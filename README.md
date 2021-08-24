@@ -5,3 +5,5 @@ The proxy-party is controlled by its members via an app and offers them direct p
 
 more:
 https://www.dropbox.com/s/1z33cn1r7r89mzv/Skizze_Schwarmtool_eng.pdf?dl=0
+
+The Pnyx (/nɪks, pəˈnɪks/; Ancient Greek: Πνύξ [pnýks]; Greek: Πνύκα, Pnyka) is a hill in central Athens where from 508 BC (reforms of Kleisthenes) to 330 BC the Athenians were hosting their popular assemblies, thus making the hill one of the earliest and most important sites in the creation of democracy.
