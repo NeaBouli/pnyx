@@ -1,88 +1,208 @@
-# pnyx / Ekklesia.gr
+<!-- @ai-anchor README_ROOT -->
+<!-- @update-hint Main repo file. Logo path: apps/web/public/pnx.png -->
+<!-- @seo Ekklesia.gr — Ψηφιακή Πλατφόρμα Αμέσης Δημοκρατίας Ελλάδα -->
 
-> **εκκλησία** — Ψηφιακή Πλατφόρμα Αμέσης Δημοκρατίας για τον Έλληνα Πολίτη
-> Digital Direct Democracy Platform for Greek Citizens
+<div align="center">
+
+<img src="apps/web/public/pnx.png" alt="εκκλησία logo" width="120" />
+
+# εκκλησία · Ekklesia.gr
+
+### Ψηφιακή Πλατφόρμα Αμέσης Δημοκρατίας για τον Έλληνα Πολίτη
+### Digital Direct Democracy Platform for Greek Citizens
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/NeaBouli/pnyx/actions/workflows/ci.yml/badge.svg)](https://github.com/NeaBouli/pnyx/actions)
+[![Wiki](https://img.shields.io/badge/Wiki-9%20pages-green)](https://github.com/NeaBouli/pnyx/wiki)
+[![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-red)](https://github.com/NeaBouli/pnyx)
 
-**Open Source · Anonymous · Privacy-First · Lightweight**
+**© 2026 Vendetta Labs — MIT License**
 
-Copyright (c) 2026 [Vendetta Labs](https://github.com/NeaBouli)
+[🌐 Ekklesia.gr](https://ekklesia.gr) · [📖 Wiki](https://github.com/NeaBouli/pnyx/wiki) · [⚡ API Docs](http://localhost:8000/docs) · [📄 Whitepaper](docs/WHITEPAPER.md)
+
+</div>
 
 ---
 
-## Αρχιτεκτονική / Architecture
+## 🏛️ Τι είναι η Ekklesia; / What is Ekklesia?
+
+Η **εκκλησία** ήταν η λαϊκή συνέλευση της αρχαίας Αθήνας — εκεί όπου κάθε
+πολίτης είχε φωνή. Η **Ekklesia.gr** είναι η ψηφιακή αναβίωσή της.
+
+> The **ekklesia** was the popular assembly of ancient Athens — where every
+> citizen had a voice. **Ekklesia.gr** is its digital revival.
+
+- 🗳️ **Πολιτική Πυξίδα** — Συγκρίνετε θέσεις με 8 κόμματα / Compare positions with 8 parties
+- 🏛️ **Ψηφοφορία Πολιτών** — Ψηφίστε για πραγματικά νομοσχέδια / Vote on real parliamentary bills
+- 📊 **Δείκτης Απόκλισης** — Βουλή vs Πολίτες / Parliament vs Citizens
+- 🔐 **Πλήρης Ανωνυμία** — Ed25519 · Nullifier Hash · Μηδενικά προσωπικά δεδομένα
+
+---
+
+## ✨ Χαρακτηριστικά / Features
+
+| Χαρακτηριστικό | Περιγραφή | Κατάσταση |
+|---|---|---|
+| 🗳️ Πολιτική Πυξίδα | 15 θέσεις, 8 κόμματα, Matching Algorithm | ✅ Beta |
+| 🏛️ Ψηφοφορία Πολιτών | Ed25519 signed, Bill Lifecycle (5 states) | ✅ Beta |
+| 📊 Δείκτης Απόκλισης | Αυτόματη σύγκριση Βουλή vs Πολίτες | ✅ Beta |
+| 🔐 ZK Identity | SMS HLR → Nullifier → Key → Delete | ✅ Beta |
+| 📱 Mobile App | Expo React Native, Secure Enclave | 🔜 V2 |
+| ⛓️ TrueRepublic | Cosmos SDK Bridge, PnyxCoin | 🔜 V2 |
+| 🤖 AI Summarizer | Claude API, 3-level summaries | 🔜 V2 |
+| 🦀 Rust Crypto | WASM, ed25519-dalek, browser-native | 🔜 V2 |
+
+---
+
+## 🏗️ Αρχιτεκτονική / Architecture
+```
 pnyx/
 ├── apps/
-│   ├── api/        → Python FastAPI (MOD-01 bis MOD-12)
-│   ├── web/        → Next.js 14 (el/en, SSR)
-│   └── mobile/     → Expo / React Native
+│   ├── api/          → Python FastAPI  (13 endpoints)
+│   ├── web/          → Next.js 14      (5 pages, el/en)
+│   └── mobile/       → Expo RN         (TODO)
 ├── packages/
-│   ├── crypto/     → Ed25519, Nullifier, HLR
-│   ├── db/         → Alembic Migrations
-│   ├── i18n/       → el / en
-│   └── types/      → Shared Types
-└── infra/
-└── docker/     → Docker Compose
-
-## Ενεργά Modules / Active Modules (Beta)
-
-| Module | Περιγραφή | Status |
-|--------|-----------|--------|
-| MOD-01 Identity | SMS HLR, Ed25519, Nullifier, Revokation | ✅ |
-| MOD-02 VAA | Thesis Matching, 8 Parteien, 15 Thesen | ✅ |
-| MOD-03 Parliament | Βουλή API, Bill Lifecycle (5 States) | ✅ |
-| MOD-04 CitizenVote | Signierte Abstimmung, Stimmänderung | ✅ |
-| MOD-05 Analytics | Divergence Score, k-Anonymität | ✅ |
-| MOD-14 Relevance | Up/Down Relevanz-Signal | ✅ |
-| MOD-08 TrueRepublic | Bridge Stub (ENV-aktivierbar) | 🔜 V2 |
-| MOD-09 Demographics | gov.gr OAuth2.0 | 🔜 Alpha |
-
-## API Endpoints
-POST /api/v1/identity/verify     # SMS → Ed25519 Keypair
-POST /api/v1/identity/revoke     # Key Revokation
-POST /api/v1/identity/status     # Status prüfen
-GET  /api/v1/vaa/statements      # 15 Thesen
-GET  /api/v1/vaa/parties         # 8 Parteien
-POST /api/v1/vaa/match           # Matching-Algorithmus
-GET  /api/v1/bills               # Gesetzentwürfe
-GET  /api/v1/bills/trending      # Nach Relevanz
-GET  /api/v1/bills/{id}          # Detail + KI-Zusammenfassung
-POST /api/v1/bills/{id}/transition # Lifecycle
-POST /api/v1/vote                # Stimme abgeben (Ed25519)
-GET  /api/v1/vote/{id}/results   # Ergebnisse + Divergence Score
-POST /api/v1/vote/{id}/relevance # Up/Down Signal
-
-## Datenschutz / Privacy
-
-- Keine Telefonnummer wird gespeichert
-- Private Key lebt nur im Gerät (Secure Enclave)
-- Nur SHA256-Hashes + öffentliche Schlüssel auf dem Server
-- Kein Personenbezug möglich
-
-## Entwicklung / Development
-```bash
-# Lokale Umgebung starten
-cd infra/docker
-docker compose up -d
-
-# API Tests
-cd apps/api
-python -m pytest tests/ -v
-
-# Crypto Tests
-cd packages/crypto
-python -m pytest tests/ -v
+│   ├── crypto/       → Ed25519 · Nullifier · HLR
+│   └── db/           → Alembic Migrations
+├── infra/
+│   └── docker/       → PostgreSQL · Redis · API
+├── wiki/             → 9 Wiki pages (backup)
+└── docs/
+    ├── CLAUDE.md     → AI Context Anchor
+    ├── WHITEPAPER.md → Technical Whitepaper
+    ├── TODO.md       → Session tracking
+    └── reports/      → Build reports
 ```
 
-## Lizenz / License
+### Bill Lifecycle
+```
+ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END
+```
 
-MIT © 2026 [Vendetta Labs](https://github.com/NeaBouli)
+---
 
-Dieses Projekt ist Open Source. Beiträge willkommen.
-This project is open source. Contributions welcome.
+## 🚀 Εκκίνηση / Quick Start
 
-## Roadmap
+### Προαπαιτούμενα / Prerequisites
+- Docker + Docker Compose
+- Python 3.12+
+- Node.js 20+
 
-Siehe [docs/ROADMAP.md](docs/ROADMAP.md) | See [docs/TODO.md](docs/TODO.md)
+### Εγκατάσταση / Installation
+```bash
+# 1. Clone
+git clone https://github.com/NeaBouli/pnyx
+cd pnyx
+
+# 2. Εκκίνηση υπηρεσιών / Start services
+cd infra/docker && docker compose up -d
+
+# 3. Βάση δεδομένων / Database
+cd ../../apps/api
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+alembic upgrade head
+python seeds/seed.py
+
+# 4. API (http://localhost:8000/docs)
+uvicorn main:app --reload
+
+# 5. Web (http://localhost:3000)
+cd ../web && npm install && npm run dev
+```
+
+### Tests
+```bash
+# API Tests (40 + 4 xfail)
+cd apps/api && pytest tests/ -v
+
+# Crypto Tests (12)
+cd packages/crypto && pytest tests/ -v
+
+# Web Build
+cd apps/web && npm run build
+```
+
+---
+
+## 🔐 Ασφάλεια & Ιδιωτικότητα / Security & Privacy
+
+| Δεδομένο | Αποθηκεύεται; |
+|---|---|
+| Αριθμός κινητού | ❌ Διαγράφεται αμέσως |
+| Ιδιωτικό κλειδί | ❌ Μόνο στη συσκευή |
+| Προσωπικά δεδομένα | ❌ Ποτέ |
+| Nullifier Hash | ✅ SHA256 (non-reversible) |
+| Public Key | ✅ Ed25519 Hex |
+| Ψήφοι | ✅ Anonymized |
+
+→ Λεπτομέρειες: [Security Wiki](https://github.com/NeaBouli/pnyx/wiki/Security)
+
+---
+
+## 📊 Κατάσταση / Status
+
+| Μετρική | Τιμή |
+|---|---|
+| Commits | 19+ |
+| API Endpoints | 13 |
+| DB Tables | 9 |
+| Tests | 44 (40 + 4 xfail + 12 crypto) |
+| Web Pages | 5 |
+| Wiki Pages | 9 |
+| CI Status | ✅ Green |
+
+---
+
+## 🗺️ Χάρτης Πορείας / Roadmap
+
+| Φάση | Trigger | Κατάσταση |
+|---|---|---|
+| **Beta** | Τώρα | 🟢 Ενεργή |
+| **Alpha** | 500 χρήστες + 3 NGOs | ⏳ Επερχόμενη |
+| **V2** | Αποδεδειγμένη σταθερότητα | 📋 Σχεδιασμένη |
+
+→ Λεπτομέρειες: [Roadmap Wiki](https://github.com/NeaBouli/pnyx/wiki/Roadmap)
+
+---
+
+## 📚 Τεκμηρίωση / Documentation
+
+| Έγγραφο | Περιγραφή |
+|---|---|
+| [📖 Wiki](https://github.com/NeaBouli/pnyx/wiki) | Πλήρης τεκμηρίωση |
+| [📄 Whitepaper](docs/WHITEPAPER.md) | Τεχνικό λευκό βιβλίο |
+| [🗺️ Roadmap](docs/ROADMAP.md) | Χάρτης πορείας |
+| [✅ TODO](docs/TODO.md) | Τρέχουσες εργασίες |
+| [🔐 Security](https://github.com/NeaBouli/pnyx/wiki/Security) | Μοντέλο ασφαλείας |
+| [🏗️ Architecture](https://github.com/NeaBouli/pnyx/wiki/Architecture) | Αρχιτεκτονική |
+
+---
+
+## 🤝 Συνεισφορά / Contributing
+```bash
+# Fork → Branch → PR
+git checkout -b feat/your-feature
+# Δείτε: https://github.com/NeaBouli/pnyx/wiki/Contributing
+```
+
+**Commit format:** `feat(module): description` | `fix(module): description`
+
+---
+
+## ⚖️ Άδεια / License
+MIT License — Copyright (c) 2026 Vendetta Labs
+
+Ελεύθερη χρήση, τροποποίηση και διανομή.
+Free to use, modify and distribute.
+
+---
+
+<div align="center">
+
+**Η δημοκρατία δεν είναι θέαμα. Είναι πράξη.**
+*Democracy is not a spectacle. It is action.*
+
+[⭐ Star on GitHub](https://github.com/NeaBouli/pnyx) · [🐛 Issues](https://github.com/NeaBouli/pnyx/issues) · [📖 Wiki](https://github.com/NeaBouli/pnyx/wiki)
+
+</div>
