@@ -2,6 +2,7 @@
 
 ## Identität
 - Repo: /Users/gio/Desktop/pnyx (lokal) | https://github.com/NeaBouli/pnyx
+- Copyright: © 2026 Vendetta Labs (MIT License)
 - Produkt: Ekklesia.gr — Ψηφιακή Πλατφόρμα Αμέσης Δημοκρατίας
 - Spec: v7.0 (vollständig, griechisch)
 - Phase: Beta — SMS Verifikation, VAA, CitizenVote
