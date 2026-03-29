@@ -7,17 +7,6 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-gray-950 text-white">
-      {/* Header */}
-      <header className="border-b border-gray-800 px-6 py-4 flex justify-between items-center">
-        <span className="text-2xl font-bold tracking-tight text-blue-400">
-          εκκλησία
-        </span>
-        <div className="flex gap-4 text-sm text-gray-400">
-          <Link href="/el" className="hover:text-white transition-colors">ΕΛ</Link>
-          <Link href="/en" className="hover:text-white transition-colors">EN</Link>
-        </div>
-      </header>
-
       {/* Hero */}
       <section className="max-w-4xl mx-auto px-6 py-24 text-center">
         <h1 className="text-6xl font-bold mb-4 text-blue-400 tracking-tight">
