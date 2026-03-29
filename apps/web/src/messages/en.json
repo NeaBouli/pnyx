@@ -1,0 +1,64 @@
+{
+  "nav": {
+    "home": "Home",
+    "vaa": "VoteCompass",
+    "bills": "Bills",
+    "vote": "Vote",
+    "about": "About"
+  },
+  "home": {
+    "title": "ekklesia",
+    "subtitle": "Digital Direct Democracy Platform",
+    "description": "Participate in democracy. Compare your positions with parties. Vote on real bills.",
+    "start_vaa": "Start VoteCompass",
+    "see_bills": "See Bills",
+    "disclaimer": "This platform is not legally binding. It only represents the views of registered users."
+  },
+  "vaa": {
+    "title": "VoteCompass",
+    "subtitle": "Compare your positions with Greek parties",
+    "question_of": "Position {current} of {total}",
+    "agree": "Agree",
+    "disagree": "Disagree",
+    "neutral": "Neutral",
+    "dont_know": "Don't know",
+    "next": "Next",
+    "back": "Back",
+    "see_results": "See Results",
+    "match": "Match",
+    "your_results": "Your Results"
+  },
+  "bills": {
+    "title": "Parliament Bills",
+    "subtitle": "Vote on real parliamentary bills",
+    "status_announced": "Announced",
+    "status_active": "Voting Open",
+    "status_window": "24h before Parliament",
+    "status_voted": "Parliament decided",
+    "status_open": "Archive",
+    "vote_yes": "Yes",
+    "vote_no": "No",
+    "vote_abstain": "Abstain",
+    "vote_unknown": "Don't know enough",
+    "total_votes": "Total votes",
+    "divergence": "Divergence from Parliament",
+    "disclaimer": "This vote is not legally binding."
+  },
+  "identity": {
+    "title": "Identity Verification",
+    "subtitle": "Once — Anonymous — Secure",
+    "phone_label": "Greek mobile number",
+    "phone_placeholder": "+306912345678",
+    "verify_button": "Verify",
+    "privacy_note": "Your number is deleted immediately after key generation.",
+    "success": "Verification successful! Save your key.",
+    "already_verified": "You are already verified."
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Retry",
+    "copyright": "© 2026 Vendetta Labs — MIT License",
+    "open_source": "Open Source"
+  }
+}
