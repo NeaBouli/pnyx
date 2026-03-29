@@ -1,10 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from routers import identity
 
 app = FastAPI(
     title="Ekklesia.gr API",
     description="Ψηφιακή Πλατφόρμα Αμέσης Δημοκρατίας — Backend API",
     version="0.1.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 app.add_middleware(
@@ -14,6 +17,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Module registrieren
+app.include_router(identity.router)
 
 @app.get("/health")
 async def health():
