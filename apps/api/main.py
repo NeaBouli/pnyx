@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import identity
+from routers import identity, vaa
 
 app = FastAPI(
     title="Ekklesia.gr API",
@@ -18,8 +18,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Module registrieren
 app.include_router(identity.router)
+app.include_router(vaa.router)
 
 @app.get("/health")
 async def health():

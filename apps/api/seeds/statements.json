@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "text_el": "Το κράτος πρέπει να αυξήσει σημαντικά τις επενδύσεις στο δημόσιο σύστημα υγείας.",
+    "text_en": "The state should significantly increase investments in the public healthcare system.",
+    "explanation_el": "Η Ελλάδα δαπανά λιγότερο ανά κάτοικο για την υγεία σε σχέση με τον ευρωπαϊκό μέσο όρο.",
+    "explanation_en": "Greece spends less per capita on healthcare compared to the European average.",
+    "category": "Υγεία"
+  },
+  {
+    "id": 2,
+    "text_el": "Η Ελλάδα πρέπει να αποχωρήσει από το ΝΑΤΟ.",
+    "text_en": "Greece should withdraw from NATO.",
+    "explanation_el": "Η Ελλάδα είναι μέλος του ΝΑΤΟ από το 1952. Η συμμετοχή συζητείται πολιτικά.",
+    "explanation_en": "Greece has been a NATO member since 1952. Membership is politically debated.",
+    "category": "Άμυνα & Εξωτερική Πολιτική"
+  },
+  {
+    "id": 3,
+    "text_el": "Ο κατώτατος μισθός πρέπει να αυξηθεί στα 1.000€ καθαρά.",
+    "text_en": "The minimum wage should be raised to €1,000 net.",
+    "explanation_el": "Ο τρέχων κατώτατος μισθός στην Ελλάδα βρίσκεται στα 830€ μικτά (2024).",
+    "explanation_en": "The current minimum wage in Greece is €830 gross (2024).",
+    "category": "Εργασία & Οικονομία"
+  },
+  {
+    "id": 4,
+    "text_el": "Η χρήση κάνναβης για προσωπική χρήση πρέπει να αποποινικοποιηθεί.",
+    "text_en": "Cannabis use for personal use should be decriminalised.",
+    "explanation_el": "Αρκετές ευρωπαϊκές χώρες έχουν ήδη αποποινικοποιήσει ή νομιμοποιήσει την κάνναβη.",
+    "explanation_en": "Several European countries have already decriminalised or legalised cannabis.",
+    "category": "Κοινωνική Πολιτική"
+  },
+  {
+    "id": 5,
+    "text_el": "Η Ελλάδα πρέπει να επιταχύνει τη μετάβαση σε ανανεώσιμες πηγές ενέργειας.",
+    "text_en": "Greece should accelerate the transition to renewable energy sources.",
+    "explanation_el": "Η Ελλάδα έχει δεσμευτεί για κλιματική ουδετερότητα έως το 2050.",
+    "explanation_en": "Greece has committed to climate neutrality by 2050.",
+    "category": "Περιβάλλον & Ενέργεια"
+  },
+  {
+    "id": 6,
+    "text_el": "Τα ιδιωτικά πανεπιστήμια πρέπει να επιτραπούν στην Ελλάδα.",
+    "text_en": "Private universities should be permitted in Greece.",
+    "explanation_el": "Το Σύνταγμα απαγορεύει επί του παρόντος τα ιδιωτικά ΑΕΙ. Η κυβέρνηση προωθεί αλλαγή.",
+    "explanation_en": "The Constitution currently prohibits private universities. The government is pushing for change.",
+    "category": "Παιδεία"
+  },
+  {
+    "id": 7,
+    "text_el": "Η Ελλάδα πρέπει να αποδεχθεί περισσότερους πρόσφυγες και μετανάστες.",
+    "text_en": "Greece should accept more refugees and migrants.",
+    "explanation_el": "Η Ελλάδα βρίσκεται στην πρώτη γραμμή της μεταναστευτικής πίεσης στην ΕΕ.",
+    "explanation_en": "Greece is on the front line of migration pressure in the EU.",
+    "category": "Μετανάστευση"
+  },
+  {
+    "id": 8,
+    "text_el": "Οι φόροι για τις μεγάλες επιχειρήσεις πρέπει να αυξηθούν.",
+    "text_en": "Taxes on large corporations should be increased.",
+    "explanation_el": "Ο εταιρικός φόρος στην Ελλάδα είναι 22%. Η ΕΕ συζητά ελάχιστο 15%.",
+    "explanation_en": "Corporate tax in Greece is 22%. The EU is discussing a minimum of 15%.",
+    "category": "Εργασία & Οικονομία"
+  },
+  {
+    "id": 9,
+    "text_el": "Το γάμο ομόφυλων ζευγαριών πρέπει να αναγνωριστεί πλήρως στην Ελλάδα.",
+    "text_en": "Same-sex marriage should be fully recognised in Greece.",
+    "explanation_el": "Ο νόμος για τον γάμο ομόφυλων ψηφίστηκε το 2024 αλλά εξακολουθεί να αμφισβητείται.",
+    "explanation_en": "The same-sex marriage law was passed in 2024 but remains contested.",
+    "category": "Κοινωνική Πολιτική"
+  },
+  {
+    "id": 10,
+    "text_el": "Η Ελλάδα πρέπει να αυξήσει τις αμυντικές δαπάνες πάνω από το 2% του ΑΕΠ.",
+    "text_en": "Greece should increase defence spending above 2% of GDP.",
+    "explanation_el": "Η Ελλάδα ήδη ξεπερνά τον στόχο του 2% του ΝΑΤΟ.",
+    "explanation_en": "Greece already exceeds the NATO 2% target.",
+    "category": "Άμυνα & Εξωτερική Πολιτική"
+  },
+  {
+    "id": 11,
+    "text_el": "Πρέπει να θεσπιστεί γενική βασική εισοδηματική ασφάλεια για όλους τους πολίτες.",
+    "text_en": "A universal basic income should be introduced for all citizens.",
+    "explanation_el": "Πιλοτικά προγράμματα ΒΕΕ τρέχουν σε αρκετές ευρωπαϊκές χώρες.",
+    "explanation_en": "Universal basic income pilot programmes are running in several European countries.",
+    "category": "Κοινωνική Πολιτική"
+  },
+  {
+    "id": 12,
+    "text_el": "Τα πυρηνικά εργοστάσια πρέπει να εξεταστούν ως επιλογή ενέργειας για την Ελλάδα.",
+    "text_en": "Nuclear power plants should be considered as an energy option for Greece.",
+    "explanation_el": "Η Ελλάδα δεν διαθέτει πυρηνικούς σταθμούς. Η συζήτηση ανοίγει εκ νέου σε ευρωπαϊκό επίπεδο.",
+    "explanation_en": "Greece has no nuclear plants. The debate is reopening at European level.",
+    "category": "Περιβάλλον & Ενέργεια"
+  },
+  {
+    "id": 13,
+    "text_el": "Η εκκλησία πρέπει να φορολογείται όπως κάθε άλλος οργανισμός.",
+    "text_en": "The church should be taxed like any other organisation.",
+    "explanation_el": "Η Ελληνική Ορθόδοξη Εκκλησία απολαμβάνει σημαντικές φορολογικές απαλλαγές.",
+    "explanation_en": "The Greek Orthodox Church enjoys significant tax exemptions.",
+    "category": "Εκκλησία & Κράτος"
+  },
+  {
+    "id": 14,
+    "text_el": "Η τηλεργασία πρέπει να κατοχυρωθεί νομικά ως δικαίωμα των εργαζομένων.",
+    "text_en": "Remote work should be legally enshrined as a workers right.",
+    "explanation_el": "Μετά την πανδημία, η τηλεργασία έχει γίνει κανόνας σε πολλούς κλάδους.",
+    "explanation_en": "After the pandemic, remote work has become the norm in many sectors.",
+    "category": "Εργασία & Οικονομία"
+  },
+  {
+    "id": 15,
+    "text_el": "Η Ελλάδα πρέπει να διεκδικήσει τα Γλυπτά του Παρθενώνα με νομικά μέσα στο Διεθνές Δικαστήριο.",
+    "text_en": "Greece should pursue the return of the Parthenon Sculptures through legal means at the International Court.",
+    "explanation_el": "Τα Γλυπτά φυλάσσονται στο Βρετανικό Μουσείο. Η Ελλάδα τα διεκδικεί εδώ και δεκαετίες.",
+    "explanation_en": "The Sculptures are held in the British Museum. Greece has been claiming them for decades.",
+    "category": "Εθνικά Θέματα"
+  }
+]
