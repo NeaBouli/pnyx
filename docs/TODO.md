@@ -21,13 +21,20 @@ _Letzte Aktualisierung: 2026-03-29 — Auto-Sync nach jedem Build_
 - [x] GitHub Actions: CI (test + lint)
 - [x] GitHub Actions: Auto-Backup CLAUDE.md + TODO.md
 
-## ⏳ Phase 2: VAA + Parliament (AUSSTEHEND)
-- [ ] Seed-Daten: 6-8 griechische Parteien
-- [ ] Seed-Daten: 15 Thesen (VAA)
-- [ ] MOD-02: POST /api/v1/match (Matching-Algorithmus)
-- [ ] MOD-03: GET /api/v1/bills (Βουλή API)
+## ✅ Phase 2: VAA + Parliament (ABGESCHLOSSEN)
+- [x] Seed-Daten: 8 griechische Parteien
+- [x] Seed-Daten: 15 Thesen (VAA)
+- [x] Seed-Daten: 3 Gesetzentwürfe
+- [x] MOD-02: POST /api/v1/match (Matching-Algorithmus)
+- [x] MOD-02: GET /api/v1/vaa/statements + /parties
+- [x] MOD-03: GET /api/v1/bills (mit Status-Filter + Pagination)
+- [x] MOD-03: GET /api/v1/bills/{id} (Detail + KI-Summaries)
+- [x] MOD-03: GET /api/v1/bills/trending (Relevanz-Score)
+- [x] MOD-03: POST /api/v1/bills/{id}/transition (Lifecycle)
+- [x] MOD-03: POST /api/v1/bills/admin/create
+- [x] MOD-03: Bill Lifecycle State Machine (VALID_TRANSITIONS)
+- [x] MOD-03: Audit-Log (bill_status_logs)
 - [ ] MOD-03: Cron Job täglich 03:00
-- [ ] MOD-03: Bill Lifecycle State Machine
 
 ## ⏳ Phase 3: CitizenVote (AUSSTEHEND)
 - [ ] MOD-04: POST /api/v1/vote (Ed25519 Signatur-Validierung)

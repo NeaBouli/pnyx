@@ -1,0 +1,41 @@
+[
+  {
+    "id": "GR-2024-0001",
+    "title_el": "Νόμος για την ιδιωτική τριτοβάθμια εκπαίδευση",
+    "title_en": "Law on Private Higher Education",
+    "pill_el": "Επιτρέπει ιδιωτικά πανεπιστήμια στην Ελλάδα για πρώτη φορά.",
+    "pill_en": "Allows private universities in Greece for the first time.",
+    "summary_short_el": "Ο νόμος τροποποιεί το Σύνταγμα ώστε να επιτρέψει την ίδρυση μη κερδοσκοπικών ιδιωτικών ΑΕΙ. Αφορά κυρίως ιδρύματα με αναγνωρισμένες ξένες συνεργασίες. Προβλέπει αυστηρή εποπτεία από κρατικό φορέα πιστοποίησης.",
+    "summary_short_en": "The law amends the Constitution to permit the establishment of non-profit private universities. It primarily concerns institutions with recognised foreign partnerships and includes strict oversight by a state accreditation body.",
+    "categories": ["Παιδεία"],
+    "party_votes_parliament": {"ΝΔ": "ΝΑΙ", "ΣΥΡΙΖΑ": "ΟΧΙ", "ΠΑΣΟΚ": "ΝΑΙ", "ΚΚΕ": "ΟΧΙ", "ΕΛ": "ΝΑΙ"},
+    "status": "OPEN_END",
+    "parliament_vote_date": "2024-05-17"
+  },
+  {
+    "id": "GR-2024-0002",
+    "title_el": "Νόμος για την κλιματική ουδετερότητα και τις ΑΠΕ",
+    "title_en": "Law on Climate Neutrality and Renewable Energy",
+    "pill_el": "Ορίζει δεσμευτικούς στόχους για ΑΠΕ έως το 2030.",
+    "pill_en": "Sets binding renewable energy targets until 2030.",
+    "summary_short_el": "Ο νόμος καθορίζει δεσμευτικό στόχο 80% ΑΠΕ στο ενεργειακό μείγμα έως το 2030 και κλιματική ουδετερότητα έως το 2050. Προβλέπει φορολογικά κίνητρα για εγκατάσταση φωτοβολταϊκών και ανεμογεννητριών.",
+    "summary_short_en": "The law sets a binding target of 80% renewables in the energy mix by 2030 and climate neutrality by 2050. It includes tax incentives for solar panel and wind turbine installation.",
+    "categories": ["Περιβάλλον & Ενέργεια"],
+    "party_votes_parliament": {"ΝΔ": "ΝΑΙ", "ΣΥΡΙΖΑ": "ΝΑΙ", "ΠΑΣΟΚ": "ΝΑΙ", "ΚΚΕ": "ΑΠΟΧΗ", "ΕΛ": "ΟΧΙ"},
+    "status": "OPEN_END",
+    "parliament_vote_date": "2024-09-20"
+  },
+  {
+    "id": "GR-2025-0001",
+    "title_el": "Αύξηση κατώτατου μισθού — Νέα ρύθμιση",
+    "title_en": "Minimum Wage Increase — New Regulation",
+    "pill_el": "Αύξηση κατώτατου μισθού στα 950€ μικτά από Ιανουάριο 2025.",
+    "pill_en": "Minimum wage increase to €950 gross from January 2025.",
+    "summary_short_el": "Το νομοσχέδιο προβλέπει αύξηση του κατώτατου μισθού κατά 14.5% σε σχέση με το 2024, φτάνοντας τα 950€ μικτά. Συνοδεύεται από ελαφρύνσεις εισφορών για μικρές επιχειρήσεις.",
+    "summary_short_en": "The bill provides for a 14.5% increase in the minimum wage compared to 2024, reaching €950 gross. It is accompanied by contribution relief for small businesses.",
+    "categories": ["Εργασία & Οικονομία"],
+    "party_votes_parliament": null,
+    "status": "ACTIVE",
+    "parliament_vote_date": "2025-04-15"
+  }
+]

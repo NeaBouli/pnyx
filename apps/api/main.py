@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import identity, vaa
+from routers import identity, vaa, parliament
 
 app = FastAPI(
     title="Ekklesia.gr API",
@@ -20,6 +20,7 @@ app.add_middleware(
 
 app.include_router(identity.router)
 app.include_router(vaa.router)
+app.include_router(parliament.router)
 
 @app.get("/health")
 async def health():
