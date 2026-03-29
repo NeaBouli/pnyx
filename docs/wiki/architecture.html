@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="el" data-lang="el">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <link rel="icon" type="image/png" href="../pnx.png"/>
+  <style>
+    :root{--blue:#2563eb;--blue-dark:#1d4ed8;--blue-light:#eff6ff;--gray-900:#0f172a;--gray-700:#334155;--gray-400:#94a3b8;--gray-100:#f1f5f9;--white:#fff;--green:#22c55e;--yellow:#f59e0b;--radius:1rem;--shadow:0 4px 24px rgba(37,99,235,.10)}
+    *{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+    body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--white);color:var(--gray-900);line-height:1.6}
+    nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid #e2e8f0;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
+    .nl{font-size:1.4rem;font-weight:900;color:var(--blue);text-decoration:none;display:flex;align-items:center;gap:.5rem}.nl img{width:30px;height:30px;object-fit:contain}
+    .nk{display:flex;gap:.2rem;align-items:center;flex-wrap:wrap}.nk a{padding:.35rem .8rem;border-radius:.5rem;color:var(--gray-700);text-decoration:none;font-size:.85rem;font-weight:500;transition:all .2s}.nk a:hover,.nk a.ac{background:var(--blue-light);color:var(--blue)}
+    .lb{cursor:pointer;border:2px solid #e2e8f0;background:var(--white);border-radius:.5rem;padding:.3rem .7rem;font-size:.8rem;font-weight:700;color:var(--gray-700);transition:all .2s;margin-left:.5rem}.lb:hover{border-color:var(--blue);color:var(--blue)}
+    .wh{padding:3rem 2rem;text-align:center}.wh h1{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:900;margin-bottom:.5rem}.wh p{color:var(--gray-700);max-width:600px;margin:0 auto 1.5rem}
+    .bl{display:inline-flex;align-items:center;gap:.4rem;color:var(--blue);text-decoration:none;font-weight:600;font-size:.9rem}.bl:hover{text-decoration:underline}
+    .ly{max-width:900px;margin:0 auto;padding:2rem}
+    h2{font-size:1.5rem;font-weight:900;margin:2.5rem 0 1rem;padding-bottom:.5rem;border-bottom:2px solid #e2e8f0}h2:first-child{margin-top:0}
+    h3{font-size:1.05rem;font-weight:800;margin:1.5rem 0 .6rem;color:var(--blue)}
+    p{color:var(--gray-700);margin-bottom:1rem;line-height:1.7}ul,ol{padding-left:1.5rem;margin-bottom:1rem}li{color:var(--gray-700);margin-bottom:.4rem}
+    .cb{background:var(--gray-900);color:#e2e8f0;border-radius:var(--radius);padding:1.5rem;font-family:'Courier New',monospace;font-size:.82rem;overflow-x:auto;margin:1rem 0;line-height:1.7;white-space:pre}.cb .c{color:#64748b}
+    table{width:100%;border-collapse:collapse;font-size:.88rem;margin:1.5rem 0}th{background:var(--gray-900);color:white;padding:.7rem 1rem;text-align:left;font-weight:700}td{padding:.7rem 1rem;border-bottom:1px solid #e2e8f0}tr:hover td{background:var(--gray-100)}
+    .ib{background:var(--blue-light);border-left:4px solid var(--blue);border-radius:.5rem;padding:1.25rem 1.5rem;margin:1.5rem 0}.ib p{margin:0}
+    .wb{background:#fefce8;border-left:4px solid var(--yellow);border-radius:.5rem;padding:1.25rem 1.5rem;margin:1.5rem 0}.wb p{margin:0}
+    .sb{background:#f0fdf4;border-left:4px solid var(--green);border-radius:.5rem;padding:1.25rem 1.5rem;margin:1.5rem 0}.sb p{margin:0}
+    .cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin:1.5rem 0}
+    .cd{background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0;transition:all .2s}.cd:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:var(--shadow)}
+    .cd h4{font-weight:800;margin-bottom:.4rem}.cd p{font-size:.82rem;color:var(--gray-400);margin:0}
+    .bg{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .6rem;border-radius:2rem;font-size:.72rem;font-weight:700;margin:.15rem}
+    .bg-g{background:#dcfce7;color:#166534}.bg-y{background:#fef3c7;color:#92400e}.bg-p{background:#f3e8ff;color:#6b21a8}.bg-b{background:#dbeafe;color:#1e40af}.bg-x{background:#f1f5f9;color:#475569}
+    .fr{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;padding:1rem;background:var(--gray-100);border-radius:var(--radius);margin:1rem 0}
+    .fn{background:white;border-radius:.6rem;padding:.5rem 1rem;font-size:.8rem;font-weight:700;border:2px solid #e2e8f0;text-align:center}
+    .fn.g{border-color:var(--green);background:#f0fdf4;color:#166534}.fn.b{border-color:var(--blue);background:var(--blue-light);color:var(--blue-dark)}.fn.y{border-color:var(--yellow);background:#fefce8;color:#92400e}.fn.p{border-color:#a855f7;background:#faf5ff;color:#6b21a8}.fn.r{border-color:#ef4444;background:#fef2f2;color:#991b1b}
+    .fa{color:var(--blue);font-weight:900;font-size:1.1rem}
+    .pl{width:8px;height:8px;background:var(--green);border-radius:50%;display:inline-block;animation:pl 2s infinite;margin-right:4px}@keyframes pl{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+    footer{background:var(--gray-900);color:#94a3b8;padding:2rem;text-align:center;font-size:.85rem;margin-top:4rem}footer a{color:#64748b;text-decoration:none}footer a:hover{color:white}
+    .fi{opacity:0;transform:translateY(16px);transition:all .5s ease}.fi.v{opacity:1;transform:translateY(0)}
+    @media(max-width:768px){.nk{display:none}}
+  </style>
+  <title>Αρχιτεκτονική — εκκλησία Wiki</title>
+</head>
+<body>
+<nav>
+  <a href="../" class="nl"><img src="../pnx.png" alt=""/>εκκλησία</a>
+  <div class="nk"><a href="index.html" data-el="Wiki Home" data-en="Wiki Home">Wiki Home</a><a href="architecture.html" class="ac" data-el="Αρχιτεκτονική" data-en="Architecture">Αρχιτεκτονική</a><a href="security.html" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</a><a href="api.html" data-el="API" data-en="API">API</a><a href="modules.html" data-el="Modules" data-en="Modules">Modules</a><a href="roadmap.html" data-el="Roadmap" data-en="Roadmap">Roadmap</a><button class="lb" onclick="toggleLang()"><span id="langFlag">🇬🇧</span> <span id="langLabel">EN</span></button></div>
+</nav>
+<div class="wh" style="background:linear-gradient(135deg,#eff6ff 0%,#f0f9ff 100%)">
+  <h1>🏗️ <span data-el="Αρχιτεκτονική" data-en="Architecture">Αρχιτεκτονική</span></h1>
+  <p data-el="Monorepo, Stack, Bill Lifecycle" data-en="Monorepo, Stack, Bill Lifecycle">Monorepo, Stack, Bill Lifecycle</p>
+  <a href="index.html" class="bl">← Wiki Home</a>
+</div>
+<div class="ly">
+
+  <h2 class="fi" data-el="Monorepo Δομή" data-en="Monorepo Structure">Monorepo Δομή</h2>
+  <div class="cb fi">pnyx/
+├── apps/
+│   ├── api/          <span class="c">→ Python FastAPI (13 endpoints)</span>
+│   ├── web/          <span class="c">→ Next.js 14 (5 σελίδες, el/en)</span>
+│   └── mobile/       <span class="c">→ Expo React Native (TODO)</span>
+├── packages/
+│   ├── crypto/       <span class="c">→ Ed25519 · Nullifier · HLR</span>
+│   └── db/           <span class="c">→ Alembic Migrations</span>
+├── infra/docker/     <span class="c">→ PostgreSQL · Redis · API</span>
+├── docs/             <span class="c">→ GitHub Pages + Whitepaper</span>
+└── wiki/             <span class="c">→ GitHub Wiki backup</span></div>
+
+  <h2 class="fi" data-el="Stack Τεχνολογιών" data-en="Technology Stack">Stack Τεχνολογιών</h2>
+  <table class="fi">
+    <tr><th data-el="Επίπεδο" data-en="Layer">Επίπεδο</th><th data-el="Τεχνολογία" data-en="Technology">Τεχνολογία</th><th data-el="Αιτιολόγηση" data-en="Why">Αιτιολόγηση</th></tr>
+    <tr><td>Backend</td><td>Python FastAPI</td><td>Async, typed, OpenAPI</td></tr>
+    <tr><td>Database</td><td>PostgreSQL 15</td><td>JSONB, GDPR-ready</td></tr>
+    <tr><td>Cache</td><td>Redis 7</td><td>PubSub, WebSocket</td></tr>
+    <tr><td>Web</td><td>Next.js 14</td><td>SSR, i18n, SEO</td></tr>
+    <tr><td>Crypto (Beta)</td><td>PyNaCl + @noble/curves</td><td>Ed25519</td></tr>
+    <tr><td>Crypto (V2)</td><td>Rust + WASM</td><td data-el="Browser-native" data-en="Browser-native">Browser-native</td></tr>
+    <tr><td>CI/CD</td><td>GitHub Actions</td><td data-el="Δωρεάν" data-en="Free">Δωρεάν</td></tr>
+  </table>
+
+  <h2 class="fi">Bill Lifecycle</h2>
+  <div class="fr fi">
+    <div class="fn"><span class="pl"></span>ANNOUNCED</div><div class="fa">→</div>
+    <div class="fn g">ACTIVE</div><div class="fa">→</div>
+    <div class="fn y">WINDOW_24H</div><div class="fa">→</div>
+    <div class="fn b">PARLIAMENT_VOTED</div><div class="fa">→</div>
+    <div class="fn p">OPEN_END</div>
+  </div>
+  <table class="fi">
+    <tr><th data-el="Κατάσταση" data-en="State">Κατάσταση</th><th data-el="Ψηφοφορία" data-en="Voting">Ψηφοφορία</th><th data-el="Αλλαγή" data-en="Change">Αλλαγή</th></tr>
+    <tr><td>ANNOUNCED</td><td>❌</td><td>—</td></tr>
+    <tr><td>ACTIVE</td><td>✅</td><td>❌</td></tr>
+    <tr><td>WINDOW_24H</td><td>✅</td><td>✅</td></tr>
+    <tr><td>PARLIAMENT_VOTED</td><td>❌</td><td>—</td></tr>
+    <tr><td>OPEN_END</td><td>✅</td><td>✅</td></tr>
+  </table>
+
+  <h2 class="fi" data-el="Διάγραμμα" data-en="Diagram">Διάγραμμα</h2>
+  <div class="cb fi">┌────────────────────────────────────────────┐
+│            PNYX MONOREPO                    │
+│ ┌─────────┐ ┌────────┐ ┌───────────────┐   │
+│ │Next.js  │ │Expo RN │ │  FastAPI       │   │
+│ │(Web)    │ │(Mobile)│ │  MOD-01..14    │   │
+│ └────┬────┘ └───┬────┘ └──────┬────────┘   │
+│      └──────────┘  REST/WS   │             │
+│  ┌─────────────┐  ┌──────────▼──────────┐  │
+│  │packages/    │  │PostgreSQL + Redis    │  │
+│  │crypto       │  └─────────────────────┘  │
+│  └─────────────┘                            │
+└────────────────────────────────────────────┘
+        │ V2: TrueRepublic / Cosmos SDK</div>
+
+</div>
+<footer><p>εκκλησία · © 2026 Vendetta Labs · MIT · <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a> · <a href="index.html">Wiki</a> · <a href="../">Landing</a></p></footer>
+<script>
+let l='el';function toggleLang(){l=l==='el'?'en':'el';document.getElementById('langFlag').textContent=l==='el'?'🇬🇧':'🇬🇷';document.getElementById('langLabel').textContent=l==='el'?'EN':'ΕΛ';document.querySelectorAll('[data-el]').forEach(e=>{const t=e.getAttribute('data-'+l);if(t)e.innerHTML=t})}
+const o=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('v')})},{threshold:.1});document.querySelectorAll('.fi').forEach(e=>o.observe(e));
+</script>
+</body></html>
