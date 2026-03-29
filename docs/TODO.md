@@ -1,95 +1,84 @@
 # Ekklesia.gr — TODO
 # Copyright (c) 2026 Vendetta Labs — MIT License
-# Letzte Aktualisierung: 2026-03-29
+# Stand: 2026-03-29 — Session 1 abgeschlossen
 
 ---
 
-## ✅ ABGESCHLOSSEN
+## ✅ SESSION 1 KOMPLETT ABGESCHLOSSEN
 
-### Fundament
-- [x] Monorepo-Struktur (apps/, packages/, infra/, docs/)
+### Fundament & DevOps
+- [x] Monorepo-Struktur (apps/ packages/ infra/ docs/)
 - [x] CLAUDE.md persistenter Kontext-Anker
 - [x] MIT License © Vendetta Labs
+- [x] .gitignore, README.md, ROADMAP.md
 - [x] Docker Compose (PostgreSQL + Redis + FastAPI)
-- [x] GitHub Actions CI (grün: test-api + test-crypto + test-web)
+- [x] GitHub Actions CI (grün: test-api + test-crypto)
 - [x] GitHub Remote: https://github.com/NeaBouli/pnyx
+- [x] Prometheus-Style Reports (docs/reports/)
 
-### Backend API (apps/api — FastAPI + Python)
-- [x] FastAPI Grundgerüst + /health + /docs
-- [x] Alembic Migrations + vollständiges DB-Schema v7 (9 Tabellen, 3 Enums)
-- [x] MOD-01 Identity: verify / revoke / status (Ed25519, HLR, Nullifier)
-- [x] MOD-02 VAA: statements / parties / match (8 Parteien, 15 Thesen)
-- [x] MOD-03 Parliament: bills / trending / lifecycle / admin/create
-- [x] MOD-04 CitizenVote: vote (Ed25519 signiert) / results / relevance
-- [x] MOD-05 Divergence Score (integriert in /results)
-- [x] MOD-14 Relevance Up/Down Signal
-- [x] Seed-Daten: 8 Parteien, 15 Thesen, 3 Gesetzentwürfe
+### Backend API (apps/api)
+- [x] FastAPI Grundgerüst + /health + /docs (Swagger)
+- [x] Alembic + vollständiges DB-Schema v7 (9 Tabellen, 3 Enums)
+- [x] MOD-01 Identity: verify / revoke / status
+- [x] MOD-02 VAA: statements / parties / match
+- [x] MOD-03 Parliament: bills / trending / lifecycle / admin
+- [x] MOD-04 CitizenVote: vote (Ed25519) / results / relevance
+- [x] MOD-05 Divergence Score
+- [x] MOD-14 Relevance Up/Down
+- [x] Seed-Daten: 8 Parteien + 15 Thesen + 3 Bills
 
-### Krypto (packages/crypto — Python)
+### Krypto (packages/crypto)
 - [x] Ed25519 Keypair (generate / sign / verify)
 - [x] Nullifier Hash (SHA256 + SERVER_SALT)
-- [x] Demographic Hash (MOD-09 Alpha vorbereitet)
-- [x] HLR Lookup Stub (Twilio-Interface bereit)
+- [x] Demographic Hash (Alpha vorbereitet)
+- [x] HLR Lookup Stub (Twilio-Interface)
+- [x] 12 Unit Tests
 
-### Tests
-- [x] 40 passed + 4 xfail (kein lokales PG) + 12 Crypto = 44 total
-- [x] CI läuft auf GitHub Actions (grün)
+### Web Frontend (apps/web)
+- [x] Next.js 14 + TypeScript + Tailwind
+- [x] i18n: el/en via next-intl
+- [x] NavHeader (sticky, locale switch, GitHub icon)
+- [x] Homepage / VAA Quiz / Bills Feed / Bill Detail / Verify
+- [x] StatusBadge + DivergenceCard + ProgressBar + VoteButton
+- [x] API Client (Axios + vollständige TS Types)
+- [x] Build: erfolgreich (97–232 kB per page)
 
-### Web Frontend (apps/web — Next.js 14 + TypeScript)
-- [x] Next.js 14 App Router Setup
-- [x] i18n: Griechisch (el) + Englisch (en) via next-intl
-- [x] Startseite (Hero + Feature Cards + Footer)
-- [x] API Client (Axios + vollständige TypeScript Types)
-- [x] Middleware für Locale-Routing
-- [x] Build erfolgreich (97.3 kB First Load JS)
-
----
-
-## 🔄 IN ARBEIT (aktuell)
-
-### Web Frontend Pages
-- [ ] VAA Quiz Seite (/vaa) — Thesen-Flow + Ergebnis
-- [ ] Bills Feed Seite (/bills) — Lifecycle-Anzeige + Filter
-- [ ] Bill Detail Seite (/bills/[id]) — Abstimmung + Divergence
-- [ ] Identity/Verify Seite (/verify) — SMS Flow
+### Tests & CI
+- [x] 44 Tests total (40 API + 4 xfail + 12 Crypto)
+- [x] GitHub Actions: grün
 
 ---
 
-## ⏳ AUSSTEHEND
+## 🔄 SESSION 2 — NÄCHSTE SCHRITTE (Priorität)
 
-### Web Frontend (Vervollständigung)
-- [ ] Navigation Component (Header + Locale Switch)
-- [ ] VAA Ergebnis-Seite (Balkendiagramm, recharts)
-- [ ] Bill Abstimmungs-UI (Υπέρ/Κατά/Αποχή/Δεν γνωρίζω)
-- [ ] Divergence Score Anzeige
-- [ ] Mein Abgeordneter (MOD-13)
-- [ ] Embeddable Widget (MOD-12)
+### Kritisch (vor erstem Launch)
+- [ ] Doppelten Header in VAA/Bills Seiten entfernen (NavHeader ist im Layout)
+- [ ] Ed25519 Signatur im Browser implementieren (@noble/curves bereits installiert)
+- [ ] Vote API call in Bill Detail /bills/[id] fertigstellen (TODO-Marker)
+- [ ] Docker Compose lokal starten + alembic upgrade head
+- [ ] Seed-Script ausführen (python seeds/seed.py)
+- [ ] End-to-End Test: API lokal → Frontend lokal → vollständiger Flow
 
-### Mobile App (apps/mobile — Expo)
+### Mobile App (apps/mobile)
 - [ ] Expo Setup (React Native + TypeScript)
-- [ ] Biometrie-Flow (expo-local-auth)
-- [ ] Secure Enclave Key Storage (expo-secure-store)
-- [ ] Geteilte API-Logik mit Web
-
-### Production
-- [ ] Hetzner CX21 Setup
-- [ ] Traefik + Let's Encrypt SSL
-- [ ] Production Docker Compose
-- [ ] Environment Variables (Secrets)
-- [ ] alembic upgrade head (gegen echte DB)
+- [ ] expo-secure-store (Secure Enclave Key Storage)
+- [ ] expo-local-auth (Biometrie für Stimmabgabe)
+- [ ] Geteilte API-Logik mit Web (packages/types)
+- [ ] iOS + Android Build testen
 
 ### V2 Roadmap
-- [ ] packages/crypto-rs — Rust + WASM (Ed25519 im Browser)
+- [ ] packages/crypto-rs (Rust + WASM: ed25519-dalek, wasm-bindgen)
 - [ ] MOD-08 TrueRepublic Bridge (PnyxCoin, Cosmos SDK)
-- [ ] MOD-09 gov.gr OAuth2.0 (Alpha-Phase)
+- [ ] MOD-09 gov.gr OAuth2.0 (nach 500 Nutzern + 3 NGOs)
 - [ ] MOD-10/11 KI-Scraper (Crawl4AI + Claude API)
 - [ ] MOD-13 Mein Abgeordneter
 - [ ] WebSocket Live-Counter (WINDOW_24H)
-- [ ] Commit-Reveal Abstimmung (Zero-Knowledge V2)
-- [ ] Deliberation Layer (pol.is Modell)
+- [ ] Commit-Reveal ZK Abstimmung
 
-### Technologie-Notiz (für V2)
-- Rust (packages/crypto-rs): Ed25519-dalek + sha2 + wasm-bindgen
-  → Krypto läuft direkt im Browser als WASM-Modul
-  → Kein Server-Trust nötig für Signierung
-  → Natürliche Wahl wenn Plattform wächst
+### Production (wenn Konzept vollumfänglich gebaut)
+- [ ] Hetzner CX21 Setup
+- [ ] Traefik + Let's Encrypt SSL
+- [ ] Production Docker Compose
+- [ ] Environment Variables (Secrets Management)
+- [ ] Domain: ekklesia.gr
+- [ ] Externes Sicherheitsaudit
