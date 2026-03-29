@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="el" data-lang="el">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>εκκλησία — Wiki</title>
+  <meta name="description" content="Τεχνική τεκμηρίωση Ekklesia.gr" />
+  <link rel="icon" type="image/png" href="../pnx.png" />
+  <style>
+    :root{--blue:#2563eb;--blue-dark:#1d4ed8;--blue-light:#eff6ff;--gray-900:#0f172a;--gray-700:#334155;--gray-400:#94a3b8;--gray-100:#f1f5f9;--white:#fff;--green:#22c55e;--radius:1rem;--shadow:0 4px 24px rgba(37,99,235,.10)}
+    *{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+    body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--white);color:var(--gray-900);line-height:1.6}
+    nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid #e2e8f0;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center}
+    .nav-logo{font-size:1.5rem;font-weight:900;color:var(--blue);text-decoration:none;display:flex;align-items:center;gap:.5rem}
+    .nav-logo img{width:32px;height:32px;object-fit:contain}
+    .nav-links{display:flex;gap:.25rem;align-items:center}
+    .nav-links a{padding:.4rem .9rem;border-radius:.5rem;color:var(--gray-700);text-decoration:none;font-size:.9rem;font-weight:500;transition:all .2s}
+    .nav-links a:hover,.nav-links a.active{background:var(--blue-light);color:var(--blue)}
+    .lang-btn{margin-left:1rem;cursor:pointer;border:2px solid #e2e8f0;background:var(--white);border-radius:.5rem;padding:.3rem .7rem;font-size:.85rem;font-weight:700;color:var(--gray-700);transition:all .2s}
+    .lang-btn:hover{border-color:var(--blue);color:var(--blue)}
+    .hero{background:linear-gradient(135deg,#eff6ff 0%,#f0fdf4 100%);padding:4rem 2rem;text-align:center}
+    .hero img{width:80px;height:80px;object-fit:contain;margin-bottom:1.5rem;filter:drop-shadow(0 4px 16px rgba(37,99,235,.2))}
+    .hero h1{font-size:clamp(2rem,5vw,3.5rem);font-weight:900;margin-bottom:.75rem}
+    .hero p{color:var(--gray-700);font-size:1.1rem;max-width:600px;margin:0 auto 2rem}
+    .layout{max-width:1100px;margin:0 auto;padding:3rem 2rem}
+    h2{font-size:1.5rem;font-weight:900;margin:2.5rem 0 1rem;padding-bottom:.5rem;border-bottom:2px solid #e2e8f0}h2:first-child{margin-top:0}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin:1.5rem 0}
+    .card{background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0;text-decoration:none;color:inherit;transition:all .2s;display:block}
+    .card:hover{border-color:var(--blue);background:var(--blue-light);transform:translateY(-3px);box-shadow:var(--shadow)}
+    .card-icon{font-size:2rem;margin-bottom:.75rem}
+    .card h4{font-weight:800;margin-bottom:.3rem}
+    .card p{font-size:.8rem;color:var(--gray-400)}
+    .code-block{background:var(--gray-900);color:#e2e8f0;border-radius:var(--radius);padding:1.5rem;font-family:'Courier New',monospace;font-size:.85rem;overflow-x:auto;margin:1rem 0;line-height:1.6;white-space:pre}
+    .code-block .c{color:#64748b}
+    .flow-demo{background:var(--gray-100);border-radius:1.5rem;padding:2rem;margin:1.5rem 0}
+    .flow-row{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;justify-content:center}
+    .flow-node{background:white;border-radius:.75rem;padding:.75rem 1.25rem;font-size:.85rem;font-weight:700;border:2px solid #e2e8f0;text-align:center;min-width:120px}
+    .flow-node.a{border-color:var(--green);background:#f0fdf4;color:#166534}
+    .flow-node.w{border-color:#f59e0b;background:#fefce8;color:#92400e}
+    .flow-node.b{border-color:var(--blue);background:var(--blue-light);color:var(--blue-dark)}
+    .flow-node.p{border-color:#a855f7;background:#faf5ff;color:#6b21a8}
+    .fa{font-size:1.2rem;color:var(--blue);font-weight:900}
+    .pulse{width:8px;height:8px;background:var(--green);border-radius:50%;display:inline-block;animation:p 2s infinite;margin-right:6px}
+    @keyframes p{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin:1.5rem 0}
+    .stat{background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;text-align:center}
+    .stat-num{font-size:2rem;font-weight:900}
+    .stat-label{font-size:.8rem;color:var(--gray-400);font-weight:600}
+    footer{background:var(--gray-900);color:#94a3b8;padding:2rem;text-align:center;font-size:.85rem;margin-top:4rem}
+    footer a{color:#64748b;text-decoration:none}footer a:hover{color:white}
+    .fi{opacity:0;transform:translateY(16px);transition:all .5s ease}.fi.v{opacity:1;transform:translateY(0)}
+    @media(max-width:768px){.nav-links{display:none}}
+  </style>
+</head>
+<body>
+<nav>
+  <a href="../" class="nav-logo"><img src="../pnx.png" alt="" />εκκλησία</a>
+  <div class="nav-links">
+    <a href="index.html" class="active" data-el="Wiki" data-en="Wiki">Wiki</a>
+    <a href="security.html" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</a>
+    <a href="https://github.com/NeaBouli/pnyx/wiki" target="_blank">GitHub Wiki</a>
+    <button class="lang-btn" onclick="toggleLang()"><span id="langFlag">🇬🇧</span> <span id="langLabel">EN</span></button>
+  </div>
+</nav>
+
+<div class="hero">
+  <img src="../pnx.png" alt="εκκλησία" />
+  <h1>📖 Wiki</h1>
+  <p data-el="Πλήρης τεχνική τεκμηρίωση της πλατφόρμας Ekklesia.gr" data-en="Complete technical documentation for the Ekklesia.gr platform">Πλήρης τεχνική τεκμηρίωση της πλατφόρμας Ekklesia.gr</p>
+  <a href="../" style="color:var(--blue);text-decoration:none;font-weight:600;font-size:.9rem">← <span data-el="Αρχική Σελίδα" data-en="Landing Page">Αρχική Σελίδα</span></a>
+</div>
+
+<div class="layout">
+  <h2 class="fi" data-el="📚 Σελίδες Wiki" data-en="📚 Wiki Pages">📚 Σελίδες Wiki</h2>
+  <div class="grid">
+    <a href="security.html" class="card fi"><div class="card-icon">🔐</div><h4 data-el="Ασφάλεια" data-en="Security">Ασφάλεια</h4><p>Ed25519, Nullifier, ZK</p></a>
+    <a href="https://github.com/NeaBouli/pnyx/wiki/Architecture" target="_blank" class="card fi"><div class="card-icon">🏗️</div><h4 data-el="Αρχιτεκτονική" data-en="Architecture">Αρχιτεκτονική</h4><p>Stack, Monorepo, Lifecycle</p></a>
+    <a href="https://github.com/NeaBouli/pnyx/wiki/API" target="_blank" class="card fi"><div class="card-icon">⚡</div><h4>API</h4><p>13 Endpoints</p></a>
+    <a href="https://github.com/NeaBouli/pnyx/wiki/Modules" target="_blank" class="card fi"><div class="card-icon">🧩</div><h4>Modules</h4><p>MOD-01 — MOD-15</p></a>
+    <a href="https://github.com/NeaBouli/pnyx/wiki/Privacy" target="_blank" class="card fi"><div class="card-icon">🛡️</div><h4 data-el="Ιδιωτικότητα" data-en="Privacy">Ιδιωτικότητα</h4><p>GDPR</p></a>
+    <a href="https://github.com/NeaBouli/pnyx/wiki/Roadmap" target="_blank" class="card fi"><div class="card-icon">🗺️</div><h4>Roadmap</h4><p>Beta → Alpha → V2</p></a>
+    <a href="https://github.com/NeaBouli/pnyx/wiki/Database" target="_blank" class="card fi"><div class="card-icon">🗄️</div><h4 data-el="Βάση Δεδομένων" data-en="Database">Βάση Δεδομένων</h4><p data-el="9 Πίνακες" data-en="9 Tables">9 Πίνακες</p></a>
+    <a href="https://github.com/NeaBouli/pnyx/wiki/Whitepaper" target="_blank" class="card fi"><div class="card-icon">📄</div><h4>Whitepaper</h4><p>v1.0</p></a>
+    <a href="https://github.com/NeaBouli/pnyx/wiki/Contributing" target="_blank" class="card fi"><div class="card-icon">🤝</div><h4 data-el="Συνεισφορά" data-en="Contributing">Συνεισφορά</h4><p>Setup, Tests</p></a>
+  </div>
+
+  <h2 class="fi" data-el="⚡ Γρήγορη Εκκίνηση" data-en="⚡ Quick Start">⚡ Γρήγορη Εκκίνηση</h2>
+  <div class="code-block fi"><span class="c"># Clone</span>
+git clone https://github.com/NeaBouli/pnyx && cd pnyx
+
+<span class="c"># Services</span>
+cd infra/docker && docker compose up -d
+
+<span class="c"># Database</span>
+cd ../../apps/api && pip install -r requirements.txt
+alembic upgrade head && python seeds/seed.py
+
+<span class="c"># API → http://localhost:8000/docs</span>
+uvicorn main:app --reload
+
+<span class="c"># Web → http://localhost:3000</span>
+cd ../web && npm install && npm run dev</div>
+
+  <h2 class="fi">🏛️ Bill Lifecycle</h2>
+  <div class="flow-demo fi">
+    <div class="flow-row">
+      <div class="flow-node"><span class="pulse"></span>ANNOUNCED</div>
+      <div class="fa">→</div>
+      <div class="flow-node a">ACTIVE</div>
+      <div class="fa">→</div>
+      <div class="flow-node w">WINDOW_24H</div>
+      <div class="fa">→</div>
+      <div class="flow-node b">PARLIAMENT_VOTED</div>
+      <div class="fa">→</div>
+      <div class="flow-node p">OPEN_END</div>
+    </div>
+  </div>
+
+  <h2 class="fi" data-el="📊 Κατάσταση" data-en="📊 Status">📊 Κατάσταση</h2>
+  <div class="stats fi">
+    <div class="stat"><div class="stat-num" style="color:var(--blue)">13</div><div class="stat-label">API Endpoints</div></div>
+    <div class="stat"><div class="stat-num" style="color:var(--green)">44</div><div class="stat-label">Tests ✅</div></div>
+    <div class="stat"><div class="stat-num" style="color:#a855f7">9</div><div class="stat-label" data-el="DB Πίνακες" data-en="DB Tables">DB Πίνακες</div></div>
+    <div class="stat"><div class="stat-num" style="color:#f59e0b">21+</div><div class="stat-label">Commits</div></div>
+  </div>
+</div>
+
+<footer>
+  <p>εκκλησία · © 2026 Vendetta Labs · MIT · <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a> · <a href="../">Landing</a></p>
+</footer>
+<script>
+let l='el';function toggleLang(){l=l==='el'?'en':'el';document.getElementById('langFlag').textContent=l==='el'?'🇬🇧':'🇬🇷';document.getElementById('langLabel').textContent=l==='el'?'EN':'ΕΛ';document.querySelectorAll('[data-el]').forEach(e=>{const t=e.getAttribute('data-'+l);if(t)e.innerHTML=t})}
+const o=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('v')})},{threshold:.1});document.querySelectorAll('.fi').forEach(e=>o.observe(e));
+</script>
+</body>
+</html>
