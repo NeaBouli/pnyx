@@ -52,9 +52,13 @@ export interface Bill {
   pill_en: string | null;
   summary_short_el: string | null;
   summary_short_en: string | null;
+  summary_long_el: string | null;
+  summary_long_en: string | null;
   categories: string[] | null;
+  party_votes_parliament: Record<string, string> | null;
   status: string;
   parliament_vote_date: string | null;
+  ai_summary_reviewed?: boolean;
   relevance_score?: number;
 }
 
