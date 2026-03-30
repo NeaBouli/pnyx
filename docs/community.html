@@ -33,6 +33,18 @@
     .nd{background:white;border:2px solid #e2e8f0;border-radius:.75rem;padding:.6rem 1rem;font-size:.78rem;font-weight:700}.nd.cn{background:var(--blue);color:white;border-color:var(--blue)}.nd.cm{border-color:var(--green);color:#166534;background:#f0fdf4}
     footer{background:var(--gray-900);color:#94a3b8;padding:2rem;text-align:center;font-size:.82rem;margin-top:4rem}footer a{color:#64748b;text-decoration:none;margin:0 .5rem}footer a:hover{color:white}
     .fi{opacity:0;transform:translateY(14px);transition:all .5s ease}.fi.v{opacity:1;transform:translateY(0)}
+  
+    .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:1.5rem 0}
+    @media(max-width:700px){.pgrid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:440px){.pgrid{grid-template-columns:1fr}}
+    .pc2{background:white;border-radius:var(--radius);padding:1.25rem;border:2px solid #e2e8f0;text-align:center;transition:all .2s;display:flex;flex-direction:column;align-items:center}
+    .pc2:hover{border-color:var(--blue);box-shadow:var(--shadow);transform:translateY(-2px)}
+    .pc2.hl{border-color:var(--blue);background:#eff6ff}
+    .pc2 .pi2{font-size:2rem;margin-bottom:.6rem}
+    .pc2 h4{font-weight:800;margin-bottom:.3rem;font-size:.92rem}
+    .pc2 p{font-size:.78rem;color:var(--gray-400);margin-bottom:.75rem;flex:1}
+    .pbtn{display:inline-block;padding:.4rem 1rem;background:var(--blue);color:white;border-radius:.5rem;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s}
+    .pbtn:hover{background:var(--blue-dark)}
   </style>
 </head>
 <body>
@@ -152,21 +164,17 @@
       if(isSrv&&!due){c.style.borderColor="#86efac";b.style.background="#22c55e";if(g)g.style.display="block";if(y)y.style.display="none";if(r)r.style.display="none";if(t)t.textContent="—";return}
       var now=new Date(),diff=due-now,days=Math.ceil(diff/864e5);
       if(t)t.textContent=fmt(diff);
-      if(days>YELLOW){c.style.borderColor="#86efac";b.style.background="#22c55e";if(tb)tb.style.background="#f0fdf4";if(t)t.style.color="#166534";if(g)g.style.display="block";if(y)y.style.display="none";if(r)r.style.display="none"}
-      else if(days>RED){c.style.borderColor="#fde047";b.style.background="#f59e0b";if(tb)tb.style.background="#fefce8";if(t)t.style.color="#92400e";if(g)g.style.display="none";if(y)y.style.display="block";if(r)r.style.display="none"}
-      else{c.style.borderColor="#fca5a5";b.style.background="#ef4444";if(tb)tb.style.background="#fef2f2";if(t)t.style.color="#dc2626";if(g)g.style.display="none";if(y)y.style.display="none";if(r)r.style.display="block";var rfE=document.getElementById("srvRF");if(rfE&&rf)rfE.textContent=rf}
-    }
-    function tick(){amp("srvCard","srvBadge","srvGreen","srvYellow","srvRed","srvTimerBox","srvTimer",SRV_DUE,SRV_RF,true);amp("domCard","domBadge","domGreen","domYellow","domRed","domTimerBox","domTimer",DOM_DUE,null,false)}
-    tick();setInterval(tick,1000);
-  })();
-  </script>
+      if(days>YELLOW){c.style.borderColor="#86efac";b.style.background="#22c55e";if(tb)tb.s<h2 class="fi" data-el="Πώς να Συμμετέχεις" data-en="How to Participate">Πώς να Συμμετέχεις</h2>
+  <div class="pgrid fi">
+    <div class="pc2"><div class="pi2">🧑‍💻</div><h4 data-el="Κώδικας" data-en="Code">Κώδικας</h4><p data-el="Συνεισφορά μέσω GitHub" data-en="Contribute via GitHub">Συνεισφορά μέσω GitHub</p><a href="https://github.com/NeaBouli/pnyx" target="_blank" class="pbtn">GitHub →</a></div>
+    <div class="pc2"><div class="pi2">🐛</div><h4 data-el="Σφάλματα" data-en="Bugs">Σφάλματα</h4><p data-el="Αναφορά στο Issues" data-en="Report on Issues">GitHub Issues</p><a href="https://github.com/NeaBouli/pnyx/issues" target="_blank" class="pbtn">Issues →</a></div>
+    <div class="pc2"><div class="pi2">📝</div><h4 data-el="Τεκμηρίωση" data-en="Docs">Τεκμηρίωση</h4><p data-el="Wiki, μεταφράσεις" data-en="Wiki, translations">Wiki, μεταφράσεις</p><a href="wiki/" class="pbtn">Wiki →</a></div>
+    <div class="pc2"><div class="pi2">📢</div><h4 data-el="Διάδοση" data-en="Share">Διάδοση</h4><p data-el="Μοιράσου με φίλους" data-en="Share with friends">Μοιράσου</p><a href="./" class="pbtn" style="background:#16a34a">ekklesia.gr →</a></div>
+    <div class="pc2"><div class="pi2">🏛️</div><h4>NGO</h4><p data-el="Συνεργασία ΜΚΟ" data-en="NGO cooperation">Συνεργασία</p><a href="https://github.com/NeaBouli/pnyx/issues" target="_blank" class="pbtn">Επικοινωνία →</a></div>
+    <div class="pc2 hl"><div class="pi2">💳</div><h4 data-el="Ανάλαβε Κόστος" data-en="Cover Costs">Ανάλαβε Κόστος</h4><p data-el="Hosting ή domain" data-en="Hosting or domain">Hosting ή domain</p><a href="#finance" class="pbtn" onclick="document.getElementById('finance')?.scrollIntoView({behavior:'smooth'});return false;">💶 Χρεώσεις →</a></div>
+  </div>
 
-  <div class="sb fi">
-
-  <h2 class="fi" data-el="Πώς να Συμμετέχεις" data-en="How to Participate">Πώς να Συμμετέχεις</h2>
-  <div class="cg fi">
-    <div class="cc"><div class="ci">🧑‍💻</div><h4 data-el="Κώδικας" data-en="Code">Κώδικας</h4><p data-el="Συνεισφορά μέσω GitHub" data-en="Contribute via GitHub">GitHub</p><a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub →</a></div>
-    <div class="cc"><div class="ci">🐛</div><h4 data-el="Σφάλματα" data-en="Bugs">Σφάλματα</h4><p data-el="Αναφορά στο Issues" data-en="Report on Issues">Issues</p><a href="https://github.com/NeaBouli/pnyx/issues" target="_blank">Issues →</a></div>
+  k">Issues →</a></div>
     <div class="cc"><div class="ci">📝</div><h4 data-el="Τεκμηρίωση" data-en="Docs">Τεκμηρίωση</h4><p>Wiki</p><a href="wiki/">Wiki →</a></div>
     <div class="cc"><div class="ci">📢</div><h4 data-el="Διάδοση" data-en="Share">Διάδοση</h4><p data-el="Μοιράσου" data-en="Share">Μοιράσου</p><a href="./">ekklesia.gr →</a></div>
     <div class="cc" style="border-color:var(--blue);background:var(--blue-light)"><div class="ci">💳</div><h4 data-el="Ανάλαβε Κόστος" data-en="Cover Costs">Ανάλαβε Κόστος</h4><p data-el="Hosting ή domain" data-en="Hosting or domain">Hosting ή domain</p><a href="#finance" style="background:var(--blue)" onclick="document.getElementById('finance')?.scrollIntoView({behavior:'smooth'});return false;">💶 →</a></div>
