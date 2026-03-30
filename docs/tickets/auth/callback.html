@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Σύνδεση... — εκκλησία</title>
+  <link rel="icon" type="image/png" href="../../pnx.png"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:"Segoe UI",system-ui,sans-serif;background:#f8fafc;color:#0f172a;display:flex;align-items:center;justify-content:center;min-height:100vh}
+    .card{background:white;border-radius:1rem;padding:3rem;text-align:center;max-width:400px;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
+    .spinner{width:48px;height:48px;border:4px solid #e2e8f0;border-top:4px solid #2563eb;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 1.5rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    h2{font-weight:900;margin-bottom:0.5rem}
+    p{color:#64748b;font-size:0.9rem}
+    .error{color:#dc2626;font-weight:700;margin-top:1rem}
+    a{color:#2563eb;text-decoration:none;font-weight:600}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="spinner" id="spinner"></div>
+    <h2 id="title">Σύνδεση...</h2>
+    <p id="message">Ανταλλαγή κωδικού με το GitHub...</p>
+    <div class="error" id="error" style="display:none"></div>
+    <div id="retryLink" style="display:none;margin-top:1rem">
+      <a href="../../tickets/">← Επιστροφή στα Tickets</a>
+    </div>
+  </div>
+
+  <script src="../config.js"></script>
+  <script>
+  (async function() {
+    var params = new URLSearchParams(window.location.search);
+    var code = params.get("code");
+    var state = params.get("state");
+    var errorParam = params.get("error");
+
+    // Handle GitHub error redirect
+    if (errorParam) {
+      showError("GitHub: " + (params.get("error_description") || errorParam));
+      return;
+    }
+
+    // Validate code
+    if (!code) {
+      showError("Δεν βρέθηκε κωδικός αυθεντικοποίησης.");
+      return;
+    }
+
+    // CSRF: validate state
+    var savedState = sessionStorage.getItem("polis_oauth_state");
+    if (!savedState || savedState !== state) {
+      showError("Σφάλμα ασφαλείας (state mismatch). Δοκιμάστε ξανά.");
+      return;
+    }
+
+    // Exchange code for token via Cloudflare Worker
+    try {
+      var redirectUri = window.location.origin + POLIS_CONFIG.oauth.callbackPath;
+      var res = await fetch(POLIS_CONFIG.oauth.workerUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: code, redirect_uri: redirectUri }),
+      });
+
+      if (!res.ok) {
+        var errData = await res.json().catch(function() { return {}; });
+        throw new Error(errData.error || "HTTP " + res.status);
+      }
+
+      var data = await res.json();
+
+      if (!data.access_token) {
+        throw new Error(data.error || "Δεν επιστράφηκε token.");
+      }
+
+      // Store token in sessionStorage ONLY
+      sessionStorage.setItem("polis_token", data.access_token);
+      sessionStorage.removeItem("polis_oauth_state");
+
+      // Redirect back
+      var returnTo = sessionStorage.getItem("polis_return_to") || "../tickets/";
+      sessionStorage.removeItem("polis_return_to");
+      window.location.href = returnTo;
+
+    } catch (err) {
+      showError(err.message || "Σφάλμα ανταλλαγής token.");
+    }
+
+    function showError(msg) {
+      document.getElementById("spinner").style.display = "none";
+      document.getElementById("title").textContent = "Σφάλμα";
+      document.getElementById("message").style.display = "none";
+      document.getElementById("error").textContent = msg;
+      document.getElementById("error").style.display = "block";
+      document.getElementById("retryLink").style.display = "block";
+    }
+  })();
+  </script>
+</body>
+</html>

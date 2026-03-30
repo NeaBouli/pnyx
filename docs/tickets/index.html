@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="el" data-lang="el">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>POLIS — εκκλησία</title>
+  <link rel="icon" type="image/png" href="../pnx.png"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<nav>
+  <a href="../" class="nav-logo"><img src="../pnx.png" alt="logo"/>εκκλησία</a>
+  <div class="nav-links">
+    <a href="../" data-polis-el="Αρχική" data-polis-en="Home">Αρχική</a>
+    <a href="../votes/active.html" data-polis-el="Ψηφοφορίες" data-polis-en="Votes">Ψηφοφορίες</a>
+    <a href="../wiki/" data-polis-el="Wiki" data-polis-en="Wiki">Wiki</a>
+    <a href="../community.html" data-polis-el="Community" data-polis-en="Community">Community</a>
+    <a href="./" class="active" data-polis-el="Tickets" data-polis-en="Tickets">Tickets</a>
+    <button class="lang-btn" onclick="setPolisLang(polisLang==='el'?'en':'el');document.getElementById('langBtn').textContent=polisLang==='el'?'EN':'ΕΛ'" id="langBtn">EN</button>
+  </div>
+</nav>
+
+<!-- TOP BAR -->
+<div class="polis-topbar">
+  <div class="polis-brand"><span class="polis-dot"></span> POLIS</div>
+  <div class="polis-stats" id="polisStats">
+    <span>Open <strong>—</strong></span>
+    <span>Claimed <strong>—</strong></span>
+  </div>
+  <div class="polis-actions">
+    <button class="btn-new-ticket" onclick="openNewTicketModal()" data-polis-el="+ Νέο Ticket" data-polis-en="+ New Ticket">+ Νέο Ticket</button>
+    <div id="authStatus"></div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="polis-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="polis-sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title" data-polis-el="Κατάσταση" data-polis-en="Status">Κατάσταση</div>
+      <div class="sidebar-option active" onclick="filterByStatus(this,'')" data-polis-el="Όλα" data-polis-en="All">Όλα</div>
+      <div class="sidebar-option" onclick="filterByStatus(this,'status:pending')" data-polis-el="Εκκρεμή" data-polis-en="Pending">Εκκρεμή</div>
+      <div class="sidebar-option" onclick="filterByStatus(this,'status:open')" data-polis-el="Ανοιχτά" data-polis-en="Open">Ανοιχτά</div>
+      <div class="sidebar-option" onclick="filterByStatus(this,'status:claimed')" data-polis-el="Αναλαμβάνονται" data-polis-en="Claimed">Αναλαμβάνονται</div>
+      <div class="sidebar-option" onclick="filterByStatus(this,'status:resolved')" data-polis-el="Επιλύθηκαν" data-polis-en="Resolved">Επιλύθηκαν</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title" data-polis-el="Κατηγορία" data-polis-en="Category">Κατηγορία</div>
+      <div class="sidebar-option active" onclick="filterByCat(this,'')" data-polis-el="Όλες" data-polis-en="All">Όλες</div>
+      <div id="categorySidebar"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title" data-polis-el="Ταξινόμηση" data-polis-en="Sort">Ταξινόμηση</div>
+      <div class="sidebar-option active" onclick="sortBy(this,'newest')" data-polis-el="Νεότερα" data-polis-en="Newest">Νεότερα</div>
+      <div class="sidebar-option" onclick="sortBy(this,'votes')" data-polis-el="Ψήφοι" data-polis-en="Votes">Ψήφοι</div>
+      <div class="sidebar-option" onclick="sortBy(this,'oldest')" data-polis-el="Παλαιότερα" data-polis-en="Oldest">Παλαιότερα</div>
+    </div>
+  </aside>
+
+  <!-- TICKET LIST -->
+  <main>
+    <div class="ticket-list" id="ticketList">
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+    </div>
+    <div class="load-more-bar">
+      <button class="btn-load-more" onclick="loadMoreTickets()" data-polis-el="Φόρτωση περισσότερων" data-polis-en="Load more">Φόρτωση περισσότερων</button>
+    </div>
+  </main>
+
+  <!-- DETAIL PANEL -->
+  <aside class="polis-detail" id="detailPanel">
+    <div class="detail-empty">
+      <div style="font-size:2rem;margin-bottom:0.5rem">👈</div>
+      <p data-polis-el="Επιλέξτε ένα ticket" data-polis-en="Select a ticket">Επιλέξτε ένα ticket</p>
+    </div>
+  </aside>
+
+</div>
+
+<!-- NEW TICKET MODAL -->
+<div class="modal-overlay" id="ticketModal">
+  <div class="modal" style="position:relative">
+    <button class="btn-close-modal" onclick="closeTicketModal()">×</button>
+    <h3 data-polis-el="Νέο Ticket" data-polis-en="New Ticket">Νέο Ticket</h3>
+    <div id="ticketFormFields">
+      <form id="ticketForm" onsubmit="submitTicketForm(event)">
+        <div class="form-group">
+          <label data-polis-el="Τίτλος" data-polis-en="Title">Τίτλος</label>
+          <input id="ticketTitle" type="text" required maxlength="120" placeholder="..."/>
+          <div class="form-hint" data-polis-el="Μέγιστο 120 χαρακτήρες" data-polis-en="Max 120 characters">Μέγιστο 120 χαρακτήρες</div>
+        </div>
+        <div class="form-group">
+          <label data-polis-el="Κατηγορία" data-polis-en="Category">Κατηγορία</label>
+          <select id="ticketCategory" required></select>
+        </div>
+        <div class="form-group">
+          <label data-polis-el="Περιγραφή" data-polis-en="Description">Περιγραφή</label>
+          <textarea id="ticketDesc" required minlength="30" placeholder="..."></textarea>
+          <div class="form-hint" data-polis-el="Ελάχιστο 30 χαρακτήρες" data-polis-en="Min 30 characters">Ελάχιστο 30 χαρακτήρες</div>
+        </div>
+        <button type="submit" class="btn-submit" id="ticketSubmitBtn" data-polis-el="Υποβολή Ticket" data-polis-en="Submit Ticket">Υποβολή Ticket</button>
+      </form>
+    </div>
+    <div id="submitSuccess" style="display:none"></div>
+  </div>
+</div>
+
+<footer>
+  <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:0.3rem 1rem;margin-bottom:0.5rem">
+    <a href="../">Αρχική</a>
+    <a href="../wiki/">Wiki</a>
+    <a href="../votes/active.html">Ψηφοφορίες</a>
+    <a href="../community.html">Community</a>
+    <a href="./">Tickets</a>
+    <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>
+  </div>
+  <p>εκκλησία · © 2026 Vendetta Labs · MIT</p>
+</footer>
+
+<script src="config.js"></script>
+<script src="polis.js"></script>
+<script>
+// Populate category sidebar + select
+var catSidebar = document.getElementById("categorySidebar");
+var catSelect = document.getElementById("ticketCategory");
+POLIS_CONFIG.categories.forEach(function(cat) {
+  catSidebar.innerHTML += '<div class="sidebar-option" onclick="filterByCat(this,\'category:' + cat.id + '\')">' + (polisLang === "el" ? cat.el : cat.en) + '</div>';
+  var opt = document.createElement("option");
+  opt.value = cat.id;
+  opt.textContent = polisLang === "el" ? cat.el : cat.en;
+  catSelect.appendChild(opt);
+});
+
+// Filter state
+var currentFilters = { labels: "", sort: "newest" };
+
+function filterByStatus(el, label) {
+  el.parentElement.querySelectorAll(".sidebar-option").forEach(function(o) { o.classList.remove("active"); });
+  el.classList.add("active");
+  // Combine with category filter
+  var parts = [];
+  if (label) parts.push(label);
+  if (currentFilters._cat) parts.push(currentFilters._cat);
+  currentFilters.labels = parts.join(",");
+  polisPage = 1;
+  loadAndRender(currentFilters);
+}
+
+function filterByCat(el, label) {
+  el.parentElement.querySelectorAll(".sidebar-option").forEach(function(o) { o.classList.remove("active"); });
+  el.classList.add("active");
+  currentFilters._cat = label;
+  // Combine with status filter
+  var parts = [];
+  if (currentFilters._status) parts.push(currentFilters._status);
+  if (label) parts.push(label);
+  currentFilters.labels = parts.join(",");
+  polisPage = 1;
+  loadAndRender(currentFilters);
+}
+
+function sortBy(el, sort) {
+  el.parentElement.querySelectorAll(".sidebar-option").forEach(function(o) { o.classList.remove("active"); });
+  el.classList.add("active");
+  currentFilters.sort = sort;
+  polisPage = 1;
+  loadAndRender(currentFilters);
+}
+
+async function loadMoreTickets() {
+  polisPage++;
+  var more = await loadTickets(polisPage, currentFilters);
+  polisTickets = polisTickets.concat(more);
+  renderTicketList();
+}
+
+// Init
+initPolis();
+</script>
+</body>
+</html>

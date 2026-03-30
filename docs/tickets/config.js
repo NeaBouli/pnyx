@@ -1,0 +1,136 @@
+// POLIS Configuration — Phase 1 (Tier 1: GitHub Backend)
+// Edit this file to deploy POLIS for a different community.
+// See setup.md for full deployment instructions.
+
+const POLIS_CONFIG = {
+
+  // GitHub repository for tickets (Issues)
+  repo: "NeaBouli/pnyx-community",
+
+  // GitHub OAuth App credentials
+  oauth: {
+    clientId: "REPLACE_WITH_YOUR_GITHUB_OAUTH_CLIENT_ID",
+    // clientSecret goes in the Cloudflare Worker — NEVER here
+    workerUrl: "REPLACE_WITH_YOUR_CLOUDFLARE_WORKER_URL",
+    callbackPath: "/pnyx/tickets/auth/callback.html",
+  },
+
+  // Ticket categories
+  categories: [
+    { id: "bug",      el: "Σφάλμα",       en: "Bug",            color: "#ef4444" },
+    { id: "feature",  el: "Πρόταση",      en: "Feature",        color: "#3b82f6" },
+    { id: "docs",     el: "Τεκμηρίωση",   en: "Docs",           color: "#8b5cf6" },
+    { id: "infra",    el: "Υποδομή",      en: "Infrastructure", color: "#f59e0b" },
+    { id: "ux",       el: "UX",           en: "UX",             color: "#ec4899" },
+    { id: "security", el: "Ασφάλεια",     en: "Security",       color: "#dc2626" },
+  ],
+
+  // Moderation settings
+  moderation: {
+    pendingPromotionThreshold: 3,
+    spamFlagThreshold: 3,
+    newAccountAgeDays: 30,
+  },
+
+  // Phase 2 stub (PoW)
+  pow: {
+    enabled: false,
+    difficulty: 20,
+  },
+
+  // UI labels
+  i18n: {
+    el: {
+      newTicket:        "Νέο Ticket",
+      allTickets:       "Όλα τα Tickets",
+      filterStatus:     "Κατάσταση",
+      filterCategory:   "Κατηγορία",
+      sortBy:           "Ταξινόμηση",
+      sortVotes:        "Περισσότερες Ψήφοι",
+      sortNewest:       "Νεότερα",
+      sortOldest:       "Παλαιότερα",
+      statusAll:        "Όλα",
+      statusPending:    "Εκκρεμές",
+      statusOpen:       "Ανοιχτό",
+      statusClaimed:    "Αναλαμβάνεται",
+      statusResolved:   "Επιλύθηκε",
+      vote:             "Ψήφος",
+      voted:            "Ψηφίσατε",
+      claim:            "Ανάληψη",
+      claimed:          "Αναλήφθηκε",
+      loginToVote:      "Συνδεθείτε για να ψηφίσετε",
+      loginGitHub:      "Σύνδεση με GitHub",
+      submitTicket:     "Υποβολή Ticket",
+      titleLabel:       "Τίτλος",
+      categoryLabel:    "Κατηγορία",
+      descriptionLabel: "Περιγραφή",
+      successSubmit:    "Το ticket υποβλήθηκε επιτυχώς!",
+      viewOnGitHub:     "Δείτε στο GitHub",
+      communityHeat:    "Κοινοτική Ζέση",
+      recentActivity:   "Πρόσφατη Δραστηριότητα",
+      loadMore:         "Φόρτωση περισσότερων",
+      noTickets:        "Δεν βρέθηκαν tickets",
+      contact:          "Επικοινωνία",
+      ticketTab:        "Υποβολή Ticket",
+      contactTab:       "Επικοινωνία",
+      seeAllTickets:    "Δείτε όλα τα tickets →",
+      descMinChars:     "Ελάχιστοι χαρακτήρες: 30",
+      titleMaxChars:    "Μέγιστοι χαρακτήρες: 120",
+      pendingNote:      "Ο λογαριασμός σας είναι νέος. Το ticket θα ελεγχθεί από την κοινότητα.",
+      rateLimited:      "Παρακαλώ περιμένετε λίγα λεπτά",
+      repoNotFound:     "Το repository δεν βρέθηκε. Δείτε τις οδηγίες εγκατάστασης.",
+      networkError:     "Σφάλμα σύνδεσης. Δοκιμάστε ξανά.",
+      expired:          "Η σύνδεση έληξε. Συνδεθείτε ξανά.",
+      authError:        "Σφάλμα αυθεντικοποίησης",
+      connecting:       "Σύνδεση...",
+      submitting:       "Υποβολή...",
+      flagSpam:         "Αναφορά spam",
+    },
+    en: {
+      newTicket:        "New Ticket",
+      allTickets:       "All Tickets",
+      filterStatus:     "Status",
+      filterCategory:   "Category",
+      sortBy:           "Sort By",
+      sortVotes:        "Most Votes",
+      sortNewest:       "Newest",
+      sortOldest:       "Oldest",
+      statusAll:        "All",
+      statusPending:    "Pending",
+      statusOpen:       "Open",
+      statusClaimed:    "Claimed",
+      statusResolved:   "Resolved",
+      vote:             "Vote",
+      voted:            "Voted",
+      claim:            "Claim",
+      claimed:          "Claimed",
+      loginToVote:      "Login to vote",
+      loginGitHub:      "Login with GitHub",
+      submitTicket:     "Submit Ticket",
+      titleLabel:       "Title",
+      categoryLabel:    "Category",
+      descriptionLabel: "Description",
+      successSubmit:    "Ticket submitted successfully!",
+      viewOnGitHub:     "View on GitHub",
+      communityHeat:    "Community Heat",
+      recentActivity:   "Recent Activity",
+      loadMore:         "Load more",
+      noTickets:        "No tickets found",
+      contact:          "Contact",
+      ticketTab:        "Submit Ticket",
+      contactTab:       "Contact",
+      seeAllTickets:    "See all tickets →",
+      descMinChars:     "Minimum characters: 30",
+      titleMaxChars:    "Maximum characters: 120",
+      pendingNote:      "Your account is new. The ticket will be reviewed by the community.",
+      rateLimited:      "Please wait a few minutes",
+      repoNotFound:     "Repository not found. See setup instructions.",
+      networkError:     "Connection error. Try again.",
+      expired:          "Session expired. Please login again.",
+      authError:        "Authentication error",
+      connecting:       "Connecting...",
+      submitting:       "Submitting...",
+      flagSpam:         "Flag as spam",
+    },
+  },
+};

@@ -1,0 +1,8 @@
+name = "polis-oauth-proxy"
+main = "oauth-proxy.js"
+compatibility_date = "2024-01-01"
+
+# Deploy: wrangler deploy
+# Secrets (never in code):
+#   wrangler secret put GITHUB_CLIENT_ID
+#   wrangler secret put GITHUB_CLIENT_SECRET
