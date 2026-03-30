@@ -82,83 +82,81 @@
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.25rem;margin:1.5rem 0">
 
     <!-- SERVER -->
-    <div id="finance"></div><div id="srvCard" style="background:white;border-radius:var(--radius);padding:1.5rem;border:2px solid #86efac;position:relative;overflow:hidden">
+    <div id="finance"></div>
+
+  <!-- Server + Domain side by side -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:.75rem">
+
+    <!-- SERVER -->
+    <div id="srvCard" style="background:white;border-radius:var(--radius);padding:1.5rem;border:2px solid #86efac;position:relative;overflow:hidden">
       <div id="srvBadge" style="position:absolute;top:0;right:0;background:#22c55e;color:white;font-size:.65rem;font-weight:700;padding:.2rem .75rem;border-radius:0 var(--radius) 0 .5rem" data-el="ΕΞΟΦΛΗΜΕΝΟ" data-en="PAID">ΕΞΟΦΛΗΜΕΝΟ</div>
-      <div style="font-size:2rem;margin-bottom:.5rem">🖥️</div>
-      <h4 style="font-weight:900;margin-bottom:.2rem">Server Hosting</h4>
-      <p style="font-size:.75rem;color:var(--gray-400);margin-bottom:.75rem">Hetzner CX21 · EU · GDPR</p>
-      <div style="background:var(--gray-100);border-radius:.5rem;padding:.6rem;margin-bottom:.6rem;font-size:.78rem">
-        <div style="display:flex;justify-content:space-between;margin-bottom:.2rem"><span data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong>7€/<span data-el="μήνα" data-en="mo">μήνα</span></strong></div>
+      <div style="font-size:1.8rem;margin-bottom:.4rem">🖥️</div>
+      <h4 style="font-weight:900;margin-bottom:.2rem;font-size:.95rem">Server</h4>
+      <p style="font-size:.72rem;color:var(--gray-400);margin-bottom:.6rem">Hetzner CX21 · EU · GDPR</p>
+      <div style="background:var(--gray-100);border-radius:.5rem;padding:.5rem;margin-bottom:.5rem;font-size:.75rem">
+        <div style="display:flex;justify-content:space-between;margin-bottom:.15rem"><span data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong>7€/<span data-el="μήνα" data-en="mo">μήνα</span></strong></div>
         <div style="display:flex;justify-content:space-between"><span data-el="Κατάσταση:" data-en="Status:">Κατάσταση:</span><strong id="srvStatus" style="color:#166534" data-el="Δεν ενεργοποιήθηκε" data-en="Not activated">Δεν ενεργοποιήθηκε</strong></div>
       </div>
-      <div id="srvTimerBox" style="background:#f0fdf4;border-radius:.5rem;padding:.75rem;margin-bottom:.6rem;text-align:center">
-        <div style="font-size:.7rem;color:#166534;font-weight:700;margin-bottom:.4rem">⏱ <span data-el="Χρόνος μέχρι χρέωση" data-en="Time until charge">Χρόνος μέχρι χρέωση</span></div>
-        <div id="srvTimer" style="font-size:1.1rem;font-weight:900;font-family:monospace;color:#166534">—</div>
-        <div id="srvTimerSub" style="font-size:.65rem;color:#166534;margin-top:.2rem" data-el="(Δεν έχει οριστεί)" data-en="(Not set)">(Δεν έχει οριστεί)</div>
+      <div id="srvTimerBox" style="background:#f0fdf4;border-radius:.4rem;padding:.5rem;margin-bottom:.5rem;text-align:center">
+        <div style="font-size:.65rem;color:#166534;font-weight:700;margin-bottom:.2rem">⏱</div>
+        <div id="srvTimer" style="font-size:.95rem;font-weight:900;font-family:monospace;color:#166534">—</div>
       </div>
-      <div id="srvGreen" style="background:#f0fdf4;border-radius:.5rem;padding:.5rem;text-align:center;font-size:.8rem;font-weight:700;color:#166534">✅ <span data-el="Καμία οφειλή" data-en="No invoice">Καμία οφειλή</span></div>
-      <div id="srvYellow" style="display:none;background:#fefce8;border-radius:.5rem;padding:.5rem;text-align:center;font-size:.78rem;font-weight:700;color:#92400e">⚠️ <span data-el="Επερχόμενη χρέωση" data-en="Upcoming charge">Επερχόμενη χρέωση</span></div>
-      <div id="srvRed" style="display:none;background:#fef2f2;border-radius:.5rem;padding:.75rem;text-align:center">
-        <div style="font-size:.78rem;font-weight:700;color:#dc2626;margin-bottom:.5rem">🔴 <span data-el="Άμεση πληρωμή!" data-en="Pay now!">Άμεση πληρωμή!</span></div>
-        <div style="background:white;border:1px solid #fca5a5;border-radius:.4rem;padding:.5rem;margin-bottom:.5rem;font-family:monospace"><div style="font-size:.62rem;color:var(--gray-400)">RF:</div><div id="srvRF" style="font-size:.85rem;font-weight:700">—</div></div>
+      <div id="srvGreen" style="background:#f0fdf4;border-radius:.4rem;padding:.4rem;text-align:center;font-size:.75rem;font-weight:700;color:#166534">✅ <span data-el="Καμία οφειλή" data-en="No invoice">Καμία οφειλή</span></div>
+      <div id="srvYellow" style="display:none;background:#fefce8;border-radius:.4rem;padding:.4rem;text-align:center;font-size:.72rem;font-weight:700;color:#92400e">⚠️</div>
+      <div id="srvRed" style="display:none;background:#fef2f2;border-radius:.4rem;padding:.5rem;text-align:center">
+        <div style="font-size:.72rem;font-weight:700;color:#dc2626;margin-bottom:.3rem">🔴</div>
+        <div style="background:white;border:1px solid #fca5a5;border-radius:.3rem;padding:.3rem;margin-bottom:.3rem;font-family:monospace"><div style="font-size:.6rem;color:var(--gray-400)">RF:</div><div id="srvRF" style="font-size:.82rem;font-weight:700">—</div></div>
       </div>
     </div>
 
     <!-- DOMAIN -->
     <div id="domCard" style="background:white;border-radius:var(--radius);padding:1.5rem;border:2px solid #86efac;position:relative;overflow:hidden">
       <div id="domBadge" style="position:absolute;top:0;right:0;background:#22c55e;color:white;font-size:.65rem;font-weight:700;padding:.2rem .75rem;border-radius:0 var(--radius) 0 .5rem" data-el="ΕΞΟΦΛΗΜΕΝΟ" data-en="PAID">ΕΞΟΦΛΗΜΕΝΟ</div>
-      <div style="font-size:2rem;margin-bottom:.5rem">🌐</div>
-      <h4 style="font-weight:900;margin-bottom:.2rem">Domain</h4>
-      <p style="font-size:.75rem;color:var(--gray-400);margin-bottom:.75rem">ekklesia.gr · Papaki.gr</p>
-      <div style="background:var(--gray-100);border-radius:.5rem;padding:.6rem;margin-bottom:.6rem;font-size:.78rem">
-        <div style="display:flex;justify-content:space-between;margin-bottom:.2rem"><span data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong>9,30€/<span data-el="έτος" data-en="yr">έτος</span></strong></div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:.2rem"><span data-el="Πληρώθηκε:" data-en="Paid:">Πληρώθηκε:</span><strong style="color:#166534">29/03/2026 · 24μ</strong></div>
-        <div style="display:flex;justify-content:space-between"><span data-el="Λήξη:" data-en="Expires:">Λήξη:</span><strong id="domDue" style="color:#166534">29/03/2028</strong></div>
+      <div style="font-size:1.8rem;margin-bottom:.4rem">🌐</div>
+      <h4 style="font-weight:900;margin-bottom:.2rem;font-size:.95rem">Domain</h4>
+      <p style="font-size:.72rem;color:var(--gray-400);margin-bottom:.6rem">ekklesia.gr · Papaki.gr</p>
+      <div style="background:var(--gray-100);border-radius:.5rem;padding:.5rem;margin-bottom:.5rem;font-size:.75rem">
+        <div style="display:flex;justify-content:space-between;margin-bottom:.15rem"><span data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong style="color:#166534">9,30€/<span data-el="έτος" data-en="yr">έτος</span></strong></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:.15rem"><span data-el="Πληρώθηκε:" data-en="Paid:">Πληρώθηκε:</span><strong style="color:#166534">29/03/2026 · 24μ</strong></div>
+        <div style="display:flex;justify-content:space-between"><span data-el="Λήξη:" data-en="Expires:">Λήξη:</span><strong style="color:#166534">29/03/2028</strong></div>
       </div>
-      <div id="domTimerBox" style="background:#f0fdf4;border-radius:.5rem;padding:.75rem;margin-bottom:.6rem;text-align:center">
-        <div style="font-size:.7rem;color:#166534;font-weight:700;margin-bottom:.4rem">⏱ <span data-el="Χρόνος μέχρι λήξη" data-en="Time until expiry">Χρόνος μέχρι λήξη</span></div>
-        <div id="domTimer" style="font-size:1.1rem;font-weight:900;font-family:monospace;color:#166534">—</div>
-        <div style="font-size:.65rem;color:#166534;margin-top:.2rem" data-el="ημέρες · ώρες · λεπτά · δευτ." data-en="days · hours · min · sec">ημέρες · ώρες · λεπτά · δευτ.</div>
+      <div id="domTimerBox" style="background:#f0fdf4;border-radius:.4rem;padding:.5rem;margin-bottom:.5rem;text-align:center">
+        <div style="font-size:.65rem;color:#166534;font-weight:700;margin-bottom:.2rem">⏱ <span data-el="Λήξη" data-en="Expiry">Λήξη</span></div>
+        <div id="domTimer" style="font-size:.95rem;font-weight:900;font-family:monospace;color:#166534">—</div>
       </div>
-      <div id="domGreen" style="background:#f0fdf4;border-radius:.5rem;padding:.5rem;text-align:center;font-size:.8rem;font-weight:700;color:#166534">✅ <span data-el="Εξοφλημένο 🙏" data-en="Paid 🙏">Εξοφλημένο 🙏</span></div>
-      <div id="domYellow" style="display:none;background:#fefce8;border-radius:.5rem;padding:.5rem;text-align:center;font-size:.78rem;font-weight:700;color:#92400e">⚠️ <span data-el="Επερχόμενη ανανέωση" data-en="Upcoming renewal">Επερχόμενη ανανέωση</span></div>
-      <div id="domRed" style="display:none;background:#fef2f2;border-radius:.5rem;padding:.5rem;text-align:center;font-size:.78rem;font-weight:700;color:#dc2626">🔴 <span data-el="Άμεση ανανέωση!" data-en="Renew now!">Άμεση ανανέωση!</span></div>
+      <div id="domGreen" style="background:#f0fdf4;border-radius:.4rem;padding:.4rem;text-align:center;font-size:.75rem;font-weight:700;color:#166534">✅ <span data-el="Εξοφλημένο 🙏" data-en="Paid 🙏">Εξοφλημένο 🙏</span></div>
+      <div id="domYellow" style="display:none;background:#fefce8;border-radius:.4rem;padding:.4rem;text-align:center;font-size:.72rem;font-weight:700;color:#92400e">⚠️</div>
+      <div id="domRed" style="display:none;background:#fef2f2;border-radius:.4rem;padding:.4rem;text-align:center;font-size:.72rem;font-weight:700;color:#dc2626">🔴</div>
     </div>
+  </div>
 
-    <!-- TOTAL -->
-    <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0">
-      <div style="font-size:2rem;margin-bottom:.5rem">📊</div>
-      <h4 style="font-weight:900;margin-bottom:.75rem" data-el="Σύνολο / Έτος" data-en="Total / Year">Σύνολο / Έτος</h4>
-      <div style="display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid #e2e8f0;font-size:.82rem"><span>🖥️ Server</span><span style="font-weight:700">84€</span></div>
-      <div style="display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid #e2e8f0;font-size:.82rem"><span>🌐 Domain</span><span style="font-weight:700">9,30€</span></div>
-      <div style="display:flex;justify-content:space-between;padding:.5rem 0;font-size:.9rem"><span style="font-weight:900" data-el="Σύνολο:" data-en="Total:">Σύνολο:</span><span style="font-weight:900;color:var(--blue)">~93€</span></div>
-      <div style="margin-top:.75rem;padding:.6rem;background:white;border-radius:.5rem;font-size:.72rem;color:var(--gray-400);text-align:center">💻 <span data-el="Ανάπτυξη: 100% εθελοντική" data-en="Development: 100% volunteer">100% εθελοντική</span></div>
+  <!-- Total Banner -->
+  <div style="background:var(--gray-100);border-radius:.75rem;padding:.75rem 1.5rem;border:2px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+    <div style="display:flex;gap:2rem;font-size:.82rem;flex-wrap:wrap">
+      <span>🖥️ 84€</span>
+      <span>🌐 9,30€</span>
+      <span>💻 <span data-el="εθελοντική" data-en="volunteer">εθελοντική</span></span>
     </div>
+    <div style="font-size:1rem;font-weight:900;color:var(--blue)">~93,30€/<span data-el="έτος" data-en="yr">έτος</span></div>
   </div>
 
   <script>
   (function(){
-    var SRV_DUE=null, SRV_RF="RF__ ____ ____ ____";
+    var SRV_DUE=null,SRV_RF="RF__ ____ ____";
     var DOM_DUE=new Date("2028-03-29T00:00:00");
-    var YELLOW=30, RED=7;
-
-    function fmt(ms){if(ms<=0)return"00:00:00:00";var s=Math.floor(ms/1000),m=Math.floor(s/60);s%=60;var h=Math.floor(m/60);m%=60;var d=Math.floor(h/24);h%=24;return d+"ημ "+String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")}
-
-    function ampel(cid,bid,gid,yid,rid,tbid,tid,due,rf,isSrv){
+    var YELLOW=30,RED=7;
+    function fmt(ms){if(ms<=0)return"00:00:00";var s=Math.floor(ms/1000),m=Math.floor(s/60);s%=60;var h=Math.floor(m/60);m%=60;var d=Math.floor(h/24);h%=24;return d+"d "+String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")}
+    function amp(cid,bid,gid,yid,rid,tbid,tid,due,rf,isSrv){
       var c=document.getElementById(cid),b=document.getElementById(bid),g=document.getElementById(gid),y=document.getElementById(yid),r=document.getElementById(rid),tb=document.getElementById(tbid),t=document.getElementById(tid);
       if(!c)return;
       if(isSrv&&!due){c.style.borderColor="#86efac";b.style.background="#22c55e";if(g)g.style.display="block";if(y)y.style.display="none";if(r)r.style.display="none";if(t)t.textContent="—";return}
       var now=new Date(),diff=due-now,days=Math.ceil(diff/864e5);
       if(t)t.textContent=fmt(diff);
-      if(days>YELLOW){c.style.borderColor="#86efac";b.style.background="#22c55e";tb.style.background="#f0fdf4";if(t)t.style.color="#166534";if(g)g.style.display="block";if(y)y.style.display="none";if(r)r.style.display="none"}
-      else if(days>RED){c.style.borderColor="#fde047";b.style.background="#f59e0b";b.textContent="ΣΚΟΠΕΥΕΤΑΙ";tb.style.background="#fefce8";if(t)t.style.color="#92400e";if(g)g.style.display="none";if(y)y.style.display="block";if(r)r.style.display="none"}
-      else{c.style.borderColor="#fca5a5";b.style.background="#ef4444";b.textContent="ΛΗΞΙΠΡΟΘΕΣΜΟ";tb.style.background="#fef2f2";if(t)t.style.color="#dc2626";if(g)g.style.display="none";if(y)y.style.display="none";if(r)r.style.display="block";var rfEl=document.getElementById("srvRF");if(rfEl&&rf)rfEl.textContent=rf}
+      if(days>YELLOW){c.style.borderColor="#86efac";b.style.background="#22c55e";if(tb)tb.style.background="#f0fdf4";if(t)t.style.color="#166534";if(g)g.style.display="block";if(y)y.style.display="none";if(r)r.style.display="none"}
+      else if(days>RED){c.style.borderColor="#fde047";b.style.background="#f59e0b";if(tb)tb.style.background="#fefce8";if(t)t.style.color="#92400e";if(g)g.style.display="none";if(y)y.style.display="block";if(r)r.style.display="none"}
+      else{c.style.borderColor="#fca5a5";b.style.background="#ef4444";if(tb)tb.style.background="#fef2f2";if(t)t.style.color="#dc2626";if(g)g.style.display="none";if(y)y.style.display="none";if(r)r.style.display="block";var rfE=document.getElementById("srvRF");if(rfE&&rf)rfE.textContent=rf}
     }
-
-    function tick(){
-      ampel("srvCard","srvBadge","srvGreen","srvYellow","srvRed","srvTimerBox","srvTimer",SRV_DUE,SRV_RF,true);
-      ampel("domCard","domBadge","domGreen","domYellow","domRed","domTimerBox","domTimer",DOM_DUE,null,false);
-    }
+    function tick(){amp("srvCard","srvBadge","srvGreen","srvYellow","srvRed","srvTimerBox","srvTimer",SRV_DUE,SRV_RF,true);amp("domCard","domBadge","domGreen","domYellow","domRed","domTimerBox","domTimer",DOM_DUE,null,false)}
     tick();setInterval(tick,1000);
   })();
   </script>
@@ -171,8 +169,9 @@
     <div class="cc"><div class="ci">🐛</div><h4 data-el="Σφάλματα" data-en="Bugs">Σφάλματα</h4><p data-el="Αναφορά στο Issues" data-en="Report on Issues">Issues</p><a href="https://github.com/NeaBouli/pnyx/issues" target="_blank">Issues →</a></div>
     <div class="cc"><div class="ci">📝</div><h4 data-el="Τεκμηρίωση" data-en="Docs">Τεκμηρίωση</h4><p>Wiki</p><a href="wiki/">Wiki →</a></div>
     <div class="cc"><div class="ci">📢</div><h4 data-el="Διάδοση" data-en="Share">Διάδοση</h4><p data-el="Μοιράσου" data-en="Share">Μοιράσου</p><a href="./">ekklesia.gr →</a></div>
+    <div class="cc" style="border-color:var(--blue);background:var(--blue-light)"><div class="ci">💳</div><h4 data-el="Ανάλαβε Κόστος" data-en="Cover Costs">Ανάλαβε Κόστος</h4><p data-el="Hosting ή domain" data-en="Hosting or domain">Hosting ή domain</p><a href="#finance" style="background:var(--blue)" onclick="document.getElementById('finance')?.scrollIntoView({behavior:'smooth'});return false;">💶 →</a></div>
     <div class="cc"><div class="ci">🏛️</div><h4>NGO</h4><p data-el="Συνεργασία" data-en="Cooperation">Συνεργασία</p><a href="https://github.com/NeaBouli/pnyx/issues" target="_blank">Επικοινωνία →</a>
-    <div class="cc"><div class="ci">💳</div><h4 data-el="Κάλυψε Κόστος" data-en="Cover Costs">Κάλυψε Κόστος</h4><p data-el="Hosting ή domain άμεσα" data-en="Hosting or domain directly">Hosting ή domain</p><a href="#finance" onclick="document.getElementById('srvCard')?.scrollIntoView({behavior:'smooth'});return false;" data-el="💶 Χρεώσεις →" data-en="💶 Invoices →">💶 Χρεώσεις →</a></div></div>
+    </div>
   </div>
 
   <h2 class="fi" data-el="Τι ΔΕΝ είμαστε" data-en="What we are NOT">Τι ΔΕΝ είμαστε</h2>
