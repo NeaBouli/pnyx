@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <link rel="icon" type="image/png" href="../pnx.png"/>
-  <style>:root{--blue:#2563eb;--blue-dark:#1d4ed8;--blue-light:#eff6ff;--gray-900:#0f172a;--gray-700:#334155;--gray-400:#94a3b8;--gray-100:#f1f5f9;--white:#fff;--green:#22c55e;--yellow:#f59e0b;--radius:1rem;--shadow:0 4px 24px rgba(37,99,235,.10)}*{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--white);color:var(--gray-900);line-height:1.6}nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid #e2e8f0;padding:.8rem 1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}.nav-logo{font-size:1.3rem;font-weight:900;color:var(--blue);text-decoration:none;display:flex;align-items:center;gap:.5rem;flex-shrink:0}.nav-logo img{width:28px;height:28px;object-fit:contain}.nav-links,.nk{display:flex;gap:.15rem;align-items:center;flex-wrap:wrap}.nav-links a,.nk a{padding:.3rem .65rem;border-radius:.5rem;color:var(--gray-700);text-decoration:none;font-size:.8rem;font-weight:500;transition:all .2s;white-space:nowrap}.nav-links a:hover,.nav-links a.active,.nk a:hover,.nk a.ac{background:var(--blue-light);color:var(--blue)}.lang-btn,.lb{cursor:pointer;border:2px solid #e2e8f0;background:var(--white);border-radius:.5rem;padding:.25rem .6rem;font-size:.78rem;font-weight:700;color:var(--gray-700);transition:all .2s;margin-left:.4rem;white-space:nowrap}.lang-btn:hover,.lb:hover{border-color:var(--blue);color:var(--blue)}.wiki-hero,.wh{padding:3rem 2rem;text-align:center}.wiki-hero h1,.wh h1{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:900;margin-bottom:.5rem}.wiki-hero p,.wh p{color:var(--gray-700);max-width:600px;margin:0 auto 1.5rem}.back-link,.bl{display:inline-flex;align-items:center;gap:.4rem;color:var(--blue);text-decoration:none;font-weight:600;font-size:.9rem}.back-link:hover,.bl:hover{text-decoration:underline}.layout,.ly{max-width:900px;margin:0 auto;padding:2rem}h2{font-size:1.5rem;font-weight:900;margin:2.5rem 0 1rem;padding-bottom:.5rem;border-bottom:2px solid #e2e8f0}h2:first-child{margin-top:0}h3{font-size:1.05rem;font-weight:800;margin:1.5rem 0 .6rem;color:var(--blue)}p{color:var(--gray-700);margin-bottom:1rem;line-height:1.7}ul,ol{padding-left:1.5rem;margin-bottom:1rem}li{color:var(--gray-700);margin-bottom:.4rem}.code-block,.cb{background:var(--gray-900);color:#e2e8f0;border-radius:var(--radius);padding:1.5rem;font-family:"Courier New",monospace;font-size:.82rem;overflow-x:auto;margin:1rem 0;line-height:1.7;white-space:pre}.code-block .c,.cb .c{color:#64748b}table{width:100%;border-collapse:collapse;font-size:.88rem;margin:1.5rem 0}th{background:var(--gray-900);color:white;padding:.7rem 1rem;text-align:left;font-weight:700}td{padding:.7rem 1rem;border-bottom:1px solid #e2e8f0}tr:hover td{background:var(--gray-100)}.info-box,.ib{background:var(--blue-light);border-left:4px solid var(--blue);border-radius:.5rem;padding:1.25rem 1.5rem;margin:1.5rem 0}.info-box p,.ib p{margin:0}.warn-box,.wb{background:#fefce8;border-left:4px solid var(--yellow);border-radius:.5rem;padding:1.25rem 1.5rem;margin:1.5rem 0}.warn-box p,.wb p{margin:0}.success-box,.sb{background:#f0fdf4;border-left:4px solid var(--green);border-radius:.5rem;padding:1.25rem 1.5rem;margin:1.5rem 0}.success-box p,.sb p{margin:0}.card-grid,.cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin:1.5rem 0}.card,.cd{background:var(--gray-100);border-radius:var(--radius);padding:1.25rem;border:2px solid #e2e8f0;transition:all .2s;text-decoration:none;color:inherit;display:block}.card:hover,.cd:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:var(--shadow)}.card h4,.cd h4{font-weight:800;margin-bottom:.4rem;font-size:.95rem}.card p,.cd p{font-size:.8rem;color:var(--gray-400);margin:0}.card-icon,.wiki-card-icon{font-size:2rem;margin-bottom:.75rem}.badge,.bg{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .6rem;border-radius:2rem;font-size:.72rem;font-weight:700;margin:.15rem}.b-green,.bg-g{background:#dcfce7;color:#166534}.b-yellow,.bg-y{background:#fef3c7;color:#92400e}.b-purple,.bg-p{background:#f3e8ff;color:#6b21a8}.b-blue,.bg-b{background:#dbeafe;color:#1e40af}.b-gray,.bg-x{background:#f1f5f9;color:#475569}.flow-row,.fr{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;padding:1rem;background:var(--gray-100);border-radius:var(--radius);margin:1rem 0}.fnode,.fn{background:white;border-radius:.6rem;padding:.5rem 1rem;font-size:.8rem;font-weight:700;border:2px solid #e2e8f0;text-align:center}.fnode.g,.fn.g{border-color:var(--green);background:#f0fdf4;color:#166534}.fnode.b,.fn.b{border-color:var(--blue);background:var(--blue-light);color:var(--blue-dark)}.fnode.y,.fn.y{border-color:var(--yellow);background:#fefce8;color:#92400e}.fnode.p,.fn.p{border-color:#a855f7;background:#faf5ff;color:#6b21a8}.fnode.r,.fn.r{border-color:#ef4444;background:#fef2f2;color:#991b1b}.farr,.fa{color:var(--blue);font-weight:900;font-size:1.1rem}.chain,.security-chain{background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;margin:1.5rem 0}.chain-step,.cs{display:flex;gap:1rem;align-items:flex-start;padding:.75rem 0;border-bottom:1px solid #e2e8f0}.chain-step:last-child,.cs:last-child{border-bottom:none}.chain-num,.cn{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.85rem;flex-shrink:0;background:#dcfce7;color:#166534}.chain-text h4,.ct h4{font-weight:800;font-size:.9rem;margin-bottom:.25rem}.chain-text p,.ct p{font-size:.8rem;color:var(--gray-400);margin:0}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin:1.5rem 0}.stat{background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;text-align:center}.stat-num{font-size:2rem;font-weight:900}.stat-label{font-size:.8rem;color:var(--gray-400);font-weight:600}.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem;margin:1.5rem 0}.rule{border-radius:var(--radius);padding:1.5rem;border:2px solid}.rule .i{font-size:2rem;margin-bottom:.5rem}.rule h3{margin:0 0 .5rem}.rule p{font-size:.85rem;margin:0}.flow-demo,.flow{background:var(--gray-100);border-radius:1.5rem;padding:2rem;margin:1.5rem 0}footer{background:var(--gray-900);color:#94a3b8;padding:2rem;text-align:center;font-size:.85rem;margin-top:4rem}footer a{color:#64748b;text-decoration:none}footer a:hover{color:white}.fade-in,.fi{opacity:0;transform:translateY(16px);transition:all .5s ease}.fade-in.visible,.fi.v,.fi.visible{opacity:1;transform:translateY(0)}.pulse,.pl{width:8px;height:8px;background:var(--green);border-radius:50%;display:inline-block;animation:pulse 2s infinite;margin-right:4px}@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}@media(max-width:700px){.nav-links a,.nk a{font-size:.72rem;padding:.25rem .45rem}}</style>
+  <style>:root{--blue:#2563eb;--blue-dark:#1d4ed8;--blue-light:#eff6ff;--gray-900:#0f172a;--gray-700:#334155;--gray-400:#94a3b8;--gray-100:#f1f5f9;--white:#fff;--green:#22c55e;--yellow:#f59e0b;--radius:1rem;--shadow:0 4px 24px rgba(37,99,235,.10)}*{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--white);color:var(--gray-900);line-height:1.6}nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid #e2e8f0;padding:.8rem 1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}.nav-logo{font-size:1.3rem;font-weight:900;color:var(--blue);text-decoration:none;display:flex;align-items:center;gap:.5rem;flex-shrink:0}.nav-logo img{width:28px;height:28px;object-fit:contain}.nav-links{display:flex;gap:.15rem;align-items:center;flex-wrap:wrap}.nav-links a{padding:.3rem .65rem;border-radius:.5rem;color:var(--gray-700);text-decoration:none;font-size:.8rem;font-weight:500;transition:all .2s;white-space:nowrap}.nav-links a:hover,.nav-links a.active{background:var(--blue-light);color:var(--blue)}.lang-btn{cursor:pointer;border:2px solid #e2e8f0;background:var(--white);border-radius:.5rem;padding:.25rem .6rem;font-size:.78rem;font-weight:700;color:var(--gray-700);transition:all .2s;margin-left:.4rem;white-space:nowrap}.lang-btn:hover{border-color:var(--blue);color:var(--blue)}.wh{padding:3rem 2rem;text-align:center}.wh h1{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:900;margin-bottom:.5rem}.wh p{max-width:600px;margin:0 auto 1.5rem}.bl{display:inline-flex;align-items:center;gap:.4rem;color:var(--blue);text-decoration:none;font-weight:600;font-size:.9rem}.bl:hover{text-decoration:underline}.ly{max-width:900px;margin:0 auto;padding:2rem}h2{font-size:1.5rem;font-weight:900;margin:2.5rem 0 1rem;padding-bottom:.5rem;border-bottom:2px solid #e2e8f0}h2:first-child{margin-top:0}h3{font-size:1.05rem;font-weight:800;margin:1.5rem 0 .6rem;color:var(--blue)}p{color:var(--gray-700);margin-bottom:1rem;line-height:1.7}ul,ol{padding-left:1.5rem;margin-bottom:1rem}li{color:var(--gray-700);margin-bottom:.4rem}.cb{background:var(--gray-900);color:#e2e8f0;border-radius:var(--radius);padding:1.5rem;font-family:"Courier New",monospace;font-size:.82rem;overflow-x:auto;margin:1rem 0;line-height:1.7;white-space:pre}.cb .c{color:#64748b}.ib{background:var(--blue-light);border-left:4px solid var(--blue);border-radius:.5rem;padding:1.25rem 1.5rem;margin:1.5rem 0}.ib p{margin:0}.wb{background:#fefce8;border-left:4px solid var(--yellow);border-radius:.5rem;padding:1.25rem 1.5rem;margin:1.5rem 0}.wb p{margin:0}.sb{background:#f0fdf4;border-left:4px solid var(--green);border-radius:.5rem;padding:1.25rem 1.5rem;margin:1.5rem 0}.sb p{margin:0}table{width:100%;border-collapse:collapse;font-size:.88rem;margin:1.5rem 0}th{background:var(--gray-900);color:white;padding:.7rem 1rem;text-align:left;font-weight:700}td{padding:.7rem 1rem;border-bottom:1px solid #e2e8f0}tr:hover td{background:var(--gray-100)}.cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin:1.5rem 0}.cd{background:var(--gray-100);border-radius:var(--radius);padding:1.25rem;border:2px solid #e2e8f0;transition:all .2s;text-decoration:none;color:inherit;display:block}.cd:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:var(--shadow)}.cd h4{font-weight:800;margin-bottom:.4rem;font-size:.95rem}.cd p{font-size:.8rem;color:var(--gray-400);margin:0}.fr{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;padding:1rem;background:var(--gray-100);border-radius:var(--radius);margin:1rem 0}.fn{background:white;border-radius:.6rem;padding:.5rem 1rem;font-size:.8rem;font-weight:700;border:2px solid #e2e8f0;text-align:center}.fn.g{border-color:var(--green);background:#f0fdf4;color:#166534}.fn.b{border-color:var(--blue);background:var(--blue-light);color:var(--blue-dark)}.fn.y{border-color:var(--yellow);background:#fefce8;color:#92400e}.fn.p{border-color:#a855f7;background:#faf5ff;color:#6b21a8}.fa{color:var(--blue);font-weight:900;font-size:1.1rem}.chain{background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;margin:1.5rem 0}.cs{display:flex;gap:1rem;align-items:flex-start;padding:.75rem 0;border-bottom:1px solid #e2e8f0}.cs:last-child{border-bottom:none}.cn{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.85rem;flex-shrink:0;background:#dcfce7;color:#166534}.ct h4{font-weight:800;font-size:.9rem;margin-bottom:.25rem}.ct p{font-size:.8rem;color:var(--gray-400);margin:0}.toc{background:var(--gray-100);border-radius:var(--radius);padding:1.5rem 2rem;margin:1.5rem 0}.toc h3{margin-top:0;color:var(--gray-900)}.toc ol{counter-reset:toc;list-style:none;padding:0}.toc li{counter-increment:toc;margin-bottom:.5rem}.toc li a{color:var(--gray-700);text-decoration:none;font-weight:600;font-size:.9rem;display:flex;align-items:center;gap:.5rem;transition:color .2s}.toc li a:hover{color:var(--blue)}.toc li a::before{content:counter(toc);background:var(--blue);color:white;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:900;flex-shrink:0}.chapter-num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--blue);color:white;font-weight:900;font-size:.8rem;margin-right:.5rem;flex-shrink:0}footer{background:var(--gray-900);color:#94a3b8;padding:2rem;text-align:center;font-size:.85rem;margin-top:4rem}footer a{color:#64748b;text-decoration:none}footer a:hover{color:white}.fi{opacity:0;transform:translateY(16px);transition:all .5s ease}.fi.visible{opacity:1;transform:translateY(0)}@media(max-width:700px){.nav-links a{font-size:.72rem;padding:.25rem .45rem}}</style>
   <title>Whitepaper — εκκλησία Wiki</title>
 </head>
 <body>
@@ -23,32 +23,266 @@
     <button class="lang-btn" onclick="toggleLang()"><span id="langFlag">🇬🇧</span> <span id="langLabel">EN</span></button>
   </div>
 </nav>
+
 <div class="wh" style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);color:white">
   <h1 style="color:white">📄 <span data-el="Whitepaper" data-en="Whitepaper">Whitepaper</span></h1>
-  <p style="color:rgba(255,255,255,0.8)" data-el="Τεχνικό Λευκό Βιβλίο v1.0" data-en="Technical Whitepaper v1.0">Τεχνικό Λευκό Βιβλίο v1.0</p>
+  <p style="color:rgba(255,255,255,0.8)" data-el="Τεχνικό Λευκό Βιβλίο v1.0 — Ekklesia.gr" data-en="Technical Whitepaper v1.0 — Ekklesia.gr">Τεχνικό Λευκό Βιβλίο v1.0 — Ekklesia.gr</p>
   <a href="index.html" class="bl" style="color:#93c5fd">← Wiki Home</a>
 </div>
+
 <div class="ly">
 
-  <div class="ib fi"><p>📄 <a href="https://github.com/NeaBouli/pnyx/blob/main/docs/WHITEPAPER.md" target="_blank" style="color:var(--blue);font-weight:700" data-el="Πλήρες Whitepaper στο GitHub →" data-en="Full Whitepaper on GitHub →">Πλήρες Whitepaper στο GitHub →</a></p></div>
-
-  <h2 class="fi" data-el="Περίληψη" data-en="Abstract">Περίληψη</h2>
-  <p class="fi" data-el="Η Ekklesia.gr είναι ανοιχτού κώδικα πλατφόρμα άμεσης ψηφιακής δημοκρατίας για τον Έλληνα πολίτη. Πολιτική Πυξίδα + Ψηφοφορία Πολιτών + Δείκτης Απόκλισης." data-en="Ekklesia.gr is an open-source digital direct democracy platform for Greek citizens. VoteCompass + Citizen Voting + Divergence Score.">Η Ekklesia.gr είναι ανοιχτού κώδικα πλατφόρμα άμεσης ψηφιακής δημοκρατίας.</p>
-
-  <h2 class="fi" data-el="Κεφάλαια" data-en="Chapters">Κεφάλαια (11)</h2>
-  <div class="cg fi">
-    <div class="cd"><h4>1. <span data-el="Πρόβλημα" data-en="Problem">Πρόβλημα</span></h4><p data-el="Δημοκρατικό Έλλειμμα" data-en="Democratic Deficit">Δημοκρατικό Έλλειμμα</p></div>
-    <div class="cd"><h4>2. <span data-el="Αρχιτεκτονική" data-en="Architecture">Αρχιτεκτονική</span></h4><p>Monorepo, Stack</p></div>
-    <div class="cd"><h4>3. <span data-el="Ταυτότητα" data-en="Identity">Ταυτότητα</span></h4><p>Nullifier, Ed25519</p></div>
-    <div class="cd"><h4>4. Bill Lifecycle</h4><p data-el="5 Καταστάσεις" data-en="5 States">5 Καταστάσεις</p></div>
-    <div class="cd"><h4>5. <span data-el="Αλγόριθμοι" data-en="Algorithms">Αλγόριθμοι</span></h4><p>Matching + Divergence</p></div>
-    <div class="cd"><h4>6. GDPR</h4><p>k-Anonymity</p></div>
-    <div class="cd"><h4>7. <span data-el="Στρατηγική" data-en="Strategy">Στρατηγική</span></h4><p>Beta → Alpha → V2</p></div>
-    <div class="cd"><h4>8. TrueRepublic</h4><p>ZK-Proof Bridge</p></div>
-    <div class="cd"><h4>9. <span data-el="Οικονομικά" data-en="Economics">Οικονομικά</span></h4><p>~300€/yr, MIT</p></div>
+  <!-- Table of Contents -->
+  <div class="toc fi">
+    <h3 data-el="Πίνακας Περιεχομένων" data-en="Table of Contents">Πίνακας Περιεχομένων</h3>
+    <ol>
+      <li><a href="#ch1" data-el="Περίληψη" data-en="Abstract">Περίληψη</a></li>
+      <li><a href="#ch2" data-el="Το Πρόβλημα" data-en="The Problem">Το Πρόβλημα</a></li>
+      <li><a href="#ch3" data-el="Αρχιτεκτονική Συστήματος" data-en="System Architecture">Αρχιτεκτονική Συστήματος</a></li>
+      <li><a href="#ch4" data-el="Σύστημα Ταυτότητας" data-en="Identity System">Σύστημα Ταυτότητας</a></li>
+      <li><a href="#ch5" data-el="Κύκλος Ζωής Νομοσχεδίου" data-en="Bill Lifecycle">Κύκλος Ζωής Νομοσχεδίου</a></li>
+      <li><a href="#ch6" data-el="Αλγόριθμοι Ψηφοφορίας" data-en="Voting Algorithms">Αλγόριθμοι Ψηφοφορίας</a></li>
+      <li><a href="#ch7" data-el="Ιδιωτικότητα & GDPR" data-en="Privacy & GDPR">Ιδιωτικότητα & GDPR</a></li>
+      <li><a href="#ch8" data-el="Στρατηγική Ανάπτυξης" data-en="Development Strategy">Στρατηγική Ανάπτυξης</a></li>
+      <li><a href="#ch9" data-el="Δημοτική Διακυβέρνηση MOD-16" data-en="Municipal Governance MOD-16">Δημοτική Διακυβέρνηση MOD-16</a></li>
+      <li><a href="#ch10" data-el="TrueRepublic & Blockchain" data-en="TrueRepublic & Blockchain">TrueRepublic & Blockchain</a></li>
+      <li><a href="#ch11" data-el="Οικονομικά" data-en="Economics">Οικονομικά</a></li>
+      <li><a href="#ch12" data-el="Νομικό Πλαίσιο" data-en="Legal Framework">Νομικό Πλαίσιο</a></li>
+      <li><a href="#ch13" data-el="Αναφορές" data-en="References">Αναφορές</a></li>
+    </ol>
   </div>
 
+  <!-- Chapter 1: Abstract -->
+  <h2 class="fi" id="ch1"><span class="chapter-num">1</span> <span data-el="Περίληψη" data-en="Abstract">Περίληψη</span></h2>
+  <p class="fi" data-el="Η Ekklesia.gr είναι μια ανοιχτού κώδικα πλατφόρμα άμεσης ψηφιακής δημοκρατίας σχεδιασμένη αποκλειστικά για τον Έλληνα πολίτη. Συνδυάζει τρεις πυλώνες: Πολιτική Πυξίδα (VAA), Ψηφοφορία Πολιτών σε πραγματικά νομοσχέδια, και τον Δείκτη Απόκλισης που μετρά πόσο αντιπροσωπεύει η Βουλή τη λαϊκή βούληση." data-en="Ekklesia.gr is an open-source direct digital democracy platform designed exclusively for Greek citizens. It combines three pillars: Vote Compass (VAA), Citizen Voting on real parliamentary bills, and the Divergence Score that measures how well Parliament represents the people's will.">Η Ekklesia.gr είναι μια ανοιχτού κώδικα πλατφόρμα άμεσης ψηφιακής δημοκρατίας σχεδιασμένη αποκλειστικά για τον Έλληνα πολίτη. Συνδυάζει τρεις πυλώνες: Πολιτική Πυξίδα (VAA), Ψηφοφορία Πολιτών σε πραγματικά νομοσχέδια, και τον Δείκτη Απόκλισης που μετρά πόσο αντιπροσωπεύει η Βουλή τη λαϊκή βούληση.</p>
+  <p class="fi" data-el="Η πλατφόρμα χρησιμοποιεί κρυπτογραφία Ed25519 και Nullifier Hashes ώστε κανένα προσωπικό δεδομένο να μην αποθηκεύεται ποτέ. Κάθε πολίτης αποκτά ένα μοναδικό κρυπτογραφικό κλειδί χωρίς σύνδεση με την πραγματική ταυτότητά του." data-en="The platform uses Ed25519 cryptography and Nullifier Hashes so that no personal data is ever stored. Each citizen receives a unique cryptographic key without any link to their real identity.">Η πλατφόρμα χρησιμοποιεί κρυπτογραφία Ed25519 και Nullifier Hashes ώστε κανένα προσωπικό δεδομένο να μην αποθηκεύεται ποτέ. Κάθε πολίτης αποκτά ένα μοναδικό κρυπτογραφικό κλειδί χωρίς σύνδεση με την πραγματική ταυτότητά του.</p>
+  <div class="sb fi"><p data-el="Αποστολή: Κάθε Έλληνας πολίτης μπορεί να ψηφίσει σε κάθε νομοσχέδιο — ανώνυμα, ασφαλώς, δωρεάν." data-en="Mission: Every Greek citizen can vote on every bill — anonymously, securely, for free.">Αποστολή: Κάθε Έλληνας πολίτης μπορεί να ψηφίσει σε κάθε νομοσχέδιο — ανώνυμα, ασφαλώς, δωρεάν.</p></div>
+
+  <!-- Chapter 2: Problem -->
+  <h2 class="fi" id="ch2"><span class="chapter-num">2</span> <span data-el="Το Πρόβλημα" data-en="The Problem">Το Πρόβλημα</span></h2>
+  <p class="fi" data-el="Η Ελλάδα κατατάσσεται σταθερά χαμηλά στους δείκτες εμπιστοσύνης προς το Κοινοβούλιο. Σύμφωνα με το Eurobarometer 2024, μόνο το 18% των Ελλήνων εμπιστεύεται τη Βουλή — το χαμηλότερο στην ΕΕ. Η αποχή στις εκλογές ξεπερνά το 40%." data-en="Greece consistently ranks low in trust indices towards Parliament. According to Eurobarometer 2024, only 18% of Greeks trust Parliament — the lowest in the EU. Election abstention exceeds 40%.">Η Ελλάδα κατατάσσεται σταθερά χαμηλά στους δείκτες εμπιστοσύνης προς το Κοινοβούλιο. Σύμφωνα με το Eurobarometer 2024, μόνο το 18% των Ελλήνων εμπιστεύεται τη Βουλή — το χαμηλότερο στην ΕΕ. Η αποχή στις εκλογές ξεπερνά το 40%.</p>
+  <p class="fi" data-el="Τα βασικά ελλείμματα:" data-en="Key deficits:">Τα βασικά ελλείμματα:</p>
+  <ul class="fi">
+    <li data-el="Δεν υπάρχει μηχανισμός άμεσης ψηφοφορίας σε νομοσχέδια" data-en="No mechanism for direct voting on bills">Δεν υπάρχει μηχανισμός άμεσης ψηφοφορίας σε νομοσχέδια</li>
+    <li data-el="Δεν υπάρχει μέτρηση της απόκλισης Βουλής-Πολιτών" data-en="No measurement of Parliament-Citizens divergence">Δεν υπάρχει μέτρηση της απόκλισης Βουλής-Πολιτών</li>
+    <li data-el="Η Πολιτική Πυξίδα λειτουργεί μόνο σε εκλογές, όχι διαρκώς" data-en="Vote Compass only works during elections, not continuously">Η Πολιτική Πυξίδα λειτουργεί μόνο σε εκλογές, όχι διαρκώς</li>
+    <li data-el="Τα κοινωνικά δίκτυα χειραγωγούνται εύκολα (bots, trolls)" data-en="Social media is easily manipulated (bots, trolls)">Τα κοινωνικά δίκτυα χειραγωγούνται εύκολα (bots, trolls)</li>
+    <li data-el="Η τοπική αυτοδιοίκηση είναι αποκομμένη από τους πολίτες" data-en="Local governance is disconnected from citizens">Η τοπική αυτοδιοίκηση είναι αποκομμένη από τους πολίτες</li>
+  </ul>
+  <div class="wb fi"><p data-el="Η Ekklesia.gr δεν αντικαθιστά τη Βουλή. Αυτή αποφασίζει — εμείς μετράμε πόσο αντιπροσωπεύει." data-en="Ekklesia.gr does not replace Parliament. Parliament decides — we measure how well it represents.">Η Ekklesia.gr δεν αντικαθιστά τη Βουλή. Αυτή αποφασίζει — εμείς μετράμε πόσο αντιπροσωπεύει.</p></div>
+
+  <!-- Chapter 3: Architecture -->
+  <h2 class="fi" id="ch3"><span class="chapter-num">3</span> <span data-el="Αρχιτεκτονική Συστήματος" data-en="System Architecture">Αρχιτεκτονική Συστήματος</span></h2>
+  <p class="fi" data-el="Η Ekklesia.gr χρησιμοποιεί monorepo αρχιτεκτονική με τρεις εφαρμογές:" data-en="Ekklesia.gr uses a monorepo architecture with three applications:">Η Ekklesia.gr χρησιμοποιεί monorepo αρχιτεκτονική με τρεις εφαρμογές:</p>
+  <div class="cb fi">┌─────────────────────────────────────────────────────┐
+│                    pnyx/ (Monorepo)                 │
+├─────────────┬──────────────┬────────────────────────┤
+│  apps/api   │  apps/web    │  apps/mobile           │
+│  FastAPI    │  Next.js 14  │  Expo (TODO)           │
+│  13 endpts  │  5 pages     │                        │
+├─────────────┴──────────────┴────────────────────────┤
+│  packages/crypto     │  packages/db                 │
+│  Ed25519 + Nullifier │  Alembic Migrations          │
+├──────────────────────┴──────────────────────────────┤
+│  PostgreSQL 15  │  Redis 7  │  Docker Compose       │
+└─────────────────┴───────────┴───────────────────────┘
+
+<span class="c">Δεδομένα (Data Flow):</span>
+  Πολίτης → SMS OTP → Nullifier Hash → Ed25519 Key
+  Πολίτης → Ψήφος + Υπογραφή → API → PostgreSQL
+  API → Αποτελέσματα + Divergence → Web/Mobile</div>
+
+  <table class="fi">
+    <tr><th data-el="Στοιχείο" data-en="Component">Στοιχείο</th><th data-el="Τεχνολογία" data-en="Technology">Τεχνολογία</th><th data-el="Ρόλος" data-en="Role">Ρόλος</th></tr>
+    <tr><td>Backend API</td><td>Python FastAPI</td><td data-el="Async, OpenAPI, 13 endpoints" data-en="Async, OpenAPI, 13 endpoints">Async, OpenAPI, 13 endpoints</td></tr>
+    <tr><td>Database</td><td>PostgreSQL 15</td><td data-el="JSONB, GDPR-ready, 9 πίνακες" data-en="JSONB, GDPR-ready, 9 tables">JSONB, GDPR-ready, 9 πίνακες</td></tr>
+    <tr><td>Cache/PubSub</td><td>Redis 7</td><td data-el="WebSocket, real-time updates" data-en="WebSocket, real-time updates">WebSocket, real-time updates</td></tr>
+    <tr><td>Web Client</td><td>Next.js 14</td><td data-el="SSR, i18n el/en, Tailwind" data-en="SSR, i18n el/en, Tailwind">SSR, i18n el/en, Tailwind</td></tr>
+    <tr><td data-el="Κρυπτογραφία (Beta)" data-en="Crypto (Beta)">Κρυπτογραφία (Beta)</td><td>PyNaCl</td><td>Ed25519, HMAC-SHA256</td></tr>
+    <tr><td data-el="Κρυπτογραφία (V2)" data-en="Crypto (V2)">Κρυπτογραφία (V2)</td><td>Rust + WASM</td><td data-el="Browser-native, zero trust" data-en="Browser-native, zero trust">Browser-native, zero trust</td></tr>
+  </table>
+
+  <!-- Chapter 4: Identity -->
+  <h2 class="fi" id="ch4"><span class="chapter-num">4</span> <span data-el="Σύστημα Ταυτότητας" data-en="Identity System">Σύστημα Ταυτότητας</span></h2>
+  <p class="fi" data-el="Το MOD-01 Identity είναι ο πυρήνας ασφαλείας. Κάθε πολίτης αποκτά ένα μοναδικό κρυπτογραφικό ζεύγος κλειδιών χωρίς να αποθηκεύεται ποτέ ο αριθμός τηλεφώνου ή οποιοδήποτε προσωπικό δεδομένο." data-en="MOD-01 Identity is the security core. Each citizen gets a unique cryptographic key pair without ever storing the phone number or any personal data.">Το MOD-01 Identity είναι ο πυρήνας ασφαλείας. Κάθε πολίτης αποκτά ένα μοναδικό κρυπτογραφικό ζεύγος κλειδιών χωρίς να αποθηκεύεται ποτέ ο αριθμός τηλεφώνου ή οποιοδήποτε προσωπικό δεδομένο.</p>
+
+  <div class="chain fi">
+    <div class="cs"><div class="cn">1</div><div class="ct"><h4 data-el="SMS OTP Επαλήθευση" data-en="SMS OTP Verification">SMS OTP Επαλήθευση</h4><p data-el="Ο πολίτης εισάγει αριθμό κινητού → λαμβάνει 6ψήφιο κωδικό" data-en="Citizen enters mobile number → receives 6-digit code">Ο πολίτης εισάγει αριθμό κινητού → λαμβάνει 6ψήφιο κωδικό</p></div></div>
+    <div class="cs"><div class="cn">2</div><div class="ct"><h4 data-el="Δημιουργία Nullifier" data-en="Nullifier Generation">Δημιουργία Nullifier</h4><p data-el="nullifier = SHA256(phone + SERVER_SALT) — μη αναστρέψιμο" data-en="nullifier = SHA256(phone + SERVER_SALT) — irreversible">nullifier = SHA256(phone + SERVER_SALT) — μη αναστρέψιμο</p></div></div>
+    <div class="cs"><div class="cn">3</div><div class="ct"><h4 data-el="Διαγραφή Τηλεφώνου" data-en="Phone Deletion">Διαγραφή Τηλεφώνου</h4><p data-el="Ο αριθμός διαγράφεται αμέσως (gc.collect()) — ποτέ στη βάση" data-en="Number deleted immediately (gc.collect()) — never in database">Ο αριθμός διαγράφεται αμέσως (gc.collect()) — ποτέ στη βάση</p></div></div>
+    <div class="cs"><div class="cn">4</div><div class="ct"><h4 data-el="Δημιουργία Ed25519" data-en="Ed25519 Generation">Δημιουργία Ed25519</h4><p data-el="Ζεύγος κλειδιών: Public Key → server, Private Key → μόνο στον πολίτη" data-en="Key pair: Public Key → server, Private Key → citizen only">Ζεύγος κλειδιών: Public Key → server, Private Key → μόνο στον πολίτη</p></div></div>
+    <div class="cs"><div class="cn">5</div><div class="ct"><h4 data-el="Demographic Hash" data-en="Demographic Hash">Demographic Hash</h4><p data-el="SHA256(region + gender + SERVER_SALT) — k-ανωνυμία, χωρίς ταυτοποίηση" data-en="SHA256(region + gender + SERVER_SALT) — k-anonymity, no identification">SHA256(region + gender + SERVER_SALT) — k-ανωνυμία, χωρίς ταυτοποίηση</p></div></div>
+  </div>
+
+  <div class="ib fi"><p data-el="Ο server δεν γνωρίζει ποτέ ποιος είναι ο πολίτης. Γνωρίζει μόνο ότι υπάρχει ένας επαληθευμένος πολίτης πίσω από κάθε nullifier." data-en="The server never knows who the citizen is. It only knows a verified citizen exists behind each nullifier.">Ο server δεν γνωρίζει ποτέ ποιος είναι ο πολίτης. Γνωρίζει μόνο ότι υπάρχει ένας επαληθευμένος πολίτης πίσω από κάθε nullifier.</p></div>
+
+  <!-- Chapter 5: Bill Lifecycle -->
+  <h2 class="fi" id="ch5"><span class="chapter-num">5</span> <span data-el="Κύκλος Ζωής Νομοσχεδίου" data-en="Bill Lifecycle">Κύκλος Ζωής Νομοσχεδίου</span></h2>
+  <p class="fi" data-el="Κάθε νομοσχέδιο περνάει από 5 καταστάσεις:" data-en="Every bill goes through 5 states:">Κάθε νομοσχέδιο περνάει από 5 καταστάσεις:</p>
+  <div class="fr fi">
+    <div class="fn y">ANNOUNCED</div><div class="fa">→</div>
+    <div class="fn g">ACTIVE</div><div class="fa">→</div>
+    <div class="fn" style="border-color:#ef4444;background:#fef2f2;color:#991b1b">WINDOW_24H</div><div class="fa">→</div>
+    <div class="fn b">PARLIAMENT_VOTED</div><div class="fa">→</div>
+    <div class="fn p">OPEN_END</div>
+  </div>
+  <table class="fi">
+    <tr><th data-el="Κατάσταση" data-en="State">Κατάσταση</th><th data-el="Περιγραφή" data-en="Description">Περιγραφή</th><th data-el="Ψηφοφορία" data-en="Voting">Ψηφοφορία</th></tr>
+    <tr><td>ANNOUNCED</td><td data-el="Νέο νομοσχέδιο, AI συνοψίζει" data-en="New bill, AI summarizes">Νέο νομοσχέδιο, AI συνοψίζει</td><td>-</td></tr>
+    <tr><td>ACTIVE</td><td data-el="Πολίτες ψηφίζουν" data-en="Citizens vote">Πολίτες ψηφίζουν</td><td data-el="Ανοιχτή" data-en="Open">Ανοιχτή</td></tr>
+    <tr><td>WINDOW_24H</td><td data-el="24ώρο πριν την ψηφοφορία Βουλής" data-en="24h before Parliament vote">24ώρο πριν την ψηφοφορία Βουλής</td><td data-el="Τελευταία ευκαιρία" data-en="Last chance">Τελευταία ευκαιρία</td></tr>
+    <tr><td>PARLIAMENT_VOTED</td><td data-el="Η Βουλή ψήφισε" data-en="Parliament voted">Η Βουλή ψήφισε</td><td data-el="Κλειστή" data-en="Closed">Κλειστή</td></tr>
+    <tr><td>OPEN_END</td><td data-el="Αρχείο — Divergence Score ορατό" data-en="Archive — Divergence Score visible">Αρχείο — Divergence Score ορατό</td><td data-el="Ιστορικό" data-en="Historical">Ιστορικό</td></tr>
+  </table>
+
+  <!-- Chapter 6: Voting Algorithms -->
+  <h2 class="fi" id="ch6"><span class="chapter-num">6</span> <span data-el="Αλγόριθμοι Ψηφοφορίας" data-en="Voting Algorithms">Αλγόριθμοι Ψηφοφορίας</span></h2>
+
+  <h3 data-el="VAA Matching (MOD-02)" data-en="VAA Matching (MOD-02)">VAA Matching (MOD-02)</h3>
+  <p class="fi" data-el="Η Πολιτική Πυξίδα συγκρίνει τις απαντήσεις του πολίτη με τις θέσεις των κομμάτων:" data-en="The Vote Compass compares citizen answers with party positions:">Η Πολιτική Πυξίδα συγκρίνει τις απαντήσεις του πολίτη με τις θέσεις των κομμάτων:</p>
+  <div class="cb fi"><span class="c"># VAA Matching Algorithm — MOD-02</span>
+def compute_match(user_answers, party_positions):
+    """
+    user_answers:    {statement_id: -1|0|1}
+    party_positions: {statement_id: -1|0|1}
+    returns: float 0.0 — 1.0 (similarity)
+    """
+    total, matched = 0, 0
+    for sid, user_val in user_answers.items():
+        if sid in party_positions:
+            party_val = party_positions[sid]
+            total += 1
+            if user_val == party_val:
+                matched += 1
+            elif abs(user_val - party_val) == 1:
+                matched += 0.5
+    return matched / total if total > 0 else 0.0</div>
+
+  <h3 data-el="Divergence Score (MOD-05)" data-en="Divergence Score (MOD-05)">Divergence Score (MOD-05)</h3>
+  <p class="fi" data-el="Ο Δείκτης Απόκλισης μετράει πόσο διαφέρει η ψήφος της Βουλής από τη βούληση των πολιτών:" data-en="The Divergence Score measures how much Parliament's vote differs from citizens' will:">Ο Δείκτης Απόκλισης μετράει πόσο διαφέρει η ψήφος της Βουλής από τη βούληση των πολιτών:</p>
+  <div class="cb fi"><span class="c"># Divergence Score Algorithm — MOD-05</span>
+def divergence_score(citizen_yes_pct, parliament_yes):
+    """
+    citizen_yes_pct: float 0-100 (% ΝΑΙ πολιτών)
+    parliament_yes:  bool (Βουλή ψήφισε ΝΑΙ;)
+    returns: float -100 to +100
+      0   = πλήρης ευθυγράμμιση
+      +100 = Βουλή ΝΑΙ, Πολίτες ΟΧΙ
+      -100 = Βουλή ΟΧΙ, Πολίτες ΝΑΙ
+    """
+    parl_val = 100.0 if parliament_yes else 0.0
+    return parl_val - citizen_yes_pct</div>
+
+  <h3 data-el="Ψηφοφορία Πολιτών (MOD-04)" data-en="Citizen Vote (MOD-04)">Ψηφοφορία Πολιτών (MOD-04)</h3>
+  <div class="cb fi"><span class="c"># Citizen Vote Verification — MOD-04</span>
+def verify_and_cast(nullifier_hash, bill_id, vote, signature_hex):
+    """
+    1. Verify Ed25519 signature (public key from identity_records)
+    2. Check UNIQUE(nullifier_hash, bill_id) — no double voting
+    3. Check bill.status in (ACTIVE, WINDOW_24H)
+    4. Insert citizen_votes row
+    """
+    identity = db.get(nullifier_hash)     <span class="c"># lookup public key</span>
+    verify_ed25519(identity.public_key_hex, message, signature_hex)
+    assert not db.exists(nullifier_hash, bill_id)  <span class="c"># no double</span>
+    assert bill.status in ("ACTIVE", "WINDOW_24H")
+    db.insert(CitizenVote(...))</div>
+
+  <!-- Chapter 7: Privacy & GDPR -->
+  <h2 class="fi" id="ch7"><span class="chapter-num">7</span> <span data-el="Ιδιωτικότητα & GDPR" data-en="Privacy & GDPR">Ιδιωτικότητα & GDPR</span></h2>
+  <p class="fi" data-el="Η Ekklesia.gr σχεδιάστηκε με αρχή Privacy by Design. Κανένα προσωπικό δεδομένο δεν αποθηκεύεται ποτέ στη βάση δεδομένων." data-en="Ekklesia.gr was designed with Privacy by Design principles. No personal data is ever stored in the database.">Η Ekklesia.gr σχεδιάστηκε με αρχή Privacy by Design. Κανένα προσωπικό δεδομένο δεν αποθηκεύεται ποτέ στη βάση δεδομένων.</p>
+  <table class="fi">
+    <tr><th data-el="Δεδομένο" data-en="Data">Δεδομένο</th><th data-el="Αποθήκευση" data-en="Storage">Αποθήκευση</th><th data-el="Τεχνική" data-en="Technique">Τεχνική</th></tr>
+    <tr><td data-el="Τηλέφωνο" data-en="Phone">Τηλέφωνο</td><td data-el="Ποτέ — διαγράφεται αμέσως" data-en="Never — deleted immediately">Ποτέ — διαγράφεται αμέσως</td><td>gc.collect()</td></tr>
+    <tr><td>Private Key</td><td data-el="Μόνο στον πολίτη" data-en="Citizen-only">Μόνο στον πολίτη</td><td data-el="Μία φορά, δεν αποθηκεύεται" data-en="One-time, not stored">Μία φορά, δεν αποθηκεύεται</td></tr>
+    <tr><td data-el="Ταυτότητα" data-en="Identity">Ταυτότητα</td><td>Nullifier Hash</td><td>SHA256 + salt</td></tr>
+    <tr><td data-el="Δημογραφικά" data-en="Demographics">Δημογραφικά</td><td>Demographic Hash</td><td data-el="k-ανωνυμία (k≥5)" data-en="k-anonymity (k≥5)">k-ανωνυμία (k≥5)</td></tr>
+    <tr><td data-el="Ψήφος" data-en="Vote">Ψήφος</td><td data-el="Ναι — ανώνυμα" data-en="Yes — anonymously">Ναι — ανώνυμα</td><td>Nullifier + Ed25519 sig</td></tr>
+  </table>
+  <div class="ib fi"><p data-el="GDPR Άρθρο 25: Privacy by Design — η Ekklesia.gr δεν επεξεργάζεται ποτέ προσωπικά δεδομένα, επομένως δεν υπόκειται σε DPIA." data-en="GDPR Article 25: Privacy by Design — Ekklesia.gr never processes personal data, therefore no DPIA is required.">GDPR Άρθρο 25: Privacy by Design — η Ekklesia.gr δεν επεξεργάζεται ποτέ προσωπικά δεδομένα, επομένως δεν υπόκειται σε DPIA.</p></div>
+
+  <!-- Chapter 8: Strategy -->
+  <h2 class="fi" id="ch8"><span class="chapter-num">8</span> <span data-el="Στρατηγική Ανάπτυξης" data-en="Development Strategy">Στρατηγική Ανάπτυξης</span></h2>
+  <p class="fi" data-el="Η ανάπτυξη ακολουθεί τρεις φάσεις:" data-en="Development follows three phases:">Η ανάπτυξη ακολουθεί τρεις φάσεις:</p>
+  <div class="chain fi">
+    <div class="cs"><div class="cn">B</div><div class="ct"><h4>Beta (v0.3)</h4><p data-el="SMS Verify + VAA + CitizenVote + Divergence. 15 alpha testers. Κόστος ~0€." data-en="SMS Verify + VAA + CitizenVote + Divergence. 15 alpha testers. Cost ~0€.">SMS Verify + VAA + CitizenVote + Divergence. 15 alpha testers. Κόστος ~0€.</p></div></div>
+    <div class="cs"><div class="cn">A</div><div class="ct"><h4>Alpha (v1.0)</h4><p data-el="500+ χρήστες, 3 NGOs, gov.gr OAuth, MOD-16 Municipal. Κόστος ~300€/χρόνο." data-en="500+ users, 3 NGOs, gov.gr OAuth, MOD-16 Municipal. Cost ~300€/year.">500+ χρήστες, 3 NGOs, gov.gr OAuth, MOD-16 Municipal. Κόστος ~300€/χρόνο.</p></div></div>
+    <div class="cs"><div class="cn">V2</div><div class="ct"><h4>V2 (v2.0)</h4><p data-el="TrueRepublic Bridge, Rust+WASM Crypto, Mobile App, PnyxCoin. Κόστος ~1.200€/χρόνο." data-en="TrueRepublic Bridge, Rust+WASM Crypto, Mobile App, PnyxCoin. Cost ~1,200€/year.">TrueRepublic Bridge, Rust+WASM Crypto, Mobile App, PnyxCoin. Κόστος ~1.200€/χρόνο.</p></div></div>
+  </div>
+
+  <!-- Chapter 9: Municipal Governance MOD-16 -->
+  <h2 class="fi" id="ch9"><span class="chapter-num">9</span> <span data-el="Δημοτική Διακυβέρνηση MOD-16" data-en="Municipal Governance MOD-16">Δημοτική Διακυβέρνηση MOD-16</span></h2>
+  <p class="fi" data-el="Το MOD-16 επεκτείνει την πλατφόρμα σε 4 επίπεδα διακυβέρνησης, αντικατοπτρίζοντας τη δομή της ελληνικής αυτοδιοίκησης:" data-en="MOD-16 extends the platform to 4 governance levels, mirroring the structure of Greek local government:">Το MOD-16 επεκτείνει την πλατφόρμα σε 4 επίπεδα διακυβέρνησης, αντικατοπτρίζοντας τη δομή της ελληνικής αυτοδιοίκησης:</p>
+  <div class="fr fi">
+    <div class="fn b">NATIONAL</div><div class="fa">→</div>
+    <div class="fn g">REGIONAL (Περιφέρεια)</div><div class="fa">→</div>
+    <div class="fn y">MUNICIPAL (Δήμος)</div><div class="fa">→</div>
+    <div class="fn p">COMMUNITY (Κοινότητα)</div>
+  </div>
+  <table class="fi">
+    <tr><th data-el="Επίπεδο" data-en="Level">Επίπεδο</th><th data-el="Πίνακας" data-en="Table">Πίνακας</th><th data-el="Παραδείγματα" data-en="Examples">Παραδείγματα</th></tr>
+    <tr><td>NATIONAL</td><td>parliament_bills</td><td data-el="Νομοσχέδια Βουλής" data-en="Parliament Bills">Νομοσχέδια Βουλής</td></tr>
+    <tr><td>REGIONAL</td><td>periferia</td><td data-el="Αττική, Κρήτη, Θεσσαλία" data-en="Attica, Crete, Thessaly">Αττική, Κρήτη, Θεσσαλία</td></tr>
+    <tr><td>MUNICIPAL</td><td>dimos</td><td data-el="Αθήνα, Θεσσαλονίκη, Ηράκλειο" data-en="Athens, Thessaloniki, Heraklion">Αθήνα, Θεσσαλονίκη, Ηράκλειο</td></tr>
+    <tr><td>COMMUNITY</td><td>communities</td><td data-el="Πλάκα, Εξάρχεια, Κολωνάκι" data-en="Plaka, Exarchia, Kolonaki">Πλάκα, Εξάρχεια, Κολωνάκι</td></tr>
+  </table>
+  <div class="sb fi"><p data-el="Κάθε απόφαση (Decision) ανήκει σε ένα επίπεδο. Οι πολίτες ψηφίζουν μόνο σε αποφάσεις που τους αφορούν γεωγραφικά." data-en="Each Decision belongs to a level. Citizens only vote on decisions that concern them geographically.">Κάθε απόφαση (Decision) ανήκει σε ένα επίπεδο. Οι πολίτες ψηφίζουν μόνο σε αποφάσεις που τους αφορούν γεωγραφικά.</p></div>
+
+  <!-- Chapter 10: TrueRepublic -->
+  <h2 class="fi" id="ch10"><span class="chapter-num">10</span> <span data-el="TrueRepublic & Blockchain" data-en="TrueRepublic & Blockchain">TrueRepublic & Blockchain</span></h2>
+  <p class="fi" data-el="Η TrueRepublic είναι μια Cosmos SDK blockchain σχεδιασμένη ειδικά για δημοκρατική διακυβέρνηση. Η Ekklesia.gr θα συνδεθεί μέσω MOD-08 Bridge στη φάση V2." data-en="TrueRepublic is a Cosmos SDK blockchain designed specifically for democratic governance. Ekklesia.gr will connect via MOD-08 Bridge in phase V2.">Η TrueRepublic είναι μια Cosmos SDK blockchain σχεδιασμένη ειδικά για δημοκρατική διακυβέρνηση. Η Ekklesia.gr θα συνδεθεί μέσω MOD-08 Bridge στη φάση V2.</p>
+  <div class="chain fi">
+    <div class="cs"><div class="cn">1</div><div class="ct"><h4 data-el="ZK-Proof Ψήφων" data-en="ZK-Proof of Votes">ZK-Proof Ψήφων</h4><p data-el="Κάθε ψήφος δημιουργεί ένα ZK-Proof που καταγράφεται στο blockchain χωρίς να αποκαλύπτει τον ψηφοφόρο" data-en="Each vote creates a ZK-Proof recorded on the blockchain without revealing the voter">Κάθε ψήφος δημιουργεί ένα ZK-Proof που καταγράφεται στο blockchain χωρίς να αποκαλύπτει τον ψηφοφόρο</p></div></div>
+    <div class="cs"><div class="cn">2</div><div class="ct"><h4>PnyxCoin (PNX)</h4><p data-el="Governance token — Liquid Democracy delegation, Community rewards" data-en="Governance token — Liquid Democracy delegation, Community rewards">Governance token — Liquid Democracy delegation, Community rewards</p></div></div>
+    <div class="cs"><div class="cn">3</div><div class="ct"><h4 data-el="Αμετάβλητο Αρχείο" data-en="Immutable Archive">Αμετάβλητο Αρχείο</h4><p data-el="Divergence Scores + αποτελέσματα ψηφοφοριών μόνιμα στο blockchain" data-en="Divergence Scores + voting results permanently on blockchain">Divergence Scores + αποτελέσματα ψηφοφοριών μόνιμα στο blockchain</p></div></div>
+  </div>
+  <div class="wb fi"><p data-el="Η Bridge είναι ENV-activated (ENABLE_BRIDGE=true). Default: off. Ενεργοποιείται μόνο αφού η TrueRepublic blockchain είναι σε mainnet." data-en="The Bridge is ENV-activated (ENABLE_BRIDGE=true). Default: off. Only activated after TrueRepublic blockchain reaches mainnet.">Η Bridge είναι ENV-activated (ENABLE_BRIDGE=true). Default: off. Ενεργοποιείται μόνο αφού η TrueRepublic blockchain είναι σε mainnet.</p></div>
+
+  <!-- Chapter 11: Economics -->
+  <h2 class="fi" id="ch11"><span class="chapter-num">11</span> <span data-el="Οικονομικά" data-en="Economics">Οικονομικά</span></h2>
+  <p class="fi" data-el="Η Ekklesia.gr σχεδιάστηκε να είναι σχεδόν δωρεάν. Χρησιμοποιεί αποκλειστικά ελεύθερο λογισμικό και δωρεάν υπηρεσίες." data-en="Ekklesia.gr is designed to be nearly free. It uses exclusively free software and free-tier services.">Η Ekklesia.gr σχεδιάστηκε να είναι σχεδόν δωρεάν. Χρησιμοποιεί αποκλειστικά ελεύθερο λογισμικό και δωρεάν υπηρεσίες.</p>
+  <table class="fi">
+    <tr><th data-el="Φάση" data-en="Phase">Φάση</th><th data-el="Κόστος/Χρόνο" data-en="Cost/Year">Κόστος/Χρόνο</th><th data-el="Λεπτομέρειες" data-en="Details">Λεπτομέρειες</th></tr>
+    <tr><td>Beta</td><td>~0€</td><td data-el="GitHub Pages, free tier DB, 15 testers" data-en="GitHub Pages, free tier DB, 15 testers">GitHub Pages, free tier DB, 15 testers</td></tr>
+    <tr><td>Alpha</td><td>~300€</td><td data-el="VPS, SMS κόστος (~0.04€/SMS), domain" data-en="VPS, SMS cost (~0.04€/SMS), domain">VPS, SMS κόστος (~0.04€/SMS), domain</td></tr>
+    <tr><td>V2</td><td>~1.200€</td><td data-el="Blockchain nodes, WASM CDN, scaling" data-en="Blockchain nodes, WASM CDN, scaling">Blockchain nodes, WASM CDN, scaling</td></tr>
+  </table>
+  <div class="sb fi"><p data-el="Η πλατφόρμα είναι MIT Licensed — ελεύθερη για όλους. Κανένα subscription, κανένα paywall, κανένα advertisement." data-en="The platform is MIT Licensed — free for everyone. No subscription, no paywall, no advertisement.">Η πλατφόρμα είναι MIT Licensed — ελεύθερη για όλους. Κανένα subscription, κανένα paywall, κανένα advertisement.</p></div>
+
+  <!-- Chapter 12: Legal -->
+  <h2 class="fi" id="ch12"><span class="chapter-num">12</span> <span data-el="Νομικό Πλαίσιο" data-en="Legal Framework">Νομικό Πλαίσιο</span></h2>
+  <p class="fi" data-el="Η Ekklesia.gr λειτουργεί ως πλατφόρμα δημόσιας γνώμης (opinion platform) — δεν αποτελεί δεσμευτικό δημοψήφισμα." data-en="Ekklesia.gr operates as a public opinion platform — it does not constitute a binding referendum.">Η Ekklesia.gr λειτουργεί ως πλατφόρμα δημόσιας γνώμης (opinion platform) — δεν αποτελεί δεσμευτικό δημοψήφισμα.</p>
+  <ul class="fi">
+    <li data-el="Άδεια: MIT License — πλήρως ανοιχτός κώδικας" data-en="License: MIT License — fully open source">Άδεια: MIT License — πλήρως ανοιχτός κώδικας</li>
+    <li data-el="GDPR: Privacy by Design (Άρθρο 25) — κανένα PII αποθηκεύεται" data-en="GDPR: Privacy by Design (Article 25) — no PII stored">GDPR: Privacy by Design (Άρθρο 25) — κανένα PII αποθηκεύεται</li>
+    <li data-el="eIDAS: Μελλοντική ενσωμάτωση gov.gr OAuth (MOD-09)" data-en="eIDAS: Future gov.gr OAuth integration (MOD-09)">eIDAS: Μελλοντική ενσωμάτωση gov.gr OAuth (MOD-09)</li>
+    <li data-el="Ν. 4624/2019: Συμμόρφωση ελληνικής νομοθεσίας περί δεδομένων" data-en="Law 4624/2019: Compliance with Greek data protection law">Ν. 4624/2019: Συμμόρφωση ελληνικής νομοθεσίας περί δεδομένων</li>
+    <li data-el="Ν. 3852/2010 (Καλλικράτης): Βάση για MOD-16 δομή αυτοδιοίκησης" data-en="Law 3852/2010 (Kallikratis): Basis for MOD-16 governance structure">Ν. 3852/2010 (Καλλικράτης): Βάση για MOD-16 δομή αυτοδιοίκησης</li>
+  </ul>
+  <div class="wb fi"><p data-el="Η Ekklesia.gr δεν συλλέγει, δεν επεξεργάζεται και δεν αποθηκεύει προσωπικά δεδομένα. Η μόνη 'ταυτότητα' είναι ένα SHA256 hash." data-en="Ekklesia.gr does not collect, process, or store personal data. The only 'identity' is a SHA256 hash.">Η Ekklesia.gr δεν συλλέγει, δεν επεξεργάζεται και δεν αποθηκεύει προσωπικά δεδομένα. Η μόνη 'ταυτότητα' είναι ένα SHA256 hash.</p></div>
+
+  <!-- Chapter 13: References -->
+  <h2 class="fi" id="ch13"><span class="chapter-num">13</span> <span data-el="Αναφορές" data-en="References">Αναφορές</span></h2>
+  <ol class="fi">
+    <li>Eurobarometer 2024 — <em>Trust in National Parliaments</em>, European Commission</li>
+    <li>Bernstein, D.J. et al. — <em>Ed25519: High-speed high-security signatures</em>, 2012</li>
+    <li>GDPR — <em>Regulation (EU) 2016/679</em>, European Parliament</li>
+    <li>eIDAS — <em>Regulation (EU) No 910/2014</em>, Electronic Identification</li>
+    <li data-el="Ν. 4624/2019 — Ελληνικός Νόμος Προστασίας Δεδομένων" data-en="Law 4624/2019 — Greek Data Protection Law">Ν. 4624/2019 — Ελληνικός Νόμος Προστασίας Δεδομένων</li>
+    <li data-el="Ν. 3852/2010 (Καλλικράτης) — Νέα Αρχιτεκτονική Αυτοδιοίκησης" data-en="Law 3852/2010 (Kallikratis) — New Architecture of Local Government">Ν. 3852/2010 (Καλλικράτης) — Νέα Αρχιτεκτονική Αυτοδιοίκησης</li>
+    <li>Cosmos SDK — <em>Application-specific Blockchain Framework</em>, Interchain Foundation</li>
+    <li>Sasson, E.B. et al. — <em>Zerocash: Decentralized Anonymous Payments</em>, 2014</li>
+    <li>Sweeney, L. — <em>k-Anonymity: A Model for Protecting Privacy</em>, 2002</li>
+    <li>TrueRepublic — <em>Governance Blockchain for Direct Democracy</em>, Vendetta Labs, 2026</li>
+    <li>FastAPI — <em>Modern Python Web Framework</em>, Tiangolo, 2019</li>
+    <li>Next.js 14 — <em>React Framework for Production</em>, Vercel, 2024</li>
+    <li>PyNaCl — <em>Python Binding to libsodium</em>, 2013</li>
+  </ol>
+
+  <div class="ib fi"><p>📄 <a href="https://github.com/NeaBouli/pnyx" target="_blank" style="color:var(--blue);font-weight:700" data-el="Πηγαίος κώδικας στο GitHub →" data-en="Source code on GitHub →">Πηγαίος κώδικας στο GitHub →</a></p></div>
+
 </div>
+
 <footer>
   <p>εκκλησία · © 2026 Vendetta Labs · MIT ·
     <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a> ·
@@ -56,10 +290,11 @@
     <a href="../">Landing</a>
   </p>
 </footer>
+
 <script>
 let currentLang="el";
 function toggleLang(){currentLang=currentLang==="el"?"en":"el";document.getElementById("langFlag").textContent=currentLang==="el"?"🇬🇧":"🇬🇷";document.getElementById("langLabel").textContent=currentLang==="el"?"EN":"ΕΛ";document.querySelectorAll("[data-el]").forEach(el=>{const t=el.getAttribute("data-"+currentLang);if(t)el.innerHTML=t})}
 const obs=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add("visible")})},{threshold:0.1});
-document.querySelectorAll(".fade-in,.fi").forEach(el=>obs.observe(el));
+document.querySelectorAll(".fi").forEach(el=>obs.observe(el));
 </script>
 </body></html>

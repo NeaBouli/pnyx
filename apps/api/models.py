@@ -224,7 +224,7 @@ class SurveyResponse(Base):
     )
 
 
-# ─── MOD-16: Municipal Governance ─────────────────────────────────────────────
+# ─── MOD-16: Municipal Governance ────────────────────────────────────────────
 
 class GovernanceLevel(str, PyEnum):
     NATIONAL   = "NATIONAL"
@@ -234,57 +234,83 @@ class GovernanceLevel(str, PyEnum):
 
 
 class Periferia(Base):
+    """Περιφέρειες Ελλάδας (13 + Άγιο Όρος)"""
     __tablename__ = "periferia"
-    id        = Column(Integer, primary_key=True)
-    name_el   = Column(String(100), nullable=False)
-    name_en   = Column(String(100), nullable=True)
-    code      = Column(String(10), unique=True, nullable=False)
-    is_active = Column(Boolean, default=True)
+
+    id         = Column(Integer, primary_key=True)
+    name_el    = Column(String(100), nullable=False)
+    name_en    = Column(String(100), nullable=True)
+    code       = Column(String(10), unique=True, nullable=False)   # e.g. GR-ATT
+    is_active  = Column(Boolean, default=True)
+
+    __table_args__ = (
+        Index("idx_periferia_code", "code"),
+    )
 
 
 class Dimos(Base):
+    """Δήμοι Ελλάδας (~332)"""
     __tablename__ = "dimos"
-    id           = Column(Integer, primary_key=True)
-    name_el      = Column(String(100), nullable=False)
-    name_en      = Column(String(100), nullable=True)
-    periferia_id = Column(Integer, ForeignKey("periferia.id"), nullable=False)
-    population   = Column(Integer, nullable=True)
-    is_active    = Column(Boolean, default=True)
-    __table_args__ = (Index("idx_dimos_periferia", "periferia_id"),)
+
+    id            = Column(Integer, primary_key=True)
+    name_el       = Column(String(100), nullable=False)
+    name_en       = Column(String(100), nullable=True)
+    periferia_id  = Column(Integer, ForeignKey("periferia.id", ondelete="CASCADE"), nullable=False)
+    population    = Column(Integer, nullable=True)
+    is_active     = Column(Boolean, default=True)
+
+    __table_args__ = (
+        Index("idx_dimos_periferia", "periferia_id"),
+    )
 
 
 class Community(Base):
+    """Κοινότητες / Δημοτικές Ενότητες"""
     __tablename__ = "communities"
-    id       = Column(Integer, primary_key=True)
-    name_el  = Column(String(100), nullable=False)
-    name_en  = Column(String(100), nullable=True)
-    dimos_id = Column(Integer, ForeignKey("dimos.id"), nullable=False)
-    is_active = Column(Boolean, default=True)
+
+    id         = Column(Integer, primary_key=True)
+    name_el    = Column(String(100), nullable=False)
+    name_en    = Column(String(100), nullable=True)
+    dimos_id   = Column(Integer, ForeignKey("dimos.id", ondelete="CASCADE"), nullable=False)
+    is_active  = Column(Boolean, default=True)
+
+    __table_args__ = (
+        Index("idx_community_dimos", "dimos_id"),
+    )
 
 
 class Decision(Base):
+    """
+    Αποφάσεις σε όλα τα επίπεδα διακυβέρνησης (MOD-16).
+    Αντίστοιχο του ParliamentBill αλλά για τοπική αυτοδιοίκηση.
+    """
     __tablename__ = "decisions"
-    id               = Column(String(60), primary_key=True)
-    title_el         = Column(Text, nullable=False)
-    title_en         = Column(Text, nullable=True)
-    pill_el          = Column(String(200), nullable=True)
-    pill_en          = Column(String(200), nullable=True)
-    summary_short_el = Column(Text, nullable=True)
-    summary_short_en = Column(Text, nullable=True)
-    level            = Column(Enum(GovernanceLevel), nullable=False, default=GovernanceLevel.NATIONAL)
-    periferia_id     = Column(Integer, ForeignKey("periferia.id"), nullable=True)
-    dimos_id         = Column(Integer, ForeignKey("dimos.id"), nullable=True)
-    community_id     = Column(Integer, ForeignKey("communities.id"), nullable=True)
-    categories       = Column(JSONB, nullable=True)
-    authority_votes  = Column(JSONB, nullable=True)
-    status           = Column(Enum(BillStatus), default=BillStatus.ANNOUNCED, nullable=False)
-    vote_date        = Column(DateTime, nullable=True)
-    status_changed_at = Column(DateTime, nullable=True)
-    created_at       = Column(DateTime, default=datetime.utcnow)
-    updated_at       = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    id                = Column(Integer, primary_key=True)
+    title_el          = Column(Text, nullable=False)
+    title_en          = Column(Text, nullable=True)
+    pill_el           = Column(String(200), nullable=True)      # 1 Satz, max 15 Wörter
+    pill_en           = Column(String(200), nullable=True)
+    summary_short_el  = Column(Text, nullable=True)             # 3 Absätze
+    summary_short_en  = Column(Text, nullable=True)
+
+    level             = Column(Enum(GovernanceLevel), nullable=False, default=GovernanceLevel.MUNICIPAL)
+    periferia_id      = Column(Integer, ForeignKey("periferia.id"), nullable=True)
+    dimos_id          = Column(Integer, ForeignKey("dimos.id"), nullable=True)
+    community_id      = Column(Integer, ForeignKey("communities.id"), nullable=True)
+
+    categories        = Column(JSONB, nullable=True)            # ["Περιβάλλον", ...]
+    authority_votes   = Column(JSONB, nullable=True)            # {"ΝΑΙ": 15, "ΟΧΙ": 8}
+    status            = Column(Enum(BillStatus), default=BillStatus.ANNOUNCED, nullable=False)
+    vote_date         = Column(DateTime, nullable=True)
+
+    created_at        = Column(DateTime, default=datetime.utcnow)
+    updated_at        = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
     __table_args__ = (
         Index("idx_decisions_level", "level"),
         Index("idx_decisions_status", "status"),
         Index("idx_decisions_periferia", "periferia_id"),
         Index("idx_decisions_dimos", "dimos_id"),
+        Index("idx_decisions_vote_date", "vote_date"),
     )

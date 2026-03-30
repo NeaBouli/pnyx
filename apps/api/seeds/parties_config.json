@@ -1,13 +1,90 @@
 {
   "version": "2026-03",
   "parties": [
-    {"id":1,"name_el":"Νέα Δημοκρατία","name_en":"New Democracy","abbreviation":"ΝΔ","color_hex":"#1E90FF","description_el":"Κεντροδεξιά παράταξη, κυβερνών κόμμα.","description_en":"Centre-right governing party.","is_active":true},
-    {"id":2,"name_el":"ΣΥΡΙΖΑ - Προοδευτική Συμμαχία","name_en":"SYRIZA","abbreviation":"ΣΥΡΙΖΑ","color_hex":"#C0392B","description_el":"Αριστερή παράταξη.","description_en":"Left-wing party.","is_active":true},
-    {"id":3,"name_el":"ΠΑΣΟΚ - Κίνημα Αλλαγής","name_en":"PASOK","abbreviation":"ΠΑΣΟΚ","color_hex":"#27AE60","description_el":"Κεντροαριστερή παράταξη.","description_en":"Centre-left party.","is_active":true},
-    {"id":4,"name_el":"Κομμουνιστικό Κόμμα Ελλάδας","name_en":"Communist Party","abbreviation":"ΚΚΕ","color_hex":"#8E44AD","description_el":"Κομμουνιστικό κόμμα.","description_en":"Communist party.","is_active":true},
-    {"id":5,"name_el":"Ελληνική Λύση","name_en":"Greek Solution","abbreviation":"ΕΛ","color_hex":"#E67E22","description_el":"Εθνικιστική παράταξη.","description_en":"Nationalist party.","is_active":true},
-    {"id":6,"name_el":"ΝΙΚΗ","name_en":"NIKI","abbreviation":"ΝΙΚΗ","color_hex":"#2C3E50","description_el":"Χριστιανοδημοκρατική παράταξη.","description_en":"Christian democratic party.","is_active":true},
-    {"id":7,"name_el":"Πλεύση Ελευθερίας","name_en":"Course of Freedom","abbreviation":"ΠΛ","color_hex":"#16A085","description_el":"Αριστερή παράταξη.","description_en":"Left party.","is_active":true},
-    {"id":8,"name_el":"Σπαρτιάτες","name_en":"Spartans","abbreviation":"ΣΠΑΡΤ","color_hex":"#922B21","description_el":"Ακροδεξιά παράταξη.","description_en":"Far-right party.","is_active":true}
-  ]
+    {
+      "id": 1,
+      "name_el": "Νέα Δημοκρατία",
+      "name_en": "New Democracy",
+      "abbreviation": "ΝΔ",
+      "color_hex": "#0056A0",
+      "description_el": "Κεντροδεξιά φιλελεύθερη-συντηρητική παράταξη. Κυβερνών κόμμα.",
+      "description_en": "Centre-right liberal-conservative party. Governing party.",
+      "is_active": true
+    },
+    {
+      "id": 2,
+      "name_el": "ΣΥΡΙΖΑ – Προοδευτική Συμμαχία",
+      "name_en": "SYRIZA – Progressive Alliance",
+      "abbreviation": "ΣΥΡΙΖΑ",
+      "color_hex": "#E30B20",
+      "description_el": "Αριστερή παράταξη. Αξιωματική αντιπολίτευση.",
+      "description_en": "Left-wing party. Official opposition.",
+      "is_active": true
+    },
+    {
+      "id": 3,
+      "name_el": "ΠΑΣΟΚ – Κίνημα Αλλαγής",
+      "name_en": "PASOK – Movement for Change",
+      "abbreviation": "ΠΑΣΟΚ",
+      "color_hex": "#22B14C",
+      "description_el": "Κεντροαριστερή σοσιαλδημοκρατική παράταξη.",
+      "description_en": "Centre-left social democratic party.",
+      "is_active": true
+    },
+    {
+      "id": 4,
+      "name_el": "Κομμουνιστικό Κόμμα Ελλάδας",
+      "name_en": "Communist Party of Greece",
+      "abbreviation": "ΚΚΕ",
+      "color_hex": "#D71920",
+      "description_el": "Μαρξιστικό-λενινιστικό κομμουνιστικό κόμμα.",
+      "description_en": "Marxist-Leninist communist party.",
+      "is_active": true
+    },
+    {
+      "id": 5,
+      "name_el": "Ελληνική Λύση",
+      "name_en": "Greek Solution",
+      "abbreviation": "ΕΛ",
+      "color_hex": "#0072CE",
+      "description_el": "Δεξιά εθνικιστική-συντηρητική παράταξη.",
+      "description_en": "Right-wing nationalist-conservative party.",
+      "is_active": true
+    },
+    {
+      "id": 6,
+      "name_el": "ΝΙΚΗ",
+      "name_en": "NIKI",
+      "abbreviation": "ΝΙΚΗ",
+      "color_hex": "#1B3A6B",
+      "description_el": "Συντηρητική χριστιανοδημοκρατική παράταξη.",
+      "description_en": "Conservative Christian-democratic party.",
+      "is_active": true
+    },
+    {
+      "id": 7,
+      "name_el": "Πλεύση Ελευθερίας",
+      "name_en": "Course of Freedom",
+      "abbreviation": "ΠΛ",
+      "color_hex": "#FF6B00",
+      "description_el": "Αριστερή αντισυστημική παράταξη.",
+      "description_en": "Left-wing anti-establishment party.",
+      "is_active": true
+    },
+    {
+      "id": 8,
+      "name_el": "Σπαρτιάτες",
+      "name_en": "Spartans",
+      "abbreviation": "ΣΠΑΡΤ",
+      "color_hex": "#8B0000",
+      "description_el": "Ακροδεξιά εθνικιστική παράταξη.",
+      "description_en": "Far-right nationalist party.",
+      "is_active": true
+    }
+  ],
+  "instructions": {
+    "add": "Προσθέστε νέο αντικείμενο στο parties array με μοναδικό id, όλα τα πεδία συμπληρωμένα. Εκτελέστε seed_parties.py για εισαγωγή.",
+    "remove": "Ορίστε is_active: false στο κόμμα που θέλετε να απενεργοποιήσετε. ΜΗΝ διαγράφετε — soft delete μόνο. Εκτελέστε seed_parties.py.",
+    "update": "Ενημερώστε τα πεδία του κόμματος στο JSON. Εκτελέστε seed_parties.py — θα κάνει upsert (ενημέρωση αν υπάρχει, εισαγωγή αν δεν υπάρχει)."
+  }
 }
