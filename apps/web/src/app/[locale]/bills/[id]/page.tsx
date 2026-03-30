@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useLocale } from "next-intl";
 import Link from "next/link";
 import { ekklesia, Bill, BillResults } from "@/lib/api";
+import { loadKeypair, loadNullifier, signVote } from "@/lib/crypto";
 import StatusBadge from "@/components/StatusBadge";
 import DivergenceCard from "@/components/DivergenceCard";
 
@@ -24,8 +25,10 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
   const [results, setResults]   = useState<BillResults | null>(null);
   const [loading, setLoading]   = useState(true);
   const [expanded, setExpanded] = useState<"short" | "long">("short");
-  const [voteStatus, setVoteStatus] = useState<"idle" | "needs_key" | "voted" | "error">("idle");
+  const [voteStatus, setVoteStatus] = useState<"idle" | "needs_key" | "voted" | "already" | "invalid_sig" | "error">("idle");
   const [selectedVote, setSelectedVote] = useState<string | null>(null);
+  const [voteLoading, setVoteLoading] = useState(false);
+  const [voteError, setVoteError] = useState<string | null>(null);
 
   const titleKey = locale === "el" ? "title_el" : "title_en";
   const shortKey = locale === "el" ? "summary_short_el" : "summary_short_en";
@@ -40,19 +43,64 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
     }).catch(() => {}).finally(() => setLoading(false));
   }, [billId]);
 
-  function handleVoteClick(choice: string) {
-    const key = typeof window !== "undefined"
-      ? localStorage.getItem("ekklesia_nullifier_hash")
-      : null;
+  async function handleVoteClick(choice: string) {
+    // 1. Check keypair
+    const keypair = loadKeypair();
+    const nullifier = loadNullifier();
 
-    if (!key) {
+    if (!keypair || !nullifier) {
       setVoteStatus("needs_key");
       setSelectedVote(choice);
       return;
     }
-    // TODO: echte Ed25519 Signatur + API call
+
+    // 2. Sign vote with Ed25519
+    setVoteLoading(true);
+    setVoteError(null);
     setSelectedVote(choice);
-    setVoteStatus("voted");
+
+    try {
+      const signatureHex = signVote(keypair.privateKeyHex, {
+        bill_id: billId,
+        vote: choice,
+        nullifier_hash: nullifier,
+      });
+
+      // 3. POST to API
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${API_URL}/api/v1/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nullifier_hash: nullifier,
+          bill_id: billId,
+          vote: choice,
+          signature_hex: signatureHex,
+        }),
+      });
+
+      if (res.ok) {
+        setVoteStatus("voted");
+        // 4. Refresh results
+        try {
+          const resultsRes = await ekklesia.getResults(billId);
+          setResults(resultsRes.data);
+        } catch { /* results refresh optional */ }
+      } else if (res.status === 409) {
+        setVoteStatus("already");
+      } else if (res.status === 401) {
+        setVoteStatus("invalid_sig");
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setVoteError(err.detail || `Error ${res.status}`);
+        setVoteStatus("error");
+      }
+    } catch (err) {
+      setVoteError(err instanceof Error ? err.message : "Network error");
+      setVoteStatus("error");
+    } finally {
+      setVoteLoading(false);
+    }
   }
 
   if (loading) {
@@ -155,13 +203,16 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
                 <button
                   key={opt.value}
                   onClick={() => handleVoteClick(opt.value)}
+                  disabled={voteLoading || voteStatus === "voted"}
                   className={`py-4 px-4 rounded-xl font-semibold border-2 transition-all ${opt.color} ${
                     selectedVote === opt.value
                       ? "ring-2 ring-white scale-105"
                       : "opacity-80"
-                  }`}
+                  } ${(voteLoading || voteStatus === "voted") ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
-                  {locale === "el" ? opt.label_el : opt.label_en}
+                  {voteLoading && selectedVote === opt.value
+                    ? (locale === "el" ? "Υπογραφή..." : "Signing...")
+                    : (locale === "el" ? opt.label_el : opt.label_en)}
                 </button>
               ))}
             </div>
@@ -186,8 +237,30 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
             {voteStatus === "voted" && (
               <div className="bg-green-900/50 border border-green-700 rounded-xl p-4 text-green-300 text-sm">
                 ✓ {locale === "el"
-                  ? `Ψήφος "${selectedVote}" καταγράφηκε. (Demo — Ed25519 signing TODO)`
-                  : `Vote "${selectedVote}" recorded. (Demo — Ed25519 signing TODO)`}
+                  ? `Ψήφος "${selectedVote}" καταγράφηκε με Ed25519 υπογραφή.`
+                  : `Vote "${selectedVote}" recorded with Ed25519 signature.`}
+              </div>
+            )}
+
+            {voteStatus === "already" && (
+              <div className="bg-yellow-900/50 border border-yellow-700 rounded-xl p-4 text-yellow-300 text-sm">
+                {locale === "el"
+                  ? "Έχετε ήδη ψηφίσει για αυτό το νομοσχέδιο."
+                  : "You have already voted on this bill."}
+              </div>
+            )}
+
+            {voteStatus === "invalid_sig" && (
+              <div className="bg-red-900/50 border border-red-700 rounded-xl p-4 text-red-300 text-sm">
+                {locale === "el"
+                  ? "Μη έγκυρη υπογραφή. Δοκιμάστε νέα επαλήθευση."
+                  : "Invalid signature. Try re-verifying."}
+              </div>
+            )}
+
+            {voteStatus === "error" && voteError && (
+              <div className="bg-red-900/50 border border-red-700 rounded-xl p-4 text-red-300 text-sm">
+                {voteError}
               </div>
             )}
 
