@@ -43,11 +43,11 @@ footer{background:var(--gray-900);color:#94a3b8;padding:1.5rem;text-align:center
 <nav>
   <a href="../" class="nl"><img src="../pnx.png" alt="logo"/>εκκλησία</a>
   <div class="nk">
-    <a href="../" data-el="Landing" data-en="Landing">Landing</a>
+    <a href="../" data-el="Αρχική" data-en="Home">Αρχική</a>
     <a href="../wiki/" data-el="Wiki" data-en="Wiki">Wiki</a>
-    <a href="active.html" data-el="Τρέχουσες" data-en="Active" id="navActive">Τρέχουσες</a>
-    <a href="recent.html" data-el="24 Ώρες" data-en="24 Hours" id="navRecent">24 Ώρες</a>
-    <a href="results.html" data-el="Αποτελέσματα" data-en="Results" id="navResults" class="ac">Αποτελέσματα</a>
+    <a href="active.html" data-el="🟢 Τρέχουσες" data-en="🟢 Active">🟢 Τρέχουσες</a>
+    <a href="recent.html" data-el="🕐 24ω" data-en="🕐 24h">🕐 24ω</a>
+    <a href="results.html" class="ac" data-el="✅ Αποτελέσματα" data-en="✅ Results">✅ Αποτελέσματα</a>
     <button class="lb" onclick="toggleLang()"><span id="langFlag">🇬🇧</span> <span id="langLabel">EN</span></button>
   </div>
 </nav>
@@ -95,7 +95,7 @@ footer{background:var(--gray-900);color:#94a3b8;padding:1.5rem;text-align:center
     <div class="pn"><button class="pb" onclick="prev()" id="pb" disabled>◀</button><span class="pi" id="pi">1/1</span><button class="pb" onclick="next()" id="nb" disabled>▶</button></div>
   </div>
 </div>
-<footer><p>εκκλησία · © 2026 Vendetta Labs · MIT · <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a> · <a href="../wiki/">Wiki</a> · <a href="../">Landing</a></p></footer>
+<footer><div style="display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem 1.5rem;margin-bottom:.75rem"><a href="../">Αρχική</a><a href="../wiki/">Wiki</a><a href="active.html">🟢 Τρέχουσες</a><a href="recent.html">🕐 24ω</a><a href="results.html">✅ Αποτελέσματα</a><a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a></div><p>εκκλησία · © 2026 Vendetta Labs · MIT</p></footer>
 <script>
 let currentLang="el";
 function toggleLang(){currentLang=currentLang==="el"?"en":"el";document.getElementById("langFlag").textContent=currentLang==="el"?"🇬🇧":"🇬🇷";document.getElementById("langLabel").textContent=currentLang==="el"?"EN":"ΕΛ";document.querySelectorAll("[data-el]").forEach(el=>{const t=el.getAttribute("data-"+currentLang);if(t)el.innerHTML=t})}

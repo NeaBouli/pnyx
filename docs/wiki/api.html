@@ -10,16 +10,13 @@
 <nav>
   <a href="../" class="nav-logo"><img src="../pnx.png" alt="logo"/>εκκλησία</a>
   <div class="nav-links">
-    <a href="index.html" data-el="Wiki Home" data-en="Wiki Home">Wiki Home</a>
+    <a href="index.html" data-el="Wiki" data-en="Wiki">Wiki</a>
     <a href="architecture.html" data-el="Αρχιτεκτονική" data-en="Architecture">Αρχιτεκτονική</a>
     <a href="security.html" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</a>
-    <a href="api.html" class="active" data-el="API" data-en="API">API</a>
-    <a href="modules.html" data-el="Modules" data-en="Modules">Modules</a>
-    <a href="roadmap.html" data-el="Roadmap" data-en="Roadmap">Roadmap</a>
-    <a href="privacy.html" data-el="Ιδιωτικότητα" data-en="Privacy">Ιδιωτικότητα</a>
-    <a href="database.html" data-el="Database" data-en="Database">Database</a>
-    <a href="contributing.html" data-el="Συνεισφορά" data-en="Contributing">Συνεισφορά</a>
-    <a href="whitepaper.html" data-el="Whitepaper" data-en="Whitepaper">Whitepaper</a>
+    <a href="api.html" class="active">API</a>
+    <a href="modules.html">Modules</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="../votes/active.html" data-el="🗳️ Ψηφοφορίες" data-en="🗳️ Votes" style="color:#16a34a;font-weight:700">🗳️ Ψηφοφορίες</a>
     <button class="lang-btn" onclick="toggleLang()"><span id="langFlag">🇬🇧</span> <span id="langLabel">EN</span></button>
   </div>
 </nav>
@@ -80,13 +77,7 @@
   "divergence": { "score": 0.587, "label_el": "Έντονη Απόκλιση" } }</div>
 
 </div>
-<footer>
-  <p>εκκλησία · © 2026 Vendetta Labs · MIT ·
-    <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a> ·
-    <a href="index.html">Wiki Home</a> ·
-    <a href="../">Landing</a>
-  </p>
-</footer>
+<footer><div style="display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem 1.5rem;margin-bottom:.75rem"><a href="../">Landing</a><a href="index.html">Wiki</a><a href="../votes/active.html">🟢 Ψηφοφορίες</a><a href="../votes/recent.html">🕐 24ω</a><a href="../votes/results.html">✅ Αποτελέσματα</a><a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a></div><p>εκκλησία · © 2026 Vendetta Labs · MIT</p></footer>
 <script>
 let currentLang="el";
 function toggleLang(){currentLang=currentLang==="el"?"en":"el";document.getElementById("langFlag").textContent=currentLang==="el"?"🇬🇧":"🇬🇷";document.getElementById("langLabel").textContent=currentLang==="el"?"EN":"ΕΛ";document.querySelectorAll("[data-el]").forEach(el=>{const t=el.getAttribute("data-"+currentLang);if(t)el.innerHTML=t})}
