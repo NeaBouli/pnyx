@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="el" data-lang="el">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Wiki — εκκλησία Wiki — εκκλησία</title>
+  <link rel="icon" type="image/png" href="../pnx.png"/>
+
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-d: #1d4ed8;
+      --blue-l: #eff6ff;
+      --gray-900: #0f172a;
+      --gray-700: #334155;
+      --gray-500: #64748b;
+      --gray-400: #94a3b8;
+      --gray-100: #f1f5f9;
+      --white: #ffffff;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --purple: #a855f7;
+      --radius: 1rem;
+      --shadow: 0 4px 24px rgba(37,99,235,0.10);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--white);
+      color: var(--gray-900);
+      line-height: 1.6;
+    }
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid #e2e8f0;
+      padding: 0.75rem 1.5rem;
+      display: flex; justify-content: space-between;
+      align-items: center; flex-wrap: wrap; gap: 0.5rem;
+    }
+    .nav-logo {
+      font-size: 1.25rem; font-weight: 900; color: var(--blue);
+      text-decoration: none; display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;
+    }
+    .nav-logo img { width: 40px; height: 40px; object-fit: contain; }
+    .nav-links { display: flex; gap: 0.15rem; align-items: center; flex-wrap: wrap; }
+    .nav-links a {
+      padding: 0.3rem 0.7rem; border-radius: 0.4rem;
+      color: var(--gray-700); text-decoration: none;
+      font-size: 0.82rem; font-weight: 500;
+      transition: all 0.2s; white-space: nowrap;
+    }
+    .nav-links a:hover, .nav-links a.active {
+      background: var(--blue-l); color: var(--blue);
+    }
+    .lang-btn {
+      cursor: pointer; border: 2px solid #e2e8f0;
+      background: var(--white); border-radius: 0.4rem;
+      padding: 0.22rem 0.55rem; font-size: 0.75rem;
+      font-weight: 700; color: var(--gray-700);
+      transition: all 0.2s; margin-left: 0.3rem;
+    }
+    .lang-btn:hover { border-color: var(--blue); color: var(--blue); }
+    /* FOOTER */
+    footer {
+      background: var(--gray-900); color: var(--gray-400);
+      padding: 2rem 1.5rem; text-align: center;
+      font-size: 0.82rem; margin-top: 4rem;
+    }
+    .footer-links {
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 0.3rem 1rem; margin-bottom: 0.75rem;
+    }
+    footer a { color: var(--gray-500); text-decoration: none; }
+    footer a:hover { color: var(--white); }
+    /* COMMON */
+    .layout { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+    .layout-wide { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+    h2 { font-size: 1.4rem; font-weight: 900; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0; }
+    h2:first-child { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 800; margin: 1.25rem 0 0.5rem; color: var(--blue); }
+    p { color: var(--gray-700); margin-bottom: 1rem; line-height: 1.8; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { color: var(--gray-700); margin-bottom: 0.4rem; line-height: 1.7; }
+    .hero {
+      padding: 4rem 2rem; text-align: center;
+      background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 50%, #fefce8 100%);
+    }
+    .hero h1 { font-size: clamp(1.8rem,5vw,3rem); font-weight: 900; margin-bottom: 0.75rem; }
+    .hero p { color: var(--gray-700); max-width: 640px; margin: 0 auto 1.5rem; font-size: 1.05rem; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--blue); text-decoration: none; font-weight: 600; font-size: 0.88rem;
+    }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .card {
+      background: var(--gray-100); border-radius: var(--radius);
+      padding: 1.25rem; border: 2px solid #e2e8f0;
+      transition: all 0.2s; text-decoration: none; color: inherit; display: block;
+    }
+    .card:hover { border-color: var(--blue); transform: translateY(-2px); box-shadow: var(--shadow); }
+    .card-icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+    .card h4 { font-weight: 800; margin-bottom: 0.25rem; font-size: 0.9rem; }
+    .card p { font-size: 0.78rem; color: var(--gray-400); margin: 0; }
+    .badge {
+      display: inline-block; padding: 0.15rem 0.55rem; border-radius: 1rem;
+      font-size: 0.7rem; font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-yellow { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-purple { background: #ede9fe; color: #5b21b6; }
+    .badge-gray { background: var(--gray-100); color: var(--gray-500); }
+    .info-box { background: var(--blue-l); border-left: 4px solid var(--blue); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .info-box p { margin: 0; }
+    .warn-box { background: #fefce8; border-left: 4px solid var(--yellow); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .warn-box p { margin: 0; }
+    .success-box { background: #f0fdf4; border-left: 4px solid var(--green); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .success-box p { margin: 0; }
+    .code-block {
+      background: var(--gray-900); color: #e2e8f0;
+      border-radius: var(--radius); padding: 1.25rem;
+      font-family: "Courier New", monospace; font-size: 0.8rem;
+      overflow-x: auto; margin: 1rem 0; line-height: 1.7; white-space: pre;
+    }
+    .code-c { color: #64748b; }
+    .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    th { background: var(--gray-900); color: white; padding: 0.65rem 1rem; text-align: left; font-weight: 700; }
+    td { padding: 0.65rem 1rem; border-bottom: 1px solid #e2e8f0; color: var(--gray-700); }
+    tr:hover td { background: var(--gray-100); }
+    .flow { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; padding: 1rem; background: var(--gray-100); border-radius: var(--radius); margin: 1rem 0; }
+    .fnode { background: white; border-radius: 0.5rem; padding: 0.4rem 0.9rem; font-size: 0.78rem; font-weight: 700; border: 2px solid #e2e8f0; }
+    .fnode-g { border-color: var(--green); background: #f0fdf4; color: #166534; }
+    .fnode-b { border-color: var(--blue); background: var(--blue-l); color: var(--blue-d); }
+    .fnode-y { border-color: var(--yellow); background: #fefce8; color: #92400e; }
+    .fnode-p { border-color: var(--purple); background: #faf5ff; color: #6b21a8; }
+    .farr { color: var(--blue); font-weight: 900; }
+    .fade-in { opacity: 0; transform: translateY(14px); transition: all 0.5s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+    @media (max-width: 640px) { .nav-links a { font-size: 0.75rem; padding: 0.22rem 0.45rem; } }
+  </style>
+
+
+</head>
+<body>
+<nav>
+  <a href="../" class="nav-logo">
+    <img src="../pnx.png" alt="logo"/>εκκλησία
+  </a>
+  <div class="nav-links">
+    <a href="../" data-el="Αρχική" data-en="Home">Αρχική</a>
+    <a href="../votes/active.html" data-el="Ψηφοφορίες" data-en="Votes">Ψηφοφορίες</a>
+    <a href="../wiki/" class="active" data-el="Wiki" data-en="Wiki">Wiki</a>
+    <a href="../community.html" data-el="Community" data-en="Community">Community</a>
+    <button class="lang-btn" onclick="toggleLang()">
+      <span id="langFlag">EN</span>
+    </button>
+  </div>
+</nav>
+<div class="hero" style="background:linear-gradient(135deg,#eff6ff,#f0fdf4)">
+  <h1 data-el="Wiki" data-en="Wiki">Wiki</h1>
+  <a href="../" class="back-link" data-el="← Αρχική" data-en="← Home">← Αρχική</a>
+</div>
+<div class="layout">
+
+  <h2 class="fade-in" data-el="Σελίδες Wiki" data-en="Wiki Pages">Σελίδες Wiki</h2>
+  <div class="card-grid fade-in">
+    <a href="architecture.html" class="card"><div class="card-icon">🏗️</div><h4 data-el="Αρχιτεκτονική" data-en="Architecture">Αρχιτεκτονική</h4><p>Stack, Monorepo, Bill Lifecycle</p></a>
+    <a href="security.html"     class="card"><div class="card-icon">🔐</div><h4 data-el="Ασφάλεια" data-en="Security">Ασφάλεια</h4><p>Ed25519, Nullifier, ZK</p></a>
+    <a href="api.html"          class="card"><div class="card-icon">⚡</div><h4>API</h4><p>16 Endpoints, Schemas</p></a>
+    <a href="modules.html"      class="card"><div class="card-icon">🧩</div><h4>Modules</h4><p>MOD-01 — MOD-16</p></a>
+    <a href="roadmap.html"      class="card"><div class="card-icon">🗺️</div><h4>Roadmap</h4><p>Beta → Alpha → V2</p></a>
+    <a href="privacy.html"      class="card"><div class="card-icon">🛡️</div><h4 data-el="Ιδιωτικότητα" data-en="Privacy">Ιδιωτικότητα</h4><p>GDPR, k-Anonymity</p></a>
+    <a href="database.html"     class="card"><div class="card-icon">🗄️</div><h4>Database</h4><p data-el="13 Πίνακες, Schema" data-en="13 Tables, Schema">13 Πίνακες, Schema</p></a>
+    <a href="contributing.html" class="card"><div class="card-icon">🤝</div><h4>Contributing</h4><p data-el="Setup, Tests, Commits" data-en="Setup, Tests, Commits">Setup, Tests, Commits</p></a>
+    <a href="whitepaper.html"   class="card"><div class="card-icon">📄</div><h4>Whitepaper</h4><p data-el="Λευκό Βιβλίο v1.0" data-en="Technical Whitepaper v1.0">Λευκό Βιβλίο v1.0</p></a>
+  </div>
+
+  <h2 class="fade-in" data-el="Γρήγορη Εκκίνηση" data-en="Quick Start">Γρήγορη Εκκίνηση</h2>
+  <div class="code-block fade-in"><span class="code-c"># Clone</span>
+git clone https://github.com/NeaBouli/pnyx && cd pnyx
+
+<span class="code-c"># Services</span>
+cd infra/docker && docker compose up -d
+
+<span class="code-c"># Database</span>
+cd ../../apps/api && pip install -r requirements.txt
+alembic upgrade head && python seeds/seed.py
+
+<span class="code-c"># API → http://localhost:8000/docs</span>
+uvicorn main:app --reload
+
+<span class="code-c"># Web → http://localhost:3000</span>
+cd ../web && npm install && npm run dev</div>
+
+  <h2 class="fade-in" data-el="Bill Lifecycle" data-en="Bill Lifecycle">Bill Lifecycle</h2>
+  <div class="flow fade-in">
+    <div class="fnode" data-el="ANNOUNCED" data-en="ANNOUNCED">ANNOUNCED</div>
+    <div class="farr">→</div>
+    <div class="fnode fnode-g" data-el="ACTIVE" data-en="ACTIVE">ACTIVE</div>
+    <div class="farr">→</div>
+    <div class="fnode fnode-y" data-el="WINDOW_24H" data-en="WINDOW_24H">WINDOW_24H</div>
+    <div class="farr">→</div>
+    <div class="fnode fnode-b" data-el="PARLIAMENT_VOTED" data-en="PARLIAMENT_VOTED">PARLIAMENT_VOTED</div>
+    <div class="farr">→</div>
+    <div class="fnode fnode-p" data-el="OPEN_END" data-en="OPEN_END">OPEN_END</div>
+  </div>
+
+  <h2 class="fade-in" data-el="Στατιστικά" data-en="Stats">Στατιστικά</h2>
+  <div class="card-grid fade-in" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">
+    <div class="card" style="text-align:center"><div style="font-size:2rem;font-weight:900;color:var(--blue)">16</div><div style="font-size:0.78rem;color:var(--gray-400)">API Endpoints</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:2rem;font-weight:900;color:var(--green)">44</div><div style="font-size:0.78rem;color:var(--gray-400)">Tests ✅</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:2rem;font-weight:900;color:var(--purple)">13</div><div style="font-size:0.78rem;color:var(--gray-400)" data-el="DB Πίνακες" data-en="DB Tables">DB Πίνακες</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:2rem;font-weight:900;color:var(--yellow)">50+</div><div style="font-size:0.78rem;color:var(--gray-400)">Commits</div></div>
+  </div>
+
+</div>
+<footer>
+  <div class="footer-links">
+    <a href="..//">Αρχική</a>
+    <a href="../wiki/">Wiki</a>
+    <a href="../votes/active.html" data-el="Τρέχουσες" data-en="Active">Τρέχουσες</a>
+    <a href="../votes/recent.html" data-el="24 Ώρες" data-en="24 Hours">24 Ώρες</a>
+    <a href="../votes/results.html" data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</a>
+    <a href="../community.html">Community</a>
+    <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>
+  </div>
+  <p>εκκλησία &middot; &copy; 2026 Vendetta Labs &middot; MIT License</p>
+</footer>
+
+<script>
+var currentLang = "el";
+function toggleLang() {
+  currentLang = currentLang === "el" ? "en" : "el";
+  document.getElementById("langFlag").textContent = currentLang === "el" ? "EN" : "ΕΛ";
+  document.querySelectorAll("[data-el]").forEach(function(el) {
+    var t = el.getAttribute("data-" + currentLang);
+    if (t) el.innerHTML = t;
+  });
+}
+var obs = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add("visible"); });
+}, { threshold: 0.1 });
+document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); });
+</script>
+
+
+</body>
+</html>

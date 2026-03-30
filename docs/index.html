@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="el" data-lang="el">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>εκκλησία — Ψηφιακή Άμεση Δημοκρατία — εκκλησία</title>
+  <link rel="icon" type="image/png" href="pnx.png"/>
+
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-d: #1d4ed8;
+      --blue-l: #eff6ff;
+      --gray-900: #0f172a;
+      --gray-700: #334155;
+      --gray-500: #64748b;
+      --gray-400: #94a3b8;
+      --gray-100: #f1f5f9;
+      --white: #ffffff;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --purple: #a855f7;
+      --radius: 1rem;
+      --shadow: 0 4px 24px rgba(37,99,235,0.10);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--white);
+      color: var(--gray-900);
+      line-height: 1.6;
+    }
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid #e2e8f0;
+      padding: 0.75rem 1.5rem;
+      display: flex; justify-content: space-between;
+      align-items: center; flex-wrap: wrap; gap: 0.5rem;
+    }
+    .nav-logo {
+      font-size: 1.25rem; font-weight: 900; color: var(--blue);
+      text-decoration: none; display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;
+    }
+    .nav-logo img { width: 40px; height: 40px; object-fit: contain; }
+    .nav-links { display: flex; gap: 0.15rem; align-items: center; flex-wrap: wrap; }
+    .nav-links a {
+      padding: 0.3rem 0.7rem; border-radius: 0.4rem;
+      color: var(--gray-700); text-decoration: none;
+      font-size: 0.82rem; font-weight: 500;
+      transition: all 0.2s; white-space: nowrap;
+    }
+    .nav-links a:hover, .nav-links a.active {
+      background: var(--blue-l); color: var(--blue);
+    }
+    .lang-btn {
+      cursor: pointer; border: 2px solid #e2e8f0;
+      background: var(--white); border-radius: 0.4rem;
+      padding: 0.22rem 0.55rem; font-size: 0.75rem;
+      font-weight: 700; color: var(--gray-700);
+      transition: all 0.2s; margin-left: 0.3rem;
+    }
+    .lang-btn:hover { border-color: var(--blue); color: var(--blue); }
+    /* FOOTER */
+    footer {
+      background: var(--gray-900); color: var(--gray-400);
+      padding: 2rem 1.5rem; text-align: center;
+      font-size: 0.82rem; margin-top: 4rem;
+    }
+    .footer-links {
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 0.3rem 1rem; margin-bottom: 0.75rem;
+    }
+    footer a { color: var(--gray-500); text-decoration: none; }
+    footer a:hover { color: var(--white); }
+    /* COMMON */
+    .layout { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+    .layout-wide { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+    h2 { font-size: 1.4rem; font-weight: 900; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0; }
+    h2:first-child { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 800; margin: 1.25rem 0 0.5rem; color: var(--blue); }
+    p { color: var(--gray-700); margin-bottom: 1rem; line-height: 1.8; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { color: var(--gray-700); margin-bottom: 0.4rem; line-height: 1.7; }
+    .hero {
+      padding: 4rem 2rem; text-align: center;
+      background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 50%, #fefce8 100%);
+    }
+    .hero h1 { font-size: clamp(1.8rem,5vw,3rem); font-weight: 900; margin-bottom: 0.75rem; }
+    .hero p { color: var(--gray-700); max-width: 640px; margin: 0 auto 1.5rem; font-size: 1.05rem; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--blue); text-decoration: none; font-weight: 600; font-size: 0.88rem;
+    }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .card {
+      background: var(--gray-100); border-radius: var(--radius);
+      padding: 1.25rem; border: 2px solid #e2e8f0;
+      transition: all 0.2s; text-decoration: none; color: inherit; display: block;
+    }
+    .card:hover { border-color: var(--blue); transform: translateY(-2px); box-shadow: var(--shadow); }
+    .card-icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+    .card h4 { font-weight: 800; margin-bottom: 0.25rem; font-size: 0.9rem; }
+    .card p { font-size: 0.78rem; color: var(--gray-400); margin: 0; }
+    .badge {
+      display: inline-block; padding: 0.15rem 0.55rem; border-radius: 1rem;
+      font-size: 0.7rem; font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-yellow { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-purple { background: #ede9fe; color: #5b21b6; }
+    .badge-gray { background: var(--gray-100); color: var(--gray-500); }
+    .info-box { background: var(--blue-l); border-left: 4px solid var(--blue); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .info-box p { margin: 0; }
+    .warn-box { background: #fefce8; border-left: 4px solid var(--yellow); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .warn-box p { margin: 0; }
+    .success-box { background: #f0fdf4; border-left: 4px solid var(--green); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .success-box p { margin: 0; }
+    .code-block {
+      background: var(--gray-900); color: #e2e8f0;
+      border-radius: var(--radius); padding: 1.25rem;
+      font-family: "Courier New", monospace; font-size: 0.8rem;
+      overflow-x: auto; margin: 1rem 0; line-height: 1.7; white-space: pre;
+    }
+    .code-c { color: #64748b; }
+    .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    th { background: var(--gray-900); color: white; padding: 0.65rem 1rem; text-align: left; font-weight: 700; }
+    td { padding: 0.65rem 1rem; border-bottom: 1px solid #e2e8f0; color: var(--gray-700); }
+    tr:hover td { background: var(--gray-100); }
+    .flow { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; padding: 1rem; background: var(--gray-100); border-radius: var(--radius); margin: 1rem 0; }
+    .fnode { background: white; border-radius: 0.5rem; padding: 0.4rem 0.9rem; font-size: 0.78rem; font-weight: 700; border: 2px solid #e2e8f0; }
+    .fnode-g { border-color: var(--green); background: #f0fdf4; color: #166534; }
+    .fnode-b { border-color: var(--blue); background: var(--blue-l); color: var(--blue-d); }
+    .fnode-y { border-color: var(--yellow); background: #fefce8; color: #92400e; }
+    .fnode-p { border-color: var(--purple); background: #faf5ff; color: #6b21a8; }
+    .farr { color: var(--blue); font-weight: 900; }
+    .fade-in { opacity: 0; transform: translateY(14px); transition: all 0.5s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+    @media (max-width: 640px) { .nav-links a { font-size: 0.75rem; padding: 0.22rem 0.45rem; } }
+  </style>
+
+  <style>
+    .landing-hero {
+      background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 50%, #fefce8 100%);
+      padding: 5rem 2rem 4rem; text-align: center;
+    }
+    .landing-hero h1 {
+      font-size: clamp(2.5rem,6vw,4rem); font-weight: 900;
+      color: var(--gray-900); margin-bottom: 0.5rem;
+    }
+    .landing-hero .tagline {
+      font-size: clamp(1rem,2.5vw,1.3rem); color: var(--gray-700); margin-bottom: 1.5rem;
+    }
+    .hero-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-bottom: 2rem; }
+    .hero-badge {
+      background: rgba(37,99,235,0.08); border: 1px solid rgba(37,99,235,0.15);
+      border-radius: 2rem; padding: 0.4rem 1rem; font-size: 0.82rem; color: var(--blue); font-weight: 600;
+    }
+    .cta-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.75rem 1.75rem; background: var(--blue); color: white;
+      border-radius: var(--radius); font-weight: 700; text-decoration: none;
+      transition: all 0.2s; font-size: 0.95rem;
+    }
+    .btn-primary:hover { background: var(--blue-d); transform: translateY(-1px); }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.75rem 1.75rem; background: white; color: var(--blue);
+      border: 2px solid var(--blue); border-radius: var(--radius);
+      font-weight: 700; text-decoration: none; transition: all 0.2s; font-size: 0.95rem;
+    }
+    .btn-secondary:hover { background: var(--blue-l); }
+    .section { padding: 4rem 2rem; }
+    .section-inner { max-width: 1100px; margin: 0 auto; }
+    .section-title { font-size: clamp(1.5rem,3vw,2.2rem); font-weight: 900; margin-bottom: 0.5rem; text-align: center; }
+    .section-sub { color: var(--gray-500); text-align: center; margin-bottom: 2.5rem; }
+    .section-gray { background: var(--gray-100); }
+    .steps-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap: 1.5rem; }
+    .step { text-align: center; padding: 1.5rem; background: white; border-radius: var(--radius); box-shadow: var(--shadow); }
+    .step-num { width: 48px; height: 48px; border-radius: 50%; background: var(--blue); color: white; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.2rem; margin: 0 auto 1rem; }
+    .step h3 { color: var(--gray-900); margin-bottom: 0.4rem; }
+    .step p { font-size: 0.85rem; color: var(--gray-500); margin: 0; }
+    .demo-section { background: var(--gray-900); padding: 4rem 2rem; color: white; }
+    .demo-title { text-align: center; font-size: clamp(1.4rem,3vw,2rem); font-weight: 900; margin-bottom: 0.5rem; color: white; }
+    .demo-sub { text-align: center; color: var(--gray-400); margin-bottom: 2.5rem; }
+    .demo-grid { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; max-width: 900px; margin: 0 auto; }
+    .demo-box {
+      flex: 1; min-width: 150px; max-width: 180px;
+      background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.12);
+      border-radius: var(--radius); padding: 1.25rem 1rem; text-align: center;
+      transition: all 0.4s; height: 140px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; overflow: hidden;
+    }
+    .demo-box.active {
+      background: rgba(37,99,235,0.25); border-color: var(--blue);
+      transform: translateY(-4px); box-shadow: 0 8px 24px rgba(37,99,235,0.4);
+    }
+    .demo-icon { font-size: 1.8rem; margin-bottom: 0.4rem; }
+    .demo-label { font-size: 0.8rem; font-weight: 700; color: rgba(255,255,255,0.85); }
+    .demo-badge {
+      margin-top: 0.5rem; padding: 0.2rem 0.5rem; background: #fef3c7;
+      border-radius: 0.4rem; font-size: 0.62rem; font-weight: 700; color: #92400e;
+      display: none; width: 100%; text-align: center;
+    }
+    .demo-bar-row { width: 100%; margin-top: 0.4rem; display: none; }
+    .demo-bar-wrap { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; margin-bottom: 2px; }
+    .demo-bar { height: 100%; border-radius: 3px; width: 0; transition: width 1s; }
+    .demo-bar-yes { background: var(--green); }
+    .demo-bar-no { background: var(--red); }
+    .demo-pct { font-size: 0.65rem; color: rgba(255,255,255,0.6); text-align: right; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); gap: 1.5rem; }
+    .feature-card { background: white; border: 2px solid #e2e8f0; border-radius: var(--radius); padding: 1.5rem; transition: all 0.2s; }
+    .feature-card:hover { border-color: var(--blue); box-shadow: var(--shadow); }
+    .feature-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+    .feature-card h3 { margin-bottom: 0.4rem; color: var(--gray-900); }
+    .feature-card p { font-size: 0.85rem; margin: 0; }
+    .ticker-section { padding: 4rem 2rem; background: white; }
+    .ticker-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; margin-top: 2rem; }
+    @media(max-width:700px){ .ticker-grid { grid-template-columns: 1fr; } }
+    .ticker-col h4 { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray-400); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem; }
+    .ticker-col h4 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); }
+    .ticker-cards-wrap { min-height: 160px; position: relative; }
+    .t-card {
+      background: var(--gray-100); border-radius: 0.75rem; padding: 1rem;
+      border: 2px solid #e2e8f0; text-decoration: none; color: inherit;
+      position: absolute; width: 100%; opacity: 0; transform: translateY(8px);
+      transition: all 0.4s;
+    }
+    .t-card.visible { opacity: 1; transform: translateY(0); position: relative; }
+    .t-card:hover { border-color: var(--blue); }
+    .t-card.al { border-left: 3px solid var(--green); }
+    .t-card.rc { border-left: 3px solid var(--blue); }
+    .t-card.rs { border-left: 3px solid var(--purple); }
+    .t-badge { font-size: 0.68rem; font-weight: 700; display: inline-block; margin-bottom: 0.3rem; padding: 0.1rem 0.4rem; border-radius: 0.3rem; }
+    .t-title { font-size: 0.88rem; font-weight: 800; display: block; margin-bottom: 0.25rem; }
+    .t-meta { font-size: 0.75rem; color: var(--gray-400); }
+    .t-bar { height: 4px; background: var(--gray-100); border-radius: 2px; overflow: hidden; margin-top: 0.4rem; }
+    .t-fill { height: 100%; border-radius: 2px; background: var(--green); }
+    .t-diverge { font-size: 0.72rem; font-weight: 700; color: var(--red); margin-top: 0.25rem; }
+    .t-converge { font-size: 0.72rem; font-weight: 700; color: #16a34a; margin-top: 0.25rem; }
+    .t-more { display: block; text-align: right; font-size: 0.78rem; font-weight: 700; color: var(--blue); text-decoration: none; margin-top: 0.5rem; }
+    .wiki-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 1rem; }
+    .wiki-card {
+      background: var(--gray-100); border: 2px solid #e2e8f0; border-radius: var(--radius);
+      padding: 1.25rem; text-decoration: none; color: inherit; transition: all 0.2s;
+    }
+    .wiki-card:hover { border-color: var(--blue); background: var(--blue-l); transform: translateY(-2px); }
+    .wiki-card-icon { font-size: 1.6rem; margin-bottom: 0.5rem; }
+    .wiki-card h4 { font-weight: 800; font-size: 0.88rem; margin-bottom: 0.2rem; }
+    .wiki-card p { font-size: 0.75rem; color: var(--gray-400); margin: 0; }
+    .roadmap-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap: 1.5rem; }
+    .roadmap-card { background: white; border: 2px solid #e2e8f0; border-radius: var(--radius); padding: 1.5rem; }
+    .roadmap-phase { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--blue); margin-bottom: 0.5rem; }
+    .roadmap-card h3 { color: var(--gray-900); margin-bottom: 0.75rem; }
+    .roadmap-card ul { padding-left: 1.2rem; }
+    .roadmap-card li { font-size: 0.82rem; margin-bottom: 0.25rem; }
+    .contact-form { max-width: 600px; margin: 0 auto; }
+    .form-group { margin-bottom: 1.25rem; }
+    .form-group label { display: block; font-size: 0.82rem; font-weight: 700; color: var(--gray-700); margin-bottom: 0.4rem; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%; padding: 0.65rem 0.85rem; border: 2px solid #e2e8f0;
+      border-radius: 0.5rem; font-family: inherit; font-size: 0.88rem;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--blue); }
+    .form-group textarea { resize: vertical; min-height: 120px; }
+    .btn-submit {
+      width: 100%; padding: 0.75rem; background: var(--blue); color: white;
+      border: none; border-radius: 0.5rem; font-weight: 700; font-size: 0.95rem;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .btn-submit:hover { background: var(--blue-d); }
+    .beta-pill {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: rgba(37,99,235,0.1); border: 1px solid rgba(37,99,235,0.2);
+      border-radius: 2rem; padding: 0.3rem 1rem; font-size: 0.78rem;
+      font-weight: 700; color: var(--blue); margin-bottom: 1rem;
+    }
+    .pulse { width: 7px; height: 7px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+  </style>
+</head>
+<body>
+<nav>
+  <a href="#" class="nav-logo">
+    <img src="pnx.png" alt="logo"/>εκκλησία
+  </a>
+  <div class="nav-links">
+    <a href="#how" data-el="Πώς λειτουργεί" data-en="How it works">Πώς λειτουργεί</a>
+    <a href="#features" data-el="Χαρακτηριστικά" data-en="Features">Χαρακτηριστικά</a>
+    <a href="votes/active.html" data-el="Ψηφοφορίες" data-en="Votes">Ψηφοφορίες</a>
+    <a href="#roadmap" data-el="Roadmap" data-en="Roadmap">Roadmap</a>
+    <a href="wiki/" data-el="Wiki" data-en="Wiki">Wiki</a>
+    <a href="community.html" data-el="Community" data-en="Community">Community</a>
+    <a href="#contact" data-el="Επικοινωνία" data-en="Contact">Επικοινωνία</a>
+    <button class="lang-btn" onclick="toggleLang()">
+      <span id="langFlag">EN</span>
+    </button>
+  </div>
+</nav>
+
+<section class="landing-hero">
+  <div class="beta-pill"><span class="pulse"></span> Beta — Ανοιχτός Κώδικας</div>
+  <h1>εκκλησία</h1>
+  <p class="tagline" data-el="Η φωνή σου μετράει. Ψήφισε για πραγματικά νομοσχέδια." data-en="Your voice counts. Vote on real bills.">
+    Η φωνή σου μετράει. Ψήφισε για πραγματικά νομοσχέδια.
+  </p>
+  <div class="hero-badges">
+    <span class="hero-badge" data-el="Χωρίς cookies" data-en="No cookies">Χωρίς cookies</span>
+    <span class="hero-badge" data-el="Χωρίς προσωπικά δεδομένα" data-en="No personal data">Χωρίς προσωπικά δεδομένα</span>
+    <span class="hero-badge" data-el="100% Ανοιχτός κώδικας" data-en="100% Open source">100% Ανοιχτός κώδικας</span>
+    <span class="hero-badge">GDPR</span>
+  </div>
+  <div class="cta-row">
+    <a href="#how" class="btn-primary" data-el="Πώς λειτουργεί" data-en="How it works">Πώς λειτουργεί</a>
+    <a href="wiki/" class="btn-secondary" data-el="Διαβάστε το Wiki" data-en="Read the Wiki">Διαβάστε το Wiki</a>
+  </div>
+</section>
+
+<section class="section" id="how">
+  <div class="section-inner">
+    <h2 class="section-title fade-in" data-el="Πώς λειτουργεί;" data-en="How does it work?">Πώς λειτουργεί;</h2>
+    <p class="section-sub fade-in" data-el="Τέσσερα βήματα. Χωρίς λογαριασμό. Χωρίς email." data-en="Four steps. No account. No email.">Τέσσερα βήματα. Χωρίς λογαριασμό. Χωρίς email.</p>
+    <div class="steps-grid">
+      <div class="step fade-in">
+        <div class="step-num">1</div>
+        <h3 data-el="Επαλήθευση" data-en="Verification">Επαλήθευση</h3>
+        <p data-el="SMS στον αριθμό σας. Διαγράφεται αμέσως." data-en="SMS to your number. Deleted immediately.">SMS στον αριθμό σας. Διαγράφεται αμέσως.</p>
+      </div>
+      <div class="step fade-in">
+        <div class="step-num">2</div>
+        <h3 data-el="Κρυπτογραφικό Κλειδί" data-en="Cryptographic Key">Κρυπτογραφικό Κλειδί</h3>
+        <p data-el="Ed25519 κλειδί μόνο στη συσκευή σας." data-en="Ed25519 key only on your device.">Ed25519 κλειδί μόνο στη συσκευή σας.</p>
+      </div>
+      <div class="step fade-in">
+        <div class="step-num">3</div>
+        <h3 data-el="Ψηφίστε" data-en="Vote">Ψηφίστε</h3>
+        <p data-el="Υπέρ, Κατά ή Αποχή σε πραγματικά νομοσχέδια." data-en="Yes, No or Abstain on real bills.">Υπέρ, Κατά ή Αποχή σε πραγματικά νομοσχέδια.</p>
+      </div>
+      <div class="step fade-in">
+        <div class="step-num">4</div>
+        <h3 data-el="Δείτε τη Διαφορά" data-en="See the Difference">Δείτε τη Διαφορά</h3>
+        <p data-el="Δείκτης Απόκλισης: Βουλή vs Πολίτες." data-en="Divergence Score: Parliament vs Citizens.">Δείκτης Απόκλισης: Βουλή vs Πολίτες.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="demo-section" id="demo">
+  <div class="demo-title" data-el="Ο Κύκλος της Δημοκρατίας" data-en="The Democracy Cycle">Ο Κύκλος της Δημοκρατίας</div>
+  <p class="demo-sub" data-el="Κάθε απόφαση διανύει 5 φάσεις — οι πολίτες ψηφίζουν παράλληλα." data-en="Every decision goes through 5 phases — citizens vote in parallel.">Κάθε απόφαση διανύει 5 φάσεις — οι πολίτες ψηφίζουν παράλληλα.</p>
+  <div class="demo-grid">
+    <div class="demo-box" id="dBox1">
+      <div class="demo-icon">🏛️</div>
+      <div class="demo-label" data-el="Ανακοίνωση" data-en="Announced">Ανακοίνωση</div>
+    </div>
+    <div class="demo-box" id="dBox2">
+      <div class="demo-icon">🗳️</div>
+      <div class="demo-label" data-el="Ψηφοφορία Πολιτών" data-en="Citizen Vote">Ψηφοφορία Πολιτών</div>
+      <div class="demo-bar-row" id="barRow" style="display:block">
+        <div class="demo-bar-wrap"><div class="demo-bar demo-bar-yes" id="yesBar"></div></div>
+        <div class="demo-pct">42% Υπέρ</div>
+        <div class="demo-bar-wrap" style="margin-top:3px"><div class="demo-bar demo-bar-no" id="noBar"></div></div>
+        <div class="demo-pct">67% Κατά</div>
+      </div>
+    </div>
+    <div class="demo-box" id="dBox3">
+      <div class="demo-icon">⚖️</div>
+      <div class="demo-label" data-el="24ω Παράθυρο" data-en="24h Window">24ω Παράθυρο</div>
+    </div>
+    <div class="demo-box" id="dBox4">
+      <div class="demo-icon">📊</div>
+      <div class="demo-label" data-el="Αποτέλεσμα" data-en="Result">Αποτέλεσμα</div>
+      <div class="demo-badge" id="divBadge">⚠️ 67% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ</div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-gray" id="features">
+  <div class="section-inner">
+    <h2 class="section-title fade-in" data-el="Τι προσφέρει η εκκλησία;" data-en="What does ekklesia offer?">Τι προσφέρει η εκκλησία;</h2>
+    <div class="features-grid">
+      <div class="feature-card fade-in">
+        <div class="feature-icon">🗳️</div>
+        <h3 data-el="Πολιτική Πυξίδα" data-en="Political Compass">Πολιτική Πυξίδα</h3>
+        <p data-el="15 πολιτικές θέσεις, 8 κόμματα. Δείτε πού ανήκετε σε 5 λεπτά." data-en="15 political positions, 8 parties. See where you stand in 5 minutes.">15 πολιτικές θέσεις, 8 κόμματα. Δείτε πού ανήκετε σε 5 λεπτά.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">🏛️</div>
+        <h3 data-el="Ψηφοφορία Πολιτών" data-en="Citizen Voting">Ψηφοφορία Πολιτών</h3>
+        <p data-el="Βουλή, Περιφέρεια, Δήμος. Ψηφίστε σε αποφάσεις όλων των επιπέδων." data-en="Parliament, Periferia, Dimos. Vote on decisions at all levels.">Βουλή, Περιφέρεια, Δήμος. Ψηφίστε σε αποφάσεις όλων των επιπέδων.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">📊</div>
+        <h3 data-el="Δείκτης Απόκλισης" data-en="Divergence Score">Δείκτης Απόκλισης</h3>
+        <p data-el="Ποσοστό διαφοράς μεταξύ γνώμης πολιτών και απόφασης αρχής." data-en="Divergence between citizen opinion and authority decision.">Ποσοστό διαφοράς μεταξύ γνώμης πολιτών και απόφασης αρχής.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">🔐</div>
+        <h3 data-el="Πλήρης Ανωνυμία" data-en="Full Anonymity">Πλήρης Ανωνυμία</h3>
+        <p data-el="Ed25519 κρυπτογραφία. Κανένα προσωπικό δεδομένο στον server." data-en="Ed25519 cryptography. No personal data on server.">Ed25519 κρυπτογραφία. Κανένα προσωπικό δεδομένο στον server.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">🌐</div>
+        <h3 data-el="Τοπική Αυτοδιοίκηση" data-en="Local Governance">Τοπική Αυτοδιοίκηση</h3>
+        <p data-el="Αποφάσεις Δημοτικών Συμβουλίων και Περιφερειακής Αυτοδιοίκησης." data-en="Municipal and regional council decisions.">Αποφάσεις Δημοτικών Συμβουλίων και Περιφερειακής Αυτοδιοίκησης.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">📖</div>
+        <h3 data-el="Ανοιχτός Κώδικας" data-en="Open Source">Ανοιχτός Κώδικας</h3>
+        <p data-el="MIT License. Ο κώδικας ανήκει σε όλους. Κανείς δεν ελέγχει." data-en="MIT License. Code belongs to everyone. Nobody controls.">MIT License. Ο κώδικας ανήκει σε όλους. Κανείς δεν ελέγχει.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="ticker-section" id="votes">
+  <div class="section-inner">
+    <h2 class="section-title fade-in" data-el="Ψηφοφορίες σε Εξέλιξη" data-en="Votes in Progress">Ψηφοφορίες σε Εξέλιξη</h2>
+    <div class="ticker-grid">
+      <div class="fade-in">
+        <h4><span class="dot"></span> <span data-el="Τρέχουσες" data-en="Active">Τρέχουσες</span></h4>
+        <div class="ticker-cards-wrap" id="t1">
+          <a href="votes/active.html" class="t-card al visible">
+            <span class="t-badge badge-green" data-el="Βουλή · Ανοιχτή" data-en="Parliament · Active">Βουλή · Ανοιχτή</span>
+            <span class="t-title" data-el="Νόμος Ανανεώσιμων Πηγών 2025" data-en="Renewable Energy Law 2025">Νόμος Ανανεώσιμων Πηγών 2025</span>
+            <span class="t-meta">1.247 ψήφοι</span>
+            <div class="t-bar"><div class="t-fill" style="width:67%"></div></div>
+          </a>
+          <a href="votes/active.html" class="t-card al">
+            <span class="t-badge badge-yellow" data-el="Βουλή · 24ω" data-en="Parliament · 24h">Βουλή · 24ω</span>
+            <span class="t-title" data-el="Αύξηση Κατώτατου Μισθού 950€" data-en="Minimum Wage Increase €950">Αύξηση Κατώτατου Μισθού 950€</span>
+            <span class="t-meta">3.891 ψήφοι</span>
+            <div class="t-bar"><div class="t-fill" style="width:82%"></div></div>
+          </a>
+          <a href="votes/active.html" class="t-card al">
+            <span class="t-badge badge-purple" data-el="Δήμος Αθηναίων" data-en="Athens">Δήμος Αθηναίων</span>
+            <span class="t-title" data-el="Ανάπλαση Πεδίου του Άρεως" data-en="Pedion Areos Renovation">Ανάπλαση Πεδίου του Άρεως</span>
+            <span class="t-meta">524 ψήφοι</span>
+            <div class="t-bar"><div class="t-fill" style="width:71%"></div></div>
+          </a>
+        </div>
+        <a href="votes/active.html" class="t-more" data-el="Όλες οι τρέχουσες →" data-en="All active →">Όλες οι τρέχουσες →</a>
+      </div>
+      <div class="fade-in">
+        <h4><span class="dot"></span> <span data-el="Τελευταίες 24ω" data-en="Last 24h">Τελευταίες 24ω</span></h4>
+        <div class="ticker-cards-wrap" id="t2">
+          <a href="votes/recent.html" class="t-card rc visible">
+            <span class="t-badge badge-blue" data-el="Βουλή · 8ω πριν" data-en="Parliament · 8h ago">Βουλή · 8ω πριν</span>
+            <span class="t-title" data-el="Νόμος Ιδιωτικών Πανεπιστημίων" data-en="Private Universities Law">Νόμος Ιδιωτικών Πανεπιστημίων</span>
+            <span class="t-meta">2.103 ψήφοι</span>
+            <div class="t-diverge" data-el="⚠️ Απόκλιση 58%" data-en="⚠️ Divergence 58%">⚠️ Απόκλιση 58%</div>
+          </a>
+          <a href="votes/recent.html" class="t-card rc">
+            <span class="t-badge badge-purple" data-el="Θεσσαλονίκη · 12ω" data-en="Thessaloniki · 12h">Θεσσαλονίκη · 12ω</span>
+            <span class="t-title" data-el="Νέα Κεντρική Αγορά" data-en="New Central Market">Νέα Κεντρική Αγορά</span>
+            <span class="t-meta">312 ψήφοι</span>
+            <div class="t-bar"><div class="t-fill" style="width:61%"></div></div>
+          </a>
+          <a href="votes/recent.html" class="t-card rc">
+            <span class="t-badge badge-blue" data-el="Βουλή · 20ω πριν" data-en="Parliament · 20h">Βουλή · 20ω πριν</span>
+            <span class="t-title" data-el="Κλιματικός Νόμος 2025" data-en="Climate Law 2025">Κλιματικός Νόμος 2025</span>
+            <span class="t-meta">891 ψήφοι</span>
+            <div class="t-converge" data-el="✓ Σύγκλιση 78%" data-en="✓ Convergence 78%">✓ Σύγκλιση 78%</div>
+          </a>
+        </div>
+        <a href="votes/recent.html" class="t-more" data-el="Τελευταίες 24ω →" data-en="Last 24h →">Τελευταίες 24ω →</a>
+      </div>
+      <div class="fade-in">
+        <h4><span class="dot"></span> <span data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</span></h4>
+        <div class="ticker-cards-wrap" id="t3">
+          <a href="votes/results.html" class="t-card rs visible">
+            <span class="t-badge badge-blue" data-el="Εγκρίθηκε · Βουλή" data-en="Approved · Parliament">Εγκρίθηκε · Βουλή</span>
+            <span class="t-title" data-el="Νόμος Παιδείας 2024" data-en="Education Law 2024">Νόμος Παιδείας 2024</span>
+            <span class="t-meta">4.821 ψήφοι</span>
+            <div class="t-diverge" data-el="⚠️ 73% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ" data-en="⚠️ 73% NO — Parliament YES">⚠️ 73% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ</div>
+          </a>
+          <a href="votes/results.html" class="t-card rs">
+            <span class="t-badge badge-blue" data-el="Εγκρίθηκε · Βουλή" data-en="Approved · Parliament">Εγκρίθηκε · Βουλή</span>
+            <span class="t-title" data-el="Κλιματική Ουδετερότητα 2024" data-en="Climate Neutrality 2024">Κλιματική Ουδετερότητα 2024</span>
+            <span class="t-meta">2.341 ψήφοι</span>
+            <div class="t-converge" data-el="✓ Σύγκλιση 81%" data-en="✓ Convergence 81%">✓ Σύγκλιση 81%</div>
+          </a>
+          <a href="votes/results.html" class="t-card rs">
+            <span class="t-badge badge-purple" data-el="Εγκρίθηκε · Πειραιάς" data-en="Approved · Piraeus">Εγκρίθηκε · Πειραιάς</span>
+            <span class="t-title" data-el="Ποδηλατόδρομοι Πειραιά" data-en="Piraeus Bike Lanes">Ποδηλατόδρομοι Πειραιά</span>
+            <span class="t-meta">1.102 ψήφοι</span>
+            <div class="t-converge" data-el="✓ 94% Υπέρ" data-en="✓ 94% Yes">✓ 94% Υπέρ</div>
+          </a>
+        </div>
+        <a href="votes/results.html" class="t-more" data-el="Όλα τα αποτελέσματα →" data-en="All results →">Όλα τα αποτελέσματα →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-gray" id="wiki-section">
+  <div class="section-inner">
+    <h2 class="section-title fade-in" data-el="Τεκμηρίωση" data-en="Documentation">Τεκμηρίωση</h2>
+    <p class="section-sub fade-in" data-el="Πλήρης τεχνική τεκμηρίωση" data-en="Complete technical documentation">Πλήρης τεχνική τεκμηρίωση</p>
+    <div class="wiki-grid">
+      <a href="wiki/architecture.html" class="wiki-card fade-in">
+        <div class="wiki-card-icon">🏗️</div>
+        <h4 data-el="Αρχιτεκτονική" data-en="Architecture">Αρχιτεκτονική</h4>
+        <p>Stack, Monorepo, Lifecycle</p>
+      </a>
+      <a href="wiki/security.html" class="wiki-card fade-in">
+        <div class="wiki-card-icon">🔐</div>
+        <h4 data-el="Ασφάλεια" data-en="Security">Ασφάλεια</h4>
+        <p>Ed25519, Nullifier, ZK</p>
+      </a>
+      <a href="wiki/api.html" class="wiki-card fade-in">
+        <div class="wiki-card-icon">⚡</div>
+        <h4>API</h4>
+        <p>16 Endpoints, Schemas</p>
+      </a>
+      <a href="wiki/modules.html" class="wiki-card fade-in">
+        <div class="wiki-card-icon">🧩</div>
+        <h4>Modules</h4>
+        <p>MOD-01 — MOD-16</p>
+      </a>
+      <a href="wiki/privacy.html" class="wiki-card fade-in">
+        <div class="wiki-card-icon">🛡️</div>
+        <h4 data-el="Ιδιωτικότητα" data-en="Privacy">Ιδιωτικότητα</h4>
+        <p>GDPR, k-Anonymity</p>
+      </a>
+      <a href="wiki/roadmap.html" class="wiki-card fade-in">
+        <div class="wiki-card-icon">🗺️</div>
+        <h4>Roadmap</h4>
+        <p>Beta → Alpha → V2</p>
+      </a>
+      <a href="wiki/database.html" class="wiki-card fade-in">
+        <div class="wiki-card-icon">🗄️</div>
+        <h4>Database</h4>
+        <p data-el="13 Πίνακες, Schema" data-en="13 Tables, Schema">13 Πίνακες, Schema</p>
+      </a>
+      <a href="wiki/whitepaper.html" class="wiki-card fade-in">
+        <div class="wiki-card-icon">📄</div>
+        <h4>Whitepaper</h4>
+        <p data-el="Λευκό Βιβλίο v1.0" data-en="Technical Whitepaper v1.0">Λευκό Βιβλίο v1.0</p>
+      </a>
+      <a href="wiki/" class="wiki-card fade-in" style="border-color:var(--blue);background:var(--blue-l)">
+        <div class="wiki-card-icon">📖</div>
+        <h4 data-el="Wiki Home" data-en="Wiki Home">Wiki Home</h4>
+        <p data-el="Όλες οι σελίδες" data-en="All pages">Όλες οι σελίδες →</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="roadmap">
+  <div class="section-inner">
+    <h2 class="section-title fade-in">Roadmap</h2>
+    <div class="roadmap-grid">
+      <div class="roadmap-card fade-in" style="border-color:var(--green)">
+        <div class="roadmap-phase" style="color:var(--green)">Beta — Τώρα</div>
+        <h3>Beta Phase</h3>
+        <ul>
+          <li data-el="SMS Επαλήθευση" data-en="SMS Verification">SMS Επαλήθευση</li>
+          <li data-el="Πολιτική Πυξίδα" data-en="Political Compass">Πολιτική Πυξίδα</li>
+          <li data-el="Ψηφοφορία Πολιτών" data-en="Citizen Voting">Ψηφοφορία Πολιτών</li>
+          <li data-el="Τοπική Αυτοδιοίκηση" data-en="Local Governance">Τοπική Αυτοδιοίκηση</li>
+        </ul>
+      </div>
+      <div class="roadmap-card fade-in">
+        <div class="roadmap-phase" data-el="Alpha — 500+ χρήστες" data-en="Alpha — 500+ users">Alpha — 500+ χρήστες</div>
+        <h3>Alpha Phase</h3>
+        <ul>
+          <li>gov.gr OAuth2.0</li>
+          <li data-el="Δημογραφικά στοιχεία" data-en="Demographics">Δημογραφικά στοιχεία</li>
+          <li data-el="Mobile App (iOS/Android)" data-en="Mobile App">Mobile App</li>
+        </ul>
+      </div>
+      <div class="roadmap-card fade-in">
+        <div class="roadmap-phase">V2 — Future</div>
+        <h3>V2 Phase</h3>
+        <ul>
+          <li>TrueRepublic Bridge</li>
+          <li>Rust + WASM Crypto</li>
+          <li>ZK Identity</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-gray" id="contact">
+  <div class="section-inner">
+    <h2 class="section-title fade-in" data-el="Επικοινωνία" data-en="Contact">Επικοινωνία</h2>
+    <div class="contact-form fade-in">
+      <form id="contactForm">
+        <div class="form-group">
+          <label data-el="Όνομα" data-en="Name">Όνομα</label>
+          <input id="cName" type="text" required placeholder="Το όνομά σας"/>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input id="cEmail" type="email" required placeholder="email@example.com"/>
+        </div>
+        <div class="form-group">
+          <label data-el="Μήνυμα" data-en="Message">Μήνυμα</label>
+          <textarea id="cMsg" required placeholder="Πώς μπορούμε να βοηθήσουμε;"></textarea>
+        </div>
+        <button type="submit" class="btn-submit" data-el="Αποστολή" data-en="Send">Αποστολή</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-links">
+    <a href="/">Αρχική</a>
+    <a href="wiki/">Wiki</a>
+    <a href="votes/active.html" data-el="Τρέχουσες" data-en="Active">Τρέχουσες</a>
+    <a href="votes/recent.html" data-el="24 Ώρες" data-en="24 Hours">24 Ώρες</a>
+    <a href="votes/results.html" data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</a>
+    <a href="community.html">Community</a>
+    <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>
+  </div>
+  <p>εκκλησία &middot; &copy; 2026 Vendetta Labs &middot; MIT License</p>
+</footer>
+
+<script>
+var currentLang = "el";
+function toggleLang() {
+  currentLang = currentLang === "el" ? "en" : "el";
+  document.getElementById("langFlag").textContent = currentLang === "el" ? "EN" : "ΕΛ";
+  document.querySelectorAll("[data-el]").forEach(function(el) {
+    var t = el.getAttribute("data-" + currentLang);
+    if (t) el.innerHTML = t;
+  });
+}
+var obs = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add("visible"); });
+}, { threshold: 0.1 });
+document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); });
+</script>
+
+<script>
+// Democracy Cycle Animation
+(function() {
+  var boxes = ["dBox1","dBox2","dBox3","dBox4"];
+  function resetAll() {
+    boxes.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.classList.remove("active");
+    });
+    var yb = document.getElementById("yesBar");
+    var nb = document.getElementById("noBar");
+    if (yb) yb.style.width = "0%";
+    if (nb) nb.style.width = "0%";
+    var badge = document.getElementById("divBadge");
+    if (badge) badge.style.display = "none";
+  }
+  function runCycle() {
+    resetAll();
+    var step = 0;
+    function next() {
+      boxes.forEach(function(id) { var el=document.getElementById(id); if(el) el.classList.remove("active"); });
+      if (step < boxes.length) { var el=document.getElementById(boxes[step]); if(el) el.classList.add("active"); }
+      if (step === 1) {
+        setTimeout(function() {
+          var y=document.getElementById("yesBar"); var n=document.getElementById("noBar");
+          if(y) y.style.width="42%"; if(n) n.style.width="67%";
+        }, 300);
+      }
+      if (step === 3) {
+        setTimeout(function() {
+          var b=document.getElementById("divBadge");
+          if(b) { b.style.display="block"; b.textContent="⚠️ 67% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ"; }
+        }, 300);
+      }
+      step++;
+      if (step < boxes.length) { setTimeout(next, 2000); }
+      else { setTimeout(function() { resetAll(); setTimeout(runCycle, 800); }, 2500); }
+    }
+    next();
+  }
+  var d = document.getElementById("dBox1");
+  if (d) { var io = new IntersectionObserver(function(e){ if(e[0].isIntersecting){ io.disconnect(); runCycle(); }}, {threshold:0.3}); io.observe(d); }
+})();
+
+// Ticker
+(function() {
+  var tickers = [
+    { trackId: "t1", cards: 3, interval: 3000 },
+    { trackId: "t2", cards: 3, interval: 3500 },
+    { trackId: "t3", cards: 3, interval: 4000 },
+  ];
+  tickers.forEach(function(t) {
+    var track = document.getElementById(t.trackId);
+    if (!track) return;
+    var cards = track.querySelectorAll(".t-card");
+    if (!cards.length) return;
+    var cur = 0;
+    function show(i) {
+      cards.forEach(function(c) { c.classList.remove("visible"); c.style.position="absolute"; c.style.opacity="0"; });
+      cur = i % cards.length;
+      cards[cur].style.position = "relative";
+      cards[cur].style.opacity = "1";
+      cards[cur].classList.add("visible");
+    }
+    show(0);
+    setInterval(function() { show(cur + 1); }, t.interval);
+  });
+})();
+
+// Contact form
+document.addEventListener("DOMContentLoaded", function() {
+  var form = document.getElementById("contactForm");
+  if (!form) return;
+  form.addEventListener("submit", function(e) {
+    e.preventDefault();
+    var name = document.getElementById("cName").value;
+    var email = document.getElementById("cEmail").value;
+    var msg = document.getElementById("cMsg").value;
+    var subject = encodeURIComponent("Ekklesia.gr — " + name);
+    var body = encodeURIComponent(msg + "\n\nFrom: " + name + " (" + email + ")");
+    window.location.href = "mailto:kaspartisan@proton.me?subject=" + subject + "&body=" + body;
+  });
+});
+</script>
+</body>
+</html>
