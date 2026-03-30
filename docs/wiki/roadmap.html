@@ -150,23 +150,17 @@
 </head>
 <body>
 <nav>
-  <a href="../" class="nav-logo"><img src="../pnx.png" alt="logo" style="width:40px;height:40px;object-fit:contain"/>εκκλησία</a>
+  <a href="../" class="nav-logo">
+    <img src="../pnx.png" alt="logo"/>εκκλησία
+  </a>
   <div class="nav-links">
     <a href="../" data-el="Αρχική" data-en="Home">Αρχική</a>
     <a href="../votes/active.html" data-el="Ψηφοφορίες" data-en="Votes">Ψηφοφορίες</a>
-    <a href="index.html" data-el="Wiki" data-en="Wiki">Wiki</a>
+    <a href="../wiki/" data-el="Wiki" data-en="Wiki">Wiki</a>
     <a href="../community.html" data-el="Community" data-en="Community">Community</a>
-    <span style="width:1px;height:20px;background:#e2e8f0;margin:0 0.3rem"></span>
-    <a href="architecture.html" data-el="Αρχιτεκτονική" data-en="Architecture">Αρχιτεκτονική</a>
-    <a href="security.html" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</a>
-    <a href="api.html">API</a>
-    <a href="modules.html">Modules</a>
-    <a href="roadmap.html" class="active">Roadmap</a>
-    <a href="privacy.html" data-el="Ιδιωτικότητα" data-en="Privacy">Ιδιωτικότητα</a>
-    <a href="database.html">Database</a>
-    <a href="contributing.html">Contributing</a>
-    <a href="whitepaper.html">Whitepaper</a>
-    <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
+    <button class="lang-btn" onclick="toggleLang()">
+      <span id="langFlag">EN</span>
+    </button>
   </div>
 </nav>
 <div class="hero" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7)">
@@ -238,7 +232,7 @@
 var currentLang = "el";
 function toggleLang() {
   currentLang = currentLang === "el" ? "en" : "el";
-  document.getElementById("langBtn").textContent = currentLang === "el" ? "EN" : "ΕΛ";
+  document.getElementById("langFlag").textContent = currentLang === "el" ? "EN" : "ΕΛ";
   document.querySelectorAll("[data-el]").forEach(function(el) {
     var t = el.getAttribute("data-" + currentLang);
     if (t) el.innerHTML = t;
