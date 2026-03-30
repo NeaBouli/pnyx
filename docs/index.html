@@ -125,6 +125,29 @@
     .footer-disclaimer{margin-bottom:.75rem;color:#475569}
     .fade-in{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
     .fade-in.visible{opacity:1;transform:translateY(0)}
+  
+    .lt-section{padding:5rem 2rem;background:var(--gray-100)}
+    .lt-inner{max-width:1100px;margin:0 auto}
+    .lt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem;margin-top:2.5rem}
+    .lt-col h3{font-size:.85rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-400);margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem}
+    .lt-col h3 .ld{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .ld-g{background:#22c55e;animation:pulse 2s infinite}.ld-b{background:#2563eb}.ld-p{background:#a855f7}
+    .lt-cards{display:flex;flex-direction:column;gap:.5rem;min-height:150px;position:relative;overflow:hidden}
+    .lc{background:white;border-radius:.75rem;padding:.9rem 1rem;border:2px solid #e2e8f0;transition:all .4s;text-decoration:none;color:inherit;display:block;position:absolute;width:100%;opacity:0;transform:translateY(10px)}
+    .lc.vis{opacity:1;transform:translateY(0);position:relative}
+    .lc:hover{border-color:var(--blue);box-shadow:var(--shadow)}
+    .lc.ca{border-left:4px solid #22c55e}.lc.cw{border-left:4px solid #f59e0b}.lc.cr{border-left:4px solid #2563eb}.lc.cm{border-left:4px solid #a855f7}.lc.cd{border-left:4px solid #ef4444}
+    .lc-b{font-size:.66rem;font-weight:700;padding:.1rem .45rem;border-radius:1rem;margin-bottom:.35rem;display:inline-block}
+    .lbg{background:#dcfce7;color:#166534}.lby{background:#fef3c7;color:#92400e}.lbb{background:#dbeafe;color:#1e40af}.lbp{background:#ede9fe;color:#5b21b6}.lbr{background:#fee2e2;color:#991b1b}
+    .lc-t{font-size:.85rem;font-weight:800;margin-bottom:.2rem;color:var(--gray-900);display:block}
+    .lc-m{font-size:.72rem;color:var(--gray-400)}
+    .lc-bar{height:4px;background:#f1f5f9;border-radius:2px;overflow:hidden;margin-top:.4rem}
+    .lc-f{height:100%;border-radius:2px}.fg{background:#22c55e}
+    .lc-dv{font-size:.7rem;font-weight:700;color:#dc2626;margin-top:.2rem}
+    .lc-cv{font-size:.7rem;font-weight:700;color:#16a34a;margin-top:.2rem}
+    .lt-foot{display:flex;justify-content:space-between;align-items:center;margin-top:.6rem}
+    .lt-dots{display:flex;gap:4px}.lt-d{width:6px;height:6px;border-radius:50%;background:#e2e8f0;transition:background .3s;cursor:pointer}.lt-d.on{background:var(--blue)}
+    .lt-more{font-size:.76rem;font-weight:700;color:var(--blue);text-decoration:none}.lt-more:hover{text-decoration:underline}
   </style>
 </head>
 <body>
@@ -246,6 +269,42 @@
   </div>
 </section>
 
+
+<section class="lt-section">
+  <div class="lt-inner">
+    <h2 class="section-title fade-in" data-el="🗳️ Ψηφοφορίες σε Εξέλιξη" data-en="🗳️ Votes in Progress">🗳️ Ψηφοφορίες σε Εξέλιξη</h2>
+    <p class="section-sub fade-in" data-el="Βουλή · Περιφέρεια · Δήμοι — ζωντανά αποτελέσματα" data-en="Parliament · Region · Municipalities — live results">Βουλή · Περιφέρεια · Δήμοι — ζωντανά αποτελέσματα</p>
+    <div class="lt-grid">
+      <div class="lt-col fade-in">
+        <h3><span class="ld ld-g"></span><span data-el="Τρέχουσες" data-en="Active">Τρέχουσες</span></h3>
+        <div class="lt-cards" id="lc1">
+          <a href="votes/active.html" class="lc ca vis"><span class="lc-b lbg" data-el="🟢 Βουλή" data-en="🟢 Parliament">🟢 Βουλή</span><span class="lc-t" data-el="Νόμος ΑΠΕ 2025" data-en="Renewable Energy 2025">Νόμος ΑΠΕ 2025</span><span class="lc-m">1.247 ψήφοι · 67% Υπέρ</span><div class="lc-bar"><div class="lc-f fg" style="width:67%"></div></div></a>
+          <a href="votes/active.html" class="lc cw"><span class="lc-b lby" data-el="🟡 24ω Βουλή" data-en="🟡 24h Parliament">🟡 24ω Βουλή</span><span class="lc-t" data-el="Κατώτατος Μισθός 950€" data-en="Min Wage €950">Κατώτατος Μισθός 950€</span><span class="lc-m">3.891 ψήφοι · 82% Υπέρ</span><div class="lc-bar"><div class="lc-f fg" style="width:82%"></div></div></a>
+          <a href="votes/active.html" class="lc cm"><span class="lc-b lbp" data-el="🟢 Δ. Αθηναίων" data-en="🟢 Athens">🟢 Δ. Αθηναίων</span><span class="lc-t" data-el="Ανάπλαση Πεδίου Άρεως" data-en="Pedion Areos">Ανάπλαση Πεδίου Άρεως</span><span class="lc-m">524 ψήφοι · 71% Υπέρ</span></a>
+        </div>
+        <div class="lt-foot"><div class="lt-dots" id="ld1"><div class="lt-d on"></div><div class="lt-d"></div><div class="lt-d"></div></div><a href="votes/active.html" class="lt-more" data-el="Όλες →" data-en="All →">Όλες →</a></div>
+      </div>
+      <div class="lt-col fade-in">
+        <h3><span class="ld ld-b"></span><span data-el="Τελευταίες 24ω" data-en="Last 24h">Τελευταίες 24ω</span></h3>
+        <div class="lt-cards" id="lc2">
+          <a href="votes/recent.html" class="lc cr vis"><span class="lc-b lbb" data-el="Βουλή · 8ω" data-en="Parliament · 8h">Βουλή · 8ω</span><span class="lc-t" data-el="Ιδιωτικά Πανεπιστήμια" data-en="Private Universities">Ιδιωτικά Πανεπιστήμια</span><span class="lc-m">2.103 ψήφοι</span><span class="lc-dv" data-el="⚠️ Απόκλιση 58%" data-en="⚠️ Divergence 58%">⚠️ Απόκλιση 58%</span></a>
+          <a href="votes/recent.html" class="lc cm"><span class="lc-b lbp" data-el="Θεσσαλονίκη · 12ω" data-en="Thessaloniki · 12h">Θεσσαλονίκη · 12ω</span><span class="lc-t" data-el="Κεντρική Αγορά" data-en="Central Market">Κεντρική Αγορά</span><span class="lc-m">312 ψήφοι · 61% Υπέρ</span></a>
+          <a href="votes/recent.html" class="lc ca"><span class="lc-b lbb" data-el="Βουλή · 20ω" data-en="Parliament · 20h">Βουλή · 20ω</span><span class="lc-t" data-el="Κλιματικός Νόμος" data-en="Climate Law">Κλιματικός Νόμος</span><span class="lc-m">891 ψήφοι</span><span class="lc-cv" data-el="✓ Σύγκλιση 78%" data-en="✓ Convergence 78%">✓ Σύγκλιση 78%</span></a>
+        </div>
+        <div class="lt-foot"><div class="lt-dots" id="ld2"><div class="lt-d on"></div><div class="lt-d"></div><div class="lt-d"></div></div><a href="votes/recent.html" class="lt-more" data-el="24ω →" data-en="24h →">24ω →</a></div>
+      </div>
+      <div class="lt-col fade-in">
+        <h3><span class="ld ld-p"></span><span data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</span></h3>
+        <div class="lt-cards" id="lc3">
+          <a href="votes/results.html" class="lc cd vis"><span class="lc-b lbr" data-el="✅ Βουλή" data-en="✅ Parliament">✅ Βουλή</span><span class="lc-t" data-el="Νόμος Παιδείας" data-en="Education Law">Νόμος Παιδείας</span><span class="lc-m">4.821 ψήφοι</span><span class="lc-dv" data-el="⚠️ 73% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ" data-en="⚠️ 73% NO — Parliament APPROVED">⚠️ 73% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ</span></a>
+          <a href="votes/results.html" class="lc cr"><span class="lc-b lbb" data-el="✅ Βουλή" data-en="✅ Parliament">✅ Βουλή</span><span class="lc-t" data-el="Κλιματική Ουδετερότητα" data-en="Climate Neutrality">Κλιματική Ουδετερότητα</span><span class="lc-m">2.341 ψήφοι</span><span class="lc-cv" data-el="✓ Σύγκλιση 81%" data-en="✓ Convergence 81%">✓ Σύγκλιση 81%</span></a>
+          <a href="votes/results.html" class="lc cm"><span class="lc-b lbp" data-el="✅ Πειραιάς" data-en="✅ Piraeus">✅ Πειραιάς</span><span class="lc-t" data-el="Ποδηλατόδρομοι" data-en="Bike Lanes">Ποδηλατόδρομοι</span><span class="lc-cv" data-el="✓ 94% Υπέρ" data-en="✓ 94% Yes">✓ 94% Υπέρ</span></a>
+        </div>
+        <div class="lt-foot"><div class="lt-dots" id="ld3"><div class="lt-d on"></div><div class="lt-d"></div><div class="lt-d"></div></div><a href="votes/results.html" class="lt-more" data-el="Αποτελέσματα →" data-en="Results →">Αποτελέσματα →</a></div>
+      </div>
+    </div>
+  </div>
+</section>
 <section id="wiki">
   <div class="section-inner">
     <h2 class="section-title fade-in" data-el="📖 Wiki" data-en="📖 Wiki">📖 Wiki</h2>
@@ -324,6 +383,9 @@ function runDemo(){
 const dObs=new IntersectionObserver(e=>{if(e[0].isIntersecting){runDemo();dObs.disconnect()}},{threshold:.3});
 const dEl=document.querySelector('.demo-container');if(dEl)dObs.observe(dEl);
 function submitForm(e){e.preventDefault();const n=document.getElementById('name').value,em=document.getElementById('email').value,s=document.getElementById('subject').value,m=document.getElementById('message').value;window.location.href='mailto:kaspartisan@proton.me?subject='+encodeURIComponent('[Ekklesia.gr] '+s)+'&body='+encodeURIComponent('From: '+n+'\nEmail: '+em+'\n\n'+m);document.getElementById('contactForm').style.display='none';document.getElementById('formSuccess').style.display='block'}
+
+function initLT(colId,dotsId,ms){var col=document.getElementById(colId),de=document.getElementById(dotsId);if(!col)return;var cards=col.querySelectorAll('.lc');if(cards.length<2)return;var dots=de?de.querySelectorAll('.lt-d'):[];var cur=0;function go(i){cards.forEach(function(c){c.classList.remove('vis');c.style.position='absolute';c.style.opacity='0'});cur=i%cards.length;var card=cards[cur];card.style.position='relative';card.style.opacity='1';card.classList.add('vis');dots.forEach(function(d,j){d.classList.toggle('on',j===cur)})}go(0);setInterval(function(){go(cur+1)},ms)}
+document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){initLT('lc1','ld1',3000)},500);setTimeout(function(){initLT('lc2','ld2',3500)},1000);setTimeout(function(){initLT('lc3','ld3',4000)},1500)});
 </script>
 </body>
 </html>
