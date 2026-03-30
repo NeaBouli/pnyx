@@ -52,9 +52,9 @@
     .demo-section{background:white;overflow:hidden}
     .demo-container{max-width:900px;margin:0 auto;background:var(--gray-100);border-radius:1.5rem;padding:3rem 2rem;position:relative}
     .demo-flow{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
-    .demo-box{flex:1;min-width:150px;background:white;border-radius:var(--radius);padding:1.5rem;text-align:center;box-shadow:var(--shadow);border:2px solid transparent;transition:all .4s}
+    .demo-box{flex:1;min-width:130px;max-width:200px;background:white;border-radius:var(--radius);padding:1.25rem 1rem;text-align:center;box-shadow:var(--shadow);border:2px solid transparent;transition:all .4s;height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
     .demo-box.active{border-color:var(--blue);box-shadow:0 0 0 4px rgba(37,99,235,.1);transform:scale(1.04)}
-    .demo-box-icon{font-size:2.5rem;margin-bottom:.75rem}
+    .demo-box-icon{font-size:1.8rem;margin-bottom:.4rem}
     .demo-box h4{font-weight:800;font-size:.95rem;margin-bottom:.4rem}
     .demo-box p{font-size:.8rem;color:var(--gray-400)}
     .demo-arrow{font-size:2rem;color:var(--blue);font-weight:900;flex-shrink:0;animation:arrowPulse 1.5s infinite}
@@ -62,7 +62,7 @@
     .vote-bar{margin-top:.75rem;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden}
     .vote-fill{height:100%;border-radius:4px;transition:width 2s ease}
     .vote-fill.yes{background:var(--green)}.vote-fill.no{background:var(--red)}
-    .divergence-badge{margin-top:1rem;padding:.5rem 1rem;background:#fef3c7;border-radius:.5rem;font-size:.8rem;font-weight:700;color:#92400e;text-align:center}
+    .divergence-badge{margin-top:.5rem;padding:.25rem .5rem;background:#fef3c7;border-radius:.4rem;font-size:.65rem;font-weight:700;color:#92400e;text-align:center;line-height:1.3;width:100%}
     .features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem}
     .feature-card{background:white;border-radius:var(--radius);padding:2rem;border:2px solid #e2e8f0;transition:all .3s;opacity:0;transform:translateY(20px)}
     .feature-card.visible{opacity:1;transform:translateY(0)}
@@ -207,7 +207,7 @@
         <div class="demo-arrow">→</div>
         <div class="demo-box" id="dBox3"><div class="demo-box-icon">⚖️</div><h4 data-el="24ω Παράθυρο" data-en="24h Window">24ω Παράθυρο</h4><p data-el="Αλλαγή ψήφου επιτρέπεται" data-en="Vote change allowed">Αλλαγή ψήφου επιτρέπεται</p></div>
         <div class="demo-arrow">→</div>
-        <div class="demo-box" id="dBox4"><div class="demo-box-icon">📊</div><h4 data-el="Αποτέλεσμα" data-en="Result">Αποτέλεσμα</h4><p data-el="Βουλή vs Πολίτες" data-en="Parliament vs Citizens">Βουλή vs Πολίτες</p><div class="divergence-badge" id="divBadge" style="display:none">⚠️ 67% Πολιτών ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ</div></div>
+        <div class="demo-box" id="dBox4"><div class="demo-box-icon">📊</div><h4 data-el="Αποτέλεσμα" data-en="Result">Αποτέλεσμα</h4><p data-el="Βουλή vs Πολίτες" data-en="Parliament vs Citizens">Βουλή vs Πολίτες</p><div class="divergence-badge" id="divBadge" style="display:none">⚠️ 67% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ</div></div>
       </div>
     </div>
   </div>
@@ -369,7 +369,7 @@ function runDemo(){
       b.forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('active')});
       if(s<b.length){const c=document.getElementById(b[s]);if(c)c.classList.add('active')}
       if(s===1){setTimeout(()=>{const y=document.getElementById('yesBar'),n=document.getElementById('noBar');if(y)y.style.width='42%';if(n)n.style.width='67%'},300)}
-      if(s===3){setTimeout(()=>{const d=document.getElementById('divBadge');if(d){d.style.display='block';d.textContent=currentLang==='el'?'⚠️ 67% Πολιτών ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ':'⚠️ 67% Citizens NO — Parliament APPROVED'}},300)}
+      if(s===3){setTimeout(()=>{const d=document.getElementById('divBadge');if(d){d.style.display='block';d.textContent=currentLang==='el'?'⚠️ 67% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ':'⚠️ 67% NO — Parliament YES'}},300)}
       s++;
       if(s<b.length){setTimeout(step,2000)}else{setTimeout(()=>{reset();setTimeout(cycle,1000)},2500)}
     }
