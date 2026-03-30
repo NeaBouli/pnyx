@@ -300,7 +300,27 @@ function toggleLang(){currentLang=currentLang==='el'?'en':'el';document.document
 function applyLang(){document.querySelectorAll('[data-el]').forEach(el=>{const t=el.getAttribute('data-'+currentLang);if(t){if(el.tagName==='INPUT'||el.tagName==='TEXTAREA'){const p=el.getAttribute('data-placeholder-'+currentLang);if(p)el.placeholder=p}else el.innerHTML=t}});document.querySelectorAll('select option[data-el]').forEach(o=>{const t=o.getAttribute('data-'+currentLang);if(t)o.textContent=t})}
 const obs=new IntersectionObserver(e=>{e.forEach((en,i)=>{if(en.isIntersecting)setTimeout(()=>en.target.classList.add('visible'),i*100)})},{threshold:.1});
 document.querySelectorAll('.fade-in,.flow-step,.feature-card,.roadmap-card').forEach(el=>obs.observe(el));
-function runDemo(){const b=['dBox1','dBox2','dBox3','dBox4'];let s=0;function n(){b.forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('active')});if(s<b.length)document.getElementById(b[s])?.classList.add('active');if(s===1){setTimeout(()=>document.getElementById('yesBar').style.width='42%',200);setTimeout(()=>document.getElementById('noBar').style.width='67%',400)}if(s===3){const d=document.getElementById('divBadge');d.style.display='block';d.textContent=currentLang==='el'?'⚠️ 67% Πολιτών ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ':'⚠️ 67% Citizens NO — Parliament APPROVED'}s=(s+1)%(b.length+2);setTimeout(n,2000)}n()}
+function runDemo(){
+  const b=['dBox1','dBox2','dBox3','dBox4'];
+  function reset(){
+    b.forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('active')});
+    const y=document.getElementById('yesBar'),n=document.getElementById('noBar'),d=document.getElementById('divBadge');
+    if(y)y.style.width='0%';if(n)n.style.width='0%';if(d)d.style.display='none';
+  }
+  function cycle(){
+    reset();let s=0;
+    function step(){
+      b.forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('active')});
+      if(s<b.length){const c=document.getElementById(b[s]);if(c)c.classList.add('active')}
+      if(s===1){setTimeout(()=>{const y=document.getElementById('yesBar'),n=document.getElementById('noBar');if(y)y.style.width='42%';if(n)n.style.width='67%'},300)}
+      if(s===3){setTimeout(()=>{const d=document.getElementById('divBadge');if(d){d.style.display='block';d.textContent=currentLang==='el'?'⚠️ 67% Πολιτών ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ':'⚠️ 67% Citizens NO — Parliament APPROVED'}},300)}
+      s++;
+      if(s<b.length){setTimeout(step,2000)}else{setTimeout(()=>{reset();setTimeout(cycle,1000)},2500)}
+    }
+    step();
+  }
+  cycle();
+}
 const dObs=new IntersectionObserver(e=>{if(e[0].isIntersecting){runDemo();dObs.disconnect()}},{threshold:.3});
 const dEl=document.querySelector('.demo-container');if(dEl)dObs.observe(dEl);
 function submitForm(e){e.preventDefault();const n=document.getElementById('name').value,em=document.getElementById('email').value,s=document.getElementById('subject').value,m=document.getElementById('message').value;window.location.href='mailto:kaspartisan@proton.me?subject='+encodeURIComponent('[Ekklesia.gr] '+s)+'&body='+encodeURIComponent('From: '+n+'\nEmail: '+em+'\n\n'+m);document.getElementById('contactForm').style.display='none';document.getElementById('formSuccess').style.display='block'}
