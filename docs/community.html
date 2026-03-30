@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="el" data-lang="el">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Community — εκκλησία</title>
+  <link rel="icon" type="image/png" href="pnx.png"/>
+  <style>
+    :root{--blue:#2563eb;--blue-dark:#1d4ed8;--blue-light:#eff6ff;--gray-900:#0f172a;--gray-700:#334155;--gray-400:#94a3b8;--gray-100:#f1f5f9;--white:#fff;--green:#22c55e;--yellow:#f59e0b;--radius:1rem;--shadow:0 4px 24px rgba(37,99,235,.10)}
+    *{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--white);color:var(--gray-900);line-height:1.6}
+    nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid #e2e8f0;padding:.75rem 1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
+    .nl{font-size:1.25rem;font-weight:900;color:var(--blue);text-decoration:none;display:flex;align-items:center;gap:.4rem}.nl img{width:26px;height:26px;object-fit:contain}
+    .nk{display:flex;gap:.1rem;align-items:center;flex-wrap:wrap}.nk a{padding:.28rem .6rem;border-radius:.4rem;color:var(--gray-700);text-decoration:none;font-size:.78rem;font-weight:500;transition:all .2s;white-space:nowrap}.nk a:hover,.nk a.ac{background:var(--blue-light);color:var(--blue)}
+    .lb{cursor:pointer;border:2px solid #e2e8f0;background:var(--white);border-radius:.4rem;padding:.22rem .55rem;font-size:.75rem;font-weight:700;color:var(--gray-700);transition:all .2s;margin-left:.4rem}
+    .hero{background:linear-gradient(135deg,#eff6ff 0%,#f0fdf4 50%,#fefce8 100%);padding:4rem 2rem;text-align:center}
+    .hero h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:900;margin-bottom:.75rem}.hero p{color:var(--gray-700);max-width:650px;margin:0 auto 1.5rem;font-size:1.05rem;line-height:1.7}
+    .bl{display:inline-flex;align-items:center;gap:.4rem;color:var(--blue);text-decoration:none;font-weight:600;font-size:.88rem}
+    .ly{max-width:820px;margin:0 auto;padding:3rem 1.5rem}
+    h2{font-size:1.4rem;font-weight:900;margin:2.5rem 0 1rem;padding-bottom:.5rem;border-bottom:2px solid #e2e8f0}h2:first-child{margin-top:0}
+    p{color:var(--gray-700);margin-bottom:1rem;line-height:1.8}
+    .pg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin:1.5rem 0}
+    .pc{background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0;transition:all .2s}.pc:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:var(--shadow)}
+    .pc .i{font-size:2rem;margin-bottom:.6rem}.pc h4{font-weight:800;margin-bottom:.4rem;font-size:.95rem}.pc p{font-size:.82rem;color:var(--gray-400);margin:0}
+    .ib{background:var(--blue-light);border-left:4px solid var(--blue);border-radius:.5rem;padding:1rem 1.25rem;margin:1.25rem 0}.ib p{margin:0}
+    .sb{background:#f0fdf4;border-left:4px solid var(--green);border-radius:.5rem;padding:1rem 1.25rem;margin:1.25rem 0}.sb p{margin:0}
+    .wb{background:#fefce8;border-left:4px solid var(--yellow);border-radius:.5rem;padding:1rem 1.25rem;margin:1.25rem 0}.wb p{margin:0}
+    .cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin:1.5rem 0}
+    .cc{background:white;border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0;text-align:center;transition:all .2s}.cc:hover{border-color:var(--blue);box-shadow:var(--shadow)}
+    .cc .ci{font-size:2.5rem;margin-bottom:.75rem}.cc h4{font-weight:800;margin-bottom:.4rem}.cc p{font-size:.8rem;color:var(--gray-400);margin-bottom:1rem}
+    .cc a{display:inline-block;padding:.4rem 1rem;background:var(--blue);color:white;border-radius:.5rem;font-size:.8rem;font-weight:700;text-decoration:none}.cc a:hover{background:var(--blue-dark)}
+    .dv{background:var(--gray-100);border-radius:1.5rem;padding:2rem;margin:1.5rem 0;text-align:center}
+    .nodes{display:flex;flex-wrap:wrap;justify-content:center;gap:.75rem;margin-bottom:1rem}
+    .nd{background:white;border:2px solid #e2e8f0;border-radius:.75rem;padding:.6rem 1rem;font-size:.78rem;font-weight:700}.nd.cn{background:var(--blue);color:white;border-color:var(--blue)}.nd.cm{border-color:var(--green);color:#166534;background:#f0fdf4}
+    footer{background:var(--gray-900);color:#94a3b8;padding:2rem;text-align:center;font-size:.82rem;margin-top:4rem}footer a{color:#64748b;text-decoration:none;margin:0 .5rem}footer a:hover{color:white}
+    .fi{opacity:0;transform:translateY(14px);transition:all .5s ease}.fi.v{opacity:1;transform:translateY(0)}
+  </style>
+</head>
+<body>
+<nav>
+  <a href="./" class="nl"><img src="pnx.png" alt=""/>εκκλησία</a>
+  <div class="nk">
+    <a href="./" data-el="Αρχική" data-en="Home">Αρχική</a>
+    <a href="wiki/">Wiki</a>
+    <a href="votes/active.html" data-el="Ψηφοφορίες" data-en="Votes">Ψηφοφορίες</a>
+    <a href="community.html" class="ac">Community</a>
+    <button class="lb" onclick="toggleLang()"><span id="langFlag">🇬🇧</span> <span id="langLabel">EN</span></button>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>🤝 <span data-el="Κοινοτική Πρωτοβουλία" data-en="Community Initiative">Κοινοτική Πρωτοβουλία</span></h1>
+  <p data-el="Η Ekklesia.gr δεν ανήκει σε καμία εταιρεία, κόμμα ή κυβέρνηση. Ανήκει σε όσους πιστεύουν ότι η δημοκρατία ανήκει στους πολίτες." data-en="Ekklesia.gr does not belong to any company, party or government. It belongs to those who believe that democracy belongs to the citizens.">Η Ekklesia.gr δεν ανήκει σε καμία εταιρεία, κόμμα ή κυβέρνηση.<br/>Ανήκει σε όσους πιστεύουν ότι η δημοκρατία ανήκει στους πολίτες.</p>
+  <a href="./" class="bl">← <span data-el="Αρχική" data-en="Home">Αρχική</span></a>
+</div>
+
+<div class="ly">
+  <h2 class="fi" data-el="Οι Αρχές μας" data-en="Our Principles">Οι Αρχές μας</h2>
+  <div class="pg">
+    <div class="pc fi"><div class="i">🔓</div><h4 data-el="Πλήρης Διαφάνεια" data-en="Full Transparency">Πλήρης Διαφάνεια</h4><p data-el="Κάθε γραμμή κώδικα δημόσια. Τίποτα κρυφό." data-en="Every line of code public. Nothing hidden.">Κάθε γραμμή κώδικα δημόσια.</p></div>
+    <div class="pc fi"><div class="i">🌐</div><h4 data-el="Αποκέντρωση" data-en="Decentralization">Αποκέντρωση</h4><p data-el="Καμία κεντρική αρχή. Η κοινότητα αποφασίζει." data-en="No central authority. The community decides.">Η κοινότητα αποφασίζει.</p></div>
+    <div class="pc fi"><div class="i">🤲</div><h4 data-el="Κοινοτική Χρηματοδότηση" data-en="Community Funding">Κοινοτική Χρηματοδότηση</h4><p data-el="Από πολίτες, για πολίτες." data-en="By citizens, for citizens.">Από πολίτες, για πολίτες.</p></div>
+    <div class="pc fi"><div class="i">🚫</div><h4 data-el="Χωρίς Διαφημίσεις" data-en="No Ads">Χωρίς Διαφημίσεις</h4><p data-el="Ποτέ. Κανένα διαφημιστικό μοντέλο." data-en="Never. No advertising model.">Ποτέ.</p></div>
+    <div class="pc fi"><div class="i">⚖️</div><h4 data-el="Πολιτική Ουδετερότητα" data-en="Political Neutrality">Πολιτική Ουδετερότητα</h4><p data-el="Ούτε δεξιά ούτε αριστερά. Μόνο δημοκρατία." data-en="Neither right nor left. Only democracy.">Μόνο δημοκρατία.</p></div>
+    <div class="pc fi"><div class="i">🔐</div><h4 data-el="Ιδιωτικότητα" data-en="Privacy First">Ιδιωτικότητα</h4><p data-el="Κανένα προσωπικό δεδομένο. GDPR by design." data-en="No personal data. GDPR by design.">GDPR by design.</p></div>
+  </div>
+
+  <h2 class="fi" data-el="Αποκεντρωμένη Δομή" data-en="Decentralized Structure">Αποκεντρωμένη Δομή</h2>
+  <div class="dv fi">
+    <div class="nodes">
+      <div class="nd cm" data-el="👩 Πολίτες" data-en="👩 Citizens">👩 Πολίτες</div>
+      <div class="nd cm">🧑‍💻 Developers</div>
+      <div class="nd cn">εκκλησία</div>
+      <div class="nd cm">🏛️ NGOs</div>
+      <div class="nd cm" data-el="📰 Δημοσιογράφοι" data-en="📰 Journalists">📰 Δημοσιογράφοι</div>
+    </div>
+    <p style="font-size:.82rem;color:var(--gray-400)" data-el="Όλοι συνεισφέρουν ισότιμα. Κανείς δεν ελέγχει." data-en="Everyone contributes equally. Nobody controls.">Όλοι συνεισφέρουν ισότιμα.</p>
+  </div>
+
+  <h2 class="fi" data-el="Χρηματοδότηση" data-en="Funding">Χρηματοδότηση</h2>
+  <div class="pg fi">
+    <div class="pc"><div class="i">💶</div><h4>Hosting</h4><p>~15-25€/μήνα — Hetzner EU</p></div>
+    <div class="pc"><div class="i">🌐</div><h4>Domain</h4><p>ekklesia.gr — ~10€/χρόνο</p></div>
+    <div class="pc"><div class="i">💻</div><h4 data-el="Ανάπτυξη" data-en="Development">Ανάπτυξη</h4><p data-el="100% εθελοντική" data-en="100% volunteer">100% εθελοντική</p></div>
+    <div class="pc"><div class="i">📊</div><h4 data-el="Σύνολο/έτος" data-en="Total/year">Σύνολο/έτος</h4><p><strong>~200-300€</strong></p></div>
+  </div>
+  <div class="sb fi"><p data-el="💡 Κανένας χρηματοδότης δεν μπορεί να επηρεάσει την πλατφόρμα. Μόνο η κοινότητα αποφασίζει." data-en="💡 No funder can influence the platform. Only the community decides.">💡 Μόνο η κοινότητα αποφασίζει.</p></div>
+
+  <h2 class="fi" data-el="Πώς να Συμμετέχεις" data-en="How to Participate">Πώς να Συμμετέχεις</h2>
+  <div class="cg fi">
+    <div class="cc"><div class="ci">🧑‍💻</div><h4 data-el="Κώδικας" data-en="Code">Κώδικας</h4><p data-el="Συνεισφορά μέσω GitHub" data-en="Contribute via GitHub">GitHub</p><a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub →</a></div>
+    <div class="cc"><div class="ci">🐛</div><h4 data-el="Σφάλματα" data-en="Bugs">Σφάλματα</h4><p data-el="Αναφορά στο Issues" data-en="Report on Issues">Issues</p><a href="https://github.com/NeaBouli/pnyx/issues" target="_blank">Issues →</a></div>
+    <div class="cc"><div class="ci">📝</div><h4 data-el="Τεκμηρίωση" data-en="Docs">Τεκμηρίωση</h4><p>Wiki</p><a href="wiki/">Wiki →</a></div>
+    <div class="cc"><div class="ci">📢</div><h4 data-el="Διάδοση" data-en="Share">Διάδοση</h4><p data-el="Μοιράσου" data-en="Share">Μοιράσου</p><a href="./">ekklesia.gr →</a></div>
+    <div class="cc"><div class="ci">🏛️</div><h4>NGO</h4><p data-el="Συνεργασία" data-en="Cooperation">Συνεργασία</p><a href="https://github.com/NeaBouli/pnyx/issues" target="_blank">Επικοινωνία →</a></div>
+  </div>
+
+  <h2 class="fi" data-el="Τι ΔΕΝ είμαστε" data-en="What we are NOT">Τι ΔΕΝ είμαστε</h2>
+  <div class="wb fi"><p data-el="⚠️ ΔΕΝ κόμμα · ΔΕΝ εταιρεία · ΔΕΝ κυβέρνηση · ΔΕΝ νομικά δεσμευτική. Εργαλείο — ανήκει στους πολίτες." data-en="⚠️ NOT a party · NOT a company · NOT government · NOT legally binding. A tool — belongs to the citizens.">⚠️ <strong>ΔΕΝ</strong> κόμμα · <strong>ΔΕΝ</strong> εταιρεία · <strong>ΔΕΝ</strong> κυβέρνηση · <strong>ΔΕΝ</strong> νομικά δεσμευτική.<br/>Εργαλείο — ανήκει στους πολίτες.</p></div>
+
+  <div style="text-align:center;margin-top:3rem;padding:2.5rem;background:var(--gray-100);border-radius:1.5rem" class="fi">
+    <p style="font-size:1.3rem;font-weight:900;margin-bottom:.5rem" data-el="Η δημοκρατία δεν είναι θέαμα. Είναι πράξη." data-en="Democracy is not a spectacle. It is action.">Η δημοκρατία δεν είναι θέαμα. Είναι πράξη.</p>
+    <a href="https://github.com/NeaBouli/pnyx" target="_blank" style="display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 2rem;background:var(--blue);color:white;border-radius:var(--radius);font-weight:700;text-decoration:none;margin-top:1rem">⭐ <span data-el="Star στο GitHub" data-en="Star on GitHub">Star στο GitHub</span></a>
+  </div>
+</div>
+
+<footer>
+  <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem 1.5rem;margin-bottom:.75rem">
+    <a href="./">Αρχική</a><a href="wiki/">Wiki</a><a href="votes/active.html">Ψηφοφορίες</a><a href="community.html">Community</a><a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>
+  </div>
+  <p>εκκλησία · © 2026 Vendetta Labs · MIT</p>
+</footer>
+
+<script>
+let l="el";function toggleLang(){l=l==="el"?"en":"el";document.getElementById("langFlag").textContent=l==="el"?"🇬🇧":"🇬🇷";document.getElementById("langLabel").textContent=l==="el"?"EN":"ΕΛ";document.querySelectorAll("[data-el]").forEach(e=>{const t=e.getAttribute("data-"+l);if(t)e.innerHTML=t})}
+const o=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add("v")})},{threshold:.1});document.querySelectorAll(".fi").forEach(e=>o.observe(e));
+</script>
+</body>
+</html>
