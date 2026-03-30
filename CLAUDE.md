@@ -71,3 +71,10 @@ ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END
 - 3 Gesetzentwürfe (2x OPEN_END, 1x ACTIVE)
 
 ## Nächste Session → docs/TODO.md
+
+## MOD-16 Municipal Governance (neu)
+- Neue DB Tabellen: periferia, dimos, communities, decisions
+- Router: apps/api/routers/municipal.py (Stub)
+- Governance Levels: NATIONAL | REGIONAL | MUNICIPAL | COMMUNITY
+- Parteien: skalierbar via seeds/parties_config.json
+- Wiki Home: Live Ticker (3 Ticker × 3 Karten, auto-scroll 3s)

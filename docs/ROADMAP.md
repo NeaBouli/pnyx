@@ -34,3 +34,11 @@ Voraussetzung: 500+ Nutzer, 3+ NGO-Partner, öffentliche Legitimation.
 ## Transparenz
 Monatliche Berichte in docs/reports/
 Vollständig Open Source: https://github.com/NeaBouli/pnyx
+
+## MOD-16: Municipal Governance (Beta+)
+- Αποφάσεις Περιφερειακών Συμβουλίων
+- Αποφάσεις Δημοτικών Συμβουλίων
+- Κοινοτικές Αποφάσεις
+- Ιεραρχική δομή: Περιφέρεια → Δήμος → Κοινότητα
+- Φιλτράρισμα ανά επίπεδο, περιοχή, θέμα
+- Divergence Score για κάθε επίπεδο
