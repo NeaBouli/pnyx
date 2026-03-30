@@ -19,6 +19,13 @@
     .ticker-meta{display:block;font-size:.75rem;color:var(--gray-400)}.divergence-high{color:#dc2626!important;font-weight:700}
     .ticker-more{display:block;text-align:right;padding:.5rem 1rem;font-size:.78rem;font-weight:700;color:var(--blue);text-decoration:none;background:white;border-top:1px solid #e2e8f0}
     .ticker-more:hover{background:var(--blue-light)}
+  
+    .ticker-dots{display:flex;gap:4px;align-items:center}
+    .ticker-dot{width:6px;height:6px;border-radius:50%;background:#e2e8f0;transition:background .3s}
+    .ticker-dot.active{background:var(--blue)}
+    .ticker-more-bar{display:flex;justify-content:space-between;align-items:center;padding:.5rem 1rem;background:white;border-top:1px solid #e2e8f0}
+    .ticker-more-bar a{font-size:.78rem;font-weight:700;color:var(--blue);text-decoration:none}
+    .ticker-more-bar a:hover{background:var(--blue-light)}
   </style>
 </head>
 <body>
@@ -114,8 +121,13 @@ function toggleLang(){currentLang=currentLang==="el"?"en":"el";document.getEleme
 const obs=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add("visible")})},{threshold:0.1});
 document.querySelectorAll(".fade-in,.fi").forEach(el=>obs.observe(el));
 
-function initTicker(id){const t=document.getElementById(id);if(!t)return;const c=t.querySelectorAll('.ticker-card');if(!c.length)return;let i=0;setInterval(()=>{i=(i+1)%c.length;c[i].scrollIntoView({behavior:'smooth',block:'nearest',inline:'start'})},3000)}
-document.addEventListener('DOMContentLoaded',()=>{initTicker('track1');setTimeout(()=>initTicker('track2'),1000);setTimeout(()=>initTicker('track3'),2000)});
+function initTicker(trackId,dotsId,ms){
+  const t=document.getElementById(trackId),d=document.getElementById(dotsId);
+  if(!t)return;const c=t.querySelectorAll('.ticker-card');if(!c.length)return;
+  const dots=d?d.querySelectorAll('.ticker-dot'):[];let i=0;
+  setInterval(()=>{i=(i+1)%c.length;c[i].scrollIntoView({behavior:'smooth',block:'nearest',inline:'start'});
+  dots.forEach((dot,j)=>dot.classList.toggle('active',j===i))},ms)}
+document.addEventListener('DOMContentLoaded',()=>{initTicker('track1','t1dots',3000);setTimeout(()=>initTicker('track2','t2dots',3500),1000);setTimeout(()=>initTicker('track3','t3dots',4000),2000)});
 
 </script>
 </body>
