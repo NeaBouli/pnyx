@@ -82,7 +82,7 @@
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.25rem;margin:1.5rem 0">
 
     <!-- SERVER -->
-    <div id="srvCard" style="background:white;border-radius:var(--radius);padding:1.5rem;border:2px solid #86efac;position:relative;overflow:hidden">
+    <div id="finance"></div><div id="srvCard" style="background:white;border-radius:var(--radius);padding:1.5rem;border:2px solid #86efac;position:relative;overflow:hidden">
       <div id="srvBadge" style="position:absolute;top:0;right:0;background:#22c55e;color:white;font-size:.65rem;font-weight:700;padding:.2rem .75rem;border-radius:0 var(--radius) 0 .5rem" data-el="ΕΞΟΦΛΗΜΕΝΟ" data-en="PAID">ΕΞΟΦΛΗΜΕΝΟ</div>
       <div style="font-size:2rem;margin-bottom:.5rem">🖥️</div>
       <h4 style="font-weight:900;margin-bottom:.2rem">Server Hosting</h4>
@@ -171,7 +171,8 @@
     <div class="cc"><div class="ci">🐛</div><h4 data-el="Σφάλματα" data-en="Bugs">Σφάλματα</h4><p data-el="Αναφορά στο Issues" data-en="Report on Issues">Issues</p><a href="https://github.com/NeaBouli/pnyx/issues" target="_blank">Issues →</a></div>
     <div class="cc"><div class="ci">📝</div><h4 data-el="Τεκμηρίωση" data-en="Docs">Τεκμηρίωση</h4><p>Wiki</p><a href="wiki/">Wiki →</a></div>
     <div class="cc"><div class="ci">📢</div><h4 data-el="Διάδοση" data-en="Share">Διάδοση</h4><p data-el="Μοιράσου" data-en="Share">Μοιράσου</p><a href="./">ekklesia.gr →</a></div>
-    <div class="cc"><div class="ci">🏛️</div><h4>NGO</h4><p data-el="Συνεργασία" data-en="Cooperation">Συνεργασία</p><a href="https://github.com/NeaBouli/pnyx/issues" target="_blank">Επικοινωνία →</a></div>
+    <div class="cc"><div class="ci">🏛️</div><h4>NGO</h4><p data-el="Συνεργασία" data-en="Cooperation">Συνεργασία</p><a href="https://github.com/NeaBouli/pnyx/issues" target="_blank">Επικοινωνία →</a>
+    <div class="cc"><div class="ci">💳</div><h4 data-el="Κάλυψε Κόστος" data-en="Cover Costs">Κάλυψε Κόστος</h4><p data-el="Hosting ή domain άμεσα" data-en="Hosting or domain directly">Hosting ή domain</p><a href="#finance" onclick="document.getElementById('srvCard')?.scrollIntoView({behavior:'smooth'});return false;" data-el="💶 Χρεώσεις →" data-en="💶 Invoices →">💶 Χρεώσεις →</a></div></div>
   </div>
 
   <h2 class="fi" data-el="Τι ΔΕΝ είμαστε" data-en="What we are NOT">Τι ΔΕΝ είμαστε</h2>
