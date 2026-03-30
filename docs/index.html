@@ -231,10 +231,10 @@
     .t-card {
       background: var(--gray-100); border-radius: 0.75rem; padding: 1rem;
       border: 2px solid #e2e8f0; text-decoration: none; color: inherit;
-      position: absolute; width: 100%; opacity: 0; transform: translateY(8px);
+      display: none; width: 100%;
       transition: all 0.4s;
     }
-    .t-card.visible { opacity: 1; transform: translateY(0); position: relative; }
+    .t-card.visible { display: block; }
     .t-card:hover { border-color: var(--blue); }
     .t-card.al { border-left: 3px solid var(--green); }
     .t-card.rc { border-left: 3px solid var(--blue); }
@@ -310,6 +310,7 @@
 <section class="landing-hero">
   <div class="beta-pill"><span class="pulse"></span> Beta — Ανοιχτός Κώδικας</div>
   <h1>εκκλησία</h1>
+  <img src="pnx.png" alt="εκκλησία" style="width:120px;height:120px;object-fit:contain;margin:1.5rem auto;display:block;filter:drop-shadow(0 4px 12px rgba(37,99,235,0.15))"/>
   <p class="tagline" data-el="Η φωνή σου μετράει. Ψήφισε για πραγματικά νομοσχέδια." data-en="Your voice counts. Vote on real bills.">
     Η φωνή σου μετράει. Ψήφισε για πραγματικά νομοσχέδια.
   </p>
@@ -595,7 +596,20 @@
 <section class="section section-gray" id="contact">
   <div class="section-inner">
     <h2 class="section-title fade-in" data-el="Επικοινωνία" data-en="Contact">Επικοινωνία</h2>
-    <div class="contact-form fade-in">
+
+    <!-- Tab Switcher -->
+    <div class="fade-in" style="display:flex;gap:0.5rem;justify-content:center;margin-bottom:1.5rem">
+      <button id="tabContact" onclick="switchContactTab('contact')" style="padding:0.5rem 1.5rem;border-radius:0.5rem;border:2px solid #2563eb;background:#2563eb;color:white;font-weight:700;cursor:pointer;font-size:0.88rem" data-el="Επικοινωνία" data-en="Contact">Επικοινωνία</button>
+      <button id="tabTicket" onclick="switchContactTab('ticket')" style="padding:0.5rem 1.5rem;border-radius:0.5rem;border:2px solid #e2e8f0;background:white;color:#334155;font-weight:700;cursor:pointer;font-size:0.88rem" data-el="Υποβολή Ticket" data-en="Submit Ticket">Υποβολή Ticket</button>
+    </div>
+
+    <!-- Ticket Banner -->
+    <div class="fade-in" style="text-align:center;margin-bottom:1.5rem">
+      <a href="tickets/" style="color:#2563eb;font-weight:700;font-size:0.88rem;text-decoration:none" data-el="Δείτε όλα τα tickets →" data-en="See all tickets →">Δείτε όλα τα tickets →</a>
+    </div>
+
+    <!-- MODE 1: Contact (existing) -->
+    <div id="contactMode" class="contact-form fade-in">
       <form id="contactForm">
         <div class="form-group">
           <label data-el="Όνομα" data-en="Name">Όνομα</label>
@@ -612,6 +626,41 @@
         <button type="submit" class="btn-submit" data-el="Αποστολή" data-en="Send">Αποστολή</button>
       </form>
     </div>
+
+    <!-- MODE 2: Ticket Submission -->
+    <div id="ticketMode" class="contact-form fade-in" style="display:none">
+      <div id="ticketLoginPrompt" style="text-align:center;padding:2rem">
+        <p style="margin-bottom:1rem;color:#64748b" data-el="Για υποβολή ticket απαιτείται σύνδεση με GitHub." data-en="GitHub login required to submit a ticket.">Για υποβολή ticket απαιτείται σύνδεση με GitHub.</p>
+        <button onclick="polisLogin()" style="padding:0.6rem 1.5rem;background:#2563eb;color:white;border:none;border-radius:0.5rem;font-weight:700;cursor:pointer;font-size:0.9rem" data-el="Σύνδεση με GitHub" data-en="Login with GitHub">Σύνδεση με GitHub</button>
+      </div>
+      <form id="ticketFormLanding" style="display:none" onsubmit="submitLandingTicket(event)">
+        <div id="ticketUserInfo" style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;padding:0.75rem;background:#f0fdf4;border-radius:0.5rem">
+        </div>
+        <div class="form-group">
+          <label data-el="Τίτλος" data-en="Title">Τίτλος</label>
+          <input id="ltTitle" type="text" required maxlength="120" placeholder="..."/>
+        </div>
+        <div class="form-group">
+          <label data-el="Κατηγορία" data-en="Category">Κατηγορία</label>
+          <select id="ltCategory" required>
+            <option value="bug" data-el="Σφάλμα" data-en="Bug">Σφάλμα</option>
+            <option value="feature" data-el="Πρόταση" data-en="Feature">Πρόταση</option>
+            <option value="docs" data-el="Τεκμηρίωση" data-en="Docs">Τεκμηρίωση</option>
+            <option value="infra" data-el="Υποδομή" data-en="Infrastructure">Υποδομή</option>
+            <option value="ux">UX</option>
+            <option value="security" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label data-el="Περιγραφή" data-en="Description">Περιγραφή</label>
+          <textarea id="ltDesc" required minlength="30" placeholder="..."></textarea>
+          <div style="font-size:0.72rem;color:#94a3b8;margin-top:0.2rem" data-el="Ελάχιστο 30 χαρακτήρες" data-en="Min 30 characters">Ελάχιστο 30 χαρακτήρες</div>
+        </div>
+        <button type="submit" class="btn-submit" id="ltSubmitBtn" data-el="Υποβολή Ticket" data-en="Submit Ticket">Υποβολή Ticket</button>
+      </form>
+      <div id="ltSuccess" style="display:none"></div>
+    </div>
+
   </div>
 </section>
 
@@ -727,6 +776,80 @@ document.addEventListener("DOMContentLoaded", function() {
     window.location.href = "mailto:kaspartisan@proton.me?subject=" + subject + "&body=" + body;
   });
 });
+
+// Landing Ticket Tab Switcher
+function switchContactTab(mode) {
+  document.getElementById("contactMode").style.display = mode === "contact" ? "block" : "none";
+  document.getElementById("ticketMode").style.display = mode === "ticket" ? "block" : "none";
+  document.getElementById("tabContact").style.background = mode === "contact" ? "#2563eb" : "white";
+  document.getElementById("tabContact").style.color = mode === "contact" ? "white" : "#334155";
+  document.getElementById("tabContact").style.borderColor = mode === "contact" ? "#2563eb" : "#e2e8f0";
+  document.getElementById("tabTicket").style.background = mode === "ticket" ? "#2563eb" : "white";
+  document.getElementById("tabTicket").style.color = mode === "ticket" ? "white" : "#334155";
+  document.getElementById("tabTicket").style.borderColor = mode === "ticket" ? "#2563eb" : "#e2e8f0";
+  if (mode === "ticket") checkTicketAuth();
+}
+
+function polisLogin() {
+  var state = crypto.randomUUID();
+  sessionStorage.setItem("polis_oauth_state", state);
+  sessionStorage.setItem("polis_return_to", window.location.href + "#contact");
+  // Use config if available, fallback to placeholder
+  var clientId = "REPLACE_WITH_YOUR_GITHUB_OAUTH_CLIENT_ID";
+  var callbackPath = "/pnyx/tickets/auth/callback.html";
+  var params = new URLSearchParams({ client_id: clientId, redirect_uri: window.location.origin + callbackPath, scope: "public_repo", state: state });
+  window.location.href = "https://github.com/login/oauth/authorize?" + params.toString();
+}
+
+function checkTicketAuth() {
+  var token = sessionStorage.getItem("polis_token");
+  if (token) {
+    document.getElementById("ticketLoginPrompt").style.display = "none";
+    document.getElementById("ticketFormLanding").style.display = "block";
+    // Fetch user info
+    fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + token } })
+      .then(function(r) { return r.json(); })
+      .then(function(u) {
+        document.getElementById("ticketUserInfo").innerHTML =
+          '<img src="' + u.avatar_url + '&s=40" style="width:28px;height:28px;border-radius:50%"/>' +
+          '<span style="font-weight:700;font-size:0.85rem">' + u.login + '</span>' +
+          '<button onclick="sessionStorage.removeItem(\'polis_token\');checkTicketAuth()" style="margin-left:auto;background:none;border:1px solid #e2e8f0;border-radius:0.3rem;padding:0.15rem 0.5rem;font-size:0.7rem;cursor:pointer">Logout</button>';
+      });
+  } else {
+    document.getElementById("ticketLoginPrompt").style.display = "block";
+    document.getElementById("ticketFormLanding").style.display = "none";
+  }
+}
+
+async function submitLandingTicket(e) {
+  e.preventDefault();
+  var btn = document.getElementById("ltSubmitBtn");
+  btn.disabled = true; btn.textContent = "...";
+  var token = sessionStorage.getItem("polis_token");
+  var title = document.getElementById("ltTitle").value;
+  var cat = document.getElementById("ltCategory").value;
+  var desc = document.getElementById("ltDesc").value;
+  var meta = { polis_version: "1.0", category: cat, submitted_at: Date.now(), submitter_pubkey: null, pow_nonce: null, pow_difficulty: null, nullifier: null, client_lang: currentLang || "el" };
+  var body = "<!-- POLIS_META\n" + JSON.stringify(meta, null, 2) + "\n-->\n\n## Περιγραφή\n\n" + desc + "\n\n---\n*Submitted via POLIS*";
+  try {
+    var res = await fetch("https://api.github.com/repos/NeaBouli/pnyx-community/issues", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token, "Content-Type": "application/json", Accept: "application/vnd.github.v3+json" },
+      body: JSON.stringify({ title: "[POLIS] " + title, body: body, labels: ["status:pending", "category:" + cat] })
+    });
+    var issue = await res.json();
+    document.getElementById("ticketFormLanding").style.display = "none";
+    document.getElementById("ltSuccess").style.display = "block";
+    document.getElementById("ltSuccess").innerHTML = '<div style="background:#f0fdf4;border:2px solid #86efac;border-radius:0.75rem;padding:1.5rem;text-align:center"><h4 style="color:#166534;font-weight:900">✅ Ticket υποβλήθηκε!</h4><a href="' + issue.html_url + '" target="_blank" style="color:#2563eb;font-weight:700">Δείτε στο GitHub ↗</a></div>';
+  } catch (err) { alert(err.message); }
+  btn.disabled = false; btn.textContent = "Υποβολή Ticket";
+}
+
+// Auto-check auth on load (if returning from OAuth)
+if (window.location.hash === "#contact" && sessionStorage.getItem("polis_token")) {
+  setTimeout(function() { switchContactTab("ticket"); }, 500);
+}
+
 </script>
 </body>
 </html>
