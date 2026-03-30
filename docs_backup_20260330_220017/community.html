@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="el" data-lang="el">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Community — εκκλησία</title>
+  <link rel="icon" type="image/png" href="pnx.png"/>
+  <style>
+    :root{--blue:#2563eb;--blue-dark:#1d4ed8;--blue-light:#eff6ff;--gray-900:#0f172a;--gray-700:#334155;--gray-400:#94a3b8;--gray-100:#f1f5f9;--white:#fff;--green:#22c55e;--yellow:#f59e0b;--red:#ef4444;--radius:1rem;--shadow:0 4px 24px rgba(37,99,235,.10)}
+    *{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--white);color:var(--gray-900);line-height:1.6}
+    nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid #e2e8f0;padding:.75rem 1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
+    .nav-logo{font-size:1.25rem;font-weight:900;color:var(--blue);text-decoration:none;display:flex;align-items:center;gap:.4rem}.nav-logo img{width:40px;height:40px;object-fit:contain}
+    .nav-links{display:flex;gap:.1rem;align-items:center;flex-wrap:wrap}.nav-links a{padding:.28rem .6rem;border-radius:.4rem;color:var(--gray-700);text-decoration:none;font-size:.78rem;font-weight:500;transition:all .2s;white-space:nowrap}.nav-links a:hover,.nav-links a.active{background:var(--blue-light);color:var(--blue)}
+    .lang-btn{cursor:pointer;border:2px solid #e2e8f0;background:var(--white);border-radius:.4rem;padding:.22rem .55rem;font-size:.75rem;font-weight:700;color:var(--gray-700);transition:all .2s;margin-left:.4rem}
+    .hero{background:linear-gradient(135deg,#eff6ff 0%,#f0fdf4 50%,#fefce8 100%);padding:4rem 2rem;text-align:center}.hero h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:900;margin-bottom:.75rem}.hero p{color:var(--gray-700);max-width:650px;margin:0 auto 1.5rem;font-size:1.05rem;line-height:1.7}
+    .bl{display:inline-flex;align-items:center;gap:.4rem;color:var(--blue);text-decoration:none;font-weight:600;font-size:.88rem}
+    .ly{max-width:860px;margin:0 auto;padding:3rem 1.5rem}
+    h2{font-size:1.35rem;font-weight:900;margin:2.5rem 0 1rem;padding-bottom:.5rem;border-bottom:2px solid #e2e8f0}h2:first-child{margin-top:0}
+    p{color:var(--gray-700);margin-bottom:1rem;line-height:1.8}
+    .ib{background:var(--blue-light);border-left:4px solid var(--blue);border-radius:.5rem;padding:1rem 1.25rem;margin:1.25rem 0}.ib p{margin:0}
+    .wb{background:#fefce8;border-left:4px solid var(--yellow);border-radius:.5rem;padding:1rem 1.25rem;margin:1.25rem 0}.wb p{margin:0}
+    .sb{background:#f0fdf4;border-left:4px solid var(--green);border-radius:.5rem;padding:1rem 1.25rem;margin:1.25rem 0}.sb p{margin:0}
+    .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:1.5rem 0}@media(max-width:600px){.pgrid{grid-template-columns:repeat(2,1fr)}}
+    .pc{background:var(--gray-100);border-radius:var(--radius);padding:1.25rem;border:2px solid #e2e8f0;transition:all .2s}.pc:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:var(--shadow)}
+    .pc .pi{font-size:1.8rem;margin-bottom:.5rem}.pc h4{font-weight:800;margin-bottom:.3rem;font-size:.9rem}.pc p{font-size:.78rem;color:var(--gray-400);margin:0}
+    .nodes{display:flex;flex-wrap:wrap;justify-content:center;gap:.6rem;margin:1rem 0}
+    .nd{background:white;border:2px solid #e2e8f0;border-radius:.6rem;padding:.5rem .9rem;font-size:.78rem;font-weight:700}.nd.cn{background:var(--blue);color:white;border-color:var(--blue)}.nd.cm{border-color:var(--green);color:#166534;background:#f0fdf4}
+    .fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:1.5rem 0}@media(max-width:700px){.fgrid{grid-template-columns:1fr}}
+    .fc{background:white;border-radius:var(--radius);padding:1.25rem;border:2px solid #86efac;position:relative;overflow:hidden}.fc.gray{background:#f8fafc;border:2px dashed #e2e8f0;opacity:.75}
+    .fb{position:absolute;top:0;right:0;color:white;font-size:.62rem;font-weight:700;padding:.2rem .65rem;border-radius:0 var(--radius) 0 .4rem}
+    .fi2{font-size:1.8rem;margin-bottom:.4rem}.ft{font-weight:900;margin-bottom:.2rem;font-size:.95rem}.fs{font-size:.72rem;color:var(--gray-400);margin-bottom:.6rem}
+    .finfo{background:var(--gray-100);border-radius:.5rem;padding:.5rem .6rem;margin-bottom:.5rem;font-size:.75rem}
+    .fr{display:flex;justify-content:space-between;margin-bottom:.15rem}.fr:last-child{margin:0}
+    .ftb{border-radius:.4rem;padding:.5rem;margin-bottom:.5rem;text-align:center}
+    .ftm{font-size:.95rem;font-weight:900;font-family:monospace}.fts{font-size:.6rem;margin-top:.1rem}
+    .fst{border-radius:.4rem;padding:.4rem .5rem;text-align:center;font-size:.75rem;font-weight:700}
+    .tb{background:var(--gray-100);border-radius:.75rem;padding:.75rem 1.25rem;border:2px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-top:.75rem}
+    .ctgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:1.5rem 0}@media(max-width:700px){.ctgrid{grid-template-columns:repeat(2,1fr)}}@media(max-width:440px){.ctgrid{grid-template-columns:1fr}}
+    .ctc{background:white;border-radius:var(--radius);padding:1.25rem;border:2px solid #e2e8f0;text-align:center;transition:all .2s;display:flex;flex-direction:column;align-items:center}.ctc:hover{border-color:var(--blue);box-shadow:var(--shadow);transform:translateY(-2px)}.ctc.hl{border-color:var(--blue);background:#eff6ff}
+    .ctc .ci{font-size:2rem;margin-bottom:.5rem}.ctc h4{font-weight:800;margin-bottom:.3rem;font-size:.9rem}.ctc p{font-size:.78rem;color:var(--gray-400);margin-bottom:.75rem;flex:1}
+    .ctb{display:inline-block;padding:.4rem 1rem;background:var(--blue);color:white;border-radius:.5rem;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s}.ctb:hover{background:var(--blue-dark)}.ctb.gr{background:#16a34a}
+    footer{background:var(--gray-900);color:#94a3b8;padding:2rem;text-align:center;font-size:.82rem;margin-top:4rem}footer a{color:#64748b;text-decoration:none;margin:0 .4rem}footer a:hover{color:white}
+    .flinks{display:flex;flex-wrap:wrap;justify-content:center;gap:.3rem .75rem;margin-bottom:.75rem}
+    .fade-in{opacity:0;transform:translateY(14px);transition:all .5s ease}.fade-in.visible{opacity:1;transform:translateY(0)}
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="./" class="nav-logo"><img src="pnx.png" alt="" style="width:40px;height:40px;object-fit:contain"/>εκκλησία</a>
+  <div class="nav-links">
+    <a href="./" data-el="Αρχική" data-en="Home">Αρχική</a>
+    <a href="votes/active.html" data-el="Ψηφοφορίες" data-en="Votes">Ψηφοφορίες</a>
+    <a href="wiki/">Wiki</a>
+    <a href="community.html" class="active">Community</a>
+    <button class="lang-btn" onclick="toggleLang()"><span id="langFlag">🇬🇧</span><span id="langLabel">EN</span></button>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>🤝 <span data-el="Κοινοτική Πρωτοβουλία" data-en="Community Initiative">Κοινοτική Πρωτοβουλία</span></h1>
+  <p data-el="Η Ekklesia.gr δεν ανήκει σε καμία εταιρεία, κόμμα ή κυβέρνηση. Ανήκει σε όσους πιστεύουν ότι η δημοκρατία ανήκει στους πολίτες." data-en="Ekklesia.gr belongs to no company, party or government. It belongs to those who believe democracy belongs to the citizens.">Η Ekklesia.gr δεν ανήκει σε καμία εταιρεία, κόμμα ή κυβέρνηση.<br/>Ανήκει σε όσους πιστεύουν ότι η δημοκρατία ανήκει στους πολίτες.</p>
+  <a href="./" class="bl">← <span data-el="Αρχική" data-en="Home">Αρχική</span></a>
+</div>
+
+<div class="ly">
+
+  <h2 class="fade-in" data-el="Οι Αρχές μας" data-en="Our Principles">Οι Αρχές μας</h2>
+  <div class="pgrid">
+    <div class="pc fade-in"><div class="pi">🔓</div><h4 data-el="Πλήρης Διαφάνεια" data-en="Full Transparency">Πλήρης Διαφάνεια</h4><p data-el="Κάθε γραμμή κώδικα δημόσια." data-en="Every line of code public.">Κάθε γραμμή κώδικα δημόσια.</p></div>
+    <div class="pc fade-in"><div class="pi">🌐</div><h4 data-el="Αποκέντρωση" data-en="Decentralization">Αποκέντρωση</h4><p data-el="Η κοινότητα αποφασίζει." data-en="The community decides.">Η κοινότητα αποφασίζει.</p></div>
+    <div class="pc fade-in"><div class="pi">🤲</div><h4 data-el="Κοινοτική Χρηματοδότηση" data-en="Community Funding">Κοινοτική Χρηματοδότηση</h4><p data-el="Από πολίτες, για πολίτες." data-en="By citizens, for citizens.">Από πολίτες, για πολίτες.</p></div>
+    <div class="pc fade-in"><div class="pi">🚫</div><h4 data-el="Χωρίς Διαφημίσεις" data-en="No Ads">Χωρίς Διαφημίσεις</h4><p data-el="Ποτέ." data-en="Never.">Ποτέ.</p></div>
+    <div class="pc fade-in"><div class="pi">⚖️</div><h4 data-el="Πολιτική Ουδετερότητα" data-en="Political Neutrality">Πολιτική Ουδετερότητα</h4><p data-el="Καμία κομματική σύνδεση." data-en="No party affiliation.">Καμία κομματική σύνδεση.</p></div>
+    <div class="pc fade-in"><div class="pi">🔐</div><h4 data-el="Ιδιωτικότητα" data-en="Privacy First">Ιδιωτικότητα</h4><p>GDPR by design.</p></div>
+  </div>
+
+  <h2 class="fade-in" data-el="Αποκεντρωμένη Δομή" data-en="Decentralized Structure">Αποκεντρωμένη Δομή</h2>
+  <div style="background:var(--gray-100);border-radius:1.5rem;padding:1.5rem;text-align:center" class="fade-in">
+    <div class="nodes">
+      <div class="nd cm">👩 <span data-el="Πολίτες" data-en="Citizens">Πολίτες</span></div>
+      <div class="nd cm">🧑‍💻 Developers</div>
+      <div class="nd cn">εκκλησία</div>
+      <div class="nd cm">🏛️ NGOs</div>
+      <div class="nd cm">📰 <span data-el="Δημοσιογράφοι" data-en="Journalists">Δημοσιογράφοι</span></div>
+    </div>
+    <p style="font-size:.8rem;color:var(--gray-400);margin:0" data-el="Όλοι συνεισφέρουν ισότιμα." data-en="Everyone contributes equally.">Όλοι συνεισφέρουν ισότιμα.</p>
+  </div>
+
+  <h2 class="fade-in" data-el="Χρηματοδότηση &amp; Βιωσιμότητα" data-en="Funding &amp; Sustainability">Χρηματοδότηση &amp; Βιωσιμότητα</h2>
+
+  <div id="finance" class="fgrid fade-in">
+    <div class="fc" id="srvCard">
+      <div class="fb" id="srvBadge" style="background:#22c55e" data-el="ΕΞΟΦΛΗΜΕΝΟ" data-en="PAID">ΕΞΟΦΛΗΜΕΝΟ</div>
+      <div class="fi2">🖥️</div><div class="ft">Server</div><div class="fs">Hetzner CX21 · EU · GDPR</div>
+      <div class="finfo"><div class="fr"><span data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong>7€/<span data-el="μήνα" data-en="mo">μήνα</span></strong></div><div class="fr"><span data-el="Κατάσταση:" data-en="Status:">Κατάσταση:</span><strong id="srvStatus" style="color:#166534" data-el="Μη ενεργός" data-en="Not active">Μη ενεργός</strong></div></div>
+      <div class="ftb" id="srvTimerBox" style="background:#f0fdf4"><div style="font-size:.65rem;font-weight:700;color:#166534;margin-bottom:.2rem">⏱</div><div class="ftm" id="srvTimer" style="color:#166534">—</div><div class="fts" id="srvTimerSub" style="color:#166534" data-el="(Δεν έχει οριστεί)" data-en="(Not set)">(Δεν έχει οριστεί)</div></div>
+      <div class="fst" id="srvGreen" style="background:#f0fdf4;color:#166534">✅ <span data-el="Καμία οφειλή" data-en="No invoice">Καμία οφειλή</span></div>
+      <div class="fst" id="srvYellow" style="display:none;background:#fefce8;color:#92400e">⚠️</div>
+      <div id="srvRed" style="display:none"><div class="fst" style="background:#fef2f2;color:#dc2626;margin-bottom:.4rem">🔴</div><div style="background:white;border:1px solid #fca5a5;border-radius:.4rem;padding:.4rem;margin-bottom:.4rem;font-family:monospace"><div style="font-size:.6rem;color:var(--gray-400)">RF:</div><div id="srvRFnum" style="font-size:.82rem;font-weight:700">—</div></div></div>
+    </div>
+
+    <div class="fc" id="domCard">
+      <div class="fb" id="domBadge" style="background:#22c55e" data-el="ΕΞΟΦΛΗΜΕΝΟ" data-en="PAID">ΕΞΟΦΛΗΜΕΝΟ</div>
+      <div class="fi2">🌐</div><div class="ft">Domain</div><div class="fs">ekklesia.gr · Papaki.gr</div>
+      <div class="finfo"><div class="fr"><span data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong style="color:#166534">9,30€/<span data-el="έτος" data-en="yr">έτος</span></strong></div><div class="fr"><span data-el="Πληρώθηκε:" data-en="Paid:">Πληρώθηκε:</span><strong style="color:#166534">29/03/2026 · 24μ</strong></div><div class="fr"><span data-el="Λήξη:" data-en="Expires:">Λήξη:</span><strong style="color:#166534">29/03/2028</strong></div></div>
+      <div class="ftb" id="domTimerBox" style="background:#f0fdf4"><div style="font-size:.65rem;font-weight:700;color:#166534;margin-bottom:.2rem">⏱ <span data-el="Λήξη" data-en="Expiry">Λήξη</span></div><div class="ftm" id="domTimer" style="color:#166534">—</div><div class="fts" id="domTimerSub" style="color:#166534">ημ · ώ · λ · δ</div></div>
+      <div class="fst" id="domGreen" style="background:#f0fdf4;color:#166534">✅ <span data-el="Εξοφλημένο 🙏" data-en="Paid 🙏">Εξοφλημένο 🙏</span></div>
+      <div class="fst" id="domYellow" style="display:none;background:#fefce8;color:#92400e">⚠️</div>
+      <div id="domRed" style="display:none"><div class="fst" style="background:#fef2f2;color:#dc2626">🔴</div></div>
+    </div>
+
+    <div class="fc gray">
+      <div class="fb" style="background:#94a3b8" data-el="ΣΧΕΔΙΑΖΕΤΑΙ" data-en="PLANNED">ΣΧΕΔΙΑΖΕΤΑΙ</div>
+      <div class="fi2">🪞</div><div class="ft" style="color:var(--gray-400)" data-el="Spiegel-Server" data-en="Mirror Server">Spiegel-Server</div><div class="fs" data-el="Αποκεντρωμένο αντίγραφο" data-en="Decentralized mirror">Αποκεντρωμένο αντίγραφο</div>
+      <div class="finfo" style="background:#f1f5f9"><div class="fr"><span style="color:#94a3b8" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong style="color:#94a3b8" data-el="Υπό διερεύνηση" data-en="TBD">Υπό διερεύνηση</strong></div></div>
+      <div class="fst" style="background:#f1f5f9;color:#94a3b8;margin-top:.5rem">🔜 <span data-el="Προγραμματίζεται" data-en="Planned">Προγραμματίζεται</span></div>
+    </div>
+  </div>
+
+  <div class="tb fade-in">
+    <div style="display:flex;gap:1.5rem;font-size:.82rem;flex-wrap:wrap"><span>🖥️ 84€</span><span>🌐 9,30€</span><span>💻 <span data-el="Εθελοντική" data-en="Volunteer">Εθελοντική</span></span></div>
+    <div style="font-size:1rem;font-weight:900;color:var(--blue)">~93,30€/<span data-el="έτος" data-en="yr">έτος</span></div>
+  </div>
+
+  <div class="sb fade-in" style="margin-top:1rem"><p data-el="💡 Κανένας χρηματοδότης δεν μπορεί να επηρεάσει. Μόνο η κοινότητα." data-en="💡 No funder can influence. Only the community.">💡 Κανένας χρηματοδότης δεν μπορεί να επηρεάσει. Μόνο η κοινότητα.</p></div>
+
+  <h2 class="fade-in" data-el="Πώς να Συμμετέχεις" data-en="How to Participate">Πώς να Συμμετέχεις</h2>
+  <div class="ctgrid fade-in">
+    <div class="ctc"><div class="ci">🧑‍💻</div><h4 data-el="Κώδικας" data-en="Code">Κώδικας</h4><p data-el="Συνεισφορά μέσω GitHub" data-en="Contribute via GitHub">GitHub</p><a href="https://github.com/NeaBouli/pnyx" target="_blank" class="ctb">GitHub →</a></div>
+    <div class="ctc"><div class="ci">🐛</div><h4 data-el="Σφάλματα" data-en="Bugs">Σφάλματα</h4><p data-el="Αναφορά Issues" data-en="Report Issues">Issues</p><a href="https://github.com/NeaBouli/pnyx/issues" target="_blank" class="ctb">Issues →</a></div>
+    <div class="ctc"><div class="ci">📝</div><h4 data-el="Τεκμηρίωση" data-en="Docs">Τεκμηρίωση</h4><p>Wiki</p><a href="wiki/" class="ctb">Wiki →</a></div>
+    <div class="ctc"><div class="ci">📢</div><h4 data-el="Διάδοση" data-en="Share">Διάδοση</h4><p data-el="Μοιράσου" data-en="Share">Μοιράσου</p><a href="./" class="ctb gr">ekklesia.gr →</a></div>
+    <div class="ctc"><div class="ci">🏛️</div><h4>NGO</h4><p data-el="Συνεργασία" data-en="Cooperation">Συνεργασία</p><a href="https://github.com/NeaBouli/pnyx/issues" target="_blank" class="ctb">Επικοινωνία →</a></div>
+    <div class="ctc hl"><div class="ci">💳</div><h4 data-el="Κάλυψε Κόστος" data-en="Cover Costs">Κάλυψε Κόστος</h4><p data-el="Hosting ή domain" data-en="Hosting or domain">Hosting / domain</p><a href="#finance" class="ctb" onclick="document.getElementById('finance').scrollIntoView({behavior:'smooth'});return false;">💶 →</a></div>
+  </div>
+
+  <h2 class="fade-in" data-el="Τι ΔΕΝ είμαστε" data-en="What we are NOT">Τι ΔΕΝ είμαστε</h2>
+  <div class="wb fade-in"><p>⚠️ <strong>ΔΕΝ</strong> κόμμα · <strong>ΔΕΝ</strong> εταιρεία · <strong>ΔΕΝ</strong> κυβέρνηση · <strong>ΔΕΝ</strong> νομικά δεσμευτική.<br/><span data-el="Εργαλείο — ανήκει στους πολίτες." data-en="A tool — belongs to the citizens.">Εργαλείο — ανήκει στους πολίτες.</span></p></div>
+
+  <div style="text-align:center;margin-top:3rem;padding:2.5rem;background:var(--gray-100);border-radius:1.5rem" class="fade-in">
+    <p style="font-size:1.3rem;font-weight:900;margin-bottom:.5rem" data-el="Η δημοκρατία δεν είναι θέαμα. Είναι πράξη." data-en="Democracy is not a spectacle. It is action.">Η δημοκρατία δεν είναι θέαμα. Είναι πράξη.</p>
+    <a href="https://github.com/NeaBouli/pnyx" target="_blank" style="display:inline-flex;align-items:center;gap:.5rem;padding:.75rem 2rem;background:var(--blue);color:white;border-radius:var(--radius);font-weight:700;text-decoration:none;margin-top:1rem">⭐ <span data-el="Star στο GitHub" data-en="Star on GitHub">Star στο GitHub</span></a>
+  </div>
+</div>
+
+<footer>
+  <div class="flinks">
+    <a href="./">Αρχική</a>
+    <a href="wiki/">Wiki</a>
+    <a href="votes/active.html">🟢 Τρέχουσες</a>
+    <a href="votes/recent.html">🕐 24ω</a>
+    <a href="votes/results.html">✅ Αποτελέσματα</a>
+    <a href="community.html">Community</a>
+    <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>
+  </div>
+  <p>εκκλησία · © 2026 Vendetta Labs · MIT License</p>
+</footer>
+
+<script>
+var currentLang="el";
+function toggleLang(){currentLang=currentLang==="el"?"en":"el";document.getElementById("langFlag").textContent=currentLang==="el"?"🇬🇧":"🇬🇷";document.getElementById("langLabel").textContent=currentLang==="el"?"EN":"ΕΛ";document.querySelectorAll("[data-el]").forEach(function(el){var t=el.getAttribute("data-"+currentLang);if(t)el.innerHTML=t})}
+var obs=new IntersectionObserver(function(e){e.forEach(function(x){if(x.isIntersecting)x.target.classList.add("visible")})},{threshold:.1});document.querySelectorAll(".fade-in").forEach(function(el){obs.observe(el)});
+
+(function(){
+  var SRV_DUE=null,SRV_RF="RF__ ____ ____",DOM_DUE=new Date("2028-03-29T00:00:00"),YD=30,RD=7;
+  function pad(n){return String(n).padStart(2,"0")}
+  function fmt(ms){if(ms<=0)return"00:00:00";var s=Math.floor(ms/1000),m=Math.floor(s/60);s%=60;var h=Math.floor(m/60);m%=60;var d=Math.floor(h/24);h%=24;return d+"ημ "+pad(h)+":"+pad(m)+":"+pad(s)}
+  function amp(o,due,rf,isSrv){var c=document.getElementById(o.c),b=document.getElementById(o.b),g=document.getElementById(o.g),y=document.getElementById(o.y),r=document.getElementById(o.r),tb=document.getElementById(o.tb),t=document.getElementById(o.t);if(!c)return;if(isSrv&&!due){c.style.borderColor="#86efac";b.style.background="#22c55e";g.style.display="block";y.style.display="none";r.style.display="none";if(t)t.textContent="—";return}var now=new Date(),ms=due-now,days=Math.ceil(ms/864e5);if(t)t.textContent=fmt(ms);if(days>YD){c.style.borderColor="#86efac";b.style.background="#22c55e";if(tb)tb.style.background="#f0fdf4";if(t)t.style.color="#166534";g.style.display="block";y.style.display="none";r.style.display="none"}else if(days>RD){c.style.borderColor="#fde047";b.style.background="#f59e0b";b.textContent="ΣΚΟΠΕΥΕΤΑΙ";if(tb)tb.style.background="#fefce8";if(t)t.style.color="#92400e";g.style.display="none";y.style.display="block";r.style.display="none"}else{c.style.borderColor="#fca5a5";b.style.background="#ef4444";b.textContent="ΛΗΞΙΠΡΟΘΕΣΜΟ";if(tb)tb.style.background="#fef2f2";if(t)t.style.color="#dc2626";g.style.display="none";y.style.display="none";r.style.display="block";var rfE=document.getElementById("srvRFnum");if(rfE&&rf)rfE.textContent=rf}}
+  function tick(){amp({c:"srvCard",b:"srvBadge",g:"srvGreen",y:"srvYellow",r:"srvRed",tb:"srvTimerBox",t:"srvTimer"},SRV_DUE,SRV_RF,true);amp({c:"domCard",b:"domBadge",g:"domGreen",y:"domYellow",r:"domRed",tb:"domTimerBox",t:"domTimer"},DOM_DUE,null,false)}
+  tick();setInterval(tick,1000);
+})();
+</script>
+</body>
+</html>
+
+<!-- v2026-03-30T18:32:02Z -->
