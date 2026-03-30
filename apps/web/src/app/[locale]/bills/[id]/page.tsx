@@ -49,6 +49,8 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
     const nullifier = loadNullifier();
 
     if (!keypair || !nullifier) {
+      // Save current path so verify page can redirect back
+      sessionStorage.setItem("verify_redirect", window.location.pathname);
       setVoteStatus("needs_key");
       setSelectedVote(choice);
       return;

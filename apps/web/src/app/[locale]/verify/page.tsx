@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useLocale } from "next-intl";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ekklesia } from "@/lib/api";
+import { storeKeypair, storeNullifier, loadNullifier, hexToPrivateKey, hexToPublicKey } from "@/lib/crypto";
 
 type Phase = "form" | "success" | "already";
 
@@ -26,6 +28,7 @@ const REGIONS = [
 
 export default function VerifyPage() {
   const locale = useLocale();
+  const router = useRouter();
   const [phase, setPhase]           = useState<Phase>("form");
   const [phone, setPhone]           = useState("");
   const [region, setRegion]         = useState("");
@@ -37,9 +40,7 @@ export default function VerifyPage() {
   const [copied, setCopied]         = useState(false);
 
   // Check if already verified
-  const existingKey = typeof window !== "undefined"
-    ? localStorage.getItem("ekklesia_nullifier_hash")
-    : null;
+  const existingKey = typeof window !== "undefined" ? loadNullifier() : null;
 
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
@@ -50,9 +51,12 @@ export default function VerifyPage() {
       const res = await ekklesia.verify(phone, region || undefined, gender);
       const data = res.data;
 
-      // Store in localStorage (Beta — Secure Enclave in Mobile V2)
-      localStorage.setItem("ekklesia_nullifier_hash", data.nullifier_hash);
-      localStorage.setItem("ekklesia_public_key", data.public_key_hex);
+      // Store via crypto.ts (Beta: localStorage, later: Secure Enclave)
+      storeKeypair({
+        privateKey: hexToPrivateKey(data.private_key_hex),
+        publicKey: hexToPublicKey(data.public_key_hex),
+      });
+      storeNullifier(data.nullifier_hash);
 
       setPrivateKey(data.private_key_hex);
       setNullifier(data.nullifier_hash);
@@ -158,14 +162,22 @@ export default function VerifyPage() {
             </p>
           </div>
 
-          {/* CTA */}
+          {/* CTA — redirect to previous page or bills */}
           <div className="text-center">
-            <Link
-              href={`/${locale}/bills`}
+            <button
+              onClick={() => {
+                const redirect = sessionStorage.getItem("verify_redirect");
+                if (redirect) {
+                  sessionStorage.removeItem("verify_redirect");
+                  router.push(redirect);
+                } else {
+                  router.push(`/${locale}/bills`);
+                }
+              }}
               className="inline-block px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold transition-colors"
             >
               🏛️ {locale === "el" ? "Ψηφίστε τώρα" : "Vote now"} →
-            </Link>
+            </button>
           </div>
         </div>
       </main>
