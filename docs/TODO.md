@@ -82,3 +82,20 @@
 - [ ] Environment Variables (Secrets Management)
 - [ ] Domain: ekklesia.gr
 - [ ] Externes Sicherheitsaudit
+
+## ✅ Session 1.5 + 2.0 — Abgeschlossen
+- [x] GitHub Pages live: ekklesia.gr
+- [x] Landing Page (8 Sections, hell, animiert, el/en)
+- [x] Wiki HTML (10 Seiten, identischer Style)
+- [x] Whitepaper (13 Kapitel, vollständig)
+- [x] MOD-16 Municipal Governance (DB Models + Router Stub)
+- [x] Parteien skalierbar (parties_config.json)
+- [x] Wiki Home Live Ticker (3 Ticker × auto-scroll)
+- [x] Alembic Migration MOD-16
+
+## 🔄 Session 2 — Nächste Schritte
+- [ ] Ed25519 Signatur im Browser (@noble/curves)
+- [ ] Docker lokal + alembic upgrade head + seed
+- [ ] E2E Test vollständiger Flow
+- [ ] Wiki Ticker → echte API-Daten verbinden
+- [ ] Expo Mobile App Setup
