@@ -166,7 +166,7 @@
     <a href="database.html">Database</a>
     <a href="contributing.html">Contributing</a>
     <a href="whitepaper.html" class="active">Whitepaper</a>
-    <button class="lang-btn" onclick="toggleLang()"><span id="langFlag">🇬🇧</span> <span id="langLabel">EN</span></button>
+    <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
   </div>
 </nav>
 <div class="hero" style="background:linear-gradient(135deg,#0f172a,#1e3a5f)">
@@ -299,7 +299,7 @@ divergence = abs(citizen_yes_pct - (1.0 if authority_passed else 0.0))
 var currentLang = "el";
 function toggleLang() {
   currentLang = currentLang === "el" ? "en" : "el";
-  document.getElementById("langFlag").textContent = currentLang === "el" ? "EN" : "ΕΛ";
+  document.getElementById("langBtn").textContent = currentLang === "el" ? "EN" : "ΕΛ";
   document.querySelectorAll("[data-el]").forEach(function(el) {
     var t = el.getAttribute("data-" + currentLang);
     if (t) el.innerHTML = t;
