@@ -231,10 +231,10 @@
     .t-card {
       background: var(--gray-100); border-radius: 0.75rem; padding: 1rem;
       border: 2px solid #e2e8f0; text-decoration: none; color: inherit;
-      position: absolute; width: 100%; opacity: 0; transform: translateY(8px);
+      display: none; width: 100%;
       transition: all 0.4s;
     }
-    .t-card.visible { opacity: 1; transform: translateY(0); position: relative; }
+    .t-card.visible { display: block; }
     .t-card:hover { border-color: var(--blue); }
     .t-card.al { border-left: 3px solid var(--green); }
     .t-card.rc { border-left: 3px solid var(--blue); }
