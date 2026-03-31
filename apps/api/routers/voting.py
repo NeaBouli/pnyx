@@ -21,6 +21,7 @@ from models import (
 
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../packages/crypto"))
+sys.path.insert(0, "/packages/crypto")  # Docker container path
 from keypair import verify_signature
 
 router = APIRouter(prefix="/api/v1/vote", tags=["MOD-04 CitizenVote"])

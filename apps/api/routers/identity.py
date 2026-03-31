@@ -17,6 +17,7 @@ from models import IdentityRecord, KeyStatus
 
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../packages/crypto"))
+sys.path.insert(0, "/packages/crypto")  # Docker container path
 from keypair import generate_keypair
 from nullifier import generate_nullifier_hash
 from hlr import hlr_lookup, HLRResult
