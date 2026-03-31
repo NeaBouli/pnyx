@@ -164,7 +164,7 @@
     .node { background: white; border: 2px solid #e2e8f0; border-radius: 0.6rem; padding: 0.5rem 0.9rem; font-size: 0.78rem; font-weight: 700; color: var(--gray-700); }
     .node-c { background: var(--blue); color: white; border-color: var(--blue); }
     .node-g { border-color: var(--green); color: #166634; background: #f0fdf4; }
-    .finance-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin: 1.5rem 0; }
+    .finance-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); gap: 1rem; margin: 1.5rem 0; }
     @media(max-width:700px) { .finance-grid { grid-template-columns: 1fr; } }
     .fc { background: white; border-radius: var(--radius); padding: 1.25rem; border: 2px solid #86efac; position: relative; overflow: hidden; transition: border-color 0.4s; }
     .fc.gray { background: #f8fafc; border: 2px dashed #e2e8f0; opacity: 0.75; }
@@ -313,6 +313,34 @@
       <div class="fc-status" style="background:#f1f5f9;color:#94a3b8;margin-top:0.5rem">🔜 <span data-el="Προγραμματίζεται" data-en="Planned">Προγραμματίζεται</span></div>
     </div>
 
+    <!-- ARWEAVE — MOD-08 -->
+    <div class="fc gray">
+      <div class="fc-badge" style="background:#94a3b8" data-el="ΑΝΕΝΕΡΓΟ" data-en="INACTIVE">ΑΝΕΝΕΡΓΟ</div>
+      <div class="fc-icon">🗄️</div>
+      <div class="fc-title" style="color:var(--gray-400)">Arweave</div>
+      <div class="fc-sub" data-el="Μόνιμη αποθήκευση Audit Trail — MOD-08" data-en="Permanent audit trail storage — MOD-08">Μόνιμη αποθήκευση Audit Trail</div>
+      <div class="fc-info" style="background:#f1f5f9">
+        <div class="fc-row"><span style="color:#94a3b8" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong style="color:#94a3b8">~$0.0001/<span data-el="ανέβασμα" data-en="upload">ανέβασμα</span></strong></div>
+        <div class="fc-row"><span style="color:#94a3b8" data-el="Πληρωμή:" data-en="Payment:">Πληρωμή:</span><strong style="color:#94a3b8">AR Token Wallet</strong></div>
+        <div class="fc-row"><span style="color:#94a3b8" data-el="Διεύθυνση:" data-en="Address:">Διεύθυνση:</span><strong style="color:#94a3b8;font-size:0.7rem;word-break:break-all" data-el="Σύντομα δημόσια" data-en="Public soon">Σύντομα δημόσια</strong></div>
+      </div>
+      <div class="fc-status" style="background:#f1f5f9;color:#94a3b8;margin-top:0.5rem">🔜 <span data-el="Σύνδεση με API σύντομα" data-en="API connection soon">Σύνδεση με API σύντομα</span></div>
+    </div>
+
+    <!-- HLR — SMS VERIFICATION -->
+    <div class="fc gray">
+      <div class="fc-badge" style="background:#94a3b8" data-el="ΑΝΕΝΕΡΓΟ" data-en="INACTIVE">ΑΝΕΝΕΡΓΟ</div>
+      <div class="fc-icon">📱</div>
+      <div class="fc-title" style="color:var(--gray-400)">HLR Lookup</div>
+      <div class="fc-sub" data-el="Επαλήθευση κινητού — MOD-01" data-en="Mobile verification — MOD-01">Επαλήθευση κινητού — MOD-01</div>
+      <div class="fc-info" style="background:#f1f5f9">
+        <div class="fc-row"><span style="color:#94a3b8" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong style="color:#94a3b8">~$0.002/<span data-el="ερώτημα" data-en="query">ερώτημα</span></strong></div>
+        <div class="fc-row"><span style="color:#94a3b8" data-el="Πληρωμή:" data-en="Payment:">Πληρωμή:</span><strong style="color:#94a3b8">Crypto Wallet</strong></div>
+        <div class="fc-row"><span style="color:#94a3b8" data-el="Διεύθυνση:" data-en="Address:">Διεύθυνση:</span><strong style="color:#94a3b8;font-size:0.7rem;word-break:break-all" data-el="Σύντομα δημόσια" data-en="Public soon">Σύντομα δημόσια</strong></div>
+      </div>
+      <div class="fc-status" style="background:#f1f5f9;color:#94a3b8;margin-top:0.5rem">🔜 <span data-el="Σύνδεση με API σύντομα" data-en="API connection soon">Σύνδεση με API σύντομα</span></div>
+    </div>
+
   </div>
 
   <!-- TOTAL BANNER -->
@@ -321,9 +349,11 @@
       <span data-el="Σύνολο/Έτος:" data-en="Total/Year:">Σύνολο/Έτος:</span>
       <span>Server: <strong>84€</strong></span>
       <span>Domain: <strong>9,30€</strong></span>
+      <span>Arweave: <strong style="color:#94a3b8" data-el="ανενεργό" data-en="inactive">ανενεργό</strong></span>
+      <span>HLR: <strong style="color:#94a3b8" data-el="ανενεργό" data-en="inactive">ανενεργό</strong></span>
       <span data-el="Ανάπτυξη: Εθελοντική" data-en="Development: Volunteer">Ανάπτυξη: <strong data-el="Εθελοντική" data-en="Volunteer">Εθελοντική</strong></span>
     </div>
-    <div style="font-size:1rem;font-weight:900;color:var(--blue)">~93,30€/<span data-el="έτος" data-en="year">έτος</span></div>
+    <div style="font-size:1rem;font-weight:900;color:var(--blue)">~93,30€/<span data-el="έτος" data-en="year">έτος</span> + crypto</div>
   </div>
 
   <h2 class="fade-in" data-el="Πώς να Συμμετέχεις" data-en="How to Participate">Πώς να Συμμετέχεις</h2>
