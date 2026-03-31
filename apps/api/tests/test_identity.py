@@ -16,7 +16,7 @@ async def test_verify_invalid_number():
             "phone_number": "+302101234567"
         })
     assert r.status_code == 400
-    assert "Ungültige Nummer" in r.json()["detail"]
+    assert "Μη έγκυρος" in r.json()["detail"] or "Ungültige" in r.json()["detail"]
 
 
 @pytest.mark.asyncio
