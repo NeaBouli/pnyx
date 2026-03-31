@@ -66,6 +66,8 @@ services:
       REDIS_URL: redis://redis:6379
       SECRET_KEY: ${SECRET_KEY}
       SERVER_SALT: ${SERVER_SALT}
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
       ENVIRONMENT: production
     depends_on:
       db:
@@ -99,10 +101,29 @@ services:
       - "traefik.http.routers.web.tls.certresolver=letsencrypt"
       - "traefik.http.services.web.loadbalancer.server.port=3000"
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ekklesia-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - ekklesia
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 volumes:
   postgres-data:
   redis-data:
   traefik-letsencrypt:
+  ollama-data:
 
 networks:
   ekklesia:
