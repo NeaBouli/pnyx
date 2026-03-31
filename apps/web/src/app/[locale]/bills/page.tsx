@@ -36,7 +36,10 @@ export default function BillsPage() {
     <main className="min-h-screen bg-gray-950 text-white">
       <header className="border-b border-gray-800 px-6 py-4 flex justify-between items-center">
         <Link href=".." className="text-blue-400 font-bold text-xl">← εκκλησία</Link>
-        <div className="flex gap-3 text-sm text-gray-400">
+        <div className="flex gap-3 text-sm text-gray-400 items-center">
+          <Link href="results" className="text-xs text-gray-500 hover:text-blue-400 transition-colors">
+            {locale === "el" ? "Αποτελέσματα" : "Results"}
+          </Link>
           <Link href="/el/bills" className="hover:text-white">ΕΛ</Link>
           <Link href="/en/bills" className="hover:text-white">EN</Link>
         </div>
