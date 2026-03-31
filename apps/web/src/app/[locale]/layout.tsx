@@ -12,6 +12,13 @@ export const metadata: Metadata = {
   description: "Ψηφιακή Πλατφόρμα Αμέσης Δημοκρατίας για τον Έλληνα Πολίτη",
   keywords: ["democracy", "greece", "parliament", "voting", "δημοκρατία"],
   authors: [{ name: "Vendetta Labs", url: "https://github.com/NeaBouli" }],
+  manifest: "/manifest.json",
+  themeColor: "#2563eb",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "εκκλησία",
+  },
   openGraph: {
     title: "εκκλησία — Ekklesia.gr",
     description: "Digital Direct Democracy Platform for Greek Citizens",
@@ -32,6 +39,10 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale}>
+      <head>
+        <link rel="apple-touch-icon" href="/pnx.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+      </head>
       <body className={inter.className}>
         <NextIntlClientProvider messages={messages}>
           <NavHeader />

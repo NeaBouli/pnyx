@@ -1,0 +1,38 @@
+{
+  "name": "εκκλησία — Ψηφιακή Άμεση Δημοκρατία",
+  "short_name": "εκκλησία",
+  "description": "Ψηφίστε για πραγματικά νομοσχέδια. Χωρίς cookies, χωρίς προσωπικά δεδομένα.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a237e",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "lang": "el",
+  "icons": [
+    {
+      "src": "/pnx.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pnx.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["politics", "government", "social"],
+  "shortcuts": [
+    {
+      "name": "Τρέχουσες Ψηφοφορίες",
+      "url": "/el/bills",
+      "description": "Δείτε τις τρέχουσες ψηφοφορίες"
+    },
+    {
+      "name": "Wiki",
+      "url": "/wiki/",
+      "description": "Τεκμηρίωση"
+    }
+  ]
+}
