@@ -134,7 +134,7 @@
 1. PWA (Next.js) — iOS ohne App Store
 2. VAA UI — Wahlkompass Seite
 3. Results Dashboard — Divergence Score Visualisierung
-4. HLR Provider aktivieren (HLR Lookups API Key)
+4. ~~HLR Provider aktivieren~~ — verify_greek_number() implementiert, Dry Run aktiv
 5. Arweave Wallet erstellen + community.html Kacheln
 
 ### Bald

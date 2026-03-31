@@ -1,66 +1,198 @@
 """
-MOD-01: HLR (Home Location Register) Lookup Stub
-Prüft ob eine Nummer eine echte griechische Mobilnummer ist.
-Production: Twilio Lookup API
-Beta: Stub mit Basis-Validierung
+MOD-01: HLR (Home Location Register) Verifikation
+Verifiziert griechische Mobilnummern ohne SMS.
+
+Griechische SIM-Karten sind per Gesetz an Personalausweis gebunden.
+HLR prüft ob Nummer im griechischen Netz aktiv ist.
+
+Provider: HLR Lookups (hlrlookups.com)
+- Crypto prepaid (BTC/ETH/USDC)
+- ~$0.002/query
+- Community Wallet — Balance öffentlich auf community.html
+
+@ai-anchor MOD01_HLR
+@update-hint Provider-Wechsel: nur HLR_PROVIDER_URL + Auth ändern
 """
 import re
-from enum import Enum
+import os
+import logging
+import httpx
+from typing import Optional
 
-class HLRResult(str, Enum):
-    VALID_MOBILE   = "VALID_MOBILE"
-    INVALID        = "INVALID"
-    VOIP           = "VOIP"          # Abgelehnt
-    FOREIGN        = "FOREIGN"       # Keine griechische Nummer
-    UNKNOWN        = "UNKNOWN"
+logger = logging.getLogger(__name__)
 
-GREEK_MOBILE_PREFIXES = [
-    "69",   # alle griechischen Mobilnetze (+30 69x)
-]
+# ── Griechische Nummer Validierung ────────────────────────────────────────────
 
-def validate_greek_mobile(phone_number: str) -> HLRResult:
+def normalize_greek_number(phone: str) -> Optional[str]:
     """
-    Beta-Stub: Basis-Validierung griechischer Mobilnummern.
-    Production: ersetzt durch Twilio HLR Lookup.
-
-    Griechisches Format: +306XXXXXXXXX (12 Stellen) oder 069XXXXXXXXX
+    Normalisiert griechische Mobilnummer → +306XXXXXXXXX
+    Akzeptiert: 6912345678, 06912345678, 306912345678, +306912345678
     """
-    # Normalisierung
-    normalized = phone_number.strip().replace(" ", "").replace("-", "")
+    digits = re.sub(r"[\s\-\.\(\)]", "", phone)
 
-    if normalized.startswith("+30"):
-        normalized = normalized[3:]
-    elif normalized.startswith("0030"):
-        normalized = normalized[4:]
+    if digits.startswith("+30"):
+        normalized = digits
+    elif digits.startswith("0030"):
+        normalized = "+" + digits[2:]
+    elif digits.startswith("30") and len(digits) == 12:
+        normalized = "+" + digits
+    elif digits.startswith("69") and len(digits) == 10:
+        normalized = "+30" + digits
+    else:
+        return None
 
-    # Griechische Mobilnummer: beginnt mit 69, 10 Stellen
-    if re.match(r"^69\d{8}$", normalized):
-        return HLRResult.VALID_MOBILE
+    if not re.match(r"^\+3069\d{8}$", normalized):
+        return None
 
-    if re.match(r"^2\d{9}$", normalized):
-        return HLRResult.INVALID  # Festnetz
-
-    return HLRResult.UNKNOWN
+    return normalized
 
 
-async def hlr_lookup(phone_number: str, use_twilio: bool = False) -> HLRResult:
+def is_valid_greek_mobile(phone: str) -> bool:
+    """Schnelle Validierung ohne API-Call."""
+    return normalize_greek_number(phone) is not None
+
+
+# ── HLR Provider: HLR Lookups ─────────────────────────────────────────────────
+
+async def hlr_lookup(phone: str) -> dict:
     """
-    Production HLR Lookup via Twilio (wenn use_twilio=True).
-    Fallback: lokale Basis-Validierung.
+    HLR Query für griechische Mobilnummer.
+
+    Returns:
+        {
+            "valid": bool,
+            "network": str | None,
+            "country": str | None,
+            "status": str,
+            "error": str | None
+        }
+
+    Dry Run wenn HLRLOOKUPS_USERNAME nicht gesetzt.
     """
-    if not use_twilio:
-        return validate_greek_mobile(phone_number)
+    normalized = normalize_greek_number(phone)
 
-    # Production: Twilio Lookup
-    # import os
-    # from twilio.rest import Client
-    # client = Client(os.environ["TWILIO_ACCOUNT_SID"], os.environ["TWILIO_AUTH_TOKEN"])
-    # lookup = client.lookups.v2.phone_numbers(phone_number).fetch(fields=["line_type_intelligence"])
-    # line_type = lookup.line_type_intelligence.get("type", "")
-    # if line_type == "mobile" and lookup.country_code == "GR":
-    #     return HLRResult.VALID_MOBILE
-    # elif line_type in ["voip", "virtual"]:
-    #     return HLRResult.VOIP
-    # return HLRResult.INVALID
+    if not normalized:
+        return {
+            "valid": False,
+            "network": None,
+            "country": None,
+            "status": "INVALID_FORMAT",
+            "error": "Μη έγκυρος ελληνικός αριθμός κινητού"
+        }
 
-    raise NotImplementedError("Twilio HLR: TWILIO_ACCOUNT_SID nicht konfiguriert")
+    api_username = os.getenv("HLRLOOKUPS_USERNAME")
+    api_password = os.getenv("HLRLOOKUPS_PASSWORD")
+
+    # Dry Run — kein Provider konfiguriert
+    if not api_username:
+        logger.info(f"[MOD-01] HLR Dry Run für {normalized[:6]}XXXX")
+        return {
+            "valid":   True,
+            "network": "Cosmote GR (Dry Run)",
+            "country": "GR",
+            "status":  "DRY_RUN",
+            "error":   None
+        }
+
+    # Echter HLR Lookup via hlrlookups.com
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                "https://api.hlrlookups.com/",
+                params={
+                    "username": api_username,
+                    "password": api_password,
+                    "msisdn":   normalized.replace("+", ""),
+                },
+                headers={"Accept": "application/json"}
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            status = data.get("status", "")
+            network = data.get("network", None)
+            country = data.get("country_code", None)
+
+            is_greek  = country == "GR" or normalized.startswith("+30")
+            is_active = status in ("0", "active", "ACTIVE", "Live")
+
+            logger.info(
+                f"[MOD-01] HLR result: {normalized[:6]}XXXX "
+                f"status={status} network={network} country={country}"
+            )
+
+            return {
+                "valid":   is_greek and is_active,
+                "network": network,
+                "country": country,
+                "status":  status,
+                "error":   None if (is_greek and is_active) else "Ο αριθμός δεν είναι ενεργός ελληνικός αριθμός"
+            }
+
+    except httpx.TimeoutException:
+        logger.error("[MOD-01] HLR timeout")
+        return {
+            "valid": False, "network": None, "country": None,
+            "status": "TIMEOUT",
+            "error": "HLR timeout — δοκιμάστε ξανά"
+        }
+    except Exception as e:
+        logger.error(f"[MOD-01] HLR error: {e}")
+        return {
+            "valid": False, "network": None, "country": None,
+            "status": "ERROR",
+            "error": str(e)
+        }
+
+
+# ── Alternative Provider: Melrose Labs ───────────────────────────────────────
+
+async def hlr_lookup_melrose(phone: str) -> dict:
+    """
+    Alternative: Melrose Labs HLR API
+    Aktivieren: HLRLOOKUPS_PROVIDER=melrose in .env
+    """
+    normalized = normalize_greek_number(phone)
+    if not normalized:
+        return {"valid": False, "status": "INVALID_FORMAT", "error": "Invalid number",
+                "network": None, "country": None}
+
+    api_key = os.getenv("MELROSE_API_KEY")
+    if not api_key:
+        return {"valid": True, "status": "DRY_RUN", "network": "Dry Run",
+                "country": "GR", "error": None}
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.post(
+                "https://meirons.melroselabs.com/hlr",
+                json={"msisdn": normalized},
+                headers={"x-api-key": api_key, "Content-Type": "application/json"}
+            )
+            r.raise_for_status()
+            data = r.json()
+            return {
+                "valid":   data.get("present") == "yes",
+                "network": data.get("network"),
+                "country": data.get("country"),
+                "status":  data.get("status", "UNKNOWN"),
+                "error":   None
+            }
+    except Exception as e:
+        return {"valid": False, "status": "ERROR", "error": str(e),
+                "network": None, "country": None}
+
+
+# ── Provider Router ───────────────────────────────────────────────────────────
+
+async def verify_greek_number(phone: str) -> dict:
+    """
+    Hauptfunktion — wählt Provider automatisch.
+    HLRLOOKUPS_PROVIDER=hlrlookups (default) | melrose
+    """
+    provider = os.getenv("HLRLOOKUPS_PROVIDER", "hlrlookups")
+
+    if provider == "melrose":
+        return await hlr_lookup_melrose(phone)
+
+    return await hlr_lookup(phone)

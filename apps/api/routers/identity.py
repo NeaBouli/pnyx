@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../packages/cr
 sys.path.insert(0, "/packages/crypto")  # Docker container path
 from keypair import generate_keypair
 from nullifier import generate_nullifier_hash
-from hlr import hlr_lookup, HLRResult
+from hlr import verify_greek_number
 
 router = APIRouter(prefix="/api/v1/identity", tags=["MOD-01 Identity"])
 
@@ -67,11 +67,11 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
     """
 
     # 1. HLR Prüfung
-    hlr_result = await hlr_lookup(req.phone_number, use_twilio=False)
-    if hlr_result not in [HLRResult.VALID_MOBILE]:
+    hlr_result = await verify_greek_number(req.phone_number)
+    if not hlr_result["valid"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Ungültige Nummer: {hlr_result.value}. Nur echte griechische Mobilnummern."
+            detail=hlr_result["error"] or f"Ungültige Nummer ({hlr_result['status']}). Nur echte griechische Mobilnummern."
         )
 
     # 2. Nullifier Hash (Telefonnummer wird in der Funktion sofort gelöscht)
