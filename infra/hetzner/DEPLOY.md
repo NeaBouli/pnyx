@@ -42,6 +42,18 @@ var SERVER_RF       = "RF__ ____ ____ ____";
 ## Fertig
 Jeder `git push` auf main → automatisches Deployment.
 
+## Mobile App
+
+### Android APK
+- EAS Project: kaspartisan/ekklesia-gr
+- Build: https://expo.dev/accounts/kaspartisan/projects/ekklesia-gr/builds/07f282ee-1f5f-498a-a852-8fcffc4254c5
+- Neuen Build erstellen: `cd apps/mobile && eas build --platform android --profile preview --non-interactive`
+
+### iOS (PWA — kein App Store nötig)
+- Nutzer öffnet ekklesia.gr in Safari
+- "Zum Homescreen hinzufügen"
+- Funktioniert als native App
+
 ## Rollback
 ```bash
 cd /opt/ekklesia
