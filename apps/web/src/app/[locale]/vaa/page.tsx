@@ -12,6 +12,7 @@ import {
 } from "recharts";
 
 type Phase = "intro" | "quiz" | "results";
+type AnswerValue = number | "skip";
 
 export default function VAAPage() {
   const t = useTranslations("vaa");
@@ -22,10 +23,11 @@ export default function VAAPage() {
   const [statements, setStatements] = useState<Statement[]>([]);
   const [parties, setParties] = useState<Party[]>([]);
   const [current, setCurrent] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [answers, setAnswers] = useState<Record<number, AnswerValue>>({});
   const [results, setResults] = useState<PartyMatchResult[]>([]);
   const [, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedParty, setExpandedParty] = useState<number | null>(null);
 
   // Thesen laden
   useEffect(() => {
@@ -42,9 +44,26 @@ export default function VAAPage() {
   const label = locale === "el" ? "text_el" : "text_en";
   const explLabel = locale === "el" ? "explanation_el" : "explanation_en";
 
+  // Anzahl tatsächlich beantworteter Thesen (ohne skip)
+  const answeredCount = Object.values(answers).filter(v => v !== "skip").length;
+
   function answer(value: number) {
     if (!stmt) return;
     setAnswers(prev => ({ ...prev, [stmt.id]: value }));
+  }
+
+  function skip() {
+    if (!stmt) return;
+    setAnswers(prev => ({ ...prev, [stmt.id]: "skip" }));
+    advance();
+  }
+
+  function advance() {
+    if (!isLast) {
+      setCurrent(c => c + 1);
+    } else {
+      showResults();
+    }
   }
 
   async function next() {
@@ -62,13 +81,34 @@ export default function VAAPage() {
   async function showResults() {
     setLoading(true);
     try {
-      const r = await ekklesia.match(answers);
+      // Filter out skipped answers before sending to API
+      const filtered = Object.fromEntries(
+        Object.entries(answers).filter(([, v]) => v !== "skip")
+      ) as Record<number, number>;
+      const r = await ekklesia.match(filtered);
       setResults(r.data.results);
       setPhase("results");
     } catch {
       setError("Fehler beim Berechnen der Ergebnisse.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function shareResults() {
+    if (!results.length) return;
+    const top = results[0];
+    const shareData = {
+      title: locale === "el" ? "Πολιτική μου Πυξίδα — εκκλησία" : "My Political Compass — ekklesia",
+      text: locale === "el"
+        ? `${top.name_el} (${top.match_percent}%) — Βρες και εσύ τον πολιτικό σου χάρτη!`
+        : `${top.name_el} (${top.match_percent}%) — Find your political compass!`,
+      url: "https://ekklesia.gr/vaa",
+    };
+    if (navigator.share) {
+      try { await navigator.share(shareData); } catch { /* cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
     }
   }
 
@@ -101,7 +141,7 @@ export default function VAAPage() {
           </div>
           {error && (
             <div className="bg-red-900/50 border border-red-700 rounded-xl p-4 mb-6 text-red-300">
-              {error} — API läuft? <code>cd apps/api && uvicorn main:app</code>
+              {error}
             </div>
           )}
           <button
@@ -123,7 +163,9 @@ export default function VAAPage() {
       <main className="min-h-screen bg-gray-950 text-white">
         <header className="border-b border-gray-800 px-6 py-4 flex justify-between items-center">
           <Link href="." className="text-blue-400 font-bold">εκκλησία</Link>
-          <span className="text-gray-400 text-sm">{stmt.category}</span>
+          <span className="text-gray-500 text-sm">
+            {current + 1} / {statements.length}
+          </span>
         </header>
 
         <div className="max-w-2xl mx-auto px-6 py-10">
@@ -134,25 +176,36 @@ export default function VAAPage() {
 
           {/* These */}
           <div className="bg-gray-900 rounded-2xl p-8 mb-6 border border-gray-800">
+            {/* Kategorie-Badge */}
+            {stmt.category && (
+              <span className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-3 block">
+                {stmt.category}
+              </span>
+            )}
             <p className="text-xl font-semibold leading-relaxed mb-4">
               {stmt[label] || stmt.text_el}
             </p>
             {stmt[explLabel] && (
               <p className="text-gray-400 text-sm leading-relaxed border-t border-gray-800 pt-4">
-                ℹ️ {stmt[explLabel]}
+                {stmt[explLabel]}
               </p>
             )}
           </div>
 
           {/* Antwort-Buttons */}
-          <div className="grid grid-cols-2 gap-3 mb-8">
+          <div className="grid grid-cols-2 gap-3 mb-4">
             <VoteButton label={t("agree")}    value={1}  selected={selected === 1}  onClick={answer} />
             <VoteButton label={t("disagree")} value={-1} selected={selected === -1} onClick={answer} />
             <VoteButton label={t("neutral")}  value={0}  selected={selected === 0}  onClick={answer} />
-            <VoteButton label={t("dont_know")} value={0} selected={false} onClick={() => {
-              answer(0);
-            }} />
           </div>
+
+          {/* Δεν ξέρω — Skip */}
+          <button
+            onClick={skip}
+            className="w-full py-3 mb-8 text-gray-500 hover:text-gray-300 text-sm font-medium transition-colors"
+          >
+            {locale === "el" ? "Δεν ξέρω / Παράλειψη →" : "Don't know / Skip →"}
+          </button>
 
           {/* Navigation */}
           <div className="flex gap-4">
@@ -189,20 +242,28 @@ export default function VAAPage() {
       <main className="min-h-screen bg-gray-950 text-white">
         <header className="border-b border-gray-800 px-6 py-4 flex justify-between items-center">
           <Link href="." className="text-blue-400 font-bold">εκκλησία</Link>
-          <button
-            onClick={() => { setPhase("intro"); setCurrent(0); setAnswers({}); }}
-            className="text-gray-400 hover:text-white text-sm transition-colors"
-          >
-            ↩ {locale === "el" ? "Επανάληψη" : "Restart"}
-          </button>
+          <div className="flex gap-3 items-center">
+            <button
+              onClick={shareResults}
+              className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
+            >
+              {locale === "el" ? "Κοινοποίηση" : "Share"}
+            </button>
+            <button
+              onClick={() => { setPhase("intro"); setCurrent(0); setAnswers({}); setExpandedParty(null); }}
+              className="text-gray-400 hover:text-white text-sm transition-colors"
+            >
+              ↩ {locale === "el" ? "Επανάληψη" : "Restart"}
+            </button>
+          </div>
         </header>
 
         <div className="max-w-2xl mx-auto px-6 py-10">
           <h1 className="text-3xl font-bold mb-2">{t("your_results")}</h1>
           <p className="text-gray-400 mb-8">
             {locale === "el"
-              ? `Απαντήσατε σε ${Object.keys(answers).length} θέσεις`
-              : `You answered ${Object.keys(answers).length} positions`}
+              ? `Απαντήσατε σε ${answeredCount} από ${statements.length} θέσεις`
+              : `You answered ${answeredCount} of ${statements.length} positions`}
           </p>
 
           {/* Balkendiagramm */}
@@ -227,27 +288,86 @@ export default function VAAPage() {
 
           {/* Rangliste */}
           <div className="space-y-3 mb-8">
-            {results.map((r, i) => (
-              <div key={r.party_id}
-                className="flex items-center gap-4 bg-gray-900 rounded-xl p-4 border border-gray-800">
-                <span className="text-2xl font-bold text-gray-600 w-8">
-                  {i + 1}
-                </span>
-                <div
-                  className="w-3 h-12 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: r.color_hex || "#3b82f6" }}
-                />
-                <div className="flex-1">
-                  <p className="font-semibold">{r.name_el}</p>
-                  <p className="text-gray-400 text-sm">{r.abbreviation}</p>
+            {results.map((r, i) => {
+              const isTop = i === 0;
+              const isExpanded = expandedParty === r.party_id;
+
+              return (
+                <div key={r.party_id}>
+                  <button
+                    onClick={() => setExpandedParty(isExpanded ? null : r.party_id)}
+                    className={`w-full flex items-center gap-4 rounded-xl p-4 border text-left transition-all ${
+                      isTop
+                        ? "bg-yellow-950/40 border-yellow-600/60 ring-1 ring-yellow-500/30"
+                        : "bg-gray-900 border-gray-800 hover:border-gray-600"
+                    }`}
+                  >
+                    <span className={`text-2xl font-bold w-8 ${isTop ? "text-yellow-400" : "text-gray-600"}`}>
+                      {isTop ? "🥇" : i + 1}
+                    </span>
+                    <div
+                      className="w-3 h-12 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: r.color_hex || "#3b82f6" }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-semibold ${isTop ? "text-lg" : ""}`}>{r.name_el}</p>
+                      <p className="text-gray-400 text-sm">{r.abbreviation}</p>
+                      {isTop && (
+                        <p className="text-yellow-500 text-xs font-bold mt-1">
+                          {locale === "el" ? "Καλύτερη Αντιστοίχιση" : "Best Match"}
+                        </p>
+                      )}
+                    </div>
+                    <span className={`text-2xl font-bold ${isTop ? "text-3xl" : ""}`}
+                      style={{ color: r.color_hex || "#3b82f6" }}>
+                      {r.match_percent}%
+                    </span>
+                    <span className="text-gray-600 text-sm ml-1">
+                      {isExpanded ? "▲" : "▼"}
+                    </span>
+                  </button>
+
+                  {/* Party Detail — Übereinstimmungen pro These */}
+                  {isExpanded && (
+                    <div className="mt-1 bg-gray-900/60 border border-gray-800 rounded-xl p-4 space-y-2">
+                      <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-3">
+                        {locale === "el" ? "Σύγκριση ανά θέση" : "Comparison per position"}
+                      </p>
+                      {statements.map(s => {
+                        const userAns = answers[s.id];
+                        if (userAns === "skip" || userAns === undefined) return null;
+                        const posLabel = (v: number | undefined) =>
+                          v === 1 ? (locale === "el" ? "Υπέρ" : "Agree")
+                          : v === -1 ? (locale === "el" ? "Κατά" : "Disagree")
+                          : (locale === "el" ? "Ουδέτερο" : "Neutral");
+                        return (
+                          <div key={s.id} className="flex items-center gap-2 text-sm">
+                            <span className="text-gray-500 w-5 text-right flex-shrink-0">{s.display_order}.</span>
+                            <span className="flex-1 text-gray-300 truncate">{s[label] || s.text_el}</span>
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                              userAns === 1 ? "bg-green-900/50 text-green-400"
+                              : userAns === -1 ? "bg-red-900/50 text-red-400"
+                              : "bg-gray-800 text-gray-400"
+                            }`}>
+                              {posLabel(userAns as number)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-                <span className="text-2xl font-bold"
-                  style={{ color: r.color_hex || "#3b82f6" }}>
-                  {r.match_percent}%
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
+
+          {/* Share Button */}
+          <button
+            onClick={shareResults}
+            className="w-full py-3 mb-6 bg-gray-800 hover:bg-gray-700 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+          >
+            <span>{locale === "el" ? "Κοινοποίηση Αποτελεσμάτων" : "Share Results"}</span>
+          </button>
 
           {/* Bills CTA */}
           <div className="bg-blue-950 border border-blue-800 rounded-2xl p-6 text-center">
@@ -260,7 +380,7 @@ export default function VAAPage() {
               href="../bills"
               className="inline-block px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold transition-colors"
             >
-              🏛️ {locale === "el" ? "Δείτε τα Νομοσχέδια" : "See Bills"} →
+              {locale === "el" ? "Δείτε τα Νομοσχέδια" : "See Bills"} →
             </Link>
           </div>
         </div>
