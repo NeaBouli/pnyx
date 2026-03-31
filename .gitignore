@@ -31,3 +31,7 @@ Thumbs.db
 .vscode/
 .idea/
 .env.production
+
+# Arweave
+arweave-wallet*.json
+*.jwk

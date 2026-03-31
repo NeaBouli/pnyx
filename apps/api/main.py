@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import identity, vaa, parliament, voting
+from routers import arweave
 
 app = FastAPI(
     title="Ekklesia.gr API",
@@ -22,6 +23,7 @@ app.include_router(identity.router)
 app.include_router(vaa.router)
 app.include_router(parliament.router)
 app.include_router(voting.router)
+app.include_router(arweave.router)
 
 @app.get("/health")
 async def health():
@@ -36,6 +38,7 @@ async def health():
             "MOD-04 CitizenVote",
             "MOD-05 Analytics/Divergence",
             "MOD-12 PublicAPI",
+            "MOD-08 Arweave",
             "MOD-14 Relevance",
         ]
     }

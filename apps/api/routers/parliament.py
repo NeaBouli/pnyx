@@ -5,13 +5,19 @@ GET  /api/v1/bills/{bill_id}    — Einzelner Gesetzentwurf mit Details
 POST /api/v1/bills/{bill_id}/transition — Lifecycle-Übergang (intern/admin)
 GET  /api/v1/bills/trending     — Nach Relevanz-Score sortiert
 """
+import logging
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from database import get_db
-from models import ParliamentBill, BillStatus, BillStatusLog, BillRelevanceVote
+from models import (
+    ParliamentBill, BillStatus, BillStatusLog, BillRelevanceVote,
+    CitizenVote, VoteChoice,
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/bills", tags=["MOD-03 Parliament"])
 
@@ -238,6 +244,48 @@ async def transition_bill(
     db.add(log)
     await db.commit()
 
+    # MOD-08: Arweave Auto-Publish bei PARLIAMENT_VOTED
+    arweave_tx_id = None
+    if new_status == BillStatus.PARLIAMENT_VOTED:
+        try:
+            from routers.arweave import build_audit_trail, publish_to_arweave
+
+            logs_result = await db.execute(
+                select(BillStatusLog)
+                .where(BillStatusLog.bill_id == bill_id)
+                .order_by(BillStatusLog.changed_at)
+            )
+            status_logs = logs_result.scalars().all()
+
+            yes     = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.YES)) or 0
+            no      = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.NO)) or 0
+            abstain = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.ABSTAIN)) or 0
+            total   = yes + no + abstain
+
+            divergence = None
+            if total > 0 and bill.party_votes_parliament:
+                yes_pct = yes / total
+                parliament_yes = sum(1 for v in bill.party_votes_parliament.values() if v in ("ΝΑΙ", "YES"))
+                parliament_no  = sum(1 for v in bill.party_votes_parliament.values() if v in ("ΟΧΙ", "NO"))
+                authority_passed = parliament_yes >= parliament_no
+                divergence = round(abs(yes_pct - (1.0 if authority_passed else 0.0)), 3)
+
+            audit_trail = build_audit_trail(
+                bill=bill,
+                status_logs=status_logs,
+                vote_results={"yes": yes, "no": no, "abstain": abstain, "total": total},
+                divergence_score=divergence,
+            )
+
+            tx_id = await publish_to_arweave(audit_trail, bill_id)
+            if tx_id:
+                bill.arweave_tx_id = tx_id
+                await db.commit()
+                arweave_tx_id = tx_id
+                logger.info(f"[MOD-08] Arweave TX: {tx_id}")
+        except Exception as arweave_err:
+            logger.error(f"[MOD-08] Arweave publish error: {arweave_err}")
+
     return {
         "success": True,
         "bill_id": bill_id,
@@ -245,6 +293,7 @@ async def transition_bill(
         "to": new_status.value,
         "label_el": STATUS_LABELS.get(new_status.value, new_status.value),
         "changed_at": datetime.utcnow().isoformat(),
+        "arweave_tx_id": arweave_tx_id,
     }
 
 

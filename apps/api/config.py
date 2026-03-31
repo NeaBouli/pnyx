@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     server_salt: str = "dev-salt-change-in-production"
     anthropic_api_key: str = ""
     truerepublic_enabled: bool = False
+    arweave_wallet_path: str = ""  # MOD-08: Pfad zur Arweave Wallet JSON
     env: str = "development"
 
     class Config:
