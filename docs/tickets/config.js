@@ -11,7 +11,7 @@ const POLIS_CONFIG = {
   oauth: {
     clientId: "REPLACE_WITH_YOUR_GITHUB_OAUTH_CLIENT_ID",
     // clientSecret goes in the Cloudflare Worker — NEVER here
-    workerUrl: "REPLACE_WITH_YOUR_CLOUDFLARE_WORKER_URL",
+    workerUrl: "https://polis-oauth-proxy.bergamolia.workers.dev",
     callbackPath: "/pnyx/tickets/auth/callback.html",
   },
 
