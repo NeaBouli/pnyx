@@ -59,7 +59,7 @@ jobs:
 
       - name: Install crypto dependencies
         run: |
-          pip install PyNaCl pytest pytest-asyncio
+          pip install PyNaCl pytest pytest-asyncio httpx
 
       - name: Run crypto tests
         working-directory: packages/crypto
