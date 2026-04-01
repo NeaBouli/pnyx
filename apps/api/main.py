@@ -4,6 +4,7 @@ from routers import identity, vaa, parliament, voting
 from routers import arweave
 from routers import scraper
 from routers import public_api
+from routers import export
 
 app = FastAPI(
     title="Ekklesia.gr API",
@@ -28,6 +29,7 @@ app.include_router(voting.router)
 app.include_router(arweave.router)
 app.include_router(scraper.router)
 app.include_router(public_api.router)
+app.include_router(export.router)
 
 @app.get("/health")
 async def health():
@@ -45,6 +47,7 @@ async def health():
             "MOD-08 Arweave",
             "MOD-10 AI Scraper",
             "MOD-11 Public API",
+            "MOD-14 Data Export",
             "MOD-14 Relevance",
         ]
     }
