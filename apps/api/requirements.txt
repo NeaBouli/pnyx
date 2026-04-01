@@ -28,6 +28,9 @@ httpx==0.27.2
 # Arweave (MOD-08)
 arweave-python-client==1.0.19
 
+# Rate Limiting (MOD-11)
+slowapi>=0.1.9
+
 # AI Scraper (MOD-10) — Ollama self-hosted, kein API Key nötig
 beautifulsoup4>=4.12.0
 
