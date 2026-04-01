@@ -286,6 +286,17 @@ async def transition_bill(
         except Exception as arweave_err:
             logger.error(f"[MOD-08] Arweave publish error: {arweave_err}")
 
+    # MOD-07: Notification publishen
+    try:
+        from routers.notifications import publish_bill_event
+        await publish_bill_event("bill.status_changed", bill_id, {
+            "old_status": old_status.value,
+            "new_status": new_status.value,
+            "label_el": STATUS_LABELS.get(new_status.value, new_status.value),
+        })
+    except Exception as notify_err:
+        logger.warning(f"[MOD-07] Notification failed: {notify_err}")
+
     return {
         "success": True,
         "bill_id": bill_id,
