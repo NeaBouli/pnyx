@@ -290,7 +290,7 @@ Server-seitiger Task der:
 
 ---
 
-## OFFENE PUNKTE — UX + DESIGN + CONTENT
+## OFFENE PUNKTE — UX + DESIGN + CONTENT (alle erledigt)
 
 ### PWA iOS Button Fix
 - Problem: iOS Button zeigt nur ekklesia.gr Homepage — keine echte PWA Installation
