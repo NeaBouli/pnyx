@@ -110,6 +110,57 @@ export const ekklesia = {
     }),
 };
 
+// ─── Fetch Helpers ───────────────────────────────────────────────────────────
+
+async function _get(path: string) {
+  const res = await fetch(`${API_URL}/api/v1${path}`);
+  return res.json();
+}
+
+async function _post(path: string, body: unknown) {
+  const res = await fetch(`${API_URL}/api/v1${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+// MOD-06: Analytics
+export const analytics = {
+  overview:       ()              => _get("/analytics/overview"),
+  trends:         (days = 30)     => _get(`/analytics/divergence-trends?days=${days}`),
+  timeline:       (billId?: string, days = 30) =>
+    _get(`/analytics/votes-timeline?days=${days}${billId ? `&bill_id=${billId}` : ""}`),
+  topDivergence:  (limit = 10)    => _get(`/analytics/top-divergence?limit=${limit}`),
+};
+
+// MOD-12: MP Comparison
+export const mp = {
+  parties: () => _get("/mp/parties"),
+  ranking: () => _get("/mp/ranking"),
+  compare: (abbr: string) => _get(`/mp/compare/${encodeURIComponent(abbr)}`),
+  bill:    (id: string)   => _get(`/mp/bill/${id}`),
+};
+
+// MOD-14: Export URLs
+export const exportUrls = {
+  billsCsv:      `${API_URL}/api/v1/export/bills.csv`,
+  resultsJson:   `${API_URL}/api/v1/export/results.json`,
+  divergenceCsv: `${API_URL}/api/v1/export/divergence.csv`,
+};
+
+// MOD-15: Admin
+export const adminApi = {
+  dashboard:   (key: string) => _get(`/admin/dashboard?admin_key=${key}`),
+  bills:       (key: string) => _get(`/admin/bills?admin_key=${key}`),
+  stats:       (key: string) => _get(`/admin/stats?admin_key=${key}`),
+  reviewBill:  (key: string, id: string, approved = true) =>
+    _post(`/admin/bills/${id}/review?admin_key=${key}&approved=${approved}`, {}),
+  transition:  (key: string, id: string, newStatus: string) =>
+    _post(`/bills/${id}/transition`, { new_status: newStatus, admin_key: key }),
+};
+
 // MOD-13: Relevance Voting
 export async function voteRelevance(
   billId: string,

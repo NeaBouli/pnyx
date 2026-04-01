@@ -41,6 +41,12 @@ export default function BillsPage() {
           <Link href="results" className="text-xs text-gray-500 hover:text-blue-400 transition-colors">
             {locale === "el" ? "Αποτελέσματα" : "Results"}
           </Link>
+          <Link href="analytics" className="text-xs text-gray-500 hover:text-blue-400 transition-colors">
+            Analytics
+          </Link>
+          <Link href="mp" className="text-xs text-gray-500 hover:text-blue-400 transition-colors">
+            MP
+          </Link>
           <Link href="/el/bills" className="hover:text-white">ΕΛ</Link>
           <Link href="/en/bills" className="hover:text-white">EN</Link>
         </div>
