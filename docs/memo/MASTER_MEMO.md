@@ -379,3 +379,29 @@ Server-seitiger Task der:
 - [ ] API: POST /api/v1/tickets/create (Ed25519 signiert)
 - [ ] API: GET /api/v1/tickets/status/{pubkey_hash}
 - [ ] Mobile: Ticket Status Polling
+
+---
+
+## iOS PWA — WICHTIG
+
+### Problem
+Der iOS PWA Button auf der Landing Page zeigt aktuell auf ekklesia.gr (GitHub Pages).
+Das ist nur die statische Landing/Info Seite — KEIN App-Frontend.
+Die eigentliche App (Verify, Vote, Bills, VAA) ist apps/web (Next.js) und läuft
+erst auf dem Hetzner Server unter app.ekklesia.gr.
+
+### Lösung (nach Hetzner Deploy)
+1. Next.js App auf app.ekklesia.gr deployen (Traefik Subdomain)
+2. iOS PWA Button auf app.ekklesia.gr zeigen
+3. manifest.json start_url auf app.ekklesia.gr
+4. PWA installiert sich von der Next.js App — mit Vote-UI, Verify, Ed25519
+
+### Bis dahin
+- iOS PWA Button auf Landing → grau/inaktiv setzen ("Σύντομα")
+- Nur Android APK ist aktuell nutzbar
+- Oder: Button zeigt Modal mit Erklärung "Verfügbar nach Server-Launch"
+
+### DNS Konfiguration (Papaki/Cloudflare)
+- ekklesia.gr → GitHub Pages (Landing, Wiki, Community)
+- app.ekklesia.gr → Hetzner Server (Next.js App + API)
+- api.ekklesia.gr → Hetzner Server (FastAPI Backend)
