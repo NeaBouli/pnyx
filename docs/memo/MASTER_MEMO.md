@@ -1,6 +1,23 @@
 # Ekklesia.gr — Master Memo
 # Alle Architektur-Entscheidungen, TODOs, Specs
-# Zuletzt aktualisiert: 2026-03-31
+# Zuletzt aktualisiert: 2026-04-01
+
+---
+
+## ALPHA PHASE — ABGESCHLOSSEN
+Tag: v0.3.0-alpha | Datum: 2026-04-01
+
+### Alle 8 Alpha-Module gebaut:
+- MOD-06: Analytics + Divergence Trends + k-Anonymity
+- MOD-07: Push Notifications (SSE + WebSocket + Event Bus)
+- MOD-09: gov.gr OAuth Stub (1/4 Gates)
+- MOD-11: Public API + Rate Limiting + API Keys (CC BY 4.0)
+- MOD-12: MP Comparison — Partei vs. Bürgermehrheit + Ranking
+- MOD-13: Relevance Voting FE — RelevanceButtons + Trending
+- MOD-14: Data Export CSV/JSON + Divergence + Parties
+- MOD-15: Admin Panel — Dashboard + Bills CRUD + AI Review
+
+### Stand: 13 Router, ~50 Endpoints, 7 Web Routes, Expo Mobile + APK
 
 ---
 
