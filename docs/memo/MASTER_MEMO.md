@@ -128,29 +128,101 @@
 
 ---
 
-## TODO — OFFEN
+## TODO — ABGEHAKT (Session 2)
+- ~~PWA (Next.js) — iOS ohne App Store~~ — Service Worker + manifest + apple-touch-icon
+- ~~VAA UI — Wahlkompass Seite~~ — Skip, Party Detail, Share, Top Match
+- ~~Results Dashboard~~ — /results mit Divergence Übersicht + animierter DivergenceCard
+- ~~HLR Provider aktivieren~~ — verify_greek_number() implementiert, Dry Run aktiv
+- ~~Arweave Wallet erstellen~~ — 2hkK3Bcr6g...GdhBTs, community.html aktiviert
+- ~~Parliament API Scraper~~ — MOD-10 Ollama L1 + HuggingFace L2 + Rule-based L3
 
-### Nächste Schritte
-1. PWA (Next.js) — iOS ohne App Store
-2. VAA UI — Wahlkompass Seite
-3. Results Dashboard — Divergence Score Visualisierung
-4. ~~HLR Provider aktivieren~~ — verify_greek_number() implementiert, Dry Run aktiv
-5. Arweave Wallet erstellen + community.html Kacheln
+---
 
-### Bald
-6. Parliament API — echte Gesetze (Hellenic Parliament API)
-7. community.html — HLR + Arweave Wallet Balance Kacheln
-8. Server Relay für Blockchain-Preis-Berechnung (V2)
-9. Hetzner Server aktivieren
-10. SERVER_DUE_DATE in community.html setzen
+## ALPHA MODULE — Bereit zum Bauen (kein Hetzner nötig)
 
-### Later
-11. iOS App Store ($99/Jahr Apple Developer)
-12. gov.gr OAuth (Alpha — nach 500 Nutzern)
-13. TrueRepublic Bridge (V2)
-14. Rust crypto-rs + WASM (V2)
-15. MOD-17 LimeSurvey Stub
-16. ZK Identity (V2)
+### MOD-06: Analytics + Demographics
+- Divergence Trends über Zeit (Chart)
+- k-Anonymity >= 10 für demografische Auswertung
+- Altersgruppen, Regionen, Governance Level
+- Endpoint: GET /api/v1/analytics/divergence-trends
+- Endpoint: GET /api/v1/analytics/demographics/{bill_id}
+
+### MOD-07: Push Notifications
+- WebSocket / SSE für Live-Updates im 24h-Fenster
+- Bill Status Änderung -> Notification
+- Stub: POST /api/v1/notifications/subscribe
+
+### MOD-09: gov.gr OAuth2.0 Stub
+- Stub-Endpoints für OAuth Flow
+- Aktivierung nach: 500 Nutzer + 3 NGOs + publiziertes Roadmap
+- Endpoint: GET /api/v1/auth/govgr/login
+- Endpoint: GET /api/v1/auth/govgr/callback
+
+### MOD-11: Public API + OpenAPI Docs
+- Öffentliche REST API für NGOs, Journalisten, Forscher
+- Rate Limiting (100 req/min anonym, 1000 mit API Key)
+- API Key System (community-generiert, kein Konto nötig)
+
+### MOD-12: MP Comparison
+- "Dein Abgeordneter" — Wahlkreis auswählen
+- Vergleich: Bürger-Stimme vs. Abgeordneten-Stimme
+- Divergence Score pro MP
+- Endpoint: GET /api/v1/mp/{mp_id}/comparison
+
+### MOD-13: Relevance Voting
+- Up/Down Voting für Bill-Wichtigkeit
+- Backend fertig (BillRelevanceVote Tabelle), Frontend ausstehend
+- Endpoint: POST /api/v1/bills/{id}/relevance
+
+### MOD-14: Data Export
+- CSV + JSON Download aller aggregierten Ergebnisse
+- NIEMALS Individual-Votes oder Nullifier
+- Endpoint: GET /api/v1/export/bills.csv
+- Endpoint: GET /api/v1/export/results.json
+
+### MOD-15: Admin Panel
+- Bill Management (Create, Transition, Review)
+- AI Summary Review (ai_summary_reviewed Flag)
+- Endpoint: GET /api/v1/admin/bills
+
+---
+
+## TODO — ALPHA REIHENFOLGE
+
+### Empfohlene Baufolge (alle lokal testbar)
+1. MOD-11 Public API + OpenAPI -> sofort nützlich für NGOs
+2. MOD-14 Data Export CSV/JSON -> Transparenz + Medien
+3. MOD-06 Analytics + Trends   -> Divergence Visualisierung
+4. MOD-12 MP Comparison        -> "Dein Abgeordneter"
+5. MOD-09 gov.gr OAuth Stub    -> Vorbereitung Alpha
+6. MOD-15 Admin Panel          -> Bill Management
+7. MOD-07 Push Notifications   -> WebSocket/SSE
+8. MOD-13 Relevance Voting FE  -> Frontend (Backend fertig)
+
+---
+
+## TODO — HETZNER (wenn bereit)
+1. Server aktivieren (CX21, Ubuntu 24.04, ~7EUR/Monat)
+2. bash infra/hetzner/setup.sh
+3. .env.production ausfüllen
+4. docker compose -f docker-compose.prod.yml up -d
+5. docker exec ekklesia-ollama ollama pull llama3.2
+6. GitHub Secrets: HETZNER_HOST, HETZNER_USER, HETZNER_SSH_KEY
+7. SERVER_DUE_DATE in community.html setzen
+
+---
+
+## TODO — V2 (nach Alpha + Hetzner)
+1. TrueRepublic Bridge (MOD-08 V2)
+2. Rust crypto-rs + WASM
+3. ZK Identity
+4. MOD-10 V2 Crawl4AI Self-Healing Scraper
+5. MOD-17 LimeSurvey Stub aktivieren
+6. MOD-18 pol.is Clustering
+7. MOD-19 Liquid Democracy (gov.gr + Verwandtschaft 1. Grades)
+8. iOS App Store ($99/Jahr Apple Developer)
+9. Mirror Server (DigitalOcean)
+10. Server Relay für Blockchain-Preis-Berechnung
 
 ---
 
@@ -165,8 +237,16 @@
 - Hetzner Setup Scripts + DEPLOY.md
 - Expo Mobile — 5 Screens + Biometric + Secure Enclave
 - Android APK — EAS Build (kaspartisan/ekklesia-gr)
-- MOD-08 Arweave L2 — Dry Run aktiv
+- MOD-08 Arweave L2 — Wallet aktiv, Dry Run
+- MOD-10 AI Scraper — Ollama L1 + HuggingFace L2 + Rule-based L3
+- MOD-01 HLR Provider — hlrlookups.com + Melrose Labs, Dry Run
+- PWA — Service Worker + manifest + iOS installierbar
+- Results Dashboard — /results + animierter DivergenceCard
+- VAA Verbesserungen — Skip, Party Detail, Share, Top Match
+- Landing: iOS PWA + Android APK Buttons
+- Community: Arweave + HLR Kacheln aktiviert
 - GitHub Pages — alle 15 Seiten live
+- 28 Tests grün, Nacht-Durchlauf bestanden
 
 ---
 
