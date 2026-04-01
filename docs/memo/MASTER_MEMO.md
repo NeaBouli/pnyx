@@ -317,3 +317,23 @@ Server-seitiger Task der:
   * Keine Moderation — Community selbst
   * Wie erstelle ich ein Ticket?
   * Wie vote ich auf Tickets?
+
+---
+
+## OFFENE PUNKTE — CONTENT + DOCS (kein Hetzner nötig)
+
+### Security Wiki — Alpha Auth Methode ergänzen
+- Datei: docs/wiki/security.html
+- Hinzufügen: Alpha Auth Sektion mit gov.gr OAuth2.0 Flow
+- Vergleich: Beta (HLR) vs Alpha (gov.gr OAuth)
+- AMKA wird NIEMALS gespeichert
+
+### POLIS Ticket System — Landing Page
+- Datei: docs/index.html
+- Ticket System Sektion prominenter machen
+- Link zu tickets/ Board + wiki/community-driven.html
+
+### POLIS Ticket System — Wiki Verknüpfung
+- Datei: docs/wiki/community-driven.html
+- Direkter Link zum POLIS Ticket Board (tickets/)
+- Direkter Link zu GitHub Issues (github.com/NeaBouli/pnyx-community)
