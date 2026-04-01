@@ -109,3 +109,16 @@ export const ekklesia = {
       gender_code: gender,
     }),
 };
+
+// MOD-13: Relevance Voting
+export async function voteRelevance(
+  billId: string,
+  signal: 1 | -1,
+  nullifierHash: string
+): Promise<{ success: boolean; message: string }> {
+  const res = await api.post(`/api/v1/vote/${billId}/relevance`, {
+    signal,
+    nullifier_hash: nullifierHash,
+  });
+  return res.data;
+}

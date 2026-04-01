@@ -5,6 +5,7 @@ import { useLocale } from "next-intl";
 import Link from "next/link";
 import { ekklesia, Bill } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
+import RelevanceButtons from "@/components/RelevanceButtons";
 
 const STATUS_FILTERS = [
   { key: "",                label_el: "Όλα",             label_en: "All" },
@@ -132,8 +133,13 @@ export default function BillsPage() {
                 </div>
               )}
 
-              <div className="mt-4 text-blue-400 text-sm font-semibold group-hover:text-blue-300">
-                {locale === "el" ? "Ψηφίστε →" : "Vote →"}
+              <div className="flex items-center justify-between mt-4">
+                <div onClick={(e) => e.preventDefault()}>
+                  <RelevanceButtons billId={bill.id} initialScore={bill.relevance_score ?? 0} locale={locale} compact />
+                </div>
+                <span className="text-blue-400 text-sm font-semibold group-hover:text-blue-300">
+                  {locale === "el" ? "Ψηφίστε →" : "Vote →"}
+                </span>
               </div>
             </Link>
           ))}

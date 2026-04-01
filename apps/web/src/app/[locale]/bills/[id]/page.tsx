@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ekklesia, Bill, BillResults } from "@/lib/api";
 import { loadKeypair, loadNullifier, signVote } from "@/lib/crypto";
 import StatusBadge from "@/components/StatusBadge";
+import RelevanceButtons from "@/components/RelevanceButtons";
 import DivergenceCard from "@/components/DivergenceCard";
 
 const VOTE_OPTIONS = [
@@ -148,6 +149,14 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
         <div className="flex justify-between items-center mb-4">
           <StatusBadge status={bill.status} locale={locale} />
           <span className="text-xs text-gray-600 font-mono">{bill.id}</span>
+        </div>
+
+        {/* Relevance */}
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-sm text-gray-500">
+            {locale === "el" ? "Σημαντικότητα:" : "Importance:"}
+          </span>
+          <RelevanceButtons billId={billId} locale={locale} />
         </div>
 
         {/* Titel */}
