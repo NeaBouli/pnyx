@@ -361,3 +361,21 @@ Server-seitiger Task der:
 - [ ] Echte Parteistimmen
 - [ ] Realistische VAA Parteipositionen
 - [ ] Wiki API Seite — alle neuen Endpoints dokumentiert
+
+---
+
+## TICKET SYSTEM — Crypto-Native Pseudonymous Identity
+
+### Konzept
+- Ed25519 Public Key = pseudonyme Ticket-Identität
+- PublicKeyHash (erste 16 chars SHA256) = Ticket-ID
+- NIEMALS Klarnamen — kompromittiert Public Key + alle Abstimmungen
+
+### Zwei Wege
+1. Verifizierter Nutzer: Ed25519 signiert → POLIS Board
+2. Nicht registriert: GitHub Issues direkt
+
+### TODO
+- [ ] API: POST /api/v1/tickets/create (Ed25519 signiert)
+- [ ] API: GET /api/v1/tickets/status/{pubkey_hash}
+- [ ] Mobile: Ticket Status Polling

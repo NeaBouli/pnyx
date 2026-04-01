@@ -632,77 +632,32 @@
 <section class="section section-gray" id="contact">
   <div class="section-inner">
     <h2 class="section-title fade-in" data-el="Επικοινωνία" data-en="Contact">Επικοινωνία</h2>
+    <p class="section-sub fade-in" data-el="Κανένα email. Κανένα προσωπικό δεδομένο." data-en="No email. No personal data.">Κανένα email. Κανένα προσωπικό δεδομένο.</p>
 
-    <!-- Tab Switcher -->
-    <div class="fade-in" style="display:flex;gap:0.5rem;justify-content:center;margin-bottom:1.5rem">
-      <button id="tabContact" onclick="switchContactTab('contact')" style="padding:0.5rem 1.5rem;border-radius:0.5rem;border:2px solid #2563eb;background:#2563eb;color:white;font-weight:700;cursor:pointer;font-size:0.88rem" data-el="Επικοινωνία" data-en="Contact">Επικοινωνία</button>
-      <button id="tabTicket" onclick="switchContactTab('ticket')" style="padding:0.5rem 1.5rem;border-radius:0.5rem;border:2px solid #e2e8f0;background:white;color:#334155;font-weight:700;cursor:pointer;font-size:0.88rem" data-el="Υποβολή Ticket" data-en="Submit Ticket">Υποβολή Ticket</button>
+    <div style="background:#fef3c7;border-left:4px solid #f59e0b;border-radius:0.5rem;padding:1rem 1.25rem;margin:0 auto 2rem;max-width:700px" class="fade-in">
+      <p style="margin:0;font-size:0.85rem;color:#92400e" data-el="⚠️ ΠΟΤΕ πραγματικό όνομα — το ticket συνδέεται με τον δημόσιο κλειδί σας." data-en="⚠️ NEVER use your real name — the ticket is linked to your public key.">
+        ⚠️ <strong>ΠΟΤΕ</strong> πραγματικό όνομα — το ticket συνδέεται με τον δημόσιο κλειδί σας.
+      </p>
     </div>
 
-    <!-- Ticket Banner -->
-    <div class="fade-in" style="text-align:center;margin-bottom:1.5rem">
-      <a href="tickets/" style="color:#2563eb;font-weight:700;font-size:0.88rem;text-decoration:none" data-el="Δείτε όλα τα tickets →" data-en="See all tickets →">Δείτε όλα τα tickets →</a>
-    </div>
-
-    <!-- Community Driven Info -->
-    <div class="fade-in" style="text-align:center;margin-bottom:1.5rem;padding:0.75rem 1rem;background:var(--gray-100);border-radius:0.75rem;max-width:600px;margin-left:auto;margin-right:auto">
-      <p style="font-size:0.82rem;color:var(--gray-500);margin:0 0 0.3rem" data-el="Δεν υπάρχει ομάδα υποστήριξης — η κοινότητα αποφασίζει" data-en="No support team — the community decides">Δεν υπάρχει ομάδα υποστήριξης — η κοινότητα αποφασίζει</p>
-      <a href="community.html#community-driven" style="color:var(--blue);font-weight:700;font-size:0.82rem;text-decoration:none" data-el="Πώς λειτουργεί; →" data-en="How does it work? →">Πώς λειτουργεί; →</a>
-    </div>
-
-    <!-- MODE 1: Contact (existing) -->
-    <div id="contactMode" class="contact-form fade-in">
-      <form id="contactForm">
-        <div class="form-group">
-          <label data-el="Όνομα" data-en="Name">Όνομα</label>
-          <input id="cName" type="text" required placeholder="Το όνομά σας"/>
-        </div>
-        <div class="form-group">
-          <label>Email</label>
-          <input id="cEmail" type="email" required placeholder="email@example.com"/>
-        </div>
-        <div class="form-group">
-          <label data-el="Μήνυμα" data-en="Message">Μήνυμα</label>
-          <textarea id="cMsg" required placeholder="Πώς μπορούμε να βοηθήσουμε;"></textarea>
-        </div>
-        <button type="submit" class="btn-submit" data-el="Αποστολή" data-en="Send">Αποστολή</button>
-      </form>
-    </div>
-
-    <!-- MODE 2: Ticket Submission -->
-    <div id="ticketMode" class="contact-form fade-in" style="display:none">
-      <div id="ticketLoginPrompt" style="text-align:center;padding:2rem">
-        <p style="margin-bottom:1rem;color:#64748b" data-el="Για υποβολή ticket απαιτείται σύνδεση με GitHub." data-en="GitHub login required to submit a ticket.">Για υποβολή ticket απαιτείται σύνδεση με GitHub.</p>
-        <button onclick="polisLogin()" style="padding:0.6rem 1.5rem;background:#2563eb;color:white;border:none;border-radius:0.5rem;font-weight:700;cursor:pointer;font-size:0.9rem" data-el="Σύνδεση με GitHub" data-en="Login with GitHub">Σύνδεση με GitHub</button>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;max-width:700px;margin:0 auto" class="fade-in">
+      <div class="card" style="border-color:#2563eb;background:var(--blue-l);border-radius:1rem;padding:1.5rem">
+        <div style="font-size:2rem;margin-bottom:0.5rem">🔐</div>
+        <h4 style="font-weight:800;margin-bottom:0.5rem" data-el="Επαληθευμένος Χρήστης" data-en="Verified User">Επαληθευμένος Χρήστης</h4>
+        <p style="font-size:0.82rem;color:var(--gray-500);margin-bottom:0.75rem" data-el="Ticket με Ed25519 υπογραφή — πλήρως ανώνυμο." data-en="Ticket with Ed25519 signature — fully anonymous.">Ticket με Ed25519 υπογραφή — πλήρως ανώνυμο.</p>
+        <a href="tickets/" style="display:inline-block;padding:0.5rem 1.25rem;background:var(--blue);color:white;border-radius:0.5rem;font-weight:700;font-size:0.85rem;text-decoration:none">POLIS Ticket Board →</a>
       </div>
-      <form id="ticketFormLanding" style="display:none" onsubmit="submitLandingTicket(event)">
-        <div id="ticketUserInfo" style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;padding:0.75rem;background:#f0fdf4;border-radius:0.5rem">
-        </div>
-        <div class="form-group">
-          <label data-el="Τίτλος" data-en="Title">Τίτλος</label>
-          <input id="ltTitle" type="text" required maxlength="120" placeholder="..."/>
-        </div>
-        <div class="form-group">
-          <label data-el="Κατηγορία" data-en="Category">Κατηγορία</label>
-          <select id="ltCategory" required>
-            <option value="bug" data-el="Σφάλμα" data-en="Bug">Σφάλμα</option>
-            <option value="feature" data-el="Πρόταση" data-en="Feature">Πρόταση</option>
-            <option value="docs" data-el="Τεκμηρίωση" data-en="Docs">Τεκμηρίωση</option>
-            <option value="infra" data-el="Υποδομή" data-en="Infrastructure">Υποδομή</option>
-            <option value="ux">UX</option>
-            <option value="security" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label data-el="Περιγραφή" data-en="Description">Περιγραφή</label>
-          <textarea id="ltDesc" required minlength="30" placeholder="..."></textarea>
-          <div style="font-size:0.72rem;color:#94a3b8;margin-top:0.2rem" data-el="Ελάχιστο 30 χαρακτήρες" data-en="Min 30 characters">Ελάχιστο 30 χαρακτήρες</div>
-        </div>
-        <button type="submit" class="btn-submit" id="ltSubmitBtn" data-el="Υποβολή Ticket" data-en="Submit Ticket">Υποβολή Ticket</button>
-      </form>
-      <div id="ltSuccess" style="display:none"></div>
+      <div class="card" style="border-radius:1rem;padding:1.5rem">
+        <div style="font-size:2rem;margin-bottom:0.5rem">🐙</div>
+        <h4 style="font-weight:800;margin-bottom:0.5rem" data-el="Χωρίς Λογαριασμό" data-en="Without Account">Χωρίς Λογαριασμό</h4>
+        <p style="font-size:0.82rem;color:var(--gray-500);margin-bottom:0.75rem" data-el="Απευθείας στο GitHub Issues." data-en="Directly on GitHub Issues.">Απευθείας στο GitHub Issues.</p>
+        <a href="https://github.com/NeaBouli/pnyx-community/issues/new" target="_blank" style="display:inline-block;padding:0.5rem 1.25rem;background:#1e293b;color:white;border-radius:0.5rem;font-weight:700;font-size:0.85rem;text-decoration:none">GitHub Issues →</a>
+      </div>
     </div>
 
+    <p style="text-align:center;margin-top:1.5rem;font-size:0.78rem;color:var(--gray-400)" class="fade-in">
+      <a href="community.html#community-driven" style="color:var(--blue);font-weight:600;text-decoration:none" data-el="Πώς λειτουργεί; →" data-en="How does it work? →">Πώς λειτουργεί; →</a>
+    </p>
   </div>
 </section>
 
