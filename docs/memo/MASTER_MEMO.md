@@ -328,3 +328,36 @@ Server-seitiger Task der:
 - Datei: docs/wiki/community-driven.html
 - Direkter Link zum POLIS Ticket Board (tickets/)
 - Direkter Link zu GitHub Issues (github.com/NeaBouli/pnyx-community)
+
+---
+
+## PRE-HETZNER TODO — Lokale Arbeiten
+
+### Schritt 1: Next.js Frontend vervollständigen
+- [ ] /analytics Seite — Divergence Trends Chart + Stats
+- [ ] /mp Seite — MP Comparison + Partei Ranking
+- [ ] /admin Seite — Bill Management (Admin Key geschützt)
+- [ ] Export Buttons in Results Dashboard
+- [ ] SSE Live Notifications im Browser
+- [ ] Notifications UI Komponente
+
+### Schritt 2: API Tests — alle Alpha Module
+- [ ] tests/test_analytics.py — MOD-06
+- [ ] tests/test_notifications.py — MOD-07
+- [ ] tests/test_govgr.py — MOD-09
+- [ ] tests/test_public_api.py — MOD-11
+- [ ] tests/test_mp.py — MOD-12
+- [ ] tests/test_export.py — MOD-14
+- [ ] tests/test_admin.py — MOD-15
+
+### Schritt 3: Mobile App vervollständigen
+- [ ] Bills Feed → Vote Flow verbinden
+- [ ] Results Screen mit Divergence Score
+- [ ] WebSocket Notifications
+- [ ] Trending Screen
+
+### Schritt 4: Seed — echte griechische Gesetze
+- [ ] 10 echte Bills aus hellenicparliament.gr
+- [ ] Echte Parteistimmen
+- [ ] Realistische VAA Parteipositionen
+- [ ] Wiki API Seite — alle neuen Endpoints dokumentiert
