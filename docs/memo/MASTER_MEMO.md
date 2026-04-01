@@ -320,20 +320,11 @@ Server-seitiger Task der:
 
 ---
 
-## OFFENE PUNKTE — CONTENT + DOCS (kein Hetzner nötig)
+## OFFENE PUNKTE — CONTENT + DOCS (alle erledigt)
 
-### Security Wiki — Alpha Auth Methode ergänzen
-- Datei: docs/wiki/security.html
-- Hinzufügen: Alpha Auth Sektion mit gov.gr OAuth2.0 Flow
-- Vergleich: Beta (HLR) vs Alpha (gov.gr OAuth)
-- AMKA wird NIEMALS gespeichert
-
-### POLIS Ticket System — Landing Page
-- Datei: docs/index.html
-- Ticket System Sektion prominenter machen
-- Link zu tickets/ Board + wiki/community-driven.html
-
-### POLIS Ticket System — Wiki Verknüpfung
+### ~~Security Wiki — Alpha Auth Methode~~ done
+### ~~POLIS Ticket System — Landing Page~~ done
+### ~~POLIS Ticket System — Wiki Verknüpfung~~ done
 - Datei: docs/wiki/community-driven.html
 - Direkter Link zum POLIS Ticket Board (tickets/)
 - Direkter Link zu GitHub Issues (github.com/NeaBouli/pnyx-community)

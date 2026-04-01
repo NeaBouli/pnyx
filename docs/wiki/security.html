@@ -228,6 +228,49 @@
     </table>
   </div>
 
+  <h2 class="fade-in" data-el="Alpha: gov.gr OAuth2.0" data-en="Alpha: gov.gr OAuth2.0">Alpha: gov.gr OAuth2.0</h2>
+
+  <div class="info-box fade-in">
+    <p data-el="Διαθέσιμο μετά: 500+ χρήστες + 3 NGOs + gov.gr Έγκριση" data-en="Available after: 500+ users + 3 NGOs + gov.gr Approval">
+      <strong>Διαθέσιμο μετά:</strong> 500+ χρήστες · 3+ NGO συνεργασίες · gov.gr Έγκριση
+    </p>
+  </div>
+
+  <h3 data-el="Beta vs Alpha — Σύγκριση" data-en="Beta vs Alpha — Comparison">Beta vs Alpha — Σύγκριση</h3>
+  <div class="table-wrap fade-in">
+    <table>
+      <tr><th data-el="Μέθοδος" data-en="Method">Μέθοδος</th><th>Beta</th><th>Alpha</th></tr>
+      <tr><td data-el="Τεχνολογία" data-en="Technology">Τεχνολογία</td><td>HLR Lookup</td><td>gov.gr OAuth2.0</td></tr>
+      <tr><td data-el="Επαλήθευση" data-en="Verification">Επαλήθευση</td><td data-el="Ελληνική SIM (+30)" data-en="Greek SIM (+30)">Ελληνική SIM (+30)</td><td>Taxisnet Login</td></tr>
+      <tr><td data-el="Ισχύς" data-en="Strength">Ισχύς</td><td data-el="Μέτρια" data-en="Medium">Μέτρια</td><td data-el="Υψηλή" data-en="High">Υψηλή</td></tr>
+      <tr><td data-el="Κόστος" data-en="Cost">Κόστος</td><td>~$0.002/query</td><td data-el="Δωρεάν" data-en="Free">Δωρεάν</td></tr>
+      <tr><td>AMKA</td><td data-el="Δεν απαιτείται" data-en="Not required">Δεν απαιτείται</td><td data-el="ΠΟΤΕ αποθηκεύεται" data-en="NEVER stored">ΠΟΤΕ αποθηκεύεται</td></tr>
+    </table>
+  </div>
+
+  <h3 data-el="gov.gr OAuth Flow" data-en="gov.gr OAuth Flow">gov.gr OAuth Flow</h3>
+  <div class="flow fade-in">
+    <div class="fnode fnode-b">Taxisnet Login</div><div class="farr">→</div>
+    <div class="fnode">Authorization Code</div><div class="farr">→</div>
+    <div class="fnode fnode-b">ekklesia.gr</div><div class="farr">→</div>
+    <div class="fnode">SHA256 Hash</div><div class="farr">→</div>
+    <div class="fnode" style="border-color:var(--red);background:#fef2f2;color:#991b1b">DELETE AMKA</div><div class="farr">→</div>
+    <div class="fnode fnode-g">Ed25519 Keypair</div>
+  </div>
+
+  <h3 data-el="Liquid Democracy (Alpha)" data-en="Liquid Democracy (Alpha)">Liquid Democracy (Alpha)</h3>
+  <div class="warn-box fade-in">
+    <p data-el="Μόνο με gov.gr OAuth — ανάθεση ψήφου σε εξακριβωμένους συγγενείς 1ου βαθμού μέσω AMKA register." data-en="Only with gov.gr OAuth — vote delegation to verified 1st degree relatives via AMKA register.">
+      Μόνο με gov.gr OAuth — ανάθεση ψήφου σε <strong>εξακριβωμένους συγγενείς 1ου βαθμού</strong> μέσω AMKA register.
+    </p>
+  </div>
+
+  <div class="success-box fade-in">
+    <p data-el="Και στις δύο μεθόδους: Κανένα personal data στον server. GDPR by design." data-en="Both methods: No personal data on server. GDPR by design.">
+      Και στις δύο μεθόδους: <strong>Κανένα personal data στον server.</strong> GDPR by design.
+    </p>
+  </div>
+
 </div>
 <footer>
   <div class="footer-links">
