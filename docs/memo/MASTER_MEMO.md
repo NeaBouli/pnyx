@@ -270,3 +270,33 @@ Server-seitiger Task der:
 3. Betrag in EUR berechnet
 4. community.html automatisch aktuell hält
 → Community sieht immer Echtzeit-Balance in EUR
+
+---
+
+## OFFENE PUNKTE — UX + DESIGN + CONTENT
+
+### PWA iOS Button Fix
+- Problem: iOS Button zeigt nur ekklesia.gr Homepage — keine echte PWA Installation
+- Fix: Safari-spezifische Anleitung (Safari → Teilen → Zum Homescreen)
+- Zusätzlich: Inaktiver "App Store iOS" Button (grau, "Σύντομα")
+- Dateien: docs/index.html (Landing Download-Sektion)
+
+### Contact Sektion — Community Driven Link
+- Unter Kontaktformular auf Landing: Link "Community Driven — Πώς λειτουργεί;"
+- Führt zu: wiki/community-driven.html
+- Erklärt: POLIS Ticket System, GitHub Issues Backend, kein Team
+
+### Logo Konsistenz — alle Plattformen
+- Überall pnx.png (Eule schwarz/weiss) verwenden
+- Android APK: app.json icon prüfen
+- PWA manifest.json: icon prüfen
+- Next.js: favicon + apple-touch-icon prüfen
+
+### Wiki — Community Driven Seite (neu)
+- Neue Seite: wiki/community-driven.html
+- Inhalt: Wie funktioniert POLIS ohne Team?
+  * GitHub Issues als Backend
+  * OAuth via Cloudflare Worker
+  * Keine Moderation — Community selbst
+  * Wie erstelle ich ein Ticket?
+  * Wie vote ich auf Tickets?
