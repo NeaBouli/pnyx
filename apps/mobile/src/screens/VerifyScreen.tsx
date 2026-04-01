@@ -12,12 +12,12 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import type { RootStackParamList } from "../navigation";
+import type { StackScreenProps } from "@react-navigation/stack";
+import type { RootStackParams } from "../navigation";
 import { verifyIdentity } from "../lib/api";
 import { storeKeypair, storeNullifier } from "../lib/crypto-native";
 
-type Props = NativeStackScreenProps<RootStackParamList, "Verify">;
+type Props = StackScreenProps<RootStackParams, "Verify">;
 
 export default function VerifyScreen({ navigation }: Props) {
   const [phone, setPhone] = useState("+30");
@@ -40,7 +40,7 @@ export default function VerifyScreen({ navigation }: Props) {
       Alert.alert(
         "Επιτυχία ✓",
         "Το κλειδί σας αποθηκεύτηκε με ασφάλεια. Μπορείτε τώρα να ψηφίσετε.",
-        [{ text: "Συνέχεια", onPress: () => navigation.navigate("Bills") }]
+        [{ text: "Συνέχεια", onPress: () => navigation.navigate("Tabs") }]
       );
     } catch (err: any) {
       Alert.alert("Σφάλμα", err.message || "Η επαλήθευση απέτυχε.");

@@ -12,11 +12,11 @@ import {
   RefreshControl,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import type { RootStackParamList } from "../navigation";
+import type { StackScreenProps } from "@react-navigation/stack";
+import type { RootStackParams } from "../navigation";
 import { fetchResults, type BillResults } from "../lib/api";
 
-type Props = NativeStackScreenProps<RootStackParamList, "Result">;
+type Props = StackScreenProps<RootStackParams, "Result">;
 
 function Bar({ label, count, percent, color }: { label: string; count: number; percent: number; color: string }) {
   return (

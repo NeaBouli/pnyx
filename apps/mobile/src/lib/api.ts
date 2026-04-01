@@ -60,7 +60,7 @@ export async function checkIdentityStatus(
 export interface Bill {
   id: string;
   title_el: string;
-  summary_el: string;
+  pill_el: string;
   status: string;
   submitted_at: string;
   party_votes_parliament: Record<string, string> | null;
@@ -125,4 +125,18 @@ export interface BillResults {
 
 export async function fetchResults(billId: string): Promise<BillResults> {
   return request<BillResults>(`/api/v1/vote/${billId}/results`);
+}
+
+// ─── Trending + Analytics + MP ──────────────────────────────────────────────
+
+export async function fetchTrending(limit = 10): Promise<Bill[]> {
+  return request<Bill[]>(`/api/v1/bills/trending?limit=${limit}`);
+}
+
+export async function fetchAnalyticsOverview(): Promise<any> {
+  return request<any>("/api/v1/analytics/overview");
+}
+
+export async function fetchMPRanking(): Promise<any> {
+  return request<any>("/api/v1/mp/ranking");
 }

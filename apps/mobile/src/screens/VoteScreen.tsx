@@ -12,12 +12,12 @@ import {
   ActivityIndicator,
 } from "react-native";
 import * as LocalAuthentication from "expo-local-authentication";
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import type { RootStackParamList } from "../navigation";
+import type { StackScreenProps } from "@react-navigation/stack";
+import type { RootStackParams } from "../navigation";
 import { loadKeypair, loadNullifier, buildVotePayload } from "../lib/crypto-native";
 import { submitVote } from "../lib/api";
 
-type Props = NativeStackScreenProps<RootStackParamList, "Vote">;
+type Props = StackScreenProps<RootStackParams, "Vote">;
 
 const VOTE_OPTIONS = [
   { key: "YES", label: "ΝΑΙ", color: "#2e7d32", icon: "👍" },
@@ -26,7 +26,7 @@ const VOTE_OPTIONS = [
 ] as const;
 
 export default function VoteScreen({ route, navigation }: Props) {
-  const { billId, titleEl } = route.params;
+  const { billId, billTitle } = route.params;
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -65,7 +65,7 @@ export default function VoteScreen({ route, navigation }: Props) {
       Alert.alert("Επιτυχία ✓", res.message, [
         {
           text: "Αποτελέσματα",
-          onPress: () => navigation.replace("Result", { billId, titleEl }),
+          onPress: () => navigation.replace("Result", { billId, billTitle }),
         },
       ]);
     } catch (err: any) {
@@ -78,7 +78,7 @@ export default function VoteScreen({ route, navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{titleEl}</Text>
+      <Text style={styles.title}>{billTitle}</Text>
       <Text style={styles.info}>
         Επιλέξτε την ψήφο σας. Απαιτείται βιομετρική πιστοποίηση.
       </Text>
@@ -117,7 +117,7 @@ export default function VoteScreen({ route, navigation }: Props) {
 
       <TouchableOpacity
         style={styles.resultsLink}
-        onPress={() => navigation.navigate("Result", { billId, titleEl })}
+        onPress={() => navigation.navigate("Result", { billId, billTitle })}
       >
         <Text style={styles.resultsLinkText}>
           Δείτε τα τρέχοντα αποτελέσματα →
