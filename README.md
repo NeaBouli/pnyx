@@ -13,12 +13,12 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/NeaBouli/pnyx/actions/workflows/ci.yml/badge.svg)](https://github.com/NeaBouli/pnyx/actions)
-[![Wiki](https://img.shields.io/badge/Wiki-9%20pages-green)](https://github.com/NeaBouli/pnyx/wiki)
+[![Wiki](https://img.shields.io/badge/Wiki-17%20pages-green)](https://github.com/NeaBouli/pnyx/wiki)
 [![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-red)](https://github.com/NeaBouli/pnyx)
 
 **© 2026 Vendetta Labs — MIT License**
 
-[🌐 Ekklesia.gr](https://ekklesia.gr) · [📖 Wiki](https://github.com/NeaBouli/pnyx/wiki) · [⚡ API Docs](http://localhost:8000/docs) · [📄 Whitepaper](docs/WHITEPAPER.md)
+[🌐 Ekklesia.gr](https://ekklesia.gr) · [📖 Wiki](https://github.com/NeaBouli/pnyx/wiki) · [⚡ API Docs](https://api.ekklesia.gr/docs) · [📄 Whitepaper](docs/WHITEPAPER.md)
 
 </div>
 
@@ -47,10 +47,10 @@
 | 🏛️ Ψηφοφορία Πολιτών | Ed25519 signed, Bill Lifecycle (5 states) | ✅ Beta |
 | 📊 Δείκτης Απόκλισης | Αυτόματη σύγκριση Βουλή vs Πολίτες | ✅ Beta |
 | 🔐 ZK Identity | SMS HLR → Nullifier → Key → Delete | ✅ Beta |
-| 📱 Mobile App | Expo React Native, Secure Enclave | 🔜 V2 |
+| 📱 Mobile App | Expo React Native, 7 Screens, Android APK | ✅ Alpha |
 | ⛓️ TrueRepublic | Cosmos SDK Bridge, PnyxCoin | 🔜 V2 |
-| 🤖 AI Summarizer | Claude API, 3-level summaries | 🔜 V2 |
-| 🦀 Rust Crypto | WASM, ed25519-dalek, browser-native | 🔜 V2 |
+| 🤖 AI Summarizer | Ollama self-hosted (L1) + HuggingFace (L2) + Regel-basiert (L3) | ✅ Alpha |
+| 🦀 Rust Crypto | @noble/curves v2.0.1, browser Ed25519 | ✅ Beta |
 
 ---
 
@@ -58,15 +58,15 @@
 ```
 pnyx/
 ├── apps/
-│   ├── api/          → Python FastAPI  (13 endpoints)
-│   ├── web/          → Next.js 14      (5 pages, el/en)
-│   └── mobile/       → Expo RN         (TODO)
+│   ├── api/          → Python FastAPI  (62 endpoints, 14 Router)
+│   ├── web/          → Next.js 14      (9 Routes, el/en)
+│   └── mobile/       → Expo RN         (7 Screens, ✅ gebaut)
 ├── packages/
 │   ├── crypto/       → Ed25519 · Nullifier · HLR
 │   └── db/           → Alembic Migrations
 ├── infra/
 │   └── docker/       → PostgreSQL · Redis · API
-├── wiki/             → 9 Wiki pages (backup)
+├── wiki/             → 17 Wiki Seiten
 └── docs/
     ├── CLAUDE.md     → AI Context Anchor
     ├── WHITEPAPER.md → Technical Whitepaper
@@ -102,7 +102,7 @@ cd ../../apps/api
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 alembic upgrade head
-python seeds/seed.py
+python seeds/seed_real_bills.py
 
 # 4. API (http://localhost:8000/docs)
 uvicorn main:app --reload
@@ -113,7 +113,7 @@ cd ../web && npm install && npm run dev
 
 ### Tests
 ```bash
-# API Tests (40 + 4 xfail)
+# API Tests (51 passed + 16 xfail)
 cd apps/api && pytest tests/ -v
 
 # Crypto Tests (12)
@@ -144,12 +144,12 @@ cd apps/web && npm run build
 
 | Μετρική | Τιμή |
 |---|---|
-| Commits | 19+ |
-| API Endpoints | 13 |
-| DB Tables | 9 |
-| Tests | 44 (40 + 4 xfail + 12 crypto) |
-| Web Pages | 5 |
-| Wiki Pages | 9 |
+| Commits | 133+ |
+| API Endpoints | 62 (14 Router) |
+| DB Tables | 13 |
+| Tests | 67 (51 passed + 16 xfailed) |
+| Web Pages | 9 Routes |
+| Wiki Pages | 17 Seiten |
 | CI Status | ✅ Green |
 
 ---
