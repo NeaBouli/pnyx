@@ -17,7 +17,7 @@ Tag: v0.3.0-alpha | Datum: 2026-04-01
 - MOD-14: Data Export CSV/JSON + Divergence + Parties
 - MOD-15: Admin Panel — Dashboard + Bills CRUD + AI Review
 
-### Stand: 13 Router, ~50 Endpoints, 7 Web Routes, Expo Mobile + APK
+### Stand: 14 Router, 62 Endpoints, 9 Web Routes, 7 Mobile Screens + APK
 
 ---
 
@@ -44,7 +44,7 @@ Tag: v0.3.0-alpha | Datum: 2026-04-01
 ---
 
 ## ARCHITEKTUR — STACK
-- Backend: Python FastAPI (apps/api/) — 16 Endpoints
+- Backend: Python FastAPI (apps/api/) — 62 Endpoints, 14 Router
 - Database: PostgreSQL 15 + Redis 7
 - Frontend: Next.js 14 (apps/web/)
 - Mobile: Expo React Native SDK 54 (apps/mobile/)
@@ -245,14 +245,14 @@ Tag: v0.3.0-alpha | Datum: 2026-04-01
 
 ## ABGESCHLOSSEN
 - Docker + PostgreSQL + Redis (lokal)
-- API 16 Endpoints + Seed (8 Parteien, 15 Thesen, 3 Bills, 120 party_positions)
+- API 62 Endpoints + Seed (8 Parteien, 15 Thesen, 3 Bills, 120 party_positions)
 - Browser Ed25519 crypto.ts — 17 Tests
 - Vote Flow Frontend + /verify
 - POLIS Worker + OAuth + Repo + Labels
 - Repo Security (Branch Protection, Dependabot, CODEOWNERS, SECURITY.md)
 - Docker Prod + Traefik + GitHub Actions Deploy
 - Hetzner Setup Scripts + DEPLOY.md
-- Expo Mobile — 5 Screens + Biometric + Secure Enclave
+- Expo Mobile — 7 Screens + Biometric + Secure Enclave
 - Android APK — EAS Build (kaspartisan/ekklesia-gr)
 - MOD-08 Arweave L2 — Wallet aktiv, Dry Run
 - MOD-10 AI Scraper — Ollama L1 + HuggingFace L2 + Rule-based L3
@@ -262,8 +262,8 @@ Tag: v0.3.0-alpha | Datum: 2026-04-01
 - VAA Verbesserungen — Skip, Party Detail, Share, Top Match
 - Landing: iOS PWA + Android APK Buttons
 - Community: Arweave + HLR Kacheln aktiviert
-- GitHub Pages — alle 15 Seiten live
-- 28 Tests grün, Nacht-Durchlauf bestanden
+- GitHub Pages — alle 17 Seiten live
+- 67 Tests (51 passed + 16 xfailed), Build grün
 
 ---
 
@@ -405,3 +405,13 @@ erst auf dem Hetzner Server unter app.ekklesia.gr.
 - ekklesia.gr → GitHub Pages (Landing, Wiki, Community)
 - app.ekklesia.gr → Hetzner Server (Next.js App + API)
 - api.ekklesia.gr → Hetzner Server (FastAPI Backend)
+
+---
+
+## TECH DEBT — Niedrige Priorität
+
+### next@15 Upgrade
+- Aktuell: next@14 + react@19 → peer dependency warning (npm)
+- Fix: `npm install next@15` in apps/web
+- Wann: nach Hetzner Deploy, wenn stabil
+- Risiko: Low (next@15 ist react@19 kompatibel)
