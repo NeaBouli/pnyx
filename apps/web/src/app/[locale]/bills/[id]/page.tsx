@@ -7,7 +7,8 @@ import { ekklesia, Bill, BillResults } from "@/lib/api";
 import { loadKeypair, loadNullifier, signVote } from "@/lib/crypto";
 import StatusBadge from "@/components/StatusBadge";
 import RelevanceButtons from "@/components/RelevanceButtons";
-import DivergenceCard from "@/components/DivergenceCard";
+import BillResultReport from "@/components/BillResultReport";
+// DivergenceCard replaced by BillResultReport
 
 const VOTE_OPTIONS = [
   { value: "YES",     label_el: "Υπέρ",               label_en: "Yes",            color: "bg-green-700 hover:bg-green-600 border-green-600" },
@@ -283,51 +284,25 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
           </div>
         )}
 
-        {/* ── ERGEBNISSE ── */}
+        {/* ── FULL RESULT REPORT ── */}
         {results && results.total_votes > 0 && (
-          <div className="bg-gray-900 rounded-2xl p-6 mb-6 border border-gray-800">
-            <h2 className="font-bold text-lg mb-4">
-              📊 {locale === "el" ? "Αποτελέσματα Πολιτών" : "Citizen Results"}
-            </h2>
-            <p className="text-gray-400 text-sm mb-4">
-              {results.total_votes.toLocaleString()}{" "}
-              {locale === "el" ? "ψήφοι" : "votes"}
-            </p>
-
-            {/* Ergebnis-Bars */}
-            {[
-              { label: locale === "el" ? "Υπέρ" : "Yes",     pct: results.yes_percent,     color: "bg-green-500" },
-              { label: locale === "el" ? "Κατά" : "No",      pct: results.no_percent,      color: "bg-red-500" },
-              { label: locale === "el" ? "Αποχή" : "Abstain",pct: results.abstain_percent, color: "bg-gray-500" },
-            ].map(bar => (
-              <div key={bar.label} className="mb-3">
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-300">{bar.label}</span>
-                  <span className="font-semibold">{bar.pct}%</span>
-                </div>
-                <div className="h-3 bg-gray-800 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full ${bar.color} rounded-full transition-all duration-700`}
-                    style={{ width: `${bar.pct}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+          <BillResultReport
+            billId={billId}
+            titleEl={bill?.title_el || ""}
+            totalVotes={results.total_votes}
+            yesCount={results.yes_count}
+            noCount={results.no_count}
+            abstainCount={results.abstain_count}
+            yesPct={results.yes_percent}
+            noPct={results.no_percent}
+            abstainPct={results.abstain_percent}
+            divergence={results.divergence}
+            representativity={(results as unknown as Record<string, unknown>).representativity as never ?? null}
+            partyVotes={bill?.party_votes_parliament || null}
+            parliamentVoteDate={bill?.parliament_vote_date || null}
+            locale={locale}
+          />
         )}
-
-        {/* Divergence Score */}
-        {results?.divergence && (
-          <div className="mb-6">
-            <DivergenceCard divergence={results.divergence} locale={locale} />
-          </div>
-        )}
-
-        {/* Disclaimer */}
-        <p className="text-gray-600 text-xs text-center leading-relaxed">
-          {results?.disclaimer_el ||
-            "Η ψηφοφορία αυτή δεν είναι νομικά δεσμευτική και εκφράζει μόνο τη γνώμη των εγγεγραμμένων χρηστών."}
-        </p>
       </div>
 
       <footer className="border-t border-gray-800 px-6 py-6 text-center text-xs text-gray-600">

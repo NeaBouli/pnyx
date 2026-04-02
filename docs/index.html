@@ -381,22 +381,91 @@
       <div class="demo-label" data-el="Ψηφοφορία Πολιτών" data-en="Citizen Vote">Ψηφοφορία Πολιτών</div>
       <div class="demo-bar-row" id="barRow" style="display:block">
         <div class="demo-bar-wrap"><div class="demo-bar demo-bar-yes" id="yesBar"></div></div>
-        <div class="demo-pct">42% Υπέρ</div>
+        <div class="demo-pct" data-el="33% Υπέρ" data-en="33% Yes">33% Υπέρ</div>
         <div class="demo-bar-wrap" style="margin-top:3px"><div class="demo-bar demo-bar-no" id="noBar"></div></div>
-        <div class="demo-pct">67% Κατά</div>
+        <div class="demo-pct" data-el="67% Κατά" data-en="67% No">67% Κατά</div>
       </div>
     </div>
     <div class="demo-box" id="dBox5">
       <div class="demo-icon">⚖️</div>
       <div class="demo-label" data-el="24ω Παράθυρο" data-en="24h Window">24ω Παράθυρο</div>
     </div>
-    <div class="demo-box" id="dBox6">
-      <div class="demo-icon">📊</div>
-      <div class="demo-label" data-el="Αποτέλεσμα" data-en="Result">Αποτέλεσμα</div>
-      <div class="demo-badge" id="divBadge">⚠️ 67% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ</div>
+  </div>
+  <!-- Result Kachel — breit -->
+  <div id="dBox6" style="max-width:900px;margin:1rem auto 0;background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:1.25rem 1.5rem;opacity:0;transform:translateY(8px);transition:all 0.5s">
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem">
+      <span style="font-size:1.4rem">📊</span>
+      <span style="font-weight:900;font-size:1rem;color:rgba(255,255,255,0.9)" data-el="Αποτέλεσμα Ψηφοφορίας" data-en="Vote Result">Αποτέλεσμα Ψηφοφορίας</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;font-size:0.78rem;color:rgba(255,255,255,0.7)">
+      <!-- Βουλή -->
+      <div>
+        <div style="font-weight:800;color:rgba(255,255,255,0.9);margin-bottom:0.5rem;font-size:0.82rem" data-el="Βουλή — 17.05.2024" data-en="Parliament — 17.05.2024">🏛️ Βουλή — 17.05.2024</div>
+        <div data-el="Νόμος 4933 — Ιδιωτικά Πανεπιστήμια" data-en="Law 4933 — Private Universities" style="margin-bottom:0.4rem">Νόμος 4933 — Ιδιωτικά Πανεπιστήμια</div>
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.5rem">
+          <span style="background:#166534;color:#86efac;padding:0.15rem 0.4rem;border-radius:0.25rem;font-size:0.65rem;font-weight:700">ΝΔ ΝΑΙ</span>
+          <span style="background:#7f1d1d;color:#fca5a5;padding:0.15rem 0.4rem;border-radius:0.25rem;font-size:0.65rem;font-weight:700">ΣΥΡΙΖΑ ΟΧΙ</span>
+          <span style="background:#7f1d1d;color:#fca5a5;padding:0.15rem 0.4rem;border-radius:0.25rem;font-size:0.65rem;font-weight:700">ΠΑΣΟΚ ΟΧΙ</span>
+          <span style="background:#166534;color:#86efac;padding:0.15rem 0.4rem;border-radius:0.25rem;font-size:0.65rem;font-weight:700">ΕΛ ΝΑΙ</span>
+        </div>
+        <div style="font-weight:700;color:#86efac" data-el="Αποτέλεσμα: ΕΓΚΡΙΘΗΚΕ" data-en="Result: APPROVED">Αποτέλεσμα: ΕΓΚΡΙΘΗΚΕ</div>
+      </div>
+      <!-- Πολίτες -->
+      <div>
+        <div style="font-weight:800;color:rgba(255,255,255,0.9);margin-bottom:0.5rem;font-size:0.82rem" data-el="εκκλησία του έθνους" data-en="ekklesia tou ethnous">🗳️ εκκλησία του έθνους</div>
+        <div style="margin-bottom:0.4rem" data-el="1.247 ψήφοι πολιτών" data-en="1,247 citizen votes">1.247 ψήφοι πολιτών</div>
+        <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.3rem">
+          <div style="flex:1;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden">
+            <div id="resultYes" style="height:100%;width:0;background:#22c55e;border-radius:4px;transition:width 1s"></div>
+          </div>
+          <span style="font-weight:700;color:#22c55e;width:50px;text-align:right">33%</span>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem">
+          <div style="flex:1;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden">
+            <div id="resultNo" style="height:100%;width:0;background:#ef4444;border-radius:4px;transition:width 1s"></div>
+          </div>
+          <span style="font-weight:700;color:#ef4444;width:50px;text-align:right">67%</span>
+        </div>
+        <div style="font-weight:700;color:#ef4444" data-el="Πλειοψηφία: ΚΑΤΑ" data-en="Majority: AGAINST">Πλειοψηφία: ΚΑΤΑ</div>
+      </div>
+    </div>
+    <!-- Divergence + Representativität -->
+    <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid rgba(255,255,255,0.1);display:flex;gap:1rem;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);margin-bottom:0.3rem" data-el="Απόκλιση Πολιτών — Βουλής" data-en="Citizen — Parliament Divergence">Απόκλιση Πολιτών — Βουλής</div>
+        <div id="divBadge" style="display:none;padding:0.3rem 0.6rem;background:#fef3c7;border-radius:0.4rem;font-size:0.72rem;font-weight:700;color:#92400e;text-align:center">⚠️ 67% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ</div>
+      </div>
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);margin-bottom:0.3rem" data-el="Αντιπροσωπευτικότητα" data-en="Representativity">Αντιπροσωπευτικότητα</div>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <div style="flex:1;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden">
+            <div id="repBar" style="height:100%;width:0;border-radius:4px;transition:width 1s;background:linear-gradient(90deg,#ef4444,#f59e0b,#22c55e)"></div>
+          </div>
+          <span id="repPct" style="font-size:0.72rem;font-weight:700;color:#f59e0b;white-space:nowrap">0.013%</span>
+        </div>
+        <div id="repLabel" style="font-size:0.62rem;color:rgba(255,255,255,0.4);margin-top:0.2rem" data-el="1.247 / 9.900.000 — Χαμηλή αντιπροσωπευτικότητα" data-en="1,247 / 9,900,000 — Low representativity">1.247 / 9.900.000 — Χαμηλή αντιπροσωπευτικότητα</div>
+      </div>
     </div>
   </div>
 </section>
+
+<!-- Repräsentativitäts-Skala -->
+<div style="max-width:800px;margin:0 auto;padding:1.5rem 2rem" class="fade-in">
+  <div style="background:var(--gray-100);border-radius:1rem;padding:1.25rem 1.5rem">
+    <h4 style="font-weight:800;font-size:0.88rem;margin-bottom:0.5rem" data-el="Αντιπροσωπευτικότητα Ψήφων" data-en="Vote Representativeness">Αντιπροσωπευτικότητα Ψήφων</h4>
+    <p style="font-size:0.78rem;color:var(--gray-500);margin-bottom:0.75rem" data-el="Πόσο αντιπροσωπευτικές είναι οι ψήφοι σε σχέση με τον πληθυσμό;" data-en="How representative are the votes relative to the population?">Πόσο αντιπροσωπευτικές σε σχέση με τον πληθυσμό;</p>
+    <div style="height:8px;border-radius:4px;background:linear-gradient(to right,#ef4444,#f97316,#f59e0b,#22c55e,#2563eb);margin-bottom:0.3rem"></div>
+    <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:#94a3b8">
+      <span>&lt;0.01%</span><span>0.01%</span><span>0.1%</span><span>0.5%</span><span>&gt;1%</span>
+    </div>
+    <div style="display:flex;gap:1rem;margin-top:0.5rem;flex-wrap:wrap;font-size:0.7rem;color:var(--gray-500)">
+      <span><span style="color:#ef4444;font-weight:700">●</span> <span data-el="Πολύ Χαμηλή" data-en="Very Low">Πολύ Χαμηλή</span></span>
+      <span><span style="color:#f59e0b;font-weight:700">●</span> <span data-el="Μέτρια" data-en="Moderate">Μέτρια</span></span>
+      <span><span style="color:#22c55e;font-weight:700">●</span> <span data-el="Υψηλή" data-en="High">Υψηλή</span></span>
+      <span><span style="color:#2563eb;font-weight:700">●</span> <span data-el="Πολύ Υψηλή" data-en="Very High">Πολύ Υψηλή</span></span>
+    </div>
+  </div>
+</div>
 
 <section class="section section-gray" id="features">
   <div class="section-inner">
@@ -761,6 +830,10 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     var ss=document.getElementById("scrapeStatus"); if(ss) ss.style.opacity="0";
     var as=document.getElementById("activateStatus"); if(as) as.style.opacity="0";
     var si=document.getElementById("scrapeIcon"); if(si) si.style.animation="";
+    var box6=document.getElementById("dBox6"); if(box6) { box6.style.opacity="0"; box6.style.transform="translateY(8px)"; }
+    var ry=document.getElementById("resultYes"); if(ry) ry.style.width="0";
+    var rn=document.getElementById("resultNo"); if(rn) rn.style.width="0";
+    var rep=document.getElementById("repBar"); if(rep) rep.style.width="0";
   }
   function runCycle() {
     resetAll();
@@ -789,12 +862,17 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
           if(y) y.style.width="42%"; if(n) n.style.width="67%";
         }, 300);
       }
-      // Step 5: Ergebnis
+      // Step 5: Ergebnis — breite Kachel einblenden
       if(step===5) {
+        var box6=document.getElementById("dBox6");
+        if(box6) { box6.style.opacity="1"; box6.style.transform="translateY(0)"; }
         setTimeout(function() {
+          var ry=document.getElementById("resultYes"); var rn=document.getElementById("resultNo");
+          if(ry) ry.style.width="33%"; if(rn) rn.style.width="67%";
           var b=document.getElementById("divBadge");
           if(b) { b.style.display="block"; b.textContent="⚠️ 67% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ"; }
-        }, 300);
+          var rep=document.getElementById("repBar"); if(rep) rep.style.width="12%";
+        }, 400);
       }
       step++;
       if(step<boxes.length) { setTimeout(next, 2000); }

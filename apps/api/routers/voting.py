@@ -26,6 +26,44 @@ from keypair import verify_signature
 
 router = APIRouter(prefix="/api/v1/vote", tags=["MOD-04 CitizenVote"])
 
+# ─── Repräsentativität ───────────────────────────────────────────────────────
+
+GREECE_ELIGIBLE_VOTERS = 9_900_000
+GREECE_POPULATION = 10_400_000
+
+def compute_representativity(total_votes: int) -> dict:
+    """Misst Repräsentativität basierend auf Beteiligung vs Wahlberechtigte."""
+    if total_votes == 0:
+        return {"participation_pct": 0, "level": "none", "color": "#94a3b8",
+                "label_el": "Δεν υπάρχουν ψήφοι", "is_representative": False, "score": 0}
+
+    pct = round(total_votes / GREECE_ELIGIBLE_VOTERS * 100, 4)
+
+    if pct >= 1.0:
+        level, color, label = "very_high", "#2563eb", "Πολύ Υψηλή Συμμετοχή"
+    elif pct >= 0.5:
+        level, color, label = "high", "#22c55e", "Υψηλή Συμμετοχή"
+    elif pct >= 0.1:
+        level, color, label = "medium", "#f59e0b", "Μέτρια Συμμετοχή"
+    elif pct >= 0.01:
+        level, color, label = "low", "#f97316", "Χαμηλή Συμμετοχή"
+    else:
+        level, color, label = "very_low", "#ef4444", "Πολύ Χαμηλή Συμμετοχή"
+
+    is_rep = pct >= 0.5
+    score = min(100, round(pct / 1.0 * 100, 1))
+
+    return {
+        "total_votes": total_votes,
+        "eligible_voters": GREECE_ELIGIBLE_VOTERS,
+        "population": GREECE_POPULATION,
+        "participation_pct": pct,
+        "population_pct": round(total_votes / GREECE_POPULATION * 100, 4),
+        "level": level, "color": color, "label_el": label,
+        "is_representative": is_rep, "score": score,
+        "headline_el": f"Η συμμετοχή ({pct:.3f}% εκλογέων) {'καθιστά τα αποτελέσματα αντιπροσωπευτικά' if is_rep else 'δεν είναι αρκετά αντιπροσωπευτική'}.",
+    }
+
 
 # ─── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -61,6 +99,7 @@ class BillResults(BaseModel):
     no_percent:       float
     abstain_percent:  float
     divergence:       DivergenceResult | None
+    representativity: dict | None = None
     disclaimer_el:    str
 
 class RelevanceRequest(BaseModel):
@@ -283,6 +322,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
         no_percent=pct(no_c),
         abstain_percent=pct(abs_c),
         divergence=divergence,
+        representativity=compute_representativity(total),
         disclaimer_el="Η ψηφοφορία αυτή δεν είναι νομικά δεσμευτική και εκφράζει μόνο τη γνώμη των εγγεγραμμένων χρηστών της πλατφόρμας.",
     )
 
