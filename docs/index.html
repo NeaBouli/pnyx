@@ -286,6 +286,7 @@
     }
     .pulse { width: 7px; height: 7px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
     @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+    @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
   </style>
 </head>
 <body>
@@ -359,13 +360,23 @@
 
 <section class="demo-section" id="demo">
   <div class="demo-title" data-el="Ο Κύκλος της Δημοκρατίας" data-en="The Democracy Cycle">Ο Κύκλος της Δημοκρατίας</div>
-  <p class="demo-sub" data-el="Κάθε απόφαση διανύει 5 φάσεις — οι πολίτες ψηφίζουν παράλληλα." data-en="Every decision goes through 5 phases — citizens vote in parallel.">Κάθε απόφαση διανύει 5 φάσεις — οι πολίτες ψηφίζουν παράλληλα.</p>
+  <p class="demo-sub" data-el="Κάθε απόφαση διανύει 6 φάσεις — από τη Βουλή στους πολίτες." data-en="Every decision goes through 6 phases — from Parliament to citizens.">Κάθε απόφαση διανύει 6 φάσεις — από τη Βουλή στους πολίτες.</p>
   <div class="demo-grid">
     <div class="demo-box" id="dBox1">
       <div class="demo-icon">🏛️</div>
       <div class="demo-label" data-el="Ανακοίνωση" data-en="Announced">Ανακοίνωση</div>
     </div>
     <div class="demo-box" id="dBox2">
+      <div class="demo-icon" id="scrapeIcon" style="display:inline-block">🔍</div>
+      <div class="demo-label" data-el="Ανάλυση Νόμου" data-en="Law Analysis">Ανάλυση Νόμου</div>
+      <div class="demo-pct" id="scrapeStatus" style="opacity:0;transition:opacity 0.5s;font-size:0.65rem;margin-top:0.3rem" data-el="AI Σύνοψη..." data-en="AI Summary...">AI Σύνοψη...</div>
+    </div>
+    <div class="demo-box" id="dBox3">
+      <div class="demo-icon">✅</div>
+      <div class="demo-label" data-el="Ενεργοποίηση" data-en="Activation">Ενεργοποίηση</div>
+      <div class="demo-pct" id="activateStatus" style="opacity:0;transition:opacity 0.5s;font-size:0.65rem;margin-top:0.3rem" data-el="Ψηφοφορία ανοιχτή" data-en="Voting open">Ψηφοφορία ανοιχτή</div>
+    </div>
+    <div class="demo-box" id="dBox4">
       <div class="demo-icon">🗳️</div>
       <div class="demo-label" data-el="Ψηφοφορία Πολιτών" data-en="Citizen Vote">Ψηφοφορία Πολιτών</div>
       <div class="demo-bar-row" id="barRow" style="display:block">
@@ -375,11 +386,11 @@
         <div class="demo-pct">67% Κατά</div>
       </div>
     </div>
-    <div class="demo-box" id="dBox3">
+    <div class="demo-box" id="dBox5">
       <div class="demo-icon">⚖️</div>
       <div class="demo-label" data-el="24ω Παράθυρο" data-en="24h Window">24ω Παράθυρο</div>
     </div>
-    <div class="demo-box" id="dBox4">
+    <div class="demo-box" id="dBox6">
       <div class="demo-icon">📊</div>
       <div class="demo-label" data-el="Αποτέλεσμα" data-en="Result">Αποτέλεσμα</div>
       <div class="demo-badge" id="divBadge">⚠️ 67% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ</div>
@@ -739,47 +750,60 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
 </script>
 
 <script>
-// Democracy Cycle Animation
+// Democracy Cycle Animation — 6 Phasen
 (function() {
-  var boxes = ["dBox1","dBox2","dBox3","dBox4"];
+  var boxes = ["dBox1","dBox2","dBox3","dBox4","dBox5","dBox6"];
   function resetAll() {
-    boxes.forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el) el.classList.remove("active");
-    });
-    var yb = document.getElementById("yesBar");
-    var nb = document.getElementById("noBar");
-    if (yb) yb.style.width = "0%";
-    if (nb) nb.style.width = "0%";
-    var badge = document.getElementById("divBadge");
-    if (badge) badge.style.display = "none";
+    boxes.forEach(function(id) { var el=document.getElementById(id); if(el) el.classList.remove("active"); });
+    var yb=document.getElementById("yesBar"); var nb=document.getElementById("noBar");
+    if(yb) yb.style.width="0%"; if(nb) nb.style.width="0%";
+    var badge=document.getElementById("divBadge"); if(badge) badge.style.display="none";
+    var ss=document.getElementById("scrapeStatus"); if(ss) ss.style.opacity="0";
+    var as=document.getElementById("activateStatus"); if(as) as.style.opacity="0";
+    var si=document.getElementById("scrapeIcon"); if(si) si.style.animation="";
   }
   function runCycle() {
     resetAll();
-    var step = 0;
+    var step=0;
     function next() {
       boxes.forEach(function(id) { var el=document.getElementById(id); if(el) el.classList.remove("active"); });
-      if (step < boxes.length) { var el=document.getElementById(boxes[step]); if(el) el.classList.add("active"); }
-      if (step === 1) {
+      if(step<boxes.length) { var el=document.getElementById(boxes[step]); if(el) el.classList.add("active"); }
+      // Step 1: Scraping — animiertes Icon + Status
+      if(step===1) {
+        var si=document.getElementById("scrapeIcon");
+        if(si) si.style.animation="spin 1s linear infinite";
+        setTimeout(function() {
+          var ss=document.getElementById("scrapeStatus"); if(ss) ss.style.opacity="1";
+        }, 400);
+      }
+      // Step 2: Aktivierung
+      if(step===2) {
+        setTimeout(function() {
+          var as=document.getElementById("activateStatus"); if(as) as.style.opacity="1";
+        }, 300);
+      }
+      // Step 3: Citizen Vote — Balken animieren
+      if(step===3) {
         setTimeout(function() {
           var y=document.getElementById("yesBar"); var n=document.getElementById("noBar");
           if(y) y.style.width="42%"; if(n) n.style.width="67%";
         }, 300);
       }
-      if (step === 3) {
+      // Step 5: Ergebnis
+      if(step===5) {
         setTimeout(function() {
           var b=document.getElementById("divBadge");
           if(b) { b.style.display="block"; b.textContent="⚠️ 67% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ"; }
         }, 300);
       }
       step++;
-      if (step < boxes.length) { setTimeout(next, 2000); }
+      if(step<boxes.length) { setTimeout(next, 2000); }
       else { setTimeout(function() { resetAll(); setTimeout(runCycle, 800); }, 2500); }
     }
     next();
   }
-  var d = document.getElementById("dBox1");
-  if (d) { var io = new IntersectionObserver(function(e){ if(e[0].isIntersecting){ io.disconnect(); runCycle(); }}, {threshold:0.3}); io.observe(d); }
+  var d=document.getElementById("dBox1");
+  if(d) { var io=new IntersectionObserver(function(e){ if(e[0].isIntersecting){ io.disconnect(); runCycle(); }},{threshold:0.3}); io.observe(d); }
 })();
 
 // Ticker
