@@ -843,65 +843,78 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     var rp=document.getElementById("repPct"); if(rp) rp.style.opacity="0";
     var rl=document.getElementById("repLabel"); if(rl) rl.style.opacity="0";
   }
+  function clearResultData() {
+    var box6=document.getElementById("dBox6"); if(box6) box6.style.borderColor="rgba(255,255,255,0.1)";
+    var pd=document.getElementById("rParlData"); if(pd) pd.style.opacity="0";
+    var cd=document.getElementById("rCitizenData"); if(cd) cd.style.opacity="0";
+    var ry=document.getElementById("resultYes"); if(ry) ry.style.width="0";
+    var rn=document.getElementById("resultNo"); if(rn) rn.style.width="0";
+    var badge=document.getElementById("divBadge"); if(badge) badge.style.display="none";
+    var rep=document.getElementById("repBar"); if(rep) rep.style.width="0";
+    var rp=document.getElementById("repPct"); if(rp) rp.style.opacity="0";
+    var rl=document.getElementById("repLabel"); if(rl) rl.style.opacity="0";
+  }
+  function fillResultData() {
+    var box6=document.getElementById("dBox6"); if(box6) box6.style.borderColor="rgba(37,99,235,0.5)";
+    var pd=document.getElementById("rParlData"); if(pd) pd.style.opacity="1";
+    setTimeout(function() {
+      var cd=document.getElementById("rCitizenData"); if(cd) cd.style.opacity="1";
+    }, 300);
+    setTimeout(function() {
+      var ry=document.getElementById("resultYes"); if(ry) ry.style.width="33%";
+      var rn=document.getElementById("resultNo"); if(rn) rn.style.width="67%";
+    }, 600);
+    setTimeout(function() {
+      var b=document.getElementById("divBadge"); if(b) { b.style.display="block"; b.textContent="⚠️ 67% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ"; }
+      var rep=document.getElementById("repBar"); if(rep) rep.style.width="12%";
+      var rp=document.getElementById("repPct"); if(rp) rp.style.opacity="1";
+      var rl=document.getElementById("repLabel"); if(rl) rl.style.opacity="1";
+    }, 900);
+  }
   function runCycle() {
-    resetAll();
+    // Nur die oberen Kacheln resetten, Result-Daten bleiben sichtbar
+    boxes.forEach(function(id) { var el=document.getElementById(id); if(el) el.classList.remove("active"); });
+    var yb=document.getElementById("yesBar"); var nb=document.getElementById("noBar");
+    if(yb) yb.style.width="0%"; if(nb) nb.style.width="0%";
+    var ss=document.getElementById("scrapeStatus"); if(ss) ss.style.opacity="0";
+    var as=document.getElementById("activateStatus"); if(as) as.style.opacity="0";
+    var si=document.getElementById("scrapeIcon"); if(si) si.style.animation="";
+
     var step=0;
     function next() {
       boxes.forEach(function(id) { var el=document.getElementById(id); if(el) el.classList.remove("active"); });
       if(step<boxes.length) { var el=document.getElementById(boxes[step]); if(el) el.classList.add("active"); }
-      // Step 1: Scraping — animiertes Icon + Status
+
+      // Step 1: Scraping
       if(step===1) {
-        var si=document.getElementById("scrapeIcon");
-        if(si) si.style.animation="spin 1s linear infinite";
-        setTimeout(function() {
-          var ss=document.getElementById("scrapeStatus"); if(ss) ss.style.opacity="1";
-        }, 400);
+        var si2=document.getElementById("scrapeIcon"); if(si2) si2.style.animation="spin 1s linear infinite";
+        setTimeout(function() { var s=document.getElementById("scrapeStatus"); if(s) s.style.opacity="1"; }, 400);
       }
       // Step 2: Aktivierung
       if(step===2) {
-        setTimeout(function() {
-          var as=document.getElementById("activateStatus"); if(as) as.style.opacity="1";
-        }, 300);
+        setTimeout(function() { var a=document.getElementById("activateStatus"); if(a) a.style.opacity="1"; }, 300);
       }
-      // Step 3: Citizen Vote — Balken animieren
+      // Step 3: Citizen Vote — Result-Daten ausblenden, Vote-Bars füllen
       if(step===3) {
+        clearResultData();
         setTimeout(function() {
           var y=document.getElementById("yesBar"); var n=document.getElementById("noBar");
-          if(y) y.style.width="42%"; if(n) n.style.width="67%";
+          if(y) y.style.width="33%"; if(n) n.style.width="67%";
         }, 300);
       }
-      // Step 5: Ergebnis — Daten füllen sich in die sichtbare Kachel
+      // Step 5: Ergebnis — Daten füllen sich wieder
       if(step===5) {
-        var box6=document.getElementById("dBox6");
-        if(box6) box6.style.borderColor="rgba(37,99,235,0.5)";
-        // Parlament-Daten einblenden
-        var pd=document.getElementById("rParlData"); if(pd) pd.style.opacity="1";
-        // Bürger-Daten einblenden (leicht verzögert)
-        setTimeout(function() {
-          var cd=document.getElementById("rCitizenData"); if(cd) cd.style.opacity="1";
-        }, 300);
-        // Balken füllen
-        setTimeout(function() {
-          var ry=document.getElementById("resultYes"); if(ry) ry.style.width="33%";
-          var rn=document.getElementById("resultNo"); if(rn) rn.style.width="67%";
-        }, 600);
-        // Divergenz + Repräsentativität
-        setTimeout(function() {
-          var b=document.getElementById("divBadge");
-          if(b) { b.style.display="block"; b.textContent="⚠️ 67% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ"; }
-          var rep=document.getElementById("repBar"); if(rep) rep.style.width="12%";
-          var rp=document.getElementById("repPct"); if(rp) rp.style.opacity="1";
-          var rl=document.getElementById("repLabel"); if(rl) rl.style.opacity="1";
-        }, 900);
+        fillResultData();
       }
+
       step++;
       if(step<boxes.length) { setTimeout(next, 2000); }
-      else { setTimeout(function() { resetAll(); setTimeout(runCycle, 800); }, 2500); }
+      else { setTimeout(runCycle, 3000); }
     }
     next();
   }
   var d=document.getElementById("dBox1");
-  if(d) { var io=new IntersectionObserver(function(e){ if(e[0].isIntersecting){ io.disconnect(); runCycle(); }},{threshold:0.3}); io.observe(d); }
+  if(d) { var io=new IntersectionObserver(function(e){ if(e[0].isIntersecting){ io.disconnect(); clearResultData(); runCycle(); }},{threshold:0.3}); io.observe(d); }
 })();
 
 // Ticker
