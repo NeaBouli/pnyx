@@ -193,6 +193,7 @@
       <tr><td>Nullifier Hash</td><td>SHA256 (64 chars)</td><td data-el="Μοναδικότητα χωρίς ταυτοποίηση" data-en="Uniqueness without identification">Μοναδικότητα χωρίς ταυτοποίηση</td></tr>
       <tr><td>Public Key</td><td>Ed25519 Hex</td><td data-el="Επαλήθευση υπογραφής" data-en="Signature verification">Επαλήθευση υπογραφής</td></tr>
       <tr><td data-el="Ψήφοι (ανώνυμα)" data-en="Votes (anonymous)">Ψήφοι (ανώνυμα)</td><td>YES/NO/ABSTAIN</td><td data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</td></tr>
+      <tr><td data-el="VAA Απαντήσεις" data-en="VAA Answers">VAA Απαντήσεις</td><td data-el="Ψευδώνυμο (Public Key Hash)" data-en="Pseudonymous (Public Key Hash)">Ψευδώνυμο (Public Key Hash)</td><td data-el="Πολιτική Πυξίδα — Art. 9 GDPR · Διαγράφονται με revoke" data-en="Political Compass — Art. 9 GDPR · Deleted on revoke">Πολιτική Πυξίδα — Art. 9 GDPR · Διαγράφονται με revoke</td></tr>
     </table>
   </div>
 
@@ -210,33 +211,43 @@
     </p>
   </div>
 
+  <h2 class="fade-in" data-el="Επαλήθευση HLR — Τρίτος Πάροχος" data-en="HLR Verification — Third-Party Provider">Επαλήθευση HLR — Τρίτος Πάροχος</h2>
+  <div class="warn-box fade-in">
+    <p data-el="Η επαλήθευση ταυτότητας χρησιμοποιεί HLR (Home Location Register) lookup μέσω εμπορικού παρόχου τηλεπικοινωνιών (HLR Lookups / Melrose Labs / Telnyx) για να επιβεβαιωθεί αν ένας αριθμός κινητού είναι ενεργός." data-en="Identity verification uses HLR (Home Location Register) lookup via a commercial telecom provider (HLR Lookups / Melrose Labs / Telnyx) to confirm if a mobile number is active.">
+      Η επαλήθευση ταυτότητας χρησιμοποιεί <strong>HLR (Home Location Register) lookup</strong> μέσω εμπορικού παρόχου τηλεπικοινωνιών (HLR Lookups / Melrose Labs / Telnyx) για να επιβεβαιωθεί αν ένας αριθμός κινητού είναι ενεργός.
+    </p>
+  </div>
+  <ul class="fade-in">
+    <li data-el="Ο αριθμός τηλεφώνου δεν αποθηκεύεται από τον πάροχο πέραν του ελέγχου" data-en="The phone number is not stored by the provider beyond the check">Ο αριθμός τηλεφώνου <strong>δεν αποθηκεύεται</strong> από τον πάροχο πέραν του ελέγχου</li>
+    <li data-el="Η ekklesia.gr διαγράφει αμέσως τον αριθμό μετά τον έλεγχο" data-en="ekklesia.gr immediately deletes the number after the check">Η ekklesia.gr <strong>διαγράφει αμέσως</strong> τον αριθμό μετά τον έλεγχο</li>
+    <li data-el="Ο πάροχος δεσμεύεται από σύμβαση επεξεργασίας δεδομένων (DPA/AVV)" data-en="The provider is bound by a Data Processing Agreement (DPA)">Ο πάροχος δεσμεύεται από σύμβαση επεξεργασίας δεδομένων (DPA/AVV)</li>
+    <li data-el="Βάση: Art. 28 GDPR — Εκτελών Επεξεργασίας" data-en="Legal basis: Art. 28 GDPR — Data Processor">Βάση: Art. 28 GDPR — Εκτελών Επεξεργασίας</li>
+  </ul>
+
+  <h2 class="fade-in" data-el="Arweave Μόνιμο Αρχείο" data-en="Arweave Permanent Archive">Arweave Μόνιμο Αρχείο</h2>
+  <div class="info-box fade-in">
+    <p data-el="Τα αποτελέσματα ψηφοφορίας αρχειοθετούνται μόνιμα στο Arweave αποκλειστικά ως συγκεντρωτικά δεδομένα:" data-en="Vote results are permanently archived on Arweave exclusively as aggregate data:">
+      Τα αποτελέσματα ψηφοφορίας αρχειοθετούνται μόνιμα στο <strong>Arweave</strong> αποκλειστικά ως <strong>συγκεντρωτικά δεδομένα</strong>:
+    </p>
+  </div>
+  <div class="table-wrap fade-in">
+    <table>
+      <tr><th data-el="Δεδομένο" data-en="Data">Δεδομένο</th><th data-el="On-chain;" data-en="On-chain?">On-chain;</th></tr>
+      <tr><td data-el="Συνολικές ψήφοι ανά επιλογή" data-en="Total votes per option">Συνολικές ψήφοι ανά επιλογή (YES / NO / ABSTAIN)</td><td style="color:var(--green);font-weight:700">✅</td></tr>
+      <tr><td>Divergence Score</td><td style="color:var(--green);font-weight:700">✅</td></tr>
+      <tr><td data-el="Αποτέλεσμα Βουλής" data-en="Parliament Result">Αποτέλεσμα Βουλής</td><td style="color:var(--green);font-weight:700">✅</td></tr>
+      <tr><td data-el="Ατομικές ψήφοι" data-en="Individual votes">Ατομικές ψήφοι</td><td style="color:var(--red);font-weight:700">❌ ΠΟΤΕ</td></tr>
+      <tr><td data-el="Public Keys συνδεδεμένοι με ψήφους" data-en="Public Keys linked to votes">Public Keys συνδεδεμένοι με ψήφους</td><td style="color:var(--red);font-weight:700">❌ ΠΟΤΕ</td></tr>
+      <tr><td>Nullifier Hashes</td><td style="color:var(--red);font-weight:700">❌ ΠΟΤΕ</td></tr>
+    </table>
+  </div>
+  <div class="success-box fade-in">
+    <p data-el="Τα συγκεντρωτικά στατιστικά δεν αποτελούν προσωπικά δεδομένα — συμβατά με Art. 17 GDPR (δικαίωμα διαγραφής)." data-en="Aggregate statistics are not personal data — compatible with Art. 17 GDPR (right to erasure).">
+      Τα συγκεντρωτικά στατιστικά <strong>δεν αποτελούν προσωπικά δεδομένα</strong> — συμβατά με Art. 17 GDPR (δικαίωμα διαγραφής).
+    </p>
+  </div>
+
 </div>
-
-<h2>Επαλήθευση HLR — Τρίτος Πάροχος</h2>
-<p>Η επαλήθευση ταυτότητας χρησιμοποιεί <strong>HLR (Home Location Register) lookup</strong>
-μέσω εμπορικού παρόχου τηλεπικοινωνιών (HLR Lookups / Melrose Labs / Telnyx)
-για να επιβεβαιωθεί αν ένας αριθμός κινητού είναι ενεργός.</p>
-<ul>
-  <li>Ο αριθμός τηλεφώνου <strong>δεν αποθηκεύεται</strong> από τον πάροχο πέραν του ελέγχου</li>
-  <li>Η ekklesia.gr <strong>διαγράφει αμέσως</strong> τον αριθμό μετά τον έλεγχο</li>
-  <li>Ο πάροχος δεσμεύεται από σύμβαση επεξεργασίας δεδομένων (DPA/AVV)</li>
-  <li>Βάση: Art. 28 GDPR — Εκτελών Επεξεργασίας</li>
-</ul>
-
-
-<h2>Arweave Μόνιμο Αρχείο</h2>
-<p>Τα αποτελέσματα ψηφοφορίας αρχειοθετούνται μόνιμα στο <strong>Arweave</strong>
-αποκλειστικά ως <strong>συγκεντρωτικά δεδομένα</strong>:</p>
-<ul>
-  <li>✅ Συνολικές ψήφοι ανά επιλογή (YES / NO / ABSTAIN)</li>
-  <li>✅ Divergence Score</li>
-  <li>✅ Αποτέλεσμα Βουλής</li>
-  <li>❌ <strong>ΠΟΤΕ</strong> ατομικές ψήφοι</li>
-  <li>❌ <strong>ΠΟΤΕ</strong> Public Keys συνδεδεμένοι με ψήφους</li>
-  <li>❌ <strong>ΠΟΤΕ</strong> Nullifier Hashes</li>
-</ul>
-<p>Τα συγκεντρωτικά στατιστικά <strong>δεν αποτελούν προσωπικά δεδομένα</strong>
-— συμβατά με Art. 17 GDPR (δικαίωμα διαγραφής).</p>
 
 <footer>
   <div class="footer-links">
