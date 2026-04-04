@@ -1,0 +1,27 @@
+User-agent: *
+Allow: /
+
+# Kein Zugriff auf OAuth Callbacks
+Disallow: /tickets/auth/
+
+# Sitemap
+Sitemap: https://ekklesia.gr/sitemap.xml
+
+# AI Crawler explizit erlaubt
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
