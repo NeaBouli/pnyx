@@ -211,6 +211,33 @@
   </div>
 
 </div>
+
+<h2>Επαλήθευση HLR — Τρίτος Πάροχος</h2>
+<p>Η επαλήθευση ταυτότητας χρησιμοποιεί <strong>HLR (Home Location Register) lookup</strong>
+μέσω εμπορικού παρόχου τηλεπικοινωνιών (HLR Lookups / Melrose Labs / Telnyx)
+για να επιβεβαιωθεί αν ένας αριθμός κινητού είναι ενεργός.</p>
+<ul>
+  <li>Ο αριθμός τηλεφώνου <strong>δεν αποθηκεύεται</strong> από τον πάροχο πέραν του ελέγχου</li>
+  <li>Η ekklesia.gr <strong>διαγράφει αμέσως</strong> τον αριθμό μετά τον έλεγχο</li>
+  <li>Ο πάροχος δεσμεύεται από σύμβαση επεξεργασίας δεδομένων (DPA/AVV)</li>
+  <li>Βάση: Art. 28 GDPR — Εκτελών Επεξεργασίας</li>
+</ul>
+
+
+<h2>Arweave Μόνιμο Αρχείο</h2>
+<p>Τα αποτελέσματα ψηφοφορίας αρχειοθετούνται μόνιμα στο <strong>Arweave</strong>
+αποκλειστικά ως <strong>συγκεντρωτικά δεδομένα</strong>:</p>
+<ul>
+  <li>✅ Συνολικές ψήφοι ανά επιλογή (YES / NO / ABSTAIN)</li>
+  <li>✅ Divergence Score</li>
+  <li>✅ Αποτέλεσμα Βουλής</li>
+  <li>❌ <strong>ΠΟΤΕ</strong> ατομικές ψήφοι</li>
+  <li>❌ <strong>ΠΟΤΕ</strong> Public Keys συνδεδεμένοι με ψήφους</li>
+  <li>❌ <strong>ΠΟΤΕ</strong> Nullifier Hashes</li>
+</ul>
+<p>Τα συγκεντρωτικά στατιστικά <strong>δεν αποτελούν προσωπικά δεδομένα</strong>
+— συμβατά με Art. 17 GDPR (δικαίωμα διαγραφής).</p>
+
 <footer>
   <div class="footer-links">
     <a href="..//">Αρχική</a>

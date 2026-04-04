@@ -133,6 +133,11 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
         )
         db.add(record)
 
+    # Cascade: SurveyResponses (VAA — Art. 9 GDPR)
+    await db.execute(
+        text("DELETE FROM survey_responses WHERE nullifier_hash = :nh"),
+        {"nh": nullifier_hash}
+    )
     await db.commit()
 
     # 7. Private Key einmalig zurückgeben — danach nie wieder verfügbar

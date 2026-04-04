@@ -461,3 +461,50 @@ erst auf dem Hetzner Server unter app.ekklesia.gr.
 ### Verweis
 - Community Anfrage: localStorage Klartext Problem (April 2026)
 - Löst auch: Multi-Gerät, Backup, externe Wallet Frage
+
+---
+
+## LEGAL & COMPLIANCE AUDIT — April 2026
+
+**Auditor:** Unabhängiger Review · EU/Greek Law · Civic Tech
+**Gesamtbewertung: LOW RISK**
+
+### ✅ Positiv bewertet
+- Non-binding Disclaimer: Excellent
+- No cookies/tracking: Excellent
+- EU-only Server (Hetzner): Correct
+- Phone number deletion: Correct
+- k-Anonymity ≥ 10: Good
+- MIT License: Clear
+- identity/revoke (Art. 17 GDPR): Forward-thinking
+- Aggregate-only Arweave: Good
+- Representativeness warning (0.013%): Honest
+
+### 🟡 Sofort behoben (Medium)
+
+**Concern #1 — VAA Art. 9 GDPR (BEHOBEN ✅)**
+- Consent Checkbox vor VAA Quiz eingebaut
+- survey_responses in Privacy Wiki dokumentiert
+- Cascade Delete in identity/revoke bestätigt
+
+**Concern #2 — HLR Provider (BEHOBEN ✅)**
+- HLR Lookups / Melrose Labs / Telnyx in Privacy Wiki genannt
+- DPA-Pflicht dokumentiert (Art. 28 GDPR)
+- Arweave: explizit dokumentiert was on-chain geht (NUR Aggregate)
+
+### 🟡 Forward-Looking (dokumentiert)
+
+**PnyxCoin / MiCA**
+- Nicht relevant für ekklesia.gr
+- PnyxCoin lebt ausschließlich auf TrueRepublic (PNYX)
+- Ekklesia nur API-angebunden — kein Coin-Emittent
+- TrueRepublic + PNYX: community-driven, dezentral, kein zentraler Issuer
+- MiCA greift voraussichtlich nicht — by deliberate design
+
+**gov.gr OAuth / eIDAS**
+- Bereits korrekt gate-blocked (500 Nutzer + 3 NGOs)
+- Rechtliche Vorarbeit parallel zu Milestones: ΥΨΗΔ + DPIA (Art. 35)
+
+**Parliament Scraper (MOD-10)**
+- hellenicparliament.gr robots.txt prüfen vor Hetzner Deploy
+- AI-Summary Disclaimer bereits vorhanden ✅

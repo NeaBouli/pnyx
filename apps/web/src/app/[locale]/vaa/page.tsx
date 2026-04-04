@@ -20,6 +20,7 @@ export default function VAAPage() {
   const locale = useLocale();
 
   const [phase, setPhase] = useState<Phase>("intro");
+  const [consentGiven, setConsentGiven] = useState(false);
   const [statements, setStatements] = useState<Statement[]>([]);
   const [parties, setParties] = useState<Party[]>([]);
   const [current, setCurrent] = useState(0);
@@ -139,6 +140,24 @@ export default function VAAPage() {
               🔐 {locale === "el" ? "Ανώνυμο — Δεν αποθηκεύονται δεδομένα" : "Anonymous — No data stored"}
             </p>
           </div>
+
+          {/* Art. 9 GDPR Consent */}
+          <div className="bg-gray-900 rounded-xl p-4 mb-6 border border-yellow-800 text-left">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={consentGiven}
+                onChange={e => setConsentGiven(e.target.checked)}
+                className="mt-1 w-4 h-4 accent-blue-600 flex-shrink-0"
+              />
+              <span className="text-sm text-gray-300 leading-relaxed">
+                {locale === "el"
+                  ? "Κατανοώ ότι οι απαντήσεις μου αποθηκεύονται ψευδώνυμα, συνδεδεμένες με το δημόσιο κλειδί μου, αποκλειστικά για τη δημιουργία του πολιτικού μου προφίλ. Μπορώ να τις διαγράψω ανά πάσα στιγμή μέσω της ανάκλησης ταυτότητας."
+                  : "I understand that my answers are stored pseudonymously, linked to my public key, solely to generate my political compass result. I can delete them at any time via identity revocation."}
+              </span>
+            </label>
+          </div>
+
           {error && (
             <div className="bg-red-900/50 border border-red-700 rounded-xl p-4 mb-6 text-red-300">
               {error}
@@ -146,7 +165,7 @@ export default function VAAPage() {
           )}
           <button
             onClick={() => setPhase("quiz")}
-            disabled={statements.length === 0}
+            disabled={statements.length === 0 || !consentGiven}
             className="px-10 py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-xl font-bold text-xl transition-colors"
           >
             {statements.length === 0 ? tCommon("loading") : t("next") + " →"}
