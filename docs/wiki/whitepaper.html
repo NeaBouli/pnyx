@@ -226,7 +226,9 @@
   <h2 class="fade-in" data-el="6. Δείκτης Απόκλισης" data-en="6. Divergence Score">6. Δείκτης Απόκλισης</h2>
   <div class="code-block fade-in"><span class="code-c"># Divergence Score</span>
 divergence = abs(citizen_yes_pct - (1.0 if authority_passed else 0.0))
-<span class="code-c"># 0.0 = πλήρης σύγκλιση / 1.0 = πλήρης απόκλιση</span></div>
+<span class="code-c"># 0.0 = πλήρης σύγκλιση / 1.0 = πλήρης απόκλιση
+# Υπολογίζεται ΜΟΝΟ στο snapshot της στιγμής του Κοινοβουλευτικού Αποτελέσματος
+# Μετά: η ψηφοφορία παραμένει ανοιχτή (OPEN_END) — ιστορικά, αναδρομικά</span></div>
 
   <h2 class="fade-in" data-el="7. Ιδιωτικότητα & GDPR" data-en="7. Privacy & GDPR">7. Ιδιωτικότητα &amp; GDPR</h2>
   <div class="success-box fade-in"><p data-el="Κανένα personal data στον server. k-Anonymity ≥ 10. Servers Ευρώπη (Hetzner). GDPR by design." data-en="No personal data on server. k-Anonymity ≥ 10. Servers Europe (Hetzner). GDPR by design.">Κανένα personal data στον server. k-Anonymity ≥ 10. Servers Ευρώπη. GDPR by design.</p></div>

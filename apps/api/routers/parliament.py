@@ -270,10 +270,15 @@ async def transition_bill(
                 authority_passed = parliament_yes >= parliament_no
                 divergence = round(abs(yes_pct - (1.0 if authority_passed else 0.0)), 3)
 
+            # Snapshot Timestamp — fixiert zum Zeitpunkt des Parlamentsbeschlusses
+            snapshot_timestamp = datetime.utcnow().isoformat()
+            logger.info(f"[MOD-08] Snapshot fixiert: {snapshot_timestamp} für {bill_id}")
+
             audit_trail = build_audit_trail(
                 bill=bill,
                 status_logs=status_logs,
                 vote_results={"yes": yes, "no": no, "abstain": abstain, "total": total},
+                snapshot_timestamp=snapshot_timestamp,
                 divergence_score=divergence,
             )
 

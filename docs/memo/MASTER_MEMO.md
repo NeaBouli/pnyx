@@ -516,3 +516,32 @@ erst auf dem Hetzner Server unter app.ekklesia.gr.
 - [ ] Splash Screen Hintergrund: #2563eb
 - [ ] 1024x1024px für App Store
 - [ ] Vor nächstem APK Build erledigen
+
+---
+
+## SNAPSHOT PRINZIP — Bürgerstimmen bei PARLIAMENT_VOTED
+
+### Konzept
+Wenn ein Gesetzentwurf den Status PARLIAMENT_VOTED erreicht:
+1. **Snapshot** der Bürgerstimmen wird mit Zeitstempel fixiert
+2. Snapshot wird auf Arweave + TrueRepublic/PNYX übermittelt
+3. Die Abstimmung bleibt danach offen (OPEN_END) — weitere Stimmen möglich
+4. Spätere Stimmen sind sichtbar aber NICHT Teil des offiziellen Snapshots
+
+### Was im Snapshot steht
+- Zeitstempel des Parlamentsbeschlusses
+- Aggregierte Bürgerstimmen zum Zeitpunkt T (YES/NO/ABSTAIN/total)
+- Divergence Score zum Zeitpunkt T
+- Parlamentsergebnis + Parteistimmen
+- Governance Level (NATIONAL/REGIONAL/MUNICIPAL)
+- NIEMALS: individuelle Stimmen, Nullifier Hashes, Public Keys
+
+### Was NACH dem Snapshot passiert
+- OPEN_END: weitere Stimmen möglich — historisch, retrospektiv
+- Anzeige trennt klar: "Zum Zeitpunkt des Beschlusses" vs "Aktuell"
+- Snapshot ist unveränderlich auf Arweave/Blockchain
+
+### TODO Frontend
+- Bill Detail: zwei Bereiche trennen
+  * "Κατά τη στιγμή της βουλευτικής απόφασης" (Snapshot, unveränderlich)
+  * "Συνολικές ψήφοι σήμερα" (inkl. Post-Snapshot Stimmen)

@@ -189,7 +189,7 @@
   </div>
 
   <!-- ═══ ΨΗΦΟΦΟΡΙΕΣ ═══ -->
-  <h2 class="fade-in" data-el="Ψηφοφορίες" data-en="Voting">Ψηφοφορίες <span class="faq-count">6</span></h2>
+  <h2 class="fade-in" data-el="Ψηφοφορίες" data-en="Voting">Ψηφοφορίες <span class="faq-count">8</span></h2>
 
   <div class="faq-item fade-in">
     <div class="faq-q" data-el="Για ποια θέματα μπορώ να ψηφίσω;" data-en="What topics can I vote on?" onclick="this.parentElement.classList.toggle('open')">Για ποια θέματα μπορώ να ψηφίσω;</div>
@@ -213,7 +213,17 @@
 
   <div class="faq-item fade-in">
     <div class="faq-q" data-el="Τι είναι ο Δείκτης Απόκλισης (Divergence Score);" data-en="What is the Divergence Score?" onclick="this.parentElement.classList.toggle('open')">Τι είναι ο Δείκτης Απόκλισης (Divergence Score);</div>
-    <div class="faq-a"><p data-el="Ένα ποσοστό που δείχνει πόσο διαφέρει η πλειοψηφία των πολιτών από την κοινοβουλευτική απόφαση. 0% = πλήρης συμφωνία. 100% = πλήρης αντίθεση." data-en="A percentage showing how much the citizen majority diverges from the parliamentary decision. 0% = full agreement. 100% = full opposition.">Ένα ποσοστό που δείχνει πόσο διαφέρει η πλειοψηφία των πολιτών από την κοινοβουλευτική απόφαση. 0% = πλήρης συμφωνία. 100% = πλήρης αντίθεση.</p></div>
+    <div class="faq-a"><p data-el="Ένα ποσοστό που δείχνει πόσο διαφέρει η πλειοψηφία των πολιτών από την κοινοβουλευτική απόφαση. 0% = πλήρης συμφωνία. 100% = πλήρης αντίθεση. Υπολογίζεται βάσει του snapshot τη στιγμή της κοινοβουλευτικής ψηφοφορίας." data-en="A percentage showing how much the citizen majority diverges from the parliamentary decision. 0% = full agreement. 100% = full opposition. Calculated from the snapshot at the time of the parliamentary vote.">Ένα ποσοστό που δείχνει πόσο διαφέρει η πλειοψηφία των πολιτών από την κοινοβουλευτική απόφαση. 0% = πλήρης συμφωνία. 100% = πλήρης αντίθεση. Υπολογίζεται βάσει του snapshot τη στιγμή της κοινοβουλευτικής ψηφοφορίας.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Τι είναι το Snapshot;" data-en="What is the Snapshot?" onclick="this.parentElement.classList.toggle('open')">Τι είναι το Snapshot;</div>
+    <div class="faq-a"><p data-el="Όταν η Βουλή αποφασίζει (PARLIAMENT_VOTED), οι ψήφοι των πολιτών εκείνη τη στιγμή φωτογραφίζονται με χρονοσφραγίδα και αρχειοθετούνται μόνιμα στο Arweave και στο TrueRepublic/PNYX blockchain. Αυτό είναι το ιστορικό αρχείο της βούλησης των πολιτών. Μετά (OPEN_END), η ψηφοφορία παραμένει ανοιχτή — οι νέες ψήφοι είναι ορατές αλλά δεν αλλάζουν το snapshot." data-en="When Parliament decides (PARLIAMENT_VOTED), citizen votes at that moment are captured with a timestamp and permanently archived on Arweave and TrueRepublic/PNYX blockchain. This is the historical record of citizen will. After (OPEN_END), voting stays open — new votes are visible but don't change the snapshot.">Όταν η Βουλή αποφασίζει (PARLIAMENT_VOTED), οι ψήφοι των πολιτών εκείνη τη στιγμή φωτογραφίζονται με χρονοσφραγίδα και αρχειοθετούνται μόνιμα στο Arweave και στο TrueRepublic/PNYX blockchain. Αυτό είναι το ιστορικό αρχείο της βούλησης των πολιτών. Μετά (OPEN_END), η ψηφοφορία παραμένει ανοιχτή — οι νέες ψήφοι είναι ορατές αλλά δεν αλλάζουν το snapshot.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Τι περιέχει το Snapshot;" data-en="What does the Snapshot contain?" onclick="this.parentElement.classList.toggle('open')">Τι περιέχει το Snapshot;</div>
+    <div class="faq-a"><p data-el="Χρονοσφραγίδα του κοινοβουλευτικού αποτελέσματος, συγκεντρωτικές ψήφοι πολιτών (YES/NO/ABSTAIN), Divergence Score, αποτέλεσμα Βουλής και ψήφοι κομμάτων, επίπεδο διακυβέρνησης (Εθνικό/Περιφερειακό/Δημοτικό). ΠΟΤΕ: ατομικές ψήφοι, Nullifier Hashes ή Public Keys." data-en="Parliament decision timestamp, aggregate citizen votes (YES/NO/ABSTAIN), Divergence Score, Parliament result and party votes, governance level (National/Regional/Municipal). NEVER: individual votes, Nullifier Hashes or Public Keys.">Χρονοσφραγίδα του κοινοβουλευτικού αποτελέσματος, συγκεντρωτικές ψήφοι πολιτών (YES/NO/ABSTAIN), Divergence Score, αποτέλεσμα Βουλής και ψήφοι κομμάτων, επίπεδο διακυβέρνησης (Εθνικό/Περιφερειακό/Δημοτικό). ΠΟΤΕ: ατομικές ψήφοι, Nullifier Hashes ή Public Keys.</p></div>
   </div>
 
   <div class="faq-item fade-in">
@@ -222,7 +232,7 @@
   </div>
 
   <!-- ═══ ΤΑΥΤΟΤΗΤΑ & ΑΣΦΑΛΕΙΑ ═══ -->
-  <h2 class="fade-in" data-el="Ταυτότητα & Ασφάλεια" data-en="Identity & Security">Ταυτότητα & Ασφάλεια <span class="faq-count">7</span></h2>
+  <h2 class="fade-in" data-el="Ταυτότητα & Ασφάλεια" data-en="Identity & Security">Ταυτότητα & Ασφάλεια <span class="faq-count">8</span></h2>
 
   <div class="faq-item fade-in">
     <div class="faq-q" data-el="Χρειάζομαι λογαριασμό;" data-en="Do I need an account?" onclick="this.parentElement.classList.toggle('open')">Χρειάζομαι λογαριασμό;</div>
@@ -236,7 +246,12 @@
 
   <div class="faq-item fade-in">
     <div class="faq-q" data-el="Γιατί μόνο ελληνικοί αριθμοί (+30);" data-en="Why only Greek numbers (+30)?" onclick="this.parentElement.classList.toggle('open')">Γιατί μόνο ελληνικοί αριθμοί (+30);</div>
-    <div class="faq-a"><p data-el="Επειδή οι ελληνικές κάρτες SIM είναι νομικά συνδεδεμένες με την ταυτότητα. Αυτό εξασφαλίζει ότι μόνο Έλληνες πολίτες ψηφίζουν — χωρίς να αποθηκεύονται προσωπικά δεδομένα." data-en="Because Greek SIM cards are legally tied to the national ID. This ensures only Greek citizens vote — without storing personal data.">Επειδή οι ελληνικές κάρτες SIM είναι νομικά συνδεδεμένες με την ταυτότητα. Αυτό εξασφαλίζει ότι μόνο Έλληνες πολίτες ψηφίζουν — χωρίς να αποθηκεύονται προσωπικά δεδομένα.</p></div>
+    <div class="faq-a"><p data-el="Οι ελληνικές SIM είναι νομικά δεσμευμένες με ελληνικό δελτίο ταυτότητας — αυτό επιβεβαιώνει ελληνική διαμονή χωρίς αποθήκευση προσωπικών δεδομένων. Σημαντικό: η SIM επαλήθευση δεν επιβεβαιώνει εκλογικό δικαίωμα (ηλικία 18+, υπηκοότητα). Πλήρης επαλήθευση εκλογικής ικανότητας γίνεται στην Alpha φάση μέσω gov.gr OAuth." data-en="Greek SIM cards are legally registered with a Greek ID — this confirms Greek residency without storing personal data. Important: SIM verification does not confirm electoral eligibility (age 18+, citizenship). Full voter verification comes in Alpha phase via gov.gr OAuth.">Οι ελληνικές SIM είναι νομικά δεσμευμένες με ελληνικό δελτίο ταυτότητας — αυτό επιβεβαιώνει ελληνική διαμονή χωρίς αποθήκευση προσωπικών δεδομένων. Σημαντικό: η SIM επαλήθευση δεν επιβεβαιώνει εκλογικό δικαίωμα (ηλικία 18+, υπηκοότητα). Πλήρης επαλήθευση εκλογικής ικανότητας γίνεται στην Alpha φάση μέσω gov.gr OAuth.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Επαληθεύεται αν είμαι εκλογέας;" data-en="Is my electoral eligibility verified?" onclick="this.parentElement.classList.toggle('open')">Επαληθεύεται αν είμαι εκλογέας;</div>
+    <div class="faq-a"><p data-el="Στη Beta φάση: η επαλήθευση μέσω ελληνικής SIM επιβεβαιώνει μόνο ότι είστε κάτοχος ενεργής ελληνικής SIM — όχι εκλογικό δικαίωμα. Η πλήρης επαλήθευση εκλογικής ικανότητας (ηλικία 18+, υπηκοότητα) γίνεται στην Alpha φάση μέσω gov.gr OAuth2.0." data-en="In Beta phase: Greek SIM verification only confirms you hold an active Greek SIM — not electoral eligibility. Full voter verification (age 18+, citizenship) comes in Alpha phase via gov.gr OAuth2.0.">Στη Beta φάση: η επαλήθευση μέσω ελληνικής SIM επιβεβαιώνει μόνο ότι είστε κάτοχος ενεργής ελληνικής SIM — όχι εκλογικό δικαίωμα. Η πλήρης επαλήθευση εκλογικής ικανότητας (ηλικία 18+, υπηκοότητα) γίνεται στην Alpha φάση μέσω gov.gr OAuth2.0.</p></div>
   </div>
 
   <div class="faq-item fade-in">

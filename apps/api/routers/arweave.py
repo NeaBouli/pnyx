@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/arweave", tags=["MOD-08 Arweave"])
 
 
-def build_audit_trail(
+def build_audit_trail(snapshot_timestamp: str = None, 
     bill: ParliamentBill,
     status_logs: list,
     vote_results: dict,
@@ -45,7 +45,8 @@ def build_audit_trail(
             "pill_el":         bill.pill_el,
             "pill_en":         bill.pill_en,
             "categories":      bill.categories,
-            "governance_level": "NATIONAL",
+            "snapshot_timestamp": snapshot_timestamp,
+        "governance_level": "NATIONAL",
             "parliament_vote_date": bill.parliament_vote_date.isoformat()
                 if bill.parliament_vote_date else None,
         },
