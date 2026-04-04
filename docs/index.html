@@ -149,16 +149,56 @@
   <style>
     .landing-hero {
       background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 50%, #fefce8 100%);
-      padding: 5rem 2rem 4rem; text-align: center;
+      padding: 4rem 2rem 3rem;
     }
-    .landing-hero h1 {
-      font-size: clamp(2.5rem,6vw,4rem); font-weight: 900;
-      color: var(--gray-900); margin-bottom: 0.5rem;
+    .hero-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center;
     }
-    .landing-hero .tagline {
-      font-size: clamp(1rem,2.5vw,1.3rem); color: var(--gray-700); margin-bottom: 1.5rem;
+    .hero-left { text-align: left; }
+    .hero-left h1 {
+      font-size: clamp(2.5rem,5vw,3.5rem); font-weight: 900;
+      color: var(--gray-900); margin-bottom: 0.15rem; line-height: 1.1;
     }
-    .hero-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-bottom: 2rem; }
+    .hero-subtitle {
+      font-size: clamp(0.85rem,1.8vw,1.05rem); font-weight: 400;
+      color: var(--gray-500); letter-spacing: 0.15em; margin-bottom: 1rem;
+    }
+    .hero-left .tagline {
+      font-size: clamp(1rem,2.2vw,1.2rem); color: var(--gray-700);
+      margin-bottom: 1.25rem; line-height: 1.5;
+    }
+    .hero-quote {
+      border-left: 3px solid var(--blue); padding: 0.75rem 1rem;
+      margin: 0 0 1.5rem; background: rgba(37,99,235,0.04); border-radius: 0 0.5rem 0.5rem 0;
+    }
+    .hero-quote p {
+      font-style: italic; font-size: clamp(0.72rem,1.2vw,0.82rem);
+      color: var(--gray-500); line-height: 1.7; margin: 0;
+    }
+    .hero-right {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+    }
+    .hero-right .hero-owl {
+      grid-column: 1 / -1; display: flex; justify-content: center; margin-bottom: 0.5rem;
+    }
+    .hero-right .hero-owl img {
+      width: 140px; height: 140px; object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(37,99,235,0.15));
+    }
+    .stat-card {
+      background: white; border: 1px solid #e2e8f0; border-radius: var(--radius);
+      padding: 1.25rem; text-align: center;
+      transition: all 0.2s;
+    }
+    .stat-card:hover { border-color: var(--blue); transform: translateY(-2px); box-shadow: var(--shadow); }
+    .stat-val { font-size: 1.5rem; font-weight: 900; color: var(--blue); margin-bottom: 0.2rem; }
+    .stat-label { font-size: 0.75rem; color: var(--gray-500); font-weight: 500; }
+    .hero-bottom {
+      max-width: 1100px; margin: 0 auto; padding-top: 2rem;
+      display: flex; flex-direction: column; align-items: center; gap: 1.25rem;
+    }
+    .hero-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; }
     .hero-badge {
       background: rgba(37,99,235,0.08); border: 1px solid rgba(37,99,235,0.15);
       border-radius: 2rem; padding: 0.4rem 1rem; font-size: 0.82rem; color: var(--blue); font-weight: 600;
@@ -178,6 +218,11 @@
       font-weight: 700; text-decoration: none; transition: all 0.2s; font-size: 0.95rem;
     }
     .btn-secondary:hover { background: var(--blue-l); }
+    @media (max-width: 768px) {
+      .hero-inner { grid-template-columns: 1fr; text-align: center; gap: 2rem; }
+      .hero-left { text-align: center; }
+      .hero-quote { text-align: left; }
+    }
     .section { padding: 4rem 2rem; }
     .section-inner { max-width: 1100px; margin: 0 auto; }
     .section-title { font-size: clamp(1.5rem,3vw,2.2rem); font-weight: 900; margin-bottom: 0.5rem; text-align: center; }
@@ -310,28 +355,52 @@
 </nav>
 
 <section class="landing-hero">
-  <div class="beta-pill"><span class="pulse"></span> Beta — Ανοιχτός Κώδικας</div>
-  <h1>εκκλησία</h1>
-  <p style="font-size:clamp(0.9rem,2vw,1.15rem);font-weight:400;color:var(--gray-500);letter-spacing:0.15em;margin-top:-0.25rem;margin-bottom:0.25rem">του έθνους</p>
-  <img src="pnx.png" alt="εκκλησία" style="width:170px;height:170px;object-fit:contain;margin:0.75rem auto;display:block;filter:drop-shadow(0 4px 12px rgba(37,99,235,0.15))"/>
-  <p class="tagline" data-el="Η φωνή σου μετράει. Ψήφισε για πραγματικά νομοσχέδια." data-en="Your voice counts. Vote on real bills.">
-    Η φωνή σου μετράει. Ψήφισε για πραγματικά νομοσχέδια.
-  </p>
-  <p style="font-style:italic;font-size:clamp(0.7rem,1.3vw,0.85rem);color:var(--gray-500);max-width:720px;margin:0.75rem auto 1.5rem;line-height:1.7;text-align:center"
-     data-el="«Η Εκκλησία του Δήμου — η κύρια δημοκρατική συνέλευση της αρχαίας Αθήνας — πραγματοποιούνταν στον λόφο της Πνύκας, στην Αρχαία Αγορά ή στο Θέατρο του Διονύσου και αποτελούσε τον πυρήνα της αθηναϊκής δημοκρατίας. Η ιστοσελίδα ekklesia.gr εμπνέεται από αυτή την ιστορική παράδοση και αποτελεί ανεξάρτητη, κοινοτική πλατφόρμα ανοιχτού κώδικα — χωρίς ιδιοκτήτη, χωρίς εταιρεία, χωρίς κεντρικό έλεγχο. Δεν ανήκει σε κανέναν και ανήκει σε όλους. Χωρίς κρατική συγκατάθεση ή επίσημο χαρακτήρα. Όλες οι ψηφοφορίες που διεξάγονται στην πλατφόρμα αφορούν αποκλειστικά πραγματικά νομοσχέδια, αποφάσεις και ανακοινώσεις που προέρχονται από επίσημες δημόσιες πηγές — τη Βουλή των Ελλήνων, τις Περιφέρειες και τους Δήμους — και έχουν αποκλειστικά ενημερωτικό χαρακτήρα. Δεν παράγουν κανενός είδους νομική ή πολιτική δεσμευτικότητα.»"
-     data-en="&quot;The Ekklesia — the principal democratic assembly of ancient Athens — convened on Pnyx hill, the Ancient Agora, or the Theatre of Dionysus and formed the core of Athenian democracy. ekklesie.gr is inspired by this historical tradition and is an independent, private platform with no state endorsement or official status. All votes conducted on this platform are purely informational and carry no legal or political binding force.&quot;">
-    «Η Εκκλησία του Δήμου — η κύρια δημοκρατική συνέλευση της αρχαίας Αθήνας — πραγματοποιούνταν στον λόφο της Πνύκας, στην Αρχαία Αγορά ή στο Θέατρο του Διονύσου και αποτελούσε τον πυρήνα της αθηναϊκής δημοκρατίας. Η ιστοσελίδα ekklesia.gr εμπνέεται από αυτή την ιστορική παράδοση και αποτελεί ανεξάρτητη, κοινοτική πλατφόρμα ανοιχτού κώδικα — χωρίς ιδιοκτήτη, χωρίς εταιρεία, χωρίς κεντρικό έλεγχο. Δεν ανήκει σε κανέναν και ανήκει σε όλους. Χωρίς κρατική συγκατάθεση ή επίσημο χαρακτήρα. Όλες οι ψηφοφορίες που διεξάγονται στην πλατφόρμα αφορούν αποκλειστικά πραγματικά νομοσχέδια, αποφάσεις και ανακοινώσεις που προέρχονται από επίσημες δημόσιες πηγές — τη Βουλή των Ελλήνων, τις Περιφέρειες και τους Δήμους — και έχουν αποκλειστικά ενημερωτικό χαρακτήρα. Δεν παράγουν κανενός είδους νομική ή πολιτική δεσμευτικότητα.»
-  </p>
-  <div class="hero-badges">
-    <span class="hero-badge" data-el="Χωρίς cookies" data-en="No cookies">Χωρίς cookies</span>
-    <span class="hero-badge" data-el="Χωρίς προσωπικά δεδομένα" data-en="No personal data">Χωρίς προσωπικά δεδομένα</span>
-    <span class="hero-badge" data-el="100% Ανοιχτός κώδικας" data-en="100% Open source">100% Ανοιχτός κώδικας</span>
-    <span class="hero-badge">GDPR</span>
+  <div class="hero-inner">
+    <!-- LEFT: Branding + Quote -->
+    <div class="hero-left">
+      <div class="beta-pill"><span class="pulse"></span> Beta — Ανοιχτός Κώδικας</div>
+      <h1>εκκλησία</h1>
+      <p class="hero-subtitle">του έθνους</p>
+      <p class="tagline" data-el="Η φωνή σου μετράει. Ψήφισε για πραγματικά νομοσχέδια." data-en="Your voice counts. Vote on real bills.">
+        Η φωνή σου μετράει. Ψήφισε για πραγματικά νομοσχέδια.
+      </p>
+      <div class="hero-quote">
+        <p data-el="«Η Εκκλησία του Δήμου — η κύρια δημοκρατική συνέλευση της αρχαίας Αθήνας — πραγματοποιούνταν στον λόφο της Πνύκας, στην Αρχαία Αγορά ή στο Θέατρο του Διονύσου και αποτελούσε τον πυρήνα της αθηναϊκής δημοκρατίας. Η ιστοσελίδα ekklesia.gr εμπνέεται από αυτή την ιστορική παράδοση και αποτελεί ανεξάρτητη, κοινοτική πλατφόρμα ανοιχτού κώδικα — χωρίς ιδιοκτήτη, χωρίς εταιρεία, χωρίς κεντρικό έλεγχο. Δεν ανήκει σε κανέναν και ανήκει σε όλους. Χωρίς κρατική συγκατάθεση ή επίσημο χαρακτήρα. Όλες οι ψηφοφορίες που διεξάγονται στην πλατφόρμα αφορούν αποκλειστικά πραγματικά νομοσχέδια, αποφάσεις και ανακοινώσεις που προέρχονται από επίσημες δημόσιες πηγές — τη Βουλή των Ελλήνων, τις Περιφέρειες και τους Δήμους — και έχουν αποκλειστικά ενημερωτικό χαρακτήρα. Δεν παράγουν κανενός είδους νομική ή πολιτική δεσμευτικότητα.»"
+           data-en="&quot;The Ekklesia — the principal democratic assembly of ancient Athens — convened on Pnyx hill, the Ancient Agora, or the Theatre of Dionysus and formed the core of Athenian democracy. ekklesia.gr is inspired by this historical tradition and is an independent, community-driven open-source platform — no owner, no company, no central control. It belongs to no one and belongs to everyone. Without state endorsement or official status. All votes conducted on this platform concern exclusively real bills, decisions and announcements from official public sources — the Hellenic Parliament, Regions and Municipalities — and are purely informational. They carry no legal or political binding force.&quot;">
+          «Η Εκκλησία του Δήμου — η κύρια δημοκρατική συνέλευση της αρχαίας Αθήνας — πραγματοποιούνταν στον λόφο της Πνύκας, στην Αρχαία Αγορά ή στο Θέατρο του Διονύσου και αποτελούσε τον πυρήνα της αθηναϊκής δημοκρατίας. Η ιστοσελίδα ekklesia.gr εμπνέεται από αυτή την ιστορική παράδοση και αποτελεί ανεξάρτητη, κοινοτική πλατφόρμα ανοιχτού κώδικα — χωρίς ιδιοκτήτη, χωρίς εταιρεία, χωρίς κεντρικό έλεγχο. Δεν ανήκει σε κανέναν και ανήκει σε όλους. Χωρίς κρατική συγκατάθεση ή επίσημο χαρακτήρα. Όλες οι ψηφοφορίες που διεξάγονται στην πλατφόρμα αφορούν αποκλειστικά πραγματικά νομοσχέδια, αποφάσεις και ανακοινώσεις που προέρχονται από επίσημες δημόσιες πηγές — τη Βουλή των Ελλήνων, τις Περιφέρειες και τους Δήμους — και έχουν αποκλειστικά ενημερωτικό χαρακτήρα. Δεν παράγουν κανενός είδους νομική ή πολιτική δεσμευτικότητα.»
+        </p>
+      </div>
+    </div>
+    <!-- RIGHT: Owl + Stat Cards -->
+    <div class="hero-right">
+      <div class="hero-owl">
+        <img src="pnx.png" alt="εκκλησία"/>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" data-el="100%" data-en="100%">100%</div>
+        <div class="stat-label" data-el="Ανοιχτός κώδικας" data-en="Open source">Ανοιχτός κώδικας</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val">GDPR</div>
+        <div class="stat-label" data-el="Πλήρης συμμόρφωση" data-en="Fully compliant">Πλήρης συμμόρφωση</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" data-el="0" data-en="0">0</div>
+        <div class="stat-label">Cookies &middot; Trackers</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val">Ed25519</div>
+        <div class="stat-label" data-el="Κρυπτογραφική ψήφος" data-en="Cryptographic vote">Κρυπτογραφική ψήφος</div>
+      </div>
+    </div>
   </div>
-  <div class="cta-row">
-    <a href="#how" class="btn-primary" data-el="Πώς λειτουργεί" data-en="How it works">Πώς λειτουργεί</a>
-    <a href="wiki/" class="btn-secondary" data-el="Διαβάστε το Wiki" data-en="Read the Wiki">Διαβάστε το Wiki</a>
-    <a href="https://github.com/NeaBouli/pnyx" target="_blank" class="btn-secondary" style="background:var(--gray-900);color:white;border-color:var(--gray-700);display:inline-flex;align-items:center;gap:0.4rem"><svg width="18" height="18" viewBox="0 0 16 16" fill="white"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+  <!-- Bottom: CTA -->
+  <div class="hero-bottom">
+    <div class="cta-row">
+      <a href="#how" class="btn-primary" data-el="Πώς λειτουργεί" data-en="How it works">Πώς λειτουργεί</a>
+      <a href="wiki/" class="btn-secondary" data-el="Διαβάστε το Wiki" data-en="Read the Wiki">Διαβάστε το Wiki</a>
+      <a href="https://github.com/NeaBouli/pnyx" target="_blank" class="btn-secondary" style="background:var(--gray-900);color:white;border-color:var(--gray-700)"><svg width="18" height="18" viewBox="0 0 16 16" fill="white"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+    </div>
   </div>
 </section>
 
