@@ -415,3 +415,49 @@ erst auf dem Hetzner Server unter app.ekklesia.gr.
 - Fix: `npm install next@15` in apps/web
 - Wann: nach Hetzner Deploy, wenn stabil
 - Risiko: Low (next@15 ist react@19 kompatibel)
+
+---
+
+## MOD-01 V2 — WebAuthn/Passkeys (Alpha)
+
+### Problem
+- Aktuell: Ed25519 Private Key → localStorage → Klartext
+- Risiko: Jeder mit Browser-Zugriff kann ihn lesen
+
+### Lösung: WebAuthn / Passkeys
+- Private Key lebt im Secure Element des Geräts (TPM/Secure Enclave)
+- Biometrisch gesichert: Face ID / Fingerprint / PIN
+- Ed25519 nativ unterstützt (COSE Algorithm -8)
+- Niemals exportierbar — niemals kompromittierbar
+- Passkeys synchronisieren automatisch: iCloud Keychain / Google Password Manager
+  → löst Multi-Gerät Problem ohne manuelles Backup
+
+### Was ersetzt wird
+- `storeKeypair()` in apps/web/src/lib/crypto.ts → WebAuthn Credential
+- localStorage Key Storage → Secure Element
+- Keine PIN, kein Passwort, kein Backup nötig
+
+### Implementierung
+1. Web: `navigator.credentials.create()` mit Ed25519 (COSE -8)
+2. Sign: `navigator.credentials.get()` für Abstimmungs-Signatur
+3. Fallback: localStorage (Beta) bleibt für nicht-unterstützte Browser
+4. Mobile: bereits Secure Enclave via Expo — bleibt unverändert
+
+### Stack
+- Browser API: WebAuthn Level 2 (alle modernen Browser)
+- Kein externes Package nötig — browser-nativ
+- FIDO2 Standard — GDPR-konform
+
+### Voraussetzungen
+- HTTPS (nach Hetzner Deploy)
+- Registrierter Domain (ekklesia.gr ✅)
+
+### Aufwand
+- ~1 Woche für Web Implementation
+- Mobile: bereits gelöst (Secure Enclave)
+
+### Phase: Alpha (nach Hetzner Deploy + HTTPS)
+
+### Verweis
+- Community Anfrage: localStorage Klartext Problem (April 2026)
+- Löst auch: Multi-Gerät, Backup, externe Wallet Frage
