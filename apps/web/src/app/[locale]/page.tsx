@@ -42,7 +42,7 @@ function HeroSection() {
       </p>
       <p className="italic text-sm text-gray-400 max-w-3xl mx-auto mb-12 leading-relaxed">
         {isEl
-          ? "«Η Εκκλησία του Δήμου — η κύρια δημοκρατική συνέλευση της αρχαίας Αθήνας — πραγματοποιούνταν στον λόφο της Πνύκας, στην Αρχαία Αγορά ή στο Θέατρο του Διονύσου και αποτελούσε τον πυρήνα της αθηναϊκής δημοκρατίας. Το ekklesie.gr εμπνέεται από αυτή την ιστορική παράδοση και αποτελεί ανεξάρτητη, ιδιωτική πλατφόρμα, χωρίς κρατική συγκατάθεση ή επίσημο χαρακτήρα. Όλες οι ψηφοφορίες που διεξάγονται στην πλατφόρμα αυτή έχουν αποκλειστικά ενημερωτικό χαρακτήρα και δεν παράγουν κανενός είδους νομική ή πολιτική δεσμευτικότητα.»"
+          ? "«Η Εκκλησία του Δήμου — η κύρια δημοκρατική συνέλευση της αρχαίας Αθήνας — πραγματοποιούνταν στον λόφο της Πνύκας, στην Αρχαία Αγορά ή στο Θέατρο του Διονύσου και αποτελούσε τον πυρήνα της αθηναϊκής δημοκρατίας. Η ιστοσελίδα ekklesia.gr εμπνέεται από αυτή την ιστορική παράδοση και αποτελεί ανεξάρτητη, ιδιωτική πλατφόρμα, χωρίς κρατική συγκατάθεση ή επίσημο χαρακτήρα. Όλες οι ψηφοφορίες που διεξάγονται στην πλατφόρμα αυτή έχουν αποκλειστικά ενημερωτικό χαρακτήρα και δεν παράγουν κανενός είδους νομική ή πολιτική δεσμευτικότητα.»"
           : "\"The Ekklesia — the principal democratic assembly of ancient Athens — convened on Pnyx hill, the Ancient Agora, or the Theatre of Dionysus and formed the core of Athenian democracy. ekklesie.gr is inspired by this historical tradition and is an independent, private platform with no state endorsement or official status. All votes conducted on this platform are purely informational and carry no legal or political binding force.\""}
       </p>
       <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-12 leading-relaxed">
