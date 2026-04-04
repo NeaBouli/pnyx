@@ -4,22 +4,23 @@
     "slug": "ekklesia-gr",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/pnx.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/pnx.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1a237e"
+      "backgroundColor": "#2563eb"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "gr.ekklesia.app"
+      "bundleIdentifier": "gr.ekklesia.app",
+      "icon": "./assets/pnx.png"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#1a237e"
+        "foregroundImage": "./assets/pnx.png",
+        "backgroundColor": "#2563eb"
       },
       "edgeToEdgeEnabled": true,
       "package": "gr.ekklesia.app",
