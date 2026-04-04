@@ -508,3 +508,11 @@ erst auf dem Hetzner Server unter app.ekklesia.gr.
 **Parliament Scraper (MOD-10)**
 - hellenicparliament.gr robots.txt prüfen vor Hetzner Deploy
 - AI-Summary Disclaimer bereits vorhanden ✅
+
+---
+
+## TODO — Logo Konsistenz Apps
+- [ ] apps/mobile/app.json — icon + splash → pnx.png
+- [ ] Splash Screen Hintergrund: #2563eb
+- [ ] 1024x1024px für App Store
+- [ ] Vor nächstem APK Build erledigen

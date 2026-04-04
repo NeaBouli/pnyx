@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="el" data-lang="el">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>FAQ — εκκλησία Wiki — εκκλησία</title>
+  <link rel="icon" type="image/png" href="../pnx.png"/>
+
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-d: #1d4ed8;
+      --blue-l: #eff6ff;
+      --gray-900: #0f172a;
+      --gray-700: #334155;
+      --gray-500: #64748b;
+      --gray-400: #94a3b8;
+      --gray-100: #f1f5f9;
+      --white: #ffffff;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --purple: #a855f7;
+      --radius: 1rem;
+      --shadow: 0 4px 24px rgba(37,99,235,0.10);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--white);
+      color: var(--gray-900);
+      line-height: 1.6;
+    }
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid #e2e8f0;
+      padding: 0.75rem 1.5rem;
+      display: flex; justify-content: space-between;
+      align-items: center; flex-wrap: wrap; gap: 0.5rem;
+    }
+    .nav-logo {
+      font-size: 1.25rem; font-weight: 900; color: var(--blue);
+      text-decoration: none; display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;
+    }
+    .nav-logo img { width: 40px; height: 40px; object-fit: contain; }
+    .nav-links { display: flex; gap: 0.15rem; align-items: center; flex-wrap: wrap; }
+    .nav-links a {
+      padding: 0.3rem 0.7rem; border-radius: 0.4rem;
+      color: var(--gray-700); text-decoration: none;
+      font-size: 0.82rem; font-weight: 500;
+      transition: all 0.2s; white-space: nowrap;
+    }
+    .nav-links a:hover, .nav-links a.active {
+      background: var(--blue-l); color: var(--blue);
+    }
+    .lang-btn {
+      cursor: pointer; border: 2px solid #e2e8f0;
+      background: var(--white); border-radius: 0.4rem;
+      padding: 0.22rem 0.55rem; font-size: 0.75rem;
+      font-weight: 700; color: var(--gray-700);
+      transition: all 0.2s; margin-left: 0.3rem;
+    }
+    .lang-btn:hover { border-color: var(--blue); color: var(--blue); }
+    /* FOOTER */
+    footer {
+      background: var(--gray-900); color: var(--gray-400);
+      padding: 2rem 1.5rem; text-align: center;
+      font-size: 0.82rem; margin-top: 4rem;
+    }
+    .footer-links {
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 0.3rem 1rem; margin-bottom: 0.75rem;
+    }
+    footer a { color: var(--gray-500); text-decoration: none; }
+    footer a:hover { color: var(--white); }
+    /* COMMON */
+    .layout { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+    h2 { font-size: 1.4rem; font-weight: 900; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0; }
+    h2:first-child { margin-top: 0; }
+    p { color: var(--gray-700); margin-bottom: 1rem; line-height: 1.8; }
+    .hero {
+      padding: 4rem 2rem; text-align: center;
+      background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 50%, #fefce8 100%);
+    }
+    .hero h1 { font-size: clamp(1.8rem,5vw,3rem); font-weight: 900; margin-bottom: 0.75rem; }
+    .hero p { color: var(--gray-700); max-width: 640px; margin: 0 auto 1.5rem; font-size: 1.05rem; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--blue); text-decoration: none; font-weight: 600; font-size: 0.88rem;
+    }
+    .fade-in { opacity: 0; transform: translateY(14px); transition: all 0.5s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+    /* ACCORDION */
+    .faq-item {
+      border: 1px solid #e2e8f0; border-radius: 0.75rem;
+      margin-bottom: 0.75rem; overflow: hidden;
+      transition: all 0.2s;
+    }
+    .faq-item:hover { border-color: var(--blue); box-shadow: var(--shadow); }
+    .faq-q {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 1.25rem; cursor: pointer;
+      background: var(--white); font-weight: 700; font-size: 0.92rem;
+      color: var(--gray-900); user-select: none;
+      transition: background 0.2s;
+    }
+    .faq-q:hover { background: var(--gray-100); }
+    .faq-q::after {
+      content: "+"; font-size: 1.3rem; font-weight: 300;
+      color: var(--blue); transition: transform 0.3s; flex-shrink: 0; margin-left: 1rem;
+    }
+    .faq-item.open .faq-q::after { content: "\2212"; }
+    .faq-a {
+      max-height: 0; overflow: hidden;
+      transition: max-height 0.35s ease, padding 0.35s ease;
+      padding: 0 1.25rem;
+    }
+    .faq-item.open .faq-a {
+      max-height: 500px; padding: 0 1.25rem 1.25rem;
+    }
+    .faq-a p { margin: 0; font-size: 0.88rem; color: var(--gray-700); line-height: 1.8; }
+    .faq-count {
+      display: inline-block; background: var(--blue-l); color: var(--blue);
+      font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem;
+      border-radius: 1rem; margin-left: 0.5rem; vertical-align: middle;
+    }
+    @media (max-width: 640px) { .nav-links a { font-size: 0.75rem; padding: 0.22rem 0.45rem; } }
+  </style>
+</head>
+<body>
+<nav>
+  <a href="../" class="nav-logo"><img src="../pnx.png" alt="logo" style="width:40px;height:40px;object-fit:contain"/>εκκλησία</a>
+  <div class="nav-links">
+    <a href="../" data-el="Αρχική" data-en="Home">Αρχική</a>
+    <a href="../votes/active.html" data-el="Ψηφοφορίες" data-en="Votes">Ψηφοφορίες</a>
+    <a href="index.html" data-el="Wiki" data-en="Wiki">Wiki</a>
+    <a href="../community.html" data-el="Community" data-en="Community">Community</a>
+    <span style="width:1px;height:20px;background:#e2e8f0;margin:0 0.3rem"></span>
+    <a href="architecture.html" data-el="Αρχιτεκτονική" data-en="Architecture">Αρχιτεκτονική</a>
+    <a href="security.html" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</a>
+    <a href="api.html">API</a>
+    <a href="modules.html">Modules</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="privacy.html" data-el="Ιδιωτικότητα" data-en="Privacy">Ιδιωτικότητα</a>
+    <a href="database.html">Database</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="whitepaper.html">Whitepaper</a>
+    <a href="faq.html" class="active">FAQ</a>
+    <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
+  </div>
+</nav>
+<div class="hero" style="background:linear-gradient(135deg,#eff6ff,#fefce8)">
+  <h1 data-el="Συχνές Ερωτήσεις" data-en="Frequently Asked Questions">Συχνές Ερωτήσεις</h1>
+  <p data-el="Όλα όσα πρέπει να γνωρίζετε για την ekklesia.gr" data-en="Everything you need to know about ekklesia.gr">Όλα όσα πρέπει να γνωρίζετε για την ekklesia.gr</p>
+  <a href="../" class="back-link" data-el="← Αρχική" data-en="← Home">← Αρχική</a>
+</div>
+<div class="layout">
+
+  <!-- ═══ ΓΕΝΙΚΑ ═══ -->
+  <h2 class="fade-in" data-el="Γενικά" data-en="General">Γενικά <span class="faq-count">5</span></h2>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Τι είναι η ekklesia.gr;" data-en="What is ekklesia.gr?" onclick="this.parentElement.classList.toggle('open')">Τι είναι η ekklesia.gr;</div>
+    <div class="faq-a"><p data-el="Η ekklesia.gr είναι μια ανεξάρτητη, κοινοτική πλατφόρμα ψηφιακής άμεσης δημοκρατίας στην Ελλάδα. Είναι ανοιχτού κώδικα, δεν ανήκει σε κανέναν και λειτουργεί από εθελοντές. Εμπνευσμένη από την αρχαία αθηναϊκή Εκκλησία του Δήμου, επιτρέπει στους πολίτες να ψηφίζουν για πραγματικά νομοσχέδια και να βλέπουν τη διαφορά μεταξύ βούλησης πολιτών και κοινοβουλευτικών αποφάσεων." data-en="ekklesia.gr is an independent, community-driven platform for digital direct democracy in Greece. It is open source, belongs to no one, and is run by volunteers. Inspired by the ancient Athenian Ekklesia, it allows citizens to vote on real bills and see the divergence between citizen will and parliamentary decisions.">Η ekklesia.gr είναι μια ανεξάρτητη, κοινοτική πλατφόρμα ψηφιακής άμεσης δημοκρατίας στην Ελλάδα. Είναι ανοιχτού κώδικα, δεν ανήκει σε κανέναν και λειτουργεί από εθελοντές. Εμπνευσμένη από την αρχαία αθηναϊκή Εκκλησία του Δήμου, επιτρέπει στους πολίτες να ψηφίζουν για πραγματικά νομοσχέδια και να βλέπουν τη διαφορά μεταξύ βούλησης πολιτών και κοινοβουλευτικών αποφάσεων.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Σε ποιον ανήκει η ekklesia.gr;" data-en="Who owns ekklesia.gr?" onclick="this.parentElement.classList.toggle('open')">Σε ποιον ανήκει η ekklesia.gr;</div>
+    <div class="faq-a"><p data-el="Σε κανέναν — και σε όλους. Δεν υπάρχει εταιρεία, ιδιοκτήτης ή κυβέρνηση πίσω από αυτήν. Ο κώδικας είναι υπό άδεια MIT και δημόσια διαθέσιμος στο GitHub. Η υποδομή χρηματοδοτείται από δωρεές της κοινότητας." data-en="No one — and everyone. There is no company, no owner, no government behind it. The code is MIT-licensed and publicly available on GitHub. Infrastructure is funded by community donations.">Σε κανέναν — και σε όλους. Δεν υπάρχει εταιρεία, ιδιοκτήτης ή κυβέρνηση πίσω από αυτήν. Ο κώδικας είναι υπό άδεια MIT και δημόσια διαθέσιμος στο GitHub. Η υποδομή χρηματοδοτείται από δωρεές της κοινότητας.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Είναι η ekklesia.gr επίσημη ή κρατικά αναγνωρισμένη;" data-en="Is ekklesia.gr official or state-recognized?" onclick="this.parentElement.classList.toggle('open')">Είναι η ekklesia.gr επίσημη ή κρατικά αναγνωρισμένη;</div>
+    <div class="faq-a"><p data-el="Όχι. Η ekklesia.gr είναι μια ανεξάρτητη πρωτοβουλία πολιτών χωρίς κρατική αναγνώριση ή έγκριση. Όλες οι ψηφοφορίες είναι ενημερωτικές και δεν είναι νομικά δεσμευτικές." data-en="No. ekklesia.gr is an independent civic initiative without state recognition or approval. All votes are informational and not legally binding.">Όχι. Η ekklesia.gr είναι μια ανεξάρτητη πρωτοβουλία πολιτών χωρίς κρατική αναγνώριση ή έγκριση. Όλες οι ψηφοφορίες είναι ενημερωτικές και δεν είναι νομικά δεσμευτικές.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Γιατί ονομάζεται «εκκλησία»;" data-en="Why is it called 'εκκλησία'?" onclick="this.parentElement.classList.toggle('open')">Γιατί ονομάζεται «εκκλησία»;</div>
+    <div class="faq-a"><p data-el="Η Εκκλησία ήταν η λαϊκή συνέλευση της αρχαίας Αθήνας — ο τόπος όπου κάθε πολίτης είχε μια ψήφο. Η ekklesia.gr είναι η ψηφιακή αναβίωση αυτής της παράδοσης." data-en="The Ekklesia was the people's assembly of ancient Athens — the place where every citizen had a vote. ekklesia.gr is the digital revival of this tradition.">Η Εκκλησία ήταν η λαϊκή συνέλευση της αρχαίας Αθήνας — ο τόπος όπου κάθε πολίτης είχε μια ψήφο. Η ekklesia.gr είναι η ψηφιακή αναβίωση αυτής της παράδοσης.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Σε ποιες γλώσσες είναι διαθέσιμη η πλατφόρμα;" data-en="In which languages is the platform available?" onclick="this.parentElement.classList.toggle('open')">Σε ποιες γλώσσες είναι διαθέσιμη η πλατφόρμα;</div>
+    <div class="faq-a"><p data-el="Ελληνικά και Αγγλικά. Η διεπαφή χρήστη είναι πλήρως δίγλωσση." data-en="Greek and English. The user interface is fully bilingual.">Ελληνικά και Αγγλικά. Η διεπαφή χρήστη είναι πλήρως δίγλωσση.</p></div>
+  </div>
+
+  <!-- ═══ ΨΗΦΟΦΟΡΙΕΣ ═══ -->
+  <h2 class="fade-in" data-el="Ψηφοφορίες" data-en="Voting">Ψηφοφορίες <span class="faq-count">6</span></h2>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Για ποια θέματα μπορώ να ψηφίσω;" data-en="What topics can I vote on?" onclick="this.parentElement.classList.toggle('open')">Για ποια θέματα μπορώ να ψηφίσω;</div>
+    <div class="faq-a"><p data-el="Πραγματικά νομοσχέδια της Ελληνικής Βουλής, αποφάσεις των Περιφερειών και ψηφίσματα των Δήμων. Όλα τα θέματα ψηφοφορίας προέρχονται από επίσημες δημόσιες ανακοινώσεις των αντίστοιχων θεσμών." data-en="Real bills from the Hellenic Parliament, decisions from Regions and resolutions from Municipalities. All voting topics come from official public announcements of the respective institutions.">Πραγματικά νομοσχέδια της Ελληνικής Βουλής, αποφάσεις των Περιφερειών και ψηφίσματα των Δήμων. Όλα τα θέματα ψηφοφορίας προέρχονται από επίσημες δημόσιες ανακοινώσεις των αντίστοιχων θεσμών.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Είναι οι ψηφοφορίες νομικά δεσμευτικές;" data-en="Are the votes legally binding?" onclick="this.parentElement.classList.toggle('open')">Είναι οι ψηφοφορίες νομικά δεσμευτικές;</div>
+    <div class="faq-a"><p data-el="Όχι. Όλες οι ψηφοφορίες έχουν αποκλειστικά ενημερωτικό χαρακτήρα και δεν παράγουν κανενός είδους νομική ή πολιτική δεσμευτικότητα." data-en="No. All votes are purely informational and carry no legal or political binding force.">Όχι. Όλες οι ψηφοφορίες έχουν αποκλειστικά ενημερωτικό χαρακτήρα και δεν παράγουν κανενός είδους νομική ή πολιτική δεσμευτικότητα.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Μπορώ να αλλάξω την ψήφο μου;" data-en="Can I change my vote?" onclick="this.parentElement.classList.toggle('open')">Μπορώ να αλλάξω την ψήφο μου;</div>
+    <div class="faq-a"><p data-el="Ναι — αλλά μόνο σε συγκεκριμένες φάσεις. Στο 24ωρο παράθυρο πριν την κοινοβουλευτική ψηφοφορία (WINDOW_24H) και μετά στο ανοιχτό αρχείο (OPEN_END) μπορεί να αλλάξει η ψήφος. Κατά τη διάρκεια της ενεργής φάσης (ACTIVE) η ψήφος είναι κλειδωμένη." data-en="Yes — but only in certain phases. In the 24-hour window before the parliamentary vote (WINDOW_24H) and afterwards in the open archive (OPEN_END) the vote can be changed. During the active phase (ACTIVE) the vote is locked.">Ναι — αλλά μόνο σε συγκεκριμένες φάσεις. Στο 24ωρο παράθυρο πριν την κοινοβουλευτική ψηφοφορία (WINDOW_24H) και μετά στο ανοιχτό αρχείο (OPEN_END) μπορεί να αλλάξει η ψήφος. Κατά τη διάρκεια της ενεργής φάσης (ACTIVE) η ψήφος είναι κλειδωμένη.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Τι σημαίνουν τα διάφορα status ενός νομοσχεδίου;" data-en="What do the different bill statuses mean?" onclick="this.parentElement.classList.toggle('open')">Τι σημαίνουν τα διάφορα status ενός νομοσχεδίου;</div>
+    <div class="faq-a"><p data-el="ANNOUNCED = ανακοινώθηκε, δεν είναι ακόμα ψηφίσιμο. ACTIVE = η ψηφοφορία είναι ανοιχτή. WINDOW_24H = 24 ώρες πριν την κοινοβουλευτική απόφαση. PARLIAMENT_VOTED = η Βουλή αποφάσισε. OPEN_END = αρχειοθετημένο, εξακολουθεί να είναι ψηφίσιμο." data-en="ANNOUNCED = announced, not yet votable. ACTIVE = voting is open. WINDOW_24H = 24 hours before parliamentary decision. PARLIAMENT_VOTED = parliament has decided. OPEN_END = archived, still votable.">ANNOUNCED = ανακοινώθηκε, δεν είναι ακόμα ψηφίσιμο. ACTIVE = η ψηφοφορία είναι ανοιχτή. WINDOW_24H = 24 ώρες πριν την κοινοβουλευτική απόφαση. PARLIAMENT_VOTED = η Βουλή αποφάσισε. OPEN_END = αρχειοθετημένο, εξακολουθεί να είναι ψηφίσιμο.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Τι είναι ο Δείκτης Απόκλισης (Divergence Score);" data-en="What is the Divergence Score?" onclick="this.parentElement.classList.toggle('open')">Τι είναι ο Δείκτης Απόκλισης (Divergence Score);</div>
+    <div class="faq-a"><p data-el="Ένα ποσοστό που δείχνει πόσο διαφέρει η πλειοψηφία των πολιτών από την κοινοβουλευτική απόφαση. 0% = πλήρης συμφωνία. 100% = πλήρης αντίθεση." data-en="A percentage showing how much the citizen majority diverges from the parliamentary decision. 0% = full agreement. 100% = full opposition.">Ένα ποσοστό που δείχνει πόσο διαφέρει η πλειοψηφία των πολιτών από την κοινοβουλευτική απόφαση. 0% = πλήρης συμφωνία. 100% = πλήρης αντίθεση.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Τι είναι η Πολιτική Πυξίδα (VAA);" data-en="What is the Political Compass (VAA)?" onclick="this.parentElement.classList.toggle('open')">Τι είναι η Πολιτική Πυξίδα (VAA);</div>
+    <div class="faq-a"><p data-el="Ένας εκλογικός compass με 15 πολιτικές θέσεις και 8 ελληνικά κόμματα. Δείχνει με ποιο κόμμα ταιριάζουν περισσότερο οι θέσεις σας. Διαρκεί περίπου 5 λεπτά." data-en="A vote compass with 15 political statements and 8 Greek parties. Shows which party your positions align with most. Takes about 5 minutes.">Ένας εκλογικός compass με 15 πολιτικές θέσεις και 8 ελληνικά κόμματα. Δείχνει με ποιο κόμμα ταιριάζουν περισσότερο οι θέσεις σας. Διαρκεί περίπου 5 λεπτά.</p></div>
+  </div>
+
+  <!-- ═══ ΤΑΥΤΟΤΗΤΑ & ΑΣΦΑΛΕΙΑ ═══ -->
+  <h2 class="fade-in" data-el="Ταυτότητα & Ασφάλεια" data-en="Identity & Security">Ταυτότητα & Ασφάλεια <span class="faq-count">7</span></h2>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Χρειάζομαι λογαριασμό;" data-en="Do I need an account?" onclick="this.parentElement.classList.toggle('open')">Χρειάζομαι λογαριασμό;</div>
+    <div class="faq-a"><p data-el="Όχι. Δεν υπάρχουν λογαριασμοί, email ή κωδικοί. Η ταυτότητα επαληθεύεται εφάπαξ μέσω της ελληνικής κάρτας SIM." data-en="No. There are no accounts, emails or passwords. Identity is verified once via the Greek SIM card.">Όχι. Δεν υπάρχουν λογαριασμοί, email ή κωδικοί. Η ταυτότητα επαληθεύεται εφάπαξ μέσω της ελληνικής κάρτας SIM.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Πώς λειτουργεί η επαλήθευση ταυτότητας;" data-en="How does identity verification work?" onclick="this.parentElement.classList.toggle('open')">Πώς λειτουργεί η επαλήθευση ταυτότητας;</div>
+    <div class="faq-a"><p data-el="Ο αριθμός τηλεφώνου ελέγχεται μέσω HLR lookup (Home Location Register) — αν μια ελληνική SIM είναι ενεργή. Ο αριθμός διαγράφεται αμέσως μετά τον έλεγχο. Δημιουργείται ένα ζεύγος κλειδιών Ed25519. Μόνο το δημόσιο κλειδί αποθηκεύεται." data-en="The phone number is checked via HLR lookup (Home Location Register) — whether a Greek SIM is active. The number is deleted immediately after the check. An Ed25519 key pair is generated. Only the public key is stored.">Ο αριθμός τηλεφώνου ελέγχεται μέσω HLR lookup (Home Location Register) — αν μια ελληνική SIM είναι ενεργή. Ο αριθμός διαγράφεται αμέσως μετά τον έλεγχο. Δημιουργείται ένα ζεύγος κλειδιών Ed25519. Μόνο το δημόσιο κλειδί αποθηκεύεται.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Γιατί μόνο ελληνικοί αριθμοί (+30);" data-en="Why only Greek numbers (+30)?" onclick="this.parentElement.classList.toggle('open')">Γιατί μόνο ελληνικοί αριθμοί (+30);</div>
+    <div class="faq-a"><p data-el="Επειδή οι ελληνικές κάρτες SIM είναι νομικά συνδεδεμένες με την ταυτότητα. Αυτό εξασφαλίζει ότι μόνο Έλληνες πολίτες ψηφίζουν — χωρίς να αποθηκεύονται προσωπικά δεδομένα." data-en="Because Greek SIM cards are legally tied to the national ID. This ensures only Greek citizens vote — without storing personal data.">Επειδή οι ελληνικές κάρτες SIM είναι νομικά συνδεδεμένες με την ταυτότητα. Αυτό εξασφαλίζει ότι μόνο Έλληνες πολίτες ψηφίζουν — χωρίς να αποθηκεύονται προσωπικά δεδομένα.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Πού αποθηκεύεται το ιδιωτικό μου κλειδί;" data-en="Where is my private key stored?" onclick="this.parentElement.classList.toggle('open')">Πού αποθηκεύεται το ιδιωτικό μου κλειδί;</div>
+    <div class="faq-a"><p data-el="Αποκλειστικά στη συσκευή σας (localStorage στον browser, Secure Enclave στο κινητό). Ο server δεν βλέπει ποτέ το ιδιωτικό κλειδί." data-en="Exclusively on your device (localStorage in the browser, Secure Enclave on mobile). The server never sees the private key.">Αποκλειστικά στη συσκευή σας (localStorage στον browser, Secure Enclave στο κινητό). Ο server δεν βλέπει ποτέ το ιδιωτικό κλειδί.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Τι γίνεται αν καθαρίσω τη μνήμη cache του browser;" data-en="What happens if I clear the browser cache?" onclick="this.parentElement.classList.toggle('open')">Τι γίνεται αν καθαρίσω τη μνήμη cache του browser;</div>
+    <div class="faq-a"><p data-el="Το ιδιωτικό κλειδί χάνεται. Στη φάση Alpha θα εισαχθούν τα WebAuthn/Passkeys — τότε το κλειδί θα συγχρονίζεται αυτόματα μέσω iCloud/Google." data-en="The private key is lost. In the Alpha phase, WebAuthn/Passkeys will be introduced — then the key will sync automatically via iCloud/Google.">Το ιδιωτικό κλειδί χάνεται. Στη φάση Alpha θα εισαχθούν τα WebAuthn/Passkeys — τότε το κλειδί θα συγχρονίζεται αυτόματα μέσω iCloud/Google.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Μπορεί κάποιος να δει την ψήφο μου;" data-en="Can someone see my vote?" onclick="this.parentElement.classList.toggle('open')">Μπορεί κάποιος να δει την ψήφο μου;</div>
+    <div class="faq-a"><p data-el="Όχι. Μόνο τα συγκεντρωτικά αποτελέσματα (σύνολο Ναι/Όχι/Αποχή) είναι δημόσια. Καμία ατομική ψήφος δεν είναι ανιχνεύσιμη." data-en="No. Only aggregate results (total Yes/No/Abstain) are public. No individual vote is traceable.">Όχι. Μόνο τα συγκεντρωτικά αποτελέσματα (σύνολο Ναι/Όχι/Αποχή) είναι δημόσια. Καμία ατομική ψήφος δεν είναι ανιχνεύσιμη.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Μπορώ να ψηφίσω δύο φορές;" data-en="Can I vote twice?" onclick="this.parentElement.classList.toggle('open')">Μπορώ να ψηφίσω δύο φορές;</div>
+    <div class="faq-a"><p data-el="Όχι. Ο συνδυασμός Nullifier Hash και Bill ID είναι UNIQUE constraint στη βάση δεδομένων." data-en="No. The combination of Nullifier Hash and Bill ID is a UNIQUE constraint at the database level.">Όχι. Ο συνδυασμός Nullifier Hash και Bill ID είναι UNIQUE constraint στη βάση δεδομένων.</p></div>
+  </div>
+
+  <!-- ═══ ΑΠΟΡΡΗΤΟ & GDPR ═══ -->
+  <h2 class="fade-in" data-el="Απόρρητο & GDPR" data-en="Privacy & GDPR">Απόρρητο & GDPR <span class="faq-count">6</span></h2>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Χρησιμοποιούνται cookies;" data-en="Are cookies used?" onclick="this.parentElement.classList.toggle('open')">Χρησιμοποιούνται cookies;</div>
+    <div class="faq-a"><p data-el="Όχι. Κανένα cookie, κανένα tracking, κανένα analytics." data-en="No. No cookies, no tracking, no analytics.">Όχι. Κανένα cookie, κανένα tracking, κανένα analytics.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Ποια δεδομένα αποθηκεύονται;" data-en="What data is stored?" onclick="this.parentElement.classList.toggle('open')">Ποια δεδομένα αποθηκεύονται;</div>
+    <div class="faq-a"><p data-el="Nullifier Hash (SHA256, μη αντιστρέψιμο), δημόσιο κλειδί Ed25519, επιλογή ψήφου (YES/NO/ABSTAIN), προαιρετικά περιοχή και φύλο ως hash. Ποτέ: αριθμός τηλεφώνου, όνομα, email, IP, ιδιωτικό κλειδί." data-en="Nullifier Hash (SHA256, irreversible), Ed25519 public key, vote choice (YES/NO/ABSTAIN), optionally region and gender as hash. Never: phone number, name, email, IP address, private key.">Nullifier Hash (SHA256, μη αντιστρέψιμο), δημόσιο κλειδί Ed25519, επιλογή ψήφου (YES/NO/ABSTAIN), προαιρετικά περιοχή και φύλο ως hash. Ποτέ: αριθμός τηλεφώνου, όνομα, email, IP, ιδιωτικό κλειδί.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Πού βρίσκονται οι servers;" data-en="Where are the servers located?" onclick="this.parentElement.classList.toggle('open')">Πού βρίσκονται οι servers;</div>
+    <div class="faq-a"><p data-el="Αποκλειστικά στην Ευρώπη (Hetzner, Γερμανία) — καμία μεταφορά σε τρίτη χώρα." data-en="Exclusively in Europe (Hetzner, Germany) — no third-country transfer.">Αποκλειστικά στην Ευρώπη (Hetzner, Γερμανία) — καμία μεταφορά σε τρίτη χώρα.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Τι αποθηκεύεται στο Arweave;" data-en="What is stored on Arweave?" onclick="this.parentElement.classList.toggle('open')">Τι αποθηκεύεται στο Arweave;</div>
+    <div class="faq-a"><p data-el="Αποκλειστικά συγκεντρωτικά στατιστικά ανά νομοσχέδιο (σύνολο Ναι/Όχι/Αποχή, Divergence Score, αποτέλεσμα Βουλής). Ποτέ ατομικές ψήφοι, δημόσια κλειδιά ή Nullifier Hashes." data-en="Exclusively aggregate statistics per bill (total Yes/No/Abstain, Divergence Score, parliament result). Never individual votes, public keys or Nullifier Hashes.">Αποκλειστικά συγκεντρωτικά στατιστικά ανά νομοσχέδιο (σύνολο Ναι/Όχι/Αποχή, Divergence Score, αποτέλεσμα Βουλής). Ποτέ ατομικές ψήφοι, δημόσια κλειδιά ή Nullifier Hashes.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Ποιος επεξεργάζεται τον αριθμό τηλεφώνου μου στο HLR lookup;" data-en="Who processes my phone number in the HLR lookup?" onclick="this.parentElement.classList.toggle('open')">Ποιος επεξεργάζεται τον αριθμό τηλεφώνου μου στο HLR lookup;</div>
+    <div class="faq-a"><p data-el="Ένας εμπορικός πάροχος HLR (HLR Lookups / Melrose Labs / Telnyx). Ο αριθμός δεν αποθηκεύεται πέραν του ελέγχου. Υπάρχει σύμβαση επεξεργασίας δεδομένων (DPA, Art. 28 GDPR)." data-en="A commercial HLR provider (HLR Lookups / Melrose Labs / Telnyx). The number is not stored beyond the check. A Data Processing Agreement exists (DPA, Art. 28 GDPR).">Ένας εμπορικός πάροχος HLR (HLR Lookups / Melrose Labs / Telnyx). Ο αριθμός δεν αποθηκεύεται πέραν του ελέγχου. Υπάρχει σύμβαση επεξεργασίας δεδομένων (DPA, Art. 28 GDPR).</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Είναι οι απαντήσεις VAA προσωπικά δεδομένα;" data-en="Are VAA answers personal data?" onclick="this.parentElement.classList.toggle('open')">Είναι οι απαντήσεις VAA προσωπικά δεδομένα;</div>
+    <div class="faq-a"><p data-el="Οι απαντήσεις VAA αφορούν πολιτικές απόψεις — ειδική κατηγορία κατά Art. 9 GDPR. Αποθηκεύονται ψευδωνυμοποιημένα, συνδεδεμένες με το δημόσιο κλειδί, και μπορούν να διαγραφούν ανά πάσα στιγμή μέσω /identity/revoke." data-en="VAA answers concern political opinions — special category under Art. 9 GDPR. They are stored pseudonymously, linked to the public key, and can be deleted at any time via /identity/revoke.">Οι απαντήσεις VAA αφορούν πολιτικές απόψεις — ειδική κατηγορία κατά Art. 9 GDPR. Αποθηκεύονται ψευδωνυμοποιημένα, συνδεδεμένες με το δημόσιο κλειδί, και μπορούν να διαγραφούν ανά πάσα στιγμή μέσω /identity/revoke.</p></div>
+  </div>
+
+  <!-- ═══ ΤΕΧΝΟΛΟΓΙΑ ═══ -->
+  <h2 class="fade-in" data-el="Τεχνολογία" data-en="Technology">Τεχνολογία <span class="faq-count">5</span></h2>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Τι είναι το Ed25519;" data-en="What is Ed25519?" onclick="this.parentElement.classList.toggle('open')">Τι είναι το Ed25519;</div>
+    <div class="faq-a"><p data-el="Ένα κρυπτογραφικό σύστημα υπογραφής. Κάθε ψήφος υπογράφεται με το ιδιωτικό κλειδί του χρήστη — χωρίς ο server να γνωρίζει την ταυτότητα." data-en="A cryptographic signature scheme. Every vote is signed with the user's private key — without the server knowing the identity.">Ένα κρυπτογραφικό σύστημα υπογραφής. Κάθε ψήφος υπογράφεται με το ιδιωτικό κλειδί του χρήστη — χωρίς ο server να γνωρίζει την ταυτότητα.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Τι είναι το Arweave;" data-en="What is Arweave?" onclick="this.parentElement.classList.toggle('open')">Τι είναι το Arweave;</div>
+    <div class="faq-a"><p data-el="Ένα αποκεντρωμένο, μόνιμο δίκτυο αποθήκευσης. Τα αποτελέσματα ψηφοφοριών αρχειοθετούνται εκεί αμετάβλητα — κανείς δεν μπορεί να τα διαγράψει ή να τα τροποποιήσει." data-en="A decentralized, permanent storage network. Vote results are archived there immutably — no one can delete or modify them.">Ένα αποκεντρωμένο, μόνιμο δίκτυο αποθήκευσης. Τα αποτελέσματα ψηφοφοριών αρχειοθετούνται εκεί αμετάβλητα — κανείς δεν μπορεί να τα διαγράψει ή να τα τροποποιήσει.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Τι είναι το Nullifier Hash;" data-en="What is the Nullifier Hash?" onclick="this.parentElement.classList.toggle('open')">Τι είναι το Nullifier Hash;</div>
+    <div class="faq-a"><p data-el="Ένα κρυπτογραφικό μονόδρομο hash που αποτρέπει τη διπλή ψηφοφορία — χωρίς ο server να γνωρίζει ποιος ψήφισε." data-en="A cryptographic one-way hash that prevents double voting — without the server knowing who voted.">Ένα κρυπτογραφικό μονόδρομο hash που αποτρέπει τη διπλή ψηφοφορία — χωρίς ο server να γνωρίζει ποιος ψήφισε.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Είναι ο κώδικας δημόσιος;" data-en="Is the code public?" onclick="this.parentElement.classList.toggle('open')">Είναι ο κώδικας δημόσιος;</div>
+    <div class="faq-a"><p data-el="Ναι. Πλήρως ανοιχτού κώδικα υπό άδεια MIT στο GitHub: github.com/NeaBouli/pnyx" data-en="Yes. Fully open source under MIT license on GitHub: github.com/NeaBouli/pnyx">Ναι. Πλήρως ανοιχτού κώδικα υπό άδεια MIT στο GitHub: <a href="https://github.com/NeaBouli/pnyx" target="_blank" style="color:var(--blue)">github.com/NeaBouli/pnyx</a></p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Ποια τεχνητή νοημοσύνη χρησιμοποιείται;" data-en="What AI is used?" onclick="this.parentElement.classList.toggle('open')">Ποια τεχνητή νοημοσύνη χρησιμοποιείται;</div>
+    <div class="faq-a"><p data-el="Ollama (self-hosted) ως κύριος πάροχος για περιλήψεις νομοσχεδίων, HuggingFace ως εναλλακτικό. Κανένας εμπορικός πάροχος AI API — όλα τρέχουν σε δικό μας server." data-en="Ollama (self-hosted) as primary provider for bill summaries, HuggingFace as fallback. No commercial AI API provider — everything runs on our own server.">Ollama (self-hosted) ως κύριος πάροχος για περιλήψεις νομοσχεδίων, HuggingFace ως εναλλακτικό. Κανένας εμπορικός πάροχος AI API — όλα τρέχουν σε δικό μας server.</p></div>
+  </div>
+
+  <!-- ═══ ΚΟΙΝΟΤΗΤΑ & ΧΡΗΜΑΤΟΔΟΤΗΣΗ ═══ -->
+  <h2 class="fade-in" data-el="Κοινότητα & Χρηματοδότηση" data-en="Community & Funding">Κοινότητα & Χρηματοδότηση <span class="faq-count">5</span></h2>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Πώς χρηματοδοτείται η ekklesia.gr;" data-en="How is ekklesia.gr funded?" onclick="this.parentElement.classList.toggle('open')">Πώς χρηματοδοτείται η ekklesia.gr;</div>
+    <div class="faq-a"><p data-el="Αποκλειστικά μέσω δωρεών της κοινότητας. Ετήσιο κόστος: ~93,30€ (Server 84€ + Domain 9,30€). Όλα τα wallets και τα κόστη είναι δημόσια στη σελίδα community.html." data-en="Exclusively through community donations. Annual cost: ~93.30€ (Server 84€ + Domain 9.30€). All wallets and costs are public on community.html.">Αποκλειστικά μέσω δωρεών της κοινότητας. Ετήσιο κόστος: ~93,30€ (Server 84€ + Domain 9,30€). Όλα τα wallets και τα κόστη είναι δημόσια στη σελίδα <a href="../community.html" style="color:var(--blue)">community.html</a>.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Υπάρχει διαφήμιση;" data-en="Is there advertising?" onclick="this.parentElement.classList.toggle('open')">Υπάρχει διαφήμιση;</div>
+    <div class="faq-a"><p data-el="Όχι. Ποτέ. Δεν υπάρχει μοντέλο διαφήμισης." data-en="No. Never. There is no advertising model.">Όχι. Ποτέ. Δεν υπάρχει μοντέλο διαφήμισης.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Πώς μπορώ να συνεισφέρω;" data-en="How can I contribute?" onclick="this.parentElement.classList.toggle('open')">Πώς μπορώ να συνεισφέρω;</div>
+    <div class="faq-a"><p data-el="Συνεισφορές κώδικα μέσω GitHub (github.com/NeaBouli/pnyx), αναφορά σφαλμάτων μέσω του POLIS Ticket System ή GitHub Issues, οικονομική υποστήριξη μέσω των community wallets." data-en="Code contributions via GitHub (github.com/NeaBouli/pnyx), bug reports via the POLIS Ticket System or GitHub Issues, financial support via community wallets.">Συνεισφορές κώδικα μέσω GitHub (<a href="https://github.com/NeaBouli/pnyx" target="_blank" style="color:var(--blue)">github.com/NeaBouli/pnyx</a>), αναφορά σφαλμάτων μέσω του POLIS Ticket System ή GitHub Issues, οικονομική υποστήριξη μέσω των community wallets.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Τι είναι το POLIS Ticket System;" data-en="What is the POLIS Ticket System?" onclick="this.parentElement.classList.toggle('open')">Τι είναι το POLIS Ticket System;</div>
+    <div class="faq-a"><p data-el="Ένα community-driven σύστημα υποστήριξης και feedback βασισμένο σε GitHub Issues. Καμία ομάδα δεν διαβάζει emails — η κοινότητα αποφασίζει ποια tickets προτεραιοποιούνται. Σημαντικό: Μην χρησιμοποιείτε ποτέ το πραγματικό σας όνομα — τα tickets συνδέονται με το δημόσιο κλειδί." data-en="A community-driven support and feedback system based on GitHub Issues. No team reads emails — the community decides which tickets are prioritized. Important: Never use your real name — tickets are linked to the public key.">Ένα community-driven σύστημα υποστήριξης και feedback βασισμένο σε GitHub Issues. Καμία ομάδα δεν διαβάζει emails — η κοινότητα αποφασίζει ποια tickets προτεραιοποιούνται. Σημαντικό: Μην χρησιμοποιείτε ποτέ το πραγματικό σας όνομα — τα tickets συνδέονται με το δημόσιο κλειδί.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Υπάρχει ομάδα ή υποστήριξη;" data-en="Is there a team or support?" onclick="this.parentElement.classList.toggle('open')">Υπάρχει ομάδα ή υποστήριξη;</div>
+    <div class="faq-a"><p data-el="Καμία πληρωμένη ομάδα. Η πλατφόρμα λειτουργεί από εθελοντές. Η υποστήριξη γίνεται μέσω του POLIS Ticket System και GitHub Issues." data-en="No paid team. The platform is run by volunteers. Support is provided via the POLIS Ticket System and GitHub Issues.">Καμία πληρωμένη ομάδα. Η πλατφόρμα λειτουργεί από εθελοντές. Η υποστήριξη γίνεται μέσω του POLIS Ticket System και GitHub Issues.</p></div>
+  </div>
+
+  <!-- ═══ ROADMAP ═══ -->
+  <h2 class="fade-in" data-el="Οδικός Χάρτης" data-en="Roadmap">Οδικός Χάρτης <span class="faq-count">3</span></h2>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Τι ακολουθεί;" data-en="What comes next?" onclick="this.parentElement.classList.toggle('open')">Τι ακολουθεί;</div>
+    <div class="faq-a"><p data-el="Φάση Alpha: gov.gr OAuth2.0 (μετά από 500 χρήστες + 3 ΜΚΟ), WebAuthn/Passkeys για ασφαλή αποθήκευση κλειδιών, iOS App. V2: TrueRepublic Bridge, ZK Identity, Rust Crypto." data-en="Alpha phase: gov.gr OAuth2.0 (after 500 users + 3 NGO partnerships), WebAuthn/Passkeys for secure key storage, iOS App. V2: TrueRepublic Bridge, ZK Identity, Rust Crypto.">Φάση Alpha: gov.gr OAuth2.0 (μετά από 500 χρήστες + 3 ΜΚΟ), WebAuthn/Passkeys για ασφαλή αποθήκευση κλειδιών, iOS App. V2: TrueRepublic Bridge, ZK Identity, Rust Crypto.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Πότε θα είναι διαθέσιμη η iOS εφαρμογή;" data-en="When will the iOS app be available?" onclick="this.parentElement.classList.toggle('open')">Πότε θα είναι διαθέσιμη η iOS εφαρμογή;</div>
+    <div class="faq-a"><p data-el="Μετά το launch του Hetzner server και όταν επιτευχθούν τα Legitimacy Milestones. Το Android APK είναι ήδη διαθέσιμο." data-en="After the Hetzner server launch and when Legitimacy Milestones are reached. The Android APK is already available.">Μετά το launch του Hetzner server και όταν επιτευχθούν τα Legitimacy Milestones. Το Android APK είναι ήδη διαθέσιμο.</p></div>
+  </div>
+
+  <div class="faq-item fade-in">
+    <div class="faq-q" data-el="Τι είναι το TrueRepublic;" data-en="What is TrueRepublic?" onclick="this.parentElement.classList.toggle('open')">Τι είναι το TrueRepublic;</div>
+    <div class="faq-a"><p data-el="Ένα ξεχωριστό, αποκεντρωμένο blockchain project (PNYX). Η ekklesia.gr θα συνδεθεί μέσω API — οι ψηφοφορίες θα λαμβάνουν blockchain επαλήθευση εκεί. Λειτουργεί ανεξάρτητα από την ekklesia.gr." data-en="A separate, community-driven blockchain project (PNYX). ekklesia.gr will connect via API — votes will receive blockchain verification there. It operates independently from ekklesia.gr.">Ένα ξεχωριστό, αποκεντρωμένο blockchain project (PNYX). Η ekklesia.gr θα συνδεθεί μέσω API — οι ψηφοφορίες θα λαμβάνουν blockchain επαλήθευση εκεί. Λειτουργεί ανεξάρτητα από την ekklesia.gr.</p></div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-links">
+    <a href="..//">Αρχική</a>
+    <a href="../wiki/">Wiki</a>
+    <a href="../votes/active.html" data-el="Τρέχουσες" data-en="Active">Τρέχουσες</a>
+    <a href="../votes/recent.html" data-el="24 Ώρες" data-en="24 Hours">24 Ώρες</a>
+    <a href="../votes/results.html" data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</a>
+    <a href="../community.html">Community</a>
+    <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>
+  </div>
+  <p>εκκλησία &middot; &copy; 2026 Vendetta Labs &middot; MIT License</p>
+</footer>
+
+<script>
+var currentLang = "el";
+function toggleLang() {
+  currentLang = currentLang === "el" ? "en" : "el";
+  document.getElementById("langBtn").textContent = currentLang === "el" ? "EN" : "ΕΛ";
+  document.querySelectorAll("[data-el]").forEach(function(el) {
+    var t = el.getAttribute("data-" + currentLang);
+    if (t) el.innerHTML = t;
+  });
+}
+var obs = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add("visible"); });
+}, { threshold: 0.1 });
+document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); });
+</script>
+
+</body>
+</html>
