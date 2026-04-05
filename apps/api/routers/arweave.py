@@ -23,11 +23,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/arweave", tags=["MOD-08 Arweave"])
 
 
-def build_audit_trail(snapshot_timestamp: str = None, 
+def build_audit_trail(
     bill: ParliamentBill,
     status_logs: list,
     vote_results: dict,
     divergence_score: Optional[float],
+    snapshot_timestamp: str = None,
 ) -> dict:
     """
     Baut den vollständigen Audit Trail für Arweave.
