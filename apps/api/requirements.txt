@@ -3,7 +3,7 @@
 
 # Web Framework
 fastapi==0.135.3
-uvicorn[standard]==0.30.6
+uvicorn[standard]==0.44.0
 
 # Database
 asyncpg==0.29.0
