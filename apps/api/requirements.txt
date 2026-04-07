@@ -23,7 +23,7 @@ cryptography==43.0.1
 python-jose[cryptography]==3.3.0
 
 # HTTP Client
-httpx==0.27.2
+httpx==0.28.1
 
 # Arweave (MOD-08)
 arweave-python-client==1.0.19
