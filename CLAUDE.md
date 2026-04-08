@@ -49,8 +49,9 @@ NavHeader | StatusBadge | DivergenceCard | ProgressBar | VoteButton
 ## Bill Lifecycle
 ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END
 
-## Tests (Stand: 2026-03-29)
-- API:    40 passed + 4 xfail (kein lokales PG)
+## Tests (Stand: 2026-04-09)
+- Web:    29 passed (17 crypto + 12 cross-platform compat)
+- API:    51 passed + 16 xfail (kein lokales PG)
 - Crypto: 12 passed
 - CI:     GitHub Actions GRÜN (test-api + test-crypto)
 

@@ -52,17 +52,19 @@
 ## 🔄 SESSION 2 — NÄCHSTE SCHRITTE (Priorität)
 
 ### Kritisch (vor erstem Launch)
-- [ ] Doppelten Header in VAA/Bills Seiten entfernen (NavHeader ist im Layout)
-- [ ] Ed25519 Signatur im Browser implementieren (@noble/curves bereits installiert)
-- [ ] Vote API call in Bill Detail /bills/[id] fertigstellen (TODO-Marker)
+- [x] Doppelten Header in VAA/Bills Seiten entfernen (NavHeader ist im Layout) — Session 3
+- [x] Ed25519 Signatur im Browser implementiert (@noble/curves) — war bereits komplett
+- [x] Vote API call in Bill Detail /bills/[id] war bereits fertig — Session 1
 - [ ] Docker Compose lokal starten + alembic upgrade head
 - [ ] Seed-Script ausführen (python seeds/seed.py)
 - [ ] End-to-End Test: API lokal → Frontend lokal → vollständiger Flow
 
 ### Mobile App (apps/mobile)
-- [ ] Expo Setup (React Native + TypeScript)
-- [ ] expo-secure-store (Secure Enclave Key Storage)
-- [ ] expo-local-auth (Biometrie für Stimmabgabe)
+- [x] Expo Setup (React Native + TypeScript) — Session 2
+- [x] expo-secure-store (Secure Enclave Key Storage) — Session 2
+- [x] expo-local-auth (Biometrie für Stimmabgabe) — Session 2
+- [x] Ed25519 Signing auf Mobile (@noble/curves) — Session 3
+- [x] Nullifier Hash Bug gefixt (fehlender ":" Separator) — Session 3
 - [ ] Geteilte API-Logik mit Web (packages/types)
 - [ ] iOS + Android Build testen
 
@@ -93,9 +95,18 @@
 - [x] Wiki Home Live Ticker (3 Ticker × auto-scroll)
 - [x] Alembic Migration MOD-16
 
-## 🔄 Session 2 — Nächste Schritte
-- [ ] Ed25519 Signatur im Browser (@noble/curves)
+## ✅ Session 3 — Abgeschlossen (2026-04-09)
+- [x] Rollback-Punkt: Tag `pre-session3-20260409` auf `cd050e5`
+- [x] Doppelter Header: 9 redundante `<header>` aus 7 Seiten entfernt
+- [x] Tailwind 4 PostCSS Fix: `@tailwindcss/postcss` + `@import "tailwindcss"`
+- [x] Mobile Ed25519 Signing: `@noble/curves` auf Expo, `signVote()` + `verifyVote()`
+- [x] Nullifier Hash Bug: fehlender `:` Separator in `computeNullifier()` gefixt
+- [x] Cross-Platform Krypto-Tests: 12 neue Tests (Signatur-Kompatibilität Web↔Mobile↔Backend)
+- [x] Alle Tests grün: Web 29/29, Python Crypto 12/12, API 51+16xfail
+
+## 🔄 Session 4 — Nächste Schritte
 - [ ] Docker lokal + alembic upgrade head + seed
 - [ ] E2E Test vollständiger Flow
 - [ ] Wiki Ticker → echte API-Daten verbinden
-- [ ] Expo Mobile App Setup
+- [ ] iOS + Android Build testen (Expo EAS)
+- [ ] Shared Types Package (packages/types)
