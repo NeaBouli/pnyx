@@ -1,5 +1,6 @@
 # Ekklesia.gr — Öffentliche Roadmap
 # Copyright (c) 2026 Vendetta Labs — MIT License
+# Stand: 2026-04-09
 
 ## Phase Beta (aktuell)
 Ziel: Eigenständige, leichtgewichtige Plattform ohne staatliche Abhängigkeit.
@@ -11,8 +12,9 @@ Ziel: Eigenständige, leichtgewichtige Plattform ohne staatliche Abhängigkeit.
 - [x] MOD-04 CitizenVote (signierte Abstimmung)
 - [x] MOD-05 Divergence Score
 - [x] MOD-14 Relevance (Up/Down)
-- [ ] Next.js Web Frontend (el/en)
-- [ ] Expo Mobile App (iOS + Android)
+- [x] Next.js Web Frontend (el/en) — 5 Seiten + NavHeader + i18n
+- [x] Ed25519 Signing Web + Mobile (@noble/curves)
+- [x] Expo Mobile App — 7 Screens, Biometrie, Secure Enclave
 - [ ] Docker Production Deployment (Hetzner)
 - [ ] Öffentlicher Launch Beta
 
@@ -30,6 +32,7 @@ Voraussetzung: 500+ Nutzer, 3+ NGO-Partner, öffentliche Legitimation.
 - [ ] MOD-13 Mein Abgeordneter
 - [ ] Deliberation (pol.is-Modell)
 - [ ] Commit-Reveal Abstimmung
+- [ ] packages/crypto-rs (Rust + WASM)
 
 ## Transparenz
 Monatliche Berichte in docs/reports/
