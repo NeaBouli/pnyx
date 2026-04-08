@@ -55,7 +55,7 @@ async def seed():
 
         await session.commit()
         print("✅ Seed abgeschlossen:")
-        print("   8 Parteien | 15 Thesen | 3 Gesetzentwürfe")
+        print("   8 Parteien | 38 Thesen | 3 Gesetzentwürfe")
 
     await engine.dispose()
 

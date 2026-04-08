@@ -118,5 +118,189 @@
     "explanation_el": "Τα Γλυπτά φυλάσσονται στο Βρετανικό Μουσείο. Η Ελλάδα τα διεκδικεί εδώ και δεκαετίες.",
     "explanation_en": "The Sculptures are held in the British Museum. Greece has been claiming them for decades.",
     "category": "Εθνικά Θέματα"
+  },
+  {
+    "id": 16,
+    "text_el": "Οι βραχυχρόνιες μισθώσεις (τύπου Airbnb) πρέπει να απαγορευτούν στα κέντρα των μεγάλων πόλεων για την αντιμετώπιση της στεγαστικής κρίσης.",
+    "text_en": "Short-term rentals (Airbnb-type) should be banned in major city centres to address the housing crisis.",
+    "explanation_el": "Τα ενοίκια στα ελληνικά αστικά κέντρα αυξήθηκαν κατά 42% μεταξύ 2021-2023. Από το 2025, η κυβέρνηση ανέστειλε νέες άδειες βραχυχρόνιας μίσθωσης σε τρεις περιοχές της Αθήνας.",
+    "explanation_en": "Rents in Greek urban centres rose 42% between 2021-2023. Since 2025, the government suspended new short-term rental permits in three Athens districts.",
+    "category": "Στέγαση"
+  },
+  {
+    "id": 17,
+    "text_el": "Οι υπηρεσίες ύδρευσης (ΕΥΔΑΠ, ΕΥΑΘ) πρέπει να παραμείνουν αποκλειστικά στη δημόσια ιδιοκτησία.",
+    "text_en": "Water utilities (EYDAP, EYATH) must remain exclusively in public ownership.",
+    "explanation_el": "Σε δημοψήφισμα στη Θεσσαλονίκη το 2014, το 98% ψήφισε κατά της ιδιωτικοποίησης της ΕΥΑΘ. Η ιδιωτικοποίηση του νερού ήταν κεντρικό ζήτημα κατά τη διάρκεια της κρίσης χρέους.",
+    "explanation_en": "In a 2014 Thessaloniki referendum, 98% voted against EYATH privatisation. Water privatisation was a central issue during the debt crisis.",
+    "category": "Δημόσιες Υπηρεσίες"
+  },
+  {
+    "id": 18,
+    "text_el": "Πρέπει να επιβληθεί αυστηρό ημερήσιο όριο επισκεπτών κρουαζιέρας σε δημοφιλή νησιά όπως η Σαντορίνη.",
+    "text_en": "A strict daily cap on cruise ship visitors should be imposed on popular islands like Santorini.",
+    "explanation_el": "Η Σαντορίνη δέχεται μέχρι 17.000 επισκέπτες κρουαζιέρας ημερησίως, ενώ η χωρητικότητα είναι 8.000. Από τον Ιούλιο 2025 επιβλήθηκε τέλος €20 ανά επιβάτη.",
+    "explanation_en": "Santorini receives up to 17,000 cruise visitors daily against a capacity of 8,000. A EUR 20 per passenger levy was imposed from July 2025.",
+    "category": "Τουρισμός"
+  },
+  {
+    "id": 19,
+    "text_el": "Η Ελλάδα πρέπει να δημιουργήσει μόνιμο επαγγελματικό σώμα δασοπροστασίας αντί να βασίζεται σε εποχικούς πυροσβέστες.",
+    "text_en": "Greece should create a permanent professional forest fire prevention corps instead of relying on seasonal firefighters.",
+    "explanation_el": "Η OECD τόνισε ότι η πρόληψη πυρκαγιών είναι η πιο οικονομικά αποδοτική πολιτική. Το πρόγραμμα ΑντιΝέρων εισήγαγε αντιπυρικές ζώνες από το 2024.",
+    "explanation_en": "The OECD stressed that fire prevention is the most cost-effective policy. The AntiNero programme introduced firebreaks from 2024.",
+    "category": "Περιβάλλον & Κλιματική Πολιτική"
+  },
+  {
+    "id": 20,
+    "text_el": "Το πρόγραμμα Golden Visa πρέπει να καταργηθεί, καθώς αυξάνει τις τιμές ακινήτων και επιδεινώνει τη στεγαστική κρίση.",
+    "text_en": "The Golden Visa programme should be abolished, as it drives up property prices and worsens the housing crisis.",
+    "explanation_el": "Η Ελλάδα δέχθηκε ρεκόρ 9.289 αιτήσεις Golden Visa το 2024. Τα ελάχιστα ποσά αυξήθηκαν σε €800.000 σε περιοχές υψηλής ζήτησης.",
+    "explanation_en": "Greece received a record 9,289 Golden Visa applications in 2024. Minimum investment was raised to EUR 800,000 in high-demand areas.",
+    "category": "Στέγαση"
+  },
+  {
+    "id": 21,
+    "text_el": "Οι Έλληνες εφοπλιστές πρέπει να φορολογούνται με το ίδιο καθεστώς όπως όλες οι υπόλοιπες επιχειρήσεις.",
+    "text_en": "Greek shipowners should be taxed under the same regime as all other businesses.",
+    "explanation_el": "Η ελληνική ναυτιλία ελέγχει τον μεγαλύτερο εμπορικό στόλο παγκοσμίως. Οι εφοπλιστές καταβάλλουν «οικειοθελή προσφορά» €60 εκατ. αντί κανονικής φορολογίας.",
+    "explanation_en": "Greek shipping controls the world's largest fleet. Shipowners pay a EUR 60M 'voluntary contribution' instead of regular taxation.",
+    "category": "Φορολογική Πολιτική"
+  },
+  {
+    "id": 22,
+    "text_el": "Οι Έλληνες του εξωτερικού πρέπει να μπορούν να ψηφίζουν με επιστολική ψήφο σε εθνικές εκλογές.",
+    "text_en": "Greeks abroad should be able to vote by postal ballot in national elections.",
+    "explanation_el": "Τον Ιούνιο 2024, Έλληνες του εξωτερικού ψήφισαν επιστολικά στις Ευρωεκλογές για πρώτη φορά. Νομοσχέδιο για εθνικές εκλογές ανακοινώθηκε τον Δεκέμβριο 2025.",
+    "explanation_en": "In June 2024, Greeks abroad voted by postal ballot in EU elections for the first time. A bill for national elections was announced in December 2025.",
+    "category": "Δημοκρατία"
+  },
+  {
+    "id": 23,
+    "text_el": "Πρέπει να δημιουργηθεί ανεξάρτητη αρχή που θα ελέγχει κάθε μορφή κρατικής παρακολούθησης πολιτών και δημοσιογράφων.",
+    "text_en": "An independent authority should be established to oversee all forms of state surveillance of citizens and journalists.",
+    "explanation_el": "Το σκάνδαλο Predator αποκάλυψε παρακολούθηση δημοσιογράφων και πολιτικών. Οι Δημοσιογράφοι Χωρίς Σύνορα κατέταξαν την Ελλάδα 89η από 180 χώρες.",
+    "explanation_en": "The Predator scandal revealed surveillance of journalists and politicians. Reporters Without Borders ranked Greece 89th of 180 countries.",
+    "category": "Δημοκρατία & Ελευθερία Τύπου"
+  },
+  {
+    "id": 24,
+    "text_el": "Το κράτος πρέπει να προσφέρει φοροαπαλλαγή 50% σε κάθε Έλληνα επιστήμονα που επιστρέφει από το εξωτερικό.",
+    "text_en": "The state should offer a 50% tax exemption to every Greek scientist returning from abroad.",
+    "explanation_el": "Μεταξύ 2010-2023, πάνω από 400.000 Έλληνες μετανάστευσαν. Το 2023, για πρώτη φορά, οι επιστρέφοντες ξεπέρασαν τους αναχωρούντες.",
+    "explanation_en": "Between 2010-2023, over 400,000 Greeks emigrated. In 2023, returning citizens exceeded emigrants for the first time.",
+    "category": "Εργασία & Δημογραφία"
+  },
+  {
+    "id": 25,
+    "text_el": "Η Ελλάδα πρέπει να ζητήσει ριζική αναθεώρηση της Κοινής Αγροτικής Πολιτικής της ΕΕ για να προστατεύονται οι μικροί Έλληνες αγρότες.",
+    "text_en": "Greece should demand a radical revision of the EU Common Agricultural Policy to protect small Greek farmers.",
+    "explanation_el": "Τον Δεκέμβριο 2025, χιλιάδες αγρότες απέκλεισαν εθνικούς δρόμους με τρακτέρ. Το 53% του κοινού στηρίζει τις κινητοποιήσεις.",
+    "explanation_en": "In December 2025, thousands of farmers blocked highways with tractors. 53% of the public supports the protests.",
+    "category": "Αγροτική Πολιτική"
+  },
+  {
+    "id": 26,
+    "text_el": "Όλες οι συναλλαγές άνω των €200 πρέπει να γίνονται υποχρεωτικά ηλεκτρονικά για την πάταξη της φοροδιαφυγής.",
+    "text_en": "All transactions above EUR 200 should be mandatory electronic payments to combat tax evasion.",
+    "explanation_el": "Η παραοικονομία στην Ελλάδα εκτιμάται σε 20,9% του ΑΕΠ. Μετρητά πάνω από €500 απαγορεύονται ήδη.",
+    "explanation_en": "Greece's shadow economy is estimated at 20.9% of GDP. Cash payments above EUR 500 are already prohibited.",
+    "category": "Φορολογική Πολιτική"
+  },
+  {
+    "id": 27,
+    "text_el": "Η δημογραφική κρίση πρέπει να είναι η πρώτη εθνική προτεραιότητα, με μηδενική φορολογία για οικογένειες με τρία ή περισσότερα παιδιά.",
+    "text_en": "The demographic crisis should be the top national priority, with zero taxation for families with three or more children.",
+    "explanation_el": "Ο πληθυσμός μειώθηκε κατά 720.000 από το 2010. Το 2024 οι θάνατοι ήταν σχεδόν διπλάσιοι από τις γεννήσεις.",
+    "explanation_en": "The population shrank by 720,000 since 2010. In 2024, deaths were nearly double the births.",
+    "category": "Δημογραφία"
+  },
+  {
+    "id": 28,
+    "text_el": "Η Ελληνική Αστυνομία χρειάζεται ριζική μεταρρύθμιση, με ανεξάρτητο φορέα ελέγχου και κάμερες σώματος σε κάθε αστυνομικό.",
+    "text_en": "The Hellenic Police needs radical reform, with an independent oversight body and body cameras on every officer.",
+    "explanation_el": "Περιστατικά αστυνομικής βίας παραμένουν ανεξερεύνητα. Η αστυνομία μπήκε σε πανεπιστημιακούς χώρους για πρώτη φορά μετά από δεκαετίες το 2021.",
+    "explanation_en": "Police violence incidents remain largely unresolved. Police entered university campuses for the first time in decades in 2021.",
+    "category": "Δικαιοσύνη & Ασφάλεια"
+  },
+  {
+    "id": 29,
+    "text_el": "Πρέπει να διεξαχθεί πλήρης κοινοβουλευτική έρευνα για το δυστύχημα των Τεμπών, με δίωξη και πολιτικών προσώπων.",
+    "text_en": "A full parliamentary investigation into the Tempi rail disaster should be conducted, with prosecution of political figures.",
+    "explanation_el": "Η σύγκρουση τρένων στα Τέμπη (2023) σκότωσε 57 ανθρώπους. Το σύστημα ασφαλείας δεν είχε εγκατασταθεί ποτέ. Κανένα πολιτικό πρόσωπο δεν έχει διωχθεί.",
+    "explanation_en": "The Tempi train collision (2023) killed 57 people. The safety system was never installed. No political figure has been prosecuted.",
+    "category": "Υποδομές & Λογοδοσία"
+  },
+  {
+    "id": 30,
+    "text_el": "Η ψηφιοποίηση του κράτους (gov.gr) πρέπει να συνοδεύεται από δικαίωμα του πολίτη να ελέγχει ποιος βλέπει τα δεδομένα του.",
+    "text_en": "State digitalisation (gov.gr) must include the citizen's right to control who accesses their data.",
+    "explanation_el": "Η πλατφόρμα gov.gr εξυπηρετεί εκατομμύρια πολίτες. Ωστόσο, λογισμικό κατασκοπείας (Predator) χρησιμοποιήθηκε στην Ελλάδα.",
+    "explanation_en": "The gov.gr platform serves millions. However, spyware (Predator) was used in Greece.",
+    "category": "Ψηφιακή Διακυβέρνηση"
+  },
+  {
+    "id": 31,
+    "text_el": "Η κυβέρνηση πρέπει να μεταφέρει δημόσιες υπηρεσίες και υπουργεία εκτός Αθήνας για να μειώσει τις περιφερειακές ανισότητες.",
+    "text_en": "The government should relocate public services and ministries outside Athens to reduce regional inequalities.",
+    "explanation_el": "Η Αττική συγκεντρώνει σχεδόν 50% του ΑΕΠ. Παρά τις μεταρρυθμίσεις αποκέντρωσης, η ανισότητα παραμένει.",
+    "explanation_en": "Attica concentrates nearly 50% of GDP. Despite decentralisation reforms, inequality persists.",
+    "category": "Περιφερειακή Ανάπτυξη"
+  },
+  {
+    "id": 32,
+    "text_el": "Το κράτος πρέπει να εγγυηθεί καθημερινή, οικονομικά προσιτή ακτοπλοϊκή σύνδεση κάθε κατοικημένου νησιού.",
+    "text_en": "The state must guarantee daily, affordable ferry connections for every inhabited island.",
+    "explanation_el": "Οι επιδοτήσεις ακτοπλοΐας αυξήθηκαν σε €167 εκατ. το 2025. Πολλά μικρά νησιά εξακολουθούν να αντιμετωπίζουν απομόνωση χειμώνα.",
+    "explanation_en": "Ferry subsidies rose to EUR 167M in 2025. Many small islands still face isolation in winter.",
+    "category": "Μεταφορές & Νησιωτική Πολιτική"
+  },
+  {
+    "id": 33,
+    "text_el": "Κάθε δήμος πρέπει να υποχρεούται να λειτουργεί καταφύγιο ζώων και πρόγραμμα μαζικής στείρωσης αδέσποτων.",
+    "text_en": "Every municipality must be required to operate an animal shelter and a mass stray sterilisation programme.",
+    "explanation_el": "Ο Νόμος 4830/2021 θέσπισε το πρόγραμμα «Άργος» με €40 εκατ. χρηματοδότηση, αλλά η εφαρμογή παραμένει ελλιπής.",
+    "explanation_en": "Law 4830/2021 established the 'Argos' programme with EUR 40M funding, but implementation remains incomplete.",
+    "category": "Ζωικά Δικαιώματα"
+  },
+  {
+    "id": 34,
+    "text_el": "Η προστασία αρχαιολογικών χώρων πρέπει πάντα να υπερισχύει έναντι αναπτυξιακών σχεδίων.",
+    "text_en": "Archaeological site protection must always take precedence over development projects.",
+    "explanation_el": "Η ανάπτυξη του Ελληνικού και μεγάλων τουριστικών έργων δημιουργεί εντάσεις με αρχαιολογικούς περιορισμούς.",
+    "explanation_en": "Development of the Elliniko project and major tourism projects create tensions with archaeological constraints.",
+    "category": "Πολιτισμός"
+  },
+  {
+    "id": 35,
+    "text_el": "Οι δημόσιες μεταφορές πρέπει να είναι δωρεάν για νέους κάτω των 25 και ηλικιωμένους άνω των 65.",
+    "text_en": "Public transport should be free for people under 25 and over 65.",
+    "explanation_el": "Η Αθήνα κατασκευάζει τη Γραμμή 4 του Μετρό. Εκτός Αθήνας-Θεσσαλονίκης, οι δημόσιες συγκοινωνίες παραμένουν ελλιπείς.",
+    "explanation_en": "Athens is building Metro Line 4. Outside Athens-Thessaloniki, public transport remains inadequate.",
+    "category": "Μεταφορές"
+  },
+  {
+    "id": 36,
+    "text_el": "Η Ελλάδα πρέπει να υποστηρίξει τη δημιουργία ευρωπαϊκού ομοσπονδιακού κράτους με κοινή εξωτερική πολιτική και στρατό.",
+    "text_en": "Greece should support the creation of a European federal state with common foreign policy and army.",
+    "explanation_el": "Η κρίση χρέους ενίσχυσε τον ευρωσκεπτικισμό. Οι θέσεις κυμαίνονται από αποχώρηση (ΚΚΕ) έως ομοσπονδιακές τάσεις.",
+    "explanation_en": "The debt crisis strengthened Euroscepticism. Positions range from EU exit (KKE) to federalist tendencies.",
+    "category": "Ευρωπαϊκή Πολιτική"
+  },
+  {
+    "id": 37,
+    "text_el": "Η Ελλάδα πρέπει να μειώσει τα πρωτογενή πλεονάσματα για να αυξήσει τις δαπάνες σε υγεία, παιδεία και πρόνοια.",
+    "text_en": "Greece should reduce primary surpluses to increase spending on healthcare, education and welfare.",
+    "explanation_el": "Η Ελλάδα πέτυχε πλεόνασμα 4,4% του ΑΕΠ το 2025. Η κοινωνική δαπάνη παραμένει χαμηλότερη από τον μέσο όρο της ΕΕ.",
+    "explanation_en": "Greece achieved a 4.4% primary surplus of GDP in 2025. Social spending remains below the EU average.",
+    "category": "Οικονομική Πολιτική"
+  },
+  {
+    "id": 38,
+    "text_el": "Η Ελλάδα πρέπει να θεσπίσει αυστηρά περιβαλλοντικά πρότυπα για τα πλοία ελληνικής σημαίας, ακόμα κι αν αυξήσει το κόστος.",
+    "text_en": "Greece should impose strict environmental standards on Greek-flagged ships, even if it raises costs.",
+    "explanation_el": "Η ΕΕ απαιτεί προσαρμογή στους κανονισμούς μείωσης εκπομπών (EU ETS) για τη ναυτιλία από το 2024.",
+    "explanation_en": "The EU requires compliance with emission reduction regulations (EU ETS) for shipping from 2024.",
+    "category": "Ναυτιλία & Περιβάλλον"
   }
 ]

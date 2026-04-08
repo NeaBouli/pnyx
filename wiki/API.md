@@ -22,7 +22,7 @@ Swagger UI: `http://localhost:8000/docs`
 
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/vaa/statements` | 15 positions (el/en) |
+| GET | `/vaa/statements` | 38 positions (el/en) |
 | GET | `/vaa/parties` | 8 parties |
 | POST | `/vaa/match` | Matching algorithm |
 

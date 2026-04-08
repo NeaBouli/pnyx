@@ -43,7 +43,7 @@
 
 | Χαρακτηριστικό | Περιγραφή | Κατάσταση |
 |---|---|---|
-| 🗳️ Πολιτική Πυξίδα | 15 θέσεις, 8 κόμματα, Matching Algorithm | ✅ Beta |
+| 🗳️ Πολιτική Πυξίδα | 38 θέσεις, 8 κόμματα, Matching Algorithm | ✅ Beta |
 | 🏛️ Ψηφοφορία Πολιτών | Ed25519 signed, Bill Lifecycle (5 states) | ✅ Beta |
 | 📊 Δείκτης Απόκλισης | Αυτόματη σύγκριση Βουλή vs Πολίτες | ✅ Beta |
 | 🔐 ZK Identity | SMS HLR → Nullifier → Key → Delete | ✅ Beta |

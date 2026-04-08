@@ -326,8 +326,8 @@ function RoadmapSection() {
       color: "border-green-400 bg-green-50",
       badge: "bg-green-500",
       items: isEl
-        ? ["SMS Επαλήθευση", "Πολιτική Πυξίδα (8 κόμματα, 15 θέσεις)", "Ψηφοφορία Πολιτών", "Δείκτης Απόκλισης"]
-        : ["SMS Verification", "VoteCompass (8 parties, 15 positions)", "Citizen Voting", "Divergence Score"],
+        ? ["SMS Επαλήθευση", "Πολιτική Πυξίδα (8 κόμματα, 38 θέσεις)", "Ψηφοφορία Πολιτών", "Δείκτης Απόκλισης"]
+        : ["SMS Verification", "VoteCompass (8 parties, 38 positions)", "Citizen Voting", "Divergence Score"],
     },
     {
       phase: "Alpha",
