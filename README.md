@@ -47,10 +47,10 @@
 | 🏛️ Ψηφοφορία Πολιτών | Ed25519 signed, Bill Lifecycle (5 states) | ✅ Beta |
 | 📊 Δείκτης Απόκλισης | Αυτόματη σύγκριση Βουλή vs Πολίτες | ✅ Beta |
 | 🔐 ZK Identity | SMS HLR → Nullifier → Key → Delete | ✅ Beta |
-| 📱 Mobile App | Expo React Native, 7 Screens, Android APK | ✅ Alpha |
+| 📱 Mobile App | Expo React Native, 7 Screens, Ed25519 Signing, Biometrie | ✅ Beta |
 | ⛓️ TrueRepublic | Cosmos SDK Bridge, PnyxCoin | 🔜 V2 |
 | 🤖 AI Summarizer | Ollama self-hosted (L1) + HuggingFace (L2) + Regel-basiert (L3) | ✅ Alpha |
-| 🦀 Rust Crypto | @noble/curves v2.0.1, browser Ed25519 | ✅ Beta |
+| 🔑 Ed25519 Signing | @noble/curves v2.0.1, Web + Mobile, cross-platform verifiziert | ✅ Beta |
 
 ---
 
@@ -113,14 +113,20 @@ cd ../web && npm install && npm run dev
 
 ### Tests
 ```bash
-# API Tests (51 passed + 16 xfail)
-cd apps/api && pytest tests/ -v
+# Web Tests (29 passed — crypto + cross-platform compat)
+cd apps/web && npx vitest run
 
-# Crypto Tests (12)
-cd packages/crypto && pytest tests/ -v
+# API Tests (51 passed + 16 xfail)
+cd apps/api && .venv/bin/python -m pytest tests/ -v
+
+# Crypto Tests (12 passed)
+cd packages/crypto && .venv/bin/python -m pytest tests/ -v
+
+# Mobile TypeScript Check
+cd apps/mobile && npx tsc --noEmit
 
 # Web Build
-cd apps/web && npm run build
+cd apps/web && npx next build
 ```
 
 ---
@@ -144,10 +150,10 @@ cd apps/web && npm run build
 
 | Μετρική | Τιμή |
 |---|---|
-| Commits | 133+ |
+| Commits | 196 |
 | API Endpoints | 62 (14 Router) |
 | DB Tables | 13 |
-| Tests | 67 (51 passed + 16 xfailed) |
+| Tests | 92 (Web 29 + API 51 + Crypto 12, 16 xfailed) |
 | Web Pages | 9 Routes |
 | Wiki Pages | 17 Seiten |
 | CI Status | ✅ Green |
