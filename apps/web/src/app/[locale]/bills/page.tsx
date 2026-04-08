@@ -35,27 +35,23 @@ export default function BillsPage() {
 
   return (
     <main className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-6 py-4 flex justify-between items-center">
-        <Link href=".." className="text-blue-400 font-bold text-xl">← εκκλησία</Link>
-        <div className="flex gap-3 text-sm text-gray-400 items-center">
-          <Link href="results" className="text-xs text-gray-500 hover:text-blue-400 transition-colors">
-            {locale === "el" ? "Αποτελέσματα" : "Results"}
-          </Link>
-          <Link href="analytics" className="text-xs text-gray-500 hover:text-blue-400 transition-colors">
-            Analytics
-          </Link>
-          <Link href="mp" className="text-xs text-gray-500 hover:text-blue-400 transition-colors">
-            MP
-          </Link>
-          <Link href="/el/bills" className="hover:text-white">ΕΛ</Link>
-          <Link href="/en/bills" className="hover:text-white">EN</Link>
-        </div>
-      </header>
-
       <div className="max-w-3xl mx-auto px-6 py-10">
-        <h1 className="text-3xl font-bold mb-2">
-          🏛️ {locale === "el" ? "Νομοσχέδια" : "Parliament Bills"}
-        </h1>
+        <div className="flex justify-between items-center mb-2">
+          <h1 className="text-3xl font-bold">
+            🏛️ {locale === "el" ? "Νομοσχέδια" : "Parliament Bills"}
+          </h1>
+          <div className="flex gap-3 text-sm items-center">
+            <Link href="results" className="text-xs text-gray-500 hover:text-blue-400 transition-colors">
+              {locale === "el" ? "Αποτελέσματα" : "Results"}
+            </Link>
+            <Link href="analytics" className="text-xs text-gray-500 hover:text-blue-400 transition-colors">
+              Analytics
+            </Link>
+            <Link href="mp" className="text-xs text-gray-500 hover:text-blue-400 transition-colors">
+              MP
+            </Link>
+          </div>
+        </div>
         <p className="text-gray-400 mb-8">
           {locale === "el"
             ? "Ψηφίστε για πραγματικά κοινοβουλευτικά νομοσχέδια"

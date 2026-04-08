@@ -67,13 +67,11 @@ export default function AdminPage() {
 
   return (
     <main className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-6 py-4 flex justify-between items-center">
-        <Link href="../bills" className="text-blue-400 font-bold">← εκκλησία</Link>
-        <h1 className="text-sm font-bold text-gray-300">Admin Panel</h1>
-        <button onClick={() => setAuth(false)} className="text-xs text-gray-500 hover:text-white">Logout</button>
-      </header>
-
       <div className="max-w-3xl mx-auto px-6 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-sm font-bold text-gray-300">Admin Panel</h1>
+          <button onClick={() => setAuth(false)} className="text-xs text-gray-500 hover:text-white">Logout</button>
+        </div>
         <div className="flex gap-2 mb-6">
           {(["overview", "bills", "transition"] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}

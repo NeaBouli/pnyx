@@ -34,12 +34,13 @@ export default function MPPage() {
 
   return (
     <main className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-6 py-4 flex justify-between items-center">
-        <Link href="../bills" className="text-blue-400 font-bold">← εκκλησία</Link>
-        <h1 className="text-sm font-bold text-gray-300">{el("Κόμματα vs Πολίτες", "Parties vs Citizens")}</h1>
-      </header>
-
       <div className="max-w-2xl mx-auto px-6 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <Link href="../bills" className="text-blue-400 text-sm hover:text-blue-300">
+            ← {el("Νομοσχέδια", "Bills")}
+          </Link>
+          <h1 className="text-sm font-bold text-gray-300">{el("Κόμματα vs Πολίτες", "Parties vs Citizens")}</h1>
+        </div>
         <h2 className="text-xl font-bold mb-2">{el("Ποιο κόμμα ψηφίζει όπως οι πολίτες;", "Which party votes like the citizens?")}</h2>
         <p className="text-gray-400 text-sm mb-6">{el("Σύγκριση πλειοψηφίας πολιτών με κοινοβουλευτική ψήφο.", "Comparing citizen majority with parliamentary vote.")}</p>
 

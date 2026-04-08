@@ -137,15 +137,10 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
 
   return (
     <main className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-6 py-4 flex justify-between items-center">
-        <Link href="../bills" className="text-blue-400 font-bold">← εκκλησία</Link>
-        <div className="flex gap-3 text-sm text-gray-400">
-          <Link href={`/el/bills/${billId}`} className="hover:text-white">ΕΛ</Link>
-          <Link href={`/en/bills/${billId}`} className="hover:text-white">EN</Link>
-        </div>
-      </header>
-
       <div className="max-w-2xl mx-auto px-6 py-10">
+        <Link href="../bills" className="text-blue-400 text-sm hover:text-blue-300 mb-4 inline-block">
+          ← {locale === "el" ? "Πίσω στα Νομοσχέδια" : "Back to Bills"}
+        </Link>
         {/* Status + ID */}
         <div className="flex justify-between items-center mb-4">
           <StatusBadge status={bill.status} locale={locale} />

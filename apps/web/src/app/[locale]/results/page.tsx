@@ -80,14 +80,15 @@ export default function ResultsPage() {
 
   return (
     <main className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-6 py-4 flex justify-between items-center">
-        <Link href="../bills" className="text-blue-400 font-bold">← εκκλησία</Link>
-        <h1 className="text-sm font-bold text-gray-300">
-          {locale === "el" ? "Αποτελέσματα & Απόκλιση" : "Results & Divergence"}
-        </h1>
-      </header>
-
       <div className="max-w-2xl mx-auto px-6 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <Link href="../bills" className="text-blue-400 text-sm hover:text-blue-300">
+            ← {locale === "el" ? "Νομοσχέδια" : "Bills"}
+          </Link>
+          <h1 className="text-sm font-bold text-gray-300">
+            {locale === "el" ? "Αποτελέσματα & Απόκλιση" : "Results & Divergence"}
+          </h1>
+        </div>
 
         {/* Stats Banner */}
         <div className="grid grid-cols-3 gap-3 mb-8">

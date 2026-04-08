@@ -117,11 +117,6 @@ export default function VAAPage() {
   if (phase === "intro") {
     return (
       <main className="min-h-screen bg-gray-950 text-white">
-        <header className="border-b border-gray-800 px-6 py-4">
-          <Link href="." className="text-blue-400 font-bold text-xl">
-            ← εκκλησία
-          </Link>
-        </header>
         <div className="max-w-2xl mx-auto px-6 py-20 text-center">
           <div className="text-5xl mb-6">🗳️</div>
           <h1 className="text-4xl font-bold mb-4">{t("title")}</h1>
@@ -180,14 +175,10 @@ export default function VAAPage() {
     const selected = answers[stmt.id];
     return (
       <main className="min-h-screen bg-gray-950 text-white">
-        <header className="border-b border-gray-800 px-6 py-4 flex justify-between items-center">
-          <Link href="." className="text-blue-400 font-bold">εκκλησία</Link>
-          <span className="text-gray-500 text-sm">
-            {current + 1} / {statements.length}
-          </span>
-        </header>
-
         <div className="max-w-2xl mx-auto px-6 py-10">
+          <div className="text-right text-gray-500 text-sm mb-4">
+            {current + 1} / {statements.length}
+          </div>
           {/* Progress */}
           <div className="mb-10">
             <ProgressBar current={current + 1} total={statements.length} />
@@ -259,9 +250,8 @@ export default function VAAPage() {
 
     return (
       <main className="min-h-screen bg-gray-950 text-white">
-        <header className="border-b border-gray-800 px-6 py-4 flex justify-between items-center">
-          <Link href="." className="text-blue-400 font-bold">εκκλησία</Link>
-          <div className="flex gap-3 items-center">
+        <div className="max-w-2xl mx-auto px-6 py-10">
+          <div className="flex justify-end gap-3 mb-4">
             <button
               onClick={shareResults}
               className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
@@ -275,9 +265,6 @@ export default function VAAPage() {
               ↩ {locale === "el" ? "Επανάληψη" : "Restart"}
             </button>
           </div>
-        </header>
-
-        <div className="max-w-2xl mx-auto px-6 py-10">
           <h1 className="text-3xl font-bold mb-2">{t("your_results")}</h1>
           <p className="text-gray-400 mb-8">
             {locale === "el"
