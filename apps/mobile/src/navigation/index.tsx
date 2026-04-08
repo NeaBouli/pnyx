@@ -16,7 +16,7 @@ export type RootStackParams = {
   Tabs: undefined;
   Verify: undefined;
   Vote: { billId: string; billTitle: string };
-  Result: { billId: string };
+  Result: { billId: string; billTitle?: string };
 };
 
 export type TabParams = {

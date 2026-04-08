@@ -14,7 +14,7 @@ import {
 import * as LocalAuthentication from "expo-local-authentication";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
-import { loadKeypair, loadNullifier, buildVotePayload } from "../lib/crypto-native";
+import { loadKeypair, loadNullifier, signVote, verifyVote } from "../lib/crypto-native";
 import { submitVote } from "../lib/api";
 
 type Props = StackScreenProps<RootStackParams, "Vote">;
@@ -56,11 +56,18 @@ export default function VoteScreen({ route, navigation }: Props) {
         return;
       }
 
-      const payload = buildVotePayload(billId, choice, nullifier);
+      // Ed25519: Τοπική υπογραφή με @noble/curves
+      const voteParams = { bill_id: billId, vote: choice, nullifier_hash: nullifier };
+      const signatureHex = signVote(keypair.privateKeyHex, voteParams);
 
-      // Η υπογραφή γίνεται server-side στο Beta
-      // Σε V2: Ed25519 signing τοπικά με crypto-rs WASM
-      const res = await submitVote(nullifier, billId, choice, "beta-unsigned");
+      // Self-check: Επαλήθευση υπογραφής πριν την υποβολή
+      const valid = verifyVote(keypair.publicKeyHex, voteParams, signatureHex);
+      if (!valid) {
+        Alert.alert("Σφάλμα Κρυπτογραφίας", "Η τοπική επαλήθευση υπογραφής απέτυχε.");
+        return;
+      }
+
+      const res = await submitVote(nullifier, billId, choice, signatureHex);
 
       Alert.alert("Επιτυχία ✓", res.message, [
         {
