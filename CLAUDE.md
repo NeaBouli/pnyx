@@ -55,6 +55,13 @@ MOD-14: Relevance Signal (integriert in /relevance)
 - 100% clientseitig, AES-256-GCM verschlüsselt mit HKDF vom Ed25519 Key
 - Niemals an Server gesendet — höchst persönlich, nur auf dem Gerät
 
+## Smart Notifications (MOD-17 — GEPLANT)
+- User wählt Kategorien (Βουλή, Δήμος, etc.) + Ton pro Kategorie
+- Server sendet nur "Ping" (Topic-basiert), kein Inhalt im Push
+- 3 Content-Modi: Manuell (Headline → Download), Automatisch, Headline-Only
+- Templates lokal auf Gerät, lokaler Cache für Gesetze
+- Privacy: Minimaler Datenverkehr, User kontrolliert alles
+
 ## Components
 NavHeader | StatusBadge | DivergenceCard | ProgressBar | VoteButton | CompassCard
 

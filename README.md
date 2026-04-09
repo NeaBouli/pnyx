@@ -52,6 +52,7 @@
 | ⛓️ TrueRepublic | Cosmos SDK Bridge, PnyxCoin | 🔜 V2 |
 | 🤖 AI Summarizer | Ollama self-hosted (L1) + HuggingFace (L2) + Regel-basiert (L3) | ✅ Alpha |
 | 🔑 Ed25519 Signing | @noble/curves v2.0.1, Web + Mobile, cross-platform verifiziert | ✅ Beta |
+| 🔔 Smart Notifications | Kategorie-Filter, Ping-only Push, 3 Content-Modi (Manuell/Auto/Headline) | 🔜 Geplant |
 
 ---
 

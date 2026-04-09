@@ -39,6 +39,28 @@
 - [ ] MOD-16 Municipal Governance — Router-Implementierung
 - [ ] WebSocket Live-Counter (WINDOW_24H Bills)
 
+### Smart Notifications & Content Delivery (MOD-17)
+Prinzip: Minimaler Datenverkehr, maximale User-Kontrolle, Privacy-by-Design.
+
+**Benachrichtigungs-Einstellungen (pro Kategorie):**
+- [ ] Kategorie-Filter: User wählt welche Kategorien er empfängt (Βουλή, Περιφέρεια, Δήμος, VAA, Compass, etc.)
+- [ ] Ton-Steuerung: pro Kategorie Ton an/aus, eigener Ton wählbar
+- [ ] Vorgefertigte Templates: Benachrichtigungsvorlagen lokal auf Gerät gespeichert (kein Server-Rendering)
+- [ ] Nur ein "Ping": Server sendet minimalen Push (nur Signal dass Neues anliegt), keine Inhalte im Push
+
+**Content Delivery Mode (User wählt):**
+- [ ] **Modus A: Manuell** — Nach Ping sieht User nur Überschrift, entscheidet selbst ob er die volle Gesetzesvorlage + Abstimmung herunterlädt
+- [ ] **Modus B: Automatisch** — Neue Gesetze + Abstimmungen werden automatisch in die App geladen und angezeigt
+- [ ] **Modus C: Headline-Only** — User sieht nur Überschriften, lädt bei Interesse die komplette Vorlage nach
+
+**Technische Umsetzung:**
+- [ ] `expo-notifications` für Push-Registrierung (FCM/APNs)
+- [ ] Server: Nur Topic-basierte Pushes (Kategorie als Topic), Inhalt = `{type, id, title}` — kein Gesetzestext im Push
+- [ ] App: `NotificationPreferences` Screen in Einstellungen
+- [ ] App: `ContentDeliveryMode` Toggle (manuell/auto/headline)
+- [ ] App: Lokaler Cache für heruntergeladene Gesetze (expo-file-system)
+- [ ] App: Badge-Counter pro Kategorie
+
 ### Partei-Synchronisation (nach Server-Migration)
 - [ ] **L1: Parlaments-Scraper** — hellenicparliament.gr Abstimmungen → Auto-Update Parteipositionen (objektiv, basierend auf echtem Stimmverhalten)
 - [ ] **L2: Admin-Review** — Admin-Panel Tab für Partei-Verwaltung (neue Parteien, Positionsänderungen, Programm-Updates), Vorschläge aus L1 prüfen

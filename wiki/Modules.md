@@ -16,6 +16,7 @@
 | MOD-05 | Analytics | ✅ Beta | Divergence Score, k-anonymity |
 | MOD-06 | Admin | 🔜 Optional | Data management, moderation queue |
 | MOD-07 | Notifications | 🔜 V2 | Push (Expo), WebSocket, RSS |
+| MOD-17 | Smart Notifications | 🔜 Geplant | Category filter, ping-only push, 3 content modes (manual/auto/headline), local templates |
 | MOD-08 | TrueRepublic | 🔜 V2 | Cosmos SDK Bridge, PnyxCoin |
 | MOD-09 | Demographics | 🔜 Alpha | gov.gr OAuth2.0, Demographic Hash |
 | MOD-10 | Scraper | 🔜 V2 | Crawl4AI, Graceful Fallback |
