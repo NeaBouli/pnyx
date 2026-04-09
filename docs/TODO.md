@@ -23,7 +23,8 @@
 
 ### Landing Page
 - [x] App-Download-Buttons deaktiviert (2026-04-09) — PWA, APK, Store-Links alle auf "Σύντομα/Coming soon" gesetzt bis App user-ready ist
-- [ ] App-Buttons reaktivieren wenn Mobile App komplett getestet + user-ready
+- [ ] App-Buttons reaktivieren wenn Mobile App komplett getestet + user-ready (App Store, Android APK, Google Play, F-Droid)
+- [ ] F-Droid Repo einrichten + APK publizieren (FOSS-Kanal für Privacy-bewusste User)
 
 ---
 
