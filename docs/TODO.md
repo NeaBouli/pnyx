@@ -39,6 +39,14 @@
 - [ ] MOD-16 Municipal Governance — Router-Implementierung
 - [ ] WebSocket Live-Counter (WINDOW_24H Bills)
 
+### Partei-Synchronisation (nach Server-Migration)
+- [ ] **L1: Parlaments-Scraper** — hellenicparliament.gr Abstimmungen → Auto-Update Parteipositionen (objektiv, basierend auf echtem Stimmverhalten)
+- [ ] **L2: Admin-Review** — Admin-Panel Tab für Partei-Verwaltung (neue Parteien, Positionsänderungen, Programm-Updates), Vorschläge aus L1 prüfen
+- [ ] **L3: Community-Flagging** — "Position veraltet?" Button für User, triggert Admin-Review
+- [ ] `party_position_history` DB-Table — Changelog wann/warum sich Positionen geändert haben
+- [ ] Automatische Erkennung neuer/aufgelöster Parteien (ΥΠΕΣ / Άρειος Πάγος Register)
+- [ ] KI-gestützte Programm-Analyse: Parteiprogramme → extrahierte Positionen → Human Review
+
 ---
 
 ## 🟢 GEPLANT — V2 / Alpha

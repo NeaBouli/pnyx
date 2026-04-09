@@ -155,7 +155,7 @@ cd apps/web && npx next build
 | API Endpoints | 62 (14 Router) |
 | DB Tables | 13 |
 | Tests | 92 (Web 29 + API 51 + Crypto 12, 16 xfailed) |
-| Web Pages | 9 Routes |
+| Web Pages | 10 Routes (inkl. Liquid Compass) |
 | Wiki Pages | 17 Seiten |
 | CI Status | ✅ Green |
 
