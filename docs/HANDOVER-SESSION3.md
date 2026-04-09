@@ -6,51 +6,81 @@
 
 ## Übersicht
 
-**8 Commits** auf `main`, alle gepusht auf Remote. HEAD: `f84626f`.
-Rollback-Tag: `pre-session3-20260409` → `cd050e5`.
+**10 Commits** auf `main`, alle gepusht. HEAD: `99ae8ea`.
+Rollback: Tag `pre-session3-20260409` → `cd050e5`.
 
 ---
 
 ## Was wurde gemacht?
 
-### 1. Header-Bug gefixt (`da7f7cb`)
-**Problem:** Doppelter Header — NavHeader aus Layout + eigenes `<header>` pro Seite.
-**Lösung:** 9 redundante `<header>` aus 7 Dateien entfernt (bills, bill detail, VAA 3x, results, analytics, mp, admin). Sub-Navigation als Inline-Elemente im Content.
+### 1. Header-Bug (`da7f7cb`)
+9 redundante `<header>` aus 7 Seiten entfernt — NavHeader im Layout reicht.
 
-### 2. Tailwind 4 PostCSS-Migration (`9aa89cd`)
-**Problem:** Tailwind 4 hat den PostCSS-Plugin in `@tailwindcss/postcss` verschoben.
-**Lösung:** Neues Paket installiert, `postcss.config.mjs` + `globals.css` aktualisiert.
-**Achtung:** `npm install` braucht `--legacy-peer-deps` wegen eslint Peer-Conflict.
+### 2. Tailwind 4 PostCSS (`9aa89cd`)
+`@tailwindcss/postcss` installiert, `postcss.config.mjs` + `globals.css` migriert.
 
 ### 3. Mobile Ed25519 Signing (`4f969bf`)
-**Problem:** VoteScreen sendete `"beta-unsigned"` — Backend hätte alle Mobile-Votes abgelehnt.
-**Lösung:** `@noble/curves` installiert, `signVote()` + `verifyVote()` implementiert, Self-Verify vor Submit.
-**KRITISCHER BUG GEFIXT:** `computeNullifier()` fehlte `:` Separator → Hash-Mismatch mit Backend.
+- `@noble/curves` auf Expo, `signVote()` + `verifyVote()` statt `"beta-unsigned"`
+- **Kritischer Bug:** `computeNullifier()` fehlte `:` Separator
 
 ### 4. Cross-Platform Krypto-Tests (`f429eb0`)
-12 neue Tests in `crypto-compat.test.ts`: JSON-Format, Determinismus, Forgery-Resistance, Hex-Validierung.
+12 Tests: JSON-Format, Determinismus, Forgery-Resistance, Hex-Validierung.
 
-### 5. Dokumentation (`79793e4`, `32292b6`)
-STATUS.md, HANDOVER, TODO, ROADMAP erstellt/aktualisiert. README + Wiki Stats (92 Tests, 196 Commits).
+### 5. VAA Erweiterung 15 → 38 Thesen (`e0b2f04`, `f84626f`)
+23 neue Statements (echte griechische Politik), 304 Parteipositionen, alle Referenzen aktualisiert.
 
-### 6. VAA Erweiterung: 15 → 38 Thesen (`e0b2f04`, `f84626f`)
-23 neue politische Positionen basierend auf echten griechischen Debatten 2024-2026:
-- Recherchierte Quellen: hellenicparliament.gr, OECD, RSF, IMF, Amnesty, HRW
-- 8 Parteien × 38 verifizierte Positionen (304 party_positions)
-- Alle Referenzen aktualisiert: Landing Page, Homepage, Wiki (7 HTML-Seiten), README, CLAUDE.md, FAQ, MASTER_MEMO
-- Zeitschätzung angepasst: 5 Min → 10 Min
+### 6. Liquid Political Compass (`99ae8ea`)
+**Kerninnovation dieser Session.** Vollständig neues Feature:
 
-**Neue Themen:** Στέγαση/Airbnb, Ιδιωτικοποίηση Νερού, Overtourism, Πυρκαγιές, Golden Visa, Εφοπλιστές, Αποδήμων Ψήφος, Predator/Παρακολουθήσεις, Brain Drain, Αγρότες/ΚΑΠ, Φοροδιαφυγή, Δημογραφικό, Αστυνομία, Τέμπη, gov.gr/Privacy, Περιφέρεια, Νησιωτικότητα, Αδέσποτα, Αρχαιολογία, ΜΜΜ, Ευρωπαϊσμός, Πλεονάσματα, Πράσινη Ναυτιλία.
+**Konzept:** Der Kompass ist liquide — er startet optional mit dem 38-Fragen-VAA und aktualisiert sich bei jeder Abstimmung. Der User wählt sein Modell oder deaktiviert den Kompass komplett.
+
+**4 Modelle:**
+1. **Party Match** — % Übereinstimmung mit 8 Parteien
+2. **Links-Rechts** — Einzelachse politisches Spektrum
+3. **2D Compass** — Wirtschaft (Staat↔Markt) × Gesellschaft (Liberal↔Konservativ)
+4. **Thematischer Radar** — 7 Politikbereiche (Wirtschaft, Soziales, Umwelt, Governance, Sicherheit, Kultur, Infrastruktur)
+
+**Datenschutz (höchste Priorität):**
+- 100% clientseitig — niemals an Server gesendet
+- AES-256-GCM verschlüsselt, Key via HKDF-SHA256 vom Ed25519 Private Key abgeleitet
+- User kann Kompass jederzeit deaktivieren oder löschen
+- Klar kommuniziert im Privacy Banner auf der Compass-Seite
+
+**Architektur (8 neue Dateien):**
+```
+lib/compass/
+├── types.ts          → Interfaces (CompassProfile, Models, Results)
+├── dimension-map.ts  → 30 Kategorien → politische Dimensionen
+├── engine.ts         → Pure Berechnung aller 4 Modelle
+├── storage.ts        → AES-256-GCM Verschlüsselung + localStorage
+├── useCompass.ts     → React Hook (Load/Save/Compute)
+└── index.ts          → Barrel Export
+
+components/
+├── CompassCard.tsx   → Kompaktes Widget für Bill-Detail
+
+app/[locale]/
+└── compass/page.tsx  → Dashboard (Modellwahl, Visualisierungen, Stats)
+
+public/data/
+└── party-positions.json → Statische Parteipositionen (304 Einträge)
+```
+
+**Integration:**
+- VAA → `compass.seedFromVAA()` nach Ergebnis
+- Bill Vote → `compass.recordBillVote()` nach erfolgreicher Abstimmung
+- NavHeader → "Πυξίδα/Compass" Link
+- Bill Detail → CompassCard Widget
 
 ---
 
 ## Was wurde NICHT angefasst?
 
 - Keine DB-Schema-Änderungen / Alembic Migrations
-- Keine Docker/Traefik/Infra-Änderungen
-- Keine CORS-Config / Environment-Änderungen
 - Keine neuen API-Endpoints
-- Keine Redis-abhängigen Features
+- Keine Docker/Traefik/Infra-Änderungen
+- Keine CORS/Environment-Änderungen
+- Kompass ist rein clientseitig — zero Backend-Impact
 
 ---
 
@@ -60,62 +90,41 @@ STATUS.md, HANDOVER, TODO, ROADMAP erstellt/aktualisiert. README + Wiki Stats (9
 # Komplett zurück auf pre-Session-3:
 git reset --hard pre-session3-20260409
 
-# Nur VAA rückgängig:
-git revert f84626f e0b2f04
+# Nur Compass rückgängig:
+git revert 99ae8ea
 ```
 
 ---
 
-## Teststatus
+## Tests
 
 ```
 Web:    29/29 passed (vitest)
 Crypto: 12/12 passed (pytest)
 API:    51/51 passed + 16 xfail (pytest)
-VAA:     6/6  passed (pytest)
+Build:  next build OK (10 Routes inkl. /compass)
 Mobile: tsc --noEmit clean
-Build:  next build OK
 ```
-
----
-
-## Geänderte Dateien (gesamt ~30)
-
-### Session 3a — Crypto + Header (19 Dateien)
-- 7 Page-Dateien: Header entfernt
-- 4 Web-Config: Tailwind 4 PostCSS
-- 5 Mobile: Ed25519 Signing
-- 1 Neue Testdatei: crypto-compat.test.ts
-- 2 Docs: CLAUDE.md, TODO.md
-
-### Session 3b — VAA Erweiterung (17 Dateien)
-- 3 Seed-Dateien: statements.json (38 Einträge), seed_real_bills.py (304 Positionen), seed.py
-- 1 Homepage: page.tsx (el+en Beschreibungen)
-- 1 VAA-Seite: vaa/page.tsx (Fallback-Count)
-- 5 Wiki HTML: modules, api, database, faq + index (Stats)
-- 3 Wiki MD: API, Modules, Roadmap
-- 2 Docs: README, MASTER_MEMO
-- 2 Meta: CLAUDE.md, STATUS.md
 
 ---
 
 ## Nächste Schritte (Session 4)
 
-### Priorität 1 — Vor erstem Launch
-1. **Docker lokal** — `docker-compose up` + `alembic upgrade head` + `seed.py` + `seed_real_bills.py`
-2. **E2E Test** — API → Web → Verify → Vote → Results (kompletter Flow mit 38 Thesen)
-3. **VAA verifizieren** — Alle 38 Thesen im Browser durchspielen, Matching prüfen
+### Priorität 1 — Launch-Vorbereitung
+1. Docker lokal + alembic + seed (38 Thesen + 10 Bills + 304 Positionen)
+2. E2E Test: Verify → VAA → Compass → Vote → Compass-Update → Results
+3. Compass-Engine Unit Tests (vitest)
 
 ### Priorität 2 — Qualität
-4. **iOS/Android Build** — `eas build --platform all`
-5. **Shared Types** — `packages/types/` für Web + Mobile
-6. **Next.js 15 Upgrade** — eslint Peer-Conflict lösen
+4. iOS/Android Build (Expo EAS)
+5. Compass auf Mobile portieren (useCompass → expo-secure-store)
+6. Next.js 15 Upgrade
 
 ### Priorität 3 — Features
-7. **Wiki Ticker** → echte API-Daten
-8. **MOD-16 Municipal** — Router-Implementierung
-9. **VAA auf Mobile** portieren
+7. VAA auf Mobile
+8. MOD-16 Municipal Router
+9. Wiki Ticker → echte API-Daten
 
 ---
 
-*Handover erstellt: 2026-04-09, Session 3 komplett.*
+*Handover: 2026-04-09, Session 3 komplett. 10 Commits gepusht.*

@@ -1,6 +1,6 @@
 # Ekklesia.gr — TODO
 # Copyright (c) 2026 Vendetta Labs — MIT License
-# Stand: 2026-04-09 — Session 3 komplett (8 Commits gepusht)
+# Stand: 2026-04-09 — Session 3 komplett (10 Commits gepusht)
 
 ---
 
@@ -8,91 +8,81 @@
 
 ### Infrastruktur
 - [ ] Docker Compose lokal starten + `alembic upgrade head`
-- [ ] Seed-Scripts ausführen (`seed.py` + `seed_real_bills.py` — 38 Thesen + 10 Bills)
-- [ ] End-to-End Test: API → Web → Verify → Vote → Results
-- [ ] VAA mit 38 Thesen im Browser durchspielen, Matching verifizieren
+- [ ] Seed-Scripts: `seed.py` (38 Thesen) + `seed_real_bills.py` (10 Bills + 304 Positionen)
+- [ ] E2E Test: Verify → VAA (38 Fragen) → Compass-Seed → Vote → Compass-Update → Results
 
 ### Web
-- [ ] Next.js 15 Upgrade (löst eslint Peer-Conflict + react@19 Warning)
-- [ ] Secure Storage Hardening (localStorage → httpOnly Cookie o.ä.)
+- [ ] Compass Engine Unit Tests (vitest) — engine.ts Berechnungen
+- [ ] Next.js 15 Upgrade (eslint Peer-Conflict lösen)
+- [ ] Secure Storage Hardening (localStorage → httpOnly Cookie)
 
 ### Mobile
-- [ ] iOS + Android Build testen (Expo EAS: `eas build --platform all`)
-- [ ] Geteilte API-Typen: `packages/types/` für Web + Mobile
+- [ ] iOS + Android Build (Expo EAS)
+- [ ] Compass auf Mobile portieren (useCompass → expo-secure-store)
+- [ ] Shared Types: `packages/types/` für Web + Mobile
 
 ---
 
 ## 🟡 OFFEN — Vor Public Beta
 
 ### Plattform
-- [ ] Hetzner CX21 Setup + Traefik + Let's Encrypt SSL
-- [ ] Production Docker Compose deployen
-- [ ] Environment Variables / Secrets Management
-- [ ] Domain ekklesia.gr → Hetzner (statt GitHub Pages)
-- [ ] CORS-Config für Prod-Domain
+- [ ] Hetzner CX21 + Traefik + Let's Encrypt SSL
+- [ ] Production Docker Compose
+- [ ] Secrets Management
+- [ ] Domain ekklesia.gr → Hetzner
+- [ ] CORS für Prod-Domain
 - [ ] Externes Sicherheitsaudit
 
 ### Features
-- [ ] Wiki Ticker → echte API-Daten verbinden
+- [ ] VAA auf Mobile portieren
+- [ ] Wiki Ticker → echte API-Daten
 - [ ] MOD-16 Municipal Governance — Router-Implementierung
 - [ ] WebSocket Live-Counter (WINDOW_24H Bills)
-- [ ] VAA auf Mobile portieren (fehlt auf Expo)
 
 ---
 
 ## 🟢 GEPLANT — V2 / Alpha
 
-### Krypto
-- [ ] packages/crypto-rs (Rust + WASM: ed25519-dalek, wasm-bindgen)
+- [ ] packages/crypto-rs (Rust + WASM)
 - [ ] Commit-Reveal ZK Abstimmung
-
-### Integrationen
-- [ ] MOD-08 TrueRepublic Bridge (PnyxCoin, Cosmos SDK)
-- [ ] MOD-09 gov.gr OAuth2.0 (nach 500 Nutzern + 3 NGOs)
-- [ ] MOD-10/11 KI-Scraper + Zusammenfassung (Crawl4AI + Claude API)
-- [ ] MOD-13 Mein Abgeordneter — Vollimplementierung
-
-### Governance
+- [ ] MOD-08 TrueRepublic Bridge
+- [ ] MOD-09 gov.gr OAuth2.0
+- [ ] MOD-10/11 KI-Scraper
+- [ ] MOD-13 Mein Abgeordneter
 - [ ] Deliberation (pol.is-Modell)
-- [ ] Demographische Verifikation (Altersgruppe + Region)
-- [ ] Sandbox-Anfrage an AADE/gov.gr
 
 ---
 
-## ✅ ERLEDIGT
+## ✅ ERLEDIGT — Session 3 (2026-04-09, 10 Commits)
 
-### Session 3 (2026-04-09) — 8 Commits
+### Crypto & Bugs
+- [x] 9 doppelte Headers entfernt
+- [x] Tailwind 4 PostCSS Migration
+- [x] Mobile Ed25519 Signing (`@noble/curves`)
+- [x] Nullifier Hash `:` Separator Bug gefixt
+- [x] 12 Cross-Platform Krypto-Tests
 
-#### Ed25519 + Header + Tailwind
-- [x] Rollback-Punkt: Tag `pre-session3-20260409` auf `cd050e5`
-- [x] 9 doppelte `<header>` aus 7 Seiten entfernt
-- [x] Tailwind 4 PostCSS Fix: `@tailwindcss/postcss` + `@import "tailwindcss"`
-- [x] Mobile Ed25519 Signing: `@noble/curves`, `signVote()` + `verifyVote()`
-- [x] Nullifier Hash Bug: fehlender `:` Separator in `computeNullifier()` gefixt
-- [x] Cross-Platform Krypto-Tests: 12 neue Tests (Web ↔ Mobile ↔ Backend)
+### VAA Erweiterung
+- [x] 15 → 38 Thesen (echte griechische Debatten)
+- [x] 304 Parteipositionen (8 × 38)
+- [x] Alle Referenzen aktualisiert (Landing, Wiki, README, FAQ)
 
-#### VAA Erweiterung 15 → 38 Thesen
-- [x] 23 neue Statements basierend auf echten griechischen Debatten (2024-2026)
-- [x] 304 Parteipositionen (8 Parteien × 38 Thesen), verifiziert
-- [x] Alle Referenzen aktualisiert: Landing, Homepage, Wiki, README, FAQ, CLAUDE.md
-- [x] Alle Tests grün: Web 29/29, Crypto 12/12, API 51+16xfail, VAA 6/6
-- [x] 8 Commits gepusht auf Remote
+### Liquid Political Compass
+- [x] 4 Modelle: Party Match, Links-Rechts, 2D, Thematischer Radar
+- [x] AES-256-GCM Verschlüsselung (HKDF vom Ed25519 Key)
+- [x] 100% clientseitig — nie auf Server
+- [x] VAA seeds Compass, jeder Bill-Vote aktualisiert
+- [x] User wählt Modell oder deaktiviert komplett
+- [x] Dashboard-Seite: `/[locale]/compass`
+- [x] CompassCard Widget auf Bill-Detail
+- [x] NavHeader + Landing + Wiki + README aktualisiert
+- [x] Privacy Banner auf Compass-Seite
 
-### Session 2 (2026-04-07) — Dependencies
-- [x] 10 Dependabot PRs gemergt (#11–#20)
-- [x] TypeScript 5.9 → 6.0 Breaking Changes gefixt
-
-### Session 1.5 + 2.0 — Docs & Features
-- [x] GitHub Pages live: ekklesia.gr
-- [x] Landing Page, Wiki HTML, Whitepaper
-- [x] MOD-16 Municipal Governance (Stub + Alembic)
-- [x] Mobile App: 7 Screens, Biometrie, Secure Enclave
-
-### Session 1 (2026-03-29) — Foundation
-- [x] Monorepo, CI/CD, 13 Router, 9 Tabellen
-- [x] MOD-01 bis MOD-05 + MOD-14
-- [x] Next.js Web: 5 Seiten + i18n
+### Previous Sessions
+- [x] Session 2: 10 Dependabot PRs, TS 6.0 Fixes
+- [x] Session 1.5+2.0: Landing, Wiki, Whitepaper, Mobile 7 Screens
+- [x] Session 1: Foundation (13 Router, 9 Tabellen, CI/CD)
 
 ---
 
-*Aktualisiert: 2026-04-09 — Session 3 komplett, alle Commits gepusht.*
+*Stand: 2026-04-09. 10 Commits gepusht. Remote synchron.*
