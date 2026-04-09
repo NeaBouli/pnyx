@@ -13,6 +13,7 @@ export default function NavHeader() {
     { href: `/${locale}`,        label_el: "Αρχική",       label_en: "Home"    },
     { href: `/${locale}/vaa`,    label_el: "Wahlkompass",  label_en: "Compass" },
     { href: `/${locale}/bills`,  label_el: "Νομοσχέδια",  label_en: "Bills"   },
+    { href: `/${locale}/compass`, label_el: "Πυξίδα",     label_en: "Compass" },
     { href: `/${locale}/verify`, label_el: "Επαλήθευση",  label_en: "Verify"  },
   ];
 

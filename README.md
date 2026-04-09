@@ -44,6 +44,7 @@
 | Χαρακτηριστικό | Περιγραφή | Κατάσταση |
 |---|---|---|
 | 🗳️ Πολιτική Πυξίδα | 38 θέσεις, 8 κόμματα, Matching Algorithm | ✅ Beta |
+| 🧭 Liquid Compass | 4 Modelle (Party/Links-Rechts/2D/Radar), AES-256-GCM verschlüsselt, 100% lokal | ✅ Beta |
 | 🏛️ Ψηφοφορία Πολιτών | Ed25519 signed, Bill Lifecycle (5 states) | ✅ Beta |
 | 📊 Δείκτης Απόκλισης | Αυτόματη σύγκριση Βουλή vs Πολίτες | ✅ Beta |
 | 🔐 ZK Identity | SMS HLR → Nullifier → Key → Delete | ✅ Beta |
@@ -59,7 +60,7 @@
 pnyx/
 ├── apps/
 │   ├── api/          → Python FastAPI  (62 endpoints, 14 Router)
-│   ├── web/          → Next.js 14      (9 Routes, el/en)
+│   ├── web/          → Next.js 14      (10 Routes, el/en, Liquid Compass)
 │   └── mobile/       → Expo RN         (7 Screens, ✅ gebaut)
 ├── packages/
 │   ├── crypto/       → Ed25519 · Nullifier · HLR

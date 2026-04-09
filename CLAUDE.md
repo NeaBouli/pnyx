@@ -36,15 +36,27 @@ MOD-04: POST /api/v1/vote  /  GET /{id}/results  /  POST /{id}/relevance
 MOD-05: Divergence Score (integriert in /results)
 MOD-14: Relevance Signal (integriert in /relevance)
 
-## Web Seiten (5 total — alle gebaut + deployed auf GitHub)
+## Web Seiten (10 Routes — alle gebaut)
 /[locale]            → Homepage (Hero + Feature Cards)
-/[locale]/vaa        → VAA Quiz (Intro → Quiz → Results + recharts)
+/[locale]/vaa        → VAA Quiz (Intro → Quiz → Results + recharts) → seeds Compass
+/[locale]/compass    → Liquid Compass Dashboard (4 Modelle, AES-256-GCM verschlüsselt)
 /[locale]/bills      → Bills Feed (Filter + StatusBadge + Cards)
-/[locale]/bills/[id] → Bill Detail (Summary + Abstimmung + Divergence)
+/[locale]/bills/[id] → Bill Detail (Summary + Abstimmung + Divergence) → feeds Compass
 /[locale]/verify     → Identity Verify (SMS → Key → Success)
+/[locale]/results    → Ergebnisse & Divergenz
+/[locale]/analytics  → Analytische Daten
+/[locale]/mp         → Parteien vs Bürger
+/[locale]/admin      → Admin Panel
+
+## Liquid Compass (lib/compass/)
+- 4 Modelle: Party Match, Links-Rechts, 2D Kompass, Thematischer Radar
+- User wählt Modell oder deaktiviert Kompass komplett
+- VAA = freiwilliger Einstieg, Kompass aktualisiert sich bei jeder Abstimmung
+- 100% clientseitig, AES-256-GCM verschlüsselt mit HKDF vom Ed25519 Key
+- Niemals an Server gesendet — höchst persönlich, nur auf dem Gerät
 
 ## Components
-NavHeader | StatusBadge | DivergenceCard | ProgressBar | VoteButton
+NavHeader | StatusBadge | DivergenceCard | ProgressBar | VoteButton | CompassCard
 
 ## Bill Lifecycle
 ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END

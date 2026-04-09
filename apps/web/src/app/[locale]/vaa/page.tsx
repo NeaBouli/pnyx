@@ -10,6 +10,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, Cell
 } from "recharts";
+import { useCompass } from "@/lib/compass";
 
 type Phase = "intro" | "quiz" | "results";
 type AnswerValue = number | "skip";
@@ -18,6 +19,7 @@ export default function VAAPage() {
   const t = useTranslations("vaa");
   const tCommon = useTranslations("common");
   const locale = useLocale();
+  const compass = useCompass();
 
   const [phase, setPhase] = useState<Phase>("intro");
   const [consentGiven, setConsentGiven] = useState(false);
@@ -88,6 +90,7 @@ export default function VAAPage() {
       ) as Record<number, number>;
       const r = await ekklesia.match(filtered);
       setResults(r.data.results);
+      compass.seedFromVAA(filtered);
       setPhase("results");
     } catch {
       setError("Fehler beim Berechnen der Ergebnisse.");
@@ -387,6 +390,22 @@ export default function VAAPage() {
               className="inline-block px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold transition-colors"
             >
               {locale === "el" ? "Δείτε τα Νομοσχέδια" : "See Bills"} →
+            </Link>
+          </div>
+
+          {/* Compass CTA */}
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mt-6 text-center">
+            <div className="text-3xl mb-3">🧭</div>
+            <p className="text-gray-300 mb-4">
+              {locale === "el"
+                ? "Οι απαντήσεις σας τροφοδοτούν τώρα την εξελισσόμενη Πολιτική σας Πυξίδα."
+                : "Your answers now feed your evolving Political Compass."}
+            </p>
+            <Link
+              href={`/${locale}/compass`}
+              className="inline-block px-8 py-3 bg-gray-800 hover:bg-gray-700 rounded-xl font-semibold transition-colors"
+            >
+              {locale === "el" ? "Δείτε την Πυξίδα" : "View Compass"} →
             </Link>
           </div>
         </div>

@@ -8,6 +8,8 @@ import { loadKeypair, loadNullifier, signVote } from "@/lib/crypto";
 import StatusBadge from "@/components/StatusBadge";
 import RelevanceButtons from "@/components/RelevanceButtons";
 import BillResultReport from "@/components/BillResultReport";
+import CompassCard from "@/components/CompassCard";
+import { useCompass } from "@/lib/compass";
 // DivergenceCard replaced by BillResultReport
 
 const VOTE_OPTIONS = [
@@ -22,6 +24,7 @@ const VOTABLE = ["ACTIVE", "WINDOW_24H", "OPEN_END"];
 export default function BillDetailPage({ params }: { params: { id: string } }) {
   const locale = useLocale();
   const billId = decodeURIComponent(params.id);
+  const compass = useCompass();
 
   const [bill, setBill]         = useState<Bill | null>(null);
   const [results, setResults]   = useState<BillResults | null>(null);
@@ -85,6 +88,8 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
 
       if (res.ok) {
         setVoteStatus("voted");
+        // Record in compass
+        compass.recordBillVote(billId, choice, bill?.categories || []);
         // 4. Refresh results
         try {
           const resultsRes = await ekklesia.getResults(billId);
@@ -278,6 +283,11 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
             </p>
           </div>
         )}
+
+        {/* ── COMPASS CARD ── */}
+        <div className="mb-6">
+          <CompassCard />
+        </div>
 
         {/* ── FULL RESULT REPORT ── */}
         {results && results.total_votes > 0 && (
