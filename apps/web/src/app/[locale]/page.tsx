@@ -130,7 +130,7 @@ function FeaturesSection() {
     {
       icon: "🗳️", color: "bg-blue-50 border-blue-200", iconBg: "bg-blue-100",
       title: "Πολιτική Πυξίδα",
-      desc: "15 πολιτικές θέσεις. 8 κόμματα. Δείτε με ποιο κόμμα συμφωνείτε περισσότερο — σε λιγότερο από 5 λεπτά.",
+      desc: "38 πολιτικές θέσεις. 8 κόμματα. Δείτε με ποιο κόμμα συμφωνείτε περισσότερο — σε περίπου 10 λεπτά.",
       cta: "Ξεκινήστε →", href: "vaa",
     },
     {
@@ -167,7 +167,7 @@ function FeaturesSection() {
     {
       icon: "🗳️", color: "bg-blue-50 border-blue-200", iconBg: "bg-blue-100",
       title: "VoteCompass", href: "vaa", cta: "Start →",
-      desc: "15 political positions. 8 parties. See which party you agree with most — in under 5 minutes.",
+      desc: "38 political positions. 8 parties. See which party you agree with most — in about 10 minutes.",
     },
     {
       icon: "🏛️", color: "bg-green-50 border-green-200", iconBg: "bg-green-100",

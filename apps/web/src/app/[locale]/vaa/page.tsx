@@ -123,7 +123,7 @@ export default function VAAPage() {
           <p className="text-gray-400 mb-8 text-lg">{t("subtitle")}</p>
           <div className="bg-gray-900 rounded-2xl p-6 mb-8 text-left space-y-3 border border-gray-800">
             <p className="text-gray-300">
-              📋 <strong>{statements.length || 15}</strong> {locale === "el" ? "θέσεις" : "positions"}
+              📋 <strong>{statements.length || 38}</strong> {locale === "el" ? "θέσεις" : "positions"}
             </p>
             <p className="text-gray-300">
               🏛️ <strong>{parties.length || 8}</strong> {locale === "el" ? "κόμματα" : "parties"}

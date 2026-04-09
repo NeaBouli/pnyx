@@ -68,7 +68,7 @@ ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END
 
 ## Seed-Daten (bereit für alembic upgrade head)
 - 8 griechische Parteien (ΝΔ, ΣΥΡΙΖΑ, ΠΑΣΟΚ, ΚΚΕ, ΕΛ, ΝΙΚΗ, ΠΛ, ΣΠΑΡΤ)
-- 15 VAA-Thesen (Υγεία, ΝΑΤΟ, Μισθός, ΑΠΕ, Παιδεία, Μετανάστευση...)
+- 38 VAA-Thesen (Υγεία, ΝΑΤΟ, Μισθός, Στέγαση, Τουρισμός, Δημογραφία, Τέμπη...)
 - 3 Gesetzentwürfe (2x OPEN_END, 1x ACTIVE)
 
 ## Nächste Session → docs/TODO.md

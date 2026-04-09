@@ -59,7 +59,7 @@ Tag: v0.3.0-alpha | Datum: 2026-04-01
 
 ### Beta (aktiv)
 - MOD-01: Identity — HLR Verifikation (KEIN SMS OTP)
-- MOD-02: VAA Wahlkompass — 8 Parteien, 15 Thesen
+- MOD-02: VAA Wahlkompass — 8 Parteien, 38 Thesen
 - MOD-03: Parliament — Bill Lifecycle 5 Phasen
 - MOD-04: CitizenVote — Ed25519 Signatur
 - MOD-05: Divergence Score
@@ -245,7 +245,7 @@ Tag: v0.3.0-alpha | Datum: 2026-04-01
 
 ## ABGESCHLOSSEN
 - Docker + PostgreSQL + Redis (lokal)
-- API 62 Endpoints + Seed (8 Parteien, 15 Thesen, 3 Bills, 120 party_positions)
+- API 62 Endpoints + Seed (8 Parteien, 38 Thesen, 10 Bills, 304 party_positions)
 - Browser Ed25519 crypto.ts — 17 Tests
 - Vote Flow Frontend + /verify
 - POLIS Worker + OAuth + Repo + Labels
