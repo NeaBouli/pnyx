@@ -1,6 +1,6 @@
 # Ekklesia.gr — Projektstatus
 # Copyright (c) 2026 Vendetta Labs — MIT License
-# Stand: 2026-04-09 — nach Session 3
+# Stand: 2026-04-09 — nach Session 3 (komplett gepusht)
 
 ---
 
@@ -12,7 +12,7 @@
 | **Codename**        | pnyx                                              |
 | **Repo**            | https://github.com/NeaBouli/pnyx                  |
 | **Lokal**           | `/Users/gio/Desktop/pnyx`                         |
-| **HEAD**            | `d84fb84` (main, 4 Commits nicht gepusht)         |
+| **HEAD**            | `f84626f` (main, Remote synchron)                 |
 | **Rollback**        | Tag `pre-session3-20260409` → `cd050e5`           |
 | **Phase**           | Beta — Kernmodule komplett, vor Prod-Deployment    |
 | **Lizenz**          | MIT — (c) 2026 Vendetta Labs                      |
@@ -30,7 +30,7 @@ pnyx/
 ├── packages/
 │   └── crypto/       Python PyNaCl (Ed25519, Nullifier, HLR)
 ├── infra/            Docker Compose + Traefik
-├── docs/             Roadmap, Whitepaper, TODO, Status, Reports
+├── docs/             Roadmap, Whitepaper, TODO, Status, Handover, Reports
 ├── cloudflare-worker/  OAuth-Proxy
 └── wiki/             GitHub Wiki (Submodul)
 ```
@@ -39,10 +39,10 @@ pnyx/
 
 ## Modulstatus
 
-| Modul  | Name                  | Status       | Plattform        |
-|--------|-----------------------|--------------|------------------|
+| Modul  | Name                  | Status       | Plattform          |
+|--------|-----------------------|--------------|--------------------|
 | MOD-01 | Identity (HLR+Ed25519)| KOMPLETT     | API + Web + Mobile |
-| MOD-02 | VAA Wahlkompass       | KOMPLETT     | API + Web        |
+| MOD-02 | VAA Wahlkompass       | KOMPLETT     | API + Web (38 Thesen, 8 Parteien) |
 | MOD-03 | Parliament Bills      | KOMPLETT     | API + Web + Mobile |
 | MOD-04 | CitizenVote           | KOMPLETT     | API + Web + Mobile |
 | MOD-05 | Divergence Score      | KOMPLETT     | API + Web + Mobile |
@@ -52,6 +52,22 @@ pnyx/
 | MOD-13 | Mein Abgeordneter     | STUB         | API              |
 | MOD-14 | Relevance Up/Down     | KOMPLETT     | API + Web        |
 | MOD-16 | Municipal Governance  | STUB + DB    | API              |
+
+---
+
+## VAA Politische Πυξίδα — Themenabdeckung (38 Thesen)
+
+| Bereich | Thesen | Beispiele |
+|---------|--------|-----------|
+| Wirtschaft & Arbeit | 6 | Mindestlohn, Unternehmenssteuern, Reedersteuer, Brain Drain, Primärüberschuss, Schattenökonomie |
+| Gesellschaft & Soziales | 5 | Cannabis, Gleichgeschlechtliche Ehe, UBI, Demographische Krise, Tierschutz |
+| Umwelt & Klima | 4 | Erneuerbare Energie, Atomkraft, Waldbrandprävention, Grüne Schifffahrt |
+| Demokratie & Rechte | 4 | Diaspora-Wahl, Überwachung/Predator, Polizeireform, Tempi-Aufklärung |
+| Außen-/Sicherheitspolitik | 3 | NATO, Verteidigung, EU-Föderalismus |
+| Wohnen & Infrastruktur | 4 | Airbnb, Golden Visa, Wasser-Privatisierung, ÖPNV |
+| Digital & Bildung | 3 | Ιδιωτικά ΑΕΙ, E-Government, Telearbeit |
+| Tourismus & Regionen | 4 | Overtourism, Inselanbindung, Regionale Ungleichheit, Archäologie |
+| Landwirtschaft & Kultur | 4 | EU-CAP, Kirchensteuer, Parthenon-Marmore, Agrarsubventionen |
 
 ---
 
@@ -68,14 +84,6 @@ pnyx/
 | Biometric Auth (Mobile)   | OK      | expo-local-authentication                   |
 | Cross-Platform Compat     | VERIFIZIERT | 12 Tests: Web ↔ Mobile ↔ Backend identisch |
 
-### Signatur-Flow
-```
-Client: message = JSON.stringify({bill_id, nullifier_hash, vote}, sorted_keys)
-Client: signature = ed25519.sign(message, privateKey)  → 128 hex chars
-Server: verify_signature(publicKey_from_db, message, signature)
-Server: valid → store vote, invalid → 401
-```
-
 ---
 
 ## Teststatus (2026-04-09)
@@ -86,26 +94,29 @@ Server: valid → store vote, invalid → 401
 | Web Crypto Compat  | 12    | 12 passed             | vitest 4.1.3  |
 | Python Crypto      | 12    | 12 passed             | pytest 8.3.3  |
 | API                | 67    | 51 passed, 16 xfailed | pytest 8.3.3  |
+| VAA Matching       | 6     | 6 passed              | pytest 8.3.3  |
 | Mobile TypeScript  | —     | tsc --noEmit clean    | TS 5.9.2      |
 | Web Build          | —     | next build OK         | Next.js 14    |
 | **TOTAL**          | **92**| **92 passed**         |               |
 
-xfailed = DB offline (erwartet, kein lokales PostgreSQL)
-
 ---
 
-## Git-Historie (Session 3)
+## Git-Historie (Session 3 — 8 Commits)
 
 ```
-d84fb84 test+docs: add 12 cross-platform crypto tests, update session docs
-4a11089 feat(mobile): implement Ed25519 signing with @noble/curves
-c13640e fix(web): upgrade to Tailwind 4 PostCSS plugin
-6c5d943 fix(web): remove 9 duplicate headers — NavHeader in layout is sufficient
+f84626f docs: update all remaining 15→38 VAA references
+e0b2f04 feat(vaa): expand political compass from 15 to 38 statements
+32292b6 docs: update README + wiki stats (92 tests, 196 commits, mobile beta)
+79793e4 docs: add STATUS, HANDOVER-SESSION3, update TODO + ROADMAP
+f429eb0 test+docs: add 12 cross-platform crypto tests, update session docs
+4f969bf feat(mobile): implement Ed25519 signing with @noble/curves
+9aa89cd fix(web): upgrade to Tailwind 4 PostCSS plugin
+da7f7cb fix(web): remove 9 duplicate headers — NavHeader in layout is sufficient
 --- Tag: pre-session3-20260409 ---
-cd050e5 fix(web): resolve TypeScript 6.0 compatibility issues  [← Remote HEAD]
+cd050e5 fix(web): resolve TypeScript 6.0 compatibility issues
 ```
 
-**19 Dateien geändert**, +2454 / -1680 Zeilen, **4 Commits nicht gepusht**.
+**Alle 8 Commits gepusht auf Remote.**
 
 ---
 
@@ -132,4 +143,4 @@ cd050e5 fix(web): resolve TypeScript 6.0 compatibility issues  [← Remote HEAD]
 
 ---
 
-*Nächstes Update: nach Session 4 oder bei Push auf Remote.*
+*Stand: 2026-04-09, Session 3 komplett. Nächstes Update: nach Session 4.*

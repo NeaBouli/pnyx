@@ -4,163 +4,118 @@
 
 ---
 
+## Übersicht
+
+**8 Commits** auf `main`, alle gepusht auf Remote. HEAD: `f84626f`.
+Rollback-Tag: `pre-session3-20260409` → `cd050e5`.
+
+---
+
 ## Was wurde gemacht?
 
-### 1. Header-Bug gefixt (`6c5d943`)
-**Problem:** Jede Seite hatte ein eigenes `<header>`-Element, obwohl `NavHeader` bereits im Locale-Layout (`[locale]/layout.tsx`) gerendert wird. Ergebnis: Doppelter Header auf allen Seiten ausser Home und Verify.
+### 1. Header-Bug gefixt (`da7f7cb`)
+**Problem:** Doppelter Header — NavHeader aus Layout + eigenes `<header>` pro Seite.
+**Lösung:** 9 redundante `<header>` aus 7 Dateien entfernt (bills, bill detail, VAA 3x, results, analytics, mp, admin). Sub-Navigation als Inline-Elemente im Content.
 
-**Lösung:** 9 redundante `<header>` aus 7 Dateien entfernt:
-- `bills/page.tsx` — Sub-Navigation (Results/Analytics/MP) in Page-Content verschoben
-- `bills/[id]/page.tsx` — Back-Link als Inline-Element
-- `vaa/page.tsx` — 3 Header (Intro/Quiz/Results Phase) entfernt
-- `results/page.tsx`, `analytics/page.tsx`, `mp/page.tsx` — Back-Link + Titel inline
-- `admin/page.tsx` — Logout-Button inline
+### 2. Tailwind 4 PostCSS-Migration (`9aa89cd`)
+**Problem:** Tailwind 4 hat den PostCSS-Plugin in `@tailwindcss/postcss` verschoben.
+**Lösung:** Neues Paket installiert, `postcss.config.mjs` + `globals.css` aktualisiert.
+**Achtung:** `npm install` braucht `--legacy-peer-deps` wegen eslint Peer-Conflict.
 
-**Verifiziert:** `next build` erfolgreich, alle Seiten kompilieren.
+### 3. Mobile Ed25519 Signing (`4f969bf`)
+**Problem:** VoteScreen sendete `"beta-unsigned"` — Backend hätte alle Mobile-Votes abgelehnt.
+**Lösung:** `@noble/curves` installiert, `signVote()` + `verifyVote()` implementiert, Self-Verify vor Submit.
+**KRITISCHER BUG GEFIXT:** `computeNullifier()` fehlte `:` Separator → Hash-Mismatch mit Backend.
 
-### 2. Tailwind 4 PostCSS-Migration (`c13640e`)
-**Problem:** Tailwind CSS v4 hat den PostCSS-Plugin in ein separates Paket verschoben. Build schlug fehl mit: `The PostCSS plugin has moved to @tailwindcss/postcss`.
+### 4. Cross-Platform Krypto-Tests (`f429eb0`)
+12 neue Tests in `crypto-compat.test.ts`: JSON-Format, Determinismus, Forgery-Resistance, Hex-Validierung.
 
-**Lösung:**
-- `npm install @tailwindcss/postcss --save-dev --legacy-peer-deps`
-- `postcss.config.mjs`: `tailwindcss: {}` → `"@tailwindcss/postcss": {}`
-- `globals.css`: `@tailwind base/components/utilities` → `@import "tailwindcss"`
+### 5. Dokumentation (`79793e4`, `32292b6`)
+STATUS.md, HANDOVER, TODO, ROADMAP erstellt/aktualisiert. README + Wiki Stats (92 Tests, 196 Commits).
 
-**Achtung:** npm install braucht `--legacy-peer-deps` wegen eslint Peer-Conflict.
+### 6. VAA Erweiterung: 15 → 38 Thesen (`e0b2f04`, `f84626f`)
+23 neue politische Positionen basierend auf echten griechischen Debatten 2024-2026:
+- Recherchierte Quellen: hellenicparliament.gr, OECD, RSF, IMF, Amnesty, HRW
+- 8 Parteien × 38 verifizierte Positionen (304 party_positions)
+- Alle Referenzen aktualisiert: Landing Page, Homepage, Wiki (7 HTML-Seiten), README, CLAUDE.md, FAQ, MASTER_MEMO
+- Zeitschätzung angepasst: 5 Min → 10 Min
 
-### 3. Mobile Ed25519 Signing (`4a11089`)
-**Problem:** `VoteScreen.tsx` sendete `"beta-unsigned"` als Signatur. Das Backend hätte alle Mobile-Votes mit `401 Unauthorized` abgelehnt.
-
-**Lösung:**
-- `@noble/curves` als Dependency in `apps/mobile/` installiert
-- `crypto-native.ts` erweitert um:
-  - `hexToBytes()` / `bytesToHex()` — Hex-Konvertierung
-  - `signVote(privateKeyHex, {bill_id, vote, nullifier_hash})` — Ed25519 Signatur
-  - `verifyVote(publicKeyHex, params, signatureHex)` — Lokale Verifikation
-- `VoteScreen.tsx`: Echte Signatur + Self-Verify vor Submit
-- `navigation/index.tsx`: `Result` Route akzeptiert optionales `billTitle`
-
-**KRITISCHER BUG GEFIXT:** `computeNullifier()` verwendete `phone + salt` statt `phone + ":" + salt`. Der Python-Backend nutzt `f"{phone}:{salt}"`. Ohne den `:` hätten Mobile-Nullifier nicht mit dem Backend übereingestimmt → Nutzer hätten sich nicht verifizieren können.
-
-### 4. Cross-Platform Krypto-Tests (`d84fb84`)
-**Neue Datei:** `apps/web/src/lib/crypto-compat.test.ts` (12 Tests)
-
-Testet die kritische Kompatibilität zwischen Web, Mobile und Python:
-- JSON-Message-Format: Alphabetisch sortierte Keys, kompakt, uppercase Vote
-- Sign/Verify Round-Trips mit generierten Keypairs
-- Determinismus (Ed25519 RFC 8032)
-- Forgery-Resistance (falscher Key → invalid)
-- Tampering-Detection (geänderter bill_id/nullifier → invalid)
-- Hex-Format-Validierung (64-char Keys, 128-char Signatures)
+**Neue Themen:** Στέγαση/Airbnb, Ιδιωτικοποίηση Νερού, Overtourism, Πυρκαγιές, Golden Visa, Εφοπλιστές, Αποδήμων Ψήφος, Predator/Παρακολουθήσεις, Brain Drain, Αγρότες/ΚΑΠ, Φοροδιαφυγή, Δημογραφικό, Αστυνομία, Τέμπη, gov.gr/Privacy, Περιφέρεια, Νησιωτικότητα, Αδέσποτα, Αρχαιολογία, ΜΜΜ, Ευρωπαϊσμός, Πλεονάσματα, Πράσινη Ναυτιλία.
 
 ---
 
 ## Was wurde NICHT angefasst?
 
-Gemäss Absprache: Alles was Kollisionsgefahr mit Server-Migration hat.
-
 - Keine DB-Schema-Änderungen / Alembic Migrations
 - Keine Docker/Traefik/Infra-Änderungen
-- Keine CORS-Config-Änderungen
-- Keine Redis-abhängigen Features
-- Keine Environment/Secrets-Änderungen
+- Keine CORS-Config / Environment-Änderungen
 - Keine neuen API-Endpoints
+- Keine Redis-abhängigen Features
 
 ---
 
 ## Rollback
 
-Falls etwas nicht stimmt:
-
 ```bash
 # Komplett zurück auf pre-Session-3:
 git reset --hard pre-session3-20260409
 
-# Einzelne Commits rückgängig machen:
-git revert d84fb84   # Tests + Docs
-git revert 4a11089   # Mobile Ed25519
-git revert c13640e   # Tailwind 4
-git revert 6c5d943   # Header Fix
+# Nur VAA rückgängig:
+git revert f84626f e0b2f04
 ```
-
-**Stash:** `stash@{0}: On main: pre-session3-stash-20260409-005835` enthält die vorherigen uncommitted Änderungen (CLAUDE.md, package-lock.json, .claude/, BACKLOG.md).
 
 ---
 
 ## Teststatus
 
 ```
-Web:    29/29 passed (vitest)     — npx vitest run
-Crypto: 12/12 passed (pytest)    — .venv/bin/python -m pytest tests/ (von packages/crypto/)
-API:    51/51 passed + 16 xfail  — .venv/bin/python -m pytest tests/ (von apps/api/)
-Mobile: tsc --noEmit clean       — npx tsc --noEmit (von apps/mobile/)
-Build:  next build OK            — npx next build (von apps/web/)
+Web:    29/29 passed (vitest)
+Crypto: 12/12 passed (pytest)
+API:    51/51 passed + 16 xfail (pytest)
+VAA:     6/6  passed (pytest)
+Mobile: tsc --noEmit clean
+Build:  next build OK
 ```
 
 ---
 
-## Dateien geändert (19 total)
+## Geänderte Dateien (gesamt ~30)
 
-### Web (11 Dateien)
-| Datei | Änderung |
-|-------|----------|
-| `apps/web/postcss.config.mjs` | Tailwind 4 PostCSS Plugin |
-| `apps/web/src/app/globals.css` | `@import "tailwindcss"` statt `@tailwind` |
-| `apps/web/package.json` | +@tailwindcss/postcss |
-| `apps/web/package-lock.json` | Lockfile aktualisiert |
-| `apps/web/src/app/[locale]/bills/page.tsx` | Header entfernt, Sub-Nav inline |
-| `apps/web/src/app/[locale]/bills/[id]/page.tsx` | Header entfernt, Back-Link inline |
-| `apps/web/src/app/[locale]/vaa/page.tsx` | 3 Header entfernt (Intro/Quiz/Results) |
-| `apps/web/src/app/[locale]/results/page.tsx` | Header entfernt |
-| `apps/web/src/app/[locale]/analytics/page.tsx` | Header entfernt |
-| `apps/web/src/app/[locale]/mp/page.tsx` | Header entfernt |
-| `apps/web/src/app/[locale]/admin/page.tsx` | Header entfernt |
+### Session 3a — Crypto + Header (19 Dateien)
+- 7 Page-Dateien: Header entfernt
+- 4 Web-Config: Tailwind 4 PostCSS
+- 5 Mobile: Ed25519 Signing
+- 1 Neue Testdatei: crypto-compat.test.ts
+- 2 Docs: CLAUDE.md, TODO.md
 
-### Web Tests (1 neue Datei)
-| Datei | Änderung |
-|-------|----------|
-| `apps/web/src/lib/crypto-compat.test.ts` | **NEU** — 12 Cross-Platform Krypto-Tests |
-
-### Mobile (5 Dateien)
-| Datei | Änderung |
-|-------|----------|
-| `apps/mobile/package.json` | +@noble/curves |
-| `apps/mobile/package-lock.json` | Lockfile aktualisiert |
-| `apps/mobile/src/lib/crypto-native.ts` | +signVote, +verifyVote, +hex utils, Fix computeNullifier |
-| `apps/mobile/src/screens/VoteScreen.tsx` | Echte Ed25519 Signatur statt "beta-unsigned" |
-| `apps/mobile/src/navigation/index.tsx` | Result Route + optionales billTitle |
-
-### Docs (2 Dateien)
-| Datei | Änderung |
-|-------|----------|
-| `CLAUDE.md` | Teststatus aktualisiert |
-| `docs/TODO.md` | Session 3 dokumentiert, Session 4 Tasks |
+### Session 3b — VAA Erweiterung (17 Dateien)
+- 3 Seed-Dateien: statements.json (38 Einträge), seed_real_bills.py (304 Positionen), seed.py
+- 1 Homepage: page.tsx (el+en Beschreibungen)
+- 1 VAA-Seite: vaa/page.tsx (Fallback-Count)
+- 5 Wiki HTML: modules, api, database, faq + index (Stats)
+- 3 Wiki MD: API, Modules, Roadmap
+- 2 Docs: README, MASTER_MEMO
+- 2 Meta: CLAUDE.md, STATUS.md
 
 ---
 
 ## Nächste Schritte (Session 4)
 
 ### Priorität 1 — Vor erstem Launch
-1. **Docker lokal starten** — `docker-compose up` + `alembic upgrade head` + `seed.py`
-2. **E2E Test** — API lokal → Web lokal → Verify → Vote → Results (kompletter Flow)
-3. **Git Push** — 4 Commits auf Remote pushen
+1. **Docker lokal** — `docker-compose up` + `alembic upgrade head` + `seed.py` + `seed_real_bills.py`
+2. **E2E Test** — API → Web → Verify → Vote → Results (kompletter Flow mit 38 Thesen)
+3. **VAA verifizieren** — Alle 38 Thesen im Browser durchspielen, Matching prüfen
 
 ### Priorität 2 — Qualität
-4. **iOS/Android Build** — `eas build --platform all` testen
-5. **Shared Types** — `packages/types/` für Web + Mobile API-Typen
-6. **Next.js 15 Upgrade** — Löst eslint Peer-Conflict
+4. **iOS/Android Build** — `eas build --platform all`
+5. **Shared Types** — `packages/types/` für Web + Mobile
+6. **Next.js 15 Upgrade** — eslint Peer-Conflict lösen
 
 ### Priorität 3 — Features
-7. **Wiki Ticker** → echte API-Daten statt Dummy
+7. **Wiki Ticker** → echte API-Daten
 8. **MOD-16 Municipal** — Router-Implementierung
-9. **WebSocket Live-Counter** für WINDOW_24H Bills
+9. **VAA auf Mobile** portieren
 
 ---
 
-## Kontakt
-
-- **Repo:** https://github.com/NeaBouli/pnyx
-- **Org:** Vendetta Labs
-- **Lizenz:** MIT
-
-*Handover erstellt: 2026-04-09, nach Session 3.*
+*Handover erstellt: 2026-04-09, Session 3 komplett.*
