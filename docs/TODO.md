@@ -21,6 +21,10 @@
 - [ ] Compass auf Mobile portieren (useCompass → expo-secure-store)
 - [ ] Shared Types: `packages/types/` für Web + Mobile
 
+### Landing Page
+- [x] App-Download-Buttons deaktiviert (2026-04-09) — PWA, APK, Store-Links alle auf "Σύντομα/Coming soon" gesetzt bis App user-ready ist
+- [ ] App-Buttons reaktivieren wenn Mobile App komplett getestet + user-ready
+
 ---
 
 ## 🟡 OFFEN — Vor Public Beta
