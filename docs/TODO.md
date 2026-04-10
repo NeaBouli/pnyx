@@ -33,7 +33,9 @@
 ### Plattform
 - [ ] Hetzner CX21 + Traefik + Let's Encrypt SSL
 - [ ] Production Docker Compose
-- [ ] Secrets Management
+- [ ] Secrets Management (HETZNER_HOST, HETZNER_USER, HETZNER_SSH_KEY in GitHub Secrets)
+- [ ] `/opt/ekklesia` auf Server anlegen + initial git clone
+- [ ] Deploy-Workflow reaktivieren: `push: branches: [main]` Trigger in `.github/workflows/deploy.yml` wieder einfügen (aktuell nur `workflow_dispatch` — deaktiviert 2026-04-10 wegen fehlender Secrets)
 - [ ] Domain ekklesia.gr → Hetzner
 - [ ] CORS für Prod-Domain
 - [ ] Externes Sicherheitsaudit

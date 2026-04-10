@@ -1,7 +1,12 @@
 name: Deploy to Hetzner
+
+# Deaktiviert bis Hetzner Server bereit ist und Secrets gesetzt sind.
+# Trigger nur manuell via workflow_dispatch, nicht automatisch bei Push.
+# Reaktivierung: push-Trigger unter on: wieder einfügen nachdem
+# HETZNER_HOST, HETZNER_USER, HETZNER_SSH_KEY als Repository Secrets
+# konfiguriert sind und /opt/ekklesia auf dem Server existiert.
+
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -10,6 +15,23 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
+
+      - name: Verify secrets are configured
+        run: |
+          if [ -z "${{ secrets.HETZNER_HOST }}" ]; then
+            echo "::error::HETZNER_HOST secret is not set. Configure it under Settings → Secrets → Actions before deploying."
+            exit 1
+          fi
+          if [ -z "${{ secrets.HETZNER_USER }}" ]; then
+            echo "::error::HETZNER_USER secret is not set."
+            exit 1
+          fi
+          if [ -z "${{ secrets.HETZNER_SSH_KEY }}" ]; then
+            echo "::error::HETZNER_SSH_KEY secret is not set."
+            exit 1
+          fi
+          echo "All Hetzner secrets configured."
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
