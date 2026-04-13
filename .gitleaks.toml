@@ -1,0 +1,31 @@
+title = "Pnyx Custom Gitleaks Config"
+
+[allowlist]
+  description = "Global allowlist"
+  paths = [
+    '''node_modules''',
+    '''\.git''',
+    '''package-lock\.json''',
+    '''__pycache__'''
+  ]
+
+[[rules]]
+  description = "GitHub OAuth Secret"
+  id = "github-oauth-secret"
+  regex = '''(?i)(client[_-]?secret)\s*[=:]\s*["']?[a-fA-F0-9]{30,}["']?'''
+  tags = ["oauth", "github"]
+  severity = "CRITICAL"
+
+[[rules]]
+  description = "Arweave Wallet Key"
+  id = "arweave-key"
+  regex = '''"kty"\s*:\s*"RSA"'''
+  tags = ["key", "arweave", "crypto"]
+  severity = "CRITICAL"
+
+[[rules]]
+  description = "Generic API Key"
+  id = "generic-api-key"
+  regex = '''(?i)(api[_-]?key|apikey)\s*[=:]\s*["']?[a-zA-Z0-9_\-]{20,}["']?'''
+  tags = ["api", "key"]
+  severity = "HIGH"
