@@ -90,7 +90,17 @@ ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END
 - 38 VAA-Thesen (Υγεία, ΝΑΤΟ, Μισθός, Στέγαση, Τουρισμός, Δημογραφία, Τέμπη...)
 - 3 Gesetzentwürfe (2x OPEN_END, 1x ACTIVE)
 
-## Nächste Session → docs/TODO.md
+## Nächste Session → docs/TODO.md (dort steht der STARTFLOW)
+
+## Rollback-Punkte
+- `pre-session4-20260413` → HEAD `d7b09f4` (Session 3 komplett)
+- `pre-session3-20260409` → HEAD `cd050e5` (pre-Session 3)
+
+## Wichtige Hinweise
+- `npm install` braucht `--legacy-peer-deps` (eslint Peer-Conflict)
+- `.github/workflows/deploy.yml` = nur `workflow_dispatch` (kein auto-deploy)
+- App-Download-Buttons auf Landing = DEAKTIVIERT bis App user-ready
+- Compass-Daten = 100% clientseitig, AES-256-GCM, nie auf Server
 
 ## MOD-16 Municipal Governance (neu)
 - Neue DB Tabellen: periferia, dimos, communities, decisions
