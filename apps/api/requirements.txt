@@ -38,7 +38,7 @@ beautifulsoup4>=4.12.0
 apscheduler==3.11.2
 
 # Forms
-python-multipart==0.0.24
+python-multipart==0.0.26
 
 # Testing
 pytest==8.3.3
