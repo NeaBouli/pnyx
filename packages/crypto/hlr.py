@@ -5,13 +5,14 @@ Verifiziert griechische Mobilnummern ohne SMS.
 Griechische SIM-Karten sind per Gesetz an Personalausweis gebunden.
 HLR prüft ob Nummer im griechischen Netz aktiv ist.
 
-Provider: HLR Lookups (hlrlookups.com)
+Provider: HLR Lookups (www.hlr-lookups.com)
 - Crypto prepaid (BTC/ETH/USDC)
 - ~$0.002/query
 - Community Wallet — Balance öffentlich auf community.html
+- REST API v2: POST /api/v2/hlr-lookup mit HTTP Basic Auth (API_KEY:API_SECRET)
 
 @ai-anchor MOD01_HLR
-@update-hint Provider-Wechsel: nur HLR_PROVIDER_URL + Auth ändern
+@update-hint Provider-Wechsel: hlr_lookup() url + auth anpassen
 """
 import re
 import os
@@ -54,9 +55,12 @@ def is_valid_greek_mobile(phone: str) -> bool:
 
 # ── HLR Provider: HLR Lookups ─────────────────────────────────────────────────
 
+HLR_LOOKUPS_URL = "https://www.hlr-lookups.com/api/v2/hlr-lookup"
+
+
 async def hlr_lookup(phone: str) -> dict:
     """
-    HLR Query für griechische Mobilnummer.
+    HLR Query für griechische Mobilnummer via www.hlr-lookups.com REST API v2.
 
     Returns:
         {
@@ -67,7 +71,7 @@ async def hlr_lookup(phone: str) -> dict:
             "error": str | None
         }
 
-    Dry Run wenn HLRLOOKUPS_USERNAME nicht gesetzt.
+    Dry Run wenn HLRLOOKUPS_API_KEY (oder legacy HLRLOOKUPS_USERNAME) nicht gesetzt.
     """
     normalized = normalize_greek_number(phone)
 
@@ -80,11 +84,11 @@ async def hlr_lookup(phone: str) -> dict:
             "error": "Μη έγκυρος ελληνικός αριθμός κινητού"
         }
 
-    api_username = os.getenv("HLRLOOKUPS_USERNAME")
-    api_password = os.getenv("HLRLOOKUPS_PASSWORD")
+    api_key = os.getenv("HLRLOOKUPS_API_KEY")
+    api_secret = os.getenv("HLRLOOKUPS_API_SECRET")
 
     # Dry Run — kein Provider konfiguriert
-    if not api_username:
+    if not api_key or not api_secret:
         logger.info(f"[MOD-01] HLR Dry Run für {normalized[:6]}XXXX")
         return {
             "valid":   True,
@@ -94,38 +98,35 @@ async def hlr_lookup(phone: str) -> dict:
             "error":   None
         }
 
-    # Echter HLR Lookup via hlrlookups.com
+    # Echter HLR Lookup via www.hlr-lookups.com API v2 (POST + HTTP Basic Auth)
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(
-                "https://api.hlrlookups.com/",
-                params={
-                    "username": api_username,
-                    "password": api_password,
-                    "msisdn":   normalized.replace("+", ""),
-                },
-                headers={"Accept": "application/json"}
+            response = await client.post(
+                HLR_LOOKUPS_URL,
+                json={"msisdn": normalized},
+                auth=(api_key, api_secret),
+                headers={"Accept": "application/json"},
             )
             response.raise_for_status()
             data = response.json()
 
-            status = data.get("status", "")
-            network = data.get("network", None)
-            country = data.get("country_code", None)
+            conn_status = data.get("connectivity_status", "")
+            network = data.get("original_network_name")
+            country = data.get("original_country_code")
 
             is_greek  = country == "GR" or normalized.startswith("+30")
-            is_active = status in ("0", "active", "ACTIVE", "Live")
+            is_active = conn_status == "CONNECTED"
 
             logger.info(
                 f"[MOD-01] HLR result: {normalized[:6]}XXXX "
-                f"status={status} network={network} country={country}"
+                f"status={conn_status} network={network} country={country}"
             )
 
             return {
                 "valid":   is_greek and is_active,
                 "network": network,
                 "country": country,
-                "status":  status,
+                "status":  conn_status or "UNKNOWN",
                 "error":   None if (is_greek and is_active) else "Ο αριθμός δεν είναι ενεργός ελληνικός αριθμός"
             }
 
