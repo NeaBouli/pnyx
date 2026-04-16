@@ -61,19 +61,15 @@ services:
       dockerfile: apps/api/Dockerfile.prod
     container_name: ekklesia-api
     restart: unless-stopped
+    # env_file injects secrets verbatim (no YAML variable interpolation — safe
+    # for secrets that contain '$' characters such as the HLR API_SECRET)
+    env_file:
+      - /opt/ekklesia/.env.production
     environment:
+      # Composed / fixed values stay here because they reference other vars
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379
-      SECRET_KEY: ${SECRET_KEY}
-      SERVER_SALT: ${SERVER_SALT}
-      ADMIN_KEY: ${ADMIN_KEY}
       OLLAMA_URL: http://ollama:11434
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
-      HF_API_KEY: ${HF_API_KEY:-}
-      HLRLOOKUPS_PROVIDER: ${HLRLOOKUPS_PROVIDER:-hlrlookups}
-      HLRLOOKUPS_API_KEY: ${HLRLOOKUPS_API_KEY:-}
-      HLRLOOKUPS_API_SECRET: ${HLRLOOKUPS_API_SECRET:-}
-      ARWEAVE_WALLET_PATH: ${ARWEAVE_WALLET_PATH:-/opt/ekklesia/arweave-wallet.json}
       ENVIRONMENT: production
     volumes:
       - /opt/ekklesia/arweave-wallet.json:/opt/ekklesia/arweave-wallet.json:ro

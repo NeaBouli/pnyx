@@ -1,7 +1,8 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY apps/web/package*.json ./
-RUN npm ci
+# --legacy-peer-deps: eslint peer-dep conflict in this monorepo (per CLAUDE.md)
+RUN npm ci --legacy-peer-deps
 COPY apps/web/ .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
