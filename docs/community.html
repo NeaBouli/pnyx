@@ -304,7 +304,7 @@
           <div style="font-size:0.6rem;color:var(--gray-400)" data-el="RF Αριθμός:" data-en="RF Number:">RF Αριθμός:</div>
           <div id="srvRF" style="font-size:0.82rem;font-weight:700">—</div>
         </div>
-        <a href="mailto:kaspartisan@proton.me?subject=Server%20Payment" style="display:block;text-align:center;padding:0.4rem;background:#dc2626;color:white;border-radius:0.4rem;font-weight:700;font-size:0.82rem;text-decoration:none" data-el="Πληρωμή" data-en="Pay">Πληρωμή</a>
+        <a id="stripePayBtn" href="https://www.paypal.com/paypalme/VendettaLabs/10" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:0.4rem;background:#dc2626;color:white;border-radius:0.4rem;font-weight:700;font-size:0.82rem;text-decoration:none" data-el="Πληρωμή 10€ Server" data-en="Pay 10€ Server">Πληρωμή 10€ Server →</a>
       </div>
     </div>
 
@@ -545,11 +545,12 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
 <script>
 // @ai-anchor INVOICE_AMPEL_TIMER
 (function() {
+  // Server: monthly billing cycle 16th→16th, 10€/month
+  // Due date = next payment deadline. GREEN while paid, YELLOW 5 days before, RED when overdue.
   var SERVER_DUE_DATE = new Date("2026-05-16T00:00:00");
   var SERVER_RF = "RF__ ____ ____ ____";
+  // Domain: yearly, paid until 2028
   var DOMAIN_DUE_DATE = new Date("2028-03-29T00:00:00");
-  var YELLOW_DAYS = 30;
-  var RED_DAYS = 7;
 
   function fmt(ms) {
     if (ms <= 0) return "00:00:00:00";
@@ -560,7 +561,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
   }
   function pad(n){return String(n).padStart(2,"0");}
 
-  function ampel(ids, dueDate, rfNum, isServer) {
+  function ampel(ids, dueDate, rfNum, yellowDays, redDays) {
     var card=document.getElementById(ids.card);
     var badge=document.getElementById(ids.badge);
     var green=document.getElementById(ids.green);
@@ -571,7 +572,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     var tsub=document.getElementById(ids.tsub);
     if (!card) return;
 
-    if (isServer && !dueDate) {
+    if (!dueDate) {
       card.style.borderColor="#86efac"; badge.style.background="#22c55e";
       if (green) green.style.display="block";
       if (yell) yell.style.display="none";
@@ -581,18 +582,32 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     }
 
     var now=new Date(),ms=dueDate-now,days=Math.ceil(ms/86400000);
-    if (timer) timer.textContent=fmt(ms);
+    if (timer) timer.textContent=fmt(Math.max(0,ms));
 
-    if (days > YELLOW_DAYS) {
-      card.style.borderColor="#86efac"; badge.style.background="#22c55e";
-      badge.setAttribute("data-el","ΕΞΟΦΛΗΜΕΝΟ"); badge.textContent="ΕΞΟΦΛΗΜΕΝΟ";
-      if (tbox) tbox.style.background="#f0fdf4";
-      if (timer) timer.style.color="#166534";
-      if (tsub) tsub.style.color="#166534";
-      if (green) green.style.display="block";
+    if (days <= 0) {
+      // OVERDUE — past due date
+      card.style.borderColor="#fca5a5"; badge.style.background="#ef4444";
+      badge.textContent="ΛΗΞΙΠΡΟΘΕΣΜΟ";
+      if (tbox) tbox.style.background="#fef2f2";
+      if (timer) { timer.style.color="#dc2626"; timer.textContent="ΕΚΠΡΟΘΕΣΜΟ"; }
+      if (tsub) { tsub.style.color="#dc2626"; tsub.textContent=Math.abs(days)+" ημ. καθυστέρηση"; }
+      if (green) green.style.display="none";
       if (yell) yell.style.display="none";
-      if (red) red.style.display="none";
-    } else if (days > RED_DAYS) {
+      if (red) red.style.display="block";
+      var rfEl=document.getElementById("srvRF"); if(rfEl&&rfNum) rfEl.textContent=rfNum;
+    } else if (days <= redDays) {
+      // RED — last few days
+      card.style.borderColor="#fca5a5"; badge.style.background="#ef4444";
+      badge.textContent="ΕΠΕΙΓΟΝ";
+      if (tbox) tbox.style.background="#fef2f2";
+      if (timer) timer.style.color="#dc2626";
+      if (tsub) tsub.style.color="#dc2626";
+      if (green) green.style.display="none";
+      if (yell) yell.style.display="none";
+      if (red) red.style.display="block";
+      var rfEl2=document.getElementById("srvRF"); if(rfEl2&&rfNum) rfEl2.textContent=rfNum;
+    } else if (days <= yellowDays) {
+      // YELLOW — approaching
       card.style.borderColor="#fde047"; badge.style.background="#f59e0b";
       badge.textContent="ΣΚΟΠΕΥΕΤΑΙ";
       if (tbox) tbox.style.background="#fefce8";
@@ -602,21 +617,23 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
       if (yell) yell.style.display="block";
       if (red) red.style.display="none";
     } else {
-      card.style.borderColor="#fca5a5"; badge.style.background="#ef4444";
-      badge.textContent="ΛΗΞΙΠΡΟΘΕΣΜΟ";
-      if (tbox) tbox.style.background="#fef2f2";
-      if (timer) timer.style.color="#dc2626";
-      if (tsub) tsub.style.color="#dc2626";
-      if (green) green.style.display="none";
+      // GREEN — paid, all good
+      card.style.borderColor="#86efac"; badge.style.background="#22c55e";
+      badge.textContent="ΕΞΟΦΛΗΜΕΝΟ";
+      if (tbox) tbox.style.background="#f0fdf4";
+      if (timer) timer.style.color="#166534";
+      if (tsub) tsub.style.color="#166534";
+      if (green) green.style.display="block";
       if (yell) yell.style.display="none";
-      if (red) red.style.display="block";
-      var rfEl=document.getElementById("srvRF"); if(rfEl&&rfNum) rfEl.textContent=rfNum;
+      if (red) red.style.display="none";
     }
   }
 
   function tick() {
-    ampel({card:"sCard",badge:"sBadge",green:"sGreen",yellow:"sYellow",red:"sRed",tbox:"sTbox",timer:"sTimer",tsub:"sTsub"}, SERVER_DUE_DATE, SERVER_RF, true);
-    ampel({card:"dCard",badge:"dBadge",green:"dGreen",yellow:"dYellow",red:"dRed",tbox:"dTbox",timer:"dTimer",tsub:"dTsub"}, DOMAIN_DUE_DATE, null, false);
+    // Server: green > 5 days, yellow 3-5 days, red < 3 days / overdue
+    ampel({card:"sCard",badge:"sBadge",green:"sGreen",yellow:"sYellow",red:"sRed",tbox:"sTbox",timer:"sTimer",tsub:"sTsub"}, SERVER_DUE_DATE, SERVER_RF, 5, 3);
+    // Domain: green > 30 days, yellow 7-30 days, red < 7 days
+    ampel({card:"dCard",badge:"dBadge",green:"dGreen",yellow:"dYellow",red:"dRed",tbox:"dTbox",timer:"dTimer",tsub:"dTsub"}, DOMAIN_DUE_DATE, null, 30, 7);
   }
   tick();
   setInterval(tick, 1000);
