@@ -4,6 +4,15 @@ COPY apps/web/package*.json ./
 # --legacy-peer-deps: eslint peer-dep conflict in this monorepo (per CLAUDE.md)
 RUN npm ci --legacy-peer-deps
 COPY apps/web/ .
+# Copy docs/ static content (GitHub Pages site) into public/ so Next.js
+# serves wiki, votes, tickets, community, SEO files as static assets.
+# Build context is repo root (../../ from compose), so docs/ is accessible.
+COPY docs/wiki/ ./public/wiki/
+COPY docs/votes/ ./public/votes/
+COPY docs/tickets/ ./public/tickets/
+COPY docs/logo/ ./public/logo/
+COPY docs/community.html docs/parliament.jpg docs/favicon.ico ./public/
+COPY docs/robots.txt docs/sitemap.xml docs/llms.txt ./public/
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
