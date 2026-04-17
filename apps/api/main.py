@@ -1,5 +1,11 @@
+import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+
+logger = logging.getLogger(__name__)
 from routers import identity, vaa, parliament, voting
 from routers import arweave
 from routers import scraper
@@ -12,12 +18,38 @@ from routers import admin
 from routers import notifications
 from routers import municipal
 
+scheduler = AsyncIOScheduler()
+
+
+async def scheduled_scrape():
+    """Scrape parliament bills every 6 hours (MOD-03 cron + MOD-10 scraper)."""
+    from routers.scraper import scrape_parliament_bills
+    try:
+        bills = await scrape_parliament_bills(limit=20)
+        logger.info(f"[MOD-03] Scheduled scrape: {len(bills)} bills found")
+    except Exception as e:
+        logger.error(f"[MOD-03] Scheduled scrape failed: {e}")
+
+
+@asynccontextmanager
+async def lifespan(app):
+    # Startup
+    scheduler.add_job(scheduled_scrape, IntervalTrigger(hours=6), id="parliament_scrape", replace_existing=True)
+    scheduler.start()
+    logger.info("[MOD-03] APScheduler started — parliament scrape every 6h")
+    yield
+    # Shutdown
+    scheduler.shutdown()
+    logger.info("[MOD-03] APScheduler shut down")
+
+
 app = FastAPI(
     title="Ekklesia.gr API",
     description="Ψηφιακή Πλατφόρμα Αμέσης Δημοκρατίας — Backend API",
     version="0.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 app.add_middleware(

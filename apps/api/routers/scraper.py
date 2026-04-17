@@ -222,27 +222,47 @@ async def generate_summaries(bill_text: str, title_el: str) -> dict:
 
 # ── Parliament Scraper ────────────────────────────────────────────────────────
 
+PARLIAMENT_API = "https://www.hellenicparliament.gr/api.ashx"
+
+
 async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
-    """Scraped aktuelle Gesetzentwürfe von hellenicparliament.gr."""
-    urls = [
-        f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Psifisthenta-Nomoschedia",
-        f"{PARLIAMENT_BASE}/Vouli-ton-Ellinon/ToKtirio/",
-    ]
+    """Fetches latest bills from hellenicparliament.gr official REST API.
 
+    Uses the Open Data API (api.ashx?q=laws) instead of HTML scraping.
+    Categories: ν = Σχέδιο νόμου (bill), νο = Νόμος (law), πν = Πρόταση νόμου (proposal).
+    """
     bills = []
-    for url in urls:
-        html = await fetch_with_fallback(url)
-        if not html:
-            continue
-
-        if not html.strip().startswith("<"):
-            for line in html.split("\n"):
-                line = line.strip()
-                if len(line) > 30 and any(kw in line.lower() for kw in ["νόμος", "νομοσχέδιο", "ν."]):
-                    bills.append({"title_el": line[:200], "url": url, "date": None})
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            # Fetch recent bills (Σχέδια νόμου + ψηφισθέντα)
+            for cat in ["%CE%BD", "%CE%BD%CE%BF"]:  # ν (bills), νο (laws)
+                r = await client.get(PARLIAMENT_API, params={"q": "laws", "cat": cat})
+                if r.status_code != 200:
+                    continue
+                data = r.json()
+                for item in data.get("Data", []):
+                    # Parse .NET date format /Date(1775595600000+0300)/
+                    date_str = item.get("LawPhaseDate", "")
+                    date = None
+                    if date_str:
+                        ts_match = re.search(r"/Date\((\d+)", date_str)
+                        if ts_match:
+                            date = datetime.fromtimestamp(int(ts_match.group(1)) / 1000).isoformat()
+                    bills.append({
+                        "title_el": item.get("Title", "")[:200],
+                        "url": f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Anazitisi-Nomothetikon-Ergon?law_id={item.get('ID', '')}",
+                        "date": date,
+                        "law_num": item.get("LawNum"),
+                        "ministry": item.get("Ministry"),
+                        "type": item.get("Type"),
+                    })
                 if len(bills) >= limit:
                     break
-        else:
+    except Exception as e:
+        logger.warning(f"[MOD-10] Parliament API error: {e}")
+        # Fallback: try HTML scraping via Jina Reader
+        html = await fetch_with_fallback(f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Psifisthenta-Nomoschedia")
+        if html:
             soup = BeautifulSoup(html, "html.parser")
             for link in soup.find_all("a", href=True):
                 text = link.get_text(strip=True)
@@ -252,8 +272,6 @@ async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
                     bills.append({"title_el": text[:200], "url": full_url, "date": None})
                 if len(bills) >= limit:
                     break
-        if bills:
-            break
 
     return bills[:limit]
 
