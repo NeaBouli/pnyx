@@ -143,6 +143,13 @@ export const mp = {
   bill:    (id: string)   => _get(`/mp/bill/${id}`),
 };
 
+// MOD-16: Municipal
+export const municipal = {
+  periferias: ()              => _get("/periferia"),
+  dimoi:      (id: number)    => _get(`/periferia/${id}/dimos`),
+  decisions:  ()              => _get("/decisions"),
+};
+
 // MOD-14: Export URLs
 export const exportUrls = {
   billsCsv:      `${API_URL}/api/v1/export/bills.csv`,
