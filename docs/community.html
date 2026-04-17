@@ -289,12 +289,12 @@
       <div class="fc-sub">Hetzner CX33 &middot; EU &middot; GDPR</div>
       <div class="fc-info">
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong>10€/<span data-el="μήνα" data-en="month">μήνα</span></strong></div>
-        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κατάσταση:" data-en="Status:">Κατάσταση:</span><strong style="color:#92400e" id="sDue" data-el="Σε διαδικασία εγγραφής" data-en="Registration in progress">Σε διαδικασία εγγραφής</strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κατάσταση:" data-en="Status:">Κατάσταση:</span><strong style="color:#166534" id="sDue" data-el="Ενεργός — πληρωμένο" data-en="Active — paid">Ενεργός — πληρωμένο</strong></div>
       </div>
       <div class="fc-tbox" id="sTbox" style="background:#fefce8">
         <div style="font-size:0.65rem;font-weight:700;color:#92400e;margin-bottom:0.2rem" data-el="Χρόνος μέχρι χρέωση" data-en="Time until charge">Χρόνος μέχρι χρέωση</div>
         <div class="fc-timer" id="sTimer" style="color:#92400e">—</div>
-        <div class="fc-tsub" id="sTsub" style="color:#92400e" data-el="(Αναμονή εγγραφής)" data-en="(Awaiting registration)">(Αναμονή εγγραφής)</div>
+        <div class="fc-tsub" id="sTsub" style="color:#92400e" data-el="ημ · ώ · λ · δ" data-en="d · h · m · s">ημ · ώ · λ · δ</div>
       </div>
       <div class="fc-status" id="sGreen" style="display:none;background:#f0fdf4;color:#166534">✅ <span data-el="Καμία οφειλή" data-en="No invoice">Καμία οφειλή</span></div>
       <div class="fc-status" id="sYellow" style="background:#fefce8;color:#92400e">⏳ <span data-el="Σε διαδικασία εγγραφής" data-en="Registration in progress">Σε διαδικασία εγγραφής</span></div>
@@ -370,21 +370,6 @@
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κατάσταση:" data-en="Status:">Κατάσταση:</span><strong style="color:#166534" data-el="Dry Run — API έτοιμο" data-en="Dry Run — API ready">Dry Run — API έτοιμο</strong></div>
       </div>
       <div class="fc-status" style="background:#f0fdf4;color:#166534;margin-top:0.5rem">✅ <span data-el="verify_greek_number() ενεργό" data-en="verify_greek_number() active">verify_greek_number() ενεργό</span></div>
-    </div>
-
-    <!-- DEVELOPER DONATIONS — PayPal.me -->
-    <div class="fc" style="border-color:#0070ba">
-      <div class="fc-badge" style="background:#0070ba" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
-      <div class="fc-icon">💙</div>
-      <div class="fc-title" data-el="Στήριξη Ανάπτυξης" data-en="Support Development">Στήριξη Ανάπτυξης</div>
-      <div class="fc-sub" data-el="Προαιρετική δωρεά στους προγραμματιστές" data-en="Optional donation to developers">Προαιρετική δωρεά στους προγραμματιστές</div>
-      <div class="fc-info">
-        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Μέσω:" data-en="Via:">Μέσω:</span><strong>PayPal</strong></div>
-        <div class="fc-row"><span style="color:var(--gray-700)">Account:</span><strong>VendettaLabs</strong></div>
-        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Ποσό:" data-en="Amount:">Ποσό:</span><strong data-el="Ελεύθερο" data-en="Any amount">Ελεύθερο</strong></div>
-      </div>
-      <a href="https://www.paypal.com/paypalme/k9GR" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:0.5rem;background:#0070ba;color:white;border-radius:0.4rem;font-weight:700;font-size:0.82rem;text-decoration:none;margin-top:0.5rem" data-el="Δωρεά μέσω PayPal" data-en="Donate via PayPal">Δωρεά μέσω PayPal →</a>
-      <div style="text-align:center;margin-top:0.3rem;font-size:0.6rem;color:var(--gray-400)" data-el="100% στους προγραμματιστές — κανένα overhead" data-en="100% to developers — zero overhead">100% στους προγραμματιστές — κανένα overhead</div>
     </div>
 
   </div>
@@ -545,7 +530,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
 <script>
 // @ai-anchor INVOICE_AMPEL_TIMER
 (function() {
-  var SERVER_DUE_DATE = null;
+  var SERVER_DUE_DATE = new Date("2026-05-16T00:00:00");
   var SERVER_RF = "RF__ ____ ____ ____";
   var DOMAIN_DUE_DATE = new Date("2028-03-29T00:00:00");
   var YELLOW_DAYS = 30;
