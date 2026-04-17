@@ -135,7 +135,7 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
 
     # Cascade: SurveyResponses (VAA — Art. 9 GDPR)
     await db.execute(
-        text("DELETE FROM survey_responses WHERE nullifier_hash = :nh"),
+        text("DELETE FROM survey_responses WHERE user_hash = :nh"),
         {"nh": nullifier}
     )
     await db.commit()
