@@ -6,7 +6,7 @@ import asyncio
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from database import engine, get_db_context
+from database import engine, AsyncSessionLocal
 from models import Periferia, Dimos
 from sqlalchemy import select
 
@@ -94,10 +94,7 @@ DIMOI = {
 
 
 async def seed():
-    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-    async with async_session() as db:
+    async with AsyncSessionLocal() as db:
         inserted_p = 0
         updated_p = 0
         for name_el, name_en, code in PERIFERIAS:
