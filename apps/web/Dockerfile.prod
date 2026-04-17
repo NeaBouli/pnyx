@@ -11,7 +11,7 @@ COPY docs/wiki/ ./public/wiki/
 COPY docs/votes/ ./public/votes/
 COPY docs/tickets/ ./public/tickets/
 COPY docs/logo/ ./public/logo/
-COPY docs/community.html docs/parliament.jpg docs/favicon.ico ./public/
+COPY docs/index.html docs/community.html docs/parliament.jpg docs/favicon.ico ./public/
 COPY docs/robots.txt docs/sitemap.xml docs/llms.txt ./public/
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
