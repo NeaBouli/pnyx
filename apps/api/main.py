@@ -10,6 +10,7 @@ from routers import mp
 from routers import govgr
 from routers import admin
 from routers import notifications
+from routers import municipal
 
 app = FastAPI(
     title="Ekklesia.gr API",
@@ -40,6 +41,7 @@ app.include_router(mp.router)
 app.include_router(govgr.router)
 app.include_router(admin.router)
 app.include_router(notifications.router)
+app.include_router(municipal.router)
 
 @app.get("/health")
 async def health():
@@ -64,6 +66,7 @@ async def health():
             "MOD-14 Relevance",
             "MOD-07 Notifications",
             "MOD-15 Admin Panel",
+            "MOD-16 Municipal Governance",
         ]
     }
 

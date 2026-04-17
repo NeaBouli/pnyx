@@ -10,7 +10,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import select, update, text
 
 from database import get_db
 from models import IdentityRecord, KeyStatus
@@ -136,7 +136,7 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
     # Cascade: SurveyResponses (VAA — Art. 9 GDPR)
     await db.execute(
         text("DELETE FROM survey_responses WHERE nullifier_hash = :nh"),
-        {"nh": nullifier_hash}
+        {"nh": nullifier}
     )
     await db.commit()
 

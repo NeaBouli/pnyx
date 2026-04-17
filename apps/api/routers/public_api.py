@@ -10,6 +10,7 @@ Rate Limits:
 @ai-anchor MOD11_PUBLIC_API
 """
 import hashlib
+import json
 import secrets
 import logging
 import time
@@ -29,18 +30,34 @@ from models import (
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/public", tags=["MOD-11 Public API"])
 
-# ── API Key Store (In-Memory Beta — später DB) ────────────────────────────────
 
-API_KEY_STORE: dict = {}
+# ── Redis-backed API Key Store ────────────────────────────────────────────────
+
+import redis.asyncio as aioredis
+import os
+
+_redis_client: Optional[aioredis.Redis] = None
+REDIS_KEY_HASH = "public_api:keys"
+
+
+async def get_redis() -> aioredis.Redis:
+    global _redis_client
+    if _redis_client is None:
+        url = os.getenv("REDIS_URL", "redis://localhost:6379")
+        _redis_client = aioredis.from_url(url, decode_responses=True)
+    return _redis_client
+
 
 def hash_key(key: str) -> str:
     return hashlib.sha256(key.encode()).hexdigest()
 
-def verify_api_key(key: str) -> bool:
-    return hash_key(key) in API_KEY_STORE
+
+async def verify_api_key(key: str) -> bool:
+    r = await get_redis()
+    return await r.hexists(REDIS_KEY_HASH, hash_key(key))
 
 
-# ── Rate Limiter (In-Memory) ─────────────────────────────────────────────────
+# ── Rate Limiter (In-Memory — acceptable for single-instance) ────────────────
 
 request_counts: dict = defaultdict(list)
 
@@ -61,7 +78,7 @@ async def rate_limit_check(
 ):
     """Dependency für Rate Limiting."""
     identifier = x_api_key if x_api_key else (request.client.host if request.client else "unknown")
-    limit = 1000 if (x_api_key and verify_api_key(x_api_key)) else 100
+    limit = 1000 if (x_api_key and await verify_api_key(x_api_key)) else 100
     if not check_rate_limit(identifier, limit):
         raise HTTPException(
             status_code=429,
@@ -82,10 +99,11 @@ async def generate_api_key(label: str = "ekklesia-client"):
     """Generiert einen API Key — kein Konto nötig."""
     key = f"ek_{secrets.token_urlsafe(32)}"
     hashed = hash_key(key)
-    API_KEY_STORE[hashed] = {
+    r = await get_redis()
+    await r.hset(REDIS_KEY_HASH, hashed, json.dumps({
         "label":      label[:50],
         "created_at": datetime.now(timezone.utc).isoformat(),
-    }
+    }))
     logger.info(f"[MOD-11] API Key generiert: label={label}")
     return {
         "api_key":    key,
@@ -103,10 +121,12 @@ async def api_key_status(x_api_key: Optional[str] = Header(None, alias="X-API-Ke
         return {"authenticated": False, "rate_limit": "100 req/min"}
 
     hashed = hash_key(x_api_key)
-    if hashed not in API_KEY_STORE:
+    r = await get_redis()
+    raw = await r.hget(REDIS_KEY_HASH, hashed)
+    if not raw:
         raise HTTPException(401, "Ungültiger API Key")
 
-    info = API_KEY_STORE[hashed]
+    info = json.loads(raw)
     return {"authenticated": True, "label": info["label"], "rate_limit": "1000 req/min"}
 
 
