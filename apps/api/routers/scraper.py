@@ -236,7 +236,14 @@ async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
         async with httpx.AsyncClient(timeout=15.0) as client:
             # Fetch recent bills (Σχέδια νόμου + ψηφισθέντα)
             for cat in ["%CE%BD", "%CE%BD%CE%BF"]:  # ν (bills), νο (laws)
-                r = await client.get(PARLIAMENT_API, params={"q": "laws", "cat": cat})
+                r = await client.get(
+                    PARLIAMENT_API, params={"q": "laws", "cat": cat},
+                    headers={"User-Agent": "Mozilla/5.0 (compatible; Ekklesia/1.0; +https://ekklesia.gr)",
+                             "Accept": "application/json", "Accept-Language": "el-GR,el;q=0.9"},
+                )
+                if r.status_code == 403:
+                    logger.warning("[MOD-10] Parliament API blocked (403) — datacenter IP restricted")
+                    break
                 if r.status_code != 200:
                     continue
                 data = r.json()
