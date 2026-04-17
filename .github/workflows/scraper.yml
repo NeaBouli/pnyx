@@ -1,0 +1,106 @@
+name: Parliament Bill Scraper
+
+# Fetches latest bills from hellenicparliament.gr Open Data API
+# and imports them into ekklesia.gr via POST /api/v1/scraper/import.
+# Runs on GitHub's IPs (not blocked by parliament WAF, unlike Hetzner).
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:        # Manual trigger
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify secrets
+        run: |
+          if [ -z "${{ secrets.EKKLESIA_ADMIN_KEY }}" ]; then
+            echo "::error::EKKLESIA_ADMIN_KEY secret not set"
+            exit 1
+          fi
+
+      - name: Fetch bills from hellenicparliament.gr API
+        run: |
+          echo "Fetching bills from parliament Open Data API..."
+          BILLS="[]"
+          for CAT in "%CE%BD" "%CE%BD%CE%BF"; do
+            RESP=$(curl -sS --max-time 30 \
+              "https://www.hellenicparliament.gr/api.ashx?q=laws&cat=${CAT}" \
+              -H "Accept: application/json" \
+              -H "User-Agent: Mozilla/5.0 (compatible; Ekklesia/1.0; +https://ekklesia.gr)")
+
+            if echo "$RESP" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
+              PAGE_BILLS=$(echo "$RESP" | python3 -c "
+          import sys, json, re
+          d = json.load(sys.stdin)
+          bills = []
+          for item in d.get('Data', []):
+              law_num = item.get('LawNum', '')
+              if not law_num: continue
+              date = None
+              ds = item.get('LawPhaseDate', '')
+              if ds:
+                  m = re.search(r'/Date\((\d+)', ds)
+                  if m:
+                      from datetime import datetime
+                      date = datetime.fromtimestamp(int(m.group(1))/1000).isoformat()
+              bills.append({
+                  'bill_id': f'GR-{law_num}',
+                  'title_el': item.get('Title', ''),
+                  'ministry': item.get('Ministry', ''),
+                  'law_num': law_num,
+                  'vote_date': date
+              })
+          print(json.dumps(bills))
+          ")
+              BILLS=$(echo "$BILLS" "$PAGE_BILLS" | python3 -c "
+          import sys, json
+          arrays = []
+          for line in sys.stdin:
+              line = line.strip()
+              if line:
+                  arrays.extend(json.loads(line))
+          print(json.dumps(arrays))
+          ")
+            else
+              echo "::warning::Failed to parse response for cat=${CAT}"
+            fi
+          done
+
+          COUNT=$(echo "$BILLS" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))")
+          echo "Fetched ${COUNT} bills from parliament API"
+          echo "$BILLS" > /tmp/bills.json
+
+      - name: Import into ekklesia.gr
+        run: |
+          COUNT=$(python3 -c "import json; print(len(json.load(open('/tmp/bills.json'))))")
+          echo "Importing ${COUNT} bills..."
+
+          PAYLOAD=$(python3 -c "
+          import json
+          bills = json.load(open('/tmp/bills.json'))
+          print(json.dumps({
+              'admin_key': '${{ secrets.EKKLESIA_ADMIN_KEY }}',
+              'bills': bills[:20]
+          }))
+          ")
+
+          RESP=$(curl -sS --max-time 30 \
+            -X POST "https://api.ekklesia.gr/api/v1/scraper/import" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")
+
+          echo "Response: $RESP"
+
+          # Check success
+          echo "$RESP" | python3 -c "
+          import sys, json
+          d = json.load(sys.stdin)
+          imported = d.get('imported', 0)
+          skipped = d.get('skipped', 0)
+          print(f'Imported: {imported}, Skipped: {skipped}')
+          if not d.get('success'):
+              print('::error::Import failed')
+              sys.exit(1)
+          "

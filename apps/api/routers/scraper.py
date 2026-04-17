@@ -375,3 +375,70 @@ async def fetch_and_store(
         "provider": summaries.get("_provider"),
         "categories": summaries.get("categories"),
     }
+
+
+from pydantic import BaseModel
+from typing import List
+
+
+class BillImportItem(BaseModel):
+    bill_id: str
+    title_el: str
+    ministry: str = ""
+    law_num: str = ""
+    vote_date: str | None = None  # ISO format
+
+
+class BillImportRequest(BaseModel):
+    admin_key: str
+    bills: List[BillImportItem]
+
+
+@router.post("/import")
+async def import_parliament_bills(
+    req: BillImportRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Bulk import structured bill data.
+    Called by GitHub Actions scraper workflow which fetches from
+    hellenicparliament.gr API (GitHub IPs are not blocked).
+    Accepts pre-structured JSON, stores new bills, skips duplicates.
+    """
+    if req.admin_key != os.environ.get("ADMIN_KEY", "dev-admin-key"):
+        raise HTTPException(403, "Ungültiger Admin-Key")
+
+    imported = 0
+    skipped = 0
+
+    for item in req.bills:
+        existing = await db.execute(
+            select(ParliamentBill).where(ParliamentBill.id == item.bill_id)
+        )
+        if existing.scalar_one_or_none():
+            skipped += 1
+            continue
+
+        summaries = summarize_rule_based(item.title_el, item.title_el)
+        date = None
+        if item.vote_date:
+            try:
+                date = datetime.fromisoformat(item.vote_date)
+            except ValueError:
+                pass
+
+        bill = ParliamentBill(
+            id=item.bill_id, title_el=item.title_el,
+            pill_el=f"Ν. {item.law_num}: {item.title_el[:100]}" if item.law_num else item.title_el[:120],
+            pill_en=f"Law {item.law_num}: {item.ministry[:80]}" if item.law_num else "",
+            summary_short_el=f"Νόμος {item.law_num} — {item.ministry}. {item.title_el}" if item.law_num else item.title_el,
+            summary_short_en=f"Law {item.law_num} by {item.ministry}." if item.law_num else "",
+            categories=summaries.get("categories", ["Νομοθεσία"]),
+            status=BillStatus.ANNOUNCED,
+            parliament_vote_date=date,
+        )
+        db.add(bill)
+        imported += 1
+
+    await db.commit()
+    logger.info(f"[MOD-10] Import: {imported} new, {skipped} skipped")
+    return {"success": True, "imported": imported, "skipped": skipped}
