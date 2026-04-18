@@ -9,11 +9,45 @@
 </head>
 <body>
 
-<div style="background:#fef3c7;border-left:4px solid #f59e0b;border-radius:0.5rem;padding:0.75rem 1rem;margin:0.75rem auto;max-width:800px">
-  <p style="margin:0;font-size:0.82rem;color:#92400e;font-weight:600">
+<!-- PHASE A BANNER -->
+<div style="background:#dbeafe;border-left:4px solid #2563eb;border-radius:0.5rem;padding:0.75rem 1rem;margin:0.75rem auto;max-width:800px">
+  <p style="margin:0;font-size:0.82rem;color:#1e40af;font-weight:600" data-polis-el="📱 Φάση Α — Για να δημιουργήσετε ticket ή να ψηφίσετε, χρειάζεστε επαλήθευση μέσω smartphone." data-polis-en="📱 Phase A — To create tickets or vote, smartphone verification is required.">
+    📱 Φάση Α — Για να δημιουργήσετε ticket ή να ψηφίσετε, χρειάζεστε επαλήθευση μέσω smartphone.
+  </p>
+</div>
+<div style="background:#fef3c7;border-left:4px solid #f59e0b;border-radius:0.5rem;padding:0.75rem 1rem;margin:0.25rem auto 0.75rem;max-width:800px">
+  <p style="margin:0;font-size:0.82rem;color:#92400e;font-weight:600" data-polis-el="⚠️ ΠΟΤΕ πραγματικό όνομα — το ticket συνδέεται με τον δημόσιο κλειδί σας." data-polis-en="⚠️ NEVER use real name — the ticket is linked to your public key.">
     ⚠️ ΠΟΤΕ πραγματικό όνομα — το ticket συνδέεται με τον δημόσιο κλειδί σας.
   </p>
 </div>
+<!-- PHASE A MODAL -->
+<div id="phaseAModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:1rem;padding:2rem;max-width:400px;margin:1rem;text-align:center">
+    <div style="font-size:2.5rem;margin-bottom:0.75rem">📱</div>
+    <h3 style="font-weight:900;margin-bottom:0.5rem" data-polis-el="Απαιτείται Επαλήθευση Smartphone" data-polis-en="Smartphone Verification Required">Απαιτείται Επαλήθευση Smartphone</h3>
+    <p style="color:#64748b;font-size:0.85rem;line-height:1.6;margin-bottom:1rem" data-polis-el="Στη Φάση Α, οι ενέργειες στο POLIS απαιτούν επαλήθευση ελληνικής SIM. Ανοίξτε το ekklesia.gr στο smartphone σας και εγκαταστήστε την εφαρμογή." data-polis-en="In Phase A, POLIS actions require Greek SIM verification. Open ekklesia.gr on your smartphone and install the app.">Στη Φάση Α, οι ενέργειες στο POLIS απαιτούν επαλήθευση ελληνικής SIM. Ανοίξτε το ekklesia.gr στο smartphone σας και εγκαταστήστε την εφαρμογή.</p>
+    <a href="../#download" style="display:inline-block;padding:0.5rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;font-weight:700;text-decoration:none;margin-bottom:0.5rem" data-polis-el="Οδηγίες Εγκατάστασης →" data-polis-en="Installation Guide →">Οδηγίες Εγκατάστασης →</a>
+    <br/><button onclick="document.getElementById('phaseAModal').style.display='none'" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:0.8rem;margin-top:0.5rem" data-polis-el="Κλείσιμο" data-polis-en="Close">Κλείσιμο</button>
+  </div>
+</div>
+<!-- PHASE B: When gov.gr OAuth is available, enable web browser verification
+     Remove smartphone-only restrictions and enable full desktop functionality -->
+<script>
+// Phase A: detect desktop → intercept action buttons
+var isDesktop = !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+function showPhaseAModal() {
+  document.getElementById("phaseAModal").style.display = "flex";
+  return false;
+}
+// Override new ticket + vote buttons on desktop
+if (isDesktop) {
+  document.addEventListener("DOMContentLoaded", function() {
+    // Override new ticket button
+    var newBtn = document.querySelector(".btn-new-ticket");
+    if (newBtn) newBtn.onclick = function(e) { e.preventDefault(); return showPhaseAModal(); };
+  });
+}
+</script>
 
 <nav>
   <a href="../" class="nav-logo"><img src="../pnx.png" alt="logo"/>εκκλησία</a>
