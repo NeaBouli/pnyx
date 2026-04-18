@@ -939,6 +939,81 @@
   </div>
 </section>
 
+<!-- NEWSLETTER SIGNUP — MOD-19 -->
+<section id="newsletter" style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);padding:3rem 1.5rem">
+  <div style="max-width:520px;margin:0 auto;text-align:center">
+    <h2 style="color:#e2e8f0;font-size:1.5rem;font-weight:900;margin-bottom:0.5rem" data-el="📬 Ενημέρωση" data-en="📬 Stay Informed">📬 Ενημέρωση</h2>
+    <p style="color:#94a3b8;font-size:0.88rem;margin-bottom:1.5rem" data-el="Λάβετε ενημερώσεις για νέες ψηφοφορίες και αποτελέσματα." data-en="Get updates on new votes and results.">Λάβετε ενημερώσεις για νέες ψηφοφορίες και αποτελέσματα.</p>
+    <form id="nlForm" onsubmit="submitNewsletter(event)" style="text-align:left">
+      <input type="email" id="nlEmail" required placeholder="email@example.com" style="width:100%;padding:0.65rem 1rem;background:#1e293b;border:2px solid #334155;border-radius:0.5rem;color:#e2e8f0;font-size:0.9rem;margin-bottom:0.75rem;outline:none" />
+      <div style="display:flex;gap:1rem;margin-bottom:0.75rem">
+        <label style="color:#94a3b8;font-size:0.8rem;display:flex;align-items:center;gap:0.3rem"><input type="radio" name="freq" value="weekly" checked style="accent-color:#2563eb"> <span data-el="Εβδομαδιαίο" data-en="Weekly">Εβδομαδιαίο</span></label>
+        <label style="color:#94a3b8;font-size:0.8rem;display:flex;align-items:center;gap:0.3rem"><input type="radio" name="freq" value="monthly" style="accent-color:#2563eb"> <span data-el="Μηνιαίο" data-en="Monthly">Μηνιαίο</span></label>
+      </div>
+      <select id="nlType" style="width:100%;padding:0.5rem;background:#1e293b;border:2px solid #334155;border-radius:0.5rem;color:#94a3b8;font-size:0.8rem;margin-bottom:0.75rem">
+        <option value="citizens" data-el="Πολίτης" data-en="Citizen">Πολίτης</option>
+        <option value="press" data-el="Τύπος" data-en="Press">Τύπος</option>
+        <option value="parties" data-el="Κόμμα" data-en="Party">Κόμμα</option>
+        <option value="public_bodies" data-el="Δημόσιος Φορέας" data-en="Public Body">Δημόσιος Φορέας</option>
+        <option value="ngos" data-el="ΜΚΟ / Σύλλογος" data-en="NGO">ΜΚΟ / Σύλλογος</option>
+        <option value="government" data-el="Κυβέρνηση" data-en="Government">Κυβέρνηση</option>
+      </select>
+      <div style="display:flex;flex-wrap:wrap;gap:0.5rem 1rem;margin-bottom:0.75rem;font-size:0.78rem;color:#94a3b8">
+        <label style="display:flex;align-items:center;gap:0.3rem"><input type="checkbox" id="nlVotes" checked style="accent-color:#2563eb"> <span data-el="Ψηφοφορίες" data-en="Votes">Ψηφοφορίες</span></label>
+        <label style="display:flex;align-items:center;gap:0.3rem"><input type="checkbox" id="nlResults" checked style="accent-color:#2563eb"> <span data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</span></label>
+        <label style="display:flex;align-items:center;gap:0.3rem"><input type="checkbox" id="nlProposals" style="accent-color:#2563eb"> <span data-el="Νέες Προτάσεις" data-en="New Proposals">Νέες Προτάσεις</span></label>
+        <label style="display:flex;align-items:center;gap:0.3rem"><input type="checkbox" id="nlSystem" style="accent-color:#2563eb"> <span data-el="Σύστημα" data-en="System">Σύστημα</span></label>
+        <label style="display:flex;align-items:center;gap:0.3rem"><input type="checkbox" id="nlBreaking" style="accent-color:#2563eb"> <span data-el="Ειδήσεις" data-en="News">Ειδήσεις</span></label>
+      </div>
+      <div style="display:flex;gap:1rem;margin-bottom:1rem">
+        <label style="color:#94a3b8;font-size:0.8rem;display:flex;align-items:center;gap:0.3rem"><input type="radio" name="lang" value="el" checked style="accent-color:#2563eb"> Ελληνικά</label>
+        <label style="color:#94a3b8;font-size:0.8rem;display:flex;align-items:center;gap:0.3rem"><input type="radio" name="lang" value="en" style="accent-color:#2563eb"> English</label>
+      </div>
+      <button type="submit" id="nlBtn" style="width:100%;padding:0.7rem;background:#2563eb;color:white;border:none;border-radius:0.5rem;font-weight:800;font-size:0.9rem;cursor:pointer" data-el="📬 Εγγραφή" data-en="📬 Subscribe">📬 Εγγραφή</button>
+      <div id="nlMsg" style="display:none;margin-top:0.5rem;padding:0.5rem;border-radius:0.4rem;font-size:0.78rem;text-align:center"></div>
+      <p style="color:#475569;font-size:0.65rem;text-align:center;margin-top:0.75rem" data-el="🔒 Double opt-in · GDPR · Θα λάβετε email επιβεβαίωσης" data-en="🔒 Double opt-in · GDPR · You will receive a confirmation email">🔒 Double opt-in · GDPR · Θα λάβετε email επιβεβαίωσης</p>
+    </form>
+  </div>
+</section>
+<script>
+async function submitNewsletter(e) {
+  e.preventDefault();
+  var btn = document.getElementById("nlBtn");
+  var msg = document.getElementById("nlMsg");
+  btn.disabled = true; btn.textContent = "...";
+  try {
+    var r = await fetch("https://api.ekklesia.gr/api/v1/newsletter/subscribe", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        email: document.getElementById("nlEmail").value,
+        subscriber_type: document.getElementById("nlType").value,
+        frequency: document.querySelector('input[name="freq"]:checked').value,
+        language: document.querySelector('input[name="lang"]:checked').value,
+        topic_active_votes: document.getElementById("nlVotes").checked,
+        topic_vote_results: document.getElementById("nlResults").checked,
+        topic_new_proposals: document.getElementById("nlProposals").checked,
+        topic_system_news: document.getElementById("nlSystem").checked,
+        topic_breaking_news: document.getElementById("nlBreaking").checked,
+      })
+    });
+    var d = await r.json();
+    msg.style.display = "block";
+    if (d.success) {
+      msg.style.background = "#052e16"; msg.style.color = "#22c55e";
+      msg.textContent = d.message;
+    } else {
+      msg.style.background = "#450a0a"; msg.style.color = "#ef4444";
+      msg.textContent = d.detail || d.message || "Error";
+    }
+  } catch(err) {
+    msg.style.display = "block"; msg.style.background = "#450a0a"; msg.style.color = "#ef4444";
+    msg.textContent = "Network error";
+  }
+  btn.disabled = false; btn.textContent = "📬 Εγγραφή";
+}
+</script>
+
 <footer>
   <div class="footer-links">
     <a href="/">Αρχική</a>
