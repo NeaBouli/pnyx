@@ -387,7 +387,7 @@
     <!-- MIRROR SERVER — VOLUNTEERS WANTED -->
     <div class="fc" style="border-color:#a855f7">
       <div class="fc-badge" style="background:#a855f7" data-el="ΑΝΑΖΗΤΟΥΜΕ" data-en="SEEKING">ΑΝΑΖΗΤΟΥΜΕ</div>
-      <div class="fc-icon">🪞</div>
+      <div class="fc-icon">🙏🖥️</div>
       <div class="fc-title" data-el="Mirror-Server" data-en="Mirror Server">Mirror-Server</div>
       <div class="fc-sub" data-el="Αποκεντρωμένο αντίγραφο — ανθεκτικότητα" data-en="Decentralized mirror — redundancy">Αποκεντρωμένο αντίγραφο — ανθεκτικότητα</div>
       <div class="fc-info">
@@ -510,10 +510,32 @@
       </div>
     </div>
 
+    <!-- NEWSLETTER-BETRIEB — MOD-19 (LIVE STATS) -->
+    <div class="fc" id="nlCard" style="border-color:#86efac">
+      <div class="fc-badge" id="nlBadge" style="background:#22c55e" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
+      <div class="fc-icon">📬</div>
+      <div class="fc-title" data-el="Newsletter-Betrieb" data-en="Newsletter Operations">Newsletter-Betrieb</div>
+      <div class="fc-sub" data-el="Listmonk + Brevo SMTP — MOD-19" data-en="Listmonk + Brevo SMTP — MOD-19">Listmonk + Brevo SMTP</div>
+      <div class="fc-info">
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Πρόγραμμα:" data-en="Plan:">Πρόγραμμα:</span><strong id="nlPlan">Free</strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Αποστολές/μήνα:" data-en="Sent/month:">Αποστολές:</span><strong id="nlSent">0 / 9.000</strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Εγγεγραμμένοι:" data-en="Subscribers:">Εγγεγρ.:</span><strong id="nlSubs">0</strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong id="nlCost" style="color:#166534">0€</strong></div>
+      </div>
+      <div style="background:#e2e8f0;border-radius:0.3rem;height:8px;margin:0.5rem 0;overflow:hidden">
+        <div id="nlBar" style="height:100%;background:#22c55e;border-radius:0.3rem;transition:width 0.5s,background 0.5s;width:0%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--gray-400)">
+        <span id="nlBarLabel" data-el="0% χρήση" data-en="0% usage">0% χρήση</span>
+        <span class="fc-live"><span class="fc-live-dot"></span> Live</span>
+      </div>
+      <div class="fc-status" id="nlStatus" style="background:#f0fdf4;color:#166534;margin-top:0.3rem">✅ <span id="nlStatusText" data-el="Φόρτωση..." data-en="Loading...">Φόρτωση...</span></div>
+    </div>
+
     <!-- DEVELOPER DONATIONS — PayPal (freier Betrag, nicht getrackt) -->
     <div class="fc" style="border-color:#0070ba">
       <div class="fc-badge" style="background:#0070ba" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
-      <div class="fc-icon">💙</div>
+      <div class="fc-icon">👨‍💻</div>
       <div class="fc-title" data-el="Στήριξη Ανάπτυξης" data-en="Support Development">Στήριξη Ανάπτυξης</div>
       <div class="fc-sub" data-el="Προαιρετική δωρεά στους προγραμματιστές" data-en="Optional donation to developers">Προαιρετική δωρεά στους προγραμματιστές</div>
       <div class="fc-info">
@@ -521,7 +543,8 @@
         <div class="fc-row"><span style="color:var(--gray-700)">Account:</span><strong>VendettaLabs</strong></div>
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Ποσό:" data-en="Amount:">Ποσό:</span><strong data-el="Ελεύθερο" data-en="Any amount">Ελεύθερο</strong></div>
       </div>
-      <a href="https://www.paypal.com/paypalme/VendettaLabs" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:0.5rem;background:#0070ba;color:white;border-radius:0.4rem;font-weight:700;font-size:0.82rem;text-decoration:none;margin-top:0.5rem" data-el="Δωρεά μέσω PayPal" data-en="Donate via PayPal">Δωρεά μέσω PayPal →</a>
+      <div style="text-align:center;padding:0.75rem 0;font-size:1.5rem">👨‍💻⌨️</div>
+      <a href="https://www.paypal.com/paypalme/VendettaLabs" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:0.5rem;background:#0070ba;color:white;border-radius:0.4rem;font-weight:700;font-size:0.82rem;text-decoration:none" data-el="Δωρεά μέσω PayPal" data-en="Donate via PayPal">Δωρεά μέσω PayPal →</a>
       <div style="text-align:center;margin-top:0.3rem;font-size:0.6rem;color:var(--gray-400)" data-el="100% στους προγραμματιστές — κανένα overhead" data-en="100% to developers — zero overhead">100% στους προγραμματιστές — κανένα overhead</div>
     </div>
 
@@ -1072,6 +1095,58 @@ function copyAddr(id) {
   }
 
   // ═══════════════════════════════════════════════════════════
+  // NEWSLETTER LIVE STATS
+  // ═══════════════════════════════════════════════════════════
+  function fetchNewsletterStats() {
+    fetch("https://api.ekklesia.gr/api/v1/newsletter/stats")
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        var plan = document.getElementById("nlPlan");
+        var sent = document.getElementById("nlSent");
+        var subs = document.getElementById("nlSubs");
+        var cost = document.getElementById("nlCost");
+        var bar = document.getElementById("nlBar");
+        var barLabel = document.getElementById("nlBarLabel");
+        var card = document.getElementById("nlCard");
+        var badge = document.getElementById("nlBadge");
+        var statusBox = document.getElementById("nlStatus");
+        var statusText = document.getElementById("nlStatusText");
+
+        if (plan) plan.textContent = d.plan || "Free";
+        if (sent) sent.textContent = (d.emails_sent_month || 0).toLocaleString() + " / " + (d.monthly_limit || 9000).toLocaleString();
+        if (subs) subs.textContent = d.subscribers || 0;
+        if (cost) { cost.textContent = (d.monthly_cost_eur || 0) + "\u20AC"; cost.style.color = d.monthly_cost_eur > 0 ? "#dc2626" : "#166534"; }
+        var pct = d.usage_percent || 0;
+        if (bar) bar.style.width = pct + "%";
+        if (barLabel) barLabel.textContent = pct + t("% χρήση","% usage");
+
+        if (d.status === "paid") {
+          if (card) { card.className = "fc pulse-red"; card.style.borderColor = "#ef4444"; }
+          if (badge) { badge.style.background = "#ef4444"; badge.textContent = t("ΠΛΗΡΩΜΕΝΟ","PAID"); }
+          if (bar) bar.style.background = "#ef4444";
+          if (statusBox) { statusBox.style.background = "#fef2f2"; statusBox.style.color = "#dc2626"; }
+          if (statusText) statusText.textContent = t("Πληρωμένο πρόγραμμα — ","Paid plan — ") + d.monthly_cost_eur + "\u20AC/" + t("μήνα","month");
+        } else if (d.status === "warning") {
+          if (card) { card.className = "fc"; card.style.borderColor = "#fde047"; }
+          if (badge) { badge.style.background = "#f59e0b"; badge.textContent = t("ΠΡΟΣΟΧΗ","ATTENTION"); }
+          if (bar) bar.style.background = "#f59e0b";
+          if (statusBox) { statusBox.style.background = "#fefce8"; statusBox.style.color = "#92400e"; }
+          if (statusText) statusText.textContent = t("Πλησιάζει το όριο","Approaching limit");
+        } else {
+          if (card) { card.className = "fc"; card.style.borderColor = "#86efac"; }
+          if (badge) { badge.style.background = "#22c55e"; badge.textContent = t("ΕΝΕΡΓΟ","ACTIVE"); }
+          if (bar) bar.style.background = "#22c55e";
+          if (statusBox) { statusBox.style.background = "#f0fdf4"; statusBox.style.color = "#166534"; }
+          if (statusText) statusText.textContent = t("Free plan — ","Free plan — ") + (d.subscribers || 0) + t(" εγγεγραμμένοι"," subscribers");
+        }
+      })
+      .catch(function() {
+        var st = document.getElementById("nlStatusText");
+        if (st) st.textContent = t("Μη διαθέσιμο","Unavailable");
+      });
+  }
+
+  // ═══════════════════════════════════════════════════════════
   // TICK — runs every second
   // ═══════════════════════════════════════════════════════════
   function tick() {
@@ -1089,11 +1164,13 @@ function copyAddr(id) {
   fetchArweavePrice();
   fetchHlrCredits();
   fetchCryptoPrices();
+  fetchNewsletterStats();
   setInterval(fetchPaymentStatus, 60000);    // Server/Domain balances every 60s
   setInterval(fetchArweaveBalance, 60000);   // AR balance every 60s
   setInterval(fetchArweavePrice, 300000);    // AR price every 5min
   setInterval(fetchHlrCredits, 30000);       // HLR credits every 30s
   setInterval(fetchCryptoPrices, 60000);     // BTC/LTC prices every 60s
+  setInterval(fetchNewsletterStats, 60000);  // Newsletter stats every 60s
 })();
 </script>
 </body>

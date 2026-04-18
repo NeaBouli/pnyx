@@ -1,15 +1,18 @@
 """
 MOD-19: Newsletter Integration (Listmonk + Brevo)
-POST /api/v1/newsletter/subscribe — Public signup
-GET  /api/v1/newsletter/lists     — Public list of available lists
-POST /api/v1/newsletter/send      — Admin-only: trigger campaign via Brevo HTTP API
+POST /api/v1/newsletter/subscribe  — Public signup
+GET  /api/v1/newsletter/lists      — Public list of available lists
+GET  /api/v1/newsletter/stats      — Public transparency (Brevo account stats)
+POST /api/v1/newsletter/webhook/brevo — Brevo event webhook
 """
 import os
+import json
 import logging
 from typing import Optional
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr
 import httpx
+import redis.asyncio as aioredis
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/newsletter", tags=["MOD-19 Newsletter"])
@@ -128,3 +131,125 @@ async def subscribe(req: SubscribeRequest):
         return {"success": True, "message": "Already subscribed."}
     else:
         raise HTTPException(status_code=400, detail=result.get("message", "Subscription failed"))
+
+
+# ── Redis for stats caching ───────────────────────────────────────────────────
+
+_nl_redis: aioredis.Redis | None = None
+
+async def _get_redis() -> aioredis.Redis:
+    global _nl_redis
+    if _nl_redis is None:
+        url = os.getenv("REDIS_URL", "redis://localhost:6379")
+        _nl_redis = aioredis.from_url(url, decode_responses=True)
+    return _nl_redis
+
+
+# ── Stats Endpoint (Brevo + Listmonk) ────────────────────────────────────────
+
+@router.get("/stats")
+async def newsletter_stats():
+    """
+    Public transparency endpoint.
+    Fetches Brevo account stats + Listmonk subscriber count.
+    Cached in Redis for 60 minutes.
+    """
+    r = await _get_redis()
+    cached = await r.get("newsletter:stats_cache")
+    if cached:
+        return json.loads(cached)
+
+    stats = {
+        "plan": "free",
+        "emails_sent_month": 0,
+        "daily_limit": 300,
+        "monthly_limit": 9000,
+        "subscribers": 0,
+        "open_rate": 0,
+        "monthly_cost_eur": 0,
+        "status": "ok",
+    }
+
+    # Fetch from Brevo API
+    if BREVO_API_KEY:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                # Account info
+                acct = await client.get(
+                    "https://api.brevo.com/v3/account",
+                    headers={"api-key": BREVO_API_KEY},
+                )
+                if acct.status_code == 200:
+                    data = acct.json()
+                    plan_list = data.get("plan", [])
+                    if plan_list:
+                        p = plan_list[0]
+                        plan_type = p.get("type", "free")
+                        stats["plan"] = plan_type
+                        stats["daily_limit"] = p.get("credits", 300)
+                        stats["monthly_limit"] = p.get("credits", 300) * 30
+
+                # Email stats this month
+                smtp_stats = await client.get(
+                    "https://api.brevo.com/v3/smtp/statistics/aggregatedReport",
+                    headers={"api-key": BREVO_API_KEY},
+                )
+                if smtp_stats.status_code == 200:
+                    sd = smtp_stats.json()
+                    stats["emails_sent_month"] = sd.get("requests", 0)
+                    delivered = sd.get("delivered", 0)
+                    opened = sd.get("uniqueOpens", 0)
+                    if delivered > 0:
+                        stats["open_rate"] = round((opened / delivered) * 100, 1)
+        except Exception as e:
+            logger.error(f"[MOD-19] Brevo API error: {e}")
+
+    # Fetch subscriber count from Listmonk
+    if LISTMONK_PW:
+        try:
+            result = await _listmonk_request("GET", "/api/subscribers?per_page=1&page=1")
+            if "data" in result:
+                stats["subscribers"] = result["data"].get("total", 0)
+        except Exception:
+            pass
+
+    # Ampel logic
+    usage_pct = (stats["emails_sent_month"] / max(stats["monthly_limit"], 1)) * 100
+    if stats["plan"] != "free" or stats["monthly_cost_eur"] > 0:
+        stats["status"] = "paid"
+    elif usage_pct > 80:
+        stats["status"] = "warning"
+    else:
+        stats["status"] = "ok"
+
+    stats["usage_percent"] = round(usage_pct, 1)
+
+    # Cache for 60 minutes
+    await r.setex("newsletter:stats_cache", 3600, json.dumps(stats))
+
+    return stats
+
+
+# ── Brevo Webhook ─────────────────────────────────────────────────────────────
+
+@router.post("/webhook/brevo")
+async def brevo_webhook(request: Request):
+    """Receive Brevo event webhooks — track sent/opened/bounced."""
+    try:
+        events = await request.json()
+        if not isinstance(events, list):
+            events = [events]
+
+        r = await _get_redis()
+        for event in events:
+            evt = event.get("event", "")
+            if evt in ("sent", "delivered", "opened", "clicked", "unsubscribed", "hardBounce", "softBounce"):
+                await r.hincrby("newsletter:events", evt, 1)
+
+        # Invalidate stats cache on activity
+        await r.delete("newsletter:stats_cache")
+
+        return {"received": True, "events": len(events)}
+    except Exception as e:
+        logger.error(f"[MOD-19] Brevo webhook error: {e}")
+        return {"received": False, "error": str(e)}
