@@ -116,6 +116,11 @@
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-purple { background: #ede9fe; color: #5b21b6; }
     .badge-gray { background: var(--gray-100); color: var(--gray-500); }
+    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.4rem; vertical-align: middle; }
+    .dot-active { background: #22c55e; animation: dotPulse 2s ease-in-out infinite; }
+    .dot-inactive { background: #ef4444; }
+    .dot-planned { background: #94a3b8; }
+    @keyframes dotPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); } 50% { box-shadow: 0 0 0 4px rgba(34,197,94,0); } }
     .info-box { background: var(--blue-l); border-left: 4px solid var(--blue); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
     .info-box p { margin: 0; }
     .warn-box { background: #fefce8; border-left: 4px solid var(--yellow); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
@@ -180,24 +185,24 @@
   <div class="table-wrap fade-in">
     <table>
       <tr><th>ID</th><th>Name</th><th data-el="Φάση" data-en="Phase">Φάση</th><th data-el="Περιγραφή" data-en="Description">Περιγραφή</th></tr>
-      <tr><td>MOD-01</td><td>Identity</td><td><span class="badge badge-green">Beta</span></td><td>Ed25519, Nullifier Hash, HLR</td></tr>
-      <tr><td>MOD-02</td><td>VAA Wahlkompass</td><td><span class="badge badge-green">Beta</span></td><td data-el="Πολιτική Πυξίδα, 38 Θέσεις" data-en="Political Compass, 38 Statements">Πολιτική Πυξίδα, 38 Θέσεις</td></tr>
-      <tr><td>MOD-02b</td><td>Liquid Compass</td><td><span class="badge badge-green">Beta</span></td><td data-el="Εξελισσόμενη Πυξίδα, 4 Μοντέλα, AES-256-GCM, 100% τοπικά" data-en="Evolving Compass, 4 Models, AES-256-GCM, 100% client-side">Εξελισσόμενη Πυξίδα, 4 Μοντέλα, 100% τοπικά</td></tr>
-      <tr><td>MOD-03</td><td>Parliament</td><td><span class="badge badge-green">Beta</span></td><td data-el="Νομοσχέδια, Bill Lifecycle" data-en="Bills, Bill Lifecycle">Νομοσχέδια, Bill Lifecycle</td></tr>
-      <tr><td>MOD-04</td><td>CitizenVote</td><td><span class="badge badge-green">Beta</span></td><td data-el="Ψηφοφορία Πολιτών" data-en="Citizen Voting">Ψηφοφορία Πολιτών</td></tr>
-      <tr><td>MOD-05</td><td>Divergence Score</td><td><span class="badge badge-green">Beta</span></td><td data-el="Δείκτης Απόκλισης" data-en="Divergence Score">Δείκτης Απόκλισης</td></tr>
-      <tr><td>MOD-06</td><td>Analytics</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Δημογραφικά, Τάσεις" data-en="Demographics, Trends">Δημογραφικά, Τάσεις</td></tr>
-      <tr><td>MOD-07</td><td>Notifications</td><td><span class="badge badge-yellow">Alpha</span></td><td>Push, RSS, WebSocket</td></tr>
-      <tr><td>MOD-17</td><td>Smart Notifications</td><td><span class="badge badge-gray">Geplant</span></td><td data-el="Kategorie-Filter, Ping-only Push, 3 Content-Modi, Templates lokal" data-en="Category filter, ping-only push, 3 content modes, local templates">Kategorie-Filter, Ping-only Push, 3 Content-Modi</td></tr>
-      <tr><td>MOD-08</td><td>Arweave L2</td><td><span class="badge badge-green">Beta</span></td><td>Permanent Audit Trail bei PARLIAMENT_VOTED</td></tr>
-      <tr><td>MOD-09</td><td>Gov.gr OAuth</td><td><span class="badge badge-yellow">Alpha</span></td><td>gov.gr OAuth2.0</td></tr>
-      <tr><td>MOD-10</td><td>AI Scraper</td><td><span class="badge badge-yellow">Alpha</span></td><td>Ollama (L1) + HuggingFace (L2) + Regel-basiert (L3)</td></tr>
-      <tr><td>MOD-11</td><td>Public API</td><td><span class="badge badge-yellow">Alpha</span></td><td>OpenAPI, REST</td></tr>
-      <tr><td>MOD-12</td><td>MP Comparison</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Σύγκριση Βουλευτών" data-en="MP Comparison">Σύγκριση Βουλευτών</td></tr>
-      <tr><td>MOD-13</td><td>Relevance Voting</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Βαθμός Συνάφειας" data-en="Relevance Score">Βαθμός Συνάφειας</td></tr>
-      <tr><td>MOD-14</td><td>Data Export</td><td><span class="badge badge-yellow">Alpha</span></td><td>CSV, JSON Export</td></tr>
-      <tr><td>MOD-15</td><td>Admin</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Διαχείριση" data-en="Management">Διαχείριση</td></tr>
-      <tr><td>MOD-16</td><td data-el="Τοπική Αυτοδιοίκηση" data-en="Local Governance">Τοπική Αυτοδιοίκηση</td><td><span class="badge badge-green">Beta</span></td><td data-el="Περιφέρεια, Δήμος, Κοινότητα" data-en="Periferia, Dimos, Community">Περιφέρεια, Δήμος, Κοινότητα</td></tr>
+      <tr><td><span class="status-dot dot-active"></span>MOD-01</td><td>Identity</td><td><span class="badge badge-green">Beta</span></td><td>Ed25519, Nullifier Hash, HLR</td></tr>
+      <tr><td><span class="status-dot dot-active"></span>MOD-02</td><td>VAA Wahlkompass</td><td><span class="badge badge-green">Beta</span></td><td data-el="Πολιτική Πυξίδα, 38 Θέσεις" data-en="Political Compass, 38 Statements">Πολιτική Πυξίδα, 38 Θέσεις</td></tr>
+      <tr><td><span class="status-dot dot-active"></span>MOD-02b</td><td>Liquid Compass</td><td><span class="badge badge-green">Beta</span></td><td data-el="Εξελισσόμενη Πυξίδα, 4 Μοντέλα, AES-256-GCM, 100% τοπικά" data-en="Evolving Compass, 4 Models, AES-256-GCM, 100% client-side">Εξελισσόμενη Πυξίδα, 4 Μοντέλα, 100% τοπικά</td></tr>
+      <tr><td><span class="status-dot dot-active"></span>MOD-03</td><td>Parliament</td><td><span class="badge badge-green">Beta</span></td><td data-el="Νομοσχέδια, Bill Lifecycle" data-en="Bills, Bill Lifecycle">Νομοσχέδια, Bill Lifecycle</td></tr>
+      <tr><td><span class="status-dot dot-active"></span>MOD-04</td><td>CitizenVote</td><td><span class="badge badge-green">Beta</span></td><td data-el="Ψηφοφορία Πολιτών" data-en="Citizen Voting">Ψηφοφορία Πολιτών</td></tr>
+      <tr><td><span class="status-dot dot-active"></span>MOD-05</td><td>Divergence Score</td><td><span class="badge badge-green">Beta</span></td><td data-el="Δείκτης Απόκλισης" data-en="Divergence Score">Δείκτης Απόκλισης</td></tr>
+      <tr><td><span class="status-dot dot-active"></span>MOD-06</td><td>Analytics</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Δημογραφικά, Τάσεις" data-en="Demographics, Trends">Δημογραφικά, Τάσεις</td></tr>
+      <tr><td><span class="status-dot dot-active"></span>MOD-07</td><td>Notifications</td><td><span class="badge badge-yellow">Alpha</span></td><td>Push, RSS, WebSocket</td></tr>
+      <tr><td><span class="status-dot dot-planned"></span>MOD-17</td><td>Smart Notifications</td><td><span class="badge badge-gray">Geplant</span></td><td data-el="Kategorie-Filter, Ping-only Push, 3 Content-Modi, Templates lokal" data-en="Category filter, ping-only push, 3 content modes, local templates">Kategorie-Filter, Ping-only Push, 3 Content-Modi</td></tr>
+      <tr><td><span class="status-dot dot-active"></span>MOD-08</td><td>Arweave L2</td><td><span class="badge badge-green">Beta</span></td><td>Permanent Audit Trail bei PARLIAMENT_VOTED</td></tr>
+      <tr><td><span class="status-dot dot-active"></span>MOD-09</td><td>Gov.gr OAuth</td><td><span class="badge badge-yellow">Alpha</span></td><td>gov.gr OAuth2.0</td></tr>
+      <tr><td><span class="status-dot dot-active"></span>MOD-10</td><td>AI Scraper</td><td><span class="badge badge-yellow">Alpha</span></td><td>Ollama (L1) + HuggingFace (L2) + Regel-basiert (L3)</td></tr>
+      <tr><td><span class="status-dot dot-active"></span>MOD-11</td><td>Public API</td><td><span class="badge badge-yellow">Alpha</span></td><td>OpenAPI, REST</td></tr>
+      <tr><td><span class="status-dot dot-active"></span>MOD-12</td><td>MP Comparison</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Σύγκριση Βουλευτών" data-en="MP Comparison">Σύγκριση Βουλευτών</td></tr>
+      <tr><td><span class="status-dot dot-active"></span>MOD-13</td><td>Relevance Voting</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Βαθμός Συνάφειας" data-en="Relevance Score">Βαθμός Συνάφειας</td></tr>
+      <tr><td><span class="status-dot dot-active"></span>MOD-14</td><td>Data Export</td><td><span class="badge badge-yellow">Alpha</span></td><td>CSV, JSON Export</td></tr>
+      <tr><td><span class="status-dot dot-active"></span>MOD-15</td><td>Admin</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Διαχείριση" data-en="Management">Διαχείριση</td></tr>
+      <tr><td><span class="status-dot dot-active"></span>MOD-16</td><td data-el="Τοπική Αυτοδιοίκηση" data-en="Local Governance">Τοπική Αυτοδιοίκηση</td><td><span class="badge badge-green">Beta</span></td><td data-el="Περιφέρεια, Δήμος, Κοινότητα" data-en="Periferia, Dimos, Community">Περιφέρεια, Δήμος, Κοινότητα</td></tr>
     </table>
   </div>
 

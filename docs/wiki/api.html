@@ -115,6 +115,9 @@
     .badge-yellow { background: #fef3c7; color: #92400e; }
     .badge-red { background: #fee2e2; color: #991b1b; }
     .badge-purple { background: #ede9fe; color: #5b21b6; }
+    .dot-on { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #22c55e; margin-right: 0.3rem; vertical-align: middle; animation: dotP 2s ease-in-out infinite; }
+    .dot-off { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #ef4444; margin-right: 0.3rem; vertical-align: middle; }
+    @keyframes dotP { 0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); } 50% { box-shadow: 0 0 0 4px rgba(34,197,94,0); } }
     .badge-gray { background: var(--gray-100); color: var(--gray-500); }
     .info-box { background: var(--blue-l); border-left: 4px solid var(--blue); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
     .info-box p { margin: 0; }
@@ -182,81 +185,81 @@
     <table>
       <tr><th>Module</th><th>Method</th><th>Endpoint</th><th>Description</th></tr>
       <!-- MOD-01 Identity (3) -->
-      <tr><td>MOD-01</td><td><span class="badge badge-green">POST</span></td><td>/identity/verify</td><td>HLR Επαλήθευση ελληνικής SIM</td></tr>
-      <tr><td>MOD-01</td><td><span class="badge badge-green">POST</span></td><td>/identity/revoke</td><td>Ανάκληση ταυτότητας</td></tr>
-      <tr><td>MOD-01</td><td><span class="badge badge-blue">GET</span></td><td>/identity/status/{hash}</td><td>Κατάσταση επαλήθευσης</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-01</td><td><span class="badge badge-green">POST</span></td><td>/identity/verify</td><td>HLR Επαλήθευση ελληνικής SIM</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-01</td><td><span class="badge badge-green">POST</span></td><td>/identity/revoke</td><td>Ανάκληση ταυτότητας</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-01</td><td><span class="badge badge-blue">GET</span></td><td>/identity/status/{hash}</td><td>Κατάσταση επαλήθευσης</td></tr>
       <!-- MOD-02 VAA (3) -->
-      <tr><td>MOD-02</td><td><span class="badge badge-blue">GET</span></td><td>/vaa/statements</td><td>38 Πολιτικές Θέσεις</td></tr>
-      <tr><td>MOD-02</td><td><span class="badge badge-blue">GET</span></td><td>/vaa/parties</td><td>8 Κόμματα</td></tr>
-      <tr><td>MOD-02</td><td><span class="badge badge-green">POST</span></td><td>/vaa/match</td><td>Matching αποτέλεσμα</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-02</td><td><span class="badge badge-blue">GET</span></td><td>/vaa/statements</td><td>38 Πολιτικές Θέσεις</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-02</td><td><span class="badge badge-blue">GET</span></td><td>/vaa/parties</td><td>8 Κόμματα</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-02</td><td><span class="badge badge-green">POST</span></td><td>/vaa/match</td><td>Matching αποτέλεσμα</td></tr>
       <!-- MOD-03 Parliament (5) -->
-      <tr><td>MOD-03</td><td><span class="badge badge-blue">GET</span></td><td>/bills</td><td>Λίστα νομοσχεδίων (filter, paginate)</td></tr>
-      <tr><td>MOD-03</td><td><span class="badge badge-blue">GET</span></td><td>/bills/{id}</td><td>Λεπτομέρειες νομοσχεδίου</td></tr>
-      <tr><td>MOD-03</td><td><span class="badge badge-blue">GET</span></td><td>/bills/trending</td><td>Trending ανά relevance score</td></tr>
-      <tr><td>MOD-03</td><td><span class="badge badge-green">POST</span></td><td>/bills/{id}/transition</td><td>Αλλαγή κατάστασης (admin)</td></tr>
-      <tr><td>MOD-03</td><td><span class="badge badge-green">POST</span></td><td>/bills/admin/create</td><td>Δημιουργία νομοσχεδίου (admin)</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-03</td><td><span class="badge badge-blue">GET</span></td><td>/bills</td><td>Λίστα νομοσχεδίων (filter, paginate)</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-03</td><td><span class="badge badge-blue">GET</span></td><td>/bills/{id}</td><td>Λεπτομέρειες νομοσχεδίου</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-03</td><td><span class="badge badge-blue">GET</span></td><td>/bills/trending</td><td>Trending ανά relevance score</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-03</td><td><span class="badge badge-green">POST</span></td><td>/bills/{id}/transition</td><td>Αλλαγή κατάστασης (admin)</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-03</td><td><span class="badge badge-green">POST</span></td><td>/bills/admin/create</td><td>Δημιουργία νομοσχεδίου (admin)</td></tr>
       <!-- MOD-04 CitizenVote (3) -->
-      <tr><td>MOD-04</td><td><span class="badge badge-green">POST</span></td><td>/vote</td><td>Καταχώρηση ψήφου (Ed25519 signed)</td></tr>
-      <tr><td>MOD-04</td><td><span class="badge badge-blue">GET</span></td><td>/vote/{id}/results</td><td>Αποτελέσματα + Divergence Score</td></tr>
-      <tr><td>MOD-04</td><td><span class="badge badge-green">POST</span></td><td>/vote/{id}/relevance</td><td>Relevance Up/Down Signal</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-04</td><td><span class="badge badge-green">POST</span></td><td>/vote</td><td>Καταχώρηση ψήφου (Ed25519 signed)</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-04</td><td><span class="badge badge-blue">GET</span></td><td>/vote/{id}/results</td><td>Αποτελέσματα + Divergence Score</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-04</td><td><span class="badge badge-green">POST</span></td><td>/vote/{id}/relevance</td><td>Relevance Up/Down Signal</td></tr>
       <!-- MOD-06 Analytics (6) -->
-      <tr><td>MOD-06</td><td><span class="badge badge-blue">GET</span></td><td>/analytics/overview</td><td>Πλατφόρμα Στατιστικά</td></tr>
-      <tr><td>MOD-06</td><td><span class="badge badge-blue">GET</span></td><td>/analytics/divergence-trends</td><td>Divergence Trends ανά χρόνο</td></tr>
-      <tr><td>MOD-06</td><td><span class="badge badge-blue">GET</span></td><td>/analytics/top-divergence</td><td>Top Bills ανά Divergence</td></tr>
-      <tr><td>MOD-06</td><td><span class="badge badge-blue">GET</span></td><td>/analytics/votes-timeline</td><td>Χρονική εξέλιξη ψηφοφοριών</td></tr>
-      <tr><td>MOD-06</td><td><span class="badge badge-blue">GET</span></td><td>/analytics/bill/{id}</td><td>Αναλυτικά για ένα Bill</td></tr>
-      <tr><td>MOD-06</td><td><span class="badge badge-blue">GET</span></td><td>/analytics/info</td><td>Analytics Endpoint Docs</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-06</td><td><span class="badge badge-blue">GET</span></td><td>/analytics/overview</td><td>Πλατφόρμα Στατιστικά</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-06</td><td><span class="badge badge-blue">GET</span></td><td>/analytics/divergence-trends</td><td>Divergence Trends ανά χρόνο</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-06</td><td><span class="badge badge-blue">GET</span></td><td>/analytics/top-divergence</td><td>Top Bills ανά Divergence</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-06</td><td><span class="badge badge-blue">GET</span></td><td>/analytics/votes-timeline</td><td>Χρονική εξέλιξη ψηφοφοριών</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-06</td><td><span class="badge badge-blue">GET</span></td><td>/analytics/bill/{id}</td><td>Αναλυτικά για ένα Bill</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-06</td><td><span class="badge badge-blue">GET</span></td><td>/analytics/info</td><td>Analytics Endpoint Docs</td></tr>
       <!-- MOD-07 Notifications (3) -->
-      <tr><td>MOD-07</td><td><span class="badge badge-blue">GET</span></td><td>/notifications/status</td><td>Κατάσταση Notification System</td></tr>
-      <tr><td>MOD-07</td><td><span class="badge badge-blue">GET</span></td><td>/notifications/stream</td><td>SSE Live Stream</td></tr>
-      <tr><td>MOD-07</td><td><span class="badge badge-purple">WS</span></td><td>/notifications/ws</td><td>WebSocket για Mobile</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-07</td><td><span class="badge badge-blue">GET</span></td><td>/notifications/status</td><td>Κατάσταση Notification System</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-07</td><td><span class="badge badge-blue">GET</span></td><td>/notifications/stream</td><td>SSE Live Stream</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-07</td><td><span class="badge badge-purple">WS</span></td><td>/notifications/ws</td><td>WebSocket για Mobile</td></tr>
       <!-- MOD-08 Arweave (2) -->
-      <tr><td>MOD-08</td><td><span class="badge badge-blue">GET</span></td><td>/arweave/status</td><td>Arweave Wallet κατάσταση</td></tr>
-      <tr><td>MOD-08</td><td><span class="badge badge-blue">GET</span></td><td>/arweave/bill/{id}</td><td>Arweave TX-ID για Bill</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-08</td><td><span class="badge badge-blue">GET</span></td><td>/arweave/status</td><td>Arweave Wallet κατάσταση</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-08</td><td><span class="badge badge-blue">GET</span></td><td>/arweave/bill/{id}</td><td>Arweave TX-ID για Bill</td></tr>
       <!-- MOD-09 gov.gr (5) -->
-      <tr><td>MOD-09</td><td><span class="badge badge-blue">GET</span></td><td>/auth/govgr/status</td><td>gov.gr OAuth Activation Gates</td></tr>
-      <tr><td>MOD-09</td><td><span class="badge badge-blue">GET</span></td><td>/auth/govgr/login</td><td>OAuth Login (Stub)</td></tr>
-      <tr><td>MOD-09</td><td><span class="badge badge-blue">GET</span></td><td>/auth/govgr/callback</td><td>OAuth Callback (Stub)</td></tr>
-      <tr><td>MOD-09</td><td><span class="badge badge-blue">GET</span></td><td>/auth/govgr/family/verify</td><td>Liquid Democracy Stub</td></tr>
-      <tr><td>MOD-09</td><td><span class="badge badge-blue">GET</span></td><td>/auth/govgr/info</td><td>gov.gr Docs</td></tr>
+      <tr><td><span class="dot-off"></span>MOD-09</td><td><span class="badge badge-blue">GET</span></td><td>/auth/govgr/status</td><td>gov.gr OAuth Activation Gates</td></tr>
+      <tr><td><span class="dot-off"></span>MOD-09</td><td><span class="badge badge-blue">GET</span></td><td>/auth/govgr/login</td><td>OAuth Login (Stub)</td></tr>
+      <tr><td><span class="dot-off"></span>MOD-09</td><td><span class="badge badge-blue">GET</span></td><td>/auth/govgr/callback</td><td>OAuth Callback (Stub)</td></tr>
+      <tr><td><span class="dot-off"></span>MOD-09</td><td><span class="badge badge-blue">GET</span></td><td>/auth/govgr/family/verify</td><td>Liquid Democracy Stub</td></tr>
+      <tr><td><span class="dot-off"></span>MOD-09</td><td><span class="badge badge-blue">GET</span></td><td>/auth/govgr/info</td><td>gov.gr Docs</td></tr>
       <!-- MOD-10 AI Scraper (4) -->
-      <tr><td>MOD-10</td><td><span class="badge badge-blue">GET</span></td><td>/scraper/status</td><td>AI Scraper Provider Status</td></tr>
-      <tr><td>MOD-10</td><td><span class="badge badge-blue">GET</span></td><td>/scraper/test</td><td>Scraper Test ohne DB</td></tr>
-      <tr><td>MOD-10</td><td><span class="badge badge-blue">GET</span></td><td>/scraper/parliament/latest</td><td>Scrape hellenicparliament.gr</td></tr>
-      <tr><td>MOD-10</td><td><span class="badge badge-green">POST</span></td><td>/scraper/fetch</td><td>Scrape + Ollama → DB (admin)</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-10</td><td><span class="badge badge-blue">GET</span></td><td>/scraper/status</td><td>AI Scraper Provider Status</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-10</td><td><span class="badge badge-blue">GET</span></td><td>/scraper/test</td><td>Scraper Test ohne DB</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-10</td><td><span class="badge badge-blue">GET</span></td><td>/scraper/parliament/latest</td><td>Scrape hellenicparliament.gr</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-10</td><td><span class="badge badge-green">POST</span></td><td>/scraper/fetch</td><td>Scrape + Ollama → DB (admin)</td></tr>
       <!-- MOD-11 Public API (7) -->
-      <tr><td>MOD-11</td><td><span class="badge badge-blue">GET</span></td><td>/public/info</td><td>Public API Docs</td></tr>
-      <tr><td>MOD-11</td><td><span class="badge badge-blue">GET</span></td><td>/public/stats</td><td>Πλατφόρμα Στατιστικά (public)</td></tr>
-      <tr><td>MOD-11</td><td><span class="badge badge-blue">GET</span></td><td>/public/bills</td><td>Bills (CC BY 4.0)</td></tr>
-      <tr><td>MOD-11</td><td><span class="badge badge-blue">GET</span></td><td>/public/bills/{id}/results</td><td>Αποτελέσματα (public)</td></tr>
-      <tr><td>MOD-11</td><td><span class="badge badge-blue">GET</span></td><td>/public/vaa/parties</td><td>Parteien (public)</td></tr>
-      <tr><td>MOD-11</td><td><span class="badge badge-green">POST</span></td><td>/public/keys/generate</td><td>API Key (kein Konto nötig)</td></tr>
-      <tr><td>MOD-11</td><td><span class="badge badge-blue">GET</span></td><td>/public/keys/status</td><td>API Key Status</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-11</td><td><span class="badge badge-blue">GET</span></td><td>/public/info</td><td>Public API Docs</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-11</td><td><span class="badge badge-blue">GET</span></td><td>/public/stats</td><td>Πλατφόρμα Στατιστικά (public)</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-11</td><td><span class="badge badge-blue">GET</span></td><td>/public/bills</td><td>Bills (CC BY 4.0)</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-11</td><td><span class="badge badge-blue">GET</span></td><td>/public/bills/{id}/results</td><td>Αποτελέσματα (public)</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-11</td><td><span class="badge badge-blue">GET</span></td><td>/public/vaa/parties</td><td>Parteien (public)</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-11</td><td><span class="badge badge-green">POST</span></td><td>/public/keys/generate</td><td>API Key (kein Konto nötig)</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-11</td><td><span class="badge badge-blue">GET</span></td><td>/public/keys/status</td><td>API Key Status</td></tr>
       <!-- MOD-12 MP Comparison (5) -->
-      <tr><td>MOD-12</td><td><span class="badge badge-blue">GET</span></td><td>/mp/parties</td><td>Κόμματα με Παρλαμεντική Παρουσία</td></tr>
-      <tr><td>MOD-12</td><td><span class="badge badge-blue">GET</span></td><td>/mp/ranking</td><td>Ranking Σύγκλισης με Πολίτες</td></tr>
-      <tr><td>MOD-12</td><td><span class="badge badge-blue">GET</span></td><td>/mp/compare/{abbr}</td><td>Κόμμα vs Πλειοψηφία Πολιτών</td></tr>
-      <tr><td>MOD-12</td><td><span class="badge badge-blue">GET</span></td><td>/mp/bill/{id}</td><td>Κομματικές Ψήφοι για Bill</td></tr>
-      <tr><td>MOD-12</td><td><span class="badge badge-blue">GET</span></td><td>/mp/info</td><td>MP Comparison Docs</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-12</td><td><span class="badge badge-blue">GET</span></td><td>/mp/parties</td><td>Κόμματα με Παρλαμεντική Παρουσία</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-12</td><td><span class="badge badge-blue">GET</span></td><td>/mp/ranking</td><td>Ranking Σύγκλισης με Πολίτες</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-12</td><td><span class="badge badge-blue">GET</span></td><td>/mp/compare/{abbr}</td><td>Κόμμα vs Πλειοψηφία Πολιτών</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-12</td><td><span class="badge badge-blue">GET</span></td><td>/mp/bill/{id}</td><td>Κομματικές Ψήφοι για Bill</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-12</td><td><span class="badge badge-blue">GET</span></td><td>/mp/info</td><td>MP Comparison Docs</td></tr>
       <!-- MOD-14 Data Export (5) -->
-      <tr><td>MOD-14</td><td><span class="badge badge-blue">GET</span></td><td>/export/info</td><td>Export Endpoint Docs</td></tr>
-      <tr><td>MOD-14</td><td><span class="badge badge-blue">GET</span></td><td>/export/bills.csv</td><td>Bills + Αποτελέσματα CSV</td></tr>
-      <tr><td>MOD-14</td><td><span class="badge badge-blue">GET</span></td><td>/export/results.json</td><td>Αποτελέσματα JSON</td></tr>
-      <tr><td>MOD-14</td><td><span class="badge badge-blue">GET</span></td><td>/export/divergence.csv</td><td>Divergence Ranking CSV</td></tr>
-      <tr><td>MOD-14</td><td><span class="badge badge-blue">GET</span></td><td>/export/parties.json</td><td>Κόμματα JSON</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-14</td><td><span class="badge badge-blue">GET</span></td><td>/export/info</td><td>Export Endpoint Docs</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-14</td><td><span class="badge badge-blue">GET</span></td><td>/export/bills.csv</td><td>Bills + Αποτελέσματα CSV</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-14</td><td><span class="badge badge-blue">GET</span></td><td>/export/results.json</td><td>Αποτελέσματα JSON</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-14</td><td><span class="badge badge-blue">GET</span></td><td>/export/divergence.csv</td><td>Divergence Ranking CSV</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-14</td><td><span class="badge badge-blue">GET</span></td><td>/export/parties.json</td><td>Κόμματα JSON</td></tr>
       <!-- MOD-15 Admin (8) -->
-      <tr><td>MOD-15</td><td><span class="badge badge-blue">GET</span></td><td>/admin/dashboard</td><td>Admin Dashboard</td></tr>
-      <tr><td>MOD-15</td><td><span class="badge badge-blue">GET</span></td><td>/admin/bills</td><td>Admin Bills Liste</td></tr>
-      <tr><td>MOD-15</td><td><span class="badge badge-green">POST</span></td><td>/admin/bills</td><td>Νέο Bill δημιουργία</td></tr>
-      <tr><td>MOD-15</td><td><span class="badge badge-yellow">PATCH</span></td><td>/admin/bills/{id}</td><td>Bill ενημέρωση</td></tr>
-      <tr><td>MOD-15</td><td><span class="badge badge-green">POST</span></td><td>/admin/bills/{id}/review</td><td>AI Summary Review</td></tr>
-      <tr><td>MOD-15</td><td><span class="badge badge-green">POST</span></td><td>/admin/bills/{id}/party-votes</td><td>Κομματικές Ψήφοι setzen</td></tr>
-      <tr><td>MOD-15</td><td><span class="badge badge-blue">GET</span></td><td>/admin/stats</td><td>Admin Στατιστικά</td></tr>
-      <tr><td>MOD-15</td><td><span class="badge badge-green">POST</span></td><td>/notifications/test/publish</td><td>Test Event publish</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-15</td><td><span class="badge badge-blue">GET</span></td><td>/admin/dashboard</td><td>Admin Dashboard</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-15</td><td><span class="badge badge-blue">GET</span></td><td>/admin/bills</td><td>Admin Bills Liste</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-15</td><td><span class="badge badge-green">POST</span></td><td>/admin/bills</td><td>Νέο Bill δημιουργία</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-15</td><td><span class="badge badge-yellow">PATCH</span></td><td>/admin/bills/{id}</td><td>Bill ενημέρωση</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-15</td><td><span class="badge badge-green">POST</span></td><td>/admin/bills/{id}/review</td><td>AI Summary Review</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-15</td><td><span class="badge badge-green">POST</span></td><td>/admin/bills/{id}/party-votes</td><td>Κομματικές Ψήφοι setzen</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-15</td><td><span class="badge badge-blue">GET</span></td><td>/admin/stats</td><td>Admin Στατιστικά</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-15</td><td><span class="badge badge-green">POST</span></td><td>/notifications/test/publish</td><td>Test Event publish</td></tr>
       <!-- MOD-16 Municipal (3) -->
-      <tr><td>MOD-16</td><td><span class="badge badge-blue">GET</span></td><td>/periferia</td><td>13 Περιφέρειες</td></tr>
-      <tr><td>MOD-16</td><td><span class="badge badge-blue">GET</span></td><td>/periferia/{id}/dimos</td><td>Δήμοι Περιφέρειας</td></tr>
-      <tr><td>MOD-16</td><td><span class="badge badge-blue">GET</span></td><td>/decisions</td><td>Αποφάσεις (φίλτρο)</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-16</td><td><span class="badge badge-blue">GET</span></td><td>/periferia</td><td>13 Περιφέρειες</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-16</td><td><span class="badge badge-blue">GET</span></td><td>/periferia/{id}/dimos</td><td>Δήμοι Περιφέρειας</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-16</td><td><span class="badge badge-blue">GET</span></td><td>/decisions</td><td>Αποφάσεις (φίλτρο)</td></tr>
     </table>
   </div>
 
