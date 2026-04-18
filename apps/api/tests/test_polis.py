@@ -19,7 +19,9 @@ import time
 import pytest
 from nacl.signing import SigningKey
 
-from ..crypto.polis import (
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from crypto.polis import (
     PROTO_VERSION,
     PROPOSAL_THRESHOLD,
     TIMESTAMP_WINDOW_MS,
@@ -254,7 +256,17 @@ class TestValidateTicketVote:
         self, owner_sk: SigningKey, voter_sk: SigningKey, now_ms: int,
     ) -> None:
         owner_pk = bytes(owner_sk.verify_key).hex()
-        payload  = make_vote_payload(voter_sk, vote="sideways", timestamp_ms=now_ms)
+        # Build a valid payload first, then tamper the vote field
+        valid    = make_vote_payload(voter_sk, vote="up", timestamp_ms=now_ms)
+        payload  = PolisVotePayload(
+            ticket_id      = valid.ticket_id,
+            vote           = "sideways",  # invalid
+            pk_polis       = valid.pk_polis,
+            vote_nullifier = valid.vote_nullifier,
+            signature      = valid.signature,
+            timestamp_ms   = valid.timestamp_ms,
+            version        = valid.version,
+        )
         err      = validate_ticket_vote(payload, set(), owner_pk, now_ms=now_ms)
         assert err is not None
         assert err.code == "INVALID_VOTE"

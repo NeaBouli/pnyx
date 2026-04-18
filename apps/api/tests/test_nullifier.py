@@ -20,7 +20,9 @@ import pytest
 from nacl.signing import SigningKey, VerifyKey
 from nacl.exceptions import BadSignatureError
 
-from ..crypto.nullifier import (
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from crypto.nullifier import (
     PROTO_VERSION,
     TIMESTAMP_WINDOW_MS,
     RegistrationPayload,
