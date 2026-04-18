@@ -315,9 +315,9 @@ async def cumulative_representation(db: AsyncSession = Depends(get_db)):
         # Count votes for this bill
         vote_counts = await db.execute(
             select(
-                func.count(CitizenVote.id).filter(CitizenVote.choice == "YES").label("yes"),
-                func.count(CitizenVote.id).filter(CitizenVote.choice == "NO").label("no"),
-                func.count(CitizenVote.id).filter(CitizenVote.choice == "ABSTAIN").label("abstain"),
+                func.sum(func.cast(CitizenVote.vote == "YES", Integer)).label("yes"),
+                func.sum(func.cast(CitizenVote.vote == "NO", Integer)).label("no"),
+                func.sum(func.cast(CitizenVote.vote == "ABSTAIN", Integer)).label("abstain"),
             ).where(CitizenVote.bill_id == bill.id)
         )
         row = vote_counts.one()
