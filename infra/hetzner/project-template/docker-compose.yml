@@ -1,0 +1,66 @@
+# Project template — ADR-009 multi-project layout
+# Copy to /srv/PROJEKTNAME/ and customize
+# Usage: bash new-project.sh generates this automatically
+
+services:
+  app:
+    build: .
+    container_name: PROJEKTNAME-app
+    restart: unless-stopped
+    env_file: .env
+    networks:
+      - traefik-public
+      - internal
+    depends_on:
+      db:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.PROJEKTNAME.rule=Host(`DOMAIN`)"
+      - "traefik.http.routers.PROJEKTNAME.entrypoints=websecure"
+      - "traefik.http.routers.PROJEKTNAME.tls.certresolver=letsencrypt"
+      - "traefik.http.services.PROJEKTNAME.loadbalancer.server.port=8000"
+      # Security headers
+      - "traefik.http.middlewares.PROJEKTNAME-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.PROJEKTNAME-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.PROJEKTNAME-headers.headers.frameDeny=true"
+      - "traefik.http.routers.PROJEKTNAME.middlewares=PROJEKTNAME-headers"
+
+  db:
+    image: postgres:15-alpine
+    container_name: PROJEKTNAME-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: PROJEKTNAME-redis
+    restart: unless-stopped
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:
+
+networks:
+  traefik-public:
+    external: true
+  internal:
+    internal: true    # No internet access — privacy by design

@@ -1,0 +1,32 @@
+# Central Traefik static config — ADR-009
+# Location: /srv/traefik/traefik.yml
+
+api:
+  dashboard: false
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ":443"
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: traefik-public
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: "kaspartisan@proton.me"
+      storage: /acme/acme.json
+      tlsChallenge: {}
+
+log:
+  level: WARN
