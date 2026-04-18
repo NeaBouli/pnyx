@@ -17,8 +17,11 @@
 import * as SecureStore from "expo-secure-store";
 import { hmac } from "@noble/hashes/hmac";
 import { sha256 } from "@noble/hashes/sha256";
+import { pbkdf2 } from "@noble/hashes/pbkdf2";
 import { ed25519 } from "@noble/curves/ed25519";
-import { argon2id } from "react-native-argon2";
+// NOTE: Argon2id preferred but react-native-argon2 requires native build config.
+// Using PBKDF2-SHA256 (100k iterations) as portable fallback.
+// TODO: Switch to Argon2id when native module is configured in EAS build.
 
 // ─── Constants (mirror types.ts) ─────────────────────────────────────────────
 
@@ -100,14 +103,12 @@ function normalizePhone(raw: string): string {
  */
 export async function deriveNullifierRoot(phone: string): Promise<Uint8Array> {
   const normalized = normalizePhone(phone);
-  const result = await argon2id(normalized, REGISTRATION_SALT, {
-    iterations: ARGON2_PARAMS.iterations,
-    memory: ARGON2_PARAMS.memory,
-    parallelism: ARGON2_PARAMS.parallelism,
-    hashLength: ARGON2_PARAMS.hashLength,
+  // PBKDF2-SHA256 fallback (100k iterations ≈ 300-500ms on mobile)
+  // TODO: Replace with Argon2id(t=3, m=65536) when native module configured
+  return pbkdf2(sha256, utf8ToBytes(normalized), utf8ToBytes(REGISTRATION_SALT), {
+    c: 100000,
+    dkLen: 32,
   });
-  // react-native-argon2 returns hex string
-  return hexToBytes(result.rawHash);
 }
 
 /**
