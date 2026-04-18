@@ -1,30 +1,4 @@
 services:
-  traefik:
-    image: traefik:v3.6
-    container_name: traefik
-    restart: unless-stopped
-    environment:
-      DOCKER_API_VERSION: "1.46"
-    command:
-      - "--api.dashboard=false"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
-      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - traefik-letsencrypt:/letsencrypt
-    networks:
-      - ekklesia
-
   db:
     image: postgres:15-alpine
     container_name: ekklesia-db
@@ -63,12 +37,9 @@ services:
       dockerfile: apps/api/Dockerfile.prod
     container_name: ekklesia-api
     restart: unless-stopped
-    # env_file injects secrets verbatim (no YAML variable interpolation — safe
-    # for secrets that contain '$' characters such as the HLR API_SECRET)
     env_file:
       - /opt/ekklesia/.env.production
     environment:
-      # Composed / fixed values stay here because they reference other vars
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379
       OLLAMA_URL: http://ollama:11434
@@ -83,11 +54,11 @@ services:
     networks:
       - ekklesia
     labels:
-      - "traefik.enable=true"
-      - 'traefik.http.routers.api.rule=Host(`api.ekklesia.gr`)'
-      - "traefik.http.routers.api.entrypoints=websecure"
-      - "traefik.http.routers.api.tls.certresolver=letsencrypt"
-      - "traefik.http.services.api.loadbalancer.server.port=8000"
+      - traefik.enable=true
+      - traefik.http.routers.ekklesia-api.rule=Host(`api.ekklesia.gr`)
+      - traefik.http.routers.ekklesia-api.entrypoints=websecure
+      - traefik.http.routers.ekklesia-api.tls.certresolver=letsencrypt
+      - traefik.http.services.ekklesia-api.loadbalancer.server.port=8000
 
   web:
     build:
@@ -101,16 +72,20 @@ services:
     networks:
       - ekklesia
     labels:
-      - "traefik.enable=true"
-      - 'traefik.http.routers.web.rule=Host(`ekklesia.gr`) || Host(`www.ekklesia.gr`)'
-      - "traefik.http.routers.web.entrypoints=websecure"
-      - "traefik.http.routers.web.tls.certresolver=letsencrypt"
-      - "traefik.http.services.web.loadbalancer.server.port=3000"
+      - traefik.enable=true
+      - traefik.http.routers.ekklesia-web.rule=Host(`ekklesia.gr`) || Host(`www.ekklesia.gr`)
+      - traefik.http.routers.ekklesia-web.entrypoints=websecure
+      - traefik.http.routers.ekklesia-web.tls.certresolver=letsencrypt
+      - traefik.http.services.ekklesia-web.loadbalancer.server.port=3000
+      - traefik.http.middlewares.ekklesia-headers.headers.stsSeconds=31536000
+      - traefik.http.middlewares.ekklesia-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.ekklesia-headers.headers.frameDeny=true
+      - traefik.http.routers.ekklesia-web.middlewares=ekklesia-headers
 
   ollama:
     image: ollama/ollama:latest
     container_name: ekklesia-ollama
-    profiles: ["ollama"]          # ADR-001: does not start by default on CX33 (RAM budget)
+    profiles: ["ollama"]
     restart: unless-stopped
     volumes:
       - ollama-data:/root/.ollama
@@ -133,9 +108,6 @@ volumes:
   redis-data:
     external: true
     name: volumes_ekklesia_redis
-  traefik-letsencrypt:
-    external: true
-    name: volumes_ekklesia_traefik
   ollama-data:
     external: true
     name: volumes_ekklesia_ollama
@@ -144,3 +116,5 @@ networks:
   ekklesia:
     external: true
     name: net_ekklesia
+  traefik-public:
+    external: true
