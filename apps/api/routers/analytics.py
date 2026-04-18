@@ -287,6 +287,97 @@ async def bill_analytics(bill_id: str, db: AsyncSession = Depends(get_db)):
     }
 
 
+@router.get("/representation")
+async def cumulative_representation(db: AsyncSession = Depends(get_db)):
+    """
+    Kumulative Repräsentation: Durchschnittliche Übereinstimmung zwischen
+    Bürgermeinung und Parlamentsentscheid über alle abgestimmten Bills.
+
+    score = 1.0 - avg_divergence → 100% = perfekte Übereinstimmung
+    Berechnet über ALLE Bills mit Status PARLIAMENT_VOTED oder OPEN_END
+    die mindestens 1 Citizen-Vote haben.
+    """
+    from models import CitizenVote
+
+    # Alle Bills mit Votes
+    bills_result = await db.execute(
+        select(ParliamentBill).where(
+            ParliamentBill.status.in_([BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END])
+        )
+    )
+    bills = bills_result.scalars().all()
+
+    scores = []
+    bill_details = []
+    total_citizen_votes = 0
+
+    for bill in bills:
+        # Count votes for this bill
+        vote_counts = await db.execute(
+            select(
+                func.count(CitizenVote.id).filter(CitizenVote.choice == "YES").label("yes"),
+                func.count(CitizenVote.id).filter(CitizenVote.choice == "NO").label("no"),
+                func.count(CitizenVote.id).filter(CitizenVote.choice == "ABSTAIN").label("abstain"),
+            ).where(CitizenVote.bill_id == bill.id)
+        )
+        row = vote_counts.one()
+        yes, no, abstain = row.yes or 0, row.no or 0, row.abstain or 0
+        total = yes + no + abstain
+
+        if total == 0:
+            continue
+
+        total_citizen_votes += total
+
+        # Compute divergence for this bill
+        div_score = await compute_divergence(db, bill.id, bill)
+        if div_score is not None:
+            scores.append(div_score)
+            representation = round((1.0 - div_score) * 100, 1)
+            bill_details.append({
+                "bill_id": bill.id,
+                "title_el": bill.title_el[:60] if bill.title_el else "",
+                "citizen_votes": total,
+                "divergence": round(div_score * 100, 1),
+                "representation": representation,
+            })
+
+    if not scores:
+        return {
+            "cumulative_representation": None,
+            "cumulative_divergence": None,
+            "bills_analyzed": 0,
+            "total_citizen_votes": 0,
+            "message_el": "Δεν υπάρχουν αρκετά δεδομένα ακόμη.",
+            "message_en": "Not enough data yet.",
+            "last_bill": None,
+            "bills": [],
+        }
+
+    avg_div = sum(scores) / len(scores)
+    cumulative_rep = round((1.0 - avg_div) * 100, 1)
+
+    # Status label
+    if cumulative_rep >= 80:
+        label_el, label_en, color = "Υψηλή Αντιπροσωπευτικότητα", "High Representation", "#22c55e"
+    elif cumulative_rep >= 50:
+        label_el, label_en, color = "Μέτρια Αντιπροσωπευτικότητα", "Moderate Representation", "#f59e0b"
+    else:
+        label_el, label_en, color = "Χαμηλή Αντιπροσωπευτικότητα", "Low Representation", "#ef4444"
+
+    return {
+        "cumulative_representation": cumulative_rep,
+        "cumulative_divergence": round(avg_div * 100, 1),
+        "bills_analyzed": len(scores),
+        "total_citizen_votes": total_citizen_votes,
+        "label_el": label_el,
+        "label_en": label_en,
+        "color": color,
+        "last_bill": bill_details[-1] if bill_details else None,
+        "bills": bill_details,
+    }
+
+
 @router.get("/info")
 async def analytics_info():
     """Übersicht aller Analytics-Endpoints."""
@@ -295,6 +386,7 @@ async def analytics_info():
         "privacy": f"k-Anonymity >={K_ANONYMITY_MIN}",
         "endpoints": {
             "GET /api/v1/analytics/overview":          "Plattform-Statistiken",
+            "GET /api/v1/analytics/representation":    "Kumulative Repräsentation (live)",
             "GET /api/v1/analytics/divergence-trends": "Divergence Trends über Zeit",
             "GET /api/v1/analytics/votes-timeline":    "Vote Zeitverlauf (aggregiert)",
             "GET /api/v1/analytics/top-divergence":    "Top Bills nach Divergence",
