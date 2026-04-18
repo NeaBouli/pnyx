@@ -103,13 +103,12 @@ async def subscribe(req: SubscribeRequest):
 
     list_id = LIST_IDS.get(req.subscriber_type, LIST_IDS["citizens"])
 
-    # Create subscriber in Listmonk with list assignment
+    # Create subscriber in Listmonk (without list — add list separately)
     payload = {
         "email": req.email,
         "name": req.name or "",
         "status": "enabled",
-        "lists": [list_id],
-        "preconfirm_subscriptions": False,  # Double opt-in
+        "preconfirm_subscriptions": True,
         "attribs": {
             "frequency": req.frequency,
             "language": req.language,
@@ -125,6 +124,15 @@ async def subscribe(req: SubscribeRequest):
     result = await _listmonk_request("POST", "/api/subscribers", payload)
 
     if "data" in result:
+        sub_id = result["data"].get("id")
+        # Add subscriber to the correct list
+        if sub_id:
+            await _listmonk_request("PUT", f"/api/subscribers/lists", {
+                "ids": [sub_id],
+                "action": "add",
+                "target_list_ids": [list_id],
+                "status": "unconfirmed",
+            })
         logger.info(f"[MOD-19] New subscriber: {req.email} → list {req.subscriber_type}")
         return {"success": True, "message": "Confirmation email sent. Please check your inbox."}
     elif "subscriber exists" in str(result.get("message", "")).lower():
