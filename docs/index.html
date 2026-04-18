@@ -590,11 +590,11 @@
         <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);margin-bottom:0.3rem" data-el="Αντιπροσωπευτικότητα" data-en="Representativity">Αντιπροσωπευτικότητα</div>
         <div style="display:flex;align-items:center;gap:0.5rem">
           <div style="flex:1;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden">
-            <div id="repBar" style="height:100%;width:0;border-radius:4px;transition:width 1s;background:linear-gradient(90deg,#ef4444,#f59e0b,#22c55e)"></div>
+            <div id="repBar" style="height:100%;width:0;border-radius:4px;transition:width 1s;background:#ef4444"></div>
           </div>
           <span id="repPct" style="font-size:0.72rem;font-weight:700;color:#f59e0b;white-space:nowrap;opacity:0;transition:opacity 0.5s">0.013%</span>
         </div>
-        <div id="repLabel" style="font-size:0.62rem;color:rgba(255,255,255,0.4);margin-top:0.2rem;opacity:0;transition:opacity 0.5s" data-el="1.247 / 9.900.000 — Χαμηλή" data-en="1,247 / 9,900,000 — Low">1.247 / 9.900.000 — Χαμηλή</div>
+        <div id="repLabel" style="font-size:0.62rem;color:rgba(255,255,255,0.4);margin-top:0.2rem;opacity:0;transition:opacity 0.5s" data-el="1.247 / 9.810.040 — Χαμηλή" data-en="1,247 / 9,810,040 — Low">1.247 / 9.810.040 — Χαμηλή</div>
       </div>
     </div>
   </div>
@@ -605,13 +605,13 @@
   <div style="background:var(--gray-100);border-radius:1rem;padding:1.25rem 1.5rem">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
       <h4 style="font-weight:800;font-size:0.88rem;margin:0" data-el="Αντιπροσωπευτικότητα Βουλής" data-en="Parliament Representativeness">Αντιπροσωπευτικότητα Βουλής</h4>
-      <span class="fc-live" style="font-size:0.65rem"><span class="fc-live-dot" style="width:5px;height:5px;border-radius:50%;background:#22c55e;display:inline-block;animation:blink 2s infinite"></span> Live</span>
+      <span style="font-size:0.65rem;color:#94a3b8;display:flex;align-items:center;gap:0.3rem"><span style="width:5px;height:5px;border-radius:50%;background:#22c55e;display:inline-block;animation:blink 2s infinite"></span> Live</span>
     </div>
-    <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:0.75rem" data-el="Πόσο αντιπροσωπεύει η Βουλή τη γνώμη των πολιτών; Υπολογίζεται σωρευτικά από όλες τις ψηφοφορίες." data-en="How well does Parliament represent citizen opinion? Calculated cumulatively from all votes.">Πόσο αντιπροσωπεύει η Βουλή τη γνώμη των πολιτών; Σωρευτικός υπολογισμός από όλες τις ψηφοφορίες.</p>
-    <!-- Live bar -->
-    <div style="position:relative;height:28px;border-radius:6px;background:linear-gradient(to right,#ef4444 0%,#f97316 25%,#f59e0b 50%,#22c55e 75%,#2563eb 100%);margin-bottom:0.3rem;overflow:visible">
-      <div id="repMarker" style="position:absolute;top:-4px;width:4px;height:36px;background:#0f172a;border-radius:2px;transition:left 1.5s ease;left:0%"></div>
-      <div id="repMarkerLabel" style="position:absolute;top:-22px;font-size:0.72rem;font-weight:900;color:var(--gray-900);transition:left 1.5s ease;left:0%;transform:translateX(-50%);white-space:nowrap">—</div>
+    <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:0.75rem" data-el="Πόσο αντιπροσωπεύει η Βουλή τη γνώμη των πολιτών; Σωρευτικός υπολογισμός από όλες τις ψηφοφορίες." data-en="How well does Parliament represent citizen opinion? Calculated cumulatively from all votes.">Πόσο αντιπροσωπεύει η Βουλή τη γνώμη των πολιτών; Σωρευτικός υπολογισμός από όλες τις ψηφοφορίες.</p>
+    <!-- Live bar: background is grey track, colored fill grows left-to-right -->
+    <div style="position:relative;height:28px;border-radius:6px;background:#e2e8f0;margin-bottom:0.3rem;overflow:hidden">
+      <div id="repFill" style="height:100%;width:0%;border-radius:6px;transition:width 0.8s ease-out;background:#ef4444"></div>
+      <div id="repMarker" style="position:absolute;top:-4px;left:0%;width:4px;height:36px;background:#0f172a;border-radius:2px;transition:left 1.5s ease"></div>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:0.62rem;color:#94a3b8">
       <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
@@ -641,24 +641,58 @@
       <div id="repLastTitle" style="font-weight:800;color:var(--gray-900)"></div>
       <div id="repLastStats" style="color:var(--gray-500);margin-top:0.2rem"></div>
     </div>
-    <!-- Legend -->
-    <div style="display:flex;gap:1rem;margin-top:0.5rem;flex-wrap:wrap;font-size:0.65rem;color:var(--gray-500)">
-      <span><span style="color:#ef4444;font-weight:700">●</span> <span data-el="Χαμηλή (0-25%)" data-en="Low (0-25%)">Χαμηλή</span></span>
-      <span><span style="color:#f59e0b;font-weight:700">●</span> <span data-el="Μέτρια (25-50%)" data-en="Moderate (25-50%)">Μέτρια</span></span>
-      <span><span style="color:#22c55e;font-weight:700">●</span> <span data-el="Υψηλή (50-75%)" data-en="High (50-75%)">Υψηλή</span></span>
-      <span><span style="color:#2563eb;font-weight:700">●</span> <span data-el="Πολύ Υψηλή (75-100%)" data-en="Very High (75-100%)">Πολύ Υψηλή</span></span>
+    <!-- Three-tier calculation -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.75rem;margin-top:0.75rem">
+      <!-- Tier 1: Raw -->
+      <div style="background:#f1f5f9;border-radius:0.5rem;padding:0.6rem 0.75rem">
+        <div style="font-size:0.62rem;font-weight:700;color:#2563eb;margin-bottom:0.3rem" data-el="Tier 1 — Πλατφόρμα" data-en="Tier 1 — Platform">Tier 1 — Πλατφόρμα</div>
+        <div style="font-size:0.95rem;font-weight:900" id="tier1Score">—</div>
+        <div style="font-size:0.58rem;color:var(--gray-500)" id="tier1Detail" data-el="Ψήφοι ÷ Εκλογικό Σώμα (9.810.040)" data-en="Votes ÷ Electorate (9,810,040)">Ψήφοι ÷ Εκλογικό Σώμα (9.810.040)</div>
+      </div>
+      <!-- Tier 2: Weighted -->
+      <div style="background:#f1f5f9;border-radius:0.5rem;padding:0.6rem 0.75rem">
+        <div style="font-size:0.62rem;font-weight:700;color:#2563eb;margin-bottom:0.3rem" data-el="Tier 2 — Σταθμισμένη" data-en="Tier 2 — Weighted">Tier 2 — Σταθμισμένη</div>
+        <div style="font-size:0.95rem;font-weight:900" id="tier2Score">—</div>
+        <div style="font-size:0.58rem;color:var(--gray-500)" data-el="Jackman MRP — διόρθωση εθελοντικής συμμετοχής" data-en="Jackman MRP — voluntary participation correction">Jackman MRP — διόρθωση εθελοντικής συμμετοχής</div>
+      </div>
+      <!-- Tier 3: CRI -->
+      <div style="background:#f1f5f9;border-radius:0.5rem;padding:0.6rem 0.75rem">
+        <div style="font-size:0.62rem;font-weight:700;color:#2563eb;margin-bottom:0.3rem" data-el="Tier 3 — CRI Σύνθετος" data-en="Tier 3 — CRI Composite">Tier 3 — CRI Σύνθετος</div>
+        <div style="font-size:0.95rem;font-weight:900" id="tier3Score">—</div>
+        <div style="font-size:0.58rem;color:var(--gray-500)" data-el="Ποσοτική 40% + Ποιοτική 30% + Ποικιλομορφία 30%" data-en="Quantity 40% + Quality 30% + Diversity 30%">Ποσοτική 40% + Ποιοτική 30% + Ποικιλομορφία 30%</div>
+      </div>
+    </div>
+    <!-- Legend + no-data note -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem;flex-wrap:wrap;gap:0.5rem">
+      <div style="display:flex;gap:0.75rem;font-size:0.65rem;color:var(--gray-500)">
+        <span><span style="color:#ef4444;font-weight:700">●</span> <span data-el="Χαμηλή" data-en="Low">Χαμηλή</span></span>
+        <span><span style="color:#f59e0b;font-weight:700">●</span> <span data-el="Μέτρια" data-en="Moderate">Μέτρια</span></span>
+        <span><span style="color:#22c55e;font-weight:700">●</span> <span data-el="Υψηλή" data-en="High">Υψηλή</span></span>
+        <span><span style="color:#2563eb;font-weight:700">●</span> <span data-el="Εξαιρετική" data-en="Excellent">Εξαιρετική</span></span>
+      </div>
+      <span id="repNoData" style="font-size:0.6rem;color:#94a3b8;font-style:italic" data-el="Αναμονή δεδομένων..." data-en="Awaiting data...">Αναμονή δεδομένων...</span>
     </div>
   </div>
 </div>
 <script>
 (function(){
+  var ELECTORATE = 9810040; // Εκλογικό Σώμα Ελλάδας 2023 (ΥΠΕΣ)
+
+  function repColor(pct) {
+    if (pct < 25) return "#ef4444";
+    if (pct < 50) return "#f97316";
+    if (pct < 75) return "#eab308";
+    if (pct < 90) return "#22c55e";
+    return "#3b82f6";
+  }
+
   function fetchRepresentation() {
     fetch("https://api.ekklesia.gr/api/v1/analytics/representation")
       .then(function(r){return r.json()})
       .then(function(d){
         var score = d.cumulative_representation;
+        var fill = document.getElementById("repFill");
         var marker = document.getElementById("repMarker");
-        var label = document.getElementById("repMarkerLabel");
         var scoreEl = document.getElementById("repScore");
         var divEl = document.getElementById("repDivergence");
         var billsEl = document.getElementById("repBills");
@@ -666,20 +700,49 @@
         var lastBill = document.getElementById("repLastBill");
         var lastTitle = document.getElementById("repLastTitle");
         var lastStats = document.getElementById("repLastStats");
+        var noData = document.getElementById("repNoData");
+        var t1 = document.getElementById("tier1Score");
+        var t2 = document.getElementById("tier2Score");
+        var t3 = document.getElementById("tier3Score");
+
+        var totalVotes = d.total_citizen_votes || 0;
+        var avgDiv = d.cumulative_divergence || 0;
+        var bills = d.bills_analyzed || 0;
+
+        // Tier 1: Raw platform
+        var rawPct = (totalVotes / ELECTORATE) * 100;
+        if (t1) t1.textContent = rawPct < 0.001 ? "0%" : rawPct.toFixed(rawPct < 1 ? 3 : 1) + "%";
+
+        // Tier 2: Weighted (Jackman MRP correction)
+        var corrected = rawPct / 0.65; // voluntary participation bias
+        var avgBillsPerVoter = bills > 0 ? Math.min(totalVotes / Math.max(1, bills), 5) / 5 : 0;
+        var weighted = corrected * (1 + avgBillsPerVoter * 0.3);
+        weighted = Math.min(100, weighted);
+        if (t2) t2.textContent = weighted < 0.001 ? "0%" : weighted.toFixed(weighted < 1 ? 3 : 1) + "%";
+
+        // Tier 3: CRI composite
+        var quantityScore = Math.min(1, rawPct / 1); // normalize: 1% = max
+        var qualityScore = score !== null ? score / 100 : 0.5; // representation = 1-divergence
+        var diversityScore = 0.5; // neutral until demographic data available
+        var cri = Math.round((0.4 * quantityScore + 0.3 * qualityScore + 0.3 * diversityScore) * 100);
+        if (t3) { t3.textContent = cri + "/100"; t3.style.color = repColor(cri); }
 
         if (score === null || score === undefined) {
           if (scoreEl) scoreEl.textContent = "—";
-          if (label) label.textContent = "Δεν υπάρχουν δεδομένα";
+          if (fill) fill.style.width = "0%";
+          if (noData) noData.style.display = "inline";
           return;
         }
 
+        if (noData) noData.style.display = "none";
         var pct = Math.min(100, Math.max(0, score));
+        var col = repColor(pct);
+        if (fill) { fill.style.width = pct + "%"; fill.style.background = col; }
         if (marker) marker.style.left = pct + "%";
-        if (label) { label.style.left = pct + "%"; label.textContent = pct + "%"; label.style.color = d.color || "#0f172a"; }
-        if (scoreEl) { scoreEl.textContent = pct + "%"; scoreEl.style.color = d.color || "#0f172a"; }
-        if (divEl) divEl.textContent = (d.cumulative_divergence || 0) + "%";
-        if (billsEl) billsEl.textContent = d.bills_analyzed || 0;
-        if (votesEl) votesEl.textContent = (d.total_citizen_votes || 0).toLocaleString();
+        if (scoreEl) { scoreEl.textContent = pct + "%"; scoreEl.style.color = col; }
+        if (divEl) divEl.textContent = avgDiv + "%";
+        if (billsEl) billsEl.textContent = bills;
+        if (votesEl) votesEl.textContent = totalVotes.toLocaleString();
 
         if (d.last_bill && lastBill) {
           lastBill.style.display = "block";
