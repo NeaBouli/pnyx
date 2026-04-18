@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Image } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { isVerified } from "../lib/crypto-native";
@@ -23,7 +23,7 @@ export default function HomeScreen() {
   return (
     <ScrollView style={s.container} contentContainerStyle={s.content}>
       <View style={s.hero}>
-        <Text style={s.logo}>εκκλησία</Text>
+        <Image source={require("../../assets/pnx.png")} style={s.logoImg} resizeMode="contain" />
         <Text style={s.sub}>του έθνους</Text>
         <Text style={s.tagline}>Η φωνή σου μετράει.</Text>
       </View>
@@ -77,7 +77,7 @@ const s = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0f172a" },
   content: { padding: 20, paddingBottom: 40 },
   hero: { alignItems: "center", paddingVertical: 32 },
-  logo: { fontSize: 48, fontWeight: "900", color: "#2563eb" },
+  logoImg: { width: 120, height: 120, marginBottom: 8 },
   sub: { fontSize: 14, color: "#64748b", letterSpacing: 3, marginTop: -4 },
   tagline: { fontSize: 16, color: "#94a3b8", marginTop: 8 },
   statusCard: { borderRadius: 12, padding: 14, marginBottom: 16 },

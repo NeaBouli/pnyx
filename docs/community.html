@@ -219,6 +219,39 @@
     .pgc p { font-size: 0.78rem; color: var(--gray-400); margin-bottom: 0.75rem; flex: 1; }
     .pgc a { display: inline-block; padding: 0.4rem 1rem; background: var(--blue); color: white; border-radius: 0.5rem; font-size: 0.8rem; font-weight: 700; text-decoration: none; transition: all 0.2s; }
     .pgc a:hover { background: var(--blue-d); }
+    /* Pulsing red border */
+    @keyframes pulse-green {
+      0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+    }
+    @keyframes pulse-red {
+      0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+      50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+    }
+    .fc.pulse-red { animation: pulse-red 2s ease-in-out infinite; border-color: #ef4444; }
+    /* Soll/Ist accounting */
+    .fc-acct { background: var(--gray-100); border-radius: 0.5rem; padding: 0.5rem 0.6rem; margin: 0.5rem 0; font-size: 0.75rem; }
+    .fc-acct-row { display: flex; justify-content: space-between; margin-bottom: 0.15rem; }
+    .fc-acct-total { display: flex; justify-content: space-between; padding-top: 0.3rem; margin-top: 0.3rem; border-top: 1px solid #e2e8f0; font-weight: 900; }
+    .fc-acct-total.positive { color: #166534; }
+    .fc-acct-total.negative { color: #dc2626; }
+    .fc-acct-total.zero { color: #92400e; }
+    /* Info popup */
+    .info-trigger { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: var(--gray-100); border: 1px solid #e2e8f0; font-size: 0.65rem; font-weight: 900; color: var(--gray-500); cursor: pointer; position: relative; margin-left: 0.3rem; vertical-align: middle; }
+    .info-popup { display: none; position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); background: var(--gray-900); color: #e2e8f0; padding: 0.75rem 1rem; border-radius: 0.5rem; font-size: 0.72rem; font-weight: 400; width: 260px; z-index: 50; line-height: 1.5; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+    .info-popup::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 6px solid transparent; border-top-color: var(--gray-900); }
+    .info-trigger:hover .info-popup, .info-trigger:focus .info-popup { display: block; }
+    /* Live balance indicator */
+    .fc-live { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; color: var(--gray-400); }
+    .fc-live-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; animation: blink 2s infinite; }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .fc-balance { font-size: 1.1rem; font-weight: 900; font-family: monospace; margin: 0.3rem 0; }
+    .fc-balance-sub { font-size: 0.68rem; color: var(--gray-400); }
+    /* Payment buttons row */
+    .fc-pay-row { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
+    .fc-pay-row a { flex: 1; text-align: center; padding: 0.4rem; border-radius: 0.4rem; font-weight: 700; font-size: 0.72rem; text-decoration: none; color: white; }
+    /* Copy feedback */
+    .copy-ok { background: #dcfce7 !important; border-color: #22c55e !important; transition: all 0.3s; }
   </style>
 </head>
 <body>
@@ -276,103 +309,208 @@
     <p style="font-size:0.8rem;color:var(--gray-400);margin:0" data-el="Όλοι συνεισφέρουν ισότιμα. Κανείς δεν ελέγχει." data-en="Everyone contributes equally. Nobody controls.">Όλοι συνεισφέρουν ισότιμα. Κανείς δεν ελέγχει.</p>
   </div>
 
-  <h2 class="fade-in" data-el="Χρηματοδότηση & Βιωσιμότητα" data-en="Funding & Sustainability">Χρηματοδότηση &amp; Βιωσιμότητα</h2>
+  <h2 class="fade-in" style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap"><span data-el="Χρηματοδότηση &amp; Βιωσιμότητα" data-en="Funding &amp; Sustainability">Χρηματοδότηση &amp; Βιωσιμότητα</span> <span style="display:inline-flex;align-items:center;gap:0.35rem;background:#dcfce7;border:1px solid #86efac;border-radius:2rem;padding:0.2rem 0.75rem;font-size:0.65rem;font-weight:700;color:#166534;white-space:nowrap;animation:pulse-green 2s ease-in-out infinite"><span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;animation:blink 2s infinite"></span> <span data-el="Διαδραστικός Ζωντανός Υπολογισμός" data-en="Interactive Live Calculation">Διαδραστικός Ζωντανός Υπολογισμός</span></span></h2>
   <p class="fade-in" data-el="Κόστος σκόπιμα χαμηλό — χρηματοδοτείται αποκλειστικά από πολίτες." data-en="Deliberately low costs — funded exclusively by citizens.">Κόστος σκόπιμα χαμηλό — χρηματοδοτείται αποκλειστικά από πολίτες.</p>
 
   <div id="finance" class="finance-grid fade-in">
 
     <!-- SERVER -->
-    <div class="fc" id="sCard" style="border-color:#f59e0b">
-      <div class="fc-badge" id="sBadge" style="background:#f59e0b" data-el="ΕΓΓΡΑΦΗ" data-en="REGISTERING">ΕΓΓΡΑΦΗ</div>
+    <div class="fc" id="sCard" style="border-color:#86efac">
+      <div class="fc-badge" id="sBadge" style="background:#22c55e" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
       <div class="fc-icon">🖥️</div>
       <div class="fc-title">Server Hosting</div>
       <div class="fc-sub">Hetzner CX33 &middot; EU &middot; GDPR</div>
       <div class="fc-info">
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong>10€/<span data-el="μήνα" data-en="month">μήνα</span></strong></div>
-        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κατάσταση:" data-en="Status:">Κατάσταση:</span><strong style="color:#166534" id="sDue" data-el="Ενεργός — πληρωμένο" data-en="Active — paid">Ενεργός — πληρωμένο</strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κατάσταση:" data-en="Status:">Κατάσταση:</span><strong style="color:#166534" id="sDue" data-el="Ενεργός" data-en="Active">Ενεργός</strong></div>
       </div>
-      <div class="fc-tbox" id="sTbox" style="background:#fefce8">
-        <div style="font-size:0.65rem;font-weight:700;color:#92400e;margin-bottom:0.2rem" data-el="Χρόνος μέχρι χρέωση" data-en="Time until charge">Χρόνος μέχρι χρέωση</div>
-        <div class="fc-timer" id="sTimer" style="color:#92400e">—</div>
-        <div class="fc-tsub" id="sTsub" style="color:#92400e" data-el="ημ · ώ · λ · δ" data-en="d · h · m · s">ημ · ώ · λ · δ</div>
-      </div>
-      <div class="fc-status" id="sGreen" style="display:none;background:#f0fdf4;color:#166534">✅ <span data-el="Καμία οφειλή" data-en="No invoice">Καμία οφειλή</span></div>
-      <div class="fc-status" id="sYellow" style="background:#fefce8;color:#92400e">⏳ <span data-el="Σε διαδικασία εγγραφής" data-en="Registration in progress">Σε διαδικασία εγγραφής</span></div>
-      <div id="sRed" style="display:none">
-        <div class="fc-status" style="background:#fef2f2;color:#dc2626;margin-bottom:0.4rem">🔴 <span data-el="Άμεση πληρωμή!" data-en="Pay now!">Άμεση πληρωμή!</span></div>
-        <div style="background:white;border:1px solid #fca5a5;border-radius:0.4rem;padding:0.4rem;margin-bottom:0.4rem;font-family:monospace">
-          <div style="font-size:0.6rem;color:var(--gray-400)" data-el="RF Αριθμός:" data-en="RF Number:">RF Αριθμός:</div>
-          <div id="srvRF" style="font-size:0.82rem;font-weight:700">—</div>
+      <!-- Soll/Ist Accounting -->
+      <div class="fc-acct" id="sAcct">
+        <div style="font-size:0.65rem;font-weight:700;color:var(--gray-500);margin-bottom:0.3rem" data-el="Σολλ / Ιστ Λογαριασμός" data-en="Debit / Credit Account">Σολλ / Ιστ Λογαριασμός</div>
+        <div class="fc-acct-row"><span data-el="Εισπράξεις:" data-en="Received:">Εισπράξεις:</span><strong id="sReceived" style="color:#166534">20,00€</strong></div>
+        <div class="fc-acct-row"><span data-el="Κόστος server:" data-en="Server cost:">Κόστος server:</span><strong id="sCost" style="color:#dc2626">-10,00€</strong></div>
+        <div class="fc-acct-total positive" id="sBalance">
+          <span data-el="Υπόλοιπο:" data-en="Balance:">Υπόλοιπο:</span>
+          <span id="sBalanceVal">10,00€</span>
         </div>
-        <a id="stripePayBtn" href="https://www.paypal.com/paypalme/VendettaLabs/10" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:0.4rem;background:#dc2626;color:white;border-radius:0.4rem;font-weight:700;font-size:0.82rem;text-decoration:none" data-el="Πληρωμή 10€ Server" data-en="Pay 10€ Server">Πληρωμή 10€ Server →</a>
+      </div>
+      <div class="fc-tbox" id="sTbox" style="background:#f0fdf4">
+        <div style="font-size:0.65rem;font-weight:700;color:#166534;margin-bottom:0.2rem" id="sTboxLabel" data-el="Χρόνος μέχρι χρέωση" data-en="Time until charge">Χρόνος μέχρι χρέωση</div>
+        <div class="fc-timer" id="sTimer" style="color:#166534">—</div>
+        <div class="fc-tsub" id="sTsub" style="color:#166534" data-el="ημ · ώ · λ · δ" data-en="d · h · m · s">ημ · ώ · λ · δ</div>
+      </div>
+      <div class="fc-status" id="sGreen" style="background:#f0fdf4;color:#166534">✅ <span data-el="Server εξοφλημένος" data-en="Server paid">Server εξοφλημένος</span></div>
+      <div class="fc-status" id="sYellow" style="display:none;background:#fefce8;color:#92400e">⚠️ <span data-el="Παρακαλούμε υποστηρίξτε" data-en="Please support">Παρακαλούμε υποστηρίξτε</span></div>
+      <div id="sRed" style="display:none">
+        <div class="fc-status" style="background:#fef2f2;color:#dc2626;margin-bottom:0.4rem">🔴 <span data-el="Ο server χρειάζεται χρηματοδότηση!" data-en="Server needs funding!">Ο server χρειάζεται χρηματοδότηση!</span></div>
+      </div>
+      <div class="fc-pay-row" style="margin-top:0.5rem">
+        <a href="https://donate.stripe.com/7sYcN477P6RF3ii9Uk7N604" target="_blank" rel="noopener noreferrer" style="background:#635bff;flex:1;text-align:center;padding:0.45rem;border-radius:0.4rem;font-weight:700;font-size:0.8rem;text-decoration:none;color:white" data-el="Κάλυψε Κόστος 10€" data-en="Cover Costs 10€">Κάλυψε Κόστος 10€</a>
       </div>
     </div>
 
-    <!-- DOMAIN -->
-    <div class="fc" id="dCard">
-      <div class="fc-badge" id="dBadge" style="background:#22c55e">ΕΞΟΦΛΗΜΕΝΟ</div>
+    <!-- DOMAIN (Soll/Ist like Server) -->
+    <div class="fc" id="dCard" style="border-color:#86efac">
+      <div class="fc-badge" id="dBadge" style="background:#22c55e" data-el="ΕΞΟΦΛΗΜΕΝΟ" data-en="PAID">ΕΞΟΦΛΗΜΕΝΟ</div>
       <div class="fc-icon">🌐</div>
       <div class="fc-title">Domain</div>
       <div class="fc-sub">ekklesia.gr &middot; Papaki.gr</div>
       <div class="fc-info">
-        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong style="color:#166534">9,30€/<span data-el="έτος" data-en="year">έτος</span></strong></div>
-        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Πληρώθηκε:" data-en="Paid:">Πληρώθηκε:</span><strong style="color:#166534">29/03/2026 &middot; 24<span data-el="μ" data-en="m">μ</span></strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong>9,30€/<span data-el="έτος" data-en="year">έτος</span> (24<span data-el="μ" data-en="m">μ</span>)</strong></div>
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Λήξη:" data-en="Expires:">Λήξη:</span><strong style="color:#166534">29/03/2028</strong></div>
       </div>
+      <!-- Soll/Ist Accounting -->
+      <div class="fc-acct" id="dAcct">
+        <div style="font-size:0.65rem;font-weight:700;color:var(--gray-500);margin-bottom:0.3rem" data-el="Σολλ / Ιστ Λογαριασμός" data-en="Debit / Credit Account">Σολλ / Ιστ Λογαριασμός</div>
+        <div class="fc-acct-row"><span data-el="Εισπράξεις:" data-en="Received:">Εισπράξεις:</span><strong id="dReceived" style="color:#166534">9,30€</strong></div>
+        <div class="fc-acct-row"><span data-el="Κόστος domain:" data-en="Domain cost:">Κόστος domain:</span><strong id="dCost" style="color:#dc2626">-9,30€</strong></div>
+        <div class="fc-acct-total zero" id="dBalance">
+          <span data-el="Υπόλοιπο:" data-en="Balance:">Υπόλοιπο:</span>
+          <span id="dBalanceVal">0,00€</span>
+        </div>
+      </div>
       <div class="fc-tbox" id="dTbox" style="background:#f0fdf4">
-        <div style="font-size:0.65rem;font-weight:700;color:#166534;margin-bottom:0.2rem" data-el="Χρόνος μέχρι λήξη" data-en="Time until expiry">Χρόνος μέχρι λήξη</div>
+        <div style="font-size:0.65rem;font-weight:700;color:#166534;margin-bottom:0.2rem" id="dTboxLabel" data-el="Χρόνος μέχρι ανανέωση" data-en="Time until renewal">Χρόνος μέχρι ανανέωση</div>
         <div class="fc-timer" id="dTimer" style="color:#166534">—</div>
         <div class="fc-tsub" id="dTsub" style="color:#166534" data-el="ημ · ώ · λ · δ" data-en="d · h · m · s">ημ · ώ · λ · δ</div>
       </div>
-      <div class="fc-status" id="dGreen" style="background:#f0fdf4;color:#166534">✅ <span data-el="Εξοφλημένο" data-en="Paid">Εξοφλημένο</span> 🙏</div>
-      <div class="fc-status" id="dYellow" style="display:none;background:#fefce8;color:#92400e">⚠️ <span data-el="Επερχόμενη ανανέωση" data-en="Renewal upcoming">Επερχόμενη ανανέωση</span></div>
+      <div class="fc-status" id="dGreen" style="background:#f0fdf4;color:#166534">✅ <span data-el="Domain ενεργό" data-en="Domain active">Domain ενεργό</span></div>
+      <div class="fc-status" id="dYellow" style="display:none;background:#fefce8;color:#92400e">⚠️ <span data-el="Ανανέωση εντός 1 έτους — παρακαλούμε υποστηρίξτε" data-en="Renewal within 1 year — please support">Ανανέωση εντός 1 έτους</span></div>
       <div id="dRed" style="display:none">
-        <div class="fc-status" style="background:#fef2f2;color:#dc2626;margin-bottom:0.4rem">🔴 <span data-el="Άμεση ανανέωση!" data-en="Immediate renewal!">Άμεση ανανέωση!</span></div>
-        <a href="mailto:kaspartisan@proton.me?subject=Domain%20Renewal" style="display:block;text-align:center;padding:0.4rem;background:#dc2626;color:white;border-radius:0.4rem;font-weight:700;font-size:0.82rem;text-decoration:none" data-el="Επικοινωνία" data-en="Contact">Επικοινωνία</a>
+        <div class="fc-status" style="background:#fef2f2;color:#dc2626;margin-bottom:0.4rem">🔴 <span data-el="Domain λήγει σύντομα — χρειάζεται ανανέωση!" data-en="Domain expiring soon — renewal needed!">Domain λήγει σύντομα!</span></div>
+      </div>
+      <div class="fc-pay-row" style="margin-top:0.5rem">
+        <a href="https://donate.stripe.com/7sYcN477P6RF3ii9Uk7N604" target="_blank" rel="noopener noreferrer" style="background:#635bff;flex:1;text-align:center;padding:0.45rem;border-radius:0.4rem;font-weight:700;font-size:0.8rem;text-decoration:none;color:white" data-el="Κάλυψε Κόστος 10€" data-en="Cover Costs 10€">Κάλυψε Κόστος 10€</a>
       </div>
     </div>
 
-    <!-- MIRROR SERVER — PLANNED -->
-    <div class="fc gray">
-      <div class="fc-badge" style="background:#94a3b8" data-el="ΣΧΕΔΙΑΖΕΤΑΙ" data-en="PLANNED">ΣΧΕΔΙΑΖΕΤΑΙ</div>
+    <!-- MIRROR SERVER — VOLUNTEERS WANTED -->
+    <div class="fc" style="border-color:#a855f7">
+      <div class="fc-badge" style="background:#a855f7" data-el="ΑΝΑΖΗΤΟΥΜΕ" data-en="SEEKING">ΑΝΑΖΗΤΟΥΜΕ</div>
       <div class="fc-icon">🪞</div>
-      <div class="fc-title" style="color:var(--gray-400)" data-el="Spiegel-Server" data-en="Mirror Server">Spiegel-Server</div>
-      <div class="fc-sub" data-el="Αποκεντρωμένο αντίγραφο — ανθεκτικότητα" data-en="Decentralized mirror — redundancy">Αποκεντρωμένο αντίγραφο</div>
-      <div class="fc-info" style="background:#f1f5f9">
-        <div class="fc-row"><span style="color:#94a3b8" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong style="color:#94a3b8" data-el="Υπό διερεύνηση" data-en="Under review">Υπό διερεύνηση</strong></div>
+      <div class="fc-title" data-el="Mirror-Server" data-en="Mirror Server">Mirror-Server</div>
+      <div class="fc-sub" data-el="Αποκεντρωμένο αντίγραφο — ανθεκτικότητα" data-en="Decentralized mirror — redundancy">Αποκεντρωμένο αντίγραφο — ανθεκτικότητα</div>
+      <div class="fc-info">
+        <p style="font-size:0.72rem;color:var(--gray-700);margin:0;line-height:1.5" data-el="Θέλετε να φιλοξενήσετε ένα mirror; Προσφέρετε ένα server (VPS ή bare-metal) ως αντίγραφο ασφαλείας. Η πλατφόρμα γίνεται ανθεκτικότερη — κανείς δεν μπορεί να την κλείσει." data-en="Want to host a mirror? Offer a server (VPS or bare-metal) as a backup copy. The platform becomes more resilient — nobody can shut it down.">
+          Θέλετε να φιλοξενήσετε ένα mirror; Προσφέρετε ένα server (VPS ή bare-metal) ως αντίγραφο ασφαλείας. Η πλατφόρμα γίνεται ανθεκτικότερη — κανείς δεν μπορεί να την κλείσει.
+        </p>
       </div>
-      <div class="fc-status" style="background:#f1f5f9;color:#94a3b8;margin-top:0.5rem">🔜 <span data-el="Προγραμματίζεται" data-en="Planned">Προγραμματίζεται</span></div>
+      <div class="fc-info" style="background:#faf5ff;margin-top:0.3rem">
+        <div style="font-size:0.68rem;color:#6b21a8;font-weight:600" data-el="Ελάχιστες απαιτήσεις: 2 vCPU, 4GB RAM, 40GB SSD, Linux" data-en="Min. requirements: 2 vCPU, 4GB RAM, 40GB SSD, Linux">Min: 2 vCPU · 4GB RAM · 40GB SSD · Linux</div>
+      </div>
+      <a href="https://github.com/NeaBouli/pnyx/issues/new?title=Mirror%20Server%20Volunteer&labels=mirror,infrastructure&body=I%20want%20to%20provide%20a%20mirror%20server.%0A%0ALocation:%20%0ASpecs:%20%0AAvailability:%20" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:0.5rem;background:#a855f7;color:white;border-radius:0.4rem;font-weight:700;font-size:0.82rem;text-decoration:none;margin-top:0.5rem" data-el="Εθελοντής Mirror →" data-en="Volunteer Mirror →">Εθελοντής Mirror → GitHub</a>
     </div>
 
-    <!-- ARWEAVE — MOD-08 -->
-    <div class="fc" style="border-color:#86efac">
-      <div class="fc-badge" style="background:#22c55e" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
+    <!-- ARWEAVE — MOD-08 (LIVE BALANCE) -->
+    <div class="fc" id="arCard" style="border-color:#86efac">
+      <div class="fc-badge" id="arBadge" style="background:#22c55e" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
       <div class="fc-icon">🗄️</div>
-      <div class="fc-title">Arweave</div>
+      <div class="fc-title">Arweave
+        <span class="info-trigger" tabindex="0">?
+          <div class="info-popup" data-el="Arweave αποθηκεύει ψήφους μόνιμα στο blockchain. Κάθε αρχειοθέτηση κοστίζει ελάχιστα AR (~$0.0001). Πώς να αποκτήσετε AR: Ανταλλαγή μέσω CoinEx (χωρίς KYC), Changenow.io, ή Uniswap DEX." data-en="Arweave stores votes permanently on blockchain. Each archive costs minimal AR (~$0.0001). How to get AR: Swap via CoinEx (no KYC), Changenow.io, or Uniswap DEX.">
+            Arweave αποθηκεύει ψήφους μόνιμα στο blockchain. Κάθε αρχειοθέτηση κοστίζει ~$0.0001 AR.<br/><br/>
+            <strong data-el="Πώς να αποκτήσετε AR:" data-en="How to get AR:">Πώς να αποκτήσετε AR:</strong><br/>
+            • <a href="https://changenow.io" target="_blank" style="color:#93c5fd">Changenow.io</a> — swap χωρίς λογαριασμό<br/>
+            • <a href="https://www.coinex.com" target="_blank" style="color:#93c5fd">CoinEx</a> — χωρίς KYC<br/>
+            • DEX: Uniswap (wAR/ETH)
+          </div>
+        </span>
+      </div>
       <div class="fc-sub" data-el="Μόνιμη αποθήκευση Audit Trail — MOD-08" data-en="Permanent audit trail storage — MOD-08">Μόνιμη αποθήκευση Audit Trail</div>
       <div class="fc-info">
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong>~$0.0001/<span data-el="ανέβασμα" data-en="upload">ανέβασμα</span></strong></div>
-        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Πληρωμή:" data-en="Payment:">Πληρωμή:</span><strong>AR Token Wallet</strong></div>
-        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Διεύθυνση:" data-en="Address:">Διεύθυνση:</span><a href="https://viewblock.io/arweave/address/2hkK3Bcr6garERqyBCLCiJ-d8zZzM5ZWe3_AzGdhBTs" target="_blank" style="color:var(--blue);font-size:0.68rem;font-family:monospace;word-break:break-all">2hkK3Bcr6g...GdhBTs</a></div>
       </div>
-      <div class="fc-status" style="background:#f0fdf4;color:#166534;margin-top:0.5rem">✅ <span data-el="Dry Run — 0 AR Balance" data-en="Dry Run — 0 AR Balance">Dry Run — 0 AR Balance</span></div>
+      <!-- Live Balance -->
+      <div style="text-align:center;padding:0.5rem 0">
+        <div class="fc-live"><span class="fc-live-dot"></span> <span data-el="Live Υπόλοιπο" data-en="Live Balance">Live Υπόλοιπο</span></div>
+        <div class="fc-balance" id="arBalance">—</div>
+        <div class="fc-balance-sub" id="arBalanceUsd">≈ $—</div>
+      </div>
+      <div class="fc-status" id="arStatus" style="background:#f0fdf4;color:#166534;margin-top:0.3rem">✅ <span id="arStatusText" data-el="Φόρτωση..." data-en="Loading...">Φόρτωση...</span></div>
+      <!-- AR Wallet — collapsed -->
+      <button onclick="toggleCoin('ar')" style="width:100%;margin-top:0.5rem;padding:0.35rem;background:#22222218;border:1px solid #33333340;border-radius:0.4rem;cursor:pointer;font-weight:800;font-size:0.78rem;color:var(--gray-700);transition:all 0.2s" data-el="AR Wallet Adresse" data-en="AR Wallet Address">AR Wallet</button>
+      <div id="arPanel" style="display:none;margin-top:0.35rem;background:var(--gray-100);border:1px solid #e2e8f0;border-radius:0.4rem;padding:0.5rem">
+        <div style="display:flex;align-items:center;gap:0.3rem;background:white;border:1px solid #e2e8f0;border-radius:0.3rem;padding:0.25rem 0.4rem">
+          <code style="font-size:0.55rem;color:var(--gray-700);word-break:break-all;flex:1;user-select:all" id="arAddr">2hkK3Bcr6garERqyBCLCiJ-d8zZzM5ZWe3_AzGdhBTs</code>
+          <button onclick="copyAddr('arAddr')" style="background:none;border:1px solid #e2e8f0;border-radius:0.25rem;padding:0.15rem 0.35rem;cursor:pointer;font-size:0.6rem;color:var(--gray-500)" title="Copy">📋</button>
+        </div>
+        <a href="https://viewblock.io/arweave/address/2hkK3Bcr6garERqyBCLCiJ-d8zZzM5ZWe3_AzGdhBTs" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;font-size:0.6rem;color:var(--blue);margin-top:0.25rem;text-decoration:none" data-el="Viewblock Explorer →" data-en="Viewblock Explorer →">Viewblock Explorer →</a>
+      </div>
     </div>
 
-    <!-- HLR — SMS VERIFICATION -->
-    <div class="fc" style="border-color:#86efac">
-      <div class="fc-badge" style="background:#22c55e" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
+    <!-- HLR — SMS VERIFICATION (LIVE CREDITS + BTC/LTC) -->
+    <div class="fc" id="hlrCard" style="border-color:#86efac">
+      <div class="fc-badge" id="hlrBadge" style="background:#22c55e" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
       <div class="fc-icon">📱</div>
-      <div class="fc-title">HLR Lookup</div>
+      <div class="fc-title">HLR Lookup
+        <span class="info-trigger" tabindex="0">?
+          <div class="info-popup" data-el="HLR Lookup επαληθεύει ελληνικούς αριθμούς κινητού χωρίς SMS. Κάθε επαλήθευση = 1 credit (~0,01€). 10€ = 1000 HLR credits. Αγορά credits μέσω BTC ή LTC — ανώνυμα, χωρίς KYC." data-en="HLR Lookup verifies Greek mobile numbers without SMS. Each verification = 1 credit (~0.01€). 10€ = 1000 HLR credits. Buy credits via BTC or LTC — anonymous, no KYC.">
+            HLR Lookup επαληθεύει ελληνικούς αριθμούς κινητού χωρίς SMS.<br/>
+            Κάθε επαλήθευση = 1 credit (~0,01€).<br/>
+            10€ = 1000 HLR / 2000 MNP / 4000 NT<br/><br/>
+            <strong data-el="Αγορά Credits:" data-en="Buy Credits:">Αγορά Credits:</strong><br/>
+            • BTC ή LTC → HLR — <span data-el="ανώνυμα, χωρίς KYC" data-en="anonymous, no KYC">ανώνυμα, χωρίς KYC</span>
+          </div>
+        </span>
+      </div>
       <div class="fc-sub" data-el="Επαλήθευση κινητού — MOD-01" data-en="Mobile verification — MOD-01">Επαλήθευση κινητού — MOD-01</div>
       <div class="fc-info">
-        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong>~$0.002/<span data-el="ερώτημα" data-en="query">ερώτημα</span></strong></div>
-        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Πληρωμή:" data-en="Payment:">Πληρωμή:</span><strong>hlrlookups.com (Crypto)</strong></div>
-        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κατάσταση:" data-en="Status:">Κατάσταση:</span><strong style="color:#166534" data-el="Dry Run — API έτοιμο" data-en="Dry Run — API ready">Dry Run — API έτοιμο</strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong>~0,01€/<span data-el="επαλήθευση" data-en="verification">επαλήθευση</span></strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Πληρωμή:" data-en="Payment:">Πληρωμή:</span><strong>BTC / LTC</strong></div>
       </div>
-      <div class="fc-status" style="background:#f0fdf4;color:#166534;margin-top:0.5rem">✅ <span data-el="verify_greek_number() ενεργό" data-en="verify_greek_number() active">verify_greek_number() ενεργό</span></div>
+      <!-- Live Credits -->
+      <div class="fc-acct" id="hlrAcct">
+        <div style="font-size:0.65rem;font-weight:700;color:var(--gray-500);margin-bottom:0.3rem" data-el="Credits Κατάσταση" data-en="Credits Status">Credits Κατάσταση</div>
+        <div class="fc-acct-row"><span data-el="Αρχικά:" data-en="Initial:">Αρχικά:</span><strong id="hlrInitial" style="color:#166534">1000</strong></div>
+        <div class="fc-acct-row"><span data-el="Χρησιμοποιήθηκαν:" data-en="Used:">Χρησιμοποιήθηκαν:</span><strong id="hlrUsed" style="color:#dc2626">0</strong></div>
+        <div class="fc-acct-total positive" id="hlrBalance">
+          <span data-el="Υπόλοιπο:" data-en="Remaining:">Υπόλοιπο:</span>
+          <span id="hlrRemaining">1000</span>
+        </div>
+      </div>
+      <!-- Live balance bar -->
+      <div style="background:#e2e8f0;border-radius:0.3rem;height:8px;margin:0.3rem 0;overflow:hidden">
+        <div id="hlrBar" style="height:100%;background:#22c55e;border-radius:0.3rem;transition:width 0.5s,background 0.5s;width:100%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--gray-400)">
+        <span id="hlrBarLabel" data-el="100% διαθέσιμο" data-en="100% available">100% διαθέσιμο</span>
+        <span class="fc-live"><span class="fc-live-dot"></span> Live</span>
+      </div>
+      <div class="fc-status" id="hlrStatusBox" style="background:#f0fdf4;color:#166534;margin-top:0.5rem">✅ <span id="hlrStatusText" data-el="Φόρτωση..." data-en="Loading...">Φόρτωση...</span></div>
+      <!-- BTC/LTC Donation — collapsed by default -->
+      <div style="display:flex;gap:0.4rem;margin-top:0.5rem">
+        <button onclick="toggleCoin('btc')" style="flex:1;padding:0.35rem;background:#f7931a18;border:1px solid #f7931a40;border-radius:0.4rem;cursor:pointer;font-weight:800;font-size:0.78rem;color:#f7931a;transition:all 0.2s">BTC → HLR</button>
+        <button onclick="toggleCoin('ltc')" style="flex:1;padding:0.35rem;background:#34568018;border:1px solid #34568050;border-radius:0.4rem;cursor:pointer;font-weight:800;font-size:0.78rem;color:#345680;transition:all 0.2s">LTC → HLR</button>
+      </div>
+      <!-- BTC Panel (hidden) -->
+      <div id="btcPanel" style="display:none;margin-top:0.35rem;background:#f7931a0d;border:1px solid #f7931a40;border-radius:0.4rem;padding:0.5rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem">
+          <span style="font-weight:800;color:#f7931a;font-size:0.82rem">Bitcoin</span>
+          <span style="font-size:0.62rem;color:var(--gray-400)" id="btcPrice">—</span>
+        </div>
+        <div style="font-size:0.72rem;font-weight:700;color:var(--gray-700);margin-bottom:0.25rem" id="btcAmount">—</div>
+        <div style="display:flex;align-items:center;gap:0.3rem;background:white;border:1px solid #e2e8f0;border-radius:0.3rem;padding:0.25rem 0.4rem">
+          <code style="font-size:0.55rem;color:var(--gray-700);word-break:break-all;flex:1;user-select:all" id="btcAddr">bc1q83370mce8qfkyyepspg6xf42f577s47rtl3mhx</code>
+          <button onclick="copyAddr('btcAddr')" style="background:none;border:1px solid #e2e8f0;border-radius:0.25rem;padding:0.15rem 0.35rem;cursor:pointer;font-size:0.6rem;color:var(--gray-500)" title="Copy">📋</button>
+        </div>
+        <div style="font-size:0.55rem;color:var(--gray-400);text-align:center;margin-top:0.2rem" data-el="Live — πριν τη μεταφορά ελέγξτε το ποσό" data-en="Live — check amount before transfer">Live — πριν τη μεταφορά ελέγξτε το ποσό</div>
+      </div>
+      <!-- LTC Panel (hidden) -->
+      <div id="ltcPanel" style="display:none;margin-top:0.35rem;background:#34568018;border:1px solid #34568050;border-radius:0.4rem;padding:0.5rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem">
+          <span style="font-weight:800;color:#345680;font-size:0.82rem">Litecoin</span>
+          <span style="font-size:0.62rem;color:var(--gray-400)" id="ltcPrice">—</span>
+        </div>
+        <div style="font-size:0.72rem;font-weight:700;color:var(--gray-700);margin-bottom:0.25rem" id="ltcAmount">—</div>
+        <div style="display:flex;align-items:center;gap:0.3rem;background:white;border:1px solid #e2e8f0;border-radius:0.3rem;padding:0.25rem 0.4rem">
+          <code style="font-size:0.55rem;color:var(--gray-700);word-break:break-all;flex:1;user-select:all" id="ltcAddr">ltc1qmr467kl8w0e8axplq5uyrpws3mc4sclpu4ds8w</code>
+          <button onclick="copyAddr('ltcAddr')" style="background:none;border:1px solid #e2e8f0;border-radius:0.25rem;padding:0.15rem 0.35rem;cursor:pointer;font-size:0.6rem;color:var(--gray-500)" title="Copy">📋</button>
+        </div>
+        <div style="font-size:0.55rem;color:var(--gray-400);text-align:center;margin-top:0.2rem" data-el="Live — πριν τη μεταφορά ελέγξτε το ποσό" data-en="Live — check amount before transfer">Live — πριν τη μεταφορά ελέγξτε το ποσό</div>
+      </div>
     </div>
 
-    <!-- DEVELOPER DONATIONS — PayPal.me/VendettaLabs -->
+    <!-- DEVELOPER DONATIONS — PayPal (freier Betrag, nicht getrackt) -->
     <div class="fc" style="border-color:#0070ba">
       <div class="fc-badge" style="background:#0070ba" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
       <div class="fc-icon">💙</div>
@@ -395,11 +533,11 @@
       <span data-el="Σύνολο/Έτος:" data-en="Total/Year:">Σύνολο/Έτος:</span>
       <span>Server: <strong>120€</strong></span>
       <span>Domain: <strong>9,30€</strong></span>
-      <span>Arweave: <strong style="color:#166534" data-el="Dry Run" data-en="Dry Run">Dry Run</strong></span>
-      <span>HLR: <strong style="color:#166534" data-el="Dry Run" data-en="Dry Run">Dry Run</strong></span>
+      <span>Arweave: <strong>~$0.0001/<span data-el="ανέβασμα" data-en="upload">ανέβ.</span></strong></span>
+      <span>HLR: <strong>~0,01€/<span data-el="επαλήθευση" data-en="verif.">επαλ.</span></strong></span>
       <span data-el="Ανάπτυξη: Εθελοντική" data-en="Development: Volunteer">Ανάπτυξη: <strong data-el="Εθελοντική" data-en="Volunteer">Εθελοντική</strong></span>
     </div>
-    <div style="font-size:1rem;font-weight:900;color:var(--blue)">~129,30€/<span data-el="έτος" data-en="year">έτος</span> + crypto</div>
+    <div style="font-size:1rem;font-weight:900;color:var(--blue)">~129,30€/<span data-el="έτος" data-en="year">έτος</span> + <span data-el="ανά χρήση" data-en="per use">ανά χρήση</span></div>
   </div>
 
   <h2 class="fade-in" data-el="Πώς να Συμμετέχεις" data-en="How to Participate">Πώς να Συμμετέχεις</h2>
@@ -543,100 +681,419 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
 </script>
 
 <script>
+// Toggle BTC/LTC panels (accordion — only one open at a time)
+function toggleCoin(coin) {
+  var panels = ["btcPanel","ltcPanel","arPanel"];
+  panels.forEach(function(p) {
+    var el = document.getElementById(p);
+    if (!el) return;
+    if (p === coin + "Panel") { el.style.display = el.style.display === "none" ? "block" : "none"; }
+    else { el.style.display = "none"; }
+  });
+}
+// Copy address to clipboard
+function copyAddr(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var text = el.textContent.trim();
+  navigator.clipboard.writeText(text).then(function() {
+    var btn = el.parentElement.querySelector("button");
+    if (btn) { var orig = btn.textContent; btn.textContent = "✅"; btn.parentElement.classList.add("copy-ok"); setTimeout(function(){ btn.textContent = orig; btn.parentElement.classList.remove("copy-ok"); }, 1500); }
+  });
+}
+</script>
+
+<script>
 // @ai-anchor INVOICE_AMPEL_TIMER
 (function() {
-  // Server: monthly billing cycle 16th→16th, 10€/month
-  // Due date = next payment deadline. GREEN while paid, YELLOW 5 days before, RED when overdue.
-  var SERVER_DUE_DATE = new Date("2026-05-16T00:00:00");
-  var SERVER_RF = "RF__ ____ ____ ____";
-  // Domain: yearly, paid until 2028
-  var DOMAIN_DUE_DATE = new Date("2028-03-29T00:00:00");
+  // ═══════════════════════════════════════════════════════════
+  // CONFIG — fetched live from /api/v1/payments/status
+  // Fallback values used until first API response arrives
+  // ═══════════════════════════════════════════════════════════
+  var SERVER_COST_PER_MONTH = 10;
+  var SERVER_START_DATE = new Date("2026-04-16T00:00:00");
+  var DOMAIN_EXPIRY = new Date("2028-03-29T00:00:00");
+  var DOMAIN_YELLOW_DAYS = 365;
+  var DOMAIN_RED_DAYS = 183;
+
+  // Live data from API (updated by fetchPaymentStatus)
+  var liveServerData = { received: 20, cost_total: 10, balance: 10 };
+  var liveDomainData = { received: 9.30, cost_total: 9.30, balance: 0 };
+
+  function fetchPaymentStatus() {
+    fetch("https://api.ekklesia.gr/api/v1/payments/status")
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.server) liveServerData = data.server;
+        if (data.domain) liveDomainData = data.domain;
+        if (data.domain && data.domain.expires) DOMAIN_EXPIRY = new Date(data.domain.expires + "T00:00:00");
+        updateServerTile();
+        updateDomainTile();
+      })
+      .catch(function() { /* use fallback values */ });
+  }
+  // Arweave wallet
+  var AR_WALLET = "2hkK3Bcr6garERqyBCLCiJ-d8zZzM5ZWe3_AzGdhBTs";
+  var AR_WARN_THRESHOLD = 1.0;  // AR — yellow below this
+  var AR_CRIT_THRESHOLD = 0.1;  // AR — red below this
+
+  // ═══════════════════════════════════════════════════════════
+  // HELPERS
+  // ═══════════════════════════════════════════════════════════
+  // Bilingual text helper — uses global currentLang from toggle
+  function t(el, en) { return (typeof currentLang !== "undefined" && currentLang === "en") ? en : el; }
 
   function fmt(ms) {
     if (ms <= 0) return "00:00:00:00";
     var s=Math.floor(ms/1000),m=Math.floor(s/60);s%=60;
     var h=Math.floor(m/60);m%=60;
     var d=Math.floor(h/24);h%=24;
-    return d+"ημ "+pad(h)+":"+pad(m)+":"+pad(s);
+    return d+t("ημ ","d ")+pad(h)+":"+pad(m)+":"+pad(s);
   }
   function pad(n){return String(n).padStart(2,"0");}
+  function eur(n){return n.toFixed(2).replace(".",",")+"\u20AC";}
 
-  function ampel(ids, dueDate, rfNum, yellowDays, redDays) {
-    var card=document.getElementById(ids.card);
-    var badge=document.getElementById(ids.badge);
-    var green=document.getElementById(ids.green);
-    var yell=document.getElementById(ids.yellow);
-    var red=document.getElementById(ids.red);
-    var tbox=document.getElementById(ids.tbox);
-    var timer=document.getElementById(ids.timer);
-    var tsub=document.getElementById(ids.tsub);
+  // ═══════════════════════════════════════════════════════════
+  // SERVER SOLL/IST ACCOUNTING (data from API)
+  // ═══════════════════════════════════════════════════════════
+  function updateServerTile() {
+    var acct = liveServerData;
+    // Next due: start + months_elapsed months
+    var monthsElapsed = acct.months_elapsed || Math.max(1, Math.ceil((new Date() - SERVER_START_DATE) / (30.44*86400000)));
+    var nextDue = new Date(SERVER_START_DATE);
+    nextDue.setMonth(nextDue.getMonth() + monthsElapsed);
+    var now = new Date();
+    var ms = nextDue - now;
+    var days = Math.ceil(ms / 86400000);
+
+    // Update accounting display
+    var recEl = document.getElementById("sReceived");
+    var costEl = document.getElementById("sCost");
+    var balEl = document.getElementById("sBalanceVal");
+    var balRow = document.getElementById("sBalance");
+    if (recEl) recEl.textContent = eur(acct.received || 0);
+    if (costEl) costEl.textContent = "-" + eur(acct.cost_total || 0);
+    if (balEl) balEl.textContent = (acct.balance < 0 ? "-" : "") + eur(Math.abs(acct.balance || 0));
+    if (balRow) {
+      balRow.className = "fc-acct-total " + (acct.balance > 0 ? "positive" : acct.balance < 0 ? "negative" : "zero");
+    }
+
+    // Timer
+    var timer = document.getElementById("sTimer");
+    if (timer) timer.textContent = fmt(Math.max(0, ms));
+
+    // Ampel logic based on balance
+    var card = document.getElementById("sCard");
+    var badge = document.getElementById("sBadge");
+    var green = document.getElementById("sGreen");
+    var yell = document.getElementById("sYellow");
+    var red = document.getElementById("sRed");
+    var tbox = document.getElementById("sTbox");
+    var tsub = document.getElementById("sTsub");
+    var tboxLabel = document.getElementById("sTboxLabel");
+    var sDue = document.getElementById("sDue");
+
+    if (acct.balance < 0) {
+      // RED — negative balance, pulsing
+      card.className = "fc pulse-red";
+      card.style.borderColor = "#ef4444";
+      badge.style.background = "#ef4444";
+      badge.textContent = t("ΧΡΕΙΑΖΕΤΑΙ ΧΡΗΜΑΤΟΔΟΤΗΣΗ","NEEDS FUNDING");
+      if (tbox) { tbox.style.background = "#fef2f2"; }
+      if (timer) timer.style.color = "#dc2626";
+      if (tsub) { tsub.style.color = "#dc2626"; tsub.textContent = Math.abs(days) + t(" ημ. εκκρεμότητα"," days overdue"); }
+      if (tboxLabel) { tboxLabel.textContent = t("Κρίσιμο — χρειάζεται δωρεά","Critical — donation needed"); tboxLabel.style.color = "#dc2626"; }
+      if (sDue) { sDue.textContent = t("Χρειάζεται χρηματοδότηση","Needs funding"); sDue.style.color = "#dc2626"; }
+      if (green) green.style.display = "none";
+      if (yell) yell.style.display = "none";
+      if (red) red.style.display = "block";
+    } else if (acct.balance === 0 || days <= 5) {
+      // YELLOW — balance zero or approaching due
+      card.className = "fc";
+      card.style.borderColor = "#fde047";
+      badge.style.background = "#f59e0b";
+      badge.textContent = t("ΠΡΟΣΟΧΗ","ATTENTION");
+      if (tbox) { tbox.style.background = "#fefce8"; }
+      if (timer) timer.style.color = "#92400e";
+      if (tsub) tsub.style.color = "#92400e";
+      if (tboxLabel) { tboxLabel.textContent = t("Χρόνος μέχρι χρέωση","Time until charge"); tboxLabel.style.color = "#92400e"; }
+      if (sDue) { sDue.textContent = t("Υπόλοιπο: ","Balance: ") + eur(acct.balance); sDue.style.color = "#92400e"; }
+      if (green) green.style.display = "none";
+      if (yell) yell.style.display = "block";
+      if (red) red.style.display = "none";
+    } else {
+      // GREEN — balance positive
+      card.className = "fc";
+      card.style.borderColor = "#86efac";
+      badge.style.background = "#22c55e";
+      badge.textContent = t("ΕΝΕΡΓΟ","ACTIVE");
+      if (tbox) { tbox.style.background = "#f0fdf4"; }
+      if (timer) timer.style.color = "#166534";
+      if (tsub) tsub.style.color = "#166534";
+      if (tboxLabel) { tboxLabel.textContent = t("Χρόνος μέχρι χρέωση","Time until charge"); tboxLabel.style.color = "#166534"; }
+      if (sDue) { sDue.textContent = t("Ενεργός — ","Active — ") + eur(acct.balance) + t(" υπόλοιπο"," balance"); sDue.style.color = "#166534"; }
+      if (green) green.style.display = "block";
+      if (yell) yell.style.display = "none";
+      if (red) red.style.display = "none";
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // DOMAIN SOLL/IST (gelb < 1 Jahr, rot < 6 Monate, pulsing when expired)
+  // ═══════════════════════════════════════════════════════════
+  function updateDomainTile() {
+    var now = new Date(), ms = DOMAIN_EXPIRY - now, days = Math.ceil(ms / 86400000);
+    var acct = liveDomainData;
+
+    // Accounting display
+    var recEl = document.getElementById("dReceived");
+    var costEl = document.getElementById("dCost");
+    var balEl = document.getElementById("dBalanceVal");
+    var balRow = document.getElementById("dBalance");
+    if (recEl) recEl.textContent = eur(acct.received || 0);
+    if (costEl) costEl.textContent = "-" + eur(acct.cost_total || 0);
+    if (balEl) balEl.textContent = (acct.balance < 0 ? "-" : "") + eur(Math.abs(acct.balance || 0));
+    if (balRow) balRow.className = "fc-acct-total " + (acct.balance > 0 ? "positive" : acct.balance < 0 ? "negative" : "zero");
+
+    // Timer
+    var timer = document.getElementById("dTimer");
+    if (timer) timer.textContent = fmt(Math.max(0, ms));
+
+    var card = document.getElementById("dCard");
+    var badge = document.getElementById("dBadge");
+    var green = document.getElementById("dGreen");
+    var yell = document.getElementById("dYellow");
+    var red = document.getElementById("dRed");
+    var tbox = document.getElementById("dTbox");
+    var tsub = document.getElementById("dTsub");
+    var tboxLabel = document.getElementById("dTboxLabel");
     if (!card) return;
 
-    if (!dueDate) {
-      card.style.borderColor="#86efac"; badge.style.background="#22c55e";
-      if (green) green.style.display="block";
-      if (yell) yell.style.display="none";
-      if (red) red.style.display="none";
-      if (timer) timer.textContent="—";
-      return;
-    }
-
-    var now=new Date(),ms=dueDate-now,days=Math.ceil(ms/86400000);
-    if (timer) timer.textContent=fmt(Math.max(0,ms));
-
     if (days <= 0) {
-      // OVERDUE — past due date
-      card.style.borderColor="#fca5a5"; badge.style.background="#ef4444";
-      badge.textContent="ΛΗΞΙΠΡΟΘΕΣΜΟ";
-      if (tbox) tbox.style.background="#fef2f2";
-      if (timer) { timer.style.color="#dc2626"; timer.textContent="ΕΚΠΡΟΘΕΣΜΟ"; }
-      if (tsub) { tsub.style.color="#dc2626"; tsub.textContent=Math.abs(days)+" ημ. καθυστέρηση"; }
-      if (green) green.style.display="none";
-      if (yell) yell.style.display="none";
-      if (red) red.style.display="block";
-      var rfEl=document.getElementById("srvRF"); if(rfEl&&rfNum) rfEl.textContent=rfNum;
-    } else if (days <= redDays) {
-      // RED — last few days
-      card.style.borderColor="#fca5a5"; badge.style.background="#ef4444";
-      badge.textContent="ΕΠΕΙΓΟΝ";
-      if (tbox) tbox.style.background="#fef2f2";
-      if (timer) timer.style.color="#dc2626";
-      if (tsub) tsub.style.color="#dc2626";
-      if (green) green.style.display="none";
-      if (yell) yell.style.display="none";
-      if (red) red.style.display="block";
-      var rfEl2=document.getElementById("srvRF"); if(rfEl2&&rfNum) rfEl2.textContent=rfNum;
-    } else if (days <= yellowDays) {
-      // YELLOW — approaching
-      card.style.borderColor="#fde047"; badge.style.background="#f59e0b";
-      badge.textContent="ΣΚΟΠΕΥΕΤΑΙ";
-      if (tbox) tbox.style.background="#fefce8";
-      if (timer) timer.style.color="#92400e";
-      if (tsub) tsub.style.color="#92400e";
-      if (green) green.style.display="none";
-      if (yell) yell.style.display="block";
-      if (red) red.style.display="none";
+      // EXPIRED — pulsing red
+      card.className = "fc pulse-red"; card.style.borderColor = "#ef4444";
+      badge.style.background = "#ef4444"; badge.textContent = t("ΛΗΓΜΕΝΟ","EXPIRED");
+      if (tbox) tbox.style.background = "#fef2f2";
+      if (timer) { timer.style.color = "#dc2626"; timer.textContent = t("ΛΗΓΜΕΝΟ","EXPIRED"); }
+      if (tsub) { tsub.style.color = "#dc2626"; tsub.textContent = Math.abs(days) + t(" ημ. εκπρόθεσμο"," days overdue"); }
+      if (tboxLabel) { tboxLabel.textContent = t("Domain έχει λήξει!","Domain has expired!"); tboxLabel.style.color = "#dc2626"; }
+      if (green) green.style.display = "none"; if (yell) yell.style.display = "none"; if (red) red.style.display = "block";
+    } else if (days <= DOMAIN_RED_DAYS) {
+      // RED — < 6 months, pulsing
+      card.className = "fc pulse-red"; card.style.borderColor = "#ef4444";
+      badge.style.background = "#ef4444"; badge.textContent = t("ΕΠΕΙΓΟΝ","URGENT");
+      if (tbox) tbox.style.background = "#fef2f2";
+      if (timer) timer.style.color = "#dc2626";
+      if (tsub) tsub.style.color = "#dc2626";
+      if (tboxLabel) { tboxLabel.textContent = t("Χρόνος μέχρι λήξη","Time until expiry"); tboxLabel.style.color = "#dc2626"; }
+      if (green) green.style.display = "none"; if (yell) yell.style.display = "none"; if (red) red.style.display = "block";
+    } else if (days <= DOMAIN_YELLOW_DAYS) {
+      // YELLOW — < 1 year
+      card.className = "fc"; card.style.borderColor = "#fde047";
+      badge.style.background = "#f59e0b"; badge.textContent = t("ΑΝΑΝΕΩΣΗ","RENEWAL");
+      if (tbox) tbox.style.background = "#fefce8";
+      if (timer) timer.style.color = "#92400e"; if (tsub) tsub.style.color = "#92400e";
+      if (tboxLabel) { tboxLabel.textContent = t("Χρόνος μέχρι ανανέωση","Time until renewal"); tboxLabel.style.color = "#92400e"; }
+      if (green) green.style.display = "none"; if (yell) yell.style.display = "block"; if (red) red.style.display = "none";
     } else {
-      // GREEN — paid, all good
-      card.style.borderColor="#86efac"; badge.style.background="#22c55e";
-      badge.textContent="ΕΞΟΦΛΗΜΕΝΟ";
-      if (tbox) tbox.style.background="#f0fdf4";
-      if (timer) timer.style.color="#166534";
-      if (tsub) tsub.style.color="#166534";
-      if (green) green.style.display="block";
-      if (yell) yell.style.display="none";
-      if (red) red.style.display="none";
+      // GREEN — > 1 year remaining
+      card.className = "fc"; card.style.borderColor = "#86efac";
+      badge.style.background = "#22c55e"; badge.textContent = t("ΕΞΟΦΛΗΜΕΝΟ","PAID");
+      if (tbox) tbox.style.background = "#f0fdf4";
+      if (timer) timer.style.color = "#166534"; if (tsub) tsub.style.color = "#166534";
+      if (tboxLabel) { tboxLabel.textContent = t("Χρόνος μέχρι ανανέωση","Time until renewal"); tboxLabel.style.color = "#166534"; }
+      if (green) green.style.display = "block"; if (yell) yell.style.display = "none"; if (red) red.style.display = "none";
     }
   }
 
-  function tick() {
-    // Server: green > 5 days, yellow 3-5 days, red < 3 days / overdue
-    ampel({card:"sCard",badge:"sBadge",green:"sGreen",yellow:"sYellow",red:"sRed",tbox:"sTbox",timer:"sTimer",tsub:"sTsub"}, SERVER_DUE_DATE, SERVER_RF, 5, 3);
-    // Domain: green > 30 days, yellow 7-30 days, red < 7 days
-    ampel({card:"dCard",badge:"dBadge",green:"dGreen",yellow:"dYellow",red:"dRed",tbox:"dTbox",timer:"dTimer",tsub:"dTsub"}, DOMAIN_DUE_DATE, null, 30, 7);
+  // ═══════════════════════════════════════════════════════════
+  // ARWEAVE LIVE BALANCE
+  // ═══════════════════════════════════════════════════════════
+  var arLastBalance = null;
+  var arLastPrice = null;
+
+  function fetchArweaveBalance() {
+    fetch("https://arweave.net/wallet/" + AR_WALLET + "/balance")
+      .then(function(r) { return r.text(); })
+      .then(function(winston) {
+        arLastBalance = parseInt(winston, 10) / 1e12; // winston → AR
+        updateArweaveTile();
+      })
+      .catch(function() {
+        var el = document.getElementById("arBalance");
+        if (el) el.textContent = "Offline";
+      });
   }
+
+  function fetchArweavePrice() {
+    fetch("https://api.coingecko.com/api/v3/simple/price?ids=arweave&vs_currencies=usd")
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data && data.arweave) arLastPrice = data.arweave.usd;
+        updateArweaveTile();
+      })
+      .catch(function() { /* price unavailable, show AR only */ });
+  }
+
+  function updateArweaveTile() {
+    var balEl = document.getElementById("arBalance");
+    var usdEl = document.getElementById("arBalanceUsd");
+    var statusEl = document.getElementById("arStatusText");
+    var card = document.getElementById("arCard");
+    var badge = document.getElementById("arBadge");
+    var statusBox = document.getElementById("arStatus");
+
+    if (arLastBalance === null) return;
+
+    if (balEl) balEl.textContent = arLastBalance.toFixed(4) + " AR";
+    if (usdEl && arLastPrice) usdEl.textContent = "≈ $" + (arLastBalance * arLastPrice).toFixed(4);
+
+    // Ampel
+    if (arLastBalance < AR_CRIT_THRESHOLD) {
+      // RED
+      if (card) { card.className = "fc pulse-red"; card.style.borderColor = "#ef4444"; }
+      if (badge) { badge.style.background = "#ef4444"; badge.textContent = t("ΚΡΙΣΙΜΟ","CRITICAL"); }
+      if (statusBox) { statusBox.style.background = "#fef2f2"; statusBox.style.color = "#dc2626"; }
+      if (statusEl) statusEl.textContent = t("Κρίσιμο υπόλοιπο — χρειάζεται AR","Critical balance — AR needed");
+    } else if (arLastBalance < AR_WARN_THRESHOLD) {
+      // YELLOW
+      if (card) { card.className = "fc"; card.style.borderColor = "#fde047"; }
+      if (badge) { badge.style.background = "#f59e0b"; badge.textContent = t("ΧΑΜΗΛΟ","LOW"); }
+      if (statusBox) { statusBox.style.background = "#fefce8"; statusBox.style.color = "#92400e"; }
+      if (statusEl) statusEl.textContent = t("Χαμηλό υπόλοιπο — σκεφτείτε δωρεά AR","Low balance — consider donating AR");
+    } else {
+      // GREEN
+      if (card) { card.className = "fc"; card.style.borderColor = "#86efac"; }
+      if (badge) { badge.style.background = "#22c55e"; badge.textContent = t("ΕΝΕΡΓΟ","ACTIVE"); }
+      if (statusBox) { statusBox.style.background = "#f0fdf4"; statusBox.style.color = "#166534"; }
+      if (statusEl) statusEl.textContent = t("Wallet ενεργό — ","Wallet active — ") + arLastBalance.toFixed(2) + " AR";
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // BTC/LTC LIVE PRICE CALCULATOR (for HLR donations)
+  // ═══════════════════════════════════════════════════════════
+  var HLR_DONATE_EUR = 10; // target donation amount
+  var PRICE_BUFFER = 1.03; // +3% tolerance
+
+  function fetchCryptoPrices() {
+    fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,litecoin&vs_currencies=eur")
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.bitcoin && data.bitcoin.eur) updateCryptoCalc("btc", data.bitcoin.eur);
+        if (data.litecoin && data.litecoin.eur) updateCryptoCalc("ltc", data.litecoin.eur);
+      })
+      .catch(function() {
+        var bp = document.getElementById("btcPrice");
+        var lp = document.getElementById("ltcPrice");
+        if (bp) bp.textContent = t("Τιμή: μη διαθέσιμη","Price: unavailable");
+        if (lp) lp.textContent = t("Τιμή: μη διαθέσιμη","Price: unavailable");
+      });
+  }
+
+  function updateCryptoCalc(coin, priceEur) {
+    var amount = (HLR_DONATE_EUR / priceEur) * PRICE_BUFFER;
+    var priceEl = document.getElementById(coin + "Price");
+    var amountEl = document.getElementById(coin + "Amount");
+    var decimals = coin === "btc" ? 8 : 6;
+    var symbol = coin.toUpperCase();
+
+    if (priceEl) priceEl.textContent = "1 " + symbol + " = " + priceEur.toLocaleString("de-DE", {minimumFractionDigits:2, maximumFractionDigits:2}) + "\u20AC";
+    if (amountEl) amountEl.textContent = "10\u20AC \u2248 " + amount.toFixed(decimals) + " " + symbol + t(" (συμπ. 3% περιθώριο)"," (incl. 3% buffer)");
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // HLR LIVE CREDITS
+  // ═══════════════════════════════════════════════════════════
+  var HLR_WARN = 200;
+  var HLR_CRIT = 50;
+
+  function fetchHlrCredits() {
+    fetch("https://api.ekklesia.gr/api/v1/identity/hlr/credits")
+      .then(function(r) { return r.json(); })
+      .then(function(data) { updateHlrTile(data); })
+      .catch(function() {
+        var st = document.getElementById("hlrStatusText");
+        if (st) st.textContent = t("API εκτός σύνδεσης — δεδομένα μη διαθέσιμα","API offline — data unavailable");
+      });
+  }
+
+  function updateHlrTile(data) {
+    var initial = data.initial || 1000;
+    var used = data.used || 0;
+    var remaining = data.remaining || 0;
+    var pct = Math.round((remaining / initial) * 100);
+
+    // Numbers
+    var initEl = document.getElementById("hlrInitial");
+    var usedEl = document.getElementById("hlrUsed");
+    var remEl = document.getElementById("hlrRemaining");
+    var balRow = document.getElementById("hlrBalance");
+    var bar = document.getElementById("hlrBar");
+    var barLabel = document.getElementById("hlrBarLabel");
+    var card = document.getElementById("hlrCard");
+    var badge = document.getElementById("hlrBadge");
+    var statusBox = document.getElementById("hlrStatusBox");
+    var statusText = document.getElementById("hlrStatusText");
+    var payRow = document.getElementById("hlrPayRow");
+
+    if (initEl) initEl.textContent = initial;
+    if (usedEl) usedEl.textContent = used;
+    if (remEl) remEl.textContent = remaining + " (" + eur(remaining * 0.01) + ")";
+    if (balRow) balRow.className = "fc-acct-total " + (remaining > HLR_WARN ? "positive" : remaining > HLR_CRIT ? "zero" : "negative");
+    if (bar) { bar.style.width = pct + "%"; }
+    if (barLabel) barLabel.textContent = pct + t("% διαθέσιμο","% available");
+
+    if (remaining <= HLR_CRIT) {
+      // RED — pulsing
+      if (card) { card.className = "fc pulse-red"; card.style.borderColor = "#ef4444"; }
+      if (badge) { badge.style.background = "#ef4444"; badge.textContent = t("ΚΡΙΣΙΜΟ","CRITICAL"); }
+      if (bar) bar.style.background = "#ef4444";
+      if (statusBox) { statusBox.style.background = "#fef2f2"; statusBox.style.color = "#dc2626"; }
+      if (statusText) statusText.textContent = t("Κρίσιμο — μόνο ","Critical — only ") + remaining + t(" credits απομένουν"," credits remaining");
+      if (payRow) payRow.style.display = "block";
+    } else if (remaining <= HLR_WARN) {
+      // YELLOW
+      if (card) { card.className = "fc"; card.style.borderColor = "#fde047"; }
+      if (badge) { badge.style.background = "#f59e0b"; badge.textContent = t("ΧΑΜΗΛΟ","LOW"); }
+      if (bar) bar.style.background = "#f59e0b";
+      if (statusBox) { statusBox.style.background = "#fefce8"; statusBox.style.color = "#92400e"; }
+      if (statusText) statusText.textContent = t("Χαμηλά credits — ","Low credits — ") + remaining + t(" απομένουν"," remaining");
+      if (payRow) payRow.style.display = "block";
+    } else {
+      // GREEN
+      if (card) { card.className = "fc"; card.style.borderColor = "#86efac"; }
+      if (badge) { badge.style.background = "#22c55e"; badge.textContent = t("ΕΝΕΡΓΟ","ACTIVE"); }
+      if (bar) bar.style.background = "#22c55e";
+      if (statusBox) { statusBox.style.background = "#f0fdf4"; statusBox.style.color = "#166534"; }
+      if (statusText) statusText.textContent = remaining + " credits — " + eur(remaining * 0.01) + t(" υπόλοιπο"," balance");
+      if (payRow) payRow.style.display = "none";
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // TICK — runs every second
+  // ═══════════════════════════════════════════════════════════
+  function tick() {
+    updateServerTile();
+    updateDomainTile();
+  }
+
+  // Init
   tick();
   setInterval(tick, 1000);
+
+  // Fetch live data
+  fetchPaymentStatus();
+  fetchArweaveBalance();
+  fetchArweavePrice();
+  fetchHlrCredits();
+  fetchCryptoPrices();
+  setInterval(fetchPaymentStatus, 60000);    // Server/Domain balances every 60s
+  setInterval(fetchArweaveBalance, 60000);   // AR balance every 60s
+  setInterval(fetchArweavePrice, 300000);    // AR price every 5min
+  setInterval(fetchHlrCredits, 30000);       // HLR credits every 30s
+  setInterval(fetchCryptoPrices, 60000);     // BTC/LTC prices every 60s
 })();
 </script>
 </body>

@@ -1,9 +1,8 @@
 """
-MOD-16: Municipal Governance Router — Stub
-GET /api/v1/periferia              — All regions (filterable)
-GET /api/v1/periferia/{id}/dimos   — Municipalities of a region
+MOD-16: Municipal Governance Router — Active (325 dimoi operational)
+GET /api/v1/periferia              — All 13 regions
+GET /api/v1/periferia/{id}/dimos   — Municipalities of a region (325 total)
 GET /api/v1/decisions              — Decisions (filter by level, periferia_id, dimos_id, status)
-@status: STUB — Phase Beta+
 """
 from typing import Optional
 

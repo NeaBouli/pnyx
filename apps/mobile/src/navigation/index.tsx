@@ -11,6 +11,7 @@ import VoteScreen from "../screens/VoteScreen";
 import ResultScreen from "../screens/ResultScreen";
 import TrendingScreen from "../screens/TrendingScreen";
 import MPScreen from "../screens/MPScreen";
+import TicketsScreen from "../screens/TicketsScreen";
 
 export type RootStackParams = {
   Tabs: undefined;
@@ -24,13 +25,14 @@ export type TabParams = {
   Bills: undefined;
   Trending: undefined;
   MP: undefined;
+  Tickets: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParams>();
 const Tab = createBottomTabNavigator<TabParams>();
 
 const TAB_ICONS: Record<string, string> = {
-  Home: "🏠", Bills: "🏛️", Trending: "🔥", MP: "📊",
+  Home: "🏠", Bills: "🏛️", Trending: "🔥", MP: "📊", Tickets: "🎫",
 };
 
 function TabNavigator() {
@@ -44,7 +46,7 @@ function TabNavigator() {
         tabBarActiveTintColor: "#2563eb",
         tabBarInactiveTintColor: "#64748b",
         tabBarLabel: ({ color }: { color: string }) => (
-          <Text style={{ color, fontSize: 10, fontWeight: "700" }}>{route.name === "Home" ? "εκκλησία" : route.name === "Bills" ? "Ψηφοφορίες" : route.name === "Trending" ? "Trending" : "Κόμματα"}</Text>
+          <Text style={{ color, fontSize: 10, fontWeight: "700" }}>{route.name === "Home" ? "εκκλησία" : route.name === "Bills" ? "Ψηφοφορίες" : route.name === "Trending" ? "Trending" : route.name === "Tickets" ? "Tickets" : "Κόμματα"}</Text>
         ),
         tabBarIcon: () => (
           <Text style={{ fontSize: 18 }}>{TAB_ICONS[route.name] || "●"}</Text>
@@ -55,6 +57,7 @@ function TabNavigator() {
       <Tab.Screen name="Bills" component={BillsScreen} options={{ title: "Ψηφοφορίες" }} />
       <Tab.Screen name="Trending" component={TrendingScreen} options={{ title: "Trending" }} />
       <Tab.Screen name="MP" component={MPScreen} options={{ title: "Κόμματα" }} />
+      <Tab.Screen name="Tickets" component={TicketsScreen} options={{ title: "Tickets" }} />
     </Tab.Navigator>
   );
 }

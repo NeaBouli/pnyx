@@ -8,9 +8,11 @@ import gc
 import json
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, text
+import redis.asyncio as aioredis
 
 from database import get_db
 from models import IdentityRecord, KeyStatus
@@ -23,6 +25,32 @@ from nullifier import generate_nullifier_hash
 from hlr import verify_greek_number
 
 router = APIRouter(prefix="/api/v1/identity", tags=["MOD-01 Identity"])
+
+# ─── HLR Credits Tracking (Redis) ────────────────────────────────────────────
+# Initial credits loaded: 10€ = 1000 HLR / 2000 MNP / 4000 NT
+# Each verify_greek_number() call consumes 1 HLR credit.
+# Redis key "hlr:used" tracks total lookups performed.
+
+HLR_INITIAL_CREDITS = 1000  # HLR lookups purchased
+HLR_REDIS_KEY = "hlr:used"
+
+_hlr_redis: aioredis.Redis | None = None
+
+async def _get_hlr_redis() -> aioredis.Redis:
+    global _hlr_redis
+    if _hlr_redis is None:
+        url = os.getenv("REDIS_URL", "redis://localhost:6379")
+        _hlr_redis = aioredis.from_url(url, decode_responses=True)
+    return _hlr_redis
+
+async def _increment_hlr_usage() -> int:
+    r = await _get_hlr_redis()
+    return await r.incr(HLR_REDIS_KEY)
+
+async def _get_hlr_usage() -> int:
+    r = await _get_hlr_redis()
+    val = await r.get(HLR_REDIS_KEY)
+    return int(val) if val else 0
 
 
 # ─── Schemas ──────────────────────────────────────────────────────────────────
@@ -68,6 +96,9 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
 
     # 1. HLR Prüfung
     hlr_result = await verify_greek_number(req.phone_number)
+    # Track HLR usage (even failed lookups cost a credit if not DRY_RUN)
+    if hlr_result.get("status") != "DRY_RUN":
+        await _increment_hlr_usage()
     if not hlr_result["valid"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -196,3 +227,27 @@ async def check_status(req: StatusRequest, db: AsyncSession = Depends(get_db)):
         status=record.status.value,
         created_at=record.created_at.isoformat() if record.created_at else None
     )
+
+
+# ─── HLR Credits Public Endpoint ─────────────────────────────────────────────
+
+@router.get("/hlr/credits")
+async def hlr_credits():
+    """
+    Öffentlicher Endpoint — zeigt verbleibende HLR Credits.
+    Kein Auth nötig (Transparenz-Prinzip).
+    Für community.html Live-Kachel.
+    """
+    used = await _get_hlr_usage()
+    remaining = max(0, HLR_INITIAL_CREDITS - used)
+    cost_per_query = 0.01  # 10€ / 1000 credits
+    balance_eur = remaining * cost_per_query
+
+    return {
+        "initial": HLR_INITIAL_CREDITS,
+        "used": used,
+        "remaining": remaining,
+        "balance_eur": round(balance_eur, 2),
+        "cost_per_query_eur": cost_per_query,
+        "status": "critical" if remaining < 50 else ("low" if remaining < 200 else "ok"),
+    }
