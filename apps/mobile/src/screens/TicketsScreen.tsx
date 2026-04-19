@@ -123,11 +123,11 @@ export default function TicketsScreen() {
             <Text style={[s.filterText, filter === f.key && s.filterTextActive]}>{f.label}</Text>
           </TouchableOpacity>
         ))}
-        <View style={{ flex: 1 }} />
-        <TouchableOpacity style={s.newBtn} onPress={() => { if (handleAction()) Alert.alert("Σύντομα", "Δημιουργία ticket σύντομα διαθέσιμη"); }}>
-          <Text style={s.newBtnText}>+ Νέο</Text>
-        </TouchableOpacity>
       </View>
+      {/* New ticket button — full width below filters */}
+      <TouchableOpacity style={s.newBtnFull} onPress={() => { if (handleAction()) Alert.alert("Σύντομα", "Δημιουργία ticket σύντομα διαθέσιμη"); }}>
+        <Text style={s.newBtnText}>+ Νέο Ticket</Text>
+      </TouchableOpacity>
 
       <FlatList
         data={filtered}
@@ -175,8 +175,8 @@ const s = StyleSheet.create({
   filterActive: { backgroundColor: colors.primary },
   filterText: { fontSize: 12, fontWeight: "700", color: colors.textSecondary },
   filterTextActive: { color: "#fff" },
-  newBtn: { backgroundColor: colors.primary, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16 },
-  newBtnText: { color: "#fff", fontSize: 12, fontWeight: "800" },
+  newBtnFull: { backgroundColor: colors.primary, marginHorizontal: 16, marginVertical: 8, paddingVertical: 12, borderRadius: 12, alignItems: "center" },
+  newBtnText: { color: "#fff", fontSize: 14, fontWeight: "800" },
   card: { backgroundColor: colors.surface, borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: colors.border, borderLeftWidth: 4 },
   cardHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
   badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
