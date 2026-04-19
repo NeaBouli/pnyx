@@ -59,6 +59,22 @@ export default function HomeScreen() {
         </TouchableOpacity>
       )}
 
+      {/* Compass + Settings buttons */}
+      <View style={s.actionRow}>
+        <TouchableOpacity style={s.actionBtn} onPress={() => nav.navigate("Compass" as any)}>
+          <Text style={s.actionIcon}>🧭</Text>
+          <Text style={s.actionLabel}>Πολιτική Πυξίδα</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.actionBtn} onPress={() => nav.navigate("Profile" as any)}>
+          <Text style={s.actionIcon}>👤</Text>
+          <Text style={s.actionLabel}>Προφίλ</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={s.actionBtn} onPress={() => nav.navigate("NotificationSettings" as any)}>
+          <Text style={s.actionIcon}>⚙️</Text>
+          <Text style={s.actionLabel}>Ρυθμίσεις</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={s.infoBox}>
         <Text style={s.infoTitle}>Πώς λειτουργεί;</Text>
         {["🔐 Επαλήθευση μέσω ελληνικής SIM",
@@ -90,6 +106,10 @@ const s = StyleSheet.create({
   statCard: { flex: 1, backgroundColor: colors.surface, borderRadius: 12, padding: 12, alignItems: "center", borderWidth: 1, borderColor: colors.border },
   statVal: { fontSize: 20, fontWeight: "900", color: colors.primary },
   statLabel: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  actionRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
+  actionBtn: { flex: 1, backgroundColor: colors.surface, borderRadius: 12, padding: 12, alignItems: "center", borderWidth: 1, borderColor: colors.border },
+  actionIcon: { fontSize: 22, marginBottom: 4 },
+  actionLabel: { fontSize: 10, fontWeight: "700", color: colors.textSecondary },
   btnPrimary: { backgroundColor: colors.primary, borderRadius: 12, padding: 16, alignItems: "center", marginBottom: 16 },
   btnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
   infoBox: { backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: colors.border },

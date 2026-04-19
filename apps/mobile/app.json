@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/pnx.png",
       "resizeMode": "contain",
-      "backgroundColor": "#2563eb"
+      "backgroundColor": "#93c5fd"
     },
     "ios": {
       "supportsTablet": false,
@@ -20,7 +20,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/pnx.png",
-        "backgroundColor": "#2563eb"
+        "backgroundColor": "#93c5fd"
       },
       "edgeToEdgeEnabled": true,
       "package": "gr.ekklesia.app",
