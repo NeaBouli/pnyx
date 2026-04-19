@@ -211,6 +211,56 @@
     <div class="fnode fnode-p">OPEN_END</div>
   </div>
 
+  <h2 class="fade-in" data-el="Αρχιτεκτονική Επαλήθευσης" data-en="Verification Architecture">Αρχιτεκτονική Επαλήθευσης</h2>
+
+  <h3 data-el="Beta Flow (SMS / HLR)" data-en="Beta Flow (SMS / HLR)">Beta Flow (SMS / HLR)</h3>
+  <div class="code-block fade-in" data-el="Phone (+30)  ──►  HLR Lookup  ──►  Argon2id  ──►  nullifier_root
+                                           │
+                                     (αριθμός διαγράφεται)
+                                           │
+                              nullifier_root  ──►  HMAC  ──►  Ed25519 Keypair
+                                                                    │
+                                                              Vote (1.0x)" data-en="Phone (+30)  ──►  HLR Lookup  ──►  Argon2id  ──►  nullifier_root
+                                           │
+                                     (number deleted)
+                                           │
+                              nullifier_root  ──►  HMAC  ──►  Ed25519 Keypair
+                                                                    │
+                                                              Vote (1.0x)">Phone (+30)  ──►  HLR Lookup  ──►  Argon2id  ──►  nullifier_root
+                                           │
+                                     (αριθμός διαγράφεται)
+                                           │
+                              nullifier_root  ──►  HMAC  ──►  Ed25519 Keypair
+                                                                    │
+                                                              Vote (1.0x)</div>
+
+  <h3 data-el="Alpha Flow (gov.gr OAuth)" data-en="Alpha Flow (gov.gr OAuth)">Alpha Flow (gov.gr OAuth)</h3>
+  <div class="code-block fade-in" data-el="gov.gr OAuth  ──►  AFM hash  ──►  HMAC  ──►  nullifier_root
+                                            │
+                                      (AMKA/AFM διαγράφεται)
+                                            │
+                               nullifier_root  ──►  HMAC  ──►  Ed25519 Keypair
+                                                                     │
+                                                               Vote (2.0x)" data-en="gov.gr OAuth  ──►  TIN hash  ──►  HMAC  ──►  nullifier_root
+                                            │
+                                      (AMKA/TIN deleted)
+                                            │
+                               nullifier_root  ──►  HMAC  ──►  Ed25519 Keypair
+                                                                     │
+                                                               Vote (2.0x)">gov.gr OAuth  ──►  AFM hash  ──►  HMAC  ──►  nullifier_root
+                                            │
+                                      (AMKA/AFM διαγράφεται)
+                                            │
+                               nullifier_root  ──►  HMAC  ──►  Ed25519 Keypair
+                                                                     │
+                                                               Vote (2.0x)</div>
+
+  <div class="info-box fade-in">
+    <p data-el="Και στα δύο flows: τα ακατέργαστα δεδομένα (τηλέφωνο ή ΑΦΜ) διαγράφονται αμέσως μετά τη δημιουργία του nullifier. Ο server αποθηκεύει μόνο το nullifier hash και το δημόσιο κλειδί — ποτέ ανακτήσιμα προσωπικά δεδομένα." data-en="In both flows: raw data (phone or TIN) is deleted immediately after nullifier creation. The server stores only the nullifier hash and public key — never recoverable personal data.">
+      Και στα δύο flows: τα ακατέργαστα δεδομένα (τηλέφωνο ή ΑΦΜ) διαγράφονται αμέσως μετά τη δημιουργία του nullifier. Ο server αποθηκεύει μόνο το nullifier hash και το δημόσιο κλειδί — ποτέ ανακτήσιμα προσωπικά δεδομένα.
+    </p>
+  </div>
+
 </div>
 <footer>
   <div class="footer-links">

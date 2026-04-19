@@ -302,6 +302,77 @@
     </p>
   </div>
 
+  <h2 class="fade-in" data-el="Σύστημα Επαλήθευσης & Στάθμιση Ψήφων" data-en="Verification System & Vote Weighting">Σύστημα Επαλήθευσης & Στάθμιση Ψήφων</h2>
+
+  <h3 data-el="Φάση Beta — SMS Επαλήθευση" data-en="Phase Beta — SMS Verification">Φάση Beta — SMS Επαλήθευση</h3>
+  <p data-el="Η βασική επαλήθευση γίνεται μέσω ελληνικής SIM (+30) και HLR lookup. Επιβεβαιώνει ότι ο χρήστης κατέχει ενεργή ελληνική SIM — δεν επαληθεύει εκλογικό δικαίωμα (ηλικία, υπηκοότητα). Οι ψήφοι Beta χρηστών έχουν βάρος <strong>1.0x</strong>." data-en="Basic verification is done via Greek SIM (+30) and HLR lookup. It confirms the user holds an active Greek SIM — it does not verify electoral eligibility (age, citizenship). Beta user votes have a weight of <strong>1.0x</strong>.">Η βασική επαλήθευση γίνεται μέσω ελληνικής SIM (+30) και HLR lookup. Επιβεβαιώνει ότι ο χρήστης κατέχει ενεργή ελληνική SIM — δεν επαληθεύει εκλογικό δικαίωμα (ηλικία, υπηκοότητα). Οι ψήφοι Beta χρηστών έχουν βάρος <strong>1.0x</strong>.</p>
+
+  <h3 data-el="Φάση Alpha — gov.gr Επαλήθευση" data-en="Phase Alpha — gov.gr Verification">Φάση Alpha — gov.gr Επαλήθευση</h3>
+  <p data-el="Η πλήρης επαλήθευση γίνεται μέσω gov.gr OAuth2.0 (Taxisnet). Επιβεβαιώνει ηλικία 18+, ελληνική υπηκοότητα και εκλογικό δικαίωμα. Οι ψήφοι Alpha χρηστών έχουν βάρος <strong>2.0x</strong> — διπλάσια αντιπροσωπευτική ισχύ λόγω πλήρους ταυτοποίησης." data-en="Full verification is done via gov.gr OAuth2.0 (Taxisnet). It confirms age 18+, Greek citizenship and electoral eligibility. Alpha user votes have a weight of <strong>2.0x</strong> — double representative power due to full identity verification.">Η πλήρης επαλήθευση γίνεται μέσω gov.gr OAuth2.0 (Taxisnet). Επιβεβαιώνει ηλικία 18+, ελληνική υπηκοότητα και εκλογικό δικαίωμα. Οι ψήφοι Alpha χρηστών έχουν βάρος <strong>2.0x</strong> — διπλάσια αντιπροσωπευτική ισχύ λόγω πλήρους ταυτοποίησης.</p>
+
+  <h3 data-el="Πίνακας Βάρους Ψήφων" data-en="Vote Weight Table">Πίνακας Βάρους Ψήφων</h3>
+  <div class="table-wrap fade-in">
+    <table>
+      <tr>
+        <th data-el="Επίπεδο" data-en="Level">Επίπεδο</th>
+        <th data-el="Μέθοδος" data-en="Method">Μέθοδος</th>
+        <th data-el="Βάρος" data-en="Weight">Βάρος</th>
+        <th data-el="Ταυτοποίηση" data-en="Identity Check">Ταυτοποίηση</th>
+        <th data-el="Εκλογικό Δικαίωμα" data-en="Electoral Eligibility">Εκλογικό Δικαίωμα</th>
+      </tr>
+      <tr>
+        <td><span class="badge badge-yellow">Beta</span></td>
+        <td>HLR / SMS (+30)</td>
+        <td><strong>1.0x</strong></td>
+        <td data-el="Ελληνική SIM" data-en="Greek SIM">Ελληνική SIM</td>
+        <td style="color:var(--red);font-weight:700" data-el="Δεν επαληθεύεται" data-en="Not verified">Δεν επαληθεύεται</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">Alpha</span></td>
+        <td>gov.gr OAuth2.0</td>
+        <td><strong>2.0x</strong></td>
+        <td data-el="Taxisnet (ΑΦΜ)" data-en="Taxisnet (TIN)">Taxisnet (ΑΦΜ)</td>
+        <td style="color:var(--green);font-weight:700" data-el="Πλήρης (18+, υπηκοότητα)" data-en="Full (18+, citizenship)">Πλήρης (18+, υπηκοότητα)</td>
+      </tr>
+    </table>
+  </div>
+
+  <h3 data-el="Εύρος Ψηφοφορίας ανά Επίπεδο" data-en="Voting Scope by Level">Εύρος Ψηφοφορίας ανά Επίπεδο</h3>
+  <div class="table-wrap fade-in">
+    <table>
+      <tr>
+        <th data-el="Επίπεδο Διακυβέρνησης" data-en="Governance Level">Επίπεδο Διακυβέρνησης</th>
+        <th>Beta (1.0x)</th>
+        <th>Alpha (2.0x)</th>
+      </tr>
+      <tr>
+        <td data-el="Εθνικό (Βουλή)" data-en="National (Parliament)">Εθνικό (Βουλή)</td>
+        <td style="color:var(--green);font-weight:700">&#10003;</td>
+        <td style="color:var(--green);font-weight:700">&#10003;</td>
+      </tr>
+      <tr>
+        <td data-el="Περιφερειακό" data-en="Regional">Περιφερειακό</td>
+        <td style="color:var(--red);font-weight:700">&#10007;</td>
+        <td style="color:var(--green);font-weight:700" data-el="&#10003; (με εκλ. κύκλο)" data-en="&#10003; (with constituency)">&#10003; (με εκλ. κύκλο)</td>
+      </tr>
+      <tr>
+        <td data-el="Δημοτικό" data-en="Municipal">Δημοτικό</td>
+        <td style="color:var(--red);font-weight:700">&#10007;</td>
+        <td style="color:var(--green);font-weight:700" data-el="&#10003; (με εκλ. κύκλο)" data-en="&#10003; (with constituency)">&#10003; (με εκλ. κύκλο)</td>
+      </tr>
+    </table>
+  </div>
+
+  <h3 data-el="Μετάβαση από Beta σε Alpha" data-en="Transition from Beta to Alpha">Μετάβαση από Beta σε Alpha</h3>
+  <div class="info-box fade-in">
+    <p data-el="Οι Beta χρήστες μπορούν να αναβαθμιστούν σε Alpha ανά πάσα στιγμή μέσω gov.gr OAuth. Κατά τη μετάβαση: ο υπάρχων nullifier αντικαθίσταται με νέο (βασισμένο σε ΑΦΜ hash), το βάρος ψήφου αυξάνεται αυτόματα σε 2.0x, και ξεκλειδώνονται περιφερειακές/δημοτικές ψηφοφορίες βάσει εκλογικού κύκλου. Οι προηγούμενες ψήφοι διατηρούνται στο 1.0x." data-en="Beta users can upgrade to Alpha at any time via gov.gr OAuth. During transition: the existing nullifier is replaced with a new one (based on TIN hash), vote weight automatically increases to 2.0x, and regional/municipal voting is unlocked based on constituency. Previous votes remain at 1.0x.">
+      Οι Beta χρήστες μπορούν να αναβαθμιστούν σε Alpha ανά πάσα στιγμή μέσω gov.gr OAuth. Κατά τη μετάβαση: ο υπάρχων nullifier αντικαθίσταται με νέο (βασισμένο σε ΑΦΜ hash), το βάρος ψήφου αυξάνεται αυτόματα σε <strong>2.0x</strong>, και ξεκλειδώνονται περιφερειακές/δημοτικές ψηφοφορίες βάσει εκλογικού κύκλου. Οι προηγούμενες ψήφοι διατηρούνται στο 1.0x.
+    </p>
+  </div>
+
+  <h3 data-el="Εμφάνιση Στάθμισης στα Αποτελέσματα" data-en="How Weighting Appears in Results">Εμφάνιση Στάθμισης στα Αποτελέσματα</h3>
+  <p data-el="Τα αποτελέσματα εμφανίζουν δύο μετρήσεις: <strong>Ακατέργαστες ψήφοι</strong> (1 άτομο = 1 ψήφος, ανεξαρτήτως επιπέδου) και <strong>Σταθμισμένες ψήφοι</strong> (Beta 1.0x, Alpha 2.0x). Ο Divergence Score υπολογίζεται πάντα στις σταθμισμένες ψήφους. Αυτό διασφαλίζει ότι η σύγκριση με το κοινοβουλευτικό αποτέλεσμα αντικατοπτρίζει την ποιότητα επαλήθευσης." data-en="Results display two metrics: <strong>Raw votes</strong> (1 person = 1 vote, regardless of level) and <strong>Weighted votes</strong> (Beta 1.0x, Alpha 2.0x). The Divergence Score is always calculated on weighted votes. This ensures the comparison with the parliamentary result reflects verification quality.">Τα αποτελέσματα εμφανίζουν δύο μετρήσεις: <strong>Ακατέργαστες ψήφοι</strong> (1 άτομο = 1 ψήφος, ανεξαρτήτως επιπέδου) και <strong>Σταθμισμένες ψήφοι</strong> (Beta 1.0x, Alpha 2.0x). Ο Divergence Score υπολογίζεται πάντα στις σταθμισμένες ψήφους. Αυτό διασφαλίζει ότι η σύγκριση με το κοινοβουλευτικό αποτέλεσμα αντικατοπτρίζει την ποιότητα επαλήθευσης.</p>
+
 </div>
 <footer>
   <div class="footer-links">
