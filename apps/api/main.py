@@ -19,6 +19,7 @@ from routers import notifications
 from routers import municipal
 from routers import payments
 from routers import newsletter
+from routers import contact
 
 scheduler = AsyncIOScheduler()
 
@@ -78,6 +79,7 @@ app.include_router(notifications.router)
 app.include_router(municipal.router)
 app.include_router(payments.router)
 app.include_router(newsletter.router)
+app.include_router(contact.router)
 
 @app.get("/health")
 async def health():

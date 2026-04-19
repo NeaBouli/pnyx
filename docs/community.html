@@ -589,13 +589,13 @@
       <div class="pgc-icon">📢</div>
       <h4 data-el="Διάδοση" data-en="Spread">Διάδοση</h4>
       <p data-el="Μοιράσου με φίλους" data-en="Share with friends">Μοιράσου με φίλους</p>
-      <a href="./" style="background:#16a34a">ekklesia.gr →</a>
+      <a href="#" onclick="openSharePopup();return false;" style="background:#16a34a" data-el="Μοιράσου →" data-en="Share →">Μοιράσου →</a>
     </div>
     <div class="pgc">
       <div class="pgc-icon">🏛️</div>
       <h4 data-el="NGO / Κίνηση" data-en="NGO / Movement">NGO / Κίνηση</h4>
       <p data-el="Συνεργασία ΜΚΟ" data-en="NGO cooperation">Συνεργασία ΜΚΟ</p>
-      <a href="mailto:kaspartisan@proton.me?subject=NGO">Επικοινωνία →</a>
+      <a href="#" onclick="openNgoModal();return false;" data-el="Επικοινωνία →" data-en="Contact →">Επικοινωνία →</a>
     </div>
     <div class="pgc hl">
       <div class="pgc-icon">💳</div>
@@ -651,6 +651,13 @@
       <h4 data-el="Αντοχή" data-en="Resilience">Αντοχή</h4>
       <p data-el="Fork = νέα αρχή. Ο κώδικας παραμένει." data-en="Fork = new start. Code remains.">Fork = νέα αρχή</p>
     </div>
+  </div>
+
+  <div style="background:#f1f5f9;border:2px solid #e2e8f0;border-radius:1rem;padding:1.5rem;margin:1.5rem 0" class="fade-in">
+    <h4 style="font-weight:900;margin-bottom:0.5rem;font-size:1rem;color:var(--gray-900)" data-el="Το POLIS Ticket System" data-en="The POLIS Ticket System">Το POLIS Ticket System</h4>
+    <p style="font-size:0.85rem;color:var(--gray-700);margin-bottom:0.5rem;line-height:1.7" data-el="Το POLIS είναι το σύστημα ανατροφοδότησης της κοινότητας. Κάθε πολίτης μπορεί να δημιουργήσει ένα Ticket (πρόταση, αναφορά σφάλματος ή ερώτηση) μέσω GitHub Issues. Η ταυτοποίηση γίνεται μέσω δημόσιου κλειδιού — δεν απαιτείται λογαριασμός, email ή κωδικός. Κανείς δεν μπορεί να διαγράψει ένα Ticket. Η κοινότητα ψηφίζει μέσω Reactions." data-en="POLIS is the community feedback system. Any citizen can create a Ticket (proposal, bug report or question) via GitHub Issues. Authentication uses public key — no account, email or password required. Nobody can delete a Ticket. The community votes via Reactions.">
+      Το POLIS είναι το σύστημα ανατροφοδότησης της κοινότητας. Κάθε πολίτης μπορεί να δημιουργήσει ένα Ticket (πρόταση, αναφορά σφάλματος ή ερώτηση) μέσω GitHub Issues. Η ταυτοποίηση γίνεται μέσω δημόσιου κλειδιού — δεν απαιτείται λογαριασμός, email ή κωδικός. Κανείς δεν μπορεί να διαγράψει ένα Ticket. Η κοινότητα ψηφίζει μέσω Reactions.
+    </p>
   </div>
 
   <div style="text-align:center;margin:2rem 0" class="fade-in">
@@ -1175,5 +1182,126 @@ function copyAddr(id) {
   setInterval(fetchNewsletterStats, 60000);  // Newsletter stats every 60s
 })();
 </script>
+
+<!-- NGO Contact Modal -->
+<div id="ngoModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:1rem;padding:2rem;max-width:480px;width:90%;position:relative;box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+    <button onclick="closeNgoModal()" style="position:absolute;top:0.75rem;right:0.75rem;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#64748b">&times;</button>
+    <h3 style="margin:0 0 0.25rem;font-size:1.1rem;font-weight:900" data-el="NGO Επικοινωνία" data-en="NGO Contact">NGO Επικοινωνία</h3>
+    <p style="font-size:0.78rem;color:#64748b;margin-bottom:1rem" data-el="Συμπληρώστε τη φόρμα για συνεργασία ΜΚΟ." data-en="Fill the form for NGO cooperation.">Συμπληρώστε τη φόρμα για συνεργασία ΜΚΟ.</p>
+    <form id="ngoForm" onsubmit="submitNgoForm(event)">
+      <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:0.2rem" data-el="Οργανισμός *" data-en="Organization *">Οργανισμός *</label>
+      <input name="org" required style="width:100%;padding:0.45rem 0.6rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.85rem;margin-bottom:0.6rem;box-sizing:border-box"/>
+      <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:0.2rem" data-el="Όνομα *" data-en="Name *">Όνομα *</label>
+      <input name="name" required style="width:100%;padding:0.45rem 0.6rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.85rem;margin-bottom:0.6rem;box-sizing:border-box"/>
+      <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:0.2rem">Email *</label>
+      <input name="email" type="email" required style="width:100%;padding:0.45rem 0.6rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.85rem;margin-bottom:0.6rem;box-sizing:border-box"/>
+      <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:0.2rem" data-el="Μήνυμα *" data-en="Message *">Μήνυμα *</label>
+      <textarea name="message" required rows="4" style="width:100%;padding:0.45rem 0.6rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.85rem;margin-bottom:0.8rem;resize:vertical;box-sizing:border-box"></textarea>
+      <button type="submit" id="ngoSubmitBtn" style="width:100%;padding:0.55rem;background:#2563eb;color:white;border:none;border-radius:0.5rem;font-weight:700;font-size:0.9rem;cursor:pointer" data-el="Αποστολή" data-en="Send">Αποστολή</button>
+      <div id="ngoStatus" style="text-align:center;margin-top:0.5rem;font-size:0.78rem;display:none"></div>
+    </form>
+  </div>
+</div>
+
+<!-- Share Popup -->
+<div id="sharePopup" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:1rem;padding:2rem;max-width:400px;width:90%;position:relative;box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+    <button onclick="closeSharePopup()" style="position:absolute;top:0.75rem;right:0.75rem;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#64748b">&times;</button>
+    <h3 style="margin:0 0 1rem;font-size:1.1rem;font-weight:900" data-el="Διάδοση" data-en="Share">Διάδοση</h3>
+    <div style="display:flex;flex-direction:column;gap:0.5rem">
+      <button onclick="copyShareLink()" style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.8rem;background:#f1f5f9;border:2px solid #e2e8f0;border-radius:0.5rem;cursor:pointer;font-size:0.85rem;font-weight:600;color:#334155;transition:all 0.2s" id="copyLinkBtn">
+        <span style="font-size:1.1rem">🔗</span> <span data-el="Αντιγραφή Συνδέσμου" data-en="Copy Link">Αντιγραφή Συνδέσμου</span>
+      </button>
+      <a href="" id="shareTwitter" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.8rem;background:#f1f5f9;border:2px solid #e2e8f0;border-radius:0.5rem;text-decoration:none;font-size:0.85rem;font-weight:600;color:#334155">
+        <span style="font-size:1.1rem">𝕏</span> Twitter / X
+      </a>
+      <a href="" id="shareFacebook" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.8rem;background:#f1f5f9;border:2px solid #e2e8f0;border-radius:0.5rem;text-decoration:none;font-size:0.85rem;font-weight:600;color:#334155">
+        <span style="font-size:1.1rem">📘</span> Facebook
+      </a>
+      <a href="" id="shareWhatsApp" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.8rem;background:#f1f5f9;border:2px solid #e2e8f0;border-radius:0.5rem;text-decoration:none;font-size:0.85rem;font-weight:600;color:#334155">
+        <span style="font-size:1.1rem">💬</span> WhatsApp
+      </a>
+      <a href="" id="shareEmail" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.8rem;background:#f1f5f9;border:2px solid #e2e8f0;border-radius:0.5rem;text-decoration:none;font-size:0.85rem;font-weight:600;color:#334155">
+        <span style="font-size:1.1rem">📧</span> Email
+      </a>
+      <a href="" id="shareTelegram" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.8rem;background:#f1f5f9;border:2px solid #e2e8f0;border-radius:0.5rem;text-decoration:none;font-size:0.85rem;font-weight:600;color:#334155">
+        <span style="font-size:1.1rem">✈️</span> Telegram
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+// NGO Contact Modal
+function openNgoModal() {
+  var m = document.getElementById("ngoModal");
+  m.style.display = "flex";
+  document.getElementById("ngoForm").reset();
+  document.getElementById("ngoStatus").style.display = "none";
+}
+function closeNgoModal() { document.getElementById("ngoModal").style.display = "none"; }
+document.getElementById("ngoModal").addEventListener("click", function(e) { if (e.target === this) closeNgoModal(); });
+
+function submitNgoForm(e) {
+  e.preventDefault();
+  var form = document.getElementById("ngoForm");
+  var btn = document.getElementById("ngoSubmitBtn");
+  var status = document.getElementById("ngoStatus");
+  var data = { org: form.org.value, name: form.name.value, email: form.email.value, message: form.message.value };
+  btn.disabled = true;
+  btn.textContent = (typeof currentLang !== "undefined" && currentLang === "en") ? "Sending..." : "Αποστολή...";
+  fetch("https://api.ekklesia.gr/api/v1/contact/ngo", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data)
+  }).then(function(r) {
+    if (!r.ok) return r.json().then(function(d) { throw new Error(d.detail || "Error"); });
+    return r.json();
+  }).then(function() {
+    status.style.display = "block";
+    status.style.color = "#166534";
+    status.textContent = (typeof currentLang !== "undefined" && currentLang === "en") ? "Sent successfully!" : "Εστάλη επιτυχώς!";
+    btn.textContent = "✅";
+    setTimeout(closeNgoModal, 2000);
+  }).catch(function(err) {
+    status.style.display = "block";
+    status.style.color = "#dc2626";
+    status.textContent = err.message || "Error";
+    btn.disabled = false;
+    btn.textContent = (typeof currentLang !== "undefined" && currentLang === "en") ? "Send" : "Αποστολή";
+  });
+}
+
+// Share Popup
+var shareTextEl = "Η φωνή σου μετράει. Ψήφισε για πραγματικά νομοσχέδια στο ekklesia.gr 🏛️ #εκκλησία #δημοκρατία";
+var shareTextEn = "Your voice matters. Vote on real legislation at ekklesia.gr 🏛️ #ekklesia #democracy";
+var shareUrl = "https://ekklesia.gr";
+
+function getShareText() { return (typeof currentLang !== "undefined" && currentLang === "en") ? shareTextEn : shareTextEl; }
+
+function openSharePopup() {
+  var txt = encodeURIComponent(getShareText());
+  var url = encodeURIComponent(shareUrl);
+  document.getElementById("shareTwitter").href = "https://twitter.com/intent/tweet?text=" + txt + "&url=" + url;
+  document.getElementById("shareFacebook").href = "https://www.facebook.com/sharer/sharer.php?u=" + url;
+  document.getElementById("shareWhatsApp").href = "https://wa.me/?text=" + txt + "%20" + url;
+  document.getElementById("shareEmail").href = "mailto:?subject=" + encodeURIComponent("ekklesia.gr") + "&body=" + txt + "%0A" + url;
+  document.getElementById("shareTelegram").href = "https://t.me/share/url?url=" + url + "&text=" + txt;
+  document.getElementById("copyLinkBtn").innerHTML = '<span style="font-size:1.1rem">🔗</span> <span>' + ((typeof currentLang !== "undefined" && currentLang === "en") ? "Copy Link" : "Αντιγραφή Συνδέσμου") + '</span>';
+  document.getElementById("sharePopup").style.display = "flex";
+}
+function closeSharePopup() { document.getElementById("sharePopup").style.display = "none"; }
+document.getElementById("sharePopup").addEventListener("click", function(e) { if (e.target === this) closeSharePopup(); });
+
+function copyShareLink() {
+  navigator.clipboard.writeText(shareUrl).then(function() {
+    var btn = document.getElementById("copyLinkBtn");
+    btn.innerHTML = '<span style="font-size:1.1rem">🔗</span> <span style="color:#166534">✓ ' + ((typeof currentLang !== "undefined" && currentLang === "en") ? "Copied!" : "Αντιγράφηκε!") + '</span>';
+    setTimeout(function() {
+      btn.innerHTML = '<span style="font-size:1.1rem">🔗</span> <span>' + ((typeof currentLang !== "undefined" && currentLang === "en") ? "Copy Link" : "Αντιγραφή Συνδέσμου") + '</span>';
+    }, 2000);
+  });
+}
+</script>
+
 </body>
 </html>
