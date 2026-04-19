@@ -25,6 +25,7 @@ export default function HomeScreen() {
     <ScrollView style={s.container} contentContainerStyle={s.content}>
       <View style={s.hero}>
         <Image source={require("../../assets/pnx.png")} style={s.logoImg} resizeMode="contain" />
+        <Text style={s.logoText}>εκκλησία</Text>
         <Text style={s.sub}>του έθνους</Text>
         <Text style={s.tagline}>Η φωνή σου μετράει.</Text>
       </View>
@@ -94,7 +95,8 @@ const s = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },
   content: { padding: 20, paddingBottom: 40 },
   hero: { alignItems: "center", paddingVertical: 32 },
-  logoImg: { width: 120, height: 120, marginBottom: 8 },
+  logoImg: { width: 120, height: 120, marginBottom: 4 },
+  logoText: { fontSize: 32, fontWeight: "900", color: colors.primary, marginBottom: 2 },
   sub: { fontSize: 14, color: colors.textTertiary, letterSpacing: 3, marginTop: -4 },
   tagline: { fontSize: 16, color: colors.textSecondary, marginTop: 8 },
   statusCard: { borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1 },
