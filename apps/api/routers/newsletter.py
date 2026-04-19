@@ -92,8 +92,11 @@ async def get_lists():
 async def subscribe(req: SubscribeRequest):
     """
     Public: subscribe to newsletter.
-    Creates subscriber in Listmonk with double opt-in.
+    Sends double opt-in email via Brevo. Stores pending token in Redis.
+    Subscriber only activated after clicking confirmation link.
     """
+    import secrets
+
     if req.subscriber_type not in VALID_TYPES:
         raise HTTPException(status_code=400, detail=f"Invalid type. Must be one of: {VALID_TYPES}")
     if req.frequency not in VALID_FREQUENCIES:
@@ -101,44 +104,112 @@ async def subscribe(req: SubscribeRequest):
     if req.language not in VALID_LANGUAGES:
         raise HTTPException(status_code=400, detail="Language must be 'el' or 'en'")
 
-    list_id = LIST_IDS.get(req.subscriber_type, LIST_IDS["citizens"])
+    r = await _get_redis()
 
-    # Create subscriber in Listmonk (without list — add list separately)
-    payload = {
+    # Check if already confirmed
+    existing = await r.hget("newsletter:confirmed", req.email)
+    if existing:
+        return {"success": True, "message": "Already subscribed."}
+
+    # Generate confirmation token
+    token = secrets.token_urlsafe(32)
+    sub_data = json.dumps({
         "email": req.email,
         "name": req.name or "",
-        "status": "enabled",
-        "preconfirm_subscriptions": False,  # Listmonk sends double opt-in email
-        "attribs": {
-            "frequency": req.frequency,
-            "language": req.language,
-            "subscriber_type": req.subscriber_type,
-            "topic_new_proposals": req.topic_new_proposals,
-            "topic_active_votes": req.topic_active_votes,
-            "topic_vote_results": req.topic_vote_results,
-            "topic_system_news": req.topic_system_news,
-            "topic_breaking_news": req.topic_breaking_news,
+        "subscriber_type": req.subscriber_type,
+        "frequency": req.frequency,
+        "language": req.language,
+        "topics": {
+            "new_proposals": req.topic_new_proposals,
+            "active_votes": req.topic_active_votes,
+            "vote_results": req.topic_vote_results,
+            "system_news": req.topic_system_news,
+            "breaking_news": req.topic_breaking_news,
         },
-    }
+    })
 
-    result = await _listmonk_request("POST", "/api/subscribers", payload)
+    # Store pending subscription (expires in 24h)
+    await r.setex(f"newsletter:pending:{token}", 86400, sub_data)
 
-    if "data" in result:
-        sub_id = result["data"].get("id")
-        # Add subscriber to the correct list
-        if sub_id:
-            await _listmonk_request("PUT", f"/api/subscribers/lists", {
-                "ids": [sub_id],
-                "action": "add",
-                "target_list_ids": [list_id],
-                "status": "unconfirmed",
-            })
-        logger.info(f"[MOD-19] New subscriber: {req.email} → list {req.subscriber_type}")
-        return {"success": True, "message": "Confirmation email sent. Please check your inbox."}
-    elif "subscriber exists" in str(result.get("message", "")).lower():
-        return {"success": True, "message": "Already subscribed."}
+    # Send confirmation email via Brevo
+    confirm_url = f"https://api.ekklesia.gr/api/v1/newsletter/confirm/{token}"
+
+    if req.language == "en":
+        subject = "Confirm your subscription — ekklesia Newsletter"
+        body = f'<div style="background:#f8fafc;padding:2rem 1rem;font-family:Segoe UI,sans-serif"><div style="max-width:500px;margin:0 auto;background:#fff;border-radius:12px;border-top:4px solid #2563eb;padding:2rem;text-align:center"><img src="https://ekklesia.gr/pnx.png" width="60"/><h2 style="color:#2563eb">Confirm Subscription</h2><p style="color:#1e293b">Click the button below to confirm your newsletter subscription.</p><a href="{confirm_url}" style="display:inline-block;padding:0.75rem 2rem;background:#2563eb;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;margin:1rem 0">Confirm →</a><p style="color:#94a3b8;font-size:12px">If you did not request this, ignore this email.</p></div></div>'
     else:
-        raise HTTPException(status_code=400, detail=result.get("message", "Subscription failed"))
+        subject = "Επιβεβαίωση εγγραφής — ekklesia Newsletter"
+        body = f'<div style="background:#f8fafc;padding:2rem 1rem;font-family:Segoe UI,sans-serif"><div style="max-width:500px;margin:0 auto;background:#fff;border-radius:12px;border-top:4px solid #2563eb;padding:2rem;text-align:center"><img src="https://ekklesia.gr/pnx.png" width="60"/><h2 style="color:#2563eb">Επιβεβαίωση Εγγραφής</h2><p style="color:#1e293b">Πατήστε το κουμπί για να επιβεβαιώσετε την εγγραφή σας στο newsletter.</p><a href="{confirm_url}" style="display:inline-block;padding:0.75rem 2rem;background:#2563eb;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;margin:1rem 0">Επιβεβαίωση →</a><p style="color:#94a3b8;font-size:12px">Αν δεν ζητήσατε αυτό, αγνοήστε αυτό το email.</p></div></div>'
+
+    if not BREVO_API_KEY:
+        raise HTTPException(status_code=503, detail="Email service not configured")
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post("https://api.brevo.com/v3/smtp/email", headers={
+                "api-key": BREVO_API_KEY,
+                "Content-Type": "application/json",
+            }, json={
+                "sender": {"name": "ekklesia Newsletter", "email": "newsletter@ekklesia.gr"},
+                "to": [{"email": req.email}],
+                "subject": subject,
+                "htmlContent": body,
+            })
+            if resp.status_code >= 400:
+                logger.error(f"[MOD-19] Brevo send failed: {resp.status_code} {resp.text[:200]}")
+                raise HTTPException(status_code=502, detail="Email send failed")
+    except httpx.HTTPError as e:
+        logger.error(f"[MOD-19] Brevo error: {e}")
+        raise HTTPException(status_code=502, detail="Email service error")
+
+    logger.info(f"[MOD-19] Opt-in email sent to {req.email}")
+    return {"success": True, "message": "Confirmation email sent. Please check your inbox."}
+
+
+@router.get("/confirm/{token}")
+async def confirm_subscription(token: str):
+    """Confirm newsletter subscription via token from email link."""
+    from fastapi.responses import HTMLResponse
+
+    r = await _get_redis()
+    raw = await r.get(f"newsletter:pending:{token}")
+
+    if not raw:
+        return HTMLResponse(
+            '<div style="text-align:center;padding:3rem;font-family:sans-serif"><h2>Link abgelaufen</h2><p>Bitte registrieren Sie sich erneut auf ekklesia.gr</p></div>',
+            status_code=410
+        )
+
+    data = json.loads(raw)
+    email = data["email"]
+
+    # Mark as confirmed
+    await r.hset("newsletter:confirmed", email, raw)
+    await r.delete(f"newsletter:pending:{token}")
+
+    # Also register in Listmonk (if available)
+    if LISTMONK_PW:
+        try:
+            await _listmonk_request("POST", "/api/subscribers", {
+                "email": email,
+                "name": data.get("name", ""),
+                "status": "enabled",
+                "preconfirm_subscriptions": True,
+                "attribs": data.get("topics", {}),
+            })
+        except Exception:
+            pass  # Listmonk is optional — Redis is primary
+
+    logger.info(f"[MOD-19] Subscription confirmed: {email}")
+
+    return HTMLResponse(
+        '<div style="text-align:center;padding:3rem;font-family:sans-serif">'
+        '<img src="https://ekklesia.gr/pnx.png" width="60"/>'
+        '<h2 style="color:#2563eb">Εγγραφή Επιβεβαιώθηκε!</h2>'
+        '<p>Ευχαριστούμε! Θα λαμβάνετε ενημερώσεις από το ekklesia.gr</p>'
+        '<a href="https://ekklesia.gr" style="color:#2563eb">← Επιστροφή στο ekklesia.gr</a>'
+        '</div>'
+    )
 
 
 # ── Redis for stats caching ───────────────────────────────────────────────────
