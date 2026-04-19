@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { colors } from "../theme";
-import { CompassEngine } from "../../../../packages/compass/src/engine";
-import { QUESTIONS } from "../../../../packages/compass/src/questions";
-import { PARTIES } from "../../../../packages/compass/src/parties";
-import type { Answer, CompassResult, LikertValue } from "../../../../packages/compass/src/types";
+import { CompassEngine } from "../compass/engine";
+import { QUESTIONS } from "../compass/questions";
+import { PARTIES } from "../compass/parties";
+import type { Answer, CompassResult, LikertValue } from "../compass/types";
 import { saveCompass, getCompass } from "../lib/compassStore";
 
 const engine = new CompassEngine();

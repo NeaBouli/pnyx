@@ -1,5 +1,5 @@
 import * as SecureStore from "expo-secure-store";
-import type { CompassResult, Answer } from "../../../../packages/compass/src/types";
+import type { CompassResult, Answer } from "../compass/types";
 
 const KEY = "compass_data";
 
