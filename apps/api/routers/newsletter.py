@@ -108,7 +108,7 @@ async def subscribe(req: SubscribeRequest):
         "email": req.email,
         "name": req.name or "",
         "status": "enabled",
-        "preconfirm_subscriptions": True,
+        "preconfirm_subscriptions": False,  # Listmonk sends double opt-in email
         "attribs": {
             "frequency": req.frequency,
             "language": req.language,
