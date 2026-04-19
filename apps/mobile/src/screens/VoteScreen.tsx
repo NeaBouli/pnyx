@@ -16,6 +16,7 @@ import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { loadKeypair, loadNullifier, signVote, verifyVote } from "../lib/crypto-native";
 import { submitVote } from "../lib/api";
+import { colors } from "../theme";
 
 type Props = StackScreenProps<RootStackParams, "Vote">;
 
@@ -117,7 +118,7 @@ export default function VoteScreen({ route, navigation }: Props) {
 
       {loading && (
         <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#1a237e" />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Υποβολή ψήφου...</Text>
         </View>
       )}
@@ -135,18 +136,18 @@ export default function VoteScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: "#f5f5f5" },
-  title: { fontSize: 20, fontWeight: "bold", color: "#1a237e", marginBottom: 8 },
-  info: { fontSize: 14, color: "#555", marginBottom: 32 },
+  container: { flex: 1, padding: 24, backgroundColor: colors.background },
+  title: { fontSize: 20, fontWeight: "bold", color: colors.primary, marginBottom: 8 },
+  info: { fontSize: 14, color: colors.textSecondary, marginBottom: 32 },
   options: { gap: 16 },
   voteButton: {
-    flexDirection: "row", alignItems: "center", backgroundColor: "#fff",
+    flexDirection: "row", alignItems: "center", backgroundColor: colors.surface,
     borderWidth: 2, borderRadius: 16, padding: 20, marginBottom: 12,
   },
   voteIcon: { fontSize: 28, marginRight: 16 },
-  voteLabel: { fontSize: 20, fontWeight: "bold", color: "#333" },
+  voteLabel: { fontSize: 20, fontWeight: "bold", color: colors.text },
   loadingOverlay: { alignItems: "center", marginTop: 24 },
-  loadingText: { marginTop: 8, color: "#666" },
+  loadingText: { marginTop: 8, color: colors.textSecondary },
   resultsLink: { marginTop: 32, alignItems: "center" },
-  resultsLinkText: { color: "#1565c0", fontSize: 14 },
+  resultsLinkText: { color: colors.primary, fontSize: 14 },
 });

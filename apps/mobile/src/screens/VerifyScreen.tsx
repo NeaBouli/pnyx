@@ -16,6 +16,7 @@ import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { verifyIdentity } from "../lib/api";
 import { storeKeypair, storeNullifier } from "../lib/crypto-native";
+import { colors } from "../theme";
 
 type Props = StackScreenProps<RootStackParams, "Verify">;
 
@@ -93,22 +94,22 @@ export default function VerifyScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: "#f5f5f5" },
-  heading: { fontSize: 22, fontWeight: "bold", color: "#1a237e", marginBottom: 8 },
-  info: { fontSize: 14, color: "#555", marginBottom: 24, lineHeight: 20 },
+  container: { flex: 1, padding: 24, backgroundColor: colors.background },
+  heading: { fontSize: 22, fontWeight: "bold", color: colors.primary, marginBottom: 8 },
+  info: { fontSize: 14, color: colors.textSecondary, marginBottom: 24, lineHeight: 20 },
   input: {
-    backgroundColor: "#fff", borderWidth: 1, borderColor: "#ddd",
-    borderRadius: 12, padding: 16, fontSize: 18, marginBottom: 16,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
+    borderRadius: 12, padding: 16, fontSize: 18, marginBottom: 16, color: colors.text,
   },
   button: {
-    backgroundColor: "#1a237e", paddingVertical: 14, borderRadius: 12,
+    backgroundColor: colors.primary, paddingVertical: 14, borderRadius: 12,
     alignItems: "center", marginBottom: 32,
   },
-  disabledButton: { backgroundColor: "#999" },
+  disabledButton: { backgroundColor: colors.textTertiary },
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
   securityNote: {
-    backgroundColor: "#e8eaf6", padding: 16, borderRadius: 12,
+    backgroundColor: colors.primaryLight, padding: 16, borderRadius: 12,
   },
-  securityTitle: { fontSize: 14, fontWeight: "bold", color: "#1a237e", marginBottom: 8 },
-  securityText: { fontSize: 13, color: "#333", lineHeight: 20 },
+  securityTitle: { fontSize: 14, fontWeight: "bold", color: colors.primary, marginBottom: 8 },
+  securityText: { fontSize: 13, color: colors.text, lineHeight: 20 },
 });

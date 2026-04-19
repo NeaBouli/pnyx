@@ -5,6 +5,7 @@ import type { StackNavigationProp } from "@react-navigation/stack";
 import { isVerified } from "../lib/crypto-native";
 import { fetchAnalyticsOverview } from "../lib/api";
 import type { RootStackParams } from "../navigation";
+import { colors } from "../theme";
 
 type Nav = StackNavigationProp<RootStackParams, "Tabs">;
 
@@ -18,7 +19,7 @@ export default function HomeScreen() {
     fetchAnalyticsOverview().then(setAnalytics).catch(() => {});
   }, []);
 
-  if (verified === null) return <View style={s.center}><ActivityIndicator color="#2563eb" /></View>;
+  if (verified === null) return <View style={s.center}><ActivityIndicator color={colors.primary} /></View>;
 
   return (
     <ScrollView style={s.container} contentContainerStyle={s.content}>
@@ -29,7 +30,7 @@ export default function HomeScreen() {
       </View>
 
       <View style={[s.statusCard, verified ? s.statusGreen : s.statusYellow]}>
-        <Text style={[s.statusTitle, { color: verified ? "#22c55e" : "#f59e0b" }]}>
+        <Text style={[s.statusTitle, { color: verified ? colors.success : colors.warning }]}>
           {verified ? "✓ Επαληθευμένος" : "Μη επαληθευμένος"}
         </Text>
         <Text style={s.statusSub}>
@@ -73,26 +74,26 @@ export default function HomeScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0f172a" },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0f172a" },
+  container: { flex: 1, backgroundColor: colors.background },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },
   content: { padding: 20, paddingBottom: 40 },
   hero: { alignItems: "center", paddingVertical: 32 },
   logoImg: { width: 120, height: 120, marginBottom: 8 },
-  sub: { fontSize: 14, color: "#64748b", letterSpacing: 3, marginTop: -4 },
-  tagline: { fontSize: 16, color: "#94a3b8", marginTop: 8 },
-  statusCard: { borderRadius: 12, padding: 14, marginBottom: 16 },
-  statusGreen: { backgroundColor: "#052e16" },
-  statusYellow: { backgroundColor: "#431407" },
+  sub: { fontSize: 14, color: colors.textTertiary, letterSpacing: 3, marginTop: -4 },
+  tagline: { fontSize: 16, color: colors.textSecondary, marginTop: 8 },
+  statusCard: { borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1 },
+  statusGreen: { backgroundColor: colors.successBg, borderColor: colors.success },
+  statusYellow: { backgroundColor: colors.warningBg, borderColor: colors.warning },
   statusTitle: { fontWeight: "800", fontSize: 15 },
-  statusSub: { fontSize: 12, color: "#94a3b8", marginTop: 2 },
+  statusSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   statsRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
-  statCard: { flex: 1, backgroundColor: "#1e293b", borderRadius: 12, padding: 12, alignItems: "center" },
-  statVal: { fontSize: 20, fontWeight: "900", color: "#2563eb" },
-  statLabel: { fontSize: 11, color: "#64748b", marginTop: 2 },
-  btnPrimary: { backgroundColor: "#2563eb", borderRadius: 12, padding: 16, alignItems: "center", marginBottom: 16 },
+  statCard: { flex: 1, backgroundColor: colors.surface, borderRadius: 12, padding: 12, alignItems: "center", borderWidth: 1, borderColor: colors.border },
+  statVal: { fontSize: 20, fontWeight: "900", color: colors.primary },
+  statLabel: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  btnPrimary: { backgroundColor: colors.primary, borderRadius: 12, padding: 16, alignItems: "center", marginBottom: 16 },
   btnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
-  infoBox: { backgroundColor: "#1e293b", borderRadius: 12, padding: 16, marginBottom: 20 },
-  infoTitle: { fontSize: 15, fontWeight: "800", color: "#e2e8f0", marginBottom: 10 },
-  infoItem: { fontSize: 13, color: "#94a3b8", marginBottom: 6 },
-  footer: { textAlign: "center", fontSize: 11, color: "#334155" },
+  infoBox: { backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: colors.border },
+  infoTitle: { fontSize: 15, fontWeight: "800", color: colors.text, marginBottom: 10 },
+  infoItem: { fontSize: 13, color: colors.textSecondary, marginBottom: 6 },
+  footer: { textAlign: "center", fontSize: 11, color: colors.textTertiary },
 });

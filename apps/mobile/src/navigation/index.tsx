@@ -3,6 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Text } from "react-native";
+import { colors } from "../theme";
 
 import HomeScreen from "../screens/HomeScreen";
 import VerifyScreen from "../screens/VerifyScreen";
@@ -39,12 +40,12 @@ function TabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        headerStyle: { backgroundColor: "#2563eb" },
-        headerTintColor: "#ffffff",
+        headerStyle: { backgroundColor: colors.headerBg },
+        headerTintColor: colors.headerText,
         headerTitleStyle: { fontWeight: "900" },
-        tabBarStyle: { backgroundColor: "#0f172a", borderTopColor: "#1e293b" },
-        tabBarActiveTintColor: "#2563eb",
-        tabBarInactiveTintColor: "#64748b",
+        tabBarStyle: { backgroundColor: colors.tabBarBg, borderTopColor: colors.border },
+        tabBarActiveTintColor: colors.tabBarActive,
+        tabBarInactiveTintColor: colors.tabBarInactive,
         tabBarLabel: ({ color }: { color: string }) => (
           <Text style={{ color, fontSize: 10, fontWeight: "700" }}>{route.name === "Home" ? "εκκλησία" : route.name === "Bills" ? "Ψηφοφορίες" : route.name === "Trending" ? "Trending" : route.name === "Tickets" ? "Tickets" : "Κόμματα"}</Text>
         ),
@@ -67,9 +68,9 @@ export default function Navigation() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Tabs" component={TabNavigator} />
-        <Stack.Screen name="Verify" component={VerifyScreen} options={{ headerShown: true, headerStyle: { backgroundColor: "#2563eb" }, headerTintColor: "#fff", title: "Επαλήθευση" }} />
-        <Stack.Screen name="Vote" component={VoteScreen} options={{ headerShown: true, headerStyle: { backgroundColor: "#2563eb" }, headerTintColor: "#fff", title: "Ψηφίστε" }} />
-        <Stack.Screen name="Result" component={ResultScreen} options={{ headerShown: true, headerStyle: { backgroundColor: "#2563eb" }, headerTintColor: "#fff", title: "Αποτελέσματα" }} />
+        <Stack.Screen name="Verify" component={VerifyScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Επαλήθευση" }} />
+        <Stack.Screen name="Vote" component={VoteScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Ψηφίστε" }} />
+        <Stack.Screen name="Result" component={ResultScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Αποτελέσματα" }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

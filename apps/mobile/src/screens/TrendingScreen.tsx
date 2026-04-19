@@ -4,6 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { fetchTrending } from "../lib/api";
 import type { RootStackParams } from "../navigation";
+import { colors } from "../theme";
 
 type Nav = StackNavigationProp<RootStackParams, "Tabs">;
 
@@ -19,14 +20,14 @@ export default function TrendingScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <View style={s.center}><ActivityIndicator color="#2563eb" size="large" /></View>;
+  if (loading) return <View style={s.center}><ActivityIndicator color={colors.primary} size="large" /></View>;
 
   return (
     <FlatList
       data={bills}
       keyExtractor={b => b.id}
       contentContainerStyle={s.list}
-      style={{ backgroundColor: "#0f172a" }}
+      style={{ backgroundColor: colors.background }}
       ListHeaderComponent={
         <View style={s.header}>
           <Text style={s.headerTitle}>Trending Ψηφοφορίες</Text>
@@ -52,19 +53,19 @@ export default function TrendingScreen() {
 }
 
 const s = StyleSheet.create({
-  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0f172a" },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },
   list: { padding: 12, gap: 8 },
   header: { marginBottom: 12 },
-  headerTitle: { fontSize: 20, fontWeight: "900", color: "#e2e8f0" },
-  headerSub: { fontSize: 12, color: "#64748b" },
-  card: { backgroundColor: "#1e293b", borderRadius: 12, padding: 14, flexDirection: "row", gap: 12 },
-  rank: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#2563eb", alignItems: "center", justifyContent: "center" },
+  headerTitle: { fontSize: 20, fontWeight: "900", color: colors.text },
+  headerSub: { fontSize: 12, color: colors.textSecondary },
+  card: { backgroundColor: colors.surface, borderRadius: 12, padding: 14, flexDirection: "row", gap: 12, borderWidth: 1, borderColor: colors.border },
+  rank: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
   rankText: { color: "#fff", fontWeight: "900", fontSize: 14 },
   content: { flex: 1 },
-  title: { fontSize: 14, fontWeight: "700", color: "#e2e8f0", marginBottom: 4 },
-  pill: { fontSize: 11, color: "#64748b", marginBottom: 6 },
+  title: { fontSize: 14, fontWeight: "700", color: colors.text, marginBottom: 4 },
+  pill: { fontSize: 11, color: colors.textSecondary, marginBottom: 6 },
   footer: { flexDirection: "row", justifyContent: "space-between" },
-  status: { fontSize: 11, color: "#94a3b8", fontWeight: "600" },
-  score: { fontSize: 11, color: "#22c55e", fontWeight: "700" },
-  empty: { color: "#64748b", textAlign: "center", marginTop: 40 },
+  status: { fontSize: 11, color: colors.textTertiary, fontWeight: "600" },
+  score: { fontSize: 11, color: colors.success, fontWeight: "700" },
+  empty: { color: colors.textSecondary, textAlign: "center", marginTop: 40 },
 });
