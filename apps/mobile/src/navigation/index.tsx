@@ -13,10 +13,14 @@ import ResultScreen from "../screens/ResultScreen";
 import TrendingScreen from "../screens/TrendingScreen";
 import MPScreen from "../screens/MPScreen";
 import TicketsScreen from "../screens/TicketsScreen";
+import ProfileScreen from "../screens/ProfileScreen";
+import NotificationSettingsScreen from "../screens/NotificationSettingsScreen";
 
 export type RootStackParams = {
   Tabs: undefined;
   Verify: undefined;
+  Profile: undefined;
+  NotificationSettings: undefined;
   Vote: { billId: string; billTitle: string };
   Result: { billId: string; billTitle?: string };
 };
@@ -47,7 +51,9 @@ function TabNavigator() {
         tabBarActiveTintColor: colors.tabBarActive,
         tabBarInactiveTintColor: colors.tabBarInactive,
         tabBarLabel: ({ color }: { color: string }) => (
-          <Text style={{ color, fontSize: 10, fontWeight: "700" }}>{route.name === "Home" ? "εκκλησία" : route.name === "Bills" ? "Ψηφοφορίες" : route.name === "Trending" ? "Trending" : route.name === "Tickets" ? "Tickets" : "Κόμματα"}</Text>
+          <Text style={{ color, fontSize: 10, fontWeight: "700" }}>
+            {route.name === "Home" ? "εκκλησία" : route.name === "Bills" ? "Ψηφοφορίες" : route.name === "Trending" ? "Trending" : route.name === "Tickets" ? "POLIS" : "Κόμματα"}
+          </Text>
         ),
         tabBarIcon: () => (
           <Text style={{ fontSize: 18 }}>{TAB_ICONS[route.name] || "●"}</Text>
@@ -58,7 +64,7 @@ function TabNavigator() {
       <Tab.Screen name="Bills" component={BillsScreen} options={{ title: "Ψηφοφορίες" }} />
       <Tab.Screen name="Trending" component={TrendingScreen} options={{ title: "Trending" }} />
       <Tab.Screen name="MP" component={MPScreen} options={{ title: "Κόμματα" }} />
-      <Tab.Screen name="Tickets" component={TicketsScreen} options={{ title: "Tickets" }} />
+      <Tab.Screen name="Tickets" component={TicketsScreen} options={{ title: "POLIS" }} />
     </Tab.Navigator>
   );
 }
@@ -69,6 +75,8 @@ export default function Navigation() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Tabs" component={TabNavigator} />
         <Stack.Screen name="Verify" component={VerifyScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Επαλήθευση" }} />
+        <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Προφίλ" }} />
+        <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Ειδοποιήσεις" }} />
         <Stack.Screen name="Vote" component={VoteScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Ψηφίστε" }} />
         <Stack.Screen name="Result" component={ResultScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Αποτελέσματα" }} />
       </Stack.Navigator>
