@@ -25,7 +25,8 @@ export default function ProfileScreen() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("https://api.ekklesia.gr/api/v1/periferia");
+        const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
+        const res = await fetch(`${API}/api/v1/periferia`);
         const data = await res.json();
         setPeriferias(data);
       } catch {}
@@ -43,7 +44,8 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     if (!selectedPeriferia) { setDimoi([]); setSelectedDimos(null); return; }
-    fetch(`https://api.ekklesia.gr/api/v1/periferia/${selectedPeriferia}/dimos`)
+    const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
+    fetch(`${API}/api/v1/periferia/${selectedPeriferia}/dimos`)
       .then(r => r.json()).then(setDimoi).catch(() => setDimoi([]));
   }, [selectedPeriferia]);
 
