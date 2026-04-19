@@ -283,14 +283,17 @@ async def newsletter_stats():
         except Exception as e:
             logger.error(f"[MOD-19] Brevo API error: {e}")
 
-    # Fetch subscriber count from Listmonk
+    # Fetch subscriber count from Redis confirmed + Listmonk
+    redis_count = await r.hlen("newsletter:confirmed")
+    listmonk_count = 0
     if LISTMONK_PW:
         try:
             result = await _listmonk_request("GET", "/api/subscribers?per_page=1&page=1")
             if "data" in result:
-                stats["subscribers"] = result["data"].get("total", 0)
+                listmonk_count = result["data"].get("total", 0)
         except Exception:
             pass
+    stats["subscribers"] = max(redis_count, listmonk_count)
 
     # Ampel logic
     usage_pct = (stats["emails_sent_month"] / max(stats["monthly_limit"], 1)) * 100

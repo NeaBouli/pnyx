@@ -127,6 +127,30 @@ async def contact_ngo(body: NgoContactRequest, request: Request) -> dict:
         logger.error("[CONTACT] HTTP error: %s", e)
         raise HTTPException(status_code=502, detail="Email service unreachable")
 
+    # Send confirmation to sender
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            await client.post(
+                "https://api.brevo.com/v3/smtp/email",
+                json={
+                    "sender": {"name": "ekklesia Newsletter", "email": "newsletter@ekklesia.gr"},
+                    "to": [{"email": body.email, "name": body.name}],
+                    "subject": "Λάβαμε το μήνυμά σας — εκκλησία",
+                    "htmlContent": (
+                        '<div style="background:#f8fafc;padding:2rem 1rem;font-family:sans-serif">'
+                        '<div style="max-width:500px;margin:0 auto;background:#fff;border-radius:12px;border-top:4px solid #2563eb;padding:2rem">'
+                        f'<p>Αγαπητέ/ή {_escape(body.name)},</p>'
+                        '<p>Λάβαμε το μήνυμά σας και θα επικοινωνήσουμε σύντομα.</p>'
+                        '<p>Ευχαριστούμε για το ενδιαφέρον σας.</p>'
+                        '<p style="color:#64748b">— Vendetta Labs / εκκλησία</p>'
+                        '</div></div>'
+                    ),
+                },
+                headers={"api-key": brevo_key, "Content-Type": "application/json"},
+            )
+    except Exception:
+        pass  # Confirmation is best-effort
+
     logger.info("[CONTACT] NGO contact from %s — org=%s", client_ip, body.org)
     return {"status": "ok", "message": "Message sent successfully"}
 
