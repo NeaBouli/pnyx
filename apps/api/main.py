@@ -20,6 +20,7 @@ from routers import municipal
 from routers import payments
 from routers import newsletter
 from routers import contact
+from routers import notify
 
 scheduler = AsyncIOScheduler()
 
@@ -80,6 +81,7 @@ app.include_router(municipal.router)
 app.include_router(payments.router)
 app.include_router(newsletter.router)
 app.include_router(contact.router)
+app.include_router(notify.router)
 
 @app.get("/health")
 async def health():
@@ -107,6 +109,7 @@ async def health():
             "MOD-16 Municipal Governance",
             "MOD-18 Community Donations",
             "MOD-19 Newsletter (Listmonk + Brevo)",
+            "MOD-20 Push Notifications",
         ]
     }
 

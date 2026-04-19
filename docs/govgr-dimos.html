@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="el" data-lang="el">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>gov.gr Ενεργοποίηση Δήμου | εκκλησία</title>
+  <meta name="description" content="Ενεργοποιήστε το gov.gr OAuth για τον Δήμο σας — επαληθευμένη ταυτότητα πολιτών με 2.0x βάρος ψήφου."/>
+  <meta name="keywords" content="gov.gr, Δήμος, Περιφέρεια, OAuth, ekklesia, ψηφοφορία, ενεργοποίηση"/>
+  <meta name="author" content="Vendetta Labs — Community"/>
+  <meta name="robots" content="index, follow"/>
+  <link rel="canonical" href="https://ekklesia.gr/govgr-dimos.html"/>
+
+  <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://ekklesia.gr/govgr-dimos.html"/>
+  <meta property="og:title" content="gov.gr Ενεργοποίηση Δήμου | εκκλησία"/>
+  <meta property="og:description" content="Ενεργοποιήστε το gov.gr OAuth για τον Δήμο σας — επαληθευμένη ταυτότητα πολιτών με 2.0x βάρος ψήφου."/>
+  <meta property="og:image" content="https://ekklesia.gr/pnx.png"/>
+  <meta property="og:locale" content="el_GR"/>
+  <meta property="og:locale:alternate" content="en_US"/>
+  <meta property="og:site_name" content="εκκλησία"/>
+
+  <meta name="twitter:card" content="summary"/>
+  <meta name="twitter:title" content="gov.gr Ενεργοποίηση Δήμου | εκκλησία"/>
+  <meta name="twitter:description" content="Ενεργοποιήστε το gov.gr OAuth για τον Δήμο σας — επαληθευμένη ταυτότητα πολιτών με 2.0x βάρος ψήφου."/>
+  <meta name="twitter:image" content="https://ekklesia.gr/pnx.png"/>
+
+  <link rel="alternate" hreflang="el" href="https://ekklesia.gr/govgr-dimos.html"/>
+  <link rel="alternate" hreflang="en" href="https://ekklesia.gr/govgr-dimos.html"/>
+  <link rel="alternate" hreflang="x-default" href="https://ekklesia.gr/govgr-dimos.html"/>
+  <link rel="sitemap" type="application/xml" href="https://ekklesia.gr/sitemap.xml"/>
+  <link rel="icon" type="image/png" href="pnx.png"/>
+
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-d: #1d4ed8;
+      --blue-l: #eff6ff;
+      --gray-900: #0f172a;
+      --gray-700: #334155;
+      --gray-500: #64748b;
+      --gray-400: #94a3b8;
+      --gray-100: #f1f5f9;
+      --white: #ffffff;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --purple: #a855f7;
+      --radius: 1rem;
+      --shadow: 0 4px 24px rgba(37,99,235,0.10);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--white);
+      color: var(--gray-900);
+      line-height: 1.6;
+    }
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid #e2e8f0;
+      padding: 0.75rem 1.5rem;
+      display: flex; justify-content: space-between;
+      align-items: center; flex-wrap: wrap; gap: 0.5rem;
+    }
+    .nav-logo {
+      font-size: 1.25rem; font-weight: 900; color: var(--blue);
+      text-decoration: none; display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;
+    }
+    .nav-logo img { width: 40px; height: 40px; object-fit: contain; }
+    .nav-links { display: flex; gap: 0.15rem; align-items: center; flex-wrap: wrap; }
+    .nav-links a {
+      padding: 0.3rem 0.7rem; border-radius: 0.4rem;
+      color: var(--gray-700); text-decoration: none;
+      font-size: 0.82rem; font-weight: 500;
+      transition: all 0.2s; white-space: nowrap;
+    }
+    .nav-links a:hover, .nav-links a.active {
+      background: var(--blue-l); color: var(--blue);
+    }
+    .lang-btn {
+      cursor: pointer; border: 2px solid #e2e8f0;
+      background: var(--white); border-radius: 0.4rem;
+      padding: 0.22rem 0.55rem; font-size: 0.75rem;
+      font-weight: 700; color: var(--gray-700);
+      transition: all 0.2s; margin-left: 0.3rem;
+    }
+    .lang-btn:hover { border-color: var(--blue); color: var(--blue); }
+    /* FOOTER */
+    footer {
+      background: var(--gray-900); color: var(--gray-400);
+      padding: 2rem 1.5rem; text-align: center;
+      font-size: 0.82rem; margin-top: 4rem;
+    }
+    .footer-links {
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 0.3rem 1rem; margin-bottom: 0.75rem;
+    }
+    footer a { color: var(--gray-500); text-decoration: none; }
+    footer a:hover { color: var(--white); }
+    /* COMMON */
+    .layout { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+    h2 { font-size: 1.4rem; font-weight: 900; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0; }
+    h2:first-child { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 800; margin: 1.25rem 0 0.5rem; color: var(--blue); }
+    p { color: var(--gray-700); margin-bottom: 1rem; line-height: 1.8; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { color: var(--gray-700); margin-bottom: 0.4rem; line-height: 1.7; }
+    .hero {
+      padding: 4rem 2rem; text-align: center;
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 50%, #bfdbfe 100%);
+    }
+    .hero h1 { font-size: clamp(1.8rem,5vw,2.6rem); font-weight: 900; margin-bottom: 0.75rem; color: var(--gray-900); }
+    .hero p { color: var(--gray-700); max-width: 640px; margin: 0 auto 1.5rem; font-size: 1.05rem; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--blue); text-decoration: none; font-weight: 600; font-size: 0.88rem;
+    }
+    .card {
+      background: var(--gray-100); border-radius: var(--radius);
+      padding: 1.25rem; border: 2px solid #e2e8f0;
+      transition: all 0.2s; text-decoration: none; color: inherit; display: block;
+    }
+    .card:hover { border-color: var(--blue); transform: translateY(-2px); box-shadow: var(--shadow); }
+    .card-icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+    .card h4 { font-weight: 800; margin-bottom: 0.25rem; font-size: 0.9rem; }
+    .card p { font-size: 0.78rem; color: var(--gray-400); margin: 0; }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .badge {
+      display: inline-block; padding: 0.15rem 0.55rem; border-radius: 1rem;
+      font-size: 0.7rem; font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-yellow { background: #fef3c7; color: #92400e; }
+    .info-box { background: var(--blue-l); border-left: 4px solid var(--blue); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .info-box p { margin: 0; }
+    .warn-box { background: #fefce8; border-left: 4px solid var(--yellow); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .warn-box p { margin: 0; }
+    .success-box { background: #f0fdf4; border-left: 4px solid var(--green); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .success-box p { margin: 0; }
+    .step-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 1rem; margin: 1.5rem 0; counter-reset: step; }
+    .step {
+      background: var(--white); border-radius: var(--radius); padding: 1.25rem;
+      border: 2px solid #e2e8f0; position: relative; padding-top: 2.5rem;
+    }
+    .step::before {
+      counter-increment: step; content: counter(step);
+      position: absolute; top: 0.75rem; left: 0.75rem;
+      background: var(--blue); color: white; width: 1.5rem; height: 1.5rem;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 900;
+    }
+    .step h4 { font-weight: 800; font-size: 0.88rem; margin-bottom: 0.35rem; }
+    .step p { font-size: 0.8rem; color: var(--gray-500); margin: 0; }
+    .cta-section {
+      text-align: center; padding: 3rem 2rem; margin: 2rem 0;
+      background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+      border-radius: var(--radius); border: 2px solid #e2e8f0;
+    }
+    .cta-section h3 { font-size: 1.3rem; margin-bottom: 0.75rem; color: var(--gray-900); }
+    .cta-section p { max-width: 500px; margin: 0 auto 1.5rem; }
+    .cta-btn {
+      display: inline-block; padding: 0.75rem 2rem; background: var(--blue);
+      color: white; border: none; border-radius: 0.5rem; font-size: 1rem;
+      font-weight: 700; cursor: pointer; text-decoration: none;
+      transition: all 0.2s;
+    }
+    .cta-btn:hover { background: var(--blue-d); transform: translateY(-1px); box-shadow: var(--shadow); }
+    .empty-card {
+      background: var(--gray-100); border: 2px dashed #cbd5e1; border-radius: var(--radius);
+      padding: 2rem; text-align: center; color: var(--gray-400);
+    }
+    .flow { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; padding: 1rem; background: var(--gray-100); border-radius: var(--radius); margin: 1rem 0; }
+    .fnode { background: white; border-radius: 0.5rem; padding: 0.4rem 0.9rem; font-size: 0.78rem; font-weight: 700; border: 2px solid #e2e8f0; }
+    .fnode-b { border-color: var(--blue); background: var(--blue-l); color: var(--blue-d); }
+    .fnode-g { border-color: var(--green); background: #f0fdf4; color: #166534; }
+    .farr { color: var(--blue); font-weight: 900; }
+    .fade-in { opacity: 0; transform: translateY(14px); transition: all 0.5s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+    @media (max-width: 640px) {
+      .nav-links a { font-size: 0.75rem; padding: 0.22rem 0.45rem; }
+      .step-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<nav>
+  <a href="./" class="nav-logo"><img src="pnx.png" alt="logo"/>εκκλησία<span style="font-size:0.55em;color:#9ca3af;font-weight:400;margin-left:0.35em;letter-spacing:0.05em">του έθνους</span></a>
+  <div class="nav-links">
+    <a href="./" data-el="Αρχική" data-en="Home">Αρχική</a>
+    <a href="votes/active.html" data-el="Ψηφοφορίες" data-en="Votes">Ψηφοφορίες</a>
+    <a href="wiki/" data-el="Wiki" data-en="Wiki">Wiki</a>
+    <a href="community.html" data-el="Community" data-en="Community">Community</a>
+    <span style="width:1px;height:20px;background:#e2e8f0;margin:0 0.3rem"></span>
+    <a href="govgr-dimos.html" class="active" data-el="gov.gr Δήμος" data-en="gov.gr Municipality">gov.gr Δήμος</a>
+    <a href="wiki/security.html" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</a>
+    <a href="wiki/faq.html">FAQ</a>
+    <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <h1 data-el="gov.gr Ενεργοποίηση για τον Δήμο σας" data-en="gov.gr Activation for your Municipality">gov.gr Ενεργοποίηση για τον Δήμο σας</h1>
+  <p data-el="Δώστε στους πολίτες σας επαληθευμένη ταυτότητα μέσω gov.gr OAuth — αναβαθμίστε τη δημοτική δημοκρατία." data-en="Give your citizens verified identity via gov.gr OAuth — upgrade your municipal democracy.">Δώστε στους πολίτες σας επαληθευμένη ταυτότητα μέσω gov.gr OAuth — αναβαθμίστε τη δημοτική δημοκρατία.</p>
+  <a href="./" class="back-link" data-el="← Αρχική" data-en="← Home">← Αρχική</a>
+</div>
+
+<div class="layout">
+
+  <!-- SECTION 1: What it means -->
+  <h2 class="fade-in" data-el="Τι σημαίνει για τους πολίτες" data-en="What it means for citizens">Τι σημαίνει για τους πολίτες</h2>
+  <div class="card-grid fade-in">
+    <div class="card" style="border-color:#93c5fd;background:var(--blue-l)">
+      <div class="card-icon">🪪</div>
+      <h4 style="color:var(--blue-d)" data-el="Επαληθευμένη Ταυτότητα" data-en="Verified Identity">Επαληθευμένη Ταυτότητα</h4>
+      <p data-el="Taxisnet login μέσω gov.gr OAuth2.0" data-en="Taxisnet login via gov.gr OAuth2.0">Taxisnet login μέσω gov.gr OAuth2.0</p>
+    </div>
+    <div class="card" style="border-color:#86efac;background:#f0fdf4">
+      <div class="card-icon">⚖️</div>
+      <h4 style="color:#166534" data-el="2.0x Βάρος Ψήφου" data-en="2.0x Vote Weight">2.0x Βάρος Ψήφου</h4>
+      <p data-el="Διπλάσια αντιπροσωπευτική ισχύ λόγω πλήρους ταυτοποίησης" data-en="Double representative power from full identity verification">Διπλάσια αντιπροσωπευτική ισχύ λόγω πλήρους ταυτοποίησης</p>
+    </div>
+    <div class="card" style="border-color:#c4b5fd;background:#faf5ff">
+      <div class="card-icon">🏘️</div>
+      <h4 style="color:#6b21a8" data-el="Δημοτικές Ψηφοφορίες" data-en="Municipal Voting">Δημοτικές Ψηφοφορίες</h4>
+      <p data-el="Πρόσβαση σε τοπικές και περιφερειακές ψηφοφορίες" data-en="Access to local and regional voting">Πρόσβαση σε τοπικές και περιφερειακές ψηφοφορίες</p>
+    </div>
+  </div>
+
+  <div class="info-box fade-in">
+    <p data-el="Οι πολίτες που επαληθεύονται μέσω gov.gr αναβαθμίζονται αυτόματα από <strong>Beta (1.0x)</strong> σε <strong>Alpha (2.0x)</strong> — χωρίς κανένα προσωπικό δεδομένο να αποθηκεύεται στον server." data-en="Citizens verified via gov.gr are automatically upgraded from <strong>Beta (1.0x)</strong> to <strong>Alpha (2.0x)</strong> — without any personal data stored on the server.">
+      Οι πολίτες που επαληθεύονται μέσω gov.gr αναβαθμίζονται αυτόματα από <strong>Beta (1.0x)</strong> σε <strong>Alpha (2.0x)</strong> — χωρίς κανένα προσωπικό δεδομένο να αποθηκεύεται στον server.
+    </p>
+  </div>
+
+  <!-- SECTION 2: Who can apply -->
+  <h2 class="fade-in" data-el="Ποιοι μπορούν να υποβάλουν αίτηση" data-en="Who can apply">Ποιοι μπορούν να υποβάλουν αίτηση</h2>
+  <div class="card-grid fade-in">
+    <div class="card" style="border-color:#93c5fd">
+      <div class="card-icon">🏛️</div>
+      <h4 data-el="Δήμοι" data-en="Municipalities">Δήμοι</h4>
+      <p data-el="332 Δήμοι σε όλη την Ελλάδα" data-en="332 Municipalities across Greece">332 Δήμοι σε όλη την Ελλάδα</p>
+    </div>
+    <div class="card" style="border-color:#93c5fd">
+      <div class="card-icon">🗺️</div>
+      <h4 data-el="Περιφέρειες" data-en="Regions">Περιφέρειες</h4>
+      <p data-el="13 Περιφέρειες" data-en="13 Regions">13 Περιφέρειες</p>
+    </div>
+    <div class="card" style="border-color:#93c5fd">
+      <div class="card-icon">🏢</div>
+      <h4 data-el="Φορείς Δημοσίου" data-en="Public Bodies">Φορείς Δημοσίου</h4>
+      <p data-el="Δημόσιοι οργανισμοί και υπηρεσίες" data-en="Public organizations and services">Δημόσιοι οργανισμοί και υπηρεσίες</p>
+    </div>
+  </div>
+
+  <div class="warn-box fade-in">
+    <p data-el="Η πρόσβαση στο gov.gr OAuth <strong>δεν</strong> παρέχεται σε ιδιωτικές πλατφόρμες ή εμπορικές εφαρμογές. Μόνο φορείς δημοσίου συμφέροντος." data-en="gov.gr OAuth access is <strong>not</strong> available to private platforms or commercial applications. Only public interest bodies.">
+      Η πρόσβαση στο gov.gr OAuth <strong>δεν</strong> παρέχεται σε ιδιωτικές πλατφόρμες ή εμπορικές εφαρμογές. Μόνο φορείς δημοσίου συμφέροντος.
+    </p>
+  </div>
+
+  <!-- SECTION 3: How to apply -->
+  <h2 class="fade-in" data-el="Πώς γίνεται η αίτηση" data-en="How to apply">Πώς γίνεται η αίτηση</h2>
+  <p class="fade-in" data-el="Η ενεργοποίηση του gov.gr OAuth γίνεται μέσω επίσημων καναλιών της <strong>Γενικής Γραμματείας Πληροφοριακών Συστημάτων Δημόσιας Διοίκησης (ΓΓΠΣΔΔ)</strong>." data-en="gov.gr OAuth activation is done through official channels of the <strong>General Secretariat for Information Systems of Public Administration (GSRT)</strong>.">Η ενεργοποίηση του gov.gr OAuth γίνεται μέσω επίσημων καναλιών της <strong>Γενικής Γραμματείας Πληροφοριακών Συστημάτων Δημόσιας Διοίκησης (ΓΓΠΣΔΔ)</strong>.</p>
+
+  <div class="step-grid fade-in">
+    <div class="step">
+      <h4 data-el="Αίτηση στη ΓΓΠΣΔΔ" data-en="Apply to GSRT">Αίτηση στη ΓΓΠΣΔΔ</h4>
+      <p data-el="Ο Δήμος υποβάλλει επίσημο αίτημα για gov.gr OAuth integration" data-en="The Municipality submits an official request for gov.gr OAuth integration">Ο Δήμος υποβάλλει επίσημο αίτημα για gov.gr OAuth integration</p>
+    </div>
+    <div class="step">
+      <h4 data-el="Τεχνική Αξιολόγηση" data-en="Technical Review">Τεχνική Αξιολόγηση</h4>
+      <p data-el="Η ΓΓΠΣΔΔ αξιολογεί την πλατφόρμα και τα μέτρα ασφαλείας" data-en="GSRT evaluates the platform and security measures">Η ΓΓΠΣΔΔ αξιολογεί την πλατφόρμα και τα μέτρα ασφαλείας</p>
+    </div>
+    <div class="step">
+      <h4 data-el="Έγκριση & Credentials" data-en="Approval & Credentials">Έγκριση & Credentials</h4>
+      <p data-el="Παροχή OAuth2.0 client credentials για τον συγκεκριμένο Δήμο" data-en="OAuth2.0 client credentials issued for the specific Municipality">Παροχή OAuth2.0 client credentials για τον συγκεκριμένο Δήμο</p>
+    </div>
+    <div class="step">
+      <h4 data-el="Ενεργοποίηση" data-en="Activation">Ενεργοποίηση</h4>
+      <p data-el="Οι πολίτες του Δήμου μπορούν πλέον να χρησιμοποιούν gov.gr" data-en="Citizens of the Municipality can now use gov.gr">Οι πολίτες του Δήμου μπορούν πλέον να χρησιμοποιούν gov.gr</p>
+    </div>
+  </div>
+
+  <!-- SECTION 4: What happens after approval -->
+  <h2 class="fade-in" data-el="Τι συμβαίνει μετά την έγκριση" data-en="What happens after approval">Τι συμβαίνει μετά την έγκριση</h2>
+
+  <div class="flow fade-in">
+    <div class="fnode fnode-b" data-el="Δήμος εγκρίνεται" data-en="Municipality approved">Δήμος εγκρίνεται</div><div class="farr">→</div>
+    <div class="fnode" data-el="Εκλογικός κύκλος ενεργοποιείται" data-en="Constituency activated">Εκλογικός κύκλος ενεργοποιείται</div><div class="farr">→</div>
+    <div class="fnode fnode-b" data-el="Πολίτες κάνουν login μέσω Taxisnet" data-en="Citizens login via Taxisnet">Πολίτες κάνουν login μέσω Taxisnet</div><div class="farr">→</div>
+    <div class="fnode fnode-g" data-el="Αναβάθμιση σε Alpha (2.0x)" data-en="Upgrade to Alpha (2.0x)">Αναβάθμιση σε Alpha (2.0x)</div>
+  </div>
+
+  <ul class="fade-in">
+    <li data-el="Οι πολίτες στον εκλογικό κύκλο του Δήμου μπορούν να αναβαθμιστούν σε <strong>Alpha</strong> μέσω gov.gr OAuth" data-en="Citizens in the Municipality's constituency can upgrade to <strong>Alpha</strong> via gov.gr OAuth">Οι πολίτες στον εκλογικό κύκλο του Δήμου μπορούν να αναβαθμιστούν σε <strong>Alpha</strong> μέσω gov.gr OAuth</li>
+    <li data-el="Ξεκλειδώνονται δημοτικές και περιφερειακές ψηφοφορίες" data-en="Municipal and regional voting is unlocked">Ξεκλειδώνονται δημοτικές και περιφερειακές ψηφοφορίες</li>
+    <li data-el="Το βάρος ψήφου αυξάνεται αυτόματα σε <strong>2.0x</strong>" data-en="Vote weight automatically increases to <strong>2.0x</strong>">Το βάρος ψήφου αυξάνεται αυτόματα σε <strong>2.0x</strong></li>
+    <li data-el="Κανένα προσωπικό δεδομένο δεν αποθηκεύεται — GDPR by design" data-en="No personal data is stored — GDPR by design">Κανένα προσωπικό δεδομένο δεν αποθηκεύεται — GDPR by design</li>
+  </ul>
+
+  <!-- SECTION 5: Approved municipalities -->
+  <h2 class="fade-in" data-el="Εγκεκριμένοι Δήμοι" data-en="Approved Municipalities">Εγκεκριμένοι Δήμοι</h2>
+  <div class="empty-card fade-in">
+    <div style="font-size:2.5rem;margin-bottom:0.75rem">🏛️</div>
+    <h4 style="font-size:1.1rem;font-weight:900;margin-bottom:0.5rem;color:var(--gray-500)" data-el="Σύντομα" data-en="Coming Soon">Σύντομα</h4>
+    <p style="color:var(--gray-400);font-size:0.85rem;margin:0" data-el="Η λίστα θα ενημερώνεται καθώς εγκρίνονται νέοι Δήμοι." data-en="This list will be updated as new Municipalities are approved.">Η λίστα θα ενημερώνεται καθώς εγκρίνονται νέοι Δήμοι.</p>
+  </div>
+
+  <!-- SECTION 6: CTA -->
+  <div class="cta-section fade-in">
+    <h3 data-el="Είστε εκπρόσωπος Δήμου;" data-en="Are you a Municipality representative?">Είστε εκπρόσωπος Δήμου;</h3>
+    <p data-el="Επικοινωνήστε μαζί μας για να ξεκινήσουμε τη διαδικασία ενεργοποίησης gov.gr OAuth για τον Δήμο σας." data-en="Contact us to start the gov.gr OAuth activation process for your Municipality.">Επικοινωνήστε μαζί μας για να ξεκινήσουμε τη διαδικασία ενεργοποίησης gov.gr OAuth για τον Δήμο σας.</p>
+    <button class="cta-btn" onclick="openNgoModal()" data-el="Επικοινωνία" data-en="Contact Us">Επικοινωνία</button>
+  </div>
+
+  <!-- SECTION 7: Contact / Technical Support -->
+  <h2 class="fade-in" data-el="Τεχνική Υποστήριξη" data-en="Technical Support">Τεχνική Υποστήριξη</h2>
+  <div class="success-box fade-in">
+    <p data-el="Επικοινωνήστε μαζί μας για τεχνική υποστήριξη σχετικά με την ενσωμάτωση gov.gr OAuth στον Δήμο σας. Η ομάδα μας θα σας καθοδηγήσει σε κάθε βήμα της διαδικασίας." data-en="Contact us for technical support regarding gov.gr OAuth integration for your Municipality. Our team will guide you through every step of the process.">
+      Επικοινωνήστε μαζί μας για τεχνική υποστήριξη σχετικά με την ενσωμάτωση gov.gr OAuth στον Δήμο σας. Η ομάδα μας θα σας καθοδηγήσει σε κάθε βήμα της διαδικασίας.
+    </p>
+  </div>
+  <div class="card-grid fade-in">
+    <div class="card" style="border-color:#93c5fd">
+      <div class="card-icon">📧</div>
+      <h4 data-el="Email Υποστήριξης" data-en="Support Email">Email Υποστήριξης</h4>
+      <p>support@ekklesia.gr</p>
+    </div>
+    <div class="card" style="border-color:#93c5fd">
+      <div class="card-icon">📖</div>
+      <h4 data-el="Τεχνική Τεκμηρίωση" data-en="Technical Documentation">Τεχνική Τεκμηρίωση</h4>
+      <p><a href="wiki/security.html" style="color:var(--blue);text-decoration:none" data-el="Μοντέλο Ασφαλείας →" data-en="Security Model →">Μοντέλο Ασφαλείας →</a></p>
+    </div>
+    <div class="card" style="border-color:#93c5fd">
+      <div class="card-icon">💻</div>
+      <h4>GitHub</h4>
+      <p><a href="https://github.com/NeaBouli/pnyx" target="_blank" style="color:var(--blue);text-decoration:none">NeaBouli/pnyx →</a></p>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-links">
+    <a href="./">Αρχική</a>
+    <a href="wiki/">Wiki</a>
+    <a href="votes/active.html" data-el="Τρέχουσες" data-en="Active">Τρέχουσες</a>
+    <a href="votes/recent.html" data-el="24 Ώρες" data-en="24 Hours">24 Ώρες</a>
+    <a href="votes/results.html" data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</a>
+    <a href="community.html">Community</a>
+    <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>
+  </div>
+  <p>εκκλησία &middot; &copy; 2026 Vendetta Labs &middot; MIT License</p>
+</footer>
+
+<!-- NGO Contact Modal (same as community.html) -->
+<div id="ngoModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:1rem;padding:2rem;max-width:480px;width:90%;position:relative;box-shadow:0 8px 32px rgba(0,0,0,0.2)">
+    <button onclick="closeNgoModal()" style="position:absolute;top:0.75rem;right:0.75rem;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#64748b">&times;</button>
+    <h3 style="margin:0 0 0.25rem;font-size:1.1rem;font-weight:900" data-el="Επικοινωνία Δήμου" data-en="Municipality Contact">Επικοινωνία Δήμου</h3>
+    <p style="color:#64748b;font-size:0.82rem;margin:0 0 1rem" data-el="Συμπληρώστε τα στοιχεία σας και θα επικοινωνήσουμε μαζί σας." data-en="Fill in your details and we will contact you.">Συμπληρώστε τα στοιχεία σας και θα επικοινωνήσουμε μαζί σας.</p>
+    <form id="ngoForm" onsubmit="submitNgoForm(event)">
+      <div style="margin-bottom:0.75rem">
+        <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:0.25rem" data-el="Ονοματεπώνυμο" data-en="Full Name">Ονοματεπώνυμο</label>
+        <input name="name" required style="width:100%;padding:0.5rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.88rem"/>
+      </div>
+      <div style="margin-bottom:0.75rem">
+        <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:0.25rem" data-el="Φορέας / Δήμος" data-en="Organization / Municipality">Φορέας / Δήμος</label>
+        <input name="org" required style="width:100%;padding:0.5rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.88rem"/>
+      </div>
+      <div style="margin-bottom:0.75rem">
+        <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:0.25rem">Email</label>
+        <input name="email" type="email" required style="width:100%;padding:0.5rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.88rem"/>
+      </div>
+      <div style="margin-bottom:1rem">
+        <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:0.25rem" data-el="Μήνυμα" data-en="Message">Μήνυμα</label>
+        <textarea name="message" rows="3" style="width:100%;padding:0.5rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.88rem;resize:vertical"></textarea>
+      </div>
+      <button type="submit" style="width:100%;padding:0.6rem;background:#2563eb;color:white;border:none;border-radius:0.4rem;font-weight:700;font-size:0.88rem;cursor:pointer" data-el="Αποστολή" data-en="Send">Αποστολή</button>
+    </form>
+    <div id="ngoStatus" style="display:none;margin-top:0.75rem;padding:0.6rem;border-radius:0.4rem;text-align:center;font-size:0.82rem;font-weight:700"></div>
+  </div>
+</div>
+
+<script>
+var currentLang = "el";
+function toggleLang() {
+  currentLang = currentLang === "el" ? "en" : "el";
+  document.getElementById("langBtn").textContent = currentLang === "el" ? "EN" : "ΕΛ";
+  document.querySelectorAll("[data-el]").forEach(function(el) {
+    var t = el.getAttribute("data-" + currentLang);
+    if (t) el.innerHTML = t;
+  });
+}
+
+// NGO Contact Modal
+function openNgoModal() {
+  var m = document.getElementById("ngoModal");
+  m.style.display = "flex";
+  document.getElementById("ngoForm").reset();
+  document.getElementById("ngoStatus").style.display = "none";
+}
+function closeNgoModal() { document.getElementById("ngoModal").style.display = "none"; }
+document.getElementById("ngoModal").addEventListener("click", function(e) { if (e.target === this) closeNgoModal(); });
+
+function submitNgoForm(e) {
+  e.preventDefault();
+  var fd = new FormData(e.target);
+  var status = document.getElementById("ngoStatus");
+  fetch("/api/v1/contact/ngo", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: fd.get("name"),
+      org: fd.get("org"),
+      email: fd.get("email"),
+      message: fd.get("message"),
+      source: "govgr-dimos"
+    })
+  }).then(function(r) {
+    if (r.ok) {
+      status.style.display = "block";
+      status.style.background = "#dcfce7";
+      status.style.color = "#166534";
+      status.innerHTML = currentLang === "el" ? "Ευχαριστούμε! Θα επικοινωνήσουμε σύντομα." : "Thank you! We will be in touch soon.";
+      e.target.reset();
+    } else { throw new Error(); }
+  }).catch(function() {
+    status.style.display = "block";
+    status.style.background = "#fee2e2";
+    status.style.color = "#991b1b";
+    status.innerHTML = currentLang === "el" ? "Σφάλμα. Δοκιμάστε ξανά." : "Error. Please try again.";
+  });
+}
+
+// Fade-in observer
+var obs = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add("visible"); });
+}, { threshold: 0.1 });
+document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); });
+</script>
+
+</body>
+</html>

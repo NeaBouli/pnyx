@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Roadmap — εκκλησία Wiki — εκκλησία</title>
+  <title>Πώς λειτουργεί — εκκλησία Wiki — εκκλησία</title>
   <link rel="icon" type="image/png" href="../pnx.png"/>
 
   <style>
@@ -144,6 +144,53 @@
     .fade-in { opacity: 0; transform: translateY(14px); transition: all 0.5s ease; }
     .fade-in.visible { opacity: 1; transform: translateY(0); }
     @media (max-width: 640px) { .nav-links a { font-size: 0.75rem; padding: 0.22rem 0.45rem; } }
+
+    /* ACCORDION */
+    .roadmap-section {
+      cursor: pointer;
+      user-select: none;
+      background: var(--gray-100);
+      border: 2px solid #e2e8f0;
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+      transition: all 0.2s;
+    }
+    .roadmap-section:hover {
+      border-color: var(--blue);
+      box-shadow: var(--shadow);
+    }
+    .roadmap-section h3 {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.05rem;
+    }
+    .roadmap-section h3::after {
+      content: "+";
+      margin-left: auto;
+      font-size: 1.3rem;
+      color: var(--gray-400);
+      transition: transform 0.2s;
+    }
+    .roadmap-section.open h3::after {
+      content: "-";
+      color: var(--blue);
+    }
+    .roadmap-section.open {
+      border-color: var(--blue);
+    }
+    .roadmap-content {
+      display: none;
+      padding-top: 1rem;
+    }
+    .roadmap-section.open .roadmap-content {
+      display: block;
+    }
+    .section-icon {
+      font-size: 1.3rem;
+    }
   </style>
 
 
@@ -170,58 +217,258 @@
     <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
   </div>
 </nav>
-<div class="hero" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7)">
-  <h1 data-el="Roadmap" data-en="Roadmap">Roadmap</h1>
+<div class="hero" style="background:linear-gradient(135deg,#eff6ff,#f0fdf4)">
+  <h1 data-el="Πώς λειτουργεί η εκκλησία" data-en="How ekklesia Works">Πώς λειτουργεί η εκκλησία</h1>
+  <p data-el="Όλα όσα πρέπει να ξέρετε — με απλά λόγια." data-en="Everything you need to know — in plain language.">Όλα όσα πρέπει να ξέρετε — με απλά λόγια.</p>
   <a href="../" class="back-link" data-el="← Αρχική" data-en="← Home">← Αρχική</a>
 </div>
 <div class="layout">
 
-  <h2 class="fade-in" data-el="Φάσεις Ανάπτυξης" data-en="Development Phases">Φάσεις Ανάπτυξης</h2>
-  <div class="card-grid fade-in" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
-    <div class="card" style="border-color:var(--green)">
-      <span class="badge badge-green" style="margin-bottom:0.75rem">Beta — Τώρα</span>
-      <h4 data-el="Beta Phase" data-en="Beta Phase">Beta Phase</h4>
-      <ul style="margin-top:0.5rem">
-        <li>SMS Επαλήθευση (HLR)</li>
-        <li>Ed25519 Identity</li>
-        <li>VAA Wahlkompass</li>
-        <li data-el="Ψηφοφορία Βουλής" data-en="Parliamentary Voting">Ψηφοφορία Βουλής</li>
-        <li data-el="Τοπική Αυτοδιοίκηση" data-en="Local Governance">Τοπική Αυτοδιοίκηση</li>
-        <li>Divergence Score</li>
-        <li>Arweave L2 Audit Trail</li>
-        <li>AI Scraper (Ollama)</li>
-        <li>Android APK + PWA</li>
-        <li>GitHub Pages</li>
-      </ul>
-    </div>
-    <div class="card" style="border-color:#f59e0b">
-      <span class="badge badge-yellow" style="margin-bottom:0.75rem" data-el="Alpha — Rollout Ready" data-en="Alpha — Rollout Ready">Alpha — Rollout Ready</span>
-      <h4>Alpha Phase</h4>
-      <ul style="margin-top:0.5rem">
-        <li>gov.gr OAuth2.0</li>
-        <li data-el="Δημογραφικά" data-en="Demographics">Δημογραφικά</li>
-        <li>Mobile App (Expo)</li>
-        <li>Push Notifications</li>
-        <li>AI Bill Summaries</li>
-      </ul>
-    </div>
-    <div class="card" style="border-color:#ef4444">
-      <span class="badge badge-red" style="margin-bottom:0.75rem" data-el="V2 — Υπό Ανάπτυξη" data-en="V2 — Under Development">V2 — Υπό Ανάπτυξη</span>
-      <h4>V2 Phase</h4>
-      <ul style="margin-top:0.5rem">
-        <li>TrueRepublic Bridge</li>
-        <li>Rust + WASM Crypto</li>
-        <li>ZK Proofs</li>
-        <li>PnyxCoin</li>
-      </ul>
+  <!-- ===== SECTION 1: Τι είναι η εκκλησία ===== -->
+  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+    <h3 data-el="Τι είναι η εκκλησία;" data-en="What is ekklesia?"><span class="section-icon">🏛️</span> Τι είναι η εκκλησία;</h3>
+    <div class="roadmap-content">
+      <p data-el="Η εκκλησία είναι μια ψηφιακή πλατφόρμα που σας επιτρέπει να ψηφίζετε σε πραγματικά νομοσχέδια της Βουλής — χωρίς κόμμα, χωρίς μεσάζοντα, χωρίς γραφειοκρατία. Ψηφίζετε ανώνυμα από το κινητό σας, όποτε θέλετε. Τα αποτελέσματα δημοσιεύονται ανοιχτά ώστε να φαίνεται τι θέλουν πραγματικά οι πολίτες." data-en="Ekklesia is a digital platform that lets you vote on real parliamentary bills — without a party, without a middleman, without bureaucracy. You vote anonymously from your phone, whenever you want. Results are published openly so everyone can see what citizens truly want.">
+        Η εκκλησία είναι μια ψηφιακή πλατφόρμα που σας επιτρέπει να ψηφίζετε σε πραγματικά νομοσχέδια της Βουλής — χωρίς κόμμα, χωρίς μεσάζοντα, χωρίς γραφειοκρατία. Ψηφίζετε ανώνυμα από το κινητό σας, όποτε θέλετε. Τα αποτελέσματα δημοσιεύονται ανοιχτά ώστε να φαίνεται τι θέλουν πραγματικά οι πολίτες.
+      </p>
+      <div class="success-box">
+        <p data-el="Δεν χρειάζεται λογαριασμό, email ή κωδικό. Μόνο το κινητό σας τηλέφωνο." data-en="No account, email, or password needed. Just your mobile phone.">Δεν χρειάζεται λογαριασμό, email ή κωδικό. Μόνο το κινητό σας τηλέφωνο.</p>
+      </div>
     </div>
   </div>
 
-  <h2 class="fade-in" data-el="Legitimacy Milestones" data-en="Legitimacy Milestones">Legitimacy Milestones</h2>
-  <div class="info-box fade-in">
-    <p data-el="Gov.gr OAuth2.0 ξεκινά όταν: 3+ NGO συνεργασίες + 500+ ενεργοί χρήστες + δημοσιευμένο Roadmap." data-en="Gov.gr OAuth2.0 starts when: 3+ NGO partnerships + 500+ active users + published Roadmap.">
-      Gov.gr OAuth2.0 ξεκινά όταν: <strong>3+ NGO συνεργασίες</strong> + <strong>500+ ενεργοί χρήστες</strong> + <strong>δημοσιευμένο Roadmap.</strong>
-    </p>
+  <!-- ===== SECTION 2: Φάση Β — Τώρα ===== -->
+  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+    <h3 data-el="Φάση Β — Τώρα" data-en="Phase B — Now"><span class="section-icon">📱</span> Φάση Β — Τώρα</h3>
+    <div class="roadmap-content">
+      <p data-el="Η πλατφόρμα βρίσκεται σε φάση Beta. Σήμερα λειτουργεί ως εξής:" data-en="The platform is in Beta phase. Here is how it currently works:">
+        Η πλατφόρμα βρίσκεται σε φάση Beta. Σήμερα λειτουργεί ως εξής:
+      </p>
+      <ol>
+        <li data-el="Δίνετε τον αριθμό κινητού σας. Λαμβάνετε ένα SMS με κωδικό." data-en="You provide your mobile number. You receive an SMS with a code.">Δίνετε τον αριθμό κινητού σας. Λαμβάνετε ένα SMS με κωδικό.</li>
+        <li data-el="Πληκτρολογείτε τον κωδικό. Το σύστημα επιβεβαιώνει ότι ο αριθμός σας είναι πραγματικός (HLR έλεγχος)." data-en="You enter the code. The system confirms your number is real (HLR check).">Πληκτρολογείτε τον κωδικό. Το σύστημα επιβεβαιώνει ότι ο αριθμός σας είναι πραγματικός (HLR έλεγχος).</li>
+        <li data-el="Δημιουργείται αυτόματα ένα μοναδικό κρυπτογραφικό κλειδί στη συσκευή σας. Αυτό είναι η «ταυτότητά» σας στην πλατφόρμα." data-en="A unique cryptographic key is automatically created on your device. This is your 'identity' on the platform.">Δημιουργείται αυτόματα ένα μοναδικό κρυπτογραφικό κλειδί στη συσκευή σας. Αυτό είναι η «ταυτότητά» σας στην πλατφόρμα.</li>
+        <li data-el="Ψηφίζετε! Κάθε ψήφος σας έχει βαρύτητα 1.0x." data-en="You vote! Each vote has a weight of 1.0x.">Ψηφίζετε! Κάθε ψήφος σας έχει βαρύτητα 1.0x.</li>
+      </ol>
+      <div class="info-box">
+        <p data-el="Ο αριθμός τηλεφώνου σας διαγράφεται αμέσως μετά την επαλήθευση. Δεν αποθηκεύεται πουθενά." data-en="Your phone number is deleted immediately after verification. It is stored nowhere.">Ο αριθμός τηλεφώνου σας διαγράφεται αμέσως μετά την επαλήθευση. Δεν αποθηκεύεται πουθενά.</p>
+      </div>
+      <span class="badge badge-green">Beta — Ενεργό</span>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 3: Πώς δημιουργείται το κλειδί σας ===== -->
+  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+    <h3 data-el="Πώς δημιουργείται και φυλάσσεται το κλειδί σας" data-en="How your key is created and stored"><span class="section-icon">🔑</span> Πώς δημιουργείται και φυλάσσεται το κλειδί σας</h3>
+    <div class="roadmap-content">
+      <p data-el="Σκεφτείτε το κλειδί σαν μια ψηφιακή υπογραφή — σαν το μοναδικό γράψιμο του χεριού σας, αλλά στον ψηφιακό κόσμο." data-en="Think of the key as a digital signature — like your unique handwriting, but in the digital world.">
+        Σκεφτείτε το κλειδί σαν μια ψηφιακή υπογραφή — σαν το μοναδικό γράψιμο του χεριού σας, αλλά στον ψηφιακό κόσμο.
+      </p>
+      <div class="card" style="border-color:var(--blue);cursor:default">
+        <h4 data-el="Τι συμβαίνει βήμα-βήμα:" data-en="What happens step by step:">Τι συμβαίνει βήμα-βήμα:</h4>
+        <ol style="margin-top:0.75rem">
+          <li data-el="Όταν επαληθεύεστε, η συσκευή σας (κινητό ή υπολογιστής) δημιουργεί ένα ζευγάρι κλειδιών: ένα ιδιωτικό και ένα δημόσιο." data-en="When you verify, your device (phone or computer) creates a key pair: one private and one public.">Όταν επαληθεύεστε, η συσκευή σας (κινητό ή υπολογιστής) δημιουργεί ένα ζευγάρι κλειδιών: ένα <strong>ιδιωτικό</strong> και ένα <strong>δημόσιο</strong>.</li>
+          <li data-el="Το ιδιωτικό κλειδί μένει ΜΟΝΟ στη συσκευή σας. Κανείς άλλος δεν το βλέπει — ούτε εμείς." data-en="The private key stays ONLY on your device. Nobody else sees it — not even us.">Το ιδιωτικό κλειδί μένει <strong>ΜΟΝΟ στη συσκευή σας</strong>. Κανείς άλλος δεν το βλέπει — ούτε εμείς.</li>
+          <li data-el="Το δημόσιο κλειδί στέλνεται στον server για να μπορεί να επαληθεύσει ότι μια ψήφος ήρθε πράγματι από εσάς." data-en="The public key is sent to the server so it can verify that a vote truly came from you.">Το δημόσιο κλειδί στέλνεται στον server για να μπορεί να επαληθεύσει ότι μια ψήφος ήρθε πράγματι από εσάς.</li>
+          <li data-el="Όταν ψηφίζετε, η συσκευή σας υπογράφει την ψήφο με το ιδιωτικό κλειδί. Κανείς δεν μπορεί να πλαστογραφήσει την ψήφο σας." data-en="When you vote, your device signs the vote with your private key. Nobody can forge your vote.">Όταν ψηφίζετε, η συσκευή σας «υπογράφει» την ψήφο με το ιδιωτικό κλειδί. Κανείς δεν μπορεί να πλαστογραφήσει την ψήφο σας.</li>
+        </ol>
+      </div>
+      <div class="warn-box">
+        <p data-el="Αν χάσετε τη συσκευή σας, χάνετε και το κλειδί. Μπορείτε να ξανα-επαληθευτείτε με νέο SMS και να πάρετε νέο κλειδί." data-en="If you lose your device, you lose your key. You can re-verify with a new SMS and get a new key.">Αν χάσετε τη συσκευή σας, χάνετε και το κλειδί. Μπορείτε να ξανα-επαληθευτείτε με νέο SMS και να πάρετε νέο κλειδί.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 4: Φάση Α — Έρχεται ===== -->
+  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+    <h3 data-el="Φάση Α — Έρχεται" data-en="Phase A — Coming Soon"><span class="section-icon">🏗️</span> Φάση Α — Έρχεται</h3>
+    <div class="roadmap-content">
+      <p data-el="Στην επόμενη φάση, θα μπορείτε να συνδεθείτε μέσω gov.gr — την πλατφόρμα του ελληνικού Δημοσίου." data-en="In the next phase, you will be able to log in through gov.gr — the Greek government platform.">
+        Στην επόμενη φάση, θα μπορείτε να συνδεθείτε μέσω <strong>gov.gr</strong> — την πλατφόρμα του ελληνικού Δημοσίου.
+      </p>
+      <ul>
+        <li data-el="Σύνδεση μέσω gov.gr OAuth (ίδιος κωδικός που χρησιμοποιείτε για taxisnet, e-ΕΦΚΑ κ.λπ.)." data-en="Login via gov.gr OAuth (same credentials you use for taxisnet, e-EFKA etc.).">Σύνδεση μέσω gov.gr OAuth (ίδιος κωδικός που χρησιμοποιείτε για taxisnet, e-ΕΦΚΑ κ.λπ.).</li>
+        <li data-el="Οι Δήμοι ενεργοποιούν τοπικές ψηφοφορίες για τη γειτονιά σας." data-en="Municipalities activate local votes for your neighborhood.">Οι Δήμοι ενεργοποιούν τοπικές ψηφοφορίες για τη γειτονιά σας.</li>
+        <li data-el="Η ψήφος σας αποκτά βαρύτητα 2.0x — διπλάσια ισχύ." data-en="Your vote gets a weight of 2.0x — double the power.">Η ψήφος σας αποκτά βαρύτητα <strong>2.0x</strong> — διπλάσια ισχύ.</li>
+      </ul>
+      <div class="info-box">
+        <p data-el="Η Φάση Α ξεκινάει μόλις: 500+ ενεργοί χρήστες + 3+ συνεργασίες με ΜΚΟ + δημοσιευμένο roadmap." data-en="Phase A starts when: 500+ active users + 3+ NGO partnerships + published roadmap.">Η Φάση Α ξεκινάει μόλις: <strong>500+ ενεργοί χρήστες</strong> + <strong>3+ συνεργασίες με ΜΚΟ</strong> + <strong>δημοσιευμένο roadmap</strong>.</p>
+      </div>
+      <span class="badge badge-yellow">Alpha — Σχεδιασμός</span>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 5: Πώς υπολογίζεται η ψήφος σας ===== -->
+  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+    <h3 data-el="Πώς υπολογίζεται η ψήφος σας" data-en="How your vote is calculated"><span class="section-icon">⚖️</span> Πώς υπολογίζεται η ψήφος σας</h3>
+    <div class="roadmap-content">
+      <p data-el="Κάθε ψήφος μετράει, αλλά η βαρύτητα εξαρτάται από τον τρόπο επαλήθευσής σας:" data-en="Every vote counts, but the weight depends on your verification method:">
+        Κάθε ψήφος μετράει, αλλά η βαρύτητα εξαρτάται από τον τρόπο επαλήθευσής σας:
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-el="Μέθοδος" data-en="Method">Μέθοδος</th>
+              <th data-el="Βαρύτητα" data-en="Weight">Βαρύτητα</th>
+              <th data-el="Κατάσταση" data-en="Status">Κατάσταση</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-el="SMS Επαλήθευση" data-en="SMS Verification">SMS Επαλήθευση</td>
+              <td><strong>1.0x</strong></td>
+              <td><span class="badge badge-green" data-el="Ενεργό" data-en="Active">Ενεργό</span></td>
+            </tr>
+            <tr>
+              <td data-el="SMS + Πολιτικός Κομπάς" data-en="SMS + Political Compass">SMS + Πολιτικός Κομπάς</td>
+              <td><strong>1.2x</strong></td>
+              <td><span class="badge badge-green" data-el="Ενεργό" data-en="Active">Ενεργό</span></td>
+            </tr>
+            <tr>
+              <td data-el="gov.gr OAuth" data-en="gov.gr OAuth">gov.gr OAuth</td>
+              <td><strong>2.0x</strong></td>
+              <td><span class="badge badge-yellow" data-el="Φάση Α" data-en="Phase A">Φάση Α</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="info-box">
+        <p data-el="Η βαρύτητα 1.2x δίνεται αυτόματα αν έχετε συμπληρώσει τον Πολιτικό Κομπάς. Δεν χρειάζεται κάποια άλλη ενέργεια." data-en="The 1.2x weight is given automatically if you complete the Political Compass. No further action needed.">Η βαρύτητα 1.2x δίνεται αυτόματα αν έχετε συμπληρώσει τον Πολιτικό Κομπάς. Δεν χρειάζεται κάποια άλλη ενέργεια.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 6: Ο Πολιτικός Σας Κομπάς ===== -->
+  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+    <h3 data-el="Ο Πολιτικός Σας Κομπάς" data-en="Your Political Compass"><span class="section-icon">🧭</span> Ο Πολιτικός Σας Κομπάς</h3>
+    <div class="roadmap-content">
+      <p data-el="Ο Πολιτικός Κομπάς είναι ένα ερωτηματολόγιο 48 ερωτήσεων που σας βοηθάει να δείτε πού στέκεστε πολιτικά — χωρίς ετικέτες." data-en="The Political Compass is a 48-question quiz that helps you see where you stand politically — without labels.">
+        Ο Πολιτικός Κομπάς είναι ένα ερωτηματολόγιο <strong>48 ερωτήσεων</strong> που σας βοηθάει να δείτε πού στέκεστε πολιτικά — χωρίς ετικέτες.
+      </p>
+      <ul>
+        <li data-el="Θέματα: υγεία, παιδεία, οικονομία, άμυνα, μεταναστευτικό, περιβάλλον κ.ά." data-en="Topics: health, education, economy, defense, immigration, environment and more.">Θέματα: υγεία, παιδεία, οικονομία, άμυνα, μεταναστευτικό, περιβάλλον κ.ά.</li>
+        <li data-el="Τα δεδομένα μένουν 100% στη συσκευή σας. Δεν στέλνονται πουθενά — ούτε στον server μας." data-en="Data stays 100% on your device. It is not sent anywhere — not even to our server.">Τα δεδομένα μένουν <strong>100% στη συσκευή σας</strong>. Δεν στέλνονται πουθενά — ούτε στον server μας.</li>
+        <li data-el="Είναι κρυπτογραφημένα τοπικά (AES-256) — ακόμα κι αν κάποιος πάρει τη συσκευή σας, δεν μπορεί να τα διαβάσει." data-en="They are locally encrypted (AES-256) — even if someone takes your device, they cannot read them.">Είναι κρυπτογραφημένα τοπικά (AES-256) — ακόμα κι αν κάποιος πάρει τη συσκευή σας, δεν μπορεί να τα διαβάσει.</li>
+        <li data-el="Ο κομπάς ενημερώνεται αυτόματα κάθε φορά που ψηφίζετε — γίνεται πιο ακριβής με τον καιρό." data-en="The compass updates automatically every time you vote — it becomes more accurate over time.">Ο κομπάς ενημερώνεται αυτόματα κάθε φορά που ψηφίζετε — γίνεται πιο ακριβής με τον καιρό.</li>
+      </ul>
+      <div class="success-box">
+        <p data-el="Είναι εντελώς προαιρετικός. Μπορείτε να ψηφίζετε κανονικά χωρίς αυτόν." data-en="It is completely optional. You can vote normally without it.">Είναι εντελώς προαιρετικός. Μπορείτε να ψηφίζετε κανονικά χωρίς αυτόν.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 7: Ειδοποιήσεις ===== -->
+  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+    <h3 data-el="Ειδοποιήσεις" data-en="Notifications"><span class="section-icon">🔔</span> Ειδοποιήσεις</h3>
+    <div class="roadmap-content">
+      <p data-el="Θα μπορείτε να λαμβάνετε ειδοποιήσεις όταν υπάρχει νέα ψηφοφορία — αλλά μόνο αν εσείς το θέλετε." data-en="You will be able to receive notifications when there is a new vote — but only if you choose to.">
+        Θα μπορείτε να λαμβάνετε ειδοποιήσεις όταν υπάρχει νέα ψηφοφορία — αλλά μόνο αν εσείς το θέλετε.
+      </p>
+      <ul>
+        <li data-el="Εσείς επιλέγετε τις κατηγορίες: Βουλή, Δήμος, ή και τα δύο." data-en="You choose the categories: Parliament, Municipality, or both.">Εσείς επιλέγετε τις κατηγορίες: Βουλή, Δήμος, ή και τα δύο.</li>
+        <li data-el="Ο server στέλνει μόνο ένα σύντομο σήμα (ping) — χωρίς περιεχόμενο. Η συσκευή σας κατεβάζει μετά τις λεπτομέρειες." data-en="The server sends only a short signal (ping) — no content. Your device then downloads the details.">Ο server στέλνει μόνο ένα σύντομο σήμα (ping) — <strong>χωρίς περιεχόμενο</strong>. Η συσκευή σας κατεβάζει μετά τις λεπτομέρειες.</li>
+        <li data-el="Μπορείτε να επιλέξετε τον ήχο ειδοποίησης ξεχωριστά για κάθε κατηγορία." data-en="You can choose the notification sound separately for each category.">Μπορείτε να επιλέξετε τον ήχο ειδοποίησης ξεχωριστά για κάθε κατηγορία.</li>
+        <li data-el="Μπορείτε να τις απενεργοποιήσετε ανά πάσα στιγμή." data-en="You can disable them at any time.">Μπορείτε να τις απενεργοποιήσετε ανά πάσα στιγμή.</li>
+      </ul>
+      <div class="info-box">
+        <p data-el="Ιδιωτικότητα: ο server δεν ξέρει ποιος λαμβάνει τι. Η ειδοποίηση είναι ανώνυμη." data-en="Privacy: the server does not know who receives what. The notification is anonymous.">Ιδιωτικότητα: ο server δεν ξέρει ποιος λαμβάνει τι. Η ειδοποίηση είναι ανώνυμη.</p>
+      </div>
+      <span class="badge badge-yellow" data-el="Σχεδιασμός" data-en="Planned">Σχεδιασμός</span>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 8: gov.gr — Ο Ρόλος των Δήμων ===== -->
+  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+    <h3 data-el="gov.gr — Ο Ρόλος των Δήμων" data-en="gov.gr — The Role of Municipalities"><span class="section-icon">🏢</span> gov.gr — Ο Ρόλος των Δήμων</h3>
+    <div class="roadmap-content">
+      <p data-el="Στη Φάση Α, οι Δήμοι της Ελλάδας θα μπορούν να χρησιμοποιήσουν την εκκλησία για να ρωτήσουν τους κατοίκους τους σε τοπικά θέματα." data-en="In Phase A, Greek municipalities will be able to use ekklesia to ask their residents about local issues.">
+        Στη Φάση Α, οι Δήμοι της Ελλάδας θα μπορούν να χρησιμοποιήσουν την εκκλησία για να ρωτήσουν τους κατοίκους τους σε τοπικά θέματα.
+      </p>
+      <ul>
+        <li data-el="Π.χ. «Να γίνει πεζόδρομος η οδός Ερμού;» — ψηφίζουν μόνο οι κάτοικοι του Δήμου." data-en="E.g. 'Should Ermou Street be pedestrianized?' — only the municipality's residents vote.">Π.χ. «Να γίνει πεζόδρομος η οδός Ερμού;» — ψηφίζουν μόνο οι κάτοικοι του Δήμου.</li>
+        <li data-el="Η ταυτοποίηση γίνεται μέσω gov.gr — ο Δήμος δεν βλέπει ποιος ψήφισε τι." data-en="Identification is through gov.gr — the municipality does not see who voted for what.">Η ταυτοποίηση γίνεται μέσω gov.gr — ο Δήμος δεν βλέπει ποιος ψήφισε τι.</li>
+        <li data-el="Τα αποτελέσματα δημοσιεύονται ανοιχτά." data-en="Results are published openly.">Τα αποτελέσματα δημοσιεύονται ανοιχτά.</li>
+      </ul>
+      <div class="success-box">
+        <p data-el="Είστε Δήμαρχος ή εργάζεστε σε Δήμο; Μάθετε πώς να ενεργοποιήσετε τον Δήμο σας." data-en="Are you a Mayor or work at a municipality? Learn how to activate your municipality.">
+          Είστε Δήμαρχος ή εργάζεστε σε Δήμο;
+          <a href="govgr-dimos.html" style="color:var(--blue);font-weight:700" data-el="Μάθετε πώς να ενεργοποιήσετε τον Δήμο σας →" data-en="Learn how to activate your municipality →"> Μάθετε πώς να ενεργοποιήσετε τον Δήμο σας →</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 9: Αρχιτεκτονική Ψηφοφορίας ===== -->
+  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+    <h3 data-el="Αρχιτεκτονική Ψηφοφορίας" data-en="Voting Architecture"><span class="section-icon">🗳️</span> Αρχιτεκτονική Ψηφοφορίας</h3>
+    <div class="roadmap-content">
+      <p data-el="Πώς λειτουργεί η ψηφοφορία τεχνικά — με απλά λόγια:" data-en="How voting works technically — in simple terms:">
+        Πώς λειτουργεί η ψηφοφορία τεχνικά — με απλά λόγια:
+      </p>
+      <div class="flow">
+        <span class="fnode fnode-g" data-el="Εσείς ψηφίζετε" data-en="You vote">Εσείς ψηφίζετε</span>
+        <span class="farr">→</span>
+        <span class="fnode fnode-b" data-el="Η συσκευή υπογράφει" data-en="Device signs">Η συσκευή υπογράφει</span>
+        <span class="farr">→</span>
+        <span class="fnode fnode-y" data-el="Ο server επαληθεύει" data-en="Server verifies">Ο server επαληθεύει</span>
+        <span class="farr">→</span>
+        <span class="fnode fnode-p" data-el="Αρχειοθέτηση στο Arweave" data-en="Archived on Arweave">Αρχειοθέτηση στο Arweave</span>
+      </div>
+      <ol>
+        <li data-el="Επιλέγετε ΝΑΙ ή ΟΧΙ σε ένα νομοσχέδιο." data-en="You choose YES or NO on a bill.">Επιλέγετε <strong>ΝΑΙ</strong> ή <strong>ΟΧΙ</strong> σε ένα νομοσχέδιο.</li>
+        <li data-el="Η συσκευή σας υπογράφει την ψήφο με το ιδιωτικό κλειδί (Ed25519). Ο server δεν ξέρει ποιος είστε — ξέρει μόνο ότι η ψήφος είναι αυθεντική." data-en="Your device signs the vote with your private key (Ed25519). The server does not know who you are — it only knows the vote is authentic.">Η συσκευή σας υπογράφει την ψήφο με το ιδιωτικό κλειδί (Ed25519). Ο server δεν ξέρει ποιος είστε — ξέρει μόνο ότι η ψήφος είναι αυθεντική.</li>
+        <li data-el="Ο server ελέγχει ότι δεν έχετε ξαναψηφίσει στο ίδιο νομοσχέδιο." data-en="The server checks you haven't voted on the same bill before.">Ο server ελέγχει ότι δεν έχετε ξαναψηφίσει στο ίδιο νομοσχέδιο.</li>
+        <li data-el="Η ψήφος αρχειοθετείται μόνιμα στο Arweave — ένα αμετάβλητο αρχείο που κανείς δεν μπορεί να σβήσει ή να αλλάξει." data-en="The vote is permanently archived on Arweave — an immutable record that nobody can delete or modify.">Η ψήφος αρχειοθετείται μόνιμα στο <strong>Arweave</strong> — ένα αμετάβλητο αρχείο που κανείς δεν μπορεί να σβήσει ή να αλλάξει.</li>
+      </ol>
+      <div class="warn-box">
+        <p data-el="Κανείς — ούτε η πλατφόρμα, ούτε ο Δήμος, ούτε η κυβέρνηση — δεν μπορεί να δει ποιος ψήφισε τι. Η ανωνυμία δεν είναι επιλογή, είναι εγγύηση." data-en="Nobody — not the platform, not the municipality, not the government — can see who voted for what. Anonymity is not an option, it is a guarantee.">Κανείς — ούτε η πλατφόρμα, ούτε ο Δήμος, ούτε η κυβέρνηση — δεν μπορεί να δει ποιος ψήφισε τι. Η ανωνυμία δεν είναι επιλογή, είναι <strong>εγγύηση</strong>.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 10: Οδικός Χάρτης ===== -->
+  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+    <h3 data-el="Οδικός Χάρτης" data-en="Roadmap"><span class="section-icon">🗺️</span> Οδικός Χάρτης</h3>
+    <div class="roadmap-content">
+      <div class="card-grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+        <div class="card" style="border-color:var(--green);cursor:default">
+          <span class="badge badge-green" style="margin-bottom:0.75rem">Beta — Τώρα</span>
+          <h4 data-el="Φάση Β (Τρέχουσα)" data-en="Phase B (Current)">Φάση Β (Τρέχουσα)</h4>
+          <ul style="margin-top:0.5rem">
+            <li data-el="SMS Επαλήθευση" data-en="SMS Verification">SMS Επαλήθευση</li>
+            <li data-el="Κρυπτογραφική Ταυτότητα (Ed25519)" data-en="Cryptographic Identity (Ed25519)">Κρυπτογραφική Ταυτότητα (Ed25519)</li>
+            <li data-el="Πολιτικός Κομπάς (48 ερωτήσεις)" data-en="Political Compass (48 questions)">Πολιτικός Κομπάς (48 ερωτήσεις)</li>
+            <li data-el="Ψηφοφορία Βουλής" data-en="Parliamentary Voting">Ψηφοφορία Βουλής</li>
+            <li data-el="Τοπική Αυτοδιοίκηση" data-en="Local Governance">Τοπική Αυτοδιοίκηση</li>
+            <li data-el="Αρχειοθέτηση στο Arweave" data-en="Arweave Archiving">Αρχειοθέτηση στο Arweave</li>
+            <li data-el="Android APK + PWA" data-en="Android APK + PWA">Android APK + PWA</li>
+          </ul>
+        </div>
+        <div class="card" style="border-color:var(--yellow);cursor:default">
+          <span class="badge badge-yellow" style="margin-bottom:0.75rem" data-el="Alpha — Σύντομα" data-en="Alpha — Soon">Alpha — Σύντομα</span>
+          <h4 data-el="Φάση Α (Επόμενη)" data-en="Phase A (Next)">Φάση Α (Επόμενη)</h4>
+          <ul style="margin-top:0.5rem">
+            <li data-el="gov.gr Σύνδεση" data-en="gov.gr Login">gov.gr Σύνδεση</li>
+            <li data-el="Ενεργοποίηση Δήμων" data-en="Municipal Activation">Ενεργοποίηση Δήμων</li>
+            <li data-el="Δημογραφικά στοιχεία" data-en="Demographics">Δημογραφικά στοιχεία</li>
+            <li data-el="Εφαρμογή κινητού (Expo)" data-en="Mobile App (Expo)">Εφαρμογή κινητού (Expo)</li>
+            <li data-el="Ειδοποιήσεις Push" data-en="Push Notifications">Ειδοποιήσεις Push</li>
+            <li data-el="Περιλήψεις νομοσχεδίων με AI" data-en="AI Bill Summaries">Περιλήψεις νομοσχεδίων με AI</li>
+          </ul>
+        </div>
+        <div class="card" style="border-color:var(--red);cursor:default">
+          <span class="badge badge-red" style="margin-bottom:0.75rem" data-el="V2 — Μέλλον" data-en="V2 — Future">V2 — Μέλλον</span>
+          <h4 data-el="Έκδοση 2 (Μακροπρόθεσμα)" data-en="Version 2 (Long-term)">Έκδοση 2 (Μακροπρόθεσμα)</h4>
+          <ul style="margin-top:0.5rem">
+            <li data-el="Σύνδεση με TrueRepublic Blockchain" data-en="TrueRepublic Blockchain Bridge">Σύνδεση με TrueRepublic Blockchain</li>
+            <li data-el="Κρυπτογραφία στον browser (Rust + WASM)" data-en="Browser Cryptography (Rust + WASM)">Κρυπτογραφία στον browser (Rust + WASM)</li>
+            <li data-el="Zero-Knowledge Proofs" data-en="Zero-Knowledge Proofs">Zero-Knowledge Proofs</li>
+            <li data-el="PnyxCoin" data-en="PnyxCoin">PnyxCoin</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -247,6 +494,9 @@ function toggleLang() {
     var t = el.getAttribute("data-" + currentLang);
     if (t) el.innerHTML = t;
   });
+}
+function toggleSection(el) {
+  el.classList.toggle("open");
 }
 var obs = new IntersectionObserver(function(entries) {
   entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add("visible"); });
