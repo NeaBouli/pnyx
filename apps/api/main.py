@@ -57,8 +57,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://ekklesia.gr"],
-    allow_credentials=True,
+    allow_origins=["*"],  # Mobile apps + PWA send requests without Origin header
+    allow_credentials=False,  # Must be False when allow_origins is "*"
     allow_methods=["*"],
     allow_headers=["*"],
 )
