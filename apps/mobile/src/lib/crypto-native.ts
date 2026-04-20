@@ -167,7 +167,7 @@ export function derivePolisKey(nullifierRoot: Uint8Array): {
  */
 export async function storeNullifierRoot(root: Uint8Array): Promise<void> {
   await SecureStore.setItemAsync(KEYS.NULLIFIER_ROOT, bytesToHex(root), {
-    requireAuthentication: true,
+    requireAuthentication: false,
   });
 }
 
@@ -188,7 +188,7 @@ export async function loadIdentityCommitment(): Promise<string | null> {
 // ─── Legacy compat (Phase B — will be deprecated) ────────────────────────────
 
 export async function storeKeypair(privateKeyHex: string, publicKeyHex: string): Promise<void> {
-  await SecureStore.setItemAsync(KEYS.PRIVATE_KEY, privateKeyHex, { requireAuthentication: true });
+  await SecureStore.setItemAsync(KEYS.PRIVATE_KEY, privateKeyHex, { requireAuthentication: false });
   await SecureStore.setItemAsync(KEYS.PUBLIC_KEY, publicKeyHex);
 }
 

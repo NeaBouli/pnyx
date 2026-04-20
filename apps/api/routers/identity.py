@@ -6,7 +6,7 @@ GET  /api/v1/identity/status  — Key Status prüfen
 """
 import gc
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -119,7 +119,7 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
     if existing and existing.status == KeyStatus.ACTIVE:
         # Auto-revoke and re-register (user lost their key or reinstalled app)
         existing.status = KeyStatus.REVOKED
-        existing.revoked_at = datetime.utcnow()
+        existing.revoked_at = datetime.now(timezone.utc)
         await db.commit()
         logger.info(f"[MOD-01] Auto-revoked existing key for re-registration")
 
@@ -150,7 +150,7 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
                 region=req.region,
                 gender_code=req.gender_code,
                 revoked_at=None,
-                created_at=datetime.utcnow()
+                created_at=datetime.now(timezone.utc)
             )
         )
     else:
@@ -206,7 +206,7 @@ async def revoke_identity(req: RevokeRequest, db: AsyncSession = Depends(get_db)
     await db.execute(
         update(IdentityRecord)
         .where(IdentityRecord.nullifier_hash == new_nullifier)
-        .values(status=KeyStatus.REVOKED, revoked_at=datetime.utcnow())
+        .values(status=KeyStatus.REVOKED, revoked_at=datetime.now(timezone.utc))
     )
     await db.commit()
 
