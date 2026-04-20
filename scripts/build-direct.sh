@@ -7,6 +7,7 @@ set -e
 
 cd "$(dirname "$0")/../apps/mobile"
 npx expo prebuild --platform android --clean
+echo "sdk.dir=$HOME/Library/Android/sdk" > android/local.properties
 cd android
 ./gradlew assembleRelease
 
