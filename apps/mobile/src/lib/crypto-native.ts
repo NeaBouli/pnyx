@@ -162,18 +162,12 @@ export function derivePolisKey(nullifierRoot: Uint8Array): {
 // ─── Hardware-backed Storage ─────────────────────────────────────────────────
 
 /**
- * Secure store helper: tries biometrics first, falls back to PIN/pattern/none.
- * - Devices WITH biometrics → biometric unlock (most secure)
- * - Devices WITH PIN/pattern only → standard encryption (still secure)
- * - Devices with NO lock → OS-encrypted (minimum security)
+ * Secure store helper — Beta: no auth gate.
+ * Data still encrypted by Android Keystore / iOS Keychain.
+ * Biometric gate added only for Play Store / F-Droid / iOS later.
  */
 async function secureSet(key: string, value: string): Promise<void> {
-  try {
-    await SecureStore.setItemAsync(key, value, { requireAuthentication: true });
-  } catch {
-    // No biometrics enrolled — fallback to standard encryption
-    await SecureStore.setItemAsync(key, value, { requireAuthentication: false });
-  }
+  await SecureStore.setItemAsync(key, value);
 }
 
 /**
