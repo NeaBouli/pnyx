@@ -23,7 +23,7 @@
     },
     "production": {
       "android": {
-        "buildType": "apk",
+        "buildType": "app-bundle",
         "credentialsSource": "remote"
       },
       "ios": {

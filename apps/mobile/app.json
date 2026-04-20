@@ -24,7 +24,14 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "gr.ekklesia.app",
-      "versionCode": 2
+      "versionCode": 2,
+      "permissions": [
+        "INTERNET",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
