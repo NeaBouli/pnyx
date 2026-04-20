@@ -102,7 +102,7 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
     if not hlr_result["valid"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=hlr_result["error"] or f"Ungültige Nummer ({hlr_result['status']}). Nur echte griechische Mobilnummern."
+            detail=hlr_result["error"] or f"Μη έγκυρος αριθμός. Μόνο ελληνικοί αριθμοί κινητού."
         )
 
     # 2. Nullifier Hash (Telefonnummer wird in der Funktion sofort gelöscht)
@@ -178,7 +178,7 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
         public_key_hex=keypair["public_key_hex"],
         private_key_hex=keypair["private_key_hex"],
         nullifier_hash=nullifier,
-        message="Schlüssel erzeugt. Speichere den Private Key sofort im Secure Enclave. Er wird nicht gespeichert und ist nicht wiederherstellbar."
+        message="Κλειδί δημιουργήθηκε. Αποθηκεύεται με ασφάλεια στη συσκευή σας. Δεν αποθηκεύεται στον server."
     )
 
 
@@ -193,7 +193,7 @@ async def revoke_identity(req: RevokeRequest, db: AsyncSession = Depends(get_db)
     gc.collect()
 
     if new_nullifier != req.nullifier_hash:
-        raise HTTPException(status_code=400, detail="Nullifier stimmt nicht mit Telefonnummer überein.")
+        raise HTTPException(status_code=400, detail="Ο Nullifier δεν αντιστοιχεί στον αριθμό.")
 
     result = await db.execute(
         select(IdentityRecord).where(IdentityRecord.nullifier_hash == new_nullifier)
@@ -201,7 +201,7 @@ async def revoke_identity(req: RevokeRequest, db: AsyncSession = Depends(get_db)
     record = result.scalar_one_or_none()
 
     if not record:
-        raise HTTPException(status_code=404, detail="Kein Key für diese Nummer gefunden.")
+        raise HTTPException(status_code=404, detail="Δεν βρέθηκε κλειδί για αυτόν τον αριθμό.")
 
     await db.execute(
         update(IdentityRecord)
@@ -210,7 +210,7 @@ async def revoke_identity(req: RevokeRequest, db: AsyncSession = Depends(get_db)
     )
     await db.commit()
 
-    return {"success": True, "message": "Key revoziert. Rufe /verify auf um einen neuen Key zu erhalten."}
+    return {"success": True, "message": "Το κλειδί ανακλήθηκε. Μπορείτε τώρα να επαληθευτείτε εκ νέου."}
 
 
 @router.post("/status", response_model=StatusResponse)
