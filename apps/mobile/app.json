@@ -23,7 +23,7 @@
         "backgroundColor": "#93c5fd"
       },
       "edgeToEdgeEnabled": true,
-      "package": "gr.ekklesia.app",
+      "package": "ekklesia.gr",
       "versionCode": 2,
       "permissions": [
         "INTERNET",
