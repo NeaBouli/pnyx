@@ -2,7 +2,7 @@
  * api.ts — API Client για Ekklesia Mobile
  */
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
 
 async function request<T>(
   path: string,
