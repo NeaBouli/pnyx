@@ -85,6 +85,7 @@ export default function HomeScreen() {
         ].map(t => <Text key={t} style={s.infoItem}>{t}</Text>)}
       </View>
 
+      <Text style={s.disclaimer}>Η εκκλησία δεν είναι κρατική εφαρμογή. Οι ψηφοφορίες έχουν αποκλειστικά ενημερωτικό χαρακτήρα — χωρίς νομική ή πολιτική δεσμευτικότητα.</Text>
       <Text style={s.footer}>εκκλησία · MIT · © 2026 Vendetta Labs</Text>
     </ScrollView>
   );
@@ -117,5 +118,6 @@ const s = StyleSheet.create({
   infoBox: { backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: colors.border },
   infoTitle: { fontSize: 15, fontWeight: "800", color: colors.text, marginBottom: 10 },
   infoItem: { fontSize: 13, color: colors.textSecondary, marginBottom: 6 },
+  disclaimer: { textAlign: "center", fontSize: 10, color: colors.textTertiary, marginBottom: 8, lineHeight: 15, fontStyle: "italic", paddingHorizontal: 10 },
   footer: { textAlign: "center", fontSize: 11, color: colors.textTertiary },
 });
