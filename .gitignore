@@ -35,3 +35,7 @@ Thumbs.db
 # Arweave
 arweave-wallet*.json
 *.jwk
+
+# Play Store keystore
+apps/mobile/ekklesia-playstore-key.jks
+apps/mobile/android/keystore-play.properties

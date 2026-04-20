@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import * as SecureStore from "expo-secure-store";
+import Constants from "expo-constants";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
@@ -125,6 +126,11 @@ export default function ProfileScreen() {
       <TouchableOpacity style={s.skipBtn} onPress={skip}>
         <Text style={s.skipBtnText}>Αργότερα</Text>
       </TouchableOpacity>
+
+      {/* Version + Channel */}
+      <Text style={s.versionInfo}>
+        Έκδοση: {Constants.expoConfig?.version ?? "?"} | Κανάλι: {Constants.expoConfig?.extra?.distributionChannel === "play" ? "Google Play" : "Direct Download"}
+      </Text>
     </ScrollView>
   );
 }
@@ -150,4 +156,5 @@ const s = StyleSheet.create({
   saveBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
   skipBtn: { alignItems: "center", padding: 14, marginTop: 8 },
   skipBtnText: { color: colors.textSecondary, fontWeight: "600", fontSize: 14 },
+  versionInfo: { textAlign: "center", color: colors.textSecondary, fontSize: 11, marginTop: 24 },
 });

@@ -4,6 +4,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Text } from "react-native";
 import { colors } from "../theme";
+import { ChannelNotice } from "../components/ChannelNotice";
 
 import HomeScreen from "../screens/HomeScreen";
 import VerifyScreen from "../screens/VerifyScreen";
@@ -74,6 +75,7 @@ function TabNavigator() {
 export default function Navigation() {
   return (
     <NavigationContainer>
+      <ChannelNotice />
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Tabs" component={TabNavigator} />
         <Stack.Screen name="Verify" component={VerifyScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Επαλήθευση" }} />

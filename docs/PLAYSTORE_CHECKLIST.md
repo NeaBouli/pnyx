@@ -9,12 +9,19 @@
 - [ ] Privacy Policy URL: https://ekklesia.gr/wiki/security.html
 - [ ] Data safety form: no personal data collected, votes are anonymous
 
-## Build (after EAS resets 2026-05-01)
+## Building AAB for Google Play
+```bash
+bash scripts/build-play.sh
+```
+- AAB: `android/app/build/outputs/bundle/playRelease/app-play-release.aab`
+- Upload to Play Console → Internal Testing → New Release
+- Share opt-in link with testers
+
+## Alternative: EAS Cloud (after resets 2026-05-01)
 ```bash
 npx eas build --platform android --profile production
 ```
 - Download AAB from EAS dashboard
-- Upload to Play Console → Internal Testing → New Release
 
 ## Internal Testing setup
 - Create tester list (email addresses)
@@ -26,9 +33,17 @@ npx eas build --platform android --profile production
 - Promote to Closed Testing (requires 12 testers, 14 days)
 - Then promote to Production
 
+## Two channels — never mix
+| Channel | Signing | Distribution | Script |
+|---------|---------|-------------|--------|
+| Direct APK | EAS / debug key | ekklesia.gr/download | `scripts/build-direct.sh` |
+| Google Play | `ekklesia-playstore-key.jks` | Play Store | `scripts/build-play.sh` |
+
+Users switching channels must reinstall (informed on first launch via ChannelNotice).
+
 ## Current config
 - `android.package`: gr.ekklesia.app
 - `android.versionCode`: 2
 - `version`: 1.0.0
-- EAS production: app-bundle (AAB)
-- EAS preview: apk (beta testers)
+- Flavors: `direct` (APK) + `play` (AAB)
+- Keystore backup: server `/opt/hetzner-migration/memory/ekklesia-playstore-key.jks`
