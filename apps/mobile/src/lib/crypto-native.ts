@@ -162,13 +162,26 @@ export function derivePolisKey(nullifierRoot: Uint8Array): {
 // ─── Hardware-backed Storage ─────────────────────────────────────────────────
 
 /**
+ * Secure store helper: tries biometrics first, falls back to PIN/pattern/none.
+ * - Devices WITH biometrics → biometric unlock (most secure)
+ * - Devices WITH PIN/pattern only → standard encryption (still secure)
+ * - Devices with NO lock → OS-encrypted (minimum security)
+ */
+async function secureSet(key: string, value: string): Promise<void> {
+  try {
+    await SecureStore.setItemAsync(key, value, { requireAuthentication: true });
+  } catch {
+    // No biometrics enrolled — fallback to standard encryption
+    await SecureStore.setItemAsync(key, value, { requireAuthentication: false });
+  }
+}
+
+/**
  * Store nullifier_root in Android Keystore / iOS Keychain.
- * Requires biometric authentication to read.
+ * Uses biometrics if available, falls back gracefully.
  */
 export async function storeNullifierRoot(root: Uint8Array): Promise<void> {
-  await SecureStore.setItemAsync(KEYS.NULLIFIER_ROOT, bytesToHex(root), {
-    requireAuthentication: false,
-  });
+  await secureSet(KEYS.NULLIFIER_ROOT, bytesToHex(root));
 }
 
 export async function loadNullifierRoot(): Promise<Uint8Array | null> {
@@ -188,7 +201,7 @@ export async function loadIdentityCommitment(): Promise<string | null> {
 // ─── Legacy compat (Phase B — will be deprecated) ────────────────────────────
 
 export async function storeKeypair(privateKeyHex: string, publicKeyHex: string): Promise<void> {
-  await SecureStore.setItemAsync(KEYS.PRIVATE_KEY, privateKeyHex, { requireAuthentication: false });
+  await secureSet(KEYS.PRIVATE_KEY, privateKeyHex);
   await SecureStore.setItemAsync(KEYS.PUBLIC_KEY, publicKeyHex);
 }
 
