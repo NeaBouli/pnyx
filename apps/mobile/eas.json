@@ -6,22 +6,31 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.ekklesia.gr"
+      }
     },
     "preview": {
       "android": {
         "buildType": "apk",
         "credentialsSource": "remote"
       },
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.ekklesia.gr"
+      }
     },
     "production": {
       "android": {
-        "buildType": "app-bundle",
+        "buildType": "apk",
         "credentialsSource": "remote"
       },
       "ios": {
         "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.ekklesia.gr"
       }
     }
   }
