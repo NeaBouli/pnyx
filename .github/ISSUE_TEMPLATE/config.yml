@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "ekklesia.gr — POLIS Ticket System"
+    url: "https://ekklesia.gr/tickets/index.html"
+    about: "Use the POLIS system for proposals and bug reports (requires verification)"
