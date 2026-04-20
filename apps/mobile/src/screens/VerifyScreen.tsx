@@ -44,7 +44,16 @@ export default function VerifyScreen({ navigation }: Props) {
         [{ text: "Συνέχεια", onPress: () => navigation.navigate("Tabs") }]
       );
     } catch (err: any) {
-      Alert.alert("Σφάλμα", err.message || "Η επαλήθευση απέτυχε.");
+      const msg = err.message || "";
+      if (msg.includes("already") || msg.includes("bereits") || msg.includes("409")) {
+        Alert.alert(
+          "Ήδη Επαληθευμένος",
+          "Ο αριθμός σας είναι ήδη καταχωρημένος. Δοκιμάστε ξανά για νέο κλειδί.",
+          [{ text: "OK" }]
+        );
+      } else {
+        Alert.alert("Σφάλμα", msg || "Η επαλήθευση απέτυχε. Ελέγξτε τη σύνδεσή σας.");
+      }
     } finally {
       setLoading(false);
     }

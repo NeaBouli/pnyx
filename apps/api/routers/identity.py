@@ -117,10 +117,11 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
     existing = result.scalar_one_or_none()
 
     if existing and existing.status == KeyStatus.ACTIVE:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Diese Nummer ist bereits registriert. Für neuen Key: /revoke aufrufen."
-        )
+        # Auto-revoke and re-register (user lost their key or reinstalled app)
+        existing.status = KeyStatus.REVOKED
+        existing.revoked_at = datetime.utcnow()
+        await db.commit()
+        logger.info(f"[MOD-01] Auto-revoked existing key for re-registration")
 
     # 4. Keypair erzeugen
     keypair = generate_keypair()
