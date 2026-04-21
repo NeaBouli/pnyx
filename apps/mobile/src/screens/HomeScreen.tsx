@@ -1,12 +1,21 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Image } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, Image, Animated } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { isVerified } from "../lib/crypto-native";
 import { fetchAnalyticsOverview } from "../lib/api";
 import { isDemoMode } from "../lib/demo";
+import { getResult } from "../lib/compassStore";
+import type { CompassResult } from "../compass/types";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
+
+const QUADRANT_COLORS: Record<string, string> = {
+  libertarian_left: "#22c55e",
+  libertarian_right: "#2563eb",
+  authoritarian_left: "#ef4444",
+  authoritarian_right: "#f59e0b",
+};
 
 type Nav = StackNavigationProp<RootStackParams, "Tabs">;
 
@@ -15,12 +24,27 @@ export default function HomeScreen() {
   const [verified, setVerified] = useState<boolean | null>(null);
   const [demo, setDemo] = useState(false);
   const [analytics, setAnalytics] = useState<any>(null);
+  const [compassResult, setCompassResult] = useState<CompassResult | null>(null);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     isVerified().then(setVerified);
     isDemoMode().then(setDemo);
     fetchAnalyticsOverview().then(setAnalytics).catch(() => {});
+    getResult().then(setCompassResult);
   }, []);
+
+  useEffect(() => {
+    if (!compassResult) return;
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 0.6, duration: 1200, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1.0, duration: 1200, useNativeDriver: true }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [compassResult]);
 
   if (verified === null) return <View style={s.center}><ActivityIndicator color={colors.primary} /></View>;
 
@@ -32,7 +56,16 @@ export default function HomeScreen() {
         </View>
       )}
       <View style={s.hero}>
-        <Image source={require("../../assets/pnx.png")} style={s.logoImg} resizeMode="contain" />
+        <Animated.View style={[
+          s.compassRing,
+          compassResult && {
+            borderWidth: 3,
+            borderColor: QUADRANT_COLORS[compassResult.quadrant] || "#94a3b8",
+            opacity: pulseAnim,
+          },
+        ]}>
+          <Image source={require("../../assets/pnx.png")} style={s.logoImg} resizeMode="contain" />
+        </Animated.View>
         <Text style={s.logoText}>εκκλησία</Text>
         <Text style={s.sub}>του έθνους</Text>
         <Text style={s.tagline}>Η φωνή σου μετράει.</Text>
@@ -104,7 +137,8 @@ const s = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },
   content: { padding: 20, paddingBottom: 40 },
   hero: { alignItems: "center", paddingVertical: 32 },
-  logoImg: { width: 120, height: 120, marginBottom: 4 },
+  compassRing: { width: 136, height: 136, borderRadius: 68, justifyContent: "center", alignItems: "center", marginBottom: 4 },
+  logoImg: { width: 120, height: 120 },
   logoText: { fontSize: 32, fontWeight: "900", color: colors.primary, marginBottom: 2 },
   sub: { fontSize: 14, color: colors.textTertiary, letterSpacing: 3, marginTop: -4 },
   tagline: { fontSize: 16, color: colors.textSecondary, marginTop: 8 },
