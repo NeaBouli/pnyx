@@ -1,4 +1,5 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,12 +48,15 @@ async def lifespan(app):
     logger.info("[MOD-03] APScheduler shut down")
 
 
+_is_dev = os.getenv("ENVIRONMENT", "production") != "production"
+
 app = FastAPI(
     title="Ekklesia.gr API",
     description="Ψηφιακή Πλατφόρμα Αμέσης Δημοκρατίας — Backend API",
     version="0.1.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url="/docs" if _is_dev else None,
+    redoc_url="/redoc" if _is_dev else None,
+    openapi_url="/openapi.json" if _is_dev else None,
     lifespan=lifespan,
 )
 
