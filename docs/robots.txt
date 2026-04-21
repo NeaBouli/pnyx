@@ -1,7 +1,17 @@
 User-agent: *
 Allow: /
+Allow: /wiki/
+Allow: /download/
+Allow: /community.html
 
-# Kein Zugriff auf OAuth Callbacks
+# App-Routen nicht indexieren (Web-App ist Beta)
+Disallow: /el/
+Disallow: /en/
+Disallow: /vaa
+Disallow: /bills
+Disallow: /compass
+Disallow: /verify
+Disallow: /api/
 Disallow: /tickets/auth/
 
 # Sitemap

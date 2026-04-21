@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   description: "Ψηφιακή Πλατφόρμα Αμέσης Δημοκρατίας για τον Έλληνα Πολίτη",
   keywords: ["democracy", "greece", "parliament", "voting", "δημοκρατία"],
   authors: [{ name: "Vendetta Labs", url: "https://github.com/NeaBouli" }],
+  robots: { index: false, follow: false },
   manifest: "/manifest.json",
   themeColor: "#2563eb",
   appleWebApp: {
