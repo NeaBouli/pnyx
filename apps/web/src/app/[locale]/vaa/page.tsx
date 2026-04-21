@@ -36,7 +36,7 @@ export default function VAAPage() {
   useEffect(() => {
     ekklesia.getStatements()
       .then(r => setStatements(r.data))
-      .catch(() => setError("API nicht erreichbar"));
+      .catch(() => setError("Σφάλμα σύνδεσης API"));
     ekklesia.getParties()
       .then(r => setParties(r.data))
       .catch(() => {});
@@ -93,7 +93,7 @@ export default function VAAPage() {
       compass.seedFromVAA(filtered);
       setPhase("results");
     } catch {
-      setError("Fehler beim Berechnen der Ergebnisse.");
+      setError("Σφάλμα κατά τον υπολογισμό αποτελεσμάτων.");
     } finally {
       setLoading(false);
     }

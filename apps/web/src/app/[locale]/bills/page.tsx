@@ -26,7 +26,7 @@ export default function BillsPage() {
     setLoading(true);
     ekklesia.getBills(filter || undefined)
       .then(r => { setBills(r.data); setError(null); })
-      .catch(() => setError("API nicht erreichbar"))
+      .catch(() => setError("Σφάλμα σύνδεσης API"))
       .finally(() => setLoading(false));
   }, [filter]);
 
@@ -78,7 +78,7 @@ export default function BillsPage() {
         {/* Error */}
         {error && (
           <div className="bg-red-900/50 border border-red-700 rounded-xl p-4 mb-6 text-red-300 text-sm">
-            {error} — Backend läuft? <code>cd apps/api && uvicorn main:app</code>
+            {error}
           </div>
         )}
 

@@ -20,7 +20,7 @@ export default function LiveNotifications({ billId, maxItems = 5 }: Props) {
   const esRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
-    const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.ekklesia.gr";
     const url = `${BASE}/api/v1/notifications/stream${billId ? `?bill_id=${billId}` : ""}`;
     const es = new EventSource(url);
     esRef.current = es;
