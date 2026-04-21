@@ -16,6 +16,7 @@ import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { verifyIdentity } from "../lib/api";
 import { storeKeypair, storeNullifier } from "../lib/crypto-native";
+import { isDemoNumber, activateDemo } from "../lib/demo";
 import { colors } from "../theme";
 
 type Props = StackScreenProps<RootStackParams, "Verify">;
@@ -32,6 +33,21 @@ export default function VerifyScreen({ navigation }: Props) {
 
     setLoading(true);
     try {
+      // Demo mode for Play Store reviewer
+      if (isDemoNumber(phone)) {
+        const demoKey = "a".repeat(64);
+        const demoPub = "b".repeat(64);
+        await storeKeypair(demoKey, demoPub);
+        await storeNullifier("demo_" + Date.now().toString(16));
+        await activateDemo();
+        Alert.alert(
+          "Demo Mode",
+          "Λειτουργία επίδειξης — δεν απαιτείται SIM.",
+          [{ text: "Συνέχεια", onPress: () => navigation.navigate("Tabs") }]
+        );
+        return;
+      }
+
       const res = await verifyIdentity(phone);
 
       // Αποθήκευση στο Secure Enclave

@@ -4,6 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { isVerified } from "../lib/crypto-native";
 import { fetchAnalyticsOverview } from "../lib/api";
+import { isDemoMode } from "../lib/demo";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
 
@@ -12,10 +13,12 @@ type Nav = StackNavigationProp<RootStackParams, "Tabs">;
 export default function HomeScreen() {
   const nav = useNavigation<Nav>();
   const [verified, setVerified] = useState<boolean | null>(null);
+  const [demo, setDemo] = useState(false);
   const [analytics, setAnalytics] = useState<any>(null);
 
   useEffect(() => {
     isVerified().then(setVerified);
+    isDemoMode().then(setDemo);
     fetchAnalyticsOverview().then(setAnalytics).catch(() => {});
   }, []);
 
@@ -23,6 +26,11 @@ export default function HomeScreen() {
 
   return (
     <ScrollView style={s.container} contentContainerStyle={s.content}>
+      {demo && (
+        <View style={s.demoBadge}>
+          <Text style={s.demoBadgeText}>Demo</Text>
+        </View>
+      )}
       <View style={s.hero}>
         <Image source={require("../../assets/pnx.png")} style={s.logoImg} resizeMode="contain" />
         <Text style={s.logoText}>εκκλησία</Text>
@@ -120,4 +128,6 @@ const s = StyleSheet.create({
   infoItem: { fontSize: 13, color: colors.textSecondary, marginBottom: 6 },
   disclaimer: { textAlign: "center", fontSize: 10, color: colors.textTertiary, marginBottom: 8, lineHeight: 15, fontStyle: "italic", paddingHorizontal: 10 },
   footer: { textAlign: "center", fontSize: 11, color: colors.textTertiary },
+  demoBadge: { position: "absolute", top: 8, right: 8, backgroundColor: "#f97316", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, zIndex: 10 },
+  demoBadgeText: { color: "#fff", fontSize: 12, fontWeight: "800" },
 });

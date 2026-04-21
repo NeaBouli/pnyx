@@ -16,6 +16,7 @@ import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { loadKeypair, loadNullifier, signVote, verifyVote } from "../lib/crypto-native";
 import { submitVote } from "../lib/api";
+import { isDemoMode } from "../lib/demo";
 import { colors } from "../theme";
 
 type Props = StackScreenProps<RootStackParams, "Vote">;
@@ -48,6 +49,18 @@ export default function VoteScreen({ route, navigation }: Props) {
 
     setLoading(true);
     try {
+      // Demo mode: simulate vote without server
+      const demo = await isDemoMode();
+      if (demo) {
+        await new Promise((r) => setTimeout(r, 800));
+        Alert.alert(
+          "Demo ✓",
+          "Demo — ψήφος δεν καταγράφεται",
+          [{ text: "Αποτελέσματα", onPress: () => navigation.replace("Result", { billId, billTitle }) }]
+        );
+        return;
+      }
+
       const keypair = await loadKeypair();
       const nullifier = await loadNullifier();
 
