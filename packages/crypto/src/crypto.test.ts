@@ -23,7 +23,7 @@ import {
   buildSignedPayload,
   buildVotePayload,
   verifyReceipt,
-} from "../src/nullifier.js";
+} from "./nullifier.js";
 
 import {
   derivePolisKeypair,
@@ -33,13 +33,13 @@ import {
   buildPolisVotePayload,
   hashContent,
   getPolisShortHandle,
-} from "../src/polis.js";
+} from "./polis.js";
 
 import {
   DOMAIN,
   PROTO_VERSION,
   type VoteReceipt,
-} from "../src/types.js";
+} from "./types.js";
 
 // ─── Test constants ───────────────────────────────────────────────────────────
 
