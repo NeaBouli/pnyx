@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="el" data-lang="el">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Διαγραφή Λογαριασμού | εκκλησία Wiki</title>
+  <meta name="description" content="Πώς να διαγράψετε τον λογαριασμό σας στο ekklesia.gr — Account Deletion Instructions"/>
+  <meta name="keywords" content="delete account, διαγραφή, GDPR, nullifier, ekklesia"/>
+  <meta name="author" content="Vendetta Labs — Community"/>
+  <meta name="robots" content="index, follow"/>
+  <link rel="canonical" href="https://ekklesia.gr/wiki/delete-account.html"/>
+
+  <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://ekklesia.gr/wiki/delete-account.html"/>
+  <meta property="og:title" content="Διαγραφή Λογαριασμού | εκκλησία Wiki"/>
+  <meta property="og:description" content="Πώς να διαγράψετε τον λογαριασμό σας στο ekklesia.gr — Account Deletion Instructions"/>
+  <meta property="og:image" content="https://ekklesia.gr/pnx.png"/>
+  <meta property="og:locale" content="el_GR"/>
+  <meta property="og:locale:alternate" content="en_US"/>
+  <meta property="og:site_name" content="εκκλησία"/>
+
+  <meta name="twitter:card" content="summary"/>
+  <meta name="twitter:title" content="Διαγραφή Λογαριασμού | εκκλησία Wiki"/>
+  <meta name="twitter:description" content="Πώς να διαγράψετε τον λογαριασμό σας στο ekklesia.gr — Account Deletion Instructions"/>
+  <meta name="twitter:image" content="https://ekklesia.gr/pnx.png"/>
+
+  <link rel="alternate" hreflang="el" href="https://ekklesia.gr/wiki/delete-account.html"/>
+  <link rel="alternate" hreflang="en" href="https://ekklesia.gr/wiki/delete-account.html"/>
+  <link rel="alternate" hreflang="x-default" href="https://ekklesia.gr/wiki/delete-account.html"/>
+
+  <link rel="sitemap" type="application/xml" href="https://ekklesia.gr/sitemap.xml"/>
+  <link rel="icon" type="image/png" href="../pnx.png"/>
+
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-d: #1d4ed8;
+      --blue-l: #eff6ff;
+      --gray-900: #0f172a;
+      --gray-700: #334155;
+      --gray-500: #64748b;
+      --gray-400: #94a3b8;
+      --gray-100: #f1f5f9;
+      --white: #ffffff;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --purple: #a855f7;
+      --radius: 1rem;
+      --shadow: 0 4px 24px rgba(37,99,235,0.10);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--white);
+      color: var(--gray-900);
+      line-height: 1.6;
+    }
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid #e2e8f0;
+      padding: 0.75rem 1.5rem;
+      display: flex; justify-content: space-between;
+      align-items: center; flex-wrap: wrap; gap: 0.5rem;
+    }
+    .nav-logo {
+      font-size: 1.25rem; font-weight: 900; color: var(--blue);
+      text-decoration: none; display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;
+    }
+    .nav-logo img { width: 40px; height: 40px; object-fit: contain; }
+    .nav-links { display: flex; gap: 0.15rem; align-items: center; flex-wrap: wrap; }
+    .nav-links a {
+      padding: 0.3rem 0.7rem; border-radius: 0.4rem;
+      color: var(--gray-700); text-decoration: none;
+      font-size: 0.82rem; font-weight: 500;
+      transition: all 0.2s; white-space: nowrap;
+    }
+    .nav-links a:hover, .nav-links a.active {
+      background: var(--blue-l); color: var(--blue);
+    }
+    .lang-btn {
+      cursor: pointer; border: 2px solid #e2e8f0;
+      background: var(--white); border-radius: 0.4rem;
+      padding: 0.22rem 0.55rem; font-size: 0.75rem;
+      font-weight: 700; color: var(--gray-700);
+      transition: all 0.2s; margin-left: 0.3rem;
+    }
+    .lang-btn:hover { border-color: var(--blue); color: var(--blue); }
+    footer {
+      background: var(--gray-900); color: var(--gray-400);
+      padding: 2rem 1.5rem; text-align: center;
+      font-size: 0.82rem; margin-top: 4rem;
+    }
+    .footer-links {
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 0.3rem 1rem; margin-bottom: 0.75rem;
+    }
+    footer a { color: var(--gray-500); text-decoration: none; }
+    footer a:hover { color: var(--white); }
+    .layout { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+    h2 { font-size: 1.4rem; font-weight: 900; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0; }
+    h2:first-child { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 800; margin: 1.25rem 0 0.5rem; color: var(--blue); }
+    p { color: var(--gray-700); margin-bottom: 1rem; line-height: 1.8; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { color: var(--gray-700); margin-bottom: 0.4rem; line-height: 1.7; }
+    .hero {
+      padding: 4rem 2rem; text-align: center;
+      background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 50%, #fefce8 100%);
+    }
+    .hero h1 { font-size: clamp(1.8rem,5vw,3rem); font-weight: 900; margin-bottom: 0.75rem; }
+    .hero p { color: var(--gray-700); max-width: 640px; margin: 0 auto 1.5rem; font-size: 1.05rem; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--blue); text-decoration: none; font-weight: 600; font-size: 0.88rem;
+    }
+    .info-box { background: var(--blue-l); border-left: 4px solid var(--blue); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .info-box p { margin: 0; }
+    .warn-box { background: #fefce8; border-left: 4px solid var(--yellow); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .warn-box p { margin: 0; }
+    .success-box { background: #f0fdf4; border-left: 4px solid var(--green); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .success-box p { margin: 0; }
+    .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    th { background: var(--gray-900); color: white; padding: 0.65rem 1rem; text-align: left; font-weight: 700; }
+    td { padding: 0.65rem 1rem; border-bottom: 1px solid #e2e8f0; color: var(--gray-700); }
+    tr:hover td { background: var(--gray-100); }
+    .fade-in { opacity: 0; transform: translateY(14px); transition: all 0.5s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+    @media (max-width: 640px) { .nav-links a { font-size: 0.75rem; padding: 0.22rem 0.45rem; } }
+  </style>
+</head>
+<body>
+<nav>
+  <a href="../" class="nav-logo"><img src="../pnx.png" alt="logo" style="width:40px;height:40px;object-fit:contain"/>εκκλησία<span style="font-size:0.55em;color:#9ca3af;font-weight:400;margin-left:0.35em;letter-spacing:0.05em">του έθνους</span></a>
+  <div class="nav-links">
+    <a href="../" data-el="Αρχική" data-en="Home">Αρχική</a>
+    <a href="../votes/active.html" data-el="Ψηφοφορίες" data-en="Votes">Ψηφοφορίες</a>
+    <a href="index.html" data-el="Wiki" data-en="Wiki">Wiki</a>
+    <a href="../community.html" data-el="Community" data-en="Community">Community</a>
+    <span style="width:1px;height:20px;background:#e2e8f0;margin:0 0.3rem"></span>
+    <a href="architecture.html" data-el="Αρχιτεκτονική" data-en="Architecture">Αρχιτεκτονική</a>
+    <a href="security.html" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</a>
+    <a href="api.html">API</a>
+    <a href="modules.html">Modules</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="privacy.html" data-el="Ιδιωτικότητα" data-en="Privacy">Ιδιωτικότητα</a>
+    <a href="database.html">Database</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="whitepaper.html">Whitepaper</a>
+    <a href="faq.html">FAQ</a>
+    <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
+  </div>
+</nav>
+
+<div class="hero" style="background:linear-gradient(135deg,#fee2e2,#fef2f2)">
+  <h1 data-el="Διαγραφή Λογαριασμού" data-en="Delete Account">Διαγραφή Λογαριασμού</h1>
+  <p data-el="Πώς να διαγράψετε τα δεδομένα σας από το ekklesia.gr" data-en="How to delete your data from ekklesia.gr">Πώς να διαγράψετε τα δεδομένα σας από το ekklesia.gr</p>
+  <a href="../" class="back-link" data-el="← Αρχική" data-en="← Home">← Αρχική</a>
+</div>
+
+<div class="layout">
+
+  <h2 class="fade-in" data-el="Τι είναι ο «λογαριασμός» σας" data-en="What your &quot;account&quot; is">Τι είναι ο «λογαριασμός» σας</h2>
+  <p class="fade-in" data-el="Το ekklesia.gr δεν δημιουργεί παραδοσιακό λογαριασμό. Δεν υπάρχει email, κωδικός ή username. Η ταυτότητά σας αποτελείται αποκλειστικά από κρυπτογραφικά στοιχεία:" data-en="ekklesia.gr does not create a traditional account. There is no email, password, or username. Your identity consists exclusively of cryptographic elements:">
+    Το ekklesia.gr δεν δημιουργεί παραδοσιακό λογαριασμό. Δεν υπάρχει email, κωδικός ή username. Η ταυτότητά σας αποτελείται αποκλειστικά από κρυπτογραφικά στοιχεία:
+  </p>
+
+  <div class="table-wrap fade-in">
+    <table>
+      <tr><th data-el="Στοιχείο" data-en="Element">Στοιχείο</th><th data-el="Αποθήκευση" data-en="Storage">Αποθήκευση</th><th data-el="Περιέχει PII;" data-en="Contains PII?">Περιέχει PII;</th></tr>
+      <tr>
+        <td data-el="Nullifier Root (ρίζα ταυτοποίησης)" data-en="Nullifier Root (identity root)">Nullifier Root (ρίζα ταυτοποίησης)</td>
+        <td data-el="Τοπικά στη συσκευή (SecureStore)" data-en="Locally on device (SecureStore)">Τοπικά στη συσκευή (SecureStore)</td>
+        <td style="color:var(--red);font-weight:700" data-el="Όχι" data-en="No">Όχι</td>
+      </tr>
+      <tr>
+        <td data-el="Ed25519 Private Key" data-en="Ed25519 Private Key">Ed25519 Private Key</td>
+        <td data-el="Τοπικά στη συσκευή (SecureStore)" data-en="Locally on device (SecureStore)">Τοπικά στη συσκευή (SecureStore)</td>
+        <td style="color:var(--red);font-weight:700" data-el="Όχι" data-en="No">Όχι</td>
+      </tr>
+      <tr>
+        <td data-el="Nullifier Hash (SHA256)" data-en="Nullifier Hash (SHA256)">Nullifier Hash (SHA256)</td>
+        <td data-el="Server" data-en="Server">Server</td>
+        <td style="color:var(--red);font-weight:700" data-el="Όχι — μη αναστρέψιμο" data-en="No — irreversible">Όχι — μη αναστρέψιμο</td>
+      </tr>
+      <tr>
+        <td data-el="Ed25519 Public Key" data-en="Ed25519 Public Key">Ed25519 Public Key</td>
+        <td data-el="Server" data-en="Server">Server</td>
+        <td style="color:var(--red);font-weight:700" data-el="Όχι — ψευδώνυμο" data-en="No — pseudonymous">Όχι — ψευδώνυμο</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="info-box fade-in">
+    <p data-el="Κανένας αριθμός τηλεφώνου, email ή άλλο προσωπικό δεδομένο δεν αποθηκεύεται ποτέ στον server. Ο αριθμός τηλεφώνου χρησιμοποιείται μόνο κατά την επαλήθευση και διαγράφεται αμέσως μετά τη δημιουργία του nullifier." data-en="No phone number, email, or other personal data is ever stored on the server. The phone number is used only during verification and deleted immediately after nullifier generation.">
+      Κανένας αριθμός τηλεφώνου, email ή άλλο προσωπικό δεδομένο δεν αποθηκεύεται ποτέ στον server. Ο αριθμός τηλεφώνου χρησιμοποιείται μόνο κατά την επαλήθευση και διαγράφεται αμέσως μετά τη δημιουργία του nullifier.
+    </p>
+  </div>
+
+  <h2 class="fade-in" data-el="Πώς να διαγράψετε τον λογαριασμό σας" data-en="How to delete your account">Πώς να διαγράψετε τον λογαριασμό σας</h2>
+
+  <h3 class="fade-in" data-el="Βήμα 1 — Απεγκατάσταση εφαρμογής" data-en="Step 1 — Uninstall the app">Βήμα 1 — Απεγκατάσταση εφαρμογής</h3>
+  <p class="fade-in" data-el="Απεγκαταστήστε την εφαρμογή εκκλησία από τη συσκευή σας. Αυτό διαγράφει αμέσως:" data-en="Uninstall the ekklesia app from your device. This immediately deletes:">
+    Απεγκαταστήστε την εφαρμογή εκκλησία από τη συσκευή σας. Αυτό διαγράφει αμέσως:
+  </p>
+  <ul class="fade-in">
+    <li data-el="Το Ed25519 Private Key (μόνο αντίγραφο)" data-en="Your Ed25519 Private Key (only copy)">Το Ed25519 Private Key (μόνο αντίγραφο)</li>
+    <li data-el="Το Nullifier Root" data-en="Your Nullifier Root">Το Nullifier Root</li>
+    <li data-el="Όλα τα τοπικά δεδομένα της εφαρμογής" data-en="All local app data">Όλα τα τοπικά δεδομένα της εφαρμογής</li>
+  </ul>
+
+  <h3 class="fade-in" data-el="Βήμα 2 — Server-side δεδομένα" data-en="Step 2 — Server-side data">Βήμα 2 — Server-side δεδομένα</h3>
+  <p class="fade-in" data-el="Μετά την απεγκατάσταση, τα δεδομένα στον server (Nullifier Hash + Public Key) γίνονται ορφανά:" data-en="After uninstallation, the server-side data (Nullifier Hash + Public Key) becomes orphaned:">
+    Μετά την απεγκατάσταση, τα δεδομένα στον server (Nullifier Hash + Public Key) γίνονται <strong>ορφανά</strong>:
+  </p>
+  <ul class="fade-in">
+    <li data-el="Δεν μπορούν να συσχετιστούν με κανέναν χρήστη" data-en="Cannot be linked back to any user">Δεν μπορούν να συσχετιστούν με κανέναν χρήστη</li>
+    <li data-el="Δεν περιέχουν προσωπικά δεδομένα (PII)" data-en="Contain no personal identifiable information (PII)">Δεν περιέχουν προσωπικά δεδομένα (PII)</li>
+    <li data-el="Χωρίς το Private Key, κανείς δεν μπορεί να ψηφίσει με αυτά" data-en="Without the Private Key, nobody can vote with them">Χωρίς το Private Key, κανείς δεν μπορεί να ψηφίσει με αυτά</li>
+  </ul>
+
+  <h3 class="fade-in" data-el="Βήμα 3 — Αυτόματη ανάκληση (Re-registration)" data-en="Step 3 — Automatic revocation (Re-registration)">Βήμα 3 — Αυτόματη ανάκληση (Re-registration)</h3>
+  <div class="success-box fade-in">
+    <p data-el="Αν επανεγκαταστήσετε την εφαρμογή και επαληθεύσετε ξανά με τον ίδιο αριθμό τηλεφώνου, ο παλιός Nullifier ανακαλείται αυτόματα (auto-revoke). Δημιουργείται νέο ζεύγος κλειδιών και νέος Nullifier." data-en="If you reinstall the app and re-verify with the same phone number, the old Nullifier is automatically revoked (auto-revoke). A new key pair and new Nullifier are created.">
+      Αν επανεγκαταστήσετε την εφαρμογή και επαληθεύσετε ξανά με τον ίδιο αριθμό τηλεφώνου, ο παλιός Nullifier <strong>ανακαλείται αυτόματα</strong> (auto-revoke). Δημιουργείται νέο ζεύγος κλειδιών και νέος Nullifier.
+    </p>
+  </div>
+
+  <h2 class="fade-in" data-el="Τι διατηρείται μετά τη διαγραφή" data-en="What is retained after deletion">Τι διατηρείται μετά τη διαγραφή</h2>
+  <div class="warn-box fade-in">
+    <p data-el="Τα συγκεντρωτικά αποτελέσματα ψηφοφοριών αρχειοθετούνται μόνιμα στο Arweave. Αυτά περιλαμβάνουν μόνο:" data-en="Aggregate vote results are permanently archived on Arweave. These include only:">
+      Τα συγκεντρωτικά αποτελέσματα ψηφοφοριών αρχειοθετούνται μόνιμα στο Arweave. Αυτά περιλαμβάνουν <strong>μόνο</strong>:
+    </p>
+  </div>
+  <ul class="fade-in">
+    <li data-el="Σύνολα ψήφων ανά επιλογή (YES / NO / ABSTAIN)" data-en="Vote totals per option (YES / NO / ABSTAIN)">Σύνολα ψήφων ανά επιλογή (YES / NO / ABSTAIN)</li>
+    <li data-el="Divergence Score (Βουλή vs Πολίτες)" data-en="Divergence Score (Parliament vs Citizens)">Divergence Score (Βουλή vs Πολίτες)</li>
+  </ul>
+  <div class="info-box fade-in">
+    <p data-el="Δεν αρχειοθετούνται ατομικές ψήφοι, Nullifier Hashes ή Public Keys. Τα συγκεντρωτικά στατιστικά δεν αποτελούν προσωπικά δεδομένα (Art. 17 GDPR)." data-en="No individual votes, Nullifier Hashes, or Public Keys are archived. Aggregate statistics are not personal data (Art. 17 GDPR).">
+      Δεν αρχειοθετούνται ατομικές ψήφοι, Nullifier Hashes ή Public Keys. Τα συγκεντρωτικά στατιστικά <strong>δεν αποτελούν προσωπικά δεδομένα</strong> (Art. 17 GDPR).
+    </p>
+  </div>
+
+  <h2 class="fade-in" data-el="Κοινοτικό Έργο" data-en="Community Project">Κοινοτικό Έργο</h2>
+  <div class="info-box fade-in">
+    <p data-el="Η διαγραφή γίνεται αποκλειστικά μέσω της εφαρμογής. Δεν υπάρχει κεντρικός διαχειριστής ή υπηρεσία υποστήριξης — το ekklesia.gr είναι κοινοτικό έργο ανοιχτού κώδικα." data-en="Account deletion is handled entirely through the app. There is no central administrator or support service — ekklesia.gr is an open-source community project.">
+      Η διαγραφή γίνεται αποκλειστικά μέσω της εφαρμογής. Δεν υπάρχει κεντρικός διαχειριστής ή υπηρεσία υποστήριξης — το ekklesia.gr είναι <strong>κοινοτικό έργο ανοιχτού κώδικα</strong>.
+    </p>
+  </div>
+
+  <hr style="border:none;border-top:2px solid #e2e8f0;margin:3rem 0"/>
+
+  <h2 class="fade-in" data-el="English Summary" data-en="English Summary">English Summary</h2>
+  <p class="fade-in">
+    ekklesia.gr does not store any personal data (no phone number, no email, no name). Your identity is a cryptographic nullifier hash and an Ed25519 public key on the server, plus a private key stored only on your device.
+  </p>
+  <p class="fade-in"><strong>To delete your account:</strong></p>
+  <ol class="fade-in">
+    <li>Uninstall the app — your local private key and nullifier root are deleted immediately.</li>
+    <li>Server-side data (nullifier hash + public key) becomes orphaned and untraceable.</li>
+    <li>Re-installing and re-verifying with the same phone number automatically revokes the previous nullifier.</li>
+  </ol>
+  <p class="fade-in">
+    <strong>Retained data:</strong> Only aggregate vote results on Arweave (totals per option, divergence scores). No individual votes, no nullifiers, no public keys.
+  </p>
+  <p class="fade-in">
+    <strong>No central administrator or support service exists.</strong> ekklesia.gr is an open-source community project. Account deletion is handled entirely through the app itself.
+  </p>
+
+</div>
+
+<footer>
+  <div class="footer-links">
+    <a href="..//">Αρχική</a>
+    <a href="../wiki/">Wiki</a>
+    <a href="../votes/active.html" data-el="Τρέχουσες" data-en="Active">Τρέχουσες</a>
+    <a href="../votes/recent.html" data-el="24 Ώρες" data-en="24 Hours">24 Ώρες</a>
+    <a href="../votes/results.html" data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</a>
+    <a href="../community.html">Community</a>
+    <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>
+  </div>
+  <p>εκκλησία &middot; &copy; 2026 Vendetta Labs &middot; MIT License</p>
+</footer>
+
+<script>
+var currentLang = "el";
+function toggleLang() {
+  currentLang = currentLang === "el" ? "en" : "el";
+  document.getElementById("langBtn").textContent = currentLang === "el" ? "EN" : "ΕΛ";
+  document.querySelectorAll("[data-el]").forEach(function(el) {
+    var t = el.getAttribute("data-" + currentLang);
+    if (t) el.innerHTML = t;
+  });
+}
+var obs = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add("visible"); });
+}, { threshold: 0.1 });
+document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); });
+</script>
+
+</body>
+</html>
