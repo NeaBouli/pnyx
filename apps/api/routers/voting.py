@@ -4,10 +4,13 @@ POST /api/v1/vote               — Stimme abgeben (Ed25519 signiert)
 GET  /api/v1/vote/{bill_id}/results — Ergebnisse + Divergence Score
 POST /api/v1/vote/{bill_id}/relevance — Up/Down Relevanz (MOD-14)
 """
+import hashlib
+import hmac
 import json
 import gc
+import os
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Header, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
@@ -368,3 +371,47 @@ async def vote_relevance(
     await db.commit()
     label = "wichtig" if req.signal == 1 else "weniger wichtig"
     return {"success": True, "message": f"Gesetz als '{label}' markiert."}
+
+
+# ─── VoteReceipt (ADR-008 stub) ─────────────────────────────────────────────
+
+@router.get("/{bill_id}/receipt")
+async def get_vote_receipt(
+    bill_id: str,
+    x_nullifier: str = Header(..., alias="X-Nullifier"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    ADR-008: VoteReceipt — server-signed proof that a vote was recorded.
+
+    Stub implementation using HMAC-SHA256 chain_proof.
+    Full Tier-1 receipt (Ed25519 server signature) deferred
+    pending mobile schema migration (ADR-022).
+    """
+    result = await db.execute(
+        select(CitizenVote).where(
+            CitizenVote.nullifier_hash == x_nullifier,
+            CitizenVote.bill_id == bill_id,
+        )
+    )
+    vote = result.scalar_one_or_none()
+    if not vote:
+        raise HTTPException(status_code=404, detail="Keine Stimme gefunden.")
+
+    ts = vote.created_at.isoformat() if vote.created_at else datetime.utcnow().isoformat()
+    salt = os.environ.get("SERVER_SALT", "")
+    chain_proof = hmac.new(
+        salt.encode(),
+        f"{bill_id}:{x_nullifier}:{ts}".encode(),
+        hashlib.sha256,
+    ).hexdigest()
+
+    return {
+        "bill_id": bill_id,
+        "nullifier_hash": x_nullifier,
+        "vote": vote.vote.value,
+        "timestamp": ts,
+        "chain_proof": chain_proof,
+        "status": "confirmed",
+        "note": "Tier-1 full receipt pending mobile schema migration (ADR-022)",
+    }
