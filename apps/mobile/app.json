@@ -24,7 +24,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "ekklesia.gr",
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "INTERNET",
         "RECEIVE_BOOT_COMPLETED",
