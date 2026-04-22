@@ -66,7 +66,7 @@ export default function VerifyPage() {
       if (axiosErr.response?.status === 409) {
         setPhase("already");
       } else if (axiosErr.response?.status === 400) {
-        setError(axiosErr.response.data?.detail || "Ungültige Nummer.");
+        setError(axiosErr.response.data?.detail || "Μη έγκυρος αριθμός.");
       } else {
         setError(locale === "el"
           ? "Σύνδεση με API αποτυχημένη. Λειτουργεί το backend;"

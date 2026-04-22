@@ -1,10 +1,10 @@
 /**
- * crypto-compat.test.ts — Cross-Platform Kompatibilitätstest
- * Verifiziert dass Web (@noble/curves) und Mobile (gleiche Lib)
- * identische Ergebnisse produzieren wie das Python-Backend.
+ * crypto-compat.test.ts — Cross-Platform Compatibility Test
+ * Verifies that Web (@noble/curves) and Mobile (same lib)
+ * produce identical results as the Python backend.
  *
- * KRITISCH: Wenn diese Tests fehlschlagen, stimmen Signaturen
- * zwischen Frontend und Backend nicht überein → Votes werden abgelehnt.
+ * CRITICAL: If these tests fail, signatures between frontend
+ * and backend do not match — votes will be rejected.
  */
 import { describe, it, expect } from "vitest";
 import { ed25519 } from "@noble/curves/ed25519.js";

@@ -1,6 +1,6 @@
 /**
- * useCompass — React Hook für den Liquid Political Compass.
- * Lädt/speichert verschlüsseltes Profil, berechnet Ergebnisse reaktiv.
+ * useCompass — React Hook for Liquid Political Compass.
+ * Loads/saves encrypted profile, computes results reactively.
  */
 "use client";
 

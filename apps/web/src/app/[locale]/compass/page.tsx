@@ -289,7 +289,7 @@ export default function CompassPage() {
                 href={`/${locale}/vaa`}
                 className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold transition-colors"
               >
-                {isEl ? "Wahlkompass (VAA) →" : "Take the VAA →"}
+                {isEl ? "Πολιτική Πυξίδα (VAA) →" : "Take the VAA →"}
               </Link>
               <Link
                 href={`/${locale}/bills`}
