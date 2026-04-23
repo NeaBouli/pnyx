@@ -37,6 +37,18 @@
 - 📊 **Δείκτης Απόκλισης** — Βουλή vs Πολίτες / Parliament vs Citizens
 - 🔐 **Πλήρης Ανωνυμία** — Ed25519 · Nullifier Hash · Μηδενικά προσωπικά δεδομένα
 
+## Data Sources
+This project uses publicly available government data from:
+- Hellenic Parliament
+- Diavgeia
+- data.gov.gr
+
+This project is not affiliated with any government entity.
+
+
+⚠️ Η εφαρμογή δεν είναι κρατική και δεν συνδέεται με καμία κυβερνητική αρχή.
+Οι πληροφορίες παρέχονται μόνο για ενημερωτικούς σκοπούς.
+
 ---
 
 ## ✨ Χαρακτηριστικά / Features
