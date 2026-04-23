@@ -132,6 +132,7 @@ class ParliamentBill(Base):
     status              = Column(Enum(BillStatus), default=BillStatus.ANNOUNCED, nullable=False)
     parliament_vote_date= Column(DateTime, nullable=True)
     status_changed_at   = Column(DateTime, nullable=True)
+    parliament_url      = Column(String(500), nullable=True)      # Official hellenicparliament.gr link
     arweave_tx_id       = Column(String(100), nullable=True)     # MOD-08
     ai_summary_reviewed = Column(Boolean, default=False)        # Community-geprüft
 

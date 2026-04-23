@@ -33,6 +33,7 @@ class BillSummary(BaseModel):
     categories:          list | None
     status:              str
     parliament_vote_date: str | None
+    parliament_url:      str | None = None
     relevance_score:     int | None = 0
 
 class BillDetail(BaseModel):
@@ -49,6 +50,7 @@ class BillDetail(BaseModel):
     party_votes_parliament: dict | None
     status:                 str
     parliament_vote_date:   str | None
+    parliament_url:         str | None = None
     ai_summary_reviewed:    bool
 
 class TransitionRequest(BaseModel):
@@ -121,6 +123,7 @@ async def get_bills(
         categories=b.categories,
         status=b.status.value,
         parliament_vote_date=b.parliament_vote_date.isoformat() if b.parliament_vote_date else None,
+        parliament_url=b.parliament_url,
     ) for b in bills]
 
 
@@ -163,6 +166,7 @@ async def get_trending(
         categories=row[0].categories,
         status=row[0].status.value,
         parliament_vote_date=row[0].parliament_vote_date.isoformat() if row[0].parliament_vote_date else None,
+        parliament_url=row[0].parliament_url,
         relevance_score=row[1] or 0,
     ) for row in rows]
 
@@ -191,6 +195,7 @@ async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db)):
         party_votes_parliament=bill.party_votes_parliament,
         status=bill.status.value,
         parliament_vote_date=bill.parliament_vote_date.isoformat() if bill.parliament_vote_date else None,
+        parliament_url=bill.parliament_url,
         ai_summary_reviewed=bill.ai_summary_reviewed,
     )
 

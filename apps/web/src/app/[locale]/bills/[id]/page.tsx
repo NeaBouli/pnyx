@@ -152,6 +152,18 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
           <span className="text-xs text-gray-600 font-mono">{bill.id}</span>
         </div>
 
+        {/* Official Parliament Link */}
+        {(bill as any).parliament_url && (
+          <a
+            href={(bill as any).parliament_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 mb-4 transition-colors"
+          >
+            🏛️ {locale === "el" ? "Επίσημο κείμενο στη Βουλή →" : "Official Parliament text →"}
+          </a>
+        )}
+
         {/* Relevance */}
         <div className="flex items-center gap-3 mb-4">
           <span className="text-sm text-gray-500">
