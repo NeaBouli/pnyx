@@ -462,7 +462,28 @@ async function selectTicket(number) {
   }
   polisSelectedTicket = issue;
   renderTicketList();
-  renderDetail(issue);
+  if (window.innerWidth <= 1024) {
+    renderMobileDetail(issue);
+  } else {
+    renderDetail(issue);
+  }
+}
+
+function closeMobileDetail() {
+  document.getElementById("polisMobileModal").classList.remove("open");
+}
+
+async function renderMobileDetail(issue) {
+  var body = document.getElementById("mobileDetailBody");
+  if (!body || !issue) return;
+  // Temporarily swap detailPanel to mobile body
+  var desktopPanel = document.getElementById("detailPanel");
+  var originalParent = desktopPanel.parentNode;
+  body.innerHTML = "";
+  body.appendChild(desktopPanel);
+  await renderDetail(issue);
+  document.getElementById("polisMobileModal").classList.add("open");
+  // Restore desktop panel on close (handled by closeMobileDetail)
 }
 
 async function toggleVote(number) {

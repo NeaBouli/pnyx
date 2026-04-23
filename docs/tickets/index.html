@@ -150,6 +150,15 @@ if (isDesktop) {
   </div>
 </div>
 
+<!-- MOBILE DETAIL MODAL -->
+<div class="polis-mobile-modal" id="polisMobileModal" onclick="if(event.target===this)closeMobileDetail()">
+  <div class="polis-mobile-modal-content" style="position:relative">
+    <div class="polis-mobile-modal-handle"></div>
+    <button class="polis-mobile-modal-close" onclick="closeMobileDetail()">✕</button>
+    <div id="mobileDetailBody"></div>
+  </div>
+</div>
+
 <footer>
   <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:0.3rem 1rem;margin-bottom:0.5rem">
     <a href="../">Αρχική</a>

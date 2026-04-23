@@ -95,7 +95,35 @@ nav {
   max-width: 1200px; margin: 0 auto; padding: 1rem;
   display: grid; grid-template-columns: 220px 1fr 340px; gap: 1rem;
 }
-@media(max-width:1024px) { .polis-layout { grid-template-columns: 1fr; } }
+@media(max-width:1024px) {
+  .polis-layout { grid-template-columns: 1fr; }
+  .polis-detail { display: none; }
+  .polis-sidebar { display: none; }
+}
+
+/* MOBILE DETAIL MODAL */
+.polis-mobile-modal {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6); z-index: 300;
+  display: none; align-items: flex-end; justify-content: center;
+}
+.polis-mobile-modal.open { display: flex; }
+.polis-mobile-modal-content {
+  background: white; border-radius: 1rem 1rem 0 0; padding: 1.5rem;
+  width: 100%; max-height: 85vh; overflow-y: auto;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.polis-mobile-modal-close {
+  position: absolute; top: 1rem; right: 1rem;
+  background: #f1f5f9; border: none; width: 32px; height: 32px;
+  border-radius: 50%; font-size: 1.2rem; cursor: pointer; color: var(--gray-700);
+}
+.polis-mobile-modal-handle {
+  width: 40px; height: 4px; background: #cbd5e1; border-radius: 2px;
+  margin: 0 auto 1rem;
+}
 
 /* SIDEBAR */
 .polis-sidebar { padding: 0.5rem 0; }
