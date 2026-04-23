@@ -1337,8 +1337,8 @@ function polisLogin() {
   sessionStorage.setItem("polis_oauth_state", state);
   sessionStorage.setItem("polis_return_to", window.location.href + "#contact");
   // Use config if available, fallback to placeholder
-  var clientId = "REPLACE_WITH_YOUR_GITHUB_OAUTH_CLIENT_ID";
-  var callbackPath = "/pnyx/tickets/auth/callback.html";
+  var clientId = "Ov23lifSswjpPlnYF6UK";
+  var callbackPath = "/tickets/auth/callback.html";
   var params = new URLSearchParams({ client_id: clientId, redirect_uri: window.location.origin + callbackPath, scope: "public_repo", state: state });
   window.location.href = "https://github.com/login/oauth/authorize?" + params.toString();
 }
