@@ -92,7 +92,7 @@ services:
       - traefik.http.middlewares.ekklesia-headers.headers.contentTypeNosniff=true
       - traefik.http.middlewares.ekklesia-headers.headers.frameDeny=true
       - traefik.http.middlewares.ekklesia-headers.headers.browserXssFilter=true
-      - "traefik.http.middlewares.ekklesia-headers.headers.contentSecurityPolicy=default-src 'self' https://api.ekklesia.gr https://donate.stripe.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com; frame-ancestors 'none'"
+      - "traefik.http.middlewares.ekklesia-headers.headers.contentSecurityPolicy=default-src 'self' https://api.ekklesia.gr https://donate.stripe.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com https://polis-oauth-proxy.bergamolia.workers.dev; frame-ancestors 'none'"
       - traefik.http.routers.ekklesia-web.middlewares=ekklesia-headers
 
   ollama:
