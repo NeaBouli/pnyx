@@ -21,6 +21,8 @@ function setPolisLang(lang) {
   document.querySelectorAll("[data-polis-el]").forEach(function(el) {
     el.textContent = el.getAttribute("data-polis-" + polisLang) || el.textContent;
   });
+  // Re-render dynamic elements that use t()
+  if (typeof renderAuthStatus === "function") renderAuthStatus();
 }
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
