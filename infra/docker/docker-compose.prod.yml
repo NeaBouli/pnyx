@@ -59,6 +59,15 @@ services:
       - traefik.http.routers.ekklesia-api.entrypoints=websecure
       - traefik.http.routers.ekklesia-api.tls.certresolver=letsencrypt
       - traefik.http.services.ekklesia-api.loadbalancer.server.port=8000
+      - traefik.http.middlewares.api-headers.headers.frameDeny=true
+      - traefik.http.middlewares.api-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.api-headers.headers.browserXssFilter=true
+      - traefik.http.middlewares.api-headers.headers.forceSTSHeader=true
+      - traefik.http.middlewares.api-headers.headers.stsSeconds=31536000
+      - traefik.http.middlewares.api-headers.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.api-headers.headers.stsPreload=true
+      - traefik.http.middlewares.api-headers.headers.customResponseHeaders.X-Robots-Tag=noindex
+      - traefik.http.routers.ekklesia-api.middlewares=api-headers
 
   web:
     build:
@@ -78,8 +87,11 @@ services:
       - traefik.http.routers.ekklesia-web.tls.certresolver=letsencrypt
       - traefik.http.services.ekklesia-web.loadbalancer.server.port=3000
       - traefik.http.middlewares.ekklesia-headers.headers.stsSeconds=31536000
+      - traefik.http.middlewares.ekklesia-headers.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.ekklesia-headers.headers.stsPreload=true
       - traefik.http.middlewares.ekklesia-headers.headers.contentTypeNosniff=true
       - traefik.http.middlewares.ekklesia-headers.headers.frameDeny=true
+      - traefik.http.middlewares.ekklesia-headers.headers.browserXssFilter=true
       - "traefik.http.middlewares.ekklesia-headers.headers.contentSecurityPolicy=default-src 'self' https://api.ekklesia.gr https://donate.stripe.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com https://arweave.net https://api.github.com; frame-ancestors 'none'"
       - traefik.http.routers.ekklesia-web.middlewares=ekklesia-headers
 
