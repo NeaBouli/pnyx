@@ -9,10 +9,10 @@ const POLIS_CONFIG = {
 
   // GitHub OAuth App credentials
   oauth: {
-    clientId: "", // Set via Cloudflare Worker env — see wrangler.toml
+    clientId: "Ov23lifSswjpPlnYF6UK",
     // clientSecret goes in the Cloudflare Worker — NEVER here
     workerUrl: "https://polis-oauth-proxy.bergamolia.workers.dev",
-    callbackPath: "/pnyx/tickets/auth/callback.html",
+    callbackPath: "/tickets/auth/callback.html",
   },
 
   // Ticket categories
