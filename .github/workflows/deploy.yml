@@ -1,12 +1,14 @@
 name: Deploy to Hetzner
 
-# Deaktiviert bis Hetzner Server bereit ist und Secrets gesetzt sind.
-# Trigger nur manuell via workflow_dispatch, nicht automatisch bei Push.
-# Reaktivierung: push-Trigger unter on: wieder einfügen nachdem
-# HETZNER_HOST, HETZNER_USER, HETZNER_SSH_KEY als Repository Secrets
-# konfiguriert sind und /opt/ekklesia auf dem Server existiert.
-
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - 'apps/web/**'
+      - 'docs/**'
+      - 'packages/crypto/**'
+      - 'infra/docker/**'
   workflow_dispatch:
 
 jobs:
@@ -15,22 +17,24 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
-      - name: Verify secrets are configured
+      - name: Verify secrets
         run: |
-          if [ -z "${{ secrets.HETZNER_HOST }}" ]; then
-            echo "::error::HETZNER_HOST secret is not set. Configure it under Settings → Secrets → Actions before deploying."
-            exit 1
-          fi
-          if [ -z "${{ secrets.HETZNER_USER }}" ]; then
-            echo "::error::HETZNER_USER secret is not set."
-            exit 1
-          fi
           if [ -z "${{ secrets.HETZNER_SSH_KEY }}" ]; then
-            echo "::error::HETZNER_SSH_KEY secret is not set."
+            echo "::error::HETZNER_SSH_KEY not set — skip deploy"
             exit 1
           fi
-          echo "All Hetzner secrets configured."
+
+      - name: Detect changed services
+        id: changes
+        run: |
+          CHANGED=$(git diff HEAD~1 HEAD --name-only 2>/dev/null || echo "all")
+          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
+          echo "$CHANGED" | grep -q "apps/api/" && echo "api=true" >> $GITHUB_OUTPUT || echo "api=false" >> $GITHUB_OUTPUT
+          echo "$CHANGED" | grep -q "apps/web/\|docs/" && echo "web=true" >> $GITHUB_OUTPUT || echo "web=false" >> $GITHUB_OUTPUT
+          echo "$CHANGED" | grep -q "infra/docker/" && echo "infra=true" >> $GITHUB_OUTPUT || echo "infra=false" >> $GITHUB_OUTPUT
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
@@ -39,9 +43,29 @@ jobs:
           username: ${{ secrets.HETZNER_USER }}
           key: ${{ secrets.HETZNER_SSH_KEY }}
           script: |
+            set -e
             cd /opt/ekklesia/app
             git pull origin main
-            cd /opt/ekklesia
-            docker compose --env-file .env.production -f app/infra/docker/docker-compose.prod.yml build
-            docker compose --env-file .env.production -f app/infra/docker/docker-compose.prod.yml up -d
-            echo "Deploy done: $(date)"
+
+            source /opt/ekklesia/.env.production
+            export POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB
+
+            CD="docker compose -f infra/docker/docker-compose.prod.yml"
+
+            if [ "${{ steps.changes.outputs.infra }}" = "true" ]; then
+              echo "Rebuilding all containers..."
+              $CD build && $CD up -d
+            else
+              if [ "${{ steps.changes.outputs.api }}" = "true" ]; then
+                echo "Rebuilding API..."
+                $CD build api && $CD up -d api
+              fi
+              if [ "${{ steps.changes.outputs.web }}" = "true" ]; then
+                echo "Rebuilding Web..."
+                $CD build web && $CD up -d web
+              fi
+            fi
+
+            sleep 10
+            curl -sf https://api.ekklesia.gr/health || exit 1
+            echo "Deploy OK: $(date)"
