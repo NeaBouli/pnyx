@@ -69,7 +69,7 @@ async def scrape_decisions(
     Links to dimos/periferia via dimos_diavgeia_orgs mapping.
     """
     if decision_type_uids is None:
-        decision_type_uids = ["2.4.1"]
+        decision_type_uids = ["Α.2"]  # Κανονιστικές Πράξεις
 
     result = ScrapeResult()
 
@@ -100,9 +100,9 @@ async def scrape_decisions(
                     result.errors.append("Decision without ADA — skipped")
                     continue
 
-                org_uid = str(raw_decision.get("organizationUid", ""))
-                publish_ts = parse_timestamp(raw_decision.get("issueDate", ""))
-                submission_ts = parse_timestamp(raw_decision.get("submissionTimestamp", ""))
+                org_uid = str(raw_decision.get("organizationId", ""))
+                publish_ts = parse_timestamp(raw_decision.get("issueDate"))
+                submission_ts = parse_timestamp(raw_decision.get("submissionTimestamp"))
 
                 if not publish_ts:
                     result.errors.append(f"ADA {ada}: no publish timestamp — skipped")
@@ -116,10 +116,10 @@ async def scrape_decisions(
                 row_data = {
                     "ada": ada,
                     "subject": raw_decision.get("subject", ""),
-                    "decision_type_uid": type_uid,
-                    "decision_type_label": raw_decision.get("decisionTypeLabel", ""),
+                    "decision_type_uid": raw_decision.get("decisionTypeId", type_uid),
+                    "decision_type_label": raw_decision.get("decisionTypeId", ""),
                     "organization_uid": org_uid,
-                    "organization_label": raw_decision.get("organizationLabel", ""),
+                    "organization_label": str(raw_decision.get("organizationId", "")),
                     "document_url": raw_decision.get("documentUrl", ""),
                     "submission_timestamp": submission_ts,
                     "publish_timestamp": publish_ts,

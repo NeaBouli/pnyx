@@ -22,13 +22,31 @@ MAX_RETRIES = 3
 RETRY_BASE_DELAY = 2.0
 
 
-def parse_timestamp(raw: str) -> datetime | None:
-    """Parse Diavgeia timestamps — handles both ISO and DD/MM/YYYY HH:MM:SS formats."""
+def parse_timestamp(raw: str | int | None) -> datetime | None:
+    """Parse Diavgeia timestamps — handles Unix ms, ISO, and DD/MM/YYYY formats."""
+    if raw is None:
+        return None
+
+    # Unix timestamp in milliseconds (primary format from search API)
+    if isinstance(raw, (int, float)):
+        try:
+            return datetime.utcfromtimestamp(raw / 1000.0)
+        except (OSError, ValueError, OverflowError):
+            logger.warning("Unparseable Unix timestamp from Diavgeia: %s", raw)
+            return None
+
+    raw = str(raw).strip()
     if not raw:
         return None
-    raw = raw.strip()
 
-    # ISO 8601 (most common from API)
+    # Try as numeric string (Unix ms)
+    try:
+        ms = int(raw)
+        return datetime.utcfromtimestamp(ms / 1000.0)
+    except (ValueError, OSError, OverflowError):
+        pass
+
+    # ISO 8601
     for fmt in ("%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S"):
         try:
             return datetime.strptime(raw, fmt)
