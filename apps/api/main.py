@@ -36,12 +36,74 @@ async def scheduled_scrape():
         logger.error(f"[MOD-03] Scheduled scrape failed: {e}")
 
 
+async def scheduled_notify_new_bills():
+    """Check for new ACTIVE bills and push-notify registered devices."""
+    import redis.asyncio as aioredis
+    from sqlalchemy import select
+    from database import AsyncSessionLocal
+    from models import ParliamentBill, BillStatus
+    from routers.notify import notify_all
+
+    try:
+        r = aioredis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"), decode_responses=True)
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(ParliamentBill).where(ParliamentBill.status == BillStatus.ACTIVE)
+            )
+            for bill in result.scalars().all():
+                key = f"notified:new_bill:{bill.id}"
+                if await r.exists(key):
+                    continue
+                await notify_all("new_bill", {
+                    "title": "🗳️ Νέα Ψηφοφορία",
+                    "body": bill.title_el[:100],
+                    "bill_id": bill.id,
+                })
+                await r.setex(key, 604800, "1")  # 7 days TTL
+                logger.info(f"[MOD-20] Notified: new bill {bill.id}")
+        await r.aclose()
+    except Exception as e:
+        logger.error(f"[MOD-20] Notify new bills failed: {e}")
+
+
+async def scheduled_notify_results():
+    """Check for new PARLIAMENT_VOTED bills and push-notify results."""
+    import redis.asyncio as aioredis
+    from sqlalchemy import select
+    from database import AsyncSessionLocal
+    from models import ParliamentBill, BillStatus
+    from routers.notify import notify_all
+
+    try:
+        r = aioredis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"), decode_responses=True)
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(ParliamentBill).where(ParliamentBill.status == BillStatus.PARLIAMENT_VOTED)
+            )
+            for bill in result.scalars().all():
+                key = f"notified:result:{bill.id}"
+                if await r.exists(key):
+                    continue
+                await notify_all("result", {
+                    "title": "📊 Αποτέλεσμα Ψηφοφορίας",
+                    "body": bill.title_el[:100],
+                    "bill_id": bill.id,
+                })
+                await r.setex(key, 604800, "1")
+                logger.info(f"[MOD-20] Notified: result {bill.id}")
+        await r.aclose()
+    except Exception as e:
+        logger.error(f"[MOD-20] Notify results failed: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app):
     # Startup
     scheduler.add_job(scheduled_scrape, IntervalTrigger(hours=6), id="parliament_scrape", replace_existing=True)
+    scheduler.add_job(scheduled_notify_new_bills, IntervalTrigger(minutes=30), id="notify_new_bills", replace_existing=True)
+    scheduler.add_job(scheduled_notify_results, IntervalTrigger(hours=1), id="notify_results", replace_existing=True)
     scheduler.start()
-    logger.info("[MOD-03] APScheduler started — parliament scrape every 6h")
+    logger.info("[MOD-03] APScheduler started — scrape 6h, notify-bills 30m, notify-results 1h")
     yield
     # Shutdown
     scheduler.shutdown()
