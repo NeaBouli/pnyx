@@ -70,9 +70,18 @@ def test_seed_load_snapshot_gzip():
 
 def test_seed_missing_snapshot_error():
     """load_snapshot should raise FileNotFoundError with clear message."""
-    from scripts.seed_diavgeia_orgs import load_snapshot
-    with pytest.raises(FileNotFoundError, match="Snapshot not found"):
-        load_snapshot(Path("/nonexistent/path/snapshot.json"))
+    from scripts.seed_diavgeia_orgs import load_snapshot, DEFAULT_SNAPSHOT, DEFAULT_SNAPSHOT_GZ
+    from unittest.mock import patch
+    # Patch default paths to non-existent locations so fallback fails too
+    with patch.object(
+        __import__("scripts.seed_diavgeia_orgs", fromlist=["DEFAULT_SNAPSHOT"]),
+        "DEFAULT_SNAPSHOT", Path("/nonexistent/a.json"),
+    ), patch.object(
+        __import__("scripts.seed_diavgeia_orgs", fromlist=["DEFAULT_SNAPSHOT_GZ"]),
+        "DEFAULT_SNAPSHOT_GZ", Path("/nonexistent/a.json.gz"),
+    ):
+        with pytest.raises(FileNotFoundError, match="Snapshot not found"):
+            load_snapshot(None)
 
 
 def test_seed_malformed_snapshot_error():
