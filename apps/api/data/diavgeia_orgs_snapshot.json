@@ -1,0 +1,2374 @@
+{
+ "metadata": {
+  "fetched_at": "2026-04-24T22:46:58.884760+00:00",
+  "total_count": 337,
+  "total_api_orgs_scanned": 432160,
+  "pages_fetched": 80,
+  "filter": "category=MUNICIPALITY",
+  "source_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations.json",
+  "api_version_hint": "luminapi-v1",
+  "script_version": "1.0",
+  "note": "Partial fetch (80 pages). Diavgeia has ~800k org units; only MUNICIPALITYs saved."
+ },
+ "organizations": [
+  {
+   "uid": "6001",
+   "label": "ΔΗΜΟΣ ΑΒΔΗΡΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6002",
+   "label": "ΔΗΜΟΣ ΑΓΑΘΟΝΗΣΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6003",
+   "label": "ΔΗΜΟΣ ΑΓΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6004",
+   "label": "ΔΗΜΟΣ ΑΓΙΑΣ ΒΑΡΒΑΡΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6005",
+   "label": "ΔΗΜΟΣ ΑΓΙΑΣ ΠΑΡΑΣΚΕΥΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6006",
+   "label": "ΔΗΜΟΣ ΑΓΙΟΥ ΒΑΣΙΛΕΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6007",
+   "label": "ΔΗΜΟΣ ΑΓΙΟΥ ΔΗΜΗΤΡΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6008",
+   "label": "ΔΗΜΟΣ ΑΓΙΟΥ ΕΥΣΤΡΑΤΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6009",
+   "label": "ΔΗΜΟΣ ΑΓΙΩΝ ΑΝΑΡΓΥΡΩΝ - ΚΑΜΑΤΕΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6010",
+   "label": "ΔΗΜΟΣ ΑΓΚΙΣΤΡΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6011",
+   "label": "ΔΗΜΟΣ ΑΓΡΑΦΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6012",
+   "label": "ΔΗΜΟΣ ΑΓΡΙΝΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6013",
+   "label": "ΔΗΜΟΣ ΑΘΗΝΑΙΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6014",
+   "label": "ΔΗΜΟΣ ΑΙΓΑΛΕΩ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6015",
+   "label": "ΔΗΜΟΣ ΑΙΓΙΑΛΕΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6016",
+   "label": "ΔΗΜΟΣ ΑΙΓΙΝΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6017",
+   "label": "ΔΗΜΟΣ ΑΚΤΙΟΥ - ΒΟΝΙΤΣΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6018",
+   "label": "ΔΗΜΟΣ ΑΛΕΞΑΝΔΡΕΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6019",
+   "label": "ΔΗΜΟΣ ΑΛΕΞΑΝΔΡΟΥΠΟΛΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6020",
+   "label": "ΔΗΜΟΣ ΑΛΙΑΡΤΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6021",
+   "label": "ΔΗΜΟΣ ΑΛΙΜΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6022",
+   "label": "ΔΗΜΟΣ ΑΛΜΥΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6023",
+   "label": "ΔΗΜΟΣ ΑΛΜΩΠΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6024",
+   "label": "ΔΗΜΟΣ ΑΛΟΝΝΗΣΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6025",
+   "label": "ΔΗΜΟΣ ΑΜΑΡΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6026",
+   "label": "ΔΗΜΟΣ ΑΜΑΡΟΥΣΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6027",
+   "label": "ΔΗΜΟΣ ΑΜΟΡΓΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6028",
+   "label": "ΔΗΜΟΣ ΑΜΠΕΛΟΚΗΠΩΝ - ΜΕΝΕΜΕΝΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6029",
+   "label": "ΔΗΜΟΣ ΑΜΥΝΤΑΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6030",
+   "label": "ΔΗΜΟΣ ΑΜΦΙΚΛΕΙΑΣ - ΕΛΑΤΕΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6031",
+   "label": "ΔΗΜΟΣ ΑΜΦΙΛΟΧΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6032",
+   "label": "ΔΗΜΟΣ ΑΜΦΙΠΟΛΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6033",
+   "label": "ΔΗΜΟΣ ΑΝΑΤΟΛΙΚΗΣ ΜΑΝΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6034",
+   "label": "ΔΗΜΟΣ ΑΝΑΦΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6035",
+   "label": "ΔΗΜΟΣ ΑΝΔΡΑΒΙΔΑΣ - ΚΥΛΛΗΝΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6036",
+   "label": "ΔΗΜΟΣ ΑΝΔΡΙΤΣΑΙΝΑΣ - ΚΡΕΣΤΕΝΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6037",
+   "label": "ΔΗΜΟΣ ΑΝΔΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6038",
+   "label": "ΔΗΜΟΣ ΑΝΤΙΠΑΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6039",
+   "label": "ΔΗΜΟΣ ΑΝΩΓΕΙΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6040",
+   "label": "ΔΗΜΟΣ ΑΠΟΚΟΡΩΝΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6041",
+   "label": "ΔΗΜΟΣ ΑΡΓΙΘΕΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6042",
+   "label": "ΔΗΜΟΣ ΑΡΓΟΥΣ - ΜΥΚΗΝΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6043",
+   "label": "ΔΗΜΟΣ ΑΡΙΣΤΟΤΕΛΗ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6044",
+   "label": "ΔΗΜΟΣ ΑΡΡΙΑΝΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6045",
+   "label": "ΔΗΜΟΣ ΑΡΤΑΙΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6046",
+   "label": "ΔΗΜΟΣ ΑΡΧΑΙΑΣ ΟΛΥΜΠΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6047",
+   "label": "ΔΗΜΟΣ ΑΡΧΑΝΩΝ - ΑΣΤΕΡΟΥΣΙΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6048",
+   "label": "ΔΗΜΟΣ ΑΣΠΡΟΠΥΡΓΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6049",
+   "label": "ΔΗΜΟΣ ΑΣΤΥΠΑΛΑΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6050",
+   "label": "ΔΗΜΟΣ ΑΧΑΡΝΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6051",
+   "label": "ΔΗΜΟΣ ΒΑΡΗΣ - ΒΟΥΛΑΣ - ΒΟΥΛΙΑΓΜΕΝΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6052",
+   "label": "ΔΗΜΟΣ ΒΕΛΟΥ - ΒΟΧΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6053",
+   "label": "ΔΗΜΟΣ ΒΕΡΟΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6054",
+   "label": "ΔΗΜΟΣ ΒΙΑΝΝΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6055",
+   "label": "ΔΗΜΟΣ ΒΙΣΑΛΤΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6056",
+   "label": "ΔΗΜΟΣ ΒΟΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6057",
+   "label": "ΔΗΜΟΣ ΒΟΛΒΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6058",
+   "label": "ΔΗΜΟΣ ΒΟΛΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6059",
+   "label": "ΔΗΜΟΣ ΒΟΡΕΙΑΣ ΚΥΝΟΥΡΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6060",
+   "label": "ΔΗΜΟΣ ΒΟΡΕΙΩΝ ΤΖΟΥΜΕΡΚΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6061",
+   "label": "ΔΗΜΟΣ ΒΡΙΛΗΣΣΙΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6062",
+   "label": "ΔΗΜΟΣ ΒΥΡΩΝΟΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6063",
+   "label": "ΔΗΜΟΣ ΓΑΛΑΤΣΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6064",
+   "label": "ΔΗΜΟΣ ΓΑΥΔΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6065",
+   "label": "ΔΗΜΟΣ ΓΕΩΡΓΙΟΥ ΚΑΡΑΙΣΚΑΚΗ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6066",
+   "label": "ΔΗΜΟΣ ΓΛΥΦΑΔΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6067",
+   "label": "ΔΗΜΟΣ ΓΟΡΤΥΝΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6068",
+   "label": "ΔΗΜΟΣ ΓΟΡΤΥΝΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6069",
+   "label": "ΔΗΜΟΣ ΓΡΕΒΕΝΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6070",
+   "label": "ΔΗΜΟΣ ΔΑΦΝΗΣ - ΥΜΗΤΤΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6071",
+   "label": "ΔΗΜΟΣ ΔΕΛΤΑ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6072",
+   "label": "ΔΗΜΟΣ ΔΕΛΦΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6073",
+   "label": "ΔΗΜΟΣ ΔΕΣΚΑΤΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6074",
+   "label": "ΔΗΜΟΣ ΔΙΔΥΜΟΤΕΙΧΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6075",
+   "label": "ΔΗΜΟΣ ΔΙΟΝΥΣΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6076",
+   "label": "ΔΗΜΟΣ ΔΙΟΥ - ΟΛΥΜΠΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6077",
+   "label": "ΔΗΜΟΣ ΔΙΡΦΥΩΝ - ΜΕΣΣΑΠΙΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6078",
+   "label": "ΔΗΜΟΣ ΔΙΣΤΟΜΟΥ-ΑΡΑΧΟΒΑΣ - ΑΝΤΙΚΥΡΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6079",
+   "label": "ΔΗΜΟΣ ΔΟΜΟΚΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6080",
+   "label": "ΔΗΜΟΣ ΔΟΞΑΤΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6081",
+   "label": "ΔΗΜΟΣ ΔΡΑΜΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6082",
+   "label": "ΔΗΜΟΣ ΔΥΤΙΚΗΣ ΑΧΑΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6083",
+   "label": "ΔΗΜΟΣ ΔΥΤΙΚΗΣ ΜΑΝΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6084",
+   "label": "ΔΗΜΟΣ ΔΩΔΩΝΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6085",
+   "label": "ΔΗΜΟΣ ΔΩΡΙΔΟΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6086",
+   "label": "ΔΗΜΟΣ ΕΔΕΣΣΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6087",
+   "label": "ΔΗΜΟΣ ΕΛΑΣΣΟΝΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6088",
+   "label": "ΔΗΜΟΣ ΕΛΑΦΟΝΗΣΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6089",
+   "label": "ΔΗΜΟΣ ΕΛΕΥΣΙΝΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6090",
+   "label": "ΔΗΜΟΣ ΕΛΛΗΝΙΚΟΥ - ΑΡΓΥΡΟΥΠΟΛΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6091",
+   "label": "ΔΗΜΟΣ ΕΜΜΑΝΟΥΗΛ ΠΑΠΠΑ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6092",
+   "label": "ΔΗΜΟΣ ΕΟΡΔΑΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6093",
+   "label": "ΔΗΜΟΣ ΕΠΙΔΑΥΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6094",
+   "label": "ΔΗΜΟΣ ΕΡΕΤΡΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6095",
+   "label": "ΔΗΜΟΣ ΕΡΜΙΟΝΙΔΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6096",
+   "label": "ΔΗΜΟΣ ΕΡΥΜΑΝΘΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6097",
+   "label": "ΔΗΜΟΣ ΕΥΡΩΤΑ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6098",
+   "label": "ΔΗΜΟΣ ΖΑΓΟΡΑΣ - ΜΟΥΡΕΣΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6099",
+   "label": "ΔΗΜΟΣ ΖΑΓΟΡΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6100",
+   "label": "ΔΗΜΟΣ ΖΑΚΥΝΘΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6101",
+   "label": "ΔΗΜΟΣ ΖΑΧΑΡΩΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6102",
+   "label": "ΔΗΜΟΣ ΖΗΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6103",
+   "label": "ΔΗΜΟΣ ΖΙΤΣΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6104",
+   "label": "ΔΗΜΟΣ ΖΩΓΡΑΦΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6105",
+   "label": "ΔΗΜΟΣ ΗΓΟΥΜΕΝΙΤΣΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6106",
+   "label": "ΔΗΜΟΣ ΗΛΙΔΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6107",
+   "label": "ΔΗΜΟΣ ΗΛΙΟΥΠΟΛΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6108",
+   "label": "ΔΗΜΟΣ ΗΡΑΚΛΕΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6109",
+   "label": "ΔΗΜΟΣ ΗΡΑΚΛΕΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6110",
+   "label": "ΔΗΜΟΣ ΘΑΣΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6111",
+   "label": "ΔΗΜΟΣ ΘΕΡΜΑΙΚΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6112",
+   "label": "ΔΗΜΟΣ ΘΕΡΜΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6113",
+   "label": "ΔΗΜΟΣ ΘΕΡΜΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6114",
+   "label": "ΔΗΜΟΣ ΘΕΣΣΑΛΟΝΙΚΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6115",
+   "label": "ΔΗΜΟΣ ΘΗΒΑΙΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6116",
+   "label": "ΔΗΜΟΣ ΘΗΡΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6117",
+   "label": "ΔΗΜΟΣ ΙΑΣΜΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6118",
+   "label": "ΔΗΜΟΣ ΙΕΡΑΠΕΤΡΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6119",
+   "label": "ΔΗΜΟΣ ΙΕΡΑΣ ΠΟΛΗΣ ΜΕΣΟΛΟΓΓΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6120",
+   "label": "ΔΗΜΟΣ ΙΗΤΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6121",
+   "label": "ΔΗΜΟΣ ΙΘΑΚΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6122",
+   "label": "ΔΗΜΟΣ ΙΚΑΡΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6123",
+   "label": "ΔΗΜΟΣ ΙΛΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6124",
+   "label": "ΔΗΜΟΣ ΙΣΤΙΑΙΑΣ - ΑΙΔΗΨΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6125",
+   "label": "ΔΗΜΟΣ ΙΩΑΝΝΙΤΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6126",
+   "label": "ΔΗΜΟΣ ΚΑΒΑΛΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6127",
+   "label": "ΔΗΜΟΣ ΚΑΙΣΑΡΙΑΝΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6128",
+   "label": "ΔΗΜΟΣ ΚΑΛΑΒΡΥΤΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6129",
+   "label": "ΔΗΜΟΣ ΚΑΛΑΜΑΡΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6130",
+   "label": "ΔΗΜΟΣ ΚΑΛΑΜΑΤΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6132",
+   "label": "ΔΗΜΟΣ ΚΑΛΛΙΘΕΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6133",
+   "label": "ΔΗΜΟΣ ΚΑΛΥΜΝΙΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6134",
+   "label": "ΔΗΜΟΣ ΚΑΝΤΑΝΟΥ - ΣΕΛΙΝΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6135",
+   "label": "ΔΗΜΟΣ ΚΑΡΔΙΤΣΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6136",
+   "label": "ΔΗΜΟΣ ΚΑΡΠΑΘΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6137",
+   "label": "ΔΗΜΟΣ ΚΑΡΠΕΝΗΣΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6138",
+   "label": "ΔΗΜΟΣ ΚΑΡΥΣΤΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6139",
+   "label": "ΔΗΜΟΣ ΚΑΣΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6140",
+   "label": "ΔΗΜΟΣ ΚΑΣΣΑΝΔΡΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6141",
+   "label": "ΔΗΜΟΣ ΚΑΣΤΟΡΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6142",
+   "label": "ΔΗΜΟΣ ΚΑΤΕΡΙΝΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6143",
+   "label": "ΔΗΜΟΣ ΚΑΤΩ ΝΕΥΡΟΚΟΠΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6144",
+   "label": "ΔΗΜΟΣ ΚΕΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6145",
+   "label": "ΔΗΜΟΣ ΚΕΝΤΡΙΚΩΝ ΤΖΟΥΜΕΡΚΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6146",
+   "label": "ΔΗΜΟΣ ΚΕΡΑΤΣΙΝΙΟΥ - ΔΡΑΠΕΤΣΩΝΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6147",
+   "label": "ΔΗΜΟΣ ΚΕΡΚΥΡΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6148",
+   "label": "ΔΗΜΟΣ ΚΕΦΑΛΟΝΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6149",
+   "label": "ΔΗΜΟΣ ΚΗΦΙΣΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6150",
+   "label": "ΔΗΜΟΣ ΚΙΛΕΛΕΡ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6151",
+   "label": "ΔΗΜΟΣ ΚΙΛΚΙΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6152",
+   "label": "ΔΗΜΟΣ ΚΙΜΩΛΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6153",
+   "label": "ΔΗΜΟΣ ΚΙΣΣΑΜΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6154",
+   "label": "ΔΗΜΟΣ ΚΟΖΑΝΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6155",
+   "label": "ΔΗΜΟΣ ΚΟΜΟΤΗΝΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6156",
+   "label": "ΔΗΜΟΣ ΚΟΝΙΤΣΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6157",
+   "label": "ΔΗΜΟΣ ΚΟΡΔΕΛΙΟΥ - ΕΥΟΣΜΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6158",
+   "label": "ΔΗΜΟΣ ΚΟΡΙΝΘΙΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6159",
+   "label": "ΔΗΜΟΣ ΚΟΡΥΔΑΛΛΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6160",
+   "label": "ΔΗΜΟΣ ΚΡΩΠΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6161",
+   "label": "ΔΗΜΟΣ ΚΥΘΗΡΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6162",
+   "label": "ΔΗΜΟΣ ΚΥΘΝΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6163",
+   "label": "ΔΗΜΟΣ ΚΥΜΗΣ - ΑΛΙΒΕΡΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6164",
+   "label": "ΔΗΜΟΣ ΚΩ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6165",
+   "label": "ΔΗΜΟΣ ΛΑΓΚΑΔΑ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6166",
+   "label": "ΔΗΜΟΣ ΛΑΜΙΕΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6167",
+   "label": "ΔΗΜΟΣ ΛΑΡΙΣΑΙΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6168",
+   "label": "ΔΗΜΟΣ ΛΑΥΡΕΩΤΙΚΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6169",
+   "label": "ΔΗΜΟΣ ΛΕΒΑΔΕΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6170",
+   "label": "ΔΗΜΟΣ ΛΕΙΨΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6171",
+   "label": "ΔΗΜΟΣ ΛΕΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6172",
+   "label": "ΔΗΜΟΣ ΛΕΣΒΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6173",
+   "label": "ΔΗΜΟΣ ΛΕΥΚΑΔΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6174",
+   "label": "ΔΗΜΟΣ ΛΗΜΝΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6175",
+   "label": "ΔΗΜΟΣ ΛΙΜΝΗΣ ΠΛΑΣΤΗΡΑ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6176",
+   "label": "ΔΗΜΟΣ ΛΟΚΡΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6177",
+   "label": "ΔΗΜΟΣ ΛΟΥΤΡΑΚΙΟΥ - ΠΕΡΑΧΩΡΑΣ - ΑΓΙΩΝ ΘΕΟΔΩΡΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6178",
+   "label": "ΔΗΜΟΣ ΛΥΚΟΒΡΥΣΗΣ - ΠΕΥΚΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6179",
+   "label": "ΔΗΜΟΣ ΜΑΚΡΑΚΩΜΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6180",
+   "label": "ΔΗΜΟΣ ΜΑΛΕΒΙΖΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6181",
+   "label": "ΔΗΜΟΣ ΜΑΝΔΡΑΣ - ΕΙΔΥΛΛΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6182",
+   "label": "ΔΗΜΟΣ ΜΑΝΤΟΥΔΙΟΥ - ΛΙΜΝΗΣ - ΑΓΙΑΣ ΑΝΝΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6183",
+   "label": "ΔΗΜΟΣ ΜΑΡΑΘΩΝΟΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6184",
+   "label": "ΔΗΜΟΣ ΜΑΡΚΟΠΟΥΛΟΥ ΜΕΣΟΓΑΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6185",
+   "label": "ΔΗΜΟΣ ΜΑΡΩΝΕΙΑΣ - ΣΑΠΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6186",
+   "label": "ΔΗΜΟΣ ΜΕΓΑΛΟΠΟΛΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6187",
+   "label": "ΔΗΜΟΣ ΜΕΓΑΝΗΣΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6188",
+   "label": "ΔΗΜΟΣ ΜΕΓΑΡΕΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6189",
+   "label": "ΔΗΜΟΣ ΜΕΓΙΣΤΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6190",
+   "label": "ΔΗΜΟΣ ΜΕΣΣΗΝΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6192",
+   "label": "ΔΗΜΟΣ ΜΕΤΣΟΒΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6193",
+   "label": "ΔΗΜΟΣ ΜΗΛΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6194",
+   "label": "ΔΗΜΟΣ ΜΙΝΩΑ ΠΕΔΙΑΔΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6195",
+   "label": "ΔΗΜΟΣ AΓΙΟΥ ΝΙΚΟΛΑΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6196",
+   "label": "ΔΗΜΟΣ ΜΟΝΕΜΒΑΣΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6197",
+   "label": "ΔΗΜΟΣ ΜΟΣΧΑΤΟΥ - ΤΑΥΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6198",
+   "label": "ΔΗΜΟΣ ΜΟΥΖΑΚΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6199",
+   "label": "ΔΗΜΟΣ ΜΥΚΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6200",
+   "label": "ΔΗΜΟΣ ΜΥΚΟΝΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6201",
+   "label": "ΔΗΜΟΣ ΜΥΛΟΠΟΤΑΜΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6202",
+   "label": "ΔΗΜΟΣ ΚΑΜΕΝΩΝ ΒΟΥΡΛΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6203",
+   "label": "ΔΗΜΟΣ ΝΑΞΟΥ & ΜΙΚΡΩΝ ΚΥΚΛΑΔΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6204",
+   "label": "ΔΗΜΟΣ ΝΑΟΥΣΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6205",
+   "label": "ΔΗΜΟΣ ΝΑΥΠΑΚΤΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6206",
+   "label": "ΔΗΜΟΣ ΝΑΥΠΛΙΕΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6207",
+   "label": "ΔΗΜΟΣ ΝΕΑΠΟΛΗΣ - ΣΥΚΕΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6208",
+   "label": "ΔΗΜΟΣ ΝΕΑΣ ΖΙΧΝΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6209",
+   "label": "ΔΗΜΟΣ ΝΕΑΣ ΙΩΝΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6210",
+   "label": "ΔΗΜΟΣ ΝΕΑΣ ΠΡΟΠΟΝΤΙΔΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6211",
+   "label": "ΔΗΜΟΣ ΝΕΑΣ ΣΜΥΡΝΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6212",
+   "label": "ΔΗΜΟΣ ΝΕΜΕΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6213",
+   "label": "ΔΗΜΟΣ ΝΕΣΤΟΡΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6214",
+   "label": "ΔΗΜΟΣ ΝΕΣΤΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6215",
+   "label": "ΔΗΜΟΣ ΝΙΚΑΙΑΣ - ΑΓΙΟΥ Ι. ΡΕΝΤΗ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6216",
+   "label": "ΔΗΜΟΣ ΝΙΚΟΛΑΟΥ ΣΚΟΥΦΑ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6217",
+   "label": "ΔΗΜΟΣ ΝΙΣΥΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6218",
+   "label": "ΔΗΜΟΣ ΝΟΤΙΑΣ ΚΥΝΟΥΡΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6219",
+   "label": "ΔΗΜΟΣ ΝΟΤΙΟΥ ΠΗΛΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6220",
+   "label": "ΔΗΜΟΣ ΞΑΝΘΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6221",
+   "label": "ΔΗΜΟΣ ΞΗΡΟΜΕΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6222",
+   "label": "ΔΗΜΟΣ ΞΥΛΟΚΑΣΤΡΟΥ - ΕΥΡΩΣΤΙΝΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6223",
+   "label": "ΔΗΜΟΣ ΟΙΝΟΥΣΣΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6224",
+   "label": "ΔΗΜΟΣ ΟΙΧΑΛΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6225",
+   "label": "ΔΗΜΟΣ ΟΡΕΣΤΙΑΔΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6227",
+   "label": "ΔΗΜΟΣ ΟΡΟΠΕΔΙΟΥ ΛΑΣΙΘΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6228",
+   "label": "ΔΗΜΟΣ ΟΡΧΟΜΕΝΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6229",
+   "label": "ΔΗΜΟΣ ΠΑΓΓΑΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6230",
+   "label": "ΔΗΜΟΣ ΠΑΙΑΝΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6231",
+   "label": "ΔΗΜΟΣ ΠΑΙΟΝΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6232",
+   "label": "ΔΗΜΟΣ ΠΑΛΑΙΟΥ ΦΑΛΗΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6233",
+   "label": "ΔΗΜΟΣ ΠΑΛΑΜΑ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6234",
+   "label": "ΔΗΜΟΣ ΠΑΛΛΗΝΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6235",
+   "label": "ΔΗΜΟΣ ΠΑΞΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6236",
+   "label": "ΔΗΜΟΣ ΠΑΠΑΓΟΥ - ΧΟΛΑΡΓΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6237",
+   "label": "ΔΗΜΟΣ ΠΑΡΑΝΕΣΤΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6238",
+   "label": "ΔΗΜΟΣ ΠΑΡΓΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6239",
+   "label": "ΔΗΜΟΣ ΠΑΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6240",
+   "label": "ΔΗΜΟΣ ΠΑΤΜΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6241",
+   "label": "ΔΗΜΟΣ ΠΑΤΡΕΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6242",
+   "label": "ΔΗΜΟΣ ΠΑΥΛΟΥ ΜΕΛΑ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6243",
+   "label": "ΔΗΜΟΣ ΠΕΙΡΑΙΩΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6244",
+   "label": "ΔΗΜΟΣ ΠΕΛΛΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6245",
+   "label": "ΔΗΜΟΣ ΠΕΝΤΕΛΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6246",
+   "label": "ΔΗΜΟΣ ΠΕΡΑΜΑΤΟΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6247",
+   "label": "ΔΗΜΟΣ ΠΕΡΙΣΤΕΡΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6248",
+   "label": "ΔΗΜΟΣ ΠΕΤΡΟΥΠΟΛΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6249",
+   "label": "ΔΗΜΟΣ ΠΗΝΕΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6250",
+   "label": "ΔΗΜΟΣ ΠΛΑΤΑΝΙΑ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6251",
+   "label": "ΔΗΜΟΣ ΠΟΛΥΓΥΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6252",
+   "label": "ΔΗΜΟΣ ΠΟΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6253",
+   "label": "ΔΗΜΟΣ ΠΡΕΒΕΖΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6254",
+   "label": "ΔΗΜΟΣ ΠΡΕΣΠΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6255",
+   "label": "ΔΗΜΟΣ ΠΡΟΣΟΤΣΑΝΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6256",
+   "label": "ΔΗΜΟΣ ΠΥΔΝΑΣ - ΚΟΛΙΝΔΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6257",
+   "label": "ΔΗΜΟΣ ΠΥΛΑΙΑΣ - ΧΟΡΤΙΑΤΗ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6258",
+   "label": "ΔΗΜΟΣ ΠΥΛΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6259",
+   "label": "ΔΗΜΟΣ ΠΥΛΟΥ - ΝΕΣΤΟΡΟΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6260",
+   "label": "ΔΗΜΟΣ ΠΥΡΓΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6261",
+   "label": "ΔΗΜΟΣ ΠΩΓΩΝΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6262",
+   "label": "ΔΗΜΟΣ ΡΑΦΗΝΑΣ - ΠΙΚΕΡΜΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6263",
+   "label": "ΔΗΜΟΣ ΡΕΘΥΜΝΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6264",
+   "label": "ΔΗΜΟΣ ΡΗΓΑ ΦΕΡΑΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6265",
+   "label": "ΔΗΜΟΣ ΡΟΔΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6266",
+   "label": "ΔΗΜΟΣ ΣΑΛΑΜΙΝΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6267",
+   "label": "ΔΗΜΟΣ ΣΑΜΟΘΡΑΚΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6268",
+   "label": "ΔΗΜΟΣ ΣΑΜΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6269",
+   "label": "ΔΗΜΟΣ ΣΑΡΩΝΙΚΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6271",
+   "label": "ΔΗΜΟΣ ΣΕΡΙΦΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6272",
+   "label": "ΔΗΜΟΣ ΣΕΡΡΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6273",
+   "label": "ΔΗΜΟΣ ΣΗΤΕΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6274",
+   "label": "ΔΗΜΟΣ ΣΙΘΩΝΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6275",
+   "label": "ΔΗΜΟΣ ΣΙΚΙΝΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6276",
+   "label": "ΔΗΜΟΣ ΣΙΚΥΩΝΙΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6277",
+   "label": "ΔΗΜΟΣ ΣΙΝΤΙΚΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6278",
+   "label": "ΔΗΜΟΣ ΣΙΦΝΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6279",
+   "label": "ΔΗΜΟΣ ΣΚΙΑΘΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6280",
+   "label": "ΔΗΜΟΣ ΣΚΟΠΕΛΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6281",
+   "label": "ΔΗΜΟΣ ΣΚΥΔΡΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6282",
+   "label": "ΔΗΜΟΣ ΣΚΥΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6283",
+   "label": "ΔΗΜΟΣ ΣΟΥΛΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6284",
+   "label": "ΔΗΜΟΣ ΣΟΥΦΛΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6285",
+   "label": "ΔΗΜΟΣ ΣΟΦΑΔΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6286",
+   "label": "ΔΗΜΟΣ ΣΠΑΡΤΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6287",
+   "label": "ΔΗΜΟΣ ΣΠΑΤΩΝ - ΑΡΤΕΜΙΔΟΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6288",
+   "label": "ΔΗΜΟΣ ΣΠΕΤΣΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6289",
+   "label": "ΔΗΜΟΣ ΣΤΥΛΙΔΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6290",
+   "label": "ΔΗΜΟΣ ΣΥΜΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6291",
+   "label": "ΔΗΜΟΣ ΣΥΡΟΥ - ΕΡΜΟΥΠΟΛΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6292",
+   "label": "ΔΗΜΟΣ ΣΦΑΚΙΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6293",
+   "label": "ΔΗΜΟΣ ΤΑΝΑΓΡΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6294",
+   "label": "ΔΗΜΟΣ ΤΕΜΠΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6295",
+   "label": "ΔΗΜΟΣ ΤΗΛΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6296",
+   "label": "ΔΗΜΟΣ ΤΗΝΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6297",
+   "label": "ΔΗΜΟΣ ΤΟΠΕΙΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6298",
+   "label": "ΔΗΜΟΣ ΤΡΙΚΚΑΙΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6299",
+   "label": "ΔΗΜΟΣ ΤΡΙΠΟΛΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6300",
+   "label": "ΔΗΜΟΣ ΤΡΙΦΥΛΙΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6301",
+   "label": "ΔΗΜΟΣ ΤΡΟΙΖΗΝΙΑΣ - ΜΕΘΑΝΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6302",
+   "label": "ΔΗΜΟΣ ΤΥΡΝΑΒΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6303",
+   "label": "ΔΗΜΟΣ ΥΔΡΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6304",
+   "label": "ΔΗΜΟΣ ΦΑΙΣΤΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6305",
+   "label": "ΔΗΜΟΣ ΦΑΡΚΑΔΟΝΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6306",
+   "label": "ΔΗΜΟΣ ΦΑΡΣΑΛΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6308",
+   "label": "ΔΗΜΟΣ ΦΙΛΙΑΤΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6309",
+   "label": "ΔΗΜΟΣ ΦΛΩΡΙΝΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6310",
+   "label": "ΔΗΜΟΣ ΦΟΛΕΓΑΝΔΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6311",
+   "label": "ΔΗΜΟΣ ΦΟΥΡΝΩΝ ΚΟΡΣΕΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6312",
+   "label": "ΔΗΜΟΣ ΦΥΛΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6313",
+   "label": "ΔΗΜΟΣ ΧΑΙΔΑΡΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6314",
+   "label": "ΔΗΜΟΣ ΧΑΛΑΝΔΡΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6315",
+   "label": "ΔΗΜΟΣ ΧΑΛΚΗΔΟΝΟΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6316",
+   "label": "ΔΗΜΟΣ ΧΑΛΚΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6317",
+   "label": "ΔΗΜΟΣ ΧΑΛΚΙΔΕΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6318",
+   "label": "ΔΗΜΟΣ ΧΑΝΙΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6319",
+   "label": "ΔΗΜΟΣ ΧΕΡΣΟΝΗΣΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6320",
+   "label": "ΔΗΜΟΣ ΧΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6321",
+   "label": "ΔΗΜΟΣ ΨΑΡΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6322",
+   "label": "ΔΗΜΟΣ ΦΙΛΟΘΕΗΣ - ΨΥΧΙΚΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6323",
+   "label": "ΔΗΜΟΣ ΩΡΑΙΟΚΑΣΤΡΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6324",
+   "label": "ΔΗΜΟΣ ΩΡΩΠΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6325",
+   "label": "ΔΗΜΟΣ ΗΡΑΚΛΕΙΟΥ (ΚΡΗΤΗΣ)",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6226",
+   "label": "ΔΗΜΟ ΑΡΓΟΥΣ ΟΡΕΣΤΙΚΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "100035023",
+   "label": "ΔΗΜΟΣ  ΝΕΑΣ  ΦΙΛΑΔΕΛΦΕΙΑΣ - ΝΕΑΣ ΧΑΛΚΗΔΟΝΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "100048870",
+   "label": "ΔΗΜΟΣ ΣΕΡΒΙΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "100049029",
+   "label": "ΔΗΜΟΣ ΜΥΤΙΛΗΝΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "100049102",
+   "label": "ΔΗΜΟΣ ΑΡΓΟΣΤΟΛΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "100049127",
+   "label": "ΔΗΜΟΣ ΛΗΞΟΥΡΙΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "100049133",
+   "label": "ΔΗΜΟΣ ΣΑΜΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "100049209",
+   "label": "ΔΗΜΟΣ ΚΕΝΤΡΙΚΗΣ ΚΕΡΚΥΡΑΣ ΚΑΙ ΔΙΑΠΟΝΤΙΩΝ ΝΗΣΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "100049235",
+   "label": "ΔΗΜΟΣ ΝΟΤΙΑΣ ΚΕΡΚΥΡΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "100049339",
+   "label": "ΔΗΜΟΣ ΒΟΡΕΙΑΣ ΚΕΡΚΥΡΑΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "100049544",
+   "label": "ΔΗΜΟΣ ΑΝΑΤΟΛΙΚΗΣ ΣΑΜΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "100049554",
+   "label": "ΔΗΜΟΣ ΔΥΤΙΚΗΣ ΣΑΜΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "100048875",
+   "label": "ΔΗΜΟΣ ΒΕΛΒΕΝΤΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "100062933",
+   "label": "ΔΗΜΟΣ ΜΕΤΕΩΡΩΝ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "6191",
+   "label": "ΔΗΜΟΣ ΜΕΤΑΜΟΡΦΩΣΗΣ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "100049040",
+   "label": "ΔΗΜΟΣ ΔΥΤΙΚΗΣ ΛΕΣΒΟΥ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  },
+  {
+   "uid": "100072229",
+   "label": "ΕΝΕΡΓΕΙΑΚΗ ΚΟΙΝΟΤΗΤΑ ΑΓΡΙΝΙΟΥ ΣΥΝ ΠΕ",
+   "category": "MUNICIPALITY",
+   "parent_uid": null,
+   "status": "active"
+  }
+ ]
+}

@@ -54,6 +54,10 @@ async def fetch_all_orgs() -> list[dict]:
                 break
 
             for org in orgs:
+                # Only keep MUNICIPALITY orgs — Diavgeia has ~800k total units,
+                # but we only need ~332 municipalities for dimos matching.
+                if org.get("category") != "MUNICIPALITY":
+                    continue
                 all_orgs.append({
                     "uid": str(org.get("uid", "")),
                     "label": org.get("label", ""),
@@ -70,7 +74,9 @@ async def fetch_all_orgs() -> list[dict]:
                 with open(PARTIAL_PATH, "w", encoding="utf-8") as f:
                     json.dump({"organizations": all_orgs, "next_page": page}, f, ensure_ascii=False)
 
-            if len(orgs) < 500:
+            # Diavgeia API ignores size param and returns ~5400 orgs/page.
+            # Stop when fewer items returned (last page).
+            if len(orgs) < 100:
                 break
 
     # Cleanup partial
