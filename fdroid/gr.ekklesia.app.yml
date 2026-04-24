@@ -27,12 +27,6 @@ Description: |-
 
   This is NOT a government app. Votes are informational only.
 
-  Data sources: hellenicparliament.gr, diavgeia.gov.gr, data.gov.gr
-
-AntiFeatures:
-  NonFreeNet:
-    en-US: Uses HLR Lookup service and Expo Push Notification service (FCM)
-
 RepoType: git
 Repo: https://github.com/NeaBouli/pnyx
 
@@ -40,10 +34,13 @@ Builds:
   - versionName: 1.0.0
     versionCode: 5
     commit: pre-session-20260424
+    sudo:
+      - apt-get update
+      - apt-get install -y npm
+    init: cd apps/mobile && npm ci && npx expo prebuild --clean --platform android
     subdir: apps/mobile/android
     gradle:
       - play
-    prebuild: cd ../.. && npm ci && npx expo prebuild --clean --platform android
 
 AutoUpdateMode: None
 UpdateCheckMode: None
