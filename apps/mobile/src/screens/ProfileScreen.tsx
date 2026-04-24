@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Linking } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
@@ -22,6 +22,8 @@ export default function ProfileScreen() {
   const [language, setLanguage] = useState<"el" | "en">("el");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "upToDate" | "updateAvailable">("idle");
+  const [latestVersion, setLatestVersion] = useState<any>(null);
 
   useEffect(() => {
     (async () => {
@@ -127,10 +129,47 @@ export default function ProfileScreen() {
         <Text style={s.skipBtnText}>Αργότερα</Text>
       </TouchableOpacity>
 
-      {/* Version + Channel */}
+      {/* Version + Channel + Update Check */}
       <Text style={s.versionInfo}>
-        Έκδοση: {Constants.expoConfig?.version ?? "?"} | Κανάλι: {Constants.expoConfig?.extra?.distributionChannel === "play" ? "Google Play" : "Direct Download"}
+        Έκδοση: {Constants.expoConfig?.version ?? "?"} (v{Constants.expoConfig?.android?.versionCode ?? "?"}) | Κανάλι: {Constants.expoConfig?.extra?.distributionChannel === "play" ? "Google Play" : "Direct"}
       </Text>
+      <TouchableOpacity
+        style={s.updateBtn}
+        onPress={async () => {
+          setUpdateStatus("checking");
+          try {
+            const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
+            const res = await fetch(`${API}/api/v1/version`);
+            const data = await res.json();
+            setLatestVersion(data);
+            const current = Constants.expoConfig?.android?.versionCode ?? 0;
+            setUpdateStatus(data.versionCode > current ? "updateAvailable" : "upToDate");
+          } catch { setUpdateStatus("idle"); }
+        }}
+        disabled={updateStatus === "checking"}
+      >
+        {updateStatus === "checking" ? (
+          <ActivityIndicator color={colors.primary} size="small" />
+        ) : updateStatus === "upToDate" ? (
+          <Text style={s.updateText}>✅ Τρέχουσα έκδοση</Text>
+        ) : updateStatus === "updateAvailable" ? (
+          <Text style={[s.updateText, { color: colors.success }]}>🆕 Νέα έκδοση διαθέσιμη!</Text>
+        ) : (
+          <Text style={s.updateText}>🔄 Έλεγχος ενημερώσεων</Text>
+        )}
+      </TouchableOpacity>
+      {updateStatus === "updateAvailable" && latestVersion && (
+        <TouchableOpacity
+          style={s.downloadBtn}
+          onPress={() => {
+            const channel = Constants.expoConfig?.extra?.distributionChannel;
+            const url = channel === "play" ? latestVersion.playStoreUrl : latestVersion.downloadUrl;
+            Linking.openURL(url);
+          }}
+        >
+          <Text style={s.downloadBtnText}>Λήψη έκδοσης {latestVersion.version} →</Text>
+        </TouchableOpacity>
+      )}
     </ScrollView>
   );
 }
@@ -157,4 +196,8 @@ const s = StyleSheet.create({
   skipBtn: { alignItems: "center", padding: 14, marginTop: 8 },
   skipBtnText: { color: colors.textSecondary, fontWeight: "600", fontSize: 14 },
   versionInfo: { textAlign: "center", color: colors.textSecondary, fontSize: 11, marginTop: 24 },
+  updateBtn: { alignItems: "center", padding: 10, marginTop: 8 },
+  updateText: { fontSize: 13, fontWeight: "600", color: colors.primary },
+  downloadBtn: { backgroundColor: colors.success, borderRadius: 10, padding: 12, alignItems: "center", marginTop: 8 },
+  downloadBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
 });

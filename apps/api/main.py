@@ -121,6 +121,20 @@ async def health():
         ]
     }
 
+@app.get("/api/v1/version")
+async def app_version():
+    return {
+        "version": "1.0.0",
+        "versionCode": 4,
+        "minSupportedCode": 3,
+        "releaseNotes": {
+            "el": "Έκδοση 4 — Κλειστή Δοκιμή\n• Ασφάλεια: CORS + SSH\n• Analytics διόρθωση\n• POLIS OAuth",
+            "en": "Version 4 — Closed Testing\n• Security: CORS + SSH hardened\n• Analytics fix\n• POLIS OAuth",
+        },
+        "downloadUrl": "https://ekklesia.gr/download/ekklesia-latest.apk",
+        "playStoreUrl": "https://play.google.com/store/apps/details?id=gr.ekklesia.app",
+    }
+
 @app.get("/")
 async def root():
     return {"message": "Ekklesia.gr API — εκκλησία του δήμου"}
