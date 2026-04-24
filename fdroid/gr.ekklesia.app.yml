@@ -1,16 +1,12 @@
 Categories:
   - Connectivity
-
 License: MIT
-
 WebSite: https://ekklesia.gr
 SourceCode: https://github.com/NeaBouli/pnyx
 IssueTracker: https://github.com/NeaBouli/pnyx-community/issues
 
 Name: ekklesia
-
 Summary: Anonymous civic participation for Greek citizens
-
 Description: |-
   Open-source platform for anonymous civic participation in Greece.
 
@@ -27,6 +23,8 @@ Description: |-
 
   This is NOT a government app. Votes are informational only.
 
+  Data sources: hellenicparliament.gr, diavgeia.gov.gr, data.gov.gr
+
 RepoType: git
 Repo: https://github.com/NeaBouli/pnyx
 
@@ -34,15 +32,16 @@ Builds:
   - versionName: 1.0.0
     versionCode: 5
     commit: pre-session-20260424
+    subdir: apps/mobile/android
     sudo:
       - apt-get update
       - apt-get install -y npm
     init: cd apps/mobile && npm ci && npx expo prebuild --clean --platform android
-    subdir: apps/mobile/android
     gradle:
       - play
 
 AutoUpdateMode: None
 UpdateCheckMode: None
+
 CurrentVersion: 1.0.0
 CurrentVersionCode: 5
