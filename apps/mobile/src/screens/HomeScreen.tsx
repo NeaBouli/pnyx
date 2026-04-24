@@ -6,6 +6,7 @@ import { isVerified } from "../lib/crypto-native";
 import { fetchAnalyticsOverview } from "../lib/api";
 import { isDemoMode } from "../lib/demo";
 import { getResult } from "../lib/compassStore";
+import { registerForPushNotifications } from "../lib/notifications";
 import type { CompassResult } from "../compass/types";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
@@ -32,6 +33,7 @@ export default function HomeScreen() {
     isDemoMode().then(setDemo);
     fetchAnalyticsOverview().then(setAnalytics).catch(() => {});
     getResult().then(setCompassResult);
+    isVerified().then((v) => { if (v) registerForPushNotifications().catch(() => {}); });
   }, []);
 
   useEffect(() => {

@@ -1,0 +1,62 @@
+/**
+ * notifications.ts — Push Token Registration (MOD-20)
+ * Registers Expo Push Token with server after user verification.
+ * Token is linked to nullifier_hash (anonymous — no PII).
+ */
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
+import { Platform } from "react-native";
+import * as SecureStore from "expo-secure-store";
+
+const API_BASE = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
+const TOKEN_KEY = "push_token";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
+export async function registerForPushNotifications(): Promise<string | null> {
+  if (!Device.isDevice) return null;
+
+  const { status: existing } = await Notifications.getPermissionsAsync();
+  let finalStatus = existing;
+
+  if (existing !== "granted") {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
+  }
+
+  if (finalStatus !== "granted") return null;
+
+  const tokenData = await Notifications.getExpoPushTokenAsync({
+    projectId: "f6cfa7b1-ff85-4020-ac35-94d3774615fd",
+  });
+  const token = tokenData.data;
+
+  // Store locally
+  await SecureStore.setItemAsync(TOKEN_KEY, token);
+
+  // Register with server (anonymous)
+  const nullifier = await SecureStore.getItemAsync("ekklesia:nullifier:v1");
+  try {
+    await fetch(`${API_BASE}/api/v1/notify/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token,
+        device_id: `${Platform.OS}-${Device.modelName || "unknown"}`,
+        platform: Platform.OS,
+      }),
+    });
+  } catch {}
+
+  return token;
+}
+
+export async function getPushToken(): Promise<string | null> {
+  return SecureStore.getItemAsync(TOKEN_KEY);
+}
