@@ -1,0 +1,46 @@
+{
+  "decisions": [
+    {
+      "ada": "Ε7ΞΥ46ΜΨΦΖ-ΔΝΖ",
+      "subject": "Τροποποίηση κανονιστικής απόφασης λειτουργίας λαϊκών αγορών",
+      "protocolNumber": "12345/2026",
+      "issueDate": "2026-04-20T10:30:00Z",
+      "submissionTimestamp": "2026-04-19T14:20:00Z",
+      "organizationUid": "6183",
+      "organizationLabel": "ΔΗΜΟΣ ΑΘΗΝΑΙΩΝ",
+      "decisionTypeUid": "2.4.1",
+      "decisionTypeLabel": "Κανονιστική Πράξη",
+      "documentUrl": "https://diavgeia.gov.gr/doc/Ε7ΞΥ46ΜΨΦΖ-ΔΝΖ",
+      "status": "PUBLISHED",
+      "extraFieldValues": {}
+    },
+    {
+      "ada": "ΩΑΒ246ΜΧΝ2-ΘΚΛ",
+      "subject": "Κανονισμός καθαριότητας και προστασίας περιβάλλοντος",
+      "protocolNumber": "5678/2026",
+      "issueDate": "24/04/2026 09:15:00",
+      "submissionTimestamp": "2026-04-23T18:00:00Z",
+      "organizationUid": "6219",
+      "organizationLabel": "ΔΗΜΟΣ ΘΕΣΣΑΛΟΝΙΚΗΣ",
+      "decisionTypeUid": "2.4.1",
+      "decisionTypeLabel": "Κανονιστική Πράξη",
+      "documentUrl": "https://diavgeia.gov.gr/doc/ΩΑΒ246ΜΧΝ2-ΘΚΛ",
+      "status": "PUBLISHED",
+      "extraFieldValues": {}
+    },
+    {
+      "ada": "ΨΔΕΦ46ΠΣΩΓ-ΜΝΞ",
+      "subject": "Ρύθμιση κυκλοφορίας στο κέντρο της πόλης",
+      "protocolNumber": "9012/2026",
+      "issueDate": "2026-04-22T15:45:00Z",
+      "submissionTimestamp": "2026-04-21T11:30:00Z",
+      "organizationUid": "6400",
+      "organizationLabel": "ΔΗΜΟΣ ΠΑΤΡΕΩΝ",
+      "decisionTypeUid": "2.4.1",
+      "decisionTypeLabel": "Κανονιστική Πράξη",
+      "documentUrl": "https://diavgeia.gov.gr/doc/ΨΔΕΦ46ΠΣΩΓ-ΜΝΞ",
+      "status": "PUBLISHED",
+      "extraFieldValues": {}
+    }
+  ]
+}

@@ -22,6 +22,7 @@ from routers import payments
 from routers import newsletter
 from routers import contact
 from routers import notify
+from routers import diavgeia
 
 scheduler = AsyncIOScheduler()
 
@@ -152,6 +153,7 @@ app.include_router(payments.router)
 app.include_router(newsletter.router)
 app.include_router(contact.router)
 app.include_router(notify.router)
+app.include_router(diavgeia.router)
 
 @app.get("/health")
 async def health():
@@ -180,6 +182,7 @@ async def health():
             "MOD-18 Community Donations",
             "MOD-19 Newsletter (Listmonk + Brevo)",
             "MOD-20 Push Notifications",
+            "MOD-21 Diavgeia Integration",
         ]
     }
 
