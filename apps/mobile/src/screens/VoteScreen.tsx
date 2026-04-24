@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Share,
 } from "react-native";
 import * as LocalAuthentication from "expo-local-authentication";
 import type { StackScreenProps } from "@react-navigation/stack";
@@ -97,9 +98,23 @@ export default function VoteScreen({ route, navigation }: Props) {
     }
   }
 
+  const shareBill = async () => {
+    try {
+      await Share.share({
+        title: billTitle,
+        message: `${billTitle}\n\nΨήφισε ανώνυμα στην εκκλησία:\nhttps://ekklesia.gr/el/bills/${billId}`,
+      });
+    } catch {}
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{billTitle}</Text>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <Text style={[styles.title, { flex: 1 }]}>{billTitle}</Text>
+        <TouchableOpacity onPress={shareBill} style={{ padding: 8 }}>
+          <Text style={{ fontSize: 20, color: colors.primary }}>↗</Text>
+        </TouchableOpacity>
+      </View>
       <Text style={styles.info}>
         Επιλέξτε την ψήφο σας. Απαιτείται βιομετρική πιστοποίηση.
       </Text>

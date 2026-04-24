@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Share } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { fetchBills } from "../lib/api";
@@ -37,6 +37,15 @@ export default function BillsScreen() {
 
   const filtered = filter === "ALL" ? bills : bills.filter(b => b.status === filter);
 
+  const shareBill = async (bill: any) => {
+    try {
+      await Share.share({
+        title: bill.title_el,
+        message: `${bill.title_el}\n\nΨήφισε ανώνυμα στην εκκλησία:\nhttps://ekklesia.gr/el/bills/${bill.id}`,
+      });
+    } catch {}
+  };
+
   if (loading) return <View style={s.center}><ActivityIndicator color={colors.primary} size="large" /></View>;
 
   return (
@@ -63,7 +72,12 @@ export default function BillsScreen() {
               {item.pill_el && <Text style={s.cardPill} numberOfLines={1}>{item.pill_el}</Text>}
               <View style={s.cardFooter}>
                 <Text style={[s.cardStatus, { color: STATUS_COLORS[item.status] ?? colors.textTertiary }]}>{STATUS_LABELS[item.status] ?? item.status}</Text>
-                {VOTABLE.includes(item.status) && <Text style={s.voteHint}>Ψηφίστε →</Text>}
+                <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+                  <TouchableOpacity onPress={(e) => { e.stopPropagation(); shareBill(item); }} hitSlop={8}>
+                    <Text style={s.shareBtn}>↗</Text>
+                  </TouchableOpacity>
+                  {VOTABLE.includes(item.status) && <Text style={s.voteHint}>Ψηφίστε →</Text>}
+                </View>
               </View>
             </View>
           </TouchableOpacity>
@@ -89,6 +103,7 @@ const s = StyleSheet.create({
   cardPill: { fontSize: 12, color: colors.textSecondary, marginBottom: 6 },
   cardFooter: { flexDirection: "row", justifyContent: "space-between" },
   cardStatus: { fontSize: 11, fontWeight: "600" },
+  shareBtn: { fontSize: 16, color: colors.primary, fontWeight: "700" },
   voteHint: { fontSize: 11, color: colors.primary, fontWeight: "700" },
   empty: { color: colors.textSecondary, textAlign: "center", marginTop: 40 },
 });
