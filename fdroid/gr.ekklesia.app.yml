@@ -1,0 +1,55 @@
+Categories:
+  - Connectivity
+  - Politics
+
+License: MIT
+
+WebSite: https://ekklesia.gr
+SourceCode: https://github.com/NeaBouli/pnyx
+IssueTracker: https://github.com/NeaBouli/pnyx-community/issues
+
+Name: εκκλησία
+AutoName: ekklesia
+
+Summary: Anonymous direct democracy for Greek citizens
+Description: |-
+  εκκλησία is an open-source platform for anonymous civic participation.
+
+  Vote on real parliamentary bills anonymously using cryptographic
+  identity verification (HLR lookup, no SMS OTP). Your phone number
+  is never stored — only a cryptographic nullifier hash.
+
+  Features:
+  * Vote YES/NO/ABSTAIN on real Hellenic Parliament bills
+  * Political Compass (48 questions, 100% local — never leaves device)
+  * Divergence Index: compare citizen votes vs parliament decisions
+  * 325 municipalities + 13 regions
+  * Full anonymity: Ed25519 keypair, zero PII stored
+
+  This is NOT a government app. Votes are informational only.
+
+  Data sources: hellenicparliament.gr, diavgeia.gov.gr, data.gov.gr
+
+AntiFeatures:
+  NonFreeNet:
+    en-US: Uses HLR lookup API for phone verification and Expo Push Notifications (FCM)
+
+RepoType: git
+Repo: https://github.com/NeaBouli/pnyx
+
+Builds:
+  - versionName: 1.0.0
+    versionCode: 5
+    commit: v1.0.0-fdroid
+    subdir: apps/mobile/android
+    gradle:
+      - free
+    prebuild:
+      - cd ../..
+      - npm ci
+      - npx expo prebuild --clean --platform android
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 1.0.0
+CurrentVersionCode: 5
