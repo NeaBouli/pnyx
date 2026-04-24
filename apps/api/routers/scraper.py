@@ -50,7 +50,7 @@ HF_API_KEY   = os.getenv("HF_API_KEY", "")
 async def fetch_with_fallback(url: str) -> Optional[str]:
     """1. Direkt HTTP → 2. Jina Reader → 3. None"""
     headers = {
-        "User-Agent": "Mozilla/5.0 (compatible; Ekklesia/1.0; +https://ekklesia.gr)",
+        "User-Agent": SCRAPE_USER_AGENT,
         "Accept-Language": "el-GR,el;q=0.9,en;q=0.8",
     }
 
@@ -224,21 +224,32 @@ async def generate_summaries(bill_text: str, title_el: str) -> dict:
 
 PARLIAMENT_API = "https://www.hellenicparliament.gr/api.ashx"
 
+# Soft scraping config
+SCRAPE_USER_AGENT = "ekklesia.gr/1.0 (civic-tech; +https://ekklesia.gr/wiki/api.html)"
+SCRAPE_DELAY_SECONDS = 5
+SCRAPE_MAX_REQUESTS = 20
+
 
 async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
     """Fetches latest bills from hellenicparliament.gr official REST API.
 
     Uses the Open Data API (api.ashx?q=laws) instead of HTML scraping.
-    Categories: ν = Σχέδιο νόμου (bill), νο = Νόμος (law), πν = Πρόταση νόμου (proposal).
+    Soft scraping: 5s delay between requests, proper User-Agent, max 20 req/session.
     """
+    import asyncio
     bills = []
+    request_count = 0
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            # Fetch recent bills (Σχέδια νόμου + ψηφισθέντα)
             for cat in ["%CE%BD", "%CE%BD%CE%BF"]:  # ν (bills), νο (laws)
+                if request_count >= SCRAPE_MAX_REQUESTS:
+                    break
+                if request_count > 0:
+                    await asyncio.sleep(SCRAPE_DELAY_SECONDS)
+                request_count += 1
                 r = await client.get(
                     PARLIAMENT_API, params={"q": "laws", "cat": cat},
-                    headers={"User-Agent": "Mozilla/5.0 (compatible; Ekklesia/1.0; +https://ekklesia.gr)",
+                    headers={"User-Agent": SCRAPE_USER_AGENT,
                              "Accept": "application/json", "Accept-Language": "el-GR,el;q=0.9"},
                 )
                 if r.status_code == 403:

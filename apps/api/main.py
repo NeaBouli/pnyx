@@ -99,11 +99,11 @@ async def scheduled_notify_results():
 @asynccontextmanager
 async def lifespan(app):
     # Startup
-    scheduler.add_job(scheduled_scrape, IntervalTrigger(hours=6), id="parliament_scrape", replace_existing=True)
+    scheduler.add_job(scheduled_scrape, IntervalTrigger(hours=12), id="parliament_scrape", replace_existing=True)
     scheduler.add_job(scheduled_notify_new_bills, IntervalTrigger(minutes=30), id="notify_new_bills", replace_existing=True)
     scheduler.add_job(scheduled_notify_results, IntervalTrigger(hours=1), id="notify_results", replace_existing=True)
     scheduler.start()
-    logger.info("[MOD-03] APScheduler started — scrape 6h, notify-bills 30m, notify-results 1h")
+    logger.info("[MOD-03] APScheduler started — scrape 12h, notify-bills 30m, notify-results 1h")
     yield
     # Shutdown
     scheduler.shutdown()
