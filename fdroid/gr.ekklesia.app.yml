@@ -1,6 +1,5 @@
 Categories:
   - Connectivity
-  - Politics
 
 License: MIT
 
@@ -8,23 +7,23 @@ WebSite: https://ekklesia.gr
 SourceCode: https://github.com/NeaBouli/pnyx
 IssueTracker: https://github.com/NeaBouli/pnyx-community/issues
 
-Name: εκκλησία
-AutoName: ekklesia
+Name: ekklesia
 
-Summary: Anonymous direct democracy for Greek citizens
+Summary: Anonymous civic participation for Greek citizens
+
 Description: |-
-  εκκλησία is an open-source platform for anonymous civic participation.
+  Open-source platform for anonymous civic participation in Greece.
 
-  Vote on real parliamentary bills anonymously using cryptographic
-  identity verification (HLR lookup, no SMS OTP). Your phone number
-  is never stored — only a cryptographic nullifier hash.
+  Vote on real Hellenic Parliament bills anonymously using cryptographic
+  identity verification. Your phone number is never stored, only a
+  cryptographic nullifier hash is kept.
 
   Features:
-  * Vote YES/NO/ABSTAIN on real Hellenic Parliament bills
-  * Political Compass (48 questions, 100% local — never leaves device)
-  * Divergence Index: compare citizen votes vs parliament decisions
-  * 325 municipalities + 13 regions
-  * Full anonymity: Ed25519 keypair, zero PII stored
+  * Vote YES/NO/ABSTAIN on real parliamentary bills
+  * Political Compass (48 questions, local only)
+  * Divergence Index: citizen votes vs parliament decisions
+  * 325 municipalities and 13 regions covered
+  * Full anonymity via Ed25519 cryptography
 
   This is NOT a government app. Votes are informational only.
 
@@ -32,7 +31,7 @@ Description: |-
 
 AntiFeatures:
   NonFreeNet:
-    en-US: Uses HLR lookup API for phone verification and Expo Push Notifications (FCM)
+    en-US: Uses HLR Lookup service and Expo Push Notification service (FCM)
 
 RepoType: git
 Repo: https://github.com/NeaBouli/pnyx
@@ -40,16 +39,13 @@ Repo: https://github.com/NeaBouli/pnyx
 Builds:
   - versionName: 1.0.0
     versionCode: 5
-    commit: v1.0.0-fdroid
+    commit: pre-session-20260424
     subdir: apps/mobile/android
     gradle:
-      - free
-    prebuild:
-      - cd ../..
-      - npm ci
-      - npx expo prebuild --clean --platform android
+      - play
+    prebuild: cd ../.. && npm ci && npx expo prebuild --clean --platform android
 
-AutoUpdateMode: Version
-UpdateCheckMode: Tags
+AutoUpdateMode: None
+UpdateCheckMode: None
 CurrentVersion: 1.0.0
 CurrentVersionCode: 5
