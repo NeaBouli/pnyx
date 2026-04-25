@@ -53,14 +53,14 @@ function HeroSection() {
 
       {/* CTA */}
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Link href="vaa"
-          className="px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg transition-all shadow-lg shadow-blue-200 hover:scale-105">
-          {isEl ? "🗳️ Ξεκινήστε την Πυξίδα" : "🗳️ Start VoteCompass"}
-        </Link>
         <Link href="bills"
-          className="px-10 py-4 bg-white hover:bg-gray-50 text-gray-800 rounded-2xl font-bold text-lg transition-all shadow-md border border-gray-200 hover:scale-105">
+          className="px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg transition-all shadow-lg shadow-blue-200 hover:scale-105">
           {isEl ? "🏛️ Δείτε τα Νομοσχέδια" : "🏛️ See Parliament Bills"}
         </Link>
+        <a href="https://ekklesia.gr/download/"
+          className="px-10 py-4 bg-white hover:bg-gray-50 text-gray-800 rounded-2xl font-bold text-lg transition-all shadow-md border border-gray-200 hover:scale-105">
+          {isEl ? "📱 Κατεβάστε την Εφαρμογή" : "📱 Download the App"}
+        </a>
       </div>
 
       {/* Social Proof */}
@@ -129,9 +129,9 @@ function FeaturesSection() {
   const features = isEl ? [
     {
       icon: "🗳️", color: "bg-blue-50 border-blue-200", iconBg: "bg-blue-100",
-      title: "Πολιτική Πυξίδα",
-      desc: "38 πολιτικές θέσεις. 8 κόμματα. Δείτε με ποιο κόμμα συμφωνείτε περισσότερο — σε περίπου 10 λεπτά.",
-      cta: "Ξεκινήστε →", href: "vaa",
+      title: "Ψηφοφορία Πολιτών",
+      desc: "Ψηφίστε για πραγματικά νομοσχέδια. Ανώνυμα, με Ed25519 κρυπτογραφική υπογραφή. Χωρίς λογαριασμό.",
+      cta: "Δείτε νομοσχέδια →", href: "bills",
     },
     {
       icon: "🏛️", color: "bg-green-50 border-green-200", iconBg: "bg-green-100",
@@ -149,7 +149,7 @@ function FeaturesSection() {
       icon: "🔐", color: "bg-yellow-50 border-yellow-200", iconBg: "bg-yellow-100",
       title: "Απόλυτη Ανωνυμία",
       desc: "Ed25519 κρυπτογράφηση. Nullifier Hash. Ο αριθμός σας διαγράφεται. Κανένα προσωπικό δεδομένο δεν αποθηκεύεται ποτέ.",
-      cta: "Μάθετε περισσότερα →", href: "verify",
+      cta: "Μάθετε περισσότερα →", href: "https://github.com/NeaBouli/pnyx/wiki/Security",
     },
     {
       icon: "📖", color: "bg-orange-50 border-orange-200", iconBg: "bg-orange-100",
@@ -166,8 +166,8 @@ function FeaturesSection() {
   ] : [
     {
       icon: "🗳️", color: "bg-blue-50 border-blue-200", iconBg: "bg-blue-100",
-      title: "VoteCompass", href: "vaa", cta: "Start →",
-      desc: "38 political positions. 8 parties. See which party you agree with most — in about 10 minutes.",
+      title: "Citizen Voting", href: "bills", cta: "See bills →",
+      desc: "Vote on real parliamentary bills. Anonymously, with Ed25519 cryptographic signatures. No account needed.",
     },
     {
       icon: "🏛️", color: "bg-green-50 border-green-200", iconBg: "bg-green-100",
@@ -181,7 +181,7 @@ function FeaturesSection() {
     },
     {
       icon: "🔐", color: "bg-yellow-50 border-yellow-200", iconBg: "bg-yellow-100",
-      title: "Full Anonymity", href: "verify", cta: "Learn more →",
+      title: "Full Anonymity", href: "https://github.com/NeaBouli/pnyx/wiki/Security", cta: "Learn more →",
       desc: "Ed25519 encryption. Nullifier Hash. Your number is deleted. No personal data is ever stored.",
     },
     {
@@ -298,9 +298,9 @@ function DemocracyCTA() {
             : "The ekklesia was the popular assembly of ancient Athens — where every citizen had a voice. Ekklesia.gr is its digital revival."}
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="vaa"
+          <Link href="bills"
             className="px-10 py-4 bg-white text-blue-700 rounded-2xl font-bold text-lg hover:bg-blue-50 transition-all shadow-lg hover:scale-105">
-            {isEl ? "🗳️ Ξεκινήστε τώρα — δωρεάν" : "🗳️ Start now — free"}
+            {isEl ? "🏛️ Δείτε τα Νομοσχέδια" : "🏛️ See Parliament Bills"}
           </Link>
           <a href="https://github.com/NeaBouli/pnyx/wiki"
             target="_blank" rel="noopener noreferrer"
@@ -326,8 +326,8 @@ function RoadmapSection() {
       color: "border-green-400 bg-green-50",
       badge: "bg-green-500",
       items: isEl
-        ? ["SMS Επαλήθευση", "Πολιτική Πυξίδα (8 κόμματα, 38 θέσεις)", "Ψηφοφορία Πολιτών", "Δείκτης Απόκλισης"]
-        : ["SMS Verification", "VoteCompass (8 parties, 38 positions)", "Citizen Voting", "Divergence Score"],
+        ? ["SMS Επαλήθευση", "Ψηφοφορία Πολιτών", "Δείκτης Απόκλισης", "Διαύγεια Ενσωμάτωση"]
+        : ["SMS Verification", "Citizen Voting", "Divergence Score", "Diavgeia Integration"],
     },
     {
       phase: "Alpha",
@@ -457,9 +457,9 @@ function Footer() {
           <div>
             <p className="text-white font-semibold mb-3">{isEl ? "Πλατφόρμα" : "Platform"}</p>
             <ul className="space-y-2 text-sm">
-              <li><Link href="vaa" className="hover:text-white transition-colors">{isEl ? "Πολιτική Πυξίδα" : "VoteCompass"}</Link></li>
               <li><Link href="bills" className="hover:text-white transition-colors">{isEl ? "Νομοσχέδια" : "Bills"}</Link></li>
-              <li><Link href="verify" className="hover:text-white transition-colors">{isEl ? "Επαλήθευση" : "Verify"}</Link></li>
+              <li><Link href="results" className="hover:text-white transition-colors">{isEl ? "Αποτελέσματα" : "Results"}</Link></li>
+              <li><a href="https://ekklesia.gr/download/" className="hover:text-white transition-colors">{isEl ? "Εφαρμογή" : "App"}</a></li>
             </ul>
           </div>
           <div>

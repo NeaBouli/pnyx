@@ -9,14 +9,14 @@ import StatusBadge from "@/components/StatusBadge";
 import RelevanceButtons from "@/components/RelevanceButtons";
 import BillResultReport from "@/components/BillResultReport";
 import CompassCard from "@/components/CompassCard";
+import QRCodeVoteStub from "@/components/QRCodeVoteStub";
 import { useCompass } from "@/lib/compass";
-// DivergenceCard replaced by BillResultReport
 
 const VOTE_OPTIONS = [
-  { value: "YES",     label_el: "Υπέρ",               label_en: "Yes",            color: "bg-green-700 hover:bg-green-600 border-green-600" },
-  { value: "NO",      label_el: "Κατά",               label_en: "No",             color: "bg-red-700 hover:bg-red-600 border-red-600" },
-  { value: "ABSTAIN", label_el: "Αποχή",              label_en: "Abstain",        color: "bg-gray-700 hover:bg-gray-600 border-gray-600" },
-  { value: "UNKNOWN", label_el: "Δεν γνωρίζω αρκετά", label_en: "Don't know enough", color: "bg-yellow-800 hover:bg-yellow-700 border-yellow-700" },
+  { value: "YES",     label_el: "Υπέρ",               label_en: "Yes",            color: "bg-green-600 hover:bg-green-700 border-green-500 text-white" },
+  { value: "NO",      label_el: "Κατά",               label_en: "No",             color: "bg-red-600 hover:bg-red-700 border-red-500 text-white" },
+  { value: "ABSTAIN", label_el: "Αποχή",              label_en: "Abstain",        color: "bg-gray-500 hover:bg-gray-600 border-gray-400 text-white" },
+  { value: "UNKNOWN", label_el: "Δεν γνωρίζω αρκετά", label_en: "Don't know enough", color: "bg-yellow-500 hover:bg-yellow-600 border-yellow-400 text-white" },
 ];
 
 const VOTABLE = ["ACTIVE", "WINDOW_24H", "OPEN_END"];
@@ -49,19 +49,15 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
   }, [billId]);
 
   async function handleVoteClick(choice: string) {
-    // 1. Check keypair
     const keypair = loadKeypair();
     const nullifier = loadNullifier();
 
     if (!keypair || !nullifier) {
-      // Save current path so verify page can redirect back
-      sessionStorage.setItem("verify_redirect", window.location.pathname);
       setVoteStatus("needs_key");
       setSelectedVote(choice);
       return;
     }
 
-    // 2. Sign vote with Ed25519
     setVoteLoading(true);
     setVoteError(null);
     setSelectedVote(choice);
@@ -73,7 +69,6 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
         nullifier_hash: nullifier,
       });
 
-      // 3. POST to API
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.ekklesia.gr";
       const res = await fetch(`${API_URL}/api/v1/vote`, {
         method: "POST",
@@ -88,9 +83,7 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
 
       if (res.ok) {
         setVoteStatus("voted");
-        // Record in compass
         compass.recordBillVote(billId, choice, bill?.categories || []);
-        // 4. Refresh results
         try {
           const resultsRes = await ekklesia.getResults(billId);
           setResults(resultsRes.data);
@@ -114,7 +107,7 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-gray-400 animate-pulse">
           {locale === "el" ? "Φόρτωση..." : "Loading..."}
         </div>
@@ -124,13 +117,15 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
 
   if (!bill) {
     return (
-      <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-5xl mb-4">🏛️</p>
-          <p className="text-gray-400">
+          <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">
+            🏛️
+          </div>
+          <p className="text-gray-600 font-medium">
             {locale === "el" ? "Νομοσχέδιο δεν βρέθηκε" : "Bill not found"}
           </p>
-          <Link href="../bills" className="mt-4 inline-block text-blue-400 hover:text-blue-300">
+          <Link href="../bills" className="mt-4 inline-block text-blue-600 hover:text-blue-700 font-semibold text-sm">
             ← {locale === "el" ? "Πίσω" : "Back"}
           </Link>
         </div>
@@ -141,15 +136,17 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
   const canVote = VOTABLE.includes(bill.status);
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white">
+    <main className="min-h-screen bg-gray-50">
       <div className="max-w-2xl mx-auto px-6 py-10">
-        <Link href="../bills" className="text-blue-400 text-sm hover:text-blue-300 mb-4 inline-block">
+        {/* Back link */}
+        <Link href="../bills" className="text-blue-600 text-sm hover:text-blue-700 mb-6 inline-flex items-center gap-1 font-medium">
           ← {locale === "el" ? "Πίσω στα Νομοσχέδια" : "Back to Bills"}
         </Link>
+
         {/* Status + ID */}
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-4 mt-4">
           <StatusBadge status={bill.status} locale={locale} />
-          <span className="text-xs text-gray-600 font-mono">{bill.id}</span>
+          <span className="text-xs text-gray-400 font-mono">{bill.id}</span>
         </div>
 
         {/* Official Parliament Link */}
@@ -158,7 +155,7 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
             href={(bill as any).parliament_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 mb-4 transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 mb-4 transition-colors font-medium"
           >
             🏛️ {locale === "el" ? "Επίσημο κείμενο στη Βουλή →" : "Official Parliament text →"}
           </a>
@@ -172,24 +169,24 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
           <RelevanceButtons billId={billId} locale={locale} />
         </div>
 
-        {/* Titel */}
-        <h1 className="text-2xl font-bold leading-snug mb-6">
+        {/* Title */}
+        <h1 className="text-2xl font-black text-gray-900 leading-snug mb-6">
           {bill[titleKey as keyof Bill] as string || bill.title_el}
         </h1>
 
-        {/* Kategorien */}
+        {/* Categories */}
         {bill.categories && (
           <div className="flex gap-2 mb-6 flex-wrap">
             {bill.categories.map(cat => (
-              <span key={cat} className="px-3 py-1 bg-gray-800 rounded-lg text-xs text-gray-400">
+              <span key={cat} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium">
                 {cat}
               </span>
             ))}
           </div>
         )}
 
-        {/* Zusammenfassung */}
-        <div className="bg-gray-900 rounded-2xl p-6 mb-6 border border-gray-800">
+        {/* Summary */}
+        <div className="bg-white rounded-2xl p-6 mb-6 border border-gray-200">
           <div className="flex gap-3 mb-4">
             {["short", "long"].map(level => (
               <button
@@ -198,7 +195,7 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
                 className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                   expanded === level
                     ? "bg-blue-600 text-white"
-                    : "bg-gray-800 text-gray-400 hover:text-white"
+                    : "bg-gray-100 text-gray-500 hover:text-gray-900"
                 }`}
               >
                 {level === "short"
@@ -207,7 +204,7 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
               </button>
             ))}
           </div>
-          <p className="text-gray-300 leading-relaxed">
+          <p className="text-gray-700 leading-relaxed">
             {expanded === "short"
               ? (bill[shortKey as keyof Bill] as string || bill.pill_el || "—")
               : (locale === "el" ? bill.summary_long_el : bill.summary_long_en) || "—"
@@ -215,11 +212,11 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
           </p>
         </div>
 
-        {/* ── ABSTIMMUNG ── */}
+        {/* ── VOTING ── */}
         {canVote && (
-          <div className="bg-gray-900 rounded-2xl p-6 mb-6 border border-gray-800">
-            <h2 className="font-bold text-lg mb-4">
-              🗳️ {locale === "el" ? "Η ψήφος σας" : "Your vote"}
+          <div className="bg-white rounded-2xl p-6 mb-6 border border-gray-200">
+            <h2 className="font-bold text-lg text-gray-900 mb-4">
+              {locale === "el" ? "Η ψήφος σας" : "Your vote"}
             </h2>
 
             <div className="grid grid-cols-2 gap-3 mb-4">
@@ -230,8 +227,8 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
                   disabled={voteLoading || voteStatus === "voted"}
                   className={`py-4 px-4 rounded-xl font-semibold border-2 transition-all ${opt.color} ${
                     selectedVote === opt.value
-                      ? "ring-2 ring-white scale-105"
-                      : "opacity-80"
+                      ? "ring-2 ring-blue-600 scale-105"
+                      : "opacity-90"
                   } ${(voteLoading || voteStatus === "voted") ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {voteLoading && selectedVote === opt.value
@@ -243,23 +240,22 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
 
             {/* Vote Status Messages */}
             {voteStatus === "needs_key" && (
-              <div className="bg-yellow-900/50 border border-yellow-700 rounded-xl p-4 text-yellow-300 text-sm">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-yellow-800 text-sm">
                 <p className="font-semibold mb-2">
                   {locale === "el"
                     ? "Απαιτείται επαλήθευση ταυτότητας"
                     : "Identity verification required"}
                 </p>
-                <Link
-                  href="../verify"
-                  className="inline-block px-4 py-2 bg-yellow-700 hover:bg-yellow-600 rounded-lg font-semibold transition-colors"
-                >
-                  {locale === "el" ? "Επαλήθευση →" : "Verify →"}
-                </Link>
+                <p className="text-yellow-700 text-xs">
+                  {locale === "el"
+                    ? "Κατεβάστε την εφαρμογή εκκλησία για να επαληθεύσετε την ταυτότητά σας και να ψηφίσετε."
+                    : "Download the ekklesia app to verify your identity and vote."}
+                </p>
               </div>
             )}
 
             {voteStatus === "voted" && (
-              <div className="bg-green-900/50 border border-green-700 rounded-xl p-4 text-green-300 text-sm">
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-green-800 text-sm">
                 ✓ {locale === "el"
                   ? `Ψήφος "${selectedVote}" καταγράφηκε με Ed25519 υπογραφή.`
                   : `Vote "${selectedVote}" recorded with Ed25519 signature.`}
@@ -267,7 +263,7 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
             )}
 
             {voteStatus === "already" && (
-              <div className="bg-yellow-900/50 border border-yellow-700 rounded-xl p-4 text-yellow-300 text-sm">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-yellow-800 text-sm">
                 {locale === "el"
                   ? "Έχετε ήδη ψηφίσει για αυτό το νομοσχέδιο."
                   : "You have already voted on this bill."}
@@ -275,7 +271,7 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
             )}
 
             {voteStatus === "invalid_sig" && (
-              <div className="bg-red-900/50 border border-red-700 rounded-xl p-4 text-red-300 text-sm">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-800 text-sm">
                 {locale === "el"
                   ? "Μη έγκυρη υπογραφή. Δοκιμάστε νέα επαλήθευση."
                   : "Invalid signature. Try re-verifying."}
@@ -283,18 +279,23 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
             )}
 
             {voteStatus === "error" && voteError && (
-              <div className="bg-red-900/50 border border-red-700 rounded-xl p-4 text-red-300 text-sm">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-800 text-sm">
                 {voteError}
               </div>
             )}
 
-            <p className="text-gray-600 text-xs mt-3">
+            <p className="text-gray-400 text-xs mt-3">
               {locale === "el"
                 ? "Η ψηφοφορία δεν είναι νομικά δεσμευτική."
                 : "This vote is not legally binding."}
             </p>
           </div>
         )}
+
+        {/* ── QR CODE STUB ── */}
+        <div className="mb-6">
+          <QRCodeVoteStub />
+        </div>
 
         {/* ── COMPASS CARD ── */}
         <div className="mb-6">
@@ -322,11 +323,19 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
         )}
       </div>
 
-      <footer className="border-t border-gray-800 px-6 py-6 text-center text-xs text-gray-600">
-        © 2026 Vendetta Labs — MIT License —{" "}
-        <a href="https://github.com/NeaBouli/pnyx" className="hover:text-gray-400" target="_blank">
-          Open Source
-        </a>
+      {/* Footer */}
+      <footer className="border-t border-gray-200 px-6 py-6 text-center text-xs text-gray-400">
+        <p>
+          {locale === "el"
+            ? "Μη κρατική εφαρμογή — ενημερωτικός χαρακτήρας"
+            : "Non-governmental application — informational purposes only"}
+        </p>
+        <p className="mt-1">
+          © 2026 Vendetta Labs — MIT License —{" "}
+          <a href="https://github.com/NeaBouli/pnyx" className="hover:text-gray-600" target="_blank">
+            Open Source
+          </a>
+        </p>
       </footer>
     </main>
   );

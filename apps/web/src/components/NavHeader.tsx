@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useLocale } from "next-intl";
 import { usePathname } from "next/navigation";
 import { clsx } from "clsx";
@@ -10,20 +11,21 @@ export default function NavHeader() {
   const path = usePathname();
 
   const navLinks = [
-    { href: `/${locale}`,        label_el: "Αρχική",       label_en: "Home"    },
-    { href: `/${locale}/vaa`,    label_el: "Πολιτική Πυξίδα",  label_en: "Political Compass" },
-    { href: `/${locale}/bills`,  label_el: "Νομοσχέδια",  label_en: "Bills"   },
-    { href: `/${locale}/compass`, label_el: "Πυξίδα",     label_en: "Compass" },
-    { href: `/${locale}/verify`, label_el: "Επαλήθευση",  label_en: "Verify"  },
+    { href: `/${locale}`,       label_el: "Αρχική",      label_en: "Home" },
+    { href: `/${locale}/bills`, label_el: "Νομοσχέδια",  label_en: "Bills" },
+    { href: `/${locale}/results`, label_el: "Αποτελέσματα", label_en: "Results" },
   ];
 
   const otherLocale = locale === "el" ? "en" : "el";
-  const otherPath   = path.replace(`/${locale}`, `/${otherLocale}`);
+  const otherPath = path.replace(`/${locale}`, `/${otherLocale}`);
 
   return (
-    <header className="border-b border-gray-800 px-6 py-4 flex justify-between items-center sticky top-0 bg-gray-950/95 backdrop-blur-sm z-50">
-      <Link href={`/${locale}`} className="text-blue-400 font-bold text-xl tracking-tight">
-        εκκλησία
+    <header className="border-b border-gray-200 bg-white/95 backdrop-blur-sm px-6 py-3 flex justify-between items-center sticky top-0 z-50">
+      <Link href={`/${locale}`} className="flex items-center gap-2 group">
+        <Image src="/pnx.png" alt="εκκλησία" width={32} height={32} className="rounded-lg" />
+        <span className="text-blue-600 font-bold text-lg tracking-tight group-hover:text-blue-700 transition-colors">
+          εκκλησία
+        </span>
       </Link>
 
       <nav className="hidden sm:flex gap-1">
@@ -33,9 +35,9 @@ export default function NavHeader() {
             href={link.href}
             className={clsx(
               "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-              path === link.href || path.startsWith(link.href + "/")
-                ? "bg-blue-900 text-blue-300"
-                : "text-gray-400 hover:text-white hover:bg-gray-800"
+              path === link.href || (link.href !== `/${locale}` && path.startsWith(link.href))
+                ? "bg-blue-50 text-blue-700"
+                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
             )}
           >
             {locale === "el" ? link.label_el : link.label_en}
@@ -46,7 +48,7 @@ export default function NavHeader() {
       <div className="flex items-center gap-3">
         <Link
           href={otherPath}
-          className="text-sm text-gray-500 hover:text-gray-300 transition-colors px-2 py-1 rounded-lg hover:bg-gray-800"
+          className="text-sm font-semibold text-gray-500 hover:text-blue-600 transition-colors px-2 py-1 rounded-lg hover:bg-blue-50"
         >
           {otherLocale.toUpperCase()}
         </Link>
@@ -54,7 +56,7 @@ export default function NavHeader() {
           href="https://github.com/NeaBouli/pnyx"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-gray-500 hover:text-gray-300 transition-colors"
+          className="text-gray-400 hover:text-gray-600 transition-colors"
           title="GitHub"
         >
           <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
