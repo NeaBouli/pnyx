@@ -46,7 +46,7 @@ export default function MunicipalPage() {
   }
 
   if (loading) return (
-    <main className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+    <main className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-gray-400 animate-pulse">{el("Φόρτωση...", "Loading...")}</div>
     </main>
   );
@@ -54,16 +54,16 @@ export default function MunicipalPage() {
   const selectedPeriferia = periferias.find(p => p.id === selected);
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white">
+    <main className="min-h-screen bg-gray-50">
       <div className="max-w-2xl mx-auto px-6 py-8">
         <div className="flex justify-between items-center mb-6">
-          <Link href="../bills" className="text-blue-400 text-sm hover:text-blue-300">
+          <Link href="bills" className="text-blue-600 text-sm hover:text-blue-700 font-medium">
             ← {el("Νομοσχέδια", "Bills")}
           </Link>
-          <h1 className="text-xl font-bold">{el("Τοπική Αυτοδιοίκηση", "Municipal Governance")}</h1>
+          <h1 className="text-xl font-bold text-gray-900">{el("Τοπική Αυτοδιοίκηση", "Municipal Governance")}</h1>
         </div>
 
-        <p className="text-gray-400 text-sm mb-6">
+        <p className="text-gray-500 text-sm mb-6">
           {el(
             "Περιφέρειες και Δήμοι της Ελλάδας — MOD-16. Επιλέξτε μια περιφέρεια για να δείτε τους δήμους.",
             "Regions and Municipalities of Greece — MOD-16. Select a region to view its municipalities."
@@ -78,20 +78,20 @@ export default function MunicipalPage() {
               onClick={() => loadDimoi(p.id)}
               className={`text-left px-3 py-2 rounded-lg text-sm transition-colors border ${
                 selected === p.id
-                  ? "border-blue-500 bg-blue-500/10 text-blue-300"
-                  : "border-gray-800 bg-gray-900 text-gray-300 hover:border-gray-600"
+                  ? "border-blue-400 bg-blue-50 text-blue-700"
+                  : "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:shadow-sm"
               }`}
             >
               <div className="font-medium">{locale === "el" ? p.name_el : (p.name_en || p.name_el)}</div>
-              <div className="text-xs text-gray-500">{p.code}</div>
+              <div className="text-xs text-gray-400">{p.code}</div>
             </button>
           ))}
         </div>
 
         {/* Dimoi List */}
         {selected && (
-          <div className="border border-gray-800 rounded-xl p-4">
-            <h2 className="text-lg font-bold mb-3">
+          <div className="border border-gray-200 rounded-xl p-4 bg-white">
+            <h2 className="text-lg font-bold text-gray-900 mb-3">
               {locale === "el"
                 ? selectedPeriferia?.name_el
                 : (selectedPeriferia?.name_en || selectedPeriferia?.name_el)}
@@ -104,18 +104,18 @@ export default function MunicipalPage() {
             ) : (
               <div className="space-y-2">
                 {dimoi.map(d => (
-                  <div key={d.id} className="flex justify-between items-center px-3 py-2 bg-gray-900 rounded-lg">
+                  <div key={d.id} className="flex justify-between items-center px-3 py-2 bg-gray-50 rounded-lg">
                     <div>
-                      <span className="text-sm font-medium">{locale === "el" ? d.name_el : (d.name_en || d.name_el)}</span>
+                      <span className="text-sm font-medium text-gray-900">{locale === "el" ? d.name_el : (d.name_en || d.name_el)}</span>
                     </div>
                     {d.population && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-400">
                         {d.population.toLocaleString()} {el("κάτ.", "pop.")}
                       </span>
                     )}
                   </div>
                 ))}
-                <div className="text-center text-xs text-gray-600 mt-2">
+                <div className="text-center text-xs text-gray-400 mt-2">
                   {dimoi.length} {el("δήμοι", "municipalities")}
                 </div>
               </div>
@@ -123,10 +123,15 @@ export default function MunicipalPage() {
           </div>
         )}
 
-        <div className="mt-8 text-center text-xs text-gray-600">
+        <div className="mt-8 text-center text-xs text-gray-400">
           MOD-16 · {el("Δεδομένα από Ελληνική Διοίκηση", "Data from Greek Administration")} · API: /api/v1/periferia
         </div>
       </div>
+
+      <footer className="border-t border-gray-200 px-6 py-6 text-center text-xs text-gray-400 mt-8">
+        <p>{el("Μη κρατική εφαρμογή — ενημερωτικός χαρακτήρας", "Non-governmental application — informational purposes only")}</p>
+        <p className="mt-1">© 2026 Vendetta Labs — MIT License — <a href="https://github.com/NeaBouli/pnyx" className="hover:text-gray-600" target="_blank">Open Source</a></p>
+      </footer>
     </main>
   );
 }
