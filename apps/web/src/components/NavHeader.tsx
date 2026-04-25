@@ -21,12 +21,12 @@ export default function NavHeader() {
 
   return (
     <header className="border-b border-gray-200 bg-white/95 backdrop-blur-sm px-6 py-3 flex justify-between items-center sticky top-0 z-50">
-      <Link href={`/${locale}`} className="flex items-center gap-2 group">
-        <Image src="/pnx.png" alt="εκκλησία" width={32} height={32} className="rounded-lg" />
+      <a href="https://ekklesia.gr" className="flex items-center gap-2 group">
+        <Image src="/pnx.png" alt="εκκλησία του έθνους" width={32} height={32} className="rounded-lg" />
         <span className="text-blue-600 font-bold text-lg tracking-tight group-hover:text-blue-700 transition-colors">
-          εκκλησία
+          εκκλησία<span className="text-xs font-normal text-gray-400 ml-1">του έθνους</span>
         </span>
-      </Link>
+      </a>
 
       <nav className="hidden sm:flex gap-1">
         {navLinks.map(link => {
