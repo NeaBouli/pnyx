@@ -44,7 +44,12 @@ apscheduler==3.11.2
 # Forms
 python-multipart==0.0.26
 
+# Diavgeia Integration (MOD-21)
+rapidfuzz>=3.0.0
+unidecode>=1.3.0
+
 # Testing
 pytest==8.3.3
 pytest-asyncio==1.3.0
 anyio==4.13.0
+respx>=0.21.0

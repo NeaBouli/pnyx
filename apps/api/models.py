@@ -5,9 +5,9 @@ Alle Tabellen: Identity, VAA, Parliament, Voting, Analytics
 from datetime import datetime
 from enum import Enum as PyEnum
 from sqlalchemy import (
-    Column, Integer, String, Text, SmallInteger, Boolean,
+    Column, Integer, BigInteger, String, Text, SmallInteger, Boolean,
     DateTime, JSON, ForeignKey, UniqueConstraint, Index,
-    CheckConstraint, Enum
+    CheckConstraint, Enum, Numeric
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from database import Base
@@ -305,6 +305,7 @@ class Decision(Base):
     authority_votes   = Column(JSONB, nullable=True)            # {"ΝΑΙ": 15, "ΟΧΙ": 8}
     status            = Column(Enum(BillStatus), default=BillStatus.ANNOUNCED, nullable=False)
     vote_date         = Column(DateTime, nullable=True)
+    diavgeia_ada      = Column(String(32), ForeignKey("diavgeia_decisions.ada", ondelete="SET NULL"), nullable=True)
 
     created_at        = Column(DateTime, default=datetime.utcnow)
     updated_at        = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -315,4 +316,63 @@ class Decision(Base):
         Index("idx_decisions_periferia", "periferia_id"),
         Index("idx_decisions_dimos", "dimos_id"),
         Index("idx_decisions_vote_date", "vote_date"),
+        Index("ix_decisions_diavgeia_ada", "diavgeia_ada"),
     )
+
+
+# ─── MOD-21: Diavgeia Integration ─────────────────────────────────────────
+
+class DiavgeiaDecision(Base):
+    """
+    Raw Diavgeia decisions (government transparency portal).
+    Separate from curated `decisions` table — raw layer for high-volume data.
+    """
+    __tablename__ = "diavgeia_decisions"
+
+    id                    = Column(BigInteger, primary_key=True, autoincrement=True)
+    ada                   = Column(String(32), unique=True, nullable=False)
+    subject               = Column(Text, nullable=False)
+    decision_type_uid     = Column(String(16), nullable=False)
+    decision_type_label   = Column(Text)
+    organization_uid      = Column(String(16), nullable=False)
+    organization_label    = Column(Text, nullable=False)
+    document_url          = Column(Text, nullable=False)
+    submission_timestamp  = Column(DateTime(timezone=True))
+    publish_timestamp     = Column(DateTime(timezone=True), nullable=False)
+    raw_payload           = Column(JSONB, nullable=False)
+    fetched_at            = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    dimos_id              = Column(Integer, ForeignKey("dimos.id", ondelete="SET NULL"), nullable=True)
+    periferia_id          = Column(Integer, ForeignKey("periferia.id", ondelete="SET NULL"), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("length(ada) BETWEEN 10 AND 32", name="diavgeia_decisions_ada_chk"),
+        Index("ix_diavgeia_decisions_org_published", "organization_uid", publish_timestamp.desc()),
+        Index("ix_diavgeia_decisions_dimos_published", "dimos_id", publish_timestamp.desc()),
+        Index("ix_diavgeia_decisions_type_published", "decision_type_uid", publish_timestamp.desc()),
+    )
+
+    def __repr__(self) -> str:
+        return f"<DiavgeiaDecision ada={self.ada} org={self.organization_uid}>"
+
+
+class DimosDiavgeiaOrg(Base):
+    """Mapping between ekklesia dimos and Diavgeia organization UIDs (1:N)."""
+    __tablename__ = "dimos_diavgeia_orgs"
+
+    id               = Column(Integer, primary_key=True, autoincrement=True)
+    dimos_id         = Column(Integer, ForeignKey("dimos.id", ondelete="CASCADE"), nullable=False)
+    diavgeia_uid     = Column(String(16), nullable=False)
+    org_label        = Column(Text, nullable=False)
+    org_category     = Column(String(32))
+    is_primary       = Column(Boolean, nullable=False, default=False)
+    match_confidence = Column(Numeric(4, 3))
+    verified_at      = Column(DateTime(timezone=True))
+    created_at       = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("dimos_id", "diavgeia_uid", name="uq_dimos_diavgeia_org"),
+        Index("ix_dimos_diavgeia_orgs_uid", "diavgeia_uid"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<DimosDiavgeiaOrg dimos={self.dimos_id} uid={self.diavgeia_uid}>"
