@@ -41,8 +41,8 @@ async def ask_agent(req: AskRequest, db: AsyncSession = Depends(get_db)):
 
     context_parts = []
     for b in bills:
-        title = b.title_el or b.title_en or b.bill_id
-        ctx = f"- {b.bill_id}: {title} (Status: {b.status.value})"
+        title = b.title_el or b.title_en or b.id
+        ctx = f"- {b.id}: {title} (Status: {b.status.value})"
         if b.pill_el:
             ctx += f" — {b.pill_el[:200]}"
         context_parts.append(ctx)
@@ -56,7 +56,7 @@ async def ask_agent(req: AskRequest, db: AsyncSession = Depends(get_db)):
     answer = await answer_citizen_question(req.question, context, req.lang)
 
     sources = [
-        {"bill_id": b.bill_id, "title": b.title_el or b.title_en}
+        {"bill_id": b.id, "title": b.title_el or b.title_en}
         for b in bills[:5]
     ]
 
