@@ -7,7 +7,7 @@ GET  /api/v1/bills/trending     — Nach Relevanz-Score sortiert
 """
 import logging
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -202,6 +202,7 @@ async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db)):
 
 @router.get("/{bill_id}/summary")
 async def get_bill_summary(
+    request: Request,
     bill_id: str,
     lang: str = "el",
     db: AsyncSession = Depends(get_db),

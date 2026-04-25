@@ -236,3 +236,62 @@ async def admin_stats(_key=Depends(verify_admin), db: AsyncSession = Depends(get
         "environment": os.environ.get("ENVIRONMENT", "development"),
         "admin_key_set": ADMIN_KEY != "dev-admin-key",
     }
+
+
+@router.post("/scraper/heal-status")
+async def admin_heal_status(_key=Depends(verify_admin)):
+    """Check auto-healing scraper status and healed selectors."""
+    import redis.asyncio as aioredis
+    redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
+    r = aioredis.from_url(redis_url, decode_responses=True)
+    keys = []
+    try:
+        async for key in r.scan_iter("scraper:healed:*"):
+            val = await r.get(key)
+            ttl = await r.ttl(key)
+            keys.append({"key": key, "selector": val, "ttl_hours": round(ttl / 3600, 1)})
+    except Exception:
+        pass
+    from services.ollama_service import ollama_available
+    return {
+        "ollama_available": await ollama_available(),
+        "healed_selectors": keys,
+        "total": len(keys),
+    }
+
+
+@router.post("/logs/explain")
+async def admin_explain_logs(
+    _key=Depends(verify_admin),
+    lines: int = Query(default=30, ge=5, le=200),
+):
+    """Ask Ollama to analyze recent API container logs."""
+    from services.ollama_service import ollama_generate, ollama_available
+    if not await ollama_available():
+        raise HTTPException(503, "Ollama unavailable")
+
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["tail", "-n", str(lines), "/proc/1/fd/2"],
+            capture_output=True, text=True, timeout=5,
+        )
+        log_text = result.stderr or result.stdout or ""
+    except Exception:
+        log_text = "(Could not read container logs)"
+
+    if not log_text.strip():
+        return {"analysis": "No log output available", "lines": 0}
+
+    prompt = (
+        "You are a server admin assistant for a Greek democracy platform (ekklesia.gr).\n"
+        "Analyze these API server logs. Report:\n"
+        "1. Any errors or warnings\n"
+        "2. Unusual patterns\n"
+        "3. Recommendations\n"
+        "Be concise. Answer in English.\n\n"
+        f"Logs:\n{log_text[:3000]}\n\n"
+        "Analysis:"
+    )
+    analysis = await ollama_generate(prompt, max_tokens=300)
+    return {"analysis": analysis, "lines": lines}

@@ -1,28 +1,37 @@
 """
 MOD-22: RAG Agent — Citizen Q&A powered by Ollama
 POST /api/v1/agent/ask — Answer citizen questions using DB context
+Rate limited: 5 requests/minute per IP (Ollama is CPU-intensive)
 """
 import logging
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from database import get_db
 from models import ParliamentBill, BillStatus
 from services.ollama_service import answer_citizen_question, ollama_available
 
 logger = logging.getLogger(__name__)
 
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/api/v1/agent", tags=["agent"])
 
 
 class AskRequest(BaseModel):
-    question: str
+    question: str = Field(..., min_length=3, max_length=500)
     lang: str = "el"
 
 
 @router.post("/ask")
-async def ask_agent(req: AskRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def ask_agent(
+    request: Request,
+    req: AskRequest,
+    db: AsyncSession = Depends(get_db),
+):
     """RAG Agent — answer citizen questions using DB context."""
     if not await ollama_available():
         raise HTTPException(503, "AI assistant temporarily unavailable")
