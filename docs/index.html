@@ -1279,15 +1279,34 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
   if(d) { var io=new IntersectionObserver(function(e){ if(e[0].isIntersecting){ io.disconnect(); clearResultData(); runCycle(); }},{threshold:0.3}); io.observe(d); }
 })();
 
-// Ticker
+// Ticker — live bills from API, fallback to static HTML
 (function() {
-  var tickers = [
-    { trackId: "t1", cards: 3, interval: 3000 },
-    { trackId: "t2", cards: 3, interval: 3500 },
-    { trackId: "t3", cards: 3, interval: 4000 },
-  ];
-  tickers.forEach(function(t) {
-    var track = document.getElementById(t.trackId);
+  var lang = document.documentElement.lang || "el";
+  var STATUS_BADGE = {
+    ACTIVE:    { el: "Βουλή · Ανοιχτή", en: "Parliament · Active", cls: "badge-green" },
+    ANNOUNCED: { el: "Βουλή · Ανακοινώθηκε", en: "Parliament · Announced", cls: "badge-yellow" },
+    WINDOW_24H:{ el: "Βουλή · 24ω", en: "Parliament · 24h", cls: "badge-yellow" },
+    OPEN_END:  { el: "Αποτέλεσμα", en: "Result", cls: "badge-blue" },
+    PARLIAMENT_VOTED: { el: "Ψηφίστηκε", en: "Voted", cls: "badge-blue" }
+  };
+
+  function billCard(b, cssClass) {
+    var s = STATUS_BADGE[b.status] || STATUS_BADGE.ACTIVE;
+    var title = (lang === "en" && b.title_en) ? b.title_en : b.title_el;
+    var badge = lang === "en" ? s.en : s.el;
+    var a = document.createElement("a");
+    a.href = "https://ekklesia.gr/" + lang + "/bills/" + b.id;
+    a.className = "t-card " + cssClass;
+    a.innerHTML =
+      '<span class="t-badge ' + s.cls + '">' + badge + '</span>' +
+      '<span class="t-title">' + title + '</span>' +
+      '<span class="t-meta" style="font-size:0.65rem;opacity:0.6">' +
+        (b.categories && b.categories[0] ? b.categories[0] : "") + '</span>';
+    return a;
+  }
+
+  function startCycle(trackId, interval) {
+    var track = document.getElementById(trackId);
     if (!track) return;
     var cards = track.querySelectorAll(".t-card");
     if (!cards.length) return;
@@ -1300,8 +1319,48 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
       cards[cur].classList.add("visible");
     }
     show(0);
-    setInterval(function() { show(cur + 1); }, t.interval);
-  });
+    if (cards.length > 1) setInterval(function() { show(cur + 1); }, interval);
+  }
+
+  function populateTrack(trackId, bills, cssClass) {
+    var track = document.getElementById(trackId);
+    if (!track || !bills.length) return;
+    track.innerHTML = "";
+    bills.forEach(function(b) { track.appendChild(billCard(b, cssClass)); });
+  }
+
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
+  }
+
+  fetch("https://api.ekklesia.gr/api/v1/bills")
+    .then(function(r) { return r.json(); })
+    .then(function(bills) {
+      if (!bills || !bills.length) throw new Error("empty");
+      var active = bills.filter(function(b) { return b.status === "ACTIVE" || b.status === "WINDOW_24H"; });
+      var announced = bills.filter(function(b) { return b.status === "ANNOUNCED"; });
+      var finished = bills.filter(function(b) { return b.status === "OPEN_END" || b.status === "PARLIAMENT_VOTED"; });
+      // Fill t1 with active+announced, t2 with announced, t3 with finished
+      var t1Bills = shuffle(active.concat(announced)).slice(0, 5);
+      var t2Bills = shuffle(announced.concat(active)).slice(0, 5);
+      var t3Bills = shuffle(finished).slice(0, 5);
+      if (t1Bills.length) populateTrack("t1", t1Bills, "al");
+      if (t2Bills.length) populateTrack("t2", t2Bills, "rc");
+      if (t3Bills.length) populateTrack("t3", t3Bills, "rs");
+      startCycle("t1", 3000);
+      startCycle("t2", 3500);
+      startCycle("t3", 4000);
+    })
+    .catch(function() {
+      // API unavailable or empty — keep static HTML fallback
+      startCycle("t1", 3000);
+      startCycle("t2", 3500);
+      startCycle("t3", 4000);
+    });
 })();
 
 // Contact form
