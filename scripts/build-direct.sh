@@ -14,4 +14,4 @@ cd android
 APK="app/build/outputs/apk/release/app-release.apk"
 echo ""
 echo "APK: apps/mobile/android/$APK"
-echo "Deploy: scp apps/mobile/android/$APK root@135.181.254.229:/opt/ekklesia/downloads/ekklesia-latest.apk"
+echo "Deploy: scp apps/mobile/android/\$APK root@<SERVER>:/opt/ekklesia/downloads/ekklesia-latest.apk"
