@@ -14,7 +14,7 @@ alembic==1.18.4
 redis==5.0.8
 
 # Config & Validation
-pydantic[email]==2.9.2
+pydantic[email]==2.13.3
 pydantic-settings==2.5.2
 
 # Crypto
