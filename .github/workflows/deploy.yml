@@ -31,10 +31,21 @@ jobs:
         id: changes
         run: |
           CHANGED=$(git diff HEAD~1 HEAD --name-only 2>/dev/null || echo "all")
-          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
-          echo "$CHANGED" | grep -q "apps/api/" && echo "api=true" >> $GITHUB_OUTPUT || echo "api=false" >> $GITHUB_OUTPUT
-          echo "$CHANGED" | grep -q "apps/web/\|docs/" && echo "web=true" >> $GITHUB_OUTPUT || echo "web=false" >> $GITHUB_OUTPUT
-          echo "$CHANGED" | grep -q "infra/docker/" && echo "infra=true" >> $GITHUB_OUTPUT || echo "infra=false" >> $GITHUB_OUTPUT
+          if echo "$CHANGED" | grep -qF "apps/api/"; then
+            echo "api=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "api=false" >> "$GITHUB_OUTPUT"
+          fi
+          if echo "$CHANGED" | grep -qE "apps/web/|docs/"; then
+            echo "web=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "web=false" >> "$GITHUB_OUTPUT"
+          fi
+          if echo "$CHANGED" | grep -qF "infra/docker/"; then
+            echo "infra=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "infra=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
