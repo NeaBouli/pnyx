@@ -32,7 +32,7 @@ export default function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL(`/tickets/${sub || "index.html"}`, request.url), 301);
     }
     if (section === "votes") {
-      return NextResponse.redirect(new URL(`/votes/${sub || "active.html"}`, request.url), 301);
+      return NextResponse.redirect(new URL("/el/bills", request.url), 301);
     }
     // section === "wiki"
     if (!sub || sub === "index") {
