@@ -12,7 +12,14 @@ from slowapi.errors import RateLimitExceeded
 
 logger = logging.getLogger(__name__)
 
-limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
+def _get_real_ip(request: Request) -> str:
+    """Extract real client IP from X-Forwarded-For (behind Traefik)."""
+    forwarded = request.headers.get("x-forwarded-for", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return get_remote_address(request)
+
+limiter = Limiter(key_func=_get_real_ip, default_limits=["60/minute"])
 from routers import identity, vaa, parliament, voting
 from routers import arweave
 from routers import scraper
