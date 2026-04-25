@@ -1488,5 +1488,58 @@ if (window.location.hash === "#contact" && sessionStorage.getItem("polis_token")
   </div>
 </div>
 
+<!-- Chat Widget — RAG Agent -->
+<div id="chatWidget" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999">
+  <button id="chatToggle" onclick="toggleChat()" style="width:56px;height:56px;border-radius:50%;background:#2563eb;color:white;border:none;cursor:pointer;font-size:1.5rem;box-shadow:0 4px 16px rgba(37,99,235,0.3);transition:all 0.2s" onmouseenter="this.style.transform='scale(1.1)'" onmouseleave="this.style.transform='scale(1)'">💬</button>
+  <div id="chatPanel" style="display:none;position:absolute;bottom:70px;right:0;width:360px;max-height:480px;background:white;border-radius:1rem;box-shadow:0 8px 32px rgba(0,0,0,0.15);border:1px solid #e2e8f0;overflow:hidden;flex-direction:column">
+    <div style="background:#2563eb;color:white;padding:0.75rem 1rem;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-weight:700;font-size:0.9rem" data-el="Ρωτήστε την εκκλησία" data-en="Ask ekklesia">Ρωτήστε την εκκλησία</span>
+      <button onclick="toggleChat()" style="background:none;border:none;color:white;font-size:1.2rem;cursor:pointer">✕</button>
+    </div>
+    <div id="chatMessages" style="flex:1;overflow-y:auto;padding:0.75rem;min-height:200px;max-height:320px;font-size:0.85rem;line-height:1.6">
+      <div style="background:#eff6ff;border-radius:0.75rem;padding:0.6rem 0.8rem;margin-bottom:0.5rem;color:#1e40af;font-size:0.8rem" data-el="Γεια σας! Ρωτήστε με οτιδήποτε σχετικά με τα νομοσχέδια, τις ψηφοφορίες ή την πλατφόρμα." data-en="Hello! Ask me anything about bills, votes, or the platform.">Γεια σας! Ρωτήστε με οτιδήποτε σχετικά με τα νομοσχέδια, τις ψηφοφορίες ή την πλατφόρμα.</div>
+    </div>
+    <div style="padding:0.5rem;border-top:1px solid #e2e8f0;display:flex;gap:0.5rem">
+      <input id="chatInput" type="text" style="flex:1;padding:0.5rem 0.75rem;border:2px solid #e2e8f0;border-radius:0.5rem;font-size:0.85rem;outline:none;font-family:inherit" onkeydown="if(event.key==='Enter')sendChat()" data-el-placeholder="Γράψτε την ερώτησή σας..." data-en-placeholder="Type your question...">
+      <button onclick="sendChat()" style="padding:0.5rem 1rem;background:#2563eb;color:white;border:none;border-radius:0.5rem;font-weight:700;font-size:0.85rem;cursor:pointer" data-el="Αποστολή" data-en="Send">Αποστολή</button>
+    </div>
+  </div>
+</div>
+<script>
+function toggleChat(){
+  var p=document.getElementById("chatPanel");
+  p.style.display=p.style.display==="none"?"flex":"none";
+  if(p.style.display==="flex"){
+    var inp=document.getElementById("chatInput");
+    inp.placeholder=inp.getAttribute("data-"+(typeof currentLang!=="undefined"?currentLang:"el")+"-placeholder")||"...";
+    inp.focus();
+  }
+}
+function sendChat(){
+  var inp=document.getElementById("chatInput");
+  var q=inp.value.trim();
+  if(!q)return;
+  inp.value="";
+  var msgs=document.getElementById("chatMessages");
+  msgs.innerHTML+='<div style="background:#f1f5f9;border-radius:0.75rem;padding:0.6rem 0.8rem;margin-bottom:0.5rem;text-align:right;color:#334155">'+q.replace(/</g,"&lt;")+'</div>';
+  msgs.innerHTML+='<div id="chatLoading" style="color:#94a3b8;font-size:0.8rem;padding:0.3rem 0.8rem">⏳...</div>';
+  msgs.scrollTop=msgs.scrollHeight;
+  var lang=(typeof currentLang!=="undefined")?currentLang:"el";
+  fetch("https://api.ekklesia.gr/api/v1/agent/ask",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({question:q,lang:lang})
+  }).then(function(r){return r.json()}).then(function(d){
+    var el=document.getElementById("chatLoading");
+    if(el)el.remove();
+    var answer=d.answer||((lang==="el")?"Δεν μπόρεσα να απαντήσω.":"I couldn't answer that.");
+    msgs.innerHTML+='<div style="background:#eff6ff;border-radius:0.75rem;padding:0.6rem 0.8rem;margin-bottom:0.5rem;color:#1e40af;font-size:0.8rem">'+answer.replace(/</g,"&lt;")+'</div>';
+    msgs.scrollTop=msgs.scrollHeight;
+  }).catch(function(){
+    var el=document.getElementById("chatLoading");
+    if(el)el.remove();
+    msgs.innerHTML+='<div style="background:#fef2f2;border-radius:0.75rem;padding:0.6rem 0.8rem;margin-bottom:0.5rem;color:#991b1b;font-size:0.8rem">⚠️ '+((lang==="el")?"Σφάλμα σύνδεσης":"Connection error")+'</div>';
+  });
+}
+</script>
 </body>
 </html>

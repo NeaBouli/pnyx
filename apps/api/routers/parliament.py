@@ -200,6 +200,55 @@ async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db)):
     )
 
 
+@router.get("/{bill_id}/summary")
+async def get_bill_summary(
+    bill_id: str,
+    lang: str = "el",
+    db: AsyncSession = Depends(get_db),
+):
+    """AI-generated plain-language bill summary (cached in Redis 7d)."""
+    import redis.asyncio as aioredis
+    import os
+    from services.ollama_service import summarize_bill, ollama_available
+
+    if not await ollama_available():
+        raise HTTPException(status_code=503, detail="AI summary unavailable")
+
+    # Redis cache
+    redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
+    r = aioredis.from_url(redis_url, decode_responses=True)
+    cache_key = f"bill_summary:{bill_id}:{lang}"
+    try:
+        cached = await r.get(cache_key)
+        if cached:
+            return {"bill_id": bill_id, "summary": cached, "cached": True, "lang": lang}
+    except Exception:
+        pass
+
+    # Get bill
+    result = await db.execute(
+        select(ParliamentBill).where(ParliamentBill.id == bill_id)
+    )
+    bill = result.scalar_one_or_none()
+    if not bill:
+        raise HTTPException(status_code=404, detail=f"Bill {bill_id} not found")
+
+    title = bill.title_el if lang == "el" else (bill.title_en or bill.title_el)
+    content = bill.summary_long_el if lang == "el" else (bill.summary_long_en or bill.summary_long_el or "")
+
+    summary = await summarize_bill(title, content or "", lang)
+    if not summary:
+        raise HTTPException(status_code=503, detail="AI summary generation failed")
+
+    # Cache 7 days
+    try:
+        await r.setex(cache_key, 604800, summary)
+    except Exception:
+        pass
+
+    return {"bill_id": bill_id, "summary": summary, "cached": False, "lang": lang}
+
+
 @router.post("/{bill_id}/transition")
 async def transition_bill(
     bill_id: str,

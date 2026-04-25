@@ -23,6 +23,7 @@ from routers import newsletter
 from routers import contact
 from routers import notify
 from routers import diavgeia
+from routers import agent
 
 scheduler = AsyncIOScheduler()
 
@@ -202,6 +203,7 @@ app.include_router(newsletter.router)
 app.include_router(contact.router)
 app.include_router(notify.router)
 app.include_router(diavgeia.router)
+app.include_router(agent.router)
 
 @app.get("/health")
 async def health():
@@ -231,6 +233,7 @@ async def health():
             "MOD-19 Newsletter (Listmonk + Brevo)",
             "MOD-20 Push Notifications",
             "MOD-21 Diavgeia Integration",
+            "MOD-22 RAG Agent (Ollama)",
         ]
     }
 
