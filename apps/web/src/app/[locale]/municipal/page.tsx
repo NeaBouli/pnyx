@@ -60,7 +60,12 @@ export default function MunicipalPage() {
           <Link href="bills" className="text-blue-600 text-sm hover:text-blue-700 font-medium">
             ← {el("Νομοσχέδια", "Bills")}
           </Link>
-          <h1 className="text-xl font-bold text-gray-900">{el("Τοπική Αυτοδιοίκηση", "Municipal Governance")}</h1>
+          <div className="flex gap-3 items-center">
+            <Link href="mp" className="text-xs text-gray-400 hover:text-blue-600 transition-colors">
+              {el("Κόμματα", "Parties")}
+            </Link>
+            <h1 className="text-sm font-bold text-gray-600">{el("Τοπική Αυτοδιοίκηση", "Municipal Governance")}</h1>
+          </div>
         </div>
 
         <p className="text-gray-500 text-sm mb-6">

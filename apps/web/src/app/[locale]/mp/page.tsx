@@ -39,7 +39,14 @@ export default function MPPage() {
           <Link href="bills" className="text-blue-600 text-sm hover:text-blue-700 font-medium">
             ← {el("Νομοσχέδια", "Bills")}
           </Link>
-          <h1 className="text-sm font-bold text-gray-600">{el("Κόμματα vs Πολίτες", "Parties vs Citizens")}</h1>
+          <div className="flex gap-3 items-center">
+            <Link href="results" className="text-xs text-gray-400 hover:text-blue-600 transition-colors">
+              {el("Αποτελέσματα", "Results")}
+            </Link>
+            <Link href="municipal" className="text-xs text-gray-400 hover:text-blue-600 transition-colors">
+              {el("Δήμοι", "Municipal")}
+            </Link>
+          </div>
         </div>
         <h2 className="text-xl font-bold text-gray-900 mb-2">{el("Ποιο κόμμα ψηφίζει όπως οι πολίτες;", "Which party votes like the citizens?")}</h2>
         <p className="text-gray-500 text-sm mb-6">{el("Σύγκριση πλειοψηφίας πολιτών με κοινοβουλευτική ψήφο.", "Comparing citizen majority with parliamentary vote.")}</p>

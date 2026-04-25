@@ -82,6 +82,12 @@ export default function BillsPage() {
             <Link href="results" className="text-xs text-gray-400 hover:text-blue-600 transition-colors">
               {isEl ? "Αποτελέσματα" : "Results"}
             </Link>
+            <Link href="mp" className="text-xs text-gray-400 hover:text-blue-600 transition-colors">
+              {isEl ? "Κόμματα" : "Parties"}
+            </Link>
+            <Link href="municipal" className="text-xs text-gray-400 hover:text-blue-600 transition-colors">
+              {isEl ? "Δήμοι" : "Municipal"}
+            </Link>
             <Link href="analytics" className="text-xs text-gray-400 hover:text-blue-600 transition-colors">
               Analytics
             </Link>

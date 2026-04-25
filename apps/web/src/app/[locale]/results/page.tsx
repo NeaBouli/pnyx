@@ -86,9 +86,14 @@ export default function ResultsPage() {
           <Link href="bills" className="text-blue-600 text-sm hover:text-blue-700 font-medium">
             ← {isEl ? "Νομοσχέδια" : "Bills"}
           </Link>
-          <h1 className="text-sm font-bold text-gray-600">
-            {isEl ? "Αποτελέσματα & Απόκλιση" : "Results & Divergence"}
-          </h1>
+          <div className="flex gap-3 items-center">
+            <Link href="mp" className="text-xs text-gray-400 hover:text-blue-600 transition-colors">
+              {isEl ? "Κόμματα vs Πολίτες" : "Parties vs Citizens"}
+            </Link>
+            <h1 className="text-sm font-bold text-gray-600">
+              {isEl ? "Αποτελέσματα & Απόκλιση" : "Results & Divergence"}
+            </h1>
+          </div>
         </div>
 
         {/* Stats Banner */}
