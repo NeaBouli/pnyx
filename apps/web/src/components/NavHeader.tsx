@@ -48,26 +48,12 @@ export default function NavHeader() {
       </nav>
 
       <div className="flex items-center gap-3">
-        <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden text-sm font-semibold">
-          <Link
-            href={path.replace(`/${locale}`, "/el")}
-            className={clsx(
-              "px-2 py-1 transition-colors",
-              locale === "el" ? "bg-blue-600 text-white" : "text-gray-500 hover:text-blue-600 hover:bg-blue-50"
-            )}
-          >
-            ΕΛ
-          </Link>
-          <Link
-            href={path.replace(`/${locale}`, "/en")}
-            className={clsx(
-              "px-2 py-1 transition-colors",
-              locale === "en" ? "bg-blue-600 text-white" : "text-gray-500 hover:text-blue-600 hover:bg-blue-50"
-            )}
-          >
-            EN
-          </Link>
-        </div>
+        <Link
+          href={otherPath}
+          className="border-2 border-gray-200 bg-white rounded-md px-2 py-0.5 text-xs font-bold text-gray-600 hover:border-blue-600 hover:text-blue-600 transition-all"
+        >
+          {otherLocale === "en" ? "EN" : "ΕΛ"}
+        </Link>
         <a
           href="https://github.com/NeaBouli/pnyx"
           target="_blank"
