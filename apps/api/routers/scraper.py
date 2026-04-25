@@ -296,6 +296,18 @@ async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
+@router.get("/jobs")
+async def scraper_jobs():
+    """Status aller Scraper-Jobs (Redis-backed)."""
+    from services.scraper_state import get_all_states
+    names = ["parliament", "diavgeia_municipal", "notify_new_bills", "notify_results"]
+    try:
+        states = await get_all_states(names)
+    except Exception:
+        states = [{"name": n, "status": "unknown", "error_count": 0} for n in names]
+    return {"scrapers": states}
+
+
 @router.get("/status")
 async def scraper_status():
     """Status aller KI-Provider."""

@@ -203,6 +203,7 @@
       <tr><td><span class="status-dot dot-active"></span>MOD-14</td><td>Data Export</td><td><span class="badge badge-yellow">Alpha</span></td><td>CSV, JSON Export</td></tr>
       <tr><td><span class="status-dot dot-active"></span>MOD-15</td><td>Admin</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Διαχείριση" data-en="Management">Διαχείριση</td></tr>
       <tr><td><span class="status-dot dot-active"></span>MOD-16</td><td data-el="Τοπική Αυτοδιοίκηση" data-en="Local Governance">Τοπική Αυτοδιοίκηση</td><td><span class="badge badge-green">Beta</span></td><td data-el="Περιφέρεια, Δήμος, Κοινότητα" data-en="Periferia, Dimos, Community">Περιφέρεια, Δήμος, Κοινότητα</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod21"></span>MOD-21</td><td data-el="Διαύγεια Integration" data-en="Diavgeia Integration">Διαύγεια Integration</td><td><span class="badge badge-green">Beta</span></td><td data-el="OpenData API, Αποφάσεις Δήμων, Scheduler 48ω" data-en="OpenData API, Municipal Decisions, Scheduler 48h">OpenData API, Αποφάσεις Δήμων, Scheduler 48ω</td></tr>
     </table>
   </div>
 
@@ -234,6 +235,30 @@ var obs = new IntersectionObserver(function(entries) {
   entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add("visible"); });
 }, { threshold: 0.1 });
 document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); });
+
+// Live scraper job status polling
+(function() {
+  var JOB_DOT_MAP = { "parliament": null, "diavgeia_municipal": "dot-mod21" };
+  function pollJobs() {
+    fetch("https://api.ekklesia.gr/api/v1/scraper/jobs")
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        (d.scrapers || []).forEach(function(s) {
+          var dotId = JOB_DOT_MAP[s.name];
+          if (!dotId) return;
+          var el = document.getElementById(dotId);
+          if (!el) return;
+          el.classList.remove("dot-active", "dot-inactive", "dot-planned");
+          if (s.status === "ok") el.classList.add("dot-active");
+          else if (s.status === "circuit_open") el.classList.add("dot-inactive");
+          else el.classList.add("dot-active"); // warning still shows green
+        });
+      })
+      .catch(function() {});
+  }
+  pollJobs();
+  setInterval(pollJobs, 60000);
+})();
 </script>
 
 

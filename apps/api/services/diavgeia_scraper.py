@@ -70,7 +70,7 @@ async def scrape_decisions(
     Links to dimos/periferia via dimos_diavgeia_orgs mapping.
     """
     if decision_type_uids is None:
-        decision_type_uids = ["Α.2"]  # Κανονιστικές Πράξεις
+        decision_type_uids = ["Α.1.1", "Α.2", "2.4.1", "2.4.2"]  # Νόμοι, Κανονιστικές, Οικονομικές
 
     result = ScrapeResult()
 

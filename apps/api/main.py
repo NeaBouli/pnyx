@@ -28,13 +28,21 @@ scheduler = AsyncIOScheduler()
 
 
 async def scheduled_scrape():
-    """Scrape parliament bills every 6 hours (MOD-03 cron + MOD-10 scraper)."""
+    """Scrape parliament bills every 12 hours (MOD-03 cron + MOD-10 scraper)."""
     from routers.scraper import scrape_parliament_bills
+    from services.scraper_state import record_run, record_success, record_failure, is_circuit_open
+    name = "parliament"
+    if await is_circuit_open(name):
+        logger.warning("[MOD-03] Circuit breaker OPEN for %s — skipping", name)
+        return
+    await record_run(name)
     try:
         bills = await scrape_parliament_bills(limit=20)
         logger.info(f"[MOD-03] Scheduled scrape: {len(bills)} bills found")
+        await record_success(name)
     except Exception as e:
         logger.error(f"[MOD-03] Scheduled scrape failed: {e}")
+        await record_failure(name, str(e))
 
 
 async def scheduled_notify_new_bills():
@@ -44,7 +52,10 @@ async def scheduled_notify_new_bills():
     from database import AsyncSessionLocal
     from models import ParliamentBill, BillStatus
     from routers.notify import notify_all
+    from services.scraper_state import record_run, record_success, record_failure
 
+    name = "notify_new_bills"
+    await record_run(name)
     try:
         r = aioredis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"), decode_responses=True)
         async with AsyncSessionLocal() as db:
@@ -63,8 +74,10 @@ async def scheduled_notify_new_bills():
                 await r.setex(key, 604800, "1")  # 7 days TTL
                 logger.info(f"[MOD-20] Notified: new bill {bill.id}")
         await r.aclose()
+        await record_success(name)
     except Exception as e:
         logger.error(f"[MOD-20] Notify new bills failed: {e}")
+        await record_failure(name, str(e))
 
 
 async def scheduled_notify_results():
@@ -74,7 +87,10 @@ async def scheduled_notify_results():
     from database import AsyncSessionLocal
     from models import ParliamentBill, BillStatus
     from routers.notify import notify_all
+    from services.scraper_state import record_run, record_success, record_failure
 
+    name = "notify_results"
+    await record_run(name)
     try:
         r = aioredis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"), decode_responses=True)
         async with AsyncSessionLocal() as db:
@@ -93,8 +109,39 @@ async def scheduled_notify_results():
                 await r.setex(key, 604800, "1")
                 logger.info(f"[MOD-20] Notified: result {bill.id}")
         await r.aclose()
+        await record_success(name)
     except Exception as e:
         logger.error(f"[MOD-20] Notify results failed: {e}")
+        await record_failure(name, str(e))
+
+
+async def scheduled_diavgeia_scrape():
+    """Scrape Diavgeia municipal decisions every 48h (MOD-21)."""
+    from services.scraper_state import record_run, record_success, record_failure, is_circuit_open
+    from services.diavgeia_scraper import scrape_decisions
+    from database import AsyncSessionLocal
+
+    name = "diavgeia_municipal"
+    if await is_circuit_open(name):
+        logger.warning("[MOD-21] Circuit breaker OPEN for %s — skipping", name)
+        return
+    await record_run(name)
+    try:
+        async with AsyncSessionLocal() as session:
+            result = await scrape_decisions(
+                session=session,
+                decision_type_uids=["Α.1.1", "Α.2", "2.4.1", "2.4.2"],
+                max_pages=5,
+                dry_run=False,
+            )
+            logger.info("[MOD-21] Scheduled Diavgeia scrape: %d fetched, %d inserted, %d errors",
+                        result.fetched, result.inserted, len(result.errors))
+            if result.errors:
+                logger.warning("[MOD-21] Scrape errors: %s", result.errors[:3])
+        await record_success(name)
+    except Exception as e:
+        logger.error("[MOD-21] Scheduled Diavgeia scrape failed: %s", e)
+        await record_failure(name, str(e))
 
 
 @asynccontextmanager
@@ -103,12 +150,13 @@ async def lifespan(app):
     scheduler.add_job(scheduled_scrape, IntervalTrigger(hours=12), id="parliament_scrape", replace_existing=True)
     scheduler.add_job(scheduled_notify_new_bills, IntervalTrigger(minutes=30), id="notify_new_bills", replace_existing=True)
     scheduler.add_job(scheduled_notify_results, IntervalTrigger(hours=1), id="notify_results", replace_existing=True)
+    scheduler.add_job(scheduled_diavgeia_scrape, IntervalTrigger(hours=48), id="diavgeia_municipal", replace_existing=True)
     scheduler.start()
-    logger.info("[MOD-03] APScheduler started — scrape 12h, notify-bills 30m, notify-results 1h")
+    logger.info("[Scheduler] Started — parliament 12h, diavgeia 48h, notify-bills 30m, notify-results 1h")
     yield
     # Shutdown
     scheduler.shutdown()
-    logger.info("[MOD-03] APScheduler shut down")
+    logger.info("[Scheduler] Shut down")
 
 
 _is_dev = os.getenv("ENVIRONMENT", "production") != "production"
