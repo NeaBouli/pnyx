@@ -137,14 +137,14 @@ async def main() -> None:
     all_orgs = snapshot["organizations"]
     logger.info("Loaded %d organizations from snapshot", len(all_orgs))
 
-    # Filter municipalities
-    municipality_orgs = [o for o in all_orgs if o.get("category") == "MUNICIPALITY"]
-    other_orgs = [o for o in all_orgs if o.get("category") != "MUNICIPALITY"]
-    logger.info("Municipality orgs: %d, Other orgs: %d", len(municipality_orgs), len(other_orgs))
+    # Split into primary (MUNICIPALITY) and subsidiary orgs
+    municipality_orgs = [o for o in all_orgs if o.get("is_primary", False) or o.get("category") == "MUNICIPALITY"]
+    subsidiary_orgs = [o for o in all_orgs if not (o.get("is_primary", False) or o.get("category") == "MUNICIPALITY")]
+    logger.info("Municipality orgs: %d, Subsidiary orgs: %d", len(municipality_orgs), len(subsidiary_orgs))
 
     # Pre-normalize org labels
     norm_municipality = [(o, normalize_greek(o.get("label", ""))) for o in municipality_orgs]
-    norm_other = [(o, normalize_greek(o.get("label", ""))) for o in other_orgs]
+    norm_subsidiary = [(o, normalize_greek(o.get("label", ""))) for o in subsidiary_orgs]
 
     # Load dimoi from DB
     from database import AsyncSessionLocal
@@ -204,7 +204,7 @@ async def main() -> None:
                 stats["auto_matched"] += 1
 
             # Auto-link subsidiaries containing the dimos name
-            for org, org_norm in norm_other:
+            for org, org_norm in norm_subsidiary:
                 if dimos_norm in org_norm and len(dimos_norm) >= 4:
                     mappings_to_insert.append({
                         "dimos_id": dimos.id,

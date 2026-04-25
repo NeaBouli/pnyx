@@ -12,6 +12,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from models import DiavgeiaDecision, DimosDiavgeiaOrg
 from services.diavgeia_client import DiavgeiaClient, parse_timestamp
+from services.diavgeia_org_lookup import get_label as get_org_label
 
 logger = logging.getLogger(__name__)
 
@@ -113,13 +114,18 @@ async def scrape_decisions(
                 if dimos_id is None:
                     logger.warning("ADA %s: org %s not mapped to any dimos", ada, org_uid)
 
+                # Resolve org label from snapshot (not API — API doesn't return it)
+                org_label = get_org_label(org_uid)
+                if org_label.startswith("[unknown:"):
+                    logger.warning("ADA %s: org %s not in snapshot — label unknown", ada, org_uid)
+
                 row_data = {
                     "ada": ada,
                     "subject": raw_decision.get("subject", ""),
                     "decision_type_uid": raw_decision.get("decisionTypeId", type_uid),
                     "decision_type_label": raw_decision.get("decisionTypeId", ""),
                     "organization_uid": org_uid,
-                    "organization_label": str(raw_decision.get("organizationId", "")),
+                    "organization_label": org_label,
                     "document_url": raw_decision.get("documentUrl", ""),
                     "submission_timestamp": submission_ts,
                     "publish_timestamp": publish_ts,

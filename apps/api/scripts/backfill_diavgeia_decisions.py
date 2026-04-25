@@ -109,6 +109,7 @@ async def main() -> None:
 
     from services.diavgeia_client import DiavgeiaClient, parse_timestamp
     from services.diavgeia_scraper import _resolve_dimos
+    from services.diavgeia_org_lookup import get_label as get_org_label
     from models import DiavgeiaDecision
     from database import AsyncSessionLocal
     from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -172,7 +173,7 @@ async def main() -> None:
                         "decision_type_uid": raw.get("decisionTypeId", args.decision_type_uid),
                         "decision_type_label": raw.get("decisionTypeId", ""),
                         "organization_uid": org_uid,
-                        "organization_label": str(raw.get("organizationId", "")),
+                        "organization_label": get_org_label(org_uid),
                         "document_url": raw.get("documentUrl", ""),
                         "submission_timestamp": submission_ts,
                         "publish_timestamp": publish_ts,

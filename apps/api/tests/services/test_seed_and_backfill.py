@@ -19,15 +19,19 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 SAMPLE_SNAPSHOT = {
     "metadata": {
         "fetched_at": datetime.now(timezone.utc).isoformat(),
-        "total_count": 3,
+        "total_count": 5,
+        "municipality_count": 2,
+        "subsidiary_count": 2,
         "source_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations.json",
         "api_version_hint": "luminapi-v1",
-        "script_version": "1.0",
+        "script_version": "2.0",
     },
     "organizations": [
-        {"uid": "6013", "label": "ΔΗΜΟΣ ΑΘΗΝΑΙΩΝ", "category": "MUNICIPALITY", "parent_uid": None, "status": "active"},
-        {"uid": "6219", "label": "ΔΗΜΟΣ ΘΕΣΣΑΛΟΝΙΚΗΣ", "category": "MUNICIPALITY", "parent_uid": None, "status": "active"},
-        {"uid": "99999", "label": "ΥΠΟΥΡΓΕΙΟ ΕΣΩΤΕΡΙΚΩΝ", "category": "MINISTRY", "parent_uid": None, "status": "active"},
+        {"uid": "6013", "label": "ΔΗΜΟΣ ΑΘΗΝΑΙΩΝ", "category": "MUNICIPALITY", "parent_uid": None, "status": "active", "is_primary": True, "match_method": "category"},
+        {"uid": "6219", "label": "ΔΗΜΟΣ ΘΕΣΣΑΛΟΝΙΚΗΣ", "category": "MUNICIPALITY", "parent_uid": None, "status": "active", "is_primary": True, "match_method": "category"},
+        {"uid": "50554", "label": "ΚΕΝΤΡΟ ΕΠΑΓΓΕΛΜΑΤΙΚΗΣ ΚΑΤΑΡΤΙΣΗΣ ΔΗΜΟΥ ΑΘΗΝΑΙΩΝ", "category": "OTHERTYPE", "parent_uid": None, "status": "active", "is_primary": False, "match_method": "label_contains:ΔΗΜΟΥ "},
+        {"uid": "50381", "label": "ΔΗΜΟΤΙΚΟ ΒΡΕΦΟΚΟΜΕΙΟ ΑΘΗΝΩΝ", "category": "NPDD", "parent_uid": None, "status": "active", "is_primary": False, "match_method": "label_contains:ΔΗΜΟΤΙΚ"},
+        {"uid": "99999", "label": "ΥΠΟΥΡΓΕΙΟ ΕΣΩΤΕΡΙΚΩΝ", "category": "MINISTRY", "parent_uid": None, "status": "active", "is_primary": False, "match_method": ""},
     ],
 }
 
@@ -48,8 +52,8 @@ def test_seed_load_snapshot_valid():
         path = Path(f.name)
     try:
         data = load_snapshot(path)
-        assert data["metadata"]["total_count"] == 3
-        assert len(data["organizations"]) == 3
+        assert data["metadata"]["total_count"] == 5
+        assert len(data["organizations"]) == 5
     finally:
         path.unlink()
 
@@ -63,7 +67,7 @@ def test_seed_load_snapshot_gzip():
         json.dump(SAMPLE_SNAPSHOT, f, ensure_ascii=False)
     try:
         data = load_snapshot(path)
-        assert len(data["organizations"]) == 3
+        assert len(data["organizations"]) == 5
     finally:
         path.unlink()
 
@@ -194,3 +198,61 @@ def test_scrape_result_to_dict():
     d = sr.to_dict()
     assert d["fetched"] == 5
     assert d["errors"] == ["x"]
+
+
+# ── Snapshot: subsidiary verification ───────────────────────────────────────
+
+def test_snapshot_includes_subsidiaries_for_athens():
+    """Real snapshot must have Athens primary + subsidiaries."""
+    from scripts.seed_diavgeia_orgs import load_snapshot
+    snapshot = load_snapshot(None)  # loads default
+    orgs = snapshot["organizations"]
+
+    # Find Athens primary
+    athens_primary = [o for o in orgs if o.get("uid") == "6013"]
+    assert len(athens_primary) == 1, "Athens primary (uid=6013) must exist"
+    assert athens_primary[0].get("is_primary") is True
+
+    # Find Athens subsidiaries (label contains ΑΘΗΝΑΙ or ΔΗΜΟΥ ΑΘΗΝΑΙΩΝ)
+    from scripts.seed_diavgeia_orgs import normalize_greek
+    athens_subs = [
+        o for o in orgs
+        if not o.get("is_primary", False)
+        and ("ΑΘΗΝΑΙ" in normalize_greek(o.get("label", "")) or "ΑΘΗΝΩΝ" in normalize_greek(o.get("label", "")))
+    ]
+    assert len(athens_subs) >= 5, f"Athens must have ≥5 subsidiaries, found {len(athens_subs)}"
+
+
+def test_snapshot_metadata_has_subsidiary_count():
+    """Snapshot metadata must report municipality + subsidiary counts."""
+    from scripts.seed_diavgeia_orgs import load_snapshot
+    snapshot = load_snapshot(None)
+    meta = snapshot["metadata"]
+    assert "municipality_count" in meta
+    assert "subsidiary_count" in meta
+    assert meta["municipality_count"] >= 300
+    assert meta["subsidiary_count"] >= 100
+
+
+# ── Org lookup ──────────────────────────────────────────────────────────────
+
+def test_org_lookup_known_uid():
+    """get_label should return human-readable label for known org."""
+    from services.diavgeia_org_lookup import get_label, reload
+    reload()
+    label = get_label("6013")
+    assert "ΑΘΗΝΑΙ" in label.upper()
+
+
+def test_org_lookup_unknown_uid():
+    """get_label should return [unknown:uid] for unknown org."""
+    from services.diavgeia_org_lookup import get_label
+    label = get_label("999999999")
+    assert label == "[unknown:999999999]"
+
+
+def test_org_lookup_reload():
+    """reload() should return cache size > 0."""
+    from services.diavgeia_org_lookup import reload
+    size = reload()
+    assert size > 300
