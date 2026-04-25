@@ -11,9 +11,9 @@ export default function NavHeader() {
   const path = usePathname();
 
   const navLinks = [
-    { href: `/${locale}`,       label_el: "Αρχική",      label_en: "Home" },
-    { href: `/${locale}/bills`, label_el: "Νομοσχέδια",  label_en: "Bills" },
-    { href: `/${locale}/results`, label_el: "Αποτελέσματα", label_en: "Results" },
+    { href: "https://ekklesia.gr", label_el: "Αρχική",      label_en: "Home",    external: true },
+    { href: `/${locale}/bills`,    label_el: "Νομοσχέδια",  label_en: "Bills",   external: false },
+    { href: `/${locale}/results`,  label_el: "Αποτελέσματα", label_en: "Results", external: false },
   ];
 
   const otherLocale = locale === "el" ? "en" : "el";
@@ -29,20 +29,22 @@ export default function NavHeader() {
       </Link>
 
       <nav className="hidden sm:flex gap-1">
-        {navLinks.map(link => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={clsx(
-              "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-              path === link.href || (link.href !== `/${locale}` && path.startsWith(link.href))
-                ? "bg-blue-50 text-blue-700"
-                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-            )}
-          >
-            {locale === "el" ? link.label_el : link.label_en}
-          </Link>
-        ))}
+        {navLinks.map(link => {
+          const isActive = !link.external && (path === link.href || path.startsWith(link.href + "/"));
+          const cls = clsx(
+            "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+            isActive ? "bg-blue-50 text-blue-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+          );
+          return link.external ? (
+            <a key={link.href} href={link.href} className={cls}>
+              {locale === "el" ? link.label_el : link.label_en}
+            </a>
+          ) : (
+            <Link key={link.href} href={link.href} className={cls}>
+              {locale === "el" ? link.label_el : link.label_en}
+            </Link>
+          );
+        })}
       </nav>
 
       <div className="flex items-center gap-3">

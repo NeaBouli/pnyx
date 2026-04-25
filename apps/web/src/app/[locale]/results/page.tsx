@@ -12,6 +12,7 @@ type BillWithResults = {
 
 export default function ResultsPage() {
   const locale = useLocale();
+  const isEl = locale === "el";
   const [data, setData] = useState<BillWithResults[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "diverge" | "converge">("all");
@@ -58,13 +59,13 @@ export default function ResultsPage() {
     });
 
   function divergenceColor(score: number) {
-    if (score > 0.4) return { bg: "bg-red-950",    border: "border-red-800",    text: "text-red-400",    bar: "bg-red-500" };
-    if (score > 0.2) return { bg: "bg-yellow-950", border: "border-yellow-800", text: "text-yellow-400", bar: "bg-yellow-500" };
-    return              { bg: "bg-green-950",   border: "border-green-800",  text: "text-green-400",  bar: "bg-green-500" };
+    if (score > 0.4) return { bg: "bg-red-50",    border: "border-red-200",    text: "text-red-700",    bar: "bg-red-500",    statBg: "bg-red-50",  statBorder: "border-red-200",  statText: "text-red-700" };
+    if (score > 0.2) return { bg: "bg-yellow-50", border: "border-yellow-200", text: "text-yellow-700", bar: "bg-yellow-500", statBg: "bg-yellow-50", statBorder: "border-yellow-200", statText: "text-yellow-700" };
+    return              { bg: "bg-green-50",   border: "border-green-200",  text: "text-green-700",  bar: "bg-green-500",  statBg: "bg-green-50", statBorder: "border-green-200", statText: "text-green-700" };
   }
 
   function divergenceLabel(score: number) {
-    if (locale === "el") {
+    if (isEl) {
       if (score > 0.4) return "Έντονη Απόκλιση";
       if (score > 0.2) return "Μέτρια Απόκλιση";
       return "Σύγκλιση";
@@ -79,37 +80,37 @@ export default function ResultsPage() {
   const converge     = data.filter(d => (d.results?.divergence?.score ?? 0) <= 0.2).length;
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white">
+    <main className="min-h-screen bg-gray-50">
       <div className="max-w-2xl mx-auto px-6 py-8">
         <div className="flex justify-between items-center mb-6">
-          <Link href="../bills" className="text-blue-400 text-sm hover:text-blue-300">
-            ← {locale === "el" ? "Νομοσχέδια" : "Bills"}
+          <Link href="bills" className="text-blue-600 text-sm hover:text-blue-700 font-medium">
+            ← {isEl ? "Νομοσχέδια" : "Bills"}
           </Link>
-          <h1 className="text-sm font-bold text-gray-300">
-            {locale === "el" ? "Αποτελέσματα & Απόκλιση" : "Results & Divergence"}
+          <h1 className="text-sm font-bold text-gray-600">
+            {isEl ? "Αποτελέσματα & Απόκλιση" : "Results & Divergence"}
           </h1>
         </div>
 
         {/* Stats Banner */}
         <div className="grid grid-cols-3 gap-3 mb-8">
-          <div className="bg-gray-900 rounded-xl p-4 border border-gray-800 text-center">
-            <div className="text-2xl font-black text-blue-400">
+          <div className="bg-white rounded-xl p-4 border border-gray-200 text-center">
+            <div className="text-2xl font-black text-blue-600">
               {totalVotes.toLocaleString()}
             </div>
             <div className="text-xs text-gray-500 mt-1">
-              {locale === "el" ? "Συνολικές Ψήφοι" : "Total Votes"}
+              {isEl ? "Συνολικές Ψήφοι" : "Total Votes"}
             </div>
           </div>
-          <div className="bg-red-950 rounded-xl p-4 border border-red-900 text-center">
-            <div className="text-2xl font-black text-red-400">{highDiverge}</div>
+          <div className="bg-red-50 rounded-xl p-4 border border-red-200 text-center">
+            <div className="text-2xl font-black text-red-700">{highDiverge}</div>
             <div className="text-xs text-gray-500 mt-1">
-              {locale === "el" ? "Έντονη Απόκλιση" : "High Divergence"}
+              {isEl ? "Έντονη Απόκλιση" : "High Divergence"}
             </div>
           </div>
-          <div className="bg-green-950 rounded-xl p-4 border border-green-900 text-center">
-            <div className="text-2xl font-black text-green-400">{converge}</div>
+          <div className="bg-green-50 rounded-xl p-4 border border-green-200 text-center">
+            <div className="text-2xl font-black text-green-700">{converge}</div>
             <div className="text-xs text-gray-500 mt-1">
-              {locale === "el" ? "Σύγκλιση" : "Convergence"}
+              {isEl ? "Σύγκλιση" : "Convergence"}
             </div>
           </div>
         </div>
@@ -126,10 +127,10 @@ export default function ResultsPage() {
               className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                 filter === f.key
                   ? "bg-blue-600 text-white"
-                  : "bg-gray-800 text-gray-400 hover:text-white"
+                  : "bg-white text-gray-500 border border-gray-200 hover:text-gray-900"
               }`}
             >
-              {locale === "el" ? f.el : f.en}
+              {isEl ? f.el : f.en}
             </button>
           ))}
           <div className="ml-auto flex gap-2">
@@ -141,11 +142,11 @@ export default function ResultsPage() {
                 onClick={() => setSortBy(s.key as typeof sortBy)}
                 className={`px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                   sortBy === s.key
-                    ? "bg-gray-700 text-white"
-                    : "bg-gray-900 text-gray-500 hover:text-white"
+                    ? "bg-gray-200 text-gray-900"
+                    : "bg-white text-gray-400 border border-gray-200 hover:text-gray-700"
                 }`}
               >
-                {locale === "el" ? s.el : s.en}
+                {isEl ? s.el : s.en}
               </button>
             ))}
           </div>
@@ -155,7 +156,7 @@ export default function ResultsPage() {
         {loading && (
           <div className="space-y-3">
             {[1,2,3].map(i => (
-              <div key={i} className="h-32 bg-gray-900 rounded-2xl animate-pulse border border-gray-800"/>
+              <div key={i} className="h-32 bg-white rounded-2xl animate-pulse border border-gray-200"/>
             ))}
           </div>
         )}
@@ -163,7 +164,7 @@ export default function ResultsPage() {
         {/* Empty */}
         {!loading && filtered.length === 0 && (
           <div className="text-center py-20 text-gray-500">
-            {locale === "el" ? "Δεν υπάρχουν αποτελέσματα ακόμα." : "No results yet."}
+            {isEl ? "Δεν υπάρχουν αποτελέσματα ακόμα." : "No results yet."}
           </div>
         )}
 
@@ -173,16 +174,16 @@ export default function ResultsPage() {
             if (!results) return null;
             const score = results.divergence?.score ?? 0;
             const c = divergenceColor(score);
-            const titleKey = locale === "el" ? "title_el" : "title_en";
+            const tk = isEl ? "title_el" : "title_en";
 
             return (
-              <Link key={bill.id} href={`../bills/${bill.id}`}
-                className={`block rounded-2xl p-5 border ${c.bg} ${c.border} hover:ring-1 hover:ring-blue-500 transition-all`}
+              <Link key={bill.id} href={`bills/${bill.id}`}
+                className={`block rounded-2xl p-5 border ${c.bg} ${c.border} hover:shadow-md transition-all`}
               >
                 {/* Header */}
                 <div className="flex justify-between items-start mb-3 gap-2">
-                  <h3 className="font-bold text-sm leading-snug flex-1">
-                    {(titleKey === "title_en" && bill.title_en) ? bill.title_en : bill.title_el}
+                  <h3 className="font-bold text-sm text-gray-900 leading-snug flex-1">
+                    {(tk === "title_en" && bill.title_en) ? bill.title_en : bill.title_el}
                   </h3>
                   <div className="text-right flex-shrink-0">
                     <div className={`text-2xl font-black ${c.text}`}>
@@ -195,7 +196,7 @@ export default function ResultsPage() {
                 </div>
 
                 {/* Divergence Bar */}
-                <div className="h-2 bg-gray-800 rounded-full overflow-hidden mb-3">
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden mb-3">
                   <div
                     className={`h-full ${c.bar} rounded-full transition-all duration-700`}
                     style={{ width: `${Math.round(score * 100)}%` }}
@@ -205,16 +206,16 @@ export default function ResultsPage() {
                 {/* Vote Bars */}
                 <div className="grid grid-cols-3 gap-2 mb-3">
                   {[
-                    { label: locale === "el" ? "Υπέρ" : "Yes",     pct: results.yes_percent,     color: "bg-green-600" },
-                    { label: locale === "el" ? "Κατά" : "No",      pct: results.no_percent,      color: "bg-red-600" },
-                    { label: locale === "el" ? "Αποχή" : "Abstain",pct: results.abstain_percent, color: "bg-gray-600" },
+                    { label: isEl ? "Υπέρ" : "Yes",     pct: results.yes_percent,     color: "bg-green-500" },
+                    { label: isEl ? "Κατά" : "No",      pct: results.no_percent,      color: "bg-red-500" },
+                    { label: isEl ? "Αποχή" : "Abstain",pct: results.abstain_percent, color: "bg-gray-400" },
                   ].map(bar => (
                     <div key={bar.label}>
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-400">{bar.label}</span>
-                        <span className="font-bold">{bar.pct}%</span>
+                        <span className="text-gray-500">{bar.label}</span>
+                        <span className="font-bold text-gray-700">{bar.pct}%</span>
                       </div>
-                      <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
                         <div className={`h-full ${bar.color} rounded-full`}
                           style={{ width: `${bar.pct}%` }} />
                       </div>
@@ -229,9 +230,9 @@ export default function ResultsPage() {
                       {results.divergence.headline_el}
                     </p>
                   )}
-                  <span className="text-xs text-gray-600 ml-2 flex-shrink-0">
+                  <span className="text-xs text-gray-400 ml-2 flex-shrink-0">
                     {results.total_votes.toLocaleString()}{" "}
-                    {locale === "el" ? "ψήφοι" : "votes"}
+                    {isEl ? "ψήφοι" : "votes"}
                   </span>
                 </div>
               </Link>
@@ -241,22 +242,30 @@ export default function ResultsPage() {
 
         {/* Info Box */}
         {!loading && filtered.length > 0 && (
-          <div className="mt-8 bg-gray-900 rounded-xl p-4 border border-gray-800 text-xs text-gray-500 leading-relaxed">
-            <strong className="text-gray-400">
-              {locale === "el" ? "Δείκτης Απόκλισης:" : "Divergence Score:"}
+          <div className="mt-8 bg-blue-50 rounded-xl p-4 border border-blue-200 text-xs text-gray-600 leading-relaxed">
+            <strong className="text-gray-700">
+              {isEl ? "Δείκτης Απόκλισης:" : "Divergence Score:"}
             </strong>{" "}
-            {locale === "el"
+            {isEl
               ? "Μετρά τη διαφορά μεταξύ της πλειοψηφίας των πολιτών και της απόφασης της Βουλής. 0% = πλήρης σύγκλιση, 100% = πλήρης αντίθεση."
               : "Measures the gap between citizen majority and parliamentary decision. 0% = full convergence, 100% = full opposition."}
           </div>
         )}
       </div>
 
-      <footer className="border-t border-gray-800 px-6 py-6 text-center text-xs text-gray-600">
-        © 2026 Vendetta Labs — MIT —{" "}
-        <a href="https://github.com/NeaBouli/pnyx" target="_blank" className="hover:text-gray-400">
-          Open Source
-        </a>
+      {/* Footer */}
+      <footer className="border-t border-gray-200 px-6 py-6 text-center text-xs text-gray-400">
+        <p>
+          {isEl
+            ? "Μη κρατική εφαρμογή — ενημερωτικός χαρακτήρας"
+            : "Non-governmental application — informational purposes only"}
+        </p>
+        <p className="mt-1">
+          © 2026 Vendetta Labs — MIT License —{" "}
+          <a href="https://github.com/NeaBouli/pnyx" className="hover:text-gray-600" target="_blank">
+            Open Source
+          </a>
+        </p>
       </footer>
     </main>
   );
