@@ -44,25 +44,58 @@ async def ollama_available() -> bool:
         return False
 
 
-async def summarize_bill(title: str, content: str = "", lang: str = "el") -> str:
+async def summarize_bill(
+    title: str, content: str = "", lang: str = "el",
+    pill: str = "", status: str = "", categories: list[str] | None = None,
+) -> str:
     """Generate plain-language summary of a parliamentary bill."""
+    cats = ", ".join(categories) if categories else ""
+
     if lang == "el":
-        prompt = (
-            "Είσαι βοηθός που εξηγεί νόμους σε απλούς πολίτες.\n"
-            "Γράψε περίληψη σε 3-4 προτάσεις, απλά ελληνικά, χωρίς νομική ορολογία.\n\n"
-            f"Τίτλος: {title}\n"
-            + (f"Κείμενο: {content[:1500]}\n" if content else "")
-            + "\nΠερίληψη:"
-        )
+        if content and len(content) > 100:
+            prompt = (
+                "Είσαι ειδικός σε ελληνική νομοθεσία που εξηγεί νόμους σε απλούς πολίτες.\n"
+                "Εξήγησε τι ρυθμίζει αυτός ο νόμος σε 4-5 προτάσεις.\n\n"
+                f"Τίτλος: {title}\n"
+                f"Κείμενο: {content[:2000]}\n\n"
+                "Ανάλυση σε απλά ελληνικά:"
+            )
+        else:
+            prompt = (
+                "Είσαι ειδικός σε ελληνική νομοθεσία.\n"
+                "Βάσει του τίτλου αυτού του νόμου, εξήγησε σε 4-5 προτάσεις:\n"
+                "1. Τι πιθανώς ρυθμίζει αυτός ο νόμος\n"
+                "2. Ποιους πολίτες αφορά\n"
+                "3. Ποια η πιθανή επίπτωση στην καθημερινή ζωή\n\n"
+                f"Νόμος: {title}\n"
+                + (f"Σύνοψη: {pill}\n" if pill else "")
+                + (f"Κατηγορίες: {cats}\n" if cats else "")
+                + (f"Κατάσταση: {status}\n" if status else "")
+                + "\nΑνάλυση σε απλά ελληνικά:"
+            )
     else:
-        prompt = (
-            "You are an assistant that explains laws to ordinary citizens.\n"
-            "Write a summary in 3-4 sentences, plain English, no legal jargon.\n\n"
-            f"Title: {title}\n"
-            + (f"Content: {content[:1500]}\n" if content else "")
-            + "\nSummary:"
-        )
-    return await ollama_generate(prompt, max_tokens=200)
+        if content and len(content) > 100:
+            prompt = (
+                "You are a Greek legislation expert explaining laws to ordinary citizens.\n"
+                "Explain what this law regulates in 4-5 sentences.\n\n"
+                f"Title: {title}\n"
+                f"Content: {content[:2000]}\n\n"
+                "Analysis in plain English:"
+            )
+        else:
+            prompt = (
+                "You are a Greek legislation expert.\n"
+                "Based on this law's title, explain in 4-5 sentences:\n"
+                "1. What this law likely regulates\n"
+                "2. Which citizens it affects\n"
+                "3. What impact it may have on daily life\n\n"
+                f"Law: {title}\n"
+                + (f"Summary: {pill}\n" if pill else "")
+                + (f"Categories: {cats}\n" if cats else "")
+                + (f"Status: {status}\n" if status else "")
+                + "\nAnalysis in plain English:"
+            )
+    return await ollama_generate(prompt, max_tokens=400)
 
 
 async def explain_divergence(

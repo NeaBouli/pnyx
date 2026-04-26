@@ -236,8 +236,14 @@ async def get_bill_summary(
 
     title = bill.title_el if lang == "el" else (bill.title_en or bill.title_el)
     content = bill.summary_long_el if lang == "el" else (bill.summary_long_en or bill.summary_long_el or "")
+    pill = bill.pill_el if lang == "el" else (bill.pill_en or bill.pill_el or "")
 
-    summary = await summarize_bill(title, content or "", lang)
+    summary = await summarize_bill(
+        title, content or "", lang,
+        pill=pill or "",
+        status=bill.status.value if bill.status else "",
+        categories=bill.categories or [],
+    )
     if not summary:
         raise HTTPException(status_code=503, detail="AI summary generation failed")
 
