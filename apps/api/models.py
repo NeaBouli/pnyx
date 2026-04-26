@@ -387,3 +387,19 @@ class DimosDiavgeiaOrg(Base):
 
     def __repr__(self) -> str:
         return f"<DimosDiavgeiaOrg dimos={self.dimos_id} uid={self.diavgeia_uid}>"
+
+
+class DiavgeiaVote(Base):
+    """Citizen votes on Diavgeia municipal/regional decisions."""
+    __tablename__ = "diavgeia_votes"
+
+    id              = Column(Integer, primary_key=True, autoincrement=True)
+    ada             = Column(String(20), nullable=False, index=True)
+    nullifier_hash  = Column(String(64), nullable=False)
+    vote            = Column(Enum(VoteChoice), nullable=False)
+    voted_at        = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("ada", "nullifier_hash", name="uq_diavgeia_vote"),
+        Index("idx_diavgeia_votes_ada", "ada"),
+    )
