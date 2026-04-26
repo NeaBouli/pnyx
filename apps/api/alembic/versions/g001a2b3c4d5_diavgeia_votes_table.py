@@ -12,10 +12,9 @@ down_revision = "f901a2b3c4d5"
 branch_labels = None
 depends_on = None
 
-vote_enum = sa.Enum("YES", "NO", "ABSTAIN", "UNKNOWN", name="votechoice", create_type=False)
-
-
 def upgrade() -> None:
+    # votechoice enum already exists from citizen_votes table
+    vote_enum = sa.Enum("YES", "NO", "ABSTAIN", "UNKNOWN", name="votechoice", create_type=False)
     op.create_table(
         "diavgeia_votes",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
