@@ -535,14 +535,14 @@
     </div>
 
     <!-- DeepL Free API — Translation -->
-    <div class="fc" id="deeplCard" style="border-color:#0f2b46">
-      <div class="fc-badge" style="background:#0f2b46" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
+    <div class="fc" id="deeplCard" style="border-color:#86efac">
+      <div class="fc-badge" style="background:#22c55e" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
       <div class="fc-icon">🌐</div>
       <div class="fc-title" data-el="DeepL Μετάφραση" data-en="DeepL Translation">DeepL Μετάφραση</div>
       <div class="fc-sub" data-el="Free API — EN↔EL για AI Summaries + RAG Agent" data-en="Free API — EN↔EL for AI Summaries + RAG Agent">Free API — EN↔EL</div>
       <div class="fc-info">
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Πρόγραμμα:" data-en="Plan:">Πρόγραμμα:</span><strong>Free API</strong></div>
-        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Όριο:" data-en="Limit:">Όριο:</span><strong>1.000.000 <span data-el="χαρ./μήνα" data-en="chars/month">χαρ./μήνα</span></strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Όριο:" data-en="Limit:">Όριο:</span><strong id="deeplLimit">500.000 <span data-el="χαρ./μήνα" data-en="chars/month">χαρ./μήνα</span></strong></div>
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Χρήση:" data-en="Usage:">Χρήση:</span><strong id="deeplUsed">—</strong></div>
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong style="color:#166534">0€</strong></div>
       </div>
@@ -1233,8 +1233,10 @@ function copyAddr(id) {
         var pct = Math.round(used / limit * 100);
         var el = document.getElementById("deeplUsed");
         if (el) el.textContent = used.toLocaleString() + " / " + limit.toLocaleString();
+        var lim = document.getElementById("deeplLimit");
+        if (lim) lim.innerHTML = limit.toLocaleString() + " <span>" + (currentLang === "en" ? "chars/month" : "χαρ./μήνα") + "</span>";
         var bar = document.getElementById("deeplBar");
-        if (bar) { bar.style.width = pct + "%"; bar.style.background = pct > 80 ? "#ef4444" : pct > 50 ? "#f59e0b" : "#0f2b46"; }
+        if (bar) { bar.style.width = pct + "%"; bar.style.background = pct > 80 ? "#ef4444" : pct > 50 ? "#f59e0b" : "#22c55e"; }
         var lbl = document.getElementById("deeplBarLabel");
         if (lbl) lbl.textContent = pct + "% " + (currentLang === "en" ? "usage" : "χρήση");
       }).catch(function() {});
