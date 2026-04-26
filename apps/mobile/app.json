@@ -47,6 +47,7 @@
     ],
     "extra": {
       "distributionChannel": "direct",
+      "buildFlavor": "play",
       "eas": {
         "projectId": "f6cfa7b1-ff85-4020-ac35-94d3774615fd"
       }
