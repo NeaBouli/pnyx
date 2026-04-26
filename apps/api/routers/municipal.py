@@ -166,7 +166,7 @@ async def get_voteable_decisions(
             "organization_label": d.organization_label,
             "dimos_id": d.dimos_id,
             "decision_type_uid": d.decision_type_uid,
-            "issue_date": d.issue_date.isoformat() if d.issue_date else None,
+            "issue_date": d.publish_timestamp.isoformat() if d.publish_timestamp else None,
             "document_url": d.document_url,
             "governance_level": "MUNICIPAL",
             "votes": {"yes": yes_c, "no": no_c, "abstain": abs_c, "total": total},
