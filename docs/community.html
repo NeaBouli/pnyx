@@ -544,10 +544,12 @@
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Πρόγραμμα:" data-en="Plan:">Πρόγραμμα:</span><strong>Free API</strong></div>
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Όριο:" data-en="Limit:">Όριο:</span><strong id="deeplLimit">500.000 <span data-el="χαρ./μήνα" data-en="chars/month">χαρ./μήνα</span></strong></div>
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Χρήση:" data-en="Usage:">Χρήση:</span><strong id="deeplUsed">—</strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Περίοδος:" data-en="Period:">Περίοδος:</span><strong id="deeplPeriod">—</strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Reset σε:" data-en="Resets in:">Reset σε:</span><strong id="deeplDays">—</strong></div>
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong style="color:#166534">0€</strong></div>
       </div>
       <div style="background:#e2e8f0;border-radius:0.3rem;height:8px;margin:0.5rem 0;overflow:hidden">
-        <div id="deeplBar" style="height:100%;background:#0f2b46;border-radius:0.3rem;transition:width 0.5s;width:0%"></div>
+        <div id="deeplBar" style="height:100%;background:#22c55e;border-radius:0.3rem;transition:width 0.5s;width:0%"></div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--gray-400)">
         <span id="deeplBarLabel" data-el="0% χρήση" data-en="0% usage">0% χρήση</span>
@@ -1222,14 +1224,33 @@ function copyAddr(id) {
   setInterval(fetchCryptoPrices, 60000);     // BTC/LTC prices every 60s
   setInterval(fetchNewsletterStats, 60000);  // Newsletter stats every 60s
 
-  // DeepL usage
+  // DeepL usage + billing cycle (resets on 26th of each month, started 26.04.2026)
+  function deeplBillingCycle() {
+    var now = new Date();
+    var resetDay = 26;
+    var startY = now.getFullYear(), startM = now.getMonth();
+    // Current period start: 26th of this month or last month
+    if (now.getDate() < resetDay) { startM--; if (startM < 0) { startM = 11; startY--; } }
+    var periodStart = new Date(startY, startM, resetDay);
+    var nextM = startM + 1, nextY = startY;
+    if (nextM > 11) { nextM = 0; nextY++; }
+    var periodEnd = new Date(nextY, nextM, resetDay);
+    var daysLeft = Math.ceil((periodEnd - now) / 86400000);
+    var fmt = function(d) { return d.getDate().toString().padStart(2,"0") + "." + (d.getMonth()+1).toString().padStart(2,"0") + "." + d.getFullYear(); };
+    return { start: fmt(periodStart), end: fmt(periodEnd), daysLeft: daysLeft };
+  }
   function fetchDeeplUsage() {
+    var cycle = deeplBillingCycle();
+    var per = document.getElementById("deeplPeriod");
+    if (per) per.textContent = cycle.start + " — " + cycle.end;
+    var days = document.getElementById("deeplDays");
+    if (days) days.textContent = cycle.daysLeft + " " + (currentLang === "en" ? "days" : "ημέρες");
     fetch("https://api.ekklesia.gr/api/v1/admin/deepl/usage")
       .then(function(r) { return r.json(); })
       .then(function(d) {
         if (!d.available) return;
         var used = d.character_count || 0;
-        var limit = d.character_limit || 1000000;
+        var limit = d.character_limit || 500000;
         var pct = Math.round(used / limit * 100);
         var el = document.getElementById("deeplUsed");
         if (el) el.textContent = used.toLocaleString() + " / " + limit.toLocaleString();
