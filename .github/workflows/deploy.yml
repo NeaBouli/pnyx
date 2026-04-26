@@ -1,15 +1,10 @@
 name: Deploy to Hetzner
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/api/**'
-      - 'apps/web/**'
-      - 'docs/**'
-      - 'packages/crypto/**'
-      - 'infra/docker/**'
   workflow_dispatch:
+  # Auto-deploy disabled — SSH key is passphrase-protected.
+  # Deploy manually: ssh → git pull → docker compose up -d --build
+  # Re-enable push trigger after generating a passphrase-free CI key.
 
 jobs:
   deploy:
