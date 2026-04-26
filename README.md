@@ -1,92 +1,91 @@
 <!-- @ai-anchor README_ROOT -->
 <!-- @update-hint Main repo file. Logo path: apps/web/public/pnx.png -->
-<!-- @seo Ekklesia.gr — Ψηφιακή Πλατφόρμα Αμέσης Δημοκρατίας Ελλάδα -->
 
 <div align="center">
 
-<img src="apps/web/public/pnx.png" alt="εκκλησία logo" width="120" />
+<img src="apps/web/public/pnx.png" alt="ekklesia logo" width="120" />
 
-# εκκλησία · Ekklesia.gr
+# ekklesia tou ethnous · Ekklesia.gr
 
-### Ψηφιακή Πλατφόρμα Αμέσης Δημοκρατίας για τον Έλληνα Πολίτη
 ### Digital Direct Democracy Platform for Greek Citizens
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/NeaBouli/pnyx/actions/workflows/ci.yml/badge.svg)](https://github.com/NeaBouli/pnyx/actions)
-[![Wiki](https://img.shields.io/badge/Wiki-17%20pages-green)](https://github.com/NeaBouli/pnyx/wiki)
+[![Modules](https://img.shields.io/badge/Modules-22-green)](https://ekklesia.gr/wiki/modules.html)
 [![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-red)](https://github.com/NeaBouli/pnyx)
 
-**© 2026 Vendetta Labs — MIT License**
+**© 2026 Vendetta Labs �� MIT License**
 
-[🌐 Ekklesia.gr](https://ekklesia.gr) · [📖 Wiki](https://github.com/NeaBouli/pnyx/wiki) · [⚡ API Docs](https://api.ekklesia.gr/docs) · [📄 Whitepaper](docs/WHITEPAPER.md)
+[Website](https://ekklesia.gr) · [Wiki](https://ekklesia.gr/wiki/) · [API](https://api.ekklesia.gr/health) · [Download APK](https://ekklesia.gr/download/)
 
 </div>
 
 ---
 
-## 🏛️ Τι είναι η Ekklesia; / What is Ekklesia?
+## What is Ekklesia?
 
-Η **εκκλησία** ήταν η λαϊκή συνέλευση της αρχαίας Αθήνας — εκεί όπου κάθε
-πολίτης είχε φωνή. Η **Ekklesia.gr** είναι η ψηφιακή αναβίωσή της.
+The **ekklesia** was the popular assembly of ancient Athens — where every citizen had a voice. **Ekklesia.gr** is its digital revival: an independent, open-source platform where Greek citizens can vote on real parliamentary bills and municipal decisions.
 
-> The **ekklesia** was the popular assembly of ancient Athens — where every
-> citizen had a voice. **Ekklesia.gr** is its digital revival.
+- **Citizen Voting** — Vote on real bills from the Hellenic Parliament
+- **Divergence Score** — See how Parliament votes vs. citizens
+- **Party Comparison** — Which party votes like the people?
+- **Municipal Governance** — Diavgeia decisions per region and municipality
+- **AI Assistant** — Ollama-powered bill summaries and citizen Q&A
+- **Full Anonymity** — Ed25519 signatures, nullifier hashes, zero personal data
 
-- 🗳️ **Πολιτική Πυξίδα** — Συγκρίνετε θέσεις με 8 κόμματα / Compare positions with 8 parties
-- 🏛️ **Ψηφοφορία Πολιτών** — Ψηφίστε για πραγματικά νομοσχέδια / Vote on real parliamentary bills
-- 📊 **Δείκτης Απόκλισης** — Βουλή vs Πολίτες / Parliament vs Citizens
-- 🔐 **Πλήρης Ανωνυμία** — Ed25519 · Nullifier Hash · Μηδενικά προσωπικά δεδομένα
+> This platform is not affiliated with any government entity. All votes are informational only and carry no legal binding force.
 
 ## Data Sources
+
 This project uses publicly available government data from:
-- Hellenic Parliament
-- Diavgeia
-- data.gov.gr
-
-This project is not affiliated with any government entity.
-
-
-⚠️ Η εφαρμογή δεν είναι κρατική και δεν συνδέεται με καμία κυβερνητική αρχή.
-Οι πληροφορίες παρέχονται μόνο για ενημερωτικούς σκοπούς.
+- [Hellenic Parliament](https://www.hellenicparliament.gr/) — Bills, voting records
+- [Diavgeia](https://diavgeia.gov.gr/) — Municipal and regional decisions (OpenData API)
+- [data.gov.gr](https://data.gov.gr/) — Public datasets
 
 ---
 
-## ✨ Χαρακτηριστικά / Features
+## Features
 
-| Χαρακτηριστικό | Περιγραφή | Κατάσταση |
+| Feature | Description | Status |
 |---|---|---|
-| 🗳️ Πολιτική Πυξίδα | 38 θέσεις, 8 κόμματα, Matching Algorithm | ✅ Beta |
-| 🧭 Liquid Compass | 4 Modelle (Party/Links-Rechts/2D/Radar), AES-256-GCM verschlüsselt, 100% lokal | ✅ Beta |
-| 🏛️ Ψηφοφορία Πολιτών | Ed25519 signed, Bill Lifecycle (5 states) | ✅ Beta |
-| 📊 Δείκτης Απόκλισης | Αυτόματη σύγκριση Βουλή vs Πολίτες | ✅ Beta |
-| 🔐 ZK Identity | SMS HLR → Nullifier → Key → Delete | ✅ Beta |
-| 📱 Mobile App | Expo React Native, 7 Screens, Ed25519 Signing, Biometrie | ✅ Beta |
-| ⛓️ TrueRepublic | Cosmos SDK Bridge, PnyxCoin | 🔜 V2 |
-| 🤖 AI Summarizer | Ollama self-hosted (L1) + HuggingFace (L2) + Regel-basiert (L3) | ✅ Alpha |
-| 🔑 Ed25519 Signing | @noble/curves v2.0.1, Web + Mobile, cross-platform verifiziert | ✅ Beta |
-| 🔔 Smart Notifications | Kategorie-Filter, Ping-only Push, 3 Content-Modi (Manuell/Auto/Headline) | 🔜 Geplant |
+| Citizen Voting | Ed25519 signed votes on real parliamentary bills | Beta |
+| Divergence Score | Automatic comparison Parliament vs Citizens | Beta |
+| Party Ranking | Which party agrees most with citizens | Beta |
+| Municipal Governance | 13 regions, 325 municipalities, Diavgeia integration | Beta |
+| AI Bill Summaries | Ollama llama3.2:3b, cached in Redis | Beta |
+| RAG Agent | Citizen Q&A powered by local AI | Beta |
+| Auto-Healing Scraper | Ollama repairs broken CSS selectors | Beta |
+| Newsletter | Listmonk + Brevo SMTP, 6 subscriber lists | Beta |
+| Push Notifications | Expo Push API, APScheduler | Beta |
+| Stripe Donations | Community-funded, auto-allocation | Beta |
+| Mobile App | Expo React Native, Ed25519, Compass | Beta |
+| Arweave Archive | Immutable vote audit trail | Beta |
+| TrueRepublic Bridge | Cosmos SDK, PnyxCoin on-chain votes | Planned (V2) |
 
 ---
 
-## 🏗️ Αρχιτεκτονική / Architecture
+## Architecture
+
 ```
 pnyx/
-├── apps/
-│   ├── api/          → Python FastAPI  (62 endpoints, 14 Router)
-│   ├── web/          → Next.js 14      (10 Routes, el/en, Liquid Compass)
-│   └── mobile/       → Expo RN         (7 Screens, ✅ gebaut)
+├���─ apps/
+│   ├── api/          → Python FastAPI  (70+ endpoints, 22 modules)
+│   ├��─ web/          → Next.js 14      (el/en, Tailwind, light theme)
+│   └── mobile/       → Expo RN         (Android APK + Play Store)
 ├── packages/
-│   ├── crypto/       → Ed25519 · Nullifier · HLR
-│   └── db/           → Alembic Migrations
-├── infra/
-│   └── docker/       → PostgreSQL · Redis · API
-├── wiki/             → 17 Wiki Seiten
-└── docs/
-    ├── CLAUDE.md     → AI Context Anchor
-    ├── WHITEPAPER.md → Technical Whitepaper
-    ├── TODO.md       → Session tracking
-    └── reports/      → Build reports
+│   ├── crypto/       → Ed25519 · Nullifier · HMAC Chain (47 tests)
+│   └── db/           → Alembic Migrations (15+ tables)
+��── infra/
+│   └── docker/       → PostgreSQL · Redis · Ollama · Traefik
+└── docs/             → Landing page + Wiki + Community
 ```
+
+### Server Infrastructure (Hetzner CX33)
+- **9 containers**: API, Web, DB, Redis, Ollama, Traefik, Listmonk (x3)
+- **Ollama llama3.2:3b**: 2.6 GB RAM, 5 GB limit
+- **Rate limiting**: 60 req/min/IP global, 5 req/min/IP for AI endpoints
+- **Circuit breaker**: 3 errors → 24h pause, auto-reset
+- **Auto-deploy**: GitHub Actions CI/CD
 
 ### Bill Lifecycle
 ```
@@ -95,134 +94,137 @@ ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END
 
 ---
 
-## 🚀 Εκκίνηση / Quick Start
+## Quick Start
 
-### Προαπαιτούμενα / Prerequisites
+### Prerequisites
 - Docker + Docker Compose
 - Python 3.12+
 - Node.js 20+
 
-### Εγκατάσταση / Installation
+### Installation
 ```bash
 # 1. Clone
-git clone https://github.com/NeaBouli/pnyx
-cd pnyx
+git clone https://github.com/NeaBouli/pnyx && cd pnyx
 
-# 2. Εκκίνηση υπηρεσιών / Start services
+# 2. Start services
 cd infra/docker && docker compose up -d
 
-# 3. Βάση δεδομένων / Database
+# 3. Database
 cd ../../apps/api
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-alembic upgrade head
-python seeds/seed_real_bills.py
+alembic upgrade head && python seeds/seed_real_bills.py
 
-# 4. API (http://localhost:8000/docs)
+# 4. API
 uvicorn main:app --reload
 
-# 5. Web (http://localhost:3000)
-cd ../web && npm install && npm run dev
+# 5. Web
+cd ../web && npm ci && npm run dev
 ```
 
 ### Tests
 ```bash
-# Web Tests (29 passed — crypto + cross-platform compat)
-cd apps/web && npx vitest run
+# API Tests (106 passed)
+cd apps/api && python -m pytest tests/ -v
 
-# API Tests (51 passed + 16 xfail)
-cd apps/api && .venv/bin/python -m pytest tests/ -v
-
-# Crypto Tests (12 passed)
-cd packages/crypto && .venv/bin/python -m pytest tests/ -v
-
-# Mobile TypeScript Check
-cd apps/mobile && npx tsc --noEmit
+# Crypto Tests (47 passed — nullifier + polis)
+cd packages/crypto && npx vitest run
 
 # Web Build
-cd apps/web && npx next build
+cd apps/web && npm run build
 ```
 
 ---
 
-## 🔐 Ασφάλεια & Ιδιωτικότητα / Security & Privacy
+## Security & Privacy
 
-| Δεδομένο | Αποθηκεύεται; |
+| Data | Stored? |
 |---|---|
-| Αριθμός κινητού | ❌ Διαγράφεται αμέσως |
-| Ιδιωτικό κλειδί | ❌ Μόνο στη συσκευή |
-| Προσωπικά δεδομένα | ❌ Ποτέ |
-| Nullifier Hash | ✅ SHA256 (non-reversible) |
-| Public Key | ✅ Ed25519 Hex |
-| Ψήφοι | ✅ Anonymized |
+| Mobile number | Deleted immediately after verification |
+| Private key | Device only — never leaves your phone |
+| Personal data | Never collected |
+| Nullifier hash | SHA256 + Argon2id (non-reversible) |
+| Public key | Ed25519 hex (anonymous) |
+| Votes | Anonymized, Arweave-archived |
 
-→ Λεπτομέρειες: [Security Wiki](https://github.com/NeaBouli/pnyx/wiki/Security)
+→ Details: [Security Wiki](https://ekklesia.gr/wiki/security.html)
 
 ---
 
-## 📊 Κατάσταση / Status
+## Status
 
-| Μετρική | Τιμή |
+| Metric | Value |
 |---|---|
-| Commits | 196 |
-| API Endpoints | 62 (14 Router) |
-| DB Tables | 13 |
-| Tests | 92 (Web 29 + API 51 + Crypto 12, 16 xfailed) |
-| Web Pages | 10 Routes (inkl. Liquid Compass) |
-| Wiki Pages | 17 Seiten |
-| CI Status | ✅ Green |
+| Modules | 22 (MOD-01 through MOD-22) |
+| API Endpoints | 70+ |
+| DB Tables | 15+ (Alembic managed) |
+| Containers | 9 (including Ollama) |
+| CI | Green |
+| Security Score | ~90/100 |
 
 ---
 
-## 🗺️ Χάρτης Πορείας / Roadmap
+## Distribution
 
-| Φάση | Trigger | Κατάσταση |
+| Channel | Status | Link |
 |---|---|---|
-| **Beta** | Τώρα | 🟢 Ενεργή |
-| **Alpha** | 500 χρήστες + 3 NGOs | ⏳ Επερχόμενη |
-| **V2** | Αποδεδειγμένη σταθερότητα | 📋 Σχεδιασμένη |
-
-→ Λεπτομέρειες: [Roadmap Wiki](https://github.com/NeaBouli/pnyx/wiki/Roadmap)
+| Direct APK | Live | [ekklesia.gr/download](https://ekklesia.gr/download/) |
+| GitHub Release | v1.0.0 | [Releases](https://github.com/NeaBouli/pnyx/releases) |
+| Google Play | Closed Testing | [Play Store](https://play.google.com/store/apps/details?id=ekklesia.gr) |
+| F-Droid | Pending Review | [MR #37087](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/37087) |
 
 ---
 
-## 📚 Τεκμηρίωση / Documentation
+## Roadmap
 
-| Έγγραφο | Περιγραφή |
+| Phase | Trigger | Status |
+|---|---|---|
+| **Beta** | Now | Active |
+| **Alpha** | 500 users + 3 NGOs + gov.gr OAuth | Upcoming |
+| **V2** | TrueRepublic Bridge + PnyxCoin | Planned |
+
+→ Details: [Roadmap](https://ekklesia.gr/wiki/roadmap.html)
+
+---
+
+## Documentation
+
+| Document | Description |
 |---|---|
-| [📖 Wiki](https://github.com/NeaBouli/pnyx/wiki) | Πλήρης τεκμηρίωση |
-| [📄 Whitepaper](docs/WHITEPAPER.md) | Τεχνικό λευκό βιβλίο |
-| [🗺️ Roadmap](docs/ROADMAP.md) | Χάρτης πορείας |
-| [✅ TODO](docs/TODO.md) | Τρέχουσες εργασίες |
-| [🔐 Security](https://github.com/NeaBouli/pnyx/wiki/Security) | Μοντέλο ασφαλείας |
-| [🏗️ Architecture](https://github.com/NeaBouli/pnyx/wiki/Architecture) | Αρχιτεκτονική |
+| [Wiki](https://ekklesia.gr/wiki/) | Full technical documentation (12 pages) |
+| [API Docs](https://ekklesia.gr/wiki/api.html) | 70+ endpoints, all modules |
+| [Modules](https://ekklesia.gr/wiki/modules.html) | MOD-01 through MOD-22 |
+| [Security](https://ekklesia.gr/wiki/security.html) | Ed25519, Nullifier, threat model |
+| [Architecture](https://ekklesia.gr/wiki/architecture.html) | Stack, monorepo, lifecycle |
+| [FAQ](https://ekklesia.gr/wiki/faq.html) | Frequently asked questions |
 
 ---
 
-## 🤝 Συνεισφορά / Contributing
+## Contributing
+
 ```bash
 # Fork → Branch → PR
 git checkout -b feat/your-feature
-# Δείτε: https://github.com/NeaBouli/pnyx/wiki/Contributing
 ```
 
 **Commit format:** `feat(module): description` | `fix(module): description`
 
+→ Details: [Contributing Guide](https://ekklesia.gr/wiki/contributing.html)
+
 ---
 
-## ⚖️ Άδεια / License
+## License
+
 MIT License — Copyright (c) 2026 Vendetta Labs
 
-Ελεύθερη χρήση, τροποποίηση και διανομή.
 Free to use, modify and distribute.
 
 ---
 
 <div align="center">
 
-**Η δημοκρατία δεν είναι θέαμα. Είναι πράξη.**
-*Democracy is not a spectacle. It is action.*
+**Democracy is not a spectacle. It is action.**
 
-[⭐ Star on GitHub](https://github.com/NeaBouli/pnyx) · [🐛 Issues](https://github.com/NeaBouli/pnyx/issues) · [📖 Wiki](https://github.com/NeaBouli/pnyx/wiki)
+[Star on GitHub](https://github.com/NeaBouli/pnyx) · [Report Issues](https://github.com/NeaBouli/pnyx/issues) · [Wiki](https://ekklesia.gr/wiki/)
 
 </div>
