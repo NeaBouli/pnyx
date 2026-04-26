@@ -1,0 +1,8 @@
+Version 4 — Closed Testing
+• Security: CORS restricted + SSH hardened
+• Analytics datetime fix
+• POLIS OAuth integration
+• Compass ring on HomeScreen
+• Bill sharing via native Share API
+• Push notification token registration
+• Update check on ProfileScreen

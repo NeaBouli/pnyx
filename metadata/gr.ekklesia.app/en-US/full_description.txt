@@ -1,0 +1,24 @@
+ekklesia is an independent, open-source direct democracy platform for Greek citizens.
+
+Vote on real parliamentary bills, regional and municipal decisions — anonymously and securely.
+
+Features:
+• Citizen Voting — Vote Yes/No/Abstain on real bills from the Hellenic Parliament
+• Divergence Score — See how Parliament votes vs. citizens
+• Party Comparison — Which party agrees most with the people?
+• Municipal Governance — Diavgeia integration for regional decisions
+• AI Summaries — Bill analysis powered by Ollama + DeepL
+• Full Anonymity — Ed25519 cryptographic signatures, nullifier hashes, zero PII
+
+Security:
+• No personal data stored — phone number deleted after verification
+• Private key stays on your device — never leaves your phone
+• Every vote is cryptographically signed — impossible to falsify
+• Results archived on Arweave — permanent, immutable audit trail
+
+This platform is not affiliated with any government entity. All votes are informational only and carry no legal binding force.
+
+Data sources: Hellenic Parliament, Diavgeia (diavgeia.gov.gr), data.gov.gr
+
+Open Source: MIT License — github.com/NeaBouli/pnyx
+© 2026 Vendetta Labs
