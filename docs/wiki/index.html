@@ -183,7 +183,7 @@
   <a href="../" class="nav-logo"><img src="../pnx.png" alt="logo" style="width:40px;height:40px;object-fit:contain"/>εκκλησία<span style="font-size:0.55em;color:#9ca3af;font-weight:400;margin-left:0.35em;letter-spacing:0.05em">του έθνους</span></a>
   <div class="nav-links">
     <a href="../" data-el="Αρχική" data-en="Home">Αρχική</a>
-    <a href="../votes/active.html" data-el="Ψηφοφορίες" data-en="Votes">Ψηφοφορίες</a>
+    <a href="/el/bills" data-el="Ψηφοφορίες" data-en="Votes">Ψηφοφορίες</a>
     <a href="index.html" class="active" data-el="Wiki" data-en="Wiki">Wiki</a>
     <a href="../community.html" data-el="Community" data-en="Community">Community</a>
     <span style="width:1px;height:20px;background:#e2e8f0;margin:0 0.3rem"></span>
@@ -210,11 +210,11 @@
   <div class="card-grid fade-in">
     <a href="architecture.html" class="card"><div class="card-icon">🏗️</div><h4 data-el="Αρχιτεκτονική" data-en="Architecture">Αρχιτεκτονική</h4><p>Stack, Monorepo, Bill Lifecycle</p></a>
     <a href="security.html"     class="card"><div class="card-icon">🔐</div><h4 data-el="Ασφάλεια" data-en="Security">Ασφάλεια</h4><p>Ed25519, Nullifier, ZK</p></a>
-    <a href="api.html"          class="card"><div class="card-icon">⚡</div><h4>API</h4><p>62 Endpoints, Schemas</p></a>
-    <a href="modules.html"      class="card"><div class="card-icon">🧩</div><h4>Modules</h4><p>MOD-01 — MOD-16</p></a>
+    <a href="api.html"          class="card"><div class="card-icon">⚡</div><h4>API</h4><p data-el="70+ Endpoints, 22 Modules" data-en="70+ Endpoints, 22 Modules">70+ Endpoints, 22 Modules</p></a>
+    <a href="modules.html"      class="card"><div class="card-icon">🧩</div><h4>Modules</h4><p>MOD-01 — MOD-22</p></a>
     <a href="roadmap.html"      class="card"><div class="card-icon">🗺️</div><h4>Roadmap</h4><p>Beta → Alpha → V2</p></a>
     <a href="privacy.html"      class="card"><div class="card-icon">🛡️</div><h4 data-el="Ιδιωτικότητα" data-en="Privacy">Ιδιωτικότητα</h4><p>GDPR, k-Anonymity</p></a>
-    <a href="database.html"     class="card"><div class="card-icon">🗄️</div><h4>Database</h4><p data-el="13 Πίνακες, Schema" data-en="13 Tables, Schema">13 Πίνακες, Schema</p></a>
+    <a href="database.html"     class="card"><div class="card-icon">🗄️</div><h4>Database</h4><p data-el="15+ Πίνακες, Alembic" data-en="15+ Tables, Alembic">15+ Πίνακες, Alembic</p></a>
     <a href="contributing.html" class="card"><div class="card-icon">🤝</div><h4>Contributing</h4><p data-el="Setup, Tests, Commits" data-en="Setup, Tests, Commits">Setup, Tests, Commits</p></a>
     <a href="../community.html#community-driven" class="card"><div class="card-icon">🏛️</div><h4 data-el="Community Driven" data-en="Community Driven">Community Driven</h4><p data-el="POLIS, Tickets, Χωρίς Ομάδα" data-en="POLIS, Tickets, No Team">POLIS, Tickets, Χωρίς Ομάδα</p></a>
     <a href="whitepaper.html"   class="card"><div class="card-icon">📄</div><h4>Whitepaper</h4><p data-el="Λευκό Βιβλίο v1.0" data-en="Technical Whitepaper v1.0">Λευκό Βιβλίο v1.0</p></a>
@@ -232,7 +232,7 @@ cd infra/docker && docker compose up -d
 cd ../../apps/api && pip install -r requirements.txt
 alembic upgrade head && python seeds/seed_real_bills.py
 
-<span class="code-c"># API → http://localhost:8000/docs</span>
+<span class="code-c"># API → https://api.ekklesia.gr/health</span>
 uvicorn main:app --reload
 
 <span class="code-c"># Web → http://localhost:3000</span>
@@ -264,9 +264,9 @@ cd ../web && npm install && npm run dev</div>
   <div class="footer-links">
     <a href="..//">Αρχική</a>
     <a href="../wiki/">Wiki</a>
-    <a href="../votes/active.html" data-el="Τρέχουσες" data-en="Active">Τρέχουσες</a>
-    <a href="../votes/recent.html" data-el="24 Ώρες" data-en="24 Hours">24 Ώρες</a>
-    <a href="../votes/results.html" data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</a>
+    <a href="/el/bills" data-el="Τρέχουσες" data-en="Active">Τρέχουσες</a>
+    <a href="/el/bills" data-el="24 Ώρες" data-en="24 Hours">24 Ώρες</a>
+    <a href="/el/results" data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</a>
     <a href="../community.html">Community</a>
     <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>
   </div>

@@ -156,7 +156,7 @@
   <a href="../" class="nav-logo"><img src="../pnx.png" alt="logo" style="width:40px;height:40px;object-fit:contain"/>εκκλησία<span style="font-size:0.55em;color:#9ca3af;font-weight:400;margin-left:0.35em;letter-spacing:0.05em">του έθνους</span></a>
   <div class="nav-links">
     <a href="../" data-el="Αρχική" data-en="Home">Αρχική</a>
-    <a href="../votes/active.html" data-el="Ψηφοφορίες" data-en="Votes">Ψηφοφορίες</a>
+    <a href="/el/bills" data-el="Ψηφοφορίες" data-en="Votes">Ψηφοφορίες</a>
     <a href="index.html" data-el="Wiki" data-en="Wiki">Wiki</a>
     <a href="../community.html" data-el="Community" data-en="Community">Community</a>
     <span style="width:1px;height:20px;background:#e2e8f0;margin:0 0.3rem"></span>
@@ -180,7 +180,7 @@
 <div class="layout">
 
   <h2 class="fade-in">API Endpoints</h2>
-  <div class="info-box fade-in"><p>Base URL: <strong>https://api.ekklesia.gr/api/v1</strong> (Hetzner) &nbsp;|&nbsp; Dev: <strong>http://localhost:8000/api/v1</strong> &nbsp;|&nbsp; Docs: <strong>/docs</strong></p></div>
+  <div class="info-box fade-in"><p>Base URL: <strong>https://api.ekklesia.gr/api/v1</strong> &nbsp;|&nbsp; Rate Limit: 60 req/min/IP &nbsp;|&nbsp; 22 Modules</p></div>
   <div class="table-wrap fade-in">
     <table>
       <tr><th>Module</th><th>Method</th><th>Endpoint</th><th>Description</th></tr>
@@ -266,12 +266,22 @@
       <tr><td><span class="dot-on"></span>MOD-21</td><td><span class="badge badge-green">POST</span></td><td>/admin/diavgeia/scrape</td><td>Manual Scrape (Admin)</td></tr>
       <tr><td><span class="dot-on"></span>MOD-21</td><td><span class="badge badge-green">POST</span></td><td>/admin/diavgeia/refresh-orgs-cache</td><td>Org Cache Refresh (Admin)</td></tr>
       <tr><td><span class="dot-on"></span>MOD-21</td><td><span class="badge badge-blue">GET</span></td><td>/scraper/jobs</td><td>Scraper Job Status (Redis)</td></tr>
+      <!-- MOD-22 RAG Agent -->
+      <tr><td><span class="dot-on"></span>MOD-22</td><td><span class="badge badge-green">POST</span></td><td>/agent/ask</td><td data-el="RAG Agent — Ερωτήσεις Πολιτών (5 req/min)" data-en="RAG Agent — Citizen Q&A (5 req/min)">RAG Agent — Ερωτήσεις Πολιτών (5 req/min)</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-22</td><td><span class="badge badge-blue">GET</span></td><td>/bills/{id}/summary</td><td data-el="AI Περίληψη Νόμου (Redis cache 7d)" data-en="AI Bill Summary (Redis cache 7d)">AI Περίληψη Νόμου (Redis cache 7d)</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-22</td><td><span class="badge badge-green">POST</span></td><td>/admin/logs/explain</td><td data-el="Ollama Ανάλυση Logs (Admin)" data-en="Ollama Log Analysis (Admin)">Ollama Ανάλυση Logs (Admin)</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-22</td><td><span class="badge badge-green">POST</span></td><td>/admin/scraper/heal-status</td><td data-el="Auto-Healing Status (Admin)" data-en="Auto-Healing Status (Admin)">Auto-Healing Status (Admin)</td></tr>
+      <!-- MOD-19 Newsletter -->
+      <tr><td><span class="dot-on"></span>MOD-19</td><td><span class="badge badge-green">POST</span></td><td>/newsletter/subscribe</td><td data-el="Newsletter Εγγραφή" data-en="Newsletter Subscribe">Newsletter Εγγραφή</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-19</td><td><span class="badge badge-blue">GET</span></td><td>/newsletter/stats</td><td data-el="Newsletter Στατιστικά" data-en="Newsletter Stats">Newsletter Στατιστικά</td></tr>
+      <!-- MOD-20 Push Notifications -->
+      <tr><td><span class="dot-on"></span>MOD-20</td><td><span class="badge badge-green">POST</span></td><td>/notify/register</td><td data-el="Push Token Εγγραφή" data-en="Push Token Registration">Push Token Εγγραφή</td></tr>
     </table>
   </div>
 
   <h2 class="fade-in" data-el="Παράδειγμα" data-en="Example">Παράδειγμα</h2>
   <div class="code-block fade-in"><span class="code-c"># Cast a vote</span>
-curl -X POST http://localhost:8000/api/v1/vote \
+curl -X POST https://api.ekklesia.gr/api/v1/vote \
   -H "Content-Type: application/json" \
   -d '{
     "bill_id": "GR-2025-001",
@@ -286,9 +296,9 @@ curl -X POST http://localhost:8000/api/v1/vote \
   <div class="footer-links">
     <a href="..//">Αρχική</a>
     <a href="../wiki/">Wiki</a>
-    <a href="../votes/active.html" data-el="Τρέχουσες" data-en="Active">Τρέχουσες</a>
-    <a href="../votes/recent.html" data-el="24 Ώρες" data-en="24 Hours">24 Ώρες</a>
-    <a href="../votes/results.html" data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</a>
+    <a href="/el/bills" data-el="Τρέχουσες" data-en="Active">Τρέχουσες</a>
+    <a href="/el/bills" data-el="24 Ώρες" data-en="24 Hours">24 Ώρες</a>
+    <a href="/el/results" data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</a>
     <a href="../community.html">Community</a>
     <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>
   </div>
