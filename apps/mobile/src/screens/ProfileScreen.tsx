@@ -60,6 +60,24 @@ export default function ProfileScreen() {
     else await SecureStore.deleteItemAsync("user_dimos_id");
     await SecureStore.setItemAsync("user_language", language);
     await SecureStore.setItemAsync("user_profile_completed", "true");
+
+    // Sync location to server (enables vote scope enforcement)
+    try {
+      const nullifier = await SecureStore.getItemAsync("ekklesia:nullifier:v1");
+      if (nullifier) {
+        const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
+        await fetch(`${API}/api/v1/identity/profile/location`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nullifier_hash: nullifier,
+            periferia_id: selectedPeriferia || 0,
+            dimos_id: selectedDimos || 0,
+          }),
+        });
+      }
+    } catch {} // offline-first: local save always works
+
     setSaving(false);
     nav.navigate("Tabs");
   };

@@ -260,3 +260,47 @@ async def hlr_credits():
         "cost_per_query_eur": cost_per_query,
         "status": "critical" if remaining < 50 else ("low" if remaining < 200 else "ok"),
     }
+
+
+# ─── Profile Location Sync ────────────────────────────────────────────────────
+
+class LocationUpdateRequest(BaseModel):
+    nullifier_hash: str = Field(..., min_length=16, max_length=64)
+    periferia_id: int | None = None
+    dimos_id: int | None = None
+
+
+@router.patch("/profile/location")
+async def update_profile_location(
+    req: LocationUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Sync user's declared Dimos/Periferia to server.
+    Enables vote scope enforcement for MUNICIPAL/REGIONAL bills.
+    No PII stored — only integer IDs linked to anonymous nullifier.
+    """
+    # Find identity
+    result = await db.execute(
+        select(IdentityRecord).where(
+            IdentityRecord.nullifier_hash == req.nullifier_hash,
+            IdentityRecord.status == KeyStatus.ACTIVE,
+        )
+    )
+    identity = result.scalar_one_or_none()
+    if not identity:
+        raise HTTPException(403, "Nullifier nicht gefunden oder revoziert.")
+
+    # Update location
+    if req.periferia_id is not None:
+        identity.periferia_id = req.periferia_id if req.periferia_id > 0 else None
+    if req.dimos_id is not None:
+        identity.dimos_id = req.dimos_id if req.dimos_id > 0 else None
+
+    await db.commit()
+
+    return {
+        "success": True,
+        "periferia_id": identity.periferia_id,
+        "dimos_id": identity.dimos_id,
+    }
