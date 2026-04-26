@@ -34,9 +34,12 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
   const [selectedVote, setSelectedVote] = useState<string | null>(null);
   const [voteLoading, setVoteLoading] = useState(false);
   const [voteError, setVoteError] = useState<string | null>(null);
+  const [aiSummary, setAiSummary] = useState<string>("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   const titleKey = locale === "el" ? "title_el" : "title_en";
   const shortKey = locale === "el" ? "summary_short_el" : "summary_short_en";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.ekklesia.gr";
 
   useEffect(() => {
     Promise.all([
@@ -47,6 +50,17 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
       setResults(resultsRes.data);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [billId]);
+
+  // Fetch AI summary when "Ανάλυση" tab is clicked
+  useEffect(() => {
+    if (expanded !== "long" || aiSummary || aiLoading) return;
+    setAiLoading(true);
+    fetch(`${API_URL}/api/v1/bills/${encodeURIComponent(billId)}/summary?lang=${locale}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.summary) setAiSummary(d.summary); })
+      .catch(() => {})
+      .finally(() => setAiLoading(false));
+  }, [expanded, billId, locale, aiSummary, aiLoading, API_URL]);
 
   async function handleVoteClick(choice: string) {
     const keypair = loadKeypair();
@@ -204,12 +218,26 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
               </button>
             ))}
           </div>
-          <p className="text-gray-700 leading-relaxed">
-            {expanded === "short"
-              ? (bill[shortKey as keyof Bill] as string || bill.pill_el || "—")
-              : (locale === "el" ? bill.summary_long_el : bill.summary_long_en) || "—"
-            }
-          </p>
+          {expanded === "short" ? (
+            <p className="text-gray-700 leading-relaxed">
+              {bill[shortKey as keyof Bill] as string || bill.pill_el || "—"}
+            </p>
+          ) : (
+            <div className="text-gray-700 leading-relaxed">
+              {aiLoading ? (
+                <div className="flex items-center gap-2 text-gray-400 text-sm animate-pulse">
+                  <span>AI</span>
+                  {locale === "el" ? "Φόρτωση ανάλυσης..." : "Loading analysis..."}
+                </div>
+              ) : aiSummary ? (
+                <div className="whitespace-pre-line">{aiSummary}</div>
+              ) : (bill.summary_long_el || bill.summary_long_en) ? (
+                <p>{locale === "el" ? bill.summary_long_el : (bill.summary_long_en || bill.summary_long_el)}</p>
+              ) : (
+                <p className="text-gray-400">{locale === "el" ? "Δεν υπάρχει ανάλυση ακόμα." : "No analysis available yet."}</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── VOTING ── */}

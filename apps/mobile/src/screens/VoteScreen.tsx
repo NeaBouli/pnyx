@@ -32,6 +32,17 @@ export default function VoteScreen({ route, navigation }: Props) {
   const { billId, billTitle } = route.params;
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  const [summary, setSummary] = useState("");
+  const [summaryLoading, setSummaryLoading] = useState(true);
+
+  React.useEffect(() => {
+    const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
+    fetch(`${API}/api/v1/bills/${encodeURIComponent(billId)}/summary?lang=el`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.summary) setSummary(d.summary); })
+      .catch(() => {})
+      .finally(() => setSummaryLoading(false));
+  }, [billId]);
 
   async function handleVote(choice: string) {
     setSelected(choice);
@@ -115,6 +126,18 @@ export default function VoteScreen({ route, navigation }: Props) {
           <Text style={{ fontSize: 20, color: colors.primary }}>↗</Text>
         </TouchableOpacity>
       </View>
+      {/* AI Summary */}
+      {summaryLoading ? (
+        <ActivityIndicator size="small" color={colors.textSecondary} style={{ marginBottom: 16 }} />
+      ) : summary ? (
+        <View style={{ backgroundColor: "#eff6ff", borderRadius: 12, padding: 14, marginBottom: 16 }}>
+          <Text style={{ fontWeight: "700", color: "#1e40af", fontSize: 13, marginBottom: 6 }}>
+            Σύνοψη & Ανάλυση
+          </Text>
+          <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20 }}>{summary}</Text>
+        </View>
+      ) : null}
+
       <Text style={styles.info}>
         Επιλέξτε την ψήφο σας. Απαιτείται βιομετρική πιστοποίηση.
       </Text>
