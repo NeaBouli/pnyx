@@ -319,3 +319,44 @@ async def deepl_usage():
             }
     except Exception:
         return {"available": False, "character_count": 0, "character_limit": 0}
+
+
+@router.post("/bills/{bill_id}/fetch-text")
+async def admin_fetch_bill_text(
+    bill_id: str,
+    _key=Depends(verify_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Fetch bill text from parliament via Jina Reader + update DB."""
+    import redis.asyncio as aioredis
+    from services.parliament_fetcher import enrich_bill_with_text
+    redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
+    r = aioredis.from_url(redis_url, decode_responses=True)
+    result = await enrich_bill_with_text(bill_id, db, r)
+    return result
+
+
+@router.post("/bills/{bill_id}/set-text")
+async def admin_set_bill_text(
+    bill_id: str,
+    text: str = "",
+    _key=Depends(verify_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Manually set bill text (for when auto-fetch fails)."""
+    import redis.asyncio as aioredis
+    from sqlalchemy import select
+    bill_result = await db.execute(
+        select(ParliamentBill).where(ParliamentBill.id == bill_id)
+    )
+    bill = bill_result.scalar_one_or_none()
+    if not bill:
+        raise HTTPException(404, f"Bill {bill_id} not found")
+    bill.summary_long_el = text
+    await db.commit()
+    # Clear cache
+    redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
+    r = aioredis.from_url(redis_url, decode_responses=True)
+    await r.delete(f"bill_summary:{bill_id}:el")
+    await r.delete(f"bill_summary:{bill_id}:en")
+    return {"success": True, "bill_id": bill_id, "text_length": len(text)}
