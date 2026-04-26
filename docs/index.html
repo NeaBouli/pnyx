@@ -1289,6 +1289,17 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
   }
   var d=document.getElementById("dBox1");
   if(d) { var io=new IntersectionObserver(function(e){ if(e[0].isIntersecting){ io.disconnect(); clearResultData(); runCycle(); }},{threshold:0.3}); io.observe(d); }
+
+  // Load live result data if available (replaces hardcoded 67%)
+  fetch("https://api.ekklesia.gr/api/v1/vote/results/latest")
+    .then(function(r){return r.json()})
+    .then(function(data){
+      if(!data||!data.bill_id||data.total_votes<1) return;
+      // Override demo values with real data
+      window._liveResult=data;
+      var pct=document.querySelector(".demo-pct");
+      if(pct) pct.textContent=data.no_pct+"% "+(currentLang==="en"?"No":"Κατά");
+    }).catch(function(){});
 })();
 
 // Ticker — live bills from API, fallback to static HTML
@@ -1511,9 +1522,12 @@ if (window.location.hash === "#contact" && sessionStorage.getItem("polis_token")
     <div id="chatMessages" style="flex:1;overflow-y:auto;padding:0.75rem;min-height:200px;max-height:320px;font-size:0.85rem;line-height:1.6">
       <div style="background:#eff6ff;border-radius:0.75rem;padding:0.6rem 0.8rem;margin-bottom:0.5rem;color:#1e40af;font-size:0.8rem" data-el="Γεια σας! Ρωτήστε με οτιδήποτε σχετικά με τα νομοσχέδια, τις ψηφοφορίες ή την πλατφόρμα." data-en="Hello! Ask me anything about bills, votes, or the platform.">Γεια σας! Ρωτήστε με οτιδήποτε σχετικά με τα νομοσχέδια, τις ψηφοφορίες ή την πλατφόρμα.</div>
     </div>
-    <div style="padding:0.5rem;border-top:1px solid #e2e8f0;display:flex;gap:0.5rem">
-      <input id="chatInput" type="text" style="flex:1;padding:0.5rem 0.75rem;border:2px solid #e2e8f0;border-radius:0.5rem;font-size:0.85rem;outline:none;font-family:inherit" onkeydown="if(event.key==='Enter')sendChat()" data-el-placeholder="Γράψτε την ερώτησή σας..." data-en-placeholder="Type your question...">
-      <button onclick="sendChat()" style="padding:0.5rem 1rem;background:#2563eb;color:white;border:none;border-radius:0.5rem;font-weight:700;font-size:0.85rem;cursor:pointer" data-el="Αποστολή" data-en="Send">Αποστολή</button>
+    <div style="padding:0.5rem;border-top:1px solid #e2e8f0">
+      <div style="display:flex;gap:0.5rem">
+        <input id="chatInput" type="text" style="flex:1;padding:0.5rem 0.75rem;border:2px solid #e2e8f0;border-radius:0.5rem;font-size:0.85rem;outline:none;font-family:inherit" onkeydown="if(event.key==='Enter')sendChat()" data-el-placeholder="Γράψτε την ερώτησή σας..." data-en-placeholder="Type your question...">
+        <button onclick="sendChat()" style="padding:0.5rem 1rem;background:#2563eb;color:white;border:none;border-radius:0.5rem;font-weight:700;font-size:0.85rem;cursor:pointer" data-el="Αποστολή" data-en="Send">Αποστολή</button>
+      </div>
+      <p style="font-size:0.6rem;color:#94a3b8;margin:0.4rem 0 0;line-height:1.3" data-el="⚠️ Μη κρατική πλατφόρμα · Ψηφοφορίες χωρίς νομική δέσμευση · Πρωτοβουλία πολιτών" data-en="⚠️ Not a government platform · No legal binding · Citizen initiative">⚠️ Μη κρατική πλατφόρμα · Ψηφοφορίες χωρίς νομική δέσμευση · Πρωτοβουλία πολιτών</p>
     </div>
   </div>
 </div>

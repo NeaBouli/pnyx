@@ -216,6 +216,23 @@ async def explain_divergence(
 
 # ── RAG Agent Q&A ────────────────────────────────────────────────────────────
 
+_DISCLAIMER_EL = (
+    "\n\n---\n"
+    "⚠️ Αυτή η πλατφόρμα δεν είναι κρατική υπηρεσία. "
+    "Οι ψηφοφορίες δεν έχουν νομική δεσμευτικότητα. "
+    "Είναι μια ανεξάρτητη πρωτοβουλία πολιτών για διαφάνεια "
+    "και εκπαίδευση στη δημοκρατική συμμετοχή."
+)
+
+_DISCLAIMER_EN = (
+    "\n\n---\n"
+    "⚠️ This is not a government platform. "
+    "Votes have no legal binding force. "
+    "This is an independent citizen initiative for transparency "
+    "and democratic education."
+)
+
+
 async def answer_citizen_question(question: str, context: str, lang: str = "el") -> str:
     """
     Answer a citizen question using DB context.
@@ -246,13 +263,14 @@ async def answer_citizen_question(question: str, context: str, lang: str = "el")
     en_answer = await ollama_generate(prompt, max_tokens=300)
     if not en_answer:
         if lang == "el":
-            return "Δεν μπόρεσα να απαντήσω. Δοκιμάστε ξανά αργότερα."
-        return "I couldn't answer. Please try again later."
+            return "Δεν μπόρεσα να απαντήσω. Δοκιμάστε ξανά αργότερα." + _DISCLAIMER_EL
+        return "I couldn't answer. Please try again later." + _DISCLAIMER_EN
 
     # Translate back to Greek
     if lang == "el" and DEEPL_API_KEY:
         el_answer = await deepl_translate(en_answer, "EL", "EN")
         if el_answer:
-            return el_answer
+            return el_answer + _DISCLAIMER_EL
 
-    return en_answer
+    disclaimer = _DISCLAIMER_EL if lang == "el" else _DISCLAIMER_EN
+    return en_answer + disclaimer

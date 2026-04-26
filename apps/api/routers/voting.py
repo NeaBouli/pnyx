@@ -283,6 +283,40 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
     )
 
 
+@router.get("/results/latest")
+async def get_latest_result(db: AsyncSession = Depends(get_db)):
+    """Most recent bill with at least 1 vote — for landing page live data."""
+    from sqlalchemy import desc
+    # Find bill with most votes
+    result = await db.execute(
+        select(ParliamentBill)
+        .where(ParliamentBill.status.in_([
+            BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END, BillStatus.ACTIVE,
+        ]))
+        .order_by(desc(ParliamentBill.created_at))
+        .limit(5)
+    )
+    bills = result.scalars().all()
+    for bill in bills:
+        yes_r = await db.execute(select(func.count()).where(CitizenVote.bill_id == bill.id, CitizenVote.vote == VoteChoice.YES))
+        no_r = await db.execute(select(func.count()).where(CitizenVote.bill_id == bill.id, CitizenVote.vote == VoteChoice.NO))
+        abs_r = await db.execute(select(func.count()).where(CitizenVote.bill_id == bill.id, CitizenVote.vote == VoteChoice.ABSTAIN))
+        yes_c, no_c, abs_c = yes_r.scalar() or 0, no_r.scalar() or 0, abs_r.scalar() or 0
+        total = yes_c + no_c + abs_c
+        if total > 0:
+            return {
+                "bill_id": bill.id,
+                "title_el": bill.title_el,
+                "title_en": bill.title_en,
+                "status": bill.status.value,
+                "total_votes": total,
+                "yes_pct": round(yes_c / total * 100),
+                "no_pct": round(no_c / total * 100),
+                "abstain_pct": round(abs_c / total * 100),
+            }
+    return {"bill_id": None, "total_votes": 0}
+
+
 @router.get("/{bill_id}/results", response_model=BillResults)
 async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
     """
