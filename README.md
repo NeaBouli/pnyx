@@ -52,8 +52,8 @@ This project uses publicly available government data from:
 | Divergence Score | Automatic comparison Parliament vs Citizens | Beta |
 | Party Ranking | Which party agrees most with citizens | Beta |
 | Municipal Governance | 13 regions, 325 municipalities, Diavgeia integration | Beta |
-| AI Bill Summaries | Ollama llama3.2:3b, cached in Redis | Beta |
-| RAG Agent | Citizen Q&A powered by local AI | Beta |
+| AI Bill Summaries | Ollama (EN) + DeepL (EN→EL), cached in Redis | Beta |
+| RAG Agent | Citizen Q&A: Ollama + DeepL translation | Beta |
 | Auto-Healing Scraper | Ollama repairs broken CSS selectors | Beta |
 | Newsletter | Listmonk + Brevo SMTP, 6 subscriber lists | Beta |
 | Push Notifications | Expo Push API, APScheduler | Beta |

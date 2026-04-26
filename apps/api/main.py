@@ -249,7 +249,7 @@ async def health():
             "MOD-19 Newsletter (Listmonk + Brevo)",
             "MOD-20 Push Notifications",
             "MOD-21 Diavgeia Integration",
-            "MOD-22 RAG Agent (Ollama)",
+            "MOD-22 RAG Agent (Ollama + DeepL)",
         ]
     }
 

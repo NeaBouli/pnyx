@@ -1,6 +1,8 @@
 """
-Ollama LLM Service — llama3.2:3b
-Provides: bill summaries, divergence explanations, citizen Q&A
+AI Services — Ollama + DeepL Integration
+- Ollama llama3.2:3b: RAG Agent Q&A, English summaries
+- DeepL Free API: EN↔EL translation (1M chars/month)
+- Template fallback: when no content or services unavailable
 """
 import httpx
 import logging
@@ -10,7 +12,54 @@ logger = logging.getLogger(__name__)
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+DEEPL_API_KEY = os.getenv("DEEPL_API_KEY", "")
+DEEPL_API_URL = "https://api-free.deepl.com/v2/translate"
 
+
+# ── DeepL Translation ────────────────────────────────────────────────────────
+
+async def deepl_translate(text: str, target_lang: str, source_lang: str = "") -> str:
+    """Translate text via DeepL Free API. Returns empty string on failure."""
+    if not DEEPL_API_KEY or not text.strip():
+        return ""
+    try:
+        params: dict = {
+            "text": [text],
+            "target_lang": target_lang.upper(),
+        }
+        if source_lang:
+            params["source_lang"] = source_lang.upper()
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                DEEPL_API_URL,
+                headers={"Authorization": f"DeepL-Auth-Key {DEEPL_API_KEY}"},
+                json=params,
+            )
+            resp.raise_for_status()
+            translations = resp.json().get("translations", [])
+            if translations:
+                return translations[0].get("text", "").strip()
+    except Exception as e:
+        logger.warning("DeepL translation failed: %s", e)
+    return ""
+
+
+async def deepl_available() -> bool:
+    """Check if DeepL API key is set and reachable."""
+    if not DEEPL_API_KEY:
+        return False
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.get(
+                "https://api-free.deepl.com/v2/usage",
+                headers={"Authorization": f"DeepL-Auth-Key {DEEPL_API_KEY}"},
+            )
+            return resp.status_code == 200
+    except Exception:
+        return False
+
+
+# ── Ollama LLM ───────────────────────────────────────────────────────────────
 
 async def ollama_generate(prompt: str, max_tokens: int = 500) -> str:
     """Send prompt to Ollama and return response."""
@@ -44,6 +93,8 @@ async def ollama_available() -> bool:
         return False
 
 
+# ── Bill Summaries ───────────────────────────────────────────────────────────
+
 _STATUS_MAP_EL = {
     "ACTIVE": "Ανοιχτή ψηφοφορία",
     "ANNOUNCED": "Ανακοινωθέν",
@@ -64,7 +115,7 @@ _STATUS_MAP_EN = {
 def _template_summary(
     title: str, pill: str, status: str, categories: list[str], lang: str,
 ) -> str:
-    """Deterministic structured summary from bill metadata. No hallucination."""
+    """Deterministic structured summary from bill metadata."""
     if lang == "el":
         lines = [f"**Νομοσχέδιο:** {title}"]
         if pill:
@@ -76,7 +127,7 @@ def _template_summary(
         lines.append("")
         lines.append(
             "Πλήρης ανάλυση θα είναι διαθέσιμη μόλις το επίσημο κείμενο "
-            "συγχρονιστεί από τη Βουλή των Ελλήνων (hellenicparliament.gr)."
+            "συγχρονιστεί από τη Βουλή των Ελλήνων."
         )
         return "\n".join(lines)
     else:
@@ -90,7 +141,7 @@ def _template_summary(
         lines.append("")
         lines.append(
             "Full analysis will be available once the official text "
-            "is synced from the Hellenic Parliament (hellenicparliament.gr)."
+            "is synced from the Hellenic Parliament."
         )
         return "\n".join(lines)
 
@@ -100,71 +151,108 @@ async def summarize_bill(
     pill: str = "", status: str = "", categories: list[str] | None = None,
 ) -> str:
     """
-    Generate bill summary.
-    - If real content (>500 chars) exists: use Ollama for AI summary.
-    - Otherwise: structured template from metadata (no hallucination).
+    Generate bill summary. Strategy:
+    1. If real content (>500 chars): Ollama EN summary → DeepL EN→EL
+    2. If no content but DeepL available: template + DeepL translation
+    3. Fallback: static template (always correct, no hallucination)
     """
     cats = categories or []
 
-    # Only use Ollama when we have substantial real text
+    # Strategy 1: Real content → Ollama (English) → DeepL (→ Greek)
     if content and len(content) > 500 and await ollama_available():
         prompt = (
-            "Summarize this Greek law in 4-5 sentences. "
-            "Write ONLY in {'Greek' if lang == 'el' else 'English'}. "
-            "Be specific, no jargon.\n\n"
+            "You are a Greek legislation expert. Summarize this law in 4-5 sentences.\n"
+            "Be specific about what it regulates, who it affects, and its impact.\n"
+            "Write ONLY in English.\n\n"
             f"Title: {title}\n"
             f"Text: {content[:2000]}\n\n"
             "Summary:"
         )
-        result = await ollama_generate(prompt, max_tokens=400)
-        if result and len(result) > 50:
-            return result
+        en_summary = await ollama_generate(prompt, max_tokens=400)
+        if en_summary and len(en_summary) > 50:
+            if lang == "el":
+                el_summary = await deepl_translate(en_summary, "EL", "EN")
+                if el_summary:
+                    return el_summary
+            return en_summary
 
-    # Fallback: reliable template (always correct, never hallucinates)
+    # Strategy 2: No content, but DeepL → translate title/pill for EN version
+    if lang == "en" and DEEPL_API_KEY:
+        en_title = await deepl_translate(title, "EN", "EL")
+        en_pill = await deepl_translate(pill, "EN", "EL") if pill else ""
+        if en_title:
+            return _template_summary(en_title, en_pill, status, cats, "en")
+
+    # Strategy 3: Fallback template (always works)
     return _template_summary(title, pill, status, cats, lang)
 
 
+# ── Divergence Explanation ───────────────────────────────────────────────────
+
 async def explain_divergence(
-    bill_title: str, citizen_pct: float, parliament_result: str, lang: str = "el"
+    bill_title: str, citizen_pct: float, parliament_result: str, lang: str = "el",
 ) -> str:
     """Explain why citizens and parliament voted differently."""
-    if lang == "el":
-        prompt = (
-            "Εξήγησε σύντομα γιατί η γνώμη των πολιτών διαφέρει από την απόφαση της Βουλής.\n\n"
-            f"Νόμος: {bill_title}\n"
-            f"Πολίτες υπέρ: {citizen_pct:.0f}%\n"
-            f"Βουλή: {parliament_result}\n\n"
-            "Εξήγηση (2-3 προτάσεις):"
-        )
-    else:
-        prompt = (
-            "Briefly explain why citizens and parliament voted differently.\n\n"
-            f"Law: {bill_title}\n"
-            f"Citizens in favor: {citizen_pct:.0f}%\n"
-            f"Parliament: {parliament_result}\n\n"
-            "Explanation (2-3 sentences):"
-        )
-    return await ollama_generate(prompt, max_tokens=150)
+    # Generate in English (Ollama is better at EN)
+    prompt = (
+        "Briefly explain in 2-3 sentences why citizens and parliament "
+        "may have voted differently on this law.\n\n"
+        f"Law: {bill_title}\n"
+        f"Citizens in favor: {citizen_pct:.0f}%\n"
+        f"Parliament: {parliament_result}\n\n"
+        "Explanation:"
+    )
+    en_result = await ollama_generate(prompt, max_tokens=150)
+    if not en_result:
+        return ""
 
+    if lang == "el" and DEEPL_API_KEY:
+        el_result = await deepl_translate(en_result, "EL", "EN")
+        if el_result:
+            return el_result
+
+    return en_result
+
+
+# ── RAG Agent Q&A ────────────────────────────────────────────────────────────
 
 async def answer_citizen_question(question: str, context: str, lang: str = "el") -> str:
-    """Answer a citizen question using DB context (RAG)."""
-    if lang == "el":
-        prompt = (
-            "Είσαι βοηθός της πλατφόρμας εκκλησία.\n"
-            "Απάντησε στην ερώτηση βάσει των δεδομένων. Απλά ελληνικά, σύντομα.\n"
-            "Αν δεν ξέρεις, πες ότι δεν έχεις αρκετά δεδομένα.\n\n"
-            f"Δεδομένα:\n{context}\n\n"
-            f"Ερώτηση: {question}\n\n"
-            "Απάντηση:"
-        )
-    else:
-        prompt = (
-            "You are an assistant for the ekklesia platform.\n"
-            "Answer the question based on the data. Plain English, concise.\n"
-            "If you don't know, say you don't have enough data.\n\n"
-            f"Data:\n{context}\n\n"
-            f"Question: {question}\n\n"
-            "Answer:"
-        )
-    return await ollama_generate(prompt, max_tokens=300)
+    """
+    Answer a citizen question using DB context.
+    Strategy: if question is Greek → translate to EN → Ollama → translate back.
+    """
+    # Translate Greek question to English for better Ollama performance
+    en_question = question
+    if lang == "el" and DEEPL_API_KEY:
+        translated = await deepl_translate(question, "EN", "EL")
+        if translated:
+            en_question = translated
+
+    # Translate context to English too
+    en_context = context
+    if lang == "el" and DEEPL_API_KEY:
+        translated_ctx = await deepl_translate(context[:2000], "EN", "EL")
+        if translated_ctx:
+            en_context = translated_ctx
+
+    prompt = (
+        "You are an assistant for the ekklesia.gr platform (Greek digital democracy).\n"
+        "Answer the question based on the data. Be concise and helpful.\n"
+        "If you don't know, say you don't have enough data.\n\n"
+        f"Data:\n{en_context}\n\n"
+        f"Question: {en_question}\n\n"
+        "Answer:"
+    )
+    en_answer = await ollama_generate(prompt, max_tokens=300)
+    if not en_answer:
+        if lang == "el":
+            return "Δεν μπόρεσα να απαντήσω. Δοκιμάστε ξανά αργότερα."
+        return "I couldn't answer. Please try again later."
+
+    # Translate back to Greek
+    if lang == "el" and DEEPL_API_KEY:
+        el_answer = await deepl_translate(en_answer, "EL", "EN")
+        if el_answer:
+            return el_answer
+
+    return en_answer

@@ -254,8 +254,8 @@ export default function AdminPage() {
                   <div className="font-bold text-sm text-gray-900">5 GB</div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="text-xs text-gray-500 mb-1">Rate Limit</div>
-                  <div className="font-bold text-sm text-gray-900">5 req/min/IP</div>
+                  <div className="text-xs text-gray-500 mb-1">DeepL</div>
+                  <div className="font-bold text-sm text-green-600">Free API (1M chars/Mo)</div>
                 </div>
               </div>
             </div>
