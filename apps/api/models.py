@@ -32,6 +32,12 @@ class KeyStatus(str, PyEnum):
     ACTIVE  = "ACTIVE"
     REVOKED = "REVOKED"
 
+class GovernanceLevel(str, PyEnum):
+    NATIONAL   = "NATIONAL"
+    REGIONAL   = "REGIONAL"
+    MUNICIPAL  = "MUNICIPAL"
+    COMMUNITY  = "COMMUNITY"
+
 
 # ─── MOD-01: Identity ─────────────────────────────────────────────────────────
 
@@ -235,12 +241,6 @@ class SurveyResponse(Base):
 
 
 # ─── MOD-16: Municipal Governance ────────────────────────────────────────────
-
-class GovernanceLevel(str, PyEnum):
-    NATIONAL   = "NATIONAL"
-    REGIONAL   = "REGIONAL"
-    MUNICIPAL  = "MUNICIPAL"
-    COMMUNITY  = "COMMUNITY"
 
 
 class Periferia(Base):
