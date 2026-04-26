@@ -8,9 +8,8 @@ import { loadKeypair, loadNullifier, signVote } from "@/lib/crypto";
 import StatusBadge from "@/components/StatusBadge";
 import RelevanceButtons from "@/components/RelevanceButtons";
 import BillResultReport from "@/components/BillResultReport";
-import CompassCard from "@/components/CompassCard";
+// CompassCard removed — compass is mobile-app only
 import QRCodeVoteStub from "@/components/QRCodeVoteStub";
-import { useCompass } from "@/lib/compass";
 
 const VOTE_OPTIONS = [
   { value: "YES",     label_el: "Υπέρ",               label_en: "Yes",            color: "bg-green-600 hover:bg-green-700 border-green-500 text-white" },
@@ -24,7 +23,6 @@ const VOTABLE = ["ACTIVE", "WINDOW_24H", "OPEN_END"];
 export default function BillDetailPage({ params }: { params: { id: string } }) {
   const locale = useLocale();
   const billId = decodeURIComponent(params.id);
-  const compass = useCompass();
 
   const [bill, setBill]         = useState<Bill | null>(null);
   const [results, setResults]   = useState<BillResults | null>(null);
@@ -97,7 +95,7 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
 
       if (res.ok) {
         setVoteStatus("voted");
-        compass.recordBillVote(billId, choice, bill?.categories || []);
+        // compass recording is mobile-app only
         try {
           const resultsRes = await ekklesia.getResults(billId);
           setResults(resultsRes.data);
@@ -325,10 +323,6 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
           <QRCodeVoteStub />
         </div>
 
-        {/* ── COMPASS CARD ── */}
-        <div className="mb-6">
-          <CompassCard />
-        </div>
 
         {/* ── FULL RESULT REPORT ── */}
         {results && results.total_votes > 0 && (
