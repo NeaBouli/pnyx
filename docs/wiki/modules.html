@@ -118,8 +118,11 @@
     .badge-gray { background: var(--gray-100); color: var(--gray-500); }
     .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.4rem; vertical-align: middle; }
     .dot-active { background: #22c55e; animation: dotPulse 2s ease-in-out infinite; }
+    .dot-degraded { background: #f59e0b; animation: dotPulse 1.5s ease-in-out infinite; }
+    .dot-error { background: #ef4444; animation: dotPulseError 1s ease-in-out infinite; }
     .dot-inactive { background: #ef4444; }
     .dot-planned { background: #94a3b8; }
+    @keyframes dotPulseError { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(239,68,68,0.4)} 50%{opacity:0.7;box-shadow:0 0 0 6px rgba(239,68,68,0)} }
     @keyframes dotPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); } 50% { box-shadow: 0 0 0 4px rgba(34,197,94,0); } }
     .info-box { background: var(--blue-l); border-left: 4px solid var(--blue); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
     .info-box p { margin: 0; }
@@ -185,29 +188,29 @@
   <div class="table-wrap fade-in">
     <table>
       <tr><th>ID</th><th>Name</th><th data-el="Φάση" data-en="Phase">Φάση</th><th data-el="Περιγραφή" data-en="Description">Περιγραφή</th></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-01</td><td>Identity</td><td><span class="badge badge-green">Beta</span></td><td>Ed25519, Nullifier Hash, HLR</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-02</td><td data-el="VAA Πολιτική Πυξίδα" data-en="VAA Political Compass">VAA Πολιτική Πυξίδα</td><td><span class="badge badge-green">Beta</span></td><td data-el="Πολιτική Πυξίδα, 38 Θέσεις" data-en="Political Compass, 38 Statements">Πολιτική Πυξίδα, 38 Θέσεις</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-02b</td><td>Liquid Compass</td><td><span class="badge badge-green">Beta</span></td><td data-el="Εξελισσόμενη Πυξίδα, 4 Μοντέλα, AES-256-GCM, 100% τοπικά" data-en="Evolving Compass, 4 Models, AES-256-GCM, 100% client-side">Εξελισσόμενη Πυξίδα, 4 Μοντέλα, 100% τοπικά</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-03</td><td>Parliament</td><td><span class="badge badge-green">Beta</span></td><td data-el="Νομοσχέδια, Bill Lifecycle" data-en="Bills, Bill Lifecycle">Νομοσχέδια, Bill Lifecycle</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-04</td><td>CitizenVote</td><td><span class="badge badge-green">Beta</span></td><td data-el="Ψηφοφορία Πολιτών" data-en="Citizen Voting">Ψηφοφορία Πολιτών</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-05</td><td>Divergence Score</td><td><span class="badge badge-green">Beta</span></td><td data-el="Δείκτης Απόκλισης" data-en="Divergence Score">Δείκτης Απόκλισης</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-06</td><td>Analytics</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Δημογραφικά, Τάσεις" data-en="Demographics, Trends">Δημογραφικά, Τάσεις</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-07</td><td>Notifications</td><td><span class="badge badge-yellow">Alpha</span></td><td>Push, RSS, WebSocket</td></tr>
-      <tr><td><span class="status-dot dot-planned"></span>MOD-17</td><td>Smart Notifications</td><td><span class="badge badge-gray" data-el="Προγραμματισμένο" data-en="Planned">Προγραμματισμένο</span></td><td data-el="Φίλτρο κατηγοριών, Ping-only Push, 3 λειτουργίες περιεχομένου, τοπικά πρότυπα" data-en="Category filter, ping-only push, 3 content modes, local templates">Φίλτρο κατηγοριών, Ping-only Push, 3 λειτουργίες περιεχομένου</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-08</td><td>Arweave L2</td><td><span class="badge badge-green">Beta</span></td><td data-el="Μόνιμο Ίχνος Ελέγχου κατά PARLIAMENT_VOTED" data-en="Permanent Audit Trail on PARLIAMENT_VOTED">Μόνιμο Ίχνος Ελέγχου κατά PARLIAMENT_VOTED</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-09</td><td>Gov.gr OAuth</td><td><span class="badge badge-yellow">Alpha</span></td><td>gov.gr OAuth2.0</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-10</td><td>AI Scraper</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Ollama (L1) + HuggingFace (L2) + Κανόνες (L3)" data-en="Ollama (L1) + HuggingFace (L2) + Rule-based (L3)">Ollama (L1) + HuggingFace (L2) + Κανόνες (L3)</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-11</td><td>Public API</td><td><span class="badge badge-yellow">Alpha</span></td><td>OpenAPI, REST</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-12</td><td>MP Comparison</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Σύγκριση Βουλευτών" data-en="MP Comparison">Σύγκριση Βουλευτών</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-13</td><td>Relevance Voting</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Βαθμός Συνάφειας" data-en="Relevance Score">Βαθμός Συνάφειας</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-14</td><td>Data Export</td><td><span class="badge badge-yellow">Alpha</span></td><td>CSV, JSON Export</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-15</td><td>Admin</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Διαχείριση" data-en="Management">Διαχείριση</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-16</td><td data-el="Τοπική Αυτοδιοίκηση" data-en="Local Governance">Τοπική Αυτοδιοίκηση</td><td><span class="badge badge-green">Beta</span></td><td data-el="Περιφέρεια, Δήμος, Κοινότητα" data-en="Periferia, Dimos, Community">Περιφέρεια, Δήμος, Κοινότητα</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-18</td><td data-el="Κοινοτικές Δωρεές" data-en="Community Donations">Κοινοτικές Δωρεές</td><td><span class="badge badge-green">Beta</span></td><td data-el="Stripe Donate, Auto-κατανομή, Webhook" data-en="Stripe Donate, Auto-allocation, Webhook">Stripe Donate, Auto-κατανομή, Webhook</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-19</td><td>Newsletter</td><td><span class="badge badge-green">Beta</span></td><td data-el="Listmonk + Brevo SMTP, 6 Λίστες, Double Opt-in" data-en="Listmonk + Brevo SMTP, 6 Lists, Double Opt-in">Listmonk + Brevo SMTP, 6 Λίστες, Double Opt-in</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-20</td><td data-el="Push Ειδοποιήσεις" data-en="Push Notifications">Push Ειδοποιήσεις</td><td><span class="badge badge-green">Beta</span></td><td data-el="Expo Push API, APScheduler, Redis dedup" data-en="Expo Push API, APScheduler, Redis dedup">Expo Push API, APScheduler, Redis dedup</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod01"></span>MOD-01</td><td>Identity</td><td><span class="badge badge-green">Beta</span></td><td>Ed25519, Nullifier Hash, HLR</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod02"></span>MOD-02</td><td data-el="VAA Πολιτική Πυξίδα" data-en="VAA Political Compass">VAA Πολιτική Πυξίδα</td><td><span class="badge badge-green">Beta</span></td><td data-el="Πολιτική Πυξίδα, 38 Θέσεις" data-en="Political Compass, 38 Statements">Πολιτική Πυξίδα, 38 Θέσεις</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod02"></span>MOD-02b</td><td>Liquid Compass</td><td><span class="badge badge-green">Beta</span></td><td data-el="Εξελισσόμενη Πυξίδα, 4 Μοντέλα, AES-256-GCM, 100% τοπικά" data-en="Evolving Compass, 4 Models, AES-256-GCM, 100% client-side">Εξελισσόμενη Πυξίδα, 4 Μοντέλα, 100% τοπικά</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod03"></span>MOD-03</td><td>Parliament</td><td><span class="badge badge-green">Beta</span></td><td data-el="Νομοσχέδια, Bill Lifecycle" data-en="Bills, Bill Lifecycle">Νομοσχέδια, Bill Lifecycle</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod04"></span>MOD-04</td><td>CitizenVote</td><td><span class="badge badge-green">Beta</span></td><td data-el="Ψηφοφορία Πολιτών" data-en="Citizen Voting">Ψηφοφορία Πολιτών</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod05"></span>MOD-05</td><td>Divergence Score</td><td><span class="badge badge-green">Beta</span></td><td data-el="Δείκτης Απόκλισης" data-en="Divergence Score">Δείκτης Απόκλισης</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod06"></span>MOD-06</td><td>Analytics</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Δημογραφικά, Τάσεις" data-en="Demographics, Trends">Δημογραφικά, Τάσεις</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod07"></span>MOD-07</td><td>Notifications</td><td><span class="badge badge-yellow">Alpha</span></td><td>Push, RSS, WebSocket</td></tr>
+      <tr><td><span class="status-dot dot-planned" id="dot-mod17"></span>MOD-17</td><td>Smart Notifications</td><td><span class="badge badge-gray" data-el="Προγραμματισμένο" data-en="Planned">Προγραμματισμένο</span></td><td data-el="Φίλτρο κατηγοριών, Ping-only Push, 3 λειτουργίες περιεχομένου, τοπικά πρότυπα" data-en="Category filter, ping-only push, 3 content modes, local templates">Φίλτρο κατηγοριών, Ping-only Push, 3 λειτουργίες περιεχομένου</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod08"></span>MOD-08</td><td>Arweave L2</td><td><span class="badge badge-green">Beta</span></td><td data-el="Μόνιμο Ίχνος Ελέγχου κατά PARLIAMENT_VOTED" data-en="Permanent Audit Trail on PARLIAMENT_VOTED">Μόνιμο Ίχνος Ελέγχου κατά PARLIAMENT_VOTED</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod09"></span>MOD-09</td><td>Gov.gr OAuth</td><td><span class="badge badge-yellow">Alpha</span></td><td>gov.gr OAuth2.0</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod10"></span>MOD-10</td><td>AI Scraper</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Ollama (L1) + HuggingFace (L2) + Κανόνες (L3)" data-en="Ollama (L1) + HuggingFace (L2) + Rule-based (L3)">Ollama (L1) + HuggingFace (L2) + Κανόνες (L3)</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod11"></span>MOD-11</td><td>Public API</td><td><span class="badge badge-yellow">Alpha</span></td><td>OpenAPI, REST</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod12"></span>MOD-12</td><td>MP Comparison</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Σύγκριση Βουλευτών" data-en="MP Comparison">Σύγκριση Βουλευτών</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod13"></span>MOD-13</td><td>Relevance Voting</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Βαθμός Συνάφειας" data-en="Relevance Score">Βαθμός Συνάφειας</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod14"></span>MOD-14</td><td>Data Export</td><td><span class="badge badge-yellow">Alpha</span></td><td>CSV, JSON Export</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod15"></span>MOD-15</td><td>Admin</td><td><span class="badge badge-yellow">Alpha</span></td><td data-el="Διαχείριση" data-en="Management">Διαχείριση</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod16"></span>MOD-16</td><td data-el="Τοπική Αυτοδιοίκηση" data-en="Local Governance">Τοπική Αυτοδιοίκηση</td><td><span class="badge badge-green">Beta</span></td><td data-el="Περιφέρεια, Δήμος, Κοινότητα" data-en="Periferia, Dimos, Community">Περιφέρεια, Δήμος, Κοινότητα</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod18"></span>MOD-18</td><td data-el="Κοινοτικές Δωρεές" data-en="Community Donations">Κοινοτικές Δωρεές</td><td><span class="badge badge-green">Beta</span></td><td data-el="Stripe Donate, Auto-κατανομή, Webhook" data-en="Stripe Donate, Auto-allocation, Webhook">Stripe Donate, Auto-κατανομή, Webhook</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod19"></span>MOD-19</td><td>Newsletter</td><td><span class="badge badge-green">Beta</span></td><td data-el="Listmonk + Brevo SMTP, 6 Λίστες, Double Opt-in" data-en="Listmonk + Brevo SMTP, 6 Lists, Double Opt-in">Listmonk + Brevo SMTP, 6 Λίστες, Double Opt-in</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod20"></span>MOD-20</td><td data-el="Push Ειδοποιήσεις" data-en="Push Notifications">Push Ειδοποιήσεις</td><td><span class="badge badge-green">Beta</span></td><td data-el="Expo Push API, APScheduler, Redis dedup" data-en="Expo Push API, APScheduler, Redis dedup">Expo Push API, APScheduler, Redis dedup</td></tr>
       <tr><td><span class="status-dot dot-active" id="dot-mod21"></span>MOD-21</td><td data-el="Διαύγεια Integration" data-en="Diavgeia Integration">Διαύγεια Integration</td><td><span class="badge badge-green">Beta</span></td><td data-el="OpenData API, Αποφάσεις Δήμων, Scheduler 48ω" data-en="OpenData API, Municipal Decisions, Scheduler 48h">OpenData API, Αποφάσεις Δήμων, Scheduler 48ω</td></tr>
-      <tr><td><span class="status-dot dot-active"></span>MOD-22</td><td data-el="RAG Agent (KI)" data-en="RAG Agent (AI)">RAG Agent (KI)</td><td><span class="badge badge-green">Beta</span></td><td data-el="Ollama + DeepL, Πολίτης Q&A, Περιλήψεις Νόμων, EN↔EL, Auto-Healing Scraper" data-en="Ollama llama3.2:3b, Citizen Q&A, Bill Summaries, Auto-Healing Scraper">Ollama + DeepL, Πολίτης Q&A, Περιλήψεις Νόμων, EN↔EL</td></tr>
+      <tr><td><span class="status-dot dot-active" id="dot-mod22"></span>MOD-22</td><td data-el="RAG Agent (KI)" data-en="RAG Agent (AI)">RAG Agent (KI)</td><td><span class="badge badge-green">Beta</span></td><td data-el="Ollama + DeepL, Πολίτης Q&A, Περιλήψεις Νόμων, EN↔EL, Auto-Healing Scraper" data-en="Ollama llama3.2:3b, Citizen Q&A, Bill Summaries, Auto-Healing Scraper">Ollama + DeepL, Πολίτης Q&A, Περιλήψεις Νόμων, EN↔EL</td></tr>
     </table>
   </div>
 
@@ -240,28 +243,44 @@ var obs = new IntersectionObserver(function(entries) {
 }, { threshold: 0.1 });
 document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); });
 
-// Live scraper job status polling
+// Live module health status polling (every 30s)
 (function() {
-  var JOB_DOT_MAP = { "parliament": null, "diavgeia_municipal": "dot-mod21" };
-  function pollJobs() {
-    fetch("https://api.ekklesia.gr/api/v1/scraper/jobs")
-      .then(function(r) { return r.json(); })
-      .then(function(d) {
-        (d.scrapers || []).forEach(function(s) {
-          var dotId = JOB_DOT_MAP[s.name];
-          if (!dotId) return;
-          var el = document.getElementById(dotId);
-          if (!el) return;
-          el.classList.remove("dot-active", "dot-inactive", "dot-planned");
-          if (s.status === "ok") el.classList.add("dot-active");
-          else if (s.status === "circuit_open") el.classList.add("dot-inactive");
-          else el.classList.add("dot-active"); // warning still shows green
+  var MOD_DOT_MAP = {
+    "MOD-01":"dot-mod01","MOD-02":"dot-mod02","MOD-03":"dot-mod03",
+    "MOD-04":"dot-mod04","MOD-05":"dot-mod05","MOD-06":"dot-mod06",
+    "MOD-07":"dot-mod07","MOD-08":"dot-mod08","MOD-09":"dot-mod09",
+    "MOD-10":"dot-mod10","MOD-11":"dot-mod11","MOD-12":"dot-mod12",
+    "MOD-14":"dot-mod14","MOD-15":"dot-mod15","MOD-16":"dot-mod16",
+    "MOD-18":"dot-mod18","MOD-19":"dot-mod19","MOD-20":"dot-mod20",
+    "MOD-21":"dot-mod21","MOD-22":"dot-mod22"
+  };
+  function pollHealth() {
+    fetch("https://api.ekklesia.gr/api/v1/health/modules")
+      .then(function(r){return r.json()})
+      .then(function(d){
+        if(!d.modules) return;
+        Object.entries(d.modules).forEach(function(entry){
+          var modId=entry[0], info=entry[1];
+          var dotId=MOD_DOT_MAP[modId];
+          if(!dotId) return;
+          var el=document.getElementById(dotId);
+          if(!el) return;
+          el.classList.remove("dot-active","dot-inactive","dot-planned","dot-error","dot-degraded");
+          if(info.status==="ok") el.classList.add("dot-active");
+          else if(info.status==="degraded") el.classList.add("dot-degraded");
+          else if(info.status==="error") el.classList.add("dot-error");
+          else if(info.status==="deferred") el.classList.add("dot-planned");
+          // Show error row highlight
+          var row=el.closest("tr");
+          if(row){
+            row.style.background=(info.status==="error")?"#fff1f2":(info.status==="degraded")?"#fffbeb":"";
+            row.style.borderLeft=(info.status==="error")?"3px solid #ef4444":(info.status==="degraded")?"3px solid #f59e0b":"";
+          }
         });
-      })
-      .catch(function() {});
+      }).catch(function(){});
   }
-  pollJobs();
-  setInterval(pollJobs, 60000);
+  pollHealth();
+  setInterval(pollHealth, 30000);
 })();
 </script>
 

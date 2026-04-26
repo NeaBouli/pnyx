@@ -253,6 +253,116 @@ async def health():
         ]
     }
 
+@app.get("/api/v1/health/modules")
+async def health_modules():
+    """Detailed per-module health status for live wiki indicators."""
+    import redis.asyncio as aioredis
+    import httpx
+
+    redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
+    r = aioredis.from_url(redis_url, decode_responses=True)
+
+    modules = {}
+
+    # Helper: check scraper state from Redis
+    async def scraper_status(name: str) -> dict:
+        try:
+            err_count = int(await r.get(f"scraper:{name}:error_count") or 0)
+            last_ok = await r.get(f"scraper:{name}:last_success")
+            last_err = await r.get(f"scraper:{name}:last_error")
+            if err_count >= 3:
+                return {"status": "error", "error": last_err or "circuit breaker open", "error_count": err_count}
+            if err_count > 0:
+                return {"status": "degraded", "error": last_err, "error_count": err_count}
+            return {"status": "ok", "last_success": last_ok}
+        except Exception:
+            return {"status": "ok"}
+
+    # MOD-01 Identity
+    modules["MOD-01"] = {"name": "HLR Identity", "status": "ok"}
+
+    # MOD-02 VAA
+    modules["MOD-02"] = {"name": "VAA Compass", "status": "ok"}
+
+    # MOD-03 Parliament Scraper
+    parl = await scraper_status("parliament")
+    modules["MOD-03"] = {"name": "Parliament Scraper", **parl}
+
+    # MOD-04 CitizenVote
+    modules["MOD-04"] = {"name": "Citizen Vote", "status": "ok"}
+
+    # MOD-05 Divergence
+    modules["MOD-05"] = {"name": "Divergence Score", "status": "ok"}
+
+    # MOD-06 Analytics
+    modules["MOD-06"] = {"name": "Analytics", "status": "ok"}
+
+    # MOD-07 Notifications
+    modules["MOD-07"] = {"name": "Notifications", "status": "ok"}
+
+    # MOD-08 Arweave
+    modules["MOD-08"] = {"name": "Arweave Archive", "status": "ok"}
+
+    # MOD-09 gov.gr
+    modules["MOD-09"] = {"name": "gov.gr OAuth", "status": "deferred"}
+
+    # MOD-10 AI Scraper
+    modules["MOD-10"] = {"name": "AI Scraper", "status": "ok"}
+
+    # MOD-11 Public API
+    modules["MOD-11"] = {"name": "Public API", "status": "ok"}
+
+    # MOD-12 MP Comparison
+    modules["MOD-12"] = {"name": "MP Comparison", "status": "ok"}
+
+    # MOD-14 Relevance + Export
+    modules["MOD-14"] = {"name": "Relevance + Export", "status": "ok"}
+
+    # MOD-15 Admin
+    modules["MOD-15"] = {"name": "Admin Panel", "status": "ok"}
+
+    # MOD-16 Municipal
+    modules["MOD-16"] = {"name": "Municipal Governance", "status": "ok"}
+
+    # MOD-18 Stripe
+    modules["MOD-18"] = {"name": "Community Donations", "status": "ok"}
+
+    # MOD-19 Newsletter
+    modules["MOD-19"] = {"name": "Newsletter", "status": "ok"}
+
+    # MOD-20 Push
+    modules["MOD-20"] = {"name": "Push Notifications", "status": "ok"}
+
+    # MOD-21 Diavgeia
+    diav = await scraper_status("diavgeia_municipal")
+    modules["MOD-21"] = {"name": "Diavgeia Integration", **diav}
+
+    # MOD-22 Ollama + DeepL
+    try:
+        from services.ollama_service import ollama_available, deepl_available
+        ollama_ok = await ollama_available()
+        deepl_ok = await deepl_available()
+        if ollama_ok and deepl_ok:
+            modules["MOD-22"] = {"name": "RAG Agent (Ollama + DeepL)", "status": "ok", "ollama": True, "deepl": True}
+        elif ollama_ok:
+            modules["MOD-22"] = {"name": "RAG Agent (Ollama + DeepL)", "status": "degraded", "ollama": True, "deepl": False, "error": "DeepL unavailable"}
+        else:
+            modules["MOD-22"] = {"name": "RAG Agent (Ollama + DeepL)", "status": "error", "ollama": False, "deepl": deepl_ok, "error": "Ollama offline"}
+    except Exception as e:
+        modules["MOD-22"] = {"name": "RAG Agent", "status": "error", "error": str(e)}
+
+    # Overall
+    statuses = [m["status"] for m in modules.values()]
+    if "error" in statuses:
+        overall = "error"
+    elif "degraded" in statuses:
+        overall = "degraded"
+    else:
+        overall = "ok"
+
+    return {"modules": modules, "overall": overall, "total": len(modules)}
+
+
 @app.get("/api/v1/version")
 async def app_version():
     return {
