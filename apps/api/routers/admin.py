@@ -360,3 +360,79 @@ async def admin_set_bill_text(
     await r.delete(f"bill_summary:{bill_id}:el")
     await r.delete(f"bill_summary:{bill_id}:en")
     return {"success": True, "bill_id": bill_id, "text_length": len(text)}
+
+
+# ── Compass Question Generator ────────────────────────────────────────────
+
+@router.post("/compass/generate-questions")
+async def admin_generate_compass(
+    _key=Depends(verify_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate new compass questions from recent bills (Ollama + DeepL)."""
+    from services.compass_generator import run_compass_update
+    questions = await run_compass_update(db)
+    return {
+        "generated": len(questions),
+        "status": "pending",
+        "questions": questions,
+    }
+
+
+@router.get("/compass/pending-review")
+async def admin_compass_pending(
+    _key=Depends(verify_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all pending (unapproved) compass questions."""
+    result = await db.execute(
+        select(Statement)
+        .where(Statement.is_active == False, Statement.generated_by == "ollama")
+        .order_by(Statement.created_at.desc())
+    )
+    pending = result.scalars().all()
+    return {
+        "pending": [
+            {
+                "id": s.id,
+                "text_el": s.text_el,
+                "text_en": s.text_en,
+                "explanation_el": s.explanation_el,
+                "category": s.category,
+                "source_bill_id": s.source_bill_id,
+                "created_at": s.created_at.isoformat() if s.created_at else None,
+            }
+            for s in pending
+        ],
+        "count": len(pending),
+    }
+
+
+@router.post("/compass/approve/{question_id}")
+async def admin_compass_approve(
+    question_id: int,
+    _key=Depends(verify_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Approve a pending compass question → goes live."""
+    stmt = await db.get(Statement, question_id)
+    if not stmt:
+        raise HTTPException(404, "Question not found")
+    stmt.is_active = True
+    await db.commit()
+    return {"success": True, "id": question_id, "status": "active"}
+
+
+@router.post("/compass/reject/{question_id}")
+async def admin_compass_reject(
+    question_id: int,
+    _key=Depends(verify_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Reject a pending compass question."""
+    stmt = await db.get(Statement, question_id)
+    if not stmt:
+        raise HTTPException(404, "Question not found")
+    await db.delete(stmt)
+    await db.commit()
+    return {"success": True, "id": question_id, "status": "rejected"}

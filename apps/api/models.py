@@ -86,7 +86,7 @@ class Party(Base):
 
 
 class Statement(Base):
-    """VAA-Thesen (15-20 Stück)"""
+    """VAA-Thesen (38 aktive + AI-generierte pending)"""
     __tablename__ = "statements"
 
     id              = Column(Integer, primary_key=True)
@@ -97,6 +97,9 @@ class Statement(Base):
     category        = Column(String(50), nullable=True)  # Οικονομία, Περιβάλλον...
     display_order   = Column(Integer, default=0)
     is_active       = Column(Boolean, default=True)
+    source_bill_id  = Column(String(50), nullable=True)  # Bill that inspired this question
+    version         = Column(Integer, default=1)
+    generated_by    = Column(String(20), nullable=True)  # 'manual' | 'ollama'
     created_at      = Column(DateTime, default=datetime.utcnow)
 
 

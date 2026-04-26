@@ -86,15 +86,25 @@ def calculate_match(
 @router.get("/statements", response_model=list[StatementOut])
 async def get_statements(
     lang: str = Query("el", description="Sprache: el oder en"),
+    limit: int = Query(0, description="Max questions (0=all). Random selection if >0 and pool is larger."),
     db: AsyncSession = Depends(get_db)
 ):
-    """Gibt alle aktiven Thesen zurück, sortiert nach display_order."""
+    """Gibt aktive Thesen zurück. Mit limit>0: zufällige Auswahl aus dem Pool."""
     result = await db.execute(
         select(Statement)
         .where(Statement.is_active == True)
         .order_by(Statement.display_order)
     )
-    return result.scalars().all()
+    statements = list(result.scalars().all())
+
+    # If limit set and pool is larger → random subset per category
+    if limit > 0 and len(statements) > limit:
+        import random
+        random.shuffle(statements)
+        statements = statements[:limit]
+        statements.sort(key=lambda s: s.display_order or 0)
+
+    return statements
 
 
 @router.get("/parties", response_model=list[PartyOut])
