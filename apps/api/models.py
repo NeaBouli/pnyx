@@ -47,8 +47,10 @@ class IdentityRecord(Base):
     public_key_hex  = Column(String(128), nullable=False)
     demographic_hash= Column(String(64), nullable=True)   # SHA256(region+gender+salt)
     age_group       = Column(String(20), nullable=True)   # AGE_18_25 .. AGE_65_PLUS
-    region          = Column(String(30), nullable=True)   # REG_ATTICA etc.
+    region          = Column(String(30), nullable=True)   # REG_ATTICA etc. (legacy)
     gender_code     = Column(String(20), nullable=True)   # GENDER_MALE etc.
+    periferia_id    = Column(Integer, ForeignKey("periferia.id", ondelete="SET NULL"), nullable=True)
+    dimos_id        = Column(Integer, ForeignKey("dimos.id", ondelete="SET NULL"), nullable=True)
     status          = Column(Enum(KeyStatus), default=KeyStatus.ACTIVE, nullable=False)
     created_at      = Column(DateTime, default=datetime.utcnow, nullable=False)
     revoked_at      = Column(DateTime, nullable=True)
@@ -136,12 +138,18 @@ class ParliamentBill(Base):
     arweave_tx_id       = Column(String(100), nullable=True)     # MOD-08
     ai_summary_reviewed = Column(Boolean, default=False)        # Community-geprüft
 
+    # Vote Scope: who can vote on this bill
+    governance_level    = Column(Enum(GovernanceLevel), default=GovernanceLevel.NATIONAL, nullable=False)
+    periferia_id        = Column(Integer, ForeignKey("periferia.id", ondelete="SET NULL"), nullable=True)
+    dimos_id            = Column(Integer, ForeignKey("dimos.id", ondelete="SET NULL"), nullable=True)
+
     created_at          = Column(DateTime, default=datetime.utcnow)
     updated_at          = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     __table_args__ = (
         Index("idx_bills_status", "status"),
         Index("idx_bills_vote_date", "parliament_vote_date"),
+        Index("idx_bills_governance", "governance_level"),
     )
 
 

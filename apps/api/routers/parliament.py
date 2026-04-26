@@ -32,6 +32,7 @@ class BillSummary(BaseModel):
     pill_en:             str | None
     categories:          list | None
     status:              str
+    governance_level:    str | None = "NATIONAL"
     parliament_vote_date: str | None
     parliament_url:      str | None = None
     relevance_score:     int | None = 0
@@ -49,6 +50,7 @@ class BillDetail(BaseModel):
     categories:             list | None
     party_votes_parliament: dict | None
     status:                 str
+    governance_level:       str | None = "NATIONAL"
     parliament_vote_date:   str | None
     parliament_url:         str | None = None
     ai_summary_reviewed:    bool
@@ -122,6 +124,7 @@ async def get_bills(
         pill_en=b.pill_en,
         categories=b.categories,
         status=b.status.value,
+        governance_level=b.governance_level.value if b.governance_level else "NATIONAL",
         parliament_vote_date=b.parliament_vote_date.isoformat() if b.parliament_vote_date else None,
         parliament_url=b.parliament_url,
     ) for b in bills]
@@ -194,6 +197,7 @@ async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db)):
         categories=bill.categories,
         party_votes_parliament=bill.party_votes_parliament,
         status=bill.status.value,
+        governance_level=bill.governance_level.value if bill.governance_level else "NATIONAL",
         parliament_vote_date=bill.parliament_vote_date.isoformat() if bill.parliament_vote_date else None,
         parliament_url=bill.parliament_url,
         ai_summary_reviewed=bill.ai_summary_reviewed,

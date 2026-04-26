@@ -212,6 +212,23 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
                    f"Erlaubt: ACTIVE, WINDOW_24H, OPEN_END."
         )
 
+    # 2b. Vote Scope: check governance_level permission
+    from models import GovernanceLevel
+    gov_level = getattr(bill, "governance_level", None)
+    if gov_level and gov_level != GovernanceLevel.NATIONAL:
+        if gov_level == GovernanceLevel.REGIONAL:
+            if not identity.periferia_id or identity.periferia_id != bill.periferia_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Αυτή η ψηφοφορία αφορά μόνο κατοίκους αυτής της Περιφέρειας."
+                )
+        elif gov_level == GovernanceLevel.MUNICIPAL:
+            if not identity.dimos_id or identity.dimos_id != bill.dimos_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Αυτή η ψηφοφορία αφορά μόνο κατοίκους αυτού του Δήμου."
+                )
+
     # 3. Stimme validieren
     try:
         vote_choice = VoteChoice(req.vote.upper())
