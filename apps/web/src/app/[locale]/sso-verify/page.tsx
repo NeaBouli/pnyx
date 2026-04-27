@@ -97,8 +97,16 @@ export default function SSOVerifyPage() {
   }
 
   return (
+    <>
+    {/* Hide NavHeader on this page */}
+    <style dangerouslySetInnerHTML={{ __html: "header { display: none !important; }" }} />
     <main className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-lg max-w-md w-full mx-6 p-10 text-center">
+        {/* Back button */}
+        <a href="https://pnyx.ekklesia.gr" className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-blue-600 mb-6 transition-colors">
+          ← {isEl ? "Πίσω στο Forum" : "Back to Forum"}
+        </a>
+
         {/* Logo */}
         <img src="/pnx.png" alt="ekklesia" className="w-16 h-16 mx-auto mb-4" />
         <h1 className="text-xl font-black text-gray-900 mb-1">
@@ -208,5 +216,6 @@ export default function SSOVerifyPage() {
         </div>
       </div>
     </main>
+    </>
   );
 }
