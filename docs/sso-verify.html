@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Σύνδεση — ekklesia.gr</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      max-width: 420px;
+      width: 100%;
+      margin: 24px;
+      padding: 40px 32px;
+      text-align: center;
+    }
+
+    .logo {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #0f172a;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #64748b;
+      margin-bottom: 32px;
+    }
+
+    /* ─── States ─── */
+    .state { display: none; }
+    .state.active { display: block; }
+
+    /* ─── QR / No-Key State ─── */
+    .qr-container {
+      background: #f1f5f9;
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+
+    .qr-placeholder {
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 16px;
+      background: #fff;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px dashed #cbd5e1;
+    }
+
+    .qr-placeholder svg {
+      width: 120px;
+      height: 120px;
+      color: #2563eb;
+    }
+
+    .qr-hint {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+
+    .app-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+      padding: 12px 24px;
+      background: #2563eb;
+      color: #fff;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+
+    .app-link:hover { background: #1d4ed8; }
+
+    /* ─── Verifying State ─── */
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #e2e8f0;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      margin: 0 auto 20px;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .status-text {
+      font-size: 15px;
+      color: #475569;
+      margin-bottom: 8px;
+    }
+
+    /* ─── Error State ─── */
+    .error-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 16px;
+      color: #dc2626;
+    }
+
+    .error-msg {
+      font-size: 14px;
+      color: #dc2626;
+      background: #fef2f2;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      word-break: break-word;
+    }
+
+    .btn-retry {
+      padding: 10px 24px;
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-retry:hover { background: #e2e8f0; }
+
+    /* ─── Success State ─── */
+    .success-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 16px;
+      color: #16a34a;
+    }
+
+    .success-text {
+      font-size: 15px;
+      color: #16a34a;
+      font-weight: 600;
+    }
+
+    /* ─── Footer ─── */
+    .footer {
+      margin-top: 24px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .footer a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <img src="/pnx.png" alt="" class="logo">
+  <h1>Σύνδεση στο Forum</h1>
+  <p class="subtitle">pnyx.ekklesia.gr</p>
+
+  <!-- ─── State 1: No Key — show QR ─── -->
+  <div id="state-nokey" class="state">
+    <div class="qr-container">
+      <div class="qr-placeholder" id="qr-target">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <rect x="14" y="14" width="3" height="3"/>
+          <rect x="18" y="18" width="3" height="3"/>
+          <rect x="14" y="18" width="3" height="3"/>
+          <rect x="18" y="14" width="3" height="3"/>
+        </svg>
+      </div>
+      <p class="qr-hint">
+        Σκανάρετε τον κωδικό QR με την εφαρμογή<br>
+        <strong>ekklesia</strong> για να συνδεθείτε.
+      </p>
+    </div>
+    <a href="https://ekklesia.gr/el/verify" class="app-link">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="5" y="2" width="14" height="20" rx="2"/>
+        <line x1="12" y1="18" x2="12" y2="18" stroke-linecap="round" stroke-width="3"/>
+      </svg>
+      Εγγραφή μέσω ekklesia
+    </a>
+  </div>
+
+  <!-- ─── State 2: Verifying ─── -->
+  <div id="state-verifying" class="state">
+    <div class="spinner"></div>
+    <p class="status-text">Επαλήθευση ταυτότητας…</p>
+    <p class="subtitle">Παρακαλώ περιμένετε</p>
+  </div>
+
+  <!-- ─── State 3: Error ─── -->
+  <div id="state-error" class="state">
+    <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="15" y1="9" x2="9" y2="15"/>
+      <line x1="9" y1="9" x2="15" y2="15"/>
+    </svg>
+    <div class="error-msg" id="error-detail">Σφάλμα σύνδεσης</div>
+    <button class="btn-retry" onclick="retryAuth()">Δοκιμάστε ξανά</button>
+  </div>
+
+  <!-- ─── State 4: Success ─── -->
+  <div id="state-success" class="state">
+    <svg class="success-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/>
+      <polyline points="8 12 11 15 16 9"/>
+    </svg>
+    <p class="success-text">Επιτυχής σύνδεση — ανακατεύθυνση…</p>
+  </div>
+
+  <div class="footer">
+    <a href="https://ekklesia.gr">ekklesia.gr</a> — Ψηφιακή Δημοκρατία
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var API_BASE = 'https://api.ekklesia.gr/api/v1';
+  var LOCALSTORAGE_KEY = 'ekklesia_private_key';
+  var LOCALSTORAGE_PUBKEY = 'ekklesia_public_key';
+
+  // ─── URL params from SSO redirect ───
+  var params = new URLSearchParams(window.location.search);
+  var nonce = params.get('nonce');
+  var returnUrl = params.get('return_url');
+
+  // ─── State management ───
+  function showState(id) {
+    var states = document.querySelectorAll('.state');
+    for (var i = 0; i < states.length; i++) {
+      states[i].classList.remove('active');
+    }
+    document.getElementById('state-' + id).classList.add('active');
+  }
+
+  function showError(msg) {
+    document.getElementById('error-detail').textContent = msg;
+    showState('error');
+  }
+
+  // ─── Validate nonce + return_url ───
+  if (!nonce || !returnUrl) {
+    showState('error');
+    document.getElementById('error-detail').textContent =
+      'Μη έγκυρος σύνδεσμος — λείπουν παράμετροι nonce/return_url.';
+    return;
+  }
+
+  // ─── Check for stored private key ───
+  var privateKeyHex = localStorage.getItem(LOCALSTORAGE_KEY);
+  var publicKeyHex = localStorage.getItem(LOCALSTORAGE_PUBKEY);
+
+  if (!privateKeyHex || !publicKeyHex) {
+    // No key — show QR / registration prompt
+    showState('nokey');
+    return;
+  }
+
+  // ─── Key exists — authenticate automatically ───
+  authenticate(publicKeyHex);
+
+  function authenticate(pubKeyHex) {
+    showState('verifying');
+
+    // Build POST body
+    var body = JSON.stringify({
+      nonce: nonce,
+      public_key_hex: pubKeyHex
+    });
+
+    fetch(API_BASE + '/sso/discourse/callback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: body,
+      redirect: 'manual'
+    })
+      .then(function (res) {
+        // API returns 307 redirect to Discourse
+        if (res.type === 'opaqueredirect' || res.status === 307 || res.status === 302) {
+          var location = res.headers.get('Location');
+          if (location) {
+            showState('success');
+            setTimeout(function () { window.location.href = location; }, 600);
+            return;
+          }
+        }
+
+        // API returns 200 with redirect URL in body
+        if (res.ok) {
+          return res.json().then(function (data) {
+            if (data.redirect_url) {
+              showState('success');
+              setTimeout(function () { window.location.href = data.redirect_url; }, 600);
+            } else {
+              showError('Δεν ελήφθη URL ανακατεύθυνσης.');
+            }
+          });
+        }
+
+        // Error responses
+        if (res.status === 404) {
+          showError('Η ταυτότητα δεν βρέθηκε. Ολοκληρώστε πρώτα την εγγραφή στο ekklesia.gr.');
+          return;
+        }
+        if (res.status === 410) {
+          showError('Η σύνδεση έληξε. Επιστρέψτε στο forum και δοκιμάστε ξανά.');
+          return;
+        }
+
+        return res.text().then(function (text) {
+          var detail;
+          try { detail = JSON.parse(text).detail; } catch (e) { detail = text; }
+          showError(detail || 'Σφάλμα ' + res.status);
+        });
+      })
+      .catch(function (err) {
+        showError('Αδυναμία σύνδεσης: ' + err.message);
+      });
+  }
+
+  // ─── Retry button ───
+  window.retryAuth = function () {
+    var pk = localStorage.getItem(LOCALSTORAGE_PUBKEY);
+    if (!pk) {
+      showState('nokey');
+      return;
+    }
+    authenticate(pk);
+  };
+})();
+</script>
+
+</body>
+</html>
