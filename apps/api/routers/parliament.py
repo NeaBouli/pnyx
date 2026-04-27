@@ -6,7 +6,7 @@ POST /api/v1/bills/{bill_id}/transition — Lifecycle-Übergang (intern/admin)
 GET  /api/v1/bills/trending     — Nach Relevanz-Score sortiert
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -298,7 +298,7 @@ async def transition_bill(
 
     old_status = bill.status
     bill.status = new_status
-    bill.status_changed_at = datetime.utcnow()
+    bill.status_changed_at = datetime.now(timezone.utc)
 
     # Audit-Log
     log = BillStatusLog(
@@ -336,7 +336,7 @@ async def transition_bill(
                 divergence = round(abs(yes_pct - (1.0 if authority_passed else 0.0)), 3)
 
             # Snapshot Timestamp — fixiert zum Zeitpunkt des Parlamentsbeschlusses
-            snapshot_timestamp = datetime.utcnow().isoformat()
+            snapshot_timestamp = datetime.now(timezone.utc).isoformat()
             logger.info(f"[MOD-08] Snapshot fixiert: {snapshot_timestamp} für {bill_id}")
 
             audit_trail = build_audit_trail(
@@ -373,7 +373,7 @@ async def transition_bill(
         "from": old_status.value,
         "to": new_status.value,
         "label_el": STATUS_LABELS.get(new_status.value, new_status.value),
-        "changed_at": datetime.utcnow().isoformat(),
+        "changed_at": datetime.now(timezone.utc).isoformat(),
         "arweave_tx_id": arweave_tx_id,
     }
 

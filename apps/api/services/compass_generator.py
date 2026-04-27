@@ -7,7 +7,7 @@ import asyncio
 import json
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -114,7 +114,7 @@ async def run_compass_update(db: AsyncSession) -> list[dict]:
     Generate new compass questions from recent bills.
     Returns list of generated questions (stored as pending in DB).
     """
-    cutoff = datetime.utcnow() - timedelta(days=90)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=90)
 
     # Get recent bills with votes
     result = await db.execute(

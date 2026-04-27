@@ -49,7 +49,7 @@ export default function LiveNotifications({ billId, maxItems = 5 }: Props) {
         {connected ? "Live" : "Offline"}
       </div>
       {events.map((ev, i) => (
-        <div key={i} className="bg-gray-900 border border-gray-700 rounded-xl p-3 shadow-lg text-sm">
+        <div key={i} className="bg-white border border-gray-200 rounded-xl p-3 shadow-lg text-sm">
           <div className="font-bold text-xs text-blue-400 mb-1">{ev.type}</div>
           {ev.label_el && <p className="text-gray-300 text-xs">{ev.label_el}</p>}
           {ev.message_el && <p className="text-gray-300 text-xs">{ev.message_el}</p>}

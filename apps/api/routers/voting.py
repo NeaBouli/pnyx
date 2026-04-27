@@ -9,7 +9,7 @@ import hmac
 import json
 import gc
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Header, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -290,7 +290,7 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
             )
         existing_vote.vote = vote_choice
         existing_vote.signature_hex = req.signature_hex
-        existing_vote.updated_at = datetime.utcnow()
+        existing_vote.updated_at = datetime.now(timezone.utc)
         await db.commit()
         return VoteResponse(
             success=True,
@@ -478,7 +478,7 @@ async def get_vote_receipt(
     if not vote:
         raise HTTPException(status_code=404, detail="Keine Stimme gefunden.")
 
-    ts = vote.created_at.isoformat() if vote.created_at else datetime.utcnow().isoformat()
+    ts = vote.created_at.isoformat() if vote.created_at else datetime.now(timezone.utc).isoformat()
     salt = os.environ.get("SERVER_SALT", "")
     chain_proof = hmac.new(
         salt.encode(),

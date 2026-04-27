@@ -60,7 +60,7 @@ export default function DivergenceCard({ divergence, locale = "el" }: Props) {
 
       {/* Citizen vs Parliament */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="bg-gray-900 rounded-xl p-3 text-center border border-gray-800">
+        <div className="bg-white rounded-xl p-3 text-center border border-gray-200">
           <div className="text-xs text-gray-500 mb-1">
             {locale === "el" ? "Πλειοψηφία Πολιτών" : "Citizen Majority"}
           </div>
@@ -68,7 +68,7 @@ export default function DivergenceCard({ divergence, locale = "el" }: Props) {
             {divergence.citizen_majority}
           </div>
         </div>
-        <div className="bg-gray-900 rounded-xl p-3 text-center border border-gray-800">
+        <div className="bg-white rounded-xl p-3 text-center border border-gray-200">
           <div className="text-xs text-gray-500 mb-1">
             {locale === "el" ? "Απόφαση Βουλής" : "Parliament Decision"}
           </div>

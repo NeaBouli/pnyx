@@ -158,7 +158,7 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
                 region=req.region,
                 gender_code=req.gender_code,
                 revoked_at=None,
-                created_at=datetime.utcnow()
+                created_at=datetime.now(timezone.utc)
             )
         )
     else:
@@ -214,7 +214,7 @@ async def revoke_identity(req: RevokeRequest, db: AsyncSession = Depends(get_db)
     await db.execute(
         update(IdentityRecord)
         .where(IdentityRecord.nullifier_hash == new_nullifier)
-        .values(status=KeyStatus.REVOKED, revoked_at=datetime.utcnow())
+        .values(status=KeyStatus.REVOKED, revoked_at=datetime.now(timezone.utc))
     )
     await db.commit()
 

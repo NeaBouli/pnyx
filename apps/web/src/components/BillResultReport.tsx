@@ -46,8 +46,8 @@ export default function BillResultReport({
      (divergence.citizen_majority === "ΚΑΤΑ" && divergence.parliament_result === "ΕΓΚΡΙΘΗΚΕ"));
 
   return (
-    <div className="rounded-2xl border border-gray-700 bg-gray-900 overflow-hidden mb-6">
-      <div className="px-6 py-4 bg-gray-800 border-b border-gray-700">
+    <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden mb-6">
+      <div className="px-6 py-4 bg-gray-800 border-b border-gray-200">
         <h2 className="font-black text-lg">{el("Πλήρης Έκθεση Αποτελεσμάτων", "Full Results Report")}</h2>
       </div>
       <div className="p-6 space-y-6">
@@ -73,7 +73,7 @@ export default function BillResultReport({
                 {Object.entries(partyVotes).map(([abbr, vote]) => {
                   const { l, c } = pvLabel(vote);
                   return (
-                    <div key={abbr} className="flex justify-between bg-gray-900 rounded-lg px-3 py-2">
+                    <div key={abbr} className="flex justify-between bg-white rounded-lg px-3 py-2">
                       <span className="font-bold text-sm text-gray-200">{abbr}</span>
                       <span className="font-black text-sm" style={{ color: c }}>{l}</span>
                     </div>
@@ -170,7 +170,7 @@ export default function BillResultReport({
           </div>
         )}
 
-        <p className="text-xs text-gray-600 text-center pt-2 border-t border-gray-800">
+        <p className="text-xs text-gray-600 text-center pt-2 border-t border-gray-200">
           {el("Η ψηφοφορία δεν είναι νομικά δεσμευτική.", "This vote is not legally binding.")}
         </p>
       </div>

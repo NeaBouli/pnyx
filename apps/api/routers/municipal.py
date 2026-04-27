@@ -5,7 +5,7 @@ GET /api/v1/periferia/{id}/dimos   — Municipalities of a region (325 total)
 GET /api/v1/decisions              — Decisions (filter by level, periferia_id, dimos_id, status)
 """
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
@@ -140,7 +140,7 @@ async def get_voteable_decisions(
     db: AsyncSession = Depends(get_db),
 ):
     """Diavgeia decisions for a specific Dimos that can be voted on."""
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     result = await db.execute(
         select(DiavgeiaDecision)
         .where(

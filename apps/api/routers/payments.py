@@ -14,7 +14,7 @@ Alles in Redis gespeichert — kein DB-Schema nötig.
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Request, HTTPException
 import redis.asyncio as aioredis
 
@@ -72,7 +72,7 @@ async def allocate_donation(amount: float, r: aioredis.Redis) -> dict:
     2. Domain: wenn < 1 Jahr Deckung → auffüllen
     3. Rest → Reserve
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     remaining = amount
     allocation = {"server": 0.0, "domain": 0.0, "reserve": 0.0}
 
@@ -119,7 +119,7 @@ async def allocate_donation(amount: float, r: aioredis.Redis) -> dict:
 
 def _months_elapsed(start_str: str) -> int:
     start = datetime.strptime(start_str, "%Y-%m-%d")
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     months = (now.year - start.year) * 12 + (now.month - start.month)
     if now.day >= int(start_str.split("-")[2]):
         months += 1
@@ -176,7 +176,7 @@ async def stripe_webhook(request: Request):
 
     # Log
     record = {
-        "date": datetime.utcnow().strftime("%Y-%m-%d %H:%M"),
+        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
         "amount": amount_total,
         "allocation": allocation,
         "from": customer_email,
