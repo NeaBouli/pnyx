@@ -10,7 +10,7 @@ import os
 import urllib.parse
 import logging
 
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -66,7 +66,7 @@ async def discourse_sso_initiate(sso: str = Query(...), sig: str = Query(...)):
     await r.setex(f"sso:discourse:{nonce}", 300, return_sso_url)
 
     redirect = (
-        f"https://ekklesia.gr/sso-verify.html"
+        f"https://ekklesia.gr/el/sso-verify"
         f"?nonce={urllib.parse.quote(nonce)}"
         f"&return_url={urllib.parse.quote(return_sso_url)}"
     )
@@ -75,11 +75,25 @@ async def discourse_sso_initiate(sso: str = Query(...), sig: str = Query(...)):
 
 @router.post("/discourse/callback")
 async def discourse_sso_callback(
-    nonce: str = Query(...),
-    public_key_hex: str = Query(...),
+    request: Request,
+    nonce: str = Query(None),
+    public_key_hex: str = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     """Called after user confirms identity → build Discourse payload → redirect."""
+
+    # Accept both query params and JSON body
+    if not nonce or not public_key_hex:
+        try:
+            body = await request.json()
+            nonce = nonce or body.get("nonce")
+            public_key_hex = public_key_hex or body.get("public_key_hex")
+        except Exception:
+            pass
+
+    if not nonce or not public_key_hex:
+        raise HTTPException(400, "Missing nonce or public_key_hex")
+
     r = await _redis()
     return_sso_url = await r.get(f"sso:discourse:{nonce}")
     if not return_sso_url:
@@ -129,4 +143,4 @@ async def discourse_sso_callback(
     logger.info("SSO login: nullifier=%s... dimos=%s", identity.nullifier_hash[:8], dimos_name)
 
     redirect = f"{return_sso_url}?sso={urllib.parse.quote(payload)}&sig={sig}"
-    return RedirectResponse(url=redirect, status_code=302)
+    return {"redirect_url": redirect}
