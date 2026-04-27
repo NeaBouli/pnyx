@@ -10,7 +10,7 @@ import os
 import urllib.parse
 import logging
 
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -130,7 +130,3 @@ async def discourse_sso_callback(
 
     redirect = f"{return_sso_url}?sso={urllib.parse.quote(payload)}&sig={sig}"
     return RedirectResponse(url=redirect, status_code=302)
-
-
-# Fix missing import
-from fastapi import Depends
