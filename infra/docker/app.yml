@@ -66,12 +66,8 @@ volumes:
       host: /var/discourse/shared/standalone/log/var-log
       guest: /var/log
 
-hooks:
-  after_code:
-    - exec:
-        cd: $home/plugins
-        cmd:
-          - git clone https://github.com/discourse/discourse-voting.git
+## Plugins: install via admin panel after bootstrap
+## discourse-voting: may conflict with core routes — install manually if needed
 
 docker_args: >-
   --network net_ekklesia
