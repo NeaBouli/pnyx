@@ -59,8 +59,16 @@
     <a href="index.html" data-el="Wiki" data-en="Wiki">Wiki</a>
     <a href="../community.html" data-el="Community" data-en="Community">Community</a>
     <span style="width:1px;height:20px;background:#e2e8f0;margin:0 0.3rem"></span>
+    <a href="architecture.html" data-el="Αρχιτεκτονική" data-en="Architecture">Αρχιτεκτονική</a>
+    <a href="security.html" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</a>
     <a href="api.html">API</a>
     <a href="modules.html">Modules</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="privacy.html" data-el="Ιδιωτικότητα" data-en="Privacy">Ιδιωτικότητα</a>
+    <a href="database.html">Database</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="whitepaper.html">Whitepaper</a>
+    <a href="faq.html">FAQ</a>
     <a href="broadcasting.html" class="active">Broadcasting</a>
     <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
   </div>
@@ -116,8 +124,30 @@
   </ul>
 
   <h2 data-el="Embed Widget" data-en="Embed Widget">Embed Widget</h2>
+  <p data-el="Αντιγράψτε τον παρακάτω κώδικα για να ενσωματώσετε αποτελέσματα ψηφοφορίας σε εξωτερικές ιστοσελίδες:" data-en="Copy the code below to embed voting results on external websites:">Αντιγράψτε τον παρακάτω κώδικα για να ενσωματώσετε αποτελέσματα ψηφοφορίας σε εξωτερικές ιστοσελίδες:</p>
+
+  <h3 data-el="Όλα τα Νομοσχέδια" data-en="All Bills">Όλα τα Νομοσχέδια</h3>
+  <div class="code-block" id="embed-all">&lt;iframe
+  src="https://ekklesia.gr/el/bills"
+  width="100%"
+  height="600"
+  frameborder="0"
+  title="ekklesia.gr — Ψηφοφορία Πολιτών"&gt;
+&lt;/iframe&gt;</div>
+  <button onclick="navigator.clipboard.writeText(document.getElementById('embed-all').innerText)" style="background:var(--blue);color:white;border:none;padding:0.4rem 1rem;border-radius:0.4rem;font-size:0.82rem;font-weight:700;cursor:pointer;margin-bottom:1.5rem" data-el="Αντιγραφή" data-en="Copy">Αντιγραφή</button>
+
+  <h3 data-el="Συγκεκριμένο Νομοσχέδιο" data-en="Specific Bill">Συγκεκριμένο Νομοσχέδιο</h3>
+  <div class="code-block" id="embed-single">&lt;iframe
+  src="https://ekklesia.gr/el/bills/GR-5293"
+  width="100%"
+  height="400"
+  frameborder="0"
+  title="ekklesia.gr — Νομοσχέδιο GR-5293"&gt;
+&lt;/iframe&gt;</div>
+  <button onclick="navigator.clipboard.writeText(document.getElementById('embed-single').innerText)" style="background:var(--blue);color:white;border:none;padding:0.4rem 1rem;border-radius:0.4rem;font-size:0.82rem;font-weight:700;cursor:pointer;margin-bottom:1.5rem" data-el="Αντιγραφή" data-en="Copy">Αντιγραφή</button>
+
   <div class="info-box">
-    <p data-el="🚧 <strong>Σύντομα:</strong> Embed code για ενσωμάτωση αποτελεσμάτων σε εξωτερικές ιστοσελίδες. iframe + JS widget." data-en="🚧 <strong>Coming soon:</strong> Embed code for integrating results into external websites. iframe + JS widget.">🚧 <strong>Σύντομα:</strong> Embed code για αποτελέσματα σε εξωτερικές ιστοσελίδες.</p>
+    <p data-el="Αντικαταστήστε <code>GR-5293</code> με το ID του νομοσχεδίου που θέλετε. Μπορείτε να αλλάξετε <code>/el/</code> σε <code>/en/</code> για αγγλικά." data-en="Replace <code>GR-5293</code> with the bill ID you want. Change <code>/el/</code> to <code>/en/</code> for English.">Αντικαταστήστε <code>GR-5293</code> με το ID του νομοσχεδίου. Αλλάξτε <code>/el/</code> σε <code>/en/</code> για αγγλικά.</p>
   </div>
 
   <h2 data-el="API για Developers" data-en="API for Developers">API για Developers</h2>

@@ -36,6 +36,7 @@ class BillSummary(BaseModel):
     parliament_vote_date: str | None
     parliament_url:      str | None = None
     relevance_score:     int | None = 0
+    forum_topic_id:      int | None = None
 
 class BillDetail(BaseModel):
     id:                     str
@@ -53,6 +54,7 @@ class BillDetail(BaseModel):
     governance_level:       str | None = "NATIONAL"
     parliament_vote_date:   str | None
     parliament_url:         str | None = None
+    forum_topic_id:         int | None = None
     ai_summary_reviewed:    bool
 
 class TransitionRequest(BaseModel):
@@ -127,6 +129,7 @@ async def get_bills(
         governance_level=b.governance_level.value if b.governance_level else "NATIONAL",
         parliament_vote_date=b.parliament_vote_date.isoformat() if b.parliament_vote_date else None,
         parliament_url=b.parliament_url,
+        forum_topic_id=b.forum_topic_id,
     ) for b in bills]
 
 
@@ -171,6 +174,7 @@ async def get_trending(
         parliament_vote_date=row[0].parliament_vote_date.isoformat() if row[0].parliament_vote_date else None,
         parliament_url=row[0].parliament_url,
         relevance_score=row[1] or 0,
+        forum_topic_id=row[0].forum_topic_id,
     ) for row in rows]
 
 
@@ -200,6 +204,7 @@ async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db)):
         governance_level=bill.governance_level.value if bill.governance_level else "NATIONAL",
         parliament_vote_date=bill.parliament_vote_date.isoformat() if bill.parliament_vote_date else None,
         parliament_url=bill.parliament_url,
+        forum_topic_id=bill.forum_topic_id,
         ai_summary_reviewed=bill.ai_summary_reviewed,
     )
 

@@ -60,6 +60,7 @@ export interface Bill {
   parliament_vote_date: string | null;
   ai_summary_reviewed?: boolean;
   relevance_score?: number;
+  forum_topic_id?: number | null;
 }
 
 export interface DivergenceResult {

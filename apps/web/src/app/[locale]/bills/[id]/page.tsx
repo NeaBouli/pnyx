@@ -161,16 +161,30 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
           <span className="text-xs text-gray-400 font-mono">{bill.id}</span>
         </div>
 
-        {/* Official Parliament Link */}
+        {/* Official Parliament Link + Jina Reader fallback (WAF bypass) */}
         {(bill as any).parliament_url && (
-          <a
-            href={(bill as any).parliament_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 mb-4 transition-colors font-medium"
-          >
-            🏛️ {locale === "el" ? "Επίσημο κείμενο στη Βουλή →" : "Official Parliament text →"}
-          </a>
+          <div className="flex items-center gap-2 flex-wrap mb-4">
+            <a
+              href={(bill as any).parliament_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 transition-colors font-medium"
+            >
+              🏛️ {locale === "el" ? "Επίσημο κείμενο στη Βουλή →" : "Official Parliament text →"}
+            </a>
+            <span className="text-xs text-gray-400">
+              ({locale === "el" ? "αν δεν ανοίγει:" : "if blocked:"}
+              <a
+                href={`https://r.jina.ai/${(bill as any).parliament_url}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline ml-1 hover:text-gray-600"
+                title={locale === "el" ? "Μέσω Jina Reader — τρίτος πάροχος" : "Via Jina Reader — third-party provider"}
+              >
+                {locale === "el" ? "εναλλακτικός σύνδεσμος ↗" : "alternative link ↗"}
+              </a>)
+            </span>
+          </div>
         )}
 
         {/* Relevance */}
@@ -215,6 +229,16 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
                   : (locale === "el" ? "Ανάλυση" : "Analysis")}
               </button>
             ))}
+            {(bill as any).forum_topic_id && (
+              <a
+                href={`https://pnyx.ekklesia.gr/t/${(bill as any).forum_topic_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-gray-100 text-gray-500 hover:text-gray-900 hover:bg-gray-200 inline-flex items-center gap-1"
+              >
+                {locale === "el" ? "Συζήτηση" : "Discussion"}
+              </a>
+            )}
           </div>
           {expanded === "short" ? (
             <p className="text-gray-700 leading-relaxed">
