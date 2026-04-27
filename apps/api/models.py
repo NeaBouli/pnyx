@@ -146,6 +146,7 @@ class ParliamentBill(Base):
     parliament_url      = Column(String(500), nullable=True)      # Official hellenicparliament.gr link
     arweave_tx_id       = Column(String(100), nullable=True)     # MOD-08
     ai_summary_reviewed = Column(Boolean, default=False)        # Community-geprüft
+    forum_topic_id      = Column(Integer, nullable=True)         # Discourse topic ID
 
     # Vote Scope: who can vote on this bill
     governance_level    = Column(Enum(GovernanceLevel), default=GovernanceLevel.NATIONAL, nullable=False)

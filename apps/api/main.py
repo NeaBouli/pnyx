@@ -38,6 +38,7 @@ from routers import notify
 from routers import diavgeia
 from routers import agent
 from routers import polis_qr
+from routers import sso
 
 scheduler = AsyncIOScheduler()
 
@@ -222,6 +223,7 @@ app.include_router(notify.router)
 app.include_router(diavgeia.router)
 app.include_router(agent.router)
 app.include_router(polis_qr.router)
+app.include_router(sso.router)
 
 @app.get("/health")
 async def health():
