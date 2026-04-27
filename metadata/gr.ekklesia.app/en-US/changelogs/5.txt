@@ -1,0 +1,8 @@
+Version 5
+• AI Agent: Ollama + DeepL bill summaries and citizen Q&A
+• Municipal voting: vote on local Diavgeia decisions
+• Onboarding wizard (5 screens)
+• QR-Code POLIS browser login
+• Political compass: 44 questions (6 AI-generated)
+• Push notifications removed for F-Droid (FCM-free)
+• Performance and security improvements
