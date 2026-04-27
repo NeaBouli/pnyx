@@ -55,12 +55,12 @@ async def analytics_overview(db: AsyncSession = Depends(get_db)):
         )
     ) or 0
 
-    week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    week_ago = datetime.utcnow() - timedelta(days=7)  # naive to match DB column
     recent_votes = await db.scalar(
         select(func.count(CitizenVote.id)).where(CitizenVote.created_at >= week_ago)
     ) or 0
 
-    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     today_votes = await db.scalar(
         select(func.count(CitizenVote.id)).where(CitizenVote.created_at >= today)
     ) or 0
@@ -101,7 +101,7 @@ async def divergence_trends(
     db: AsyncSession = Depends(get_db)
 ):
     """Divergence Score Trends über Zeit."""
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.utcnow() - timedelta(days=days)
 
     result = await db.execute(
         select(ParliamentBill).where(
@@ -162,7 +162,7 @@ async def votes_timeline(
     db: AsyncSession = Depends(get_db)
 ):
     """Abstimmungs-Zeitverlauf aggregiert nach Tag."""
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    since = datetime.utcnow() - timedelta(days=days)
 
     query = select(
         func.date_trunc("day", CitizenVote.created_at).label("day"),

@@ -252,15 +252,26 @@ async def answer_citizen_question(question: str, context: str, lang: str = "el")
         if translated_ctx:
             en_context = translated_ctx
 
+    from datetime import datetime as _dt
+    current_date = _dt.now().strftime("%d %B %Y")
+
     prompt = (
         "You are an assistant for the ekklesia.gr platform (Greek digital democracy).\n"
+        f"Today's date: {current_date}. The current year is 2026.\n"
         "Answer the question based on the data. Be concise and helpful.\n"
+        "Do NOT add greetings, exclamations, or filler text. Answer directly.\n"
         "If you don't know, say you don't have enough data.\n\n"
         f"Data:\n{en_context}\n\n"
         f"Question: {en_question}\n\n"
         "Answer:"
     )
     en_answer = await ollama_generate(prompt, max_tokens=300)
+
+    # Clean Ollama warmup artifacts
+    if en_answer:
+        lines = en_answer.split("\n")
+        clean = [l for l in lines if not (len(l) < 40 and any(x in l.lower() for x in ["great!", "excellent!", "two years", "let me", "here's"]))]
+        en_answer = "\n".join(clean).strip()
     if not en_answer:
         if lang == "el":
             return "Δεν μπόρεσα να απαντήσω. Δοκιμάστε ξανά αργότερα." + _DISCLAIMER_EL
