@@ -1,7 +1,6 @@
 ## Discourse Launcher Configuration — pnyx.ekklesia.gr
-## Deploy path on server: /opt/pnyx-forum/app.yml
-## Network: net_ekklesia (shared with ekklesia stack)
-## Traefik handles TLS + routing — no exposed ports
+## Standard setup: own Postgres + Redis inside container
+## Traefik handles TLS + routing via docker_args labels
 
 templates:
   - "templates/postgres.template.yml"
@@ -9,78 +8,64 @@ templates:
   - "templates/web.template.yml"
   - "templates/web.ratelimited.template.yml"
 
-## ─── No port publishing — Traefik routes pnyx.ekklesia.gr ───
 expose: []
 
 params:
-  ## ─── Database (external — shared ekklesia-db) ───
   db_default_text_search_config: "pg_catalog.greek"
   db_shared_buffers: "128MB"
-
-  ## ─── Versions ───
   version: tests-passed
 
 env:
-  LC_ALL: el_GR.UTF-8
-  LANG: el_GR.UTF-8
-  LANGUAGE: el_GR:el
+  LC_ALL: en_US.UTF-8
+  LANG: en_US.UTF-8
+  LANGUAGE: en_US:en
 
-  ## ─── Domain ───
   DISCOURSE_HOSTNAME: pnyx.ekklesia.gr
-
-  ## ─── Behind Traefik — force HTTPS scheme without terminating TLS ───
   DISCOURSE_FORCE_HTTPS: true
   DISCOURSE_SERVE_STATIC_ASSETS: true
 
-  ## ─── External PostgreSQL (ekklesia-db container) ───
-  DISCOURSE_DB_HOST: db
+  ## Internal DB (Discourse default — own Postgres inside container)
+  DISCOURSE_DB_HOST: localhost
   DISCOURSE_DB_PORT: 5432
-  DISCOURSE_DB_NAME: pnyx_discourse
-  DISCOURSE_DB_USERNAME: discourse_user
-  DISCOURSE_DB_PASSWORD: DISCOURSE_DB_PASSWORD
+  DISCOURSE_DB_NAME: discourse
+  DISCOURSE_DB_USERNAME: discourse
+  DISCOURSE_DB_PASSWORD: discourse
 
-  ## ─── External Redis (ekklesia-redis container, DB=1) ───
-  DISCOURSE_REDIS_HOST: redis
+  ## Internal Redis (own Redis inside container)
+  DISCOURSE_REDIS_HOST: localhost
   DISCOURSE_REDIS_PORT: 6379
-  DISCOURSE_REDIS_DB: 1
 
-  ## ─── Email ───
-  DISCOURSE_SMTP_ADDRESS: DISCOURSE_SMTP_HOST
-  DISCOURSE_SMTP_PORT: 587
-  DISCOURSE_SMTP_USER_NAME: DISCOURSE_SMTP_USER
-  DISCOURSE_SMTP_PASSWORD: DISCOURSE_SMTP_PASSWORD
-  DISCOURSE_SMTP_ENABLE_START_TLS: true
-  DISCOURSE_SMTP_DOMAIN: ekklesia.gr
+  ## SMTP — configure after bootstrap via admin panel
+  #DISCOURSE_SMTP_ADDRESS: smtp-relay.brevo.com
+  #DISCOURSE_SMTP_PORT: 587
+  #DISCOURSE_SMTP_USER_NAME: SET_LATER
+  #DISCOURSE_SMTP_PASSWORD: SET_LATER
   DISCOURSE_NOTIFICATION_EMAIL: forum@ekklesia.gr
+  DISCOURSE_DEVELOPER_EMAILS: bergamolia@protonmail.com
 
-  ## ─── SSO via ekklesia Identity (DiscourseConnect) ───
+  ## SSO via ekklesia Identity (DiscourseConnect)
   DISCOURSE_ENABLE_DISCOURSE_CONNECT: true
   DISCOURSE_DISCOURSE_CONNECT_URL: https://api.ekklesia.gr/api/v1/sso/discourse/initiate
-  DISCOURSE_DISCOURSE_CONNECT_SECRET: DISCOURSE_SSO_SECRET
+  DISCOURSE_DISCOURSE_CONNECT_SECRET: REPLACE_WITH_SSO_SECRET
 
-  ## ─── Site defaults ───
+  ## Site defaults
   DISCOURSE_DEFAULT_LOCALE: el
   DISCOURSE_ALLOW_USER_LOCALE: true
 
-  ## ─── Admin (first-run bootstrap) ───
-  DISCOURSE_DEVELOPER_EMAILS: DISCOURSE_ADMIN_EMAIL
-
-  ## ─── Memory tuning for CX33 (shared server) ───
+  ## Memory tuning for CX33 (shared server)
   UNICORN_WORKERS: 2
   RUBY_GC_HEAP_GROWTH_MAX_SLOTS: 40000
   RUBY_GC_HEAP_INIT_SLOTS: 400000
   RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR: 1.5
 
-## ─── Persistent storage ───
 volumes:
   - volume:
-      host: /opt/pnyx-forum/shared/standalone
-      guest: /shared/standalone
+      host: /var/discourse/shared/standalone
+      guest: /shared
   - volume:
-      host: /opt/pnyx-forum/shared/log/var-log
+      host: /var/discourse/shared/standalone/log/var-log
       guest: /var/log
 
-## ─── Hooks: join net_ekklesia + install plugins ───
 hooks:
   after_code:
     - exec:
@@ -89,12 +74,6 @@ hooks:
           - git clone https://github.com/discourse/discourse-voting.git
           - git clone https://github.com/discourse/discourse-solved.git
 
-  ## ─── Connect container to net_ekklesia after bootstrap ───
-  after_web_config:
-    - exec:
-        cmd: echo "Container must be connected to net_ekklesia via docker network connect"
-
-## ─── Docker run args: connect to Traefik network ───
 docker_args: >-
   --network net_ekklesia
   --label traefik.enable=true
@@ -102,12 +81,8 @@ docker_args: >-
   --label traefik.http.routers.pnyx-forum.entrypoints=websecure
   --label traefik.http.routers.pnyx-forum.tls.certresolver=letsencrypt
   --label traefik.http.services.pnyx-forum.loadbalancer.server.port=80
-  --label traefik.http.middlewares.pnyx-headers.headers.frameDeny=true
-  --label traefik.http.middlewares.pnyx-headers.headers.contentTypeNosniff=true
-  --label traefik.http.middlewares.pnyx-headers.headers.browserXssFilter=true
   --label traefik.http.middlewares.pnyx-headers.headers.forceSTSHeader=true
   --label traefik.http.middlewares.pnyx-headers.headers.stsSeconds=31536000
-  --label traefik.http.middlewares.pnyx-headers.headers.stsIncludeSubdomains=true
   --label traefik.http.middlewares.pnyx-headers.headers.stsPreload=true
   --label traefik.http.routers.pnyx-forum.middlewares=pnyx-headers
   --memory=1536m
