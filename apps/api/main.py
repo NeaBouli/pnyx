@@ -160,6 +160,17 @@ async def scheduled_diavgeia_scrape():
         await record_failure(name, str(e))
 
 
+async def scheduled_forum_sync():
+    """Sync ACTIVE bills to Discourse forum every 10 min."""
+    from database import AsyncSessionLocal
+    from services.discourse_sync import sync_new_bills_to_forum
+    try:
+        async with AsyncSessionLocal() as db:
+            await sync_new_bills_to_forum(db)
+    except Exception as e:
+        logger.error("[Forum] Sync failed: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(app):
     # Startup
@@ -167,8 +178,9 @@ async def lifespan(app):
     scheduler.add_job(scheduled_notify_new_bills, IntervalTrigger(minutes=30), id="notify_new_bills", replace_existing=True)
     scheduler.add_job(scheduled_notify_results, IntervalTrigger(hours=1), id="notify_results", replace_existing=True)
     scheduler.add_job(scheduled_diavgeia_scrape, IntervalTrigger(hours=48), id="diavgeia_municipal", replace_existing=True)
+    scheduler.add_job(scheduled_forum_sync, IntervalTrigger(minutes=10), id="forum_sync", replace_existing=True)
     scheduler.start()
-    logger.info("[Scheduler] Started — parliament 12h, diavgeia 48h, notify-bills 30m, notify-results 1h")
+    logger.info("[Scheduler] Started — parliament 12h, diavgeia 48h, notify-bills 30m, notify-results 1h, forum-sync 10m")
     yield
     # Shutdown
     scheduler.shutdown()
