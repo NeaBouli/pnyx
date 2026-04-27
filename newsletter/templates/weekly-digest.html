@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Εβδομαδιαίο Δελτίο — εκκλησία</title>
+<style>
+body{margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,system-ui,'Segoe UI',sans-serif;color:#1e293b}
+.wrap{max-width:600px;margin:0 auto;background:#fff}
+.header{background:#2563eb;padding:24px 32px;text-align:center}
+.header img{width:48px;height:48px;border-radius:12px}
+.header h1{color:#fff;font-size:20px;margin:8px 0 0;font-weight:900}
+.header p{color:#93c5fd;font-size:12px;margin:4px 0 0}
+.content{padding:24px 32px}
+h2{font-size:16px;font-weight:800;color:#2563eb;border-bottom:2px solid #e2e8f0;padding-bottom:8px;margin:24px 0 12px}
+h2:first-child{margin-top:0}
+.bill{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:10px}
+.bill-title{font-weight:700;font-size:14px;color:#1e293b;margin-bottom:4px}
+.bill-meta{font-size:11px;color:#64748b}
+.bill-link{color:#2563eb;font-size:12px;font-weight:600;text-decoration:none}
+.stats{display:flex;gap:12px;margin:16px 0}
+.stat{flex:1;background:#eff6ff;border-radius:10px;padding:12px;text-align:center}
+.stat-num{font-size:24px;font-weight:900;color:#2563eb}
+.stat-label{font-size:10px;color:#64748b;margin-top:2px}
+.divergence{background:#fef3c7;border-left:3px solid #f59e0b;border-radius:8px;padding:12px 14px;margin:16px 0}
+.divergence p{margin:0;font-size:13px;color:#92400e}
+.cta{display:block;background:#2563eb;color:#fff;text-align:center;padding:14px;border-radius:12px;font-weight:800;font-size:15px;text-decoration:none;margin:20px 0}
+.disclaimer{background:#fefce8;border-radius:8px;padding:10px 14px;margin:16px 0;font-size:11px;color:#92400e;line-height:1.5}
+.footer{background:#0f172a;padding:20px 32px;text-align:center;color:#64748b;font-size:11px}
+.footer a{color:#94a3b8;text-decoration:underline}
+.unsubscribe{margin-top:12px;font-size:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="header">
+<img src="https://ekklesia.gr/pnx.png" alt="εκκλησία">
+<h1>εκκλησία του έθνους</h1>
+<p>Εβδομαδιαίο Δελτίο — {{ .Campaign.Name }}</p>
+</div>
+
+<div class="content">
+
+<h2>Νέα Νομοσχέδια</h2>
+<p style="font-size:13px;color:#64748b;margin-bottom:12px">Τα νομοσχέδια που κατατέθηκαν αυτή την εβδομάδα:</p>
+
+<!-- Placeholder — filled by APScheduler job -->
+<div class="bill">
+<div class="bill-title">{{ .Subscriber.Name }}</div>
+<div class="bill-meta">Βουλή · Ανοιχτή ψηφοφορία</div>
+<a class="bill-link" href="https://ekklesia.gr/el/bills">Ψηφίστε →</a>
+</div>
+
+<h2>Στατιστικά Εβδομάδας</h2>
+<div class="stats">
+<div class="stat"><div class="stat-num">—</div><div class="stat-label">Ψήφοι</div></div>
+<div class="stat"><div class="stat-num">—</div><div class="stat-label">Νομοσχέδια</div></div>
+<div class="stat"><div class="stat-num">—</div><div class="stat-label">Αποφάσεις</div></div>
+</div>
+
+<h2>Δείκτης Απόκλισης</h2>
+<div class="divergence">
+<p>Πόσο απέχει η Βουλή από τους πολίτες; Δείτε τα αποτελέσματα στην πλατφόρμα.</p>
+</div>
+
+<a class="cta" href="https://ekklesia.gr/el/bills">🏛️ Ψηφίστε τώρα</a>
+
+<div class="disclaimer">
+⚠️ Αυτή η πλατφόρμα δεν είναι κρατική υπηρεσία. Οι ψηφοφορίες δεν έχουν νομική δεσμευτικότητα. Είναι μια ανεξάρτητη πρωτοβουλία πολιτών για διαφάνεια και δημοκρατική εκπαίδευση.
+</div>
+
+<!-- English version -->
+<hr style="border:0;border-top:1px solid #e2e8f0;margin:20px 0">
+<p style="font-size:11px;color:#94a3b8;text-align:center">🇬🇧 English version</p>
+<p style="font-size:12px;color:#64748b;line-height:1.6">
+This week's parliamentary bills are now available for voting on ekklesia.gr.
+Visit <a href="https://ekklesia.gr/en/bills" style="color:#2563eb">ekklesia.gr/en/bills</a> to participate.
+This is not a government platform. Votes are informational only.
+</p>
+
+</div>
+
+<div class="footer">
+<p>εκκλησία · © 2026 Vendetta Labs · MIT License</p>
+<p><a href="https://ekklesia.gr">ekklesia.gr</a> · <a href="https://github.com/NeaBouli/pnyx">GitHub</a></p>
+<p class="unsubscribe">
+<a href="{{ .UnsubscribeURL }}">Διαγραφή / Unsubscribe</a> ·
+Αυτό το email στάλθηκε στο {{ .Subscriber.Email }} επειδή εγγραφήκατε στο newsletter.ekklesia.gr
+</p>
+</div>
+
+</div>
+</body>
+</html>

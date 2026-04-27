@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Μηνιαίο Δελτίο — εκκλησία</title>
+<style>
+body{margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,system-ui,'Segoe UI',sans-serif;color:#1e293b}
+.wrap{max-width:600px;margin:0 auto;background:#fff}
+.header{background:linear-gradient(135deg,#2563eb,#1d4ed8);padding:28px 32px;text-align:center}
+.header img{width:56px;height:56px;border-radius:14px}
+.header h1{color:#fff;font-size:22px;margin:8px 0 0;font-weight:900}
+.header p{color:#93c5fd;font-size:13px;margin:4px 0 0}
+.content{padding:24px 32px}
+h2{font-size:16px;font-weight:800;color:#2563eb;border-bottom:2px solid #e2e8f0;padding-bottom:8px;margin:24px 0 12px}
+h2:first-child{margin-top:0}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.stat-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;text-align:center}
+.stat-card.highlight{background:#eff6ff;border-color:#93c5fd}
+.stat-num{font-size:28px;font-weight:900;color:#2563eb}
+.stat-num.green{color:#22c55e}
+.stat-num.red{color:#ef4444}
+.stat-num.yellow{color:#f59e0b}
+.stat-label{font-size:11px;color:#64748b;margin-top:4px}
+.bill{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:10px}
+.bill-rank{display:inline-block;background:#2563eb;color:#fff;width:22px;height:22px;border-radius:50%;text-align:center;line-height:22px;font-size:11px;font-weight:800;margin-right:8px}
+.bill-title{font-weight:700;font-size:14px;color:#1e293b;display:inline}
+.bill-meta{font-size:11px;color:#64748b;margin-top:4px}
+.bill-link{color:#2563eb;font-size:12px;font-weight:600;text-decoration:none}
+.highlight-box{background:#fef3c7;border-left:3px solid #f59e0b;border-radius:8px;padding:14px;margin:16px 0}
+.highlight-box h3{margin:0 0 6px;font-size:14px;color:#92400e}
+.highlight-box p{margin:0;font-size:13px;color:#92400e;line-height:1.5}
+.cta{display:block;background:#2563eb;color:#fff;text-align:center;padding:16px;border-radius:12px;font-weight:800;font-size:16px;text-decoration:none;margin:24px 0}
+.disclaimer{background:#fefce8;border-radius:8px;padding:10px 14px;margin:16px 0;font-size:11px;color:#92400e;line-height:1.5}
+.footer{background:#0f172a;padding:20px 32px;text-align:center;color:#64748b;font-size:11px}
+.footer a{color:#94a3b8;text-decoration:underline}
+.unsubscribe{margin-top:12px;font-size:10px}
+.divider{border:0;border-top:1px solid #e2e8f0;margin:20px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="header">
+<img src="https://ekklesia.gr/pnx.png" alt="εκκλησία">
+<h1>εκκλησία του έθνους</h1>
+<p>Μηνιαίο Δελτίο — {{ .Campaign.Name }}</p>
+</div>
+
+<div class="content">
+
+<h2>Στατιστικά Μήνα</h2>
+<div class="stats-grid">
+<div class="stat-card highlight"><div class="stat-num">—</div><div class="stat-label">Συνολικές Ψήφοι</div></div>
+<div class="stat-card"><div class="stat-num">—</div><div class="stat-label">Νομοσχέδια</div></div>
+<div class="stat-card"><div class="stat-num green">—</div><div class="stat-label">Σύγκλιση</div></div>
+<div class="stat-card"><div class="stat-num red">—</div><div class="stat-label">Απόκλιση</div></div>
+</div>
+
+<h2>Top Νομοσχέδια του Μήνα</h2>
+<!-- Filled by APScheduler -->
+<div class="bill">
+<span class="bill-rank">1</span>
+<span class="bill-title">Πρώτο νομοσχέδιο</span>
+<div class="bill-meta">Βουλή · — ψήφοι</div>
+<a class="bill-link" href="https://ekklesia.gr/el/bills">Δείτε αποτελέσματα →</a>
+</div>
+
+<h2>Βουλή vs Πολίτες</h2>
+<div class="highlight-box">
+<h3>Δείκτης Απόκλισης</h3>
+<p>Πόσο αντιπροσωπεύει η Βουλή τους πολίτες; Δείτε τη σύγκριση για κάθε νομοσχέδιο στα αποτελέσματα.</p>
+</div>
+
+<h2>Τοπική Αυτοδιοίκηση</h2>
+<p style="font-size:13px;color:#64748b;line-height:1.6">
+Αποφάσεις Δημοτικών Συμβουλίων μέσω Διαύγειας. Εγγραφείτε στον Δήμο σας στην εφαρμογή για να ψηφίζετε τοπικά.
+</p>
+
+<a class="cta" href="https://ekklesia.gr/el/bills">🏛️ Δείτε τα Νομοσχέδια</a>
+
+<div class="disclaimer">
+⚠️ Αυτή η πλατφόρμα δεν είναι κρατική υπηρεσία. Οι ψηφοφορίες δεν έχουν νομική δεσμευτικότητα. Είναι μια ανεξάρτητη πρωτοβουλία πολιτών για διαφάνεια και δημοκρατική εκπαίδευση. Δημοκρατία σημαίνει ενεργή συμμετοχή στα κοινά!
+</div>
+
+<hr class="divider">
+<p style="font-size:11px;color:#94a3b8;text-align:center">🇬🇧 English version</p>
+<p style="font-size:12px;color:#64748b;line-height:1.6">
+Monthly summary: See how Parliament voted vs citizens this month. Visit <a href="https://ekklesia.gr/en/results" style="color:#2563eb">ekklesia.gr/en/results</a> for full divergence analysis. This is not a government platform — votes are informational only.
+</p>
+
+</div>
+
+<div class="footer">
+<p>εκκλησία · © 2026 Vendetta Labs · MIT License</p>
+<p><a href="https://ekklesia.gr">ekklesia.gr</a> · <a href="https://github.com/NeaBouli/pnyx">GitHub</a> · <a href="https://ekklesia.gr/wiki/">Wiki</a></p>
+<p class="unsubscribe">
+<a href="{{ .UnsubscribeURL }}">Διαγραφή / Unsubscribe</a> ·
+{{ .Subscriber.Email }} · GDPR: Δεν αποθηκεύουμε προσωπικά δεδομένα πέραν του email σας.
+</p>
+</div>
+
+</div>
+</body>
+</html>
