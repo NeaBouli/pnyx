@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Text } from "react-native";
+import { Text, ActivityIndicator, View } from "react-native";
+import * as SecureStore from "expo-secure-store";
 import { colors } from "../theme";
 import { ChannelNotice } from "../components/ChannelNotice";
 
+import OnboardingScreen from "../screens/OnboardingScreen";
 import HomeScreen from "../screens/HomeScreen";
 import VerifyScreen from "../screens/VerifyScreen";
 import BillsScreen from "../screens/BillsScreen";
@@ -19,6 +21,7 @@ import NotificationSettingsScreen from "../screens/NotificationSettingsScreen";
 import CompassScreen from "../screens/CompassScreen";
 
 export type RootStackParams = {
+  Onboarding: undefined;
   Tabs: undefined;
   Verify: undefined;
   Profile: undefined;
@@ -73,10 +76,23 @@ function TabNavigator() {
 }
 
 export default function Navigation() {
+  const [loading, setLoading] = useState(true);
+  const [onboarded, setOnboarded] = useState(true);
+
+  useEffect(() => {
+    SecureStore.getItemAsync("onboarding_completed").then(v => {
+      setOnboarded(v === "true");
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background }}><ActivityIndicator color={colors.primary} /></View>;
+
   return (
     <NavigationContainer>
       <ChannelNotice />
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={onboarded ? "Tabs" : "Onboarding"}>
+        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         <Stack.Screen name="Tabs" component={TabNavigator} />
         <Stack.Screen name="Verify" component={VerifyScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Επαλήθευση" }} />
         <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Προφίλ" }} />
