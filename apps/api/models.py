@@ -192,6 +192,11 @@ class CitizenVote(Base):
     bill_id         = Column(String(50), ForeignKey("parliament_bills.id"), nullable=False)
     vote            = Column(Enum(VoteChoice), nullable=False)
     signature_hex   = Column(String(128), nullable=False)   # Ed25519 Signatur
+    # Tier-1 fields (ADR-022) — nullable for backward compat with Tier-0 votes
+    pk_eph          = Column(String(64), nullable=True)     # Ephemeral public key per bill
+    vote_nullifier  = Column(String(64), nullable=True)     # Bill-specific nullifier
+    linkage_tag     = Column(String(64), nullable=True)     # Anti-double-vote proof
+    timestamp_ms    = Column(BigInteger, nullable=True)     # Millisecond precision
     created_at      = Column(DateTime, default=datetime.utcnow)
     updated_at      = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

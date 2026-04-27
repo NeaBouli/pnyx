@@ -75,6 +75,11 @@ class VoteRequest(BaseModel):
     bill_id:        str
     vote:           str  = Field(..., description="YES | NO | ABSTAIN | UNKNOWN")
     signature_hex:  str  = Field(..., description="Ed25519 Signatur des Payloads")
+    # Tier-1 fields (ADR-022) — optional for backward compat
+    pk_eph:         str | None = Field(None, description="Ephemeral public key (64 hex)")
+    vote_nullifier: str | None = Field(None, description="Bill-specific nullifier (64 hex)")
+    linkage_tag:    str | None = Field(None, description="Anti-double-vote proof (64 hex)")
+    timestamp_ms:   int | None = Field(None, description="Millisecond timestamp")
 
 class VoteResponse(BaseModel):
     success:    bool
@@ -248,6 +253,25 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
             detail="Ungültige Signatur. Stimme wird abgelehnt."
         )
 
+    # 4b. Tier-1 validation (ADR-022) — if Tier-1 fields present
+    if req.pk_eph and req.vote_nullifier and req.linkage_tag:
+        try:
+            from crypto.nullifier import validate_vote
+            tier1_result = validate_vote(
+                pk_eph=req.pk_eph,
+                vote_nullifier=req.vote_nullifier,
+                linkage_tag=req.linkage_tag,
+                bill_id=req.bill_id,
+                choice=vote_choice.value,
+                signature=req.signature_hex,
+                timestamp_ms=req.timestamp_ms or 0,
+            )
+            if tier1_result and hasattr(tier1_result, 'code') and tier1_result.code != "OK":
+                logger.warning("Tier-1 validation failed: %s", tier1_result.message)
+                # Don't reject — log warning only (Tier-1 validation is advisory during rollout)
+        except Exception as e:
+            logger.warning("Tier-1 validation error (non-blocking): %s", e)
+
     # 5. Bestehende Stimme prüfen (Stimmänderung)
     existing_result = await db.execute(
         select(CitizenVote).where(
@@ -282,6 +306,11 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
             bill_id=req.bill_id,
             vote=vote_choice,
             signature_hex=req.signature_hex,
+            # Tier-1 fields (ADR-022) — stored if provided
+            pk_eph=req.pk_eph,
+            vote_nullifier=req.vote_nullifier,
+            linkage_tag=req.linkage_tag,
+            timestamp_ms=req.timestamp_ms,
         )
         db.add(new_vote)
         await db.commit()
