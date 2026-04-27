@@ -60,21 +60,32 @@ async def _resolve_category(bill: ParliamentBill, db: AsyncSession) -> int:
     gov = bill.governance_level.value if bill.governance_level else "NATIONAL"
 
     if gov == "NATIONAL":
-        return await get_or_create_category("Βουλή")
+        # Post into Βουλή → Νομοσχέδια subcategory
+        parent = await get_or_create_category("Βουλή")
+        return await get_or_create_category("Νομοσχέδια", parent)
 
     if gov == "REGIONAL" and bill.periferia_id:
-        parent = await get_or_create_category("Περιφέρειες")
+        parent = await get_or_create_category("Τοπική Αυτοδιοίκηση")
         periferia = await db.get(Periferia, bill.periferia_id)
-        name = periferia.name_el if periferia else "Περιφέρεια"
+        name = f"Περιφέρεια {periferia.name_el}" if periferia else "Περιφέρεια"
         return await get_or_create_category(name, parent)
 
     if gov == "MUNICIPAL" and bill.dimos_id:
-        parent = await get_or_create_category("Δήμοι")
+        # Find periferia parent, then create dimos subcategory on-demand
         dimos = await db.get(Dimos, bill.dimos_id)
-        name = dimos.name_el if dimos else "Δήμος"
-        return await get_or_create_category(name, parent)
+        if dimos and dimos.periferia_id:
+            periferia = await db.get(Periferia, dimos.periferia_id)
+            local_parent = await get_or_create_category("Τοπική Αυτοδιοίκηση")
+            periferia_cat = await get_or_create_category(
+                f"Περιφέρεια {periferia.name_el}" if periferia else "Περιφέρεια",
+                local_parent,
+            )
+            return await get_or_create_category(dimos.name_el, periferia_cat)
+        parent = await get_or_create_category("Τοπική Αυτοδιοίκηση")
+        return await get_or_create_category("Δήμος", parent)
 
-    return await get_or_create_category("Βουλή")
+    parent = await get_or_create_category("Βουλή")
+    return await get_or_create_category("Νομοσχέδια", parent)
 
 
 async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
