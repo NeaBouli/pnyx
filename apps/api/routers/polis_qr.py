@@ -17,7 +17,18 @@ import redis.asyncio as aioredis
 
 from database import get_db
 from models import IdentityRecord, KeyStatus
-from keypair import verify_challenge
+
+
+def verify_challenge(public_key_hex: str, challenge: str, signature_hex: str) -> bool:
+    """Verify Ed25519 signature on a challenge string."""
+    try:
+        from nacl.signing import VerifyKey
+        from nacl.exceptions import BadSignatureError
+        vk = VerifyKey(bytes.fromhex(public_key_hex))
+        vk.verify(challenge.encode("utf-8"), bytes.fromhex(signature_hex))
+        return True
+    except Exception:
+        return False
 
 logger = logging.getLogger(__name__)
 
