@@ -558,6 +558,28 @@
       <div class="fc-status" id="deeplStatus" style="background:#f0fdf4;color:#166534;margin-top:0.3rem">✅ <span data-el="AI Μετάφραση ενεργή" data-en="AI Translation active">AI Μετάφραση ενεργή</span></div>
     </div>
 
+    <!-- Claude AI Assistant — Budget Tracking -->
+    <div class="fc" id="claudeCard" style="border-color:#86efac">
+      <div class="fc-badge" id="claudeBadge" style="background:#22c55e" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
+      <div class="fc-icon">🤖</div>
+      <div class="fc-title" data-el="AI Βοηθός (Claude)" data-en="AI Assistant (Claude)">AI Βοηθός (Claude)</div>
+      <div class="fc-sub" data-el="Claude Haiku — σύνθετες ερωτήσεις πολιτών" data-en="Claude Haiku — complex citizen questions">Claude Haiku — σύνθετες ερωτήσεις</div>
+      <div class="fc-info">
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Σήμερα:" data-en="Today:">Σήμερα:</span><strong id="claudeToday">—</strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Μήνας:" data-en="Month:">Μήνας:</span><strong id="claudeMonth">—</strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Budget:" data-en="Budget:">Budget:</span><strong id="claudeBudget">—</strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong id="claudeCost" style="color:#166534">0€</strong></div>
+      </div>
+      <div style="background:#e2e8f0;border-radius:0.3rem;height:8px;margin:0.5rem 0;overflow:hidden">
+        <div id="claudeBar" style="height:100%;background:#22c55e;border-radius:0.3rem;transition:width 0.5s;width:0%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--gray-400)">
+        <span id="claudeBarLabel" data-el="0% budget" data-en="0% budget">0% budget</span>
+        <span class="fc-live"><span class="fc-live-dot"></span> Live</span>
+      </div>
+      <div class="fc-status" id="claudeStatus" style="background:#f0fdf4;color:#166534;margin-top:0.3rem">✅ <span data-el="AI Βοηθός ενεργός" data-en="AI Assistant active">AI Βοηθός ενεργός</span></div>
+    </div>
+
     <!-- DEVELOPER DONATIONS — PayPal (freier Betrag, nicht getrackt) -->
     <div class="fc" style="border-color:#0070ba">
       <div class="fc-badge" style="background:#0070ba" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
@@ -1264,6 +1286,36 @@ function copyAddr(id) {
   }
   fetchDeeplUsage();
   setInterval(fetchDeeplUsage, 60000);
+
+  // Claude AI Budget
+  function fetchClaudeBudget() {
+    fetch("https://api.ekklesia.gr/api/v1/claude/budget")
+      .then(function(r){return r.json()})
+      .then(function(d){
+        var today=document.getElementById("claudeToday");
+        if(today) today.textContent=d.tokens_today.toLocaleString()+" tokens";
+        var month=document.getElementById("claudeMonth");
+        if(month) month.textContent=d.tokens_month.toLocaleString()+" tokens";
+        var budget=document.getElementById("claudeBudget");
+        if(budget) budget.textContent="€"+d.budget_limit_eur;
+        var cost=document.getElementById("claudeCost");
+        if(cost) cost.textContent="€"+d.budget_eur_month.toFixed(3);
+        var bar=document.getElementById("claudeBar");
+        if(bar){bar.style.width=d.percent_used+"%";bar.style.background=d.percent_used>80?"#ef4444":d.percent_used>50?"#f59e0b":"#22c55e";}
+        var lbl=document.getElementById("claudeBarLabel");
+        if(lbl) lbl.textContent=d.percent_used+"% budget";
+        var card=document.getElementById("claudeCard");
+        var badge=document.getElementById("claudeBadge");
+        var status=document.getElementById("claudeStatus");
+        if(!d.is_active){
+          if(card)card.style.borderColor="#fca5a5";
+          if(badge){badge.style.background="#ef4444";badge.textContent="BUDGET";}
+          if(status){status.style.background="#fef2f2";status.style.color="#991b1b";status.innerHTML="⚠️ Budget erreicht — <a href='https://www.paypal.com/paypalme/VendettaLabs' target='_blank' style='color:#2563eb;font-weight:700'>Unterstütze →</a>";}
+        }
+      }).catch(function(){});
+  }
+  fetchClaudeBudget();
+  setInterval(fetchClaudeBudget, 30000);
 })();
 </script>
 
