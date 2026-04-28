@@ -22,7 +22,7 @@ export default function CompassCard() {
           </p>
         </div>
         <a
-          href="https://ekklesia.gr/download/"
+          href="https://ekklesia.gr/#download"
           className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
         >
           {isEl ? "Διαθέσιμη στην εφαρμογή →" : "Available in the app →"}

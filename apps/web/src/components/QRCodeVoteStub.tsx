@@ -30,7 +30,7 @@ export default function QRCodeVoteStub() {
           : "Soon you will be able to scan a QR code with the ekklesia app to vote directly from the browser."}
       </p>
       <a
-        href="https://ekklesia.gr/download/"
+        href="https://ekklesia.gr/#download"
         className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all shadow-sm hover:shadow-md"
       >
         {isEl ? "Κατεβάστε την εφαρμογή" : "Download the app"}
