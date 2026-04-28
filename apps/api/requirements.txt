@@ -33,7 +33,7 @@ arweave-python-client==1.0.19
 slowapi>=0.1.9
 
 # AI Scraper (MOD-10) — Ollama self-hosted, kein API Key nötig
-beautifulsoup4>=4.12.0
+beautifulsoup4>=4.14.3
 
 # Payments / Donations (MOD-18)
 stripe==15.0.1
