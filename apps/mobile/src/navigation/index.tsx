@@ -19,6 +19,7 @@ import TicketsScreen from "../screens/TicketsScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import NotificationSettingsScreen from "../screens/NotificationSettingsScreen";
 import CompassScreen from "../screens/CompassScreen";
+import PolisLoginScreen from "../screens/PolisLoginScreen";
 
 export type RootStackParams = {
   Onboarding: undefined;
@@ -29,6 +30,7 @@ export type RootStackParams = {
   Compass: undefined;
   Vote: { billId: string; billTitle: string };
   Result: { billId: string; billTitle?: string };
+  PolisLogin: { session?: string; challenge?: string };
 };
 
 export type TabParams = {
@@ -88,8 +90,17 @@ export default function Navigation() {
 
   if (loading) return <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background }}><ActivityIndicator color={colors.primary} /></View>;
 
+  const linking = {
+    prefixes: ["ekklesia://"],
+    config: {
+      screens: {
+        PolisLogin: "polis-login",
+      },
+    },
+  };
+
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <ChannelNotice />
       <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={onboarded ? "Tabs" : "Onboarding"}>
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
@@ -100,6 +111,7 @@ export default function Navigation() {
         <Stack.Screen name="Compass" component={CompassScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Πολιτική Πυξίδα" }} />
         <Stack.Screen name="Vote" component={VoteScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Ψηφίστε" }} />
         <Stack.Screen name="Result" component={ResultScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Αποτελέσματα" }} />
+        <Stack.Screen name="PolisLogin" component={PolisLoginScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "POLIS Login" }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
