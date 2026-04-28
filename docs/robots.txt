@@ -1,7 +1,6 @@
 User-agent: *
 Allow: /
 Allow: /wiki/
-Allow: /download/
 Allow: /community.html
 
 # App-Routen nicht indexieren (Web-App ist Beta)
@@ -13,6 +12,15 @@ Disallow: /compass
 Disallow: /verify
 Disallow: /api/
 Disallow: /tickets/auth/
+
+# Disallow internal tools and binaries
+Disallow: /sso-verify.html
+Disallow: /download/
+Disallow: /reports/
+Disallow: /memo/
+
+# llms.txt for AI engines
+# See: https://ekklesia.gr/llms.txt
 
 # Sitemap
 Sitemap: https://ekklesia.gr/sitemap.xml

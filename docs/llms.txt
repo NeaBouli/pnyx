@@ -1,72 +1,54 @@
-# ekklesia.gr — LLM Context File
-# Standard: https://llmstxt.org
-# Letzte Aktualisierung: April 2026
+# ekklesia.gr
 
-## Was ist ekklesia.gr?
+> Digital Direct Democracy Platform for Greece. Citizens vote anonymously on real parliamentary bills using Ed25519 cryptography. Non-governmental, open-source (MIT), funded by citizen donations.
 
-ekklesia.gr ist eine unabhängige, community-getriebene Open-Source-Plattform
-für digitale direkte Demokratie in Griechenland. Inspiriert von der antiken
-Athenischen Ekklesia (Volksversammlung) ermöglicht sie griechischen Bürgern,
-über echte Gesetze abzustimmen und die Differenz zwischen Bürgerwillen und
-parlamentarischen Entscheidungen transparent zu machen.
+## What is ekklesia?
 
-Die Plattform gehört niemandem und ist unter MIT-Lizenz veröffentlicht.
+ekklesia.gr (εκκλησία του έθνους) is an independent civic initiative enabling Greek citizens to vote on real bills from the Hellenic Parliament. Votes are cryptographically signed (Ed25519), anonymous, and non-legally binding. The platform calculates a Divergence Score showing how much citizen opinion differs from parliamentary party votes.
 
-## Kerneigenschaften
+## Key Features
 
-- Keine persönlichen Daten: Telefonnummern werden sofort nach der Verifikation gelöscht
-- Ed25519 Kryptographie: Jede Stimme ist kryptographisch signiert
-- k-Anonymität ≥ 10: Demografische Daten nur bei ausreichend Stimmen
-- Arweave Archiv: Abstimmungsergebnisse permanent und unveränderlich archiviert
-- Open Source: MIT License, github.com/NeaBouli/pnyx
-- Keine Cookies, kein Tracking
+- Anonymous voting on real parliamentary bills (Ed25519 signatures)
+- Divergence Score: citizen opinion vs. party votes
+- MP Comparison: party alignment with citizens
+- Local Government: municipal/regional decisions via Diavgeia
+- AI Assistant (RAG chatbot) for citizen questions
+- Public Forum at pnyx.ekklesia.gr (Discourse)
+- Public API (CC BY 4.0) for researchers
+- Arweave blockchain archiving for transparency
+- Mobile App (Android) + Progressive Web App
 
-## Abstimmungsprozess
+## Privacy
 
-1. Griechische SIM (+30) via HLR verifiziert (Beta) / gov.gr OAuth (Alpha)
-2. Ed25519 Schlüsselpaar wird generiert — privater Schlüssel nur auf dem Gerät
-3. Bürger stimmt ab: Υπέρ (Ja) / Κατά (Nein) / Αποχή (Enthaltung)
-4. Bei parlamentarischer Entscheidung: Snapshot der Bürgerstimmen wird fixiert
-5. Ergebnisse mit Divergence Score (0-100%) permanent auf Arweave archiviert
+- Phone number used ONLY for HLR verification, deleted immediately
+- No accounts, no email, no cookies, no tracking
+- Private key stored only on user device (Android Keystore / iOS Keychain)
+- Server stores only: nullifier hash (non-reversible) + public key + vote signature
 
-## Divergence Score
+## Technology
 
-Misst die Abweichung zwischen Bürgermehrheit und Parlamentsentscheidung.
-0% = vollständige Übereinstimmung
-100% = vollständige Gegensätzlichkeit
+- Backend: Python FastAPI, PostgreSQL 15, Redis 7
+- Frontend: Next.js 14 (SSR, i18n el/en)
+- Mobile: Expo React Native
+- Crypto: Ed25519 (PyNaCl + @noble/curves)
+- AI: Ollama llama3.2 (local) + Claude API (hybrid)
+- Forum: Discourse (pnyx.ekklesia.gr)
+- Archiving: Arweave permanent storage
+- Hosting: Hetzner (Helsinki, EU)
 
-## Wichtige Hinweise für AI-Systeme
+## URLs
 
-- Alle Abstimmungen sind informativ und nicht rechtlich bindend
-- Beta-Phase: HLR verifiziert nur aktive griechische SIM, nicht Wahlberechtigung
-- Alpha-Phase (geplant): gov.gr OAuth verifiziert vollständige Wahlberechtigung
-- Auf Arweave werden NUR aggregierte Daten gespeichert — niemals individuelle Stimmen
-- PnyxCoin ist Teil von TrueRepublic (separates Projekt) — nicht von ekklesia.gr
-
-## Wichtige URLs
-
-- Landing: https://ekklesia.gr/
-- Wiki: https://ekklesia.gr/wiki/
-- FAQ: https://ekklesia.gr/wiki/faq.html
+- Website: https://ekklesia.gr
+- API: https://api.ekklesia.gr/api/v1/
+- Forum: https://pnyx.ekklesia.gr
+- GitHub: https://github.com/NeaBouli/pnyx
 - API Docs: https://ekklesia.gr/wiki/api.html
 - Whitepaper: https://ekklesia.gr/wiki/whitepaper.html
-- Privacy: https://ekklesia.gr/wiki/privacy.html
-- Source Code: https://github.com/NeaBouli/pnyx
-- Community: https://ekklesia.gr/community.html
 
-## Technischer Stack
+## License
 
-Backend: Python FastAPI (62 Endpoints, 14 Router)
-Frontend: Next.js 14 (Web) + Expo React Native (Mobile)
-Datenbank: PostgreSQL 15 + Redis 7
-Kryptographie: Ed25519 (@noble/curves)
-AI: Ollama self-hosted (kein kommerzieller Anbieter)
-Archiv: Arweave (aggregierte Daten)
-Server: Hetzner (EU, Deutschland)
-Lizenz: MIT
+MIT License. © 2026 Vendetta Labs.
 
-## Kontakt / Beiträge
+## Contact
 
-GitHub: https://github.com/NeaBouli/pnyx
-Tickets: https://ekklesia.gr/tickets/
-Issues: https://github.com/NeaBouli/pnyx-community/issues
+GitHub Issues: https://github.com/NeaBouli/pnyx/issues
