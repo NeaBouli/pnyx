@@ -66,17 +66,14 @@ async def get_budget():
 
     tokens_today = int(await r.get(today_key) or 0)
     tokens_month = int(await r.get(month_key) or 0)
-    budget_eur = round(tokens_month / 1000 * 0.001, 4)
-    is_active = bool(ANTHROPIC_API_KEY) and tokens_today < DAILY_TOKEN_LIMIT and budget_eur < MONTHLY_BUDGET_EUR
-    pct = round((budget_eur / MONTHLY_BUDGET_EUR) * 100, 1) if MONTHLY_BUDGET_EUR > 0 else 0
+    last_error = await r.get("claude:last_error") or ""
+    is_active = bool(ANTHROPIC_API_KEY) and last_error != "credit_balance"
 
     return {
         "tokens_today": tokens_today,
         "tokens_month": tokens_month,
-        "budget_eur_month": budget_eur,
-        "budget_limit_eur": MONTHLY_BUDGET_EUR,
         "is_active": is_active,
-        "percent_used": pct,
+        "error": last_error if last_error else None,
     }
 
 
@@ -90,10 +87,12 @@ async def claude_ask(request: Request, req: ClaudeRequest):
     r = await _redis()
     now = datetime.now(timezone.utc)
     today_key = f"claude:tokens:{now.strftime('%Y-%m-%d')}"
+    month_key = f"claude:tokens:{now.strftime('%Y-%m')}"
 
-    tokens_today = int(await r.get(today_key) or 0)
-    if tokens_today >= DAILY_TOKEN_LIMIT:
-        raise HTTPException(429, "Daily AI budget reached — please try tomorrow")
+    # Check if credits depleted
+    last_error = await r.get("claude:last_error") or ""
+    if last_error == "credit_balance":
+        raise HTTPException(402, "AI credits depleted — please donate to reactivate")
 
     try:
         async with httpx.AsyncClient(timeout=30) as client:
@@ -140,5 +139,10 @@ async def claude_ask(request: Request, req: ClaudeRequest):
             }
 
     except httpx.HTTPStatusError as e:
-        logger.error("Claude API error: %s", e.response.status_code)
+        logger.error("Claude API error: %s %s", e.response.status_code, e.response.text[:100])
+        if e.response.status_code == 400 and "credit" in e.response.text.lower():
+            await r.set("claude:last_error", "credit_balance")
+            raise HTTPException(402, "AI credits depleted")
+        if e.response.status_code == 429:
+            raise HTTPException(429, "API rate limited — try again later")
         raise HTTPException(503, "Claude AI temporarily unavailable")
