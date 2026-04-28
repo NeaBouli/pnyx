@@ -16,7 +16,12 @@ interface QRSession {
   qr_data: string;
 }
 
-export default function QRCodeVoteStub() {
+interface Props {
+  billId?: string;
+  purpose?: "vote" | "ticket" | "forum_login";
+}
+
+export default function QRCodeVoteStub({ billId, purpose = "ticket" }: Props) {
   const locale = useLocale();
   const isEl = locale === "el";
   const [status, setStatus] = useState<SessionStatus>("loading");
@@ -28,7 +33,9 @@ export default function QRCodeVoteStub() {
     setSession(null);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/v1/polis/qr-session`);
+      const params = new URLSearchParams({ purpose });
+      if (billId) params.set("bill_id", billId);
+      const res = await fetch(`${API_BASE}/api/v1/polis/qr-session?${params}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setSession(data);
@@ -37,7 +44,7 @@ export default function QRCodeVoteStub() {
       setError(e.message || "Connection error");
       setStatus("error");
     }
-  }, []);
+  }, [billId, purpose]);
 
   useEffect(() => {
     createSession();

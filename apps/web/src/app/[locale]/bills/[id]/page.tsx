@@ -344,7 +344,7 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
 
         {/* ── QR CODE STUB ── */}
         <div className="mb-6">
-          <QRCodeVoteStub />
+          <QRCodeVoteStub billId={billId} purpose="vote" />
         </div>
 
 

@@ -30,7 +30,7 @@ export type RootStackParams = {
   Compass: undefined;
   Vote: { billId: string; billTitle: string };
   Result: { billId: string; billTitle?: string };
-  PolisLogin: { session?: string; challenge?: string };
+  PolisLogin: { session?: string; challenge?: string; purpose?: string; bill_id?: string };
 };
 
 export type TabParams = {

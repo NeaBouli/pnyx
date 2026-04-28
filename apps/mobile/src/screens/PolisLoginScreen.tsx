@@ -43,9 +43,14 @@ export default function PolisLoginScreen({ route, navigation }: Props) {
 
   async function authenticate() {
     try {
-      const params = route.params as { session?: string; challenge?: string } | undefined;
+      const params = route.params as {
+        session?: string; challenge?: string;
+        purpose?: string; bill_id?: string;
+      } | undefined;
       const session_id = params?.session;
       const challenge = params?.challenge;
+      const purpose = params?.purpose || "ticket";
+      const bill_id = params?.bill_id;
 
       if (!session_id || !challenge) {
         setStatus("error");
@@ -77,6 +82,8 @@ export default function PolisLoginScreen({ route, navigation }: Props) {
           nullifier_hash: nullifier,
           public_key_hex: keypair.publicKeyHex,
           signature_hex: signatureHex,
+          purpose,
+          ...(bill_id ? { bill_id } : {}),
         }),
       });
 
