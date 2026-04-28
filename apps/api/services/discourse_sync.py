@@ -24,7 +24,7 @@ _category_cache: dict[str, int] = {}
 def _headers() -> dict:
     return {
         "Api-Key": DISCOURSE_API_KEY,
-        "Api-Username": "system",
+        "Api-Username": os.getenv("DISCOURSE_API_USERNAME", "ekklesia"),
         "Content-Type": "application/json",
     }
 
@@ -136,7 +136,11 @@ async def sync_new_bills_to_forum(db: AsyncSession) -> None:
     result = await db.execute(
         select(ParliamentBill)
         .where(
-            ParliamentBill.status.in_([BillStatus.ACTIVE, BillStatus.WINDOW_24H]),
+            ParliamentBill.status.in_([
+                BillStatus.ACTIVE, BillStatus.WINDOW_24H,
+                BillStatus.ANNOUNCED, BillStatus.OPEN_END,
+                BillStatus.PARLIAMENT_VOTED,
+            ]),
             ParliamentBill.forum_topic_id.is_(None),
         )
         .limit(FORUM_SYNC_BATCH)

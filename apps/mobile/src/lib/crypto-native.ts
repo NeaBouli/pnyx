@@ -214,6 +214,30 @@ export async function loadNullifier(): Promise<string | null> {
   return SecureStore.getItemAsync(KEYS.NULLIFIER);
 }
 
+// ─── Legacy Vote Signing (Phase B compat) ────────────────────────────────────
+
+export function signVote(
+  privateKeyHex: string,
+  params: { bill_id: string; vote: string; nullifier_hash: string },
+): string {
+  const message = new TextEncoder().encode(
+    `${params.bill_id}:${params.vote}:${params.nullifier_hash}`,
+  );
+  const signature = ed25519.sign(message, hexToBytes(privateKeyHex));
+  return bytesToHex(signature);
+}
+
+export function verifyVote(
+  publicKeyHex: string,
+  params: { bill_id: string; vote: string; nullifier_hash: string },
+  signatureHex: string,
+): boolean {
+  const message = new TextEncoder().encode(
+    `${params.bill_id}:${params.vote}:${params.nullifier_hash}`,
+  );
+  return ed25519.verify(hexToBytes(signatureHex), message, hexToBytes(publicKeyHex));
+}
+
 export async function isVerified(): Promise<boolean> {
   // Check both new (Tier 1) and legacy (Phase B)
   const root = await SecureStore.getItemAsync(KEYS.NULLIFIER_ROOT);
