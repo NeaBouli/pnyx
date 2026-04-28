@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from slowapi import Limiter
 from database import get_db
-from models import ParliamentBill, BillStatus
+from models import ParliamentBill, BillStatus, KnowledgeBase
 from services.ollama_service import answer_citizen_question, ollama_available
 
 logger = logging.getLogger(__name__)
@@ -61,10 +61,41 @@ async def ask_agent(
             ctx += f" — {b.pill_el[:200]}"
         context_parts.append(ctx)
 
-    context = "\n".join(context_parts) if context_parts else (
-        "Δεν υπάρχουν νομοσχέδια αυτή τη στιγμή."
-        if req.lang == "el"
-        else "No bills available at the moment."
+    bills_context = "\n".join(context_parts) if context_parts else ""
+
+    # Knowledge Base retrieval — keyword match
+    kb_context = ""
+    try:
+        q_lower = req.question.lower()
+        kb_result = await db.execute(
+            select(KnowledgeBase)
+            .order_by(KnowledgeBase.priority)
+            .limit(20)
+        )
+        kb_entries = kb_result.scalars().all()
+        relevant = []
+        for entry in kb_entries:
+            keywords = entry.keywords or []
+            if any(kw.lower() in q_lower for kw in keywords) or any(w in (entry.title_el or "").lower() for w in q_lower.split() if len(w) > 3):
+                relevant.append(entry)
+        if relevant:
+            kb_parts = []
+            for e in relevant[:3]:
+                title = e.title_en if req.lang == "en" else e.title_el
+                content = e.content_en if req.lang == "en" else e.content_el
+                kb_parts.append(f"Q: {title}\nA: {content}")
+            kb_context = "\n\n".join(kb_parts)
+    except Exception:
+        pass
+
+    # Combine: Knowledge Base first, then bills
+    parts = []
+    if kb_context:
+        parts.append("Platform Knowledge:\n" + kb_context)
+    if bills_context:
+        parts.append("Active Bills:\n" + bills_context)
+    context = "\n\n".join(parts) if parts else (
+        "Δεν υπάρχουν διαθέσιμα δεδομένα." if req.lang == "el" else "No data available."
     )
 
     answer = await answer_citizen_question(req.question, context, req.lang)

@@ -409,3 +409,19 @@ class DiavgeiaVote(Base):
         UniqueConstraint("ada", "nullifier_hash", name="uq_diavgeia_vote"),
         Index("idx_diavgeia_votes_ada", "ada"),
     )
+
+
+class KnowledgeBase(Base):
+    """Structured knowledge for RAG Agent — FAQ, mission, concepts."""
+    __tablename__ = "knowledge_base"
+
+    id          = Column(Integer, primary_key=True, autoincrement=True)
+    category    = Column(String(50), nullable=False)  # mission/faq/concept/privacy/process/govgr/forum
+    title_el    = Column(Text, nullable=False)
+    title_en    = Column(Text)
+    content_el  = Column(Text, nullable=False)
+    content_en  = Column(Text)
+    keywords    = Column(JSONB)  # ["keyword1", "keyword2"]
+    priority    = Column(Integer, default=2)  # 1=high, 2=medium, 3=low
+    created_at  = Column(DateTime, default=datetime.utcnow)
+    updated_at  = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
