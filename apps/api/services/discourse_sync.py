@@ -30,19 +30,33 @@ def _headers() -> dict:
 
 
 async def get_or_create_category(name: str, parent_id: int | None = None) -> int:
-    """Get or create a Discourse category by name."""
+    """Get or create a Discourse category by name. Searches all categories incl. subcategories."""
     cache_key = f"{parent_id}:{name}"
     if cache_key in _category_cache:
         return _category_cache[cache_key]
 
     async with httpx.AsyncClient(timeout=15) as client:
-        r = await client.get(f"{DISCOURSE_API_URL}/categories.json", headers=_headers())
+        # Fetch all categories including subcategories
+        r = await client.get(
+            f"{DISCOURSE_API_URL}/categories.json",
+            params={"include_subcategories": "true"},
+            headers=_headers(),
+        )
         if r.status_code == 200:
-            for cat in r.json().get("category_list", {}).get("categories", []):
-                if cat["name"] == name:
+            data = r.json().get("category_list", {}).get("categories", [])
+            for cat in data:
+                if cat["name"] == name and (parent_id is None or cat.get("parent_category_id") == parent_id):
                     _category_cache[cache_key] = cat["id"]
                     return cat["id"]
+                # Check subcategories
+                for sub in cat.get("subcategory_ids", []):
+                    pass  # IDs only, need name match from top-level
+                for sub in cat.get("subcategory_list", []):
+                    if sub["name"] == name and (parent_id is None or sub.get("parent_category_id") == parent_id):
+                        _category_cache[cache_key] = sub["id"]
+                        return sub["id"]
 
+        # Not found — create
         payload: dict = {"name": name, "color": "2563eb", "text_color": "FFFFFF"}
         if parent_id:
             payload["parent_category_id"] = parent_id
@@ -50,9 +64,15 @@ async def get_or_create_category(name: str, parent_id: int | None = None) -> int
         r = await client.post(
             f"{DISCOURSE_API_URL}/categories.json", json=payload, headers=_headers()
         )
-        cat_id = r.json()["category"]["id"]
-        _category_cache[cache_key] = cat_id
-        return cat_id
+        resp = r.json()
+        if "category" in resp:
+            cat_id = resp["category"]["id"]
+            _category_cache[cache_key] = cat_id
+            return cat_id
+
+        # Category might already exist (race condition or name conflict)
+        logger.warning("Could not create category %s: %s", name, r.text[:200])
+        raise RuntimeError(f"Failed to get/create category '{name}'")
 
 
 async def _resolve_category(bill: ParliamentBill, db: AsyncSession) -> int:

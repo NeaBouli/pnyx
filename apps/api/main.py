@@ -162,11 +162,15 @@ async def scheduled_diavgeia_scrape():
 
 
 async def scheduled_forum_sync():
-    """Sync ACTIVE bills to Discourse forum every 10 min."""
-    from database import AsyncSessionLocal
-    from services.discourse_sync import sync_new_bills_to_forum
+    """Sync bills to Discourse forum every 10 min."""
+    from services.discourse_sync import sync_new_bills_to_forum, FORUM_SYNC_ENABLED, DISCOURSE_API_KEY
+    if not FORUM_SYNC_ENABLED or not DISCOURSE_API_KEY:
+        return
+    from database import engine
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+    session_factory = async_sessionmaker(engine, expire_on_commit=False)
     try:
-        async with AsyncSessionLocal() as db:
+        async with session_factory() as db:
             await sync_new_bills_to_forum(db)
     except Exception as e:
         logger.error("[Forum] Sync failed: %s", e)
