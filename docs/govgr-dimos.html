@@ -346,6 +346,149 @@
 
 </div>
 
+<!-- ═══ SEKTION: Τριεπίπεδη Ασφάλεια ═══ -->
+<div style="max-width:900px;margin:0 auto;padding:2rem 1.5rem">
+  <h2 style="font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:0.5rem" data-el="Τριεπίπεδη Ασφάλεια" data-en="Three-Layer Security">Τριεπίπεδη Ασφάλεια</h2>
+  <p style="text-align:center;color:var(--gray-500);margin-bottom:2rem;font-size:0.88rem" data-el="Κάθε πρόσβαση περνά από τρία ανεξάρτητα επίπεδα ελέγχου." data-en="Every access passes through three independent control layers.">Κάθε πρόσβαση περνά από τρία ανεξάρτητα επίπεδα ελέγχου.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.25rem">
+
+    <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0">
+      <div style="font-size:2rem;margin-bottom:0.5rem">🏛️</div>
+      <h3 style="font-weight:800;font-size:0.95rem;color:var(--blue);margin-bottom:0.4rem" data-el="Ταυτότητα — gov.gr OAuth" data-en="Identity — gov.gr OAuth">Ταυτότητα — gov.gr OAuth</h3>
+      <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Αυθεντικοποίηση μέσω gov.gr με χρήση ΑΦΜ. Μόνο εξουσιοδοτημένοι αιρετοί και δημόσιοι υπάλληλοι αποκτούν πρόσβαση." data-en="Authentication via gov.gr using Tax ID (AFM). Only authorized elected officials and civil servants gain access.">Αυθεντικοποίηση μέσω gov.gr με χρήση ΑΦΜ. Μόνο εξουσιοδοτημένοι αιρετοί και δημόσιοι υπάλληλοι αποκτούν πρόσβαση.</p>
+    </div>
+
+    <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0">
+      <div style="font-size:2rem;margin-bottom:0.5rem">🗺️</div>
+      <h3 style="font-weight:800;font-size:0.95rem;color:var(--blue);margin-bottom:0.4rem" data-el="Περιφερειακή Πρόσβαση" data-en="Regional Access">Περιφερειακή Πρόσβαση</h3>
+      <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Κάθε χρήστης βλέπει ΜΟΝΟ τα δεδομένα του δήμου ή της περιφέρειάς του. Τα δεδομένα άλλων περιοχών είναι τεχνικά αόρατα." data-en="Each user sees ONLY their municipality's or region's data. Other areas' data is technically invisible.">Κάθε χρήστης βλέπει ΜΟΝΟ τα δεδομένα του δήμου ή της περιφέρειάς του. Τα δεδομένα άλλων περιοχών είναι τεχνικά αόρατα.</p>
+    </div>
+
+    <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0">
+      <div style="font-size:2rem;margin-bottom:0.5rem">🔐</div>
+      <h3 style="font-weight:800;font-size:0.95rem;color:var(--blue);margin-bottom:0.4rem" data-el="2FA — Διπλή Επαλήθευση" data-en="2FA — Double Verification">2FA — Διπλή Επαλήθευση</h3>
+      <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Google Authenticator (TOTP) ή SMS. Email αποκλείεται ρητά ως 2FA μέθοδος λόγω ευπάθειας. Session: 8 ώρες." data-en="Google Authenticator (TOTP) or SMS. Email is explicitly excluded as 2FA method due to vulnerability. Session: 8 hours.">Google Authenticator (TOTP) ή SMS. Email αποκλείεται ρητά ως 2FA μέθοδος λόγω ευπάθειας. Session: 8 ώρες.</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ SEKTION: Διαδικασία Ενεργοποίησης (Timeline) ═══ -->
+<div style="max-width:900px;margin:0 auto;padding:2rem 1.5rem">
+  <h2 style="font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:2rem" data-el="Διαδικασία Ενεργοποίησης" data-en="Activation Process">Διαδικασία Ενεργοποίησης</h2>
+
+  <div style="position:relative;padding-left:2.5rem">
+    <!-- Vertical line -->
+    <div style="position:absolute;left:0.75rem;top:0;bottom:0;width:3px;background:linear-gradient(to bottom,var(--blue),#93c5fd);border-radius:2px"></div>
+
+    <!-- Step 1 -->
+    <div style="position:relative;margin-bottom:2rem">
+      <div style="position:absolute;left:-2.15rem;top:0.2rem;width:1.5rem;height:1.5rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:0.7rem;font-weight:900">1</div>
+      <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.25rem;border-left:3px solid var(--blue)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
+          <h3 style="font-weight:800;font-size:0.95rem;color:var(--gray-900)" data-el="Υποβολή Αίτησης" data-en="Application">Υποβολή Αίτησης</h3>
+          <span style="background:#dcfce7;color:#166534;font-size:0.65rem;font-weight:700;padding:0.15rem 0.6rem;border-radius:1rem" data-el="Αυτόματο" data-en="Automatic">Αυτόματο</span>
+        </div>
+        <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Ο Δήμαρχος ή εξουσιοδοτημένος εκπρόσωπος υποβάλλει αίτηση μέσω gov.gr OAuth. Το ΑΦΜ επαληθεύεται αυτόματα." data-en="The Mayor or authorized representative submits an application via gov.gr OAuth. The Tax ID is verified automatically.">Ο Δήμαρχος ή εξουσιοδοτημένος εκπρόσωπος υποβάλλει αίτηση μέσω gov.gr OAuth. Το ΑΦΜ επαληθεύεται αυτόματα.</p>
+      </div>
+    </div>
+
+    <!-- Step 2 (manual — honest) -->
+    <div style="position:relative;margin-bottom:2rem">
+      <div style="position:absolute;left:-2.15rem;top:0.2rem;width:1.5rem;height:1.5rem;background:var(--yellow);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:0.7rem;font-weight:900">2</div>
+      <div style="background:#fffbeb;border-radius:var(--radius);padding:1.25rem;border-left:3px solid var(--yellow)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
+          <h3 style="font-weight:800;font-size:0.95rem;color:var(--gray-900)" data-el="Χειροκίνητη Επαλήθευση Αξιώματος" data-en="Manual Role Verification">Χειροκίνητη Επαλήθευση Αξιώματος</h3>
+          <span style="background:#fef3c7;color:#92400e;font-size:0.65rem;font-weight:700;padding:0.15rem 0.6rem;border-radius:1rem" data-el="Εντός 48 ωρών" data-en="Within 48 hours">Εντός 48 ωρών</span>
+        </div>
+        <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Η ομάδα ekklesia.gr επαληθεύει ότι το ΑΦΜ αντιστοιχεί στον Δήμαρχο. Απαραίτητο βήμα — δεν υπάρχει κυβερνητικό API για αυτόματη επαλήθευση αξιωμάτων." data-en="The ekklesia.gr team verifies the Tax ID corresponds to the Mayor. Required step — no government API exists for automatic role verification.">Η ομάδα ekklesia.gr επαληθεύει ότι το ΑΦΜ αντιστοιχεί στον Δήμαρχο. Απαραίτητο βήμα — δεν υπάρχει κυβερνητικό API για αυτόματη επαλήθευση αξιωμάτων.</p>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div style="position:relative;margin-bottom:2rem">
+      <div style="position:absolute;left:-2.15rem;top:0.2rem;width:1.5rem;height:1.5rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:0.7rem;font-weight:900">3</div>
+      <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.25rem;border-left:3px solid var(--blue)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
+          <h3 style="font-weight:800;font-size:0.95rem;color:var(--gray-900)" data-el="Ενεργοποίηση Dashboard" data-en="Dashboard Activation">Ενεργοποίηση Dashboard</h3>
+          <span style="background:#dcfce7;color:#166534;font-size:0.65rem;font-weight:700;padding:0.15rem 0.6rem;border-radius:1rem" data-el="Αυτόματο" data-en="Automatic">Αυτόματο</span>
+        </div>
+        <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Μοναδικός κωδικός ενεργοποίησης + gov.gr OAuth + ρύθμιση 2FA. Πλήρης πρόσβαση στα δεδομένα του δήμου σας." data-en="Unique activation code + gov.gr OAuth + 2FA setup. Full access to your municipality's data.">Μοναδικός κωδικός ενεργοποίησης + gov.gr OAuth + ρύθμιση 2FA. Πλήρης πρόσβαση στα δεδομένα του δήμου σας.</p>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div style="position:relative;margin-bottom:1rem">
+      <div style="position:absolute;left:-2.15rem;top:0.2rem;width:1.5rem;height:1.5rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:0.7rem;font-weight:900">4</div>
+      <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.25rem;border-left:3px solid var(--blue)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
+          <h3 style="font-weight:800;font-size:0.95rem;color:var(--gray-900)" data-el="Πρόσκληση Συνεργατών" data-en="Team Management">Πρόσκληση Συνεργατών</h3>
+          <span style="background:#dcfce7;color:#166534;font-size:0.65rem;font-weight:700;padding:0.15rem 0.6rem;border-radius:1rem" data-el="Αυτόματο" data-en="Automatic">Αυτόματο</span>
+        </div>
+        <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Ο Δήμαρχος προσκαλεί συνεργάτες μέσω υπογεγραμμένου συνδέσμου (48h ισχύς). Κάθε συνεργάτης: gov.gr OAuth + 2FA. Δικαιώματα: μόνο ανάγνωση / εισαγωγή δεδομένων / πλήρης πρόσβαση εντός δήμου." data-en="The Mayor invites team members via signed link (48h validity). Each member: gov.gr OAuth + 2FA. Permissions: read-only / data entry / full access within municipality.">Ο Δήμαρχος προσκαλεί συνεργάτες μέσω υπογεγραμμένου συνδέσμου (48h ισχύς). Κάθε συνεργάτης: gov.gr OAuth + 2FA. Δικαιώματα: μόνο ανάγνωση / εισαγωγή δεδομένων / πλήρης πρόσβαση εντός δήμου.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ SEKTION: Τεχνικές Εγγυήσεις ═══ -->
+<div style="max-width:900px;margin:0 auto;padding:2rem 1.5rem">
+  <h2 style="font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:2rem" data-el="Τεχνικές Εγγυήσεις Ασφαλείας" data-en="Technical Security Guarantees">Τεχνικές Εγγυήσεις Ασφαλείας</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem">
+
+    <div style="background:white;border:2px solid #e2e8f0;border-radius:var(--radius);padding:1.25rem;text-align:center">
+      <div style="font-size:1.5rem;margin-bottom:0.4rem">🚫</div>
+      <h4 style="font-weight:800;font-size:0.85rem;margin-bottom:0.3rem" data-el="Χωρίς αποθήκευση IP" data-en="No IP storage">Χωρίς αποθήκευση IP</h4>
+      <p style="font-size:0.75rem;color:var(--gray-500);line-height:1.6" data-el="Δεν αποθηκεύονται πλήρεις IP διευθύνσεις. Ανωνυμοποίηση τελευταίου οκτετίου σε όλα τα logs." data-en="No full IP addresses stored. Last octet anonymized in all logs.">Δεν αποθηκεύονται πλήρεις IP. Ανωνυμοποίηση τελευταίου οκτετίου.</p>
+    </div>
+
+    <div style="background:white;border:2px solid #e2e8f0;border-radius:var(--radius);padding:1.25rem;text-align:center">
+      <div style="font-size:1.5rem;margin-bottom:0.4rem">🔑</div>
+      <h4 style="font-weight:800;font-size:0.85rem;margin-bottom:0.3rem" data-el="Ed25519 Κρυπτογραφία" data-en="Ed25519 Cryptography">Ed25519 Κρυπτογραφία</h4>
+      <p style="font-size:0.75rem;color:var(--gray-500);line-height:1.6" data-el="Κάθε ψήφος υπογράφεται κρυπτογραφικά με Ed25519. Αδύνατη η παραποίηση." data-en="Every vote is cryptographically signed with Ed25519. Impossible to forge.">Κάθε ψήφος υπογράφεται με Ed25519. Αδύνατη η παραποίηση.</p>
+    </div>
+
+    <div style="background:white;border:2px solid #e2e8f0;border-radius:var(--radius);padding:1.25rem;text-align:center">
+      <div style="font-size:1.5rem;margin-bottom:0.4rem">📋</div>
+      <h4 style="font-weight:800;font-size:0.85rem;margin-bottom:0.3rem" data-el="Audit Log (append-only)" data-en="Audit Log (append-only)">Audit Log (append-only)</h4>
+      <p style="font-size:0.75rem;color:var(--gray-500);line-height:1.6" data-el="Κάθε ενέργεια στο dashboard καταγράφεται σε append-only log. Αδύνατη η διαγραφή ιστορικού." data-en="Every dashboard action is logged in an append-only log. History cannot be deleted.">Κάθε ενέργεια καταγράφεται. Αδύνατη η διαγραφή ιστορικού.</p>
+    </div>
+
+    <div style="background:white;border:2px solid #e2e8f0;border-radius:var(--radius);padding:1.25rem;text-align:center">
+      <div style="font-size:1.5rem;margin-bottom:0.4rem">⏱️</div>
+      <h4 style="font-weight:800;font-size:0.85rem;margin-bottom:0.3rem" data-el="Session Timeout 8 ώρες" data-en="Session Timeout 8 hours">Session Timeout 8 ώρες</h4>
+      <p style="font-size:0.75rem;color:var(--gray-500);line-height:1.6" data-el="Αυτόματη αποσύνδεση μετά από 8 ώρες αδράνειας. Άμεση ακύρωση πρόσβασης κατά αποχώρηση." data-en="Automatic logout after 8 hours of inactivity. Immediate access revocation upon departure.">Αυτόματη αποσύνδεση μετά 8 ώρες. Άμεση ακύρωση πρόσβασης.</p>
+    </div>
+
+    <div style="background:white;border:2px solid #e2e8f0;border-radius:var(--radius);padding:1.25rem;text-align:center">
+      <div style="font-size:1.5rem;margin-bottom:0.4rem">🌍</div>
+      <h4 style="font-weight:800;font-size:0.85rem;margin-bottom:0.3rem" data-el="Ανοιχτός Κώδικας" data-en="Open Source">Ανοιχτός Κώδικας</h4>
+      <p style="font-size:0.75rem;color:var(--gray-500);line-height:1.6" data-el="Πλήρης κώδικας στο GitHub (MIT License). Ανεξάρτητος έλεγχος ασφάλειας εφικτός ανά πάσα στιγμή." data-en="Full code on GitHub (MIT License). Independent security audit possible at any time.">Κώδικας στο GitHub (MIT). Ανεξάρτητος audit ανά πάσα στιγμή.</p>
+    </div>
+
+    <div style="background:white;border:2px solid #e2e8f0;border-radius:var(--radius);padding:1.25rem;text-align:center">
+      <div style="font-size:1.5rem;margin-bottom:0.4rem">🏦</div>
+      <h4 style="font-weight:800;font-size:0.85rem;margin-bottom:0.3rem" data-el="GDPR Συμμόρφωση" data-en="GDPR Compliance">GDPR Συμμόρφωση</h4>
+      <p style="font-size:0.75rem;color:var(--gray-500);line-height:1.6" data-el="Χωρίς cookies tracking, χωρίς analytics τρίτων. Δεδομένα σε servers εντός ΕΕ (Hetzner, Φινλανδία)." data-en="No tracking cookies, no third-party analytics. Data on EU servers (Hetzner, Finland).">Χωρίς cookies tracking. Servers εντός ΕΕ (Hetzner, Φινλανδία).</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ SEKTION: CTA ═══ -->
+<div style="max-width:900px;margin:0 auto;padding:2rem 1.5rem">
+  <div style="background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%);border-radius:var(--radius);padding:2.5rem;text-align:center;border:2px solid #bfdbfe">
+    <h2 style="font-size:1.3rem;font-weight:900;margin-bottom:0.5rem" data-el="Ενδιαφέρεστε για ενεργοποίηση του δήμου σας;" data-en="Interested in activating your municipality?">Ενδιαφέρεστε για ενεργοποίηση του δήμου σας;</h2>
+    <p style="color:var(--gray-500);font-size:0.88rem;margin-bottom:1.5rem" data-el="Η εκκλησία του έθνους είναι δωρεάν για όλους τους δήμους κατά τη φάση Beta." data-en="ekklesia is free for all municipalities during the Beta phase.">Η εκκλησία είναι δωρεάν για δήμους κατά τη φάση Beta.</p>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:1rem">
+      <a href="mailto:gov@ekklesia.gr?subject=Αίτηση Ενεργοποίησης Δήμου" style="display:inline-block;padding:0.75rem 2rem;background:var(--blue);color:white;border-radius:0.75rem;font-weight:800;font-size:0.95rem;text-decoration:none;transition:all 0.2s" onmouseenter="this.style.background='#1d4ed8'" onmouseleave="this.style.background='#2563eb'" data-el="Υποβολή Αίτησης →" data-en="Submit Application →">Υποβολή Αίτησης →</a>
+      <a href="wiki/api.html" style="display:inline-block;padding:0.75rem 2rem;background:transparent;color:var(--blue);border:2px solid var(--blue);border-radius:0.75rem;font-weight:800;font-size:0.95rem;text-decoration:none;transition:all 0.2s" onmouseenter="this.style.background='#eff6ff'" onmouseleave="this.style.background='transparent'" data-el="Τεχνική Τεκμηρίωση →" data-en="Technical Documentation →">Τεχνική Τεκμηρίωση →</a>
+    </div>
+    <p style="font-size:0.72rem;color:var(--gray-400)" data-el="Απάντηση εντός 48 ωρών. Χωρίς κόστος για δήμους κατά τη φάση Beta." data-en="Response within 48 hours. Free for municipalities during Beta phase.">Απάντηση εντός 48 ωρών. Χωρίς κόστος κατά τη φάση Beta.</p>
+  </div>
+</div>
+
 <footer>
   <div class="footer-links">
     <a href="./">Αρχική</a>
