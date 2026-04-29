@@ -176,6 +176,41 @@ async def scheduled_forum_sync():
         logger.error("[Forum] Sync failed: %s", e)
 
 
+async def scheduled_bill_lifecycle():
+    """Auto-transition bills based on parliament_vote_date (every 1h)."""
+    from services.bill_lifecycle import run_bill_lifecycle
+    from database import AsyncSessionLocal
+
+    try:
+        async with AsyncSessionLocal() as db:
+            stats = await run_bill_lifecycle(db)
+            if stats["transitioned"] > 0:
+                logger.info("[LIFECYCLE] %s", stats)
+    except Exception as e:
+        logger.error("[LIFECYCLE] Failed: %s", e)
+
+
+async def scheduled_greek_topics():
+    """Scrape Greek news RSS and create forum topics every 6 hours."""
+    from services.greek_topics_scraper import scrape_greek_topics, GREEK_SCRAPER_ENABLED
+    from services.scraper_state import record_run, record_success, record_failure, is_circuit_open
+
+    name = "greek_topics"
+    if not GREEK_SCRAPER_ENABLED:
+        return
+    if await is_circuit_open(name):
+        logger.warning("[GreekScraper] Circuit breaker OPEN — skipping")
+        return
+    await record_run(name)
+    try:
+        stats = await scrape_greek_topics()
+        logger.info("[GreekScraper] %s", stats)
+        await record_success(name)
+    except Exception as e:
+        logger.error("[GreekScraper] Failed: %s", e)
+        await record_failure(name, str(e))
+
+
 @asynccontextmanager
 async def lifespan(app):
     # Startup
@@ -184,8 +219,10 @@ async def lifespan(app):
     scheduler.add_job(scheduled_notify_results, IntervalTrigger(hours=1), id="notify_results", replace_existing=True)
     scheduler.add_job(scheduled_diavgeia_scrape, IntervalTrigger(hours=48), id="diavgeia_municipal", replace_existing=True)
     scheduler.add_job(scheduled_forum_sync, IntervalTrigger(minutes=10), id="forum_sync", replace_existing=True)
+    scheduler.add_job(scheduled_bill_lifecycle, IntervalTrigger(hours=1), id="bill_lifecycle", replace_existing=True)
+    scheduler.add_job(scheduled_greek_topics, IntervalTrigger(hours=6), id="greek_topics", replace_existing=True)
     scheduler.start()
-    logger.info("[Scheduler] Started — parliament 12h, diavgeia 48h, notify-bills 30m, notify-results 1h, forum-sync 10m")
+    logger.info("[Scheduler] Started — lifecycle 1h, parliament 12h, diavgeia 48h, notify-bills 30m, notify-results 1h, forum-sync 10m, greek-topics 6h")
     yield
     # Shutdown
     scheduler.shutdown()
@@ -272,6 +309,7 @@ async def health():
             "MOD-20 Push Notifications",
             "MOD-21 Diavgeia Integration",
             "MOD-22 RAG Agent (Ollama + DeepL)",
+            "MOD-23 Greek Topics Scraper",
         ]
     }
 
@@ -373,11 +411,19 @@ async def health_modules():
     except Exception as e:
         modules["MOD-22"] = {"name": "RAG Agent", "status": "error", "error": str(e)}
 
+    # MOD-23 Greek Topics Scraper
+    greek_enabled = os.getenv("GREEK_SCRAPER_ENABLED", "false").lower() == "true"
+    if greek_enabled:
+        greek_st = await scraper_status("greek_topics")
+        modules["MOD-23"] = {"name": "Greek Topics Scraper", **greek_st}
+    else:
+        modules["MOD-23"] = {"name": "Greek Topics Scraper", "status": "disabled"}
+
     # Overall
-    statuses = [m["status"] for m in modules.values()]
-    if "error" in statuses:
+    active_statuses = [m["status"] for m in modules.values() if m["status"] not in ("disabled", "deferred")]
+    if "error" in active_statuses:
         overall = "error"
-    elif "degraded" in statuses:
+    elif "degraded" in active_statuses:
         overall = "degraded"
     else:
         overall = "ok"
