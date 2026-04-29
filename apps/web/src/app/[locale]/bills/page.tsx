@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useLocale } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ekklesia, Bill } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
@@ -26,8 +27,10 @@ const PAGE_SIZE = 10;
 
 export default function BillsPage() {
   const locale = useLocale();
+  const searchParams = useSearchParams();
+  const initialStatus = searchParams.get("status") || "";
   const [bills, setBills] = useState<Bill[]>([]);
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
   const [levelFilter, setLevelFilter] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
