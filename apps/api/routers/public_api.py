@@ -242,6 +242,54 @@ async def public_parties(_key=Depends(rate_limit_check), db: AsyncSession = Depe
     }
 
 
+@router.get("/cplm")
+async def public_cplm(
+    _key=Depends(rate_limit_check),
+    db: AsyncSession = Depends(get_db),
+):
+    """CPLM — Citizens Political Liquid Mirror. Aggregate political position of society. CC BY 4.0."""
+    from services.cplm import get_cplm_cached
+    data = await get_cplm_cached(db)
+    data["data_license"] = "CC BY 4.0"
+    data["source"] = "ekklesia.gr"
+    data["description"] = {
+        "el": "Ο CPLM αντικατοπτρίζει την πολιτική θέση της κοινωνίας βάσει των ψήφων πολιτών. "
+              "X = Οικονομία (Αριστερά/Δεξιά), Y = Κοινωνία (Αυταρχικό/Ελευθεριακό). "
+              "Κλίμακα: -10 έως +10. Ανανεώνεται κάθε 6 ώρες.",
+        "en": "The CPLM reflects society's political position based on citizen votes. "
+              "X = Economy (Left/Right), Y = Society (Authoritarian/Libertarian). "
+              "Scale: -10 to +10. Updated every 6 hours.",
+    }
+    return data
+
+
+@router.get("/cplm/history")
+async def public_cplm_history(
+    days: int = 30,
+    _key=Depends(rate_limit_check),
+):
+    """CPLM historical snapshots. CC BY 4.0."""
+    from services.cplm import get_cplm_history
+    entries = await get_cplm_history(min(days, 365))
+    return {"snapshots": entries, "count": len(entries), "data_license": "CC BY 4.0"}
+
+
+@router.get("/representation")
+async def public_representation(
+    _key=Depends(rate_limit_check),
+    db: AsyncSession = Depends(get_db),
+):
+    """Parliament Representativeness — cumulative divergence. CC BY 4.0."""
+    from routers.analytics import compute_cumulative_representation
+    try:
+        data = await compute_cumulative_representation(db)
+        data["data_license"] = "CC BY 4.0"
+        data["source"] = "ekklesia.gr"
+        return data
+    except Exception:
+        return {"error": "Representation data not available", "data_license": "CC BY 4.0"}
+
+
 @router.get("/info")
 async def api_info():
     """API Dokumentation + Endpoints Übersicht."""
@@ -261,6 +309,9 @@ async def api_info():
             "GET /api/v1/public/bills":              "Alle Gesetzentwürfe",
             "GET /api/v1/public/bills/{id}/results": "Abstimmungsergebnisse",
             "GET /api/v1/public/vaa/parties":        "Parteien",
+            "GET /api/v1/public/cplm":              "CPLM — Political Mirror (X/Y Aggregate)",
+            "GET /api/v1/public/cplm/history":      "CPLM Historical Snapshots",
+            "GET /api/v1/public/representation":    "Parliament Representativeness",
             "POST /api/v1/public/keys/generate":     "API Key generieren",
             "GET /api/v1/public/keys/status":        "API Key Status",
         },

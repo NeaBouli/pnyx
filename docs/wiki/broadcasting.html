@@ -101,6 +101,18 @@
       <h4>CSV Export</h4>
       <p data-el="Δείκτης Απόκλισης σε CSV" data-en="Divergence Score as CSV">Divergence CSV</p>
     </a>
+    <a href="https://api.ekklesia.gr/api/v1/public/cplm" target="_blank" class="card">
+      <h4>CPLM — Πολιτικός Καθρέφτης</h4>
+      <p data-el="Πολιτική θέση κοινωνίας (X/Y) — JSON API" data-en="Society political position (X/Y) — JSON API">Πολιτική θέση κοινωνίας (X/Y)</p>
+    </a>
+    <a href="https://api.ekklesia.gr/api/v1/public/cplm/history?days=30" target="_blank" class="card">
+      <h4>CPLM History</h4>
+      <p data-el="Ιστορικά snapshots — πολιτική εξέλιξη" data-en="Historical snapshots — political evolution">Ιστορικά snapshots</p>
+    </a>
+    <a href="https://api.ekklesia.gr/api/v1/public/representation" target="_blank" class="card">
+      <h4 data-el="Αντιπροσωπευτικότητα" data-en="Representativeness">Αντιπροσωπευτικότητα</h4>
+      <p data-el="Σωρευτικός Δείκτης Βουλής vs Πολίτες" data-en="Cumulative Parliament vs Citizens Index">Βουλή vs Πολίτες</p>
+    </a>
     <a href="../community.html" class="card">
       <h4 data-el="Επικοινωνία" data-en="Contact">Επικοινωνία</h4>
       <p data-el="POLIS tickets ή community" data-en="POLIS tickets or community">POLIS ή community</p>
@@ -157,8 +169,19 @@
   <h2 data-el="API για Developers" data-en="API for Developers">API για Developers</h2>
   <p data-el="Πλήρης τεκμηρίωση API:" data-en="Full API documentation:">Πλήρης τεκμηρίωση:</p>
   <div class="code-block">Base URL: https://api.ekklesia.gr/api/v1
-Rate Limit: 60 req/min/IP
+Rate Limit: 60 req/min (anonym) | 1000 req/min (mit API Key)
 
+GET /public/info              — API Übersicht + Endpoints
+GET /public/bills             — Νομοσχέδια (CC BY 4.0)
+GET /public/bills/{id}/results — Αποτελέσματα + Divergence
+GET /public/stats             — Plattform Statistiken
+GET /public/cplm              — CPLM Πολιτικός Καθρέφτης (X/Y)
+GET /public/cplm/history      — CPLM Ιστορικά Snapshots
+GET /public/representation    — Αντιπροσωπευτικότητα Βουλής
+GET /public/vaa/parties       — Κόμματα
+POST /public/keys/generate    — API Key (1000 req/min)
+
+# Legacy (ohne Public-Prefix):
 GET /bills                    — Νομοσχέδια
 GET /vote/{id}/results        — Αποτελέσματα + Divergence
 GET /analytics/overview       — Στατιστικά
