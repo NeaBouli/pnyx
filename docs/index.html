@@ -438,6 +438,7 @@
     <a href="#how" data-el="Πώς λειτουργεί" data-en="How it works">Πώς λειτουργεί</a>
     <a href="#features" data-el="Χαρακτηριστικά" data-en="Features">Χαρακτηριστικά</a>
     <a href="#votes" data-el="Ψηφοφορίες" data-en="Votes">Ψηφοφορίες</a>
+    <a href="#repSection" data-el="Charts" data-en="Charts">Charts</a>
     <a href="#forum" data-el="Forum" data-en="Forum">Forum</a>
     <a href="#roadmap" data-el="Roadmap" data-en="Roadmap">Roadmap</a>
     <a href="wiki/" data-el="Wiki" data-en="Wiki">Wiki</a>
@@ -779,6 +780,106 @@
   }
   fetchRepresentation();
   setInterval(fetchRepresentation, 60000);
+})();
+</script>
+
+<!-- CPLM — Citizens Political Liquid Mirror -->
+<div style="max-width:800px;margin:0 auto;padding:0 2rem 1.5rem" class="fade-in" id="cplmSection">
+  <div style="background:var(--gray-100);border-radius:1rem;padding:1.25rem 1.5rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
+      <h4 style="font-weight:800;font-size:0.88rem;margin:0" data-el="Πολιτικός Καθρέφτης (CPLM)" data-en="Political Mirror (CPLM)">Πολιτικός Καθρέφτης (CPLM)</h4>
+      <span style="font-size:0.65rem;color:#94a3b8;display:flex;align-items:center;gap:0.3rem"><span style="width:5px;height:5px;border-radius:50%;background:#22c55e;display:inline-block;animation:blink 2s infinite"></span> Live</span>
+    </div>
+    <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:0.75rem" data-el="Πού βρίσκεται πολιτικά η κοινωνία; Σωρευτικός υπολογισμός από όλες τις ψήφους πολιτών, συμπεριλαμβανομένων των ανοιχτών ψηφοφοριών." data-en="Where does society stand politically? Cumulative calculation from all citizen votes, including open-end votes.">Πού βρίσκεται πολιτικά η κοινωνία; Σωρευτικός υπολογισμός από όλες τις ψήφους πολιτών, συμπεριλαμβανομένων των ανοιχτών ψηφοφοριών.</p>
+    <!-- SVG Political Compass -->
+    <div style="display:flex;justify-content:center;margin-bottom:0.75rem">
+      <svg id="cplmChart" width="280" height="280" viewBox="0 0 280 280" style="background:white;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <!-- Quadrant backgrounds -->
+        <rect x="0" y="0" width="140" height="140" fill="#fef3c7" opacity="0.4"/>
+        <rect x="140" y="0" width="140" height="140" fill="#fce7f3" opacity="0.4"/>
+        <rect x="0" y="140" width="140" height="140" fill="#d1fae5" opacity="0.4"/>
+        <rect x="140" y="140" width="140" height="140" fill="#dbeafe" opacity="0.4"/>
+        <!-- Axes -->
+        <line x1="140" y1="0" x2="140" y2="280" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4"/>
+        <line x1="0" y1="140" x2="280" y2="140" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4"/>
+        <!-- Labels -->
+        <text x="6" y="148" font-size="8" fill="#94a3b8" data-el="Αριστερά" data-en="Left">Αριστερά</text>
+        <text x="242" y="148" font-size="8" fill="#94a3b8" data-el="Δεξιά" data-en="Right">Δεξιά</text>
+        <text x="130" y="12" font-size="8" fill="#94a3b8" text-anchor="middle" data-el="Αυταρχικό" data-en="Auth.">Αυταρχικό</text>
+        <text x="130" y="276" font-size="8" fill="#94a3b8" text-anchor="middle" data-el="Ελευθεριακό" data-en="Libert.">Ελευθεριακό</text>
+        <!-- Citizen dot (positioned by JS) -->
+        <circle id="cplmDot" cx="140" cy="140" r="8" fill="#2563eb" stroke="white" stroke-width="2" opacity="0.9"/>
+        <!-- Trend arrow -->
+        <line id="cplmArrow" x1="140" y1="140" x2="140" y2="140" stroke="#2563eb" stroke-width="2" marker-end="url(#arrowHead)" opacity="0"/>
+        <defs><marker id="arrowHead" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto"><path d="M0,0 L6,2 L0,4" fill="#2563eb"/></marker></defs>
+      </svg>
+    </div>
+    <!-- Stats row -->
+    <div style="display:flex;gap:1rem;flex-wrap:wrap">
+      <div style="flex:1;min-width:80px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
+        <div style="font-size:1.1rem;font-weight:900" id="cplmX">—</div>
+        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Οικονομία (X)" data-en="Economy (X)">Οικονομία (X)</div>
+      </div>
+      <div style="flex:1;min-width:80px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
+        <div style="font-size:1.1rem;font-weight:900" id="cplmY">—</div>
+        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Κοινωνία (Y)" data-en="Society (Y)">Κοινωνία (Y)</div>
+      </div>
+      <div style="flex:1;min-width:80px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
+        <div style="font-size:1.1rem;font-weight:900" id="cplmVoters">—</div>
+        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Ψηφοφόροι" data-en="Voters">Ψηφοφόροι</div>
+      </div>
+      <div style="flex:1;min-width:80px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
+        <div style="font-size:1.1rem;font-weight:900" id="cplmQuadrant">—</div>
+        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Τεταρτημόριο" data-en="Quadrant">Τεταρτημόριο</div>
+      </div>
+    </div>
+    <p style="font-size:0.65rem;color:#94a3b8;margin-top:0.5rem;text-align:center" data-el="Ανανεώνεται αυτόματα κάθε 6 ώρες. Περιλαμβάνει όλες τις ψήφους (και Open End)." data-en="Updated automatically every 6 hours. Includes all votes (including Open End).">Ανανεώνεται αυτόματα κάθε 6 ώρες. Περιλαμβάνει όλες τις ψήφους (και Open End).</p>
+  </div>
+</div>
+<script>
+(function(){
+  var QUAD_EL = {
+    center: "Κέντρο", libertarian_left: "Ελευθ. Αριστερά",
+    libertarian_right: "Ελευθ. Δεξιά", authoritarian_left: "Αυτ. Αριστερά",
+    authoritarian_right: "Αυτ. Δεξιά"
+  };
+  var QUAD_EN = {
+    center: "Center", libertarian_left: "Lib. Left",
+    libertarian_right: "Lib. Right", authoritarian_left: "Auth. Left",
+    authoritarian_right: "Auth. Right"
+  };
+  function fetchCPLM() {
+    fetch("https://api.ekklesia.gr/api/v1/cplm/aggregate")
+      .then(function(r){return r.json()})
+      .then(function(d){
+        var dot = document.getElementById("cplmDot");
+        var arrow = document.getElementById("cplmArrow");
+        var xEl = document.getElementById("cplmX");
+        var yEl = document.getElementById("cplmY");
+        var vEl = document.getElementById("cplmVoters");
+        var qEl = document.getElementById("cplmQuadrant");
+        // Map X/Y from [-10,+10] to [0,280]
+        var px = 140 + (d.x / 10) * 140;
+        var py = 140 - (d.y / 10) * 140;
+        if (dot) { dot.setAttribute("cx", px); dot.setAttribute("cy", py); }
+        if (xEl) xEl.textContent = d.x.toFixed(2);
+        if (yEl) yEl.textContent = d.y.toFixed(2);
+        if (vEl) vEl.textContent = d.total_voters.toLocaleString();
+        var lang = document.documentElement.lang === "en" ? "en" : "el";
+        if (qEl) qEl.textContent = (lang === "en" ? QUAD_EN : QUAD_EL)[d.quadrant] || d.quadrant;
+        // Trend arrow
+        if (arrow && d.trend && (Math.abs(d.trend.x_delta) > 0.001 || Math.abs(d.trend.y_delta) > 0.001)) {
+          var ax = px + (d.trend.x_delta / 10) * 280;
+          var ay = py - (d.trend.y_delta / 10) * 280;
+          arrow.setAttribute("x1", px); arrow.setAttribute("y1", py);
+          arrow.setAttribute("x2", ax); arrow.setAttribute("y2", ay);
+          arrow.setAttribute("opacity", "0.6");
+        }
+      })
+      .catch(function(){});
+  }
+  fetchCPLM();
+  setInterval(fetchCPLM, 60000);
 })();
 </script>
 

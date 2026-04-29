@@ -40,6 +40,7 @@ from routers import agent
 from routers import polis_qr
 from routers import sso
 from routers import claude_agent
+from routers import cplm
 
 scheduler = AsyncIOScheduler()
 
@@ -190,6 +191,19 @@ async def scheduled_bill_lifecycle():
         logger.error("[LIFECYCLE] Failed: %s", e)
 
 
+async def scheduled_cplm_refresh():
+    """Refresh CPLM aggregate cache every 6 hours."""
+    from services.cplm import refresh_cplm_cache
+    from database import AsyncSessionLocal
+
+    try:
+        async with AsyncSessionLocal() as db:
+            result = await refresh_cplm_cache(db)
+            logger.info("[CPLM] Refreshed: x=%.4f y=%.4f voters=%d", result["x"], result["y"], result["total_voters"])
+    except Exception as e:
+        logger.error("[CPLM] Refresh failed: %s", e)
+
+
 async def scheduled_greek_topics():
     """Scrape Greek news RSS and create forum topics every 6 hours."""
     from services.greek_topics_scraper import scrape_greek_topics, GREEK_SCRAPER_ENABLED
@@ -220,6 +234,7 @@ async def lifespan(app):
     scheduler.add_job(scheduled_diavgeia_scrape, IntervalTrigger(hours=48), id="diavgeia_municipal", replace_existing=True)
     scheduler.add_job(scheduled_forum_sync, IntervalTrigger(minutes=10), id="forum_sync", replace_existing=True)
     scheduler.add_job(scheduled_bill_lifecycle, IntervalTrigger(hours=1), id="bill_lifecycle", replace_existing=True)
+    scheduler.add_job(scheduled_cplm_refresh, IntervalTrigger(hours=6), id="cplm_refresh", replace_existing=True)
     scheduler.add_job(scheduled_greek_topics, IntervalTrigger(hours=6), id="greek_topics", replace_existing=True)
     scheduler.start()
     logger.info("[Scheduler] Started — lifecycle 1h, parliament 12h, diavgeia 48h, notify-bills 30m, notify-results 1h, forum-sync 10m, greek-topics 6h")
@@ -279,6 +294,7 @@ app.include_router(agent.router)
 app.include_router(polis_qr.router)
 app.include_router(sso.router)
 app.include_router(claude_agent.router)
+app.include_router(cplm.router)
 
 @app.get("/health")
 async def health():
@@ -310,6 +326,7 @@ async def health():
             "MOD-21 Diavgeia Integration",
             "MOD-22 RAG Agent (Ollama + DeepL)",
             "MOD-23 Greek Topics Scraper",
+            "MOD-24 CPLM (Citizens Political Liquid Mirror)",
         ]
     }
 
