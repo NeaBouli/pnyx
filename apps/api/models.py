@@ -198,6 +198,10 @@ class CitizenVote(Base):
     vote_nullifier  = Column(String(64), nullable=True)     # Bill-specific nullifier
     linkage_tag     = Column(String(64), nullable=True)     # Anti-double-vote proof
     timestamp_ms    = Column(BigInteger, nullable=True)     # Millisecond precision
+    # Vote Correction (einmalig, nur in WINDOW_24H)
+    is_correction   = Column(Boolean, default=False, nullable=False)
+    corrected_at    = Column(DateTime, nullable=True)
+    original_vote   = Column(String(20), nullable=True)      # Vorheriger Vote-Wert
     created_at      = Column(DateTime, default=datetime.utcnow)
     updated_at      = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

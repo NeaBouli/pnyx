@@ -16,7 +16,7 @@ import * as LocalAuthentication from "expo-local-authentication";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { loadKeypair, loadNullifier, signVote, verifyVote } from "../lib/crypto-native";
-import { submitVote } from "../lib/api";
+import { submitVote, correctVote } from "../lib/api";
 import { isDemoMode } from "../lib/demo";
 import { colors } from "../theme";
 
@@ -34,6 +34,9 @@ export default function VoteScreen({ route, navigation }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   const [summary, setSummary] = useState("");
   const [summaryLoading, setSummaryLoading] = useState(true);
+  const [billStatus, setBillStatus] = useState<string>("");
+  const [hasVoted, setHasVoted] = useState(false);
+  const [isCorrected, setIsCorrected] = useState(false);
 
   React.useEffect(() => {
     const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
@@ -42,6 +45,11 @@ export default function VoteScreen({ route, navigation }: Props) {
       .then(d => { if (d?.summary) setSummary(d.summary); })
       .catch(() => {})
       .finally(() => setSummaryLoading(false));
+    // Load bill status
+    fetch(`${API}/api/v1/bills/${encodeURIComponent(billId)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.status) setBillStatus(d.status); })
+      .catch(() => {});
   }, [billId]);
 
   async function handleVote(choice: string) {
@@ -118,6 +126,29 @@ export default function VoteScreen({ route, navigation }: Props) {
     } catch {}
   };
 
+  async function handleCorrection(choice: string) {
+    setLoading(true);
+    try {
+      const keypair = await loadKeypair();
+      const nullifier = await loadNullifier();
+      if (!keypair || !nullifier) {
+        Alert.alert("Σφάλμα", "Δεν βρέθηκε κλειδί.");
+        return;
+      }
+      const voteParams = { bill_id: billId, vote: choice, nullifier_hash: nullifier };
+      const signatureHex = signVote(keypair.privateKeyHex, voteParams);
+      const res = await correctVote(nullifier, billId, choice, signatureHex);
+      setIsCorrected(true);
+      Alert.alert("Διόρθωση ✓", "Η ψήφος σας διορθώθηκε επιτυχώς.", [
+        { text: "Αποτελέσματα", onPress: () => navigation.replace("Result", { billId, billTitle }) },
+      ]);
+    } catch (err: any) {
+      Alert.alert("Σφάλμα", err.message || "Η διόρθωση απέτυχε.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <View style={styles.container}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -138,8 +169,17 @@ export default function VoteScreen({ route, navigation }: Props) {
         </View>
       ) : null}
 
+      {billStatus === "WINDOW_24H" && (
+        <View style={{ backgroundColor: "#fef3c7", borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#f59e0b" }}>
+          <Text style={{ fontWeight: "700", color: "#92400e", fontSize: 13 }}>
+            ⚠️ Τελευταίες 24 ώρες — μπορείτε να διορθώσετε την ψήφο σας (μία φορά)
+          </Text>
+        </View>
+      )}
       <Text style={styles.info}>
-        Επιλέξτε την ψήφο σας. Απαιτείται βιομετρική πιστοποίηση.
+        {hasVoted && billStatus === "WINDOW_24H" && !isCorrected
+          ? "Έχετε ήδη ψηφίσει. Επιλέξτε νέα ψήφο για διόρθωση."
+          : "Επιλέξτε την ψήφο σας. Απαιτείται βιομετρική πιστοποίηση."}
       </Text>
 
       <View style={styles.options}>
@@ -151,7 +191,7 @@ export default function VoteScreen({ route, navigation }: Props) {
               { borderColor: opt.color },
               selected === opt.key && { backgroundColor: opt.color },
             ]}
-            onPress={() => handleVote(opt.key)}
+            onPress={() => hasVoted && billStatus === "WINDOW_24H" && !isCorrected ? handleCorrection(opt.key) : handleVote(opt.key)}
             disabled={loading}
           >
             <Text style={styles.voteIcon}>{opt.icon}</Text>

@@ -1,6 +1,7 @@
 """
 MOD-04: CitizenVote Router
 POST /api/v1/vote               — Stimme abgeben (Ed25519 signiert)
+PUT  /api/v1/vote/{bill_id}/correct — Einmalige Korrektur (nur WINDOW_24H)
 GET  /api/v1/vote/{bill_id}/results — Ergebnisse + Divergence Score
 POST /api/v1/vote/{bill_id}/relevance — Up/Down Relevanz (MOD-14)
 """
@@ -327,6 +328,102 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
         bill_id=req.bill_id,
         vote=vote_choice.value
     )
+
+
+# ─── Vote Correction (einmalig, nur WINDOW_24H) ──────────────────────────────
+
+class CorrectionRequest(BaseModel):
+    nullifier_hash: str = Field(..., min_length=64, max_length=64)
+    bill_id: str
+    vote: str = Field(..., description="YES | NO | ABSTAIN | UNKNOWN")
+    signature_hex: str = Field(..., description="Ed25519 Signatur des Payloads")
+
+
+@router.put("/{bill_id}/correct")
+async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Einmalige Stimmkorrektur — nur in WINDOW_24H erlaubt.
+    - Bill muss Status WINDOW_24H haben
+    - Existing Vote muss existieren
+    - is_correction darf nicht bereits True sein (einmal = einmal)
+    - Ed25519 Signatur wird validiert
+    """
+    # 1. Bill laden + Status prüfen
+    bill_result = await db.execute(
+        select(ParliamentBill).where(ParliamentBill.id == bill_id)
+    )
+    bill = bill_result.scalar_one_or_none()
+    if not bill:
+        raise HTTPException(404, f"Gesetz {bill_id} nicht gefunden.")
+
+    if bill.status != BillStatus.WINDOW_24H:
+        raise HTTPException(
+            403,
+            f"Korrektur nur in den letzten 24h möglich. Aktueller Status: {bill.status.value}"
+        )
+
+    # 2. Identity prüfen
+    id_result = await db.execute(
+        select(IdentityRecord).where(
+            IdentityRecord.nullifier_hash == req.nullifier_hash,
+            IdentityRecord.status == KeyStatus.ACTIVE,
+        )
+    )
+    identity = id_result.scalar_one_or_none()
+    if not identity:
+        raise HTTPException(403, "Nicht verifiziert oder Key revoziert.")
+
+    # 3. Existing Vote laden
+    vote_result = await db.execute(
+        select(CitizenVote).where(
+            CitizenVote.nullifier_hash == req.nullifier_hash,
+            CitizenVote.bill_id == bill_id,
+        )
+    )
+    existing = vote_result.scalar_one_or_none()
+    if not existing:
+        raise HTTPException(404, "Keine Stimme gefunden — Sie haben noch nicht abgestimmt.")
+
+    # 4. Einmal-Korrektur prüfen
+    if existing.is_correction:
+        raise HTTPException(
+            409,
+            "Korrektur bereits verwendet — nur eine Korrektur pro Abstimmung erlaubt."
+        )
+
+    # 5. Neuen Vote validieren
+    try:
+        new_choice = VoteChoice(req.vote.upper())
+    except ValueError:
+        raise HTTPException(400, f"Ungültige Stimme: {req.vote}")
+
+    # 6. Ed25519 Signatur prüfen
+    payload = json.dumps({
+        "bill_id": bill_id,
+        "vote": req.vote.upper(),
+        "nullifier_hash": req.nullifier_hash,
+    }, sort_keys=True).encode()
+
+    if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
+        raise HTTPException(401, "Ungültige Signatur.")
+
+    # 7. Korrektur durchführen
+    existing.original_vote = existing.vote.value
+    existing.vote = new_choice
+    existing.signature_hex = req.signature_hex
+    existing.is_correction = True
+    existing.corrected_at = datetime.now(timezone.utc)
+    existing.updated_at = datetime.now(timezone.utc)
+
+    await db.commit()
+
+    return {
+        "status": "corrected",
+        "bill_id": bill_id,
+        "original_vote": existing.original_vote,
+        "new_vote": new_choice.value,
+        "corrected_at": existing.corrected_at.isoformat(),
+    }
 
 
 @router.get("/results/latest")

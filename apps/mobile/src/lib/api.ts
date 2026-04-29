@@ -101,6 +101,23 @@ export async function submitVote(
   });
 }
 
+export async function correctVote(
+  nullifierHash: string,
+  billId: string,
+  vote: string,
+  signatureHex: string
+): Promise<any> {
+  return request<any>(`/api/v1/vote/${encodeURIComponent(billId)}/correct`, {
+    method: "PUT",
+    body: JSON.stringify({
+      nullifier_hash: nullifierHash,
+      bill_id: billId,
+      vote: vote.toUpperCase(),
+      signature_hex: signatureHex,
+    }),
+  });
+}
+
 export interface BillResults {
   bill_id: string;
   title_el: string;
