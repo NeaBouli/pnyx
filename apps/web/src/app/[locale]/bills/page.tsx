@@ -28,14 +28,21 @@ const PAGE_SIZE = 10;
 export default function BillsPage() {
   const locale = useLocale();
   const searchParams = useSearchParams();
-  const initialStatus = searchParams.get("status") || "";
   const [bills, setBills] = useState<Bill[]>([]);
-  const [statusFilter, setStatusFilter] = useState(initialStatus);
+  const [statusFilter, setStatusFilter] = useState("");
   const [levelFilter, setLevelFilter] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync URL ?status= param on mount and navigation
+  useEffect(() => {
+    const urlStatus = searchParams.get("status") || "";
+    if (urlStatus && urlStatus !== statusFilter) {
+      setStatusFilter(urlStatus);
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setLoading(true);
