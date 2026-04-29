@@ -44,67 +44,79 @@ def _check_rate_limit(ip: str) -> None:
 # Request model
 # ---------------------------------------------------------------------------
 class NgoContactRequest(BaseModel):
-    org: str
-    name: str
+    subject: str = ""
+    first_name: str
+    last_name: str
     email: EmailStr
-    message: str
+    phone: str = ""
+    org: str = ""
+    position: str = ""
+    region: str = ""
+    message: str = ""
+    consent: bool = False
 
-    @field_validator("org", "name", "message")
+    @field_validator("first_name", "last_name")
     @classmethod
     def not_blank(cls, v: str) -> str:
         v = v.strip()
         if not v:
             raise ValueError("Field must not be blank")
-        if len(v) > 2000:
-            raise ValueError("Field too long (max 2000 chars)")
-        return v
-
-    @field_validator("org", "name")
-    @classmethod
-    def max_length_short(cls, v: str) -> str:
         if len(v) > 200:
             raise ValueError("Field too long (max 200 chars)")
         return v
+
+    @field_validator("message", "subject", "org", "position", "region", "phone")
+    @classmethod
+    def max_length(cls, v: str) -> str:
+        if len(v) > 2000:
+            raise ValueError("Field too long (max 2000 chars)")
+        return v.strip()
 
 
 # ---------------------------------------------------------------------------
 # Endpoint
 # ---------------------------------------------------------------------------
-RECIPIENT = "kaspartisan@proton.me"
+RECIPIENT = os.getenv("CONTACT_RECIPIENT", "noreply@ekklesia.gr")
 
 
 @router.post("/ngo")
 async def contact_ngo(body: NgoContactRequest, request: Request) -> dict:
-    """Handle NGO contact form submission.
-
-    Validates fields, rate-limits by IP, and sends notification email
-    via Brevo transactional API.
-    """
+    """Handle contact form submission. Sends to admin via Brevo. No confirmation email to sender."""
     client_ip = request.client.host if request.client else "unknown"
     _check_rate_limit(client_ip)
+
+    if not body.consent:
+        raise HTTPException(status_code=400, detail="Consent required")
 
     brevo_key = os.getenv("BREVO_API_KEY")
     if not brevo_key:
         logger.error("[CONTACT] BREVO_API_KEY not set")
         raise HTTPException(status_code=503, detail="Email service unavailable")
 
-    subject = f"NGO Επικοινωνία ekklesia.gr — {body.org}"
+    full_name = f"{body.first_name} {body.last_name}"
+    subject = body.subject or f"Επικοινωνία ekklesia.gr — {body.org or full_name}"
 
     html_body = (
-        f"<h2>NGO Επικοινωνία — ekklesia.gr</h2>"
-        f"<p><strong>Οργανισμός:</strong> {_escape(body.org)}</p>"
-        f"<p><strong>Όνομα:</strong> {_escape(body.name)}</p>"
-        f"<p><strong>Email:</strong> {_escape(body.email)}</p>"
-        f"<hr/>"
+        f"<h2>Επικοινωνία — ekklesia.gr</h2>"
+        f"<table style='border-collapse:collapse;font-size:14px'>"
+        f"<tr><td style='padding:4px 12px 4px 0;font-weight:bold'>Θέμα:</td><td>{_escape(subject)}</td></tr>"
+        f"<tr><td style='padding:4px 12px 4px 0;font-weight:bold'>Όνομα:</td><td>{_escape(full_name)}</td></tr>"
+        f"<tr><td style='padding:4px 12px 4px 0;font-weight:bold'>Email:</td><td>{_escape(body.email)}</td></tr>"
+        f"<tr><td style='padding:4px 12px 4px 0;font-weight:bold'>Τηλέφωνο:</td><td>{_escape(body.phone or '-')}</td></tr>"
+        f"<tr><td style='padding:4px 12px 4px 0;font-weight:bold'>Φορέας:</td><td>{_escape(body.org or '-')}</td></tr>"
+        f"<tr><td style='padding:4px 12px 4px 0;font-weight:bold'>Θέση:</td><td>{_escape(body.position or '-')}</td></tr>"
+        f"<tr><td style='padding:4px 12px 4px 0;font-weight:bold'>Περιφέρεια/Δήμος:</td><td>{_escape(body.region or '-')}</td></tr>"
+        f"</table>"
+        f"<hr style='margin:1rem 0'/>"
         f"<p>{_escape(body.message)}</p>"
-        f"<hr/>"
-        f"<p style='color:#999;font-size:0.8em'>IP: {client_ip}</p>"
+        f"<hr style='margin:1rem 0'/>"
+        f"<p style='color:#999;font-size:0.8em'>IP: {client_ip} | Consent: {body.consent}</p>"
     )
 
     payload = {
         "sender": {"name": "ekklesia.gr", "email": "noreply@ekklesia.gr"},
         "to": [{"email": RECIPIENT, "name": "Ekklesia Admin"}],
-        "replyTo": {"email": body.email, "name": body.name},
+        "replyTo": {"email": body.email, "name": full_name},
         "subject": subject,
         "htmlContent": html_body,
     }
@@ -127,31 +139,8 @@ async def contact_ngo(body: NgoContactRequest, request: Request) -> dict:
         logger.error("[CONTACT] HTTP error: %s", e)
         raise HTTPException(status_code=502, detail="Email service unreachable")
 
-    # Send confirmation to sender
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            await client.post(
-                "https://api.brevo.com/v3/smtp/email",
-                json={
-                    "sender": {"name": "ekklesia Newsletter", "email": "newsletter@ekklesia.gr"},
-                    "to": [{"email": body.email, "name": body.name}],
-                    "subject": "Λάβαμε το μήνυμά σας — εκκλησία",
-                    "htmlContent": (
-                        '<div style="background:#f8fafc;padding:2rem 1rem;font-family:sans-serif">'
-                        '<div style="max-width:500px;margin:0 auto;background:#fff;border-radius:12px;border-top:4px solid #2563eb;padding:2rem">'
-                        f'<p>Αγαπητέ/ή {_escape(body.name)},</p>'
-                        '<p>Λάβαμε το μήνυμά σας και θα επικοινωνήσουμε σύντομα.</p>'
-                        '<p>Ευχαριστούμε για το ενδιαφέρον σας.</p>'
-                        '<p style="color:#64748b">— Vendetta Labs / εκκλησία</p>'
-                        '</div></div>'
-                    ),
-                },
-                headers={"api-key": brevo_key, "Content-Type": "application/json"},
-            )
-    except Exception:
-        pass  # Confirmation is best-effort
-
-    logger.info("[CONTACT] NGO contact from %s — org=%s", client_ip, body.org)
+    # NO confirmation email to sender (by design)
+    logger.info("[CONTACT] Contact from %s — %s (%s)", client_ip, full_name, body.org)
     return {"status": "ok", "message": "Message sent successfully"}
 
 

@@ -327,10 +327,10 @@
     </p>
   </div>
   <div class="card-grid fade-in">
-    <div class="card" style="border-color:#93c5fd">
+    <div class="card" style="border-color:#93c5fd;cursor:pointer" onclick="openNgoModal()">
       <div class="card-icon">📧</div>
-      <h4 data-el="Email Υποστήριξης" data-en="Support Email">Email Υποστήριξης</h4>
-      <p>support@ekklesia.gr</p>
+      <h4 data-el="Φόρμα Επικοινωνίας" data-en="Contact Form">Φόρμα Επικοινωνίας</h4>
+      <p style="color:var(--blue);font-weight:600" data-el="Στείλτε μήνυμα →" data-en="Send a message →">Στείλτε μήνυμα →</p>
     </div>
     <div class="card" style="border-color:#93c5fd">
       <div class="card-icon">📖</div>
@@ -359,32 +359,74 @@
   <p>εκκλησία &middot; &copy; 2026 Vendetta Labs &middot; MIT License</p>
 </footer>
 
-<!-- NGO Contact Modal (same as community.html) -->
-<div id="ngoModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center">
-  <div style="background:white;border-radius:1rem;padding:2rem;max-width:480px;width:90%;position:relative;box-shadow:0 8px 32px rgba(0,0,0,0.2)">
-    <button onclick="closeNgoModal()" style="position:absolute;top:0.75rem;right:0.75rem;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#64748b">&times;</button>
-    <h3 style="margin:0 0 0.25rem;font-size:1.1rem;font-weight:900" data-el="Επικοινωνία Δήμου" data-en="Municipality Contact">Επικοινωνία Δήμου</h3>
-    <p style="color:#64748b;font-size:0.82rem;margin:0 0 1rem" data-el="Συμπληρώστε τα στοιχεία σας και θα επικοινωνήσουμε μαζί σας." data-en="Fill in your details and we will contact you.">Συμπληρώστε τα στοιχεία σας και θα επικοινωνήσουμε μαζί σας.</p>
+<!-- Contact Modal -->
+<div id="ngoModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;overflow-y:auto">
+  <div style="background:white;border-radius:1rem;padding:2rem;max-width:520px;width:90%;position:relative;box-shadow:0 8px 32px rgba(0,0,0,0.2);margin:2rem auto">
+    <button onclick="closeNgoModal()" style="position:absolute;top:0.75rem;right:0.75rem;background:none;border:none;font-size:1.4rem;cursor:pointer;color:#64748b;line-height:1">&times;</button>
+    <h3 style="margin:0 0 0.25rem;font-size:1.1rem;font-weight:900" data-el="Φόρμα Επικοινωνίας" data-en="Contact Form">Φόρμα Επικοινωνίας</h3>
+    <p style="color:#64748b;font-size:0.78rem;margin:0 0 1rem" data-el="Συμπληρώστε τα στοιχεία σας. Κάποιος από την ομάδα ανάπτυξης θα επικοινωνήσει μαζί σας." data-en="Fill in your details. Someone from the development team will contact you.">Συμπληρώστε τα στοιχεία σας. Κάποιος από την ομάδα ανάπτυξης θα επικοινωνήσει μαζί σας.</p>
     <form id="ngoForm" onsubmit="submitNgoForm(event)">
-      <div style="margin-bottom:0.75rem">
-        <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:0.25rem" data-el="Ονοματεπώνυμο" data-en="Full Name">Ονοματεπώνυμο</label>
-        <input name="name" required style="width:100%;padding:0.5rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.88rem"/>
+      <div style="margin-bottom:0.6rem">
+        <label style="display:block;font-size:0.75rem;font-weight:700;margin-bottom:0.2rem" data-el="Θέμα" data-en="Subject">Θέμα</label>
+        <select name="subject" style="width:100%;padding:0.45rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.82rem;background:white">
+          <option value="gov.gr Ενεργοποίηση Δήμου" data-el="gov.gr Ενεργοποίηση Δήμου" data-en="gov.gr Municipality Activation">gov.gr Ενεργοποίηση Δήμου</option>
+          <option value="Τεχνική Υποστήριξη" data-el="Τεχνική Υποστήριξη" data-en="Technical Support">Τεχνική Υποστήριξη</option>
+          <option value="Συνεργασία" data-el="Συνεργασία" data-en="Partnership">Συνεργασία</option>
+          <option value="Γενική Ερώτηση" data-el="Γενική Ερώτηση" data-en="General Question">Γενική Ερώτηση</option>
+        </select>
       </div>
-      <div style="margin-bottom:0.75rem">
-        <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:0.25rem" data-el="Φορέας / Δήμος" data-en="Organization / Municipality">Φορέας / Δήμος</label>
-        <input name="org" required style="width:100%;padding:0.5rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.88rem"/>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.6rem">
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:700;margin-bottom:0.2rem" data-el="Όνομα *" data-en="First Name *">Όνομα *</label>
+          <input name="first_name" required style="width:100%;padding:0.45rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.82rem"/>
+        </div>
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:700;margin-bottom:0.2rem" data-el="Επώνυμο *" data-en="Last Name *">Επώνυμο *</label>
+          <input name="last_name" required style="width:100%;padding:0.45rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.82rem"/>
+        </div>
       </div>
-      <div style="margin-bottom:0.75rem">
-        <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:0.25rem">Email</label>
-        <input name="email" type="email" required style="width:100%;padding:0.5rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.88rem"/>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.6rem">
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:700;margin-bottom:0.2rem">Email *</label>
+          <input name="email" type="email" required style="width:100%;padding:0.45rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.82rem"/>
+        </div>
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:700;margin-bottom:0.2rem" data-el="Τηλέφωνο" data-en="Phone">Τηλέφωνο</label>
+          <input name="phone" type="tel" style="width:100%;padding:0.45rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.82rem"/>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.6rem">
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:700;margin-bottom:0.2rem" data-el="Φορέας / Οργανισμός" data-en="Organization">Φορέας / Οργανισμός</label>
+          <input name="org" style="width:100%;padding:0.45rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.82rem" placeholder="π.χ. Δήμος Αθηναίων"/>
+        </div>
+        <div>
+          <label style="display:block;font-size:0.75rem;font-weight:700;margin-bottom:0.2rem" data-el="Θέση / Ιδιότητα" data-en="Position">Θέση / Ιδιότητα</label>
+          <input name="position" style="width:100%;padding:0.45rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.82rem" placeholder="π.χ. Δήμαρχος"/>
+        </div>
+      </div>
+      <div style="margin-bottom:0.6rem">
+        <label style="display:block;font-size:0.75rem;font-weight:700;margin-bottom:0.2rem" data-el="Περιφέρεια / Δήμος" data-en="Region / Municipality">Περιφέρεια / Δήμος</label>
+        <input name="region" style="width:100%;padding:0.45rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.82rem" placeholder="π.χ. Αττικής — Δήμος Αθηναίων"/>
+      </div>
+      <div style="margin-bottom:0.6rem">
+        <label style="display:block;font-size:0.75rem;font-weight:700;margin-bottom:0.2rem" data-el="Μήνυμα" data-en="Message">Μήνυμα</label>
+        <textarea name="message" rows="3" style="width:100%;padding:0.45rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.82rem;resize:vertical"></textarea>
+      </div>
+      <div style="margin-bottom:0.6rem">
+        <label style="display:block;font-size:0.75rem;font-weight:700;margin-bottom:0.2rem" data-el="Επισύναψη αρχείου (PDF/DOC, μέγ. 5MB)" data-en="Attach file (PDF/DOC, max 5MB)">Επισύναψη αρχείου (PDF/DOC, μέγ. 5MB)</label>
+        <input type="file" name="attachment" accept=".pdf,.doc,.docx,.odt,.txt,.png,.jpg,.jpeg" style="width:100%;font-size:0.78rem;color:#64748b"/>
+        <p style="font-size:0.65rem;color:#94a3b8;margin:0.2rem 0 0" data-el="Αποδεκτοί τύποι: PDF, DOC, DOCX, ODT, TXT, PNG, JPG" data-en="Accepted types: PDF, DOC, DOCX, ODT, TXT, PNG, JPG">Αποδεκτοί τύποι: PDF, DOC, DOCX, ODT, TXT, PNG, JPG</p>
       </div>
       <div style="margin-bottom:1rem">
-        <label style="display:block;font-size:0.78rem;font-weight:700;margin-bottom:0.25rem" data-el="Μήνυμα" data-en="Message">Μήνυμα</label>
-        <textarea name="message" rows="3" style="width:100%;padding:0.5rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.88rem;resize:vertical"></textarea>
+        <label style="display:flex;align-items:flex-start;gap:0.5rem;font-size:0.72rem;color:#64748b;cursor:pointer">
+          <input type="checkbox" name="consent" required style="accent-color:#2563eb;margin-top:0.15rem;flex-shrink:0"/>
+          <span data-el="Συναινώ στην εθελοντική υποβολή των παραπάνω στοιχείων για σκοπούς επικοινωνίας. Τα δεδομένα δεν αποθηκεύονται μόνιμα και χρησιμοποιούνται αποκλειστικά για την απάντηση στο αίτημά μου." data-en="I consent to the voluntary submission of the above data for communication purposes. Data is not stored permanently and is used exclusively to respond to my request.">Συναινώ στην εθελοντική υποβολή των παραπάνω στοιχείων για σκοπούς επικοινωνίας. Τα δεδομένα δεν αποθηκεύονται μόνιμα και χρησιμοποιούνται αποκλειστικά για την απάντηση στο αίτημά μου.</span>
+        </label>
       </div>
-      <button type="submit" style="width:100%;padding:0.6rem;background:#2563eb;color:white;border:none;border-radius:0.4rem;font-weight:700;font-size:0.88rem;cursor:pointer" data-el="Αποστολή" data-en="Send">Αποστολή</button>
+      <button type="submit" id="ngoBtn" style="width:100%;padding:0.6rem;background:#2563eb;color:white;border:none;border-radius:0.4rem;font-weight:700;font-size:0.88rem;cursor:pointer" data-el="Αποστολή" data-en="Send">Αποστολή</button>
     </form>
-    <div id="ngoStatus" style="display:none;margin-top:0.75rem;padding:0.6rem;border-radius:0.4rem;text-align:center;font-size:0.82rem;font-weight:700"></div>
+    <div id="ngoStatus" style="display:none;margin-top:0.75rem;padding:1rem;border-radius:0.5rem;text-align:center"></div>
   </div>
 </div>
 
@@ -413,29 +455,65 @@ function submitNgoForm(e) {
   e.preventDefault();
   var fd = new FormData(e.target);
   var status = document.getElementById("ngoStatus");
-  fetch("/api/v1/contact/ngo", {
+  var btn = document.getElementById("ngoBtn");
+  var fileInput = e.target.querySelector('input[type="file"]');
+
+  // Validate file size (max 5MB) and type
+  if (fileInput && fileInput.files.length > 0) {
+    var file = fileInput.files[0];
+    var allowedTypes = ['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.oasis.opendocument.text','text/plain','image/png','image/jpeg'];
+    if (file.size > 5 * 1024 * 1024) {
+      status.style.display = "block";
+      status.style.background = "#fee2e2";
+      status.style.color = "#991b1b";
+      status.innerHTML = currentLang === "el" ? "Το αρχείο υπερβαίνει τα 5MB." : "File exceeds 5MB limit.";
+      return;
+    }
+    if (!allowedTypes.includes(file.type)) {
+      status.style.display = "block";
+      status.style.background = "#fee2e2";
+      status.style.color = "#991b1b";
+      status.innerHTML = currentLang === "el" ? "Μη αποδεκτός τύπος αρχείου." : "Invalid file type.";
+      return;
+    }
+  }
+
+  btn.disabled = true;
+  btn.textContent = "...";
+
+  fetch("https://api.ekklesia.gr/api/v1/contact/ngo", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      name: fd.get("name"),
-      org: fd.get("org"),
+      subject: fd.get("subject"),
+      first_name: fd.get("first_name"),
+      last_name: fd.get("last_name"),
       email: fd.get("email"),
-      message: fd.get("message"),
-      source: "govgr-dimos"
+      phone: fd.get("phone") || "",
+      org: fd.get("org") || "",
+      position: fd.get("position") || "",
+      region: fd.get("region") || "",
+      message: fd.get("message") || "",
+      consent: e.target.querySelector('input[name="consent"]').checked
     })
   }).then(function(r) {
     if (r.ok) {
       status.style.display = "block";
       status.style.background = "#dcfce7";
       status.style.color = "#166534";
-      status.innerHTML = currentLang === "el" ? "Ευχαριστούμε! Θα επικοινωνήσουμε σύντομα." : "Thank you! We will be in touch soon.";
-      e.target.reset();
+      status.innerHTML = currentLang === "el"
+        ? "<div style='font-size:1.5rem;margin-bottom:0.5rem'>✅</div><strong>Το μήνυμά σας εστάλη επιτυχώς!</strong><br/><span style='font-size:0.82rem;color:#22863a'>Κάποιος από την ομάδα ανάπτυξης θα επικοινωνήσει μαζί σας.</span>"
+        : "<div style='font-size:1.5rem;margin-bottom:0.5rem'>✅</div><strong>Your message was sent successfully!</strong><br/><span style='font-size:0.82rem;color:#22863a'>Someone from the development team will contact you.</span>";
+      e.target.style.display = "none";
     } else { throw new Error(); }
   }).catch(function() {
     status.style.display = "block";
     status.style.background = "#fee2e2";
     status.style.color = "#991b1b";
     status.innerHTML = currentLang === "el" ? "Σφάλμα. Δοκιμάστε ξανά." : "Error. Please try again.";
+  }).finally(function() {
+    btn.disabled = false;
+    btn.textContent = currentLang === "el" ? "Αποστολή" : "Send";
   });
 }
 
