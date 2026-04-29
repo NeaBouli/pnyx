@@ -342,10 +342,12 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
           </div>
         )}
 
-        {/* ── QR CODE STUB ── */}
-        <div className="mb-6">
-          <QRCodeVoteStub billId={billId} purpose="vote" />
-        </div>
+        {/* ── QR CODE — nur bei abstimmungsbereiten Bills ── */}
+        {bill && VOTABLE.includes(bill.status) && (
+          <div className="mb-6">
+            <QRCodeVoteStub billId={billId} purpose="vote" />
+          </div>
+        )}
 
 
         {/* ── FULL RESULT REPORT ── */}
