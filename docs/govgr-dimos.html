@@ -360,8 +360,8 @@
 
     <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0">
       <div style="font-size:2rem;margin-bottom:0.5rem">🗺️</div>
-      <h3 style="font-weight:800;font-size:0.95rem;color:var(--blue);margin-bottom:0.4rem" data-el="Περιφερειακή Πρόσβαση" data-en="Regional Access">Περιφερειακή Πρόσβαση</h3>
-      <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Κάθε χρήστης βλέπει ΜΟΝΟ τα δεδομένα του δήμου ή της περιφέρειάς του. Τα δεδομένα άλλων περιοχών είναι τεχνικά αόρατα." data-en="Each user sees ONLY their municipality's or region's data. Other areas' data is technically invisible.">Κάθε χρήστης βλέπει ΜΟΝΟ τα δεδομένα του δήμου ή της περιφέρειάς του. Τα δεδομένα άλλων περιοχών είναι τεχνικά αόρατα.</p>
+      <h3 style="font-weight:800;font-size:0.95rem;color:var(--blue);margin-bottom:0.4rem" data-el="Ψήφος κατά Εκλογική Περιφέρεια" data-en="Vote by Constituency">Ψήφος κατά Εκλογική Περιφέρεια</h3>
+      <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Όλα τα δεδομένα είναι δημόσια — κάθε πολίτης βλέπει τα πάντα. Η ψήφος όμως περιορίζεται στον δήμο ή την περιφέρειά σας. Εθνικά νομοσχέδια: ψηφίζουν όλοι. Περιφερειακά/δημοτικά: μόνο κάτοικοι της αντίστοιχης περιοχής." data-en="All data is public — every citizen can see everything. Voting however is restricted to your municipality or region. National bills: everyone votes. Regional/municipal: only residents of the respective area.">Όλα τα δεδομένα είναι δημόσια. Η ψήφος περιορίζεται στον δήμο/περιφέρειά σας. Εθνικά: ψηφίζουν όλοι. Τοπικά: μόνο κάτοικοι.</p>
     </div>
 
     <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0">
@@ -393,15 +393,15 @@
       </div>
     </div>
 
-    <!-- Step 2 (manual — honest) -->
+    <!-- Step 2 — Diavgeia verification -->
     <div style="position:relative;margin-bottom:2rem">
-      <div style="position:absolute;left:-2.15rem;top:0.2rem;width:1.5rem;height:1.5rem;background:var(--yellow);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:0.7rem;font-weight:900">2</div>
-      <div style="background:#fffbeb;border-radius:var(--radius);padding:1.25rem;border-left:3px solid var(--yellow)">
+      <div style="position:absolute;left:-2.15rem;top:0.2rem;width:1.5rem;height:1.5rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:0.7rem;font-weight:900">2</div>
+      <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.25rem;border-left:3px solid var(--blue)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
-          <h3 style="font-weight:800;font-size:0.95rem;color:var(--gray-900)" data-el="Χειροκίνητη Επαλήθευση Αξιώματος" data-en="Manual Role Verification">Χειροκίνητη Επαλήθευση Αξιώματος</h3>
-          <span style="background:#fef3c7;color:#92400e;font-size:0.65rem;font-weight:700;padding:0.15rem 0.6rem;border-radius:1rem" data-el="Εντός 48 ωρών" data-en="Within 48 hours">Εντός 48 ωρών</span>
+          <h3 style="font-weight:800;font-size:0.95rem;color:var(--gray-900)" data-el="Επαλήθευση μέσω ΔΙ.ΑΥΓΕΙΑ" data-en="Verification via DI.AVGIA">Επαλήθευση μέσω ΔΙ.ΑΥΓΕΙΑ</h3>
+          <span style="background:#dcfce7;color:#166534;font-size:0.65rem;font-weight:700;padding:0.15rem 0.6rem;border-radius:1rem" data-el="Αυτόματο" data-en="Automatic">Αυτόματο</span>
         </div>
-        <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Η ομάδα ekklesia.gr επαληθεύει ότι το ΑΦΜ αντιστοιχεί στον Δήμαρχο. Απαραίτητο βήμα — δεν υπάρχει κυβερνητικό API για αυτόματη επαλήθευση αξιωμάτων." data-en="The ekklesia.gr team verifies the Tax ID corresponds to the Mayor. Required step — no government API exists for automatic role verification.">Η ομάδα ekklesia.gr επαληθεύει ότι το ΑΦΜ αντιστοιχεί στον Δήμαρχο. Απαραίτητο βήμα — δεν υπάρχει κυβερνητικό API για αυτόματη επαλήθευση αξιωμάτων.</p>
+        <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Το σύστημα επαληθεύει αυτόματα το αξίωμα μέσω ΔΙ.ΑΥΓΕΙΑ (diavgeia.gov.gr). Κάθε διορισμός δημάρχου δημοσιεύεται υποχρεωτικά με ΑΔΑ — η εκκλησία αντιπαραβάλλει αυτόματα το ΑΦΜ με τη δημόσια πράξη διορισμού. Κανένα χειροκίνητο βήμα, κανένας μεσάζοντας." data-en="The system automatically verifies the office via DI.AVGIA (diavgeia.gov.gr). Every mayor's appointment is mandatorily published with an ADA number — ekklesia automatically cross-references the Tax ID with the public appointment act. No manual step, no intermediary.">Το σύστημα επαληθεύει αυτόματα το αξίωμα μέσω ΔΙ.ΑΥΓΕΙΑ (diavgeia.gov.gr). Κάθε διορισμός δημάρχου δημοσιεύεται υποχρεωτικά με ΑΔΑ — η εκκλησία αντιπαραβάλλει αυτόματα το ΑΦΜ με τη δημόσια πράξη διορισμού. Κανένα χειροκίνητο βήμα.</p>
       </div>
     </div>
 
@@ -451,8 +451,8 @@
 
     <div style="background:white;border:2px solid #e2e8f0;border-radius:var(--radius);padding:1.25rem;text-align:center">
       <div style="font-size:1.5rem;margin-bottom:0.4rem">📋</div>
-      <h4 style="font-weight:800;font-size:0.85rem;margin-bottom:0.3rem" data-el="Audit Log (append-only)" data-en="Audit Log (append-only)">Audit Log (append-only)</h4>
-      <p style="font-size:0.75rem;color:var(--gray-500);line-height:1.6" data-el="Κάθε ενέργεια στο dashboard καταγράφεται σε append-only log. Αδύνατη η διαγραφή ιστορικού." data-en="Every dashboard action is logged in an append-only log. History cannot be deleted.">Κάθε ενέργεια καταγράφεται. Αδύνατη η διαγραφή ιστορικού.</p>
+      <h4 style="font-weight:800;font-size:0.85rem;margin-bottom:0.3rem" data-el="Αρχείο στο Arweave" data-en="Arweave Archive">Αρχείο στο Arweave</h4>
+      <p style="font-size:0.75rem;color:var(--gray-500);line-height:1.6" data-el="Τα αποτελέσματα κάθε ψηφοφορίας αρχειοθετούνται στο Arweave blockchain. Μόνιμα, αμετάβλητα, δημόσια επαληθεύσιμα. Κανένα κεντρικό log — μόνο blockchain." data-en="Every vote result is archived on the Arweave blockchain. Permanent, immutable, publicly verifiable. No central log — blockchain only.">Αποτελέσματα στο Arweave blockchain. Μόνιμα, αμετάβλητα, δημόσια επαληθεύσιμα.</p>
     </div>
 
     <div style="background:white;border:2px solid #e2e8f0;border-radius:var(--radius);padding:1.25rem;text-align:center">
