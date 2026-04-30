@@ -388,20 +388,29 @@
 
     <!-- MIRROR SERVER — VOLUNTEERS WANTED -->
     <div class="fc" style="border-color:#a855f7">
-      <div class="fc-badge" style="background:#a855f7" data-el="ΑΝΑΖΗΤΟΥΜΕ" data-en="SEEKING">ΑΝΑΖΗΤΟΥΜΕ</div>
-      <div class="fc-icon">🖥️</div>
-      <div class="fc-title" data-el="Mirror-Server" data-en="Mirror Server">Mirror-Server</div>
-      <div class="fc-sub" data-el="Αποκεντρωμένο αντίγραφο — ανθεκτικότητα" data-en="Decentralized mirror — redundancy">Αποκεντρωμένο αντίγραφο — ανθεκτικότητα</div>
-      <div class="fc-info">
-        <p style="font-size:0.72rem;color:var(--gray-700);margin:0;line-height:1.5" data-el="Θέλετε να φιλοξενήσετε ένα mirror; Προσφέρετε ένα server (VPS ή bare-metal) ως αντίγραφο ασφαλείας. Η πλατφόρμα γίνεται ανθεκτικότερη — κανείς δεν μπορεί να την κλείσει." data-en="Want to host a mirror? Offer a server (VPS or bare-metal) as a backup copy. The platform becomes more resilient — nobody can shut it down.">
-          Θέλετε να φιλοξενήσετε ένα mirror; Προσφέρετε ένα server (VPS ή bare-metal) ως αντίγραφο ασφαλείας. Η πλατφόρμα γίνεται ανθεκτικότερη — κανείς δεν μπορεί να την κλείσει.
-        </p>
+      <div class="fc-badge" style="background:#a855f7" data-el="ΚΑΤΟΠΤΡΑ" data-en="MIRRORS">ΚΑΤΟΠΤΡΑ</div>
+      <div class="fc-icon">🪞</div>
+      <div class="fc-title" data-el="Mirror Server" data-en="Mirror Server">Mirror Server</div>
+      <div class="fc-sub" data-el="Ανώνυμα αντίγραφα — κανείς δεν μπορεί να κλείσει την πλατφόρμα" data-en="Anonymous mirrors — nobody can shut down the platform">Ανώνυμα αντίγραφα — κανείς δεν μπορεί να κλείσει την πλατφόρμα</div>
+      <!-- Mirror Status Counter -->
+      <div style="margin:0.5rem 0;display:flex;flex-direction:column;gap:0.3rem" id="mirrorList">
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:0.75rem;padding:0.3rem 0.5rem;background:#faf5ff;border-radius:0.3rem">
+          <a href="https://1.ekklesia.gr" target="_blank" style="color:#6b21a8;text-decoration:none;font-weight:600">1.ekklesia.gr</a>
+          <span id="m1" style="font-size:0.7rem;color:#94a3b8">⬚ <span data-el="Διαθέσιμο" data-en="Available">Διαθέσιμο</span></span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:0.75rem;padding:0.3rem 0.5rem;background:#faf5ff;border-radius:0.3rem">
+          <a href="https://2.ekklesia.gr" target="_blank" style="color:#6b21a8;text-decoration:none;font-weight:600">2.ekklesia.gr</a>
+          <span id="m2" style="font-size:0.7rem;color:#94a3b8">⬚ <span data-el="Διαθέσιμο" data-en="Available">Διαθέσιμο</span></span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:0.75rem;padding:0.3rem 0.5rem;background:#faf5ff;border-radius:0.3rem">
+          <a href="https://3.ekklesia.gr" target="_blank" style="color:#6b21a8;text-decoration:none;font-weight:600">3.ekklesia.gr</a>
+          <span id="m3" style="font-size:0.7rem;color:#94a3b8">⬚ <span data-el="Διαθέσιμο" data-en="Available">Διαθέσιμο</span></span>
+        </div>
       </div>
-      <div class="fc-info" style="background:#faf5ff;margin-top:0.3rem">
-        <div style="font-size:0.68rem;color:#6b21a8;font-weight:600" data-el="Ελάχιστες απαιτήσεις: 2 vCPU, 4GB RAM, 40GB SSD, Linux" data-en="Min. requirements: 2 vCPU, 4GB RAM, 40GB SSD, Linux">Min: 2 vCPU · 4GB RAM · 40GB SSD · Linux</div>
+      <div class="fc-info" style="margin-top:0.3rem">
+        <p style="font-size:0.7rem;color:var(--gray-700);margin:0;line-height:1.5" data-el="Read-only αντίγραφο. Εγκατάσταση με 1 εντολή. Χωρίς βάση δεδομένων — μόνο cache. Αυτόματος συγχρονισμός κάθε 5 λεπτά. Ελάχιστο: 1GB RAM, 10GB SSD." data-en="Read-only mirror. 1-command setup. No database — cache only. Auto-sync every 5 min. Minimum: 1GB RAM, 10GB SSD.">Read-only αντίγραφο. 1 εντολή. Χωρίς DB — μόνο cache. Sync κάθε 5λ. Min: 1GB RAM, 10GB SSD.</p>
       </div>
-      <a href="https://github.com/NeaBouli/pnyx/issues/new?title=Mirror%20Server%20Volunteer&labels=mirror,infrastructure&body=I%20want%20to%20provide%20a%20mirror%20server.%0A%0ALocation:%20%0ASpecs:%20%0AAvailability:%20" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;padding:0.5rem;background:#a855f7;color:white;border-radius:0.4rem;font-weight:700;font-size:0.82rem;text-decoration:none;margin-top:0.5rem" data-el="Εθελοντής Mirror →" data-en="Volunteer Mirror →">Εθελοντής Mirror → GitHub</a>
-      <div style="text-align:center;padding-top:0.5rem;font-size:1.3rem">🙏</div>
+      <a href="mirror-setup.html" style="display:block;text-align:center;padding:0.5rem;background:#a855f7;color:white;border-radius:0.4rem;font-weight:700;font-size:0.82rem;text-decoration:none;margin-top:0.5rem" data-el="Mirror εγκατάσταση →" data-en="Set up a mirror →">Mirror εγκατάσταση →</a>
     </div>
 
     <!-- ARWEAVE — MOD-08 (LIVE BALANCE) -->

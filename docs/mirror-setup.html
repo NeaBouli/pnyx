@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="el" data-lang="el">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Mirror Setup — εκκλησία</title>
+  <meta name="robots" content="noindex, nofollow"/>
+  <link rel="icon" type="image/png" href="/favicon.ico"/>
+  <style>
+    :root{--blue:#2563eb;--blue-l:#eff6ff;--gray-900:#0f172a;--gray-700:#334155;--gray-500:#64748b;--gray-400:#94a3b8;--gray-100:#f1f5f9;--white:#fff;--purple:#a855f7;--green:#22c55e;--radius:1rem}
+    *{box-sizing:border-box;margin:0;padding:0}body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--white);color:var(--gray-900);line-height:1.6}
+    .layout{max-width:700px;margin:0 auto;padding:2.5rem 1.5rem}
+    h1{font-size:1.6rem;font-weight:900;margin-bottom:0.5rem}
+    h2{font-size:1.1rem;font-weight:800;margin:2rem 0 0.75rem;color:var(--blue)}
+    h3{font-size:0.95rem;font-weight:700;margin:1.25rem 0 0.5rem}
+    p{color:var(--gray-700);margin-bottom:1rem;line-height:1.8;font-size:0.88rem}
+    .hero{padding:3rem 2rem;text-align:center;background:linear-gradient(135deg,#faf5ff,#eff6ff)}
+    .hero p{color:var(--gray-500);max-width:550px;margin:0.5rem auto}
+    .back{display:inline-flex;align-items:center;gap:0.3rem;color:var(--blue);text-decoration:none;font-weight:600;font-size:0.85rem;margin-top:0.75rem}
+    .code{background:var(--gray-900);color:#e2e8f0;border-radius:var(--radius);padding:1.25rem;font-family:"Courier New",monospace;font-size:0.82rem;overflow-x:auto;margin:1rem 0;line-height:1.7;white-space:pre;position:relative}
+    .copy-btn{position:absolute;top:0.5rem;right:0.5rem;background:var(--blue);color:white;border:none;padding:0.25rem 0.6rem;border-radius:0.3rem;font-size:0.7rem;font-weight:700;cursor:pointer}
+    .step{background:var(--gray-100);border-radius:var(--radius);padding:1.25rem;margin:1rem 0;border-left:4px solid var(--purple)}
+    .step-num{display:inline-block;background:var(--purple);color:white;width:1.5rem;height:1.5rem;border-radius:50%;text-align:center;font-size:0.75rem;font-weight:900;line-height:1.5rem;margin-right:0.5rem}
+    .warn{background:#fefce8;border-left:4px solid #f59e0b;border-radius:0.5rem;padding:1rem 1.25rem;margin:1rem 0}
+    .warn p{margin:0;font-size:0.82rem;color:#92400e}
+    .info{background:var(--blue-l);border-left:4px solid var(--blue);border-radius:0.5rem;padding:1rem 1.25rem;margin:1rem 0}
+    .info p{margin:0;font-size:0.82rem;color:#1e40af}
+    table{width:100%;border-collapse:collapse;font-size:0.82rem;margin:1rem 0}
+    th{background:var(--gray-900);color:white;padding:0.5rem 0.75rem;text-align:left;font-weight:700}
+    td{padding:0.5rem 0.75rem;border-bottom:1px solid #e2e8f0;color:var(--gray-700)}
+    footer{background:var(--gray-900);color:var(--gray-400);padding:1.5rem;text-align:center;font-size:0.78rem;margin-top:3rem}
+    footer a{color:var(--gray-500);text-decoration:none}
+  </style>
+</head>
+<body>
+<div class="hero">
+  <h1 data-el="🪞 Mirror Server — Εγκατάσταση" data-en="🪞 Mirror Server — Setup">🪞 Mirror Server — Εγκατάσταση</h1>
+  <p data-el="Φιλοξενήστε ένα ανώνυμο αντίγραφο της πλατφόρμας. Μία εντολή — πλήρως αυτόματο." data-en="Host an anonymous copy of the platform. One command — fully automatic.">Φιλοξενήστε ένα ανώνυμο αντίγραφο της πλατφόρμας. Μία εντολή — πλήρως αυτόματο.</p>
+  <a href="community.html" class="back" data-el="← Community" data-en="← Community">← Community</a>
+</div>
+
+<div class="layout">
+
+  <h2 data-el="Τι είναι ένα Mirror;" data-en="What is a Mirror?">Τι είναι ένα Mirror;</h2>
+  <p data-el="Ένα mirror είναι ένα read-only αντίγραφο της πλατφόρμας ekklesia.gr. Δεν αποθηκεύει βάση δεδομένων ή προσωπικά στοιχεία. Συγχρονίζεται αυτόματα κάθε 5 λεπτά με τον κεντρικό server. Αν ο κεντρικός server πέσει, τα mirrors συνεχίζουν να λειτουργούν." data-en="A mirror is a read-only copy of the ekklesia.gr platform. It stores no database or personal data. It syncs automatically every 5 minutes with the main server. If the main server goes down, mirrors keep working.">Ένα mirror είναι ένα read-only αντίγραφο. Χωρίς βάση δεδομένων ή προσωπικά στοιχεία. Αυτόματος συγχρονισμός κάθε 5 λεπτά. Αν ο κεντρικός server πέσει — τα mirrors συνεχίζουν.</p>
+
+  <h2 data-el="Απαιτήσεις" data-en="Requirements">Απαιτήσεις</h2>
+  <table>
+    <tr><th data-el="Στοιχείο" data-en="Item">Στοιχείο</th><th data-el="Ελάχιστο" data-en="Minimum">Ελάχιστο</th><th data-el="Συνιστάται" data-en="Recommended">Συνιστάται</th></tr>
+    <tr><td>OS</td><td>Ubuntu 22.04+</td><td>Ubuntu 24.04</td></tr>
+    <tr><td>RAM</td><td>1 GB</td><td>2 GB</td></tr>
+    <tr><td>Disk</td><td>10 GB</td><td>20 GB</td></tr>
+    <tr><td data-el="Κόστος" data-en="Cost">Κόστος</td><td colspan="2">~4€/μήνα (π.χ. Hetzner CX22)</td></tr>
+  </table>
+
+  <h2 data-el="Εγκατάσταση — 1 Εντολή" data-en="Installation — 1 Command">Εγκατάσταση — 1 Εντολή</h2>
+
+  <div class="step">
+    <p><span class="step-num">1</span> <strong data-el="Αποκτήστε ένα VPS" data-en="Get a VPS">Αποκτήστε ένα VPS</strong></p>
+    <p style="margin:0.5rem 0 0;font-size:0.82rem" data-el="Hetzner, DigitalOcean, OVH ή οποιοδήποτε VPS με Ubuntu. Δεν χρειάζεται domain — χρησιμοποιείτε subdomain από εμάς." data-en="Hetzner, DigitalOcean, OVH or any VPS with Ubuntu. No domain needed — you use a subdomain from us.">Hetzner, DigitalOcean, OVH ή οποιοδήποτε VPS. Χωρίς domain — subdomain από εμάς.</p>
+  </div>
+
+  <div class="step">
+    <p><span class="step-num">2</span> <strong data-el="Εκτελέστε στο terminal" data-en="Run in terminal">Εκτελέστε στο terminal</strong></p>
+    <div class="code" id="setupCmd">curl -fsSL https://ekklesia.gr/mirror-setup.sh | sudo bash<button class="copy-btn" onclick="navigator.clipboard.writeText('curl -fsSL https://ekklesia.gr/mirror-setup.sh | sudo bash')">copy</button></div>
+  </div>
+
+  <div class="step">
+    <p><span class="step-num">3</span> <strong data-el="Ακολουθήστε τον wizard" data-en="Follow the wizard">Ακολουθήστε τον wizard</strong></p>
+    <p style="margin:0.5rem 0 0;font-size:0.82rem" data-el="Ο wizard θα σας ρωτήσει ποια subdomain θέλετε (1/2/3.ekklesia.gr) και το email σας. Τα υπόλοιπα γίνονται αυτόματα." data-en="The wizard will ask which subdomain you want (1/2/3.ekklesia.gr) and your email. Everything else is automatic.">Ο wizard ρωτάει subdomain + email. Τα υπόλοιπα αυτόματα.</p>
+  </div>
+
+  <div class="step">
+    <p><span class="step-num">4</span> <strong data-el="Ορίστε DNS (αν χρειάζεται)" data-en="Set DNS (if needed)">Ορίστε DNS</strong></p>
+    <p style="margin:0.5rem 0 0;font-size:0.82rem" data-el="Μετά την εγκατάσταση, στείλτε την IP σας στο gov@ekklesia.gr. Εμείς ρυθμίζουμε το DNS για εσάς." data-en="After setup, send your IP to gov@ekklesia.gr. We configure DNS for you.">Στείλτε την IP σας → εμείς ρυθμίζουμε το DNS.</p>
+  </div>
+
+  <h2 data-el="Τι εγκαθιστά" data-en="What it installs">Τι εγκαθιστά</h2>
+  <table>
+    <tr><th>Container</th><th data-el="Ρόλος" data-en="Role">Ρόλος</th></tr>
+    <tr><td>ekklesia-web</td><td data-el="Frontend (Next.js) — ίδιο με το ekklesia.gr" data-en="Frontend (Next.js) — same as ekklesia.gr">Frontend — ίδιο με ekklesia.gr</td></tr>
+    <tr><td>mirror-api</td><td data-el="Caching Proxy — συγχρονίζει δεδομένα κάθε 5 λεπτά" data-en="Caching Proxy — syncs data every 5 minutes">Caching Proxy — sync κάθε 5λ</td></tr>
+    <tr><td>redis</td><td data-el="Cache αποτελεσμάτων" data-en="Results cache">Cache αποτελεσμάτων</td></tr>
+    <tr><td>traefik</td><td data-el="SSL/TLS (Let's Encrypt)" data-en="SSL/TLS (Let's Encrypt)">SSL/TLS (Let's Encrypt)</td></tr>
+    <tr><td>watchtower</td><td data-el="Αυτόματες ενημερώσεις" data-en="Auto updates">Αυτόματες ενημερώσεις</td></tr>
+  </table>
+
+  <div class="warn">
+    <p data-el="⚠️ Ένα mirror ΔΕΝ αποθηκεύει βάση δεδομένων, ψήφους ή προσωπικά στοιχεία. Είναι αποκλειστικά read-only. Οι ψήφοι γίνονται πάντα στο ekklesia.gr." data-en="⚠️ A mirror does NOT store a database, votes, or personal data. It is strictly read-only. Votes always go to ekklesia.gr.">⚠️ Ένα mirror ΔΕΝ αποθηκεύει βάση δεδομένων, ψήφους ή προσωπικά στοιχεία. Read-only. Ψήφοι μόνο στο ekklesia.gr.</p>
+  </div>
+
+  <h2 data-el="Ασφάλεια" data-en="Security">Ασφάλεια</h2>
+  <ul style="padding-left:1.5rem;font-size:0.85rem;color:var(--gray-700)">
+    <li data-el="Τα δεδομένα υπογράφονται με Ed25519 από τον κεντρικό server" data-en="Data is signed with Ed25519 by the main server">Δεδομένα υπογράφονται με Ed25519</li>
+    <li data-el="Κανένα προσωπικό δεδομένο στο mirror" data-en="No personal data on the mirror">Κανένα προσωπικό δεδομένο</li>
+    <li data-el="Αυτόματες ενημερώσεις ασφαλείας μέσω Watchtower" data-en="Auto security updates via Watchtower">Auto-updates μέσω Watchtower</li>
+    <li data-el="Πλήρως ανώνυμο — ο betreiber δεν χρειάζεται να αποκαλύψει την ταυτότητά του" data-en="Fully anonymous — the operator does not need to reveal their identity">Πλήρως ανώνυμο για τον betreiber</li>
+  </ul>
+
+  <h2 data-el="Διαθέσιμες Subdomains" data-en="Available Subdomains">Διαθέσιμες Subdomains</h2>
+  <div style="display:flex;flex-direction:column;gap:0.4rem;margin:1rem 0">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;background:#faf5ff;border-radius:0.4rem;border:1px solid #e9d5ff">
+      <span style="font-weight:700;color:#6b21a8">1.ekklesia.gr</span>
+      <span id="ms1" style="font-size:0.78rem;color:#94a3b8">⬚ Διαθέσιμο</span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;background:#faf5ff;border-radius:0.4rem;border:1px solid #e9d5ff">
+      <span style="font-weight:700;color:#6b21a8">2.ekklesia.gr</span>
+      <span id="ms2" style="font-size:0.78rem;color:#94a3b8">⬚ Διαθέσιμο</span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;background:#faf5ff;border-radius:0.4rem;border:1px solid #e9d5ff">
+      <span style="font-weight:700;color:#6b21a8">3.ekklesia.gr</span>
+      <span id="ms3" style="font-size:0.78rem;color:#94a3b8">⬚ Διαθέσιμο</span>
+    </div>
+  </div>
+
+  <div class="info">
+    <p data-el="Θέλετε περισσότερα; Αν όλες οι subdomains είναι κατειλημμένες, δημιουργούμε νέες (4, 5, 6...). Επικοινωνήστε μέσω GitHub Issues." data-en="Want more? If all subdomains are taken, we create new ones (4, 5, 6...). Contact via GitHub Issues.">Αν όλες κατειλημμένες → δημιουργούμε νέες. GitHub Issues.</p>
+  </div>
+
+  <h2 data-el="Συχνές Ερωτήσεις" data-en="FAQ">Συχνές Ερωτήσεις</h2>
+
+  <h3 data-el="Μπορώ να ψηφίσω μέσω mirror;" data-en="Can I vote via a mirror?">Μπορώ να ψηφίσω μέσω mirror;</h3>
+  <p data-el="Η ψήφος ανακατευθύνεται αυτόματα στο ekklesia.gr. Τα mirrors είναι μόνο για ανάγνωση." data-en="Voting is automatically redirected to ekklesia.gr. Mirrors are read-only.">Η ψήφος ανακατευθύνεται στο ekklesia.gr. Mirrors = μόνο ανάγνωση.</p>
+
+  <h3 data-el="Πρέπει να αποκαλύψω ποιος είμαι;" data-en="Do I have to reveal who I am?">Πρέπει να αποκαλύψω ποιος είμαι;</h3>
+  <p data-el="Όχι. Χρειάζεστε μόνο ένα email για το SSL πιστοποιητικό (Let's Encrypt). Μπορεί να είναι ανώνυμο." data-en="No. You only need an email for the SSL certificate (Let's Encrypt). It can be anonymous.">Όχι. Μόνο email για SSL (μπορεί ανώνυμο).</p>
+
+  <h3 data-el="Τι γίνεται αν ο κεντρικός server πέσει;" data-en="What if the main server goes down?">Τι γίνεται αν ο κεντρικός server πέσει;</h3>
+  <p data-el="Το mirror συνεχίζει να λειτουργεί με τα cached δεδομένα. Οι πολίτες μπορούν να βλέπουν νομοσχέδια και αποτελέσματα. Νέες ψήφοι δεν είναι δυνατές μέχρι ο κεντρικός server επανέλθει." data-en="The mirror continues working with cached data. Citizens can view bills and results. New votes are not possible until the main server returns.">Cached δεδομένα παραμένουν. Νέες ψήφοι αδύνατες μέχρι επαναφοράς.</p>
+
+</div>
+
+<footer>
+  <a href="./">εκκλησία</a> · <a href="community.html">Community</a> · <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>
+  <p style="margin-top:0.5rem">© 2026 Vendetta Labs · MIT License</p>
+</footer>
+
+<script>
+var currentLang="el";
+function toggleLang(){currentLang=currentLang==="el"?"en":"el";document.querySelectorAll("[data-el]").forEach(function(el){var t=el.getAttribute("data-"+currentLang);if(t)el.innerHTML=t;})}
+// Mirror status check (future: fetch from API)
+// For now: static "available"
+</script>
+</body>
+</html>
