@@ -476,6 +476,202 @@
   </div>
 </div>
 
+
+<!-- ═══ SEKTION: Ο Κόμβος σας — Έτοιμος σε 1 εντολή ═══ -->
+<div style="max-width:900px;margin:0 auto;padding:2rem 1.5rem">
+
+  <!-- HERO BOX -->
+  <div style="background:linear-gradient(135deg,#1e3a5f 0%,#1d4ed8 100%);border-radius:var(--radius);padding:2.5rem 2rem;text-align:center;color:white;margin-bottom:2rem">
+    <div style="font-size:2.5rem;margin-bottom:0.75rem">🚀</div>
+    <h2 style="font-size:1.5rem;font-weight:900;margin-bottom:0.5rem;color:white;border:none;padding:0" data-el="Ο κόμβος σας είναι έτοιμος να λειτουργήσει" data-en="Your node is ready to operate">Ο κόμβος σας είναι έτοιμος να λειτουργήσει</h2>
+    <p style="color:rgba(255,255,255,0.85);font-size:0.95rem;max-width:560px;margin:0 auto 1.5rem;line-height:1.7" data-el="Ένας κόμβος ekklesia.gr για τον Δήμο σας — αυτόνομος, ασφαλής, και πλήρως ελεγχόμενος από εσάς. Εγκατάσταση σε λιγότερο από 10 λεπτά." data-en="An ekklesia.gr node for your municipality — autonomous, secure, and fully under your control. Setup in less than 10 minutes.">Ένας κόμβος ekklesia.gr για τον Δήμο σας — αυτόνομος, ασφαλής, και πλήρως ελεγχόμενος από εσάς. Εγκατάσταση σε λιγότερο από 10 λεπτά.</p>
+
+    <!-- Code Block -->
+    <div style="background:#0f172a;border-radius:0.75rem;padding:1.25rem 1.5rem;max-width:500px;margin:0 auto 1rem;text-align:left;font-family:'Courier New',monospace;font-size:0.88rem;color:#a5f3fc;border:1px solid rgba(255,255,255,0.1)">
+      <span style="color:#94a3b8">$</span> curl -fsSL https://ekklesia.gr/node-setup.sh \<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;| bash
+    </div>
+    <p style="color:rgba(255,255,255,0.6);font-size:0.72rem;margin:0" data-el="Αυτό είναι το μόνο που χρειάζεται ο διαχειριστής του server σας." data-en="That's all your server administrator needs.">Αυτό είναι το μόνο που χρειάζεται ο διαχειριστής του server σας.</p>
+  </div>
+
+  <!-- 7-STEP WIZARD TIMELINE -->
+  <h3 style="font-size:1.1rem;font-weight:900;text-align:center;margin-bottom:1.5rem;color:var(--gray-900)" data-el="Τι κάνει ο wizard αυτόματα" data-en="What the wizard does automatically">Τι κάνει ο wizard αυτόματα</h3>
+
+  <!-- Desktop: horizontal timeline / Mobile: vertical -->
+  <div class="node-timeline" style="display:grid;grid-template-columns:repeat(7,1fr);gap:0.5rem;margin-bottom:2.5rem">
+    <div style="text-align:center">
+      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">✓</div>
+      <p style="font-size:0.7rem;font-weight:700;color:var(--gray-900);margin:0 0 0.2rem" data-el="Έλεγχος συστήματος" data-en="System check">Έλεγχος συστήματος</p>
+      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="Αυτόματος έλεγχος RAM, disk και OS" data-en="Auto-check RAM, disk and OS">Αυτόματος έλεγχος RAM, disk και OS</p>
+    </div>
+    <div style="text-align:center">
+      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">✓</div>
+      <p style="font-size:0.7rem;font-weight:700;color:var(--gray-900);margin:0 0 0.2rem" data-el="Εγκατάσταση Docker" data-en="Docker install">Εγκατάσταση Docker</p>
+      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="Όλες οι εξαρτήσεις αυτόματα" data-en="All dependencies automatically">Όλες οι εξαρτήσεις αυτόματα</p>
+    </div>
+    <div style="text-align:center">
+      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">✓</div>
+      <p style="font-size:0.7rem;font-weight:700;color:var(--gray-900);margin:0 0 0.2rem" data-el="Ρύθμιση (Wizard)" data-en="Setup (Wizard)">Ρύθμιση (Wizard)</p>
+      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="3 ερωτήσεις: όνομα δήμου, subdomain, email" data-en="3 questions: municipality name, subdomain, email">3 ερωτήσεις: όνομα, subdomain, email</p>
+    </div>
+    <div style="text-align:center">
+      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">✓</div>
+      <p style="font-size:0.7rem;font-weight:700;color:var(--gray-900);margin:0 0 0.2rem" data-el="Κρυπτογραφικά κλειδιά" data-en="Cryptographic keys">Κρυπτογραφικά κλειδιά</p>
+      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="Ed25519 keypair — μοναδικό για τον κόμβο σας" data-en="Ed25519 keypair — unique to your node">Ed25519 keypair — μοναδικό για τον κόμβο</p>
+    </div>
+    <div style="text-align:center">
+      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">✓</div>
+      <p style="font-size:0.7rem;font-weight:700;color:var(--gray-900);margin:0 0 0.2rem" data-el="Καταχώρηση" data-en="Registration">Καταχώρηση</p>
+      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="Αυτόματη σύνδεση με ekklesia.gr" data-en="Automatic connection to ekklesia.gr">Αυτόματη σύνδεση με ekklesia.gr</p>
+    </div>
+    <div style="text-align:center">
+      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">✓</div>
+      <p style="font-size:0.7rem;font-weight:700;color:var(--gray-900);margin:0 0 0.2rem" data-el="SSL Πιστοποιητικό" data-en="SSL Certificate">SSL Πιστοποιητικό</p>
+      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="Let's Encrypt — δωρεάν και αυτόματο" data-en="Let's Encrypt — free and automatic">Let's Encrypt — δωρεάν και αυτόματο</p>
+    </div>
+    <div style="text-align:center">
+      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">✓</div>
+      <p style="font-size:0.7rem;font-weight:700;color:var(--gray-900);margin:0 0 0.2rem" data-el="Αυτόματες ενημερώσεις" data-en="Auto-updates">Αυτόματες ενημερώσεις</p>
+      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="Ασφαλείς ενημερώσεις κάθε 24 ώρες" data-en="Secure updates every 24 hours">Ασφαλείς ενημερώσεις κάθε 24 ώρες</p>
+    </div>
+  </div>
+
+  <!-- 3 KACHELN: Αυτονομία / Ασφάλεια / Διαφάνεια -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.25rem;margin-bottom:2.5rem">
+    <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0">
+      <div style="font-size:2rem;margin-bottom:0.5rem">🏛️</div>
+      <h4 style="font-weight:800;font-size:0.95rem;color:var(--blue);margin-bottom:0.4rem" data-el="Πλήρης Αυτονομία" data-en="Full Autonomy">Πλήρης Αυτονομία</h4>
+      <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Ο κόμβος σας τρέχει στον δικό σας server. Τα δεδομένα των πολιτών σας παραμένουν αποκλειστικά στον Δήμο σας. Καμία εξάρτηση από τρίτους." data-en="Your node runs on your own server. Your citizens' data stays exclusively in your municipality. No third-party dependency.">Ο κόμβος σας τρέχει στον δικό σας server. Τα δεδομένα των πολιτών σας παραμένουν αποκλειστικά στον Δήμο σας. Καμία εξάρτηση από τρίτους.</p>
+    </div>
+    <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0">
+      <div style="font-size:2rem;margin-bottom:0.5rem">🔐</div>
+      <h4 style="font-weight:800;font-size:0.95rem;color:var(--blue);margin-bottom:0.4rem" data-el="Στρατιωτική Ασφάλεια" data-en="Military-grade Security">Στρατιωτική Ασφάλεια</h4>
+      <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Ed25519 κρυπτογράφηση — το ίδιο πρότυπο που χρησιμοποιεί το SSH και το Signal. Κάθε ψήφος υπογράφεται ψηφιακά. Αδύνατη η παραποίηση." data-en="Ed25519 encryption — the same standard used by SSH and Signal. Every vote is digitally signed. Tampering is impossible.">Ed25519 κρυπτογράφηση — το ίδιο πρότυπο που χρησιμοποιεί το SSH και το Signal. Κάθε ψήφος υπογράφεται ψηφιακά. Αδύνατη η παραποίηση.</p>
+    </div>
+    <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0">
+      <div style="font-size:2rem;margin-bottom:0.5rem">👁️</div>
+      <h4 style="font-weight:800;font-size:0.95rem;color:var(--blue);margin-bottom:0.4rem" data-el="Ανοιχτός Κώδικας" data-en="Open Source">Ανοιχτός Κώδικας</h4>
+      <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="100% ανοιχτός κώδικας στο GitHub (MIT). Ανεξάρτητος έλεγχος ασφαλείας ανά πάσα στιγμή. Κανένα κρυφό backdoor." data-en="100% open source on GitHub (MIT). Independent security audit possible at any time. No hidden backdoors.">100% ανοιχτός κώδικας στο GitHub (MIT). Ανεξάρτητος έλεγχος ασφαλείας ανά πάσα στιγμή. Κανένα κρυφό backdoor.</p>
+    </div>
+  </div>
+
+  <!-- TECHNISCHE ANFORDERUNGEN -->
+  <h3 style="font-size:1.1rem;font-weight:900;text-align:center;margin-bottom:1rem;color:var(--gray-900)" data-el="Τεχνικές Απαιτήσεις" data-en="Technical Requirements">Τεχνικές Απαιτήσεις</h3>
+  <div style="max-width:500px;margin:0 auto 1.25rem">
+    <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+      <tr style="border-bottom:1px solid #e2e8f0">
+        <td style="padding:0.6rem 1rem;font-weight:700;color:var(--gray-900)">Server</td>
+        <td style="padding:0.6rem 1rem;color:var(--gray-700)">Ubuntu 22.04+ ή Debian 12+</td>
+      </tr>
+      <tr style="border-bottom:1px solid #e2e8f0">
+        <td style="padding:0.6rem 1rem;font-weight:700;color:var(--gray-900)">RAM</td>
+        <td style="padding:0.6rem 1rem;color:var(--gray-700)" data-el="1GB minimum (2GB συνιστάται)" data-en="1GB minimum (2GB recommended)">1GB minimum (2GB συνιστάται)</td>
+      </tr>
+      <tr style="border-bottom:1px solid #e2e8f0">
+        <td style="padding:0.6rem 1rem;font-weight:700;color:var(--gray-900)" data-el="Αποθήκευση" data-en="Storage">Αποθήκευση</td>
+        <td style="padding:0.6rem 1rem;color:var(--gray-700)" data-el="10GB ελεύθερο χώρο" data-en="10GB free space">10GB ελεύθερο χώρο</td>
+      </tr>
+      <tr>
+        <td style="padding:0.6rem 1rem;font-weight:700;color:var(--gray-900)" data-el="Κόστος" data-en="Cost">Κόστος</td>
+        <td style="padding:0.6rem 1rem;color:var(--gray-700)">~10€/μήνα (VPS)</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Info Box -->
+  <div style="background:var(--blue-l);border-left:4px solid var(--blue);border-radius:0.5rem;padding:1rem 1.25rem;margin-bottom:2.5rem">
+    <p style="margin:0;font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Το ekklesia.gr παρέχει δωρεάν: την subdomain [δήμος].ekklesia.gr, τεχνική υποστήριξη εγκατάστασης, και αυτόματες ενημερώσεις ασφαλείας." data-en="ekklesia.gr provides free of charge: the subdomain [municipality].ekklesia.gr, technical installation support, and automatic security updates.">Το ekklesia.gr παρέχει δωρεάν: την subdomain [δήμος].ekklesia.gr, τεχνική υποστήριξη εγκατάστασης, και αυτόματες ενημερώσεις ασφαλείας.</p>
+  </div>
+
+  <!-- ΒΗΜΑΤΑ ΜΕΤΑ ΤΗΝ ΕΓΚΑΤΑΣΤΑΣΗ -->
+  <h3 style="font-size:1.1rem;font-weight:900;text-align:center;margin-bottom:1.25rem;color:var(--gray-900)" data-el="Βήματα μετά την εγκατάσταση" data-en="Post-installation steps">Βήματα μετά την εγκατάσταση</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2.5rem;counter-reset:poststep">
+    <div style="background:var(--white);border-radius:var(--radius);padding:1.25rem;border:2px solid #e2e8f0;position:relative;padding-top:2.5rem">
+      <div style="position:absolute;top:0.75rem;left:0.75rem;background:var(--blue);color:white;width:1.5rem;height:1.5rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:900">1</div>
+      <h4 style="font-weight:800;font-size:0.88rem;margin-bottom:0.35rem" data-el="DNS Ρύθμιση" data-en="DNS Setup">DNS Ρύθμιση</h4>
+      <p style="font-size:0.8rem;color:var(--gray-500);margin:0" data-el="Ορίστε DNS A-Record: [subdomain] → [IP του server σας] (5 λεπτά)" data-en="Set DNS A-Record: [subdomain] → [your server IP] (5 minutes)">Ορίστε DNS A-Record: [subdomain] → [IP του server σας] (5 λεπτά)</p>
+    </div>
+    <div style="background:var(--white);border-radius:var(--radius);padding:1.25rem;border:2px solid #e2e8f0;position:relative;padding-top:2.5rem">
+      <div style="position:absolute;top:0.75rem;left:0.75rem;background:var(--blue);color:white;width:1.5rem;height:1.5rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:900">2</div>
+      <h4 style="font-weight:800;font-size:0.88rem;margin-bottom:0.35rem" data-el="Ειδοποίηση ekklesia.gr" data-en="Notify ekklesia.gr">Ειδοποίηση ekklesia.gr</h4>
+      <p style="font-size:0.8rem;color:var(--gray-500);margin:0" data-el="Στείλτε email: gov@ekklesia.gr — Ενεργοποίηση εντός 48 ωρών" data-en="Send email: gov@ekklesia.gr — Activation within 48 hours">Στείλτε email: gov@ekklesia.gr — Ενεργοποίηση εντός 48 ωρών</p>
+    </div>
+    <div style="background:var(--white);border-radius:var(--radius);padding:1.25rem;border:2px solid #e2e8f0;position:relative;padding-top:2.5rem">
+      <div style="position:absolute;top:0.75rem;left:0.75rem;background:var(--blue);color:white;width:1.5rem;height:1.5rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:900">3</div>
+      <h4 style="font-weight:800;font-size:0.88rem;margin-bottom:0.35rem" data-el="gov.gr OAuth Αίτηση" data-en="gov.gr OAuth Application">gov.gr OAuth Αίτηση</h4>
+      <p style="font-size:0.8rem;color:var(--gray-500);margin:0" data-el="Υποβάλετε αίτηση OAuth για το domain σας στο gov.gr" data-en="Submit OAuth application for your domain to gov.gr">Υποβάλετε αίτηση OAuth για το domain σας στο gov.gr</p>
+    </div>
+  </div>
+
+  <!-- SVG DATENFLUSS -->
+  <h3 style="font-size:1.1rem;font-weight:900;text-align:center;margin-bottom:1.25rem;color:var(--gray-900)" data-el="Ροή Δεδομένων" data-en="Data Flow">Ροή Δεδομένων</h3>
+  <div style="text-align:center;margin-bottom:1rem">
+    <svg viewBox="0 0 700 180" style="max-width:100%;height:auto" xmlns="http://www.w3.org/2000/svg">
+      <!-- Box 1: Citizen -->
+      <rect x="20" y="30" width="160" height="70" rx="12" fill="#2563eb" stroke="#1d4ed8" stroke-width="2"/>
+      <text x="100" y="60" text-anchor="middle" fill="white" font-size="14" font-weight="bold" data-el="Πολίτης" data-en="Citizen">Πολίτης</text>
+      <text x="100" y="82" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10" data-el="gov.gr OAuth (lokal im Δήμο)" data-en="gov.gr OAuth (local in municipality)">gov.gr OAuth (τοπικά)</text>
+
+      <!-- Arrow 1 -->
+      <line x1="185" y1="65" x2="240" y2="65" stroke="#2563eb" stroke-width="2" marker-end="url(#arrowhead)"/>
+      <text x="212" y="55" text-anchor="middle" fill="#2563eb" font-size="9" font-weight="bold" data-el="Ψηφίζει" data-en="Votes">Ψηφίζει</text>
+
+      <!-- Box 2: Municipality Node -->
+      <rect x="245" y="20" width="190" height="90" rx="12" fill="#1e3a5f" stroke="#1d4ed8" stroke-width="2"/>
+      <text x="340" y="50" text-anchor="middle" fill="white" font-size="13" font-weight="bold">[δήμος].ekklesia.gr</text>
+      <text x="340" y="72" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10" data-el="Κόμβος Δήμου" data-en="Municipality Node">Κόμβος Δήμου</text>
+      <text x="340" y="90" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="9" data-el="(δικός σας server)" data-en="(your own server)">(δικός σας server)</text>
+
+      <!-- Arrow 2 -->
+      <line x1="440" y1="65" x2="495" y2="65" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead2)"/>
+      <text x="467" y="45" text-anchor="middle" fill="#64748b" font-size="8">nullifier_hash</text>
+      <text x="467" y="57" text-anchor="middle" fill="#64748b" font-size="8" data-el="+ ψήφος (ποτέ ΑΦΜ)" data-en="+ vote (never TaxID)">+ ψήφος (ποτέ ΑΦΜ)</text>
+
+      <!-- Box 3: Central -->
+      <rect x="500" y="30" width="175" height="70" rx="12" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="2"/>
+      <text x="587" y="60" text-anchor="middle" fill="#334155" font-size="13" font-weight="bold">ekklesia.gr</text>
+      <text x="587" y="80" text-anchor="middle" fill="#64748b" font-size="10" data-el="Κεντρικός Αθροιστής" data-en="Central Aggregator">Κεντρικός Αθροιστής</text>
+
+      <!-- Arrow markers -->
+      <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#2563eb"/>
+        </marker>
+        <marker id="arrowhead2" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+        </marker>
+      </defs>
+
+      <!-- Green confirmation box -->
+      <rect x="150" y="130" width="400" height="36" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5"/>
+      <text x="350" y="153" text-anchor="middle" fill="#166534" font-size="11" font-weight="bold" data-el="✓ Το ekklesia.gr δεν γνωρίζει ΠΟΙΟΣ ψήφισε — μόνο ΤΙ ψηφίστηκε" data-en="✓ ekklesia.gr doesn't know WHO voted — only WHAT was voted">✓ Το ekklesia.gr δεν γνωρίζει ΠΟΙΟΣ ψήφισε — μόνο ΤΙ ψηφίστηκε</text>
+    </svg>
+  </div>
+
+</div>
+
+<!-- Mobile responsive override for timeline -->
+<style>
+  @media (max-width: 640px) {
+    .node-timeline {
+      grid-template-columns: 1fr !important;
+      gap: 1rem !important;
+    }
+    .node-timeline > div {
+      display: grid;
+      grid-template-columns: 2rem 1fr;
+      gap: 0.5rem;
+      text-align: left !important;
+      align-items: start;
+    }
+    .node-timeline > div > div:first-child {
+      margin: 0 !important;
+      grid-row: 1 / 3;
+      align-self: center;
+    }
+  }
+</style>
+
 <!-- ═══ SEKTION: CTA ═══ -->
 <div style="max-width:900px;margin:0 auto;padding:2rem 1.5rem">
   <div style="background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%);border-radius:var(--radius);padding:2.5rem;text-align:center;border:2px solid #bfdbfe">
