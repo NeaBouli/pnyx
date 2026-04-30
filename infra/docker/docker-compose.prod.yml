@@ -82,7 +82,15 @@ services:
       - ekklesia
     labels:
       - traefik.enable=true
-      - traefik.http.routers.ekklesia-web.rule=Host(`ekklesia.gr`) || Host(`www.ekklesia.gr`)
+      - traefik.http.routers.ekklesia-web.rule=Host(`ekklesia.gr`)
+      # www → 301 redirect to non-www (GSC canonical fix)
+      - traefik.http.routers.ekklesia-www.rule=Host(`www.ekklesia.gr`)
+      - traefik.http.routers.ekklesia-www.entrypoints=websecure
+      - traefik.http.routers.ekklesia-www.tls.certresolver=letsencrypt
+      - traefik.http.routers.ekklesia-www.middlewares=www-redirect
+      - traefik.http.middlewares.www-redirect.redirectregex.regex=^https://www\.ekklesia\.gr/(.*)
+      - traefik.http.middlewares.www-redirect.redirectregex.replacement=https://ekklesia.gr/$${1}
+      - traefik.http.middlewares.www-redirect.redirectregex.permanent=true
       - traefik.http.routers.ekklesia-web.entrypoints=websecure
       - traefik.http.routers.ekklesia-web.tls.certresolver=letsencrypt
       - traefik.http.services.ekklesia-web.loadbalancer.server.port=3000
