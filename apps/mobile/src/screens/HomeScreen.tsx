@@ -10,6 +10,8 @@ import { registerForPushNotifications } from "../lib/notifications";
 import type { CompassResult } from "../compass/types";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
+import { Linking, Platform } from "react-native";
+import Constants from "expo-constants";
 
 const QUADRANT_COLORS: Record<string, string> = {
   libertarian_left: "#22c55e",
@@ -36,6 +38,25 @@ export default function HomeScreen() {
     isVerified().then((v) => { if (v) registerForPushNotifications().catch(() => {}); });
   }, []);
 
+  // Version check
+  const [updateAvailable, setUpdateAvailable] = useState<{version: string; notes: string; url: string; force: boolean} | null>(null);
+  useEffect(() => {
+    const currentVC = Constants.expoConfig?.android?.versionCode ?? 5;
+    fetch("https://api.ekklesia.gr/api/v1/app/version")
+      .then(r => r.json())
+      .then(data => {
+        if (data.latest_version_code > currentVC) {
+          setUpdateAvailable({
+            version: data.latest_version,
+            notes: data.release_notes_el,
+            url: data.fdroid_url || data.playstore_url || data.direct_apk_url,
+            force: data.force_update || false,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (!compassResult) return;
     const anim = Animated.loop(
@@ -57,6 +78,7 @@ export default function HomeScreen() {
           <Text style={s.demoBadgeText}>Demo</Text>
         </View>
       )}
+      {updateAvailable && (        <TouchableOpacity          style={{ backgroundColor: "#fef3c7", borderWidth: 1, borderColor: "#f59e0b", borderRadius: 10, padding: 12, marginBottom: 12 }}          onPress={() => Linking.openURL(updateAvailable.url)}        >          <Text style={{ fontWeight: "700", color: "#92400e", fontSize: 13, marginBottom: 4 }}>            {"u26a0ufe0f u039du03adu03b1 u03adu03bau03b4u03bfu03c3u03b7 v" + updateAvailable.version}          </Text>          <Text style={{ color: "#92400e", fontSize: 11 }}>{updateAvailable.notes}</Text>          <Text style={{ color: "#2563eb", fontSize: 12, fontWeight: "700", marginTop: 6 }}>            {"u0395u03bdu03b7u03bcu03adu03c1u03c9u03c3u03b7 u2192"}          </Text>        </TouchableOpacity>      )}
       <View style={s.hero}>
         <Animated.View style={[
           s.compassRing,

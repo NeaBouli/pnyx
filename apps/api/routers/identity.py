@@ -5,6 +5,8 @@ POST /api/v1/identity/revoke  — Key Revokation
 GET  /api/v1/identity/status  — Key Status prüfen
 """
 import gc
+import logging
+import logging
 import json
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -24,15 +26,23 @@ from keypair import generate_keypair
 from nullifier import generate_nullifier_hash
 from hlr import verify_greek_number
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/identity", tags=["MOD-01 Identity"])
 
 # ─── HLR Credits Tracking (Redis) ────────────────────────────────────────────
-# Initial credits loaded: 10€ = 1000 HLR / 2000 MNP / 4000 NT
-# Each verify_greek_number() call consumes 1 HLR credit.
-# Redis key "hlr:used" tracks total lookups performed.
+# Primary: hlrlookup.com — 2499 credits (15€ = 2500, ~0.006€/query)
+# Fallback: hlr-lookups.com — 1000 credits (10€ = 1000, 0.01€/query)
+# Redis keys:
+#   "hlr:hlrlookupcom:used" — tracks primary (hlrlookup.com) usage
+#   "hlr:used"              — tracks fallback (hlr-lookups.com) usage (legacy key)
 
-HLR_INITIAL_CREDITS = 1000  # HLR lookups purchased
-HLR_REDIS_KEY = "hlr:used"
+HLR_PRIMARY_INITIAL_CREDITS = 2499   # hlrlookup.com
+HLR_PRIMARY_COST_PER_QUERY = 0.006   # ~0.006€
+HLR_PRIMARY_REDIS_KEY = "hlr:hlrlookupcom:used"
+
+HLR_FALLBACK_INITIAL_CREDITS = 1000  # hlr-lookups.com
+HLR_FALLBACK_COST_PER_QUERY = 0.01   # 0.01€
+HLR_FALLBACK_REDIS_KEY = "hlr:used"  # legacy key
 
 _hlr_redis: aioredis.Redis | None = None
 
@@ -44,12 +54,17 @@ async def _get_hlr_redis() -> aioredis.Redis:
     return _hlr_redis
 
 async def _increment_hlr_usage() -> int:
+    """Increment usage for the currently active provider."""
     r = await _get_hlr_redis()
-    return await r.incr(HLR_REDIS_KEY)
+    failover_active = (await r.get("hlr:failover:active")) == "true"
+    if failover_active:
+        return await r.incr(HLR_FALLBACK_REDIS_KEY)
+    else:
+        return await r.incr(HLR_PRIMARY_REDIS_KEY)
 
-async def _get_hlr_usage() -> int:
+async def _get_hlr_usage(key: str) -> int:
     r = await _get_hlr_redis()
-    val = await r.get(HLR_REDIS_KEY)
+    val = await r.get(key)
     return int(val) if val else 0
 
 
@@ -246,11 +261,22 @@ async def hlr_credits():
     Öffentlicher Endpoint — zeigt verbleibende HLR Credits.
     Kein Auth nötig (Transparenz-Prinzip).
     Für community.html Live-Kachel.
+
+    Rückwärtskompatibel: Flat-Felder (initial, used, remaining, etc.)
+    zeigen den AKTIVEN Provider (Primary oder Failover).
+    Zusätzlich: primary/fallback Objekte mit Details beider Provider.
     """
-    used = await _get_hlr_usage()
-    remaining = max(0, HLR_INITIAL_CREDITS - used)
-    cost_per_query = 0.01  # 10€ / 1000 credits
-    balance_eur = remaining * cost_per_query
+    primary_used = await _get_hlr_usage(HLR_PRIMARY_REDIS_KEY)
+    fallback_used = await _get_hlr_usage(HLR_FALLBACK_REDIS_KEY)
+
+    primary_remaining = max(0, HLR_PRIMARY_INITIAL_CREDITS - primary_used)
+    fallback_remaining = max(0, HLR_FALLBACK_INITIAL_CREDITS - fallback_used)
+
+    primary_balance_eur = round(primary_remaining * HLR_PRIMARY_COST_PER_QUERY, 2)
+    fallback_balance_eur = round(fallback_remaining * HLR_FALLBACK_COST_PER_QUERY, 2)
+
+    primary_status = "critical" if primary_remaining < 50 else ("low" if primary_remaining < 200 else "ok")
+    fallback_status = "critical" if fallback_remaining < 50 else ("low" if fallback_remaining < 200 else "ok")
 
     # Failover status from Redis
     r = await _get_hlr_redis()
@@ -258,23 +284,37 @@ async def hlr_credits():
     failover_reason = await r.get("hlr:failover:reason")
 
     fallback_enabled = os.getenv("HLR_FALLBACK_ENABLED", "false").lower() == "true"
-    fallback_configured = bool(os.getenv("HLR_FALLBACK_API_KEY"))
+    fallback_configured = bool(os.getenv("HLRLOOKUPS_API_KEY"))
 
+    # Flat fields for backward compat: show primary (hlrlookup.com)
     return {
+        # ── Rückwärtskompatibilität (flat) ──
+        "initial": HLR_PRIMARY_INITIAL_CREDITS,
+        "used": primary_used,
+        "remaining": primary_remaining,
+        "balance_eur": primary_balance_eur,
+        "cost_per_query_eur": HLR_PRIMARY_COST_PER_QUERY,
+        "status": primary_status,
+        # ── Detaillierte Provider-Struktur ──
         "primary": {
-            "provider": "hlr-lookups.com",
-            "initial": HLR_INITIAL_CREDITS,
-            "used": used,
-            "remaining": remaining,
-            "balance_eur": round(balance_eur, 2),
-            "cost_per_query_eur": cost_per_query,
-            "status": "critical" if remaining < 50 else ("low" if remaining < 200 else "ok"),
+            "provider": "hlrlookup.com",
+            "initial": HLR_PRIMARY_INITIAL_CREDITS,
+            "used": primary_used,
+            "remaining": primary_remaining,
+            "balance_eur": primary_balance_eur,
+            "cost_per_query_eur": HLR_PRIMARY_COST_PER_QUERY,
+            "status": primary_status,
         },
         "fallback": {
-            "provider": "hlrlookup.com",
+            "provider": "hlr-lookups.com",
             "enabled": fallback_enabled,
             "configured": fallback_configured,
-            "status": "ok" if (fallback_enabled and fallback_configured) else "not_configured",
+            "initial": HLR_FALLBACK_INITIAL_CREDITS,
+            "used": fallback_used,
+            "remaining": fallback_remaining,
+            "balance_eur": fallback_balance_eur,
+            "cost_per_query_eur": HLR_FALLBACK_COST_PER_QUERY,
+            "status": fallback_status,
         },
         "failover_active": failover_active,
         "failover_reason": failover_reason,

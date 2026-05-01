@@ -450,79 +450,140 @@
       </div>
     </div>
 
-    <!-- HLR — SMS VERIFICATION (LIVE CREDITS + BTC/LTC) -->
+    <!-- HLR — SMS VERIFICATION (TABBED: PRIMARY + FALLBACK) -->
     <div class="fc" id="hlrCard" style="border-color:#86efac">
       <div class="fc-badge" id="hlrBadge" style="background:#22c55e" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
       <div class="fc-icon">📱</div>
       <div class="fc-title">HLR Lookup
         <span class="info-trigger" tabindex="0">?
-          <div class="info-popup" data-el="HLR Lookup επαληθεύει ελληνικούς αριθμούς κινητού χωρίς SMS. Κάθε επαλήθευση = 1 credit (~0,01€). 10€ = 1000 HLR credits. Αγορά credits μέσω BTC ή LTC — ανώνυμα, χωρίς KYC." data-en="HLR Lookup verifies Greek mobile numbers without SMS. Each verification = 1 credit (~0.01€). 10€ = 1000 HLR credits. Buy credits via BTC or LTC — anonymous, no KYC.">
+          <div class="info-popup" data-el="HLR Lookup επαληθεύει ελληνικούς αριθμούς κινητού χωρίς SMS. Δύο providers: hlrlookup.com (Primary, PayPal) και hlr-lookups.com (Fallback, BTC/LTC)." data-en="HLR Lookup verifies Greek mobile numbers without SMS. Two providers: hlrlookup.com (Primary, PayPal) and hlr-lookups.com (Fallback, BTC/LTC).">
             HLR Lookup επαληθεύει ελληνικούς αριθμούς κινητού χωρίς SMS.<br/>
-            Κάθε επαλήθευση = 1 credit (~0,01€).<br/>
-            10€ = 1000 HLR / 2000 MNP / 4000 NT<br/><br/>
-            <strong data-el="Αγορά Credits:" data-en="Buy Credits:">Αγορά Credits:</strong><br/>
-            • BTC ή LTC → HLR — <span data-el="ανώνυμα, χωρίς KYC" data-en="anonymous, no KYC">ανώνυμα, χωρίς KYC</span>
+            Δύο providers με auto-failover.<br/><br/>
+            <strong>Primary:</strong> hlrlookup.com — PayPal<br/>
+            <strong>Fallback:</strong> hlr-lookups.com — BTC/LTC
           </div>
         </span>
       </div>
       <div class="fc-sub" data-el="Επαλήθευση κινητού — MOD-01" data-en="Mobile verification — MOD-01">Επαλήθευση κινητού — MOD-01</div>
-      <div class="fc-info">
-        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong>~0,01€/<span data-el="επαλήθευση" data-en="verification">επαλήθευση</span></strong></div>
-        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Πληρωμή:" data-en="Payment:">Πληρωμή:</span><strong>BTC / LTC</strong></div>
+
+      <!-- Failover Notice -->
+      <div id="hlrFailoverNotice" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:0.4rem;padding:0.3rem 0.5rem;margin-bottom:0.4rem;font-size:0.62rem;color:#92400e;font-weight:600">
+        ⚡ <span id="hlrFailoverText"></span>
       </div>
-      <!-- Live Credits -->
-      <div class="fc-acct" id="hlrAcct">
-        <div style="font-size:0.65rem;font-weight:700;color:var(--gray-500);margin-bottom:0.3rem" data-el="Credits Κατάσταση" data-en="Credits Status">Credits Κατάσταση</div>
-        <div class="fc-acct-row"><span data-el="Αρχικά:" data-en="Initial:">Αρχικά:</span><strong id="hlrInitial" style="color:#166534">1000</strong></div>
-        <div class="fc-acct-row"><span data-el="Χρησιμοποιήθηκαν:" data-en="Used:">Χρησιμοποιήθηκαν:</span><strong id="hlrUsed" style="color:#dc2626">0</strong></div>
-        <div class="fc-acct-total positive" id="hlrBalance">
-          <span data-el="Υπόλοιπο:" data-en="Remaining:">Υπόλοιπο:</span>
-          <span id="hlrRemaining">1000</span>
+
+      <!-- Tab Buttons -->
+      <script>
+      function switchHlrTab(tab) {
+        var pp = document.getElementById("hlrPanelPrimary");
+        var pf = document.getElementById("hlrPanelFallback");
+        var bp = document.getElementById("hlrTabPrimary");
+        var bf = document.getElementById("hlrTabFallback");
+        if (tab === "primary") {
+          if (pp) pp.style.display = "";
+          if (pf) pf.style.display = "none";
+          if (bp) { bp.style.border = "2px solid #3b82f6"; bp.style.background = "#eff6ff"; bp.style.color = "#1d4ed8"; }
+          if (bf) { bf.style.border = "2px solid #e2e8f0"; bf.style.background = "white"; bf.style.color = "#6b7280"; }
+        } else {
+          if (pp) pp.style.display = "none";
+          if (pf) pf.style.display = "";
+          if (bf) { bf.style.border = "2px solid #3b82f6"; bf.style.background = "#eff6ff"; bf.style.color = "#1d4ed8"; }
+          if (bp) { bp.style.border = "2px solid #e2e8f0"; bp.style.background = "white"; bp.style.color = "#6b7280"; }
+        }
+      }
+      </script>
+      <div style="display:flex;gap:0.3rem;margin-bottom:0.5rem">
+        <button id="hlrTabPrimary" onclick="switchHlrTab('primary')" style="flex:1;padding:0.3rem 0.4rem;border-radius:0.4rem;cursor:pointer;font-weight:700;font-size:0.68rem;transition:all 0.2s;border:2px solid #3b82f6;background:#eff6ff;color:#1d4ed8">hlrlookup.com (<span data-el="Ενεργό" data-en="Active">Ενεργό</span>)</button>
+        <button id="hlrTabFallback" onclick="switchHlrTab('fallback')" style="flex:1;padding:0.3rem 0.4rem;border-radius:0.4rem;cursor:pointer;font-weight:700;font-size:0.68rem;transition:all 0.2s;border:2px solid #e2e8f0;background:white;color:var(--gray-500)">hlr-lookups.com (<span data-el="Εφεδρικό" data-en="Fallback">Εφεδρικό</span>)</button>
+      </div>
+
+      <!-- ═══ TAB: hlrlookup.com (Primary) ═══ -->
+      <div id="hlrPanelPrimary">
+        <div class="fc-info">
+          <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong>~0,006€/<span data-el="επαλήθευση" data-en="verification">επαλήθευση</span></strong></div>
+          <div class="fc-row"><span style="color:var(--gray-700)" data-el="Πληρωμή:" data-en="Payment:">Πληρωμή:</span><strong>PayPal (15€ = 2500 credits)</strong></div>
+        </div>
+        <div class="fc-acct" id="hlrAcctPrimary">
+          <div style="font-size:0.65rem;font-weight:700;color:var(--gray-500);margin-bottom:0.3rem" data-el="Credits Κατάσταση" data-en="Credits Status">Credits Κατάσταση</div>
+          <div class="fc-acct-row"><span data-el="Αρχικά:" data-en="Initial:">Αρχικά:</span><strong id="hlrInitial" style="color:#166534">2499</strong></div>
+          <div class="fc-acct-row"><span data-el="Χρησιμοποιήθηκαν:" data-en="Used:">Χρησιμοποιήθηκαν:</span><strong id="hlrUsed" style="color:#dc2626">0</strong></div>
+          <div class="fc-acct-total positive" id="hlrBalance">
+            <span data-el="Υπόλοιπο:" data-en="Remaining:">Υπόλοιπο:</span>
+            <span id="hlrRemaining">2499</span>
+          </div>
+        </div>
+        <div style="background:#e2e8f0;border-radius:0.3rem;height:8px;margin:0.3rem 0;overflow:hidden">
+          <div id="hlrBar" style="height:100%;background:#22c55e;border-radius:0.3rem;transition:width 0.5s,background 0.5s;width:100%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--gray-400)">
+          <span id="hlrBarLabel" data-el="100% διαθέσιμο" data-en="100% available">100% διαθέσιμο</span>
+          <span class="fc-live"><span class="fc-live-dot"></span> Live</span>
+        </div>
+        <div class="fc-status" id="hlrStatusBox" style="background:#f0fdf4;color:#166534;margin-top:0.5rem">✅ <span id="hlrStatusText" data-el="Φόρτωση..." data-en="Loading...">Φόρτωση...</span></div>
+        <!-- PayPal Donate -->
+        <div style="margin-top:0.5rem">
+          <a href="https://www.paypal.com/paypalme/VendettaLabs/15" target="_blank" rel="noopener" style="display:block;padding:0.4rem;background:#0070ba;color:white;border-radius:0.4rem;text-align:center;font-weight:700;font-size:0.75rem;text-decoration:none;transition:opacity 0.2s" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">PayPal → 15€ = 2500 HLR Credits</a>
         </div>
       </div>
-      <!-- Live balance bar -->
-      <div style="background:#e2e8f0;border-radius:0.3rem;height:8px;margin:0.3rem 0;overflow:hidden">
-        <div id="hlrBar" style="height:100%;background:#22c55e;border-radius:0.3rem;transition:width 0.5s,background 0.5s;width:100%"></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--gray-400)">
-        <span id="hlrBarLabel" data-el="100% διαθέσιμο" data-en="100% available">100% διαθέσιμο</span>
-        <span class="fc-live"><span class="fc-live-dot"></span> Live</span>
-      </div>
-      <div class="fc-status" id="hlrStatusBox" style="background:#f0fdf4;color:#166534;margin-top:0.5rem">✅ <span id="hlrStatusText" data-el="Φόρτωση..." data-en="Loading...">Φόρτωση...</span></div>
-      <!-- BTC/LTC Donation — collapsed by default -->
-      <div style="display:flex;gap:0.4rem;margin-top:0.5rem">
-        <button onclick="toggleCoin('btc')" style="flex:1;padding:0.35rem;background:#f7931a18;border:1px solid #f7931a40;border-radius:0.4rem;cursor:pointer;font-weight:800;font-size:0.78rem;color:#f7931a;transition:all 0.2s">BTC → HLR</button>
-        <button onclick="toggleCoin('ltc')" style="flex:1;padding:0.35rem;background:#34568018;border:1px solid #34568050;border-radius:0.4rem;cursor:pointer;font-weight:800;font-size:0.78rem;color:#345680;transition:all 0.2s">LTC → HLR</button>
-      </div>
-      <!-- BTC Panel (hidden) -->
-      <div id="btcPanel" style="display:none;margin-top:0.35rem;background:#f7931a0d;border:1px solid #f7931a40;border-radius:0.4rem;padding:0.5rem">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem">
-          <span style="font-weight:800;color:#f7931a;font-size:0.82rem">Bitcoin</span>
-          <span style="font-size:0.62rem;color:var(--gray-400)" id="btcPrice">—</span>
+
+      <!-- ═══ TAB: hlr-lookups.com (Fallback) ═══ -->
+      <div id="hlrPanelFallback" style="display:none">
+        <div class="fc-info">
+          <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong>~0,01€/<span data-el="επαλήθευση" data-en="verification">επαλήθευση</span></strong></div>
+          <div class="fc-row"><span style="color:var(--gray-700)" data-el="Πληρωμή:" data-en="Payment:">Πληρωμή:</span><strong>BTC / LTC</strong></div>
         </div>
-        <div style="font-size:0.72rem;font-weight:700;color:var(--gray-700);margin-bottom:0.25rem" id="btcAmount">—</div>
-        <div style="display:flex;align-items:center;gap:0.3rem;background:white;border:1px solid #e2e8f0;border-radius:0.3rem;padding:0.25rem 0.4rem">
-          <code style="font-size:0.55rem;color:var(--gray-700);word-break:break-all;flex:1;user-select:all" id="btcAddr">bc1q83370mce8qfkyyepspg6xf42f577s47rtl3mhx</code>
-          <button onclick="copyAddr('btcAddr')" style="background:none;border:1px solid #e2e8f0;border-radius:0.25rem;padding:0.15rem 0.35rem;cursor:pointer;font-size:0.6rem;color:var(--gray-500)" title="Copy">📋</button>
+        <div class="fc-acct" id="hlrAcctFallback">
+          <div style="font-size:0.65rem;font-weight:700;color:var(--gray-500);margin-bottom:0.3rem" data-el="Credits Κατάσταση" data-en="Credits Status">Credits Κατάσταση</div>
+          <div class="fc-acct-row"><span data-el="Αρχικά:" data-en="Initial:">Αρχικά:</span><strong id="hlrFbInitial" style="color:#166534">1000</strong></div>
+          <div class="fc-acct-row"><span data-el="Χρησιμοποιήθηκαν:" data-en="Used:">Χρησιμοποιήθηκαν:</span><strong id="hlrFbUsed" style="color:#dc2626">0</strong></div>
+          <div class="fc-acct-total positive" id="hlrFbBalance">
+            <span data-el="Υπόλοιπο:" data-en="Remaining:">Υπόλοιπο:</span>
+            <span id="hlrFbRemaining">1000</span>
+          </div>
         </div>
-        <div style="font-size:0.55rem;color:var(--gray-400);text-align:center;margin-top:0.2rem" data-el="Live — πριν τη μεταφορά ελέγξτε το ποσό" data-en="Live — check amount before transfer">Live — πριν τη μεταφορά ελέγξτε το ποσό</div>
-      </div>
-      <!-- LTC Panel (hidden) -->
-      <div id="ltcPanel" style="display:none;margin-top:0.35rem;background:#34568018;border:1px solid #34568050;border-radius:0.4rem;padding:0.5rem">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem">
-          <span style="font-weight:800;color:#345680;font-size:0.82rem">Litecoin</span>
-          <span style="font-size:0.62rem;color:var(--gray-400)" id="ltcPrice">—</span>
+        <div style="background:#e2e8f0;border-radius:0.3rem;height:8px;margin:0.3rem 0;overflow:hidden">
+          <div id="hlrFbBar" style="height:100%;background:#22c55e;border-radius:0.3rem;transition:width 0.5s,background 0.5s;width:100%"></div>
         </div>
-        <div style="font-size:0.72rem;font-weight:700;color:var(--gray-700);margin-bottom:0.25rem" id="ltcAmount">—</div>
-        <div style="display:flex;align-items:center;gap:0.3rem;background:white;border:1px solid #e2e8f0;border-radius:0.3rem;padding:0.25rem 0.4rem">
-          <code style="font-size:0.55rem;color:var(--gray-700);word-break:break-all;flex:1;user-select:all" id="ltcAddr">ltc1qmr467kl8w0e8axplq5uyrpws3mc4sclpu4ds8w</code>
-          <button onclick="copyAddr('ltcAddr')" style="background:none;border:1px solid #e2e8f0;border-radius:0.25rem;padding:0.15rem 0.35rem;cursor:pointer;font-size:0.6rem;color:var(--gray-500)" title="Copy">📋</button>
+        <div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--gray-400)">
+          <span id="hlrFbBarLabel" data-el="100% διαθέσιμο" data-en="100% available">100% διαθέσιμο</span>
+          <span class="fc-live"><span class="fc-live-dot"></span> Live</span>
         </div>
-        <div style="font-size:0.55rem;color:var(--gray-400);text-align:center;margin-top:0.2rem" data-el="Live — πριν τη μεταφορά ελέγξτε το ποσό" data-en="Live — check amount before transfer">Live — πριν τη μεταφορά ελέγξτε το ποσό</div>
+        <div class="fc-status" id="hlrFbStatusBox" style="background:#f0fdf4;color:#166534;margin-top:0.5rem">✅ <span id="hlrFbStatusText" data-el="Φόρτωση..." data-en="Loading...">Φόρτωση...</span></div>
+        <!-- BTC/LTC Donation — collapsed by default -->
+        <div style="display:flex;gap:0.4rem;margin-top:0.5rem">
+          <button onclick="toggleCoin('btc')" style="flex:1;padding:0.35rem;background:#f7931a18;border:1px solid #f7931a40;border-radius:0.4rem;cursor:pointer;font-weight:800;font-size:0.78rem;color:#f7931a;transition:all 0.2s">BTC → HLR</button>
+          <button onclick="toggleCoin('ltc')" style="flex:1;padding:0.35rem;background:#34568018;border:1px solid #34568050;border-radius:0.4rem;cursor:pointer;font-weight:800;font-size:0.78rem;color:#345680;transition:all 0.2s">LTC → HLR</button>
+        </div>
+        <!-- BTC Panel (hidden) -->
+        <div id="btcPanel" style="display:none;margin-top:0.35rem;background:#f7931a0d;border:1px solid #f7931a40;border-radius:0.4rem;padding:0.5rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem">
+            <span style="font-weight:800;color:#f7931a;font-size:0.82rem">Bitcoin</span>
+            <span style="font-size:0.62rem;color:var(--gray-400)" id="btcPrice">—</span>
+          </div>
+          <div style="font-size:0.72rem;font-weight:700;color:var(--gray-700);margin-bottom:0.25rem" id="btcAmount">—</div>
+          <div style="display:flex;align-items:center;gap:0.3rem;background:white;border:1px solid #e2e8f0;border-radius:0.3rem;padding:0.25rem 0.4rem">
+            <code style="font-size:0.55rem;color:var(--gray-700);word-break:break-all;flex:1;user-select:all" id="btcAddr">bc1q83370mce8qfkyyepspg6xf42f577s47rtl3mhx</code>
+            <button onclick="copyAddr('btcAddr')" style="background:none;border:1px solid #e2e8f0;border-radius:0.25rem;padding:0.15rem 0.35rem;cursor:pointer;font-size:0.6rem;color:var(--gray-500)" title="Copy">📋</button>
+          </div>
+          <div style="font-size:0.55rem;color:var(--gray-400);text-align:center;margin-top:0.2rem" data-el="Live — πριν τη μεταφορά ελέγξτε το ποσό" data-en="Live — check amount before transfer">Live — πριν τη μεταφορά ελέγξτε το ποσό</div>
+        </div>
+        <!-- LTC Panel (hidden) -->
+        <div id="ltcPanel" style="display:none;margin-top:0.35rem;background:#34568018;border:1px solid #34568050;border-radius:0.4rem;padding:0.5rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem">
+            <span style="font-weight:800;color:#345680;font-size:0.82rem">Litecoin</span>
+            <span style="font-size:0.62rem;color:var(--gray-400)" id="ltcPrice">—</span>
+          </div>
+          <div style="font-size:0.72rem;font-weight:700;color:var(--gray-700);margin-bottom:0.25rem" id="ltcAmount">—</div>
+          <div style="display:flex;align-items:center;gap:0.3rem;background:white;border:1px solid #e2e8f0;border-radius:0.3rem;padding:0.25rem 0.4rem">
+            <code style="font-size:0.55rem;color:var(--gray-700);word-break:break-all;flex:1;user-select:all" id="ltcAddr">ltc1qmr467kl8w0e8axplq5uyrpws3mc4sclpu4ds8w</code>
+            <button onclick="copyAddr('ltcAddr')" style="background:none;border:1px solid #e2e8f0;border-radius:0.25rem;padding:0.15rem 0.35rem;cursor:pointer;font-size:0.6rem;color:var(--gray-500)" title="Copy">📋</button>
+          </div>
+          <div style="font-size:0.55rem;color:var(--gray-400);text-align:center;margin-top:0.2rem" data-el="Live — πριν τη μεταφορά ελέγξτε το ποσό" data-en="Live — check amount before transfer">Live — πριν τη μεταφορά ελέγξτε το ποσό</div>
+        </div>
       </div>
     </div>
 
-    <!-- NEWSLETTER-BETRIEB — MOD-19 (LIVE STATS) -->
+
+        <!-- NEWSLETTER-BETRIEB — MOD-19 (LIVE STATS) -->
     <div class="fc" id="nlCard" style="border-color:#86efac">
       <div class="fc-badge" id="nlBadge" style="background:#22c55e" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
       <div class="fc-icon">📬</div>
@@ -1121,10 +1182,30 @@ function copyAddr(id) {
   }
 
   // ═══════════════════════════════════════════════════════════
-  // HLR LIVE CREDITS
+  // HLR LIVE CREDITS (TABBED PRIMARY/FALLBACK)
   // ═══════════════════════════════════════════════════════════
   var HLR_WARN = 200;
   var HLR_CRIT = 50;
+  var hlrActiveTab = "primary";
+
+  function switchHlrTab(tab) {
+    hlrActiveTab = tab;
+    var pp = document.getElementById("hlrPanelPrimary");
+    var pf = document.getElementById("hlrPanelFallback");
+    var bp = document.getElementById("hlrTabPrimary");
+    var bf = document.getElementById("hlrTabFallback");
+    if (tab === "primary") {
+      if (pp) pp.style.display = "";
+      if (pf) pf.style.display = "none";
+      if (bp) { bp.style.border = "2px solid #3b82f6"; bp.style.background = "#eff6ff"; bp.style.color = "#1d4ed8"; }
+      if (bf) { bf.style.border = "2px solid #e2e8f0"; bf.style.background = "white"; bf.style.color = "var(--gray-500)"; }
+    } else {
+      if (pp) pp.style.display = "none";
+      if (pf) pf.style.display = "";
+      if (bf) { bf.style.border = "2px solid #3b82f6"; bf.style.background = "#eff6ff"; bf.style.color = "#1d4ed8"; }
+      if (bp) { bp.style.border = "2px solid #e2e8f0"; bp.style.background = "white"; bp.style.color = "var(--gray-500)"; }
+    }
+  }
 
   function fetchHlrCredits() {
     fetch("https://api.ekklesia.gr/api/v1/identity/hlr/credits")
@@ -1136,61 +1217,86 @@ function copyAddr(id) {
       });
   }
 
-  function updateHlrTile(data) {
-    var initial = data.initial || 1000;
-    var used = data.used || 0;
-    var remaining = data.remaining || 0;
-    var pct = Math.round((remaining / initial) * 100);
+  function updateHlrProvider(prefix, pData, costPerQuery) {
+    var initial = pData.initial || 0;
+    var used = pData.used || 0;
+    var remaining = pData.remaining || 0;
+    var pct = initial > 0 ? Math.round((remaining / initial) * 100) : 0;
 
-    // Numbers
-    var initEl = document.getElementById("hlrInitial");
-    var usedEl = document.getElementById("hlrUsed");
-    var remEl = document.getElementById("hlrRemaining");
-    var balRow = document.getElementById("hlrBalance");
-    var bar = document.getElementById("hlrBar");
-    var barLabel = document.getElementById("hlrBarLabel");
-    var card = document.getElementById("hlrCard");
-    var badge = document.getElementById("hlrBadge");
-    var statusBox = document.getElementById("hlrStatusBox");
-    var statusText = document.getElementById("hlrStatusText");
-    var payRow = document.getElementById("hlrPayRow");
+    var initEl = document.getElementById(prefix + "Initial");
+    var usedEl = document.getElementById(prefix + "Used");
+    var remEl = document.getElementById(prefix + "Remaining");
+    var balRow = document.getElementById(prefix + "Balance");
+    var bar = document.getElementById(prefix + "Bar");
+    var barLabel = document.getElementById(prefix + "BarLabel");
+    var statusBox = document.getElementById(prefix + "StatusBox");
+    var statusText = document.getElementById(prefix + "StatusText");
 
     if (initEl) initEl.textContent = initial;
     if (usedEl) usedEl.textContent = used;
-    if (remEl) remEl.textContent = remaining + " (" + eur(remaining * 0.01) + ")";
+    if (remEl) remEl.textContent = remaining + " (" + eur(remaining * costPerQuery) + ")";
     if (balRow) balRow.className = "fc-acct-total " + (remaining > HLR_WARN ? "positive" : remaining > HLR_CRIT ? "zero" : "negative");
-    if (bar) { bar.style.width = pct + "%"; }
+    if (bar) bar.style.width = pct + "%";
     if (barLabel) barLabel.textContent = pct + t("% διαθέσιμο","% available");
 
     if (remaining <= HLR_CRIT) {
-      // RED — pulsing
-      if (card) { card.className = "fc pulse-red"; card.style.borderColor = "#ef4444"; }
-      if (badge) { badge.style.background = "#ef4444"; badge.textContent = t("ΚΡΙΣΙΜΟ","CRITICAL"); }
       if (bar) bar.style.background = "#ef4444";
       if (statusBox) { statusBox.style.background = "#fef2f2"; statusBox.style.color = "#dc2626"; }
       if (statusText) statusText.textContent = t("Κρίσιμο — μόνο ","Critical — only ") + remaining + t(" credits απομένουν"," credits remaining");
-      if (payRow) payRow.style.display = "block";
     } else if (remaining <= HLR_WARN) {
-      // YELLOW
-      if (card) { card.className = "fc"; card.style.borderColor = "#fde047"; }
-      if (badge) { badge.style.background = "#f59e0b"; badge.textContent = t("ΧΑΜΗΛΟ","LOW"); }
       if (bar) bar.style.background = "#f59e0b";
       if (statusBox) { statusBox.style.background = "#fefce8"; statusBox.style.color = "#92400e"; }
       if (statusText) statusText.textContent = t("Χαμηλά credits — ","Low credits — ") + remaining + t(" απομένουν"," remaining");
-      if (payRow) payRow.style.display = "block";
     } else {
-      // GREEN
-      if (card) { card.className = "fc"; card.style.borderColor = "#86efac"; }
-      if (badge) { badge.style.background = "#22c55e"; badge.textContent = t("ΕΝΕΡΓΟ","ACTIVE"); }
       if (bar) bar.style.background = "#22c55e";
       if (statusBox) { statusBox.style.background = "#f0fdf4"; statusBox.style.color = "#166534"; }
-      if (statusText) statusText.textContent = remaining + " credits — " + eur(remaining * 0.01) + t(" υπόλοιπο"," balance");
-      if (payRow) payRow.style.display = "none";
+      if (statusText) statusText.textContent = remaining + " credits — " + eur(remaining * costPerQuery) + t(" υπόλοιπο"," balance");
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // NEWSLETTER LIVE STATS
+  function updateHlrTile(data) {
+    // Primary tab (hlrlookup.com)
+    var primary = data.primary || { initial: data.initial || 2499, used: data.used || 0, remaining: data.remaining || 0 };
+    updateHlrProvider("hlr", primary, 0.006);
+
+    // Fallback tab (hlr-lookups.com)
+    var fb = data.fallback || {};
+    if (fb.initial !== undefined) {
+      updateHlrProvider("hlrFb", fb, 0.01);
+    }
+
+    // Card-level badge: use primary status
+    var card = document.getElementById("hlrCard");
+    var badge = document.getElementById("hlrBadge");
+    var pRemaining = primary.remaining || 0;
+
+    if (pRemaining <= HLR_CRIT) {
+      if (card) { card.className = "fc pulse-red"; card.style.borderColor = "#ef4444"; }
+      if (badge) { badge.style.background = "#ef4444"; badge.textContent = t("ΚΡΙΣΙΜΟ","CRITICAL"); }
+    } else if (pRemaining <= HLR_WARN) {
+      if (card) { card.className = "fc"; card.style.borderColor = "#fde047"; }
+      if (badge) { badge.style.background = "#f59e0b"; badge.textContent = t("ΧΑΜΗΛΟ","LOW"); }
+    } else {
+      if (card) { card.className = "fc"; card.style.borderColor = "#86efac"; }
+      if (badge) { badge.style.background = "#22c55e"; badge.textContent = t("ΕΝΕΡΓΟ","ACTIVE"); }
+    }
+
+    // Failover notice
+    var notice = document.getElementById("hlrFailoverNotice");
+    var noticeText = document.getElementById("hlrFailoverText");
+    if (data.failover_active) {
+      if (notice) notice.style.display = "";
+      var reason = data.failover_reason || "unknown";
+      if (noticeText) noticeText.textContent = t(
+        "Auto-Failover ενεργό → hlr-lookups.com (Λόγος: " + reason + ")",
+        "Auto-Failover active → hlr-lookups.com (Reason: " + reason + ")"
+      );
+    } else {
+      if (notice) notice.style.display = "none";
+    }
+  }
+
+    // NEWSLETTER LIVE STATS
   // ═══════════════════════════════════════════════════════════
   function fetchNewsletterStats() {
     fetch("https://api.ekklesia.gr/api/v1/newsletter/stats")

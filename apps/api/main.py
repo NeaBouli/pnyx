@@ -41,6 +41,7 @@ from routers import polis_qr
 from routers import sso
 from routers import claude_agent
 from routers import cplm
+from routers import app_version
 
 scheduler = AsyncIOScheduler()
 
@@ -295,6 +296,7 @@ app.include_router(polis_qr.router)
 app.include_router(sso.router)
 app.include_router(claude_agent.router)
 app.include_router(cplm.router)
+app.include_router(app_version.router)
 
 @app.get("/health")
 async def health():

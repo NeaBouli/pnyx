@@ -5,14 +5,15 @@ Verifiziert griechische Mobilnummern ohne SMS.
 Griechische SIM-Karten sind per Gesetz an Personalausweis gebunden.
 HLR prüft ob Nummer im griechischen Netz aktiv ist.
 
-Primary: HLR Lookups (www.hlr-lookups.com)
+Primary: HLR Lookup (www.hlrlookup.com)
+- PayPal prepaid (15€ = 2500 Credits)
+- ~0.006 EUR/query
+- REST API v2: POST /apiv2/hlr mit api_key+api_secret im Body
+
+Fallback: HLR Lookups (www.hlr-lookups.com)
 - Crypto prepaid (BTC/ETH/USDC)
 - ~0.01 EUR/query
 - REST API v2: POST /api/v2/hlr-lookup mit HTTP Basic Auth
-
-Fallback: HLR Lookup (www.hlrlookup.com)
-- ~0.006 EUR/query
-- REST API v2: POST /apiv2/hlr mit api_key+api_secret im Body
 
 Auto-Failover Trigger:
 A) Primary TIMEOUT oder ERROR
@@ -61,96 +62,14 @@ def is_valid_greek_mobile(phone: str) -> bool:
     return normalize_greek_number(phone) is not None
 
 
-# ── HLR Provider: HLR Lookups (Primary) ──────────────────────────────────────
-
-HLR_LOOKUPS_URL = "https://www.hlr-lookups.com/api/v2/hlr-lookup"
-
-
-async def hlr_lookup(phone: str) -> dict:
-    """
-    HLR Query via www.hlr-lookups.com REST API v2.
-    HTTP Basic Auth (API_KEY:API_SECRET).
-    """
-    normalized = normalize_greek_number(phone)
-
-    if not normalized:
-        return {
-            "valid": False, "network": None, "country": None,
-            "status": "INVALID_FORMAT",
-            "error": "Μη έγκυρος ελληνικός αριθμός κινητού"
-        }
-
-    api_key = os.getenv("HLRLOOKUPS_API_KEY")
-    api_secret = os.getenv("HLRLOOKUPS_API_SECRET")
-
-    if not api_key or not api_secret:
-        logger.info(f"[MOD-01] HLR Dry Run für {normalized[:6]}XXXX")
-        return {
-            "valid": True, "network": "Cosmote GR (Dry Run)",
-            "country": "GR", "status": "DRY_RUN", "error": None
-        }
-
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.post(
-                HLR_LOOKUPS_URL,
-                json={"msisdn": normalized},
-                auth=(api_key, api_secret),
-                headers={"Accept": "application/json"},
-            )
-
-            if response.status_code in (401, 403):
-                logger.error(f"[MOD-01] HLR Primary auth error: {response.status_code}")
-                return {
-                    "valid": False, "network": None, "country": None,
-                    "status": "AUTH_ERROR", "error": f"HLR Auth Error {response.status_code}"
-                }
-
-            response.raise_for_status()
-            data = response.json()
-
-            conn_status = data.get("connectivity_status", "")
-            network = data.get("original_network_name")
-            country = data.get("original_country_code")
-
-            is_greek = country == "GR" or normalized.startswith("+30")
-            is_active = conn_status == "CONNECTED"
-
-            logger.info(
-                f"[MOD-01] HLR Primary: {normalized[:6]}XXXX "
-                f"status={conn_status} network={network} country={country}"
-            )
-
-            return {
-                "valid": is_greek and is_active,
-                "network": network,
-                "country": country,
-                "status": conn_status or "UNKNOWN",
-                "error": None if (is_greek and is_active) else "Ο αριθμός δεν είναι ενεργός ελληνικός αριθμός"
-            }
-
-    except httpx.TimeoutException:
-        logger.error("[MOD-01] HLR Primary timeout")
-        return {
-            "valid": False, "network": None, "country": None,
-            "status": "TIMEOUT", "error": "HLR timeout — δοκιμάστε ξανά"
-        }
-    except Exception as e:
-        logger.error(f"[MOD-01] HLR Primary error: {e}")
-        return {
-            "valid": False, "network": None, "country": None,
-            "status": "ERROR", "error": str(e)
-        }
-
-
-# ── HLR Provider: hlrlookup.com (Fallback) ──────────────────────────────────
+# ── HLR Provider: hlrlookup.com (Primary) ────────────────────────────────────
 
 HLRLOOKUP_COM_URL = "https://api.hlrlookup.com/apiv2/hlr"
 
 
 async def hlr_lookup_hlrlookupcom(phone: str) -> dict:
     """
-    Fallback HLR Query via api.hlrlookup.com API v2.
+    Primary HLR Query via api.hlrlookup.com API v2.
     POST mit api_key + api_secret im JSON Body.
     """
     normalized = normalize_greek_number(phone)
@@ -166,11 +85,10 @@ async def hlr_lookup_hlrlookupcom(phone: str) -> dict:
     api_secret = os.getenv("HLR_FALLBACK_API_SECRET")
 
     if not api_key or not api_secret:
-        logger.warning("[MOD-01] HLR Fallback not configured (no API key)")
+        logger.info(f"[MOD-01] HLR Primary (hlrlookup.com) Dry Run für {normalized[:6]}XXXX")
         return {
-            "valid": False, "network": None, "country": None,
-            "status": "FALLBACK_NOT_CONFIGURED",
-            "error": "Fallback HLR provider not configured"
+            "valid": True, "network": "Cosmote GR (Dry Run)",
+            "country": "GR", "status": "DRY_RUN", "error": None
         }
 
     try:
@@ -186,10 +104,10 @@ async def hlr_lookup_hlrlookupcom(phone: str) -> dict:
             )
 
             if response.status_code in (401, 403):
-                logger.error(f"[MOD-01] HLR Fallback auth error: {response.status_code}")
+                logger.error(f"[MOD-01] HLR Primary auth error: {response.status_code}")
                 return {
                     "valid": False, "network": None, "country": None,
-                    "status": "AUTH_ERROR", "error": f"Fallback Auth Error {response.status_code}"
+                    "status": "AUTH_ERROR", "error": f"HLR Auth Error {response.status_code}"
                 }
 
             response.raise_for_status()
@@ -199,7 +117,7 @@ async def hlr_lookup_hlrlookupcom(phone: str) -> dict:
             if not results:
                 return {
                     "valid": False, "network": None, "country": None,
-                    "status": "NO_RESULT", "error": "Keine Ergebnisse vom Fallback-Provider"
+                    "status": "NO_RESULT", "error": "Keine Ergebnisse vom Primary-Provider"
                 }
 
             r = results[0]
@@ -222,7 +140,7 @@ async def hlr_lookup_hlrlookupcom(phone: str) -> dict:
             is_live = live_status == "LIVE"
 
             logger.info(
-                f"[MOD-01] HLR Fallback: {normalized[:6]}XXXX "
+                f"[MOD-01] HLR Primary: {normalized[:6]}XXXX "
                 f"live={live_status} network={network} type={number_type}"
             )
 
@@ -236,10 +154,93 @@ async def hlr_lookup_hlrlookupcom(phone: str) -> dict:
             }
 
     except httpx.TimeoutException:
+        logger.error("[MOD-01] HLR Primary timeout")
+        return {
+            "valid": False, "network": None, "country": None,
+            "status": "TIMEOUT", "error": "HLR Primary timeout"
+        }
+    except Exception as e:
+        logger.error(f"[MOD-01] HLR Primary error: {e}")
+        return {
+            "valid": False, "network": None, "country": None,
+            "status": "ERROR", "error": str(e)
+        }
+
+
+# ── HLR Provider: hlr-lookups.com (Fallback) ─────────────────────────────────
+
+HLR_LOOKUPS_URL = "https://www.hlr-lookups.com/api/v2/hlr-lookup"
+
+
+async def hlr_lookup(phone: str) -> dict:
+    """
+    Fallback HLR Query via www.hlr-lookups.com REST API v2.
+    HTTP Basic Auth (API_KEY:API_SECRET).
+    """
+    normalized = normalize_greek_number(phone)
+
+    if not normalized:
+        return {
+            "valid": False, "network": None, "country": None,
+            "status": "INVALID_FORMAT",
+            "error": "Μη έγκυρος ελληνικός αριθμός κινητού"
+        }
+
+    api_key = os.getenv("HLRLOOKUPS_API_KEY")
+    api_secret = os.getenv("HLRLOOKUPS_API_SECRET")
+
+    if not api_key or not api_secret:
+        logger.warning("[MOD-01] HLR Fallback (hlr-lookups.com) not configured (no API key)")
+        return {
+            "valid": False, "network": None, "country": None,
+            "status": "FALLBACK_NOT_CONFIGURED",
+            "error": "Fallback HLR provider not configured"
+        }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                HLR_LOOKUPS_URL,
+                json={"msisdn": normalized},
+                auth=(api_key, api_secret),
+                headers={"Accept": "application/json"},
+            )
+
+            if response.status_code in (401, 403):
+                logger.error(f"[MOD-01] HLR Fallback auth error: {response.status_code}")
+                return {
+                    "valid": False, "network": None, "country": None,
+                    "status": "AUTH_ERROR", "error": f"Fallback Auth Error {response.status_code}"
+                }
+
+            response.raise_for_status()
+            data = response.json()
+
+            conn_status = data.get("connectivity_status", "")
+            network = data.get("original_network_name")
+            country = data.get("original_country_code")
+
+            is_greek = country == "GR" or normalized.startswith("+30")
+            is_active = conn_status == "CONNECTED"
+
+            logger.info(
+                f"[MOD-01] HLR Fallback: {normalized[:6]}XXXX "
+                f"status={conn_status} network={network} country={country}"
+            )
+
+            return {
+                "valid": is_greek and is_active,
+                "network": network,
+                "country": country,
+                "status": conn_status or "UNKNOWN",
+                "error": None if (is_greek and is_active) else "Ο αριθμός δεν είναι ενεργός ελληνικός αριθμός"
+            }
+
+    except httpx.TimeoutException:
         logger.error("[MOD-01] HLR Fallback timeout")
         return {
             "valid": False, "network": None, "country": None,
-            "status": "TIMEOUT", "error": "Fallback HLR timeout"
+            "status": "TIMEOUT", "error": "Fallback HLR timeout — δοκιμάστε ξανά"
         }
     except Exception as e:
         logger.error(f"[MOD-01] HLR Fallback error: {e}")
@@ -290,15 +291,15 @@ async def hlr_lookup_melrose(phone: str) -> dict:
 # ── Provider Router mit intelligentem Auto-Failover ──────────────────────────
 
 async def _get_primary_credits_remaining() -> int:
-    """Liest verbleibende Primary-Credits aus Redis."""
+    """Liest verbleibende Primary-Credits (hlrlookup.com) aus Redis."""
     try:
         import redis.asyncio as aioredis
         url = os.getenv("REDIS_URL", "redis://localhost:6379")
         r = aioredis.from_url(url, decode_responses=True)
-        val = await r.get("hlr:used")
+        val = await r.get("hlr:hlrlookupcom:used")
         await r.aclose()
         used = int(val) if val else 0
-        initial = int(os.getenv("HLR_INITIAL_CREDITS", "1000"))
+        initial = int(os.getenv("HLR_PRIMARY_INITIAL_CREDITS", "2499"))
         return max(0, initial - used)
     except Exception:
         return 999  # Im Fehlerfall nicht triggern
@@ -311,14 +312,14 @@ async def verify_greek_number(phone: str) -> dict:
     Trigger B: Primary Credits < 50
     Trigger C: Primary HTTP 401/403 (AUTH_ERROR)
     """
-    provider = os.getenv("HLRLOOKUPS_PROVIDER", "hlrlookups")
+    provider = os.getenv("HLRLOOKUPS_PROVIDER", "hlrlookupcom")
     fallback_enabled = os.getenv("HLR_FALLBACK_ENABLED", "false").lower() == "true"
 
     # Primary-Lookup
     if provider == "melrose":
         result = await hlr_lookup_melrose(phone)
     else:
-        result = await hlr_lookup(phone)
+        result = await hlr_lookup_hlrlookupcom(phone)
 
     # Dry Run braucht keinen Failover
     if result.get("status") == "DRY_RUN":
@@ -335,7 +336,7 @@ async def verify_greek_number(phone: str) -> dict:
         reason = "timeout/error" if trigger_a else \
                  f"low_credits ({credits_remaining})" if trigger_b else \
                  "auth_error"
-        logger.warning(f"[MOD-01] Auto-Failover → hlrlookup.com — Grund: {reason}")
+        logger.warning(f"[MOD-01] Auto-Failover → hlr-lookups.com — Grund: {reason}")
 
         # Redis Warning setzen (für Dashboard / Credits-Endpoint)
         try:
@@ -348,7 +349,7 @@ async def verify_greek_number(phone: str) -> dict:
         except Exception as e:
             logger.error(f"[MOD-01] Redis failover write error: {e}")
 
-        fallback = await hlr_lookup_hlrlookupcom(phone)
+        fallback = await hlr_lookup(phone)
         if fallback.get("status") not in ("FALLBACK_NOT_CONFIGURED", "ERROR", "AUTH_ERROR"):
             return fallback
         else:
