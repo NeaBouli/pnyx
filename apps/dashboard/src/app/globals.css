@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --blue: #2563eb;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+  }
+
+  html {
+    font-family: Inter, system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
+
+@layer utilities {
+  .status-badge-green {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800;
+  }
+  .status-badge-red {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800;
+  }
+  .status-badge-yellow {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800;
+  }
+  .status-badge-blue {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800;
+  }
+}

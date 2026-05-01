@@ -130,6 +130,27 @@ volumes:
     external: true
     name: volumes_ekklesia_ollama
 
+  dashboard:
+    build:
+      context: ../../apps/dashboard
+      dockerfile: Dockerfile.prod
+    container_name: ekklesia-dashboard
+    restart: unless-stopped
+    environment:
+      NEXTAUTH_URL: https://dashboard.ekklesia.gr
+      NEXTAUTH_SECRET: ${DASHBOARD_SECRET}
+      AUTH_GITHUB_ID: ${DASHBOARD_GITHUB_ID}
+      AUTH_GITHUB_SECRET: ${DASHBOARD_GITHUB_SECRET}
+      EKKLESIA_API: https://api.ekklesia.gr
+    networks:
+      - ekklesia
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.dashboard.rule=Host(`dashboard.ekklesia.gr`)
+      - traefik.http.routers.dashboard.entrypoints=websecure
+      - traefik.http.routers.dashboard.tls.certresolver=letsencrypt
+      - traefik.http.services.dashboard.loadbalancer.server.port=3001
+
 networks:
   ekklesia:
     external: true
