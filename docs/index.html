@@ -39,6 +39,7 @@
   <!-- Sitemap -->
   <link rel="sitemap" type="application/xml" href="https://ekklesia.gr/sitemap.xml"/>
   <link rel="icon" type="image/png" href="favicon.ico"/>
+  <link rel="stylesheet" href="animations/css/ekklesia-motion.css"/>
 
   <style>
     :root {
@@ -57,6 +58,18 @@
       --purple: #a855f7;
       --radius: 1rem;
       --shadow: 0 4px 24px rgba(37,99,235,0.10);
+      /* ekklesia Motion Pack v1 — bridge variables */
+      --ekk-bg: var(--white, #ffffff);
+      --ekk-surface: var(--gray-100, #f1f5f9);
+      --ekk-surface-2: var(--blue-l, #eff6ff);
+      --ekk-text: var(--gray-900, #0f172a);
+      --ekk-muted: var(--gray-400, #94a3b8);
+      --ekk-accent: var(--blue, #2563eb);
+      --ekk-accent-2: var(--green, #22c55e);
+      --ekk-good: var(--green, #22c55e);
+      --ekk-warn: var(--yellow, #f59e0b);
+      --ekk-danger: var(--red, #ef4444);
+      --ekk-border: rgba(37, 99, 235, 0.14);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
@@ -453,7 +466,10 @@
   </div>
 </nav>
 
-<section class="landing-hero">
+<section class="landing-hero ekk-motion-layer">
+  <div class="ekk-motion-bg" aria-hidden="true">
+    <img src="animations/svg/hero-pnyx-network.svg" alt="" decoding="async">
+  </div>
   <div class="hero-inner">
     <!-- LEFT: Branding + Quote -->
     <div class="hero-left">
@@ -529,12 +545,22 @@
         <p data-el="Δείκτης Απόκλισης: Βουλή vs Πολίτες." data-en="Divergence Score: Parliament vs Citizens.">Δείκτης Απόκλισης: Βουλή vs Πολίτες.</p>
       </div>
     </div>
+    <figure class="ekk-visual-card ekk-visual-frame ekk-fade-up" style="margin-top:2rem">
+      <img src="animations/svg/voting-flow.svg"
+           alt="Ροή ψήφου: SMS επαλήθευση, SHA256 hash, Ed25519 κλειδί στη συσκευή, υπογεγραμμένη ψήφος και δημόσιο αποτέλεσμα"
+           loading="lazy" decoding="async">
+    </figure>
   </div>
 </section>
 
 <section class="demo-section" id="demo">
   <div class="demo-title" data-el="Ο Κύκλος της Δημοκρατίας" data-en="The Democracy Cycle">Ο Κύκλος της Δημοκρατίας</div>
   <p class="demo-sub" data-el="Κάθε απόφαση διανύει 6 φάσεις — από τη Βουλή στους πολίτες." data-en="Every decision goes through 6 phases — from Parliament to citizens.">Κάθε απόφαση διανύει 6 φάσεις — από τη Βουλή στους πολίτες.</p>
+  <figure class="ekk-visual-card ekk-visual-frame ekk-fade-up" style="margin:0 auto 2rem;max-width:680px">
+    <img src="animations/svg/bill-lifecycle-ring.svg"
+         alt="Κύκλος Δημοκρατίας: ανακοίνωση, ανάλυση, ενεργοποίηση, ψήφος πολιτών, 24ω παράθυρο, απόφαση Βουλής και αρχείο Arweave"
+         loading="lazy" decoding="async">
+  </figure>
   <div class="demo-grid">
     <div class="demo-box" id="dBox1">
       <div class="demo-icon">🏛️</div>
@@ -626,6 +652,13 @@
     </div>
   </div>
 </section>
+
+<!-- Divergence visual -->
+<figure class="ekk-visual-card ekk-visual-frame ekk-fade-up" style="max-width:680px;margin:0 auto 1.5rem">
+  <img src="animations/svg/divergence-balance.svg"
+       alt="Σύγκριση ψήφων Βουλής και πολιτών — δείκτης απόκλισης ανά νομοσχέδιο"
+       loading="lazy" decoding="async">
+</figure>
 
 <!-- LIVE Repräsentations-Skala — Kumulative Divergenz Βουλή vs Πολίτες -->
 <div style="max-width:800px;margin:0 auto;padding:1.5rem 2rem" class="fade-in" id="repSection">
@@ -783,6 +816,13 @@
   setInterval(fetchRepresentation, 60000);
 })();
 </script>
+
+<!-- CPLM visual -->
+<figure class="ekk-visual-card ekk-visual-frame ekk-fade-up" style="max-width:580px;margin:0 auto 1.5rem">
+  <img src="animations/svg/cplm-compass.svg"
+       alt="Πολιτικός Καθρέφτης CPLM: σωρευτική θέση πολιτών σε δύο άξονες — οικονομία και κοινωνία"
+       loading="lazy" decoding="async">
+</figure>
 
 <!-- CPLM — Citizens Political Liquid Mirror -->
 <div style="max-width:800px;margin:0 auto;padding:0 2rem 1.5rem" class="fade-in" id="cplmSection">
@@ -1786,5 +1826,6 @@ function sendChat(){
   });
 }
 </script>
+<script src="animations/js/motion-observer.js" defer></script>
 </body>
 </html>

@@ -1,0 +1,149 @@
+/* ekklesia.gr Motion Pack v1
+   Lightweight, local-only animation helpers for landing + wiki pages.
+   Design rules: calm, civic, privacy-first, no gamified motion.
+*/
+
+:root {
+  /* Bridge variables. Claude Code may map these to existing site variables. */
+  --ekk-bg: var(--color-bg, var(--background, #0b1020));
+  --ekk-surface: var(--color-surface, var(--surface, #111827));
+  --ekk-surface-2: var(--color-card, var(--card, #172033));
+  --ekk-text: var(--color-text, var(--foreground, #f8fafc));
+  --ekk-muted: var(--color-muted, var(--muted, #94a3b8));
+  --ekk-border: var(--color-border, rgba(148, 163, 184, 0.24));
+  --ekk-accent: var(--color-accent, var(--accent, #c9a227));
+  --ekk-accent-2: var(--color-accent-2, var(--accent-secondary, #38bdf8));
+  --ekk-good: var(--color-success, #22c55e);
+  --ekk-warn: var(--color-warning, #f59e0b);
+  --ekk-danger: var(--color-danger, #ef4444);
+  --ekk-radius: var(--radius-lg, 22px);
+  --ekk-shadow-soft: 0 18px 60px rgba(0, 0, 0, 0.24);
+  --ekk-motion-duration: 720ms;
+  --ekk-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ekk-motion-layer {
+  position: relative;
+  isolation: isolate;
+}
+
+.ekk-motion-layer > .ekk-motion-bg,
+.ekk-motion-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ekk-visual-card {
+  border: 1px solid var(--ekk-border);
+  border-radius: var(--ekk-radius);
+  background: color-mix(in srgb, var(--ekk-surface) 84%, transparent);
+  box-shadow: var(--ekk-shadow-soft);
+  overflow: hidden;
+}
+
+.ekk-visual-frame {
+  width: min(100%, 980px);
+  margin-inline: auto;
+  padding: clamp(1rem, 2vw, 1.5rem);
+}
+
+.ekk-visual-frame img,
+.ekk-visual-frame svg,
+.ekk-motion-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ekk-fade-up,
+.ekk-stagger > * {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity var(--ekk-motion-duration) var(--ekk-motion-ease),
+    transform var(--ekk-motion-duration) var(--ekk-motion-ease);
+}
+
+.ekk-fade-up.is-visible,
+.ekk-stagger.is-visible > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ekk-stagger.is-visible > *:nth-child(2) { transition-delay: 90ms; }
+.ekk-stagger.is-visible > *:nth-child(3) { transition-delay: 180ms; }
+.ekk-stagger.is-visible > *:nth-child(4) { transition-delay: 270ms; }
+.ekk-stagger.is-visible > *:nth-child(5) { transition-delay: 360ms; }
+.ekk-stagger.is-visible > *:nth-child(6) { transition-delay: 450ms; }
+
+.ekk-soft-pulse {
+  animation: ekkSoftPulse 2600ms ease-in-out infinite;
+}
+
+.ekk-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--ekk-accent) 56%, transparent);
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  color: var(--ekk-text);
+  background: color-mix(in srgb, var(--ekk-accent) 13%, transparent);
+}
+
+.ekk-status-pill::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: var(--ekk-accent);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ekk-accent) 38%, transparent);
+  animation: ekkStatusPulse 2400ms ease-out infinite;
+}
+
+.ekk-feature-card {
+  transition:
+    transform 260ms var(--ekk-motion-ease),
+    border-color 260ms var(--ekk-motion-ease),
+    background 260ms var(--ekk-motion-ease);
+}
+
+.ekk-feature-card:hover,
+.ekk-feature-card:focus-within {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--ekk-accent) 44%, var(--ekk-border));
+  background: color-mix(in srgb, var(--ekk-surface-2) 92%, var(--ekk-accent) 8%);
+}
+
+.ekk-metric-count {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+@keyframes ekkSoftPulse {
+  0%, 100% { opacity: 0.72; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.018); }
+}
+
+@keyframes ekkStatusPulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ekk-accent) 38%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 12px transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
+
+  .ekk-fade-up,
+  .ekk-stagger > * {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

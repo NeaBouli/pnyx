@@ -23,6 +23,7 @@
   <link rel="alternate" hreflang="en" href="https://ekklesia.gr/wiki/architecture.html"/>
   <link rel="alternate" hreflang="x-default" href="https://ekklesia.gr/wiki/architecture.html"/>
   <link rel="icon" type="image/png" href="/favicon.ico"/>
+  <link rel="stylesheet" href="../animations/css/ekklesia-motion.css"/>
 
   <style>
     :root {
@@ -232,6 +233,12 @@
 
   <h2 class="fade-in" data-el="Αρχιτεκτονική Επαλήθευσης" data-en="Verification Architecture">Αρχιτεκτονική Επαλήθευσης</h2>
 
+  <figure class="ekk-visual-card ekk-visual-frame ekk-fade-up" style="margin:0 auto 2rem">
+    <img src="../animations/svg/voting-flow.svg"
+         alt="Ροή επαλήθευσης ψήφου: SMS, HLR, Argon2id nullifier, Ed25519 κλειδί, υπογεγραμμένη ψήφος στον server"
+         loading="lazy" decoding="async">
+  </figure>
+
   <h3 data-el="Beta Flow (SMS / HLR)" data-en="Beta Flow (SMS / HLR)">Beta Flow (SMS / HLR)</h3>
   <div class="code-block fade-in" data-el="Phone (+30)  ──►  HLR Lookup  ──►  Argon2id  ──►  nullifier_root
                                            │
@@ -338,7 +345,7 @@ var obs = new IntersectionObserver(function(entries) {
 }, { threshold: 0.1 });
 document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); });
 </script>
-
+<script src="../animations/js/motion-observer.js" defer></script>
 
 </body>
 </html>

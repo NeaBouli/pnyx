@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 620" role="img" aria-labelledby="title desc">
+  <title id="title">Privacy flow</title>
+  <desc id="desc">Animated privacy flow showing raw phone number deletion, local private key, public key server record, and anonymous aggregated vote.</desc>
+  <style>
+    :root { --ekk-surface:#111827; --ekk-card:#172033; --ekk-text:#f8fafc; --ekk-muted:#94a3b8; --ekk-accent:#c9a227; --ekk-accent-2:#38bdf8; --ekk-good:#22c55e; --ekk-danger:#ef4444; }
+    .panel{ fill:color-mix(in srgb,var(--ekk-surface) 92%,transparent); stroke:color-mix(in srgb,var(--ekk-muted) 24%,transparent); }
+    .card{ fill:color-mix(in srgb,var(--ekk-card) 92%,transparent); stroke:color-mix(in srgb,var(--ekk-muted) 24%,transparent); }
+    .safe{ stroke:color-mix(in srgb,var(--ekk-good) 54%,transparent); }
+    .gone{ stroke:color-mix(in srgb,var(--ekk-danger) 54%,transparent); }
+    .title{ fill:var(--ekk-text); font:800 28px Inter,ui-sans-serif,system-ui,sans-serif; }
+    .label{ fill:var(--ekk-text); font:700 18px Inter,ui-sans-serif,system-ui,sans-serif; }
+    .small{ fill:var(--ekk-muted); font:500 14px Inter,ui-sans-serif,system-ui,sans-serif; }
+    .mono{ fill:var(--ekk-accent-2); font:600 14px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .arrow{ fill:none; stroke:color-mix(in srgb,var(--ekk-accent) 66%,transparent); stroke-width:3; stroke-linecap:round; stroke-dasharray:10 12; animation: dash 6s linear infinite; }
+    .delete-line{ stroke:var(--ekk-danger); stroke-width:4; stroke-linecap:round; animation: cut 4.6s ease-in-out infinite; transform-origin:center; }
+    .hash{ opacity:0; animation: appear 4.6s ease-in-out infinite; }
+    .lock{ animation: lockPulse 3.2s ease-in-out infinite; transform-origin:528px 294px; }
+    .vote{ animation: aggregate 4.8s ease-in-out infinite; transform-origin:center; }
+    .stack rect{ animation: stack 5.2s ease-in-out infinite; transform-origin:center; }
+    .stack rect:nth-child(2){ animation-delay:120ms } .stack rect:nth-child(3){ animation-delay:240ms } .stack rect:nth-child(4){ animation-delay:360ms }
+    @keyframes dash{ to{stroke-dashoffset:-132} }
+    @keyframes cut{ 0%,28%{opacity:0; transform:scaleX(.2)} 48%,100%{opacity:1; transform:scaleX(1)} }
+    @keyframes appear{ 0%,35%{opacity:0; transform:translateY(8px)} 55%,100%{opacity:1; transform:translateY(0)} }
+    @keyframes lockPulse{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+    @keyframes aggregate{ 0%,100%{opacity:.56; transform:scale(1)} 50%{opacity:1; transform:scale(1.06)} }
+    @keyframes stack{ 0%,100%{opacity:.42} 50%{opacity:1} }
+    @media (prefers-reduced-motion: reduce){ *{animation:none!important} .hash{opacity:1} }
+  </style>
+  <defs><marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M2 2 L10 6 L2 10 Z" fill="var(--ekk-accent)"/></marker></defs>
+  <rect class="panel" x="24" y="24" width="1052" height="572" rx="32"/>
+  <text class="title" x="64" y="82">Ιδιωτικότητα: τι φεύγει, τι μένει</text>
+  <text class="small" x="64" y="110">Ο αριθμός δεν μένει στον server. Το private key δεν φεύγει από τη συσκευή.</text>
+
+  <path class="arrow" d="M250 306 H338" marker-end="url(#arrowhead)"/>
+  <path class="arrow" d="M514 306 H602" marker-end="url(#arrowhead)"/>
+  <path class="arrow" d="M778 306 H866" marker-end="url(#arrowhead)"/>
+
+  <g transform="translate(64 188)">
+    <rect class="card gone" width="186" height="236" rx="24"/>
+    <text class="label" x="24" y="44">Τηλέφωνο</text>
+    <text class="small" x="24" y="70">μόνο για HLR/SMS</text>
+    <text class="mono" x="32" y="134">+30 69•• ••••</text>
+    <line class="delete-line" x1="34" y1="148" x2="152" y2="98"/>
+    <line class="delete-line" x1="34" y1="98" x2="152" y2="148"/>
+    <text class="small" x="24" y="202">Διαγράφεται</text>
+  </g>
+
+  <g transform="translate(328 188)">
+    <rect class="card safe" width="186" height="236" rx="24"/>
+    <text class="label" x="24" y="44">Nullifier</text>
+    <text class="small" x="24" y="70">one-way hash</text>
+    <g class="hash">
+      <rect x="24" y="104" width="138" height="58" rx="13" fill="rgba(0,0,0,.22)"/>
+      <text class="mono" x="38" y="128">a91f...42c0</text>
+      <text class="mono" x="38" y="150">argon2id</text>
+    </g>
+    <text class="small" x="24" y="202">Αποτρέπει διπλή ψήφο</text>
+  </g>
+
+  <g transform="translate(592 188)">
+    <rect class="card safe" width="186" height="236" rx="24"/>
+    <text class="label" x="24" y="44">Private Key</text>
+    <text class="small" x="24" y="70">μένει τοπικά</text>
+    <g class="lock" transform="translate(62 106)">
+      <rect x="0" y="36" width="62" height="54" rx="11" fill="color-mix(in srgb,var(--ekk-accent) 45%,transparent)" stroke="var(--ekk-accent)"/>
+      <path d="M12 36V20C12-6 50-6 50 20v16" fill="none" stroke="var(--ekk-accent)" stroke-width="7" stroke-linecap="round"/>
+    </g>
+    <text class="small" x="24" y="202">Δεν ανεβαίνει στον server</text>
+  </g>
+
+  <g transform="translate(856 188)">
+    <rect class="card safe" width="186" height="236" rx="24"/>
+    <text class="label" x="24" y="44">Ψήφος</text>
+    <text class="small" x="24" y="70">ανώνυμη / aggregated</text>
+    <g class="stack" transform="translate(42 112)">
+      <rect class="vote" x="0" y="0" width="96" height="15" rx="8" fill="var(--ekk-good)"/>
+      <rect class="vote" x="0" y="26" width="126" height="15" rx="8" fill="var(--ekk-danger)"/>
+      <rect class="vote" x="0" y="52" width="56" height="15" rx="8" fill="var(--ekk-muted)"/>
+      <rect class="vote" x="0" y="78" width="104" height="15" rx="8" fill="var(--ekk-accent)"/>
+    </g>
+    <text class="small" x="24" y="202">χωρίς προσωπικό προφίλ</text>
+  </g>
+</svg>

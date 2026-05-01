@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 720" role="img" aria-labelledby="title desc">
+  <title id="title">Pnyx to digital civic network</title>
+  <desc id="desc">Subtle animated civic network background inspired by the Pnyx and digital participation.</desc>
+  <style>
+    :root { --ekk-bg:#0b1020; --ekk-accent:#c9a227; --ekk-accent-2:#38bdf8; --ekk-muted:#94a3b8; }
+    .bg { fill: var(--ekk-bg); }
+    .hill { fill: color-mix(in srgb, var(--ekk-accent) 13%, transparent); stroke: color-mix(in srgb, var(--ekk-accent) 38%, transparent); stroke-width: 1.2; }
+    .line { fill:none; stroke: color-mix(in srgb, var(--ekk-accent-2) 34%, transparent); stroke-width:1.15; stroke-dasharray: 4 12; animation: drift 18s linear infinite; }
+    .line.gold { stroke: color-mix(in srgb, var(--ekk-accent) 36%, transparent); animation-duration: 22s; }
+    .node { fill: var(--ekk-accent); opacity:.72; animation: pulse 4.8s ease-in-out infinite; transform-origin:center; }
+    .node.blue { fill: var(--ekk-accent-2); animation-delay: 900ms; }
+    .node.muted { fill: var(--ekk-muted); opacity:.4; animation-delay: 1600ms; }
+    .ring { fill:none; stroke: color-mix(in srgb, var(--ekk-accent) 28%, transparent); stroke-width:1; opacity:.6; animation: pulseStroke 5.6s ease-in-out infinite; }
+    .glyph { fill: color-mix(in srgb, var(--ekk-accent) 70%, white); opacity:.62; font: 600 28px ui-serif, Georgia, serif; letter-spacing:.04em; }
+    @keyframes drift { to { stroke-dashoffset: -160; } }
+    @keyframes pulse { 0%,100%{ transform:scale(1); opacity:.44 } 50%{ transform:scale(1.55); opacity:.86 } }
+    @keyframes pulseStroke { 0%,100%{ opacity:.16 } 50%{ opacity:.62 } }
+    @media (prefers-reduced-motion: reduce) { .line,.node,.ring{ animation:none!important; } }
+  </style>
+  <rect class="bg" width="1440" height="720" rx="0"/>
+  <path class="hill" d="M0 576 C132 512 210 505 350 548 C480 588 564 533 710 500 C875 462 965 520 1082 486 C1222 445 1324 486 1440 452 L1440 720 L0 720 Z"/>
+  <path class="hill" opacity=".44" d="M0 632 C190 570 346 610 520 586 C715 559 796 510 962 542 C1134 575 1270 535 1440 498 L1440 720 L0 720 Z"/>
+
+  <path class="line gold" d="M132 492 C300 354 394 402 530 300 S812 254 942 344 S1174 417 1314 264"/>
+  <path class="line" d="M72 298 C250 182 410 224 560 170 S800 122 980 204 S1220 262 1370 160"/>
+  <path class="line" d="M184 604 C370 440 562 474 720 380 S1028 286 1268 390"/>
+  <path class="line gold" d="M238 132 C334 230 424 226 526 236 C712 254 784 384 906 428 C1040 478 1182 405 1288 520"/>
+
+  <g opacity=".72">
+    <circle class="ring" cx="232" cy="438" r="58"/>
+    <circle class="ring" cx="550" cy="286" r="46"/>
+    <circle class="ring" cx="764" cy="374" r="66"/>
+    <circle class="ring" cx="1032" cy="338" r="48"/>
+    <circle class="ring" cx="1248" cy="248" r="70"/>
+  </g>
+
+  <g>
+    <circle class="node" cx="132" cy="492" r="4"/>
+    <circle class="node blue" cx="344" cy="396" r="5"/>
+    <circle class="node muted" cx="530" cy="300" r="4"/>
+    <circle class="node" cx="742" cy="278" r="5"/>
+    <circle class="node blue" cx="942" cy="344" r="4"/>
+    <circle class="node" cx="1174" cy="417" r="5"/>
+    <circle class="node muted" cx="1314" cy="264" r="4"/>
+    <circle class="node blue" cx="72" cy="298" r="4"/>
+    <circle class="node" cx="560" cy="170" r="5"/>
+    <circle class="node muted" cx="980" cy="204" r="4"/>
+    <circle class="node" cx="1370" cy="160" r="4"/>
+  </g>
+
+  <text class="glyph" x="108" y="112">ΠΝΥΞ</text>
+  <text class="glyph" x="1120" y="610" opacity=".42">ekklesia.gr</text>
+</svg>

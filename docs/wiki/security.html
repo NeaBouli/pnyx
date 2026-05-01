@@ -35,6 +35,7 @@
   <!-- Sitemap -->
   <link rel="sitemap" type="application/xml" href="https://ekklesia.gr/sitemap.xml"/>
   <link rel="icon" type="image/png" href="/favicon.ico"/>
+  <link rel="stylesheet" href="../animations/css/ekklesia-motion.css"/>
 
   <style>
     :root {
@@ -305,6 +306,12 @@
     </p>
   </div>
 
+  <figure class="ekk-visual-card ekk-visual-frame ekk-fade-up" style="margin:0 auto 2rem">
+    <img src="../animations/svg/privacy-flow.svg"
+         alt="Ροή ιδιωτικότητας: τηλέφωνο διαγράφεται, αποθηκεύεται μόνο nullifier hash και δημόσιο κλειδί Ed25519"
+         loading="lazy" decoding="async">
+  </figure>
+
   <h2 class="fade-in" data-el="Server Logging & Ιδιωτικότητα" data-en="Server Logging & Privacy">Server Logging & Ιδιωτικότητα</h2>
   <div class="table-wrap fade-in">
     <table>
@@ -444,7 +451,7 @@ var obs = new IntersectionObserver(function(entries) {
 }, { threshold: 0.1 });
 document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); });
 </script>
-
+<script src="../animations/js/motion-observer.js" defer></script>
 
 </body>
 </html>

@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" role="img" aria-labelledby="title desc">
+  <title id="title">Verification and vote flow</title>
+  <desc id="desc">Animated flow from SMS verification to hashing, local key, signed vote, and divergence result.</desc>
+  <style>
+    :root { --ekk-bg:#0b1020; --ekk-surface:#111827; --ekk-card:#172033; --ekk-text:#f8fafc; --ekk-muted:#94a3b8; --ekk-accent:#c9a227; --ekk-accent-2:#38bdf8; --ekk-good:#22c55e; --ekk-danger:#ef4444; }
+    .panel{ fill:color-mix(in srgb,var(--ekk-surface) 92%,transparent); stroke:color-mix(in srgb,var(--ekk-muted) 26%,transparent); stroke-width:1.2; }
+    .card{ fill:color-mix(in srgb,var(--ekk-card) 92%,transparent); stroke:color-mix(in srgb,var(--ekk-muted) 22%,transparent); stroke-width:1; }
+    .title{ fill:var(--ekk-text); font:700 24px Inter,ui-sans-serif,system-ui,sans-serif; }
+    .label{ fill:var(--ekk-text); font:650 18px Inter,ui-sans-serif,system-ui,sans-serif; }
+    .small{ fill:var(--ekk-muted); font:500 14px Inter,ui-sans-serif,system-ui,sans-serif; }
+    .mono{ fill:color-mix(in srgb,var(--ekk-accent-2) 86%,white); font:600 14px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .accent{ fill:var(--ekk-accent); }
+    .blue{ fill:var(--ekk-accent-2); }
+    .good{ fill:var(--ekk-good); }
+    .danger{ fill:var(--ekk-danger); }
+    .line{ fill:none; stroke:color-mix(in srgb,var(--ekk-accent) 70%,transparent); stroke-width:3; stroke-linecap:round; stroke-dasharray:12 12; animation: move 8s linear infinite; }
+    .flowdot{ fill:var(--ekk-accent); filter:url(#glow); offset-path:path('M250 280 C320 280 342 280 400 280 S508 280 560 280 S676 280 730 280 S848 280 900 280'); animation: dot 7s ease-in-out infinite; }
+    .codeblock{ fill:rgba(0,0,0,.22); stroke:color-mix(in srgb,var(--ekk-accent-2) 22%,transparent); }
+    .phone-msg{ animation: sms 5s ease-in-out infinite; transform-origin:center; }
+    .hash-text{ animation: hash 5s steps(1,end) infinite; }
+    .key-lock{ animation: lock 4.4s ease-in-out infinite; transform-origin:690px 244px; }
+    .signature{ stroke:var(--ekk-accent); stroke-width:3; stroke-linecap:round; fill:none; stroke-dasharray:130; stroke-dashoffset:130; animation: sign 5.6s ease-in-out infinite; }
+    .bar-yes{ animation: yesbar 5.8s ease-in-out infinite; transform-origin:912px 388px; }
+    .bar-no{ animation: nobar 5.8s ease-in-out infinite; transform-origin:912px 423px; }
+    @keyframes move{ to{ stroke-dashoffset:-96; } }
+    @keyframes dot{ 0%,6%{ offset-distance:0%;opacity:0 } 12%{opacity:1} 86%{opacity:1} 96%,100%{ offset-distance:100%;opacity:0 } }
+    @keyframes sms{ 0%,20%,100%{ opacity:.28; transform:translateY(10px) } 30%,62%{ opacity:1; transform:translateY(0) } }
+    @keyframes hash{ 0%,34%{ opacity:0 } 40%,100%{ opacity:1 } }
+    @keyframes lock{ 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.08) } }
+    @keyframes sign{ 0%,38%{ stroke-dashoffset:130;opacity:.2 } 56%,86%{ stroke-dashoffset:0;opacity:1 } 100%{ stroke-dashoffset:0;opacity:.38 } }
+    @keyframes yesbar{ 0%,45%{ transform:scaleX(.22) } 70%,100%{ transform:scaleX(.33) } }
+    @keyframes nobar{ 0%,45%{ transform:scaleX(.22) } 70%,100%{ transform:scaleX(.67) } }
+    @media (prefers-reduced-motion: reduce){ *{ animation:none!important; } .signature{ stroke-dashoffset:0; } .bar-yes{ transform:scaleX(.33)} .bar-no{transform:scaleX(.67)} }
+  </style>
+  <defs>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M2 2 L10 6 L2 10 Z" fill="var(--ekk-accent)"/></marker>
+  </defs>
+  <rect class="panel" x="28" y="32" width="1144" height="496" rx="28"/>
+  <text class="title" x="70" y="86">Πώς λειτουργεί η ψήφος</text>
+  <text class="small" x="70" y="112">SMS → hash/delete → local Ed25519 key → signed vote → public result</text>
+
+  <path class="line" d="M250 280 C320 280 342 280 400 280 S508 280 560 280 S676 280 730 280 S848 280 900 280" marker-end="url(#arrow)"/>
+  <circle class="flowdot" cx="0" cy="0" r="8"/>
+
+  <g transform="translate(70 170)">
+    <rect class="card" width="180" height="220" rx="24"/>
+    <text class="label" x="24" y="42">1. SMS</text>
+    <text class="small" x="24" y="68">Επαλήθευση</text>
+    <rect x="60" y="88" width="62" height="108" rx="12" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.18)"/>
+    <circle cx="91" cy="180" r="4" fill="var(--ekk-muted)"/>
+    <g class="phone-msg">
+      <rect x="28" y="108" width="124" height="46" rx="12" fill="color-mix(in srgb,var(--ekk-accent-2) 20%,transparent)" stroke="color-mix(in srgb,var(--ekk-accent-2) 48%,transparent)"/>
+      <text class="mono" x="48" y="137">042917</text>
+    </g>
+  </g>
+
+  <g transform="translate(330 170)">
+    <rect class="card" width="180" height="220" rx="24"/>
+    <text class="label" x="24" y="42">2. Hash</text>
+    <text class="small" x="24" y="68">Διαγραφή αριθμού</text>
+    <rect class="codeblock" x="22" y="96" width="136" height="62" rx="12"/>
+    <text class="small" x="36" y="121">+30 69•• ••••</text>
+    <text class="mono hash-text" x="36" y="146">a91f...42c0</text>
+    <path d="M50 178 L130 178" stroke="var(--ekk-danger)" stroke-width="3" stroke-linecap="round"/>
+    <path d="M86 166 L74 178 L86 190 M94 166 L106 178 L94 190" stroke="var(--ekk-danger)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <g transform="translate(590 170)">
+    <rect class="card" width="180" height="220" rx="24"/>
+    <text class="label" x="24" y="42">3. Key</text>
+    <text class="small" x="24" y="68">Μένει στη συσκευή</text>
+    <g class="key-lock">
+      <rect x="62" y="120" width="58" height="52" rx="10" fill="color-mix(in srgb,var(--ekk-accent) 48%,transparent)" stroke="var(--ekk-accent)"/>
+      <path d="M75 120 v-22 c0-19 32-19 32 0 v22" fill="none" stroke="var(--ekk-accent)" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="91" cy="146" r="5" fill="var(--ekk-text)"/>
+    </g>
+    <text class="mono" x="33" y="196">Ed25519 local</text>
+  </g>
+
+  <g transform="translate(850 170)">
+    <rect class="card" width="280" height="220" rx="24"/>
+    <text class="label" x="24" y="42">4. Result</text>
+    <text class="small" x="24" y="68">Υπογεγραμμένη ψήφος</text>
+    <path class="signature" d="M32 116 C52 88 67 148 88 118 C106 94 124 130 142 112 C162 94 179 113 198 102"/>
+    <text class="small" x="30" y="150">Βουλή</text><rect x="92" y="138" width="136" height="16" rx="8" fill="rgba(255,255,255,.08)"/><rect class="bar-yes" x="92" y="138" width="136" height="16" rx="8" fill="var(--ekk-good)"/>
+    <text class="small" x="30" y="185">Πολίτες</text><rect x="92" y="173" width="136" height="16" rx="8" fill="rgba(255,255,255,.08)"/><rect class="bar-no" x="92" y="173" width="136" height="16" rx="8" fill="var(--ekk-danger)"/>
+  </g>
+</svg>

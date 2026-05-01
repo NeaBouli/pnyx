@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 760" role="img" aria-labelledby="title desc">
+  <title id="title">CPLM political mirror compass</title>
+  <desc id="desc">Animated two-axis political compass showing an aggregate social position moving to a computed point.</desc>
+  <style>
+    :root { --ekk-surface:#111827; --ekk-card:#172033; --ekk-text:#f8fafc; --ekk-muted:#94a3b8; --ekk-accent:#c9a227; --ekk-accent-2:#38bdf8; }
+    .panel{ fill:color-mix(in srgb,var(--ekk-surface) 92%,transparent); stroke:color-mix(in srgb,var(--ekk-muted) 24%,transparent); }
+    .plot{ fill:color-mix(in srgb,var(--ekk-card) 78%,transparent); stroke:color-mix(in srgb,var(--ekk-muted) 28%,transparent); }
+    .grid{ stroke:color-mix(in srgb,var(--ekk-muted) 18%,transparent); stroke-width:1; }
+    .axis{ stroke:color-mix(in srgb,var(--ekk-muted) 50%,transparent); stroke-width:2; }
+    .quad{ fill: color-mix(in srgb,var(--ekk-accent) 5%,transparent); }
+    .title{ fill:var(--ekk-text); font:800 28px Inter,ui-sans-serif,system-ui,sans-serif; }
+    .label{ fill:var(--ekk-text); font:700 18px Inter,ui-sans-serif,system-ui,sans-serif; }
+    .small{ fill:var(--ekk-muted); font:500 14px Inter,ui-sans-serif,system-ui,sans-serif; }
+    .dot{ fill:var(--ekk-accent); filter:url(#glow); offset-path:path('M450 420 C390 390 384 330 430 300 S526 308 560 270'); animation: moveDot 7s ease-in-out infinite; }
+    .trail{ fill:none; stroke:color-mix(in srgb,var(--ekk-accent) 64%,transparent); stroke-width:3; stroke-linecap:round; stroke-dasharray:420; stroke-dashoffset:420; animation: trail 7s ease-in-out infinite; }
+    .live{ fill:color-mix(in srgb,var(--ekk-accent-2) 14%,transparent); stroke:color-mix(in srgb,var(--ekk-accent-2) 48%,transparent); }
+    .live-dot{ fill:var(--ekk-accent-2); animation: pulse 2.2s ease-out infinite; transform-origin:center; }
+    .crosshair{ stroke:var(--ekk-accent); stroke-width:1.5; opacity:.75; stroke-dasharray:5 8; animation: fade 7s ease-in-out infinite; }
+    @keyframes moveDot{ 0%,12%{offset-distance:0%;opacity:.55} 60%,100%{offset-distance:100%;opacity:1} }
+    @keyframes trail{ 0%,12%{stroke-dashoffset:420;opacity:.15} 60%,100%{stroke-dashoffset:0;opacity:.65} }
+    @keyframes pulse{ 0%{r:4;opacity:1} 100%{r:18;opacity:0} }
+    @keyframes fade{ 0%,42%{opacity:0} 60%,100%{opacity:.75} }
+    @media (prefers-reduced-motion: reduce){ *{animation:none!important} .trail{stroke-dashoffset:0} }
+  </style>
+  <defs><filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <rect class="panel" x="24" y="24" width="852" height="712" rx="32"/>
+  <text class="title" x="64" y="82">Πολιτικός Καθρέφτης (CPLM)</text>
+  <text class="small" x="64" y="110">Σωρευτική θέση κοινωνίας από ανώνυμες ψήφους πολιτών.</text>
+  <g transform="translate(110 150)">
+    <rect class="plot" width="680" height="480" rx="24"/>
+    <rect class="quad" x="340" y="0" width="340" height="240" rx="0"/>
+    <path class="grid" d="M85 0V480 M170 0V480 M255 0V480 M425 0V480 M510 0V480 M595 0V480 M0 60H680 M0 120H680 M0 180H680 M0 300H680 M0 360H680 M0 420H680"/>
+    <path class="axis" d="M340 0V480 M0 240H680"/>
+    <path class="trail" d="M340 270 C280 240 274 180 320 150 S416 158 450 120"/>
+    <line class="crosshair" x1="450" y1="0" x2="450" y2="480"/>
+    <line class="crosshair" x1="0" y1="120" x2="680" y2="120"/>
+    <circle class="dot" cx="0" cy="0" r="13"/>
+    <text class="small" x="310" y="-18">Αυταρχικό</text>
+    <text class="small" x="300" y="514">Ελευθεριακό</text>
+    <text class="small" x="-4" y="246" text-anchor="end">Αριστερά</text>
+    <text class="small" x="684" y="246">Δεξιά</text>
+  </g>
+  <g transform="translate(116 666)">
+    <rect class="live" width="124" height="34" rx="17"/>
+    <circle class="live-dot" cx="22" cy="17" r="4"/>
+    <circle cx="22" cy="17" r="4" fill="var(--ekk-accent-2)"/>
+    <text class="small" x="42" y="22">Live 6h</text>
+    <text class="label" x="174" y="23">X: +0.32</text>
+    <text class="label" x="306" y="23">Y: +0.50</text>
+    <text class="small" x="456" y="22">Τεταρτημόριο: Κεντροδεξιά / Αυταρχικό</text>
+  </g>
+</svg>

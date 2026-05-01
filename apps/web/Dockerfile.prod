@@ -11,6 +11,7 @@ COPY docs/wiki/ ./public/wiki/
 COPY docs/votes/ ./public/votes/
 COPY docs/tickets/ ./public/tickets/
 COPY docs/logo/ ./public/logo/
+COPY docs/animations/ ./public/animations/
 COPY docs/index.html docs/community.html docs/govgr-dimos.html docs/parliament.jpg docs/favicon.ico ./public/
 COPY docs/download/ ./public/download/
 COPY docs/robots.txt docs/sitemap.xml docs/llms.txt ./public/

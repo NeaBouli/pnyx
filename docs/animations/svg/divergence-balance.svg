@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" role="img" aria-labelledby="title desc">
+  <title id="title">Parliament citizen divergence balance</title>
+  <desc id="desc">Animated balance and bars comparing the decision of parliament with citizen voting results.</desc>
+  <style>
+    :root { --ekk-surface:#111827; --ekk-card:#172033; --ekk-text:#f8fafc; --ekk-muted:#94a3b8; --ekk-accent:#c9a227; --ekk-accent-2:#38bdf8; --ekk-good:#22c55e; --ekk-danger:#ef4444; --ekk-warn:#f59e0b; }
+    .panel{ fill:color-mix(in srgb,var(--ekk-surface) 92%,transparent); stroke:color-mix(in srgb,var(--ekk-muted) 24%,transparent); }
+    .title{ fill:var(--ekk-text); font:800 28px Inter,ui-sans-serif,system-ui,sans-serif; }
+    .label{ fill:var(--ekk-text); font:700 18px Inter,ui-sans-serif,system-ui,sans-serif; }
+    .small{ fill:var(--ekk-muted); font:500 14px Inter,ui-sans-serif,system-ui,sans-serif; }
+    .mono{ fill:var(--ekk-accent); font:800 38px Inter,ui-sans-serif,system-ui,sans-serif; }
+    .axis{ stroke:color-mix(in srgb,var(--ekk-muted) 30%,transparent); stroke-width:2; }
+    .beam{ stroke:var(--ekk-accent); stroke-width:9; stroke-linecap:round; transform-origin:500px 250px; animation: tilt 5.8s ease-in-out infinite; }
+    .chain{ stroke:color-mix(in srgb,var(--ekk-muted) 70%,transparent); stroke-width:2; }
+    .pan{ fill:color-mix(in srgb,var(--ekk-card) 96%,transparent); stroke:color-mix(in srgb,var(--ekk-accent) 48%,transparent); stroke-width:2; }
+    .left-pan{ animation: leftPan 5.8s ease-in-out infinite; }
+    .right-pan{ animation: rightPan 5.8s ease-in-out infinite; }
+    .bar-bg{ fill:rgba(255,255,255,.08); }
+    .bar-parliament{ fill:var(--ekk-good); animation: pbar 5.8s ease-in-out infinite; transform-origin:126px 456px; }
+    .bar-citizens{ fill:var(--ekk-danger); animation: cbar 5.8s ease-in-out infinite; transform-origin:590px 456px; }
+    .warn{ fill:color-mix(in srgb,var(--ekk-warn) 16%,transparent); stroke:color-mix(in srgb,var(--ekk-warn) 55%,transparent); }
+    @keyframes tilt{ 0%,22%{transform:rotate(0deg)} 55%,88%{transform:rotate(-9deg)} 100%{transform:rotate(0deg)} }
+    @keyframes leftPan{ 0%,22%{transform:translateY(0)} 55%,88%{transform:translateY(-28px)} 100%{transform:translateY(0)} }
+    @keyframes rightPan{ 0%,22%{transform:translateY(0)} 55%,88%{transform:translateY(34px)} 100%{transform:translateY(0)} }
+    @keyframes pbar{ 0%,30%{transform:scaleX(.18)} 60%,100%{transform:scaleX(.84)} }
+    @keyframes cbar{ 0%,30%{transform:scaleX(.18)} 60%,100%{transform:scaleX(.67)} }
+    @media (prefers-reduced-motion: reduce){ *{ animation:none!important; } .bar-parliament{transform:scaleX(.84)} .bar-citizens{transform:scaleX(.67)} }
+  </style>
+  <rect class="panel" x="24" y="24" width="952" height="552" rx="30"/>
+  <text class="title" x="64" y="78">Απόκλιση: Βουλή vs Πολίτες</text>
+  <text class="small" x="64" y="106">Οπτική εξήγηση όταν η θεσμική απόφαση και η δημόσια ψήφος αποκλίνουν.</text>
+
+  <line class="axis" x1="500" y1="190" x2="500" y2="356"/>
+  <circle cx="500" cy="250" r="18" fill="var(--ekk-accent)"/>
+  <line class="beam" x1="282" y1="250" x2="718" y2="250"/>
+
+  <g class="left-pan">
+    <line class="chain" x1="320" y1="250" x2="278" y2="348"/>
+    <line class="chain" x1="320" y1="250" x2="362" y2="348"/>
+    <ellipse class="pan" cx="320" cy="358" rx="90" ry="18"/>
+    <text class="label" x="267" y="416">Βουλή</text>
+    <text class="small" x="272" y="438">ΕΓΚΡΙΝΕ</text>
+  </g>
+  <g class="right-pan">
+    <line class="chain" x1="680" y1="250" x2="638" y2="348"/>
+    <line class="chain" x1="680" y1="250" x2="722" y2="348"/>
+    <ellipse class="pan" cx="680" cy="358" rx="90" ry="18"/>
+    <text class="label" x="620" y="416">Πολίτες</text>
+    <text class="small" x="628" y="438">67% ΚΑΤΑ</text>
+  </g>
+
+  <g transform="translate(64 452)">
+    <text class="small" x="0" y="-12">Βουλή: ΝΑΙ</text>
+    <rect class="bar-bg" x="0" y="0" width="330" height="20" rx="10"/>
+    <rect class="bar-parliament" x="0" y="0" width="330" height="20" rx="10"/>
+    <text class="small" x="464" y="-12">Πολίτες: ΚΑΤΑ</text>
+    <rect class="bar-bg" x="464" y="0" width="330" height="20" rx="10"/>
+    <rect class="bar-citizens" x="464" y="0" width="330" height="20" rx="10"/>
+  </g>
+  <g transform="translate(64 506)">
+    <rect class="warn" width="872" height="46" rx="18"/>
+    <text class="label" x="24" y="30">⚠ Απόκλιση 67%</text>
+    <text class="small" x="232" y="30">Η Βουλή εγκρίνει, ενώ η πλειοψηφία των πολιτών ψηφίζει κατά.</text>
+  </g>
+</svg>
