@@ -252,13 +252,32 @@ async def hlr_credits():
     cost_per_query = 0.01  # 10€ / 1000 credits
     balance_eur = remaining * cost_per_query
 
+    # Failover status from Redis
+    r = await _get_hlr_redis()
+    failover_active = (await r.get("hlr:failover:active")) == "true"
+    failover_reason = await r.get("hlr:failover:reason")
+
+    fallback_enabled = os.getenv("HLR_FALLBACK_ENABLED", "false").lower() == "true"
+    fallback_configured = bool(os.getenv("HLR_FALLBACK_API_KEY"))
+
     return {
-        "initial": HLR_INITIAL_CREDITS,
-        "used": used,
-        "remaining": remaining,
-        "balance_eur": round(balance_eur, 2),
-        "cost_per_query_eur": cost_per_query,
-        "status": "critical" if remaining < 50 else ("low" if remaining < 200 else "ok"),
+        "primary": {
+            "provider": "hlr-lookups.com",
+            "initial": HLR_INITIAL_CREDITS,
+            "used": used,
+            "remaining": remaining,
+            "balance_eur": round(balance_eur, 2),
+            "cost_per_query_eur": cost_per_query,
+            "status": "critical" if remaining < 50 else ("low" if remaining < 200 else "ok"),
+        },
+        "fallback": {
+            "provider": "hlrlookup.com",
+            "enabled": fallback_enabled,
+            "configured": fallback_configured,
+            "status": "ok" if (fallback_enabled and fallback_configured) else "not_configured",
+        },
+        "failover_active": failover_active,
+        "failover_reason": failover_reason,
     }
 
 
