@@ -36,11 +36,11 @@ function HlrRow({ label, provider }: HlrRowProps) {
       <span className="text-sm text-gray-600">{label}</span>
       <div className="text-right">
         <div className="text-sm font-semibold text-gray-800">
-          {provider.remaining != null ? `${provider.remaining} credits` : '—'}
+          {provider.remaining != null ? `${String(provider.remaining)} credits` : '—'}
         </div>
-        {provider.provider && (
+        {provider.provider ? (
           <div className="text-xs text-gray-400">{String(provider.provider)}</div>
-        )}
+        ) : null}
       </div>
     </div>
   )
