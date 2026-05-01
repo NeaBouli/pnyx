@@ -119,17 +119,6 @@ services:
       timeout: 10s
       retries: 3
 
-volumes:
-  postgres-data:
-    external: true
-    name: volumes_ekklesia_postgres
-  redis-data:
-    external: true
-    name: volumes_ekklesia_redis
-  ollama-data:
-    external: true
-    name: volumes_ekklesia_ollama
-
   dashboard:
     build:
       context: ../../apps/dashboard
@@ -150,6 +139,17 @@ volumes:
       - traefik.http.routers.dashboard.entrypoints=websecure
       - traefik.http.routers.dashboard.tls.certresolver=letsencrypt
       - traefik.http.services.dashboard.loadbalancer.server.port=3001
+
+volumes:
+  postgres-data:
+    external: true
+    name: volumes_ekklesia_postgres
+  redis-data:
+    external: true
+    name: volumes_ekklesia_redis
+  ollama-data:
+    external: true
+    name: volumes_ekklesia_ollama
 
 networks:
   ekklesia:
