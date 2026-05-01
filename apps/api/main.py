@@ -451,17 +451,17 @@ async def health_modules():
 
 
 @app.get("/api/v1/version")
-async def app_version():
+async def legacy_app_version():
+    """Legacy endpoint — redirects to canonical /api/v1/app/version data."""
+    from routers.app_version import LATEST_VERSION, LATEST_VERSION_CODE, MIN_REQUIRED_VERSION_CODE
+    from routers.app_version import RELEASE_NOTES_EL, RELEASE_NOTES_EN, PLAYSTORE_URL, DIRECT_APK_URL
     return {
-        "version": "1.0.0",
-        "versionCode": 4,
-        "minSupportedCode": 3,
-        "releaseNotes": {
-            "el": "Έκδοση 4 — Κλειστή Δοκιμή\n• Ασφάλεια: CORS + SSH\n• Analytics διόρθωση\n• POLIS OAuth",
-            "en": "Version 4 — Closed Testing\n• Security: CORS + SSH hardened\n• Analytics fix\n• POLIS OAuth",
-        },
-        "downloadUrl": "https://ekklesia.gr/download/ekklesia-latest.apk",
-        "playStoreUrl": "https://play.google.com/store/apps/details?id=gr.ekklesia.app",
+        "version": LATEST_VERSION,
+        "versionCode": LATEST_VERSION_CODE,
+        "minSupportedCode": MIN_REQUIRED_VERSION_CODE,
+        "releaseNotes": {"el": RELEASE_NOTES_EL, "en": RELEASE_NOTES_EN},
+        "downloadUrl": DIRECT_APK_URL,
+        "playStoreUrl": "https://play.google.com/store/apps/details?id=ekklesia.gr",
     }
 
 @app.get("/")

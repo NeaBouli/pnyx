@@ -42,7 +42,8 @@ export default function HomeScreen() {
   const [updateAvailable, setUpdateAvailable] = useState<{version: string; notes: string; url: string; force: boolean} | null>(null);
   useEffect(() => {
     const currentVC = Constants.expoConfig?.android?.versionCode ?? 5;
-    fetch("https://api.ekklesia.gr/api/v1/app/version")
+    const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
+    fetch(`${API}/api/v1/app/version`)
       .then(r => r.json())
       .then(data => {
         if (data.latest_version_code > currentVC) {
@@ -78,7 +79,20 @@ export default function HomeScreen() {
           <Text style={s.demoBadgeText}>Demo</Text>
         </View>
       )}
-      {updateAvailable && (        <TouchableOpacity          style={{ backgroundColor: "#fef3c7", borderWidth: 1, borderColor: "#f59e0b", borderRadius: 10, padding: 12, marginBottom: 12 }}          onPress={() => Linking.openURL(updateAvailable.url)}        >          <Text style={{ fontWeight: "700", color: "#92400e", fontSize: 13, marginBottom: 4 }}>            {"u26a0ufe0f u039du03adu03b1 u03adu03bau03b4u03bfu03c3u03b7 v" + updateAvailable.version}          </Text>          <Text style={{ color: "#92400e", fontSize: 11 }}>{updateAvailable.notes}</Text>          <Text style={{ color: "#2563eb", fontSize: 12, fontWeight: "700", marginTop: 6 }}>            {"u0395u03bdu03b7u03bcu03adu03c1u03c9u03c3u03b7 u2192"}          </Text>        </TouchableOpacity>      )}
+      {updateAvailable && (
+        <TouchableOpacity
+          style={{ backgroundColor: "#fef3c7", borderWidth: 1, borderColor: "#f59e0b", borderRadius: 10, padding: 12, marginBottom: 12 }}
+          onPress={() => Linking.openURL(updateAvailable.url)}
+        >
+          <Text style={{ fontWeight: "700", color: "#92400e", fontSize: 13, marginBottom: 4 }}>
+            {"\u26a0\ufe0f \u039d\u03ad\u03b1 \u03ad\u03ba\u03b4\u03bf\u03c3\u03b7 v" + updateAvailable.version}
+          </Text>
+          <Text style={{ color: "#92400e", fontSize: 11 }}>{updateAvailable.notes}</Text>
+          <Text style={{ color: "#2563eb", fontSize: 12, fontWeight: "700", marginTop: 6 }}>
+            {"\u0395\u03bd\u03b7\u03bc\u03ad\u03c1\u03c9\u03c3\u03b7 \u2192"}
+          </Text>
+        </TouchableOpacity>
+      )}
       <View style={s.hero}>
         <Animated.View style={[
           s.compassRing,

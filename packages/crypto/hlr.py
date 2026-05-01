@@ -85,10 +85,11 @@ async def hlr_lookup_hlrlookupcom(phone: str) -> dict:
     api_secret = os.getenv("HLR_FALLBACK_API_SECRET")
 
     if not api_key or not api_secret:
-        logger.info(f"[MOD-01] HLR Primary (hlrlookup.com) Dry Run für {normalized[:6]}XXXX")
+        logger.warning(f"[MOD-01] HLR Primary — Credentials fehlen, fail-closed für {normalized[:6]}XXXX")
         return {
-            "valid": True, "network": "Cosmote GR (Dry Run)",
-            "country": "GR", "status": "DRY_RUN", "error": None
+            "valid": False, "network": None,
+            "country": None, "status": "NOT_CONFIGURED",
+            "error": "HLR nicht konfiguriert — Verifikation nicht möglich"
         }
 
     try:
@@ -264,8 +265,8 @@ async def hlr_lookup_melrose(phone: str) -> dict:
 
     api_key = os.getenv("MELROSE_API_KEY")
     if not api_key:
-        return {"valid": True, "status": "DRY_RUN", "network": "Dry Run",
-                "country": "GR", "error": None}
+        return {"valid": False, "status": "NOT_CONFIGURED", "network": None,
+                "country": None, "error": "Melrose not configured"}
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:

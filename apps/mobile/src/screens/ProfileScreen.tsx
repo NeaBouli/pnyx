@@ -157,11 +157,11 @@ export default function ProfileScreen() {
           setUpdateStatus("checking");
           try {
             const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
-            const res = await fetch(`${API}/api/v1/version`);
+            const res = await fetch(`${API}/api/v1/app/version`);
             const data = await res.json();
             setLatestVersion(data);
             const current = Constants.expoConfig?.android?.versionCode ?? 0;
-            setUpdateStatus(data.versionCode > current ? "updateAvailable" : "upToDate");
+            setUpdateStatus(data.latest_version_code > current ? "updateAvailable" : "upToDate");
           } catch { setUpdateStatus("idle"); }
         }}
         disabled={updateStatus === "checking"}
