@@ -556,11 +556,6 @@
 <section class="demo-section" id="demo">
   <div class="demo-title" data-el="Ο Κύκλος της Δημοκρατίας" data-en="The Democracy Cycle">Ο Κύκλος της Δημοκρατίας</div>
   <p class="demo-sub" data-el="Κάθε απόφαση διανύει 6 φάσεις — από τη Βουλή στους πολίτες." data-en="Every decision goes through 6 phases — from Parliament to citizens.">Κάθε απόφαση διανύει 6 φάσεις — από τη Βουλή στους πολίτες.</p>
-  <figure class="ekk-visual-card ekk-visual-frame ekk-fade-up" style="margin:0 auto 2rem;max-width:680px">
-    <img src="animations/svg/bill-lifecycle-ring.svg"
-         alt="Κύκλος Δημοκρατίας: ανακοίνωση, ανάλυση, ενεργοποίηση, ψήφος πολιτών, 24ω παράθυρο, απόφαση Βουλής και αρχείο Arweave"
-         loading="lazy" decoding="async">
-  </figure>
   <div class="demo-grid">
     <div class="demo-box" id="dBox1">
       <div class="demo-icon">🏛️</div>
@@ -653,15 +648,14 @@
   </div>
 </section>
 
-<!-- Divergence visual -->
-<figure class="ekk-visual-card ekk-visual-frame ekk-fade-up" style="max-width:680px;margin:0 auto 1.5rem">
-  <img src="animations/svg/divergence-balance.svg"
-       alt="Σύγκριση ψήφων Βουλής και πολιτών — δείκτης απόκλισης ανά νομοσχέδιο"
-       loading="lazy" decoding="async">
-</figure>
-
 <!-- LIVE Repräsentations-Skala — Kumulative Divergenz Βουλή vs Πολίτες -->
 <div style="max-width:800px;margin:0 auto;padding:1.5rem 2rem" class="fade-in" id="repSection">
+  <!-- Divergence SVG: shows as visual element; JS below tilts balance via data-divergence-score -->
+  <figure style="margin:0 0 1.25rem;border-radius:0.75rem;overflow:hidden;border:1px solid rgba(37,99,235,0.10)">
+    <img src="animations/svg/divergence-balance.svg" id="divergenceFigure"
+         alt="Σύγκριση ψήφων Βουλής και πολιτών — δείκτης απόκλισης ανά νομοσχέδιο"
+         loading="lazy" decoding="async" style="width:100%;display:block">
+  </figure>
   <div style="background:var(--gray-100);border-radius:1rem;padding:1.25rem 1.5rem">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
       <h4 style="font-weight:800;font-size:0.88rem;margin:0" data-el="Αντιπροσωπευτικότητα Βουλής" data-en="Parliament Representativeness">Αντιπροσωπευτικότητα Βουλής</h4>
@@ -809,6 +803,15 @@
           if (lastTitle) lastTitle.textContent = d.last_bill.title_el;
           if (lastStats) lastStats.textContent = d.last_bill.citizen_votes + " ψήφοι · Απόκλιση " + d.last_bill.divergence + "% · Αντιπρ. " + d.last_bill.representation + "%";
         }
+        // Tilt divergence-balance SVG based on live representation score
+        // score 100 = balanced (no tilt), score 0 = max divergence (max tilt)
+        var divFig = document.getElementById("divergenceFigure");
+        if (divFig && score !== null && score !== undefined) {
+          var tiltDeg = ((100 - score) / 100) * 12; // 0–12 degrees based on divergence
+          divFig.style.filter = "none";
+          divFig.parentElement.style.transform = "rotate(" + tiltDeg.toFixed(1) + "deg)";
+          divFig.parentElement.style.transition = "transform 1.2s ease";
+        }
       })
       .catch(function(){});
   }
@@ -816,13 +819,6 @@
   setInterval(fetchRepresentation, 60000);
 })();
 </script>
-
-<!-- CPLM visual -->
-<figure class="ekk-visual-card ekk-visual-frame ekk-fade-up" style="max-width:580px;margin:0 auto 1.5rem">
-  <img src="animations/svg/cplm-compass.svg"
-       alt="Πολιτικός Καθρέφτης CPLM: σωρευτική θέση πολιτών σε δύο άξονες — οικονομία και κοινωνία"
-       loading="lazy" decoding="async">
-</figure>
 
 <!-- CPLM — Citizens Political Liquid Mirror -->
 <div style="max-width:800px;margin:0 auto;padding:0 2rem 1.5rem" class="fade-in" id="cplmSection">
@@ -832,9 +828,14 @@
       <span style="font-size:0.65rem;color:#94a3b8;display:flex;align-items:center;gap:0.3rem"><span style="width:5px;height:5px;border-radius:50%;background:#22c55e;display:inline-block;animation:blink 2s infinite"></span> Live</span>
     </div>
     <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:0.75rem" data-el="Πού βρίσκεται πολιτικά η κοινωνία; Σωρευτικός υπολογισμός από όλες τις ψήφους πολιτών, συμπεριλαμβανομένων των ανοιχτών ψηφοφοριών." data-en="Where does society stand politically? Cumulative calculation from all citizen votes, including open-end votes.">Πού βρίσκεται πολιτικά η κοινωνία; Σωρευτικός υπολογισμός από όλες τις ψήφους πολιτών, συμπεριλαμβανομένων των ανοιχτών ψηφοφοριών.</p>
-    <!-- SVG Political Compass -->
-    <div style="display:flex;justify-content:center;margin-bottom:0.75rem">
-      <svg id="cplmChart" width="280" height="280" viewBox="0 0 280 280" style="background:white;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+    <!-- SVG Political Compass: cplm-compass.svg shown as fallback until live data loads -->
+    <div style="display:flex;justify-content:center;margin-bottom:0.75rem;position:relative">
+      <!-- Fallback: animated SVG, hidden once live data arrives -->
+      <img id="cplmFallback" src="animations/svg/cplm-compass.svg"
+           alt="Πολιτικός Καθρέφτης CPLM — animation"
+           loading="lazy" decoding="async"
+           style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:280px;height:280px;border-radius:0.75rem;opacity:0.55;pointer-events:none;transition:opacity 0.5s">
+      <svg id="cplmChart" width="280" height="280" viewBox="0 0 280 280" style="background:white;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.06);position:relative;z-index:1">
         <!-- Quadrant backgrounds -->
         <rect x="0" y="0" width="140" height="140" fill="#fef3c7" opacity="0.4"/>
         <rect x="140" y="0" width="140" height="140" fill="#fce7f3" opacity="0.4"/>
@@ -916,6 +917,9 @@
           arrow.setAttribute("x2", ax); arrow.setAttribute("y2", ay);
           arrow.setAttribute("opacity", "0.6");
         }
+        // Hide fallback SVG once live data is available
+        var fallback = document.getElementById("cplmFallback");
+        if (fallback) fallback.style.opacity = "0";
       })
       .catch(function(){});
   }
