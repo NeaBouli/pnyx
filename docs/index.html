@@ -650,12 +650,6 @@
 
 <!-- LIVE Repräsentations-Skala — Kumulative Divergenz Βουλή vs Πολίτες -->
 <div style="max-width:800px;margin:0 auto;padding:1.5rem 2rem" class="fade-in" id="repSection">
-  <!-- Divergence SVG: shows as visual element; JS below tilts balance via data-divergence-score -->
-  <figure style="margin:0 0 1.25rem;border-radius:0.75rem;overflow:hidden;border:1px solid rgba(37,99,235,0.10)">
-    <img src="animations/svg/divergence-balance.svg" id="divergenceFigure"
-         alt="Σύγκριση ψήφων Βουλής και πολιτών — δείκτης απόκλισης ανά νομοσχέδιο"
-         loading="lazy" decoding="async" style="width:100%;display:block">
-  </figure>
   <div style="background:var(--gray-100);border-radius:1rem;padding:1.25rem 1.5rem">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
       <h4 style="font-weight:800;font-size:0.88rem;margin:0" data-el="Αντιπροσωπευτικότητα Βουλής" data-en="Parliament Representativeness">Αντιπροσωπευτικότητα Βουλής</h4>
@@ -802,15 +796,6 @@
           lastBill.style.display = "block";
           if (lastTitle) lastTitle.textContent = d.last_bill.title_el;
           if (lastStats) lastStats.textContent = d.last_bill.citizen_votes + " ψήφοι · Απόκλιση " + d.last_bill.divergence + "% · Αντιπρ. " + d.last_bill.representation + "%";
-        }
-        // Tilt divergence-balance SVG based on live representation score
-        // score 100 = balanced (no tilt), score 0 = max divergence (max tilt)
-        var divFig = document.getElementById("divergenceFigure");
-        if (divFig && score !== null && score !== undefined) {
-          var tiltDeg = ((100 - score) / 100) * 12; // 0–12 degrees based on divergence
-          divFig.style.filter = "none";
-          divFig.parentElement.style.transform = "rotate(" + tiltDeg.toFixed(1) + "deg)";
-          divFig.parentElement.style.transition = "transform 1.2s ease";
         }
       })
       .catch(function(){});
