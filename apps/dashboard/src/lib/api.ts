@@ -33,6 +33,36 @@ export async function fetchRepresentation() {
   return r.json()
 }
 
+export async function fetchAdminStats() {
+  const r = await fetch(`${API}/api/v1/admin/stats`, { next: { revalidate: 60 } })
+  return r.json()
+}
+
+export async function fetchAdminBills(limit = 100) {
+  const r = await fetch(`${API}/api/v1/admin/bills?limit=${limit}`, {
+    next: { revalidate: 30 },
+  })
+  return r.json()
+}
+
+export async function createBill(data: {
+  title_el: string
+  title_en?: string
+  summary_short_el: string
+  governance_level: string
+  source_url?: string
+}) {
+  const adminKey = process.env.EKKLESIA_ADMIN_KEY || ''
+  const r = await fetch(`${API}/api/v1/admin/bills?admin_key=${adminKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+    cache: 'no-store',
+  })
+  if (!r.ok) throw new Error(`createBill: HTTP ${r.status}`)
+  return r.json()
+}
+
 export async function fetchDiscourseVersion(): Promise<string> {
   try {
     const r = await fetch('https://pnyx.ekklesia.gr/about.json', {

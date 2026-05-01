@@ -22,12 +22,15 @@ export const ROLE_MODULES: Record<DashboardRole, string[]> = {
     'cplm',
     'users',
     'logs',
+    'settings',
+    'node',
+    'gov',
   ],
-  SYSTEM_ADMIN: ['overview', 'system', 'bills', 'votes', 'logs'],
+  SYSTEM_ADMIN: ['overview', 'system', 'bills', 'votes', 'logs', 'node'],
   CONTENT: ['overview', 'bills', 'votes'],
   ANALYST: ['overview', 'bills', 'votes', 'cplm'],
   SUPPORT: ['overview', 'users'],
-  NODE_ADMIN: ['overview', 'system', 'logs'],
+  NODE_ADMIN: ['overview', 'system', 'logs', 'node'],
 }
 
 export function canAccess(role: DashboardRole, module: string): boolean {

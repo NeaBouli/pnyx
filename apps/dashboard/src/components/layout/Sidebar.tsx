@@ -6,13 +6,16 @@ import { signOut } from 'next-auth/react'
 import { canAccess, type DashboardRole } from '@/lib/auth'
 
 const NAV_ITEMS = [
-  { href: '/', module: 'overview', label: 'Επισκόπηση', labelEn: 'Overview', icon: '🏠' },
-  { href: '/system', module: 'system', label: 'Σύστημα', labelEn: 'System', icon: '⚙️' },
-  { href: '/bills', module: 'bills', label: 'Νομοσχέδια', labelEn: 'Bills', icon: '📋' },
+  { href: '/', module: 'overview', label: 'Επισκόπηση', labelEn: 'Overview', icon: '📊' },
+  { href: '/bills', module: 'bills', label: 'Νομοσχέδια', labelEn: 'Bills', icon: '🏛️' },
   { href: '/votes', module: 'votes', label: 'Ψηφοφορίες', labelEn: 'Votes', icon: '🗳️' },
-  { href: '/cplm', module: 'cplm', label: 'CPLM', labelEn: 'CPLM', icon: '📊' },
+  { href: '/cplm', module: 'cplm', label: 'CPLM', labelEn: 'CPLM', icon: '🧭' },
+  { href: '/system', module: 'system', label: 'Σύστημα', labelEn: 'System', icon: '💻' },
   { href: '/users', module: 'users', label: 'Χρήστες', labelEn: 'Users', icon: '👥' },
-  { href: '/logs', module: 'logs', label: 'Αρχεία', labelEn: 'Logs', icon: '📝' },
+  { href: '/logs', module: 'logs', label: 'Αρχεία', labelEn: 'Logs', icon: '📋' },
+  { href: '/settings', module: 'settings', label: 'Ρυθμίσεις', labelEn: 'Settings', icon: '⚙️' },
+  { href: '/nodes', module: 'node', label: 'Κόμβοι', labelEn: 'Nodes', icon: '🔗' },
+  { href: '/gov', module: 'gov', label: 'Αιτήσεις Gov', labelEn: 'Gov Requests', icon: '🏗️' },
 ]
 
 const ROLE_LABELS: Record<DashboardRole, string> = {
