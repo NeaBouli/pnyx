@@ -138,7 +138,7 @@ services:
       - traefik.http.routers.dashboard.rule=Host(`dashboard.ekklesia.gr`)
       - traefik.http.routers.dashboard.entrypoints=websecure
       - traefik.http.routers.dashboard.tls.certresolver=letsencrypt
-      - traefik.http.services.dashboard.loadbalancer.server.port=3001
+      - traefik.http.services.dashboard.loadbalancer.server.port=3000
 
 volumes:
   postgres-data:
