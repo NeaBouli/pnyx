@@ -131,6 +131,7 @@ services:
       AUTH_GITHUB_ID: ${DASHBOARD_GITHUB_ID}
       AUTH_GITHUB_SECRET: ${DASHBOARD_GITHUB_SECRET}
       EKKLESIA_API: https://api.ekklesia.gr
+      AUTH_TRUST_HOST: "true"
     networks:
       - ekklesia
     labels:
