@@ -211,7 +211,7 @@ export default function SettingsPage() {
           <Toggle
             id="hlr" label="HLR Επαλήθευση" value={modules.hlr}
             onChange={(v) => setModule('hlr', v)}
-            sub={hlrPrimary ? `Credits: ${hlrPrimary.remaining ?? '—'} (${hlrPrimary.provider ?? 'primary'})` : undefined}
+            sub={hlrPrimary ? `Credits: ${String(hlrPrimary?.remaining ?? "—")} (${String(hlrPrimary?.provider ?? "primary")})` : undefined}
           />
           <Toggle
             id="ai_ollama" label="AI Chatbot (Ollama)" value={modules.ai_ollama}
@@ -262,16 +262,16 @@ export default function SettingsPage() {
               return (
                 <div key={i} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-800">{job.name ?? job.job_id ?? `Job ${i + 1}`}</span>
+                    <span className="text-sm font-medium text-gray-800">{String(job.name ?? job.job_id ?? `Job ${i + 1}`)}</span>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ok ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {ok ? 'OK' : job.status ?? 'Error'}
+                      {ok ? "OK" : String(job.status ?? "Error")}
                     </span>
                   </div>
-                  {job.interval && <div className="text-xs text-gray-400">Κάθε {job.interval}</div>}
-                  {job.last_run && <div className="text-xs text-gray-400">Τελ.: {new Date(job.last_run).toLocaleString('el-GR')}</div>}
-                  {job.next_run && <div className="text-xs text-gray-400">Επόμ.: {new Date(job.next_run).toLocaleString('el-GR')}</div>}
+                  {job.interval && <div className="text-xs text-gray-400">Κάθε {String(job.interval)}</div>}
+                  {job.last_run && <div className="text-xs text-gray-400">Τελ.: {new Date(String(job.last_run)).toLocaleString('el-GR')}</div>}
+                  {job.next_run && <div className="text-xs text-gray-400">Επόμ.: {new Date(String(job.next_run)).toLocaleString('el-GR')}</div>}
                   {job.circuit_breaker && (
-                    <div className={`text-xs mt-0.5 ${job.circuit_breaker === 'open' ? 'text-red-500' : 'text-green-500'}`}>
+                    <div className={`text-xs mt-0.5 ${String(job.circuit_breaker) === 'open' ? 'text-red-500' : 'text-green-500'}`}>
                       CB: {job.circuit_breaker}
                     </div>
                   )}
@@ -309,8 +309,8 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between py-2 border-b border-gray-100">
             <span className="text-sm text-gray-600">Τρέχουσα Έκδοση</span>
             <span className="text-sm font-medium text-gray-800">
-              {appVersion?.version ?? appVersion?.versionName ?? '—'}
-              {appVersion?.versionCode ? ` (${appVersion.versionCode})` : ''}
+              {String(appVersion?.latest_version ?? appVersion?.version ?? '—')}
+              {appVersion?.latest_version_code ? ` (${String(appVersion.latest_version_code)})` : ''}
             </span>
           </div>
           <div className="flex items-center justify-between py-2 border-b border-gray-100">
@@ -371,7 +371,7 @@ export default function SettingsPage() {
             <div className="text-sm font-medium text-gray-700 mb-2">Εκκρεμείς ({compassPending.length})</div>
             {compassPending.map((q) => (
               <div key={q.id} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-                <div className="text-sm text-gray-800 mb-2">{q.text_el ?? q.text_en ?? `#${q.id}`}</div>
+                <div className="text-sm text-gray-800 mb-2">{String(q.text_el ?? q.text_en ?? `#${q.id}`)}</div>
                 {q.category && <div className="text-xs text-gray-400 mb-2">Κατηγορία: {q.category}</div>}
                 <div className="flex gap-2">
                   <button
