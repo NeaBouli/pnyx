@@ -171,10 +171,10 @@ export default function SettingsPage() {
 
   const tabs: { key: SettingsTab; label: string }[] = [
     { key: 'modules', label: 'Module' },
-    { key: 'scraper', label: 'Scraper' },
+    { key: 'scraper', label: 'Αυτοματισμοί' },
     { key: 'apps', label: 'Apps' },
     { key: 'compass', label: 'Compass' },
-    { key: 'kb', label: 'Knowledge Base' },
+    { key: 'kb', label: 'Βάση Γνώσεων' },
   ]
 
   return (
@@ -223,7 +223,7 @@ export default function SettingsPage() {
               />
               <Toggle id="discourse" label="Discourse Forum Sync" value={modules.discourse} onChange={(v) => setModule('discourse', v)} sub="FORUM_SYNC_ENABLED" />
               <Toggle
-                id="greek_topics" label="Greek Topics Scraper" value={modules.greek_topics}
+                id="greek_topics" label="Scraper Ελληνικών Θεμάτων" value={modules.greek_topics}
                 onChange={(v) => setModule('greek_topics', v)}
                 disabled disabledReason="Απενεργοποιημένο"
                 warning="Νομική διευκρίνιση σε εξέλιξη"
@@ -301,7 +301,7 @@ export default function SettingsPage() {
                 disabled={actionLoading === 'heal'}
                 className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors disabled:opacity-50"
               >
-                {actionLoading === 'heal' ? String('Επιδιόρθωση...') : String('Heal Scraper')}
+                {actionLoading === 'heal' ? String('Επιδιόρθωση...') : String('Επιδιόρθωση Scraper')}
               </button>
             </div>
           </div>

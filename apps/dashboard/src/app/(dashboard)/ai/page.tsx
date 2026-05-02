@@ -236,7 +236,7 @@ export default function AIPage() {
                 disabled={actionLoading === 'heal-scraper'}
                 className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors disabled:opacity-50"
               >
-                {actionLoading === 'heal-scraper' ? String('Επιδιόρθωση...') : String('Scraper heilen')}
+                {actionLoading === 'heal-scraper' ? String('Επιδιόρθωση...') : String('Επιδιόρθωση Scraper')}
               </button>
               <button
                 onClick={() => handleAction('compass-gen', () =>
@@ -245,7 +245,7 @@ export default function AIPage() {
                 disabled={actionLoading === 'compass-gen'}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
-                {actionLoading === 'compass-gen' ? String('Δημιουργία...') : String('Compass-Fragen generieren')}
+                {actionLoading === 'compass-gen' ? String('Δημιουργία...') : String('Δημιουργία Ερωτήσεων Compass')}
               </button>
             </div>
           </div>

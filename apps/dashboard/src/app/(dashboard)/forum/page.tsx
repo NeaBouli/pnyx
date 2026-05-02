@@ -42,7 +42,7 @@ export default function ForumPage() {
         <span className={`px-3 py-1 rounded-full text-sm font-medium ${
           isOnline ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
         }`}>
-          {isOnline ? String('Online') : String('Offline')}
+          {isOnline ? String('Ενεργό') : String('Εκτός Σύνδεσης')}
         </span>
       </div>
 
