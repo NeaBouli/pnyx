@@ -251,3 +251,29 @@ Diese Inhalte sind als `PUBLIC_DOCS` zu behandeln und gelten nicht automatisch a
   - Keine SSH-/Live-Server-Pruefung.
   - Keine externen Netzwerkaufrufe.
   - Keine `.env`-, Secret-, Key- oder Wallet-Dateien gelesen.
+
+## Codex Gegenpruefung 2026-05-02
+
+- Datum/Zeit: 2026-05-02 21:46:27 EEST
+- Agent: Codex
+- Lokaler HEAD: `ea0d248`
+- Tag: `session-20260502-final`
+- Branch: `main`
+- Remote-Tracking: `main...origin/main`, lokal laut Git nicht ahead/behind
+- Letzter Commit: `fix(scraper): greek_topics ImportError guard + Bridge updates`
+- Arbeitsbaum:
+  - `apps/api/services/greek_topics_scraper.py` bleibt untracked.
+  - Keine weiteren Produktcode-Diffs.
+- Geaenderter Stand:
+  - `apps/api/main.py` faengt `ImportError` beim Lazy Import von `services.greek_topics_scraper` ab.
+  - Damit ist das konkrete Risiko entschaerft, dass der 6h-Scheduler-Job crasht, wenn `greek_topics_scraper.py` auf dem Server fehlt.
+- Weiterhin offen:
+  - `greek_topics_scraper.py` bleibt fachlich gesperrt/untracked; Review-/Draft-Flow statt Auto-Post bleibt die Entscheidung.
+  - Admin-Key-Defaults und Query-Parameter-Auth sind weiterhin sichtbar.
+  - `votes-timeline` nutzt weiterhin broad `except` und kann echte Fehler als leere Timeline maskieren.
+  - Android/F-Droid Package-ID bleibt zu pruefen: lokaler Android-Code nutzt `ekklesia.gr`, F-Droid-Datei heisst `fdroid/gr.ekklesia.app.yml`, Checklist nennt weiterhin `gr.ekklesia.app`.
+- Grenzen:
+  - Keine Tests ausgefuehrt.
+  - Keine SSH-/Live-Server-Pruefung.
+  - Keine externen Netzwerkaufrufe.
+  - Keine `.env`-, Secret-, Key- oder Wallet-Dateien gelesen.

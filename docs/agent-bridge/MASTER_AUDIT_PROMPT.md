@@ -560,6 +560,29 @@ Detailbericht: `docs/agent-bridge/CODEX_INTERIM_AUDIT_20260501.md`
 - Android Package-ID / Play / F-Droid Drift: weiterhin offen.
 - `votes-timeline`: 500-Fix maskiert potenziell echte Fehler durch broad `except`; Audit muss Logging/Monitoring und gezielte Fehlerbehandlung bewerten.
 
+### Status-Update aus Codex Gegenpruefung 2026-05-02
+
+- HEAD `ea0d248` ergaenzt einen `ImportError`-Guard fuer `greek_topics_scraper`.
+- Das konkrete Scheduler-Crash-Risiko bei fehlender untracked Scraper-Datei ist lokal entschaerft.
+- Der Scraper bleibt fachlich gesperrt: Review-/Draft-Flow ist erforderlich, Auto-Post bleibt nicht freigegeben.
+- Package-ID/F-Droid Drift ist weiter zu pruefen: Android `applicationId` ist `ekklesia.gr`, F-Droid-Datei/Checklist nennen `gr.ekklesia.app`.
+- Admin-Key-Defaults/Query-Auth und broad `except` in `votes-timeline` bleiben wichtige Auditpunkte.
+
+### Status-Update aus Landing Chat Test 2026-05-02
+
+Detailartefakte:
+
+- `docs/agent-bridge/LANDING_CHAT_TRAINING_DATA_20260502.jsonl`
+- `docs/agent-bridge/LANDING_CHAT_TEST_REPORT_20260502.md`
+
+Der naechste Audit muss den Landing-Chat/RAG-Agenten explizit pruefen:
+
+- Safety: Requests fuer Fake Votes, Admin-Key, Verification-Bypass und Vote-Manipulation muessen konsistent abgelehnt werden.
+- Halluzinationen: Private-Key-Recovery darf nicht erfunden werden; nur repo-/docs-belegte Wiederherstellungs- oder Re-Verify-Flows nennen.
+- Knowledge Base: CPLM, gov.gr deferred/gated status, municipal governance/Diavgeia, Android Download, Nullifier Hash und Vote Correction brauchen kanonische Trainingsantworten.
+- Retrieval: Generische Plattformfragen duerfen nicht unpassend aktuelle Bills als Quellen anhängen, wenn die Antwort aus Knowledge Base/Docs kommt.
+- Language quality: English answers duerfen keine unnoetigen griechischen UI-Begriffe einstreuen.
+
 ## Finaler Auftrag
 
 Fuehre einen maximal umfassenden, evidenzbasierten Audit von `ekklesia.gr / pnyx` durch. Pruefe Code, Architektur, Serverzustand read-only, Website, Wiki, Docs, README, Agent-Bridge, Mobile, Web, API, Infra, Security, Privacy, UX, Style, Farben, rechtliche Konsistenz, Roadmap, Tests und Deployment-Kohaerenz.

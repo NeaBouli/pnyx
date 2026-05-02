@@ -1,5 +1,113 @@
 # Action Log
 
+## 2026-05-02 — Codex: Chat/RAG Agent Fix vorbereitet
+
+- **Agent:** Codex
+- **Aktion:** Safety-Pre-Filter, kanonische Chat-Antworten, KB-Seed-Sync, Source-Retrieval und Regressionstests implementiert
+- **Geaenderte Produktdateien:**
+  - `apps/api/routers/agent.py`
+  - `apps/api/scripts/seed_knowledge_base.py`
+  - `apps/api/tests/test_agent_guardrails.py`
+  - `apps/api/tests/test_agent_training_regression.py`
+- **Neue Bridge-Dateien:**
+  - `docs/agent-bridge/CHAT_RAG_FIX_REPORT_20260502.md`
+  - `docs/agent-bridge/CLAUDE_DEPLOY_PROMPT_CHAT_RAG_20260502.md`
+- **Tests:**
+  - `./.venv/bin/python -m pytest tests/test_agent_guardrails.py tests/test_agent_training_regression.py -q` → 11 passed, 1 warning
+  - `./.venv/bin/python -m py_compile routers/agent.py scripts/seed_knowledge_base.py tests/test_agent_guardrails.py tests/test_agent_training_regression.py` → passed
+- **Keine `.env`-Dateien gelesen**
+- **Keine Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Commit**
+- **Kein Push**
+- **Kein Deployment**
+- **Keine SSH-Verbindung**
+
+---
+
+## 2026-05-02 — Codex: Landing Chat Trainingsdaten-Test
+
+- **Agent:** Codex
+- **Aktion:** Landing-Page Chat Widget/API rate-limit-konform getestet
+- **Endpoint:** `POST https://api.ekklesia.gr/api/v1/agent/ask`
+- **Umfang:** 24 Primaerfragen + 1 Retry
+- **Ergebnisse:**
+  - 23/24 Primaerfragen erfolgreich, 1 HTTP/2 Transportfehler bei `EN-005`
+  - Retry `EN-005-R1` mit `curl --http1.1` erfolgreich
+  - Modelle: 22x `ollama`, 2x `claude-haiku`
+  - Kritische Trainings-Findings: Fake-Vote-Frage wurde unsicher beantwortet; Private-Key-Recovery wurde wahrscheinlich halluziniert; CPLM/gov.gr/municipal Knowledge fehlt oder ist schwach
+- **Neue Bridge-Dateien:**
+  - `docs/agent-bridge/LANDING_CHAT_TRAINING_DATA_20260502.jsonl`
+  - `docs/agent-bridge/LANDING_CHAT_TEST_REPORT_20260502.md`
+  - `docs/agent-bridge/LANDING_CHAT_FULL_TRANSCRIPT_20260502.md`
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine `.env`-Dateien gelesen**
+- **Keine Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Commit**
+- **Kein Push**
+- **Kein Deployment**
+- **Keine SSH-Verbindung**
+
+---
+
+## 2026-05-02 — Claude Code: Dashboard HP — Bill Edit + Party Votes + Log-Viewer
+
+- **Agent:** Claude Code
+- **Commit:** `4229053` — 4 Dateien, +810/-146
+- **HEAD:** `4229053`
+- **Bills:** Edit Modal (PATCH), Status-Dropdown, Text Modal (set-text + auto-scrape), Party Votes (8 Parteien ΝΑΙ/ΟΧΙ/ΑΠΟΧΗ)
+- **Votes:** Party Divergence BarChart, Export CSV/JSON/Divergence
+- **Logs:** 4 Tabs (System/HLR/Scheduler/API), 8 Jobs Tabelle, Module Status, Auto-Refresh
+- **6 offene Items erledigt** (von 25 → 19 verbleibend)
+- **Rollback-Tag:** `pre-dashboard-hp-20260502`
+
+---
+
+## 2026-05-02 — Claude Code: 8/8 Scheduler-Jobs sichtbar
+
+- **Agent:** Claude Code
+- **Commit:** `6e5507c`
+- **HEAD:** `6e5507c`
+- **Fix:** scraper.py /jobs Liste 4→8 Namen, main.py forum_sync/bill_lifecycle/cplm_refresh mit record_run/success/failure
+- **Verifiziert:** Alle 8 Jobs in API Response
+
+---
+
+## 2026-05-02 — Claude Code: F-005 Admin-Key Hardening deployed
+
+- **Agent:** Claude Code
+- **Commit:** `7e1742b` — 7 Dateien, zentrale `verify_admin_key()`, Bearer Token + Query fallback, 24 Endpoints, fail-closed Production
+- **Verifiziert:** Kein Key → 403, Bearer → OK, Query → OK
+
+---
+
+## 2026-05-02 — Codex: Gegenpruefung nach ea0d248
+
+- **Agent:** Codex
+- **Aktion:** Lokalen Stand nach Commit `ea0d248` gegen letzte offene Findings geprueft
+- **Ergebnis:**
+  - HEAD `ea0d248`, Tag `session-20260502-final`
+  - `main` laut Git mit `origin/main` synchron
+  - `greek_topics` ImportError-Guard vorhanden; Scheduler-Importfehler bei fehlender untracked Datei ist entschaerft
+  - `apps/api/services/greek_topics_scraper.py` bleibt bewusst untracked und fachlich gesperrt
+  - Weiterhin offen: Admin-Key-Defaults/Query-Auth, broad `except` in `votes-timeline`, Package-ID/F-Droid Drift
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/PROJECT_STATE.md`
+  - `docs/agent-bridge/CODEX_TO_CLAUDE.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine Produktcode-Aenderung**
+- **Keine `.env`-Dateien gelesen**
+- **Keine Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Commit**
+- **Kein Push**
+- **Kein Deployment**
+- **Keine SSH-Verbindung**
+
+---
+
 ## 2026-05-02 — Codex: Recheck nach fd3f50d
 
 - **Agent:** Codex

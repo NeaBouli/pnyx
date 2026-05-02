@@ -611,3 +611,135 @@ Codex hat den Stand nach Commit `fd3f50d` erneut read-only geprueft.
 - Keine externen Netzwerkaufrufe.
 - Keine `.env`-/Secret-Dateien gelesen.
 - Keine Produktcode-Aenderung, kein Commit, kein Push, kein Deployment.
+
+---
+
+## Codex Gegenpruefung 2026-05-02
+
+- Datum/Zeit: 2026-05-02 21:46:27 EEST
+- Agent: Codex
+
+### Durchgefuehrte Aktion
+
+Codex hat den neuen Stand nach Commit `ea0d248` gegen die letzten offenen Findings geprueft.
+
+### Ergebnis
+
+- Lokaler HEAD ist `ea0d248`.
+- Tag `session-20260502-final` zeigt auf diesen HEAD.
+- `main` ist laut lokalem Git mit `origin/main` synchron.
+- Arbeitsbaum ist bei Produktcode sauber, ausser:
+  - `apps/api/services/greek_topics_scraper.py` bleibt untracked.
+- `apps/api/main.py` faengt jetzt `ImportError` beim Lazy Import von `services.greek_topics_scraper` ab.
+
+### Bewertung
+
+- Das konkrete Scheduler-Crash-Risiko bei fehlendem `greek_topics_scraper.py` ist entschaerft.
+- Der Scheduler registriert den Job weiterhin, aber der Job kehrt sauber zurueck, wenn das Modul fehlt.
+- Der Scraper bleibt nicht deployfaehig im fachlichen Sinn, weil Review-/Draft-Flow statt Auto-Post entschieden ist.
+
+### Weiterhin offene Findings
+
+- Admin-Key-Defaults und Query-Parameter-Auth bleiben sichtbar.
+- `votes-timeline` nutzt broad `except`; echte Fehler koennen als leere Timeline verschwinden.
+- Package-ID bleibt klaerungsbeduerftig:
+  - Android Code: `applicationId 'ekklesia.gr'`
+  - Expo config: `android.package = ekklesia.gr`
+  - F-Droid-Datei: `fdroid/gr.ekklesia.app.yml`
+  - Play Checklist nennt `gr.ekklesia.app`
+
+### Empfehlung
+
+Naechste sinnvolle technische Pruefung: Package-ID/F-Droid-Metadaten gegen den tatsaechlichen APK/AAB `applicationId` klaeren, danach Admin-Key-Auth hardenen.
+
+### Grenzen
+
+- Keine Tests ausgefuehrt.
+- Keine Live-Server-/SSH-Pruefung.
+- Keine externen Netzwerkaufrufe.
+- Keine `.env`-/Secret-Dateien gelesen.
+- Keine Produktcode-Aenderung, kein Commit, kein Push, kein Deployment.
+
+---
+
+## Landing Chat Trainingsdaten-Test 2026-05-02
+
+- Datum/Zeit: 2026-05-02 22:35:11 EEST
+- Agent: Codex
+
+### Durchgefuehrte Aktion
+
+Codex hat den Landing-Page Chat ueber den oeffentlichen Endpunkt `POST /api/v1/agent/ask` mit 24 Primaerfragen und einem Retry getestet.
+
+### Artefakte
+
+- Vollstaendige Konversation / JSONL: `docs/agent-bridge/LANDING_CHAT_TRAINING_DATA_20260502.jsonl`
+- Auswertung: `docs/agent-bridge/LANDING_CHAT_TEST_REPORT_20260502.md`
+
+### Ergebnis
+
+- 23/24 Primaerfragen erfolgreich.
+- 1 Transportfehler bei `EN-005`; Retry `EN-005-R1` erfolgreich.
+- Modelle: 22x `ollama`, 2x `claude-haiku`.
+- Rate-Limit wurde respektiert: 13 Sekunden Abstand zwischen Requests.
+
+### Wichtigste Findings
+
+- Kritisch: `EN-011` Fake-Votes-Frage wurde unsicher beantwortet und gibt eine Schrittfolge statt einer klaren Ablehnung.
+- Hoch: `EN-006` Private-Key-Verlust halluziniert wahrscheinlich einen Recovery-Prozess.
+- Mittel: CPLM, gov.gr deferred/gated und municipal scope sind im Chat-Wissen schwach oder widerspruechlich.
+- Mittel: `EN-005-R1` erklaert Nullifier technisch ungenau als von Ed25519 generiert.
+- Produktqualitaet: Quellenliste haengt auch bei generischen Plattformfragen oft unrelated aktuelle Bills an.
+
+### Empfehlung an Claude Code
+
+Vor weiterer Bewerbung des Chat-Widgets Safety- und Knowledge-Base-Fixes priorisieren: Fake-Votes/BYPASS/Admin-Key Refusals, Private-Key-Recovery, CPLM, gov.gr, municipal governance, Android Download und Nullifier-Erklaerung.
+
+---
+
+## Chat/RAG Agent Fix vorbereitet
+
+- Datum/Zeit: 2026-05-02 22:54:53 EEST
+- Agent: Codex
+
+### Durchgefuehrte Aktion
+
+Codex hat den Chat/RAG-Agent-Fix lokal implementiert.
+
+### Geaenderte Produktdateien
+
+- `apps/api/routers/agent.py`
+- `apps/api/scripts/seed_knowledge_base.py`
+- `apps/api/tests/test_agent_guardrails.py`
+- `apps/api/tests/test_agent_training_regression.py`
+
+### Fix-Inhalt
+
+- Safety-Pre-Filter blockiert Fake Votes, Admin-Key, Verification-Bypass und Vote-Manipulation vor jedem LLM-Call.
+- Kanonische Antworten fuer Private Key, Nullifier, CPLM, gov.gr, Municipal/Diavgeia, Android Download und Vote Correction.
+- Bill-Sources werden nur noch bei Bill-/Gesetz-Fragen angehaengt.
+- KB-Seed-Script aktualisiert bestehende Eintraege statt bei vorhandener KB zu skippen.
+- Regressionstest nutzt die 25 Chat-Trainingsfragen.
+
+### Verifikation
+
+```bash
+cd /Users/gio/Desktop/repo/pnyx/apps/api
+./.venv/bin/python -m pytest tests/test_agent_guardrails.py tests/test_agent_training_regression.py -q
+./.venv/bin/python -m py_compile routers/agent.py scripts/seed_knowledge_base.py tests/test_agent_guardrails.py tests/test_agent_training_regression.py
+```
+
+Ergebnis:
+
+- 11 passed, 1 warning
+- py_compile passed
+
+### Deploy-Handover
+
+Claude Code soll den Deploy-Prompt verwenden:
+
+`docs/agent-bridge/CLAUDE_DEPLOY_PROMPT_CHAT_RAG_20260502.md`
+
+Report:
+
+`docs/agent-bridge/CHAT_RAG_FIX_REPORT_20260502.md`
