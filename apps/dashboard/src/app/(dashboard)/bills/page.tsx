@@ -230,7 +230,7 @@ export default function BillsPage() {
                     <td className="px-4 py-3 text-gray-500 font-mono">#{bill.id}</td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-gray-900 truncate max-w-xs">{bill.title_el}</div>
-                      {bill.title_en && <div className="text-xs text-gray-400 truncate max-w-xs">{bill.title_en}</div>}
+                      {bill.title_en ? <div className="text-xs text-gray-400 truncate max-w-xs">{String(bill.title_en)}</div> : null}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[bill.status]}`}>

@@ -372,7 +372,7 @@ export default function SettingsPage() {
             {compassPending.map((q) => (
               <div key={q.id} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
                 <div className="text-sm text-gray-800 mb-2">{String(q.text_el ?? q.text_en ?? `#${q.id}`)}</div>
-                {q.category && <div className="text-xs text-gray-400 mb-2">Κατηγορία: {q.category}</div>}
+                {q.category ? <div className="text-xs text-gray-400 mb-2">Κατηγορία: {String(q.category)}</div> : null}
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleCompassAction(q.id, 'approve')}

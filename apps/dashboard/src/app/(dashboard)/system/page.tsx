@@ -127,9 +127,9 @@ export default function SystemPage() {
               {data ? (
                 <div className="text-right">
                   <div className="text-sm font-semibold text-gray-800">
-                    {data.remaining != null ? `${data.remaining} credits` : '—'}
+                    {data.remaining != null ? `${String(data.remaining)} credits` : '—'}
                   </div>
-                  {data.provider && <div className="text-xs text-gray-400">{data.provider as string}</div>}
+                  {data.provider ? <div className="text-xs text-gray-400">{String(data.provider)}</div> : null}
                 </div>
               ) : (
                 <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">Μη διαθέσιμο</span>
