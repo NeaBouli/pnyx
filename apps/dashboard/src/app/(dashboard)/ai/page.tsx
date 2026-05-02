@@ -52,7 +52,7 @@ export default function AIPage() {
   }, [])
 
   async function handleAction(name: string, fn: () => Promise<unknown>) {
-    if (!confirm(`Aktion "${name}" ausführen?`)) return
+    if (!confirm(`Εκτέλεση "${name}";`)) return
     setActionLoading(name)
     setActionResult(null)
     try {
@@ -69,9 +69,11 @@ export default function AIPage() {
     }
   }
 
-  const ollamaModel = (scraper?.ollama_model ?? claude?.ollama_model ?? scraper?.model) as string | null
-  const ollamaStatus = (scraper?.ollama_status ?? scraper?.status ?? claude?.ollama_status) as string | null
-  const ollamaOk = ollamaStatus === 'ok' || ollamaStatus === 'available' || ollamaStatus === 'healthy'
+  const scraperProviders = scraper?.providers as Record<string, Record<string, unknown>> | undefined
+  const ollamaProvider = scraperProviders?.ollama
+  const ollamaModel = (ollamaProvider?.model ?? scraper?.ollama_model ?? claude?.ollama_model ?? scraper?.model) as string | null
+  const ollamaStatus = (ollamaProvider?.status ?? scraper?.ollama_status ?? scraper?.status ?? claude?.ollama_status) as string | null
+  const ollamaOk = ollamaStatus === 'ok' || ollamaStatus === 'active' || ollamaStatus === 'available' || ollamaStatus === 'healthy'
 
   const claudeTokensToday = claude?.tokens_today as number | null
   const claudeTokensMonth = claude?.tokens_month as number | null
@@ -99,11 +101,11 @@ export default function AIPage() {
           {/* Ollama */}
           <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="font-semibold text-gray-800">{String('Ollama (Self-hosted LLM)')}</h2>
+              <h2 className="font-semibold text-gray-800">{String('Ollama (Τοπικό LLM)')}</h2>
               <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
                 ollamaOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
               }`}>
-                {ollamaOk ? String('Online') : String(ollamaStatus ?? 'Offline')}
+                {ollamaOk ? String('Ενεργό') : String('Εκτός Σύνδεσης')}
               </span>
             </div>
             <div className="p-5 space-y-3">
@@ -195,20 +197,20 @@ export default function AIPage() {
             <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
               <h2 className="font-semibold text-gray-800">{String('RAG Agent')}</h2>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                {String('Hybrid')}
+                {String('Υβριδικό')}
               </span>
             </div>
             <div className="p-5 space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">{String('Primary')}</span>
+                <span className="text-gray-600">{String('Κύρια Πηγή')}</span>
                 <span className="text-gray-800">{String('Ollama')} ({String(ollamaModel ?? 'llama3.2')})</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">{String('Fallback')}</span>
+                <span className="text-gray-600">{String('Εφεδρική Πηγή')}</span>
                 <span className="text-gray-800">{String('Claude Haiku')}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">{String('Rate Limit')}</span>
+                <span className="text-gray-600">{String('Όριο Αιτημάτων')}</span>
                 <span className="text-gray-500">{String('5 αιτήματα/λεπτό')}</span>
               </div>
             </div>
@@ -217,7 +219,7 @@ export default function AIPage() {
           {/* One-Click Repair Buttons */}
           <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-200">
-              <h2 className="font-semibold text-gray-800">{String('Ενέργειες Επισκευής')}</h2>
+              <h2 className="font-semibold text-gray-800">{String('Ενέργειες Επιδιόρθωσης')}</h2>
             </div>
             <div className="p-5 flex flex-wrap gap-3">
               <button

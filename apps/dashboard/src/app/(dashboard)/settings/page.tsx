@@ -336,7 +336,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="divide-y divide-gray-100 border-t border-gray-100 pt-2">
-            <Toggle id="force_update" label="Force Update" value={forceUpdate} onChange={setForceUpdate} />
+            <Toggle id="force_update" label="Αναγκαστική Ενημέρωση" value={forceUpdate} onChange={setForceUpdate} />
             {forceUpdate && (
               <div className="py-2 pl-2">
                 <label className="block text-xs font-medium text-gray-600 mb-1">{String('Ελάχιστη Έκδοση')}</label>
@@ -349,15 +349,15 @@ export default function SettingsPage() {
                 />
               </div>
             )}
-            <Toggle id="maintenance" label="Maintenance Mode" value={maintenanceMode} onChange={setMaintenanceMode} warning={maintenanceMode ? 'App zeigt Maintenance-Bildschirm' : undefined} />
+            <Toggle id="maintenance" label="Λειτουργία Συντήρησης" value={maintenanceMode} onChange={setMaintenanceMode} warning={maintenanceMode ? 'Η εφαρμογή εμφανίζει οθόνη συντήρησης' : undefined} />
           </div>
 
           <div className="mt-4 space-y-2">
             <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-500">
-              {String('Download-Statistiken (Play Console API — Phase 2)')}
+              {String('Στατιστικά Λήψεων (Play Console API — Phase 2)')}
             </div>
             <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-500">
-              {String('Crash Reports (Sentry — Phase 2)')}
+              {String('Αναφορές Σφαλμάτων (Sentry — Phase 2)')}
             </div>
           </div>
         </div>
@@ -416,9 +416,9 @@ export default function SettingsPage() {
       {/* Tab 5: Knowledge Base */}
       {tab === 'kb' && (
         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <h2 className="font-semibold text-gray-900 mb-3">{String('Knowledge Base (RAG)')}</h2>
+          <h2 className="font-semibold text-gray-900 mb-3">{String('Βάση Γνώσεων (RAG)')}</h2>
           <div className="bg-gray-50 rounded-lg p-6 text-center">
-            <div className="text-sm font-medium text-gray-500">{String('Knowledge Base CRUD — Phase 2')}</div>
+            <div className="text-sm font-medium text-gray-500">{String('Βάση Γνώσεων CRUD — Phase 2')}</div>
             <div className="text-xs text-gray-400 mt-1">{String('FAQ, Αποστολή, Concepts για τον RAG Agent')}</div>
           </div>
         </div>

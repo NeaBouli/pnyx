@@ -108,7 +108,7 @@ export default function OverviewPage() {
       apiFetch('/api/v1/cplm/aggregate'),
       apiFetch('/api/v1/analytics/overview'),
       apiFetch('/api/v1/scraper/jobs'),
-      fetch('https://pnyx.ekklesia.gr/about.json').then(r => r.json()).catch(() => null),
+      fetch('/api/discourse').then(r => r.json()).catch(() => null),
       apiFetch('/api/v1/claude/budget'),
       apiFetch('/api/v1/newsletter/stats'),
       apiFetch('/api/v1/analytics/divergence-trends?days=90'),
@@ -259,13 +259,13 @@ export default function OverviewPage() {
               />
               <StatCard
                 title="Discourse Forum"
-                value={discourseVersion ?? 'offline'}
+                value={discourseVersion ?? 'Εκτός Σύνδεσης'}
                 sub="pnyx.ekklesia.gr"
                 color={discourseVersion ? 'text-blue-600' : 'text-red-600'}
-                badge={{ label: discourseVersion ? 'Live' : 'Offline', color: discourseVersion ? 'green' : 'red' }}
+                badge={{ label: discourseVersion ? 'Live' : 'Εκτός Σύνδεσης', color: discourseVersion ? 'green' : 'red' }}
               />
               <StatCard
-                title="AI Budget"
+                title="AI Προϋπολογισμός"
                 value={claudeIsActive ? 'Ενεργό' : claudeIsActive === false ? 'Ανενεργό' : '—'}
                 sub={claudeTokensToday != null ? `Σήμερα: ${claudeTokensToday.toLocaleString('el-GR')} tokens` : 'Claude Tokens'}
                 color={claudeIsActive ? 'text-green-600' : 'text-gray-400'}
@@ -499,8 +499,8 @@ export default function OverviewPage() {
                         <span className="text-gray-600">{key === 'primary' ? 'Κύρια' : 'Εφεδρική'} ({prov.provider as string ?? '—'})</span>
                         <span className="font-medium text-gray-800">{rem ?? '—'} / {tot}</span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2">
-                        <div className={`h-2 rounded-full transition-all ${pct > 20 ? 'bg-blue-500' : 'bg-red-500'}`} style={{ width: `${pct}%` }} />
+                      <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                        <div className={`h-2 rounded-full transition-all ${pct > 20 ? 'bg-blue-500' : 'bg-red-500'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
                       </div>
                     </div>
                   )
@@ -528,9 +528,9 @@ export default function OverviewPage() {
             )}
           </div>
 
-          {/* Claude AI Budget */}
+          {/* Claude AI Προϋπολογισμός */}
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-gray-800 mb-3">Claude AI Budget</h2>
+            <h2 className="text-base font-semibold text-gray-800 mb-3">Claude AI Προϋπολογισμός</h2>
             {claudeData ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-gray-50 rounded-lg p-4">

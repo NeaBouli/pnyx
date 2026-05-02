@@ -13,7 +13,7 @@ export default function ForumPage() {
     async function load() {
       try {
         const [aboutRes, healthRes] = await Promise.allSettled([
-          fetch('https://pnyx.ekklesia.gr/about.json').then(r => r.json()),
+          fetch('/api/discourse').then(r => r.json()),
           fetch(`${API}/health`).then(r => r.json()),
         ])
         if (aboutRes.status === 'fulfilled') setDiscourse(aboutRes.value as Record<string, unknown>)
@@ -97,7 +97,7 @@ export default function ForumPage() {
                   forumSyncEnabled === false ? 'bg-red-100 text-red-700' :
                   'bg-gray-100 text-gray-500'
                 }`}>
-                  {forumSyncEnabled === true ? String('FORUM_SYNC_ENABLED') :
+                  {forumSyncEnabled === true ? String('Ενεργοποιημένο') :
                    forumSyncEnabled === false ? String('Απενεργοποιημένο') :
                    String('Άγνωστο')}
                 </span>

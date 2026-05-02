@@ -91,10 +91,10 @@ export default function FinancePage() {
                   </span>
                 </div>
                 {primaryPct != null && (
-                  <div className="w-full bg-gray-100 rounded-full h-2.5">
+                  <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
                     <div
                       className={`h-2.5 rounded-full transition-all ${primaryPct > 20 ? 'bg-blue-500' : 'bg-red-500'}`}
-                      style={{ width: `${primaryPct}%` }}
+                      style={{ width: `${Math.min(primaryPct, 100)}%` }}
                     />
                   </div>
                 )}
@@ -182,9 +182,9 @@ export default function FinancePage() {
             )}
           </div>
 
-          {/* Claude AI Budget */}
+          {/* Claude AI Προϋπολογισμός */}
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-gray-800 mb-3">Claude AI Budget</h2>
+            <h2 className="text-base font-semibold text-gray-800 mb-3">Claude AI Προϋπολογισμός</h2>
             {claude ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-gray-50 rounded-lg p-4">
@@ -217,7 +217,7 @@ export default function FinancePage() {
                   rel="noopener noreferrer"
                   className="text-sm text-blue-600 hover:underline"
                 >
-                  {String('Donate via PayPal')}
+                  {String('Δωρεά μέσω PayPal')}
                 </a>
               </div>
               <div className="flex items-center justify-between py-2 border-b border-gray-100">

@@ -67,8 +67,16 @@ export default function SystemPage() {
 
   const healthStatus = health?.status as string | null
   const isOk = healthStatus === 'ok'
-  const moduleMap: Record<string, string> = (modules?.modules ?? modules ?? {}) as Record<string, string>
-  const moduleEntries = Object.entries(moduleMap).filter(([k]) => k !== 'status' && k !== 'timestamp')
+  const rawModules = (modules?.modules ?? modules ?? {}) as Record<string, unknown>
+  const moduleEntries = Object.entries(rawModules)
+    .filter(([k]) => k !== 'status' && k !== 'timestamp')
+    .map(([key, val]): [string, string, string] => {
+      if (val && typeof val === 'object' && 'name' in (val as Record<string, unknown>)) {
+        const mod = val as { name: string; status: string }
+        return [key, `${key} — ${mod.name}`, mod.status]
+      }
+      return [key, key, String(val)]
+    })
 
   const hlrPrimary = hlr?.primary as Record<string, unknown> | undefined
   const hlrFallback = hlr?.fallback as Record<string, unknown> | undefined
@@ -101,8 +109,8 @@ export default function SystemPage() {
         <div className="p-4">
           {moduleEntries.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {moduleEntries.map(([name, status]) => (
-                <ModuleBadge key={name} name={name} status={String(status)} />
+              {moduleEntries.map(([key, name, status]) => (
+                <ModuleBadge key={key} name={name} status={status} />
               ))}
             </div>
           ) : (
@@ -119,8 +127,8 @@ export default function SystemPage() {
         </div>
         <div className="px-6 py-4 space-y-3">
           {[
-            { label: 'Κύρια πηγή (Primary)', data: hlrPrimary },
-            { label: 'Εφεδρική πηγή (Fallback)', data: hlrFallback },
+            { label: 'Κύρια Πηγή', data: hlrPrimary },
+            { label: 'Εφεδρική Πηγή', data: hlrFallback },
           ].map(({ label, data }) => (
             <div key={label} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
               <span className="text-sm text-gray-600">{label}</span>
@@ -165,7 +173,7 @@ export default function SystemPage() {
             {String(govGr?.progress ?? '0/4')}
           </div>
           <div className="text-xs text-gray-400 mt-0.5">
-            {govGr?.status === 'active' ? 'Ενεργό' : govGr?.status === 'stub' ? 'Stub' : 'Αναμονή πλήρωσης'}
+            {govGr?.status === 'active' ? 'Ενεργό' : govGr?.status === 'stub' ? 'Αναμονή' : 'Αναμονή πλήρωσης'}
           </div>
         </div>
       </div>

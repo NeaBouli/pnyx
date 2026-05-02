@@ -52,10 +52,10 @@ const EXAMPLE_APPLICATIONS: GovApplication[] = [
 ]
 
 const GATE_LABELS: { key: keyof GovGrGates; label: string; description: string }[] = [
-  { key: '500_aktive_nutzer', label: '500 Aktive Nutzer', description: 'Mindestens 500 verifizierte, aktive Nutzer auf der Plattform' },
-  { key: '3_ngo_partnerschaften', label: '3 NGO Partnerschaften', description: 'Partnerschaften mit mindestens 3 anerkannten NGOs' },
-  { key: 'roadmap_publiziert', label: 'Roadmap Publiziert', description: 'Öffentliche Roadmap mit Transparenz-Verpflichtung' },
-  { key: 'govgr_genehmigung', label: 'gov.gr Genehmigung', description: 'Offizielle Genehmigung durch gov.gr für OAuth 2.0 Integration' },
+  { key: '500_aktive_nutzer', label: '500 Ενεργοί Χρήστες', description: 'Τουλάχιστον 500 επαληθευμένοι, ενεργοί χρήστες στην πλατφόρμα' },
+  { key: '3_ngo_partnerschaften', label: '3 Συνεργασίες ΜΚΟ', description: 'Συνεργασίες με τουλάχιστον 3 αναγνωρισμένες ΜΚΟ' },
+  { key: 'roadmap_publiziert', label: 'Δημοσιευμένο Roadmap', description: 'Δημόσιο roadmap με δέσμευση διαφάνειας' },
+  { key: 'govgr_genehmigung', label: 'Έγκριση gov.gr', description: 'Επίσημη έγκριση από το gov.gr για ενσωμάτωση OAuth 2.0' },
 ]
 
 export default function GovPage() {
@@ -86,7 +86,7 @@ export default function GovPage() {
         <span className={`px-3 py-1 rounded-full text-sm font-medium ${
           govGr?.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-800'
         }`}>
-          {govGr?.status === 'active' ? 'Ενεργό' : govGr?.status === 'stub' ? 'Stub' : 'Αναμονή'}
+          {govGr?.status === 'active' ? 'Ενεργό' : govGr?.status === 'stub' ? 'Αναμονή' : 'Αναμονή'}
         </span>
       </div>
 
@@ -97,9 +97,9 @@ export default function GovPage() {
           {/* Gates Progress */}
           <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
             <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="font-semibold text-gray-800">Aktivierungsbedingungen</h2>
+              <h2 className="font-semibold text-gray-800">Προϋποθέσεις Ενεργοποίησης</h2>
               <span className="text-sm font-medium text-gray-500">
-                {govGr?.progress ?? `${fulfilledCount}/4`} Aktivierungsbedingungen
+                {govGr?.progress ?? `${fulfilledCount}/4`} Προϋποθέσεις
               </span>
             </div>
             <div className="p-5">
@@ -122,7 +122,7 @@ export default function GovPage() {
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                           fulfilled ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'
                         }`}>
-                          {fulfilled ? 'Erfüllt' : 'Offen'}
+                          {fulfilled ? 'Πληρώθηκε' : 'Εκκρεμεί'}
                         </span>
                       </div>
                       <div className="text-xs text-gray-500">{description}</div>
@@ -137,20 +137,20 @@ export default function GovPage() {
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
             <div className="font-semibold text-blue-800 mb-1">gov.gr OAuth 2.0</div>
             <div className="text-sm text-blue-700">
-              gov.gr OAuth wird aktiviert sobald alle 4 Bedingungen erfüllt sind.
-              Bis dahin wird MOD-01 HLR für Identitätsverifikation genutzt.
+              Το gov.gr OAuth θα ενεργοποιηθεί μόλις πληρωθούν και οι 4 προϋποθέσεις.
+              Μέχρι τότε χρησιμοποιείται το MOD-01 HLR για επαλήθευση ταυτότητας.
             </div>
           </div>
 
           <div className="bg-orange-50 border border-orange-200 rounded-xl p-5">
-            <div className="font-semibold text-orange-800 mb-1">Aktueller Status: {govGr?.module ?? 'MOD-09'}</div>
+            <div className="font-semibold text-orange-800 mb-1">Τρέχουσα Κατάσταση: {govGr?.module ?? 'MOD-09'}</div>
             <div className="text-sm text-orange-700">
-              Aktuell wird MOD-01 HLR für Identitätsverifikation genutzt. Die gov.gr OAuth 2.0
-              Integration ist als Stub vorbereitet und wird nach Erfüllung aller Bedingungen aktiviert.
+              Αυτή τη στιγμή χρησιμοποιείται το MOD-01 HLR για επαλήθευση ταυτότητας. Η ενσωμάτωση
+              gov.gr OAuth 2.0 είναι σε αναμονή και θα ενεργοποιηθεί μετά την πλήρωση όλων των προϋποθέσεων.
             </div>
             {govGr?.env_configured === false && (
               <div className="text-xs text-orange-600 mt-2">
-                ENV-Konfiguration: Noch nicht eingerichtet
+                Ρύθμιση ENV: Δεν έχει ολοκληρωθεί ακόμα
               </div>
             )}
           </div>

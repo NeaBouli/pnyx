@@ -167,10 +167,10 @@ export async function adminRejectCompass(questionId: number) {
   } as RequestInit)
 }
 
-// --- Forum (Discourse) ---
+// --- Forum (Discourse) --- via server-side proxy to avoid CORS
 export async function fetchDiscourseStats() {
   try {
-    const r = await fetch('https://pnyx.ekklesia.gr/about.json', { next: { revalidate: 300 } })
+    const r = await fetch('/api/discourse', { next: { revalidate: 300 } })
     return r.json()
   } catch {
     return null
