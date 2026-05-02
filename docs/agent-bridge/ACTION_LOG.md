@@ -1,5 +1,46 @@
 # Action Log
 
+## 2026-05-02 — Codex: Recheck nach fd3f50d
+
+- **Agent:** Codex
+- **Aktion:** Lokalen Stand nach Commit `fd3f50d` read-only erneut geprueft
+- **Ergebnis:**
+  - Version-Endpoint-Drift lokal weitgehend behoben
+  - HomeScreen Unicode-Banner lokal behoben
+  - HLR fehlende Credentials lokal fail-closed
+  - `discourse_sync.py` committed und nicht mehr dirty
+  - Bridge committed
+  - Weiterhin kritisch: `greek_topics_scraper.py` untracked, aber Scheduler importiert ihn vor Feature-Flag-Check
+  - Weiterhin offen: Admin-Key-Defaults/Query-Auth, Package-ID Drift, `votes-timeline` maskiert Fehler
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/PROJECT_STATE.md`
+  - `docs/agent-bridge/CODEX_TO_CLAUDE.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine Produktcode-Aenderung**
+- **Keine `.env`-Dateien gelesen**
+- **Keine Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Commit**
+- **Kein Push**
+- **Kein Deployment**
+- **Keine SSH-Verbindung**
+
+---
+
+## 2026-05-02 — Claude Code: Aufraeumen + Bridge committed + votes-timeline Fix
+
+- **Agent:** Claude Code
+- **Commit:** `fd3f50d` — 17 Dateien, +4400 Zeilen
+- **HEAD:** `fd3f50d`
+- **Bridge:** 14 Dateien committed (waren vorher untracked)
+- **discourse_sync.py:** committed (reichere Forum-Topics, fachlich sinnvoll)
+- **greek_topics_scraper.py:** bewusst NICHT committed (Review-Flow Entscheidung)
+- **votes-timeline:** 500 → 200 gefixt (try/except + timezone-aware)
+- **govgr:** "Aktivierungsbedingungen" → Griechisch (Backend-Fix deployed)
+- **API:** rebuilt + deployed
+
+---
+
 ## 2026-05-02 — Codex: Projektstand geprueft
 
 - **Agent:** Codex

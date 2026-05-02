@@ -555,3 +555,59 @@ Codex hat den aktuellen lokalen Projektstand anhand von Git-Metadaten und Bridge
 - Keine Tests ausgefuehrt.
 - Keine `.env`-/Secret-Dateien gelesen.
 - Keine Produktcode-Aenderung, kein Commit, kein Push, kein Deployment.
+
+---
+
+## Codex Recheck 2026-05-02
+
+- Datum/Zeit: 2026-05-02 17:23:55 EEST
+- Agent: Codex
+
+### Durchgefuehrte Aktion
+
+Codex hat den Stand nach Commit `fd3f50d` erneut read-only geprueft.
+
+### Behobene oder deutlich verbesserte Punkte
+
+- Bridge-Dateien sind committed.
+- `apps/api/services/discourse_sync.py` ist committed und nicht mehr dirty.
+- Version-Endpoint-Drift ist lokal weitgehend behoben:
+  - HomeScreen nutzt `/api/v1/app/version`.
+  - ProfileScreen nutzt `/api/v1/app/version`.
+  - Legacy `/api/v1/version` gibt lokal `versionCode = LATEST_VERSION_CODE`.
+- HomeScreen Update-Banner nutzt wieder korrekte Unicode-Escapes.
+- HLR Primary gibt bei fehlenden Credentials lokal fail-closed `valid: False` / `NOT_CONFIGURED` zurueck.
+- `votes-timeline` ist lokal gegen 500 abgesichert.
+
+### Weiterhin offene Findings
+
+1. **High: `greek_topics_scraper.py` ist untracked, aber Scheduler-Code referenziert ihn.**
+   - `apps/api/main.py` importiert `services.greek_topics_scraper` innerhalb `scheduled_greek_topics()`.
+   - Der Feature-Flag-Check kommt erst nach diesem Import.
+   - Wenn die Datei nicht auf dem Server vorhanden ist, kann der 6h-Job trotz deaktiviertem Feature-Flag beim Import scheitern.
+   - Empfehlung: Feature-Flag vor den Import ziehen oder Scheduler-Job nicht registrieren, solange der Scraper nicht committed/reviewed ist.
+
+2. **High/Medium: Admin-Key-Defaults und Query-Parameter-Auth bleiben sichtbar.**
+   - `dev-admin-key` Defaults existieren weiter in mehreren Routern.
+   - Empfehlung: zentraler Admin-Auth-Dependency, Production fail-closed, Header/Session statt Query-Key.
+
+3. **Medium: `votes-timeline` vermeidet 500, maskiert aber echte Fehler.**
+   - Der Endpoint faengt alle Exceptions und gibt leere Timeline zurueck.
+   - Empfehlung: bekannte Empty-DB/Enum-Faelle gezielt behandeln, unerwartete Fehler loggen/monitoren und nicht still verschlucken.
+
+4. **Medium: Android Package-ID Drift bleibt offen.**
+   - `apps/mobile/app.json` nutzt Android `package: ekklesia.gr`.
+   - F-Droid/Checklist-Dokumente nennen `gr.ekklesia.app`.
+   - Empfehlung: vor Play/F-Droid naechstem Schritt kanonische Package-ID festlegen und alle Doku/API-URLs angleichen.
+
+5. **Low/Doc: Bridge enthaelt historische, teils ueberholte Findings.**
+   - Alte Audit-Abschnitte nennen noch erledigte Punkte als offen.
+   - Empfehlung: `PROJECT_STATE.md`/Audit-Findings als `resolved/open` nachziehen, ohne Historie zu verlieren.
+
+### Grenzen
+
+- Keine Tests ausgefuehrt.
+- Keine Live-Server-/SSH-Pruefung.
+- Keine externen Netzwerkaufrufe.
+- Keine `.env`-/Secret-Dateien gelesen.
+- Keine Produktcode-Aenderung, kein Commit, kein Push, kein Deployment.

@@ -224,3 +224,30 @@ Diese Inhalte sind als `PUBLIC_DOCS` zu behandeln und gelten nicht automatisch a
   - Keine Tests ausgefuehrt.
   - Keine `.env`-, Secret-, Key- oder Wallet-Dateien gelesen.
   - Kein Commit, Push oder Deployment.
+
+## Codex Recheck 2026-05-02
+
+- Datum/Zeit: 2026-05-02 17:23:55 EEST
+- Agent: Codex
+- Lokaler HEAD: `fd3f50d`
+- Branch: `main`
+- Remote-Tracking: `main...origin/main`, lokal laut Git nicht ahead/behind
+- Letzter Commit: `chore: Bridge committed + discourse_sync + votes-timeline fix + Aufräumen`
+- Geaenderter Stand gegenueber vorheriger Codex-Pruefung:
+  - Bridge-Dateien sind jetzt committed.
+  - `apps/api/services/discourse_sync.py` ist committed und nicht mehr dirty.
+  - `/api/v1/app/version` / `/api/v1/version` Drift ist lokal weitgehend behoben.
+  - HomeScreen Unicode-Update-Banner ist lokal behoben.
+  - HLR Primary fail-closed bei fehlenden Credentials ist lokal behoben.
+  - `votes-timeline` gibt lokal durch try/except nicht mehr 500, maskiert aber moegliche echte Fehler als leere Timeline.
+- Weiterhin offen / riskant:
+  - `apps/api/services/greek_topics_scraper.py` ist weiterhin untracked.
+  - `apps/api/main.py` referenziert `services.greek_topics_scraper` im Scheduler. Wenn der deployed Code diese Datei nicht enthaelt, kann der Job trotz deaktiviertem Feature-Flag beim Import scheitern.
+  - Admin-Key-Defaults und Query-Parameter-Auth sind weiterhin im Code sichtbar.
+  - Android Package-ID / F-Droid / Play-Checklist bleiben inkonsistent: `apps/mobile/app.json` nutzt `ekklesia.gr`, mehrere F-Droid/Checklist-Dokumente nennen `gr.ekklesia.app`.
+  - `docs/agent-bridge/ACTION_LOG.md` hat lokale uncommitted Ergaenzungen.
+- Grenzen:
+  - Keine Tests ausgefuehrt.
+  - Keine SSH-/Live-Server-Pruefung.
+  - Keine externen Netzwerkaufrufe.
+  - Keine `.env`-, Secret-, Key- oder Wallet-Dateien gelesen.

@@ -207,7 +207,11 @@ async def scheduled_cplm_refresh():
 
 async def scheduled_greek_topics():
     """Scrape Greek news RSS and create forum topics every 6 hours."""
-    from services.greek_topics_scraper import scrape_greek_topics, GREEK_SCRAPER_ENABLED
+    try:
+        from services.greek_topics_scraper import scrape_greek_topics, GREEK_SCRAPER_ENABLED
+    except ImportError:
+        logger.debug("[GreekScraper] Module nicht verfuegbar — Job deaktiviert")
+        return
     from services.scraper_state import record_run, record_success, record_failure, is_circuit_open
 
     name = "greek_topics"

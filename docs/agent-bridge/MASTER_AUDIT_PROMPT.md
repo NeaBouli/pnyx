@@ -549,6 +549,17 @@ Der naechste Master-Audit muss diese konkret belegten Drift-/Risikopunkte priori
 
 Detailbericht: `docs/agent-bridge/CODEX_INTERIM_AUDIT_20260501.md`
 
+### Status-Update aus Codex Recheck 2026-05-02
+
+- Version-Endpoint-Drift: lokal nach `fd3f50d` weitgehend behoben; erneut gegen Live-API pruefen.
+- HomeScreen Unicode-Banner: lokal behoben.
+- HLR fehlende Credentials: lokal fail-closed; Produktionskonfiguration trotzdem read-only verifizieren, ohne Secrets auszugeben.
+- `discourse_sync.py`: committed und nicht mehr dirty.
+- `greek_topics_scraper.py`: bleibt kritisch. Datei ist untracked, aber `apps/api/main.py` importiert sie im Scheduler vor dem Feature-Flag-Check. Audit muss pruefen, ob deployed Server dadurch Importfehler im 6h-Job bekommt.
+- Admin-Key-Defaults und Query-Parameter-Auth: weiterhin offen.
+- Android Package-ID / Play / F-Droid Drift: weiterhin offen.
+- `votes-timeline`: 500-Fix maskiert potenziell echte Fehler durch broad `except`; Audit muss Logging/Monitoring und gezielte Fehlerbehandlung bewerten.
+
 ## Finaler Auftrag
 
 Fuehre einen maximal umfassenden, evidenzbasierten Audit von `ekklesia.gr / pnyx` durch. Pruefe Code, Architektur, Serverzustand read-only, Website, Wiki, Docs, README, Agent-Bridge, Mobile, Web, API, Infra, Security, Privacy, UX, Style, Farben, rechtliche Konsistenz, Roadmap, Tests und Deployment-Kohaerenz.
