@@ -301,10 +301,10 @@ export default function OverviewPage() {
                   {(bills as Record<string, unknown>[]).slice(0, 5).map((bill) => (
                     <tr key={bill.id as number} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-2.5 text-gray-400 font-mono text-xs">#{bill.id as number}</td>
-                      <td className="px-4 py-2.5 font-medium text-gray-900 truncate max-w-xs">{bill.title_el as string}</td>
+                      <td className="px-4 py-2.5 font-medium text-gray-900 truncate max-w-xs">{String(bill.title_el ?? '')}</td>
                       <td className="px-4 py-2.5">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[bill.status as BillStatus] ?? 'bg-gray-100 text-gray-600'}`}>
-                          {STATUS_LABELS[bill.status as BillStatus] ?? bill.status as string}
+                          {STATUS_LABELS[bill.status as BillStatus] ?? String(bill.status ?? '')}
                         </span>
                       </td>
                       <td className="px-4 py-2.5 text-gray-400 text-xs">
@@ -331,11 +331,11 @@ export default function OverviewPage() {
                   return (
                     <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-gray-800 truncate">{job.name as string ?? job.job_id as string ?? `Job ${i + 1}`}</span>
+                        <span className="text-sm font-medium text-gray-800 truncate">{String(job.name ?? job.job_id ?? `Job ${i + 1}`)}</span>
                         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${ok ? 'bg-green-500' : 'bg-red-500'}`} />
                       </div>
-                      {job.interval && <div className="text-xs text-gray-400">{job.interval as string}</div>}
-                      {job.last_run && <div className="text-xs text-gray-400 mt-0.5">Τελ.: {new Date(job.last_run as string).toLocaleString('el-GR')}</div>}
+                      {job.interval ? <div className="text-xs text-gray-400">{String(job.interval)}</div> : null}
+                      {job.last_run ? <div className="text-xs text-gray-400 mt-0.5">Τελ.: {new Date(String(job.last_run)).toLocaleString('el-GR')}</div> : null}
                     </div>
                   )
                 })}

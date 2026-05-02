@@ -216,7 +216,7 @@ export default function SettingsPage() {
           <Toggle
             id="ai_ollama" label="AI Chatbot (Ollama)" value={modules.ai_ollama}
             onChange={(v) => setModule('ai_ollama', v)}
-            sub={claudeData?.ollama_model ? `Μοντέλο: ${claudeData.ollama_model as string}` : undefined}
+            sub={claudeData?.ollama_model ? `Μοντέλο: ${String(claudeData.ollama_model)}` : undefined}
           />
           <Toggle
             id="ai_claude" label="AI Chatbot (Claude)" value={modules.ai_claude}
