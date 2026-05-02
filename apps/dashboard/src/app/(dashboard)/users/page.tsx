@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { ROLE_MODULES, type DashboardRole } from '@/lib/auth'
 
-const API = process.env.NEXT_PUBLIC_EKKLESIA_API || 'https://api.ekklesia.gr'
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
 const ROLE_LABELS: Record<DashboardRole, string> = {
   SUPER_ADMIN: 'Super Admin',

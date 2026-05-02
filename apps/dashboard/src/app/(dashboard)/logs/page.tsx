@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 
-const API = process.env.NEXT_PUBLIC_EKKLESIA_API || 'https://api.ekklesia.gr'
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
 interface HealthData {
   status: string

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 
-const API = process.env.NEXT_PUBLIC_EKKLESIA_API || 'https://api.ekklesia.gr'
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || ''
 
 type BillStatus = 'ANNOUNCED' | 'ACTIVE' | 'WINDOW_24H' | 'PARLIAMENT_VOTED' | 'OPEN_END'
@@ -16,6 +16,8 @@ interface Bill {
   governance_level: GovernanceLevel
   created_at: string
   source_url?: string
+  ai_reviewed?: boolean
+  ai_summary?: string
 }
 
 const STATUS_LABELS: Record<BillStatus, string> = {
@@ -51,6 +53,11 @@ interface NewBillForm {
   source_url: string
 }
 
+function adminURL(path: string): string {
+  const sep = path.includes('?') ? '&' : '?'
+  return `${API}${path}${sep}admin_key=${ADMIN_KEY}`
+}
+
 export default function BillsPage() {
   const [bills, setBills] = useState<Bill[]>([])
   const [loading, setLoading] = useState(true)
@@ -58,6 +65,7 @@ export default function BillsPage() {
   const [showModal, setShowModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [actionLoading, setActionLoading] = useState<Record<number, string>>({})
   const [form, setForm] = useState<NewBillForm>({
     title_el: '',
     title_en: '',
@@ -87,7 +95,7 @@ export default function BillsPage() {
     e.preventDefault()
     setSubmitting(true)
     try {
-      const r = await fetch(`${API}/api/v1/admin/bills?admin_key=${ADMIN_KEY}`, {
+      const r = await fetch(adminURL('/api/v1/admin/bills'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -97,7 +105,7 @@ export default function BillsPage() {
       setBills((prev) => [newBill, ...prev])
       setShowModal(false)
       setForm({ title_el: '', title_en: '', summary_short_el: '', governance_level: 'NATIONAL', source_url: '' })
-    } catch (err) {
+    } catch {
       setError('Αδύνατη η δημιουργία νομοσχεδίου')
     } finally {
       setSubmitting(false)
@@ -106,7 +114,7 @@ export default function BillsPage() {
 
   async function handleStatusChange(id: number, status: BillStatus) {
     try {
-      await fetch(`${API}/api/v1/admin/bills/${id}/transition?admin_key=${ADMIN_KEY}`, {
+      await fetch(adminURL(`/api/v1/bills/${id}/transition`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
@@ -117,16 +125,53 @@ export default function BillsPage() {
     }
   }
 
+  async function handleAction(id: number, action: 'review' | 'fetch-text') {
+    setActionLoading(prev => ({ ...prev, [id]: action }))
+    try {
+      const path = action === 'review'
+        ? `/api/v1/admin/bills/${id}/review`
+        : `/api/v1/admin/bills/${id}/fetch-text`
+      const r = await fetch(adminURL(path), { method: 'POST' })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      if (action === 'review') {
+        setBills(prev => prev.map(b => b.id === id ? { ...b, ai_reviewed: true } : b))
+      }
+    } catch {
+      setError(`Αδύνατη η ενέργεια ${action} για #${id}`)
+    } finally {
+      setActionLoading(prev => { const n = { ...prev }; delete n[id]; return n })
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Νομοσχέδια</h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-        >
-          + Νέο Νομοσχέδιο
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Export buttons */}
+          <a
+            href={`${API}/api/v1/export/bills.csv`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+          >
+            CSV
+          </a>
+          <a
+            href={`${API}/api/v1/export/results.json`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+          >
+            JSON
+          </a>
+          <button
+            onClick={() => setShowModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            + Νέο Νομοσχέδιο
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -166,57 +211,77 @@ export default function BillsPage() {
         ) : filtered.length === 0 ? (
           <div className="p-8 text-center text-gray-500">Δεν βρέθηκαν νομοσχέδια</div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">ID</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Τίτλος</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Κατάσταση</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Επίπεδο</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Ημερομηνία</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Ενέργειες</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.map((bill) => (
-                <tr key={bill.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 text-gray-500 font-mono">#{bill.id}</td>
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900 truncate max-w-xs">{bill.title_el}</div>
-                    {bill.title_en && <div className="text-xs text-gray-400 truncate max-w-xs">{bill.title_en}</div>}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[bill.status]}`}>
-                      {STATUS_LABELS[bill.status]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{GOVERNANCE_LABELS[bill.governance_level]}</td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {new Date(bill.created_at).toLocaleDateString('el-GR')}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <a
-                        href={`/bills/${bill.id}`}
-                        className="text-blue-600 hover:underline text-xs"
-                      >
-                        Λεπτομέρειες
-                      </a>
-                      <select
-                        value={bill.status}
-                        onChange={(e) => handleStatusChange(bill.id, e.target.value as BillStatus)}
-                        className="text-xs border border-gray-200 rounded px-1.5 py-0.5 text-gray-700"
-                      >
-                        {ALL_STATUSES.map((s) => (
-                          <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">ID</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Τίτλος</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Κατάσταση</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Επίπεδο</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">AI</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Ημερομηνία</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Ενέργειες</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filtered.map((bill) => (
+                  <tr key={bill.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 text-gray-500 font-mono">#{bill.id}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-gray-900 truncate max-w-xs">{bill.title_el}</div>
+                      {bill.title_en && <div className="text-xs text-gray-400 truncate max-w-xs">{bill.title_en}</div>}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[bill.status]}`}>
+                        {STATUS_LABELS[bill.status]}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 text-xs">{GOVERNANCE_LABELS[bill.governance_level]}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        bill.ai_reviewed ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {bill.ai_reviewed ? 'Ελέγχθηκε' : 'Εκκρεμεί'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">
+                      {new Date(bill.created_at).toLocaleDateString('el-GR')}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <select
+                          value={bill.status}
+                          onChange={(e) => handleStatusChange(bill.id, e.target.value as BillStatus)}
+                          className="text-xs border border-gray-200 rounded px-1.5 py-0.5 text-gray-700"
+                        >
+                          {ALL_STATUSES.map((s) => (
+                            <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => handleAction(bill.id, 'review')}
+                          disabled={!!actionLoading[bill.id]}
+                          className="px-2 py-0.5 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors disabled:opacity-50"
+                          title="AI Review"
+                        >
+                          {actionLoading[bill.id] === 'review' ? '...' : 'Review'}
+                        </button>
+                        <button
+                          onClick={() => handleAction(bill.id, 'fetch-text')}
+                          disabled={!!actionLoading[bill.id]}
+                          className="px-2 py-0.5 text-xs bg-gray-50 text-gray-600 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
+                          title="Scrape Text"
+                        >
+                          {actionLoading[bill.id] === 'fetch-text' ? '...' : 'Scrape'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -226,7 +291,7 @@ export default function BillsPage() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">Νέο Νομοσχέδιο</h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">x</button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
@@ -236,7 +301,6 @@ export default function BillsPage() {
                   value={form.title_el}
                   onChange={(e) => setForm({ ...form, title_el: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="π.χ. Νόμος για την Υγεία"
                 />
               </div>
               <div>
@@ -245,7 +309,6 @@ export default function BillsPage() {
                   value={form.title_en}
                   onChange={(e) => setForm({ ...form, title_en: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g. Healthcare Act"
                 />
               </div>
               <div>
@@ -256,7 +319,6 @@ export default function BillsPage() {
                   onChange={(e) => setForm({ ...form, summary_short_el: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   rows={3}
-                  placeholder="Σύντομη περιγραφή του νομοσχεδίου..."
                 />
               </div>
               <div>
@@ -279,7 +341,6 @@ export default function BillsPage() {
                   value={form.source_url}
                   onChange={(e) => setForm({ ...form, source_url: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="https://..."
                 />
               </div>
               <div className="flex gap-3 pt-2">

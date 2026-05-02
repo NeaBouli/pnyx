@@ -15,22 +15,18 @@ const GITHUB_ALLOWLIST: Record<string, DashboardRole> = {
 
 export const ROLE_MODULES: Record<DashboardRole, string[]> = {
   SUPER_ADMIN: [
-    'overview',
-    'system',
-    'bills',
-    'votes',
-    'cplm',
-    'users',
-    'logs',
-    'settings',
-    'node',
-    'gov',
+    'overview', 'analytics', 'bills', 'votes', 'cplm',
+    'system', 'ai', 'forum', 'users', 'hlr', 'arweave',
+    'node', 'gov', 'logs', 'settings',
   ],
-  SYSTEM_ADMIN: ['overview', 'system', 'bills', 'votes', 'logs', 'node'],
-  CONTENT: ['overview', 'bills', 'votes'],
-  ANALYST: ['overview', 'bills', 'votes', 'cplm'],
-  SUPPORT: ['overview', 'users'],
-  NODE_ADMIN: ['overview', 'system', 'logs', 'node'],
+  SYSTEM_ADMIN: [
+    'overview', 'analytics', 'bills', 'votes', 'cplm',
+    'system', 'ai', 'forum', 'hlr', 'logs',
+  ],
+  CONTENT: ['overview', 'bills', 'votes', 'cplm', 'forum', 'gov'],
+  ANALYST: ['overview', 'analytics', 'votes', 'cplm'],
+  SUPPORT: ['overview', 'system', 'logs', 'forum', 'node'],
+  NODE_ADMIN: ['overview', 'bills', 'votes', 'cplm', 'node', 'gov'],
 }
 
 export function canAccess(role: DashboardRole, module: string): boolean {

@@ -1,0 +1,220 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
+
+export default function AIPage() {
+  const [claude, setClaude] = useState<Record<string, unknown> | null>(null)
+  const [deepl, setDeepl] = useState<Record<string, unknown> | null>(null)
+  const [scraper, setScraper] = useState<Record<string, unknown> | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      const [claudeRes, deeplRes, scraperRes] = await Promise.allSettled([
+        fetch(`${API}/api/v1/claude/budget`).then(r => r.json()),
+        fetch(`${API}/api/v1/admin/deepl/usage`).then(r => r.json()),
+        fetch(`${API}/api/v1/scraper/status`).then(r => r.json()),
+      ])
+      const v = (r: PromiseSettledResult<unknown>) => r.status === 'fulfilled' ? r.value : null
+      setClaude(v(claudeRes) as Record<string, unknown> | null)
+      setDeepl(v(deeplRes) as Record<string, unknown> | null)
+      setScraper(v(scraperRes) as Record<string, unknown> | null)
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  // Auto-refresh every 60s
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const [c, d, s] = await Promise.allSettled([
+          fetch(`${API}/api/v1/claude/budget`).then(r => r.json()),
+          fetch(`${API}/api/v1/admin/deepl/usage`).then(r => r.json()),
+          fetch(`${API}/api/v1/scraper/status`).then(r => r.json()),
+        ])
+        const v = (r: PromiseSettledResult<unknown>) => r.status === 'fulfilled' ? r.value : null
+        setClaude(v(c) as Record<string, unknown> | null)
+        setDeepl(v(d) as Record<string, unknown> | null)
+        setScraper(v(s) as Record<string, unknown> | null)
+      } catch { /* ignore */ }
+    }, 60000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const ollamaModel = (scraper?.ollama_model ?? claude?.ollama_model ?? scraper?.model) as string | null
+  const ollamaStatus = (scraper?.ollama_status ?? scraper?.status ?? claude?.ollama_status) as string | null
+  const ollamaOk = ollamaStatus === 'ok' || ollamaStatus === 'available' || ollamaStatus === 'healthy'
+
+  const claudeUsed = claude?.used_eur as number | null
+  const claudeTotal = claude?.budget_eur as number | null
+  const claudeDaily = claude?.daily_used as number | null
+  const claudeTokens = claude?.total_tokens as number | null
+
+  const deeplCount = deepl?.character_count as number | null
+  const deeplLimit = (deepl?.character_limit as number) ?? 500000
+  const deeplPct = deeplCount != null ? Math.round((deeplCount / deeplLimit) * 100) : null
+  const deeplReset = deepl?.reset_date as string | null
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">AI & Εργαλεία</h1>
+
+      {loading ? (
+        <div className="p-8 text-center text-gray-500">Φόρτωση...</div>
+      ) : (
+        <div className="space-y-6">
+          {/* Ollama */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="font-semibold text-gray-800">Ollama (Self-hosted LLM)</h2>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                ollamaOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+              }`}>
+                {ollamaOk ? 'Online' : ollamaStatus ?? 'Offline'}
+              </span>
+            </div>
+            <div className="p-5 space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Μοντέλο</span>
+                <span className="font-medium text-gray-800">{ollamaModel ?? 'llama3.2'}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Κατάσταση</span>
+                <span className={`font-medium ${ollamaOk ? 'text-green-600' : 'text-red-600'}`}>
+                  {ollamaOk ? 'Λειτουργικό' : 'Μη Διαθέσιμο'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Χρήση</span>
+                <span className="text-gray-500">Summaries, Compass, RAG Agent</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Claude Haiku */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="font-semibold text-gray-800">Claude Haiku (Anthropic)</h2>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                claudeUsed != null ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+              }`}>
+                {claudeUsed != null ? 'Ενεργό' : 'Άγνωστο'}
+              </span>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-xs text-gray-500 mb-1">Ημερήσια Χρήση</div>
+                  <div className="text-xl font-bold text-gray-800">
+                    {claudeDaily != null ? `${claudeDaily.toFixed(2)} EUR` : '—'}
+                  </div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-xs text-gray-500 mb-1">Μηνιαίο Budget</div>
+                  <div className="text-xl font-bold text-gray-800">
+                    {claudeUsed != null && claudeTotal != null
+                      ? `${claudeUsed.toFixed(2)} / ${claudeTotal} EUR`
+                      : '—'}
+                  </div>
+                  {claudeUsed != null && claudeTotal != null && claudeTotal > 0 && (
+                    <div className="mt-2">
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full transition-all ${
+                            (claudeUsed / claudeTotal) > 0.8 ? 'bg-red-500' : 'bg-blue-500'
+                          }`}
+                          style={{ width: `${Math.min(100, (claudeUsed / claudeTotal) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {claudeTokens != null && (
+                <div className="text-sm text-gray-500">
+                  Tokens μηνιαίο: {claudeTokens.toLocaleString('el-GR')}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* DeepL */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="font-semibold text-gray-800">DeepL Translation</h2>
+              {deeplPct != null && (
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  deeplPct > 80 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+                }`}>
+                  {deeplPct}%
+                </span>
+              )}
+            </div>
+            <div className="p-5 space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Χαρακτήρες</span>
+                <span className="font-medium text-gray-800">
+                  {deeplCount != null
+                    ? `${deeplCount.toLocaleString('el-GR')} / ${deeplLimit.toLocaleString('el-GR')}`
+                    : '—'}
+                </span>
+              </div>
+              {deeplPct != null && (
+                <div className="w-full bg-gray-100 rounded-full h-2.5">
+                  <div
+                    className={`h-2.5 rounded-full transition-all ${deeplPct > 80 ? 'bg-red-500' : 'bg-green-500'}`}
+                    style={{ width: `${Math.min(100, deeplPct)}%` }}
+                  />
+                </div>
+              )}
+              {deeplReset && (
+                <div className="text-xs text-gray-400">
+                  Reset: {new Date(deeplReset).toLocaleDateString('el-GR')}
+                </div>
+              )}
+              <div className="text-xs text-gray-400">Χρήση: Compass-Fragen Ελληνικά → Αγγλικά</div>
+            </div>
+          </div>
+
+          {/* RAG Agent */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="font-semibold text-gray-800">RAG Agent</h2>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                Hybrid
+              </span>
+            </div>
+            <div className="p-5 space-y-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Primary</span>
+                <span className="text-gray-800">Ollama ({ollamaModel ?? 'llama3.2'})</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Fallback</span>
+                <span className="text-gray-800">Claude Haiku</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Rate Limit</span>
+                <span className="text-gray-500">5 αιτήματα/λεπτό</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Compass Generator */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-200">
+              <h2 className="font-semibold text-gray-800">Compass-Fragen Generator</h2>
+            </div>
+            <div className="p-5 text-sm text-gray-500">
+              <div className="mb-2">Ollama αναλύει τρέχοντα Bills → DeepL μεταφράζει → Νέες θέσεις για VAA</div>
+              <div className="text-xs text-gray-400">Ενεργοποίηση: Ρυθμίσεις → Compass Διαχείριση</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

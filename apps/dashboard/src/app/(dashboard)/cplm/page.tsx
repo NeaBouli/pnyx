@@ -14,7 +14,7 @@ import {
   Line,
 } from 'recharts'
 
-const API = process.env.NEXT_PUBLIC_EKKLESIA_API || 'https://api.ekklesia.gr'
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
 interface CPLMData {
   x: number
@@ -39,8 +39,8 @@ export default function CPLMPage() {
     async function load() {
       try {
         const [currentRes, historyRes] = await Promise.allSettled([
-          fetch(`${API}/api/v1/public/cplm`),
-          fetch(`${API}/api/v1/public/cplm/history`),
+          fetch(`${API}/api/v1/cplm/aggregate`),
+          fetch(`${API}/api/v1/cplm/history`),
         ])
 
         if (currentRes.status === 'fulfilled' && currentRes.value.ok) {
