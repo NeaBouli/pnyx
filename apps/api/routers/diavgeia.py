@@ -26,16 +26,14 @@ from models import DiavgeiaDecision, DimosDiavgeiaOrg, Dimos, Periferia
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["MOD-21 Diavgeia"])
 
-ADMIN_KEY = os.environ.get("ADMIN_KEY", "dev-admin-key")
+from dependencies import verify_admin_key
 
 # In-memory job tracking for async org cache refresh
 _refresh_jobs: dict[str, dict] = {}
 
 
-def verify_admin(admin_key: str = Query(...)) -> str:
-    if admin_key != ADMIN_KEY:
-        raise HTTPException(403, "Ungültiger Admin-Key")
-    return admin_key
+def verify_admin(key: bool = Depends(verify_admin_key)):
+    return key
 
 
 # ─── Schemas ────────────────────────────────────────────────────────────────

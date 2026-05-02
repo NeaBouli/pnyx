@@ -13,7 +13,8 @@ import json
 import logging
 from datetime import datetime, timezone
 from typing import AsyncGenerator, Optional
-from fastapi import APIRouter, Query, Request, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import APIRouter, Query, Request, WebSocket, WebSocketDisconnect, HTTPException, Depends
+from dependencies import verify_admin_key
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/notifications", tags=["MOD-07 Notifications"])
@@ -127,12 +128,9 @@ async def websocket_endpoint(websocket: WebSocket, bill_id: Optional[str] = Quer
 async def test_publish(
     event_type: str = Query("bill.status_changed"),
     bill_id: str = Query("GR-2025-0001"),
-    admin_key: str = Query(...),
+    _auth: bool = Depends(verify_admin_key),
 ):
     """DEV: Test Event publishen."""
-    import os
-    if admin_key != os.environ.get("ADMIN_KEY", "dev-admin-key"):
-        raise HTTPException(403, "Ungültiger Admin-Key")
 
     await publish_bill_event(event_type, bill_id, {"message_el": f"Test: {event_type}", "source": "admin_test"})
     return {"published": True, "event_type": event_type, "subscribers": event_bus.subscriber_count}

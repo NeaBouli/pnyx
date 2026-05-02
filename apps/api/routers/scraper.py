@@ -31,6 +31,7 @@ from datetime import datetime
 
 from database import get_db
 from models import ParliamentBill, BillStatus
+from dependencies import verify_admin_key
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/scraper", tags=["MOD-10 AI Scraper"])
@@ -360,12 +361,11 @@ async def get_latest_from_parliament(limit: int = Query(10, le=20)):
 @router.post("/fetch")
 async def fetch_and_store(
     url: str = Query(...), title_el: str = Query(...),
-    bill_id: str = Query(...), admin_key: str = Query(...),
+    bill_id: str = Query(...),
+    _auth: bool = Depends(verify_admin_key),
     db: AsyncSession = Depends(get_db)
 ):
     """Scraped URL → KI Zusammenfassung → DB. Admin-geschützt."""
-    if admin_key != os.environ.get("ADMIN_KEY", "dev-admin-key"):
-        raise HTTPException(403, "Ungültiger Admin-Key")
 
     existing = await db.execute(select(ParliamentBill).where(ParliamentBill.id == bill_id))
     if existing.scalar_one_or_none():
@@ -420,6 +420,7 @@ class BillImportRequest(BaseModel):
 @router.post("/import")
 async def import_parliament_bills(
     req: BillImportRequest,
+    _auth: bool = Depends(verify_admin_key),
     db: AsyncSession = Depends(get_db)
 ):
     """Bulk import structured bill data.
@@ -427,8 +428,6 @@ async def import_parliament_bills(
     hellenicparliament.gr API (GitHub IPs are not blocked).
     Accepts pre-structured JSON, stores new bills, skips duplicates.
     """
-    if req.admin_key != os.environ.get("ADMIN_KEY", "dev-admin-key"):
-        raise HTTPException(403, "Ungültiger Admin-Key")
 
     imported = 0
     skipped = 0

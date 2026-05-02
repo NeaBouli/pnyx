@@ -26,11 +26,11 @@ router = APIRouter(prefix="/api/v1/admin", tags=["MOD-15 Admin"])
 
 ADMIN_KEY = os.environ.get("ADMIN_KEY", "dev-admin-key")
 
+from dependencies import verify_admin_key
 
-def verify_admin(admin_key: str = Query(...)):
-    if admin_key != ADMIN_KEY:
-        raise HTTPException(403, "Ungültiger Admin-Key")
-    return admin_key
+def verify_admin(key: bool = Depends(verify_admin_key)):
+    """Rueckwaertskompatibel — delegiert an zentrale Dependency."""
+    return key
 
 
 class BillUpdateRequest(BaseModel):

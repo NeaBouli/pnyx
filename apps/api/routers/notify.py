@@ -6,7 +6,8 @@ POST /api/v1/notify/send     — admin: send push to all (ADMIN_KEY required)
 import os
 import json
 import logging
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, Depends
+from dependencies import verify_admin_key
 from pydantic import BaseModel
 from typing import Optional
 import redis.asyncio as aioredis
@@ -58,10 +59,8 @@ async def register_push(req: RegisterRequest) -> dict:
 @router.post("/send")
 async def send_push(
     req: SendRequest,
-    x_admin_key: Optional[str] = Header(None),
+    _auth: bool = Depends(verify_admin_key),
 ) -> dict:
-    if not ADMIN_KEY or x_admin_key != ADMIN_KEY:
-        raise HTTPException(403, "Admin key required")
 
     r = await _get_redis()
     keys = [k async for k in r.scan_iter("push_tokens:*")]

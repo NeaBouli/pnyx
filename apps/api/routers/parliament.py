@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from database import get_db
+from dependencies import verify_admin_key
 from models import (
     ParliamentBill, BillStatus, BillStatusLog, BillRelevanceVote,
     CitizenVote, VoteChoice,
@@ -269,17 +270,13 @@ async def get_bill_summary(
 async def transition_bill(
     bill_id: str,
     req: TransitionRequest,
+    _auth: bool = Depends(verify_admin_key),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Lifecycle-Übergang eines Gesetzentwurfs.
     Nur valide Übergänge laut VALID_TRANSITIONS erlaubt.
-    Beta: einfacher Admin-Key-Schutz.
     """
-    import os
-    admin_key = os.environ.get("ADMIN_KEY", "dev-admin-key")
-    if req.admin_key != admin_key:
-        raise HTTPException(status_code=403, detail="Ungültiger Admin-Key.")
 
     result = await db.execute(
         select(ParliamentBill).where(ParliamentBill.id == bill_id)
@@ -386,13 +383,10 @@ async def transition_bill(
 @router.post("/admin/create")
 async def create_bill(
     req: BillCreateRequest,
-    admin_key: str = Query(...),
+    _auth: bool = Depends(verify_admin_key),
     db: AsyncSession = Depends(get_db)
 ):
     """Admin: Neuen Gesetzentwurf anlegen."""
-    import os
-    if admin_key != os.environ.get("ADMIN_KEY", "dev-admin-key"):
-        raise HTTPException(status_code=403, detail="Ungültiger Admin-Key.")
 
     existing = await db.execute(
         select(ParliamentBill).where(ParliamentBill.id == req.id)
