@@ -301,7 +301,10 @@ async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
 async def scraper_jobs():
     """Status aller Scraper-Jobs (Redis-backed)."""
     from services.scraper_state import get_all_states
-    names = ["parliament", "diavgeia_municipal", "notify_new_bills", "notify_results"]
+    names = [
+        "parliament", "diavgeia_municipal", "notify_new_bills", "notify_results",
+        "forum_sync", "bill_lifecycle", "cplm_refresh", "greek_topics",
+    ]
     try:
         states = await get_all_states(names)
     except Exception:

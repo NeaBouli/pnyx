@@ -166,43 +166,56 @@ async def scheduled_diavgeia_scrape():
 async def scheduled_forum_sync():
     """Sync bills to Discourse forum every 10 min."""
     from services.discourse_sync import sync_new_bills_to_forum, FORUM_SYNC_ENABLED, DISCOURSE_API_KEY
+    from services.scraper_state import record_run, record_success, record_failure
+    name = "forum_sync"
     if not FORUM_SYNC_ENABLED or not DISCOURSE_API_KEY:
         return
+    await record_run(name)
     from database import engine
     from sqlalchemy.ext.asyncio import async_sessionmaker
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     try:
         async with session_factory() as db:
             await sync_new_bills_to_forum(db)
+        await record_success(name)
     except Exception as e:
         logger.error("[Forum] Sync failed: %s", e)
+        await record_failure(name, str(e))
 
 
 async def scheduled_bill_lifecycle():
     """Auto-transition bills based on parliament_vote_date (every 1h)."""
     from services.bill_lifecycle import run_bill_lifecycle
+    from services.scraper_state import record_run, record_success, record_failure
     from database import AsyncSessionLocal
-
+    name = "bill_lifecycle"
+    await record_run(name)
     try:
         async with AsyncSessionLocal() as db:
             stats = await run_bill_lifecycle(db)
             if stats["transitioned"] > 0:
                 logger.info("[LIFECYCLE] %s", stats)
+        await record_success(name)
     except Exception as e:
         logger.error("[LIFECYCLE] Failed: %s", e)
+        await record_failure(name, str(e))
 
 
 async def scheduled_cplm_refresh():
     """Refresh CPLM aggregate cache every 6 hours."""
     from services.cplm import refresh_cplm_cache
+    from services.scraper_state import record_run, record_success, record_failure
     from database import AsyncSessionLocal
-
+    name = "cplm_refresh"
+    await record_run(name)
     try:
         async with AsyncSessionLocal() as db:
             result = await refresh_cplm_cache(db)
             logger.info("[CPLM] Refreshed: x=%.4f y=%.4f voters=%d", result["x"], result["y"], result["total_voters"])
+        await record_success(name)
     except Exception as e:
         logger.error("[CPLM] Refresh failed: %s", e)
+        await record_failure(name, str(e))
 
 
 async def scheduled_greek_topics():
