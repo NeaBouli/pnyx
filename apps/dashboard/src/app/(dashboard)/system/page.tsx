@@ -154,7 +154,7 @@ export default function SystemPage() {
         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
           <div className="text-xs text-gray-500 mb-1">Push Notifications</div>
           <div className="text-2xl font-bold text-blue-600">
-            {notifications?.subscriber_count ?? notifications?.device_count ?? '—'}
+            {String(notifications?.subscriber_count ?? notifications?.device_count ?? '—')}
           </div>
           <div className="text-xs text-gray-400 mt-0.5">Εγγεγραμμένες συσκευές</div>
         </div>
@@ -162,7 +162,7 @@ export default function SystemPage() {
         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
           <div className="text-xs text-gray-500 mb-1">gov.gr OAuth Gates</div>
           <div className="text-2xl font-bold text-gray-800">
-            {govGr?.gates_fulfilled ?? govGr?.fulfilled ?? '0'}/{govGr?.gates_total ?? govGr?.total ?? '4'}
+            {String(govGr?.gates_fulfilled ?? govGr?.fulfilled ?? '0')}/{String(govGr?.gates_total ?? govGr?.total ?? '4')}
           </div>
           <div className="text-xs text-gray-400 mt-0.5">
             {govGr?.status === 'active' ? 'Ενεργό' : 'Αναμονή πλήρωσης'}
