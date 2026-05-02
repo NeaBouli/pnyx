@@ -8,6 +8,8 @@ import {
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
+const PARTIES = ['ΝΔ', 'ΣΥΡΙΖΑ', 'ΠΑΣΟΚ', 'ΚΚΕ', 'ΕΛ', 'ΝΙΚΗ', 'ΠΛ', 'ΣΠΑΡΤ'] as const
+
 interface Bill {
   id: number
   title_el: string
@@ -35,6 +37,12 @@ interface MPParty {
   total_count: number
 }
 
+interface PartyCompare {
+  party: string
+  alignment_score: number
+  bills_compared: number
+}
+
 const VOTE_COLORS: Record<string, string> = {
   'ΝΑΙ': '#16a34a',
   'ΟΧΙ': '#dc2626',
@@ -43,6 +51,11 @@ const VOTE_COLORS: Record<string, string> = {
 }
 
 const PIE_COLORS = ['#16a34a', '#dc2626', '#9ca3af', '#ca8a04']
+
+const PARTY_BAR_COLORS = [
+  '#3b82f6', '#ef4444', '#22c55e', '#f59e0b',
+  '#8b5cf6', '#06b6d4', '#ec4899', '#f97316',
+]
 
 export default function VotesPage() {
   const [bills, setBills] = useState<Bill[]>([])
@@ -53,6 +66,8 @@ export default function VotesPage() {
   const [error, setError] = useState<string | null>(null)
   const [mpRanking, setMpRanking] = useState<MPParty[]>([])
   const [representation, setRepresentation] = useState<Record<string, unknown> | null>(null)
+  const [partyCompare, setPartyCompare] = useState<PartyCompare[]>([])
+  const [loadingCompare, setLoadingCompare] = useState(false)
 
   useEffect(() => {
     async function loadBills() {
@@ -69,7 +84,6 @@ export default function VotesPage() {
     loadBills()
   }, [])
 
-  // Load MP ranking and representation
   useEffect(() => {
     async function loadExtra() {
       try {
@@ -87,6 +101,7 @@ export default function VotesPage() {
     loadExtra()
   }, [])
 
+  // Load results when bill selected
   useEffect(() => {
     if (!selectedBillId) { setResults(null); return }
     async function loadResults() {
@@ -106,6 +121,35 @@ export default function VotesPage() {
     loadResults()
   }, [selectedBillId])
 
+  // Load party compare when bill selected
+  useEffect(() => {
+    if (!selectedBillId) { setPartyCompare([]); return }
+    async function loadCompare() {
+      setLoadingCompare(true)
+      const compareResults: PartyCompare[] = []
+      const settled = await Promise.allSettled(
+        PARTIES.map(async (abbr) => {
+          try {
+            const r = await fetch(`${API}/api/v1/mp/compare/${encodeURIComponent(abbr)}`)
+            if (!r.ok) return null
+            const data = await r.json()
+            return {
+              party: abbr,
+              alignment_score: typeof data?.alignment_score === 'number' ? data.alignment_score : 0,
+              bills_compared: typeof data?.bills_compared === 'number' ? data.bills_compared : 0,
+            } as PartyCompare
+          } catch { return null }
+        })
+      )
+      for (const s of settled) {
+        if (s.status === 'fulfilled' && s.value) compareResults.push(s.value)
+      }
+      setPartyCompare(compareResults)
+      setLoadingCompare(false)
+    }
+    loadCompare()
+  }, [selectedBillId])
+
   const chartData = results
     ? [
         { name: 'ΝΑΙ', value: results.yes ?? 0 },
@@ -117,9 +161,42 @@ export default function VotesPage() {
 
   const repScore = representation?.score as number | null
 
+  const partyChartData = partyCompare.map((p) => ({
+    name: p.party,
+    score: Math.round((p.alignment_score ?? 0) * 100),
+  }))
+
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Αποτελέσματα Ψηφοφοριών</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Αποτελέσματα Ψηφοφοριών</h1>
+        <div className="flex items-center gap-2">
+          <a
+            href={`${API}/api/v1/export/bills.csv`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+          >
+            CSV
+          </a>
+          <a
+            href={`${API}/api/v1/export/results.json`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+          >
+            JSON
+          </a>
+          <a
+            href={`${API}/api/v1/export/divergence.csv`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 transition-colors"
+          >
+            Divergence CSV
+          </a>
+        </div>
+      </div>
 
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
@@ -155,7 +232,7 @@ export default function VotesPage() {
           >
             <option value="">-- Επιλέξτε νομοσχέδιο --</option>
             {bills.map((b) => (
-              <option key={b.id} value={b.id}>#{b.id} — {b.title_el}</option>
+              <option key={b.id} value={b.id}>#{String(b.id)} — {b.title_el}</option>
             ))}
           </select>
         )}
@@ -191,7 +268,6 @@ export default function VotesPage() {
 
           {/* Side by side: Pie + Bar */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Pie chart - citizen distribution */}
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
               <h2 className="text-base font-semibold text-gray-800 mb-4">Κατανομή Πολιτών</h2>
               <ResponsiveContainer width="100%" height={240}>
@@ -206,7 +282,6 @@ export default function VotesPage() {
               </ResponsiveContainer>
             </div>
 
-            {/* Bar chart - comparison */}
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
               <h2 className="text-base font-semibold text-gray-800 mb-4">Κατανομή Ψήφων</h2>
               <ResponsiveContainer width="100%" height={240}>
@@ -223,6 +298,30 @@ export default function VotesPage() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
+          </div>
+
+          {/* Party Divergence Chart */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <h2 className="text-base font-semibold text-gray-800 mb-4">Ευθυγράμμιση Κομμάτων με Πολίτες</h2>
+            {loadingCompare ? (
+              <div className="p-8 text-center text-gray-500">Φόρτωση σύγκρισης κομμάτων...</div>
+            ) : partyChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={partyChartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} domain={[0, 100]} unit="%" />
+                  <Tooltip formatter={(value: number) => [`${String(value)}%`, 'Alignment']} />
+                  <Bar dataKey="score" radius={[4, 4, 0, 0]}>
+                    {partyChartData.map((entry, i) => (
+                      <Cell key={entry.name} fill={PARTY_BAR_COLORS[i] ?? '#6b7280'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="p-8 text-center text-sm text-gray-400">Δεν υπάρχουν δεδομένα σύγκρισης</div>
+            )}
           </div>
 
           {/* Detail table */}
@@ -275,7 +374,7 @@ export default function VotesPage() {
               <tbody className="divide-y divide-gray-100">
                 {mpRanking.map((party, i) => (
                   <tr key={party.abbreviation ?? i} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-400">{i + 1}</td>
+                    <td className="px-4 py-3 text-gray-400">{String(i + 1)}</td>
                     <td className="px-4 py-3 font-medium text-gray-900">
                       {party.party ?? party.abbreviation}
                     </td>

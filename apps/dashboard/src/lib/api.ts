@@ -111,11 +111,31 @@ export async function adminFetchBillText(billId: number) {
   } as RequestInit)
 }
 
-export async function adminTransitionBill(billId: number, status: string) {
+export async function adminSetBillText(billId: number, text: string) {
+  return fetchAPI(adminURL(`/api/v1/admin/bills/${billId}/set-text`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text_el: text }),
+    cache: 'no-store',
+    next: undefined,
+  } as RequestInit)
+}
+
+export async function adminPatchBill(billId: number, data: Record<string, unknown>) {
+  return fetchAPI(adminURL(`/api/v1/admin/bills/${billId}`), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+    cache: 'no-store',
+    next: undefined,
+  } as RequestInit)
+}
+
+export async function adminTransitionBill(billId: number, newStatus: string) {
   return fetchAPI(adminURL(`/api/v1/bills/${billId}/transition`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ new_status: newStatus }),
     cache: 'no-store',
     next: undefined,
   } as RequestInit)
@@ -125,10 +145,14 @@ export async function adminSetPartyVotes(billId: number, votes: Record<string, s
   return fetchAPI(adminURL(`/api/v1/admin/bills/${billId}/party-votes`), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(votes),
+    body: JSON.stringify({ votes }),
     cache: 'no-store',
     next: undefined,
   } as RequestInit)
+}
+
+export async function fetchMPCompare(partyAbbr: string) {
+  return fetchAPI(`/api/v1/mp/compare/${partyAbbr}`)
 }
 
 export async function adminHealScraper() {
