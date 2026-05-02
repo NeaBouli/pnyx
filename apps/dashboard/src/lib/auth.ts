@@ -17,16 +17,16 @@ export const ROLE_MODULES: Record<DashboardRole, string[]> = {
   SUPER_ADMIN: [
     'overview', 'analytics', 'bills', 'votes', 'cplm',
     'system', 'ai', 'forum', 'users', 'hlr', 'arweave',
-    'node', 'gov', 'logs', 'settings',
+    'node', 'gov', 'logs', 'settings', 'finance', 'stats',
   ],
   SYSTEM_ADMIN: [
     'overview', 'analytics', 'bills', 'votes', 'cplm',
-    'system', 'ai', 'forum', 'hlr', 'logs',
+    'system', 'ai', 'forum', 'hlr', 'logs', 'finance', 'stats',
   ],
-  CONTENT: ['overview', 'bills', 'votes', 'cplm', 'forum', 'gov'],
-  ANALYST: ['overview', 'analytics', 'votes', 'cplm'],
-  SUPPORT: ['overview', 'system', 'logs', 'forum', 'node'],
-  NODE_ADMIN: ['overview', 'bills', 'votes', 'cplm', 'node', 'gov'],
+  CONTENT: ['overview', 'bills', 'votes', 'cplm', 'forum', 'gov', 'finance', 'stats'],
+  ANALYST: ['overview', 'analytics', 'votes', 'cplm', 'finance', 'stats'],
+  SUPPORT: ['overview', 'system', 'logs', 'forum', 'node', 'finance', 'stats'],
+  NODE_ADMIN: ['overview', 'bills', 'votes', 'cplm', 'node', 'gov', 'finance', 'stats'],
 }
 
 export function canAccess(role: DashboardRole, module: string): boolean {

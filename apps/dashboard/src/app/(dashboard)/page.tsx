@@ -405,10 +405,10 @@ export default function OverviewPage() {
                   {(topDivData as Record<string, unknown>[]).slice(0, 5).map((item, i) => (
                     <tr key={i} className="hover:bg-gray-50">
                       <td className="px-4 py-2.5 text-gray-800 truncate max-w-xs">
-                        #{item.bill_id as number} — {item.title_el as string ?? item.title as string ?? ''}
+                        {String('#')}{String(item.bill_id ?? '')} {String('—')} {String(item.title_el ?? item.title ?? '')}
                       </td>
                       <td className="px-4 py-2.5 text-right font-mono text-red-600">
-                        {((item.divergence_score as number ?? item.divergence as number ?? 0) * 100).toFixed(1)}%
+                        {String((((item.divergence_score as number | undefined) ?? (item.divergence as number | undefined) ?? 0) * 100).toFixed(1))}{String('%')}
                       </td>
                     </tr>
                   ))}

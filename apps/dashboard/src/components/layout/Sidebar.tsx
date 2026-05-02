@@ -35,16 +35,18 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/system', module: 'system', label: 'Σύστημα', icon: '💻' },
       { href: '/ai', module: 'ai', label: 'AI & Εργαλεία', icon: '🤖' },
       { href: '/forum', module: 'forum', label: 'Forum', icon: '💬' },
-      { href: '/logs', module: 'logs', label: 'Αρχεία', icon: '📋' },
+      { href: '/logs', module: 'logs', label: 'Αρχεία καταγρ.', icon: '📋' },
     ],
   },
   {
     title: 'ΔΙΑΧΕΙΡΙΣΗ',
     items: [
+      { href: '/finance', module: 'finance', label: 'Οικονομικά', icon: '💰' },
+      { href: '/stats', module: 'stats', label: 'Στατιστικά', icon: '📊' },
       { href: '/settings', module: 'settings', label: 'Ρυθμίσεις', icon: '⚙️' },
       { href: '/users', module: 'users', label: 'Χρήστες', icon: '👥' },
       { href: '/nodes', module: 'node', label: 'Κόμβοι', icon: '🔗' },
-      { href: '/gov', module: 'gov', label: 'Gov Αιτήσεις', icon: '🏗️' },
+      { href: '/gov', module: 'gov', label: 'Αιτήσεις Gov', icon: '🏗️' },
     ],
   },
 ]
