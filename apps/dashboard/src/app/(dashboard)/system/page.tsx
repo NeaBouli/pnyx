@@ -167,13 +167,13 @@ export default function SystemPage() {
           <div className="text-xs text-gray-400 mt-0.5">Εγγεγραμμένες συσκευές</div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <div className="text-xs text-gray-500 mb-1">gov.gr OAuth Gates</div>
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm overflow-hidden">
+          <div className="text-xs text-gray-500 mb-1">gov.gr OAuth</div>
           <div className="text-2xl font-bold text-gray-800">
-            {String(govGr?.progress ?? '0/4')}
+            {String(govGr?.progress ?? '0/4').split(' ')[0]}
           </div>
-          <div className="text-xs text-gray-400 mt-0.5">
-            {govGr?.status === 'active' ? 'Ενεργό' : govGr?.status === 'stub' ? 'Αναμονή' : 'Αναμονή πλήρωσης'}
+          <div className="text-xs text-gray-400 mt-0.5 truncate">
+            {govGr?.status === 'active' ? 'Ενεργό' : 'Αναμονή ενεργοποίησης'}
           </div>
         </div>
       </div>

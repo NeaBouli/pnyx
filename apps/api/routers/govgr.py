@@ -67,7 +67,7 @@ async def govgr_status():
     return {
         "module": "MOD-09 gov.gr OAuth2.0",
         "status": "active" if is_active() else "stub",
-        "progress": f"{gates_met}/{len(ACTIVATION_GATES)} Aktivierungsbedingungen",
+        "progress": f"{gates_met}/{len(ACTIVATION_GATES)} Προϋποθέσεις Ενεργοποίησης",
         "gates": {
             "500_aktive_nutzer":     ACTIVATION_GATES["users_500"],
             "3_ngo_partnerschaften": ACTIVATION_GATES["ngos_3"],
