@@ -113,16 +113,48 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
     category_id = await _resolve_category(bill, db)
     ekklesia_url = f"https://ekklesia.gr/el/bills/{bill.id}"
 
+    # Status badge
+    status_labels = {
+        "ANNOUNCED": "📋 Ανακοινώθηκε",
+        "ACTIVE": "🗳️ Ενεργή Ψηφοφορία",
+        "WINDOW_24H": "⏰ Τελευταίες 24 ώρες",
+        "PARLIAMENT_VOTED": "🏛️ Ψηφίστηκε στη Βουλή",
+        "OPEN_END": "♾️ Ανοιχτή Ψηφοφορία",
+    }
+    status_val = bill.status.value if bill.status else "ACTIVE"
+    status_badge = status_labels.get(status_val, f"📌 {status_val}")
+
+    # Governance level label
+    gov_labels = {
+        "NATIONAL": "🇬🇷 Εθνικό",
+        "REGIONAL": "🏛️ Περιφερειακό",
+        "MUNICIPAL": "🏘️ Δημοτικό",
+    }
+    gov_val = bill.governance_level.value if bill.governance_level else "NATIONAL"
+    gov_label = gov_labels.get(gov_val, gov_val)
+
+    # Build rich body
+    summary = bill.summary_short_el or bill.pill_el or ""
+    long_text = bill.summary_long_el or ""
+
     body = (
-        f"## {bill.title_el}\n\n"
-        f"{bill.summary_short_el or bill.pill_el or ''}\n\n"
+        f"# {bill.title_el}\n\n"
+        f"| | |\n|---|---|\n"
+        f"| **Κατάσταση** | {status_badge} |\n"
+        f"| **Επίπεδο** | {gov_label} |\n"
+        f"| **ID** | `{bill.id}` |\n\n"
         "---\n\n"
-        f"{bill.summary_long_el or ''}\n\n"
+    )
+    if summary:
+        body += f"## Περίληψη\n{summary}\n\n"
+    if long_text:
+        body += f"## Ανάλυση\n{long_text}\n\n"
+    body += (
         "---\n\n"
-        f"> 🗳️ **[Ψηφίστε στο ekklesia.gr →]({ekklesia_url})**\n>\n"
-        f"> Κατηγορία: `{bill.governance_level.value if bill.governance_level else 'NATIONAL'}` "
-        f"| ID: `{bill.id}`\n"
-        "> Αυτό το θέμα δημιουργήθηκε αυτόματα από το σύστημα ekklesia.\n"
+        f"### 🗳️ [Ψηφίστε τώρα στο ekklesia.gr →]({ekklesia_url})\n\n"
+        "> Κατεβάστε την εφαρμογή ekklesia για να ψηφίσετε ανώνυμα.\n"
+        "> Η ψήφος σας είναι κρυπτογραφημένη (Ed25519) — κανείς δεν γνωρίζει τι ψηφίσατε.\n\n"
+        "*Αυτό το θέμα δημιουργήθηκε αυτόματα από το σύστημα ekklesia.*\n"
     )
 
     async with httpx.AsyncClient(timeout=30) as client:

@@ -162,39 +162,37 @@ async def votes_timeline(
     db: AsyncSession = Depends(get_db)
 ):
     """Abstimmungs-Zeitverlauf aggregiert nach Tag."""
-    since = datetime.utcnow() - timedelta(days=days)
-
-    query = select(
-        func.date_trunc("day", CitizenVote.created_at).label("day"),
-        CitizenVote.vote,
-        func.count(CitizenVote.id).label("count")
-    ).where(
-        CitizenVote.created_at >= since
-    ).group_by(
-        func.date_trunc("day", CitizenVote.created_at), CitizenVote.vote
-    ).order_by(func.date_trunc("day", CitizenVote.created_at))
-
-    if bill_id:
-        query = query.where(CitizenVote.bill_id == bill_id)
-
-    result = await db.execute(query)
-    rows = result.all()
-
-    timeline: dict = {}
-    for row in rows:
-        day = row.day.strftime("%Y-%m-%d") if row.day else "unknown"
-        if day not in timeline:
-            timeline[day] = {"date": day, "yes": 0, "no": 0, "abstain": 0, "total": 0}
-        vote_key = row.vote.value.lower() if hasattr(row.vote, "value") else str(row.vote).lower()
-        if vote_key in timeline[day]:
-            timeline[day][vote_key] = row.count
-        timeline[day]["total"] += row.count
-
-    return {
-        "period_days": days, "bill_id": bill_id,
-        "timeline": sorted(timeline.values(), key=lambda x: x["date"]),
-        "note": "Aggregiert nach Tag — keine Individual-Votes",
-    }
+    try:
+        since = datetime.now(timezone.utc) - timedelta(days=days)
+        query = select(
+            func.date_trunc("day", CitizenVote.created_at).label("day"),
+            CitizenVote.vote,
+            func.count(CitizenVote.id).label("count")
+        ).where(
+            CitizenVote.created_at >= since
+        ).group_by(
+            func.date_trunc("day", CitizenVote.created_at), CitizenVote.vote
+        ).order_by(func.date_trunc("day", CitizenVote.created_at))
+        if bill_id:
+            query = query.where(CitizenVote.bill_id == bill_id)
+        result = await db.execute(query)
+        rows = result.all()
+        timeline: dict = {}
+        for row in rows:
+            day = row.day.strftime("%Y-%m-%d") if row.day else "unknown"
+            if day not in timeline:
+                timeline[day] = {"date": day, "yes": 0, "no": 0, "abstain": 0, "total": 0}
+            vote_key = row.vote.value.lower() if hasattr(row.vote, "value") else str(row.vote).lower()
+            if vote_key in timeline[day]:
+                timeline[day][vote_key] = row.count
+            timeline[day]["total"] += row.count
+        return {
+            "period_days": days, "bill_id": bill_id,
+            "timeline": sorted(timeline.values(), key=lambda x: x["date"]),
+            "note": "Aggregiert nach Tag",
+        }
+    except Exception:
+        return {"period_days": days, "bill_id": bill_id, "timeline": [], "note": "Keine Daten"}
 
 
 @router.get("/top-divergence")

@@ -13,7 +13,7 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `704ba82` (wird nach Audit-Fix-Commit aktualisiert)
+- **HEAD:** `ffa92c7`
 - **Tags:** `v1.0.0`, `pre-audit-fixes-20260501`, `pre-fdroid-versioncheck-20260501`
 - **Remote:** synchron mit GitHub
 
@@ -154,7 +154,12 @@ Weiterhin UNSICHER:
 
 - Datum/Zeit: 2026-05-01
 - Agent: Claude Code
-- HEAD lokal: wird nach Commit aktualisiert
+- HEAD lokal: `a5ee48b` (gepusht + deployed)
+- Motion Pack v1: 5 SVGs aktiv (Hero, Voting, CPLM-Fallback, Privacy x2), Lifecycle+Divergence aus Landing entfernt
+- Broadcasting: Social Media Buttons (Telegram/GitHub/Forum)
+- vr.ekklesia.gr: **LIVE** (SSL + nginx Landing Page, MiroFisch Konzeptphase)
+- Divergence-Balance SVG: aus Landing entfernt (Waagschalen-Bug), Datei bleibt im Repo
+- Session 01.05: 8 Commits, 13 Tasks erledigt
 - Server: API deployed, Discourse Rebuild laeuft
 - Rollback-Tag: `pre-fdroid-versioncheck-20260501`
 
@@ -186,3 +191,36 @@ Der oeffentliche Konzeptkontext aus `ekklesia.gr` und den Wiki-Seiten wird zentr
 `docs/agent-bridge/PUBLIC_CONCEPT_CONTEXT.md`
 
 Diese Inhalte sind als `PUBLIC_DOCS` zu behandeln und gelten nicht automatisch als Repo-Fakt. Repo-belegte Fakten haben Vorrang vor Website/Wiki/Memory.
+
+## Codex Statuspruefung 2026-05-02
+
+- Datum/Zeit: 2026-05-02 17:10:21 EEST
+- Agent: Codex
+- Pruefung: lokaler Repo-/Bridge-Stand, read-only
+- Lokaler HEAD: `88a7547`
+- Branch: `main`
+- Remote-Tracking: `main...origin/main`, lokal laut Git nicht ahead/behind
+- Letzter Commit: `feat(dashboard): HLR Switch + Failover-Monitor + echte Wallet-Adressen`
+- Bridge-Hinweis: Aeltere Abschnitte in dieser Datei nennen noch `ffa92c7`, `a5ee48b`, `704ba82` oder `abf95ce`. Fuer den lokalen Stand dieser Pruefung gilt `88a7547`.
+- Aktueller Arbeitsbaum:
+  - `apps/api/services/discourse_sync.py` modifiziert
+  - `apps/api/services/greek_topics_scraper.py` untracked
+  - `docs/agent-bridge/` enthaelt untracked Bridge-Dateien
+- Neue/aktuelle Bridge-Artefakte seit Dashboard-Arbeit:
+  - `docs/agent-bridge/DEV_REPORT_20260502.md`
+  - `docs/agent-bridge/DASHBOARD_INVENTORY.md`
+- Dashboard-Stand laut Bridge:
+  - `dashboard.ekklesia.gr` ist live und auth-geschuetzt.
+  - Dashboard umfasst laut Dev Report 15 Seiten.
+  - Letzter dokumentierter Dashboard-/HLR-Commit ist `88a7547`.
+- Bekannte offene Punkte laut Bridge:
+  - `/api/v1/analytics/votes-timeline` gibt 500.
+  - Discourse `about.json` liefert keine `topic_count`/`post_count`.
+  - 4 von 8 Scheduler-Jobs fehlen im `/scraper/jobs` Response.
+  - 25 Dashboard-Features fehlen noch, davon 6 mit hoher Prioritaet vor Public Beta.
+- Grenzen dieser Pruefung:
+  - Keine Live-Server-/SSH-Pruefung in diesem Lauf.
+  - Keine externen Netzwerkaufrufe.
+  - Keine Tests ausgefuehrt.
+  - Keine `.env`-, Secret-, Key- oder Wallet-Dateien gelesen.
+  - Kein Commit, Push oder Deployment.
