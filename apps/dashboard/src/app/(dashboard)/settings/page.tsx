@@ -11,7 +11,7 @@ function adminURL(path: string): string {
   return `${API}${path}${sep}admin_key=${ADMIN_KEY}`
 }
 
-type SettingsTab = 'modules' | 'scraper' | 'apps' | 'compass' | 'kb'
+type SettingsTab = 'modules' | 'scraper' | 'apps' | 'compass' | 'kb' | 'notifications'
 
 // ─── Toggle ───
 
@@ -109,6 +109,13 @@ export default function SettingsPage() {
   const [maintenanceMode, setMaintenanceMode] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
+  // Notifications tab state
+  const [notifTitle, setNotifTitle] = useState('')
+  const [notifBody, setNotifBody] = useState('')
+  const [notifConfirm, setNotifConfirm] = useState(false)
+  const [notifResult, setNotifResult] = useState<string | null>(null)
+  const [notifSending, setNotifSending] = useState(false)
+
   useEffect(() => {
     async function load() {
       const [hlr, claude, deepl, notif, arweave, jobs, version, compass] = await Promise.allSettled([
@@ -169,12 +176,39 @@ export default function SettingsPage() {
 
   const hlrPrimary = hlrData?.primary as Record<string, unknown> | null
 
+  async function handleSendPush() {
+    setNotifSending(true)
+    setNotifResult(null)
+    try {
+      const res = await fetch(`${API}/api/v1/notify/send`, {
+        method: 'POST',
+        headers: { 'X-Admin-Key': ADMIN_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title_el: notifTitle, body_el: notifBody, title_en: notifTitle, body_en: notifBody }),
+      })
+      const data = await res.json() as Record<string, unknown>
+      if (res.ok) {
+        const sent = data?.sent ?? data?.devices ?? data?.count
+        setNotifResult(sent != null ? `Εστάλη σε ${String(sent)} συσκευές` : 'Εστάλη επιτυχώς')
+        setNotifTitle('')
+        setNotifBody('')
+      } else {
+        setNotifResult(`Σφάλμα: ${String(data?.detail ?? data?.error ?? res.status)}`)
+      }
+    } catch (e) {
+      setNotifResult(`Σφάλμα αποστολής: ${String(e)}`)
+    } finally {
+      setNotifSending(false)
+      setNotifConfirm(false)
+    }
+  }
+
   const tabs: { key: SettingsTab; label: string }[] = [
     { key: 'modules', label: 'Module' },
     { key: 'scraper', label: 'Αυτοματισμοί' },
     { key: 'apps', label: 'Apps' },
     { key: 'compass', label: 'Compass' },
     { key: 'kb', label: 'Βάση Γνώσεων' },
+    { key: 'notifications', label: 'Ειδοποιήσεις' },
   ]
 
   return (
@@ -421,6 +455,82 @@ export default function SettingsPage() {
             <div className="text-sm font-medium text-gray-500">{String('Βάση Γνώσεων CRUD — Phase 2')}</div>
             <div className="text-xs text-gray-400 mt-1">{String('FAQ, Αποστολή, Concepts για τον RAG Agent')}</div>
           </div>
+        </div>
+      )}
+
+      {/* Tab 6: Notifications */}
+      {tab === 'notifications' && (
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+          <h2 className="font-semibold text-gray-900 mb-1">{String('Push Notifications')}</h2>
+          {notifData?.device_count != null && (
+            <div className="text-xs text-gray-400 mb-4">
+              {String('Εγγεγραμμένες συσκευές:')} <span className="font-medium text-gray-700">{String(notifData.device_count)}</span>
+            </div>
+          )}
+
+          <div className="space-y-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{String('Τίτλος')}</label>
+              <input
+                type="text"
+                maxLength={50}
+                value={notifTitle}
+                onChange={(e) => setNotifTitle(e.target.value)}
+                placeholder="max 50 χαρακτήρες"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <div className="text-right text-xs text-gray-400 mt-0.5">{String(notifTitle.length)}/50</div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{String('Μήνυμα')}</label>
+              <textarea
+                maxLength={200}
+                rows={4}
+                value={notifBody}
+                onChange={(e) => setNotifBody(e.target.value)}
+                placeholder="max 200 χαρακτήρες"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
+              <div className="text-right text-xs text-gray-400 mt-0.5">{String(notifBody.length)}/200</div>
+            </div>
+          </div>
+
+          {!notifConfirm ? (
+            <button
+              onClick={() => setNotifConfirm(true)}
+              disabled={!notifTitle.trim() || !notifBody.trim()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {String('Αποστολή Push')}
+            </button>
+          ) : (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="text-sm font-medium text-yellow-800 mb-1">{String('Επιβεβαίωση Αποστολής')}</div>
+              <div className="text-sm text-yellow-700 mb-3">{String('Η ειδοποίηση θα σταλεί σε όλες τις εγγεγραμμένες συσκευές. Συνέχεια;')}</div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSendPush}
+                  disabled={notifSending}
+                  className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {notifSending ? String('Αποστολή...') : String('Ναι, Αποστολή')}
+                </button>
+                <button
+                  onClick={() => setNotifConfirm(false)}
+                  disabled={notifSending}
+                  className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
+                >
+                  {String('Ακύρωση')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {notifResult && (
+            <div className={`mt-4 p-3 rounded-lg text-sm font-medium ${notifResult.startsWith('Σφάλμα') ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`}>
+              {String(notifResult)}
+            </div>
+          )}
         </div>
       )}
     </div>

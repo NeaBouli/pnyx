@@ -209,3 +209,24 @@ export async function fetchDiscourseVersion(): Promise<string> {
     return 'offline'
   }
 }
+
+// --- Push Notifications ---
+export async function sendPushNotification(title: string, body: string) {
+  return fetch(`${API_BASE}/api/v1/notify/send`, {
+    method: 'POST',
+    headers: { 'X-Admin-Key': ADMIN_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title_el: title, body_el: body, title_en: title, body_en: body }),
+  }).then(r => r.json())
+}
+
+// --- VAA ---
+export async function fetchVAAStatements() { return fetchAPI('/api/v1/vaa/statements') }
+export async function fetchVAAParties() { return fetchAPI('/api/v1/vaa/parties') }
+
+// --- Diavgeia Admin ---
+export async function adminDiavgeiaScrape() {
+  return fetch(`${API_BASE}/api/v1/admin/diavgeia/scrape?admin_key=${ADMIN_KEY}`, { method: 'POST' }).then(r => r.json())
+}
+export async function adminRefreshOrgsCache() {
+  return fetch(`${API_BASE}/api/v1/admin/diavgeia/refresh-orgs-cache?admin_key=${ADMIN_KEY}`, { method: 'POST' }).then(r => r.json())
+}

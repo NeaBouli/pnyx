@@ -3,6 +3,12 @@
 import { useState, useEffect } from 'react'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
+const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || ''
+
+function adminURL(path: string): string {
+  const sep = path.includes('?') ? '&' : '?'
+  return `${API}${path}${sep}admin_key=${ADMIN_KEY}`
+}
 
 type ApplicationStatus = 'pending' | 'approved' | 'rejected'
 
@@ -12,6 +18,15 @@ interface GovApplication {
   ada: string
   status: ApplicationStatus
   date: string
+}
+
+interface DiavgeiaDecision {
+  ada?: string
+  subject?: string
+  decisionType?: string
+  organizationLabel?: string
+  issueDate?: string
+  [key: string]: unknown
 }
 
 interface GovGrGates {
@@ -62,6 +77,14 @@ export default function GovPage() {
   const [govGr, setGovGr] = useState<GovGrStatus | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // Diavgeia state
+  const [adaInput, setAdaInput] = useState('')
+  const [diavgeiaResults, setDiavgeiaResults] = useState<DiavgeiaDecision[]>([])
+  const [diavgeiaLoading, setDiavgeiaLoading] = useState(false)
+  const [diavgeiaError, setDiavgeiaError] = useState<string | null>(null)
+  const [diavgeiaAction, setDiavgeiaAction] = useState<string | null>(null)
+  const [diavgeiaActionResult, setDiavgeiaActionResult] = useState<string | null>(null)
+
   useEffect(() => {
     async function load() {
       try {
@@ -74,6 +97,44 @@ export default function GovPage() {
     }
     load()
   }, [])
+
+  async function handleDiavgeiaSearch() {
+    if (!adaInput.trim()) return
+    setDiavgeiaLoading(true)
+    setDiavgeiaError(null)
+    setDiavgeiaResults([])
+    try {
+      const res = await fetch(`${API}/api/v1/admin/diavgeia/scrape?admin_key=${ADMIN_KEY}&ada=${encodeURIComponent(adaInput.trim())}`, { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json() as Record<string, unknown>
+        const decisions = Array.isArray(data) ? data : (Array.isArray(data?.decisions) ? data.decisions as DiavgeiaDecision[] : [data as DiavgeiaDecision])
+        setDiavgeiaResults(decisions)
+      } else {
+        setDiavgeiaError(`HTTP ${String(res.status)}`)
+      }
+    } catch (e) {
+      setDiavgeiaError(String(e))
+    } finally {
+      setDiavgeiaLoading(false)
+    }
+  }
+
+  async function handleDiavgeiaAdminAction(action: 'scrape' | 'refresh-orgs-cache') {
+    setDiavgeiaAction(action)
+    setDiavgeiaActionResult(null)
+    try {
+      const url = action === 'scrape'
+        ? adminURL('/api/v1/admin/diavgeia/scrape')
+        : adminURL('/api/v1/admin/diavgeia/refresh-orgs-cache')
+      const res = await fetch(url, { method: 'POST' })
+      const data = await res.json() as Record<string, unknown>
+      setDiavgeiaActionResult(res.ok ? String(data?.message ?? data?.status ?? 'OK') : `Σφάλμα: ${String(data?.detail ?? res.status)}`)
+    } catch (e) {
+      setDiavgeiaActionResult(`Σφάλμα: ${String(e)}`)
+    } finally {
+      setDiavgeiaAction(null)
+    }
+  }
 
   const fulfilledCount = govGr?.gates
     ? Object.values(govGr.gates).filter(Boolean).length
@@ -199,6 +260,88 @@ export default function GovPage() {
             </table>
             <div className="px-5 py-3 border-t border-gray-100 text-xs text-gray-400">
               Ενεργοποιείται μετά τη σύνδεση gov.gr OAuth 2.0 και Diavgeia API.
+            </div>
+          </div>
+
+          {/* Diavgeia Section */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
+            <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="font-semibold text-gray-800">Diavgeia</h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleDiavgeiaAdminAction('scrape')}
+                  disabled={diavgeiaAction === 'scrape'}
+                  className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200 transition-colors disabled:opacity-50"
+                >
+                  {diavgeiaAction === 'scrape' ? String('Scrape...') : String('Scrape τώρα')}
+                </button>
+                <button
+                  onClick={() => handleDiavgeiaAdminAction('refresh-orgs-cache')}
+                  disabled={diavgeiaAction === 'refresh-orgs-cache'}
+                  className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
+                >
+                  {diavgeiaAction === 'refresh-orgs-cache' ? String('Ανανέωση...') : String('Org-Cache ανανέωση')}
+                </button>
+              </div>
+            </div>
+
+            {diavgeiaActionResult && (
+              <div className="mx-5 mt-3 p-2 bg-gray-50 rounded text-xs text-gray-600 border border-gray-200">
+                {String(diavgeiaActionResult)}
+              </div>
+            )}
+
+            <div className="p-5">
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  value={adaInput}
+                  onChange={(e) => setAdaInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleDiavgeiaSearch()}
+                  placeholder="ΑΔΑ π.χ. ΨΧΧΧ-ΑΒΓ"
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  onClick={handleDiavgeiaSearch}
+                  disabled={diavgeiaLoading || !adaInput.trim()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {diavgeiaLoading ? String('Αναζήτηση...') : String('Αναζήτηση')}
+                </button>
+              </div>
+
+              {diavgeiaError && (
+                <div className="text-sm text-red-600 mb-3">{String('Σφάλμα:')} {String(diavgeiaError)}</div>
+              )}
+
+              {diavgeiaResults.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="text-left px-3 py-2 font-medium text-gray-600">ΑΔΑ</th>
+                        <th className="text-left px-3 py-2 font-medium text-gray-600">Τύπος</th>
+                        <th className="text-left px-3 py-2 font-medium text-gray-600">Οργανισμός</th>
+                        <th className="text-left px-3 py-2 font-medium text-gray-600">Ημερομηνία</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {diavgeiaResults.map((d, i) => (
+                        <tr key={i} className="hover:bg-gray-50">
+                          <td className="px-3 py-2 font-mono text-xs text-gray-700">{String(d.ada ?? '—')}</td>
+                          <td className="px-3 py-2 text-xs text-gray-600">{String(d.decisionType ?? d.subject ?? '—')}</td>
+                          <td className="px-3 py-2 text-xs text-gray-600">{String(d.organizationLabel ?? '—')}</td>
+                          <td className="px-3 py-2 text-xs text-gray-500">{d.issueDate ? String(new Date(String(d.issueDate)).toLocaleDateString('el-GR')) : String('—')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {!diavgeiaLoading && diavgeiaResults.length === 0 && !diavgeiaError && (
+                <div className="text-sm text-gray-400 text-center py-4">{String('Εισάγετε ΑΔΑ και πατήστε Αναζήτηση')}</div>
+              )}
             </div>
           </div>
         </div>

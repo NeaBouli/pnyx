@@ -27,6 +27,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/bills', module: 'bills', label: 'Νομοσχέδια', icon: '🏛️' },
       { href: '/votes', module: 'votes', label: 'Ψηφοφορίες', icon: '🗳️' },
       { href: '/cplm', module: 'cplm', label: 'CPLM', icon: '🧭' },
+      { href: '/vaa', module: 'vaa', label: 'VAA Θέσεις', icon: '🗳️' },
     ],
   },
   {
