@@ -48,7 +48,17 @@ export default function AnalyticsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">{String('Αναλυτικά')}</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">{String('Αναλυτικά')}</h1>
+        <a
+          href={`${API}/api/v1/export/divergence.csv`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+        >
+          {String('CSV')}
+        </a>
+      </div>
 
       {loading && <div className="p-8 text-center text-gray-500">{String('Φόρτωση...')}</div>}
 

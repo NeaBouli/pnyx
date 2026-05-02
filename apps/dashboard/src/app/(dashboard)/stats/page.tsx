@@ -81,48 +81,67 @@ export default function StatsPage() {
             </div>
           </div>
 
-          {/* Phase 2 Placeholders */}
-          <h2 className="text-lg font-semibold text-gray-800 mt-8 mb-4">{String('Αναμένονται (Phase 2)')}</h2>
+          {/* Integration Cards */}
+          <h2 className="text-lg font-semibold text-gray-800 mt-8 mb-4">{String('Integrations (Phase 2)')}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
-              <div className="flex items-start gap-3">
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-600">{String('Phase 2')}</span>
+
+            {/* Plausible */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-800">{String('Plausible Analytics')}</h3>
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">{String('Empfohlen')}</span>
               </div>
-              <div className="text-sm font-medium text-gray-700 mt-3">{String('App Downloads')}</div>
-              <div className="text-xs text-gray-400 mt-1">
-                {String('Play Console API — ακόμη δεν έχει συνδεθεί. Απαιτείται Google Play Developer API integration.')}
-              </div>
+              <div className="text-sm font-medium text-gray-700 mb-1">{String('Datenschutzkonforme Besucherstatistik')}</div>
+              <div className="text-xs text-gray-500 mb-1">{String('Selbst-gehostet, GDPR-konform, kein Cookie-Banner noetig')}</div>
+              <div className="text-xs text-gray-400 mb-3">{String('Εκτιμώμενο κόστος: Δωρεάν (self-hosted Docker)')}</div>
+              <a
+                href="/settings"
+                className="inline-block px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors"
+              >
+                {String('Aktivieren -> Einstellungen')}
+              </a>
             </div>
 
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
-              <div className="flex items-start gap-3">
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-600">{String('Phase 2')}</span>
+            {/* Sentry */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-800">{String('Sentry Crash Reports')}</h3>
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">{String('Phase 2')}</span>
               </div>
-              <div className="text-sm font-medium text-gray-700 mt-3">{String('Website Επισκέπτες')}</div>
-              <div className="text-xs text-gray-400 mt-1">
-                {String('Κανένα analytics tool εγκατεστημένο. Σύσταση: Plausible (self-hosted, GDPR-konform).')}
-              </div>
+              <div className="text-sm font-medium text-gray-700 mb-1">{String('App Crash Reporting')}</div>
+              <div className="text-xs text-gray-500 mb-1">{String('Free Tier: 5000 Events/Monat')}</div>
+              <div className="text-xs text-gray-400 mb-3">{String('Automatische Fehlererkennung fuer Android-App')}</div>
+              <a
+                href="/settings"
+                className="inline-block px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors"
+              >
+                {String('Aktivieren -> Einstellungen')}
+              </a>
             </div>
 
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
-              <div className="flex items-start gap-3">
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-600">{String('Phase 2')}</span>
+            {/* Play Console */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-800">{String('Google Play Console API')}</h3>
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">{String('Phase 2')}</span>
               </div>
-              <div className="text-sm font-medium text-gray-700 mt-3">{String('App Crashes')}</div>
-              <div className="text-xs text-gray-400 mt-1">
-                {String('Κανένα crash-reporting. Σύσταση: Sentry Free Tier.')}
-              </div>
+              <div className="text-sm font-medium text-gray-700 mb-1">{String('Download-Statistiken, Bewertungen, ANR-Rate')}</div>
+              <div className="text-xs text-gray-500 mb-3">{String('Erfordert Service Account + API Freigabe in Play Console')}</div>
+              <span className="inline-block px-3 py-1.5 bg-gray-100 text-gray-400 rounded-lg text-xs font-medium cursor-not-allowed">
+                {String('Nicht verbunden')}
+              </span>
             </div>
 
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
-              <div className="flex items-start gap-3">
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-600">{String('Phase 2')}</span>
+            {/* F-Droid */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-800">{String('F-Droid')}</h3>
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">{String('Open Source')}</span>
               </div>
-              <div className="text-sm font-medium text-gray-700 mt-3">{String('F-Droid Installs')}</div>
-              <div className="text-xs text-gray-400 mt-1">
-                {String('Δεν είναι trackable — Open Source αρχή. Τα F-Droid downloads δεν αναφέρονται στους developers.')}
-              </div>
+              <div className="text-sm font-medium text-gray-700 mb-1">{String('Keine Download-Statistiken verfuegbar')}</div>
+              <div className="text-xs text-gray-500">{String('Open Source Prinzip: F-Droid meldet keine Installationszahlen an Entwickler zurueck.')}</div>
             </div>
+
           </div>
         </div>
       )}

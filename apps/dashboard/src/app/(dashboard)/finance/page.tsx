@@ -314,6 +314,23 @@ export default function FinancePage() {
               </div>
             </div>
           </div>
+
+          {/* PayPal IPN Placeholder */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <h2 className="text-base font-semibold text-gray-800 mb-3">Αυτόματη Καταμέτρηση Δωρεών</h2>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="text-sm font-medium text-yellow-800">PayPal IPN Webhook — Φάση 2</div>
+              <div className="text-xs text-yellow-600 mt-1">
+                Όταν ρυθμιστεί: αυτόματη καταμέτρηση δωρεών μέσω PayPal
+              </div>
+              <div className="text-xs text-gray-500 mt-2">
+                Webhook URL: https://api.ekklesia.gr/api/v1/payments/webhook/paypal
+              </div>
+              <div className="text-xs text-gray-400 mt-1">
+                Αυτή τη στιγμή: χειροκίνητη καταμέτρηση
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

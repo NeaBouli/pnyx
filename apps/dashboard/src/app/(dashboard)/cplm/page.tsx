@@ -72,7 +72,18 @@ export default function CPLMPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">CPLM — Συλλογικός Πολιτικός Χάρτης</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">CPLM — Συλλογικός Πολιτικός Χάρτης</h1>
+        <a
+          href={`${API}/api/v1/export/bills.csv`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+          title="CPLM CSV Export — Εκκρεμεί"
+        >
+          CSV
+        </a>
+      </div>
 
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">

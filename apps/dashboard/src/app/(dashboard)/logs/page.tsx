@@ -343,7 +343,7 @@ export default function LogsPage() {
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <h2 className="font-semibold text-gray-800 mb-2">Log-Analyse (Ollama)</h2>
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-700 mb-3">
-              Platzhalter — POST /admin/logs/explain (Backend-Endpoint fehlt noch)
+              Εκκρεμεί — POST /admin/logs/explain (Backend endpoint δεν υπάρχει ακόμα)
             </div>
             <button
               disabled

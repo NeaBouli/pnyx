@@ -13,6 +13,7 @@ interface Bill {
   title_el: string
   title_en?: string
   summary_short_el?: string
+  summary_long_el?: string
   status: BillStatus
   governance_level: GovernanceLevel
   created_at: string
@@ -93,6 +94,7 @@ export default function BillsPage() {
   // Text modal
   const [textBill, setTextBill] = useState<Bill | null>(null)
   const [textContent, setTextContent] = useState('')
+  const [textEditable, setTextEditable] = useState(false)
   const [textSubmitting, setTextSubmitting] = useState(false)
 
   // Party votes modal
@@ -204,7 +206,8 @@ export default function BillsPage() {
   // Text modal handlers
   function openTextModal(bill: Bill) {
     setTextBill(bill)
-    setTextContent('')
+    setTextContent(bill.summary_long_el ? String(bill.summary_long_el).slice(0, 500) : '')
+    setTextEditable(false)
   }
 
   async function handleSetText(e: React.FormEvent) {
@@ -590,19 +593,41 @@ export default function BillsPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Κείμενο #{String(textBill.id)}</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Κείμενο Νομοσχεδίου #{String(textBill.id)}</h2>
               <button onClick={() => setTextBill(null)} className="text-gray-400 hover:text-gray-600 text-xl">x</button>
             </div>
             <form onSubmit={handleSetText} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Κείμενο Νομοσχεδίου (Ελληνικά)</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700">Κείμενο Νομοσχεδίου (Ελληνικά)</label>
+                  {!textEditable && (
+                    <button
+                      type="button"
+                      onClick={() => setTextEditable(true)}
+                      className="px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded text-xs font-medium hover:bg-indigo-100 transition-colors"
+                    >
+                      Επεξεργασία
+                    </button>
+                  )}
+                </div>
                 <textarea
                   value={textContent}
                   onChange={(e) => setTextContent(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                  readOnly={!textEditable}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono ${
+                    textEditable
+                      ? 'border-gray-300 bg-white'
+                      : 'border-gray-200 bg-gray-50 text-gray-600 cursor-default'
+                  }`}
                   rows={10}
-                  placeholder="Εισάγετε το κείμενο του νομοσχεδίου..."
+                  placeholder={textEditable ? 'Εισάγετε το κείμενο του νομοσχεδίου...' : 'Δεν υπάρχει κείμενο — πατήστε Επεξεργασία ή Αυτόματη Εξαγωγή'}
                 />
+                {textEditable && (
+                  <div className="text-xs text-gray-400 mt-1">{String(textContent.length)} χαρακτήρες</div>
+                )}
+              </div>
+              <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 text-xs text-gray-500">
+                Αυτόματη Εξαγωγή: Jina Reader → Ollama → DeepL Pipeline
               </div>
               <div className="flex gap-3 pt-2">
                 <button
@@ -618,15 +643,17 @@ export default function BillsPage() {
                   disabled={textSubmitting}
                   className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50"
                 >
-                  {textSubmitting ? '...' : 'Αυτόματο Scrape'}
+                  {textSubmitting ? '...' : 'Αυτόματη Εξαγωγή'}
                 </button>
-                <button
-                  type="submit"
-                  disabled={textSubmitting || !textContent.trim()}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
-                >
-                  {textSubmitting ? 'Αποθήκευση...' : 'Αποθήκευση'}
-                </button>
+                {textEditable && (
+                  <button
+                    type="submit"
+                    disabled={textSubmitting || !textContent.trim()}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    {textSubmitting ? 'Αποθήκευση...' : 'Αποθήκευση'}
+                  </button>
+                )}
               </div>
             </form>
           </div>

@@ -497,54 +497,80 @@ export default function SettingsPage() {
 
       {/* Tab 4: Apps */}
       {tab === 'apps' && (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <h2 className="font-semibold text-gray-900 mb-3">{String('App Distribution')}</h2>
-          <div className="space-y-3 mb-4">
-            <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <span className="text-sm text-gray-600">{String('Τρέχουσα Έκδοση')}</span>
-              <span className="text-sm font-medium text-gray-800">
-                {String(appVersion?.latest_version ?? appVersion?.version ?? '—')}
-                {appVersion?.latest_version_code ? ` (${String(appVersion.latest_version_code)})` : ''}
-              </span>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <span className="text-sm text-gray-600">{String('Play Store')}</span>
-              <a href="https://play.google.com/store/apps/details?id=ekklesia.gr" target="_blank" rel="noopener noreferrer"
-                className="text-sm text-blue-600 hover:underline">{String('Άνοιγμα')}</a>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <span className="text-sm text-gray-600">{String('F-Droid')}</span>
-              <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs">{String('MR Εκκρεμεί')}</span>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <span className="text-sm text-gray-600">{String('Direct APK')}</span>
-              <span className="text-xs text-gray-400">{String('Σύντομα')}</span>
+        <div className="space-y-4">
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+            <h2 className="font-semibold text-gray-900 mb-3">{String('App Distribution')}</h2>
+            <div className="space-y-3 mb-4">
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-600">{String('Τρέχουσα Έκδοση')}</span>
+                <span className="text-sm font-medium text-gray-800">
+                  {String(appVersion?.latest_version ?? appVersion?.version ?? '—')}
+                  {appVersion?.latest_version_code ? ` (${String(appVersion.latest_version_code)})` : ''}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-600">{String('Play Store')}</span>
+                <a href="https://play.google.com/store/apps/details?id=ekklesia.gr" target="_blank" rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:underline">{String('Άνοιγμα')}</a>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-600">{String('F-Droid')}</span>
+                <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs">{String('MR Εκκρεμεί')}</span>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <span className="text-sm text-gray-600">{String('Direct APK')}</span>
+                <span className="text-xs text-gray-400">{String('Σύντομα')}</span>
+              </div>
             </div>
           </div>
 
-          <div className="divide-y divide-gray-100 border-t border-gray-100 pt-2">
-            <Toggle id="force_update" label="Αναγκαστική Ενημέρωση" value={forceUpdate} onChange={setForceUpdate} />
-            {forceUpdate && (
-              <div className="py-2 pl-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">{String('Ελάχιστη Έκδοση')}</label>
+          {/* Force Update + Minimum Version */}
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+            <h2 className="font-semibold text-gray-900 mb-3">{String('Αναγκαστική Ενημέρωση')}</h2>
+            <div className="divide-y divide-gray-100">
+              <Toggle
+                id="force_update"
+                label="Force Update"
+                value={appVersion?.force_update === true || forceUpdate}
+                onChange={setForceUpdate}
+                sub={String('Αλλαγή μέσω .env: APP_FORCE_UPDATE=true')}
+              />
+              <div className="py-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">{String('Ελάχιστη Έκδοση (Version Code)')}</label>
                 <input
                   type="text"
-                  value={forceUpdateVersion}
+                  value={forceUpdateVersion || String(appVersion?.min_required_version_code ?? '')}
                   onChange={(e) => setForceUpdateVersion(e.target.value)}
-                  placeholder="π.χ. 1.2.0"
+                  placeholder="π.χ. 5"
                   className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-48 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+                <div className="text-xs text-gray-400 mt-1">{String('Αλλαγή μέσω .env: APP_MIN_VERSION_CODE=X')}</div>
               </div>
-            )}
-            <Toggle id="maintenance" label="Λειτουργία Συντήρησης" value={maintenanceMode} onChange={setMaintenanceMode} warning={maintenanceMode ? 'Η εφαρμογή εμφανίζει οθόνη συντήρησης' : undefined} />
+            </div>
           </div>
 
-          <div className="mt-4 space-y-2">
-            <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-500">
-              {String('Στατιστικά Λήψεων (Play Console API — Phase 2)')}
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-500">
-              {String('Αναφορές Σφαλμάτων (Sentry — Phase 2)')}
+          {/* Maintenance Mode */}
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+            <h2 className="font-semibold text-gray-900 mb-3">{String('Λειτουργία Συντήρησης')}</h2>
+            <Toggle
+              id="maintenance"
+              label="Maintenance Mode"
+              value={maintenanceMode}
+              onChange={setMaintenanceMode}
+              warning={maintenanceMode ? String('Η σελίδα θα κλείσει για τους χρήστες') : undefined}
+            />
+            {maintenanceMode && (
+              <div className="mt-2 bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-700">
+                {String('Προσοχή: Ενεργοποίηση Maintenance Mode κλείνει την εφαρμογή για όλους τους χρήστες.')}
+              </div>
+            )}
+          </div>
+
+          {/* Info box */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+            <div className="font-medium mb-1">{String('Backend-Endpoints fehlen')}</div>
+            <div className="text-xs text-blue-700">
+              {String('Backend-Endpoints fuer Live-Aenderungen fehlen — .env auf Server aendern und Container neu starten.')}
             </div>
           </div>
         </div>

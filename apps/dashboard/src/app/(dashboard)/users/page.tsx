@@ -80,7 +80,16 @@ export default function UsersPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">{String('Χρήστες & Ταυτότητες')}</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">{String('Χρήστες & Ταυτότητες')}</h1>
+        <button
+          disabled
+          title="Kein PII-Export moeglich — Datenschutz"
+          className="px-3 py-1.5 bg-gray-100 text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed"
+        >
+          {String('CSV (kein PII-Export)')}
+        </button>
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
