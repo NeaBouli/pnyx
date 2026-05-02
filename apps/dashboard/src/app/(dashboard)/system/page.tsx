@@ -144,10 +144,10 @@ export default function SystemPage() {
         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
           <div className="text-xs text-gray-500 mb-1">Arweave Balance</div>
           <div className="text-2xl font-bold text-blue-600">
-            {arweave?.balance != null ? `${(arweave.balance as number).toFixed(4)} AR` : '—'}
+            {arweave?.balance_ar != null ? `${(arweave.balance_ar as number).toFixed(4)} AR` : '—'}
           </div>
           <div className="text-xs text-gray-400 mt-0.5">
-            {arweave?.address ? `${(arweave.address as string).slice(0, 10)}...` : 'Wallet'}
+            {arweave?.wallet_address ? `${(arweave.wallet_address as string).slice(0, 10)}...` : 'Wallet'}
           </div>
         </div>
 
@@ -162,10 +162,10 @@ export default function SystemPage() {
         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
           <div className="text-xs text-gray-500 mb-1">gov.gr OAuth Gates</div>
           <div className="text-2xl font-bold text-gray-800">
-            {String(govGr?.gates_fulfilled ?? govGr?.fulfilled ?? '0')}/{String(govGr?.gates_total ?? govGr?.total ?? '4')}
+            {String(govGr?.progress ?? '0/4')}
           </div>
           <div className="text-xs text-gray-400 mt-0.5">
-            {govGr?.status === 'active' ? 'Ενεργό' : 'Αναμονή πλήρωσης'}
+            {govGr?.status === 'active' ? 'Ενεργό' : govGr?.status === 'stub' ? 'Stub' : 'Αναμονή πλήρωσης'}
           </div>
         </div>
       </div>

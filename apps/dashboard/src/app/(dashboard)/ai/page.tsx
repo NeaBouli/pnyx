@@ -73,10 +73,9 @@ export default function AIPage() {
   const ollamaStatus = (scraper?.ollama_status ?? scraper?.status ?? claude?.ollama_status) as string | null
   const ollamaOk = ollamaStatus === 'ok' || ollamaStatus === 'available' || ollamaStatus === 'healthy'
 
-  const claudeUsed = claude?.used_eur as number | null
-  const claudeTotal = claude?.budget_eur as number | null
-  const claudeDaily = claude?.daily_used as number | null
-  const claudeTokens = claude?.total_tokens as number | null
+  const claudeTokensToday = claude?.tokens_today as number | null
+  const claudeTokensMonth = claude?.tokens_month as number | null
+  const claudeIsActive = claude?.is_active as boolean | null
 
   const deeplCount = deepl?.character_count as number | null
   const deeplLimit = (deepl?.character_limit as number) ?? 500000
@@ -130,45 +129,26 @@ export default function AIPage() {
             <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
               <h2 className="font-semibold text-gray-800">{String('Claude Haiku (Anthropic)')}</h2>
               <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                claudeUsed != null ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                claudeIsActive ? 'bg-green-100 text-green-700' : claudeIsActive === false ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500'
               }`}>
-                {claudeUsed != null ? String('Ενεργό') : String('Άγνωστο')}
+                {claudeIsActive ? String('Ενεργό') : claudeIsActive === false ? String('Ανενεργό') : String('Άγνωστο')}
               </span>
             </div>
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-xs text-gray-500 mb-1">{String('Ημερήσια Χρήση')}</div>
+                  <div className="text-xs text-gray-500 mb-1">{String('Tokens Σήμερα')}</div>
                   <div className="text-xl font-bold text-gray-800">
-                    {claudeDaily != null ? `${String(claudeDaily.toFixed(2))} EUR` : String('—')}
+                    {claudeTokensToday != null ? String(claudeTokensToday.toLocaleString('el-GR')) : String('—')}
                   </div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-xs text-gray-500 mb-1">{String('Μηνιαίο Budget')}</div>
+                  <div className="text-xs text-gray-500 mb-1">{String('Tokens Μήνα')}</div>
                   <div className="text-xl font-bold text-gray-800">
-                    {claudeUsed != null && claudeTotal != null
-                      ? `${String(claudeUsed.toFixed(2))} / ${String(claudeTotal)} EUR`
-                      : String('—')}
+                    {claudeTokensMonth != null ? String(claudeTokensMonth.toLocaleString('el-GR')) : String('—')}
                   </div>
-                  {claudeUsed != null && claudeTotal != null && claudeTotal > 0 && (
-                    <div className="mt-2">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full transition-all ${
-                            (claudeUsed / claudeTotal) > 0.8 ? 'bg-red-500' : 'bg-blue-500'
-                          }`}
-                          style={{ width: `${Math.min(100, (claudeUsed / claudeTotal) * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
-              {claudeTokens != null && (
-                <div className="text-sm text-gray-500">
-                  {String('Tokens μηνιαίο:')} {String(claudeTokens.toLocaleString('el-GR'))}
-                </div>
-              )}
             </div>
           </div>
 

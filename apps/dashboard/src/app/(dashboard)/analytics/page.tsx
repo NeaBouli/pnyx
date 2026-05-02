@@ -82,7 +82,7 @@ export default function AnalyticsPage() {
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-40 flex items-center justify-center text-sm text-gray-400">{String('Δεν υπάρχουν δεδομένα')}</div>
+              <div className="h-40 flex items-center justify-center text-sm text-gray-400">{String('Δεν υπάρχουν διαθέσιμα δεδομένα')}</div>
             )}
           </div>
 

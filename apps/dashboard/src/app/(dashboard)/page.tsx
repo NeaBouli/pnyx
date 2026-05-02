@@ -144,7 +144,8 @@ export default function OverviewPage() {
   const hlrData = data.hlr as Record<string, unknown> | null
   const cplmData = data.cplm as Record<string, unknown> | null
   const analyticsData = data.analytics as Record<string, unknown> | null
-  const scraperJobs = data.scraperJobs as unknown[] | null
+  const scraperJobsRaw = data.scraperJobs as Record<string, unknown> | null
+  const scraperJobs = (scraperJobsRaw?.scrapers ?? scraperJobsRaw) as unknown[] | null
   const discourseData = data.discourse as Record<string, unknown> | null
   const claudeData = data.claude as Record<string, unknown> | null
   const newsletterData = data.newsletter as Record<string, unknown> | null
@@ -172,10 +173,9 @@ export default function OverviewPage() {
   const cplmX = cplmData?.x != null ? (cplmData.x as number).toFixed(1) : null
   const cplmY = cplmData?.y != null ? (cplmData.y as number).toFixed(1) : null
   const discourseVersion = (discourseData?.about as Record<string, unknown>)?.version as string | null
-  const discourseTopics = (discourseData?.about as Record<string, unknown>)?.topic_count as number | null
-  const claudeUsed = claudeData?.used_eur as number | null
-  const claudeTotal = claudeData?.budget_eur as number | null
-  const ollamaStatus = claudeData?.ollama_status as string | null
+  const claudeTokensToday = claudeData?.tokens_today as number | null
+  const claudeTokensMonth = claudeData?.tokens_month as number | null
+  const claudeIsActive = claudeData?.is_active as boolean | null
   const subscriberCount = newsletterData?.subscriber_count as number | null
   const sentMonth = newsletterData?.sent_month as number | null
 
@@ -260,15 +260,15 @@ export default function OverviewPage() {
               <StatCard
                 title="Discourse Forum"
                 value={discourseVersion ?? 'offline'}
-                sub={discourseTopics != null ? `${discourseTopics} θέματα` : 'pnyx.ekklesia.gr'}
+                sub="pnyx.ekklesia.gr"
                 color={discourseVersion ? 'text-blue-600' : 'text-red-600'}
                 badge={{ label: discourseVersion ? 'Live' : 'Offline', color: discourseVersion ? 'green' : 'red' }}
               />
               <StatCard
                 title="AI Budget"
-                value={claudeUsed != null && claudeTotal != null ? `${claudeUsed.toFixed(2)}/${claudeTotal}` : '—'}
-                sub={ollamaStatus ? `Ollama: ${ollamaStatus}` : 'Claude EUR'}
-                color="text-blue-600"
+                value={claudeIsActive ? 'Ενεργό' : claudeIsActive === false ? 'Ανενεργό' : '—'}
+                sub={claudeTokensToday != null ? `Σήμερα: ${claudeTokensToday.toLocaleString('el-GR')} tokens` : 'Claude Tokens'}
+                color={claudeIsActive ? 'text-green-600' : 'text-gray-400'}
               />
               <StatCard
                 title="Newsletter"
@@ -449,18 +449,33 @@ export default function OverviewPage() {
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <h2 className="text-base font-semibold text-gray-800 mb-4">Κατάσταση Πληρωμών</h2>
             {paymentsData ? (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {['server', 'domain', 'reserve'].map(key => {
-                  const val = paymentsData[key]
-                  return (
-                    <div key={key} className="bg-gray-50 rounded-lg p-4">
-                      <div className="text-xs text-gray-500 mb-1 capitalize">{key === 'server' ? 'Διακομιστής' : key === 'domain' ? 'Domain' : 'Αποθεματικό'}</div>
-                      <div className="text-xl font-bold text-gray-800">
-                        {val != null ? (typeof val === 'object' ? JSON.stringify(val) : String(val)) : '—'}
-                      </div>
-                    </div>
-                  )
-                })}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-xs text-gray-500 mb-1">Διακομιστής</div>
+                  <div className="text-xl font-bold text-gray-800">
+                    {(paymentsData.server as Record<string, unknown>)?.balance != null
+                      ? `${((paymentsData.server as Record<string, unknown>).balance as number).toFixed(2)} EUR`
+                      : '—'}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    Μηνιαίο κόστος: {(paymentsData.server as Record<string, unknown>)?.cost_monthly != null
+                      ? `${((paymentsData.server as Record<string, unknown>).cost_monthly as number).toFixed(2)} EUR`
+                      : '—'}
+                  </div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-xs text-gray-500 mb-1">Domain</div>
+                  <div className="text-xl font-bold text-gray-800">
+                    {(paymentsData.domain as Record<string, unknown>)?.balance != null
+                      ? `${((paymentsData.domain as Record<string, unknown>).balance as number).toFixed(2)} EUR`
+                      : '—'}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    Λήξη: {(paymentsData.domain as Record<string, unknown>)?.expires
+                      ? new Date((paymentsData.domain as Record<string, unknown>).expires as string).toLocaleDateString('el-GR')
+                      : '—'}
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="text-sm text-gray-400">Δεν υπάρχουν δεδομένα πληρωμών</div>
@@ -502,10 +517,10 @@ export default function OverviewPage() {
             {arweaveData ? (
               <div>
                 <div className="text-3xl font-bold text-blue-600">
-                  {arweaveData.balance != null ? `${(arweaveData.balance as number).toFixed(4)} AR` : '—'}
+                  {arweaveData.balance_ar != null ? `${(arweaveData.balance_ar as number).toFixed(4)} AR` : '—'}
                 </div>
                 <div className="text-xs text-gray-400 mt-1">
-                  {arweaveData.address ? `Wallet: ${(arweaveData.address as string).slice(0, 12)}...` : ''}
+                  {arweaveData.wallet_address ? `Wallet: ${(arweaveData.wallet_address as string).slice(0, 12)}...` : ''}
                 </div>
               </div>
             ) : (
@@ -519,27 +534,20 @@ export default function OverviewPage() {
             {claudeData ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-xs text-gray-500 mb-1">Ημερήσιο</div>
+                  <div className="text-xs text-gray-500 mb-1">Tokens Σήμερα</div>
                   <div className="text-xl font-bold text-gray-800">
-                    {(claudeData as Record<string, unknown>).daily_used != null
-                      ? `${((claudeData as Record<string, unknown>).daily_used as number).toFixed(2)} EUR`
+                    {claudeTokensToday != null
+                      ? claudeTokensToday.toLocaleString('el-GR')
                       : '—'}
                   </div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-xs text-gray-500 mb-1">Μηνιαίο</div>
+                  <div className="text-xs text-gray-500 mb-1">Tokens Μήνα</div>
                   <div className="text-xl font-bold text-gray-800">
-                    {claudeUsed != null && claudeTotal != null
-                      ? `${claudeUsed.toFixed(2)} / ${claudeTotal} EUR`
+                    {claudeTokensMonth != null
+                      ? claudeTokensMonth.toLocaleString('el-GR')
                       : '—'}
                   </div>
-                  {claudeUsed != null && claudeTotal != null && claudeTotal > 0 && (
-                    <div className="mt-2">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-blue-500 h-2 rounded-full transition-all" style={{ width: `${Math.min(100, (claudeUsed / claudeTotal) * 100)}%` }} />
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             ) : (

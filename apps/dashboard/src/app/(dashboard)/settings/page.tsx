@@ -127,8 +127,9 @@ export default function SettingsPage() {
       setDeeplData(v(deepl) as Record<string, unknown> | null)
       setNotifData(v(notif) as Record<string, unknown> | null)
       setArweaveData(v(arweave) as Record<string, unknown> | null)
-      const jobsVal = v(jobs)
-      setScraperJobs(Array.isArray(jobsVal) ? jobsVal : [])
+      const jobsVal = v(jobs) as Record<string, unknown> | unknown[] | null
+      const jobsArray = Array.isArray(jobsVal) ? jobsVal : (jobsVal as Record<string, unknown>)?.scrapers
+      setScraperJobs(Array.isArray(jobsArray) ? jobsArray : [])
       setAppVersion(v(version) as Record<string, unknown> | null)
       const cp = v(compass)
       setCompassPending(Array.isArray(cp) ? cp : (cp as Record<string, unknown> | null)?.questions as CompassQuestion[] ?? [])
@@ -218,7 +219,7 @@ export default function SettingsPage() {
               <Toggle
                 id="ai_claude" label="AI Chatbot (Claude)" value={modules.ai_claude}
                 onChange={(v) => setModule('ai_claude', v)}
-                sub={claudeData?.used_eur != null ? `Budget: ${String((claudeData.used_eur as number).toFixed(2))}/${String(claudeData.budget_eur ?? '?')} EUR` : undefined}
+                sub={claudeData?.tokens_today != null ? `Σήμερα: ${String((claudeData.tokens_today as number).toLocaleString('el-GR'))} tokens` : claudeData?.is_active ? 'Ενεργό' : undefined}
               />
               <Toggle id="discourse" label="Discourse Forum Sync" value={modules.discourse} onChange={(v) => setModule('discourse', v)} sub="FORUM_SYNC_ENABLED" />
               <Toggle
@@ -240,7 +241,7 @@ export default function SettingsPage() {
               <Toggle
                 id="arweave" label="Arweave Αρχειοθέτηση" value={modules.arweave}
                 onChange={(v) => setModule('arweave', v)}
-                sub={arweaveData?.balance != null ? `Balance: ${String((arweaveData.balance as number).toFixed(4))} AR` : undefined}
+                sub={arweaveData?.balance_ar != null ? `Balance: ${String((arweaveData.balance_ar as number).toFixed(4))} AR` : undefined}
               />
               <Toggle
                 id="deepl" label="DeepL Translation" value={modules.deepl}

@@ -46,15 +46,11 @@ export default function FinancePage() {
   const fallbackProvider = hlrFallback?.provider as string | null
   const failoverActive = hlr?.failover_active === true
 
-  const claudeUsed = claude?.used_eur as number | null
-  const claudeTotal = claude?.budget_eur as number | null
-  const claudeDaily = claude?.daily_used as number | null
+  const claudeTokensToday = claude?.tokens_today as number | null
+  const claudeTokensMonth = claude?.tokens_month as number | null
+  const claudeIsActive = claude?.is_active as boolean | null
 
-  // Estimated runtime: credits / avg queries per day
-  const avgQueriesPerDay = (claude?.avg_queries_per_day as number) ?? null
-  const estimatedDays = primaryCredits != null && avgQueriesPerDay != null && avgQueriesPerDay > 0
-    ? Math.round(primaryCredits / avgQueriesPerDay)
-    : null
+  // Estimated runtime removed — no avg_queries_per_day in API
 
   return (
     <div>
@@ -121,12 +117,7 @@ export default function FinancePage() {
                   </div>
                 </div>
               )}
-              {/* Estimated runtime */}
-              {estimatedDays != null && (
-                <div className="bg-blue-50 rounded-lg p-3 text-sm text-blue-800">
-                  Εκτιμώμενη διάρκεια: <strong>{String(estimatedDays)}</strong> ημέρες με τρέχουσα κατανάλωση
-                </div>
-              )}
+              {/* Estimated runtime — Phase 2 */}
             </div>
           </div>
 
@@ -136,11 +127,11 @@ export default function FinancePage() {
             {arweave ? (
               <div>
                 <div className="text-3xl font-bold text-blue-600">
-                  {arweave.balance != null ? `${String((arweave.balance as number).toFixed(4))} AR` : String('—')}
+                  {arweave.balance_ar != null ? `${String((arweave.balance_ar as number).toFixed(4))} AR` : String('—')}
                 </div>
-                {arweave.address != null && (
+                {arweave.wallet_address != null && (
                   <div className="text-xs text-gray-400 mt-1">
-                    Wallet: {String((arweave.address as string).slice(0, 16))}...
+                    Wallet: {String((arweave.wallet_address as string).slice(0, 16))}...
                   </div>
                 )}
                 {arweave.tx_count != null && (
@@ -158,23 +149,33 @@ export default function FinancePage() {
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <h2 className="text-base font-semibold text-gray-800 mb-4">Κατάσταση Πληρωμών</h2>
             {payments ? (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {(['server', 'domain', 'reserve'] as const).map(key => {
-                  const val = payments[key]
-                  const labels: Record<string, string> = {
-                    server: 'Διακομιστής',
-                    domain: 'Domain',
-                    reserve: 'Αποθεματικό',
-                  }
-                  return (
-                    <div key={key} className="bg-gray-50 rounded-lg p-4">
-                      <div className="text-xs text-gray-500 mb-1">{String(labels[key])}</div>
-                      <div className="text-xl font-bold text-gray-800">
-                        {val != null ? (typeof val === 'object' ? String(JSON.stringify(val)) : String(val)) : String('—')}
-                      </div>
-                    </div>
-                  )
-                })}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-xs text-gray-500 mb-1">{String('Διακομιστής')}</div>
+                  <div className="text-xl font-bold text-gray-800">
+                    {(payments.server as Record<string, unknown>)?.balance != null
+                      ? `${String(((payments.server as Record<string, unknown>).balance as number).toFixed(2))} EUR`
+                      : String('—')}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {String('Μηνιαίο:')} {(payments.server as Record<string, unknown>)?.cost_monthly != null
+                      ? `${String(((payments.server as Record<string, unknown>).cost_monthly as number).toFixed(2))} EUR`
+                      : String('—')}
+                  </div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-xs text-gray-500 mb-1">{String('Domain')}</div>
+                  <div className="text-xl font-bold text-gray-800">
+                    {(payments.domain as Record<string, unknown>)?.balance != null
+                      ? `${String(((payments.domain as Record<string, unknown>).balance as number).toFixed(2))} EUR`
+                      : String('—')}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {String('Λήξη:')} {(payments.domain as Record<string, unknown>)?.expires
+                      ? String(new Date((payments.domain as Record<string, unknown>).expires as string).toLocaleDateString('el-GR'))
+                      : String('—')}
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="text-sm text-gray-400">{String('Δεν υπάρχουν δεδομένα πληρωμών')}</div>
@@ -187,28 +188,16 @@ export default function FinancePage() {
             {claude ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-xs text-gray-500 mb-1">{String('Ημερήσιο')}</div>
+                  <div className="text-xs text-gray-500 mb-1">{String('Tokens Σήμερα')}</div>
                   <div className="text-xl font-bold text-gray-800">
-                    {claudeDaily != null ? `${String(claudeDaily.toFixed(2))} EUR` : String('—')}
+                    {claudeTokensToday != null ? String(claudeTokensToday.toLocaleString('el-GR')) : String('—')}
                   </div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="text-xs text-gray-500 mb-1">{String('Μηνιαίο')}</div>
+                  <div className="text-xs text-gray-500 mb-1">{String('Tokens Μήνα')}</div>
                   <div className="text-xl font-bold text-gray-800">
-                    {claudeUsed != null && claudeTotal != null
-                      ? `${String(claudeUsed.toFixed(2))} / ${String(claudeTotal)} EUR`
-                      : String('—')}
+                    {claudeTokensMonth != null ? String(claudeTokensMonth.toLocaleString('el-GR')) : String('—')}
                   </div>
-                  {claudeUsed != null && claudeTotal != null && claudeTotal > 0 && (
-                    <div className="mt-2">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-blue-500 h-2 rounded-full transition-all"
-                          style={{ width: `${Math.min(100, (claudeUsed / claudeTotal) * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             ) : (

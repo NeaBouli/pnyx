@@ -31,9 +31,6 @@ export default function ForumPage() {
 
   const about = discourse?.about as Record<string, unknown> | undefined
   const version = about?.version as string | undefined
-  const topicCount = about?.topic_count as number | undefined
-  const postCount = about?.post_count as number | undefined
-  const userCount = about?.user_count as number | undefined
   const title = about?.title as string | undefined
   const description = about?.description as string | undefined
   const isOnline = version != null
@@ -54,22 +51,14 @@ export default function ForumPage() {
       ) : (
         <div className="space-y-6">
           {/* Stats cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
               <div className="text-xs text-gray-500 mb-1">{String('Discourse Έκδοση')}</div>
               <div className="text-2xl font-bold text-blue-600">{String(version ?? '—')}</div>
             </div>
             <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-              <div className="text-xs text-gray-500 mb-1">{String('Θέματα (Topics)')}</div>
-              <div className="text-2xl font-bold text-blue-600">{topicCount != null ? String(topicCount.toLocaleString('el-GR')) : String('—')}</div>
-            </div>
-            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-              <div className="text-xs text-gray-500 mb-1">{String('Δημοσιεύσεις (Posts)')}</div>
-              <div className="text-2xl font-bold text-blue-600">{postCount != null ? String(postCount.toLocaleString('el-GR')) : String('—')}</div>
-            </div>
-            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-              <div className="text-xs text-gray-500 mb-1">{String('Χρήστες')}</div>
-              <div className="text-2xl font-bold text-blue-600">{userCount != null ? String(userCount.toLocaleString('el-GR')) : String('—')}</div>
+              <div className="text-xs text-gray-500 mb-1">{String('Τίτλος Forum')}</div>
+              <div className="text-lg font-bold text-blue-600">{String(title ?? '—')}</div>
             </div>
           </div>
 
