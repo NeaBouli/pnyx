@@ -230,3 +230,8 @@ export async function adminDiavgeiaScrape() {
 export async function adminRefreshOrgsCache() {
   return fetch(`${API_BASE}/api/v1/admin/diavgeia/refresh-orgs-cache?admin_key=${ADMIN_KEY}`, { method: 'POST' }).then(r => r.json())
 }
+
+export async function fetchNewsletterLists() { return fetchAPI('/api/v1/newsletter/lists') }
+export async function adminScraperTest() {
+  return fetch(`${API_BASE}/api/v1/scraper/test`, { next: { revalidate: 0 } } as RequestInit).then(r => r.json()).catch(() => null)
+}

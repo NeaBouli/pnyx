@@ -57,7 +57,10 @@ const PARTY_BAR_COLORS = [
   '#8b5cf6', '#06b6d4', '#ec4899', '#f97316',
 ]
 
+type VotesMainTab = 'results' | 'party-compare'
+
 export default function VotesPage() {
+  const [mainTab, setMainTab] = useState<VotesMainTab>('results')
   const [bills, setBills] = useState<Bill[]>([])
   const [selectedBillId, setSelectedBillId] = useState<number | null>(null)
   const [results, setResults] = useState<VoteResults | null>(null)
@@ -68,6 +71,7 @@ export default function VotesPage() {
   const [representation, setRepresentation] = useState<Record<string, unknown> | null>(null)
   const [partyCompare, setPartyCompare] = useState<PartyCompare[]>([])
   const [loadingCompare, setLoadingCompare] = useState(false)
+  const [partyCompareSortDir, setPartyCompareSortDir] = useState<'desc' | 'asc'>('desc')
 
   useEffect(() => {
     async function loadBills() {
@@ -166,9 +170,23 @@ export default function VotesPage() {
     score: Math.round((p.alignment_score ?? 0) * 100),
   }))
 
+  // Global party compare from /mp/ranking
+  const globalPartySorted = [...mpRanking].sort((a, b) =>
+    partyCompareSortDir === 'desc'
+      ? (b.alignment_score ?? 0) - (a.alignment_score ?? 0)
+      : (a.alignment_score ?? 0) - (b.alignment_score ?? 0)
+  )
+
+  const globalPartyChartData = [...mpRanking]
+    .sort((a, b) => (b.alignment_score ?? 0) - (a.alignment_score ?? 0))
+    .map((p) => ({
+      name: p.abbreviation ?? p.party,
+      score: Math.round((p.alignment_score ?? 0) * 100),
+    }))
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-gray-900">Αποτελέσματα Ψηφοφοριών</h1>
         <div className="flex items-center gap-2">
           <a
@@ -197,6 +215,28 @@ export default function VotesPage() {
           </a>
         </div>
       </div>
+
+      {/* Main Tabs */}
+      <div className="flex gap-1 mb-6 border-b border-gray-200">
+        {([
+          { key: 'results', label: 'Αποτελέσματα' },
+          { key: 'party-compare', label: 'Σύγκριση Κομμάτων' },
+        ] as { key: VotesMainTab; label: string }[]).map(t => (
+          <button
+            key={t.key}
+            onClick={() => setMainTab(t.key)}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              mainTab === t.key
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {String(t.label)}
+          </button>
+        ))}
+      </div>
+
+      {mainTab === 'results' && (<>
 
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
@@ -405,6 +445,115 @@ export default function VotesPage() {
           )}
         </div>
       </div>
+
+      </>)}
+
+      {/* Party Compare Tab */}
+      {mainTab === 'party-compare' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">{String('Σύγκριση Κομμάτων — Alignment με Πολίτες')}</h2>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setPartyCompareSortDir(d => d === 'desc' ? 'asc' : 'desc')}
+                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+              >
+                {partyCompareSortDir === 'desc' ? String('Φθίνουσα ↓') : String('Αύξουσα ↑')}
+              </button>
+              <a
+                href={`${API}/api/v1/export/divergence.csv`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors"
+              >
+                {String('CSV')}
+              </a>
+            </div>
+          </div>
+
+          {/* Bar Chart */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">{String('Alignment Score ανά Κόμμα (%)')}</h3>
+            {globalPartyChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={globalPartyChartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} domain={[0, 100]} unit="%" />
+                  <Tooltip formatter={(value: number) => [`${String(value)}%`, 'Alignment']} />
+                  <Bar dataKey="score" radius={[4, 4, 0, 0]}>
+                    {globalPartyChartData.map((entry, i) => {
+                      const score = entry.score
+                      const color = score >= 60 ? '#16a34a' : score >= 40 ? '#ca8a04' : '#dc2626'
+                      return <Cell key={String(i)} fill={color} />
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="p-8 text-center text-sm text-gray-400">{String('Δεν υπάρχουν δεδομένα MP Ranking')}</div>
+            )}
+          </div>
+
+          {/* Table */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">#</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">{String('Κόμμα')}</th>
+                  <th
+                    className="text-right px-4 py-3 font-medium text-gray-600 cursor-pointer hover:text-blue-600 select-none"
+                    onClick={() => setPartyCompareSortDir(d => d === 'desc' ? 'asc' : 'desc')}
+                  >
+                    {String('Alignment Score')} {partyCompareSortDir === 'desc' ? '↓' : '↑'}
+                  </th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-600">{String('Συμφωνούν')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {globalPartySorted.length > 0 ? globalPartySorted.map((party, i) => {
+                  const pct = (party.alignment_score ?? 0) * 100
+                  const color = pct >= 60 ? 'text-green-600' : pct >= 40 ? 'text-yellow-600' : 'text-red-600'
+                  return (
+                    <tr key={party.abbreviation ?? String(i)} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-gray-400">{String(i + 1)}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        <div>{String(party.party ?? party.abbreviation ?? '')}</div>
+                        {party.party && party.abbreviation && party.party !== party.abbreviation && (
+                          <div className="text-xs text-gray-400">{String(party.abbreviation)}</div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <div className="w-24 bg-gray-100 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full ${pct >= 60 ? 'bg-green-500' : pct >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                              style={{ width: `${Math.min(100, pct)}%` }}
+                            />
+                          </div>
+                          <span className={`text-sm font-bold ${color}`}>{pct.toFixed(1)}%</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-500">
+                        {party.aligned_count != null && party.total_count != null
+                          ? `${String(party.aligned_count)}/${String(party.total_count)}`
+                          : String('—')}
+                      </td>
+                    </tr>
+                  )
+                }) : (
+                  <tr>
+                    <td colSpan={4} className="py-12 text-center text-sm text-gray-400">
+                      {String('Δεν υπάρχουν δεδομένα. Βεβαιωθείτε ότι το /api/v1/mp/ranking επιστρέφει δεδομένα.')}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

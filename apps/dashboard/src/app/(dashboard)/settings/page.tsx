@@ -11,7 +11,7 @@ function adminURL(path: string): string {
   return `${API}${path}${sep}admin_key=${ADMIN_KEY}`
 }
 
-type SettingsTab = 'modules' | 'scraper' | 'apps' | 'compass' | 'kb' | 'notifications'
+type SettingsTab = 'modules' | 'scraper' | 'newsletter' | 'apps' | 'compass' | 'kb' | 'notifications'
 
 // ─── Toggle ───
 
@@ -73,8 +73,25 @@ interface ScraperJob {
   next_run?: string
   status?: string
   error_count?: number
+  last_error?: string
+  recent_errors?: string[]
   circuit_breaker?: string
   healthy?: boolean
+}
+
+interface NewsletterStats {
+  subscriber_count?: number
+  sent?: number
+  opened?: number
+  bounced?: number
+  lists?: NewsletterList[]
+}
+
+interface NewsletterList {
+  id?: number
+  name?: string
+  subscriber_count?: number
+  enabled?: boolean
 }
 
 interface CompassQuestion {
@@ -104,6 +121,10 @@ export default function SettingsPage() {
   const [appVersion, setAppVersion] = useState<Record<string, unknown> | null>(null)
   const [compassPending, setCompassPending] = useState<CompassQuestion[]>([])
 
+  const [newsletterStats, setNewsletterStats] = useState<NewsletterStats | null>(null)
+  const [newsletterLists, setNewsletterLists] = useState<NewsletterList[]>([])
+  const [scraperTestResult, setScraperTestResult] = useState<string | null>(null)
+
   const [forceUpdate, setForceUpdate] = useState(false)
   const [forceUpdateVersion, setForceUpdateVersion] = useState('')
   const [maintenanceMode, setMaintenanceMode] = useState(false)
@@ -118,7 +139,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     async function load() {
-      const [hlr, claude, deepl, notif, arweave, jobs, version, compass] = await Promise.allSettled([
+      const [hlr, claude, deepl, notif, arweave, jobs, version, compass, nlStats, nlLists] = await Promise.allSettled([
         fetch(`${API}/api/v1/identity/hlr/credits`).then(r => r.json()),
         fetch(`${API}/api/v1/claude/budget`).then(r => r.json()),
         fetch(`${API}/api/v1/admin/deepl/usage`).then(r => r.json()),
@@ -127,6 +148,8 @@ export default function SettingsPage() {
         fetch(`${API}/api/v1/scraper/jobs`).then(r => r.json()),
         fetch(`${API}/api/v1/app/version`).then(r => r.json()),
         fetch(adminURL('/api/v1/admin/compass/pending-review')).then(r => r.json()),
+        fetch(`${API}/api/v1/newsletter/stats`).then(r => r.json()),
+        fetch(`${API}/api/v1/newsletter/lists`).then(r => r.json()),
       ])
       const v = (r: PromiseSettledResult<unknown>) => r.status === 'fulfilled' ? r.value : null
       setHlrData(v(hlr) as Record<string, unknown> | null)
@@ -140,6 +163,10 @@ export default function SettingsPage() {
       setAppVersion(v(version) as Record<string, unknown> | null)
       const cp = v(compass)
       setCompassPending(Array.isArray(cp) ? cp : (cp as Record<string, unknown> | null)?.questions as CompassQuestion[] ?? [])
+      const nlStatsVal = v(nlStats) as NewsletterStats | null
+      setNewsletterStats(nlStatsVal)
+      const nlListsVal = v(nlLists)
+      setNewsletterLists(Array.isArray(nlListsVal) ? nlListsVal as NewsletterList[] : [])
     }
     load()
   }, [])
@@ -205,6 +232,7 @@ export default function SettingsPage() {
   const tabs: { key: SettingsTab; label: string }[] = [
     { key: 'modules', label: 'Module' },
     { key: 'scraper', label: 'Αυτοματισμοί' },
+    { key: 'newsletter', label: 'Newsletter' },
     { key: 'apps', label: 'Apps' },
     { key: 'compass', label: 'Compass' },
     { key: 'kb', label: 'Βάση Γνώσεων' },
@@ -296,6 +324,9 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                 {scraperJobs.map((job, i) => {
                   const ok = job.status === 'ok' || job.status === 'success' || job.healthy === true
+                  const isParliament = (job.name ?? job.job_id ?? '').toLowerCase().includes('parliament') || (job.name ?? job.job_id ?? '').toLowerCase().includes('βουλ')
+                  const isDiavgeia = (job.name ?? job.job_id ?? '').toLowerCase().includes('diavgeia')
+                  const errors: string[] = Array.isArray(job.recent_errors) ? job.recent_errors.slice(0, 3) : job.last_error ? [String(job.last_error)] : []
                   return (
                     <div key={i} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
                       <div className="flex items-center justify-between mb-1">
@@ -313,7 +344,31 @@ export default function SettingsPage() {
                         </div>
                       )}
                       {job.error_count != null && job.error_count > 0 && (
-                        <div className="text-xs text-red-500">{String('Σφάλματα:')} {String(job.error_count)}</div>
+                        <div className="text-xs text-red-500 mt-0.5">{String('Σφάλματα:')} {String(job.error_count)}</div>
+                      )}
+                      {errors.length > 0 && (
+                        <div className="mt-1">
+                          <div className="text-xs font-medium text-red-600 mb-0.5">{String('Τελευταία σφάλματα:')}</div>
+                          {errors.map((e, ei) => (
+                            <div key={ei} className="text-xs text-red-500 bg-red-50 rounded px-1.5 py-0.5 mb-0.5 truncate">{String(e)}</div>
+                          ))}
+                        </div>
+                      )}
+                      {(isParliament || isDiavgeia) && (
+                        <div className="mt-2">
+                          <button
+                            onClick={() => handleAction(`run-${i}`, () => {
+                              const url = isDiavgeia
+                                ? adminURL('/api/v1/admin/diavgeia/scrape')
+                                : adminURL('/api/v1/scraper/fetch')
+                              return fetch(url, { method: 'POST' }).then(r => r.json())
+                            })}
+                            disabled={actionLoading === `run-${i}`}
+                            className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium hover:bg-blue-200 transition-colors disabled:opacity-50"
+                          >
+                            {actionLoading === `run-${i}` ? String('Εκτέλεση...') : String('Εκτέλεση τώρα')}
+                          </button>
+                        </div>
                       )}
                     </div>
                   )
@@ -322,9 +377,20 @@ export default function SettingsPage() {
             ) : (
               <div className="text-sm text-gray-400 mb-4">{String('Δεν βρέθηκαν δεδομένα jobs')}</div>
             )}
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <button
-                onClick={() => handleAction('test', () => fetch(`${API}/api/v1/scraper/test`).then(r => r.json()))}
+                onClick={async () => {
+                  setActionLoading('test')
+                  setScraperTestResult(null)
+                  try {
+                    const res = await fetch(`${API}/api/v1/scraper/test`).then(r => r.json())
+                    setScraperTestResult(JSON.stringify(res, null, 2))
+                  } catch (e) {
+                    setScraperTestResult(String(e))
+                  } finally {
+                    setActionLoading(null)
+                  }
+                }}
                 disabled={actionLoading === 'test'}
                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
               >
@@ -338,11 +404,98 @@ export default function SettingsPage() {
                 {actionLoading === 'heal' ? String('Επιδιόρθωση...') : String('Επιδιόρθωση Scraper')}
               </button>
             </div>
+            {scraperTestResult && (
+              <div className="mt-3 bg-gray-900 text-green-400 rounded-lg p-3 text-xs font-mono whitespace-pre-wrap overflow-auto max-h-40">
+                {scraperTestResult}
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* Tab 3: Apps */}
+      {/* Tab 3: Newsletter */}
+      {tab === 'newsletter' && (
+        <div className="space-y-4">
+          {/* Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+              <div className="text-xs text-gray-500 mb-1">{String('Συνδρομητές')}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {newsletterStats?.subscriber_count != null ? String(newsletterStats.subscriber_count) : String('—')}
+              </div>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+              <div className="text-xs text-gray-500 mb-1">{String('Απεστάλησαν')}</div>
+              <div className="text-2xl font-bold text-gray-800">
+                {newsletterStats?.sent != null ? String(newsletterStats.sent) : String('—')}
+              </div>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+              <div className="text-xs text-gray-500 mb-1">{String('Ανοίχτηκαν')}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {newsletterStats?.opened != null ? String(newsletterStats.opened) : String('—')}
+              </div>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+              <div className="text-xs text-gray-500 mb-1">{String('Αναπήδησαν')}</div>
+              <div className="text-2xl font-bold text-red-600">
+                {newsletterStats?.bounced != null ? String(newsletterStats.bounced) : String('—')}
+              </div>
+            </div>
+          </div>
+
+          {/* Lists */}
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+            <h2 className="font-semibold text-gray-900 mb-3">{String('Λίστες')}</h2>
+            {newsletterLists.length > 0 ? (
+              <div className="divide-y divide-gray-100">
+                {newsletterLists.map((list, i) => (
+                  <div key={list.id ?? i} className="flex items-center justify-between py-2.5">
+                    <div>
+                      <span className="text-sm font-medium text-gray-800">{String(list.name ?? `List ${i + 1}`)}</span>
+                      {list.subscriber_count != null && (
+                        <span className="ml-2 text-xs text-gray-400">{String(list.subscriber_count)} {String('συνδρομητές')}</span>
+                      )}
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${list.enabled !== false ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {list.enabled !== false ? String('Ενεργή') : String('Ανενεργή')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-gray-400">{String('Δεν βρέθηκαν λίστες')}</div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+            <h2 className="font-semibold text-gray-900 mb-3">{String('Ενέργειες')}</h2>
+            <div className="flex flex-wrap gap-3 mb-3">
+              <a
+                href="https://listmonk.ekklesia.gr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+              >
+                {String('Listmonk Admin')}
+              </a>
+              <button
+                disabled
+                title="Χρησιμοποίησε Listmonk Admin για εκστρατείες"
+                className="px-3 py-1.5 bg-gray-100 text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed"
+              >
+                {String('Εκκίνηση Καμπάνιας')}
+              </button>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
+              {String('Χρησιμοποίησε Listmonk Admin για τη διαχείριση καμπανιών newsletter.')}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 4: Apps */}
       {tab === 'apps' && (
         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
           <h2 className="font-semibold text-gray-900 mb-3">{String('App Distribution')}</h2>
