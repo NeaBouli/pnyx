@@ -220,10 +220,7 @@ async def get_bill_summary(
     """AI-generated plain-language bill summary (cached in Redis 7d)."""
     import redis.asyncio as aioredis
     import os
-    from services.ollama_service import summarize_bill, ollama_available
-
-    if not await ollama_available():
-        raise HTTPException(status_code=503, detail="AI summary unavailable")
+    from services.ollama_service import summarize_bill
 
     # Redis cache
     redis_url = os.getenv("REDIS_URL", "redis://redis:6379")

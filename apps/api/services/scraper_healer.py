@@ -14,6 +14,18 @@ logger = logging.getLogger(__name__)
 HEALED_SELECTOR_KEY = "scraper:healed:{scraper_name}:{field}"
 
 
+def _looks_like_css_selector(selector: str) -> bool:
+    """Reject prose, multi-line answers, and obviously invalid selector output."""
+    if not selector or len(selector) > 200 or "\n" in selector:
+        return False
+    lowered = selector.lower()
+    if lowered.startswith(("i ", "the ", "here", "css selector")):
+        return False
+    if any(token in selector for token in ["<", ">", "{", "}", ";"]):
+        return False
+    return any(prefix in selector for prefix in [".", "#", "[", ":", " "]) or selector.isidentifier()
+
+
 async def analyze_html_structure(
     html_snippet: str,
     field_name: str,
@@ -34,7 +46,7 @@ async def analyze_html_structure(
     try:
         result = await ollama_generate(prompt, max_tokens=50)
         selector = result.strip().strip('"').strip("'").strip()
-        if selector and len(selector) < 200 and not selector.startswith("I "):
+        if _looks_like_css_selector(selector):
             logger.info("Ollama suggested selector for %s/%s: %s", scraper_name, field_name, selector)
             return selector
     except Exception as e:

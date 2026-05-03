@@ -294,6 +294,8 @@ async def admin_explain_logs(
         "Analysis:"
     )
     analysis = await ollama_generate(prompt, max_tokens=300)
+    if not analysis:
+        raise HTTPException(503, "Ollama returned no analysis")
     return {"analysis": analysis, "lines": lines}
 
 

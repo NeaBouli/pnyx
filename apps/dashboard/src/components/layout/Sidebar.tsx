@@ -37,6 +37,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/ai', module: 'ai', label: 'AI & Εργαλεία', icon: '🤖' },
       { href: '/forum', module: 'forum', label: 'Forum', icon: '💬' },
       { href: '/logs', module: 'logs', label: 'Αρχεία καταγρ.', icon: '📋' },
+      { href: '/embed', module: 'embed', label: 'Embed Κώδικας', icon: '🔗' },
     ],
   },
   {
@@ -47,6 +48,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/settings', module: 'settings', label: 'Ρυθμίσεις', icon: '⚙️' },
       { href: '/users', module: 'users', label: 'Χρήστες', icon: '👥' },
       { href: '/nodes', module: 'node', label: 'Κόμβοι', icon: '🔗' },
+      { href: '/node-settings', module: 'node-settings', label: 'Ρυθμίσεις Κόμβου', icon: '🔧' },
       { href: '/gov', module: 'gov', label: 'Αιτήσεις Gov', icon: '🏗️' },
     ],
   },
@@ -62,6 +64,8 @@ const ROLE_LABELS: Record<DashboardRole, string> = {
   ANALYST: 'Αναλυτής',
   SUPPORT: 'Υποστήριξη',
   NODE_ADMIN: 'Node Admin',
+  NODE_SUPER_ADMIN: 'Node Super Admin',
+  NODE_STAFF: 'Node Staff',
 }
 
 interface SidebarProps {

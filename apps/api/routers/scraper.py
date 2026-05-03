@@ -18,7 +18,6 @@ Scraping Fallback-Kette:
 """
 import os
 import re
-import json
 import hashlib
 import logging
 import httpx
@@ -32,6 +31,12 @@ from datetime import datetime
 from database import get_db
 from models import ParliamentBill, BillStatus
 from dependencies import verify_admin_key
+from services.ollama_service import (
+    OLLAMA_MODEL,
+    OLLAMA_URL,
+    ollama_available,
+    ollama_json_generate,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/scraper", tags=["MOD-10 AI Scraper"])
@@ -40,8 +45,6 @@ PARLIAMENT_BASE = "https://www.hellenicparliament.gr"
 
 # ── KI Provider Konfiguration ─────────────────────────────────────────────────
 
-OLLAMA_URL   = os.getenv("OLLAMA_URL",   "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 HF_API_URL   = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
 HF_API_KEY   = os.getenv("HF_API_KEY", "")
 
@@ -115,21 +118,23 @@ async def summarize_ollama(bill_text: str, title_el: str) -> Optional[dict]:
   "categories": ["κατηγορία1"]
 }}"""
 
-    try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            r = await client.post(
-                f"{OLLAMA_URL}/api/generate",
-                json={"model": OLLAMA_MODEL, "prompt": prompt, "stream": False, "format": "json"}
-            )
-            r.raise_for_status()
-            raw = r.json().get("response", "")
-            raw = re.sub(r"```json|```", "", raw).strip()
-            data = json.loads(raw)
-            logger.info(f"[MOD-10] Ollama OK: {title_el[:40]}")
-            return data
-    except Exception as e:
-        logger.warning(f"[MOD-10] Ollama fehlgeschlagen: {e}")
+    data = await ollama_json_generate(prompt, max_tokens=900)
+    if not isinstance(data, dict):
+        logger.warning("[MOD-10] Ollama returned non-object JSON for: %s", title_el[:40])
         return None
+
+    required = {
+        "pill_el", "pill_en", "summary_short_el", "summary_short_en",
+        "summary_long_el", "summary_long_en", "categories",
+    }
+    if not required.issubset(data.keys()):
+        logger.warning("[MOD-10] Ollama JSON missing required fields for: %s", title_el[:40])
+        return None
+    if not isinstance(data.get("categories"), list):
+        data["categories"] = ["Νομοθεσία"]
+
+    logger.info(f"[MOD-10] Ollama OK: {title_el[:40]}")
+    return data
 
 
 # ── L2: Hugging Face Free Tier ───────────────────────────────────────────────
@@ -315,13 +320,7 @@ async def scraper_jobs():
 @router.get("/status")
 async def scraper_status():
     """Status aller KI-Provider."""
-    ollama_ok = False
-    try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            r = await client.get(f"{OLLAMA_URL}/api/tags")
-            ollama_ok = r.status_code == 200
-    except Exception:
-        pass
+    ollama_ok = await ollama_available()
 
     return {
         "providers": {
@@ -337,13 +336,7 @@ async def scraper_status():
 async def test_scraper():
     """Testet Scraper + KI Provider ohne DB."""
     bills = await scrape_parliament_bills(limit=3)
-    ollama_ok = False
-    try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            r = await client.get(f"{OLLAMA_URL}/api/tags")
-            ollama_ok = r.status_code == 200
-    except Exception:
-        pass
+    ollama_ok = await ollama_available()
 
     return {
         "scraper":        {"bills_found": len(bills), "sample": bills[:2]},

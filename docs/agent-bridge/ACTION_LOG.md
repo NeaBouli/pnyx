@@ -1,5 +1,48 @@
 # Action Log
 
+## 2026-05-02 — Claude Code: Dashboard Low-Priority — 6 Features + DE→EL
+
+- **Agent:** Claude Code
+- **Commit:** `4a20dbf` — 9 Dateien, +293/-137
+- **HEAD:** `4a20dbf`
+- **Settings:** Force Update, Maintenance Mode, Min Version (env-basiert)
+- **Nodes:** Periferia-Select, Ed25519, erweiterte Tabelle, DE→EL
+- **Stats:** 4 Info-Cards (Plausible/Sentry/Play/F-Droid)
+- **Finance:** PayPal IPN Webhook Platzhalter
+- **Bills:** Text-Tab (readonly→edit, auto-scrape, Jina-Pipeline)
+- **Exports:** CPLM, Analytics, Users (disabled/PII)
+- **Offene Items:** 12 → ~6 verbleibend (Backend-seitige Features)
+
+---
+
+## 2026-05-02 — Claude Code: Dashboard Medium — Scraper/Newsletter/Users/MP Compare
+
+- **Agent:** Claude Code
+- **Commit:** `9a74c08` — 4 Dateien, +497/-79
+- **HEAD:** `9a74c08`
+- **Scraper:** per-Job Trigger, Test/Heal, Fehler-Anzeige
+- **Newsletter:** Stats, Listen, Brevo Metriken, Listmonk Link
+- **Users:** Stat-Kacheln, Revoke-Sektion, Phase-2 Tabelle
+- **Votes:** Tab "Σύγκριση Κομμάτων" mit BarChart + sortierbare Tabelle
+- **Offene Items:** 25 → 12 verbleibend
+
+---
+
+## 2026-05-02 — Claude Code: Chat/RAG deployed + Dashboard HP2 (Push/Diavgeia/VAA)
+
+- **Agent:** Claude Code
+- **Commits:** `78cb4d4` (Chat/RAG Codex Fix) + `ce9470f` (Dashboard HP2)
+- **HEAD:** `ce9470f`
+- **Chat/RAG:** Safety filter deployed, KB corrections, 11 regression tests, fake-vote blockiert
+- **Dashboard:** Push Notifications Tab, Diavgeia Admin (ADA/Scrape/Org-Cache), VAA CRUD (Thesen + Positionen)
+- **Sidebar:** +VAA Link (SUPER_ADMIN/CONTENT)
+- **Dashboard Seiten:** 16 (war 15)
+- **Offene Items:** 25 → 16 verbleibend
+- **Rollback-Tag:** `pre-dashboard-hp2-20260502`
+- **Alle Memos/Bridge/Server aktualisiert**
+
+---
+
 ## 2026-05-02 — Codex: Chat/RAG Agent Fix vorbereitet
 
 - **Agent:** Codex
@@ -1015,3 +1058,46 @@
 - Kein Deployment
 - Keine SSH-Verbindung
 - Hinweis: bestehende uncommitted Aenderungen unter `apps/api/services/` wurden nicht veraendert
+## 2026-05-03 - Codex: Ollama System auditiert und justiert
+
+- **Agent:** Codex
+- **Aktion:** Ollama-System ueber angebundene API-Anwendungsfaelle auditiert, Konfigurationsdrift behoben, Fallbacks verbessert und Regressionstests ergaenzt
+- **Gelesene Dateien:**
+  - Bridge-Dateien unter `docs/agent-bridge/`
+  - `apps/api/services/ollama_service.py`
+  - `apps/api/routers/agent.py`
+  - `apps/api/routers/scraper.py`
+  - `apps/api/routers/parliament.py`
+  - `apps/api/routers/admin.py`
+  - `apps/api/services/scraper_healer.py`
+  - `apps/api/services/compass_generator.py`
+  - relevante API-Testdateien
+- **Geaenderte Produktdateien:**
+  - `apps/api/services/ollama_service.py`
+  - `apps/api/routers/scraper.py`
+  - `apps/api/routers/parliament.py`
+  - `apps/api/services/compass_generator.py`
+  - `apps/api/services/scraper_healer.py`
+  - `apps/api/routers/admin.py`
+  - `apps/api/tests/test_ollama_system.py`
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/OLLAMA_SYSTEM_AUDIT_20260503.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+  - `docs/agent-bridge/CODEX_TO_CLAUDE.md`
+  - `docs/agent-bridge/PROJECT_STATE.md`
+- **Tests/Checks:**
+  - `./.venv/bin/python -m pytest tests/test_ollama_system.py tests/test_agent_guardrails.py tests/test_agent_training_regression.py -q`
+  - Ergebnis: `19 passed, 1 warning`
+  - `./.venv/bin/python -m py_compile services/ollama_service.py routers/scraper.py routers/parliament.py services/compass_generator.py services/scraper_healer.py routers/admin.py tests/test_ollama_system.py`
+  - Ergebnis: erfolgreich
+- **Keine Secrets gelesen**
+- **Keine `.env`-Dateien gelesen**
+- **Keine Secret-Dateien gelesen**
+- **Keine externen Netzwerkaufrufe**
+- **Kein Commit**
+- **Kein Push**
+- **Kein Deployment**
+- **Keine SSH-Verbindung**
+- **Bestehende uncommitted Aenderungen in Dashboard und `greek_topics_scraper.py` nicht angefasst**
+
+---

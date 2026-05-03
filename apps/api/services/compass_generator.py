@@ -4,16 +4,14 @@ Generates evidence-based political compass questions from real parliamentary dat
 Flow: Bill data → Ollama (EN) → DeepL (EN→EL) → Store as pending → Admin review
 """
 import asyncio
-import json
 import logging
-import re
 from datetime import datetime, timezone, timedelta
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import ParliamentBill, BillStatus, CitizenVote, VoteChoice, Statement
-from .ollama_service import ollama_generate, deepl_translate, ollama_available
+from .ollama_service import deepl_translate, ollama_available, ollama_json_generate
 
 logger = logging.getLogger(__name__)
 
@@ -58,18 +56,9 @@ Respond ONLY with valid JSON (no explanation):
   {{"text_en": "...", "category_en": "...", "explanation_en": "..."}}
 ]"""
 
-    response = await ollama_generate(prompt, max_tokens=500)
-    if not response:
-        return []
-
-    # Parse JSON from Ollama response
-    try:
-        json_match = re.search(r"\[.*\]", response, re.DOTALL)
-        if not json_match:
-            return []
-        questions_en = json.loads(json_match.group())
-    except (json.JSONDecodeError, AttributeError) as e:
-        logger.error("Failed to parse compass questions JSON: %s", e)
+    questions_en = await ollama_json_generate(prompt, max_tokens=500)
+    if not isinstance(questions_en, list):
+        logger.error("Failed to parse compass questions JSON")
         return []
 
     # Translate EN → EL via DeepL

@@ -8,6 +8,8 @@ export type DashboardRole =
   | 'ANALYST'
   | 'SUPPORT'
   | 'NODE_ADMIN'
+  | 'NODE_SUPER_ADMIN'
+  | 'NODE_STAFF'
 
 const GITHUB_ALLOWLIST: Record<string, DashboardRole> = {
   NeaBouli: 'SUPER_ADMIN',
@@ -17,16 +19,18 @@ export const ROLE_MODULES: Record<DashboardRole, string[]> = {
   SUPER_ADMIN: [
     'overview', 'analytics', 'bills', 'votes', 'cplm',
     'system', 'ai', 'forum', 'users', 'hlr', 'arweave',
-    'node', 'gov', 'logs', 'settings', 'finance', 'stats', 'vaa',
+    'node', 'gov', 'logs', 'settings', 'vaa', 'finance', 'stats', 'embed', 'nodes-readonly',
   ],
   SYSTEM_ADMIN: [
     'overview', 'analytics', 'bills', 'votes', 'cplm',
     'system', 'ai', 'forum', 'hlr', 'logs', 'finance', 'stats',
   ],
-  CONTENT: ['overview', 'bills', 'votes', 'cplm', 'forum', 'gov', 'finance', 'stats', 'vaa'],
+  CONTENT: ['overview', 'bills', 'votes', 'cplm', 'forum', 'gov', 'vaa', 'embed'],
   ANALYST: ['overview', 'analytics', 'votes', 'cplm', 'finance', 'stats'],
-  SUPPORT: ['overview', 'system', 'logs', 'forum', 'node', 'finance', 'stats'],
-  NODE_ADMIN: ['overview', 'bills', 'votes', 'cplm', 'node', 'gov', 'finance', 'stats'],
+  SUPPORT: ['overview', 'system', 'logs', 'forum', 'node'],
+  NODE_ADMIN: ['overview', 'bills', 'votes', 'cplm', 'node', 'gov', 'embed', 'finance', 'stats'],
+  NODE_SUPER_ADMIN: ['overview', 'bills', 'votes', 'cplm', 'node-settings', 'node-staff', 'embed', 'sync', 'node-pages', 'finance', 'stats'],
+  NODE_STAFF: ['overview', 'bills', 'votes', 'cplm', 'embed'],
 }
 
 export function canAccess(role: DashboardRole, module: string): boolean {

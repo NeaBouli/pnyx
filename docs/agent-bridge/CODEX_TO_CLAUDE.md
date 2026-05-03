@@ -743,3 +743,67 @@ Claude Code soll den Deploy-Prompt verwenden:
 Report:
 
 `docs/agent-bridge/CHAT_RAG_FIX_REPORT_20260502.md`
+
+---
+
+## Ollama System Audit und Justierung 2026-05-03
+
+- Datum/Zeit: 2026-05-03 00:46 EEST
+- Agent: Codex
+
+### Durchgefuehrte Aktion
+
+Codex hat die Ollama-Anbindungen im lokalen API-Code auditiert, gezielt justiert und mock-basierte Regressionstests ergaenzt.
+
+### Gepruefte Anwendungsfaelle
+
+- Landing Chat / RAG Agent
+- Bill-Summary Endpoint
+- MOD-10 Scraper-Summary und Scraper Provider-Status
+- Admin Log-Erklaerung
+- Scraper Auto-Healing
+- Compass Question Generator
+- Dashboard-nutzbare Admin-Ollama-Flaechen indirekt ueber API-Callsites
+
+### Wichtigste Findings
+
+- `routers/scraper.py` hatte Ollama-Konfigurationsdrift (`localhost:11434` / `llama3.2`) gegen den zentralen Service (`ollama:11434` / `llama3.2:3b`).
+- Bill-Summary war zu hart von `ollama_available()` abhaengig, obwohl `summarize_bill()` einen deterministischen Fallback hat.
+- JSON-Parsing fuer Ollama war mehrfach ad hoc implementiert.
+- Scraper-Healing akzeptierte zu breite Selector-Ausgaben.
+- Admin Log-Erklaerung konnte eine leere Analyse als Erfolg zurueckgeben.
+
+### Geaenderte Dateien
+
+- `apps/api/services/ollama_service.py`
+- `apps/api/routers/scraper.py`
+- `apps/api/routers/parliament.py`
+- `apps/api/services/compass_generator.py`
+- `apps/api/services/scraper_healer.py`
+- `apps/api/routers/admin.py`
+- `apps/api/tests/test_ollama_system.py`
+- `docs/agent-bridge/OLLAMA_SYSTEM_AUDIT_20260503.md`
+- `docs/agent-bridge/ACTION_LOG.md`
+- `docs/agent-bridge/CODEX_TO_CLAUDE.md`
+- `docs/agent-bridge/PROJECT_STATE.md`
+
+### Verifikation
+
+```bash
+cd /Users/gio/Desktop/repo/pnyx/apps/api
+./.venv/bin/python -m pytest tests/test_ollama_system.py tests/test_agent_guardrails.py tests/test_agent_training_regression.py -q
+./.venv/bin/python -m py_compile services/ollama_service.py routers/scraper.py routers/parliament.py services/compass_generator.py services/scraper_healer.py routers/admin.py tests/test_ollama_system.py
+```
+
+Ergebnis:
+
+- 19 passed, 1 warning
+- py_compile passed
+
+### Empfehlung an Claude Code
+
+Vor Deployment Diff pruefen, dann nach Deployment `/api/v1/scraper/status`, `/api/v1/scraper/test`, `/api/v1/bills/{id}/summary`, `/api/v1/admin/logs/explain` und Landing Chat live smoke-testen. `greek_topics_scraper.py` weiterhin nicht deploy-/auto-post-faehig behandeln.
+
+Report:
+
+`docs/agent-bridge/OLLAMA_SYSTEM_AUDIT_20260503.md`

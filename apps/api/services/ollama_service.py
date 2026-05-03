@@ -5,8 +5,11 @@ AI Services — Ollama + DeepL Integration
 - Template fallback: when no content or services unavailable
 """
 import httpx
+import json
 import logging
 import os
+import re
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +74,7 @@ async def ollama_generate(prompt: str, max_tokens: int = 500) -> str:
                     "model": OLLAMA_MODEL,
                     "prompt": prompt,
                     "stream": False,
-                    "options": {"num_predict": max_tokens},
+                    "options": {"num_predict": max_tokens, "temperature": 0.2},
                 },
             )
             resp.raise_for_status()
@@ -81,6 +84,17 @@ async def ollama_generate(prompt: str, max_tokens: int = 500) -> str:
         return ""
 
 
+def _ollama_model_matches(available_models: list[str]) -> bool:
+    """Accept exact model tags and base-name matches like llama3.2 vs llama3.2:3b."""
+    requested = OLLAMA_MODEL.strip()
+    requested_base = requested.split(":")[0]
+    for model in available_models:
+        name = model.strip()
+        if name == requested or name.split(":")[0] == requested_base:
+            return True
+    return False
+
+
 async def ollama_available() -> bool:
     """Check if Ollama is reachable and model loaded."""
     try:
@@ -88,9 +102,52 @@ async def ollama_available() -> bool:
             resp = await client.get(f"{OLLAMA_URL}/api/tags")
             resp.raise_for_status()
             models = [m["name"] for m in resp.json().get("models", [])]
-            return OLLAMA_MODEL in models or any(OLLAMA_MODEL.split(":")[0] in m for m in models)
+            return _ollama_model_matches(models)
     except Exception:
         return False
+
+
+def _parse_ollama_json(raw: str) -> Any | None:
+    """Parse Ollama JSON mode responses, tolerating markdown fences and short prefaces."""
+    cleaned = re.sub(r"```(?:json)?|```", "", raw or "", flags=re.IGNORECASE).strip()
+    if not cleaned:
+        return None
+
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        pass
+
+    for opener, closer in (("{", "}"), ("[", "]")):
+        start = cleaned.find(opener)
+        end = cleaned.rfind(closer)
+        if start != -1 and end > start:
+            try:
+                return json.loads(cleaned[start:end + 1])
+            except json.JSONDecodeError:
+                continue
+    return None
+
+
+async def ollama_json_generate(prompt: str, max_tokens: int = 500) -> Any | None:
+    """Send a JSON-only prompt to Ollama and return parsed JSON data."""
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            resp = await client.post(
+                f"{OLLAMA_URL}/api/generate",
+                json={
+                    "model": OLLAMA_MODEL,
+                    "prompt": prompt,
+                    "stream": False,
+                    "format": "json",
+                    "options": {"num_predict": max_tokens, "temperature": 0.1},
+                },
+            )
+            resp.raise_for_status()
+            return _parse_ollama_json(resp.json().get("response", ""))
+    except Exception as e:
+        logger.warning("Ollama JSON generation failed: %s", e)
+        return None
 
 
 # ── Bill Summaries ───────────────────────────────────────────────────────────

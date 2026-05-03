@@ -258,6 +258,7 @@ Diese Inhalte sind als `PUBLIC_DOCS` zu behandeln und gelten nicht automatisch a
 - Agent: Codex
 - Lokaler HEAD: `ea0d248`
 - Tag: `session-20260502-final`
+
 - Branch: `main`
 - Remote-Tracking: `main...origin/main`, lokal laut Git nicht ahead/behind
 - Letzter Commit: `fix(scraper): greek_topics ImportError guard + Bridge updates`
@@ -277,3 +278,32 @@ Diese Inhalte sind als `PUBLIC_DOCS` zu behandeln und gelten nicht automatisch a
   - Keine SSH-/Live-Server-Pruefung.
   - Keine externen Netzwerkaufrufe.
   - Keine `.env`-, Secret-, Key- oder Wallet-Dateien gelesen.
+
+## Codex Ollama System Audit 2026-05-03
+
+- Datum/Zeit: 2026-05-03 00:46 EEST
+- Agent: Codex
+- Aktion: Ollama-Anbindungen lokal auditiert, justiert und mit Mock-Regressionstests abgesichert.
+- Gepruefte Anwendungsfaelle:
+  - Landing Chat / RAG Agent
+  - Bill-Summary Endpoint
+  - MOD-10 Scraper-Summary und Provider-Status
+  - Admin Log-Erklaerung
+  - Scraper Auto-Healing
+  - Compass Question Generator
+- Repo-belegte technische Aenderungen:
+  - Zentraler Ollama-Service enthaelt jetzt robustes Modell-Matching und `ollama_json_generate()`.
+  - MOD-10 Scraper nutzt zentrale Ollama-Konfiguration statt eigener `localhost`/Modell-Defaults.
+  - Bill-Summary kann deterministische Fallbacks nutzen, auch wenn Ollama nicht verfuegbar ist.
+  - Compass Generator nutzt zentrale JSON-Erzeugung.
+  - Scraper-Healing validiert Selector-Antworten strenger.
+  - Admin Log-Erklaerung meldet leere Ollama-Antworten als 503.
+- Tests:
+  - `19 passed, 1 warning`
+  - `py_compile` erfolgreich fuer geaenderte API-Dateien.
+- Report: `docs/agent-bridge/OLLAMA_SYSTEM_AUDIT_20260503.md`
+- Grenzen:
+  - Keine Live-Ollama-/Server-Pruefung.
+  - Keine externen Netzwerkaufrufe.
+  - Keine `.env`-, Secret-, Key- oder Wallet-Dateien gelesen.
+  - Kein Commit, Push, Deployment oder SSH.
