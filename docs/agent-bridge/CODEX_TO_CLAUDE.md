@@ -807,3 +807,40 @@ Vor Deployment Diff pruefen, dann nach Deployment `/api/v1/scraper/status`, `/ap
 Report:
 
 `docs/agent-bridge/OLLAMA_SYSTEM_AUDIT_20260503.md`
+
+---
+
+## Vier Projekt-Master-Audits lokal platziert 2026-05-03
+
+- Datum/Zeit: 2026-05-03 EEST
+- Agent: Codex
+- Aktion: Master-Audits fuer `pnyx`, `stealth`, `inferno` und `vlabs` erstellt und lokal in jedem Projekt sichtbar platziert.
+
+### Audit-Ordner
+
+- `/Users/gio/Desktop/repo/pnyx/AUDIT_MUST_READ/`
+- `/Users/gio/Desktop/repo/stealth/AUDIT_MUST_READ/`
+- `/Users/gio/Desktop/repo/inferno/AUDIT_MUST_READ/`
+- `/Users/gio/Desktop/repo/vlabs/vlabs-website/AUDIT_MUST_READ/`
+
+### Pflicht fuer Claude Code und Entwickler
+
+Vor Arbeiten am jeweiligen Repository zuerst `AUDIT_MUST_READ/README.md` und den darin genannten Master-Audit lesen.
+
+### Enthaltene Reports
+
+- `pnyx_MASTER_AUDIT_20260503.md`
+- `stealth_MASTER_AUDIT_20260503.md`
+- `inferno_MASTER_AUDIT_20260503.md`
+- `vlabs_MASTER_AUDIT_20260503.md`
+
+### Wichtige Grenzen
+
+- Keine `.env`, `.env.*`, `.gitignore`, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen.
+- Keine Secrets ausgegeben.
+- Kein Commit, Push oder Deployment.
+- Serverzugriff nur lesend fuer Inventar/Container-Kontext.
+
+### Empfehlung an Claude Code
+
+Die Reports als initiale Master-Audit-Basis verwenden, Findings priorisieren und Fixes repo-belegt abarbeiten. Sicherheitskritische Auth-, Token-, Admin-, Wallet-, Secret- und Deployment-Themen nur nach expliziter Nutzerfreigabe aendern.

@@ -307,3 +307,20 @@ Diese Inhalte sind als `PUBLIC_DOCS` zu behandeln und gelten nicht automatisch a
   - Keine externen Netzwerkaufrufe.
   - Keine `.env`-, Secret-, Key- oder Wallet-Dateien gelesen.
   - Kein Commit, Push, Deployment oder SSH.
+
+## Cross-Project Master Audits 2026-05-03
+
+- Agent: Codex
+- Status: Lokale Master-Audit-Reports fuer vier Projekte wurden erstellt und zusaetzlich direkt in den jeweiligen Repositories platziert.
+- Lokale zentrale Kopien:
+  - `/Users/gio/Desktop/repo/audits/pnyx_MASTER_AUDIT_20260503.md`
+  - `/Users/gio/Desktop/repo/audits/stealth_MASTER_AUDIT_20260503.md`
+  - `/Users/gio/Desktop/repo/audits/inferno_MASTER_AUDIT_20260503.md`
+  - `/Users/gio/Desktop/repo/audits/vlabs_MASTER_AUDIT_20260503.md`
+- Projektlokale Pflicht-Leseordner:
+  - `/Users/gio/Desktop/repo/pnyx/AUDIT_MUST_READ/`
+  - `/Users/gio/Desktop/repo/stealth/AUDIT_MUST_READ/`
+  - `/Users/gio/Desktop/repo/inferno/AUDIT_MUST_READ/`
+  - `/Users/gio/Desktop/repo/vlabs/vlabs-website/AUDIT_MUST_READ/`
+- Hinweis: Diese Ordner sind lokal angelegt und wurden nicht committed oder gepusht.
+- Sicherheitsgrenze: Keine `.env`, `.env.*`, `.gitignore`, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen; keine Secrets ausgegeben.

@@ -1,5 +1,57 @@
 # Action Log
 
+## 2026-05-03 — Claude Code: PayPal IPN Webhook LIVE
+
+- **Agent:** Claude Code
+- **Commit:** `bc52c8f`
+- **HEAD:** `bc52c8f`
+- **PayPal IPN:** POST /payments/webhook/paypal — IPN Verification, Idempotency, GDPR (payer_hash)
+- **HLR Auto-Reload:** Intent bei >=15 EUR (manuell noch noetig — hlrlookup.com hat keine Auto-Purchase API)
+- **Payment Logs:** GET /admin/payments/logs — letzte 50 Zahlungen
+- **Dashboard Finance:** Payment-Log Tabelle (Datum, Betrag, Methode, Konto)
+- **Webhook URL:** https://api.ekklesia.gr/api/v1/payments/webhook/paypal
+- **Test:** Endpoint antwortet korrekt (received=true, not_completed fuer leeren POST)
+
+---
+
+## 2026-05-03 — Claude Code: analytics.ekklesia.gr SSL LIVE + Session-Report
+
+- **Agent:** Claude Code
+- **HEAD:** `6d18d48`
+- **analytics.ekklesia.gr:** SSL LIVE (HTTPS 302 → /register)
+- **Plausible Fixes:** TOTP_VAULT_KEY, DB-Erstellung, Migrationen, ClickHouse URL, command:run, traefik.docker.network, Rate-Limit-Wartezeit
+- **DNS:** Bei allen Resolvern propagiert (8.8.8.8, 1.1.1.1, 9.9.9.9, Papaki NS1/NS2)
+- **Session 03.05:** Plausible + Sentry + Ollama Audit + Node-Dashboard + Embed
+
+---
+
+## 2026-05-03 — Claude Code: Sentry Hybrid LIVE — Cloud + Fallback + GDPR
+
+- **Agent:** Claude Code
+- **Commit:** `6d18d48`
+- **HEAD:** `6d18d48`
+- **Sentry:** enabled=true, provider=sentry.io Cloud, environment=production
+- **FastAPI:** sentry-sdk + Hybrid capture_error() + GDPR before_send (kein PII)
+- **Endpoint:** GET /admin/sentry/status → Dashboard-Integration
+- **Stats-Seite:** Sentry-Sektion (Ενεργό, Free Tier, GDPR)
+- **Mobile:** DSN vorbereitet, @sentry/react-native noch einzubauen
+
+---
+
+## 2026-05-03 — Claude Code: Plausible Analytics LIVE + Troubleshooting
+
+- **Agent:** Claude Code
+- **Commit:** `b0b6614` (23 HTML Dateien + Plausible script)
+- **HEAD:** `b0b6614`
+- **Plausible CE v2.1.0:** 3 Container (app + postgres + clickhouse), Port 8000
+- **Fixes:** TOTP_VAULT_KEY fehlte, DB manuell erstellt, ClickHouse URL (container name), Migrationen, `command: run`, `traefik.docker.network`
+- **Status:** App antwortet (Redirect zu /register), SSL wartet auf DNS-Propagation
+- **DNS:** analytics.ekklesia.gr → 135.181.254.229 (bei Papaki gesetzt, propagiert bei dig, noch nicht bei allen Resolvern)
+- **Plausible Script:** 23 HTML-Seiten (cookie-free, GDPR)
+- **Sentry:** Cloud Free Tier empfohlen (Server RAM nicht ausreichend fuer self-hosted)
+
+---
+
 ## 2026-05-02 — Claude Code: Dashboard Low-Priority — 6 Features + DE→EL
 
 - **Agent:** Claude Code
@@ -1099,5 +1151,53 @@
 - **Kein Deployment**
 - **Keine SSH-Verbindung**
 - **Bestehende uncommitted Aenderungen in Dashboard und `greek_topics_scraper.py` nicht angefasst**
+
+---
+
+## 2026-05-03 - Codex: Vier Projekt-Master-Audits erstellt
+
+- **Agent:** Codex
+- **Aktion:** Defensive Master-Audit-Reports fuer `pnyx`, `stealth`, `inferno` und `vlabs` erstellt
+- **Audit-Dateien:**
+  - `/Users/gio/Desktop/repo/audits/pnyx_MASTER_AUDIT_20260503.md`
+  - `/Users/gio/Desktop/repo/audits/stealth_MASTER_AUDIT_20260503.md`
+  - `/Users/gio/Desktop/repo/audits/inferno_MASTER_AUDIT_20260503.md`
+  - `/Users/gio/Desktop/repo/audits/vlabs_MASTER_AUDIT_20260503.md`
+- **Gelesene Quellen:**
+  - Bridge-Dateien unter `docs/agent-bridge/`
+  - lokale Repos: `/Users/gio/Desktop/repo/pnyx`, `/Users/gio/Desktop/repo/stealth`, `/Users/gio/Desktop/repo/inferno`, `/Users/gio/Desktop/repo/vlabs/vlabs-website`
+  - oeffentliche Projektseiten: `ekklesia.gr`, `stealthx.tech`, `ifrunit.tech`, `vlabs.gr` soweit erreichbar
+  - GitHub-Remotes aus lokalen Repos
+  - bekannter Hetzner-Server read-only: Hostname, Uptime, Docker-Container, Top-Level `/opt`-Struktur
+- **Wichtige Einschraenkungen:**
+  - Keine `.env`-, `.env.*`-, `.gitignore`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen
+  - Keine Secret-Inhalte ausgegeben
+  - Keine Exploitation, keine destruktiven Aktionen
+  - Kein Commit, Push oder Deployment
+  - Server nur read-only inventarisiert
+- **Bestehende uncommitted Aenderungen nicht veraendert**
+
+---
+
+## 2026-05-03 - Codex: Audit-Reports projektlokal platziert
+
+- **Agent:** Codex
+- **Aktion:** In jedem auditierten Projekt einen lokalen Pflicht-Leseordner `AUDIT_MUST_READ/` angelegt und den jeweiligen Master-Audit dort abgelegt.
+- **Projektlokale Audit-Ordner:**
+  - `/Users/gio/Desktop/repo/pnyx/AUDIT_MUST_READ/`
+  - `/Users/gio/Desktop/repo/stealth/AUDIT_MUST_READ/`
+  - `/Users/gio/Desktop/repo/inferno/AUDIT_MUST_READ/`
+  - `/Users/gio/Desktop/repo/vlabs/vlabs-website/AUDIT_MUST_READ/`
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/ACTION_LOG.md`
+  - `docs/agent-bridge/CODEX_TO_CLAUDE.md`
+  - `docs/agent-bridge/PROJECT_STATE.md`
+- **Keine Produktcodeaenderung**
+- **Keine `.env`-, `.env.*`-, `.gitignore`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Commit**
+- **Kein Push**
+- **Kein Deployment**
+- **Keine SSH-Verbindung fuer diese Platzierung**
 
 ---

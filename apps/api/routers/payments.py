@@ -410,3 +410,159 @@ async def admin_payment_logs(_auth: bool = Depends(verify_admin_key)):
             "pending_hlr_reload": json.loads(pending_reload) if pending_reload else None,
         },
     }
+
+
+# ── Blockchain Balance Endpoints ──────────────────────────────────────────────
+
+BTC_ADDRESS = os.getenv("BTC_ADDRESS", "bc1q83370mce8qfkyyepspg6xf42f577s47rtl3mhx")
+LTC_ADDRESS = os.getenv("LTC_ADDRESS", "ltc1qmr467kl8w0e8axplq5uyrpws3mc4sclpu4ds8w")
+ARWEAVE_ADDRESS = os.getenv("ARWEAVE_ADDRESS", "2hkK3Bcr6garERqyBCLCiJ-d8zZzM5ZWe3_AzGdhBTs")
+HETZNER_MONTHLY = float(os.getenv("HETZNER_MONTHLY_COST", "15.00"))
+
+
+@router.get("/admin/finance/btc")
+async def btc_balance():
+    """BTC Wallet Balance via Blockstream API (30min Redis cache)."""
+    r = await _get_redis()
+    cached = await r.get("finance:btc:cache")
+    if cached:
+        return json.loads(cached)
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(f"https://blockstream.info/api/address/{BTC_ADDRESS}")
+            data = resp.json()
+            funded = data.get("chain_stats", {}).get("funded_txo_sum", 0)
+            spent = data.get("chain_stats", {}).get("spent_txo_sum", 0)
+            balance_sat = funded - spent
+            balance_btc = balance_sat / 1e8
+            tx_count = data.get("chain_stats", {}).get("tx_count", 0)
+            # EUR price from CoinGecko
+            price_resp = await client.get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=eur")
+            btc_eur = price_resp.json().get("bitcoin", {}).get("eur", 0)
+            result = {"address": BTC_ADDRESS, "balance_btc": round(balance_btc, 8), "balance_eur": round(balance_btc * btc_eur, 2), "btc_eur": btc_eur, "tx_count": tx_count}
+            await r.setex("finance:btc:cache", 1800, json.dumps(result))
+            return result
+    except Exception as e:
+        return {"address": BTC_ADDRESS, "error": str(e), "balance_btc": 0, "balance_eur": 0}
+
+
+@router.get("/admin/finance/ltc")
+async def ltc_balance():
+    """LTC Wallet Balance via Blockcypher API (30min Redis cache)."""
+    r = await _get_redis()
+    cached = await r.get("finance:ltc:cache")
+    if cached:
+        return json.loads(cached)
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(f"https://api.blockcypher.com/v1/ltc/main/addrs/{LTC_ADDRESS}/balance")
+            data = resp.json()
+            balance_sat = data.get("balance", 0)
+            balance_ltc = balance_sat / 1e8
+            tx_count = data.get("n_tx", 0)
+            price_resp = await client.get("https://api.coingecko.com/api/v3/simple/price?ids=litecoin&vs_currencies=eur")
+            ltc_eur = price_resp.json().get("litecoin", {}).get("eur", 0)
+            result = {"address": LTC_ADDRESS, "balance_ltc": round(balance_ltc, 8), "balance_eur": round(balance_ltc * ltc_eur, 2), "ltc_eur": ltc_eur, "tx_count": tx_count}
+            await r.setex("finance:ltc:cache", 1800, json.dumps(result))
+            return result
+    except Exception as e:
+        return {"address": LTC_ADDRESS, "error": str(e), "balance_ltc": 0, "balance_eur": 0}
+
+
+@router.get("/admin/finance/overview")
+async def finance_overview(_auth: bool = Depends(verify_admin_key)):
+    """Vollstaendige Finanzuebersicht — alle Quellen kombiniert."""
+    r = await _get_redis()
+    await _init_seed_payments(r)
+
+    # Einnahmen
+    server_received = float(await r.get(R_SERVER_RECEIVED) or "0")
+    domain_received = float(await r.get(R_DOMAIN_RECEIVED) or "0")
+    reserve = float(await r.get(R_RESERVE) or "0")
+    paypal_total = float(await r.get(R_PAYPAL_DONATIONS) or "0")
+    paypal_count = int(await r.get(R_PAYPAL_COUNT) or "0")
+
+    # BTC + LTC (aus Cache)
+    btc_cache = json.loads(await r.get("finance:btc:cache") or "{}")
+    ltc_cache = json.loads(await r.get("finance:ltc:cache") or "{}")
+    btc_eur = btc_cache.get("balance_eur", 0)
+    ltc_eur = ltc_cache.get("balance_eur", 0)
+
+    # HLR Credits
+    hlr_primary_remaining = int(await r.get("hlr:hlrlookupcom:used") or "0")
+    hlr_primary_remaining = max(0, 2499 - hlr_primary_remaining)
+    hlr_fallback_remaining = int(await r.get("hlr:used") or "0")
+    hlr_fallback_remaining = max(0, 1000 - hlr_fallback_remaining)
+    hlr_primary_eur = round(hlr_primary_remaining * 0.006, 2)
+
+    # Ausgaben
+    months = _months_elapsed(SERVER_START)
+    server_cost_total = months * HETZNER_MONTHLY
+
+    # Arweave (aus eigener API)
+    ar_cache = None
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            ar_resp = await client.get("http://localhost:8000/api/v1/arweave/status")
+            ar_cache = ar_resp.json()
+    except Exception:
+        pass
+    ar_balance = ar_cache.get("balance_ar", 0) if ar_cache else 0
+
+    total_einnahmen = server_received + domain_received + reserve + btc_eur + ltc_eur
+    total_ausgaben_monatlich = HETZNER_MONTHLY
+    saldo = total_einnahmen - server_cost_total
+    runway_monate = int(saldo / HETZNER_MONTHLY) if HETZNER_MONTHLY > 0 and saldo > 0 else 0
+
+    return {
+        "einnahmen": {
+            "paypal_gesamt": paypal_total,
+            "paypal_count": paypal_count,
+            "server_received": server_received,
+            "domain_received": domain_received,
+            "btc_eur": btc_eur,
+            "ltc_eur": ltc_eur,
+            "reserve": reserve,
+            "gesamt": round(total_einnahmen, 2),
+        },
+        "ausgaben": {
+            "server_monatlich": HETZNER_MONTHLY,
+            "server_gesamt": round(server_cost_total, 2),
+            "hlr_verbraucht_credits": 2499 - hlr_primary_remaining,
+            "gesamt_monatlich": round(total_ausgaben_monatlich, 2),
+        },
+        "wallets": {
+            "btc": btc_cache,
+            "ltc": ltc_cache,
+            "arweave": {"balance_ar": ar_balance, "address": ARWEAVE_ADDRESS},
+            "hlr_primary": {"remaining": hlr_primary_remaining, "eur": hlr_primary_eur},
+            "hlr_fallback": {"remaining": hlr_fallback_remaining},
+        },
+        "saldo": round(saldo, 2),
+        "runway_monate": runway_monate,
+        "server_gedeckt_bis": f"{months + runway_monate} Monate ab Start",
+        "letztes_update": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@router.get("/public/finance")
+async def public_finance_overview():
+    """Oeffentlicher Transparenz-Endpoint — nur Summen, keine Details."""
+    r = await _get_redis()
+    await _init_seed_payments(r)
+
+    server_received = float(await r.get(R_SERVER_RECEIVED) or "0")
+    months = _months_elapsed(SERVER_START)
+    server_cost = months * HETZNER_MONTHLY
+    server_balance = round(server_received - server_cost, 2)
+    runway = int(server_balance / HETZNER_MONTHLY) if server_balance > 0 else 0
+
+    hlr_remaining = max(0, 2499 - int(await r.get("hlr:hlrlookupcom:used") or "0"))
+    payment_count = await r.llen(R_PAYMENTS)
+
+    return {
+        "server_gedeckt_monate": runway,
+        "hlr_verifikationen_moeglich": hlr_remaining,
+        "spenden_gesamt": payment_count,
+        "transparenz": "Alle Einnahmen und Ausgaben sind oeffentlich einsehbar auf community.html",
+    }
