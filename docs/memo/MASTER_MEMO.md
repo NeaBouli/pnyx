@@ -27,7 +27,7 @@ Tag: v0.3.0-alpha | Datum: 2026-04-01
 - Org: NeaBouli
 - Repo: github.com/NeaBouli/pnyx
 - Domain: ekklesia.gr (Papaki, bis 29.03.2028)
-- License: MIT © 2026 Vendetta Labs
+- License: MIT © 2026 V-Labs Development
 - Kontakt: kaspartisan@proton.me (nie öffentlich)
 
 ---

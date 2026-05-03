@@ -1,7 +1,7 @@
 # pnyx.ekklesia.gr Integration — Technical Answers
 
 **Date:** 2026-04-27
-**From:** ekklesia Core Team (Vendetta Labs)
+**From:** ekklesia Core Team (V-Labs Development)
 **For:** pnyx Forum Dev Team
 **Source:** Live codebase + running server audit
 
@@ -290,7 +290,7 @@ Compass:       Recent bills → Ollama generates EN questions → DeepL → pend
 | Item | Value |
 |------|-------|
 | **DNS Provider** | Cloudflare (DNS-only, not proxied) |
-| **Registrar** | External (domain owned by Vendetta Labs) |
+| **Registrar** | External (domain owned by V-Labs Development) |
 | **Active records** | `ekklesia.gr`, `api.ekklesia.gr`, `newsletter.ekklesia.gr` |
 | **Wildcard SSL** | No — per-domain via Let's Encrypt/Traefik |
 
@@ -405,4 +405,4 @@ LISTMONK_ADMIN_USER, LISTMONK_ADMIN_PASSWORD
 ---
 
 *Generated from live codebase + running server. All values verified.*
-*© 2026 Vendetta Labs — MIT License*
+*© 2026 V-Labs Development — MIT License*

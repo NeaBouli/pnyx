@@ -1,16 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 720" role="img" aria-labelledby="hero-net-desc">
-  <desc id="hero-net-desc">Subtle animated civic network background for ekklesia.gr landing page.</desc>
+  <desc id="hero-net-desc">Static civic landscape background for ekklesia.gr landing page.</desc>
   <style>
     .hill { fill: rgba(37,99,235,0.05); stroke: rgba(37,99,235,0.10); stroke-width: 1.2; }
-    .line { fill:none; stroke: rgba(37,99,235,0.18); stroke-width:1.15; stroke-dasharray: 4 12; animation: drift 18s linear infinite; }
-    .line.green { stroke: rgba(34,197,94,0.18); animation-duration: 22s; }
-    .node { fill: #93c5fd; opacity:.28; animation: pulse 4.8s ease-in-out infinite; transform-origin:center; }
-    .node.green { fill: #86efac; opacity:.30; animation-delay: 900ms; }
-    .node.muted { fill: #94a3b8; opacity:.20; animation-delay: 1600ms; }
-    .ring { fill:none; stroke: rgba(37,99,235,0.12); stroke-width:1; opacity:.5; animation: pulseStroke 5.6s ease-in-out infinite; }
-    @keyframes drift { to { stroke-dashoffset: -160; } }
-    @keyframes pulse { 0%,100%{ transform:scale(1); opacity:.20 } 50%{ transform:scale(1.55); opacity:.40 } }
-    @keyframes pulseStroke { 0%,100%{ opacity:.10 } 50%{ opacity:.30 } }
+    .line { fill:none; stroke: rgba(37,99,235,0.18); stroke-width:1.15; stroke-dasharray: 4 12;  }
+    .line.green { stroke: rgba(34,197,94,0.18);  }
+    .node { fill: #93c5fd; opacity:.28;  transform-origin:center; }
+    .node.green { fill: #86efac; opacity:.30;  }
+    .node.muted { fill: #94a3b8; opacity:.20;  }
+    .ring { fill:none; stroke: rgba(37,99,235,0.12); stroke-width:1; opacity:.5;  }
     @media (prefers-reduced-motion: reduce) { .line,.node,.ring{ animation:none!important; } }
   </style>
   <path class="hill" d="M0 576 C132 512 210 505 350 548 C480 588 564 533 710 500 C875 462 965 520 1082 486 C1222 445 1324 486 1440 452 L1440 720 L0 720 Z"/>
@@ -20,24 +17,14 @@
   <path class="line" d="M184 604 C370 440 562 474 720 380 S1028 286 1268 390"/>
 
   <g opacity=".6">
-    <circle class="ring" cx="232" cy="438" r="58"/>
-    <circle class="ring" cx="550" cy="286" r="46"/>
-    <circle class="ring" cx="764" cy="374" r="66"/>
-    <circle class="ring" cx="1032" cy="338" r="48"/>
-    <circle class="ring" cx="1248" cy="248" r="70"/>
   </g>
 
   <g>
-    <circle class="node" cx="132" cy="492" r="4"/>
     <circle class="node green" cx="344" cy="396" r="5"/>
     <circle class="node muted" cx="530" cy="300" r="4"/>
-    <circle class="node" cx="742" cy="278" r="5"/>
     <circle class="node green" cx="942" cy="344" r="4"/>
-    <circle class="node" cx="1174" cy="417" r="5"/>
     <circle class="node muted" cx="1314" cy="264" r="4"/>
     <circle class="node green" cx="72" cy="298" r="4"/>
-    <circle class="node" cx="560" cy="170" r="5"/>
     <circle class="node muted" cx="980" cy="204" r="4"/>
-    <circle class="node" cx="1370" cy="160" r="4"/>
   </g>
 </svg>

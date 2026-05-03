@@ -50,7 +50,7 @@ export default function LoginPage() {
 
           {/* Footer */}
           <p className="text-xs text-gray-400 mt-6">
-            © 2026 Vendetta Labs · ekklesia.gr
+            © 2026 V-Labs Development · ekklesia.gr
           </p>
         </div>
       </div>

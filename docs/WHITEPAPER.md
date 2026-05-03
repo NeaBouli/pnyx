@@ -8,7 +8,7 @@
 ## Λευκό Βιβλίο / Technical Whitepaper
 ### Version 1.0 — 2026
 
-**© 2026 Vendetta Labs — MIT License**
+**© 2026 V-Labs Development — MIT License**
 
 </div>
 
@@ -306,7 +306,7 @@ TrueRepublic (Blockchain Layer)
 - Κόστος hosting: ~15-25€/μήνα (Hetzner CX21)
 - Κόστος domain: ~10€/χρόνο
 - Σύνολο: ~200-300€/χρόνο
-- Χρηματοδότηση: Vendetta Labs + NGO donations
+- Χρηματοδότηση: V-Labs Development + NGO donations
 
 ### 9.2 Βιωσιμότητα / Sustainability
 - Κανένα paywall, κανένα freemium
@@ -327,7 +327,7 @@ TrueRepublic (Blockchain Layer)
 **does not** replace official electoral processes. It is a tool for
 **expressing** political opinion and **measuring** democratic representation.
 
-- MIT License © 2026 Vendetta Labs
+- MIT License © 2026 V-Labs Development
 - GDPR Compliant
 - Δεν συλλέγει δεδομένα εκστρατείας / No campaign data collection
 - Πολιτικά ουδέτερο σύστημα / Politically neutral system
@@ -349,7 +349,7 @@ TrueRepublic (Blockchain Layer)
 
 <div align="center">
 
-**© 2026 Vendetta Labs — MIT License**
+**© 2026 V-Labs Development — MIT License**
 
 [GitHub](https://github.com/NeaBouli/pnyx) · [Wiki](https://github.com/NeaBouli/pnyx/wiki) · [ekklesia.gr](https://ekklesia.gr)
 

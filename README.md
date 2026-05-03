@@ -14,7 +14,7 @@
 [![Modules](https://img.shields.io/badge/Modules-22-green)](https://ekklesia.gr/wiki/modules.html)
 [![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-red)](https://github.com/NeaBouli/pnyx)
 
-**© 2026 Vendetta Labs �� MIT License**
+**© 2026 V-Labs Development �� MIT License**
 
 [Website](https://ekklesia.gr) · [Wiki](https://ekklesia.gr/wiki/) · [API](https://api.ekklesia.gr/health) · [Download APK](https://ekklesia.gr/download/)
 
@@ -215,7 +215,7 @@ git checkout -b feat/your-feature
 
 ## License
 
-MIT License — Copyright (c) 2026 Vendetta Labs
+MIT License — Copyright (c) 2026 V-Labs Development
 
 Free to use, modify and distribute.
 

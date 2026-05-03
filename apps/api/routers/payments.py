@@ -65,8 +65,8 @@ async def _init_seed_payments(r: aioredis.Redis) -> None:
         await r.set(R_DOMAIN_RECEIVED, "9.30")
         await r.set(R_RESERVE, "0.00")
         seed = [
-            {"date": "2026-04-16", "amount": 20.00, "to": "server", "from": "Vendetta Labs (Seed)", "method": "manual"},
-            {"date": "2026-03-29", "amount": 9.30, "to": "domain", "from": "Vendetta Labs (Registration)", "method": "manual"},
+            {"date": "2026-04-16", "amount": 20.00, "to": "server", "from": "V-Labs Development (Seed)", "method": "manual"},
+            {"date": "2026-03-29", "amount": 9.30, "to": "domain", "from": "V-Labs Development (Registration)", "method": "manual"},
         ]
         for p in seed:
             await r.rpush(R_PAYMENTS, json.dumps(p))

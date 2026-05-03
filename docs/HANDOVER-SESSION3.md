@@ -1,6 +1,6 @@
 # Handover — Session 3 (2026-04-09)
-# Ekklesia.gr / pnyx — Vendetta Labs Core Dev Team
-# Copyright (c) 2026 Vendetta Labs — MIT License
+# Ekklesia.gr / pnyx — V-Labs Development Core Dev Team
+# Copyright (c) 2026 V-Labs Development — MIT License
 
 ---
 

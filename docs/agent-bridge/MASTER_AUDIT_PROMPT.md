@@ -373,7 +373,7 @@ Pruefe:
 - Navigation
 - Legal/Privacy trust tone
 - Greek/English language quality
-- Branding consistency: ekklesia, pnyx, Vendetta Labs, NeaBouli
+- Branding consistency: ekklesia, pnyx, V-Labs Development, NeaBouli
 - Forum/Docs/Web/Mobile visuelle Konsistenz
 
 Finde:

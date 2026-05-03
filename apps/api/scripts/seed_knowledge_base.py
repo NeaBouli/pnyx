@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 ENTRIES = [
     ("mission", "Τι είναι η εκκλησία;", "What is ekklesia?",
-     "Η εκκλησία του έθνους είναι μια ανεξάρτητη πρωτοβουλία πολιτών για άμεση δημοκρατία στην Ελλάδα. Επιτρέπει στους πολίτες να ψηφίζουν ανώνυμα σε πραγματικά νομοσχέδια της Βουλής. ΔΕΝ είναι κρατική υπηρεσία. Οι ψηφοφορίες δεν έχουν νομική δεσμευτικότητα. Είναι εργαλείο διαφάνειας και δημοκρατικής εκπαίδευσης. © 2026 Vendetta Labs, MIT License.",
+     "Η εκκλησία του έθνους είναι μια ανεξάρτητη πρωτοβουλία πολιτών για άμεση δημοκρατία στην Ελλάδα. Επιτρέπει στους πολίτες να ψηφίζουν ανώνυμα σε πραγματικά νομοσχέδια της Βουλής. ΔΕΝ είναι κρατική υπηρεσία. Οι ψηφοφορίες δεν έχουν νομική δεσμευτικότητα. Είναι εργαλείο διαφάνειας και δημοκρατικής εκπαίδευσης. © 2026 V-Labs Development, MIT License.",
      "ekklesia tou ethnous is an independent civic initiative for direct democracy in Greece. Citizens vote anonymously on real Hellenic Parliament bills. NOT a government service. Votes have no legal binding. Transparency and civic education tool.",
      '["ekklesia","democracy","parliament","civic","initiative","vote"]', 1),
 

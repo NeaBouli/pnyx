@@ -4,7 +4,7 @@
 - Name: Ekklesia.gr (εκκλησία)
 - Repo: github.com/NeaBouli/pnyx
 - Domain: ekklesia.gr (Papaki, bis 29.03.2028)
-- License: MIT © 2026 Vendetta Labs
+- License: MIT © 2026 V-Labs Development
 - Logo: pnx.png (40px in Nav)
 
 ## DESIGN

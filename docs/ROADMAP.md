@@ -1,5 +1,5 @@
 # Ekklesia.gr — Öffentliche Roadmap
-# Copyright (c) 2026 Vendetta Labs — MIT License
+# Copyright (c) 2026 V-Labs Development — MIT License
 # Stand: 2026-04-09
 
 ## Phase Beta (aktuell)

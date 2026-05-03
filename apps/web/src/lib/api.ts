@@ -1,7 +1,7 @@
 /**
  * Ekklesia.gr API Client
  * Kommuniziert mit FastAPI Backend (apps/api)
- * Copyright (c) 2026 Vendetta Labs — MIT License
+ * Copyright (c) 2026 V-Labs Development — MIT License
  */
 import axios from "axios";
 

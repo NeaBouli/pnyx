@@ -1,5 +1,5 @@
 # Ekklesia.gr — TODO
-# Copyright (c) 2026 Vendetta Labs — MIT License
+# Copyright (c) 2026 V-Labs Development — MIT License
 # Stand: 2026-04-13 — Session 3 komplett, Rollback pre-session4-20260413
 
 ---

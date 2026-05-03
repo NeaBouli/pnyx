@@ -25,7 +25,7 @@ Tag: `PUBLIC_DOCS:WEBSITE`
 - Governance-Ebenen: Parlament, Periferia, Dimos
 - AI: Ollama + DeepL fuer Zusammenfassungen
 - Roadmap Beta → Alpha (500 User + 3 NGOs + gov.gr OAuth) → V2 (Blockchain)
-- Vendetta Labs, MIT License
+- V-Labs Development, MIT License
 
 ## Quelle: GitHub Wiki (NeaBouli/pnyx/wiki)
 

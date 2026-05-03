@@ -8,7 +8,7 @@
 - **GitHub:** https://github.com/NeaBouli/pnyx (oeffentlich)
 - **Server:** Hetzner CX33, Helsinki (`root@135.181.254.229`), Ubuntu 24.04.4 LTS
 - **Server-Zugangsdaten:** NICHT in dieser Bridge — SSH-Key erforderlich
-- **Copyright:** (c) 2026 Vendetta Labs (MIT License)
+- **Copyright:** (c) 2026 V-Labs Development (MIT License)
 
 ## Git-Status
 

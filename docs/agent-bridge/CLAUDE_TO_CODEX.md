@@ -15,7 +15,7 @@ Buerger koennen anonym ueber echte Parlamentsgesetze abstimmen. Die Plattform ve
 **Kernprinzip:** Vollstaendige Anonymitaet. Keine Accounts, keine E-Mails, keine Cookies. Identitaet wird per SMS verifiziert (Nummer wird sofort geloescht), danach signiert der Buerger mit Ed25519 — Private Key bleibt ausschliesslich auf dem Geraet.
 
 **Owner:** Gio (Kaspartizan / NeaBouli), unabhaengiger Entwickler, Griechenland.
-**Organisation:** Vendetta Labs
+**Organisation:** V-Labs Development
 **Lizenz:** MIT
 **Repo:** https://github.com/NeaBouli/pnyx (oeffentlich)
 **Lokaler Pfad:** `/Users/gio/Desktop/repo/pnyx`

@@ -93,3 +93,17 @@ Damit zeigt die Sitemap auf eine URL, die nicht die finale kanonische Zielseite 
   - Commit `5d43642` wurde auf `main` gepusht und `ekklesia-web` neu deployed.
   - Nachschaerfung interner Links wurde lokal vorbereitet und soll ebenfalls committed/gepusht/deployed werden.
 - Keine Secrets gelesen oder ausgegeben.
+
+## Google Search Console Follow-up
+
+- Nutzer hat `https://ekklesia.gr/sitemap.xml` in Google Search Console eingereicht.
+- Search Console Status nach Einreichung:
+  - Status: `Erfolgreich`
+  - Erkannte Seiten: `16`
+  - Zuletzt gelesen: `01.05.2026`
+  - Hinweis: Das Datum `Zuletzt gelesen` zeigt, dass Google die neu eingereichte Sitemap noch nicht erneut gecrawlt hatte.
+- Nutzer hat fuer `https://ekklesia.gr/tickets/index.html` die Indexierung beantragt.
+- Nutzer hat die Validierung fuer die Indexierungsprobleme gestartet.
+- Aktueller naechster Schritt:
+  - Keine weitere technische Aktion erforderlich.
+  - In den naechsten Tagen Search Console pruefen, ob `Zuletzt gelesen` aktualisiert wird und ob `tickets/index.html` als indexierbar/indexiert gemeldet wird.

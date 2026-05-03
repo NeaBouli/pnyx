@@ -1,5 +1,17 @@
 # Action Log
 
+## 2026-05-03 — Claude Code: Finance Transparenz + Broadcasting + Session-Report
+
+- **Agent:** Claude Code
+- **Commits:** `f05af76` (Finance) + `85fabbf` (Broadcasting)
+- **HEAD:** `85fabbf`
+- **Finance:** BTC/LTC/Arweave Balance APIs, Admin Overview, Public Finance, Dashboard 5 Tabs, CSV Export
+- **Broadcasting:** Share-Buttons (X/Facebook/LinkedIn) + Facebook Seite
+- **Codex:** 4 Master-Audits (pnyx/stealth/inferno/vlabs) + Ollama System Audit
+- **Session 01-03.05 Zusammenfassung:** 30+ Commits, Dashboard 18 Seiten, Plausible, Sentry, PayPal IPN, HLR Failover, Discourse 2026.5.0, Motion Pack, Admin Hardening, Finance Buchhaltung
+
+---
+
 ## 2026-05-03 — Claude Code: PayPal IPN Webhook LIVE
 
 - **Agent:** Claude Code
@@ -1285,5 +1297,24 @@
 - **Keine `.env`-, `.env.*`-, `.gitignore`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
 - **Keine Secrets ausgegeben**
 - **Commit/Push/Deployment durch Nutzer freigegeben und ausgefuehrt**
+
+---
+
+## 2026-05-03 - Nutzer/Codex: Google Search Console Follow-up dokumentiert
+
+- **Agent:** Codex
+- **Nutzeraktion:** Sitemap `https://ekklesia.gr/sitemap.xml` in Google Search Console eingereicht.
+- **Search-Console-Status laut Nutzer:**
+  - Status: Erfolgreich
+  - Erkannte Seiten: 16
+  - Zuletzt gelesen: 01.05.2026
+- **Nutzeraktion:** Indexierung fuer `https://ekklesia.gr/tickets/index.html` beantragt.
+- **Nutzeraktion:** Validierung der Indexierungsprobleme gestartet.
+- **Naechster Schritt:** Warten, bis Google die Sitemap neu liest und die Validierung verarbeitet.
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/GOOGLE_INDEXING_AUDIT_20260503.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine Produktcodeaenderung**
+- **Kein Commit/Push/Deployment in diesem Dokumentationsschritt**
 
 ---

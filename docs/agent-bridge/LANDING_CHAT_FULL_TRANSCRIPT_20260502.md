@@ -19,7 +19,7 @@ Hinweis: Dies ist ein Trainingsdaten-Artefakt. Antworten muessen vor produktiver
 
 ### Assistant Answer
 
-Η Εκκλησία του Έθνους (ekklesia.gr) είναι μια ανεξάρτητη, μη κρατική πλατφόρμα ανοικτού κώδικα για την ψηφιακή άμεση δημοκρατία. Επιτρέπει στους Έλληνες πολίτες να ψηφίζουν ανώνυμα για πραγματικά νομοσχέδια στο ελληνικό κοινοβούλιο. Η πλατφόρμα δημιουργήθηκε από την Vendetta Labs, ένα ανεξάρτητο στούντιο ανάπτυξης με έδρα την Ελλάδα.
+Η Εκκλησία του Έθνους (ekklesia.gr) είναι μια ανεξάρτητη, μη κρατική πλατφόρμα ανοικτού κώδικα για την ψηφιακή άμεση δημοκρατία. Επιτρέπει στους Έλληνες πολίτες να ψηφίζουν ανώνυμα για πραγματικά νομοσχέδια στο ελληνικό κοινοβούλιο. Η πλατφόρμα δημιουργήθηκε από την V-Labs Development, ένα ανεξάρτητο στούντιο ανάπτυξης με έδρα την Ελλάδα.
 
 ---
 ⚠️ Αυτή η πλατφόρμα δεν είναι κρατική υπηρεσία. Οι ψηφοφορίες δεν έχουν νομική δεσμευτικότητα. Είναι μια ανεξάρτητη πρωτοβουλία πολιτών για διαφάνεια και εκπαίδευση στη δημοκρατική συμμετοχή.
@@ -361,7 +361,7 @@ What is ekklesia.gr and who operates it?
 
 ### Assistant Answer
 
-ekklesia.gr is an independent, non-governmental, open-source platform for digital direct democracy. It was founded in 2026 by Vendetta Labs.
+ekklesia.gr is an independent, non-governmental, open-source platform for digital direct democracy. It was founded in 2026 by V-Labs Development.
 
 ---
 ⚠️ This is not a government platform. Votes have no legal binding force. This is an independent citizen initiative for transparency and democratic education.
@@ -557,7 +557,7 @@ The platform allows:
 **I don't have specific information** about whether or how municipalities can integrate ekklesia.gr into their own governance processes. 
 
 If you're interested in municipal applications, I'd recommend:
-1. Contacting Vendetta Labs (the platform founders)
+1. Contacting V-Labs Development (the platform founders)
 2. Checking the ekklesia.gr documentation or website directly
 3. Exploring whether the open-source nature (MIT License) allows for municipal adaptations
 

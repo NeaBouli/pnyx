@@ -1,5 +1,5 @@
 # Ekklesia.gr — Projektstatus
-# Copyright (c) 2026 Vendetta Labs — MIT License
+# Copyright (c) 2026 V-Labs Development — MIT License
 # Stand: 2026-04-09 — Session 3 komplett (alle Commits gepusht)
 
 ---
@@ -14,7 +14,7 @@
 | **HEAD**            | `99ae8ea` (main, Remote synchron)                 |
 | **Rollback**        | Tag `pre-session3-20260409` → `cd050e5`           |
 | **Phase**           | Beta — Kernmodule + Liquid Compass komplett        |
-| **Lizenz**          | MIT — (c) 2026 Vendetta Labs                      |
+| **Lizenz**          | MIT — (c) 2026 V-Labs Development                      |
 
 ---
 
