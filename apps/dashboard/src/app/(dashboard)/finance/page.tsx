@@ -9,21 +9,25 @@ export default function FinancePage() {
   const [arweave, setArweave] = useState<Record<string, unknown> | null>(null)
   const [payments, setPayments] = useState<Record<string, unknown> | null>(null)
   const [claude, setClaude] = useState<Record<string, unknown> | null>(null)
+  const [paymentLogs, setPaymentLogs] = useState<Record<string, unknown> | null>(null)
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    const [hlrRes, arRes, payRes, claudeRes] = await Promise.allSettled([
+    const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || ''
+    const [hlrRes, arRes, payRes, claudeRes, logsRes] = await Promise.allSettled([
       fetch(`${API}/api/v1/identity/hlr/credits`).then(r => r.json()),
       fetch(`${API}/api/v1/arweave/status`).then(r => r.json()),
       fetch(`${API}/api/v1/payments/status`).then(r => r.json()),
       fetch(`${API}/api/v1/claude/budget`).then(r => r.json()),
+      ADMIN_KEY ? fetch(`${API}/api/v1/payments/admin/logs?admin_key=${ADMIN_KEY}`).then(r => r.json()) : Promise.resolve(null),
     ])
     const v = (r: PromiseSettledResult<unknown>) => r.status === 'fulfilled' ? r.value : null
     setHlr(v(hlrRes) as Record<string, unknown> | null)
     setArweave(v(arRes) as Record<string, unknown> | null)
     setPayments(v(payRes) as Record<string, unknown> | null)
     setClaude(v(claudeRes) as Record<string, unknown> | null)
+    setPaymentLogs(v(logsRes) as Record<string, unknown> | null)
     setLoading(false)
   }, [])
 
@@ -327,10 +331,57 @@ export default function FinancePage() {
                 Webhook URL: https://api.ekklesia.gr/api/v1/payments/webhook/paypal
               </div>
               <div className="text-xs text-gray-400 mt-1">
-                Αυτή τη στιγμή: χειροκίνητη καταμέτρηση
+                Webhook ενεργό — αυτόματη καταμέτρηση PayPal IPN
               </div>
             </div>
           </div>
+
+          {/* Payment Logs */}
+          {paymentLogs && (paymentLogs.payments as Record<string, unknown>[])?.length > 0 && (
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-semibold text-gray-800">Ιστορικό Πληρωμών</h2>
+                <span className="text-xs text-gray-400">
+                  {String(paymentLogs.total_count ?? '0')} συνολικά
+                </span>
+              </div>
+              {(paymentLogs.paypal as Record<string, unknown>)?.count != null && Number((paymentLogs.paypal as Record<string, unknown>).count) > 0 && (
+                <div className="mb-3 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+                  PayPal: {String((paymentLogs.paypal as Record<string, unknown>).total_eur ?? '0')} EUR ({String((paymentLogs.paypal as Record<string, unknown>).count)} δωρεές)
+                </div>
+              )}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left px-3 py-2 font-medium text-gray-500">Ημερομηνία</th>
+                      <th className="text-right px-3 py-2 font-medium text-gray-500">Ποσό</th>
+                      <th className="text-left px-3 py-2 font-medium text-gray-500">Μέθοδος</th>
+                      <th className="text-left px-3 py-2 font-medium text-gray-500">Κατανομή</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {(paymentLogs.payments as Record<string, unknown>[]).slice(0, 10).map((p, i) => (
+                      <tr key={i} className="hover:bg-gray-50">
+                        <td className="px-3 py-2 text-gray-600">{String(p.date ?? '—')}</td>
+                        <td className="px-3 py-2 text-right font-mono text-gray-800">{String(p.amount ?? '0')} {String(p.currency ?? 'EUR')}</td>
+                        <td className="px-3 py-2">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            p.method === 'paypal' ? 'bg-blue-100 text-blue-700' :
+                            p.method === 'stripe' ? 'bg-purple-100 text-purple-700' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>{String(p.method ?? '—')}</span>
+                        </td>
+                        <td className="px-3 py-2 text-xs text-gray-500">
+                          {p.allocation ? `Server: ${String((p.allocation as Record<string, unknown>).server ?? '0')}€` : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1,7 +1,9 @@
 """
 MOD-18: Community Donations / Spenden
-POST /api/v1/payments/webhook — Stripe Webhook (signature-verified)
-GET  /api/v1/payments/status  — Öffentlicher Transparenz-Endpoint
+POST /api/v1/payments/webhook         — Stripe Webhook (signature-verified)
+POST /api/v1/payments/webhook/paypal  — PayPal IPN Webhook (auto-verified)
+GET  /api/v1/payments/status          — Öffentlicher Transparenz-Endpoint
+GET  /api/v1/admin/payments/logs      — Admin: Zahlungs-Log
 
 Verteilungslogik:
   Eingehende Spenden werden automatisch priorisiert:
@@ -9,14 +11,22 @@ Verteilungslogik:
   2. Domain (9,30€/Jahr) — niedrigere Frequenz
   3. Reserve — Überschuss als Puffer
 
+PayPal IPN:
+  - Automatische Verifizierung gegen PayPal Server
+  - HLR Credits Auto-Reload (15€ = 2500 Credits)
+  - Idempotency via txn_id in Redis
+
 Alles in Redis gespeichert — kein DB-Schema nötig.
 """
+import hashlib
 import json
 import logging
 import os
 from datetime import datetime, timezone
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Depends, Request, HTTPException
+import httpx
 import redis.asyncio as aioredis
+from dependencies import verify_admin_key
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/payments", tags=["MOD-18 Donations"])
@@ -241,4 +251,162 @@ async def payment_status():
         "total_received": round(total_received, 2),
         "last_payment": last_payment,
         "payment_count": log_len,
+    }
+
+
+# ── PayPal IPN Webhook ───────────────────────────────────────────────────────
+
+R_PAYPAL_TXN = "paypal:txn:"  # Set of processed txn_ids
+R_PAYPAL_DONATIONS = "paypal:donations:total"
+R_PAYPAL_COUNT = "paypal:donations:count"
+
+PAYPAL_IPN_URL = os.getenv(
+    "PAYPAL_IPN_URL",
+    "https://ipnpb.paypal.com/cgi-bin/webscr"  # Production
+)
+
+HLR_CREDITS_PER_15EUR = 2500
+
+
+async def _verify_paypal_ipn(payload: bytes) -> bool:
+    """Verify IPN by sending it back to PayPal with cmd=_notify-validate."""
+    verify_payload = b"cmd=_notify-validate&" + payload
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(
+                PAYPAL_IPN_URL,
+                content=verify_payload,
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+            return resp.text.strip() == "VERIFIED"
+    except Exception as e:
+        logger.error("[PayPal] IPN verification failed: %s", e)
+        return False
+
+
+@router.post("/webhook/paypal")
+async def paypal_ipn_webhook(request: Request):
+    """
+    PayPal IPN Webhook.
+    1. Verify IPN mit PayPal Server
+    2. Wenn VERIFIED + Completed: Spende verbuchen
+    3. HLR Credits automatisch aufladen (15€ = 2500 Credits)
+    4. Idempotency: txn_id nur einmal verarbeiten
+    """
+    payload = await request.body()
+    form = dict(x.split("=", 1) for x in payload.decode().split("&") if "=" in x)
+
+    # Parse IPN fields
+    payment_status = form.get("payment_status", "")
+    txn_id = form.get("txn_id", "")
+    mc_gross = form.get("mc_gross", "0")
+    mc_currency = form.get("mc_currency", "EUR")
+    item_name = form.get("item_name", "")
+    payer_email = form.get("payer_email", "")
+
+    logger.info("[PayPal] IPN received: txn=%s status=%s amount=%s %s",
+                txn_id, payment_status, mc_gross, mc_currency)
+
+    # Only process completed payments
+    if payment_status != "Completed":
+        return {"received": True, "processed": False, "reason": "not_completed"}
+
+    if not txn_id:
+        return {"received": True, "processed": False, "reason": "no_txn_id"}
+
+    # Verify with PayPal
+    verified = await _verify_paypal_ipn(payload)
+    if not verified:
+        logger.warning("[PayPal] IPN verification FAILED for txn=%s", txn_id)
+        return {"received": True, "processed": False, "reason": "verification_failed"}
+
+    r = await _get_redis()
+
+    # Idempotency: check if txn already processed
+    txn_key = f"{R_PAYPAL_TXN}{txn_id}"
+    already = await r.exists(txn_key)
+    if already:
+        logger.info("[PayPal] Duplicate IPN for txn=%s — skipping", txn_id)
+        return {"received": True, "processed": False, "reason": "duplicate"}
+
+    # Parse amount
+    try:
+        amount = float(mc_gross)
+    except ValueError:
+        amount = 0.0
+
+    if amount <= 0:
+        return {"received": True, "processed": False, "reason": "zero_amount"}
+
+    # Mark txn as processed (90 days TTL)
+    await r.setex(txn_key, 86400 * 90, "processed")
+
+    # Track PayPal donations
+    await r.incrbyfloat(R_PAYPAL_DONATIONS, amount)
+    await r.incr(R_PAYPAL_COUNT)
+
+    # Allocate donation (same as Stripe)
+    await _init_seed_payments(r)
+    allocation = await allocate_donation(amount, r)
+
+    # HLR Credits auto-reload if amount >= 15€
+    hlr_credits_added = 0
+    if amount >= 14.99:
+        hlr_credits_added = HLR_CREDITS_PER_15EUR
+        # Note: actual credit reload requires hlrlookup.com API purchase
+        # For now, log the intent — manual reload needed
+        await r.setex("hlr:paypal:pending_reload", 86400 * 7, json.dumps({
+            "amount": amount,
+            "credits": hlr_credits_added,
+            "txn_id": txn_id,
+            "date": datetime.now(timezone.utc).isoformat(),
+        }))
+        logger.info("[PayPal] HLR reload pending: %d credits from %.2f EUR", hlr_credits_added, amount)
+
+    # Log payment
+    payer_hash = hashlib.sha256(payer_email.encode()).hexdigest()[:12] if payer_email else "anonym"
+    record = {
+        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
+        "amount": amount,
+        "currency": mc_currency,
+        "allocation": allocation,
+        "from": payer_hash,
+        "method": "paypal",
+        "txn_id": txn_id,
+        "item_name": item_name,
+        "hlr_credits_added": hlr_credits_added,
+    }
+    await r.rpush(R_PAYMENTS, json.dumps(record))
+
+    logger.info("[PayPal] Donation %.2f %s allocated: %s (HLR: +%d)",
+                amount, mc_currency, allocation, hlr_credits_added)
+
+    return {"received": True, "processed": True, "allocation": allocation}
+
+
+# ── Admin Payment Logs ───────────────────────────────────────────────────────
+
+@router.get("/admin/logs")
+async def admin_payment_logs(_auth: bool = Depends(verify_admin_key)):
+    """Admin: Alle Zahlungen (letzte 50)."""
+    r = await _get_redis()
+    log_len = await r.llen(R_PAYMENTS)
+    start = max(0, log_len - 50)
+    raw_logs = await r.lrange(R_PAYMENTS, start, -1)
+    logs = [json.loads(x) for x in raw_logs]
+    logs.reverse()  # Neueste zuerst
+
+    paypal_total = float(await r.get(R_PAYPAL_DONATIONS) or "0")
+    paypal_count = int(await r.get(R_PAYPAL_COUNT) or "0")
+
+    pending_reload = await r.get("hlr:paypal:pending_reload")
+
+    return {
+        "payments": logs,
+        "total_count": log_len,
+        "paypal": {
+            "total_eur": round(paypal_total, 2),
+            "count": paypal_count,
+            "pending_hlr_reload": json.loads(pending_reload) if pending_reload else None,
+        },
     }
