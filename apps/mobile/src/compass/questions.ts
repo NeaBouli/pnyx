@@ -2,7 +2,7 @@ import type { Question } from "./types";
 
 export const QUESTIONS: Question[] = [
   // ── ECONOMIC (E1-E24) ──────────────────────────────────────
-  { id: "E1", text: "Ο κράτος πρέπει να αυξήσει τη φορολογία για να μειώσει τις κοινωνικές ανισότητες.", axis: "economic", reverse: false, weight: 1.0 },
+  { id: "E1", text: "Το κράτος πρέπει να αυξήσει τη φορολογία για να μειώσει τις κοινωνικές ανισότητες.", axis: "economic", reverse: false, weight: 1.0 },
   { id: "E2", text: "Η ελεύθερη αγορά είναι πιο αποτελεσματική από το κράτος στην κατανομή πόρων.", axis: "economic", reverse: true, weight: 1.0 },
   { id: "E3", text: "Οι ιδιωτικοποιήσεις δημόσιων υπηρεσιών ωφελούν την οικονομία.", axis: "economic", reverse: true, weight: 1.0 },
   { id: "E4", text: "Το κράτος πρέπει να προστατεύει τους εργαζόμενους ακόμη και αν περιορίζει τις επιχειρήσεις.", axis: "economic", reverse: false, weight: 1.0 },

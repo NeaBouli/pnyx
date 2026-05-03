@@ -60,7 +60,7 @@ function TabNavigator() {
         tabBarInactiveTintColor: colors.tabBarInactive,
         tabBarLabel: ({ color }: { color: string }) => (
           <Text style={{ color, fontSize: 10, fontWeight: "700" }}>
-            {route.name === "Home" ? "εκκλησία" : route.name === "Bills" ? "Ψηφοφορίες" : route.name === "Trending" ? "Trending" : route.name === "Tickets" ? "POLIS" : "Κόμματα"}
+            {route.name === "Home" ? "εκκλησία" : route.name === "Bills" ? "Ψ/φορία" : route.name === "Trending" ? "Trending" : route.name === "Tickets" ? "POLIS" : "Κόμματα"}
           </Text>
         ),
         tabBarIcon: () => (
