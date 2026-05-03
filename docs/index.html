@@ -114,7 +114,7 @@
     .lang-btn:hover { border-color: var(--blue); color: var(--blue); }
     /* FOOTER */
     footer {
-      background: var(--gray-900); color: var(--gray-400);
+      background: var(--gray-100); color: var(--gray-600);
       padding: 2rem 1.5rem; text-align: center;
       font-size: 0.82rem; margin-top: 4rem;
     }
@@ -123,7 +123,7 @@
       gap: 0.3rem 1rem; margin-bottom: 0.75rem;
     }
     footer a { color: var(--gray-500); text-decoration: none; }
-    footer a:hover { color: var(--white); }
+    footer a:hover { color: var(--blue); }
     /* COMMON */
     .layout { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem; }
     .layout-wide { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
@@ -169,6 +169,7 @@
     .warn-box p { margin: 0; }
     .success-box { background: #f0fdf4; border-left: 4px solid var(--green); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
     .success-box p { margin: 0; }
+    /* code-block stays dark for readability */
     .code-block {
       background: var(--gray-900); color: #e2e8f0;
       border-radius: var(--radius); padding: 1.25rem;
@@ -178,7 +179,7 @@
     .code-c { color: #64748b; }
     .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
     table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
-    th { background: var(--gray-900); color: white; padding: 0.65rem 1rem; text-align: left; font-weight: 700; }
+    th { background: var(--blue); color: white; padding: 0.65rem 1rem; text-align: left; font-weight: 700; }
     td { padding: 0.65rem 1rem; border-bottom: 1px solid #e2e8f0; color: var(--gray-700); }
     tr:hover td { background: var(--gray-100); }
     .flow { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; padding: 1rem; background: var(--gray-100); border-radius: var(--radius); margin: 1rem 0; }
@@ -280,23 +281,23 @@
     .step-num { width: 48px; height: 48px; border-radius: 50%; background: var(--blue); color: white; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.2rem; margin: 0 auto 1rem; }
     .step h3 { color: var(--gray-900); margin-bottom: 0.4rem; }
     .step p { font-size: 0.85rem; color: var(--gray-500); margin: 0; }
-    .demo-section { background: var(--gray-900); padding: 4rem 2rem; color: white; }
-    .demo-title { text-align: center; font-size: clamp(1.4rem,3vw,2rem); font-weight: 900; margin-bottom: 0.5rem; color: white; }
-    .demo-sub { text-align: center; color: var(--gray-400); margin-bottom: 2.5rem; }
+    .demo-section { background: linear-gradient(135deg,#f8fafc 0%,#eff6ff 100%); padding: 4rem 2rem; color: var(--gray-900); border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+    .demo-title { text-align: center; font-size: clamp(1.4rem,3vw,2rem); font-weight: 900; margin-bottom: 0.5rem; color: var(--gray-900); }
+    .demo-sub { text-align: center; color: var(--gray-500); margin-bottom: 2.5rem; }
     .demo-grid { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; max-width: 900px; margin: 0 auto; }
     .demo-box {
       flex: 1; min-width: 150px; max-width: 180px;
-      background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.12);
+      background: white; border: 2px solid #e2e8f0;
       border-radius: var(--radius); padding: 1.25rem 1rem; text-align: center;
       transition: all 0.4s; height: 140px; display: flex; flex-direction: column;
       align-items: center; justify-content: center; overflow: hidden;
     }
     .demo-box.active {
-      background: rgba(37,99,235,0.25); border-color: var(--blue);
+      background: #dbeafe; border-color: var(--blue);
       transform: translateY(-4px); box-shadow: 0 8px 24px rgba(37,99,235,0.4);
     }
     .demo-icon { font-size: 1.8rem; margin-bottom: 0.4rem; }
-    .demo-label { font-size: 0.8rem; font-weight: 700; color: rgba(255,255,255,0.85); }
+    .demo-label { font-size: 0.8rem; font-weight: 700; color: var(--gray-700); }
     .demo-badge {
       margin-top: 0.5rem; padding: 0.2rem 0.5rem; background: #fef3c7;
       border-radius: 0.4rem; font-size: 0.62rem; font-weight: 700; color: #92400e;
@@ -588,15 +589,15 @@
     </div>
   </div>
   <!-- Result Kachel — immer sichtbar, Daten füllen sich bei Step 6 -->
-  <div id="dBox6" style="max-width:900px;margin:1rem auto 0;background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.1);border-radius:var(--radius);padding:1.25rem 1.5rem">
+  <div id="dBox6" style="max-width:900px;margin:1rem auto 0;background:white;border:2px solid #e2e8f0;border-radius:var(--radius);padding:1.25rem 1.5rem">
     <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem">
       <span style="font-size:1.4rem">📊</span>
-      <span style="font-weight:900;font-size:1rem;color:rgba(255,255,255,0.9)" data-el="Αποτέλεσμα Ψηφοφορίας" data-en="Vote Result">Αποτέλεσμα Ψηφοφορίας</span>
+      <span style="font-weight:900;font-size:1rem;color:var(--gray-900)" data-el="Αποτέλεσμα Ψηφοφορίας" data-en="Vote Result">Αποτέλεσμα Ψηφοφορίας</span>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;font-size:0.78rem;color:rgba(255,255,255,0.7)">
       <!-- Βουλή -->
       <div>
-        <div style="font-weight:800;color:rgba(255,255,255,0.5);margin-bottom:0.5rem;font-size:0.82rem">🏛️ <span data-el="Απόφαση Βουλής" data-en="Parliament Decision">Απόφαση Βουλής</span></div>
+        <div style="font-weight:800;color:var(--gray-500);margin-bottom:0.5rem;font-size:0.82rem">🏛️ <span data-el="Απόφαση Βουλής" data-en="Parliament Decision">Απόφαση Βουλής</span></div>
         <div id="rParlData" style="opacity:0;transition:opacity 0.6s">
           <div style="color:rgba(255,255,255,0.7);margin-bottom:0.4rem">17.05.2024 — Ν. 4933 Ιδιωτικά Πανεπιστήμια</div>
           <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.5rem">
@@ -610,17 +611,17 @@
       </div>
       <!-- Πολίτες -->
       <div>
-        <div style="font-weight:800;color:rgba(255,255,255,0.5);margin-bottom:0.5rem;font-size:0.82rem">🗳️ <span data-el="Βούληση Πολιτών" data-en="Citizen Will">Βούληση Πολιτών</span></div>
+        <div style="font-weight:800;color:var(--gray-500);margin-bottom:0.5rem;font-size:0.82rem">🗳️ <span data-el="Βούληση Πολιτών" data-en="Citizen Will">Βούληση Πολιτών</span></div>
         <div id="rCitizenData" style="opacity:0;transition:opacity 0.6s">
           <div style="margin-bottom:0.4rem">1.247 <span data-el="ψήφοι" data-en="votes">ψήφοι</span></div>
           <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.3rem">
-            <div style="flex:1;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden">
+            <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
               <div id="resultYes" style="height:100%;width:0;background:#22c55e;border-radius:4px;transition:width 1s"></div>
             </div>
             <span style="font-weight:700;color:#22c55e;width:50px;text-align:right" data-el="33% Υπέρ" data-en="33% Yes">33% Υπέρ</span>
           </div>
           <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem">
-            <div style="flex:1;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden">
+            <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
               <div id="resultNo" style="height:100%;width:0;background:#ef4444;border-radius:4px;transition:width 1s"></div>
             </div>
             <span style="font-weight:700;color:#ef4444;width:50px;text-align:right" data-el="67% Κατά" data-en="67% No">67% Κατά</span>
@@ -632,13 +633,13 @@
     <!-- Divergence + Representativität -->
     <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid rgba(255,255,255,0.1);display:flex;gap:1rem;flex-wrap:wrap">
       <div style="flex:1;min-width:200px">
-        <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);margin-bottom:0.3rem" data-el="Απόκλιση Πολιτών — Βουλής" data-en="Citizen — Parliament Divergence">Απόκλιση Πολιτών — Βουλής</div>
+        <div style="font-size:0.7rem;color:var(--gray-500);margin-bottom:0.3rem" data-el="Απόκλιση Πολιτών — Βουλής" data-en="Citizen — Parliament Divergence">Απόκλιση Πολιτών — Βουλής</div>
         <div id="divBadge" style="display:none;padding:0.3rem 0.6rem;background:#fef3c7;border-radius:0.4rem;font-size:0.72rem;font-weight:700;color:#92400e;text-align:center">⚠️ 67% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ</div>
       </div>
       <div style="flex:1;min-width:200px">
-        <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);margin-bottom:0.3rem" data-el="Αντιπροσωπευτικότητα" data-en="Representativity">Αντιπροσωπευτικότητα</div>
+        <div style="font-size:0.7rem;color:var(--gray-500);margin-bottom:0.3rem" data-el="Αντιπροσωπευτικότητα" data-en="Representativity">Αντιπροσωπευτικότητα</div>
         <div style="display:flex;align-items:center;gap:0.5rem">
-          <div style="flex:1;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden">
+          <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
             <div id="repBar" style="height:100%;width:0;border-radius:4px;transition:width 1s;background:#ef4444"></div>
           </div>
           <span id="repPct" style="font-size:0.72rem;font-weight:700;color:#f59e0b;white-space:nowrap;opacity:0;transition:opacity 0.5s">0.013%</span>
