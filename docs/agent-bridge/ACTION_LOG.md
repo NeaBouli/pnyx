@@ -1266,3 +1266,24 @@
 - **Keine Secrets ausgegeben**
 
 ---
+
+## 2026-05-03 - Codex: Google Indexing Fix final live verifiziert
+
+- **Agent:** Codex
+- **Aktion:** Zweiten Nachschaerfungs-Commit `ea90fc3` gepusht, Server per fast-forward aktualisiert und `ekklesia-web` erneut neu gebaut/gestartet.
+- **Deployment:** Nur Web-Service `ekklesia-web`; keine API-, DB-, Dashboard- oder Mobile-Deployments.
+- **Live-Verifikation:**
+  - `ekklesia-web` laeuft.
+  - `https://ekklesia.gr/sitemap.xml` listet `https://ekklesia.gr/tickets/index.html`.
+  - `https://ekklesia.gr/tickets/index.html` liefert `HTTP 200`.
+  - `https://ekklesia.gr/tickets/index.html` enthaelt `<meta name="robots" content="index, follow">`.
+  - `https://ekklesia.gr/tickets/index.html` enthaelt Canonical `https://ekklesia.gr/tickets/index.html`.
+  - `https://ekklesia.gr/tickets` leitet direkt per `301` auf `/tickets/index.html`.
+  - `https://ekklesia.gr/el/tickets` leitet direkt per `301` auf `/tickets/index.html`.
+- **Bekannte Restnotiz:** `https://ekklesia.gr/tickets/` wird von Next weiterhin automatisch per `308` auf `/tickets` normalisiert. Da Sitemap, Canonical und interne Links jetzt auf `/tickets/index.html` zeigen, ist diese URL nicht mehr das primaere Google-Signal.
+- **Build-Hinweise:** Docker/Web-Build erfolgreich; bestehende ESLint-Options-Warnung und Compose-Variable-Warnungen traten erneut auf.
+- **Keine `.env`-, `.env.*`-, `.gitignore`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Commit/Push/Deployment durch Nutzer freigegeben und ausgefuehrt**
+
+---

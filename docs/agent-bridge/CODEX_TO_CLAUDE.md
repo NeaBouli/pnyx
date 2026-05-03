@@ -883,3 +883,16 @@ Sitemap, Redirects, Canonical und Hreflang fuer die Tickets-Seite bereinigen. Da
 - Server `/opt/ekklesia/app` wurde per fast-forward auf `5d43642` aktualisiert.
 - `ekklesia-web` wurde neu gebaut und gestartet.
 - Nach Live-Pruefung wurden interne Links in statischen Docs zusaetzlich auf `tickets/index.html` nachgezogen, damit die Website selbst nicht mehr `tickets/` als bevorzugte URL bewirbt.
+
+### Finaler Stand nach zweitem Deploy
+
+- Zweiter Commit: `ea90fc3`
+- Server HEAD: `ea90fc3`
+- Deployment: nur `ekklesia-web`
+- Live verifiziert:
+  - Sitemap listet `https://ekklesia.gr/tickets/index.html`.
+  - Finale Tickets-URL liefert `HTTP 200`.
+  - Finale Tickets-URL enthaelt `robots=index,follow`.
+  - Finale Tickets-URL enthaelt Canonical `https://ekklesia.gr/tickets/index.html`.
+  - `/tickets` und `/el/tickets` leiten direkt auf `/tickets/index.html`.
+- Restnotiz: `/tickets/` wird von Next automatisch `308 -> /tickets`; da Sitemap, Canonical und interne Links jetzt final zeigen, ist das kein primaeres Canonical-Signal mehr.

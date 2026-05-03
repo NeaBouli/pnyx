@@ -324,3 +324,23 @@ Diese Inhalte sind als `PUBLIC_DOCS` zu behandeln und gelten nicht automatisch a
   - `/Users/gio/Desktop/repo/vlabs/vlabs-website/AUDIT_MUST_READ/`
 - Hinweis: Diese Ordner sind lokal angelegt und wurden nicht committed oder gepusht.
 - Sicherheitsgrenze: Keine `.env`, `.env.*`, `.gitignore`, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen; keine Secrets ausgegeben.
+
+## Google Indexing Fix ekklesia.gr 2026-05-03
+
+- Agent: Codex
+- Nutzerfreigabe: Commit, Push und Deployment fuer den Google-Indexing-Fix voll freigegeben.
+- Commits:
+  - `5d43642` - `fix(web): canonicalize tickets indexing URL`
+  - `ea90fc3` - `fix(docs): point ticket links to canonical URL`
+- Deployment:
+  - Server `/opt/ekklesia/app` auf `ea90fc3` aktualisiert.
+  - Nur `ekklesia-web` neu gebaut/gestartet.
+  - Keine API-, DB-, Dashboard- oder Mobile-Deployments.
+- Live-Status:
+  - Sitemap listet `https://ekklesia.gr/tickets/index.html`.
+  - `https://ekklesia.gr/tickets/index.html` liefert `HTTP 200`.
+  - Canonical und `robots=index,follow` sind live.
+  - `/tickets` und `/el/tickets` leiten direkt auf `/tickets/index.html`.
+- Sicherheit:
+  - Keine `.env`, `.env.*`, `.gitignore`, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen.
+  - Keine Secrets ausgegeben.
