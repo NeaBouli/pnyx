@@ -417,7 +417,61 @@ async def admin_payment_logs(_auth: bool = Depends(verify_admin_key)):
 BTC_ADDRESS = os.getenv("BTC_ADDRESS", "bc1q83370mce8qfkyyepspg6xf42f577s47rtl3mhx")
 LTC_ADDRESS = os.getenv("LTC_ADDRESS", "ltc1qmr467kl8w0e8axplq5uyrpws3mc4sclpu4ds8w")
 ARWEAVE_ADDRESS = os.getenv("ARWEAVE_ADDRESS", "2hkK3Bcr6garERqyBCLCiJ-d8zZzM5ZWe3_AzGdhBTs")
+HETZNER_API_TOKEN = os.getenv("HETZNER_API_TOKEN", "")
 HETZNER_MONTHLY = float(os.getenv("HETZNER_MONTHLY_COST", "15.00"))
+
+
+@router.get("/admin/finance/server")
+async def server_costs():
+    """Hetzner Server Kosten — echte Daten via API (1h Redis cache)."""
+    r = await _get_redis()
+    cached = await r.get("finance:hetzner:cache")
+    if cached:
+        return json.loads(cached)
+    if not HETZNER_API_TOKEN:
+        return {"error": "HETZNER_API_TOKEN nicht gesetzt", "monthly_eur": HETZNER_MONTHLY, "source": "hardcoded"}
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(
+                "https://api.hetzner.cloud/v1/servers",
+                headers={"Authorization": f"Bearer {HETZNER_API_TOKEN}"}
+            )
+            data = resp.json()
+            servers = data.get("servers", [])
+            total_monthly = 0.0
+            server_list = []
+            for s in servers:
+                st = s.get("server_type", {})
+                prices = st.get("prices", [])
+                monthly = 0.0
+                for p in prices:
+                    if p.get("location") == s.get("datacenter", {}).get("location", {}).get("name"):
+                        monthly = float(p.get("price_monthly", {}).get("gross", "0"))
+                        break
+                if not monthly and prices:
+                    monthly = float(prices[0].get("price_monthly", {}).get("gross", "0"))
+                total_monthly += monthly
+                server_list.append({
+                    "name": s.get("name"),
+                    "type": st.get("name"),
+                    "cores": st.get("cores"),
+                    "ram_gb": st.get("memory"),
+                    "disk_gb": st.get("disk"),
+                    "status": s.get("status"),
+                    "location": s.get("datacenter", {}).get("location", {}).get("name"),
+                    "monthly_eur": round(monthly, 2),
+                    "ipv4": s.get("public_net", {}).get("ipv4", {}).get("ip"),
+                })
+            result = {
+                "servers": server_list,
+                "total_monthly_eur": round(total_monthly, 2),
+                "count": len(server_list),
+                "source": "hetzner_api",
+            }
+            await r.setex("finance:hetzner:cache", 3600, json.dumps(result))
+            return result
+    except Exception as e:
+        return {"error": str(e), "monthly_eur": HETZNER_MONTHLY, "source": "fallback"}
 
 
 @router.get("/admin/finance/btc")
@@ -495,9 +549,11 @@ async def finance_overview(_auth: bool = Depends(verify_admin_key)):
     hlr_fallback_remaining = max(0, 1000 - hlr_fallback_remaining)
     hlr_primary_eur = round(hlr_primary_remaining * 0.006, 2)
 
-    # Ausgaben
+    # Ausgaben — echte Hetzner-Kosten wenn verfuegbar
     months = _months_elapsed(SERVER_START)
-    server_cost_total = months * HETZNER_MONTHLY
+    hetzner_cache = json.loads(await r.get("finance:hetzner:cache") or "{}")
+    actual_monthly = hetzner_cache.get("total_monthly_eur", HETZNER_MONTHLY)
+    server_cost_total = months * actual_monthly
 
     # Arweave (aus eigener API)
     ar_cache = None
@@ -526,7 +582,7 @@ async def finance_overview(_auth: bool = Depends(verify_admin_key)):
             "gesamt": round(total_einnahmen, 2),
         },
         "ausgaben": {
-            "server_monatlich": HETZNER_MONTHLY,
+            "server_monatlich": actual_monthly,
             "server_gesamt": round(server_cost_total, 2),
             "hlr_verbraucht_credits": 2499 - hlr_primary_remaining,
             "gesamt_monatlich": round(total_ausgaben_monatlich, 2),
