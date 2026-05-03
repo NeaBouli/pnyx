@@ -672,6 +672,32 @@
 
   </div>
 
+  <!-- Transparenz Live-Zusammenfassung -->
+  <div id="transparencyCard" style="background:#f0fdf4;border:2px solid #86efac;border-radius:1rem;padding:1.5rem;margin:1.5rem 0" class="fade-in">
+    <h4 style="font-weight:900;margin-bottom:0.75rem;font-size:1rem;color:#166534;display:flex;align-items:center;gap:0.5rem">
+      <span>🔍</span>
+      <span data-el="Ζωντανή Διαφάνεια" data-en="Live Transparency">Ζωντανή Διαφάνεια</span>
+      <span style="display:inline-flex;align-items:center;gap:0.3rem;font-size:0.6rem;background:#dcfce7;padding:0.15rem 0.5rem;border-radius:999px;font-weight:600"><span style="width:5px;height:5px;border-radius:50%;background:#22c55e;animation:blink 2s infinite"></span> Live</span>
+    </h4>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.75rem">
+      <div style="background:white;border-radius:0.5rem;padding:0.75rem;border:1px solid #e2e8f0">
+        <div style="font-size:0.6rem;color:#64748b;margin-bottom:0.2rem" data-el="HLR Επαληθεύσεις" data-en="HLR Verifications">HLR Επαληθεύσεις</div>
+        <div style="font-size:1.2rem;font-weight:800;color:#166534" id="tranHlr">—</div>
+        <div style="font-size:0.55rem;color:#94a3b8" data-el="credits διαθέσιμα" data-en="credits available">credits διαθέσιμα</div>
+      </div>
+      <div style="background:white;border-radius:0.5rem;padding:0.75rem;border:1px solid #e2e8f0">
+        <div style="font-size:0.6rem;color:#64748b;margin-bottom:0.2rem" data-el="Server" data-en="Server">Server</div>
+        <div style="font-size:1.2rem;font-weight:800;color:#166534" id="tranRunway">—</div>
+        <div style="font-size:0.55rem;color:#94a3b8" data-el="μήνες καλυμμένοι" data-en="months covered">μήνες καλυμμένοι</div>
+      </div>
+      <div style="background:white;border-radius:0.5rem;padding:0.75rem;border:1px solid #e2e8f0">
+        <div style="font-size:0.6rem;color:#64748b;margin-bottom:0.2rem" data-el="Δωρεές" data-en="Donations">Δωρεές</div>
+        <div style="font-size:1.2rem;font-weight:800;color:#2563eb" id="tranDonations">—</div>
+        <div style="font-size:0.55rem;color:#94a3b8" data-el="συνολικές" data-en="total">συνολικές</div>
+      </div>
+    </div>
+  </div>
+
   <!-- TOTAL BANNER -->
   <div class="fade-in" style="background:linear-gradient(135deg,#eff6ff,#f0fdf4);border-radius:1rem;padding:1.5rem;border:2px solid #dbeafe;margin-top:1rem">
     <div style="text-align:center;margin-bottom:1rem">
@@ -808,31 +834,6 @@
     </p>
   </div>
 
-  <!-- Transparenz Live-Zusammenfassung -->
-  <div id="transparencyCard" style="background:#f0fdf4;border:2px solid #86efac;border-radius:1rem;padding:1.5rem;margin:1.5rem 0" class="fade-in">
-    <h4 style="font-weight:900;margin-bottom:0.75rem;font-size:1rem;color:#166534;display:flex;align-items:center;gap:0.5rem">
-      <span>🔍</span>
-      <span data-el="Ζωντανή Διαφάνεια" data-en="Live Transparency">Ζωντανή Διαφάνεια</span>
-      <span style="display:inline-flex;align-items:center;gap:0.3rem;font-size:0.6rem;background:#dcfce7;padding:0.15rem 0.5rem;border-radius:999px;font-weight:600"><span style="width:5px;height:5px;border-radius:50%;background:#22c55e;animation:blink 2s infinite"></span> Live</span>
-    </h4>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.75rem">
-      <div style="background:white;border-radius:0.5rem;padding:0.75rem;border:1px solid #e2e8f0">
-        <div style="font-size:0.6rem;color:#64748b;margin-bottom:0.2rem" data-el="HLR Επαληθεύσεις" data-en="HLR Verifications">HLR Επαληθεύσεις</div>
-        <div style="font-size:1.2rem;font-weight:800;color:#166534" id="tranHlr">—</div>
-        <div style="font-size:0.55rem;color:#94a3b8" data-el="credits διαθέσιμα" data-en="credits available">credits διαθέσιμα</div>
-      </div>
-      <div style="background:white;border-radius:0.5rem;padding:0.75rem;border:1px solid #e2e8f0">
-        <div style="font-size:0.6rem;color:#64748b;margin-bottom:0.2rem" data-el="Server" data-en="Server">Server</div>
-        <div style="font-size:1.2rem;font-weight:800;color:#166534" id="tranRunway">—</div>
-        <div style="font-size:0.55rem;color:#94a3b8" data-el="μήνες καλυμμένοι" data-en="months covered">μήνες καλυμμένοι</div>
-      </div>
-      <div style="background:white;border-radius:0.5rem;padding:0.75rem;border:1px solid #e2e8f0">
-        <div style="font-size:0.6rem;color:#64748b;margin-bottom:0.2rem" data-el="Δωρεές" data-en="Donations">Δωρεές</div>
-        <div style="font-size:1.2rem;font-weight:800;color:#2563eb" id="tranDonations">—</div>
-        <div style="font-size:0.55rem;color:#94a3b8" data-el="συνολικές" data-en="total">συνολικές</div>
-      </div>
-    </div>
-  </div>
 
   <div style="text-align:center;margin:2rem 0" class="fade-in">
     <a href="tickets/index.html" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.75rem 2rem;background:var(--blue);color:white;border-radius:var(--radius);font-weight:700;text-decoration:none" data-el="Άνοιγμα Ticket Board" data-en="Open Ticket Board">Άνοιγμα Ticket Board</a>
