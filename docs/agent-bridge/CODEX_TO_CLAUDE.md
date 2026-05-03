@@ -875,3 +875,11 @@ Sitemap, Redirects, Canonical und Hreflang fuer die Tickets-Seite bereinigen. Da
 - Keine Ticket-Logik, API, Auth oder POLIS-JavaScript-Logik geaendert.
 - Check: `npx tsc --noEmit` in `apps/web` erfolgreich.
 - Hinweis: `npm run lint` scheitert weiterhin an bestehender `next lint`/ESLint-Options-Inkompatibilitaet.
+
+### Commit/Push/Deploy
+
+- Nutzer gab volle Freigabe fuer Commit, Push und Deployment.
+- Commit `5d43642` wurde auf `main` gepusht.
+- Server `/opt/ekklesia/app` wurde per fast-forward auf `5d43642` aktualisiert.
+- `ekklesia-web` wurde neu gebaut und gestartet.
+- Nach Live-Pruefung wurden interne Links in statischen Docs zusaetzlich auf `tickets/index.html` nachgezogen, damit die Website selbst nicht mehr `tickets/` als bevorzugte URL bewirbt.

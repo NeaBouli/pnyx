@@ -222,7 +222,7 @@ async function createTicket(data) {
     + "## " + (polisLang === "el" ? "Περιγραφή" : "Description") + "\n\n"
     + data.description + "\n\n"
     + "---\n"
-    + "*Submitted via [POLIS](https://ekklesia.gr/tickets/) — Community Ticket System for [εκκλησία](https://ekklesia.gr)*";
+    + "*Submitted via [POLIS](https://ekklesia.gr/tickets/index.html) — Community Ticket System for [εκκλησία](https://ekklesia.gr)*";
 
   // Check account age
   var labels = ["status:pending", "category:" + data.category];

@@ -25,7 +25,7 @@
     <p id="message">Ανταλλαγή κωδικού με το GitHub...</p>
     <div class="error" id="error" style="display:none"></div>
     <div id="retryLink" style="display:none;margin-top:1rem">
-      <a href="../../tickets/">← Επιστροφή στα Tickets</a>
+      <a href="../index.html">← Επιστροφή στα Tickets</a>
     </div>
   </div>
 
@@ -81,7 +81,7 @@
       sessionStorage.removeItem("polis_oauth_state");
 
       // Redirect back
-      var returnTo = sessionStorage.getItem("polis_return_to") || "../tickets/";
+      var returnTo = sessionStorage.getItem("polis_return_to") || "../index.html";
       sessionStorage.removeItem("polis_return_to");
       window.location.href = returnTo;
 

@@ -80,6 +80,7 @@ Damit zeigt die Sitemap auf eine URL, die nicht die finale kanonische Zielseite 
   - `apps/web/src/middleware.ts`: `/tickets` und `/tickets/` leiten direkt auf `/tickets/index.html`.
   - `docs/sitemap.xml`: Tickets-URL auf `https://ekklesia.gr/tickets/index.html` gesetzt.
   - `docs/tickets/index.html`: `robots` und `canonical` Meta-Tags ergaenzt.
+  - Interne Links in statischen Docs auf `tickets/index.html` nachgezogen, damit die Website selbst nicht mehr `tickets/` als bevorzugte URL bewirbt.
 - Funktionsumfang:
   - Keine Ticket-Logik geaendert.
   - Keine API geaendert.
@@ -88,5 +89,7 @@ Damit zeigt die Sitemap auf eine URL, die nicht die finale kanonische Zielseite 
 - Checks:
   - `npm run lint` scheitert an bestehender `next lint`/ESLint-Options-Inkompatibilitaet, nicht an der SEO-Aenderung.
   - `npx tsc --noEmit` in `apps/web` erfolgreich.
-- Kein Commit, Push oder Deployment.
+- Commit/Push/Deployment:
+  - Commit `5d43642` wurde auf `main` gepusht und `ekklesia-web` neu deployed.
+  - Nachschaerfung interner Links wurde lokal vorbereitet und soll ebenfalls committed/gepusht/deployed werden.
 - Keine Secrets gelesen oder ausgegeben.

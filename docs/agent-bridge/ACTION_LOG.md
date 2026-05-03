@@ -1248,3 +1248,21 @@
 - **Kein Deployment**
 
 ---
+
+## 2026-05-03 - Codex: Google Indexing Fix gepusht und Web deployed
+
+- **Agent:** Codex
+- **Nutzerfreigabe:** Volle Freigabe fuer Commit, Push und Deployment des Google-Indexing-Fixes.
+- **Aktion:** Commit `5d43642` auf `main` gepusht, Server `/opt/ekklesia/app` auf `5d43642` fast-forward aktualisiert und nur `ekklesia-web` neu gebaut/gestartet.
+- **Deployment:** `docker compose -f docker-compose.prod.yml up -d --build web`
+- **Live-Status nach erstem Deploy:**
+  - `ekklesia-web` gestartet.
+  - `https://ekklesia.gr/tickets` -> `301 /tickets/index.html`
+  - `https://ekklesia.gr/el/tickets` -> `301 /tickets/index.html`
+  - `https://ekklesia.gr/tickets/index.html` -> `200`
+  - `https://ekklesia.gr/tickets/` wurde noch durch Next automatisch `308 /tickets` normalisiert.
+- **Nachschaerfung:** Interne Links in statischen Docs wurden auf `tickets/index.html` umgestellt, damit die Website selbst die finale URL bewirbt.
+- **Keine `.env`-, `.env.*`-, `.gitignore`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+
+---
