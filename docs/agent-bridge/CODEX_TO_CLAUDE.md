@@ -844,3 +844,34 @@ Vor Arbeiten am jeweiligen Repository zuerst `AUDIT_MUST_READ/README.md` und den
 ### Empfehlung an Claude Code
 
 Die Reports als initiale Master-Audit-Basis verwenden, Findings priorisieren und Fixes repo-belegt abarbeiten. Sicherheitskritische Auth-, Token-, Admin-, Wallet-, Secret- und Deployment-Themen nur nach expliziter Nutzerfreigabe aendern.
+
+---
+
+## Google Indexing Audit ekklesia.gr 2026-05-03
+
+- Datum/Zeit: 2026-05-03 EEST
+- Agent: Codex
+- Aktion: Search-Console-Coverage-ZIP fuer `ekklesia.gr` ausgewertet und oeffentliche SEO-Signale geprueft.
+- Report: `docs/agent-bridge/GOOGLE_INDEXING_AUDIT_20260503.md`
+
+### Hauptbefund
+
+Search Console meldet 2 nicht indexierte Seiten:
+
+- `Gecrawlt - zurzeit nicht indexiert`: 1
+- `Alternative Seite mit richtigem kanonischen Tag`: 1
+
+Wahrscheinliche Hauptursache fuer das Canonical-Problem: Die Sitemap listet `https://ekklesia.gr/tickets/`, aber diese URL laeuft ueber mehrere Redirects bis `https://ekklesia.gr/tickets/index.html`.
+
+### Empfehlung an Claude Code
+
+Sitemap, Redirects, Canonical und Hreflang fuer die Tickets-Seite bereinigen. Danach Search Console Validierung fuer die betroffenen URLs neu starten.
+
+### Lokaler Fix umgesetzt
+
+- `apps/web/src/middleware.ts`: `/tickets` und `/tickets/` leiten direkt auf `/tickets/index.html`.
+- `docs/sitemap.xml`: Sitemap listet jetzt `https://ekklesia.gr/tickets/index.html`.
+- `docs/tickets/index.html`: `robots=index,follow` und Canonical auf `https://ekklesia.gr/tickets/index.html`.
+- Keine Ticket-Logik, API, Auth oder POLIS-JavaScript-Logik geaendert.
+- Check: `npx tsc --noEmit` in `apps/web` erfolgreich.
+- Hinweis: `npm run lint` scheitert weiterhin an bestehender `next lint`/ESLint-Options-Inkompatibilitaet.

@@ -1201,3 +1201,50 @@
 - **Keine SSH-Verbindung fuer diese Platzierung**
 
 ---
+
+## 2026-05-03 - Codex: Google Indexing Audit ekklesia.gr
+
+- **Agent:** Codex
+- **Aktion:** Search-Console-Coverage-ZIP aus `/Users/gio/Downloads/ekklesia.gr-Coverage-2026-05-03.zip` gelesen und oeffentliche Indexierungs-Signale fuer `ekklesia.gr` geprueft.
+- **Gelesene Quellen:**
+  - `Diagramm.csv`
+  - `Kritische Probleme.csv`
+  - `Nicht kritische Probleme.csv`
+  - `Metadaten.csv`
+  - oeffentliche URLs: `https://ekklesia.gr/`, `robots.txt`, `sitemap.xml`, Tickets-/Wiki-URLs
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/GOOGLE_INDEXING_AUDIT_20260503.md`
+  - `docs/agent-bridge/CODEX_TO_CLAUDE.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine Produktcodeaenderung**
+- **Keine `.env`-, `.env.*`-, `.gitignore`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Commit**
+- **Kein Push**
+- **Kein Deployment**
+
+---
+
+## 2026-05-03 - Codex: Google Indexing Canonical Fix lokal umgesetzt
+
+- **Agent:** Codex
+- **Aktion:** Lokalen SEO-/Routing-Fix fuer das Search-Console-Canonical-Problem der Tickets-Seite umgesetzt.
+- **Geaenderte Produkt-/Web-Dateien:**
+  - `apps/web/src/middleware.ts`
+  - `docs/sitemap.xml`
+  - `docs/tickets/index.html`
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/GOOGLE_INDEXING_AUDIT_20260503.md`
+  - `docs/agent-bridge/CODEX_TO_CLAUDE.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Funktionsumfang:** Keine Ticket-Logik, keine API, keine Auth-Logik, kein POLIS-JavaScript geaendert; nur SEO-/Routing-Signale.
+- **Checks:**
+  - `npx tsc --noEmit` in `apps/web` erfolgreich.
+  - `npm run lint` scheitert an bestehender `next lint`/ESLint-Options-Inkompatibilitaet.
+- **Keine `.env`-, `.env.*`-, `.gitignore`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Commit**
+- **Kein Push**
+- **Kein Deployment**
+
+---

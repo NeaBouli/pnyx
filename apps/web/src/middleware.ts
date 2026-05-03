@@ -18,6 +18,12 @@ export default function middleware(request: NextRequest) {
     return NextResponse.rewrite(new URL("/index.html", request.url));
   }
 
+  // Canonical static POLIS ticket board. Keep sitemap/canonical on the final
+  // index file to avoid the old /tickets -> /el/tickets -> /tickets/index.html chain.
+  if (p === "/tickets" || p === "/tickets/") {
+    return NextResponse.redirect(new URL("/tickets/index.html", request.url), 301);
+  }
+
   // Redirect /{el|en}/wiki, /{el|en}/wiki/*, /{el|en}/community,
   // /{el|en}/tickets, /{el|en}/votes to their static docs/ equivalents
   const localeStatic = p.match(/^\/(el|en)\/(wiki|community|tickets|votes)(\/(.*))?$/);
