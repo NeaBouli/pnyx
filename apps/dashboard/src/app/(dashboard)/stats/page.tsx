@@ -105,17 +105,24 @@ export default function StatsPage() {
             {/* Sentry */}
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-800">{String('Sentry Crash Reports')}</h3>
-                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">{String('Phase 2')}</span>
+                <h3 className="text-sm font-semibold text-gray-800">Sentry — Παρακολούθηση Σφαλμάτων</h3>
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Ενεργό</span>
               </div>
-              <div className="text-sm font-medium text-gray-700 mb-1">{String('App Crash Reporting')}</div>
-              <div className="text-xs text-gray-500 mb-1">{String('Free Tier: 5000 Events/Monat')}</div>
-              <div className="text-xs text-gray-400 mb-3">{String('Automatische Fehlererkennung fuer Android-App')}</div>
+              <div className="text-sm font-medium text-gray-700 mb-2">Sentry Cloud (Free Tier)</div>
+              <div className="space-y-1 text-xs text-gray-500">
+                <div>API: Sentry SDK + FastAPI Integration</div>
+                <div>Dashboard: @sentry/nextjs</div>
+                <div>Mobile: @sentry/react-native (εκκρεμεί)</div>
+                <div>Όριο: 5.000 events/μήνα (Free Tier)</div>
+                <div>GDPR: Χωρίς PII, χωρίς cookies</div>
+              </div>
               <a
-                href="/settings"
-                className="inline-block px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors"
+                href="https://sentry.io"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block mt-3 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 transition-colors"
               >
-                {String('Aktivieren -> Einstellungen')}
+                Sentry Dashboard →
               </a>
             </div>
 

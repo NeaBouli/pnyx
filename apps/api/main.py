@@ -11,6 +11,53 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 logger = logging.getLogger(__name__)
+local_error_logger = logging.getLogger("ekklesia.errors")
+
+# ── Sentry Cloud Integration (Hybrid: Cloud + lokaler Fallback) ──────────────
+SENTRY_ENABLED = False
+_SENTRY_DSN = os.getenv("SENTRY_DSN_API", "")
+
+if _SENTRY_DSN:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+        from sentry_sdk.integrations.starlette import StarletteIntegration
+
+        def _before_send_filter(event, hint):
+            """GDPR: keine PII senden."""
+            if "request" in event:
+                event["request"].pop("env", None)
+                headers = event.get("request", {}).get("headers", {})
+                if isinstance(headers, dict):
+                    headers.pop("X-Forwarded-For", None)
+                    headers.pop("Cookie", None)
+            return event
+
+        sentry_sdk.init(
+            dsn=_SENTRY_DSN,
+            integrations=[FastApiIntegration(), StarletteIntegration()],
+            traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
+            environment=os.getenv("SENTRY_ENVIRONMENT", "production"),
+            send_default_pii=False,
+            before_send=_before_send_filter,
+        )
+        SENTRY_ENABLED = True
+        logger.info("[SENTRY] Cloud aktiv — %s", os.getenv("SENTRY_ENVIRONMENT", "production"))
+    except Exception as e:
+        logger.warning("[SENTRY] Init fehlgeschlagen — lokaler Fallback: %s", e)
+
+
+def capture_error(error: Exception, context: dict = None):
+    """Hybrid: Sentry wenn aktiv, sonst lokal loggen."""
+    if SENTRY_ENABLED:
+        import sentry_sdk
+        with sentry_sdk.push_scope() as scope:
+            if context:
+                for k, v in context.items():
+                    scope.set_extra(k, v)
+            sentry_sdk.capture_exception(error)
+    else:
+        local_error_logger.error("[LOCAL] %s: %s | %s", type(error).__name__, error, context)
 
 def _get_real_ip(request: Request) -> str:
     """Extract real client IP from X-Forwarded-For (behind Traefik)."""
@@ -481,6 +528,18 @@ async def legacy_app_version():
         "downloadUrl": DIRECT_APK_URL,
         "playStoreUrl": "https://play.google.com/store/apps/details?id=ekklesia.gr",
     }
+
+@app.get("/api/v1/admin/sentry/status")
+async def sentry_status():
+    """Sentry Cloud Status fuer Dashboard."""
+    return {
+        "enabled": SENTRY_ENABLED,
+        "dsn_configured": bool(_SENTRY_DSN),
+        "environment": os.getenv("SENTRY_ENVIRONMENT", "unknown"),
+        "traces_sample_rate": float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
+        "provider": "sentry.io Cloud" if SENTRY_ENABLED else "lokaler Fallback",
+    }
+
 
 @app.get("/")
 async def root():
