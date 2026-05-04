@@ -25,7 +25,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "ekklesia.gr",
-      "versionCode": 5,
+      "versionCode": 6,
       "permissions": [
         "INTERNET",
         "RECEIVE_BOOT_COMPLETED",
@@ -47,7 +47,7 @@
       ]
     ],
     "extra": {
-      "distributionChannel": "direct",
+      "distributionChannel": "play",
       "buildFlavor": "play",
       "eas": {
         "projectId": "f6cfa7b1-ff85-4020-ac35-94d3774615fd"
