@@ -19,7 +19,7 @@ pydantic-settings==2.14.0
 
 # Crypto
 PyNaCl==1.6.2
-cryptography==46.0.7
+cryptography==48.0.0
 python-jose[cryptography]==3.5.0
 argon2-cffi>=25.1.0
 
