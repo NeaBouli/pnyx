@@ -42,7 +42,7 @@ stripe==15.0.1
 apscheduler==3.11.2
 
 # Forms
-python-multipart==0.0.26
+python-multipart==0.0.27
 
 # Diavgeia Integration (MOD-21)
 rapidfuzz>=3.14.5
