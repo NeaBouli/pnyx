@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
-const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || ''
+
 
 type BillStatus = 'ANNOUNCED' | 'ACTIVE' | 'WINDOW_24H' | 'PARLIAMENT_VOTED' | 'OPEN_END'
 type GovernanceLevel = 'NATIONAL' | 'REGIONAL' | 'MUNICIPAL' | 'COMMUNITY'
@@ -66,10 +66,6 @@ interface EditBillForm {
   source_url: string
 }
 
-function adminURL(path: string): string {
-  const sep = path.includes('?') ? '&' : '?'
-  return `${API}${path}${sep}admin_key=${ADMIN_KEY}`
-}
 
 export default function BillsPage() {
   const [bills, setBills] = useState<Bill[]>([])
@@ -122,7 +118,7 @@ export default function BillsPage() {
     e.preventDefault()
     setSubmitting(true)
     try {
-      const r = await fetch(adminURL('/api/v1/admin/bills'), {
+      const r = await fetch('/api/proxy/admin/bills', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -141,7 +137,7 @@ export default function BillsPage() {
 
   async function handleStatusChange(id: number, newStatus: BillStatus) {
     try {
-      await fetch(adminURL(`/api/v1/bills/${id}/transition`), {
+      await fetch(`/api/proxy/bills/${id}/transition`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ new_status: newStatus }),
@@ -156,9 +152,9 @@ export default function BillsPage() {
     setActionLoading(prev => ({ ...prev, [id]: action }))
     try {
       const path = action === 'review'
-        ? `/api/v1/admin/bills/${id}/review`
-        : `/api/v1/admin/bills/${id}/fetch-text`
-      const r = await fetch(adminURL(path), { method: 'POST' })
+        ? `/api/proxy/admin/bills/${id}/review`
+        : `/api/proxy/admin/bills/${id}/fetch-text`
+      const r = await fetch(path, { method: 'POST' })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       if (action === 'review') {
         setBills(prev => prev.map(b => b.id === id ? { ...b, ai_reviewed: true } : b))
@@ -187,7 +183,7 @@ export default function BillsPage() {
     if (!editBill) return
     setEditSubmitting(true)
     try {
-      const r = await fetch(adminURL(`/api/v1/admin/bills/${editBill.id}`), {
+      const r = await fetch(`/api/proxy/admin/bills/${editBill.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm),
@@ -215,7 +211,7 @@ export default function BillsPage() {
     if (!textBill) return
     setTextSubmitting(true)
     try {
-      const r = await fetch(adminURL(`/api/v1/admin/bills/${textBill.id}/set-text`), {
+      const r = await fetch(`/api/proxy/admin/bills/${textBill.id}/set-text`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text_el: textContent }),
@@ -234,7 +230,7 @@ export default function BillsPage() {
     if (!textBill) return
     setTextSubmitting(true)
     try {
-      const r = await fetch(adminURL(`/api/v1/admin/bills/${textBill.id}/fetch-text`), { method: 'POST' })
+      const r = await fetch(`/api/proxy/admin/bills/${textBill.id}/fetch-text`, { method: 'POST' })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       setTextBill(null)
       setSuccess('Αυτόματο scrape ξεκίνησε')
@@ -258,7 +254,7 @@ export default function BillsPage() {
     if (!partyBill) return
     setPartySubmitting(true)
     try {
-      const r = await fetch(adminURL(`/api/v1/admin/bills/${partyBill.id}/party-votes`), {
+      const r = await fetch(`/api/proxy/admin/bills/${partyBill.id}/party-votes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ votes: partyVotes }),

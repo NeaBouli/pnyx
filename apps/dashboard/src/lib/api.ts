@@ -1,6 +1,6 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || process.env.EKKLESIA_API || 'https://api.ekklesia.gr'
-const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || process.env.EKKLESIA_ADMIN_KEY || ''
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
+// Public endpoints (no auth needed) — direct to API
 async function fetchAPI(path: string, options?: RequestInit) {
   try {
     const url = path.startsWith('http') ? path : `${API_BASE}${path}`
@@ -16,9 +16,38 @@ async function fetchAPI(path: string, options?: RequestInit) {
   }
 }
 
-function adminURL(path: string): string {
-  const sep = path.includes('?') ? '&' : '?'
-  return `${path}${sep}admin_key=${ADMIN_KEY}`
+// Admin endpoints — through server-side proxy (no key in browser)
+async function adminFetch(path: string) {
+  try {
+    const proxyPath = path.replace(/^\/api\/v1\//, '')
+    const r = await fetch(`/api/proxy/${proxyPath}`, { cache: 'no-store' })
+    if (!r.ok) return null
+    return r.json()
+  } catch { return null }
+}
+
+async function adminPost(path: string, body?: unknown) {
+  try {
+    const proxyPath = path.replace(/^\/api\/v1\//, '')
+    const r = await fetch(`/api/proxy/${proxyPath}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    })
+    return r.json()
+  } catch { return null }
+}
+
+async function adminPatch(path: string, body?: unknown) {
+  try {
+    const proxyPath = path.replace(/^\/api\/v1\//, '')
+    const r = await fetch(`/api/proxy/${proxyPath}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    })
+    return r.json()
+  } catch { return null }
 }
 
 // --- Health ---
@@ -30,8 +59,8 @@ export async function fetchHlrCredits() { return fetchAPI('/api/v1/identity/hlr/
 
 // --- Bills ---
 export async function fetchBills(limit = 5) { return fetchAPI(`/api/v1/bills?limit=${limit}`) }
-export async function fetchAdminBills(limit = 100) { return fetchAPI(`/api/v1/admin/bills?limit=${limit}`) }
-export async function fetchAdminStats() { return fetchAPI('/api/v1/admin/stats') }
+export async function fetchAdminBills(limit = 100) { return adminFetch(`/api/v1/admin/bills?limit=${limit}`) }
+export async function fetchAdminStats() { return adminFetch('/api/v1/admin/stats') }
 
 export async function createBill(data: {
   title_el: string
@@ -40,13 +69,7 @@ export async function createBill(data: {
   governance_level: string
   source_url?: string
 }) {
-  return fetchAPI(adminURL('/api/v1/admin/bills'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-    cache: 'no-store',
-    next: undefined,
-  } as RequestInit)
+  return adminPost('/api/v1/admin/bills', data)
 }
 
 // --- CPLM ---
@@ -66,7 +89,7 @@ export async function fetchScraperStatus() { return fetchAPI('/api/v1/scraper/st
 
 // --- AI Budget ---
 export async function fetchClaudeBudget() { return fetchAPI('/api/v1/claude/budget') }
-export async function fetchDeepLUsage() { return fetchAPI('/api/v1/admin/deepl/usage') }
+export async function fetchDeepLUsage() { return adminFetch('/api/v1/admin/deepl/usage') }
 
 // --- Payments ---
 export async function fetchPaymentStatus() { return fetchAPI('/api/v1/payments/status') }
@@ -90,65 +113,33 @@ export async function fetchGovGrStatus() { return fetchAPI('/api/v1/auth/govgr/s
 export async function fetchMPRanking() { return fetchAPI('/api/v1/mp/ranking') }
 
 // --- Admin Dashboard ---
-export async function fetchAdminDashboard(adminKey: string) {
-  return fetchAPI(`/api/v1/admin/dashboard?admin_key=${adminKey}`)
+export async function fetchAdminDashboard() {
+  return adminFetch('/api/v1/admin/dashboard')
 }
 
-// --- Admin Actions (client-side, need ADMIN_KEY) ---
+// --- Admin Actions ---
 export async function adminReviewBill(billId: number) {
-  return fetchAPI(adminURL(`/api/v1/admin/bills/${billId}/review`), {
-    method: 'POST',
-    cache: 'no-store',
-    next: undefined,
-  } as RequestInit)
+  return adminPost(`/api/v1/admin/bills/${billId}/review`)
 }
 
 export async function adminFetchBillText(billId: number) {
-  return fetchAPI(adminURL(`/api/v1/admin/bills/${billId}/fetch-text`), {
-    method: 'POST',
-    cache: 'no-store',
-    next: undefined,
-  } as RequestInit)
+  return adminPost(`/api/v1/admin/bills/${billId}/fetch-text`)
 }
 
 export async function adminSetBillText(billId: number, text: string) {
-  return fetchAPI(adminURL(`/api/v1/admin/bills/${billId}/set-text`), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text_el: text }),
-    cache: 'no-store',
-    next: undefined,
-  } as RequestInit)
+  return adminPost(`/api/v1/admin/bills/${billId}/set-text`, { text_el: text })
 }
 
 export async function adminPatchBill(billId: number, data: Record<string, unknown>) {
-  return fetchAPI(adminURL(`/api/v1/admin/bills/${billId}`), {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-    cache: 'no-store',
-    next: undefined,
-  } as RequestInit)
+  return adminPatch(`/api/v1/admin/bills/${billId}`, data)
 }
 
 export async function adminTransitionBill(billId: number, newStatus: string) {
-  return fetchAPI(adminURL(`/api/v1/bills/${billId}/transition`), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ new_status: newStatus }),
-    cache: 'no-store',
-    next: undefined,
-  } as RequestInit)
+  return adminPost(`/api/v1/bills/${billId}/transition`, { new_status: newStatus })
 }
 
 export async function adminSetPartyVotes(billId: number, votes: Record<string, string>) {
-  return fetchAPI(adminURL(`/api/v1/admin/bills/${billId}/party-votes`), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ votes }),
-    cache: 'no-store',
-    next: undefined,
-  } as RequestInit)
+  return adminPost(`/api/v1/admin/bills/${billId}/party-votes`, { votes })
 }
 
 export async function fetchMPCompare(partyAbbr: string) {
@@ -156,39 +147,23 @@ export async function fetchMPCompare(partyAbbr: string) {
 }
 
 export async function adminHealScraper() {
-  return fetchAPI(adminURL('/api/v1/admin/scraper/heal-status'), {
-    method: 'POST',
-    cache: 'no-store',
-    next: undefined,
-  } as RequestInit)
+  return adminPost('/api/v1/admin/scraper/heal-status')
 }
 
 export async function adminGenerateCompassQuestions() {
-  return fetchAPI(adminURL('/api/v1/admin/compass/generate-questions'), {
-    method: 'POST',
-    cache: 'no-store',
-    next: undefined,
-  } as RequestInit)
+  return adminPost('/api/v1/admin/compass/generate-questions')
 }
 
 export async function fetchCompassPending() {
-  return fetchAPI(adminURL('/api/v1/admin/compass/pending-review'))
+  return adminFetch('/api/v1/admin/compass/pending-review')
 }
 
 export async function adminApproveCompass(questionId: number) {
-  return fetchAPI(adminURL(`/api/v1/admin/compass/approve/${questionId}`), {
-    method: 'POST',
-    cache: 'no-store',
-    next: undefined,
-  } as RequestInit)
+  return adminPost(`/api/v1/admin/compass/approve/${questionId}`)
 }
 
 export async function adminRejectCompass(questionId: number) {
-  return fetchAPI(adminURL(`/api/v1/admin/compass/reject/${questionId}`), {
-    method: 'POST',
-    cache: 'no-store',
-    next: undefined,
-  } as RequestInit)
+  return adminPost(`/api/v1/admin/compass/reject/${questionId}`)
 }
 
 // --- Forum (Discourse) --- via server-side proxy to avoid CORS
@@ -210,13 +185,11 @@ export async function fetchDiscourseVersion(): Promise<string> {
   }
 }
 
-// --- Push Notifications ---
+// --- Push Notifications --- via proxy
 export async function sendPushNotification(title: string, body: string) {
-  return fetch(`${API_BASE}/api/v1/notify/send`, {
-    method: 'POST',
-    headers: { 'X-Admin-Key': ADMIN_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title_el: title, body_el: body, title_en: title, body_en: body }),
-  }).then(r => r.json())
+  return adminPost('/api/v1/notify/send', {
+    title_el: title, body_el: body, title_en: title, body_en: body,
+  })
 }
 
 // --- VAA ---
@@ -225,13 +198,16 @@ export async function fetchVAAParties() { return fetchAPI('/api/v1/vaa/parties')
 
 // --- Diavgeia Admin ---
 export async function adminDiavgeiaScrape() {
-  return fetch(`${API_BASE}/api/v1/admin/diavgeia/scrape?admin_key=${ADMIN_KEY}`, { method: 'POST' }).then(r => r.json())
+  return adminPost('/api/v1/admin/diavgeia/scrape')
 }
 export async function adminRefreshOrgsCache() {
-  return fetch(`${API_BASE}/api/v1/admin/diavgeia/refresh-orgs-cache?admin_key=${ADMIN_KEY}`, { method: 'POST' }).then(r => r.json())
+  return adminPost('/api/v1/admin/diavgeia/refresh-orgs-cache')
 }
 
 export async function fetchNewsletterLists() { return fetchAPI('/api/v1/newsletter/lists') }
 export async function adminScraperTest() {
-  return fetch(`${API_BASE}/api/v1/scraper/test`, { next: { revalidate: 0 } } as RequestInit).then(r => r.json()).catch(() => null)
+  try {
+    const r = await fetch(`${API_BASE}/api/v1/scraper/test`, { cache: 'no-store' })
+    return r.json()
+  } catch { return null }
 }

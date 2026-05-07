@@ -4,11 +4,9 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
-const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || ''
 
-function adminURL(path: string): string {
-  const sep = path.includes('?') ? '&' : '?'
-  return `${API}${path}${sep}admin_key=${ADMIN_KEY}`
+function adminProxyPath(path: string): string {
+  return `/api/proxy/${path.replace(/^\/api\/v1\//, '')}`
 }
 
 type SettingsTab = 'modules' | 'scraper' | 'newsletter' | 'apps' | 'compass' | 'kb' | 'notifications'
@@ -147,7 +145,7 @@ export default function SettingsPage() {
         fetch(`${API}/api/v1/arweave/status`).then(r => r.json()),
         fetch(`${API}/api/v1/scraper/jobs`).then(r => r.json()),
         fetch(`${API}/api/v1/app/version`).then(r => r.json()),
-        fetch(adminURL('/api/v1/admin/compass/pending-review')).then(r => r.json()),
+        fetch(adminProxyPath('/api/v1/admin/compass/pending-review')).then(r => r.json()),
         fetch(`${API}/api/v1/newsletter/stats`).then(r => r.json()),
         fetch(`${API}/api/v1/newsletter/lists`).then(r => r.json()),
       ])
@@ -195,7 +193,7 @@ export default function SettingsPage() {
   async function handleCompassAction(id: number, action: 'approve' | 'reject') {
     setActionLoading(`compass-${id}`)
     try {
-      await fetch(adminURL(`/api/v1/admin/compass/${action}/${id}`), { method: 'POST' })
+      await fetch(adminProxyPath(`/api/v1/admin/compass/${action}/${id}`), { method: 'POST' })
       setCompassPending(prev => prev.filter(q => q.id !== id))
     } catch { /* non-critical */ }
     finally { setActionLoading(null) }
@@ -207,9 +205,9 @@ export default function SettingsPage() {
     setNotifSending(true)
     setNotifResult(null)
     try {
-      const res = await fetch(`${API}/api/v1/notify/send`, {
+      const res = await fetch(adminProxyPath('/api/v1/notify/send'), {
         method: 'POST',
-        headers: { 'X-Admin-Key': ADMIN_KEY, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title_el: notifTitle, body_el: notifBody, title_en: notifTitle, body_en: notifBody }),
       })
       const data = await res.json() as Record<string, unknown>
@@ -359,8 +357,8 @@ export default function SettingsPage() {
                           <button
                             onClick={() => handleAction(`run-${i}`, () => {
                               const url = isDiavgeia
-                                ? adminURL('/api/v1/admin/diavgeia/scrape')
-                                : adminURL('/api/v1/scraper/fetch')
+                                ? adminProxyPath('/api/v1/admin/diavgeia/scrape')
+                                : adminProxyPath('/api/v1/scraper/fetch')
                               return fetch(url, { method: 'POST' }).then(r => r.json())
                             })}
                             disabled={actionLoading === `run-${i}`}
@@ -397,7 +395,7 @@ export default function SettingsPage() {
                 {actionLoading === 'test' ? String('Δοκιμή...') : String('Δοκιμή Scraper')}
               </button>
               <button
-                onClick={() => handleAction('heal', () => fetch(adminURL('/api/v1/admin/scraper/heal-status'), { method: 'POST' }))}
+                onClick={() => handleAction('heal', () => fetch(adminProxyPath('/api/v1/admin/scraper/heal-status'), { method: 'POST' }))}
                 disabled={actionLoading === 'heal'}
                 className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors disabled:opacity-50"
               >
@@ -583,7 +581,7 @@ export default function SettingsPage() {
           <div className="mb-4">
             <button
               onClick={() => handleAction('compass-gen', () =>
-                fetch(adminURL('/api/v1/admin/compass/generate-questions'), { method: 'POST' }).then(r => r.json())
+                fetch(adminProxyPath('/api/v1/admin/compass/generate-questions'), { method: 'POST' }).then(r => r.json())
               )}
               disabled={actionLoading === 'compass-gen'}
               className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"

@@ -32,14 +32,13 @@ export default function FinancePage() {
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || ''
     const [hlrRes, arRes, payRes, claudeRes, logsRes, ovRes] = await Promise.allSettled([
       fetch(`${API}/api/v1/identity/hlr/credits`).then(r => r.json()),
       fetch(`${API}/api/v1/arweave/status`).then(r => r.json()),
       fetch(`${API}/api/v1/payments/status`).then(r => r.json()),
       fetch(`${API}/api/v1/claude/budget`).then(r => r.json()),
-      ADMIN_KEY ? fetch(`${API}/api/v1/payments/admin/logs?admin_key=${ADMIN_KEY}`).then(r => r.json()) : Promise.resolve(null),
-      ADMIN_KEY ? fetch(`${API}/api/v1/payments/admin/finance/overview?admin_key=${ADMIN_KEY}`).then(r => r.json()) : Promise.resolve(null),
+      fetch('/api/proxy/payments/admin/logs').then(r => r.json()),
+      fetch('/api/proxy/payments/admin/finance/overview').then(r => r.json()),
     ])
     const v = (r: PromiseSettledResult<unknown>) => r.status === 'fulfilled' ? r.value : null
     setHlr(v(hlrRes) as Record<string, unknown> | null)

@@ -3,12 +3,8 @@
 import { useState, useEffect } from 'react'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
-const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || ''
 
-function adminURL(path: string): string {
-  const sep = path.includes('?') ? '&' : '?'
-  return `${API}${path}${sep}admin_key=${ADMIN_KEY}`
-}
+
 
 type ApplicationStatus = 'pending' | 'approved' | 'rejected'
 
@@ -104,7 +100,7 @@ export default function GovPage() {
     setDiavgeiaError(null)
     setDiavgeiaResults([])
     try {
-      const res = await fetch(`${API}/api/v1/admin/diavgeia/scrape?admin_key=${ADMIN_KEY}&ada=${encodeURIComponent(adaInput.trim())}`, { method: 'POST' })
+      const res = await fetch(`/api/proxy/admin/diavgeia/scrape?ada=${encodeURIComponent(adaInput.trim())}`, { method: 'POST' })
       if (res.ok) {
         const data = await res.json() as Record<string, unknown>
         const decisions = Array.isArray(data) ? data : (Array.isArray(data?.decisions) ? data.decisions as DiavgeiaDecision[] : [data as DiavgeiaDecision])
@@ -124,8 +120,8 @@ export default function GovPage() {
     setDiavgeiaActionResult(null)
     try {
       const url = action === 'scrape'
-        ? adminURL('/api/v1/admin/diavgeia/scrape')
-        : adminURL('/api/v1/admin/diavgeia/refresh-orgs-cache')
+        ? '/api/proxy/admin/diavgeia/scrape'
+        : '/api/proxy/admin/diavgeia/refresh-orgs-cache'
       const res = await fetch(url, { method: 'POST' })
       const data = await res.json() as Record<string, unknown>
       setDiavgeiaActionResult(res.ok ? String(data?.message ?? data?.status ?? 'OK') : `Σφάλμα: ${String(data?.detail ?? res.status)}`)

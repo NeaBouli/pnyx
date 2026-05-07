@@ -1,10 +1,11 @@
 """
 Zentrale Admin-Auth Dependency.
-Akzeptiert: Authorization: Bearer <key> ODER ?admin_key= (deprecated, rueckwaertskompatibel)
+Akzeptiert NUR: Authorization: Bearer <key>
+Query-Parameter admin_key ist ENTFERNT (CRIT-01).
 Fail-closed wenn ADMIN_KEY nicht konfiguriert in Production.
 """
 import os
-from fastapi import HTTPException, Security, Query
+from fastapi import HTTPException, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 
@@ -13,7 +14,6 @@ security = HTTPBearer(auto_error=False)
 
 def verify_admin_key(
     credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
-    admin_key: Optional[str] = Query(default=None, include_in_schema=False),
 ) -> bool:
     configured_key = os.getenv("ADMIN_KEY", "")
 
@@ -25,12 +25,8 @@ def verify_admin_key(
         # Development: dev-admin-key erlaubt
         configured_key = configured_key or "dev-admin-key"
 
-    # Bearer Token (primaer)
+    # NUR Bearer Token
     if credentials and credentials.credentials == configured_key:
-        return True
-
-    # Query-Parameter (fallback, deprecated)
-    if admin_key and admin_key == configured_key:
         return True
 
     raise HTTPException(status_code=403, detail="Ungueltiger Admin-Key")

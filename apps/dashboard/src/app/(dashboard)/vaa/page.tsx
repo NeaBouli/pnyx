@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
-const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || ''
 
 const CATEGORIES = [
   'Οικονομία', 'Κοινωνία', 'Περιβάλλον', 'Υγεία',
@@ -100,7 +99,7 @@ export default function VAAPage() {
     setModalLoading(true)
     setModalResult(null)
     try {
-      const res = await fetch(`${API}/api/v1/admin/vaa/create?admin_key=${ADMIN_KEY}`, {
+      const res = await fetch(`/api/proxy/admin/vaa/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

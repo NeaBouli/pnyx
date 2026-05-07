@@ -3,12 +3,7 @@
 import { useState, useEffect } from 'react'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
-const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || ''
 
-function adminURL(path: string): string {
-  const sep = path.includes('?') ? '&' : '?'
-  return `${API}${path}${sep}admin_key=${ADMIN_KEY}`
-}
 
 export default function AIPage() {
   const [claude, setClaude] = useState<Record<string, unknown> | null>(null)
@@ -22,7 +17,7 @@ export default function AIPage() {
     async function load() {
       const [claudeRes, deeplRes, scraperRes] = await Promise.allSettled([
         fetch(`${API}/api/v1/claude/budget`).then(r => r.json()),
-        fetch(`${API}/api/v1/admin/deepl/usage`).then(r => r.json()),
+        fetch('/api/proxy/admin/deepl/usage').then(r => r.json()),
         fetch(`${API}/api/v1/scraper/status`).then(r => r.json()),
       ])
       const v = (r: PromiseSettledResult<unknown>) => r.status === 'fulfilled' ? r.value : null
@@ -39,7 +34,7 @@ export default function AIPage() {
       try {
         const [c, d, s] = await Promise.allSettled([
           fetch(`${API}/api/v1/claude/budget`).then(r => r.json()),
-          fetch(`${API}/api/v1/admin/deepl/usage`).then(r => r.json()),
+          fetch('/api/proxy/admin/deepl/usage').then(r => r.json()),
           fetch(`${API}/api/v1/scraper/status`).then(r => r.json()),
         ])
         const v = (r: PromiseSettledResult<unknown>) => r.status === 'fulfilled' ? r.value : null
@@ -233,7 +228,7 @@ export default function AIPage() {
               </button>
               <button
                 onClick={() => handleAction('heal-scraper', () =>
-                  fetch(adminURL('/api/v1/admin/scraper/heal-status'), { method: 'POST' }).then(r => r.json())
+                  fetch('/api/proxy/admin/scraper/heal-status', { method: 'POST' }).then(r => r.json())
                 )}
                 disabled={actionLoading === 'heal-scraper'}
                 className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors disabled:opacity-50"
@@ -242,7 +237,7 @@ export default function AIPage() {
               </button>
               <button
                 onClick={() => handleAction('compass-gen', () =>
-                  fetch(adminURL('/api/v1/admin/compass/generate-questions'), { method: 'POST' }).then(r => r.json())
+                  fetch('/api/proxy/admin/compass/generate-questions', { method: 'POST' }).then(r => r.json())
                 )}
                 disabled={actionLoading === 'compass-gen'}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"

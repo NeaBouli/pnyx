@@ -4,12 +4,8 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
-const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || ''
 
-function adminURL(path: string): string {
-  const sep = path.includes('?') ? '&' : '?'
-  return `${API}${path}${sep}admin_key=${ADMIN_KEY}`
-}
+
 
 interface AdminStats {
   total_identities?: number
@@ -37,7 +33,7 @@ export default function UsersPage() {
     async function load() {
       setLoading(true)
       const [statsRes, analyticsRes] = await Promise.allSettled([
-        fetch(adminURL('/api/v1/admin/stats')).then(r => r.json()),
+        fetch('/api/proxy/admin/stats').then(r => r.json()),
         fetch(`${API}/api/v1/analytics/overview`).then(r => r.json()),
       ])
       const v = (r: PromiseSettledResult<unknown>) => r.status === 'fulfilled' ? r.value : null
