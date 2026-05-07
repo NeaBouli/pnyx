@@ -3,7 +3,7 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -337,6 +337,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def add_noindex_header(request: Request, call_next):
+    """Prevent search engines from indexing API responses."""
+    response = await call_next(request)
+    response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    return response
+
+
 app.include_router(identity.router)
 app.include_router(vaa.router)
 app.include_router(parliament.router)
@@ -539,6 +548,15 @@ async def sentry_status():
         "traces_sample_rate": float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
         "provider": "sentry.io Cloud" if SENTRY_ENABLED else "lokaler Fallback",
     }
+
+
+@app.get("/robots.txt", include_in_schema=False)
+async def robots_txt():
+    """Block all crawlers from indexing the API subdomain."""
+    return PlainTextResponse(
+        "User-agent: *\nDisallow: /\n",
+        media_type="text/plain",
+    )
 
 
 @app.get("/")
