@@ -6,7 +6,6 @@ GET  /api/v1/identity/status  — Key Status prüfen
 """
 import gc
 import logging
-import logging
 import json
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -54,10 +53,17 @@ async def _get_hlr_redis() -> aioredis.Redis:
     return _hlr_redis
 
 async def _increment_hlr_usage() -> int:
-    """Increment usage for the currently active provider."""
+    """Increment usage for the currently active provider.
+
+    On failover (Trigger A: timeout/error), the primary provider already
+    consumed a credit before failing, so both counters must be incremented.
+    """
     r = await _get_hlr_redis()
     failover_active = (await r.get("hlr:failover:active")) == "true"
+    failover_reason = await r.get("hlr:failover:reason") or ""
     if failover_active:
+        if "timeout" in failover_reason or "error" in failover_reason:
+            await r.incr(HLR_PRIMARY_REDIS_KEY)
         return await r.incr(HLR_FALLBACK_REDIS_KEY)
     else:
         return await r.incr(HLR_PRIMARY_REDIS_KEY)
