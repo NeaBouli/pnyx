@@ -13,14 +13,15 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `ffa92c7`
-- **Tags:** `v1.0.0`, `pre-audit-fixes-20260501`, `pre-fdroid-versioncheck-20260501`
+- **HEAD:** `d20b1b4` (fix(hlr): Failover double-credit tracking)
+- **Tags:** `v1.0.0`, `pre-audit-fixes-20260501`, `session-final-20260501`, `session-20260502-final`
 - **Remote:** synchron mit GitHub
+- **Server HEAD:** `d20b1b4` (deployed 2026-05-09)
 
-## Uncommitted Aenderungen (NICHT ANFASSEN)
+## Uncommitted Aenderungen
 
-- `apps/api/services/discourse_sync.py` — modifiziert
-- `apps/api/services/greek_topics_scraper.py` — untracked (neu)
+- `apps/mobile/app.json` — modifiziert (versionCode Aenderung)
+- `greek_topics_scraper.py` — AUS GIT ENTFERNT (Commit `30cd77e`)
 
 ## Architektur / Stack
 

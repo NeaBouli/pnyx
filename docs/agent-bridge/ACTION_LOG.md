@@ -1,5 +1,52 @@
 # Action Log
 
+## 2026-05-09 — Claude Code: Chat/RAG Deploy verifiziert
+
+- **Agent:** Claude Code
+- **Aktion:** Deploy-Prompt aus CLAUDE_DEPLOY_PROMPT_CHAT_RAG_20260502.md gelesen und verifiziert
+- **Ergebnis:** Chat/RAG-Fix war bereits committed (`78cb4d4`) und deployed (in HEAD `d20b1b4` enthalten)
+- **Tests:** 11 passed, 1 warning (test_agent_guardrails + test_agent_training_regression)
+- **Live-Smoke-Tests:**
+  - Fake votes → safety-filter, sources: [] (BLOCKIERT)
+  - Admin key → safety-filter, sources: [] (BLOCKIERT)
+  - Private key recovery → knowledge-base, korrekte Antwort (kein Recovery)
+  - Allgemeine Frage → ollama, sources: [] (keine unrelated Bills)
+- **KB-Seed:** Bereits via Commit deployed, kein separater Seed noetig
+- **Keine Secret-Dateien gelesen**
+
+---
+
+## 2026-05-09 — Claude Code: Hermes Architektur + SEO Fixes + HLR Counter Fix
+
+- **Agent:** Claude Code
+- **Commits:** `1a1642f` (Hermes) + `2ae5b89` (SEO) + `d20b1b4` (HLR Fix)
+- **HEAD:** `d20b1b4`
+- **Hermes:** Server Mind Architektur dokumentiert (hermes/HERMES_ARCHITECTURE.md), Server-Kopie unter /opt/hetzner-migration/architecture/hermes/
+- **SEO:** API robots.txt (Disallow: /), X-Robots-Tag: noindex auf allen API Responses, Sitemap war sauber
+- **HLR Fix:** Redis Primary Counter +2 korrigiert (Test-Lookups), _increment_hlr_usage() fixt Failover double-credit Bug (Trigger A: Primary verbraucht Credit vor Failover, jetzt werden beide Counter inkrementiert), duplicate import logging entfernt
+- **Deployed:** API Container rebuilt + restarted (2x)
+- **Verifiziert:** robots.txt LIVE, X-Robots-Tag LIVE, HLR Credits 2497/2499 korrekt
+- **Bridge:** Q7 beantwortet, ACTION_LOG + PROJECT_STATE aktualisiert
+- **Keine Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+
+---
+
+## 2026-05-08 - Codex: Status-Sync-Frage an Claude Code gestellt
+
+- **Agent:** Codex
+- **Aktion:** In `QUESTIONS.md` eine neue offene Status-Sync-Frage an Claude Code eingetragen.
+- **Ziel:** Aktuellen pnyx/ekklesia Stand klaeren: HEAD, Remote-/Deployment-Status, offene Findings, Dashboard, Chat/RAG/Ollama, Package-ID Drift, Admin-Key-Auth, `votes-timeline`, Scheduler-Jobs und Greek Topics Review-Flow.
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/QUESTIONS.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine Produktcodeaenderung**
+- **Keine Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Commit/Push/Deployment**
+
+---
+
 ## 2026-05-03 — Claude Code: Finance Transparenz + Broadcasting + Session-Report
 
 - **Agent:** Claude Code
@@ -9,6 +56,21 @@
 - **Broadcasting:** Share-Buttons (X/Facebook/LinkedIn) + Facebook Seite
 - **Codex:** 4 Master-Audits (pnyx/stealth/inferno/vlabs) + Ollama System Audit
 - **Session 01-03.05 Zusammenfassung:** 30+ Commits, Dashboard 18 Seiten, Plausible, Sentry, PayPal IPN, HLR Failover, Discourse 2026.5.0, Motion Pack, Admin Hardening, Finance Buchhaltung
+
+---
+
+## 2026-05-08 - Codex: Status-Sync-Frage an Claude Code gestellt
+
+- **Agent:** Codex
+- **Aktion:** In `QUESTIONS.md` eine neue offene Status-Sync-Frage an Claude Code eingetragen.
+- **Ziel:** Aktuellen pnyx/ekklesia Stand klaeren: HEAD, Remote-/Deployment-Status, offene Findings, Dashboard, Chat/RAG/Ollama, Package-ID Drift, Admin-Key-Auth, `votes-timeline`, Scheduler-Jobs und Greek Topics Review-Flow.
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/QUESTIONS.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine Produktcodeaenderung**
+- **Keine Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Commit/Push/Deployment**
 
 ---
 
