@@ -1,5 +1,19 @@
 # Action Log
 
+## 2026-05-09 — Claude Code: F-Droid Pipeline Fixes (3 Runden)
+
+- **Agent:** Claude Code
+- **MR:** https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007
+- **Runde 1:** rewritemeta FAIL (AntiFeatures Reihenfolge) + build FAIL (Missing subdir) → prebuild/build Pattern
+- **Runde 2:** rewritemeta PASS, build FAIL (openjdk-17 nicht in Trixie) → JDK sudo entfernt
+- **Runde 3:** JDK21 Fix — sed JavaLanguageVersion 17→21 in prebuild nach expo prebuild
+- **GitLab Commits:** `308f5a0` → `faa62b3` → `2d5a33b`
+- **rewritemeta:** PASS seit Runde 2
+- **build:** wartet auf Pipeline Runde 3
+- **Keine Secret-Dateien gelesen**
+
+---
+
 ## 2026-05-09 — Claude Code: F-Droid MR !38007 erstellt
 
 - **Agent:** Claude Code

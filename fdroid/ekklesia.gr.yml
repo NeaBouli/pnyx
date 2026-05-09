@@ -20,14 +20,14 @@ Builds:
     timeout: 20000
     sudo:
       - apt-get update
-      - apt-get install -y npm openjdk-17-jdk-headless
-      - update-alternatives --auto java
-    output: 
+      - apt-get install -y npm
+    output:
       apps/mobile/android/app/build/outputs/apk/directRelease/app-direct-release-unsigned.apk
     prebuild:
       - cd apps/mobile
       - npm ci --ignore-scripts
       - npx expo prebuild --clean --platform android
+      - sed -i 's/JavaLanguageVersion.of(17)/JavaLanguageVersion.of(21)/g' android/app/build.gradle
     scandelete:
       - apps/mobile/node_modules
     build:
