@@ -21,11 +21,10 @@ Builds:
     sudo:
       - apt-get update
       - apt-get install -y npm
-    output: 
-      apps/mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk
+    output: apps/mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk
     prebuild:
       - cd apps/mobile
-      - npm ci --ignore-scripts
+      - npm ci
       - npx expo prebuild --clean --platform android
       - echo "org.gradle.java.installations.auto-download=true" >> android/gradle.properties
       - mkdir -p ~/.gradle
