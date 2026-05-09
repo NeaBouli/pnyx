@@ -1,0 +1,63 @@
+Categories:
+  - Connectivity
+License: MIT
+WebSite: https://ekklesia.gr
+SourceCode: https://github.com/NeaBouli/pnyx
+IssueTracker: https://github.com/NeaBouli/pnyx/issues
+
+Name: ekklesia
+AutoName: ekklesia
+
+Summary: Anonymous civic participation for Greek citizens
+
+Description: |-
+  Open-source platform for anonymous civic participation in Greece.
+
+  Vote on real Hellenic Parliament bills anonymously using cryptographic
+  identity verification. Your phone number is never stored — only a
+  cryptographic nullifier hash is kept.
+
+  Features:
+  * Vote YES/NO/ABSTAIN on real parliamentary bills
+  * Political Compass (48 questions, computed locally)
+  * Divergence Index: citizen votes vs parliament decisions
+  * 325 municipalities and 13 regions covered
+  * Full anonymity via Ed25519 cryptography
+  * No accounts, no email, no cookies
+
+  This is NOT a government app. Votes are informational only.
+
+  Data sources: hellenicparliament.gr, diavgeia.gov.gr
+
+AntiFeatures:
+  NonFreeNet:
+    en-US: HLR phone verification uses a commercial API.
+
+RepoType: git
+Repo: https://github.com/NeaBouli/pnyx
+
+Builds:
+  - versionName: 1.0.0
+    versionCode: 6
+    commit: a864fca2e5fe8da1d9d18adb39c488a085d0b249
+    timeout: 20000
+    subdir: apps/mobile/android/app
+    submodules: true
+    sudo:
+      - apt-get update
+      - apt-get install -y npm
+    init:
+      - cd ../../../..
+      - npm ci --ignore-scripts
+      - cd apps/mobile
+      - npm ci --ignore-scripts
+      - npx expo prebuild --clean --platform android
+    gradle:
+      - direct
+    scandelete:
+      - apps/mobile/node_modules
+
+AutoUpdateMode: None
+UpdateCheckMode: Tags
+CurrentVersion: 1.0.0
+CurrentVersionCode: 6

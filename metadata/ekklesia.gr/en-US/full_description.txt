@@ -1,0 +1,15 @@
+Open-source platform for anonymous civic participation in Greece.
+
+Vote on real Hellenic Parliament bills anonymously using cryptographic identity verification. Your phone number is never stored — only a cryptographic nullifier hash is kept.
+
+Features:
+• Vote YES/NO/ABSTAIN on real parliamentary bills
+• Political Compass (48 questions, computed locally)
+• Divergence Index: citizen votes vs parliament decisions
+• 325 municipalities and 13 regions covered
+• Full anonymity via Ed25519 cryptography
+• No accounts, no email, no cookies
+
+This is NOT a government app. Votes are informational only.
+
+Data sources: hellenicparliament.gr, diavgeia.gov.gr
