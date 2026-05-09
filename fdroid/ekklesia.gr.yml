@@ -39,7 +39,7 @@ Repo: https://github.com/NeaBouli/pnyx
 Builds:
   - versionName: 1.0.0
     versionCode: 6
-    commit: 7fe3ca23f922fee4de62cfb1e902a63dbbc8b4b5
+    commit: ccaf8e5a99abc73323f4999ad5e4173342685d4b
     timeout: 20000
     subdir: apps/mobile/android/app
     submodules: true
