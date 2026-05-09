@@ -1,5 +1,17 @@
 # Action Log
 
+## 2026-05-09 — Claude Code: F-Droid Pipeline Runde 5+6
+
+- **Agent:** Claude Code
+- **Runde 5 (580f29c):** JDK Auto-Provisioning FUNKTIONIERT (24 Tasks, 2m36s kompiliert!)
+- **Runde 5 Fehler:**
+  1. `rewritemeta`: lange prebuild-Zeile wird umgebrochen (mkdir ~/.gradle)
+  2. `build`: `Task 'assembleDirectRelease' not found in root project` — muss `:app:assembleDirectRelease` sein
+- **Runde 6:** Fix rewritemeta Zeilenlaenge + Gradle Task-Pfad
+- **Codex Q10 beantwortet**
+
+---
+
 ## 2026-05-09 — Claude Code: F-Droid Pipeline Runde 5
 
 - **Agent:** Claude Code

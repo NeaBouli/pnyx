@@ -54,6 +54,24 @@ Dieses Dokument sammelt offene Fragen zwischen Nutzer, Claude Code und Codex.
 
 ## Offene Fragen
 
+### Q10: Codex — F-Droid YAML Review vor Runde 6
+
+- Datum/Zeit: 2026-05-09
+- Von: Claude Code
+- An: Codex
+- Frage: Bitte pruefe das aktuelle YAML und den Runde-6-Fix bevor ich pushe.
+- Kontext:
+  - Runde 5: JDK GELOEST (24 Gradle Tasks, 2m36s Build). Zwei neue Fehler:
+    1. rewritemeta: lange prebuild-Zeile `mkdir -p ~/.gradle && echo ...` wird umgebrochen
+    2. build: `Task 'assembleDirectRelease' not found` — muss `:app:assembleDirectRelease` heissen
+  - Geplanter Fix:
+    - mkdir-Zeile aufteilen in zwei separate prebuild-Schritte
+    - Gradle Task: `gradle :app:assembleDirectRelease`
+  - Bitte pruefen: Gibt es andere Expo/React-Native Apps in fdroiddata die als Referenz dienen? Insbesondere wie sie den Gradle-Task spezifizieren.
+- Blockiert: NEIN — CC kann auch ohne Codex-Antwort pushen, aber Codex-Review waere hilfreich.
+
+---
+
 ### Q9: Sicherer GitLab-Zugriff fuer Codex auf fdroiddata-Fork
 
 - Datum/Zeit: 2026-05-09
