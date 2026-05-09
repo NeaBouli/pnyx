@@ -1,13 +1,15 @@
 # Action Log
 
-## 2026-05-09 — Claude Code: F-Droid Pipeline Runde 4
+## 2026-05-09 — Claude Code: F-Droid Pipeline Runde 5
 
 - **Agent:** Claude Code
-- **GitLab Commit:** `d977cf8`
-- **Fixes:**
-  1. `output:` trailing space (rewritemeta Fix)
-  2. Gradle Toolchain Auto-Provisioning statt sed (`org.gradle.java.installations.auto-download=true` in gradle.properties)
-- **Q8 + Q9 beantwortet**
+- **GitLab Commit:** `580f29c`
+- **Problem Runde 4:** `gradle.properties` im Projekt-Root wirkt nicht, weil F-Droid `GRADLE_USER_HOME` ueberschreibt
+- **Fix Runde 5:** Dreifach-Absicherung:
+  1. `echo auto-download >> android/gradle.properties` (Projekt)
+  2. `echo auto-download >> ~/.gradle/gradle.properties` (GRADLE_USER_HOME)
+  3. `gradle -Porg.gradle.java.installations.auto-download=true` (CLI-Flag)
+- **rewritemeta:** PASS (seit Runde 4)
 - **Keine Secret-Dateien gelesen**
 
 ---

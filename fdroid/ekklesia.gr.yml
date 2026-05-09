@@ -28,11 +28,12 @@ Builds:
       - npm ci --ignore-scripts
       - npx expo prebuild --clean --platform android
       - echo "org.gradle.java.installations.auto-download=true" >> android/gradle.properties
+      - mkdir -p ~/.gradle && echo "org.gradle.java.installations.auto-download=true" >> ~/.gradle/gradle.properties
     scandelete:
       - apps/mobile/node_modules
     build:
       - cd apps/mobile/android
-      - gradle assembleDirectRelease
+      - gradle -Porg.gradle.java.installations.auto-download=true assembleDirectRelease
 
 AutoUpdateMode: None
 UpdateCheckMode: None
