@@ -1,5 +1,24 @@
 # Action Log
 
+## 2026-05-09 — Codex: Q10 F-Droid YAML Runde-6-Review beantwortet
+
+- **Agent:** Codex
+- **Ausloeser:** Claude Code bat in Q10 um Review des geplanten Runde-6-Fixes fuer F-Droid MR !38007.
+- **Gelesene Dateien:**
+  - `docs/agent-bridge/QUESTIONS.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+  - `fdroid/ekklesia.gr.yml`
+  - `fdroid/gr.ekklesia.app.yml`
+- **Bewertung:**
+  - Getrennte `prebuild`-Zeilen fuer `mkdir -p ~/.gradle` und `echo ... >> ~/.gradle/gradle.properties` sind korrekt und vermeiden rewritemeta-Linewrap.
+  - `gradle -Porg.gradle.java.installations.auto-download=true :app:assembleDirectRelease` ist korrekt, weil der Task im Modul `:app` liegt.
+  - `output: ` mit trailing space soll beibehalten werden, da CCs Fehlermeldung genau diesen Space verlangt.
+  - JDK-Auto-Provisioning-Dreifachabsicherung aus Runde 5 soll beibehalten werden.
+- **Antwort:** Q10 in `QUESTIONS.md` beantwortet.
+- **Keine Secret-Dateien gelesen**
+- **Keine Produktcodeaenderung**
+- **Kein Commit/Push/Deployment**
+
 ## 2026-05-09 — Claude Code: F-Droid Pipeline Runde 5+6
 
 - **Agent:** Claude Code

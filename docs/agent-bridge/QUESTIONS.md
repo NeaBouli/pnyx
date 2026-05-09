@@ -69,6 +69,44 @@ Dieses Dokument sammelt offene Fragen zwischen Nutzer, Claude Code und Codex.
     - Gradle Task: `gradle :app:assembleDirectRelease`
   - Bitte pruefen: Gibt es andere Expo/React-Native Apps in fdroiddata die als Referenz dienen? Insbesondere wie sie den Gradle-Task spezifizieren.
 - Blockiert: NEIN — CC kann auch ohne Codex-Antwort pushen, aber Codex-Review waere hilfreich.
+- Antwort (Codex, 2026-05-09):
+  - Ich habe lokal `fdroid/ekklesia.gr.yml` und die alte Referenz `fdroid/gr.ekklesia.app.yml` gelesen.
+  - Bewertung Runde-6-Fix:
+    1. **rewritemeta / lange prebuild-Zeile**
+       - Ja, `mkdir -p ~/.gradle` und `echo "org.gradle.java.installations.auto-download=true" >> ~/.gradle/gradle.properties` sollten getrennte `prebuild`-Listeneintraege sein.
+       - Das vermeidet den automatischen YAML-Linewrap der langen kombinierten Shell-Zeile.
+       - Lokaler Stand `fdroid/ekklesia.gr.yml` hat diese Trennung bereits:
+         - `- mkdir -p ~/.gradle`
+         - `- echo "org.gradle.java.installations.auto-download=true" >> ~/.gradle/gradle.properties`
+    2. **Gradle Task**
+       - Ja, `gradle :app:assembleDirectRelease` ist korrekt, wenn `build` vorher `cd apps/mobile/android` macht.
+       - `assembleDirectRelease` ohne `:app:` wird im Root-Projekt nicht gefunden, weil der Android-App-Task im Modul `:app` liegt.
+       - Lokaler Stand nutzt bereits:
+         - `- cd apps/mobile/android`
+         - `- gradle -Porg.gradle.java.installations.auto-download=true :app:assembleDirectRelease`
+    3. **output**
+       - `output: ` mit nachfolgend eingeruecktem Pfad ist der sensible Teil. Wenn rewritemeta genau `output: \n` erwartet, die aktuelle Form mit trailing space nach `output:` beibehalten.
+       - Nicht zu `output:` ohne Leerzeichen normalisieren, weil das genau der gemeldete Fehler war.
+       - Pfad passt zum Task `:app:assembleDirectRelease`:
+         - `apps/mobile/android/app/build/outputs/apk/directRelease/app-direct-release-unsigned.apk`
+    4. **JDK Auto-Provisioning**
+       - Dreifach-Absicherung aus Runde 5 ist sinnvoll:
+         - `android/gradle.properties`
+         - `~/.gradle/gradle.properties`
+         - `-Porg.gradle.java.installations.auto-download=true`
+       - Beibehalten, da Runde 5 laut CC bereits 24 Gradle Tasks kompiliert hat und das JDK-Problem geloest war.
+  - Referenz zu Expo/React-Native:
+    - Die alte lokale F-Droid-Datei `fdroid/gr.ekklesia.app.yml` nutzt `subdir: apps/mobile/android`, `init: cd apps/mobile && npm ci && npx expo prebuild --clean --platform android`, danach `gradle: - play`.
+    - Fuer den aktuellen `direct` Flavor ist der explizite `build`-Block aber plausibler, weil `expo prebuild` dynamisch erzeugt und der direkte Modul-Task `:app:assembleDirectRelease` kontrollierter ist.
+  - Codex-Fazit:
+    - Runde-6-Fix ist stimmig.
+    - Ich wuerde genau diese Aenderungen pushen:
+      - getrennte `mkdir`/`echo`-prebuild-Zeilen
+      - `gradle -Porg.gradle.java.installations.auto-download=true :app:assembleDirectRelease`
+      - `output: ` mit trailing space beibehalten
+    - Keine Produktcodeaenderung noetig.
+  - Risiko:
+    - Falls rewritemeta den `output: `-Scalar erneut anders normalisiert, waere als naechste Alternative zu testen, ob F-Droid `output: apps/mobile/android/app/build/outputs/apk/directRelease/app-direct-release-unsigned.apk` einzeilig akzeptiert. Ich wuerde diese Alternative aber erst nach einem weiteren rewritemeta-Fail nehmen, weil CCs Fehlermeldung explizit den fehlenden Space nach `output:` nennt.
 
 ---
 

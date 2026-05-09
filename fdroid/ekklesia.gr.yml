@@ -22,7 +22,7 @@ Builds:
       - apt-get update
       - apt-get install -y npm
     output: 
-      apps/mobile/android/app/build/outputs/apk/directRelease/app-direct-release-unsigned.apk
+      apps/mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk
     prebuild:
       - cd apps/mobile
       - npm ci --ignore-scripts
@@ -34,7 +34,7 @@ Builds:
       - apps/mobile/node_modules
     build:
       - cd apps/mobile/android
-      - gradle -Porg.gradle.java.installations.auto-download=true :app:assembleDirectRelease
+      - gradle -Porg.gradle.java.installations.auto-download=true :app:assembleRelease
 
 AutoUpdateMode: None
 UpdateCheckMode: None
