@@ -1,5 +1,23 @@
 # Action Log
 
+## 2026-05-09 — Claude Code: F-Droid MR !38007 erstellt
+
+- **Agent:** Claude Code
+- **Commits:** `7fe3ca2` (F-Droid metadata + Fastlane) + `d7772ee` (SHA fix)
+- **HEAD:** `d7772ee`
+- **F-Droid MR:** https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007
+- **Package ID:** `ekklesia.gr` (konsistent mit Play Console + build.gradle)
+- **Flavor:** `direct` (kein FCM, kein google-services.json)
+- **versionCode:** 6
+- **Commit SHA:** `7fe3ca23f922fee4de62cfb1e902a63dbbc8b4b5`
+- **AntiFeature:** NonFreeNet (nur HLR)
+- **Fastlane Metadata:** en-US + el unter metadata/ekklesia.gr/
+- **Alter MR !37087:** geschlossen, neuer MR ersetzt ihn
+- **GitLab Fork:** TrueRepublic/fdroiddata (Branch ekklesia-v1.0.0)
+- **Keine Secret-Dateien gelesen**
+
+---
+
 ## 2026-05-09 — Claude Code: Chat/RAG Deploy verifiziert
 
 - **Agent:** Claude Code
