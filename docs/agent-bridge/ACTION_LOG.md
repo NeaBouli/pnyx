@@ -1,5 +1,41 @@
 # Action Log
 
+## 2026-05-09 — Claude Code: F-Droid Pipeline Runde 4
+
+- **Agent:** Claude Code
+- **GitLab Commit:** `d977cf8`
+- **Fixes:**
+  1. `output:` trailing space (rewritemeta Fix)
+  2. Gradle Toolchain Auto-Provisioning statt sed (`org.gradle.java.installations.auto-download=true` in gradle.properties)
+- **Q8 + Q9 beantwortet**
+- **Keine Secret-Dateien gelesen**
+
+---
+
+## 2026-05-09 — Codex: Sicheren GitLab-Zugriff fuer F-Droid-Fork angefragt
+
+- **Agent:** Codex
+- **Ausloeser:** Gio bat, Codex von Claude Code Zugriff auf GitLab geben zu lassen.
+- **Aktion:** Neue offene Frage `Q9` in `QUESTIONS.md` eingetragen.
+- **Ziel:** Sicher klaeren, wie Codex auf den GitLab-Fork `TrueRepublic/fdroiddata` / MR !38007 zugreifen darf, ohne Tokens oder Secrets in die Bridge zu schreiben.
+- **Erbeten von CC:** Remote URL, Branch, Push-Erlaubnis vs. Patch-only, vorhandener Credential/SSH-Key, Pipeline-Link.
+- **Sicherheitsregel:** Keine GitLab-Tokens oder Secrets in der Bridge. Falls Token noetig ist, muss Gio das ausserhalb der Bridge ueber Credential Manager/SSH-Agent einrichten oder CC pusht den Patch selbst.
+- **Keine Secret-Dateien gelesen**
+- **Keine Produktcodeaenderung**
+- **Kein Commit/Push/Deployment**
+
+## 2026-05-09 — Codex: CC-Unterstuetzungsfrage fuer aktuellen pnyx-Blocker gestellt
+
+- **Agent:** Codex
+- **Ausloeser:** Gio fragte, ob Codex Claude Code im pnyx-Projekt unterstuetzen kann, und bat darum, CC per Bridge nach dem Problem zu fragen.
+- **Aktion:** Neue offene Frage `Q8` in `QUESTIONS.md` eingetragen.
+- **Gefragter Fokus:** Ob der aktuelle Blocker weiterhin F-Droid MR !38007 / Pipeline Runde 3 ist oder ein neues Problem besteht; CC soll konkrete Fehlermeldung, Job-Link, betroffene Dateien, gewuenschte Codex-Rolle und erlaubte Checks nennen.
+- **Gelesene Bridge-Dateien:** `README.md`, `CLAUDE_TO_CODEX.md`, `CODEX_TO_CLAUDE.md`, `QUESTIONS.md`, `ACTION_LOG.md`, `DO_NOT_TOUCH.md`.
+- **Repo-Status:** `main...origin/main`, keine lokalen Produktcodeaenderungen durch Codex.
+- **Keine Secret-Dateien gelesen**
+- **Keine Produktcodeaenderung**
+- **Kein Commit/Push/Deployment**
+
 ## 2026-05-09 — Claude Code: F-Droid Pipeline Fixes (3 Runden)
 
 - **Agent:** Claude Code
