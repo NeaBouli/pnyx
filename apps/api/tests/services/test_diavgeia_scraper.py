@@ -26,19 +26,20 @@ def anyio_backend():
 
 @pytest.mark.asyncio
 async def test_scrape_requires_admin_key():
-    """POST /api/v1/admin/diavgeia/scrape without admin_key -> 422."""
+    """POST /api/v1/admin/diavgeia/scrape without Bearer token -> 403."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         r = await c.post("/api/v1/admin/diavgeia/scrape", json={"dry_run": True})
-    assert r.status_code == 422  # missing required query param
+    assert r.status_code == 403
 
 
 @pytest.mark.asyncio
 async def test_scrape_wrong_admin_key():
-    """POST /api/v1/admin/diavgeia/scrape with wrong key -> 403."""
+    """POST /api/v1/admin/diavgeia/scrape with wrong Bearer -> 403."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         r = await c.post(
-            "/api/v1/admin/diavgeia/scrape?admin_key=wrong-key",
+            "/api/v1/admin/diavgeia/scrape",
             json={"dry_run": True},
+            headers={"Authorization": "Bearer wrong-key"},
         )
     assert r.status_code == 403
 
@@ -46,11 +47,12 @@ async def test_scrape_wrong_admin_key():
 @pytest.mark.asyncio
 @pytest.mark.xfail(reason="DB offline — no local PostgreSQL")
 async def test_scrape_with_valid_key():
-    """POST /api/v1/admin/diavgeia/scrape with valid key -> 200."""
+    """POST /api/v1/admin/diavgeia/scrape with valid Bearer -> 200."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         r = await c.post(
-            "/api/v1/admin/diavgeia/scrape?admin_key=dev-admin-key",
+            "/api/v1/admin/diavgeia/scrape",
             json={"dry_run": True, "max_pages": 1},
+            headers={"Authorization": "Bearer dev-admin-key"},
         )
     assert r.status_code == 200
     data = r.json()

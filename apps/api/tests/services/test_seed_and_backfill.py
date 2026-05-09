@@ -165,28 +165,34 @@ def test_backfill_no_cursor_returns_none():
 
 @pytest.mark.asyncio
 async def test_refresh_orgs_cache_requires_admin():
-    """POST /refresh-orgs-cache without key -> 422."""
+    """POST /refresh-orgs-cache without Bearer -> 403."""
     from main import app
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         r = await c.post("/api/v1/admin/diavgeia/refresh-orgs-cache")
-    assert r.status_code == 422
+    assert r.status_code == 403
 
 
 @pytest.mark.asyncio
 async def test_refresh_orgs_cache_wrong_key():
-    """POST /refresh-orgs-cache with wrong key -> 403."""
+    """POST /refresh-orgs-cache with wrong Bearer -> 403."""
     from main import app
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-        r = await c.post("/api/v1/admin/diavgeia/refresh-orgs-cache?admin_key=wrong")
+        r = await c.post(
+            "/api/v1/admin/diavgeia/refresh-orgs-cache",
+            headers={"Authorization": "Bearer wrong"},
+        )
     assert r.status_code == 403
 
 
 @pytest.mark.asyncio
 async def test_refresh_orgs_cache_status_not_found():
-    """GET /refresh-orgs-cache/badid -> 404."""
+    """GET /refresh-orgs-cache/badid with valid Bearer -> 404."""
     from main import app
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-        r = await c.get("/api/v1/admin/diavgeia/refresh-orgs-cache/nonexistent?admin_key=dev-admin-key")
+        r = await c.get(
+            "/api/v1/admin/diavgeia/refresh-orgs-cache/nonexistent",
+            headers={"Authorization": "Bearer dev-admin-key"},
+        )
     assert r.status_code == 404
 
 

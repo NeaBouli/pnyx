@@ -80,14 +80,20 @@ async def test_notifications_events_list():
 @pytest.mark.asyncio
 async def test_notifications_publish_requires_admin():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-        r = await c.post("/api/v1/notifications/test/publish?event_type=test&bill_id=T&admin_key=wrong")
+        r = await c.post(
+            "/api/v1/notifications/test/publish?event_type=test&bill_id=T",
+            headers={"Authorization": "Bearer wrong"},
+        )
     assert r.status_code == 403
 
 
 @pytest.mark.asyncio
 async def test_notifications_publish_valid():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-        r = await c.post("/api/v1/notifications/test/publish?event_type=test&bill_id=T&admin_key=dev-admin-key")
+        r = await c.post(
+            "/api/v1/notifications/test/publish?event_type=test&bill_id=T",
+            headers={"Authorization": "Bearer dev-admin-key"},
+        )
     assert r.status_code == 200
     assert r.json()["published"] is True
 
@@ -271,21 +277,21 @@ async def test_export_divergence_csv_exists():
 @pytest.mark.asyncio
 async def test_admin_dashboard_requires_auth():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-        r = await c.get("/api/v1/admin/dashboard?admin_key=wrong")
+        r = await c.get("/api/v1/admin/dashboard", headers={"Authorization": "Bearer wrong"})
     assert r.status_code == 403
 
 
 @pytest.mark.asyncio
 async def test_admin_bills_requires_auth():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-        r = await c.get("/api/v1/admin/bills?admin_key=wrong")
+        r = await c.get("/api/v1/admin/bills", headers={"Authorization": "Bearer wrong"})
     assert r.status_code == 403
 
 
 @pytest.mark.asyncio
 async def test_admin_stats_requires_auth():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-        r = await c.get("/api/v1/admin/stats?admin_key=wrong")
+        r = await c.get("/api/v1/admin/stats", headers={"Authorization": "Bearer wrong"})
     assert r.status_code == 403
 
 
@@ -293,21 +299,21 @@ async def test_admin_stats_requires_auth():
 @pytest.mark.xfail(reason="DB offline")
 async def test_admin_dashboard_valid_key():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-        r = await c.get("/api/v1/admin/dashboard?admin_key=dev-admin-key")
+        r = await c.get("/api/v1/admin/dashboard", headers={"Authorization": "Bearer dev-admin-key"})
     assert r.status_code in (200, 500)
 
 
 @pytest.mark.asyncio
 async def test_admin_review_requires_auth():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-        r = await c.post("/api/v1/admin/bills/TEST/review?admin_key=wrong&approved=true")
+        r = await c.post("/api/v1/admin/bills/TEST/review?approved=true", headers={"Authorization": "Bearer wrong"})
     assert r.status_code == 403
 
 
 @pytest.mark.asyncio
 async def test_admin_reset_requires_auth():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-        r = await c.delete("/api/v1/admin/bills/TEST/votes?admin_key=wrong&confirm=CONFIRM_DELETE")
+        r = await c.delete("/api/v1/admin/bills/TEST/votes?confirm=CONFIRM_DELETE", headers={"Authorization": "Bearer wrong"})
     assert r.status_code == 403
 
 
