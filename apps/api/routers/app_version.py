@@ -13,8 +13,8 @@ LATEST_VERSION_CODE = 7
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v7 — Scroll fix, Forum-Link, Auto-Update Banner, Scheduler Monitoring"
-RELEASE_NOTES_EN = "v7 — Scroll fix, Forum link, Auto-update banner, Scheduler monitoring"
+RELEASE_NOTES_EL = "v7 — Διόρθωση κύλισης, Σύνδεσμος φόρουμ ανά ψηφοφορία, Ειδοποίηση νέας έκδοσης, Παρακολούθηση εργασιών"
+RELEASE_NOTES_EN = "v7 — Scroll fix, Forum link per bill, Update notification banner, Scheduler monitoring"
 
 FDROID_URL = "https://f-droid.org/packages/ekklesia.gr/"
 PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=ekklesia.gr"
