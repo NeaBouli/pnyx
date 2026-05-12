@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Share } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Share, Linking } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { fetchBills } from "../lib/api";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
+
+const FORUM_BASE = "https://pnyx.ekklesia.gr/t/";
 
 type Nav = StackNavigationProp<RootStackParams, "Tabs">;
 
@@ -58,7 +60,8 @@ export default function BillsScreen() {
         ))}
       </View>
       <FlatList
-        data={filtered} keyExtractor={b => b.id} contentContainerStyle={s.list}
+        style={{ flex: 1 }}
+        data={filtered} keyExtractor={b => b.id} contentContainerStyle={[s.list, { paddingBottom: 120 }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.primary} />}
         ListEmptyComponent={<Text style={s.empty}>Δεν βρέθηκαν ψηφοφορίες</Text>}
         renderItem={({ item }) => (
@@ -73,6 +76,11 @@ export default function BillsScreen() {
               <View style={s.cardFooter}>
                 <Text style={[s.cardStatus, { color: STATUS_COLORS[item.status] ?? colors.textTertiary }]}>{STATUS_LABELS[item.status] ?? item.status}</Text>
                 <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+                  {item.forum_topic_id != null && (
+                    <TouchableOpacity onPress={(e) => { e.stopPropagation(); Linking.openURL(`${FORUM_BASE}${item.forum_topic_id}`); }} hitSlop={8}>
+                      <Text style={s.forumBtn}>💬</Text>
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity onPress={(e) => { e.stopPropagation(); shareBill(item); }} hitSlop={8}>
                     <Text style={s.shareBtn}>↗</Text>
                   </TouchableOpacity>
@@ -103,6 +111,7 @@ const s = StyleSheet.create({
   cardPill: { fontSize: 12, color: colors.textSecondary, marginBottom: 6 },
   cardFooter: { flexDirection: "row", justifyContent: "space-between" },
   cardStatus: { fontSize: 11, fontWeight: "600" },
+  forumBtn: { fontSize: 14 },
   shareBtn: { fontSize: 16, color: colors.primary, fontWeight: "700" },
   voteHint: { fontSize: 11, color: colors.primary, fontWeight: "700" },
   empty: { color: colors.textSecondary, textAlign: "center", marginTop: 40 },
