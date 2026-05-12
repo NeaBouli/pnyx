@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Linking, Animated } from "react-native";
+import { Text, TouchableOpacity, StyleSheet, Linking, Animated } from "react-native";
 import Constants from "expo-constants";
+import * as SecureStore from "expo-secure-store";
 import { colors } from "../theme";
 
 const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
@@ -9,9 +10,19 @@ const CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 min
 export function UpdateBanner(): React.JSX.Element | null {
   const [update, setUpdate] = useState<{ version: string; url: string } | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const [enabled, setEnabled] = useState<boolean | null>(null);
   const slideAnim = useRef(new Animated.Value(-40)).current;
 
   useEffect(() => {
+    SecureStore.getItemAsync("push_system_update").then(v => {
+      setEnabled(v !== "false"); // default true
+    });
+  }, []);
+
+  useEffect(() => {
+    if (enabled === false) return;
+    if (enabled === null) return; // not yet loaded
+
     const check = async () => {
       try {
         const currentVC = Constants.expoConfig?.android?.versionCode ?? 0;
@@ -29,7 +40,7 @@ export function UpdateBanner(): React.JSX.Element | null {
     check();
     const interval = setInterval(check, CHECK_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
     if (update && !dismissed) {
@@ -37,7 +48,7 @@ export function UpdateBanner(): React.JSX.Element | null {
     }
   }, [update, dismissed, slideAnim]);
 
-  if (!update || dismissed) return null;
+  if (!update || dismissed || enabled === false) return null;
 
   return (
     <Animated.View style={[s.container, { transform: [{ translateY: slideAnim }] }]}>
