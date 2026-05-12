@@ -8,15 +8,15 @@ from fastapi import APIRouter
 router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
-LATEST_VERSION = "1.0.0"
-LATEST_VERSION_CODE = 5
+LATEST_VERSION = "1.1.0"
+LATEST_VERSION_CODE = 7
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v5 — QR Code ψηφοφορία, διόρθωση ψήφου, POLIS login, CPLM"
-RELEASE_NOTES_EN = "v5 — QR Code voting, vote correction, POLIS login, CPLM"
+RELEASE_NOTES_EL = "v7 — Scroll fix, Forum-Link, Auto-Update Banner, Scheduler Monitoring"
+RELEASE_NOTES_EN = "v7 — Scroll fix, Forum link, Auto-update banner, Scheduler monitoring"
 
-FDROID_URL = "https://f-droid.org/packages/gr.ekklesia.app/"
+FDROID_URL = "https://f-droid.org/packages/ekklesia.gr/"
 PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=ekklesia.gr"
 DIRECT_APK_URL = "https://ekklesia.gr/download/"
 
