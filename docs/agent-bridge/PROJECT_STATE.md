@@ -13,10 +13,10 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `7981eb4` (chore: F-Droid YAML sync — Pipeline GRUEN)
+- **HEAD:** `86456ec` (fix(mobile): NEA-100 Bills scroll + NEA-101 Forum-Link pro Bill)
 - **Tags:** `v1.0.0`, `pre-audit-fixes-20260501`, `session-final-20260501`, `session-20260502-final`
 - **Remote:** synchron mit GitHub
-- **Server HEAD:** `d20b1b4` (deployed 2026-05-09) — Redeploy noetig fuer NEA-71/NEA-74 Fixes
+- **Server HEAD:** `d20b1b4` (deployed 2026-05-09) — Redeploy noetig fuer NEA-71/74/100/101 Fixes
 
 ## Uncommitted Aenderungen
 

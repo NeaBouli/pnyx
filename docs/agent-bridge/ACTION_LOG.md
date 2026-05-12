@@ -1,5 +1,22 @@
 # Action Log
 
+## 2026-05-12 — Claude Code: NEA-100 Bills Scroll Fix + NEA-101 Forum Link
+
+- **Agent:** Claude Code
+- **Commit:** `86456ec` — `fix(mobile): NEA-100 Bills scroll + NEA-101 Forum-Link pro Bill`
+- **NEA-100 DONE** — Bills Scroll Fix:
+  - FlatList: `style={{ flex: 1 }}` + `paddingBottom: 120`
+  - Behebt abgeschnittene Liste auf kleinen Bildschirmen
+  - Datei: `apps/mobile/src/screens/BillsScreen.tsx`
+- **NEA-101 DONE** — Forum-Link pro Bill:
+  - API: `forum_topic_url` als computed field in BillSummary + BillDetail (3 Serialisierungsstellen)
+  - URL: `{DISCOURSE_BASE_URL}/t/{forum_topic_id}` — kein neues DB-Feld noetig
+  - Mobile: Forum-Button (💬) im Card Footer, oeffnet Discourse Topic via `Linking.openURL()`
+  - Dateien: `apps/api/routers/parliament.py`, `apps/mobile/src/screens/BillsScreen.tsx`
+- **Kein Dashboard-Aenderung noetig:** `forum_topic_id` wird automatisch via `forum_sync` Scheduler Job gesetzt
+- **Keine Secret-Dateien gelesen**
+- **Pushed:** `86456ec` auf `main`
+
 ## 2026-05-11 — Claude Code: Linear Setup + 3 Bug Fixes + Bridge Update
 
 - **Agent:** Claude Code
