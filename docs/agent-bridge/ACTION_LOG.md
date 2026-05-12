@@ -1,5 +1,36 @@
 # Action Log
 
+## 2026-05-13 — Claude Code: AAB uploaded + APK Build + Backup Script + NEA-63 DONE
+
+- **Agent:** Claude Code
+- **NEA-61 DONE** — AAB v1.1.0 (vC7) hochgeladen zu Play Console
+- **NEA-63 DONE** — Dashboard Features: 5/6 High-Prio waren bereits implementiert, 3 Luecken geschlossen (Scheduler + DeepL + Diavgeia Refresh)
+- **NEA-65 vorbereitet** — Backup Script: `scripts/backup-offsite.sh` (Commit `c73d721`)
+  - PostgreSQL dump + Redis RDB + Alembic State
+  - SFTP zu Hetzner Storage Box, Daily/Weekly/Monthly Retention
+  - Braucht: Storage Box Bestellung + SSH Key + Cron auf Server
+- **API:** Release Notes auf Griechisch (Commit `8435040`)
+- **UpdateBanner Fix:** Respektiert `push_system_update` Setting (Commit `6fd2fdb`)
+- **Direct APK Build:** laeuft (vC7 / v1.1.0, direct channel)
+- **Keine Secret-Dateien gelesen**
+
+## 2026-05-12 — Claude Code: UpdateBanner + Version Bump vC7 + Build
+
+- **Agent:** Claude Code
+- **Commit:** `8ba827b` — `feat(mobile): Global UpdateBanner + version bump vC7 (1.1.0)`
+- **UpdateBanner:**
+  - Neue Komponente `apps/mobile/src/components/UpdateBanner.tsx`
+  - Checkt `/api/v1/app/version` beim Start + alle 30 Minuten
+  - Schmaler blauer Balken unter Header: "v{x} verfuegbar — Ενημέρωση →"
+  - Dismissable mit X-Button, oeffnet Play Store / Direct Download
+  - Eingebunden in Navigation root → sichtbar auf ALLEN Screens
+- **Version Bump:** vC6 → vC7 (1.1.0)
+  - `apps/mobile/app.json` versionCode 7
+  - `apps/api/routers/app_version.py` LATEST_VERSION_CODE 7, LATEST_VERSION "1.1.0"
+  - F-Droid URL korrigiert: `ekklesia.gr` statt `gr.ekklesia.app`
+- **Build:** AAB (Play Store) laeuft, Output: `apps/mobile/android/app/build/outputs/bundle/playRelease/`
+- **Pushed:** `8ba827b` auf `main`
+
 ## 2026-05-12 — Claude Code: NEA-100 Bills Scroll Fix + NEA-101 Forum Link
 
 - **Agent:** Claude Code
