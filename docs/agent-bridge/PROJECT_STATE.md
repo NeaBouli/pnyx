@@ -13,10 +13,10 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `d20b1b4` (fix(hlr): Failover double-credit tracking)
+- **HEAD:** `7981eb4` (chore: F-Droid YAML sync — Pipeline GRUEN)
 - **Tags:** `v1.0.0`, `pre-audit-fixes-20260501`, `session-final-20260501`, `session-20260502-final`
 - **Remote:** synchron mit GitHub
-- **Server HEAD:** `d20b1b4` (deployed 2026-05-09)
+- **Server HEAD:** `d20b1b4` (deployed 2026-05-09) — Redeploy noetig fuer NEA-71/NEA-74 Fixes
 
 ## Uncommitted Aenderungen
 
@@ -65,14 +65,39 @@
 - Crypto: 12 passed
 - CI: GitHub Actions GRUEN
 
-## Naechste Schritte (Prioritaet)
+## Tracking
 
-1. **v5 EAS Build** (01.05.2026) — AAB bauen fuer Play Store
-2. ADR-022 Migration
-3. F-Droid MR versionCode 5
-4. dashboard.ekklesia.gr (Admin Dashboard) — hoechste Dev-Prioritaet
-5. Embed-System (Phase 2)
-6. test.ekklesia.gr aufsetzen
+- **Linear:** https://linear.app/neabouli/project/ekklesiagr-pnyx-76223f68c92f
+- **Team:** NeaBouli (Key: NEA)
+- **Bridge:** Einziger CC↔Codex Kommunikationskanal
+
+## Naechste Schritte (Prioritaet) — siehe auch Linear
+
+1. **NEA-59** F-Droid MR !38007 — Pipeline GRUEN, wartet auf `linsui` Review
+2. **NEA-61** AAB Upload Play Console (versionCode 6, manuell)
+3. **NEA-63** Dashboard: 25 Features (6 Prio HOCH vor Public Beta)
+4. **NEA-65** Off-Site Backup (Hetzner Storage Box)
+5. **NEA-69** Diavgeia Org-Mapping 3/101 → Server-Seed noetig
+6. **NEA-72** Hermes Phase 1 (blocked auf CX43)
+7. **NEA-73** Embed-System (Phase 2)
+
+## F-Droid MR !38007 Status (2026-05-10)
+
+- **MR:** https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007
+- **Fork/Branch:** `TrueRepublic/fdroiddata:ekklesia-v1.0.0`
+- **Package ID:** `ekklesia.gr`
+- **versionName / versionCode:** `1.0.0` / `6`
+- **Finaler Commit:** `8baaa64a94c64625b6fa0c096eba473f8ec38768`
+- **Finale Pipeline:** `2512855066`
+- **Status:** **BESTANDEN, 9/9 Jobs gruen**
+- **Naechster Schritt:** Warten auf Review durch `linsui`.
+- **Finaler technischer Fix:** Expo/RN F-Droid Build braucht:
+  - `npm ci` ohne `--ignore-scripts`
+  - `expo prebuild --clean --platform android`
+  - `newArchEnabled=false` und `hermesEnabled=false` nach prebuild
+  - Gradle Toolchain Auto-Provisioning in `android/gradle.properties`, `~/.gradle/gradle.properties` und via `-Porg.gradle.java.installations.auto-download=true`
+  - gezielte `scanignore`-Eintraege fuer Expo/RN `local-maven-repo` und lokale Maven-Gradle-Dateien
+  - `output: apps/mobile/android/app/build/outputs/apk/release/app-release.apk`
 
 ## Architektur-Planung (NUR Dokumente, KEIN Code)
 
@@ -243,10 +268,12 @@ Diese Inhalte sind als `PUBLIC_DOCS` zu behandeln und gelten nicht automatisch a
   - `votes-timeline` gibt lokal durch try/except nicht mehr 500, maskiert aber moegliche echte Fehler als leere Timeline.
 - Weiterhin offen / riskant:
   - `apps/api/services/greek_topics_scraper.py` ist weiterhin untracked.
-  - `apps/api/main.py` referenziert `services.greek_topics_scraper` im Scheduler. Wenn der deployed Code diese Datei nicht enthaelt, kann der Job trotz deaktiviertem Feature-Flag beim Import scheitern.
   - Admin-Key-Defaults und Query-Parameter-Auth sind weiterhin im Code sichtbar.
-  - Android Package-ID / F-Droid / Play-Checklist bleiben inkonsistent: `apps/mobile/app.json` nutzt `ekklesia.gr`, mehrere F-Droid/Checklist-Dokumente nennen `gr.ekklesia.app`.
   - `docs/agent-bridge/ACTION_LOG.md` hat lokale uncommitted Ergaenzungen.
+- Geloest (2026-05-11, Claude Code):
+  - ~~`votes-timeline` broad except~~ → NEA-74 DONE (spezifische Exceptions + Logging)
+  - ~~4/8 Scheduler-Jobs fehlen~~ → NEA-71 DONE (record_run vor early returns)
+  - ~~Package-ID Drift~~ → NEA-67 DONE (stale gr.ekklesia.app.yml archiviert)
 - Grenzen:
   - Keine Tests ausgefuehrt.
   - Keine SSH-/Live-Server-Pruefung.

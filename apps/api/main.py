@@ -100,6 +100,7 @@ async def scheduled_scrape():
     name = "parliament"
     if await is_circuit_open(name):
         logger.warning("[MOD-03] Circuit breaker OPEN for %s — skipping", name)
+        await record_run(name)
         return
     await record_run(name)
     try:
@@ -190,6 +191,7 @@ async def scheduled_diavgeia_scrape():
     name = "diavgeia_municipal"
     if await is_circuit_open(name):
         logger.warning("[MOD-21] Circuit breaker OPEN for %s — skipping", name)
+        await record_run(name)
         return
     await record_run(name)
     try:
@@ -216,6 +218,9 @@ async def scheduled_forum_sync():
     from services.scraper_state import record_run, record_success, record_failure
     name = "forum_sync"
     if not FORUM_SYNC_ENABLED or not DISCOURSE_API_KEY:
+        await record_run(name)
+        await record_success(name)
+        logger.debug("[Forum] Sync disabled — recording idle state")
         return
     await record_run(name)
     from database import engine
@@ -267,15 +272,20 @@ async def scheduled_cplm_refresh():
 
 async def scheduled_greek_topics():
     """Scrape Greek news RSS and create forum topics every 6 hours."""
+    from services.scraper_state import record_run, record_success, record_failure, is_circuit_open
+    name = "greek_topics"
     try:
         from services.greek_topics_scraper import scrape_greek_topics, GREEK_SCRAPER_ENABLED
     except ImportError:
         logger.debug("[GreekScraper] Module nicht verfuegbar — Job deaktiviert")
+        await record_run(name)
+        await record_success(name)
         return
-    from services.scraper_state import record_run, record_success, record_failure, is_circuit_open
 
-    name = "greek_topics"
     if not GREEK_SCRAPER_ENABLED:
+        await record_run(name)
+        await record_success(name)
+        logger.debug("[GreekScraper] Disabled — recording idle state")
         return
     if await is_circuit_open(name):
         logger.warning("[GreekScraper] Circuit breaker OPEN — skipping")

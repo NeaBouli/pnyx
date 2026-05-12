@@ -191,7 +191,8 @@ async def votes_timeline(
             "timeline": sorted(timeline.values(), key=lambda x: x["date"]),
             "note": "Aggregiert nach Tag",
         }
-    except Exception:
+    except (AttributeError, TypeError, ValueError) as e:
+        logger.warning("[votes-timeline] Data processing error: %s", e)
         return {"period_days": days, "bill_id": bill_id, "timeline": [], "note": "Keine Daten"}
 
 

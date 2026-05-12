@@ -401,6 +401,13 @@ export default function SettingsPage() {
               >
                 {actionLoading === 'heal' ? String('Επιδιόρθωση...') : String('Επιδιόρθωση Scraper')}
               </button>
+              <button
+                onClick={() => handleAction('diavgeia-refresh', () => fetch(adminProxyPath('/api/v1/admin/diavgeia/refresh-orgs-cache'), { method: 'POST' }).then(r => r.json()))}
+                disabled={actionLoading === 'diavgeia-refresh'}
+                className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200 transition-colors disabled:opacity-50"
+              >
+                {actionLoading === 'diavgeia-refresh' ? String('Ανανέωση...') : String('Diavgeia Org-Cache')}
+              </button>
             </div>
             {scraperTestResult && (
               <div className="mt-3 bg-gray-900 text-green-400 rounded-lg p-3 text-xs font-mono whitespace-pre-wrap overflow-auto max-h-40">

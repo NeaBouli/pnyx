@@ -1,5 +1,78 @@
 # Action Log
 
+## 2026-05-11 — Claude Code: Linear Setup + 3 Bug Fixes + Bridge Update
+
+- **Agent:** Claude Code
+- **Linear Setup:**
+  - Projekt "Ekklesia.gr / pnyx" erstellt (https://linear.app/neabouli/project/ekklesiagr-pnyx-76223f68c92f)
+  - Labels: F-Droid, Infra, Dashboard, Mobile, Scraper
+  - 10 Issues importiert aus Session-State (NEA-59 bis NEA-74)
+  - Linear ist ab sofort Single Source of Truth fuer Task-Status
+- **NEA-74 DONE** — votes-timeline broad except:
+  - `except Exception` → `except (AttributeError, TypeError, ValueError)` + `logger.warning()`
+  - DB-Fehler propagieren jetzt korrekt
+  - Datei: `apps/api/routers/analytics.py:194`
+- **NEA-71 DONE** — 4/8 Scheduler-Jobs fehlten im /scraper/jobs:
+  - Root Cause: `forum_sync`, `greek_topics` returnten vor `record_run()` bei disabled
+  - `parliament`, `diavgeia_municipal` returnten vor `record_run()` bei circuit breaker open
+  - Fix: Alle 4 rufen jetzt `record_run()` auf bevor sie returnen
+  - Disabled Jobs schreiben zusaetzlich `record_success()` fuer "idle" State
+  - Datei: `apps/api/main.py` (4 Stellen)
+- **NEA-67 DONE** — Package-ID Drift:
+  - Stale `fdroid/gr.ekklesia.app.yml` (vC5) → `fdroid/archive/gr.ekklesia.app.yml.deprecated`
+  - iOS `gr.ekklesia.app` vs Android `ekklesia.gr` ist intentional (Expo convention)
+  - Nur noch eine aktive F-Droid Datei: `fdroid/ekklesia.gr.yml` (vC6)
+- **NEA-69 analysiert** — Diavgeia Org-Mapping:
+  - Script fertig (`scripts/seed_diavgeia_orgs.py`), Snapshot 2507 Orgs vorhanden
+  - Braucht Server-Zugriff zum Seeden — Codex oder naechste Server-Session
+- **Bridge:** PROJECT_STATE.md aktualisiert (HEAD, Tracking-Sektion, geloeste Issues)
+- **Memory:** feedback_bridge_workflow.md auf GLOBAL erweitert, reference_linear_workspace.md erstellt
+- **NEA-63 teilweise** — Dashboard System-Seite erweitert:
+  - Scheduler Jobs Monitoring: 8 Jobs mit Status, Last Run, Last Success, Error Count, Circuit Breaker (system/page.tsx)
+  - DeepL API Usage: Fortschrittsbalken, farbcodiert (system/page.tsx)
+  - Diavgeia Org-Cache Refresh Button in Settings → Scraper Tab (settings/page.tsx)
+  - TypeScript Build: sauber, keine Fehler
+- **Analyse (6 High-Prio Dashboard Features):** 5 von 6 waren bereits implementiert (HLR Credits, Arweave, Notifications, Circuit Breaker, teilweise Scheduler). Fehlten nur: detailliertes Scheduler-Monitoring in System + DeepL Usage + Diavgeia Refresh Button.
+- **Redeploy noetig:** NEA-71 + NEA-74 + Dashboard-Erweiterungen muessen auf Server deployed werden
+- **Keine Secret-Dateien gelesen**
+- **Kein Commit/Push/Deployment**
+
+## 2026-05-10 — Codex: F-Droid MR !38007 Pipeline gruen
+
+- **Agent:** Codex
+- **Ausloeser:** Gio fragte, ob Codex den verbleibenden `fdroid build`-Fehler besser fixen kann.
+- **MR:** https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007
+- **Branch:** `TrueRepublic/fdroiddata:ekklesia-v1.0.0`
+- **Finaler Commit:** `8baaa64a94c64625b6fa0c096eba473f8ec38768`
+- **Finale Pipeline:** `2512855066` — **BESTANDEN, 9/9 Jobs gruen**
+- **Pipeline-Jobs gruen:**
+  - `fdroid build` — success, 653.840299s
+  - `check apk`
+  - `check source code`
+  - `checkupdates`
+  - `fdroid lint`
+  - `fdroid rewritemeta`
+  - `git redirect`
+  - `schema validation`
+  - `tools check scripts`
+- **Codex-Fixes auf GitLab-Fork:**
+  - `0b6362cd` — `Fix: disable RN new arch and Hermes for F-Droid build`
+  - `0b1435dd` — `Fix: write valid F-Droid metadata YAML`
+    - Korrektur eines Codex-API-Fehlers: `glab api -f content=@file` schrieb literal `@/private/tmp/...`; gefixt mit `-F content=@file`.
+  - `72d2ae04` — `Fix: keep Expo native artifacts during F-Droid build`
+    - Gezielt `scanignore` fuer Expo/RN `local-maven-repo` AARs und lokale Maven-Gradle-Dateien gesetzt.
+    - Grund: F-Droid Scanner entfernte sonst Expo AARs und RN lokale Maven-Repositories; Gradle konnte `expo.modules.*`, `react-native-picker_picker`, `react-native-safe-area-context` nicht aufloesen.
+  - `8baaa64a` — `Fix: use Expo release APK output path`
+    - Android Build war bereits erfolgreich (`BUILD SUCCESSFUL in 7m 56s`, 357 Tasks), F-Droid fand nur den Output nicht.
+    - `output` von `app-release-unsigned.apk` auf `app-release.apk` korrigiert.
+- **Wichtiger Befund:**
+  - Runde vor finalem Fix: Android/Gradle Build selbst war gruen; letzter Fehler war nur `No apks match ... app-release-unsigned.apk`.
+  - Finale Pipeline `2512855066` bestaetigt den kompletten F-Droid-Pfad.
+- **Aktueller Status:** MR !38007 wartet auf Review durch `linsui`.
+- **Keine pnyx-Produktcodeaenderung durch Codex**
+- **Keine Secret-Dateien gelesen**
+- **Kein Deployment**
+
 ## 2026-05-09 — Codex: Q10 F-Droid YAML Runde-6-Review beantwortet
 
 - **Agent:** Codex
