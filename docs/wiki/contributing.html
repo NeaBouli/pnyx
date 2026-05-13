@@ -245,8 +245,26 @@ docs(wiki): update whitepaper chapter 9</div>
     <a href="../community.html">Community</a>
     <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>
   </div>
+  <div class="footer-links" style="margin-top:0.5rem;font-size:0.75rem">
+    <a href="#" onclick="openLegalModal('privacy');return false" data-el="Πολιτική Απορρήτου" data-en="Privacy Policy">Πολιτική Απορρήτου</a>
+    <a href="#" onclick="openLegalModal('delete');return false" data-el="Διαγραφή Λογαριασμού" data-en="Delete Account">Διαγραφή Λογαριασμού</a>
+  </div>
   <p>εκκλησία &middot; &copy; 2026 V-Labs Development &middot; MIT License</p>
 </footer>
+
+<div id="legalModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center" onclick="if(event.target===this)closeLegalModal()">
+  <div style="background:#fff;border-radius:1rem;max-width:700px;width:92%;max-height:85vh;overflow-y:auto;padding:2rem;position:relative;box-shadow:0 8px 40px rgba(0,0,0,0.2)">
+    <button onclick="closeLegalModal()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;line-height:1">&times;</button>
+    <div id="legalContent"></div>
+  </div>
+</div>
+<script>
+var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP Address.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ανώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="color:#2563eb;font-weight:600">Πλήρης Πολιτική →</a></p>';
+var _deleteHtml='<h2 style="margin-top:0">Διαγραφή Λογαριασμού</h2><p>Απεγκαταστήστε την εφαρμογή — Private Key και Nullifier διαγράφονται αμέσως.</p><p><a href="delete-account.html" style="color:#2563eb;font-weight:600">Αναλυτικές Οδηγίες →</a></p>';
+function openLegalModal(t){document.getElementById("legalContent").innerHTML=t==="privacy"?_privacyHtml:_deleteHtml;document.getElementById("legalModal").style.display="flex"}
+function closeLegalModal(){document.getElementById("legalModal").style.display="none"}
+document.addEventListener("keydown",function(e){if(e.key==="Escape")closeLegalModal()});
+</script>
 
 <script>
 var currentLang = "el";
