@@ -1,5 +1,24 @@
 # Action Log
 
+## 2026-05-13 — Claude Code: Scroll-Fixes + Builds + Install S10/S7
+
+- **Agent:** Claude Code
+- **VoteScreen ScrollView Fix** (Commit `cc7d33a`):
+  - VoteScreen hatte kein ScrollView — Buttons (ΟΧΙ/ΑΠΟΧΗ) waren auf kleinen Screens abgeschnitten
+  - Fix: `View` → `ScrollView` + `paddingBottom: 40`
+- **edgeToEdgeEnabled: false** (Commit `16f54bd`):
+  - `edgeToEdgeEnabled: true` renderte Content hinter System-Bars und Tab-Bar
+  - Ohne `react-native-safe-area-context` waren FlatList-Eintraege nicht erreichbar
+  - Fix: `edgeToEdgeEnabled: false` in app.json
+- **Builds:**
+  - APK Direct: `ekklesia-v1.1.0-vC7-SCROLLFIX.apk` (66 MB) — FINAL
+  - AAB Play: `ekklesia-v1.1.0-vC7-PLAY.aab` (45 MB) — UPLOADED (vor Scroll-Fixes, Rebuild noetig)
+- **Installation:**
+  - S10 (SM-G973F / RF8N313QMFL) — installiert + gestartet
+  - S7 (SM-G930F / ce10160adc00152604) — installiert + gestartet
+- **HINWEIS:** AAB fuer Play Console muss nach Scroll-Fixes NEU gebaut werden!
+- **Keine Secret-Dateien gelesen**
+
 ## 2026-05-13 — Claude Code: AAB uploaded + APK Build + Backup Script + NEA-63 DONE
 
 - **Agent:** Claude Code

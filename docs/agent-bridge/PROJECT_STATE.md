@@ -13,10 +13,10 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `86456ec` (fix(mobile): NEA-100 Bills scroll + NEA-101 Forum-Link pro Bill)
+- **HEAD:** `cc7d33a` (fix(mobile): VoteScreen ScrollView)
 - **Tags:** `v1.0.0`, `pre-audit-fixes-20260501`, `session-final-20260501`, `session-20260502-final`
 - **Remote:** synchron mit GitHub
-- **Server HEAD:** `d20b1b4` (deployed 2026-05-09) — Redeploy noetig fuer NEA-71/74/100/101 Fixes
+- **Server HEAD:** `d20b1b4` (deployed 2026-05-09) — Redeploy noetig fuer NEA-71/74/100/101 + Scroll-Fixes + Version-Bump
 
 ## Uncommitted Aenderungen
 
@@ -29,7 +29,7 @@
 |---|---|
 | API | Python FastAPI + Alembic + PostgreSQL + Redis |
 | Web | Next.js 14 (App Router, i18n el/en, Tailwind, recharts) |
-| Mobile | Expo / React Native (versionCode 5, bereit fuer EAS Build) |
+| Mobile | Expo / React Native (versionCode 7 / v1.1.0, bereit fuer EAS Build) |
 | Crypto | Python + PyNaCl (Ed25519, Nullifier, HLR) |
 | DB | PostgreSQL, 9+ Tabellen, 3 Enums, Alembic Migrations |
 | Infra | Docker Compose (10 Container), Traefik, Listmonk Newsletter |
