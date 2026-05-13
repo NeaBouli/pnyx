@@ -94,9 +94,16 @@ scheduler = AsyncIOScheduler()
 
 
 async def scheduled_scrape():
-    """Scrape parliament bills every 12 hours (MOD-03 cron + MOD-10 scraper)."""
+    """Scrape parliament bills every 12 hours (MOD-03 cron + MOD-10 scraper).
+    Fetches from hellenicparliament.gr API and upserts new bills into DB.
+    """
     from routers.scraper import scrape_parliament_bills
     from services.scraper_state import record_run, record_success, record_failure, is_circuit_open
+    from database import AsyncSessionLocal
+    from models import ParliamentBill, BillStatus
+    from sqlalchemy import select
+    import hashlib
+
     name = "parliament"
     if await is_circuit_open(name):
         logger.warning("[MOD-03] Circuit breaker OPEN for %s — skipping", name)
@@ -105,7 +112,58 @@ async def scheduled_scrape():
     await record_run(name)
     try:
         bills = await scrape_parliament_bills(limit=20)
-        logger.info(f"[MOD-03] Scheduled scrape: {len(bills)} bills found")
+        logger.info(f"[MOD-03] Scheduled scrape: {len(bills)} bills fetched from API")
+
+        if not bills:
+            await record_success(name)
+            return
+
+        inserted = 0
+        async with AsyncSessionLocal() as db:
+            for b in bills:
+                title = (b.get("title_el") or "").strip()
+                if not title or len(title) < 10:
+                    continue
+
+                # Generate stable ID from law_num or title hash
+                law_num = b.get("law_num")
+                if law_num:
+                    bill_id = f"GR-{law_num}".replace(" ", "-")[:50]
+                else:
+                    h = hashlib.sha256(title.encode()).hexdigest()[:8]
+                    bill_id = f"GR-AUTO-{h}"
+
+                # Skip if already exists
+                existing = await db.execute(
+                    select(ParliamentBill.id).where(ParliamentBill.id == bill_id)
+                )
+                if existing.scalar_one_or_none():
+                    continue
+
+                # Parse vote date if available
+                vote_date = None
+                if b.get("date"):
+                    try:
+                        from datetime import datetime as dt
+                        vote_date = dt.fromisoformat(b["date"])
+                    except (ValueError, TypeError):
+                        pass
+
+                new_bill = ParliamentBill(
+                    id=bill_id,
+                    title_el=title,
+                    status=BillStatus.ANNOUNCED,
+                    parliament_url=b.get("url"),
+                    parliament_vote_date=vote_date,
+                    categories=[b["ministry"]] if b.get("ministry") else None,
+                )
+                db.add(new_bill)
+                inserted += 1
+
+            if inserted > 0:
+                await db.commit()
+                logger.info("[MOD-03] Upserted %d new bills into DB", inserted)
+
         await record_success(name)
     except Exception as e:
         logger.error(f"[MOD-03] Scheduled scrape failed: {e}")

@@ -35,8 +35,9 @@ async def _transition_bill(
 ) -> None:
     """Execute a status transition with audit log."""
     old_status = bill.status
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
     bill.status = new_status
-    bill.status_changed_at = datetime.now(timezone.utc)
+    bill.status_changed_at = now_naive
 
     log = BillStatusLog(
         bill_id=bill.id,

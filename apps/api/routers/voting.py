@@ -291,7 +291,7 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
             )
         existing_vote.vote = vote_choice
         existing_vote.signature_hex = req.signature_hex
-        existing_vote.updated_at = datetime.now(timezone.utc)
+        existing_vote.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
         await db.commit()
         return VoteResponse(
             success=True,
@@ -412,8 +412,8 @@ async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = 
     existing.vote = new_choice
     existing.signature_hex = req.signature_hex
     existing.is_correction = True
-    existing.corrected_at = datetime.now(timezone.utc)
-    existing.updated_at = datetime.now(timezone.utc)
+    existing.corrected_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    existing.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
     await db.commit()
 

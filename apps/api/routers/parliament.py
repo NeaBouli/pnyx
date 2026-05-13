@@ -305,7 +305,7 @@ async def transition_bill(
 
     old_status = bill.status
     bill.status = new_status
-    bill.status_changed_at = datetime.now(timezone.utc)
+    bill.status_changed_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
     # Audit-Log
     log = BillStatusLog(

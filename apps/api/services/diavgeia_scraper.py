@@ -162,6 +162,7 @@ async def scrape_decisions(
                     else:
                         result.updated += 1
                 except Exception as e:
+                    await session.rollback()
                     result.errors.append(f"ADA {ada}: {e}")
                     logger.error("Failed to upsert ADA %s: %s", ada, e)
 
