@@ -188,6 +188,19 @@ export default function ProfileScreen() {
           <Text style={s.downloadBtnText}>Λήψη έκδοσης {latestVersion.version} →</Text>
         </TouchableOpacity>
       )}
+
+      {/* Legal Links */}
+      <View style={s.legalSection}>
+        <TouchableOpacity onPress={() => Linking.openURL("https://ekklesia.gr/wiki/privacy.html")}>
+          <Text style={s.legalLink}>Πολιτική Απορρήτου</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => Linking.openURL("https://ekklesia.gr/wiki/delete-account.html")}>
+          <Text style={s.legalLink}>Διαγραφή Λογαριασμού</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => Linking.openURL("https://github.com/NeaBouli/pnyx")}>
+          <Text style={s.legalLink}>Πηγαίος Κώδικας</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
@@ -218,4 +231,6 @@ const s = StyleSheet.create({
   updateText: { fontSize: 13, fontWeight: "600", color: colors.primary },
   downloadBtn: { backgroundColor: colors.success, borderRadius: 10, padding: 12, alignItems: "center", marginTop: 8 },
   downloadBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  legalSection: { marginTop: 24, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border, gap: 8, alignItems: "center" },
+  legalLink: { fontSize: 13, color: colors.primary, fontWeight: "600" },
 });

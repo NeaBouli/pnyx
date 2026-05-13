@@ -6,7 +6,7 @@
 - [ ] Package: gr.ekklesia.app
 - [ ] Category: Tools or Social
 - [ ] Content rating: fill out questionnaire
-- [ ] Privacy Policy URL: https://ekklesia.gr/wiki/security.html
+- [ ] Privacy Policy URL: https://ekklesia.gr/wiki/privacy.html
 - [ ] Data safety form: no personal data collected, votes are anonymous
 
 ## Building AAB for Google Play
@@ -42,7 +42,7 @@ npx eas build --platform android --profile production
 Users switching channels must reinstall (informed on first launch via ChannelNotice).
 
 ## Current config
-- `android.package`: gr.ekklesia.app
+- `android.package`: `ekklesia.gr` (Play Store + Direct APK) / `gr.ekklesia.app` (F-Droid, iOS bundleIdentifier)
 - `android.versionCode`: 2
 - `version`: 1.0.0
 - Flavors: `direct` (APK) + `play` (AAB)
