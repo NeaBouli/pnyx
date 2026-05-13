@@ -11,6 +11,7 @@ import {
   Alert,
   ActivityIndicator,
   Share,
+  ScrollView,
 } from "react-native";
 import * as LocalAuthentication from "expo-local-authentication";
 import type { StackScreenProps } from "@react-navigation/stack";
@@ -150,7 +151,7 @@ export default function VoteScreen({ route, navigation }: Props) {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
         <Text style={[styles.title, { flex: 1 }]}>{billTitle}</Text>
         <TouchableOpacity onPress={shareBill} style={{ padding: 8 }}>
@@ -222,7 +223,7 @@ export default function VoteScreen({ route, navigation }: Props) {
           Δείτε τα τρέχοντα αποτελέσματα →
         </Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
