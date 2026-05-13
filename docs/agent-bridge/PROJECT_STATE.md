@@ -6,17 +6,17 @@
 - **Beschreibung:** Digitale Direkte Demokratie Plattform fuer Griechenland
 - **Lokaler Repo-Pfad:** `/Users/gio/Desktop/repo/pnyx`
 - **GitHub:** https://github.com/NeaBouli/pnyx (oeffentlich)
-- **Server:** Hetzner CX33, Helsinki (`root@135.181.254.229`), Ubuntu 24.04.4 LTS
+- **Server:** Hetzner CX43 (8 vCPU / 16 GB RAM), Helsinki (`root@135.181.254.229`), Ubuntu 24.04.4 LTS
 - **Server-Zugangsdaten:** NICHT in dieser Bridge — SSH-Key erforderlich
 - **Copyright:** (c) 2026 V-Labs Development (MIT License)
 
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `cc7d33a` (fix(mobile): VoteScreen ScrollView)
-- **Tags:** `v1.0.0`, `pre-audit-fixes-20260501`, `session-final-20260501`, `session-20260502-final`
+- **HEAD:** `775bd74` (fix(legal): NEA-78+81 Terms+Delete+In-App Links)
+- **Tags:** `v1.0.0`, `pre-hermes-20260513`, `pre-legal-20260513`
 - **Remote:** synchron mit GitHub
-- **Server HEAD:** `d20b1b4` (deployed 2026-05-09) — Redeploy noetig fuer NEA-71/74/100/101 + Scroll-Fixes + Version-Bump
+- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `775bd74` (deployed 2026-05-13)
 
 ## Uncommitted Aenderungen
 
