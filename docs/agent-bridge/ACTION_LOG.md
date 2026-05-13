@@ -1,5 +1,24 @@
 # Action Log
 
+## 2026-05-13 — Play Console Legal Compliance + CX43 + Bugfixes
+
+- Privacy Policy URL: https://ekklesia.gr/wiki/privacy.html
+- Account Deletion URL: https://ekklesia.gr/wiki/delete-account.html
+- Terms of Use in privacy.html (bilingual)
+- Footer Popup auf 15 HTML Seiten
+- In-App Links ProfileScreen (Privacy, Delete, Source)
+- FEDERATION.md erstellt (NEA-113/114)
+- bill_lifecycle tz-bug fix (NEA-110, 494 errors)
+- Parliament Scraper DB Upsert (NEA-111)
+- Diavgeia Session Rollback fix
+- Server CX33 -> CX43 (8 vCPU, 16 GB RAM)
+- qwen2.5:14b auf Ollama installiert
+- Docker Build Cache pruned (22.6 GB)
+- Hermes Architektur entfernt (ad acta, NEA-72 Canceled)
+- Linear: NEA-78 Done, NEA-81 Done, NEA-110 Done, NEA-111 Done, NEA-114 Done
+- HEAD: 15d2c09
+- Server: 15d2c09 (deployed, all containers rebuilt)
+
 ## 2026-05-13 — Claude Code: Scroll-Fixes + Builds + Install S10/S7
 
 - **Agent:** Claude Code

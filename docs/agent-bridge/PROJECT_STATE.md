@@ -13,10 +13,10 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `775bd74` (fix(legal): NEA-78+81 Terms+Delete+In-App Links)
+- **HEAD:** `15d2c09` (feat(legal): Footer-Popups + FEDERATION.md)
 - **Tags:** `v1.0.0`, `pre-hermes-20260513`, `pre-legal-20260513`
 - **Remote:** synchron mit GitHub
-- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `775bd74` (deployed 2026-05-13)
+- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `15d2c09` (deployed 2026-05-13, all containers rebuilt)
 
 ## Uncommitted Aenderungen
 
