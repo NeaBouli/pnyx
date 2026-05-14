@@ -108,7 +108,36 @@ async def run_bill_lifecycle(db: AsyncSession) -> dict:
     if stats["transitioned"] > 0:
         await db.commit()
 
+    # Catch-up: archive bills that missed Arweave snapshot
+    catchup = await _catchup_arweave(db)
+    stats["arweave_catchup"] = catchup
+
     return stats
+
+
+async def _catchup_arweave(db: AsyncSession) -> int:
+    """Find bills in PARLIAMENT_VOTED/OPEN_END without arweave_tx_id and archive them."""
+    result = await db.execute(
+        select(ParliamentBill).where(
+            ParliamentBill.arweave_tx_id.is_(None),
+            ParliamentBill.status.in_([
+                BillStatus.PARLIAMENT_VOTED,
+                BillStatus.OPEN_END,
+            ]),
+        )
+    )
+    bills = result.scalars().all()
+    archived = 0
+    for bill in bills:
+        await _hook_arweave_snapshot(db, bill)
+        if bill.arweave_tx_id:
+            archived += 1
+            logger.info("[LIFECYCLE] Arweave catch-up: %s → %s", bill.id, bill.arweave_tx_id)
+
+    if archived > 0:
+        await db.commit()
+
+    return archived
 
 
 async def _hook_notify_new_bill(bill: ParliamentBill) -> None:
@@ -165,8 +194,9 @@ async def _hook_arweave_snapshot(db: AsyncSession, bill: ParliamentBill) -> None
         )
         status_logs = logs_result.scalars().all()
 
-        audit = build_audit_trail(bill, yes, no, abstain, status_logs)
-        tx_id = await publish_to_arweave(audit)
+        vote_results = {"yes": yes, "no": no, "abstain": abstain, "total": yes + no + abstain}
+        audit = build_audit_trail(bill, status_logs, vote_results, divergence_score=None)
+        tx_id = await publish_to_arweave(audit, bill.id)
         if tx_id:
             bill.arweave_tx_id = tx_id
             logger.info("[LIFECYCLE] Arweave snapshot: %s → %s", bill.id, tx_id)

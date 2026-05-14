@@ -271,7 +271,8 @@ async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
                     if date_str:
                         ts_match = re.search(r"/Date\((\d+)", date_str)
                         if ts_match:
-                            date = datetime.fromtimestamp(int(ts_match.group(1)) / 1000).isoformat()
+                            from datetime import timezone as _tz
+                            date = datetime.fromtimestamp(int(ts_match.group(1)) / 1000, tz=_tz.utc).isoformat()
                     bills.append({
                         "title_el": item.get("Title", "")[:200],
                         "url": f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Anazitisi-Nomothetikon-Ergon?law_id={item.get('ID', '')}",
