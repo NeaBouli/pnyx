@@ -143,8 +143,8 @@ services:
 
   monitor:
     build:
-      context: ../../
-      dockerfile: apps/monitor/Dockerfile
+      context: ../../apps/monitor
+      dockerfile: Dockerfile
     container_name: ekklesia-monitor
     restart: unless-stopped
     environment:
