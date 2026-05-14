@@ -18,8 +18,7 @@ interface Bill {
   governance_level: GovernanceLevel
   created_at: string
   source_url?: string
-  ai_reviewed?: boolean
-  ai_summary?: string
+  ai_summary_reviewed?: boolean
 }
 
 const STATUS_LABELS: Record<BillStatus, string> = {
@@ -157,7 +156,7 @@ export default function BillsPage() {
       const r = await fetch(path, { method: 'POST' })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       if (action === 'review') {
-        setBills(prev => prev.map(b => b.id === id ? { ...b, ai_reviewed: true } : b))
+        setBills(prev => prev.map(b => b.id === id ? { ...b, ai_summary_reviewed: true } : b))
       }
     } catch {
       setError(`Αδύνατη η ενέργεια ${action} για #${String(id)}`)
@@ -377,13 +376,13 @@ export default function BillsPage() {
                     <td className="px-4 py-3 text-gray-600 text-xs">{GOVERNANCE_LABELS[bill.governance_level]}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        bill.ai_reviewed ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                        bill.ai_summary_reviewed ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                       }`}>
-                        {bill.ai_reviewed ? 'Ελέγχθηκε' : 'Εκκρεμεί'}
+                        {bill.ai_summary_reviewed ? 'Ελέγχθηκε' : 'Εκκρεμεί'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-gray-500 text-xs">
-                      {new Date(bill.created_at).toLocaleDateString('el-GR')}
+                      {bill.created_at ? new Date(bill.created_at).toLocaleDateString('el-GR') : '—'}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 flex-wrap">

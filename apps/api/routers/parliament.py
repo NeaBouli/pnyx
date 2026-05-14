@@ -42,6 +42,8 @@ class BillSummary(BaseModel):
     relevance_score:     int | None = 0
     forum_topic_id:      int | None = None
     forum_topic_url:     str | None = None
+    created_at:          str | None = None
+    ai_summary_reviewed: bool = False
 
 class BillDetail(BaseModel):
     id:                     str
@@ -137,6 +139,8 @@ async def get_bills(
         parliament_url=b.parliament_url,
         forum_topic_id=b.forum_topic_id,
         forum_topic_url=f"{DISCOURSE_BASE}/t/{b.forum_topic_id}" if b.forum_topic_id else None,
+        created_at=b.created_at.isoformat() if b.created_at else None,
+        ai_summary_reviewed=b.ai_summary_reviewed or False,
     ) for b in bills]
 
 
