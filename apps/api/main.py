@@ -152,12 +152,22 @@ async def scheduled_scrape():
                     except (ValueError, TypeError):
                         pass
 
+                # Parse submitted_date (strip tz for naive DB column)
+                submitted_date = None
+                if b.get("submitted_date"):
+                    try:
+                        from datetime import datetime as dt
+                        submitted_date = dt.fromisoformat(b["submitted_date"]).replace(tzinfo=None)
+                    except (ValueError, TypeError):
+                        pass
+
                 new_bill = ParliamentBill(
                     id=bill_id,
                     title_el=title,
                     status=BillStatus.ANNOUNCED,
                     parliament_url=b.get("url"),
                     parliament_vote_date=vote_date,
+                    submitted_date=submitted_date,
                     categories=[b["ministry"]] if b.get("ministry") else None,
                 )
                 db.add(new_bill)

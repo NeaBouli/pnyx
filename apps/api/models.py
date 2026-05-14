@@ -141,7 +141,8 @@ class ParliamentBill(Base):
     party_votes_parliament = Column(JSONB, nullable=True)        # {"ΝΔ": "ΝΑΙ", ...}
 
     status              = Column(Enum(BillStatus), default=BillStatus.ANNOUNCED, nullable=False)
-    parliament_vote_date= Column(DateTime, nullable=True)
+    parliament_vote_date= Column(DateTime, nullable=True)   # Ψηφισθέντα: actual vote date
+    submitted_date      = Column(DateTime, nullable=True)   # Κατατεθέντα: when bill was submitted
     status_changed_at   = Column(DateTime, nullable=True)
     parliament_url      = Column(String(500), nullable=True)      # Official hellenicparliament.gr link
     arweave_tx_id       = Column(String(100), nullable=True)     # MOD-08

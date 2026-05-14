@@ -309,15 +309,22 @@ def _parse_parliament_markdown(md: str, source_url: str) -> list[dict]:
             import hashlib
             bill_id_short = hashlib.sha256(title_el.encode()).hexdigest()[:8]
 
-        bills.append({
+        bill_data = {
             "title_el": title_el,
             "url": detail_url if detail_url.startswith("http") else f"{PARLIAMENT_BASE}{detail_url}",
-            "date": vote_date,
-            "law_num": None,  # Not available in HTML table
+            "law_num": None,
             "ministry": ministry,
             "type": bill_type,
             "law_id": law_id,
-        })
+        }
+        # Κατατεθέντα date = submitted_date, Ψηφισθέντα date = parliament_vote_date
+        if is_katatethenta:
+            bill_data["submitted_date"] = vote_date
+            bill_data["date"] = None  # no vote date yet
+        else:
+            bill_data["date"] = vote_date  # actual vote date
+            bill_data["submitted_date"] = None
+        bills.append(bill_data)
 
     return bills
 
