@@ -20,8 +20,11 @@
   - 11 ANNOUNCED Bills korrigiert (vote_date→NULL)
   - Scraper unterscheidet jetzt Κατατεθέντα vs Ψηφισθέντα
 - Diavgeia: 325 Dimos + 13 Periferia + 1775 Orgs bereits in DB (NEA-132 In Progress)
-- HEAD: 4bf9e9c
-- Server: 4bf9e9c (deployed)
+- Diavgeia: Region-Mapping + governance_level (NEA-132)
+  - 13 Regionen → periferia_id gemappt (5001-5013)
+  - 101 Decisions klassifiziert: MUNICIPAL(3), REGION(1), CENTRAL(13), OTHER(84)
+- HEAD: 155f830
+- Server: 155f830 (deployed)
 - Kanal-Stand: Play=vC8, Direct=vC7, F-Droid=vC6
 - Linear: NEA-128 Done
 
