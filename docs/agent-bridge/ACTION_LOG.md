@@ -31,8 +31,10 @@
   - /srv/traefik/dynamic/default-catchall.yml auf Server
   - Kein Code-Commit (Server-Config, nicht im Repo)
 - NEA-136: Dashboard Invalid Date + AI Status gefixt (da4a047)
-- HEAD: da4a047
-- Server: da4a047 (deployed, monitor running, traefik fixed)
+- NEA-77: QR Login Widget live (ekklesia.gr/embed/qr-login.html)
+  - QR-Code, 2s Polling, 5min Countdown, Expired-Handler, iframe postMessage
+- HEAD: cc8149a
+- Server: cc8149a (deployed)
 - Kanal-Stand: Play=vC8, Direct=vC7, F-Droid=vC6
 - Linear: NEA-128 Done
 
