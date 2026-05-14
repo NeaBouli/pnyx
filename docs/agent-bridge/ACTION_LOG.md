@@ -9,8 +9,12 @@
 - Scraper datetime.fromtimestamp() auf UTC gefixt
 - vC8 AAB gebaut + Play Console hochgeladen (Play Store Keystore)
 - Popup-Links zu schoenen Buttons umgebaut (alle 15 Seiten)
-- HEAD: 7033af1
-- Server: 7033af1 (deployed)
+- Scraper 3-stage fallback: REST → Jina (403) → Direct HTML (NEA-129)
+- GET /api/v1/public/scraper/status — live endpoint
+- Community Kachel: Parliament & Arweave Status (grün/gelb/rot)
+- Parliament API: kein RSS, API blockiert Hetzner+GitHub IPs, lokal funktioniert
+- HEAD: 1a33a91
+- Server: 1a33a91 (deployed, API+Web rebuilt)
 - Kanal-Stand: Play=vC8, Direct=vC7, F-Droid=vC6
 - Linear: NEA-128 Done
 
