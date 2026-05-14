@@ -1,5 +1,19 @@
 # Action Log
 
+## 2026-05-14 — Kausal-Audit + Arweave Fix + vC8 Play Store
+
+- CRITICAL FIX: Arweave hook signature mismatch (NEA-128) — 0 Bills je archiviert
+  - build_audit_trail() falsche positionale Args seit Deployment
+  - publish_to_arweave() fehlender bill_id Parameter
+  - Catch-up Mechanismus fuer verpasste Bills hinzugefuegt
+- Scraper datetime.fromtimestamp() auf UTC gefixt
+- vC8 AAB gebaut + Play Console hochgeladen (Play Store Keystore)
+- Popup-Links zu schoenen Buttons umgebaut (alle 15 Seiten)
+- HEAD: 7033af1
+- Server: 7033af1 (deployed)
+- Kanal-Stand: Play=vC8, Direct=vC7, F-Droid=vC6
+- Linear: NEA-128 Done
+
 ## 2026-05-13 — Play Console Legal Compliance + CX43 + Bugfixes
 
 - Privacy Policy URL: https://ekklesia.gr/wiki/privacy.html
