@@ -125,10 +125,13 @@ async def scheduled_scrape():
                 if not title or len(title) < 10:
                     continue
 
-                # Generate stable ID from law_num or title hash
+                # Generate stable ID: law_num > law_id (from Jina URL) > title hash
                 law_num = b.get("law_num")
+                law_id = b.get("law_id")  # UUID from parliament URL
                 if law_num:
                     bill_id = f"GR-{law_num}".replace(" ", "-")[:50]
+                elif law_id:
+                    bill_id = f"GR-{law_id[:8]}"
                 else:
                     h = hashlib.sha256(title.encode()).hexdigest()[:8]
                     bill_id = f"GR-AUTO-{h}"

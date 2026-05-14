@@ -236,6 +236,92 @@ SCRAPE_DELAY_SECONDS = 5
 SCRAPE_MAX_REQUESTS = 20
 
 
+async def _fetch_jina_markdown(url: str) -> Optional[str]:
+    """Fetch a URL via Jina Reader and return Markdown content."""
+    try:
+        async with httpx.AsyncClient(timeout=25.0) as client:
+            r = await client.get(f"https://r.jina.ai/{url}", headers={"Accept": "text/plain"})
+            if r.status_code == 200 and len(r.text) > 200:
+                return r.text
+    except Exception as e:
+        logger.warning("[SCRAPER] Jina fetch failed for %s: %s", url[:60], e)
+    return None
+
+
+def _parse_parliament_markdown(md: str, source_url: str) -> list[dict]:
+    """Parse Jina Markdown table rows into structured bill dicts.
+
+    Handles both Κατατεθέντα (submitted) and Ψηφισθέντα (voted) table formats.
+    Κατατεθέντα columns: Date | Title+Link | Type | Ministry | PDFs
+    Ψηφισθέντα columns:  Date | Title+Link | PDFs
+    """
+    bills = []
+    is_katatethenta = "Katatethenta" in source_url
+
+    for line in md.split("\n"):
+        line = line.strip()
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.split("|")]
+        cells = [c for c in cells if c]  # remove empty from leading/trailing pipes
+
+        if len(cells) < 2:
+            continue
+
+        # Skip header/separator rows
+        if cells[0].startswith("---") or cells[0].startswith("Βρέθηκαν") or cells[0].startswith("[Ημ.") or cells[0].startswith("Εγγραφές"):
+            continue
+        if cells[0].startswith("[") and "SortBy" in cells[0]:
+            continue
+
+        # Parse date (DD/MM/YYYY)
+        date_match = re.match(r"(\d{2})/(\d{2})/(\d{4})", cells[0])
+        if not date_match:
+            continue
+
+        day, month, year = date_match.groups()
+        vote_date = f"{year}-{month}-{day}T00:00:00+00:00"
+
+        # Parse title + URL from cell 1
+        title_cell = cells[1] if len(cells) > 1 else ""
+        title_match = re.search(r"\[([^\]]+)\]\(([^)]+)\)", title_cell)
+        if not title_match:
+            continue
+
+        title_el = title_match.group(1).strip()[:200]
+        detail_url = title_match.group(2).strip()
+
+        # Extract law_id from URL
+        law_id_match = re.search(r"law_id=([a-f0-9-]+)", detail_url)
+        law_id = law_id_match.group(1) if law_id_match else None
+
+        # Parse ministry (Κατατεθέντα column 3)
+        ministry = None
+        bill_type = None
+        if is_katatethenta and len(cells) > 3:
+            bill_type = cells[2] if not cells[2].startswith("[") else None
+            ministry = cells[3] if not cells[3].startswith("[") else None
+
+        # Generate stable bill ID
+        if law_id:
+            bill_id_short = law_id[:8]
+        else:
+            import hashlib
+            bill_id_short = hashlib.sha256(title_el.encode()).hexdigest()[:8]
+
+        bills.append({
+            "title_el": title_el,
+            "url": detail_url if detail_url.startswith("http") else f"{PARLIAMENT_BASE}{detail_url}",
+            "date": vote_date,
+            "law_num": None,  # Not available in HTML table
+            "ministry": ministry,
+            "type": bill_type,
+            "law_id": law_id,
+        })
+
+    return bills
+
+
 async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
     """Fetches latest bills from hellenicparliament.gr.
 
@@ -298,24 +384,24 @@ async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
     if bills:
         return bills[:limit]
 
-    # ── Stage 2: Jina HTML Scrape ────────────────────────────────────
+    # ── Stage 2: Jina Markdown Scrape (both pages) ─────────────────
     if api_blocked:
         fallback_used = "jina"
         try:
-            html = await fetch_with_fallback(f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Psifisthenta-Nomoschedia")
-            if html:
-                soup = BeautifulSoup(html, "html.parser")
-                for link in soup.find_all("a", href=True):
-                    text = link.get_text(strip=True)
-                    href = link.get("href", "")
-                    if len(text) > 20 and any(kw in text.lower() for kw in ["νόμος", "νομοσχέδιο", "ν.", "κύρωση"]):
-                        full_url = href if href.startswith("http") else f"{PARLIAMENT_BASE}{href}"
-                        bills.append({"title_el": text[:200], "url": full_url, "date": None})
-                    if len(bills) >= limit:
-                        break
-                if bills:
-                    logger.info("[SCRAPER] Fallback 1→2: Jina returned %d bills", len(bills))
-                    return bills[:limit]
+            jina_pages = [
+                f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Katatethenta-Nomosxedia",   # submitted
+                f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Psifisthenta-Nomoschedia",  # voted
+            ]
+            for page_url in jina_pages:
+                md = await _fetch_jina_markdown(page_url)
+                if md:
+                    parsed = _parse_parliament_markdown(md, page_url)
+                    bills.extend(parsed)
+                if len(bills) >= limit:
+                    break
+            if bills:
+                logger.info("[SCRAPER] Fallback 1→2: Jina returned %d bills from %d pages", len(bills), len(jina_pages))
+                return bills[:limit]
         except Exception as e:
             logger.warning("[SCRAPER] Stage 2 (Jina) error: %s — falling back to direct HTML", e)
 
