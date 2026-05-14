@@ -35,27 +35,45 @@ class ScrapeResult:
         }
 
 
-async def _resolve_dimos(
+# Diavgeia Region UID → ekklesia periferia_id mapping
+_REGION_UID_MAP = {
+    "5001": 7, "5002": 1, "5003": 12, "5004": 3, "5005": 9,
+    "5006": 8, "5007": 4, "5008": 11, "5009": 2, "5010": 5,
+    "5011": 13, "5012": 6, "5013": 10,
+}
+
+
+async def _resolve_org(
     session: AsyncSession,
     organization_uid: str,
-) -> tuple[int | None, int | None]:
-    """Resolve dimos_id and periferia_id from org mapping."""
+) -> tuple[int | None, int | None, str]:
+    """Resolve dimos_id, periferia_id, and governance_level from org UID.
+
+    Returns (dimos_id, periferia_id, governance_level).
+    """
+    uid = str(organization_uid)
+
+    # Check region mapping first (fast, no DB query)
+    if uid in _REGION_UID_MAP:
+        return None, _REGION_UID_MAP[uid], "REGION"
+
+    # Check dimos mapping
     result = await session.execute(
         select(DimosDiavgeiaOrg.dimos_id)
-        .where(DimosDiavgeiaOrg.diavgeia_uid == organization_uid)
+        .where(DimosDiavgeiaOrg.diavgeia_uid == uid)
         .where(DimosDiavgeiaOrg.is_primary == True)  # noqa: E712
         .limit(1)
     )
     row = result.scalar_one_or_none()
-    if row is None:
-        return None, None
+    if row is not None:
+        from models import Dimos
+        dimos = await session.get(Dimos, row)
+        if dimos:
+            return dimos.id, dimos.periferia_id, "MUNICIPAL"
+        return row, None, "MUNICIPAL"
 
-    # Resolve periferia_id via dimos
-    from models import Dimos
-    dimos = await session.get(Dimos, row)
-    if dimos:
-        return dimos.id, dimos.periferia_id
-    return row, None
+    # Unknown org — likely ministry, university, or other
+    return None, None, "OTHER"
 
 
 async def scrape_decisions(
@@ -109,10 +127,8 @@ async def scrape_decisions(
                     result.errors.append(f"ADA {ada}: no publish timestamp — skipped")
                     continue
 
-                # Resolve dimos
-                dimos_id, periferia_id = await _resolve_dimos(session, org_uid)
-                if dimos_id is None:
-                    logger.warning("ADA %s: org %s not mapped to any dimos", ada, org_uid)
+                # Resolve org → dimos/periferia/governance_level
+                dimos_id, periferia_id, gov_level = await _resolve_org(session, org_uid)
 
                 # Resolve org label from snapshot (not API — API doesn't return it)
                 org_label = get_org_label(org_uid)
@@ -132,6 +148,7 @@ async def scrape_decisions(
                     "raw_payload": raw_decision,
                     "dimos_id": dimos_id,
                     "periferia_id": periferia_id,
+                    "governance_level": gov_level,
                 }
 
                 if dry_run:

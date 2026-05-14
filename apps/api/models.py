@@ -365,6 +365,7 @@ class DiavgeiaDecision(Base):
     fetched_at            = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     dimos_id              = Column(Integer, ForeignKey("dimos.id", ondelete="SET NULL"), nullable=True)
     periferia_id          = Column(Integer, ForeignKey("periferia.id", ondelete="SET NULL"), nullable=True)
+    governance_level      = Column(String(20), nullable=True)  # MUNICIPAL, REGION, CENTRAL, OTHER
 
     __table_args__ = (
         CheckConstraint("length(ada) BETWEEN 10 AND 32", name="diavgeia_decisions_ada_chk"),
