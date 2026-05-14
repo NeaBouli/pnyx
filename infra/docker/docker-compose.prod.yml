@@ -141,6 +141,27 @@ services:
       - traefik.http.routers.dashboard.tls.certresolver=letsencrypt
       - traefik.http.services.dashboard.loadbalancer.server.port=3000
 
+  monitor:
+    build:
+      context: ../../
+      dockerfile: apps/monitor/Dockerfile
+    container_name: ekklesia-monitor
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_ADMIN_CHAT_ID: ${TELEGRAM_ADMIN_CHAT_ID}
+      API_URL: http://api:8000
+      MONITOR_INTERVAL_SECONDS: "1800"
+    networks:
+      - ekklesia
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
 volumes:
   postgres-data:
     external: true
