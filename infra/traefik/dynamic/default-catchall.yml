@@ -1,0 +1,15 @@
+http:
+  routers:
+    catchall:
+      rule: "HostRegexp(`.+`)"
+      priority: 1
+      entryPoints:
+        - websecure
+      service: noop
+      tls: {}
+
+  services:
+    noop:
+      loadBalancer:
+        servers:
+          - url: ""
