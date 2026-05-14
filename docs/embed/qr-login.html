@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>QR Login — ekklesia.gr</title>
+<meta name="robots" content="noindex">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f8fafc;display:flex;align-items:center;justify-content:center;min-height:100vh}
+.card{background:#fff;border-radius:1rem;padding:2rem;max-width:360px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,0.08);border:1px solid #e2e8f0}
+.card h2{font-size:1.1rem;font-weight:800;color:#0f172a;margin-bottom:0.5rem}
+.card p{font-size:0.85rem;color:#64748b;margin-bottom:1.25rem;line-height:1.5}
+#qr-container{display:flex;justify-content:center;margin:1rem 0}
+#qr-container canvas,#qr-container img{border-radius:0.5rem}
+.status{display:flex;align-items:center;justify-content:center;gap:0.5rem;font-size:0.82rem;font-weight:600;padding:0.5rem;border-radius:0.5rem;margin-top:1rem}
+.status-pending{background:#eff6ff;color:#2563eb}
+.status-success{background:#f0fdf4;color:#16a34a}
+.status-expired{background:#fef2f2;color:#dc2626}
+.timer{font-size:0.75rem;color:#94a3b8;margin-top:0.5rem}
+.btn{display:inline-block;padding:0.6rem 1.5rem;border:none;border-radius:0.5rem;font-size:0.85rem;font-weight:700;cursor:pointer;transition:all 0.2s;margin-top:0.75rem}
+.btn-primary{background:#2563eb;color:#fff}.btn-primary:hover{background:#1d4ed8}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid #2563eb;border-top:2px solid transparent;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hidden{display:none}
+.logo{font-size:1.3rem;font-weight:900;color:#2563eb;margin-bottom:1rem;display:flex;align-items:center;justify-content:center;gap:0.4rem}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">εκκλησία</div>
+  <h2 id="title">Σύνδεση με QR Code</h2>
+  <p id="subtitle">Σκανάρετε τον κωδικό QR με την εφαρμογή ekklesia.gr</p>
+
+  <div id="qr-container"></div>
+
+  <div id="status-pending" class="status status-pending">
+    <span class="spinner"></span> Αναμονή σάρωσης...
+  </div>
+
+  <div id="status-success" class="status status-success hidden">
+    ✅ Επιτυχής σύνδεση!
+  </div>
+
+  <div id="status-expired" class="status status-expired hidden">
+    ⏰ Η συνεδρία έληξε
+  </div>
+
+  <div id="timer" class="timer"></div>
+
+  <button id="btn-refresh" class="btn btn-primary hidden" onclick="startSession()">Ανανέωση QR</button>
+</div>
+
+<script>
+var API='https://api.ekklesia.gr';
+var sessionId=null;
+var pollTimer=null;
+var countdownTimer=null;
+var ttl=300;
+var remaining=0;
+
+function getParams(){
+  var p=new URLSearchParams(window.location.search);
+  return{purpose:p.get('purpose')||'ticket',bill_id:p.get('bill_id')||null};
+}
+
+function show(id){document.getElementById(id).classList.remove('hidden')}
+function hide(id){document.getElementById(id).classList.add('hidden')}
+
+async function startSession(){
+  // Reset UI
+  hide('status-success');hide('status-expired');hide('btn-refresh');
+  show('status-pending');
+  document.getElementById('qr-container').innerHTML='';
+  document.getElementById('timer').textContent='';
+
+  var params=getParams();
+  var url=API+'/api/v1/polis/qr-session?purpose='+params.purpose;
+  if(params.bill_id)url+='&bill_id='+encodeURIComponent(params.bill_id);
+
+  try{
+    var r=await fetch(url);
+    var d=await r.json();
+    sessionId=d.session_id;
+    ttl=d.ttl||300;
+    remaining=ttl;
+
+    // Render QR
+    new QRCode(document.getElementById('qr-container'),{
+      text:d.qr_data,
+      width:200,height:200,
+      colorDark:'#0f172a',colorLight:'#ffffff',
+      correctLevel:QRCode.CorrectLevel.M
+    });
+
+    // Start polling
+    if(pollTimer)clearInterval(pollTimer);
+    pollTimer=setInterval(pollSession,2000);
+
+    // Start countdown
+    if(countdownTimer)clearInterval(countdownTimer);
+    countdownTimer=setInterval(updateCountdown,1000);
+    updateCountdown();
+  }catch(e){
+    document.getElementById('qr-container').innerHTML='<p style="color:#dc2626">Σφάλμα φόρτωσης</p>';
+  }
+}
+
+async function pollSession(){
+  if(!sessionId)return;
+  try{
+    var r=await fetch(API+'/api/v1/polis/qr-session/'+sessionId);
+    var d=await r.json();
+
+    if(d.status==='authenticated'){
+      clearInterval(pollTimer);clearInterval(countdownTimer);
+      hide('status-pending');hide('status-expired');hide('btn-refresh');
+      show('status-success');
+      document.getElementById('timer').textContent='';
+
+      // Callback to parent (iframe embed)
+      if(window.parent!==window){
+        window.parent.postMessage({type:'ekklesia-qr-auth',status:'authenticated',
+          nullifier_hash:d.nullifier_hash,public_key_hex:d.public_key_hex,
+          purpose:d.purpose,bill_id:d.bill_id},'*');
+      }
+    }else if(d.status==='expired'){
+      onExpired();
+    }
+  }catch(e){}
+}
+
+function updateCountdown(){
+  remaining--;
+  if(remaining<=0){onExpired();return}
+  var m=Math.floor(remaining/60);
+  var s=remaining%60;
+  document.getElementById('timer').textContent=m+':'+(s<10?'0':'')+s+' verbleibend';
+}
+
+function onExpired(){
+  clearInterval(pollTimer);clearInterval(countdownTimer);
+  hide('status-pending');show('status-expired');show('btn-refresh');
+  document.getElementById('timer').textContent='';
+  document.getElementById('qr-container').style.opacity='0.3';
+}
+
+// Auto-start
+startSession();
+</script>
+</body>
+</html>
