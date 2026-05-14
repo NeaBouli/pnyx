@@ -27,8 +27,12 @@
   - 6 Regeln, 30min Intervall, Telegram @ekklesia_admin_bot
   - Chat-ID: 579949616 (Gio)
   - Erster Run: 3 Alerts (Arweave pending)
-- HEAD: 091fe7f
-- Server: 091fe7f (deployed, monitor running)
+- NEA-66: Traefik catch-all Router fuer unbekannte Domains (fitcase.shop ACME-Spam gestoppt)
+  - /srv/traefik/dynamic/default-catchall.yml auf Server
+  - Kein Code-Commit (Server-Config, nicht im Repo)
+- NEA-136: Dashboard Invalid Date + AI Status gefixt (da4a047)
+- HEAD: da4a047
+- Server: da4a047 (deployed, monitor running, traefik fixed)
 - Kanal-Stand: Play=vC8, Direct=vC7, F-Droid=vC6
 - Linear: NEA-128 Done
 
