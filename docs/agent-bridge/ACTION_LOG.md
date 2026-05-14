@@ -15,8 +15,13 @@
 - Parliament API: kein RSS, API blockiert Hetzner+GitHub IPs, lokal funktioniert
 - Jina Markdown Parser: 11 neue Bills importiert (5→16) via Jina Fallback (NEA-130)
 - TZ-Fix: vote_date .replace(tzinfo=None) fuer naive DB
-- HEAD: d3e4b20
-- Server: d3e4b20 (deployed)
+- CRITICAL FIX: vote_date war Einreichungsdatum (NEA-131)
+  - submitted_date Spalte hinzugefuegt
+  - 11 ANNOUNCED Bills korrigiert (vote_date→NULL)
+  - Scraper unterscheidet jetzt Κατατεθέντα vs Ψηφισθέντα
+- Diavgeia: 325 Dimos + 13 Periferia + 1775 Orgs bereits in DB (NEA-132 In Progress)
+- HEAD: 4bf9e9c
+- Server: 4bf9e9c (deployed)
 - Kanal-Stand: Play=vC8, Direct=vC7, F-Droid=vC6
 - Linear: NEA-128 Done
 
