@@ -839,6 +839,47 @@
     <a href="tickets/index.html" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.75rem 2rem;background:var(--blue);color:white;border-radius:var(--radius);font-weight:700;text-decoration:none" data-el="Άνοιγμα Ticket Board" data-en="Open Ticket Board">Άνοιγμα Ticket Board</a>
   </div>
 
+  <!-- Parliament & Arweave Status -->
+  <h2 class="fade-in" data-el="Κοινοβούλιο & Αρχείο" data-en="Parliament & Archive">Κοινοβούλιο & Αρχείο</h2>
+  <div id="scraperStatus" class="fade-in" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin:1rem 0">
+    <div style="background:var(--gray-100);border-radius:0.75rem;padding:1rem;text-align:center;border:2px solid #e2e8f0">
+      <div style="font-size:1.5rem">📜</div>
+      <div style="font-size:1.5rem;font-weight:900;color:var(--gray-900)" id="ss-bills">—</div>
+      <div style="font-size:0.7rem;color:var(--gray-500)" data-el="Νομοσχέδια" data-en="Bills">Νομοσχέδια</div>
+    </div>
+    <div style="background:var(--gray-100);border-radius:0.75rem;padding:1rem;text-align:center;border:2px solid #e2e8f0">
+      <div style="font-size:1.5rem">⛓️</div>
+      <div style="font-size:1.5rem;font-weight:900;color:var(--gray-900)" id="ss-arweave">—</div>
+      <div style="font-size:0.7rem;color:var(--gray-500)" data-el="Arweave Αρχεία" data-en="Arweave Records">Arweave Αρχεία</div>
+    </div>
+    <div style="background:var(--gray-100);border-radius:0.75rem;padding:1rem;text-align:center;border:2px solid #e2e8f0">
+      <div style="font-size:1.5rem">💰</div>
+      <div style="font-size:1.5rem;font-weight:900;color:var(--gray-900)" id="ss-balance">—</div>
+      <div style="font-size:0.7rem;color:var(--gray-500)">Arweave AR</div>
+    </div>
+    <div style="background:var(--gray-100);border-radius:0.75rem;padding:1rem;text-align:center;border:2px solid #e2e8f0">
+      <div style="font-size:1.5rem" id="ss-indicator">⏳</div>
+      <div style="font-size:0.75rem;font-weight:700;color:var(--gray-700)" id="ss-label">Φόρτωση...</div>
+      <div style="font-size:0.7rem;color:var(--gray-500)">Scraper Status</div>
+    </div>
+  </div>
+  <script>
+  (function(){
+    fetch("https://api.ekklesia.gr/api/v1/public/scraper/status").then(function(r){return r.json()}).then(function(d){
+      document.getElementById("ss-bills").textContent=d.bills_total||0;
+      document.getElementById("ss-arweave").textContent=d.arweave_archived||0;
+      document.getElementById("ss-balance").textContent=d.arweave_balance_ar?d.arweave_balance_ar.toFixed(2):"—";
+      var last=d.parliament_scraper&&d.parliament_scraper.last_success;
+      if(last){
+        var age=(Date.now()-new Date(last).getTime())/3600000;
+        if(age<24){document.getElementById("ss-indicator").textContent="🟢";document.getElementById("ss-label").textContent="Ενεργό"}
+        else if(age<72){document.getElementById("ss-indicator").textContent="🟡";document.getElementById("ss-label").textContent="Καθυστέρηση"}
+        else{document.getElementById("ss-indicator").textContent="🔴";document.getElementById("ss-label").textContent="Ανενεργό"}
+      }
+    }).catch(function(){});
+  })();
+  </script>
+
   <h2 class="fade-in" data-el="Τι ΔΕΝ είμαστε" data-en="What we are NOT">Τι ΔΕΝ είμαστε</h2>
   <div class="warn-box fade-in">
     <p>⚠️ Η Ekklesia.gr <strong>ΔΕΝ</strong> είναι πολιτικό κόμμα &middot;

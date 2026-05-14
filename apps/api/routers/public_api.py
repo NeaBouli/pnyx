@@ -263,6 +263,46 @@ async def public_cplm(
     return data
 
 
+@router.get("/scraper/status")
+async def public_scraper_status(db: AsyncSession = Depends(get_db)):
+    """Public scraper & archival health status."""
+    import redis.asyncio as aioredis
+    import os
+    from config import settings
+
+    r = aioredis.from_url(os.getenv("REDIS_URL", "redis://redis:6379"), decode_responses=True)
+
+    last_run = await r.get("scraper:parliament:last_run") or None
+    last_success = await r.get("scraper:parliament:last_success") or None
+
+    # Bills stats
+    total = await db.scalar(select(func.count(ParliamentBill.id))) or 0
+    with_arweave = await db.scalar(
+        select(func.count(ParliamentBill.id)).where(ParliamentBill.arweave_tx_id.isnot(None))
+    ) or 0
+
+    # Arweave balance
+    arweave_balance = None
+    try:
+        if settings.arweave_wallet_path:
+            import arweave
+            w = arweave.Wallet(settings.arweave_wallet_path)
+            arweave_balance = float(w.balance)
+    except Exception:
+        pass
+
+    await r.aclose()
+    return {
+        "parliament_scraper": {
+            "last_run": last_run,
+            "last_success": last_success,
+        },
+        "bills_total": total,
+        "arweave_archived": with_arweave,
+        "arweave_balance_ar": arweave_balance,
+    }
+
+
 @router.get("/cplm/history")
 async def public_cplm_history(
     days: int = 30,

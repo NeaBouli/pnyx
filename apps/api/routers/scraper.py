@@ -237,17 +237,26 @@ SCRAPE_MAX_REQUESTS = 20
 
 
 async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
-    """Fetches latest bills from hellenicparliament.gr official REST API.
+    """Fetches latest bills from hellenicparliament.gr.
 
-    Uses the Open Data API (api.ashx?q=laws) instead of HTML scraping.
-    Soft scraping: 5s delay between requests, proper User-Agent, max 20 req/session.
+    3-stage fallback chain:
+      1. REST API (api.ashx?q=laws) — fastest, structured JSON
+      2. Jina HTML scrape — if API returns 403 or fails
+      3. Direct HTML parse — if Jina also fails
+    Each fallback is logged. Total failure = empty list + log warning.
     """
     import asyncio
+    from datetime import timezone as _tz
+
     bills = []
-    request_count = 0
+    fallback_used = None
+
+    # ── Stage 1: REST API ────────────────────────────────────────────
+    api_blocked = False
     try:
+        request_count = 0
         async with httpx.AsyncClient(timeout=15.0) as client:
-            for cat in ["%CE%BD", "%CE%BD%CE%BF"]:  # ν (bills), νο (laws)
+            for cat in ["%CE%BD", "%CE%BD%CE%BF"]:
                 if request_count >= SCRAPE_MAX_REQUESTS:
                     break
                 if request_count > 0:
@@ -259,19 +268,18 @@ async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
                              "Accept": "application/json", "Accept-Language": "el-GR,el;q=0.9"},
                 )
                 if r.status_code == 403:
-                    logger.warning("[MOD-10] Parliament API blocked (403) — datacenter IP restricted")
+                    logger.warning("[SCRAPER] Stage 1 blocked (403) — falling back to Jina")
+                    api_blocked = True
                     break
                 if r.status_code != 200:
                     continue
                 data = r.json()
                 for item in data.get("Data", []):
-                    # Parse .NET date format /Date(1775595600000+0300)/
                     date_str = item.get("LawPhaseDate", "")
                     date = None
                     if date_str:
                         ts_match = re.search(r"/Date\((\d+)", date_str)
                         if ts_match:
-                            from datetime import timezone as _tz
                             date = datetime.fromtimestamp(int(ts_match.group(1)) / 1000, tz=_tz.utc).isoformat()
                     bills.append({
                         "title_el": item.get("Title", "")[:200],
@@ -284,19 +292,59 @@ async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
                 if len(bills) >= limit:
                     break
     except Exception as e:
-        logger.warning(f"[MOD-10] Parliament API error: {e}")
-        # Fallback: try HTML scraping via Jina Reader
-        html = await fetch_with_fallback(f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Psifisthenta-Nomoschedia")
-        if html:
-            soup = BeautifulSoup(html, "html.parser")
-            for link in soup.find_all("a", href=True):
-                text = link.get_text(strip=True)
-                href = link.get("href", "")
-                if len(text) > 20 and any(kw in text.lower() for kw in ["νόμος", "νομοσχέδιο", "ν."]):
-                    full_url = href if href.startswith("http") else f"{PARLIAMENT_BASE}{href}"
-                    bills.append({"title_el": text[:200], "url": full_url, "date": None})
-                if len(bills) >= limit:
-                    break
+        logger.warning("[SCRAPER] Stage 1 error: %s — falling back to Jina", e)
+        api_blocked = True
+
+    if bills:
+        return bills[:limit]
+
+    # ── Stage 2: Jina HTML Scrape ────────────────────────────────────
+    if api_blocked:
+        fallback_used = "jina"
+        try:
+            html = await fetch_with_fallback(f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Psifisthenta-Nomoschedia")
+            if html:
+                soup = BeautifulSoup(html, "html.parser")
+                for link in soup.find_all("a", href=True):
+                    text = link.get_text(strip=True)
+                    href = link.get("href", "")
+                    if len(text) > 20 and any(kw in text.lower() for kw in ["νόμος", "νομοσχέδιο", "ν.", "κύρωση"]):
+                        full_url = href if href.startswith("http") else f"{PARLIAMENT_BASE}{href}"
+                        bills.append({"title_el": text[:200], "url": full_url, "date": None})
+                    if len(bills) >= limit:
+                        break
+                if bills:
+                    logger.info("[SCRAPER] Fallback 1→2: Jina returned %d bills", len(bills))
+                    return bills[:limit]
+        except Exception as e:
+            logger.warning("[SCRAPER] Stage 2 (Jina) error: %s — falling back to direct HTML", e)
+
+    # ── Stage 3: Direct HTML parse (no proxy) ────────────────────────
+    if not bills:
+        fallback_used = "direct_html"
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                r = await client.get(
+                    f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Psifisthenta-Nomoschedia",
+                    headers={"User-Agent": SCRAPE_USER_AGENT, "Accept-Language": "el-GR,el;q=0.9"},
+                )
+                if r.status_code == 200:
+                    soup = BeautifulSoup(r.text, "html.parser")
+                    for link in soup.find_all("a", href=True):
+                        text = link.get_text(strip=True)
+                        href = link.get("href", "")
+                        if len(text) > 20 and any(kw in text.lower() for kw in ["νόμος", "νομοσχέδιο", "ν.", "κύρωση"]):
+                            full_url = href if href.startswith("http") else f"{PARLIAMENT_BASE}{href}"
+                            bills.append({"title_el": text[:200], "url": full_url, "date": None})
+                        if len(bills) >= limit:
+                            break
+                    if bills:
+                        logger.info("[SCRAPER] Fallback 2→3: Direct HTML returned %d bills", len(bills))
+        except Exception as e:
+            logger.warning("[SCRAPER] Stage 3 (direct HTML) error: %s", e)
+
+    if not bills:
+        logger.warning("[SCRAPER] ALL 3 STAGES FAILED — 0 bills. Next run in 6-12h.")
 
     return bills[:limit]
 
