@@ -13,8 +13,10 @@
 - GET /api/v1/public/scraper/status — live endpoint
 - Community Kachel: Parliament & Arweave Status (grün/gelb/rot)
 - Parliament API: kein RSS, API blockiert Hetzner+GitHub IPs, lokal funktioniert
-- HEAD: 1a33a91
-- Server: 1a33a91 (deployed, API+Web rebuilt)
+- Jina Markdown Parser: 11 neue Bills importiert (5→16) via Jina Fallback (NEA-130)
+- TZ-Fix: vote_date .replace(tzinfo=None) fuer naive DB
+- HEAD: d3e4b20
+- Server: d3e4b20 (deployed)
 - Kanal-Stand: Play=vC8, Direct=vC7, F-Droid=vC6
 - Linear: NEA-128 Done
 

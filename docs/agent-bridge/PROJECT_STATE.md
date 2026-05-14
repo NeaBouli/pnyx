@@ -13,7 +13,7 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `1a33a91` (feat(scraper): 3-stage fallback + status + community kachel)
+- **HEAD:** `d3e4b20` (fix(scraper): Jina parser + tz-fix, 16 bills in DB)
 - **Tags:** `v1.0.0`, `pre-hermes-20260513`, `pre-legal-20260513`
 - **Remote:** synchron mit GitHub
 - **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `1a33a91` (deployed 2026-05-14)
