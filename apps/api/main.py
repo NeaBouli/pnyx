@@ -143,12 +143,12 @@ async def scheduled_scrape():
                 if existing.scalar_one_or_none():
                     continue
 
-                # Parse vote date if available
+                # Parse vote date if available (strip tz for naive DB column)
                 vote_date = None
                 if b.get("date"):
                     try:
                         from datetime import datetime as dt
-                        vote_date = dt.fromisoformat(b["date"])
+                        vote_date = dt.fromisoformat(b["date"]).replace(tzinfo=None)
                     except (ValueError, TypeError):
                         pass
 
