@@ -83,6 +83,12 @@ async function startSession(){
   try{
     var r=await fetch(url);
     var d=await r.json();
+    if(!r.ok){
+      hide('status-pending');
+      document.getElementById('qr-container').innerHTML='<p style="color:#dc2626;font-size:0.85rem">'+(d.detail||'API Error '+r.status)+'</p>';
+      show('btn-refresh');
+      return;
+    }
     sessionId=d.session_id;
     ttl=d.ttl||300;
     remaining=ttl;
