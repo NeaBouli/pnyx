@@ -23,8 +23,12 @@
 - Diavgeia: Region-Mapping + governance_level (NEA-132)
   - 13 Regionen → periferia_id gemappt (5001-5013)
   - 101 Decisions klassifiziert: MUNICIPAL(3), REGION(1), CENTRAL(13), OTHER(84)
-- HEAD: 155f830
-- Server: 155f830 (deployed)
+- Business Logic Monitor: ekklesia-monitor Container LIVE (NEA-134)
+  - 6 Regeln, 30min Intervall, Telegram @ekklesia_admin_bot
+  - Chat-ID: 579949616 (Gio)
+  - Erster Run: 3 Alerts (Arweave pending)
+- HEAD: 091fe7f
+- Server: 091fe7f (deployed, monitor running)
 - Kanal-Stand: Play=vC8, Direct=vC7, F-Droid=vC6
 - Linear: NEA-128 Done
 
