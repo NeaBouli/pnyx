@@ -176,6 +176,15 @@ async def scheduled_scrape():
             if inserted > 0:
                 await db.commit()
                 logger.info("[MOD-03] Upserted %d new bills into DB", inserted)
+                # Notify community about new bills
+                try:
+                    from services.telegram_community import notify_announced
+                    for b in bills[:inserted]:
+                        title = (b.get("title_el") or "")[:150]
+                        if title:
+                            await notify_announced(b.get("law_id", "")[:8] or "new", title, b.get("submitted_date"))
+                except Exception as e:
+                    logger.warning("[MOD-03] Telegram notify failed: %s", e)
 
         await record_success(name)
     except Exception as e:

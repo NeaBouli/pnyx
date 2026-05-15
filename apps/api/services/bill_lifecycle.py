@@ -96,8 +96,14 @@ async def run_bill_lifecycle(db: AsyncSession) -> dict:
                     # Hooks
                     if to_status == BillStatus.ACTIVE:
                         await _hook_notify_new_bill(bill)
+                        await _hook_telegram_community(bill, to_status)
+                    elif to_status == BillStatus.WINDOW_24H:
+                        await _hook_telegram_community(bill, to_status)
                     elif to_status == BillStatus.PARLIAMENT_VOTED:
                         await _hook_arweave_snapshot(db, bill)
+                        await _hook_telegram_community(bill, to_status)
+                    elif to_status == BillStatus.OPEN_END:
+                        pass  # no community post for OPEN_END
 
                     break  # Only one transition per cycle per bill
 
@@ -133,6 +139,7 @@ async def _catchup_arweave(db: AsyncSession) -> int:
         if bill.arweave_tx_id:
             archived += 1
             logger.info("[LIFECYCLE] Arweave catch-up: %s → %s", bill.id, bill.arweave_tx_id)
+            await _hook_telegram_arweave(bill)
 
     if archived > 0:
         await db.commit()
@@ -202,3 +209,31 @@ async def _hook_arweave_snapshot(db: AsyncSession, bill: ParliamentBill) -> None
             logger.info("[LIFECYCLE] Arweave snapshot: %s → %s", bill.id, tx_id)
     except Exception as e:
         logger.warning("[LIFECYCLE] Arweave hook failed for %s: %s", bill.id, e)
+
+
+async def _hook_telegram_community(bill: ParliamentBill, new_status: BillStatus) -> None:
+    """Post bill transition to community Telegram channel + group."""
+    try:
+        from services.telegram_community import notify_active, notify_window_24h, notify_parliament_voted
+        title = bill.title_el or bill.id
+
+        if new_status == BillStatus.ACTIVE:
+            vote_date = bill.parliament_vote_date.strftime("%d.%m.%Y") if bill.parliament_vote_date else None
+            await notify_active(bill.id, title, vote_date)
+        elif new_status == BillStatus.WINDOW_24H:
+            await notify_window_24h(bill.id, title)
+        elif new_status == BillStatus.PARLIAMENT_VOTED:
+            await notify_parliament_voted(bill.id, title)
+    except Exception as e:
+        logger.warning("[LIFECYCLE] Telegram community hook failed for %s: %s", bill.id, e)
+
+
+async def _hook_telegram_arweave(bill: ParliamentBill) -> None:
+    """Post Arweave archival to community Telegram."""
+    try:
+        from services.telegram_community import notify_arweave
+        title = bill.title_el or bill.id
+        if bill.arweave_tx_id:
+            await notify_arweave(bill.id, title, bill.arweave_tx_id)
+    except Exception as e:
+        logger.warning("[LIFECYCLE] Telegram arweave hook failed for %s: %s", bill.id, e)
