@@ -303,6 +303,17 @@ async def public_scraper_status(db: AsyncSession = Depends(get_db)):
     }
 
 
+@router.post("/share")
+async def record_share():
+    """Anonymous share counter — no tracking, just a number."""
+    import redis.asyncio as aioredis
+    import os
+    r = aioredis.from_url(os.getenv("REDIS_URL", "redis://redis:6379"), decode_responses=True)
+    count = await r.incr("stats:share_count")
+    await r.aclose()
+    return {"share_count": count}
+
+
 @router.get("/cplm/history")
 async def public_cplm_history(
     days: int = 30,

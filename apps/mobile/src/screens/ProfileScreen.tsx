@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Linking } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Linking, Share } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
@@ -189,6 +189,21 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       )}
 
+      {/* Invite Friends */}
+      <TouchableOpacity
+        style={s.inviteBtn}
+        onPress={async () => {
+          try {
+            await Share.share({
+              message: "Ψήφισε ανώνυμα για τα νομοσχέδια της Βουλής!\nekklesia.gr — Ψηφιακή Άμεση Δημοκρατία\nΚατέβασε την εφαρμογή: https://ekklesia.gr/download",
+            });
+            fetch(`${process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr"}/api/v1/public/share`, { method: "POST" }).catch(() => {});
+          } catch {}
+        }}
+      >
+        <Text style={s.inviteBtnText}>Πρόσκληση Φίλων</Text>
+      </TouchableOpacity>
+
       {/* Legal Links */}
       <View style={s.legalSection}>
         <TouchableOpacity onPress={() => Linking.openURL("https://ekklesia.gr/wiki/privacy.html")}>
@@ -231,6 +246,8 @@ const s = StyleSheet.create({
   updateText: { fontSize: 13, fontWeight: "600", color: colors.primary },
   downloadBtn: { backgroundColor: colors.success, borderRadius: 10, padding: 12, alignItems: "center", marginTop: 8 },
   downloadBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  inviteBtn: { backgroundColor: colors.primaryLight, borderRadius: 12, padding: 14, alignItems: "center", marginTop: 24, borderWidth: 2, borderColor: colors.primary },
+  inviteBtnText: { color: colors.primary, fontWeight: "800", fontSize: 15 },
   legalSection: { marginTop: 24, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border, gap: 8, alignItems: "center" },
   legalLink: { fontSize: 13, color: colors.primary, fontWeight: "600" },
 });
