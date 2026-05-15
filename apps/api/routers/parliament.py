@@ -44,6 +44,7 @@ class BillSummary(BaseModel):
     forum_topic_url:     str | None = None
     created_at:          str | None = None
     ai_summary_reviewed: bool = False
+    arweave_tx_id:       str | None = None
 
 class BillDetail(BaseModel):
     id:                     str
@@ -141,6 +142,7 @@ async def get_bills(
         forum_topic_url=f"{DISCOURSE_BASE}/t/{b.forum_topic_id}" if b.forum_topic_id else None,
         created_at=b.created_at.isoformat() if b.created_at else None,
         ai_summary_reviewed=b.ai_summary_reviewed or False,
+        arweave_tx_id=b.arweave_tx_id,
     ) for b in bills]
 
 

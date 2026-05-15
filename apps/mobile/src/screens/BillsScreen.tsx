@@ -37,7 +37,7 @@ export default function BillsScreen() {
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = filter === "ALL" ? bills : bills.filter(b => b.status === filter);
+  const filtered = filter === "ALL" ? bills : filter === "ARWEAVE" ? bills.filter(b => b.arweave_tx_id) : bills.filter(b => b.status === filter);
 
   const shareBill = async (bill: any) => {
     try {
@@ -53,7 +53,7 @@ export default function BillsScreen() {
   return (
     <View style={s.container}>
       <View style={s.filterRow}>
-        {[["ALL", "Όλα"], ["ACTIVE", "Ενεργά"], ["WINDOW_24H", "24ω"], ["PARLIAMENT_VOTED", "Βουλή"]].map(([k, l]) => (
+        {[["ALL", "Όλα"], ["ACTIVE", "Ενεργά"], ["WINDOW_24H", "24ω"], ["PARLIAMENT_VOTED", "Βουλή"], ["ARWEAVE", "⛓ Arweave"]].map(([k, l]) => (
           <TouchableOpacity key={k} onPress={() => setFilter(k)} style={[s.filterBtn, filter === k && s.filterActive]}>
             <Text style={[s.filterTxt, filter === k && s.filterTxtActive]}>{l}</Text>
           </TouchableOpacity>
@@ -76,6 +76,11 @@ export default function BillsScreen() {
               <View style={s.cardFooter}>
                 <Text style={[s.cardStatus, { color: STATUS_COLORS[item.status] ?? colors.textTertiary }]}>{STATUS_LABELS[item.status] ?? item.status}</Text>
                 <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+                  {item.arweave_tx_id != null && (
+                    <TouchableOpacity onPress={(e) => { e.stopPropagation(); Linking.openURL(`https://arweave.net/${item.arweave_tx_id}`); }} hitSlop={8}>
+                      <Text style={{ fontSize: 11, color: "#a855f7", fontWeight: "700" }}>⛓ {item.arweave_tx_id.substring(0, 8)}…</Text>
+                    </TouchableOpacity>
+                  )}
                   {item.forum_topic_id != null && (
                     <TouchableOpacity onPress={(e) => { e.stopPropagation(); Linking.openURL(`${FORUM_BASE}${item.forum_topic_id}`); }} hitSlop={8}>
                       <Text style={s.forumBtn}>💬</Text>
