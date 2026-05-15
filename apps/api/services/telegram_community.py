@@ -11,23 +11,31 @@ logger = logging.getLogger(__name__)
 NEWS_TOKEN = os.getenv("TELEGRAM_NEWS_BOT_TOKEN", "")
 CHANNEL_ID = os.getenv("TELEGRAM_CHANNEL_ID", "")
 GROUP_ID = os.getenv("TELEGRAM_GROUP_ID", "")
+GROUP_THREAD_ID = os.getenv("TELEGRAM_GROUP_THREAD_ID", "")
 
 
 async def send_community_update(message: str) -> bool:
-    """Send message to both channel and group."""
+    """Send message to both channel and group (forum topic)."""
     if not NEWS_TOKEN:
         logger.debug("[TG-NEWS] Token not set — skipping")
         return False
 
+    targets = []
+    if CHANNEL_ID:
+        targets.append({"chat_id": CHANNEL_ID})
+    if GROUP_ID:
+        payload = {"chat_id": GROUP_ID}
+        if GROUP_THREAD_ID:
+            payload["message_thread_id"] = int(GROUP_THREAD_ID)
+        targets.append(payload)
+
     sent = 0
-    for chat_id in [CHANNEL_ID, GROUP_ID]:
-        if not chat_id:
-            continue
+    for target in targets:
         try:
             async with httpx.AsyncClient(timeout=10) as client:
                 r = await client.post(
                     f"https://api.telegram.org/bot{NEWS_TOKEN}/sendMessage",
-                    json={"chat_id": chat_id, "text": message, "parse_mode": "HTML",
+                    json={**target, "text": message, "parse_mode": "HTML",
                           "disable_web_page_preview": True},
                 )
                 if r.status_code == 200:
