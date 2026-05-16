@@ -21,6 +21,7 @@ import ProfileScreen from "../screens/ProfileScreen";
 import NotificationSettingsScreen from "../screens/NotificationSettingsScreen";
 import CompassScreen from "../screens/CompassScreen";
 import PolisLoginScreen from "../screens/PolisLoginScreen";
+import ImportAccountScreen from "../screens/ImportAccountScreen";
 
 export type RootStackParams = {
   Onboarding: undefined;
@@ -32,6 +33,7 @@ export type RootStackParams = {
   Vote: { billId: string; billTitle: string };
   Result: { billId: string; billTitle?: string };
   PolisLogin: { session?: string; challenge?: string; purpose?: string; bill_id?: string };
+  ImportAccount: { key?: string; nullifier?: string; pubkey?: string };
 };
 
 export type TabParams = {
@@ -96,6 +98,7 @@ export default function Navigation() {
     config: {
       screens: {
         PolisLogin: "polis-login",
+        ImportAccount: "import-account",
       },
     },
   };
@@ -114,6 +117,7 @@ export default function Navigation() {
         <Stack.Screen name="Vote" component={VoteScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Ψηφίστε" }} />
         <Stack.Screen name="Result" component={ResultScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Αποτελέσματα" }} />
         <Stack.Screen name="PolisLogin" component={PolisLoginScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "POLIS Login" }} />
+        <Stack.Screen name="ImportAccount" component={ImportAccountScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Import Account" }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
