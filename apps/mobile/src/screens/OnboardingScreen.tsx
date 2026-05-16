@@ -88,7 +88,7 @@ export default function OnboardingScreen({ navigation }: Props) {
   const screens = [
     // Screen 1: Welcome
     <View key="1" style={[s.screen, { backgroundColor: "#eff6ff" }]}>
-      <Image source={require("../../assets/icon.png")} style={s.logo} />
+      <Image source={require("../../assets/pnx.png")} style={s.logo} />
       <Text style={s.title}>εκκλησία</Text>
       <Text style={s.subtitle}>του έθνους</Text>
       <Text style={s.tagline}>Η φωνή σου μετράει.</Text>
@@ -241,7 +241,7 @@ const s = StyleSheet.create({
   pickerWrap: { alignSelf: "stretch", backgroundColor: colors.surface, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginBottom: 12, overflow: "hidden" },
   picker: { height: 50 },
   hint: { fontSize: 12, color: colors.textTertiary, marginBottom: 20, textAlign: "center" },
-  dots: { flexDirection: "row", justifyContent: "center", position: "absolute", bottom: 40, left: 0, right: 0 },
+  dots: { flexDirection: "row", justifyContent: "center", position: "absolute", bottom: 20, left: 0, right: 0 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border, marginHorizontal: 4 },
   dotActive: { backgroundColor: colors.primary, width: 24 },
   skipBtn: { position: "absolute", top: 56, right: 24 },

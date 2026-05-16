@@ -53,7 +53,7 @@ export default function BillsScreen() {
   return (
     <View style={s.container}>
       <View style={s.filterRow}>
-        {[["ALL", "Όλα"], ["ACTIVE", "Ενεργά"], ["WINDOW_24H", "24ω"], ["PARLIAMENT_VOTED", "Βουλή"], ["ARWEAVE", "⛓ Arweave"]].map(([k, l]) => (
+        {[["ALL", "Όλα"], ["ACTIVE", "Ενεργά"], ["WINDOW_24H", "24ω"], ["PARLIAMENT_VOTED", "Βουλή"], ["ARWEAVE", "⛓"]].map(([k, l]) => (
           <TouchableOpacity key={k} onPress={() => setFilter(k)} style={[s.filterBtn, filter === k && s.filterActive]}>
             <Text style={[s.filterTxt, filter === k && s.filterTxtActive]}>{l}</Text>
           </TouchableOpacity>
