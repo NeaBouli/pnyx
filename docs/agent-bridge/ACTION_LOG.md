@@ -14,7 +14,11 @@
 - Traefik catchall + NEA-66 closed
 - QR Widget: CSP fix (inline qrcode.js)
 - Dashboard: Invalid Date + AI Status Fix
-- HEAD: dbc4f8d
+- NEA-73: Embed Phase 2 — vote.html + results.html Widgets
+- NEA-70: OG-Image 1200x630 + Twitter summary_large_image
+- NEA-165: Arweave Links in Archiv-Bills auf Landing Page
+- NEA-163: Post-Vote Konsensierung (-5 bis +5) für OPEN_END Bills
+- HEAD: 59e5db2
 - AAB: builds/ekklesia-v1.1.0-vC10-PLAY.aab
 
 ## 2026-05-14 — Kausal-Audit + Arweave Fix + vC8 Play Store
