@@ -99,35 +99,66 @@ async def send_monthly_report(db: AsyncSession) -> bool:
     now = datetime.now(timezone.utc)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-    # Neue Bills diesen Monat
-    new_bills = await db.scalar(
-        select(func.count(ParliamentBill.id)).where(
-            ParliamentBill.created_at >= month_start
-        )
+    # ── Stats ──────────────────────────────────────────────────────
+    new_bills_count = await db.scalar(
+        select(func.count(ParliamentBill.id)).where(ParliamentBill.created_at >= month_start)
     ) or 0
 
-    # Bills in OPEN_END (abgestimmt)
-    voted = await db.scalar(
-        select(func.count(ParliamentBill.id)).where(
-            ParliamentBill.status == BillStatus.OPEN_END
-        )
+    voted_count = await db.scalar(
+        select(func.count(ParliamentBill.id)).where(ParliamentBill.status == BillStatus.OPEN_END)
     ) or 0
 
-    # Gesamte Stimmen
     total_votes = await db.scalar(select(func.count(CitizenVote.id))) or 0
 
-    # Arweave archiviert
-    archived = await db.scalar(
-        select(func.count(ParliamentBill.id)).where(
-            ParliamentBill.arweave_tx_id.isnot(None)
-        )
+    archived_count = await db.scalar(
+        select(func.count(ParliamentBill.id)).where(ParliamentBill.arweave_tx_id.isnot(None))
     ) or 0
 
+    # ── Neue Bills (Titel-Liste) ──────────────────────────────────
+    new_bills_result = await db.execute(
+        select(ParliamentBill.id, ParliamentBill.title_el)
+        .where(ParliamentBill.created_at >= month_start)
+        .order_by(ParliamentBill.created_at.desc())
+        .limit(10)
+    )
+    new_bills_list = new_bills_result.all()
+
+    # ── Nächste Abstimmungen (ACTIVE + ANNOUNCED mit vote_date) ───
+    upcoming_result = await db.execute(
+        select(ParliamentBill.id, ParliamentBill.title_el, ParliamentBill.parliament_vote_date)
+        .where(
+            ParliamentBill.status.in_([BillStatus.ACTIVE, BillStatus.ANNOUNCED]),
+            ParliamentBill.parliament_vote_date.isnot(None),
+            ParliamentBill.parliament_vote_date >= now.replace(tzinfo=None),
+        )
+        .order_by(ParliamentBill.parliament_vote_date)
+        .limit(5)
+    )
+    upcoming_list = upcoming_result.all()
+
+    # ── Top-Abstimmungen mit Ergebnis (diesen Monat) ─────────────
+    from sqlalchemy import text
+    top_votes_result = await db.execute(text("""
+        SELECT b.id, b.title_el,
+            COUNT(*) FILTER (WHERE cv.vote='YES') as yes,
+            COUNT(*) FILTER (WHERE cv.vote='NO') as no,
+            COUNT(*) as total
+        FROM citizen_votes cv
+        JOIN parliament_bills b ON b.id = cv.bill_id
+        WHERE cv.created_at >= :month_start
+        GROUP BY b.id, b.title_el
+        ORDER BY total DESC LIMIT 5
+    """), {"month_start": month_start})
+    top_votes_list = top_votes_result.all()
+
+    # ── Build HTML ────────────────────────────────────────────────
     month_name = now.strftime("%B %Y")
-    body = f"""<h2 style="color:#2563eb">Μηνιαία Αναφορά — {month_name}</h2>
+
+    # Stats grid
+    stats_html = f"""<h2 style="color:#2563eb">Μηνιαία Αναφορά — {month_name}</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0">
 <div style="background:#f1f5f9;border-radius:8px;padding:16px;text-align:center">
-<div style="font-size:28px;font-weight:900;color:#2563eb">{new_bills}</div>
+<div style="font-size:28px;font-weight:900;color:#2563eb">{new_bills_count}</div>
 <div style="font-size:12px;color:#64748b">Νέα νομοσχέδια</div>
 </div>
 <div style="background:#f1f5f9;border-radius:8px;padding:16px;text-align:center">
@@ -135,14 +166,42 @@ async def send_monthly_report(db: AsyncSession) -> bool:
 <div style="font-size:12px;color:#64748b">Ψήφοι πολιτών</div>
 </div>
 <div style="background:#f1f5f9;border-radius:8px;padding:16px;text-align:center">
-<div style="font-size:28px;font-weight:900;color:#a855f7">{archived}</div>
+<div style="font-size:28px;font-weight:900;color:#a855f7">{archived_count}</div>
 <div style="font-size:12px;color:#64748b">Arweave αρχεία</div>
 </div>
 <div style="background:#f1f5f9;border-radius:8px;padding:16px;text-align:center">
-<div style="font-size:28px;font-weight:900;color:#0f172a">{voted}</div>
-<div style="font-size:12px;color:#64748b">Ψηφισμένα νομοσχέδια</div>
+<div style="font-size:28px;font-weight:900;color:#0f172a">{voted_count}</div>
+<div style="font-size:12px;color:#64748b">Ψηφισμένα</div>
 </div>
-</div>
+</div>"""
+
+    # New bills list
+    bills_html = ""
+    if new_bills_list:
+        bills_html = '<h3 style="color:#0f172a;margin-top:24px">Νέα Νομοσχέδια</h3><ul style="font-size:13px;line-height:2;color:#334155">'
+        for bill_id, title in new_bills_list:
+            bills_html += f'<li><a href="https://ekklesia.gr/el/bills/{bill_id}" style="color:#2563eb;text-decoration:none">{(title or "")[:80]}</a></li>'
+        bills_html += '</ul>'
+
+    # Upcoming votes
+    upcoming_html = ""
+    if upcoming_list:
+        upcoming_html = '<h3 style="color:#0f172a;margin-top:24px">Επόμενες Ψηφοφορίες</h3><ul style="font-size:13px;line-height:2;color:#334155">'
+        for bill_id, title, vote_date in upcoming_list:
+            date_str = vote_date.strftime("%d.%m") if vote_date else "—"
+            upcoming_html += f'<li>{date_str} — {(title or "")[:60]}</li>'
+        upcoming_html += '</ul>'
+
+    # Top votes
+    top_html = ""
+    if top_votes_list:
+        top_html = '<h3 style="color:#0f172a;margin-top:24px">Top Ψηφοφορίες</h3><table style="width:100%;font-size:12px;border-collapse:collapse">'
+        top_html += '<tr style="background:#f1f5f9"><th style="padding:6px;text-align:left">Νομοσχέδιο</th><th style="padding:6px">ΝΑΙ</th><th style="padding:6px">ΟΧΙ</th><th style="padding:6px">Σύνολο</th></tr>'
+        for bill_id, title, yes, no, total in top_votes_list:
+            top_html += f'<tr><td style="padding:6px">{(title or "")[:40]}</td><td style="padding:6px;text-align:center;color:#22c55e">{yes}</td><td style="padding:6px;text-align:center;color:#ef4444">{no}</td><td style="padding:6px;text-align:center;font-weight:700">{total}</td></tr>'
+        top_html += '</table>'
+
+    body = stats_html + bills_html + upcoming_html + top_html + """
 <p style="text-align:center;margin:24px 0">
 <a href="https://ekklesia.gr/el/bills" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px">Δείτε τα νομοσχέδια →</a>
 </p>"""
