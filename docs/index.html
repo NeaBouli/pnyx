@@ -1614,11 +1614,18 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     var a = document.createElement("a");
     a.href = "https://ekklesia.gr/" + lang + "/bills/" + b.id;
     a.className = "t-card " + cssClass;
+    var arweaveHtml = '';
+    if (b.arweave_tx_id) {
+      arweaveHtml = '<span class="t-meta" style="font-size:0.6rem;color:#a855f7" onclick="event.preventDefault();window.open(\'https://arweave.net/' + b.arweave_tx_id + '\',\'_blank\')">⛓ ' + b.arweave_tx_id.substring(0,8) + '…</span>';
+    } else if (b.status === 'OPEN_END' || b.status === 'PARLIAMENT_VOTED') {
+      arweaveHtml = '<span class="t-meta" style="font-size:0.6rem;color:#94a3b8">⏳ ' + (lang==='en'?'Archiving pending':'Αρχειοθέτηση εκκρεμεί') + '</span>';
+    }
     a.innerHTML =
       '<span class="t-badge ' + s.cls + '">' + badge + '</span>' +
       '<span class="t-title">' + title + '</span>' +
       '<span class="t-meta" style="font-size:0.65rem;opacity:0.6">' +
-        (b.categories && b.categories[0] ? b.categories[0] : "") + '</span>';
+        (b.categories && b.categories[0] ? b.categories[0] : "") + '</span>' +
+      arweaveHtml;
     return a;
   }
 
