@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Αποτελέσματα — ekklesia.gr</title>
+<meta name="robots" content="noindex">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#fff}
+.card{padding:20px;max-width:500px;margin:0 auto}
+.title{font-size:15px;font-weight:800;color:#0f172a;margin-bottom:12px;line-height:1.4}
+.row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.label{font-size:12px;font-weight:700;width:40px;text-align:right}
+.bar-bg{flex:1;background:#f1f5f9;border-radius:6px;height:24px;overflow:hidden}
+.bar{height:100%;border-radius:6px;display:flex;align-items:center;padding:0 8px;font-size:11px;font-weight:700;color:#fff;transition:width 0.5s}
+.bar-yes{background:#22c55e}
+.bar-no{background:#ef4444}
+.bar-abs{background:#94a3b8}
+.pct{font-size:12px;font-weight:700;width:40px}
+.total{text-align:center;font-size:13px;color:#64748b;margin:12px 0;font-weight:600}
+.parl{background:#f1f5f9;border-radius:10px;padding:12px;margin:12px 0}
+.parl-title{font-size:11px;font-weight:700;color:#64748b;margin-bottom:6px}
+.parl-result{font-size:14px;font-weight:800}
+.div-wrap{background:#eff6ff;border-radius:10px;padding:12px;margin:12px 0}
+.div-title{font-size:11px;font-weight:700;color:#2563eb;margin-bottom:4px}
+.div-bar{background:#dbeafe;border-radius:6px;height:20px;position:relative;overflow:hidden}
+.div-fill{background:#2563eb;height:100%;border-radius:6px;transition:width 0.5s}
+.div-label{font-size:12px;font-weight:700;color:#2563eb;text-align:center;margin-top:4px}
+.attr{font-size:11px;color:#94a3b8;text-align:center;margin-top:16px;padding-top:12px;border-top:1px solid #e2e8f0}
+.attr a{color:#2563eb;text-decoration:none}
+.loading{text-align:center;padding:40px;color:#94a3b8}
+.error{text-align:center;padding:40px;color:#ef4444;font-size:13px}
+</style>
+</head>
+<body>
+<div class="card" id="widget">
+  <div class="loading" id="loader">Φόρτωση...</div>
+</div>
+<script>
+var API='https://api.ekklesia.gr';
+var params=new URLSearchParams(window.location.search);
+var billId=params.get('bill_id')||params.get('bill')||'';
+var lang=params.get('lang')||'el';
+var el=lang==='el';
+
+async function load(){
+  if(!billId){document.getElementById('loader').className='error';document.getElementById('loader').textContent=el?'Λείπει bill_id':'Missing bill_id';return}
+  try{
+    var r=await fetch(API+'/api/v1/bills/'+billId);
+    if(!r.ok)throw new Error(r.status);
+    var b=await r.json();
+    var vr=await fetch(API+'/api/v1/vote/'+billId+'/results').then(function(x){return x.json()}).catch(function(){return{}});
+    render(b,vr);
+  }catch(e){document.getElementById('loader').className='error';document.getElementById('loader').textContent=(el?'Νομοσχέδιο δεν βρέθηκε: ':'Bill not found: ')+billId}
+}
+
+function render(b,vr){
+  var yes=vr.yes||0,no=vr.no||0,abstain=vr.abstain||0,total=yes+no+abstain;
+  var yesPct=total?Math.round(yes/total*100):0;
+  var noPct=total?Math.round(no/total*100):0;
+  var absPct=total?Math.round(abstain/total*100):0;
+
+  var h='<div class="title">'+(b.title_el||b.title_en||billId)+'</div>';
+
+  // Vote bars
+  h+='<div class="row"><div class="label" style="color:#22c55e">'+(el?'ΝΑΙ':'YES')+'</div><div class="bar-bg"><div class="bar bar-yes" style="width:'+Math.max(yesPct,2)+'%">'+yes+'</div></div><div class="pct" style="color:#22c55e">'+yesPct+'%</div></div>';
+  h+='<div class="row"><div class="label" style="color:#ef4444">'+(el?'ΟΧΙ':'NO')+'</div><div class="bar-bg"><div class="bar bar-no" style="width:'+Math.max(noPct,2)+'%">'+no+'</div></div><div class="pct" style="color:#ef4444">'+noPct+'%</div></div>';
+  if(abstain>0)h+='<div class="row"><div class="label" style="color:#94a3b8">'+(el?'ΑΠΟΧΗ':'ABS')+'</div><div class="bar-bg"><div class="bar bar-abs" style="width:'+Math.max(absPct,2)+'%">'+abstain+'</div></div><div class="pct" style="color:#94a3b8">'+absPct+'%</div></div>';
+
+  h+='<div class="total">'+total+' '+(el?'ψήφοι πολιτών':'citizen votes')+'</div>';
+
+  // Parliament result
+  var pv=b.party_votes_parliament;
+  if(pv&&Object.keys(pv).length>0){
+    var parlYes=0,parlNo=0;
+    for(var p in pv){if(pv[p]==='ΝΑΙ'||pv[p]==='YES')parlYes++;if(pv[p]==='ΟΧΙ'||pv[p]==='NO')parlNo++}
+    var parlResult=parlYes>=parlNo?(el?'ΕΓΚΡΙΘΗΚΕ':'APPROVED'):(el?'ΑΠΟΡΡΙΦΘΗΚΕ':'REJECTED');
+    var parlColor=parlYes>=parlNo?'#22c55e':'#ef4444';
+    h+='<div class="parl"><div class="parl-title">'+(el?'Αποτέλεσμα Βουλής':'Parliament Result')+'</div><div class="parl-result" style="color:'+parlColor+'">'+parlResult+' ('+parlYes+'/'+parlNo+')</div></div>';
+
+    // Divergence
+    if(total>0){
+      var citizenYesPct=yesPct;
+      var parlYesPct=Math.round(parlYes/(parlYes+parlNo)*100);
+      var divergence=Math.abs(citizenYesPct-parlYesPct);
+      h+='<div class="div-wrap"><div class="div-title">'+(el?'Δείκτης Απόκλισης':'Divergence Score')+'</div><div class="div-bar"><div class="div-fill" style="width:'+divergence+'%"></div></div><div class="div-label">'+divergence+'%</div></div>';
+    }
+  }
+
+  if(total===0)h+='<div style="text-align:center;color:#94a3b8;font-size:13px;margin:16px 0">'+(el?'Δεν υπάρχουν ψήφοι ακόμα':'No votes yet')+'</div>';
+
+  h+='<div class="attr">'+(el?'Πηγή':'Source')+': <a href="https://ekklesia.gr" target="_blank">ekklesia.gr</a> · <a href="https://ekklesia.gr/el/results" target="_blank">'+(el?'Όλα τα αποτελέσματα':'All results')+'</a></div>';
+  document.getElementById('widget').innerHTML=h;
+}
+load();
+setInterval(load,60000);
+</script>
+</body>
+</html>

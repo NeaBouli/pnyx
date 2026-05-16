@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Ψηφοφορία — ekklesia.gr</title>
+<meta name="robots" content="noindex">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#fff}
+.card{padding:20px;max-width:500px;margin:0 auto}
+.title{font-size:15px;font-weight:800;color:#0f172a;margin-bottom:6px;line-height:1.4}
+.pill{font-size:12px;color:#64748b;margin-bottom:16px;line-height:1.5}
+.status{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-bottom:12px}
+.status-active{background:#dcfce7;color:#166534}
+.status-announced{background:#f1f5f9;color:#64748b}
+.status-voted{background:#dbeafe;color:#1e40af}
+.status-open{background:#ede9fe;color:#5b21b6}
+.btns{display:flex;gap:10px;margin:16px 0}
+.btn{flex:1;padding:14px;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer;text-decoration:none;text-align:center;display:block;transition:opacity 0.2s}
+.btn:hover{opacity:0.85}
+.btn-yes{background:#22c55e;color:#fff}
+.btn-no{background:#ef4444;color:#fff}
+.bar-wrap{background:#f1f5f9;border-radius:8px;height:28px;overflow:hidden;display:flex;margin:12px 0}
+.bar-yes{background:#22c55e;height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;min-width:30px;transition:width 0.5s}
+.bar-no{background:#ef4444;height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;min-width:30px;transition:width 0.5s}
+.stats{font-size:12px;color:#94a3b8;text-align:center;margin:8px 0}
+.attr{font-size:11px;color:#94a3b8;text-align:center;margin-top:16px;padding-top:12px;border-top:1px solid #e2e8f0}
+.attr a{color:#2563eb;text-decoration:none}
+.loading{text-align:center;padding:40px;color:#94a3b8}
+.error{text-align:center;padding:40px;color:#ef4444;font-size:13px}
+</style>
+</head>
+<body>
+<div class="card" id="widget">
+  <div class="loading" id="loader">Φόρτωση...</div>
+</div>
+<script>
+var API='https://api.ekklesia.gr';
+var params=new URLSearchParams(window.location.search);
+var billId=params.get('bill_id')||params.get('bill')||'';
+var lang=params.get('lang')||'el';
+var el=lang==='el';
+
+async function load(){
+  if(!billId){document.getElementById('loader').className='error';document.getElementById('loader').textContent=el?'Λείπει bill_id':'Missing bill_id';return}
+  try{
+    var r=await fetch(API+'/api/v1/bills/'+billId);
+    if(!r.ok)throw new Error(r.status);
+    var b=await r.json();
+    var vr=await fetch(API+'/api/v1/vote/'+billId+'/results').then(function(x){return x.json()}).catch(function(){return{}});
+    render(b,vr);
+  }catch(e){document.getElementById('loader').className='error';document.getElementById('loader').textContent=(el?'Νομοσχέδιο δεν βρέθηκε: ':'Bill not found: ')+billId}
+}
+
+function render(b,vr){
+  var yes=vr.yes||0,no=vr.no||0,abstain=vr.abstain||0,total=yes+no+abstain;
+  var yesPct=total?Math.round(yes/total*100):0;
+  var noPct=total?Math.round(no/total*100):0;
+  var st=b.status||'ANNOUNCED';
+  var sc={'ACTIVE':'status-active','ANNOUNCED':'status-announced','PARLIAMENT_VOTED':'status-voted','OPEN_END':'status-open','WINDOW_24H':'status-active'};
+  var sl={'ACTIVE':el?'Ανοιχτή':'Active','ANNOUNCED':el?'Ανακοινώθηκε':'Announced','PARLIAMENT_VOTED':el?'Ψηφίστηκε':'Voted','OPEN_END':el?'Αρχείο':'Archive','WINDOW_24H':el?'24ω':'24h'};
+  var votable=st==='ACTIVE'||st==='WINDOW_24H'||st==='OPEN_END';
+  var h='<span class="status '+(sc[st]||'status-announced')+'">'+(sl[st]||st)+'</span>';
+  h+='<div class="title">'+(b.title_el||b.title_en||billId)+'</div>';
+  if(b.pill_el)h+='<div class="pill">'+b.pill_el+'</div>';
+  if(votable)h+='<div class="btns"><a href="https://ekklesia.gr/el/bills/'+billId+'" target="_blank" class="btn btn-yes">'+(el?'ΝΑΙ':'YES')+'</a><a href="https://ekklesia.gr/el/bills/'+billId+'" target="_blank" class="btn btn-no">'+(el?'ΟΧΙ':'NO')+'</a></div>';
+  if(total>0){
+    h+='<div class="bar-wrap"><div class="bar-yes" style="width:'+Math.max(yesPct,5)+'%">'+yesPct+'%</div><div class="bar-no" style="width:'+Math.max(noPct,5)+'%">'+noPct+'%</div></div>';
+    h+='<div class="stats">'+total+' '+(el?'ψήφοι':'votes')+'</div>';
+  }else{
+    h+='<div class="stats">'+(el?'Δεν υπάρχουν ψήφοι ακόμα':'No votes yet')+'</div>';
+  }
+  h+='<div class="attr">'+(el?'Πηγή':'Source')+': <a href="https://ekklesia.gr" target="_blank">ekklesia.gr</a> · <a href="https://ekklesia.gr/el/bills/'+billId+'" target="_blank">'+(el?'Ψηφίστε':'Vote')+'</a></div>';
+  document.getElementById('widget').innerHTML=h;
+}
+load();
+setInterval(load,60000);
+</script>
+</body>
+</html>
