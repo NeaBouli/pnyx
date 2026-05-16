@@ -58,6 +58,8 @@ async def compute_cplm(db: AsyncSession) -> dict:
     Each voter's position starts at (0, 0) and shifts ±0.05 per vote.
     The societal position is the average of all voter positions.
     """
+    from sqlalchemy import text
+
     # Load all votes with their bills
     result = await db.execute(
         select(CitizenVote, ParliamentBill)
@@ -69,13 +71,23 @@ async def compute_cplm(db: AsyncSession) -> dict:
         return {
             "x": 0.0, "y": 0.0, "quadrant": "center",
             "total_voters": 0, "total_votes": 0, "open_end_votes": 0,
+            "consensus_adjustments": 0,
             "last_updated": datetime.now(timezone.utc).isoformat(),
             "trend": {"x_delta": 0.0, "y_delta": 0.0, "direction": "stable"},
         }
 
+    # Load consensus votes for weighting
+    consensus_result = await db.execute(text(
+        "SELECT nullifier_hash, bill_id, score FROM consensus_votes"
+    ))
+    consensus_map: dict[tuple, int] = {}
+    for nh, bid, score in consensus_result:
+        consensus_map[(nh, bid)] = score
+
     # Group votes by voter (nullifier_hash)
     voter_positions: dict[str, dict] = {}
     open_end_count = 0
+    consensus_adjustments = 0
 
     for vote, bill in rows:
         nh = vote.nullifier_hash
@@ -85,12 +97,22 @@ async def compute_cplm(db: AsyncSession) -> dict:
         axis = _classify_axis(bill)
         direction = _vote_direction(vote.vote)
 
+        # Apply consensus weighting if available
+        consensus_score = consensus_map.get((nh, bill.id))
+        if consensus_score is not None and bill.status == BillStatus.OPEN_END:
+            # consensus_weight: -5→-1.0, 0→0.0, +5→+1.0
+            weight = consensus_score / 5.0
+            effective_direction = direction * weight
+            consensus_adjustments += 1
+        else:
+            effective_direction = direction
+
         if axis == "economic":
             voter_positions[nh]["x"] = max(-10, min(10,
-                voter_positions[nh]["x"] + direction * STRENGTH))
+                voter_positions[nh]["x"] + effective_direction * STRENGTH))
         else:
             voter_positions[nh]["y"] = max(-10, min(10,
-                voter_positions[nh]["y"] + direction * STRENGTH))
+                voter_positions[nh]["y"] + effective_direction * STRENGTH))
 
         if bill.status == BillStatus.OPEN_END:
             open_end_count += 1
@@ -119,6 +141,7 @@ async def compute_cplm(db: AsyncSession) -> dict:
         "total_voters": n,
         "total_votes": len(rows),
         "open_end_votes": open_end_count,
+        "consensus_adjustments": consensus_adjustments,
         "last_updated": datetime.now(timezone.utc).isoformat(),
         "trend": {"x_delta": 0.0, "y_delta": 0.0, "direction": "stable"},
     }

@@ -649,6 +649,14 @@ async def submit_consensus(
 
     bill.consensus_score = avg_score
     bill.consensus_count = count
+
+    # Record in cplm_history
+    weight = req.score / 5.0
+    await db.execute(text("""
+        INSERT INTO cplm_history (nullifier_hash, economic_score, social_score, trigger_type, trigger_bill_id)
+        VALUES (:nh, :econ, :soc, 'consensus', :bill_id)
+    """), {"nh": req.nullifier_hash, "econ": weight * 0.05, "soc": 0.0, "bill_id": bill_id})
+
     await db.commit()
 
     return {
@@ -656,4 +664,32 @@ async def submit_consensus(
         "your_score": req.score,
         "consensus_score": avg_score,
         "consensus_count": count,
+    }
+
+
+@router.get("/compass/personal")
+async def get_personal_compass(
+    x_nullifier: str = Header(..., alias="X-Nullifier"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Personal compass position including consensus adjustments."""
+    from sqlalchemy import text
+
+    # Get cplm_history for this user
+    history = await db.execute(text("""
+        SELECT economic_score, social_score, trigger_type, trigger_bill_id, created_at
+        FROM cplm_history WHERE nullifier_hash = :nh ORDER BY created_at DESC LIMIT 50
+    """), {"nh": x_nullifier})
+    entries = [{"economic": r[0], "social": r[1], "type": r[2], "bill_id": r[3],
+                "date": r[4].isoformat() if r[4] else None} for r in history]
+
+    # Compute cumulative position
+    x = sum(e["economic"] for e in entries)
+    y = sum(e["social"] for e in entries)
+
+    return {
+        "nullifier_hash": x_nullifier[:8] + "...",
+        "position": {"x": round(x, 4), "y": round(y, 4)},
+        "history": entries,
+        "total_entries": len(entries),
     }
