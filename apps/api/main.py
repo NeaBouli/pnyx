@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -380,6 +381,21 @@ async def scheduled_greek_topics():
         await record_failure(name, str(e))
 
 
+async def scheduled_monthly_newsletter():
+    """Send monthly report newsletter on 1st of each month at 09:00 UTC."""
+    from services.newsletter_service import send_monthly_report
+    from database import AsyncSessionLocal
+    try:
+        async with AsyncSessionLocal() as db:
+            success = await send_monthly_report(db)
+            if success:
+                logger.info("[NEWSLETTER] Monthly report sent")
+            else:
+                logger.warning("[NEWSLETTER] Monthly report failed")
+    except Exception as e:
+        logger.error("[NEWSLETTER] Monthly report error: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(app):
     # Startup
@@ -391,8 +407,9 @@ async def lifespan(app):
     scheduler.add_job(scheduled_bill_lifecycle, IntervalTrigger(hours=1), id="bill_lifecycle", replace_existing=True)
     scheduler.add_job(scheduled_cplm_refresh, IntervalTrigger(hours=6), id="cplm_refresh", replace_existing=True)
     scheduler.add_job(scheduled_greek_topics, IntervalTrigger(hours=6), id="greek_topics", replace_existing=True)
+    scheduler.add_job(scheduled_monthly_newsletter, CronTrigger(day=1, hour=9, minute=0), id="monthly_newsletter", replace_existing=True)
     scheduler.start()
-    logger.info("[Scheduler] Started — lifecycle 1h, parliament 12h, diavgeia 48h, notify-bills 30m, notify-results 1h, forum-sync 10m, greek-topics 6h")
+    logger.info("[Scheduler] Started — lifecycle 1h, parliament 12h, diavgeia 48h, notify-bills 30m, notify-results 1h, forum-sync 10m, greek-topics 6h, newsletter 1st/month")
     yield
     # Shutdown
     scheduler.shutdown()
