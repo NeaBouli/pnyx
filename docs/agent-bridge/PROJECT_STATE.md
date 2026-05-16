@@ -13,10 +13,10 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `4bf9e9c` (fix: vote_date korrekt, 16 bills, submitted_date Spalte)
-- **Tags:** `v1.0.0`, `pre-hermes-20260513`, `pre-legal-20260513`
+- **HEAD:** `dbc4f8d` (vC10 UI fixes + Admin QR + Newsletter)
+- **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-votedate-fix-20260515`
 - **Remote:** synchron mit GitHub
-- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `1a33a91` (deployed 2026-05-14)
+- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `cdcb449` (deployed 2026-05-17)
 
 ## Uncommitted Aenderungen
 

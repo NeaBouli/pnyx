@@ -1,5 +1,22 @@
 # Action Log
 
+## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
+
+- vC10 gebaut + S10 deployed + AAB bereit
+- Logo Fix (pnx.png statt Placeholder), Onboarding Dots Fix, Arweave Tab "⛓"
+- Admin QR Test-Account: POST /api/v1/admin/test-account (id=11, S10 RF8N313QMFL)
+- ImportAccountScreen: Deep-Link ekklesia://import-account
+- Update-Banner: direct_apk_url Priorität, try/catch, F-Droid URL leer
+- Newsletter: Brevo API direkt, monatlicher Auto-Report CronTrigger 1./Monat
+- Community Telegram Bot: 11 Topics konfiguriert, Kanal+Gruppe aktiv
+- SMTP Fix: Brevo Credentials korrigiert (a73611001 + xsmtpsib-..JK81lt)
+- Discourse Hub App Buttons auf Landing Page
+- Traefik catchall + NEA-66 closed
+- QR Widget: CSP fix (inline qrcode.js)
+- Dashboard: Invalid Date + AI Status Fix
+- HEAD: dbc4f8d
+- AAB: builds/ekklesia-v1.1.0-vC10-PLAY.aab
+
 ## 2026-05-14 — Kausal-Audit + Arweave Fix + vC8 Play Store
 
 - CRITICAL FIX: Arweave hook signature mismatch (NEA-128) — 0 Bills je archiviert
