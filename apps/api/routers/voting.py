@@ -592,3 +592,68 @@ async def get_vote_receipt(
         "status": "confirmed",
         "note": "Tier-1 full receipt pending mobile schema migration (ADR-022)",
     }
+
+
+# ── Post-Vote Consensus (-5 to +5) for OPEN_END Bills ───────────────────────
+
+class ConsensusRequest(BaseModel):
+    score: int = Field(..., ge=-5, le=5)
+    nullifier_hash: str = Field(..., min_length=16, max_length=64)
+    signature_hex: str = Field(..., min_length=64)
+
+
+@router.post("/{bill_id}/consensus")
+async def submit_consensus(
+    bill_id: str,
+    req: ConsensusRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Post-vote consensus score for OPEN_END bills. Scale: -5 (full resistance) to +5 (full consensus)."""
+    from sqlalchemy import text
+
+    # Bill must exist and be OPEN_END
+    bill_result = await db.execute(
+        select(ParliamentBill).where(ParliamentBill.id == bill_id)
+    )
+    bill = bill_result.scalar_one_or_none()
+    if not bill:
+        raise HTTPException(404, "Bill nicht gefunden")
+    if bill.status != BillStatus.OPEN_END:
+        raise HTTPException(400, "Konsensierung nur für abgestimmte Bills (OPEN_END)")
+
+    # Verify identity exists
+    identity = await db.execute(
+        select(IdentityRecord).where(
+            IdentityRecord.nullifier_hash == req.nullifier_hash,
+            IdentityRecord.status == KeyStatus.ACTIVE,
+        )
+    )
+    if not identity.scalar_one_or_none():
+        raise HTTPException(403, "Identität nicht gefunden oder widerrufen")
+
+    # Upsert consensus vote
+    await db.execute(text("""
+        INSERT INTO consensus_votes (nullifier_hash, bill_id, score)
+        VALUES (:nullifier, :bill_id, :score)
+        ON CONFLICT (nullifier_hash, bill_id)
+        DO UPDATE SET score = :score, created_at = NOW()
+    """), {"nullifier": req.nullifier_hash, "bill_id": bill_id, "score": req.score})
+
+    # Update aggregate on bill
+    agg = await db.execute(text("""
+        SELECT AVG(score)::float, COUNT(*) FROM consensus_votes WHERE bill_id = :bill_id
+    """), {"bill_id": bill_id})
+    row = agg.fetchone()
+    avg_score = round(row[0], 2) if row[0] is not None else 0.0
+    count = row[1] or 0
+
+    bill.consensus_score = avg_score
+    bill.consensus_count = count
+    await db.commit()
+
+    return {
+        "bill_id": bill_id,
+        "your_score": req.score,
+        "consensus_score": avg_score,
+        "consensus_count": count,
+    }

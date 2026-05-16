@@ -148,6 +148,8 @@ class ParliamentBill(Base):
     arweave_tx_id       = Column(String(100), nullable=True)     # MOD-08
     ai_summary_reviewed = Column(Boolean, default=False)        # Community-geprüft
     forum_topic_id      = Column(Integer, nullable=True)         # Discourse topic ID
+    consensus_score     = Column(Float, nullable=True)           # Post-vote consensus -5..+5
+    consensus_count     = Column(Integer, default=0)             # Number of consensus votes
 
     # Vote Scope: who can vote on this bill
     governance_level    = Column(Enum(GovernanceLevel), default=GovernanceLevel.NATIONAL, nullable=False)

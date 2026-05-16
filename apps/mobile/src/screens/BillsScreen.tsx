@@ -74,7 +74,14 @@ export default function BillsScreen() {
               <Text style={s.cardTitle} numberOfLines={2}>{item.title_el}</Text>
               {item.pill_el && <Text style={s.cardPill} numberOfLines={1}>{item.pill_el}</Text>}
               <View style={s.cardFooter}>
-                <Text style={[s.cardStatus, { color: STATUS_COLORS[item.status] ?? colors.textTertiary }]}>{STATUS_LABELS[item.status] ?? item.status}</Text>
+                <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+                  <Text style={[s.cardStatus, { color: STATUS_COLORS[item.status] ?? colors.textTertiary }]}>{STATUS_LABELS[item.status] ?? item.status}</Text>
+                  {item.status === "OPEN_END" && item.consensus_count > 0 && (
+                    <Text style={{ fontSize: 10, fontWeight: "700", color: (item.consensus_score || 0) >= 0 ? "#22c55e" : "#ef4444" }}>
+                      ⚖️ {(item.consensus_score || 0) > 0 ? "+" : ""}{(item.consensus_score || 0).toFixed(1)}
+                    </Text>
+                  )}
+                </View>
                 <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
                   {item.arweave_tx_id != null && (
                     <TouchableOpacity onPress={(e) => { e.stopPropagation(); Linking.openURL(`https://arweave.net/${item.arweave_tx_id}`); }} hitSlop={8}>

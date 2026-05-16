@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Share,
   ScrollView,
+  Slider,
 } from "react-native";
 import * as LocalAuthentication from "expo-local-authentication";
 import type { StackScreenProps } from "@react-navigation/stack";
@@ -38,6 +39,9 @@ export default function VoteScreen({ route, navigation }: Props) {
   const [billStatus, setBillStatus] = useState<string>("");
   const [hasVoted, setHasVoted] = useState(false);
   const [isCorrected, setIsCorrected] = useState(false);
+  const [consensusScore, setConsensusScore] = useState(0);
+  const [consensusSubmitting, setConsensusSubmitting] = useState(false);
+  const [consensusDone, setConsensusDone] = useState(false);
 
   React.useEffect(() => {
     const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
@@ -212,6 +216,66 @@ export default function VoteScreen({ route, navigation }: Props) {
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Υποβολή ψήφου...</Text>
+        </View>
+      )}
+
+      {/* Consensus Slider for OPEN_END Bills */}
+      {billStatus === "OPEN_END" && !consensusDone && (
+        <View style={{ backgroundColor: "#faf5ff", borderRadius: 12, padding: 16, marginTop: 24, borderWidth: 1, borderColor: "#a855f7" }}>
+          <Text style={{ fontWeight: "800", color: "#5b21b6", fontSize: 14, marginBottom: 8 }}>
+            ⚖️ Κλίμακα Συναίνεσης
+          </Text>
+          <Text style={{ fontSize: 12, color: "#7c3aed", marginBottom: 12 }}>
+            Πόσο συμφωνείτε με την απόφαση της Βουλής;
+          </Text>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+            <Text style={{ fontSize: 10, color: "#ef4444" }}>Αντίσταση</Text>
+            <Text style={{ fontSize: 10, color: "#94a3b8" }}>Ουδέτερο</Text>
+            <Text style={{ fontSize: 10, color: "#22c55e" }}>Συναίνεση</Text>
+          </View>
+          <Slider
+            minimumValue={-5}
+            maximumValue={5}
+            step={1}
+            value={consensusScore}
+            onValueChange={setConsensusScore}
+            minimumTrackTintColor="#a855f7"
+            maximumTrackTintColor="#e2e8f0"
+            thumbTintColor="#7c3aed"
+          />
+          <Text style={{ textAlign: "center", fontSize: 24, fontWeight: "900", color: consensusScore > 0 ? "#22c55e" : consensusScore < 0 ? "#ef4444" : "#94a3b8", marginVertical: 8 }}>
+            {consensusScore > 0 ? "+" : ""}{consensusScore}
+          </Text>
+          <TouchableOpacity
+            style={{ backgroundColor: "#7c3aed", borderRadius: 10, padding: 14, alignItems: "center" }}
+            disabled={consensusSubmitting}
+            onPress={async () => {
+              setConsensusSubmitting(true);
+              try {
+                const nullifier = await loadNullifier();
+                const keypair = await loadKeypair();
+                if (!nullifier || !keypair) { Alert.alert("Σφάλμα", "Δεν έχετε επαληθευτεί"); return; }
+                const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
+                const r = await fetch(`${API}/api/v1/vote/${encodeURIComponent(billId)}/consensus`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ score: consensusScore, nullifier_hash: nullifier, signature_hex: "consensus" }),
+                });
+                if (r.ok) { setConsensusDone(true); Alert.alert("Ευχαριστούμε!", `Βαθμολογία: ${consensusScore > 0 ? "+" : ""}${consensusScore}`); }
+                else { const d = await r.json(); Alert.alert("Σφάλμα", d.detail || "Αποτυχία"); }
+              } catch (e: any) { Alert.alert("Σφάλμα", e.message); }
+              finally { setConsensusSubmitting(false); }
+            }}
+          >
+            <Text style={{ color: "#fff", fontWeight: "800", fontSize: 15 }}>
+              {consensusSubmitting ? "..." : "Υποβολή Βαθμολογίας"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      {consensusDone && (
+        <View style={{ backgroundColor: "#f0fdf4", borderRadius: 12, padding: 14, marginTop: 24, alignItems: "center" }}>
+          <Text style={{ color: "#166534", fontWeight: "700" }}>✅ Η βαθμολογία σας καταγράφηκε</Text>
         </View>
       )}
 

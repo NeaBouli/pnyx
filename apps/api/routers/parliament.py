@@ -45,6 +45,8 @@ class BillSummary(BaseModel):
     created_at:          str | None = None
     ai_summary_reviewed: bool = False
     arweave_tx_id:       str | None = None
+    consensus_score:     float | None = None
+    consensus_count:     int | None = 0
 
 class BillDetail(BaseModel):
     id:                     str
@@ -143,6 +145,8 @@ async def get_bills(
         created_at=b.created_at.isoformat() if b.created_at else None,
         ai_summary_reviewed=b.ai_summary_reviewed or False,
         arweave_tx_id=b.arweave_tx_id,
+        consensus_score=b.consensus_score,
+        consensus_count=b.consensus_count or 0,
     ) for b in bills]
 
 
