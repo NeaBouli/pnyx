@@ -5,7 +5,7 @@ Alle Tabellen: Identity, VAA, Parliament, Voting, Analytics
 from datetime import datetime
 from enum import Enum as PyEnum
 from sqlalchemy import (
-    Column, Integer, BigInteger, String, Text, SmallInteger, Boolean,
+    Column, Integer, BigInteger, String, Text, SmallInteger, Boolean, Float,
     DateTime, JSON, ForeignKey, UniqueConstraint, Index,
     CheckConstraint, Enum, Numeric
 )
