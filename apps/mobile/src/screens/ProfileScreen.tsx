@@ -180,9 +180,11 @@ export default function ProfileScreen() {
         <TouchableOpacity
           style={s.downloadBtn}
           onPress={() => {
-            const channel = Constants.expoConfig?.extra?.distributionChannel;
-            const url = channel === "play" ? latestVersion.playStoreUrl : latestVersion.downloadUrl;
-            Linking.openURL(url);
+            try {
+              const channel = Constants.expoConfig?.extra?.distributionChannel;
+              const url = channel === "play" ? latestVersion.playStoreUrl : (latestVersion.downloadUrl || "https://ekklesia.gr/download");
+              Linking.openURL(url);
+            } catch {}
           }}
         >
           <Text style={s.downloadBtnText}>Λήψη έκδοσης {latestVersion.version} →</Text>

@@ -16,7 +16,7 @@ FORCE_UPDATE = False
 RELEASE_NOTES_EL = "v9 — Πρόσκληση Φίλων, Arweave Tab, QR Code Σύνδεση, Telegram Bot, 16 νομοσχέδια"
 RELEASE_NOTES_EN = "v9 — Invite Friends, Arweave Tab, QR Code Login, Telegram Bot, 16 bills from Parliament"
 
-FDROID_URL = "https://f-droid.org/packages/ekklesia.gr/"
+FDROID_URL = ""  # Not live yet — MR !38007 pending
 PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=ekklesia.gr"
 DIRECT_APK_URL = "https://ekklesia.gr/download/"
 

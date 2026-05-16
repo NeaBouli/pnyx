@@ -31,7 +31,7 @@ export function UpdateBanner(): React.JSX.Element | null {
         if (data.latest_version_code > currentVC) {
           setUpdate({
             version: data.latest_version,
-            url: data.playstore_url || data.direct_apk_url || "https://ekklesia.gr/download/",
+            url: data.direct_apk_url || data.playstore_url || "https://ekklesia.gr/download/",
           });
         }
       } catch { /* silent */ }
@@ -52,7 +52,7 @@ export function UpdateBanner(): React.JSX.Element | null {
 
   return (
     <Animated.View style={[s.container, { transform: [{ translateY: slideAnim }] }]}>
-      <TouchableOpacity style={s.inner} onPress={() => Linking.openURL(update.url)} activeOpacity={0.8}>
+      <TouchableOpacity style={s.inner} onPress={() => { try { Linking.openURL(update.url); } catch {} }} activeOpacity={0.8}>
         <Text style={s.text}>
           v{update.version} διαθέσιμη
         </Text>

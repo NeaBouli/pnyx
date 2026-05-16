@@ -50,7 +50,7 @@ export default function HomeScreen() {
           setUpdateAvailable({
             version: data.latest_version,
             notes: data.release_notes_el,
-            url: data.fdroid_url || data.playstore_url || data.direct_apk_url,
+            url: data.direct_apk_url || data.playstore_url || "https://ekklesia.gr/download",
             force: data.force_update || false,
           });
         }
@@ -82,7 +82,7 @@ export default function HomeScreen() {
       {updateAvailable && (
         <TouchableOpacity
           style={{ backgroundColor: "#fef3c7", borderWidth: 1, borderColor: "#f59e0b", borderRadius: 10, padding: 12, marginBottom: 12 }}
-          onPress={() => Linking.openURL(updateAvailable.url)}
+          onPress={() => { try { Linking.openURL(updateAvailable.url); } catch {} }}
         >
           <Text style={{ fontWeight: "700", color: "#92400e", fontSize: 13, marginBottom: 4 }}>
             {"\u26a0\ufe0f \u039d\u03ad\u03b1 \u03ad\u03ba\u03b4\u03bf\u03c3\u03b7 v" + updateAvailable.version}
