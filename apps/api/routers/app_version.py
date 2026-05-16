@@ -9,12 +9,12 @@ router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
 LATEST_VERSION = "1.1.0"
-LATEST_VERSION_CODE = 7
+LATEST_VERSION_CODE = 9
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v7 — Διόρθωση κύλισης, Σύνδεσμος φόρουμ ανά ψηφοφορία, Ειδοποίηση νέας έκδοσης, Παρακολούθηση εργασιών"
-RELEASE_NOTES_EN = "v7 — Scroll fix, Forum link per bill, Update notification banner, Scheduler monitoring"
+RELEASE_NOTES_EL = "v9 — Πρόσκληση Φίλων, Arweave Tab, QR Code Σύνδεση, Telegram Bot, 16 νομοσχέδια"
+RELEASE_NOTES_EN = "v9 — Invite Friends, Arweave Tab, QR Code Login, Telegram Bot, 16 bills from Parliament"
 
 FDROID_URL = "https://f-droid.org/packages/ekklesia.gr/"
 PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=ekklesia.gr"
