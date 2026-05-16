@@ -33,7 +33,12 @@
 - NEA-136: Dashboard Invalid Date + AI Status gefixt (da4a047)
 - NEA-77: QR Login Widget live (ekklesia.gr/embed/qr-login.html)
   - QR-Code, 2s Polling, 5min Countdown, Expired-Handler, iframe postMessage
-- HEAD: cc8149a
+- vC10 Build: AAB + APK, Admin QR-Account, Logo Fix, Dots Fix, Arweave Tab
+- S10: vC10 installiert (RF8N313QMFL)
+- AAB: builds/ekklesia-v1.1.0-vC10-PLAY.aab (45 MB)
+- Newsletter: Brevo API, monatlicher Report Scheduler
+- SMTP: Brevo Credentials gefixt
+- HEAD: 543b9a3
 - Server: cc8149a (deployed)
 - Kanal-Stand: Play=vC8, Direct=vC7, F-Droid=vC6
 - Linear: NEA-128 Done
