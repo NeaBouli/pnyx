@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Demo — ekklesia.gr για Δήμους</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--blue:#2563eb;--blue-d:#1d4ed8;--blue-l:#eff6ff;--gray-900:#0f172a;--gray-700:#334155;--gray-400:#94a3b8;--green:#22c55e;--purple:#a855f7;--yellow:#f59e0b;--radius:1rem}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;color:var(--gray-900);line-height:1.6}
+.demo-banner{background:#fef3c7;border-bottom:2px solid var(--yellow);padding:8px;text-align:center;font-size:13px;font-weight:700;color:#92400e;position:sticky;top:0;z-index:100}
+nav{background:rgba(255,255,255,0.96);backdrop-filter:blur(16px);border-bottom:1px solid #e2e8f0;padding:12px 24px;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:1.2rem;font-weight:900;color:var(--blue);text-decoration:none;display:flex;align-items:center;gap:8px}
+.logo img{width:36px;height:36px;border-radius:8px}
+.nav-links{display:flex;gap:8px}
+.nav-links a{padding:6px 14px;border-radius:6px;color:var(--gray-700);text-decoration:none;font-size:13px;font-weight:600}
+.nav-links a:hover,.nav-links a.active{background:var(--blue-l);color:var(--blue)}
+.hero{padding:60px 24px;text-align:center;background:linear-gradient(135deg,#eff6ff,#f0fdf4)}
+.hero h1{font-size:clamp(1.8rem,4vw,2.5rem);font-weight:900;margin-bottom:12px}
+.hero p{font-size:1rem;color:var(--gray-700);max-width:600px;margin:0 auto 24px}
+.hero .btn{display:inline-block;padding:14px 28px;background:var(--blue);color:#fff;border-radius:var(--radius);font-weight:800;text-decoration:none;font-size:15px}
+.hero .btn:hover{background:var(--blue-d)}
+.section{max-width:900px;margin:0 auto;padding:40px 24px}
+h2{font-size:1.4rem;font-weight:900;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #e2e8f0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin:20px 0}
+.card{background:#fff;border:2px solid #e2e8f0;border-radius:var(--radius);padding:20px;transition:all 0.2s}
+.card:hover{border-color:var(--blue);transform:translateY(-2px)}
+.card-icon{font-size:2rem;margin-bottom:8px}
+.card h3{font-size:1rem;font-weight:800;margin-bottom:6px}
+.card p{font-size:0.85rem;color:var(--gray-700)}
+.steps{counter-reset:step}
+.step{counter-increment:step;display:flex;gap:16px;margin-bottom:20px;align-items:flex-start}
+.step::before{content:counter(step);background:var(--blue);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0}
+.step-content h3{font-size:0.95rem;font-weight:800;margin-bottom:4px}
+.step-content p{font-size:0.85rem;color:var(--gray-700)}
+.info-box{background:var(--blue-l);border-left:4px solid var(--blue);border-radius:8px;padding:16px;margin:20px 0}
+footer{background:var(--gray-900);color:var(--gray-400);padding:24px;text-align:center;font-size:12px;margin-top:40px}
+footer a{color:var(--gray-400);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="demo-banner">⚠️ Demo-Umgebung — Παρουσίαση πλατφόρμας για Δήμους</div>
+
+<nav>
+  <a href="https://ekklesia.gr" class="logo"><img src="https://ekklesia.gr/pnx.png" alt="logo">εκκλησία <span style="font-size:0.5em;color:var(--gray-400)">Demo</span></a>
+  <div class="nav-links">
+    <a href="index.html" class="active">Αρχική</a>
+    <a href="bills.html">Ψηφοφορίες</a>
+    <a href="admin.html">Admin</a>
+    <a href="https://ekklesia.gr">← ekklesia.gr</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>ekklesia.gr για Δήμους</h1>
+  <p>Η πλατφόρμα ψηφιακής δημοκρατίας που φέρνει τους πολίτες πιο κοντά στις αποφάσεις του Δήμου τους.</p>
+  <a href="bills.html" class="btn">Δείτε Demo Ψηφοφορίες →</a>
+</div>
+
+<div class="section">
+  <h2>Τι προσφέρει το ekklesia.gr;</h2>
+  <div class="grid">
+    <div class="card"><div class="card-icon">🗳️</div><h3>Ανώνυμη Ψηφοφορία</h3><p>Οι πολίτες ψηφίζουν ανώνυμα με κρυπτογραφία Ed25519. Κανένα email, κανένας κωδικός.</p></div>
+    <div class="card"><div class="card-icon">📊</div><h3>Πραγματικά Δεδομένα</h3><p>Αποτελέσματα σε πραγματικό χρόνο. Divergence Score δείχνει αν ο Δήμος εκπροσωπεί τους πολίτες.</p></div>
+    <div class="card"><div class="card-icon">⛓️</div><h3>Arweave Αρχείο</h3><p>Κάθε αποτέλεσμα αρχειοθετείται μόνιμα στο blockchain. Αδύνατο να διαγραφεί ή να αλλοιωθεί.</p></div>
+    <div class="card"><div class="card-icon">🔒</div><h3>GDPR by Design</h3><p>Κανένα προσωπικό δεδομένο στον server. Ο αριθμός τηλεφώνου διαγράφεται αμέσως μετά την επαλήθευση.</p></div>
+    <div class="card"><div class="card-icon">📱</div><h3>Mobile App</h3><p>Android εφαρμογή (APK + Play Store). Οι πολίτες ψηφίζουν από το κινητό τους.</p></div>
+    <div class="card"><div class="card-icon">💬</div><h3>Forum Συζήτησης</h3><p>Κάθε ψηφοφορία έχει αυτόματα ένα θέμα στο Discourse forum για δημόσια συζήτηση.</p></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Πώς λειτουργεί;</h2>
+  <div class="steps">
+    <div class="step"><div class="step-content"><h3>Ο Δήμος δημιουργεί ψηφοφορία</h3><p>Μέσω του Admin Dashboard, ο Δήμος δημοσιεύει ένα θέμα προς ψηφοφορία.</p></div></div>
+    <div class="step"><div class="step-content"><h3>Οι πολίτες επαληθεύονται</h3><p>Μέσω HLR (Home Location Register) — ελέγχεται αν ο αριθμός κινητού είναι ενεργός. Κανένα SMS, κανένα email.</p></div></div>
+    <div class="step"><div class="step-content"><h3>Ψηφοφορία με κρυπτογραφία</h3><p>Η ψήφος υπογράφεται με Ed25519 και αποστέλλεται ανώνυμα. Ο server δεν γνωρίζει ποιος ψήφισε τι.</p></div></div>
+    <div class="step"><div class="step-content"><h3>Αποτελέσματα σε πραγματικό χρόνο</h3><p>Τα αποτελέσματα ενημερώνονται ζωντανά. Ο Divergence Score δείχνει τη σύγκλιση πολιτών-δημοτικού συμβουλίου.</p></div></div>
+    <div class="step"><div class="step-content"><h3>Μόνιμη αρχειοθέτηση</h3><p>Με τη λήξη της ψηφοφορίας, τα συγκεντρωτικά αποτελέσματα αρχειοθετούνται στο Arweave blockchain.</p></div></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="info-box">
+    <p><strong>Κόστος για τον Δήμο:</strong> 0€ — Η πλατφόρμα είναι ανοιχτού κώδικα (MIT License). Ο Δήμος χρειάζεται μόνο μια ιστοσελίδα με iframe embed.</p>
+  </div>
+  <div style="text-align:center;margin-top:24px">
+    <a href="bills.html" style="display:inline-block;padding:14px 28px;background:var(--blue);color:#fff;border-radius:var(--radius);font-weight:800;text-decoration:none;margin:8px">Δείτε Demo Ψηφοφορίες</a>
+    <a href="admin.html" style="display:inline-block;padding:14px 28px;background:var(--gray-900);color:#fff;border-radius:var(--radius);font-weight:800;text-decoration:none;margin:8px">Admin Panel</a>
+  </div>
+</div>
+
+<footer>
+  εκκλησία — Demo Node · © 2026 V-Labs Development · MIT License · <a href="https://ekklesia.gr">ekklesia.gr</a>
+</footer>
+</body>
+</html>

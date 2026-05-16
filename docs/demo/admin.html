@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Admin Panel — ekklesia.gr Demo</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--blue:#2563eb;--blue-l:#eff6ff;--gray-900:#0f172a;--gray-700:#334155;--gray-400:#94a3b8;--green:#22c55e;--yellow:#f59e0b;--radius:1rem}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;color:var(--gray-900);line-height:1.6;background:#f8fafc}
+.demo-banner{background:#fef3c7;border-bottom:2px solid var(--yellow);padding:8px;text-align:center;font-size:13px;font-weight:700;color:#92400e;position:sticky;top:0;z-index:100}
+nav{background:rgba(255,255,255,0.96);backdrop-filter:blur(16px);border-bottom:1px solid #e2e8f0;padding:12px 24px;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:1.2rem;font-weight:900;color:var(--blue);text-decoration:none}
+.nav-links{display:flex;gap:8px}
+.nav-links a{padding:6px 14px;border-radius:6px;color:var(--gray-700);text-decoration:none;font-size:13px;font-weight:600}
+.nav-links a:hover,.nav-links a.active{background:var(--blue-l);color:var(--blue)}
+.section{max-width:900px;margin:0 auto;padding:32px 24px}
+h1{font-size:1.6rem;font-weight:900;margin-bottom:8px}
+h2{font-size:1.2rem;font-weight:900;margin:24px 0 12px;padding-bottom:8px;border-bottom:2px solid #e2e8f0}
+.sub{color:var(--gray-700);margin-bottom:24px;font-size:14px}
+.feature{background:#fff;border:2px solid #e2e8f0;border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.feature h3{font-size:0.95rem;font-weight:800;margin-bottom:6px;color:var(--blue)}
+.feature p{font-size:0.85rem;color:var(--gray-700)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:16px 0}
+.stat{background:var(--blue-l);border-radius:var(--radius);padding:16px;text-align:center}
+.stat-num{font-size:28px;font-weight:900;color:var(--blue)}
+.stat-label{font-size:11px;color:var(--gray-400)}
+.btn{display:inline-block;padding:12px 24px;background:var(--blue);color:#fff;border-radius:8px;font-weight:700;text-decoration:none;font-size:14px}
+footer{background:var(--gray-900);color:var(--gray-400);padding:24px;text-align:center;font-size:12px;margin-top:40px}
+footer a{color:var(--gray-400);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="demo-banner">⚠️ Demo — Admin Panel Übersicht</div>
+
+<nav>
+  <a href="index.html" class="logo">εκκλησία <span style="font-size:0.5em;color:var(--gray-400)">Demo</span></a>
+  <div class="nav-links">
+    <a href="index.html">Αρχική</a>
+    <a href="bills.html">Ψηφοφορίες</a>
+    <a href="admin.html" class="active">Admin</a>
+    <a href="https://ekklesia.gr">← ekklesia.gr</a>
+  </div>
+</nav>
+
+<div class="section">
+  <h1>Admin Dashboard</h1>
+  <p class="sub">Ο Δήμος διαχειρίζεται τις ψηφοφορίες μέσω ενός ασφαλούς web dashboard.</p>
+
+  <div class="grid">
+    <div class="stat"><div class="stat-num">3</div><div class="stat-label">Ψηφοφορίες</div></div>
+    <div class="stat"><div class="stat-num">0</div><div class="stat-label">Ψήφοι</div></div>
+    <div class="stat"><div class="stat-num">0</div><div class="stat-label">Arweave TXs</div></div>
+    <div class="stat"><div class="stat-num">24</div><div class="stat-label">Modules</div></div>
+  </div>
+
+  <h2>Λειτουργίες Admin</h2>
+
+  <div class="feature"><h3>Δημιουργία Ψηφοφορίας</h3><p>Νέα ψηφοφορία με τίτλο, περιγραφή, κατηγορία, ημερομηνία λήξης. Αυτόματη δημιουργία Forum topic.</p></div>
+  <div class="feature"><h3>Lifecycle Management</h3><p>Αυτόματη μετάβαση: ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END</p></div>
+  <div class="feature"><h3>Αποτελέσματα & Analytics</h3><p>Real-time αποτελέσματα, δημογραφικά, CPLM, Divergence Score.</p></div>
+  <div class="feature"><h3>Embed Code Generator</h3><p>Ενσωμάτωση ψηφοφοριών σε εξωτερικές ιστοσελίδες μέσω iframe.</p></div>
+  <div class="feature"><h3>Newsletter</h3><p>Αυτόματο μηνιαίο newsletter (Brevo) με αποτελέσματα και νέες ψηφοφορίες.</p></div>
+  <div class="feature"><h3>Telegram Bot</h3><p>Αυτόματες ειδοποιήσεις στο Telegram κανάλι του Δήμου.</p></div>
+
+  <h2>Τεχνικά</h2>
+  <div class="feature"><h3>Stack</h3><p>Python FastAPI + PostgreSQL + Redis + Next.js + React Native (Expo) + Docker + Traefik</p></div>
+  <div class="feature"><h3>Deployment</h3><p>Ένας Docker Compose stack. Τρέχει σε οποιοδήποτε VPS (Hetzner, DigitalOcean, AWS).</p></div>
+  <div class="feature"><h3>Κόστος</h3><p>Server: ~10€/μήνα (CX23). SMTP: Brevo Free (300 emails/day). Arweave: ~0.001€/TX.</p></div>
+
+  <div style="text-align:center;margin-top:32px">
+    <a href="https://dashboard.ekklesia.gr" class="btn" target="_blank">Dashboard Live →</a>
+  </div>
+</div>
+
+<footer>
+  εκκλησία — Demo Node · © 2026 V-Labs Development · MIT License · <a href="https://ekklesia.gr">ekklesia.gr</a>
+</footer>
+</body>
+</html>
