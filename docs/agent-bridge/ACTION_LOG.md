@@ -18,7 +18,10 @@
 - NEA-70: OG-Image 1200x630 + Twitter summary_large_image
 - NEA-165: Arweave Links in Archiv-Bills auf Landing Page
 - NEA-163: Post-Vote Konsensierung (-5 bis +5) für OPEN_END Bills
-- HEAD: 59e5db2
+- NEA-168: CPLM Living Democracy — Consensus weighting + personal compass
+- 8 Dependabot PRs gemergt (#45,52-57,59) inkl. cryptography 46→48
+- CI Float import fix (6c4d5ac)
+- HEAD: dd1c2bf
 - AAB: builds/ekklesia-v1.1.0-vC10-PLAY.aab
 
 ## 2026-05-14 — Kausal-Audit + Arweave Fix + vC8 Play Store
