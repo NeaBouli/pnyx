@@ -66,6 +66,7 @@
     <a href="representative.html" class="active" data-el="Εκπρόσωπος" data-en="Representative">Εκπρόσωπος</a>
     <a href="wiki/security.html" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</a>
     <a href="wiki/faq.html">FAQ</a>
+    <button style="cursor:pointer;border:2px solid rgba(255,255,255,0.3);background:transparent;border-radius:0.4rem;padding:0.22rem 0.55rem;font-size:0.75rem;font-weight:700;color:rgba(255,255,255,0.7);margin-left:0.3rem;transition:all 0.2s" onclick="toggleLang()" id="langBtn">EN</button>
   </div>
 </nav>
 
@@ -175,5 +176,16 @@
   <p>εκπρόσωπος · εκκλησία · © 2026 V-Labs Development · MIT License</p>
 </footer>
 
+<script>
+var currentLang="el";
+function toggleLang(){
+  currentLang=currentLang==="el"?"en":"el";
+  document.getElementById("langBtn").textContent=currentLang==="el"?"EN":"ΕΛ";
+  document.querySelectorAll("[data-el]").forEach(function(el){
+    var t=el.getAttribute("data-"+currentLang);
+    if(t)el.innerHTML=t;
+  });
+}
+</script>
 </body>
 </html>
