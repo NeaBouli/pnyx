@@ -226,7 +226,7 @@ export default function BillsPage() {
 
               {(bill as any).arweave_tx_id && (
                 <a
-                  href={`https://arweave.net/${(bill as any).arweave_tx_id}`}
+                  href={`https://viewblock.io/arweave/tx/${(bill as any).arweave_tx_id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}

@@ -84,7 +84,7 @@ export default function BillsScreen() {
                 </View>
                 <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
                   {item.arweave_tx_id != null && (
-                    <TouchableOpacity onPress={(e) => { e.stopPropagation(); Linking.openURL(`https://arweave.net/${item.arweave_tx_id}`); }} hitSlop={8}>
+                    <TouchableOpacity onPress={(e) => { e.stopPropagation(); Linking.openURL(`https://viewblock.io/arweave/tx/${item.arweave_tx_id}`); }} hitSlop={8}>
                       <Text style={{ fontSize: 11, color: "#a855f7", fontWeight: "700" }}>⛓ {item.arweave_tx_id.substring(0, 8)}…</Text>
                     </TouchableOpacity>
                   )}
