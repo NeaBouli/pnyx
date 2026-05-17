@@ -224,7 +224,7 @@ async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db)):
         parliament_url=bill.parliament_url,
         forum_topic_id=bill.forum_topic_id,
         forum_topic_url=f"{DISCOURSE_BASE}/t/{bill.forum_topic_id}" if bill.forum_topic_id else None,
-        ai_summary_reviewed=bill.ai_summary_reviewed,
+        ai_summary_reviewed=bill.ai_summary_reviewed or False,
     )
 
 
