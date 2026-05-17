@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "εκπρόσωπος",
+    "slug": "ekprosopos",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f172a"
+    },
+    "android": {
+      "package": "ekklesia.representative",
+      "versionCode": 1,
+      "edgeToEdgeEnabled": false,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0f172a"
+      },
+      "permissions": ["INTERNET", "USE_BIOMETRIC", "USE_FINGERPRINT"]
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "gr.ekklesia.representative",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Για ασφαλή πρόσβαση"
+      }
+    },
+    "plugins": ["expo-secure-store", "expo-local-authentication"]
+  }
+}

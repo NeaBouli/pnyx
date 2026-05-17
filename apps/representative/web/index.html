@@ -91,7 +91,7 @@ async function doLogin(){
     var d=await r.json();
     if(!r.ok){showError(d.detail||'Σφάλμα επαλήθευσης');return}
     token=d.token;adaNumber=ada;
-    localStorage.setItem('rep_token',token);
+    localStorage.setItem('rep_token',token);if(window.postToNative)window.postToNative('SAVE_TOKEN',token);
     localStorage.setItem('rep_ada',ada);
     showBillsScreen();
   }catch(e){showError('Σφάλμα δικτύου')}
@@ -147,7 +147,7 @@ async function loadResults(billId){
 }
 
 function showBills(){loadBills()}
-function doLogout(){token='';adaNumber='';localStorage.removeItem('rep_token');localStorage.removeItem('rep_ada');location.reload()}
+function doLogout(){token='';adaNumber='';localStorage.removeItem('rep_token');localStorage.removeItem('rep_ada');if(window.postToNative)window.postToNative('LOGOUT','');location.reload()}
 </script>
 </body>
 </html>

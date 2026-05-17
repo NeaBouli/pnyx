@@ -15,6 +15,7 @@ COPY docs/animations/ ./public/animations/
 COPY docs/index.html docs/community.html docs/govgr-dimos.html docs/parliament.jpg docs/favicon.ico ./public/
 COPY docs/download/ ./public/download/
 COPY docs/embed/ ./public/embed/
+COPY apps/representative/web/ ./public/representative/
 COPY docs/assets/ ./public/assets/
 COPY docs/robots.txt docs/sitemap.xml docs/llms.txt ./public/
 ENV NEXT_TELEMETRY_DISABLED=1
