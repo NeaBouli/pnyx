@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Admin Panel — ekklesia.gr Demo</title>
+<title>Node Admin — ekklesia.gr Demo</title>
 <meta name="robots" content="noindex">
 <style>
-:root{--blue:#2563eb;--blue-l:#eff6ff;--gray-900:#0f172a;--gray-700:#334155;--gray-400:#94a3b8;--green:#22c55e;--yellow:#f59e0b;--radius:1rem}
+:root{--blue:#2563eb;--blue-l:#eff6ff;--gray-900:#0f172a;--gray-700:#334155;--gray-400:#94a3b8;--green:#22c55e;--yellow:#f59e0b;--red:#ef4444;--radius:1rem}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,sans-serif;color:var(--gray-900);line-height:1.6;background:#f8fafc}
 .demo-banner{background:#fef3c7;border-bottom:2px solid var(--yellow);padding:8px;text-align:center;font-size:13px;font-weight:700;color:#92400e;position:sticky;top:0;z-index:100}
@@ -19,23 +19,38 @@ nav{background:rgba(255,255,255,0.96);backdrop-filter:blur(16px);border-bottom:1
 h1{font-size:1.6rem;font-weight:900;margin-bottom:8px}
 h2{font-size:1.2rem;font-weight:900;margin:24px 0 12px;padding-bottom:8px;border-bottom:2px solid #e2e8f0}
 .sub{color:var(--gray-700);margin-bottom:24px;font-size:14px}
-.feature{background:#fff;border:2px solid #e2e8f0;border-radius:var(--radius);padding:20px;margin-bottom:16px}
-.feature h3{font-size:0.95rem;font-weight:800;margin-bottom:6px;color:var(--blue)}
-.feature p{font-size:0.85rem;color:var(--gray-700)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:16px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:16px 0}
 .stat{background:var(--blue-l);border-radius:var(--radius);padding:16px;text-align:center}
 .stat-num{font-size:28px;font-weight:900;color:var(--blue)}
 .stat-label{font-size:11px;color:var(--gray-400)}
-.btn{display:inline-block;padding:12px 24px;background:var(--blue);color:#fff;border-radius:8px;font-weight:700;text-decoration:none;font-size:14px}
+.card{background:#fff;border:2px solid #e2e8f0;border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card h3{font-size:0.95rem;font-weight:800;margin-bottom:6px;color:var(--blue)}
+.card p{font-size:0.85rem;color:var(--gray-700)}
+.info-box{background:var(--blue-l);border-left:4px solid var(--blue);border-radius:8px;padding:14px;margin:16px 0;font-size:13px;color:var(--gray-700)}
+.warn-box{background:#fefce8;border-left:4px solid var(--yellow);border-radius:8px;padding:14px;margin:16px 0;font-size:13px;color:#92400e}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;font-weight:700;color:var(--gray-700);margin-bottom:4px}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;font-family:inherit}
+.form-group textarea{resize:vertical;min-height:80px}
+.btn{display:inline-block;padding:12px 24px;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none}
+.btn-blue{background:var(--blue);color:#fff}.btn-blue:hover{background:var(--blue-d,#1d4ed8)}
+.btn-green{background:var(--green);color:#fff}
+.btn-gray{background:var(--gray-400);color:#fff}
+.bill-row{display:flex;justify-content:space-between;align-items:center;padding:12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:8px}
+.bill-row .title{font-size:13px;font-weight:700;flex:1}
+.bill-row .status{font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px}
+.msg{padding:10px;border-radius:8px;margin:12px 0;font-size:13px;font-weight:600;display:none}
+.msg-ok{background:#dcfce7;color:#166534;display:block}
+.msg-err{background:#fee2e2;color:#991b1b;display:block}
 footer{background:var(--gray-900);color:var(--gray-400);padding:24px;text-align:center;font-size:12px;margin-top:40px}
 footer a{color:var(--gray-400);text-decoration:none}
 </style>
 </head>
 <body>
-<div class="demo-banner">⚠️ Demo — Επισκόπηση Admin Panel</div>
+<div class="demo-banner">⚠️ Demo Node Admin — Για λόγους πόρων δεν χρησιμοποιείται ξεχωριστό stack. Σε παραγωγή κάθε Δήμος έχει δικό του.</div>
 
 <nav>
-  <a href="index.html" class="logo">εκκλησία <span style="font-size:0.5em;color:var(--gray-400)">Demo</span></a>
+  <a href="index.html" class="logo">εκκλησία <span style="font-size:0.5em;color:var(--gray-400)">Node Admin</span></a>
   <div class="nav-links">
     <a href="index.html">Αρχική</a>
     <a href="bills.html">Ψηφοφορίες</a>
@@ -45,37 +60,73 @@ footer a{color:var(--gray-400);text-decoration:none}
 </nav>
 
 <div class="section">
-  <h1>Admin Dashboard</h1>
-  <p class="sub">Ο Δήμος διαχειρίζεται τις ψηφοφορίες μέσω ενός ασφαλούς web dashboard.</p>
+  <h1>Node Admin Panel</h1>
+  <p class="sub">Διαχείριση δημοτικών ψηφοφοριών — Demo περιβάλλον</p>
 
-  <div class="grid">
-    <div class="stat"><div class="stat-num">3</div><div class="stat-label">Ψηφοφορίες</div></div>
-    <div class="stat"><div class="stat-num">0</div><div class="stat-label">Ψήφοι</div></div>
-    <div class="stat"><div class="stat-num">0</div><div class="stat-label">Arweave TXs</div></div>
-    <div class="stat"><div class="stat-num">24</div><div class="stat-label">Modules</div></div>
+  <div class="grid" id="stats">
+    <div class="stat"><div class="stat-num" id="st-bills">—</div><div class="stat-label">Ψηφοφορίες</div></div>
+    <div class="stat"><div class="stat-num" id="st-active">—</div><div class="stat-label">Ενεργές</div></div>
+    <div class="stat"><div class="stat-num" id="st-votes">—</div><div class="stat-label">Ψήφοι</div></div>
+    <div class="stat"><div class="stat-num" id="st-arweave">—</div><div class="stat-label">Arweave</div></div>
   </div>
 
-  <h2>Λειτουργίες Admin</h2>
+  <h2>Τρέχουσες Ψηφοφορίες</h2>
+  <div id="billsList"><p style="color:var(--gray-400);font-size:13px">Φόρτωση...</p></div>
 
-  <div class="feature"><h3>Δημιουργία Ψηφοφορίας</h3><p>Νέα ψηφοφορία με τίτλο, περιγραφή, κατηγορία, ημερομηνία λήξης. Αυτόματη δημιουργία Forum topic.</p></div>
-  <div class="feature"><h3>Lifecycle Management</h3><p>Αυτόματη μετάβαση: ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END</p></div>
-  <div class="feature"><h3>Αποτελέσματα & Analytics</h3><p>Real-time αποτελέσματα, δημογραφικά, CPLM, Divergence Score.</p></div>
-  <div class="feature"><h3>Embed Code Generator</h3><p>Ενσωμάτωση ψηφοφοριών σε εξωτερικές ιστοσελίδες μέσω iframe.</p></div>
-  <div class="feature"><h3>Newsletter</h3><p>Αυτόματο μηνιαίο newsletter (Brevo) με αποτελέσματα και νέες ψηφοφορίες.</p></div>
-  <div class="feature"><h3>Telegram Bot</h3><p>Αυτόματες ειδοποιήσεις στο Telegram κανάλι του Δήμου.</p></div>
-
-  <h2>Τεχνικά</h2>
-  <div class="feature"><h3>Stack</h3><p>Python FastAPI + PostgreSQL + Redis + Next.js + React Native (Expo) + Docker + Traefik</p></div>
-  <div class="feature"><h3>Deployment</h3><p>Ένας Docker Compose stack. Τρέχει σε οποιοδήποτε VPS (Hetzner, DigitalOcean, AWS).</p></div>
-  <div class="feature"><h3>Κόστος</h3><p>Server: ~10€/μήνα (CX23). SMTP: Brevo Free (300 emails/day). Arweave: ~0.001€/TX.</p></div>
-
-  <div style="text-align:center;margin-top:32px">
-    <span class="btn" style="background:#94a3b8;cursor:default">Node Dashboard — Σύντομα (test.dash.ekklesia.gr)</span>
+  <h2>Αρχιτεκτονική Node</h2>
+  <div class="info-box">
+    <strong>Multi-Tenant Αρχιτεκτονική:</strong> Κάθε Δήμος χρησιμοποιεί την ίδια υποδομή (API, DB) με φιλτράρισμα βάσει <code>governance_level=MUNICIPAL</code> + <code>dimos_id</code>. Τα δεδομένα είναι πλήρως απομονωμένα — κάθε Δήμος βλέπει μόνο τις δικές του ψηφοφορίες.
   </div>
+  <div class="warn-box">
+    <strong>Demo περιορισμός:</strong> Αυτή η test node χρησιμοποιεί κοινό stack με το ekklesia.gr για λόγους πόρων. Σε παραγωγικό περιβάλλον, κάθε Δήμος μπορεί να έχει <strong>δικό του απομονωμένο stack</strong> (Docker Compose) για μέγιστη ασφάλεια.
+  </div>
+
+  <h2>Επίπεδα Απομόνωσης</h2>
+  <div class="card"><h3>Επίπεδο 1 — Multi-Tenant (Demo)</h3><p>Κοινή DB + API. Κάθε Δήμος φιλτράρεται βάσει <code>dimos_id</code>. Row-Level Security. Κόστος: 0€ επιπλέον.</p></div>
+  <div class="card"><h3>Επίπεδο 2 — Ξεχωριστό Stack (Παραγωγή)</h3><p>Κάθε Δήμος: δικό API + DB + Web + Redis σε Docker Compose. Πλήρης απομόνωση. Κόστος: ~10€/μήνα VPS.</p></div>
+  <div class="card"><h3>Επίπεδο 3 — Federated Network (Μέλλον)</h3><p>Αυτόνομοι κόμβοι με Federation API. Κάθε Δήμος ανεξάρτητος, δεδομένα συγχρονίζονται. TrueRepublic bridge.</p></div>
+
+  <h2>Δυνατότητες Admin</h2>
+  <div class="card"><h3>Δημιουργία Ψηφοφορίας</h3><p>Τίτλος, περιγραφή, κατηγορία, ημερομηνία λήξης. Αυτόματο Forum topic + Telegram ειδοποίηση.</p></div>
+  <div class="card"><h3>Lifecycle Αυτόματο</h3><p>ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END. Χωρίς χειροκίνητη παρέμβαση.</p></div>
+  <div class="card"><h3>Αποτελέσματα & Analytics</h3><p>Real-time αποτελέσματα, CPLM, Divergence Score, Demographics (k-anonymity ≥10).</p></div>
+  <div class="card"><h3>Embed Generator</h3><p>Ενσωμάτωση ψηφοφοριών σε ιστοσελίδα του Δήμου μέσω iframe.</p></div>
+  <div class="card"><h3>Newsletter + Telegram</h3><p>Αυτόματο μηνιαίο newsletter (Brevo) + Telegram Bot ειδοποιήσεις.</p></div>
+  <div class="card"><h3>Arweave Αρχειοθέτηση</h3><p>Μόνιμη αρχειοθέτηση αποτελεσμάτων στο blockchain. Αδύνατο να αλλοιωθεί.</p></div>
+
+  <h2>Τεχνικό Stack</h2>
+  <div class="card"><h3>Backend</h3><p>Python FastAPI + PostgreSQL + Redis + Arweave + Ollama (AI)</p></div>
+  <div class="card"><h3>Frontend</h3><p>Next.js 14 (Web) + React Native / Expo (Mobile) + Discourse (Forum)</p></div>
+  <div class="card"><h3>Infra</h3><p>Docker Compose + Traefik (reverse proxy) + Let's Encrypt (SSL)</p></div>
+  <div class="card"><h3>Κόστος Παραγωγής</h3><p>Server: ~10€/μήνα (Hetzner CX23). SMTP: Brevo Free (300/ημέρα). Arweave: ~0.001€/TX.</p></div>
 </div>
 
 <footer>
-  εκκλησία — Demo Node · © 2026 V-Labs Development · MIT License · <a href="https://ekklesia.gr">ekklesia.gr</a>
+  εκκλησία — Demo Node Admin · © 2026 V-Labs Development · MIT License · <a href="https://ekklesia.gr">ekklesia.gr</a>
 </footer>
+
+<script>
+var API='https://api.ekklesia.gr';
+(function(){
+  fetch(API+'/api/v1/bills?limit=50').then(function(r){return r.json()}).then(function(bills){
+    var muni=bills.filter(function(b){return b.governance_level==='MUNICIPAL'});
+    document.getElementById('st-bills').textContent=muni.length;
+    document.getElementById('st-active').textContent=muni.filter(function(b){return b.status==='ACTIVE'}).length;
+    document.getElementById('st-arweave').textContent=muni.filter(function(b){return b.arweave_tx_id}).length;
+
+    var html='';
+    muni.forEach(function(b){
+      var sc={'ACTIVE':'background:#dcfce7;color:#166534','ANNOUNCED':'background:#f1f5f9;color:#64748b','OPEN_END':'background:#ede9fe;color:#5b21b6'};
+      var sl={'ACTIVE':'Ενεργή','ANNOUNCED':'Ανακοινώθηκε','OPEN_END':'Αρχείο','PARLIAMENT_VOTED':'Ψηφίστηκε','WINDOW_24H':'24ω'};
+      html+='<div class="bill-row"><span class="title">'+b.id+' — '+(b.title_el||'').substring(0,50)+'</span><span class="status" style="'+(sc[b.status]||'')+'">'+(sl[b.status]||b.status)+'</span></div>';
+    });
+    document.getElementById('billsList').innerHTML=html||'<p style="color:var(--gray-400)">Δεν βρέθηκαν δημοτικές ψηφοφορίες</p>';
+  }).catch(function(){});
+
+  fetch(API+'/api/v1/public/scraper/status').then(function(r){return r.json()}).then(function(d){
+    document.getElementById('st-votes').textContent='0';
+  }).catch(function(){});
+})();
+</script>
 </body>
 </html>

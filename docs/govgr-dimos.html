@@ -502,6 +502,36 @@
 </div>
 
 
+<!-- ═══ SEKTION: Αρχιτεκτονική Κόμβου ═══ -->
+<div style="max-width:900px;margin:0 auto;padding:2rem 1.5rem">
+  <h2 style="font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:0.5rem" data-el="Αρχιτεκτονική Κόμβου" data-en="Node Architecture">Αρχιτεκτονική Κόμβου</h2>
+  <p style="text-align:center;color:var(--gray-500);font-size:0.88rem;max-width:640px;margin:0 auto 1.5rem" data-el="Τρία επίπεδα απομόνωσης — επιλέξτε αυτό που ταιριάζει στον Δήμο σας" data-en="Three isolation levels — choose what fits your municipality">Τρία επίπεδα απομόνωσης — επιλέξτε αυτό που ταιριάζει στον Δήμο σας</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem;margin-bottom:2rem">
+    <div style="background:white;border:2px solid #e2e8f0;border-radius:var(--radius);padding:1.25rem">
+      <div style="font-size:1.5rem;margin-bottom:0.5rem">🏢</div>
+      <h4 style="font-weight:800;font-size:0.95rem;color:var(--blue);margin-bottom:0.3rem" data-el="Multi-Tenant" data-en="Multi-Tenant">Multi-Tenant</h4>
+      <p style="font-size:0.78rem;color:var(--gray-500);line-height:1.6" data-el="Κοινή υποδομή, δεδομένα απομονωμένα βάσει dimos_id. Κάθε Δήμος βλέπει μόνο τα δικά του. Row-Level Security. Κόστος: 0€ επιπλέον." data-en="Shared infrastructure, data isolated by dimos_id. Each municipality sees only its own. Row-Level Security. Cost: €0 extra.">Κοινή υποδομή, δεδομένα απομονωμένα βάσει dimos_id. Κόστος: 0€ επιπλέον.</p>
+    </div>
+    <div style="background:white;border:2px solid var(--green);border-radius:var(--radius);padding:1.25rem">
+      <div style="font-size:1.5rem;margin-bottom:0.5rem">🏗️</div>
+      <h4 style="font-weight:800;font-size:0.95rem;color:#166534;margin-bottom:0.3rem" data-el="Ξεχωριστό Stack (Συνιστάται)" data-en="Dedicated Stack (Recommended)">Ξεχωριστό Stack (Συνιστάται)</h4>
+      <p style="font-size:0.78rem;color:var(--gray-500);line-height:1.6" data-el="Κάθε Δήμος: δικό API, DB, Web, Redis σε Docker Compose. Πλήρης απομόνωση. ~10€/μήνα." data-en="Each municipality: own API, DB, Web, Redis in Docker Compose. Full isolation. ~€10/month.">Κάθε Δήμος: δικό API, DB, Web, Redis. Πλήρης απομόνωση. ~10€/μήνα.</p>
+    </div>
+    <div style="background:white;border:2px solid var(--purple,#a855f7);border-radius:var(--radius);padding:1.25rem">
+      <div style="font-size:1.5rem;margin-bottom:0.5rem">🌐</div>
+      <h4 style="font-weight:800;font-size:0.95rem;color:#7c3aed;margin-bottom:0.3rem" data-el="Federated Network (Μέλλον)" data-en="Federated Network (Future)">Federated Network (Μέλλον)</h4>
+      <p style="font-size:0.78rem;color:var(--gray-500);line-height:1.6" data-el="Αυτόνομοι κόμβοι με Federation API. Δεδομένα συγχρονίζονται. TrueRepublic blockchain bridge." data-en="Autonomous nodes with Federation API. Data synced. TrueRepublic blockchain bridge.">Αυτόνομοι κόμβοι με Federation API. TrueRepublic bridge.</p>
+    </div>
+  </div>
+
+  <div style="background:var(--blue-l,#eff6ff);border-left:4px solid var(--blue);border-radius:0.5rem;padding:1rem 1.25rem;margin-bottom:2rem">
+    <p style="font-size:0.82rem;color:var(--gray-700);margin:0" data-el="Δείτε live demo: test.ekklesia.gr — Παράδειγμα δημοτικού κόμβου με 3 ψηφοφορίες (Multi-Tenant αρχιτεκτονική)." data-en="See live demo: test.ekklesia.gr — Example municipal node with 3 votes (Multi-Tenant architecture).">
+      Δείτε live demo: <a href="https://test.ekklesia.gr" style="color:var(--blue);font-weight:700">test.ekklesia.gr</a> — Παράδειγμα δημοτικού κόμβου με 3 ψηφοφορίες.
+    </p>
+  </div>
+</div>
+
 <!-- ═══ SEKTION: Ο Κόμβος σας — Έτοιμος σε 1 εντολή ═══ -->
 <div style="max-width:900px;margin:0 auto;padding:2rem 1.5rem">
 
