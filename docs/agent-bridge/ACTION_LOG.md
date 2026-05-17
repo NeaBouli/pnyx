@@ -29,8 +29,14 @@
 - εκπρόσωπος Native App: WebView + SecureStore + Biometric (00a0db4)
 - Web App live: ekklesia.gr/representative/index.html
 - APK Build läuft (erster Build ~20min)
-- HEAD: 00a0db4
+- εκπρόσωπος Landing Page (representative.html) + govgr-dimos Navigation
+- εκπρόσωπος APK auf Server (55 MB, vC1, EKPROSOPOS Keystore)
+- Landing Page: ⚖️ Kachel + Roadmap 4x ✅ (Alpha)
+- Demo-Node Fixes: CORS, ai_summary_reviewed, Deutsch→Griechisch
+- EN/ΕΛ Sprachumschalter auf representative.html
+- HEAD: 598c729
 - AAB: builds/ekklesia-v1.1.0-vC10-PLAY.aab
+- εκπρόσωπος APK: download/ekprosopos-latest.apk (vC1)
 
 ## 2026-05-14 — Kausal-Audit + Arweave Fix + vC8 Play Store
 

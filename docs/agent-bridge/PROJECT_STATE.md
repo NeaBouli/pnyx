@@ -13,7 +13,7 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `3e14fd7` (Node Architektur + Admin Panel + govgr-dimos)
+- **HEAD:** `598c729` (εκπρόσωπος Landing + Kachel + Roadmap)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-votedate-fix-20260515`
 - **Remote:** synchron mit GitHub
 - **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `cdcb449` (deployed 2026-05-17)
