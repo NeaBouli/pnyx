@@ -984,6 +984,41 @@
   </div>
 </section>
 
+<!-- ─── ARWEAVE ARCHIVE SECTION ─── -->
+<section class="section" id="arweave-archive" style="background:#faf5ff;border-top:2px solid #a855f7;border-bottom:2px solid #a855f7">
+  <div class="section-inner" style="text-align:center">
+    <h2 class="section-title fade-in" style="color:#7c3aed" data-el="⛓ Blockchain Αρχείο — Arweave" data-en="⛓ Blockchain Archive — Arweave">⛓ Blockchain Αρχείο — Arweave</h2>
+    <p class="section-sub fade-in" style="max-width:640px;margin:0 auto 1.5rem" data-el="Τα αποτελέσματα κάθε ψηφοφορίας αρχειοθετούνται μόνιμα στο Arweave blockchain. Κανείς δεν μπορεί να τα αλλοιώσει ή να τα διαγράψει — ούτε εμείς." data-en="Every vote result is permanently archived on the Arweave blockchain. Nobody can tamper with or delete them — not even us.">Τα αποτελέσματα κάθε ψηφοφορίας αρχειοθετούνται μόνιμα στο Arweave blockchain. Κανείς δεν μπορεί να τα αλλοιώσει — ούτε εμείς.</p>
+    <div id="arweaveList" style="display:flex;flex-direction:column;gap:0.75rem;max-width:700px;margin:0 auto">
+      <div style="color:#94a3b8;font-size:0.85rem">Φόρτωση αρχείων...</div>
+    </div>
+    <script>
+    (function(){
+      fetch("https://api.ekklesia.gr/api/v1/bills?limit=50").then(function(r){return r.json()}).then(function(bills){
+        var archived=bills.filter(function(b){return b.arweave_tx_id});
+        var pending=bills.filter(function(b){return !b.arweave_tx_id&&(b.status==="OPEN_END"||b.status==="PARLIAMENT_VOTED")});
+        var html="";
+        if(archived.length===0&&pending.length===0){html='<div style="color:#94a3b8">Δεν υπάρχουν αρχειοθετημένες ψηφοφορίες ακόμα</div>';document.getElementById("arweaveList").innerHTML=html;return}
+        archived.forEach(function(b){
+          html+='<a href="https://arweave.net/'+b.arweave_tx_id+'" target="_blank" style="display:flex;align-items:center;gap:1rem;padding:1rem;background:white;border:2px solid #a855f7;border-radius:0.75rem;text-decoration:none;transition:all 0.2s" onmouseenter="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 12px rgba(168,85,247,0.2)\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\'">'
+            +'<span style="font-size:1.5rem;flex-shrink:0">⛓️</span>'
+            +'<span style="flex:1;text-align:left"><span style="font-size:0.85rem;font-weight:800;color:#0f172a;display:block">'+b.title_el+'</span><span style="font-size:0.7rem;color:#a855f7;font-family:monospace">TX: '+b.arweave_tx_id.substring(0,16)+'…</span></span>'
+            +'<span style="font-size:0.75rem;color:#7c3aed;font-weight:700;white-space:nowrap">Προβολή →</span>'
+            +'</a>';
+        });
+        pending.forEach(function(b){
+          html+='<div style="display:flex;align-items:center;gap:1rem;padding:1rem;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:0.75rem">'
+            +'<span style="font-size:1.5rem;flex-shrink:0">⏳</span>'
+            +'<span style="flex:1;text-align:left"><span style="font-size:0.85rem;font-weight:700;color:#64748b;display:block">'+b.title_el+'</span><span style="font-size:0.7rem;color:#94a3b8">Αρχειοθέτηση εκκρεμεί</span></span>'
+            +'</div>';
+        });
+        document.getElementById("arweaveList").innerHTML=html;
+      }).catch(function(){});
+    })();
+    </script>
+  </div>
+</section>
+
 <!-- ─── PNYX FORUM SECTION ─── -->
 <section class="section" id="forum" style="background:linear-gradient(135deg,#eff6ff 0%,#f0fdf4 100%)">
   <div class="section-inner" style="text-align:center">
