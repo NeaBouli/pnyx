@@ -9,12 +9,12 @@ router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
 LATEST_VERSION = "1.1.0"
-LATEST_VERSION_CODE = 10
+LATEST_VERSION_CODE = 11
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v10 — Admin Account Import, Update-Banner Fix, Discourse Hub Buttons, Newsletter"
-RELEASE_NOTES_EN = "v10 — Admin Account Import, Update Banner Fix, Discourse Hub, Newsletter Service"
+RELEASE_NOTES_EL = "v11 — Arweave αρχειοθέτηση, Αποτελέσματα μετά ψηφοφορία, Περιοχή ψηφοφορίας, viewblock.io"
+RELEASE_NOTES_EN = "v11 — Arweave archival, Results after vote, Region banner, viewblock.io links"
 
 FDROID_URL = ""  # Not live yet — MR !38007 pending
 PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=ekklesia.gr"
