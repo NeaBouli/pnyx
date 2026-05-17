@@ -37,7 +37,10 @@
 - NEA-171: Results visibility HIDDEN default (ACTIVE Bills verbergen Ergebnisse)
 - NEA-175: Region Banner auf VoteScreen (📍 Δημοτική/Περιφερειακή)
 - NEA-174: Kein Hyperbeam — war schon arweave.net
-- HEAD: 1c56bdb
+- DEMO-Bills aus Haupt-API gefiltert (~DEMO-% excluded)
+- Arweave Links: 3 OPEN_END Bills korrekt verlinkt (arweave.net)
+- CI: 3/3 GRÜN
+- HEAD: bd1d812
 - AAB: builds/ekklesia-v1.1.0-vC10-PLAY.aab
 - εκπρόσωπος APK: download/ekprosopos-latest.apk (vC1)
 
