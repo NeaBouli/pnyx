@@ -1634,9 +1634,9 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     a.className = "t-card " + cssClass;
     var arweaveHtml = '';
     if (b.arweave_tx_id) {
-      arweaveHtml = '<span style="display:inline-block;margin-top:6px;padding:3px 10px;background:#ede9fe;border:1px solid #a855f7;border-radius:6px;font-size:0.72rem;font-weight:700;color:#7c3aed;cursor:pointer" onclick="event.preventDefault();window.open(\'https://arweave.net/' + b.arweave_tx_id + '\',\'_blank\')">⛓ Arweave: ' + b.arweave_tx_id.substring(0,10) + '…</span>';
+      arweaveHtml = '';
     } else if (b.status === 'OPEN_END' || b.status === 'PARLIAMENT_VOTED') {
-      arweaveHtml = '<span style="display:inline-block;margin-top:6px;padding:3px 10px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;font-size:0.72rem;font-weight:600;color:#94a3b8">⏳ ' + (lang==='en'?'Archive pending':'Αρχειοθέτηση εκκρεμεί') + '</span>';
+      arweaveHtml = '';
     }
     a.innerHTML =
       '<span class="t-badge ' + s.cls + '">' + badge + '</span>' +

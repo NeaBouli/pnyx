@@ -105,9 +105,16 @@ async def publish_to_arweave(audit_trail: dict, bill_id: str) -> Optional[str]:
         tx.add_tag("Governance-Level", "NATIONAL")
         tx.add_tag("Schema-Version",   "1.0")
         tx.sign()
-        tx.send()
-        logger.info(f"[MOD-08] Arweave TX published: {tx.id} für Bill {bill_id}")
-        return tx.id
+        response = tx.send()
+        tx_id = tx.id
+
+        # Verify TX was actually accepted
+        if not tx_id or len(tx_id) != 43:
+            logger.error(f"[MOD-08] Arweave TX invalid ID: {tx_id} für {bill_id}")
+            return None
+
+        logger.info(f"[MOD-08] Arweave TX published: {tx_id} für Bill {bill_id} (response: {str(response)[:100]})")
+        return tx_id
 
     except Exception as e:
         logger.error(f"[MOD-08] Arweave publish failed für {bill_id}: {e}")

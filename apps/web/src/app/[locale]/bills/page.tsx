@@ -224,6 +224,18 @@ export default function BillsPage() {
                 </div>
               )}
 
+              {(bill as any).arweave_tx_id && (
+                <a
+                  href={`https://arweave.net/${(bill as any).arweave_tx_id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 bg-purple-50 border border-purple-300 rounded-lg text-xs font-bold text-purple-700 hover:bg-purple-100 transition-colors"
+                >
+                  ⛓ Arweave: {(bill as any).arweave_tx_id.substring(0, 12)}…
+                </a>
+              )}
+
               <div className="flex items-center justify-between mt-4">
                 <div onClick={(e) => e.preventDefault()}>
                   <RelevanceButtons billId={bill.id} initialScore={bill.relevance_score ?? 0} locale={locale} compact />
