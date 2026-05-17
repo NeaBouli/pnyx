@@ -22,7 +22,10 @@
 - 8 Dependabot PRs gemergt (#45,52-57,59) inkl. cryptography 46→48
 - CI Float import fix (6c4d5ac)
 - NEA-167/170: Demo-Node Gemeinden auf test.ekklesia.gr deployed
-- HEAD: 47bc952
+- Demo-Node Fixes: Deutsch→Griechisch, CORS fix, ai_summary_reviewed None guard
+- Admin Panel: Live-Stats, Bill-Liste, 3 Architektur-Level dokumentiert
+- govgr-dimos.html: Architektur-Sektion (Multi-Tenant/Dedicated/Federated)
+- HEAD: 3e14fd7
 - AAB: builds/ekklesia-v1.1.0-vC10-PLAY.aab
 
 ## 2026-05-14 — Kausal-Audit + Arweave Fix + vC8 Play Store

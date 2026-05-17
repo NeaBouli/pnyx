@@ -13,7 +13,7 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `dbc4f8d` (vC10 UI fixes + Admin QR + Newsletter)
+- **HEAD:** `3e14fd7` (Node Architektur + Admin Panel + govgr-dimos)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-votedate-fix-20260515`
 - **Remote:** synchron mit GitHub
 - **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `cdcb449` (deployed 2026-05-17)
