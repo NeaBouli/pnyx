@@ -114,7 +114,9 @@ async def get_bills(
     db: AsyncSession = Depends(get_db)
 ):
     """Gibt Gesetzentwürfe zurück, optional gefiltert nach Status/Kategorie."""
-    query = select(ParliamentBill).order_by(
+    query = select(ParliamentBill).where(
+        ~ParliamentBill.id.like("DEMO-%")
+    ).order_by(
         ParliamentBill.parliament_vote_date.desc().nullslast(),
         ParliamentBill.created_at.desc()
     ).limit(limit).offset(offset)
@@ -173,6 +175,7 @@ async def get_trending(
         select(ParliamentBill, relevance_subq.c.score)
         .outerjoin(relevance_subq, ParliamentBill.id == relevance_subq.c.bill_id)
         .where(ParliamentBill.status.in_([BillStatus.ACTIVE, BillStatus.WINDOW_24H]))
+        .where(~ParliamentBill.id.like("DEMO-%"))
         .order_by(relevance_subq.c.score.desc().nullslast())
         .limit(limit)
     )
