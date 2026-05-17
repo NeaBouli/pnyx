@@ -12,7 +12,7 @@ COPY docs/votes/ ./public/votes/
 COPY docs/tickets/ ./public/tickets/
 COPY docs/logo/ ./public/logo/
 COPY docs/animations/ ./public/animations/
-COPY docs/index.html docs/community.html docs/govgr-dimos.html docs/parliament.jpg docs/favicon.ico ./public/
+COPY docs/index.html docs/community.html docs/govgr-dimos.html docs/representative.html docs/parliament.jpg docs/favicon.ico ./public/
 COPY docs/download/ ./public/download/
 COPY docs/embed/ ./public/embed/
 COPY apps/representative/web/ ./public/representative/

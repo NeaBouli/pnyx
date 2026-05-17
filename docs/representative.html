@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="el" data-lang="el">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>εκπρόσωπος — Η εφαρμογή για Λαϊκούς Αντιπροσώπους | ekklesia.gr</title>
+  <meta name="description" content="Εφαρμογή εκπρόσωπος — Live αποτελέσματα ψηφοφοριών για βουλευτές και δημοτικούς συμβούλους."/>
+  <meta name="robots" content="index, follow"/>
+  <link rel="canonical" href="https://ekklesia.gr/representative.html"/>
+  <meta property="og:image" content="https://ekklesia.gr/assets/og-image.png"/>
+  <meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <link rel="icon" type="image/png" href="favicon.ico"/>
+  <script defer data-domain="ekklesia.gr" src="https://analytics.ekklesia.gr/js/script.js"></script>
+  <style>
+    :root{--dark:#0f172a;--gold:#f59e0b;--gold-l:#fef3c7;--blue:#2563eb;--blue-l:#eff6ff;--gray-900:#0f172a;--gray-700:#334155;--gray-500:#64748b;--gray-400:#94a3b8;--green:#22c55e;--red:#ef4444;--purple:#a855f7;--radius:1rem;--white:#ffffff}
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--white);color:var(--gray-900);line-height:1.6}
+    nav{position:sticky;top:0;z-index:100;background:rgba(15,23,42,0.97);backdrop-filter:blur(16px);border-bottom:2px solid var(--gold);padding:0.75rem 1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem}
+    .nav-logo{font-size:1.25rem;font-weight:900;color:var(--gold);text-decoration:none;display:flex;align-items:center;gap:0.4rem}
+    .nav-links{display:flex;gap:0.15rem;align-items:center;flex-wrap:wrap}
+    .nav-links a{padding:0.3rem 0.7rem;border-radius:0.4rem;color:rgba(255,255,255,0.7);text-decoration:none;font-size:0.82rem;font-weight:500;transition:all 0.2s}
+    .nav-links a:hover,.nav-links a.active{background:rgba(245,158,11,0.15);color:var(--gold)}
+    .hero{padding:5rem 2rem;text-align:center;background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%);color:white}
+    .hero h1{font-size:clamp(2rem,5vw,3rem);font-weight:900;color:var(--gold);margin-bottom:0.75rem}
+    .hero p{color:rgba(255,255,255,0.8);max-width:640px;margin:0 auto 1.5rem;font-size:1.05rem}
+    .layout{max-width:900px;margin:0 auto;padding:2.5rem 1.5rem}
+    h2{font-size:1.4rem;font-weight:900;margin:2.5rem 0 1rem;padding-bottom:0.5rem;border-bottom:2px solid #e2e8f0}
+    p{color:var(--gray-700);margin-bottom:1rem;line-height:1.8}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem;margin:1.5rem 0}
+    .card{background:var(--white);border:2px solid #e2e8f0;border-radius:var(--radius);padding:1.25rem;transition:all 0.2s}
+    .card:hover{border-color:var(--gold);transform:translateY(-2px)}
+    .card-icon{font-size:1.8rem;margin-bottom:0.5rem}
+    .card h4{font-weight:800;margin-bottom:0.25rem;font-size:0.9rem}
+    .card p{font-size:0.78rem;color:var(--gray-400);margin:0}
+    .info-box{background:var(--blue-l);border-left:4px solid var(--blue);border-radius:0.5rem;padding:1rem 1.25rem;margin:1.25rem 0}
+    .warn-box{background:var(--gold-l);border-left:4px solid var(--gold);border-radius:0.5rem;padding:1rem 1.25rem;margin:1.25rem 0}
+    .download-section{text-align:center;padding:3rem 2rem;background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:var(--radius);margin:2rem 0;color:white}
+    .download-btn{display:inline-block;padding:1rem 2.5rem;background:var(--gold);color:var(--dark);border-radius:var(--radius);font-weight:800;font-size:1.1rem;text-decoration:none;margin:0.5rem}
+    .download-btn:hover{background:#d97706}
+    .faq-item{margin-bottom:1.5rem}
+    .faq-item h4{font-size:0.95rem;font-weight:800;color:var(--dark);margin-bottom:0.4rem}
+    .faq-item p{font-size:0.85rem;color:var(--gray-700);margin:0}
+    .flow{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;padding:1rem;background:#f1f5f9;border-radius:var(--radius);margin:1rem 0}
+    .fnode{background:white;border-radius:0.5rem;padding:0.4rem 0.9rem;font-size:0.78rem;font-weight:700;border:2px solid #e2e8f0}
+    .fnode-g{border-color:var(--gold);background:var(--gold-l);color:#92400e}
+    .fnode-b{border-color:var(--blue);background:var(--blue-l);color:var(--blue)}
+    .farr{color:var(--gold);font-weight:900}
+    footer{background:var(--gray-900);color:var(--gray-400);padding:2rem 1.5rem;text-align:center;font-size:0.82rem;margin-top:4rem}
+    footer a{color:var(--gray-500);text-decoration:none}
+    @media(max-width:640px){.nav-links a{font-size:0.75rem;padding:0.22rem 0.45rem}}
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="./" class="nav-logo">εκπρόσωπος</a>
+  <div class="nav-links">
+    <a href="./" data-el="Αρχική" data-en="Home">Αρχική</a>
+    <a href="/el/bills" data-el="Ψηφοφορίες" data-en="Votes">Ψηφοφορίες</a>
+    <a href="govgr-dimos.html" data-el="Δήμος" data-en="Municipality">Δήμος</a>
+    <a href="representative.html" class="active" data-el="Εκπρόσωπος" data-en="Representative">Εκπρόσωπος</a>
+    <a href="wiki/security.html" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1 data-el="Η εφαρμογή για τους Λαϊκούς Αντιπροσώπους" data-en="The App for People's Representatives">Η εφαρμογή για τους Λαϊκούς Αντιπροσώπους</h1>
+  <p data-el="Live αποτελέσματα ψηφοφοριών πολιτών — αποκλειστικά για επαληθευμένους Βουλευτές, Περιφερειάρχες και Δημοτικούς Συμβούλους." data-en="Live citizen vote results — exclusively for verified MPs, Regional Governors, and Municipal Councillors.">Live αποτελέσματα ψηφοφοριών πολιτών — αποκλειστικά για επαληθευμένους εκπροσώπους.</p>
+  <a href="#download" class="download-btn">Κατεβάστε την εφαρμογή ↓</a>
+</div>
+
+<div class="layout">
+
+  <h2 data-el="Τι προσφέρει;" data-en="What does it offer?">Τι προσφέρει;</h2>
+  <div class="grid">
+    <div class="card"><div class="card-icon">📊</div><h4 data-el="Live Αποτελέσματα" data-en="Live Results">Live Αποτελέσματα</h4><p data-el="Δείτε πώς ψηφίζουν οι πολίτες — σε πραγματικό χρόνο, κατά τη διάρκεια του 24ωρου παραθύρου." data-en="See how citizens vote — in real time, during the 24h window.">Live ψήφοι πολιτών κατά τη διάρκεια του 24ωρου παραθύρου.</p></div>
+    <div class="card"><div class="card-icon">⚖️</div><h4 data-el="Δείκτης Απόκλισης" data-en="Divergence Score">Δείκτης Απόκλισης</h4><p data-el="Σύγκριση αποτελέσματος πολιτών vs. Βουλής — πόσο σας εκπροσωπούν;" data-en="Citizens vs. Parliament comparison — how representative are you?">Πολίτες vs. Βουλή — πόσο συμφωνούν;</p></div>
+    <div class="card"><div class="card-icon">📈</div><h4 data-el="Ωριαία Ανάλυση" data-en="Hourly Analysis">Ωριαία Ανάλυση</h4><p data-el="Χρονοδιάγραμμα ψήφων — πότε ψήφισαν οι πολίτες, τάσεις ανά ώρα." data-en="Vote timeline — when citizens voted, hourly trends.">Χρονοδιάγραμμα ψήφων ανά ώρα.</p></div>
+    <div class="card"><div class="card-icon">🏛️</div><h4 data-el="Κατά Επίπεδο" data-en="By Level">Κατά Επίπεδο</h4><p data-el="Ανάλυση αποτελεσμάτων κατά Βουλή, Περιφέρεια, Δήμο." data-en="Results by Parliament, Region, Municipality.">Βουλή · Περιφέρεια · Δήμος</p></div>
+    <div class="card"><div class="card-icon">🔐</div><h4 data-el="Βιομετρική Ασφάλεια" data-en="Biometric Security">Βιομετρική Ασφάλεια</h4><p data-el="Δαχτυλικό αποτύπωμα ή FaceID κάθε φορά που ανοίγετε την εφαρμογή." data-en="Fingerprint or FaceID every time you open the app.">Δαχτυλικό αποτύπωμα / FaceID</p></div>
+    <div class="card"><div class="card-icon">⛓️</div><h4 data-el="Arweave Αρχείο" data-en="Arweave Archive">Arweave Αρχείο</h4><p data-el="Μόνιμη αρχειοθέτηση — τα αποτελέσματα δεν μπορούν να αλλοιωθούν." data-en="Permanent archive — results cannot be tampered with.">Μόνιμη, αμετάβλητη αρχειοθέτηση.</p></div>
+  </div>
+
+  <h2 data-el="Πώς λειτουργεί;" data-en="How does it work?">Πώς λειτουργεί;</h2>
+  <div class="flow">
+    <div class="fnode fnode-g" data-el="Εισάγετε ADA" data-en="Enter ADA">Εισάγετε ADA</div><div class="farr">→</div>
+    <div class="fnode" data-el="Διαύγεια επαληθεύει" data-en="Diavgeia verifies">Διαύγεια επαληθεύει</div><div class="farr">→</div>
+    <div class="fnode fnode-g" data-el="Token 24ω" data-en="24h Token">Token 24ω</div><div class="farr">→</div>
+    <div class="fnode fnode-b" data-el="Live αποτελέσματα" data-en="Live results">Live αποτελέσματα</div>
+  </div>
+
+  <div class="info-box">
+    <p style="margin:0" data-el="Η ADA (Αριθμός Διαδικτυακής Ανάρτησης) είναι ο μοναδικός αριθμός κάθε πράξης στη Διαύγεια — δημόσια διαθέσιμος. Χρησιμοποιείται αποκλειστικά για επαλήθευση ταυτότητας, δεν αποθηκεύεται." data-en="The ADA number is the unique identifier of every government act in Diavgeia — publicly available. Used only for verification, never stored.">Η ADA είναι ο μοναδικός αριθμός κάθε πράξης στη Διαύγεια. Δημόσια διαθέσιμος, χρησιμοποιείται μόνο για επαλήθευση.</p>
+  </div>
+
+  <h2 data-el="Γιατί εκπρόσωπος;" data-en="Why εκπρόσωπος?">Γιατί εκπρόσωπος;</h2>
+  <div class="warn-box">
+    <p style="margin:0" data-el="Η δημοκρατία λειτουργεί μόνο όταν οι εκπρόσωποι γνωρίζουν τι θέλουν οι πολίτες. Η εφαρμογή εκπρόσωπος δίνει αυτή τη γνώση — ανώνυμα, ακριβή, σε πραγματικό χρόνο." data-en="Democracy works only when representatives know what citizens want. εκπρόσωπος provides that knowledge — anonymous, accurate, in real time.">Η δημοκρατία λειτουργεί μόνο όταν οι εκπρόσωποι γνωρίζουν τι θέλουν οι πολίτες. Η εφαρμογή εκπρόσωπος δίνει αυτή τη γνώση.</p>
+  </div>
+
+  <div class="download-section" id="download">
+    <h2 style="color:var(--gold);border:none;margin-top:0" data-el="Κατεβάστε την εφαρμογή" data-en="Download the App">Κατεβάστε την εφαρμογή</h2>
+    <p style="color:rgba(255,255,255,0.7);margin-bottom:1.5rem" data-el="Αποκλειστικά για επαληθευμένους Λαϊκούς Αντιπροσώπους" data-en="Exclusively for verified People's Representatives">Αποκλειστικά για επαληθευμένους Λαϊκούς Αντιπροσώπους</p>
+    <a href="download/ekprosopos-latest.apk" class="download-btn">Android APK</a>
+    <p style="color:rgba(255,255,255,0.5);font-size:0.75rem;margin-top:1rem">iOS: Σύντομα διαθέσιμο | Web: <a href="representative/index.html" style="color:var(--gold)">ekklesia.gr/representative</a></p>
+  </div>
+
+  <h2 data-el="Συχνές Ερωτήσεις" data-en="FAQ">Συχνές Ερωτήσεις</h2>
+  <div class="faq-item"><h4 data-el="Ποιοι μπορούν να χρησιμοποιήσουν την εφαρμογή;" data-en="Who can use the app?">Ποιοι μπορούν να χρησιμοποιήσουν την εφαρμογή;</h4><p data-el="Κάθε δημόσιος λειτουργός με πράξη ανάρτησης στη Διαύγεια (ADA). Βουλευτές, Περιφερειάρχες, Δημοτικοί Σύμβουλοι." data-en="Any public official with a Diavgeia posting act (ADA). MPs, Regional Governors, Municipal Councillors.">Κάθε δημόσιος λειτουργός με πράξη στη Διαύγεια (ADA).</p></div>
+  <div class="faq-item"><h4 data-el="Πώς γίνεται η επαλήθευση ADA;" data-en="How does ADA verification work?">Πώς γίνεται η επαλήθευση ADA;</h4><p data-el="Η εφαρμογή ελέγχει αν ο αριθμός ADA υπάρχει στο Diavgeia API (δημόσια δεδομένα). Δεν αποθηκεύεται κανένα προσωπικό στοιχείο." data-en="The app checks if the ADA number exists in the Diavgeia API (public data). No personal data is stored.">Ελέγχεται αν η ADA υπάρχει στο Diavgeia API. Κανένα προσωπικό στοιχείο δεν αποθηκεύεται.</p></div>
+  <div class="faq-item"><h4 data-el="Τα δεδομένα είναι ανώνυμα;" data-en="Is the data anonymous?">Τα δεδομένα είναι ανώνυμα;</h4><p data-el="Ναι. Οι ψήφοι των πολιτών είναι πλήρως ανώνυμες (Ed25519 κρυπτογραφία). Ο εκπρόσωπος βλέπει μόνο συγκεντρωτικά αποτελέσματα, ποτέ μεμονωμένες ψήφους." data-en="Yes. Citizen votes are fully anonymous (Ed25519 cryptography). Representatives see only aggregate results, never individual votes.">Ναι. Μόνο συγκεντρωτικά αποτελέσματα, ποτέ μεμονωμένες ψήφους.</p></div>
+  <div class="faq-item"><h4 data-el="Τι γίνεται μετά τις 24 ώρες;" data-en="What happens after 24 hours?">Τι γίνεται μετά τις 24 ώρες;</h4><p data-el="Το token λήγει αυτόματα. Τα αποτελέσματα αρχειοθετούνται στο Arweave και γίνονται δημόσια για όλους." data-en="The token expires automatically. Results are archived on Arweave and become public for everyone.">Το token λήγει. Τα αποτελέσματα αρχειοθετούνται στο Arweave (δημόσια).</p></div>
+
+</div>
+
+<footer>
+  <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:0.3rem 1rem;margin-bottom:0.75rem">
+    <a href="./">Αρχική</a>
+    <a href="govgr-dimos.html">Δήμος</a>
+    <a href="community.html">Community</a>
+    <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>
+  </div>
+  <p>εκπρόσωπος · εκκλησία · © 2026 V-Labs Development · MIT License</p>
+</footer>
+
+</body>
+</html>
