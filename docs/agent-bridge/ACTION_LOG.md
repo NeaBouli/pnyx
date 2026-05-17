@@ -25,7 +25,8 @@
 - Demo-Node Fixes: Deutsch→Griechisch, CORS fix, ai_summary_reviewed None guard
 - Admin Panel: Live-Stats, Bill-Liste, 3 Architektur-Level dokumentiert
 - govgr-dimos.html: Architektur-Sektion (Multi-Tenant/Dedicated/Federated)
-- HEAD: 3e14fd7
+- NEA-172+173: εκπρόσωπος API (5 Endpoints) + Web App (Diavgeia ADA Login)
+- HEAD: 92b0a6c
 - AAB: builds/ekklesia-v1.1.0-vC10-PLAY.aab
 
 ## 2026-05-14 — Kausal-Audit + Arweave Fix + vC8 Play Store
