@@ -34,7 +34,10 @@
 - Landing Page: ⚖️ Kachel + Roadmap 4x ✅ (Alpha)
 - Demo-Node Fixes: CORS, ai_summary_reviewed, Deutsch→Griechisch
 - EN/ΕΛ Sprachumschalter auf representative.html
-- HEAD: 598c729
+- NEA-171: Results visibility HIDDEN default (ACTIVE Bills verbergen Ergebnisse)
+- NEA-175: Region Banner auf VoteScreen (📍 Δημοτική/Περιφερειακή)
+- NEA-174: Kein Hyperbeam — war schon arweave.net
+- HEAD: 1c56bdb
 - AAB: builds/ekklesia-v1.1.0-vC10-PLAY.aab
 - εκπρόσωπος APK: download/ekprosopos-latest.apk (vC1)
 
