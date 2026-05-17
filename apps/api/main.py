@@ -89,6 +89,7 @@ from routers import polis_qr
 from routers import sso
 from routers import claude_agent
 from routers import admin_account
+from routers import representative
 from routers import cplm
 from routers import app_version
 
@@ -479,6 +480,7 @@ app.include_router(polis_qr.router)
 app.include_router(sso.router)
 app.include_router(claude_agent.router)
 app.include_router(admin_account.router)
+app.include_router(representative.router)
 app.include_router(cplm.router)
 app.include_router(app_version.router)
 

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>εκπρόσωπος — ekklesia.gr</title>
+<style>
+:root{--dark:#0f172a;--gold:#f59e0b;--gold-l:#fef3c7;--blue:#2563eb;--green:#22c55e;--red:#ef4444;--gray:#64748b;--radius:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:var(--dark);color:#e2e8f0;min-height:100vh}
+.header{background:linear-gradient(135deg,#0f172a,#1e293b);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--gold)}
+.header h1{font-size:18px;font-weight:900;color:var(--gold)}
+.header .badge{font-size:10px;background:var(--gold);color:var(--dark);padding:2px 8px;border-radius:10px;font-weight:700}
+.content{padding:20px;max-width:500px;margin:0 auto}
+
+/* Login */
+#loginScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center}
+#loginScreen h2{font-size:28px;font-weight:900;color:var(--gold);margin-bottom:8px}
+#loginScreen p{color:var(--gray);font-size:14px;margin-bottom:32px}
+.input{width:100%;padding:14px;border:2px solid #334155;border-radius:var(--radius);background:#1e293b;color:#e2e8f0;font-size:16px;font-weight:600;text-align:center;letter-spacing:1px}
+.input:focus{outline:none;border-color:var(--gold)}
+.btn{width:100%;padding:14px;border:none;border-radius:var(--radius);font-size:15px;font-weight:800;cursor:pointer;margin-top:12px}
+.btn-gold{background:var(--gold);color:var(--dark)}.btn-gold:hover{background:#d97706}
+.btn-outline{background:transparent;border:2px solid #334155;color:var(--gray)}.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+
+/* Bills */
+#billsScreen{display:none}
+.bill-card{background:#1e293b;border:1px solid #334155;border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.bill-card h3{font-size:14px;font-weight:800;color:#e2e8f0;margin-bottom:6px}
+.bill-card .meta{font-size:12px;color:var(--gray)}
+.bill-card .status{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;margin-bottom:8px}
+.status-window{background:#fef3c7;color:#92400e}
+.status-voted{background:#dbeafe;color:#1e40af}
+.status-open{background:#ede9fe;color:#5b21b6}
+.bar-wrap{background:#334155;border-radius:6px;height:20px;display:flex;overflow:hidden;margin:8px 0}
+.bar-yes{background:var(--green);height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;min-width:20px}
+.bar-no{background:var(--red);height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;min-width:20px}
+.votes-label{font-size:11px;color:var(--gray);text-align:center}
+.error{background:#7f1d1d;color:#fca5a5;padding:10px;border-radius:8px;font-size:13px;margin:12px 0;display:none}
+.loading{text-align:center;color:var(--gray);padding:40px}
+.nav-bar{position:fixed;bottom:0;left:0;right:0;background:#1e293b;border-top:1px solid #334155;display:flex;padding:8px 0;display:none}
+.nav-bar a{flex:1;text-align:center;color:var(--gray);text-decoration:none;font-size:11px;font-weight:600;padding:8px 0}
+.nav-bar a.active{color:var(--gold)}
+.disclaimer{font-size:10px;color:#475569;text-align:center;margin-top:24px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>εκπρόσωπος</h1>
+  <span class="badge" id="repBadge" style="display:none">Επαληθευμένος</span>
+</div>
+
+<div class="content">
+  <!-- Login Screen -->
+  <div id="loginScreen">
+    <h2>Σύνδεση</h2>
+    <p>Εισάγετε τον αριθμό ΑΔΑ σας από τη Διαύγεια για επαλήθευση.</p>
+    <input type="text" class="input" id="adaInput" placeholder="π.χ. 9ΠΝΘΩ6Γ-ΘΥΦ" autocomplete="off">
+    <div class="error" id="loginError"></div>
+    <button class="btn btn-gold" id="loginBtn" onclick="doLogin()">Επαλήθευση</button>
+    <p class="disclaimer">Η εφαρμογή εκπρόσωπος παρέχει πρόσβαση σε αποτελέσματα ψηφοφοριών μετά το 24ωρο παράθυρο. Δεν παρέχει πρόσβαση σε ενεργές ψηφοφορίες.</p>
+  </div>
+
+  <!-- Bills Screen -->
+  <div id="billsScreen">
+    <h2 style="font-size:16px;font-weight:800;color:var(--gold);margin-bottom:16px">Ψηφοφορίες</h2>
+    <div id="billsList"><div class="loading">Φόρτωση...</div></div>
+  </div>
+</div>
+
+<div class="nav-bar" id="navBar">
+  <a href="#" class="active" onclick="showBills()">Ψηφοφορίες</a>
+  <a href="#" onclick="doLogout()">Αποσύνδεση</a>
+</div>
+
+<script>
+var API='https://api.ekklesia.gr';
+var token=localStorage.getItem('rep_token')||'';
+var adaNumber=localStorage.getItem('rep_ada')||'';
+
+if(token)showBillsScreen();
+
+async function doLogin(){
+  var ada=document.getElementById('adaInput').value.trim();
+  if(!ada){showError('Εισάγετε αριθμό ΑΔΑ');return}
+  document.getElementById('loginBtn').textContent='Επαλήθευση...';
+  document.getElementById('loginBtn').disabled=true;
+  try{
+    var r=await fetch(API+'/api/v1/rep/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ada_number:ada})});
+    var d=await r.json();
+    if(!r.ok){showError(d.detail||'Σφάλμα επαλήθευσης');return}
+    token=d.token;adaNumber=ada;
+    localStorage.setItem('rep_token',token);
+    localStorage.setItem('rep_ada',ada);
+    showBillsScreen();
+  }catch(e){showError('Σφάλμα δικτύου')}
+  finally{document.getElementById('loginBtn').textContent='Επαλήθευση';document.getElementById('loginBtn').disabled=false}
+}
+
+function showError(msg){var e=document.getElementById('loginError');e.textContent=msg;e.style.display='block';setTimeout(function(){e.style.display='none'},5000)}
+
+async function showBillsScreen(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('billsScreen').style.display='block';
+  document.getElementById('navBar').style.display='flex';
+  document.getElementById('repBadge').style.display='inline';
+  loadBills();
+}
+
+async function loadBills(){
+  try{
+    var r=await fetch(API+'/api/v1/rep/bills',{headers:{'Authorization':'Bearer '+token}});
+    if(r.status===401){doLogout();return}
+    var bills=await r.json();
+    var html='';
+    if(!bills.length)html='<p style="color:var(--gray);text-align:center">Δεν υπάρχουν διαθέσιμες ψηφοφορίες</p>';
+    bills.forEach(function(b){
+      var sc={'WINDOW_24H':'status-window','PARLIAMENT_VOTED':'status-voted','OPEN_END':'status-open'};
+      var sl={'WINDOW_24H':'24ω Παράθυρο','PARLIAMENT_VOTED':'Ψηφίστηκε','OPEN_END':'Αρχείο'};
+      html+='<div class="bill-card" onclick="loadResults(\''+b.id+'\')">';
+      html+='<span class="status '+(sc[b.status]||'')+'">'+(sl[b.status]||b.status)+'</span>';
+      html+='<h3>'+b.title_el+'</h3>';
+      html+='<div class="meta">'+b.id+' · '+(b.governance_level||'NATIONAL')+'</div>';
+      if(b.consensus_count>0)html+='<div class="meta" style="color:#a855f7">⚖️ Συναίνεση: '+(b.consensus_score>0?'+':'')+((b.consensus_score||0).toFixed(1))+' ('+b.consensus_count+' ψήφοι)</div>';
+      html+='</div>';
+    });
+    document.getElementById('billsList').innerHTML=html;
+  }catch(e){document.getElementById('billsList').innerHTML='<p style="color:var(--red)">Σφάλμα φόρτωσης</p>'}
+}
+
+async function loadResults(billId){
+  document.getElementById('billsList').innerHTML='<div class="loading">Φόρτωση αποτελεσμάτων...</div>';
+  try{
+    var r=await fetch(API+'/api/v1/rep/results/'+billId,{headers:{'Authorization':'Bearer '+token}});
+    var d=await r.json();
+    var yesPct=d.yes_pct||0,noPct=d.no_pct||0;
+    var html='<button class="btn btn-outline" onclick="loadBills()" style="margin-bottom:16px">← Πίσω</button>';
+    html+='<div class="bill-card"><h3>'+d.title_el+'</h3>';
+    html+='<div class="bar-wrap"><div class="bar-yes" style="width:'+Math.max(yesPct,3)+'%">'+yesPct+'%</div><div class="bar-no" style="width:'+Math.max(noPct,3)+'%">'+noPct+'%</div></div>';
+    html+='<div class="votes-label">'+d.total+' ψήφοι πολιτών</div>';
+    if(d.party_votes){html+='<div style="margin-top:12px;font-size:12px;color:var(--gray)"><strong>Κόμματα:</strong> ';for(var p in d.party_votes)html+=p+':'+d.party_votes[p]+' ';html+='</div>'}
+    if(d.consensus_count>0)html+='<div style="margin-top:8px;font-size:12px;color:#a855f7">⚖️ Συναίνεση: '+((d.consensus_score||0)>0?'+':'')+(d.consensus_score||0).toFixed(1)+' ('+d.consensus_count+')</div>';
+    html+='</div>';
+    document.getElementById('billsList').innerHTML=html;
+  }catch(e){document.getElementById('billsList').innerHTML='<p style="color:var(--red)">Σφάλμα</p>'}
+}
+
+function showBills(){loadBills()}
+function doLogout(){token='';adaNumber='';localStorage.removeItem('rep_token');localStorage.removeItem('rep_ada');location.reload()}
+</script>
+</body>
+</html>
