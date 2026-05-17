@@ -439,6 +439,7 @@ app.add_middleware(
         "https://www.ekklesia.gr",
         "https://api.ekklesia.gr",
         "https://dashboard.ekklesia.gr",
+        "https://test.ekklesia.gr",
     ],
     allow_credentials=True,
     allow_methods=["*"],
