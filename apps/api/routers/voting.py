@@ -463,8 +463,9 @@ async def get_latest_result(db: AsyncSession = Depends(get_db)):
 @router.get("/{bill_id}/results", response_model=BillResults)
 async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
     """
-    Öffentliche Abstimmungsergebnisse + Divergence Score.
-    Immer verfügbar — auch während laufender Abstimmung.
+    Abstimmungsergebnisse + Divergence Score.
+    Visibility: HIDDEN (default for ACTIVE), WINDOW (24h), ALWAYS.
+    PARLIAMENT_VOTED/OPEN_END always visible.
     """
     bill_result = await db.execute(
         select(ParliamentBill).where(ParliamentBill.id == bill_id)
@@ -472,6 +473,18 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
     bill = bill_result.scalar_one_or_none()
     if not bill:
         raise HTTPException(status_code=404, detail=f"Gesetz {bill_id} nicht gefunden.")
+
+    # Visibility check
+    visibility = getattr(bill, 'results_visibility', 'HIDDEN') or 'HIDDEN'
+    always_visible = bill.status in (BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END, BillStatus.WINDOW_24H)
+    if visibility == 'HIDDEN' and not always_visible and bill.status == BillStatus.ACTIVE:
+        return BillResults(
+            bill_id=bill_id, title_el=bill.title_el, status=bill.status.value,
+            total_votes=0, yes_count=0, no_count=0, abstain_count=0, unknown_count=0,
+            yes_percent=0, no_percent=0, abstain_percent=0, divergence=None,
+            representativity=compute_representativity(0),
+            disclaimer_el="Τα αποτελέσματα θα είναι ορατά μετά τη λήξη της ψηφοφορίας.",
+        )
 
     # Einzelne Counts
     yes_r = await db.execute(select(func.count()).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.YES))
