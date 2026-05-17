@@ -26,7 +26,10 @@
 - Admin Panel: Live-Stats, Bill-Liste, 3 Architektur-Level dokumentiert
 - govgr-dimos.html: Architektur-Sektion (Multi-Tenant/Dedicated/Federated)
 - NEA-172+173: εκπρόσωπος API (5 Endpoints) + Web App (Diavgeia ADA Login)
-- HEAD: 92b0a6c
+- εκπρόσωπος Native App: WebView + SecureStore + Biometric (00a0db4)
+- Web App live: ekklesia.gr/representative/index.html
+- APK Build läuft (erster Build ~20min)
+- HEAD: 00a0db4
 - AAB: builds/ekklesia-v1.1.0-vC10-PLAY.aab
 
 ## 2026-05-14 — Kausal-Audit + Arweave Fix + vC8 Play Store
