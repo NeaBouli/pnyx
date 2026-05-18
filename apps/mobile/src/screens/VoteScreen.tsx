@@ -12,7 +12,6 @@ import {
   ActivityIndicator,
   Share,
   ScrollView,
-  Slider,
 } from "react-native";
 import * as LocalAuthentication from "expo-local-authentication";
 import type { StackScreenProps } from "@react-navigation/stack";
@@ -242,16 +241,16 @@ export default function VoteScreen({ route, navigation }: Props) {
             <Text style={{ fontSize: 10, color: "#94a3b8" }}>Ουδέτερο</Text>
             <Text style={{ fontSize: 10, color: "#22c55e" }}>Συναίνεση</Text>
           </View>
-          <Slider
-            minimumValue={-5}
-            maximumValue={5}
-            step={1}
-            value={consensusScore}
-            onValueChange={setConsensusScore}
-            minimumTrackTintColor="#a855f7"
-            maximumTrackTintColor="#e2e8f0"
-            thumbTintColor="#7c3aed"
-          />
+          <View style={{ flexDirection: "row", justifyContent: "center", flexWrap: "wrap", gap: 6, marginVertical: 8 }}>
+            {[-5,-4,-3,-2,-1,0,1,2,3,4,5].map(v => (
+              <TouchableOpacity key={v} onPress={() => setConsensusScore(v)}
+                style={{ width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center",
+                  backgroundColor: consensusScore === v ? (v > 0 ? "#22c55e" : v < 0 ? "#ef4444" : "#94a3b8") : "#f1f5f9",
+                  borderWidth: consensusScore === v ? 2 : 1, borderColor: consensusScore === v ? "#7c3aed" : "#e2e8f0" }}>
+                <Text style={{ fontSize: 12, fontWeight: "800", color: consensusScore === v ? "#fff" : "#64748b" }}>{v > 0 ? "+" : ""}{v}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
           <Text style={{ textAlign: "center", fontSize: 24, fontWeight: "900", color: consensusScore > 0 ? "#22c55e" : consensusScore < 0 ? "#ef4444" : "#94a3b8", marginVertical: 8 }}>
             {consensusScore > 0 ? "+" : ""}{consensusScore}
           </Text>
