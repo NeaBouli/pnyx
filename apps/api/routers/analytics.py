@@ -163,7 +163,7 @@ async def votes_timeline(
 ):
     """Abstimmungs-Zeitverlauf aggregiert nach Tag."""
     try:
-        since = datetime.now(timezone.utc) - timedelta(days=days)
+        since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
         day_col = func.date_trunc("day", CitizenVote.created_at).label("day")
         filters = [CitizenVote.created_at >= since]
         if bill_id:
