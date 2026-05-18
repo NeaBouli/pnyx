@@ -9,7 +9,7 @@ router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
 LATEST_VERSION = "1.1.0"
-LATEST_VERSION_CODE = 11
+LATEST_VERSION_CODE = 12
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
