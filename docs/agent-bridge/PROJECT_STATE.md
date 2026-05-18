@@ -13,15 +13,15 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `bd1d812` (DEMO filter + results visibility + region banner)
-- **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-votedate-fix-20260515`
+- **HEAD:** `5349b39` (chore: gold adaptive icon bg + builds/ gitignore)
+- **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`
+- **Rollback:** `pre-session-20260518` → `5349b39`
 - **Remote:** synchron mit GitHub
-- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `cdcb449` (deployed 2026-05-17)
+- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `7e87b75` (deployed 2026-05-18)
 
 ## Uncommitted Aenderungen
 
-- `apps/mobile/app.json` — modifiziert (versionCode Aenderung)
-- `greek_topics_scraper.py` — AUS GIT ENTFERNT (Commit `30cd77e`)
+- Keine (clean tree)
 
 ## Architektur / Stack
 
@@ -29,10 +29,11 @@
 |---|---|
 | API | Python FastAPI + Alembic + PostgreSQL + Redis |
 | Web | Next.js 14 (App Router, i18n el/en, Tailwind, recharts) |
-| Mobile | Expo / React Native (versionCode 7 / v1.1.0, bereit fuer EAS Build) |
+| Mobile | Expo / React Native (versionCode 12 / v1.1.0, AAB bereit) |
+| Representative | Expo / React Native WebView (versionCode 1 / v1.0.0, APK bereit) |
 | Crypto | Python + PyNaCl (Ed25519, Nullifier, HLR) |
 | DB | PostgreSQL, 9+ Tabellen, 3 Enums, Alembic Migrations |
-| Infra | Docker Compose (10 Container), Traefik, Listmonk Newsletter |
+| Infra | Docker Compose (11 Container), Traefik, Brevo Newsletter |
 | Forum | Discourse (pnyx.ekklesia.gr), Sync alle 10min |
 
 ## Server-Deployment (Hetzner)
@@ -49,13 +50,20 @@
 - Ed25519 Voting (anonym, keine Accounts/Email/Cookies)
 - Deep-Link: `ekklesia://polis-login`
 - QR-Code Vote (purpose-bound, bill_id-gebunden)
+- **QR Web Vote** (Browser-Voting via QR-Session, POST /polis/qr-vote, kein Ed25519 Signing im Browser noetig)
 - Bill Lifecycle Scheduler (ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END)
 - Vote Correction (einmalig in WINDOW_24H)
+- Consensus Scale (-5 bis +5 fuer OPEN_END Bills)
+- Arweave Blockchain Archivierung (viewblock.io Links)
 - CPLM (Citizens Political Liquid Mirror) mit Public API (CC BY 4.0)
 - Liquid Compass (4 Modelle, 100% clientseitig, AES-256-GCM)
+- **ekprosopos App** (Vertreter-App, WebView + SecureStore + Biometric, Demo: ADA DEMO-123)
+- **Demo Node** (test.ekklesia.gr, komplett autonom, localStorage, keine API-Calls)
+- Telegram Community Bot (@ekklesia_news_bot, 11 Topics)
+- Newsletter (Brevo API direkt, monatlicher Auto-Report)
+- Region Voting (MUNICIPAL/REGIONAL Banner)
 - GSC Fixes (www→301, hreflang)
 - Discourse Forum Sync
-- govgr-dimos.html (5-Schritt Timeline, Server-Wahl, Kontaktformular)
 - 24 Module insgesamt
 
 ## Tests
@@ -73,13 +81,13 @@
 
 ## Naechste Schritte (Prioritaet) — siehe auch Linear
 
-1. **NEA-59** F-Droid MR !38007 — Pipeline GRUEN, wartet auf `linsui` Review
-2. **NEA-61** AAB Upload Play Console (versionCode 6, manuell)
-3. **NEA-63** Dashboard: 25 Features (6 Prio HOCH vor Public Beta)
-4. **NEA-65** Off-Site Backup (Hetzner Storage Box)
-5. **NEA-69** Diavgeia Org-Mapping 3/101 → Server-Seed noetig
-6. **NEA-72** Hermes Phase 1 (blocked auf CX43)
-7. **NEA-73** Embed-System (Phase 2)
+1. **AAB vC12 Upload** Play Console (~/Desktop/ekklesia-v1.1.0-vC12-PLAY.aab, 45MB)
+2. **F-Droid MR !38007** — Pipeline GRUEN, wartet auf `linsui` Review
+3. **Dashboard** — 25 Features (6 Prio HOCH vor Public Beta)
+4. **End-to-End QR Vote Test** — Mobile App → QR Scan → Browser Vote (Deep-Link Flow)
+5. **Wahlbezirk region_locked** — DB Column + ProfileScreen fuer Einmal-Regionswahl
+6. **analytics/votes-timeline 500** — GROUP BY Fix in analytics.py
+7. **Off-Site Backup** — Hetzner Storage Box
 
 ## F-Droid MR !38007 Status (2026-05-10)
 
@@ -178,16 +186,23 @@ Weiterhin UNSICHER:
 
 ## Letzte Aktualisierung
 
-- Datum/Zeit: 2026-05-01
+- Datum/Zeit: 2026-05-18
 - Agent: Claude Code
-- HEAD lokal: `a5ee48b` (gepusht + deployed)
-- Motion Pack v1: 5 SVGs aktiv (Hero, Voting, CPLM-Fallback, Privacy x2), Lifecycle+Divergence aus Landing entfernt
-- Broadcasting: Social Media Buttons (Telegram/GitHub/Forum)
-- vr.ekklesia.gr: **LIVE** (SSL + nginx Landing Page, MiroFisch Konzeptphase)
-- Divergence-Balance SVG: aus Landing entfernt (Waagschalen-Bug), Datei bleibt im Repo
-- Session 01.05: 8 Commits, 13 Tasks erledigt
-- Server: API deployed, Discourse Rebuild laeuft
-- Rollback-Tag: `pre-fdroid-versioncheck-20260501`
+- HEAD lokal: `5349b39` (gepusht)
+- HEAD server: `7e87b75` (deployed, API + Web neu gebaut)
+- Session 18.05: 6 Commits
+  - `56dae21` fix(mobile): vC12 Slider crash fix
+  - `d53ea32` fix(representative): URL index.html + gold icon
+  - `b6255d6` fix: QR Web Vote embed + API endpoint
+  - `43a11e0` feat(representative): Demo-Bypass ADA DEMO-123
+  - `7e87b75` fix: QR Web Vote — Next.js Flow (3 Voting-Pfade)
+  - `5349b39` chore: gold adaptive icon bg + builds/ gitignore
+- Rollback-Tag: `pre-session-20260518`
+- Builds bereit:
+  - `~/Desktop/ekklesia-v1.1.0-vC12-PLAY.aab` (45MB) — Play Console
+  - `~/Desktop/ekprosopos-v1.0.0-vC1.apk` (54MB) — auf S10 getestet
+- WICHTIG: Docker Container muessen per Image-Rebuild deployed werden (kein Volume-Mount fuer Code).
+  Deploy-Flow: `git pull` → `docker compose build api/web` → Container manuell mit Traefik-Labels + Env neu erstellen
 
 ## Codex-Verifikation aus Repo-Metadaten
 
