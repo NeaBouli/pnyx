@@ -4,7 +4,7 @@ import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
 
-const WEB_URL = 'https://ekklesia.gr/representative/';
+const WEB_URL = 'https://ekklesia.gr/representative/index.html';
 const API_BASE = 'https://api.ekklesia.gr';
 
 export default function App() {
