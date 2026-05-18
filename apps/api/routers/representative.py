@@ -81,6 +81,29 @@ async def verify_rep_token(
 @router.post("/verify")
 async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(get_db)):
     """Verify representative via Diavgeia ADA number. Returns a 24h token."""
+    # Demo bypass: DEMO-123 returns a demo token without Diavgeia API call
+    if req.ada_number == "DEMO-123":
+        token = secrets.token_urlsafe(48)
+        expires = datetime.now(timezone.utc) + timedelta(hours=TOKEN_TTL_HOURS)
+        try:
+            await db.execute(text("""
+                INSERT INTO representative_tokens (ada_number, token, role, org_label, expires_at)
+                VALUES (:ada, :token, 'demo', :org_label, :expires)
+                ON CONFLICT (ada_number) DO UPDATE SET token = :token, expires_at = :expires, org_label = :org_label
+            """), {"ada": "DEMO-123", "token": token, "org_label": "Demo Δήμος",
+                   "expires": expires.replace(tzinfo=None)})
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
+        return {
+            "ada_number": "DEMO-123",
+            "token": token,
+            "expires_at": expires.isoformat(),
+            "org_label": "Demo Δήμος",
+            "subject": "Demo — Εκπρόσωπος χωρίς Διαύγεια",
+        }
+
     ada_info = await _verify_ada_diavgeia(req.ada_number)
     if not ada_info:
         raise HTTPException(403, "ADA not found in Diavgeia — verification failed")
