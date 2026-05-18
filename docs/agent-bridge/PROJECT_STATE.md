@@ -13,7 +13,7 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `5349b39` (chore: gold adaptive icon bg + builds/ gitignore)
+- **HEAD:** `69ec363` (fix: NEA-188 votes-timeline tz-naive)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`
 - **Rollback:** `pre-session-20260518` → `5349b39`
 - **Remote:** synchron mit GitHub
