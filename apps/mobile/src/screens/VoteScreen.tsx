@@ -170,7 +170,15 @@ export default function VoteScreen({ route, navigation }: Props) {
           <Text style={{ fontWeight: "700", color: "#1e40af", fontSize: 13, marginBottom: 6 }}>
             Σύνοψη & Ανάλυση
           </Text>
-          <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20 }}>{summary}</Text>
+          <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20 }}>
+            {summary.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/).map((part, i) => {
+              if (part.startsWith("**") && part.endsWith("**"))
+                return <Text key={i} style={{ fontWeight: "700" }}>{part.slice(2, -2)}</Text>;
+              if (part.startsWith("*") && part.endsWith("*"))
+                return <Text key={i} style={{ fontStyle: "italic" }}>{part.slice(1, -1)}</Text>;
+              return part;
+            })}
+          </Text>
         </View>
       ) : null}
 

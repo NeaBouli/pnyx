@@ -22,6 +22,7 @@ export default function ProfileScreen() {
   const [language, setLanguage] = useState<"el" | "en">("el");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [regionLocked, setRegionLocked] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "upToDate" | "updateAvailable">("idle");
   const [latestVersion, setLatestVersion] = useState<any>(null);
 
@@ -41,6 +42,23 @@ export default function ProfileScreen() {
       if (savedP) setSelectedPeriferia(Number(savedP));
       if (savedD) setSelectedDimos(Number(savedD));
       if (savedL === "en") setLanguage("en");
+
+      // Check region_locked from server
+      try {
+        const nullifier = await SecureStore.getItemAsync("ekklesia:nullifier:v1");
+        if (nullifier) {
+          const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
+          const statusRes = await fetch(`${API}/api/v1/identity/status`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nullifier_hash: nullifier }),
+          });
+          if (statusRes.ok) {
+            const st = await statusRes.json();
+            if (st.region_locked) setRegionLocked(true);
+          }
+        }
+      } catch {}
+
       setLoading(false);
     })();
   }, []);
@@ -64,9 +82,9 @@ export default function ProfileScreen() {
     // Sync location to server (enables vote scope enforcement)
     try {
       const nullifier = await SecureStore.getItemAsync("ekklesia:nullifier:v1");
-      if (nullifier) {
+      if (nullifier && !regionLocked) {
         const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
-        await fetch(`${API}/api/v1/identity/profile/location`, {
+        const r = await fetch(`${API}/api/v1/identity/profile/location`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -75,6 +93,10 @@ export default function ProfileScreen() {
             dimos_id: selectedDimos || 0,
           }),
         });
+        if (r.ok) {
+          const data = await r.json();
+          if (data.region_locked) setRegionLocked(true);
+        }
       }
     } catch {} // offline-first: local save always works
 
@@ -102,13 +124,30 @@ export default function ProfileScreen() {
         <Text style={s.infoTextSmall}>Διαβάζεις τα πάντα ανεξαρτήτως</Text>
       </View>
 
+      {/* Region Lock Warning */}
+      {!regionLocked && (selectedPeriferia || selectedDimos) && (
+        <View style={{ backgroundColor: "#fef3c7", borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#f59e0b" }}>
+          <Text style={{ fontWeight: "700", color: "#92400e", fontSize: 12 }}>
+            ⚠️ Προσοχή: Ο εκλογικός κύκλος ορίζεται μία φορά και δεν μπορεί να αλλαχθεί.
+          </Text>
+        </View>
+      )}
+      {regionLocked && (
+        <View style={{ backgroundColor: "#f0fdf4", borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#22c55e" }}>
+          <Text style={{ fontWeight: "700", color: "#166534", fontSize: 12 }}>
+            🔒 Ο εκλογικός κύκλος έχει οριστεί και δεν μπορεί να αλλαχθεί.
+          </Text>
+        </View>
+      )}
+
       {/* Periferia */}
-      <Text style={s.sectionTitle}>Εκλογική Περιφέρεια (προαιρετικό)</Text>
-      <View style={s.pickerWrap}>
+      <Text style={s.sectionTitle}>Εκλογική Περιφέρεια {regionLocked ? "(κλειδωμένο)" : "(προαιρετικό)"}</Text>
+      <View style={[s.pickerWrap, regionLocked && { opacity: 0.5 }]}>
         <Picker
           selectedValue={selectedPeriferia}
-          onValueChange={v => { setSelectedPeriferia(v); setSelectedDimos(null); }}
+          onValueChange={v => { if (!regionLocked) { setSelectedPeriferia(v); setSelectedDimos(null); } }}
           style={s.picker}
+          enabled={!regionLocked}
         >
           <Picker.Item label="Δεν δηλώνω" value={null} />
           {periferias.map(p => <Picker.Item key={p.id} label={p.name_el} value={p.id} />)}
@@ -118,9 +157,9 @@ export default function ProfileScreen() {
       {/* Dimos */}
       {selectedPeriferia && dimoi.length > 0 && (
         <>
-          <Text style={s.sectionTitle}>Δήμος (προαιρετικό)</Text>
-          <View style={s.pickerWrap}>
-            <Picker selectedValue={selectedDimos} onValueChange={setSelectedDimos} style={s.picker}>
+          <Text style={s.sectionTitle}>Δήμος {regionLocked ? "(κλειδωμένο)" : "(προαιρετικό)"}</Text>
+          <View style={[s.pickerWrap, regionLocked && { opacity: 0.5 }]}>
+            <Picker selectedValue={selectedDimos} onValueChange={v => { if (!regionLocked) setSelectedDimos(v); }} style={s.picker} enabled={!regionLocked}>
               <Picker.Item label="Δεν δηλώνω" value={null} />
               {dimoi.map(d => <Picker.Item key={d.id} label={d.name_el} value={d.id} />)}
             </Picker>

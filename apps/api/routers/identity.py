@@ -99,6 +99,9 @@ class StatusRequest(BaseModel):
 class StatusResponse(BaseModel):
     status:     str
     created_at: str | None
+    region_locked: bool = False
+    periferia_id: int | None = None
+    dimos_id: int | None = None
 
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
@@ -255,7 +258,10 @@ async def check_status(req: StatusRequest, db: AsyncSession = Depends(get_db)):
 
     return StatusResponse(
         status=record.status.value,
-        created_at=record.created_at.isoformat() if record.created_at else None
+        created_at=record.created_at.isoformat() if record.created_at else None,
+        region_locked=record.region_locked if hasattr(record, 'region_locked') else False,
+        periferia_id=record.periferia_id,
+        dimos_id=record.dimos_id,
     )
 
 
@@ -356,11 +362,22 @@ async def update_profile_location(
     if not identity:
         raise HTTPException(403, "Nullifier nicht gefunden oder revoziert.")
 
+    # Region lock: einmalig setzbar, danach gesperrt
+    if identity.region_locked:
+        raise HTTPException(
+            403,
+            "Ο εκλογικός σας κύκλος έχει ήδη οριστεί και δεν μπορεί να αλλαχθεί."
+        )
+
     # Update location
     if req.periferia_id is not None:
         identity.periferia_id = req.periferia_id if req.periferia_id > 0 else None
     if req.dimos_id is not None:
         identity.dimos_id = req.dimos_id if req.dimos_id > 0 else None
+
+    # Lock after first meaningful set
+    if identity.periferia_id or identity.dimos_id:
+        identity.region_locked = True
 
     await db.commit()
 
@@ -368,4 +385,5 @@ async def update_profile_location(
         "success": True,
         "periferia_id": identity.periferia_id,
         "dimos_id": identity.dimos_id,
+        "region_locked": identity.region_locked,
     }
