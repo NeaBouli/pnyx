@@ -9,12 +9,12 @@ router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
 LATEST_VERSION = "1.2.0"
-LATEST_VERSION_CODE = 13
+LATEST_VERSION_CODE = 14
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v13 — QR Web Vote, Wahlbezirk Lock, Markdown AI-Summary, PolisLogin Schliessen-Button"
-RELEASE_NOTES_EN = "v13 — QR Web Vote, Region Lock, Markdown AI-Summary, PolisLogin close button"
+RELEASE_NOTES_EL = "v14 — Πολιτικοί Tab, Back Navigation, Button Fix, QR Web Vote, Εκλογικός Κύκλος"
+RELEASE_NOTES_EN = "v14 — Politikoi Tab, Back Navigation, Button Fix, QR Web Vote, Region Lock"
 
 FDROID_URL = ""  # Not live yet — MR !38007 pending
 PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=ekklesia.gr"
