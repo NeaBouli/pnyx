@@ -77,6 +77,9 @@ export default function VerifyScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate("Tabs")} style={{ marginBottom: 12 }}>
+        <Text style={{ color: colors.primary, fontSize: 14, fontWeight: "600" }}>← Πίσω</Text>
+      </TouchableOpacity>
       <Text style={styles.heading}>Επαλήθευση Κινητού</Text>
       <Text style={styles.info}>
         Εισάγετε τον ελληνικό αριθμό κινητού σας. Μετά την επαλήθευση, ο αριθμός

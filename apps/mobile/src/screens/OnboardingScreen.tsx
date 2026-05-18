@@ -70,7 +70,7 @@ export default function OnboardingScreen({ navigation }: Props) {
 
   const goVerify = async () => {
     await SecureStore.setItemAsync("onboarding_completed", "true");
-    navigation.replace("Verify");
+    navigation.navigate("Verify");
   };
 
   const next = () => {
@@ -180,7 +180,7 @@ export default function OnboardingScreen({ navigation }: Props) {
         ή εξερευνήστε τα νομοσχέδια πρώτα.
       </Text>
       <TouchableOpacity style={s.ctaBtn} onPress={goVerify}>
-        <Text style={s.ctaBtnText}>📱 Επαλήθευση τηλεφώνου</Text>
+        <Text style={s.ctaBtnText} numberOfLines={1} adjustsFontSizeToFit>📱 Επαλήθευση</Text>
       </TouchableOpacity>
       <TouchableOpacity style={s.secondaryBtn} onPress={complete}>
         <Text style={s.secondaryBtnText}>Περιήγηση χωρίς λογαριασμό →</Text>
