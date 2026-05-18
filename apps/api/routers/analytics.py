@@ -164,17 +164,16 @@ async def votes_timeline(
     """Abstimmungs-Zeitverlauf aggregiert nach Tag."""
     try:
         since = datetime.now(timezone.utc) - timedelta(days=days)
-        query = select(
-            func.date_trunc("day", CitizenVote.created_at).label("day"),
-            CitizenVote.vote,
-            func.count(CitizenVote.id).label("count")
-        ).where(
-            CitizenVote.created_at >= since
-        ).group_by(
-            func.date_trunc("day", CitizenVote.created_at), CitizenVote.vote
-        ).order_by(func.date_trunc("day", CitizenVote.created_at))
+        day_col = func.date_trunc("day", CitizenVote.created_at).label("day")
+        filters = [CitizenVote.created_at >= since]
         if bill_id:
-            query = query.where(CitizenVote.bill_id == bill_id)
+            filters.append(CitizenVote.bill_id == bill_id)
+        query = (
+            select(day_col, CitizenVote.vote, func.count(CitizenVote.id).label("count"))
+            .where(*filters)
+            .group_by(day_col, CitizenVote.vote)
+            .order_by(day_col)
+        )
         result = await db.execute(query)
         rows = result.all()
         timeline: dict = {}
