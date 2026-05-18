@@ -42,3 +42,4 @@ apps/mobile/keystore-play.properties
 apps/mobile/.env.local
 docs_backup*
 apps/api/services/greek_topics_scraper.py
+builds/

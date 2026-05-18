@@ -18,7 +18,7 @@
       "edgeToEdgeEnabled": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0f172a"
+        "backgroundColor": "#d4a017"
       },
       "permissions": ["INTERNET", "USE_BIOMETRIC", "USE_FINGERPRINT"]
     },
