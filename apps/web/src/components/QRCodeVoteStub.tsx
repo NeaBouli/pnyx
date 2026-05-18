@@ -19,9 +19,10 @@ interface QRSession {
 interface Props {
   billId?: string;
   purpose?: "vote" | "ticket" | "forum_login";
+  onAuthenticated?: (sessionId: string) => void;
 }
 
-export default function QRCodeVoteStub({ billId, purpose = "ticket" }: Props) {
+export default function QRCodeVoteStub({ billId, purpose = "ticket", onAuthenticated }: Props) {
   const locale = useLocale();
   const isEl = locale === "el";
   const [status, setStatus] = useState<SessionStatus>("loading");
@@ -65,6 +66,9 @@ export default function QRCodeVoteStub({ billId, purpose = "ticket" }: Props) {
         if (data.status === "authenticated") {
           setStatus("authenticated");
           clearInterval(pollInterval);
+          if (onAuthenticated && session) {
+            onAuthenticated(session.session_id);
+          }
         } else if (data.status === "expired") {
           setStatus("expired");
           clearInterval(pollInterval);
@@ -156,8 +160,8 @@ export default function QRCodeVoteStub({ billId, purpose = "ticket" }: Props) {
           </p>
           <p style={{ color: "#6b7280", fontSize: 14, marginTop: 8 }}>
             {isEl
-              ? "Μπορείτε τώρα να ψηφίσετε από τον browser."
-              : "You can now vote from the browser."}
+              ? "Ψηφίστε παραπάνω — τα κουμπιά είναι τώρα ενεργά."
+              : "Vote above — the buttons are now active."}
           </p>
         </div>
       )}

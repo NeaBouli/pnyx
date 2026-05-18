@@ -34,6 +34,7 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
   const [voteError, setVoteError] = useState<string | null>(null);
   const [aiSummary, setAiSummary] = useState<string>("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [qrSessionId, setQrSessionId] = useState<string | null>(null);
 
   const titleKey = locale === "el" ? "title_el" : "title_en";
   const shortKey = locale === "el" ? "summary_short_el" : "summary_short_en";
@@ -64,57 +65,72 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
     const keypair = loadKeypair();
     const nullifier = loadNullifier();
 
-    if (!keypair || !nullifier) {
-      setVoteStatus("needs_key");
+    // Path A: Local Ed25519 keys exist → sign and submit directly
+    if (keypair && nullifier) {
+      setVoteLoading(true);
+      setVoteError(null);
       setSelectedVote(choice);
+      try {
+        const signatureHex = signVote(keypair.privateKeyHex, {
+          bill_id: billId,
+          vote: choice,
+          nullifier_hash: nullifier,
+        });
+        const res = await fetch(`${API_URL}/api/v1/vote`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nullifier_hash: nullifier,
+            bill_id: billId,
+            vote: choice,
+            signature_hex: signatureHex,
+          }),
+        });
+        if (res.ok) {
+          setVoteStatus("voted");
+          try { const r = await ekklesia.getResults(billId); setResults(r.data); } catch {}
+        } else if (res.status === 409) { setVoteStatus("already"); }
+        else if (res.status === 401) { setVoteStatus("invalid_sig"); }
+        else { const e = await res.json().catch(() => ({})); setVoteError(e.detail || `Error ${res.status}`); setVoteStatus("error"); }
+      } catch (err) {
+        setVoteError(err instanceof Error ? err.message : "Network error");
+        setVoteStatus("error");
+      } finally { setVoteLoading(false); }
       return;
     }
 
-    setVoteLoading(true);
-    setVoteError(null);
-    setSelectedVote(choice);
-
-    try {
-      const signatureHex = signVote(keypair.privateKeyHex, {
-        bill_id: billId,
-        vote: choice,
-        nullifier_hash: nullifier,
-      });
-
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.ekklesia.gr";
-      const res = await fetch(`${API_URL}/api/v1/vote`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nullifier_hash: nullifier,
-          bill_id: billId,
-          vote: choice,
-          signature_hex: signatureHex,
-        }),
-      });
-
-      if (res.ok) {
-        setVoteStatus("voted");
-        // compass recording is mobile-app only
-        try {
-          const resultsRes = await ekklesia.getResults(billId);
-          setResults(resultsRes.data);
-        } catch { /* results refresh optional */ }
-      } else if (res.status === 409) {
-        setVoteStatus("already");
-      } else if (res.status === 401) {
-        setVoteStatus("invalid_sig");
-      } else {
-        const err = await res.json().catch(() => ({}));
-        setVoteError(err.detail || `Error ${res.status}`);
+    // Path B: QR session authenticated → vote via session proxy
+    if (qrSessionId) {
+      setVoteLoading(true);
+      setVoteError(null);
+      setSelectedVote(choice);
+      try {
+        const res = await fetch(`${API_URL}/api/v1/polis/qr-vote`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            session_id: qrSessionId,
+            bill_id: billId,
+            vote: choice,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+          setVoteStatus("voted");
+          setQrSessionId(null); // consumed
+          try { const r = await ekklesia.getResults(billId); setResults(r.data); } catch {}
+        } else if (res.status === 409) { setVoteStatus("already"); }
+        else { setVoteError(data.detail || `Error ${res.status}`); setVoteStatus("error"); }
+      } catch (err) {
+        setVoteError(err instanceof Error ? err.message : "Network error");
         setVoteStatus("error");
-      }
-    } catch (err) {
-      setVoteError(err instanceof Error ? err.message : "Network error");
-      setVoteStatus("error");
-    } finally {
-      setVoteLoading(false);
+      } finally { setVoteLoading(false); }
+      return;
     }
+
+    // Path C: No keys, no QR session → prompt to scan QR below
+    setVoteStatus("needs_key");
+    setSelectedVote(choice);
   }
 
   if (loading) {
@@ -298,9 +314,17 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
                 </p>
                 <p className="text-yellow-700 text-xs">
                   {locale === "el"
-                    ? "Κατεβάστε την εφαρμογή εκκλησία για να επαληθεύσετε την ταυτότητά σας και να ψηφίσετε."
-                    : "Download the ekklesia app to verify your identity and vote."}
+                    ? "Σκανάρετε τον κωδικό QR παρακάτω με την εφαρμογή ekklesia για να ψηφίσετε από τον browser."
+                    : "Scan the QR code below with the ekklesia app to vote from the browser."}
                 </p>
+              </div>
+            )}
+
+            {qrSessionId && voteStatus === "idle" && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-green-800 text-sm">
+                ✅ {locale === "el"
+                  ? "Ταυτοποίηση επιτυχής — πατήστε ένα κουμπί για να ψηφίσετε."
+                  : "Authenticated — click a button to vote."}
               </div>
             )}
 
@@ -345,7 +369,15 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
         {/* ── QR CODE — nur bei abstimmungsbereiten Bills ── */}
         {bill && VOTABLE.includes(bill.status) && (
           <div className="mb-6">
-            <QRCodeVoteStub billId={billId} purpose="vote" />
+            <QRCodeVoteStub
+              billId={billId}
+              purpose="vote"
+              onAuthenticated={(sid) => {
+                setQrSessionId(sid);
+                setVoteStatus("idle");
+                setVoteError(null);
+              }}
+            />
           </div>
         )}
 
