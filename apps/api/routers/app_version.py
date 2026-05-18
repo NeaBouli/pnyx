@@ -8,13 +8,13 @@ from fastapi import APIRouter
 router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
-LATEST_VERSION = "1.1.0"
-LATEST_VERSION_CODE = 12
+LATEST_VERSION = "1.2.0"
+LATEST_VERSION_CODE = 13
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v11 — Arweave αρχειοθέτηση, Αποτελέσματα μετά ψηφοφορία, Περιοχή ψηφοφορίας, viewblock.io"
-RELEASE_NOTES_EN = "v11 — Arweave archival, Results after vote, Region banner, viewblock.io links"
+RELEASE_NOTES_EL = "v13 — QR Web Vote, Wahlbezirk Lock, Markdown AI-Summary, PolisLogin Schliessen-Button"
+RELEASE_NOTES_EN = "v13 — QR Web Vote, Region Lock, Markdown AI-Summary, PolisLogin close button"
 
 FDROID_URL = ""  # Not live yet — MR !38007 pending
 PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=ekklesia.gr"
