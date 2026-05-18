@@ -129,6 +129,7 @@ async function pollSession(){
       // Callback to parent (iframe embed)
       if(window.parent!==window){
         window.parent.postMessage({type:'ekklesia-qr-auth',status:'authenticated',
+          session_id:sessionId,
           nullifier_hash:d.nullifier_hash,public_key_hex:d.public_key_hex,
           purpose:d.purpose,bill_id:d.bill_id},'*');
       }
@@ -143,7 +144,7 @@ function updateCountdown(){
   if(remaining<=0){onExpired();return}
   var m=Math.floor(remaining/60);
   var s=remaining%60;
-  document.getElementById('timer').textContent=m+':'+(s<10?'0':'')+s+' verbleibend';
+  document.getElementById('timer').textContent=m+':'+(s<10?'0':'')+s+' απομένουν';
 }
 
 function onExpired(){

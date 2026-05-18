@@ -5,6 +5,7 @@ Flow: Browser → QR → App scannt → Ed25519 sign → Browser authenticated
 GET  /api/v1/polis/qr-session         — Generate session + challenge
 GET  /api/v1/polis/qr-session/{id}    — Poll status (pending/authenticated/expired)
 POST /api/v1/polis/qr-auth            — App submits signed challenge
+POST /api/v1/polis/qr-vote            — Browser submits vote via authenticated session
 
 Purpose types:
   - "ticket"      — POLIS ticket create/vote (default)
@@ -22,7 +23,10 @@ from sqlalchemy import select
 import redis.asyncio as aioredis
 
 from database import get_db
-from models import IdentityRecord, KeyStatus
+from models import (
+    IdentityRecord, KeyStatus, CitizenVote, VoteChoice,
+    ParliamentBill, BillStatus,
+)
 
 
 def verify_challenge(public_key_hex: str, challenge: str, signature_hex: str) -> bool:
@@ -192,3 +196,107 @@ async def authenticate_qr(req: QRAuthRequest, db: AsyncSession = Depends(get_db)
         "purpose": session_purpose,
         "bill_id": session_bill_id,
     }
+
+
+# ─── QR Web Vote ─────────────────────────────────────────────────────────────
+
+class QRVoteRequest(BaseModel):
+    session_id: str = Field(..., min_length=10)
+    bill_id: str = Field(..., min_length=1)
+    vote: str = Field(..., pattern="^(YES|NO|ABSTAIN)$")
+
+
+@router.post("/qr-vote")
+async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
+    """Browser submits vote via an authenticated QR session.
+
+    The session must have purpose=vote, status=authenticated, and matching bill_id.
+    Identity was already verified during QR auth (Ed25519 challenge signed by mobile app).
+    No additional signature required — the session IS the proof of identity.
+    """
+    r = await _redis()
+    data = await r.hgetall(f"polis_qr:{req.session_id}")
+
+    if not data:
+        raise HTTPException(410, "Session expired — scan QR again")
+
+    if data.get("status") != "authenticated":
+        raise HTTPException(403, "Session not authenticated")
+
+    if data.get("purpose") != "vote":
+        raise HTTPException(400, "Session purpose is not 'vote'")
+
+    session_bill = data.get("bill_id") or ""
+    if session_bill != req.bill_id:
+        raise HTTPException(403, "bill_id mismatch — this session is bound to another bill")
+
+    nullifier_hash = data.get("nullifier_hash", "")
+    if not nullifier_hash:
+        raise HTTPException(400, "Session missing identity data")
+
+    # Verify identity is still active
+    id_result = await db.execute(
+        select(IdentityRecord).where(
+            IdentityRecord.nullifier_hash == nullifier_hash,
+            IdentityRecord.status == KeyStatus.ACTIVE,
+        )
+    )
+    identity = id_result.scalar_one_or_none()
+    if not identity:
+        raise HTTPException(403, "Identity not found or revoked")
+
+    # Check bill is votable
+    bill_result = await db.execute(
+        select(ParliamentBill).where(ParliamentBill.id == req.bill_id)
+    )
+    bill = bill_result.scalar_one_or_none()
+    if not bill:
+        raise HTTPException(404, f"Bill {req.bill_id} not found")
+
+    votable = [BillStatus.ACTIVE, BillStatus.WINDOW_24H, BillStatus.OPEN_END]
+    if bill.status not in votable:
+        raise HTTPException(400, f"Voting closed. Status: {bill.status.value}")
+
+    vote_choice = VoteChoice(req.vote)
+
+    # Check for existing vote
+    from sqlalchemy.exc import IntegrityError
+    existing = await db.execute(
+        select(CitizenVote).where(
+            CitizenVote.nullifier_hash == nullifier_hash,
+            CitizenVote.bill_id == req.bill_id,
+        )
+    )
+    existing_vote = existing.scalar_one_or_none()
+
+    if existing_vote:
+        if bill.status == BillStatus.ACTIVE:
+            raise HTTPException(409, "Already voted. Correction available during 24h window.")
+        from datetime import datetime, timezone
+        existing_vote.vote = vote_choice
+        existing_vote.signature_hex = f"qr-session:{req.session_id[:16]}"
+        existing_vote.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        await db.commit()
+        msg = "Vote corrected via QR session."
+    else:
+        try:
+            new_vote = CitizenVote(
+                nullifier_hash=nullifier_hash,
+                bill_id=req.bill_id,
+                vote=vote_choice,
+                signature_hex=f"qr-session:{req.session_id[:16]}",
+            )
+            db.add(new_vote)
+            await db.commit()
+            msg = "Vote submitted via QR session."
+        except IntegrityError:
+            await db.rollback()
+            raise HTTPException(409, "Already voted (race condition)")
+
+    # Consume session — one vote per session
+    await r.delete(f"polis_qr:{req.session_id}")
+
+    logger.info("QR web vote: bill=%s vote=%s nullifier=%s...",
+                req.bill_id, req.vote, nullifier_hash[:8])
+
+    return {"success": True, "message": msg, "bill_id": req.bill_id, "vote": req.vote}
