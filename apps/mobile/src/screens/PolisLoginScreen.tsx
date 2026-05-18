@@ -8,6 +8,7 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
@@ -114,7 +115,9 @@ export default function PolisLoginScreen({ route, navigation }: Props) {
           <Text style={s.icon}>✅</Text>
           <Text style={s.title}>Επιτυχία</Text>
           <Text style={s.text}>{message}</Text>
-          <Text style={s.hint}>Μπορείτε να κλείσετε αυτή την οθόνη.</Text>
+          <TouchableOpacity style={s.btn} onPress={() => navigation.goBack()}>
+            <Text style={s.btnText}>Κλείσιμο</Text>
+          </TouchableOpacity>
         </>
       )}
       {status === "error" && (
@@ -122,6 +125,9 @@ export default function PolisLoginScreen({ route, navigation }: Props) {
           <Text style={s.icon}>❌</Text>
           <Text style={s.title}>Σφάλμα</Text>
           <Text style={s.text}>{message}</Text>
+          <TouchableOpacity style={s.btn} onPress={() => navigation.goBack()}>
+            <Text style={s.btnText}>Πίσω</Text>
+          </TouchableOpacity>
         </>
       )}
     </View>
@@ -139,5 +145,9 @@ const s = StyleSheet.create({
   icon: { fontSize: 64, marginBottom: 16 },
   title: { fontSize: 24, fontWeight: "900", color: colors.text, marginBottom: 8 },
   text: { fontSize: 16, color: colors.textSecondary, textAlign: "center", marginTop: 12 },
-  hint: { fontSize: 14, color: colors.textSecondary, marginTop: 24, opacity: 0.7 },
+  btn: {
+    marginTop: 32, backgroundColor: colors.primary, borderRadius: 12,
+    paddingVertical: 14, paddingHorizontal: 48,
+  },
+  btnText: { color: "#fff", fontSize: 16, fontWeight: "800" },
 });
