@@ -34,8 +34,18 @@
 - APK Build fertig, S10 Install ausstehend
 - Commit: 390db95
 
-### HEAD: 390db95
-### Offen: S10 APK Install (vC15 Bugfix)
+### NEA-199: Diavgeia → parliament_bills Pipeline
+- DB: source, diavgeia_ada, flag_count, admin_hidden auf parliament_bills
+- DB: bill_flags Tabelle
+- Konverter: Α.2 → ANNOUNCED Bills (DIAV-{ada} Format)
+- API: POST /bills/{id}/flag, POST /admin/diavgeia/convert-to-bills
+- Scheduler: Auto-Konvertierung nach diavgeia_scrape (48h)
+- App: ΔΙΑΥΓΕΙΑ Badge
+- Linear: NEA-199, NEA-171, NEA-187 → Done
+- Commit: d021fb1, dc708ce (import fix)
+
+### HEAD: dc708ce
+### Offen: S10 APK Install (vC15 Bugfix + NEA-199 Badge)
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 

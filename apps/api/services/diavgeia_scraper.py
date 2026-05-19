@@ -216,12 +216,12 @@ async def convert_decisions_to_bills(session: AsyncSession) -> dict:
                d.document_url, d.governance_level, d.dimos_id, d.periferia_id,
                d.publish_timestamp
         FROM diavgeia_decisions d
-        WHERE d.decision_type_uid IN :types
+        WHERE d.decision_type_uid = ANY(:types)
         AND NOT EXISTS (
             SELECT 1 FROM parliament_bills pb WHERE pb.diavgeia_ada = d.ada
         )
         ORDER BY d.publish_timestamp DESC
-    """), {"types": tuple(CONVERTIBLE_TYPES)})
+    """), {"types": list(CONVERTIBLE_TYPES)})
     rows = result.fetchall()
 
     created = 0
