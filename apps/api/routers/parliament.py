@@ -48,6 +48,9 @@ class BillSummary(BaseModel):
     consensus_score:     float | None = None
     consensus_count:     int | None = 0
     results_visibility:  str | None = "HIDDEN"
+    source:              str | None = "PARLIAMENT"
+    diavgeia_ada:        str | None = None
+    flag_count:          int | None = 0
 
 class BillDetail(BaseModel):
     id:                     str
@@ -116,7 +119,8 @@ async def get_bills(
 ):
     """Gibt Gesetzentwürfe zurück, optional gefiltert nach Status/Kategorie."""
     query = select(ParliamentBill).where(
-        ~ParliamentBill.id.like("DEMO-%")
+        ~ParliamentBill.id.like("DEMO-%"),
+        ParliamentBill.admin_hidden != True,
     ).order_by(
         ParliamentBill.parliament_vote_date.desc().nullslast(),
         ParliamentBill.created_at.desc()
@@ -151,6 +155,9 @@ async def get_bills(
         consensus_score=b.consensus_score,
         consensus_count=b.consensus_count or 0,
         results_visibility=b.results_visibility or "HIDDEN",
+        source=b.source or "PARLIAMENT",
+        diavgeia_ada=b.diavgeia_ada,
+        flag_count=b.flag_count or 0,
     ) for b in bills]
 
 
@@ -284,6 +291,44 @@ async def get_bill_summary(
         pass
 
     return {"bill_id": bill_id, "summary": summary, "cached": False, "lang": lang}
+
+
+@router.post("/{bill_id}/flag")
+async def flag_bill(
+    bill_id: str,
+    nullifier_hash: str = Header(..., alias="X-Nullifier"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Flag a bill as irrelevant/spam. One flag per user (nullifier)."""
+    from models import IdentityRecord, KeyStatus
+    # Verify identity
+    id_result = await db.execute(
+        select(IdentityRecord).where(
+            IdentityRecord.nullifier_hash == nullifier_hash,
+            IdentityRecord.status == KeyStatus.ACTIVE,
+        )
+    )
+    if not id_result.scalar_one_or_none():
+        raise HTTPException(403, "Δεν έχετε επαληθευτεί.")
+
+    bill = await db.get(ParliamentBill, bill_id)
+    if not bill:
+        raise HTTPException(404, f"Το νομοσχέδιο {bill_id} δεν βρέθηκε.")
+
+    # Insert flag (unique per user+bill)
+    try:
+        await db.execute(text(
+            "INSERT INTO bill_flags (nullifier_hash, bill_id) VALUES (:nh, :bid)"
+        ), {"nh": nullifier_hash, "bid": bill_id})
+        await db.execute(text(
+            "UPDATE parliament_bills SET flag_count = flag_count + 1 WHERE id = :bid"
+        ), {"bid": bill_id})
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise HTTPException(409, "Έχετε ήδη αναφέρει αυτό το νομοσχέδιο.")
+
+    return {"success": True, "bill_id": bill_id, "message": "Η αναφορά καταγράφηκε."}
 
 
 @router.post("/{bill_id}/transition")

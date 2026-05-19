@@ -78,6 +78,9 @@ export default function BillsScreen() {
               <View style={s.cardFooter}>
                 <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
                   <Text style={[s.cardStatus, { color: STATUS_COLORS[item.status] ?? colors.textTertiary }]}>{STATUS_LABELS[item.status] ?? item.status}</Text>
+                  {item.source === "DIAVGEIA" && (
+                    <Text style={{ fontSize: 9, fontWeight: "800", color: "#0369a1", backgroundColor: "#e0f2fe", paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4, overflow: "hidden" }}>ΔΙΑΥΓΕΙΑ</Text>
+                  )}
                   {item.status === "OPEN_END" && item.consensus_count > 0 && (
                     <Text style={{ fontSize: 10, fontWeight: "700", color: (item.consensus_score || 0) >= 0 ? "#22c55e" : "#ef4444" }}>
                       ⚖️ {(item.consensus_score || 0) > 0 ? "+" : ""}{(item.consensus_score || 0).toFixed(1)}

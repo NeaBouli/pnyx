@@ -158,6 +158,12 @@ class ParliamentBill(Base):
     periferia_id        = Column(Integer, ForeignKey("periferia.id", ondelete="SET NULL"), nullable=True)
     dimos_id            = Column(Integer, ForeignKey("dimos.id", ondelete="SET NULL"), nullable=True)
 
+    # Source tracking
+    source              = Column(String(20), default="PARLIAMENT")  # PARLIAMENT | DIAVGEIA
+    diavgeia_ada        = Column(String(50), nullable=True)
+    flag_count          = Column(Integer, default=0)
+    admin_hidden        = Column(Boolean, default=False)
+
     created_at          = Column(DateTime, default=datetime.utcnow)
     updated_at          = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

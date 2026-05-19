@@ -10,7 +10,7 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-from models import DiavgeiaDecision, DimosDiavgeiaOrg
+from models import DiavgeiaDecision, DimosDiavgeiaOrg, ParliamentBill, BillStatus, GovernanceLevel
 from services.diavgeia_client import DiavgeiaClient, parse_timestamp
 from services.diavgeia_org_lookup import get_label as get_org_label
 
@@ -188,3 +188,86 @@ async def scrape_decisions(
 
     logger.info("Scrape complete: %s", result.to_dict())
     return result
+
+
+# ─── NEA-199: Diavgeia → parliament_bills Pipeline ──────────────────────────
+
+# Diavgeia governance_level → ekklesia GovernanceLevel mapping
+_GOV_LEVEL_MAP = {
+    "REGION": GovernanceLevel.REGIONAL,
+    "MUNICIPALITY": GovernanceLevel.MUNICIPAL,
+    "MUNICIPAL": GovernanceLevel.MUNICIPAL,
+    "CENTRAL": GovernanceLevel.NATIONAL,
+    "OTHER": GovernanceLevel.NATIONAL,
+}
+
+# Only these decision types are converted to votable bills
+CONVERTIBLE_TYPES = {"Α.2"}
+
+
+async def convert_decisions_to_bills(session: AsyncSession) -> dict:
+    """
+    Convert new Diavgeia Α.2 decisions into parliament_bills (ANNOUNCED).
+    Skips decisions already imported (by diavgeia_ada).
+    """
+    # Find Α.2 decisions not yet in parliament_bills
+    result = await session.execute(text("""
+        SELECT d.ada, d.subject, d.decision_type_uid, d.organization_label,
+               d.document_url, d.governance_level, d.dimos_id, d.periferia_id,
+               d.publish_timestamp
+        FROM diavgeia_decisions d
+        WHERE d.decision_type_uid IN :types
+        AND NOT EXISTS (
+            SELECT 1 FROM parliament_bills pb WHERE pb.diavgeia_ada = d.ada
+        )
+        ORDER BY d.publish_timestamp DESC
+    """), {"types": tuple(CONVERTIBLE_TYPES)})
+    rows = result.fetchall()
+
+    created = 0
+    skipped = 0
+
+    for row in rows:
+        ada, subject, type_uid, org_label, doc_url, gov_level, dimos_id, periferia_id, pub_ts = row
+
+        if not subject or len(subject.strip()) < 10:
+            skipped += 1
+            continue
+
+        bill_id = f"DIAV-{ada[:12]}"
+        gov = _GOV_LEVEL_MAP.get(gov_level or "OTHER", GovernanceLevel.NATIONAL)
+
+        # Prefix title with org label for context
+        title = f"{subject.strip()}"
+        pill = f"Διαύγεια: {org_label}" if org_label else "Διαύγεια"
+
+        bill = ParliamentBill(
+            id=bill_id,
+            title_el=title,
+            pill_el=pill,
+            status=BillStatus.ANNOUNCED,
+            governance_level=gov,
+            parliament_url=doc_url,
+            dimos_id=dimos_id,
+            periferia_id=periferia_id,
+            source="DIAVGEIA",
+            diavgeia_ada=ada,
+            categories=["Διαύγεια", type_uid],
+        )
+
+        try:
+            session.add(bill)
+            await session.flush()
+            created += 1
+            logger.info("[NEA-199] Created bill %s from ADA %s", bill_id, ada)
+        except Exception as e:
+            await session.rollback()
+            skipped += 1
+            logger.warning("[NEA-199] Skip ADA %s: %s", ada, e)
+
+    if created > 0:
+        await session.commit()
+
+    stats = {"created": created, "skipped": skipped, "total_checked": len(rows)}
+    logger.info("[NEA-199] Conversion complete: %s", stats)
+    return stats

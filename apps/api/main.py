@@ -289,6 +289,17 @@ async def scheduled_diavgeia_scrape():
                         result.fetched, result.inserted, len(result.errors))
             if result.errors:
                 logger.warning("[MOD-21] Scrape errors: %s", result.errors[:3])
+
+        # NEA-199: Convert new decisions to votable bills
+        try:
+            from services.diavgeia_scraper import convert_decisions_to_bills
+            async with AsyncSessionLocal() as session:
+                conv = await convert_decisions_to_bills(session)
+                if conv["created"] > 0:
+                    logger.info("[NEA-199] Converted %d Diavgeia decisions to bills", conv["created"])
+        except Exception as e:
+            logger.warning("[NEA-199] Conversion failed (non-blocking): %s", e)
+
         await record_success(name)
     except Exception as e:
         logger.error("[MOD-21] Scheduled Diavgeia scrape failed: %s", e)

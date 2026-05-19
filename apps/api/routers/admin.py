@@ -200,6 +200,17 @@ async def admin_set_party_votes(
     return {"success": True, "bill_id": bill_id, "party_votes": party_votes}
 
 
+@router.post("/diavgeia/convert-to-bills")
+async def admin_convert_diavgeia(
+    _key=Depends(verify_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Convert new Diavgeia Α.2 decisions into parliament_bills."""
+    from services.diavgeia_scraper import convert_decisions_to_bills
+    stats = await convert_decisions_to_bills(db)
+    return {"success": True, **stats}
+
+
 @router.delete("/bills/{bill_id}/votes")
 async def admin_reset_votes(
     bill_id: str, confirm: str = Query(...),
