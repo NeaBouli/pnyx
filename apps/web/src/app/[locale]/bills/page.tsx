@@ -21,6 +21,7 @@ const LEVEL_FILTERS = [
   { key: "NATIONAL",  label_el: "Βουλή",      label_en: "Parliament" },
   { key: "REGIONAL",  label_el: "Περιφέρεια", label_en: "Region" },
   { key: "MUNICIPAL", label_el: "Δήμος",      label_en: "Municipality" },
+  { key: "DIAVGEIA",  label_el: "Διαύγεια",   label_en: "Diavgeia" },
 ];
 
 const PAGE_SIZE = 10;
@@ -52,10 +53,12 @@ export default function BillsPage() {
       .finally(() => setLoading(false));
   }, [statusFilter, locale]);
 
-  // Client-side filtering: search + governance level
+  // Client-side filtering: search + governance level / source
   const filtered = useMemo(() => {
     let result = bills;
-    if (levelFilter) {
+    if (levelFilter === "DIAVGEIA") {
+      result = result.filter(b => (b as any).source === "DIAVGEIA");
+    } else if (levelFilter) {
       result = result.filter(b => (b as any).governance_level === levelFilter);
     }
     if (search.trim()) {
@@ -199,7 +202,14 @@ export default function BillsPage() {
               className="block bg-white rounded-2xl p-6 border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all group"
             >
               <div className="flex justify-between items-start gap-4 mb-3">
-                <StatusBadge status={bill.status} locale={locale} />
+                <div className="flex items-center gap-2">
+                  <StatusBadge status={bill.status} locale={locale} />
+                  {(bill as any).source === "DIAVGEIA" && (
+                    <span className="px-2 py-0.5 bg-sky-100 text-sky-700 text-xs font-bold rounded-md">
+                      ΔΙΑΥΓΕΙΑ
+                    </span>
+                  )}
+                </div>
                 <span className="text-xs text-gray-400 font-mono">{bill.id}</span>
               </div>
 
@@ -234,6 +244,17 @@ export default function BillsPage() {
                 >
                   ⛓ Arweave: {(bill as any).arweave_tx_id.substring(0, 12)}…
                 </a>
+              )}
+
+              {bill.status === "OPEN_END" && (bill as any).consensus_count > 0 && (
+                <div className="mt-3 flex items-center gap-2 text-sm">
+                  <span className="text-purple-600 font-bold">
+                    ⚖️ {((bill as any).consensus_score || 0) > 0 ? "+" : ""}{((bill as any).consensus_score || 0).toFixed(1)}
+                  </span>
+                  <span className="text-gray-400 text-xs">
+                    ({(bill as any).consensus_count} {isEl ? "αξιολογήσεις" : "ratings"})
+                  </span>
+                </div>
               )}
 
               <div className="flex items-center justify-between mt-4">

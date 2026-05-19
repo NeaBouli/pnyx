@@ -173,7 +173,14 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
 
         {/* Status + ID */}
         <div className="flex justify-between items-center mb-4 mt-4">
-          <StatusBadge status={bill.status} locale={locale} />
+          <div className="flex items-center gap-2">
+            <StatusBadge status={bill.status} locale={locale} />
+            {(bill as any).source === "DIAVGEIA" && (
+              <span className="px-2 py-0.5 bg-sky-100 text-sky-700 text-xs font-bold rounded-md">
+                ΔΙΑΥΓΕΙΑ
+              </span>
+            )}
+          </div>
           <span className="text-xs text-gray-400 font-mono">{bill.id}</span>
         </div>
 
@@ -381,6 +388,21 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
           </div>
         )}
 
+
+        {/* Results hidden message for ACTIVE bills */}
+        {results && results.total_votes === 0 && bill?.status === "ACTIVE" && (
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-6 text-center">
+            <div className="text-4xl mb-3">🗳️</div>
+            <p className="text-blue-800 font-semibold mb-1">
+              {locale === "el" ? "Η ψήφος σας καταγράφηκε" : "Your vote has been recorded"}
+            </p>
+            <p className="text-blue-600 text-sm">
+              {locale === "el"
+                ? `Τα αποτελέσματα θα είναι διαθέσιμα μετά την ολοκλήρωση της ψηφοφορίας στη Βουλή${bill.parliament_vote_date ? ` (${new Date(bill.parliament_vote_date).toLocaleDateString("el-GR")})` : ""}.`
+                : `Results will be available after the parliamentary vote${bill.parliament_vote_date ? ` (${new Date(bill.parliament_vote_date).toLocaleDateString("en-GB")})` : ""}.`}
+            </p>
+          </div>
+        )}
 
         {/* ── FULL RESULT REPORT ── */}
         {results && results.total_votes > 0 && (
