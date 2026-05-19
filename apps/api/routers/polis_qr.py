@@ -53,18 +53,18 @@ async def _redis():
 
 @router.get("/qr-session")
 async def create_qr_session(
-    purpose: Literal["ticket", "vote", "forum_login"] = Query("ticket"),
+    purpose: Literal["ticket", "vote", "consensus", "forum_login"] = Query("ticket"),
     bill_id: Optional[str] = Query(None),
 ):
     """Generate a new QR login session with challenge.
 
     Query params:
-      - purpose: ticket | vote | forum_login
-      - bill_id: required when purpose=vote
+      - purpose: ticket | vote | consensus | forum_login
+      - bill_id: required when purpose=vote or consensus
     """
-    # Validate: vote requires bill_id
-    if purpose == "vote" and not bill_id:
-        raise HTTPException(400, "bill_id is required when purpose=vote")
+    # Validate: vote/consensus requires bill_id
+    if purpose in ("vote", "consensus") and not bill_id:
+        raise HTTPException(400, "bill_id is required when purpose=vote or consensus")
 
     session_id = secrets.token_urlsafe(32)
     challenge = secrets.token_hex(32)
@@ -125,7 +125,7 @@ class QRAuthRequest(BaseModel):
     nullifier_hash: str = Field(..., min_length=16, max_length=64)
     public_key_hex: str = Field(..., min_length=32)
     signature_hex: str = Field(..., min_length=64)
-    purpose: Literal["ticket", "vote", "forum_login"] = "ticket"
+    purpose: Literal["ticket", "vote", "consensus", "forum_login"] = "ticket"
     bill_id: Optional[str] = None
 
 
@@ -153,9 +153,9 @@ async def authenticate_qr(req: QRAuthRequest, db: AsyncSession = Depends(get_db)
     if req.purpose != session_purpose:
         raise HTTPException(403, f"Purpose mismatch: session is '{session_purpose}', request is '{req.purpose}'")
 
-    # Validate bill_id for vote sessions
+    # Validate bill_id for vote/consensus sessions
     session_bill_id = data.get("bill_id") or None
-    if session_purpose == "vote":
+    if session_purpose in ("vote", "consensus"):
         if not req.bill_id or req.bill_id != session_bill_id:
             raise HTTPException(403, "bill_id mismatch — this QR is bound to a specific bill")
 

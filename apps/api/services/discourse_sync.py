@@ -76,8 +76,14 @@ async def get_or_create_category(name: str, parent_id: int | None = None) -> int
 
 
 async def _resolve_category(bill: ParliamentBill, db: AsyncSession) -> int:
-    """Resolve Discourse category based on governance level."""
+    """Resolve Discourse category based on governance level + source."""
     gov = bill.governance_level.value if bill.governance_level else "NATIONAL"
+    source = getattr(bill, "source", "PARLIAMENT") or "PARLIAMENT"
+
+    # Diavgeia bills that are NATIONAL go to a dedicated subcategory
+    if source == "DIAVGEIA" and gov == "NATIONAL":
+        parent = await get_or_create_category("Διαύγεια")
+        return await get_or_create_category("Κανονιστικές Πράξεις", parent)
 
     if gov == "NATIONAL":
         # Post into Βουλή → Νομοσχέδια subcategory
@@ -133,6 +139,10 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
     gov_val = bill.governance_level.value if bill.governance_level else "NATIONAL"
     gov_label = gov_labels.get(gov_val, gov_val)
 
+    # Source badge
+    source = getattr(bill, "source", "PARLIAMENT") or "PARLIAMENT"
+    source_badge = "📜 ΒΟΥΛΗ" if source == "PARLIAMENT" else "📋 ΔΙΑΥΓΕΙΑ"
+
     # Build rich body
     summary = bill.summary_short_el or bill.pill_el or ""
     long_text = bill.summary_long_el or ""
@@ -141,20 +151,33 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
         f"# {bill.title_el}\n\n"
         f"| | |\n|---|---|\n"
         f"| **Κατάσταση** | {status_badge} |\n"
+        f"| **Πηγή** | {source_badge} |\n"
         f"| **Επίπεδο** | {gov_label} |\n"
         f"| **ID** | `{bill.id}` |\n\n"
         "---\n\n"
     )
     if summary:
         body += f"## Περίληψη\n{summary}\n\n"
+    elif source == "DIAVGEIA":
+        body += "## Περίληψη\n*Η AI σύνοψη θα είναι σύντομα διαθέσιμη.*\n\n"
     if long_text:
         body += f"## Ανάλυση\n{long_text}\n\n"
-    body += (
-        "---\n\n"
-        f"### 🗳️ [Ψηφίστε τώρα στο ekklesia.gr →]({ekklesia_url})\n\n"
-        "> Κατεβάστε την εφαρμογή ekklesia για να ψηφίσετε ανώνυμα.\n"
-        "> Η ψήφος σας είναι κρυπτογραφημένη (Ed25519) — κανείς δεν γνωρίζει τι ψηφίσατε.\n\n"
-        "*Αυτό το θέμα δημιουργήθηκε αυτόματα από το σύστημα ekklesia.*\n"
+
+    # CTA depends on status
+    if status_val == "OPEN_END":
+        body += (
+            "---\n\n"
+            f"### ⚖️ [Αξιολογήστε στο ekklesia.gr →]({ekklesia_url})\n\n"
+            "> Χρησιμοποιήστε την κλίμακα συναίνεσης (-5 έως +5) για να εκφράσετε τη γνώμη σας.\n\n"
+        )
+    else:
+        body += (
+            "---\n\n"
+            f"### 🗳️ [Ψηφίστε τώρα στο ekklesia.gr →]({ekklesia_url})\n\n"
+            "> Κατεβάστε την εφαρμογή ekklesia για να ψηφίσετε ανώνυμα.\n"
+            "> Η ψήφος σας είναι κρυπτογραφημένη (Ed25519) — κανείς δεν γνωρίζει τι ψηφίσατε.\n\n"
+        )
+    body += "*Αυτό το θέμα δημιουργήθηκε αυτόματα από το σύστημα ekklesia.*\n"
     )
 
     async with httpx.AsyncClient(timeout=30) as client:

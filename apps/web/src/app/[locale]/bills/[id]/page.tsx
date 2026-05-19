@@ -428,11 +428,15 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
                 </span>
               </div>
             )}
-            <p className="text-xs text-purple-400 text-center mt-3">
-              {locale === "el"
-                ? "Η αξιολόγηση γίνεται μέσω της εφαρμογής εκκλησία (Ed25519 υπογραφή)"
-                : "Rating requires the ekklesia app (Ed25519 signature)"}
-            </p>
+            <div className="mt-4">
+              <QRCodeVoteStub
+                billId={billId}
+                purpose="consensus"
+                onAuthenticated={(sid) => {
+                  setQrSessionId(sid);
+                }}
+              />
+            </div>
           </div>
         )}
 

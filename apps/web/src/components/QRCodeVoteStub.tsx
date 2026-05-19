@@ -18,7 +18,7 @@ interface QRSession {
 
 interface Props {
   billId?: string;
-  purpose?: "vote" | "ticket" | "forum_login";
+  purpose?: "vote" | "consensus" | "ticket" | "forum_login";
   onAuthenticated?: (sessionId: string) => void;
 }
 
