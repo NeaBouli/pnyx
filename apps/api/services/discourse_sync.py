@@ -80,10 +80,14 @@ async def _resolve_category(bill: ParliamentBill, db: AsyncSession) -> int:
     gov = bill.governance_level.value if bill.governance_level else "NATIONAL"
     source = getattr(bill, "source", "PARLIAMENT") or "PARLIAMENT"
 
-    # Diavgeia bills that are NATIONAL go to a dedicated subcategory
-    if source == "DIAVGEIA" and gov == "NATIONAL":
+    # Diavgeia: route by governance level
+    if source == "DIAVGEIA":
         parent = await get_or_create_category("Διαύγεια")
-        return await get_or_create_category("Κανονιστικές Πράξεις", parent)
+        if gov == "INSTITUTIONAL":
+            return await get_or_create_category("Φορείς & Οργανισμοί", parent)
+        if gov == "NATIONAL":
+            return await get_or_create_category("Κεντρική Διοίκηση", parent)
+        # REGIONAL/MUNICIPAL Diavgeia → fall through to local categories below
 
     if gov == "NATIONAL":
         # Post into Βουλή → Νομοσχέδια subcategory
@@ -135,6 +139,7 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
         "NATIONAL": "🇬🇷 Εθνικό",
         "REGIONAL": "🏛️ Περιφερειακό",
         "MUNICIPAL": "🏘️ Δημοτικό",
+        "INSTITUTIONAL": "🏫 Φορέας/Οργανισμός",
     }
     gov_val = bill.governance_level.value if bill.governance_level else "NATIONAL"
     gov_label = gov_labels.get(gov_val, gov_val)

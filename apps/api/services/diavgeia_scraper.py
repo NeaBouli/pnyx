@@ -198,7 +198,7 @@ _GOV_LEVEL_MAP = {
     "MUNICIPALITY": GovernanceLevel.MUNICIPAL,
     "MUNICIPAL": GovernanceLevel.MUNICIPAL,
     "CENTRAL": GovernanceLevel.NATIONAL,
-    "OTHER": GovernanceLevel.NATIONAL,
+    "OTHER": GovernanceLevel.INSTITUTIONAL,
 }
 
 # Only these decision types are converted to votable bills

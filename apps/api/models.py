@@ -33,10 +33,11 @@ class KeyStatus(str, PyEnum):
     REVOKED = "REVOKED"
 
 class GovernanceLevel(str, PyEnum):
-    NATIONAL   = "NATIONAL"
-    REGIONAL   = "REGIONAL"
-    MUNICIPAL  = "MUNICIPAL"
-    COMMUNITY  = "COMMUNITY"
+    NATIONAL      = "NATIONAL"
+    REGIONAL      = "REGIONAL"
+    MUNICIPAL     = "MUNICIPAL"
+    COMMUNITY     = "COMMUNITY"
+    INSTITUTIONAL = "INSTITUTIONAL"  # Πανεπιστήμια, Νοσοκομεία, Φορείς
 
 
 # ─── MOD-01: Identity ─────────────────────────────────────────────────────────

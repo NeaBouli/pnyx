@@ -21,7 +21,8 @@ const LEVEL_FILTERS = [
   { key: "NATIONAL",  label_el: "Βουλή",      label_en: "Parliament" },
   { key: "REGIONAL",  label_el: "Περιφέρεια", label_en: "Region" },
   { key: "MUNICIPAL", label_el: "Δήμος",      label_en: "Municipality" },
-  { key: "DIAVGEIA",  label_el: "Διαύγεια",   label_en: "Diavgeia" },
+  { key: "DIAVGEIA",       label_el: "Διαύγεια",   label_en: "Diavgeia" },
+  { key: "INSTITUTIONAL", label_el: "Φορείς",     label_en: "Institutions" },
 ];
 
 const PAGE_SIZE = 10;
@@ -58,6 +59,8 @@ export default function BillsPage() {
     let result = bills;
     if (levelFilter === "DIAVGEIA") {
       result = result.filter(b => (b as any).source === "DIAVGEIA");
+    } else if (levelFilter === "INSTITUTIONAL") {
+      result = result.filter(b => (b as any).governance_level === "INSTITUTIONAL");
     } else if (levelFilter) {
       result = result.filter(b => (b as any).governance_level === levelFilter);
     }

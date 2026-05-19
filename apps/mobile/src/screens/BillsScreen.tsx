@@ -42,6 +42,7 @@ export default function BillsScreen() {
     : filter === "DIAVGEIA" ? bills.filter(b => b.source === "DIAVGEIA")
     : filter === "MUNICIPAL" ? bills.filter(b => b.governance_level === "MUNICIPAL")
     : filter === "REGIONAL" ? bills.filter(b => b.governance_level === "REGIONAL")
+    : filter === "INSTITUTIONAL" ? bills.filter(b => b.governance_level === "INSTITUTIONAL")
     : filter === "OPEN_END" ? bills.filter(b => b.status === "OPEN_END")
     : bills.filter(b => b.status === filter);
 
@@ -59,7 +60,7 @@ export default function BillsScreen() {
   return (
     <View style={s.container}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.filterRow} contentContainerStyle={{ gap: 6, paddingHorizontal: 12, alignItems: "center" }}>
-        {[["ALL", "Όλα"], ["ACTIVE", "Ενεργά"], ["DIAVGEIA", "Διαύγεια"], ["MUNICIPAL", "Δήμος"], ["REGIONAL", "Περιφ."], ["PARLIAMENT_VOTED", "Βουλή"], ["OPEN_END", "Αρχείο"], ["ARWEAVE", "⛓"]].map(([k, l]) => (
+        {[["ALL", "Όλα"], ["ACTIVE", "Ενεργά"], ["DIAVGEIA", "Διαύγεια"], ["MUNICIPAL", "Δήμος"], ["REGIONAL", "Περιφ."], ["INSTITUTIONAL", "Φορείς"], ["PARLIAMENT_VOTED", "Βουλή"], ["OPEN_END", "Αρχείο"], ["ARWEAVE", "⛓"]].map(([k, l]) => (
           <TouchableOpacity key={k} onPress={() => setFilter(k)} style={[s.filterBtn, filter === k && s.filterActive]}>
             <Text style={[s.filterTxt, filter === k && s.filterTxtActive]}>{l}</Text>
           </TouchableOpacity>
