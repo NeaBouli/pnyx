@@ -1,10 +1,11 @@
 """
 εκπρόσωπος API — Volksvertreter Live-Ergebnisse
-Verifizierung via Diavgeia ADA-Nummer.
+Verifizierung via Diavgeia ADA-Nummer + Admin Invite-Code.
 Zugang nur zu WINDOW_24H / PARLIAMENT_VOTED / OPEN_END Bills.
 """
 import os
 import secrets
+import string
 import logging
 from datetime import datetime, timezone, timedelta
 
@@ -15,22 +16,107 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from dependencies import verify_admin_key
 from models import ParliamentBill, BillStatus
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/rep", tags=["Representative"])
 
 TOKEN_TTL_HOURS = 24
+INVITE_TTL_HOURS = 48
 ALLOWED_STATUSES = [BillStatus.WINDOW_24H, BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END]
+
+VALID_ROLES = ["Βουλευτής", "Περιφερειάρχης", "Δήμαρχος", "Δημοτικός Σύμβουλος"]
+
+
+def _generate_invite_code() -> str:
+    """Generate XXXX-XXXX invite code."""
+    chars = string.ascii_uppercase + string.digits
+    part1 = "".join(secrets.choice(chars) for _ in range(4))
+    part2 = "".join(secrets.choice(chars) for _ in range(4))
+    return f"{part1}-{part2}"
+
+
+# ─── Schemas ──────────────────────────────────────────────────────────────────
+
+
+class InviteRequest(BaseModel):
+    role: str = Field(..., description="Βουλευτής / Περιφερειάρχης / Δήμαρχος / Δημοτικός Σύμβουλος")
+    region: str | None = None
+    municipality: str | None = None
 
 
 class VerifyRequest(BaseModel):
     ada_number: str = Field(..., min_length=5, max_length=50)
+    invite_code: str = Field(..., min_length=9, max_length=9, description="Format: XXXX-XXXX")
 
 
 class AuthRequest(BaseModel):
     ada_number: str = Field(..., min_length=5)
     token: str = Field(..., min_length=10)
+
+
+def _verify_admin(key: bool = Depends(verify_admin_key)):
+    return key
+
+
+# ─── Admin Endpoints ─────────────────────────────────────────────────────────
+
+
+@router.post("/admin/invite")
+async def create_invite(
+    req: InviteRequest,
+    _auth=Depends(_verify_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Admin: Generate invite code for a representative."""
+    if req.role not in VALID_ROLES:
+        raise HTTPException(400, f"Μη έγκυρος ρόλος. Επιτρέπεται: {', '.join(VALID_ROLES)}")
+
+    code = _generate_invite_code()
+    expires = datetime.now(timezone.utc) + timedelta(hours=INVITE_TTL_HOURS)
+
+    await db.execute(text("""
+        INSERT INTO rep_invitations (invite_code, role, region, municipality, expires_at)
+        VALUES (:code, :role, :region, :municipality, :expires)
+    """), {
+        "code": code, "role": req.role,
+        "region": req.region, "municipality": req.municipality,
+        "expires": expires.replace(tzinfo=None),
+    })
+    await db.commit()
+
+    logger.info("[REP] Invite created: %s role=%s region=%s", code, req.role, req.region)
+    return {
+        "invite_code": code,
+        "role": req.role,
+        "region": req.region,
+        "municipality": req.municipality,
+        "expires_at": expires.isoformat(),
+    }
+
+
+@router.get("/admin/invites")
+async def list_invites(
+    _auth=Depends(_verify_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Admin: List all invite codes."""
+    result = await db.execute(text(
+        "SELECT id, invite_code, ada_number, role, region, municipality, used, expires_at, created_at "
+        "FROM rep_invitations ORDER BY created_at DESC LIMIT 100"
+    ))
+    rows = result.fetchall()
+    return [{
+        "id": r[0], "invite_code": r[1], "ada_number": r[2], "role": r[3],
+        "region": r[4], "municipality": r[5], "used": r[6],
+        "expired": r[7] < datetime.now() if r[7] else False,
+        "expires_at": r[7].isoformat() if r[7] else None,
+        "created_at": r[8].isoformat() if r[8] else None,
+    } for r in rows]
+
+
+# ─── Diavgeia ────────────────────────────────────────────────────────────────
 
 
 async def _verify_ada_diavgeia(ada: str) -> dict | None:
@@ -80,51 +166,62 @@ async def verify_rep_token(
 
 @router.post("/verify")
 async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(get_db)):
-    """Verify representative via Diavgeia ADA number. Returns a 24h token."""
-    # Demo bypass: DEMO-123 returns a demo token without Diavgeia API call
+    """Verify representative via ADA number + admin invite code. Returns a 24h token."""
+    # 1. Validate invite code
+    inv_result = await db.execute(text(
+        "SELECT id, role, region, municipality, used, expires_at FROM rep_invitations "
+        "WHERE invite_code = :code"
+    ), {"code": req.invite_code})
+    invite = inv_result.fetchone()
+
+    if not invite:
+        raise HTTPException(403, "Μη έγκυρος κωδικός πρόσκλησης.")
+    if invite[4]:  # used
+        raise HTTPException(403, "Ο κωδικός πρόσκλησης έχει ήδη χρησιμοποιηθεί.")
+    if invite[5] and invite[5] < datetime.now():
+        raise HTTPException(403, "Ο κωδικός πρόσκλησης έχει λήξει.")
+
+    invite_id, role, region, municipality = invite[0], invite[1], invite[2], invite[3]
+
+    # 2. Demo bypass
     if req.ada_number == "DEMO-123":
-        token = secrets.token_urlsafe(48)
-        expires = datetime.now(timezone.utc) + timedelta(hours=TOKEN_TTL_HOURS)
-        try:
-            await db.execute(text("""
-                INSERT INTO representative_tokens (ada_number, token, role, org_label, expires_at)
-                VALUES (:ada, :token, 'demo', :org_label, :expires)
-                ON CONFLICT (ada_number) DO UPDATE SET token = :token, expires_at = :expires, org_label = :org_label
-            """), {"ada": "DEMO-123", "token": token, "org_label": "Demo Δήμος",
-                   "expires": expires.replace(tzinfo=None)})
-            await db.commit()
-        except Exception:
-            await db.rollback()
-            raise
-        return {
-            "ada_number": "DEMO-123",
-            "token": token,
-            "expires_at": expires.isoformat(),
-            "org_label": "Demo Δήμος",
-            "subject": "Demo — Εκπρόσωπος χωρίς Διαύγεια",
-        }
+        ada_info = {"org_label": "Demo Δήμος", "subject": "Demo — Εκπρόσωπος"}
+    else:
+        # 3. Verify ADA via Diavgeia
+        ada_info = await _verify_ada_diavgeia(req.ada_number)
+        if not ada_info:
+            raise HTTPException(403, "Ο αριθμός ADA δεν βρέθηκε στη Διαύγεια.")
 
-    ada_info = await _verify_ada_diavgeia(req.ada_number)
-    if not ada_info:
-        raise HTTPException(403, "ADA not found in Diavgeia — verification failed")
-
+    # 4. Generate token
     token = secrets.token_urlsafe(48)
     expires = datetime.now(timezone.utc) + timedelta(hours=TOKEN_TTL_HOURS)
 
     await db.execute(text("""
-        INSERT INTO representative_tokens (ada_number, token, role, org_label, expires_at)
-        VALUES (:ada, :token, 'representative', :org_label, :expires)
-        ON CONFLICT (ada_number) DO UPDATE SET token = :token, expires_at = :expires, org_label = :org_label
-    """), {"ada": req.ada_number, "token": token, "org_label": ada_info.get("org_label", ""),
-           "expires": expires.replace(tzinfo=None)})
+        INSERT INTO representative_tokens (ada_number, token, role, region, org_label, expires_at)
+        VALUES (:ada, :token, :role, :region, :org_label, :expires)
+        ON CONFLICT (ada_number) DO UPDATE SET token = :token, role = :role, region = :region,
+            expires_at = :expires, org_label = :org_label
+    """), {
+        "ada": req.ada_number, "token": token, "role": role,
+        "region": region or "", "org_label": ada_info.get("org_label", ""),
+        "expires": expires.replace(tzinfo=None),
+    })
+
+    # 5. Mark invite as used
+    await db.execute(text(
+        "UPDATE rep_invitations SET used = TRUE, used_at = NOW(), ada_number = :ada WHERE id = :id"
+    ), {"ada": req.ada_number, "id": invite_id})
     await db.commit()
 
+    logger.info("[REP] Verified: ada=%s role=%s invite=%s", req.ada_number, role, req.invite_code)
     return {
         "ada_number": req.ada_number,
         "token": token,
         "expires_at": expires.isoformat(),
+        "role": role,
+        "region": region,
         "org_label": ada_info.get("org_label", ""),
-        "subject": ada_info.get("subject", "")[:100],
+        "subject": ada_info.get("subject", "")[:100] if ada_info.get("subject") else "",
     }
 
 

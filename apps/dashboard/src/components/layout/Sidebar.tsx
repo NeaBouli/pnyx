@@ -50,6 +50,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/nodes', module: 'node', label: 'Κόμβοι', icon: '🔗' },
       { href: '/node-settings', module: 'node-settings', label: 'Ρυθμίσεις Κόμβου', icon: '🔧' },
       { href: '/gov', module: 'gov', label: 'Αιτήσεις Gov', icon: '🏗️' },
+      { href: '/representatives', module: 'representatives', label: 'Εκπρόσωποι', icon: '🎖️' },
     ],
   },
 ]
