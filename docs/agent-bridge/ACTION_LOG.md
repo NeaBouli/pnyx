@@ -76,7 +76,16 @@
 - Commit: c6b7aab
 - APK+AAB Build läuft
 
-### HEAD: c6b7aab
+### NEA-221 Codex Findings Fixed
+- C-01 Public API: VERIFIED_FIXED (132bdf6)
+- C-03 Konsensierung Signatur: FIXED — Ed25519 verifiziert (132bdf6)
+- C-04 BillDetail: VERIFIED_FIXED (132bdf6)
+- W-01 Web DIAVGEIA Filter+Badge: FIXED (623c296)
+- W-02 Web Consensus Score: FIXED (623c296)
+- W-03 Web results_hidden Message: FIXED (623c296)
+- APK vC16 auf S10+Server, AAB ~/Desktop/ekklesia-v1.3.0-vC16-PLAY.aab
+
+### HEAD: 623c296
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
