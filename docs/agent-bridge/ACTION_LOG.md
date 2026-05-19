@@ -1,11 +1,41 @@
 # Action Log
 
-## 2026-05-19 — vC14 Build
-- vC14 v1.2.0 gebaut: Button Fix + Back Nav + Πολιτικοί Tab
-- AAB: Play Store uploaded ✅
-- APK: Server deployed (66M, 2026-05-18 20:50)
-- API version_code: 14
-- HEAD: 83aafa9
+## 2026-05-19 — Session: vC15 + Bugfixes + NEA-171 + NEA-187
+
+### vC15 v1.2.1 Build + Deploy
+- Vote Signature Fix: Server payload (JSON) → Client-Format (colon-separated)
+- Hidden Results: Info-Card mit Βουλή-Datum statt leere Balken
+- 18 Fehlermeldungen DE → EL in voting.py
+- AAB: Play Store uploaded ✅ (`~/Desktop/ekklesia-v1.2.1-vC15-PLAY.aab`, 45M)
+- APK: Server deployed (66M), S10 vC15 installiert
+- API version_code: 15, version: 1.2.1
+- EAS Free Plan Limit → lokaler Gradle Build mit Play-Keystore
+- Commits: fa991d9, 4f1156e, f9caeb4
+
+### NEA-171: Dashboard results_visibility Dropdown
+- API: results_visibility in BillUpdateRequest + BillSummary Response
+- Dashboard: Inline Dropdown pro Bill (Κρυφά / Παράθυρο 24ω / Πάντα ορατά)
+- PATCH /api/v1/admin/bills/{id} getestet ✅
+- Commit: 509a083
+
+### NEA-187: εκπρόσωπος Admin-Freigabe + Invite-Code
+- DB: rep_invitations Tabelle (XXXX-XXXX, 48h TTL)
+- API: POST /rep/admin/invite, GET /rep/admin/invites
+- POST /rep/verify erfordert jetzt invite_code + ada_number
+- Dashboard: /representatives Seite (Formular + QR + History)
+- Sidebar: Nav-Link unter ΔΙΑΧΕΙΡΙΣΗ
+- Getestet: Invite erstellt, verify mit Code ✅, re-use blockiert ✅
+- Commit: 87d5217
+
+### Bugfixes (George Feedback)
+- BUG 1: ANNOUNCED Bills → VoteScreen Info-Modus statt ResultScreen
+- BUG 2: PARLIAMENT_VOTED ohne party_votes → "Αναμονή δεδομένων" Placeholder
+- Auto-Completeness-Checker: scheduled_completeness_check alle 6h
+- APK Build fertig, S10 Install ausstehend
+- Commit: 390db95
+
+### HEAD: 390db95
+### Offen: S10 APK Install (vC15 Bugfix)
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
