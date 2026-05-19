@@ -44,8 +44,16 @@
 - Linear: NEA-199, NEA-171, NEA-187 → Done
 - Commit: d021fb1, dc708ce (import fix)
 
-### HEAD: dc708ce
-### Offen: S10 APK Install (vC15 Bugfix + NEA-199 Badge)
+### 4-Kanal Text-Pipeline (NEA-210)
+- CH1: Jina Markdown, CH2: Jina HTML+Regex, CH3: Ollama, CH4: Playwright
+- Dockerfile: Playwright + Chromium im API Container
+- Admin: POST /admin/scraper/enrich-all
+- Ergebnis: 3/21 → 15/21 Bills mit Text (12 enriched, 0 failed)
+- Linear: NEA-210 → Done
+- Commit: 34b7835
+
+### HEAD: 34b7835
+### Offen: S10 APK Install (vC15 Bugfix + NEA-199 Badge + 4-Kanal)
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
