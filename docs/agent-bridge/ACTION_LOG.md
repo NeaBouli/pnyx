@@ -85,7 +85,9 @@
 - W-03 Web results_hidden Message: FIXED (623c296)
 - APK vC16 auf S10+Server, AAB ~/Desktop/ekklesia-v1.3.0-vC16-PLAY.aab
 
-### HEAD: 623c296
+- AAB vC16 Play Store uploaded ✅
+
+### HEAD: 43497d7
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
