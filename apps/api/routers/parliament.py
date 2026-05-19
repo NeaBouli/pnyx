@@ -8,10 +8,10 @@ GET  /api/v1/bills/trending     — Nach Relevanz-Score sortiert
 import logging
 import os
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, text
 from database import get_db
 
 DISCOURSE_BASE = os.getenv("DISCOURSE_BASE_URL", "https://pnyx.ekklesia.gr")
