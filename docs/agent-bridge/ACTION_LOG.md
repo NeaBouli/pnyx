@@ -1,5 +1,12 @@
 # Action Log
 
+## 2026-05-19 — vC14 Build
+- vC14 v1.2.0 gebaut: Button Fix + Back Nav + Πολιτικοί Tab
+- AAB: Play Store uploaded ✅
+- APK: Server deployed (66M, 2026-05-18 20:50)
+- API version_code: 14
+- HEAD: 83aafa9
+
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
 - vC10 gebaut + S10 deployed + AAB bereit
