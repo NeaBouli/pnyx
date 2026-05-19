@@ -87,7 +87,15 @@
 
 - AAB vC16 Play Store uploaded ✅
 
-### HEAD: 43497d7
+### Forum + QR Consensus + Web Fixes
+- QR: purpose=consensus für Web-Konsensierung
+- Forum: ΒΟΥΛΗ/ΔΙΑΥΓΕΙΑ Badge in Topics
+- Forum: Diavgeia → Kategorie "Διαύγεια/Κανονιστικές Πράξεις"
+- Forum: OPEN_END → "Αξιολογήστε" CTA, AI-Summary Placeholder
+- Web: QR Stub auf OPEN_END Detail-Seite
+- Commit: f84292a
+
+### HEAD: f84292a
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
