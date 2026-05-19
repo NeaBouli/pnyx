@@ -95,7 +95,15 @@
 - Web: QR Stub auf OPEN_END Detail-Seite
 - Commit: f84292a
 
-### HEAD: f84292a
+### Forum Resync + Auto-Kategorisierung
+- Syntax-Fix in discourse_sync.py (stray parenthesis)
+- Tags: +source (parliament/diavgeia) +status (active/open-end)
+- resync_all_topics(): 51/51 Topics aktualisiert, 0 Fehler
+- 70 fehlende Diavgeia-Topics: werden automatisch erstellt (10min Sync)
+- Admin: POST /admin/forum/resync-all
+- Commit: 8707f64
+
+### HEAD: 8707f64
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
