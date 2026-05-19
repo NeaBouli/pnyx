@@ -1,6 +1,6 @@
 # Action Log
 
-## 2026-05-19 — Session: vC15 + Bugfixes + NEA-171 + NEA-187
+## 2026-05-19/20 — Marathon Session: vC15→vC16 + NEA-171/187/199/210/221
 
 ### vC15 v1.2.1 Build + Deploy
 - Vote Signature Fix: Server payload (JSON) → Client-Format (colon-separated)
