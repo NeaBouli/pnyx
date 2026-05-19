@@ -54,7 +54,7 @@ Builds:
 
   - versionName: 1.2.1
     versionCode: 15
-    commit: WILL_UPDATE_POST_BUILD
+    commit: f9caeb4
     timeout: 20000
     sudo:
       - apt-get update
