@@ -37,7 +37,12 @@ export default function BillsScreen() {
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = filter === "ALL" ? bills : filter === "ARWEAVE" ? bills.filter(b => b.arweave_tx_id) : bills.filter(b => b.status === filter);
+  const filtered = filter === "ALL" ? bills
+    : filter === "ARWEAVE" ? bills.filter(b => b.arweave_tx_id)
+    : filter === "DIAVGEIA" ? bills.filter(b => b.source === "DIAVGEIA")
+    : filter === "MUNICIPAL" ? bills.filter(b => b.governance_level === "MUNICIPAL")
+    : filter === "REGIONAL" ? bills.filter(b => b.governance_level === "REGIONAL")
+    : bills.filter(b => b.status === filter);
 
   const shareBill = async (bill: any) => {
     try {
@@ -53,7 +58,7 @@ export default function BillsScreen() {
   return (
     <View style={s.container}>
       <View style={s.filterRow}>
-        {[["ALL", "Όλα"], ["ACTIVE", "Ενεργά"], ["WINDOW_24H", "24ω"], ["PARLIAMENT_VOTED", "Βουλή"], ["ARWEAVE", "⛓"]].map(([k, l]) => (
+        {[["ALL", "Όλα"], ["ACTIVE", "Ενεργά"], ["DIAVGEIA", "Διαύγεια"], ["MUNICIPAL", "Δήμος"], ["REGIONAL", "Περιφέρεια"], ["PARLIAMENT_VOTED", "Βουλή"], ["ARWEAVE", "⛓"]].map(([k, l]) => (
           <TouchableOpacity key={k} onPress={() => setFilter(k)} style={[s.filterBtn, filter === k && s.filterActive]}>
             <Text style={[s.filterTxt, filter === k && s.filterTxtActive]}>{l}</Text>
           </TouchableOpacity>
