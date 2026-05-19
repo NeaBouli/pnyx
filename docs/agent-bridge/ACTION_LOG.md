@@ -1,6 +1,6 @@
 # Action Log
 
-## 2026-05-19/20 — Marathon Session: vC15→vC16 + NEA-171/187/199/210/221
+## 2026-05-19/20 — Marathon Session: vC15→vC17 + NEA-171/187/199/210/221/222
 
 ### vC15 v1.2.1 Build + Deploy
 - Vote Signature Fix: Server payload (JSON) → Client-Format (colon-separated)
@@ -103,7 +103,18 @@
 - Admin: POST /admin/forum/resync-all
 - Commit: 8707f64
 
-### HEAD: 8707f64
+### NEA-222: Wahlbezirk-Filter + INSTITUTIONAL Level + vC17
+- GovernanceLevel.INSTITUTIONAL für Diavgeia Φορείς (83 Bills)
+- API: ?governance= + ?source= Filter auf /bills + /public/bills
+- App: Φορείς Filter Tab
+- Web: Φορείς/Institutions Filter
+- Forum: Διαύγεια/Φορείς & Οργανισμοί + Κεντρική Διοίκηση Kategorien
+- Forum resync: 51/51 Topics aktualisiert
+- vC17 v1.3.1: APK S10 ✅ + Server ✅
+- AAB: ~/Desktop/ekklesia-v1.3.1-vC17-PLAY.aab (45M)
+- Commits: 97078c5, 18f8a2b, 6a58da9
+
+### HEAD: 6a58da9
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
