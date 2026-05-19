@@ -199,7 +199,7 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
     if not identity:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Nicht verifiziert oder Key revoziert. Bitte /identity/verify aufrufen."
+            detail="Δεν έχετε επαληθευτεί ή το κλειδί σας έχει ανακληθεί. Παρακαλώ επαληθεύστε ξανά."
         )
 
     # 2. Bill-Status prüfen
@@ -208,14 +208,14 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
     )
     bill = bill_result.scalar_one_or_none()
     if not bill:
-        raise HTTPException(status_code=404, detail=f"Gesetz {req.bill_id} nicht gefunden.")
+        raise HTTPException(status_code=404, detail=f"Το νομοσχέδιο {req.bill_id} δεν βρέθηκε.")
 
     votable_states = [BillStatus.ACTIVE, BillStatus.WINDOW_24H, BillStatus.OPEN_END]
     if bill.status not in votable_states:
         raise HTTPException(
             status_code=400,
-            detail=f"Abstimmung nicht möglich. Status: {bill.status.value}. "
-                   f"Erlaubt: ACTIVE, WINDOW_24H, OPEN_END."
+            detail=f"Η ψηφοφορία δεν είναι δυνατή. Κατάσταση: {bill.status.value}. "
+                   f"Επιτρέπεται: ACTIVE, WINDOW_24H, OPEN_END."
         )
 
     # 2b. Vote Scope: check governance_level permission
@@ -239,19 +239,17 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
     try:
         vote_choice = VoteChoice(req.vote.upper())
     except ValueError:
-        raise HTTPException(status_code=400, detail=f"Ungültige Stimme: {req.vote}. Erlaubt: YES, NO, ABSTAIN, UNKNOWN")
+        raise HTTPException(status_code=400, detail=f"Μη έγκυρη ψήφος: {req.vote}. Επιτρέπεται: YES, NO, ABSTAIN, UNKNOWN")
 
     # 4. Ed25519 Signatur verifizieren
-    payload = json.dumps({
-        "bill_id":       req.bill_id,
-        "vote":          req.vote.upper(),
-        "nullifier_hash": req.nullifier_hash,
-    }, sort_keys=True).encode()
+    # Payload-Format muss mit Client (crypto-native.ts signVote) übereinstimmen:
+    # `${bill_id}:${vote}:${nullifier_hash}`
+    payload = f"{req.bill_id}:{req.vote.upper()}:{req.nullifier_hash}".encode()
 
     if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Ungültige Signatur. Stimme wird abgelehnt."
+            detail="Μη έγκυρη υπογραφή. Η ψήφος απορρίφθηκε."
         )
 
     # 4b. Tier-1 validation (ADR-022) — if Tier-1 fields present
@@ -287,7 +285,7 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
         if bill.status == BillStatus.ACTIVE:
             raise HTTPException(
                 status_code=409,
-                detail="Stimme bereits abgegeben. Änderung erst im 24h-Fenster möglich."
+                detail="Η ψήφος έχει ήδη καταχωρηθεί. Αλλαγή μόνο στο 24ωρο παράθυρο."
             )
         existing_vote.vote = vote_choice
         existing_vote.signature_hex = req.signature_hex
@@ -295,7 +293,7 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
         await db.commit()
         return VoteResponse(
             success=True,
-            message="Stimme erfolgreich geändert.",
+            message="Η ψήφος άλλαξε επιτυχώς.",
             bill_id=req.bill_id,
             vote=vote_choice.value
         )
@@ -319,12 +317,12 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
         await db.rollback()
         raise HTTPException(
             status_code=409,
-            detail="Stimme bereits abgegeben (Race Condition verhindert)."
+            detail="Η ψήφος έχει ήδη καταχωρηθεί."
         )
 
     return VoteResponse(
         success=True,
-        message="Stimme erfolgreich abgegeben. Danke für Ihre Teilnahme.",
+        message="Η ψήφος καταχωρήθηκε επιτυχώς. Ευχαριστούμε για τη συμμετοχή σας.",
         bill_id=req.bill_id,
         vote=vote_choice.value
     )
@@ -354,12 +352,12 @@ async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = 
     )
     bill = bill_result.scalar_one_or_none()
     if not bill:
-        raise HTTPException(404, f"Gesetz {bill_id} nicht gefunden.")
+        raise HTTPException(404, f"Το νομοσχέδιο {bill_id} δεν βρέθηκε.")
 
     if bill.status != BillStatus.WINDOW_24H:
         raise HTTPException(
             403,
-            f"Korrektur nur in den letzten 24h möglich. Aktueller Status: {bill.status.value}"
+            f"Η διόρθωση είναι δυνατή μόνο στις τελευταίες 24 ώρες. Τρέχουσα κατάσταση: {bill.status.value}"
         )
 
     # 2. Identity prüfen
@@ -371,7 +369,7 @@ async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = 
     )
     identity = id_result.scalar_one_or_none()
     if not identity:
-        raise HTTPException(403, "Nicht verifiziert oder Key revoziert.")
+        raise HTTPException(403, "Δεν έχετε επαληθευτεί ή το κλειδί σας έχει ανακληθεί.")
 
     # 3. Existing Vote laden
     vote_result = await db.execute(
@@ -382,30 +380,26 @@ async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = 
     )
     existing = vote_result.scalar_one_or_none()
     if not existing:
-        raise HTTPException(404, "Keine Stimme gefunden — Sie haben noch nicht abgestimmt.")
+        raise HTTPException(404, "Δεν βρέθηκε ψήφος — δεν έχετε ψηφίσει ακόμα.")
 
     # 4. Einmal-Korrektur prüfen
     if existing.is_correction:
         raise HTTPException(
             409,
-            "Korrektur bereits verwendet — nur eine Korrektur pro Abstimmung erlaubt."
+            "Η διόρθωση έχει ήδη χρησιμοποιηθεί — επιτρέπεται μόνο μία διόρθωση ανά ψηφοφορία."
         )
 
     # 5. Neuen Vote validieren
     try:
         new_choice = VoteChoice(req.vote.upper())
     except ValueError:
-        raise HTTPException(400, f"Ungültige Stimme: {req.vote}")
+        raise HTTPException(400, f"Μη έγκυρη ψήφος: {req.vote}")
 
     # 6. Ed25519 Signatur prüfen
-    payload = json.dumps({
-        "bill_id": bill_id,
-        "vote": req.vote.upper(),
-        "nullifier_hash": req.nullifier_hash,
-    }, sort_keys=True).encode()
+    payload = f"{bill_id}:{req.vote.upper()}:{req.nullifier_hash}".encode()
 
     if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
-        raise HTTPException(401, "Ungültige Signatur.")
+        raise HTTPException(401, "Μη έγκυρη υπογραφή.")
 
     # 7. Korrektur durchführen
     existing.original_vote = existing.vote.value
@@ -528,7 +522,7 @@ async def vote_relevance(
 ):
     """MOD-14: Up/Down Relevanz-Signal. Getrennt von inhaltlicher Stimme."""
     if req.signal not in [1, -1]:
-        raise HTTPException(status_code=400, detail="Signal muss +1 oder -1 sein.")
+        raise HTTPException(status_code=400, detail="Το σήμα πρέπει να είναι +1 ή -1.")
 
     # Identity prüfen
     id_result = await db.execute(
@@ -538,7 +532,7 @@ async def vote_relevance(
         )
     )
     if not id_result.scalar_one_or_none():
-        raise HTTPException(status_code=403, detail="Nicht verifiziert.")
+        raise HTTPException(status_code=403, detail="Δεν έχετε επαληθευτεί.")
 
     # Upsert Relevanz-Signal
     existing = await db.execute(
@@ -559,8 +553,8 @@ async def vote_relevance(
         ))
 
     await db.commit()
-    label = "wichtig" if req.signal == 1 else "weniger wichtig"
-    return {"success": True, "message": f"Gesetz als '{label}' markiert."}
+    label = "σημαντικό" if req.signal == 1 else "λιγότερο σημαντικό"
+    return {"success": True, "message": f"Το νομοσχέδιο σημειώθηκε ως '{label}'."}
 
 
 # ─── VoteReceipt (ADR-008 stub) ─────────────────────────────────────────────
@@ -586,7 +580,7 @@ async def get_vote_receipt(
     )
     vote = result.scalar_one_or_none()
     if not vote:
-        raise HTTPException(status_code=404, detail="Keine Stimme gefunden.")
+        raise HTTPException(status_code=404, detail="Δεν βρέθηκε ψήφος.")
 
     ts = vote.created_at.isoformat() if vote.created_at else datetime.now(timezone.utc).isoformat()
     salt = os.environ.get("SERVER_SALT", "")
@@ -630,9 +624,9 @@ async def submit_consensus(
     )
     bill = bill_result.scalar_one_or_none()
     if not bill:
-        raise HTTPException(404, "Bill nicht gefunden")
+        raise HTTPException(404, "Το νομοσχέδιο δεν βρέθηκε")
     if bill.status != BillStatus.OPEN_END:
-        raise HTTPException(400, "Konsensierung nur für abgestimmte Bills (OPEN_END)")
+        raise HTTPException(400, "Η συναίνεση είναι δυνατή μόνο για ψηφισμένα νομοσχέδια (OPEN_END)")
 
     # Verify identity exists
     identity = await db.execute(
@@ -642,7 +636,7 @@ async def submit_consensus(
         )
     )
     if not identity.scalar_one_or_none():
-        raise HTTPException(403, "Identität nicht gefunden oder widerrufen")
+        raise HTTPException(403, "Η ταυτότητα δεν βρέθηκε ή έχει ανακληθεί")
 
     # Upsert consensus vote
     await db.execute(text("""
