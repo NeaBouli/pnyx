@@ -137,6 +137,8 @@ export interface BillResults {
     parliament_result: string | null;
     headline_el: string;
   } | null;
+  results_hidden?: boolean;
+  parliament_vote_date?: string | null;
   disclaimer_el: string;
 }
 

@@ -72,6 +72,8 @@ export default function ResultScreen({ route }: Props) {
     );
   }
 
+  const isHidden = data.results_hidden || (data.status === "ACTIVE" && data.total_votes === 0);
+
   return (
     <ScrollView
       style={styles.container}
@@ -80,37 +82,54 @@ export default function ResultScreen({ route }: Props) {
       }
     >
       <Text style={styles.title}>{data.title_el}</Text>
-      <Text style={styles.totalVotes}>
-        Σύνολο ψήφων: {data.total_votes}
-      </Text>
 
-      <View style={styles.barsContainer}>
-        <Bar label="ΝΑΙ" count={data.yes_count} percent={data.yes_percent} color="#2e7d32" />
-        <Bar label="ΟΧΙ" count={data.no_count} percent={data.no_percent} color="#c62828" />
-        <Bar label="ΑΠΟΧΗ" count={data.abstain_count} percent={data.abstain_percent} color="#f57f17" />
-      </View>
-
-      {data.divergence && (
-        <View style={styles.divergenceCard}>
-          <Text style={styles.divergenceTitle}>Απόκλιση Πολιτών – Βουλής</Text>
-          <Text style={styles.divergenceScore}>
-            {(data.divergence.score * 100).toFixed(1)}%
+      {isHidden ? (
+        <View style={styles.hiddenCard}>
+          <Text style={styles.hiddenIcon}>🗳️</Text>
+          <Text style={styles.hiddenTitle}>Η ψήφος σας καταγράφηκε</Text>
+          <Text style={styles.hiddenMessage}>
+            Τα αποτελέσματα θα είναι διαθέσιμα μετά την ολοκλήρωση της ψηφοφορίας στη Βουλή
+            {data.parliament_vote_date ? ` (${data.parliament_vote_date})` : ""}.
           </Text>
-          <Text style={styles.divergenceLabel}>{data.divergence.label_el}</Text>
-          <Text style={styles.divergenceHeadline}>
-            {data.divergence.headline_el}
+          <Text style={styles.hiddenNote}>
+            Μπορείτε να αλλάξετε την ψήφο σας μία φορά κατά το 24ωρο παράθυρο πριν την ανακοίνωση των αποτελεσμάτων.
           </Text>
-          <View style={styles.divergenceRow}>
-            <Text style={styles.divergenceDetail}>
-              Πολίτες: {data.divergence.citizen_majority}
-            </Text>
-            {data.divergence.parliament_result && (
-              <Text style={styles.divergenceDetail}>
-                Βουλή: {data.divergence.parliament_result}
-              </Text>
-            )}
-          </View>
         </View>
+      ) : (
+        <>
+          <Text style={styles.totalVotes}>
+            Σύνολο ψήφων: {data.total_votes}
+          </Text>
+
+          <View style={styles.barsContainer}>
+            <Bar label="ΝΑΙ" count={data.yes_count} percent={data.yes_percent} color="#2e7d32" />
+            <Bar label="ΟΧΙ" count={data.no_count} percent={data.no_percent} color="#c62828" />
+            <Bar label="ΑΠΟΧΗ" count={data.abstain_count} percent={data.abstain_percent} color="#f57f17" />
+          </View>
+
+          {data.divergence && (
+            <View style={styles.divergenceCard}>
+              <Text style={styles.divergenceTitle}>Απόκλιση Πολιτών – Βουλής</Text>
+              <Text style={styles.divergenceScore}>
+                {(data.divergence.score * 100).toFixed(1)}%
+              </Text>
+              <Text style={styles.divergenceLabel}>{data.divergence.label_el}</Text>
+              <Text style={styles.divergenceHeadline}>
+                {data.divergence.headline_el}
+              </Text>
+              <View style={styles.divergenceRow}>
+                <Text style={styles.divergenceDetail}>
+                  Πολίτες: {data.divergence.citizen_majority}
+                </Text>
+                {data.divergence.parliament_result && (
+                  <Text style={styles.divergenceDetail}>
+                    Βουλή: {data.divergence.parliament_result}
+                  </Text>
+                )}
+              </View>
+            </View>
+          )}
+        </>
       )}
 
       <Text style={styles.disclaimer}>{data.disclaimer_el}</Text>
@@ -140,4 +159,12 @@ const styles = StyleSheet.create({
   divergenceRow: { flexDirection: "row", justifyContent: "space-between" },
   divergenceDetail: { fontSize: 12, color: colors.textTertiary },
   disclaimer: { fontSize: 11, color: colors.textTertiary, textAlign: "center", marginTop: 8, marginBottom: 32 },
+  hiddenCard: {
+    backgroundColor: colors.surface, borderRadius: 12, padding: 24, marginTop: 16, marginBottom: 16,
+    borderWidth: 1, borderColor: colors.primary, alignItems: "center",
+  },
+  hiddenIcon: { fontSize: 48, marginBottom: 12 },
+  hiddenTitle: { fontSize: 18, fontWeight: "bold", color: colors.primary, marginBottom: 8, textAlign: "center" },
+  hiddenMessage: { fontSize: 14, color: colors.text, textAlign: "center", lineHeight: 20, marginBottom: 12 },
+  hiddenNote: { fontSize: 12, color: colors.textSecondary, textAlign: "center", lineHeight: 18, fontStyle: "italic" },
 });

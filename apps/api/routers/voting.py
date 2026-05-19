@@ -109,6 +109,8 @@ class BillResults(BaseModel):
     abstain_percent:  float
     divergence:       DivergenceResult | None
     representativity: dict | None = None
+    results_hidden:   bool = False
+    parliament_vote_date: str | None = None
     disclaimer_el:    str
 
 class RelevanceRequest(BaseModel):
@@ -466,17 +468,20 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
     )
     bill = bill_result.scalar_one_or_none()
     if not bill:
-        raise HTTPException(status_code=404, detail=f"Gesetz {bill_id} nicht gefunden.")
+        raise HTTPException(status_code=404, detail=f"Το νομοσχέδιο {bill_id} δεν βρέθηκε.")
 
     # Visibility check
     visibility = getattr(bill, 'results_visibility', 'HIDDEN') or 'HIDDEN'
     always_visible = bill.status in (BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END, BillStatus.WINDOW_24H)
     if visibility == 'HIDDEN' and not always_visible and bill.status == BillStatus.ACTIVE:
+        vote_date = bill.parliament_vote_date.strftime("%d/%m/%Y") if bill.parliament_vote_date else None
         return BillResults(
             bill_id=bill_id, title_el=bill.title_el, status=bill.status.value,
             total_votes=0, yes_count=0, no_count=0, abstain_count=0, unknown_count=0,
             yes_percent=0, no_percent=0, abstain_percent=0, divergence=None,
             representativity=compute_representativity(0),
+            results_hidden=True,
+            parliament_vote_date=vote_date,
             disclaimer_el="Τα αποτελέσματα θα είναι ορατά μετά τη λήξη της ψηφοφορίας.",
         )
 
@@ -496,6 +501,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
 
     divergence = compute_divergence(yes_c, no_c, abs_c, bill.party_votes_parliament)
 
+    vote_date = bill.parliament_vote_date.strftime("%d/%m/%Y") if bill.parliament_vote_date else None
     return BillResults(
         bill_id=bill_id,
         title_el=bill.title_el,
@@ -510,6 +516,8 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
         abstain_percent=pct(abs_c),
         divergence=divergence,
         representativity=compute_representativity(total),
+        results_hidden=False,
+        parliament_vote_date=vote_date,
         disclaimer_el="Η ψηφοφορία αυτή δεν είναι νομικά δεσμευτική και εκφράζει μόνο τη γνώμη των εγγεγραμμένων χρηστών της πλατφόρμας.",
     )
 
