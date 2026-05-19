@@ -8,13 +8,13 @@ from fastapi import APIRouter
 router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
-LATEST_VERSION = "1.3.0"
-LATEST_VERSION_CODE = 16
+LATEST_VERSION = "1.3.1"
+LATEST_VERSION_CODE = 17
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v16 — Διαύγεια Bills, ΔΙΑΥΓΕΙΑ Badge, Φίλτρα Δήμος/Περιφέρεια, 4-Kanal Text-Pipeline"
-RELEASE_NOTES_EN = "v16 — Diavgeia Bills, DIAVGEIA badge, Municipality/Region filters, 4-channel text pipeline"
+RELEASE_NOTES_EL = "v17 — Φίλτρα Φορέων, Forum κατηγορίες, Κλίμακα Συναίνεσης Ed25519, API Filter"
+RELEASE_NOTES_EN = "v17 — Institutional filters, Forum categories, Ed25519 consensus, API governance/source filter"
 
 FDROID_URL = ""  # Not live yet — MR !38007 pending
 PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=ekklesia.gr"
