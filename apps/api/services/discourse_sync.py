@@ -178,7 +178,6 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
             "> Η ψήφος σας είναι κρυπτογραφημένη (Ed25519) — κανείς δεν γνωρίζει τι ψηφίσατε.\n\n"
         )
     body += "*Αυτό το θέμα δημιουργήθηκε αυτόματα από το σύστημα ekklesia.*\n"
-    )
 
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.post(
@@ -187,13 +186,69 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
                 "title": bill.title_el[:255],
                 "raw": body,
                 "category": category_id,
-                "tags": ["ekklesia", (bill.governance_level.value if bill.governance_level else "national").lower()],
+                "tags": [
+                    "ekklesia",
+                    (bill.governance_level.value if bill.governance_level else "national").lower(),
+                    (getattr(bill, "source", "PARLIAMENT") or "PARLIAMENT").lower(),
+                    bill.status.value.lower().replace("_", "-") if bill.status else "active",
+                ],
             },
             headers=_headers(),
         )
         if r.status_code not in (200, 201):
             raise RuntimeError(f"Discourse API error {r.status_code}: {r.text[:200]}")
         return r.json()["topic_id"]
+
+
+async def update_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> bool:
+    """Update existing Discourse topic: move category + update tags."""
+    if not bill.forum_topic_id or not DISCOURSE_API_KEY:
+        return False
+
+    try:
+        category_id = await _resolve_category(bill, db)
+        source = getattr(bill, "source", "PARLIAMENT") or "PARLIAMENT"
+        tags = [
+            "ekklesia",
+            (bill.governance_level.value if bill.governance_level else "national").lower(),
+            source.lower(),
+            bill.status.value.lower().replace("_", "-") if bill.status else "active",
+        ]
+
+        async with httpx.AsyncClient(timeout=15) as client:
+            # Update topic category + tags
+            r = await client.put(
+                f"{DISCOURSE_API_URL}/t/-/{bill.forum_topic_id}.json",
+                json={"category_id": category_id, "tags": tags},
+                headers=_headers(),
+            )
+            if r.status_code == 200:
+                logger.info("Updated topic %d for bill %s (cat=%d, tags=%s)",
+                            bill.forum_topic_id, bill.id, category_id, tags)
+                return True
+            logger.warning("Topic update failed for %s: HTTP %d", bill.id, r.status_code)
+    except Exception as e:
+        logger.error("Topic update error for %s: %s", bill.id, e)
+    return False
+
+
+async def resync_all_topics(db: AsyncSession) -> dict:
+    """Re-categorize and re-tag ALL existing forum topics."""
+    result = await db.execute(
+        select(ParliamentBill).where(ParliamentBill.forum_topic_id.isnot(None))
+    )
+    bills = result.scalars().all()
+    updated = 0
+    failed = 0
+
+    for bill in bills:
+        ok = await update_discourse_topic(bill, db)
+        if ok:
+            updated += 1
+        else:
+            failed += 1
+
+    return {"total": len(bills), "updated": updated, "failed": failed}
 
 
 async def sync_new_bills_to_forum(db: AsyncSession) -> None:

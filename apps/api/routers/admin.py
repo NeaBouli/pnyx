@@ -200,6 +200,17 @@ async def admin_set_party_votes(
     return {"success": True, "bill_id": bill_id, "party_votes": party_votes}
 
 
+@router.post("/forum/resync-all")
+async def admin_resync_forum(
+    _key=Depends(verify_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Re-categorize and re-tag all existing forum topics."""
+    from services.discourse_sync import resync_all_topics
+    stats = await resync_all_topics(db)
+    return {"success": True, **stats}
+
+
 @router.post("/diavgeia/resolve-orgs")
 async def admin_resolve_orgs(
     _key=Depends(verify_admin),
