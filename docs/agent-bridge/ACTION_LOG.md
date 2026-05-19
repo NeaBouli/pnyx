@@ -68,7 +68,15 @@
 - AAB: ~/Desktop/ekklesia-v1.3.0-vC16-PLAY.aab (45M)
 - Commits: 513502a, 91b5093
 
-### HEAD: 91b5093
+### NEA-221: Critical Full Audit + Fix
+- Tab-Layout: ScrollView height:48, flexGrow:0 — kein Leerraum mehr
+- OPEN_END: Vote-Buttons versteckt, nur Konsensierung Slider
+- VoteScreen: bill.source geladen, Konsens-Text für DIAVGEIA angepasst
+- Codex Review-Request in CODEX_TO_CLAUDE.md
+- Commit: c6b7aab
+- APK+AAB Build läuft
+
+### HEAD: c6b7aab
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 

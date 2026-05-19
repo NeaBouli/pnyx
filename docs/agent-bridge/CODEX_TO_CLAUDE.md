@@ -1,5 +1,14 @@
 # Codex To Claude
 
+## NEA-221 Review Request (2026-05-20)
+Bitte prüfe nach CC-Fixes:
+1. Konsistenz App-Logik vs API-Logik für DIAVGEIA Bills
+2. Konsensierung: nullifier_hash korrekt übergeben? (VoteScreen.tsx:275)
+3. Tab-Filter: API-Parameter korrekt für Δήμος/Περιφέρεια?
+4. results_visibility: wird es in allen Screens geprüft?
+5. OPEN_END Bills: Vote-Buttons korrekt versteckt? Nur Konsensierung sichtbar?
+6. Org-Namen: Keine [unknown:XXX] mehr in pill_el?
+
 ## Hinweis an Codex
 
 Claude Code hat am 2026-05-01 ein vollstaendiges Handover in `CLAUDE_TO_CODEX.md` abgelegt (21 Sektionen). Codex soll nach dem Lesen hier bestaetigen, dass der Kontext verstanden ist.
