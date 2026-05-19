@@ -398,9 +398,59 @@ async def scheduled_monthly_newsletter():
         logger.error("[NEWSLETTER] Monthly report error: %s", e)
 
 
+async def scheduled_completeness_check():
+    """Check PARLIAMENT_VOTED bills for missing party_votes/summary and re-scrape."""
+    from services.scraper_state import record_run, record_success, record_failure
+    from database import AsyncSessionLocal
+    name = "completeness_check"
+    await record_run(name)
+    try:
+        async with AsyncSessionLocal() as db:
+            from sqlalchemy import select, or_
+            from models import ParliamentBill, BillStatus
+            # Find PARLIAMENT_VOTED/OPEN_END bills with missing data
+            result = await db.execute(
+                select(ParliamentBill).where(
+                    ParliamentBill.status.in_([BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END]),
+                    or_(
+                        ParliamentBill.party_votes_parliament.is_(None),
+                        ParliamentBill.summary_long_el.is_(None),
+                    )
+                )
+            )
+            incomplete = result.scalars().all()
+            if not incomplete:
+                await record_success(name)
+                return
+
+            logger.info("[COMPLETENESS] %d bills with missing data", len(incomplete))
+            for bill in incomplete:
+                # Try to scrape parliament text if summary missing
+                if not bill.summary_long_el and bill.parliament_url:
+                    try:
+                        from services.parliament_fetcher import fetch_bill_text
+                        text = await fetch_bill_text(bill.id, bill.parliament_url)
+                        if text:
+                            bill.summary_long_el = text[:10000]
+                            logger.info("[COMPLETENESS] Fetched text for %s", bill.id)
+                    except Exception as e:
+                        logger.warning("[COMPLETENESS] Text fetch failed for %s: %s", bill.id, e)
+
+                # Log missing party votes (manual entry required via dashboard)
+                if not bill.party_votes_parliament:
+                    logger.info("[COMPLETENESS] %s missing party_votes — awaiting admin input", bill.id)
+
+            await db.commit()
+        await record_success(name)
+    except Exception as e:
+        logger.error("[COMPLETENESS] Failed: %s", e)
+        await record_failure(name, str(e))
+
+
 @asynccontextmanager
 async def lifespan(app):
     # Startup
+    scheduler.add_job(scheduled_completeness_check, IntervalTrigger(hours=6), id="completeness_check", replace_existing=True)
     scheduler.add_job(scheduled_scrape, IntervalTrigger(hours=12), id="parliament_scrape", replace_existing=True)
     scheduler.add_job(scheduled_notify_new_bills, IntervalTrigger(minutes=30), id="notify_new_bills", replace_existing=True)
     scheduler.add_job(scheduled_notify_results, IntervalTrigger(hours=1), id="notify_results", replace_existing=True)
@@ -411,7 +461,7 @@ async def lifespan(app):
     scheduler.add_job(scheduled_greek_topics, IntervalTrigger(hours=6), id="greek_topics", replace_existing=True)
     scheduler.add_job(scheduled_monthly_newsletter, CronTrigger(day=1, hour=9, minute=0), id="monthly_newsletter", replace_existing=True)
     scheduler.start()
-    logger.info("[Scheduler] Started — lifecycle 1h, parliament 12h, diavgeia 48h, notify-bills 30m, notify-results 1h, forum-sync 10m, greek-topics 6h, newsletter 1st/month")
+    logger.info("[Scheduler] Started — completeness 6h, lifecycle 1h, parliament 12h, diavgeia 48h, notify-bills 30m, notify-results 1h, forum-sync 10m, greek-topics 6h, newsletter 1st/month")
     yield
     # Shutdown
     scheduler.shutdown()

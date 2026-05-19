@@ -107,7 +107,7 @@ export default function ResultScreen({ route }: Props) {
             <Bar label="ΑΠΟΧΗ" count={data.abstain_count} percent={data.abstain_percent} color="#f57f17" />
           </View>
 
-          {data.divergence && (
+          {data.divergence ? (
             <View style={styles.divergenceCard}>
               <Text style={styles.divergenceTitle}>Απόκλιση Πολιτών – Βουλής</Text>
               <Text style={styles.divergenceScore}>
@@ -128,7 +128,16 @@ export default function ResultScreen({ route }: Props) {
                 )}
               </View>
             </View>
-          )}
+          ) : data.status === "PARLIAMENT_VOTED" ? (
+            <View style={styles.pendingCard}>
+              <Text style={styles.pendingText}>
+                Αποτέλεσμα Βουλής: Αναμονή δεδομένων
+              </Text>
+              <Text style={styles.pendingSubtext}>
+                Η κατανομή ψήφων των κομμάτων θα ενημερωθεί αυτόματα.
+              </Text>
+            </View>
+          ) : null}
         </>
       )}
 
@@ -167,4 +176,10 @@ const styles = StyleSheet.create({
   hiddenTitle: { fontSize: 18, fontWeight: "bold", color: colors.primary, marginBottom: 8, textAlign: "center" },
   hiddenMessage: { fontSize: 14, color: colors.text, textAlign: "center", lineHeight: 20, marginBottom: 12 },
   hiddenNote: { fontSize: 12, color: colors.textSecondary, textAlign: "center", lineHeight: 18, fontStyle: "italic" },
+  pendingCard: {
+    backgroundColor: "#fef3c7", borderRadius: 12, padding: 16, marginBottom: 16,
+    borderLeftWidth: 4, borderLeftColor: "#f59e0b", alignItems: "center",
+  },
+  pendingText: { fontSize: 14, fontWeight: "bold", color: "#92400e", marginBottom: 4 },
+  pendingSubtext: { fontSize: 12, color: "#a16207", textAlign: "center" },
 });

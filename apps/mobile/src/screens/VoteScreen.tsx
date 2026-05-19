@@ -190,6 +190,18 @@ export default function VoteScreen({ route, navigation }: Props) {
         </View>
       )}
 
+      {billStatus === "ANNOUNCED" && (
+        <View style={{ backgroundColor: "#f1f5f9", borderRadius: 12, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: "#94a3b8", alignItems: "center" }}>
+          <Text style={{ fontSize: 36, marginBottom: 8 }}>🏛️</Text>
+          <Text style={{ fontWeight: "700", color: "#475569", fontSize: 15, textAlign: "center", marginBottom: 6 }}>
+            Η ψηφοφορία δεν έχει ξεκινήσει ακόμα
+          </Text>
+          <Text style={{ color: "#64748b", fontSize: 13, textAlign: "center", lineHeight: 18 }}>
+            Αυτό το νομοσχέδιο έχει ανακοινωθεί αλλά δεν είναι ακόμα ανοιχτό για ψηφοφορία. Θα ειδοποιηθείτε μόλις γίνει ενεργό.
+          </Text>
+        </View>
+      )}
+
       {billStatus === "WINDOW_24H" && (
         <View style={{ backgroundColor: "#fef3c7", borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#f59e0b" }}>
           <Text style={{ fontWeight: "700", color: "#92400e", fontSize: 13 }}>
@@ -197,36 +209,41 @@ export default function VoteScreen({ route, navigation }: Props) {
           </Text>
         </View>
       )}
-      <Text style={styles.info}>
-        {hasVoted && billStatus === "WINDOW_24H" && !isCorrected
-          ? "Έχετε ήδη ψηφίσει. Επιλέξτε νέα ψήφο για διόρθωση."
-          : "Επιλέξτε την ψήφο σας. Απαιτείται βιομετρική πιστοποίηση."}
-      </Text>
 
-      <View style={styles.options}>
-        {VOTE_OPTIONS.map((opt) => (
-          <TouchableOpacity
-            key={opt.key}
-            style={[
-              styles.voteButton,
-              { borderColor: opt.color },
-              selected === opt.key && { backgroundColor: opt.color },
-            ]}
-            onPress={() => hasVoted && billStatus === "WINDOW_24H" && !isCorrected ? handleCorrection(opt.key) : handleVote(opt.key)}
-            disabled={loading}
-          >
-            <Text style={styles.voteIcon}>{opt.icon}</Text>
-            <Text
-              style={[
-                styles.voteLabel,
-                selected === opt.key && { color: "#fff" },
-              ]}
-            >
-              {opt.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {billStatus !== "ANNOUNCED" && (
+        <>
+          <Text style={styles.info}>
+            {hasVoted && billStatus === "WINDOW_24H" && !isCorrected
+              ? "Έχετε ήδη ψηφίσει. Επιλέξτε νέα ψήφο για διόρθωση."
+              : "Επιλέξτε την ψήφο σας. Απαιτείται βιομετρική πιστοποίηση."}
+          </Text>
+
+          <View style={styles.options}>
+            {VOTE_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.key}
+                style={[
+                  styles.voteButton,
+                  { borderColor: opt.color },
+                  selected === opt.key && { backgroundColor: opt.color },
+                ]}
+                onPress={() => hasVoted && billStatus === "WINDOW_24H" && !isCorrected ? handleCorrection(opt.key) : handleVote(opt.key)}
+                disabled={loading}
+              >
+                <Text style={styles.voteIcon}>{opt.icon}</Text>
+                <Text
+                  style={[
+                    styles.voteLabel,
+                    selected === opt.key && { color: "#fff" },
+                  ]}
+                >
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </>
+      )}
 
       {loading && (
         <View style={styles.loadingOverlay}>
@@ -295,14 +312,16 @@ export default function VoteScreen({ route, navigation }: Props) {
         </View>
       )}
 
-      <TouchableOpacity
-        style={styles.resultsLink}
-        onPress={() => navigation.navigate("Result", { billId, billTitle })}
-      >
-        <Text style={styles.resultsLinkText}>
-          Δείτε τα τρέχοντα αποτελέσματα →
-        </Text>
-      </TouchableOpacity>
+      {billStatus !== "ANNOUNCED" && (
+        <TouchableOpacity
+          style={styles.resultsLink}
+          onPress={() => navigation.navigate("Result", { billId, billTitle })}
+        >
+          <Text style={styles.resultsLinkText}>
+            Δείτε τα τρέχοντα αποτελέσματα →
+          </Text>
+        </TouchableOpacity>
+      )}
     </ScrollView>
   );
 }

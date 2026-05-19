@@ -66,8 +66,10 @@ export default function BillsScreen() {
         ListEmptyComponent={<Text style={s.empty}>Δεν βρέθηκαν ψηφοφορίες</Text>}
         renderItem={({ item }) => (
           <TouchableOpacity style={s.card} onPress={() => {
-            if (VOTABLE.includes(item.status)) nav.navigate("Vote", { billId: item.id, billTitle: item.title_el });
-            else nav.navigate("Result", { billId: item.id });
+            if (item.status === "PARLIAMENT_VOTED" || item.status === "OPEN_END")
+              nav.navigate("Result", { billId: item.id, billTitle: item.title_el });
+            else
+              nav.navigate("Vote", { billId: item.id, billTitle: item.title_el });
           }}>
             <View style={[s.dot, { backgroundColor: STATUS_COLORS[item.status] ?? colors.textTertiary }]} />
             <View style={s.cardContent}>
