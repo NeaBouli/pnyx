@@ -637,14 +637,20 @@ async def submit_consensus(
         raise HTTPException(400, "Η συναίνεση είναι δυνατή μόνο για ψηφισμένα νομοσχέδια (OPEN_END)")
 
     # Verify identity exists
-    identity = await db.execute(
+    id_result = await db.execute(
         select(IdentityRecord).where(
             IdentityRecord.nullifier_hash == req.nullifier_hash,
             IdentityRecord.status == KeyStatus.ACTIVE,
         )
     )
-    if not identity.scalar_one_or_none():
+    identity = id_result.scalar_one_or_none()
+    if not identity:
         raise HTTPException(403, "Η ταυτότητα δεν βρέθηκε ή έχει ανακληθεί")
+
+    # Ed25519 Signatur verifizieren
+    consensus_payload = f"{bill_id}:{req.score}:{req.nullifier_hash}".encode()
+    if not verify_signature(identity.public_key_hex, consensus_payload, req.signature_hex):
+        raise HTTPException(401, "Μη έγκυρη υπογραφή.")
 
     # Upsert consensus vote
     await db.execute(text("""

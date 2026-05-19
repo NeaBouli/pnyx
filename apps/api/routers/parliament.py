@@ -71,6 +71,12 @@ class BillDetail(BaseModel):
     forum_topic_id:         int | None = None
     forum_topic_url:        str | None = None
     ai_summary_reviewed:    bool
+    source:                 str | None = "PARLIAMENT"
+    diavgeia_ada:           str | None = None
+    results_visibility:     str | None = "HIDDEN"
+    consensus_score:        float | None = None
+    consensus_count:        int | None = 0
+    flag_count:             int | None = 0
 
 class TransitionRequest(BaseModel):
     new_status: str
@@ -237,6 +243,12 @@ async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db)):
         forum_topic_id=bill.forum_topic_id,
         forum_topic_url=f"{DISCOURSE_BASE}/t/{bill.forum_topic_id}" if bill.forum_topic_id else None,
         ai_summary_reviewed=bill.ai_summary_reviewed or False,
+        source=bill.source or "PARLIAMENT",
+        diavgeia_ada=bill.diavgeia_ada,
+        results_visibility=bill.results_visibility or "HIDDEN",
+        consensus_score=bill.consensus_score,
+        consensus_count=bill.consensus_count or 0,
+        flag_count=bill.flag_count or 0,
     )
 
 

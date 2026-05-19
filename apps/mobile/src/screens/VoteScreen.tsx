@@ -289,11 +289,14 @@ export default function VoteScreen({ route, navigation }: Props) {
                 const nullifier = await loadNullifier();
                 const keypair = await loadKeypair();
                 if (!nullifier || !keypair) { Alert.alert("Σφάλμα", "Δεν έχετε επαληθευτεί"); return; }
+                // Ed25519 Signatur: bill_id:score:nullifier_hash
+                const sigParams = { bill_id: billId, vote: String(consensusScore), nullifier_hash: nullifier };
+                const sigHex = signVote(keypair.privateKeyHex, sigParams);
                 const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
                 const r = await fetch(`${API}/api/v1/vote/${encodeURIComponent(billId)}/consensus`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ score: consensusScore, nullifier_hash: nullifier, signature_hex: "consensus" }),
+                  body: JSON.stringify({ score: consensusScore, nullifier_hash: nullifier, signature_hex: sigHex }),
                 });
                 if (r.ok) { setConsensusDone(true); Alert.alert("Ευχαριστούμε!", `Βαθμολογία: ${consensusScore > 0 ? "+" : ""}${consensusScore}`); }
                 else { const d = await r.json(); Alert.alert("Σφάλμα", d.detail || "Αποτυχία"); }
