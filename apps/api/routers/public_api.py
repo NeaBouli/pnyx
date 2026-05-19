@@ -135,6 +135,8 @@ async def api_key_status(x_api_key: Optional[str] = Header(None, alias="X-API-Ke
 @router.get("/bills")
 async def public_bills(
     status: Optional[str] = None,
+    governance: Optional[str] = None,
+    source: Optional[str] = None,
     limit: int = 20, offset: int = 0,
     _key=Depends(rate_limit_check),
     db: AsyncSession = Depends(get_db)
@@ -149,6 +151,16 @@ async def public_bills(
             query = query.where(ParliamentBill.status == BillStatus(status.upper()))
         except ValueError:
             raise HTTPException(400, f"Ungültiger Status: {status}")
+
+    if governance:
+        from models import GovernanceLevel
+        try:
+            query = query.where(ParliamentBill.governance_level == GovernanceLevel(governance.upper()))
+        except ValueError:
+            pass
+
+    if source:
+        query = query.where(ParliamentBill.source == source.upper())
 
     result = await db.execute(query)
     bills = result.scalars().all()

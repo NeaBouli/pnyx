@@ -67,8 +67,15 @@ export interface Bill {
   relevance_score: number;
 }
 
-export async function fetchBills(): Promise<Bill[]> {
-  return request<Bill[]>("/api/v1/bills");
+export async function fetchBills(params?: {
+  governance?: string;
+  source?: string;
+}): Promise<Bill[]> {
+  const qs = new URLSearchParams();
+  qs.set("limit", "100");
+  if (params?.governance) qs.set("governance", params.governance);
+  if (params?.source) qs.set("source", params.source);
+  return request<Bill[]>(`/api/v1/bills?${qs.toString()}`);
 }
 
 export async function fetchBill(id: string): Promise<Bill> {

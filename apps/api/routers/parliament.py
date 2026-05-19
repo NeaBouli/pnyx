@@ -119,11 +119,13 @@ STATUS_LABELS = {
 async def get_bills(
     status_filter: str | None = Query(None, alias="status"),
     category: str | None = Query(None),
+    governance: str | None = Query(None),
+    source: str | None = Query(None),
     limit: int = Query(20, le=100),
     offset: int = Query(0),
     db: AsyncSession = Depends(get_db)
 ):
-    """Gibt Gesetzentwürfe zurück, optional gefiltert nach Status/Kategorie."""
+    """Gibt Gesetzentwürfe zurück, optional gefiltert nach Status/Kategorie/Governance/Source."""
     query = select(ParliamentBill).where(
         ~ParliamentBill.id.like("DEMO-%"),
         ParliamentBill.admin_hidden != True,
@@ -138,6 +140,16 @@ async def get_bills(
             query = query.where(ParliamentBill.status == s)
         except ValueError:
             raise HTTPException(400, f"Ungültiger Status: {status_filter}")
+
+    if governance:
+        from models import GovernanceLevel
+        try:
+            query = query.where(ParliamentBill.governance_level == GovernanceLevel(governance.upper()))
+        except ValueError:
+            pass
+
+    if source:
+        query = query.where(ParliamentBill.source == source.upper())
 
     result = await db.execute(query)
     bills = result.scalars().all()
