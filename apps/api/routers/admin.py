@@ -200,6 +200,17 @@ async def admin_set_party_votes(
     return {"success": True, "bill_id": bill_id, "party_votes": party_votes}
 
 
+@router.post("/scraper/enrich-all")
+async def admin_enrich_all(
+    _key=Depends(verify_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Enrich all parliament bills missing text (4-channel pipeline)."""
+    from services.parliament_fetcher import enrich_all_bills
+    stats = await enrich_all_bills(db)
+    return {"success": True, **stats}
+
+
 @router.post("/diavgeia/convert-to-bills")
 async def admin_convert_diavgeia(
     _key=Depends(verify_admin),
