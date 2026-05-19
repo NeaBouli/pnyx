@@ -37,6 +37,7 @@ export default function VoteScreen({ route, navigation }: Props) {
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [billStatus, setBillStatus] = useState<string>("");
   const [billGovernance, setBillGovernance] = useState<string>("NATIONAL");
+  const [billSource, setBillSource] = useState<string>("PARLIAMENT");
   const [hasVoted, setHasVoted] = useState(false);
   const [isCorrected, setIsCorrected] = useState(false);
   const [consensusScore, setConsensusScore] = useState(0);
@@ -53,7 +54,7 @@ export default function VoteScreen({ route, navigation }: Props) {
     // Load bill status
     fetch(`${API}/api/v1/bills/${encodeURIComponent(billId)}`)
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.status) { setBillStatus(d.status); setBillGovernance(d.governance_level || "NATIONAL"); } })
+      .then(d => { if (d?.status) { setBillStatus(d.status); setBillGovernance(d.governance_level || "NATIONAL"); setBillSource(d.source || "PARLIAMENT"); } })
       .catch(() => {});
   }, [billId]);
 
@@ -210,7 +211,7 @@ export default function VoteScreen({ route, navigation }: Props) {
         </View>
       )}
 
-      {billStatus !== "ANNOUNCED" && (
+      {billStatus !== "ANNOUNCED" && billStatus !== "OPEN_END" && (
         <>
           <Text style={styles.info}>
             {hasVoted && billStatus === "WINDOW_24H" && !isCorrected
@@ -259,7 +260,7 @@ export default function VoteScreen({ route, navigation }: Props) {
             ⚖️ Κλίμακα Συναίνεσης
           </Text>
           <Text style={{ fontSize: 12, color: "#7c3aed", marginBottom: 12 }}>
-            Πόσο συμφωνείτε με την απόφαση της Βουλής;
+            {billSource === "DIAVGEIA" ? "Πόσο συμφωνείτε με αυτή την απόφαση;" : "Πόσο συμφωνείτε με την απόφαση της Βουλής;"}
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
             <Text style={{ fontSize: 10, color: "#ef4444" }}>Αντίσταση</Text>
