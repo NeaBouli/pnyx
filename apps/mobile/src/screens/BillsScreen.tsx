@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Share, Linking } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Share, Linking, ScrollView } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { fetchBills } from "../lib/api";
@@ -42,6 +42,7 @@ export default function BillsScreen() {
     : filter === "DIAVGEIA" ? bills.filter(b => b.source === "DIAVGEIA")
     : filter === "MUNICIPAL" ? bills.filter(b => b.governance_level === "MUNICIPAL")
     : filter === "REGIONAL" ? bills.filter(b => b.governance_level === "REGIONAL")
+    : filter === "OPEN_END" ? bills.filter(b => b.status === "OPEN_END")
     : bills.filter(b => b.status === filter);
 
   const shareBill = async (bill: any) => {
@@ -57,13 +58,13 @@ export default function BillsScreen() {
 
   return (
     <View style={s.container}>
-      <View style={s.filterRow}>
-        {[["ALL", "Όλα"], ["ACTIVE", "Ενεργά"], ["DIAVGEIA", "Διαύγεια"], ["MUNICIPAL", "Δήμος"], ["REGIONAL", "Περιφέρεια"], ["PARLIAMENT_VOTED", "Βουλή"], ["ARWEAVE", "⛓"]].map(([k, l]) => (
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.filterRow} contentContainerStyle={{ gap: 6, paddingHorizontal: 12 }}>
+        {[["ALL", "Όλα"], ["ACTIVE", "Ενεργά"], ["DIAVGEIA", "Διαύγεια"], ["MUNICIPAL", "Δήμος"], ["REGIONAL", "Περιφ."], ["PARLIAMENT_VOTED", "Βουλή"], ["OPEN_END", "Αρχείο"], ["ARWEAVE", "⛓"]].map(([k, l]) => (
           <TouchableOpacity key={k} onPress={() => setFilter(k)} style={[s.filterBtn, filter === k && s.filterActive]}>
             <Text style={[s.filterTxt, filter === k && s.filterTxtActive]}>{l}</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
       <FlatList
         style={{ flex: 1 }}
         data={filtered} keyExtractor={b => b.id} contentContainerStyle={[s.list, { paddingBottom: 120 }]}
@@ -71,7 +72,7 @@ export default function BillsScreen() {
         ListEmptyComponent={<Text style={s.empty}>Δεν βρέθηκαν ψηφοφορίες</Text>}
         renderItem={({ item }) => (
           <TouchableOpacity style={s.card} onPress={() => {
-            if (item.status === "PARLIAMENT_VOTED" || item.status === "OPEN_END")
+            if (item.status === "PARLIAMENT_VOTED")
               nav.navigate("Result", { billId: item.id, billTitle: item.title_el });
             else
               nav.navigate("Vote", { billId: item.id, billTitle: item.title_el });
@@ -107,6 +108,7 @@ export default function BillsScreen() {
                     <Text style={s.shareBtn}>↗</Text>
                   </TouchableOpacity>
                   {VOTABLE.includes(item.status) && <Text style={s.voteHint}>Ψηφίστε →</Text>}
+                  {item.status === "OPEN_END" && <Text style={[s.voteHint, { color: "#7c3aed" }]}>Αξιολόγηση →</Text>}
                 </View>
               </View>
             </View>
@@ -120,7 +122,7 @@ export default function BillsScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background },
-  filterRow: { flexDirection: "row", gap: 6, padding: 12, backgroundColor: colors.surface },
+  filterRow: { paddingVertical: 12, backgroundColor: colors.surface },
   filterBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: colors.surfaceElevated },
   filterActive: { backgroundColor: colors.primary },
   filterTxt: { color: colors.textTertiary, fontSize: 12, fontWeight: "700" },

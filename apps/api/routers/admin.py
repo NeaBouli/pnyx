@@ -200,6 +200,44 @@ async def admin_set_party_votes(
     return {"success": True, "bill_id": bill_id, "party_votes": party_votes}
 
 
+@router.post("/diavgeia/resolve-orgs")
+async def admin_resolve_orgs(
+    _key=Depends(verify_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Resolve all [unknown:XXX] org names via Diavgeia API."""
+    import re
+    import asyncio
+    from services.diavgeia_org_lookup import resolve_unknown_label
+
+    result = await db.execute(
+        text("SELECT id, pill_el FROM parliament_bills WHERE pill_el LIKE '%[unknown:%'")
+    )
+    rows = result.fetchall()
+    resolved = 0
+    failed = 0
+
+    for bill_id, pill_el in rows:
+        match = re.search(r"\[unknown:(\d+)\]", pill_el)
+        if not match:
+            continue
+        uid = match.group(1)
+        label = await resolve_unknown_label(uid)
+        if label:
+            new_pill = pill_el.replace(f"[unknown:{uid}]", label)
+            await db.execute(
+                text("UPDATE parliament_bills SET pill_el = :pill WHERE id = :id"),
+                {"pill": new_pill, "id": bill_id},
+            )
+            resolved += 1
+        else:
+            failed += 1
+        await asyncio.sleep(0.3)  # Rate limit
+
+    await db.commit()
+    return {"success": True, "resolved": resolved, "failed": failed, "total": len(rows)}
+
+
 @router.post("/scraper/enrich-all")
 async def admin_enrich_all(
     _key=Depends(verify_admin),
