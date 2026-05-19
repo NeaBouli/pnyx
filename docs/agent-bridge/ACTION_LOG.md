@@ -58,7 +58,17 @@
 - APK: S10 vC16 installiert ✅, Server deployed ✅
 - Commit: 228b87f
 
-### HEAD: 228b87f
+### Fixes: Konsens + Tabs + Org-Resolve + Lifecycle
+- OPEN_END Bills → VoteScreen mit Konsensierung Slider
+- Tabs: ScrollView horizontal, "Περιφ." kürzer, +Αρχείο Tab
+- "Αξιολόγηση →" statt "Ψηφίστε →" für OPEN_END
+- 97/97 Org-Namen aufgelöst via Diavgeia API
+- GR-cf7398d9: war PARLIAMENT_VOTED (Lifecycle hatte funktioniert)
+- APK vC16: S10 ✅ + Server ✅
+- AAB: ~/Desktop/ekklesia-v1.3.0-vC16-PLAY.aab (45M)
+- Commits: 513502a, 91b5093
+
+### HEAD: 91b5093
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
