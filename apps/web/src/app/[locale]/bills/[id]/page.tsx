@@ -18,7 +18,7 @@ const VOTE_OPTIONS = [
   { value: "UNKNOWN", label_el: "Δεν γνωρίζω αρκετά", label_en: "Don't know enough", color: "bg-yellow-500 hover:bg-yellow-600 border-yellow-400 text-white" },
 ];
 
-const VOTABLE = ["ACTIVE", "WINDOW_24H", "OPEN_END"];
+const VOTABLE = ["ACTIVE", "WINDOW_24H"];
 
 export default function BillDetailPage({ params }: { params: { id: string } }) {
   const locale = useLocale();
@@ -388,6 +388,53 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
           </div>
         )}
 
+
+        {/* ── Konsensierung für OPEN_END Bills ── */}
+        {bill?.status === "OPEN_END" && (
+          <div className="bg-purple-50 border border-purple-200 rounded-2xl p-6 mb-6">
+            <h3 className="text-lg font-bold text-purple-800 mb-2">
+              ⚖️ {locale === "el" ? "Κλίμακα Συναίνεσης" : "Consensus Scale"}
+            </h3>
+            <p className="text-purple-600 text-sm mb-4">
+              {locale === "el"
+                ? (bill as any).source === "DIAVGEIA"
+                  ? "Πόσο συμφωνείτε με αυτή την απόφαση;"
+                  : "Πόσο συμφωνείτε με την απόφαση της Βουλής;"
+                : "How much do you agree with this decision?"}
+            </p>
+            <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+              <span>{locale === "el" ? "Αντίσταση" : "Resistance"}</span>
+              <span>{locale === "el" ? "Ουδέτερο" : "Neutral"}</span>
+              <span>{locale === "el" ? "Συναίνεση" : "Consensus"}</span>
+            </div>
+            <div className="flex gap-1.5 justify-center flex-wrap">
+              {[-5,-4,-3,-2,-1,0,1,2,3,4,5].map(v => (
+                <span key={v} className={`w-9 h-9 flex items-center justify-center rounded-lg text-xs font-bold border ${
+                  v > 0 ? "bg-green-50 text-green-700 border-green-200" :
+                  v < 0 ? "bg-red-50 text-red-700 border-red-200" :
+                  "bg-gray-50 text-gray-500 border-gray-200"
+                }`}>
+                  {v > 0 ? "+" : ""}{v}
+                </span>
+              ))}
+            </div>
+            {(bill as any).consensus_count > 0 && (
+              <div className="mt-4 text-center">
+                <span className="text-2xl font-black text-purple-700">
+                  {((bill as any).consensus_score || 0) > 0 ? "+" : ""}{((bill as any).consensus_score || 0).toFixed(1)}
+                </span>
+                <span className="text-sm text-purple-500 ml-2">
+                  ({(bill as any).consensus_count} {locale === "el" ? "αξιολογήσεις" : "ratings"})
+                </span>
+              </div>
+            )}
+            <p className="text-xs text-purple-400 text-center mt-3">
+              {locale === "el"
+                ? "Η αξιολόγηση γίνεται μέσω της εφαρμογής εκκλησία (Ed25519 υπογραφή)"
+                : "Rating requires the ekklesia app (Ed25519 signature)"}
+            </p>
+          </div>
+        )}
 
         {/* Results hidden message for ACTIVE bills */}
         {results && results.total_votes === 0 && bill?.status === "ACTIVE" && (
