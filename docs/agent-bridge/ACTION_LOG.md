@@ -52,8 +52,13 @@
 - Linear: NEA-210 → Done
 - Commit: 34b7835
 
-### HEAD: 34b7835
-### Offen: S10 APK Install (vC15 Bugfix + NEA-199 Badge + 4-Kanal)
+### vC16 v1.3.0 Build + Deploy
+- Diavgeia Bills: 100 → OPEN_END (sichtbar + abstimmbar)
+- App: ΔΙΑΥΓΕΙΑ Badge, Filter Δήμος/Περιφέρεια/Διαύγεια
+- APK: S10 vC16 installiert ✅, Server deployed ✅
+- Commit: 228b87f
+
+### HEAD: 228b87f
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
