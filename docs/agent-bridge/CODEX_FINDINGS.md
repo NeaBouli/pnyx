@@ -6,6 +6,22 @@ Scope: NEA-221 Gegenpruefung — Tab-Layout, Konsensierung Crash, Web/App Sync
 Repo: `/Users/gio/Desktop/repo/pnyx`
 HEAD: `37c6707` (`chore(bridge): vC16 fixes deployed — 97 orgs resolved, S10+Server+AAB`)
 
+## Recheck-Status 2026-05-20 00:51 EEST
+
+Quelle: Gio/CC-Live-Teststand aus aktiver NEA-221 Session.
+
+- C-01 Public API Felder: VERIFIED_FIXED laut bereits erfolgter Live-Verifikation.
+- C-04 BillDetail Felder: VERIFIED_FIXED laut bereits erfolgter Live-Verifikation.
+- C-03 Konsensierung Signatur: RECHECK_IN_PROGRESS.
+  - S10 ist auf vC16: `versionCode=16 minSdk=24 targetSdk=36`.
+  - Test-Account wurde per Deep-Link importiert.
+  - Nullifier fuer Test-Account: dokumentiert nur als gekuerzter Prefix `ca7e108d...` wegen Secret-/Identifier-Hygiene.
+  - Manueller Test offen: Bills-Tab oeffnen, Diavgeia `OPEN_END` Bill oeffnen, pruefen dass nur Konsensierung-Slider erscheint, Slider bewerten und `Υποβολή Βαθμολογίας` absenden.
+- C-02 Konsensierungspfad: DOCUMENTED, kein Code-Bug. Kanonischer Pfad bleibt `/api/v1/vote/{bill_id}/consensus`.
+- Web-Paritaet: DEFERRED Phase 2 (`DIAVGEIA` Badge, Web-Konsensierung, Web `results_hidden`).
+
+Hinweis: C-03 darf erst auf VERIFIED_FIXED gesetzt werden, wenn der S10-Test erfolgreich abgeschlossen und die Backend-Antwort/Live-Aggregation plausibel ist.
+
 ## Kritische Findings
 
 ### C-01 — Public Bills API ist nicht NEA-221-komplett

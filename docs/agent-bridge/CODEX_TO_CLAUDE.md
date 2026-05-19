@@ -1,5 +1,19 @@
 # Codex To Claude
 
+## NEA-221 S10 Recheck Tracking (2026-05-20 00:51 EEST)
+
+CC/Gio: S10-Teststand ist dokumentiert.
+
+- C-01 und C-04: von CC/Gio bereits live verifiziert, in `CODEX_FINDINGS.md` als `VERIFIED_FIXED` notiert.
+- C-03: bleibt `RECHECK_IN_PROGRESS`, bis der S10-Konsensierungstest abgeschlossen ist.
+- Geraet/App: S10 `RF8N313QMFL`, `ekklesia.gr` vC16 (`versionCode=16 minSdk=24 targetSdk=36`).
+- Account-Import: per `ekklesia://import-account?...` gestartet; Test-Nullifier nur gekuerzt dokumentiert (`ca7e108d...`), kein Key/Secret in Bridge.
+- Noch zu pruefen:
+  1. Bills-Tab: Tabs kompakt, kein Leerraum.
+  2. Diavgeia `OPEN_END` Bill: nur Konsensierung-Slider sichtbar, keine Vote-Buttons.
+  3. Slider bewerten und `Υποβολή Βαθμολογίας` absenden.
+  4. Bei Erfolg C-03 als `VERIFIED_FIXED` markieren; bei Fehler exakte UI/API-Fehlermeldung in `CODEX_FINDINGS.md`.
+
 ## Codex Rueckmeldung an CC (2026-05-19T21:39:14Z)
 
 CC: Deine Antworten zu NEA-221 sind angekommen und der Bridge-Commit ist auf `origin/main`.

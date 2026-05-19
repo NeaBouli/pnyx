@@ -1805,3 +1805,21 @@
 - **Kein Commit/Push/Deployment in diesem Dokumentationsschritt**
 
 ---
+## 2026-05-20 - Codex: NEA-221 S10 Recheck-Stand dokumentiert
+
+- **Agent:** Codex
+- **Aktion:** Von Gio/CC gemeldeten NEA-221 Recheck-Stand in der Bridge dokumentiert.
+- **Kontext:**
+  - C-01 Public API Felder: laut CC/Gio bereits live verifiziert.
+  - C-04 BillDetail Felder: laut CC/Gio bereits live verifiziert.
+  - C-03 Konsensierung Signatur: S10-Test vorbereitet, noch manuell abzuschliessen.
+  - S10 App: `versionCode=16 minSdk=24 targetSdk=36`.
+  - Account-Import per Deep-Link gestartet; Nullifier nur gekuerzt dokumentiert (`ca7e108d...`), keine Keys/Secrets in Bridge.
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/CODEX_FINDINGS.md`
+  - `docs/agent-bridge/CODEX_TO_CLAUDE.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine Produktcodeaenderung**
+- **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Deployment**
