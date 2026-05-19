@@ -47,6 +47,7 @@ class BillSummary(BaseModel):
     arweave_tx_id:       str | None = None
     consensus_score:     float | None = None
     consensus_count:     int | None = 0
+    results_visibility:  str | None = "HIDDEN"
 
 class BillDetail(BaseModel):
     id:                     str
@@ -149,6 +150,7 @@ async def get_bills(
         arweave_tx_id=b.arweave_tx_id,
         consensus_score=b.consensus_score,
         consensus_count=b.consensus_count or 0,
+        results_visibility=b.results_visibility or "HIDDEN",
     ) for b in bills]
 
 

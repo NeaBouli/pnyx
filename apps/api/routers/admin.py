@@ -45,6 +45,7 @@ class BillUpdateRequest(BaseModel):
     categories:            Optional[list] = None
     party_votes_parliament: Optional[dict] = None
     ai_summary_reviewed:   Optional[bool] = None
+    results_visibility:    Optional[str] = None  # HIDDEN | WINDOW | ALWAYS
 
 
 class BillCreateRequest(BaseModel):

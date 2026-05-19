@@ -7,6 +7,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
 type BillStatus = 'ANNOUNCED' | 'ACTIVE' | 'WINDOW_24H' | 'PARLIAMENT_VOTED' | 'OPEN_END'
 type GovernanceLevel = 'NATIONAL' | 'REGIONAL' | 'MUNICIPAL' | 'COMMUNITY'
+type ResultsVisibility = 'HIDDEN' | 'WINDOW' | 'ALWAYS'
 
 interface Bill {
   id: number
@@ -16,6 +17,7 @@ interface Bill {
   summary_long_el?: string
   status: BillStatus
   governance_level: GovernanceLevel
+  results_visibility?: ResultsVisibility
   created_at: string
   source_url?: string
   ai_summary_reviewed?: boolean
@@ -45,6 +47,18 @@ const GOVERNANCE_LABELS: Record<GovernanceLevel, string> = {
 }
 
 const ALL_STATUSES: BillStatus[] = ['ANNOUNCED', 'ACTIVE', 'WINDOW_24H', 'PARLIAMENT_VOTED', 'OPEN_END']
+
+const VISIBILITY_LABELS: Record<ResultsVisibility, string> = {
+  HIDDEN: 'Κρυφά',
+  WINDOW: 'Παράθυρο 24ω',
+  ALWAYS: 'Πάντα ορατά',
+}
+
+const VISIBILITY_COLORS: Record<ResultsVisibility, string> = {
+  HIDDEN: 'bg-gray-100 text-gray-600',
+  WINDOW: 'bg-yellow-100 text-yellow-700',
+  ALWAYS: 'bg-green-100 text-green-700',
+}
 
 const PARTIES = ['ΝΔ', 'ΣΥΡΙΖΑ', 'ΠΑΣΟΚ', 'ΚΚΕ', 'ΕΛ', 'ΝΙΚΗ', 'ΠΛ', 'ΣΠΑΡΤ'] as const
 const PARTY_VOTE_OPTIONS = ['—', 'ΝΑΙ', 'ΟΧΙ', 'ΑΠΟΧΗ'] as const
@@ -144,6 +158,19 @@ export default function BillsPage() {
       setBills((prev) => prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b)))
     } catch {
       setError('Αδύνατη η αλλαγή κατάστασης')
+    }
+  }
+
+  async function handleVisibilityChange(id: number, visibility: ResultsVisibility) {
+    try {
+      await fetch(`/api/proxy/admin/bills/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ results_visibility: visibility }),
+      })
+      setBills((prev) => prev.map((b) => (b.id === id ? { ...b, results_visibility: visibility } : b)))
+    } catch {
+      setError('Αδύνατη η αλλαγή ορατότητας αποτελεσμάτων')
     }
   }
 
@@ -349,6 +376,7 @@ export default function BillsPage() {
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Τίτλος</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Κατάσταση</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Επίπεδο</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Αποτελέσματα</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">AI</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Ημερομηνία</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Ενέργειες</th>
@@ -374,6 +402,17 @@ export default function BillsPage() {
                       </select>
                     </td>
                     <td className="px-4 py-3 text-gray-600 text-xs">{GOVERNANCE_LABELS[bill.governance_level]}</td>
+                    <td className="px-4 py-3">
+                      <select
+                        value={bill.results_visibility || 'HIDDEN'}
+                        onChange={(e) => handleVisibilityChange(bill.id, e.target.value as ResultsVisibility)}
+                        className={`px-2 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${VISIBILITY_COLORS[bill.results_visibility || 'HIDDEN']}`}
+                      >
+                        {(['HIDDEN', 'WINDOW', 'ALWAYS'] as ResultsVisibility[]).map((v) => (
+                          <option key={v} value={v}>{VISIBILITY_LABELS[v]}</option>
+                        ))}
+                      </select>
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                         bill.ai_summary_reviewed ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
