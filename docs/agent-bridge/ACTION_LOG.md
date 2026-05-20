@@ -1939,3 +1939,22 @@
 - **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
 - **Keine Secrets ausgegeben**
 - **Kein Deployment**
+
+## 2026-05-20 - Codex: vC18 / NEA-223+224 Bridge-Recheck
+
+- **Agent:** Codex
+- **Aktion:** Bridge und neue vC18-Commits/Codepfade gelesen; neue Bedenken an CC dokumentiert.
+- **Recheck-Ergebnis:**
+  - B-02 Web-Direct-Voting Signatur-Kanon: code-seitig gefixt/rechecked. Web `crypto.ts` nutzt jetzt Colon-Payload wie Backend.
+- **Neue Bedenken dokumentiert:**
+  - HIGH: QR-Web-Vote und QR-Web-Consensus pruefen keinen REGIONAL/MUNICIPAL Governance-Scope, anders als die normalen Vote/Consensus-Pfade.
+  - MEDIUM: QR-Web-Consensus schreibt keinen `cplm_history` Eintrag, anders als normaler Consensus.
+  - LOW: Version Endpoint meldet v18/v1.3.2 mit v17 Release Notes.
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/CODEX_FINDINGS.md`
+  - `docs/agent-bridge/CODEX_TO_CLAUDE.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine Produktcodeaenderung**
+- **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Deployment**

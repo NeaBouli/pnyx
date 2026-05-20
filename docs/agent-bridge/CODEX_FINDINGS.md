@@ -58,6 +58,78 @@ Empfehlung:
 - Danach Web-Crypto-Tests aktualisieren; die aktuellen Kommentare/Tests behaupten noch JSON-sort-keys als Backend-Erwartung.
 - Smoke-Test: Web Direct Vote mit lokalem Keypair gegen `/api/v1/vote` pruefen.
 
+## Codex Recheck 2026-05-20 08:01 UTC — vC18 / NEA-223+224
+
+### B-02 Recheck — Web-Direct-Voting Signatur-Kanon
+
+Status: RESOLVED_CODE_RECHECKED
+Severity: HIGH
+
+CC hat `apps/web/src/lib/crypto.ts` auf Colon-Payload umgestellt. Code-Recheck:
+
+- `apps/web/src/lib/crypto.ts:79` bis `apps/web/src/lib/crypto.ts:85` baut jetzt `bill_id:vote:nullifier_hash`.
+- `apps/web/src/lib/crypto.ts:95` bis `apps/web/src/lib/crypto.ts:99` signiert genau diese Nachricht.
+- Backend erwartet fuer normale Votes weiterhin `f"{req.bill_id}:{req.vote.upper()}:{req.nullifier_hash}"` in `apps/api/routers/voting.py:246` bis `apps/api/routers/voting.py:249`.
+
+Damit ist der urspruengliche B-02 Codepfad gefixt. Live-Smoke-Test Web-Direct-Vote wurde von Codex nicht ausgefuehrt.
+
+### N-01 — QR-Web-Vote/Consensus umgehen Governance-Scope fuer REGIONAL/MUNICIPAL
+
+Status: OPEN
+Severity: HIGH
+
+Normale API-Pfade erzwingen Regional-/Municipal-Scope:
+
+- Vote: `apps/api/routers/voting.py:223` bis `apps/api/routers/voting.py:238`
+- Consensus: `apps/api/routers/voting.py:650` bis `apps/api/routers/voting.py:659`
+
+Die neuen QR-Web-Pfade pruefen zwar QR-Session, Identitaet, Bill-ID und Status, aber nicht `governance_level` gegen `identity.periferia_id` / `identity.dimos_id`:
+
+- QR Vote: `apps/api/routers/polis_qr.py:237` bis `apps/api/routers/polis_qr.py:260`
+- QR Consensus: `apps/api/routers/polis_qr.py:340` bis `apps/api/routers/polis_qr.py:357`
+
+Risiko: Ein authentifizierter QR-Web-Flow kann fuer REGIONAL/MUNICIPAL Bills denselben Schutz umgehen, den `/api/v1/vote` und `/api/v1/vote/{bill_id}/consensus` bereits haben. Das betrifft direkt NEA-223 Region Auth.
+
+Empfehlung: Gemeinsamen Helper fuer Governance-Scope extrahieren und in allen vier Pfaden verwenden:
+
+- normal vote
+- normal consensus
+- QR web vote
+- QR web consensus
+
+### N-02 — QR-Web-Consensus schreibt keinen `cplm_history` Eintrag
+
+Status: OPEN
+Severity: MEDIUM
+
+Normaler Consensus aktualisiert neben `consensus_votes` und Bill-Aggregat auch den personalisierten CPLM-Verlauf:
+
+- `apps/api/routers/voting.py:685` bis `apps/api/routers/voting.py:690`
+
+QR-Web-Consensus macht nur:
+
+- Upsert `consensus_votes`: `apps/api/routers/polis_qr.py:359` bis `apps/api/routers/polis_qr.py:365`
+- Bill-Aggregat: `apps/api/routers/polis_qr.py:367` bis `apps/api/routers/polis_qr.py:373`
+
+Risiko: Mobile/API-Consensus und Web-QR-Consensus erzeugen unterschiedliche Personal-Compass-Daten. `/api/v1/vote/compass/personal` liest `cplm_history`, deshalb fehlt Web-QR-Consensus dort.
+
+Empfehlung: QR-Web-Consensus muss denselben `cplm_history` Insert wie `submit_consensus` ausfuehren oder bewusst dokumentieren, warum QR-Web-Consensus nicht in den Compass einfliessen soll.
+
+### N-03 — Version Endpoint v18 mit v17 Release Notes
+
+Status: OPEN
+Severity: LOW
+
+`apps/api/routers/app_version.py` meldet:
+
+- `LATEST_VERSION = "1.3.2"`
+- `LATEST_VERSION_CODE = 18`
+- Release Notes aber weiterhin `v17 ...`
+
+Code-Beleg: `apps/api/routers/app_version.py:11` bis `apps/api/routers/app_version.py:17`.
+
+Risiko: Update-Dialog/Clients zeigen falsche Release Notes fuer vC18. Kein Sicherheitsblocker.
+
 ## Kritische Findings
 
 ### C-01 — Public Bills API ist nicht NEA-221-komplett
