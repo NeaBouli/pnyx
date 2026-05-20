@@ -182,12 +182,13 @@
 - Resync: 19/85 Topics Body aktualisiert (66 Discourse Rate-Limit)
 - Commit: 82bbf54
 
-### Codex Findings vC18 (2026-05-20 08:01 UTC) — OFFEN
-1. **HIGH**: QR-Vote/Consensus umgehen Governance-Scope (periferia_id/dimos_id nicht geprüft)
-2. **MEDIUM**: QR-Consensus schreibt keinen cplm_history Eintrag
-3. **LOW**: app_version.py v18 mit v17 Release Notes
+### Codex Findings vC18 — ALLE GEFIXT
+1. **HIGH**: QR Governance-Scope → **FIXED** (periferia_id/dimos_id geprüft)
+2. **MEDIUM**: QR cplm_history → **FIXED** (weight * 0.05)
+3. **LOW**: Release Notes → **FIXED** (v18)
+- Commit: 0e56403
 
-### HEAD: 82bbf54
+### HEAD: 0e56403
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
