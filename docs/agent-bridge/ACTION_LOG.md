@@ -188,7 +188,16 @@
 3. **LOW**: Release Notes → **FIXED** (v18)
 - Commit: 0e56403
 
-### HEAD: 92847ba
+### NEA-223: Region Sync Fix + Banner + vC19
+- Root cause: Nullifier Key-Mismatch (ekklesia_nullifier vs ekklesia:nullifier:v1)
+- ProfileScreen: liest jetzt beide Keys → Region-Sync zum Server funktioniert
+- BillsScreen: Banner "Ορίστε εκλογική περιφέρεια" wenn keine Region
+- Vote/Consensus Berechtigung: API-seitig bereits implementiert (voting.py + polis_qr.py)
+- vC19 v1.3.3: APK Server ✅, S10 ausstehend (nicht verbunden)
+- AAB: ~/Desktop/ekklesia-v1.3.3-vC19-PLAY.aab
+- Commit: 181486e
+
+### HEAD: 181486e
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
