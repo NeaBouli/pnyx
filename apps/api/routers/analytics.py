@@ -43,8 +43,9 @@ async def compute_divergence(db: AsyncSession, bill_id: str, bill: ParliamentBil
 async def analytics_overview(db: AsyncSession = Depends(get_db)):
     """Plattform-weite Statistiken + Divergence Übersicht."""
     _real = ~ParliamentBill.id.like("DEMO-%")
+    _real_vote = ~CitizenVote.bill_id.like("DEMO-%")
     total_bills  = await db.scalar(select(func.count(ParliamentBill.id)).where(_real)) or 0
-    total_votes  = await db.scalar(select(func.count(CitizenVote.id))) or 0
+    total_votes  = await db.scalar(select(func.count(CitizenVote.id)).where(_real_vote)) or 0
     active_bills = await db.scalar(
         select(func.count(ParliamentBill.id)).where(
             _real,
@@ -60,16 +61,16 @@ async def analytics_overview(db: AsyncSession = Depends(get_db)):
 
     week_ago = datetime.utcnow() - timedelta(days=7)  # naive to match DB column
     recent_votes = await db.scalar(
-        select(func.count(CitizenVote.id)).where(CitizenVote.created_at >= week_ago)
+        select(func.count(CitizenVote.id)).where(_real_vote, CitizenVote.created_at >= week_ago)
     ) or 0
 
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     today_votes = await db.scalar(
-        select(func.count(CitizenVote.id)).where(CitizenVote.created_at >= today)
+        select(func.count(CitizenVote.id)).where(_real_vote, CitizenVote.created_at >= today)
     ) or 0
 
     result = await db.execute(
-        select(ParliamentBill).where(ParliamentBill.status == BillStatus.PARLIAMENT_VOTED)
+        select(ParliamentBill).where(_real, ParliamentBill.status == BillStatus.PARLIAMENT_VOTED)
     )
     voted = result.scalars().all()
 

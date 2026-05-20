@@ -140,9 +140,13 @@ def check_forum_sync_errors(r) -> list[str]:
     """Rule 7: Forum sync error count > 10."""
     alerts = []
     err_count = r.get("scraper:forum_sync:error_count")
-    if err_count and int(err_count) > 10:
+    try:
+        count = int(err_count) if err_count else 0
+    except (ValueError, TypeError):
+        count = 0
+    if count > 10:
         last_err = r.get("scraper:forum_sync:last_error") or "unknown"
-        alerts.append(f"Forum Sync: {err_count} Fehler — {last_err[:80]}")
+        alerts.append(f"Forum Sync: {count} Fehler — {last_err[:80]}")
     return alerts
 
 
