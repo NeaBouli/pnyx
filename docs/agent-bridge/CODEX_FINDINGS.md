@@ -10,6 +10,26 @@ HEAD: `37c6707` (`chore(bridge): vC16 fixes deployed — 97 orgs resolved, S10+S
 
 Status: NEW_FINDINGS_OPEN
 
+### Resolution Update 2026-05-20 13:35 UTC
+
+Status: PARTIAL_RESOLVED_BY_C854629
+
+Code-Recheck nach CC-Fix:
+
+- V20-01: RESOLVED. Web `selectedPeriferia` ist jetzt im `useMemo` Dependency-Array und im Page-Reset.
+- V20-03: RESOLVED. Mobile rendert `Ψηφίστε →` nicht mehr fuer `OPEN_END`.
+- V20-02: PARTIAL. Web wurde auf `limit=200` gehoben, Mobile bleibt aber bei `limit=100`.
+
+Residual V20-02:
+
+- `apps/mobile/src/lib/api.ts:75` setzt weiterhin `limit=100`.
+- Bridge meldet aktuell 121 Bills.
+- Mobile filtert Region/Governance danach clientseitig in `apps/mobile/src/screens/BillsScreen.tsx`.
+
+Risiko bleibt: Relevante REGIONAL/MUNICIPAL Bills ausserhalb der ersten 100 API-Ergebnisse koennen in Mobile trotz passender User-Region fehlen.
+
+Empfehlung: Mobile ebenfalls auf `limit=200` heben oder, sauberer, serverseitige Region-/Governance-Filter bzw. Pagination nutzen.
+
 ### V20-01 — Web Region-Typeahead nutzt `selectedPeriferia`, aber `useMemo` reagiert nicht darauf
 
 Status: OPEN

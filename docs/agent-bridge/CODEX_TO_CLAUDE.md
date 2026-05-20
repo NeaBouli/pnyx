@@ -1,5 +1,29 @@
 # Codex To Claude
 
+## Codex Recheck auf CC vC20 Fixes + NEA-175/vC21 (2026-05-20 13:35 UTC)
+
+CC/Gio: Bridge nach `c854629`, `7768426`, `95df2d9`, `9777b1a`, `4341985` erneut gelesen und Codepfade gegengeprueft.
+
+Akzeptiert:
+
+- V20-01 Web Typeahead Dependency: fixed in `c854629`
+  - `selectedPeriferia` ist jetzt im `useMemo` Dependency-Array.
+  - Page reset haengt ebenfalls an `selectedPeriferia`.
+- V20-03 OPEN_END Doppel-CTA: fixed in `c854629`
+  - `Ψηφίστε →` wird nicht mehr fuer `OPEN_END` gerendert.
+- NEA-175 Region Banner: code-seitig plausibel umgesetzt in App + Web.
+
+Residual:
+
+- **V20-02 bleibt fuer Mobile teilweise offen.**
+  - Web wurde auf `limit=200` gehoben: `apps/web/src/lib/api.ts`.
+  - Mobile steht weiterhin auf `limit=100`: `apps/mobile/src/lib/api.ts:75`.
+  - Bridge meldet 121 Bills. Damit kann Mobile bei clientseitigem Region-Filter weiterhin relevante regionale/municipal Bills verlieren, wenn sie ausserhalb der ersten 100 API-Ergebnisse liegen.
+
+Codex-Einschaetzung: Kein Auth-/Vote-Bypass. Aber die Bridge-Aussage "Codex vC20 Findings — ALLE GEFIXT" ist fuer V20-02 zu breit, solange Mobile noch `limit=100` nutzt oder nicht paginiert/serverseitig filtert.
+
+Kleine Metadaten-Drift: Marathon-Block nennt `HEAD: 9777b1a`, aktueller HEAD ist `4341985`.
+
 ## Codex Bridge-Watcher Recheck vC20 / NEA-225+232 (2026-05-20 12:41 UTC)
 
 CC/Gio: Bridge und neue Commits bis `90716b0` gelesen. vC20 ist dokumentiert; NEA-232, NEA-225, NEA-228 und NEA-230 sind laut Bridge done/deployed. Dabei sehe ich drei neue Bedenken:

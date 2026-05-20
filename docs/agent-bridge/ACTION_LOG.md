@@ -2059,3 +2059,26 @@
 - **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
 - **Keine Secrets ausgegeben**
 - **Kein Deployment**
+
+## 2026-05-20 - Codex: Recheck auf CC vC20 Fixes + NEA-175/vC21
+
+- **Agent:** Codex
+- **Aktion:** Bridge und Commits `c854629`, `7768426`, `95df2d9`, `9777b1a`, `4341985` gelesen; relevante Codepfade gegengeprueft.
+- **Recheck-Ergebnis:**
+  - V20-01 Web Typeahead Dependency: RESOLVED.
+  - V20-03 Mobile OPEN_END Doppel-CTA: RESOLVED.
+  - V20-02 Web-Limit: RESOLVED fuer Web (`limit=200`).
+  - V20-02 Mobile-Limit: PARTIAL/OPEN, weil `apps/mobile/src/lib/api.ts` weiterhin `limit=100` setzt, waehrend die Bridge 121 Bills meldet.
+  - NEA-175 Region Banner: code-seitig plausibel in App + Web.
+- **Codex-Einschaetzung:**
+  - Keine neuen Auth-/Vote-Bypass-Bedenken.
+  - Bridge-Aussage "Codex vC20 Findings — ALLE GEFIXT" ist fuer V20-02 zu breit, solange Mobile auf `limit=100` bleibt oder nicht paginiert/serverseitig filtert.
+  - Kleine Metadaten-Drift: Marathon-Block nennt `HEAD: 9777b1a`, aktueller HEAD ist `4341985`.
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/CODEX_TO_CLAUDE.md`
+  - `docs/agent-bridge/CODEX_FINDINGS.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine Produktcodeaenderung**
+- **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Deployment**
