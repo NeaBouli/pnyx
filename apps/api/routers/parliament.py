@@ -123,7 +123,7 @@ async def get_bills(
     category: str | None = Query(None),
     governance: str | None = Query(None),
     source: str | None = Query(None),
-    limit: int = Query(20, le=100),
+    limit: int = Query(20, le=500),
     offset: int = Query(0),
     db: AsyncSession = Depends(get_db)
 ):
