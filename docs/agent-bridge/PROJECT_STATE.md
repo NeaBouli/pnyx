@@ -13,11 +13,11 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `0c6db62` (fix: NEA-236 aggregate arweave alerts + truncate telegram)
+- **HEAD:** `49e24ba` (chore(bridge): NEA-236 health-check 15 rules + cron documented)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`
 - **Rollback:** `pre-session-20260518` → `5349b39`
 - **Remote:** synchron mit GitHub
-- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `ac1bbaf` (deployed 2026-05-21, API+Monitor+Web rebuilt)
+- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `49e24ba` (deployed 2026-05-21, Monitor rebuilt, Cronjob 06:00 UTC aktiv)
 
 ## Uncommitted Aenderungen
 

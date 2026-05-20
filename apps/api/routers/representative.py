@@ -343,3 +343,59 @@ async def get_rep_divergence(
         "divergence_pct": divergence,
         "governance_level": bill.governance_level.value if bill.governance_level else "NATIONAL",
     }
+
+
+# ─── NEA-189: Evaluation Consent ────────────────────────────────────────────
+
+
+@router.post("/enable-evaluation")
+async def enable_evaluation(
+    rep: dict = Depends(verify_rep_token),
+    db: AsyncSession = Depends(get_db),
+):
+    """Representative consents to being evaluated by verified citizens."""
+    await db.execute(text(
+        "UPDATE representative_tokens SET evaluation_enabled = TRUE WHERE ada_number = :ada"
+    ), {"ada": rep["ada_number"]})
+    await db.commit()
+    logger.info("[REP] Evaluation enabled: ada=%s", rep["ada_number"])
+    return {"ada_number": rep["ada_number"], "evaluation_enabled": True}
+
+
+@router.get("/my-scores")
+async def get_my_scores(
+    rep: dict = Depends(verify_rep_token),
+    db: AsyncSession = Depends(get_db),
+):
+    """Representative views their own evaluation scores."""
+    result = await db.execute(text("""
+        SELECT eq.id, eq.question_el, eq.category,
+               ROUND(AVG(pe.score)::numeric, 2) AS avg_score,
+               COUNT(pe.id) AS vote_count
+        FROM evaluation_questions eq
+        LEFT JOIN politician_evaluations pe
+            ON pe.question_id = eq.id AND pe.ada_number = :ada
+        WHERE eq.active = TRUE
+        GROUP BY eq.id, eq.question_el, eq.category
+        ORDER BY eq.id
+    """), {"ada": rep["ada_number"]})
+    rows = result.fetchall()
+
+    questions = [{
+        "question_id": r[0], "question_el": r[1], "category": r[2],
+        "avg_score": float(r[3]) if r[3] is not None else None,
+        "vote_count": r[4],
+    } for r in rows]
+
+    total_avg = None
+    total_count = sum(q["vote_count"] for q in questions)
+    if total_count > 0:
+        scored = [q["avg_score"] for q in questions if q["avg_score"] is not None]
+        total_avg = round(sum(scored) / len(scored), 2) if scored else None
+
+    return {
+        "ada_number": rep["ada_number"],
+        "questions": questions,
+        "total_avg": total_avg,
+        "total_evaluations": total_count,
+    }

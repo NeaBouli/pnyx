@@ -23,6 +23,18 @@ body{font-family:system-ui,sans-serif;background:var(--dark);color:#e2e8f0;min-h
 .btn-gold{background:var(--gold);color:var(--dark)}.btn-gold:hover{background:#d97706}
 .btn-outline{background:transparent;border:2px solid #334155;color:var(--gray)}.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
 
+/* Evaluation */
+#evalScreen{display:none}
+.eval-status{text-align:center;padding:24px 0;font-size:15px;color:var(--green);font-weight:700}
+.eval-consent{text-align:center;padding:20px 0}
+.eval-consent label{display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;color:#e2e8f0;margin-bottom:16px;cursor:pointer}
+.eval-consent input[type=checkbox]{width:18px;height:18px;accent-color:var(--gold)}
+.score-card{background:#1e293b;border:1px solid #334155;border-radius:var(--radius);padding:14px;margin-bottom:10px}
+.score-card .q{font-size:13px;color:#e2e8f0;font-weight:600;margin-bottom:4px}
+.score-card .cat{font-size:10px;color:var(--gray);text-transform:uppercase;letter-spacing:1px}
+.score-card .val{font-size:20px;font-weight:900;color:var(--gold);float:right;margin-top:-28px}
+.score-card .cnt{font-size:11px;color:var(--gray)}
+
 /* Bills */
 #billsScreen{display:none}
 .bill-card{background:#1e293b;border:1px solid #334155;border-radius:var(--radius);padding:16px;margin-bottom:12px}
@@ -67,10 +79,17 @@ body{font-family:system-ui,sans-serif;background:var(--dark);color:#e2e8f0;min-h
     <h2 style="font-size:16px;font-weight:800;color:var(--gold);margin-bottom:16px">Ψηφοφορίες</h2>
     <div id="billsList"><div class="loading">Φόρτωση...</div></div>
   </div>
+
+  <!-- Evaluation Screen -->
+  <div id="evalScreen">
+    <h2 style="font-size:16px;font-weight:800;color:var(--gold);margin-bottom:16px">Αξιολόγηση</h2>
+    <div id="evalContent"><div class="loading">Φόρτωση...</div></div>
+  </div>
 </div>
 
 <div class="nav-bar" id="navBar">
-  <a href="#" class="active" onclick="showBills()">Ψηφοφορίες</a>
+  <a href="#" class="active" id="navBills" onclick="showBills()">Ψηφοφορίες</a>
+  <a href="#" id="navEval" onclick="showEval()">Αξιολόγηση</a>
   <a href="#" onclick="doLogout()">Αποσύνδεση</a>
 </div>
 
@@ -146,7 +165,69 @@ async function loadResults(billId){
   }catch(e){document.getElementById('billsList').innerHTML='<p style="color:var(--red)">Σφάλμα</p>'}
 }
 
-function showBills(){loadBills()}
+function showBills(){
+  document.getElementById('billsScreen').style.display='block';
+  document.getElementById('evalScreen').style.display='none';
+  document.getElementById('navBills').classList.add('active');
+  document.getElementById('navEval').classList.remove('active');
+  loadBills();
+}
+function showEval(){
+  document.getElementById('billsScreen').style.display='none';
+  document.getElementById('evalScreen').style.display='block';
+  document.getElementById('navBills').classList.remove('active');
+  document.getElementById('navEval').classList.add('active');
+  loadEvalScreen();
+}
+async function loadEvalScreen(){
+  var el=document.getElementById('evalContent');
+  el.innerHTML='<div class="loading">Φόρτωση...</div>';
+  try{
+    // Check if evaluation is enabled via my-scores (returns data if token is valid)
+    var r=await fetch(API+'/api/v1/rep/my-scores',{headers:{'Authorization':'Bearer '+token}});
+    if(r.status===401){doLogout();return}
+    var d=await r.json();
+    var html='';
+    // Check enable status
+    var sr=await fetch(API+'/api/v1/politicians/'+encodeURIComponent(adaNumber)+'/questions');
+    var enabled=sr.ok;
+    if(!enabled){
+      html+='<div class="eval-consent">';
+      html+='<p style="color:#e2e8f0;font-size:14px;margin-bottom:16px">Ενεργοποιήστε την αξιολόγηση για να μπορούν οι επαληθευμένοι πολίτες να σας αξιολογήσουν.</p>';
+      html+='<label><input type="checkbox" id="evalConsent"> Συμφωνώ να αξιολογηθώ από επαληθευμένους πολίτες</label>';
+      html+='<button class="btn btn-gold" onclick="enableEvaluation()" id="evalEnableBtn">Ενεργοποίηση Αξιολόγησης</button>';
+      html+='</div>';
+    }else{
+      html+='<div class="eval-status">✓ Αξιολόγηση ενεργή</div>';
+      if(d.total_evaluations>0){
+        html+='<div style="text-align:center;margin-bottom:16px;font-size:13px;color:var(--gray)">Συνολικός μέσος όρος: <strong style="color:var(--gold);font-size:18px">'+(d.total_avg!==null?(d.total_avg>0?'+':'')+d.total_avg:'—')+'</strong></div>';
+        d.questions.forEach(function(q){
+          html+='<div class="score-card">';
+          html+='<div class="cat">'+q.category+'</div>';
+          html+='<div class="q">'+q.question_el+'</div>';
+          html+='<div class="val">'+(q.avg_score!==null?(q.avg_score>0?'+':'')+q.avg_score:'—')+'</div>';
+          html+='<div class="cnt">'+q.vote_count+' αξιολογήσεις</div>';
+          html+='</div>';
+        });
+      }else{
+        html+='<p style="color:var(--gray);text-align:center;font-size:14px;margin-top:16px">Δεν υπάρχουν αξιολογήσεις ακόμα.</p>';
+      }
+    }
+    el.innerHTML=html;
+  }catch(e){el.innerHTML='<p style="color:var(--red)">Σφάλμα φόρτωσης</p>'}
+}
+async function enableEvaluation(){
+  var cb=document.getElementById('evalConsent');
+  if(!cb||!cb.checked){alert('Πρέπει να συμφωνήσετε πρώτα.');return}
+  var btn=document.getElementById('evalEnableBtn');
+  btn.textContent='Ενεργοποίηση...';btn.disabled=true;
+  try{
+    var r=await fetch(API+'/api/v1/rep/enable-evaluation',{method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'}});
+    if(!r.ok){var d=await r.json();alert(d.detail||'Σφάλμα');return}
+    loadEvalScreen();
+  }catch(e){alert('Σφάλμα δικτύου')}
+  finally{btn.textContent='Ενεργοποίηση Αξιολόγησης';btn.disabled=false}
+}
 function doLogout(){token='';adaNumber='';localStorage.removeItem('rep_token');localStorage.removeItem('rep_ada');if(window.postToNative)window.postToNative('LOGOUT','');location.reload()}
 </script>
 </body>

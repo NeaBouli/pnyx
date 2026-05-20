@@ -166,3 +166,54 @@ export async function fetchAnalyticsOverview(): Promise<any> {
 export async function fetchMPRanking(): Promise<any> {
   return request<any>("/api/v1/mp/ranking");
 }
+
+// ─── NEA-189: Politician Evaluation ────────────────────────────────────────
+
+export interface Politician {
+  ada_number: string;
+  role: string;
+  region: string;
+  org_label: string;
+  governance_level: string;
+  avg_score: number | null;
+  evaluator_count: number;
+}
+
+export interface EvalQuestion {
+  id: number;
+  question_el: string;
+  question_en: string | null;
+  category: string;
+}
+
+export interface EvalScores {
+  ada_number: string;
+  org_label: string;
+  questions: { question_id: number; question_el: string; category: string; avg_score: number | null; vote_count: number }[];
+  total_avg: number | null;
+  total_evaluations: number;
+}
+
+export async function fetchPoliticians(): Promise<Politician[]> {
+  return request<Politician[]>("/api/v1/politicians");
+}
+
+export async function fetchPoliticianQuestions(adaNumber: string): Promise<EvalQuestion[]> {
+  return request<EvalQuestion[]>(`/api/v1/politicians/${encodeURIComponent(adaNumber)}/questions`);
+}
+
+export async function submitEvaluation(
+  adaNumber: string,
+  nullifierHash: string,
+  scores: { question_id: number; score: number }[],
+  signatureHex: string,
+): Promise<{ ada_number: string; scores_submitted: number }> {
+  return request(`/api/v1/politicians/${encodeURIComponent(adaNumber)}/evaluate`, {
+    method: "POST",
+    body: JSON.stringify({ nullifier_hash: nullifierHash, scores, signature_hex: signatureHex }),
+  });
+}
+
+export async function fetchPoliticianScores(adaNumber: string): Promise<EvalScores> {
+  return request<EvalScores>(`/api/v1/politicians/${encodeURIComponent(adaNumber)}/scores`);
+}

@@ -92,6 +92,7 @@ from routers import admin_account
 from routers import representative
 from routers import cplm
 from routers import app_version
+from routers import evaluation
 
 scheduler = AsyncIOScheduler()
 
@@ -544,6 +545,7 @@ app.include_router(admin_account.router)
 app.include_router(representative.router)
 app.include_router(cplm.router)
 app.include_router(app_version.router)
+app.include_router(evaluation.router)
 
 @app.get("/health")
 async def health():

@@ -442,3 +442,41 @@ class KnowledgeBase(Base):
     priority    = Column(Integer, default=2)  # 1=high, 2=medium, 3=low
     created_at  = Column(DateTime, default=datetime.utcnow)
     updated_at  = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# ─── NEA-189: Politician Evaluation ─────────────────────────────────────────
+
+
+class EvaluationQuestion(Base):
+    """8 Fragen zur Bewertung von Volksvertretern (-5 bis +5)."""
+    __tablename__ = "evaluation_questions"
+
+    id          = Column(Integer, primary_key=True)
+    question_el = Column(Text, nullable=False)
+    question_en = Column(Text, nullable=True)
+    category    = Column(String(50), nullable=True)
+    active      = Column(Boolean, default=True, nullable=False, server_default="true")
+
+
+class PoliticianEvaluation(Base):
+    """
+    Bürgerbewertung eines Volksvertreters pro Frage.
+    Anonym via nullifier_hash, ada_number identifiziert den Politiker.
+    UNIQUE(nullifier_hash, ada_number, question_id) — ein Score pro Bürger/Frage/Politiker.
+    """
+    __tablename__ = "politician_evaluations"
+
+    id              = Column(Integer, primary_key=True)
+    ada_number      = Column(String(50), nullable=False)
+    nullifier_hash  = Column(String(64), nullable=False)
+    question_id     = Column(Integer, ForeignKey("evaluation_questions.id", ondelete="CASCADE"), nullable=False)
+    score           = Column(SmallInteger, nullable=False)
+    created_at      = Column(DateTime, default=datetime.utcnow)
+    updated_at      = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("nullifier_hash", "ada_number", "question_id", name="uq_one_eval_per_citizen_question"),
+        CheckConstraint("score BETWEEN -5 AND 5", name="ck_eval_score_range"),
+        Index("idx_eval_ada", "ada_number"),
+        Index("idx_eval_nullifier", "nullifier_hash"),
+    )

@@ -97,6 +97,9 @@ export default function BillsScreen() {
             <Text style={[s.filterTxt, filter === k && s.filterTxtActive]}>{l}</Text>
           </TouchableOpacity>
         ))}
+        <TouchableOpacity onPress={() => nav.navigate("Politikoi" as any)} style={[s.filterBtn, { backgroundColor: "#ede9fe", borderColor: "#a855f7" }]}>
+          <Text style={[s.filterTxt, { color: "#7c3aed", fontWeight: "800" }]}>Πολιτικοί</Text>
+        </TouchableOpacity>
       </ScrollView>
       <FlatList
         style={{ flex: 1 }}

@@ -22,6 +22,8 @@ import NotificationSettingsScreen from "../screens/NotificationSettingsScreen";
 import CompassScreen from "../screens/CompassScreen";
 import PolisLoginScreen from "../screens/PolisLoginScreen";
 import ImportAccountScreen from "../screens/ImportAccountScreen";
+import PolitikoiScreen from "../screens/PolitikoiScreen";
+import EvaluatePoliticianScreen from "../screens/EvaluatePoliticianScreen";
 
 export type RootStackParams = {
   Onboarding: undefined;
@@ -32,6 +34,8 @@ export type RootStackParams = {
   Compass: undefined;
   Vote: { billId: string; billTitle: string };
   Result: { billId: string; billTitle?: string };
+  Politikoi: undefined;
+  EvaluatePolitician: { adaNumber: string; orgLabel: string };
   PolisLogin: { session?: string; challenge?: string; purpose?: string; bill_id?: string };
   ImportAccount: { key?: string; nullifier?: string; pubkey?: string };
 };
@@ -116,6 +120,8 @@ export default function Navigation() {
         <Stack.Screen name="Compass" component={CompassScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Πολιτική Πυξίδα" }} />
         <Stack.Screen name="Vote" component={VoteScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Ψηφίστε" }} />
         <Stack.Screen name="Result" component={ResultScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Αποτελέσματα" }} />
+        <Stack.Screen name="Politikoi" component={PolitikoiScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Πολιτικοί" }} />
+        <Stack.Screen name="EvaluatePolitician" component={EvaluatePoliticianScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Αξιολόγηση" }} />
         <Stack.Screen name="PolisLogin" component={PolisLoginScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "POLIS Login" }} />
         <Stack.Screen name="ImportAccount" component={ImportAccountScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Import Account" }} />
       </Stack.Navigator>
