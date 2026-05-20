@@ -108,17 +108,19 @@ def check_forum_missing(conn) -> list[str]:
 
 
 def check_arweave_pending(conn) -> list[str]:
-    """Rule 5: PARLIAMENT_VOTED/OPEN_END without arweave_tx_id for 24h+."""
+    """Rule 5: PARLIAMENT_VOTED/OPEN_END without arweave_tx_id for 24h+ (aggregated)."""
     alerts = []
     with conn.cursor() as cur:
         cur.execute("""
-            SELECT id, status, status_changed_at FROM parliament_bills
+            SELECT COUNT(*) FROM parliament_bills
             WHERE status IN ('PARLIAMENT_VOTED', 'OPEN_END')
               AND arweave_tx_id IS NULL
+              AND id NOT LIKE 'DEMO-%%'
               AND (status_changed_at IS NULL OR status_changed_at < NOW() - INTERVAL '24 hours')
         """)
-        for bill_id, status, changed_at in cur.fetchall():
-            alerts.append(f"Bill {bill_id} ({status}) — Arweave ausstehend")
+        count = cur.fetchone()[0]
+        if count > 0:
+            alerts.append(f"Arweave: {count} Bills ohne Archivierung (>24h)")
     return alerts
 
 
@@ -308,10 +310,13 @@ def run_checks():
         r.close()
 
     if all_alerts:
-        msg = "<b>ekklesia.gr Monitor Alert</b>\n\n"
+        msg = f"<b>ekklesia.gr Monitor — {len(all_alerts)} Alerts</b>\n\n"
         for i, alert in enumerate(all_alerts, 1):
             msg += f"{i}. {alert}\n"
         msg += f"\n<i>{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}</i>"
+        # Telegram max 4096 chars
+        if len(msg) > 4000:
+            msg = msg[:3950] + f"\n\n... (+{len(all_alerts)} total)"
         send_telegram(msg)
         logger.warning("ALERTS: %d issues found", len(all_alerts))
     else:
