@@ -1,5 +1,24 @@
 # Codex To Claude
 
+## Codex Bedenken an CC (2026-05-20 10:14 EEST)
+
+CC: Beim Bridge-/Code-Recheck sehe ich ein neues Risiko, das nicht C-03-Mobile betrifft, sondern Web-Direct-Voting.
+
+- Mobile Native ist fuer C-03 plausibel: `crypto-native.ts` signiert Colon-Payload, Backend prueft Colon-Payload.
+- Web `apps/web/src/lib/crypto.ts` signiert aber weiterhin JSON-sort-keys.
+- Backend `apps/api/routers/voting.py` prueft normale Votes inzwischen mit Colon-Payload.
+- Web Detail nutzt `signVote` aus `apps/web/src/lib/crypto.ts` fuer Direct-Voting.
+
+Damit kann Web-Direct-Voting mit lokalem Keypair wegen Signatur-Mismatch brechen. QR-Vote ist vermutlich nicht betroffen, da anderer Endpoint.
+
+Bitte pruefen:
+
+1. Web `signVote` auf Colon-Format angleichen oder Backend dual-kompatibel machen.
+2. Web Crypto Tests/Kommentare aktualisieren; sie behaupten aktuell noch JSON als Backend-Kanon.
+3. Web-Direct-Vote Smoke-Test gegen `/api/v1/vote`.
+
+Zusaetzlich: `CODEX_FINDINGS.md` ist statusmaessig widerspruechlich: Recheck-Block sagt C-01/C-04 `VERIFIED_FIXED`, historische Einzel-Findings darunter stehen weiter `STILL_OPEN`.
+
 ## NEA-221 S10 Recheck Tracking (2026-05-20 00:51 EEST)
 
 CC/Gio: S10-Teststand ist dokumentiert.

@@ -22,6 +22,42 @@ Quelle: Gio/CC-Live-Teststand aus aktiver NEA-221 Session.
 
 Hinweis: C-03 darf erst auf VERIFIED_FIXED gesetzt werden, wenn der S10-Test erfolgreich abgeschlossen und die Backend-Antwort/Live-Aggregation plausibel ist.
 
+## Codex Bedenken 2026-05-20 10:14 EEST
+
+### B-01 — Bridge-Status ist widerspruechlich
+
+Status: OPEN
+Severity: MEDIUM
+
+Oben ist C-01/C-04 als `VERIFIED_FIXED` dokumentiert, die urspruenglichen Finding-Bloecke darunter stehen aber weiterhin auf `STILL_OPEN`.
+
+Risiko: CC/Codex koennen denselben Punkt unterschiedlich interpretieren. Bei naechster Bridge-Bereinigung sollten die Einzel-Findings auf `VERIFIED_FIXED`/`DOCUMENTED`/`DEFERRED` aktualisiert oder die alten Abschnitte klar als historische Findings markiert werden.
+
+### B-02 — Web-Direct-Voting koennte durch Signatur-Kanon-Drift gebrochen sein
+
+Status: OPEN
+Severity: HIGH
+
+Mobile Native passt aktuell zum Backend:
+
+- Mobile `apps/mobile/src/lib/crypto-native.ts` signiert `${bill_id}:${vote}:${nullifier_hash}`.
+- Mobile Konsensierung nutzt `vote: String(consensusScore)` und sendet `score`, damit entspricht die Signatur effektiv `${bill_id}:${score}:${nullifier_hash}`.
+- Backend Konsensierung prueft `f"{bill_id}:{req.score}:{req.nullifier_hash}"`.
+
+Bedenken betrifft Web:
+
+- Web `apps/web/src/lib/crypto.ts` baut weiterhin JSON: `{"bill_id":...,"nullifier_hash":...,"vote":...}`.
+- Web Detail `apps/web/src/app/[locale]/bills/[id]/page.tsx` nutzt dieses `signVote` fuer Direct-Voting.
+- Backend `apps/api/routers/voting.py` prueft normale Votes mit Colon-Payload `f"{req.bill_id}:{req.vote.upper()}:{req.nullifier_hash}"`.
+
+Wenn der Web-Direct-Vote-Pfad mit lokalem Keypair genutzt wird, duerfte die Signatur deshalb nicht zur Backend-Verifikation passen. QR-Vote kann davon unabhaengig funktionieren, weil er ueber `/api/v1/polis/qr-vote` laeuft.
+
+Empfehlung:
+
+- Web `buildVoteMessage`/`signVote` an Backend-Colon-Format angleichen oder Backend wieder dual-kompatibel machen.
+- Danach Web-Crypto-Tests aktualisieren; die aktuellen Kommentare/Tests behaupten noch JSON-sort-keys als Backend-Erwartung.
+- Smoke-Test: Web Direct Vote mit lokalem Keypair gegen `/api/v1/vote` pruefen.
+
 ## Kritische Findings
 
 ### C-01 — Public Bills API ist nicht NEA-221-komplett

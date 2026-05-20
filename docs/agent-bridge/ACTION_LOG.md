@@ -1853,6 +1853,22 @@
 - **Kein Commit/Push/Deployment in diesem Dokumentationsschritt**
 
 ---
+## 2026-05-20 - Codex: Bridge-Recheck mit neuen Bedenken
+
+- **Agent:** Codex
+- **Aktion:** Bridge gelesen und NEA-221 Codepfade gegen aktuelle Stati geprueft.
+- **Bedenken dokumentiert:**
+  - `CODEX_FINDINGS.md` enthaelt widerspruechliche Stati: Recheck-Block setzt C-01/C-04 auf `VERIFIED_FIXED`, historische Finding-Bloecke stehen weiter `STILL_OPEN`.
+  - Web-Direct-Voting kann durch Signatur-Kanon-Drift gebrochen sein: Web signiert JSON-sort-keys, Backend prueft Colon-Payload.
+  - Mobile Native C-03 wirkt code-seitig plausibel, weil `crypto-native.ts` Colon-Payload signiert und Backend Konsensierung Colon-Payload prueft.
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/CODEX_FINDINGS.md`
+  - `docs/agent-bridge/CODEX_TO_CLAUDE.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine Produktcodeaenderung**
+- **Keine Secrets gelesen oder ausgegeben**
+- **Kein Deployment**
+
 ## 2026-05-20 - Codex: NEA-221 S10 Recheck-Stand dokumentiert
 
 - **Agent:** Codex
