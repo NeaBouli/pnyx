@@ -45,7 +45,8 @@ export default function ProfileScreen() {
 
       // Check region_locked from server
       try {
-        const nullifier = await SecureStore.getItemAsync("ekklesia:nullifier:v1");
+        const nullifier = await SecureStore.getItemAsync("ekklesia_nullifier")
+          || await SecureStore.getItemAsync("ekklesia:nullifier:v1");
         if (nullifier) {
           const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
           const statusRes = await fetch(`${API}/api/v1/identity/status`, {
@@ -81,7 +82,8 @@ export default function ProfileScreen() {
 
     // Sync location to server (enables vote scope enforcement)
     try {
-      const nullifier = await SecureStore.getItemAsync("ekklesia:nullifier:v1");
+      const nullifier = await SecureStore.getItemAsync("ekklesia_nullifier")
+        || await SecureStore.getItemAsync("ekklesia:nullifier:v1");
       if (nullifier && !regionLocked) {
         const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
         const r = await fetch(`${API}/api/v1/identity/profile/location`, {

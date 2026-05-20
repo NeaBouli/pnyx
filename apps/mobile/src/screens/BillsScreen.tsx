@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Share, Linking, ScrollView } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import * as SecureStore from "expo-secure-store";
 import { fetchBills } from "../lib/api";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
@@ -26,6 +27,18 @@ export default function BillsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState("ALL");
+  const [userPeriferia, setUserPeriferia] = useState<number | null>(null);
+  const [userDimos, setUserDimos] = useState<number | null>(null);
+  const [hasRegion, setHasRegion] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const p = await SecureStore.getItemAsync("user_periferia_id");
+      const d = await SecureStore.getItemAsync("user_dimos_id");
+      if (p) { setUserPeriferia(Number(p)); setHasRegion(true); }
+      if (d) setUserDimos(Number(d));
+    })();
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -59,6 +72,16 @@ export default function BillsScreen() {
 
   return (
     <View style={s.container}>
+      {!hasRegion && (
+        <TouchableOpacity
+          style={{ backgroundColor: "#eff6ff", padding: 10, borderBottomWidth: 1, borderBottomColor: "#bfdbfe" }}
+          onPress={() => nav.navigate("Profile" as any)}
+        >
+          <Text style={{ color: "#1e40af", fontSize: 12, textAlign: "center", fontWeight: "600" }}>
+            💡 Ορίστε εκλογική περιφέρεια στο Προφίλ για εξατομικευμένη προβολή
+          </Text>
+        </TouchableOpacity>
+      )}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.filterRow} contentContainerStyle={{ gap: 6, paddingHorizontal: 12, alignItems: "center" }}>
         {[["ALL", "Όλα"], ["ACTIVE", "Ενεργά"], ["DIAVGEIA", "Διαύγεια"], ["MUNICIPAL", "Δήμος"], ["REGIONAL", "Περιφ."], ["INSTITUTIONAL", "Φορείς"], ["PARLIAMENT_VOTED", "Βουλή"], ["OPEN_END", "Αρχείο"], ["ARWEAVE", "⛓"]].map(([k, l]) => (
           <TouchableOpacity key={k} onPress={() => setFilter(k)} style={[s.filterBtn, filter === k && s.filterActive]}>

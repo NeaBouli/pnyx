@@ -8,8 +8,8 @@ from fastapi import APIRouter
 router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
-LATEST_VERSION = "1.3.2"
-LATEST_VERSION_CODE = 18
+LATEST_VERSION = "1.3.3"
+LATEST_VERSION_CODE = 19
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
