@@ -126,11 +126,40 @@
 
 - AAB vC18 Play Store uploaded ✅
 
-### CRITICAL: Web crypto.ts Signatur-Fix (Codex Finding)
+### Post-vC18 Fixes (9 Commits)
+
+#### CRITICAL: Web crypto.ts Signatur-Fix (Codex Finding)
 - Web `buildVoteMessage()`: JSON-sort-keys → Colon-Format
 - Web-Direct-Voting war KAPUTT seit vC15 Signatur-Fix
 - Gefunden von Codex Review 2026-05-20
 - Commit: 28174d2
+
+#### Parteinamen lesbar (Kosmetik)
+- BillResultReport: text-gray-200 → text-gray-900 auf weißem Hintergrund
+- Commit: c1d632e
+
+#### Web Konsensierung: Interaktiver Slider + QR-Auth Flow
+- Slider war statisch (spans) → jetzt klickbare Buttons
+- Nach QR-Auth: Buttons aktiv, Score wählen, Submit-Button
+- Erfolgs-Meldung nach Submit
+- Commit: (web interactive slider)
+
+#### CRITICAL: Web Konsensierung via QR-Session (kein Ed25519)
+- Problem: Web nutzte Fake-Signatur → Backend lehnte ab → [object Object] Alert
+- Fix: Neuer Endpoint POST /polis/qr-consensus (Session = Auth, keine Signatur)
+- Web ruft jetzt /polis/qr-consensus statt /vote/consensus
+- Error-Alert zeigt jetzt richtigen Text statt [object Object]
+- Commit: 4dab91a
+
+#### Konsensierungen in DB
+- GR-2025-0001: score -3 (App, 19.05)
+- DIAV-ΡΒ4ΠΩ65-3ΒΝ: score -4 (App, 20.05)
+- 3. Konsensierung (Web) scheiterte an Fake-Signatur → jetzt gefixt
+
+#### Linear Status
+- NEA-223 (Wahlbezirk-Berechtigung): im Backlog, CRITICAL
+- NEA-222 (Wahlbezirk-Filter): im Backlog
+- NEA-175 (Region vor Abstimmung anzeigen): im Backlog
 
 ### vC18 AAB Play Store uploaded ✅
 
@@ -147,7 +176,7 @@
 - Web crypto.ts: Signatur-Format gefixt (Codex Finding — CRITICAL)
 - Dependabot: 10 PRs offen (npm + pip)
 
-### HEAD: 28174d2
+### HEAD: 4dab91a
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
