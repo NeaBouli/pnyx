@@ -13,11 +13,11 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `37879f5` (feat: NEA-235+236 Forum cleanup, analytics fix, health checks)
+- **HEAD:** `ac1bbaf` (fix: Codex review — DEMO filter on votes/divergence + monitor int guard)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`
 - **Rollback:** `pre-session-20260518` → `5349b39`
 - **Remote:** synchron mit GitHub
-- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `37879f5` (deployed 2026-05-21, API+Monitor+Web rebuilt)
+- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `ac1bbaf` (deployed 2026-05-21, API+Monitor+Web rebuilt)
 
 ## Uncommitted Aenderungen
 
