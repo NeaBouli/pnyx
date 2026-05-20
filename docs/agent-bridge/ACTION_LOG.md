@@ -163,17 +163,16 @@
 
 ### vC18 AAB Play Store uploaded ✅
 
-### Session Summary (~45 Commits, 83aafa9 → 28174d2)
-- Versions: vC15 → vC16 → vC17 → vC18 (+ Web crypto fix)
-- NEA-Tickets closed: 171, 187, 199, 210, 221, 222, 223, 224, 226
-- Codex-Review: 4 kritische + 4 mittlere Findings → alle resolved
+### Session Summary (66 Commits, 83aafa9 → 6b67055)
+- Versions: vC15 → vC16 → vC17 → vC18 → vC19 → vC20
+- NEA-Tickets closed: 171, 187, 199, 210, 221, 222, 223, 224, 225, 226, 228, 230, 231, 232
+- Codex-Review: alle Findings resolved (vC18 + Web crypto)
 - Bills: 21 Parliament + 100 Diavgeia = 121 total
 - Text enriched: 3 → 15 (4-Kanal Pipeline)
 - Org-Namen: 97/97 aufgelöst
-- Forum: 51 Topics resync'd, Auto-Kategorisierung aktiv
-- Dependabot: 10 PRs offen (npm + pip)
-
-- Web crypto.ts: Signatur-Format gefixt (Codex Finding — CRITICAL)
+- Forum: 85 Topics, Auto-Kategorisierung, Body-Resync
+- Web: Typeahead, Consensus QR, DIAVGEIA Badge, FAQ, Roadmap
+- App: Region-Filter, Konsensierung, Wahlbezirk-Sync
 - Dependabot: 10 PRs offen (npm + pip)
 
 ### NEA-231: Forum Content Resync
@@ -223,7 +222,7 @@
 - Linear: NEA-225, NEA-228, NEA-230 → Done
 - Commit: f5e2077
 
-### HEAD: 9592d84
+### HEAD: 6b67055
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
