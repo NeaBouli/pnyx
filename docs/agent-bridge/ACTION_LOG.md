@@ -216,6 +216,13 @@
 - vC20 v1.3.4: APK S10 ✅ + Server ✅, AAB Play Store uploaded ✅
 - Tag: apk-v20-stable
 
+### NEA-225 + NEA-228 + NEA-230: Web Typeahead + FAQ + Roadmap
+- Web: Periferia Typeahead-Suche auf Bills-Seite (API fetch + Dropdown + Filter)
+- FAQ: Neue Sektion "Διαύγεια & Κλίμακα Συναίνεσης" (4 Fragen)
+- Roadmap: Φάση Β aktualisiert (Konsensierung, Diavgeia, Wahlbezirk, Forum, εκπρόσωπος)
+- Linear: NEA-225, NEA-228, NEA-230 → Done
+- Commit: f5e2077
+
 ### HEAD: 9592d84
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
