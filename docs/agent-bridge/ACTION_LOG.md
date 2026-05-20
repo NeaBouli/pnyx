@@ -203,10 +203,14 @@
 - Bills-Liste: zeigt noch alle Bills → NEA-232 als Ticket erstellt
 - vC19 auf S10 installiert ✅
 
-### NEA-232 erstellt (Backlog, High)
-- App Bills-Liste nach Wahlbezirk filtern
-- User MIT Region → nur relevante Bills (NATIONAL+INSTITUTIONAL+eigene Region)
-- User OHNE Region → alle Bills
+### NEA-232: App Bills nach Wahlbezirk gefiltert — DONE
+- regionBills Filter vor Tab-Filter in BillsScreen
+- NATIONAL+INSTITUTIONAL immer sichtbar
+- REGIONAL nur bei matching periferia_id, MUNICIPAL nur bei matching dimos_id
+- API: periferia_id + dimos_id in BillSummary Response
+- Linear: NEA-223 + NEA-232 → Done
+- S10 installiert ✅, Server ✅, AAB bereit
+- Commit: b0e83fe
 
 - vC19 AAB Play Store uploaded ✅
 
