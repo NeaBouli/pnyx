@@ -187,6 +187,25 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
           <span className="text-xs text-gray-400 font-mono">{bill.id}</span>
         </div>
 
+        {/* Region Banner */}
+        {(bill as any).governance_level === "REGIONAL" && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 text-sm">
+            <span className="font-bold text-blue-700">📍 {locale === "el" ? "Περιφερειακή ψηφοφορία" : "Regional vote"}</span>
+            <span className="text-blue-500 ml-2">{locale === "el" ? "— Αφορά μόνο τους κατοίκους της περιοχής" : "— Only for residents of this region"}</span>
+          </div>
+        )}
+        {(bill as any).governance_level === "MUNICIPAL" && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 text-sm">
+            <span className="font-bold text-blue-700">📍 {locale === "el" ? "Δημοτική ψηφοφορία" : "Municipal vote"}</span>
+            <span className="text-blue-500 ml-2">{locale === "el" ? "— Αφορά μόνο τους κατοίκους του Δήμου" : "— Only for residents of this municipality"}</span>
+          </div>
+        )}
+        {(bill as any).governance_level === "INSTITUTIONAL" && bill.pill_el && (
+          <div className="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 mb-4 text-sm">
+            <span className="font-bold text-purple-700">🏢 {bill.pill_el}</span>
+          </div>
+        )}
+
         {/* Official Parliament Link + Jina Reader fallback (WAF bypass) */}
         {(bill as any).parliament_url && (
           <div className="flex items-center gap-2 flex-wrap mb-4">

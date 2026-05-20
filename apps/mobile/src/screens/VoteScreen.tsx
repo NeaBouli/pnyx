@@ -38,6 +38,7 @@ export default function VoteScreen({ route, navigation }: Props) {
   const [billStatus, setBillStatus] = useState<string>("");
   const [billGovernance, setBillGovernance] = useState<string>("NATIONAL");
   const [billSource, setBillSource] = useState<string>("PARLIAMENT");
+  const [billPill, setBillPill] = useState<string>("");
   const [hasVoted, setHasVoted] = useState(false);
   const [isCorrected, setIsCorrected] = useState(false);
   const [consensusScore, setConsensusScore] = useState(0);
@@ -54,7 +55,7 @@ export default function VoteScreen({ route, navigation }: Props) {
     // Load bill status
     fetch(`${API}/api/v1/bills/${encodeURIComponent(billId)}`)
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.status) { setBillStatus(d.status); setBillGovernance(d.governance_level || "NATIONAL"); setBillSource(d.source || "PARLIAMENT"); } })
+      .then(d => { if (d?.status) { setBillStatus(d.status); setBillGovernance(d.governance_level || "NATIONAL"); setBillSource(d.source || "PARLIAMENT"); setBillPill(d.pill_el || ""); } })
       .catch(() => {});
   }, [billId]);
 
@@ -183,13 +184,24 @@ export default function VoteScreen({ route, navigation }: Props) {
         </View>
       ) : null}
 
-      {billGovernance !== "NATIONAL" && (
+      {billGovernance !== "NATIONAL" && billGovernance !== "INSTITUTIONAL" && (
         <View style={{ backgroundColor: "#eff6ff", borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#2563eb" }}>
           <Text style={{ fontWeight: "700", color: "#1e40af", fontSize: 13 }}>
-            📍 {billGovernance === "MUNICIPAL" ? "Δημοτική ψηφοφορία" : billGovernance === "REGIONAL" ? "Περιφερειακή ψηφοφορία" : "Τοπική ψηφοφορία"} — Αφορά μόνο τους κατοίκους της περιοχής
+            📍 {billGovernance === "MUNICIPAL" ? "Δημοτική ψηφοφορία" : "Περιφερειακή ψηφοφορία"}
+          </Text>
+          <Text style={{ color: "#3b82f6", fontSize: 12, marginTop: 4 }}>
+            Αφορά μόνο τους κατοίκους της περιοχής
           </Text>
         </View>
       )}
+
+      {billGovernance === "INSTITUTIONAL" && billPill ? (
+        <View style={{ backgroundColor: "#f5f3ff", borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#8b5cf6" }}>
+          <Text style={{ fontWeight: "700", color: "#5b21b6", fontSize: 13 }}>
+            🏢 {billPill}
+          </Text>
+        </View>
+      ) : null}
 
       {billStatus === "ANNOUNCED" && (
         <View style={{ backgroundColor: "#f1f5f9", borderRadius: 12, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: "#94a3b8", alignItems: "center" }}>
