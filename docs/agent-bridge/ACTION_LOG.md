@@ -197,6 +197,17 @@
 - AAB: ~/Desktop/ekklesia-v1.3.3-vC19-PLAY.aab
 - Commit: 181486e
 
+### NEA-223 Test bestätigt
+- Region-Sync funktioniert: periferia_id=6, dimos_id=22 (Πελοπόννησος/Καλαμάτα)
+- Vote/Consensus Berechtigung: nur zugeordnete Bills abstimmbar ✅
+- Bills-Liste: zeigt noch alle Bills → NEA-232 als Ticket erstellt
+- vC19 auf S10 installiert ✅
+
+### NEA-232 erstellt (Backlog, High)
+- App Bills-Liste nach Wahlbezirk filtern
+- User MIT Region → nur relevante Bills (NATIONAL+INSTITUTIONAL+eigene Region)
+- User OHNE Region → alle Bills
+
 ### HEAD: 181486e
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
