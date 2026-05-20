@@ -1,6 +1,7 @@
 """
 ekklesia.gr Business Logic Monitor
-Runs every 30 minutes. Checks 6 rules. Alerts via Telegram.
+Runs every 30 minutes (daemon) or once daily at 06:00 UTC (cron).
+15 rules. Alerts via Telegram.
 """
 import os
 import time
@@ -177,8 +178,110 @@ def check_disk_usage() -> list[str]:
     return alerts
 
 
+def check_db_consistency(conn) -> list[str]:
+    """Rule 10: Bills with NULL source or missing governance_level."""
+    alerts = []
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT COUNT(*) FROM parliament_bills
+            WHERE source IS NULL AND id NOT LIKE 'DEMO-%%'
+        """)
+        null_source = cur.fetchone()[0]
+        if null_source > 0:
+            alerts.append(f"DB: {null_source} Bills ohne source (NULL)")
+        cur.execute("""
+            SELECT COUNT(*) FROM parliament_bills
+            WHERE governance_level IS NULL AND id NOT LIKE 'DEMO-%%'
+        """)
+        null_gov = cur.fetchone()[0]
+        if null_gov > 0:
+            alerts.append(f"DB: {null_gov} Bills ohne governance_level")
+    return alerts
+
+
+def check_diavgeia_scraper(r) -> list[str]:
+    """Rule 11: Diavgeia scraper last_run > 96h."""
+    alerts = []
+    last_run = r.get("scraper:diavgeia_municipal:last_run")
+    if last_run:
+        try:
+            age_h = (datetime.now(timezone.utc) - datetime.fromisoformat(last_run)).total_seconds() / 3600
+            if age_h > 96:
+                alerts.append(f"Diavgeia Scraper: kein Run seit {age_h:.0f}h")
+        except (ValueError, TypeError):
+            pass
+    return alerts
+
+
+def check_web_urls() -> list[str]:
+    """Rule 12: Key web pages return HTTP 200."""
+    alerts = []
+    urls = [
+        ("Landing", "https://ekklesia.gr/"),
+        ("Bills", "https://ekklesia.gr/el/bills"),
+        ("Results", "https://ekklesia.gr/el/results"),
+        ("API Bills", "https://api.ekklesia.gr/api/v1/bills?limit=1"),
+    ]
+    for name, url in urls:
+        try:
+            resp = httpx.get(url, timeout=10, follow_redirects=True)
+            if resp.status_code != 200:
+                alerts.append(f"Web {name}: HTTP {resp.status_code}")
+        except Exception as e:
+            alerts.append(f"Web {name} nicht erreichbar: {e}")
+    return alerts
+
+
+def check_arweave_wallet() -> list[str]:
+    """Rule 13: Arweave wallet balance > 0.1 AR."""
+    alerts = []
+    try:
+        resp = httpx.get(f"{API_URL}/api/v1/scraper/status", timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            balance = data.get("arweave_balance_ar", 999)
+            if isinstance(balance, (int, float)) and balance < 0.1:
+                alerts.append(f"Arweave Wallet niedrig: {balance:.4f} AR")
+    except Exception:
+        pass
+    return alerts
+
+
+def check_forum_completeness(conn) -> list[str]:
+    """Rule 14: Non-DEMO bills in ACTIVE/OPEN_END without forum_topic_id."""
+    alerts = []
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT COUNT(*) FROM parliament_bills
+            WHERE status IN ('ACTIVE', 'WINDOW_24H', 'OPEN_END')
+              AND forum_topic_id IS NULL
+              AND id NOT LIKE 'DEMO-%%'
+              AND created_at < NOW() - INTERVAL '1 hour'
+        """)
+        count = cur.fetchone()[0]
+        if count > 0:
+            alerts.append(f"Forum: {count} Bills ohne Topic (ACTIVE/OPEN_END)")
+    return alerts
+
+
+def check_scraper_jobs(r) -> list[str]:
+    """Rule 15: Any scraper job with error_count > 20."""
+    alerts = []
+    job_names = ["parliament", "diavgeia_municipal", "bill_lifecycle",
+                 "cplm_refresh", "greek_topics", "notify_new_bills", "notify_results"]
+    for name in job_names:
+        err_raw = r.get(f"scraper:{name}:error_count")
+        try:
+            count = int(err_raw) if err_raw else 0
+        except (ValueError, TypeError):
+            count = 0
+        if count > 20:
+            alerts.append(f"Job {name}: {count} Fehler")
+    return alerts
+
+
 def run_checks():
-    logger.info("Running 9 business logic checks...")
+    logger.info("Running 15 business logic checks...")
     all_alerts = []
 
     r = get_redis()
@@ -194,6 +297,12 @@ def run_checks():
         all_alerts.extend(check_forum_sync_errors(r))
         all_alerts.extend(check_api_health())
         all_alerts.extend(check_disk_usage())
+        all_alerts.extend(check_db_consistency(conn))
+        all_alerts.extend(check_diavgeia_scraper(r))
+        all_alerts.extend(check_web_urls())
+        all_alerts.extend(check_arweave_wallet())
+        all_alerts.extend(check_forum_completeness(conn))
+        all_alerts.extend(check_scraper_jobs(r))
     finally:
         conn.close()
         r.close()
@@ -212,10 +321,16 @@ def run_checks():
 
 
 if __name__ == "__main__":
-    logger.info("ekklesia.gr Monitor started (interval: %ds)", CHECK_INTERVAL)
-    while True:
-        try:
-            run_checks()
-        except Exception as e:
-            logger.error("Monitor error: %s", e)
-        time.sleep(CHECK_INTERVAL)
+    import sys
+    if "--once" in sys.argv:
+        logger.info("ekklesia.gr Health-Check (single run)")
+        alerts = run_checks()
+        sys.exit(1 if alerts else 0)
+    else:
+        logger.info("ekklesia.gr Monitor started (interval: %ds)", CHECK_INTERVAL)
+        while True:
+            try:
+                run_checks()
+            except Exception as e:
+                logger.error("Monitor error: %s", e)
+            time.sleep(CHECK_INTERVAL)
