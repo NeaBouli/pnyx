@@ -136,8 +136,45 @@ def check_hlr_credits() -> list[str]:
     return alerts
 
 
+def check_forum_sync_errors(r) -> list[str]:
+    """Rule 7: Forum sync error count > 10."""
+    alerts = []
+    err_count = r.get("scraper:forum_sync:error_count")
+    if err_count and int(err_count) > 10:
+        last_err = r.get("scraper:forum_sync:last_error") or "unknown"
+        alerts.append(f"Forum Sync: {err_count} Fehler — {last_err[:80]}")
+    return alerts
+
+
+def check_api_health() -> list[str]:
+    """Rule 8: API responds to health check."""
+    alerts = []
+    try:
+        resp = httpx.get(f"{API_URL}/api/v1/bills?limit=1", timeout=10)
+        if resp.status_code != 200:
+            alerts.append(f"API Health-Check FAIL: HTTP {resp.status_code}")
+    except Exception as e:
+        alerts.append(f"API nicht erreichbar: {e}")
+    return alerts
+
+
+def check_disk_usage() -> list[str]:
+    """Rule 9: Disk usage > 90%."""
+    alerts = []
+    try:
+        import shutil
+        total, used, free = shutil.disk_usage("/")
+        pct = used / total * 100
+        if pct > 90:
+            free_gb = free / (1024**3)
+            alerts.append(f"Disk {pct:.0f}% voll — nur {free_gb:.1f} GB frei")
+    except Exception:
+        pass
+    return alerts
+
+
 def run_checks():
-    logger.info("Running 6 business logic checks...")
+    logger.info("Running 9 business logic checks...")
     all_alerts = []
 
     r = get_redis()
@@ -150,6 +187,9 @@ def run_checks():
         all_alerts.extend(check_forum_missing(conn))
         all_alerts.extend(check_arweave_pending(conn))
         all_alerts.extend(check_hlr_credits())
+        all_alerts.extend(check_forum_sync_errors(r))
+        all_alerts.extend(check_api_health())
+        all_alerts.extend(check_disk_usage())
     finally:
         conn.close()
         r.close()

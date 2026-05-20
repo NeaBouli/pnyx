@@ -4,6 +4,7 @@ Syncs ACTIVE parliament bills to pnyx.ekklesia.gr Discourse forum.
 Creates one topic per bill, stores forum_topic_id back in DB.
 """
 import os
+import re
 import logging
 import httpx
 from sqlalchemy import select
@@ -146,6 +147,16 @@ def _build_topic_body(bill: ParliamentBill) -> str:
 
     summary = bill.summary_short_el or bill.pill_el or ""
     long_text = bill.summary_long_el or ""
+
+    # Strip navigation/boilerplate lines scraped from parliament site
+    def _clean(text: str) -> str:
+        lines = text.split("\n")
+        cleaned = [l for l in lines if not re.match(r"^\*?\s*\[.+\]\(https?://", l.strip())
+                   and "Μετάβαση στο κύριο" not in l
+                   and "προσβασιμότητας" not in l]
+        return "\n".join(cleaned).strip()
+    summary = _clean(summary)
+    long_text = _clean(long_text)
 
     body = (
         f"# {bill.title_el}\n\n"
@@ -309,6 +320,8 @@ async def sync_new_bills_to_forum(db: AsyncSession) -> None:
 
     for bill in bills:
         try:
+            # Refresh to prevent greenlet_spawn errors after prior commit/rollback
+            await db.refresh(bill)
             topic_id = await create_discourse_topic(bill, db)
             bill.forum_topic_id = topic_id
             await db.commit()

@@ -79,10 +79,35 @@ async def fetch_with_fallback(url: str) -> Optional[str]:
     return None
 
 
+def _is_nav_line(line: str) -> bool:
+    """Detect navigation/boilerplate lines from parliament scraped text."""
+    s = line.strip()
+    # Markdown bullet links: "* [Link text](url...)"
+    if re.match(r"^\*?\s*\[.+\]\(https?://", s):
+        return True
+    # Accessibility/skip-nav/cookie boilerplate
+    if re.search(r"Μετάβαση στο κύριο|προσβασιμότητας|Ανοίξτε το μενού|Skip to|cookies.*hellenicparliament", s, re.I):
+        return True
+    # Section headings from parliament page navigation
+    if re.match(r"^#\s*Κατατεθέντα Σχέδια", s):
+        return True
+    # Known parliament nav items
+    _nav_keywords = (
+        "Νομοθετική Διαδικασία", "Ημερ. Διάταξη", "Εβδομαδιαίο Δελτίο",
+        "Κατατεθέντα Σ/Ν", "Επεξεργασία στις Επιτροπές", "Συζητήσεις & Ψήφιση",
+        "Ψηφισθέντα Σ/Ν", "Ειδικές Διαδικασίες", "Κοινοβουλευτικού Ελέγχου",
+        "Ημερήσιες Διατάξεις", "Ειδικές Ημερήσιες",
+    )
+    if any(kw in s for kw in _nav_keywords):
+        return True
+    return False
+
+
 def extract_bill_text(html: str) -> str:
     """Extrahiert relevanten Text aus HTML oder Plain Text."""
     if not html.strip().startswith("<"):
-        lines = [l.strip() for l in html.split("\n") if l.strip() and len(l.strip()) > 20]
+        lines = [l.strip() for l in html.split("\n")
+                 if l.strip() and len(l.strip()) > 20 and not _is_nav_line(l)]
         return "\n".join(lines[:200])
 
     soup = BeautifulSoup(html, "html.parser")
@@ -95,7 +120,8 @@ def extract_bill_text(html: str) -> str:
         soup.find("body")
     )
     text = main.get_text(separator="\n", strip=True) if main else soup.get_text()
-    lines = [l.strip() for l in text.split("\n") if l.strip() and len(l.strip()) > 20]
+    lines = [l.strip() for l in text.split("\n")
+             if l.strip() and len(l.strip()) > 20 and not _is_nav_line(l)]
     return "\n".join(lines[:200])
 
 

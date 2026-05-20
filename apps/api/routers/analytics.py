@@ -42,15 +42,18 @@ async def compute_divergence(db: AsyncSession, bill_id: str, bill: ParliamentBil
 @router.get("/overview")
 async def analytics_overview(db: AsyncSession = Depends(get_db)):
     """Plattform-weite Statistiken + Divergence Übersicht."""
-    total_bills  = await db.scalar(select(func.count(ParliamentBill.id))) or 0
+    _real = ~ParliamentBill.id.like("DEMO-%")
+    total_bills  = await db.scalar(select(func.count(ParliamentBill.id)).where(_real)) or 0
     total_votes  = await db.scalar(select(func.count(CitizenVote.id))) or 0
     active_bills = await db.scalar(
         select(func.count(ParliamentBill.id)).where(
+            _real,
             ParliamentBill.status.in_([BillStatus.ACTIVE, BillStatus.WINDOW_24H])
         )
     ) or 0
     voted_bills = await db.scalar(
         select(func.count(ParliamentBill.id)).where(
+            _real,
             ParliamentBill.status == BillStatus.PARLIAMENT_VOTED
         )
     ) or 0
