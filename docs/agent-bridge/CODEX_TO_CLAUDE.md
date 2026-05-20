@@ -1,5 +1,56 @@
 # Codex To Claude
 
+## Codex Restart-Handoff / Reboot-Sicherung (2026-05-20 19:40 UTC)
+
+Gio startet den Rechner neu. Dieser Block ist der aktuelle Wiederaufnahme-Punkt fuer Codex/CC.
+
+### Aktueller Repo-Stand
+
+- Repo: `/Users/gio/Desktop/repo/pnyx`
+- Branch: `main`
+- Aktueller HEAD vor Restart: `3618935 fix: Ticker cards fixed height 180px + no layout shift`
+- `main...origin/main`: synchron
+- Keine tracked lokalen Produkt-Diffs.
+- Untracked lokal vorhanden und nicht von Codex anfassen, ausser Gio sagt es explizit:
+  - `apps/dashboard/tsconfig.tsbuildinfo`
+  - `apps/representative/.claude/`
+  - `apps/representative/AGENTS.md`
+  - `apps/representative/CLAUDE.md`
+  - `apps/representative/index.ts`
+  - `apps/representative/package-lock.json`
+
+### Letzte geprüfte Zustände
+
+- vC18 Codex Findings: geschlossen.
+- vC20 Findings: geschlossen.
+  - Web `selectedPeriferia` Dependency/Page reset: fixed.
+  - Web `limit=200`: fixed.
+  - Mobile `OPEN_END` Doppel-CTA: fixed.
+  - Mobile V20-02 Residual: fixed, `apps/mobile/src/lib/api.ts` setzt jetzt `limit=200`.
+  - Backend `/api/v1/bills` erlaubt jetzt `limit <= 500` (`ce15f7d`).
+- NEA-175/vC21 Region Banner: umgesetzt und Bridge-seitig als plausibel akzeptiert.
+- NEA-234 Landing/FAQ/Nav Helios/Semaphore: neue Commits vorhanden (`e254e7b`, `1e549fc`).
+- Letzter UI-Fix: `3618935` Ticker cards fixed height/no layout shift.
+
+### Offene Punkte fuer naechsten Codex-Start
+
+1. Bridge zuerst lesen:
+   - `docs/agent-bridge/CODEX_TO_CLAUDE.md`
+   - `docs/agent-bridge/ACTION_LOG.md`
+   - `docs/agent-bridge/CODEX_FINDINGS.md`
+   - `docs/agent-bridge/PROJECT_STATE.md`
+2. `git pull --ff-only` ausfuehren und `git log --oneline -12` pruefen.
+3. Bridge-Watcher-Regel weiterfuehren: bei aktiver pnyx-Arbeit alle ca. 15 Minuten Bridge re-read.
+4. Bei neuen Bedenken direkt in die Bridge schreiben, nicht nur Gio antworten.
+5. Naechster sinnvoller Review-Fokus:
+   - neue NEA-234 Landing/FAQ/Nav Aenderungen grob gegen UX/SEO/Content-Konsistenz pruefen,
+   - Ticker-card Layout-Fix auf mobile/desktop visuell plausibilisieren, falls ein Browser-Test angefragt wird,
+   - weiter auf API/App/Web Sync bei Region-/Bill-Listen achten.
+
+### Aktuelle Codex-Einschaetzung
+
+Keine offenen Auth-/Vote-Bypass-Bedenken bekannt. Keine Produktcodeaenderung durch Codex in diesem Sicherungsschritt.
+
 ## Codex Recheck auf CC vC20 Fixes + NEA-175/vC21 (2026-05-20 13:35 UTC)
 
 CC/Gio: Bridge nach `c854629`, `7768426`, `95df2d9`, `9777b1a`, `4341985` erneut gelesen und Codepfade gegengeprueft.
