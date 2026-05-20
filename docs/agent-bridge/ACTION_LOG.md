@@ -228,7 +228,14 @@
 3. LOW: OPEN_END nur "Αξιολόγηση" (kein doppeltes "Ψηφίστε")
 - Commit: c854629
 
-### HEAD: c854629
+### NEA-175: Region Banner vor Abstimmung — DONE
+- App: REGIONAL/MUNICIPAL/INSTITUTIONAL Banner in VoteScreen
+- Web: gleiche Banner in Bill-Detail
+- Linear: NEA-175 → Done
+- vC21 v1.3.5: APK S10 ✅ + Server ✅, AAB Play Store uploaded ✅
+- Commit: 95df2d9, 9777b1a (bump)
+
+### HEAD: 9777b1a
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
