@@ -118,12 +118,10 @@ async def _resolve_category(bill: ParliamentBill, db: AsyncSession) -> int:
     return await get_or_create_category("Νομοσχέδια", parent)
 
 
-async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
-    """Create a Discourse topic for a bill. Returns topic_id."""
-    category_id = await _resolve_category(bill, db)
+def _build_topic_body(bill: ParliamentBill) -> str:
+    """Build the Discourse topic body for a bill."""
     ekklesia_url = f"https://ekklesia.gr/el/bills/{bill.id}"
 
-    # Status badge
     status_labels = {
         "ANNOUNCED": "📋 Ανακοινώθηκε",
         "ACTIVE": "🗳️ Ενεργή Ψηφοφορία",
@@ -134,7 +132,6 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
     status_val = bill.status.value if bill.status else "ACTIVE"
     status_badge = status_labels.get(status_val, f"📌 {status_val}")
 
-    # Governance level label
     gov_labels = {
         "NATIONAL": "🇬🇷 Εθνικό",
         "REGIONAL": "🏛️ Περιφερειακό",
@@ -144,11 +141,9 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
     gov_val = bill.governance_level.value if bill.governance_level else "NATIONAL"
     gov_label = gov_labels.get(gov_val, gov_val)
 
-    # Source badge
     source = getattr(bill, "source", "PARLIAMENT") or "PARLIAMENT"
     source_badge = "📜 ΒΟΥΛΗ" if source == "PARLIAMENT" else "📋 ΔΙΑΥΓΕΙΑ"
 
-    # Build rich body
     summary = bill.summary_short_el or bill.pill_el or ""
     long_text = bill.summary_long_el or ""
 
@@ -183,6 +178,23 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
             "> Η ψήφος σας είναι κρυπτογραφημένη (Ed25519) — κανείς δεν γνωρίζει τι ψηφίσατε.\n\n"
         )
     body += "*Αυτό το θέμα δημιουργήθηκε αυτόματα από το σύστημα ekklesia.*\n"
+    return body
+
+
+def _build_topic_tags(bill: ParliamentBill) -> list[str]:
+    return [
+        "ekklesia",
+        (bill.governance_level.value if bill.governance_level else "national").lower(),
+        (getattr(bill, "source", "PARLIAMENT") or "PARLIAMENT").lower(),
+        bill.status.value.lower().replace("_", "-") if bill.status else "active",
+    ]
+
+
+async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
+    """Create a Discourse topic for a bill. Returns topic_id."""
+    category_id = await _resolve_category(bill, db)
+    body = _build_topic_body(bill)
+    tags = _build_topic_tags(bill)
 
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.post(
@@ -191,12 +203,7 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
                 "title": bill.title_el[:255],
                 "raw": body,
                 "category": category_id,
-                "tags": [
-                    "ekklesia",
-                    (bill.governance_level.value if bill.governance_level else "national").lower(),
-                    (getattr(bill, "source", "PARLIAMENT") or "PARLIAMENT").lower(),
-                    bill.status.value.lower().replace("_", "-") if bill.status else "active",
-                ],
+                "tags": tags,
             },
             headers=_headers(),
         )
@@ -206,19 +213,14 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
 
 
 async def update_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> bool:
-    """Update existing Discourse topic: move category + update tags."""
+    """Update existing Discourse topic: category + tags + first post body."""
     if not bill.forum_topic_id or not DISCOURSE_API_KEY:
         return False
 
     try:
         category_id = await _resolve_category(bill, db)
-        source = getattr(bill, "source", "PARLIAMENT") or "PARLIAMENT"
-        tags = [
-            "ekklesia",
-            (bill.governance_level.value if bill.governance_level else "national").lower(),
-            source.lower(),
-            bill.status.value.lower().replace("_", "-") if bill.status else "active",
-        ]
+        tags = _build_topic_tags(bill)
+        body = _build_topic_body(bill)
 
         async with httpx.AsyncClient(timeout=15) as client:
             # Update topic category + tags
@@ -227,11 +229,29 @@ async def update_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> bool
                 json={"category_id": category_id, "tags": tags},
                 headers=_headers(),
             )
-            if r.status_code == 200:
-                logger.info("Updated topic %d for bill %s (cat=%d, tags=%s)",
-                            bill.forum_topic_id, bill.id, category_id, tags)
-                return True
-            logger.warning("Topic update failed for %s: HTTP %d", bill.id, r.status_code)
+            if r.status_code != 200:
+                logger.warning("Topic update failed for %s: HTTP %d", bill.id, r.status_code)
+                return False
+
+            # Get first post ID
+            t = await client.get(
+                f"{DISCOURSE_API_URL}/t/{bill.forum_topic_id}.json",
+                headers=_headers(),
+            )
+            if t.status_code == 200:
+                posts = t.json().get("post_stream", {}).get("posts", [])
+                if posts:
+                    post_id = posts[0]["id"]
+                    # Update first post body
+                    await client.put(
+                        f"{DISCOURSE_API_URL}/posts/{post_id}.json",
+                        json={"post": {"raw": body}},
+                        headers=_headers(),
+                    )
+
+            logger.info("Updated topic %d for bill %s (cat+tags+body)",
+                        bill.forum_topic_id, bill.id)
+            return True
     except Exception as e:
         logger.error("Topic update error for %s: %s", bill.id, e)
     return False
