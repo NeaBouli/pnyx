@@ -1,5 +1,18 @@
 # Action Log
 
+## 2026-05-21 — NEA-235 + NEA-236 + Analytics Fix + Scraper Cleanup
+
+- **NEA-235 Forum Links:** `extract_bill_text()` filtert jetzt Parliament-Navigation, Cookies, Accessibility-Boilerplate. `_build_topic_body()` sanitized summaries. Forum sync `greenlet_spawn` Bug gefixt (`db.refresh()`). 15 Bills in DB bereinigt (SQL).
+- **NEA-236 Monitor:** 9 Rules (vorher 6): +Forum Sync Errors, +API Health, +Disk Usage
+- **Analytics DEMO-Fix:** `analytics_overview()` filtert jetzt DEMO-* Bills (war: 3 Ενεργά inkl. 2 DEMO, jetzt korrekt 1)
+- **Scraper Status:** OK — 12h Intervall, Container-Restart hat Scheduler zurückgesetzt, nächster Run automatisch
+- **Bills Diskrepanz:** DB 3 ACTIVE (1 real + 2 DEMO), API korrekt filtert DEMO raus, Analytics-Count war falsch → gefixt
+- **DB Healthcheck:** `ekklesia-db` unhealthy wegen leerer `POSTGRES_USER` in Shell-ENV — DB funktioniert aber. Container-Deploy braucht `export $(grep -v '^#' /opt/ekklesia/.env.production | xargs)` vor `docker compose up`
+- **Commit:** `37879f5`
+- **Deployed:** API + Monitor rebuilt (2026-05-21)
+
+---
+
 ## 2026-05-20/21 — Ticker Card Fix (3 Commits + Docker Rebuild)
 
 - **Problem:** Ticker-Boxen (Votes in Progress) aendern Groesse je nach Inhalt, Box 3 (Results) besonders betroffen
