@@ -249,7 +249,26 @@
 - Forum: 85+ Topics, Auto-Kategorisierung
 - 4-Kanal Text-Pipeline: 15/21 enriched
 
-### HEAD: 7953e31
+### NEA-234: Landing Transparenz + Ticker-Fix + Dependabot
+- Transparenz: #transparency Anker, Nav "Διαφάνεια", Beta/Alpha Sektion
+- Kacheln: Beta +Konsensierung/Diavgeia/Wahlbezirk/Helios🔄, Alpha bereinigt
+- FAQ: Helios/Semaphore Frage
+- Ticker: height:180px, kein Layout-Shift, Titel mit ellipsis
+- API limit le=100→le=500 (Web limit=200 verursachte 422)
+- Dependabot: 7 PRs gemergt (#60-66,68), 3 Major offen (#64,67,69)
+- Codex V20-02: Mobile limit gefixt (im Code, nächster APK-Build)
+- Commits: e254e7b, 1e549fc, ce15f7d, 3618935
+
+### Session-Stand bei Neustart (20.05.2026)
+- HEAD: 3618935 (lokal = remote, synchron)
+- Untracked: apps/representative/* (Codex), apps/dashboard/tsconfig.tsbuildinfo
+- S10: vC21 v1.3.5 installiert
+- AAB: vC21 Play Store uploaded ✅
+- Server: API vC21 + Web rebuilt
+- CI: alle grün
+- Offene PRs: #64 eslint-next, #67 recharts 2→3, #69 next 14→16
+
+### HEAD: 3618935
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
@@ -2091,6 +2110,37 @@
 - **Geaenderte Bridge-Dateien:**
   - `docs/agent-bridge/CODEX_TO_CLAUDE.md`
   - `docs/agent-bridge/CODEX_FINDINGS.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine Produktcodeaenderung**
+- **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Deployment**
+
+## 2026-05-20 - Codex: Restart-Handoff vor Rechner-Neustart
+
+- **Agent:** Codex
+- **Aktion:** Aktuellen Stand fuer Neustart/Wiederaufnahme gesichert.
+- **Aktueller HEAD vor Restart:** `3618935 fix: Ticker cards fixed height 180px + no layout shift`
+- **Branch-Status:** `main...origin/main` synchron.
+- **Recheck kurz vor Sicherung:**
+  - Mobile V20-02 Residual ist inzwischen gefixt: `apps/mobile/src/lib/api.ts` setzt `limit=200`.
+  - Backend erlaubt `limit <= 500` fuer `/api/v1/bills`.
+  - vC18/vC20 Codex Findings sind geschlossen.
+  - NEA-175/vC21 Region Banner ist Bridge-seitig akzeptiert.
+  - Neue spaetere Commits vorhanden: NEA-234 Landing/FAQ/Nav Helios/Semaphore und Ticker-card Layout-Fix.
+- **Bekannte lokale untracked Dateien, nicht von Codex anfassen ohne Gio-Freigabe:**
+  - `apps/dashboard/tsconfig.tsbuildinfo`
+  - `apps/representative/.claude/`
+  - `apps/representative/AGENTS.md`
+  - `apps/representative/CLAUDE.md`
+  - `apps/representative/index.ts`
+  - `apps/representative/package-lock.json`
+- **Wiederaufnahme-Regel:**
+  - Nach Restart zuerst Bridge lesen, dann `git pull --ff-only`, dann neuen Log/Status pruefen.
+  - Bridge-Watcher weiter alle ca. 15 Minuten bei aktiver pnyx-Arbeit.
+  - Neue Bedenken direkt in Bridge dokumentieren.
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/CODEX_TO_CLAUDE.md`
   - `docs/agent-bridge/ACTION_LOG.md`
 - **Keine Produktcodeaenderung**
 - **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
