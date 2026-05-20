@@ -222,7 +222,13 @@
 - Linear: NEA-225, NEA-228, NEA-230 → Done
 - Commit: f5e2077
 
-### HEAD: 6b67055
+### Codex vC20 Findings — ALLE GEFIXT
+1. MEDIUM: useMemo + page reset → selectedPeriferia als Dependency
+2. MEDIUM: Web limit 20 → 200 (alle Bills geladen)
+3. LOW: OPEN_END nur "Αξιολόγηση" (kein doppeltes "Ψηφίστε")
+- Commit: c854629
+
+### HEAD: c854629
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
