@@ -257,6 +257,17 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
     if bill.status not in votable:
         raise HTTPException(400, f"Voting closed. Status: {bill.status.value}")
 
+    # Governance scope check (same as normal vote)
+    from models import GovernanceLevel
+    gov = getattr(bill, "governance_level", None)
+    if gov and gov not in (GovernanceLevel.NATIONAL, GovernanceLevel.INSTITUTIONAL):
+        if gov == GovernanceLevel.REGIONAL:
+            if not identity.periferia_id or identity.periferia_id != bill.periferia_id:
+                raise HTTPException(403, "Αυτή η ψηφοφορία αφορά μόνο κατοίκους αυτής της Περιφέρειας.")
+        elif gov == GovernanceLevel.MUNICIPAL:
+            if not identity.dimos_id or identity.dimos_id != bill.dimos_id:
+                raise HTTPException(403, "Αυτή η ψηφοφορία αφορά μόνο κατοίκους αυτού του Δήμου.")
+
     vote_choice = VoteChoice(req.vote)
 
     # Check for existing vote
@@ -344,7 +355,8 @@ async def qr_web_consensus(req: QRConsensusRequest, db: AsyncSession = Depends(g
             IdentityRecord.status == KeyStatus.ACTIVE,
         )
     )
-    if not id_result.scalar_one_or_none():
+    identity = id_result.scalar_one_or_none()
+    if not identity:
         raise HTTPException(403, "Η ταυτότητα δεν βρέθηκε ή έχει ανακληθεί")
 
     # Check bill is OPEN_END
@@ -355,6 +367,17 @@ async def qr_web_consensus(req: QRConsensusRequest, db: AsyncSession = Depends(g
         raise HTTPException(404, "Το νομοσχέδιο δεν βρέθηκε")
     if bill.status != BillStatus.OPEN_END:
         raise HTTPException(400, "Η συναίνεση είναι δυνατή μόνο για OPEN_END")
+
+    # Governance scope check
+    from models import GovernanceLevel
+    gov = getattr(bill, "governance_level", None)
+    if gov and gov not in (GovernanceLevel.NATIONAL, GovernanceLevel.INSTITUTIONAL):
+        if gov == GovernanceLevel.REGIONAL:
+            if not identity.periferia_id or identity.periferia_id != bill.periferia_id:
+                raise HTTPException(403, "Αυτή η αξιολόγηση αφορά μόνο κατοίκους αυτής της Περιφέρειας.")
+        elif gov == GovernanceLevel.MUNICIPAL:
+            if not identity.dimos_id or identity.dimos_id != bill.dimos_id:
+                raise HTTPException(403, "Αυτή η αξιολόγηση αφορά μόνο κατοίκους αυτού του Δήμου.")
 
     # Upsert consensus vote
     await db.execute(sql_text("""
@@ -371,6 +394,13 @@ async def qr_web_consensus(req: QRConsensusRequest, db: AsyncSession = Depends(g
     row = agg.fetchone()
     bill.consensus_score = round(row[0], 2) if row[0] is not None else 0.0
     bill.consensus_count = row[1] or 0
+
+    # Record in cplm_history (same as normal consensus)
+    weight = req.score / 5.0
+    await db.execute(sql_text("""
+        INSERT INTO cplm_history (nullifier_hash, economic_score, social_score, trigger_type, trigger_bill_id)
+        VALUES (:nh, :econ, :soc, 'consensus', :bill_id)
+    """), {"nh": nullifier_hash, "econ": weight * 0.05, "soc": 0.0, "bill_id": req.bill_id})
 
     await db.commit()
 

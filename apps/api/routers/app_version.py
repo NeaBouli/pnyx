@@ -13,8 +13,8 @@ LATEST_VERSION_CODE = 18
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v17 — Φίλτρα Φορέων, Forum κατηγορίες, Κλίμακα Συναίνεσης Ed25519, API Filter"
-RELEASE_NOTES_EN = "v17 — Institutional filters, Forum categories, Ed25519 consensus, API governance/source filter"
+RELEASE_NOTES_EL = "v18 — Ζωντανοί μετρητές, Φίλτρα Φορέων, Κλίμακα Συναίνεσης, Έλεγχος Περιφέρειας"
+RELEASE_NOTES_EN = "v18 — Live stats, Institutional filters, Consensus scale, Region auth checks"
 
 FDROID_URL = ""  # Not live yet — MR !38007 pending
 PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=ekklesia.gr"
