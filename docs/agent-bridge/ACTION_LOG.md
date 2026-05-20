@@ -114,7 +114,17 @@
 - AAB: ~/Desktop/ekklesia-v1.3.1-vC17-PLAY.aab (45M)
 - Commits: 97078c5, 18f8a2b, 6a58da9
 
-### HEAD: 6a58da9
+### NEA-223+224: Region Auth + Community Live Stats + vC18
+- Consensus: governance_level Prüfung (REGIONAL/MUNICIPAL)
+- Vote: INSTITUTIONAL = immer erlaubt
+- /public/stats: parliament/diavgeia/archived/arweave/votes Zähler
+- community.html: live Stats (Βουλή/Διαύγεια/Ψήφοι/Arweave/AR/Scraper)
+- vC18 v1.3.2: APK S10 ✅ + Server ✅
+- AAB: ~/Desktop/ekklesia-v1.3.2-vC18-PLAY.aab
+- Rollback-Tag: pre-region-fix-20260520
+- Commit: dd85988
+
+### HEAD: dd85988
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
