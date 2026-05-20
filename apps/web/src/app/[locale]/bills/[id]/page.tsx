@@ -35,6 +35,9 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
   const [aiSummary, setAiSummary] = useState<string>("");
   const [aiLoading, setAiLoading] = useState(false);
   const [qrSessionId, setQrSessionId] = useState<string | null>(null);
+  const [consensusScore, setConsensusScore] = useState<number>(0);
+  const [consensusSubmitting, setConsensusSubmitting] = useState(false);
+  const [consensusDone, setConsensusDone] = useState(false);
 
   const titleKey = locale === "el" ? "title_el" : "title_en";
   const shortKey = locale === "el" ? "summary_short_el" : "summary_short_en";
@@ -402,25 +405,104 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
                   : "Πόσο συμφωνείτε με την απόφαση της Βουλής;"
                 : "How much do you agree with this decision?"}
             </p>
-            <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-              <span>{locale === "el" ? "Αντίσταση" : "Resistance"}</span>
-              <span>{locale === "el" ? "Ουδέτερο" : "Neutral"}</span>
-              <span>{locale === "el" ? "Συναίνεση" : "Consensus"}</span>
-            </div>
-            <div className="flex gap-1.5 justify-center flex-wrap">
-              {[-5,-4,-3,-2,-1,0,1,2,3,4,5].map(v => (
-                <span key={v} className={`w-9 h-9 flex items-center justify-center rounded-lg text-xs font-bold border ${
-                  v > 0 ? "bg-green-50 text-green-700 border-green-200" :
-                  v < 0 ? "bg-red-50 text-red-700 border-red-200" :
-                  "bg-gray-50 text-gray-500 border-gray-200"
-                }`}>
-                  {v > 0 ? "+" : ""}{v}
-                </span>
-              ))}
-            </div>
-            {(bill as any).consensus_count > 0 && (
-              <div className="mt-4 text-center">
-                <span className="text-2xl font-black text-purple-700">
+
+            {consensusDone ? (
+              <div className="text-center py-4">
+                <div className="text-3xl mb-2">✅</div>
+                <p className="text-purple-800 font-bold">
+                  {locale === "el" ? "Η αξιολόγησή σας καταγράφηκε!" : "Your rating has been recorded!"}
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                  <span>{locale === "el" ? "Αντίσταση" : "Resistance"}</span>
+                  <span>{locale === "el" ? "Ουδέτερο" : "Neutral"}</span>
+                  <span>{locale === "el" ? "Συναίνεση" : "Consensus"}</span>
+                </div>
+                <div className="flex gap-1.5 justify-center flex-wrap">
+                  {[-5,-4,-3,-2,-1,0,1,2,3,4,5].map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setConsensusScore(v)}
+                      disabled={!qrSessionId}
+                      className={`w-10 h-10 flex items-center justify-center rounded-lg text-xs font-bold border transition-all ${
+                        consensusScore === v
+                          ? v > 0 ? "bg-green-600 text-white border-green-700 scale-110" :
+                            v < 0 ? "bg-red-600 text-white border-red-700 scale-110" :
+                            "bg-gray-600 text-white border-gray-700 scale-110"
+                          : !qrSessionId
+                            ? "bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed"
+                            : v > 0 ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100 cursor-pointer" :
+                              v < 0 ? "bg-red-50 text-red-700 border-red-200 hover:bg-red-100 cursor-pointer" :
+                              "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100 cursor-pointer"
+                      }`}
+                    >
+                      {v > 0 ? "+" : ""}{v}
+                    </button>
+                  ))}
+                </div>
+                <div className="text-center mt-3 text-2xl font-black" style={{
+                  color: consensusScore > 0 ? "#16a34a" : consensusScore < 0 ? "#dc2626" : "#6b7280"
+                }}>
+                  {consensusScore > 0 ? "+" : ""}{consensusScore}
+                </div>
+
+                {qrSessionId ? (
+                  <button
+                    onClick={async () => {
+                      setConsensusSubmitting(true);
+                      try {
+                        const r = await fetch(`https://api.ekklesia.gr/api/v1/vote/${encodeURIComponent(billId)}/consensus`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            score: consensusScore,
+                            nullifier_hash: qrSessionId,
+                            signature_hex: "web-qr-" + qrSessionId.substring(0, 56),
+                          }),
+                        });
+                        if (r.ok) {
+                          setConsensusDone(true);
+                        } else {
+                          const d = await r.json().catch(() => ({}));
+                          alert(d.detail || "Σφάλμα");
+                        }
+                      } catch {
+                        alert("Σφάλμα σύνδεσης");
+                      } finally {
+                        setConsensusSubmitting(false);
+                      }
+                    }}
+                    disabled={consensusSubmitting}
+                    className="mt-4 w-full py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 transition-colors disabled:opacity-50"
+                  >
+                    {consensusSubmitting
+                      ? "..."
+                      : locale === "el" ? "Υποβολή Αξιολόγησης" : "Submit Rating"}
+                  </button>
+                ) : (
+                  <div className="mt-4">
+                    <p className="text-xs text-purple-500 text-center mb-3">
+                      {locale === "el"
+                        ? "Σαρώστε τον κωδικό QR με την εφαρμογή εκκλησία για να ξεκλειδώσετε την αξιολόγηση"
+                        : "Scan the QR code with the ekklesia app to unlock rating"}
+                    </p>
+                    <QRCodeVoteStub
+                      billId={billId}
+                      purpose="consensus"
+                      onAuthenticated={(sid) => {
+                        setQrSessionId(sid);
+                      }}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+
+            {(bill as any).consensus_count > 0 && !consensusDone && (
+              <div className="mt-4 text-center border-t border-purple-200 pt-3">
+                <span className="text-xl font-black text-purple-700">
                   {((bill as any).consensus_score || 0) > 0 ? "+" : ""}{((bill as any).consensus_score || 0).toFixed(1)}
                 </span>
                 <span className="text-sm text-purple-500 ml-2">
@@ -428,15 +510,6 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
                 </span>
               </div>
             )}
-            <div className="mt-4">
-              <QRCodeVoteStub
-                billId={billId}
-                purpose="consensus"
-                onAuthenticated={(sid) => {
-                  setQrSessionId(sid);
-                }}
-              />
-            </div>
           </div>
         )}
 
