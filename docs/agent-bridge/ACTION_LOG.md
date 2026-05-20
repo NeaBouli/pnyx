@@ -1,6 +1,6 @@
 # Action Log
 
-## 2026-05-19/20 — Marathon Session: vC15→vC17 + NEA-171/187/199/210/221/222
+## 2026-05-19/20 — Marathon Session: vC15→vC18 + NEA-171/187/199/210/221/222/223/224/226
 
 ### vC15 v1.2.1 Build + Deploy
 - Vote Signature Fix: Server payload (JSON) → Client-Format (colon-separated)
@@ -124,7 +124,19 @@
 - Rollback-Tag: pre-region-fix-20260520
 - Commit: dd85988
 
-### HEAD: dd85988
+- AAB vC18 Play Store uploaded ✅
+
+### Session Summary (43 Commits, 83aafa9 → b1dcc2a)
+- Versions: vC15 → vC16 → vC17 → vC18
+- NEA-Tickets closed: 171, 187, 199, 210, 221, 222, 223, 224, 226
+- Codex-Review: 4 kritische + 4 mittlere Findings → alle resolved
+- Bills: 21 Parliament + 100 Diavgeia = 121 total
+- Text enriched: 3 → 15 (4-Kanal Pipeline)
+- Org-Namen: 97/97 aufgelöst
+- Forum: 51 Topics resync'd, Auto-Kategorisierung aktiv
+- Dependabot: 10 PRs offen (npm + pip)
+
+### HEAD: b1dcc2a
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
