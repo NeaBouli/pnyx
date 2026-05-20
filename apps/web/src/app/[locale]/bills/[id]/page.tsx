@@ -453,20 +453,21 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
                     onClick={async () => {
                       setConsensusSubmitting(true);
                       try {
-                        const r = await fetch(`https://api.ekklesia.gr/api/v1/vote/${encodeURIComponent(billId)}/consensus`, {
+                        const r = await fetch("https://api.ekklesia.gr/api/v1/polis/qr-consensus", {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({
+                            session_id: qrSessionId,
+                            bill_id: billId,
                             score: consensusScore,
-                            nullifier_hash: qrSessionId,
-                            signature_hex: "web-qr-" + qrSessionId.substring(0, 56),
                           }),
                         });
                         if (r.ok) {
                           setConsensusDone(true);
                         } else {
                           const d = await r.json().catch(() => ({}));
-                          alert(d.detail || "Σφάλμα");
+                          const msg = typeof d.detail === "string" ? d.detail : JSON.stringify(d.detail || "Σφάλμα");
+                          alert(msg);
                         }
                       } catch {
                         alert("Σφάλμα σύνδεσης");

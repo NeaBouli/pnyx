@@ -300,3 +300,90 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
                 req.bill_id, req.vote, nullifier_hash[:8])
 
     return {"success": True, "message": msg, "bill_id": req.bill_id, "vote": req.vote}
+
+
+class QRConsensusRequest(BaseModel):
+    session_id: str = Field(..., min_length=10)
+    bill_id: str = Field(..., min_length=1)
+    score: int = Field(..., ge=-5, le=5)
+
+
+@router.post("/qr-consensus")
+async def qr_web_consensus(req: QRConsensusRequest, db: AsyncSession = Depends(get_db)):
+    """Browser submits consensus via an authenticated QR session.
+
+    Same pattern as qr-vote: session IS the proof of identity.
+    No Ed25519 signature required — identity verified during QR auth.
+    """
+    from sqlalchemy import text as sql_text
+
+    r = await _redis()
+    data = await r.hgetall(f"polis_qr:{req.session_id}")
+
+    if not data:
+        raise HTTPException(410, "Η συνεδρία έληξε — σαρώστε ξανά τον κωδικό QR")
+
+    if data.get("status") != "authenticated":
+        raise HTTPException(403, "Η συνεδρία δεν έχει πιστοποιηθεί")
+
+    if data.get("purpose") != "consensus":
+        raise HTTPException(400, "Η συνεδρία δεν είναι τύπου consensus")
+
+    session_bill = data.get("bill_id") or ""
+    if session_bill != req.bill_id:
+        raise HTTPException(403, "Αναντιστοιχία bill_id")
+
+    nullifier_hash = data.get("nullifier_hash", "")
+    if not nullifier_hash:
+        raise HTTPException(400, "Λείπουν στοιχεία ταυτότητας")
+
+    # Verify identity
+    id_result = await db.execute(
+        select(IdentityRecord).where(
+            IdentityRecord.nullifier_hash == nullifier_hash,
+            IdentityRecord.status == KeyStatus.ACTIVE,
+        )
+    )
+    if not id_result.scalar_one_or_none():
+        raise HTTPException(403, "Η ταυτότητα δεν βρέθηκε ή έχει ανακληθεί")
+
+    # Check bill is OPEN_END
+    bill = (await db.execute(
+        select(ParliamentBill).where(ParliamentBill.id == req.bill_id)
+    )).scalar_one_or_none()
+    if not bill:
+        raise HTTPException(404, "Το νομοσχέδιο δεν βρέθηκε")
+    if bill.status != BillStatus.OPEN_END:
+        raise HTTPException(400, "Η συναίνεση είναι δυνατή μόνο για OPEN_END")
+
+    # Upsert consensus vote
+    await db.execute(sql_text("""
+        INSERT INTO consensus_votes (nullifier_hash, bill_id, score)
+        VALUES (:nullifier, :bill_id, :score)
+        ON CONFLICT (nullifier_hash, bill_id)
+        DO UPDATE SET score = :score, created_at = NOW()
+    """), {"nullifier": nullifier_hash, "bill_id": req.bill_id, "score": req.score})
+
+    # Update aggregate
+    agg = await db.execute(sql_text("""
+        SELECT AVG(score)::float, COUNT(*) FROM consensus_votes WHERE bill_id = :bill_id
+    """), {"bill_id": req.bill_id})
+    row = agg.fetchone()
+    bill.consensus_score = round(row[0], 2) if row[0] is not None else 0.0
+    bill.consensus_count = row[1] or 0
+
+    await db.commit()
+
+    # Consume session
+    await r.delete(f"polis_qr:{req.session_id}")
+
+    logger.info("QR consensus: bill=%s score=%d nullifier=%s...",
+                req.bill_id, req.score, nullifier_hash[:8])
+
+    return {
+        "success": True,
+        "bill_id": req.bill_id,
+        "your_score": req.score,
+        "consensus_score": bill.consensus_score,
+        "consensus_count": bill.consensus_count,
+    }
