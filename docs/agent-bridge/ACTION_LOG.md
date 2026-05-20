@@ -1,5 +1,17 @@
 # Action Log
 
+## 2026-05-21 — NEA-236 Health-Check Vollausbau (15 Rules + Cron)
+
+- **Monitor:** 15 Rules (vorher 9): +DB Consistency, +Diavgeia Stale, +Web URLs, +Arweave Wallet, +Forum Completeness, +Scraper Job Errors
+- **Arweave Rule:** Aggregiert statt 100 Einzel-Alerts
+- **Telegram:** Truncation bei >4000 Zeichen
+- **--once Modus:** `python3 monitor.py --once` fuer Cron (exit 0=OK, 1=Alerts)
+- **Cronjob:** `0 6 * * * docker exec ekklesia-monitor python3 monitor.py --once >> /var/log/ekklesia-health.log 2>&1`
+- **Test:** 15 Checks, 4 Alerts (Arweave pending, Diavgeia stale, Forum 3 missing, Parliament stale), Telegram OK
+- **Commits:** `3357e00`, `0c6db62`
+
+---
+
 ## 2026-05-21 — NEA-235 + NEA-236 + Analytics Fix + Scraper Cleanup
 
 - **NEA-235 Forum Links:** `extract_bill_text()` filtert jetzt Parliament-Navigation, Cookies, Accessibility-Boilerplate. `_build_topic_body()` sanitized summaries. Forum sync `greenlet_spawn` Bug gefixt (`db.refresh()`). 15 Bills in DB bereinigt (SQL).

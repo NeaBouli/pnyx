@@ -13,7 +13,7 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `ac1bbaf` (fix: Codex review — DEMO filter on votes/divergence + monitor int guard)
+- **HEAD:** `0c6db62` (fix: NEA-236 aggregate arweave alerts + truncate telegram)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`
 - **Rollback:** `pre-session-20260518` → `5349b39`
 - **Remote:** synchron mit GitHub
