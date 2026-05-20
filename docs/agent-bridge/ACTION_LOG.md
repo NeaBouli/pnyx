@@ -188,7 +188,7 @@
 3. **LOW**: Release Notes → **FIXED** (v18)
 - Commit: 0e56403
 
-### HEAD: 0e56403
+### HEAD: 92847ba
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
