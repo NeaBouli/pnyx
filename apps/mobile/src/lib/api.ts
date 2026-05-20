@@ -72,7 +72,7 @@ export async function fetchBills(params?: {
   source?: string;
 }): Promise<Bill[]> {
   const qs = new URLSearchParams();
-  qs.set("limit", "100");
+  qs.set("limit", "200");
   if (params?.governance) qs.set("governance", params.governance);
   if (params?.source) qs.set("source", params.source);
   return request<Bill[]>(`/api/v1/bills?${qs.toString()}`);
