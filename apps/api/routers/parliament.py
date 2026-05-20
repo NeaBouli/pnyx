@@ -51,6 +51,8 @@ class BillSummary(BaseModel):
     source:              str | None = "PARLIAMENT"
     diavgeia_ada:        str | None = None
     flag_count:          int | None = 0
+    periferia_id:        int | None = None
+    dimos_id:            int | None = None
 
 class BillDetail(BaseModel):
     id:                     str
@@ -176,6 +178,8 @@ async def get_bills(
         source=b.source or "PARLIAMENT",
         diavgeia_ada=b.diavgeia_ada,
         flag_count=b.flag_count or 0,
+        periferia_id=b.periferia_id,
+        dimos_id=b.dimos_id,
     ) for b in bills]
 
 

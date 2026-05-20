@@ -50,14 +50,23 @@ export default function BillsScreen() {
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = filter === "ALL" ? bills
-    : filter === "ARWEAVE" ? bills.filter(b => b.arweave_tx_id)
-    : filter === "DIAVGEIA" ? bills.filter(b => b.source === "DIAVGEIA")
-    : filter === "MUNICIPAL" ? bills.filter(b => b.governance_level === "MUNICIPAL")
-    : filter === "REGIONAL" ? bills.filter(b => b.governance_level === "REGIONAL")
-    : filter === "INSTITUTIONAL" ? bills.filter(b => b.governance_level === "INSTITUTIONAL")
-    : filter === "OPEN_END" ? bills.filter(b => b.status === "OPEN_END")
-    : bills.filter(b => b.status === filter);
+  // Region-Filter: wenn User Wahlbezirk hat, nur relevante Bills
+  const regionBills = hasRegion ? bills.filter(b => {
+    const gov = b.governance_level;
+    if (!gov || gov === "NATIONAL" || gov === "INSTITUTIONAL") return true;
+    if (gov === "REGIONAL" && b.periferia_id === userPeriferia) return true;
+    if (gov === "MUNICIPAL" && b.dimos_id === userDimos) return true;
+    return false;
+  }) : bills;
+
+  const filtered = filter === "ALL" ? regionBills
+    : filter === "ARWEAVE" ? regionBills.filter(b => b.arweave_tx_id)
+    : filter === "DIAVGEIA" ? regionBills.filter(b => b.source === "DIAVGEIA")
+    : filter === "MUNICIPAL" ? regionBills.filter(b => b.governance_level === "MUNICIPAL")
+    : filter === "REGIONAL" ? regionBills.filter(b => b.governance_level === "REGIONAL")
+    : filter === "INSTITUTIONAL" ? regionBills.filter(b => b.governance_level === "INSTITUTIONAL")
+    : filter === "OPEN_END" ? regionBills.filter(b => b.status === "OPEN_END")
+    : regionBills.filter(b => b.status === filter);
 
   const shareBill = async (bill: any) => {
     try {
