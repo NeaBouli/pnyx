@@ -13,11 +13,11 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `49e24ba` (chore(bridge): NEA-236 health-check 15 rules + cron documented)
-- **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`
-- **Rollback:** `pre-session-20260518` → `5349b39`
+- **HEAD:** `0221813` (feat: NEA-189 Politician Evaluation — Grundgeruest)
+- **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`, `pre-politikoi-20260521`
+- **Rollback:** `pre-politikoi-20260521` → `49e24ba`
 - **Remote:** synchron mit GitHub
-- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `49e24ba` (deployed 2026-05-21, Monitor rebuilt, Cronjob 06:00 UTC aktiv)
+- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `0221813` (deployed 2026-05-21, API rebuilt, Migration l501a2b3c4d5, Cronjob 06:00 UTC aktiv)
 
 ## Uncommitted Aenderungen
 
@@ -81,12 +81,12 @@
 
 ## Naechste Schritte (Prioritaet) — siehe auch Linear
 
-1. **AAB vC12 Upload** Play Console (~/Desktop/ekklesia-v1.1.0-vC12-PLAY.aab, 45MB)
-2. **F-Droid MR !38007** — Pipeline GRUEN, wartet auf `linsui` Review
-3. **Dashboard** — 25 Features (6 Prio HOCH vor Public Beta)
-4. **End-to-End QR Vote Test** — Mobile App → QR Scan → Browser Vote (Deep-Link Flow)
-5. **Wahlbezirk region_locked** — DB Column + ProfileScreen fuer Einmal-Regionswahl
-6. **analytics/votes-timeline 500** — GROUP BY Fix in analytics.py
+1. **NEA-189b Region-Locking** — Buerger muss in passender Region sein fuer Evaluation
+2. **AAB vC22 Upload** Play Console (neuer Build noetig mit Play-Keystore)
+3. **F-Droid MR !38007** — Pipeline GRUEN, wartet auf `linsui` Review
+4. **Dashboard** — 25 Features (6 Prio HOCH vor Public Beta) + Evaluation Dashboard
+5. **End-to-End QR Vote Test** — Mobile App → QR Scan → Browser Vote (Deep-Link Flow)
+6. **Wahlbezirk region_locked** — DB Column + ProfileScreen fuer Einmal-Regionswahl
 7. **Off-Site Backup** — Hetzner Storage Box
 
 ## F-Droid MR !38007 Status (2026-05-10)
@@ -186,21 +186,24 @@ Weiterhin UNSICHER:
 
 ## Letzte Aktualisierung
 
-- Datum/Zeit: 2026-05-18
+- Datum/Zeit: 2026-05-21
 - Agent: Claude Code
-- HEAD lokal: `5349b39` (gepusht)
-- HEAD server: `7e87b75` (deployed, API + Web neu gebaut)
-- Session 18.05: 6 Commits
-  - `56dae21` fix(mobile): vC12 Slider crash fix
-  - `d53ea32` fix(representative): URL index.html + gold icon
-  - `b6255d6` fix: QR Web Vote embed + API endpoint
-  - `43a11e0` feat(representative): Demo-Bypass ADA DEMO-123
-  - `7e87b75` fix: QR Web Vote — Next.js Flow (3 Voting-Pfade)
-  - `5349b39` chore: gold adaptive icon bg + builds/ gitignore
-- Rollback-Tag: `pre-session-20260518`
+- HEAD lokal: `0221813` (gepusht)
+- HEAD server: `0221813` (deployed, API rebuilt + Migration)
+- Session 21.05: NEA-236 Deploy + NEA-189 Grundgeruest
+  - `3357e00` feat: NEA-236 Health-Check 15 rules + --once mode for cron
+  - `0c6db62` fix: NEA-236 aggregate arweave alerts + truncate telegram message
+  - `49e24ba` chore(bridge): NEA-236 health-check 15 rules + cron documented
+  - `0221813` feat: NEA-189 Politician Evaluation — Grundgeruest
+- Rollback-Tag: `pre-politikoi-20260521` → `49e24ba`
 - Builds bereit:
-  - `~/Desktop/ekklesia-v1.1.0-vC12-PLAY.aab` (45MB) — Play Console
-  - `~/Desktop/ekprosopos-v1.0.0-vC1.apk` (54MB) — auf S10 getestet
+  - `~/Desktop/ekklesia-v1.3.1-vC22-NEA189.apk` (66MB) — auf S10 installiert (vC22)
+  - `~/Desktop/ekklesia-v1.1.0-vC12-PLAY.aab` (45MB) — Play Console (veraltet)
+- NEA-189 DB: `evaluation_questions` (8 Rows), `politician_evaluations`, `evaluation_enabled` auf `representative_tokens`
+- NEA-189 API: 6 neue Endpoints (2 Rep + 4 Public) unter `/rep/` und `/politicians/`
+- NEA-189 Mobile: PolitikoiScreen + EvaluatePoliticianScreen (vC22)
+- DEMO-123: evaluation_enabled=TRUE (manuell aktiviert fuer Tests)
+- APK auf Server: `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` (vC22, 66MB)
 - WICHTIG: Docker Container muessen per Image-Rebuild deployed werden (kein Volume-Mount fuer Code).
   Deploy-Flow: `git pull` → `docker compose build api/web` → Container manuell mit Traefik-Labels + Env neu erstellen
 

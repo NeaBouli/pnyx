@@ -1,5 +1,24 @@
 # Action Log
 
+## 2026-05-21 — NEA-189 Politician Evaluation Grundgeruest
+
+- **Migration:** `l501a2b3c4d5` — `evaluation_questions` (8 Seed-Fragen), `politician_evaluations`, `evaluation_enabled` auf `representative_tokens`
+- **API Rep:** POST `/rep/enable-evaluation`, GET `/rep/my-scores`
+- **API Public:** GET `/politicians/`, GET `/{ada}/questions`, POST `/{ada}/evaluate`, GET `/{ada}/scores`
+- **Router:** `apps/api/routers/evaluation.py` (neu), registriert in `main.py`
+- **Auth:** Ed25519 Signatur (Payload: `evaluate:{ada}:{nullifier}`), UPSERT bei Re-Bewertung
+- **ekprosopos:** Nav "Αξιολόγηση" + Consent Checkbox + Score-Anzeige (index.html)
+- **Mobile:** PolitikoiScreen.tsx + EvaluatePoliticianScreen.tsx + api.ts + signEvaluation() + Navigation
+- **BillsScreen:** Violetter "Πολιτικοί" Button in Filter-Leiste
+- **versionCode:** 21 → 22
+- **APK:** `~/Desktop/ekklesia-v1.3.1-vC22-NEA189.apk` (66MB), S10 installiert (RF8N313QMFL)
+- **Server:** API rebuilt, Migration erfolgreich, APK unter `/opt/ekklesia/app/docs/download/ekklesia-latest.apk`
+- **DEMO-123:** `evaluation_enabled=TRUE` manuell gesetzt fuer Tests
+- **Rollback:** `pre-politikoi-20260521` → `49e24ba`
+- **Commit:** `0221813`
+
+---
+
 ## 2026-05-21 — NEA-236 Health-Check Vollausbau (15 Rules + Cron)
 
 - **Monitor:** 15 Rules (vorher 9): +DB Consistency, +Diavgeia Stale, +Web URLs, +Arweave Wallet, +Forum Completeness, +Scraper Job Errors

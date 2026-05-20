@@ -2,7 +2,14 @@
 
 ## Aktiv / In Progress
 - [ ] NEA-72: Hermes Phase 1 — qwen2.5:14b installiert, Architektur TBD
-- [ ] AAB Upload zu Play Console (vC7 mit Scroll-Fix)
+- [ ] NEA-189b: Region-Locking fuer Evaluation (Buerger Region = Politiker Region)
+- [ ] AAB vC22 Upload zu Play Console (neuer Build mit Play-Keystore noetig)
+
+## Done (Session 21.05.2026)
+- [x] NEA-236: Health-Check 15 Rules deployed + Cronjob 06:00 UTC
+- [x] NEA-189: Politician Evaluation Grundgeruest (DB + API + Mobile + ekprosopos)
+- [x] vC22 APK auf S10 installiert + Test-Account importiert
+- [x] DEMO-123 evaluation_enabled=TRUE
 
 ## Blocked
 - [ ] NEA-59: F-Droid MR !38007 — wartet auf linsui Review
