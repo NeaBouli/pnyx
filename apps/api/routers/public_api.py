@@ -237,9 +237,32 @@ async def public_stats(_key=Depends(rate_limit_check), db: AsyncSession = Depend
         )
     ) or 0
 
+    parliament_bills = await db.scalar(
+        select(func.count(ParliamentBill.id)).where(ParliamentBill.source == "PARLIAMENT")
+    ) or 0
+    diavgeia_bills = await db.scalar(
+        select(func.count(ParliamentBill.id)).where(ParliamentBill.source == "DIAVGEIA")
+    ) or 0
+    archived_bills = await db.scalar(
+        select(func.count(ParliamentBill.id)).where(
+            ParliamentBill.status.in_([BillStatus.OPEN_END, BillStatus.PARLIAMENT_VOTED])
+        )
+    ) or 0
+    arweave_archived = await db.scalar(
+        select(func.count(ParliamentBill.id)).where(ParliamentBill.arweave_tx_id.isnot(None))
+    ) or 0
+
     return {
         "platform": "ekklesia.gr", "version": "Beta",
-        "stats": {"total_bills": total_bills, "active_bills": active_bills, "total_votes": total_votes},
+        "stats": {
+            "total_bills": total_bills,
+            "parliament_bills": parliament_bills,
+            "diavgeia_bills": diavgeia_bills,
+            "active_bills": active_bills,
+            "archived_bills": archived_bills,
+            "arweave_archived": arweave_archived,
+            "total_votes": total_votes,
+        },
         "license": "MIT", "source_code": "https://github.com/NeaBouli/pnyx",
         "data_license": "CC BY 4.0",
         "arweave_wallet": "2hkK3Bcr6garERqyBCLCiJ-d8zZzM5ZWe3_AzGdhBTs",

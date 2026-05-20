@@ -223,7 +223,7 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
     # 2b. Vote Scope: check governance_level permission
     from models import GovernanceLevel
     gov_level = getattr(bill, "governance_level", None)
-    if gov_level and gov_level != GovernanceLevel.NATIONAL:
+    if gov_level and gov_level not in (GovernanceLevel.NATIONAL, GovernanceLevel.INSTITUTIONAL):
         if gov_level == GovernanceLevel.REGIONAL:
             if not identity.periferia_id or identity.periferia_id != bill.periferia_id:
                 raise HTTPException(
@@ -646,6 +646,17 @@ async def submit_consensus(
     identity = id_result.scalar_one_or_none()
     if not identity:
         raise HTTPException(403, "Η ταυτότητα δεν βρέθηκε ή έχει ανακληθεί")
+
+    # Region-Berechtigung prüfen (gleiche Logik wie Vote)
+    from models import GovernanceLevel
+    gov_level = getattr(bill, "governance_level", None)
+    if gov_level and gov_level not in (GovernanceLevel.NATIONAL, GovernanceLevel.INSTITUTIONAL):
+        if gov_level == GovernanceLevel.REGIONAL:
+            if not identity.periferia_id or identity.periferia_id != bill.periferia_id:
+                raise HTTPException(403, "Αυτή η αξιολόγηση αφορά μόνο κατοίκους αυτής της Περιφέρειας.")
+        elif gov_level == GovernanceLevel.MUNICIPAL:
+            if not identity.dimos_id or identity.dimos_id != bill.dimos_id:
+                raise HTTPException(403, "Αυτή η αξιολόγηση αφορά μόνο κατοίκους αυτού του Δήμου.")
 
     # Ed25519 Signatur verifizieren
     consensus_payload = f"{bill_id}:{req.score}:{req.nullifier_hash}".encode()
