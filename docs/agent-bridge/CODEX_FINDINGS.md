@@ -6,6 +6,60 @@ Scope: NEA-221 Gegenpruefung — Tab-Layout, Konsensierung Crash, Web/App Sync
 Repo: `/Users/gio/Desktop/repo/pnyx`
 HEAD: `37c6707` (`chore(bridge): vC16 fixes deployed — 97 orgs resolved, S10+Server+AAB`)
 
+## Codex Watcher Recheck 2026-05-20 12:41 UTC — vC20 / NEA-225+232
+
+Status: NEW_FINDINGS_OPEN
+
+### V20-01 — Web Region-Typeahead nutzt `selectedPeriferia`, aber `useMemo` reagiert nicht darauf
+
+Status: OPEN
+Severity: MEDIUM
+
+Code-Beleg:
+
+- `apps/web/src/app/[locale]/bills/page.tsx:67` bis `apps/web/src/app/[locale]/bills/page.tsx:95`
+- Dependency-Array: `apps/web/src/app/[locale]/bills/page.tsx:95`
+
+`selectedPeriferia` wird innerhalb des `useMemo` gelesen, fehlt aber im Dependency-Array. Dadurch kann die Region-Auswahl im Web-Bills-Typeahead stale bleiben, bis eine andere Dependency (`bills`, `levelFilter`, `search`) neu ausloest.
+
+Zusaetzlich resetet die Pagination nicht bei Region-Wechsel:
+
+- `apps/web/src/app/[locale]/bills/page.tsx:102`
+
+Empfehlung: `selectedPeriferia` in `useMemo` und Page-Reset Dependencies aufnehmen.
+
+### V20-02 — Web/Mobile Region-Filter arbeiten auf begrenzten clientseitigen Bill-Sets
+
+Status: OPEN
+Severity: MEDIUM
+
+Web:
+
+- `apps/web/src/lib/api.ts:99` bis `apps/web/src/lib/api.ts:100` ruft `/api/v1/bills` ohne `limit`.
+- Backend default ist `limit=20`: `apps/api/routers/parliament.py:126` bis `apps/api/routers/parliament.py:137`.
+
+Mobile:
+
+- `apps/mobile/src/lib/api.ts:70` bis `apps/mobile/src/lib/api.ts:79` setzt `limit=100`.
+- Bridge meldet aktuell 121 Bills.
+
+NEA-232/NEA-225 filtern danach clientseitig. Relevante REGIONAL/MUNICIPAL Bills koennen ausserhalb des initial geladenen Fensters liegen und dadurch trotz passender Region unsichtbar bleiben.
+
+Empfehlung: Region-/Governance-/Source-/Status-Filter serverseitig verwenden oder paginiert alle relevanten Seiten laden. Mindestens Web sollte nicht bei Backend-Default 20 bleiben.
+
+### V20-03 — Mobile OPEN_END Card kann doppelte CTA-Hints anzeigen
+
+Status: OPEN
+Severity: LOW
+
+Code-Beleg:
+
+- `OPEN_END` ist in `VOTABLE`: `apps/mobile/src/screens/BillsScreen.tsx:22`
+- `Ψηφίστε →` wird fuer alle `VOTABLE` angezeigt: `apps/mobile/src/screens/BillsScreen.tsx:143`
+- `Αξιολόγηση →` wird zusaetzlich fuer `OPEN_END` angezeigt: `apps/mobile/src/screens/BillsScreen.tsx:144`
+
+Risiko: UI-Regressionspunkt, kein Sicherheitsproblem. OPEN_END sollte nur den Konsens-/Bewertungs-CTA zeigen.
+
 ## Recheck-Status 2026-05-20 00:51 EEST
 
 Quelle: Gio/CC-Live-Teststand aus aktiver NEA-221 Session.

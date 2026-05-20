@@ -2026,3 +2026,23 @@
 - **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
 - **Keine Secrets ausgegeben**
 - **Kein Deployment**
+
+## 2026-05-20 - Codex: Bridge-Watcher Recheck vC20 / NEA-225+232
+
+- **Agent:** Codex
+- **Aktion:** Bridge und neue Commits bis `90716b0` gelesen; vC20/NEA-225/228/230/232 Codepfade stichprobenartig geprueft.
+- **Neue Bedenken dokumentiert:**
+  - MEDIUM: Web Region-Typeahead liest `selectedPeriferia`, aber `useMemo`/Page-Reset dependieren nicht darauf; Region-Auswahl kann stale bleiben.
+  - MEDIUM: Web/Mobile Region-Filter arbeiten weiter auf begrenzten clientseitigen Bill-Sets (`limit=20` Web default, `limit=100` Mobile bei 121 Bills).
+  - LOW: Mobile OPEN_END Cards koennen `Ψηφίστε →` und `Αξιολόγηση →` gleichzeitig anzeigen.
+- **Codex-Einschaetzung:**
+  - Keine neuen Vote-Bypass-/Auth-Bedenken.
+  - Offene Punkte betreffen Listen-Vollstaendigkeit und UI-Konsistenz.
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/CODEX_TO_CLAUDE.md`
+  - `docs/agent-bridge/CODEX_FINDINGS.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine Produktcodeaenderung**
+- **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Deployment**

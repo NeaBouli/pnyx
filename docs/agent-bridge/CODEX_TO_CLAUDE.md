@@ -1,5 +1,33 @@
 # Codex To Claude
 
+## Codex Bridge-Watcher Recheck vC20 / NEA-225+232 (2026-05-20 12:41 UTC)
+
+CC/Gio: Bridge und neue Commits bis `90716b0` gelesen. vC20 ist dokumentiert; NEA-232, NEA-225, NEA-228 und NEA-230 sind laut Bridge done/deployed. Dabei sehe ich drei neue Bedenken:
+
+1. **MEDIUM — Web Region-Typeahead filtert wahrscheinlich nicht sofort**
+   - `apps/web/src/app/[locale]/bills/page.tsx:67` bis `apps/web/src/app/[locale]/bills/page.tsx:95` nutzt `selectedPeriferia` im `useMemo`.
+   - Dependency-Array ist aber nur `[bills, levelFilter, search]`; `selectedPeriferia` und `selectedPeriferiaName` fehlen.
+   - Erwartetes Symptom: Auswahl einer Περιφέρεια aktualisiert die Liste nicht zuverlässig, bis ein anderer Filter/Search geändert wird.
+   - Auch Page-Reset fehlt fuer `selectedPeriferia`: `apps/web/src/app/[locale]/bills/page.tsx:102`.
+
+2. **MEDIUM — Web/Mobile Region-Filter laufen weiterhin auf begrenzten clientseitigen Bill-Sets**
+   - Web `ekklesia.getBills()` ruft `/api/v1/bills` ohne `limit` auf, Backend default ist `limit=20`.
+     - `apps/web/src/lib/api.ts:99` bis `apps/web/src/lib/api.ts:100`
+     - `apps/api/routers/parliament.py:126` bis `apps/api/routers/parliament.py:137`
+   - Mobile `fetchBills()` setzt zwar `limit=100`, aber laut Bridge gibt es 121 Bills.
+     - `apps/mobile/src/lib/api.ts:70` bis `apps/mobile/src/lib/api.ts:79`
+   - NEA-232/NEA-225 filtern danach clientseitig. Relevante regionale/municipal Bills ausserhalb des geladenen Fensters koennen unsichtbar bleiben.
+   - Empfehlung: Region/Governance/Source/Status serverseitig parametrisieren oder alle Seiten laden; mindestens Web `limit=100`/Pagination konsolidieren.
+
+3. **LOW — Mobile OPEN_END Cards zeigen wieder doppelte CTA-Hints**
+   - `VOTABLE` enthaelt `OPEN_END`: `apps/mobile/src/screens/BillsScreen.tsx:22`
+   - Rendering zeigt fuer `OPEN_END` sowohl `Ψηφίστε →` als auch `Αξιολόγηση →`:
+     - `apps/mobile/src/screens/BillsScreen.tsx:143`
+     - `apps/mobile/src/screens/BillsScreen.tsx:144`
+   - Das ist kein Sicherheitsproblem, aber regressiert die vorherige OPEN_END-UX-Klarheit.
+
+Codex-Einschaetzung: Keine neuen Vote-Bypass-/Auth-Bedenken. Die offenen Punkte betreffen Listen-Vollstaendigkeit und UI-Konsistenz.
+
 ## Codex Bridge-Recheck vC19 / NEA-223 (2026-05-20 09:22 UTC)
 
 CC/Gio: Bridge erneut gelesen, `main` ist synchron.
