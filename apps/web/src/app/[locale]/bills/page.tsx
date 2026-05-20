@@ -37,6 +37,10 @@ export default function BillsPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [periferiaList, setPeriferiaList] = useState<{id: number; name_el: string}[]>([]);
+  const [regionSearch, setRegionSearch] = useState("");
+  const [selectedPeriferia, setSelectedPeriferia] = useState<number | null>(null);
+  const [selectedPeriferiaName, setSelectedPeriferiaName] = useState("");
 
   // Sync URL ?status= param on mount and navigation
   useEffect(() => {
@@ -47,6 +51,11 @@ export default function BillsPage() {
   }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    fetch("https://api.ekklesia.gr/api/v1/periferia")
+      .then(r => r.json()).then(setPeriferiaList).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     setLoading(true);
     ekklesia.getBills(statusFilter || undefined)
       .then(r => { setBills(r.data); setError(null); })
@@ -54,9 +63,19 @@ export default function BillsPage() {
       .finally(() => setLoading(false));
   }, [statusFilter, locale]);
 
-  // Client-side filtering: search + governance level / source
+  // Client-side filtering: search + governance level / source + region
   const filtered = useMemo(() => {
     let result = bills;
+    // Region filter (Periferia)
+    if (selectedPeriferia) {
+      result = result.filter(b => {
+        const gov = (b as any).governance_level;
+        if (!gov || gov === "NATIONAL" || gov === "INSTITUTIONAL") return true;
+        if (gov === "REGIONAL" && (b as any).periferia_id === selectedPeriferia) return true;
+        if (gov === "MUNICIPAL" && (b as any).periferia_id === selectedPeriferia) return true;
+        return false;
+      });
+    }
     if (levelFilter === "DIAVGEIA") {
       result = result.filter(b => (b as any).source === "DIAVGEIA");
     } else if (levelFilter === "INSTITUTIONAL") {
@@ -124,6 +143,47 @@ export default function BillsPage() {
             placeholder={isEl ? "Αναζήτηση νομοσχεδίου..." : "Search bills..."}
             className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
           />
+        </div>
+
+        {/* Region Typeahead */}
+        <div className="mb-4 relative">
+          {selectedPeriferia ? (
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-300 rounded-xl text-sm">
+              <span className="text-blue-700 font-semibold">📍 {selectedPeriferiaName}</span>
+              <button
+                onClick={() => { setSelectedPeriferia(null); setSelectedPeriferiaName(""); setRegionSearch(""); }}
+                className="ml-auto text-blue-400 hover:text-blue-600 font-bold text-lg"
+              >×</button>
+            </div>
+          ) : (
+            <>
+              <input
+                type="text"
+                value={regionSearch}
+                onChange={e => setRegionSearch(e.target.value)}
+                placeholder={isEl ? "🔍 Αναζήτηση Περιφέρειας..." : "🔍 Search Region..."}
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+              />
+              {regionSearch.length >= 2 && (
+                <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                  {periferiaList
+                    .filter(p => p.name_el.toLowerCase().includes(regionSearch.toLowerCase()))
+                    .map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => { setSelectedPeriferia(p.id); setSelectedPeriferiaName(p.name_el); setRegionSearch(""); }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                      >
+                        📍 {p.name_el}
+                      </button>
+                    ))}
+                  {periferiaList.filter(p => p.name_el.toLowerCase().includes(regionSearch.toLowerCase())).length === 0 && (
+                    <p className="px-4 py-2.5 text-sm text-gray-400">{isEl ? "Δεν βρέθηκε" : "Not found"}</p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* Governance Level Filter */}
