@@ -322,20 +322,20 @@
     @media(max-width:700px){ .ticker-grid { grid-template-columns: 1fr; } }
     .ticker-col h4 { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray-400); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem; }
     .ticker-col h4 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); }
-    .ticker-cards-wrap { min-height: 160px; position: relative; }
+    .ticker-cards-wrap { height: 180px; position: relative; overflow: hidden; }
     .t-card {
       background: var(--gray-100); border-radius: 0.75rem; padding: 1rem;
       border: 2px solid #e2e8f0; text-decoration: none; color: inherit;
-      display: none; width: 100%;
-      transition: all 0.4s;
+      position: absolute; top: 0; left: 0; right: 0;
+      opacity: 0; transition: opacity 0.4s;
     }
-    .t-card.visible { display: block; }
+    .t-card.visible { opacity: 1; }
     .t-card:hover { border-color: var(--blue); }
     .t-card.al { border-left: 3px solid var(--green); }
     .t-card.rc { border-left: 3px solid var(--blue); }
     .t-card.rs { border-left: 3px solid var(--purple); }
     .t-badge { font-size: 0.68rem; font-weight: 700; display: inline-block; margin-bottom: 0.3rem; padding: 0.1rem 0.4rem; border-radius: 0.3rem; }
-    .t-title { font-size: 0.88rem; font-weight: 800; display: block; margin-bottom: 0.25rem; }
+    .t-title { font-size: 0.88rem; font-weight: 800; display: block; margin-bottom: 0.25rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .t-meta { font-size: 0.75rem; color: var(--gray-400); }
     .t-bar { height: 4px; background: var(--gray-100); border-radius: 2px; overflow: hidden; margin-top: 0.4rem; }
     .t-fill { height: 100%; border-radius: 2px; background: var(--green); }
@@ -1684,10 +1684,8 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     if (!cards.length) return;
     var cur = 0;
     function show(i) {
-      cards.forEach(function(c) { c.classList.remove("visible"); c.style.position="absolute"; c.style.opacity="0"; });
+      cards.forEach(function(c) { c.classList.remove("visible"); });
       cur = i % cards.length;
-      cards[cur].style.position = "relative";
-      cards[cur].style.opacity = "1";
       cards[cur].classList.add("visible");
     }
     show(0);
