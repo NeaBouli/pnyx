@@ -1,5 +1,17 @@
 # Action Log
 
+## 2026-05-20 — Ticker Card Fix v2 + Deploy
+
+- **Problem:** Ticker-Boxen (Votes in Progress) aendern Groesse je nach Inhalt
+- **Fix:** `.t-card` feste Hoehe 160px + `box-sizing: border-box` + `overflow: hidden`
+- **Titel:** `-webkit-line-clamp: 2` statt `white-space: nowrap` → max 2 Zeilen mit `...`
+- **Diverge/Converge:** Einzeilig mit `text-overflow: ellipsis`
+- **Links:** t2-Cards (Letzte 24h) zeigen jetzt auf `/el/bills?status=WINDOW_24H` (war `/el/bills`)
+- **Commit:** `f4638d1`
+- **Deployed:** Server `f4638d1` (2026-05-20), sofort live (statische HTML)
+
+---
+
 ## 2026-05-19/20 — Marathon Session: vC15→vC18 + NEA-171/187/199/210/221/222/223/224/226
 
 ### vC15 v1.2.1 Build + Deploy

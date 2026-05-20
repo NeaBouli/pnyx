@@ -13,11 +13,11 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `69ec363` (fix: NEA-188 votes-timeline tz-naive)
+- **HEAD:** `f4638d1` (fix: Ticker cards fixed size + multi-line clamp + correct links)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`
 - **Rollback:** `pre-session-20260518` → `5349b39`
 - **Remote:** synchron mit GitHub
-- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `7e87b75` (deployed 2026-05-18)
+- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `f4638d1` (deployed 2026-05-20)
 
 ## Uncommitted Aenderungen
 
