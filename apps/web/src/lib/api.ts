@@ -97,7 +97,7 @@ export const ekklesia = {
 
   // Parliament
   getBills:    (status?: string) =>
-    api.get<Bill[]>("/api/v1/bills", { params: status ? { status } : {} }),
+    api.get<Bill[]>("/api/v1/bills", { params: { limit: 200, ...(status ? { status } : {}) } }),
   getTrending: () => api.get<Bill[]>("/api/v1/bills/trending"),
   getBill:     (id: string) => api.get<Bill>(`/api/v1/bills/${id}`),
   getResults:  (id: string) => api.get<BillResults>(`/api/v1/vote/${id}/results`),

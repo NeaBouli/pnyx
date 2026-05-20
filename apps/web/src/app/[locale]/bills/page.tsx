@@ -92,14 +92,14 @@ export default function BillsPage() {
       );
     }
     return result;
-  }, [bills, levelFilter, search]);
+  }, [bills, levelFilter, search, selectedPeriferia]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // Reset page when filters change
-  useEffect(() => { setPage(1); }, [statusFilter, levelFilter, search]);
+  useEffect(() => { setPage(1); }, [statusFilter, levelFilter, search, selectedPeriferia]);
 
   const titleKey = locale === "el" ? "title_el" : "title_en";
   const pillKey  = locale === "el" ? "pill_el"  : "pill_en";
