@@ -235,7 +235,21 @@
 - vC21 v1.3.5: APK S10 ✅ + Server ✅, AAB Play Store uploaded ✅
 - Commit: 95df2d9, 9777b1a (bump)
 
-### HEAD: 9777b1a
+### Codex V20-02 Residual Fix
+- Mobile fetchBills limit 100 → 200 (gleich wie Web)
+- Commit: 7953e31
+
+### Session Summary (71 Commits, 83aafa9 → 7953e31)
+- Versions: vC15 → vC16 → vC17 → vC18 → vC19 → vC20 → vC21
+- NEA-Tickets closed: 171, 175, 187, 199, 210, 221, 222, 223, 224, 225, 226, 228, 230, 231, 232
+- Codex-Reviews: alle Findings resolved (vC18 + vC20 + V20-02)
+- Bills: 121 (21 Parliament + 100 Diavgeia)
+- App: Region-Filter, Konsensierung, Wahlbezirk-Sync, Region-Banner
+- Web: Typeahead, Consensus QR, DIAVGEIA Badge, FAQ, Roadmap, Region-Banner
+- Forum: 85+ Topics, Auto-Kategorisierung
+- 4-Kanal Text-Pipeline: 15/21 enriched
+
+### HEAD: 7953e31
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
