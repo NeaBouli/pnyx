@@ -208,7 +208,9 @@
 - User MIT Region → nur relevante Bills (NATIONAL+INSTITUTIONAL+eigene Region)
 - User OHNE Region → alle Bills
 
-### HEAD: 181486e
+- vC19 AAB Play Store uploaded ✅
+
+### HEAD: 9592d84
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
