@@ -73,19 +73,15 @@ export async function computeNullifier(
 
 /**
  * Build the canonical vote message that the backend expects.
- * Keys MUST be sorted alphabetically — matches Python json.dumps(sort_keys=True).
+ * Format: "bill_id:vote:nullifier_hash" (colon-separated)
+ * Must match: Mobile crypto-native.ts signVote() and Backend voting.py
  */
 export function buildVoteMessage(params: {
   bill_id: string;
   vote: string;
   nullifier_hash: string;
 }): string {
-  // Alphabetical: bill_id, nullifier_hash, vote
-  return JSON.stringify({
-    bill_id: params.bill_id,
-    nullifier_hash: params.nullifier_hash,
-    vote: params.vote.toUpperCase(),
-  });
+  return `${params.bill_id}:${params.vote.toUpperCase()}:${params.nullifier_hash}`;
 }
 
 /**
