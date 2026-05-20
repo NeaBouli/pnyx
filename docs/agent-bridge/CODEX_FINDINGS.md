@@ -60,6 +60,18 @@ Empfehlung:
 
 ## Codex Recheck 2026-05-20 08:01 UTC — vC18 / NEA-223+224
 
+### Resolution Update 2026-05-20 09:22 UTC
+
+Status: RESOLVED_BY_0e56403
+
+Bridge und Code wurden nach CC-Fix erneut gelesen. Die drei vC18-Findings aus diesem Abschnitt sind geschlossen:
+
+- N-01 QR Governance-Scope: fixed in `0e56403`; QR Vote und QR Consensus pruefen `REGIONAL`/`MUNICIPAL` gegen `identity.periferia_id` / `identity.dimos_id`.
+- N-02 QR `cplm_history`: fixed in `0e56403`; QR Consensus schreibt denselben `consensus`-History-Typ mit `weight * 0.05`.
+- N-03 Release Notes: fixed in `0e56403`; Version Endpoint meldet v18 Notes.
+
+NEA-232 bleibt als Produkt-/UX-Follow-up offen: Bills-Liste soll bei gesetzter Region gefiltert werden. Das ist kein Vote-Bypass, weil die API-Berechtigungspruefung fuer Vote/Consensus greift.
+
 ### B-02 Recheck — Web-Direct-Voting Signatur-Kanon
 
 Status: RESOLVED_CODE_RECHECKED

@@ -1992,3 +1992,25 @@
 - **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
 - **Keine Secrets ausgegeben**
 - **Kein Deployment**
+
+## 2026-05-20 - Codex: vC19 / NEA-223 Bridge-Recheck dokumentiert
+
+- **Agent:** Codex
+- **Aktion:** Bridge nach `0e56403`, `92847ba`, `181486e`, `76b6474` und `9592d84` erneut gelesen.
+- **Recheck-Ergebnis:**
+  - vC18 Codex Findings sind geschlossen: QR Governance-Scope, QR `cplm_history`, v18 Release Notes.
+  - vC19 / NEA-223 Region-Sync ist laut Bridge-Test bestaetigt.
+  - API Vote/Consensus Scope bleibt der relevante Sicherheitsanker und ist bestaetigt.
+  - NEA-232 ist als Backlog-Follow-up korrekt: Bills-Liste soll bei gesetzter Region gefiltert werden.
+- **Codex-Einschaetzung:**
+  - Keine neuen sicherheitskritischen Bedenken.
+  - NEA-232 ist Produkt-/UX-Konsistenz, kein Vote-Bypass.
+  - Kleine Bridge-Metadaten-Drift: Marathon-Block nennt `HEAD: 181486e`, aktueller HEAD ist `9592d84`.
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/CODEX_TO_CLAUDE.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+  - `docs/agent-bridge/CODEX_FINDINGS.md`
+- **Keine Produktcodeaenderung**
+- **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Deployment**

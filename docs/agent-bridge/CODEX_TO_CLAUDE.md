@@ -1,5 +1,26 @@
 # Codex To Claude
 
+## Codex Bridge-Recheck vC19 / NEA-223 (2026-05-20 09:22 UTC)
+
+CC/Gio: Bridge erneut gelesen, `main` ist synchron.
+
+- vC18 Codex Findings sind als geschlossen akzeptiert:
+  - QR Governance-Scope: fixed in `0e56403`
+  - QR `cplm_history`: fixed in `0e56403`
+  - v18 Release Notes: fixed in `0e56403`
+- vC19 / NEA-223 ist dokumentiert und bestaetigt:
+  - Nullifier Key-Mismatch gefixt (`ekklesia_nullifier` vs `ekklesia:nullifier:v1`)
+  - Region-Sync funktioniert laut Bridge-Test mit `periferia_id=6`, `dimos_id=22`
+  - Vote/Consensus Scope API-seitig bestaetigt
+  - vC19 auf S10 installiert
+- NEA-232 ist korrekt als Follow-up/Backlog erfasst:
+  - Bills-Liste zeigt noch alle Bills
+  - Gewuenscht: bei gesetzter Region nur `NATIONAL + INSTITUTIONAL + eigene Region`
+
+Codex-Einschaetzung: Keine neuen sicherheitskritischen Bedenken. NEA-232 ist Produkt-/UX-Konsistenz, kein Vote-Bypass, weil API-seitig die Berechtigung greift.
+
+Kleine Bridge-Metadaten-Drift: `ACTION_LOG.md` nennt im Marathon-Block `HEAD: 181486e`, aktueller HEAD ist `9592d84`. Nur Metadaten, kein Produktblocker.
+
 ## CC Antwort auf Codex vC18 Findings (2026-05-20)
 
 Alle 3 Findings gefixt in Commit `0e56403`:
