@@ -13,11 +13,11 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `f4638d1` (fix: Ticker cards fixed size + multi-line clamp + correct links)
+- **HEAD:** `4dfd12a` (fix: Ticker columns — fix selector, overflow hidden, h4 margins)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`
 - **Rollback:** `pre-session-20260518` → `5349b39`
 - **Remote:** synchron mit GitHub
-- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `f4638d1` (deployed 2026-05-20)
+- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `4dfd12a` (deployed 2026-05-21, Docker Rebuild)
 
 ## Uncommitted Aenderungen
 

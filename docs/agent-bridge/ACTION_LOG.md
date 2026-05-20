@@ -1,14 +1,16 @@
 # Action Log
 
-## 2026-05-20 — Ticker Card Fix v2 + Deploy
+## 2026-05-20/21 — Ticker Card Fix (3 Commits + Docker Rebuild)
 
-- **Problem:** Ticker-Boxen (Votes in Progress) aendern Groesse je nach Inhalt
-- **Fix:** `.t-card` feste Hoehe 160px + `box-sizing: border-box` + `overflow: hidden`
-- **Titel:** `-webkit-line-clamp: 2` statt `white-space: nowrap` → max 2 Zeilen mit `...`
-- **Diverge/Converge:** Einzeilig mit `text-overflow: ellipsis`
-- **Links:** t2-Cards (Letzte 24h) zeigen jetzt auf `/el/bills?status=WINDOW_24H` (war `/el/bills`)
-- **Commit:** `f4638d1`
-- **Deployed:** Server `f4638d1` (2026-05-20), sofort live (statische HTML)
+- **Problem:** Ticker-Boxen (Votes in Progress) aendern Groesse je nach Inhalt, Box 3 (Results) besonders betroffen
+- **Root Cause:** `git pull` aktualisiert nur Host-Dateien — der Docker-Container (`ekklesia-web`) serviert eine eingebaute Kopie aus dem Image-Build. Ohne Docker Rebuild kamen CSS-Fixes nie beim User an.
+- **CSS-Fixes (3 Commits):**
+  - `f4638d1` — `.t-card` feste Hoehe 160px, `position: absolute`, `box-sizing: border-box`, `overflow: hidden`; `.t-title` 2-Zeilen-Clamp mit Ellipsis; t2-Links → `/el/bills?status=WINDOW_24H`
+  - `621e507` — `.fade-in` Transition eingeschraenkt auf `opacity + transform` (war `all` → animierte auch Hoehe)
+  - `4dfd12a` — `.ticker-col h4` Selector gefixt → `.ticker-grid h4` (matched vorher nie, da Parent `fade-in` nicht `ticker-col`); h4 Margin-Reset; `overflow: hidden` auf Spalten
+- **Deploy:** Docker Rebuild `docker compose -f docker-compose.prod.yml build web && up -d web` (2026-05-21)
+- **WICHTIG:** Bei kuenftigen `docs/index.html` Aenderungen reicht `git pull` NICHT — Container muss rebuilt werden
+- **Verifiziert:** Live-Seite liefert `height: 160px` (nicht mehr `min-height`), alle Container UP
 
 ---
 
