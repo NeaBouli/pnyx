@@ -74,7 +74,7 @@ export default function BillResultReport({
                   const { l, c } = pvLabel(vote);
                   return (
                     <div key={abbr} className="flex justify-between bg-white rounded-lg px-3 py-2">
-                      <span className="font-bold text-sm text-gray-200">{abbr}</span>
+                      <span className="font-bold text-sm text-gray-900">{abbr}</span>
                       <span className="font-black text-sm" style={{ color: c }}>{l}</span>
                     </div>
                   );
