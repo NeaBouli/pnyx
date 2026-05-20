@@ -126,8 +126,16 @@
 
 - AAB vC18 Play Store uploaded ✅
 
-### Session Summary (43 Commits, 83aafa9 → b1dcc2a)
-- Versions: vC15 → vC16 → vC17 → vC18
+### CRITICAL: Web crypto.ts Signatur-Fix (Codex Finding)
+- Web `buildVoteMessage()`: JSON-sort-keys → Colon-Format
+- Web-Direct-Voting war KAPUTT seit vC15 Signatur-Fix
+- Gefunden von Codex Review 2026-05-20
+- Commit: 28174d2
+
+### vC18 AAB Play Store uploaded ✅
+
+### Session Summary (~45 Commits, 83aafa9 → 28174d2)
+- Versions: vC15 → vC16 → vC17 → vC18 (+ Web crypto fix)
 - NEA-Tickets closed: 171, 187, 199, 210, 221, 222, 223, 224, 226
 - Codex-Review: 4 kritische + 4 mittlere Findings → alle resolved
 - Bills: 21 Parliament + 100 Diavgeia = 121 total
@@ -136,7 +144,10 @@
 - Forum: 51 Topics resync'd, Auto-Kategorisierung aktiv
 - Dependabot: 10 PRs offen (npm + pip)
 
-### HEAD: b1dcc2a
+- Web crypto.ts: Signatur-Format gefixt (Codex Finding — CRITICAL)
+- Dependabot: 10 PRs offen (npm + pip)
+
+### HEAD: 28174d2
 
 ## 2026-05-17 — Session: UI Fixes + vC10 + Test-Account + Newsletter
 
