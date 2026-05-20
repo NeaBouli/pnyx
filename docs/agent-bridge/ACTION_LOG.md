@@ -213,6 +213,8 @@
 - Commit: b0e83fe
 
 - vC19 AAB Play Store uploaded ✅
+- vC20 v1.3.4: APK S10 ✅ + Server ✅, AAB Play Store uploaded ✅
+- Tag: apk-v20-stable
 
 ### HEAD: 9592d84
 
