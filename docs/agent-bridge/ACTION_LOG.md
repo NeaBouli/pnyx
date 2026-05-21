@@ -1,5 +1,18 @@
 # Action Log
 
+## 2026-05-21 — Monitor Arweave Fix + Trailing Slash + ekprosopos Login
+
+- **Arweave Monitor:** Rule 5 filtert jetzt `source = 'PARLIAMENT'` — DIAVGEIA Bills ausgeschlossen
+- **Health-Check:** 4 Alerts → 3 Alerts (Arweave-Alert weg)
+- **Trailing Slash:** `fetchPoliticians()` → `/api/v1/politicians/` (307 redirect fix)
+- **ekprosopos Login:** invite_code Feld hinzugefuegt, `window.REP_TOKEN` native bridge, `domStorageEnabled=true`
+- **Scraper Status:** Diavgeia last_run 2026-05-12 (9 Tage), Parliament last_run 2026-05-18 (3 Tage) — API restarted fuer Scheduler-Reset
+- **Web Container:** rebuilt (index.html mit invite_code + eval tab)
+- **Commits:** `4276a6c`, `2582790`, `91087f5`, `911a1a4`
+- **Deployed:** API + Monitor + Web rebuilt
+
+---
+
 ## 2026-05-21 — NEA-189 Politician Evaluation Grundgeruest
 
 - **Migration:** `l501a2b3c4d5` — `evaluation_questions` (8 Seed-Fragen), `politician_evaluations`, `evaluation_enabled` auf `representative_tokens`

@@ -13,11 +13,11 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `0221813` (feat: NEA-189 Politician Evaluation — Grundgeruest)
+- **HEAD:** `911a1a4` (fix: Arweave monitor rule excludes DIAVGEIA bills)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`, `pre-politikoi-20260521`
 - **Rollback:** `pre-politikoi-20260521` → `49e24ba`
 - **Remote:** synchron mit GitHub
-- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `0221813` (deployed 2026-05-21, API rebuilt, Migration l501a2b3c4d5, Cronjob 06:00 UTC aktiv)
+- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `911a1a4` (deployed 2026-05-21, API+Monitor+Web rebuilt, Migration l501a2b3c4d5, Cronjob 06:00 UTC aktiv)
 
 ## Uncommitted Aenderungen
 
