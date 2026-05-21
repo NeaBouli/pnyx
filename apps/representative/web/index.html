@@ -94,8 +94,8 @@ body{font-family:system-ui,sans-serif;background:var(--dark);color:#e2e8f0;min-h
 </div>
 
 <script>
-var API='https://api.ekklesia.gr';
-var token=localStorage.getItem('rep_token')||'';
+var API=window.API_BASE||'https://api.ekklesia.gr';
+var token=window.REP_TOKEN||localStorage.getItem('rep_token')||'';
 var adaNumber=localStorage.getItem('rep_ada')||'';
 
 if(token)showBillsScreen();

@@ -76,8 +76,8 @@ export default function App() {
         injectedJavaScriptBeforeContentLoaded={injectedJS}
         style={s.webview}
         javaScriptEnabled={true}
-        domStorageEnabled={false}
-        incognito={true}
+        domStorageEnabled={true}
+        incognito={false}
         onMessage={handleMessage}
         startInLoadingState={true}
         renderLoading={() => (
