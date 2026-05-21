@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import { fetchMPRanking, fetchPoliticians } from "../lib/api";
+import * as SecureStore from "expo-secure-store";
+import { fetchMPRanking, fetchPoliticians, fetchMyEvaluationsBulk } from "../lib/api";
 import type { Politician } from "../lib/api";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
@@ -15,6 +16,7 @@ export default function MPScreen() {
   const [mode, setMode] = useState<TabMode>("parties");
   const [ranking, setRanking] = useState<any[]>([]);
   const [politicians, setPoliticians] = useState<Politician[]>([]);
+  const [evaluatedAda, setEvaluatedAda] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [polLoading, setPolLoading] = useState(false);
 
@@ -28,10 +30,18 @@ export default function MPScreen() {
   useEffect(() => {
     if (mode === "politikoi") {
       setPolLoading(true);
-      fetchPoliticians()
-        .then(data => setPoliticians(Array.isArray(data) ? data : []))
-        .catch(() => {})
-        .finally(() => setPolLoading(false));
+      (async () => {
+        try {
+          const data = await fetchPoliticians();
+          setPoliticians(Array.isArray(data) ? data : []);
+          const nullifier = await SecureStore.getItemAsync("ekklesia_nullifier");
+          if (nullifier) {
+            const bulk = await fetchMyEvaluationsBulk(nullifier);
+            setEvaluatedAda(new Set(bulk.map(b => b.ada_number)));
+          }
+        } catch { /* */ }
+        finally { setPolLoading(false); }
+      })();
     }
   }, [mode]);
 
@@ -120,9 +130,16 @@ export default function MPScreen() {
                     <Text style={s.detail}>{item.evaluator_count} αξιολογήσεις</Text>
                   )}
                 </View>
-                <Text style={{ fontSize: 20, fontWeight: "900", color: scoreColor }}>
-                  {item.avg_score !== null ? (item.avg_score > 0 ? "+" : "") + item.avg_score.toFixed(1) : "—"}
-                </Text>
+                <View style={{ alignItems: "flex-end" }}>
+                  <Text style={{ fontSize: 20, fontWeight: "900", color: scoreColor }}>
+                    {item.avg_score !== null ? (item.avg_score > 0 ? "+" : "") + item.avg_score.toFixed(1) : "—"}
+                  </Text>
+                  {evaluatedAda.has(item.ada_number) && (
+                    <View style={{ backgroundColor: colors.success, borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2, marginTop: 4 }}>
+                      <Text style={{ color: "#fff", fontSize: 9, fontWeight: "700" }}>✓ Αξιολογήθηκε</Text>
+                    </View>
+                  )}
+                </View>
               </TouchableOpacity>
             );
           }}

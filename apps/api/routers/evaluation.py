@@ -84,6 +84,25 @@ async def list_politicians(db: AsyncSession = Depends(get_db)):
     } for r in rows]
 
 
+@router.get("/my-evaluations/bulk")
+async def get_my_evaluations_bulk(
+    nullifier_hash: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Bulk: which politicians has this citizen evaluated? Returns ada_numbers + latest updated_at."""
+    result = await db.execute(text("""
+        SELECT ada_number, MAX(updated_at) AS last_updated
+        FROM politician_evaluations
+        WHERE nullifier_hash = :null
+        GROUP BY ada_number
+    """), {"null": nullifier_hash})
+    rows = result.fetchall()
+    return [{
+        "ada_number": r[0],
+        "last_updated": r[1].isoformat() if r[1] else None,
+    } for r in rows]
+
+
 @router.get("/{ada_number}/questions")
 async def get_questions(
     ada_number: str,
@@ -100,6 +119,26 @@ async def get_questions(
         "id": q.id, "question_el": q.question_el,
         "question_en": q.question_en, "category": q.category,
     } for q in questions]
+
+
+@router.get("/{ada_number}/my-evaluation")
+async def get_my_evaluation(
+    ada_number: str,
+    nullifier_hash: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Citizen checks their own evaluation for a politician (by nullifier_hash query param)."""
+    result = await db.execute(text("""
+        SELECT question_id, score, updated_at
+        FROM politician_evaluations
+        WHERE ada_number = :ada AND nullifier_hash = :null
+        ORDER BY question_id
+    """), {"ada": ada_number, "null": nullifier_hash})
+    rows = result.fetchall()
+    return [{
+        "question_id": r[0], "score": r[1],
+        "updated_at": r[2].isoformat() if r[2] else None,
+    } for r in rows]
 
 
 @router.post("/{ada_number}/evaluate")

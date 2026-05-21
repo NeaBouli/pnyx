@@ -217,3 +217,22 @@ export async function submitEvaluation(
 export async function fetchPoliticianScores(adaNumber: string): Promise<EvalScores> {
   return request<EvalScores>(`/api/v1/politicians/${encodeURIComponent(adaNumber)}/scores`);
 }
+
+export interface MyEvaluation {
+  question_id: number;
+  score: number;
+  updated_at: string | null;
+}
+
+export async function fetchMyEvaluation(adaNumber: string, nullifierHash: string): Promise<MyEvaluation[]> {
+  return request<MyEvaluation[]>(`/api/v1/politicians/${encodeURIComponent(adaNumber)}/my-evaluation?nullifier_hash=${encodeURIComponent(nullifierHash)}`);
+}
+
+export interface MyEvalBulk {
+  ada_number: string;
+  last_updated: string | null;
+}
+
+export async function fetchMyEvaluationsBulk(nullifierHash: string): Promise<MyEvalBulk[]> {
+  return request<MyEvalBulk[]>(`/api/v1/politicians/my-evaluations/bulk?nullifier_hash=${encodeURIComponent(nullifierHash)}`);
+}

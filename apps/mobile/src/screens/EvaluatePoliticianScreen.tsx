@@ -10,8 +10,8 @@ import {
 import * as LocalAuthentication from "expo-local-authentication";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
-import { fetchPoliticianQuestions, fetchPoliticianScores, submitEvaluation } from "../lib/api";
-import type { EvalQuestion, EvalScores } from "../lib/api";
+import { fetchPoliticianQuestions, fetchPoliticianScores, submitEvaluation, fetchMyEvaluation } from "../lib/api";
+import type { EvalQuestion, EvalScores, MyEvaluation } from "../lib/api";
 import { loadKeypair, loadNullifier, signEvaluation } from "../lib/crypto-native";
 import { isDemoMode } from "../lib/demo";
 import { colors } from "../theme";
@@ -56,19 +56,41 @@ export default function EvaluatePoliticianScreen({ route, navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [hasExistingEval, setHasExistingEval] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
+        const nullifier = await loadNullifier();
         const [qs, sc] = await Promise.all([
           fetchPoliticianQuestions(adaNumber),
           fetchPoliticianScores(adaNumber),
         ]);
         setQuestions(qs);
         setExistingScores(sc);
-        // Init all scores to 0
+
+        // Init scores to 0
         const init: Record<number, number> = {};
         qs.forEach(q => { init[q.id] = 0; });
+
+        // Pre-fill if citizen already evaluated
+        if (nullifier) {
+          try {
+            const myEval = await fetchMyEvaluation(adaNumber, nullifier);
+            if (myEval.length > 0) {
+              setHasExistingEval(true);
+              myEval.forEach(e => { init[e.question_id] = e.score; });
+              const latest = myEval.reduce((a, b) =>
+                (a.updated_at || "") > (b.updated_at || "") ? a : b
+              );
+              if (latest.updated_at) {
+                const d = new Date(latest.updated_at);
+                setLastUpdated(`${d.getDate().toString().padStart(2, "0")}.${(d.getMonth() + 1).toString().padStart(2, "0")}.${d.getFullYear()}`);
+              }
+            }
+          } catch { /* no existing eval */ }
+        }
         setScores(init);
       } catch { /* */ }
       finally { setLoading(false); }
@@ -143,7 +165,7 @@ export default function EvaluatePoliticianScreen({ route, navigation }: Props) {
       {submitted ? (
         <View style={styles.successCard}>
           <Text style={styles.successIcon}>✓</Text>
-          <Text style={styles.successText}>Η αξιολόγησή σας καταχωρήθηκε!</Text>
+          <Text style={styles.successText}>Η αξιολόγηση σας καταγράφηκε</Text>
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
             <Text style={styles.backBtnText}>← Πίσω</Text>
           </TouchableOpacity>
@@ -151,8 +173,11 @@ export default function EvaluatePoliticianScreen({ route, navigation }: Props) {
       ) : (
         <>
           <Text style={styles.instructions}>
-            Αξιολογήστε τον εκπρόσωπο σε κάθε κατηγορία (-5 έως +5):
+            {hasExistingEval ? "Ενημερώστε την αξιολόγησή σας:" : "Αξιολογήστε τον εκπρόσωπο σε κάθε κατηγορία (-5 έως +5):"}
           </Text>
+          {lastUpdated && (
+            <Text style={{ fontSize: 12, color: "#888", marginBottom: 12 }}>Τελευταία αλλαγή: {lastUpdated}</Text>
+          )}
 
           {questions.map((q) => (
             <View key={q.id} style={styles.questionCard}>
@@ -170,7 +195,7 @@ export default function EvaluatePoliticianScreen({ route, navigation }: Props) {
             {submitting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.submitBtnText}>Υποβολή Αξιολόγησης</Text>
+              <Text style={styles.submitBtnText}>{hasExistingEval ? "Ενημέρωση Αξιολόγησης" : "Αποστολή Αξιολόγησης"}</Text>
             )}
           </TouchableOpacity>
         </>
