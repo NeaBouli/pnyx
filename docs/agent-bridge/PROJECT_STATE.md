@@ -13,7 +13,7 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `ce1b378` (chore: bump versionCode 22 → 23)
+- **HEAD:** `803ea51` (chore: bump versionCode 23 → 24)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`, `pre-politikoi-20260521`
 - **Rollback:** `pre-politikoi-20260521` → `49e24ba`
 - **Remote:** synchron mit GitHub
@@ -188,9 +188,9 @@ Weiterhin UNSICHER:
 
 - Datum/Zeit: 2026-05-21
 - Agent: Claude Code
-- HEAD lokal: `5e5de6b` (gepusht)
-- HEAD server: `5e5de6b` (deployed, API+Monitor+Web rebuilt)
-- Session 21.05: 12 Commits — NEA-236 Deploy, NEA-189 Grundgeruest, Bugfixes
+- HEAD lokal: `803ea51` (gepusht)
+- HEAD server: `5e5de6b` (deployed, API+Monitor+Web rebuilt — Server hat noch nicht den MPScreen Fix)
+- Session 21.05: 17 Commits
   - `3357e00` feat: NEA-236 Health-Check 15 rules + --once mode for cron
   - `0c6db62` fix: NEA-236 aggregate arweave alerts + truncate telegram message
   - `49e24ba` chore(bridge): NEA-236 health-check 15 rules + cron documented
@@ -203,24 +203,28 @@ Weiterhin UNSICHER:
   - `911a1a4` fix: Arweave monitor rule excludes DIAVGEIA bills
   - `0354871` chore(bridge): monitor fix + ekprosopos login + scraper status
   - `5e5de6b` fix: keypair.py verify_signature catches ValueError + accepts str payload
+  - `b8ca6a8` chore(bridge): complete session 21.05
+  - `ce1b378` chore: bump versionCode 22 → 23
+  - `e8746ab` chore(bridge): vC23 APK+AAB ready
+  - `700c389` fix: MPScreen Politikoi tab shows live politician list from API
+  - `803ea51` chore: bump versionCode 23 → 24
 - Rollback-Tag: `pre-politikoi-20260521` → `49e24ba`
 - Builds bereit:
-  - `~/Desktop/ekklesia-v1.3.2-vC23.apk` (66MB) — alle Fixes, auf Server
-  - `~/Desktop/ekklesia-v1.3.2-vC23-PLAY.aab` (45MB) — Play Console BEREIT
+  - `~/Desktop/ekklesia-v1.3.2-vC24.apk` (66MB) — S10 installiert (vC24, verifiziert)
+  - `~/Desktop/ekklesia-v1.3.2-vC24-PLAY.aab` (45MB) — Play Console Upload BEREIT
   - `~/Desktop/ekprosopos-v1.1.0-vC2.apk` (55MB) — ekprosopos mit Evaluation
 - NEA-189 DB: `evaluation_questions` (8 Rows), `politician_evaluations`, `evaluation_enabled` auf `representative_tokens`
 - NEA-189 API: 6 neue Endpoints (2 Rep + 4 Public) unter `/rep/` und `/politicians/`
-- NEA-189 Mobile: PolitikoiScreen + EvaluatePoliticianScreen (vC22)
+- NEA-189 Mobile: PolitikoiScreen + EvaluatePoliticianScreen + MPScreen Politikoi-Tab (vC24)
 - NEA-189 ekprosopos: Αξιολόγηση Tab + Consent + My Scores (vC2)
-- DEMO-123: evaluation_enabled=TRUE, Token muss bei Bedarf erneuert werden (24h TTL)
+- DEMO-123: evaluation_enabled=TRUE, region_locked=FALSE, Token 24h TTL (muss bei Bedarf erneuert werden)
 - Monitor: 15 Rules, Arweave nur PARLIAMENT, Health-Check 3 Alerts (Diavgeia/Parliament/Forum stale)
-- Scraper: Diavgeia last_run 2026-05-12, Parliament last_run 2026-05-18 — API restarted fuer Scheduler-Reset
-- APK auf Server: `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` (vC22 FINAL)
+- APK auf Server: `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` (vC23)
 - APK ekprosopos: `/opt/ekklesia/app/docs/download/ekprosopos-latest.apk` (vC2)
-- S10 Install: vC22 FINAL ausstehend (Geraet getrennt), vorige Version vC22 war installiert + verifiziert
 - WICHTIG: Docker Container muessen per Image-Rebuild deployed werden (kein Volume-Mount fuer Code).
   Deploy-Flow: `git pull` → `docker compose build api/web` → Container manuell mit Traefik-Labels + Env neu erstellen
 - WICHTIG: `packages/crypto/keypair.py` ueberschattet `apps/api/keypair.py` im Docker Python-Path. Beide muessen konsistent bleiben.
+- WICHTIG: APK und AAB koennen NICHT parallel gebaut werden (gleicher android/ Ordner). Immer sequentiell: erst APK, dann AAB via build-play.sh.
 
 ## Codex-Verifikation aus Repo-Metadaten
 

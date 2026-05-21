@@ -3,13 +3,19 @@
 ## Aktiv / In Progress
 - [ ] NEA-72: Hermes Phase 1 — qwen2.5:14b installiert, Architektur TBD
 - [ ] NEA-189b: Region-Locking fuer Evaluation (Buerger Region = Politiker Region)
-- [ ] AAB vC23 Upload zu Play Console (`~/Desktop/ekklesia-v1.3.2-vC23-PLAY.aab` BEREIT)
-- [ ] S10: vC23 APK installieren (`~/Desktop/ekklesia-v1.3.2-vC23.apk`, Geraet war getrennt)
+- [ ] AAB vC24 Upload zu Play Console (`~/Desktop/ekklesia-v1.3.2-vC24-PLAY.aab` BEREIT)
 
 ## Done (Session 21.05.2026)
 - [x] NEA-236: Health-Check 15 Rules deployed + Cronjob 06:00 UTC
 - [x] NEA-189: Politician Evaluation Grundgeruest (DB + API + Mobile + ekprosopos)
-- [x] vC22 APK auf S10 installiert + Test-Account importiert
+- [x] MPScreen Politikoi-Tab zeigt live Politiker-Liste statt Placeholder
+- [x] HTTP 500 Fix: keypair.py verify_signature ValueError
+- [x] Trailing Slash Fix: /politicians/ (307 redirect)
+- [x] ekprosopos Login: invite_code Feld + native bridge
+- [x] Arweave Monitor: nur PARLIAMENT Bills
+- [x] region_locked=FALSE fuer Test-Account
+- [x] vC24 APK auf S10 installiert + verifiziert
+- [x] vC24 AAB gebaut
 - [x] DEMO-123 evaluation_enabled=TRUE
 
 ## Blocked

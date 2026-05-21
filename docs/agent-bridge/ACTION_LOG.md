@@ -1,5 +1,17 @@
 # Action Log
 
+## 2026-05-21 — MPScreen Fix + vC24 Builds
+
+- **MPScreen:** Placeholder "Αξιολόγηση διαθέσιμη σύντομα" ersetzt durch echte `fetchPoliticians()` API-Liste
+- **Navigation:** Tap auf Politician → `EvaluatePoliticianScreen` (8 Fragen, -5 bis +5)
+- **region_locked:** Test-Account (id=13) auf FALSE gesetzt
+- **vC24 APK:** `~/Desktop/ekklesia-v1.3.2-vC24.apk` (66MB) — S10 installiert + verifiziert
+- **vC24 AAB:** `~/Desktop/ekklesia-v1.3.2-vC24-PLAY.aab` (45MB) — Play Console Upload bereit
+- **Commits:** `700c389` (MPScreen fix), `803ea51` (vC24 bump)
+- **Lesson:** APK und AAB NICHT parallel bauen (gleicher android/ Ordner). Play-Flavor APK haengt auf S10 — immer Direct-Build fuer Sideload.
+
+---
+
 ## 2026-05-21 — HTTP 500 Fix: keypair.py verify_signature
 
 - **Root Cause:** `packages/crypto/keypair.py` ueberschattete `apps/api/keypair.py` im Docker Python-Path
