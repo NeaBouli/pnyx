@@ -195,7 +195,7 @@ export interface EvalScores {
 }
 
 export async function fetchPoliticians(): Promise<Politician[]> {
-  return request<Politician[]>("/api/v1/politicians");
+  return request<Politician[]>("/api/v1/politicians/");
 }
 
 export async function fetchPoliticianQuestions(adaNumber: string): Promise<EvalQuestion[]> {
