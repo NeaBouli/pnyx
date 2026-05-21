@@ -1,5 +1,16 @@
 # Action Log
 
+## 2026-05-22 — NEA-239 + NEA-224 Community.html Zaehler live
+
+- **Vorher:** Alle Zaehler bereits per `fetch` aus `/public/stats` geladen — KEINE hardcoded Werte
+- **Fix:** DEMO-Bills/Votes aus Stats gefiltert, `forum_topics` + `archived_bills` hinzugefuegt
+- **community.html:** 2 neue Kacheln (Αρχείο + Forum), insgesamt 8 live Kacheln
+- **Verifiziert:** `parliament=20, diavgeia=164, archived=168, votes=4, arweave=4, forum=184`
+- **Commit:** `e7739a8`
+- **Deployed:** Web + API rebuilt
+
+---
+
 ## 2026-05-22 — NEA-231 Follow-up: Forum Resync
 
 - **resync_all_topics():** Rate-Limited (5 Topics pro 15s Batch)
