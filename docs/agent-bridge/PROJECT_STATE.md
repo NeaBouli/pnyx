@@ -13,7 +13,7 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `5e5de6b` (fix: keypair.py verify_signature catches ValueError)
+- **HEAD:** `ce1b378` (chore: bump versionCode 22 → 23)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`, `pre-politikoi-20260521`
 - **Rollback:** `pre-politikoi-20260521` → `49e24ba`
 - **Remote:** synchron mit GitHub
@@ -205,8 +205,8 @@ Weiterhin UNSICHER:
   - `5e5de6b` fix: keypair.py verify_signature catches ValueError + accepts str payload
 - Rollback-Tag: `pre-politikoi-20260521` → `49e24ba`
 - Builds bereit:
-  - `~/Desktop/ekklesia-v1.3.1-vC22-FINAL.apk` (66MB) — alle Fixes inkl. trailing slash + keypair
-  - `~/Desktop/ekklesia-v1.3.1-vC22-PLAY.aab` (45MB) — Play Console (vC22, vor keypair fix)
+  - `~/Desktop/ekklesia-v1.3.2-vC23.apk` (66MB) — alle Fixes, auf Server
+  - `~/Desktop/ekklesia-v1.3.2-vC23-PLAY.aab` (45MB) — Play Console BEREIT
   - `~/Desktop/ekprosopos-v1.1.0-vC2.apk` (55MB) — ekprosopos mit Evaluation
 - NEA-189 DB: `evaluation_questions` (8 Rows), `politician_evaluations`, `evaluation_enabled` auf `representative_tokens`
 - NEA-189 API: 6 neue Endpoints (2 Rep + 4 Public) unter `/rep/` und `/politicians/`

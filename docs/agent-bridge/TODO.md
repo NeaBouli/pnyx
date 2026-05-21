@@ -3,8 +3,8 @@
 ## Aktiv / In Progress
 - [ ] NEA-72: Hermes Phase 1 — qwen2.5:14b installiert, Architektur TBD
 - [ ] NEA-189b: Region-Locking fuer Evaluation (Buerger Region = Politiker Region)
-- [ ] AAB vC23 Build + Upload zu Play Console (keypair fix nicht in vC22 AAB enthalten)
-- [ ] S10: vC22-FINAL APK installieren (Geraet war getrennt)
+- [ ] AAB vC23 Upload zu Play Console (`~/Desktop/ekklesia-v1.3.2-vC23-PLAY.aab` BEREIT)
+- [ ] S10: vC23 APK installieren (`~/Desktop/ekklesia-v1.3.2-vC23.apk`, Geraet war getrennt)
 
 ## Done (Session 21.05.2026)
 - [x] NEA-236: Health-Check 15 Rules deployed + Cronjob 06:00 UTC
