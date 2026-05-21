@@ -5,18 +5,21 @@
 - [ ] NEA-189b: Region-Locking fuer Evaluation (Buerger Region = Politiker Region)
 - [ ] AAB vC25 Upload zu Play Console (`~/Desktop/ekklesia-v1.3.2-vC25-PLAY.aab` BEREIT)
 
-## Done (Session 21.05.2026)
+## Done (Session 21.05.2026) — 22 Commits
 - [x] NEA-236: Health-Check 15 Rules deployed + Cronjob 06:00 UTC
 - [x] NEA-189: Politician Evaluation Grundgeruest (DB + API + Mobile + ekprosopos)
+- [x] NEA-191: Liquid Evaluation (my-evaluation, pre-fill, badge, updated_at trigger)
+- [x] NEA-240: Alle 5 Codex Findings gefixt (region, eval persist, scraper, forum, keypair)
+- [x] NEA-240 Follow-up: ADA Constraint verifiziert (11-14, passt in 10-32)
+- [x] MOD-25: Status live in modules.html + /health + /health/modules
 - [x] MPScreen Politikoi-Tab zeigt live Politiker-Liste statt Placeholder
 - [x] HTTP 500 Fix: keypair.py verify_signature ValueError
 - [x] Trailing Slash Fix: /politicians/ (307 redirect)
 - [x] ekprosopos Login: invite_code Feld + native bridge
 - [x] Arweave Monitor: nur PARLIAMENT Bills
-- [x] region_locked=FALSE fuer Test-Account
-- [x] vC24 APK auf S10 installiert + verifiziert
-- [x] vC24 AAB gebaut
-- [x] DEMO-123 evaluation_enabled=TRUE
+- [x] vC25 APK auf S10 + Server download live
+- [x] vC25 AAB Play Console uploaded
+- [x] ekprosopos vC2 APK gebaut + deployed
 
 ## Blocked
 - [ ] NEA-59: F-Droid MR !38007 — wartet auf linsui Review

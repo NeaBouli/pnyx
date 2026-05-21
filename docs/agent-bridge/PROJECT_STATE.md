@@ -13,11 +13,11 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `cf448dc` (feat(NEA-191): Liquid evaluation — vC25)
+- **HEAD:** `323737f` (chore(bridge): MOD-25 status fix done)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`, `pre-politikoi-20260521`
 - **Rollback:** `pre-politikoi-20260521` → `49e24ba`
 - **Remote:** synchron mit GitHub
-- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `cf448dc` (deployed 2026-05-21, API rebuilt, NEA-191 + NEA-240 + scraper catch-up)
+- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `411a560` (deployed 2026-05-21, API+Web rebuilt, NEA-189+191+240, MOD-25 live, 25 Module)
 
 ## Uncommitted Aenderungen
 
@@ -188,8 +188,8 @@ Weiterhin UNSICHER:
 
 - Datum/Zeit: 2026-05-21
 - Agent: Claude Code
-- HEAD lokal: `803ea51` (gepusht)
-- HEAD server: `5e5de6b` (deployed, API+Monitor+Web rebuilt — Server hat noch nicht den MPScreen Fix)
+- HEAD lokal: `323737f` (gepusht)
+- HEAD server: `411a560` (deployed, API+Web rebuilt, MOD-25 live)
 - Session 21.05: 17 Commits
   - `3357e00` feat: NEA-236 Health-Check 15 rules + --once mode for cron
   - `0c6db62` fix: NEA-236 aggregate arweave alerts + truncate telegram message
