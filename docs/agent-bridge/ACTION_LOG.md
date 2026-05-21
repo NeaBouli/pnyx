@@ -1,5 +1,16 @@
 # Action Log
 
+## 2026-05-21 — MOD-25 Status Fix (Codex Befund)
+
+- **modules.html:** MOD-25 `dot-planned` → `dot-active`, `badge-gray` → `badge-green "Beta"`
+- **`/health`:** MOD-25 Politikoi hinzugefuegt (25 Module total)
+- **`/health/modules`:** MOD-24 Forum Sync + MOD-25 Politikoi hinzugefuegt (23 detaillierte Module)
+- **Verifiziert:** Live Wiki zeigt MOD-25 gruen, API gibt `{"status": "ok"}` fuer MOD-25
+- **Commit:** `411a560`
+- **Deployed:** Web + API rebuilt
+
+---
+
 ## 2026-05-21 — NEA-240 Follow-up: ADA constraint verification
 
 - **Live API:** ADA length 11–14 (100 decisions checked)
