@@ -1,5 +1,16 @@
 # Action Log
 
+## 2026-05-22 — NEA-231 + NEA-235 Forum Content Fix
+
+- **_clean():** Strips HTML Tags, hellenicparliament.gr URLs (bare + markdown), Navigation-Boilerplate, Cookies
+- **Content Fallback:** summary → long_text[:2000] → Diavgeia ADA Link → Parliament URL → Placeholder
+- **DB Stand:** 187 Bills, 182 ohne summary_short_el, 75 ohne summary_long_el, alle 187 mit forum_topic_id
+- **Re-sync:** Neue Topics bekommen jetzt automatisch besseren Body. Bestehende leere Topics werden beim naechsten forum_sync-Lauf (alle 10min) nicht automatisch aktualisiert (nur neue Bills). Manueller Resync ist ein Follow-up.
+- **Commit:** `69f9adf`
+- **Deployed:** API rebuilt
+
+---
+
 ## 2026-05-22 — NEA-226 QR Konsensierung Web — Verification
 
 - **Status:** BEREITS IMPLEMENTIERT — kein Fix noetig
