@@ -1,5 +1,18 @@
 # Action Log
 
+## 2026-05-22 — Globale Kohaerenz: Module Count + Wiki + README + Health
+
+- **README.md:** Badge + Text 22→25 Module, MOD-01 through MOD-25
+- **CLAUDE.md:** Spec v7.0→v10.0, 15→25 Module, 13→70+ Endpoints
+- **modules.html:** MOD-23 (Greek Topics, disabled) + MOD-24 (CPLM) hinzugefuegt, Meta 22→25
+- **roadmap.html:** Politikoi + CPLM + Diavgeia + Self-Healing in Beta-Phase, Politikoi aus "geplant" entfernt
+- **/health:** Duplikate MOD-12/14 bereinigt, sortiert, 23 unique Module (25 Module-Nummern, MOD-13/MOD-17 reserviert)
+- **/health/modules:** 23 detaillierte Module, overall: ok
+- **Commit:** `8f1ebfa`
+- **Deployed:** Web + API rebuilt
+
+---
+
 ## 2026-05-22 — NEA-241 Watcher 3-Tier Auto-Recovery
 
 - **Structured Alerts:** Alert dataclass (type, service, severity, recovery_allowed)
