@@ -887,8 +887,8 @@ OVERALL:         [0-100]
 - Repo remote: https://github.com/NeaBouli/pnyx
 - Produkt:     Ekklesia.gr — Ψηφιακή Πλατφόρμα Αμέσης Δημοκρατίας
 - Copyright:   © 2026 Vendetta Labs (MIT License)
-- Spec:        v7.0 (15 Module, vollständig griechisch)
-- Phase:       Beta — SMS Verifikation, VAA, CitizenVote
+- Spec:        v10.0 (25 Module, vollständig griechisch)
+- Phase:       Beta — SMS Verifikation, VAA, CitizenVote, Politikoi Evaluation, Self-Healing Monitor
 
 ## Externe Referenz (READ ONLY — niemals verändern)
 - /Users/gio/TrueRepublic — Cosmos SDK Blockchain, PnyxCoin
@@ -908,7 +908,7 @@ OVERALL:         [0-100]
 - MOD-08 TrueRepublic Bridge → Cosmos SDK / PnyxCoin
 - MOD-09 gov.gr OAuth2.0 → Alpha nach 500 Nutzern + 3 NGOs
 
-## API Endpoints (13 total — alle implementiert)
+## API Endpoints (70+ total — 25 Module, alle implementiert)
 MOD-01: POST /api/v1/identity/verify | revoke | status
 MOD-02: GET  /api/v1/vaa/statements | parties  /  POST /match
 MOD-03: GET  /api/v1/bills | /trending | /{id}  /  POST /transition | /admin/create

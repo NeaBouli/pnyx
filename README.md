@@ -11,7 +11,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/NeaBouli/pnyx/actions/workflows/ci.yml/badge.svg)](https://github.com/NeaBouli/pnyx/actions)
-[![Modules](https://img.shields.io/badge/Modules-22-green)](https://ekklesia.gr/wiki/modules.html)
+[![Modules](https://img.shields.io/badge/Modules-25-green)](https://ekklesia.gr/wiki/modules.html)
 [![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-red)](https://github.com/NeaBouli/pnyx)
 
 **© 2026 V-Labs Development �� MIT License**
@@ -69,7 +69,7 @@ This project uses publicly available government data from:
 ```
 pnyx/
 ├���─ apps/
-│   ├── api/          → Python FastAPI  (70+ endpoints, 22 modules)
+│   ├── api/          → Python FastAPI  (70+ endpoints, 25 modules)
 │   ├��─ web/          → Next.js 14      (el/en, Tailwind, light theme)
 │   └── mobile/       → Expo RN         (Android APK + Play Store)
 ├── packages/
@@ -155,7 +155,7 @@ cd apps/web && npm run build
 
 | Metric | Value |
 |---|---|
-| Modules | 22 (MOD-01 through MOD-22) |
+| Modules | 22 (MOD-01 through MOD-25) |
 | API Endpoints | 70+ |
 | DB Tables | 15+ (Alembic managed) |
 | Containers | 9 (including Ollama) |
@@ -193,7 +193,7 @@ cd apps/web && npm run build
 |---|---|
 | [Wiki](https://ekklesia.gr/wiki/) | Full technical documentation (12 pages) |
 | [API Docs](https://ekklesia.gr/wiki/api.html) | 70+ endpoints, all modules |
-| [Modules](https://ekklesia.gr/wiki/modules.html) | MOD-01 through MOD-22 |
+| [Modules](https://ekklesia.gr/wiki/modules.html) | MOD-01 through MOD-25 |
 | [Security](https://ekklesia.gr/wiki/security.html) | Ed25519, Nullifier, threat model |
 | [Architecture](https://ekklesia.gr/wiki/architecture.html) | Stack, monorepo, lifecycle |
 | [FAQ](https://ekklesia.gr/wiki/faq.html) | Frequently asked questions |
