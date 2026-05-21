@@ -168,7 +168,7 @@ services:
       API_URL: http://api:8000
       MONITOR_INTERVAL_SECONDS: "1800"
       ADMIN_KEY: ${ADMIN_KEY}
-      AUTO_RECOVERY_T2: "false"
+      AUTO_RECOVERY_T2: ${AUTO_RECOVERY_T2:-false}
       DOCKER_HOST: tcp://docker-proxy:2375
     networks:
       - ekklesia
