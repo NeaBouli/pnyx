@@ -35,7 +35,7 @@ def sign_payload(private_key_hex: str, payload: bytes) -> str:
     return signed.signature.hex()
 
 
-def verify_signature(public_key_hex: str, payload: bytes, signature_hex: str) -> bool:
+def verify_signature(public_key_hex: str, payload, signature_hex: str) -> bool:
     """
     Verifiziert eine Ed25519-Signatur.
     Returns: True wenn gültig, False sonst.
@@ -44,7 +44,8 @@ def verify_signature(public_key_hex: str, payload: bytes, signature_hex: str) ->
     from nacl.exceptions import BadSignatureError
     try:
         verify_key = VerifyKey(public_key_hex.encode(), encoder=HexEncoder)
-        verify_key.verify(payload, bytes.fromhex(signature_hex))
+        message = payload.encode("utf-8") if isinstance(payload, str) else payload
+        verify_key.verify(message, bytes.fromhex(signature_hex))
         return True
-    except BadSignatureError:
+    except (BadSignatureError, ValueError, Exception):
         return False
