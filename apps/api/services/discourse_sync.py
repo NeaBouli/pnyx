@@ -145,13 +145,25 @@ def _build_topic_body(bill: ParliamentBill) -> str:
     summary = bill.summary_short_el or bill.pill_el or ""
     long_text = bill.summary_long_el or ""
 
-    # Strip navigation/boilerplate lines scraped from parliament site
+    # Strip navigation/boilerplate/parliament links from scraped content
     def _clean(text: str) -> str:
+        if not text:
+            return ""
+        # Strip HTML tags
+        text = re.sub(r"<[^>]+>", "", text)
+        # Strip markdown links to hellenicparliament.gr
+        text = re.sub(r"\[([^\]]*)\]\(https?://[^\)]*hellenicparliament[^\)]*\)", r"\1", text)
+        # Strip bare hellenicparliament.gr URLs
+        text = re.sub(r"https?://\S*hellenicparliament\S*", "", text)
+        # Strip navigation boilerplate
         lines = text.split("\n")
-        cleaned = [l for l in lines if not re.match(r"^\*?\s*\[.+\]\(https?://", l.strip())
-                   and "Μετάβαση στο κύριο" not in l
-                   and "προσβασιμότητας" not in l]
+        cleaned = [l for l in lines
+                   if "Μετάβαση στο κύριο" not in l
+                   and "προσβασιμότητας" not in l
+                   and "Cookies" not in l
+                   and not re.match(r"^\s*\*?\s*\[Αρχική\]", l.strip())]
         return "\n".join(cleaned).strip()
+
     summary = _clean(summary)
     long_text = _clean(long_text)
 
@@ -164,12 +176,26 @@ def _build_topic_body(bill: ParliamentBill) -> str:
         f"| **ID** | `{bill.id}` |\n\n"
         "---\n\n"
     )
+
+    # Content fallback: summary → long_text → diavgeia ADA → title+link
     if summary:
         body += f"## Περίληψη\n{summary}\n\n"
-    elif source == "DIAVGEIA":
-        body += "## Περίληψη\n*Η AI σύνοψη θα είναι σύντομα διαθέσιμη.*\n\n"
     if long_text:
-        body += f"## Ανάλυση\n{long_text}\n\n"
+        body += f"## Ανάλυση\n{long_text[:2000]}\n\n"
+    if not summary and not long_text:
+        if source == "DIAVGEIA" and getattr(bill, "diavgeia_ada", None):
+            body += (
+                f"## Πληροφορίες\n"
+                f"**Διαύγεια ADA:** {bill.diavgeia_ada}\n\n"
+                f"[Δείτε την απόφαση στη Διαύγεια →](https://diavgeia.gov.gr/decision/view/{bill.diavgeia_ada})\n\n"
+            )
+        elif getattr(bill, "parliament_url", None):
+            body += (
+                f"## Πληροφορίες\n"
+                f"[Δείτε το νομοσχέδιο στη Βουλή →]({bill.parliament_url})\n\n"
+            )
+        else:
+            body += f"## Πληροφορίες\n*Δεν υπάρχει περίληψη ακόμα. Ψηφίστε στο ekklesia.gr.*\n\n"
 
     # CTA depends on status
     if status_val == "OPEN_END":
