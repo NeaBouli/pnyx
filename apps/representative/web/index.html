@@ -69,6 +69,7 @@ body{font-family:system-ui,sans-serif;background:var(--dark);color:#e2e8f0;min-h
     <h2>Σύνδεση</h2>
     <p>Εισάγετε τον αριθμό ΑΔΑ σας από τη Διαύγεια για επαλήθευση.</p>
     <input type="text" class="input" id="adaInput" placeholder="π.χ. 9ΠΝΘΩ6Γ-ΘΥΦ" autocomplete="off">
+    <input type="text" class="input" id="inviteInput" placeholder="Κωδικός πρόσκλησης (XXXX-XXXX)" autocomplete="off" style="margin-top:12px">
     <div class="error" id="loginError"></div>
     <button class="btn btn-gold" id="loginBtn" onclick="doLogin()">Επαλήθευση</button>
     <p class="disclaimer">Η εφαρμογή εκπρόσωπος παρέχει πρόσβαση σε αποτελέσματα ψηφοφοριών μετά το 24ωρο παράθυρο. Δεν παρέχει πρόσβαση σε ενεργές ψηφοφορίες.</p>
@@ -102,11 +103,13 @@ if(token)showBillsScreen();
 
 async function doLogin(){
   var ada=document.getElementById('adaInput').value.trim();
+  var invite=document.getElementById('inviteInput').value.trim();
   if(!ada){showError('Εισάγετε αριθμό ΑΔΑ');return}
+  if(!invite){showError('Εισάγετε κωδικό πρόσκλησης');return}
   document.getElementById('loginBtn').textContent='Επαλήθευση...';
   document.getElementById('loginBtn').disabled=true;
   try{
-    var r=await fetch(API+'/api/v1/rep/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ada_number:ada})});
+    var r=await fetch(API+'/api/v1/rep/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ada_number:ada,invite_code:invite})});
     var d=await r.json();
     if(!r.ok){showError(d.detail||'Σφάλμα επαλήθευσης');return}
     token=d.token;adaNumber=ada;
