@@ -1,20 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity } from "react-native";
-import { fetchMPRanking } from "../lib/api";
+import { useNavigation } from "@react-navigation/native";
+import type { StackNavigationProp } from "@react-navigation/stack";
+import { fetchMPRanking, fetchPoliticians } from "../lib/api";
+import type { Politician } from "../lib/api";
+import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
 
 type TabMode = "parties" | "politikoi";
-
-const POLITIKOI_CATEGORIES = [
-  { key: "parliament", icon: "🏛️", label: "Βουλευτές", labelEn: "MPs" },
-  { key: "periferia", icon: "🗺️", label: "Περιφερειάρχες", labelEn: "Regional Governors" },
-  { key: "dimos", icon: "🏘️", label: "Δήμαρχοι", labelEn: "Mayors" },
-];
+type Nav = StackNavigationProp<RootStackParams, "Tabs">;
 
 export default function MPScreen() {
+  const nav = useNavigation<Nav>();
   const [mode, setMode] = useState<TabMode>("parties");
   const [ranking, setRanking] = useState<any[]>([]);
+  const [politicians, setPoliticians] = useState<Politician[]>([]);
   const [loading, setLoading] = useState(true);
+  const [polLoading, setPolLoading] = useState(false);
 
   useEffect(() => {
     fetchMPRanking()
@@ -22,6 +24,16 @@ export default function MPScreen() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (mode === "politikoi") {
+      setPolLoading(true);
+      fetchPoliticians()
+        .then(data => setPoliticians(Array.isArray(data) ? data : []))
+        .catch(() => {})
+        .finally(() => setPolLoading(false));
+    }
+  }, [mode]);
 
   if (loading) return <View style={s.center}><ActivityIndicator color={colors.primary} size="large" /></View>;
 
@@ -72,10 +84,12 @@ export default function MPScreen() {
             </View>
           )}
         />
+      ) : polLoading ? (
+        <View style={s.center}><ActivityIndicator color={colors.primary} size="large" /></View>
       ) : (
         <FlatList
-          data={POLITIKOI_CATEGORIES}
-          keyExtractor={c => c.key}
+          data={politicians}
+          keyExtractor={p => p.ada_number}
           contentContainerStyle={s.list}
           ListHeaderComponent={
             <View style={s.header}>
@@ -83,16 +97,35 @@ export default function MPScreen() {
               <Text style={s.headerSub}>Αξιολογήστε εκπροσώπους σε κλίμακα -5 έως +5</Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <TouchableOpacity style={s.card} activeOpacity={0.7}>
-              <Text style={{ fontSize: 32, marginRight: 12 }}>{item.icon}</Text>
-              <View style={s.content}>
-                <Text style={s.name}>{item.label}</Text>
-                <Text style={s.detail}>Αξιολόγηση διαθέσιμη σύντομα</Text>
-              </View>
-              <Text style={{ color: colors.textTertiary, fontSize: 18 }}>→</Text>
-            </TouchableOpacity>
-          )}
+          ListEmptyComponent={
+            <View style={{ alignItems: "center", paddingVertical: 40 }}>
+              <Text style={{ fontSize: 48, marginBottom: 12 }}>🏛️</Text>
+              <Text style={s.empty}>Δεν υπάρχουν αξιολογούμενοι εκπρόσωποι ακόμα.</Text>
+            </View>
+          }
+          renderItem={({ item }) => {
+            const icon = item.role === "Βουλευτής" ? "🏛️" : item.role === "Περιφερειάρχης" ? "🗺️" : item.role === "Δήμαρχος" ? "🏙️" : "👤";
+            const scoreColor = item.avg_score === null ? colors.textTertiary : item.avg_score >= 2 ? colors.success : item.avg_score >= 0 ? colors.warning : colors.error;
+            return (
+              <TouchableOpacity
+                style={s.card}
+                activeOpacity={0.7}
+                onPress={() => nav.navigate("EvaluatePolitician", { adaNumber: item.ada_number, orgLabel: item.org_label })}
+              >
+                <Text style={{ fontSize: 32, marginRight: 12 }}>{icon}</Text>
+                <View style={s.content}>
+                  <Text style={s.name}>{item.org_label || item.ada_number}</Text>
+                  <Text style={s.detail}>{item.role}{item.region ? ` · ${item.region}` : ""}</Text>
+                  {item.evaluator_count > 0 && (
+                    <Text style={s.detail}>{item.evaluator_count} αξιολογήσεις</Text>
+                  )}
+                </View>
+                <Text style={{ fontSize: 20, fontWeight: "900", color: scoreColor }}>
+                  {item.avg_score !== null ? (item.avg_score > 0 ? "+" : "") + item.avg_score.toFixed(1) : "—"}
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
           ListFooterComponent={
             <View style={{ backgroundColor: colors.primaryLight, borderRadius: 12, padding: 16, marginTop: 12 }}>
               <Text style={{ color: colors.primary, fontWeight: "700", fontSize: 13, marginBottom: 4 }}>
