@@ -108,7 +108,7 @@ def check_forum_missing(conn) -> list[str]:
 
 
 def check_arweave_pending(conn) -> list[str]:
-    """Rule 5: PARLIAMENT_VOTED/OPEN_END without arweave_tx_id for 24h+ (aggregated)."""
+    """Rule 5: PARLIAMENT bills without arweave_tx_id for 24h+ (DIAVGEIA excluded)."""
     alerts = []
     with conn.cursor() as cur:
         cur.execute("""
@@ -116,11 +116,12 @@ def check_arweave_pending(conn) -> list[str]:
             WHERE status IN ('PARLIAMENT_VOTED', 'OPEN_END')
               AND arweave_tx_id IS NULL
               AND id NOT LIKE 'DEMO-%%'
+              AND (source IS NULL OR source = 'PARLIAMENT')
               AND (status_changed_at IS NULL OR status_changed_at < NOW() - INTERVAL '24 hours')
         """)
         count = cur.fetchone()[0]
         if count > 0:
-            alerts.append(f"Arweave: {count} Bills ohne Archivierung (>24h)")
+            alerts.append(f"Arweave: {count} Parliament-Bills ohne Archivierung (>24h)")
     return alerts
 
 
