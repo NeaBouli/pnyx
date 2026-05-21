@@ -13,11 +13,11 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `3627580` (fix: NEA-240 all 5 Codex findings)
+- **HEAD:** `cf448dc` (feat(NEA-191): Liquid evaluation — vC25)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`, `pre-politikoi-20260521`
 - **Rollback:** `pre-politikoi-20260521` → `49e24ba`
 - **Remote:** synchron mit GitHub
-- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `3627580` (deployed 2026-05-21, API rebuilt, NEA-240 fixes + scraper catch-up aktiv)
+- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `cf448dc` (deployed 2026-05-21, API rebuilt, NEA-191 + NEA-240 + scraper catch-up)
 
 ## Uncommitted Aenderungen
 
@@ -210,11 +210,13 @@ Weiterhin UNSICHER:
   - `803ea51` chore: bump versionCode 23 → 24
 - Rollback-Tag: `pre-politikoi-20260521` → `49e24ba`
 - Builds bereit:
-  - `~/Desktop/ekklesia-v1.3.2-vC24.apk` (66MB) — S10 installiert (vC24, verifiziert)
-  - `~/Desktop/ekklesia-v1.3.2-vC24-PLAY.aab` (45MB) — Play Console Upload BEREIT
+  - `~/Desktop/ekklesia-v1.3.2-vC25.apk` (66MB) — APK build laeuft (vC25)
+  - `~/Desktop/ekklesia-v1.3.2-vC24-PLAY.aab` (45MB) — Play Console (vC24, vor NEA-191)
+  - AAB vC25 muss nach APK-Build separat gebaut werden
   - `~/Desktop/ekprosopos-v1.1.0-vC2.apk` (55MB) — ekprosopos mit Evaluation
 - NEA-189 DB: `evaluation_questions` (8 Rows), `politician_evaluations`, `evaluation_enabled` auf `representative_tokens`
-- NEA-189 API: 6 neue Endpoints (2 Rep + 4 Public) unter `/rep/` und `/politicians/`
+- NEA-189 API: 6 Endpoints (2 Rep + 4 Public) unter `/rep/` und `/politicians/`
+- NEA-191 API: 2 Endpoints — `GET /my-evaluation`, `GET /my-evaluations/bulk`
 - NEA-189 Mobile: PolitikoiScreen + EvaluatePoliticianScreen + MPScreen Politikoi-Tab (vC24)
 - NEA-189 ekprosopos: Αξιολόγηση Tab + Consent + My Scores (vC2)
 - DEMO-123: evaluation_enabled=TRUE, region_locked=FALSE, Token 24h TTL (muss bei Bedarf erneuert werden)

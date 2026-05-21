@@ -1,5 +1,19 @@
 # Action Log
 
+## 2026-05-21 — NEA-191 Liquid Evaluation (updated_at + pre-fill + badge)
+
+- **DB:** `updated_at` Trigger `set_politician_eval_timestamp` auf `politician_evaluations`
+- **API:** `GET /politicians/{ada}/my-evaluation?nullifier_hash=` — eigene Scores pro Politiker
+- **API:** `GET /politicians/my-evaluations/bulk?nullifier_hash=` — alle bewerteten Politiker (vermeidet N+1)
+- **EvaluatePoliticianScreen:** Pre-fill Scores bei Wiederbesuch, "Τελευταία αλλαγή: DD.MM.YYYY", Submit-Text "Ενημέρωση" vs "Αποστολή"
+- **MPScreen:** "✓ Αξιολογήθηκε" grüner Badge per Bulk-Endpoint
+- **versionCode:** 24 → 25
+- **Verifiziert:** `/my-evaluation` + `/my-evaluations/bulk` live getestet, Daten korrekt
+- **Commit:** `cf448dc`
+- **Deployed:** API rebuilt
+
+---
+
 ## 2026-05-21 — NEA-240 All 5 Codex Findings Fixed
 
 - **Bug 1 (region_locked):** ProfileScreen syncs `periferia_id`/`dimos_id` from `/identity/status` into SecureStore
