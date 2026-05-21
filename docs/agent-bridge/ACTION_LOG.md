@@ -1,5 +1,15 @@
 # Action Log
 
+## 2026-05-21 — NEA-240 Follow-up: ADA constraint verification
+
+- **Live API:** ADA length 11–14 (100 decisions checked)
+- **DB:** ADA length 11–14 (165 rows)
+- **Constraint `BETWEEN 10 AND 32`:** KORREKT — grosszuegig aber alle Werte passen
+- **Aenderung:** Keine noetig
+- **Fazit:** Constraint bleibt, empirisch verifiziert
+
+---
+
 ## 2026-05-21 — NEA-191 Liquid Evaluation (updated_at + pre-fill + badge)
 
 - **DB:** `updated_at` Trigger `set_politician_eval_timestamp` auf `politician_evaluations`
