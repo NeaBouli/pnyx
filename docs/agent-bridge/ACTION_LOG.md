@@ -1,5 +1,16 @@
 # Action Log
 
+## 2026-05-21 — HTTP 500 Fix: keypair.py verify_signature
+
+- **Root Cause:** `packages/crypto/keypair.py` ueberschattete `apps/api/keypair.py` im Docker Python-Path
+- **Bug:** Crypto-Version fing nur `BadSignatureError`, nicht `ValueError` (falsche Signatur-Laenge → 500)
+- **Bug 2:** `payload: bytes` Type-Hint, aber evaluation.py sendete `str`
+- **Fix:** `except (BadSignatureError, ValueError, Exception)` + auto-encode str→bytes
+- **Verifiziert:** `POST /evaluate` mit ungueltiger Signatur → 401 (nicht mehr 500)
+- **Commit:** `5e5de6b`
+
+---
+
 ## 2026-05-21 — Monitor Arweave Fix + Trailing Slash + ekprosopos Login
 
 - **Arweave Monitor:** Rule 5 filtert jetzt `source = 'PARLIAMENT'` — DIAVGEIA Bills ausgeschlossen

@@ -13,11 +13,11 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `911a1a4` (fix: Arweave monitor rule excludes DIAVGEIA bills)
+- **HEAD:** `5e5de6b` (fix: keypair.py verify_signature catches ValueError)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`, `pre-politikoi-20260521`
 - **Rollback:** `pre-politikoi-20260521` → `49e24ba`
 - **Remote:** synchron mit GitHub
-- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `911a1a4` (deployed 2026-05-21, API+Monitor+Web rebuilt, Migration l501a2b3c4d5, Cronjob 06:00 UTC aktiv)
+- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `5e5de6b` (deployed 2026-05-21, API+Monitor+Web rebuilt, Migration l501a2b3c4d5, Cronjob 06:00 UTC aktiv)
 
 ## Uncommitted Aenderungen
 
@@ -188,24 +188,39 @@ Weiterhin UNSICHER:
 
 - Datum/Zeit: 2026-05-21
 - Agent: Claude Code
-- HEAD lokal: `0221813` (gepusht)
-- HEAD server: `0221813` (deployed, API rebuilt + Migration)
-- Session 21.05: NEA-236 Deploy + NEA-189 Grundgeruest
+- HEAD lokal: `5e5de6b` (gepusht)
+- HEAD server: `5e5de6b` (deployed, API+Monitor+Web rebuilt)
+- Session 21.05: 12 Commits — NEA-236 Deploy, NEA-189 Grundgeruest, Bugfixes
   - `3357e00` feat: NEA-236 Health-Check 15 rules + --once mode for cron
   - `0c6db62` fix: NEA-236 aggregate arweave alerts + truncate telegram message
   - `49e24ba` chore(bridge): NEA-236 health-check 15 rules + cron documented
   - `0221813` feat: NEA-189 Politician Evaluation — Grundgeruest
+  - `4476ed9` chore(bridge): NEA-189 session state + action log update
+  - `86ed7a9` chore: ekprosopos v1.1.0 vC2 — Evaluation Features
+  - `4276a6c` fix(representative): native token injection + enable domStorage
+  - `2582790` fix(representative): add invite_code field to login form
+  - `91087f5` fix: trailing slash on /politicians endpoint (307 redirect)
+  - `911a1a4` fix: Arweave monitor rule excludes DIAVGEIA bills
+  - `0354871` chore(bridge): monitor fix + ekprosopos login + scraper status
+  - `5e5de6b` fix: keypair.py verify_signature catches ValueError + accepts str payload
 - Rollback-Tag: `pre-politikoi-20260521` → `49e24ba`
 - Builds bereit:
-  - `~/Desktop/ekklesia-v1.3.1-vC22-NEA189.apk` (66MB) — auf S10 installiert (vC22)
-  - `~/Desktop/ekklesia-v1.1.0-vC12-PLAY.aab` (45MB) — Play Console (veraltet)
+  - `~/Desktop/ekklesia-v1.3.1-vC22-FINAL.apk` (66MB) — alle Fixes inkl. trailing slash + keypair
+  - `~/Desktop/ekklesia-v1.3.1-vC22-PLAY.aab` (45MB) — Play Console (vC22, vor keypair fix)
+  - `~/Desktop/ekprosopos-v1.1.0-vC2.apk` (55MB) — ekprosopos mit Evaluation
 - NEA-189 DB: `evaluation_questions` (8 Rows), `politician_evaluations`, `evaluation_enabled` auf `representative_tokens`
 - NEA-189 API: 6 neue Endpoints (2 Rep + 4 Public) unter `/rep/` und `/politicians/`
 - NEA-189 Mobile: PolitikoiScreen + EvaluatePoliticianScreen (vC22)
-- DEMO-123: evaluation_enabled=TRUE (manuell aktiviert fuer Tests)
-- APK auf Server: `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` (vC22, 66MB)
+- NEA-189 ekprosopos: Αξιολόγηση Tab + Consent + My Scores (vC2)
+- DEMO-123: evaluation_enabled=TRUE, Token muss bei Bedarf erneuert werden (24h TTL)
+- Monitor: 15 Rules, Arweave nur PARLIAMENT, Health-Check 3 Alerts (Diavgeia/Parliament/Forum stale)
+- Scraper: Diavgeia last_run 2026-05-12, Parliament last_run 2026-05-18 — API restarted fuer Scheduler-Reset
+- APK auf Server: `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` (vC22 FINAL)
+- APK ekprosopos: `/opt/ekklesia/app/docs/download/ekprosopos-latest.apk` (vC2)
+- S10 Install: vC22 FINAL ausstehend (Geraet getrennt), vorige Version vC22 war installiert + verifiziert
 - WICHTIG: Docker Container muessen per Image-Rebuild deployed werden (kein Volume-Mount fuer Code).
   Deploy-Flow: `git pull` → `docker compose build api/web` → Container manuell mit Traefik-Labels + Env neu erstellen
+- WICHTIG: `packages/crypto/keypair.py` ueberschattet `apps/api/keypair.py` im Docker Python-Path. Beide muessen konsistent bleiben.
 
 ## Codex-Verifikation aus Repo-Metadaten
 
