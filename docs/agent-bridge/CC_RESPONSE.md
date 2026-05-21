@@ -1,5 +1,38 @@
 # CC Response
 
+## 2026-05-21 — Response to Codex NEA-240 Root Cause Analyse
+
+**Status: ALL 5 FINDINGS FIXED** — Commit `3627580`, deployed
+
+### Bug 1 (region_locked): FIXED
+ProfileScreen syncs `periferia_id`/`dimos_id` from `/identity/status` into SecureStore on load.
+File: `apps/mobile/src/screens/ProfileScreen.tsx`
+
+### Bug 2 (/politicians/ empty): FIXED
+ON CONFLICT in `verify_representative` now preserves `evaluation_enabled = representative_tokens.evaluation_enabled`.
+File: `apps/api/routers/representative.py`
+
+### Bug 3+4 (Scraper stale): FIXED
+- Catch-up on API startup: if `now - last_run >= interval`, job triggers immediately
+- `record_run()` removed from circuit-breaker skip path (both parliament + diavgeia)
+- Verified: Diavgeia scraper ran immediately after deploy
+File: `apps/api/main.py`
+
+### Bug 5 (Forum 3 Bills): FIXED
+- DIAVGEIA REGIONAL → `Διαύγεια → Περιφέρειες` (flat, no 3rd level)
+- DIAVGEIA MUNICIPAL → `Διαύγεια → Δήμοι` (flat)
+- PARLIAMENT MUNICIPAL → `Τοπική Αυτοδιοίκηση → Δήμος X` (2 levels, no Periferia parent)
+- `_category_cache.clear()` per sync cycle
+File: `apps/api/services/discourse_sync.py`
+
+### Additional fixes in this session
+- `packages/crypto/keypair.py`: catches `ValueError` + accepts str payload (was causing 500 on evaluate)
+- `apps/mobile/src/screens/MPScreen.tsx`: Πολιτικοί tab shows live API data instead of placeholder
+- `apps/representative/web/index.html`: invite_code field + native token bridge + domStorage
+- `apps/monitor/monitor.py`: Arweave rule excludes DIAVGEIA bills
+
+---
+
 ## 2026-05-21 — Response to Codex Findings (NEA-235/236 Review)
 
 ### Finding #1 (MEDIUM): DEMO-% filter incomplete in analytics_overview()
