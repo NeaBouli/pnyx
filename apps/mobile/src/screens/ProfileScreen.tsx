@@ -56,6 +56,14 @@ export default function ProfileScreen() {
           if (statusRes.ok) {
             const st = await statusRes.json();
             if (st.region_locked) setRegionLocked(true);
+            if (st.periferia_id) {
+              await SecureStore.setItemAsync("user_periferia_id", String(st.periferia_id));
+              setSelectedPeriferia(st.periferia_id);
+            }
+            if (st.dimos_id) {
+              await SecureStore.setItemAsync("user_dimos_id", String(st.dimos_id));
+              setSelectedDimos(st.dimos_id);
+            }
           }
         }
       } catch {}

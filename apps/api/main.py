@@ -111,7 +111,6 @@ async def scheduled_scrape():
     name = "parliament"
     if await is_circuit_open(name):
         logger.warning("[MOD-03] Circuit breaker OPEN for %s — skipping", name)
-        await record_run(name)
         return
     await record_run(name)
     try:
@@ -275,7 +274,6 @@ async def scheduled_diavgeia_scrape():
     name = "diavgeia_municipal"
     if await is_circuit_open(name):
         logger.warning("[MOD-21] Circuit breaker OPEN for %s — skipping", name)
-        await record_run(name)
         return
     await record_run(name)
     try:
@@ -309,8 +307,9 @@ async def scheduled_diavgeia_scrape():
 
 async def scheduled_forum_sync():
     """Sync bills to Discourse forum every 10 min."""
-    from services.discourse_sync import sync_new_bills_to_forum, FORUM_SYNC_ENABLED, DISCOURSE_API_KEY
+    from services.discourse_sync import sync_new_bills_to_forum, FORUM_SYNC_ENABLED, DISCOURSE_API_KEY, _category_cache
     from services.scraper_state import record_run, record_success, record_failure
+    _category_cache.clear()
     name = "forum_sync"
     if not FORUM_SYNC_ENABLED or not DISCOURSE_API_KEY:
         await record_run(name)
@@ -474,6 +473,34 @@ async def lifespan(app):
     scheduler.add_job(scheduled_monthly_newsletter, CronTrigger(day=1, hour=9, minute=0), id="monthly_newsletter", replace_existing=True)
     scheduler.start()
     logger.info("[Scheduler] Started — completeness 6h, lifecycle 1h, parliament 12h, diavgeia 48h, notify-bills 30m, notify-results 1h, forum-sync 10m, greek-topics 6h, newsletter 1st/month")
+
+    # Catch-up: trigger overdue jobs immediately after restart
+    try:
+        import redis.asyncio as aioredis
+        r = aioredis.Redis(host=os.getenv("REDIS_HOST", "redis"), port=6379, db=0, decode_responses=True)
+        catchup_jobs = {
+            "parliament": (scheduled_scrape, 12 * 3600),
+            "diavgeia_municipal": (scheduled_diavgeia_scrape, 48 * 3600),
+            "bill_lifecycle": (scheduled_bill_lifecycle, 3600),
+            "forum_sync": (scheduled_forum_sync, 600),
+            "cplm_refresh": (scheduled_cplm_refresh, 6 * 3600),
+        }
+        for name, (func, interval_sec) in catchup_jobs.items():
+            last_run = await r.get(f"scraper:{name}:last_run")
+            if last_run:
+                from datetime import datetime, timezone
+                try:
+                    lr = datetime.fromisoformat(last_run)
+                    age = (datetime.now(timezone.utc) - lr).total_seconds()
+                    if age >= interval_sec:
+                        logger.info("[Scheduler] Catch-up: %s overdue by %.0fh, triggering now", name, age / 3600)
+                        scheduler.add_job(func, id=f"catchup_{name}", replace_existing=True)
+                except Exception:
+                    pass
+        await r.aclose()
+    except Exception as e:
+        logger.warning("[Scheduler] Catch-up check failed: %s", e)
+
     yield
     # Shutdown
     scheduler.shutdown()

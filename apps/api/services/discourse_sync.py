@@ -88,13 +88,17 @@ async def _resolve_category(bill: ParliamentBill, db: AsyncSession) -> int:
             return await get_or_create_category("Φορείς & Οργανισμοί", parent)
         if gov == "NATIONAL":
             return await get_or_create_category("Κεντρική Διοίκηση", parent)
-        # REGIONAL/MUNICIPAL Diavgeia → fall through to local categories below
+        if gov == "REGIONAL":
+            return await get_or_create_category("Περιφέρειες", parent)
+        if gov == "MUNICIPAL":
+            return await get_or_create_category("Δήμοι", parent)
+        return await get_or_create_category("Άλλα", parent)
 
     if gov == "NATIONAL":
-        # Post into Βουλή → Νομοσχέδια subcategory
         parent = await get_or_create_category("Βουλή")
         return await get_or_create_category("Νομοσχέδια", parent)
 
+    # Local governance: max 2 levels (Discourse limit)
     if gov == "REGIONAL" and bill.periferia_id:
         parent = await get_or_create_category("Τοπική Αυτοδιοίκηση")
         periferia = await db.get(Periferia, bill.periferia_id)
@@ -102,18 +106,11 @@ async def _resolve_category(bill: ParliamentBill, db: AsyncSession) -> int:
         return await get_or_create_category(name, parent)
 
     if gov == "MUNICIPAL" and bill.dimos_id:
-        # Find periferia parent, then create dimos subcategory on-demand
-        dimos = await db.get(Dimos, bill.dimos_id)
-        if dimos and dimos.periferia_id:
-            periferia = await db.get(Periferia, dimos.periferia_id)
-            local_parent = await get_or_create_category("Τοπική Αυτοδιοίκηση")
-            periferia_cat = await get_or_create_category(
-                f"Περιφέρεια {periferia.name_el}" if periferia else "Περιφέρεια",
-                local_parent,
-            )
-            return await get_or_create_category(dimos.name_el, periferia_cat)
+        # Flat: Τοπική Αυτοδιοίκηση → Δήμος X (no 3rd level via Periferia)
         parent = await get_or_create_category("Τοπική Αυτοδιοίκηση")
-        return await get_or_create_category("Δήμος", parent)
+        dimos = await db.get(Dimos, bill.dimos_id)
+        name = f"Δήμος {dimos.name_el}" if dimos else "Δήμος"
+        return await get_or_create_category(name, parent)
 
     parent = await get_or_create_category("Βουλή")
     return await get_or_create_category("Νομοσχέδια", parent)

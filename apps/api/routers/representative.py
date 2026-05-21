@@ -200,7 +200,8 @@ async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(g
         INSERT INTO representative_tokens (ada_number, token, role, region, org_label, expires_at)
         VALUES (:ada, :token, :role, :region, :org_label, :expires)
         ON CONFLICT (ada_number) DO UPDATE SET token = :token, role = :role, region = :region,
-            expires_at = :expires, org_label = :org_label
+            expires_at = :expires, org_label = :org_label,
+            evaluation_enabled = representative_tokens.evaluation_enabled
     """), {
         "ada": req.ada_number, "token": token, "role": role,
         "region": region or "", "org_label": ada_info.get("org_label", ""),
