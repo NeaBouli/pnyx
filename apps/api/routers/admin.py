@@ -211,6 +211,56 @@ async def admin_resync_forum(
     return {"success": True, **stats}
 
 
+@router.post("/scraper/catch-up")
+async def admin_scraper_catchup(
+    _key=Depends(verify_admin),
+):
+    """Trigger catch-up for overdue scraper jobs (background, idempotent)."""
+    import asyncio
+    import redis.asyncio as aioredis
+
+    r = aioredis.Redis(host=os.getenv("REDIS_HOST", "redis"), port=6379, db=0, decode_responses=True)
+    triggered = []
+    skipped = []
+
+    catchup_jobs = {
+        "parliament": ("scheduled_scrape", 12 * 3600),
+        "diavgeia_municipal": ("scheduled_diavgeia_scrape", 48 * 3600),
+        "bill_lifecycle": ("scheduled_bill_lifecycle", 3600),
+        "forum_sync": ("scheduled_forum_sync", 600),
+        "cplm_refresh": ("scheduled_cplm_refresh", 6 * 3600),
+    }
+
+    for name, (func_name, interval_sec) in catchup_jobs.items():
+        last_run = await r.get(f"scraper:{name}:last_run")
+        if last_run:
+            try:
+                lr = datetime.fromisoformat(last_run)
+                age = (datetime.now(timezone.utc) - lr).total_seconds()
+                if age < 600:  # run less than 10 min ago → skip
+                    skipped.append(name)
+                    continue
+                if age >= interval_sec:
+                    # Import and trigger in background
+                    import main as app_main
+                    func = getattr(app_main, func_name, None)
+                    if func:
+                        asyncio.create_task(func())
+                        triggered.append(name)
+                    else:
+                        skipped.append(name)
+                else:
+                    skipped.append(name)
+            except Exception:
+                skipped.append(name)
+        else:
+            skipped.append(name)
+
+    await r.aclose()
+    logger.info("[CATCHUP] Triggered: %s, Skipped: %s", triggered, skipped)
+    return {"accepted": True, "jobs_triggered": triggered, "skipped": skipped}
+
+
 @router.post("/diavgeia/resolve-orgs")
 async def admin_resolve_orgs(
     _key=Depends(verify_admin),

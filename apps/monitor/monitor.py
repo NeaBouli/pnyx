@@ -1,11 +1,12 @@
 """
-ekklesia.gr Business Logic Monitor
+ekklesia.gr Business Logic Monitor — 3-Tier Auto-Recovery
 Runs every 30 minutes (daemon) or once daily at 06:00 UTC (cron).
-15 rules. Alerts via Telegram.
+15 rules. Recovery: T1 API → T2 Docker Restart → T3 Telegram Escalation.
 """
 import os
 import time
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 
 import httpx
@@ -15,14 +16,50 @@ import redis
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("monitor")
 
-# Config from environment
+# ─── Config ──────────────────────────────────────────────────────────────────
+
 DB_URL = os.getenv("DATABASE_URL", "postgresql://ekklesia:devpassword@db:5432/ekklesia_prod")
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TG_CHAT = os.getenv("TELEGRAM_ADMIN_CHAT_ID", "")
-CHECK_INTERVAL = int(os.getenv("MONITOR_INTERVAL_SECONDS", "1800"))  # 30 min
+CHECK_INTERVAL = int(os.getenv("MONITOR_INTERVAL_SECONDS", "1800"))
 API_URL = os.getenv("API_URL", "http://api:8000")
+ADMIN_KEY = os.getenv("ADMIN_KEY", "")
+AUTO_RECOVERY_T2 = os.getenv("AUTO_RECOVERY_T2", "false").lower() == "true"
 
+# T2 Allowlist — HARDCODED, never restart DB/Redis/Traefik/Discourse
+T2_ALLOWED_SERVICES = {"ekklesia-api", "ekklesia-web"}
+T2_MAX_RESTARTS_PER_HOUR = 2
+
+
+# ─── Alert Dataclass ─────────────────────────────────────────────────────────
+
+@dataclass
+class Alert:
+    type: str
+    service: str
+    severity: str       # "warning" | "critical"
+    message: str
+    recovery_allowed: bool
+
+
+# ─── T1 Mapping: alert.type → API endpoint ───────────────────────────────────
+
+T1_MAPPING = {
+    "scraper_parliament_stale": "/api/v1/admin/scraper/catch-up",
+    "scraper_diavgeia_stale":   "/api/v1/admin/scraper/catch-up",
+    "forum_sync_errors":        "/api/v1/admin/forum/resync-all",
+    "forum_content_empty":      "/api/v1/admin/forum/resync-all",
+}
+
+# Longer cooldown for expensive operations
+T1_LOCK_TTL = {
+    "/api/v1/admin/forum/resync-all": 7200,  # 2h
+}
+T1_DEFAULT_LOCK_TTL = 3600  # 1h
+
+
+# ─── Telegram ────────────────────────────────────────────────────────────────
 
 def send_telegram(message: str) -> bool:
     if not TG_TOKEN or not TG_CHAT:
@@ -43,6 +80,8 @@ def send_telegram(message: str) -> bool:
     return False
 
 
+# ─── Connections ─────────────────────────────────────────────────────────────
+
 def get_db():
     return psycopg2.connect(DB_URL)
 
@@ -51,20 +90,128 @@ def get_redis():
     return redis.from_url(REDIS_URL, decode_responses=True)
 
 
-def check_scraper_stale(r) -> list[str]:
-    """Rule 1: Scraper 2x consecutive 0 bills."""
+# ─── 3-Tier Recovery ────────────────────────────────────────────────────────
+
+def attempt_tier1(alert: Alert, r) -> bool:
+    """Tier 1: Trigger API recovery endpoint."""
+    endpoint = T1_MAPPING.get(alert.type)
+    if not endpoint or not ADMIN_KEY:
+        return False
+
+    lock_key = f"lock:recovery:{alert.type}"
+    ttl = T1_LOCK_TTL.get(endpoint, T1_DEFAULT_LOCK_TTL)
+    if not r.set(lock_key, "1", ex=ttl, nx=True):
+        logger.info("[T1] Lock active for %s — skipping (cooldown %ds)", alert.type, ttl)
+        return True  # Already attempted recently, treat as handled
+
+    try:
+        resp = httpx.post(
+            f"{API_URL}{endpoint}",
+            headers={"Authorization": f"Bearer {ADMIN_KEY}"},
+            timeout=30,
+        )
+        if resp.status_code in (200, 202):
+            logger.info("[T1] Recovery OK: %s → %s → HTTP %d", alert.type, endpoint, resp.status_code)
+            return True
+        logger.warning("[T1] Recovery FAILED: %s → %s → HTTP %d", alert.type, endpoint, resp.status_code)
+    except Exception as e:
+        logger.error("[T1] Recovery ERROR: %s → %s: %s", alert.type, endpoint, e)
+
+    # Remove lock on failure so next cycle can retry
+    r.delete(lock_key)
+    return False
+
+
+def attempt_tier2(alert: Alert, r) -> bool:
+    """Tier 2: Docker container restart via socket proxy."""
+    if not AUTO_RECOVERY_T2:
+        logger.info("[T2] Disabled (AUTO_RECOVERY_T2=false) — skipping")
+        return False
+
+    service = alert.service
+    if not service or service not in T2_ALLOWED_SERVICES:
+        logger.info("[T2] Service '%s' not in allowlist — skipping", service)
+        return False
+
+    lock_key = f"lock:restart:{service}"
+    if not r.set(lock_key, "1", ex=3600, nx=True):
+        logger.info("[T2] Restart lock active for %s — skipping", service)
+        return True  # Already restarted recently
+
+    counter_key = f"restart_count:{service}"
+    count = r.incr(counter_key)
+    if count == 1:
+        r.expire(counter_key, 3600)
+
+    if count > T2_MAX_RESTARTS_PER_HOUR:
+        logger.warning("[T2] Max restarts exceeded for %s (%d/%d) — escalating", service, count, T2_MAX_RESTARTS_PER_HOUR)
+        return False
+
+    try:
+        import docker
+        client = docker.DockerClient(base_url=os.getenv("DOCKER_HOST", "tcp://docker-proxy:2375"))
+        container = client.containers.get(service)
+        container.restart(timeout=30)
+        logger.info("[T2] Restarted %s (attempt %d/%d)", service, count, T2_MAX_RESTARTS_PER_HOUR)
+        return True
+    except Exception as e:
+        logger.error("[T2] Restart FAILED for %s: %s", service, e)
+        r.delete(lock_key)
+    return False
+
+
+def escalate_tier3(alert: Alert, recovery_result: str = ""):
+    """Tier 3: Telegram escalation — always fires as last resort."""
+    severity_icon = "🔴" if alert.severity == "critical" else "🟡"
+    msg = (
+        f"{severity_icon} <b>T3 Escalation</b>\n\n"
+        f"<b>Type:</b> {alert.type}\n"
+        f"<b>Service:</b> {alert.service or '—'}\n"
+        f"<b>Severity:</b> {alert.severity}\n"
+        f"<b>Message:</b> {alert.message}\n"
+    )
+    if recovery_result:
+        msg += f"<b>Recovery:</b> {recovery_result}\n"
+    msg += f"\n<i>{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}</i>"
+    send_telegram(msg)
+    logger.warning("[T3] Escalated: %s — %s", alert.type, alert.message)
+
+
+def attempt_recovery(alert: Alert, r):
+    """Dispatcher: T1 → T2 → T3."""
+    if not alert.recovery_allowed:
+        escalate_tier3(alert, "Direct T3 — no auto-recovery for this type")
+        return "T3"
+
+    # Tier 1
+    if alert.type in T1_MAPPING:
+        if attempt_tier1(alert, r):
+            return "T1"
+
+    # Tier 2
+    if alert.service:
+        if attempt_tier2(alert, r):
+            return "T2"
+
+    # Tier 3
+    escalate_tier3(alert, "T1+T2 failed or not applicable")
+    return "T3"
+
+
+# ─── 15 Health Checks (return Alert objects) ────────────────────────────────
+
+def check_scraper_stale(r) -> list[Alert]:
     alerts = []
     last_success = r.get("scraper:parliament:last_success")
-    if not last_success:
-        return alerts
-    age_h = (datetime.now(timezone.utc) - datetime.fromisoformat(last_success)).total_seconds() / 3600
-    if age_h > 48:
-        alerts.append(f"Parliament Scraper: kein Erfolg seit {age_h:.0f}h")
+    if last_success:
+        age_h = (datetime.now(timezone.utc) - datetime.fromisoformat(last_success)).total_seconds() / 3600
+        if age_h > 48:
+            alerts.append(Alert("scraper_parliament_stale", "ekklesia-api", "warning",
+                                f"Parliament Scraper: kein Erfolg seit {age_h:.0f}h", True))
     return alerts
 
 
-def check_no_new_bills(conn) -> list[str]:
-    """Rule 2: 7+ days no new bills."""
+def check_no_new_bills(conn) -> list[Alert]:
     alerts = []
     with conn.cursor() as cur:
         cur.execute("SELECT MAX(created_at) FROM parliament_bills")
@@ -72,30 +219,28 @@ def check_no_new_bills(conn) -> list[str]:
         if latest:
             age = (datetime.now() - latest).days
             if age > 7:
-                alerts.append(f"Keine neuen Bills seit {age} Tagen (letzter: {latest.strftime('%d.%m')})")
+                alerts.append(Alert("no_new_bills", "", "warning",
+                                    f"Keine neuen Bills seit {age} Tagen", False))
     return alerts
 
 
-def check_lifecycle_stuck(conn) -> list[str]:
-    """Rule 3: Bills with past vote_date still in wrong status."""
+def check_lifecycle_stuck(conn) -> list[Alert]:
     alerts = []
     now = datetime.now()
     with conn.cursor() as cur:
-        # Bills that should have transitioned but didn't
         cur.execute("""
             SELECT id, status, parliament_vote_date FROM parliament_bills
             WHERE parliament_vote_date IS NOT NULL
               AND parliament_vote_date < %s
               AND status IN ('ANNOUNCED', 'ACTIVE', 'WINDOW_24H')
         """, (now - timedelta(days=1),))
-        stuck = cur.fetchall()
-        for bill_id, status, vote_date in stuck:
-            alerts.append(f"Bill {bill_id} stuck in {status} (vote_date: {vote_date.strftime('%d.%m.%Y')})")
+        for bill_id, status, vote_date in cur.fetchall():
+            alerts.append(Alert("lifecycle_stuck", "ekklesia-api", "warning",
+                                f"Bill {bill_id} stuck in {status} (vote: {vote_date.strftime('%d.%m.%Y')})", False))
     return alerts
 
 
-def check_forum_missing(conn) -> list[str]:
-    """Rule 4: ACTIVE bill without forum thread."""
+def check_forum_missing(conn) -> list[Alert]:
     alerts = []
     with conn.cursor() as cur:
         cur.execute("""
@@ -103,12 +248,12 @@ def check_forum_missing(conn) -> list[str]:
             WHERE status = 'ACTIVE' AND forum_topic_id IS NULL
         """)
         for bill_id, title in cur.fetchall():
-            alerts.append(f"Bill {bill_id} ACTIVE aber kein Forum-Thread: {title[:50]}")
+            alerts.append(Alert("forum_missing", "ekklesia-api", "warning",
+                                f"Bill {bill_id} ACTIVE ohne Forum: {title[:50]}", False))
     return alerts
 
 
-def check_arweave_pending(conn) -> list[str]:
-    """Rule 5: PARLIAMENT bills without arweave_tx_id for 24h+ (DIAVGEIA excluded)."""
+def check_arweave_pending(conn) -> list[Alert]:
     alerts = []
     with conn.cursor() as cur:
         cur.execute("""
@@ -121,53 +266,52 @@ def check_arweave_pending(conn) -> list[str]:
         """)
         count = cur.fetchone()[0]
         if count > 0:
-            alerts.append(f"Arweave: {count} Parliament-Bills ohne Archivierung (>24h)")
+            alerts.append(Alert("arweave_pending", "", "warning",
+                                f"Arweave: {count} Parliament-Bills ohne Archivierung (>24h)", False))
     return alerts
 
 
-def check_hlr_credits() -> list[str]:
-    """Rule 6: HLR credits < 100."""
+def check_hlr_credits() -> list[Alert]:
     alerts = []
     try:
         r = httpx.get(f"{API_URL}/api/v1/admin/hlr/credits", timeout=5)
         if r.status_code == 200:
-            data = r.json()
-            credits = data.get("primary", {}).get("credits", 9999)
+            credits = r.json().get("primary", {}).get("credits", 9999)
             if credits < 100:
-                alerts.append(f"HLR Credits niedrig: {credits} verbleibend")
+                alerts.append(Alert("hlr_low", "", "critical",
+                                    f"HLR Credits niedrig: {credits}", False))
     except Exception:
-        pass  # HLR check is best-effort
+        pass
     return alerts
 
 
-def check_forum_sync_errors(r) -> list[str]:
-    """Rule 7: Forum sync error count > 10."""
+def check_forum_sync_errors(r) -> list[Alert]:
     alerts = []
-    err_count = r.get("scraper:forum_sync:error_count")
     try:
-        count = int(err_count) if err_count else 0
+        count = int(r.get("scraper:forum_sync:error_count") or 0)
     except (ValueError, TypeError):
         count = 0
     if count > 10:
         last_err = r.get("scraper:forum_sync:last_error") or "unknown"
-        alerts.append(f"Forum Sync: {count} Fehler — {last_err[:80]}")
+        alerts.append(Alert("forum_sync_errors", "ekklesia-api", "warning",
+                            f"Forum Sync: {count} Fehler — {last_err[:80]}", True))
     return alerts
 
 
-def check_api_health() -> list[str]:
-    """Rule 8: API responds to health check."""
+def check_api_health() -> list[Alert]:
     alerts = []
     try:
         resp = httpx.get(f"{API_URL}/api/v1/bills?limit=1", timeout=10)
         if resp.status_code != 200:
-            alerts.append(f"API Health-Check FAIL: HTTP {resp.status_code}")
+            alerts.append(Alert("api_unhealthy", "ekklesia-api", "critical",
+                                f"API Health-Check FAIL: HTTP {resp.status_code}", True))
     except Exception as e:
-        alerts.append(f"API nicht erreichbar: {e}")
+        alerts.append(Alert("api_unhealthy", "ekklesia-api", "critical",
+                            f"API nicht erreichbar: {e}", True))
     return alerts
 
 
-def check_disk_usage() -> list[str]:
-    """Rule 9: Disk usage > 90%."""
+def check_disk_usage() -> list[Alert]:
     alerts = []
     try:
         import shutil
@@ -175,49 +319,44 @@ def check_disk_usage() -> list[str]:
         pct = used / total * 100
         if pct > 90:
             free_gb = free / (1024**3)
-            alerts.append(f"Disk {pct:.0f}% voll — nur {free_gb:.1f} GB frei")
+            alerts.append(Alert("disk_critical", "", "critical",
+                                f"Disk {pct:.0f}% voll — {free_gb:.1f} GB frei", False))
     except Exception:
         pass
     return alerts
 
 
-def check_db_consistency(conn) -> list[str]:
-    """Rule 10: Bills with NULL source or missing governance_level."""
+def check_db_consistency(conn) -> list[Alert]:
     alerts = []
     with conn.cursor() as cur:
-        cur.execute("""
-            SELECT COUNT(*) FROM parliament_bills
-            WHERE source IS NULL AND id NOT LIKE 'DEMO-%%'
-        """)
+        cur.execute("SELECT COUNT(*) FROM parliament_bills WHERE source IS NULL AND id NOT LIKE 'DEMO-%%'")
         null_source = cur.fetchone()[0]
         if null_source > 0:
-            alerts.append(f"DB: {null_source} Bills ohne source (NULL)")
-        cur.execute("""
-            SELECT COUNT(*) FROM parliament_bills
-            WHERE governance_level IS NULL AND id NOT LIKE 'DEMO-%%'
-        """)
+            alerts.append(Alert("db_inconsistent", "", "warning",
+                                f"DB: {null_source} Bills ohne source", False))
+        cur.execute("SELECT COUNT(*) FROM parliament_bills WHERE governance_level IS NULL AND id NOT LIKE 'DEMO-%%'")
         null_gov = cur.fetchone()[0]
         if null_gov > 0:
-            alerts.append(f"DB: {null_gov} Bills ohne governance_level")
+            alerts.append(Alert("db_inconsistent", "", "warning",
+                                f"DB: {null_gov} Bills ohne governance_level", False))
     return alerts
 
 
-def check_diavgeia_scraper(r) -> list[str]:
-    """Rule 11: Diavgeia scraper last_run > 96h."""
+def check_diavgeia_scraper(r) -> list[Alert]:
     alerts = []
     last_run = r.get("scraper:diavgeia_municipal:last_run")
     if last_run:
         try:
             age_h = (datetime.now(timezone.utc) - datetime.fromisoformat(last_run)).total_seconds() / 3600
             if age_h > 96:
-                alerts.append(f"Diavgeia Scraper: kein Run seit {age_h:.0f}h")
+                alerts.append(Alert("scraper_diavgeia_stale", "ekklesia-api", "warning",
+                                    f"Diavgeia Scraper: kein Run seit {age_h:.0f}h", True))
         except (ValueError, TypeError):
             pass
     return alerts
 
 
-def check_web_urls() -> list[str]:
-    """Rule 12: Key web pages return HTTP 200."""
+def check_web_urls() -> list[Alert]:
     alerts = []
     urls = [
         ("Landing", "https://ekklesia.gr/"),
@@ -229,29 +368,29 @@ def check_web_urls() -> list[str]:
         try:
             resp = httpx.get(url, timeout=10, follow_redirects=True)
             if resp.status_code != 200:
-                alerts.append(f"Web {name}: HTTP {resp.status_code}")
+                alerts.append(Alert("web_down", "ekklesia-web", "critical",
+                                    f"Web {name}: HTTP {resp.status_code}", True))
         except Exception as e:
-            alerts.append(f"Web {name} nicht erreichbar: {e}")
+            alerts.append(Alert("web_down", "ekklesia-web", "critical",
+                                f"Web {name} nicht erreichbar: {e}", True))
     return alerts
 
 
-def check_arweave_wallet() -> list[str]:
-    """Rule 13: Arweave wallet balance > 0.1 AR."""
+def check_arweave_wallet() -> list[Alert]:
     alerts = []
     try:
         resp = httpx.get(f"{API_URL}/api/v1/scraper/status", timeout=10)
         if resp.status_code == 200:
-            data = resp.json()
-            balance = data.get("arweave_balance_ar", 999)
+            balance = resp.json().get("arweave_balance_ar", 999)
             if isinstance(balance, (int, float)) and balance < 0.1:
-                alerts.append(f"Arweave Wallet niedrig: {balance:.4f} AR")
+                alerts.append(Alert("arweave_low", "", "critical",
+                                    f"Arweave Wallet niedrig: {balance:.4f} AR", False))
     except Exception:
         pass
     return alerts
 
 
-def check_forum_completeness(conn) -> list[str]:
-    """Rule 14: Non-DEMO bills in ACTIVE/OPEN_END without forum_topic_id."""
+def check_forum_completeness(conn) -> list[Alert]:
     alerts = []
     with conn.cursor() as cur:
         cur.execute("""
@@ -263,29 +402,32 @@ def check_forum_completeness(conn) -> list[str]:
         """)
         count = cur.fetchone()[0]
         if count > 0:
-            alerts.append(f"Forum: {count} Bills ohne Topic (ACTIVE/OPEN_END)")
+            alerts.append(Alert("forum_content_empty", "ekklesia-api", "warning",
+                                f"Forum: {count} Bills ohne Topic", True))
     return alerts
 
 
-def check_scraper_jobs(r) -> list[str]:
-    """Rule 15: Any scraper job with error_count > 20."""
+def check_scraper_jobs(r) -> list[Alert]:
     alerts = []
     job_names = ["parliament", "diavgeia_municipal", "bill_lifecycle",
                  "cplm_refresh", "greek_topics", "notify_new_bills", "notify_results"]
     for name in job_names:
-        err_raw = r.get(f"scraper:{name}:error_count")
         try:
-            count = int(err_raw) if err_raw else 0
+            count = int(r.get(f"scraper:{name}:error_count") or 0)
         except (ValueError, TypeError):
             count = 0
         if count > 20:
-            alerts.append(f"Job {name}: {count} Fehler")
+            alerts.append(Alert("scraper_job_errors", "ekklesia-api", "warning",
+                                f"Job {name}: {count} Fehler", False))
     return alerts
 
 
+# ─── Main Loop ───────────────────────────────────────────────────────────────
+
 def run_checks():
     logger.info("Running 15 business logic checks...")
-    all_alerts = []
+    all_alerts: list[Alert] = []
+    recovery_results: dict[str, str] = {}
 
     r = get_redis()
     conn = get_db()
@@ -306,6 +448,12 @@ def run_checks():
         all_alerts.extend(check_arweave_wallet())
         all_alerts.extend(check_forum_completeness(conn))
         all_alerts.extend(check_scraper_jobs(r))
+
+        # Recovery pass
+        for alert in all_alerts:
+            tier = attempt_recovery(alert, r)
+            recovery_results[alert.type] = tier
+
     finally:
         conn.close()
         r.close()
@@ -313,9 +461,10 @@ def run_checks():
     if all_alerts:
         msg = f"<b>ekklesia.gr Monitor — {len(all_alerts)} Alerts</b>\n\n"
         for i, alert in enumerate(all_alerts, 1):
-            msg += f"{i}. {alert}\n"
+            tier = recovery_results.get(alert.type, "—")
+            icon = "✓" if tier in ("T1", "T2") else "✗"
+            msg += f"{i}. [{icon}{tier}] {alert.message}\n"
         msg += f"\n<i>{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}</i>"
-        # Telegram max 4096 chars
         if len(msg) > 4000:
             msg = msg[:3950] + f"\n\n... (+{len(all_alerts)} total)"
         send_telegram(msg)
@@ -333,7 +482,7 @@ if __name__ == "__main__":
         alerts = run_checks()
         sys.exit(1 if alerts else 0)
     else:
-        logger.info("ekklesia.gr Monitor started (interval: %ds)", CHECK_INTERVAL)
+        logger.info("ekklesia.gr Monitor started (interval: %ds, T2: %s)", CHECK_INTERVAL, AUTO_RECOVERY_T2)
         while True:
             try:
                 run_checks()
