@@ -1,5 +1,20 @@
 # Action Log
 
+## 2026-05-22 — NEA-241 Watcher 3-Tier Auto-Recovery
+
+- **Structured Alerts:** Alert dataclass (type, service, severity, recovery_allowed)
+- **T1 API Recovery:** Catch-up + Forum-Resync via Admin-Endpoints, Redis Lock (1h/2h)
+- **T2 Docker Restart:** Via Socket-Proxy, Feature-Flag `AUTO_RECOVERY_T2=false` (default off), Allowlist nur api+web
+- **T3 Telegram Escalation:** Severity-Icon, Service, Recovery-Ergebnis
+- **Neuer Endpoint:** `POST /admin/scraper/catch-up` (background, idempotent, 10min dedup)
+- **Neuer Service:** `ekklesia-docker-proxy` (tecnativa/docker-socket-proxy, CONTAINERS+POST only)
+- **ADMIN_KEY:** An Monitor-Container uebergeben, nie geloggt
+- **Smoke Tests:** Docker-Proxy ✓, Health-Check ✓ (1 Alert → T3), Catch-up ✓ (alle aktuell)
+- **Commit:** `a589e6a`
+- **Deployed:** Monitor + API + docker-proxy
+
+---
+
 ## 2026-05-22 — NEA-239 + NEA-224 Community.html Zaehler live
 
 - **Vorher:** Alle Zaehler bereits per `fetch` aus `/public/stats` geladen — KEINE hardcoded Werte
