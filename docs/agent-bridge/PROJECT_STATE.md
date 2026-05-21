@@ -13,11 +13,11 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `803ea51` (chore: bump versionCode 23 → 24)
+- **HEAD:** `3627580` (fix: NEA-240 all 5 Codex findings)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`, `pre-politikoi-20260521`
 - **Rollback:** `pre-politikoi-20260521` → `49e24ba`
 - **Remote:** synchron mit GitHub
-- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `5e5de6b` (deployed 2026-05-21, API+Monitor+Web rebuilt, Migration l501a2b3c4d5, Cronjob 06:00 UTC aktiv)
+- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `3627580` (deployed 2026-05-21, API rebuilt, NEA-240 fixes + scraper catch-up aktiv)
 
 ## Uncommitted Aenderungen
 

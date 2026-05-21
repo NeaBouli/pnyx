@@ -1,5 +1,17 @@
 # Action Log
 
+## 2026-05-21 — NEA-240 All 5 Codex Findings Fixed
+
+- **Bug 1 (region_locked):** ProfileScreen syncs `periferia_id`/`dimos_id` from `/identity/status` into SecureStore
+- **Bug 2 (/politicians/ leer):** ON CONFLICT preserves `evaluation_enabled` on token renewal
+- **Bug 3+4 (Scraper stale):** Catch-up on API startup (overdue jobs trigger sofort), `record_run()` aus circuit-breaker-skip entfernt
+- **Bug 5 (Forum 3 Bills):** Kategorie-Routing flach (max 2 Ebenen), DIAVGEIA MUNICIPAL/REGIONAL korrekt geroutet, `_category_cache` cleared per sync
+- **Verifiziert:** Diavgeia Scraper laeuft nach Deploy (Catch-up erfolgreich), API OK
+- **Commit:** `3627580`
+- **Deployed:** API rebuilt
+
+---
+
 ## 2026-05-21 — MPScreen Fix + vC24 Builds
 
 - **MPScreen:** Placeholder "Αξιολόγηση διαθέσιμη σύντομα" ersetzt durch echte `fetchPoliticians()` API-Liste
