@@ -605,6 +605,7 @@ async def health():
             "MOD-22 RAG Agent (Ollama + DeepL)",
             "MOD-23 Greek Topics Scraper",
             "MOD-24 CPLM (Citizens Political Liquid Mirror)",
+            "MOD-25 Politikoi — Liquid Evaluation",
         ]
     }
 
@@ -705,6 +706,13 @@ async def health_modules():
             modules["MOD-22"] = {"name": "RAG Agent (Ollama + DeepL)", "status": "error", "ollama": False, "deepl": deepl_ok, "error": "Ollama offline"}
     except Exception as e:
         modules["MOD-22"] = {"name": "RAG Agent", "status": "error", "error": str(e)}
+
+    # MOD-24 Forum Sync
+    forum_st = await scraper_status("forum_sync")
+    modules["MOD-24"] = {"name": "Discourse Forum Sync", **forum_st}
+
+    # MOD-25 Politician Evaluation
+    modules["MOD-25"] = {"name": "Politikoi — Liquid Evaluation", "status": "ok"}
 
     # MOD-23 Greek Topics Scraper
     greek_enabled = os.getenv("GREEK_SCRAPER_ENABLED", "false").lower() == "true"
