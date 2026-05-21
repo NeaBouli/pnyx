@@ -1,5 +1,20 @@
 # Action Log
 
+## 2026-05-22 — NEA-226 QR Konsensierung Web — Verification
+
+- **Status:** BEREITS IMPLEMENTIERT — kein Fix noetig
+- **Web Bill-Detail** (`apps/web/src/app/[locale]/bills/[id]/page.tsx`):
+  - Zeile 414-415: OPEN_END Konsensierung-Block aktiv
+  - Zeile 422: DIAVGEIA-spezifischer Text
+  - Zeile 449-467: Consensus Slider (-5 bis +5)
+  - Zeile 475: QR-Auth Submit via `/api/v1/polis/qr-consensus`
+  - Zeile 513: `purpose="consensus"` QR-Widget
+- **QRCodeVoteStub.tsx:** `purpose?: "vote" | "consensus" | "ticket" | "forum_login"` — consensus supported
+- **DB:** 164 DIAVGEIA OPEN_END + 3 PARLIAMENT OPEN_END Bills
+- **Aenderung:** Keine
+
+---
+
 ## 2026-05-21 — MOD-25 Status Fix (Codex Befund)
 
 - **modules.html:** MOD-25 `dot-planned` → `dot-active`, `badge-gray` → `badge-green "Beta"`
