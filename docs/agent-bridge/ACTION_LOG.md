@@ -1,5 +1,20 @@
 # Action Log
 
+## 2026-05-22 — T2 aktiviert + Dashboard Assessment (NEA-244)
+
+- **T2 AUTO_RECOVERY_T2:** `true` in `.env.production`, Monitor verifiziert
+- **Fix:** Compose hardcoded `"false"` → `${AUTO_RECOVERY_T2:-false}` (Commit `fad42a2`)
+- **Dashboard:** 19 Seiten (overview, analytics, bills, votes, cplm, vaa, system, ai, forum, logs, embed, finance, stats, settings, users, nodes, node-settings, gov, representatives)
+- **FEHLT im Dashboard:**
+  - Πολιτικοί / Evaluation (MOD-25) — keine Seite, kein Sidebar-Link
+  - Monitor / Recovery (NEA-241) — kein Status-Panel fuer T1/T2/T3
+  - Diavgeia-Filter auf Bills-Seite — nicht vorhanden
+  - Admin-Buttons: `/admin/scraper/catch-up` + `/admin/forum/resync-all` — nicht im Dashboard
+  - Community.html Stats Mirror — nicht im Dashboard
+- **Empfehlung:** 2 neue Dashboard-Seiten: `/politicians` (Evaluation-Uebersicht) + `/monitor` (Recovery-Status + Admin-Trigger-Buttons)
+
+---
+
 ## 2026-05-22 — Globale Kohaerenz: Module Count + Wiki + README + Health
 
 - **README.md:** Badge + Text 22→25 Module, MOD-01 through MOD-25
