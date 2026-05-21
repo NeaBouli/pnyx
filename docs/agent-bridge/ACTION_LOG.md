@@ -3,9 +3,10 @@
 ## 2026-05-22 — NEA-231 Follow-up: Forum Resync
 
 - **resync_all_topics():** Rate-Limited (5 Topics pro 15s Batch)
-- **Ergebnis:** 132/187 updated, 55 failed (HTTP 429 Rate-Limit)
+- **Run 1:** 132/187 updated, 55 failed (HTTP 429)
+- **Run 2:** 185/187 updated, 2 failed (GR-cf7398d9 + DIAV-ΨΙ7Ρ46Ψ8ΧΒ-7)
+- **Gesamt:** 185/187 Forum Topics mit neuem Content aktualisiert
 - **Commit:** `420f6a1` (Throttling-Fix)
-- **Hinweis:** 55 Topics koennen bei Bedarf nochmal resynced werden. Der naechste Lauf wird die fehlgeschlagenen erneut versuchen.
 
 ---
 

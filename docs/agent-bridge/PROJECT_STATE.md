@@ -13,11 +13,11 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `323737f` (chore(bridge): MOD-25 status fix done)
+- **HEAD:** `75833a5` (chore(bridge): NEA-231 resync done)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`, `pre-politikoi-20260521`
 - **Rollback:** `pre-politikoi-20260521` → `49e24ba`
 - **Remote:** synchron mit GitHub
-- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `411a560` (deployed 2026-05-21, API+Web rebuilt, NEA-189+191+240, MOD-25 live, 25 Module)
+- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `420f6a1` (deployed 2026-05-22, API rebuilt, NEA-231 forum resync, 185/187 Topics aktualisiert)
 
 ## Uncommitted Aenderungen
 
