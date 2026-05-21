@@ -292,7 +292,8 @@ async def update_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> bool
 
 
 async def resync_all_topics(db: AsyncSession) -> dict:
-    """Re-categorize and re-tag ALL existing forum topics."""
+    """Re-categorize and re-tag ALL existing forum topics. Rate-limited to ~10/min."""
+    import asyncio
     result = await db.execute(
         select(ParliamentBill).where(ParliamentBill.forum_topic_id.isnot(None))
     )
@@ -300,12 +301,15 @@ async def resync_all_topics(db: AsyncSession) -> dict:
     updated = 0
     failed = 0
 
-    for bill in bills:
+    for i, bill in enumerate(bills):
         ok = await update_discourse_topic(bill, db)
         if ok:
             updated += 1
         else:
             failed += 1
+        # Discourse rate limit: ~20 req/min, but update does 3 calls per topic
+        if (i + 1) % 5 == 0:
+            await asyncio.sleep(15)
 
     return {"total": len(bills), "updated": updated, "failed": failed}
 
