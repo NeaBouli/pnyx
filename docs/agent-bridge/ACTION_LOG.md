@@ -1,5 +1,14 @@
 # Action Log
 
+## 2026-05-22 — NEA-231 Follow-up: Forum Resync
+
+- **resync_all_topics():** Rate-Limited (5 Topics pro 15s Batch)
+- **Ergebnis:** 132/187 updated, 55 failed (HTTP 429 Rate-Limit)
+- **Commit:** `420f6a1` (Throttling-Fix)
+- **Hinweis:** 55 Topics koennen bei Bedarf nochmal resynced werden. Der naechste Lauf wird die fehlgeschlagenen erneut versuchen.
+
+---
+
 ## 2026-05-22 — NEA-231 + NEA-235 Forum Content Fix
 
 - **_clean():** Strips HTML Tags, hellenicparliament.gr URLs (bare + markdown), Navigation-Boilerplate, Cookies
