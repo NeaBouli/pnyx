@@ -229,8 +229,12 @@ async def public_bill_results(
 @router.get("/stats")
 async def public_stats(_key=Depends(rate_limit_check), db: AsyncSession = Depends(get_db)):
     """Plattform-Statistiken — öffentlich."""
-    total_bills  = await db.scalar(select(func.count(ParliamentBill.id))) or 0
-    total_votes  = await db.scalar(select(func.count(CitizenVote.id))) or 0
+    total_bills  = await db.scalar(
+        select(func.count(ParliamentBill.id)).where(~ParliamentBill.id.like("DEMO-%"))
+    ) or 0
+    total_votes  = await db.scalar(
+        select(func.count(CitizenVote.id)).where(~CitizenVote.bill_id.like("DEMO-%"))
+    ) or 0
     active_bills = await db.scalar(
         select(func.count(ParliamentBill.id)).where(
             ParliamentBill.status.in_([BillStatus.ACTIVE, BillStatus.WINDOW_24H])
@@ -238,18 +242,26 @@ async def public_stats(_key=Depends(rate_limit_check), db: AsyncSession = Depend
     ) or 0
 
     parliament_bills = await db.scalar(
-        select(func.count(ParliamentBill.id)).where(ParliamentBill.source == "PARLIAMENT")
+        select(func.count(ParliamentBill.id)).where(
+            ParliamentBill.source == "PARLIAMENT", ~ParliamentBill.id.like("DEMO-%")
+        )
     ) or 0
     diavgeia_bills = await db.scalar(
         select(func.count(ParliamentBill.id)).where(ParliamentBill.source == "DIAVGEIA")
     ) or 0
     archived_bills = await db.scalar(
         select(func.count(ParliamentBill.id)).where(
-            ParliamentBill.status.in_([BillStatus.OPEN_END, BillStatus.PARLIAMENT_VOTED])
+            ParliamentBill.status.in_([BillStatus.OPEN_END, BillStatus.PARLIAMENT_VOTED]),
+            ~ParliamentBill.id.like("DEMO-%"),
         )
     ) or 0
     arweave_archived = await db.scalar(
         select(func.count(ParliamentBill.id)).where(ParliamentBill.arweave_tx_id.isnot(None))
+    ) or 0
+    forum_topics = await db.scalar(
+        select(func.count(ParliamentBill.id)).where(
+            ParliamentBill.forum_topic_id.isnot(None), ~ParliamentBill.id.like("DEMO-%")
+        )
     ) or 0
 
     return {
@@ -262,6 +274,7 @@ async def public_stats(_key=Depends(rate_limit_check), db: AsyncSession = Depend
             "archived_bills": archived_bills,
             "arweave_archived": arweave_archived,
             "total_votes": total_votes,
+            "forum_topics": forum_topics,
         },
         "license": "MIT", "source_code": "https://github.com/NeaBouli/pnyx",
         "data_license": "CC BY 4.0",

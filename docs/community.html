@@ -863,6 +863,16 @@
       <div style="font-size:0.7rem;color:var(--gray-500)">Arweave</div>
     </div>
     <div style="background:var(--gray-100);border-radius:0.75rem;padding:1rem;text-align:center;border:2px solid #e2e8f0">
+      <div style="font-size:1.5rem">📂</div>
+      <div style="font-size:1.5rem;font-weight:900;color:var(--gray-900)" id="ss-archived">—</div>
+      <div style="font-size:0.7rem;color:var(--gray-500)">Αρχείο</div>
+    </div>
+    <div style="background:var(--gray-100);border-radius:0.75rem;padding:1rem;text-align:center;border:2px solid #e2e8f0">
+      <div style="font-size:1.5rem">💬</div>
+      <div style="font-size:1.5rem;font-weight:900;color:var(--gray-900)" id="ss-forum">—</div>
+      <div style="font-size:0.7rem;color:var(--gray-500)">Forum</div>
+    </div>
+    <div style="background:var(--gray-100);border-radius:0.75rem;padding:1rem;text-align:center;border:2px solid #e2e8f0">
       <div style="font-size:1.5rem">💰</div>
       <div style="font-size:1.5rem;font-weight:900;color:var(--gray-900)" id="ss-balance">—</div>
       <div style="font-size:0.7rem;color:var(--gray-500)">AR</div>
@@ -881,6 +891,8 @@
       document.getElementById("ss-diavgeia").textContent=s.diavgeia_bills||0;
       document.getElementById("ss-votes").textContent=s.total_votes||0;
       document.getElementById("ss-arweave").textContent=s.arweave_archived||0;
+      document.getElementById("ss-archived").textContent=s.archived_bills||0;
+      document.getElementById("ss-forum").textContent=s.forum_topics||0;
     }).catch(function(){});
     fetch("https://api.ekklesia.gr/api/v1/public/scraper/status").then(function(r){return r.json()}).then(function(d){
       document.getElementById("ss-balance").textContent=d.arweave_balance_ar?d.arweave_balance_ar.toFixed(2):"—";
