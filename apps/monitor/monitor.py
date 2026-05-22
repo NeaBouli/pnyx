@@ -368,7 +368,7 @@ def check_web_urls() -> list[Alert]:
         ("Landing", "https://ekklesia.gr/"),
         ("Bills", "https://ekklesia.gr/el/bills"),
         ("Results", "https://ekklesia.gr/el/results"),
-        ("API Bills", "https://api.ekklesia.gr/api/v1/bills?limit=1"),
+        ("API Bills", f"{API_URL}/api/v1/bills?limit=1"),
     ]
     for name, url in urls:
         try:

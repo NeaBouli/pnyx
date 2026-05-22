@@ -495,5 +495,5 @@ class AuditLog(Base):
     actor       = Column(String(120), nullable=False)
     target_type = Column(String(80), nullable=False)
     target_id   = Column(String(255), nullable=True)
-    metadata    = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    details     = Column("metadata", JSONB, nullable=False, server_default=text("'{}'::jsonb"))
     created_at  = Column(DateTime(timezone=True), nullable=False, server_default=text("NOW()"))

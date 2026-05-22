@@ -67,7 +67,7 @@ async def create_test_account(
         actor="admin_api_key",
         target_type="identity_record",
         target_id=str(record.id),
-        metadata={"reason": "test_account", "endpoint": "/admin/test-account"},
+        details={"reason": "test_account", "endpoint": "/admin/test-account"},
     )
     db.add(audit)
 
