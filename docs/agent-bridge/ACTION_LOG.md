@@ -1,5 +1,18 @@
 # Action Log
 
+## 2026-05-22 — NEA-190 SEO Fix
+
+- **robots.txt:** `Disallow: /dashboard/` hinzugefuegt
+- **sitemap.xml:** 20→23 URLs (+votes/active, votes/results, votes/recent), lastmod 2026-05-22
+- **community.html:** JSON-LD Organization Schema hinzugefuegt
+- **representative.html:** Fehlende OG Tags (type, url, title, description, locale) ergaenzt
+- **Bestand:** Alle 23 oeffentlichen Seiten haben canonical + robots index
+- **Fehlend OG:** votes/*.html + tickets/index.html (low priority, kein User-facing)
+- **Commit:** `c06066e`
+- **Deployed:** Web rebuilt
+
+---
+
 ## 2026-05-22 — NEA-246 Dashboard Deploy
 
 - **/politicians:** Live — read-only Tabelle (Org/Ekprosopos, Rolle, Region, Bewertungen, Score, ADA)
