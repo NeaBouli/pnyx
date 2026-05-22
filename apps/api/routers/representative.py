@@ -286,13 +286,13 @@ async def get_rep_bills(
     rep: dict = Depends(verify_rep_token),
     db: AsyncSession = Depends(get_db),
 ):
-    """Bills visible to representatives — filtered by role/region/municipality.
+    """Bills visible to representatives — filtered by role.
 
     Visibility rules:
     - Βουλευτής: all bills
-    - Περιφερειάρχης (with region): PARLIAMENT + REGIONAL DIAVGEIA
-    - Δήμαρχος: PARLIAMENT + MUNICIPAL DIAVGEIA (Known Limitation: all municipal, not own-specific)
-    - role=None / Περιφερειάρχης without region: PARLIAMENT only (safe fallback)
+    - Δήμαρχος/Δημοτικός Σύμβουλος: PARLIAMENT + MUNICIPAL DIAVGEIA (Known Limitation: all municipal, not own-specific)
+    - Περιφερειάρχης: PARLIAMENT only (conservative fallback — region DIAVGEIA filter pending periferia_id mapping, NEA-186b)
+    - role=None / unknown: PARLIAMENT only (safe fallback)
     """
     from fastapi.responses import JSONResponse
     from sqlalchemy import or_, and_
@@ -402,6 +402,8 @@ async def get_rep_divergence(
         raise HTTPException(404, "Bill not found")
     if not is_bill_visible_for_token(bill, rep):
         raise HTTPException(403, "Αυτό το νομοσχέδιο δεν είναι ορατό για τον ρόλο σας.")
+    if bill.status not in ALLOWED_STATUSES:
+        raise HTTPException(403, "Divergence not available for this bill status")
 
     counts = await db.execute(text("""
         SELECT vote, COUNT(*) FROM citizen_votes WHERE bill_id = :bid GROUP BY vote
