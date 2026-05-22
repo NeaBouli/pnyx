@@ -1,5 +1,14 @@
 # Action Log
 
+## 2026-05-22 — NEA-186 Hotfix 2 (Codex residual)
+
+- **MEDIUM FIXED:** `/rep/divergence` status gate added (`bill.status not in ALLOWED_STATUSES → 403`)
+- **Docstring:** `/rep/bills` korrigiert — Περιφερειάρχης ist PARLIAMENT-only (NEA-186b pending)
+- **Commit:** `e2b6652`
+- **Deployed:** API rebuilt
+
+---
+
 ## 2026-05-22 — NEA-186 Hotfix (Codex Audit)
 
 - **HIGH FIXED:** `is_bill_visible_for_token()` extrahiert, angewendet in `/rep/results` + `/rep/divergence` → 403 bei unsichtbaren Bills
