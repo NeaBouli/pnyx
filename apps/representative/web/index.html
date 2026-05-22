@@ -115,6 +115,10 @@ async function doLogin(){
     token=d.token;adaNumber=ada;
     localStorage.setItem('rep_token',token);if(window.postToNative)window.postToNative('SAVE_TOKEN',token);
     localStorage.setItem('rep_ada',ada);
+    localStorage.setItem('rep_role',d.role||'');
+    localStorage.setItem('rep_region',d.region||'');
+    localStorage.setItem('rep_municipality',d.municipality||'');
+    localStorage.setItem('rep_org_label',d.org_label||'');
     showBillsScreen();
   }catch(e){showError('Σφάλμα δικτύου')}
   finally{document.getElementById('loginBtn').textContent='Επαλήθευση';document.getElementById('loginBtn').disabled=false}
@@ -127,6 +131,14 @@ async function showBillsScreen(){
   document.getElementById('billsScreen').style.display='block';
   document.getElementById('navBar').style.display='flex';
   document.getElementById('repBadge').style.display='inline';
+  var repRole=localStorage.getItem('rep_role')||'';
+  var repRegion=localStorage.getItem('rep_region')||'';
+  var repMuni=localStorage.getItem('rep_municipality')||'';
+  var repOrg=localStorage.getItem('rep_org_label')||'';
+  var roleInfo=repRole;
+  if(repRegion)roleInfo+=' · '+repRegion;
+  if(repMuni)roleInfo+=' · '+repMuni;
+  document.getElementById('repBadge').textContent=roleInfo||'Επαληθευμένος';
   loadBills();
 }
 
@@ -143,7 +155,8 @@ async function loadBills(){
       html+='<div class="bill-card" onclick="loadResults(\''+b.id+'\')">';
       html+='<span class="status '+(sc[b.status]||'')+'">'+(sl[b.status]||b.status)+'</span>';
       html+='<h3>'+b.title_el+'</h3>';
-      html+='<div class="meta">'+b.id+' · '+(b.governance_level||'NATIONAL')+'</div>';
+      var srcBadge=b.source==='DIAVGEIA'?' <span style="font-size:9px;background:#e0f2fe;color:#0369a1;padding:1px 5px;border-radius:4px;font-weight:700">ΔΙΑΥΓΕΙΑ</span>':'';
+      html+='<div class="meta">'+b.id+' · '+(b.governance_level||'NATIONAL')+srcBadge+'</div>';
       if(b.consensus_count>0)html+='<div class="meta" style="color:#a855f7">⚖️ Συναίνεση: '+(b.consensus_score>0?'+':'')+((b.consensus_score||0).toFixed(1))+' ('+b.consensus_count+' ψήφοι)</div>';
       html+='</div>';
     });

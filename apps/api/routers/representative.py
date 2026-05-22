@@ -28,6 +28,28 @@ ALLOWED_STATUSES = [BillStatus.WINDOW_24H, BillStatus.PARLIAMENT_VOTED, BillStat
 
 VALID_ROLES = ["Βουλευτής", "Περιφερειάρχης", "Δήμαρχος", "Δημοτικός Σύμβουλος"]
 
+# ASCII-only header values for X-Rep-Role (Greek labels stay in JSON body only)
+ROLE_HEADER_MAP = {
+    "Βουλευτής": "MP",
+    "Περιφερειάρχης": "REGIONAL",
+    "Δήμαρχος": "MUNICIPAL",
+    "Δημοτικός Σύμβουλος": "MUNICIPAL",
+}
+
+
+def detect_role_from_org_label(org_label: str) -> dict:
+    """Auto-detect role/region/municipality from Diavgeia org_label."""
+    label = (org_label or "").upper()
+    if "ΒΟΥΛΗ" in label or "ΕΛΛΗΝΩΝ" in label:
+        return {"role": "Βουλευτής", "region": None, "municipality": None}
+    if "ΠΕΡΙΦΕΡΕΙΑ" in label or "ΠΕΡΙΦ" in label:
+        region = org_label.replace("ΠΕΡΙΦΕΡΕΙΑ ", "").replace("Περιφέρεια ", "").strip()
+        return {"role": "Περιφερειάρχης", "region": region, "municipality": None}
+    if "ΔΗΜΟΣ" in label or "ΔΗΜΟ" in label:
+        muni = org_label.replace("ΔΗΜΟΣ ", "").replace("Δήμος ", "").replace("ΔΗΜΟΥ ", "").strip()
+        return {"role": "Δήμαρχος", "region": None, "municipality": muni}
+    return {"role": None, "region": None, "municipality": None}
+
 
 def _generate_invite_code() -> str:
     """Generate XXXX-XXXX invite code."""
@@ -140,14 +162,15 @@ async def _verify_ada_diavgeia(ada: str) -> dict | None:
 async def _get_rep_token(token: str, db: AsyncSession) -> dict | None:
     """Validate representative token."""
     result = await db.execute(text(
-        "SELECT ada_number, role, party, region, org_label, expires_at FROM representative_tokens "
-        "WHERE token = :token AND expires_at > NOW()"
+        "SELECT ada_number, role, party, region, org_label, expires_at, municipality "
+        "FROM representative_tokens WHERE token = :token AND expires_at > NOW()"
     ), {"token": token})
     row = result.fetchone()
     if not row:
         return None
     return {"ada_number": row[0], "role": row[1], "party": row[2],
-            "region": row[3], "org_label": row[4], "expires_at": row[5]}
+            "region": row[3], "org_label": row[4], "expires_at": row[5],
+            "municipality": row[6]}
 
 
 async def verify_rep_token(
@@ -192,19 +215,21 @@ async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(g
         if not ada_info:
             raise HTTPException(403, "Ο αριθμός ADA δεν βρέθηκε στη Διαύγεια.")
 
-    # 4. Generate token
+    # 4. Generate token + auto-detect role from org_label
     token = secrets.token_urlsafe(48)
     expires = datetime.now(timezone.utc) + timedelta(hours=TOKEN_TTL_HOURS)
+    role_suggestion = detect_role_from_org_label(ada_info.get("org_label", ""))
 
     await db.execute(text("""
-        INSERT INTO representative_tokens (ada_number, token, role, region, org_label, expires_at)
-        VALUES (:ada, :token, :role, :region, :org_label, :expires)
+        INSERT INTO representative_tokens (ada_number, token, role, region, municipality, org_label, expires_at)
+        VALUES (:ada, :token, :role, :region, :municipality, :org_label, :expires)
         ON CONFLICT (ada_number) DO UPDATE SET token = :token, role = :role, region = :region,
-            expires_at = :expires, org_label = :org_label,
+            municipality = :municipality, expires_at = :expires, org_label = :org_label,
             evaluation_enabled = representative_tokens.evaluation_enabled
     """), {
         "ada": req.ada_number, "token": token, "role": role,
-        "region": region or "", "org_label": ada_info.get("org_label", ""),
+        "region": region or "", "municipality": municipality or "",
+        "org_label": ada_info.get("org_label", ""),
         "expires": expires.replace(tzinfo=None),
     })
 
@@ -221,8 +246,10 @@ async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(g
         "expires_at": expires.isoformat(),
         "role": role,
         "region": region,
+        "municipality": municipality,
         "org_label": ada_info.get("org_label", ""),
         "subject": ada_info.get("subject", "")[:100] if ada_info.get("subject") else "",
+        "role_suggestion": role_suggestion,
     }
 
 
@@ -240,20 +267,60 @@ async def get_rep_bills(
     rep: dict = Depends(verify_rep_token),
     db: AsyncSession = Depends(get_db),
 ):
-    """Bills visible to representatives: WINDOW_24H, PARLIAMENT_VOTED, OPEN_END."""
+    """Bills visible to representatives — filtered by role/region/municipality.
+
+    Visibility rules:
+    - Βουλευτής: all bills
+    - Περιφερειάρχης (with region): PARLIAMENT + REGIONAL DIAVGEIA
+    - Δήμαρχος: PARLIAMENT + MUNICIPAL DIAVGEIA (Known Limitation: all municipal, not own-specific)
+    - role=None / Περιφερειάρχης without region: PARLIAMENT only (safe fallback)
+    """
+    from fastapi.responses import JSONResponse
+    from sqlalchemy import or_, and_
+
+    role = rep.get("role", "")
+    region = rep.get("region", "")
+    role_header = ROLE_HEADER_MAP.get(role, "UNKNOWN")
+
+    query = select(ParliamentBill).where(ParliamentBill.status.in_(ALLOWED_STATUSES))
+
+    if role == "Βουλευτής":
+        pass  # No additional filter — sees all
+    elif role == "Περιφερειάρχης" and region:
+        query = query.where(or_(
+            ParliamentBill.source == "PARLIAMENT",
+            ParliamentBill.source.is_(None),
+            and_(ParliamentBill.source == "DIAVGEIA", ParliamentBill.governance_level == "REGIONAL"),
+        ))
+    elif role in ("Δήμαρχος", "Δημοτικός Σύμβουλος"):
+        query = query.where(or_(
+            ParliamentBill.source == "PARLIAMENT",
+            ParliamentBill.source.is_(None),
+            and_(ParliamentBill.source == "DIAVGEIA", ParliamentBill.governance_level == "MUNICIPAL"),
+        ))
+    else:
+        # Fallback: role=None or Περιφερειάρχης without region → PARLIAMENT only
+        query = query.where(or_(
+            ParliamentBill.source == "PARLIAMENT",
+            ParliamentBill.source.is_(None),
+        ))
+
     result = await db.execute(
-        select(ParliamentBill)
-        .where(ParliamentBill.status.in_(ALLOWED_STATUSES))
-        .order_by(ParliamentBill.parliament_vote_date.desc().nullslast())
-        .limit(50)
+        query.order_by(ParliamentBill.parliament_vote_date.desc().nullslast()).limit(100)
     )
     bills = result.scalars().all()
-    return [{
+
+    data = [{
         "id": b.id, "title_el": b.title_el, "status": b.status.value,
+        "source": getattr(b, "source", "PARLIAMENT") or "PARLIAMENT",
         "governance_level": b.governance_level.value if b.governance_level else "NATIONAL",
         "parliament_vote_date": b.parliament_vote_date.isoformat() if b.parliament_vote_date else None,
         "consensus_score": b.consensus_score, "consensus_count": b.consensus_count or 0,
     } for b in bills]
+
+    response = JSONResponse(content=data)
+    response.headers["X-Rep-Role"] = role_header
+    return response
 
 
 @router.get("/results/{bill_id}")
