@@ -1,5 +1,17 @@
 # Action Log
 
+## 2026-05-22 — NEA-246 Dashboard Deploy
+
+- **/politicians:** Live — read-only Tabelle (Org/Ekprosopos, Rolle, Region, Bewertungen, Score, ADA)
+- **/monitor:** Live — Module Health Grid, Scraper Jobs, Admin Buttons (Catch-up + Resync)
+- **/bills Diavgeia-Filter:** Live — Source-Tabs (Ολα/Βουλή/Διαύγεια)
+- **Sidebar:** 2 neue Links (Πολιτικοί, Monitor)
+- **Roles:** politicians=4 Rollen, monitor=2 Rollen (SYSTEM_ADMIN+SUPER_ADMIN)
+- **Commit:** `331d3fd`
+- **Deployed:** Dashboard rebuilt + restarted
+
+---
+
 ## 2026-05-22 — T2 aktiviert + Dashboard Assessment (NEA-244)
 
 - **T2 AUTO_RECOVERY_T2:** `true` in `.env.production`, Monitor verifiziert
