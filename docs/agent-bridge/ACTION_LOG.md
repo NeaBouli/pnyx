@@ -11,6 +11,17 @@
 
 ---
 
+## 2026-05-23 — HOTFIX: API Crash Loop + Monitor DNS Fix
+
+- **Root Cause:** `AuditLog.metadata` ist reserviert in SQLAlchemy Declarative → `InvalidRequestError` → API Restart-Loop
+- **Fix:** Python-Attribut umbenannt zu `details`, DB-Spalte bleibt `metadata` (`Column("metadata", JSONB, ...)`)
+- **Monitor DNS:** `api.ekklesia.gr` → `API_URL` (intern `http://api:8000`) in `check_web_urls()`
+- **Verifiziert:** API Up, Monitor 0 Alerts
+- **Commit:** `4bbce75`
+- **Deployed:** API + Monitor rebuilt
+
+---
+
 ## 2026-05-23 — PR #70 Next.js 16 merged + #64/#69 closed
 
 - **PR #70:** Already merged (CI SUCCESS, CodeRabbit SUCCESS)

@@ -13,7 +13,7 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `98dfa0a` (chore(bridge): NEA-243 Discourse update)
+- **HEAD:** `4bbce75` (HOTFIX: AuditLog metadata reserved + monitor DNS)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`, `pre-politikoi-20260521`
 - **Rollback:** `pre-politikoi-20260521` → `49e24ba`
 - **Remote:** synchron mit GitHub
