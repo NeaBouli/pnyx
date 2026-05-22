@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="el" data-lang="el">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>ZK Voting — Semaphore | εκκλησία Wiki</title>
+  <meta name="description" content="Semaphore ZK Voting — κρυπτογραφικά επαληθεύσιμη ψηφοφορία. Προγραμματισμένο."/>
+  <meta name="robots" content="index, follow"/>
+  <link rel="canonical" href="https://ekklesia.gr/wiki/zk-voting.html"/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://ekklesia.gr/wiki/zk-voting.html"/>
+  <meta property="og:title" content="ZK Voting — Semaphore | εκκλησία Wiki"/>
+  <meta property="og:description" content="Semaphore ZK Voting — κρυπτογραφικά επαληθεύσιμη ψηφοφορία. Προγραμματισμένο."/>
+  <meta property="og:image" content="https://ekklesia.gr/assets/og-image.png"/>
+  <meta property="og:locale" content="el_GR"/>
+  <link rel="alternate" hreflang="el" href="https://ekklesia.gr/wiki/zk-voting.html"/>
+  <link rel="alternate" hreflang="en" href="https://ekklesia.gr/wiki/zk-voting.html"/>
+  <link rel="icon" type="image/png" href="../favicon.ico"/>
+  <link rel="sitemap" type="application/xml" href="https://ekklesia.gr/sitemap.xml"/>
+  <script defer data-domain="ekklesia.gr" src="https://analytics.ekklesia.gr/js/script.js"></script>
+  <style>
+    :root{--blue:#2563eb;--blue-l:#eff6ff;--gray-50:#f8fafc;--gray-100:#f1f5f9;--gray-500:#64748b;--gray-700:#334155;--gray-900:#0f172a;--radius:1rem}
+    *{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,-apple-system,sans-serif;background:#fff;color:var(--gray-900);line-height:1.7}
+    nav{background:#fff;border-bottom:1px solid #e2e8f0;padding:0.75rem 1.5rem;display:flex;align-items:center;gap:1rem;position:sticky;top:0;z-index:100}
+    .nav-logo{display:flex;align-items:center;gap:0.5rem;text-decoration:none;font-weight:900;font-size:1.1rem;color:var(--gray-900)}
+    .nav-links{display:flex;gap:0.5rem;font-size:0.8rem;flex-wrap:wrap}.nav-links a{color:var(--gray-500);text-decoration:none;padding:0.3rem 0.6rem;border-radius:0.5rem;font-weight:600;transition:all 0.15s}
+    .nav-links a:hover,.nav-links a.active{background:var(--blue-l);color:var(--blue)}
+    .content{max-width:800px;margin:2rem auto;padding:0 1.5rem}
+    h1{font-size:2rem;font-weight:900;margin-bottom:0.5rem}h2{font-size:1.3rem;font-weight:800;margin:2rem 0 0.75rem;color:var(--blue)}
+    .badge{display:inline-block;font-size:0.7rem;font-weight:700;padding:0.15rem 0.55rem;border-radius:1rem;background:var(--gray-100);color:var(--gray-500)}
+    .card{background:var(--gray-50);border:1px solid #e2e8f0;border-radius:var(--radius);padding:1.5rem;margin:1rem 0}
+    .card h3{font-size:1rem;font-weight:800;margin-bottom:0.5rem}
+    .warn{background:#fefce8;border:1px solid #fde047;border-radius:var(--radius);padding:1rem;margin:1rem 0;font-size:0.85rem;color:#854d0e}
+    footer{text-align:center;padding:2rem 1rem;color:var(--gray-500);font-size:0.8rem;border-top:1px solid #e2e8f0;margin-top:3rem}
+    footer a{color:var(--blue);text-decoration:none}
+  </style>
+</head>
+<body>
+<nav>
+  <a href="../" class="nav-logo"><img src="../pnx.png" alt="logo" style="width:40px;height:40px;object-fit:contain"/>εκκλησία</a>
+  <div class="nav-links">
+    <a href="../" data-el="Αρχική" data-en="Home">Αρχική</a>
+    <a href="index.html">Wiki</a>
+    <a href="security.html" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</a>
+    <a href="zk-voting.html" class="active">ZK Voting</a>
+    <a href="roadmap.html">Roadmap</a>
+  </div>
+</nav>
+
+<div class="content">
+  <h1 data-el="ZK Voting — Semaphore" data-en="ZK Voting — Semaphore">ZK Voting — Semaphore</h1>
+  <span class="badge" data-el="Προγραμματισμένο" data-en="Planned">Προγραμματισμένο</span>
+
+  <h2 data-el="Τι είναι το ZK Voting;" data-en="What is ZK Voting?">Τι είναι το ZK Voting;</h2>
+  <p data-el="Φανταστείτε έναν κρυπτογραφικό κασσετίνα: αποδεικνύει ότι ψηφίσατε, χωρίς να αποκαλύπτει τι ψηφίσατε ή ποιος είστε. Αυτό κάνει ένα Zero-Knowledge Proof." data-en="Imagine a cryptographic receipt: it proves you voted, without revealing what you voted or who you are. That's what a Zero-Knowledge Proof does.">
+    Φανταστείτε έναν κρυπτογραφικό κασσετίνα: αποδεικνύει ότι ψηφίσατε, χωρίς να αποκαλύπτει τι ψηφίσατε ή ποιος είστε.
+  </p>
+
+  <h2 data-el="Tier 1 — Σήμερα" data-en="Tier 1 — Today">Tier 1 — Σήμερα</h2>
+  <div class="card">
+    <h3>HMAC-Nullifier-Chain + Ed25519 + Arweave</h3>
+    <p data-el="Η ψηφοφορία σήμερα χρησιμοποιεί κρυπτογραφικές υπογραφές Ed25519 και HMAC Nullifiers. Το κλειδί σας μένει στη συσκευή σας. Τα συγκεντρωτικά αποτελέσματα αρχειοθετούνται στο Arweave (blockchain)." data-en="Voting today uses Ed25519 cryptographic signatures and HMAC Nullifiers. Your key stays on your device. Aggregate results are archived on Arweave (blockchain).">
+      Η ψηφοφορία σήμερα χρησιμοποιεί κρυπτογραφικές υπογραφές Ed25519 και HMAC Nullifiers. Το κλειδί σας μένει στη συσκευή σας. Τα συγκεντρωτικά αποτελέσματα αρχειοθετούνται στο Arweave.
+    </p>
+  </div>
+
+  <h2 data-el="Tier 2 — Προγραμματισμένο" data-en="Tier 2 — Planned">Tier 2 — Προγραμματισμένο</h2>
+  <div class="card">
+    <h3>Semaphore ZK Proofs + Arweave Bulletin Board</h3>
+    <p data-el="Κάθε ψήφος θα λαμβάνει μια κρυπτογραφική απόδειξη (Semaphore) που αποδεικνύει ότι ανήκετε στην ομάδα επαληθευμένων ψηφοφόρων — χωρίς να αποκαλύπτει ποιος είστε. Οι αποδείξεις θα δημοσιεύονται ανώνυμα στο Arweave, ώστε οποιοσδήποτε να μπορεί να επαληθεύσει ανεξάρτητα τα αποτελέσματα." data-en="Each vote will receive a cryptographic proof (Semaphore) proving you belong to the group of verified voters — without revealing who you are. Proofs will be published anonymously on Arweave, so anyone can independently verify results.">
+      Κάθε ψήφος θα λαμβάνει μια κρυπτογραφική απόδειξη (Semaphore). Οι αποδείξεις θα δημοσιεύονται ανώνυμα στο Arweave.
+    </p>
+    <div class="warn">
+      <strong data-el="Κατάσταση:" data-en="Status:">Κατάσταση:</strong>
+      <span data-el="Προγραμματισμένο — εξαρτάται από τη δυνατότητα native mobile proving. Δεν βρίσκεται σε ανάπτυξη αυτή τη στιγμή." data-en="Planned — depends on native mobile proving capability. Not currently in development.">
+        Προγραμματισμένο — εξαρτάται από τη δυνατότητα native mobile proving. Δεν βρίσκεται σε ανάπτυξη αυτή τη στιγμή.
+      </span>
+    </div>
+  </div>
+
+  <h2 data-el="Γιατί όχι Helios;" data-en="Why not Helios?">Γιατί όχι Helios;</h2>
+  <p data-el="Το Helios απαιτεί Treuhänder (εμπιστευτές) για την αποκρυπτογράφηση αποτελεσμάτων. Ως μοναδικός εμπιστευτής, θα έπρεπε να εμπιστεύεστε πλήρως το ekklesia — κάτι που αντιβαίνει στην αρχή Privacy-by-Design. Το Semaphore δεν χρειάζεται εμπιστευτές: η απόδειξη γίνεται τοπικά στη συσκευή σας." data-en="Helios requires trustees for result decryption. As the sole trustee, you would have to fully trust ekklesia — which contradicts the Privacy-by-Design principle. Semaphore needs no trustees: proof generation happens locally on your device.">
+    Το Helios απαιτεί εμπιστευτές (Treuhänder). Ως μοναδικός εμπιστευτής, θα έπρεπε να εμπιστεύεστε πλήρως το ekklesia — κάτι που αντιβαίνει στην αρχή Privacy-by-Design. Το Semaphore δεν χρειάζεται εμπιστευτές.
+  </p>
+
+  <h2 data-el="Τι αποδεικνύει ένα ZK Proof (και τι όχι)" data-en="What a ZK Proof proves (and what it doesn't)">Τι αποδεικνύει (και τι όχι)</h2>
+  <div class="card">
+    <p><strong data-el="Αποδεικνύει:" data-en="Proves:">Αποδεικνύει:</strong></p>
+    <ul>
+      <li data-el="Ότι η ψήφος προέρχεται από μέλος της ομάδας επαληθευμένων ψηφοφόρων" data-en="The vote comes from a member of the verified voter group">Μέλος ομάδας επαληθευμένων ψηφοφόρων</li>
+      <li data-el="Ότι δεν ψήφισε δύο φορές για το ίδιο νομοσχέδιο" data-en="Did not vote twice for the same bill">Δεν ψήφισε δύο φορές</li>
+      <li data-el="Ότι τα αποτελέσματα μπορούν να επανυπολογιστούν δημόσια" data-en="Results can be publicly recomputed">Δημόσια επαναϋπολογισμός αποτελεσμάτων</li>
+    </ul>
+    <p style="margin-top:0.75rem"><strong data-el="ΔΕΝ αποδεικνύει:" data-en="Does NOT prove:">ΔΕΝ αποδεικνύει:</strong></p>
+    <ul>
+      <li data-el="Ότι η συσκευή του ψηφοφόρου δεν έχει παραβιαστεί" data-en="The voter's device was not compromised">Ασφάλεια συσκευής</li>
+      <li data-el="Ότι η διαδικασία εγγραφής ήταν τέλεια" data-en="The enrollment process was perfect">Τέλεια εγγραφή</li>
+    </ul>
+  </div>
+
+  <h2 data-el="Εμπιστοσύνη στο Trusted Setup" data-en="Trusted Setup">Trusted Setup</h2>
+  <p data-el="Το Semaphore χρησιμοποιεί αρχεία Groth16 από την τελετή PSE (Privacy and Scaling Explorations). Το ekklesia δεν διεξάγει δική του τελετή. Η ασφάλεια εξαρτάται από τη δημόσια τελετή του PSE." data-en="Semaphore uses Groth16 artifacts from the PSE (Privacy and Scaling Explorations) ceremony. ekklesia does not conduct its own ceremony. Security depends on the public PSE ceremony.">
+    Η ασφάλεια εξαρτάται από τη δημόσια τελετή PSE. Το ekklesia δεν διεξάγει δική του τελετή.
+  </p>
+</div>
+
+<footer>
+  <a href="../">εκκλησία</a> · <a href="index.html">Wiki</a> · <a href="security.html">Ασφάλεια</a> · <a href="roadmap.html">Roadmap</a>
+  <p>εκκλησία &middot; &copy; 2026 V-Labs Development &middot; MIT License</p>
+</footer>
+</body>
+</html>
