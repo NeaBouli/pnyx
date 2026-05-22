@@ -1,5 +1,16 @@
 # Action Log
 
+## 2026-05-22 — NEA-229 + NEA-227 Roadmap + FAQ
+
+- **roadmap.html:** Duplikat MOD-25 aus Alpha entfernt, Alpha-Tile → nur "gov.gr OAuth fuer Ekprosopos (geplant)"
+- **roadmap.html:** MOD-25 bleibt korrekt in Beta-Sektion (Zeile 473)
+- **faq.html:** JSON-LD FAQPage Schema: Πολιτικοί Q&A hinzugefuegt (8 Kategorien, liquide Bewertung)
+- **HTML Q&A:** Zeile 495-496 war bereits korrekt — kein Move noetig
+- **Commit:** `2ae482a`
+- **Deployed:** Web rebuilt
+
+---
+
 ## 2026-05-22 — Lifecycle Stuck Alert + Monitor Cooldown
 
 - **GR-74e0cb08:** Bereits automatisch PARLIAMENT_VOTED (Scheduler 00:11 UTC), Arweave archiviert — kein manueller Fix noetig
