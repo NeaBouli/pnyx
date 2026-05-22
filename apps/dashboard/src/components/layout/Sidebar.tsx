@@ -28,6 +28,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/votes', module: 'votes', label: 'Ψηφοφορίες', icon: '🗳️' },
       { href: '/cplm', module: 'cplm', label: 'CPLM', icon: '🧭' },
       { href: '/vaa', module: 'vaa', label: 'VAA Θέσεις', icon: '🗳️' },
+      { href: '/politicians', module: 'politicians', label: 'Πολιτικοί', icon: '👤' },
     ],
   },
   {
@@ -38,6 +39,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/forum', module: 'forum', label: 'Forum', icon: '💬' },
       { href: '/logs', module: 'logs', label: 'Αρχεία καταγρ.', icon: '📋' },
       { href: '/embed', module: 'embed', label: 'Embed Κώδικας', icon: '🔗' },
+      { href: '/monitor', module: 'monitor', label: 'Monitor', icon: '🛡️' },
     ],
   },
   {

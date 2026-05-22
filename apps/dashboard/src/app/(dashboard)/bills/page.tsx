@@ -20,6 +20,8 @@ interface Bill {
   results_visibility?: ResultsVisibility
   created_at: string
   source_url?: string
+  source?: string
+  diavgeia_ada?: string
   ai_summary_reviewed?: boolean
 }
 
@@ -84,6 +86,7 @@ export default function BillsPage() {
   const [bills, setBills] = useState<Bill[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<BillStatus | 'ALL'>('ALL')
+  const [sourceFilter, setSourceFilter] = useState<'ALL' | 'PARLIAMENT' | 'DIAVGEIA'>('ALL')
   const [showModal, setShowModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -125,7 +128,8 @@ export default function BillsPage() {
 
   useEffect(() => { loadBills() }, [loadBills])
 
-  const filtered = filter === 'ALL' ? bills : bills.filter((b) => b.status === filter)
+  const sourceFiltered = sourceFilter === 'ALL' ? bills : bills.filter(b => (b.source || 'PARLIAMENT') === sourceFilter)
+  const filtered = filter === 'ALL' ? sourceFiltered : sourceFiltered.filter((b) => b.status === filter)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -338,7 +342,25 @@ export default function BillsPage() {
         </div>
       )}
 
-      {/* Filter */}
+      {/* Source Filter */}
+      <div className="mb-2 flex flex-wrap gap-2">
+        {([['ALL', 'Όλα'], ['PARLIAMENT', 'Βουλή'], ['DIAVGEIA', 'Διαύγεια']] as const).map(([key, label]) => {
+          const count = key === 'ALL' ? bills.length : bills.filter(b => (b.source || 'PARLIAMENT') === key).length
+          return (
+            <button
+              key={key}
+              onClick={() => { setSourceFilter(key as typeof sourceFilter); setFilter('ALL') }}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                sourceFilter === key ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {label} ({count})
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Status Filter */}
       <div className="mb-4 flex flex-wrap gap-2">
         <button
           onClick={() => setFilter('ALL')}
@@ -346,7 +368,7 @@ export default function BillsPage() {
             filter === 'ALL' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          Όλα ({String(bills.length)})
+          Όλα ({String(sourceFiltered.length)})
         </button>
         {ALL_STATUSES.map((s) => (
           <button
@@ -356,7 +378,7 @@ export default function BillsPage() {
               filter === s ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            {STATUS_LABELS[s]} ({String(bills.filter((b) => b.status === s).length)})
+            {STATUS_LABELS[s]} ({String(sourceFiltered.filter((b) => b.status === s).length)})
           </button>
         ))}
       </div>
