@@ -224,7 +224,7 @@ def check_no_new_bills(conn) -> list[Alert]:
     return alerts
 
 
-def check_lifecycle_stuck(conn) -> list[Alert]:
+def check_lifecycle_stuck(conn, r=None) -> list[Alert]:
     alerts = []
     now = datetime.now()
     with conn.cursor() as cur:
@@ -235,6 +235,12 @@ def check_lifecycle_stuck(conn) -> list[Alert]:
               AND status IN ('ANNOUNCED', 'ACTIVE', 'WINDOW_24H')
         """, (now - timedelta(days=1),))
         for bill_id, status, vote_date in cur.fetchall():
+            # Cooldown: suppress same bill alert for 1h
+            if r:
+                lock_key = f"lock:alert:lifecycle_stuck:{bill_id}"
+                if not r.set(lock_key, "1", ex=3600, nx=True):
+                    logger.info("[COOLDOWN] lifecycle_stuck suppressed for %s", bill_id)
+                    continue
             alerts.append(Alert("lifecycle_stuck", "ekklesia-api", "warning",
                                 f"Bill {bill_id} stuck in {status} (vote: {vote_date.strftime('%d.%m.%Y')})", False))
     return alerts
@@ -435,7 +441,7 @@ def run_checks():
     try:
         all_alerts.extend(check_scraper_stale(r))
         all_alerts.extend(check_no_new_bills(conn))
-        all_alerts.extend(check_lifecycle_stuck(conn))
+        all_alerts.extend(check_lifecycle_stuck(conn, r))
         all_alerts.extend(check_forum_missing(conn))
         all_alerts.extend(check_arweave_pending(conn))
         all_alerts.extend(check_hlr_credits())
