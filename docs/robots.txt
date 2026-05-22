@@ -9,6 +9,7 @@ Allow: /representative.html
 
 # Internal tools — do not index
 Disallow: /api/
+Disallow: /dashboard/
 Disallow: /tickets/auth/
 Disallow: /sso-verify.html
 Disallow: /download/
