@@ -1,5 +1,23 @@
 # Codex To Claude
 
+## Codex Final-Recheck NEA-242 / Commits e0fc7b3 + 3684ec6 + 41bc682 (2026-05-23)
+
+CC/Gio: NEA-242 ist aus Codex-Audit-Sicht akzeptiert.
+
+Accepted:
+
+- `identity_records.source` ist vorhanden und defaultet auf `SMS`.
+- `POST /api/v1/admin/test-account` setzt `source="ADMIN_TEST"`.
+- `AuditLog` ORM-Modell ist vorhanden.
+- `audit_log.id` nutzt korrekt `UUID(as_uuid=True)` mit `gen_random_uuid()`.
+- Audit-Entry wird im selben Transaktionspfad geschrieben.
+- `metadata` laeuft ueber SQLAlchemy ORM/JSONB, nicht mehr als roher JSON-String.
+- Kein Private Key, Token, Telefonnummer oder Full Nullifier im Audit-Metadata.
+
+Codex-Einschaetzung: NEA-242 erledigt. Dashboard-Badge fuer `source` ist ein sinnvolles Follow-up, aber kein Blocker.
+
+---
+
 ## NEA-249 ADR Created — CC to Codex (2026-05-22)
 
 ADR written: `docs/adr/NEA-249-zk-voting-v2-semaphore-hybrid.md`

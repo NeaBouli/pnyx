@@ -1,4 +1,36 @@
-# CODEX FINDINGS — NEA-186 / NEA-240
+# CODEX FINDINGS — NEA-242 / NEA-186 / NEA-240
+
+Datum: 2026-05-23
+Agent: Codex
+Scope: Final-Recheck NEA-242 commits `e0fc7b3`, `3684ec6`, `41bc682`, read-only Produktcode. Keine Produktcode-Aenderungen durch Codex.
+
+## NEA-242 Finding 1: audit_log schema not reproducible — RESOLVED in `3684ec6`
+
+Severity: HIGH
+
+Initial commit `e0fc7b3` wrote to `audit_log`, but the repo did not define/create that table. Fresh local/dev deploys could fail on `POST /admin/test-account` if the table existed only by manual server SQL.
+
+Recheck 2026-05-23: `3684ec6` adds `AuditLog` ORM model and switches `admin_account.py` from raw SQL insert to `db.add(AuditLog(...))`. Finding geschlossen.
+
+## NEA-242 Finding 2: AuditLog UUID default type mismatch — RESOLVED in `41bc682`
+
+Severity: MEDIUM/HIGH
+
+`3684ec6` initially declared `AuditLog.id` as `String(36)` while using `server_default=text("gen_random_uuid()")`, which can fail on fresh PostgreSQL DDL because the default expression is UUID, not VARCHAR.
+
+Recheck 2026-05-23: `41bc682` imports PostgreSQL `UUID` and changes `id` to `Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))`. Finding geschlossen.
+
+## NEA-242 Accepted State
+
+- `identity_records.source` exists with default `SMS`.
+- Admin-created test accounts set `source="ADMIN_TEST"`.
+- Audit row is written in the same transaction path as the identity record.
+- JSONB metadata is bound through SQLAlchemy ORM.
+- No private key, token, phone number, or full nullifier is written to audit metadata.
+- Dashboard display of `source` remains optional follow-up, not blocker.
+
+---
+
 Datum: 2026-05-22
 Agent: Codex
 Scope: Audit-Recheck Commit `2226eac` (NEA-247 + NEA-248), read-only Produktcode. Keine Produktcode-Aenderungen.
@@ -99,3 +131,45 @@ Fix fuer CC: Beim API-Startup Catch-up aus Redis implementieren: wenn `now - las
 Root Cause: Discourse erlaubt keine Subkategorie unter einer Subkategorie. Die 3 fehlenden Bills sind `DIAVGEIA` + `MUNICIPAL` + `OPEN_END` mit `forum_topic_id IS NULL`. `_resolve_category()` routet MUNICIPAL zu `Τοπική Αυτοδιοίκηση -> Περιφέρεια X -> Δήμος Y` und versucht damit eine dritte Kategorie-Ebene. Live-Logs zeigen exakt: `Δεν μπορείτε να βάλετε μια υποκατηγορία κάτω από άλλη` fuer `Οιχαλίας`, `Σιντικής`, `Αγρινίου`. Zusaetzlicher Monitoring-Root-Cause: `sync_new_bills_to_forum()` catcht Fehler pro Bill und raised nicht weiter; `scheduled_forum_sync()` ruft danach trotzdem `record_success()`, wodurch `error_count` wieder 0 wird und der Fehler als erfolgreicher Forum-Sync erscheint.
 
 Fix fuer CC: Discourse-Kategorie-Strategie fuer MUNICIPAL flach machen: entweder `Τοπική Αυτοδιοίκηση -> Δήμος X` direkt, oder `Περιφέρεια X` als Tag statt Parent, oder alle municipal Diavgeia unter eine erlaubte zweite Ebene posten. Danach die 3 Bills resyncen. Ausserdem `sync_new_bills_to_forum()` soll failed count zurueckgeben oder bei Fehlern raisen, damit `record_failure("forum_sync", ...)` nicht von `record_success()` ueberschrieben wird.
+
+---
+
+# CODEX FINDINGS — Next 16 Web Upgrade / PR #70
+Datum: 2026-05-22
+Agent: Codex
+Scope: GitHub PR #70 Audit, CI/CodeRabbit Recheck. Keine Produktcode-Aenderungen durch Codex.
+
+## Ergebnis
+
+- PR #70 ersetzt Dependabot PRs #64 und #69.
+- CI nach Rebase auf `59c9d8c` gruen.
+- CodeRabbit: keine actionable Findings.
+- Merge: abgeschlossen mit Commit `2d9faac665fc400a5af811d8cc27e265fd387f90`.
+- #64 geschlossen; #69 war bereits geschlossen.
+
+## Residual Notes
+
+- CodeRabbit ignorierte `apps/web/package-lock.json` wegen Path-Filter; lokaler/CI Build war deshalb entscheidend.
+- CI-Test-Fix auf main nutzt `any("MOD-01" in m ...)`; besser waere bei spaeterem Cleanup `m.startswith("MOD-01")`. Kein Blocker.
+
+---
+
+# CODEX FINDINGS — NEA-234 ZK Voting Protocol Research
+Datum: 2026-05-22
+Agent: Codex
+Scope: Architektur-Recherche Semaphore vs Helios vs Hybrid. Keine Produktcode-Aenderungen.
+
+## Ergebnis
+
+Empfehlung: Hybrid V2.
+
+- Semaphore als optionaler Membership-/Nullifier-Proof Layer ist fuer CX43 + Mobile realistisch.
+- Helios ist technisch stark, aber als naechster Bau fuer ekklesia zu schwer und trustee-operativ riskant.
+- Hybrid muss ein public per-vote/proof bulletin board enthalten; aggregate-only Arweave beweist nicht genug.
+
+## Wichtige Grenzen
+
+- Keine custom trusted setup ceremony fuer MVP.
+- Keine server-side proving pipeline.
+- Kein Full-Helios-Trustee-System jetzt.
+- Mobile Proof Generation zuerst benchmarken, bevorzugt Mopro/SemaphoreReactNative statt plain `snarkjs`.

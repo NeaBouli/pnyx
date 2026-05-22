@@ -4,7 +4,7 @@
 - [ ] NEA-72: Hermes Phase 1 — qwen2.5:14b installiert, Architektur TBD
 - [ ] NEA-189b: Region-Locking fuer Evaluation (Buerger Region = Politiker Region)
 - [ ] NEA-186b: Periferiarxis periferia_id mapping (region filter)
-- [ ] PR #70: Next.js 16 upgrade — rebased, CI fix committed, wartet auf CodeRabbit + merge
+- [ ] NEA-243: Discourse Update (pnyx.ekklesia.gr)
 - [ ] AAB vC27 Upload zu Play Console (`~/Desktop/ekklesia-v1.3.2-vC27-PLAY.aab` BEREIT)
 
 ## Blocked

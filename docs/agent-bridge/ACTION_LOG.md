@@ -1,5 +1,13 @@
 # Action Log
 
+## 2026-05-23 — PR #70 Next.js 16 merged + #64/#69 closed
+
+- **PR #70:** Already merged (CI SUCCESS, CodeRabbit SUCCESS)
+- **#64 + #69:** CLOSED (superseded by #70)
+- **Kein Handlungsbedarf** — war bereits gemergt
+
+---
+
 ## 2026-05-23 — NEA-242 Audit Log (3 Commits, 2 Codex Rechecks)
 
 - **Commit 1 (`e0fc7b3`):** audit_log Tabelle (server-manuell), identity_records.source, admin_account.py raw SQL
@@ -8,6 +16,7 @@
 - **Codex Recheck 2:** `String(36)` + `gen_random_uuid()` = DDL-Fehler auf fresh DB
 - **Commit 3 (`41bc682`):** `UUID(as_uuid=True)` — native PostgreSQL UUID
 - **Finale:** Schema reproduzierbar, ORM-basiert, JSONB korrekt, keine sensiblen Daten
+- **Codex Final-Recheck:** ACCEPTED — Dashboard source badge ist nur Follow-up, kein Blocker
 - **Deployed:** API rebuilt (3x)
 
 ---
