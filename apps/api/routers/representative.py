@@ -262,6 +262,25 @@ async def auth_representative(req: AuthRequest, db: AsyncSession = Depends(get_d
     return {"authenticated": True, **rep}
 
 
+def is_bill_visible_for_token(bill, rep: dict) -> bool:
+    """Check if a bill is visible for the given representative token.
+    Shared by /rep/bills, /rep/results, /rep/divergence.
+    """
+    role = rep.get("role", "")
+    source = getattr(bill, "source", "PARLIAMENT") or "PARLIAMENT"
+    gov = bill.governance_level.value if bill.governance_level else "NATIONAL"
+
+    if role == "Βουλευτής":
+        return True
+    elif role in ("Δήμαρχος", "Δημοτικός Σύμβουλος"):
+        # PARLIAMENT always visible + DIAVGEIA MUNICIPAL
+        return source == "PARLIAMENT" or source is None or (source == "DIAVGEIA" and gov == "MUNICIPAL")
+    else:
+        # Fallback (role=None, Περιφερειάρχης): PARLIAMENT only
+        # TODO: enable region filter after periferia_id mapping (NEA-186b)
+        return source == "PARLIAMENT" or source is None
+
+
 @router.get("/bills")
 async def get_rep_bills(
     rep: dict = Depends(verify_rep_token),
@@ -286,12 +305,6 @@ async def get_rep_bills(
 
     if role == "Βουλευτής":
         pass  # No additional filter — sees all
-    elif role == "Περιφερειάρχης" and region:
-        query = query.where(or_(
-            ParliamentBill.source == "PARLIAMENT",
-            ParliamentBill.source.is_(None),
-            and_(ParliamentBill.source == "DIAVGEIA", ParliamentBill.governance_level == "REGIONAL"),
-        ))
     elif role in ("Δήμαρχος", "Δημοτικός Σύμβουλος"):
         query = query.where(or_(
             ParliamentBill.source == "PARLIAMENT",
@@ -337,6 +350,8 @@ async def get_rep_results(
         raise HTTPException(404, "Bill not found")
     if bill.status not in ALLOWED_STATUSES:
         raise HTTPException(403, "Results not yet available for this bill status")
+    if not is_bill_visible_for_token(bill, rep):
+        raise HTTPException(403, "Αυτό το νομοσχέδιο δεν είναι ορατό για τον ρόλο σας.")
 
     # Vote counts
     counts = await db.execute(text("""
@@ -385,6 +400,8 @@ async def get_rep_divergence(
     )).scalar_one_or_none()
     if not bill:
         raise HTTPException(404, "Bill not found")
+    if not is_bill_visible_for_token(bill, rep):
+        raise HTTPException(403, "Αυτό το νομοσχέδιο δεν είναι ορατό για τον ρόλο σας.")
 
     counts = await db.execute(text("""
         SELECT vote, COUNT(*) FROM citizen_votes WHERE bill_id = :bid GROUP BY vote
