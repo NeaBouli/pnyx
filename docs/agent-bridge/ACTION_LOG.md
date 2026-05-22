@@ -1,5 +1,19 @@
 # Action Log
 
+## 2026-05-22 — NEA-222 Wahlbezirk Server-Filter + NEA-188 votes-timeline Fix
+
+- **NEA-222 parliament.py:** `periferia_id` + `dimos_id` Query-Params mit GovernanceLevel Enum
+- **NEA-222 Filter:** NATIONAL + INSTITUTIONAL immer, REGIONAL/MUNICIPAL nur bei Match
+- **NEA-222 api.ts:** `fetchBills()` erweitert mit region params
+- **NEA-222 BillsScreen:** Client-side `regionBills` Filter entfernt, `load()` abhaengig von userPeriferia/userDimos
+- **NEA-222 Verify:** periferia_id=1 → 171 Bills (NATIONAL+INSTITUTIONAL), korrekt
+- **NEA-188:** votes-timeline DEMO-Filter inline (`~bill_id.like('DEMO-%')`), Modul-Level `_real_vote` verursachte 500
+- **versionCode:** 26 → 27
+- **Commits:** `69d68a7` (NEA-188), `8bb95be` (NEA-222)
+- **Deployed:** API rebuilt
+
+---
+
 ## 2026-05-22 — NEA-229 + NEA-227 Roadmap + FAQ
 
 - **roadmap.html:** Duplikat MOD-25 aus Alpha entfernt, Alpha-Tile → nur "gov.gr OAuth fuer Ekprosopos (geplant)"
