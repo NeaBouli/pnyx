@@ -60,18 +60,16 @@ async def create_test_account(
     db.add(record)
     await db.flush()  # get record.id before audit log
 
-    # Audit log in same transaction
-    from sqlalchemy import text
-    await db.execute(text("""
-        INSERT INTO audit_log (action, actor, target_type, target_id, metadata)
-        VALUES (:action, :actor, :target_type, :target_id, :metadata)
-    """), {
-        "action": "identity.admin_test_created",
-        "actor": "admin_api_key",
-        "target_type": "identity_record",
-        "target_id": str(record.id),
-        "metadata": '{"reason": "test_account", "endpoint": "/admin/test-account"}',
-    })
+    # Audit log in same transaction (ORM)
+    from models import AuditLog
+    audit = AuditLog(
+        action="identity.admin_test_created",
+        actor="admin_api_key",
+        target_type="identity_record",
+        target_id=str(record.id),
+        metadata={"reason": "test_account", "endpoint": "/admin/test-account"},
+    )
+    db.add(audit)
 
     await db.commit()
     await db.refresh(record)

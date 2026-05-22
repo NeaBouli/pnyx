@@ -7,7 +7,7 @@ from enum import Enum as PyEnum
 from sqlalchemy import (
     Column, Integer, BigInteger, String, Text, SmallInteger, Boolean, Float,
     DateTime, JSON, ForeignKey, UniqueConstraint, Index,
-    CheckConstraint, Enum, Numeric
+    CheckConstraint, Enum, Numeric, text
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from database import Base
@@ -481,3 +481,19 @@ class PoliticianEvaluation(Base):
         Index("idx_eval_ada", "ada_number"),
         Index("idx_eval_nullifier", "nullifier_hash"),
     )
+
+
+# ─── NEA-242: Audit Log ─────────────────────────────────────────────────────
+
+
+class AuditLog(Base):
+    """Immutable audit trail for admin actions. No sensitive data (no keys, no nullifiers, no tokens)."""
+    __tablename__ = "audit_log"
+
+    id          = Column(String(36), primary_key=True, server_default=text("gen_random_uuid()"))
+    action      = Column(String(80), nullable=False)
+    actor       = Column(String(120), nullable=False)
+    target_type = Column(String(80), nullable=False)
+    target_id   = Column(String(255), nullable=True)
+    metadata    = Column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    created_at  = Column(DateTime(timezone=True), nullable=False, server_default=text("NOW()"))
