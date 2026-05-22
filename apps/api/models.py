@@ -59,6 +59,7 @@ class IdentityRecord(Base):
     periferia_id    = Column(Integer, ForeignKey("periferia.id", ondelete="SET NULL"), nullable=True)
     dimos_id        = Column(Integer, ForeignKey("dimos.id", ondelete="SET NULL"), nullable=True)
     region_locked   = Column(Boolean, default=False, nullable=False, server_default="false")
+    source          = Column(String(20), default="SMS", server_default="SMS", nullable=False)  # SMS | ADMIN_TEST | IMPORT
     status          = Column(Enum(KeyStatus), default=KeyStatus.ACTIVE, nullable=False)
     created_at      = Column(DateTime, default=datetime.utcnow, nullable=False)
     revoked_at      = Column(DateTime, nullable=True)

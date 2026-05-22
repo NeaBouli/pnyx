@@ -49,14 +49,30 @@ async def create_test_account(
         f"{random_seed}:{SERVER_SALT}:admin-test".encode()
     ).hexdigest()
 
-    # Store in DB
+    # Store in DB with source marker
     record = IdentityRecord(
         nullifier_hash=nullifier_hash,
         public_key_hex=public_key_hex,
         status=KeyStatus.ACTIVE,
+        source="ADMIN_TEST",
         created_at=datetime.now(timezone.utc).replace(tzinfo=None),
     )
     db.add(record)
+    await db.flush()  # get record.id before audit log
+
+    # Audit log in same transaction
+    from sqlalchemy import text
+    await db.execute(text("""
+        INSERT INTO audit_log (action, actor, target_type, target_id, metadata)
+        VALUES (:action, :actor, :target_type, :target_id, :metadata)
+    """), {
+        "action": "identity.admin_test_created",
+        "actor": "admin_api_key",
+        "target_type": "identity_record",
+        "target_id": str(record.id),
+        "metadata": '{"reason": "test_account", "endpoint": "/admin/test-account"}',
+    })
+
     await db.commit()
     await db.refresh(record)
 
