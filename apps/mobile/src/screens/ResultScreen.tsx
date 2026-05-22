@@ -32,7 +32,7 @@ function Bar({ label, count, percent, color }: { label: string; count: number; p
 }
 
 export default function ResultScreen({ route }: Props) {
-  const { billId } = route.params;
+  const { billId, fromVote } = route.params;
   const [data, setData] = useState<BillResults | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -86,14 +86,20 @@ export default function ResultScreen({ route }: Props) {
       {isHidden ? (
         <View style={styles.hiddenCard}>
           <Text style={styles.hiddenIcon}>🗳️</Text>
-          <Text style={styles.hiddenTitle}>Η ψήφος σας καταγράφηκε</Text>
+          <Text style={styles.hiddenTitle}>
+            {fromVote === true
+              ? "Η ψήφος σας καταγράφηκε"
+              : "Τα αποτελέσματα δεν είναι ακόμα διαθέσιμα"}
+          </Text>
           <Text style={styles.hiddenMessage}>
             Τα αποτελέσματα θα είναι διαθέσιμα μετά την ολοκλήρωση της ψηφοφορίας στη Βουλή
             {data.parliament_vote_date ? ` (${data.parliament_vote_date})` : ""}.
           </Text>
-          <Text style={styles.hiddenNote}>
-            Μπορείτε να αλλάξετε την ψήφο σας μία φορά κατά το 24ωρο παράθυρο πριν την ανακοίνωση των αποτελεσμάτων.
-          </Text>
+          {fromVote === true && (
+            <Text style={styles.hiddenNote}>
+              Μπορείτε να αλλάξετε την ψήφο σας μία φορά κατά το 24ωρο παράθυρο πριν την ανακοίνωση των αποτελεσμάτων.
+            </Text>
+          )}
         </View>
       ) : (
         <>

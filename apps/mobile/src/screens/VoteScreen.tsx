@@ -83,7 +83,7 @@ export default function VoteScreen({ route, navigation }: Props) {
         Alert.alert(
           "Demo ✓",
           "Demo — ψήφος δεν καταγράφεται",
-          [{ text: "Αποτελέσματα", onPress: () => navigation.replace("Result", { billId, billTitle }) }]
+          [{ text: "Αποτελέσματα", onPress: () => navigation.replace("Result", { billId, billTitle, fromVote: true }) }]
         );
         return;
       }
@@ -113,7 +113,7 @@ export default function VoteScreen({ route, navigation }: Props) {
       Alert.alert("Επιτυχία ✓", res.message, [
         {
           text: "Αποτελέσματα",
-          onPress: () => navigation.replace("Result", { billId, billTitle }),
+          onPress: () => navigation.replace("Result", { billId, billTitle, fromVote: true }),
         },
       ]);
     } catch (err: any) {
@@ -147,7 +147,7 @@ export default function VoteScreen({ route, navigation }: Props) {
       const res = await correctVote(nullifier, billId, choice, signatureHex);
       setIsCorrected(true);
       Alert.alert("Διόρθωση ✓", "Η ψήφος σας διορθώθηκε επιτυχώς.", [
-        { text: "Αποτελέσματα", onPress: () => navigation.replace("Result", { billId, billTitle }) },
+        { text: "Αποτελέσματα", onPress: () => navigation.replace("Result", { billId, billTitle, fromVote: true }) },
       ]);
     } catch (err: any) {
       Alert.alert("Σφάλμα", err.message || "Η διόρθωση απέτυχε.");

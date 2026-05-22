@@ -33,7 +33,7 @@ export type RootStackParams = {
   NotificationSettings: undefined;
   Compass: undefined;
   Vote: { billId: string; billTitle: string };
-  Result: { billId: string; billTitle?: string };
+  Result: { billId: string; billTitle?: string; fromVote?: boolean };
   Politikoi: undefined;
   EvaluatePolitician: { adaNumber: string; orgLabel: string };
   PolisLogin: { session?: string; challenge?: string; purpose?: string; bill_id?: string };
