@@ -301,6 +301,13 @@ function closeQRLogin() {
   var ov = document.getElementById("qrOverlay");
   if (ov) ov.remove();
 }
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeQRLogin();
+    var pb = document.getElementById('phaseBModal');
+    if (pb) pb.style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>

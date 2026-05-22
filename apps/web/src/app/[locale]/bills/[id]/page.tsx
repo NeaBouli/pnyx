@@ -533,8 +533,8 @@ export default function BillDetailPage({ params }: { params: { id: string } }) {
           </div>
         )}
 
-        {/* Results hidden message for ACTIVE bills */}
-        {results && results.total_votes === 0 && bill?.status === "ACTIVE" && (
+        {/* Results hidden message — only for users who just voted on this ACTIVE bill */}
+        {(voteStatus === "voted" || voteStatus === "already") && bill?.status === "ACTIVE" && (
           <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-6 text-center">
             <div className="text-4xl mb-3">🗳️</div>
             <p className="text-blue-800 font-semibold mb-1">
