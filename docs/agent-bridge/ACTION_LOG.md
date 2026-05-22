@@ -1,5 +1,18 @@
 # Action Log
 
+## 2026-05-23 — NEA-242 Audit Log fuer Admin-erstellte Accounts
+
+- **audit_log Tabelle:** UUID PK, action, actor, target_type, target_id, metadata JSONB, created_at
+- **identity_records.source:** `SMS` (default) | `ADMIN_TEST` | `IMPORT` — ORM + DB Spalte
+- **admin_account.py:** `source='ADMIN_TEST'` + Audit-Log in gleicher Transaktion (`db.flush()` → audit → `db.commit()`)
+- **Keine sensiblen Daten geloggt:** Kein Private Key, kein Full Nullifier, kein Token
+- **Verifiziert:** audit_log Tabelle existiert (7 Spalten), identity_records.source Spalte existiert
+- **Dashboard:** Follow-up (kein bestehender Users-Pfad fuer source Badge)
+- **Commit:** `e0fc7b3`
+- **Deployed:** API rebuilt
+
+---
+
 ## 2026-05-22 — NEA-249 Docs: Helios → Semaphore Hybrid
 
 - **index.html:** 2x Helios refs → "Semaphore ZK Proofs — προγραμματισμένο"
