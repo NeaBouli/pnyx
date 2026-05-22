@@ -13,7 +13,7 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `41bc682` (fix(NEA-242): use native UUID for audit log id)
+- **HEAD:** `98dfa0a` (chore(bridge): NEA-243 Discourse update)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`, `pre-politikoi-20260521`
 - **Rollback:** `pre-politikoi-20260521` → `49e24ba`
 - **Remote:** synchron mit GitHub
