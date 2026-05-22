@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useLocale } from "next-intl";
 import Link from "next/link";
 import { ekklesia, Bill, BillResults } from "@/lib/api";
@@ -20,9 +20,10 @@ const VOTE_OPTIONS = [
 
 const VOTABLE = ["ACTIVE", "WINDOW_24H"];
 
-export default function BillDetailPage({ params }: { params: { id: string } }) {
+export default function BillDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const locale = useLocale();
-  const billId = decodeURIComponent(params.id);
+  const billId = decodeURIComponent(id);
 
   const [bill, setBill]         = useState<Bill | null>(null);
   const [results, setResults]   = useState<BillResults | null>(null);
