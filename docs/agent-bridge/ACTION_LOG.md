@@ -1,5 +1,20 @@
 # Action Log
 
+## 2026-05-22 — NEA-186 εκπρόσωπος Rollen-Sichtbarkeit
+
+- **detect_role_from_org_label():** Auto-Erkennung Βουλευτής/Περιφερειάρχης/Δήμαρχος aus Diavgeia org_label
+- **GET /rep/bills Rollen-Filter:** Βουλευτής=alle, Περιφερειάρχης=PARLIAMENT+REGIONAL, Δήμαρχος=PARLIAMENT+MUNICIPAL
+- **Fallback:** role=None oder Περιφερειάρχης ohne Region → nur PARLIAMENT (Audit #6+#7)
+- **X-Rep-Role Header:** ASCII (MP/REGIONAL/MUNICIPAL/UNKNOWN) — nie Greek in Headers (Audit #2)
+- **municipality:** Spalte hinzugefuegt, wird bei Token-Create geschrieben (Audit #4)
+- **role_suggestion:** Additiv in Verify-Response, kein Breaking Change (Audit #5)
+- **Known Limitation:** Δήμαρχος sieht alle MUNICIPAL Bills, nicht nur eigene (Audit #1)
+- **App:** Rolle/Region Badge + ΔΙΑΥΓΕΙΑ Source Badge auf Cards
+- **Commit:** `435f3bd`
+- **Deployed:** API + Web rebuilt
+
+---
+
 ## 2026-05-22 — NEA-190 SEO Fix
 
 - **robots.txt:** `Disallow: /dashboard/` hinzugefuegt
