@@ -9,7 +9,7 @@ from sqlalchemy import (
     DateTime, JSON, ForeignKey, UniqueConstraint, Index,
     CheckConstraint, Enum, Numeric, text
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from database import Base
 
 
@@ -490,7 +490,7 @@ class AuditLog(Base):
     """Immutable audit trail for admin actions. No sensitive data (no keys, no nullifiers, no tokens)."""
     __tablename__ = "audit_log"
 
-    id          = Column(String(36), primary_key=True, server_default=text("gen_random_uuid()"))
+    id          = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
     action      = Column(String(80), nullable=False)
     actor       = Column(String(120), nullable=False)
     target_type = Column(String(80), nullable=False)
