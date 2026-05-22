@@ -13,7 +13,7 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `6a00f67` (chore(bridge): NEA-186 hotfix response to Codex audit)
+- **HEAD:** `e5c8106` (fix: lifecycle_stuck alert cooldown)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`, `pre-politikoi-20260521`
 - **Rollback:** `pre-politikoi-20260521` → `49e24ba`
 - **Remote:** synchron mit GitHub
@@ -210,8 +210,8 @@ Weiterhin UNSICHER:
   - `803ea51` chore: bump versionCode 23 → 24
 - Rollback-Tag: `pre-politikoi-20260521` → `49e24ba`
 - Builds bereit:
-  - `~/Desktop/ekklesia-v1.3.2-vC25.apk` (66MB) — S10 installiert, Server download live
-  - `~/Desktop/ekklesia-v1.3.2-vC25-PLAY.aab` (45MB) — Play Console Upload BEREIT
+  - `~/Desktop/ekklesia-v1.3.2-vC26.apk` (66MB) — Server download live, S10 ausstehend (Geraet getrennt)
+  - `~/Desktop/ekklesia-v1.3.2-vC26-PLAY.aab` — AAB Build laeuft
   - `~/Desktop/ekprosopos-v1.1.0-vC2.apk` (55MB) — ekprosopos mit Evaluation
 - NEA-189 DB: `evaluation_questions` (8 Rows), `politician_evaluations`, `evaluation_enabled` auf `representative_tokens`
 - NEA-189 API: 6 Endpoints (2 Rep + 4 Public) unter `/rep/` und `/politicians/`

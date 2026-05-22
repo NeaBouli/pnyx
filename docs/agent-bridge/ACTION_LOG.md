@@ -1,5 +1,16 @@
 # Action Log
 
+## 2026-05-22 — Lifecycle Stuck Alert + Monitor Cooldown
+
+- **GR-74e0cb08:** Bereits automatisch PARLIAMENT_VOTED (Scheduler 00:11 UTC), Arweave archiviert — kein manueller Fix noetig
+- **Andere stuck Bills:** 0 (keine WINDOW_24H ueberfaellig)
+- **lifecycle_stuck Cooldown:** Redis Lock per bill_id (1h), suppressed in check_lifecycle_stuck() BEFORE Alert reaches summary
+- **Health-Check:** 0 Alerts — all checks passed
+- **Commit:** `e5c8106`
+- **Deployed:** Monitor rebuilt
+
+---
+
 ## 2026-05-22 — NEA-247 Mobile Hotfix (Codex residual)
 
 - **ResultScreen:** `fromVote` route param — "Η ψήφος σας καταγράφηκε" nur bei `fromVote=true`
