@@ -123,11 +123,16 @@ async def get_bills(
     category: str | None = Query(None),
     governance: str | None = Query(None),
     source: str | None = Query(None),
+    periferia_id: int | None = Query(None),
+    dimos_id: int | None = Query(None),
     limit: int = Query(20, le=500),
     offset: int = Query(0),
     db: AsyncSession = Depends(get_db)
 ):
-    """Gibt Gesetzentwürfe zurück, optional gefiltert nach Status/Kategorie/Governance/Source."""
+    """Gibt Gesetzentwürfe zurück, optional gefiltert nach Status/Kategorie/Governance/Source/Region."""
+    from sqlalchemy import or_, and_
+    from models import GovernanceLevel
+
     query = select(ParliamentBill).where(
         ~ParliamentBill.id.like("DEMO-%"),
         ParliamentBill.admin_hidden != True,
@@ -144,7 +149,6 @@ async def get_bills(
             raise HTTPException(400, f"Ungültiger Status: {status_filter}")
 
     if governance:
-        from models import GovernanceLevel
         try:
             query = query.where(ParliamentBill.governance_level == GovernanceLevel(governance.upper()))
         except ValueError:
@@ -152,6 +156,24 @@ async def get_bills(
 
     if source:
         query = query.where(ParliamentBill.source == source.upper())
+
+    # Region filter: show NATIONAL + INSTITUTIONAL + matching REGIONAL/MUNICIPAL
+    if periferia_id is not None or dimos_id is not None:
+        region_conditions = [
+            ParliamentBill.governance_level == GovernanceLevel.NATIONAL,
+            ParliamentBill.governance_level == GovernanceLevel.INSTITUTIONAL,
+        ]
+        if periferia_id is not None:
+            region_conditions.append(
+                and_(ParliamentBill.governance_level == GovernanceLevel.REGIONAL,
+                     ParliamentBill.periferia_id == periferia_id)
+            )
+        if dimos_id is not None:
+            region_conditions.append(
+                and_(ParliamentBill.governance_level == GovernanceLevel.MUNICIPAL,
+                     ParliamentBill.dimos_id == dimos_id)
+            )
+        query = query.where(or_(*region_conditions))
 
     result = await db.execute(query)
     bills = result.scalars().all()

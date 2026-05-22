@@ -70,11 +70,15 @@ export interface Bill {
 export async function fetchBills(params?: {
   governance?: string;
   source?: string;
+  periferia_id?: number;
+  dimos_id?: number;
 }): Promise<Bill[]> {
   const qs = new URLSearchParams();
   qs.set("limit", "200");
   if (params?.governance) qs.set("governance", params.governance);
   if (params?.source) qs.set("source", params.source);
+  if (params?.periferia_id) qs.set("periferia_id", String(params.periferia_id));
+  if (params?.dimos_id) qs.set("dimos_id", String(params.dimos_id));
   return request<Bill[]>(`/api/v1/bills?${qs.toString()}`);
 }
 

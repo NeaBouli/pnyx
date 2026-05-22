@@ -42,31 +42,26 @@ export default function BillsScreen() {
 
   const load = useCallback(async () => {
     try {
-      const data = await fetchBills();
+      const params: { periferia_id?: number; dimos_id?: number } = {};
+      if (userPeriferia) params.periferia_id = userPeriferia;
+      if (userDimos) params.dimos_id = userDimos;
+      const data = await fetchBills(params);
       setBills(Array.isArray(data) ? data : []);
     } catch { /* */ }
     finally { setLoading(false); setRefreshing(false); }
-  }, []);
+  }, [userPeriferia, userDimos]);
 
   useEffect(() => { load(); }, [load]);
 
-  // Region-Filter: wenn User Wahlbezirk hat, nur relevante Bills
-  const regionBills = hasRegion ? bills.filter(b => {
-    const gov = b.governance_level;
-    if (!gov || gov === "NATIONAL" || gov === "INSTITUTIONAL") return true;
-    if (gov === "REGIONAL" && b.periferia_id === userPeriferia) return true;
-    if (gov === "MUNICIPAL" && b.dimos_id === userDimos) return true;
-    return false;
-  }) : bills;
-
-  const filtered = filter === "ALL" ? regionBills
-    : filter === "ARWEAVE" ? regionBills.filter(b => b.arweave_tx_id)
-    : filter === "DIAVGEIA" ? regionBills.filter(b => b.source === "DIAVGEIA")
-    : filter === "MUNICIPAL" ? regionBills.filter(b => b.governance_level === "MUNICIPAL")
-    : filter === "REGIONAL" ? regionBills.filter(b => b.governance_level === "REGIONAL")
-    : filter === "INSTITUTIONAL" ? regionBills.filter(b => b.governance_level === "INSTITUTIONAL")
-    : filter === "OPEN_END" ? regionBills.filter(b => b.status === "OPEN_END")
-    : regionBills.filter(b => b.status === filter);
+  // Server filters by region — client only filters by status/source/tab
+  const filtered = filter === "ALL" ? bills
+    : filter === "ARWEAVE" ? bills.filter(b => b.arweave_tx_id)
+    : filter === "DIAVGEIA" ? bills.filter(b => b.source === "DIAVGEIA")
+    : filter === "MUNICIPAL" ? bills.filter(b => b.governance_level === "MUNICIPAL")
+    : filter === "REGIONAL" ? bills.filter(b => b.governance_level === "REGIONAL")
+    : filter === "INSTITUTIONAL" ? bills.filter(b => b.governance_level === "INSTITUTIONAL")
+    : filter === "OPEN_END" ? bills.filter(b => b.status === "OPEN_END")
+    : bills.filter(b => b.status === filter);
 
   const shareBill = async (bill: any) => {
     try {
