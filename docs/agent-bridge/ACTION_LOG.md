@@ -1,5 +1,17 @@
 # Action Log
 
+## 2026-05-22 — NEA-247 Mobile Hotfix (Codex residual)
+
+- **ResultScreen:** `fromVote` route param — "Η ψήφος σας καταγράφηκε" nur bei `fromVote=true`
+- **Neutral copy:** "Τα αποτελέσματα δεν είναι ακόμα διαθέσιμα" bei direkter Navigation
+- **VoteScreen:** `fromVote: true` bei successful vote, correction, demo
+- **RootStackParams:** `Result.fromVote?: boolean`
+- **versionCode:** 25 → 26
+- **Commit:** `a44497e`
+- **APK Build:** laeuft
+
+---
+
 ## 2026-05-22 — NEA-247 + NEA-248 Vote Display + QR Modal
 
 - **NEA-247 (URGENT):** "Η ψήφος σας καταγράφηκε" wurde ALLEN Besuchern auf ACTIVE Bills mit 0 Votes gezeigt
