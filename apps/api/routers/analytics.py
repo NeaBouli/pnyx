@@ -169,7 +169,7 @@ async def votes_timeline(
     try:
         since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
         day_col = func.date_trunc("day", CitizenVote.created_at).label("day")
-        filters = [CitizenVote.created_at >= since]
+        filters = [CitizenVote.created_at >= since, _real_vote]
         if bill_id:
             filters.append(CitizenVote.bill_id == bill_id)
         query = (
