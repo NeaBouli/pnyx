@@ -92,8 +92,8 @@ android {
         applicationId 'ekklesia.gr'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 21
-        versionName "1.3.5"
+        versionCode 26
+        versionName "1.0.0"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
@@ -104,13 +104,28 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
-        release {
+            playRelease {
             def props = new Properties()
-            props.load(new FileInputStream(file("../../keystore-play.properties")))
-            storeFile file("../../" + props['storeFile'])
-            storePassword props['storePassword']
-            keyAlias props['keyAlias']
-            keyPassword props['keyPassword']
+            def propsFile = new File(rootDir.parentFile, "keystore-play.properties")
+            if (propsFile.exists()) {
+                props.load(new FileInputStream(propsFile))
+                storeFile new File(rootDir.parentFile, props["storeFile"])
+                storePassword props["storePassword"]
+                keyAlias props["keyAlias"]
+                keyPassword props["keyPassword"]
+            }
+        }
+    }
+    flavorDimensions "distribution"
+    productFlavors {
+        direct {
+            dimension "distribution"
+            resValue "string", "distribution_channel", "direct"
+        }
+        play {
+            dimension "distribution"
+            resValue "string", "distribution_channel", "play"
+            signingConfig signingConfigs.playRelease
         }
     }
     buildTypes {
@@ -118,7 +133,8 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig signingConfigs.release
+            // Signing handled per flavor (direct=debug, play=playRelease)
+            signingConfig null
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds

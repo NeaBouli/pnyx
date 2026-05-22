@@ -210,8 +210,8 @@ Weiterhin UNSICHER:
   - `803ea51` chore: bump versionCode 23 → 24
 - Rollback-Tag: `pre-politikoi-20260521` → `49e24ba`
 - Builds bereit:
-  - `~/Desktop/ekklesia-v1.3.2-vC26.apk` (66MB) — Server download live, S10 ausstehend (Geraet getrennt)
-  - `~/Desktop/ekklesia-v1.3.2-vC26-PLAY.aab` — AAB Build laeuft
+  - `~/Desktop/ekklesia-v1.3.2-vC26.apk` (66MB) — S10 installiert (vC26), Server download live
+  - `~/Desktop/ekklesia-v1.3.2-vC26-PLAY.aab` (45MB) — Play Console Upload BEREIT
   - `~/Desktop/ekprosopos-v1.1.0-vC2.apk` (55MB) — ekprosopos mit Evaluation
 - NEA-189 DB: `evaluation_questions` (8 Rows), `politician_evaluations`, `evaluation_enabled` auf `representative_tokens`
 - NEA-189 API: 6 Endpoints (2 Rep + 4 Public) unter `/rep/` und `/politicians/`
