@@ -1,5 +1,17 @@
 # Action Log
 
+## 2026-05-22 — NEA-249 ADR Created
+
+- **ADR:** `docs/adr/NEA-249-zk-voting-v2-semaphore-hybrid.md`
+- **Status:** Proposed / Blocked before implementation
+- **Decision:** Hybrid V2 (Tier 1 HMAC unchanged + Tier 2 Semaphore opt-in)
+- **Blocking dependency:** Mobile prover unresolved (snarkjs/Mopro/RN incompatibility)
+- **Non-goals:** No product code, no DB, no API, no "in build" claims
+- **Next step:** Mopro native Expo Module feasibility plan (separate, no code)
+- **Kein Produktcode geaendert**
+
+---
+
 ## 2026-05-22 — NEA-249 Phase 0 Benchmark Spike — STOP
 
 - **Ziel:** Semaphore Proof-Generation auf Expo SDK 54 / React Native 0.81 testen
