@@ -1,5 +1,19 @@
 # Action Log
 
+## 2026-05-22 — NEA-247 + NEA-248 Vote Display + QR Modal
+
+- **NEA-247 (URGENT):** "Η ψήφος σας καταγράφηκε" wurde ALLEN Besuchern auf ACTIVE Bills mit 0 Votes gezeigt
+  - Root Cause: Bedingung pruefte `results.total_votes === 0`, nicht ob User tatsaechlich gewaehlt hat
+  - Fix: Nur anzeigen wenn `voteStatus === "voted"` oder `voteStatus === "already"`
+  - Datei: `apps/web/src/app/[locale]/bills/[id]/page.tsx`
+- **NEA-248:** ESC-Key fuer QR Overlay + phaseBModal auf tickets/index.html
+  - Auto-close nach Auth war bereits implementiert (setTimeout 1500ms)
+  - Close-Button existierte bereits, kein z-index Problem gefunden
+- **Commit:** `2226eac`
+- **Deployed:** Web rebuilt
+
+---
+
 ## 2026-05-22 — NEA-186 Hotfix 2 (Codex residual)
 
 - **MEDIUM FIXED:** `/rep/divergence` status gate added (`bill.status not in ALLOWED_STATUSES → 403`)
