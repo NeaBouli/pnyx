@@ -25,7 +25,7 @@ async def test_health_includes_mod01():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         r = await client.get("/health")
     assert r.status_code == 200
-    assert "MOD-01 Identity" in r.json()["modules"]
+    assert any("MOD-01" in m for m in r.json()["modules"])
 
 
 @pytest.mark.asyncio

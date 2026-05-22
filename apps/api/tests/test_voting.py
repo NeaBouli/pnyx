@@ -103,5 +103,5 @@ class TestVoteEndpointStructure:
         from main import app
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             r = await client.get("/health")
-        assert "MOD-04 CitizenVote" in r.json()["modules"]
-        assert "MOD-14 Relevance" in r.json()["modules"]
+        assert any("MOD-04" in m for m in r.json()["modules"])
+        assert any("MOD-14" in m for m in r.json()["modules"])

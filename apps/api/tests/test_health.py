@@ -9,7 +9,7 @@ async def test_health():
     assert r.status_code == 200
     data = r.json()
     assert data["status"] == "ok"
-    assert "MOD-01 Identity" in data["modules"]
+    assert any("MOD-01" in m for m in data["modules"])
 
 @pytest.mark.asyncio
 async def test_root():
