@@ -1,5 +1,16 @@
 # Action Log
 
+## 2026-05-23 — NEA-243 Discourse Update
+
+- **Pre-update Tag:** `discourse-pre-update-20260523`
+- **Updates:** 8 Commits inkl. CVE-2026-42945 (nginx 1.30.1), base image 2.0.20260521
+- **Rebuild:** SUCCESS
+- **Version:** `2026.5.0-latest.1`
+- **HTTP:** 200
+- **Downtime:** ~10 Min (rebuild)
+
+---
+
 ## 2026-05-23 — PR #70 Next.js 16 merged + #64/#69 closed
 
 - **PR #70:** Already merged (CI SUCCESS, CodeRabbit SUCCESS)
