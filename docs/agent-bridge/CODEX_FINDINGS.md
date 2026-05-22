@@ -1,3 +1,76 @@
+# CODEX FINDINGS — NEA-186 / NEA-240
+Datum: 2026-05-22
+Agent: Codex
+Scope: Audit-Recheck Commit `2226eac` (NEA-247 + NEA-248), read-only Produktcode. Keine Produktcode-Aenderungen.
+
+## NEA-247 Finding 1: Mobile ResultScreen still shows false "vote recorded" message
+
+Severity: MEDIUM
+
+Web Bill Detail ist in `2226eac` gefixt: `apps/web/src/app/[locale]/bills/[id]/page.tsx` zeigt "Η ψήφος σας καταγράφηκε" nur noch bei `voteStatus === "voted"` oder `"already"`.
+
+Mobile hat aber noch denselben Pattern: `apps/mobile/src/screens/ResultScreen.tsx` setzt `isHidden = data.results_hidden || (data.status === "ACTIVE" && data.total_votes === 0)` und rendert dann "Η ψήφος σας καταγράφηκε". Dieser Screen ist ohne erfolgreichen Vote erreichbar: `apps/mobile/src/screens/VoteScreen.tsx` zeigt fuer alle nicht-ANNOUNCED Bills den Link "Δείτε τα τρέχοντα αποτελέσματα →" und navigiert direkt zu `Result`.
+
+Fix fuer CC: Mobile Hidden-Card-Text entkoppeln. Wenn `data.results_hidden`/ACTIVE+0 ohne lokalen Vote-Kontext angezeigt wird, neutral formulieren ("Τα αποτελέσματα δεν είναι ακόμη διαθέσιμα"). "Η ψήφος σας καταγράφηκε" nur nach erfolgreichem Vote/Correction-Kontext anzeigen, z.B. via route param from `VoteScreen` after submit/correction or eigener local state.
+
+## NEA-248 Notes
+
+- `docs/tickets/index.html` ESC-Handler schliesst `qrOverlay` via `closeQRLogin()` und `phaseBModal` via `display='none'`.
+- Auto-close nach QR Auth war bereits vorhanden (`setTimeout(..., 1500)`).
+- Keine neue NEA-248 Blocker im statischen Recheck gefunden.
+
+---
+
+Datum: 2026-05-22
+Agent: Codex
+Scope: Audit-Recheck Commit `435f3bd` (NEA-186 rep role-based bill visibility), read-only Produktcode. Keine Produktcode-Aenderungen.
+
+## NEA-186 Finding 1: Results endpoint bypasses role visibility — RESOLVED in `eceb806`
+
+Severity: HIGH
+
+`GET /api/v1/rep/bills` filtert die Liste nach Rolle, aber `GET /api/v1/rep/results/{bill_id}` laedt Bills nur per ID und Status. Ein Vertreter mit gueltigem Token kann dadurch Ergebnisse fuer einen Bill abrufen, der in seiner rollenbasierten Bills-Liste nicht sichtbar waere, wenn die `bill_id` bekannt/erratbar ist.
+
+Betroffene Stelle: `apps/api/routers/representative.py:get_rep_results()` prueft nur `bill.status in ALLOWED_STATUSES`; es verwendet die neue Rollen-Sichtbarkeitslogik nicht.
+
+Fix fuer CC: Sichtbarkeitslogik in einen gemeinsamen Helper extrahieren und fuer `/rep/bills`, `/rep/results/{bill_id}` und optional `/rep/divergence/{bill_id}` verwenden. Tests: unknown role darf Results fuer DIAVGEIA regional/municipal nicht abrufen; Δήμαρχος darf keine REGIONAL Results direkt per ID abrufen; Περιφερειάρχης ohne Region nur PARLIAMENT.
+
+Recheck 2026-05-22: `eceb806` extrahiert `is_bill_visible_for_token()` und wendet es in `/rep/results/{bill_id}` an. Finding geschlossen.
+
+## NEA-186 Finding 2: Περιφερειάρχης region is checked for presence but not applied — RESOLVED in `eceb806`
+
+Severity: MEDIUM
+
+Der Plan sagte `REGIONAL AND region ILIKE token.region`. Die Implementierung nutzt `region` nur als truthy guard und gibt dann alle `DIAVGEIA + REGIONAL` Bills frei. Da `parliament_bills` aktuell keine Text-Region-Spalte hat, ist echtes Region-Matching ohne `periferia_id` Mapping nicht vorhanden.
+
+Betroffene Stelle: `apps/api/routers/representative.py:get_rep_bills()` Branch `role == "Περιφερειάρχης" and region`.
+
+Fix fuer CC: Entweder als Known Limitation analog Δήμαρχος dokumentieren ("Περιφερειάρχης sieht alle REGIONAL Bills bis periferia_id Mapping") oder konservativer auf PARLIAMENT-only fallbacken, bis `periferia_id` Mapping existiert. Wenn bereits `periferia_id` auf Bills und Token-Seite eingefuehrt wird, dann strikt per ID filtern.
+
+Recheck 2026-05-22: `eceb806` entfernt den Περιφερειάρχης-Regional-Branch aus `/rep/bills`; Περιφερειάρχης faellt damit konservativ auf PARLIAMENT-only zurueck. Finding geschlossen.
+
+## NEA-186 Finding 3: `/rep/divergence/{bill_id}` lacks status gate — RESOLVED in `e2b6652`
+
+Severity: MEDIUM
+
+`/rep/divergence/{bill_id}` verwendet jetzt zwar `is_bill_visible_for_token()`, prueft aber weiterhin nicht `bill.status in ALLOWED_STATUSES`. Damit kann ein Vertreter fuer sichtbare PARLIAMENT-Bills Divergence-Daten direkt abrufen, auch wenn der Bill noch nicht in `WINDOW_24H`, `PARLIAMENT_VOTED` oder `OPEN_END` ist. Der Router-Header und `/rep/bills` definieren den Vertreterzugang aber explizit nur fuer diese Status.
+
+Betroffene Stelle: `apps/api/routers/representative.py:get_rep_divergence()` nach dem Bill-Lookup; anders als `get_rep_results()` fehlt der Status-Check.
+
+Fix fuer CC: In `/rep/divergence/{bill_id}` denselben Status-Gate wie in `/rep/results/{bill_id}` setzen, bevor Counts/Divergence berechnet werden. Test: ACTIVE/PENDING/ANNOUNCED PARLIAMENT Bill darf fuer MP/unknown nicht via `/rep/divergence` abrufbar sein.
+
+Recheck 2026-05-22: `e2b6652` ergaenzt den Status-Gate in `/rep/divergence/{bill_id}` und aktualisiert den `/rep/bills` Docstring fuer Περιφερειάρχης PARLIAMENT-only. Finding geschlossen.
+
+## NEA-186 Notes
+
+- `python3 -m py_compile apps/api/routers/representative.py` ist lokal gruen.
+- `X-Rep-Role` ist ASCII-safe (`MP/REGIONAL/MUNICIPAL/UNKNOWN`).
+- Token-UPSERT schreibt `municipality` und erhaelt `evaluation_enabled`.
+- Dashboard `municipality` ist im aktuellen Tree vorhanden, wurde aber nicht durch Commit `435f3bd` geaendert.
+- App zeigt aktuell nur fuer `DIAVGEIA` ein Source-Badge; ein explizites `ΒΟΥΛΗ` Badge fuer `PARLIAMENT` ist nicht umgesetzt.
+
+---
+
 # CODEX FINDINGS — NEA-240
 Datum: 2026-05-21
 Agent: Codex
