@@ -13,7 +13,7 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `7a17c86` (docs(ADR): NEA-249 Semaphore Hybrid V2)
+- **HEAD:** `41bc682` (fix(NEA-242): use native UUID for audit log id)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`, `pre-politikoi-20260521`
 - **Rollback:** `pre-politikoi-20260521` → `49e24ba`
 - **Remote:** synchron mit GitHub
@@ -188,7 +188,7 @@ Weiterhin UNSICHER:
 
 - Datum/Zeit: 2026-05-22
 - Agent: Claude Code
-- HEAD lokal: `7a17c86` (gepusht)
+- HEAD lokal: `41bc682` (gepusht)
 - HEAD server: `eceb806` (deployed, API+Web+Dashboard+Monitor rebuilt)
 - Session 21.05: 17 Commits
   - `3357e00` feat: NEA-236 Health-Check 15 rules + --once mode for cron

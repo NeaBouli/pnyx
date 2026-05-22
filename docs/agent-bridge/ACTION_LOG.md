@@ -1,6 +1,18 @@
 # Action Log
 
-## 2026-05-23 — NEA-242 Audit Log fuer Admin-erstellte Accounts
+## 2026-05-23 — NEA-242 Audit Log (3 Commits, 2 Codex Rechecks)
+
+- **Commit 1 (`e0fc7b3`):** audit_log Tabelle (server-manuell), identity_records.source, admin_account.py raw SQL
+- **Codex Recheck 1:** ORM Model fehlt → Schema nicht reproduzierbar
+- **Commit 2 (`3684ec6`):** AuditLog ORM Model, raw SQL → ORM `db.add()`, JSONB korrekt
+- **Codex Recheck 2:** `String(36)` + `gen_random_uuid()` = DDL-Fehler auf fresh DB
+- **Commit 3 (`41bc682`):** `UUID(as_uuid=True)` — native PostgreSQL UUID
+- **Finale:** Schema reproduzierbar, ORM-basiert, JSONB korrekt, keine sensiblen Daten
+- **Deployed:** API rebuilt (3x)
+
+---
+
+## 2026-05-23 — NEA-242 Audit Log fuer Admin-erstellte Accounts (REPLACED BY ABOVE)
 
 - **audit_log Tabelle:** UUID PK, action, actor, target_type, target_id, metadata JSONB, created_at
 - **identity_records.source:** `SMS` (default) | `ADMIN_TEST` | `IMPORT` — ORM + DB Spalte
