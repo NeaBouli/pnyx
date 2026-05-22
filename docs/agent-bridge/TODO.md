@@ -5,6 +5,19 @@
 - [ ] NEA-189b: Region-Locking fuer Evaluation (Buerger Region = Politiker Region)
 - [ ] AAB vC25 Upload zu Play Console (`~/Desktop/ekklesia-v1.3.2-vC25-PLAY.aab` BEREIT)
 
+## Done (Session 22.05.2026)
+- [x] NEA-246: Dashboard /politicians + /monitor + Diavgeia filter
+- [x] NEA-190: SEO (robots.txt, sitemap +3, JSON-LD, OG tags)
+- [x] NEA-186: Rep role-based bill visibility + org_label auto-detection
+- [x] NEA-186 Hotfix: Codex audit — visibility helper for /rep/results+divergence, Περιφερειάρχης fallback
+- [x] NEA-231+235: Forum content fallback + resync 185/187 topics
+- [x] NEA-241: Watcher 3-tier auto-recovery (T1+T2+T3) + docker-socket-proxy
+- [x] NEA-239+224: Community.html live counters + DEMO filtered
+- [x] NEA-226: QR Consensus verified (already implemented)
+- [x] NEA-240 Follow-up: ADA constraint verified
+- [x] Global Kohaerenz: 25 Module everywhere (README, CLAUDE.md, wiki, health)
+- [x] T2 AUTO_RECOVERY_T2=true aktiviert
+
 ## Done (Session 21.05.2026) — 22 Commits
 - [x] NEA-236: Health-Check 15 Rules deployed + Cronjob 06:00 UTC
 - [x] NEA-189: Politician Evaluation Grundgeruest (DB + API + Mobile + ekprosopos)

@@ -13,11 +13,11 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `8f1ebfa` (fix: global module count 22→25)
+- **HEAD:** `6a00f67` (chore(bridge): NEA-186 hotfix response to Codex audit)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`, `pre-politikoi-20260521`
 - **Rollback:** `pre-politikoi-20260521` → `49e24ba`
 - **Remote:** synchron mit GitHub
-- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `8f1ebfa` (deployed 2026-05-22, API+Web+Monitor+Docker-Proxy rebuilt, 25 Module, NEA-241 Self-Healing)
+- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `eceb806` (deployed 2026-05-22, API+Web+Monitor+Dashboard+Docker-Proxy rebuilt, 25 Module, NEA-186+190+191+231+241+246)
 
 ## Uncommitted Aenderungen
 
@@ -188,8 +188,8 @@ Weiterhin UNSICHER:
 
 - Datum/Zeit: 2026-05-21
 - Agent: Claude Code
-- HEAD lokal: `323737f` (gepusht)
-- HEAD server: `411a560` (deployed, API+Web rebuilt, MOD-25 live)
+- HEAD lokal: `6a00f67` (gepusht)
+- HEAD server: `eceb806` (deployed, API+Web+Dashboard+Monitor rebuilt)
 - Session 21.05: 17 Commits
   - `3357e00` feat: NEA-236 Health-Check 15 rules + --once mode for cron
   - `0c6db62` fix: NEA-236 aggregate arweave alerts + truncate telegram message
