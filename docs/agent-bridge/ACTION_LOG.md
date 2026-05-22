@@ -1,5 +1,21 @@
 # Action Log
 
+## 2026-05-22 — NEA-249 Phase 0 Benchmark Spike — STOP
+
+- **Ziel:** Semaphore Proof-Generation auf Expo SDK 54 / React Native 0.81 testen
+- **Ergebnis:** STOP — keine Benchmark moeglich ohne native Projektaenderungen
+- **@semaphore-protocol/proof@4.14.2:** Installierbar, aber abhaengig von snarkjs@0.7.5 das Node.js `fs`/`os`/`path`/`readline` braucht — in React Native nicht verfuegbar
+- **Mopro:** Kein npm Package. Rust SDK, native Kompilierung erforderlich. Kein Expo-Plugin.
+- **react-native-snarkjs:** Veraltet (2021), 43.6 MB, GPL-3, inkompatibel mit RN 0.81
+- **Expo Go:** NEIN — native Module zwingend noetig
+- **Dev Client:** REQUIRED fuer jede ZK-Proving-Route
+- **Entscheidung:** NEA-249 Implementation pausiert vor Phase 1
+- **Naechster Schritt:** Separater Plan fuer Mopro native Expo Module Integration
+- **Website/FAQ:** Wording bleibt "roadmap/planned", nicht "in build"
+- **Kein Produktcode geaendert**
+
+---
+
 ## 2026-05-22 — NEA-222 Wahlbezirk Server-Filter + NEA-188 votes-timeline Fix
 
 - **NEA-222 parliament.py:** `periferia_id` + `dimos_id` Query-Params mit GovernanceLevel Enum
@@ -2497,3 +2513,31 @@
 - **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
 - **Keine Secrets ausgegeben**
 - **Kein Deployment**
+
+## 2026-05-22 - Codex: Next 16 PR #70 merged + NEA-234 research
+
+- **Agent:** Codex
+- **Aktion:** PR #70 nach CodeRabbit/CI-Gruenphase gemerged; ersetzte Dependabot-PRs dokumentiert; NEA-234 Architektur-Recherche abgeschlossen.
+- **Next 16 Web Upgrade:**
+  - Replacement PR: `#70` (`fix: upgrade web to Next 16.2.6`)
+  - Merge Commit: `2d9faac665fc400a5af811d8cc27e265fd387f90`
+  - CI: gruen (`Python API Tests`, `Crypto Package Tests`, `Secret Detection`, `Dependency Audit`, `Security Summary`)
+  - CodeRabbit: keine actionable Findings; Status `SUCCESS`
+  - `#64` geschlossen als ersetzt durch `#70`
+  - `#69` war bereits geschlossen
+  - PR-Watcher `watch-pr-70-coderabbit` geloescht, weil Aufgabe erledigt
+- **CI-Fix auf main vor Merge:**
+  - Commit `59c9d8c`: Health-Tests von exact string auf Modul-Prefix-Match angepasst
+  - Codex-Stilhinweis fuer spaeter: `m.startswith("MOD-01")` ist sauberer als `any("MOD-01" in m ...)`; kein Blocker
+- **NEA-234 Research Ergebnis:**
+  - Empfehlung: Hybrid V2 statt Full Helios
+  - Pfad: Semaphore group membership proof + current Ed25519/HMAC Tier 1 + public per-vote/proof bulletin board + Arweave
+  - Nicht jetzt bauen: Full Helios trustee system, custom ZK circuit, custom trusted setup, server-side proving, aggregate-only ZK ohne public vote/proof records
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/ACTION_LOG.md`
+  - `docs/agent-bridge/CODEX_TO_CLAUDE.md`
+  - `docs/agent-bridge/CODEX_FINDINGS.md`
+- **Keine Produktcodeaenderung durch Codex**
+- **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Deployment durch Codex**

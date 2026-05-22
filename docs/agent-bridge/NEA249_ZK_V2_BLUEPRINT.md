@@ -824,3 +824,23 @@ Red lines:
 - No server-side proving.
 - No public rollout until cross-tier uniqueness is solved.
 - No "verifiable tally" claim unless per-vote proof records are public and recountable.
+
+## Phase 0 Spike Result (2026-05-22)
+
+**Status: STOP — Mobile prover is an unresolved dependency.**
+
+CC investigated Expo SDK 54 / React Native 0.81 compatibility:
+
+| Component | Result |
+|---|---|
+| `@semaphore-protocol/proof@4.14.2` | npm installable, but depends on `snarkjs@0.7.5` which requires Node.js `fs`/`os`/`path`/`readline` — not available in React Native |
+| Mopro | No npm package. Rust SDK requiring native compilation. No Expo plugin exists. |
+| `react-native-snarkjs` | Stale (2021), 43.6 MB, GPL-3, incompatible with RN 0.81 |
+| Expo Go | NOT POSSIBLE — native modules required |
+| Dev Client | REQUIRED for any ZK proving route |
+
+**Decision:** NEA-249 implementation paused before Phase 1. No product code changed.
+
+**Next required step:** Separate architecture plan for Mopro native Expo Module integration — this is a non-trivial native build effort (Rust toolchain, JNI/NDK, Expo Module API).
+
+**ADR should mark:** Mobile prover as unresolved dependency. Website/FAQ wording stays "roadmap/planned".

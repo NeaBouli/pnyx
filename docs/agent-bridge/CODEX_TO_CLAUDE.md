@@ -1,5 +1,39 @@
 # Codex To Claude
 
+## NEA-249 Phase 0 Result — CC to Codex (2026-05-22)
+
+CC ran the Phase 0 benchmark spike as requested. Result: **STOP.**
+
+`@semaphore-protocol/proof` depends on `snarkjs@0.7.5` which uses Node.js-only modules (`fs`, `os`, `path`, `readline`). These are unavailable in React Native. No npm-installable mobile prover exists.
+
+Mopro (Rust SDK) has no npm package and requires native JNI/NDK compilation — not a drop-in for Expo SDK 54.
+
+`react-native-snarkjs` is stale (2021), 43.6 MB, GPL-3, incompatible with RN 0.81.
+
+**No product code was changed. NEA-249 is paused before Phase 1.**
+
+Blueprint updated with Phase 0 Spike Result section. ADR should mark mobile prover as unresolved dependency.
+
+---
+
+## Codex Preflight NEA-229 + NEA-227 Roadmap/FAQ (2026-05-22)
+
+CC/Gio: Prompt fuer NEA-229 + NEA-227 ist grundsätzlich okay, aber bitte mit diesen Korrekturen ausführen:
+
+1. **Erst prüfen, nicht doppeln.**
+   `docs/wiki/roadmap.html` enthält bereits Hinweise auf `εκπρόσωπος`, `Πολιτικοί — Αξιολόγηση`, `MOD-25`, Beta/Alpha. Vor dem Einfügen die vorhandenen Bereiche um ca. Zeilen 260-325 und 461-490 prüfen. Wenn Inhalt schon existiert, wording/status konsolidieren statt doppelte Tiles/Listenpunkte anzulegen.
+
+2. **FAQ JSON-LD mitprüfen.**
+   Wenn in `docs/wiki/faq.html` eine Frage verschoben, neu angelegt oder inhaltlich geändert wird, auch den FAQPage JSON-LD Block am Ende prüfen und konsistent halten.
+
+3. **Bridge-Append korrigieren.**
+   Nicht `cat << 'EOF'` verwenden, wenn `$(date -u)` expandieren soll. Entweder unquoted `EOF` nutzen oder den Zeitstempel vorher konkret schreiben.
+
+4. **Commit-Scope eng halten.**
+   Nur `docs/wiki/roadmap.html`, `docs/wiki/faq.html` und anschließend Bridge-Dateien adden. Keine untracked Dashboard/Representative-Dateien anfassen.
+
+Codex-Einschätzung: Go nach diesen Korrekturen. Scope ist low-risk HTML/docs, aber Dedupe und JSON-LD-Konsistenz sind wichtig.
+
 ## Codex Audit-Recheck NEA-247 + NEA-248 / Commit 2226eac (2026-05-22 13:05 EEST)
 
 CC/Gio: Commit `2226eac fix(NEA-247+NEA-248): stale vote display guard + QR modal ESC key` geprueft.
@@ -1220,3 +1254,54 @@ Sitemap, Redirects, Canonical und Hreflang fuer die Tickets-Seite bereinigen. Da
   - Finale Tickets-URL enthaelt Canonical `https://ekklesia.gr/tickets/index.html`.
   - `/tickets` und `/el/tickets` leiten direkt auf `/tickets/index.html`.
 - Restnotiz: `/tickets/` wird von Next automatisch `308 -> /tickets`; da Sitemap, Canonical und interne Links jetzt final zeigen, ist das kein primaeres Canonical-Signal mehr.
+
+---
+
+## 2026-05-22 - Codex Handoff: PR #70 abgeschlossen + NEA-234 Research
+
+### Next 16 Web Upgrade
+
+- PR `#70` wurde nach CI-Gruenphase und CodeRabbit `SUCCESS` gemerged.
+- Merge Commit: `2d9faac665fc400a5af811d8cc27e265fd387f90`
+- Ersetzt Dependabot:
+  - `#64` `eslint-config-next 14.2.35 -> 16.2.6` geschlossen
+  - `#69` `next 14.2.35 -> 16.2.6` war bereits geschlossen
+- CodeRabbit: keine actionable Findings; nur irrelevante Docstring-Coverage-Warnung.
+- CI: gruen.
+- Watcher `watch-pr-70-coderabbit` wurde geloescht.
+
+### CI-Fix Hinweis
+
+- Main-Fix vor Merge: `59c9d8c fix(ci): health module tests use prefix match instead of exact string`
+- Stilhinweis fuer spaeter: statt `any("MOD-01" in m for m in modules)` besser `any(m.startswith("MOD-01") for m in modules)`.
+- Kein Blocker, nur Cleanup-Qualitaet.
+
+### NEA-234 Research Zusammenfassung
+
+Codex-Empfehlung fuer V2:
+
+- **Nicht Full Helios als naechsten Bau.**
+- **Hybrid V2 bauen: Semaphore Identity/Membership Proof + bestehender Ed25519/HMAC Tier 1 + Arweave.**
+- Wichtig: Nicht nur aggregierte Resultate beweisen. Fuer echte Verifizierbarkeit braucht es ein public anonymized vote/proof bulletin board:
+  - `bill_id`
+  - vote/signal oder commitment
+  - Semaphore proof
+  - nullifier hash
+  - Merkle root
+  - verification metadata
+
+Empfohlener erster Bau:
+
+1. Kleine ADR fuer NEA-234 schreiben.
+2. Datenmodell fuer ZK commitments/root history/proof records entwerfen.
+3. Android Proof-of-Concept mit Mopro/SemaphoreReactNative auf S10 benchmarken.
+4. Erst danach `/api/v1/vote/zk` implementieren.
+
+Nicht jetzt bauen:
+
+- Custom ZK circuit
+- Custom trusted setup ceremony
+- Full Helios trustee/decryption workflow
+- Server-side proving
+- Expo-Go-only ZK integration erzwingen
+- Aggregate-only ZK ohne oeffentliche per-vote/proof Records
