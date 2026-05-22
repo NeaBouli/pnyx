@@ -1,5 +1,19 @@
 # Action Log
 
+## 2026-05-22 — NEA-249 Docs: Helios → Semaphore Hybrid
+
+- **index.html:** 2x Helios refs → "Semaphore ZK Proofs — προγραμματισμένο"
+- **roadmap.html:** "σε ανάπτυξη" → "προγραμματισμένο (εξαρτάται από mobile prover)"
+- **faq.html:** Helios/Semaphore Q&A → korrektes Semaphore-Modell + "Γιατί όχι Helios?"
+- **wiki/zk-voting.html:** NEUE Seite — Tier 1 (heute) vs Tier 2 (geplant), Trust Assumptions, Helios-Erklaerung
+- **sitemap.xml:** zk-voting.html hinzugefuegt (24 URLs)
+- **Wording:** Ueberall "Προγραμματισμένο" — nie "σε ανάπτυξη"
+- **Helios:** Nur in erklaerenden "Γιατί όχι Helios?" Abschnitten
+- **Commit:** `c591d28`
+- **Deployed:** Web rebuilt
+
+---
+
 ## 2026-05-22 — NEA-249 ADR Created
 
 - **ADR:** `docs/adr/NEA-249-zk-voting-v2-semaphore-hybrid.md`
