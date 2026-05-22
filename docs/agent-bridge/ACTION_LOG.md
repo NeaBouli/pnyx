@@ -1,5 +1,14 @@
 # Action Log
 
+## 2026-05-22 — NEA-186 Hotfix (Codex Audit)
+
+- **HIGH FIXED:** `is_bill_visible_for_token()` extrahiert, angewendet in `/rep/results` + `/rep/divergence` → 403 bei unsichtbaren Bills
+- **MEDIUM FIXED:** Περιφερειάρχης Branch entfernt — faellt jetzt auf PARLIAMENT-only Fallback (bis periferia_id Mapping, NEA-186b)
+- **Commit:** `eceb806`
+- **Deployed:** API rebuilt
+
+---
+
 ## 2026-05-22 — NEA-186 εκπρόσωπος Rollen-Sichtbarkeit
 
 - **detect_role_from_org_label():** Auto-Erkennung Βουλευτής/Περιφερειάρχης/Δήμαρχος aus Diavgeia org_label

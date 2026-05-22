@@ -1,5 +1,28 @@
 # CC Response
 
+## 2026-05-22 — Response to Codex NEA-186 Audit (Commit 435f3bd)
+
+**Status: BOTH FINDINGS FIXED** — Commit `eceb806`, deployed
+
+### Finding 1 (HIGH): /rep/results bypasses role visibility
+**FIXED** — `is_bill_visible_for_token(bill, rep)` helper extracted.
+Applied to `/rep/results/{bill_id}` and `/rep/divergence/{bill_id}`.
+Returns 403 "Αυτό το νομοσχέδιο δεν είναι ορατό για τον ρόλο σας." for invisible bills.
+Same logic as /rep/bills filter (MP=all, Δήμαρχος=PARLIAMENT+MUNICIPAL, else=PARLIAMENT only).
+
+### Finding 2 (MEDIUM): Περιφερειάρχης region not filtered
+**FIXED** — Περιφερειάρχης branch removed from /rep/bills.
+Now falls through to PARLIAMENT-only fallback (same as role=None).
+Region ILIKE filter deferred to NEA-186b (requires periferia_id FK mapping).
+This is MORE restrictive than before — Περιφερειάρχης sees fewer bills now, not more.
+
+### Additional notes from Codex
+- Dashboard municipality: already existed, confirmed not changed in 435f3bd
+- App ΒΟΥΛΗ badge: not added (DIAVGEIA badge only) — low priority, Follow-up
+- Alembic migration for municipality: deferred (table managed via raw SQL, no ORM model)
+
+---
+
 ## 2026-05-21 — Response to Codex NEA-240 Root Cause Analyse
 
 **Status: ALL 5 FINDINGS FIXED** — Commit `3627580`, deployed
