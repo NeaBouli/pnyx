@@ -2,6 +2,45 @@
 
 Datum: 2026-05-23
 Agent: Codex
+Scope: Final-Recheck Audit-B-Fixes NEA-252 bis NEA-255, read-only Produktcode. Keine Produktcode-Aenderungen durch Codex.
+
+## Audit B Security Fixes Batch 2 — ACCEPTED
+
+### NEA-252: Municipal vote without Ed25519 signature — RESOLVED in `1bc3b39`
+
+Severity: HIGH
+
+`POST /municipal/vote` verlangt jetzt `signature_hex` in `DecisionVoteRequest`. Der kanonische Payload ist `municipal:{ada}:{VOTE}:{nullifier_hash}`. Die API laedt die Identity ueber `nullifier_hash`, prueft `verify_signature(identity.public_key_hex, payload, req.signature_hex)` vor Duplikat-Check und DB-Write, gibt bei ungueltiger Signatur 401 und bei fehlender Signatur Pydantic 422 zurueck. Kein aktiver Mobile/Web-Caller gefunden. Finding geschlossen.
+
+### NEA-253: Relevance signal without signature — RESOLVED in `4ce07e6`
+
+Severity: MEDIUM
+
+`RelevanceRequest` verlangt jetzt `signature_hex`. Der kanonische Payload ist `relevance:{bill_id}:{signal}:{nullifier_hash}`. Die API verifiziert die Ed25519-Signatur vor dem Upsert. Ungueltige Signatur fuehrt zu 401, fehlende Signatur zu 422. Der aktive Web-Caller `RelevanceButtons.tsx` signiert jetzt via `signPayload()`. Mobile nutzt diesen Endpoint nicht direkt. Finding geschlossen.
+
+### NEA-254: Receipt/personal compass used nullifier as bearer secret — RESOLVED in `73952cc`
+
+Severity: MEDIUM
+
+Die alten GET-Endpunkte fuer Receipt und `compass/personal` geben jetzt 410 deprecated zurueck. Neue signed POST-Endpunkte verwenden `receipt:{bill_id}:{nullifier_hash}` bzw. `compass_personal:{nullifier_hash}` als Payload und pruefen Ed25519 vor Rueckgabe persoenlicher Daten. Receipt gibt keinen vollen `nullifier_hash` mehr zurueck, sondern nur `nullifier_prefix`. Keine aktiven Mobile/Web-Caller gefunden. Finding geschlossen.
+
+### NEA-255: Finance admin detail endpoints lacked admin auth — RESOLVED in `1ff0394`
+
+Severity: MEDIUM
+
+`/payments/admin/finance/server`, `/payments/admin/finance/btc` und `/payments/admin/finance/ltc` sind jetzt mit `verify_admin_key` geschuetzt. Public/community-safe Endpunkte (`/payments/status`, `/payments/public/finance`) bleiben unveraendert. Dashboard nutzt diese drei Detail-Endpunkte nicht, daher war kein Caller-Update noetig. Finding geschlossen.
+
+Restliche Audit-B-Items:
+
+- Alembic history cannot reproduce production schema: offen, separater Schema-Baseline/ADR-Task.
+- Security-audit CI soft-fails dependency audits: offen.
+- Public API key generation lacks explicit endpoint-level rate limit: LOW, offen.
+- README/CLAUDE.md stale: INFO, offen.
+
+---
+
+Datum: 2026-05-23
+Agent: Codex
 Scope: Final-Recheck NEA-251 Commit `272f73a`, read-only Produktcode. Keine Produktcode-Aenderungen durch Codex.
 
 ## NEA-251 Finding: Discourse SSO callback lacked private-key possession proof — RESOLVED in `272f73a`

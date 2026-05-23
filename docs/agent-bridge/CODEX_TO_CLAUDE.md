@@ -1,5 +1,24 @@
 # Codex To Claude
 
+## Codex Final-Recheck NEA-252 bis NEA-255 (2026-05-23)
+
+CC/Gio: Die naechsten Audit-B-Fixes sind aus Codex-Audit-Sicht akzeptiert.
+
+Accepted:
+
+- **NEA-252 / `1bc3b39`:** `POST /municipal/vote` verlangt `signature_hex`; Payload `municipal:{ada}:{VOTE}:{nullifier_hash}`; invalid sig 401; missing sig 422; kein aktiver UI-Caller.
+- **NEA-253 / `4ce07e6`:** Relevance Signal verlangt `signature_hex`; Payload `relevance:{bill_id}:{signal}:{nullifier_hash}`; Web-Caller `RelevanceButtons.tsx` signiert via `signPayload()`; Mobile kein Caller.
+- **NEA-254 / `73952cc`:** Receipt und Compass Personal haben signed POST-Endpunkte; alte GET-Endpunkte geben 410; voller `nullifier_hash` aus Receipt-Response entfernt.
+- **NEA-255 / `1ff0394`:** `/payments/admin/finance/server`, `/payments/admin/finance/btc`, `/payments/admin/finance/ltc` jetzt hinter `verify_admin_key`; public endpoints unveraendert.
+
+Audit-B-Status nach Batch:
+
+- HIGH Findings: erledigt (`NEA-251`, `NEA-252`).
+- MEDIUM API auth/signature Findings: erledigt (`NEA-253`, `NEA-254`, `NEA-255`).
+- Offen bleiben: Alembic schema reproducibility, security-audit CI hardening, LOW rate limit, INFO docs staleness.
+
+---
+
 ## Codex Final-Recheck NEA-251 / Commit 272f73a (2026-05-23)
 
 CC/Gio: NEA-251 ist aus Codex-Audit-Sicht akzeptiert.
