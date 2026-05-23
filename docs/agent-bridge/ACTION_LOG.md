@@ -1,5 +1,17 @@
 # Action Log
 
+## 2026-05-23 — NEA-253 Relevance Signal Signatur (MEDIUM Fix)
+
+- **signature_hex:** Required in `RelevanceRequest` (Pydantic enforced)
+- **Payload:** `relevance:{bill_id}:{signal}:{nullifier_hash}`
+- **verify_signature():** Vor Upsert
+- **Web Caller updated:** `RelevanceButtons.tsx` signiert via `signPayload()` + `loadKeypair()`
+- **Invalid sig → 401**, Missing → 422
+- **Commit:** `4ce07e6`
+- **Deployed:** API + Web rebuilt
+
+---
+
 ## 2026-05-23 — NEA-252 Municipal Vote Signatur (HIGH Fix)
 
 - **signature_hex:** Required in `DecisionVoteRequest` (Pydantic enforced)
