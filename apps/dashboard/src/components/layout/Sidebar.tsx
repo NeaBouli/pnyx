@@ -40,6 +40,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/logs', module: 'logs', label: 'Αρχεία καταγρ.', icon: '📋' },
       { href: '/embed', module: 'embed', label: 'Embed Κώδικας', icon: '🔗' },
       { href: '/monitor', module: 'monitor', label: 'Monitor', icon: '🛡️' },
+      { href: '/newsletter-admin', module: 'newsletter-admin', label: 'Newsletter', icon: '📧' },
     ],
   },
   {
