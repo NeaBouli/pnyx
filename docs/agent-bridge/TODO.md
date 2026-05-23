@@ -1,15 +1,31 @@
 # TODO — Ekklesia.gr / pnyx
 
 ## Aktiv / In Progress
-- [ ] NEA-72: Hermes Phase 1 — qwen2.5:14b installiert, Architektur TBD
-- [ ] NEA-189b: Region-Locking fuer Evaluation (Buerger Region = Politiker Region)
-- [ ] NEA-186b: Periferiarxis periferia_id mapping (region filter)
-- [ ] NEA-243: Discourse Update (pnyx.ekklesia.gr)
+- [ ] NEA-258: FORUM_SSO_SALT Startup-Check (LOW follow-up)
+- [ ] README/CLAUDE.md Aktualisierung (INFO — stale Next 14, CX33, 22 Module)
 - [ ] AAB vC27 Upload zu Play Console (`~/Desktop/ekklesia-v1.3.2-vC27-PLAY.aab` BEREIT)
 
 ## Blocked
 - [ ] NEA-249: ZK Voting V2 — BLOCKED (mobile prover unresolved, ADR geschrieben)
 - [ ] NEA-249 Follow-up: Mopro native Expo Module feasibility plan
+
+## Done (Session 23.05.2026)
+- [x] NEA-251: Discourse SSO callback signed (HIGH) — `272f73a`
+- [x] NEA-252: Municipal vote Ed25519 signature (HIGH) — `1bc3b39`
+- [x] NEA-253: Relevance signal Ed25519 signature (MEDIUM) — `4ce07e6`
+- [x] NEA-254: Receipt + Compass signed POST, GET deprecated (MEDIUM) — `73952cc`
+- [x] NEA-255: Finance endpoints admin auth (MEDIUM) — `1ff0394`
+- [x] NEA-242: Audit log (3 commits + 2 Codex rechecks + HOTFIX metadata reserved)
+- [x] NEA-243: Discourse update 2026.5.0-latest.1 (CVE-2026-42945)
+- [x] NEA-186b: periferia_id FK mapping + invite pipeline
+- [x] NEA-250: Evaluation region-locking
+- [x] NEA-249: ADR + Phase 0 STOP + Docs Helios→Semaphore
+- [x] PR #70: Next.js 16 merged + #64/#69 closed
+- [x] CI fix: health module tests prefix match
+- [x] HOTFIX: API crash loop (AuditLog metadata reserved)
+- [x] HOTFIX: Monitor DNS internal URL
+- [x] Audit A: Website (31 pages, all 200 OK)
+- [x] Audit B: Code Security (7 findings, all resolved)
 
 ## Done (Session 22.05.2026)
 - [x] NEA-249: ADR geschrieben — Semaphore Hybrid V2, blocked (mobile prover)

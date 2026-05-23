@@ -13,7 +13,7 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `8c50c13` (audit(A): website navigation content live-checks)
+- **HEAD:** `1ff0394` (fix(NEA-255): finance admin auth)
 - **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`, `pre-politikoi-20260521`
 - **Rollback:** `pre-politikoi-20260521` → `49e24ba`
 - **Remote:** synchron mit GitHub

@@ -1,5 +1,16 @@
 # Action Log
 
+## 2026-05-23 — NEA-255 Finance Endpoints Admin Auth (MEDIUM Fix)
+
+- **3 Endpoints:** `/admin/finance/server`, `/admin/finance/btc`, `/admin/finance/ltc` → `Depends(verify_admin_key)`
+- **Public unaffected:** `/payments/status`, `/payments/public/finance`
+- **Dashboard unaffected:** nutzt nur `/admin/finance/overview` (war bereits geschuetzt)
+- **Commit:** `1ff0394`
+- **Deployed:** API rebuilt
+- **Codex Status:** accepted
+
+---
+
 ## 2026-05-23 — NEA-254 Receipt + Compass Signed POST (MEDIUM Fix)
 
 - **GET receipt:** → 410 deprecated
@@ -10,6 +21,7 @@
 - **No active callers** in mobile or web
 - **Commit:** `73952cc`
 - **Deployed:** API rebuilt
+- **Codex Status:** accepted
 
 ---
 
@@ -22,6 +34,7 @@
 - **Invalid sig → 401**, Missing → 422
 - **Commit:** `4ce07e6`
 - **Deployed:** API + Web rebuilt
+- **Codex Status:** accepted
 
 ---
 
@@ -35,6 +48,7 @@
 - **Kein aktiver UI-Caller:** API-only Fix
 - **Commit:** `1bc3b39`
 - **Deployed:** API rebuilt
+- **Codex Status:** accepted
 
 ---
 
