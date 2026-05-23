@@ -47,13 +47,14 @@ class EvaluateRequest(BaseModel):
 async def _get_enabled_politician(ada_number: str, db: AsyncSession) -> dict:
     """Fetch politician with evaluation_enabled=TRUE or raise 404."""
     result = await db.execute(text(
-        "SELECT ada_number, role, region, org_label, evaluation_enabled "
+        "SELECT ada_number, role, region, org_label, evaluation_enabled, periferia_id, dimos_id "
         "FROM representative_tokens WHERE ada_number = :ada"
     ), {"ada": ada_number})
     row = result.fetchone()
     if not row or not row[4]:
         raise HTTPException(404, "Ο εκπρόσωπος δεν βρέθηκε ή δεν έχει ενεργοποιήσει την αξιολόγηση.")
-    return {"ada_number": row[0], "role": row[1], "region": row[2], "org_label": row[3]}
+    return {"ada_number": row[0], "role": row[1], "region": row[2], "org_label": row[3],
+            "periferia_id": row[5], "dimos_id": row[6]}
 
 
 # ─── Endpoints ───────────────────────────────────────────────────────────────
@@ -160,6 +161,23 @@ async def evaluate_politician(
     )).scalar_one_or_none()
     if not identity:
         raise HTTPException(403, "Μη επαληθευμένος πολίτης.")
+
+    # 2b. Region-Lock: citizen must have verified region + match politician's region
+    if not getattr(identity, "region_locked", False):
+        raise HTTPException(403, "Απαιτείται επαλήθευση περιοχής πριν την αξιολόγηση.")
+
+    pol_role = politician.get("role", "")
+    pol_periferia = politician.get("periferia_id")
+    pol_dimos = politician.get("dimos_id")
+
+    if pol_role in ("Βουλευτής", "Περιφερειάρχης"):
+        if pol_periferia is None or identity.periferia_id != pol_periferia:
+            raise HTTPException(403, "Δεν έχετε δικαίωμα αξιολόγησης αυτού του εκπροσώπου (διαφορετική περιφέρεια).")
+    elif pol_role in ("Δήμαρχος", "Δημοτικός Σύμβουλος"):
+        if pol_dimos is None or identity.dimos_id != pol_dimos:
+            raise HTTPException(403, "Δεν έχετε δικαίωμα αξιολόγησης αυτού του εκπροσώπου (διαφορετικός δήμος).")
+    else:
+        raise HTTPException(403, "Δεν έχετε δικαίωμα αξιολόγησης αυτού του εκπροσώπου.")
 
     # 3. Verify Ed25519 signature
     # Payload: "evaluate:{ada_number}:{nullifier_hash}"
