@@ -576,25 +576,43 @@ async def vote_relevance(
 # ─── VoteReceipt (ADR-008 stub) ─────────────────────────────────────────────
 
 @router.get("/{bill_id}/receipt")
-async def get_vote_receipt(
+async def get_vote_receipt_deprecated(bill_id: str):
+    """DEPRECATED: Use POST /{bill_id}/receipt with signed body."""
+    raise HTTPException(status_code=410, detail="Endpoint deprecated. Use POST with signature_hex.")
+
+
+class ReceiptRequest(BaseModel):
+    nullifier_hash: str = Field(..., min_length=16, max_length=64)
+    signature_hex: str = Field(..., min_length=64, description="Ed25519: receipt:{bill_id}:{nullifier_hash}")
+
+
+@router.post("/{bill_id}/receipt")
+async def post_vote_receipt(
     bill_id: str,
-    x_nullifier: str = Header(..., alias="X-Nullifier"),
+    req: ReceiptRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    ADR-008: VoteReceipt — server-signed proof that a vote was recorded.
+    """ADR-008: VoteReceipt — requires Ed25519 signature proof."""
+    identity = (await db.execute(
+        select(IdentityRecord).where(
+            IdentityRecord.nullifier_hash == req.nullifier_hash,
+            IdentityRecord.status == KeyStatus.ACTIVE,
+        )
+    )).scalar_one_or_none()
+    if not identity:
+        raise HTTPException(status_code=404, detail="Identity not found.")
 
-    Stub implementation using HMAC-SHA256 chain_proof.
-    Full Tier-1 receipt (Ed25519 server signature) deferred
-    pending mobile schema migration (ADR-022).
-    """
-    result = await db.execute(
+    # Verify Ed25519 signature: "receipt:{bill_id}:{nullifier_hash}"
+    payload = f"receipt:{bill_id}:{req.nullifier_hash}"
+    if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
+        raise HTTPException(status_code=401, detail="Μη έγκυρη υπογραφή.")
+
+    vote = (await db.execute(
         select(CitizenVote).where(
-            CitizenVote.nullifier_hash == x_nullifier,
+            CitizenVote.nullifier_hash == req.nullifier_hash,
             CitizenVote.bill_id == bill_id,
         )
-    )
-    vote = result.scalar_one_or_none()
+    )).scalar_one_or_none()
     if not vote:
         raise HTTPException(status_code=404, detail="Δεν βρέθηκε ψήφος.")
 
@@ -602,18 +620,17 @@ async def get_vote_receipt(
     salt = os.environ.get("SERVER_SALT", "")
     chain_proof = hmac.new(
         salt.encode(),
-        f"{bill_id}:{x_nullifier}:{ts}".encode(),
+        f"{bill_id}:{req.nullifier_hash}:{ts}".encode(),
         hashlib.sha256,
     ).hexdigest()
 
     return {
         "bill_id": bill_id,
-        "nullifier_hash": x_nullifier,
+        "nullifier_prefix": req.nullifier_hash[:8] + "...",
         "vote": vote.vote.value,
         "timestamp": ts,
         "chain_proof": chain_proof,
         "status": "confirmed",
-        "note": "Tier-1 full receipt pending mobile schema migration (ADR-022)",
     }
 
 
@@ -708,27 +725,50 @@ async def submit_consensus(
 
 
 @router.get("/compass/personal")
-async def get_personal_compass(
-    x_nullifier: str = Header(..., alias="X-Nullifier"),
+async def get_personal_compass_deprecated():
+    """DEPRECATED: Use POST /compass/personal with signed body."""
+    raise HTTPException(status_code=410, detail="Endpoint deprecated. Use POST with signature_hex.")
+
+
+class CompassRequest(BaseModel):
+    nullifier_hash: str = Field(..., min_length=16, max_length=64)
+    signature_hex: str = Field(..., min_length=64, description="Ed25519: compass_personal:{nullifier_hash}")
+
+
+@router.post("/compass/personal")
+async def post_personal_compass(
+    req: CompassRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Personal compass position including consensus adjustments."""
+    """Personal compass position — requires Ed25519 signature proof."""
     from sqlalchemy import text
 
-    # Get cplm_history for this user
+    identity = (await db.execute(
+        select(IdentityRecord).where(
+            IdentityRecord.nullifier_hash == req.nullifier_hash,
+            IdentityRecord.status == KeyStatus.ACTIVE,
+        )
+    )).scalar_one_or_none()
+    if not identity:
+        raise HTTPException(status_code=404, detail="Identity not found.")
+
+    # Verify Ed25519 signature: "compass_personal:{nullifier_hash}"
+    payload = f"compass_personal:{req.nullifier_hash}"
+    if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
+        raise HTTPException(status_code=401, detail="Μη έγκυρη υπογραφή.")
+
     history = await db.execute(text("""
         SELECT economic_score, social_score, trigger_type, trigger_bill_id, created_at
         FROM cplm_history WHERE nullifier_hash = :nh ORDER BY created_at DESC LIMIT 50
-    """), {"nh": x_nullifier})
+    """), {"nh": req.nullifier_hash})
     entries = [{"economic": r[0], "social": r[1], "type": r[2], "bill_id": r[3],
                 "date": r[4].isoformat() if r[4] else None} for r in history]
 
-    # Compute cumulative position
     x = sum(e["economic"] for e in entries)
     y = sum(e["social"] for e in entries)
 
     return {
-        "nullifier_hash": x_nullifier[:8] + "...",
+        "nullifier_prefix": req.nullifier_hash[:8] + "...",
         "position": {"x": round(x, 4), "y": round(y, 4)},
         "history": entries,
         "total_entries": len(entries),
