@@ -38,39 +38,38 @@ jobs:
             echo "has_npm=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: npm audit
-        if: steps.check-npm.outputs.has_npm == 'true'
-        run: npm audit --audit-level=high || true
-
-      - name: Check for Cargo.toml
-        id: check-cargo
+      - name: npm audit (all workspaces)
         run: |
-          if [ -f Cargo.toml ] || find . -maxdepth 3 -name "Cargo.toml" -print -quit | grep -q .; then
-            echo "has_cargo=true" >> $GITHUB_OUTPUT
+          failed=0
+          for dir in . apps/web apps/dashboard apps/mobile apps/representative; do
+            if [ -f "$dir/package-lock.json" ]; then
+              echo "=== npm audit: $dir ==="
+              cd "$dir"
+              npm audit --audit-level=high || failed=1
+              cd "$GITHUB_WORKSPACE"
+            fi
+          done
+          exit $failed
+
+      - name: cargo audit (informational — no Rust workspace in pnyx)
+        run: |
+          # Soft-fail: pnyx has no Rust code. Cargo audit runs only if Cargo.toml found.
+          if find . -maxdepth 3 -name "Cargo.toml" -print -quit | grep -q .; then
+            cargo install cargo-audit 2>/dev/null || true
+            cargo audit || echo "::warning::cargo audit found issues (informational)"
           else
-            echo "has_cargo=false" >> $GITHUB_OUTPUT
+            echo "No Cargo.toml found — skipping"
           fi
 
-      - name: cargo audit
-        if: steps.check-cargo.outputs.has_cargo == 'true'
+      - name: pip audit (all requirements.txt)
         run: |
-          cargo install cargo-audit 2>/dev/null || true
-          cargo audit || true
-
-      - name: Check for requirements.txt
-        id: check-pip
-        run: |
-          if [ -f requirements.txt ] || find . -maxdepth 3 -name "requirements.txt" -print -quit | grep -q .; then
-            echo "has_pip=true" >> $GITHUB_OUTPUT
-          else
-            echo "has_pip=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: pip audit
-        if: steps.check-pip.outputs.has_pip == 'true'
-        run: |
-          pip install pip-audit 2>/dev/null || true
-          find . -maxdepth 3 -name "requirements.txt" -exec pip-audit -r {} \; || true
+          pip install pip-audit
+          failed=0
+          find . -maxdepth 3 -name "requirements.txt" -print | while read req; do
+            echo "=== pip-audit: $req ==="
+            pip-audit -r "$req" || failed=1
+          done
+          exit $failed
 
   security-summary:
     name: Security Summary
