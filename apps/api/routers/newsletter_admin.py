@@ -1,15 +1,18 @@
 """
 Newsletter Admin — Brevo Campaign Draft/Preview/Send
 Admin-only. No subscriber emails returned.
+NEA-263: Cross-publish to Telegram after successful send.
 """
 import re
 import os
+import html
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from dependencies import verify_admin_key
+from services.telegram_community import _send as tg_send, TOPICS
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/admin/newsletter", tags=["Admin Newsletter"])
@@ -20,12 +23,12 @@ SENDER = {"name": "εκκλησία", "email": "newsletter@ekklesia.gr"}
 LIST_ID = int(os.getenv("BREVO_LIST_ID", "2"))
 
 
-def _sanitize_html(html: str) -> str:
+def _sanitize_html(raw: str) -> str:
     """Minimal sanitization — strip script tags, event handlers, javascript: URLs."""
-    html = re.sub(r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE)
-    html = re.sub(r"\bon\w+\s*=\s*[\"'][^\"']*[\"']", "", html, flags=re.IGNORECASE)
-    html = re.sub(r"javascript:", "", html, flags=re.IGNORECASE)
-    return html
+    raw = re.sub(r"<script[^>]*>.*?</script>", "", raw, flags=re.DOTALL | re.IGNORECASE)
+    raw = re.sub(r"\bon\w+\s*=\s*[\"'][^\"']*[\"']", "", raw, flags=re.IGNORECASE)
+    raw = re.sub(r"javascript:", "", raw, flags=re.IGNORECASE)
+    return raw
 
 
 async def _brevo_request(method: str, endpoint: str, data: dict = None) -> dict:
@@ -141,15 +144,41 @@ async def newsletter_create_draft(req: DraftRequest, _auth: bool = Depends(verif
 
 @router.post("/send")
 async def newsletter_send(req: SendRequest, _auth: bool = Depends(verify_admin_key)):
-    """Send a drafted campaign — requires confirm=true."""
+    """Send a drafted campaign — requires confirm=true. Cross-publishes to Telegram (non-blocking)."""
     if not req.confirm:
         raise HTTPException(400, "Bestätigung erforderlich: confirm=true")
 
+    # Fetch campaign subject from Brevo (source of truth, not frontend)
+    subject = "Newsletter ekklesia.gr"
+    try:
+        campaign = await _brevo_request("GET", f"emailCampaigns/{req.campaign_id}")
+        subject = campaign.get("subject") or campaign.get("name") or subject
+    except Exception as e:
+        logger.warning("[NEWSLETTER] Could not fetch campaign %d details: %s", req.campaign_id, e)
+
     await _brevo_request("POST", f"emailCampaigns/{req.campaign_id}/sendNow", {})
     logger.info("[NEWSLETTER] Campaign %d sent", req.campaign_id)
+
+    # NEA-263: Cross-publish to Telegram (non-blocking)
+    tg_sent = False
+    try:
+        safe_subject = html.escape(subject)
+        tg_msg = (
+            f"<b>📧 Νέο Newsletter</b>\n\n"
+            f"{safe_subject}\n\n"
+            f"👉 <a href=\"https://ekklesia.gr\">ekklesia.gr</a>"
+        )
+        tg_sent = await tg_send(tg_msg, group_thread_id=TOPICS["platform"])
+        if tg_sent:
+            logger.info("[NEWSLETTER] Telegram cross-publish OK for campaign %d", req.campaign_id)
+        else:
+            logger.warning("[NEWSLETTER] Telegram cross-publish failed for campaign %d", req.campaign_id)
+    except Exception as e:
+        logger.warning("[NEWSLETTER] Telegram error (non-blocking): %s", e)
 
     return {
         "campaign_id": req.campaign_id,
         "status": "sent",
         "message": "Newsletter wurde gesendet.",
+        "telegram_sent": tg_sent,
     }

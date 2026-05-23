@@ -97,7 +97,9 @@ export default function NewsletterAdminPage() {
         body: JSON.stringify({ campaign_id: draftId, confirm: true }),
       })
       if (r.ok) {
-        setSuccess('Newsletter gesendet!')
+        const data = await r.json().catch(() => ({}))
+        const tgStatus = data.telegram_sent ? ' · Telegram ✓' : ' · Telegram ✗'
+        setSuccess(`Newsletter gesendet!${tgStatus}`)
         setDraftId(null)
         setSubject('')
         setHtmlContent('')
