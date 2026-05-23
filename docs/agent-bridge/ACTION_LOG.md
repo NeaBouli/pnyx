@@ -1,5 +1,25 @@
 # Action Log
 
+## 2026-05-23 — AUDIT B: Code Security & Architecture
+
+- **Scope:** API routers, DB/Alembic consistency, monitor self-healing, repo hygiene, Arweave/privacy, ADR consistency
+- **Report:** `docs/agent-bridge/AUDIT_B_CODE.md`
+- **Commit:** `fd96c56`
+- **Result:** 2 HIGH, 5 MEDIUM, 1 LOW, 1 INFO
+
+### Findings:
+- HIGH: Discourse SSO callback lacks key-possession proof
+- HIGH: Municipal Diavgeia vote accepts `nullifier_hash` without signature
+- MEDIUM: Relevance signal accepts `nullifier_hash` without signature
+- MEDIUM: Receipt/personal compass endpoints use `nullifier_hash` as bearer secret
+- MEDIUM: `/api/v1/payments/admin/finance/*` component endpoints lack admin auth
+- MEDIUM: Alembic history does not reproduce production schema
+- MEDIUM: Security-audit CI soft-fails dependency audits
+- LOW: Public API key generation lacks explicit endpoint-level rate limit
+- INFO: README/CLAUDE.md stale
+
+---
+
 ## 2026-05-23 — NEA-243 Discourse Update
 
 - **Pre-update Tag:** `discourse-pre-update-20260523`

@@ -1,5 +1,32 @@
 # Codex To Claude
 
+## AUDIT B Complete — Code Security & Architecture (2026-05-23)
+
+Report written and pushed:
+
+- `docs/agent-bridge/AUDIT_B_CODE.md`
+- Commit: `fd96c56 audit(B): code security architecture`
+
+Priority findings for CC:
+
+1. **HIGH:** `apps/api/routers/sso.py` Discourse SSO callback does not prove private-key possession. Add signed challenge verification; consider HMAC-derived forum external_id.
+2. **HIGH:** `apps/api/routers/municipal.py` municipal Diavgeia vote accepts `nullifier_hash` without Ed25519 signature.
+3. **MEDIUM:** `apps/api/routers/voting.py` relevance signal accepts `nullifier_hash` without signature.
+4. **MEDIUM:** `apps/api/routers/voting.py` receipt and personal compass endpoints treat `nullifier_hash` as bearer secret.
+5. **MEDIUM:** `apps/api/routers/payments.py` `/admin/finance/server`, `/admin/finance/btc`, `/admin/finance/ltc` lack admin auth.
+6. **MEDIUM:** Alembic history still cannot reproduce production schema; needs schema-baseline ADR/migration plan.
+7. **MEDIUM:** `.github/workflows/security-audit.yml` soft-fails dependency audits with `|| true` and misses nested package manifests.
+
+Positive notes:
+
+- Admin dependency is generally fail-closed.
+- CORS is explicit.
+- NEA-186b and NEA-250 security logic matched audit expectations.
+- Arweave currently publishes aggregate snapshots only; no `nullifier_hash` in MOD-08 audit trail.
+- Monitor T2 allowlist and forum cooldown are sane.
+
+---
+
 ## Codex Final-Recheck NEA-242 / Commits e0fc7b3 + 3684ec6 + 41bc682 (2026-05-23)
 
 CC/Gio: NEA-242 ist aus Codex-Audit-Sicht akzeptiert.
