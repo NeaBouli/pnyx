@@ -422,7 +422,7 @@ HETZNER_MONTHLY = float(os.getenv("HETZNER_MONTHLY_COST", "15.00"))
 
 
 @router.get("/admin/finance/server")
-async def server_costs():
+async def server_costs(_auth: bool = Depends(verify_admin_key)):
     """Hetzner Server Kosten — echte Daten via API (1h Redis cache)."""
     r = await _get_redis()
     cached = await r.get("finance:hetzner:cache")
@@ -475,7 +475,7 @@ async def server_costs():
 
 
 @router.get("/admin/finance/btc")
-async def btc_balance():
+async def btc_balance(_auth: bool = Depends(verify_admin_key)):
     """BTC Wallet Balance via Blockstream API (30min Redis cache)."""
     r = await _get_redis()
     cached = await r.get("finance:btc:cache")
@@ -501,7 +501,7 @@ async def btc_balance():
 
 
 @router.get("/admin/finance/ltc")
-async def ltc_balance():
+async def ltc_balance(_auth: bool = Depends(verify_admin_key)):
     """LTC Wallet Balance via Blockcypher API (30min Redis cache)."""
     r = await _get_redis()
     cached = await r.get("finance:ltc:cache")
