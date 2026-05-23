@@ -1,5 +1,18 @@
 # Action Log
 
+## 2026-05-23 — NEA-254 Receipt + Compass Signed POST (MEDIUM Fix)
+
+- **GET receipt:** → 410 deprecated
+- **POST receipt:** Ed25519 sig `receipt:{bill_id}:{nullifier_hash}`, response returns `nullifier_prefix` only
+- **GET compass/personal:** → 410 deprecated
+- **POST compass/personal:** Ed25519 sig `compass_personal:{nullifier_hash}`, response `nullifier_prefix` only
+- **Full nullifier removed** from all responses
+- **No active callers** in mobile or web
+- **Commit:** `73952cc`
+- **Deployed:** API rebuilt
+
+---
+
 ## 2026-05-23 — NEA-253 Relevance Signal Signatur (MEDIUM Fix)
 
 - **signature_hex:** Required in `RelevanceRequest` (Pydantic enforced)
