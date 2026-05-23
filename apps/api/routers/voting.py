@@ -116,6 +116,7 @@ class BillResults(BaseModel):
 class RelevanceRequest(BaseModel):
     nullifier_hash: str
     signal:         int  = Field(..., description="+1 wichtig / -1 unwichtig")
+    signature_hex:  str  = Field(..., description="Ed25519 Signatur: relevance:{bill_id}:{signal}:{nullifier_hash}")
 
 
 # ─── Divergence Score ─────────────────────────────────────────────────────────
@@ -539,8 +540,15 @@ async def vote_relevance(
             IdentityRecord.status == KeyStatus.ACTIVE
         )
     )
-    if not id_result.scalar_one_or_none():
+    identity = id_result.scalar_one_or_none()
+    if not identity:
         raise HTTPException(status_code=403, detail="Δεν έχετε επαληθευτεί.")
+
+    # Verify Ed25519 signature
+    # Canonical payload: "relevance:{bill_id}:{signal}:{nullifier_hash}"
+    payload = f"relevance:{bill_id}:{req.signal}:{req.nullifier_hash}"
+    if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
+        raise HTTPException(status_code=401, detail="Μη έγκυρη υπογραφή.")
 
     # Upsert Relevanz-Signal
     existing = await db.execute(

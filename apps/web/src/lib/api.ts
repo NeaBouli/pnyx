@@ -173,11 +173,13 @@ export const adminApi = {
 export async function voteRelevance(
   billId: string,
   signal: 1 | -1,
-  nullifierHash: string
+  nullifierHash: string,
+  signatureHex: string,
 ): Promise<{ success: boolean; message: string }> {
   const res = await api.post(`/api/v1/vote/${billId}/relevance`, {
     signal,
     nullifier_hash: nullifierHash,
+    signature_hex: signatureHex,
   });
   return res.data;
 }
