@@ -294,9 +294,15 @@
   authenticate(publicKeyHex);
 
   function authenticate(pubKeyHex) {
+    // Redirect to Next.js SSO-Verify which has Ed25519 signing capability
+    var nextUrl = 'https://ekklesia.gr/el/sso-verify?nonce=' +
+      encodeURIComponent(nonce) + '&return_url=' + encodeURIComponent(returnUrl);
+    window.location.href = nextUrl;
+    return;
+
+    // Legacy code below — kept for reference but never reached
     showState('verifying');
 
-    // Build POST body
     var body = JSON.stringify({
       nonce: nonce,
       public_key_hex: pubKeyHex

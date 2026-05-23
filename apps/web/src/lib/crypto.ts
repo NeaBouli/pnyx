@@ -88,6 +88,13 @@ export function buildVoteMessage(params: {
  * Sign a vote with Ed25519 private key.
  * Returns signature as hex string (128 chars = 64 bytes).
  */
+export function signPayload(privateKeyHex: string, payload: string): string {
+  const messageBytes = new TextEncoder().encode(payload);
+  const privateKey = hexToPrivateKey(privateKeyHex);
+  const signature = ed25519.sign(messageBytes, privateKey);
+  return bytesToHex(signature);
+}
+
 export function signVote(
   privateKeyHex: string,
   params: { bill_id: string; vote: string; nullifier_hash: string }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale } from "next-intl";
 import Link from "next/link";
+import { signPayload } from "@/lib/crypto";
 
 type State = "checking" | "nokey" | "verifying" | "success" | "error";
 
@@ -46,10 +47,17 @@ export default function SSOVerifyPage() {
   async function authenticate(pubKeyHex: string) {
     setState("verifying");
     try {
+      const privKey = localStorage.getItem(LOCALSTORAGE_KEY);
+      if (!privKey) { setState("nokey"); return; }
+
+      // Sign challenge to prove key possession
+      const challenge = `discourse_sso:${nonce}:${pubKeyHex}`;
+      const signatureHex = signPayload(privKey, challenge);
+
       const res = await fetch(`${API_URL}/api/v1/sso/discourse/callback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nonce, public_key_hex: pubKeyHex }),
+        body: JSON.stringify({ nonce, public_key_hex: pubKeyHex, signature_hex: signatureHex }),
       });
 
       if (res.ok) {

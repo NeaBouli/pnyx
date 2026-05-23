@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/sso", tags=["SSO"])
 
 DISCOURSE_SSO_SECRET = os.getenv("DISCOURSE_SSO_SECRET", "")
+FORUM_SSO_SALT = os.getenv("FORUM_SSO_SALT", os.getenv("SERVER_SALT", ""))
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 
 
@@ -78,21 +79,29 @@ async def discourse_sso_callback(
     request: Request,
     nonce: str = Query(None),
     public_key_hex: str = Query(None),
+    signature_hex: str = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
-    """Called after user confirms identity → build Discourse payload → redirect."""
+    """Called after user confirms identity → verify Ed25519 signature → build Discourse payload → redirect."""
+    from keypair import verify_signature
 
     # Accept both query params and JSON body
-    if not nonce or not public_key_hex:
+    if not nonce or not public_key_hex or not signature_hex:
         try:
             body = await request.json()
             nonce = nonce or body.get("nonce")
             public_key_hex = public_key_hex or body.get("public_key_hex")
+            signature_hex = signature_hex or body.get("signature_hex")
         except Exception:
             pass
 
-    if not nonce or not public_key_hex:
-        raise HTTPException(400, "Missing nonce or public_key_hex")
+    if not nonce or not public_key_hex or not signature_hex:
+        raise HTTPException(400, "Missing nonce, public_key_hex, or signature_hex")
+
+    # Verify Ed25519 proof-of-possession
+    challenge = f"discourse_sso:{nonce}:{public_key_hex}"
+    if not verify_signature(public_key_hex, challenge, signature_hex):
+        raise HTTPException(401, "Invalid signature — proof of key possession failed")
 
     r = await _redis()
     return_sso_url = await r.get(f"sso:discourse:{nonce}")
@@ -122,12 +131,16 @@ async def discourse_sso_callback(
         if periferia:
             periferia_name = periferia.name_el
 
-    # Build Discourse SSO payload
+    # Build Discourse SSO payload — external_id is HMAC, not raw nullifier
+    external_id = hmac.new(
+        FORUM_SSO_SALT.encode(), identity.nullifier_hash.encode(), hashlib.sha256
+    ).hexdigest()[:32]
+
     user_params = {
         "nonce": nonce,
-        "external_id": identity.nullifier_hash,
-        "username": f"citizen_{identity.nullifier_hash[:8]}",
-        "email": f"{identity.nullifier_hash[:16]}@noreply.ekklesia.gr",
+        "external_id": external_id,
+        "username": f"citizen_{external_id[:8]}",
+        "email": f"{external_id[:16]}@noreply.ekklesia.gr",
         "name": "Επαληθευμένος Πολίτης",
         "add_groups": "verified-citizens",
         "suppress_welcome_message": "true",
@@ -140,7 +153,7 @@ async def discourse_sso_callback(
     payload, sig = _build_payload(user_params)
     await r.delete(f"sso:discourse:{nonce}")
 
-    logger.info("SSO login: nullifier=%s... dimos=%s", identity.nullifier_hash[:8], dimos_name)
+    logger.info("SSO login: external_id=%s... dimos=%s", external_id[:8], dimos_name)
 
     redirect = f"{return_sso_url}?sso={urllib.parse.quote(payload)}&sig={sig}"
     return {"redirect_url": redirect}
