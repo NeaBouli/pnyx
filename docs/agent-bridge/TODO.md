@@ -15,6 +15,8 @@
 - [x] NEA-253: Relevance signal Ed25519 signature (MEDIUM) — `4ce07e6`
 - [x] NEA-254: Receipt + Compass signed POST, GET deprecated (MEDIUM) — `73952cc`
 - [x] NEA-255: Finance endpoints admin auth (MEDIUM) — `1ff0394`
+- [x] NEA-256: Alembic schema baseline ADR (docs only) — `217ee97`
+- [x] NEA-257: CI security audit hard-fail (MEDIUM) — `8ccf2ac`
 - [x] NEA-242: Audit log (3 commits + 2 Codex rechecks + HOTFIX metadata reserved)
 - [x] NEA-243: Discourse update 2026.5.0-latest.1 (CVE-2026-42945)
 - [x] NEA-186b: periferia_id FK mapping + invite pipeline

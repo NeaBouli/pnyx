@@ -1,5 +1,16 @@
 # Action Log
 
+## 2026-05-23 — NEA-257 CI Security Audit Hard-Fail (MEDIUM Fix)
+
+- **npm audit:** `|| true` entfernt, hard-fail bei high/critical
+- **npm scope:** Root + apps/web + apps/dashboard + apps/mobile + apps/representative
+- **pip-audit:** `|| true` entfernt, hard-fail
+- **cargo audit:** Bleibt soft (kein Rust in pnyx, dokumentiert als informational)
+- **YAML:** Validiert
+- **Commit:** `8ccf2ac`
+
+---
+
 ## 2026-05-23 — NEA-256 Alembic Schema Baseline ADR (Documentation Only)
 
 - **ADR:** `docs/adr/NEA-256-alembic-schema-baseline.md`
