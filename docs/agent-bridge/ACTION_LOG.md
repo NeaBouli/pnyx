@@ -1,5 +1,16 @@
 # Action Log
 
+## 2026-05-23 — NEA-260 Seamless Forum SSO ADR (Plan Only)
+
+- **ADR:** `docs/adr/NEA-260-seamless-forum-sso.md`
+- **Status:** Proposed — kein Code
+- **V1 empfohlen:** Browser-UX verbessern (In-App Browser, auto-SSO Discourse Config)
+- **V2 offen:** Server-initiated SSO braucht Discourse API Investigation
+- **V3 rejected:** Pre-Auth URL Bypass
+- **Kein Produktcode geaendert**
+
+---
+
 ## 2026-05-23 — NEA-258 LOW Fixes (Rate-Limit + Broken Link + OG + README)
 
 - **Rate-limit:** API key generation 5/hour per IP (Redis counter)
