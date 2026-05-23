@@ -11,6 +11,20 @@
 
 ---
 
+## 2026-05-23 — NEA-186b Περιφερειάρχης periferia_id Mapping
+
+- **DB:** `representative_tokens.periferia_id` + `dimos_id` FK Spalten hinzugefuegt
+- **_get_rep_token():** Laedt `periferia_id` + `dimos_id`
+- **is_bill_visible_for_token():** Περιφερειάρχης mit periferia_id sieht eigene REGIONAL Bills
+- **/rep/bills:** Deterministisches FK-Match `parliament_bills.periferia_id = token.periferia_id`
+- **Kein fuzzy Matching:** Kein ILIKE, kein String-Normalization
+- **Fallback:** Περιφερειάρχης ohne periferia_id → nur PARLIAMENT
+- **Verifiziert:** periferia_id=7 → 7 Bills (5 NATIONAL + 2 REGIONAL), ohne → 5 Bills (nur NATIONAL)
+- **Commit:** `a89f8c1`
+- **Deployed:** API rebuilt
+
+---
+
 ## 2026-05-23 — HOTFIX: API Crash Loop + Monitor DNS Fix
 
 - **Root Cause:** `AuditLog.metadata` ist reserviert in SQLAlchemy Declarative → `InvalidRequestError` → API Restart-Loop
