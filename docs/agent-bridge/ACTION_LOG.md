@@ -1,5 +1,18 @@
 # Action Log
 
+## 2026-05-23 — NEA-252 Municipal Vote Signatur (HIGH Fix)
+
+- **signature_hex:** Required in `DecisionVoteRequest` (Pydantic enforced)
+- **Payload:** `municipal:{ada}:{VOTE}:{nullifier_hash}`
+- **verify_signature():** Vor Duplikat-Check und DB-Write
+- **Invalid sig → 401**, Missing sig → Pydantic 422
+- **Identity not found → 404** (war 403)
+- **Kein aktiver UI-Caller:** API-only Fix
+- **Commit:** `1bc3b39`
+- **Deployed:** API rebuilt
+
+---
+
 ## 2026-05-23 — NEA-251 Discourse SSO Callback Signed (HIGH Fix)
 
 - **signature_hex:** Required param in POST /sso/discourse/callback
