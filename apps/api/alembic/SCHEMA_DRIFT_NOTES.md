@@ -69,3 +69,18 @@ Invalidates migration history integrity — not recommended for auditable system
 ---
 
 *Documented: 2026-04-25 | PR: feat/diavgeia-integration*
+
+---
+
+## NEA-256 Schema Baseline (2026-05-23)
+
+Full drift inventory and baseline plan documented in ADR:
+`docs/adr/NEA-256-alembic-schema-baseline.md`
+
+Additional drifts since original note:
+- `audit_log` table (NEA-242) — exists in prod + ORM, no migration
+- `identity_records.source` (NEA-242) — exists in prod + ORM, no migration
+- `representative_tokens.periferia_id/dimos_id/municipality` (NEA-186b) — exists in prod, no migration
+- `rep_invitations.periferia_id/dimos_id` (NEA-186b) — exists in prod, no migration
+
+**Status: ADR proposed. No production DB changes made.**

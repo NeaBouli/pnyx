@@ -1,5 +1,15 @@
 # Action Log
 
+## 2026-05-23 — NEA-256 Alembic Schema Baseline ADR (Documentation Only)
+
+- **ADR:** `docs/adr/NEA-256-alembic-schema-baseline.md`
+- **Status:** Proposed — kein DB-Change, kein Alembic-Run
+- **Drift:** 8 fehlende Spalten/Tabellen + 1 Type-Mismatch (decisions.id)
+- **Plan:** Schema Snapshot → Baseline Migration → Local Test → Clone Test → Stamp
+- **SCHEMA_DRIFT_NOTES.md:** aktualisiert mit NEA-256 Verweis
+
+---
+
 ## 2026-05-23 — NEA-255 Finance Endpoints Admin Auth (MEDIUM Fix)
 
 - **3 Endpoints:** `/admin/finance/server`, `/admin/finance/btc`, `/admin/finance/ltc` → `Depends(verify_admin_key)`
