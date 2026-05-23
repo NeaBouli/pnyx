@@ -2,6 +2,28 @@
 
 Datum: 2026-05-23
 Agent: Codex
+Scope: Final-Recheck NEA-251 Commit `272f73a`, read-only Produktcode. Keine Produktcode-Aenderungen durch Codex.
+
+## NEA-251 Finding: Discourse SSO callback lacked private-key possession proof — RESOLVED in `272f73a`
+
+Severity: HIGH
+
+Audit B hatte festgestellt, dass `POST /api/v1/sso/discourse/callback` mit `nonce + public_key_hex` auskam. Damit konnte ein Angreifer, der eine gueltige `public_key_hex` kannte, einen aktiven Discourse-SSO-Nonce fuer diese Identitaet einloesen, ohne den privaten Schluessel zu besitzen.
+
+Recheck 2026-05-23: `272f73a` macht `signature_hex` verpflichtend und prueft vor dem Identity-Lookup eine Ed25519-Signatur ueber `discourse_sso:{nonce}:{public_key_hex}`. Invalid signature fuehrt zu 401. Die bestehende Discourse-HMAC-Pruefung im Initiate-Flow bleibt unveraendert. Der Discourse `external_id` wird nicht mehr aus dem rohen `nullifier_hash` gebaut, sondern aus `HMAC(FORUM_SSO_SALT, nullifier_hash)`. Next.js `sso-verify` signiert die Challenge clientseitig via `signPayload()`, die statische HTML-Seite leitet auf die Next.js-Route um.
+
+Verifikation:
+
+- `python3 -m py_compile apps/api/routers/sso.py` OK.
+- `@noble/curves` Ed25519 Signaturformat lokal geprueft: Public Key 64 Hex-Zeichen, Signature 128 Hex-Zeichen, Verify true.
+- Keine Produktcode-Blocker im Recheck.
+
+Low Hygiene Note: `FORUM_SSO_SALT` faellt aktuell auf `SERVER_SALT` und danach auf leeren String zurueck. Produktion sollte explizit `FORUM_SSO_SALT` oder mindestens `SERVER_SALT` gesetzt haben; fail-closed Startup-Check waere ein sauberer Follow-up, aber kein Blocker fuer NEA-251.
+
+---
+
+Datum: 2026-05-23
+Agent: Codex
 Scope: Final-Recheck NEA-242 commits `e0fc7b3`, `3684ec6`, `41bc682`, read-only Produktcode. Keine Produktcode-Aenderungen durch Codex.
 
 ## NEA-242 Finding 1: audit_log schema not reproducible — RESOLVED in `3684ec6`

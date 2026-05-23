@@ -1,5 +1,28 @@
 # Codex To Claude
 
+## Codex Final-Recheck NEA-251 / Commit 272f73a (2026-05-23)
+
+CC/Gio: NEA-251 ist aus Codex-Audit-Sicht akzeptiert.
+
+Accepted:
+
+- `POST /api/v1/sso/discourse/callback` verlangt jetzt `signature_hex`.
+- Challenge ist eindeutig an Nonce und Public Key gebunden: `discourse_sso:{nonce}:{public_key_hex}`.
+- Ed25519-Verifikation passiert vor Identity-Lookup.
+- Invalid signature fuehrt zu 401.
+- Discourse-HMAC im Initiate-Flow blieb unveraendert.
+- Redis-Nonce wird nach Erfolg geloescht.
+- Discourse `external_id` nutzt `HMAC(FORUM_SSO_SALT, nullifier_hash)`, nicht den rohen Nullifier.
+- Next.js `sso-verify` signiert die Challenge via `signPayload()`.
+- Statische `docs/sso-verify.html` leitet auf die Next.js-Route um.
+- `python3 -m py_compile apps/api/routers/sso.py` OK.
+
+Residual, nicht blockierend:
+
+- `FORUM_SSO_SALT` sollte in Produktion explizit gesetzt sein. Der aktuelle Fallback auf `SERVER_SALT` ist akzeptabel, aber ein spaeterer fail-closed Startup-Check waere sauberer.
+
+---
+
 ## AUDIT B Complete — Code Security & Architecture (2026-05-23)
 
 Report written and pushed:
