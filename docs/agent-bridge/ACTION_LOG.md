@@ -11,6 +11,24 @@
 
 ---
 
+## 2026-05-23 — AUDIT A: Website & Navigation
+
+- **31 HTML Seiten** auditiert (canonical, OG, JSON-LD, sitemap, live status)
+- **24 sitemap URLs** — alle oeffentlichen Seiten abgedeckt
+- **12 Live-Endpoints** geprüft — alle 200 OK
+- **97 "broken links"** gefunden — 96 false positives (Next.js routes), 1 echter Broken Link
+- **Helios:** 0 Product-Claims, nur erklaerend in zk-voting.html
+- **Report:** `docs/agent-bridge/AUDIT_A_WEBSITE.md`
+- **Commit:** `8c50c13`
+
+### Findings:
+- LOW: `representative.html → representative/index.html` broken relative link
+- LOW: `tickets/index.html` + `votes/*.html` fehlende OG tags
+- LOW: `wiki/broadcasting.html` fehlende og:description
+- INFO: JSON-LD auf 3 Core-Seiten (index, community, faq) — ausreichend
+
+---
+
 ## 2026-05-23 — NEA-250 Evaluation Region-Locking
 
 - **POST /evaluate:** Requires `region_locked=true` + periferia_id/dimos_id Match
