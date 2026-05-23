@@ -1,5 +1,21 @@
 # Action Log
 
+## 2026-05-23 — NEA-261 Newsletter Compose (Brevo-based, Implemented)
+
+- **API:** 4 Endpoints — stats, preview (POST), draft (POST), send (POST + confirm=true)
+- **Dashboard:** /newsletter-admin — Compose + Preview + Draft + Send mit Confirm-Dialog
+- **Auth:** SUPER_ADMIN + SYSTEM_ADMIN only
+- **Sanitization:** Script/Event/javascript: stripped
+- **Safety:** Draft-first, Send braucht `confirm=true`, keine Subscriber-Emails, BREVO_API_KEY server-only
+- **Router:** Registriert in main.py
+- **Build:** Dashboard `npm run build` OK
+- **Files:** 5 exakt (keine unrelated)
+- **Commit:** `278a0e6`
+- **Deployed:** API + Dashboard rebuilt
+- **Hinweis:** ADR in `docs/adr/NEA-261-newsletter-compose-listmonk-vs-brevo.md` bleibt als Entscheidungsreferenz
+
+---
+
 ## 2026-05-23 — NEA-261 Newsletter Compose ADR (Blocked)
 
 - **ADR:** `docs/adr/NEA-261-newsletter-compose-listmonk-vs-brevo.md`
