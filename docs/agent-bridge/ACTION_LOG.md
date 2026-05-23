@@ -1,5 +1,13 @@
 # Action Log
 
+## 2026-05-23 — NEA-261 Newsletter Compose ADR (Blocked)
+
+- **ADR:** `docs/adr/NEA-261-newsletter-compose-listmonk-vs-brevo.md`
+- **Status:** Blocked — Listmonk leer (0 Listen/Subscribers), Brevo vs Listmonk Entscheidung offen
+- **Kein Produktcode**
+
+---
+
 ## 2026-05-23 — NEA-260 Seamless Forum SSO ADR (Plan Only)
 
 - **ADR:** `docs/adr/NEA-260-seamless-forum-sso.md`
