@@ -1,5 +1,18 @@
 # Action Log
 
+## 2026-05-23 — NEA-251 Discourse SSO Callback Signed (HIGH Fix)
+
+- **signature_hex:** Required param in POST /sso/discourse/callback
+- **Challenge:** `discourse_sso:{nonce}:{public_key_hex}` — Ed25519 verify before identity lookup
+- **external_id:** HMAC(FORUM_SSO_SALT, nullifier_hash) — no raw nullifier in Discourse payload
+- **Next.js sso-verify:** Signs challenge via `signPayload()` from crypto.ts
+- **Static sso-verify.html:** Redirects to Next.js version (no inline Ed25519)
+- **crypto.ts:** New `signPayload(privKey, payload)` generic signer
+- **Commit:** `272f73a`
+- **Deployed:** API + Web rebuilt
+
+---
+
 ## 2026-05-23 — AUDIT B: Code Security & Architecture
 
 - **Scope:** API routers, DB/Alembic consistency, monitor self-healing, repo hygiene, Arweave/privacy, ADR consistency
