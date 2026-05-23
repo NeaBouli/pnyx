@@ -95,8 +95,17 @@ async def rate_limit_check(
 # ── API Key Management ────────────────────────────────────────────────────────
 
 @router.post("/keys/generate")
-async def generate_api_key(label: str = "ekklesia-client"):
-    """Generiert einen API Key — kein Konto nötig."""
+async def generate_api_key(request: Request, label: str = "ekklesia-client"):
+    """Generiert einen API Key — kein Konto nötig. Rate-limited: 5/hour per IP."""
+    # Rate limit: max 5 key generations per hour per IP
+    r = await get_redis()
+    ip = request.client.host if request.client else "unknown"
+    rate_key = f"ratelimit:keygen:{ip}"
+    count = await r.incr(rate_key)
+    if count == 1:
+        await r.expire(rate_key, 3600)
+    if count > 5:
+        raise HTTPException(status_code=429, detail="Zu viele Key-Generierungen. Max 5 pro Stunde.")
     key = f"ek_{secrets.token_urlsafe(32)}"
     hashed = hash_key(key)
     r = await get_redis()

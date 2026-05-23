@@ -80,8 +80,8 @@ pnyx/
 └── docs/             → Landing page + Wiki + Community
 ```
 
-### Server Infrastructure (Hetzner CX33)
-- **9 containers**: API, Web, DB, Redis, Ollama, Traefik, Listmonk (x3)
+### Server Infrastructure (Hetzner CX43)
+- **11+ containers**: API, Web, DB, Redis, Ollama, Traefik, Listmonk (x3), Dashboard, Monitor, Docker-Proxy
 - **Ollama llama3.2:3b**: 2.6 GB RAM, 5 GB limit
 - **Rate limiting**: 60 req/min/IP global, 5 req/min/IP for AI endpoints
 - **Circuit breaker**: 3 errors → 24h pause, auto-reset
