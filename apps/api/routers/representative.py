@@ -162,7 +162,7 @@ async def _verify_ada_diavgeia(ada: str) -> dict | None:
 async def _get_rep_token(token: str, db: AsyncSession) -> dict | None:
     """Validate representative token."""
     result = await db.execute(text(
-        "SELECT ada_number, role, party, region, org_label, expires_at, municipality "
+        "SELECT ada_number, role, party, region, org_label, expires_at, municipality, periferia_id, dimos_id "
         "FROM representative_tokens WHERE token = :token AND expires_at > NOW()"
     ), {"token": token})
     row = result.fetchone()
@@ -170,7 +170,7 @@ async def _get_rep_token(token: str, db: AsyncSession) -> dict | None:
         return None
     return {"ada_number": row[0], "role": row[1], "party": row[2],
             "region": row[3], "org_label": row[4], "expires_at": row[5],
-            "municipality": row[6]}
+            "municipality": row[6], "periferia_id": row[7], "dimos_id": row[8]}
 
 
 async def verify_rep_token(
@@ -272,12 +272,18 @@ def is_bill_visible_for_token(bill, rep: dict) -> bool:
 
     if role == "Βουλευτής":
         return True
+    elif role == "Περιφερειάρχης" and rep.get("periferia_id"):
+        # PARLIAMENT + own-region REGIONAL bills (deterministic FK match)
+        if source == "PARLIAMENT" or source is None:
+            return True
+        if gov == "REGIONAL" and getattr(bill, "periferia_id", None) == rep["periferia_id"]:
+            return True
+        return False
     elif role in ("Δήμαρχος", "Δημοτικός Σύμβουλος"):
         # PARLIAMENT always visible + DIAVGEIA MUNICIPAL
         return source == "PARLIAMENT" or source is None or (source == "DIAVGEIA" and gov == "MUNICIPAL")
     else:
-        # Fallback (role=None, Περιφερειάρχης): PARLIAMENT only
-        # TODO: enable region filter after periferia_id mapping (NEA-186b)
+        # Fallback (role=None, Περιφερειάρχης without periferia_id): PARLIAMENT only
         return source == "PARLIAMENT" or source is None
 
 
@@ -291,7 +297,8 @@ async def get_rep_bills(
     Visibility rules:
     - Βουλευτής: all bills
     - Δήμαρχος/Δημοτικός Σύμβουλος: PARLIAMENT + MUNICIPAL DIAVGEIA (Known Limitation: all municipal, not own-specific)
-    - Περιφερειάρχης: PARLIAMENT only (conservative fallback — region DIAVGEIA filter pending periferia_id mapping, NEA-186b)
+    - Περιφερειάρχης (with periferia_id): PARLIAMENT + own-region REGIONAL bills (deterministic FK match)
+    - Περιφερειάρχης (without periferia_id): PARLIAMENT only (safe fallback)
     - role=None / unknown: PARLIAMENT only (safe fallback)
     """
     from fastapi.responses import JSONResponse
@@ -303,8 +310,18 @@ async def get_rep_bills(
 
     query = select(ParliamentBill).where(ParliamentBill.status.in_(ALLOWED_STATUSES))
 
+    periferia_id = rep.get("periferia_id")
+
     if role == "Βουλευτής":
         pass  # No additional filter — sees all
+    elif role == "Περιφερειάρχης" and periferia_id:
+        # PARLIAMENT + own-region REGIONAL (deterministic FK match, no string ILIKE)
+        query = query.where(or_(
+            ParliamentBill.source == "PARLIAMENT",
+            ParliamentBill.source.is_(None),
+            and_(ParliamentBill.governance_level == "REGIONAL",
+                 ParliamentBill.periferia_id == periferia_id),
+        ))
     elif role in ("Δήμαρχος", "Δημοτικός Σύμβουλος"):
         query = query.where(or_(
             ParliamentBill.source == "PARLIAMENT",
@@ -312,7 +329,7 @@ async def get_rep_bills(
             and_(ParliamentBill.source == "DIAVGEIA", ParliamentBill.governance_level == "MUNICIPAL"),
         ))
     else:
-        # Fallback: role=None or Περιφερειάρχης without region → PARLIAMENT only
+        # Fallback: role=None or Περιφερειάρχης without periferia_id → PARLIAMENT only
         query = query.where(or_(
             ParliamentBill.source == "PARLIAMENT",
             ParliamentBill.source.is_(None),
