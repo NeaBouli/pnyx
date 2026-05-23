@@ -1,5 +1,18 @@
 # Action Log
 
+## 2026-05-23 — NEA-258 LOW Fixes (Rate-Limit + Broken Link + OG + README)
+
+- **Rate-limit:** API key generation 5/hour per IP (Redis counter)
+- **Broken link:** `representative.html` → `/representative/index.html` (absoluter Pfad)
+- **OG tag:** `broadcasting.html` fehlende `og:description` hinzugefuegt
+- **README:** Hetzner CX33→CX43, 9→11+ containers
+- **Files staged:** 4 exakt (keine unrelated dirty files)
+- **py_compile:** OK
+- **Commit:** `7406c15`
+- **Deployed:** API + Web rebuilt
+
+---
+
 ## 2026-05-23 — NEA-257 CI Security Audit Hard-Fail (MEDIUM Fix)
 
 - **npm audit:** `|| true` entfernt, hard-fail bei high/critical
