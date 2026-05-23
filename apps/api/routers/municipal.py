@@ -179,11 +179,14 @@ class DecisionVoteRequest(BaseModel):
     ada: str
     nullifier_hash: str
     vote: str  # YES / NO / ABSTAIN
+    signature_hex: str  # Ed25519 signature over canonical payload
 
 
 @router.post("/municipal/vote")
 async def vote_on_decision(req: DecisionVoteRequest, db: AsyncSession = Depends(get_db)):
-    """Cast a vote on a Diavgeia municipal decision."""
+    """Cast a vote on a Diavgeia municipal decision. Requires Ed25519 signature."""
+    from keypair import verify_signature
+
     # 1. Verify identity
     id_result = await db.execute(
         select(IdentityRecord).where(
@@ -193,9 +196,21 @@ async def vote_on_decision(req: DecisionVoteRequest, db: AsyncSession = Depends(
     )
     identity = id_result.scalar_one_or_none()
     if not identity:
-        raise HTTPException(403, "Nicht verifiziert oder Key revoziert.")
+        raise HTTPException(404, "Nicht verifiziert oder Key nicht gefunden.")
 
-    # 2. Check decision exists
+    # 2. Parse vote early (needed for signature payload)
+    try:
+        vote_choice = VoteChoice(req.vote.upper())
+    except ValueError:
+        raise HTTPException(400, f"Ungültige Stimme: {req.vote}")
+
+    # 3. Verify Ed25519 signature
+    # Canonical payload: "municipal:{ada}:{VOTE}:{nullifier_hash}"
+    payload = f"municipal:{req.ada}:{vote_choice.value}:{req.nullifier_hash}"
+    if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
+        raise HTTPException(401, "Μη έγκυρη υπογραφή.")
+
+    # 4. Check decision exists
     dec_result = await db.execute(
         select(DiavgeiaDecision).where(DiavgeiaDecision.ada == req.ada)
     )
@@ -203,15 +218,9 @@ async def vote_on_decision(req: DecisionVoteRequest, db: AsyncSession = Depends(
     if not decision:
         raise HTTPException(404, f"Decision {req.ada} nicht gefunden.")
 
-    # 3. Vote scope: user must be in same dimos
+    # 5. Vote scope: user must be in same dimos
     if decision.dimos_id and identity.dimos_id != decision.dimos_id:
         raise HTTPException(403, "Αυτή η απόφαση αφορά μόνο κατοίκους αυτού του Δήμου.")
-
-    # 4. Parse vote
-    try:
-        vote_choice = VoteChoice(req.vote.upper())
-    except ValueError:
-        raise HTTPException(400, f"Ungültige Stimme: {req.vote}")
 
     # 5. Check duplicate
     existing = await db.execute(
