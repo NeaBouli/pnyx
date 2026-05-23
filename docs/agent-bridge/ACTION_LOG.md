@@ -11,6 +11,20 @@
 
 ---
 
+## 2026-05-23 — NEA-250 Evaluation Region-Locking
+
+- **POST /evaluate:** Requires `region_locked=true` + periferia_id/dimos_id Match
+- **Βουλευτής/Περιφερειάρχης:** citizen.periferia_id == politician.periferia_id
+- **Δήμαρχος:** citizen.dimos_id == politician.dimos_id
+- **Politician ohne IDs:** 403 safe deny
+- **/scores:** Bleibt oeffentlich (kein Region-Check)
+- **/my-evaluation:** Unveraendert (Lesen eigener Bewertungen)
+- **Kein fuzzy Matching:** Nur IDs
+- **Commit:** `67e6d3d`
+- **Deployed:** API rebuilt
+
+---
+
 ## 2026-05-23 — NEA-186b Περιφερειάρχης periferia_id Mapping
 
 - **DB:** `representative_tokens.periferia_id` + `dimos_id` FK Spalten hinzugefuegt
