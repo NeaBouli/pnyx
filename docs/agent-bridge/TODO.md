@@ -1,6 +1,7 @@
 # TODO — Ekklesia.gr / pnyx
 
 ## Aktiv / In Progress
+- [ ] NEA-261: Newsletter Preview Fix — deployed, Browser-Test ausstehend
 - [ ] NEA-258: FORUM_SSO_SALT Startup-Check (LOW follow-up)
 - [ ] README/CLAUDE.md Aktualisierung (INFO — stale Next 14, CX33, 22 Module)
 - [ ] AAB vC27 Upload zu Play Console (`~/Desktop/ekklesia-v1.3.2-vC27-PLAY.aab` BEREIT)

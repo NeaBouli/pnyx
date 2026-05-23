@@ -1,5 +1,19 @@
 # Action Log
 
+## 2026-05-24 — NEA-261 Newsletter Preview Client-Side Fix
+
+- **Problem:** Preview-Button im Dashboard `/newsletter-admin` funktionierte nicht. API `POST /api/v1/admin/newsletter/preview` gibt 200 OK (manuell verifiziert), aber Dashboard zeigte keine Vorschau.
+- **Root Cause:** `handlePreview()` zeigte nur generisches "Preview fehlgeschlagen" bei Fehlern — versteckte echten HTTP-Status (422/403/502). Kein Null-Check auf `html_preview` Key.
+- **Fix:** 3 Aenderungen in `newsletter-admin/page.tsx`:
+  1. Error-Detail: zeigt `errData.detail || errData.error || Preview fehlgeschlagen (${status})` statt generisch
+  2. Null-Safety: prueft `data.html_preview` bevor `setPreview()`, zeigt explizite Fehlermeldung wenn leer
+  3. `setSuccess(null)` am Preview-Start (verhindert stale Nachrichten)
+- **File:** `apps/dashboard/src/app/(dashboard)/newsletter-admin/page.tsx`
+- **Build:** `tsc --noEmit` OK
+- **Deploy:** ausstehend — nach Deploy zeigt Error-Nachricht den konkreten Grund
+
+---
+
 ## 2026-05-23 — NEA-261 Newsletter Compose (Brevo-based, Implemented)
 
 - **API:** 4 Endpoints — stats, preview (POST), draft (POST), send (POST + confirm=true)

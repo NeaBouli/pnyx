@@ -41,6 +41,7 @@ export default function NewsletterAdminPage() {
   async function handlePreview() {
     if (!subject || !htmlContent) return
     setError(null)
+    setSuccess(null)
     try {
       const r = await fetch('/api/proxy/admin/newsletter/preview', {
         method: 'POST',
@@ -49,9 +50,14 @@ export default function NewsletterAdminPage() {
       })
       if (r.ok) {
         const data = await r.json()
-        setPreview(data.html_preview)
+        if (data.html_preview) {
+          setPreview(data.html_preview)
+        } else {
+          setError('API returned no preview HTML')
+        }
       } else {
-        setError('Preview fehlgeschlagen')
+        const errData = await r.json().catch(() => ({}))
+        setError(errData.detail || errData.error || `Preview fehlgeschlagen (${r.status})`)
       }
     } catch { setError('Netzwerkfehler') }
   }

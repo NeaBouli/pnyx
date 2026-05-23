@@ -21,7 +21,7 @@
 
 ## Uncommitted Aenderungen
 
-- Keine (clean tree)
+- `apps/dashboard/src/app/(dashboard)/newsletter-admin/page.tsx` — NEA-261 Preview Fix (error detail + null safety)
 
 ## Architektur / Stack
 
@@ -186,9 +186,9 @@ Weiterhin UNSICHER:
 
 ## Letzte Aktualisierung
 
-- Datum/Zeit: 2026-05-22
+- Datum/Zeit: 2026-05-24
 - Agent: Claude Code
-- HEAD lokal: `41bc682` (gepusht)
+- HEAD lokal: uncommitted (NEA-261 Preview Fix)
 - HEAD server: `eceb806` (deployed, API+Web+Dashboard+Monitor rebuilt)
 - Session 21.05: 17 Commits
   - `3357e00` feat: NEA-236 Health-Check 15 rules + --once mode for cron
