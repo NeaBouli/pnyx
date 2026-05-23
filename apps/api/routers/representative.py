@@ -66,6 +66,8 @@ class InviteRequest(BaseModel):
     role: str = Field(..., description="Βουλευτής / Περιφερειάρχης / Δήμαρχος / Δημοτικός Σύμβουλος")
     region: str | None = None
     municipality: str | None = None
+    periferia_id: int | None = None
+    dimos_id: int | None = None
 
 
 class VerifyRequest(BaseModel):
@@ -99,11 +101,12 @@ async def create_invite(
     expires = datetime.now(timezone.utc) + timedelta(hours=INVITE_TTL_HOURS)
 
     await db.execute(text("""
-        INSERT INTO rep_invitations (invite_code, role, region, municipality, expires_at)
-        VALUES (:code, :role, :region, :municipality, :expires)
+        INSERT INTO rep_invitations (invite_code, role, region, municipality, periferia_id, dimos_id, expires_at)
+        VALUES (:code, :role, :region, :municipality, :periferia_id, :dimos_id, :expires)
     """), {
         "code": code, "role": req.role,
         "region": req.region, "municipality": req.municipality,
+        "periferia_id": req.periferia_id, "dimos_id": req.dimos_id,
         "expires": expires.replace(tzinfo=None),
     })
     await db.commit()
@@ -125,7 +128,7 @@ async def list_invites(
 ):
     """Admin: List all invite codes."""
     result = await db.execute(text(
-        "SELECT id, invite_code, ada_number, role, region, municipality, used, expires_at, created_at "
+        "SELECT id, invite_code, ada_number, role, region, municipality, used, expires_at, created_at, periferia_id, dimos_id "
         "FROM rep_invitations ORDER BY created_at DESC LIMIT 100"
     ))
     rows = result.fetchall()
@@ -135,6 +138,8 @@ async def list_invites(
         "expired": r[7] < datetime.now() if r[7] else False,
         "expires_at": r[7].isoformat() if r[7] else None,
         "created_at": r[8].isoformat() if r[8] else None,
+        "periferia_id": r[9] if len(r) > 9 else None,
+        "dimos_id": r[10] if len(r) > 10 else None,
     } for r in rows]
 
 
@@ -192,7 +197,7 @@ async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(g
     """Verify representative via ADA number + admin invite code. Returns a 24h token."""
     # 1. Validate invite code
     inv_result = await db.execute(text(
-        "SELECT id, role, region, municipality, used, expires_at FROM rep_invitations "
+        "SELECT id, role, region, municipality, used, expires_at, periferia_id, dimos_id FROM rep_invitations "
         "WHERE invite_code = :code"
     ), {"code": req.invite_code})
     invite = inv_result.fetchone()
@@ -205,6 +210,8 @@ async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(g
         raise HTTPException(403, "Ο κωδικός πρόσκλησης έχει λήξει.")
 
     invite_id, role, region, municipality = invite[0], invite[1], invite[2], invite[3]
+    invite_periferia_id = invite[6] if len(invite) > 6 else None
+    invite_dimos_id = invite[7] if len(invite) > 7 else None
 
     # 2. Demo bypass
     if req.ada_number == "DEMO-123":
@@ -221,14 +228,16 @@ async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(g
     role_suggestion = detect_role_from_org_label(ada_info.get("org_label", ""))
 
     await db.execute(text("""
-        INSERT INTO representative_tokens (ada_number, token, role, region, municipality, org_label, expires_at)
-        VALUES (:ada, :token, :role, :region, :municipality, :org_label, :expires)
+        INSERT INTO representative_tokens (ada_number, token, role, region, municipality, periferia_id, dimos_id, org_label, expires_at)
+        VALUES (:ada, :token, :role, :region, :municipality, :periferia_id, :dimos_id, :org_label, :expires)
         ON CONFLICT (ada_number) DO UPDATE SET token = :token, role = :role, region = :region,
-            municipality = :municipality, expires_at = :expires, org_label = :org_label,
+            municipality = :municipality, periferia_id = :periferia_id, dimos_id = :dimos_id,
+            expires_at = :expires, org_label = :org_label,
             evaluation_enabled = representative_tokens.evaluation_enabled
     """), {
         "ada": req.ada_number, "token": token, "role": role,
         "region": region or "", "municipality": municipality or "",
+        "periferia_id": invite_periferia_id, "dimos_id": invite_dimos_id,
         "org_label": ada_info.get("org_label", ""),
         "expires": expires.replace(tzinfo=None),
     })
