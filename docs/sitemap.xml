@@ -159,26 +159,6 @@
     <priority>0.7</priority>
   </url>
 
-  <!-- Votes -->
-  <url>
-    <loc>https://ekklesia.gr/votes/active.html</loc>
-    <lastmod>2026-05-22</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://ekklesia.gr/votes/results.html</loc>
-    <lastmod>2026-05-22</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://ekklesia.gr/votes/recent.html</loc>
-    <lastmod>2026-05-22</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
+  <!-- Votes: removed — these are meta-refresh redirects to /el/bills -->
 
 </urlset>
