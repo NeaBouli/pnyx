@@ -13,11 +13,11 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `8f3406f` (chore(bridge): NEA-266)
+- **HEAD:** `fe8ab5e` (chore(bridge): NEA-267 SEO/GEO done)
 - **Release Tags:** `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`
 - **Rollback Tags:** `rollback-pre-zk-20260524`
 - **Remote:** synchron mit GitHub
-- **Server:** HEAD `7215168` (deployed 2026-05-24, API+Web+Dashboard rebuilt, 10 commits this session)
+- **Server:** API `e9f30d5`, Web `102cf56` (deployed 2026-05-24, 15 commits this session)
 
 ## Uncommitted Aenderungen
 
@@ -46,16 +46,17 @@
 - **Monitor:** 15 Rules, 3-tier recovery
 - **Snapshot:** `ekklesia-gr-2026-04-21-stable`
 
-## Completed this cycle (Session 24.05.2026) — 10 Commits
+## Completed this cycle (Session 24.05.2026) — 15 Commits
 
-- NEA-261: Newsletter preview fix (ADMIN_KEY missing in dashboard container)
-- NEA-263: Newsletter → Telegram cross-publish (non-blocking, Brevo subject)
+- NEA-267: SEO/GEO/KI — llms.txt enriched, robots.txt AI crawlers, JSON-LD on zk-voting + representative
+- NEA-266b: Forum bad summary cleanup — 249 pill_el nulled, _is_bad_summary() guard
+- NEA-266: Forum Diavgeia topic titles + region prefix [Βουλή]/[Περιφέρεια]/[Δήμος]/[Φορέας] + metadata
+- NEA-265: Forum alert spam — duplicate Discourse title handling (search + link)
 - NEA-264: npm audit remediation — 0 high (dashboard Next 16, web PWA fork, mobile xmldom)
-- NEA-265: Forum alert spam — duplicate Discourse title handling
-- NEA-266: Forum Diavgeia topic titles + region prefix + metadata block
+- NEA-263: Newsletter → Telegram cross-publish (non-blocking, Brevo subject)
+- NEA-261: Newsletter preview fix (ADMIN_KEY missing in dashboard container)
 - PR #67: recharts 3.8.1 merged (Dependabot squash)
 - App screenshots: landing page download section (4 screens, responsive)
-- Dashboard ADMIN_KEY injection fix
 - Dependabot alerts enabled
 - 4 stable/rollback tags created
 

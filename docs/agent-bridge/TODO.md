@@ -10,6 +10,8 @@
 - [ ] NEA-249 Follow-up: Mopro native Expo Module feasibility plan
 
 ## Done (Session 24.05.2026)
+- [x] NEA-267: SEO/GEO/KI — llms.txt, robots.txt AI crawlers, JSON-LD (TechArticle, WebPage)
+- [x] NEA-266b: Forum bad summary cleanup — 249 pill_el nulled, _is_bad_summary() guard
 - [x] NEA-266: Forum Diavgeia topic titles + region prefix + metadata
 - [x] NEA-265: Forum alert spam — duplicate title search + link
 - [x] NEA-264: npm audit remediation — ALL 0 high (dashboard next 16, web PWA fork, mobile xmldom)

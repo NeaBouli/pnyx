@@ -1,8 +1,8 @@
 # Action Log
 
-## SESSION REPORT — 2026-05-24
+## SESSION REPORT — 2026-05-24 (FINAL)
 
-### Commits (10)
+### Commits (15 feature/fix + bridge)
 1. `3afd78f` fix(NEA-261): newsletter preview error handling + null safety
 2. `6632a23` fix(dashboard): inject ADMIN_KEY into dashboard container
 3. `8ff3dc3` feat(NEA-263): newsletter → Telegram cross-publish
@@ -12,7 +12,8 @@
 7. `b7c8cea` chore(deps): bump recharts to 3.8.1 (PR #67 squash merge)
 8. `653a76d` fix(NEA-265): handle duplicate Discourse topic titles in forum sync
 9. `7215168` feat(NEA-266): forum Diavgeia topic titles + region visibility
-10. `8f3406f` chore(bridge): NEA-266 forum titles + region visibility
+10. `e9f30d5` fix(NEA-266b): sanitize Diavgeia summary fallback (249 pill_el nulled)
+11. `102cf56` docs(NEA-267): llms.txt + robots.txt AI crawlers + JSON-LD schemas
 
 ### Tags
 - `v1.3.2-stable-20260524` — pre-ZK checkpoint
@@ -21,8 +22,8 @@
 - `rollback-pre-zk-20260524` — server rollback point
 
 ### Deployed
-- API: `7215168` (NEA-265+266 forum sync)
-- Web: `8944a6b` (screenshots)
+- API: `e9f30d5` (NEA-265+266+266b forum sync + summary cleanup)
+- Web: `102cf56` (screenshots + SEO/llms.txt/robots.txt)
 - Dashboard: `6632a23` (ADMIN_KEY + Next 16)
 - Monitor: unchanged (cooldown was already correct)
 
@@ -32,12 +33,20 @@
 - npm audit: 0 high in all 3 workspaces
 - CI Security Audit: green on all pushes
 - Forum: 0 bills without topic, region prefix visible, metadata block in body
+- Forum: Topic 405 clean (`Has unknown: False`)
+- Forum resync: 137/272 updated, rest auto-syncing (429 rate limit)
+- Bad pill_el: 249 nulled, 0 remaining
 - Dependabot: enabled (4 moderate reported)
 - PR #67: merged + branch deleted
 - Open PRs: 0
+- llms.txt: 200 OK live
+- robots.txt: AI crawlers live
+- JSON-LD: all valid, no overclaims
 
 ### Remaining
 - Branch protection checks stale (`test-api`/`test-crypto`) — update recommended
+- 135/272 forum topics pending resync (auto via 10min scheduler)
+- NEA-268: Institutional org_label in forum titles (needs DB column)
 - Moderate npm vulns: postcss (next), uuid/expo (needs Expo 56)
 - NEA-249 ZK V2: blocked on Mopro
 - NEA-260 Forum SSO V1: ADR only
