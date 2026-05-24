@@ -3,8 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 const API_BASE = process.env.EKKLESIA_API || 'https://api.ekklesia.gr'
 const ADMIN_KEY = process.env.ADMIN_KEY || process.env.EKKLESIA_ADMIN_KEY || ''
 
-export async function GET(request: NextRequest, { params }: { params: { path: string[] } }) {
-  const path = params.path.join('/')
+export async function GET(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const { path: segments } = await params
+  const path = segments.join('/')
   const search = request.nextUrl.searchParams.toString()
   const url = `${API_BASE}/api/v1/${path}${search ? '?' + search : ''}`
 
@@ -23,8 +24,9 @@ export async function GET(request: NextRequest, { params }: { params: { path: st
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { path: string[] } }) {
-  const path = params.path.join('/')
+export async function POST(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const { path: segments } = await params
+  const path = segments.join('/')
   const search = request.nextUrl.searchParams.toString()
   const url = `${API_BASE}/api/v1/${path}${search ? '?' + search : ''}`
 
@@ -47,8 +49,9 @@ export async function POST(request: NextRequest, { params }: { params: { path: s
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { path: string[] } }) {
-  const path = params.path.join('/')
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const { path: segments } = await params
+  const path = segments.join('/')
   const url = `${API_BASE}/api/v1/${path}`
   let body: string | null = null
   try { body = await request.text() } catch { /* ignore */ }
