@@ -224,6 +224,24 @@ def _build_topic_tags(bill: ParliamentBill) -> list[str]:
     ]
 
 
+async def _search_existing_topic(title: str) -> int | None:
+    """Search Discourse for an existing topic by title. Returns topic_id or None."""
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            r = await client.get(
+                f"{DISCOURSE_API_URL}/search.json",
+                params={"q": f'title:"{title[:100]}"'},
+                headers=_headers(),
+            )
+            if r.status_code == 200:
+                topics = r.json().get("topics", [])
+                if topics:
+                    return topics[0]["id"]
+    except Exception as e:
+        logger.warning("Discourse topic search failed: %s", e)
+    return None
+
+
 async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
     """Create a Discourse topic for a bill. Returns topic_id."""
     category_id = await _resolve_category(bill, db)
@@ -241,9 +259,19 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
             },
             headers=_headers(),
         )
-        if r.status_code not in (200, 201):
-            raise RuntimeError(f"Discourse API error {r.status_code}: {r.text[:200]}")
-        return r.json()["topic_id"]
+        if r.status_code in (200, 201):
+            return r.json()["topic_id"]
+
+        # Title already exists — search for existing topic and link it
+        if r.status_code == 422 and "χρησιμοποιηθεί" in r.text:
+            logger.info("Topic title already exists for %s — searching Discourse", bill.id)
+            existing_id = await _search_existing_topic(bill.title_el)
+            if existing_id:
+                logger.info("Found existing topic %d for bill %s", existing_id, bill.id)
+                return existing_id
+            logger.warning("Title duplicate but search found nothing for %s", bill.id)
+
+        raise RuntimeError(f"Discourse API error {r.status_code}: {r.text[:200]}")
 
 
 async def update_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> bool:
