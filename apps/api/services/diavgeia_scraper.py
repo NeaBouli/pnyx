@@ -190,6 +190,16 @@ async def scrape_decisions(
     return result
 
 
+def _clean_org_label(label: str | None) -> str | None:
+    """Return None for missing, blank, or unknown org labels."""
+    if not label or not label.strip():
+        return None
+    stripped = label.strip()
+    if stripped.lower() == "unknown" or stripped.startswith("[unknown:"):
+        return None
+    return stripped
+
+
 # ─── NEA-199: Diavgeia → parliament_bills Pipeline ──────────────────────────
 
 # Diavgeia governance_level → ekklesia GovernanceLevel mapping
@@ -252,6 +262,7 @@ async def convert_decisions_to_bills(session: AsyncSession) -> dict:
             periferia_id=periferia_id,
             source="DIAVGEIA",
             diavgeia_ada=ada,
+            org_label=_clean_org_label(org_label),
             categories=["Διαύγεια", type_uid],
         )
 

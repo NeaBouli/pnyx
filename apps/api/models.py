@@ -163,6 +163,7 @@ class ParliamentBill(Base):
     # Source tracking
     source              = Column(String(20), default="PARLIAMENT")  # PARLIAMENT | DIAVGEIA
     diavgeia_ada        = Column(String(50), nullable=True)
+    org_label           = Column(Text, nullable=True)               # Diavgeia organization name
     flag_count          = Column(Integer, default=0)
     admin_hidden        = Column(Boolean, default=False)
 

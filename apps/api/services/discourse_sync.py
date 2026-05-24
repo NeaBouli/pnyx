@@ -140,7 +140,12 @@ async def _build_topic_title(bill: ParliamentBill, db: AsyncSession) -> str:
         dimos = await db.get(Dimos, bill.dimos_id)
         prefix = f"Δήμος {dimos.name_el}" if dimos else "Δήμος"
     elif gov == "INSTITUTIONAL":
-        prefix = "Φορέας"
+        org = getattr(bill, "org_label", None) or ""
+        org = org.strip()
+        if not org or org.lower() == "unknown" or org.startswith("[unknown:"):
+            prefix = "Φορέας"
+        else:
+            prefix = f"Φορέας {org}"
     else:
         prefix = "Διαύγεια" if source == "DIAVGEIA" else "Βουλή"
 

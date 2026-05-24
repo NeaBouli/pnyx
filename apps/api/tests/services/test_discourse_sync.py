@@ -7,6 +7,7 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from services import discourse_sync
+from services.diavgeia_scraper import _clean_org_label
 
 
 class FakeResponse:
@@ -41,6 +42,20 @@ class FakeAsyncClient:
 @pytest.fixture
 def anyio_backend():
     return "asyncio"
+
+
+@pytest.mark.parametrize("raw,expected", [
+    (None, None),
+    ("", None),
+    ("   ", None),
+    ("unknown", None),
+    ("[unknown:99999]", None),
+    ("ΕΦΚΑ", "ΕΦΚΑ"),
+    ("  ΥΠΕΞ  ", "ΥΠΕΞ"),
+])
+def test_clean_org_label(raw, expected):
+    """NEA-268: _clean_org_label filters bad values."""
+    assert _clean_org_label(raw) == expected
 
 
 def test_unique_title_suffix_prefers_ada_and_preserves_limit():
@@ -86,3 +101,78 @@ async def test_create_topic_retries_with_stable_suffix_when_duplicate_search_mis
     assert len(FakeAsyncClient.posts) == 2
     assert FakeAsyncClient.posts[0]["title"] == "[Φορέας] ΑΝΑΘΕΣΗ ΕΡΓΟΥ"
     assert FakeAsyncClient.posts[1]["title"] == "[Φορέας] ΑΝΑΘΕΣΗ ΕΡΓΟΥ — ΨΙΗΕ465ΕΦ5-Λ"
+
+
+@pytest.mark.asyncio
+async def test_institutional_title_includes_org_label(monkeypatch):
+    """NEA-268: INSTITUTIONAL bills with org_label get [Φορέας X] prefix."""
+    bill = SimpleNamespace(
+        id="DIAV-456",
+        title_el="ΠΡΟΣΛΗΨΗ ΠΡΟΣΩΠΙΚΟΥ",
+        summary_short_el=None,
+        pill_el=None,
+        summary_long_el=None,
+        status=SimpleNamespace(value="OPEN_END"),
+        governance_level=SimpleNamespace(value="INSTITUTIONAL"),
+        source="DIAVGEIA",
+        diavgeia_ada="ΩΑΒΓ465ΧΘΩ-ΔΕΖ",
+        periferia_id=None,
+        dimos_id=None,
+        org_label="ΕΦΚΑ",
+    )
+
+    title = await discourse_sync._build_topic_title(bill, db=None)
+
+    assert title == "[Φορέας ΕΦΚΑ] ΠΡΟΣΛΗΨΗ ΠΡΟΣΩΠΙΚΟΥ"
+
+
+@pytest.mark.asyncio
+async def test_institutional_title_without_org_label_falls_back(monkeypatch):
+    """NEA-268: INSTITUTIONAL bills without org_label still get [Φορέας]."""
+    bill = SimpleNamespace(
+        id="DIAV-789",
+        title_el="ΑΠΟΦΑΣΗ ΔΙΟΙΚΗΤΗ",
+        summary_short_el=None,
+        pill_el=None,
+        summary_long_el=None,
+        status=SimpleNamespace(value="OPEN_END"),
+        governance_level=SimpleNamespace(value="INSTITUTIONAL"),
+        source="DIAVGEIA",
+        diavgeia_ada="ΨΩΑΒ465ΧΘΩ-ΗΙΚ",
+        periferia_id=None,
+        dimos_id=None,
+        org_label=None,
+    )
+
+    title = await discourse_sync._build_topic_title(bill, db=None)
+
+    assert title == "[Φορέας] ΑΠΟΦΑΣΗ ΔΙΟΙΚΗΤΗ"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("bad_label", [
+    "[unknown:99999]",
+    "unknown",
+    "  ",
+    "",
+])
+async def test_institutional_title_filters_bad_org_labels(bad_label):
+    """NEA-268: unknown/blank org_label must not leak into forum titles."""
+    bill = SimpleNamespace(
+        id="DIAV-BAD",
+        title_el="ΑΠΟΦΑΣΗ",
+        summary_short_el=None,
+        pill_el=None,
+        summary_long_el=None,
+        status=SimpleNamespace(value="OPEN_END"),
+        governance_level=SimpleNamespace(value="INSTITUTIONAL"),
+        source="DIAVGEIA",
+        diavgeia_ada="ΩΩΩΩ465ΧΘΩ-ΑΒΓ",
+        periferia_id=None,
+        dimos_id=None,
+        org_label=bad_label,
+    )
+
+    title = await discourse_sync._build_topic_title(bill, db=None)
+
+    assert title == "[Φορέας] ΑΠΟΦΑΣΗ"
