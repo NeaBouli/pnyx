@@ -10,12 +10,15 @@
 - [ ] NEA-249 Follow-up: Mopro native Expo Module feasibility plan
 
 ## Done (Session 24.05.2026)
+- [x] NEA-265: Forum alert spam — duplicate title search + link
 - [x] NEA-264: npm audit remediation — ALL 0 high (dashboard next 16, web PWA fork, mobile xmldom)
+- [x] PR #67: recharts 3.8.1 merged (Dependabot, squash)
 - [x] NEA-261: Newsletter Preview Fix (ADMIN_KEY missing + error handling)
 - [x] NEA-263: Newsletter → Telegram cross-publish (non-blocking, Brevo subject)
 - [x] Dashboard ADMIN_KEY injection fix
 - [x] App Screenshots on Landing Page (4 screens, responsive)
-- [x] Release Tag v1.3.2-stable-20260524
+- [x] Dependabot alerts enabled
+- [x] Release Tag v1.3.2-stable-20260524 + v1.3.3-audit-clean-20260524
 
 ## Done (Session 23.05.2026)
 - [x] NEA-251: Discourse SSO callback signed (HIGH) — `272f73a`

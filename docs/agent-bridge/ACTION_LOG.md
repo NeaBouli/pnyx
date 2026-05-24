@@ -1,5 +1,20 @@
 # Action Log
 
+## 2026-05-24 — NEA-265 Forum alert spam — duplicate title handling
+
+- **Bills without forum topic:** `DIAV-ΨΙΗΕ465ΕΦ5-Λ` (ΑΝΑΘΕΣΗ ΕΡΓΟΥ), `DIAV-Ψ79Ι4690ΒΝ-Σ` (Αίτημα έγκρισης προμήθειας)
+- **Root cause:** Discourse 422 "Τίτλος έχει ήδη χρησιμοποιηθεί" — topic exists in Discourse but `forum_topic_id` NULL in DB (sync drift)
+- **Effect:** Every 10min sync retried creation → 422 → log spam → HTTP 429 rate limits on other topic updates
+- **Fix:** `discourse_sync.py` — on 422 duplicate title, search Discourse for existing topic by title and link `forum_topic_id`
+- **Monitor cooldown:** Already correct (2h T1 lock on resync-all)
+- **Commit:** `653a76d`
+- **API deployed:** YES — Container recreated
+- **Dependabot alerts:** ENABLED via API
+- **Branch protection checks:** stale (`test-api`, `test-crypto`) — recommend update (not mutated)
+- **Security Audit CI:** 3x SUCCESS on latest pushes
+
+---
+
 ## 2026-05-24 — PR #67 Recharts 3.8.1 merged
 
 - **PR:** #67 (Dependabot)
