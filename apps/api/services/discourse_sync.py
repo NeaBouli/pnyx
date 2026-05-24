@@ -174,8 +174,17 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
     source = getattr(bill, "source", "PARLIAMENT") or "PARLIAMENT"
     source_badge = "📜 ΒΟΥΛΗ" if source == "PARLIAMENT" else "📋 ΔΙΑΥΓΕΙΑ"
 
-    summary = bill.summary_short_el or bill.pill_el or ""
-    long_text = bill.summary_long_el or ""
+    def _is_bad_summary(val: str | None) -> bool:
+        if not val or not val.strip():
+            return True
+        lower = val.lower()
+        if "unknown" in lower:
+            return True
+        if re.match(r"^διαύγεια:\s*\[", val, re.IGNORECASE):
+            return True
+        if re.match(r"^διαύγεια:\s*\S+$", val, re.IGNORECASE) and len(val) < 80:
+            return True  # Just "Διαύγεια: ORG_NAME" — not a real summary
+        return False
 
     # Strip navigation/boilerplate/parliament links from scraped content
     def _clean(text: str) -> str:
@@ -192,8 +201,17 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
                    and not re.match(r"^\s*\*?\s*\[Αρχική\]", l.strip())]
         return "\n".join(cleaned).strip()
 
-    summary = _clean(summary)
-    long_text = _clean(long_text)
+    # Build clean summary — never unknown
+    summary = ""
+    for candidate in [bill.summary_short_el, bill.pill_el, bill.summary_long_el]:
+        if candidate and not _is_bad_summary(candidate):
+            summary = _clean(candidate)
+            if summary:
+                break
+
+    long_text = ""
+    if bill.summary_long_el and not _is_bad_summary(bill.summary_long_el):
+        long_text = _clean(bill.summary_long_el)
 
     # Safe title for body heading
     title = bill.title_el or f"Απόφαση {bill.id}"
