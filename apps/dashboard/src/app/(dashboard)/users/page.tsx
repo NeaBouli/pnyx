@@ -51,20 +51,7 @@ export default function UsersPage() {
     setRevokeLoading(true)
     setRevokeResult(null)
     try {
-      const res = await fetch(`${API}/api/v1/identity/revoke`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nullifier_hash: nullifierInput.trim(), phone_number: 'required_but_unknown' }),
-      })
-      const data = await res.json() as Record<string, unknown>
-      if (res.ok) {
-        setRevokeResult(String(data?.message ?? data?.detail ?? 'Ανάκληση επιτυχής'))
-        setNullifierInput('')
-      } else {
-        setRevokeResult(String('Σφάλμα: ' + String(data?.detail ?? data?.error ?? res.status)))
-      }
-    } catch (e) {
-      setRevokeResult(String('Σφάλμα: ' + String(e)))
+      setRevokeResult(String('Ανάκληση μέσω Dashboard δεν είναι δυνατή — ο χρήστης πρέπει να ανακαλέσει μέσω της εφαρμογής (Self-Service Revoke).'))
     } finally {
       setRevokeLoading(false)
       setRevokeConfirm(false)
@@ -174,14 +161,14 @@ export default function UsersPage() {
         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
           <h2 className="font-semibold text-gray-900 mb-1">{String('Ανάκληση Ταυτότητας')}</h2>
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 text-xs text-yellow-800">
-            {String('Η ανάκληση απαιτεί τον Nullifier Hash ΚΑΙ τον αριθμό τηλεφώνου του χρήστη. Ο αριθμός τηλεφώνου είναι άγνωστος στο σύστημα μετά την εγγραφή.')}
+            {String('Η ανάκληση ταυτότητας δεν είναι δυνατή μέσω του Dashboard. Το σύστημα δεν αποθηκεύει τηλέφωνα — Privacy by Design. Η ανάκληση γίνεται αποκλειστικά μέσω Self-Service στην εφαρμογή (ο χρήστης παρέχει τον αριθμό του για Nullifier-Reverification).')}
           </div>
           <div className="flex gap-3 mb-3">
             <input
               type="text"
               value={nullifierInput}
               onChange={(e) => setNullifierInput(e.target.value)}
-              placeholder="Nullifier Hash (hex)"
+              placeholder="Nullifier Hash (hex) — μόνο για αναζήτηση"
               className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 font-mono"
             />
           </div>

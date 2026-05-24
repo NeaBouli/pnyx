@@ -52,15 +52,7 @@ const APP_STATUS_COLORS: Record<ApplicationStatus, string> = {
   rejected: 'bg-red-100 text-red-700',
 }
 
-const EXAMPLE_APPLICATIONS: GovApplication[] = [
-  {
-    applicant: 'Δήμος Αθηναίων',
-    district: 'Αττική',
-    ada: 'ΑΔΑ: ΧΧΧΧ-ΧΧΧ',
-    status: 'pending',
-    date: '2026-04-15',
-  },
-]
+const EXAMPLE_APPLICATIONS: GovApplication[] = []
 
 const GATE_LABELS: { key: keyof GovGrGates; label: string; description: string }[] = [
   { key: '500_aktive_nutzer', label: '500 Ενεργοί Χρήστες', description: 'Τουλάχιστον 500 επαληθευμένοι, ενεργοί χρήστες στην πλατφόρμα' },
@@ -229,29 +221,37 @@ export default function GovPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {EXAMPLE_APPLICATIONS.map((app, i) => (
-                  <tr key={i} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-900">{app.applicant}</td>
-                    <td className="px-4 py-3 text-gray-600">{app.district}</td>
-                    <td className="px-4 py-3 text-gray-500 font-mono text-xs">{app.ada}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${APP_STATUS_COLORS[app.status]}`}>
-                        {APP_STATUS_LABELS[app.status]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-500">
-                      {new Date(app.date).toLocaleDateString('el-GR')}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        disabled
-                        className="text-xs text-gray-400 cursor-not-allowed"
-                      >
-                        Έγκριση (n/a)
-                      </button>
+                {EXAMPLE_APPLICATIONS.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400">
+                      Δεν υπάρχουν αιτήσεις. Ενεργοποιείται μετά τη σύνδεση gov.gr OAuth 2.0.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  EXAMPLE_APPLICATIONS.map((app, i) => (
+                    <tr key={i} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 font-medium text-gray-900">{app.applicant}</td>
+                      <td className="px-4 py-3 text-gray-600">{app.district}</td>
+                      <td className="px-4 py-3 text-gray-500 font-mono text-xs">{app.ada}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${APP_STATUS_COLORS[app.status]}`}>
+                          {APP_STATUS_LABELS[app.status]}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500">
+                        {new Date(app.date).toLocaleDateString('el-GR')}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          disabled
+                          className="text-xs text-gray-400 cursor-not-allowed"
+                        >
+                          Έγκριση (n/a)
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
             <div className="px-5 py-3 border-t border-gray-100 text-xs text-gray-400">
