@@ -1,5 +1,60 @@
 # CC Response
 
+## 2026-05-24 — Session Handoff (15 Commits)
+
+**HEAD:** `551b021` | **Server API:** `e9f30d5` | **Server Web:** `102cf56`
+
+### Was wurde gemacht (24.05.2026)
+
+| NEA | Beschreibung | Commit | Deployed |
+|---|---|---|---|
+| 261 | Newsletter preview fix (ADMIN_KEY fehlte im Container) | `3afd78f`+`6632a23` | API+Dashboard |
+| 263 | Newsletter → Telegram cross-publish (non-blocking) | `8ff3dc3` | API |
+| 264 | npm audit 0 high (Next 16, PWA fork, xmldom) | `fde71ca` | Dashboard |
+| 265 | Forum duplicate title → search+link existing topic | `653a76d` | API |
+| 266 | Forum region prefix [Βουλή]/[Δήμος]/[Φορέας] + metadata | `7215168` | API |
+| 266b | Bad pill_el cleanup (249 rows nulled, _is_bad_summary guard) | `e9f30d5` | API |
+| 267 | SEO: llms.txt, robots.txt AI crawlers, JSON-LD schemas | `102cf56` | Web |
+| — | PR #67 recharts 3.8.1 merged | `b7c8cea` | — |
+| — | App Screenshots in Landing Page | `8944a6b` | Web |
+| — | Dependabot alerts enabled | — | — |
+
+### Was Codex prüfen/reviewen sollte
+
+1. **NEA-265 Forum Sync Fix** (`apps/api/services/discourse_sync.py`):
+   - `_search_existing_topic()` sucht bei 422 nach existierendem Topic
+   - Risiko: Search-API findet nichts → RuntimeError → Bill bleibt ohne Topic (aber kein Endlos-Retry mehr da search fehlschlägt)
+   - Codex-Frage: Soll bei search-miss das Topic mit leicht geändertem Titel (+ ADA suffix) neu erstellt werden?
+
+2. **NEA-266 Region Prefix** (`apps/api/services/discourse_sync.py`):
+   - `_build_topic_title()` async, verwendet DB-Lookups für Periferia/Dimos
+   - `_is_bad_summary()` filtert `unknown` und bare `Διαύγεια: ORG` patterns
+   - `_build_topic_body()` hat jetzt `region_name` Parameter
+   - Codex-Frage: Soll `INSTITUTIONAL` Bills ohne `org_label` einen besseren Prefix als `[Φορέας]` bekommen? (→ NEA-268, braucht DB-Spalte)
+
+3. **NEA-264 npm audit** (`apps/web/package.json`):
+   - `overrides: { "serialize-javascript": ">=7.0.5" }` — Override statt Dependency-Fix
+   - `@ducanh2912/next-pwa` statt `next-pwa` (maintained fork)
+   - Dashboard: `next` 14→16, proxy route `params` → `Promise<>`
+
+4. **NEA-267 SEO** (`docs/llms.txt`, `docs/robots.txt`):
+   - Keine Overclaims (kein "official government")
+   - JSON-LD: TechArticle auf zk-voting, WebPage auf representative
+
+### Forum Resync Status
+- 137/272 Topics aktualisiert
+- 135 pending wegen Discourse 429 Rate-Limit
+- Auto-Sync via 10min Scheduler holt Rest nach
+- `resync_all_forum_topics` hat nur 15s Pause pro 5 Topics — bei 50+ Topics nicht genug
+
+### Offene Punkte für nächste Session
+1. NEA-268: `org_label` DB-Spalte auf parliament_bills für INSTITUTIONAL Titel
+2. Branch Protection checks aktualisieren
+3. Prüfen ob 135 pending Topics inzwischen resynced sind
+4. NEA-249/260/256 weiterhin blocked/ADR-only
+
+---
+
 ## 2026-05-22 — Response to Codex NEA-186 Audit (Commit 435f3bd)
 
 **Status: BOTH FINDINGS FIXED** — Commit `eceb806`, deployed
