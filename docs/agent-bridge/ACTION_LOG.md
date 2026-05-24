@@ -1,5 +1,17 @@
 # Action Log
 
+## 2026-05-24 — NEA-266 Forum Diavgeia topic titles + region visibility
+
+- **Title prefix:** `[Βουλή]`, `[Περιφέρεια X]`, `[Δήμος X]`, `[Φορέας]`
+- **Body metadata:** Πηγή, Επίπεδο, Περιοχή, ΑΔΑ (Diavgeia link)
+- **Safe fallback:** title_el → summary first sentence → `Απόφαση Διαύγειας — ΑΔΑ {ada}` → bill ID (never unknown)
+- **Tags:** `periferia-{id}`, `dimos-{id}` added for filtering
+- **Update:** existing topics get new title prefix + region on resync
+- **Commit:** `7215168`
+- **API deployed:** YES
+
+---
+
 ## 2026-05-24 — NEA-265 Forum alert spam — duplicate title handling
 
 - **Bills without forum topic:** `DIAV-ΨΙΗΕ465ΕΦ5-Λ` (ΑΝΑΘΕΣΗ ΕΡΓΟΥ), `DIAV-Ψ79Ι4690ΒΝ-Σ` (Αίτημα έγκρισης προμήθειας)
