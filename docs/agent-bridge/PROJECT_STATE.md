@@ -13,15 +13,16 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `8944a6b` (feat: app screenshots in download section)
-- **Release Tag:** `v1.3.2-stable-20260524`
-- **Rollback Tags:** `v1.3.2-stable-20260524`, `rollback-pre-zk-20260524`
+- **HEAD:** `8f3406f` (chore(bridge): NEA-266)
+- **Release Tags:** `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`
+- **Rollback Tags:** `rollback-pre-zk-20260524`
 - **Remote:** synchron mit GitHub
-- **Server:** HEAD `8944a6b` (deployed 2026-05-24, API+Web+Dashboard rebuilt, NEA-261+263+Screenshots)
+- **Server:** HEAD `7215168` (deployed 2026-05-24, API+Web+Dashboard rebuilt, 10 commits this session)
 
 ## Uncommitted Aenderungen
 
 - `apps/mobile/android/app/build.gradle` — vC27 bump (already tagged)
+- Bridge files (this update)
 
 ## Architektur / Stack
 
@@ -45,12 +46,18 @@
 - **Monitor:** 15 Rules, 3-tier recovery
 - **Snapshot:** `ekklesia-gr-2026-04-21-stable`
 
-## Completed this cycle (Session 24.05.2026)
+## Completed this cycle (Session 24.05.2026) — 10 Commits
 
 - NEA-261: Newsletter preview fix (ADMIN_KEY missing in dashboard container)
-- NEA-263: Newsletter → Telegram cross-publish (non-blocking, Brevo subject as source)
-- App screenshots: landing page download section (4 screens, responsive grid)
-- Dashboard ADMIN_KEY injection fix (all admin endpoints were silently 403)
+- NEA-263: Newsletter → Telegram cross-publish (non-blocking, Brevo subject)
+- NEA-264: npm audit remediation — 0 high (dashboard Next 16, web PWA fork, mobile xmldom)
+- NEA-265: Forum alert spam — duplicate Discourse title handling
+- NEA-266: Forum Diavgeia topic titles + region prefix + metadata block
+- PR #67: recharts 3.8.1 merged (Dependabot squash)
+- App screenshots: landing page download section (4 screens, responsive)
+- Dashboard ADMIN_KEY injection fix
+- Dependabot alerts enabled
+- 4 stable/rollback tags created
 
 ## Completed previous cycle (Session 21-23.05.2026)
 

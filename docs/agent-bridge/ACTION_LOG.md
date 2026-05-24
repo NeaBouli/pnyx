@@ -1,5 +1,50 @@
 # Action Log
 
+## SESSION REPORT — 2026-05-24
+
+### Commits (10)
+1. `3afd78f` fix(NEA-261): newsletter preview error handling + null safety
+2. `6632a23` fix(dashboard): inject ADMIN_KEY into dashboard container
+3. `8ff3dc3` feat(NEA-263): newsletter → Telegram cross-publish
+4. `8944a6b` feat: app screenshots in download section on landing page
+5. `b7e7283` chore(bridge): stable checkpoint v1.3.2-stable-20260524
+6. `fde71ca` fix(NEA-264): remediate npm audit high vulnerabilities
+7. `b7c8cea` chore(deps): bump recharts to 3.8.1 (PR #67 squash merge)
+8. `653a76d` fix(NEA-265): handle duplicate Discourse topic titles in forum sync
+9. `7215168` feat(NEA-266): forum Diavgeia topic titles + region visibility
+10. `8f3406f` chore(bridge): NEA-266 forum titles + region visibility
+
+### Tags
+- `v1.3.2-stable-20260524` — pre-ZK checkpoint
+- `v1.3.3-audit-clean-20260524` — 0 high npm vulns
+- `v1.3.4-forum-fix-20260524` — forum sync fixed
+- `rollback-pre-zk-20260524` — server rollback point
+
+### Deployed
+- API: `7215168` (NEA-265+266 forum sync)
+- Web: `8944a6b` (screenshots)
+- Dashboard: `6632a23` (ADMIN_KEY + Next 16)
+- Monitor: unchanged (cooldown was already correct)
+
+### Verified
+- Newsletter preview: works (ADMIN_KEY injected)
+- Newsletter Telegram: cross-publish live (non-blocking)
+- npm audit: 0 high in all 3 workspaces
+- CI Security Audit: green on all pushes
+- Forum: 0 bills without topic, region prefix visible, metadata block in body
+- Dependabot: enabled (4 moderate reported)
+- PR #67: merged + branch deleted
+- Open PRs: 0
+
+### Remaining
+- Branch protection checks stale (`test-api`/`test-crypto`) — update recommended
+- Moderate npm vulns: postcss (next), uuid/expo (needs Expo 56)
+- NEA-249 ZK V2: blocked on Mopro
+- NEA-260 Forum SSO V1: ADR only
+- NEA-256 Alembic baseline: ADR only
+
+---
+
 ## 2026-05-24 — NEA-266 Forum Diavgeia topic titles + region visibility
 
 - **Title prefix:** `[Βουλή]`, `[Περιφέρεια X]`, `[Δήμος X]`, `[Φορέας]`
