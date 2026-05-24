@@ -281,6 +281,15 @@ def _build_topic_tags(bill: ParliamentBill) -> list[str]:
     return tags
 
 
+def _with_unique_title_suffix(title: str, bill: ParliamentBill) -> str:
+    """Append a stable suffix for Discourse duplicate-title fallback."""
+    suffix_source = getattr(bill, "diavgeia_ada", None) or bill.id
+    suffix = f" — {suffix_source}"
+    if title.endswith(suffix):
+        return title
+    return f"{title[:255 - len(suffix)]}{suffix}"
+
+
 async def _search_existing_topic(title: str) -> int | None:
     """Search Discourse for an existing topic by title. Returns topic_id or None."""
     try:
@@ -347,6 +356,21 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
                 logger.info("Found existing topic %d for bill %s", existing_id, bill.id)
                 return existing_id
             logger.warning("Title duplicate but search found nothing for %s", bill.id)
+
+            fallback_title = _with_unique_title_suffix(topic_title, bill)
+            retry = await client.post(
+                f"{DISCOURSE_API_URL}/posts.json",
+                json={
+                    "title": fallback_title,
+                    "raw": body,
+                    "category": category_id,
+                    "tags": tags,
+                },
+                headers=_headers(),
+            )
+            if retry.status_code in (200, 201):
+                logger.info("Created topic with fallback title for bill %s", bill.id)
+                return retry.json()["topic_id"]
 
         raise RuntimeError(f"Discourse API error {r.status_code}: {r.text[:200]}")
 
