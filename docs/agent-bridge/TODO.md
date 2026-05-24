@@ -1,7 +1,6 @@
 # TODO — Ekklesia.gr / pnyx
 
 ## Aktiv / In Progress
-- [ ] NEA-261: Newsletter Preview Fix — deployed, Browser-Test ausstehend
 - [ ] NEA-258: FORUM_SSO_SALT Startup-Check (LOW follow-up)
 - [ ] README/CLAUDE.md Aktualisierung (INFO — stale Next 14, CX33, 22 Module)
 - [ ] AAB vC27 Upload zu Play Console (`~/Desktop/ekklesia-v1.3.2-vC27-PLAY.aab` BEREIT)
@@ -9,6 +8,13 @@
 ## Blocked
 - [ ] NEA-249: ZK Voting V2 — BLOCKED (mobile prover unresolved, ADR geschrieben)
 - [ ] NEA-249 Follow-up: Mopro native Expo Module feasibility plan
+
+## Done (Session 24.05.2026)
+- [x] NEA-261: Newsletter Preview Fix (ADMIN_KEY missing + error handling)
+- [x] NEA-263: Newsletter → Telegram cross-publish (non-blocking, Brevo subject)
+- [x] Dashboard ADMIN_KEY injection fix
+- [x] App Screenshots on Landing Page (4 screens, responsive)
+- [x] Release Tag v1.3.2-stable-20260524
 
 ## Done (Session 23.05.2026)
 - [x] NEA-251: Discourse SSO callback signed (HIGH) — `272f73a`

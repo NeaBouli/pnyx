@@ -1,5 +1,51 @@
 # Action Log
 
+## STABLE CHECKPOINT — v1.3.2-stable-20260524
+
+- **Git tag:** `v1.3.2-stable-20260524`
+- **Rollback tag:** `rollback-pre-zk-20260524`
+- **HEAD:** `8944a6b`
+- **Server HEAD:** `8944a6b` (deployed 2026-05-24)
+- **Mobile:** vC27 v1.3.2
+- **All security findings:** resolved (NEA-251..258)
+- **System:** autonomous (T2 active, 0 alerts)
+- **Next planned:** NEA-249 ZK V2 Mopro feasibility
+
+---
+
+## 2026-05-24 — App Screenshots on Landing Page
+
+- **Screenshots:** 4 (Home, Votes, Politicians, POLIS) in `docs/assets/screenshots/`
+- **Location:** Download section, after store buttons
+- **Layout:** Desktop 4-col grid, Mobile 2x2, border-radius 20px, box-shadow
+- **Captions:** Griechisch, blau (#2563eb)
+- **Commit:** `8944a6b`
+- **Deployed:** Web container rebuilt
+
+---
+
+## 2026-05-24 — NEA-263 Newsletter → Telegram Cross-Publish
+
+- **Hook:** After successful Brevo `sendNow` only (not on draft)
+- **Target:** Channel (broadcast) + Group Topic `platform`
+- **Subject source:** Brevo GET `emailCampaigns/{id}` (not frontend) + fallback
+- **HTML escaping:** `html.escape(subject)` for Telegram
+- **Non-blocking:** `try/except`, returns `telegram_sent: true/false`
+- **Dashboard:** Success banner shows `Telegram ✓/✗`
+- **Commit:** `8ff3dc3`
+
+---
+
+## 2026-05-24 — Dashboard ADMIN_KEY Fix
+
+- **Root cause:** `docker-compose.prod.yml` dashboard service had no `ADMIN_KEY` in environment
+- **Effect:** All admin proxy calls (stats, preview, draft, send) silently returned 403
+- **Fix:** Added `ADMIN_KEY: ${ADMIN_KEY}` to dashboard environment
+- **Commit:** `6632a23`
+- **Deployed:** Dashboard container recreated with key
+
+---
+
 ## 2026-05-24 — NEA-261 Newsletter Preview Client-Side Fix
 
 - **Problem:** Preview-Button im Dashboard `/newsletter-admin` funktionierte nicht. API `POST /api/v1/admin/newsletter/preview` gibt 200 OK (manuell verifiziert), aber Dashboard zeigte keine Vorschau.

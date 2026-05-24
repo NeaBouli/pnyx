@@ -13,15 +13,15 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `8ccf2ac` (fix(NEA-257): CI security hard-fail)
-- **Tags:** `v1.0.0`, `apk-v9-stable`, `pre-session-20260518`, `pre-politikoi-20260521`
-- **Rollback:** `pre-politikoi-20260521` → `49e24ba`
+- **HEAD:** `8944a6b` (feat: app screenshots in download section)
+- **Release Tag:** `v1.3.2-stable-20260524`
+- **Rollback Tags:** `v1.3.2-stable-20260524`, `rollback-pre-zk-20260524`
 - **Remote:** synchron mit GitHub
-- **Server:** CX43 (8 vCPU, 16 GB RAM), HEAD `eceb806` (deployed 2026-05-22, API+Web+Monitor+Dashboard+Docker-Proxy rebuilt, 25 Module, NEA-186+190+191+231+241+246)
+- **Server:** HEAD `8944a6b` (deployed 2026-05-24, API+Web+Dashboard rebuilt, NEA-261+263+Screenshots)
 
 ## Uncommitted Aenderungen
 
-- `apps/dashboard/src/app/(dashboard)/newsletter-admin/page.tsx` — NEA-261 Preview Fix (error detail + null safety)
+- `apps/mobile/android/app/build.gradle` — vC27 bump (already tagged)
 
 ## Architektur / Stack
 
@@ -29,99 +29,58 @@
 |---|---|
 | API | Python FastAPI + Alembic + PostgreSQL + Redis |
 | Web | Next.js 14 (App Router, i18n el/en, Tailwind, recharts) |
-| Mobile | Expo / React Native (versionCode 12 / v1.1.0, AAB bereit) |
-| Representative | Expo / React Native WebView (versionCode 1 / v1.0.0, APK bereit) |
+| Mobile | Expo / React Native (versionCode 27 / v1.3.2, AAB bereit) |
+| Representative | Expo / React Native WebView (versionCode 2 / v1.1.0, APK bereit) |
 | Crypto | Python + PyNaCl (Ed25519, Nullifier, HLR) |
 | DB | PostgreSQL, 9+ Tabellen, 3 Enums, Alembic Migrations |
-| Infra | Docker Compose (11 Container), Traefik, Brevo Newsletter |
+| Infra | Docker Compose (11+ Container), Traefik, Brevo Newsletter |
 | Forum | Discourse (pnyx.ekklesia.gr), Sync alle 10min |
+| Monitor | 3-tier self-healing (T1 API, T2 Docker restart, T3 Telegram) |
 
 ## Server-Deployment (Hetzner)
 
-- **Container:** 10/10 aktiv (api, web, db, redis, traefik, listmonk x3, discourse, discourse-db) — UNSICHER ob discourse separat zaehlt
+- **Container:** 11+ aktiv (api, web, db, redis, traefik, dashboard, monitor, docker-proxy, discourse, discourse-db, listmonk)
 - **Scheduler Jobs:** 8 aktiv
-  - `bill_lifecycle` 1h, `cplm_refresh` 6h, `greek_topics` 6h
-  - `parliament` 12h, `diavgeia` 48h, `notify-bills` 30m, `notify-results` 1h, `forum-sync` 10m
+- **AUTO_RECOVERY_T2:** true
+- **Monitor:** 15 Rules, 3-tier recovery
 - **Snapshot:** `ekklesia-gr-2026-04-21-stable`
-- **Score:** ~96/100
 
-## Implementierte Features (Auswahl)
+## Completed this cycle (Session 24.05.2026)
 
-- Ed25519 Voting (anonym, keine Accounts/Email/Cookies)
-- Deep-Link: `ekklesia://polis-login`
-- QR-Code Vote (purpose-bound, bill_id-gebunden)
-- **QR Web Vote** (Browser-Voting via QR-Session, POST /polis/qr-vote, kein Ed25519 Signing im Browser noetig)
-- Bill Lifecycle Scheduler (ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END)
-- Vote Correction (einmalig in WINDOW_24H)
-- Consensus Scale (-5 bis +5 fuer OPEN_END Bills)
-- Arweave Blockchain Archivierung (viewblock.io Links)
-- CPLM (Citizens Political Liquid Mirror) mit Public API (CC BY 4.0)
-- Liquid Compass (4 Modelle, 100% clientseitig, AES-256-GCM)
-- **ekprosopos App** (Vertreter-App, WebView + SecureStore + Biometric, Demo: ADA DEMO-123)
-- **Demo Node** (test.ekklesia.gr, komplett autonom, localStorage, keine API-Calls)
-- Telegram Community Bot (@ekklesia_news_bot, 11 Topics)
-- Newsletter (Brevo API direkt, monatlicher Auto-Report)
-- Region Voting (MUNICIPAL/REGIONAL Banner)
-- GSC Fixes (www→301, hreflang)
-- Discourse Forum Sync
-- 24 Module insgesamt
+- NEA-261: Newsletter preview fix (ADMIN_KEY missing in dashboard container)
+- NEA-263: Newsletter → Telegram cross-publish (non-blocking, Brevo subject as source)
+- App screenshots: landing page download section (4 screens, responsive grid)
+- Dashboard ADMIN_KEY injection fix (all admin endpoints were silently 403)
 
-## Tests
+## Completed previous cycle (Session 21-23.05.2026)
 
-- Web: 29 passed
-- API: 51 passed + 16 xfail (kein lokales PG)
-- Crypto: 12 passed
-- CI: GitHub Actions GRUEN
+- Full security audit (NEA-251..258): 2 HIGH + 5 MEDIUM all resolved
+- Watcher 3-tier self-healing (NEA-241): live + T2 active
+- ZK V2 ADR (NEA-249): blocked on mobile prover
+- Dashboard: /politicians + /monitor + /newsletter-admin (21 pages total)
+- Newsletter: Brevo compose + preview + draft + send
+- Forum SSO: ADR-only (NEA-260)
+- Alembic schema baseline ADR (NEA-256)
+- Politician Evaluation (NEA-189/191): DB + API + Mobile + ekprosopos
+- NEA-186b: periferia_id FK mapping + role-based bill visibility
+- NEA-250: Evaluation region-locking
 
-## Tracking
+## Open / Backlog
 
-- **Linear:** https://linear.app/neabouli/project/ekklesiagr-pnyx-76223f68c92f
-- **Team:** NeaBouli (Key: NEA)
-- **Bridge:** Einziger CC↔Codex Kommunikationskanal
+- NEA-249: ZK V2 — BLOCKED, Mopro feasibility needed
+- NEA-260: Forum SSO V1 — ADR, Discourse API investigation needed
+- NEA-258: FORUM_SSO_SALT startup check (LOW)
+- NEA-256: Alembic schema baseline repair migrations (ADR written, no DB changes)
+- NEA-65: Off-site backup — waiting for first donation
+- AAB vC27 Upload zu Play Console (BEREIT)
+- F-Droid MR !38007 — wartet auf linsui Review
 
-## Naechste Schritte (Prioritaet) — siehe auch Linear
+## Architecture Decisions (ADRs)
 
-1. **NEA-189b Region-Locking** — Buerger muss in passender Region sein fuer Evaluation
-2. **AAB vC22 Upload** Play Console (neuer Build noetig mit Play-Keystore)
-3. **F-Droid MR !38007** — Pipeline GRUEN, wartet auf `linsui` Review
-4. **Dashboard** — 25 Features (6 Prio HOCH vor Public Beta) + Evaluation Dashboard
-5. **End-to-End QR Vote Test** — Mobile App → QR Scan → Browser Vote (Deep-Link Flow)
-6. **Wahlbezirk region_locked** — DB Column + ProfileScreen fuer Einmal-Regionswahl
-7. **Off-Site Backup** — Hetzner Storage Box
-
-## F-Droid MR !38007 Status (2026-05-10)
-
-- **MR:** https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007
-- **Fork/Branch:** `TrueRepublic/fdroiddata:ekklesia-v1.0.0`
-- **Package ID:** `ekklesia.gr`
-- **versionName / versionCode:** `1.0.0` / `6`
-- **Finaler Commit:** `8baaa64a94c64625b6fa0c096eba473f8ec38768`
-- **Finale Pipeline:** `2512855066`
-- **Status:** **BESTANDEN, 9/9 Jobs gruen**
-- **Naechster Schritt:** Warten auf Review durch `linsui`.
-- **Finaler technischer Fix:** Expo/RN F-Droid Build braucht:
-  - `npm ci` ohne `--ignore-scripts`
-  - `expo prebuild --clean --platform android`
-  - `newArchEnabled=false` und `hermesEnabled=false` nach prebuild
-  - Gradle Toolchain Auto-Provisioning in `android/gradle.properties`, `~/.gradle/gradle.properties` und via `-Porg.gradle.java.installations.auto-download=true`
-  - gezielte `scanignore`-Eintraege fuer Expo/RN `local-maven-repo` und lokale Maven-Gradle-Dateien
-  - `output: apps/mobile/android/app/build/outputs/apk/release/app-release.apk`
-
-## Architektur-Planung (NUR Dokumente, KEIN Code)
-
-- Foederiertes Node-Netzwerk: 7 Dokumente auf Server unter `/opt/hetzner-migration/architecture/federation/`
-- dashboard.ekklesia.gr: Admin Dashboard Architektur
-- gov.ekklesia.gr: Behoerden Dashboard Architektur
-- test.ekklesia.gr: DNS gesetzt, kein Container
-
-## Bekannte Risiken
-
-- axios muss >= 1.14.0 bleiben (Supply-Chain-Audit, Malware in 1.14.1–0.30.4)
-- `.env.production` liegt im Repo-Root (gitignored, aber Vorsicht)
-- `arweave-wallet.json` liegt im Repo-Root — Secret, NICHT lesen
-- SSH-Key fuer Hetzner aktuell nicht geladen (Permission denied)
-- `npm ci` statt `npm install`, `ignore-scripts=true` in .npmrc
-- Kein ORM — raw SQL mit parametrisierten Queries
+- docs/adr/NEA-249-zk-voting-v2-semaphore-hybrid.md
+- docs/adr/NEA-256-alembic-schema-baseline.md
+- docs/adr/NEA-260-seamless-forum-sso.md
+- docs/adr/NEA-261-newsletter-compose-listmonk-vs-brevo.md
 
 ## Sicherheitsprinzipien
 
@@ -130,283 +89,16 @@
 - Ed25519: Public Key auf Server, Private Key nur im Geraet
 - Compass-Daten: 100% clientseitig, AES-256-GCM, nie auf Server
 
-## Server-Verifizierung (01.05.2026, per SSH)
+## Bekannte Risiken
 
-Folgende Werte sind jetzt SERVER-BELEGT (nicht mehr UNSICHER):
+- axios muss >= 1.14.0 bleiben (Supply-Chain-Audit)
+- `.env.production` liegt im Repo-Root (gitignored)
+- `arweave-wallet.json` liegt im Repo-Root — Secret, NICHT lesen
+- `npm ci` statt `npm install`, `ignore-scripts=true` in .npmrc
+- `packages/crypto/keypair.py` ueberschattet `apps/api/keypair.py` im Docker Python-Path
+- APK und AAB koennen NICHT parallel gebaut werden (gleicher android/ Ordner)
 
-- **alembic current:** `k401a2b3c4d5` (head) — Migration erfolgreich
-- **API Health:** `status: ok`, version `0.1.0`
-- **Module:** 24 (bestaetigt via /health Endpoint — klaert Drift)
-- **SSH-Zugang:** funktioniert (Key: hetzner-neabouli ED25519)
-- **Container:** 11 aktiv (ekklesia-web, ekklesia-test-node, ekklesia-api, ekklesia-db, app, ekklesia-ollama, listmonk, traefik-central, listmonk-postfix, listmonk-db, ekklesia-redis)
-- **HLR Provider:** Primary hlrlookup.com (2499 Credits, 0.006€/Q), Fallback hlr-lookups.com (974/1000, 0.01€/Q), Auto-Failover A/B/C aktiv
-- **Community Kachel:** Registerkarten (hlrlookup.com aktiv / hlr-lookups.com Fallback), PayPal-Button (paypalme/VendettaLabs/15)
-- **Discourse:** 2026.4.0-latest, Backup vorhanden, Upgrade FEHLGESCHLAGEN (nginx anon.conf Bug), Container recovered
+## Tracking
 
-Weiterhin UNSICHER:
-- Snapshot-Name
-- Score (geschaetzt ~96/100)
-
-## v5 Build Status
-
-- **Build-Methode:** Lokaler Gradle Build (`scripts/build-play.sh`), KEIN EAS Cloud Build
-- **versionCode:** 5
-- **Keystore:** `ekklesia-playstore-key.jks` (lokal)
-- **Status:** ERFOLGREICH (BUILD SUCCESSFUL in 35m 30s, 386 Tasks)
-- **Output:** `apps/mobile/android/app/build/outputs/bundle/playRelease/app-play-release.aab`
-- **Groesse:** 45 MB
-- **Tag:** `v1.0.0` auf `abf95ce`
-- **Naechster Schritt:** Upload zu Google Play Console → Internal Testing → New Release
-
-## F-Droid MR !37087
-
-- **Branch:** ekklesia-v1.0.0 (Fork TrueRepublic/fdroiddata)
-- **YAML:** `metadata/gr.ekklesia.app.yml`
-- **AutoUpdateMode:** None (disabled Build, kein Auto-Update moeglich)
-- **UpdateCheckMode:** None
-- **commit:** abf95cea2c012d3eb6425c71f686dae4f4c75152 (voller Hash)
-- **Pipeline 2493263400:** laeuft (2 vorherige Fehler gefixt: trailing newline + AutoUpdateMode)
-- **Label:** waiting-on-response (linsui wartet auf FCM-freie Version → v5 ist bereit)
-
-## Commits heute (01.05.2026)
-
-- `abf95ce` feat(hlr): Auto-Failover hlrlookup.com — Trigger A/B/C + erweiterter Credits-Endpoint
-- `704ba82` feat(app): In-App Version-Check + Update-Banner + HLR Provider-Swap + Community Tabs
-
-## Neue Endpoints
-
-- `GET /api/v1/app/version` — Version-Check (kein Auth), force_update Support
-
-## Discourse
-
-- Version: **2026.5.0-latest** (Upgrade erfolgreich am 01.05, nach Swap-Erhoehung)
-- Backup: forum-2026-05-01-081036-v20260422130653.tar.gz
-- anon.conf Hook: ENTFERNT (de facto anonym via Docker Bridge)
-- Hinweis: Rebuild braucht >2GB Swap — bei zukuenftigen Upgrades temporaer /swapfile2 erstellen
-
-## Letzte Aktualisierung
-
-- Datum/Zeit: 2026-05-24
-- Agent: Claude Code
-- HEAD lokal: uncommitted (NEA-261 Preview Fix)
-- HEAD server: `eceb806` (deployed, API+Web+Dashboard+Monitor rebuilt)
-- Session 21.05: 17 Commits
-  - `3357e00` feat: NEA-236 Health-Check 15 rules + --once mode for cron
-  - `0c6db62` fix: NEA-236 aggregate arweave alerts + truncate telegram message
-  - `49e24ba` chore(bridge): NEA-236 health-check 15 rules + cron documented
-  - `0221813` feat: NEA-189 Politician Evaluation — Grundgeruest
-  - `4476ed9` chore(bridge): NEA-189 session state + action log update
-  - `86ed7a9` chore: ekprosopos v1.1.0 vC2 — Evaluation Features
-  - `4276a6c` fix(representative): native token injection + enable domStorage
-  - `2582790` fix(representative): add invite_code field to login form
-  - `91087f5` fix: trailing slash on /politicians endpoint (307 redirect)
-  - `911a1a4` fix: Arweave monitor rule excludes DIAVGEIA bills
-  - `0354871` chore(bridge): monitor fix + ekprosopos login + scraper status
-  - `5e5de6b` fix: keypair.py verify_signature catches ValueError + accepts str payload
-  - `b8ca6a8` chore(bridge): complete session 21.05
-  - `ce1b378` chore: bump versionCode 22 → 23
-  - `e8746ab` chore(bridge): vC23 APK+AAB ready
-  - `700c389` fix: MPScreen Politikoi tab shows live politician list from API
-  - `803ea51` chore: bump versionCode 23 → 24
-- Rollback-Tag: `pre-politikoi-20260521` → `49e24ba`
-- Builds bereit:
-  - `~/Desktop/ekklesia-v1.3.2-vC26.apk` (66MB) — S10 installiert (vC26), Server download live
-  - `~/Desktop/ekklesia-v1.3.2-vC26-PLAY.aab` (45MB) — Play Console Upload BEREIT
-  - `~/Desktop/ekprosopos-v1.1.0-vC2.apk` (55MB) — ekprosopos mit Evaluation
-- NEA-189 DB: `evaluation_questions` (8 Rows), `politician_evaluations`, `evaluation_enabled` auf `representative_tokens`
-- NEA-189 API: 6 Endpoints (2 Rep + 4 Public) unter `/rep/` und `/politicians/`
-- NEA-191 API: 2 Endpoints — `GET /my-evaluation`, `GET /my-evaluations/bulk`
-- NEA-189 Mobile: PolitikoiScreen + EvaluatePoliticianScreen + MPScreen Politikoi-Tab (vC24)
-- NEA-189 ekprosopos: Αξιολόγηση Tab + Consent + My Scores (vC2)
-- DEMO-123: evaluation_enabled=TRUE, region_locked=FALSE, Token 24h TTL (muss bei Bedarf erneuert werden)
-- Monitor: 15 Rules, Arweave nur PARLIAMENT, Health-Check 3 Alerts (Diavgeia/Parliament/Forum stale)
-- APK auf Server: `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` (vC23)
-- APK ekprosopos: `/opt/ekklesia/app/docs/download/ekprosopos-latest.apk` (vC2)
-- WICHTIG: Docker Container muessen per Image-Rebuild deployed werden (kein Volume-Mount fuer Code).
-  Deploy-Flow: `git pull` → `docker compose build api/web` → Container manuell mit Traefik-Labels + Env neu erstellen
-- WICHTIG: `packages/crypto/keypair.py` ueberschattet `apps/api/keypair.py` im Docker Python-Path. Beide muessen konsistent bleiben.
-- WICHTIG: APK und AAB koennen NICHT parallel gebaut werden (gleicher android/ Ordner). Immer sequentiell: erst APK, dann AAB via build-play.sh.
-
-## Codex-Verifikation aus Repo-Metadaten
-
-Repo-belegt:
-
-- Aktiver Analysepfad: `/Users/gio/Desktop/repo/pnyx`
-- Branch: `main`
-- HEAD: `abf95ce`
-- Remote: `https://github.com/NeaBouli/pnyx.git`
-- Tag `session-final-20260501` ist lokal vorhanden
-- Android `versionCode`: 5 in `apps/mobile/app.json`
-- EAS-Profile vorhanden in `apps/mobile/eas.json`; Production Android baut ein `app-bundle`
-- Web-App: Next.js 14.2.35, React 19, TypeScript 6, Tailwind 4 laut `apps/web/package.json`
-- Mobile-App: Expo SDK 54, React Native 0.81.5 laut `apps/mobile/package.json`
-- API-Abhaengigkeiten: FastAPI, Uvicorn, SQLAlchemy asyncio, Alembic, asyncpg, Redis, PyNaCl laut `apps/api/requirements.txt`
-- Lokales Docker Compose fuer `db`, `redis`, `api` vorhanden in `infra/docker/docker-compose.yml`
-- Production Compose fuer `db`, `redis`, `api`, `web`, optional `ollama` vorhanden in `infra/docker/docker-compose.prod.yml`
-- GitHub Actions vorhanden fuer CI, Deploy, Scraper und Security Audit
-- Deploy-Workflow ist manuell per `workflow_dispatch`; automatischer Push-Deploy ist im Workflow-Kommentar deaktiviert
-
-Alle Server-Werte oben sind jetzt SERVER-BELEGT (per SSH am 01.05 verifiziert).
-
-## Public Concept Context
-
-Der oeffentliche Konzeptkontext aus `ekklesia.gr` und den Wiki-Seiten wird zentral in folgender Datei gepflegt:
-
-`docs/agent-bridge/PUBLIC_CONCEPT_CONTEXT.md`
-
-Diese Inhalte sind als `PUBLIC_DOCS` zu behandeln und gelten nicht automatisch als Repo-Fakt. Repo-belegte Fakten haben Vorrang vor Website/Wiki/Memory.
-
-## Codex Statuspruefung 2026-05-02
-
-- Datum/Zeit: 2026-05-02 17:10:21 EEST
-- Agent: Codex
-- Pruefung: lokaler Repo-/Bridge-Stand, read-only
-- Lokaler HEAD: `88a7547`
-- Branch: `main`
-- Remote-Tracking: `main...origin/main`, lokal laut Git nicht ahead/behind
-- Letzter Commit: `feat(dashboard): HLR Switch + Failover-Monitor + echte Wallet-Adressen`
-- Bridge-Hinweis: Aeltere Abschnitte in dieser Datei nennen noch `ffa92c7`, `a5ee48b`, `704ba82` oder `abf95ce`. Fuer den lokalen Stand dieser Pruefung gilt `88a7547`.
-- Aktueller Arbeitsbaum:
-  - `apps/api/services/discourse_sync.py` modifiziert
-  - `apps/api/services/greek_topics_scraper.py` untracked
-  - `docs/agent-bridge/` enthaelt untracked Bridge-Dateien
-- Neue/aktuelle Bridge-Artefakte seit Dashboard-Arbeit:
-  - `docs/agent-bridge/DEV_REPORT_20260502.md`
-  - `docs/agent-bridge/DASHBOARD_INVENTORY.md`
-- Dashboard-Stand laut Bridge:
-  - `dashboard.ekklesia.gr` ist live und auth-geschuetzt.
-  - Dashboard umfasst laut Dev Report 15 Seiten.
-  - Letzter dokumentierter Dashboard-/HLR-Commit ist `88a7547`.
-- Bekannte offene Punkte laut Bridge:
-  - `/api/v1/analytics/votes-timeline` gibt 500.
-  - Discourse `about.json` liefert keine `topic_count`/`post_count`.
-  - 4 von 8 Scheduler-Jobs fehlen im `/scraper/jobs` Response.
-  - 25 Dashboard-Features fehlen noch, davon 6 mit hoher Prioritaet vor Public Beta.
-- Grenzen dieser Pruefung:
-  - Keine Live-Server-/SSH-Pruefung in diesem Lauf.
-  - Keine externen Netzwerkaufrufe.
-  - Keine Tests ausgefuehrt.
-  - Keine `.env`-, Secret-, Key- oder Wallet-Dateien gelesen.
-  - Kein Commit, Push oder Deployment.
-
-## Codex Recheck 2026-05-02
-
-- Datum/Zeit: 2026-05-02 17:23:55 EEST
-- Agent: Codex
-- Lokaler HEAD: `fd3f50d`
-- Branch: `main`
-- Remote-Tracking: `main...origin/main`, lokal laut Git nicht ahead/behind
-- Letzter Commit: `chore: Bridge committed + discourse_sync + votes-timeline fix + Aufräumen`
-- Geaenderter Stand gegenueber vorheriger Codex-Pruefung:
-  - Bridge-Dateien sind jetzt committed.
-  - `apps/api/services/discourse_sync.py` ist committed und nicht mehr dirty.
-  - `/api/v1/app/version` / `/api/v1/version` Drift ist lokal weitgehend behoben.
-  - HomeScreen Unicode-Update-Banner ist lokal behoben.
-  - HLR Primary fail-closed bei fehlenden Credentials ist lokal behoben.
-  - `votes-timeline` gibt lokal durch try/except nicht mehr 500, maskiert aber moegliche echte Fehler als leere Timeline.
-- Weiterhin offen / riskant:
-  - `apps/api/services/greek_topics_scraper.py` ist weiterhin untracked.
-  - Admin-Key-Defaults und Query-Parameter-Auth sind weiterhin im Code sichtbar.
-  - `docs/agent-bridge/ACTION_LOG.md` hat lokale uncommitted Ergaenzungen.
-- Geloest (2026-05-11, Claude Code):
-  - ~~`votes-timeline` broad except~~ → NEA-74 DONE (spezifische Exceptions + Logging)
-  - ~~4/8 Scheduler-Jobs fehlen~~ → NEA-71 DONE (record_run vor early returns)
-  - ~~Package-ID Drift~~ → NEA-67 DONE (stale gr.ekklesia.app.yml archiviert)
-- Grenzen:
-  - Keine Tests ausgefuehrt.
-  - Keine SSH-/Live-Server-Pruefung.
-  - Keine externen Netzwerkaufrufe.
-  - Keine `.env`-, Secret-, Key- oder Wallet-Dateien gelesen.
-
-## Codex Gegenpruefung 2026-05-02
-
-- Datum/Zeit: 2026-05-02 21:46:27 EEST
-- Agent: Codex
-- Lokaler HEAD: `ea0d248`
-- Tag: `session-20260502-final`
-
-- Branch: `main`
-- Remote-Tracking: `main...origin/main`, lokal laut Git nicht ahead/behind
-- Letzter Commit: `fix(scraper): greek_topics ImportError guard + Bridge updates`
-- Arbeitsbaum:
-  - `apps/api/services/greek_topics_scraper.py` bleibt untracked.
-  - Keine weiteren Produktcode-Diffs.
-- Geaenderter Stand:
-  - `apps/api/main.py` faengt `ImportError` beim Lazy Import von `services.greek_topics_scraper` ab.
-  - Damit ist das konkrete Risiko entschaerft, dass der 6h-Scheduler-Job crasht, wenn `greek_topics_scraper.py` auf dem Server fehlt.
-- Weiterhin offen:
-  - `greek_topics_scraper.py` bleibt fachlich gesperrt/untracked; Review-/Draft-Flow statt Auto-Post bleibt die Entscheidung.
-  - Admin-Key-Defaults und Query-Parameter-Auth sind weiterhin sichtbar.
-  - `votes-timeline` nutzt weiterhin broad `except` und kann echte Fehler als leere Timeline maskieren.
-  - Android/F-Droid Package-ID bleibt zu pruefen: lokaler Android-Code nutzt `ekklesia.gr`, F-Droid-Datei heisst `fdroid/gr.ekklesia.app.yml`, Checklist nennt weiterhin `gr.ekklesia.app`.
-- Grenzen:
-  - Keine Tests ausgefuehrt.
-  - Keine SSH-/Live-Server-Pruefung.
-  - Keine externen Netzwerkaufrufe.
-  - Keine `.env`-, Secret-, Key- oder Wallet-Dateien gelesen.
-
-## Codex Ollama System Audit 2026-05-03
-
-- Datum/Zeit: 2026-05-03 00:46 EEST
-- Agent: Codex
-- Aktion: Ollama-Anbindungen lokal auditiert, justiert und mit Mock-Regressionstests abgesichert.
-- Gepruefte Anwendungsfaelle:
-  - Landing Chat / RAG Agent
-  - Bill-Summary Endpoint
-  - MOD-10 Scraper-Summary und Provider-Status
-  - Admin Log-Erklaerung
-  - Scraper Auto-Healing
-  - Compass Question Generator
-- Repo-belegte technische Aenderungen:
-  - Zentraler Ollama-Service enthaelt jetzt robustes Modell-Matching und `ollama_json_generate()`.
-  - MOD-10 Scraper nutzt zentrale Ollama-Konfiguration statt eigener `localhost`/Modell-Defaults.
-  - Bill-Summary kann deterministische Fallbacks nutzen, auch wenn Ollama nicht verfuegbar ist.
-  - Compass Generator nutzt zentrale JSON-Erzeugung.
-  - Scraper-Healing validiert Selector-Antworten strenger.
-  - Admin Log-Erklaerung meldet leere Ollama-Antworten als 503.
-- Tests:
-  - `19 passed, 1 warning`
-  - `py_compile` erfolgreich fuer geaenderte API-Dateien.
-- Report: `docs/agent-bridge/OLLAMA_SYSTEM_AUDIT_20260503.md`
-- Grenzen:
-  - Keine Live-Ollama-/Server-Pruefung.
-  - Keine externen Netzwerkaufrufe.
-  - Keine `.env`-, Secret-, Key- oder Wallet-Dateien gelesen.
-  - Kein Commit, Push, Deployment oder SSH.
-
-## Cross-Project Master Audits 2026-05-03
-
-- Agent: Codex
-- Status: Lokale Master-Audit-Reports fuer vier Projekte wurden erstellt und zusaetzlich direkt in den jeweiligen Repositories platziert.
-- Lokale zentrale Kopien:
-  - `/Users/gio/Desktop/repo/audits/pnyx_MASTER_AUDIT_20260503.md`
-  - `/Users/gio/Desktop/repo/audits/stealth_MASTER_AUDIT_20260503.md`
-  - `/Users/gio/Desktop/repo/audits/inferno_MASTER_AUDIT_20260503.md`
-  - `/Users/gio/Desktop/repo/audits/vlabs_MASTER_AUDIT_20260503.md`
-- Projektlokale Pflicht-Leseordner:
-  - `/Users/gio/Desktop/repo/pnyx/AUDIT_MUST_READ/`
-  - `/Users/gio/Desktop/repo/stealth/AUDIT_MUST_READ/`
-  - `/Users/gio/Desktop/repo/inferno/AUDIT_MUST_READ/`
-  - `/Users/gio/Desktop/repo/vlabs/vlabs-website/AUDIT_MUST_READ/`
-- Hinweis: Diese Ordner sind lokal angelegt und wurden nicht committed oder gepusht.
-- Sicherheitsgrenze: Keine `.env`, `.env.*`, `.gitignore`, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen; keine Secrets ausgegeben.
-
-## Google Indexing Fix ekklesia.gr 2026-05-03
-
-- Agent: Codex
-- Nutzerfreigabe: Commit, Push und Deployment fuer den Google-Indexing-Fix voll freigegeben.
-- Commits:
-  - `5d43642` - `fix(web): canonicalize tickets indexing URL`
-  - `ea90fc3` - `fix(docs): point ticket links to canonical URL`
-- Deployment:
-  - Server `/opt/ekklesia/app` auf `ea90fc3` aktualisiert.
-  - Nur `ekklesia-web` neu gebaut/gestartet.
-  - Keine API-, DB-, Dashboard- oder Mobile-Deployments.
-- Live-Status:
-  - Sitemap listet `https://ekklesia.gr/tickets/index.html`.
-  - `https://ekklesia.gr/tickets/index.html` liefert `HTTP 200`.
-  - Canonical und `robots=index,follow` sind live.
-  - `/tickets` und `/el/tickets` leiten direkt auf `/tickets/index.html`.
-- Sicherheit:
-  - Keine `.env`, `.env.*`, `.gitignore`, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen.
-  - Keine Secrets ausgegeben.
+- **Linear:** https://linear.app/neabouli/project/ekklesiagr-pnyx-76223f68c92f
+- **Bridge:** Einziger CC-Codex Kommunikationskanal
