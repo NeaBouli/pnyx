@@ -116,7 +116,39 @@ async def _resolve_category(bill: ParliamentBill, db: AsyncSession) -> int:
     return await get_or_create_category("Νομοσχέδια", parent)
 
 
-def _build_topic_body(bill: ParliamentBill) -> str:
+async def _build_topic_title(bill: ParliamentBill, db: AsyncSession) -> str:
+    """Build topic title with region prefix. Never returns 'unknown'."""
+    gov = bill.governance_level.value if bill.governance_level else "NATIONAL"
+    source = getattr(bill, "source", "PARLIAMENT") or "PARLIAMENT"
+
+    # Derive a safe title — never unknown
+    title = bill.title_el
+    if not title or title.strip() == "":
+        title = (
+            bill.summary_short_el.split(".")[0] if bill.summary_short_el else
+            f"Απόφαση Διαύγειας — ΑΔΑ {bill.diavgeia_ada}" if getattr(bill, "diavgeia_ada", None) else
+            f"Νομοσχέδιο {bill.id}"
+        )
+
+    # Region prefix
+    if source == "PARLIAMENT" or gov == "NATIONAL":
+        prefix = "Βουλή"
+    elif gov == "REGIONAL" and bill.periferia_id:
+        periferia = await db.get(Periferia, bill.periferia_id)
+        prefix = f"Περιφέρεια {periferia.name_el}" if periferia else "Περιφέρεια"
+    elif gov == "MUNICIPAL" and bill.dimos_id:
+        dimos = await db.get(Dimos, bill.dimos_id)
+        prefix = f"Δήμος {dimos.name_el}" if dimos else "Δήμος"
+    elif gov == "INSTITUTIONAL":
+        prefix = "Φορέας"
+    else:
+        prefix = "Διαύγεια" if source == "DIAVGEIA" else "Βουλή"
+
+    formatted = f"[{prefix}] {title}"
+    return formatted[:255]
+
+
+def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
     """Build the Discourse topic body for a bill."""
     ekklesia_url = f"https://ekklesia.gr/el/bills/{bill.id}"
 
@@ -149,13 +181,9 @@ def _build_topic_body(bill: ParliamentBill) -> str:
     def _clean(text: str) -> str:
         if not text:
             return ""
-        # Strip HTML tags
         text = re.sub(r"<[^>]+>", "", text)
-        # Strip markdown links to hellenicparliament.gr
         text = re.sub(r"\[([^\]]*)\]\(https?://[^\)]*hellenicparliament[^\)]*\)", r"\1", text)
-        # Strip bare hellenicparliament.gr URLs
         text = re.sub(r"https?://\S*hellenicparliament\S*", "", text)
-        # Strip navigation boilerplate
         lines = text.split("\n")
         cleaned = [l for l in lines
                    if "Μετάβαση στο κύριο" not in l
@@ -167,15 +195,21 @@ def _build_topic_body(bill: ParliamentBill) -> str:
     summary = _clean(summary)
     long_text = _clean(long_text)
 
-    body = (
-        f"# {bill.title_el}\n\n"
-        f"| | |\n|---|---|\n"
-        f"| **Κατάσταση** | {status_badge} |\n"
-        f"| **Πηγή** | {source_badge} |\n"
-        f"| **Επίπεδο** | {gov_label} |\n"
-        f"| **ID** | `{bill.id}` |\n\n"
-        "---\n\n"
-    )
+    # Safe title for body heading
+    title = bill.title_el or f"Απόφαση {bill.id}"
+
+    # Metadata block
+    body = f"# {title}\n\n"
+    body += "| | |\n|---|---|\n"
+    body += f"| **Πηγή** | {source_badge} |\n"
+    body += f"| **Επίπεδο** | {gov_label} |\n"
+    if region_name:
+        body += f"| **Περιοχή** | {region_name} |\n"
+    if source == "DIAVGEIA" and getattr(bill, "diavgeia_ada", None):
+        body += f"| **ΑΔΑ** | [{bill.diavgeia_ada}](https://diavgeia.gov.gr/decision/view/{bill.diavgeia_ada}) |\n"
+    body += f"| **Κατάσταση** | {status_badge} |\n"
+    body += f"| **ID** | `{bill.id}` |\n\n"
+    body += "---\n\n"
 
     # Content fallback: summary → long_text → diavgeia ADA → title+link
     if summary:
@@ -216,12 +250,17 @@ def _build_topic_body(bill: ParliamentBill) -> str:
 
 
 def _build_topic_tags(bill: ParliamentBill) -> list[str]:
-    return [
+    tags = [
         "ekklesia",
         (bill.governance_level.value if bill.governance_level else "national").lower(),
         (getattr(bill, "source", "PARLIAMENT") or "PARLIAMENT").lower(),
         bill.status.value.lower().replace("_", "-") if bill.status else "active",
     ]
+    if bill.periferia_id:
+        tags.append(f"periferia-{bill.periferia_id}")
+    if bill.dimos_id:
+        tags.append(f"dimos-{bill.dimos_id}")
+    return tags
 
 
 async def _search_existing_topic(title: str) -> int | None:
@@ -242,17 +281,34 @@ async def _search_existing_topic(title: str) -> int | None:
     return None
 
 
+async def _region_name_for_body(bill: ParliamentBill, db: AsyncSession) -> str:
+    """Build region name string for topic body metadata."""
+    gov = bill.governance_level.value if bill.governance_level else "NATIONAL"
+    parts = []
+    if bill.dimos_id:
+        dimos = await db.get(Dimos, bill.dimos_id)
+        if dimos:
+            parts.append(f"Δήμος {dimos.name_el}")
+    if bill.periferia_id:
+        periferia = await db.get(Periferia, bill.periferia_id)
+        if periferia:
+            parts.append(f"Περιφέρεια {periferia.name_el}")
+    return ", ".join(parts)
+
+
 async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
     """Create a Discourse topic for a bill. Returns topic_id."""
     category_id = await _resolve_category(bill, db)
-    body = _build_topic_body(bill)
+    topic_title = await _build_topic_title(bill, db)
+    region_name = await _region_name_for_body(bill, db)
+    body = _build_topic_body(bill, region_name=region_name)
     tags = _build_topic_tags(bill)
 
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.post(
             f"{DISCOURSE_API_URL}/posts.json",
             json={
-                "title": bill.title_el[:255],
+                "title": topic_title,
                 "raw": body,
                 "category": category_id,
                 "tags": tags,
@@ -265,7 +321,10 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
         # Title already exists — search for existing topic and link it
         if r.status_code == 422 and "χρησιμοποιηθεί" in r.text:
             logger.info("Topic title already exists for %s — searching Discourse", bill.id)
-            existing_id = await _search_existing_topic(bill.title_el)
+            # Search with new prefixed title first, then raw title
+            existing_id = await _search_existing_topic(topic_title)
+            if not existing_id and bill.title_el:
+                existing_id = await _search_existing_topic(bill.title_el)
             if existing_id:
                 logger.info("Found existing topic %d for bill %s", existing_id, bill.id)
                 return existing_id
@@ -282,13 +341,15 @@ async def update_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> bool
     try:
         category_id = await _resolve_category(bill, db)
         tags = _build_topic_tags(bill)
-        body = _build_topic_body(bill)
+        region_name = await _region_name_for_body(bill, db)
+        body = _build_topic_body(bill, region_name=region_name)
+        topic_title = await _build_topic_title(bill, db)
 
         async with httpx.AsyncClient(timeout=15) as client:
-            # Update topic category + tags
+            # Update topic category + tags + title
             r = await client.put(
                 f"{DISCOURSE_API_URL}/t/-/{bill.forum_topic_id}.json",
-                json={"category_id": category_id, "tags": tags},
+                json={"category_id": category_id, "tags": tags, "title": topic_title},
                 headers=_headers(),
             )
             if r.status_code != 200:
