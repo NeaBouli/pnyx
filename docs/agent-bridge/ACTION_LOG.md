@@ -45,6 +45,19 @@
 
 ---
 
+## 2026-05-24 — NEA-266b Diavgeia forum bad summary cleanup
+
+- **Root cause:** `pill_el` contained `Διαύγεια: [unknown:XXXXX]` from scraper — body formatter used it as summary fallback
+- **Bad summary detector:** `_is_bad_summary()` — detects `unknown`, bare `Διαύγεια: ORG` patterns
+- **Clean summary fallback:** cascading: summary_short_el → pill_el → summary_long_el, skipping bad values
+- **Existing bad summaries nulled:** 249 rows (`pill_el` nulled)
+- **Resync triggered:** YES — first batch updated, rest hit Discourse 429 rate-limit (50 hits). Topics will auto-resync over next hours via 10min scheduler.
+- **Bad summary remaining in DB:** 0 (all 249 nulled)
+- **Commit:** `e9f30d5`
+- **API deployed:** YES
+
+---
+
 ## 2026-05-24 — NEA-266 Forum Diavgeia topic titles + region visibility
 
 - **Title prefix:** `[Βουλή]`, `[Περιφέρεια X]`, `[Δήμος X]`, `[Φορέας]`
