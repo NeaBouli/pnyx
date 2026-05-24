@@ -1,53 +1,70 @@
-# ekklesia.gr
+# ekklesia.gr — Ψηφιακή Δημοκρατία στην Ελλάδα
 
-> Digital Direct Democracy Platform for Greece. Citizens vote anonymously on real parliamentary bills using Ed25519 cryptography. Non-governmental, open-source (MIT), funded by citizen donations.
+> Ανεξάρτητη πλατφόρμα ψηφιακής άμεσης δημοκρατίας. Οι πολίτες ψηφίζουν ανώνυμα σε πραγματικά νομοσχέδια χρησιμοποιώντας κρυπτογραφία Ed25519. Μη κυβερνητική, ανοιχτού κώδικα (MIT), χρηματοδοτούμενη από δωρεές πολιτών.
+>
+> Independent digital direct democracy platform for Greece. Citizens vote anonymously on real parliamentary bills using Ed25519 cryptography. Non-governmental, open-source (MIT), funded by citizen donations.
 
-## What is ekklesia?
+## Τι είναι η ekklesia;
 
-ekklesia.gr (εκκλησία του έθνους) is an independent civic initiative enabling Greek citizens to vote on real bills from the Hellenic Parliament. Votes are cryptographically signed (Ed25519), anonymous, and non-legally binding. The platform calculates a Divergence Score showing how much citizen opinion differs from parliamentary party votes.
+ekklesia.gr (εκκλησία του έθνους) is an independent civic initiative enabling Greek citizens to vote on real bills from the Hellenic Parliament and local government (Diavgeia). Votes are cryptographically signed (Ed25519), anonymous, and non-legally binding. The platform calculates a Divergence Score showing how much citizen opinion differs from parliamentary party votes.
 
 ## Key Features
 
-- Anonymous voting on real parliamentary bills (Ed25519 signatures)
+- Anonymous voting on real parliamentary bills (Ed25519 signatures, HMAC nullifier chain)
 - Divergence Score: citizen opinion vs. party votes
-- MP Comparison: party alignment with citizens
-- Local Government: municipal/regional decisions via Diavgeia
-- AI Assistant (RAG chatbot) for citizen questions
+- Πολιτική Αξιολόγηση: citizens evaluate elected representatives on 8 criteria (-5 to +5)
+- Local Government: municipal/regional decisions via Diavgeia integration
+- εκπρόσωπος App: role-based representative access (Βουλευτής, Δήμαρχος, Περιφερειάρχης)
 - Public Forum at pnyx.ekklesia.gr (Discourse)
 - Public API (CC BY 4.0) for researchers
 - Arweave blockchain archiving for transparency
 - Mobile App (Android) + Progressive Web App
+- AI Assistant (local Ollama + Claude hybrid)
 
 ## Privacy
 
-- Phone number used ONLY for HLR verification, deleted immediately
+- Phone number used ONLY for HLR verification, deleted immediately after nullifier generation
 - No accounts, no email, no cookies, no tracking
+- Only nullifier hash (SHA256, non-reversible) + public key stored on server
 - Private key stored only on user device (Android Keystore / iOS Keychain)
-- Server stores only: nullifier hash (non-reversible) + public key + vote signature
+- Votes cannot be linked to identity
 
 ## Technology
 
 - Backend: Python FastAPI, PostgreSQL 15, Redis 7
-- Frontend: Next.js 14 (SSR, i18n el/en)
-- Mobile: Expo React Native
-- Crypto: Ed25519 (PyNaCl + @noble/curves)
-- AI: Ollama llama3.2 (local) + Claude API (hybrid)
+- Frontend: Next.js 16 (SSR, i18n el/en)
+- Mobile: Expo React Native (Android, vC27)
+- Crypto: Ed25519 (PyNaCl + @noble/curves), HMAC nullifier chain
+- AI: Ollama (local) + Claude API (hybrid)
 - Forum: Discourse (pnyx.ekklesia.gr)
 - Archiving: Arweave permanent storage
 - Hosting: Hetzner (Helsinki, EU)
+- ZK Voting V2: Semaphore-based, planned (blocked on mobile prover feasibility)
+
+## Status
+
+- Tier 1: Active (25 modules, 11+ containers)
+- Newsletter: Brevo + Telegram cross-publish
+- Monitor: 3-tier self-healing (API recovery, Docker restart, Telegram escalation)
+- ZK Voting V2: Planned, currently blocked on mobile snarkjs/Mopro compatibility
 
 ## URLs
 
 - Website: https://ekklesia.gr
+- Community: https://ekklesia.gr/community.html
+- FAQ: https://ekklesia.gr/wiki/faq.html
+- ZK Voting: https://ekklesia.gr/wiki/zk-voting.html
+- Representative Info: https://ekklesia.gr/representative.html
 - API: https://api.ekklesia.gr/api/v1/
 - Forum: https://pnyx.ekklesia.gr
 - GitHub: https://github.com/NeaBouli/pnyx
 - API Docs: https://ekklesia.gr/wiki/api.html
 - Whitepaper: https://ekklesia.gr/wiki/whitepaper.html
+- Privacy: https://ekklesia.gr/wiki/privacy.html
 
 ## License
 
-MIT License. © 2026 Vendetta Labs.
+MIT License. (c) 2026 V-Labs Development.
 
 ## Contact
 

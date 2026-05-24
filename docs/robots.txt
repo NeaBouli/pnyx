@@ -6,10 +6,12 @@ Allow: /wiki/
 Allow: /community.html
 Allow: /govgr-dimos.html
 Allow: /representative.html
+Allow: /votes/
 
 # Internal tools — do not index
 Disallow: /api/
-Disallow: /dashboard/
+Disallow: /admin
+Disallow: /dashboard
 Disallow: /tickets/auth/
 Disallow: /sso-verify.html
 Disallow: /download/
@@ -18,6 +20,7 @@ Disallow: /memo/
 Disallow: /embed/
 Disallow: /demo/
 Disallow: /mirror-setup.html
+Disallow: /representative/app
 
 # llms.txt for AI engines
 # See: https://ekklesia.gr/llms.txt
@@ -25,17 +28,29 @@ Disallow: /mirror-setup.html
 # Sitemap
 Sitemap: https://ekklesia.gr/sitemap.xml
 
-# AI Crawler explizit erlaubt
+# AI Crawlers — explicitly allowed
 User-agent: GPTBot
 Allow: /
 
+User-agent: ChatGPT-User
+Allow: /
+
 User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
 Allow: /
 
 User-agent: anthropic-ai
 Allow: /
 
 User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: CCBot
 Allow: /
 
 User-agent: Googlebot
