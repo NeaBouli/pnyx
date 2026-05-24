@@ -1,5 +1,20 @@
 # Action Log
 
+## 2026-05-24 — NEA-264 npm audit high vulnerabilities remediated
+
+- **dashboard:** next 14.2.35 → 16.2.6 + proxy route `params` Promise fix
+- **web:** `next-pwa` 5.6.0 → `@ducanh2912/next-pwa` 10.2.9 (maintained fork), `serialize-javascript` override >=7.0.5
+- **web:** npm audit fix: @babel/plugin-transform-modules-systemjs, fast-uri, brace-expansion
+- **mobile:** npm audit fix: @xmldom/xmldom, brace-expansion, ws
+- **Result:** ALL workspaces 0 high vulnerabilities
+- **Remaining moderate:** postcss (next transitive), uuid/expo chain (needs Expo 56)
+- **CI Security Audit:** should now PASS (audit-level=high)
+- **Commit:** `fde71ca`
+- **Branch protection:** stale checks (`test-api`, `test-crypto`) — recommend update (not mutated)
+- **Dependabot alerts:** disabled in repo — recommend enabling in GitHub Settings
+
+---
+
 ## STABLE CHECKPOINT — v1.3.2-stable-20260524
 
 - **Git tag:** `v1.3.2-stable-20260524`

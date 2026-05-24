@@ -10,6 +10,7 @@
 - [ ] NEA-249 Follow-up: Mopro native Expo Module feasibility plan
 
 ## Done (Session 24.05.2026)
+- [x] NEA-264: npm audit remediation — ALL 0 high (dashboard next 16, web PWA fork, mobile xmldom)
 - [x] NEA-261: Newsletter Preview Fix (ADMIN_KEY missing + error handling)
 - [x] NEA-263: Newsletter → Telegram cross-publish (non-blocking, Brevo subject)
 - [x] Dashboard ADMIN_KEY injection fix
