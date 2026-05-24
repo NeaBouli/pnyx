@@ -1,5 +1,24 @@
 # Action Log
 
+## SESSION 2 — 2026-05-24 (NEA-265 Fallback + NEA-268 + Branch Protection)
+
+### Commits
+12. `49d5780` fix(NEA-265): retry duplicate Discourse titles with stable suffix
+13. `3e965de` feat(NEA-268): add org_label to parliament_bills for institutional forum titles
+
+### Deployed
+- API: `3e965de` (Migration m601a2b3c4d5 + NEA-265 fallback + NEA-268 org_label)
+- Forum Resync: ~268/272 updated, 4 failed (2× 429, 2× 422)
+
+### Branch Protection
+- Updated: `test-api`/`test-crypto` → `Python API Tests`/`Crypto Package Tests`
+
+### Residual
+- 2× 429 Topics: Scheduler will auto-retry
+- 2× 422 Topics (DIAV-ΡΛΩ6465ΕΦ5-Ω, DIAV-63ΚΛ4690ΒΝ-Ι): Title collision, NEA-265 fallback candidate
+
+---
+
 ## SESSION REPORT — 2026-05-24 (FINAL)
 
 ### Commits (15 feature/fix + bridge)

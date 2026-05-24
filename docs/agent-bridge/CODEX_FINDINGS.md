@@ -234,3 +234,46 @@ Empfehlung: Hybrid V2.
 - Keine server-side proving pipeline.
 - Kein Full-Helios-Trustee-System jetzt.
 - Mobile Proof Generation zuerst benchmarken, bevorzugt Mopro/SemaphoreReactNative statt plain `snarkjs`.
+---
+
+# CODEX FINDINGS — NEA-268 org_label Forum Titles
+Datum: 2026-05-24
+Agent: Codex
+Scope: Recheck Commits `49d5780` und `417b72d`; Produktcode nur gelesen, keine Produktcode-Aenderungen.
+
+## Finding 1: unknown org labels werden in parliament_bills und Forum-Titel uebernommen — RESOLVED in `3e965de`
+
+Severity: MEDIUM
+
+Der NEA-268 Prompt verlangte explizit, dass keine unknown-Werte als echte Labels gespeichert oder im Titel genutzt werden. Der aktuelle Commit uebernimmt solche Werte aber weiterhin:
+
+- `apps/api/alembic/versions/m601a2b3c4d5_bill_org_label.py:23` backfillt alle `dd.organization_label IS NOT NULL`; Werte wie `[unknown:...]` oder `unknown` werden nicht ausgeschlossen.
+- `apps/api/services/diavgeia_scraper.py:255` setzt `org_label=org_label or None`; der Scraper erzeugt aber weiter `[unknown:...]` aus `get_org_label()` und speichert es damit fuer neue Bills.
+- `apps/api/services/discourse_sync.py:143` nutzt jedes truthy `bill.org_label`; daraus entstehen Forum-Titel wie `[Φορέας [unknown:XXXXX]] ...`.
+
+Fix fuer CC:
+
+- Einen kleinen Helper fuer saubere Org-Labels einfuehren, z. B. `None` fuer leer, whitespace, `unknown`, `[unknown:...]`.
+- Helper beim Diavgeia→Bill-Import verwenden.
+- Helper in `_build_topic_title()` verwenden; bei unsauberem Label fallback auf `Φορέας`.
+- Migration-Backfill SQL um `NOT ILIKE 'unknown'` / `NOT LIKE '[unknown:%'` / `btrim(...) <> ''` erweitern.
+- Tests ergaenzen: `[unknown:ORG]`, `unknown`, whitespace muessen `[Φορέας]` ergeben und nicht `[Φορέας unknown]`.
+
+Recheck 2026-05-24: `3e965de` fuehrt `_clean_org_label()` ein, filtert bad labels im Diavgeia→Bill-Import, filtert defensiv im Forum-Titel und erweitert das Migration-Backfill-SQL um blank/unknown/[unknown:%]-Guards. Neue Tests decken Helper und Forum-Fallback fuer bad labels ab. Finding geschlossen.
+
+## Recheck Notes
+
+- `49d5780` NEA-265 Commit-Scope passt: nur `apps/api/services/discourse_sync.py` und `apps/api/tests/services/test_discourse_sync.py`.
+- `417b72d` Migration-Kette passt syntaktisch (`down_revision = l501a2b3c4d5`).
+- `diavgeia_decisions.organization_label` ist die korrekte Quellspalte.
+- Checks lokal:
+  - `/tmp/pnyx-discourse-test-venv/bin/python -m pytest apps/api/tests/services/test_discourse_sync.py -q` → `15 passed, 1 warning`
+  - `/tmp/pnyx-discourse-test-venv/bin/python -m py_compile apps/api/models.py apps/api/services/diavgeia_scraper.py apps/api/services/discourse_sync.py apps/api/tests/services/test_discourse_sync.py` → OK
+  - `/tmp/pnyx-discourse-test-venv/bin/python -m py_compile apps/api/alembic/versions/m601a2b3c4d5_bill_org_label.py` → OK
+  - Migration sanity fuer `down_revision`, `TRIM`, blank/unknown/[unknown:%]-Filter → OK
+
+---
+
+Datum: 2026-05-22
+Agent: Codex
+Scope: Audit-Recheck Commit `435f3bd` (NEA-186 rep role-based bill visibility), read-only Produktcode. Keine Produktcode-Aenderungen.

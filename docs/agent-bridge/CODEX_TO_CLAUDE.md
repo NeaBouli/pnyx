@@ -1400,3 +1400,149 @@ Nicht jetzt bauen:
 - Server-side proving
 - Expo-Go-only ZK integration erzwingen
 - Aggregate-only ZK ohne oeffentliche per-vote/proof Records
+
+---
+
+## 2026-05-24 - Codex Review/Fix: NEA-265 Duplicate Discourse Topic Search-Miss
+
+### Kontext
+
+Gio hat nach Rechnerabsturz den CC-Handoff uebergeben. Gelesen:
+
+- `docs/agent-bridge/CC_RESPONSE.md`
+- `docs/agent-bridge/TODO.md`
+- `docs/agent-bridge/PROJECT_STATE.md`
+- `docs/agent-bridge/ACTION_LOG.md`
+
+Aktueller lokaler HEAD beim Start: `e5b2f99` (`chore(bridge): session handoff for Codex — 15 commits, review points`), also neuer als im CC-Text genannter `551b021`.
+
+### Review-Ergebnis NEA-265
+
+Codex bestaetigt den offenen Risikopunkt: Wenn Discourse bei Topic-Create `422 Titel bereits verwendet` liefert und `_search_existing_topic()` keinen Treffer findet, fiel der Code wieder in `RuntimeError`. Dadurch bleibt `forum_topic_id` leer und der 10-Minuten-Scheduler versucht den gleichen Bill spaeter erneut.
+
+### Lokaler Fix
+
+- Datei: `apps/api/services/discourse_sync.py`
+- Neu: `_with_unique_title_suffix(title, bill)`
+- Verhalten: Bei 422 duplicate title erst bestehendes Topic suchen; wenn Search-Miss, einmal mit stabilem Suffix neu erstellen.
+- Suffix-Prioritaet: `diavgeia_ada`, sonst `bill.id`.
+- Discourse-Titellimit bleibt bei 255 Zeichen.
+
+### Tests
+
+- Neue Datei: `apps/api/tests/services/test_discourse_sync.py`
+- Testet:
+  - ADA-Suffix und 255-Zeichen-Limit
+  - `create_discourse_topic()` retryt bei 422/Search-Miss mit stabilem Suffix und gibt neue `topic_id` zurueck
+
+Verifikation:
+
+```bash
+/tmp/pnyx-discourse-test-venv/bin/python -m pytest apps/api/tests/services/test_discourse_sync.py -q
+```
+
+Ergebnis: `2 passed, 1 warning in 0.08s`
+
+Warnung: bestehende Pydantic-V2-Deprecation in `apps/api/config.py`.
+
+### Nicht angeruehrt
+
+- Kein Commit, Push oder Deployment.
+- Bestehende dirty/untracked Crash-Reste nicht geaendert:
+  - `apps/mobile/android/app/build.gradle`
+  - `apps/dashboard/tsconfig.tsbuildinfo`
+  - `apps/representative/.claude/`
+  - `apps/representative/AGENTS.md`
+  - `apps/representative/CLAUDE.md`
+  - `apps/representative/index.ts`
+  - `apps/representative/package-lock.json`
+
+---
+
+## 2026-05-24 - Codex Prompt an Claude Code: NEA-268 org_label fuer Institutional Forum-Titel
+
+### Auftrag
+
+Bitte implementiere **NEA-268: `org_label` auf `parliament_bills` fuer bessere Institutional-Forum-Titel**.
+
+Ziel: Diavgeia-Bills mit `governance_level = INSTITUTIONAL` sollen im Forum nicht mehr generisch als `[Φορέας] ...` erscheinen, sondern soweit verfuegbar mit konkretem Organisationstitel, z. B. `[Φορέας Εθνικό Μετσόβιο Πολυτεχνείο] ...` oder eine sinnvoll gekuerzte Variante.
+
+### Wichtiger aktueller Stand
+
+- Gio will: **CC baut, Codex prueft**.
+- Codex hat lokal bereits einen kleinen uncommitted NEA-265-Fix in `apps/api/services/discourse_sync.py` plus Test angelegt:
+  - `_with_unique_title_suffix()`
+  - Retry nach Discourse `422` duplicate title, wenn Search-Miss
+  - Test: `apps/api/tests/services/test_discourse_sync.py`
+- Bitte diesen Codex-Fix **nicht ueberschreiben**. Wenn du an `discourse_sync.py` arbeitest, integriere deine Aenderung darauf.
+- Weitere bestehende dirty/untracked Crash-Reste nicht anfassen, wenn nicht noetig.
+
+### Empfohlener Scope
+
+1. **DB/Model**
+   - `parliament_bills` bekommt nullable `org_label` / `organization_label` Text-Spalte.
+   - Bitte einen Namen waehlen und konsistent halten; Empfehlung: `org_label`, weil `diavgeia_decisions.org_label` bereits existiert.
+   - SQLAlchemy Model `ParliamentBill` erweitern.
+   - Alembic Migration mit sicherem `upgrade()`/`downgrade()`.
+
+2. **Import/Backfill**
+   - Beim Import aus `diavgeia_decisions` nach `parliament_bills` das bestehende `org_label` uebernehmen.
+   - Existing rows backfillen, soweit `parliament_bills.diavgeia_ada = diavgeia_decisions.ada`.
+   - Keine unknown-Werte als echte Labels speichern:
+     - leer/null
+     - `[unknown:...]`
+     - `unknown`
+   - Backfill entweder in Migration oder in vorhandenen Script-/Service-Pfad, aber bitte klar dokumentieren.
+
+3. **Forum-Titel**
+   - `apps/api/services/discourse_sync.py::_build_topic_title()`
+   - Fuer `governance_level == INSTITUTIONAL`:
+     - Wenn `bill.org_label` sauber vorhanden: Prefix daraus bauen.
+     - Wenn nicht: fallback bleibt `Φορέας`.
+   - Prefix muss Discourse-Titellimit respektieren. Gesamttitel bleibt <= 255.
+   - Keine `unknown`/bare Org-ID in Titel.
+
+4. **Forum-Body Metadata**
+   - Optional, aber sinnvoll: bei Institutional + sauberem org_label im Body eine Metadata-Zeile fuer Organisation anzeigen.
+   - Nicht doppelt als Summary verwenden.
+
+5. **API Response**
+   - Wenn `ParliamentBill` public/admin schemas bereits source/governance/diavgeia_ada ausgeben, bitte `org_label` dort aufnehmen, wo es fachlich passt.
+   - Keine Auth-/Voting-/Identity-Logik aendern.
+
+### Akzeptanzkriterien
+
+- Institutional Diavgeia bill mit sauberem `org_label` erzeugt Forum-Titel mit konkretem Org-Prefix.
+- Institutional Diavgeia bill ohne sauberem `org_label` bleibt bei `[Φορέας]`.
+- Existing NEA-265 duplicate-title fallback bleibt erhalten und Tests bleiben gruen.
+- Keine Secrets lesen/ausgeben.
+- Keine unrelated Files formatieren.
+- Keine Deployments/Pushes ohne Gio-Freigabe.
+
+### Tests/Checks
+
+Bitte mindestens:
+
+```bash
+python -m py_compile apps/api/services/discourse_sync.py
+python -m pytest apps/api/tests/services/test_discourse_sync.py -q
+```
+
+Wenn Migration/Model geaendert:
+
+```bash
+python -m py_compile apps/api/models.py apps/api/services/diavgeia_scraper.py
+```
+
+Wenn lokale API-Testumgebung verfuegbar ist, zusaetzlich relevante API Tests laufen lassen. Wenn nicht, exakten fehlenden Dependency-/DB-Fehler berichten.
+
+### Erwarteter Fixbericht an Codex
+
+Bitte in `docs/agent-bridge/CC_RESPONSE.md` schreiben:
+
+- Commit/Arbeitsbaum-Stand
+- Geaenderte Dateien
+- Migrationsname
+- Backfill-Strategie
+- Tests + exakte Ergebnisse
+- Offene Risiken, besonders fuer Production-DB und Forum-Resync

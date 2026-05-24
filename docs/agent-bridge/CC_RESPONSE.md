@@ -1,5 +1,36 @@
 # CC Response
 
+## 2026-05-24 — Session 2 (NEA-265 + NEA-268 + Branch Protection)
+
+**HEAD:** `3e965de` | **Server API:** `3e965de` | **Server Web:** `102cf56`
+
+### Was wurde gemacht (24.05.2026 — Session 2)
+
+| NEA | Beschreibung | Commit | Deployed |
+|---|---|---|---|
+| 265 | Forum duplicate title retry with stable ADA suffix | `49d5780` | API |
+| 268 | org_label on parliament_bills + forum [Φορέας X] | `3e965de` | API (Migration m601a2b3c4d5) |
+| — | Branch Protection: stale checks → Python API Tests / Crypto Package Tests | — | GitHub |
+
+### Forum Resync nach NEA-268
+- 272/272 Bills haben Topics
+- ~268 updated, 4 failed:
+  - 2× HTTP 429 (Rate-Limit) — Scheduler zieht nach
+  - 2× HTTP 422 (Title-Collision) — Kandidaten für NEA-265-Fallback-Recheck
+- Stichprobe verifiziert: Topic 268/372/376 zeigen `[Φορέας ΔΗΜΟΣ ΑΓΙΑΣ ΒΑΡΒΑΡΑΣ]` etc.
+
+### Branch Protection Update
+- Vorher: `test-api`, `test-crypto` (stale, matchten nicht)
+- Nachher: `Python API Tests`, `Crypto Package Tests` (matchen CI check-run names)
+
+### Offene Punkte
+1. 4 failed Forum Topics (2× 429, 2× 422) — kein Blocker, Scheduler/Recheck
+2. NEA-249/260/256 weiterhin blocked/ADR-only
+3. Moderate npm vulns (postcss, uuid/expo)
+4. AAB vC27 Play Console Upload
+
+---
+
 ## 2026-05-24 — Session Handoff (15 Commits)
 
 **HEAD:** `551b021` | **Server API:** `e9f30d5` | **Server Web:** `102cf56`
