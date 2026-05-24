@@ -1,5 +1,17 @@
 # Action Log
 
+## 2026-05-24 — PR #67 Recharts 3.8.1 merged
+
+- **PR:** #67 (Dependabot)
+- **Dependency:** recharts 2.15.4 → 3.8.1
+- **CodeRabbit:** SUCCESS, no actionable comments
+- **CI:** green before merge
+- **Security Audit:** green before merge
+- **Merge method:** squash, branch deleted
+- **Open PRs remaining:** 0
+
+---
+
 ## 2026-05-24 — NEA-264 npm audit high vulnerabilities remediated
 
 - **dashboard:** next 14.2.35 → 16.2.6 + proxy route `params` Promise fix
