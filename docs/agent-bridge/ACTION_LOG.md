@@ -45,6 +45,21 @@
 
 ---
 
+## 2026-05-24 — NEA-267 SEO/GEO/KI Optimierung
+
+- **llms.txt:** Erweitert — griechische Beschreibung, Πολιτική Αξιολόγηση, εκπρόσωπος, Diavgeia, ZK V2 Status, HMAC nullifier chain, alle Public URLs
+- **robots.txt:** 4 neue AI Crawler (ChatGPT-User, Claude-User, Google-Extended, CCBot), /admin + /dashboard + /representative/app disallowed
+- **JSON-LD:** TechArticle auf zk-voting.html, WebPage auf representative.html
+- **Sitemap:** Unchanged (alle URLs valid)
+- **FAQ JSON-LD:** Bereits 40+ Fragen inkl. Nullifier, Αξιολόγηση — kein Update nötig
+- **Overclaim:** PASS — kein "official government"
+- **JSON-LD Validation:** PASS (alle Blöcke gültig)
+- **Live:** /llms.txt 200, /robots.txt 200, /sitemap.xml 200
+- **Commit:** `102cf56`
+- **Web deployed:** YES
+
+---
+
 ## 2026-05-24 — NEA-266b Diavgeia forum bad summary cleanup
 
 - **Root cause:** `pill_el` contained `Διαύγεια: [unknown:XXXXX]` from scraper — body formatter used it as summary fallback
