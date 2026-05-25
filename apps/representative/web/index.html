@@ -8,10 +8,10 @@
 :root{--dark:#0f172a;--gold:#f59e0b;--gold-l:#fef3c7;--blue:#2563eb;--green:#22c55e;--red:#ef4444;--gray:#64748b;--radius:12px}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,sans-serif;background:var(--dark);color:#e2e8f0;min-height:100vh}
-.header{background:linear-gradient(135deg,#0f172a,#1e293b);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--gold)}
+.header{position:sticky;top:0;z-index:100;background:linear-gradient(135deg,#0f172a,#1e293b);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:2px solid var(--gold)}
 .header h1{font-size:18px;font-weight:900;color:var(--gold)}
-.header .badge{font-size:10px;background:var(--gold);color:var(--dark);padding:2px 8px;border-radius:10px;font-weight:700}
-.content{padding:20px;max-width:500px;margin:0 auto}
+.header .badge{font-size:10px;background:var(--gold);color:var(--dark);padding:4px 12px;border-radius:999px;font-weight:700;line-height:1.15;text-align:center;max-width:48%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.content{padding:20px 20px 80px;max-width:500px;margin:0 auto}
 
 /* Login */
 #loginScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center}
@@ -30,9 +30,11 @@ body{font-family:system-ui,sans-serif;background:var(--dark);color:#e2e8f0;min-h
 .eval-consent label{display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;color:#e2e8f0;margin-bottom:16px;cursor:pointer}
 .eval-consent input[type=checkbox]{width:18px;height:18px;accent-color:var(--gold)}
 .score-card{background:#1e293b;border:1px solid #334155;border-radius:var(--radius);padding:14px;margin-bottom:10px}
-.score-card .q{font-size:13px;color:#e2e8f0;font-weight:600;margin-bottom:4px}
+.score-card .score-row{display:flex;align-items:center;gap:12px}
+.score-card .score-main{flex:1;min-width:0;padding-right:8px}
+.score-card .q{font-size:13px;color:#e2e8f0;font-weight:600;margin-bottom:4px;line-height:1.25}
 .score-card .cat{font-size:10px;color:var(--gray);text-transform:uppercase;letter-spacing:1px}
-.score-card .val{font-size:20px;font-weight:900;color:var(--gold);float:right;margin-top:-28px}
+.score-card .val{flex:0 0 56px;min-width:56px;text-align:right;font-size:20px;font-weight:900;color:var(--gold)}
 .score-card .cnt{font-size:11px;color:var(--gray)}
 
 /* Bills */
@@ -48,6 +50,7 @@ body{font-family:system-ui,sans-serif;background:var(--dark);color:#e2e8f0;min-h
 .bar-yes{background:var(--green);height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;min-width:20px}
 .bar-no{background:var(--red);height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;min-width:20px}
 .votes-label{font-size:11px;color:var(--gray);text-align:center}
+.empty-state{color:var(--gray);text-align:center;font-size:12px;padding:18px 10px;border:1px dashed #334155;border-radius:10px;background:rgba(15,23,42,.35);margin-top:12px}
 .error{background:#7f1d1d;color:#fca5a5;padding:10px;border-radius:8px;font-size:13px;margin:12px 0;display:none}
 .loading{text-align:center;color:var(--gray);padding:40px}
 .nav-bar{position:fixed;bottom:0;left:0;right:0;background:#1e293b;border-top:1px solid #334155;display:flex;padding:8px 0;display:none}
@@ -172,8 +175,14 @@ async function loadResults(billId){
     var yesPct=d.yes_pct||0,noPct=d.no_pct||0;
     var html='<button class="btn btn-outline" onclick="loadBills()" style="margin-bottom:16px">← Πίσω</button>';
     html+='<div class="bill-card"><h3>'+d.title_el+'</h3>';
-    html+='<div class="bar-wrap"><div class="bar-yes" style="width:'+Math.max(yesPct,3)+'%">'+yesPct+'%</div><div class="bar-no" style="width:'+Math.max(noPct,3)+'%">'+noPct+'%</div></div>';
-    html+='<div class="votes-label">'+d.total+' ψήφοι πολιτών</div>';
+    if((d.total||0)>0){
+      var yesLabel=yesPct>=5?yesPct+'%':'';
+      var noLabel=noPct>=5?noPct+'%':'';
+      html+='<div class="bar-wrap"><div class="bar-yes" style="width:'+Math.max(yesPct,3)+'%">'+yesLabel+'</div><div class="bar-no" style="width:'+Math.max(noPct,3)+'%">'+noLabel+'</div></div>';
+      html+='<div class="votes-label">'+d.total+' ψήφοι πολιτών</div>';
+    }else{
+      html+='<div class="empty-state">Δεν υπάρχουν ψήφοι πολιτών ακόμα</div>';
+    }
     if(d.party_votes){html+='<div style="margin-top:12px;font-size:12px;color:var(--gray)"><strong>Κόμματα:</strong> ';for(var p in d.party_votes)html+=p+':'+d.party_votes[p]+' ';html+='</div>'}
     if(d.consensus_count>0)html+='<div style="margin-top:8px;font-size:12px;color:#a855f7">⚖️ Συναίνεση: '+((d.consensus_score||0)>0?'+':'')+(d.consensus_score||0).toFixed(1)+' ('+d.consensus_count+')</div>';
     html+='</div>';
@@ -219,14 +228,18 @@ async function loadEvalScreen(){
         html+='<div style="text-align:center;margin-bottom:16px;font-size:13px;color:var(--gray)">Συνολικός μέσος όρος: <strong style="color:var(--gold);font-size:18px">'+(d.total_avg!==null?(d.total_avg>0?'+':'')+d.total_avg:'—')+'</strong></div>';
         d.questions.forEach(function(q){
           html+='<div class="score-card">';
+          html+='<div class="score-row">';
+          html+='<div class="score-main">';
           html+='<div class="cat">'+q.category+'</div>';
           html+='<div class="q">'+q.question_el+'</div>';
+          html+='<div class="cnt">'+q.vote_count+' Αξιολογήσεις</div>';
+          html+='</div>';
           html+='<div class="val">'+(q.avg_score!==null?(q.avg_score>0?'+':'')+q.avg_score:'—')+'</div>';
-          html+='<div class="cnt">'+q.vote_count+' αξιολογήσεις</div>';
+          html+='</div>';
           html+='</div>';
         });
       }else{
-        html+='<p style="color:var(--gray);text-align:center;font-size:14px;margin-top:16px">Δεν υπάρχουν αξιολογήσεις ακόμα.</p>';
+        html+='<p style="color:var(--gray);text-align:center;font-size:14px;margin-top:16px">Δεν υπάρχουν Αξιολογήσεις ακόμα.</p>';
       }
     }
     el.innerHTML=html;
