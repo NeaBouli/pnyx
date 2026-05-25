@@ -13,8 +13,8 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `9363e16` (feat(NEA-272): admin endpoint to resolve unknown org labels + backfill)
-- **origin/main:** `9363e16` (synchron)
+- **Lokaler HEAD:** `4ba94fc` (fix: add logout confirmation dialog in ekprosopos)
+- **origin/main:** `6b12524` (1 Commit ahead: logout fix + bridge)
 - **Release Tags:** `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`
 - **Rollback Tags:** `rollback-pre-zk-20260524`
 - **Server HEAD:** `9363e16`

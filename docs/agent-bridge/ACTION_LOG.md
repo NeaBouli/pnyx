@@ -2,6 +2,15 @@
 
 ## SESSION 4 — 2026-05-25 (NEA-267 SEO + NEA-266 README + F-Droid !38007)
 
+### ekprosopos Logout Confirm
+- Logout-Button zeigt jetzt Bestätigungsdialog: "Θέλετε σίγουρα να αποσυνδεθείτε;"
+- Verhindert versehentliches Ausloggen bei Touch
+- Commit: `4ba94fc`
+
+### Topic 173 Single Resync
+- `DIAV-9Ε7846ΨΖ2Ν-Υ` → `[Φορέας ΕΘΝΙΚΟ & ΚΑΠΟΔΙΣΤΡΙΑΚΟ ΠΑΝΕΠΙΣΤΗΜΙΟ ΑΘΗΝΩΝ]`
+- Jetzt 6/6 Stichproben korrekt
+
 ### NEA-272 org_label Resolve + Backfill
 - `POST /admin/maintenance/resolve-org-labels` triggered
 - Step 1: 43 unknown UIDs → 43 resolved (100%), 0 failed
