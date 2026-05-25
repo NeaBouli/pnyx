@@ -2,6 +2,12 @@
 
 ## SESSION 4 — 2026-05-25 (NEA-267 SEO + NEA-266 README + F-Droid !38007)
 
+### ekprosopos Screenshots auf Landing Page
+- 3 Screenshots (bills, detail, evaluation) in ekprosopos-Banner eingefuegt
+- Dateien: `docs/assets/screenshots/screenshot-ekprosopos-{bills,detail,evaluation}.jpg`
+- Position: unter Beschreibungstext, ueber Buttons
+- Commit: `4b8574e`
+
 ### F-Droid !38007 Autoupdate Metadata
 - linsui feedback addressed: autoupdate metadata added to `metadata/ekklesia.gr.yml` in `TrueRepublic/fdroiddata`
 - Branch: `ekklesia-v1.0.0`

@@ -13,8 +13,8 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `0f3ce02` (chore(bridge): record fdroid autoupdate metadata)
-- **origin/main:** `0f3ce02` (synchron)
+- **Lokaler HEAD:** `4b8574e` (feat: add ekprosopos app screenshots to landing page)
+- **origin/main:** `4b8574e` (synchron)
 - **Release Tags:** `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`
 - **Rollback Tags:** `rollback-pre-zk-20260524`
 - **Server repo HEAD:** `6ba382a` (web rebuilt per ADR-010)
