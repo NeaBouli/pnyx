@@ -13,11 +13,11 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `4b8574e` (feat: add ekprosopos app screenshots to landing page)
-- **origin/main:** `4b8574e` (synchron)
+- **Lokaler HEAD:** `b46fece` (chore(mobile): commit versionCode 27 bump)
+- **origin/main:** `b46fece` (synchron)
 - **Release Tags:** `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`
 - **Rollback Tags:** `rollback-pre-zk-20260524`
-- **Server repo HEAD:** `6ba382a` (web rebuilt per ADR-010)
+- **Server repo HEAD:** `b46fece` (web rebuilt per ADR-010, screenshots live)
 - **Web container representative/index.html:** clean image rebuild done; `docker cp` hotfix replaced per ADR-010
 - **API container code:** `9363e16` (NEA-265+268+270+271+272, org_label 192/192 resolved)
 - **Dashboard container code:** `1964e1f` (NEA-269+267+270+271, /logs fully wired)
@@ -25,7 +25,8 @@
 - **ekprosopos UI fix:** `3633d69` live after server pull; hard refresh/cache clear may be needed
 - **ekprosopos APK live:** `/download/ekprosopos-latest.apk` SHA-256 `4b9d49d888465cac2f1de94f50e46efc8dbfea49cb805fd715459bbbb28a761e` (matches local `~/Desktop/ekprosopos-v1.1.0-vC2.apk` and ignored archive `builds/artifacts/ekprosopos-v1.1.0-vC2.apk`)
 - **APK manifest:** `docs/download/APK_MANIFEST.md` + `docs/download/ekprosopos-latest.apk.sha256` track canonical server artifact without committing 55MB APK binary
-- **F-Droid !38007:** autoupdate metadata pushed to `TrueRepublic/fdroiddata@3d81d65c1`; linsui comment posted, MR still open/waiting-on-response
+- **F-Droid !38007:** Pipeline fix: vC27 committed, Tag `v1.3.5-20260525` erstellt, CurrentVersion korrigiert. Pipeline #2551701100 running.
+- **Tag:** `v1.3.5-20260525` → Commit `b46fece` (vC27, versionName 1.0.0)
 
 ## Uncommitted Aenderungen
 
