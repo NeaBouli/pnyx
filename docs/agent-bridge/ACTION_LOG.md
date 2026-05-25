@@ -2,13 +2,33 @@
 
 ## SESSION 4 — 2026-05-25 (NEA-267 SEO + NEA-266 README + F-Droid !38007)
 
-### F-Droid Pipeline Fix
-- Pipeline #2551676986 failed: `checkupdates` error "current version is newer: old vercode=27, new vercode=26"
-- Root cause: `build.gradle` vC27 war uncommitted, kein Tag hatte vC27
-- Fix 1: `build.gradle` vC27 committed + gepusht (`b46fece`)
-- Fix 2: Tag `v1.3.5-20260525` erstellt + gepusht (zeigt auf Commit mit vC27)
-- Fix 3: fdroiddata `CurrentVersion: 1.0.0` (matcht `versionName` in build.gradle)
-- Neue Pipeline #2551701100 laeuft (status: running)
+### Logout Modal (professionell)
+- System `confirm()` ersetzt durch Custom Dark-Theme Modal
+- Zentriertes Overlay mit Titel "Αποσύνδεση;", Cancel/Confirm Buttons
+- Gilt fuer ekprosopos Web-App
+- Commit: `98ba0b6`
+- Web-Container rebuild noetig fuer Live
+
+### NEA-273 Compass Toggle Aggregated Position
+- Tap auf Achsenbeschriftung toggled zwischen Partei-Dots und aggregiertem Durchschnittspunkt
+- Aggregiert: blauer Ring (24px) bei Durchschnitt aller Partei-X/Y, Label "Μέση Θέση"
+- Hint-Text wechselt kontextbasiert
+- Commit: `5328a42`
+- APK Rebuild nötig (React Native Änderung)
+
+### CHECK: Benachrichtigungseinstellungen
+- Toggle-States: ECHT — SecureStore (expo-secure-store), per-Key gespeichert
+- Push-Token: ECHT — expo-notifications, registriert bei /api/v1/notify/register
+- F-Droid: Push korrekt deaktiviert (buildFlavor check)
+- Fazit: ECHT, nicht fake
+
+### F-Droid Pipeline Fixes
+- Pipeline #2551676986 failed: `checkupdates` "current version is newer: old vercode=27, new vercode=26"
+  - Root cause: `build.gradle` vC27 war uncommitted, kein Tag hatte vC27
+  - Fix: vC27 committed (`b46fece`), Tag `v1.3.5-20260525`, CurrentVersion korrigiert
+- Pipeline #2551701100 failed: `checkupdates` + `rewritemeta` — trailing newline fehlte + checkupdates wollte neuen Build-Eintrag hinzufuegen
+  - Fix: trailing newline in metadata YAML
+- Pipeline #2551718912 laeuft (status: running)
 
 ### ekprosopos Screenshots auf Landing Page
 - 3 Screenshots (bills, detail, evaluation) in ekprosopos-Banner eingefuegt
