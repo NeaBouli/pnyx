@@ -13,19 +13,17 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `b46fece` (chore(mobile): commit versionCode 27 bump)
-- **origin/main:** `b46fece` (synchron)
-- **Release Tags:** `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`
+- **Lokaler HEAD:** `9e7dced` (chore(bridge): F-Droid build scan errors fixed)
+- **origin/main:** `9e7dced` (synchron)
+- **Release Tags:** `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`, `v1.3.5-20260525`
 - **Rollback Tags:** `rollback-pre-zk-20260524`
-- **Server repo HEAD:** `b46fece` (web rebuilt per ADR-010, screenshots live)
-- **Web container representative/index.html:** clean image rebuild done; `docker cp` hotfix replaced per ADR-010
-- **API container code:** `9363e16` (NEA-265+268+270+271+272, org_label 192/192 resolved)
-- **Dashboard container code:** `1964e1f` (NEA-269+267+270+271, /logs fully wired)
-- **Static logout fix:** live, verified (`confirmLogout` 2x in index.html)
-- **ekprosopos UI fix:** `3633d69` live after server pull; hard refresh/cache clear may be needed
-- **ekprosopos APK live:** `/download/ekprosopos-latest.apk` SHA-256 `4b9d49d888465cac2f1de94f50e46efc8dbfea49cb805fd715459bbbb28a761e` (matches local `~/Desktop/ekprosopos-v1.1.0-vC2.apk` and ignored archive `builds/artifacts/ekprosopos-v1.1.0-vC2.apk`)
-- **APK manifest:** `docs/download/APK_MANIFEST.md` + `docs/download/ekprosopos-latest.apk.sha256` track canonical server artifact without committing 55MB APK binary
-- **F-Droid !38007:** Pipeline fix: vC27 committed, Tag `v1.3.5-20260525` erstellt, CurrentVersion korrigiert. Pipeline #2551701100 running.
+- **Server repo HEAD:** `8a71cc4` (web rebuilt mit Logout Modal + Screenshots)
+- **Web container:** rebuilt (ADR-010), Logout Modal + Screenshots + ekprosopos UI fix live
+- **API container code:** `9363e16` (NEA-265+268+270+271+272)
+- **Dashboard container code:** `1964e1f` (NEA-269+267+270+271)
+- **F-Droid !38007:** 4 Pipeline-Iterationen, `checkupdates` gruen seit #2551741271. Pipeline #2551754848 laeuft (scanignore + lock-file Fixes).
+- **APK Build:** NEA-273 Compass Toggle — Build laeuft im Hintergrund
+- **Pending deploys:** pnyx Repo `9e7dced` noch nicht auf Server gepullt (nur bridge/mobile changes, kein Container-Impact)
 - **Tag:** `v1.3.5-20260525` → Commit `b46fece` (vC27, versionName 1.0.0)
 
 ## Uncommitted Aenderungen
