@@ -1,15 +1,26 @@
 # TODO — Ekklesia.gr / pnyx
 
 ## Aktiv / In Progress
+- [ ] NEA-270: Admin Logs Hardening (Analyse fertig; braucht Freigabe fuer Code) — sanitize logs before Ollama, auth-gate sensitive status, dashboard text cleanup
 - [ ] NEA-258: FORUM_SSO_SALT Startup-Check (LOW follow-up)
-- [ ] README/CLAUDE.md Aktualisierung (INFO — stale Next 14, CX33, 22 Module)
 - [ ] AAB vC27 Upload zu Play Console (`~/Desktop/ekklesia-v1.3.2-vC27-PLAY.aab` BEREIT)
+- [ ] CLAUDE.md Aktualisierung (INFO — stale CX33, 22 Module, Next 14)
 
 ## Blocked
 - [ ] NEA-249: ZK Voting V2 — BLOCKED (mobile prover unresolved, ADR geschrieben)
 - [ ] NEA-249 Follow-up: Mopro native Expo Module feasibility plan
 
+## Done (Session 25.05.2026)
+- [x] NEA-267: JSON-LD auf 12 neue Seiten (wiki, tickets, govgr-dimos), sitemap cleanup, votes noindex (`7fc3f26`)
+- [x] NEA-266: README vollständig aktualisiert — Encoding, Versionen, Links, Features, SEO-Sektion (`221815c`)
+
 ## Done (Session 24.05.2026)
+- [x] NEA-269: Dashboard /gov Demo-Daten entfernt + /users Revocation UX privacy-korrekt (`08994b0`)
+- [x] NEA-270 Analyse: Admin Logs Endpoint Gap/Sicherheitsmodell analysiert (kein Produktcode)
+- [x] NEA-268: org_label auf parliament_bills + Forum [Φορέας X] Titel live/deployed (`3e965de`)
+- [x] NEA-265 Follow-up: Duplicate-Title Search-Miss Retry mit ADA-Suffix (`49d5780`)
+- [x] Branch Protection: stale checks korrigiert auf `Python API Tests`/`Crypto Package Tests`
+- [x] Forum Resync: 268/272 Topics aktualisiert, [Φορέας X] Stichproben verifiziert
 - [x] NEA-267: SEO/GEO/KI — llms.txt, robots.txt AI crawlers, JSON-LD (TechArticle, WebPage)
 - [x] NEA-266b: Forum bad summary cleanup — 249 pill_el nulled, _is_bad_summary() guard
 - [x] NEA-266: Forum Diavgeia topic titles + region prefix + metadata

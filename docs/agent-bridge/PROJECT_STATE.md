@@ -13,16 +13,19 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **HEAD:** `fe8ab5e` (chore(bridge): NEA-267 SEO/GEO done)
+- **Lokaler HEAD:** `221815c` (docs(NEA-266): update README to current project state)
+- **origin/main:** `221815c` (synchron)
 - **Release Tags:** `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`
 - **Rollback Tags:** `rollback-pre-zk-20260524`
-- **Remote:** synchron mit GitHub
-- **Server:** API `e9f30d5`, Web `102cf56` (deployed 2026-05-24, 15 commits this session)
+- **Server:** API `3e965de` (NEA-265+268), Dashboard `7fc3f26` (NEA-269+267), Static Docs `7fc3f26`
+- **Server HEAD:** `7fc3f26` (README-Commit `221815c` noch nicht auf Server — nur docs, kein Container-Impact)
 
 ## Uncommitted Aenderungen
 
 - `apps/mobile/android/app/build.gradle` — vC27 bump (already tagged)
 - Bridge files (this update)
+- `apps/dashboard/tsconfig.tsbuildinfo` — build artifact
+- `apps/representative/.claude/`, `AGENTS.md`, `CLAUDE.md`, `index.ts`, `package-lock.json` — Crash-Reste/untracked, nicht durch Codex anfassen ohne Gio-Freigabe
 
 ## Architektur / Stack
 
@@ -48,6 +51,12 @@
 
 ## Completed this cycle (Session 24.05.2026) — 15 Commits
 
+- NEA-269: Dashboard /gov Demo-Daten entfernt + /users Revocation UX privacy-korrekt (`08994b0`, push-freigegeben; nicht als deployed markiert)
+- NEA-270: Admin Logs Endpoint/Sicherheitsmodell analysiert (Analyse only, kein Produktcode)
+- NEA-268: org_label auf parliament_bills + Forum [Φορέας X] Titel deployed (`3e965de`, 64 org_label backfilled, unknown labels 0)
+- NEA-265 Follow-up: duplicate Discourse title Search-Miss Retry mit ADA-Suffix (`49d5780`)
+- Branch Protection: required checks aktualisiert auf `Python API Tests` und `Crypto Package Tests`
+- Forum Resync: 268/272 Topics aktualisiert; 4 residual (2× 429, 2× 422), kein Blocker
 - NEA-267: SEO/GEO/KI — llms.txt enriched, robots.txt AI crawlers, JSON-LD on zk-voting + representative
 - NEA-266b: Forum bad summary cleanup — 249 pill_el nulled, _is_bad_summary() guard
 - NEA-266: Forum Diavgeia topic titles + region prefix [Βουλή]/[Περιφέρεια]/[Δήμος]/[Φορέας] + metadata

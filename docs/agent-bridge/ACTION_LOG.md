@@ -1,5 +1,72 @@
 # Action Log
 
+## SESSION 4 — 2026-05-25 (NEA-267 SEO + NEA-266 README)
+
+### Commits
+15. `08994b0` fix(NEA-269): remove demo data from /gov, fix /users revocation UX
+16. `7fc3f26` feat(NEA-267): JSON-LD schemas for wiki, tickets, govgr-dimos + sitemap cleanup
+17. `221815c` docs(NEA-266): update README to current project state
+
+### NEA-267 SEO/GEO/KI (Session 4)
+- JSON-LD TechArticle auf 10 Wiki-Seiten (api, architecture, security, privacy, whitepaper, broadcasting, contributing, database, modules, delete-account)
+- JSON-LD WebPage auf govgr-dimos.html und tickets/index.html
+- Meta description + OG tags auf tickets/index.html
+- votes/* Redirects: noindex + aus sitemap.xml entfernt
+- JSON-LD total: 5 → 17 Seiten, 19 Blöcke, alle validiert, keine Overclaims
+- robots.txt: 11 User-agents (GPTBot, ClaudeBot, PerplexityBot etc.)
+- llms.txt: 3504 Bytes, 71 Zeilen
+- Sitemap: 24 → 21 URLs (3 Redirects entfernt)
+- Deployed: Server pull + Dashboard rebuild
+
+### NEA-266 README
+- Encoding-Artefakte gefixt (kaputte Unicode → ASCII tree)
+- Next.js 14→16, Modules 22→25, Containers 9→11, DB 15→18+
+- Newsletter: Listmonk → Brevo + Telegram cross-publish
+- Stale Links: Download 404 gefixt, Play Store 404 → "Internal testing", F-Droid MR 37087→38007
+- V2 Roadmap: TrueRepublic/PnyxCoin → ZK Voting (Semaphore) + Federation
+- Neue Features: Politician Evaluation, Representative App, Discourse Forum, POLIS, Dashboard, ZK V2
+- Neue Sektion: SEO & AI Indexing
+
+---
+
+## SESSION 3 — 2026-05-24 (NEA-269 + NEA-270 Analyse)
+
+### Commits
+14. `08994b0` fix(NEA-269): remove demo data from /gov, fix /users revocation UX
+
+### NEA-269
+- **/gov:** Production-Demo-Daten entfernt (`Δήμος Αθηναίων`, `ΑΔΑ: ΧΧΧΧ-ΧΧΧ`)
+- **/gov:** Empty-State statt Demo-Antrag, bis gov.gr OAuth 2.0 angeschlossen ist
+- **/users:** Revocation-UX korrigiert: Dashboard-Revocation ist Self-Service-only / nicht admin-actionable
+- **/users:** Kein Phone-Input, kein `phone_number`, kein API-Call zu `/api/v1/identity/revoke`
+- **Privacy:** Keine Aenderung an Identity-Modell, Voting, Nullifier oder Key-Logik
+- **Codex Recheck:** ACCEPTED — Finding in `CODEX_FINDINGS.md` geschlossen
+
+### NEA-270 Analyse
+- **Status:** Analyse only, kein Produktcode
+- **Ergebnis:** Dashboard-/Logs-Endpoints existieren weitgehend; Hauptproblem ist Sicherheitsmodell, nicht fehlende Routen
+- **Risiken identifiziert:**
+  - `/admin/logs/explain` liest Container-Logs und kann Secrets/PII enthalten
+  - Logs werden ohne Sanitization an Ollama gegeben
+  - `/scraper/status` kann Infrastrukturdetails oeffentlich preisgeben
+  - HLR-Credits sind oeffentlich sichtbar (bekannt/by design, aber finanziell sensibel)
+- **Empfohlener naechster Schritt:** NEA-270 als Hardening-Task nur mit expliziter Freigabe bauen: Log-Sanitization, Auth-Gating fuer sensible Statusdaten, Dashboard-Text korrigieren
+
+### Verification
+- `npx tsc --noEmit` in `apps/dashboard` — OK
+- `npm run build -- --no-lint` in `apps/dashboard` — lokal blockiert vor TS-Compile durch bestehenden Next/SWC-Lockfile-Patching-Fehler: `TypeError: Cannot read properties of undefined (reading 'os')`
+
+### Deployment
+- **NEA-269:** Push-freigegeben durch Codex, noch nicht als deployed markiert
+- **NEA-270:** Keine Codeaenderung, kein Deploy
+
+### Residual
+- `apps/mobile/android/app/build.gradle` bleibt lokal dirty (vC27 bump)
+- `apps/dashboard/tsconfig.tsbuildinfo` bleibt untracked/build artifact
+- `apps/representative/*` Crash-Reste bleiben untracked
+
+---
+
 ## SESSION 2 — 2026-05-24 (NEA-265 Fallback + NEA-268 + Branch Protection)
 
 ### Commits
