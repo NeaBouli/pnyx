@@ -18,13 +18,15 @@
 - APK metadata: package `ekklesia.representative`, versionCode `2`, versionName `1.1.0`, WebView URL `https://ekklesia.gr/representative/index.html`
 - Note: `~/Desktop/ekprosopos-v1.0.0-vC2.apk` was not present; current canonical vC2 artifact is v1.1.0
 
-### ekprosopos Deploy-Fix (Web-Container)
+### ekprosopos ADR-010 Cleanup (Web-Container Rebuild)
 - Web-Container hatte alte `representative/index.html` ohne UI-Fixes
 - Root cause: `git pull` aktualisiert Repo, nicht Container-Inhalt
-- Fix: `docker cp apps/representative/web/index.html ekklesia-web:/app/public/representative/index.html`
-- Live verifiziert: 5 Fix-Marker (sticky, confirmLogout, score-row)
-- S10 App-Cache geleert + neugestartet
-- **Regel:** Bei ekprosopos-Aenderungen: Web-Container rebuild ODER `docker cp` noetig
+- ADR-010 violation corrected: previous `docker cp` hotfix was replaced by a clean `ekklesia-web` image rebuild
+- Build context verified: `apps/web/Dockerfile.prod` copies `apps/representative/web/` to `/app/public/representative/`
+- Clean deploy: server pulled to `199cd06`, `docker compose build web`, `docker compose up -d --no-deps web`
+- Container verified: `/app/public/representative/index.html` contains 5 Fix-Marker (`position:sticky`, `z-index:100`, `score-row`, `empty-state`)
+- Live verified: `https://ekklesia.gr/representative/index.html` contains the same 5 Fix-Marker
+- **Rule:** `docker cp` is prohibited for production fixes. For ekprosopos/static web changes, rebuild/restart `ekklesia-web`.
 
 ### ekprosopos Logout Confirm
 - Logout-Button zeigt jetzt Bestätigungsdialog: "Θέλετε σίγουρα να αποσυνδεθείτε;"

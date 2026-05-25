@@ -11,7 +11,8 @@
 - [ ] NEA-249 Follow-up: Mopro native Expo Module feasibility plan
 
 ## Done (Session 25.05.2026)
-- [x] ekprosopos UI fix static deploy: server pulled to `125d45a`, no container rebuild
+- [x] ADR-010 cleanup: ekprosopos `docker cp` hotfix replaced by clean `ekklesia-web` rebuild, container + live HTML verified
+- [x] ekprosopos UI fix initial static pull: server pulled to `125d45a`; later corrected by ADR-010 clean rebuild
 - [x] ekprosopos APK validation: live `/download/ekprosopos-latest.apk` matches `~/Desktop/ekprosopos-v1.1.0-vC2.apk` SHA-256 `4b9d49d888465cac2f1de94f50e46efc8dbfea49cb805fd715459bbbb28a761e`
 - [x] ekprosopos APK manifest/checksum tracked in `docs/download/APK_MANIFEST.md` and `docs/download/ekprosopos-latest.apk.sha256`
 - [x] ekprosopos UI fix: sticky header, badge inset, score-overlap fixed, 0%-progress empty-state (`3633d69`, pushed)
