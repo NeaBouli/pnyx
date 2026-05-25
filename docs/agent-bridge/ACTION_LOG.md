@@ -18,6 +18,14 @@
 - APK metadata: package `ekklesia.representative`, versionCode `2`, versionName `1.1.0`, WebView URL `https://ekklesia.gr/representative/index.html`
 - Note: `~/Desktop/ekprosopos-v1.0.0-vC2.apk` was not present; current canonical vC2 artifact is v1.1.0
 
+### ekprosopos Deploy-Fix (Web-Container)
+- Web-Container hatte alte `representative/index.html` ohne UI-Fixes
+- Root cause: `git pull` aktualisiert Repo, nicht Container-Inhalt
+- Fix: `docker cp apps/representative/web/index.html ekklesia-web:/app/public/representative/index.html`
+- Live verifiziert: 5 Fix-Marker (sticky, confirmLogout, score-row)
+- S10 App-Cache geleert + neugestartet
+- **Regel:** Bei ekprosopos-Aenderungen: Web-Container rebuild ODER `docker cp` noetig
+
 ### ekprosopos Logout Confirm
 - Logout-Button zeigt jetzt Bestätigungsdialog: "Θέλετε σίγουρα να αποσυνδεθείτε;"
 - Verhindert versehentliches Ausloggen bei Touch

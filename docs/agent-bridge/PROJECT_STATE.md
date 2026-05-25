@@ -17,7 +17,8 @@
 - **origin/main:** `ab98d39` (synchron)
 - **Release Tags:** `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`
 - **Rollback Tags:** `rollback-pre-zk-20260524`
-- **Server repo HEAD / Static Docs:** `ab98d39` (APK manifest + UI fix live)
+- **Server repo HEAD:** `ab98d39` (git pull done)
+- **Web container representative/index.html:** gefixt via `docker cp` (Container hatte alte Kopie; bei zukuenftigen Aenderungen: Web-Container rebuild ODER `docker cp` noetig)
 - **API container code:** `9363e16` (NEA-265+268+270+271+272, org_label 192/192 resolved)
 - **Dashboard container code:** `1964e1f` (NEA-269+267+270+271, /logs fully wired)
 - **Static logout fix:** live, verified (`confirmLogout` 2x in index.html)
