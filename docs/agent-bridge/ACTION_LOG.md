@@ -14,6 +14,7 @@
 - Static deploy: server pulled to `125d45a`; no container rebuild
 - Live APK validation: `/download/ekprosopos-latest.apk` SHA-256 `4b9d49d888465cac2f1de94f50e46efc8dbfea49cb805fd715459bbbb28a761e`
 - Desktop/local APK: `~/Desktop/ekprosopos-v1.1.0-vC2.apk` same SHA-256; archived locally at ignored path `builds/artifacts/ekprosopos-v1.1.0-vC2.apk`
+- Tracked manifest/checksum added: `docs/download/APK_MANIFEST.md`, `docs/download/ekprosopos-latest.apk.sha256`
 - APK metadata: package `ekklesia.representative`, versionCode `2`, versionName `1.1.0`, WebView URL `https://ekklesia.gr/representative/index.html`
 - Note: `~/Desktop/ekprosopos-v1.0.0-vC2.apk` was not present; current canonical vC2 artifact is v1.1.0
 

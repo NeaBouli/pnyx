@@ -35,6 +35,7 @@
 - Desktop APK `~/Desktop/ekprosopos-v1.1.0-vC2.apk`: same SHA-256
 - Local build output `apps/representative/android/app/build/outputs/apk/release/app-release.apk`: same SHA-256
 - Ignored local archive created: `builds/artifacts/ekprosopos-v1.1.0-vC2.apk`
+- Tracked manifest/checksum: `docs/download/APK_MANIFEST.md`, `docs/download/ekprosopos-latest.apk.sha256`
 - Metadata: package `ekklesia.representative`, versionCode `2`, versionName `1.1.0`
 - WebView target in bundle: `https://ekklesia.gr/representative/index.html`
 - Signing: Android Debug certificate, matching existing release build config (`release` uses `signingConfigs.debug`)

@@ -23,6 +23,7 @@
 - **Static logout fix:** live, verified (`confirmLogout` 2x in index.html)
 - **ekprosopos UI fix:** `3633d69` live after server pull; hard refresh/cache clear may be needed
 - **ekprosopos APK live:** `/download/ekprosopos-latest.apk` SHA-256 `4b9d49d888465cac2f1de94f50e46efc8dbfea49cb805fd715459bbbb28a761e` (matches local `~/Desktop/ekprosopos-v1.1.0-vC2.apk` and ignored archive `builds/artifacts/ekprosopos-v1.1.0-vC2.apk`)
+- **APK manifest:** `docs/download/APK_MANIFEST.md` + `docs/download/ekprosopos-latest.apk.sha256` track canonical server artifact without committing 55MB APK binary
 
 ## Uncommitted Aenderungen
 
