@@ -13,11 +13,11 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** current bridge commit (chore(bridge): replace ekprosopos docker cp with web rebuild)
-- **origin/main:** current bridge commit after push
+- **Lokaler HEAD:** `0f3ce02` (chore(bridge): record fdroid autoupdate metadata)
+- **origin/main:** `0f3ce02` (synchron)
 - **Release Tags:** `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`
 - **Rollback Tags:** `rollback-pre-zk-20260524`
-- **Server repo HEAD:** `199cd06` (git pull done)
+- **Server repo HEAD:** `6ba382a` (web rebuilt per ADR-010)
 - **Web container representative/index.html:** clean image rebuild done; `docker cp` hotfix replaced per ADR-010
 - **API container code:** `9363e16` (NEA-265+268+270+271+272, org_label 192/192 resolved)
 - **Dashboard container code:** `1964e1f` (NEA-269+267+270+271, /logs fully wired)
