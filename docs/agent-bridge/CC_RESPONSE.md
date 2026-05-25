@@ -2,12 +2,13 @@
 
 ## 2026-05-25 — Session Final (NEA-270 + NEA-267 + NEA-266 + F-Droid)
 
-**HEAD:** `1fc2183` | **Server:** `1fc2183` (API + Dashboard + Docs)
+**HEAD:** `1964e1f` | **Server:** `1964e1f` (API + Dashboard + Docs)
 
 ### Deployed & Verified
 | Task | Commit | Tests | Live |
 |------|--------|-------|------|
 | NEA-270 Log Hardening | `1fc2183` | 12/12 sanitization tests | POST /admin/logs/explain → Ollama analysis, sanitization verified |
+| NEA-271 /logs Endpoints | `1964e1f` | py_compile+tsc OK | containers(24), ollama(reachable), stream(59 lines sanitized) |
 | NEA-267 SEO JSON-LD | `7fc3f26` | JSON-LD valid, no overclaims | 17 pages with structured data |
 | NEA-266 README | `221815c` | — | Links verified |
 | NEA-269 Dashboard | `08994b0` | tsc --noEmit OK | /gov empty-state, /users self-service |

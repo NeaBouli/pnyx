@@ -2,6 +2,15 @@
 
 ## SESSION 4 — 2026-05-25 (NEA-267 SEO + NEA-266 README + F-Droid !38007)
 
+### NEA-271 Dashboard /logs Live Endpoints
+- 3 neue Endpoints: `/admin/logs/containers`, `/admin/logs/ollama`, `/admin/logs/stream`
+- Containers: 24 live, structural data only (name/image/status/state/health)
+- Ollama: reachable, qwen2.5:14b + llama3.2:3b
+- Stream: available:true, 59 sanitized lines (docker-proxy LOGS funktioniert trotz Pre-Check-Unsicherheit)
+- Dashboard: SSH/Phase-2 Placeholder entfernt, Container-Tabelle + Ollama-Status + Log-Block live
+- Tests: py_compile OK, tsc OK, sanitizer 12/12
+- Commit: `1964e1f`
+
 ### NEA-262 Forum Alerts — CANCELLED (historisch)
 - Telegram-Alerts vom 23.-24.05 waren Duplicate-Title-Bug (vor NEA-265 Fix)
 - Gegencheck 25.05: `bills_ohne_topic = 0`, Monitor `All checks passed` seit 24h

@@ -13,13 +13,13 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `1fc2183` (feat(NEA-270): harden /admin/logs/explain + activate dashboard log analysis)
-- **origin/main:** `1fc2183` (synchron)
+- **Lokaler HEAD:** `1964e1f` (feat(NEA-271): dashboard /logs live container + ollama + stream endpoints)
+- **origin/main:** `1964e1f` (synchron)
 - **Release Tags:** `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`
 - **Rollback Tags:** `rollback-pre-zk-20260524`
-- **Server HEAD:** `1fc2183`
-- **Server API:** `1fc2183` (NEA-265+268+270 deployed, log sanitization live)
-- **Server Dashboard:** `1fc2183` (NEA-269+267+270 deployed, /logs button active)
+- **Server HEAD:** `1964e1f`
+- **Server API:** `1964e1f` (NEA-265+268+270+271, containers/ollama/stream endpoints live)
+- **Server Dashboard:** `1964e1f` (NEA-269+267+270+271, /logs fully wired)
 - **Server Static Docs:** `1fc2183` (JSON-LD, README, Fastlane)
 
 ## Uncommitted Aenderungen

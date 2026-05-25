@@ -11,6 +11,7 @@
 - [ ] NEA-249 Follow-up: Mopro native Expo Module feasibility plan
 
 ## Done (Session 25.05.2026)
+- [x] NEA-271: Dashboard /logs live container + ollama + stream endpoints deployed (`1964e1f`)
 - [x] NEA-262: Forum Alerts — CANCELLED (historisch, NEA-265 hat den Bug gefixt, 0 bills ohne topic)
 - [x] NEA-270: Admin Logs Hardening — Sanitization + Dashboard Button live, 12 Tests, live-verifiziert (`1fc2183`)
 - [x] F-Droid !38007: Fastlane Metadaten komplett (en-US + el-GR, Screenshots, Changelogs), MR Description + Kommentar gepostet (`53c03bb`)
