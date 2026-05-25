@@ -31,6 +31,7 @@ export default function CompassScreen() {
   const [currentQ, setCurrentQ] = useState(0);
   const [selected, setSelected] = useState<LikertValue | null>(null);
   const [mode, setMode] = useState<"loading" | "quiz" | "result">("loading");
+  const [showAggregated, setShowAggregated] = useState(false);
 
   useEffect(() => {
     getCompass().then(data => {
@@ -99,9 +100,13 @@ export default function CompassScreen() {
 
       {/* Simple 2D grid visualization */}
       <View style={s.compassGrid}>
-        <Text style={s.axisLabelTop}>Αυταρχικό ↑</Text>
+        <TouchableOpacity onPress={() => setShowAggregated(!showAggregated)}>
+          <Text style={s.axisLabelTop}>Αυταρχικό ↑</Text>
+        </TouchableOpacity>
         <View style={s.compassInner}>
-          <Text style={s.axisLabelLeft}>Αριστερά</Text>
+          <TouchableOpacity onPress={() => setShowAggregated(!showAggregated)}>
+            <Text style={s.axisLabelLeft}>Αριστερά</Text>
+          </TouchableOpacity>
           <View style={s.compassBox}>
             {/* Quadrant backgrounds */}
             <View style={[s.quadrant, { top: 0, left: 0, backgroundColor: "#fef2f2" }]} />
@@ -110,18 +115,36 @@ export default function CompassScreen() {
             <View style={[s.quadrant, { bottom: 0, right: 0, backgroundColor: "#f0fdf4" }]} />
             {/* Axes */}
             <View style={s.axisH} /><View style={s.axisV} />
-            {/* Party dots */}
-            {PARTIES.map(p => (
-              <View key={p.name} style={[s.partyDot, { left: `${(p.x + 10) / 20 * 100}%`, bottom: `${(-p.y + 10) / 20 * 100}%`, backgroundColor: p.color }]}>
-                <Text style={s.partyLabel}>{p.name}</Text>
-              </View>
-            ))}
+            {showAggregated ? (
+              /* Aggregated: single average dot */
+              (() => {
+                const avgX = PARTIES.reduce((s, p) => s + p.x, 0) / PARTIES.length;
+                const avgY = PARTIES.reduce((s, p) => s + p.y, 0) / PARTIES.length;
+                return (
+                  <View style={[s.aggDot, { left: `${(avgX + 10) / 20 * 100}%`, bottom: `${(-avgY + 10) / 20 * 100}%` }]}>
+                    <Text style={s.aggLabel}>Μέση Θέση</Text>
+                  </View>
+                );
+              })()
+            ) : (
+              /* Party dots */
+              PARTIES.map(p => (
+                <View key={p.name} style={[s.partyDot, { left: `${(p.x + 10) / 20 * 100}%`, bottom: `${(-p.y + 10) / 20 * 100}%`, backgroundColor: p.color }]}>
+                  <Text style={s.partyLabel}>{p.name}</Text>
+                </View>
+              ))
+            )}
             {/* User dot */}
             <View style={[s.userDot, { left: `${(result.economic + 10) / 20 * 100}%`, bottom: `${(-result.social + 10) / 20 * 100}%` }]} />
           </View>
-          <Text style={s.axisLabelRight}>Δεξιά</Text>
+          <TouchableOpacity onPress={() => setShowAggregated(!showAggregated)}>
+            <Text style={s.axisLabelRight}>Δεξιά</Text>
+          </TouchableOpacity>
         </View>
-        <Text style={s.axisLabelBottom}>↓ Ελευθεριακό</Text>
+        <TouchableOpacity onPress={() => setShowAggregated(!showAggregated)}>
+          <Text style={s.axisLabelBottom}>↓ Ελευθεριακό</Text>
+        </TouchableOpacity>
+        <Text style={s.toggleHint}>{showAggregated ? "Πατήστε στον άξονα για μεμονωμένα κόμματα" : "Πατήστε στον άξονα για συνολική θέση"}</Text>
       </View>
 
       <Text style={s.description}>{descEcon} οικονομικά, {descSoc} κοινωνικά.</Text>
@@ -195,4 +218,7 @@ const s = StyleSheet.create({
   retakeBtn: { backgroundColor: colors.surfaceElevated, borderRadius: 12, padding: 14, alignItems: "center", marginTop: 20 },
   retakeBtnText: { color: colors.textSecondary, fontWeight: "700", fontSize: 14 },
   privacy: { fontSize: 11, color: colors.textTertiary, textAlign: "center", marginTop: 16 },
+  aggDot: { position: "absolute", width: 24, height: 24, borderRadius: 12, backgroundColor: "#2563eb", marginLeft: -12, marginBottom: -12, borderWidth: 3, borderColor: "#fff", shadowColor: "#2563eb", shadowRadius: 8, shadowOpacity: 0.6, elevation: 6 },
+  aggLabel: { position: "absolute", top: -14, left: -10, fontSize: 9, fontWeight: "800", color: "#2563eb", width: 60 },
+  toggleHint: { fontSize: 10, color: colors.textTertiary, textAlign: "center", marginTop: 6, fontStyle: "italic" },
 });
