@@ -57,9 +57,28 @@ body{font-family:system-ui,sans-serif;background:var(--dark);color:#e2e8f0;min-h
 .nav-bar a{flex:1;text-align:center;color:var(--gray);text-decoration:none;font-size:11px;font-weight:600;padding:8px 0}
 .nav-bar a.active{color:var(--gold)}
 .disclaimer{font-size:10px;color:#475569;text-align:center;margin-top:24px}
+.logout-modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center}
+.logout-modal{background:#1e293b;border:2px solid #334155;border-radius:16px;padding:28px 24px;max-width:320px;margin:1rem;text-align:center}
+.logout-modal h3{color:#e2e8f0;font-size:17px;font-weight:900;margin-bottom:8px}
+.logout-modal p{color:var(--gray);font-size:13px;margin-bottom:20px}
+.logout-modal .btns{display:flex;gap:10px;justify-content:center}
+.logout-modal .btn-cancel{padding:10px 20px;border:2px solid #334155;border-radius:10px;background:transparent;color:#e2e8f0;font-size:14px;font-weight:700;cursor:pointer}
+.logout-modal .btn-confirm{padding:10px 20px;border:none;border-radius:10px;background:var(--red);color:#fff;font-size:14px;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
+
+<!-- Logout Modal -->
+<div class="logout-modal-overlay" id="logoutModal">
+  <div class="logout-modal">
+    <h3>Αποσύνδεση;</h3>
+    <p>Είστε σίγουροι ότι θέλετε να αποσυνδεθείτε;</p>
+    <div class="btns">
+      <button class="btn-cancel" onclick="closeLogoutModal()">Άκυρο</button>
+      <button class="btn-confirm" onclick="doLogout()">Αποσύνδεση</button>
+    </div>
+  </div>
+</div>
 
 <div class="header">
   <h1>εκπρόσωπος</h1>
@@ -257,7 +276,8 @@ async function enableEvaluation(){
   }catch(e){alert('Σφάλμα δικτύου')}
   finally{btn.textContent='Ενεργοποίηση Αξιολόγησης';btn.disabled=false}
 }
-function confirmLogout(){if(confirm('Θέλετε σίγουρα να αποσυνδεθείτε;'))doLogout()}
+function confirmLogout(){document.getElementById('logoutModal').style.display='flex'}
+function closeLogoutModal(){document.getElementById('logoutModal').style.display='none'}
 function doLogout(){token='';adaNumber='';localStorage.removeItem('rep_token');localStorage.removeItem('rep_ada');if(window.postToNative)window.postToNative('LOGOUT','');location.reload()}
 </script>
 </body>
