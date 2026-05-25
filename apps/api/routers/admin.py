@@ -462,6 +462,91 @@ async def admin_explain_logs(
     return {"analysis": analysis, "lines": lines}
 
 
+DOCKER_PROXY_URL = os.getenv("DOCKER_PROXY_URL", "http://docker-proxy:2375")
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
+
+
+@router.get("/logs/containers")
+async def admin_log_containers(_key=Depends(verify_admin)):
+    """List running containers via docker-proxy. Returns structural data only."""
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            r = await client.get(f"{DOCKER_PROXY_URL}/containers/json")
+            if r.status_code != 200:
+                raise HTTPException(502, f"Docker proxy returned {r.status_code}")
+            raw = r.json()
+    except httpx.ConnectError:
+        raise HTTPException(502, "Docker proxy not reachable")
+    except httpx.TimeoutException:
+        raise HTTPException(504, "Docker proxy timeout")
+
+    containers = []
+    for c in raw:
+        names = c.get("Names", [])
+        name = names[0].lstrip("/") if names else "unknown"
+        containers.append({
+            "name": name,
+            "image": c.get("Image", "").split("@")[0],
+            "status": c.get("Status", ""),
+            "state": c.get("State", ""),
+            "health": (c.get("Status", "").split("(")[-1].rstrip(")") if "(" in c.get("Status", "") else None),
+        })
+    return {"containers": containers}
+
+
+@router.get("/logs/ollama")
+async def admin_log_ollama(_key=Depends(verify_admin)):
+    """Check Ollama reachability and available models."""
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=3) as client:
+            r = await client.get(f"{OLLAMA_URL}/api/tags")
+            if r.status_code != 200:
+                return {"reachable": False, "models": [], "active_model": None}
+            data = r.json()
+            models = [m["name"] for m in data.get("models", [])]
+            active = models[0] if models else None
+            return {"reachable": True, "models": models, "active_model": active}
+    except (httpx.ConnectError, httpx.TimeoutException):
+        return {"reachable": False, "models": [], "active_model": None}
+
+
+@router.get("/logs/stream")
+async def admin_log_stream(_key=Depends(verify_admin)):
+    """Return last 100 sanitized API container log lines via docker-proxy."""
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            r = await client.get(
+                f"{DOCKER_PROXY_URL}/containers/ekklesia-api/logs",
+                params={"tail": "100", "stdout": "1", "stderr": "1"},
+            )
+            if r.status_code in (403, 404, 501):
+                return {
+                    "available": False,
+                    "reason": "Docker proxy LOGS capability not enabled",
+                    "container": "ekklesia-api",
+                    "lines": [],
+                }
+            if r.status_code != 200:
+                raise HTTPException(502, f"Docker proxy returned {r.status_code}")
+
+            raw_text = r.text
+            safe_text = _sanitize_logs(raw_text)
+            lines = [ln for ln in safe_text.splitlines() if ln.strip()][-100:]
+            return {
+                "available": True,
+                "container": "ekklesia-api",
+                "lines": lines,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+    except httpx.ConnectError:
+        raise HTTPException(502, "Docker proxy not reachable")
+    except httpx.TimeoutException:
+        raise HTTPException(504, "Docker proxy timeout")
+
+
 @router.get("/deepl/usage")
 async def deepl_usage():
     """Public: DeepL API usage stats (no auth needed — no sensitive data)."""

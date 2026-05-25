@@ -80,6 +80,16 @@ export default function LogsPage() {
   const [logAnalysisResult, setLogAnalysisResult] = useState<string | null>(null)
   const [logAnalysisError, setLogAnalysisError] = useState<string | null>(null)
 
+  // Containers
+  const [containers, setContainers] = useState<{ name: string; image: string; status: string; state: string; health: string | null }[]>([])
+
+  // Ollama
+  const [ollamaInfo, setOllamaInfo] = useState<{ reachable: boolean; models: string[]; active_model: string | null } | null>(null)
+
+  // Log Stream
+  const [logStream, setLogStream] = useState<{ available: boolean; lines: string[]; reason?: string } | null>(null)
+  const [logStreamLoading, setLogStreamLoading] = useState(false)
+
   const refresh = useCallback(async () => {
     setLoading(true)
     try {
@@ -123,6 +133,18 @@ export default function LogsPage() {
       }
       if (settled[4].status === 'fulfilled') setScraperStatus(settled[4].value as ScraperStatus)
 
+      // Admin-authenticated endpoints (via proxy)
+      const adminSettled = await Promise.allSettled([
+        fetch('/api/proxy/admin/logs/containers').then(r => r.ok ? r.json() : null),
+        fetch('/api/proxy/admin/logs/ollama').then(r => r.ok ? r.json() : null),
+      ])
+      if (adminSettled[0].status === 'fulfilled' && adminSettled[0].value) {
+        setContainers((adminSettled[0].value as Record<string, unknown>).containers as typeof containers)
+      }
+      if (adminSettled[1].status === 'fulfilled' && adminSettled[1].value) {
+        setOllamaInfo(adminSettled[1].value as typeof ollamaInfo)
+      }
+
       setLastChecked(new Date())
     } catch {
       // partial failure is ok
@@ -138,6 +160,23 @@ export default function LogsPage() {
     const interval = setInterval(refresh, 30_000)
     return () => clearInterval(interval)
   }, [autoRefresh, refresh])
+
+  async function handleLogStream() {
+    setLogStreamLoading(true)
+    try {
+      const res = await fetch('/api/proxy/admin/logs/stream')
+      const data = await res.json() as Record<string, unknown>
+      if (res.ok) {
+        setLogStream(data as typeof logStream)
+      } else {
+        setLogStream({ available: false, lines: [], reason: String(data?.detail ?? `HTTP ${res.status}`) })
+      }
+    } catch (e) {
+      setLogStream({ available: false, lines: [], reason: String(e) })
+    } finally {
+      setLogStreamLoading(false)
+    }
+  }
 
   async function handleLogAnalysis() {
     setLogAnalysisLoading(true)
@@ -247,12 +286,37 @@ export default function LogsPage() {
             )}
           </div>
 
-          {/* Docker placeholder */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-            <h2 className="font-semibold text-gray-800 mb-2">Docker Container Status</h2>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-700">
-              Phase 2 — braucht Server SSH Endpoint
+          {/* Docker Containers */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-200">
+              <h2 className="font-semibold text-gray-800">Docker Containers ({String(containers.length)})</h2>
             </div>
+            {containers.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Image</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">State</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {containers.map((c) => (
+                      <tr key={c.name} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
+                        <td className="px-4 py-3 text-gray-500 text-xs font-mono truncate max-w-xs">{c.image}</td>
+                        <td className="px-4 py-3 text-xs text-gray-600">{c.status}</td>
+                        <td className="px-4 py-3"><StatusBadge status={c.state} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-6 text-sm text-gray-400">Container-Daten nicht verfügbar (Admin-Auth erforderlich)</div>
+            )}
           </div>
         </div>
       )}
@@ -345,7 +409,26 @@ export default function LogsPage() {
           {/* Ollama Status */}
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <h2 className="font-semibold text-gray-800 mb-4">Ollama Status</h2>
-            {scraperStatus ? (
+            {ollamaInfo ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-600">Status:</span>
+                  <StatusBadge status={ollamaInfo.reachable ? 'ok' : 'error'} />
+                </div>
+                {ollamaInfo.active_model && (
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-gray-600">Active Model:</span>
+                    <span className="text-sm font-mono text-gray-800">{ollamaInfo.active_model}</span>
+                  </div>
+                )}
+                {ollamaInfo.models.length > 1 && (
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-gray-600">Alle Modelle:</span>
+                    <span className="text-sm text-gray-500">{ollamaInfo.models.join(', ')}</span>
+                  </div>
+                )}
+              </div>
+            ) : scraperStatus ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-gray-600">Status:</span>
@@ -359,7 +442,7 @@ export default function LogsPage() {
                 )}
               </div>
             ) : (
-              <div className="text-sm text-gray-400">Keine Ollama-Daten</div>
+              <div className="text-sm text-gray-400">Ollama-Daten nicht verfügbar (Admin-Auth erforderlich)</div>
             )}
           </div>
 
@@ -386,6 +469,33 @@ export default function LogsPage() {
             {logAnalysisError && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
                 {logAnalysisError}
+              </div>
+            )}
+          </div>
+
+          {/* Log Stream */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <h2 className="font-semibold text-gray-800 mb-2">API Container Logs</h2>
+            <div className="text-xs text-gray-400 mb-3">
+              Letzte 100 Zeilen aus ekklesia-api Container. Secrets werden automatisch redaktiert.
+            </div>
+            <button
+              onClick={handleLogStream}
+              disabled={logStreamLoading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 mb-4"
+            >
+              {logStreamLoading ? 'Laden...' : 'Logs laden'}
+            </button>
+            {logStream && !logStream.available && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-700">
+                {logStream.reason || 'Docker proxy LOGS capability nicht aktiviert'}
+              </div>
+            )}
+            {logStream && logStream.available && logStream.lines.length > 0 && (
+              <div className="bg-gray-900 text-green-400 rounded-lg p-4 text-xs font-mono overflow-x-auto max-h-96 overflow-y-auto">
+                {logStream.lines.map((line, i) => (
+                  <div key={i} className="whitespace-pre">{line}</div>
+                ))}
               </div>
             )}
           </div>
