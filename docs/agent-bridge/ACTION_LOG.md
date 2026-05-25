@@ -2,6 +2,15 @@
 
 ## SESSION 4 — 2026-05-25 (NEA-267 SEO + NEA-266 README + F-Droid !38007)
 
+### F-Droid !38007 Autoupdate Metadata
+- linsui feedback addressed: autoupdate metadata added to `metadata/ekklesia.gr.yml` in `TrueRepublic/fdroiddata`
+- Branch: `ekklesia-v1.0.0`
+- Commit: `3d81d65c1` (`ekklesia.gr: add autoupdate metadata`)
+- Fields: `AutoUpdateMode: Version`, `UpdateCheckMode: Tags`, `CurrentVersion: 1.3.2`, `CurrentVersionCode: 27`
+- GitHub tag format checked: `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`
+- GitLab comment posted to !38007: `https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007#note_3382971274`
+- MR status after update: open, label `waiting-on-response`
+
 ### ekprosopos Mobile UI Fixes
 - Screenshot-Findings gefixt in `apps/representative/web/index.html`
 - Header ist jetzt sticky (`position: sticky; top: 0; z-index: 100`)
