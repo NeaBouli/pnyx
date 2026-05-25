@@ -49,6 +49,9 @@
   - Root cause: Expo SDK 54 hoisted `expo-file-system`, `expo-asset`, `expo-application`, `expo-notifications` aus `expo/node_modules/` nach `node_modules/` — scanignore fehlte
   - Fix: alle 4 hoisted local-maven-repo Pfade als scanignore hinzugefuegt
 - Pipeline #2551767847 laeuft (SHA 6e38ebea, hoisted scanignore drin)
+- Pipeline #2551767847 failed: scanignore hatte hoisted Pfade (`expo-file-system/`, `expo-asset/`), aber F-Droid-Build nutzt `expo/node_modules/expo-file-system/` (npm hoisting ist nicht deterministisch)
+  - Fix: scanignore auf `expo/node_modules/`-Pfade korrigiert (wie im Build-Log bestaetigt)
+- Pipeline #2551771502 laeuft (alle scanignore jetzt korrekt)
 - APK Build: AAB fertig (build-play.sh), direktRelease APK gebaut (unsigned — Signierung noetig)
 
 ### ekprosopos Screenshots auf Landing Page
