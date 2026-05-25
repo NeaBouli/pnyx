@@ -5,7 +5,7 @@
 
 <img src="apps/web/public/pnx.png" alt="ekklesia logo" width="120" />
 
-# ekklesia tou ethnous · Ekklesia.gr
+# ekklesia tou ethnous &middot; Ekklesia.gr
 
 ### Digital Direct Democracy Platform for Greek Citizens
 
@@ -14,9 +14,9 @@
 [![Modules](https://img.shields.io/badge/Modules-25-green)](https://ekklesia.gr/wiki/modules.html)
 [![Open Source](https://img.shields.io/badge/Open%20Source-%E2%9D%A4-red)](https://github.com/NeaBouli/pnyx)
 
-**© 2026 V-Labs Development �� MIT License**
+**&copy; 2026 V-Labs Development &mdash; MIT License**
 
-[Website](https://ekklesia.gr) · [Wiki](https://ekklesia.gr/wiki/) · [API](https://api.ekklesia.gr/health) · [Download APK](https://ekklesia.gr/download/)
+[Website](https://ekklesia.gr) &middot; [Wiki](https://ekklesia.gr/wiki/) &middot; [API](https://api.ekklesia.gr/health) &middot; [Forum](https://pnyx.ekklesia.gr)
 
 </div>
 
@@ -24,23 +24,24 @@
 
 ## What is Ekklesia?
 
-The **ekklesia** was the popular assembly of ancient Athens — where every citizen had a voice. **Ekklesia.gr** is its digital revival: an independent, open-source platform where Greek citizens can vote on real parliamentary bills and municipal decisions.
+The **ekklesia** was the popular assembly of ancient Athens &mdash; where every citizen had a voice. **Ekklesia.gr** is its digital revival: an independent, open-source platform where Greek citizens can vote on real parliamentary bills and municipal decisions.
 
-- **Citizen Voting** — Vote on real bills from the Hellenic Parliament
-- **Divergence Score** — See how Parliament votes vs. citizens
-- **Party Comparison** — Which party votes like the people?
-- **Municipal Governance** — Diavgeia decisions per region and municipality
-- **AI Assistant** — Ollama-powered bill summaries and citizen Q&A
-- **Full Anonymity** — Ed25519 signatures, nullifier hashes, zero personal data
+- **Citizen Voting** &mdash; Vote on real bills from the Hellenic Parliament
+- **Divergence Score** &mdash; See how Parliament votes vs. citizens
+- **Party Comparison** &mdash; Which party votes like the people?
+- **Municipal Governance** &mdash; Diavgeia decisions per region and municipality
+- **Politician Evaluation** &mdash; Rate elected officials on transparency and performance
+- **AI Assistant** &mdash; Ollama-powered bill summaries and citizen Q&A
+- **Full Anonymity** &mdash; Ed25519 signatures, nullifier hashes, zero personal data
 
 > This platform is not affiliated with any government entity. All votes are informational only and carry no legal binding force.
 
 ## Data Sources
 
 This project uses publicly available government data from:
-- [Hellenic Parliament](https://www.hellenicparliament.gr/) — Bills, voting records
-- [Diavgeia](https://diavgeia.gov.gr/) — Municipal and regional decisions (OpenData API)
-- [data.gov.gr](https://data.gov.gr/) — Public datasets
+- [Hellenic Parliament](https://www.hellenicparliament.gr/) &mdash; Bills, voting records
+- [Diavgeia](https://diavgeia.gov.gr/) &mdash; Municipal and regional decisions (OpenData API)
+- [data.gov.gr](https://data.gov.gr/) &mdash; Public datasets
 
 ---
 
@@ -52,15 +53,20 @@ This project uses publicly available government data from:
 | Divergence Score | Automatic comparison Parliament vs Citizens | Beta |
 | Party Ranking | Which party agrees most with citizens | Beta |
 | Municipal Governance | 13 regions, 325 municipalities, Diavgeia integration | Beta |
-| AI Bill Summaries | Ollama (EN) + DeepL (EN→EL), cached in Redis | Beta |
+| Politician Evaluation | Citizen ratings for elected officials | Beta |
+| AI Bill Summaries | Ollama (EN) + DeepL (EN&rarr;EL), cached in Redis | Beta |
 | RAG Agent | Citizen Q&A: Ollama + DeepL translation | Beta |
 | Auto-Healing Scraper | Ollama repairs broken CSS selectors | Beta |
-| Newsletter | Listmonk + Brevo SMTP, 6 subscriber lists | Beta |
+| Newsletter + Telegram | Brevo SMTP + Telegram cross-publish | Beta |
 | Push Notifications | Expo Push API, APScheduler | Beta |
 | Stripe Donations | Community-funded, auto-allocation | Beta |
 | Mobile App | Expo React Native, Ed25519, Compass | Beta |
+| Representative App | Role-based bill visibility for elected officials | Beta |
+| Discourse Forum | Automated topic sync per bill | Beta |
 | Arweave Archive | Immutable vote audit trail | Beta |
-| TrueRepublic Bridge | Cosmos SDK, PnyxCoin on-chain votes | Planned (V2) |
+| POLIS Tickets | Citizen issue tracker with Ed25519 auth | Beta |
+| Dashboard | Admin panel with GitHub OAuth, 15+ pages | Beta |
+| ZK Voting V2 | Semaphore-based anonymous proofs | ADR (blocked on mobile prover) |
 
 ---
 
@@ -68,28 +74,31 @@ This project uses publicly available government data from:
 
 ```
 pnyx/
-├���─ apps/
-│   ├── api/          → Python FastAPI  (70+ endpoints, 25 modules)
-│   ├��─ web/          → Next.js 14      (el/en, Tailwind, light theme)
-│   └── mobile/       → Expo RN         (Android APK + Play Store)
-├── packages/
-│   ├── crypto/       → Ed25519 · Nullifier · HMAC Chain (47 tests)
-│   └── db/           → Alembic Migrations (15+ tables)
-��── infra/
-│   └── docker/       → PostgreSQL · Redis · Ollama · Traefik
-└── docs/             → Landing page + Wiki + Community
++-- apps/
+|   +-- api/          -> Python FastAPI  (70+ endpoints, 25 modules)
+|   +-- web/          -> Next.js 16      (el/en, Tailwind, light theme)
+|   +-- mobile/       -> Expo RN         (Android APK + Play Store)
+|   +-- dashboard/    -> Next.js 16      (Admin panel, GitHub OAuth)
+|   +-- monitor/      -> Python          (3-tier auto-recovery)
+|   +-- representative/ -> Web app       (Role-based bill visibility)
++-- packages/
+|   +-- crypto/       -> Ed25519, Nullifier, HMAC Chain (47 tests)
+|   +-- db/           -> Alembic Migrations (18+ tables)
++-- infra/
+|   +-- docker/       -> PostgreSQL, Redis, Ollama, Traefik
++-- docs/             -> Landing page + Wiki (14 pages) + Community
 ```
 
 ### Server Infrastructure (Hetzner CX43)
-- **11+ containers**: API, Web, DB, Redis, Ollama, Traefik, Listmonk (x3), Dashboard, Monitor, Docker-Proxy
+- **11 containers**: API, Web, Dashboard, Monitor, DB, Redis, Ollama, Docker-Proxy, VR, Test-Node, ekprosopos
 - **Ollama llama3.2:3b**: 2.6 GB RAM, 5 GB limit
 - **Rate limiting**: 60 req/min/IP global, 5 req/min/IP for AI endpoints
-- **Circuit breaker**: 3 errors → 24h pause, auto-reset
-- **Auto-deploy**: GitHub Actions CI/CD
+- **Circuit breaker**: 3 errors &rarr; 24h pause, auto-reset
+- **Discourse**: pnyx.ekklesia.gr &mdash; automated forum sync per bill
 
 ### Bill Lifecycle
 ```
-ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END
+ANNOUNCED -> ACTIVE -> WINDOW_24H -> PARLIAMENT_VOTED -> OPEN_END
 ```
 
 ---
@@ -124,10 +133,10 @@ cd ../web && npm ci && npm run dev
 
 ### Tests
 ```bash
-# API Tests (106 passed)
+# API Tests
 cd apps/api && python -m pytest tests/ -v
 
-# Crypto Tests (47 passed — nullifier + polis)
+# Crypto Tests (47 passed)
 cd packages/crypto && npx vitest run
 
 # Web Build
@@ -141,13 +150,15 @@ cd apps/web && npm run build
 | Data | Stored? |
 |---|---|
 | Mobile number | Deleted immediately after verification |
-| Private key | Device only — never leaves your phone |
+| Private key | Device only &mdash; never leaves your phone |
 | Personal data | Never collected |
 | Nullifier hash | SHA256 + Argon2id (non-reversible) |
 | Public key | Ed25519 hex (anonymous) |
 | Votes | Anonymized, Arweave-archived |
 
-→ Details: [Security Wiki](https://ekklesia.gr/wiki/security.html)
+> Identity revocation is self-service only. The system does not store phone numbers after registration &mdash; Privacy by Design.
+
+&rarr; Details: [Security Wiki](https://ekklesia.gr/wiki/security.html)
 
 ---
 
@@ -155,12 +166,12 @@ cd apps/web && npm run build
 
 | Metric | Value |
 |---|---|
-| Modules | 22 (MOD-01 through MOD-25) |
+| Modules | 25 (MOD-01 through MOD-25) |
 | API Endpoints | 70+ |
-| DB Tables | 15+ (Alembic managed) |
-| Containers | 9 (including Ollama) |
-| CI | Green |
-| Security Score | ~90/100 |
+| DB Tables | 18+ (Alembic managed) |
+| Containers | 11 |
+| CI | Green (Python API Tests + Crypto Package Tests) |
+| JSON-LD | 17 pages with structured data |
 
 ---
 
@@ -168,10 +179,9 @@ cd apps/web && npm run build
 
 | Channel | Status | Link |
 |---|---|---|
-| Direct APK | Live | [ekklesia.gr/download](https://ekklesia.gr/download/) |
-| GitHub Release | v1.0.0 | [Releases](https://github.com/NeaBouli/pnyx/releases) |
-| Google Play | Closed Testing | [Play Store](https://play.google.com/store/apps/details?id=ekklesia.gr) |
-| F-Droid | Pending Review | [MR #37087](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/37087) |
+| Direct APK | Live | [ekklesia.gr](https://ekklesia.gr) |
+| Google Play | Review pending | Internal testing |
+| F-Droid | MR pending review | [MR !38007](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007) |
 
 ---
 
@@ -181,9 +191,9 @@ cd apps/web && npm run build
 |---|---|---|
 | **Beta** | Now | Active |
 | **Alpha** | 500 users + 3 NGOs + gov.gr OAuth | Upcoming |
-| **V2** | TrueRepublic Bridge + PnyxCoin | Planned |
+| **V2** | ZK Voting (Semaphore) + Federation | ADR written, blocked on mobile prover |
 
-→ Details: [Roadmap](https://ekklesia.gr/wiki/roadmap.html)
+&rarr; Details: [Roadmap](https://ekklesia.gr/wiki/roadmap.html)
 
 ---
 
@@ -191,31 +201,42 @@ cd apps/web && npm run build
 
 | Document | Description |
 |---|---|
-| [Wiki](https://ekklesia.gr/wiki/) | Full technical documentation (12 pages) |
+| [Wiki](https://ekklesia.gr/wiki/) | Full technical documentation (14 pages) |
 | [API Docs](https://ekklesia.gr/wiki/api.html) | 70+ endpoints, all modules |
 | [Modules](https://ekklesia.gr/wiki/modules.html) | MOD-01 through MOD-25 |
 | [Security](https://ekklesia.gr/wiki/security.html) | Ed25519, Nullifier, threat model |
 | [Architecture](https://ekklesia.gr/wiki/architecture.html) | Stack, monorepo, lifecycle |
 | [FAQ](https://ekklesia.gr/wiki/faq.html) | Frequently asked questions |
+| [llms.txt](https://ekklesia.gr/llms.txt) | Machine-readable project overview for AI crawlers |
+
+---
+
+## SEO & AI Indexing
+
+- **robots.txt**: AI crawlers allowed (GPTBot, ClaudeBot, PerplexityBot, Google-Extended)
+- **llms.txt**: Machine-readable project description (71 lines)
+- **JSON-LD**: Structured data on 17 pages (TechArticle, WebPage, FAQPage, WebApplication)
+- **Sitemap**: 21 indexed URLs
+- **Hreflang**: el/en on 17 pages
 
 ---
 
 ## Contributing
 
 ```bash
-# Fork → Branch → PR
+# Fork -> Branch -> PR
 git checkout -b feat/your-feature
 ```
 
 **Commit format:** `feat(module): description` | `fix(module): description`
 
-→ Details: [Contributing Guide](https://ekklesia.gr/wiki/contributing.html)
+&rarr; Details: [Contributing Guide](https://ekklesia.gr/wiki/contributing.html)
 
 ---
 
 ## License
 
-MIT License — Copyright (c) 2026 V-Labs Development
+MIT License &mdash; Copyright (c) 2026 V-Labs Development
 
 Free to use, modify and distribute.
 
@@ -225,6 +246,6 @@ Free to use, modify and distribute.
 
 **Democracy is not a spectacle. It is action.**
 
-[Star on GitHub](https://github.com/NeaBouli/pnyx) · [Report Issues](https://github.com/NeaBouli/pnyx/issues) · [Wiki](https://ekklesia.gr/wiki/)
+[Star on GitHub](https://github.com/NeaBouli/pnyx) &middot; [Report Issues](https://github.com/NeaBouli/pnyx/issues) &middot; [Wiki](https://ekklesia.gr/wiki/)
 
 </div>
