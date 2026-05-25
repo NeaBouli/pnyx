@@ -36,7 +36,9 @@
   - Fix: vC27 committed (`b46fece`), Tag `v1.3.5-20260525`, CurrentVersion korrigiert
 - Pipeline #2551701100 failed: `checkupdates` + `rewritemeta` — trailing newline fehlte + checkupdates wollte neuen Build-Eintrag hinzufuegen
   - Fix: trailing newline in metadata YAML
-- Pipeline #2551718912 laeuft (status: running)
+- Pipeline #2551718912 failed: `checkupdates` fand vC27 im Tag aber Build-Eintrag fehlte in Metadata
+  - Fix: vC27 Build-Eintrag manuell in `metadata/ekklesia.gr.yml` eingefuegt (commit `b46fece` SHA)
+- Pipeline #2551741271 laeuft (mit vC27 Build-Eintrag)
 
 ### ekprosopos Screenshots auf Landing Page
 - 3 Screenshots (bills, detail, evaluation) in ekprosopos-Banner eingefuegt
