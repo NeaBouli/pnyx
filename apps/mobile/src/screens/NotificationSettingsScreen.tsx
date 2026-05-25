@@ -8,7 +8,7 @@ const SETTINGS = [
   { key: "push_vote_24h", icon: "⏰", label: "24 Ώρες πριν το κλείσιμο", sub: "Υπενθύμιση για ψηφοφορίες που λήγουν" },
   { key: "push_vote_result", icon: "📊", label: "Αποτελέσματα", sub: "Όταν κλείνει ψηφοφορία + Δείκτης Απόκλισης" },
   { key: "push_bill_announced", icon: "🏛️", label: "Νέα Νομοσχέδια", sub: "Ανακοινώσεις από τη Βουλή" },
-  { key: "push_weekly_digest", icon: "📋", label: "Εβδομαδιαία Ανακεφαλαίωση", sub: "Κάθε Δευτέρα — σύνοψη εβδομάδας" },
+  { key: "push_weekly_digest", icon: "📋", label: "Εβδομαδιαία Ειδοποίηση", sub: "Κάθε Δευτέρα — σύνοψη εβδομάδας (Push)" },
   { key: "push_system_update", icon: "⚙️", label: "Ενημερώσεις Συστήματος", sub: "Σημαντικές ανακοινώσεις πλατφόρμας" },
 ];
 
