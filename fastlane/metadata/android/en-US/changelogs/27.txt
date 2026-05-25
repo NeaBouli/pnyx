@@ -1,0 +1,5 @@
+- Politician evaluation system
+- Forum integration with Discourse
+- Improved bill summaries
+- Municipal governance updates
+- Security hardening
