@@ -13,17 +13,17 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `9e7dced` (chore(bridge): F-Droid build scan errors fixed)
-- **origin/main:** `9e7dced` (synchron)
+- **Lokaler HEAD:** `ad67f9f` (chore(bridge): F-Droid scanignore fix)
+- **origin/main:** `ad67f9f` (synchron)
 - **Release Tags:** `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`, `v1.3.5-20260525`
 - **Rollback Tags:** `rollback-pre-zk-20260524`
 - **Server repo HEAD:** `8a71cc4` (web rebuilt mit Logout Modal + Screenshots)
 - **Web container:** rebuilt (ADR-010), Logout Modal + Screenshots + ekprosopos UI fix live
 - **API container code:** `9363e16` (NEA-265+268+270+271+272)
 - **Dashboard container code:** `1964e1f` (NEA-269+267+270+271)
-- **F-Droid !38007:** 4 Pipeline-Iterationen, `checkupdates` gruen seit #2551741271. Pipeline #2551754848 laeuft (scanignore + lock-file Fixes).
-- **APK Build:** NEA-273 Compass Toggle — Build laeuft im Hintergrund
-- **Pending deploys:** pnyx Repo `9e7dced` noch nicht auf Server gepullt (nur bridge/mobile changes, kein Container-Impact)
+- **F-Droid !38007:** 7 Pipeline-Iterationen. 8/9 Jobs gruen (checkupdates, rewritemeta, lint, etc). `fdroid build` scanignore korrigiert auf `expo/node_modules/`-Pfade. Pipeline #2551771502 laeuft.
+- **APK Build:** Debug-Build laeuft fuer S10-Installation. AAB (Play) fertig.
+- **Pending deploys:** pnyx Repo `ad67f9f` noch nicht auf Server gepullt (nur bridge/mobile changes, kein Container-Impact)
 - **Tag:** `v1.3.5-20260525` → Commit `b46fece` (vC27, versionName 1.0.0)
 
 ## Uncommitted Aenderungen

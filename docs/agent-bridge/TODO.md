@@ -1,7 +1,7 @@
 # TODO — Ekklesia.gr / pnyx
 
 ## Aktiv / In Progress
-- [ ] F-Droid MR !38007: Pipeline #2551754848 laeuft (checkupdates gruen, scanignore/lock-file gefixt)
+- [ ] F-Droid MR !38007: Pipeline #2551771502 laeuft (8/9 gruen, fdroid build scanignore auf expo/node_modules/ korrigiert)
 - [ ] NEA-273: APK Build laeuft — Compass Toggle + Weekly Label + Logout Modal
 - [ ] NEA-258: FORUM_SSO_SALT Startup-Check (LOW follow-up)
 - [ ] AAB vC27 Upload zu Play Console (`~/Desktop/ekklesia-v1.3.2-vC27-PLAY.aab` BEREIT)
