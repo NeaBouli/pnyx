@@ -2,6 +2,14 @@
 
 ## SESSION 4 — 2026-05-25 (NEA-267 SEO + NEA-266 README + F-Droid !38007)
 
+### Εβδομαδιαία Toggle Check
+- Toggle steuert: Push-Notification (Expo Push), NICHT Email-Newsletter
+- Brevo-Newsletter-System ist komplett separat (routers/newsletter.py)
+- Konsistent mit NEA-262 cancelled: YES (NEA-262 war Email, nicht Push)
+- Fix: Label umbenannt: "Ανακεφαλαίωση" → "Ειδοποίηση" + "(Push)" Suffix
+- Commit: `fa096a1`
+- APK Rebuild noetig (React Native)
+
 ### Logout Modal (professionell)
 - System `confirm()` ersetzt durch Custom Dark-Theme Modal
 - Zentriertes Overlay mit Titel "Αποσύνδεση;", Cancel/Confirm Buttons
