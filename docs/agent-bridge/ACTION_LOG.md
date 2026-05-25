@@ -2,6 +2,11 @@
 
 ## SESSION 4 — 2026-05-25 (NEA-267 SEO + NEA-266 README + F-Droid !38007)
 
+### NEA-262 Forum Alerts — CANCELLED (historisch)
+- Telegram-Alerts vom 23.-24.05 waren Duplicate-Title-Bug (vor NEA-265 Fix)
+- Gegencheck 25.05: `bills_ohne_topic = 0`, Monitor `All checks passed` seit 24h
+- Kein aktueller Handlungsbedarf
+
 ### NEA-270 Admin Logs Hardening
 - `_sanitize_logs()` in `apps/api/routers/admin.py` — redaktiert Secrets vor Ollama-Analyse
 - Abgedeckte Formate: env `KEY=value`, JSON `"key":"value"`, Python dict `'key':'value'`, Bearer, DB/Redis URLs
