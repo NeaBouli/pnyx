@@ -13,13 +13,14 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `4ba94fc` (fix: add logout confirmation dialog in ekprosopos)
-- **origin/main:** `6b12524` (1 Commit ahead: logout fix + bridge)
+- **Lokaler HEAD:** `ed7e7a7` (chore(bridge): logout fix + topic 173 resynced + session update)
+- **origin/main:** `ed7e7a7` (synchron)
 - **Release Tags:** `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`
 - **Rollback Tags:** `rollback-pre-zk-20260524`
-- **Server HEAD:** `9363e16`
-- **Server API:** `9363e16` (NEA-265+268+270+271+272, org_label 192/192 resolved)
-- **Server Dashboard:** `1964e1f` (NEA-269+267+270+271, /logs fully wired)
+- **Server repo HEAD / Static Docs:** `ed7e7a7` (neuer als Container — nur bridge/static changes, kein Rebuild nötig)
+- **API container code:** `9363e16` (NEA-265+268+270+271+272, org_label 192/192 resolved)
+- **Dashboard container code:** `1964e1f` (NEA-269+267+270+271, /logs fully wired)
+- **Static logout fix:** live, verified (`confirmLogout` 2x in index.html)
 - **Server Static Docs:** `1fc2183` (JSON-LD, README, Fastlane)
 
 ## Uncommitted Aenderungen
