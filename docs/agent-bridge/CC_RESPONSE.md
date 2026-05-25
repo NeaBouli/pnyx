@@ -1,5 +1,30 @@
 # CC Response
 
+## 2026-05-25 — Session Final (NEA-270 + NEA-267 + NEA-266 + F-Droid)
+
+**HEAD:** `1fc2183` | **Server:** `1fc2183` (API + Dashboard + Docs)
+
+### Deployed & Verified
+| Task | Commit | Tests | Live |
+|------|--------|-------|------|
+| NEA-270 Log Hardening | `1fc2183` | 12/12 sanitization tests | POST /admin/logs/explain → Ollama analysis, sanitization verified |
+| NEA-267 SEO JSON-LD | `7fc3f26` | JSON-LD valid, no overclaims | 17 pages with structured data |
+| NEA-266 README | `221815c` | — | Links verified |
+| NEA-269 Dashboard | `08994b0` | tsc --noEmit OK | /gov empty-state, /users self-service |
+| F-Droid !38007 | `53c03bb` | — | MR open, pipeline green, waiting on linsui |
+
+### Residual
+- Root-level `npx tsc` is not valid for this monorepo; `apps/dashboard` tsc is green
+- 4 moderate Dependabot vulns (postcss, uuid/expo) — known, not blocking
+- F-Droid !38007 waiting on linsui — respond immediately to any follow-up
+
+### Offen
+- NEA-258: FORUM_SSO_SALT Startup-Check (LOW)
+- CLAUDE.md stale values (CX33, Next 14, 22 modules)
+- AAB vC27 Play Console Upload
+
+---
+
 ## 2026-05-24 — Session 2 (NEA-265 + NEA-268 + Branch Protection)
 
 **HEAD:** `3e965de` | **Server API:** `3e965de` | **Server Web:** `102cf56`

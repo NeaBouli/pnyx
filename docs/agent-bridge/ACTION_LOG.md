@@ -2,12 +2,20 @@
 
 ## SESSION 4 — 2026-05-25 (NEA-267 SEO + NEA-266 README + F-Droid !38007)
 
+### NEA-270 Admin Logs Hardening
+- `_sanitize_logs()` in `apps/api/routers/admin.py` — redaktiert Secrets vor Ollama-Analyse
+- Abgedeckte Formate: env `KEY=value`, JSON `"key":"value"`, Python dict `'key':'value'`, Bearer, DB/Redis URLs
+- Dashboard `/logs` Button aktiviert (war disabled mit stale "endpoint missing" Text)
+- 12 Unit Tests grün
+- Live-verifiziert: POST `/admin/logs/explain` → Ollama-Analyse ohne Secret-Leaks
+- Commit: `1fc2183`
+
 ### F-Droid MR !38007
 - Fastlane Metadaten vervollständigt: el-GR Locale, changelogs, 4 Screenshots (en-US + el-GR)
 - MR Description aktualisiert: App Inclusion Template clean, metadata link korrigiert
 - Kommentar an linsui gepostet (Entschuldigung + 3 erledigte Punkte)
 - Pipeline: grün
-- Status: `opened`, `waiting-on-response` Label sollte durch linsui entfernt werden
+- Status: `opened`, wartet auf linsui
 - Commit: `53c03bb`
 
 
