@@ -547,6 +547,86 @@ async def admin_log_stream(_key=Depends(verify_admin)):
         raise HTTPException(504, "Docker proxy timeout")
 
 
+@router.post("/maintenance/resolve-org-labels")
+async def admin_resolve_org_labels(
+    _key=Depends(verify_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    NEA-272: Resolve [unknown:UID] organization labels in diavgeia_decisions
+    via live Diavgeia API, then backfill parliament_bills.org_label.
+    Rate-limited: 1 req/sec to Diavgeia API.
+    """
+    import asyncio
+    from services.diavgeia_org_lookup import resolve_unknown_label
+    from services.diavgeia_scraper import _clean_org_label
+
+    # Step 1: Find unknown org labels in diavgeia_decisions
+    result = await db.execute(text("""
+        SELECT DISTINCT organization_uid, organization_label
+        FROM diavgeia_decisions
+        WHERE organization_label LIKE '[unknown:%'
+    """))
+    unknowns = result.fetchall()
+
+    scanned = len(unknowns)
+    resolved = 0
+    failed = 0
+    unresolved = 0
+
+    for row in unknowns:
+        uid, old_label = row
+        if not uid:
+            failed += 1
+            continue
+
+        label = await resolve_unknown_label(str(uid))
+        clean = _clean_org_label(label)
+
+        if clean:
+            await db.execute(text("""
+                UPDATE diavgeia_decisions
+                SET organization_label = :label
+                WHERE organization_uid = :uid
+                AND organization_label LIKE '[unknown:%'
+            """), {"label": clean, "uid": uid})
+            resolved += 1
+        else:
+            unresolved += 1
+
+        # Rate-limit: 1 req/sec to Diavgeia API
+        await asyncio.sleep(1)
+
+    # Step 2: Backfill parliament_bills.org_label from resolved decisions
+    backfill_result = await db.execute(text("""
+        UPDATE parliament_bills pb
+        SET org_label = TRIM(dd.organization_label)
+        FROM diavgeia_decisions dd
+        WHERE pb.diavgeia_ada = dd.ada
+          AND pb.governance_level = 'INSTITUTIONAL'
+          AND pb.org_label IS NULL
+          AND dd.organization_label IS NOT NULL
+          AND TRIM(dd.organization_label) != ''
+          AND dd.organization_label NOT LIKE '[unknown:%'
+          AND LOWER(TRIM(dd.organization_label)) != 'unknown'
+    """))
+    backfilled = backfill_result.rowcount
+
+    await db.commit()
+
+    return {
+        "step1_resolve": {
+            "scanned": scanned,
+            "resolved": resolved,
+            "failed": failed,
+            "unresolved": unresolved,
+        },
+        "step2_backfill": {
+            "bills_updated": backfilled,
+        },
+    }
+
+
 @router.get("/deepl/usage")
 async def deepl_usage():
     """Public: DeepL API usage stats (no auth needed — no sensitive data)."""
