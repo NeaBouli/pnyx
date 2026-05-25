@@ -91,7 +91,7 @@ body{font-family:system-ui,sans-serif;background:var(--dark);color:#e2e8f0;min-h
 <div class="nav-bar" id="navBar">
   <a href="#" class="active" id="navBills" onclick="showBills()">Ψηφοφορίες</a>
   <a href="#" id="navEval" onclick="showEval()">Αξιολόγηση</a>
-  <a href="#" onclick="doLogout()">Αποσύνδεση</a>
+  <a href="#" onclick="confirmLogout()">Αποσύνδεση</a>
 </div>
 
 <script>
@@ -244,6 +244,7 @@ async function enableEvaluation(){
   }catch(e){alert('Σφάλμα δικτύου')}
   finally{btn.textContent='Ενεργοποίηση Αξιολόγησης';btn.disabled=false}
 }
+function confirmLogout(){if(confirm('Θέλετε σίγουρα να αποσυνδεθείτε;'))doLogout()}
 function doLogout(){token='';adaNumber='';localStorage.removeItem('rep_token');localStorage.removeItem('rep_ada');if(window.postToNative)window.postToNative('LOGOUT','');location.reload()}
 </script>
 </body>
