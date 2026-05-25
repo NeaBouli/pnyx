@@ -75,6 +75,11 @@ export default function LogsPage() {
   // API
   const [scraperStatus, setScraperStatus] = useState<ScraperStatus | null>(null)
 
+  // Log Analysis
+  const [logAnalysisLoading, setLogAnalysisLoading] = useState(false)
+  const [logAnalysisResult, setLogAnalysisResult] = useState<string | null>(null)
+  const [logAnalysisError, setLogAnalysisError] = useState<string | null>(null)
+
   const refresh = useCallback(async () => {
     setLoading(true)
     try {
@@ -133,6 +138,25 @@ export default function LogsPage() {
     const interval = setInterval(refresh, 30_000)
     return () => clearInterval(interval)
   }, [autoRefresh, refresh])
+
+  async function handleLogAnalysis() {
+    setLogAnalysisLoading(true)
+    setLogAnalysisResult(null)
+    setLogAnalysisError(null)
+    try {
+      const res = await fetch('/api/proxy/admin/logs/explain', { method: 'POST' })
+      const data = await res.json() as Record<string, unknown>
+      if (res.ok) {
+        setLogAnalysisResult(String(data?.analysis ?? 'No analysis returned'))
+      } else {
+        setLogAnalysisError(String(data?.detail ?? `HTTP ${res.status}`))
+      }
+    } catch (e) {
+      setLogAnalysisError(String(e))
+    } finally {
+      setLogAnalysisLoading(false)
+    }
+  }
 
   const TABS: { key: TabKey; label: string }[] = [
     { key: 'system', label: 'Σύστημα' },
@@ -339,26 +363,31 @@ export default function LogsPage() {
             )}
           </div>
 
-          {/* Log Analysis Placeholder */}
+          {/* Log Analysis — Ollama */}
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <h2 className="font-semibold text-gray-800 mb-2">Log-Analyse (Ollama)</h2>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-700 mb-3">
-              Εκκρεμεί — POST /admin/logs/explain (Backend endpoint δεν υπάρχει ακόμα)
+            <div className="text-xs text-gray-400 mb-3">
+              Analysiert die letzten API-Logs mit Ollama. Secrets werden vor der Analyse automatisch redaktiert.
             </div>
-            <button
-              disabled
-              className="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg text-sm font-medium cursor-not-allowed"
-            >
-              Log-Analyse starten
-            </button>
-          </div>
-
-          {/* API Errors Placeholder */}
-          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-            <h2 className="font-semibold text-gray-800 mb-2">Letzte API Fehler</h2>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-700">
-              Log-Streaming braucht Backend-Endpoint /admin/logs
+            <div className="flex items-center gap-3 mb-4">
+              <button
+                onClick={handleLogAnalysis}
+                disabled={logAnalysisLoading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                {logAnalysisLoading ? 'Analyse...' : 'Log-Analyse starten'}
+              </button>
             </div>
+            {logAnalysisResult && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap font-mono">
+                {logAnalysisResult}
+              </div>
+            )}
+            {logAnalysisError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+                {logAnalysisError}
+              </div>
+            )}
           </div>
         </div>
       )}

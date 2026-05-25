@@ -7,6 +7,7 @@ Schutz: ADMIN_KEY (Beta) → gov.gr Auth (Alpha)
 @ai-anchor MOD15_ADMIN
 """
 import os
+import re
 import logging
 from datetime import datetime, timezone
 from typing import Optional
@@ -382,12 +383,50 @@ async def admin_heal_status(_key=Depends(verify_admin)):
     }
 
 
+_SECRET_NAMES = (
+    r"API[_-]?KEY|SECRET|PASSWORD|PRIVATE[_-]?KEY|TOKEN|DATABASE_URL|REDIS_URL|"
+    r"ADMIN_KEY|DISCOURSE_API_KEY|DEEPL_AUTH_KEY|HLR_API_KEY|PAYPAL|BREVO|TELEGRAM_BOT_TOKEN|"
+    r"STRIPE_SECRET|JWT_SECRET|FORUM_SSO_SALT|SERVER_SALT|AUTHORIZATION"
+)
+
+# KEY=value or KEY: value (env/config style)
+_REDACT_KV = re.compile(
+    rf"({_SECRET_NAMES})\s*[=:]\s*\S+",
+    re.IGNORECASE,
+)
+
+# "key": "value" or 'key': 'value' (JSON/dict style)
+_REDACT_JSON = re.compile(
+    rf"""(['"]?)({_SECRET_NAMES})\1\s*[:=]\s*(['"])(.+?)\3""",
+    re.IGNORECASE,
+)
+
+
+def _sanitize_logs(text: str) -> str:
+    """Redact secrets, tokens, and credentials from log text before sending to Ollama."""
+    # 1. Redact JSON/dict quoted patterns: "KEY": "value" / 'KEY': 'value'
+    sanitized = _REDACT_JSON.sub(
+        lambda m: f'{m.group(1)}{m.group(2)}{m.group(1)}: {m.group(3)}[REDACTED]{m.group(3)}',
+        text,
+    )
+    # 2. Redact Bearer tokens (including "Authorization: Bearer ...")
+    sanitized = re.sub(r"Bearer\s+\S+", "Bearer [REDACTED]", sanitized)
+    # 3. Redact key=value / key: value (env/config style, unquoted)
+    sanitized = _REDACT_KV.sub(
+        lambda m: re.split(r"[=:]\s*", m.group(0), maxsplit=1)[0] + "=[REDACTED]",
+        sanitized,
+    )
+    # 4. Redact postgres/redis connection strings
+    sanitized = re.sub(r"(postgres|redis)://\S+", r"\1://[REDACTED]", sanitized)
+    return sanitized
+
+
 @router.post("/logs/explain")
 async def admin_explain_logs(
     _key=Depends(verify_admin),
     lines: int = Query(default=30, ge=5, le=200),
 ):
-    """Ask Ollama to analyze recent API container logs."""
+    """Ask Ollama to analyze recent API container logs. Secrets are redacted before analysis."""
     from services.ollama_service import ollama_generate, ollama_available
     if not await ollama_available():
         raise HTTPException(503, "Ollama unavailable")
@@ -405,6 +444,8 @@ async def admin_explain_logs(
     if not log_text.strip():
         return {"analysis": "No log output available", "lines": 0}
 
+    safe_text = _sanitize_logs(log_text[:3000])
+
     prompt = (
         "You are a server admin assistant for a Greek democracy platform (ekklesia.gr).\n"
         "Analyze these API server logs. Report:\n"
@@ -412,7 +453,7 @@ async def admin_explain_logs(
         "2. Unusual patterns\n"
         "3. Recommendations\n"
         "Be concise. Answer in English.\n\n"
-        f"Logs:\n{log_text[:3000]}\n\n"
+        f"Logs:\n{safe_text}\n\n"
         "Analysis:"
     )
     analysis = await ollama_generate(prompt, max_tokens=300)
