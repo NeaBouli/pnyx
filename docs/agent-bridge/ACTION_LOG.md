@@ -38,7 +38,11 @@
   - Fix: trailing newline in metadata YAML
 - Pipeline #2551718912 failed: `checkupdates` fand vC27 im Tag aber Build-Eintrag fehlte in Metadata
   - Fix: vC27 Build-Eintrag manuell in `metadata/ekklesia.gr.yml` eingefuegt (commit `b46fece` SHA)
-- Pipeline #2551741271 laeuft (mit vC27 Build-Eintrag)
+- Pipeline #2551741271 failed: `fdroid build` 5 scan errors:
+  1. `apps/representative/package.json` ohne lock file → Fix: lock-file committed (`75a8b9f`)
+  2. `expo-asset/local-maven-repo` + `expo-file-system/local-maven-repo` Pfade existieren nicht mehr (Expo SDK 54 hoisting) → Fix: scanignore aktualisiert
+  3. `apps/representative/node_modules` → scandelete ergaenzt
+- Neue Pipeline laeuft nach Fixes
 
 ### ekprosopos Screenshots auf Landing Page
 - 3 Screenshots (bills, detail, evaluation) in ekprosopos-Banner eingefuegt
