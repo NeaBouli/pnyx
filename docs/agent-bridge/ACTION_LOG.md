@@ -42,7 +42,10 @@
   1. `apps/representative/package.json` ohne lock file → Fix: lock-file committed (`75a8b9f`)
   2. `expo-asset/local-maven-repo` + `expo-file-system/local-maven-repo` Pfade existieren nicht mehr (Expo SDK 54 hoisting) → Fix: scanignore aktualisiert
   3. `apps/representative/node_modules` → scandelete ergaenzt
-- Neue Pipeline laeuft nach Fixes
+- Pipeline #2551754848 failed: alte scanignore noch im vC6 Build-Eintrag + representative/node_modules existiert nicht im Build + fehlende Leerzeile
+  - Fix: BEIDE Build-Eintraege (vC6+vC27) mit korrekten scanignore, representative/node_modules scandelete entfernt, Leerzeile ergaenzt
+- Pipeline #2551761027 laeuft (SHA 98a4f7b6, alle Fixes drin)
+- APK Build (ekklesia mobile): AAB fertig (build-play.sh), APK assembleFreeRelease laeuft
 
 ### ekprosopos Screenshots auf Landing Page
 - 3 Screenshots (bills, detail, evaluation) in ekprosopos-Banner eingefuegt
