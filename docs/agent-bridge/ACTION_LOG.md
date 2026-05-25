@@ -55,7 +55,11 @@
   - Fix 1: Tag `v1.3.5-20260525` verschoben auf `47c1494` (enthaelt lock-file)
   - Fix 2: `expo-file-system` + `expo-asset` scanignore komplett entfernt (F-Droid loescht sie sowieso via scandelete)
   - Fix 3: vC27 commit SHA in Metadata auf `47c1494` korrigiert
-- Pipeline #2551791459 laeuft (SHA 0c411dfb)
+- Pipeline #2551791459 failed: `check source code` konnte Tag-Commit nicht auschecken (force-pushed Tag Cache) + `fdroid build` Gradle fand expo-asset/expo-file-system nicht (scandelete hatte sie entfernt weil scanignore fehlte)
+  - Root cause: scanignore fuer expo-asset/expo-file-system entfernt → scandelete loescht die AARs → Gradle Build schlaegt fehl
+  - Fix: scanignore fuer `expo/node_modules/expo-file-system/` und `expo/node_modules/expo-asset/` wiederhergestellt
+  - Die "Non-exist" Fehler von vorher kamen weil scandelete VOR prebuild lief — aber scanignore muss trotzdem da sein damit scandelete die Pfade nach prebuild nicht loescht
+- Pipeline #2551821484 laeuft (scanignore wiederhergestellt)
 - APK Build: AAB fertig (build-play.sh), direktRelease APK gebaut (unsigned — Signierung noetig)
 
 ### ekprosopos Screenshots auf Landing Page
