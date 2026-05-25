@@ -2,6 +2,14 @@
 
 ## SESSION 4 — 2026-05-25 (NEA-267 SEO + NEA-266 README + F-Droid !38007)
 
+### NEA-272 org_label Resolve + Backfill
+- `POST /admin/maintenance/resolve-org-labels` triggered
+- Step 1: 43 unknown UIDs → 43 resolved (100%), 0 failed
+- Step 2: 168 parliament_bills.org_label backfilled
+- Result: 192/192 INSTITUTIONAL bills have org_label (was 24/192)
+- Forum Resync triggered (background, ~14min)
+- Commit: `9363e16`
+
 ### NEA-271 Dashboard /logs Live Endpoints
 - 3 neue Endpoints: `/admin/logs/containers`, `/admin/logs/ollama`, `/admin/logs/stream`
 - Containers: 24 live, structural data only (name/image/status/state/health)

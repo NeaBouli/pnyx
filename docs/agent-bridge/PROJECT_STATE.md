@@ -13,12 +13,12 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `1964e1f` (feat(NEA-271): dashboard /logs live container + ollama + stream endpoints)
-- **origin/main:** `1964e1f` (synchron)
+- **Lokaler HEAD:** `9363e16` (feat(NEA-272): admin endpoint to resolve unknown org labels + backfill)
+- **origin/main:** `9363e16` (synchron)
 - **Release Tags:** `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`
 - **Rollback Tags:** `rollback-pre-zk-20260524`
-- **Server HEAD:** `1964e1f`
-- **Server API:** `1964e1f` (NEA-265+268+270+271, containers/ollama/stream endpoints live)
+- **Server HEAD:** `9363e16`
+- **Server API:** `9363e16` (NEA-265+268+270+271+272, org_label 192/192 resolved)
 - **Server Dashboard:** `1964e1f` (NEA-269+267+270+271, /logs fully wired)
 - **Server Static Docs:** `1fc2183` (JSON-LD, README, Fastlane)
 
