@@ -13,8 +13,8 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `221815c` (docs(NEA-266): update README to current project state)
-- **origin/main:** `221815c` (synchron)
+- **Lokaler HEAD:** `53c03bb` (chore: complete Fastlane metadata for F-Droid MR !38007)
+- **origin/main:** `53c03bb` (synchron)
 - **Release Tags:** `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`
 - **Rollback Tags:** `rollback-pre-zk-20260524`
 - **Server:** API `3e965de` (NEA-265+268), Dashboard `7fc3f26` (NEA-269+267), Static Docs `7fc3f26`

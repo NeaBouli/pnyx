@@ -1,7 +1,8 @@
 # TODO — Ekklesia.gr / pnyx
 
 ## Aktiv / In Progress
-- [ ] NEA-270: Admin Logs Hardening (Analyse fertig; braucht Freigabe fuer Code) — sanitize logs before Ollama, auth-gate sensitive status, dashboard text cleanup
+- [ ] F-Droid MR !38007: wartet auf linsui Review — bei Folgefragen SOFORT antworten
+- [ ] NEA-270: Admin Logs Hardening (Analyse fertig; braucht Freigabe fuer Code)
 - [ ] NEA-258: FORUM_SSO_SALT Startup-Check (LOW follow-up)
 - [ ] AAB vC27 Upload zu Play Console (`~/Desktop/ekklesia-v1.3.2-vC27-PLAY.aab` BEREIT)
 - [ ] CLAUDE.md Aktualisierung (INFO — stale CX33, 22 Module, Next 14)
@@ -11,6 +12,7 @@
 - [ ] NEA-249 Follow-up: Mopro native Expo Module feasibility plan
 
 ## Done (Session 25.05.2026)
+- [x] F-Droid !38007: Fastlane Metadaten komplett (en-US + el-GR, Screenshots, Changelogs), MR Description + Kommentar gepostet (`53c03bb`)
 - [x] NEA-267: JSON-LD auf 12 neue Seiten (wiki, tickets, govgr-dimos), sitemap cleanup, votes noindex (`7fc3f26`)
 - [x] NEA-266: README vollständig aktualisiert — Encoding, Versionen, Links, Features, SEO-Sektion (`221815c`)
 

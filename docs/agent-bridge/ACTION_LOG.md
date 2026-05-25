@@ -1,6 +1,16 @@
 # Action Log
 
-## SESSION 4 — 2026-05-25 (NEA-267 SEO + NEA-266 README)
+## SESSION 4 — 2026-05-25 (NEA-267 SEO + NEA-266 README + F-Droid !38007)
+
+### F-Droid MR !38007
+- Fastlane Metadaten vervollständigt: el-GR Locale, changelogs, 4 Screenshots (en-US + el-GR)
+- MR Description aktualisiert: App Inclusion Template clean, metadata link korrigiert
+- Kommentar an linsui gepostet (Entschuldigung + 3 erledigte Punkte)
+- Pipeline: grün
+- Status: `opened`, `waiting-on-response` Label sollte durch linsui entfernt werden
+- Commit: `53c03bb`
+
+
 
 ### Commits
 15. `08994b0` fix(NEA-269): remove demo data from /gov, fix /users revocation UX
