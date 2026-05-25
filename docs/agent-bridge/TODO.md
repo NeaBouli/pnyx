@@ -1,7 +1,6 @@
 # TODO — Ekklesia.gr / pnyx
 
 ## Aktiv / In Progress
-- [ ] ekprosopos UI fix `3633d69`: Static deploy via server pull (`cd /opt/ekklesia/app && git pull --ff-only origin main`), kein Container-Rebuild
 - [ ] F-Droid MR !38007: wartet auf linsui Review — bei Folgefragen SOFORT antworten
 - [ ] NEA-258: FORUM_SSO_SALT Startup-Check (LOW follow-up)
 - [ ] AAB vC27 Upload zu Play Console (`~/Desktop/ekklesia-v1.3.2-vC27-PLAY.aab` BEREIT)
@@ -12,6 +11,8 @@
 - [ ] NEA-249 Follow-up: Mopro native Expo Module feasibility plan
 
 ## Done (Session 25.05.2026)
+- [x] ekprosopos UI fix static deploy: server pulled to `125d45a`, no container rebuild
+- [x] ekprosopos APK validation: live `/download/ekprosopos-latest.apk` matches `~/Desktop/ekprosopos-v1.1.0-vC2.apk` SHA-256 `4b9d49d888465cac2f1de94f50e46efc8dbfea49cb805fd715459bbbb28a761e`
 - [x] ekprosopos UI fix: sticky header, badge inset, score-overlap fixed, 0%-progress empty-state (`3633d69`, pushed)
 - [x] NEA-272: org_label resolve (43/43 UIDs) + backfill (168 bills), 192/192 INSTITUTIONAL have org_label (`9363e16`)
 - [x] NEA-271: Dashboard /logs live container + ollama + stream endpoints deployed (`1964e1f`)

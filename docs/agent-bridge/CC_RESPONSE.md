@@ -2,15 +2,16 @@
 
 ## 2026-05-25 — Current Handoff (ekprosopos UI fix)
 
-**HEAD / origin/main:** `3633d69`
-**Server repo HEAD / Static Docs:** `ed7e7a7` (pull pending)
+**HEAD / origin/main:** `125d45a`
+**Server repo HEAD / Static Docs:** `125d45a`
 **API container code:** `9363e16`
 **Dashboard container code:** `1964e1f`
 
 ### Latest Product Commit
 | Commit | Scope | Status |
 |---|---|---|
-| `3633d69` | `apps/representative/web/index.html` mobile UI fixes | pushed, not yet pulled on server |
+| `3633d69` | `apps/representative/web/index.html` mobile UI fixes | live after static server pull |
+| `125d45a` | Bridge handoff for UI fix | live in repo/server HEAD |
 
 ### What Changed
 - Header sticky: `.header { position: sticky; top: 0; z-index: 100; }`
@@ -28,14 +29,19 @@
   - no `0% 0%` text
   - empty state visible
 
-### Next Step
-Static deploy only:
+### APK Validation
+- Live URL: `https://ekklesia.gr/download/ekprosopos-latest.apk` returns HTTP 200, content-type `application/vnd.android.package-archive`
+- Live server APK SHA-256: `4b9d49d888465cac2f1de94f50e46efc8dbfea49cb805fd715459bbbb28a761e`
+- Desktop APK `~/Desktop/ekprosopos-v1.1.0-vC2.apk`: same SHA-256
+- Local build output `apps/representative/android/app/build/outputs/apk/release/app-release.apk`: same SHA-256
+- Ignored local archive created: `builds/artifacts/ekprosopos-v1.1.0-vC2.apk`
+- Metadata: package `ekklesia.representative`, versionCode `2`, versionName `1.1.0`
+- WebView target in bundle: `https://ekklesia.gr/representative/index.html`
+- Signing: Android Debug certificate, matching existing release build config (`release` uses `signingConfigs.debug`)
 
-```bash
-ssh root@135.181.254.229 "cd /opt/ekklesia/app && git pull --ff-only origin main"
-```
-
-No API or Dashboard container rebuild required.
+### Residual
+- `~/Desktop/ekprosopos-v1.0.0-vC2.apk` was not present locally; use `ekprosopos-v1.1.0-vC2.apk` as canonical current vC2 artifact.
+- Browser/WebView may need hard refresh/cache clear after static deploy.
 
 ## 2026-05-25 — Session Final (NEA-270 + NEA-267 + NEA-266 + F-Droid)
 

@@ -13,15 +13,16 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `3633d69` (fix(ekprosopos): sticky header and mobile layout fixes)
-- **origin/main:** `3633d69` (synchron)
+- **Lokaler HEAD:** `125d45a` (chore(bridge): record ekprosopos UI fix handoff)
+- **origin/main:** `125d45a` (synchron)
 - **Release Tags:** `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`
 - **Rollback Tags:** `rollback-pre-zk-20260524`
-- **Server repo HEAD / Static Docs:** `ed7e7a7` (static pull pending fuer `3633d69`)
+- **Server repo HEAD / Static Docs:** `125d45a` (ekprosopos UI fix live)
 - **API container code:** `9363e16` (NEA-265+268+270+271+272, org_label 192/192 resolved)
 - **Dashboard container code:** `1964e1f` (NEA-269+267+270+271, /logs fully wired)
 - **Static logout fix:** live, verified (`confirmLogout` 2x in index.html)
-- **ekprosopos UI fix:** `3633d69` pushed; server static pull pending (sticky header, score overlap, 0% empty state)
+- **ekprosopos UI fix:** `3633d69` live after server pull; hard refresh/cache clear may be needed
+- **ekprosopos APK live:** `/download/ekprosopos-latest.apk` SHA-256 `4b9d49d888465cac2f1de94f50e46efc8dbfea49cb805fd715459bbbb28a761e` (matches local `~/Desktop/ekprosopos-v1.1.0-vC2.apk` and ignored archive `builds/artifacts/ekprosopos-v1.1.0-vC2.apk`)
 
 ## Uncommitted Aenderungen
 
@@ -54,7 +55,7 @@
 
 ## Completed this cycle (Session 24.05.2026) — 15 Commits
 
-- ekprosopos UI fix: sticky header, badge inset, evaluation score overlap, 0% progress empty-state (`3633d69`, pushed; static deploy pending)
+- ekprosopos UI fix: sticky header, badge inset, evaluation score overlap, 0% progress empty-state (`3633d69`, live after static pull)
 - NEA-269: Dashboard /gov Demo-Daten entfernt + /users Revocation UX privacy-korrekt (`08994b0`, push-freigegeben; nicht als deployed markiert)
 - NEA-270: Admin Logs Endpoint/Sicherheitsmodell analysiert (Analyse only, kein Produktcode)
 - NEA-268: org_label auf parliament_bills + Forum [Φορέας X] Titel deployed (`3e965de`, 64 org_label backfilled, unknown labels 0)
