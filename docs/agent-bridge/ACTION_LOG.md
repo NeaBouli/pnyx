@@ -2,6 +2,17 @@
 
 ## SESSION 4 — 2026-05-25 (NEA-267 SEO + NEA-266 README + F-Droid !38007)
 
+### ekprosopos Mobile UI Fixes
+- Screenshot-Findings gefixt in `apps/representative/web/index.html`
+- Header ist jetzt sticky (`position: sticky; top: 0; z-index: 100`)
+- Header-Badge hat mehr Innenabstand, max-width + Ellipsis gegen Randkleben
+- Evaluation Score-Cards: Flexbox-Layout, Text links + fixe 56px Score-Spalte rechts (kein Overlap)
+- Bill detail: Bei 0 Stimmen kein `0% 0%` Balken mehr; Empty-State `Δεν υπάρχουν ψήφοι πολιτών ακόμα`
+- Text: `αξιολογήσεις` → `Αξιολογήσεις`
+- Verifikation: `git diff --check` OK, JS `node --check` OK, Mobile Browser-Fixture OK
+- Commit: `3633d69`
+- Status: pushed to `origin/main`, static server pull pending (kein Container-Rebuild nötig)
+
 ### ekprosopos Logout Confirm
 - Logout-Button zeigt jetzt Bestätigungsdialog: "Θέλετε σίγουρα να αποσυνδεθείτε;"
 - Verhindert versehentliches Ausloggen bei Touch

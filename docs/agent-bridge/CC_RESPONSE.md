@@ -1,5 +1,42 @@
 # CC Response
 
+## 2026-05-25 — Current Handoff (ekprosopos UI fix)
+
+**HEAD / origin/main:** `3633d69`
+**Server repo HEAD / Static Docs:** `ed7e7a7` (pull pending)
+**API container code:** `9363e16`
+**Dashboard container code:** `1964e1f`
+
+### Latest Product Commit
+| Commit | Scope | Status |
+|---|---|---|
+| `3633d69` | `apps/representative/web/index.html` mobile UI fixes | pushed, not yet pulled on server |
+
+### What Changed
+- Header sticky: `.header { position: sticky; top: 0; z-index: 100; }`
+- Header badge: more padding, max-width, ellipsis to avoid edge crowding
+- Evaluation cards: flex row with fixed 56px score column, no text overlap
+- Bill detail: when total citizen votes are 0, show `Δεν υπάρχουν ψήφοι πολιτών ακόμα` instead of `0% 0%`
+- Label text: `Αξιολογήσεις` with capital alpha
+
+### Verification
+- `git diff --check -- apps/representative/web/index.html` — OK
+- HTML script extracted and checked with `node --check` — OK
+- Mobile browser fixture verified:
+  - sticky header remains at `top: 0` after scroll
+  - score text/right-column gap: 20px
+  - no `0% 0%` text
+  - empty state visible
+
+### Next Step
+Static deploy only:
+
+```bash
+ssh root@135.181.254.229 "cd /opt/ekklesia/app && git pull --ff-only origin main"
+```
+
+No API or Dashboard container rebuild required.
+
 ## 2026-05-25 — Session Final (NEA-270 + NEA-267 + NEA-266 + F-Droid)
 
 **HEAD:** `1964e1f` | **Server:** `1964e1f` (API + Dashboard + Docs)
