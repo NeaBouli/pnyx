@@ -45,7 +45,11 @@
 - Pipeline #2551754848 failed: alte scanignore noch im vC6 Build-Eintrag + representative/node_modules existiert nicht im Build + fehlende Leerzeile
   - Fix: BEIDE Build-Eintraege (vC6+vC27) mit korrekten scanignore, representative/node_modules scandelete entfernt, Leerzeile ergaenzt
 - Pipeline #2551761027 laeuft (SHA 98a4f7b6, alle Fixes drin)
-- APK Build (ekklesia mobile): AAB fertig (build-play.sh), APK assembleFreeRelease laeuft
+- Pipeline #2551761027 failed: `fdroid build` konnte `expo.modules.filesystem` nicht finden
+  - Root cause: Expo SDK 54 hoisted `expo-file-system`, `expo-asset`, `expo-application`, `expo-notifications` aus `expo/node_modules/` nach `node_modules/` — scanignore fehlte
+  - Fix: alle 4 hoisted local-maven-repo Pfade als scanignore hinzugefuegt
+- Pipeline #2551767847 laeuft (SHA 6e38ebea, hoisted scanignore drin)
+- APK Build: AAB fertig (build-play.sh), direktRelease APK gebaut (unsigned — Signierung noetig)
 
 ### ekprosopos Screenshots auf Landing Page
 - 3 Screenshots (bills, detail, evaluation) in ekprosopos-Banner eingefuegt
