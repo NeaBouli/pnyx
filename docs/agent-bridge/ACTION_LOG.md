@@ -18,6 +18,14 @@
 - Kommentar an linsui gepostet (2026-05-26 08:45 UTC)
 - MR !38007 wartet auf linsui Merge
 
+### POLIS Tickets Coming-Soon Modal
+- `Alert.alert("Σύντομα", ...)` ersetzt durch professionelles Modal
+- Titel "Σύντομα διαθέσιμο", Phase-B-Erklaerung, "Κατανοητό" Button
+- Gilt fuer "+ Νέο Ticket" und Vote-Button
+- Kein versionCode bump, kein F-Droid/Play
+- Commit: `d7489ff`
+- S10-Test noetig
+
 ### CC: vC28 Release + F-Droid Metadata
 - Version bump committed: vC28 / 1.0.1 in `app.json` + `build.gradle` (`fa6366f`)
 - APK + AAB gebaut aus demselben Commit
