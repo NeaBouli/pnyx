@@ -58,11 +58,11 @@ function utf8ToBytes(s: string): Uint8Array {
   return new TextEncoder().encode(s);
 }
 
-function bytesToHex(bytes: Uint8Array): string {
+export function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-function hexToBytes(hex: string): Uint8Array {
+export function hexToBytes(hex: string): Uint8Array {
   const bytes = new Uint8Array(hex.length / 2);
   for (let i = 0; i < hex.length; i += 2) {
     bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
@@ -212,6 +212,121 @@ export async function storeNullifier(nullifier: string): Promise<void> {
 
 export async function loadNullifier(): Promise<string | null> {
   return SecureStore.getItemAsync(KEYS.NULLIFIER);
+}
+
+// ─── POLIS Canonical Signing (mirrors apps/api/crypto/polis.py) ──────────────
+
+const POLIS_PROTO_VERSION = 0x01;
+const POLIS_VOTE_MAP: Record<string, number> = { up: 1, down: 2 };
+
+function hashContent(content: string): Uint8Array {
+  return sha256(utf8ToBytes(content));
+}
+
+function uint64BE(n: number): Uint8Array {
+  const buf = new Uint8Array(8);
+  const hi = Math.floor(n / 0x100000000);
+  const lo = n >>> 0;
+  buf[0] = (hi >>> 24) & 0xff;
+  buf[1] = (hi >>> 16) & 0xff;
+  buf[2] = (hi >>> 8) & 0xff;
+  buf[3] = hi & 0xff;
+  buf[4] = (lo >>> 24) & 0xff;
+  buf[5] = (lo >>> 16) & 0xff;
+  buf[6] = (lo >>> 8) & 0xff;
+  buf[7] = lo & 0xff;
+  return buf;
+}
+
+function uint16BE(n: number): Uint8Array {
+  return new Uint8Array([(n >>> 8) & 0xff, n & 0xff]);
+}
+
+/**
+ * Layout: version(1B) | category_len(1B) | category | content_hash(32B) |
+ *         title_hash(32B) | pk_polis(32B) | nullifier(32B) | timestamp(8B BE)
+ */
+export function buildTicketSignedBytes(
+  category: string,
+  content: string,
+  title: string,
+  pkPolis: Uint8Array,
+  nullifier: Uint8Array,
+  timestampMs: number,
+): Uint8Array {
+  const catBytes = utf8ToBytes(category);
+  const contentHash = hashContent(content);
+  const titleHash = hashContent(title);
+  return concatBytes(
+    new Uint8Array([POLIS_PROTO_VERSION]),
+    new Uint8Array([catBytes.length]),
+    catBytes,
+    contentHash,
+    titleHash,
+    pkPolis,
+    nullifier,
+    uint64BE(timestampMs),
+  );
+}
+
+/**
+ * Layout: version(1B) | ticket_id_len(2B BE) | ticket_id | vote(1B) |
+ *         pk_polis(32B) | vote_nullifier(32B) | timestamp(8B BE)
+ */
+export function buildVoteSignedBytes(
+  ticketId: string,
+  vote: "up" | "down",
+  pkPolis: Uint8Array,
+  nullifier: Uint8Array,
+  timestampMs: number,
+): Uint8Array {
+  const ticketBytes = utf8ToBytes(ticketId);
+  return concatBytes(
+    new Uint8Array([POLIS_PROTO_VERSION]),
+    uint16BE(ticketBytes.length),
+    ticketBytes,
+    new Uint8Array([POLIS_VOTE_MAP[vote]]),
+    pkPolis,
+    nullifier,
+    uint64BE(timestampMs),
+  );
+}
+
+/**
+ * Build register-key signed message: "polis-register:{pk_polis}:{nullifier_hash}:{timestamp_ms}"
+ */
+export function buildRegisterKeyMessage(
+  pkPolisHex: string,
+  nullifierHash: string,
+  timestampMs: number,
+): Uint8Array {
+  return utf8ToBytes(`polis-register:${pkPolisHex}:${nullifierHash}:${timestampMs}`);
+}
+
+/**
+ * Get or derive POLIS keypair. Supports legacy users (stored identity key) and
+ * new users (nullifierRoot-derived POLIS key).
+ */
+export async function getOrDerivePolisKey(): Promise<{
+  privateKey: Uint8Array;
+  publicKey: Uint8Array;
+  pkPolisHex: string;
+} | null> {
+  // Try nullifierRoot first (new path)
+  const root = await loadNullifierRoot();
+  if (root) {
+    const kp = derivePolisKey(root);
+    return { ...kp, pkPolisHex: bytesToHex(kp.publicKey) };
+  }
+  // Fallback: legacy stored keypair → derive POLIS key from private key as seed
+  const legacy = await loadKeypair();
+  if (legacy) {
+    const seed = hexToBytes(legacy.privateKeyHex);
+    const polisPriv = hmacSha256(seed, DOMAIN.POLIS_KEY);
+    const polisPub = ed25519.getPublicKey(polisPriv);
+    return { privateKey: polisPriv, publicKey: polisPub, pkPolisHex: bytesToHex(polisPub) };
+  }
+  return null;
 }
 
 // ─── Legacy Vote Signing (Phase B compat) ────────────────────────────────────

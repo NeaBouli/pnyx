@@ -240,3 +240,66 @@ export interface MyEvalBulk {
 export async function fetchMyEvaluationsBulk(nullifierHash: string): Promise<MyEvalBulk[]> {
   return request<MyEvalBulk[]>(`/api/v1/politicians/my-evaluations/bulk?nullifier_hash=${encodeURIComponent(nullifierHash)}`);
 }
+
+// ─── POLIS Tickets ──────────────────────────────────────────────────────────
+
+export interface PolisTicket {
+  id: string;
+  title: string;
+  category: string;
+  handle: string;
+  status: string;
+  up_votes: number;
+  down_votes: number;
+  created_at: string | null;
+}
+
+export async function fetchPolisTickets(category?: string): Promise<{ tickets: PolisTicket[]; total: number }> {
+  const params = category ? `?category=${category}` : "";
+  return request(`/api/v1/polis/tickets${params}`);
+}
+
+export async function registerPolisKey(payload: {
+  nullifier_hash: string;
+  pk_polis: string;
+  identity_signature: string;
+  timestamp_ms: number;
+}): Promise<{ status: string; handle: string }> {
+  return request("/api/v1/polis/register-key", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function createPolisTicket(payload: {
+  title: string;
+  content: string;
+  category: string;
+  pk_polis: string;
+  ticket_nullifier: string;
+  signature: string;
+  timestamp_ms: number;
+  nullifier_hash: string;
+}): Promise<{ id: string; handle: string; status: string }> {
+  return request("/api/v1/polis/tickets", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function votePolisTicket(
+  ticketId: string,
+  payload: {
+    vote: string;
+    pk_polis: string;
+    vote_nullifier: string;
+    signature: string;
+    timestamp_ms: number;
+    nullifier_hash: string;
+  },
+): Promise<{ vote_id: string; vote: string }> {
+  return request(`/api/v1/polis/tickets/${ticketId}/votes`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
