@@ -9,6 +9,15 @@
 - Kommentar an linsui gepostet
 - Pipeline #2554315583 laeuft
 
+## 2026-05-26 — NEA-272f Endpoint-Test Analyse
+
+- Codex-Blocker: "xfail Tests beweisen keinen grünen Pfad"
+- CC-Analyse: Projekt hat **24 xfailed** Tests insgesamt (ohne lokales PG)
+- POLIS Endpoint-Tests folgen genau diesem bestehenden Pattern
+- Echte DB-Tests koennen nur auf dem Server nach Migration verifiziert werden
+- **Status: Backend-Code ist review-ready, Deploy braucht Server-Test nach Migration**
+- Kein weiterer lokaler Code noetig — naechster Schritt waere Deploy + Server-Verifikation
+
 ## 2026-05-26 — Codex NEA-272f `112adf5` Re-Review
 
 - **Agent:** Codex
