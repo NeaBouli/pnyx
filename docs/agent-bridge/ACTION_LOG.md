@@ -1,5 +1,12 @@
 # Action Log
 
+## 2026-05-26 — NEA-272f Precision Tests (`ab2a24c`) + F-Droid rewritemeta
+
+- Precision-Tests: exact KEY_MISMATCH + DB UNIQUE(ticket_id, pk_polis)
+- 15/15 non-xfail Router/DB Tests PASSED
+- F-Droid: rewritemeta Linebreak angewendet
+- Deploy wartet auf Re-Review
+
 ## 2026-05-26 — Codex Re-Review: NEA-272f `b0d3ad2` + F-Droid `2554378282`
 
 - **Agent:** Codex
