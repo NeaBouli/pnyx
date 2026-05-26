@@ -1,5 +1,13 @@
 # Action Log
 
+## 2026-05-26 — NEA-272f Edge Tests + F-Droid Restore (`b0d3ad2`)
+
+- **4 Edge-Tests hinzugefuegt:** same pk_polis/different nullifier 409, wrong pair 403, duplicate vote controlled, GET safe fields nach Insert
+- **Fix:** `created_at` format kompatibel mit PG (datetime) und SQLite (string)
+- **Total:** 14/14 non-xfail Router/DB-Tests PASSED
+- **F-Droid:** Metadata aus `fe2040f7` wiederhergestellt + `buildFromSource` sauber angewendet
+- Deploy wartet auf Re-Review
+
 ## 2026-05-26 — Codex Re-Review: NEA-272f `d96f93a` + F-Droid `b12a50f17`
 
 - **Agent:** Codex
