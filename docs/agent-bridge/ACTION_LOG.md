@@ -1,5 +1,13 @@
 # Action Log
 
+## 2026-05-26 — NEA-272f Review Fix (`495a506`)
+
+- **CRITICAL fixed:** `_verify_identity()` — `nullifier_hash` muss in `identity_records` ACTIVE sein
+- **HIGH fixed:** `title` im signierten Payload — Tampering invalidiert Signatur
+- **MEDIUM fixed:** `IntegrityError` → 409 statt 500
+- **Test:** `test_tampered_title_rejected` + 36 total gruen
+- Deploy: NICHT ohne erneuten Review
+
 ## 2026-05-26 — NEA-272f Backend: POLIS DB + API Endpoints
 
 - Migration `n701a2b3c4d5`: `polis_tickets` + `polis_votes` Tabellen
