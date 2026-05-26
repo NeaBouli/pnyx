@@ -1,5 +1,16 @@
 # Action Log
 
+## 2026-05-26 — NEA-272f Backend: POLIS DB + API Endpoints
+
+- Migration `n701a2b3c4d5`: `polis_tickets` + `polis_votes` Tabellen
+- API Router `polis_tickets.py`: 3 Endpoints (GET/POST tickets, POST votes)
+- Nutzt existierende `crypto/polis.py` (validate_ticket, validate_ticket_vote)
+- 35 Tests gruen (8 neue API + 27 bestehende crypto)
+- Kein PII, nur pk_polis Handle
+- Commit: `8b0e503`
+- Deploy: NICHT ohne Review
+- Kein versionCode bump, kein F-Droid/Play
+
 ## 2026-05-26 — NEA-272f App-internal POLIS Diagnose (CC)
 
 - **API Endpoints:** NEIN — kein Router fuer POLIS tickets
