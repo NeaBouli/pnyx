@@ -9,6 +9,9 @@
 - Web deploy noetig (Server pull + Web rebuild)
 - Mobile debug APK noetig fuer S10 Test
 - Kein versionCode bump, kein F-Droid/Play
+- **DEPLOYED:**
+  - Web: Server `6ec7051`, rebuilt (ADR-010), 9 neue Feature-Marker live
+  - Mobile: Debug APK auf S10, vC28/1.0.1 (unveraendert)
 
 ## 2026-05-26 — NEA-272c Desktop Guard + QR Lokalisierung
 
