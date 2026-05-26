@@ -80,6 +80,32 @@ Important distinction:
 
 For NEA-272 Option C, CC must decide/report whether the vC29 MVP should keep both auth paths (QR verification + GitHub OAuth for issue write access), or whether a later API proxy should remove the GitHub-account requirement. Do not remove either path without Gio approval.
 
+## 2026-05-26 — NEA-272 Finding: Desktop Phase-B guard blocks ticket creation after GitHub login
+
+**User report:** Gio logged in with GitHub and then clicked new ticket. Instead of the ticket form, the page showed the smartphone verification modal:
+
+> Απαιτείται Επαλήθευση Smartphone
+
+**Code cause:** `docs/tickets/index.html` has a stale desktop-only override:
+
+```js
+var isDesktop = !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+if (isDesktop) {
+  document.addEventListener("DOMContentLoaded", function() {
+    var newBtn = document.querySelector(".btn-new-ticket");
+    if (newBtn) newBtn.onclick = function(e) { e.preventDefault(); return showPhaseBModal(); };
+  });
+}
+```
+
+This overrides the real `openNewTicketModal()` from `docs/tickets/polis.js`, even when:
+- GitHub OAuth succeeded and `sessionStorage.polis_token` exists.
+- QR/App login succeeded and `sessionStorage.polis_nullifier` / `polis_pubkey` exist.
+
+**Required fix:** Remove/replace the blanket desktop block. The button must call the real auth-aware ticket logic. If Phase-B verification is required, check actual auth state (`polis_token` + QR verification keys), not desktop user-agent.
+
+**Do next:** CC should fix this together with QR UI localization, then live-test: GitHub login + QR login + new ticket form opens.
+
 ## 2026-05-26 — FINAL: F-Droid vC28 green, waiting for linsui merge
 
 **Status:** F-Droid !38007 is green and linsui has been notified. Do not touch F-Droid metadata again unless linsui gives new review feedback.

@@ -29,6 +29,13 @@
 - QR/App login and GitHub login serve different purposes: QR verifies citizen/browser session; GitHub OAuth gives write access to `NeaBouli/pnyx-community`.
 - Linear NEA-272 updated. CC must not remove either path without Gio approval.
 
+### NEA-272 Desktop Phase-B Guard Finding
+
+- Gio reported: after GitHub login, clicking new ticket still opens smartphone verification modal.
+- Root cause found in `docs/tickets/index.html`: desktop-only `DOMContentLoaded` override replaces `.btn-new-ticket` onclick with `showPhaseBModal()`.
+- This blocks `openNewTicketModal()` from `docs/tickets/polis.js` even when GitHub OAuth and QR/App verification succeeded.
+- Linear NEA-272 updated. Required fix: remove/replace blanket desktop block and check actual auth state instead.
+
 ## 2026-05-26 — Codex F-Droid !38007 Audit
 
 - Audited pnyx bridge, fdroiddata branch, GitLab MR !38007 pipelines, local APK/AAB outputs.
