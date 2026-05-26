@@ -144,6 +144,27 @@ This overrides the real `openNewTicketModal()` from `docs/tickets/polis.js`, eve
 - Do not implement GitHub OAuth inside the app yet.
 - No version bump, no public APK/AAB/F-Droid/Play update. Build debug APK and install on S10 only.
 
+## 2026-05-26 — NEA-272 Correction: Browser redirect is rejected, app-internal POLIS required
+
+**User feedback:** Gio rejects the NEA-272e browser redirect. Opening the website from the app and forcing another browser verification/login flow is not acceptable product behavior.
+
+**Correct requirement:** A verified app user must be able to create/vote POLIS tickets inside the app. The mobile app should not merely redirect to the website.
+
+**Why CC's last fix was wrong for the product:** It followed the temporary Option C MVP, but that MVP is now rejected. Treat it as a stopgap/debug build only, not as the final NEA-272 solution.
+
+**Existing useful code basis:**
+- `apps/api/crypto/polis.py` already validates signed `PolisTicketPayload` and `PolisVotePayload`.
+- `apps/api/tests/test_polis.py` covers valid ticket creation, valid ticket vote, duplicate nullifiers, self-vote prevention, signature tampering, timestamp freshness.
+- `apps/mobile/src/lib/crypto-native.ts` has `derivePolisKey(nullifierRoot)` for a persistent POLIS key.
+
+**Missing for real app-internal POLIS:**
+- API endpoints for app ticket create/vote, e.g. `POST /api/v1/polis/tickets` and `POST /api/v1/polis/tickets/{id}/votes`.
+- Mobile signed payload builders mirroring `build_ticket_signed_bytes()` and `build_vote_signed_bytes()`.
+- Mobile ticket create form and vote action in `TicketsScreen.tsx`.
+- Persistence/sync decision: DB-backed tickets or server-side GitHub Issue proxy/bot. Do not require GitHub OAuth inside the app unless Gio explicitly approves.
+
+**Next CC task:** Diagnose/design app-internal POLIS implementation. No more browser-redirect “solution” claims.
+
 ## 2026-05-26 — FINAL: F-Droid vC28 green, waiting for linsui merge
 
 **Status:** F-Droid !38007 is green and linsui has been notified. Do not touch F-Droid metadata again unless linsui gives new review feedback.

@@ -89,6 +89,17 @@
 - Required vC29 MVP: replace disabled modal with an action that opens the working browser POLIS flow (`https://ekklesia.gr/tickets/index.html`) and explains that Mobile is used for QR verification.
 - Linear NEA-272 updated. No version bump/public release; debug APK S10 only.
 
+### NEA-272e Rejected — App-Internal POLIS Required
+
+- Gio rejected the browser redirect behavior as too cheap: the app must not simply open the website and force browser login/verification again.
+- Correct requirement: verified app user can create/vote POLIS tickets inside the mobile app.
+- Code basis exists:
+  - `apps/api/crypto/polis.py`: validates `PolisTicketPayload` and `PolisVotePayload`.
+  - `apps/api/tests/test_polis.py`: tests signatures, nullifier uniqueness, self-vote rejection, timestamp window.
+  - `apps/mobile/src/lib/crypto-native.ts`: derives persistent POLIS key from `nullifier_root`.
+- Missing: real API endpoints, mobile signed payload builders, mobile create/vote UI, and persistence/sync decision (DB-backed vs server-side GitHub Issue proxy).
+- Linear NEA-272 updated. Browser redirect must not be claimed as final solution.
+
 ## 2026-05-26 — Codex F-Droid !38007 Audit
 
 - Audited pnyx bridge, fdroiddata branch, GitLab MR !38007 pipelines, local APK/AAB outputs.
