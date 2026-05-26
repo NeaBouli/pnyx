@@ -13,23 +13,22 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `163cf19` (chore(bridge): F-Droid fix)
-- **origin/main:** `163cf19` (nach push)
+- **Lokaler HEAD:** `cbb7d93` (chore(bridge): F-Droid iteration 10 — scanignore restored, pipeline #2551821484)
+- **origin/main:** `cbb7d93`
 - **Release Tags:** `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`, `v1.3.5-20260525`
 - **Rollback Tags:** `rollback-pre-zk-20260524`
 - **Server repo HEAD:** `8a71cc4` (web rebuilt mit Logout Modal + Screenshots)
 - **Web container:** rebuilt (ADR-010), Logout Modal + Screenshots + ekprosopos UI fix live
 - **API container code:** `9363e16` (NEA-265+268+270+271+272)
 - **Dashboard container code:** `1964e1f` (NEA-269+267+270+271)
-- **F-Droid !38007:** 9 Pipeline-Iterationen. checkupdates+rewritemeta+lint gruen. `fdroid build` braucht scanignore fuer expo-asset+expo-file-system (scandelete loescht sie sonst). Pipeline #2551821484 laeuft.
-- **APK Build:** Debug-Build laeuft fuer S10-Installation. AAB (Play) fertig.
-- **Pending deploys:** pnyx Repo `ad67f9f` noch nicht auf Server gepullt (nur bridge/mobile changes, kein Container-Impact)
-- **Tag:** `v1.3.5-20260525` → Commit `b46fece` (vC27, versionName 1.0.0)
+- **F-Droid !38007:** Pipeline #2551821484 failed, but root cause is checkout/propagation of pnyx commit `47c1494`, not Gradle. Current fix direction in `CC_RESPONSE.md`: keep scanignore, keep version `1.0.0/27`, prefer metadata commit `b46fece` for vC27.
+- **APK/AAB Build Truth:** current Android release is `versionName 1.0.0`, `versionCode 27` (not 1.3.2). Direct APK and Play AAB built locally from current tree.
+- **Pending deploys:** only bridge/mobile metadata work; no API/Dashboard deploy impact.
+- **Tag:** `v1.3.5-20260525` currently points to `47c1494` (bridge commit, contains vC27 tree). Cleaner F-Droid source commit is `b46fece`.
 
 ## Uncommitted Aenderungen
 
-- `apps/mobile/android/app/build.gradle` — vC27 bump (already tagged)
-- Bridge files (this update)
+- Bridge files (Codex F-Droid audit/update)
 - `apps/dashboard/tsconfig.tsbuildinfo` — build artifact
 - `apps/representative/.claude/`, `AGENTS.md`, `CLAUDE.md`, `index.ts`, `package-lock.json` — Crash-Reste/untracked, nicht durch Codex anfassen ohne Gio-Freigabe
 

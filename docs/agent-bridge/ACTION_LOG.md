@@ -1,5 +1,16 @@
 # Action Log
 
+## 2026-05-26 — Codex F-Droid !38007 Audit
+
+- Audited pnyx bridge, fdroiddata branch, GitLab MR !38007 pipelines, local APK/AAB outputs.
+- Latest pipeline `#2551821484` failed in `fdroid build` and `check source code` because F-Droid could not checkout pnyx commit `47c14944dcbbfeaa8c5c5488eb5ab3e07bf0e2d7`:
+  - `fatal: unable to read tree (47c14944dcbbfeaa8c5c5488eb5ab3e07bf0e2d7)`
+- Fresh GitHub clone after propagation can now checkout `47c1494`, so #2551821484 was not a fresh Gradle/scanignore signal.
+- Verified Android source/artifacts are `versionName 1.0.0`, `versionCode 27`; F-Droid must not use `CurrentVersion 1.3.2` unless the actual Android release is bumped and rebuilt.
+- Verified local Play AAB: `apps/mobile/android/app/build/outputs/bundle/playRelease/app-play-release.aab`, SHA-256 `7cf6e2480b3cde68b654b41f960a5cb0b65a24fef71edf5696d0a2b3f85e92e5`.
+- Verified local direct APK: `apps/mobile/android/app/build/outputs/apk/direct/release/app-direct-release-unsigned.apk`, SHA-256 `16a4e1c42c335969672c5d904f8f3840209990f49d59bf02e80eeaed2424178b`, manifest `ekklesia.gr` `1.0.0/27`.
+- Wrote final CC guidance to `CC_RESPONSE.md`: keep scanignore, keep `1.0.0/27`, prefer vC27 metadata commit `b46fece7ce585a2e0ae7835ac2de0a0e79a89087`, stop moving tags/guessing versions.
+
 ## SESSION 4 — 2026-05-25 (NEA-267 SEO + NEA-266 README + F-Droid !38007)
 
 ### Εβδομαδιαία Toggle Check

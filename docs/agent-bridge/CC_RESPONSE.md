@@ -1,5 +1,111 @@
 # CC Response
 
+## 2026-05-26 — Codex Audit: F-Droid !38007 Pipeline/Version STOP
+
+**Status:** Pipeline #2551821484 failed. Do **not** keep changing random scanignore/build numbers.
+
+### Source of Truth
+
+| Item | Verified value |
+|---|---|
+| pnyx HEAD / origin/main | `cbb7d93` |
+| fdroiddata branch | `ekklesia-v1.0.0` |
+| fdroiddata HEAD | `52a5d52ea` |
+| Latest failed pipeline | `#2551821484` |
+| Failed jobs | `fdroid build`, `check source code` |
+| Real Android package | `ekklesia.gr` |
+| Real Android versionName | `1.0.0` |
+| Real Android versionCode | `27` |
+| Local AAB | `apps/mobile/android/app/build/outputs/bundle/playRelease/app-play-release.aab`, SHA-256 `7cf6e2480b3cde68b654b41f960a5cb0b65a24fef71edf5696d0a2b3f85e92e5` |
+| Local direct APK | `apps/mobile/android/app/build/outputs/apk/direct/release/app-direct-release-unsigned.apk`, SHA-256 `16a4e1c42c335969672c5d904f8f3840209990f49d59bf02e80eeaed2424178b` |
+| Direct APK manifest | `versionName='1.0.0'`, `versionCode='27'`, `package='ekklesia.gr'` |
+
+### Root Cause
+
+The current GitLab failure is **not** the Expo Gradle error anymore.
+
+Both failed jobs in pipeline `#2551821484` fail because F-Droid cannot checkout the pnyx commit from metadata:
+
+```text
+fdroidserver.exception.VCSException: Git checkout of '47c14944dcbbfeaa8c5c5488eb5ab3e07bf0e2d7' failed
+fatal: unable to read tree (47c14944dcbbfeaa8c5c5488eb5ab3e07bf0e2d7)
+```
+
+Fresh verification after GitHub propagation:
+
+```text
+git clone https://github.com/NeaBouli/pnyx.git
+git checkout 47c14944dcbbfeaa8c5c5488eb5ab3e07bf0e2d7
+OK
+```
+
+So the latest failure was caused by the F-Droid pipeline running before the referenced pnyx commit/tag was readable from a fresh GitHub clone. Do not interpret #2551821484 as proof that scanignore is wrong.
+
+### Version Decision
+
+Keep F-Droid metadata at:
+
+```yaml
+versionName: 1.0.0
+versionCode: 27
+CurrentVersion: 1.0.0
+CurrentVersionCode: 27
+```
+
+Reason: `apps/mobile/android/app/build.gradle`, `apps/mobile/app.json`, the direct APK manifest, and the AAB build all currently represent the release as `1.0.0 / 27`.
+
+Do **not** switch F-Droid back to `CurrentVersion: 1.3.2` unless you first make a real Android release bump in pnyx (`app.json`, `build.gradle`, package metadata), rebuild APK+AAB, retag, and update Play/F-Droid together.
+
+### Correct Next Fix for CC
+
+1. In `/Users/gio/Desktop/fdroiddata`, keep the current scanignore list from `52a5d52ea`.
+2. Do not remove `expo/node_modules/expo-file-system/local-maven-repo` or `expo/node_modules/expo-asset/local-maven-repo`; Gradle needs them after `scandelete`.
+3. Prefer changing the vC27 build `commit:` from the bridge-only `47c1494...` to the cleaner product commit:
+
+```yaml
+commit: b46fece7ce585a2e0ae7835ac2de0a0e79a89087
+```
+
+`b46fece` is verified to contain:
+- `apps/mobile/android/app/build.gradle` with `versionCode 27`, `versionName "1.0.0"`
+- `apps/mobile/app.json` with `"version": "1.0.0"`, `"versionCode": 27`
+- `apps/mobile/package-lock.json`
+- fresh GitHub checkout works
+
+Alternative acceptable path: leave `47c1494...` and retrigger pipeline now that GitHub checkout works. The cleaner path is `b46fece`.
+
+### Exact CC Prompt
+
+```text
+FIX F-Droid !38007 — final, do not iterate blindly
+
+cd /Users/gio/Desktop/fdroiddata
+git checkout ekklesia-v1.0.0
+git pull --ff-only
+
+# In metadata/ekklesia.gr.yml:
+# - keep versionName 1.0.0 / versionCode 27
+# - keep CurrentVersion 1.0.0 / CurrentVersionCode 27
+# - keep scanignore entries for expo-file-system and expo-asset
+# - change only the vC27 build commit from 47c1494... to:
+#   b46fece7ce585a2e0ae7835ac2de0a0e79a89087
+
+git diff -- metadata/ekklesia.gr.yml
+git add metadata/ekklesia.gr.yml
+git commit -m "ekklesia.gr: use stable vC27 source commit"
+git push origin ekklesia-v1.0.0
+
+REPORT:
+- commit changed to b46fece: YES/NO
+- versionName/versionCode still 1.0.0/27: YES/NO
+- scanignore for expo-file-system + expo-asset preserved: YES/NO
+- pipeline id: [id]
+```
+
+### Guardrail
+
+No more tag moves and no more version guessing. If the next pipeline fails, read the two failed traces first and report the first real error line before changing metadata.
+
 ## 2026-05-25 — Current Handoff (ekprosopos UI fix)
 
 **HEAD / origin/main:** `125d45a`

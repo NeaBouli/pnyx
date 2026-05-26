@@ -1,7 +1,7 @@
 # TODO — Ekklesia.gr / pnyx
 
 ## Aktiv / In Progress
-- [ ] F-Droid MR !38007: Pipeline #2551771502 laeuft (8/9 gruen, fdroid build scanignore auf expo/node_modules/ korrigiert)
+- [ ] F-Droid MR !38007: Pipeline #2551821484 failed. Codex audit says root cause is pnyx commit checkout/propagation (`47c1494`), not Gradle. Fix: keep scanignore + version `1.0.0/27`; prefer metadata vC27 commit `b46fece7ce585a2e0ae7835ac2de0a0e79a89087`; see `CC_RESPONSE.md`.
 - [ ] NEA-273: APK Build laeuft — Compass Toggle + Weekly Label + Logout Modal
 - [ ] NEA-258: FORUM_SSO_SALT Startup-Check (LOW follow-up)
 - [ ] AAB vC27 Upload zu Play Console (`~/Desktop/ekklesia-v1.3.2-vC27-PLAY.aab` BEREIT)
