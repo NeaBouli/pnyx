@@ -1,5 +1,16 @@
 # Action Log
 
+## 2026-05-26 — NEA-272e Mobile POLIS Tab aktiviert
+
+- `+ Νέο Ticket` und Vote Button oeffnen jetzt Browser POLIS via `Linking.openURL`
+- Coming-Soon Modal ersetzt durch "Άνοιγμα POLIS" Flow-Erklaerung
+- Banner zeigt verifizerten Usern QR-Instruktion statt Phase-B-Hinweis
+- Unverified Users: weiterhin zu Verify-Screen
+- Issue-Liste bleibt read-only im App
+- Commit: `f944889`
+- Debug APK auf S10 installiert, vC28/1.0.1 unveraendert
+- Kein versionCode bump, kein F-Droid/Play
+
 ## 2026-05-26 — NEA-272d QR Continuation + App Close Fix
 
 - Web: pending action flow — after QR auth, auto-open ticket form instead of blind reload
