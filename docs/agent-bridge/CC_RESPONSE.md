@@ -1,5 +1,108 @@
 # CC Response
 
+## 2026-05-27 — Codex Prompt: NEA-272f Full Interactive Verification
+
+Gio reports the S10 integration looks functional. Do **not** move to public release yet. Run a full interactive verification across S10 app, API/browser, DB, and logs.
+
+```text
+TASK: NEA-272f Full Interactive Verification — S10 + API + DB + Logs
+
+Scope:
+- Verification only.
+- No versionCode bump.
+- No public APK / landingpage update.
+- No AAB / Play upload.
+- No F-Droid metadata.
+- No unrelated app fixes.
+
+Pre-check:
+1. Confirm server and app build SHAs:
+   - server repo HEAD
+   - API container code SHA if available
+   - installed S10 versionCode/versionName
+   - debug APK build commit
+2. Confirm backend migrations:
+   - alembic current
+   - tables exist: polis_tickets, polis_votes, polis_identity_keys
+
+S10 interactive flow:
+1. Open POLIS tab.
+2. Confirm list loads from backend, not GitHub/browser.
+3. Create a test ticket inside the app:
+   - category: proposal or bug
+   - title: unique test title with timestamp
+   - content: >= 10 chars
+4. Capture/report:
+   - ticket_id returned or visible
+   - title visible in app after refresh
+   - category visible
+   - handle visible
+5. Try voting on the same ticket from the same S10 user:
+   - Expected: SELF_VOTE Greek message, because creator cannot vote own ticket.
+6. Try creating the exact same ticket again:
+   - Expected: DUPLICATE_TICKET Greek message.
+
+API/browser verification:
+1. GET https://api.ekklesia.gr/api/v1/polis/tickets
+   - Confirm new ticket appears.
+   - Confirm response exposes safe fields only:
+     id, title, category, handle, status, up_votes, down_votes, created_at.
+   - Confirm it does NOT expose pk_polis, nullifier_hash, ticket_nullifier, signature, content.
+2. If browser static POLIS page still exists, open https://ekklesia.gr/tickets/index.html:
+   - Confirm it does not contradict mobile state.
+   - If it still shows old GitHub-backed data, report explicitly as legacy/static mismatch. Do not fix yet.
+
+DB verification on server:
+Run read-only SQL:
+SELECT id, title, category, status, up_votes, down_votes, left(pk_polis,8) AS handle, created_at
+FROM polis_tickets
+ORDER BY created_at DESC
+LIMIT 5;
+
+SELECT ticket_id, vote, left(pk_polis,8) AS handle, created_at
+FROM polis_votes
+ORDER BY created_at DESC
+LIMIT 5;
+
+SELECT left(nullifier_hash,8) AS nh, left(pk_polis,8) AS handle, created_at, last_used_at
+FROM polis_identity_keys
+ORDER BY created_at DESC
+LIMIT 5;
+
+Log verification:
+Check API logs around the test time:
+- successful register-key log
+- successful ticket create log
+- self-vote rejection or duplicate rejection path
+- no stack traces
+- no raw private key, no full nullifier_hash, no signature dump
+
+Suggested command:
+ssh root@135.181.254.229 "
+  cd /opt/ekklesia/app/infra/docker &&
+  docker compose -f docker-compose.prod.yml logs --since 20m ekklesia-api 2>&1 |
+  grep -Ei 'POLIS|register|ticket|vote|SELF_VOTE|DUPLICATE|ERROR|Traceback' |
+  tail -80
+"
+
+Report:
+- Server HEAD:
+- API migration head:
+- S10 versionCode/versionName:
+- App list loads from backend: YES/NO
+- In-app ticket create: YES/NO, ticket_id:
+- Ticket visible after refresh: YES/NO
+- API GET contains ticket: YES/NO
+- DB row exists: YES/NO
+- Self-vote blocked with Greek message: YES/NO
+- Duplicate ticket blocked with Greek message: YES/NO
+- Logs clean, no stack traces: YES/NO
+- Logs leak no secrets/full nullifiers/signatures: YES/NO
+- Browser/static POLIS status: backend-aligned / legacy-mismatch / not checked
+- Public release untouched: YES/NO
+- Bridge updated: YES/NO
+```
+
 ## 2026-05-27 — Codex Re-Review: NEA-272f Mobile POLIS `505979c`
 
 **Verdict:** Previous Codex blockers are resolved. Mobile POLIS is ready for the next controlled integration step, **not** for public release.

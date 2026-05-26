@@ -1,5 +1,27 @@
 # Action Log
 
+## 2026-05-27 — Codex Prompt: NEA-272f Full Interactive Verification
+
+- **Agent:** Codex
+- **Aktion:** Gio meldet, dass der S10 POLIS Integrationstest funktional aussieht; Codex hat einen strikten Full-Verification-Prompt fuer CC in `CC_RESPONSE.md` geschrieben.
+- **Scope fuer CC:**
+  - S10-App interaktiv pruefen.
+  - API/browser gegenpruefen.
+  - DB read-only verifizieren.
+  - API logs auf Erfolg, Fehlerpfade und Secret-Leaks pruefen.
+- **Required evidence:**
+  - Ticket-ID.
+  - API `GET /api/v1/polis/tickets` enthaelt neues Ticket mit safe fields only.
+  - DB row in `polis_tickets`.
+  - `polis_identity_keys` row vorhanden.
+  - Self-vote sauber blockiert.
+  - Duplicate-Ticket sauber blockiert.
+  - Logs ohne Stacktrace und ohne private/full nullifier/signature leakage.
+- **Guardrails:** Kein versionCode bump, keine public APK/Landingpage, kein AAB/Play, kein F-Droid metadata, keine unrelated fixes.
+- **Keine Produktcodeaenderung durch Codex**
+- **Keine Secrets gelesen**
+- **Kein Deployment**
+
 ## 2026-05-27 — CI Fix (`f9a0734`) + Codex Akzeptanz NEA-272f
 
 - **CI rot seit `86a9f40`:** `test_polis_router_db.py` crasht Collection weil `aiosqlite` in CI nicht installiert
