@@ -1,5 +1,14 @@
 # Action Log
 
+## 2026-05-27 — NEA-272f Full Verification PASSED
+
+- **Server:** `a8658a8`, Alembic `o801a2b3c4d5`
+- **S10:** vC28/1.0.1, Debug APK
+- **DB:** 1 ticket (Τεστ νούμερο τρία, proposal, handle 58fffe50), 1 identity key
+- **API Safe Fields:** NONE leaked (kein pk_polis/nullifier/signature/content)
+- **Logs:** kein Traceback, kein Secret Leak, SQL parametrisiert
+- **Gio S10 Test:** Ticket erstellt, Filter funktionieren, Kategorie-Wechsel OK
+
 ## 2026-05-27 — Codex Prompt: NEA-272f Full Interactive Verification
 
 - **Agent:** Codex
