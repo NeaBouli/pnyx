@@ -106,6 +106,26 @@ This overrides the real `openNewTicketModal()` from `docs/tickets/polis.js`, eve
 
 **Do next:** CC should fix this together with QR UI localization, then live-test: GitHub login + QR login + new ticket form opens.
 
+## 2026-05-26 — NEA-272 Finding: QR auth succeeds but UX does not continue
+
+**User report after NEA-272c deploy:**
+- GitHub login works.
+- App/QR login verifies successfully.
+- Mobile app stays on the success screen and cannot be closed reliably.
+- Browser page still looks unchanged after QR verification and the ticket form does not open.
+
+**Log evidence:** API logs show fresh `qr-session` polling and `POST /api/v1/polis/qr-auth` with `200 OK`, so backend QR auth is not the blocker.
+
+**Likely causes in code:**
+- `apps/mobile/src/screens/PolisLoginScreen.tsx` uses `navigation.goBack()` for the success close button. A deep-link launch can have no useful back stack, so the screen may not close.
+- `docs/tickets/index.html` stores `polis_nullifier` / `polis_pubkey` and then reloads the page, but there is no visible "QR verified" browser state and no pending action that resumes `+ New Ticket` after QR auth.
+
+**Required next fix:**
+1. Web: add explicit QR-verified state/UI.
+2. Web: add pending action flow. If user clicks `+ New Ticket` with GitHub token but without QR verification, open QR login and remember `pendingPolisAction = "new-ticket"`. After QR auth succeeds, store verification and open `openNewTicketModal()` directly instead of relying on `location.reload()`.
+3. Mobile: change success/error close from fragile `navigation.goBack()` to a safe reset/navigate to `Tabs`.
+4. Keep no version bump/public release rule. Mobile change requires debug APK S10 test, but not public APK yet.
+
 ## 2026-05-26 — FINAL: F-Droid vC28 green, waiting for linsui merge
 
 **Status:** F-Droid !38007 is green and linsui has been notified. Do not touch F-Droid metadata again unless linsui gives new review feedback.

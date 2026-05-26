@@ -50,6 +50,14 @@
 - This blocks `openNewTicketModal()` from `docs/tickets/polis.js` even when GitHub OAuth and QR/App verification succeeded.
 - Linear NEA-272 updated. Required fix: remove/replace blanket desktop block and check actual auth state instead.
 
+### NEA-272 QR Auth UX Continuation Finding
+
+- Gio retested after NEA-272c deploy: GitHub login works and QR/App auth verifies, but browser does not enter a usable verified ticket-create state.
+- API logs show `qr-session` polling and `POST /api/v1/polis/qr-auth` `200 OK`, so backend auth succeeds.
+- Web issue: QR success stores `sessionStorage.polis_nullifier` / `polis_pubkey` and reloads, but no visible verified state and no pending action resumes `+ New Ticket`.
+- Mobile issue: `PolisLoginScreen.tsx` success close uses `navigation.goBack()`, fragile for deep-link launches with no back stack.
+- Linear NEA-272 updated. Next fix: web pending action + visible QR verified state; mobile close should reset/navigate to Tabs.
+
 ## 2026-05-26 — Codex F-Droid !38007 Audit
 
 - Audited pnyx bridge, fdroiddata branch, GitLab MR !38007 pipelines, local APK/AAB outputs.
