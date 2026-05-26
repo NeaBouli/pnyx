@@ -21,12 +21,10 @@
 - **Web container:** rebuilt (ADR-010), Logout Modal + Screenshots + ekprosopos UI fix live
 - **API container code:** `9363e16` (NEA-265+268+270+271+272)
 - **Dashboard container code:** `1964e1f` (NEA-269+267+270+271)
-- **F-Droid !38007:** Pipeline #2551821484 failed, but root cause is checkout/propagation of pnyx commit `47c1494`, not Gradle. Current fix direction in `CC_RESPONSE.md`: keep scanignore, keep version `1.0.0/27`, prefer metadata commit `b46fece` for vC27.
-- **F-Droid vC28 next:** vC28 is now verified on S10. F-Droid must move to `CurrentVersion 1.0.1`, `CurrentVersionCode 28`, build commit `fa6366f65c9a1e396f3cc6ffad474b6afa3ffd56`; see `CC_RESPONSE.md`.
-- **APK/AAB Build Truth:** current Android release is `versionName 1.0.1`, `versionCode 28`.
-- **S10 device truth:** `ekklesia.gr` installed on S10 is `versionCode=28`, `versionName=1.0.1`, `lastUpdateTime=2026-05-26 08:19:18`.
-- **Pending deploys:** only bridge/mobile metadata work; no API/Dashboard deploy impact.
-- **Tag:** `v1.3.5-20260525` currently points to `47c1494` (bridge commit, contains vC27 tree). Cleaner F-Droid source commit is `b46fece`.
+- **F-Droid !38007:** Pipeline #2552331797 GRUEN (9/9). Kommentar an linsui gepostet. Wartet auf Merge.
+- **APK/AAB:** vC28 / 1.0.1 lokal gebaut. S10: `versionCode=28`, `versionName=1.0.1`.
+- **Tags:** `v1.0.1-20260526` → `fa6366f` (vC28 release). `v1.3.5-20260525` → `47c1494` (alt/bridge).
+- **Pending:** nur linsui Merge + Play Console AAB Upload.
 
 ## Uncommitted Aenderungen
 

@@ -11,6 +11,13 @@
 - Follow-up device audit: S10 is connected and still reports `ekklesia.gr` as `versionCode=27`, `versionName=1.0.0`, `lastUpdateTime=2026-05-26 01:31:14`.
 - Conclusion: any new Ekklesia mobile app fixes after vC27 require a real vC28 release. Rebuilding or reinstalling vC27 is not an update path, and "no update available" on S10 is expected while versionCode remains 27.
 
+### F-Droid Pipeline #2552331797 — GRUEN (9/9)
+- Metadata-only Fix: vC28 scanignore auf hoisted Pfade (`expo-file-system/`, `expo-asset/`)
+- vC6 scanignore unveraendert (`expo/node_modules/` — korrekt fuer alten Commit)
+- Trailing newline vorhanden
+- Kommentar an linsui gepostet (2026-05-26 08:45 UTC)
+- MR !38007 wartet auf linsui Merge
+
 ### CC: vC28 Release + F-Droid Metadata
 - Version bump committed: vC28 / 1.0.1 in `app.json` + `build.gradle` (`fa6366f`)
 - APK + AAB gebaut aus demselben Commit
