@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Alert, Modal } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Alert, Modal, Linking } from "react-native";
 import { isVerified } from "../lib/crypto-native";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
+
+const POLIS_URL = "https://ekklesia.gr/tickets/index.html";
 
 type Nav = StackNavigationProp<RootStackParams, "Tabs">;
 
@@ -112,9 +114,12 @@ export default function TicketsScreen() {
 
   return (
     <View style={s.container}>
-      {/* Phase B banner */}
+      {/* Info banner */}
       <View style={s.banner}>
-        <Text style={s.bannerText}>📱 Φάση Β — Για tickets/ψήφους χρειάζεστε επαλήθευση smartphone</Text>
+        <Text style={s.bannerText}>{verified
+          ? "📋 Για υποβολή ή ψήφο, ανοίξτε το POLIS στο browser και σαρώστε το QR με την εφαρμογή."
+          : "📱 Φάση Β — Για tickets/ψήφους χρειάζεστε επαλήθευση smartphone"
+        }</Text>
       </View>
 
       {/* Filters */}
@@ -126,7 +131,7 @@ export default function TicketsScreen() {
         ))}
       </View>
       {/* New ticket button — full width below filters */}
-      <TouchableOpacity style={s.newBtnFull} onPress={() => { if (handleAction()) setShowComingSoon(true); }}>
+      <TouchableOpacity style={s.newBtnFull} onPress={() => { if (handleAction()) Linking.openURL(POLIS_URL); }}>
         <Text style={s.newBtnText}>+ Νέο Ticket</Text>
       </TouchableOpacity>
 
@@ -147,7 +152,7 @@ export default function TicketsScreen() {
             </View>
             <Text style={s.cardTitle}>{item.title}</Text>
             <View style={s.cardFooter}>
-              <TouchableOpacity style={s.voteBtn} onPress={() => { if (handleAction()) setShowComingSoon(true); }}>
+              <TouchableOpacity style={s.voteBtn} onPress={() => { if (handleAction()) Linking.openURL(POLIS_URL); }}>
                 <Text style={s.voteBtnText}>👍 {item.reactions["+1"]}</Text>
               </TouchableOpacity>
               <Text style={s.cardMeta}>#{item.id}</Text>
@@ -168,13 +173,16 @@ export default function TicketsScreen() {
         <View style={s.modalOverlay}>
           <View style={s.modalCard}>
             <Text style={s.modalIcon}>🎫</Text>
-            <Text style={s.modalTitle}>Σύντομα διαθέσιμο</Text>
+            <Text style={s.modalTitle}>Άνοιγμα POLIS</Text>
             <Text style={s.modalText}>
-              Η δημιουργία tickets θα είναι διαθέσιμη στη Φάση Β.{"\n\n"}
-              Στη Φάση Β θα μπορείτε να υποβάλλετε προτάσεις, να αναφέρετε σφάλματα και να ψηφίζετε για αλλαγές.
+              Η δημιουργία και η ψήφος tickets γίνεται στο πρόγραμμα περιήγησης.{"\n\n"}
+              Η εφαρμογή χρησιμοποιείται για επαλήθευση με QR.
             </Text>
-            <TouchableOpacity style={s.modalBtn} onPress={() => setShowComingSoon(false)}>
-              <Text style={s.modalBtnText}>Κατανοητό</Text>
+            <TouchableOpacity style={s.modalBtn} onPress={() => { setShowComingSoon(false); Linking.openURL(POLIS_URL); }}>
+              <Text style={s.modalBtnText}>Άνοιγμα POLIS</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ marginTop: 12 }} onPress={() => setShowComingSoon(false)}>
+              <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: "600" }}>Κλείσιμο</Text>
             </TouchableOpacity>
           </View>
         </View>
