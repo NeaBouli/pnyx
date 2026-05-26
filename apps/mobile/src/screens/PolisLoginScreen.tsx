@@ -38,6 +38,14 @@ export default function PolisLoginScreen({ route, navigation }: Props) {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("Υπογραφή challenge...");
 
+  const closeToApp = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.reset({ index: 0, routes: [{ name: "Tabs" }] });
+    }
+  };
+
   useEffect(() => {
     authenticate();
   }, []);
@@ -115,7 +123,7 @@ export default function PolisLoginScreen({ route, navigation }: Props) {
           <Text style={s.icon}>✅</Text>
           <Text style={s.title}>Επιτυχία</Text>
           <Text style={s.text}>{message}</Text>
-          <TouchableOpacity style={s.btn} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={s.btn} onPress={() => closeToApp()}>
             <Text style={s.btnText}>Κλείσιμο</Text>
           </TouchableOpacity>
         </>
@@ -125,7 +133,7 @@ export default function PolisLoginScreen({ route, navigation }: Props) {
           <Text style={s.icon}>❌</Text>
           <Text style={s.title}>Σφάλμα</Text>
           <Text style={s.text}>{message}</Text>
-          <TouchableOpacity style={s.btn} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={s.btn} onPress={() => closeToApp()}>
             <Text style={s.btnText}>Πίσω</Text>
           </TouchableOpacity>
         </>

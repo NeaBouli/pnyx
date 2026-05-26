@@ -74,6 +74,7 @@ document.addEventListener("DOMContentLoaded", function() {
       }
       if (!hasQR) {
         e.preventDefault();
+        sessionStorage.setItem("polis_pending_action", "new-ticket");
         if (typeof openQRLogin === "function") openQRLogin();
         return false;
       }
@@ -106,7 +107,8 @@ document.addEventListener("DOMContentLoaded", function() {
   <div class="polis-actions">
     <button class="btn-new-ticket" onclick="openNewTicketModal()" data-polis-el="+ Νέο Ticket" data-polis-en="+ New Ticket">+ Νέο Ticket</button>
     <div id="authStatus"></div>
-    <button class="btn-qr-login" onclick="openQRLogin()" style="padding:6px 14px;background:#eff6ff;color:#2563eb;border:2px solid #2563eb;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;margin-left:8px" data-polis-el="Σύνδεση με εφαρμογή" data-polis-en="Login with App">Σύνδεση με εφαρμογή</button>
+    <span id="qrVerifiedBadge" style="display:none;font-size:11px;font-weight:700;color:#22c55e;margin-left:8px" data-polis-el="✓ Επαληθεύτηκε" data-polis-en="✓ Verified">✓ Επαληθεύτηκε</span>
+    <button class="btn-qr-login" id="qrLoginBtn" onclick="openQRLogin()" style="padding:6px 14px;background:#eff6ff;color:#2563eb;border:2px solid #2563eb;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;margin-left:8px" data-polis-el="Σύνδεση με εφαρμογή" data-polis-en="Login with App">Σύνδεση με εφαρμογή</button>
   </div>
 </div>
 
@@ -325,13 +327,33 @@ function pollQRSession() {
         // Store auth in session
         sessionStorage.setItem("polis_nullifier", d.nullifier_hash || "");
         sessionStorage.setItem("polis_pubkey", d.public_key_hex || "");
-        setTimeout(function(){ closeQRLogin(); location.reload(); }, 1500);
+        setTimeout(function(){
+          closeQRLogin();
+          // Check pending action
+          var pending = sessionStorage.getItem("polis_pending_action");
+          sessionStorage.removeItem("polis_pending_action");
+          if (pending === "new-ticket" && typeof openNewTicketModal === "function") {
+            updateQRVerifiedStatus();
+            openNewTicketModal();
+          } else {
+            location.reload();
+          }
+        }, 1500);
       } else if (d.status === "expired") {
         if (st) st.innerHTML = '<span style="color:#ef4444">' + _qr("expired") + '</span>';
         clearInterval(qrPollTimer);
       }
     }).catch(function(){});
 }
+
+function updateQRVerifiedStatus() {
+  var badge = document.getElementById("qrVerifiedBadge");
+  var btn = document.getElementById("qrLoginBtn");
+  var verified = !!sessionStorage.getItem("polis_nullifier");
+  if (badge) badge.style.display = verified ? "inline" : "none";
+  if (btn) btn.style.display = verified ? "none" : "inline-block";
+}
+document.addEventListener("DOMContentLoaded", updateQRVerifiedStatus);
 
 function closeQRLogin() {
   clearInterval(qrPollTimer);
