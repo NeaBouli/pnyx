@@ -206,7 +206,7 @@ async def list_tickets(
                 "status": r[4],
                 "up_votes": r[5],
                 "down_votes": r[6],
-                "created_at": r[7].isoformat() if r[7] else None,
+                "created_at": r[7].isoformat() if hasattr(r[7], 'isoformat') else str(r[7]) if r[7] else None,
             }
             for r in rows
         ],

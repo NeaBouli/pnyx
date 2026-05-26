@@ -459,3 +459,181 @@ async def test_get_tickets_safe_fields(setup_db):
         assert "ticket_nullifier" not in t
         assert "signature" not in t
         assert "nullifier_hash" not in t
+
+
+# ─── Edge cases requested by Codex ──────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_same_pk_polis_different_nullifier_409(setup_db):
+    """Same pk_polis registered to a different nullifier → 409."""
+    from main import app
+    id1_sk, id1_pk = _make_keypair()
+    id2_sk, id2_pk = _make_keypair()
+    _, polis_pk = _make_keypair()  # same polis key for both
+    nh1 = os.urandom(32).hex()
+    nh2 = os.urandom(32).hex()
+
+    await _seed_identity(nh1, id1_pk)
+    await _seed_identity(nh2, id2_pk)
+
+    r1 = await _register_key(nh1, polis_pk, id1_sk, id1_pk)
+    assert r1.status_code == 201
+
+    r2 = await _register_key(nh2, polis_pk, id2_sk, id2_pk)
+    assert r2.status_code == 409
+    assert "KEY_CONFLICT" in r2.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_wrong_nullifier_pk_pair_rejected(setup_db):
+    """Ticket with registered pk_polis but wrong nullifier → 403 KEY_MISMATCH."""
+    from main import app
+    id1_sk, id1_pk = _make_keypair()
+    polis1_sk, polis1_pk = _make_keypair()
+    nh1 = os.urandom(32).hex()
+    nh_wrong = os.urandom(32).hex()
+
+    await _seed_identity(nh1, id1_pk)
+    await _register_key(nh1, polis1_pk, id1_sk, id1_pk)
+
+    # Create identity for wrong nullifier (so it passes identity check)
+    id2_sk, id2_pk = _make_keypair()
+    await _seed_identity(nh_wrong, id2_pk)
+
+    title = "Wrong pair"
+    content = "Testing wrong nullifier/pk pair"
+    ts = _now_ms()
+    nullifier = os.urandom(32).hex()
+
+    signed_bytes = build_ticket_signed_bytes(
+        category="bug", content_hash=hash_content(content),
+        pk_polis=bytes.fromhex(polis1_pk), nullifier=bytes.fromhex(nullifier),
+        timestamp_ms=ts, title_hash=hash_content(title),
+    )
+    sig = _sign(polis1_sk, signed_bytes)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await client.post("/api/v1/polis/tickets", json={
+            "title": title, "content": content, "category": "bug",
+            "pk_polis": polis1_pk, "ticket_nullifier": nullifier,
+            "signature": sig, "timestamp_ms": ts, "nullifier_hash": nh_wrong,
+        })
+    assert r.status_code == 403
+    assert "KEY_MISMATCH" in r.json().get("detail", "") or "UNREGISTERED" in r.json().get("detail", "")
+
+
+@pytest.mark.asyncio
+async def test_duplicate_vote_controlled_error(setup_db):
+    """Duplicate vote returns controlled error, not 500."""
+    from main import app
+    # Owner
+    id1_sk, id1_pk = _make_keypair()
+    polis1_sk, polis1_pk = _make_keypair()
+    nh1 = os.urandom(32).hex()
+    await _seed_identity(nh1, id1_pk)
+    await _register_key(nh1, polis1_pk, id1_sk, id1_pk)
+
+    # Voter
+    id2_sk, id2_pk = _make_keypair()
+    polis2_sk, polis2_pk = _make_keypair()
+    nh2 = os.urandom(32).hex()
+    await _seed_identity(nh2, id2_pk)
+    await _register_key(nh2, polis2_pk, id2_sk, id2_pk)
+
+    # Create ticket
+    title = "Dup vote test"
+    content = "Duplicate vote edge case"
+    ts = _now_ms()
+    t_null = os.urandom(32).hex()
+    t_bytes = build_ticket_signed_bytes(
+        category="bug", content_hash=hash_content(content),
+        pk_polis=bytes.fromhex(polis1_pk), nullifier=bytes.fromhex(t_null),
+        timestamp_ms=ts, title_hash=hash_content(title),
+    )
+    t_sig = _sign(polis1_sk, t_bytes)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r = await client.post("/api/v1/polis/tickets", json={
+            "title": title, "content": content, "category": "bug",
+            "pk_polis": polis1_pk, "ticket_nullifier": t_null,
+            "signature": t_sig, "timestamp_ms": ts, "nullifier_hash": nh1,
+        })
+    ticket_id = r.json()["id"]
+
+    # Vote once
+    v_null = os.urandom(32).hex()
+    v_bytes = build_vote_signed_bytes(
+        ticket_id=ticket_id, vote="up",
+        pk_polis=bytes.fromhex(polis2_pk), nullifier=bytes.fromhex(v_null),
+        timestamp_ms=ts,
+    )
+    v_sig = _sign(polis2_sk, v_bytes)
+
+    vote_payload = {
+        "vote": "up", "pk_polis": polis2_pk, "vote_nullifier": v_null,
+        "signature": v_sig, "timestamp_ms": ts, "nullifier_hash": nh2,
+    }
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        r1 = await client.post(f"/api/v1/polis/tickets/{ticket_id}/votes", json=vote_payload)
+        assert r1.status_code == 201
+
+        r2 = await client.post(f"/api/v1/polis/tickets/{ticket_id}/votes", json=vote_payload)
+        assert r2.status_code in (400, 409)
+        assert "DUPLICATE" in r2.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_get_tickets_safe_fields_after_insert(setup_db):
+    """GET /polis/tickets with real data must not expose sensitive fields."""
+    from main import app
+    id_sk, id_pk = _make_keypair()
+    polis_sk, polis_pk = _make_keypair()
+    nh = os.urandom(32).hex()
+
+    await _seed_identity(nh, id_pk)
+    await _register_key(nh, polis_pk, id_sk, id_pk)
+
+    title = "Safe fields test"
+    content = "Testing GET response shape with real data"
+    ts = _now_ms()
+    nullifier = os.urandom(32).hex()
+
+    signed_bytes = build_ticket_signed_bytes(
+        category="proposal", content_hash=hash_content(content),
+        pk_polis=bytes.fromhex(polis_pk), nullifier=bytes.fromhex(nullifier),
+        timestamp_ms=ts, title_hash=hash_content(title),
+    )
+    sig = _sign(polis_sk, signed_bytes)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        await client.post("/api/v1/polis/tickets", json={
+            "title": title, "content": content, "category": "proposal",
+            "pk_polis": polis_pk, "ticket_nullifier": nullifier,
+            "signature": sig, "timestamp_ms": ts, "nullifier_hash": nh,
+        })
+
+        r = await client.get("/api/v1/polis/tickets")
+
+    assert r.status_code == 200
+    data = r.json()
+    assert data["total"] >= 1
+
+    ticket = data["tickets"][0]
+    # Must have safe fields
+    assert "id" in ticket
+    assert "title" in ticket
+    assert "category" in ticket
+    assert "handle" in ticket
+    assert "status" in ticket
+    assert "up_votes" in ticket
+    assert "down_votes" in ticket
+    assert "created_at" in ticket
+    assert ticket["title"] == title
+
+    # Must NOT have sensitive fields
+    assert "pk_polis" not in ticket
+    assert "ticket_nullifier" not in ticket
+    assert "signature" not in ticket
+    assert "nullifier_hash" not in ticket
+    assert "content" not in ticket
