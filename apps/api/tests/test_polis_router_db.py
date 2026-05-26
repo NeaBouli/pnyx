@@ -2,6 +2,7 @@
 Real Router/DB tests for POLIS tickets using in-memory SQLite.
 Tests actual FastAPI endpoints with dependency override for get_db.
 Non-xfail — runs without PostgreSQL.
+Requires aiosqlite — skips gracefully if not installed.
 """
 import os
 import sys
@@ -9,6 +10,9 @@ import time
 import uuid
 
 import pytest
+
+aiosqlite = pytest.importorskip("aiosqlite", reason="aiosqlite required for SQLite router tests")
+
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy import event, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
