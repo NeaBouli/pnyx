@@ -1,5 +1,12 @@
 # Action Log
 
+## 2026-05-27 — NEA-272f Review Fix (`505979c`)
+
+- Import: `@noble/curves/ed25519` → `@noble/curves/ed25519.js` (3 Dateien)
+- Deterministic nullifiers: `derivePolisTicketNullifier` + `derivePolisVoteNullifier` (HMAC domain-separated)
+- Random nullifiers entfernt
+- Deploy wartet auf Re-Review
+
 ## 2026-05-27 — Codex Review: NEA-272f Mobile POLIS `b30d38c`
 
 - **Agent:** Codex
