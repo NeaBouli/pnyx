@@ -13,20 +13,18 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** latest `main` bridge commit (vC29 Mobile Backlog in Linear/Bridge)
-- **origin/main:** latest `main` bridge commit after push
-- **Release Tags:** `v1.0.1-20260526`, `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`, `v1.3.5-20260525`
-- **Rollback Tags:** `rollback-pre-zk-20260524`
-- **Server repo HEAD:** `8a71cc4` (web rebuilt mit Logout Modal + Screenshots)
-- **Web container:** rebuilt (ADR-010), Logout Modal + Screenshots + ekprosopos UI fix live
-- **API container code:** `9363e16` (NEA-265+268+270+271+272)
-- **Dashboard container code:** `1964e1f` (NEA-269+267+270+271)
-- **F-Droid !38007:** Pipeline #2554446253 GRUEN (9/9) on fdroiddata `e72a2f44b`. Root cause fixed: Expo `buildFromSource` must be inserted into `package.json`, not `app.json`. Wartet auf linsui review/merge.
-- **APK/AAB:** vC28 / 1.0.1 lokal gebaut. S10: `versionCode=28`, `versionName=1.0.1`.
-- **Tags:** `v1.0.1-20260526` → `fa6366f` (vC28 release). `v1.3.5-20260525` → `47c1494` (alt/bridge).
-- **Pending:** linsui Merge + Play Console AAB Upload + Mobile vC29 App-Fix Backlog.
-- **Mobile App Fixes:** vC28/1.0.1 was release/version consistency, not completion of Gio's app-fix backlog. Current tracking: NEA-272 POLIS Tickets truly functional, NEA-273 Compass Toggle validation/fix, NEA-274 Region-Filter Audit, NEA-275 vC29 Release Gate. Weekly Push/Digest Label and ZK/Semaphore Wizard are tracked under NEA-275 because Linear free issue limit blocked new issues.
-- **POLIS Ticket Reality Check:** Browser/static POLIS and QR auth pieces exist (`docs/tickets/*`, `apps/api/routers/polis_qr.py`, `PolisLoginScreen.tsx`), but Mobile `TicketsScreen.tsx` currently only lists GitHub issues and blocks create/vote with the Phase-B modal. Do not claim ticket system is live until browser flow is tested end-to-end and mobile is wired.
+- **Lokaler HEAD:** `92f6266`
+- **origin/main:** `92f6266`
+- **Server repo HEAD:** `a8658a8` (API rebuilt, POLIS migrations applied)
+- **API container:** `a8658a8` (NEA-265+268+270+271+272 + NEA-272f POLIS tickets live)
+- **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
+- **Web container:** rebuilt (ADR-010), Logout Modal + Screenshots + ekprosopos UI fix + QR localization
+- **S10:** vC28/1.0.1 Debug APK, POLIS app-internal funktional
+- **Alembic:** `o801a2b3c4d5` (polis_tickets + polis_votes + polis_identity_keys)
+- **F-Droid !38007:** Pipeline gruen, wartet auf linsui
+- **POLIS Status:** App-internal Create/Vote LIVE — 1 Ticket, 1 Identity Key, Self-Vote/Signature korrekt blockiert
+- **Tracking:** GitHub Issues #71-#83 (Linear read-only Archiv)
+- **Pending:** vC29 Release Gate, Play Console AAB, linsui Merge
 
 ## Uncommitted Aenderungen
 
