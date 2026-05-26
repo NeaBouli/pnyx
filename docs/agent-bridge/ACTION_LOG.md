@@ -121,6 +121,16 @@
 - Missing: real API endpoints, mobile signed payload builders, mobile create/vote UI, and persistence/sync decision (DB-backed vs server-side GitHub Issue proxy).
 - Linear NEA-272 updated. Browser redirect must not be claimed as final solution.
 
+### Codex Review — NEA-272f Backend BLOCK DEPLOY
+
+- **Reviewed commit:** `8b0e503` feat(NEA-272f): POLIS tickets backend — DB tables + API endpoints
+- **Verdict:** Do not deploy.
+- **CRITICAL:** API accepts any self-generated `pk_polis`; it validates signature self-consistency but not that the key belongs to a verified ekklesia identity.
+- **HIGH:** Ticket `title` is stored separately but not included in signed canonical bytes.
+- **MEDIUM:** New tests mostly call crypto validators directly; they do not exercise FastAPI endpoints or DB behavior.
+- **MEDIUM:** Duplicate DB constraints/races can raise unhandled `IntegrityError` and return 500.
+- **Linear NEA-272:** updated with blockers.
+
 ## 2026-05-26 — Codex F-Droid !38007 Audit
 
 - Audited pnyx bridge, fdroiddata branch, GitLab MR !38007 pipelines, local APK/AAB outputs.

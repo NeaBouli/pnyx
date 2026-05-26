@@ -165,6 +165,54 @@ This overrides the real `openNewTicketModal()` from `docs/tickets/polis.js`, eve
 
 **Next CC task:** Diagnose/design app-internal POLIS implementation. No more browser-redirect “solution” claims.
 
+## 2026-05-26 — Codex Review: NEA-272f Backend BLOCK DEPLOY
+
+**Reviewed commit:** `8b0e503` feat(NEA-272f): POLIS tickets backend — DB tables + API endpoints
+
+**Verdict:** Do not deploy. Backend is a useful start, but has security and coverage blockers.
+
+### CRITICAL — No verified identity binding
+
+`POST /api/v1/polis/tickets` and `POST /api/v1/polis/tickets/{id}/votes` validate that the submitted payload is signed by the submitted `pk_polis`, but they do not verify that `pk_polis` belongs to a registered/verified ekklesia identity.
+
+Effect: any random Ed25519 keypair can create a valid payload and use the API. This violates the product requirement: verified app users only.
+
+Required: define and enforce a binding between verified identity and POLIS key before create/vote is accepted. Options to evaluate:
+- Store/register `pk_polis` for verified identity during app verification/registration.
+- Add a POLIS key registration endpoint requiring existing identity signature.
+- Require an additional proof with existing identity key/nullifier mechanism.
+
+Do not accept unauthenticated self-generated `pk_polis` as proof of citizenship.
+
+### HIGH — Ticket title is unsigned
+
+`validate_ticket()` signs category + content hash + pk_polis + nullifier + timestamp. API stores `title` separately, but `title` is not included in the signed bytes.
+
+Effect: the primary user-facing field can be modified without invalidating the Ed25519 signature.
+
+Required: include `title` in the signed canonical payload or derive/display title from signed content.
+
+### MEDIUM — Tests are not real endpoint/DB tests
+
+`apps/api/tests/routers/test_polis_tickets_api.py` mostly calls `crypto.polis` validators directly. It does not exercise:
+- FastAPI endpoint request/response
+- DB insert
+- duplicate DB constraints
+- safe response shape from real endpoint
+- IntegrityError handling
+
+Required: add real API tests with DB/session override or existing local test pattern.
+
+### MEDIUM — DB uniqueness race/IntegrityError unhandled
+
+Duplicate `ticket_nullifier`, duplicate `vote_nullifier`, and `UNIQUE(ticket_id, pk_polis)` can raise DB exceptions and become 500s.
+
+Required: catch `IntegrityError`, rollback, return controlled 409/400.
+
+### Next CC Fix
+
+No deploy. First fix verified identity binding and signed title semantics, then add real endpoint tests. Keep no version bump/public release rule.
+
 ## 2026-05-26 — FINAL: F-Droid vC28 green, waiting for linsui merge
 
 **Status:** F-Droid !38007 is green and linsui has been notified. Do not touch F-Droid metadata again unless linsui gives new review feedback.
