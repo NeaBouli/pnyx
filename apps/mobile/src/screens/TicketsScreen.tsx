@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Alert } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Alert, Modal } from "react-native";
 import { isVerified } from "../lib/crypto-native";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
@@ -46,6 +46,7 @@ export default function TicketsScreen() {
   const [error, setError] = useState(false);
   const [filter, setFilter] = useState("all");
   const [verified, setVerified] = useState(false);
+  const [showComingSoon, setShowComingSoon] = useState(false);
 
   const loadTickets = useCallback(async () => {
     try {
@@ -125,7 +126,7 @@ export default function TicketsScreen() {
         ))}
       </View>
       {/* New ticket button — full width below filters */}
-      <TouchableOpacity style={s.newBtnFull} onPress={() => { if (handleAction()) Alert.alert("Σύντομα", "Δημιουργία ticket σύντομα διαθέσιμη"); }}>
+      <TouchableOpacity style={s.newBtnFull} onPress={() => { if (handleAction()) setShowComingSoon(true); }}>
         <Text style={s.newBtnText}>+ Νέο Ticket</Text>
       </TouchableOpacity>
 
@@ -146,7 +147,7 @@ export default function TicketsScreen() {
             </View>
             <Text style={s.cardTitle}>{item.title}</Text>
             <View style={s.cardFooter}>
-              <TouchableOpacity style={s.voteBtn} onPress={() => { if (handleAction()) Alert.alert("👍", "Vote σύντομα"); }}>
+              <TouchableOpacity style={s.voteBtn} onPress={() => { if (handleAction()) setShowComingSoon(true); }}>
                 <Text style={s.voteBtnText}>👍 {item.reactions["+1"]}</Text>
               </TouchableOpacity>
               <Text style={s.cardMeta}>#{item.id}</Text>
@@ -161,6 +162,23 @@ export default function TicketsScreen() {
           </View>
         }
       />
+
+      {/* Coming Soon Modal */}
+      <Modal visible={showComingSoon} transparent animationType="fade" onRequestClose={() => setShowComingSoon(false)}>
+        <View style={s.modalOverlay}>
+          <View style={s.modalCard}>
+            <Text style={s.modalIcon}>🎫</Text>
+            <Text style={s.modalTitle}>Σύντομα διαθέσιμο</Text>
+            <Text style={s.modalText}>
+              Η δημιουργία tickets θα είναι διαθέσιμη στη Φάση Β.{"\n\n"}
+              Στη Φάση Β θα μπορείτε να υποβάλλετε προτάσεις, να αναφέρετε σφάλματα και να ψηφίζετε για αλλαγές.
+            </Text>
+            <TouchableOpacity style={s.modalBtn} onPress={() => setShowComingSoon(false)}>
+              <Text style={s.modalBtnText}>Κατανοητό</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -193,4 +211,11 @@ const s = StyleSheet.create({
   retryText: { color: "#fff", fontWeight: "700" },
   emptyTitle: { fontSize: 16, fontWeight: "800", color: colors.text, marginBottom: 4 },
   emptySub: { fontSize: 13, color: colors.textSecondary },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", padding: 24 },
+  modalCard: { backgroundColor: colors.surface, borderRadius: 20, padding: 28, width: "100%", maxWidth: 320, alignItems: "center", borderWidth: 1, borderColor: colors.border },
+  modalIcon: { fontSize: 40, marginBottom: 12 },
+  modalTitle: { fontSize: 18, fontWeight: "900", color: colors.text, marginBottom: 8 },
+  modalText: { fontSize: 14, color: colors.textSecondary, textAlign: "center", lineHeight: 22, marginBottom: 20 },
+  modalBtn: { backgroundColor: colors.primary, paddingVertical: 14, paddingHorizontal: 40, borderRadius: 12 },
+  modalBtnText: { color: "#fff", fontSize: 15, fontWeight: "800" },
 });
