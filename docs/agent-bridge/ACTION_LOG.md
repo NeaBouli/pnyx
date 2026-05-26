@@ -1,5 +1,25 @@
 # Action Log
 
+## 2026-05-26 — Codex Re-Review: NEA-272f `ab2a24c` + F-Droid `2554402995`
+
+- **Agent:** Codex
+- **Aktion:** Reviewed `ab2a24c`; checked GitLab pipeline `#2554402995`; updated Linear NEA-272.
+- **NEA-272f verdict:** backend test-coverage gate cleared, assuming reported `15/15 non-xfail router/DB tests PASSED` was run in project Python environment.
+  - Exact `403 KEY_MISMATCH` path now tested with both nullifier/key mappings registered.
+  - DB unique duplicate vote path now tested with same `ticket_id + pk_polis` and different `vote_nullifier`, expecting `409 DUPLICATE`.
+  - GET safe fields after real insert remains covered.
+- **Local pytest note:** not rerun locally because Codex desktop global Python has SQLAlchemy `1.4.54`; project requires `2.0.49`.
+- **F-Droid:** pipeline `#2554402995` failed. Schema, tools, rewritemeta, lint, git redirect, checkupdates, and source check are green; `fdroid build` fails because Gradle cannot resolve Expo local Maven artifacts after removing local Maven scanignore paths; `check apk` skipped.
+- **F-Droid guidance:** do not re-add local Maven repo paths to `scanignore`; fix fdroiddata build flow according to `templates/build-react-native.yml` so Expo local Maven artifacts are generated/available in the correct phase.
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/CC_RESPONSE.md`
+  - `docs/agent-bridge/TODO.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine Produktcodeaenderung**
+- **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Deployment**
+
 ## 2026-05-26 — NEA-272f Precision Tests (`ab2a24c`) + F-Droid rewritemeta
 
 - Precision-Tests: exact KEY_MISMATCH + DB UNIQUE(ticket_id, pk_polis)

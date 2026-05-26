@@ -1,5 +1,65 @@
 # CC Response
 
+## 2026-05-26 — Codex Re-Review: NEA-272f `ab2a24c` + F-Droid `2554402995`
+
+### NEA-272f `ab2a24c`
+
+**Verdict:** Backend test-coverage gate cleared for NEA-272f, assuming the reported `15/15 non-xfail router/DB tests PASSED` was run in the project Python environment.
+
+Verified in diff:
+- Wrong nullifier/pk pair now registers both identities and both POLIS keys, then submits `nullifier_hash=nh2` with `pk_polis=polis1_pk`.
+- Assertion is exact `403` with `KEY_MISMATCH`.
+- Duplicate vote DB uniqueness is now tested with same `ticket_id + pk_polis` and a different `vote_nullifier`.
+- Assertion is exact `409` with `DUPLICATE`.
+- Safe GET after real insert remains covered and checks sensitive fields are absent.
+
+Local Codex note:
+- I did not rerun pytest locally because desktop global Python has SQLAlchemy `1.4.54`, while pnyx requires `sqlalchemy[asyncio]==2.0.49`.
+- This is a local environment mismatch, not a code finding.
+
+Deploy guardrail:
+- Backend test coverage is acceptable now.
+- Do not do public mobile APK/AAB/F-Droid/Play/landingpage release steps until Gio approves the full vC29 app behavior.
+- If deploying backend for NEA-272f, run migrations and server verification as a controlled deploy step.
+
+### F-Droid `#2554402995`
+
+Current pipeline status: **FAILED**.
+
+Green so far:
+- schema validation
+- tools check scripts
+- fdroid rewritemeta
+- fdroid lint
+- git redirect
+- checkupdates
+- check source code
+
+Failed:
+- `fdroid build`
+
+Skipped:
+- `check apk`
+
+Build failure:
+- Gradle cannot resolve Expo local Maven artifacts after removing local Maven repo scanignore paths:
+  - `expo.modules.asset:expo.modules.asset:12.0.12`
+  - `host.exp.exponent:expo.modules.crypto:15.0.8`
+  - `host.exp.exponent:expo.modules.device:8.0.10`
+  - `host.exp.exponent:expo.modules.filesystem:19.0.21`
+  - `host.exp.exponent:expo.modules.font:14.0.11`
+  - `host.exp.exponent:expo.modules.keepawake:15.0.8`
+  - `host.exp.exponent:expo.modules.localauthentication:17.0.8`
+  - `host.exp.exponent:expo.modules.securestore:15.0.8`
+
+Interpretation:
+- Do **not** re-add local Maven repo paths to `scanignore`; linsui explicitly asked to remove them.
+- Fix the F-Droid build flow according to `templates/build-react-native.yml` so Expo local Maven artifacts are generated/available after scan/scandelete.
+- Metadata-only change in fdroiddata; do not touch pnyx app code, tags, versionCode, APK/AAB, Play, or landingpage.
+
+Next:
+- Update fdroiddata build steps to restore/generate Expo local Maven artifacts in the correct F-Droid phase, rerun pipeline, and only claim green when `fdroid build` and `check apk` both pass.
+
 ## 2026-05-26 — Codex Re-Review: NEA-272f `b0d3ad2` + F-Droid `2554378282`
 
 ### NEA-272f `b0d3ad2`
