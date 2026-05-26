@@ -1,5 +1,16 @@
 # Action Log
 
+## 2026-05-26 — NEA-272f Identity Binding (`def7807`)
+
+- **CRITICAL fixed:** `POST /polis/register-key` bindet `pk_polis` an verifizierte Identitaet
+  - `identity_signature` gegen `identity_records.public_key_hex` geprueft
+  - Idempotent same key, 409 bei Key-Conflict
+- Migration `o801a2b3c4d5`: `polis_identity_keys`
+- Ticket/Vote: `_verify_registered_key()` statt nur Identity-Check
+- Title signing strict, IntegrityError → 409
+- 38 Tests gruen
+- Deploy: NICHT ohne Re-Review
+
 ## 2026-05-26 — NEA-272f Review Fix (`495a506`)
 
 - **CRITICAL fixed:** `_verify_identity()` — `nullifier_hash` muss in `identity_records` ACTIVE sein
