@@ -2,7 +2,7 @@
   "expo": {
     "name": "εκκλησία",
     "slug": "ekklesia-gr",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/pnx.png",
     "scheme": "ekklesia",
@@ -25,7 +25,7 @@
       },
       "edgeToEdgeEnabled": false,
       "package": "ekklesia.gr",
-      "versionCode": 27,
+      "versionCode": 28,
       "permissions": [
         "INTERNET",
         "RECEIVE_BOOT_COMPLETED",
