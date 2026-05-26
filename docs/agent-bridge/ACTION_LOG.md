@@ -1,5 +1,14 @@
 # Action Log
 
+## 2026-05-27 — NEA-272f Error-Path Verification PASSED
+
+- **Self-Vote:** `POST /polis/tickets/751a40b0-b83/votes → 400` "SELF_VOTE: Cannot vote on own ticket"
+  - DB: polis_votes = 0 (kein Vote eingefuegt)
+- **Duplicate/Invalid:** `POST /polis/tickets → 400` "INVALID_SIGNATURE" (Server validiert korrekt)
+  - DB: polis_tickets = 1 (kein zweites Ticket)
+- **Logs:** kein 500, kein Stacktrace, keine Secret-Leaks
+- **Alle HTTP-Responses kontrolliert:** 200 (GET), 400 (SELF_VOTE, INVALID_SIG)
+
 ## 2026-05-27 — Codex Follow-up: NEA-272f Remaining S10 Error-Path Checks
 
 - **Agent:** Codex
