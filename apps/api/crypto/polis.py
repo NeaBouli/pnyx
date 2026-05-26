@@ -51,7 +51,7 @@ class PolisTicketPayload:
     signature:        str   # 128-char hex
     timestamp_ms:     int
     version:          str
-    title:            str = ""  # included in signature hash
+    title:            str = ""  # required — included in signature hash
 
 
 @dataclass(frozen=True)
@@ -79,7 +79,7 @@ def build_ticket_signed_bytes(
     pk_polis:     bytes,
     nullifier:    bytes,
     timestamp_ms: int,
-    title_hash:   str = "",      # hex string of SHA-256(title), optional for v1 compat
+    title_hash:   str = "",      # hex string of SHA-256(title)
 ) -> bytes:
     """
     Builds the canonical bytes for ticket creation signature.

@@ -1,8 +1,10 @@
 """
 POLIS Tickets — App-internal ticket system with Ed25519 crypto.
 DB-backed, no GitHub account required. Privacy by Design.
+
+Identity binding: pk_polis must be registered against a verified identity
+via POST /polis/register-key before tickets/votes are accepted.
 """
-import hashlib
 import logging
 import uuid
 from typing import Literal
@@ -12,6 +14,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from nacl.signing import VerifyKey
+from nacl.exceptions import BadSignatureError
 
 from database import get_db
 from crypto.polis import (
@@ -22,13 +26,21 @@ from crypto.polis import (
     get_short_handle,
     hash_content,
     PROTO_VERSION,
+    TIMESTAMP_WINDOW_MS,
 )
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/polis", tags=["POLIS Tickets"])
 
 
-# ─── Request / Response Models ───────────────────────────────────────────────
+# ─── Request Models ──────────────────────────────────────────────────────────
+
+class RegisterKeyRequest(BaseModel):
+    nullifier_hash: str = Field(..., min_length=64, max_length=64)
+    pk_polis: str = Field(..., min_length=64, max_length=64)
+    identity_signature: str = Field(..., min_length=128, max_length=128)
+    timestamp_ms: int
+
 
 class TicketCreateRequest(BaseModel):
     title: str = Field(..., min_length=3, max_length=120)
@@ -38,7 +50,7 @@ class TicketCreateRequest(BaseModel):
     ticket_nullifier: str = Field(..., min_length=64, max_length=64)
     signature: str = Field(..., min_length=128, max_length=128)
     timestamp_ms: int
-    nullifier_hash: str = Field(..., min_length=64, max_length=64, description="Identity nullifier for verification")
+    nullifier_hash: str = Field(..., min_length=64, max_length=64)
 
 
 class VoteRequest(BaseModel):
@@ -47,20 +59,114 @@ class VoteRequest(BaseModel):
     vote_nullifier: str = Field(..., min_length=64, max_length=64)
     signature: str = Field(..., min_length=128, max_length=128)
     timestamp_ms: int
-    nullifier_hash: str = Field(..., min_length=64, max_length=64, description="Identity nullifier for verification")
+    nullifier_hash: str = Field(..., min_length=64, max_length=64)
 
 
-async def _verify_identity(nullifier_hash: str, db: AsyncSession) -> None:
-    """Verify that the nullifier_hash belongs to an ACTIVE registered identity."""
+# ─── Identity Binding ────────────────────────────────────────────────────────
+
+async def _verify_registered_key(nullifier_hash: str, pk_polis: str, db: AsyncSession) -> None:
+    """Verify pk_polis is registered to this nullifier_hash."""
     result = await db.execute(
-        text("SELECT status FROM identity_records WHERE nullifier_hash = :nh"),
+        text("SELECT pk_polis FROM polis_identity_keys WHERE nullifier_hash = :nh"),
         {"nh": nullifier_hash},
     )
     row = result.fetchone()
     if not row:
+        raise HTTPException(status_code=403, detail="UNREGISTERED_KEY: Register your POLIS key first via POST /polis/register-key")
+    if row[0] != pk_polis:
+        raise HTTPException(status_code=403, detail="KEY_MISMATCH: pk_polis does not match registered key for this identity")
+
+    # Update last_used_at
+    await db.execute(
+        text("UPDATE polis_identity_keys SET last_used_at = now() WHERE nullifier_hash = :nh"),
+        {"nh": nullifier_hash},
+    )
+
+
+def _now_ms() -> int:
+    import time
+    return int(time.time() * 1000)
+
+
+# ─── POST /polis/register-key ────────────────────────────────────────────────
+
+@router.post("/register-key", status_code=201)
+async def register_polis_key(
+    req: RegisterKeyRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Register pk_polis against a verified identity. Signed by identity key."""
+    # 1. Look up identity
+    result = await db.execute(
+        text("SELECT public_key_hex, status FROM identity_records WHERE nullifier_hash = :nh"),
+        {"nh": req.nullifier_hash},
+    )
+    row = result.fetchone()
+    if not row:
         raise HTTPException(status_code=403, detail="UNVERIFIED_IDENTITY: No verified identity found")
-    if row[0] != "ACTIVE":
+    identity_pk_hex, status = row[0], row[1]
+    if status != "ACTIVE":
         raise HTTPException(status_code=403, detail="REVOKED_IDENTITY: Identity is not active")
+
+    # 2. Timestamp freshness
+    delta = abs(_now_ms() - req.timestamp_ms)
+    if delta > TIMESTAMP_WINDOW_MS:
+        raise HTTPException(status_code=400, detail="TIMESTAMP_EXPIRED: Request too old")
+
+    # 3. Verify identity_signature
+    message = f"polis-register:{req.pk_polis}:{req.nullifier_hash}:{req.timestamp_ms}".encode("utf-8")
+    try:
+        vk = VerifyKey(bytes.fromhex(identity_pk_hex))
+        vk.verify(message, bytes.fromhex(req.identity_signature))
+    except BadSignatureError:
+        raise HTTPException(status_code=401, detail="INVALID_SIGNATURE: Identity signature verification failed")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"CRYPTO_ERROR: {type(e).__name__}")
+
+    # 4. Insert or idempotent check
+    existing = await db.execute(
+        text("SELECT pk_polis FROM polis_identity_keys WHERE nullifier_hash = :nh"),
+        {"nh": req.nullifier_hash},
+    )
+    existing_row = existing.fetchone()
+
+    if existing_row:
+        if existing_row[0] == req.pk_polis:
+            # Idempotent — same key, update last_used
+            await db.execute(
+                text("UPDATE polis_identity_keys SET last_used_at = now() WHERE nullifier_hash = :nh"),
+                {"nh": req.nullifier_hash},
+            )
+            await db.commit()
+            return {"status": "already_registered", "handle": get_short_handle(req.pk_polis)}
+        else:
+            raise HTTPException(status_code=409, detail="KEY_CONFLICT: Different pk_polis already registered for this identity")
+
+    # Check reverse: pk_polis already used by different nullifier
+    reverse = await db.execute(
+        text("SELECT nullifier_hash FROM polis_identity_keys WHERE pk_polis = :pk"),
+        {"pk": req.pk_polis},
+    )
+    if reverse.fetchone():
+        raise HTTPException(status_code=409, detail="KEY_CONFLICT: This pk_polis is already registered to a different identity")
+
+    try:
+        await db.execute(text("""
+            INSERT INTO polis_identity_keys (nullifier_hash, pk_polis, signature, timestamp_ms)
+            VALUES (:nh, :pk, :sig, :ts)
+        """), {
+            "nh": req.nullifier_hash,
+            "pk": req.pk_polis,
+            "sig": req.identity_signature,
+            "ts": req.timestamp_ms,
+        })
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="KEY_CONFLICT: Registration conflict")
+
+    logger.info("[POLIS] Key registered: %s → %s", req.nullifier_hash[:8], get_short_handle(req.pk_polis))
+    return {"status": "registered", "handle": get_short_handle(req.pk_polis)}
 
 
 # ─── GET /polis/tickets ──────────────────────────────────────────────────────
@@ -115,11 +221,14 @@ async def create_ticket(
     req: TicketCreateRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a POLIS ticket with Ed25519 signed payload."""
-    # Verify identity
-    await _verify_identity(req.nullifier_hash, db)
+    """Create a POLIS ticket with Ed25519 signed payload. Requires registered pk_polis."""
+    # Verify registered key binding
+    await _verify_registered_key(req.nullifier_hash, req.pk_polis, db)
 
-    # Build validation payload
+    # Build validation payload — title is required and signed
+    if not req.title or not req.title.strip():
+        raise HTTPException(status_code=400, detail="INVALID_TITLE: Title is required")
+
     payload = PolisTicketPayload(
         content=req.content,
         category=req.category,
@@ -135,7 +244,7 @@ async def create_ticket(
     result = await db.execute(text("SELECT ticket_nullifier FROM polis_tickets"))
     existing = {r[0] for r in result.fetchall()}
 
-    # Validate
+    # Validate (includes signature check with title hash)
     err = validate_ticket(payload, existing)
     if err:
         raise HTTPException(status_code=400, detail=f"{err.code}: {err.message}")
@@ -162,11 +271,7 @@ async def create_ticket(
         raise HTTPException(status_code=409, detail="DUPLICATE_TICKET: Ticket already exists")
 
     logger.info("[POLIS] Ticket created: %s by %s", ticket_id, get_short_handle(req.pk_polis))
-    return {
-        "id": ticket_id,
-        "handle": get_short_handle(req.pk_polis),
-        "status": "pending",
-    }
+    return {"id": ticket_id, "handle": get_short_handle(req.pk_polis), "status": "pending"}
 
 
 # ─── POST /polis/tickets/{ticket_id}/votes ───────────────────────────────────
@@ -177,9 +282,9 @@ async def vote_ticket(
     req: VoteRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Vote on a POLIS ticket with Ed25519 signed payload."""
-    # Verify identity
-    await _verify_identity(req.nullifier_hash, db)
+    """Vote on a POLIS ticket with Ed25519 signed payload. Requires registered pk_polis."""
+    # Verify registered key binding
+    await _verify_registered_key(req.nullifier_hash, req.pk_polis, db)
 
     # Get ticket
     result = await db.execute(
@@ -231,7 +336,6 @@ async def vote_ticket(
             "ts": req.timestamp_ms,
         })
 
-        # Update vote counts
         col = "up_votes" if req.vote == "up" else "down_votes"
         await db.execute(
             text(f"UPDATE polis_tickets SET {col} = {col} + 1, updated_at = now() WHERE id = :id"),
