@@ -65,6 +65,7 @@ def now_ms() -> int:
 def make_ticket_payload(
     sk:           SigningKey,
     *,
+    title:        str         = "Test Ticket",
     content:      str         = "Please add a dark mode",
     category:     str         = "proposal",
     timestamp_ms: int | None  = None,
@@ -74,6 +75,7 @@ def make_ticket_payload(
     ts          = timestamp_ms if timestamp_ms is not None else int(time.time() * 1000)
     pk_bytes    = bytes(sk.verify_key)
     ch          = hash_content(content)
+    th          = hash_content(title)
     ticket_null = nullifier or ("cc" * 32)
 
     signed_bytes = build_ticket_signed_bytes(
@@ -82,6 +84,7 @@ def make_ticket_payload(
         pk_polis     = pk_bytes,
         nullifier    = bytes.fromhex(ticket_null),
         timestamp_ms = ts,
+        title_hash   = th,
     )
     sig = bytes(sk.sign(signed_bytes).signature)
 
@@ -93,6 +96,7 @@ def make_ticket_payload(
         signature        = sig.hex(),
         timestamp_ms     = ts,
         version          = version,
+        title            = title,
     )
 
 
@@ -204,6 +208,7 @@ class TestValidateTicket:
             signature        = payload.signature,   # original sig
             timestamp_ms     = payload.timestamp_ms,
             version          = payload.version,
+            title            = payload.title,
         )
         err = validate_ticket(tampered, set(), now_ms=now_ms)
         assert err is not None

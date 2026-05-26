@@ -79,7 +79,7 @@ def build_ticket_signed_bytes(
     pk_polis:     bytes,
     nullifier:    bytes,
     timestamp_ms: int,
-    title_hash:   str = "",      # hex string of SHA-256(title)
+    title_hash:   str,            # hex string of SHA-256(title) — required
 ) -> bytes:
     """
     Builds the canonical bytes for ticket creation signature.
@@ -90,7 +90,7 @@ def build_ticket_signed_bytes(
     """
     cat_bytes  = category.encode("utf-8")
     ch_bytes   = bytes.fromhex(content_hash)
-    th_bytes   = bytes.fromhex(title_hash) if title_hash else hashlib.sha256(b"").digest()
+    th_bytes   = bytes.fromhex(title_hash)
     return (
         b"\x01"
         + bytes([len(cat_bytes)])
@@ -207,9 +207,13 @@ def validate_ticket(
     if payload.ticket_nullifier in existing_nullifiers:
         return ValidationError("DUPLICATE_TICKET", "Identical ticket already submitted")
 
-    # 5. Ed25519 signature
+    # 5. Title required
+    if not payload.title or not payload.title.strip():
+        return ValidationError("MISSING_TITLE", "Title is required")
+
+    # 6. Ed25519 signature
     content_hash = hash_content(payload.content)
-    title_hash = hash_content(payload.title) if payload.title else ""
+    title_hash = hash_content(payload.title)
     try:
         pk_bytes  = bytes.fromhex(payload.pk_polis)
         sig_bytes = bytes.fromhex(payload.signature)
