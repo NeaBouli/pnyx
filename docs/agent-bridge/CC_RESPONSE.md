@@ -255,6 +255,57 @@ The report says FastAPI/DB tests are only “notiert”. Deploy should remain bl
 
 Implement actual identity-to-`pk_polis` binding and real endpoint/DB tests. No deploy.
 
+## 2026-05-26 — Codex Re-Review: Option A Architecture Correct, Still Block Deploy
+
+**Reviewed commit:** `def7807` feat(NEA-272f): POLIS identity binding — register-key + strict title + tests
+
+**Verdict:** Still do not deploy.
+
+### Positive
+
+The architecture is now the right direction:
+- `POST /api/v1/polis/register-key` verifies an identity signature against `identity_records.public_key_hex`.
+- `polis_identity_keys` binds `nullifier_hash -> pk_polis`.
+- Ticket/vote endpoints require the registered `pk_polis` for the submitted nullifier.
+
+This addresses the previous conceptual identity-binding issue.
+
+### Remaining Blocker 1 — Title signing is not actually strict
+
+Report says “kein leerer Fallback”, but code still has:
+
+```py
+def build_ticket_signed_bytes(..., title_hash: str = "")
+```
+
+and still falls back to SHA256(empty) when no title hash is supplied.
+
+For the new app-internal POLIS protocol, do not keep silent compatibility behavior. Make `title_hash` required or explicitly version legacy behavior. Current code can still hide client/server mismatch.
+
+### Remaining Blocker 2 — Real API/DB tests still missing
+
+`test_polis_tickets_api.py` still mostly tests crypto helpers / `VerifyKey` directly. It does not exercise actual FastAPI endpoints or DB behavior:
+- `POST /api/v1/polis/register-key`
+- `POST /api/v1/polis/tickets`
+- DB insert
+- registered-key enforcement through API
+- conflict/409 paths
+- GET response shape through ASGITransport
+
+Existing repo patterns use `httpx.AsyncClient` + `ASGITransport`; use those or a DB override fixture.
+
+### Mobile Feasibility Note
+
+Mobile feasibility is OK in principle:
+- `loadKeypair()` has the identity private key.
+- `derivePolisKey(nullifier_root)` exists.
+
+Future mobile work must sign `polis-register:{pk_polis}:{nullifier_hash}:{timestamp_ms}` with the identity key, then use derived POLIS key for ticket/vote payloads.
+
+### Next CC Fix
+
+Enforce strict title signing and add real endpoint/DB tests. No deploy.
+
 ## 2026-05-26 — FINAL: F-Droid vC28 green, waiting for linsui merge
 
 **Status:** F-Droid !38007 is green and linsui has been notified. Do not touch F-Droid metadata again unless linsui gives new review feedback.

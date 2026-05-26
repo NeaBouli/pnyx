@@ -160,6 +160,15 @@
 - **MEDIUM remains:** real FastAPI/DB endpoint tests are still missing; crypto-level tests are not enough.
 - **Linear NEA-272:** updated with re-review blockers.
 
+### Codex Re-Review — Option A Correct, Still Block Deploy
+
+- **Reviewed commit:** `def7807` feat(NEA-272f): POLIS identity binding — register-key + strict title + tests
+- **Positive:** Register-key architecture is now correct in direction: identity signature checked against `identity_records.public_key_hex`, `polis_identity_keys` binds `nullifier_hash -> pk_polis`, ticket/vote endpoints require registered key.
+- **Blocker:** Title signing is not actually strict; `build_ticket_signed_bytes(..., title_hash="")` still has silent empty-title fallback.
+- **Blocker:** Real FastAPI/DB endpoint tests are still missing; current tests still mostly exercise crypto helpers directly.
+- **Mobile note:** feasible in principle because app has identity key via `loadKeypair()` and POLIS key derivation via `derivePolisKey(nullifier_root)`.
+- **Linear NEA-272:** updated.
+
 ## 2026-05-26 — Codex F-Droid !38007 Audit
 
 - Audited pnyx bridge, fdroiddata branch, GitLab MR !38007 pipelines, local APK/AAB outputs.
