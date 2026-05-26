@@ -1,5 +1,21 @@
 # Action Log
 
+## 2026-05-26 — Codex Fix: F-Droid !38007 green after package.json buildFromSource
+
+- **Agent:** Codex
+- **Aktion:** Fixed fdroiddata metadata and verified GitLab pipeline.
+- **fdroiddata commit:** `e72a2f44b` — `ekklesia.gr: apply Expo buildFromSource to package.json`
+- **Pipeline:** `#2554446253`
+- **Status:** GREEN `9/9`
+- **Jobs green:** `fdroid build`, `check apk`, `check source code`, `checkupdates`, `fdroid lint`, `fdroid rewritemeta`, `git redirect`, `schema validation`, `tools check scripts`.
+- **Root cause:** Expo SDK 54 / `expo-modules-autolinking` reads `expo.autolinking.android.buildFromSource` from `package.json`, not `app.json`. Previous sed inserted the config into `app.json`, so Gradle still tried missing Expo local Maven artifacts.
+- **Fix:** changed both F-Droid build entries (`vC6`, `vC28`) to insert:
+  - `sed -i -e '1a "expo":{"autolinking":{"android":{"buildFromSource":[".*"]}}},' package.json`
+- **Verification:** Pipeline trace shows Expo modules compiling from source (`:expo-crypto:compileReleaseKotlin`, `:expo-asset:compileReleaseKotlin`, `:expo-device:compileReleaseKotlin`) and final `check apk` success.
+- **No pnyx app code changed**
+- **No versionCode/tag/APK/AAB/Play/landingpage change**
+- **Next:** Ball bei linsui / F-Droid MR !38007 review/merge.
+
 ## 2026-05-26 — Migration Linear → GitHub Issues
 
 - **Tracking ab sofort:** GitHub Issues (NeaBouli/pnyx), nicht mehr Linear

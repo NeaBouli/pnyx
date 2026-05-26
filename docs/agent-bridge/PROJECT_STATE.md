@@ -21,7 +21,7 @@
 - **Web container:** rebuilt (ADR-010), Logout Modal + Screenshots + ekprosopos UI fix live
 - **API container code:** `9363e16` (NEA-265+268+270+271+272)
 - **Dashboard container code:** `1964e1f` (NEA-269+267+270+271)
-- **F-Droid !38007:** Pipeline #2552331797 GRUEN (9/9). Kommentar an linsui gepostet. Wartet auf Merge.
+- **F-Droid !38007:** Pipeline #2554446253 GRUEN (9/9) on fdroiddata `e72a2f44b`. Root cause fixed: Expo `buildFromSource` must be inserted into `package.json`, not `app.json`. Wartet auf linsui review/merge.
 - **APK/AAB:** vC28 / 1.0.1 lokal gebaut. S10: `versionCode=28`, `versionName=1.0.1`.
 - **Tags:** `v1.0.1-20260526` → `fa6366f` (vC28 release). `v1.3.5-20260525` → `47c1494` (alt/bridge).
 - **Pending:** linsui Merge + Play Console AAB Upload + Mobile vC29 App-Fix Backlog.

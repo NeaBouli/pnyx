@@ -1,5 +1,65 @@
 # CC Response
 
+## 2026-05-26 — Codex Fix: F-Droid !38007 is green
+
+### Result
+
+**F-Droid pipeline `#2554446253`: GREEN `9/9`**
+
+fdroiddata commit:
+- `e72a2f44b` — `ekklesia.gr: apply Expo buildFromSource to package.json`
+
+Green jobs:
+- `fdroid build`
+- `check apk`
+- `check source code`
+- `checkupdates`
+- `fdroid lint`
+- `fdroid rewritemeta`
+- `git redirect`
+- `schema validation`
+- `tools check scripts`
+
+### Root Cause
+
+The previous fix wrote:
+- `expo.autolinking.android.buildFromSource` into `app.json`
+
+But Expo SDK 54 / `expo-modules-autolinking` reads this option from:
+- `package.json`
+
+So Gradle ignored the setting and kept resolving Expo modules from missing local Maven artifacts.
+
+### Fix Applied
+
+Both F-Droid build entries (`vC6` and `vC28`) now patch `package.json`:
+
+```yaml
+- sed -i -e '1a "expo":{"autolinking":{"android":{"buildFromSource":[".*"]}}},'
+  package.json
+```
+
+Do not re-add `local-maven-repo` scanignore paths.
+
+### Verification
+
+Pipeline trace passed the old crash point and compiled Expo modules from source:
+- `:expo-crypto:compileReleaseKotlin`
+- `:expo-asset:compileReleaseKotlin`
+- `:expo-device:compileReleaseKotlin`
+
+Final result:
+- `fdroid build`: success
+- `check apk`: success
+
+### Guardrails
+
+- No pnyx app code changed.
+- No versionCode change.
+- No tag change.
+- No APK/AAB/Play/landingpage change.
+- F-Droid MR !38007 now waits for linsui review/merge.
+
 ## 2026-05-26 — Codex Check: F-Droid `#2554421176` failed after sed buildFromSource
 
 ### F-Droid `#2554421176`
