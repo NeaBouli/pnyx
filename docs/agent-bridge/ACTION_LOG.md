@@ -31,13 +31,36 @@
 - Kommentar an linsui gepostet (2026-05-26 08:45 UTC)
 - MR !38007 wartet auf linsui Merge
 
+### NEA-272 POLIS Diagnose (CC, nur Analyse)
+
+**Browser POLIS (docs/tickets/):**
+- GitHub OAuth: vorhanden (Cloudflare Worker Proxy)
+- Ticket Create: `createTicket()` → POST GitHub Issues API mit OAuth Token
+- Vote/Reactions: `castVote()` → POST GitHub Reactions API
+- QR Auth: `GET /api/v1/polis/qr-session` + `POST /api/v1/polis/qr-auth` (Ed25519)
+- Fazit: Browser-Flow architektonisch komplett
+
+**Mobile App:**
+- `TicketsScreen.tsx`: listet GitHub Issues (read-only, kein Token)
+- `PolisLoginScreen.tsx`: Deep-Link QR-Auth funktioniert (Ed25519 sign → API)
+- Create/Vote: Coming-Soon Modal (kein GitHub OAuth Token im Mobile-Flow)
+- Fazit: Mobile kann authentifizieren (QR), aber nicht erstellen/voten
+
+**Fehlende Komponente:** Kein GitHub OAuth Token im Mobile-Flow
+- Option A: GitHub OAuth in Mobile (WebView) → Token in SecureStore
+- Option B: API-Proxy (Mobile Ed25519 → API erstellt Issue mit Server-Token)
+- Option C: QR erweitern (Mobile auth → User erstellt im Browser)
+- Empfehlung: Option C (sicherster, einfachster Weg)
+
+**Browser-Live-Test steht aus** — manuell pruefen ob OAuth + Create + Vote E2E funktionieren
+
 ### POLIS Tickets Coming-Soon Modal
 - `Alert.alert("Σύντομα", ...)` ersetzt durch professionelles Modal
 - Titel "Σύντομα διαθέσιμο", Phase-B-Erklaerung, "Κατανοητό" Button
 - Gilt fuer "+ Νέο Ticket" und Vote-Button
 - Kein versionCode bump, kein F-Droid/Play
 - Commit: `d7489ff`
-- S10-Test noetig
+- S10-Test: Modal visuell akzeptiert (Screenshot bestaetigt)
 
 ### CC: vC28 Release + F-Droid Metadata
 - Version bump committed: vC28 / 1.0.1 in `app.json` + `build.gradle` (`fa6366f`)
