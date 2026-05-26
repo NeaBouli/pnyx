@@ -25,7 +25,7 @@
 - **APK/AAB:** vC28 / 1.0.1 lokal gebaut. S10: `versionCode=28`, `versionName=1.0.1`.
 - **Tags:** `v1.0.1-20260526` → `fa6366f` (vC28 release). `v1.3.5-20260525` → `47c1494` (alt/bridge).
 - **Pending:** nur linsui Merge + Play Console AAB Upload.
-- **Mobile App Fixes:** Gio-requested app fixes are still pending/not fully specified. vC28 was release/version consistency, not completion of the app-fix backlog.
+- **Mobile App Fixes:** Gio-requested app fixes are still pending. Known candidates: POLIS ticket creation disabled/not working, Weekly Push label validation, Compass aggregated-position toggle validation/fix, Semaphore/ZK proof onboarding compatibility wizard. vC28 was release/version consistency, not completion of the app-fix backlog.
 
 ## Uncommitted Aenderungen
 

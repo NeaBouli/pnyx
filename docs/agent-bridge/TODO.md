@@ -1,7 +1,7 @@
 # TODO — Ekklesia.gr / pnyx
 
 ## Aktiv / In Progress
-- [ ] Mobile App Fixes (Gio): noch NICHT abgearbeitet. vC28/1.0.1 war Versions-/Release-Glaettung fuer S10/F-Droid/Play-Konsistenz, nicht Abschluss der von Gio gewuenschten App-Fixes. Gio liefert die konkrete Fix-Liste nach F-Droid/linsui/Play-Glaettung; dann jeweils eigenes Ticket + S10-Verifikation.
+- [ ] Mobile App Fixes (Gio): noch NICHT abgearbeitet. vC28/1.0.1 war Versions-/Release-Glaettung fuer S10/F-Droid/Play-Konsistenz, nicht Abschluss der von Gio gewuenschten App-Fixes. Kandidaten fuer naechste App-Version: POLIS Ticket-Erstellung funktioniert nicht (Screenshot: "Δημιουργία ticket σύντομα διαθέσιμη"), Weekly Push-Label pruefen, Compass Toggle Gesamtposition pruefen/ggf. fixen, Semaphore/ZK-Proofs Wizard/Kompatibilitaetscheck konzipieren/implementieren. Vorgehen: jeden Fix einzeln bauen/testen, nur auf S10 verifizieren; erst wenn alle Fixes fertig sind neue APK bauen, auf S10 installieren und danach Landingpage-Download aktualisieren.
 - [ ] F-Droid MR !38007: Pipeline #2552331797 GRUEN (9/9), Kommentar an linsui gepostet, wartet auf Merge
 - [ ] AAB vC28 Upload zu Play Console (lokal gebaut, `app-play-release.aab`)
 - [ ] NEA-258: FORUM_SSO_SALT Startup-Check (LOW follow-up)

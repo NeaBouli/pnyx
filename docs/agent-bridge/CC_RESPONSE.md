@@ -21,7 +21,12 @@
 
 - F-Droid !38007: wait for linsui merge or new feedback.
 - Play Console: upload vC28 AAB.
-- Mobile App Fixes requested by Gio: still pending, not specified in full yet. vC28 was release/version consistency only, not a claim that all requested app fixes are done.
+- Mobile App Fixes requested by Gio: still pending. vC28 was release/version consistency only, not a claim that all requested app fixes are done.
+  - POLIS ticket creation currently shows "Σύντομα / Δημιουργία ticket σύντομα διαθέσιμη" and does not work.
+  - Weekly Digest/Push label needs S10 validation.
+  - Compass aggregated-position toggle needs S10 validation and possible fix.
+  - Semaphore/ZK proof support should be handled as a larger task: app install/onboarding wizard asks user to enable it if the smartphone is compatible; if incompatible, wizard explains the feature stays off by default and does not affect normal app functionality.
+  - Release rule: fix items one by one, verify each on S10, and only after all accepted fixes build the next APK and update the landing-page download.
 - NEA-258: FORUM_SSO_SALT startup check.
 - CLAUDE.md stale values update.
 
