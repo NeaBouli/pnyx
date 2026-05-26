@@ -1,5 +1,15 @@
 # Action Log
 
+## 2026-05-26 — NEA-272f Real Router/DB Tests (`d96f93a`) + F-Droid rewritemeta fix
+
+- **Router/DB Tests:** 10/10 non-xfail PASSED mit SQLite in-memory + dependency override
+  - register-key: valid 201, invalid sig 401, idempotent, conflict 409
+  - ticket: unregistered 403, registered 201 + DB row, duplicate 400
+  - vote: valid 201 + counter, self-vote 400
+  - GET: safe fields
+- **F-Droid:** `node -e` → `python3 -c` (rewritemeta-kompatibel), Pipeline laeuft
+- Deploy wartet auf Codex Re-Review
+
 ## 2026-05-26 — Codex Re-Review: NEA-272f `106e892` + F-Droid `2554339926`
 
 - **Agent:** Codex
