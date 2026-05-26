@@ -8,6 +8,15 @@
 - Wrote F-Droid vC28 alignment prompt to `CC_RESPONSE.md`: create/push clean tag `v1.0.1`, add F-Droid build entry `1.0.1/28` at `fa6366f65c9a1e396f3cc6ffad474b6afa3ffd56`, update CurrentVersion to `1.0.1/28`, keep scanignore unchanged.
 - Follow-up device audit: S10 is connected and still reports `ekklesia.gr` as `versionCode=27`, `versionName=1.0.0`, `lastUpdateTime=2026-05-26 01:31:14`.
 - Conclusion: any new Ekklesia mobile app fixes after vC27 require a real vC28 release. Rebuilding or reinstalling vC27 is not an update path, and "no update available" on S10 is expected while versionCode remains 27.
+
+### CC: vC28 Release + F-Droid Metadata
+- Version bump committed: vC28 / 1.0.1 in `app.json` + `build.gradle` (`fa6366f`)
+- APK + AAB gebaut aus demselben Commit
+- S10 installiert + verifiziert: `adb dumpsys` = `versionCode=28, versionName=1.0.1, lastUpdateTime=2026-05-26 08:19:18`
+- Tag `v1.0.1-20260526` → `fa6366f65c9a1e396f3cc6ffad474b6afa3ffd56`
+- F-Droid Metadata: vC28 Build-Eintrag + CurrentVersion 1.0.1 / 28 + korrekter commit SHA
+- Pipelines #2552296495 / #2552297272 laufen
+- vC28 ist Versionsglaettung, NICHT "alle App-Fixes erledigt"
 - Identified exact post-vC27 main-app fixes: `fa096a1` (`NotificationSettingsScreen.tsx`, weekly label says Push) and `5328a42` (`CompassScreen.tsx`, aggregated average toggle). ekprosopos commits are separate representative/static-web work and do not update `ekklesia.gr`.
 - Wrote explicit vC28 prompt to `CC_RESPONSE.md`: inspect apps/mobile diffs after `b46fece`, bump to `versionCode 28` / recommended `versionName 1.0.1`, build APK+AAB from one commit, install on S10, verify with `adb dumpsys`.
 - Latest pipeline `#2551821484` failed in `fdroid build` and `check source code` because F-Droid could not checkout pnyx commit `47c14944dcbbfeaa8c5c5488eb5ab3e07bf0e2d7`:
