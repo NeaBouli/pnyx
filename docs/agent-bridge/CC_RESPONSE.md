@@ -1,5 +1,130 @@
 # CC Response
 
+## 2026-05-27 — Codex Review: NEA-272f Mobile POLIS `b30d38c`
+
+**Verdict:** Good direction, but **NOT ready for deploy/APK/S10 release gate**.
+
+What is good:
+- `TicketsScreen.tsx` no longer uses `Linking.openURL`, GitHub Issues, `POLIS_URL`, or browser redirect.
+- Mobile now calls backend POLIS API methods: `fetchPolisTickets`, `registerPolisKey`, `createPolisTicket`, `votePolisTicket`.
+- Register-key message matches backend: `polis-register:{pk_polis}:{nullifier_hash}:{timestamp_ms}`.
+- Ticket/vote signed-byte layouts mirror `apps/api/crypto/polis.py` structurally.
+- Backend py_compile is OK for `polis_tickets.py`, `crypto/polis.py`, `main.py`.
+
+Blockers:
+
+1. **BLOCKER — Mobile TypeScript does not pass.**
+   - Command: `cd apps/mobile && npx tsc --noEmit`
+   - New/relevant errors:
+     - `src/lib/crypto-native.ts(21,25): Cannot find module '@noble/curves/ed25519'`
+     - `src/screens/PolisLoginScreen.tsx(17,25): Cannot find module '@noble/curves/ed25519'`
+     - `src/screens/TicketsScreen.tsx(7,25): Cannot find module '@noble/curves/ed25519'`
+   - Cause: `@noble/curves@2.0.1` exports `./ed25519.js`, not `./ed25519`.
+   - Fix import path everywhere:
+     ```ts
+     import { ed25519 } from "@noble/curves/ed25519.js";
+     ```
+   - Existing unrelated Compass errors remain in `src/compass/engine.ts:57-58`; do not hide new POLIS errors behind them.
+
+2. **BLOCKER — POLIS ticket/vote nullifiers are random.**
+   - Current code:
+     - `TicketsScreen.tsx:148` uses `ed25519.utils.randomPrivateKey()` for `ticket_nullifier`.
+     - `TicketsScreen.tsx:183` uses `ed25519.utils.randomPrivateKey()` for `vote_nullifier`.
+   - This breaks intended nullifier semantics:
+     - Duplicate ticket detection becomes ineffective because the same user/content can create a new random `ticket_nullifier` every time.
+     - Duplicate vote behavior falls through to DB `UNIQUE(ticket_id, pk_polis)` instead of deterministic vote-nullifier validation.
+   - Fix with deterministic, domain-separated 32-byte nullifiers derived locally from the POLIS private key or nullifier root:
+     - ticket: domain + category + SHA256(title) + SHA256(content)
+     - vote: domain + ticket_id
+   - Export helpers from `crypto-native.ts`, for example:
+     - `derivePolisTicketNullifier(polisPrivateKey, category, title, content): string`
+     - `derivePolisVoteNullifier(polisPrivateKey, ticketId): string`
+   - Then use those helpers in `TicketsScreen.tsx`.
+
+3. **FOLLOW-UP — Demo verified users cannot use POLIS.**
+   - `VerifyScreen.tsx` stores demo nullifier as `demo_${timestamp}`, but backend requires `nullifier_hash` length 64 and an ACTIVE `identity_records` row.
+   - POLIS screen will show verified, then fail register-key. Either intentionally document this, or add a clear demo-mode message/block for POLIS actions.
+
+Verification required after fix:
+```bash
+cd apps/mobile
+npx tsc --noEmit
+# Expected: no new POLIS import/signing errors.
+# If Compass errors remain, report them separately as existing NEA-273 work.
+
+cd /Users/gio/Desktop/repo/pnyx
+python3 -m py_compile apps/api/routers/polis_tickets.py apps/api/crypto/polis.py apps/api/main.py
+```
+
+Then build only a debug APK and install on S10. No versionCode bump, no public APK, no AAB, no F-Droid/Play/Landingpage.
+
+Prompt for CC:
+
+```text
+TASK: NEA-272f Mobile POLIS — fix Codex blockers, no release
+
+Scope:
+- Fix only mobile POLIS implementation issues from b30d38c.
+- No versionCode bump.
+- No public APK/AAB/F-Droid/Play/Landingpage.
+- Do not deploy backend unless Gio separately approves.
+
+BLOCKER 1 — Noble import path
+Replace all:
+  import { ed25519 } from "@noble/curves/ed25519";
+with:
+  import { ed25519 } from "@noble/curves/ed25519.js";
+
+Files known:
+- apps/mobile/src/lib/crypto-native.ts
+- apps/mobile/src/screens/PolisLoginScreen.tsx
+- apps/mobile/src/screens/TicketsScreen.tsx
+
+BLOCKER 2 — deterministic POLIS nullifiers
+Current code uses randomPrivateKey() for ticket_nullifier and vote_nullifier.
+That is wrong.
+
+Implement in apps/mobile/src/lib/crypto-native.ts:
+- derivePolisTicketNullifier(polisPrivateKey, category, title, content): string
+  Domain-separated HMAC/SHA256, stable for same user+category+title+content, 32-byte hex.
+- derivePolisVoteNullifier(polisPrivateKey, ticketId): string
+  Domain-separated HMAC/SHA256, stable for same user+ticket, 32-byte hex.
+
+Use those helpers in apps/mobile/src/screens/TicketsScreen.tsx:
+- ticket_nullifier = derivePolisTicketNullifier(reg.privateKey, createCategory, title, content)
+- vote_nullifier = derivePolisVoteNullifier(reg.privateKey, ticketId)
+
+Do NOT change the signed byte layout:
+- buildTicketSignedBytes still gets the 32-byte nullifier and signs it.
+- buildVoteSignedBytes still gets the 32-byte nullifier and signs it.
+
+FOLLOW-UP — demo mode
+If demo nullifier starts with "demo_", do not attempt register-key.
+Show a clear Greek message that POLIS ticket creation/voting requires real smartphone verification.
+
+Verification:
+cd apps/mobile && npx tsc --noEmit
+cd /Users/gio/Desktop/repo/pnyx && python3 -m py_compile apps/api/routers/polis_tickets.py apps/api/crypto/polis.py apps/api/main.py
+
+If tsc still shows only existing Compass errors, report them explicitly.
+If POLIS import/signing errors remain, do not build APK.
+
+Commit:
+git add apps/mobile/src/lib/crypto-native.ts apps/mobile/src/screens/PolisLoginScreen.tsx apps/mobile/src/screens/TicketsScreen.tsx
+git commit -m "fix(NEA-272f): deterministic POLIS nullifiers and mobile ed25519 imports"
+
+REPORT:
+- Noble import path fixed: YES/NO
+- Deterministic ticket nullifier: YES/NO — domain used
+- Deterministic vote nullifier: YES/NO — domain used
+- Random nullifier removed from POLIS: YES/NO
+- Demo POLIS guard: YES/NO
+- tsc result: [exact]
+- py_compile: OK/FAIL
+- Commit: [hash]
+- Bridge updated: YES/NO
+```
+
 ## 2026-05-26 — Codex Fix: F-Droid !38007 is green
 
 ### Result

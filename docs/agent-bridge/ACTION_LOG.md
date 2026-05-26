@@ -1,5 +1,25 @@
 # Action Log
 
+## 2026-05-27 — Codex Review: NEA-272f Mobile POLIS `b30d38c`
+
+- **Agent:** Codex
+- **Aktion:** Mobile POLIS app-internal commit `b30d38c` gegen Backend-Vertrag und Build-Gate geprueft.
+- **Positiv:**
+  - `TicketsScreen.tsx` nutzt keinen Browser-Redirect mehr.
+  - Keine GitHub-Issue API mehr fuer Mobile POLIS Create/Vote.
+  - Backend API Methoden fuer Tickets/Register/Vote sind angeschlossen.
+  - Register-Key Message und signed-byte Layouts sind strukturell kompatibel mit `apps/api/crypto/polis.py`.
+  - Backend py_compile OK.
+- **Blocker:**
+  - `cd apps/mobile && npx tsc --noEmit` ist rot. Neue/relevante POLIS-Fehler: `@noble/curves/ed25519` Importpfad existiert fuer `@noble/curves@2.0.1` nicht; muss `@noble/curves/ed25519.js` sein.
+  - POLIS `ticket_nullifier` und `vote_nullifier` werden in `TicketsScreen.tsx` zufaellig erzeugt. Das bricht deterministische Duplicate-Erkennung und muss durch domain-separierte stabile Nullifier ersetzt werden.
+  - Demo-verified User wuerden POLIS als verfuegbar sehen, aber backendseitig an `nullifier_hash`/`identity_records` scheitern; Guard/Message noetig.
+- **Entscheidung:** `b30d38c` ist nicht release-/APK-ready. Kein Deploy, kein public APK, kein AAB/F-Droid/Play/Landingpage.
+- **Bridge:** Prompt fuer CC in `CC_RESPONSE.md`; TODO aktualisiert.
+- **Keine Produktcodeaenderung durch Codex**
+- **Keine Secrets gelesen**
+- **Kein Deployment**
+
 ## 2026-05-27 — NEA-272f Mobile POLIS app-internal (`b30d38c`)
 
 - **GitHub/browser redirect entfernt** — kein `Linking.openURL` mehr
