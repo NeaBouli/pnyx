@@ -54,20 +54,34 @@
 <!-- PHASE A: When gov.gr OAuth is available, enable browser-based verification
      Remove smartphone-only restrictions and enable full desktop functionality -->
 <script>
-// Phase B: detect desktop → intercept action buttons
-var isDesktop = !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+// Phase B: auth-state-aware ticket guard (replaces old desktop blanket block)
 function showPhaseBModal() {
   document.getElementById("phaseBModal").style.display = "flex";
   return false;
 }
-// Override new ticket + vote buttons on desktop
-if (isDesktop) {
-  document.addEventListener("DOMContentLoaded", function() {
-    // Override new ticket button
-    var newBtn = document.querySelector(".btn-new-ticket");
-    if (newBtn) newBtn.onclick = function(e) { e.preventDefault(); return showPhaseBModal(); };
-  });
-}
+// Auth-aware new ticket guard: check real auth state, not user-agent
+document.addEventListener("DOMContentLoaded", function() {
+  var newBtn = document.querySelector(".btn-new-ticket");
+  if (newBtn) {
+    var origHandler = newBtn.onclick;
+    newBtn.onclick = function(e) {
+      var hasGitHub = !!sessionStorage.getItem("polis_token");
+      var hasQR = !!sessionStorage.getItem("polis_nullifier");
+      if (!hasGitHub) {
+        e.preventDefault();
+        if (typeof login === "function") login();
+        return false;
+      }
+      if (!hasQR) {
+        e.preventDefault();
+        if (typeof openQRLogin === "function") openQRLogin();
+        return false;
+      }
+      // Both auth paths OK — let original handler (openNewTicketModal) run
+      if (origHandler) return origHandler.call(this, e);
+    };
+  }
+});
 </script>
 
 <nav>
@@ -92,7 +106,7 @@ if (isDesktop) {
   <div class="polis-actions">
     <button class="btn-new-ticket" onclick="openNewTicketModal()" data-polis-el="+ Νέο Ticket" data-polis-en="+ New Ticket">+ Νέο Ticket</button>
     <div id="authStatus"></div>
-    <button class="btn-qr-login" onclick="openQRLogin()" style="padding:6px 14px;background:#eff6ff;color:#2563eb;border:2px solid #2563eb;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;margin-left:8px" data-polis-el="Login mit App" data-polis-en="Login with App">Login mit App</button>
+    <button class="btn-qr-login" onclick="openQRLogin()" style="padding:6px 14px;background:#eff6ff;color:#2563eb;border:2px solid #2563eb;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;margin-left:8px" data-polis-el="Σύνδεση με εφαρμογή" data-polis-en="Login with App">Σύνδεση με εφαρμογή</button>
   </div>
 </div>
 
@@ -257,18 +271,24 @@ initPolis();
 var qrSessionId = null;
 var qrPollTimer = null;
 
+var _qrStrings = {
+  el: { title: "Σύνδεση με εφαρμογή εκκλησία", scan: "Σαρώστε τον κωδικό QR με την εφαρμογή", loading: "Φόρτωση...", waiting: "Αναμονή σάρωσης...", cancel: "Ακύρωση", error: "Σφάλμα φόρτωσης", success: "✓ Επαληθεύτηκε!", expired: "Η σύνδεση έληξε" },
+  en: { title: "Login with ekklesia App", scan: "Scan the QR code with the app", loading: "Loading...", waiting: "Waiting for app scan...", cancel: "Cancel", error: "Loading error", success: "✓ Authenticated!", expired: "Session expired" }
+};
+function _qr(key) { return (_qrStrings[polisLang] || _qrStrings.el)[key] || key; }
+
 function openQRLogin() {
   // Create modal
   var overlay = document.createElement("div");
   overlay.id = "qrOverlay";
   overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center";
   overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:24px;max-width:340px;text-align:center">' +
-    '<h3 style="margin:0 0 8px;font-size:16px;color:#1e293b">Login mit εκκλησία App</h3>' +
-    '<p style="font-size:12px;color:#64748b;margin:0 0 16px">Scanne den QR-Code mit der App</p>' +
+    '<h3 style="margin:0 0 8px;font-size:16px;color:#1e293b">' + _qr("title") + '</h3>' +
+    '<p style="font-size:12px;color:#64748b;margin:0 0 16px">' + _qr("scan") + '</p>' +
     '<div id="qrCodeBox" style="background:#f8fafc;border:2px dashed #e2e8f0;border-radius:12px;padding:24px;margin-bottom:12px;min-height:200px;display:flex;align-items:center;justify-content:center">' +
-    '<span style="color:#94a3b8">Laden...</span></div>' +
-    '<p id="qrStatus" style="font-size:12px;color:#64748b;margin:0 0 12px">Warte auf App-Scan...</p>' +
-    '<button onclick="closeQRLogin()" style="padding:8px 20px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;cursor:pointer">Abbrechen</button>' +
+    '<span style="color:#94a3b8">' + _qr("loading") + '</span></div>' +
+    '<p id="qrStatus" style="font-size:12px;color:#64748b;margin:0 0 12px">' + _qr("waiting") + '</p>' +
+    '<button onclick="closeQRLogin()" style="padding:8px 20px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;cursor:pointer">' + _qr("cancel") + '</button>' +
     '</div>';
   document.body.appendChild(overlay);
 
@@ -289,7 +309,7 @@ function openQRLogin() {
     })
     .catch(function(){
       var box = document.getElementById("qrCodeBox");
-      if (box) box.innerHTML = '<span style="color:#ef4444">Fehler beim Laden</span>';
+      if (box) box.innerHTML = '<span style="color:#ef4444">' + _qr("error") + '</span>';
     });
 }
 
@@ -300,14 +320,14 @@ function pollQRSession() {
     .then(function(d){
       var st = document.getElementById("qrStatus");
       if (d.status === "authenticated") {
-        if (st) st.innerHTML = '<span style="color:#22c55e;font-weight:700">✓ Authentifiziert!</span>';
+        if (st) st.innerHTML = '<span style="color:#22c55e;font-weight:700">' + _qr("success") + '</span>';
         clearInterval(qrPollTimer);
         // Store auth in session
         sessionStorage.setItem("polis_nullifier", d.nullifier_hash || "");
         sessionStorage.setItem("polis_pubkey", d.public_key_hex || "");
         setTimeout(function(){ closeQRLogin(); location.reload(); }, 1500);
       } else if (d.status === "expired") {
-        if (st) st.innerHTML = '<span style="color:#ef4444">Session abgelaufen</span>';
+        if (st) st.innerHTML = '<span style="color:#ef4444">' + _qr("expired") + '</span>';
         clearInterval(qrPollTimer);
       }
     }).catch(function(){});
