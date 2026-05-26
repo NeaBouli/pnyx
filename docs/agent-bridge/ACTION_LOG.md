@@ -71,6 +71,13 @@
 - Mobile issue: `PolisLoginScreen.tsx` success close uses `navigation.goBack()`, fragile for deep-link launches with no back stack.
 - Linear NEA-272 updated. Next fix: web pending action + visible QR verified state; mobile close should reset/navigate to Tabs.
 
+### NEA-272 Mobile POLIS Tab Still Inactive
+
+- Gio confirmed: Browser POLIS now works, but Mobile POLIS tab still shows inactive/Coming-Soon behavior.
+- Code check: `apps/mobile/src/screens/TicketsScreen.tsx` still calls `setShowComingSoon(true)` for `+ Νέο Ticket` and vote buttons after verification.
+- Required vC29 MVP: replace disabled modal with an action that opens the working browser POLIS flow (`https://ekklesia.gr/tickets/index.html`) and explains that Mobile is used for QR verification.
+- Linear NEA-272 updated. No version bump/public release; debug APK S10 only.
+
 ## 2026-05-26 — Codex F-Droid !38007 Audit
 
 - Audited pnyx bridge, fdroiddata branch, GitLab MR !38007 pipelines, local APK/AAB outputs.

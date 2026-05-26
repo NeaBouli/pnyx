@@ -126,6 +126,24 @@ This overrides the real `openNewTicketModal()` from `docs/tickets/polis.js`, eve
 3. Mobile: change success/error close from fragile `navigation.goBack()` to a safe reset/navigate to `Tabs`.
 4. Keep no version bump/public release rule. Mobile change requires debug APK S10 test, but not public APK yet.
 
+## 2026-05-26 — NEA-272 Finding: Browser works, Mobile POLIS tab still inactive
+
+**User report:** Browser POLIS works now, but inside the mobile app the POLIS ticket system is still inactive.
+
+**Code cause:** `apps/mobile/src/screens/TicketsScreen.tsx` still uses the old Phase-B/Coming-Soon path:
+- `+ Νέο Ticket` calls `if (handleAction()) setShowComingSoon(true)`.
+- Ticket vote button also calls `if (handleAction()) setShowComingSoon(true)`.
+- The modal still says ticket creation will be available in Phase B.
+
+**Meaning:** Mobile is still only a read-only GitHub Issue list plus disabled actions. It does not lead the user into the now-working Browser POLIS flow.
+
+**Required next fix (vC29 MVP / Option C):**
+- Keep the issue list read-only in Mobile.
+- Replace Coming-Soon behavior with an action that opens `https://ekklesia.gr/tickets/index.html` in the browser.
+- UI text must clearly explain: tickets and POLIS votes are completed in the browser; this app is used to scan the QR and verify.
+- Do not implement GitHub OAuth inside the app yet.
+- No version bump, no public APK/AAB/F-Droid/Play update. Build debug APK and install on S10 only.
+
 ## 2026-05-26 — FINAL: F-Droid vC28 green, waiting for linsui merge
 
 **Status:** F-Droid !38007 is green and linsui has been notified. Do not touch F-Droid metadata again unless linsui gives new review feedback.
