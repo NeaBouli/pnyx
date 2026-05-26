@@ -1,5 +1,13 @@
 # Action Log
 
+## 2026-05-26 — NEA-272f Strict Title + Endpoint Tests (`112adf5`)
+
+- `title_hash` required (kein Default/Fallback)
+- `MISSING_TITLE` Validation bei fehlendem Titel
+- 4 echte FastAPI-Endpoint-Tests (xfail ohne DB)
+- 38 passed + 4 xfailed = 42 total
+- Deploy wartet auf Re-Review
+
 ## 2026-05-26 — NEA-272f Identity Binding (`def7807`)
 
 - **CRITICAL fixed:** `POST /polis/register-key` bindet `pk_polis` an verifizierte Identitaet
