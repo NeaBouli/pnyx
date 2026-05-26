@@ -1,5 +1,101 @@
 # CC Response
 
+## 2026-05-26 — Codex Audit: F-Droid vC28 pipeline failures
+
+**Status:** Pipelines `#2552296495` and `#2552297272` both failed. Do not touch app code.
+
+### Pipeline #2552296495
+
+Failed jobs:
+- `fdroid build`
+- `check source code`
+
+Root cause: metadata used an invalid/non-readable commit SHA:
+
+```text
+git checkout -f fa6366f3dfea5a4b40d0f94c29b2db8e8a4e9c7b
+fatal: unable to read tree (fa6366f3dfea5a4b40d0f94c29b2db8e8a4e9c7b)
+```
+
+This SHA is wrong. The real vC28 commit is:
+
+```text
+fa6366f65c9a1e396f3cc6ffad474b6afa3ffd56
+```
+
+### Pipeline #2552297272
+
+This pipeline got past checkout and `check source code` was green.
+
+Failed jobs:
+- `fdroid build`
+- `fdroid rewritemeta`
+
+Root causes:
+
+1. `fdroid rewritemeta` fails because `metadata/ekklesia.gr.yml` has no final newline:
+
+```text
+No newline at end of file
+```
+
+2. `fdroid build` fails because vC28 uses hoisted Expo SDK 54 paths for `expo-file-system` and `expo-asset`, but metadata still points to `expo/node_modules/...`:
+
+```text
+Non-exist scanignore path: apps/mobile/node_modules/expo/node_modules/expo-file-system/local-maven-repo
+Non-exist scanignore path: apps/mobile/node_modules/expo/node_modules/expo-asset/local-maven-repo
+Unused scanignore path: apps/mobile/node_modules/expo/node_modules/expo-file-system/local-maven-repo
+Unused scanignore path: apps/mobile/node_modules/expo/node_modules/expo-asset/local-maven-repo
+```
+
+The same trace shows the actual vC28 paths:
+
+```text
+apps/mobile/node_modules/expo-file-system/local-maven-repo
+apps/mobile/node_modules/expo-asset/local-maven-repo
+```
+
+### Exact CC Fix
+
+```text
+TASK: F-Droid vC28 metadata-only fix
+
+cd /Users/gio/Desktop/fdroiddata
+git checkout ekklesia-v1.0.0
+git pull --ff-only
+
+# Edit metadata/ekklesia.gr.yml.
+# In the vC28 build entry ONLY (versionName 1.0.1 / versionCode 28):
+# replace:
+#   apps/mobile/node_modules/expo/node_modules/expo-file-system/local-maven-repo
+#   apps/mobile/node_modules/expo/node_modules/expo-asset/local-maven-repo
+# with:
+#   apps/mobile/node_modules/expo-file-system/local-maven-repo
+#   apps/mobile/node_modules/expo-asset/local-maven-repo
+#
+# Keep vC6/vC27 entries unchanged unless the trace explicitly fails there.
+# Ensure the file ends with a newline.
+# Keep commit as:
+#   fa6366f65c9a1e396f3cc6ffad474b6afa3ffd56
+
+tail -1 metadata/ekklesia.gr.yml
+git diff -- metadata/ekklesia.gr.yml
+git add metadata/ekklesia.gr.yml
+git commit -m "ekklesia.gr: fix vC28 scanignore paths"
+git push origin ekklesia-v1.0.0
+
+REPORT:
+- vC28 scanignore uses hoisted paths: YES/NO
+- final newline present: YES/NO
+- app code untouched: YES/NO
+- pipeline id: [id]
+- if failed, first real trace error line
+```
+
+### Guardrail
+
+Do not move tags, do not rebuild APK/AAB, do not touch `apps/mobile`. This is only a metadata formatting/path correction.
+
 ## 2026-05-26 — Codex Greenlight: F-Droid must now move to vC28
 
 **Status:** vC28 is now real and verified on the S10. F-Droid can be updated now, but only in a controlled vC28 step.

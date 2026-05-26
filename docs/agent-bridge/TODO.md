@@ -1,6 +1,7 @@
 # TODO — Ekklesia.gr / pnyx
 
 ## Aktiv / In Progress
+- [ ] F-Droid vC28 pipeline fix: #2552297272 got past checkout; only metadata issues remain. In vC28 build entry, replace `expo/node_modules/expo-file-system` + `expo/node_modules/expo-asset` scanignore paths with hoisted `apps/mobile/node_modules/expo-file-system` + `apps/mobile/node_modules/expo-asset`, and add final newline. App code untouched. See `CC_RESPONSE.md`.
 - [ ] F-Droid vC28 alignment: vC28 is verified on S10 (`versionCode=28`, `versionName=1.0.1`, commit `fa6366f`). Create/push GitHub tag `v1.0.1`, add F-Droid build entry `1.0.1/28` at `fa6366f65c9a1e396f3cc6ffad474b6afa3ffd56`, update CurrentVersion to `1.0.1/28`; see `CC_RESPONSE.md`.
 - [ ] Ekklesia mobile vC28: include exactly the two post-vC27 `apps/mobile` fixes — `fa096a1` weekly Push label + `5328a42` Compass aggregated toggle. Bump to `versionCode 28` / recommended `versionName 1.0.1`, build APK+AAB from one commit, install on S10, verify `adb dumpsys package ekklesia.gr` shows vC28; see `CC_RESPONSE.md`.
 - [ ] F-Droid MR !38007: Pipeline #2551821484 failed. Codex audit says root cause is pnyx commit checkout/propagation (`47c1494`), not Gradle. Fix: keep scanignore + version `1.0.0/27`; prefer metadata vC27 commit `b46fece7ce585a2e0ae7835ac2de0a0e79a89087`; see `CC_RESPONSE.md`.

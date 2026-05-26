@@ -6,6 +6,8 @@
 - Confirmed vC28 after CC report: commit `fa6366f65c9a1e396f3cc6ffad474b6afa3ffd56` has `versionCode 28`, `versionName 1.0.1` in `apps/mobile/android/app/build.gradle` and `apps/mobile/app.json`.
 - Confirmed S10 now reports `ekklesia.gr` as `versionCode=28`, `versionName=1.0.1`, `lastUpdateTime=2026-05-26 08:19:18`.
 - Wrote F-Droid vC28 alignment prompt to `CC_RESPONSE.md`: create/push clean tag `v1.0.1`, add F-Droid build entry `1.0.1/28` at `fa6366f65c9a1e396f3cc6ffad474b6afa3ffd56`, update CurrentVersion to `1.0.1/28`, keep scanignore unchanged.
+- Audited failed F-Droid pipelines `#2552296495` and `#2552297272`. `#2552296495` used wrong SHA `fa6366f3d...`; `#2552297272` gets past checkout and fails only on metadata: no final newline plus two vC28 scanignore paths should be hoisted (`apps/mobile/node_modules/expo-file-system/...`, `apps/mobile/node_modules/expo-asset/...`) instead of `expo/node_modules/...`.
+- Wrote metadata-only fix prompt to `CC_RESPONSE.md`; app code must remain untouched.
 - Follow-up device audit: S10 is connected and still reports `ekklesia.gr` as `versionCode=27`, `versionName=1.0.0`, `lastUpdateTime=2026-05-26 01:31:14`.
 - Conclusion: any new Ekklesia mobile app fixes after vC27 require a real vC28 release. Rebuilding or reinstalling vC27 is not an update path, and "no update available" on S10 is expected while versionCode remains 27.
 
