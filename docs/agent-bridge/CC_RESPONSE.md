@@ -4,6 +4,34 @@
 
 **Status:** Gio is right. CC's "installed/fixed" claim is not sufficient: the S10 still reports the public app as `versionCode=27`.
 
+### What vC28 Actually Needs To Contain
+
+Do not guess. After the vC27 product commit `b46fece`, there are exactly two real `apps/mobile` product fixes:
+
+| Commit | File | Required in vC28? | Meaning |
+|---|---|---:|---|
+| `fa096a1` | `apps/mobile/src/screens/NotificationSettingsScreen.tsx` | YES | Weekly digest label clarified as Push notification |
+| `5328a42` | `apps/mobile/src/screens/CompassScreen.tsx` | YES | Compass screen can toggle between party dots and aggregated average position |
+
+Diff scope:
+
+```text
+apps/mobile/src/screens/CompassScreen.tsx              46 lines changed
+apps/mobile/src/screens/NotificationSettingsScreen.tsx  2 lines changed
+```
+
+These are the fixes Gio expected in the updated Ekklesia app.
+
+Do **not** mix these with ekprosopos:
+
+| Commit | Scope | App |
+|---|---|---|
+| `3633d69` | `apps/representative/web/index.html` UI overlap/sticky fixes | `ekklesia.representative` / static web |
+| `98ba0b6` | ekprosopos logout modal | `ekklesia.representative` / static web |
+| `4ba94fc` | older ekprosopos logout confirm | `ekklesia.representative` / static web |
+
+Those are separate and must not be used as evidence that the main `ekklesia.gr` APK was updated.
+
 ### Device Verification
 
 Command used:
@@ -61,12 +89,20 @@ TASK: Ekklesia mobile release sanity — vC28 required
 /Users/gio/Library/Android/sdk/platform-tools/adb devices -l
 /Users/gio/Library/Android/sdk/platform-tools/adb shell dumpsys package ekklesia.gr | grep -E 'versionCode|versionName|lastUpdateTime'
 
-# 2 — Identify mobile fixes after vC27
+# 2 — Confirm the exact mobile fixes after vC27
 cd /Users/gio/Desktop/repo/pnyx
 git log --oneline b46fece..HEAD -- apps/mobile
 git diff b46fece..HEAD -- apps/mobile
 
-# 3 — If there are real apps/mobile fixes to ship:
+# Expected apps/mobile commits:
+# - fa096a1 fix: clarify weekly digest toggle label as Push notification
+# - 5328a42 feat(NEA-273): compass toggle aggregated position
+
+# Expected apps/mobile files:
+# - apps/mobile/src/screens/NotificationSettingsScreen.tsx
+# - apps/mobile/src/screens/CompassScreen.tsx
+
+# 3 — These fixes ARE real and must ship as a new version:
 # bump apps/mobile/app.json + apps/mobile/android/app/build.gradle + apps/mobile/package.json if needed
 # target:
 #   versionCode 28
@@ -88,7 +124,7 @@ npm ci
 # update F-Droid metadata to add vC28 build/current version, or explicitly postpone F-Droid vC28.
 
 REPORT:
-- mobile fixes after vC27: [list commits or NONE]
+- mobile fixes after vC27: fa096a1 + 5328a42
 - bumped to vC28: YES/NO
 - APK built: [path + sha256]
 - AAB built: [path + sha256]
