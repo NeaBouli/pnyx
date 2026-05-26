@@ -1,5 +1,11 @@
 # Action Log
 
+## 2026-05-26 — F-Droid: sed buildFromSource (alovoa pattern)
+
+- `python3 -c` → `sed -i '/"expo":\ {/a "autolinking":...' app.json` (reference: com.alovoa.expo.yml)
+- Kein local-maven-repo scanignore (linsui Vorgabe)
+- Pipeline laeuft
+
 ## 2026-05-26 — Codex Re-Review: NEA-272f `ab2a24c` + F-Droid `2554402995`
 
 - **Agent:** Codex
