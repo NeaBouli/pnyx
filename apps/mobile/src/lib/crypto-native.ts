@@ -18,7 +18,7 @@ import * as SecureStore from "expo-secure-store";
 import { hmac } from "@noble/hashes/hmac";
 import { sha256 } from "@noble/hashes/sha256";
 import { pbkdf2 } from "@noble/hashes/pbkdf2";
-import { ed25519 } from "@noble/curves/ed25519";
+import { ed25519 } from "@noble/curves/ed25519.js";
 // NOTE: Argon2id preferred but react-native-argon2 requires native build config.
 // Using PBKDF2-SHA256 (100k iterations) as portable fallback.
 // TODO: Switch to Argon2id when native module is configured in EAS build.
@@ -327,6 +327,34 @@ export async function getOrDerivePolisKey(): Promise<{
     return { privateKey: polisPriv, publicKey: polisPub, pkPolisHex: bytesToHex(polisPub) };
   }
   return null;
+}
+
+/**
+ * Deterministic POLIS ticket nullifier.
+ * Domain-separated: same user + same content → same nullifier → server rejects duplicate.
+ */
+export function derivePolisTicketNullifier(
+  polisPrivateKey: Uint8Array,
+  category: string,
+  title: string,
+  content: string,
+): string {
+  const domain = utf8ToBytes("ekklesia:polis:ticket_nullifier:v1");
+  const payload = concatBytes(domain, utf8ToBytes(category), hashContent(title), hashContent(content));
+  return bytesToHex(hmac(sha256, polisPrivateKey, payload));
+}
+
+/**
+ * Deterministic POLIS vote nullifier.
+ * Domain-separated: same user + same ticket → same nullifier → server rejects duplicate.
+ */
+export function derivePolisVoteNullifier(
+  polisPrivateKey: Uint8Array,
+  ticketId: string,
+): string {
+  const domain = utf8ToBytes("ekklesia:polis:vote_nullifier:v1");
+  const payload = concatBytes(domain, utf8ToBytes(ticketId));
+  return bytesToHex(hmac(sha256, polisPrivateKey, payload));
 }
 
 // ─── Legacy Vote Signing (Phase B compat) ────────────────────────────────────

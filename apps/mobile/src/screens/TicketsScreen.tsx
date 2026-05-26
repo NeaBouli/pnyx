@@ -3,8 +3,8 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, RefreshControl, Alert, Modal, TextInput,
 } from "react-native";
-import { isVerified, loadKeypair, loadNullifier, getOrDerivePolisKey, buildTicketSignedBytes, buildVoteSignedBytes, buildRegisterKeyMessage, bytesToHex, hexToBytes } from "../lib/crypto-native";
-import { ed25519 } from "@noble/curves/ed25519";
+import { isVerified, loadKeypair, loadNullifier, getOrDerivePolisKey, buildTicketSignedBytes, buildVoteSignedBytes, buildRegisterKeyMessage, derivePolisTicketNullifier, derivePolisVoteNullifier, bytesToHex, hexToBytes } from "../lib/crypto-native";
+import { ed25519 } from "@noble/curves/ed25519.js";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
@@ -145,7 +145,9 @@ export default function TicketsScreen() {
       if (!reg) { setCreating(false); return; }
 
       const ts = Date.now();
-      const nullifier = bytesToHex(ed25519.utils.randomPrivateKey().slice(0, 32));
+      const nullifier = derivePolisTicketNullifier(
+        reg.privateKey, createCategory, createTitle.trim(), createContent.trim(),
+      );
       const signedBytes = buildTicketSignedBytes(
         createCategory, createContent.trim(), createTitle.trim(),
         hexToBytes(reg.pkPolisHex), hexToBytes(nullifier), ts,
@@ -180,7 +182,7 @@ export default function TicketsScreen() {
       if (!reg) return;
 
       const ts = Date.now();
-      const nullifier = bytesToHex(ed25519.utils.randomPrivateKey().slice(0, 32));
+      const nullifier = derivePolisVoteNullifier(reg.privateKey, ticketId);
       const signedBytes = buildVoteSignedBytes(
         ticketId, vote, hexToBytes(reg.pkPolisHex), hexToBytes(nullifier), ts,
       );

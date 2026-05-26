@@ -14,7 +14,7 @@ import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { loadKeypair, loadNullifier } from "../lib/crypto-native";
 import { colors } from "../theme";
-import { ed25519 } from "@noble/curves/ed25519";
+import { ed25519 } from "@noble/curves/ed25519.js";
 
 const API_BASE = "https://api.ekklesia.gr";
 
