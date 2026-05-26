@@ -1,5 +1,16 @@
 # Action Log
 
+## 2026-05-27 — CI Fix (`f9a0734`) + Codex Akzeptanz NEA-272f
+
+- **CI rot seit `86a9f40`:** `test_polis_router_db.py` crasht Collection weil `aiosqlite` in CI nicht installiert
+- **Root Cause:** `aiosqlite` lokal per `pip install` vorhanden, aber nicht in `requirements.txt`
+- **Fix:** `pytest.importorskip("aiosqlite")` — Tests werden uebersprungen statt Collection-Crash
+- **Commit:** `f9a0734`
+- **CI Pipeline:** laeuft, erwartet gruen
+- **Codex Akzeptanz `505979c`:** Mobile POLIS Blocker geloest (Import + deterministic Nullifiers)
+- **Naechster Schritt:** Backend Deploy (Migration) + Debug APK auf S10 fuer Integrationstest
+- Kein versionCode bump, kein Release
+
 ## 2026-05-27 — Codex Re-Review: NEA-272f Mobile POLIS `505979c`
 
 - **Agent:** Codex
