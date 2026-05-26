@@ -1,5 +1,15 @@
 # Action Log
 
+## 2026-05-26 — NEA-272d QR Continuation + App Close Fix
+
+- Web: pending action flow — after QR auth, auto-open ticket form instead of blind reload
+- Web: verified badge "✓ Επαληθεύτηκε" in topbar, QR button hidden when verified
+- Mobile: `PolisLoginScreen.tsx` safe navigation — `canGoBack()` fallback to Tabs reset
+- Commit: `65c2192`
+- Web deploy noetig (Server pull + Web rebuild)
+- Mobile debug APK noetig fuer S10 Test
+- Kein versionCode bump, kein F-Droid/Play
+
 ## 2026-05-26 — NEA-272c Desktop Guard + QR Lokalisierung
 
 - Desktop User-Agent-Block entfernt → Auth-State-Checks (GitHub Token + QR Verification)
