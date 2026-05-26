@@ -1,5 +1,18 @@
 # Action Log
 
+## 2026-05-27 — NEA-272f Mobile POLIS app-internal (`b30d38c`)
+
+- **GitHub/browser redirect entfernt** — kein `Linking.openURL` mehr
+- **Backend POLIS API verwendet** — `GET/POST /polis/tickets`, `POST /polis/tickets/{id}/votes`, `POST /polis/register-key`
+- **Crypto:** `buildTicketSignedBytes` + `buildVoteSignedBytes` + `buildRegisterKeyMessage` — byte layout identisch mit Python
+- **Auto register-key** vor erstem Create/Vote (SecureStore cached)
+- **In-App Create Modal:** Kategorie + Titel + Beschreibung + Ed25519-Signatur
+- **In-App Vote:** Up/Down Buttons mit signiertem Payload
+- **Greek Error Messages:** SELF_VOTE, DUPLICATE, KEY_MISMATCH etc.
+- **Legacy Support:** `getOrDerivePolisKey()` für bestehende verifizierte User
+- Kein versionCode bump, kein Release
+- Deploy wartet auf Review
+
 ## 2026-05-27 — Codex Prompt: NEA-272f Mobile POLIS app-internal
 
 - **Agent:** Codex
