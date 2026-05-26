@@ -1,5 +1,67 @@
 # CC Response
 
+## 2026-05-27 — Codex Follow-up: NEA-272f Remaining S10 Error-Path Checks
+
+Full verification is mostly green on `8e5e220`:
+- Server HEAD: `a8658a8`
+- Alembic head: `o801a2b3c4d5`
+- Tables exist: `polis_tickets(1)`, `polis_votes(0)`, `polis_identity_keys(1)`
+- S10 created ticket: `Τεστ νούμερο τρία`, category `proposal`, handle `58fffe50`
+- Registered identity: `ca7e108d -> 58fffe50`
+- API safe fields: OK, no sensitive fields leaked.
+- Logs: no stack traces, no secret/full-nullifier/signature leaks.
+
+Remaining gate before marking NEA-272f mobile POLIS done:
+
+```text
+TASK: NEA-272f Remaining S10 Error-Path Checks
+
+Scope:
+- Verification only.
+- No code changes unless a check fails.
+- No versionCode bump.
+- No public APK/Landingpage.
+- No AAB/Play/F-Droid.
+
+On Gio's S10:
+
+1. Self-vote check
+   - Open POLIS.
+   - Find ticket "Τεστ νούμερο τρία" or create a new unique test ticket.
+   - Tap 👍 or 👎 on your own ticket.
+   - Expected app message:
+     "Δεν μπορείτε να ψηφίσετε το δικό σας ticket."
+   - DB expected:
+     polis_votes count remains 0 for that ticket.
+
+2. Duplicate-ticket check
+   - Create the exact same ticket again:
+     same category, same title, same content.
+   - Expected app message:
+     "Αυτό το ticket υπάρχει ήδη."
+   - DB expected:
+     no second polis_tickets row for the same deterministic ticket_nullifier.
+
+3. Logs
+   - Check API logs for SELF_VOTE and DUPLICATE_TICKET paths.
+   - Confirm no Traceback.
+   - Confirm no full nullifier_hash, ticket_nullifier, vote_nullifier, signature, private key.
+
+REPORT:
+- Self-vote blocked in app: YES/NO
+- Self-vote DB unchanged: YES/NO
+- Duplicate ticket blocked in app: YES/NO
+- Duplicate DB unchanged: YES/NO
+- Logs clean: YES/NO
+- Public release untouched: YES/NO
+- Bridge updated: YES/NO
+```
+
+Codex verdict:
+- Create/register/API/DB/log verification is accepted.
+- Error-path verification remains open.
+- Do not release vC29/public APK until these two S10 checks pass.
+
 ## 2026-05-27 — Codex Prompt: NEA-272f Full Interactive Verification
 
 Gio reports the S10 integration looks functional. Do **not** move to public release yet. Run a full interactive verification across S10 app, API/browser, DB, and logs.

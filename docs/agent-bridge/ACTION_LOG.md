@@ -1,5 +1,27 @@
 # Action Log
 
+## 2026-05-27 — Codex Follow-up: NEA-272f Remaining S10 Error-Path Checks
+
+- **Agent:** Codex
+- **Aktion:** CC Full Verification Report `8e5e220` ausgewertet und Rest-Gate in Bridge dokumentiert.
+- **Akzeptiert:**
+  - Server HEAD `a8658a8`.
+  - Migration head `o801a2b3c4d5`.
+  - Tabellen vorhanden: `polis_tickets(1)`, `polis_votes(0)`, `polis_identity_keys(1)`.
+  - S10 Ticket erstellt: `Τεστ νούμερο τρία`, category `proposal`, handle `58fffe50`.
+  - Identity key registriert: `ca7e108d -> 58fffe50`.
+  - API safe fields OK.
+  - Keine Stacktraces.
+  - Keine Secret/full-nullifier/signature leaks.
+- **Noch offen:**
+  - Self-vote bewusst auf S10 ausloesen und Greek SELF_VOTE message bestaetigen.
+  - Duplicate-ticket bewusst auf S10 ausloesen und Greek DUPLICATE_TICKET message bestaetigen.
+  - DB muss bei beiden Fehlerpfaden unveraendert bleiben.
+- **Entscheidung:** NEA-272f ist noch nicht final done und nicht release-ready, bis diese zwei Error-Path-Checks bestanden sind.
+- **Keine Produktcodeaenderung durch Codex**
+- **Keine Secrets gelesen**
+- **Kein Deployment**
+
 ## 2026-05-27 — NEA-272f Full Verification PASSED
 
 - **Server:** `a8658a8`, Alembic `o801a2b3c4d5`
