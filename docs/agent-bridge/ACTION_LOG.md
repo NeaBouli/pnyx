@@ -52,7 +52,21 @@
 - Option C: QR erweitern (Mobile auth → User erstellt im Browser)
 - Empfehlung: Option C (sicherster, einfachster Weg)
 
-**Browser-Live-Test steht aus** — manuell pruefen ob OAuth + Create + Vote E2E funktionieren
+**Browser-Live-Test (CC, serverseitig):**
+- POLIS Seite: 200 OK
+- OAuth Client ID: konfiguriert (`Ov23lifSswjpPlnYF6UK`)
+- OAuth Callback: 200 OK
+- Cloudflare Worker Proxy: 200 OK
+- QR Session Create: funktioniert (session_id + challenge + deep_link)
+- QR Session Polling: funktioniert (status: pending → authenticated nach App-Scan)
+- pnyx-community Repo: 200 OK, 1 existierendes POLIS Issue (#2) mit korrekten Labels
+- OAuth Token-Exchange: verdrahtet (callback.html → Worker → sessionStorage)
+- **Fazit: Serverseitig alles verdrahtet.** Browser OAuth-Login braucht manuellen Test (Redirect).
+
+**Empfehlung:**
+- Option C bestätigt: Mobile = Authenticator, Browser = Ticket-Erstellung
+- Nächster Schritt: Gio testet OAuth Login im Browser manuell, erstellt Test-Ticket
+- Falls Browser-Flow gruen: Mobile POLIS-Tab kann auf "Im Browser erstellen" umgebaut werden statt Coming-Soon
 
 ### POLIS Tickets Coming-Soon Modal
 - `Alert.alert("Σύντομα", ...)` ersetzt durch professionelles Modal
