@@ -63,6 +63,15 @@
 - OAuth Token-Exchange: verdrahtet (callback.html → Worker → sessionStorage)
 - **Fazit: Serverseitig alles verdrahtet.** Browser OAuth-Login braucht manuellen Test (Redirect).
 
+**WebFetch-Test der Live-Seite:**
+- POLIS UI zeigt zwei Auth-Pfade: "Login mit App" (QR) + "Σύνδεση με GitHub" (OAuth)
+- QR-Login: authentifiziert ekklesia Identity, gibt aber KEINEN GitHub Token
+- GitHub OAuth: gibt Token fuer Issue-Erstellung/Voting
+- Kein Ticket-Listing sichtbar (leer, kein Token)
+- Phase-B Modal bei Ticket-Erstellung ohne Auth
+- **OAuth-Login kann NICHT aus CLI getestet werden** — braucht echten Browser mit GitHub Redirect
+- **Gio muss manuell testen:** GitHub Login → Test-Ticket erstellen → Vote
+
 **Empfehlung:**
 - Option C bestätigt: Mobile = Authenticator, Browser = Ticket-Erstellung
 - Nächster Schritt: Gio testet OAuth Login im Browser manuell, erstellt Test-Ticket
