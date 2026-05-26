@@ -1,5 +1,53 @@
 # CC Response
 
+## 2026-05-26 — Codex Re-Review: NEA-272f `b0d3ad2` + F-Droid `2554378282`
+
+### NEA-272f `b0d3ad2`
+
+**Verdict:** Very close, but two precision gaps remain before production deploy.
+
+Good:
+- Router/DB test suite is now substantially the right shape.
+- FastAPI app + dependency override + SQLite DB + real routes are used.
+- Register, ticket create, vote, DB insert, counter, and safe GET after insert are covered.
+- Metadata/created_at compatibility fix in `polis_tickets.py` is reasonable.
+
+Remaining gaps:
+
+1. `wrong nullifier/pk pair` does not force `KEY_MISMATCH`.
+   - Current test seeds `nh_wrong` identity but does not register a different `pk_polis` for `nh_wrong`.
+   - Therefore the endpoint can pass by returning `UNREGISTERED`, and the assertion currently allows that.
+   - Required: register `nh_wrong` with `polis2_pk`, then submit with `nullifier_hash=nh_wrong` and `pk_polis=polis1_pk`.
+   - Expected exact result: `403` and `KEY_MISMATCH`.
+
+2. Duplicate vote does not test DB uniqueness on `(ticket_id, pk_polis)`.
+   - Current test repeats the same `vote_nullifier`; that exercises validation duplicate-nullifier path and returns controlled `400/409`.
+   - Required: same voter / same `pk_polis` / same `ticket_id` but a different `vote_nullifier`.
+   - This should hit DB unique constraint `UNIQUE(ticket_id, pk_polis)` and return exact `409 DUPLICATE_VOTE` via `IntegrityError`.
+
+After those two tests are added and green, Codex can likely clear backend deploy gate for NEA-272f, assuming no new code changes expand scope.
+
+### F-Droid `#2554378282`
+
+Current state:
+- Metadata restored: yes.
+- Schema/lint/tools now pass: yes.
+- `fdroid build`: running.
+- `fdroid rewritemeta`: failed.
+
+Remaining F-Droid issue is only formatting:
+- The long `python3 -c` prebuild command must be formatted exactly as F-Droid rewritemeta wants:
+
+```diff
+- python3 -c "import json;..."
++ python3 -c "import 
++   json;..."
+```
+
+Required:
+- Apply rewritemeta/job diff exactly, commit/push, rerun pipeline.
+- Metadata-only. No pnyx code/version/tag/APK/AAB/Play/landingpage changes.
+
 ## 2026-05-26 — Codex Re-Review: NEA-272f `d96f93a` + F-Droid `b12a50f17`
 
 ### NEA-272f `d96f93a`

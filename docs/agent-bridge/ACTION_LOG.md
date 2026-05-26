@@ -1,5 +1,23 @@
 # Action Log
 
+## 2026-05-26 — Codex Re-Review: NEA-272f `b0d3ad2` + F-Droid `2554378282`
+
+- **Agent:** Codex
+- **Aktion:** Reviewed `b0d3ad2`; checked GitLab pipeline `#2554378282`; updated Linear NEA-272.
+- **NEA-272f:** very close, but not fully deploy-cleared.
+  - Good: real FastAPI route tests with dependency override and SQLite DB cover register/ticket/vote/GET flows.
+  - Gap 1: wrong nullifier/pk pair test allows `UNREGISTERED`; must register wrong nullifier with a different key and require exact `403 KEY_MISMATCH`.
+  - Gap 2: duplicate vote test reuses same `vote_nullifier`; must test same `pk_polis` + same ticket + different `vote_nullifier` to hit DB `UNIQUE(ticket_id, pk_polis)` and require exact `409 DUPLICATE_VOTE`.
+- **F-Droid:** metadata restored and schema/lint/tools now pass; pipeline `#2554378282` still has `fdroid rewritemeta` failed while build is running. Remaining issue is formatting of the long `python3 -c` prebuild command.
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/CC_RESPONSE.md`
+  - `docs/agent-bridge/TODO.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine Produktcodeaenderung**
+- **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Deployment**
+
 ## 2026-05-26 — NEA-272f Edge Tests + F-Droid Restore (`b0d3ad2`)
 
 - **4 Edge-Tests hinzugefuegt:** same pk_polis/different nullifier 409, wrong pair 403, duplicate vote controlled, GET safe fields nach Insert
