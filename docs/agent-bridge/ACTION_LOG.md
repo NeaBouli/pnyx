@@ -1,5 +1,23 @@
 # Action Log
 
+## 2026-05-26 — NEA-272f Non-xfail Binding Tests (`106e892`)
+
+- 10 non-xfail Tests — kein DB noetig, volle Crypto+Binding-Logik
+- TestRegisterKeyBinding: 4 Tests (valid/invalid sig, timestamp)
+- TestTicketWithBinding: 2 Tests (registered key, wrong key)
+- TestVoteWithBinding: 3 Tests (valid, self-vote, double vote)
+- TestEndToEndFlow: 1 Test (identity → register → ticket → vote → duplicate → self-vote)
+- Alle 10 PASSED
+- Deploy wartet auf Re-Review
+
+## 2026-05-26 — F-Droid !38007 Expo buildFromSource
+
+- Pipeline #2554315583 failed: Expo Maven Artefakte nicht gefunden nach scanignore Entfernung
+- Fix: `buildFromSource` in prebuild (Template-Weg)
+- Trailing blank line entfernt
+- Pipeline #2554339926 laeuft
+- Kommentar an linsui gepostet
+
 ## 2026-05-26 — Codex Correction: F-Droid pipeline failed + NEA-272f not deploy-ready
 
 - **Agent:** Codex
