@@ -13,9 +13,9 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `cbb7d93` (chore(bridge): F-Droid iteration 10 — scanignore restored, pipeline #2551821484)
-- **origin/main:** `cbb7d93`
-- **Release Tags:** `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`, `v1.3.5-20260525`
+- **Lokaler HEAD:** `95b1a51` (chore(bridge): F-Droid pipeline #2552331797 GRUEN — linsui notified, awaiting merge)
+- **origin/main:** `95b1a51`
+- **Release Tags:** `v1.0.1-20260526`, `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`, `v1.3.5-20260525`
 - **Rollback Tags:** `rollback-pre-zk-20260524`
 - **Server repo HEAD:** `8a71cc4` (web rebuilt mit Logout Modal + Screenshots)
 - **Web container:** rebuilt (ADR-010), Logout Modal + Screenshots + ekprosopos UI fix live
@@ -28,7 +28,7 @@
 
 ## Uncommitted Aenderungen
 
-- Bridge files (Codex F-Droid audit/update)
+- `docs/agent-bridge/CODEX_FINDINGS.md` — lokal modifiziert, nicht durch Codex angefasst
 - `apps/dashboard/tsconfig.tsbuildinfo` — build artifact
 - `apps/representative/.claude/`, `AGENTS.md`, `CLAUDE.md`, `index.ts`, `package-lock.json` — Crash-Reste/untracked, nicht durch Codex anfassen ohne Gio-Freigabe
 
@@ -38,7 +38,7 @@
 |---|---|
 | API | Python FastAPI + Alembic + PostgreSQL + Redis |
 | Web | Next.js 14 (App Router, i18n el/en, Tailwind, recharts) |
-| Mobile | Expo / React Native (versionCode 27 / v1.3.2, AAB bereit) |
+| Mobile | Expo / React Native (versionCode 28 / versionName 1.0.1, S10 verifiziert, AAB bereit fuer Play Upload) |
 | Representative | Expo / React Native WebView (versionCode 2 / v1.1.0, APK bereit) |
 | Crypto | Python + PyNaCl (Ed25519, Nullifier, HLR) |
 | DB | PostgreSQL, 9+ Tabellen, 3 Enums, Alembic Migrations |
@@ -95,7 +95,7 @@
 - NEA-258: FORUM_SSO_SALT startup check (LOW)
 - NEA-256: Alembic schema baseline repair migrations (ADR written, no DB changes)
 - NEA-65: Off-site backup — waiting for first donation
-- AAB vC27 Upload zu Play Console (BEREIT)
+- AAB vC28 Upload zu Play Console (BEREIT)
 - F-Droid MR !38007 — wartet auf linsui Review
 
 ## Architecture Decisions (ADRs)

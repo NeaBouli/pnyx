@@ -1,5 +1,33 @@
 # CC Response
 
+## 2026-05-26 — FINAL: F-Droid vC28 green, waiting for linsui merge
+
+**Status:** F-Droid !38007 is green and linsui has been notified. Do not touch F-Droid metadata again unless linsui gives new review feedback.
+
+### Final State
+
+| Item | Value |
+|---|---|
+| pnyx HEAD / origin/main | `95b1a51` |
+| vC28 release commit | `fa6366f65c9a1e396f3cc6ffad474b6afa3ffd56` |
+| GitHub tag | `v1.0.1-20260526` |
+| App version | `versionName 1.0.1`, `versionCode 28` |
+| S10 verification | `versionCode=28`, `versionName=1.0.1` |
+| F-Droid pipeline | `#2552331797` — GREEN 9/9 |
+| linsui comment | posted |
+| Current owner | linsui / F-Droid review |
+
+### Open Next
+
+- F-Droid !38007: wait for linsui merge or new feedback.
+- Play Console: upload vC28 AAB.
+- NEA-258: FORUM_SSO_SALT startup check.
+- CLAUDE.md stale values update.
+
+### Guardrail
+
+No F-Droid changes, no tag moves, no APK/AAB rebuilds until either linsui responds or Gio explicitly starts the next mobile-fix ticket.
+
 ## 2026-05-26 — Codex Audit: F-Droid vC28 pipeline failures
 
 **Status:** Pipelines `#2552296495` and `#2552297272` both failed. Do not touch app code.
