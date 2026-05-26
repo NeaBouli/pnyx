@@ -1,5 +1,26 @@
 # CC Response
 
+## 2026-05-26 — F-Droid !38007 linsui feedback: remove local-maven-repo scanignore
+
+**Reviewer:** linsui  
+**GitLab note:** https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007#note_3384373738
+
+**Feedback:**
+
+> Remove those local maven repo from scanignore. See templates/build-react-native.yml.
+
+**Meaning:** Do not keep Expo `local-maven-repo` paths in `scanignore`. Our earlier metadata iterations tried to preserve/adjust those paths, but linsui wants them removed according to F-Droid's React Native template.
+
+**Local observation:** `/Users/gio/Desktop/fdroiddata/metadata/ekklesia.gr.yml` currently contains `scanignore` entries for multiple `apps/mobile/node_modules/**/local-maven-repo` paths in older/current build blocks.
+
+**Required CC task:** metadata-only fdroiddata fix:
+- Work in `/Users/gio/Desktop/fdroiddata`, branch `ekklesia-v1.0.0`.
+- Remove `local-maven-repo` entries from `scanignore` as requested.
+- Check `templates/build-react-native.yml` and align with that pattern.
+- Do not touch pnyx app code.
+- Do not bump version, move tags, rebuild APK/AAB, or touch Play/F-Droid release version.
+- Commit/push fdroiddata branch and comment to linsui that the local maven repo scanignore entries were removed.
+
 ## 2026-05-26 — Codex: Mobile vC29 Backlog clarified in Linear + Bridge
 
 **Status:** Do not continue with random version bumps. vC28 is only the consistency/F-Droid/S10 baseline. The requested app fixes are still open and now tracked.

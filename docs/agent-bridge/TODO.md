@@ -17,6 +17,7 @@
 - [ ] Weekly Push/Digest Label: Linear free issue limit blockiert neues Ticket; vorerst unter NEA-275 getrackt. Exakten Screen/String finden, S10 validieren, ggf. fixen.
 - [ ] ZK/Semaphore Wizard: Linear free issue limit blockiert neues Ticket; Kommentar auf NEA-249 + NEA-275. Nur Onboarding/Kompatibilitaetscheck, keine echten Proofs. NEA-249 bleibt fuer echte Mobile-Prover blocked.
 - [ ] F-Droid MR !38007: Pipeline #2552331797 GRUEN (9/9), Kommentar an linsui gepostet, wartet auf Merge
+- [ ] F-Droid !38007 linsui feedback: remove Expo `local-maven-repo` paths from `scanignore` in fdroiddata metadata; see GitLab note `3384373738` and `templates/build-react-native.yml`. Metadata-only fix; no pnyx app code, no version bump, no APK/AAB rebuild.
 - [ ] AAB vC28 Upload zu Play Console (lokal gebaut, `app-play-release.aab`)
 - [ ] NEA-258: FORUM_SSO_SALT Startup-Check (LOW follow-up)
 - [ ] CLAUDE.md Aktualisierung (INFO — stale CX33, 22 Module, Next 14)

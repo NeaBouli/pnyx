@@ -1,5 +1,14 @@
 # Action Log
 
+## 2026-05-26 — F-Droid !38007 linsui feedback
+
+- **GitLab note:** https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007#note_3384373738
+- **Reviewer:** linsui
+- **Message:** "Remove those local maven repo from scanignore. See templates/build-react-native.yml."
+- **Codex interpretation:** fdroiddata metadata must remove Expo `local-maven-repo` paths from `scanignore`; previous scanignore preservation/hoisting is no longer the desired direction.
+- **Local check:** `/Users/gio/Desktop/fdroiddata/metadata/ekklesia.gr.yml` still contains `apps/mobile/node_modules/**/local-maven-repo` scanignore paths in build blocks.
+- **Guardrail:** metadata-only fdroiddata change. Do not touch pnyx app code, versionCode/versionName, tags, APK/AAB, Play, or landingpage.
+
 ## 2026-05-26 — NEA-272f Strict Title + Endpoint Tests (`112adf5`)
 
 - `title_hash` required (kein Default/Fallback)
