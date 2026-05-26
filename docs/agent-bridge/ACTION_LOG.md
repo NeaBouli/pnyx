@@ -8,6 +8,11 @@
 - Commit: `22359e9`
 - Static deploy noetig (Server pull + Web rebuild)
 - Kein versionCode bump, kein F-Droid/Play
+- **DEPLOYED:** Server `66aa8f8`, Web rebuilt (ADR-010), live verifiziert:
+  - 0 deutsche QR-Strings
+  - 3 griechische QR-Strings
+  - 0 `isDesktop` Guards
+  - 5 Auth-State-Checks
 
 ## 2026-05-26 — Codex Linear + Bridge for vC29 Mobile Backlog
 
