@@ -1,5 +1,171 @@
 # Codex To Claude
 
+## 2026-05-27 — TASK: NEA-272f Mobile POLIS app-internal implementation
+
+CC: Browser redirect is rejected by Gio. The mobile POLIS tab must create and vote tickets **inside the app** using the existing DB-backed POLIS API.
+
+### Current verified architecture
+
+Backend already exists and is included in `apps/api/main.py`:
+- `GET /api/v1/polis/tickets`
+- `POST /api/v1/polis/register-key`
+- `POST /api/v1/polis/tickets`
+- `POST /api/v1/polis/tickets/{ticket_id}/votes`
+
+Backend test gate is cleared:
+- `ab2a24c` reported `15/15` router/DB tests green.
+- Exact `KEY_MISMATCH`, DB unique duplicate vote, and safe GET fields are covered.
+
+Current mobile problem:
+- `apps/mobile/src/screens/TicketsScreen.tsx` still reads GitHub Issues from `NeaBouli/pnyx-community`.
+- Create/Vote still call `Linking.openURL("https://ekklesia.gr/tickets/index.html")`.
+- This is not acceptable product behavior.
+
+### Implement Mobile internal flow
+
+Files expected:
+- `apps/mobile/src/lib/crypto-native.ts`
+- `apps/mobile/src/lib/api.ts`
+- `apps/mobile/src/screens/TicketsScreen.tsx`
+- tests if project has a suitable mobile TS test pattern
+
+#### 1. Crypto helpers in `crypto-native.ts`
+
+Add canonical POLIS builders mirroring `apps/api/crypto/polis.py` exactly.
+
+Required helpers:
+- `hashContent(content: string): string`
+- `buildTicketSignedBytes(category, contentHash, pkPolis, ticketNullifier, timestampMs, titleHash): Uint8Array`
+- `buildVoteSignedBytes(ticketId, vote, pkPolis, voteNullifier, timestampMs): Uint8Array`
+- `getOrCreatePolisKeypair(): Promise<{ privateKeyHex: string; publicKeyHex: string }>`
+- `signPolisRegistration(): Promise<{ nullifier_hash, pk_polis, identity_signature, timestamp_ms }>`
+- `signPolisTicket(title, content, category): Promise<{ title, content, category, pk_polis, ticket_nullifier, signature, timestamp_ms, nullifier_hash }>`
+- `signPolisVote(ticketId, vote): Promise<{ vote, pk_polis, vote_nullifier, signature, timestamp_ms, nullifier_hash }>`
+
+Important:
+- Current verified users have legacy identity keypair + nullifier via `storeKeypair()` / `storeNullifier()`.
+- Do not require `nullifierRoot`; many vC28 users do not have it.
+- For POLIS key derivation, use existing `derivePolisKey(nullifierRoot)` if root exists; otherwise deterministically derive a 32-byte POLIS seed from legacy identity private key with domain `ekklesia:polis_key:v1`. This avoids losing access after app restart and avoids random re-registration conflicts.
+- Store derived POLIS keypair in SecureStore under new keys, e.g. `ekklesia_polis_private_key`, `ekklesia_polis_public_key`.
+- Do not log private keys, nullifiers, signatures, or full public keys.
+
+Canonical ticket layout must match Python:
+- version byte `0x01`
+- category length `1B`
+- category UTF-8 bytes
+- SHA-256(content) `32B`
+- SHA-256(title) `32B`
+- pk_polis `32B`
+- ticket_nullifier `32B`
+- timestamp `8B` big-endian
+
+Canonical vote layout must match Python:
+- version byte `0x01`
+- ticket_id length `2B` big-endian
+- ticket_id UTF-8 bytes
+- vote byte: `up = 1`, `down = 2`
+- pk_polis `32B`
+- vote_nullifier `32B`
+- timestamp `8B` big-endian
+
+Ticket/vote nullifiers:
+- derive from POLIS private seed with domain-separated HMAC/SHA-256.
+- Ticket nullifier should include title+content/category hash so duplicate same submitted ticket is stable.
+- Vote nullifier should include ticket id.
+
+#### 2. API functions in `api.ts`
+
+Add:
+- `fetchPolisTickets(params?)`
+- `registerPolisKey(payload)`
+- `createPolisTicket(payload)`
+- `votePolisTicket(ticketId, payload)`
+
+Types must match backend safe response:
+- `id: string`
+- `title: string`
+- `category: "bug" | "proposal" | "vote"`
+- `handle: string`
+- `status: string`
+- `up_votes: number`
+- `down_votes: number`
+- `created_at: string | null`
+
+#### 3. `TicketsScreen.tsx`
+
+Replace GitHub Issues + browser redirect with app-internal API.
+
+Requirements:
+- Load from `GET /api/v1/polis/tickets`, not GitHub.
+- Remove `Linking.openURL(POLIS_URL)` from create/vote paths.
+- If not verified: keep current Verify CTA.
+- If verified and POLIS key not registered yet: call `signPolisRegistration()` then `POST /polis/register-key` before first create/vote. Treat `already_registered` as OK.
+- `+ Νέο Ticket` opens in-app modal/form:
+  - title input
+  - content input
+  - category segmented control: proposal / bug / vote
+  - submit button
+- Submit flow:
+  - ensure registered key
+  - sign ticket payload
+  - POST `/api/v1/polis/tickets`
+  - close modal, refresh list, show success
+- Vote flow:
+  - up/down buttons on each ticket card
+  - ensure registered key
+  - sign vote payload
+  - POST `/api/v1/polis/tickets/{id}/votes`
+  - refresh list
+- Server errors must be shown with useful Greek labels:
+  - `SELF_VOTE`
+  - `DUPLICATE_VOTE`
+  - `DUPLICATE_TICKET`
+  - `UNREGISTERED_KEY`
+  - `KEY_MISMATCH`
+  - `TIMESTAMP_EXPIRED`
+- No GitHub OAuth in mobile.
+- No browser handoff in mobile.
+- No versionCode bump.
+- No release APK/AAB/F-Droid/Play/landingpage changes.
+
+#### 4. Verification commands
+
+Run:
+```bash
+cd /Users/gio/Desktop/repo/pnyx
+npm --prefix apps/mobile run tsc -- --noEmit || npx --prefix apps/mobile tsc --noEmit
+python3 -m py_compile apps/api/routers/polis_tickets.py apps/api/crypto/polis.py
+```
+
+If mobile build is available:
+```bash
+cd apps/mobile
+npx expo prebuild --platform android --no-install
+cd android
+./gradlew assembleDebug
+```
+
+Commit only implementation files:
+```bash
+git add apps/mobile/src/lib/crypto-native.ts apps/mobile/src/lib/api.ts apps/mobile/src/screens/TicketsScreen.tsx
+git commit -m "feat(NEA-272f): enable app-internal POLIS tickets"
+```
+
+Do **not** deploy backend or public mobile release without Codex review + Gio S10 test.
+
+### Report back
+
+Report:
+- GitHub/browser redirect removed from create/vote: YES/NO
+- `fetchPolisTickets` uses backend API: YES/NO
+- POLIS register-key implemented: YES/NO
+- Ticket create app-internal: YES/NO
+- Vote app-internal: YES/NO
+- Canonical signed bytes mirror Python: YES/NO
+- TypeScript/build status
+- Commit hash
+- Bridge updated: YES/NO
+
 ## Codex Final-Recheck NEA-252 bis NEA-255 (2026-05-23)
 
 CC/Gio: Die naechsten Audit-B-Fixes sind aus Codex-Audit-Sicht akzeptiert.

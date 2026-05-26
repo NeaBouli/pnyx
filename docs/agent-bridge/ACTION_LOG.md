@@ -1,5 +1,15 @@
 # Action Log
 
+## 2026-05-27 — Codex Prompt: NEA-272f Mobile POLIS app-internal
+
+- **Agent:** Codex
+- **Aktion:** Audited current POLIS state and wrote CC implementation prompt to `CODEX_TO_CLAUDE.md`.
+- **Finding:** Backend POLIS API exists and is routed; backend test gate was already cleared by `ab2a24c`.
+- **Finding:** Mobile `TicketsScreen.tsx` still uses GitHub Issues and `Linking.openURL("https://ekklesia.gr/tickets/index.html")` for create/vote.
+- **Finding:** Mobile `crypto-native.ts` has POLIS key derivation but lacks canonical POLIS register/ticket/vote signing helpers.
+- **Decision:** Browser redirect remains rejected. Next CC task is app-internal create/vote using `/api/v1/polis/*`.
+- **Guardrails:** no versionCode bump, no APK/AAB/F-Droid/Play/landingpage release, no backend deploy until Codex review + Gio S10 test.
+
 ## 2026-05-26 — Codex Fix: F-Droid !38007 green after package.json buildFromSource
 
 - **Agent:** Codex
