@@ -21,6 +21,14 @@
 - Localization issue found: QR button/modal in `docs/tickets/index.html` contains hardcoded German strings despite EL/EN page model.
 - Linear NEA-272 updated with this evidence and the localization bug.
 
+### NEA-272 GitHub Login Code Check
+
+- GitHub login is the original POLIS GitHub-backend auth path.
+- `docs/tickets/auth/callback.html` exchanges OAuth code through Cloudflare Worker and stores `polis_token` in `sessionStorage`.
+- `docs/tickets/polis.js` uses that token for GitHub Issues API: create ticket, +1 reaction vote, remove vote, comments, claim, spam flag.
+- QR/App login and GitHub login serve different purposes: QR verifies citizen/browser session; GitHub OAuth gives write access to `NeaBouli/pnyx-community`.
+- Linear NEA-272 updated. CC must not remove either path without Gio approval.
+
 ## 2026-05-26 — Codex F-Droid !38007 Audit
 
 - Audited pnyx bridge, fdroiddata branch, GitLab MR !38007 pipelines, local APK/AAB outputs.

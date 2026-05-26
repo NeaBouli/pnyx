@@ -56,6 +56,30 @@ Debug APKs on S10 are OK. No public APK on landingpage, no AAB Play upload, no F
 
 **Next CC task:** Fix QR UI localization first (EL default + EN via language toggle), then proceed with NEA-272 Option C: Mobile POLIS tab should guide/open browser flow and use the app as authenticator. No version bump or public release changes.
 
+## 2026-05-26 — NEA-272 Update: GitHub Login Purpose
+
+**Question from Gio:** What is the GitHub login button on the POLIS page for?
+
+**Code answer:** It is the original POLIS GitHub-backend auth path for support/community tickets.
+
+Relevant files:
+- `docs/tickets/config.js`: repo `NeaBouli/pnyx-community`, GitHub OAuth `clientId`, Cloudflare Worker token proxy, callback `/tickets/auth/callback.html`.
+- `docs/tickets/auth/callback.html`: exchanges GitHub OAuth code through the Cloudflare Worker and stores `polis_token` in `sessionStorage`.
+- `docs/tickets/polis.js`: uses `sessionStorage.polis_token` for GitHub API calls.
+
+Capabilities after GitHub OAuth:
+- Create POLIS ticket: `POST /repos/NeaBouli/pnyx-community/issues`
+- Vote on ticket: GitHub `+1` reaction
+- Remove vote: delete reaction
+- Load own votes: list reactions
+- Comment/claim/spam flag via GitHub Issues API
+
+Important distinction:
+- QR/App Login verifies the citizen/browser session through the ekklesia mobile app.
+- GitHub Login gives write permission to GitHub Issues/Reactions.
+
+For NEA-272 Option C, CC must decide/report whether the vC29 MVP should keep both auth paths (QR verification + GitHub OAuth for issue write access), or whether a later API proxy should remove the GitHub-account requirement. Do not remove either path without Gio approval.
+
 ## 2026-05-26 — FINAL: F-Droid vC28 green, waiting for linsui merge
 
 **Status:** F-Droid !38007 is green and linsui has been notified. Do not touch F-Droid metadata again unless linsui gives new review feedback.
