@@ -1,6 +1,16 @@
 # Action Log
 
-## 2026-05-26 — NEA-272e Mobile POLIS Tab aktiviert
+## 2026-05-26 — NEA-272f App-internal POLIS Diagnose (CC)
+
+- **API Endpoints:** NEIN — kein Router fuer POLIS tickets
+- **DB Tabellen:** NEIN — keine in `models.py`
+- **Crypto Validation:** JA — `polis.py` komplett (validate_ticket, validate_ticket_vote, 14 Tests)
+- **Mobile Signing:** TEILWEISE — `derivePolisKey()` vorhanden, `buildTicketSignedBytes()` FEHLT
+- **Empfehlung:** Option A (DB-backed), kein GitHub-Account noetig
+- **Fehlend:** Migration + API Router + Mobile payload builders + Mobile UI
+- **Kein Code ohne Gio-Freigabe**
+
+## 2026-05-26 — NEA-272e Mobile POLIS Tab aktiviert (REJECTED by Gio)
 
 - `+ Νέο Ticket` und Vote Button oeffnen jetzt Browser POLIS via `Linking.openURL`
 - Coming-Soon Modal ersetzt durch "Άνοιγμα POLIS" Flow-Erklaerung
