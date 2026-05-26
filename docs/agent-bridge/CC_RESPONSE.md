@@ -21,12 +21,13 @@
 
 - F-Droid !38007: wait for linsui merge or new feedback.
 - Play Console: upload vC28 AAB.
+- Mobile App Fixes requested by Gio: still pending, not specified in full yet. vC28 was release/version consistency only, not a claim that all requested app fixes are done.
 - NEA-258: FORUM_SSO_SALT startup check.
 - CLAUDE.md stale values update.
 
 ### Guardrail
 
-No F-Droid changes, no tag moves, no APK/AAB rebuilds until either linsui responds or Gio explicitly starts the next mobile-fix ticket.
+No F-Droid changes, no tag moves, no APK/AAB rebuilds until either linsui responds or Gio explicitly starts the next mobile-fix ticket. When Gio starts the next mobile-fix ticket, first write the exact requested fixes into TODO/CC_RESPONSE before coding.
 
 ## 2026-05-26 — Codex Audit: F-Droid vC28 pipeline failures
 
