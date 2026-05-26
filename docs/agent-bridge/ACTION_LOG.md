@@ -1,5 +1,14 @@
 # Action Log
 
+## 2026-05-26 — F-Droid !38007 linsui feedback: remove local-maven-repo scanignore
+
+- linsui: "Remove those local maven repo from scanignore. See templates/build-react-native.yml."
+- Fix: alle `local-maven-repo` Pfade aus scanignore entfernt (beide Build-Eintraege)
+- Nur `.gradle` scanignore bleiben (wie Template)
+- CurrentVersion/Code/Commit/Tag unveraendert
+- Kommentar an linsui gepostet
+- Pipeline #2554315583 laeuft
+
 ## 2026-05-26 — Codex NEA-272f `112adf5` Re-Review
 
 - **Agent:** Codex
