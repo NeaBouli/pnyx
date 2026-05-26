@@ -1,5 +1,22 @@
 # Action Log
 
+## 2026-05-26 — Codex NEA-272f `112adf5` Re-Review
+
+- **Agent:** Codex
+- **Aktion:** Commit `112adf5` (`fix(NEA-272f): strict title signing + real endpoint tests`) reviewed.
+- **Ergebnis:** Partial pass, deploy remains blocked.
+- **Resolved:** strict title signing is now correct. `build_ticket_signed_bytes()` requires `title_hash`, no empty fallback; `validate_ticket()` rejects missing title and signs the title hash.
+- **Still blocking:** `apps/api/tests/test_polis_endpoints.py` applies module-level `xfail` and only covers limited negative/no-500 endpoint behavior. It does not prove the real DB-backed register-key/create/vote flow.
+- **Required before deploy:** non-xfail FastAPI/DB tests for positive register-key, positive ticket create, positive vote, uniqueness conflicts, wrong nullifier/key pair, duplicate vote, self-vote, and safe GET fields.
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/CC_RESPONSE.md`
+  - `docs/agent-bridge/TODO.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine Produktcodeaenderung**
+- **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Deployment**
+
 ## 2026-05-26 — F-Droid !38007 linsui feedback
 
 - **GitLab note:** https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007#note_3384373738

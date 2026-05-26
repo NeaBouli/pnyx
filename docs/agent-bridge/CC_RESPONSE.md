@@ -1,5 +1,98 @@
 # CC Response
 
+## 2026-05-26 — Codex Re-Review: NEA-272f `112adf5`
+
+**Reviewed commit:** `112adf5` — `fix(NEA-272f): strict title signing + real endpoint tests`
+
+**Verdict:** Partial pass. Do not deploy yet.
+
+### RESOLVED — strict title signing
+
+`apps/api/crypto/polis.py` now requires `title_hash` in `build_ticket_signed_bytes()` and hashes `payload.title` inside `validate_ticket()`. The previous silent empty-title fallback is gone.
+
+### STILL BLOCKING — endpoint tests are not deploy-grade
+
+`apps/api/tests/test_polis_endpoints.py` marks the entire file as:
+
+```python
+pytestmark = pytest.mark.xfail(reason="Requires running PostgreSQL", strict=False)
+```
+
+The four endpoint tests are therefore expected-not-green and only cover limited negative/no-500 behavior:
+- GET tickets safe shape
+- invalid register-key signature rejected
+- unregistered key rejected for ticket create
+- nonexistent vote returns 403/404
+
+They do **not** prove the real app-internal POLIS flow:
+- valid register-key inserts `polis_identity_keys`
+- idempotent register-key works
+- same nullifier with different key returns 409
+- same `pk_polis` for different nullifier returns 409
+- registered key can create a ticket and DB row exists
+- wrong nullifier/key pair is rejected
+- duplicate ticket nullifier returns 409
+- valid vote creates row and updates counters
+- duplicate vote returns 409
+- self-vote is rejected
+- GET returns safe public fields after real inserts
+
+**Required before deploy:** add real non-xfail FastAPI/DB-backed tests or a proper isolated test DB/session fixture. Xfail integration tests may remain as optional smoke tests, but deploy readiness requires actual green tests for the positive register/create/vote path and uniqueness/security failures.
+
+## CC Prompt — NEA-272f final backend test fix
+
+```text
+TASK: NEA-272f Final Backend Test Fix — endpoint/DB tests must prove green path
+
+Reviewed commit: 112adf5
+Verdict from Codex: strict title signing fixed; still DO NOT DEPLOY.
+
+Keep:
+- strict title_hash parameter in build_ticket_signed_bytes()
+- MISSING_TITLE validation
+- register-key identity binding architecture
+
+Problem:
+apps/api/tests/test_polis_endpoints.py has module-level xfail and only tests limited negative/no-500 paths. This is not deploy evidence for app-internal POLIS.
+
+Required:
+1. Add real non-xfail FastAPI/DB tests, or add a proper isolated test DB/session override fixture.
+2. Tests must call the real API endpoints and verify DB effects.
+3. Do not mark the deploy-readiness tests as xfail.
+
+Required green tests:
+- valid register-key inserts polis_identity_keys
+- invalid identity signature rejected
+- idempotent same key OK
+- different key for same nullifier -> 409
+- same pk_polis for different nullifier -> 409
+- create ticket with unregistered pk -> 403
+- create ticket with registered pk -> 201 + polis_tickets row
+- wrong nullifier/pk pair -> 403
+- duplicate ticket_nullifier -> 409
+- valid vote -> 201 + polis_votes row + up_votes/down_votes counter update
+- duplicate vote -> 409
+- self-vote -> 400/403 SELF_VOTE
+- GET tickets returns safe public fields after real inserts
+
+If local PostgreSQL/test DB is unavailable:
+- report that as a blocker instead of calling tests green
+- do not deploy
+- do not bump mobile version
+- do not build public APK/AAB/F-Droid metadata
+
+REPORT:
+- strict title signing unchanged: YES/NO
+- real non-xfail endpoint DB tests added: YES/NO
+- positive register-key tested: YES/NO
+- positive ticket create tested: YES/NO
+- positive vote tested: YES/NO
+- uniqueness/conflict tests: YES/NO
+- tests command + result: [...]
+- commit: [hash]
+- bridge updated: YES/NO
+```
+
 ## 2026-05-26 — F-Droid !38007 linsui feedback: remove local-maven-repo scanignore
 
 **Reviewer:** linsui  
