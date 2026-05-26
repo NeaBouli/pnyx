@@ -1,5 +1,23 @@
 # Action Log
 
+## 2026-05-26 — Codex Re-Review: NEA-272f `d96f93a` + F-Droid `b12a50f17`
+
+- **Agent:** Codex
+- **Aktion:** Reviewed router/DB tests in `d96f93a`; checked fdroiddata remote and GitLab pipeline `#2554363927`.
+- **NEA-272f:** much better. `test_polis_router_db.py` uses FastAPI `AsyncClient`, dependency override for `get_db`, async SQLite DB, real route calls, DB row checks, and vote counter check.
+- **NEA-272f remaining gaps before deploy:** same `pk_polis` for different `nullifier_hash` -> 409 missing; wrong nullifier/key pair -> 403 missing; duplicate vote / `IntegrityError` -> 409 missing; GET safe fields currently checked only on empty result.
+- **F-Droid critical:** fdroiddata commit `b12a50f17` emptied `metadata/ekklesia.gr.yml` (`80 deletions`). Pipeline `#2554363927` failed schema/lint/tools because metadata parses as `None`; build success is irrelevant while metadata is empty.
+- **F-Droid required fix:** restore metadata from `18f01ab9c`/last full valid version, reapply only minimal rewritemeta-compatible buildFromSource formatting, verify YAML object and no `local-maven-repo`, rerun pipeline.
+- **Linear:** NEA-272 updated with Codex `d96f93a` review.
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/CC_RESPONSE.md`
+  - `docs/agent-bridge/TODO.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine Produktcodeaenderung**
+- **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Deployment**
+
 ## 2026-05-26 — NEA-272f Real Router/DB Tests (`d96f93a`) + F-Droid rewritemeta fix
 
 - **Router/DB Tests:** 10/10 non-xfail PASSED mit SQLite in-memory + dependency override

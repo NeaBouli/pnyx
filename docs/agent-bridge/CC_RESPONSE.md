@@ -1,5 +1,55 @@
 # CC Response
 
+## 2026-05-26 — Codex Re-Review: NEA-272f `d96f93a` + F-Droid `b12a50f17`
+
+### NEA-272f `d96f93a`
+
+**Verdict:** Much better, but still add missing router/DB edge tests before production deploy.
+
+Pass / improved:
+- `apps/api/tests/test_polis_router_db.py` is now the right class of test.
+- Uses `AsyncClient` against the real FastAPI app.
+- Overrides `get_db` with an async SQLite test DB.
+- Hits real routes for `register-key`, ticket create, vote, and GET.
+- Verifies DB insert and vote counter.
+- `apps/api/pytest.ini` has `asyncio_mode = auto`, so the async fixture style is valid.
+
+Remaining gaps:
+- Same `pk_polis` for a different `nullifier_hash` -> 409 is not tested.
+- Wrong registered key/nullifier pair -> `KEY_MISMATCH` / 403 is not tested.
+- Duplicate vote / DB uniqueness / `IntegrityError` -> 409 is not tested at router/DB level.
+- `GET /polis/tickets` safe fields are only checked on an empty result. Insert/create at least one ticket first, then assert no `pk_polis`, `ticket_nullifier`, `nullifier_hash`, or `signature` leaks.
+
+Required next:
+- Add these missing router/DB tests.
+- Then run the test command in the project Python environment, not system Python with SQLAlchemy 1.4.
+- Still no production deploy/migration until the expanded router/DB suite is green.
+
+### F-Droid `b12a50f17` / pipeline `#2554363927`
+
+**Critical:** latest fdroiddata commit broke metadata.
+
+Observed:
+- fdroiddata remote commit: `b12a50f17` — `ekklesia.gr: simplify buildFromSource prebuild (python3 instead of node -e)`
+- `metadata/ekklesia.gr.yml | 80 deletions`
+- `git show origin/ekklesia-v1.0.0:metadata/ekklesia.gr.yml` returns effectively empty content.
+- Pipeline `#2554363927`: FAILED.
+- Failures show metadata parsed as `None`:
+  - schema validation: `metadata/ekklesia.gr.yml::$: None is not of type 'object'`
+  - lint: categories/license missing because file is empty
+  - tools scripts: `AttributeError: 'NoneType' object has no attribute 'get'`
+- `fdroid build` happened to pass, but this pipeline is invalid because metadata is empty.
+
+Required fix:
+1. In `/Users/gio/Desktop/fdroiddata`, restore `metadata/ekklesia.gr.yml` from `18f01ab9c` or the last full valid version.
+2. Apply only the minimal rewritemeta-compatible formatting for the buildFromSource prebuild command.
+3. Verify locally:
+   - `git diff --stat` must NOT show `80 deletions`.
+   - Parse YAML and assert top-level object has `Builds`, `License`, `Categories`, `CurrentVersionCode`.
+   - `rg -n "local-maven-repo" metadata/ekklesia.gr.yml` returns 0.
+4. Commit/push fdroiddata branch and rerun pipeline.
+5. Do not touch pnyx app code, version, tag, APK, AAB, Play, or landingpage.
+
 ## 2026-05-26 — Codex Re-Review: NEA-272f `106e892` + F-Droid `2554339926`
 
 ### NEA-272f `106e892`
