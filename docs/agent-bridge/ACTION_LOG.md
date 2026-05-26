@@ -13,6 +13,14 @@
 - **POLIS Code-Sichtung:** Browser/static POLIS und QR-Auth existieren teilweise (`docs/tickets/*`, `polis_qr.py`, `PolisLoginScreen.tsx`), aber Mobile `TicketsScreen.tsx` listet nur GitHub Issues und blockiert Create/Vote mit Phase-B Modal.
 - **Naechste Regel:** NEA-272 beginnt mit Diagnose des Browser-Flows. Keine Implementation, kein Version-Bump, kein public APK/AAB/F-Droid Update vor Gio-Abnahme.
 
+### NEA-272 Live QR Test by Gio
+
+- Gio clicked `Login mit App` on `https://ekklesia.gr/tickets/index.html`, scanned the QR with the S10 app, and was verified in the browser.
+- Server logs confirmed `GET /api/v1/polis/qr-session` + polling and `POST /api/v1/polis/qr-auth` with `200 OK`.
+- Latest `citizen_votes` query did not show a fresh row from today; QR auth is confirmed, ticket/reaction persistence still needs OAuth/GitHub flow confirmation.
+- Localization issue found: QR button/modal in `docs/tickets/index.html` contains hardcoded German strings despite EL/EN page model.
+- Linear NEA-272 updated with this evidence and the localization bug.
+
 ## 2026-05-26 — Codex F-Droid !38007 Audit
 
 - Audited pnyx bridge, fdroiddata branch, GitLab MR !38007 pipelines, local APK/AAB outputs.

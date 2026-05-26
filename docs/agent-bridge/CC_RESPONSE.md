@@ -39,6 +39,23 @@ Start NEA-272 with diagnosis, not implementation:
 
 Debug APKs on S10 are OK. No public APK on landingpage, no AAB Play upload, no F-Droid metadata/tag update until Gio confirms all vC29 app fixes are accepted.
 
+## 2026-05-26 — NEA-272 Update: Real QR browser flow tested by Gio
+
+**User test:** Gio clicked `Login mit App` on `https://ekklesia.gr/tickets/index.html`, scanned the QR code with the S10 app, got verified, and proceeded in the browser.
+
+**Server log evidence:**
+- `GET /api/v1/polis/qr-session` returned `200 OK`.
+- Repeated `GET /api/v1/polis/qr-session/{session_id}` polling returned `200 OK`.
+- `POST /api/v1/polis/qr-auth` returned `200 OK`.
+
+**DB nuance:** A fresh `citizen_votes` row from today was not visible in the latest `citizen_votes` query. Treat QR authentication as confirmed; do not yet claim ticket create/reaction/vote persistence is fully confirmed unless OAuth/GitHub ticket/reaction test is completed.
+
+**Localization bug found:** `docs/tickets/index.html` has hardcoded German QR UI strings:
+- Button default: `Login mit App`
+- Modal title/text/status/buttons: `Login mit εκκλησία App`, `Scanne den QR-Code mit der App`, `Laden...`, `Warte auf App-Scan...`, `Abbrechen`, `Fehler beim Laden`, `Authentifiziert!`, `Session abgelaufen`
+
+**Next CC task:** Fix QR UI localization first (EL default + EN via language toggle), then proceed with NEA-272 Option C: Mobile POLIS tab should guide/open browser flow and use the app as authenticator. No version bump or public release changes.
+
 ## 2026-05-26 — FINAL: F-Droid vC28 green, waiting for linsui merge
 
 **Status:** F-Droid !38007 is green and linsui has been notified. Do not touch F-Droid metadata again unless linsui gives new review feedback.
