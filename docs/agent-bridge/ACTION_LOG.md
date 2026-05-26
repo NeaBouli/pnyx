@@ -1,5 +1,25 @@
 # Action Log
 
+## 2026-05-27 — Codex Re-Review: NEA-272f Mobile POLIS `505979c`
+
+- **Agent:** Codex
+- **Aktion:** Fix-Commit `505979c` gegen vorherige Codex-Blocker geprueft.
+- **Ergebnis:** Vorherige Mobile-POLIS-Blocker geloest.
+- **Geprueft:**
+  - `@noble/curves/ed25519.js` Importpfad in `crypto-native.ts`, `PolisLoginScreen.tsx`, `TicketsScreen.tsx`.
+  - Keine `randomPrivateKey`-Nullifier mehr in Mobile POLIS.
+  - Deterministische domain-separated `derivePolisTicketNullifier()` und `derivePolisVoteNullifier()` vorhanden.
+  - Signed-byte Layouts fuer Ticket/Vote unveraendert.
+  - Kein `Linking`, `POLIS_URL`, `api.github`, `GitHub` im Mobile-POLIS-Pfad.
+- **Verification:**
+  - `python3 -m py_compile apps/api/routers/polis_tickets.py apps/api/crypto/polis.py apps/api/main.py` -> OK.
+  - `cd apps/mobile && npx tsc --noEmit` -> weiterhin rot nur wegen bestehender Compass-Fehler in `src/compass/engine.ts:57-58`; keine POLIS Import-/Signaturfehler mehr.
+- **Rest:** Demo-mode POLIS Guard fehlt noch; nicht blockierend fuer echten S10-Test, aber vor public release klaeren.
+- **Naechster Schritt:** Kontrollierter Backend-Deploy mit Migration + Debug APK auf S10 testen. Kein public Release.
+- **Keine Produktcodeaenderung durch Codex**
+- **Keine Secrets gelesen**
+- **Kein Deployment**
+
 ## 2026-05-27 — NEA-272f Review Fix (`505979c`)
 
 - Import: `@noble/curves/ed25519` → `@noble/curves/ed25519.js` (3 Dateien)

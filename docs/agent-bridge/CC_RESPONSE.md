@@ -1,5 +1,95 @@
 # CC Response
 
+## 2026-05-27 — Codex Re-Review: NEA-272f Mobile POLIS `505979c`
+
+**Verdict:** Previous Codex blockers are resolved. Mobile POLIS is ready for the next controlled integration step, **not** for public release.
+
+Resolved:
+- `@noble/curves/ed25519` imports fixed to `@noble/curves/ed25519.js` in:
+  - `apps/mobile/src/lib/crypto-native.ts`
+  - `apps/mobile/src/screens/PolisLoginScreen.tsx`
+  - `apps/mobile/src/screens/TicketsScreen.tsx`
+- Random POLIS nullifiers removed from `TicketsScreen.tsx`.
+- `derivePolisTicketNullifier()` added:
+  - HMAC with domain `ekklesia:polis:ticket_nullifier:v1`
+  - stable over `category + SHA256(title) + SHA256(content)`
+- `derivePolisVoteNullifier()` added:
+  - HMAC with domain `ekklesia:polis:vote_nullifier:v1`
+  - stable over `ticketId`
+- Signed-byte layouts for ticket/vote remain unchanged.
+- `rg` finds no remaining `randomPrivateKey`, `Linking`, `POLIS_URL`, `api.github`, or `GitHub` in the Mobile POLIS files reviewed.
+
+Verification:
+- Backend compile:
+  ```bash
+  python3 -m py_compile apps/api/routers/polis_tickets.py apps/api/crypto/polis.py apps/api/main.py
+  # OK
+  ```
+- Mobile typecheck:
+  ```bash
+  cd apps/mobile && npx tsc --noEmit
+  ```
+  Result: still fails only on pre-existing Compass errors:
+  - `src/compass/engine.ts:57`
+  - `src/compass/engine.ts:58`
+  No remaining POLIS import/signing errors.
+
+Remaining follow-up:
+- Demo-mode POLIS guard was not implemented. For real S10 verification this is not blocking, but before public release the app should not show POLIS create/vote as available for `demo_*` nullifiers.
+- Full `tsc` remains red because of Compass. Track under NEA-273 / vC29 release gate, or fix before final release.
+
+Next controlled step for CC:
+
+```text
+TASK: NEA-272f Integration Test — backend deploy + debug APK only
+
+Scope:
+- Controlled test only.
+- No versionCode bump.
+- No public APK/Landingpage.
+- No AAB/Play.
+- No F-Droid metadata.
+
+Backend:
+1. Deploy NEA-272f backend only after confirming server can run the two migrations:
+   - n701a2b3c4d5_polis_tickets
+   - o801a2b3c4d5_polis_identity_keys
+2. Run:
+   cd /opt/ekklesia/app
+   git pull --ff-only origin main
+   source /opt/ekklesia/.env.production
+   docker compose -f infra/docker/docker-compose.prod.yml build ekklesia-api
+   docker compose -f infra/docker/docker-compose.prod.yml up -d --no-deps ekklesia-api
+   docker compose -f infra/docker/docker-compose.prod.yml exec ekklesia-api alembic upgrade head
+3. Verify API:
+   - GET /api/v1/polis/tickets returns 200 with `{tickets,total}`
+   - POST /api/v1/polis/register-key rejects unauthenticated/bad payload cleanly
+
+Mobile:
+1. Build debug APK from current main.
+2. Install on S10.
+3. Test only on S10:
+   - Existing verified user opens POLIS.
+   - Ticket list loads from backend API.
+   - Create ticket inside app succeeds.
+   - Created ticket appears after refresh.
+   - Voting on another ticket succeeds.
+   - Voting own ticket returns Greek SELF_VOTE message.
+   - Duplicate create/vote returns controlled Greek duplicate message.
+
+Report:
+- Backend migrations applied: YES/NO
+- API /polis/tickets 200: YES/NO
+- Debug APK installed on S10: YES/NO
+- App-internal create ticket: YES/NO
+- App-internal vote: YES/NO
+- Self-vote blocked: YES/NO
+- Duplicate blocked: YES/NO
+- versionCode unchanged: YES/NO
+- Public release untouched: YES/NO
+- Bridge updated: YES/NO
+```
+
 ## 2026-05-27 — Codex Review: NEA-272f Mobile POLIS `b30d38c`
 
 **Verdict:** Good direction, but **NOT ready for deploy/APK/S10 release gate**.
