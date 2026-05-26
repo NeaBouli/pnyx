@@ -40,8 +40,9 @@ def _now_ms():
 
 # ─── Ticket validation tests ────────────────────────────────────────────────
 
-def test_valid_ticket_creation():
+def test_valid_ticket_creation_with_title():
     sk, pk_hex = _make_keypair()
+    title = "Test Bug Report"
     content = "Test ticket content for POLIS"
     category = "bug"
     nullifier = os.urandom(32).hex()
@@ -53,6 +54,7 @@ def test_valid_ticket_creation():
         pk_polis=bytes.fromhex(pk_hex),
         nullifier=bytes.fromhex(nullifier),
         timestamp_ms=ts,
+        title_hash=hash_content(title),
     )
     sig = _sign(sk, signed_bytes)
 
@@ -64,16 +66,19 @@ def test_valid_ticket_creation():
         signature=sig,
         timestamp_ms=ts,
         version=PROTO_VERSION,
+        title=title,
     )
     err = validate_ticket(payload, set())
     assert err is None
 
 
-def test_duplicate_nullifier_rejected():
+def test_tampered_title_rejected():
+    """Changing title after signing must invalidate signature."""
     sk, pk_hex = _make_keypair()
+    title = "Original Title"
+    content = "Content"
     nullifier = os.urandom(32).hex()
     ts = _now_ms()
-    content = "Duplicate test"
 
     signed_bytes = build_ticket_signed_bytes(
         category="bug",
@@ -81,13 +86,43 @@ def test_duplicate_nullifier_rejected():
         pk_polis=bytes.fromhex(pk_hex),
         nullifier=bytes.fromhex(nullifier),
         timestamp_ms=ts,
+        title_hash=hash_content(title),
+    )
+    sig = _sign(sk, signed_bytes)
+
+    # Tamper the title
+    payload = PolisTicketPayload(
+        content=content, category="bug", pk_polis=pk_hex,
+        ticket_nullifier=nullifier, signature=sig,
+        timestamp_ms=ts, version=PROTO_VERSION,
+        title="Tampered Title",
+    )
+    err = validate_ticket(payload, set())
+    assert err is not None
+    assert err.code == "INVALID_SIGNATURE"
+
+
+def test_duplicate_nullifier_rejected():
+    sk, pk_hex = _make_keypair()
+    nullifier = os.urandom(32).hex()
+    ts = _now_ms()
+    content = "Duplicate test"
+    title = "Dup"
+
+    signed_bytes = build_ticket_signed_bytes(
+        category="bug",
+        content_hash=hash_content(content),
+        pk_polis=bytes.fromhex(pk_hex),
+        nullifier=bytes.fromhex(nullifier),
+        timestamp_ms=ts,
+        title_hash=hash_content(title),
     )
     sig = _sign(sk, signed_bytes)
 
     payload = PolisTicketPayload(
         content=content, category="bug", pk_polis=pk_hex,
         ticket_nullifier=nullifier, signature=sig,
-        timestamp_ms=ts, version=PROTO_VERSION,
+        timestamp_ms=ts, version=PROTO_VERSION, title=title,
     )
     err = validate_ticket(payload, {nullifier})
     assert err is not None

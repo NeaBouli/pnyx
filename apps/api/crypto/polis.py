@@ -51,6 +51,7 @@ class PolisTicketPayload:
     signature:        str   # 128-char hex
     timestamp_ms:     int
     version:          str
+    title:            str = ""  # included in signature hash
 
 
 @dataclass(frozen=True)
@@ -78,21 +79,24 @@ def build_ticket_signed_bytes(
     pk_polis:     bytes,
     nullifier:    bytes,
     timestamp_ms: int,
+    title_hash:   str = "",      # hex string of SHA-256(title), optional for v1 compat
 ) -> bytes:
     """
     Builds the canonical bytes for ticket creation signature.
     Must exactly mirror polis.ts::buildTicketSignedBytes.
 
     Layout: version(1B) | category_len(1B) | category | content_hash(32B) |
-            pk_polis(32B) | nullifier(32B) | timestamp(8B BE)
+            title_hash(32B) | pk_polis(32B) | nullifier(32B) | timestamp(8B BE)
     """
     cat_bytes  = category.encode("utf-8")
     ch_bytes   = bytes.fromhex(content_hash)
+    th_bytes   = bytes.fromhex(title_hash) if title_hash else hashlib.sha256(b"").digest()
     return (
         b"\x01"
         + bytes([len(cat_bytes)])
         + cat_bytes
         + ch_bytes
+        + th_bytes
         + pk_polis
         + nullifier
         + struct.pack(">Q", timestamp_ms)
@@ -205,6 +209,7 @@ def validate_ticket(
 
     # 5. Ed25519 signature
     content_hash = hash_content(payload.content)
+    title_hash = hash_content(payload.title) if payload.title else ""
     try:
         pk_bytes  = bytes.fromhex(payload.pk_polis)
         sig_bytes = bytes.fromhex(payload.signature)
@@ -216,6 +221,7 @@ def validate_ticket(
             pk_polis     = pk_bytes,
             nullifier    = bytes.fromhex(payload.ticket_nullifier),
             timestamp_ms = payload.timestamp_ms,
+            title_hash   = title_hash,
         )
         vk.verify(signed_bytes, sig_bytes)
 

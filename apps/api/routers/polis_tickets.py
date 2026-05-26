@@ -10,6 +10,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -37,6 +38,7 @@ class TicketCreateRequest(BaseModel):
     ticket_nullifier: str = Field(..., min_length=64, max_length=64)
     signature: str = Field(..., min_length=128, max_length=128)
     timestamp_ms: int
+    nullifier_hash: str = Field(..., min_length=64, max_length=64, description="Identity nullifier for verification")
 
 
 class VoteRequest(BaseModel):
@@ -45,6 +47,20 @@ class VoteRequest(BaseModel):
     vote_nullifier: str = Field(..., min_length=64, max_length=64)
     signature: str = Field(..., min_length=128, max_length=128)
     timestamp_ms: int
+    nullifier_hash: str = Field(..., min_length=64, max_length=64, description="Identity nullifier for verification")
+
+
+async def _verify_identity(nullifier_hash: str, db: AsyncSession) -> None:
+    """Verify that the nullifier_hash belongs to an ACTIVE registered identity."""
+    result = await db.execute(
+        text("SELECT status FROM identity_records WHERE nullifier_hash = :nh"),
+        {"nh": nullifier_hash},
+    )
+    row = result.fetchone()
+    if not row:
+        raise HTTPException(status_code=403, detail="UNVERIFIED_IDENTITY: No verified identity found")
+    if row[0] != "ACTIVE":
+        raise HTTPException(status_code=403, detail="REVOKED_IDENTITY: Identity is not active")
 
 
 # ─── GET /polis/tickets ──────────────────────────────────────────────────────
@@ -100,6 +116,9 @@ async def create_ticket(
     db: AsyncSession = Depends(get_db),
 ):
     """Create a POLIS ticket with Ed25519 signed payload."""
+    # Verify identity
+    await _verify_identity(req.nullifier_hash, db)
+
     # Build validation payload
     payload = PolisTicketPayload(
         content=req.content,
@@ -109,6 +128,7 @@ async def create_ticket(
         signature=req.signature,
         timestamp_ms=req.timestamp_ms,
         version=PROTO_VERSION,
+        title=req.title,
     )
 
     # Get existing nullifiers
@@ -122,20 +142,24 @@ async def create_ticket(
 
     # Insert
     ticket_id = str(uuid.uuid4())[:12]
-    await db.execute(text("""
-        INSERT INTO polis_tickets (id, title, content, category, pk_polis, ticket_nullifier, signature, timestamp_ms)
-        VALUES (:id, :title, :content, :category, :pk_polis, :nullifier, :signature, :ts)
-    """), {
-        "id": ticket_id,
-        "title": req.title,
-        "content": req.content,
-        "category": req.category,
-        "pk_polis": req.pk_polis,
-        "nullifier": req.ticket_nullifier,
-        "signature": req.signature,
-        "ts": req.timestamp_ms,
-    })
-    await db.commit()
+    try:
+        await db.execute(text("""
+            INSERT INTO polis_tickets (id, title, content, category, pk_polis, ticket_nullifier, signature, timestamp_ms)
+            VALUES (:id, :title, :content, :category, :pk_polis, :nullifier, :signature, :ts)
+        """), {
+            "id": ticket_id,
+            "title": req.title,
+            "content": req.content,
+            "category": req.category,
+            "pk_polis": req.pk_polis,
+            "nullifier": req.ticket_nullifier,
+            "signature": req.signature,
+            "ts": req.timestamp_ms,
+        })
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="DUPLICATE_TICKET: Ticket already exists")
 
     logger.info("[POLIS] Ticket created: %s by %s", ticket_id, get_short_handle(req.pk_polis))
     return {
@@ -154,6 +178,9 @@ async def vote_ticket(
     db: AsyncSession = Depends(get_db),
 ):
     """Vote on a POLIS ticket with Ed25519 signed payload."""
+    # Verify identity
+    await _verify_identity(req.nullifier_hash, db)
+
     # Get ticket
     result = await db.execute(
         text("SELECT id, pk_polis FROM polis_tickets WHERE id = :id"),
@@ -190,26 +217,30 @@ async def vote_ticket(
 
     # Insert vote
     vote_id = str(uuid.uuid4())[:12]
-    await db.execute(text("""
-        INSERT INTO polis_votes (id, ticket_id, vote, pk_polis, vote_nullifier, signature, timestamp_ms)
-        VALUES (:id, :tid, :vote, :pk, :nullifier, :sig, :ts)
-    """), {
-        "id": vote_id,
-        "tid": ticket_id,
-        "vote": req.vote,
-        "pk": req.pk_polis,
-        "nullifier": req.vote_nullifier,
-        "sig": req.signature,
-        "ts": req.timestamp_ms,
-    })
+    try:
+        await db.execute(text("""
+            INSERT INTO polis_votes (id, ticket_id, vote, pk_polis, vote_nullifier, signature, timestamp_ms)
+            VALUES (:id, :tid, :vote, :pk, :nullifier, :sig, :ts)
+        """), {
+            "id": vote_id,
+            "tid": ticket_id,
+            "vote": req.vote,
+            "pk": req.pk_polis,
+            "nullifier": req.vote_nullifier,
+            "sig": req.signature,
+            "ts": req.timestamp_ms,
+        })
 
-    # Update vote counts
-    col = "up_votes" if req.vote == "up" else "down_votes"
-    await db.execute(
-        text(f"UPDATE polis_tickets SET {col} = {col} + 1, updated_at = now() WHERE id = :id"),
-        {"id": ticket_id},
-    )
-    await db.commit()
+        # Update vote counts
+        col = "up_votes" if req.vote == "up" else "down_votes"
+        await db.execute(
+            text(f"UPDATE polis_tickets SET {col} = {col} + 1, updated_at = now() WHERE id = :id"),
+            {"id": ticket_id},
+        )
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="DUPLICATE_VOTE: Already voted on this ticket")
 
     logger.info("[POLIS] Vote %s on ticket %s by %s", req.vote, ticket_id, get_short_handle(req.pk_polis))
     return {"vote_id": vote_id, "vote": req.vote}
