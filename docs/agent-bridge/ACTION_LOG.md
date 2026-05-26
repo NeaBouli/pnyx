@@ -1,5 +1,18 @@
 # Action Log
 
+## 2026-05-26 — Codex Linear + Bridge for vC29 Mobile Backlog
+
+- **Ausloeser:** Gio stellte klar, dass das POLIS Ticket-System in der App nicht nur ein besseres Coming-Soon Modal sein soll, sondern so bald wie moeglich funktional werden muss. Ausserdem sollen alle Aufgaben in Linear stehen.
+- **Linear aktualisiert:**
+  - NEA-272: POLIS Tickets in Mobile wirklich funktionsfaehig machen; Code-Sichtung und Akzeptanzkriterien ergaenzt.
+  - NEA-273: Compass Toggle Gesamtposition validieren/fixen.
+  - NEA-274: Mobile/ekprosopos Region-Filter Audit.
+  - NEA-275: vC29 Release Gate — S10 acceptance before public APK.
+  - NEA-249: Kommentar fuer ZK/Semaphore Wizard; echte Proofs bleiben blocked.
+- **Linear Limit:** Neues ZK/Weekly-Ticket konnte nicht erstellt werden (`Usage limit exceeded`). Weekly Push/Digest Label und ZK/Semaphore Wizard sind daher vorerst unter NEA-275 kommentiert und in Bridge/TODO eingetragen.
+- **POLIS Code-Sichtung:** Browser/static POLIS und QR-Auth existieren teilweise (`docs/tickets/*`, `polis_qr.py`, `PolisLoginScreen.tsx`), aber Mobile `TicketsScreen.tsx` listet nur GitHub Issues und blockiert Create/Vote mit Phase-B Modal.
+- **Naechste Regel:** NEA-272 beginnt mit Diagnose des Browser-Flows. Keine Implementation, kein Version-Bump, kein public APK/AAB/F-Droid Update vor Gio-Abnahme.
+
 ## 2026-05-26 — Codex F-Droid !38007 Audit
 
 - Audited pnyx bridge, fdroiddata branch, GitLab MR !38007 pipelines, local APK/AAB outputs.

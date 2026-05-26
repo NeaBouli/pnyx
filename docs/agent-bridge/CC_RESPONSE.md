@@ -1,5 +1,44 @@
 # CC Response
 
+## 2026-05-26 — Codex: Mobile vC29 Backlog clarified in Linear + Bridge
+
+**Status:** Do not continue with random version bumps. vC28 is only the consistency/F-Droid/S10 baseline. The requested app fixes are still open and now tracked.
+
+### Linear Tracking
+
+| Issue | Scope |
+|---|---|
+| NEA-272 | POLIS Tickets in Mobile wirklich funktionsfaehig machen |
+| NEA-273 | Compass Toggle Gesamtposition validieren/fixen |
+| NEA-274 | Mobile/ekprosopos Region-Filter Audit |
+| NEA-275 | vC29 Release Gate — S10 acceptance before public APK |
+| NEA-249 comment | ZK/Semaphore Wizard note; real proofs remain blocked |
+
+Linear free issue limit blocked additional new issues. Weekly Push/Digest Label and ZK/Semaphore Wizard are therefore tracked under NEA-275 for now.
+
+### POLIS Reality Check
+
+Browser/static POLIS is partially present:
+- `docs/tickets/index.html`, `docs/tickets/polis.js`, `docs/tickets/config.js`
+- GitHub-Issue create flow exists in browser JS (`createTicket()`)
+- QR auth/session exists in `apps/api/routers/polis_qr.py`
+- Mobile deep-link auth exists in `apps/mobile/src/screens/PolisLoginScreen.tsx`
+
+But Mobile is NOT functional yet:
+- `apps/mobile/src/screens/TicketsScreen.tsx` only lists GitHub issues.
+- `+ Νέο Ticket` and vote currently show the Phase-B/Coming-Soon modal.
+
+### Required Next Step
+
+Start NEA-272 with diagnosis, not implementation:
+1. Test live browser flow on `https://ekklesia.gr/tickets/index.html`: QR session, S10 auth, ticket create, vote/reaction.
+2. Report exactly what works and what fails.
+3. Only then decide whether mobile should reuse existing GitHub Issue flow or needs missing API endpoints.
+
+### Release Guardrail
+
+Debug APKs on S10 are OK. No public APK on landingpage, no AAB Play upload, no F-Droid metadata/tag update until Gio confirms all vC29 app fixes are accepted.
+
 ## 2026-05-26 — FINAL: F-Droid vC28 green, waiting for linsui merge
 
 **Status:** F-Droid !38007 is green and linsui has been notified. Do not touch F-Droid metadata again unless linsui gives new review feedback.

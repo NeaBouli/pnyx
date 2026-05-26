@@ -1,7 +1,12 @@
 # TODO — Ekklesia.gr / pnyx
 
 ## Aktiv / In Progress
-- [ ] Mobile App Fixes (Gio): noch NICHT abgearbeitet. vC28/1.0.1 war Versions-/Release-Glaettung fuer S10/F-Droid/Play-Konsistenz, nicht Abschluss der von Gio gewuenschten App-Fixes. Kandidaten fuer naechste App-Version: POLIS Ticket-Erstellung funktioniert nicht (Screenshot: "Δημιουργία ticket σύντομα διαθέσιμη"), Weekly Push-Label pruefen, Compass Toggle Gesamtposition pruefen/ggf. fixen, Semaphore/ZK-Proofs Wizard/Kompatibilitaetscheck konzipieren/implementieren. Vorgehen: jeden Fix einzeln bauen/testen, nur auf S10 verifizieren; erst wenn alle Fixes fertig sind neue APK bauen, auf S10 installieren und danach Landingpage-Download aktualisieren.
+- [ ] NEA-272: POLIS Tickets in Mobile wirklich funktionsfaehig machen. Code-Sichtung: Browser/static POLIS existiert teilweise (`docs/tickets/*`, GitHub-Issue Backend in `polis.js`), QR-Auth existiert (`apps/api/routers/polis_qr.py`, `PolisLoginScreen.tsx`), aber Mobile `TicketsScreen.tsx` liest nur Issues und blockiert Create/Vote mit Phase-B Modal. Diagnose zuerst: Browser-Flow live end-to-end testen (QR-Session, Mobile-Auth, Ticket-Create, Vote/Reactions), dann Mobile sauber an bestehenden Flow/API anschliessen oder fehlende Backend-Endpoints bauen.
+- [ ] NEA-273: Mobile Compass Toggle Gesamtposition validieren/fixen. Erst Screen/Codepfad finden, dann S10 Debug-Test, nur reproduzierten Bug fixen.
+- [ ] NEA-274: Mobile/ekprosopos Region-Filter Audit. National/regional/municipal/institutional Sichtbarkeit pruefen, S10-Test dokumentieren.
+- [ ] NEA-275: vC29 Release Gate. Jeder App-Fix einzeln bauen und auf S10 testen. Keine neue public APK auf Landingpage, kein Play Upload, kein F-Droid Metadata Update, bis Gio alle Fixes abgenommen hat.
+- [ ] Weekly Push/Digest Label: Linear free issue limit blockiert neues Ticket; vorerst unter NEA-275 getrackt. Exakten Screen/String finden, S10 validieren, ggf. fixen.
+- [ ] ZK/Semaphore Wizard: Linear free issue limit blockiert neues Ticket; Kommentar auf NEA-249 + NEA-275. Nur Onboarding/Kompatibilitaetscheck, keine echten Proofs. NEA-249 bleibt fuer echte Mobile-Prover blocked.
 - [ ] F-Droid MR !38007: Pipeline #2552331797 GRUEN (9/9), Kommentar an linsui gepostet, wartet auf Merge
 - [ ] AAB vC28 Upload zu Play Console (lokal gebaut, `app-play-release.aab`)
 - [ ] NEA-258: FORUM_SSO_SALT Startup-Check (LOW follow-up)

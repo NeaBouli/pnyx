@@ -13,8 +13,8 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `95b1a51` (chore(bridge): F-Droid pipeline #2552331797 GRUEN — linsui notified, awaiting merge)
-- **origin/main:** `95b1a51`
+- **Lokaler HEAD:** latest `main` bridge commit (vC29 Mobile Backlog in Linear/Bridge)
+- **origin/main:** latest `main` bridge commit after push
 - **Release Tags:** `v1.0.1-20260526`, `v1.3.2-stable-20260524`, `v1.3.3-audit-clean-20260524`, `v1.3.4-forum-fix-20260524`, `v1.3.5-20260525`
 - **Rollback Tags:** `rollback-pre-zk-20260524`
 - **Server repo HEAD:** `8a71cc4` (web rebuilt mit Logout Modal + Screenshots)
@@ -24,8 +24,9 @@
 - **F-Droid !38007:** Pipeline #2552331797 GRUEN (9/9). Kommentar an linsui gepostet. Wartet auf Merge.
 - **APK/AAB:** vC28 / 1.0.1 lokal gebaut. S10: `versionCode=28`, `versionName=1.0.1`.
 - **Tags:** `v1.0.1-20260526` → `fa6366f` (vC28 release). `v1.3.5-20260525` → `47c1494` (alt/bridge).
-- **Pending:** nur linsui Merge + Play Console AAB Upload.
-- **Mobile App Fixes:** Gio-requested app fixes are still pending. Known candidates: POLIS ticket creation disabled/not working, Weekly Push label validation, Compass aggregated-position toggle validation/fix, Semaphore/ZK proof onboarding compatibility wizard. vC28 was release/version consistency, not completion of the app-fix backlog.
+- **Pending:** linsui Merge + Play Console AAB Upload + Mobile vC29 App-Fix Backlog.
+- **Mobile App Fixes:** vC28/1.0.1 was release/version consistency, not completion of Gio's app-fix backlog. Current tracking: NEA-272 POLIS Tickets truly functional, NEA-273 Compass Toggle validation/fix, NEA-274 Region-Filter Audit, NEA-275 vC29 Release Gate. Weekly Push/Digest Label and ZK/Semaphore Wizard are tracked under NEA-275 because Linear free issue limit blocked new issues.
+- **POLIS Ticket Reality Check:** Browser/static POLIS and QR auth pieces exist (`docs/tickets/*`, `apps/api/routers/polis_qr.py`, `PolisLoginScreen.tsx`), but Mobile `TicketsScreen.tsx` currently only lists GitHub issues and blocks create/vote with the Phase-B modal. Do not claim ticket system is live until browser flow is tested end-to-end and mobile is wired.
 
 ## Uncommitted Aenderungen
 
