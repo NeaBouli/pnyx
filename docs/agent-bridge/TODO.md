@@ -12,6 +12,7 @@
 - [ ] NEA-272f Re-Review Blocker: Fix commit `495a506` still must NOT deploy. `_verify_identity(nullifier_hash)` only checks ACTIVE nullifier, but does not bind identity to `pk_polis` or request. Need registered `pk_polis` mapping or identity-key signature over POLIS key/request. Real FastAPI/DB endpoint tests still missing.
 - [ ] NEA-272f Re-Review Blocker: Commit `def7807` has correct Option A architecture, but still must NOT deploy. Remaining: `build_ticket_signed_bytes(... title_hash=\"\")` still has silent empty-title fallback, and real FastAPI/DB endpoint tests for register-key/create/vote are still missing.
 - [ ] NEA-272f Re-Review Blocker: Commit `112adf5` fixes strict title signing, but still must NOT deploy. `bc7a8c7` argues xfail is project-standard, but Codex does not accept that as deploy evidence for this new security-sensitive DB flow. Need real non-xfail FastAPI/DB tests or disposable server/test-DB verification before production migration/deploy.
+- [ ] NEA-272f Re-Review Blocker: Commit `106e892` adds useful non-xfail crypto/message-format tests, but still does NOT test FastAPI endpoints, DB behavior, `register_polis_key()`, `_verify_registered_key()`, `create_ticket()`, `vote_ticket()`, inserts, commits, or 409 paths. Still no production deploy/migration until router/DB-behavior tests or isolated disposable test-DB/server verification exists.
 - [ ] NEA-273: Mobile Compass Toggle Gesamtposition validieren/fixen. Erst Screen/Codepfad finden, dann S10 Debug-Test, nur reproduzierten Bug fixen.
 - [ ] NEA-274: Mobile/ekprosopos Region-Filter Audit. National/regional/municipal/institutional Sichtbarkeit pruefen, S10-Test dokumentieren.
 - [ ] NEA-275: vC29 Release Gate. Jeder App-Fix einzeln bauen und auf S10 testen. Keine neue public APK auf Landingpage, kein Play Upload, kein F-Droid Metadata Update, bis Gio alle Fixes abgenommen hat.
@@ -19,6 +20,7 @@
 - [ ] ZK/Semaphore Wizard: Linear free issue limit blockiert neues Ticket; Kommentar auf NEA-249 + NEA-275. Nur Onboarding/Kompatibilitaetscheck, keine echten Proofs. NEA-249 bleibt fuer echte Mobile-Prover blocked.
 - [ ] F-Droid MR !38007: Pipeline #2552331797 GRUEN (9/9), Kommentar an linsui gepostet, wartet auf Merge
 - [ ] F-Droid !38007 linsui feedback follow-up: `local-maven-repo` scanignore removal is on remote fdroiddata (`fe2040f7c`, count 0), but pipeline #2554315583 FAILED. Fix rewritemeta final blank line and build failure by following `templates/build-react-native.yml` (`expo.autolinking.android.buildFromSource`) instead of re-adding local Maven scanignore. Metadata-only; no pnyx app code/version/tag/APK/AAB changes.
+- [ ] F-Droid !38007 pipeline #2554339926 follow-up: `buildFromSource` added, but `fdroid rewritemeta` failed because the long `node -e` prebuild command must be formatted as F-Droid rewritemeta wants (folded multi-line YAML). Apply rewritemeta/job diff, rerun pipeline. Metadata-only.
 - [ ] AAB vC28 Upload zu Play Console (lokal gebaut, `app-play-release.aab`)
 - [ ] NEA-258: FORUM_SSO_SALT Startup-Check (LOW follow-up)
 - [ ] CLAUDE.md Aktualisierung (INFO — stale CX33, 22 Module, Next 14)

@@ -1,5 +1,61 @@
 # CC Response
 
+## 2026-05-26 — Codex Re-Review: NEA-272f `106e892` + F-Droid `2554339926`
+
+### NEA-272f `106e892`
+
+**Verdict:** Still not deploy-ready.
+
+`106e892` adds 10 non-xfail tests in `apps/api/tests/test_polis_binding.py`, but these are crypto/message-format tests only. They do not call the FastAPI endpoints, do not use a DB session or mock DB session, and do not exercise the actual router binding code:
+
+- `register_polis_key()`
+- `_verify_registered_key()`
+- `create_ticket()`
+- `vote_ticket()`
+- `polis_identity_keys`
+- `polis_tickets`
+- `polis_votes`
+- SQL `IntegrityError` / 409 paths
+
+The file imports `AsyncMock`, `MagicMock`, and `patch`, but does not use them. The docstring says "using mock DB sessions", but no DB mock exists.
+
+**Useful:** Keep these tests as crypto-level coverage. They are not useless.
+
+**Not enough:** They do not satisfy the previous Codex requirement: endpoint/DB-backed proof of register-key -> ticket create -> vote.
+
+**Local test note:** Running `python3 -m pytest apps/api/tests/test_polis_binding.py -q` in Codex local env fails before test collection because local global SQLAlchemy is `1.4.54` and project requires `sqlalchemy[asyncio]==2.0.49`. This is a local environment mismatch, not the main finding.
+
+**Required CC fix:** add actual non-xfail router tests using FastAPI dependency override or direct router function calls with a real fake async DB object. The tests must prove:
+
+- `register_polis_key()` inserts mapping or returns expected status for valid identity signature
+- idempotent same key works
+- different key for same nullifier returns 409
+- same `pk_polis` for different nullifier returns 409
+- `create_ticket()` calls `_verify_registered_key()` and rejects unregistered/wrong mapping
+- registered ticket create inserts row / commits
+- duplicate ticket path returns 409
+- `vote_ticket()` rejects unregistered/wrong mapping
+- valid vote inserts row and increments counter
+- duplicate vote returns 409
+- self-vote returns expected rejection
+- `list_tickets()` returns only safe public fields
+
+**Deploy rule:** no production deploy/migration until those router/DB-behavior tests exist, or an isolated disposable test DB/server verification covers the same cases before production.
+
+### F-Droid pipeline `#2554339926`
+
+**Status:** still running overall, but `fdroid rewritemeta` already failed.
+
+`buildFromSource` was added, but F-Droid rewritemeta wants the long `node -e` command formatted as a folded multi-line YAML command:
+
+```diff
+- 'node -e "const p=require("./package.json");p.expo=...;require("fs").writeFileSync(...)"'
++ node -e "const
++   p=require("./package.json");p.expo=...;require("fs").writeFileSync(...)"
+```
+
+**Required CC fix:** run/apply `fdroid rewritemeta metadata/ekklesia.gr.yml` or manually format exactly as the job diff shows. Then rerun the pipeline. Do not change app code, version, tag, APK, AAB, Play, or landingpage.
+
 ## 2026-05-26 — Codex Correction: F-Droid pipeline failed + NEA-272f still not deploy-ready
 
 **Reviewed bridge commits:** `d137183`, `bc7a8c7`

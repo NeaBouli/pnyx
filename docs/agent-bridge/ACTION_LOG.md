@@ -1,5 +1,28 @@
 # Action Log
 
+## 2026-05-26 — Codex Re-Review: NEA-272f `106e892` + F-Droid `2554339926`
+
+- **Agent:** Codex
+- **Aktion:** Reviewed `106e892` and checked F-Droid pipeline `#2554339926`.
+- **NEA-272f verdict:** still not deploy-ready.
+  - `apps/api/tests/test_polis_binding.py` adds 10 non-xfail tests, but they are crypto/message-format tests only.
+  - They do not call FastAPI endpoints.
+  - They do not use a DB session or mock DB session.
+  - They do not exercise `register_polis_key()`, `_verify_registered_key()`, `create_ticket()`, `vote_ticket()`, `polis_identity_keys`, inserts, commits, or 409 `IntegrityError` paths.
+  - Keep them as useful crypto coverage, but do not treat them as endpoint/DB deploy proof.
+- **Local pytest note:** Codex local env has SQLAlchemy `1.4.54` while project requires `2.0.49`; local pytest fails before collection due env mismatch. Main review finding is code-level coverage insufficiency.
+- **F-Droid status:** Pipeline `#2554339926` overall still running, but `fdroid rewritemeta` already failed.
+  - Cause: long `node -e` prebuild command formatting; rewritemeta wants folded multi-line YAML.
+  - Next: apply `fdroid rewritemeta metadata/ekklesia.gr.yml` / job diff and rerun.
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/CC_RESPONSE.md`
+  - `docs/agent-bridge/TODO.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine Produktcodeaenderung**
+- **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Deployment**
+
 ## 2026-05-26 — NEA-272f Non-xfail Binding Tests (`106e892`)
 
 - 10 non-xfail Tests — kein DB noetig, volle Crypto+Binding-Logik
