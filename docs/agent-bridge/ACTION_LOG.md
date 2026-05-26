@@ -1,5 +1,26 @@
 # Action Log
 
+## 2026-05-26 — Migration Linear → GitHub Issues
+
+- **Tracking ab sofort:** GitHub Issues (NeaBouli/pnyx), nicht mehr Linear
+- **Linear:** Read-only Archiv, keine neuen Tickets
+- **Labels erstellt:** feature, bug, mobile, blocked, waiting, security, infra, vC29
+- **13 Issues angelegt:** #71-#83
+  - #71 FORUM_SSO_SALT Startup-Check
+  - #72 CLAUDE.md stale Werte
+  - #73 ANNOUNCED Bills Badge
+  - #74 vC29: POLIS Tickets Modal
+  - #75 vC29: Kompass Toggle
+  - #76 vC29: Region-Filter Audit
+  - #77 vC29: ZK Semaphore Wizard
+  - #78 AAB vC29 Play Console
+  - #79 F-Droid linsui Merge
+  - #80 Off-Site Backup
+  - #81 ZK V2 Semaphore (Blocked)
+  - #82 Forum SSO
+  - #83 Diavgeia Org-Mapping
+- **Regel:** Ab sofort nur GitHub Issues fuer neue Tickets. Codex und CC nutzen Issue-Nummern (#71-#83).
+
 ## 2026-05-26 — Codex Check: F-Droid `#2554421176` failed after sed buildFromSource
 
 - **Agent:** Codex
