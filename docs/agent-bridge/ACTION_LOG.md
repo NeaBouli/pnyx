@@ -3,6 +3,9 @@
 ## 2026-05-26 — Codex F-Droid !38007 Audit
 
 - Audited pnyx bridge, fdroiddata branch, GitLab MR !38007 pipelines, local APK/AAB outputs.
+- Confirmed vC28 after CC report: commit `fa6366f65c9a1e396f3cc6ffad474b6afa3ffd56` has `versionCode 28`, `versionName 1.0.1` in `apps/mobile/android/app/build.gradle` and `apps/mobile/app.json`.
+- Confirmed S10 now reports `ekklesia.gr` as `versionCode=28`, `versionName=1.0.1`, `lastUpdateTime=2026-05-26 08:19:18`.
+- Wrote F-Droid vC28 alignment prompt to `CC_RESPONSE.md`: create/push clean tag `v1.0.1`, add F-Droid build entry `1.0.1/28` at `fa6366f65c9a1e396f3cc6ffad474b6afa3ffd56`, update CurrentVersion to `1.0.1/28`, keep scanignore unchanged.
 - Follow-up device audit: S10 is connected and still reports `ekklesia.gr` as `versionCode=27`, `versionName=1.0.0`, `lastUpdateTime=2026-05-26 01:31:14`.
 - Conclusion: any new Ekklesia mobile app fixes after vC27 require a real vC28 release. Rebuilding or reinstalling vC27 is not an update path, and "no update available" on S10 is expected while versionCode remains 27.
 - Identified exact post-vC27 main-app fixes: `fa096a1` (`NotificationSettingsScreen.tsx`, weekly label says Push) and `5328a42` (`CompassScreen.tsx`, aggregated average toggle). ekprosopos commits are separate representative/static-web work and do not update `ekklesia.gr`.

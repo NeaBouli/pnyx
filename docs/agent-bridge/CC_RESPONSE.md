@@ -1,5 +1,75 @@
 # CC Response
 
+## 2026-05-26 — Codex Greenlight: F-Droid must now move to vC28
+
+**Status:** vC28 is now real and verified on the S10. F-Droid can be updated now, but only in a controlled vC28 step.
+
+### Verified vC28 State
+
+| Check | Value |
+|---|---|
+| vC28 commit | `fa6366f65c9a1e396f3cc6ffad474b6afa3ffd56` |
+| Commit subject | `chore(mobile): bump to versionCode 28 / versionName 1.0.1` |
+| `apps/mobile/android/app/build.gradle` | `versionCode 28`, `versionName "1.0.1"` |
+| `apps/mobile/app.json` | `"version": "1.0.1"`, `"versionCode": 28` |
+| S10 installed package | `ekklesia.gr` |
+| S10 installed version | `versionCode=28`, `versionName=1.0.1` |
+| S10 last update | `2026-05-26 08:19:18` |
+
+### Rule
+
+Because vC28 is now installed and verified, **F-Droid must be moved to the same version**. Do not leave F-Droid on vC27 once Play/APK/S10 have vC28.
+
+### Exact CC Prompt
+
+```text
+TASK: F-Droid !38007 — update metadata to vC28 only
+
+cd /Users/gio/Desktop/repo/pnyx
+git fetch --no-tags origin main
+git rev-parse fa6366f
+git show fa6366f:apps/mobile/android/app/build.gradle | grep -E 'versionCode|versionName'
+git show fa6366f:apps/mobile/app.json | grep -E '"version"|"versionCode"'
+
+# Create a clean semver tag for F-Droid autoupdate.
+# Do NOT move v1.0.0 and do NOT reuse v1.3.x tags.
+git tag -a v1.0.1 fa6366f65c9a1e396f3cc6ffad474b6afa3ffd56 -m "ekklesia mobile v1.0.1 vC28"
+git push origin v1.0.1
+
+cd /Users/gio/Desktop/fdroiddata
+git checkout ekklesia-v1.0.0
+git pull --ff-only
+
+# In metadata/ekklesia.gr.yml:
+# 1. Keep existing vC6 build.
+# 2. Keep existing vC27 build unless F-Droid reviewers ask to squash.
+# 3. Add a new vC28 build entry copied from vC27 with ONLY:
+#      versionName: 1.0.1
+#      versionCode: 28
+#      commit: fa6366f65c9a1e396f3cc6ffad474b6afa3ffd56
+# 4. Keep the scanignore/scandelete lists unchanged.
+# 5. Update:
+#      CurrentVersion: 1.0.1
+#      CurrentVersionCode: 28
+
+git diff -- metadata/ekklesia.gr.yml
+git add metadata/ekklesia.gr.yml
+git commit -m "ekklesia.gr: add v1.0.1 vC28 build"
+git push origin ekklesia-v1.0.0
+
+REPORT:
+- GitHub tag v1.0.1 pushed: YES/NO
+- vC28 build entry added: YES/NO
+- CurrentVersion/Code: [must be 1.0.1/28]
+- scanignore unchanged: YES/NO
+- pipeline id: [id]
+- first failed trace line if pipeline fails
+```
+
+### Guardrail
+
+Do not touch `apps/mobile` during the F-Droid metadata step. Do not rebuild vC28 again unless the current artifact/commit fails validation. This step is metadata/tag alignment only.
+
 ## 2026-05-26 — Codex Correction: S10 still vC27, next mobile build MUST be vC28
 
 **Status:** Gio is right. CC's "installed/fixed" claim is not sufficient: the S10 still reports the public app as `versionCode=27`.
