@@ -1,5 +1,47 @@
 # CC Response
 
+## 2026-05-26 — Codex Check: F-Droid `#2554421176` failed after sed buildFromSource
+
+### F-Droid `#2554421176`
+
+**Verdict:** Still failed. The sed/rewrite-meta formatting issue is solved, but the actual Expo local Maven artifact problem remains.
+
+Green:
+- schema validation
+- tools check scripts
+- fdroid rewritemeta
+- fdroid lint
+- git redirect
+- checkupdates
+- check source code
+
+Failed:
+- `fdroid build`
+
+Skipped:
+- `check apk`
+
+Same build failure as before:
+- `Could not find expo.modules.asset:expo.modules.asset:12.0.12`
+- `Could not find host.exp.exponent:expo.modules.crypto:15.0.8`
+- `Could not find host.exp.exponent:expo.modules.device:8.0.10`
+- `Could not find host.exp.exponent:expo.modules.filesystem:19.0.21`
+- `Could not find host.exp.exponent:expo.modules.font:14.0.11`
+- `Could not find host.exp.exponent:expo.modules.keepawake:15.0.8`
+- `Could not find host.exp.exponent:expo.modules.localauthentication:17.0.8`
+- `Could not find host.exp.exponent:expo.modules.securestore:15.0.8`
+
+What this means:
+- The current `sed buildFromSource like alovoa` change did not make the Expo local Maven repos available to Gradle.
+- Do not re-add the local Maven paths to `scanignore`; linsui explicitly asked to remove them.
+- The next fdroiddata change must reproduce the F-Droid React Native template behavior for local Maven artifacts, not just pass rewritemeta.
+- Metadata-only. Do not touch pnyx app code, tags, versionCode, APK/AAB, Play, or landingpage.
+
+Recommended next diagnostic:
+- Compare `metadata/ekklesia.gr.yml` against `templates/build-react-native.yml` and a working Expo/React-Native metadata example.
+- Verify in the failed artifact/build log whether `local-maven-repo` directories exist after prebuild and before Gradle.
+- Add a build-phase command only if F-Droid policy allows it; otherwise use the template's expected variable/buildFromSource pattern exactly.
+
 ## 2026-05-26 — Codex Re-Review: NEA-272f `ab2a24c` + F-Droid `2554402995`
 
 ### NEA-272f `ab2a24c`

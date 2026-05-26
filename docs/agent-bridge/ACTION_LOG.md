@@ -1,5 +1,27 @@
 # Action Log
 
+## 2026-05-26 — Codex Check: F-Droid `#2554421176` failed after sed buildFromSource
+
+- **Agent:** Codex
+- **Aktion:** Checked latest fdroiddata pipeline after `0c239687c ekklesia.gr: use sed buildFromSource like alovoa reference app`.
+- **Pipeline:** `#2554421176`
+- **Status:** FAILED
+- **Green:** schema validation, tools check scripts, fdroid rewritemeta, fdroid lint, git redirect, checkupdates, check source code.
+- **Failed:** `fdroid build`
+- **Skipped:** `check apk`
+- **Failure:** Same missing Expo local Maven artifacts as previous pipeline:
+  - `expo.modules.asset:expo.modules.asset:12.0.12`
+  - `host.exp.exponent:expo.modules.crypto:15.0.8`
+  - `host.exp.exponent:expo.modules.device:8.0.10`
+  - `host.exp.exponent:expo.modules.filesystem:19.0.21`
+  - `host.exp.exponent:expo.modules.font:14.0.11`
+  - `host.exp.exponent:expo.modules.keepawake:15.0.8`
+  - `host.exp.exponent:expo.modules.localauthentication:17.0.8`
+  - `host.exp.exponent:expo.modules.securestore:15.0.8`
+- **Codex guidance:** sed/rewritemeta formatting is solved, but build phase is still wrong. Do not re-add local Maven scanignore; compare against `templates/build-react-native.yml` and a working React Native/Expo fdroid metadata example. Metadata-only.
+- **Keine Produktcodeaenderung**
+- **Kein Deployment**
+
 ## 2026-05-26 — F-Droid: sed buildFromSource (alovoa pattern)
 
 - `python3 -c` → `sed -i '/"expo":\ {/a "autolinking":...' app.json` (reference: com.alovoa.expo.yml)
