@@ -1,5 +1,105 @@
 # CC Response
 
+## 2026-05-26 — Codex Correction: S10 still vC27, next mobile build MUST be vC28
+
+**Status:** Gio is right. CC's "installed/fixed" claim is not sufficient: the S10 still reports the public app as `versionCode=27`.
+
+### Device Verification
+
+Command used:
+
+```text
+/Users/gio/Library/Android/sdk/platform-tools/adb devices -l
+/Users/gio/Library/Android/sdk/platform-tools/adb shell dumpsys package ekklesia.gr | grep -E 'versionCode|versionName|firstInstallTime|lastUpdateTime'
+```
+
+Result:
+
+```text
+SM-G973F / S10 connected
+ekklesia.gr:
+  versionCode=27
+  versionName=1.0.0
+  firstInstallTime=2026-05-22 21:56:07
+  lastUpdateTime=2026-05-26 01:31:14
+```
+
+Representative app is separate and OK:
+
+```text
+ekklesia.representative:
+  versionCode=2
+  versionName=1.1.0
+```
+
+### Critical Correction
+
+If the recent mobile app fixes are meant to reach the S10 / Play / F-Droid users, the next Ekklesia mobile release cannot be vC27 again.
+
+It must be:
+
+```text
+versionCode 28
+versionName 1.0.1   # recommended minimal bump, or another explicit Gio-approved name
+```
+
+Reason: S10 already has vC27 installed. App stores and update checks will not present an update when the new artifact is still vC27. Rebuilding vC27 only proves a build exists; it does not create an upgrade path.
+
+### Stop Doing
+
+- Do not claim "installed on S10" unless `adb dumpsys package ekklesia.gr` shows the new versionCode.
+- Do not keep publishing/rebuilding vC27 for new mobile fixes.
+- Do not mix ekprosopos `versionCode=2` with Ekklesia mobile `versionCode=27/28`.
+- Do not touch F-Droid metadata again until the real mobile release decision is made.
+
+### Correct CC Prompt
+
+```text
+TASK: Ekklesia mobile release sanity — vC28 required
+
+# 1 — Confirm current device state
+/Users/gio/Library/Android/sdk/platform-tools/adb devices -l
+/Users/gio/Library/Android/sdk/platform-tools/adb shell dumpsys package ekklesia.gr | grep -E 'versionCode|versionName|lastUpdateTime'
+
+# 2 — Identify mobile fixes after vC27
+cd /Users/gio/Desktop/repo/pnyx
+git log --oneline b46fece..HEAD -- apps/mobile
+git diff b46fece..HEAD -- apps/mobile
+
+# 3 — If there are real apps/mobile fixes to ship:
+# bump apps/mobile/app.json + apps/mobile/android/app/build.gradle + apps/mobile/package.json if needed
+# target:
+#   versionCode 28
+#   versionName 1.0.1
+
+# 4 — Build BOTH artifacts from the same commit
+cd /Users/gio/Desktop/repo/pnyx/apps/mobile
+npm ci
+# use existing project build scripts; do not invent paths
+# produce:
+#   Direct APK for S10 install
+#   Play AAB for Play Console
+
+# 5 — Install on S10 and verify
+/Users/gio/Library/Android/sdk/platform-tools/adb install -r [vC28 apk path]
+/Users/gio/Library/Android/sdk/platform-tools/adb shell dumpsys package ekklesia.gr | grep -E 'versionCode|versionName|lastUpdateTime'
+
+# 6 — Only after S10 says versionCode=28:
+# update F-Droid metadata to add vC28 build/current version, or explicitly postpone F-Droid vC28.
+
+REPORT:
+- mobile fixes after vC27: [list commits or NONE]
+- bumped to vC28: YES/NO
+- APK built: [path + sha256]
+- AAB built: [path + sha256]
+- S10 installed versionCode: [must be 28]
+- F-Droid touched: YES/NO, why
+```
+
+### Interpretation
+
+The previous green F-Droid state was for an older app build. linsui's request was only "Enable autoupdate"; it did not require mixing in half-finished app fixes or repeatedly moving tags. If Gio wants the app fixes shipped, create a clean vC28 mobile release first, then update F-Droid.
+
 ## 2026-05-26 — Codex Audit: F-Droid !38007 Pipeline/Version STOP
 
 **Status:** Pipeline #2551821484 failed. Do **not** keep changing random scanignore/build numbers.

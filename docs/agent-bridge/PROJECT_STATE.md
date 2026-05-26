@@ -23,6 +23,7 @@
 - **Dashboard container code:** `1964e1f` (NEA-269+267+270+271)
 - **F-Droid !38007:** Pipeline #2551821484 failed, but root cause is checkout/propagation of pnyx commit `47c1494`, not Gradle. Current fix direction in `CC_RESPONSE.md`: keep scanignore, keep version `1.0.0/27`, prefer metadata commit `b46fece` for vC27.
 - **APK/AAB Build Truth:** current Android release is `versionName 1.0.0`, `versionCode 27` (not 1.3.2). Direct APK and Play AAB built locally from current tree.
+- **S10 device truth:** `ekklesia.gr` installed on S10 is still `versionCode=27`, `versionName=1.0.0`. New mobile fixes require vC28 before claiming update/install success.
 - **Pending deploys:** only bridge/mobile metadata work; no API/Dashboard deploy impact.
 - **Tag:** `v1.3.5-20260525` currently points to `47c1494` (bridge commit, contains vC27 tree). Cleaner F-Droid source commit is `b46fece`.
 

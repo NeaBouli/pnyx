@@ -3,6 +3,9 @@
 ## 2026-05-26 — Codex F-Droid !38007 Audit
 
 - Audited pnyx bridge, fdroiddata branch, GitLab MR !38007 pipelines, local APK/AAB outputs.
+- Follow-up device audit: S10 is connected and still reports `ekklesia.gr` as `versionCode=27`, `versionName=1.0.0`, `lastUpdateTime=2026-05-26 01:31:14`.
+- Conclusion: any new Ekklesia mobile app fixes after vC27 require a real vC28 release. Rebuilding or reinstalling vC27 is not an update path, and "no update available" on S10 is expected while versionCode remains 27.
+- Wrote explicit vC28 prompt to `CC_RESPONSE.md`: inspect apps/mobile diffs after `b46fece`, bump to `versionCode 28` / recommended `versionName 1.0.1`, build APK+AAB from one commit, install on S10, verify with `adb dumpsys`.
 - Latest pipeline `#2551821484` failed in `fdroid build` and `check source code` because F-Droid could not checkout pnyx commit `47c14944dcbbfeaa8c5c5488eb5ab3e07bf0e2d7`:
   - `fatal: unable to read tree (47c14944dcbbfeaa8c5c5488eb5ab3e07bf0e2d7)`
 - Fresh GitHub clone after propagation can now checkout `47c1494`, so #2551821484 was not a fresh Gradle/scanignore signal.
