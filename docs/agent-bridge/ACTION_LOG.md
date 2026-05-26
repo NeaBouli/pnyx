@@ -1,5 +1,14 @@
 # Action Log
 
+## 2026-05-26 — NEA-272c Desktop Guard + QR Lokalisierung
+
+- Desktop User-Agent-Block entfernt → Auth-State-Checks (GitHub Token + QR Verification)
+- QR Button: "Login mit App" → "Σύνδεση με εφαρμογή" (EL default)
+- QR Modal: alle deutschen Strings → EL/EN via `_qr()` Helper
+- Commit: `22359e9`
+- Static deploy noetig (Server pull + Web rebuild)
+- Kein versionCode bump, kein F-Droid/Play
+
 ## 2026-05-26 — Codex Linear + Bridge for vC29 Mobile Backlog
 
 - **Ausloeser:** Gio stellte klar, dass das POLIS Ticket-System in der App nicht nur ein besseres Coming-Soon Modal sein soll, sondern so bald wie moeglich funktional werden muss. Ausserdem sollen alle Aufgaben in Linear stehen.
