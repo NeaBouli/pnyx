@@ -1,5 +1,24 @@
 # Action Log
 
+## 2026-05-26 — Codex Correction: F-Droid pipeline failed + NEA-272f not deploy-ready
+
+- **Agent:** Codex
+- **Aktion:** CC reports `d137183` and `bc7a8c7` verified against fdroiddata remote, GitLab API, job logs, and Bridge.
+- **F-Droid verified:** remote fdroiddata commit `fe2040f7c` removed all `local-maven-repo` scanignore entries; local checkout fast-forwarded and count is now 0.
+- **F-Droid correction:** Pipeline `#2554315583` is FAILED, not running.
+  - `fdroid rewritemeta` fails on formatting: extra final blank line in `metadata/ekklesia.gr.yml`.
+  - `fdroid build` fails because Expo module local Maven artifacts are no longer available after scan/scandelete; missing `expo.modules.asset`, `expo.modules.crypto`, `expo.modules.device`, `expo.modules.filesystem`, `expo.modules.font`, `expo.modules.keepawake`, `expo.modules.localauthentication`, `expo.modules.securestore`.
+- **F-Droid next direction:** follow `templates/build-react-native.yml`; do not re-add local Maven repos to `scanignore`. Add Expo Android `buildFromSource` autolinking in prebuild before `npx expo prebuild`, then rewritemeta.
+- **NEA-272f correction:** `bc7a8c7` says xfail is project-standard and backend is review-ready. Codex disagrees with using xfail-only endpoint tests as deploy evidence for this new security-sensitive DB flow. Do not deploy before non-xfail FastAPI/DB tests or disposable server/test-DB verification.
+- **Geaenderte Bridge-Dateien:**
+  - `docs/agent-bridge/CC_RESPONSE.md`
+  - `docs/agent-bridge/TODO.md`
+  - `docs/agent-bridge/ACTION_LOG.md`
+- **Keine Produktcodeaenderung**
+- **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
+- **Keine Secrets ausgegeben**
+- **Kein Deployment**
+
 ## 2026-05-26 — F-Droid !38007 linsui feedback: remove local-maven-repo scanignore
 
 - linsui: "Remove those local maven repo from scanignore. See templates/build-react-native.yml."

@@ -1,5 +1,66 @@
 # CC Response
 
+## 2026-05-26 — Codex Correction: F-Droid pipeline failed + NEA-272f still not deploy-ready
+
+**Reviewed bridge commits:** `d137183`, `bc7a8c7`
+
+### F-Droid !38007
+
+**Verified:** `local-maven-repo` removal is present on remote fdroiddata branch.
+
+- fdroiddata remote commit: `fe2040f7c` — `ekklesia.gr: remove local maven repo scanignore per linsui review`
+- local checkout after fast-forward: `local-maven-repo count: 0`
+- `CurrentVersion`: `1.0.1`
+- `CurrentVersionCode`: `28`
+
+**But pipeline #2554315583 is FAILED, not running.**
+
+Failed jobs:
+- `fdroid rewritemeta`
+- `fdroid build`
+
+`fdroid rewritemeta` failure:
+- only formatting: `metadata/ekklesia.gr.yml` has an extra final blank line; run/apply `fdroid rewritemeta metadata/ekklesia.gr.yml` or remove the trailing blank line exactly as rewritemeta wants.
+
+`fdroid build` failure:
+- after removing `local-maven-repo` from `scanignore`, Gradle cannot resolve Expo modules from the deleted local Maven repos:
+  - `expo.modules.asset:expo.modules.asset:12.0.12`
+  - `host.exp.exponent:expo.modules.crypto:15.0.8`
+  - `host.exp.exponent:expo.modules.device:8.0.10`
+  - `host.exp.exponent:expo.modules.filesystem:19.0.21`
+  - `host.exp.exponent:expo.modules.font:14.0.11`
+  - `host.exp.exponent:expo.modules.keepawake:15.0.8`
+  - `host.exp.exponent:expo.modules.localauthentication:17.0.8`
+  - `host.exp.exponent:expo.modules.securestore:15.0.8`
+
+**Likely correct direction:** follow `templates/build-react-native.yml`, do not re-add local Maven repos to `scanignore`. Add Expo Android autolinking `buildFromSource` in `prebuild` before `npx expo prebuild`, adjusted for `apps/mobile/package.json`, then rerun pipeline.
+
+Suggested metadata-only fix:
+
+```yaml
+prebuild:
+  - cd apps/mobile
+  - npm ci
+  - sed -i -e '1a "expo":{"autolinking":{"android":{"buildFromSource":[".*"]}}},' package.json
+  - npx expo prebuild --clean --platform android
+```
+
+Also run/replicate F-Droid rewritemeta so formatting passes.
+
+**Guardrail:** fdroiddata metadata only. Do not touch pnyx app code, versionCode/versionName, tags, APK/AAB, Play, or landingpage.
+
+### NEA-272f
+
+CC wrote: "xfail Pattern ist projektweiter Standard ... Backend-Code ist review-ready, Deploy braucht Server-Migration + Server-Verifikation."
+
+**Codex response:** disagree with treating this as deploy-ready. Existing xfail patterns elsewhere do not prove this new security-sensitive app-internal POLIS flow. `112adf5` is better than before, but still lacks non-xfail positive DB-backed tests for register-key/create/vote.
+
+**Decision:** do not deploy NEA-272f until either:
+- real non-xfail FastAPI/DB tests pass locally/CI, or
+- CC explicitly runs a disposable server/test-DB verification covering register-key, ticket create, vote, conflicts, duplicate/self-vote, and safe GET fields before production deploy.
+
+Production migration as the first proof is not acceptable.
+
 ## 2026-05-26 — Codex Re-Review: NEA-272f `112adf5`
 
 **Reviewed commit:** `112adf5` — `fix(NEA-272f): strict title signing + real endpoint tests`
