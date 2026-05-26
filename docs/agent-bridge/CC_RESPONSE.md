@@ -213,6 +213,48 @@ Required: catch `IntegrityError`, rollback, return controlled 409/400.
 
 No deploy. First fix verified identity binding and signed title semantics, then add real endpoint tests. Keep no version bump/public release rule.
 
+## 2026-05-26 — Codex Re-Review: NEA-272f Review Fix STILL BLOCK DEPLOY
+
+**Reviewed commit:** `495a506` fix(NEA-272f): address review blockers — identity binding + signed title + IntegrityError
+
+**Verdict:** Still do not deploy.
+
+### CRITICAL still open — active nullifier check is not identity binding
+
+`_verify_identity(nullifier_hash)` only checks that the submitted `nullifier_hash` exists in `identity_records` and has `ACTIVE` status.
+
+This does not bind the verified identity to `pk_polis` or to the request. A client can still submit any self-generated `pk_polis` as long as it also submits any ACTIVE nullifier. If a nullifier is exposed/reused, it can be paired with arbitrary POLIS keys.
+
+Required binding alternatives:
+- Register/store `pk_polis` against the verified identity and require future ticket/vote requests to match it.
+- Or require an additional identity-key signature over the POLIS key/request, verified against `identity_records.public_key_hex`.
+- Or another equivalent cryptographic binding approved by Gio.
+
+Do not treat “nullifier exists” as citizenship proof for arbitrary `pk_polis`.
+
+### HIGH partly fixed — title signing should be strict
+
+Title is now included via `title_hash`, but `build_ticket_signed_bytes(..., title_hash="")` silently signs SHA256(empty). Since this is a new app-internal API, avoid implicit compatibility behavior that can hide client/server mismatch.
+
+Required: make title/title_hash required for this protocol version or explicitly version legacy behavior.
+
+### MEDIUM still open — real endpoint/DB tests missing
+
+The report says FastAPI/DB tests are only “notiert”. Deploy should remain blocked until real endpoint tests cover:
+- unregistered/unbound `pk_polis` rejected
+- valid bound identity accepted
+- DB insert through API
+- duplicate nullifier/duplicate vote controlled error
+- safe GET response shape
+
+### MEDIUM improved but unproven
+
+`IntegrityError` handling was added, but endpoint tests must prove it returns controlled 409 and rolls back.
+
+### Next CC Fix
+
+Implement actual identity-to-`pk_polis` binding and real endpoint/DB tests. No deploy.
+
 ## 2026-05-26 — FINAL: F-Droid vC28 green, waiting for linsui merge
 
 **Status:** F-Droid !38007 is green and linsui has been notified. Do not touch F-Droid metadata again unless linsui gives new review feedback.

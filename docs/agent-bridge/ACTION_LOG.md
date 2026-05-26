@@ -139,6 +139,16 @@
 - **MEDIUM:** Duplicate DB constraints/races can raise unhandled `IntegrityError` and return 500.
 - **Linear NEA-272:** updated with blockers.
 
+### Codex Re-Review — NEA-272f Fix STILL BLOCK DEPLOY
+
+- **Reviewed commit:** `495a506` fix(NEA-272f): address review blockers — identity binding + signed title + IntegrityError
+- **Verdict:** Still do not deploy.
+- **CRITICAL remains:** `_verify_identity(nullifier_hash)` only checks that a nullifier is ACTIVE. It does not bind `pk_polis` to the verified identity or request.
+- **Required:** registered `pk_polis` mapping to identity, identity-key signature over POLIS key/request, or equivalent approved cryptographic binding.
+- **HIGH partly fixed:** title is included, but empty `title_hash` compatibility path should not exist silently for new app-internal protocol.
+- **MEDIUM remains:** real FastAPI/DB endpoint tests are still missing; crypto-level tests are not enough.
+- **Linear NEA-272:** updated with re-review blockers.
+
 ## 2026-05-26 — Codex F-Droid !38007 Audit
 
 - Audited pnyx bridge, fdroiddata branch, GitLab MR !38007 pipelines, local APK/AAB outputs.
