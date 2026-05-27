@@ -1,5 +1,20 @@
 # Action Log
 
+## 2026-05-27 — Codex Correction: Compass Toggle Feature Still Open
+
+- **Agent:** Codex
+- **Aktion:** Gio clarified that the Compass request was a feature, not the `tsc` bug. Codex inspected `apps/mobile/src/screens/CompassScreen.tsx` and wrote corrected implementation prompt to `CC_RESPONSE.md`.
+- **Finding:** Existing `showAggregated` is partial/wrong.
+  - It averages `PARTIES`, not the user's result.
+  - It uses a blue `aggDot`, not green/pulsing.
+  - Toggle is on axis labels, not the whole compass box.
+  - User dot still renders in aggregated mode.
+- **Correct requirement:** Toggle the compass result display between detailed multi-point view and a single pulsing green point at `result.economic/result.social`.
+- **Decision:** Stop vC29 final build until Compass result toggle is implemented and S10-verified.
+- **Keine Produktcodeaenderung durch Codex**
+- **Keine Secrets gelesen**
+- **Kein Deployment**
+
 ## 2026-05-27 — Codex Prompt: vC29 Final Build Gate
 
 - **Agent:** Codex

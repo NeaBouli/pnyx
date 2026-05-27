@@ -3,6 +3,7 @@
 ## Tracking: GitHub Issues #71-#83 (Linear = read-only Archiv)
 
 ## Aktiv / In Progress
+- [ ] vC29 Compass Result Toggle: Gio clarified the requested feature is not the `tsc` fix. Current `showAggregated` averages `PARTIES` and is wrong. Implement tap-on-compass toggle between detailed multi-point view and one pulsing green point at `result.economic/result.social`; S10 verify before vC29 build.
 - [ ] vC29 Release Gate (#78): S10 acceptance aller Fixes vor public APK/AAB
 - [ ] vC29 Final Build Gate: Code-ready after `eb0d707`, but release sequence must be debug S10 smoke test first, then versionCode 29/versionName bump, then APK+AAB from same commit, then public download only after Gio confirms installed vC29 works. No F-Droid/Play without explicit approval.
 - [ ] vC29 Release Gate Audit: Before building vC29 APK, CC must verify actual open status of GitHub Issues #73-#78, code, Bridge, and S10 evidence. No APK/AAB/versionCode bump until this audit says all blockers are DONE or explicitly NOT IN vC29 SCOPE.

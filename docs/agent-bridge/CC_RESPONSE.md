@@ -1,5 +1,99 @@
 # CC Response
 
+## 2026-05-27 — Codex Correction: Compass Toggle Feature Still Open
+
+Important correction from Gio:
+- There was never a functional Compass problem.
+- The `tsc` fix was only a technical build cleanup.
+- The actual requested Compass feature is still open and blocks vC29 until implemented and S10-verified.
+
+Current code status in `apps/mobile/src/screens/CompassScreen.tsx`:
+- A `showAggregated` mode exists, but it is **not the requested feature**.
+- Current aggregated dot computes the average of `PARTIES`:
+  ```ts
+  const avgX = PARTIES.reduce((s, p) => s + p.x, 0) / PARTIES.length;
+  const avgY = PARTIES.reduce((s, p) => s + p.y, 0) / PARTIES.length;
+  ```
+- That is wrong for Gio's request.
+- Toggle currently sits on axis labels, not the whole compass/result display.
+- Dot is blue, not green/pulsing.
+- User dot is still rendered in aggregated mode, causing two "result" points.
+
+Correct product requirement:
+
+```text
+TASK: vC29 Compass Result Toggle — user result as single pulsing green point
+
+Scope:
+- Fix only Compass result visualization.
+- No versionCode bump.
+- No APK/AAB/public release.
+- No Play/F-Droid metadata.
+- Must be S10-tested before vC29 build.
+
+User requirement:
+On the Compass result screen, tapping the compass/result visualization should toggle:
+
+Mode A — current detailed view:
+- Show the existing multiple party/reference points as today.
+- Show the user's own result point.
+
+Mode B — single result view:
+- Hide all party/reference points.
+- Show only one pulsing green point representing the user's actual computed result:
+  - x = result.economic
+  - y = result.social
+- This point is the "common denominator" / total result point.
+- It should visually stand out:
+  - green
+  - pulsing/ring effect if feasible in React Native
+  - centered at the user's actual X/Y coordinate, not party average.
+
+Toggle:
+- User taps the compass box/result area to switch Mode A <-> Mode B.
+- Repeated taps toggle back and forth.
+- The hint text should explain this in Greek, for example:
+  - Detailed mode: "Πατήστε την πυξίδα για μία συνολική θέση"
+  - Single mode: "Πατήστε ξανά για αναλυτική προβολή"
+
+Implementation notes:
+- Do not use average of PARTIES.
+- Remove or replace current `avgX/avgY` logic.
+- In single mode, do not render `userDot` separately if the green point already represents the user result.
+- Keep layout stable on S10.
+- If pulsing animation is too risky, implement a green dot with a subtle ring first, but report that animation is static.
+
+Verification:
+cd apps/mobile && npx tsc --noEmit
+
+Debug S10 test:
+- Open Compass result screen.
+- Tap compass box.
+- Detailed view switches to one green result point.
+- Tap again.
+- Detailed multi-point view returns.
+- No overlap, no crash, no layout shift.
+
+Commit:
+git add apps/mobile/src/screens/CompassScreen.tsx
+git commit -m "fix(vC29): toggle compass result to single green point"
+
+REPORT:
+- Existing wrong party-average logic removed: YES/NO
+- Single point uses result.economic/result.social: YES/NO
+- Whole compass box toggles: YES/NO
+- Detailed view still works: YES/NO
+- Green pulsing/ring point: YES/NO
+- tsc: OK/FAIL
+- S10 debug test: PASS/FAIL
+- Commit:
+- Bridge updated: YES/NO
+```
+
+Codex decision:
+- Stop vC29 final build.
+- Compass feature is open until this is implemented and S10-verified.
+
 ## 2026-05-27 — Codex Prompt: vC29 Final Build Gate
 
 vC29 is **code-ready**, not yet **release-built**.
