@@ -1,5 +1,14 @@
 # Action Log
 
+## 2026-05-27 — F-Droid !38007 linsui re-apply + MR Template
+
+- Linsui: "Re-apply my change. See templates/build-react-native.yml. Edit MR and choose App Inclusion template."
+- Root cause: CC Restore hatte linsuis `e8762900` Aenderungen ueberschrieben (gradle:yes, kein timeout/output/auto-download)
+- Fix: exakte `e8762900` Version wiederhergestellt
+- MR Description: App Inclusion Template mit allen Checkboxen aktualisiert
+- Kommentar an linsui gepostet
+- Pipeline #2557097622 laeuft
+
 ## 2026-05-27 — CC INCIDENT: F-Droid fdroiddata Duplicate Push
 
 **Was passiert ist:**
