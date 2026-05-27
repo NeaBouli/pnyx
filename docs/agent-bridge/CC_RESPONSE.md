@@ -1,5 +1,99 @@
 # CC Response
 
+## 2026-05-27 — Codex Prompt: vC29 #76 Region-Filter Audit
+
+#73 ANNOUNCED Bills is accepted as implemented by `6accbd3`:
+- Mobile file: `apps/mobile/src/screens/BillsScreen.tsx`
+- Existing grey `Ανακοινώθηκε` badge reused via `STATUS_LABELS`.
+- New filter tab: `Ανακοιν.`
+- ANNOUNCED card navigation disabled (`activeOpacity=1`, no VoteScreen).
+- CC reported `cd apps/mobile && npx tsc --noEmit` = 0 errors.
+- Final S10 visual check is still useful, but #73 is not blocking code-wise.
+
+Next step: **#76 Region-Filter Audit**. Audit only first. Do not fix unless a bug is found and Gio/Codex approves the fix.
+
+```text
+TASK: vC29 #76 — Region-Filter Audit
+
+Scope:
+- Audit/report only first.
+- No code changes unless a bug is proven and approved.
+- No versionCode bump.
+- No APK/AAB/public release.
+- No Play/F-Droid metadata.
+
+Goal:
+Verify that mobile bill visibility/filtering is correct for:
+- NATIONAL
+- REGIONAL
+- MUNICIPAL
+- INSTITUTIONAL
+- DIAVGEIA
+- ANNOUNCED
+- OPEN_END / archived
+
+Step 1 — Read relevant code
+From /Users/gio/Desktop/repo/pnyx:
+
+rg -n "periferia_id|dimos_id|governance_level|region|municipal|institutional|ANNOUNCED|OPEN_END|fetchBills|/bills" \
+  apps/mobile/src apps/api/routers apps/api/services \
+  -g '*.ts' -g '*.tsx' -g '*.py' | head -160
+
+Read at minimum:
+- apps/mobile/src/screens/BillsScreen.tsx
+- apps/mobile/src/lib/api.ts
+- backend router that serves `/api/v1/bills`
+- any visibility helper used by backend
+
+Step 2 — Verify intended contract
+Report:
+- Does backend filter by `periferia_id` / `dimos_id`? YES/NO
+- Does mobile pass `periferia_id` / `dimos_id` from SecureStore? YES/NO
+- Which filters are client-side only? [list]
+- Can a user without region still see NATIONAL/INSTITUTIONAL safely? YES/NO
+- Can region/muncipal bills from the wrong region leak into mobile list? YES/NO/UNKNOWN
+- Does ANNOUNCED interact safely with Vote navigation? YES/NO
+
+Step 3 — Server/live sanity query if needed
+If safe and read-only, check production counts by governance_level/status:
+SELECT governance_level, status, COUNT(*)
+FROM parliament_bills
+GROUP BY governance_level, status
+ORDER BY governance_level, status;
+
+Do not dump sensitive data.
+
+Step 4 — Optional S10 manual checks
+On S10/debug app:
+- With current stored region, open Bills.
+- Check tabs:
+  - Όλα
+  - Ανακοιν.
+  - Δήμος
+  - Περιφ.
+  - Φορείς
+  - Αρχείο
+- Confirm no obvious wrong-region municipal/regional bills appear.
+- Confirm ANNOUNCED cards do not navigate to Vote.
+
+Step 5 — Decision
+Return one of:
+- NOT BLOCKING vC29 — no bug found
+- BLOCKS vC29 — bug found, fix prompt required
+- NEEDS DATA — cannot verify due no sample/live data
+
+REPORT:
+- #76 status: NOT BLOCKING / BLOCKS / NEEDS DATA
+- Backend region filter: PASS/FAIL/UNKNOWN
+- Mobile params: PASS/FAIL
+- Client filters: [list]
+- Wrong-region leakage risk: LOW/MEDIUM/HIGH + why
+- ANNOUNCED navigation: PASS/FAIL
+- S10 checked: YES/NO
+- If bug: exact file/line and reproduction
+- Bridge updated: YES/NO
+```
+
 ## 2026-05-27 — Codex Prompt: vC29 #73 ANNOUNCED Bills Badge
 
 Compass `tsc` blocker is resolved by `c6fd27b`:

@@ -6,10 +6,11 @@
 - [ ] vC29 Release Gate (#78): S10 acceptance aller Fixes vor public APK/AAB
 - [ ] vC29 Release Gate Audit: Before building vC29 APK, CC must verify actual open status of GitHub Issues #73-#78, code, Bridge, and S10 evidence. No APK/AAB/versionCode bump until this audit says all blockers are DONE or explicitly NOT IN vC29 SCOPE.
 - [ ] vC29 Blocker Order: Fix Compass `tsc` errors first (`apps/mobile/src/compass/engine.ts:57-58`), then implement #73 ANNOUNCED Bills badge, then run #76 Region-Filter audit. No vC29 APK/AAB until these gates are cleared.
-- [ ] vC29 #73 ANNOUNCED Bills Badge: Compass tsc blocker is fixed in `c6fd27b`; next implement minimal mobile badge after diagnosing actual backend status value and mobile bill card file. No APK/AAB/versionCode bump/public release until S10/code verification.
+- [ ] vC29 #76 Region-Filter Audit: #73 is code-complete in `6accbd3`; next audit region filtering only. No code changes unless a concrete bug is found and approved. If no bug, mark NOT BLOCKING vC29.
 - [ ] F-Droid !38007 (#79): Pipeline gruen, wartet auf linsui Merge
 - [ ] Demo-mode POLIS Guard: Demo-Nullifier soll POLIS Create/Vote nicht erlauben
 ## Done (Session 25-27.05.2026)
+- [x] vC29 #73 ANNOUNCED Bills Badge — `6accbd3`, filter tab `Ανακοιν.`, navigation disabled, badge existed, tsc reported 0 errors
 - [x] Compass tsc Fehler fixen (`engine.ts:57-58`) — `c6fd27b`, `npx tsc --noEmit` reported 0 errors
 - [x] NEA-272f: POLIS app-internal — Backend + Mobile, 15 router/DB tests, S10 verified, Self-Vote/Duplicate blockiert
 - [x] NEA-265/268/269/270/271/272: alle deployed

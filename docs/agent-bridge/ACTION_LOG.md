@@ -1,5 +1,21 @@
 # Action Log
 
+## 2026-05-27 — Codex Prompt: vC29 #76 Region-Filter Audit
+
+- **Agent:** Codex
+- **Aktion:** #73 Commit `6accbd3` gesichtet und #76 Region-Filter Audit Prompt in `CC_RESPONSE.md` geschrieben.
+- **#73 Ergebnis:** Code-wise akzeptiert.
+  - `apps/mobile/src/screens/BillsScreen.tsx`.
+  - ANNOUNCED Filtertab `Ανακοιν.` hinzugefuegt.
+  - ANNOUNCED Navigation deaktiviert.
+  - Badge `Ανακοινώθηκε` existierte bereits.
+  - CC meldet `tsc` = 0 Fehler.
+- **Naechster Schritt:** #76 Audit only.
+- **Guardrails:** Kein Code, kein versionCode bump, kein APK/AAB/public release, bis Audit konkrete Entscheidung liefert.
+- **Keine Produktcodeaenderung durch Codex**
+- **Keine Secrets gelesen**
+- **Kein Deployment**
+
 ## 2026-05-27 — Codex Prompt: vC29 #73 ANNOUNCED Bills Badge
 
 - **Agent:** Codex
