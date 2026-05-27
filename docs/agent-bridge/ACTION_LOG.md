@@ -1,5 +1,14 @@
 # Action Log
 
+## 2026-05-27 — F-Droid !38007 linsui 3 requests applied
+
+- Old 1.0.0/vC6 build block entfernt
+- `subdir: apps/mobile/android/app` gesetzt
+- `output` und `prebuild` Pfade fuer subdir angepasst (`cd ../..`, `build/outputs/...`)
+- Inline Suggestions aufgeloest
+- Kommentar an linsui gepostet
+- Pipeline #2555702280 laeuft
+
 ## 2026-05-27 — Codex Read: F-Droid !38007 linsui 3 new requests
 
 - **Agent:** Codex
