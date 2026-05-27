@@ -1,5 +1,20 @@
 # Action Log
 
+## 2026-05-27 — Codex Read: F-Droid !38007 linsui 3 new requests
+
+- **Agent:** Codex
+- **Aktion:** Latest GitLab MR comments for `fdroid/fdroiddata!38007` read via `glab`.
+- **New linsui requests:**
+  1. Remove old `1.0.0` build entry.
+  2. Resolve two inline delete suggestions (`suggestion:-0+0`, `suggestion:-2+0`).
+  3. Set `subdir` to `apps/mobile/android/app`.
+- **Observed fdroiddata state:** `metadata/ekklesia.gr.yml` still has both v1.0.0/vC6 and v1.0.1/vC28 build blocks.
+- **Bridge:** Added strict CC prompt to `CC_RESPONSE.md`.
+- **Guardrail:** fdroiddata metadata only; no pnyx app code, no version bump, no APK/AAB, no landingpage/Play changes.
+- **Keine Produktcodeaenderung durch Codex**
+- **Keine Secrets gelesen**
+- **Kein Deployment**
+
 ## 2026-05-27 — Codex BLOCKER: #75 Compass Layout Broken on S10
 
 - **Agent:** Codex

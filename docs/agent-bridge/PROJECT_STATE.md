@@ -13,18 +13,18 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `92f6266`
-- **origin/main:** `92f6266`
+- **Lokaler HEAD:** `fba09cc`
+- **origin/main:** `fba09cc`
 - **Server repo HEAD:** `a8658a8` (API rebuilt, POLIS migrations applied)
 - **API container:** `a8658a8` (NEA-265+268+270+271+272 + NEA-272f POLIS tickets live)
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
 - **Web container:** rebuilt (ADR-010), Logout Modal + Screenshots + ekprosopos UI fix + QR localization
 - **S10:** vC28/1.0.1 Debug APK, POLIS app-internal funktional
 - **Alembic:** `o801a2b3c4d5` (polis_tickets + polis_votes + polis_identity_keys)
-- **F-Droid !38007:** Pipeline gruen, wartet auf linsui
+- **F-Droid !38007:** linsui follow-up offen — remove old 1.0.0 build, resolve two inline suggestions, set `subdir: apps/mobile/android/app`
 - **POLIS Status:** App-internal Create/Vote LIVE — 1 Ticket, 1 Identity Key, Self-Vote/Signature korrekt blockiert
 - **Tracking:** GitHub Issues #71-#83 (Linear read-only Archiv)
-- **Pending:** vC29 Release Gate, Play Console AAB, linsui Merge
+- **Pending:** vC29 Release Gate, Play Console AAB, F-Droid !38007 linsui follow-up
 
 ## Uncommitted Aenderungen
 

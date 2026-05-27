@@ -1,5 +1,96 @@
 # CC Response
 
+## 2026-05-27 — Codex: F-Droid !38007 linsui follow-up (3 new requests)
+
+I read the latest GitLab MR comments on `fdroid/fdroiddata!38007`.
+
+New linsui requests:
+1. `Remove 1.0.0.`
+2. Two inline delete suggestions:
+   - `suggestion:-0+0`
+   - `suggestion:-2+0`
+3. `Set subdir to apps/mobile/android/app.`
+
+Current fdroiddata state observed:
+- `metadata/ekklesia.gr.yml` still contains two build blocks:
+  - old `versionName: 1.0.0`, `versionCode: 6`
+  - current `versionName: 1.0.1`, `versionCode: 28`
+- The current vC28 commit is still:
+  `fa6366f65c9a1e396f3cc6ffad474b6afa3ffd56`
+- Autoupdate is present:
+  - `AutoUpdateMode: Version`
+  - `UpdateCheckMode: Tags`
+  - `CurrentVersion: 1.0.1`
+  - `CurrentVersionCode: 28`
+
+```text
+TASK: F-Droid !38007 — apply linsui's 3 latest review requests
+
+Scope:
+- fdroiddata fork only.
+- File: /Users/gio/Desktop/fdroiddata/metadata/ekklesia.gr.yml
+- Do NOT touch pnyx app code.
+- Do NOT bump versionCode/versionName.
+- Do NOT build new APK/AAB.
+- Do NOT change tags.
+- Do NOT update landingpage/Play/F-Droid app release artifacts.
+
+Required changes:
+1. Remove the entire old v1.0.0/vC6 build block:
+   - versionName: 1.0.0
+   - versionCode: 6
+   - commit: ccaf8e5a99abc73323f4999ad5e4173342685d4b
+   Remove that whole build entry, not just the version line.
+
+2. Resolve linsui's two inline delete suggestions.
+   - Inspect the GitLab MR discussions in the UI or via glab/API.
+   - Apply exactly the suggested deletions.
+   - Do not guess if the inline line mapping is unclear; report the exact file/line first.
+
+3. Add F-Droid subdir for the remaining v1.0.1/vC28 build:
+   subdir: apps/mobile/android/app
+
+4. Re-check build commands after adding subdir.
+   Important:
+   - With `subdir` set, the current `output: apps/mobile/android/app/build/...` and
+     `build: cd apps/mobile/android && gradle ...` may be wrong.
+   - Compare with `templates/build-react-native.yml` and existing fdroiddata examples.
+   - Use F-Droid metadata semantics, not hand guesses.
+   - Keep the already-green Expo `buildFromSource` package.json fix unless validation proves it must move.
+
+Validation:
+cd /Users/gio/Desktop/fdroiddata
+fdroid rewritemeta ekklesia.gr
+fdroid lint ekklesia.gr
+git diff -- metadata/ekklesia.gr.yml
+
+Then commit and push to the MR branch:
+git add metadata/ekklesia.gr.yml
+git commit -m "ekklesia.gr: address review comments"
+git push origin ekklesia-v1.0.0
+
+After push:
+- Check new GitLab pipeline.
+- If green, comment to linsui:
+  "Hi @linsui, done. Removed the old 1.0.0 build entry, applied the inline suggestions, and set subdir to apps/mobile/android/app for the remaining v1.0.1/vC28 build. Pipeline is running."
+
+REPORT:
+- Old 1.0.0 build removed: YES/NO
+- Inline suggestions resolved: YES/NO + exact lines
+- subdir set: YES/NO
+- output/build commands adjusted or confirmed: [what changed / why unchanged]
+- rewritemeta: OK/FAIL
+- lint: OK/FAIL
+- Commit:
+- Push: YES/NO
+- Pipeline:
+- linsui comment posted: YES/NO
+```
+
+Codex note:
+- This is an fdroiddata metadata cleanup only.
+- Do not mix it with vC29, Compass, APK/AAB, or mobile feature work.
+
 ## 2026-05-27 — Codex BLOCKER: #75 Compass Layout Broken on S10
 
 Gio tested the debug APK on S10. The Compass result screen is visibly broken.
