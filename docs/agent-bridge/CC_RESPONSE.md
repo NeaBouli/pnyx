@@ -1,5 +1,75 @@
 # CC Response
 
+## 2026-05-27 — Codex Prompt: vC29 Blocker Order
+
+vC29 audit result accepted:
+- #74 POLIS Tickets: DONE
+- #75 Kompass Toggle: committed/debug APK, final S10 check still useful
+- #77 ZK Wizard: after vC29
+- #78 Play/AAB: after all fixes
+
+vC29 blockers now:
+1. Compass TypeScript errors in `apps/mobile/src/compass/engine.ts:57-58`
+2. #73 ANNOUNCED Bills badge not implemented
+3. #76 Region-Filter audit only blocks if it finds a bug
+
+Recommended order:
+
+```text
+TASK 1: vC29 Blocker — fix Compass tsc errors first
+
+Scope:
+- Fix only `apps/mobile/src/compass/engine.ts:57-58`.
+- Do not change app behavior.
+- No versionCode bump.
+- No APK/AAB/public release.
+
+Problem:
+`cd apps/mobile && npx tsc --noEmit` fails because `values.reduce(...)` infers `LikertValue` accumulator instead of number.
+
+Expected fix:
+- Make accumulator numeric explicitly.
+- Keep computeConfidence behavior identical.
+- Example direction:
+  const values: number[] = answers.map(a => a.value);
+  const mean = values.reduce((a: number, b: number) => a + b, 0) / values.length;
+  const variance = values.reduce((a: number, b: number) => a + Math.pow(b - mean, 2), 0) / values.length;
+- Also guard empty answers if needed, without changing normal behavior.
+
+Verification:
+cd apps/mobile && npx tsc --noEmit
+
+Commit:
+git add apps/mobile/src/compass/engine.ts
+git commit -m "fix(vC29): resolve compass typecheck accumulator errors"
+
+REPORT:
+- tsc before: [exact]
+- fix summary:
+- tsc after: OK/FAIL
+- behavior changed: YES/NO
+- commit:
+- Bridge updated: YES/NO
+```
+
+After Task 1 passes:
+
+```text
+TASK 2: vC29 Blocker — implement #73 ANNOUNCED Bills badge
+
+Do not start until Compass tsc is green.
+Audit existing bill status model first, then implement the smallest mobile UI change.
+No versionCode bump, no APK/AAB/public release until S10 acceptance.
+```
+
+After Task 2:
+
+```text
+TASK 3: #76 Region-Filter Audit
+
+Audit only first. If no bug, mark NOT BLOCKING vC29. If bug found, report before fixing.
+```
+
 ## 2026-05-27 — Codex Prompt: vC29 Release Gate Audit Before APK Build
 
 POLIS NEA-272f is verified and accepted, but **do not build vC29 yet**. Gio wants vC29 only after all app fixes are actually done and S10-verified. First audit what is truly open.

@@ -1,5 +1,19 @@
 # Action Log
 
+## 2026-05-27 — Codex Prompt: vC29 Blocker Order
+
+- **Agent:** Codex
+- **Aktion:** vC29 Audit-Report `48b3ba7` ausgewertet und naechste Reihenfolge in `CC_RESPONSE.md` festgelegt.
+- **Entscheidung:**
+  1. Compass `tsc` Fehler zuerst fixen (`apps/mobile/src/compass/engine.ts:57-58`).
+  2. Danach #73 ANNOUNCED Bills Badge implementieren.
+  3. Danach #76 Region-Filter Audit; nur bei Bug blockierend.
+- **Nicht jetzt:** vC29 APK/AAB, versionCode bump, public APK/Landingpage, Play/F-Droid.
+- **Warum:** Sauberer Typecheck muss vor Feature- und Release-Build stehen.
+- **Keine Produktcodeaenderung durch Codex**
+- **Keine Secrets gelesen**
+- **Kein Deployment**
+
 ## 2026-05-27 — vC29 Release Gate Audit
 
 | Issue | Title | Code | S10 | Blocks vC29? | Next |
