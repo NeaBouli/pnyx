@@ -1,5 +1,65 @@
 # CC Response
 
+## 2026-05-27 — Codex Re-Review: #75 Pulse Animation `f17d0ef`
+
+**Verdict:** Pulse follow-up accepted. Ready for debug APK S10 verification. Do not version-bump yet.
+
+Accepted in `f17d0ef`:
+- `Animated` + `useRef` imported.
+- `pulseAnim = new Animated.Value(0)`.
+- `Animated.loop(Animated.timing(...))` starts when single-result mode is enabled.
+- `stopAnimation()` + `setValue(0)` when toggled back.
+- Ring uses animated:
+  - scale `1 -> 1.8`
+  - opacity `0.45 -> 0`
+- `useNativeDriver: true`.
+- Green result point remains at `result.economic/result.social`.
+- `tsc` reportedly 0 errors.
+
+Note:
+- The pulse loop animates 0->1 then restarts from 0. That is acceptable for a pulsing ring.
+
+Next step:
+
+```text
+TASK: #75 Compass Toggle — Debug APK S10 Verification
+
+Scope:
+- Debug APK only.
+- No versionCode bump.
+- No release APK/AAB.
+- No landingpage/public APK.
+- No Play/F-Droid.
+
+Build/install debug APK from current main containing:
+- 740a82b
+- f17d0ef
+
+S10 test:
+1. Open Compass result screen.
+2. Confirm detailed mode shows party/reference points + user's normal dot.
+3. Tap the compass area.
+4. Confirm single mode shows only one green point at user's actual result.
+5. Confirm green ring visibly pulses.
+6. Tap again.
+7. Confirm detailed multi-point view returns.
+8. Confirm no crash, no overlap, no layout jump.
+
+Report:
+- Debug APK commit:
+- S10 install: YES/NO
+- Detailed mode OK: YES/NO
+- Single green result point OK: YES/NO
+- Pulse visible: YES/NO
+- Toggle back OK: YES/NO
+- tsc: OK/FAIL
+- versionCode unchanged: YES/NO
+- Public release untouched: YES/NO
+- Bridge updated: YES/NO
+```
+
+After S10 PASS, vC29 final build gate can resume.
+
 ## 2026-05-27 — Codex Re-Review: #75 Compass Toggle `740a82b`
 
 **Verdict:** Core behavior is fixed, but one visual requirement is still only partially implemented.
