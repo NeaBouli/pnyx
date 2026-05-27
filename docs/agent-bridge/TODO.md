@@ -3,6 +3,7 @@
 ## Tracking: GitHub Issues #71-#83 (Linear = read-only Archiv)
 
 ## Aktiv / In Progress
+- [ ] #75 Compass Layout BLOCKER: S10 screenshot shows collapsed/tiny X/Y grid after `740a82b`/`f17d0ef`; likely TouchableOpacity wrapper broke flex/aspect sizing. Restore original full-size compass square and toggle only plot layer before vC29 build.
 - [ ] vC29 Compass Result Toggle: Gio clarified the requested feature is not the `tsc` fix. Current `showAggregated` averages `PARTIES` and is wrong. Implement tap-on-compass toggle between detailed multi-point view and one pulsing green point at `result.economic/result.social`; S10 verify before vC29 build.
 - [ ] #75 Compass Pulse Follow-up: Commit `740a82b` fixes toggle/position/color, but ring is static, not actually pulsing. Add real React Native Animated pulse or get explicit Gio acceptance for static ring before vC29 build.
 - [ ] #75 Compass Debug S10 Verification: `f17d0ef` implements real Animated pulse. Build/install debug APK only, verify detailed mode, single green result point, visible pulse, toggle back. No version bump/public release.

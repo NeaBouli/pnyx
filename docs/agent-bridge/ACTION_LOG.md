@@ -1,5 +1,21 @@
 # Action Log
 
+## 2026-05-27 — Codex BLOCKER: #75 Compass Layout Broken on S10
+
+- **Agent:** Codex
+- **Aktion:** Gio S10 screenshot analysiert und Blocker-Prompt in `CC_RESPONSE.md` geschrieben.
+- **Finding:** Compass result screen is visibly broken:
+  - X/Y grid collapsed into tiny area.
+  - Axis labels overlap points.
+  - Party labels overlap.
+  - Toggle unreliable.
+- **Likely cause:** `TouchableOpacity` wrapper around `compassBox` has no flex/aspect sizing, so the old full-size grid collapsed.
+- **Required fix:** Restore original full-size X/Y grid; make the square itself tappable; toggle only plotted layer between party points and one pulsing green result point.
+- **Decision:** vC29 final build remains blocked until S10 Compass screen is visually fixed and confirmed.
+- **Keine Produktcodeaenderung durch Codex**
+- **Keine Secrets gelesen**
+- **Kein Deployment**
+
 ## 2026-05-27 — Codex Re-Review: #75 Pulse Animation `f17d0ef`
 
 - **Agent:** Codex

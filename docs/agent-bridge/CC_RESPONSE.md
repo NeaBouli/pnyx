@@ -1,5 +1,107 @@
 # CC Response
 
+## 2026-05-27 — Codex BLOCKER: #75 Compass Layout Broken on S10
+
+Gio tested the debug APK on S10. The Compass result screen is visibly broken.
+
+Observed from screenshot:
+- X/Y compass grid collapsed into a tiny area.
+- Axis labels overlap the points.
+- Party labels overlap each other.
+- Toggle does not work reliably.
+- This is not the requested behavior.
+
+Root-cause hypothesis from code:
+- `740a82b` wrapped `s.compassBox` inside a `TouchableOpacity` without giving the wrapper the same flex/aspect sizing.
+- Previously `compassBox` was the direct flex child in `compassInner`.
+- Now the wrapper has no `flex: 1`, `aspectRatio`, or stable width, so the box shrinks and all absolute-positioned dots collapse.
+
+Correct product requirement:
+- Keep the exact same full-size X/Y cross-axis compass as before.
+- Only toggle the plotted layer:
+  - Mode A: party/reference points + normal user point.
+  - Mode B: hide party/reference points and show one pulsing green point at `result.economic/result.social`.
+- Tap the full compass square to toggle.
+- Do not shrink or redesign the grid.
+- No overlapping axis labels or party labels beyond what existed before.
+
+```text
+TASK: #75 Compass Toggle Layout Fix — restore original X/Y grid size
+
+Scope:
+- Fix only apps/mobile/src/screens/CompassScreen.tsx.
+- No versionCode bump.
+- No APK/AAB/public release.
+- No Play/F-Droid.
+
+Problem:
+S10 screenshot shows the compass grid collapsed/tiny after wrapping the compass box in TouchableOpacity.
+The toggle also does not work reliably.
+
+Fix requirements:
+1. Restore compass box sizing exactly like before:
+   - Same visible square.
+   - Same x/y cross-axis layout.
+   - Same quadrant backgrounds.
+   - Same axis label placement.
+
+2. Make the full square tappable without breaking layout.
+   Preferred:
+   - Use `TouchableOpacity` or `Pressable` as the compass box itself:
+     <TouchableOpacity style={s.compassBox} ...>
+       ...
+     </TouchableOpacity>
+   - Do NOT wrap a flex child in an unstyled TouchableOpacity.
+   Alternative:
+   - Add `style={s.compassTouchable}` with the same flex/aspect/maxWidth constraints and move sizing there.
+
+3. Toggle only plot content:
+   - Mode A: render PARTIES + userDot.
+   - Mode B: render only green animated result dot at:
+     left = (result.economic + 10) / 20 * 100%
+     bottom = (-result.social + 10) / 20 * 100%
+   - In Mode B, do not render party dots and do not render normal userDot separately.
+
+4. Keep real pulse animation from `f17d0ef`.
+
+5. Improve S10 tap hint if needed:
+   - Mode A: "Πατήστε την πυξίδα για τη θέση σας"
+   - Mode B: "Πατήστε ξανά για κόμματα"
+
+Verification:
+cd apps/mobile && npx tsc --noEmit
+
+Build/install debug APK only.
+S10 checks:
+- Compass square is full-size again, not tiny.
+- Axis labels do not overlap the plotted points.
+- Mode A shows party points + user point.
+- Tap inside square switches to Mode B.
+- Mode B shows one pulsing green point only.
+- Tap again returns to Mode A.
+- No crash, no layout jump.
+
+Commit:
+git add apps/mobile/src/screens/CompassScreen.tsx
+git commit -m "fix(#75): restore compass grid size for result toggle"
+
+REPORT:
+- Root cause confirmed: YES/NO
+- Full-size grid restored: YES/NO
+- Full square tappable: YES/NO
+- Mode A correct: YES/NO
+- Mode B correct: YES/NO
+- Pulse still works: YES/NO
+- tsc: OK/FAIL
+- S10 debug test: PASS/FAIL
+- Commit:
+- Bridge updated: YES/NO
+```
+
+Codex decision:
+- vC29 final build remains blocked.
+- Do not version-bump until this S10 screenshot issue is fixed and Gio confirms the Compass screen visually.
+
 ## 2026-05-27 — Codex Re-Review: #75 Pulse Animation `f17d0ef`
 
 **Verdict:** Pulse follow-up accepted. Ready for debug APK S10 verification. Do not version-bump yet.
