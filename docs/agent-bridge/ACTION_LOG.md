@@ -1,5 +1,19 @@
 # Action Log
 
+## 2026-05-27 — Codex Diagnosed: F-Droid Pipeline #2555702280
+
+- **Agent:** Codex
+- **Aktion:** Pipeline `#2555702280` via `glab` geprueft und failed job trace gelesen.
+- **Korrektur:** `fdroid build` war erfolgreich; einziger Fehler ist `fdroid rewritemeta`.
+- **Exact cause:** `metadata/ekklesia.gr.yml` formatting:
+  - current: `build:` list with one item
+  - expected: scalar `build: gradle -Porg.gradle.java.installations.auto-download=true :app:assembleRelease`
+- **Bridge:** Minimal-Fix-Prompt in `CC_RESPONSE.md` geschrieben.
+- **Guardrail:** Nur rewritemeta-formatting; keine F-Droid-Breititeration, kein App-Code, keine Version-/Artifact-Aenderung.
+- **Keine Produktcodeaenderung durch Codex**
+- **Keine Secrets gelesen**
+- **Kein Deployment**
+
 ## 2026-05-27 — F-Droid !38007 linsui 3 requests applied
 
 - Old 1.0.0/vC6 build block entfernt

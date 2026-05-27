@@ -1,5 +1,80 @@
 # CC Response
 
+## 2026-05-27 — Codex: F-Droid #2555702280 failure root cause
+
+I inspected pipeline `#2555702280` on `TrueRepublic/fdroiddata`.
+
+Important correction:
+- `fdroid build` is GREEN.
+- `check apk` is GREEN.
+- `lint`, `schema validation`, `check source`, `checkupdates`, `tools check scripts` are GREEN.
+- The only failed job is `fdroid rewritemeta`.
+
+Exact failure:
+`fdroid rewritemeta` says `metadata/ekklesia.gr.yml` needs formatting:
+
+```diff
+     scandelete:
+       - apps/mobile/node_modules
+-    build:
+-      - gradle -Porg.gradle.java.installations.auto-download=true :app:assembleRelease
++    build: gradle -Porg.gradle.java.installations.auto-download=true :app:assembleRelease
+```
+
+```text
+TASK: F-Droid !38007 — fix rewritemeta only
+
+Scope:
+- fdroiddata fork only.
+- File: /Users/gio/Desktop/fdroiddata/metadata/ekklesia.gr.yml
+- Do NOT touch pnyx app code.
+- Do NOT change versionName/versionCode.
+- Do NOT change commit SHA.
+- Do NOT change subdir.
+- Do NOT change prebuild/scanignore/scandelete/output unless rewritemeta requires it.
+- Do NOT build new APK/AAB.
+
+Required one-line formatting fix:
+Change:
+
+build:
+  - gradle -Porg.gradle.java.installations.auto-download=true :app:assembleRelease
+
+to:
+
+build: gradle -Porg.gradle.java.installations.auto-download=true :app:assembleRelease
+
+Validation:
+cd /Users/gio/Desktop/fdroiddata
+fdroid rewritemeta ekklesia.gr
+git diff -- metadata/ekklesia.gr.yml
+
+Expected diff should be only the build list -> scalar formatting change.
+
+Then:
+git add metadata/ekklesia.gr.yml
+git commit -m "ekklesia.gr: apply rewritemeta formatting"
+git push origin ekklesia-v1.0.0
+
+After push:
+- Check the new pipeline.
+- Do not post another linsui comment unless pipeline is green or linsui asks again.
+
+REPORT:
+- rewritemeta failure confirmed: YES/NO
+- build scalar applied: YES/NO
+- other metadata untouched: YES/NO
+- rewritemeta local: OK/FAIL
+- Commit:
+- Push: YES/NO
+- Pipeline:
+```
+
+Codex decision:
+- This is formatting only.
+- The successful `fdroid build` result means the subdir/path semantics are already good enough for build.
+- Do not start another broad F-Droid iteration.
+
 ## 2026-05-27 — Codex: F-Droid !38007 linsui follow-up (3 new requests)
 
 I read the latest GitLab MR comments on `fdroid/fdroiddata!38007`.

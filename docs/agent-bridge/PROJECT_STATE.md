@@ -21,7 +21,7 @@
 - **Web container:** rebuilt (ADR-010), Logout Modal + Screenshots + ekprosopos UI fix + QR localization
 - **S10:** vC28/1.0.1 Debug APK, POLIS app-internal funktional
 - **Alembic:** `o801a2b3c4d5` (polis_tickets + polis_votes + polis_identity_keys)
-- **F-Droid !38007:** linsui follow-up offen — remove old 1.0.0 build, resolve two inline suggestions, set `subdir: apps/mobile/android/app`
+- **F-Droid !38007:** Pipeline `#2555702280` failed only in `fdroid rewritemeta`; `fdroid build` green. Needed fix: make `build:` scalar instead of single-item list.
 - **POLIS Status:** App-internal Create/Vote LIVE — 1 Ticket, 1 Identity Key, Self-Vote/Signature korrekt blockiert
 - **Tracking:** GitHub Issues #71-#83 (Linear read-only Archiv)
 - **Pending:** vC29 Release Gate, Play Console AAB, F-Droid !38007 linsui follow-up

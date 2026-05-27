@@ -3,6 +3,7 @@
 ## Tracking: GitHub Issues #71-#83 (Linear = read-only Archiv)
 
 ## Aktiv / In Progress
+- [ ] F-Droid #2555702280 rewritemeta-only fix: `fdroid build` is green; only `fdroid rewritemeta` failed because `build:` must be scalar, not single-item list. Apply exact formatting change in fdroiddata only.
 - [ ] F-Droid !38007 linsui follow-up: remove old `1.0.0` build block, resolve two inline delete suggestions, set `subdir: apps/mobile/android/app` for v1.0.1/vC28, validate with rewritemeta/lint/pipeline. fdroiddata only; no app code/version bump/APK/AAB.
 - [ ] #75 Compass Layout BLOCKER: S10 screenshot shows collapsed/tiny X/Y grid after `740a82b`/`f17d0ef`; likely TouchableOpacity wrapper broke flex/aspect sizing. Restore original full-size compass square and toggle only plot layer before vC29 build.
 - [ ] vC29 Compass Result Toggle: Gio clarified the requested feature is not the `tsc` fix. Current `showAggregated` averages `PARTIES` and is wrong. Implement tap-on-compass toggle between detailed multi-point view and one pulsing green point at `result.economic/result.social`; S10 verify before vC29 build.
