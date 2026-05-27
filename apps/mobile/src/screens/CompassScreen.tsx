@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Animated } from "react-native";
 import { colors } from "../theme";
 import { CompassEngine } from "../compass/engine";
 import { QUESTIONS } from "../compass/questions";
@@ -32,6 +32,18 @@ export default function CompassScreen() {
   const [selected, setSelected] = useState<LikertValue | null>(null);
   const [mode, setMode] = useState<"loading" | "quiz" | "result">("loading");
   const [showAggregated, setShowAggregated] = useState(false);
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (showAggregated) {
+      Animated.loop(
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
+      ).start();
+    } else {
+      pulseAnim.stopAnimation();
+      pulseAnim.setValue(0);
+    }
+  }, [showAggregated, pulseAnim]);
 
   useEffect(() => {
     getCompass().then(data => {
@@ -126,7 +138,10 @@ export default function CompassScreen() {
               {showAggregated && (
                 /* Mode B: single pulsing green result point */
                 <View style={[s.resultDot, { left: `${(result.economic + 10) / 20 * 100}%`, bottom: `${(-result.social + 10) / 20 * 100}%` }]}>
-                  <View style={s.resultDotRing} />
+                  <Animated.View style={[s.resultDotRing, {
+                    transform: [{ scale: pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.8] }) }],
+                    opacity: pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.45, 0] }),
+                  }]} />
                   <Text style={s.resultLabel}>Εσείς</Text>
                 </View>
               )}
