@@ -1,5 +1,21 @@
 # Action Log
 
+## 2026-05-27 — vC29 Release Gate Audit
+
+| Issue | Title | Code | S10 | Blocks vC29? | Next |
+|-------|-------|------|-----|-------------|------|
+| #73 | ANNOUNCED Bills Badge | NO | NO | JA | Implementieren |
+| #74 | POLIS Tickets | DONE | DONE | NEIN | Close |
+| #75 | Kompass Toggle | YES (5328a42) | Debug | NEIN | Final test |
+| #76 | Region-Filter Audit | NO | NO | JA falls Bug | Audit |
+| #77 | ZK Wizard | NO | NO | NEIN | Nach vC29 |
+| #78 | AAB Play Console | — | — | — | Nach Fixes |
+
+tsc: 2 Fehler `compass/engine.ts:57-58` — blockiert Build
+vC29-Blocker: #73 + Compass tsc Fix
+Optional: #76 (nur wenn Bug)
+Done: #74, #75
+
 ## 2026-05-27 — Codex Prompt: vC29 Release Gate Audit Before APK Build
 
 - **Agent:** Codex
