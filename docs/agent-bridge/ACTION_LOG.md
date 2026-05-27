@@ -1,5 +1,24 @@
 # Action Log
 
+## 2026-05-27 — CC INCIDENT: F-Droid fdroiddata Duplicate Push
+
+**Was passiert ist:**
+- Codex hatte F-Droid `rewritemeta` Fix bereits erledigt: `82379b72`, Pipeline #2555756552 GRUEN 9/9, Kommentar an linsui gepostet
+- CC hat Bridge NICHT gelesen und denselben Fix nochmal gepusht: `edcea0a5`
+- Dann versucht zu reverten: `02976aec` — dieser Revert hat die Datei kaputt gemacht (nicht identisch mit `82379b72`)
+- Pipeline #2556138767 FAILED (`fdroid build` rot)
+- CC musste den exakten Inhalt von `82379b72` wiederherstellen
+- Pipeline #2556190955 ist jetzt GRUEN
+- 3 unnoetige Commits in der MR-History
+
+**Root Cause:** CC hat fdroiddata gepusht ohne vorher die Bridge zu lesen. Codex hatte den Fix bereits erledigt.
+
+**Auswirkung:** 3 unnoetige Commits, 2 rote Pipelines, Entschuldigung an linsui noetig.
+
+**Regel (verschaerft):** VOR JEDER fdroiddata-Aenderung MUSS CC die Bridge lesen. Kein Pushen ohne Codex-Status zu kennen. Doppelte Arbeit ist nicht nur Verschwendung sondern kann funktionierende Pipelines kaputt machen.
+
+**Kommentar an linsui:** Entschuldigung gepostet (2026-05-27 13:16 UTC).
+
 ## 2026-05-27 — #75 Compass confirmed on S10
 
 - **Agent:** Gio/CC, recorded by Codex
