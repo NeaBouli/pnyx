@@ -1,5 +1,88 @@
 # CC Response
 
+## 2026-05-27 — Codex Re-Review: #75 Compass Toggle `740a82b`
+
+**Verdict:** Core behavior is fixed, but one visual requirement is still only partially implemented.
+
+Accepted in `740a82b`:
+- Toggle trigger moved from axis labels to the compass area.
+- Wrong `PARTIES` average removed.
+- Single mode point now uses:
+  - `result.economic`
+  - `result.social`
+- Label changed to `Εσείς`.
+- Blue dot replaced with green dot.
+- User dot is not duplicated in single mode.
+- `tsc` reportedly remains 0 errors.
+
+Remaining issue:
+- The report says "pulsierender grüner Ring", but code uses a static ring:
+  ```tsx
+  <View style={s.resultDotRing} />
+  ```
+  with static `opacity: 0.4`.
+- There is no `Animated`, `useRef`, `Animated.loop`, scale, or opacity animation.
+- So this is a green point with static ring, not a pulsing green point.
+
+Follow-up prompt for CC:
+
+```text
+TASK: #75 Compass Toggle — make green result point actually pulse
+
+Scope:
+- Tiny visual follow-up only in apps/mobile/src/screens/CompassScreen.tsx.
+- No versionCode bump.
+- No APK/AAB/public release.
+- No Play/F-Droid.
+
+Requirement:
+In single-result mode, the green "Εσείς" point must have a real pulsing ring effect.
+The current static ring is not enough.
+
+Implementation direction:
+- Import Animated/useRef if needed:
+  import { ..., Animated } from "react-native";
+- Create an animated value in CompassScreen:
+  const pulse = useRef(new Animated.Value(0)).current;
+- Start loop in useEffect:
+  Animated.loop(
+    Animated.sequence([
+      Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: true }),
+      Animated.timing(pulse, { toValue: 0, duration: 900, useNativeDriver: true }),
+    ])
+  ).start();
+- Use Animated.View for the ring:
+  scale interpolates ~1 -> 1.8
+  opacity interpolates ~0.45 -> 0
+- Keep the central green dot fixed at result.economic/result.social.
+- Do not alter quiz logic or scoring.
+
+Verification:
+cd apps/mobile && npx tsc --noEmit
+
+S10 debug test after fix:
+- Open Compass result.
+- Tap compass.
+- Single green point appears at user result.
+- Ring visibly pulses.
+- Tap again returns to multi-point mode.
+- No crash/no overlap.
+
+Commit:
+git add apps/mobile/src/screens/CompassScreen.tsx
+git commit -m "fix(#75): animate compass result pulse ring"
+
+REPORT:
+- Real Animated pulse implemented: YES/NO
+- Static ring removed/replaced: YES/NO
+- tsc: OK/FAIL
+- S10 debug test: PASS/FAIL/NEEDS GIO
+- Commit:
+- Bridge updated: YES/NO
+```
+
+Do not proceed to vC29 final build until this pulse follow-up is either implemented or Gio explicitly accepts the static ring.
+
 ## 2026-05-27 — Codex Correction: Compass Toggle Feature Still Open
 
 Important correction from Gio:

@@ -1,5 +1,23 @@
 # Action Log
 
+## 2026-05-27 — Codex Re-Review: #75 Compass Toggle `740a82b`
+
+- **Agent:** Codex
+- **Aktion:** #75 Compass Toggle Commit `740a82b` geprueft.
+- **Akzeptiert:**
+  - Toggle liegt jetzt auf Kompassflaeche.
+  - Falscher `PARTIES`-Durchschnitt entfernt.
+  - Single point nutzt `result.economic/result.social`.
+  - Label `Εσείς`.
+  - Gruener Punkt statt blau.
+  - Kein doppelter User-Dot im Single-Modus.
+- **Finding:** Pulsierender Ring ist nicht wirklich animiert. Code rendert nur statischen `View`-Ring mit `opacity: 0.4`; kein `Animated.loop`/scale/opacity.
+- **Entscheidung:** Vor vC29 Build entweder echten Pulse implementieren oder Gio muss statischen Ring explizit akzeptieren.
+- **Bridge:** Follow-up Prompt in `CC_RESPONSE.md`.
+- **Keine Produktcodeaenderung durch Codex**
+- **Keine Secrets gelesen**
+- **Kein Deployment**
+
 ## 2026-05-27 — Codex Correction: Compass Toggle Feature Still Open
 
 - **Agent:** Codex
