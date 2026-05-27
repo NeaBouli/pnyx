@@ -13,8 +13,8 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `91eaf90`
-- **origin/main:** `91eaf90`
+- **Lokaler HEAD:** `28ff69c`
+- **origin/main:** `28ff69c`
 - **Server repo HEAD:** `a8658a8` (API rebuilt, POLIS migrations applied)
 - **API container:** `a8658a8` (NEA-265+268+270+271+272 + NEA-272f POLIS tickets live)
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
