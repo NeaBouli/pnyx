@@ -4,6 +4,7 @@
 
 ## Aktiv / In Progress
 - [ ] vC29 Release Gate (#78): S10 acceptance aller Fixes vor public APK/AAB
+- [ ] vC29 Final Build Gate: Code-ready after `eb0d707`, but release sequence must be debug S10 smoke test first, then versionCode 29/versionName bump, then APK+AAB from same commit, then public download only after Gio confirms installed vC29 works. No F-Droid/Play without explicit approval.
 - [ ] vC29 Release Gate Audit: Before building vC29 APK, CC must verify actual open status of GitHub Issues #73-#78, code, Bridge, and S10 evidence. No APK/AAB/versionCode bump until this audit says all blockers are DONE or explicitly NOT IN vC29 SCOPE.
 - [ ] vC29 Blocker Order: Fix Compass `tsc` errors first (`apps/mobile/src/compass/engine.ts:57-58`), then implement #73 ANNOUNCED Bills badge, then run #76 Region-Filter audit. No vC29 APK/AAB until these gates are cleared.
 - [ ] vC29 #76 Region-Filter Audit: #73 is code-complete in `6accbd3`; next audit region filtering only. No code changes unless a concrete bug is found and approved. If no bug, mark NOT BLOCKING vC29.

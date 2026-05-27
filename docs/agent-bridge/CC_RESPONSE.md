@@ -1,5 +1,95 @@
 # CC Response
 
+## 2026-05-27 — Codex Prompt: vC29 Final Build Gate
+
+vC29 is **code-ready**, not yet **release-built**.
+
+Accepted:
+- Compass `tsc`: `c6fd27b`, clean.
+- #73 ANNOUNCED Bills: `6accbd3`, code accepted.
+- #76 Region-Filter Audit: `eb0d707`, no bug found.
+- NEA-272f POLIS: verified.
+
+Do the final sequence in the safe order below. Do not skip the debug S10 smoke test.
+
+```text
+TASK: vC29 Final Build Gate — debug S10 first, then version bump/release
+
+Scope:
+- Build vC29 only after final debug S10 smoke test.
+- Keep APK/AAB from same commit after version bump.
+- Update download manifest/checksum only after Gio confirms S10 smoke test.
+- No F-Droid metadata update unless separately requested.
+- No Play upload until Gio explicitly approves.
+
+Step 1 — Pre-release debug S10 smoke test (NO version bump yet)
+Build/install debug APK from current main.
+On S10 verify:
+- App launches.
+- Bills list loads.
+- `Ανακοιν.` tab visible.
+- ANNOUNCED bill cards do not open Vote screen.
+- POLIS tab loads.
+- POLIS existing ticket visible.
+- Compass opens and no crash.
+- Region tabs/filter look sane.
+
+Report before bump:
+- Debug APK commit:
+- S10 installed: YES/NO
+- Smoke test pass: YES/NO
+- Issues found:
+
+STOP if any issue found.
+
+Step 2 — version bump to vC29 / versionName decision
+If Step 1 passes:
+- Bump Android versionCode to 29.
+- Use next versionName. If current is `1.0.1`, use `1.0.2` unless Gio says otherwise.
+- Update only required version files, likely:
+  - apps/mobile/app.json
+  - apps/mobile/android/app/build.gradle
+- Commit:
+  git commit -m "chore(mobile): bump to vC29"
+
+Step 3 — release artifacts from same commit
+Build both from the exact same commit:
+- direct APK
+- Play AAB
+
+Verify:
+- APK versionCode=29
+- AAB versionCode=29
+- APK and AAB source commit identical
+- APK installs on S10
+- `adb dumpsys package ...` shows versionCode=29 and expected versionName
+
+Step 4 — public download update ONLY after Gio confirms installed vC29 works
+After S10 vC29 confirmation:
+- copy release APK to the canonical landingpage download path
+- update APK manifest/checksum
+- server/static pull if needed
+- verify live download SHA matches local release APK
+
+Step 5 — do NOT update F-Droid/Play unless explicitly approved
+- F-Droid !38007 still waits for linsui merge.
+- Play AAB upload is a separate Gio-approved step.
+
+REPORT:
+- Pre-bump S10 smoke test: PASS/FAIL
+- versionCode:
+- versionName:
+- Bump commit:
+- Release artifact commit:
+- APK path + size + SHA256:
+- AAB path + size + SHA256:
+- S10 installed vC29: YES/NO
+- Landingpage APK updated: YES/NO / waiting for Gio
+- Play uploaded: NO unless approved
+- F-Droid changed: NO unless approved
+- Bridge updated: YES/NO
+```
+
 ## 2026-05-27 — Codex Prompt: vC29 #76 Region-Filter Audit
 
 #73 ANNOUNCED Bills is accepted as implemented by `6accbd3`:

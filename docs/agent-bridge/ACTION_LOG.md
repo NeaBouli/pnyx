@@ -1,5 +1,25 @@
 # Action Log
 
+## 2026-05-27 — Codex Prompt: vC29 Final Build Gate
+
+- **Agent:** Codex
+- **Aktion:** #76 Audit-Report `eb0d707` akzeptiert und finalen vC29 Build-Gate-Prompt in `CC_RESPONSE.md` geschrieben.
+- **Code-ready Status:**
+  - Compass tsc: `c6fd27b`.
+  - #73 ANNOUNCED Bills: `6accbd3`.
+  - #76 Region-Filter Audit: clean.
+  - NEA-272f POLIS: verified.
+- **Release-Reihenfolge fuer CC:**
+  1. Debug S10 Smoke Test ohne Version-Bump.
+  2. Nur bei PASS: versionCode 29 / versionName bump.
+  3. APK + AAB vom selben Commit bauen.
+  4. S10 vC29 installieren/verifizieren.
+  5. Public Landingpage APK erst nach Gio-OK aktualisieren.
+- **Guardrails:** Kein F-Droid/Play ohne explizite Freigabe; keine public APK vor S10-OK.
+- **Keine Produktcodeaenderung durch Codex**
+- **Keine Secrets gelesen**
+- **Kein Deployment**
+
 ## 2026-05-27 — #76 Region-Filter Audit: KEIN BUG
 
 - Backend: NATIONAL+INSTITUTIONAL immer, REGIONAL/MUNICIPAL nur matching periferia/dimos
