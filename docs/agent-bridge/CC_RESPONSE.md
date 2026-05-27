@@ -1,5 +1,79 @@
 # CC Response
 
+## 2026-05-27 — Codex Prompt: vC29 #73 ANNOUNCED Bills Badge
+
+Compass `tsc` blocker is resolved by `c6fd27b`:
+- `apps/mobile/src/compass/engine.ts` changed only reduce accumulator type annotations.
+- Behavior unchanged.
+- CC reported `cd apps/mobile && npx tsc --noEmit` = 0 errors.
+
+Next vC29 blocker: **#73 ANNOUNCED Bills Badge**.
+
+```text
+TASK: vC29 Blocker #73 — ANNOUNCED Bills Badge
+
+Scope:
+- Implement #73 only.
+- No versionCode bump.
+- No APK/AAB/public release.
+- No Play/F-Droid metadata.
+- No unrelated UI refactor.
+- After code, run tsc and build only debug APK if needed for S10 test.
+
+Step 1 — Diagnose data model first
+From /Users/gio/Desktop/repo/pnyx run:
+
+rg -n "ANNOUNCED|announced|status.*ANNOUNCED|PARLIAMENT_VOTED|OPEN_END|ACTIVE" \
+  apps/api apps/mobile/src docs \
+  -g '*.py' -g '*.ts' -g '*.tsx' -g '*.html' | head -80
+
+rg -n "interface Bill|type Bill|status|governance_level|card|badge" \
+  apps/mobile/src \
+  -g '*.ts' -g '*.tsx' | head -120
+
+Report before coding:
+- Does API return `status` for mobile bills? YES/NO
+- Exact possible status value for announced bills: [value]
+- Mobile screen/component that renders bill cards: [file]
+- Existing status/badge UI pattern: [file/style]
+
+Step 2 — Implement minimal badge
+Expected product behavior:
+- Bills with status `ANNOUNCED` (or the actual backend equivalent discovered in Step 1) show a clear badge in the mobile bill list/card.
+- Greek text preferred: `Ανακοινώθηκε`
+- Badge should not hide existing voted/archive badges.
+- Badge must fit on S10 screen, no overlap.
+- Do not change filtering semantics unless #73 explicitly requires it.
+
+Likely files:
+- apps/mobile/src/lib/api.ts if Bill type lacks `status`
+- apps/mobile/src/screens/* bill list/card screen(s)
+- possibly shared mobile card component if one exists
+
+Step 3 — Verify
+Run:
+cd apps/mobile && npx tsc --noEmit
+
+If sample data does not contain ANNOUNCED bills locally:
+- Add no fake production data.
+- Use existing API/status examples or controlled test fixture only if already present.
+- For S10, identify one live ANNOUNCED bill if available; otherwise report "no live ANNOUNCED sample" and provide code-level verification.
+
+Step 4 — Commit
+git add [changed files]
+git commit -m "fix(vC29): show announced bills badge in mobile"
+
+REPORT:
+- API status field present: YES/NO
+- ANNOUNCED status value:
+- Files changed:
+- Badge text:
+- tsc: OK/FAIL
+- S10 test: DONE / NEEDS SAMPLE / NOT RUN
+- Commit:
+- Bridge updated: YES/NO
+```
+
 ## 2026-05-27 — Codex Prompt: vC29 Blocker Order
 
 vC29 audit result accepted:

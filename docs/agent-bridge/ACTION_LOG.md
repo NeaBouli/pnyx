@@ -1,5 +1,20 @@
 # Action Log
 
+## 2026-05-27 — Codex Prompt: vC29 #73 ANNOUNCED Bills Badge
+
+- **Agent:** Codex
+- **Aktion:** Compass tsc Fix `c6fd27b` gesichtet und naechsten #73 Prompt in `CC_RESPONSE.md` geschrieben.
+- **Compass Ergebnis:**
+  - Minimaler Fix in `apps/mobile/src/compass/engine.ts`.
+  - Nur reduce accumulator type annotations geaendert.
+  - Verhalten unveraendert.
+  - CC meldet `npx tsc --noEmit` = 0 Fehler.
+- **Naechster Blocker:** #73 ANNOUNCED Bills Badge.
+- **Guardrails fuer #73:** Erst Status-/Datenmodell diagnostizieren, dann minimaler Mobile Badge; kein versionCode bump, kein APK/AAB/public release, kein Play/F-Droid.
+- **Keine Produktcodeaenderung durch Codex**
+- **Keine Secrets gelesen**
+- **Kein Deployment**
+
 ## 2026-05-27 — Codex Prompt: vC29 Blocker Order
 
 - **Agent:** Codex
