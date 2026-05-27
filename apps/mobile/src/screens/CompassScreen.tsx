@@ -115,37 +115,35 @@ export default function CompassScreen() {
         <Text style={s.axisLabelTop}>Αυταρχικό ↑</Text>
         <View style={s.compassInner}>
           <Text style={s.axisLabelLeft}>Αριστερά</Text>
-          <TouchableOpacity activeOpacity={0.9} onPress={() => setShowAggregated(!showAggregated)}>
-            <View style={s.compassBox}>
-              {/* Quadrant backgrounds */}
-              <View style={[s.quadrant, { top: 0, left: 0, backgroundColor: "#fef2f2" }]} />
-              <View style={[s.quadrant, { top: 0, right: 0, backgroundColor: "#fefce8" }]} />
-              <View style={[s.quadrant, { bottom: 0, left: 0, backgroundColor: "#eff6ff" }]} />
-              <View style={[s.quadrant, { bottom: 0, right: 0, backgroundColor: "#f0fdf4" }]} />
-              {/* Axes */}
-              <View style={s.axisH} /><View style={s.axisV} />
-              {!showAggregated && (
-                /* Mode A: Party dots + user dot */
-                <>
-                  {PARTIES.map(p => (
-                    <View key={p.name} style={[s.partyDot, { left: `${(p.x + 10) / 20 * 100}%`, bottom: `${(-p.y + 10) / 20 * 100}%`, backgroundColor: p.color }]}>
-                      <Text style={s.partyLabel}>{p.name}</Text>
-                    </View>
-                  ))}
-                  <View style={[s.userDot, { left: `${(result.economic + 10) / 20 * 100}%`, bottom: `${(-result.social + 10) / 20 * 100}%` }]} />
-                </>
-              )}
-              {showAggregated && (
-                /* Mode B: single pulsing green result point */
-                <View style={[s.resultDot, { left: `${(result.economic + 10) / 20 * 100}%`, bottom: `${(-result.social + 10) / 20 * 100}%` }]}>
-                  <Animated.View style={[s.resultDotRing, {
-                    transform: [{ scale: pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.8] }) }],
-                    opacity: pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.45, 0] }),
-                  }]} />
-                  <Text style={s.resultLabel}>Εσείς</Text>
-                </View>
-              )}
-            </View>
+          <TouchableOpacity activeOpacity={0.9} onPress={() => setShowAggregated(!showAggregated)} style={s.compassBox}>
+            {/* Quadrant backgrounds */}
+            <View style={[s.quadrant, { top: 0, left: 0, backgroundColor: "#fef2f2" }]} />
+            <View style={[s.quadrant, { top: 0, right: 0, backgroundColor: "#fefce8" }]} />
+            <View style={[s.quadrant, { bottom: 0, left: 0, backgroundColor: "#eff6ff" }]} />
+            <View style={[s.quadrant, { bottom: 0, right: 0, backgroundColor: "#f0fdf4" }]} />
+            {/* Axes */}
+            <View style={s.axisH} /><View style={s.axisV} />
+            {!showAggregated && (
+              /* Mode A: Party dots + user dot */
+              <>
+                {PARTIES.map(p => (
+                  <View key={p.name} style={[s.partyDot, { left: `${(p.x + 10) / 20 * 100}%`, bottom: `${(-p.y + 10) / 20 * 100}%`, backgroundColor: p.color }]}>
+                    <Text style={s.partyLabel}>{p.name}</Text>
+                  </View>
+                ))}
+                <View style={[s.userDot, { left: `${(result.economic + 10) / 20 * 100}%`, bottom: `${(-result.social + 10) / 20 * 100}%` }]} />
+              </>
+            )}
+            {showAggregated && (
+              /* Mode B: single pulsing green result point */
+              <View style={[s.resultDot, { left: `${(result.economic + 10) / 20 * 100}%`, bottom: `${(-result.social + 10) / 20 * 100}%` }]}>
+                <Animated.View style={[s.resultDotRing, {
+                  transform: [{ scale: pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.8] }) }],
+                  opacity: pulseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.45, 0] }),
+                }]} />
+                <Text style={s.resultLabel}>Εσείς</Text>
+              </View>
+            )}
           </TouchableOpacity>
           <Text style={s.axisLabelRight}>Δεξιά</Text>
         </View>
