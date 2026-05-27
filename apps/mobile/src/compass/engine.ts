@@ -54,8 +54,8 @@ export class CompassEngine {
 
   private computeConfidence(answers: Answer[], consistency: number): number {
     const values = answers.map(a => a.value);
-    const mean = values.reduce((a, b) => a + b, 0) / values.length;
-    const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
+    const mean = values.reduce((a: number, b: number) => a + b, 0) / values.length;
+    const variance = values.reduce((a: number, b: number) => a + Math.pow(b - mean, 2), 0) / values.length;
     const varianceScore = Math.min(1, variance / 2);
     return consistency * 0.6 + varianceScore * 0.4;
   }
