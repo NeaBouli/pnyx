@@ -1,5 +1,26 @@
 # Action Log
 
+## 2026-05-27 — #75 Compass confirmed on S10
+
+- **Agent:** Gio/CC, recorded by Codex
+- **Commit:** `fba09cc`
+- **Root cause:** `TouchableOpacity` wrapper without compassBox styles collapsed `flex/aspectRatio`.
+- **Fix:** Applied `compassBox` styles directly to `TouchableOpacity`.
+- **Verification:** `tsc` 0 errors, debug APK installed on S10, Gio reports Compass works.
+- **Status:** #75 Compass layout/result toggle/pulse accepted for vC29 gate.
+
+## 2026-05-27 — F-Droid !38007 green after direct Codex fix
+
+- **Agent:** Codex
+- **Aktion:** Direct fdroiddata fix applied after pipeline `#2555702280` failed in `fdroid rewritemeta`.
+- **fdroiddata Commit:** `82379b722` — `ekklesia.gr: apply rewritemeta formatting`.
+- **Change:** `build:` changed from single-item list to scalar:
+  `build: gradle -Porg.gradle.java.installations.auto-download=true :app:assembleRelease`
+- **Pipeline:** `#2555756552` green 9/9.
+- **Green jobs:** `fdroid build`, `check apk`, `fdroid rewritemeta`, `fdroid lint`, `check source code`, `checkupdates`, `schema validation`, `git redirect`, `tools check scripts`.
+- **linsui:** Comment posted: https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007#note_3389179220
+- **Scope honored:** fdroiddata metadata only; no pnyx app code, no version bump, no APK/AAB, no landingpage/Play changes.
+
 ## 2026-05-27 — Codex Diagnosed: F-Droid Pipeline #2555702280
 
 - **Agent:** Codex

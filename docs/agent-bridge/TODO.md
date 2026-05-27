@@ -3,12 +3,6 @@
 ## Tracking: GitHub Issues #71-#83 (Linear = read-only Archiv)
 
 ## Aktiv / In Progress
-- [ ] F-Droid #2555702280 rewritemeta-only fix: `fdroid build` is green; only `fdroid rewritemeta` failed because `build:` must be scalar, not single-item list. Apply exact formatting change in fdroiddata only.
-- [ ] F-Droid !38007 linsui follow-up: remove old `1.0.0` build block, resolve two inline delete suggestions, set `subdir: apps/mobile/android/app` for v1.0.1/vC28, validate with rewritemeta/lint/pipeline. fdroiddata only; no app code/version bump/APK/AAB.
-- [ ] #75 Compass Layout BLOCKER: S10 screenshot shows collapsed/tiny X/Y grid after `740a82b`/`f17d0ef`; likely TouchableOpacity wrapper broke flex/aspect sizing. Restore original full-size compass square and toggle only plot layer before vC29 build.
-- [ ] vC29 Compass Result Toggle: Gio clarified the requested feature is not the `tsc` fix. Current `showAggregated` averages `PARTIES` and is wrong. Implement tap-on-compass toggle between detailed multi-point view and one pulsing green point at `result.economic/result.social`; S10 verify before vC29 build.
-- [ ] #75 Compass Pulse Follow-up: Commit `740a82b` fixes toggle/position/color, but ring is static, not actually pulsing. Add real React Native Animated pulse or get explicit Gio acceptance for static ring before vC29 build.
-- [ ] #75 Compass Debug S10 Verification: `f17d0ef` implements real Animated pulse. Build/install debug APK only, verify detailed mode, single green result point, visible pulse, toggle back. No version bump/public release.
 - [ ] vC29 Release Gate (#78): S10 acceptance aller Fixes vor public APK/AAB
 - [ ] vC29 Final Build Gate: Code-ready after `eb0d707`, but release sequence must be debug S10 smoke test first, then versionCode 29/versionName bump, then APK+AAB from same commit, then public download only after Gio confirms installed vC29 works. No F-Droid/Play without explicit approval.
 - [ ] vC29 Release Gate Audit: Before building vC29 APK, CC must verify actual open status of GitHub Issues #73-#78, code, Bridge, and S10 evidence. No APK/AAB/versionCode bump until this audit says all blockers are DONE or explicitly NOT IN vC29 SCOPE.
@@ -17,6 +11,8 @@
 - [ ] F-Droid !38007 (#79): Pipeline gruen, wartet auf linsui Merge
 - [ ] Demo-mode POLIS Guard: Demo-Nullifier soll POLIS Create/Vote nicht erlauben
 ## Done (Session 25-27.05.2026)
+- [x] #75 Compass Result Toggle/Layout/Pulse — `740a82b` + `f17d0ef` + `fba09cc`, S10 debug APK verified by Gio; full X/Y grid restored, tap toggles to pulsing green result point and back
+- [x] F-Droid !38007 linsui follow-up direct fix — `82379b722`, old 1.0.0 build removed, `subdir: apps/mobile/android/app`, rewritemeta scalar `build: ...`, pipeline `#2555756552` green 9/9, linsui comment posted
 - [x] vC29 #73 ANNOUNCED Bills Badge — `6accbd3`, filter tab `Ανακοιν.`, navigation disabled, badge existed, tsc reported 0 errors
 - [x] Compass tsc Fehler fixen (`engine.ts:57-58`) — `c6fd27b`, `npx tsc --noEmit` reported 0 errors
 - [x] NEA-272f: POLIS app-internal — Backend + Mobile, 15 router/DB tests, S10 verified, Self-Vote/Duplicate blockiert

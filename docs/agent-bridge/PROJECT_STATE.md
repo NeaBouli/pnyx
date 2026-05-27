@@ -13,18 +13,18 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `fba09cc`
-- **origin/main:** `fba09cc`
+- **Lokaler HEAD:** `91eaf90`
+- **origin/main:** `91eaf90`
 - **Server repo HEAD:** `a8658a8` (API rebuilt, POLIS migrations applied)
 - **API container:** `a8658a8` (NEA-265+268+270+271+272 + NEA-272f POLIS tickets live)
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
 - **Web container:** rebuilt (ADR-010), Logout Modal + Screenshots + ekprosopos UI fix + QR localization
-- **S10:** vC28/1.0.1 Debug APK, POLIS app-internal funktional
+- **S10:** vC28/1.0.1 Debug APK, POLIS app-internal funktional, Compass #75 layout/toggle/pulse verified
 - **Alembic:** `o801a2b3c4d5` (polis_tickets + polis_votes + polis_identity_keys)
-- **F-Droid !38007:** Pipeline `#2555702280` failed only in `fdroid rewritemeta`; `fdroid build` green. Needed fix: make `build:` scalar instead of single-item list.
+- **F-Droid !38007:** Pipeline `#2555756552` green 9/9 after direct Codex fix `82379b722`; linsui comment posted; waits for linsui merge.
 - **POLIS Status:** App-internal Create/Vote LIVE — 1 Ticket, 1 Identity Key, Self-Vote/Signature korrekt blockiert
 - **Tracking:** GitHub Issues #71-#83 (Linear read-only Archiv)
-- **Pending:** vC29 Release Gate, Play Console AAB, F-Droid !38007 linsui follow-up
+- **Pending:** vC29 Release Gate, Play Console AAB, F-Droid !38007 linsui merge
 
 ## Uncommitted Aenderungen
 
