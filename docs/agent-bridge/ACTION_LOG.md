@@ -1,5 +1,14 @@
 # Action Log
 
+## 2026-05-27 — #76 Region-Filter Audit: KEIN BUG
+
+- Backend: NATIONAL+INSTITUTIONAL immer, REGIONAL/MUNICIPAL nur matching periferia/dimos
+- Mobile: SecureStore → API Params korrekt
+- Client Filter-Tabs: korrekt
+- Ohne Region: alle Bills sichtbar (bewusstes Design, Banner vorhanden)
+- DEMO Bills gefiltert, admin_hidden gefiltert
+- **Fazit: kein Bug, kein Fix noetig**
+
 ## 2026-05-27 — Codex Prompt: vC29 #76 Region-Filter Audit
 
 - **Agent:** Codex
