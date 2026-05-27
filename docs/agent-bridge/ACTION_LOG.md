@@ -1,5 +1,13 @@
 # Action Log
 
+## 2026-05-27 — F-Droid !38007 Pipeline #2557134438 GRUEN 9/9
+
+- Linsui re-apply: `gradle: yes` + auto-download fuer JDK 17
+- Trailing blank line entfernt
+- MR Template + Checkboxen aktualisiert
+- Kommentar an linsui: ready for merge
+- Wartet auf linsui
+
 ## 2026-05-27 — F-Droid !38007 linsui re-apply + MR Template
 
 - Linsui: "Re-apply my change. See templates/build-react-native.yml. Edit MR and choose App Inclusion template."
