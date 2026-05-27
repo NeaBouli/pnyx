@@ -87,7 +87,7 @@ export default function BillsScreen() {
         </TouchableOpacity>
       )}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.filterRow} contentContainerStyle={{ gap: 6, paddingHorizontal: 12, alignItems: "center" }}>
-        {[["ALL", "Όλα"], ["ACTIVE", "Ενεργά"], ["DIAVGEIA", "Διαύγεια"], ["MUNICIPAL", "Δήμος"], ["REGIONAL", "Περιφ."], ["INSTITUTIONAL", "Φορείς"], ["PARLIAMENT_VOTED", "Βουλή"], ["OPEN_END", "Αρχείο"], ["ARWEAVE", "⛓"]].map(([k, l]) => (
+        {[["ALL", "Όλα"], ["ACTIVE", "Ενεργά"], ["ANNOUNCED", "Ανακοιν."], ["DIAVGEIA", "Διαύγεια"], ["MUNICIPAL", "Δήμος"], ["REGIONAL", "Περιφ."], ["INSTITUTIONAL", "Φορείς"], ["PARLIAMENT_VOTED", "Βουλή"], ["OPEN_END", "Αρχείο"], ["ARWEAVE", "⛓"]].map(([k, l]) => (
           <TouchableOpacity key={k} onPress={() => setFilter(k)} style={[s.filterBtn, filter === k && s.filterActive]}>
             <Text style={[s.filterTxt, filter === k && s.filterTxtActive]}>{l}</Text>
           </TouchableOpacity>
@@ -103,11 +103,12 @@ export default function BillsScreen() {
         ListEmptyComponent={<Text style={s.empty}>Δεν βρέθηκαν ψηφοφορίες</Text>}
         renderItem={({ item }) => (
           <TouchableOpacity style={s.card} onPress={() => {
+            if (item.status === "ANNOUNCED") return; // no action for announced bills
             if (item.status === "PARLIAMENT_VOTED")
               nav.navigate("Result", { billId: item.id, billTitle: item.title_el });
             else
               nav.navigate("Vote", { billId: item.id, billTitle: item.title_el });
-          }}>
+          }} activeOpacity={item.status === "ANNOUNCED" ? 1 : 0.7}>
             <View style={[s.dot, { backgroundColor: STATUS_COLORS[item.status] ?? colors.textTertiary }]} />
             <View style={s.cardContent}>
               <Text style={s.cardTitle} numberOfLines={2}>{item.title_el}</Text>
