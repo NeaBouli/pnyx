@@ -1,5 +1,97 @@
 # CC Response
 
+## 2026-05-27 — Codex Prompt: vC29 Release Gate Audit Before APK Build
+
+POLIS NEA-272f is verified and accepted, but **do not build vC29 yet**. Gio wants vC29 only after all app fixes are actually done and S10-verified. First audit what is truly open.
+
+```text
+TASK: vC29 Release Gate Audit — verify actual open app work before APK build
+
+Scope:
+- Audit/report only.
+- No code changes.
+- No versionCode bump.
+- No APK/AAB build.
+- No public APK/Landingpage.
+- No Play/F-Droid metadata.
+- Update Bridge after report.
+
+Goal:
+Determine what is actually still open for the next mobile app release vC29.
+Do not trust memory alone. Cross-check GitHub Issues, Bridge, code, and S10 status.
+
+Step 1 — GitHub Issues inventory
+Use gh or GitHub UI/API to inspect:
+- #73 ANNOUNCED Bills
+- #74 POLIS Modal / POLIS Tickets
+- #75 Kompass Toggle
+- #76 Region-Filter Audit
+- #77 ZK Wizard
+- #78 vC29 Release Gate
+
+For each issue report:
+- title
+- state open/closed
+- latest relevant comment/commit
+- whether code exists
+- whether deployed/debug-installed
+- whether S10-tested by Gio
+- whether public release-ready
+
+Step 2 — Code/status checks
+Run local checks from /Users/gio/Desktop/repo/pnyx:
+
+git log --oneline -20
+git status --short
+rg -n "ANNOUNCED|announced|ΑΝΑΚΟΙΝ|ανακοιν" apps/mobile/src apps/api docs -g '*.ts' -g '*.tsx' -g '*.py' -g '*.html' | head -40
+rg -n "Compass|Kompass|compass|toggle|weekly|digest" apps/mobile/src -g '*.ts' -g '*.tsx' | head -40
+rg -n "region|periferia|municipal|institutional|governance_level" apps/mobile/src apps/representative -g '*.ts' -g '*.tsx' -g '*.html' | head -60
+rg -n "Semaphore|ZK|zk|wizard|proof|compat" apps/mobile/src docs -g '*.ts' -g '*.tsx' -g '*.md' | head -60
+
+Step 3 — Known status to validate, not assume
+- NEA-272f / POLIS: DONE after `92f6266`, but confirm Bridge + GitHub issue.
+- F-Droid: pipeline green 9/9, waiting for linsui merge. Not part of vC29 APK build.
+- Compass tsc: Bridge says `engine.ts:57-58` still blocks clean `tsc`; verify if still true.
+- Demo-mode POLIS Guard: Bridge says still open; verify if product wants it before public vC29.
+- AAB vC28 upload: old release task, not vC29 build.
+
+Step 4 — Output exact release gate table
+Produce a table:
+
+| Issue | Status | Code Done | S10 Tested | Blocks vC29? | Next Action |
+
+Use one of:
+- DONE
+- OPEN
+- NEEDS S10 TEST
+- BLOCKED
+- NOT IN vC29 SCOPE
+
+Step 5 — Bridge update
+Update:
+- docs/agent-bridge/CC_RESPONSE.md
+- docs/agent-bridge/TODO.md
+- docs/agent-bridge/ACTION_LOG.md
+
+Do not mark vC29 ready unless every blocker is DONE or explicitly NOT IN vC29 SCOPE.
+
+REPORT:
+- vC29 APK build allowed now: YES/NO
+- Remaining blockers count:
+- Blockers:
+  1.
+  2.
+  3.
+- POLIS final status:
+- Compass final status:
+- ANNOUNCED bills status:
+- Region-filter audit status:
+- ZK wizard status:
+- Demo-mode POLIS guard status:
+- GitHub issues updated: YES/NO
+- Bridge updated: YES/NO
+```
+
 ## 2026-05-27 — Codex Follow-up: NEA-272f Remaining S10 Error-Path Checks
 
 Full verification is mostly green on `8e5e220`:

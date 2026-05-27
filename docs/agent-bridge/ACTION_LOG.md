@@ -1,5 +1,21 @@
 # Action Log
 
+## 2026-05-27 — Codex Prompt: vC29 Release Gate Audit Before APK Build
+
+- **Agent:** Codex
+- **Aktion:** Gio will vC29 erst bauen, wenn alle App-Fixes wirklich erledigt und gesichert sind. Codex hat einen Audit-Prompt fuer CC in `CC_RESPONSE.md` geschrieben.
+- **Entscheidung:** Noch kein vC29 APK/AAB bauen.
+- **Audit-Scope fuer CC:**
+  - GitHub Issues #73-#78 pruefen.
+  - Bridge, Code und S10-Teststatus gegenpruefen.
+  - POLIS final bestaetigen.
+  - Compass/Kompass, ANNOUNCED Bills, Region-Filter, ZK Wizard, Demo-mode POLIS Guard klaeren.
+  - Release-Gate-Tabelle liefern.
+- **Guardrails:** Kein versionCode bump, kein APK/AAB, kein public Download, kein Play/F-Droid, bis Audit gruene Freigabe gibt.
+- **Keine Produktcodeaenderung durch Codex**
+- **Keine Secrets gelesen**
+- **Kein Deployment**
+
 ## 2026-05-27 — NEA-272f Error-Path Verification PASSED
 
 - **Self-Vote:** `POST /polis/tickets/751a40b0-b83/votes → 400` "SELF_VOTE: Cannot vote on own ticket"

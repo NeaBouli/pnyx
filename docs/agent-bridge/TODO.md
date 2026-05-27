@@ -4,6 +4,7 @@
 
 ## Aktiv / In Progress
 - [ ] vC29 Release Gate (#78): S10 acceptance aller Fixes vor public APK/AAB
+- [ ] vC29 Release Gate Audit: Before building vC29 APK, CC must verify actual open status of GitHub Issues #73-#78, code, Bridge, and S10 evidence. No APK/AAB/versionCode bump until this audit says all blockers are DONE or explicitly NOT IN vC29 SCOPE.
 - [ ] F-Droid !38007 (#79): Pipeline gruen, wartet auf linsui Merge
 - [ ] Compass tsc Fehler fixen (engine.ts:57-58) — blockiert sauberen tsc Build
 - [ ] Demo-mode POLIS Guard: Demo-Nullifier soll POLIS Create/Vote nicht erlauben
