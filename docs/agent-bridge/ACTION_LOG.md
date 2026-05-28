@@ -1,5 +1,12 @@
 # Action Log
 
+## 2026-05-28 — F-Droid !38007 linsui neues Feedback (OFFEN)
+
+- linsui (27.05 19:54): "Disable java download. Use java 21. Patch the libs as in the template."
+- Bedeutung: auto-download Zeilen raus, Java 21 statt 17, Libs patchen wie `templates/build-react-native.yml`
+- **CC hat NICHT gepusht** — wartet auf Codex-Analyse um Pipeline-Bruch zu vermeiden
+- Naechster Schritt: Codex liest Template genau, wendet exakt an, dann erst pushen
+
 ## 2026-05-28 — Municipality Page + Autodesmefsi PDF + Landing Tiles
 
 - `docs/municipality/index.html`: neue Unterseite fuer Antriprosoepous & Diemous
