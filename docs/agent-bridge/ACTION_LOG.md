@@ -1,5 +1,34 @@
 # Action Log
 
+## 2026-05-28 — Tracking: Linear + GitHub Issues parallel
+
+**Entscheidung:** Ab sofort Linear UND GitHub Issues parallel nutzen.
+
+**Migration:**
+- 50 Done-Issues auf Linear archiviert → Limit zurueckgesetzt
+- 9 offene GitHub Issues (#71-#83) zurueck nach Linear migriert (NEA-277 bis NEA-285)
+- Cross-Links in GitHub Issues gesetzt (Kommentar mit Linear-ID)
+
+**Mapping:**
+| GitHub | Linear | Titel |
+|--------|--------|-------|
+| #71 | NEA-277 | FORUM_SSO_SALT Startup-Check |
+| #72 | NEA-278 | CLAUDE.md stale Werte |
+| #77 | NEA-279 | vC29: ZK Semaphore Wizard |
+| #78 | NEA-280 | AAB vC29 Play Console |
+| #79 | NEA-281 | F-Droid linsui Merge |
+| #80 | NEA-282 | Off-Site Backup |
+| #81 | NEA-283 | ZK V2 Semaphore |
+| #82 | NEA-284 | Forum SSO |
+| #83 | NEA-285 | Diavgeia Org-Mapping |
+
+**Regel ab sofort:**
+- Neue Tickets in BEIDEN Systemen anlegen (Linear + GitHub Issue)
+- Linear fuer Planung/Priorisierung/Sprints
+- GitHub Issues fuer oeffentliche Sichtbarkeit + PR-Verknuepfung
+- Cross-Link immer setzen (GitHub Kommentar mit NEA-ID, Linear Description mit GH#)
+- Geschlossene Tickets in Linear archivieren um Limit nicht zu erreichen
+
 ## 2026-05-28 — F-Droid !38007 linsui neues Feedback (OFFEN)
 
 - linsui (27.05 19:54): "Disable java download. Use java 21. Patch the libs as in the template."

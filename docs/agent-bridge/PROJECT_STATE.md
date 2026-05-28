@@ -23,7 +23,7 @@
 - **Alembic:** `o801a2b3c4d5` (polis_tickets + polis_votes + polis_identity_keys)
 - **F-Droid !38007:** Pipeline #2557134438 GRUEN 9/9 (gradle:yes + JDK17 auto-download + MR Template). Wartet auf linsui Merge.
 - **POLIS Status:** App-internal Create/Vote LIVE — 1 Ticket, 1 Identity Key, Self-Vote/Signature korrekt blockiert
-- **Tracking:** GitHub Issues #71-#83 (Linear read-only Archiv)
+- **Tracking:** Linear + GitHub Issues parallel. Cross-Links: GH#71-83 = NEA-277-285. Neue Tickets in beiden Systemen.
 - **Pending:** vC29 Release Gate (code-ready), Play Console AAB, F-Droid !38007 linsui merge
 - **Neu live:** municipality/, article.html, Autodesmefsi PDF, Forum Topic #436
 
