@@ -62,6 +62,16 @@ ekklesia.gr (εκκλησία του έθνους) is an independent civic initi
 - Whitepaper: https://ekklesia.gr/wiki/whitepaper.html
 - Privacy: https://ekklesia.gr/wiki/privacy.html
 
+## Municipality & Representative Tools
+
+ekklesia.gr offers specialized tools for elected representatives (MPs, Mayors, Municipal Councillors):
+- Representative app (εκπρόσωπος): exclusive mobile app for viewing bills, citizen evaluations, and divergence scores for their region.
+- Commitment Declaration (Δήλωση Αυτοδέσμευσης): public document candidates sign before elections with measurable obligations: transparency, citizen will, accountability. PDF: https://ekklesia.gr/download/Autodesmefsi_Ekklesia_v6.pdf
+- Municipality activation via gov.gr OAuth 2.0.
+- Arweave immutable archiving of all voting results.
+- Full page: https://ekklesia.gr/municipality/
+- Article: https://ekklesia.gr/municipality/article.html
+
 ## License
 
 MIT License. (c) 2026 V-Labs Development.
