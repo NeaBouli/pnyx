@@ -1,5 +1,21 @@
 # Action Log
 
+## 2026-05-28 — Municipality Page + Autodesmefsi PDF + Landing Tiles
+
+- `docs/municipality/index.html`: neue Unterseite fuer Antriprosoepous & Diemous
+- `docs/municipality/article.html`: Artikel "Το Σύστημα και η Αχίλλειος Πτέρνα"
+- `docs/download/Autodesmefsi_Ekklesia_v6.pdf`: Deilosi Autodemsefsis
+- Landing Page: 2 Kacheln (PDF Download + Municipality Link) im ekprosopos Banner
+- Screenshots vergroessert (180px → 300px max-width)
+- Dockerfile: `COPY docs/municipality/` ergaenzt
+- SEO: article.html meta/OG/JSON-LD Article + Analytics
+- llms.txt: Municipality & Representative Section
+- Sitemap: municipality/ + article.html
+- Forum: Topic #436 auf pnyx.ekklesia.gr erstellt
+- Telegram: Admin-Chat benachrichtigt, Group-Chat braucht Bot-Zugang (manuell)
+- Commits: `ea8eff0`, `4358a4e`, `743e5c9`, `4f77f1c`, `f79321e`
+- Deployed: Web Container rebuilt, alle URLs 200 OK
+
 ## 2026-05-27 — F-Droid !38007 Pipeline #2557134438 GRUEN 9/9
 
 - Linsui re-apply: `gradle: yes` + auto-download fuer JDK 17

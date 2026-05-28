@@ -13,8 +13,8 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `f540600`
-- **origin/main:** `f540600`
+- **Lokaler HEAD:** `f79321e`
+- **origin/main:** `f79321e`
 - **Server repo HEAD:** `a8658a8` (API rebuilt, POLIS migrations applied)
 - **API container:** `a8658a8` (NEA-265+268+270+271+272 + NEA-272f POLIS tickets live)
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
@@ -24,7 +24,8 @@
 - **F-Droid !38007:** Pipeline #2557134438 GRUEN 9/9 (gradle:yes + JDK17 auto-download + MR Template). Wartet auf linsui Merge.
 - **POLIS Status:** App-internal Create/Vote LIVE — 1 Ticket, 1 Identity Key, Self-Vote/Signature korrekt blockiert
 - **Tracking:** GitHub Issues #71-#83 (Linear read-only Archiv)
-- **Pending:** vC29 Release Gate, Play Console AAB, F-Droid !38007 linsui merge
+- **Pending:** vC29 Release Gate (code-ready), Play Console AAB, F-Droid !38007 linsui merge
+- **Neu live:** municipality/, article.html, Autodesmefsi PDF, Forum Topic #436
 
 ## Uncommitted Aenderungen
 
