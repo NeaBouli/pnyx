@@ -159,6 +159,14 @@
     <priority>0.7</priority>
   </url>
 
+  <!-- Municipality -->
+  <url>
+    <loc>https://ekklesia.gr/municipality/</loc>
+    <lastmod>2026-05-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
   <!-- Votes: removed — these are meta-refresh redirects to /el/bills -->
 
 </urlset>
