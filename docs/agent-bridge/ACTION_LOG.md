@@ -1,5 +1,13 @@
 # Action Log
 
+## 2026-05-29 — NEA-286 Lifecycle Bug + Dual Tracking Setup
+
+- **GR-0490a766:** War WINDOW_24H stuck, hat sich selbst auf PARLIAMENT_VOTED korrigiert
+- **GitHub Issue #94:** Angelegt, Cross-Link NEA-286
+- **Linear NEA-286:** Von Codex angelegt
+- **Dual Tracking:** 50 Done archiviert, 9 GH Issues zurueck nach Linear (NEA-277-285), Cross-Links gesetzt
+- **Regel:** Neue Tickets in beiden Systemen, Cross-Link immer setzen
+
 ## 2026-05-28 — Tracking: Linear + GitHub Issues parallel
 
 **Entscheidung:** Ab sofort Linear UND GitHub Issues parallel nutzen.
