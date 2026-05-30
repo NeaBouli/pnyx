@@ -21,7 +21,7 @@
 - **Web container:** rebuilt (ADR-010), Logout Modal + Screenshots + ekprosopos UI fix + QR localization
 - **S10:** vC28/1.0.1 Debug APK, POLIS app-internal funktional, Compass #75 layout/toggle/pulse verified
 - **Alembic:** `o801a2b3c4d5` (polis_tickets + polis_votes + polis_identity_keys)
-- **F-Droid !38007:** Pipeline #2557134438 GRUEN 9/9 (gradle:yes + JDK17 auto-download + MR Template). Wartet auf linsui Merge.
+- **F-Droid !38007:** Pipeline #2564438256 GRUEN 9/9 (Java auto-download disabled, Java 21 RN patch, expo-notifications native excluded while JS remains resolvable). Kommentar an linsui gepostet; wartet auf linsui Merge.
 - **POLIS Status:** App-internal Create/Vote LIVE — 1 Ticket, 1 Identity Key, Self-Vote/Signature korrekt blockiert
 - **Tracking:** Linear + GitHub Issues parallel. Cross-Links: GH#71-83 = NEA-277-285. Neue Tickets in beiden Systemen.
 - **Pending:** vC29 Release Gate (code-ready), Play Console AAB, F-Droid !38007 linsui merge

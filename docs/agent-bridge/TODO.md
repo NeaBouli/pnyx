@@ -8,9 +8,10 @@
 - [ ] vC29 Release Gate Audit: Before building vC29 APK, CC must verify actual open status of GitHub Issues #73-#78, code, Bridge, and S10 evidence. No APK/AAB/versionCode bump until this audit says all blockers are DONE or explicitly NOT IN vC29 SCOPE.
 - [ ] vC29 Blocker Order: Fix Compass `tsc` errors first (`apps/mobile/src/compass/engine.ts:57-58`), then implement #73 ANNOUNCED Bills badge, then run #76 Region-Filter audit. No vC29 APK/AAB until these gates are cleared.
 - [ ] vC29 #76 Region-Filter Audit: #73 is code-complete in `6accbd3`; next audit region filtering only. No code changes unless a concrete bug is found and approved. If no bug, mark NOT BLOCKING vC29.
-- [ ] F-Droid !38007 (#79): Pipeline gruen, wartet auf linsui Merge
+- [ ] F-Droid !38007 (#79): Pipeline #2564438256 gruen, Kommentar an linsui gepostet, wartet auf linsui Merge
 - [ ] Demo-mode POLIS Guard: Demo-Nullifier soll POLIS Create/Vote nicht erlauben
 ## Done (Session 25-27.05.2026)
+- [x] F-Droid !38007 linsui Java 21/template feedback — fdroiddata `61af54f58` + `05a86ac05`; Java auto-download disabled, Java 21 RN patch, `expo-notifications` native excluded while JS remains resolvable, pipeline `#2564438256` green 9/9, linsui comment posted
 - [x] #75 Compass Result Toggle/Layout/Pulse — `740a82b` + `f17d0ef` + `fba09cc`, S10 debug APK verified by Gio; full X/Y grid restored, tap toggles to pulsing green result point and back
 - [x] F-Droid !38007 linsui follow-up direct fix — `82379b722`, old 1.0.0 build removed, `subdir: apps/mobile/android/app`, rewritemeta scalar `build: ...`, pipeline `#2555756552` green 9/9, linsui comment posted
 - [x] vC29 #73 ANNOUNCED Bills Badge — `6accbd3`, filter tab `Ανακοιν.`, navigation disabled, badge existed, tsc reported 0 errors

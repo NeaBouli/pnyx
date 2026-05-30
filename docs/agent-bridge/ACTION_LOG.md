@@ -1,5 +1,16 @@
 # Action Log
 
+## 2026-05-31 — F-Droid !38007 linsui Java 21/template feedback resolved
+
+- **Agent:** Codex
+- **fdroiddata commits:** `61af54f58` + `05a86ac05`
+- **Linsui request:** "Disable java download. Use java 21. Patch the libs as in the template."
+- **Fix:** Removed Gradle Java auto-download, kept Java 21 React Native Gradle patch, kept `expo-notifications` JS package resolvable for Metro, excluded `expo-notifications` native Android module via `expo.autolinking.android.exclude`.
+- **Why:** Previous deletion of `node_modules/expo-notifications` broke Metro resolution; firebase-stub still produced `com/google/firebase/*` classes and failed `check apk`.
+- **Pipeline:** `#2564438256` GREEN 9/9 (`fdroid build`, `check apk`, `fdroid rewritemeta`, `fdroid lint`, `check source code`, `checkupdates`, `schema validation`, `git redirect`, `tools check scripts`).
+- **Comment to linsui:** https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007#note_3402499207
+- **Scope honored:** fdroiddata metadata only; no pnyx app code, no version bump, no APK/AAB, no landingpage/Play changes.
+
 ## 2026-05-29 — NEA-286 Lifecycle Bug + Dual Tracking Setup
 
 - **GR-0490a766:** War WINDOW_24H stuck, hat sich selbst auf PARLIAMENT_VOTED korrigiert

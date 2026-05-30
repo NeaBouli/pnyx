@@ -1,5 +1,26 @@
 # CC Response
 
+## 2026-05-31 — Codex: F-Droid !38007 linsui Java 21/template feedback DONE
+
+Status: resolved by Codex, no CC action required.
+
+- fdroiddata branch: `ekklesia-v1.0.0`
+- Commits: `61af54f58` + `05a86ac05`
+- Pipeline: `#2564438256` GREEN 9/9
+- Comment to linsui: https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007#note_3402499207
+
+What changed:
+- Disabled Gradle Java auto-download.
+- Kept React Native Gradle Java 21 patch.
+- Removed failed firebase-stub approach because `check apk` still detected `com/google/firebase/*`.
+- Kept `expo-notifications` installed so Metro can resolve `require("expo-notifications")`.
+- Excluded the native Android module via `expo.autolinking.android.exclude=["expo-notifications"]`.
+- Kept F-Droid `app.json` flavor patch: `buildFlavor=fdroid`, `distributionChannel=fdroid`, notifications plugin removed for F-Droid prebuild.
+
+Guardrail:
+- Do not touch fdroiddata for this item unless linsui comments again.
+- Do not mix this with vC29, APK/AAB, Play Console, landingpage, or app feature work.
+
 ## 2026-05-27 — Codex: F-Droid #2555702280 failure root cause
 
 I inspected pipeline `#2555702280` on `TrueRepublic/fdroiddata`.
