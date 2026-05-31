@@ -37,6 +37,7 @@ export default function VoteScreen({ route, navigation }: Props) {
   const [summary, setSummary] = useState("");
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [billStatus, setBillStatus] = useState<string>("");
+  const [billLoaded, setBillLoaded] = useState(false);
   const [billGovernance, setBillGovernance] = useState<string>("NATIONAL");
   const [billSource, setBillSource] = useState<string>("PARLIAMENT");
   const [billPill, setBillPill] = useState<string>("");
@@ -57,8 +58,9 @@ export default function VoteScreen({ route, navigation }: Props) {
     // Load bill status
     fetch(`${API}/api/v1/bills/${encodeURIComponent(billId)}`)
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.status) { setBillStatus(d.status); setBillGovernance(d.governance_level || "NATIONAL"); setBillSource(d.source || "PARLIAMENT"); setBillPill(d.pill_el || ""); setParliamentUrl(d.parliament_url || ""); } })
-      .catch(() => {});
+      .then(d => { if (d?.status) { setBillStatus(d.status); setBillGovernance(d.governance_level || "NATIONAL"); setBillSource(d.source || "PARLIAMENT"); setBillPill(d.pill_el || ""); setParliamentUrl(d.parliament_url || ""); setSummary(prev => prev || d.summary_short_el || d.summary_long_el || ""); } })
+      .catch(() => {})
+      .finally(() => setBillLoaded(true));
   }, [billId]);
 
   async function handleVote(choice: string) {
@@ -236,7 +238,7 @@ export default function VoteScreen({ route, navigation }: Props) {
         </View>
       )}
 
-      {billStatus !== "ANNOUNCED" && billStatus !== "OPEN_END" && (
+      {billLoaded && billStatus !== "ANNOUNCED" && billStatus !== "OPEN_END" && (
         <>
           <Text style={styles.info}>
             {hasVoted && billStatus === "WINDOW_24H" && !isCorrected
