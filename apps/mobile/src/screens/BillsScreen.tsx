@@ -103,16 +103,15 @@ export default function BillsScreen() {
         ListEmptyComponent={<Text style={s.empty}>Δεν βρέθηκαν ψηφοφορίες</Text>}
         renderItem={({ item }) => (
           <TouchableOpacity style={s.card} onPress={() => {
-            if (item.status === "ANNOUNCED") return; // no action for announced bills
             if (item.status === "PARLIAMENT_VOTED")
               nav.navigate("Result", { billId: item.id, billTitle: item.title_el });
             else
               nav.navigate("Vote", { billId: item.id, billTitle: item.title_el });
-          }} activeOpacity={item.status === "ANNOUNCED" ? 1 : 0.7}>
+          }} activeOpacity={0.7}>
             <View style={[s.dot, { backgroundColor: STATUS_COLORS[item.status] ?? colors.textTertiary }]} />
             <View style={s.cardContent}>
-              <Text style={s.cardTitle} numberOfLines={2}>{item.title_el}</Text>
-              {item.pill_el && <Text style={s.cardPill} numberOfLines={1}>{item.pill_el}</Text>}
+              <Text style={s.cardTitle}>{item.title_el}</Text>
+              {item.pill_el && <Text style={s.cardPill} numberOfLines={3}>{item.pill_el}</Text>}
               <View style={s.cardFooter}>
                 <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
                   <Text style={[s.cardStatus, { color: STATUS_COLORS[item.status] ?? colors.textTertiary }]}>{STATUS_LABELS[item.status] ?? item.status}</Text>

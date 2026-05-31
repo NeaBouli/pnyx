@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Share,
   ScrollView,
+  Linking,
 } from "react-native";
 import * as LocalAuthentication from "expo-local-authentication";
 import type { StackScreenProps } from "@react-navigation/stack";
@@ -44,6 +45,7 @@ export default function VoteScreen({ route, navigation }: Props) {
   const [consensusScore, setConsensusScore] = useState(0);
   const [consensusSubmitting, setConsensusSubmitting] = useState(false);
   const [consensusDone, setConsensusDone] = useState(false);
+  const [parliamentUrl, setParliamentUrl] = useState("");
 
   React.useEffect(() => {
     const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
@@ -55,7 +57,7 @@ export default function VoteScreen({ route, navigation }: Props) {
     // Load bill status
     fetch(`${API}/api/v1/bills/${encodeURIComponent(billId)}`)
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.status) { setBillStatus(d.status); setBillGovernance(d.governance_level || "NATIONAL"); setBillSource(d.source || "PARLIAMENT"); setBillPill(d.pill_el || ""); } })
+      .then(d => { if (d?.status) { setBillStatus(d.status); setBillGovernance(d.governance_level || "NATIONAL"); setBillSource(d.source || "PARLIAMENT"); setBillPill(d.pill_el || ""); setParliamentUrl(d.parliament_url || ""); } })
       .catch(() => {});
   }, [billId]);
 
@@ -214,6 +216,17 @@ export default function VoteScreen({ route, navigation }: Props) {
           </Text>
         </View>
       )}
+
+      {parliamentUrl ? (
+        <TouchableOpacity
+          onPress={() => Linking.openURL(parliamentUrl)}
+          style={{ backgroundColor: "#eff6ff", borderRadius: 10, padding: 12, marginBottom: 12, flexDirection: "row", alignItems: "center" }}
+        >
+          <Text style={{ fontSize: 14, marginRight: 8 }}>🔗</Text>
+          <Text style={{ color: "#1d4ed8", fontSize: 13, fontWeight: "600", flex: 1 }}>Πηγή — Επίσημο κείμενο</Text>
+          <Text style={{ color: "#93c5fd", fontSize: 12 }}>↗</Text>
+        </TouchableOpacity>
+      ) : null}
 
       {billStatus === "WINDOW_24H" && (
         <View style={{ backgroundColor: "#fef3c7", borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#f59e0b" }}>

@@ -4339,3 +4339,116 @@ Done: #74, #75
 - Kein fdroiddata geaendert
 - Kein Server-Write, kein Deployment
 - Keine Secrets gelesen oder ausgegeben
+
+---
+
+## 2026-06-01 — Codex Audit: ANNOUNCED Mobile Detail + Arweave Scope
+
+### Anlass
+Gio S10-Test nach vC29: Evaluierung funktioniert nach DB-Hotfix, aber vorangekuendigte Bills sind in der App abgeschnitten/nicht klickbar, haben keinen Quellenlink/keine Zusammenfassung. Zusaetzlich zeigt ein Βουλή-Bill einen Arweave-Link, der teils 404 liefert.
+
+### Verifiziert
+1. **Mobile ANNOUNCED Bills sind absichtlich nicht klickbar**
+   - `apps/mobile/src/screens/BillsScreen.tsx` blockiert Tap fuer `item.status === "ANNOUNCED"` mit `return`.
+   - Folge: Kein Detail-Screen, kein Quellenlink, keine read-only Summary fuer ANNOUNCED Bills.
+2. **Mobile Titel/Pill werden abgeschnitten**
+   - `cardTitle` nutzt `numberOfLines={2}`, `pill_el` nutzt `numberOfLines={1}`.
+3. **Mobile nutzt `parliament_url` nicht**
+   - API liefert `parliament_url`.
+   - Mobile `VoteScreen` speichert/zeigt aktuell nur Status/Governance/Source/Pill, keinen Original-Link.
+4. **ANNOUNCED Summary-Luecke live bestaetigt**
+   - Live-DB: 21 ANNOUNCED PARLIAMENT Bills, 20 mit `parliament_url`, 0 mit `summary_short_el`, 11 mit `summary_long_el`.
+   - NEA-301 bleibt real: `summary_short_el` Backfill + Fetcher-Fix noetig.
+5. **Arweave-Link bei `GR-0490a766` ist Datenintegritaetsproblem**
+   - DB/API hat `arweave_tx_id = unG3WJ65PODdfFfV64mUVA506N6vc29AnoPoCDxKsu0`.
+   - `https://arweave.net/unG3WJ65PODdfFfV64mUVA506N6vc29AnoPoCDxKsu0` liefert 404 HTML.
+   - Arweave GraphQL meldet `transaction: null`.
+   - `viewblock.io` ist zusaetzlich Cloudflare/403-anfaellig und als primärer App-Link ungeeignet.
+
+### Gio-Policy: Arweave Scope
+Arweave ist **nicht** fuer ANNOUNCED, ACTIVE, WINDOW_24H, DIAVGEIA oder Zwischenstaende.
+
+In die Arweave-Blockchain duerfen nur:
+- `source = PARLIAMENT`
+- echte Βουλή/Parliament Bills
+- die am Tag der Abstimmung im Parlament verabschiedet bzw. final abgestimmt wurden
+- als vollständiger Snapshot aller relevanten Daten zum Parlaments-Abstimmungszeitpunkt
+
+Nicht archivieren:
+- vorangekuendigte Bills
+- noch offene Citizen-Votes
+- DIAVGEIA Decisions
+- trockene/dry-run IDs
+- TX-IDs, die nicht im Arweave-Netz verifizierbar sind
+
+### Required Fixes fuer CC
+1. **NEA-292 erweitern/fixen**
+   - ANNOUNCED Bills in Mobile klickbar machen.
+   - Read-only Detail fuer ANNOUNCED anzeigen, kein Vote-Flow.
+   - Vollstaendigen Titel anzeigen.
+   - `parliament_url` als offizieller Quellenlink anzeigen.
+   - Summary-Fallback: `summary_short_el` → `summary_long_el` → sauberer Hinweis.
+2. **NEA-301**
+   - Backfill `summary_short_el` nur wenn NULL/leer.
+   - `parliament_fetcher.py` und Completeness-Check so fixen, dass aus gefetchtem Text auch eine Kurzfassung entsteht.
+   - Bestehende manuelle `summary_short_el` nie ueberschreiben.
+3. **Neues Arweave-Datenintegritaets-Ticket**
+   - Gespeicherte `arweave_tx_id` vor Anzeige verifizieren.
+   - Kaputte TX `GR-0490a766` bereinigen oder korrekt neu publishen.
+   - `publish_to_arweave()` darf TX-ID erst speichern, wenn Gateway/GraphQL die TX bestaetigt.
+   - Arweave Link in Mobile/Web nur anzeigen, wenn verifiziert.
+
+### Nicht getan
+- Kein Produktcode geaendert
+- Keine DB geaendert
+- Kein Deployment
+- Keine Secrets gelesen oder ausgegeben
+
+---
+
+## 2026-06-01 — CC: Test-Account + Evaluation Region-Fix
+
+### Problem
+- Test-Account (id=14) hatte `region_locked=false`, `periferia_id=NULL` — Evaluierung blockiert
+- DEMO-123 Politiker hatte `periferia_id=NULL` — Region-Match in evaluation.py:174 scheitert immer bei `pol_periferia is None`
+- App zeigt Politiker trotzdem an (nur `evaluation_enabled=TRUE` geprueft), aber POST evaluate schlaegt fehl
+- `admin/test-account` Endpoint setzt keine Region — muss manuell oder per separatem Endpoint gesetzt werden
+
+### Fix (DB direkt)
+- `identity_records` id=14: `periferia_id=6, dimos_id=22, region_locked=TRUE`
+- `representative_tokens` DEMO-123: `periferia_id=6, dimos_id=22, region='Πελοποννήσου'`
+
+### Root Cause
+1. `POST /api/v1/admin/test-account` erstellt Identity ohne Region — kein periferia_id/dimos_id
+2. DEMO-123 wurde ohne periferia_id angelegt — Evaluierung-Code prueft `if pol_periferia is None` und blockt
+3. Die App-seitige Region-Eingabe ruft `POST /api/v1/identity/set-region` — aber nach Deinstall+Reinstall gehen lokale Daten verloren und der Endpoint wird nicht erneut aufgerufen
+
+### Empfehlung (Ticket)
+- `admin/test-account` sollte optionale `periferia_id`/`dimos_id` Parameter akzeptieren
+- Oder: App sollte bei Import-Account pruefen ob `region_locked=false` und Region-Eingabe erzwingen
+
+### Server-Zugriff
+- SSH: DB UPDATE auf identity_records + representative_tokens
+- Keine `.env`, Key, Wallet, Secret-Dateien gelesen
+- Kein Deployment, kein Code geaendert
+
+---
+
+## 2026-06-01 — CC: NEA-292 ANNOUNCED Bills + Quellenlink + Titel Fix
+
+### Aenderungen
+1. **BillsScreen.tsx:106** — `if (item.status === "ANNOUNCED") return;` ENTFERNT → ANNOUNCED Bills sind jetzt klickbar, navigieren zum VoteScreen (der zeigt read-only "Ψηφοφορία δεν έχει ξεκινήσει" Banner)
+2. **BillsScreen.tsx:114** — `numberOfLines={2}` ENTFERNT von Titel, pill von `numberOfLines={1}` auf `3` → kein Abschneiden mehr
+3. **VoteScreen.tsx** — `parliament_url` wird jetzt aus API geladen und als "Πηγή — Επίσημο κείμενο" Link angezeigt
+4. **VoteScreen.tsx** — `Linking` Import hinzugefuegt
+
+### GitHub Issues angelegt
+- #95 NEA-301 summary_short_el Backfill
+- #96 NEA-304 Arweave TX Verifikation
+- #97 NEA-292 ANNOUNCED Bills (dieser Fix)
+- #98 NEA-303 test-account Region
+
+### Nicht angefasst
+- CODEX_FINDINGS.md
+- Server/DB (ausser fruehere Region-Fixes)
+- F-Droid
