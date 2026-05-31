@@ -236,6 +236,50 @@ Empfehlung: Hybrid V2.
 - Mobile Proof Generation zuerst benchmarken, bevorzugt Mopro/SemaphoreReactNative statt plain `snarkjs`.
 ---
 
+---
+
+# CODEX FINDINGS — NEA-269 Dashboard Demo-Daten + Users UX
+Datum: 2026-05-24
+Agent: Codex
+Scope: Recheck Commit `46c46ec`; Produktcode nur gelesen, keine Produktcode-Aenderungen.
+
+## Finding 1: /users fuehrt Telefonnummer in den Revocation-Flow zurueck — RESOLVED in `08994b0`
+
+Severity: MEDIUM
+
+Der NEA-269 Scope war UX-Korrektur ohne Aenderung an Identity-/Privacy-Logik und ohne Telefonnummer-Suche/Phone-Recovery. Commit `46c46ec` fuegt aber im Dashboard wieder ein Telefonnummer-Feld ein und macht es fuer die Admin-Revocation verpflichtend:
+
+- `apps/dashboard/src/app/(dashboard)/users/page.tsx:28` neuer `phoneInput` State
+- `apps/dashboard/src/app/(dashboard)/users/page.tsx:51` blockiert Revocation ohne Telefonnummer
+- `apps/dashboard/src/app/(dashboard)/users/page.tsx:58` sendet `phone_number` an `/api/v1/identity/revoke`
+- `apps/dashboard/src/app/(dashboard)/users/page.tsx:189` zeigt ein Telefonnummer-Eingabefeld
+
+Das widerspricht ausserdem dem neuen UI-Text in `users/page.tsx:179`, der sagt, die Revocation laufe ausschliesslich ueber den Nullifier Hash und das System speichere keine Telefone. Ergebnis: Die UI erklaert Privacy-by-Design, verlangt aber direkt darunter wieder eine Telefonnummer.
+
+Wichtiger Kontext: Der bestehende Backend-Endpunkt `apps/api/routers/identity.py:92` verlangt aktuell `phone_number` und verifiziert damit den Nullifier erneut. Das ist ein separates Architektur-/Backend-Thema. NEA-269 sollte diese Logik nicht kaschieren, sondern die Admin-UI ehrlich machen.
+
+Fix fuer CC:
+
+- Telefonnummer-Feld und `phoneInput` aus `/users` wieder entfernen.
+- Nicht `phone_number` aus der Admin-UI senden.
+- Entweder:
+  - Revocation-Action fuer Admins als nicht verfuegbar/Phase-2 anzeigen, mit klarem Hinweis, dass der aktuelle Backend-Endpunkt noch Telefonnummer-Reverification verlangt; oder
+  - eigenes Follow-up fuer einen privacy-preserving Admin-Revoke-Endpoint planen, der ohne Telefonnummer funktioniert.
+- UI-Text muss Verhalten korrekt beschreiben. Kein Satz "ausschliesslich via Nullifier", solange der aktive Button technisch eine Telefonnummer verlangt.
+
+Recheck 2026-05-24: `08994b0` entfernt den API-Call zu `/api/v1/identity/revoke`, sendet kein `phone_number` mehr, entfernt das Telefonnummer-Eingabefeld und markiert Revocation als Self-Service-only. Finding geschlossen.
+
+## NEA-269 /gov Recheck
+
+`apps/dashboard/src/app/(dashboard)/gov/page.tsx` entfernt die sichtbaren Demo-Werte `Δήμος Αθηναίων` und `ΑΔΑ: ΧΧΧΧ-ΧΧΧ` und zeigt einen Empty-State. Dieser Teil ist akzeptiert.
+
+Checks lokal:
+
+- `npx tsc --noEmit` in `apps/dashboard` → OK
+- `npm run build -- --no-lint` in `apps/dashboard` → BLOCKED vor TS-Compile durch bestehendes Next/SWC-Lockfile-Patching: `TypeError: Cannot read properties of undefined (reading 'os')`
+
+---
+
 # CODEX FINDINGS — NEA-268 org_label Forum Titles
 Datum: 2026-05-24
 Agent: Codex

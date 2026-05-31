@@ -1,5 +1,62 @@
 # CC Response
 
+## 2026-06-01 — Codex: ANNOUNCED Mobile + Arweave Scope Audit
+
+Gio hat auf S10 bestaetigt: Evaluierung funktioniert nach DB-Hotfix. Offen/falsch sind ANNOUNCED Bills und ein Arweave-Link.
+
+### Codex Findings
+
+1. **ANNOUNCED Mobile Detail fehlt**
+   - `apps/mobile/src/screens/BillsScreen.tsx` blockiert Tap fuer `item.status === "ANNOUNCED"`.
+   - Dadurch kein Detail-Screen, kein Quellenlink, keine read-only Zusammenfassung.
+   - Titel/Pill sind in der Liste abgeschnitten (`numberOfLines={2}` / `numberOfLines={1}`).
+
+2. **Quellenlink fehlt in Mobile**
+   - API liefert `parliament_url`.
+   - Mobile zeigt `parliament_url` fuer ANNOUNCED/Read-only Bills aktuell nicht an.
+
+3. **Summary-Luecke**
+   - Live: 21 ANNOUNCED PARLIAMENT Bills, 20 mit `parliament_url`, 0 mit `summary_short_el`, 11 mit `summary_long_el`.
+   - NEA-301 ist real: Backfill + Fetcher-Fix.
+
+4. **Arweave-Datenintegritaet**
+   - `GR-0490a766` hat DB/API `arweave_tx_id = unG3WJ65PODdfFfV64mUVA506N6vc29AnoPoCDxKsu0`.
+   - `arweave.net` liefert 404; GraphQL findet keine Transaktion.
+   - Link darf nicht als verifizierter Snapshot angezeigt werden.
+
+### Gio-Policy: Arweave
+
+Arweave darf ausschliesslich fuer echte Parliament Bills genutzt werden, die am Tag der Abstimmung im Parlament final abgestimmt/verabschiedet wurden. Dann wird ein vollstaendiger Snapshot aller relevanten Daten zum Abstimmungszeitpunkt archiviert.
+
+Nicht nach Arweave:
+- ANNOUNCED / ACTIVE / WINDOW_24H Zwischenstaende
+- DIAVGEIA Decisions
+- Dry-run IDs
+- unverifizierte oder nicht auffindbare TX-IDs
+
+### Tasks
+
+1. **NEA-292**
+   - ANNOUNCED Bills in Mobile klickbar machen.
+   - Read-only Detail anzeigen, kein Vote-Flow.
+   - Vollstaendigen Titel zeigen.
+   - Offiziellen Quellenlink `parliament_url` zeigen.
+   - Summary-Fallback: `summary_short_el` → `summary_long_el` → sauberer Hinweis.
+
+2. **NEA-301**
+   - `summary_short_el` Backfill nur fuer NULL/leer.
+   - `parliament_fetcher.py` + Completeness-Check fixen.
+   - Nie bestehende `summary_short_el` ueberschreiben.
+
+3. **Arweave Integrity Ticket anlegen**
+   - Kaputte TX `GR-0490a766` bereinigen/neu publishen.
+   - `publish_to_arweave()` speichert TX-ID erst nach Netzwerk-Verifikation.
+   - Mobile/Web zeigen Arweave-Link nur fuer verifizierte TX.
+
+Do NOT touch F-Droid.
+
+---
+
 ## 2026-06-01 — CC: vC29 Release-Build + Server-Status
 
 ### Erledigt

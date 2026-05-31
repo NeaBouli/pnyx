@@ -4452,3 +4452,42 @@ Nicht archivieren:
 - CODEX_FINDINGS.md
 - Server/DB (ausser fruehere Region-Fixes)
 - F-Droid
+
+---
+
+## 2026-06-01 — CC: NEA-292 Loading Guard + Summary Cascade
+
+### Aenderungen (Commit `0225c00`)
+1. **VoteScreen.tsx** — `billLoaded` State hinzugefuegt, Vote-Buttons werden erst nach API-Response gerendert → ANNOUNCED zeigt nie kurz Vote-Optionen
+2. **VoteScreen.tsx** — Summary Cascade: `/summary` Endpoint → `summary_short_el` → `summary_long_el` Fallback aus Bill-Detail-API
+
+### Gepusht
+- `origin/main`: `0225c00` (enthaelt `f23abec` NEA-292 + `0225c00` Guard)
+- TSC: `npx tsc --noEmit` sauber
+
+### APK Rebuild
+- `build-play.sh` laeuft — neuer vC29 APK mit allen NEA-292 Fixes
+- Nach Build: S10 Install + visueller Test
+
+---
+
+## 2026-06-01 — CC: NEA-304 Arweave TX bereinigt + Policy
+
+### DB-Fix
+- `GR-0490a766`: `arweave_tx_id` auf NULL gesetzt (TX war 404/orphaned)
+- Alle anderen 5 Arweave TXs verifiziert → HTTP 200, gueltig
+
+### Arweave Policy (verbindlich)
+- ANNOUNCED/ACTIVE/WINDOW_24H: KEIN Arweave publish
+- OPEN_END: erlaubt (User-Ergebnisse final)
+- PARLIAMENT_VOTED: NUR wenn `party_votes_parliament IS NOT NULL`
+- TX-ID erst speichern wenn Gateway die TX nach Submit kennt
+
+### GR-0490a766 Gesamtbefund
+- `party_votes_parliament`: NULL — Fetcher hat Parlamentsdaten nicht geparst
+- `summary_long_el`: Raw HTML-Scrape statt saubere Zusammenfassung
+- `summary_short_el`: NULL
+- `pill_el`: leer
+- Root Cause: parliament_fetcher.py parst Ergebnisseite nicht korrekt → NEA-301
+
+### GitHub Issue #96 aktualisiert mit Policy-Tabelle
