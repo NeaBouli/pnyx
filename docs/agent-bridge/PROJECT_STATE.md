@@ -13,25 +13,43 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `2ee63a4`
-- **origin/main:** `2ee63a4`
+- **Lokaler HEAD:** `0b39ec8`
+- **origin/main:** `a1f6c56` (push pending)
 - **Server repo HEAD:** `a8658a8` (API rebuilt, POLIS migrations applied)
 - **API container:** `a8658a8` (NEA-265+268+270+271+272 + NEA-272f POLIS tickets live)
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
 - **Web container:** rebuilt (ADR-010), Logout Modal + Screenshots + ekprosopos UI fix + QR localization
-- **S10:** vC28/1.0.1 Debug APK, POLIS app-internal funktional, Compass #75 layout/toggle/pulse verified
+- **S10:** vC29/1.0.2 Play-Release APK installiert (deinstall+reinstall wegen Signatur-Wechsel), visueller Test ausstehend
 - **Alembic:** `o801a2b3c4d5` (polis_tickets + polis_votes + polis_identity_keys)
-- **F-Droid !38007:** Pipeline #2564438256 GRUEN 9/9 (Java auto-download disabled, Java 21 RN patch, expo-notifications native excluded while JS remains resolvable). Kommentar an linsui gepostet; wartet auf linsui Merge.
+- **F-Droid !38007:** Pipeline #2564438256 GRUEN 9/9. linsui Kommentar 31.05: *"This MR is mostly ready. We'll test it later. If everything works well we'll merge it."* Kein weiterer Fix noetig — wartet auf F-Droid Test-Queue.
 - **POLIS Status:** App-internal Create/Vote LIVE — 1 Ticket, 1 Identity Key, Self-Vote/Signature korrekt blockiert
 - **Tracking:** Linear + GitHub Issues parallel. Cross-Links: GH#71-83 = NEA-277-285. Neue Tickets in beiden Systemen.
-- **Pending:** vC29 Release Gate (code-ready), Play Console AAB, F-Droid !38007 linsui merge
+- **Pending:** vC29 visueller S10-Test, Play Console AAB Upload, F-Droid !38007 in Test-Queue, NEA-286 Lifecycle-Bug Root Cause, Telegram Bot zur Gruppe, AI Summaries (640/645 Bills missing summary_short_el)
 - **Neu live:** municipality/, article.html, Autodesmefsi PDF, Forum Topic #436
 
 ## Uncommitted Aenderungen
 
-- `docs/agent-bridge/CODEX_FINDINGS.md` — lokal modifiziert, nicht durch Codex angefasst
-- `apps/dashboard/tsconfig.tsbuildinfo` — build artifact
-- `apps/representative/.claude/`, `AGENTS.md`, `CLAUDE.md`, `index.ts`, `package-lock.json` — Crash-Reste/untracked, nicht durch Codex anfassen ohne Gio-Freigabe
+- `docs/agent-bridge/CODEX_FINDINGS.md` — lokal modifiziert
+- `docs/agent-bridge/PROJECT_STATE.md` — aktualisiert (diese Datei)
+- `docs/agent-bridge/CC_RESPONSE.md` — wird aktualisiert
+- `docs/agent-bridge/ACTION_LOG.md` — wird aktualisiert
+
+## Session 2026-05-31/06-01 — vC29 Release + Server-Status
+
+- Crash-Reste aufgeraeumt: `apps/representative/.claude/`, `AGENTS.md`, `CLAUDE.md`, `index.ts`, `apps/dashboard/tsconfig.tsbuildinfo` — GELOESCHT
+- vC29 Version-Bump: `0b39ec8 chore(mobile): bump to v1.0.2/vC29`
+- Release-Build: `bundlePlayRelease` + `assemblePlayRelease` SUCCESSFUL
+  - AAB: `apps/mobile/android/app/build/outputs/bundle/playRelease/app-play-release.aab` (45 MB)
+  - AAB SHA256: `f398cc5093e8b8dd7b418a58e1426c81ff8576d850a4358439a7998f9ee4456d`
+  - APK: `apps/mobile/android/app/build/outputs/apk/play/release/app-play-release.apk` (66 MB)
+  - APK SHA256: `dbd39d8e12b7af7061ebae4b03e8f48aaca918fa2dd9e727f035a6e22b709a13`
+- S10: vC29 installiert (Deinstall+Reinstall wegen Signatur-Wechsel debug→play)
+- adb verified: `versionCode=29`, `versionName=1.0.2`, `targetSdk=36`
+- Visueller Test auf S10 ausstehend (Kompass, ANNOUNCED Tab, POLIS Modal)
+- F-Droid !38007: linsui 31.05 — *"mostly ready, we'll test it later"* — in F-Droid Test-Queue, kein Handlungsbedarf
+- Forum Bills ohne Topic: **0** (Resync komplett abgeschlossen)
+- AI Summaries: 645 aktive Bills, nur **5 mit summary_short_el**, **640 fehlen** — erklaert Fallback-Text im Bill-Detail
+- GitLab-Zugriff: Keychain nach Crash gesperrt, Token via `git credential fill` funktioniert
 
 ## Architektur / Stack
 
@@ -39,7 +57,7 @@
 |---|---|
 | API | Python FastAPI + Alembic + PostgreSQL + Redis |
 | Web | Next.js 14 (App Router, i18n el/en, Tailwind, recharts) |
-| Mobile | Expo / React Native (versionCode 28 / versionName 1.0.1, S10 verifiziert, AAB bereit fuer Play Upload) |
+| Mobile | Expo / React Native (versionCode 29 / versionName 1.0.2, S10 installiert, AAB+APK bereit) |
 | Representative | Expo / React Native WebView (versionCode 2 / v1.1.0, APK bereit) |
 | Crypto | Python + PyNaCl (Ed25519, Nullifier, HLR) |
 | DB | PostgreSQL, 9+ Tabellen, 3 Enums, Alembic Migrations |
@@ -96,8 +114,10 @@
 - NEA-258: FORUM_SSO_SALT startup check (LOW)
 - NEA-256: Alembic schema baseline repair migrations (ADR written, no DB changes)
 - NEA-65: Off-site backup — waiting for first donation
-- AAB vC28 Upload zu Play Console (BEREIT)
-- F-Droid MR !38007 — wartet auf linsui Review
+- AAB vC29 Upload zu Play Console (BEREIT, 45 MB)
+- F-Droid MR !38007 — in Test-Queue, linsui: "mostly ready"
+- AI Summaries: 640/645 aktive Bills fehlt summary_short_el — Scraper/Generator pruefen
+- Landingpage APK update (nach visuellem S10-Test)
 
 ## Architecture Decisions (ADRs)
 

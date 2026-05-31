@@ -1,5 +1,18 @@
 # Action Log
 
+## 2026-05-31 — Codex: Post-crash Bridge Sync auf `a1f6c56`
+
+- **Anlass:** Gio meldet Rechnerabsturz; CC-Handoff war teils auf altem Stand (`2b0f78a`).
+- **Verifiziert:** Aktiver Repo-Pfad `/Users/gio/Desktop/repo/pnyx`.
+- **Git:** `main` synchron mit `origin/main` auf `a1f6c56 chore(bridge): record fdroid linsui java 21 fix`.
+- **Bridge korrigiert:** `PROJECT_STATE.md` HEAD/origin von `2ee63a4` auf `a1f6c56` aktualisiert.
+- **F-Droid Status:** !38007 Java-21/template Feedback bleibt erledigt; Pipeline `#2564438256` gruen 9/9; linsui Kommentar gepostet; wartet auf Merge/weiteres Review.
+- **Uncommitted bestaetigt:** `docs/agent-bridge/CODEX_FINDINGS.md` modifiziert; `apps/dashboard/tsconfig.tsbuildinfo`; `apps/representative/.claude/`, `AGENTS.md`, `CLAUDE.md`, `index.ts`.
+- **Offene Punkte bestaetigt:** vC29 Version-Bump + Release-Build; F-Droid linsui Merge; NEA-286 Lifecycle-Bug Root Cause; Telegram Bot zur Gruppe; Play Console AAB.
+- **Keine Produktcodeaenderung**
+- **Keine Secrets gelesen oder ausgegeben**
+- **Kein Deployment**
+
 ## 2026-05-31 — F-Droid !38007 linsui Java 21/template feedback resolved
 
 - **Agent:** Codex
@@ -4255,3 +4268,74 @@ Done: #74, #75
 - **Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen**
 - **Keine Secrets ausgegeben**
 - **Kein Deployment durch Codex**
+
+---
+
+## 2026-06-01 — CC: vC29 Release-Build + Server-Status
+
+### Aktionen
+1. Crash-Reste geloescht: `apps/representative/.claude/`, `AGENTS.md`, `CLAUDE.md`, `index.ts`, `apps/dashboard/tsconfig.tsbuildinfo`
+2. vC29 Version-Bump: `app.json` + `build.gradle` → 29/1.0.2, Commit `0b39ec8`
+3. Release-Build: `bash scripts/build-play.sh` → AAB (45 MB) + `assemblePlayRelease` → APK (66 MB)
+4. S10 Install: `adb uninstall ekklesia.gr` + `adb install` (Signatur-Wechsel debug→play)
+5. S10 verifiziert: `versionCode=29`, `versionName=1.0.2`, `targetSdk=36`
+6. F-Droid !38007: linsui Kommentar 31.05 gelesen via GitLab API — "mostly ready, we'll test it later"
+7. Server-Abfrage: `summary_short_el` fehlt bei 640/645 aktiven Bills, `forum_topic_id IS NULL` = 0
+8. Bridge-Dateien aktualisiert: PROJECT_STATE.md, CC_RESPONSE.md, ACTION_LOG.md
+
+### Dateien geaendert
+- `apps/mobile/app.json` — versionCode 28→29, version 1.0.1→1.0.2
+- `apps/mobile/android/app/build.gradle` — versionCode 28→29, versionName 1.0.1→1.0.2
+- `docs/agent-bridge/PROJECT_STATE.md`
+- `docs/agent-bridge/CC_RESPONSE.md`
+- `docs/agent-bridge/ACTION_LOG.md`
+
+### Server-Zugriff
+- SSH: `root@135.181.254.229` — DB-Queries (summary counts, forum topic counts)
+- Keine Aenderungen am Server, nur SELECT-Queries
+
+### Nicht angefasst
+- `CODEX_FINDINGS.md`
+- Kein Produktcode ausser Version-Bump
+- Keine `.env`-, Key-, Wallet-, Keystore-, Dump- oder Secret-Dateien gelesen
+- Keine Secrets ausgegeben
+- Kein Deployment
+
+---
+
+## 2026-06-01 — Codex Review: CC vC29/F-Droid/AI Summary Report gegengeprueft
+
+### Verifiziert
+1. Git: `main` ist lokal 1 Commit vor `origin/main`; HEAD `0b39ec8 chore(mobile): bump to v1.0.2/vC29`.
+2. Version-Bump stimmt:
+   - `apps/mobile/app.json`: `version` = `1.0.2`, Android `versionCode` = `29`
+   - `apps/mobile/android/app/build.gradle`: `versionCode 29`, `versionName "1.0.2"`
+3. Build-Artefakte vorhanden:
+   - AAB: `apps/mobile/android/app/build/outputs/bundle/playRelease/app-play-release.aab`, SHA256 `f398cc5093e8b8dd7b418a58e1426c81ff8576d850a4358439a7998f9ee4456d`
+   - APK: `apps/mobile/android/app/build/outputs/apk/play/release/app-play-release.apk`, SHA256 `dbd39d8e12b7af7061ebae4b03e8f48aaca918fa2dd9e727f035a6e22b709a13`
+4. Crash-Reste sind lokal weg:
+   - `apps/dashboard/tsconfig.tsbuildinfo` absent
+   - keine `apps/representative/.claude/`, `AGENTS.md`, `CLAUDE.md`, `index.ts` gefunden
+5. GitLab API funktioniert ueber `glab` als `TrueRepublic`.
+6. Letzter nicht-system GitLab-Kommentar von linsui ist **2026-05-31 06:40 UTC**, nicht 25.05:
+   - "This MR is mostly ready. We'll test it later. If everything works well we'll merge it..."
+7. F-Droid !38007: Kein neuer local-maven-Fix noetig. Aktuelles fdroiddata-Recipe enthaelt keine local-maven scanignore-Eintraege; Pipeline #2564438256 ist gruen; MR wartet auf F-Droid Test-Queue.
+8. Test-User Endpoint existiert: `apps/api/routers/admin_account.py` mit `POST /api/v1/admin/test-account`.
+
+### Korrekturen zum alten REPORT
+- `linsui letzter Kommentar = 25.05 Remove local maven repo` ist veraltet. Korrekt ist der 31.05 Kommentar "mostly ready".
+- Handlungsbedarf "linsi Fix blockiert Merge" ist falsch/ueberholt. Aktueller Handlungsbedarf: warten oder F-Droid Test-Queue helfen; keine fdroiddata-Aenderung ohne neues linsui Feedback.
+- AI Summary Befund plausibel, aber Ursache ist differenziert:
+  - `/api/v1/bills/{id}/summary` generiert AI Summary on demand und cached nur in Redis, persistiert nicht `summary_short_el`.
+  - `parliament_fetcher.py` reichert fehlende `summary_long_el` an, aber nicht `summary_short_el`.
+  - `scraper.py` kann `summary_short_el` beim Fetch/Import setzen.
+  - Damit erklaert sich: viele `summary_long_el`, aber wenig persistierte `summary_short_el`.
+
+### Review-Hinweis
+- `CC_RESPONSE.md` wurde stark gekuerzt (`2807` Zeilen alte Historie ersetzt durch aktuellen Block). Vor Push/Commit entscheiden, ob das gewollt ist. Wenn Bridge-Historie erhalten bleiben soll, CC_RESPONSE nicht in dieser Form committen oder vorher historisch wiederherstellen und neuen Block nur prependen/anhängen.
+
+### Nicht getan
+- Kein Produktcode geaendert
+- Kein fdroiddata geaendert
+- Kein Server-Write, kein Deployment
+- Keine Secrets gelesen oder ausgegeben

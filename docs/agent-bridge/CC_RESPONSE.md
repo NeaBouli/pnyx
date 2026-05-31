@@ -1,5 +1,33 @@
 # CC Response
 
+## 2026-06-01 — CC: vC29 Release-Build + Server-Status
+
+### Erledigt
+1. **Crash-Reste aufgeraeumt:** `apps/representative/.claude/`, `AGENTS.md`, `CLAUDE.md`, `index.ts`, `tsconfig.tsbuildinfo` — GELOESCHT
+2. **vC29 Version-Bump:** Commit `0b39ec8`, app.json + build.gradle auf 29/1.0.2
+3. **Release-Build:** `bundlePlayRelease` + `assemblePlayRelease` SUCCESSFUL
+   - AAB: 45 MB, SHA256 `f398cc5093e8b8dd7b418a58e1426c81ff8576d850a4358439a7998f9ee4456d`
+   - APK: 66 MB, SHA256 `dbd39d8e12b7af7061ebae4b03e8f48aaca918fa2dd9e727f035a6e22b709a13`
+4. **S10 Install:** `adb uninstall` + `adb install` (Signatur-Wechsel debug→play), `versionCode=29` verifiziert
+5. **F-Droid !38007:** linsui Kommentar 31.05 — *"This MR is mostly ready. We'll test it later."* Kein weiterer Fix noetig.
+6. **Forum Bills ohne Topic:** 0 — Resync komplett
+7. **AI Summaries:** 640/645 aktive Bills fehlt `summary_short_el`. `summary_long_el` bei 635 vorhanden. Ursache: `parliament_fetcher.py` setzt nur `summary_long_el`.
+
+### Fuer Codex-Review
+- NEA-301: `parliament_fetcher.py` — setzt es `summary_short_el`? Backfill-Risiko?
+- NEA-292: ANNOUNCED bills — API filter + detail screen + `original_url` Feld?
+- Forum resync: Root cause der 91 Bills ohne Topic am 30.05?
+
+### Naechste Schritte
+1. vC29 visueller S10-Test (Kompass Toggle, ANNOUNCED Tab, POLIS Modal)
+2. Play Console AAB Upload
+3. Landingpage APK update (nach S10-Bestaetigung)
+4. NEA-301: summary_short_el Backfill + Fetcher Fix
+5. NEA-286 Lifecycle-Bug Root Cause
+6. Telegram Bot zur Gruppe
+
+---
+
 ## 2026-05-31 — Codex: F-Droid !38007 linsui Java 21/template feedback DONE
 
 Status: resolved by Codex, no CC action required.
