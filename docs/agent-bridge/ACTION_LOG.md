@@ -4491,3 +4491,37 @@ Nicht archivieren:
 - Root Cause: parliament_fetcher.py parst Ergebnisseite nicht korrekt → NEA-301
 
 ### GitHub Issue #96 aktualisiert mit Policy-Tabelle
+
+---
+
+## 2026-06-01 — CC: NEA-301 Dry-run Ergebnis + Session Close
+
+### NEA-301 Dry-run
+- Regelbasierter Backfill: NICHT moeglich
+- summary_long_el = roher HTML-Scrape bei allen 646 Bills (14 Parliament + 632 DIAVGEIA)
+- Parliament-Scrape enthaelt: Navigations-Menue, Seiten-Header ("Εμφανίζονται τα σχέδια..."), Metadata
+- DIAVGEIA-Scrape enthaelt: Behoerden-Adressen, Aktenzeichen, Protokolltexte
+- Entscheidung: Ollama-Script noetig (NEA-301b)
+- Rate-limit: 1 req/5s, llama3.2:3b (bereits auf Server)
+- parliament_fetcher.py Fix: summary_short_el direkt setzen (zukuenftige Bills)
+- Kein --apply ohne Sample-Abnahme durch Gio/Codex
+- Script liegt bereit: scripts/backfill_summary_short.py (muss fuer Ollama umgebaut werden)
+
+### Session-Stand
+- HEAD: `1a0a872` auf `origin/main`
+- vC29 APK auf S10 installiert (versionCode=29, versionName=1.0.2)
+- NEA-292: ANNOUNCED klickbar + Quellenlink + Loading Guard — DONE
+- NEA-304: GR-0490a766 TX bereinigt, Policy dokumentiert
+- F-Droid !38007: in Test-Queue, kein Handlungsbedarf
+- Forum Bills ohne Topic: 0
+
+### Naechste Session Prioritaeten
+1. NEA-301b Ollama-Backfill Script
+2. NEA-303 test-account Region permanent
+3. NEA-304 arweave.py TX-Verifikation
+4. APK vC29 final auf S10 + Play Console AAB
+
+### Nicht angefasst
+- CODEX_FINDINGS.md
+- Kein Deployment
+- Keine Secrets
