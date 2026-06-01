@@ -4525,3 +4525,38 @@ Nicht archivieren:
 - CODEX_FINDINGS.md
 - Kein Deployment
 - Keine Secrets
+
+---
+
+## 2026-06-01 — CC: Telegram Bot Audit + Fix
+
+### Bug gefunden
+- `notify_parliament_voted(bill.id, title)` uebergibt kein `citizen_votes` → default 0
+- GR-5293 hat 2 Buergerstimmen (2x NO, 18./19.05), Bot meldete 0
+- `notify_window_24h` war hardcoded auf `TOPICS["agenda"]` statt governance-basiert
+- `notify_active` governance_level wurde nicht uebergeben
+
+### Fix (Commit `d6e4dfa`)
+1. `bill_lifecycle.py`: `_hook_telegram_community` akzeptiert jetzt `db` Parameter
+2. Bei PARLIAMENT_VOTED: `citizen_votes` per COUNT query aus DB geholt
+3. `governance_level` an alle 3 notify-Funktionen uebergeben
+4. `telegram_community.py`: `notify_window_24h` jetzt governance-aware
+
+### Vollstaendiges Bot-Audit
+
+| Transition | Funktion | Status |
+|---|---|---|
+| ANNOUNCED → ACTIVE | notify_active + Push | GEFIXT: governance_level uebergeben |
+| ACTIVE → WINDOW_24H | notify_window_24h | GEFIXT: governance-aware Topic |
+| WINDOW_24H → PARL_VOTED | notify_parliament_voted | GEFIXT: citizen_votes aus DB |
+| PARL_VOTED → OPEN_END | keine | OK (by design) |
+| Arweave catch-up | notify_arweave | RISIKO: kein party_votes Check (→ NEA-304) |
+
+### Verbleibendes Risiko
+- `_catchup_arweave` archiviert PARLIAMENT_VOTED + OPEN_END Bills ohne `party_votes_parliament` Check
+- Das ist der NEA-304 Bug — arweave.py darf nur archivieren wenn Daten vollstaendig
+- Nicht in diesem Commit gefixt — eigenes Ticket
+
+### Server-Deployment noetig
+- Fix muss auf Server deployed werden (Container rebuild)
+- NICHT automatisch — Gio muss freigeben
