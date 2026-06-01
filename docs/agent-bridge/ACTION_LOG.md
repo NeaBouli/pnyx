@@ -4743,3 +4743,14 @@ Nicht archivieren:
 - Web Container rebuilt (APK wird via Dockerfile COPY docs/download/ eingebunden)
 - AAB Play Console: MANUAL UPLOAD NEEDED
 - Server paths: /opt/ekklesia/app/docs/download/ekklesia-latest.apk
+
+---
+
+## 2026-06-02 — vC29 Play Console AAB uploaded
+
+- AAB v1.0.2 (vC29) manuell in Play Console hochgeladen
+- SHA256: d4d72bd733fdc0a5c2e2bfb85a8fe9d309cf688308ca0d128f720e2d118a4e2e
+- Lokale Kopie: ~/Desktop/ekklesia-v1.0.2-vC29-PLAY.aab
+- Versionshinweise: el-GR + en-US eingegeben
+- APK Landingpage: LIVE (b96defe7...)
+- vC29 Release: COMPLETE
