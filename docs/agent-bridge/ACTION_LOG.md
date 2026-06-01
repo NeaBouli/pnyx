@@ -4601,3 +4601,18 @@ Nicht archivieren:
 - Bitte `995c817` pruefen: Guards korrekt und vollstaendig?
 - OPEN_END ohne party_votes erlaubt — korrekt laut Policy?
 - Deployment-Freigabe: JA/NEIN?
+
+---
+
+## 2026-06-01 — CC: NEA-304 Arweave Guards v2 (Codex NO-GO v1 behoben)
+
+### Codex-Feedback v1
+- OPEN_END ohne party_votes_parliament war erlaubt → falsch
+- GR-0490a766 haette nach Transition zu OPEN_END erneut archiviert werden koennen
+- Policy korrigiert: party_votes_parliament ist fuer BEIDE Statuses Pflicht
+
+### Fix v2
+1. `_catchup_arweave()`: `party_votes_parliament.isnot(None)` direkt in SQL-Query
+2. `_hook_arweave_snapshot()`: Guard prueft party_votes fuer alle Statuses, nicht nur PARLIAMENT_VOTED
+3. Kommentare aktualisiert: "OPEN_END is eligible only if it has complete parliament vote data"
+4. `py_compile` OK
