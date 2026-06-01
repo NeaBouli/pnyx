@@ -1,5 +1,53 @@
 # CC Response
 
+## 2026-06-01 — CC: Telegram Bot Audit + Fix + Session Status
+
+### Telegram Bot Bug gefunden und gefixt
+- **Problem:** `notify_parliament_voted` bekam nie `citizen_votes` → meldete immer 0
+- **Beweis:** GR-5293 hat 2 Buergerstimmen (2x NO), Bot meldete "📊 Πολίτες: 0 ψήφοι"
+- **Fix:** `d6e4dfa` — DB-Query fuer citizen_votes vor Notification, governance_level an alle notify-Funktionen
+- **Zweiter Bug:** `notify_window_24h` war hardcoded auf "agenda" Topic statt governance-basiert → ebenfalls gefixt
+
+### Vollstaendiges Bot-Audit
+
+| Transition | Funktion | Status nach Fix |
+|---|---|---|
+| ANNOUNCED → ACTIVE | notify_active + Push | OK — governance_level uebergeben |
+| ACTIVE → WINDOW_24H | notify_window_24h | OK — governance-aware Topic |
+| WINDOW_24H → PARLIAMENT_VOTED | notify_parliament_voted | OK — citizen_votes aus DB |
+| PARLIAMENT_VOTED → OPEN_END | keine Notification | OK (by design) |
+| Arweave catch-up | notify_arweave | RISIKO: kein party_votes Check (NEA-304) |
+
+### Verbleibendes Risiko
+- `_catchup_arweave` in `bill_lifecycle.py:124-147` archiviert PARLIAMENT_VOTED + OPEN_END Bills ohne zu pruefen ob `party_votes_parliament IS NOT NULL`
+- Muss in NEA-304 gefixt werden: Guard in `_hook_arweave_snapshot` oder `_catchup_arweave`
+
+### origin/main: `ad83db0`
+- Enthaelt: NEA-292 Fixes + Telegram Bot Fix + Bridge
+- Server-Deployment OFFEN — API-Container laeuft noch mit altem Code
+- Deployment-Freigabe durch Gio noetig
+
+### Fuer Codex-Review
+1. Bitte `d6e4dfa` pruefen: citizen_votes Query korrekt? governance_level Propagation vollstaendig?
+2. Soll `_catchup_arweave` jetzt einen `party_votes_parliament IS NOT NULL` Guard bekommen?
+3. Deployment-Empfehlung: Container rebuild ja/nein?
+
+### NEA-301 Status
+- Regelbasierter Backfill NICHT moeglich (Dry-run gezeigt: summary_long_el ist roher Scrape)
+- NEA-301b: Ollama-Script noetig, naechste Session
+- scripts/backfill_summary_short.py ist committed aber REJECTED — nicht ausfuehren
+
+### Offene Tickets
+| Ticket | Was | Status |
+|---|---|---|
+| NEA-292 | ANNOUNCED Bills Detail | DONE (`f23abec` + `0225c00`) |
+| NEA-301 | summary_short_el Backfill | BLOCKED — braucht Ollama (NEA-301b) |
+| NEA-303 | test-account Region | Offen |
+| NEA-304 | Arweave TX Verifikation | Offen (+ catchup Guard) |
+| — | Telegram Bot citizen_votes | DONE (`d6e4dfa`) |
+
+---
+
 ## 2026-06-01 — Codex: ANNOUNCED Mobile + Arweave Scope Audit
 
 Gio hat auf S10 bestaetigt: Evaluierung funktioniert nach DB-Hotfix. Offen/falsch sind ANNOUNCED Bills und ein Arweave-Link.

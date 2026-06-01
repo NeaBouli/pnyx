@@ -13,8 +13,8 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** `1a0a872`
-- **origin/main:** `1a0a872`
+- **Lokaler HEAD:** `ad83db0`
+- **origin/main:** `ad83db0`
 - **Server repo HEAD:** `a8658a8` (API rebuilt, POLIS migrations applied)
 - **API container:** `a8658a8` (NEA-265+268+270+271+272 + NEA-272f POLIS tickets live)
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
@@ -24,7 +24,7 @@
 - **F-Droid !38007:** Pipeline #2564438256 GRUEN 9/9. linsui Kommentar 31.05: *"This MR is mostly ready. We'll test it later. If everything works well we'll merge it."* Kein weiterer Fix noetig — wartet auf F-Droid Test-Queue.
 - **POLIS Status:** App-internal Create/Vote LIVE — 1 Ticket, 1 Identity Key, Self-Vote/Signature korrekt blockiert
 - **Tracking:** Linear + GitHub Issues parallel. Cross-Links: GH#71-83 = NEA-277-285. Neue Tickets in beiden Systemen.
-- **Pending:** vC29 visueller S10-Test, Play Console AAB Upload, F-Droid !38007 in Test-Queue, NEA-286 Lifecycle-Bug Root Cause, Telegram Bot zur Gruppe, AI Summaries (640/645 Bills missing summary_short_el)
+- **Pending:** Telegram Bot Fix deployen (d6e4dfa), Play Console AAB Upload, F-Droid !38007 in Test-Queue, NEA-286 Lifecycle-Bug Root Cause, Telegram Bot zur Gruppe, NEA-301b Ollama Backfill, NEA-304 Arweave catchup Guard
 - **Neu live:** municipality/, article.html, Autodesmefsi PDF, Forum Topic #436
 
 ## Uncommitted Aenderungen
