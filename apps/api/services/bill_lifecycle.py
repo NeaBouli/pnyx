@@ -122,10 +122,18 @@ async def run_bill_lifecycle(db: AsyncSession) -> dict:
 
 
 async def _catchup_arweave(db: AsyncSession) -> int:
-    """Find bills in PARLIAMENT_VOTED/OPEN_END without arweave_tx_id and archive them."""
+    """Find eligible bills without arweave_tx_id and archive them.
+
+    Policy (NEA-304):
+    - PARLIAMENT source only (no DIAVGEIA)
+    - PARLIAMENT_VOTED: only if party_votes_parliament IS NOT NULL
+    - OPEN_END: allowed without party_votes (no parliament vote date)
+    - ANNOUNCED/ACTIVE/WINDOW_24H: never
+    """
     result = await db.execute(
         select(ParliamentBill).where(
             ParliamentBill.arweave_tx_id.is_(None),
+            ParliamentBill.source == "PARLIAMENT",
             ParliamentBill.status.in_([
                 BillStatus.PARLIAMENT_VOTED,
                 BillStatus.OPEN_END,
@@ -135,6 +143,11 @@ async def _catchup_arweave(db: AsyncSession) -> int:
     bills = result.scalars().all()
     archived = 0
     for bill in bills:
+        # PARLIAMENT_VOTED requires complete party votes data
+        if bill.status == BillStatus.PARLIAMENT_VOTED and not bill.party_votes_parliament:
+            logger.info("[LIFECYCLE] Arweave skipped: %s — PARLIAMENT_VOTED but party_votes_parliament missing", bill.id)
+            continue
+
         await _hook_arweave_snapshot(db, bill)
         if bill.arweave_tx_id:
             archived += 1
@@ -170,7 +183,19 @@ async def _hook_notify_new_bill(bill: ParliamentBill) -> None:
 
 
 async def _hook_arweave_snapshot(db: AsyncSession, bill: ParliamentBill) -> None:
-    """Archive vote results to Arweave when bill reaches PARLIAMENT_VOTED."""
+    """Archive vote results to Arweave. Guards per NEA-304 policy."""
+    # Defensive guards
+    source = getattr(bill, "source", None)
+    if source and source != "PARLIAMENT":
+        logger.info("[LIFECYCLE] Arweave skipped: %s — source=%s (not PARLIAMENT)", bill.id, source)
+        return
+    if bill.status not in (BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END):
+        logger.info("[LIFECYCLE] Arweave skipped: %s — status=%s (not eligible)", bill.id, bill.status.value)
+        return
+    if bill.status == BillStatus.PARLIAMENT_VOTED and not bill.party_votes_parliament:
+        logger.info("[LIFECYCLE] Arweave skipped: %s — PARLIAMENT_VOTED but party_votes_parliament missing", bill.id)
+        return
+
     try:
         from routers.arweave import build_audit_trail, publish_to_arweave
         from sqlalchemy import func, select as sa_select
