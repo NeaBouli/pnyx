@@ -4730,3 +4730,16 @@ Nicht archivieren:
 - Crashes: 0 FATAL EXCEPTION
 
 ### Ergebnis: vC29 RELEASE-GATE PASS
+
+---
+
+## vC29 Release Deploy — 2026-06-01T21:13:57Z
+
+- APK v1.0.2 (vC29) auf Server deployed
+- APK SHA256: b96defe72feace36ae050c01cf5b0acacd9466549fd9ea880b9f43773748e498
+- AAB SHA256: d4d72bd733fdc0a5c2e2bfb85a8fe9d309cf688308ca0d128f720e2d118a4e2e
+- Live: https://ekklesia.gr/download/ekklesia-latest.apk — VERIFIED (SHA match)
+- Release Gate: PASS (d8fc6b1)
+- Web Container rebuilt (APK wird via Dockerfile COPY docs/download/ eingebunden)
+- AAB Play Console: MANUAL UPLOAD NEEDED
+- Server paths: /opt/ekklesia/app/docs/download/ekklesia-latest.apk
