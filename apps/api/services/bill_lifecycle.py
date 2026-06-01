@@ -101,7 +101,7 @@ async def run_bill_lifecycle(db: AsyncSession) -> dict:
                         await _hook_telegram_community(bill, to_status)
                     elif to_status == BillStatus.PARLIAMENT_VOTED:
                         await _hook_arweave_snapshot(db, bill)
-                        await _hook_telegram_community(bill, to_status)
+                        await _hook_telegram_community(bill, to_status, db=db)
                     elif to_status == BillStatus.OPEN_END:
                         pass  # no community post for OPEN_END
 
@@ -211,19 +211,27 @@ async def _hook_arweave_snapshot(db: AsyncSession, bill: ParliamentBill) -> None
         logger.warning("[LIFECYCLE] Arweave hook failed for %s: %s", bill.id, e)
 
 
-async def _hook_telegram_community(bill: ParliamentBill, new_status: BillStatus) -> None:
+async def _hook_telegram_community(bill: ParliamentBill, new_status: BillStatus, db: AsyncSession | None = None) -> None:
     """Post bill transition to community Telegram channel + group."""
     try:
         from services.telegram_community import notify_active, notify_window_24h, notify_parliament_voted
         title = bill.title_el or bill.id
+        gov = bill.governance_level.value if bill.governance_level else None
 
         if new_status == BillStatus.ACTIVE:
             vote_date = bill.parliament_vote_date.strftime("%d.%m.%Y") if bill.parliament_vote_date else None
-            await notify_active(bill.id, title, vote_date)
+            await notify_active(bill.id, title, vote_date, governance_level=gov)
         elif new_status == BillStatus.WINDOW_24H:
-            await notify_window_24h(bill.id, title)
+            await notify_window_24h(bill.id, title, governance_level=gov)
         elif new_status == BillStatus.PARLIAMENT_VOTED:
-            await notify_parliament_voted(bill.id, title)
+            citizen_votes = 0
+            if db:
+                from sqlalchemy import func, select as sa_select
+                from models import CitizenVote
+                citizen_votes = await db.scalar(
+                    sa_select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill.id)
+                ) or 0
+            await notify_parliament_voted(bill.id, title, citizen_votes=citizen_votes)
     except Exception as e:
         logger.warning("[LIFECYCLE] Telegram community hook failed for %s: %s", bill.id, e)
 

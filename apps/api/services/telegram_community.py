@@ -95,13 +95,14 @@ async def notify_active(bill_id: str, title: str, vote_date: str | None = None,
     )
 
 
-async def notify_window_24h(bill_id: str, title: str) -> None:
+async def notify_window_24h(bill_id: str, title: str, governance_level: str | None = None) -> None:
+    topic = _topic_for_governance(governance_level)
     await _send(
         f"<b>⚠️ Τελευταίες 24 ώρες!</b>\n\n"
         f"{title}\n\n"
         f"⏰ Η ψηφοφορία κλείνει αύριο\n"
         f"👉 <a href=\"https://ekklesia.gr/el/bills/{bill_id}\">Ψηφίστε τώρα</a>",
-        group_thread_id=TOPICS["agenda"],
+        group_thread_id=topic,
     )
 
 
