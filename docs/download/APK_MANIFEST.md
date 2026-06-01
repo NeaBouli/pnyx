@@ -26,6 +26,22 @@ https://ekklesia.gr/representative/index.html
 
 ## ekklesia mobile
 
-The mobile citizen-app APK is also served from this directory as
-`ekklesia-latest.apk`. Record its SHA-256 here after the next canonical
-artifact validation pass.
+| Field | Value |
+|---|---|
+| Version | 1.0.2 |
+| versionCode | 29 |
+| Package | ekklesia.gr |
+| APK SHA256 | `b96defe72feace36ae050c01cf5b0acacd9466549fd9ea880b9f43773748e498` |
+| AAB SHA256 | `d4d72bd733fdc0a5c2e2bfb85a8fe9d309cf688308ca0d128f720e2d118a4e2e` |
+| Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
+| Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
+| Build date | 2026-06-01 |
+| Release gate | PASS (d8fc6b1) |
+| Includes | NEA-292 ANNOUNCED fix, Telegram Bot fix, Arweave Guards |
+
+Validation command:
+
+```bash
+sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
+# Expected: b96defe72feace36ae050c01cf5b0acacd9466549fd9ea880b9f43773748e498
+```
