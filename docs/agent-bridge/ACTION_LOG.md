@@ -4644,3 +4644,50 @@ Nicht archivieren:
 - Bei API-Rebuild: Scheduler pausieren BEVOR alter Container stoppt
 - Oder: `docker compose stop api` → rebuild → `docker compose up -d api`
 - Nicht beide Container gleichzeitig recreaten
+
+---
+
+## 2026-06-01 — Gio: Open Ticket Triage fuer naechste Session
+
+### Urgent / Sofort
+| Ticket | Titel | Anmerkung |
+|---|---|---|
+| #78 / NEA-280 | AAB vC29 -> Play Console | Nach S10 Final-Test |
+| NEA-292 | ANNOUNCED Bills | Code done, APK ausstehend; Neubuild noetig |
+
+### High
+| Ticket | Titel | Anmerkung |
+|---|---|---|
+| NEA-301b | AI Summary Backfill via Ollama | Script noetig, Dry-run zuerst |
+| NEA-303 | test-account + DEMO-123 ohne `periferia_id` | Hotfix auf DB done, Code-Fix offen |
+| NEA-304 | Arweave TX Verifikation | Guards live, `parliament_fetcher.py` Fix noch offen |
+| #79 / NEA-281 | F-Droid linsui Merge | Wartet auf linsui |
+| NEA-286 / GH#94 | Lifecycle-Bug Root Cause | Warum Scheduler verzoegert? |
+
+### Medium
+| Ticket | Titel | Anmerkung |
+|---|---|---|
+| NEA-260 / GH#82 | Forum SSO Seamless Login | ADR / Investigation noetig |
+| NEA-273 | Kompass Toggle | Code done, vC29 APK noetig |
+| NEA-274 | ekprosopos Region-Filter Audit | Audit clean |
+| NEA-277 / GH#71 | FORUM_SSO_SALT Startup-Check | Klein |
+| NEA-278 / GH#72 | CLAUDE.md stale Werte | Klein |
+| NEA-285 / GH#83 | Diavgeia Org-Mapping (3/101) | Medium |
+| NEA-279 / GH#77 | ZK Semaphore Wizard | Nach vC29 |
+| NEA-262 | Woechentlicher Auto-Newsletter | Backlog |
+
+### Wartet auf externe Bedingung
+| Ticket | Titel | Bedingung |
+|---|---|---|
+| NEA-282 / GH#80 | Off-Site Backup | Erste Spende |
+| NEA-275 | vC29 Release Gate | S10 Final-Test |
+
+### Blocked
+| Ticket | Titel | Blocker |
+|---|---|---|
+| NEA-249 / GH#81 | ZK V2 Semaphore | Mopro / React Native |
+
+### Naechste Session Einstieg
+1. vC29 APK Final Build mit NEA-292 + NEA-273 + allen Fixes
+2. S10 Final-Test
+3. Landingpage APK aktualisieren + Play Console AAB
