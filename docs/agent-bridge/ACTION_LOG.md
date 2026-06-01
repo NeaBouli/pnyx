@@ -4691,3 +4691,42 @@ Nicht archivieren:
 1. vC29 APK Final Build mit NEA-292 + NEA-273 + allen Fixes
 2. S10 Final-Test
 3. Landingpage APK aktualisieren + Play Console AAB
+
+---
+
+## 2026-06-01 — CC: Autonomer S10 Funktionstest vC29
+
+### API Connectivity (alle PASS)
+- GET /bills: 200 (3 Bills korrekt)
+- GET /bills/trending: 200
+- GET /vaa/parties: 200
+- GET /bills/GR-5293/summary: 200 (987 chars)
+- GET /polis/tickets: 200 (2 Tickets)
+- GET /politicians: 200 (1 DEMO-123)
+
+### Aktive Funktionstests
+| Test | Status | Detail |
+|---|---|---|
+| Vote (GR-5294 YES) | PASS 200 | "Η ψήφος καταχωρήθηκε επιτυχώς" |
+| Evaluation (DEMO-123) | PASS 200 | 8 Scores submitted |
+| POLIS Ticket Create | SKIP | Braucht pk_polis + ticket_nullifier (POLIS-spezifisch) |
+| Source Link ANNOUNCED | PASS | parliament_url korrekt fuer GR-d4c62ed4 |
+| Data Integrity | PASS | DB Vote-Counts = API Response |
+
+### Signatur-Format
+- Vote: `bill_id:vote:nullifier_hash` (NICHT JSON)
+- Evaluation: `evaluate:ada_number:nullifier_hash`
+- POLIS: eigenes Crypto-Protokoll (pk_polis, ticket_nullifier, timestamp_ms)
+
+### S10 Visual Audit
+- App Start: PASS (kein Crash, Επαληθευμένος)
+- 5 Bottom Tabs: PASS (alle funktional bei Y=2000)
+- Bills + Filter: PASS (Ολα, Ενεργά, Ανακοιν., Διαύγεια, Δήμος)
+- ANNOUNCED klickbar: PASS (Detail + Banner + kein Vote-Button)
+- Compass: PASS (2D-Chart, 8 Parteien, Εγγύτητα)
+- POLIS: PASS (2 Tickets, + Νέο Ticket Button)
+- Trending: PASS
+- Parties: PASS (Κόμματα vs Πολίτες)
+- Crashes: 0 FATAL EXCEPTION
+
+### Ergebnis: vC29 RELEASE-GATE PASS
