@@ -4616,3 +4616,31 @@ Nicht archivieren:
 2. `_hook_arweave_snapshot()`: Guard prueft party_votes fuer alle Statuses, nicht nur PARLIAMENT_VOTED
 3. Kommentare aktualisiert: "OPEN_END is eligible only if it has complete parliament vote data"
 4. `py_compile` OK
+
+---
+
+## 2026-06-01 — CC: API Deploy + Arweave Race Condition
+
+### Deployment
+- Server HEAD: `b421b39`
+- API Container rebuilt via docker compose
+- DB wurde unbeabsichtigt recreated (compose-Seiteneffekt), env-file Permission-Fix noetig
+- API live: HTTP 200 auf api.ekklesia.gr
+
+### Arweave Race Condition
+- Waehrend DB-Restart + altem Container lief _catchup_arweave OHNE Guards
+- GR-0490a766 bekam erneut arweave_tx_id: `R6JV0JgusygQaG1M5WtgHvg4c-KRQDtq9JJcqm-oJaM` → 404
+- Sofort bereinigt: arweave_tx_id = NULL
+- Neuer Container hat Guards korrekt: party_votes_parliament.isnot(None) in SQL + defensiver Guard
+- Naechster Scheduler-Lauf wird GR-0490a766 korrekt skippen
+
+### Verifizierung
+- API HTTP 200: JA
+- Guards im Container: JA (grep bestaetigt)
+- GR-0490a766 arweave_tx_id: NULL (bereinigt)
+- DB healthy: JA
+
+### Lektion
+- Bei API-Rebuild: Scheduler pausieren BEVOR alter Container stoppt
+- Oder: `docker compose stop api` → rebuild → `docker compose up -d api`
+- Nicht beide Container gleichzeitig recreaten
