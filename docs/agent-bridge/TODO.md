@@ -3,14 +3,14 @@
 ## Tracking: GitHub Issues #71-#83 (Linear = read-only Archiv)
 
 ## Aktiv / In Progress
-- [ ] vC29 Release Gate (#78): S10 acceptance aller Fixes vor public APK/AAB
-- [ ] vC29 Final Build Gate: Code-ready after `eb0d707`, but release sequence must be debug S10 smoke test first, then versionCode 29/versionName bump, then APK+AAB from same commit, then public download only after Gio confirms installed vC29 works. No F-Droid/Play without explicit approval.
-- [ ] vC29 Release Gate Audit: Before building vC29 APK, CC must verify actual open status of GitHub Issues #73-#78, code, Bridge, and S10 evidence. No APK/AAB/versionCode bump until this audit says all blockers are DONE or explicitly NOT IN vC29 SCOPE.
-- [ ] vC29 Blocker Order: Fix Compass `tsc` errors first (`apps/mobile/src/compass/engine.ts:57-58`), then implement #73 ANNOUNCED Bills badge, then run #76 Region-Filter audit. No vC29 APK/AAB until these gates are cleared.
-- [ ] vC29 #76 Region-Filter Audit: #73 is code-complete in `6accbd3`; next audit region filtering only. No code changes unless a concrete bug is found and approved. If no bug, mark NOT BLOCKING vC29.
 - [ ] F-Droid !38007 (#79): Pipeline #2564438256 gruen, Kommentar an linsui gepostet, wartet auf linsui Merge
 - [ ] Demo-mode POLIS Guard: Demo-Nullifier soll POLIS Create/Vote nicht erlauben
 ## Done (Session 25-27.05.2026)
+- [x] vC29 Release Gate (#78/NEA-280): S10 Funktionstest PASS, APK live auf ekklesia.gr, AAB in Play Console hochgeladen (`5eb37cf`)
+- [x] vC29 Final Build Gate: versionCode 29/versionName 1.0.2, APK+AAB gebaut, SHA lokal/live verifiziert, Release abgeschlossen
+- [x] vC29 Release Gate Audit: API, Vote, Evaluation, POLIS List, ANNOUNCED Source Link, DB/API Integrity, Visual Audit und Crash-Check PASS
+- [x] vC29 Blocker Order: Compass, ANNOUNCED, Region-Filter, NEA-292/NEA-273 Release-Fixes abgeschlossen
+- [x] vC29 #76 Region-Filter Audit: Audit clean / nicht blockierend fuer vC29
 - [x] F-Droid !38007 linsui Java 21/template feedback — fdroiddata `61af54f58` + `05a86ac05`; Java auto-download disabled, Java 21 RN patch, `expo-notifications` native excluded while JS remains resolvable, pipeline `#2564438256` green 9/9, linsui comment posted
 - [x] #75 Compass Result Toggle/Layout/Pulse — `740a82b` + `f17d0ef` + `fba09cc`, S10 debug APK verified by Gio; full X/Y grid restored, tap toggles to pulsing green result point and back
 - [x] F-Droid !38007 linsui follow-up direct fix — `82379b722`, old 1.0.0 build removed, `subdir: apps/mobile/android/app`, rewritemeta scalar `build: ...`, pipeline `#2555756552` green 9/9, linsui comment posted
@@ -26,7 +26,7 @@
 - [x] GitHub Issues Migration (#71-#83)
 - [x] ekprosopos UI fixes + Logout Modal + APK Manifest
 - [x] F-Droid !38007 fix applied: `e72a2f44b` changes sed target from `app.json` to `package.json`, because `expo-modules-autolinking` reads `expo.autolinking.android.buildFromSource` from `package.json`. Pipeline #2554446253 green 9/9 (`fdroid build` + `check apk` success).
-- [ ] AAB vC28 Upload zu Play Console (lokal gebaut, `app-play-release.aab`)
+- [x] AAB vC29 Upload zu Play Console (lokal gebaut, `app-play-release.aab`; SHA256 `d4d72bd733fdc0a5c2e2bfb85a8fe9d309cf688308ca0d128f720e2d118a4e2e`)
 - [ ] NEA-258: FORUM_SSO_SALT Startup-Check (LOW follow-up)
 - [ ] CLAUDE.md Aktualisierung (INFO — stale CX33, 22 Module, Next 14)
 

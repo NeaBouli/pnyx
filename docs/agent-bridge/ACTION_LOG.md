@@ -4754,3 +4754,8 @@ Nicht archivieren:
 - Versionshinweise: el-GR + en-US eingegeben
 - APK Landingpage: LIVE (b96defe7...)
 - vC29 Release: COMPLETE
+
+### Session Save / Memory
+- PROJECT_STATE aktualisiert: vC29 Release COMPLETE, keine vC29 Release-Gate-Blocker offen
+- TODO aktualisiert: vC29 Release-Gate, Final Build Gate, Audit, Blocker Order und AAB Upload auf done
+- Offene naechste technische Punkte bleiben: NEA-301b Ollama Backfill, NEA-303 test-account Region permanent, NEA-304 parliament_fetcher/TX verification follow-up, NEA-286 Lifecycle Root Cause, F-Droid !38007 wartet auf linsui

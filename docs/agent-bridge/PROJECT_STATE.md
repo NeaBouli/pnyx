@@ -19,17 +19,18 @@
 - **API container:** `b421b39` — Telegram citizen_votes fix + Arweave NEA-304 Guards LIVE
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
 - **Web container:** rebuilt (ADR-010), Logout Modal + Screenshots + ekprosopos UI fix + QR localization
-- **S10:** vC29/1.0.2 Play-Release APK installiert, NEA-292 Fixes enthalten, visueller Test OK
+- **S10:** vC29/1.0.2 Play-Release APK installiert, Release-Gate PASS
 - **Alembic:** `o801a2b3c4d5` (polis_tickets + polis_votes + polis_identity_keys)
 - **F-Droid !38007:** linsui 31.05: "mostly ready, will test later" — in Test-Queue, kein Handlungsbedarf
 - **POLIS Status:** App-internal Create/Vote LIVE
 - **Tracking:** Linear + GitHub Issues parallel. Cross-Links: GH#71-83 = NEA-277-285
 - **GR-0490a766:** arweave_tx_id=NULL (bereinigt), party_votes_parliament=NULL, Guards verhindern Re-Archivierung
 - **Telegram Bot:** citizen_votes Query LIVE, governance Topic-Routing LIVE
-- **Pending urgent:** #78/NEA-280 AAB vC29 -> Play Console, NEA-292 ANNOUNCED APK rebuild/test
+- **vC29 Release:** COMPLETE — APK live auf ekklesia.gr, AAB in Play Console hochgeladen
+- **Pending urgent:** keine vC29 Release-Gate-Blocker offen
 - **Pending high:** NEA-301b Ollama Backfill, NEA-303 test-account Region permanent, NEA-304 parliament_fetcher/TX verification follow-up, #79/NEA-281 F-Droid linsui merge, NEA-286 Lifecycle-Bug Root Cause
 - **Pending medium/backlog:** NEA-260/GH#82 Forum SSO, NEA-277/GH#71 startup-check, NEA-278/GH#72 CLAUDE.md stale values, NEA-285/GH#83 Diavgeia org mapping, NEA-279/GH#77 ZK Wizard, NEA-262 weekly auto-newsletter
-- **Pending external/blocked:** NEA-282/GH#80 Off-site backup waits for first donation; NEA-275 waits for S10 final test; NEA-249/GH#81 blocked on Mopro/React Native
+- **Pending external/blocked:** NEA-282/GH#80 Off-site backup waits for first donation; NEA-249/GH#81 blocked on Mopro/React Native
 - **Neu live:** municipality/, article.html, Autodesmefsi PDF, Forum Topic #436
 
 ## Uncommitted Aenderungen
