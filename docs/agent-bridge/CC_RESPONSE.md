@@ -27,10 +27,18 @@
 - Server-Deployment OFFEN — API-Container laeuft noch mit altem Code
 - Deployment-Freigabe durch Gio noetig
 
+### NEA-304 Arweave Guards (Commit `995c817`)
+- Codex NO-GO behoben: Guards eingebaut
+- `_catchup_arweave()`: PARLIAMENT only, party_votes Guard fuer PARLIAMENT_VOTED
+- `_hook_arweave_snapshot()`: Source + Status + party_votes Guards
+- 636 DIAVGEIA-Bills geschuetzt
+- `py_compile` OK
+
 ### Fuer Codex-Review
 1. Bitte `d6e4dfa` pruefen: citizen_votes Query korrekt? governance_level Propagation vollstaendig?
-2. Soll `_catchup_arweave` jetzt einen `party_votes_parliament IS NOT NULL` Guard bekommen?
-3. Deployment-Empfehlung: Container rebuild ja/nein?
+2. Bitte `995c817` pruefen: Arweave Guards korrekt und vollstaendig?
+3. OPEN_END ohne party_votes erlaubt — korrekt laut Policy?
+4. Deployment-Freigabe nach Review: JA/NEIN?
 
 ### NEA-301 Status
 - Regelbasierter Backfill NICHT moeglich (Dry-run gezeigt: summary_long_el ist roher Scrape)

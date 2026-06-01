@@ -4560,3 +4560,44 @@ Nicht archivieren:
 ### Server-Deployment noetig
 - Fix muss auf Server deployed werden (Container rebuild)
 - NICHT automatisch — Gio muss freigeben
+
+---
+
+## 2026-06-01 — CC: NEA-304 Arweave Guards (Codex NO-GO behoben)
+
+### Problem (Codex Audit)
+- `_catchup_arweave()` hatte keinen Source-Filter → 636 DIAVGEIA-Bills waeren archiviert worden
+- `_hook_arweave_snapshot()` hatte keinen Guard → PARLIAMENT_VOTED ohne party_votes waere archiviert
+- GR-0490a766 haette nach Bereinigung erneut (falsch) archiviert werden koennen
+
+### Fix (Commit `995c817`)
+1. `_catchup_arweave()`:
+   - `source == 'PARLIAMENT'` Filter (DIAVGEIA ausgeschlossen)
+   - PARLIAMENT_VOTED: Skip wenn `party_votes_parliament IS NULL`
+   - OPEN_END: erlaubt ohne party_votes (kein Parlamentstermin)
+   - Alle Skips geloggt mit Grund
+
+2. `_hook_arweave_snapshot()`:
+   - Source-Guard: skip non-PARLIAMENT
+   - Status-Guard: skip wenn nicht PARLIAMENT_VOTED/OPEN_END
+   - Party-votes-Guard: skip PARLIAMENT_VOTED ohne party_votes_parliament
+   - Alle Skips geloggt
+
+### Verifizierung
+- `py_compile` OK fuer beide Dateien
+- Aktuell 0 Parliament-Bills warten auf Archivierung (GR-0490a766 TX bereinigt)
+- 636 DIAVGEIA-Bills OPEN_END werden jetzt korrekt uebersprungen
+
+### Server-Status
+- 0 Bills warten auf Arweave-Archivierung (korrekt)
+- GR-0490a766: arweave_tx_id=NULL, party_votes_parliament=NULL → wird korrekt uebersprungen
+
+### Deployment
+- Gio hat Deployment freigegeben
+- Codex-Review fuer NEA-304 Guards angefordert
+- Nach Codex-OK: API Container rebuild
+
+### Fuer Codex-Review
+- Bitte `995c817` pruefen: Guards korrekt und vollstaendig?
+- OPEN_END ohne party_votes erlaubt — korrekt laut Policy?
+- Deployment-Freigabe: JA/NEIN?
