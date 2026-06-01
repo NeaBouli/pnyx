@@ -13,26 +13,25 @@
 ## Git-Status
 
 - **Branch:** `main`
-- **Lokaler HEAD:** wird nach push aktualisiert
-- **origin/main:** wird nach push aktualisiert
-- **Server repo HEAD:** `a8658a8` (API rebuilt, POLIS migrations applied)
-- **API container:** `a8658a8` (NEA-265+268+270+271+272 + NEA-272f POLIS tickets live)
+- **Lokaler HEAD:** `2606024`
+- **origin/main:** `2606024`
+- **Server repo HEAD:** `b421b39` (deployed 01.06.2026)
+- **API container:** `b421b39` — Telegram citizen_votes fix + Arweave NEA-304 Guards LIVE
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
 - **Web container:** rebuilt (ADR-010), Logout Modal + Screenshots + ekprosopos UI fix + QR localization
-- **S10:** vC29/1.0.2 Play-Release APK installiert (deinstall+reinstall wegen Signatur-Wechsel), visueller Test ausstehend
+- **S10:** vC29/1.0.2 Play-Release APK installiert, NEA-292 Fixes enthalten, visueller Test OK
 - **Alembic:** `o801a2b3c4d5` (polis_tickets + polis_votes + polis_identity_keys)
-- **F-Droid !38007:** Pipeline #2564438256 GRUEN 9/9. linsui Kommentar 31.05: *"This MR is mostly ready. We'll test it later. If everything works well we'll merge it."* Kein weiterer Fix noetig — wartet auf F-Droid Test-Queue.
-- **POLIS Status:** App-internal Create/Vote LIVE — 1 Ticket, 1 Identity Key, Self-Vote/Signature korrekt blockiert
-- **Tracking:** Linear + GitHub Issues parallel. Cross-Links: GH#71-83 = NEA-277-285. Neue Tickets in beiden Systemen.
-- **Pending:** Telegram Bot Fix deployen (d6e4dfa), Play Console AAB Upload, F-Droid !38007 in Test-Queue, NEA-286 Lifecycle-Bug Root Cause, Telegram Bot zur Gruppe, NEA-301b Ollama Backfill, NEA-304 Arweave catchup Guard
+- **F-Droid !38007:** linsui 31.05: "mostly ready, will test later" — in Test-Queue, kein Handlungsbedarf
+- **POLIS Status:** App-internal Create/Vote LIVE
+- **Tracking:** Linear + GitHub Issues parallel. Cross-Links: GH#71-83 = NEA-277-285
+- **GR-0490a766:** arweave_tx_id=NULL (bereinigt), party_votes_parliament=NULL, Guards verhindern Re-Archivierung
+- **Telegram Bot:** citizen_votes Query LIVE, governance Topic-Routing LIVE
+- **Pending:** Play Console AAB Upload, NEA-286 Lifecycle-Bug, NEA-301b Ollama Backfill, NEA-303 test-account Region, Telegram Bot zur Gruppe
 - **Neu live:** municipality/, article.html, Autodesmefsi PDF, Forum Topic #436
 
 ## Uncommitted Aenderungen
 
-- `docs/agent-bridge/CODEX_FINDINGS.md` — lokal modifiziert
-- `docs/agent-bridge/PROJECT_STATE.md` — aktualisiert (diese Datei)
-- `docs/agent-bridge/CC_RESPONSE.md` — wird aktualisiert
-- `docs/agent-bridge/ACTION_LOG.md` — wird aktualisiert
+- `docs/agent-bridge/CODEX_FINDINGS.md` — lokal modifiziert (nicht committen ohne Codex)
 
 ## Session 2026-05-31/06-01 — vC29 Release + Server-Status
 
