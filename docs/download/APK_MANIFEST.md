@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.2 |
-| versionCode | 29 |
+| Version | 1.0.3 |
+| versionCode | 30 |
 | Package | ekklesia.gr |
-| APK SHA256 | `b96defe72feace36ae050c01cf5b0acacd9466549fd9ea880b9f43773748e498` |
-| AAB SHA256 | `d4d72bd733fdc0a5c2e2bfb85a8fe9d309cf688308ca0d128f720e2d118a4e2e` |
+| APK SHA256 | `f434a9834fcc3b9cf0e6c9bfdf81f892231c2d2248502b163e239ba444d0c59d` |
+| AAB SHA256 | `5df1e04c40a39fa7ea3f1a6485583e97b6dcf7e17dfc412b4fb92ab03c2d747c` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
-| Build date | 2026-06-01 |
-| Release gate | PASS (d8fc6b1) |
-| Includes | NEA-292 ANNOUNCED fix, Telegram Bot fix, Arweave Guards |
+| Build date | 2026-06-02 |
+| Release gate | PASS — Analysis Guard UI fix |
+| Includes | vC29 + Analysis Guard (ai_summary_reviewed), readableText filter, source link labels |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: b96defe72feace36ae050c01cf5b0acacd9466549fd9ea880b9f43773748e498
+# Expected: f434a9834fcc3b9cf0e6c9bfdf81f892231c2d2248502b163e239ba444d0c59d
 ```
