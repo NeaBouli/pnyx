@@ -4891,3 +4891,27 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 2. 9 Missing haben kein summary_long_el → bestaetigen
 3. DEMO + flagged unberuehrt → bestaetigen
 4. Kein DIAVGEIA geaendert → bestaetigen
+
+---
+
+## 2026-06-02 — CC: Session Close + Ollama RAM Reset
+
+### Ollama RAM Reset
+- Kein Backfill-Job aktiv (verifiziert: docker top + stats)
+- RAM: 12 GB → 2.4 GB (Produktion) zurueckgesetzt
+- Container restarted, healthy (15 MB, 0% CPU)
+
+### Codex Verification PASS
+- PARLIAMENT: 17/31 mit summary_short_el
+- 9 Missing: kein summary_long_el (Fetcher-Problem)
+- DEMO + flagged: unberuehrt
+- DIAVGEIA: 0/636 geaendert
+- Kein unbeabsichtigter Seiteneffekt
+
+### Session-Stand
+- origin/main: nach push aktualisiert
+- Server API: b421b39 (deployed 01.06)
+- Ollama: 2.4 GB, idle
+- vC29: RELEASED (APK live, AAB Play Console)
+- NEA-301b PARLIAMENT: DONE
+- NEA-301b DIAVGEIA: OFFEN (eigene Phase)

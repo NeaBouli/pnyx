@@ -1,5 +1,31 @@
 # CC Response
 
+## 2026-06-02 — CC: NEA-301b PARLIAMENT Backfill DONE + Session Close
+
+### PARLIAMENT Backfill — Codex PASS
+- **Applied:** 12 Bills via qwen2.5:14b (3 Runs)
+- **Existing:** 5 Bills (scraper.py Import)
+- **Excluded:** 3 DEMO + 2 flagged (GR-1b8eab9a, GR-9f7ad85a)
+- **Missing source text:** 9 Bills ohne summary_long_el → Fetcher muss Text holen
+- **DIAVGEIA:** 0/636 — kein Apply, eigene Phase
+- **Validation:** Sentence-boundary, rejection patterns, no overwrite — alles aktiv
+- **Ollama RAM:** temporaer 12 GB → zurueckgesetzt auf 2.4 GB (Produktion)
+
+### Naechste Schritte fuer Claude Dev
+1. **NEA-301 Fetcher:** summary_long_el fuer 9 fehlende PARLIAMENT Bills holen, dann Backfill fortsetzen
+2. **NEA-301b DIAVGEIA:** 631 Bills, separater Dry-run + Freigabe noetig, Ollama RAM wieder 12 GB
+3. **Flagged Bills:** GR-1b8eab9a + GR-9f7ad85a manuell reviewen oder mit besserem Prompt retry
+4. **T3 Alert:** Monitor-Config fuer NEA-304 Arweave Guard anpassen (GR-0490a766 false-positive)
+5. **NEA-303:** admin/test-account Region permanent fixen
+6. **Script:** scripts/backfill_summary_ollama.py ist produktionsbereit (DEMO/flagged excluded, dry-run default)
+
+### Nicht anfassen
+- scripts/backfill_summary_short.py — REJECTED Regex-Prototyp, nicht ausfuehren
+- DIAVGEIA Bills — keine Apply ohne explizite Freigabe
+- Ollama Container — RAM ist auf 2.4 GB, nicht erhoehen ohne Grund
+
+---
+
 ## 2026-06-01 — CC: Telegram Bot Audit + Fix + Session Status
 
 ### Telegram Bot Bug gefunden und gefixt
