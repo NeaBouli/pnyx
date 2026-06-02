@@ -4759,3 +4759,39 @@ Nicht archivieren:
 - PROJECT_STATE aktualisiert: vC29 Release COMPLETE, keine vC29 Release-Gate-Blocker offen
 - TODO aktualisiert: vC29 Release-Gate, Final Build Gate, Audit, Blocker Order und AAB Upload auf done
 - Offene naechste technische Punkte bleiben: NEA-301b Ollama Backfill, NEA-303 test-account Region permanent, NEA-304 parliament_fetcher/TX verification follow-up, NEA-286 Lifecycle Root Cause, F-Droid !38007 wartet auf linsui
+
+---
+
+## 2026-06-02 — CC: NEA-301b Ollama Backfill Dry-run
+
+### Befund
+- Ollama auf Server: llama3.2:3b (2 GB) + qwen2.5:14b (9 GB)
+- Ollama Container RAM-Limit: 2.4 GB → qwen2.5:14b kann nicht laden (500 Error)
+- Bills zu backfillen: 631 DIAVGEIA + 15 PARLIAMENT = 646 total
+- llama3.2:3b Dry-run PARLIAMENT: 4/5 generiert, aber Qualitaet unzureichend
+  - Mischt Englisch rein
+  - Halluziniert Inhalte
+  - Kauderwelsch bei manchen Bills
+  - Titel-Wiederholungen
+
+### Script erstellt
+- scripts/backfill_summary_ollama.py (mit Codex-Guardrails):
+  - --dry-run default
+  - Validation + Rejection patterns
+  - CSV Audit-Log
+  - Rate-limit 5s
+  - Retry-Logic + Regex-JSON-Fallback
+  - NEVER overwrite existing
+
+### Entscheidung noetig
+Option A: Ollama Container RAM-Limit erhoehen (mind. 12 GB fuer qwen2.5:14b)
+  Pro: Bessere griechische Qualitaet
+  Con: Server hat nur 16 GB total, andere Container brauchen RAM
+Option B: Externer LLM (Claude API / OpenAI)
+  Pro: Beste Qualitaet
+  Con: Kosten, API Key noetig
+Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
+  Pro: Kein Infrastruktur-Change
+  Con: Qualitaet bleibt fraglich
+
+### Kein --apply — Sample-Qualitaet nicht ausreichend
