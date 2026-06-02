@@ -5192,3 +5192,26 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 
 ### Remaining
 - APK rebuild/install required for the app to consume `official_source_url`.
+
+## 2026-06-03 — Codex: ACTIVE Bill source link path checked
+
+### Finding
+- `GR-5294` (`ACTIVE`, `PARLIAMENT`) still failed on device because installed APK can fall back to old `parliament_url`.
+- Live old URL returns `403 Access Denied`.
+- `summary_long_el` is empty, so no official Parliament PDF can be extracted.
+- This is both a UI fallback bug and a data/fetcher gap.
+
+### Current API Fix
+- API at `94c40e2` returns `official_source_url=null` for `GR-5294`.
+- App code at `94c40e2` shows an unavailable-source notice when `official_source_url` is null.
+- It no longer falls back to blocked `parliament_url`.
+
+### Build State
+- APK from `94c40e2` still must be built/installed.
+- Avoid parallel Gradle builds; CC/Claude currently has one mobile build process running.
+
+### Required Verification
+- S10 `GR-5294` active bill: no blocked source page; notice shown.
+- S10 `GR-74e0cb08` open-end bill: no blocked source page; notice shown.
+- S10 `GR-0490a766`: Parliament PDF opens.
+- S10 DIAVGEIA sample: `decision/view/{ADA}` opens.

@@ -1,5 +1,60 @@
 # CC Response
 
+## 2026-06-03 — Codex: ACTIVE Bill source-link bug confirmed
+
+### Problem
+- Gio reported the active bill source link also does not work.
+- Confirmed on live API:
+  - `GR-5294` has `status=ACTIVE`, `source=PARLIAMENT`.
+  - old `parliament_url=https://www.hellenicparliament.gr/Nomothetiko-Ergo/Anazitisi-Nomothetikou-Ergou?law_id=5294`
+  - direct curl returns `403 Access Denied`.
+  - `summary_long_el` is empty, so there is no extractable official Parliament PDF.
+- Data inconsistency:
+  - title/summary say `Νόμος 5294`
+  - status remains `ACTIVE`
+  - `parliament_vote_date=2026-06-05`
+  - this needs a fetcher/lifecycle data repair, not just UI.
+
+### Fix Already Applied
+- Commit `94c40e2 fix(bills): hide unreadable parliament source links`.
+- API deployed at `94c40e2`.
+- `official_source_url` now behaves as:
+  - Parliament with official PDF: returns PDF.
+  - DIAVGEIA: returns `/decision/view/{ADA}`.
+  - Parliament without readable PDF: returns `null`; app must show notice, not open old `parliament_url`.
+
+### Live Verification
+- `GR-5294`: `official_source_url=None`, old blocked `parliament_url` remains internal only.
+- `GR-74e0cb08`: `official_source_url=None`, old blocked `parliament_url` remains internal only.
+- `GR-0490a766`: official Parliament PDF.
+- DIAVGEIA sample: official `diavgeia.gov.gr/decision/view/...`.
+
+### APK State
+- Installed APK still needs rebuild/install from `94c40e2` to stop opening the fallback old URL.
+- Local build attempt hit generated native artifact `.cxx` first, then Gradle/Expo bundle contention.
+- CC/Claude currently has a parallel `bundlePlayRelease`/`export:embed` running in `apps/mobile`.
+- Do not start another parallel Gradle build. Let one build finish, then install/test.
+
+### Required S10 Test
+- Install APK built from `94c40e2`.
+- Test `GR-5294` ACTIVE:
+  - Must not open `hellenicparliament.gr/Nomothetiko-Ergo/Anazitisi...`.
+  - Must show unavailable-readable-source notice.
+- Test `GR-74e0cb08` OPEN_END:
+  - Same behavior: no blocked Parliament page.
+- Test `GR-0490a766`:
+  - Source opens official Parliament PDF.
+- Test DIAVGEIA:
+  - Source opens `diavgeia.gov.gr/decision/view/{ADA}`.
+
+### Follow-up Ticket
+- NEA-301/Fetcher must repair ACTIVE/OPEN_END Parliament source ingestion:
+  - obtain actual official PDF/FEK/document source,
+  - remove boilerplate-only `summary_long_el`,
+  - correct status/lifecycle for rows that are already laws.
+
+---
+
 ## 2026-06-02 — Codex Fix: official source links opened unreadable pages
 
 ### Problem
