@@ -5013,3 +5013,14 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 
 ### Naechster Schritt
 - GlassOnTin/linsui Re-Test angefragt via MR-Kommentar `3411794784`
+
+---
+
+## 2026-06-02 — Final Claude Dev Status Update
+
+- CC_RESPONSE.md oben mit finalem Status fuer Claude Dev aktualisiert
+- pnyx origin/main vor diesem Commit: `ce8ef09`
+- fdroiddata branch `ekklesia-v1.0.0`: `e42e014f`
+- F-Droid pipeline `2570810919`: SUCCESS 9/9
+- F-Droid !38007 wartet jetzt nur auf GlassOnTin/linsui Re-Test/Merge
+- Naechster interner High-Prio Punkt bleibt Dependabot critical `vitest <4.1.0` oder NEA-301 Fetcher/Text-Ingestion

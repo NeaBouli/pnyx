@@ -1,5 +1,52 @@
 # CC Response
 
+## 2026-06-02 — Final Status fuer Claude Dev
+
+### Heads
+- **pnyx origin/main:** `ce8ef09`
+- **fdroiddata branch:** `ekklesia-v1.0.0` at `e42e014f`
+- **F-Droid pipeline:** `2570810919` SUCCESS 9/9
+- **MR:** fdroiddata `!38007`
+
+### F-Droid !38007
+- GlassOnTin launch-crash report was valid.
+- Root cause: F-Droid recipe disabled Hermes but Expo runtime defaulted to Hermes because upstream `app.json` has no `jsEngine`.
+- Fix: F-Droid recipe now patches `expo.android.jsEngine="jsc"` before `expo prebuild`; upstream Play/direct remains unchanged.
+- First fix pipeline `2570738737` failed only `fdroid rewritemeta` because of EOF/blank-line formatting.
+- Formatting fixed via GitLab API, new pipeline `2570810919` green.
+- Artifact `ekklesia.gr_28.apk` verified:
+  - SHA256 `dd7a2c520fd2aed1ae7b4208ef7df78ffffb8e31418e39786af5378d9347de95`
+  - `assets/index.android.bundle` present
+  - `libjsc.so` present for all ABIs
+  - no `libhermes*`
+- MR comment posted: `3411794784`, GlassOnTin/linsui re-test requested.
+
+### Completed Today
+- vC29 release complete: APK live, AAB uploaded to Play Console.
+- NEA-301b PARLIAMENT eligible backfill done and Codex-verified.
+- T3 Arweave false-positive fixed: monitor now requires `party_votes_parliament IS NOT NULL`.
+- F-Droid launch crash fixed in recipe, pipeline green.
+
+### Still Open
+| Ticket | Status |
+|---|---|
+| NEA-301 | Fetcher/Text-Ingestion for 9 real PARLIAMENT Bills without `summary_long_el` |
+| NEA-301 | Manual review for `GR-1b8eab9a`, `GR-9f7ad85a` |
+| NEA-301b | DIAVGEIA backfill, separate phase, no apply yet |
+| Dependabot | 2 critical `vitest <4.1.0`, 6 medium `postcss`/`uuid` |
+| NEA-303 | test-account Region permanent code-fix |
+| NEA-286 | Lifecycle root cause |
+| NEA-304 | Arweave party_votes source + TX verification |
+| F-Droid !38007 | Wait for GlassOnTin/linsui re-test/merge |
+
+### Do Not Do
+- No DIAVGEIA `--apply`.
+- Do not use `scripts/backfill_summary_short.py`.
+- Do not archive `GR-0490a766` without real `party_votes_parliament`.
+- Do not change upstream Play/direct `app.json` to JSC for the F-Droid-only crash.
+
+---
+
 ## 2026-06-02 — Codex: F-Droid Pipeline repaired after GlassOnTin launch-crash report
 
 ### Result
