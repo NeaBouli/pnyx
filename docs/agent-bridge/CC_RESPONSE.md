@@ -1,5 +1,32 @@
 # CC Response
 
+## 2026-06-02 — Codex: F-Droid Pipeline repaired after GlassOnTin launch-crash report
+
+### Result
+- MR: fdroiddata `!38007`
+- Crash root cause: Hermes/JSC mismatch confirmed.
+- Correct fix: F-Droid recipe pins `expo.android.jsEngine="jsc"` before `expo prebuild`; upstream Play/direct app.json unchanged.
+- First fix pipeline `2570738737`: failed only in `fdroid rewritemeta` due to EOF/blank-line formatting.
+- Codex fixed metadata formatting via GitLab API.
+- fdroiddata branch `ekklesia-v1.0.0` HEAD: `e42e014f`
+- Pipeline `2570810919`: **SUCCESS 9/9**
+- MR comment posted: `3411794784`
+
+### Artifact Check
+- APK: `ekklesia.gr_28.apk`
+- SHA256: `dd7a2c520fd2aed1ae7b4208ef7df78ffffb8e31418e39786af5378d9347de95`
+- `assets/index.android.bundle`: present
+- `libjsc.so`: present for all ABIs
+- `libhermes*`: absent
+- Conclusion: F-Droid artifact is consistently JSC-only and ready for GlassOnTin/linsui re-test.
+
+### Static Follow-ups
+- Remove deprecated `USE_FINGERPRINT` upstream.
+- Check/remove `SYSTEM_ALERT_WINDOW` for release.
+- Remove or cap `READ_EXTERNAL_STORAGE` / `WRITE_EXTERNAL_STORAGE` with `maxSdkVersion`.
+
+---
+
 ## 2026-06-02 — Codex/Gio Status fuer Claude Dev: vC29 + NEA-301b + T3 Arweave
 
 ### Gesamtstand

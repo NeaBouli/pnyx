@@ -21,7 +21,7 @@
 - **Web container:** rebuilt (ADR-010), Logout Modal + Screenshots + ekprosopos UI fix + QR localization
 - **S10:** vC29/1.0.2 Play-Release APK installiert, Release-Gate PASS
 - **Alembic:** `o801a2b3c4d5` (polis_tickets + polis_votes + polis_identity_keys)
-- **F-Droid !38007:** linsui 31.05: "mostly ready, will test later" — in Test-Queue, kein Handlungsbedarf
+- **F-Droid !38007:** Community launch-crash fixed in fdroiddata `e42e014f`; pipeline `2570810919` green 9/9; GlassOnTin/linsui re-test requested
 - **POLIS Status:** App-internal Create/Vote LIVE
 - **Tracking:** Linear + GitHub Issues parallel. Cross-Links: GH#71-83 = NEA-277-285
 - **GR-0490a766:** arweave_tx_id=NULL (bereinigt), party_votes_parliament=NULL, Guards verhindern Re-Archivierung

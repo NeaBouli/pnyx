@@ -4990,11 +4990,26 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 - Kommentar auf MR !38007 gepostet (ID: 3411597234)
 - Upstream app.json NICHT geaendert (Play/direct bleibt Hermes)
 
+### Pipeline-Fix durch Codex
+- Erste Pipeline nach jsEngine-Fix: `2570738737` failed nur in `fdroid rewritemeta`
+- Root Cause: rein formale EOF/Blank-Line-Differenz in `metadata/ekklesia.gr.yml`
+- Fix via GitLab API auf fdroiddata Branch `ekklesia-v1.0.0`
+- Neuer fdroiddata Commit: `e42e014f fix: rewritemeta formatting for ekklesia.gr`
+- Neue Pipeline: `2570810919` — SUCCESS 9/9
+- Jobs gruen: fdroid build, fdroid rewritemeta, check apk, check source code, checkupdates, lint, schema validation, tools check scripts, git redirect
+
+### Artifact-Verifikation
+- Artifact: `ekklesia.gr_28.apk`
+- SHA256: `dd7a2c520fd2aed1ae7b4208ef7df78ffffb8e31418e39786af5378d9347de95`
+- `assets/index.android.bundle`: vorhanden
+- `libjsc.so`: vorhanden fuer `arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`
+- `libhermes*`: nicht vorhanden
+- Ergebnis: F-Droid Artifact ist konsistent JSC-only
+
 ### Static Notes (Follow-up, nicht Crash-Fix)
 - USE_FINGERPRINT: entfernen (USE_BIOMETRIC reicht)
 - SYSTEM_ALERT_WINDOW: pruefen/entfernen fuer Release
 - READ/WRITE_EXTERNAL_STORAGE: maxSdkVersion setzen
 
 ### Naechster Schritt
-- Pipeline abwarten
-- Wenn gruen: GlassOnTin bitten erneut zu testen
+- GlassOnTin/linsui Re-Test angefragt via MR-Kommentar `3411794784`
