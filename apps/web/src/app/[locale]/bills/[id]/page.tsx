@@ -166,7 +166,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   const canVote = VOTABLE.includes(bill.status);
-  const officialUrl = bill.parliament_url || undefined;
+  const officialUrl = bill.official_source_url || undefined;
   const isDiavgeia = bill.source === "DIAVGEIA";
   const officialLabel = isDiavgeia
     ? (locale === "el" ? "Επίσημο κείμενο στη Διαύγεια →" : "Official Diavgeia text →")
@@ -306,7 +306,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
               ) : aiSummary ? (
                 <div className="whitespace-pre-line">{aiSummary}</div>
-              ) : (bill.summary_long_el || bill.summary_long_en) ? (
+              ) : bill.ai_summary_reviewed && (bill.summary_long_el || bill.summary_long_en) ? (
                 <p>{locale === "el" ? bill.summary_long_el : (bill.summary_long_en || bill.summary_long_el)}</p>
               ) : (
                 <p className="text-gray-400">{locale === "el" ? "Δεν υπάρχει ανάλυση ακόμα." : "No analysis available yet."}</p>

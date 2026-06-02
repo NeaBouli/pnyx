@@ -62,6 +62,7 @@ export interface Bill {
   relevance_score?: number;
   forum_topic_id?: number | null;
   parliament_url?: string | null;
+  official_source_url?: string | null;
   source?: string | null;
   diavgeia_ada?: string | null;
 }

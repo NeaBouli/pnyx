@@ -1,5 +1,51 @@
 # CC Response
 
+## 2026-06-03 — Codex: Durable source/analysis guard, not UI patching
+
+### Ziel
+- Gio verlangt dauerhaft automatische Korrektheit: keine kaputten Quellenlinks und keine ungepruefte Analyse in App/Web/Forum.
+- Umsetzung ist jetzt zentralisiert statt statusweise geflickt.
+
+### Code-Guards
+- `services/source_links.py` ist die einzige serverseitige Quelle fuer lesbare offizielle Source-URLs.
+- Verhalten:
+  - Parliament mit direktem offiziellem PDF aus `summary_long_el` -> PDF.
+  - Parliament ohne PDF -> `official_source_url=null`; keine blocked HTML-Suche.
+  - DIAVGEIA mit ADA -> `https://diavgeia.gov.gr/decision/view/{ADA}`.
+  - DIAVGEIA ohne ADA und nur `/doc/...` -> `null`; kein schlechter Fallback.
+- Mobile:
+  - oeffnet nur `official_source_url`.
+  - zeigt Hinweis, wenn keine lesbare offizielle Quelle vorhanden ist.
+- Web:
+  - nutzt `official_source_url`, nicht `parliament_url`.
+  - zeigt `summary_long_el` nur wenn `ai_summary_reviewed=true`.
+- Forum:
+  - nutzt `official_source_url`.
+  - postet keine blocked `parliament_url` mehr.
+  - postet `Ανάλυση` nur bei `ai_summary_reviewed=true`.
+
+### Regression Tests
+- Neu: `apps/api/tests/services/test_source_links.py`
+- Covered:
+  - Parliament PDF wird bevorzugt.
+  - Parliament HTML/Suche ohne PDF wird nicht als Quelle ausgegeben.
+  - DIAVGEIA nutzt `decision/view/{ADA}`.
+  - DIAVGEIA ohne ADA nutzt keinen `/doc` Fallback.
+
+### Verification
+- `python3 -m py_compile apps/api/services/source_links.py apps/api/services/discourse_sync.py apps/api/routers/parliament.py apps/api/routers/voting.py`: PASS
+- `cd apps/web && npx tsc --noEmit`: PASS
+- `cd apps/mobile && npx tsc --noEmit`: PASS
+- Direct resolver smoke test: PASS
+- `pytest` local blocked before tests by local SQLAlchemy mismatch: `async_sessionmaker` missing. CI/server env should run with project deps.
+
+### Remaining
+- Deploy API + Web after commit.
+- Build/install APK after no parallel CC Gradle process is running.
+- Data repair still required for `GR-5294`: source ingestion/lifecycle inconsistency remains.
+
+---
+
 ## 2026-06-03 — Codex: ACTIVE Bill source-link bug confirmed
 
 ### Problem

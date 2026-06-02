@@ -5215,3 +5215,31 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 - S10 `GR-74e0cb08` open-end bill: no blocked source page; notice shown.
 - S10 `GR-0490a766`: Parliament PDF opens.
 - S10 DIAVGEIA sample: `decision/view/{ADA}` opens.
+
+## 2026-06-03 — Codex: durable source URL + analysis guard across API/Web/Mobile/Forum
+
+### Systemic Fix
+- Centralized readable official source URL logic in `apps/api/services/source_links.py`.
+- Parliament:
+  - returns direct official Parliament PDF if present in scraped text.
+  - returns `None` if only blocked/search HTML URL exists.
+- DIAVGEIA:
+  - returns `decision/view/{ADA}`.
+  - returns `None` if ADA is missing and only `/doc` exists.
+- Mobile opens only `official_source_url`; no fallback to blocked `parliament_url`.
+- Web now uses `official_source_url`, not `parliament_url`.
+- Forum now uses `official_source_url`, not `parliament_url`.
+- Web/Forum long analysis remains hidden unless `ai_summary_reviewed=true`.
+
+### Tests/Checks
+- Added `apps/api/tests/services/test_source_links.py`.
+- `py_compile`: PASS.
+- Web `tsc --noEmit`: PASS.
+- Mobile `tsc --noEmit`: PASS.
+- Direct resolver smoke test: PASS.
+- Local `pytest` blocked by environment SQLAlchemy mismatch before test collection.
+
+### Operational Follow-up
+- Deploy API/Web after commit.
+- Build/install APK once no parallel Gradle build is running.
+- Add fetcher/lifecycle repair task for `GR-5294` and other rows with `official_source_url=null`.

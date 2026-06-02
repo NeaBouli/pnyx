@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import ParliamentBill, BillStatus, Periferia, Dimos
+from services.source_links import official_source_url
 
 logger = logging.getLogger(__name__)
 
@@ -246,10 +247,10 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
                 f"**Διαύγεια ADA:** {bill.diavgeia_ada}\n\n"
                 f"[Δείτε την απόφαση στη Διαύγεια →](https://diavgeia.gov.gr/decision/view/{bill.diavgeia_ada})\n\n"
             )
-        elif getattr(bill, "parliament_url", None):
+        elif official_source_url(bill):
             body += (
                 f"## Πληροφορίες\n"
-                f"[Δείτε το νομοσχέδιο στη Βουλή →]({bill.parliament_url})\n\n"
+                f"[Δείτε το νομοσχέδιο στη Βουλή →]({official_source_url(bill)})\n\n"
             )
         else:
             body += f"## Πληροφορίες\n*Δεν υπάρχει περίληψη ακόμα. Ψηφίστε στο ekklesia.gr.*\n\n"
