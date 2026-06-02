@@ -24,6 +24,9 @@
 ### Verifikation
 - `python3 -m py_compile apps/api/routers/voting.py apps/api/services/discourse_sync.py`: PASS
 - `cd apps/mobile && npx tsc --noEmit`: PASS
+- API deployed to server at `ac36c06`.
+- Live `/health`: OK.
+- Live `GR-0490a766` results payload: `summary_long_el` present, `summary_short_el` present, `ai_summary_reviewed=false`.
 
 ### Eigentlich fehlender Arbeitsblock
 - NEA-301 muss erweitert/konkretisiert werden:

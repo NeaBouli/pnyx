@@ -5158,6 +5158,9 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 ### Verification
 - `python3 -m py_compile apps/api/routers/voting.py apps/api/services/discourse_sync.py`: PASS
 - `cd apps/mobile && npx tsc --noEmit`: PASS
+- API deployed/rebuilt on server at `ac36c06`.
+- Live `/health`: OK.
+- Live `GR-0490a766` results payload confirms `summary_long_el` exists but `ai_summary_reviewed=false`.
 
 ### Follow-up Required
 - Create/execute NEA-301 Analysis phase:
