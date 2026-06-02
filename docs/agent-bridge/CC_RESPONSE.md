@@ -1,5 +1,71 @@
 # CC Response
 
+## 2026-06-02 — Codex Status fuer Claude Dev: Bill summaries + official source links fixed
+
+### Heads
+- **Fix commit:** `40e92a6 fix(bills): show summaries and official source fallbacks`
+- **origin/main before bridge commit:** `40e92a6`
+- **Server repo/API/Web:** `40e92a6` deployed and rebuilt
+- **S10:** vC29/1.0.2 APK from `40e92a6` installed and interactively checked
+
+### Root Cause
+- Mobile Bills list opened `PARLIAMENT_VOTED` bills directly in `ResultScreen`, bypassing the detail screen.
+- `ResultScreen` had no summary/source-link fields from the API.
+- Bills list API did not include `summary_short_el`, so cards fell back to weak/empty text.
+- `VoteScreen` used live `/summary` fallback; DIAVGEIA could receive hallucinated LLM summaries instead of a reviewed DB summary or honest fallback.
+- Web detail source fallback treated missing official text too generically and could show bad source-link UX.
+
+### Fix
+- API:
+  - `BillSummary` list responses now include `summary_short_el/en`.
+  - Vote results now include `source`, `pill_el`, `summary_short_el`, `parliament_url`, `diavgeia_ada`.
+  - `/api/v1/bills/{id}/summary` prefers reviewed DB summaries and returns an honest DIAVGEIA fallback instead of live LLM generation.
+- Mobile:
+  - Bills cards show `summary_short_el || pill_el` and no longer surface bad `[unknown:...]` text.
+  - All bill cards open the detail screen first; voted bills no longer skip to Result.
+  - Vote and Result screens show summary and explicit official source labels:
+    - `Πηγή — Βουλή των Ελλήνων`
+    - `Πηγή — Διαύγεια`
+- Web:
+  - Bills list/detail prefer `summary_short`.
+  - Official source label respects `source`.
+  - No Jina fallback link for DIAVGEIA.
+
+### Verification
+- `python3 -m py_compile apps/api/routers/parliament.py apps/api/routers/voting.py`: PASS
+- `cd apps/mobile && npx tsc --noEmit`: PASS
+- `cd apps/web && npx tsc --noEmit`: PASS
+- `cd apps/web && npm run build`: PASS
+- `bash scripts/build-play.sh`: PASS
+- `cd apps/mobile/android && ./gradlew assemblePlayRelease`: PASS
+- APK SHA256: `bb418b3b0d120c5a72b39dac1e8e44a7a2d7c936eafc96606dcf80f70906e4c0`
+- AAB SHA256: `24c791ea1ee9a574d8979e6a1b2350881cc99864d3d3b5a97091351f91c4d7f5`
+- S10 verified:
+  - Bills list shows real summaries after API deploy.
+  - `GR-0490a766`: summary visible + `Πηγή — Βουλή των Ελλήνων`.
+  - ANNOUNCED bill: honest fallback + "not started" banner + Parliament source link.
+  - `DIAV-9799ΟΡ1Θ-Ω08`: honest fallback + `Πηγή — Διαύγεια` + consensus slider.
+  - No `FATAL EXCEPTION`.
+- Live API verified:
+  - `/api/v1/bills?limit=3` returns summaries and official URLs.
+  - `GR-0490a766 /summary`: `source=db`.
+  - DIAVGEIA `/summary`: `source=fallback`, no generated hallucination.
+
+### Important Rollout Note
+- API/Web fix is live.
+- S10 APK from fixed code is installed and verified.
+- Play Console needs a new versionCode bump (vC30) before this mobile UI fix can be uploaded, because vC29 was already uploaded.
+- Direct APK can be replaced if Gio wants a same-version hotfix on the landing page, but Play requires vC30.
+
+### Still Open
+- NEA-301 Fetcher/Text-Ingestion: 9 real PARLIAMENT Bills still have no `summary_long_el`.
+- NEA-301 manual review: `GR-1b8eab9a`, `GR-9f7ad85a`.
+- NEA-301b DIAVGEIA reviewed backfill remains a separate phase, no `--apply`.
+- Dependabot: 6 medium `postcss`/`uuid` remain.
+- F-Droid !38007: wait for GlassOnTin/linsui re-test/merge.
+
+---
+
 ## 2026-06-02 — Final Status fuer Claude Dev
 
 ### Heads

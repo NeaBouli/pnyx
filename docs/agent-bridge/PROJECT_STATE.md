@@ -15,11 +15,11 @@
 - **Branch:** `main`
 - **Lokaler HEAD:** siehe `git rev-parse --short HEAD`
 - **origin/main:** siehe `git rev-parse --short origin/main`
-- **Server repo HEAD:** `b421b39` (deployed 01.06.2026)
-- **API container:** `b421b39` — Telegram citizen_votes fix + Arweave NEA-304 Guards LIVE
+- **Server repo HEAD:** `40e92a6` (deployed 02.06.2026)
+- **API container:** `40e92a6` — Bill summaries/source-link fallback fix LIVE
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
-- **Web container:** rebuilt (ADR-010), Logout Modal + Screenshots + ekprosopos UI fix + QR localization
-- **S10:** vC29/1.0.2 Play-Release APK installiert, Release-Gate PASS
+- **Web container:** `40e92a6` — Bill detail source-label/fallback fix LIVE
+- **S10:** vC29/1.0.2 Play-Release APK mit Bill summary/source fix installiert und interaktiv geprueft
 - **Alembic:** `o801a2b3c4d5` (polis_tickets + polis_votes + polis_identity_keys)
 - **F-Droid !38007:** Community launch-crash fixed in fdroiddata `e42e014f`; pipeline `2570810919` green 9/9; GlassOnTin/linsui re-test requested
 - **POLIS Status:** App-internal Create/Vote LIVE
@@ -27,11 +27,12 @@
 - **GR-0490a766:** arweave_tx_id=NULL (bereinigt), party_votes_parliament=NULL, Guards verhindern Re-Archivierung
 - **Telegram Bot:** citizen_votes Query LIVE, governance Topic-Routing LIVE
 - **vC29 Release:** COMPLETE — APK live auf ekklesia.gr, AAB in Play Console hochgeladen
-- **Pending urgent:** keine vC29 Release-Gate-Blocker offen
+- **Pending urgent:** Mobile rollout fuer Bill summary/source fix braucht vC30/Play Console Upload, weil vC29 bereits hochgeladen ist
 - **NEA-301b PARLIAMENT:** DONE (17/31 mit summary_short_el, 9 brauchen Fetcher, 3 DEMO + 2 flagged excluded, DIAVGEIA 0/636 eigene Phase)
 - **Ollama:** RAM zurueck auf 2.4 GB (Produktion), kein Job aktiv
 - **T3 Arweave Alerts:** FIXED `a90d508` — Monitor verlangt `party_votes_parliament IS NOT NULL`; false-positive fuer GR-0490a766 behoben
 - **Dependabot:** critical `vitest <4.1.0` fixed in `5553e13` and GitHub reports 0 open critical; 6 medium `postcss`/`uuid` remain
+- **Bill Summary/Source Fix:** `40e92a6` LIVE API/Web; S10 verified. Root cause: list API omitted summaries, voted bills skipped detail screen, ResultScreen lacked summary/source fields, DIAVGEIA summary endpoint could call LLM instead of honest fallback.
 - **Pending high:** NEA-301 Fetcher (9 Bills ohne summary_long_el), NEA-303 test-account Region, NEA-304 follow-up, #79/NEA-281 F-Droid linsui merge, NEA-286 Lifecycle-Bug
 - **Pending medium/backlog:** NEA-260/GH#82 Forum SSO, NEA-277/GH#71 startup-check, NEA-278/GH#72 CLAUDE.md stale values, NEA-285/GH#83 Diavgeia org mapping, NEA-279/GH#77 ZK Wizard, NEA-262 weekly auto-newsletter
 - **Pending external/blocked:** NEA-282/GH#80 Off-site backup waits for first donation; NEA-249/GH#81 blocked on Mopro/React Native

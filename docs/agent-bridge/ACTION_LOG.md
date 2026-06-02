@@ -5046,3 +5046,57 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 - `npm test` in `packages/crypto`: PASS, 47/47 tests
 - `npm audit --omit=optional` in `packages/crypto`: 0 vulnerabilities
 - GitHub Dependabot re-check: 0 open critical alerts
+
+## 2026-06-02 — Codex: Bill summaries and official source links fixed
+
+### Root Cause
+- Mobile list opened `PARLIAMENT_VOTED` bills directly in `ResultScreen`, bypassing detail UI.
+- Result API/Screen had no summary/source fields.
+- Bills list API omitted `summary_short_el`, so app cards showed weak or empty fallback text.
+- DIAVGEIA summary endpoint could invoke live LLM generation and hallucinate instead of showing a reviewed DB summary or honest fallback.
+- Web detail source fallback was too generic for DIAVGEIA.
+
+### Fix Commit
+- `40e92a6 fix(bills): show summaries and official source fallbacks`
+
+### Changes
+- API `BillSummary` includes `summary_short_el/en`.
+- API vote results include `source`, `pill_el`, `summary_short_el`, `parliament_url`, `diavgeia_ada`.
+- `/summary` prefers reviewed DB summaries; DIAVGEIA without reviewed summary returns an honest fallback and never generated LLM text.
+- Mobile cards show `summary_short_el || pill_el` and always open detail first.
+- Mobile Vote/Result screens show summaries and explicit source labels:
+  - `Πηγή — Βουλή των Ελλήνων`
+  - `Πηγή — Διαύγεια`
+- Web list/detail prefer short summaries and show source-aware official links.
+
+### Verification
+- `python3 -m py_compile apps/api/routers/parliament.py apps/api/routers/voting.py`: PASS
+- `cd apps/mobile && npx tsc --noEmit`: PASS
+- `cd apps/web && npx tsc --noEmit`: PASS
+- `cd apps/web && npm run build`: PASS
+- `bash scripts/build-play.sh`: PASS
+- `cd apps/mobile/android && ./gradlew assemblePlayRelease`: PASS
+- APK SHA256: `bb418b3b0d120c5a72b39dac1e8e44a7a2d7c936eafc96606dcf80f70906e4c0`
+- AAB SHA256: `24c791ea1ee9a574d8979e6a1b2350881cc99864d3d3b5a97091351f91c4d7f5`
+- S10 installed: `versionCode=29`, `versionName=1.0.2`
+- S10 screenshots/UI dumps: `/tmp/ekklesia_fix_audit`
+- S10 verified:
+  - Bills list shows real summaries after API deploy.
+  - `GR-0490a766`: summary visible + `Πηγή — Βουλή των Ελλήνων`.
+  - ANNOUNCED detail: honest fallback + not-started banner + Parliament source.
+  - DIAVGEIA detail: honest fallback + `Πηγή — Διαύγεια`.
+  - No `FATAL EXCEPTION`.
+
+### Deployment
+- Server pulled to `40e92a6`.
+- `ekklesia-api` and `ekklesia-web` stopped, rebuilt, and restarted.
+- `/health`: OK.
+- Live API `/api/v1/bills?limit=3`: summaries and official URLs present.
+- Live DIAVGEIA `/summary`: `source=fallback`, no hallucinated generated text.
+- Live PARLIAMENT `/summary`: `source=db`.
+
+### Remaining
+- Play Console needs vC30/versionCode bump for mobile UI rollout because vC29 was already uploaded.
+- NEA-301 still needs Fetcher/Text-Ingestion for 9 real PARLIAMENT Bills without `summary_long_el`.
+- NEA-301 manual review remains for `GR-1b8eab9a`, `GR-9f7ad85a`.
+- NEA-301b DIAVGEIA reviewed backfill remains a separate phase; no `--apply`.
