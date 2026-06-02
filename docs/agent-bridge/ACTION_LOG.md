@@ -4795,3 +4795,99 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
   Con: Qualitaet bleibt fraglich
 
 ### Kein --apply — Sample-Qualitaet nicht ausreichend
+
+---
+
+## 2026-06-02 — CC: NEA-301b qwen2.5:14b Dry-run + T3 Alert
+
+### T3 Arweave Alert
+- GR-0490a766 triggert T3: "1 Parliament-Bills ohne Archivierung (>24h)"
+- ERWARTET: party_votes_parliament=NULL → Guard verhindert korrekt Re-Archivierung
+- Monitor-Config muss angepasst werden: Guard-Policy in Alert-Logic einbauen
+- Kein Handlungsbedarf — Alert ist false-positive im Kontext der NEA-304 Guards
+
+### qwen2.5:14b Dry-run Ergebnis
+- Ollama RAM: 2.4 GB → 12 GB erhoeht (temporaer)
+- PARLIAMENT 5/5: ALLE erfolgreich, sauberes Griechisch, inhaltlich korrekt
+- DIAVGEIA 5/5: ALLE erfolgreich, spezifisch, keine Halluzinationen
+- Qualitaet: DEUTLICH besser als llama3.2:3b (das war Muell)
+- Timeout muss >=300s sein (Cold Start ~2 Min)
+
+### Naechster Schritt
+- PARLIAMENT --limit 15 dry-run laeuft
+- Danach DIAVGEIA --limit 25
+- Kein --apply ohne Gio/Codex Sample-Abnahme
+
+---
+
+## 2026-06-02 — CC: NEA-301b PARLIAMENT Controlled Apply — 5 Bills
+
+### Applied Bills
+1. GR-0490a766 (PARLIAMENT_VOTED) — pill + short ✅
+2. GR-74e0cb08 (OPEN_END) — short only (Ollama lieferte kein pill) ✅
+3. GR-cf7398d9 (OPEN_END) — pill + short ✅
+4. GR-88805d16 (ANNOUNCED) — short only (Ollama lieferte kein pill) ✅
+5. GR-83d7df37 (ANNOUNCED) — pill + short ✅
+
+### pill_el 3/5 Erklaerung
+- GR-74e0cb08 + GR-88805d16: Ollama-JSON-Antwort hatte leeres pill_el
+- Script korrekt: kein pill geschrieben wenn Modell keins liefert
+- NICHT ein Script-Bug — gewolltes Verhalten
+
+### Verifizierung
+- DB: 5 Bills haben summary_short_el, alle enden auf '.'
+- API: 5 Bills liefern summary_short_el korrekt
+- PARLIAMENT total mit summary_short_el: 10 (5 alt + 5 neu)
+- Unbeabsichtigte Aenderungen: 0
+- CSV: /tmp/backfill_ollama_audit.csv
+
+### Skip-Liste (manuell flagged)
+- GR-1b8eab9a: pill Tippfehler "ανάδεικτα"
+- GR-9f7ad85a: pill zu technisch (KAD-Codes)
+- DEMO-001, DEMO-002, DEMO-003: Demo-Bills, kein Backfill
+
+### Naechster Schritt
+- Restliche ~14 echte PARLIAMENT-Bills (ohne flagged + DEMO)
+- Kein DIAVGEIA ohne separate Freigabe
+
+---
+
+## 2026-06-02 — CC: NEA-301b PARLIAMENT Backfill COMPLETE
+
+### Applied (3 Runs)
+- Run 1: 5 Bills (GR-0490a766, GR-74e0cb08, GR-cf7398d9, GR-88805d16, GR-83d7df37)
+- Run 2: 1 Bill (GR-8d8945ee) — gestoppter Run, 1 applied vor Kill
+- Run 3: 6 Bills (GR-d5391403, GR-6d0ba7e0, GR-0d69b4e0, GR-8c0aad10, GR-5d46bee9, GR-1d4ca00d)
+- **Total applied: 12 Bills**
+
+### Bestehende Summaries (nicht angefasst)
+- GR-2024-0001, GR-2024-0002, GR-2025-0001, GR-5293, GR-5294 (5 Bills aus scraper.py Import)
+
+### Excluded
+- DEMO-001, DEMO-002, DEMO-003: per SQL `id NOT LIKE 'DEMO%'` excluded
+- GR-1b8eab9a, GR-9f7ad85a: per SQL exclude (flagged fuer manuelles Review)
+
+### Nicht backfill-faehig (kein summary_long_el)
+- GR-fa1f20de, GR-622d5980, GR-d4c62ed4, GR-a3562ec6, GR-4a8dba43, GR-90563fd3, GR-3aba3e72, GR-37740bf1, GR-d71e9b04
+- **9 Bills** — parliament_fetcher hat deren Text nie geholt
+- Follow-up: Fetcher muss summary_long_el fuer diese 9 Bills holen, DANN kann Backfill fortgesetzt werden
+
+### Zahlen
+- PARLIAMENT total: 31 Bills
+- Mit summary_short_el: 17 (12 backfilled + 5 bestehend)
+- Ohne summary_short_el: 14 (9 kein Quelltext + 3 DEMO + 2 flagged)
+
+### DIAVGEIA
+- KEIN DIAVGEIA Apply durchgefuehrt
+- DIAVGEIA bleibt eigene Phase mit separater Freigabe
+
+### Modell + Infrastruktur
+- qwen2.5:14b auf ekklesia-ollama (RAM temporaer 12 GB)
+- Ollama RAM muss nach Session zurueckgesetzt werden (oder permanent 12 GB)
+- CSV: /tmp/backfill_ollama_audit.csv
+
+### Fuer Codex-Verifikation
+1. COUNT PARLIAMENT mit/ohne summary_short_el → 17/14
+2. 9 Missing haben kein summary_long_el → bestaetigen
+3. DEMO + flagged unberuehrt → bestaetigen
+4. Kein DIAVGEIA geaendert → bestaetigen

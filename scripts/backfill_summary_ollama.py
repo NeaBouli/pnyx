@@ -27,7 +27,7 @@ import urllib.request
 import urllib.error
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
-MODEL = "llama3.2:3b"
+MODEL = "qwen2.5:14b"
 RATE_LIMIT_SEC = 5
 MAX_INPUT_CHARS = 2000
 
@@ -61,7 +61,7 @@ def call_ollama(prompt: str, retries: int = 2) -> dict | None:
             "model": MODEL,
             "prompt": prompt,
             "stream": False,
-            "options": {"num_predict": 500, "temperature": 0.2},
+            "options": {"num_predict": 800, "temperature": 0.2},
         }).encode()
 
         req = urllib.request.Request(
@@ -70,7 +70,7 @@ def call_ollama(prompt: str, retries: int = 2) -> dict | None:
             headers={"Content-Type": "application/json"},
         )
         try:
-            resp = urllib.request.urlopen(req, timeout=120)
+            resp = urllib.request.urlopen(req, timeout=300)
             result = json.loads(resp.read()).get("response", "").strip()
 
             # Try strict JSON parse first
@@ -101,6 +101,27 @@ def call_ollama(prompt: str, retries: int = 2) -> dict | None:
     return None
 
 
+SENTENCE_ENDINGS = re.compile(r"[.;!?·…]")
+
+
+def trim_to_sentence(text: str, max_chars: int) -> str:
+    """Trim text to last complete sentence within max_chars."""
+    if not text:
+        return ""
+    text = text.strip()
+    if len(text) <= max_chars and SENTENCE_ENDINGS.search(text[-1:]):
+        return text
+
+    truncated = text[:max_chars]
+    # Find last sentence-ending punctuation
+    for i in range(len(truncated) - 1, -1, -1):
+        if SENTENCE_ENDINGS.match(truncated[i]):
+            return truncated[:i + 1]
+
+    # No sentence boundary found — reject
+    return ""
+
+
 REJECT_PATTERNS = [
     r"δεν υπάρχουν πληροφορίες",
     r"ως AI",
@@ -120,6 +141,9 @@ def validate_output(pill: str, short: str, title: str) -> str | None:
         return "summary too long"
     if pill and len(pill) > 200:
         return "pill too long"
+    # Must end on sentence boundary
+    if not SENTENCE_ENDINGS.search(short[-1:]):
+        return "summary does not end on sentence boundary"
     for pat in REJECT_PATTERNS:
         if re.search(pat, short, re.IGNORECASE):
             return f"rejected pattern: {pat}"
@@ -153,6 +177,9 @@ async def main():
         "summary_long_el IS NOT NULL",
         "summary_long_el != ''",
         "(summary_short_el IS NULL OR summary_short_el = '')",
+        "id NOT LIKE 'DEMO%'",
+        "id NOT LIKE 'TEST%'",
+        "id NOT IN ('GR-1b8eab9a', 'GR-9f7ad85a')",  # flagged for manual review
     ]
     if args.source != "ALL":
         conditions.append(f"source = '{args.source}'")
@@ -171,7 +198,7 @@ async def main():
 
     # CSV audit
     csv_path = "/tmp/backfill_ollama_audit.csv"
-    csv_file = open(csv_path, "w", newline="", encoding="utf-8")
+    csv_file = open(csv_path, "w", newline="", encoding="utf-8", buffering=1)
     writer = csv.writer(csv_file)
     writer.writerow(["bill_id", "source", "status", "pill_el", "summary_short_el", "action", "model"])
 
@@ -192,8 +219,8 @@ async def main():
             skipped += 1
             continue
 
-        print(f"\n[{i+1}/{len(rows)}] {bill_id} [{row['source']}/{row['status']}]")
-        print(f"  Title: {title[:70]}")
+        print(f"\n[{i+1}/{len(rows)}] {bill_id} [{row['source']}/{row['status']}]", flush=True)
+        print(f"  Title: {title[:70]}", flush=True)
 
         cleaned = clean_input_text(long_el)
         if len(cleaned) < 30:
@@ -215,7 +242,8 @@ async def main():
             continue
 
         pill = result["pill_el"]
-        short = result["summary_short_el"]
+        short = trim_to_sentence(result["summary_short_el"], 400)
+        pill = trim_to_sentence(pill, 200) if pill else pill
 
         # Validate
         rejection = validate_output(pill, short, title)
@@ -231,10 +259,10 @@ async def main():
             pill = None
 
         print(f"  Pill:  {pill[:100] if pill else '(keep existing)'}")
-        print(f"  Short: {short[:150]}")
+        print(f"  Short: {short[:150]}", flush=True)
 
         writer.writerow([bill_id, row["source"], row["status"],
-                         pill[:120] if pill else "", short[:200],
+                         pill if pill else "", short,
                          "UPDATE" if not dry_run else "DRY_RUN", model_used])
 
         if not dry_run:
