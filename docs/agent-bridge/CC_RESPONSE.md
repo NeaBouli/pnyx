@@ -3,7 +3,7 @@
 ## 2026-06-02 — Codex/Gio Status fuer Claude Dev: vC29 + NEA-301b + T3 Arweave
 
 ### Gesamtstand
-- **origin/main:** `a90d508`
+- **origin/main:** `10d3adc` vor diesem Memory-Update
 - **Server repo:** `a90d508`
 - **API container:** `b421b39` (vC29 API-Fixes live)
 - **Monitor container:** Hotfix aktiv via docker cp + restart; Repo persistent auf `a90d508`
@@ -31,11 +31,29 @@
 
 ### Naechste sinnvolle Reihenfolge
 1. **NEA-301 Fetcher/Text-Ingestion:** Fuer die 9 echten PARLIAMENT Bills `summary_long_el` holen; danach Backfill fortsetzen.
-2. **Manual Review:** `GR-1b8eab9a`, `GR-9f7ad85a` manuell pruefen oder mit besserem Prompt retry.
-3. **NEA-303:** `admin/test-account` Region permanent setzen (DB-Hotfix ist live, Code-Fix offen).
-4. **NEA-286:** Lifecycle Root Cause.
-5. **F-Droid !38007:** weiter auf linsui Test/Merge warten, kein Handlungsbedarf.
-6. **DIAVGEIA Backfill:** eigene Phase, neue Freigabe noetig; vorher RAM temporaer erhoehen und Dry-run/Qualitaet erneut zeigen.
+2. **Dependabot Criticals:** `vitest <4.1.0` in `packages/crypto/package.json` + `package-lock.json` pruefen/fixen.
+3. **Manual Review:** `GR-1b8eab9a`, `GR-9f7ad85a` manuell pruefen oder mit besserem Prompt retry.
+4. **NEA-303:** `admin/test-account` Region permanent setzen (DB-Hotfix ist live, Code-Fix offen).
+5. **NEA-286:** Lifecycle Root Cause.
+6. **F-Droid !38007:** weiter auf linsui Test/Merge warten, kein Handlungsbedarf.
+7. **DIAVGEIA Backfill:** eigene Phase, neue Freigabe noetig; vorher RAM temporaer erhoehen und Dry-run/Qualitaet erneut zeigen.
+
+### Dependabot Snapshot — 2026-06-02
+| Severity | Package | Manifest | Patched |
+|---|---|---|---|
+| critical | `vitest` | `packages/crypto/package.json` | `4.1.0` |
+| critical | `vitest` | `packages/crypto/package-lock.json` | `4.1.0` |
+| medium | `uuid` | `apps/representative/package-lock.json` | `11.1.1` |
+| medium | `postcss` | `apps/representative/package-lock.json` | `8.5.10` |
+| medium | `postcss` | `apps/web/package-lock.json` | `8.5.10` |
+| medium | `uuid` | `apps/mobile/package-lock.json` | `11.1.1` |
+| medium | `postcss` | `apps/mobile/package-lock.json` | `8.5.10` |
+| medium | `postcss` | `apps/dashboard/package-lock.json` | `8.5.10` |
+
+Impact quick read:
+- Critical `vitest`: dev/test dependency in `packages/crypto`; critical only if Vitest UI/browser server is exposed. Still should be fixed first.
+- Medium `postcss`: build-tool dependency in web/mobile/dashboard/representative lockfiles.
+- Medium `uuid`: mobile/representative lockfile dependency; verify direct/transitive before upgrading.
 
 ### Nicht tun
 - Kein DIAVGEIA `--apply`.

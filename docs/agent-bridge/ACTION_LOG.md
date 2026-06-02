@@ -4939,3 +4939,37 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 - CC_RESPONSE.md oben aktualisiert mit Gesamtstatus fuer Claude Dev
 - PROJECT_STATE.md aktualisiert: T3 Arweave Alerts nicht mehr pending, Fix `a90d508` live/persistent
 - Naechster Fokus: NEA-301 Fetcher/Text-Ingestion fuer 9 PARLIAMENT Bills ohne `summary_long_el`
+
+---
+
+## 2026-06-02 — Claude Dev Status abgeglichen + Dependabot Snapshot
+
+### Offene Punkte bereinigt
+| Ticket | Titel | Prio |
+|---|---|---|
+| NEA-301 | Fetcher/Text-Ingestion (9 Bills ohne summary_long_el) | High |
+| NEA-301 | Manual Review GR-1b8eab9a + GR-9f7ad85a | Medium |
+| NEA-301b | DIAVGEIA Backfill (636 Bills) | Medium / eigene Phase |
+| NEA-303 | test-account Region permanent (Code-Fix) | Medium |
+| NEA-286 | Lifecycle Root Cause | Medium |
+| NEA-304 | Arweave party_votes source + TX-Verifikation | Medium |
+| GH#71 / NEA-277 | FORUM_SSO_SALT Startup-Check | Klein |
+| GH#72 / NEA-278 | CLAUDE.md stale | Klein |
+| F-Droid !38007 | Wartet auf linsui | Extern |
+| Dependabot | 2 critical + 6 moderate | High |
+
+### Dependabot Alerts
+| Severity | Package | Manifest | Patched |
+|---|---|---|---|
+| critical | vitest | packages/crypto/package.json | 4.1.0 |
+| critical | vitest | packages/crypto/package-lock.json | 4.1.0 |
+| medium | uuid | apps/representative/package-lock.json | 11.1.1 |
+| medium | postcss | apps/representative/package-lock.json | 8.5.10 |
+| medium | postcss | apps/web/package-lock.json | 8.5.10 |
+| medium | uuid | apps/mobile/package-lock.json | 11.1.1 |
+| medium | postcss | apps/mobile/package-lock.json | 8.5.10 |
+| medium | postcss | apps/dashboard/package-lock.json | 8.5.10 |
+
+### Naechster Quick Task
+- Dependabot critical zuerst untersuchen/fixen: `vitest <4.1.0` in `packages/crypto`.
+- Danach Mediums in separatem Lockfile-/Workspace-Update.
