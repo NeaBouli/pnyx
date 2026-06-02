@@ -30,6 +30,15 @@ const VOTE_OPTIONS = [
   { key: "ABSTAIN", label: "ΑΠΟΧΗ", color: "#f57f17", icon: "⏸️" },
 ] as const;
 
+function readableText(value?: string | null) {
+  return Boolean(value && value.trim() && !value.includes("[unknown:"));
+}
+
+function sourceLabel(source: string) {
+  if (source === "DIAVGEIA") return "Πηγή — Διαύγεια";
+  return "Πηγή — Βουλή των Ελλήνων";
+}
+
 export default function VoteScreen({ route, navigation }: Props) {
   const { billId, billTitle } = route.params;
   const [loading, setLoading] = useState(false);
@@ -50,17 +59,21 @@ export default function VoteScreen({ route, navigation }: Props) {
 
   React.useEffect(() => {
     const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
-    fetch(`${API}/api/v1/bills/${encodeURIComponent(billId)}/summary?lang=el`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.summary) setSummary(d.summary); })
-      .catch(() => {})
-      .finally(() => setSummaryLoading(false));
-    // Load bill status
     fetch(`${API}/api/v1/bills/${encodeURIComponent(billId)}`)
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.status) { setBillStatus(d.status); setBillGovernance(d.governance_level || "NATIONAL"); setBillSource(d.source || "PARLIAMENT"); setBillPill(d.pill_el || ""); setParliamentUrl(d.parliament_url || ""); setSummary(prev => prev || d.summary_short_el || d.summary_long_el || ""); } })
+      .then(d => {
+        if (d?.status) {
+          const source = d.source || "PARLIAMENT";
+          setBillStatus(d.status);
+          setBillGovernance(d.governance_level || "NATIONAL");
+          setBillSource(source);
+          setBillPill(readableText(d.pill_el) ? d.pill_el : "");
+          setParliamentUrl(d.parliament_url || "");
+          if (readableText(d.summary_short_el)) setSummary(d.summary_short_el);
+        }
+      })
       .catch(() => {})
-      .finally(() => setBillLoaded(true));
+      .finally(() => { setBillLoaded(true); setSummaryLoading(false); });
   }, [billId]);
 
   async function handleVote(choice: string) {
@@ -171,13 +184,13 @@ export default function VoteScreen({ route, navigation }: Props) {
       {/* AI Summary */}
       {summaryLoading ? (
         <ActivityIndicator size="small" color={colors.textSecondary} style={{ marginBottom: 16 }} />
-      ) : summary ? (
+      ) : summary || billPill || billLoaded ? (
         <View style={{ backgroundColor: "#eff6ff", borderRadius: 12, padding: 14, marginBottom: 16 }}>
           <Text style={{ fontWeight: "700", color: "#1e40af", fontSize: 13, marginBottom: 6 }}>
             Σύνοψη & Ανάλυση
           </Text>
           <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20 }}>
-            {summary.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/).map((part, i) => {
+            {(summary || billPill || "Δεν υπάρχει ακόμα ελεγμένη σύνοψη για αυτή την πράξη. Δείτε το επίσημο κείμενο στην πηγή.").split(/(\*\*[^*]+\*\*|\*[^*]+\*)/).map((part, i) => {
               if (part.startsWith("**") && part.endsWith("**"))
                 return <Text key={i} style={{ fontWeight: "700" }}>{part.slice(2, -2)}</Text>;
               if (part.startsWith("*") && part.endsWith("*"))
@@ -225,7 +238,7 @@ export default function VoteScreen({ route, navigation }: Props) {
           style={{ backgroundColor: "#eff6ff", borderRadius: 10, padding: 12, marginBottom: 12, flexDirection: "row", alignItems: "center" }}
         >
           <Text style={{ fontSize: 14, marginRight: 8 }}>🔗</Text>
-          <Text style={{ color: "#1d4ed8", fontSize: 13, fontWeight: "600", flex: 1 }}>Πηγή — Επίσημο κείμενο</Text>
+          <Text style={{ color: "#1d4ed8", fontSize: 13, fontWeight: "600", flex: 1 }}>{sourceLabel(billSource)}</Text>
           <Text style={{ color: "#93c5fd", fontSize: 12 }}>↗</Text>
         </TouchableOpacity>
       ) : null}

@@ -21,6 +21,10 @@ const STATUS_LABELS: Record<string, string> = {
 };
 const VOTABLE = ["ACTIVE", "WINDOW_24H", "OPEN_END"];
 
+function readableText(value?: string | null) {
+  return Boolean(value && value.trim() && !value.includes("[unknown:"));
+}
+
 export default function BillsScreen() {
   const nav = useNavigation<Nav>();
   const [bills, setBills] = useState<any[]>([]);
@@ -103,15 +107,14 @@ export default function BillsScreen() {
         ListEmptyComponent={<Text style={s.empty}>Δεν βρέθηκαν ψηφοφορίες</Text>}
         renderItem={({ item }) => (
           <TouchableOpacity style={s.card} onPress={() => {
-            if (item.status === "PARLIAMENT_VOTED")
-              nav.navigate("Result", { billId: item.id, billTitle: item.title_el });
-            else
-              nav.navigate("Vote", { billId: item.id, billTitle: item.title_el });
+            nav.navigate("Vote", { billId: item.id, billTitle: item.title_el });
           }} activeOpacity={0.7}>
             <View style={[s.dot, { backgroundColor: STATUS_COLORS[item.status] ?? colors.textTertiary }]} />
             <View style={s.cardContent}>
               <Text style={s.cardTitle}>{item.title_el}</Text>
-              {item.pill_el && <Text style={s.cardPill} numberOfLines={3}>{item.pill_el}</Text>}
+              {readableText(item.summary_short_el || item.pill_el) && (
+                <Text style={s.cardPill} numberOfLines={3}>{item.summary_short_el || item.pill_el}</Text>
+              )}
               <View style={s.cardFooter}>
                 <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
                   <Text style={[s.cardStatus, { color: STATUS_COLORS[item.status] ?? colors.textTertiary }]}>{STATUS_LABELS[item.status] ?? item.status}</Text>

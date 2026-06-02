@@ -34,6 +34,8 @@ class BillSummary(BaseModel):
     title_en:            str | None
     pill_el:             str | None
     pill_en:             str | None
+    summary_short_el:    str | None = None
+    summary_short_en:    str | None = None
     categories:          list | None
     status:              str
     governance_level:    str | None = "NATIONAL"
@@ -184,6 +186,8 @@ async def get_bills(
         title_en=b.title_en,
         pill_el=b.pill_el,
         pill_en=b.pill_en,
+        summary_short_el=b.summary_short_el,
+        summary_short_en=b.summary_short_en,
         categories=b.categories,
         status=b.status.value,
         governance_level=b.governance_level.value if b.governance_level else "NATIONAL",
@@ -242,6 +246,8 @@ async def get_trending(
         title_en=row[0].title_en,
         pill_el=row[0].pill_el,
         pill_en=row[0].pill_en,
+        summary_short_el=row[0].summary_short_el,
+        summary_short_en=row[0].summary_short_en,
         categories=row[0].categories,
         status=row[0].status.value,
         parliament_vote_date=row[0].parliament_vote_date.isoformat() if row[0].parliament_vote_date else None,
@@ -302,17 +308,6 @@ async def get_bill_summary(
     import os
     from services.ollama_service import summarize_bill
 
-    # Redis cache
-    redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
-    r = aioredis.from_url(redis_url, decode_responses=True)
-    cache_key = f"bill_summary:{bill_id}:{lang}"
-    try:
-        cached = await r.get(cache_key)
-        if cached:
-            return {"bill_id": bill_id, "summary": cached, "cached": True, "lang": lang}
-    except Exception:
-        pass
-
     # Get bill
     result = await db.execute(
         select(ParliamentBill).where(ParliamentBill.id == bill_id)
@@ -320,6 +315,31 @@ async def get_bill_summary(
     bill = result.scalar_one_or_none()
     if not bill:
         raise HTTPException(status_code=404, detail=f"Bill {bill_id} not found")
+
+    stored_summary = bill.summary_short_el if lang == "el" else (bill.summary_short_en or bill.summary_short_el)
+    stored_pill = bill.pill_el if lang == "el" else (bill.pill_en or bill.pill_el)
+    for candidate in (stored_summary, stored_pill):
+        if candidate and "[unknown:" not in candidate:
+            return {"bill_id": bill_id, "summary": candidate, "cached": False, "lang": lang, "source": "db"}
+
+    if (bill.source or "PARLIAMENT") == "DIAVGEIA":
+        fallback = (
+            "Δεν υπάρχει ακόμα ελεγμένη σύνοψη για αυτή την πράξη. Δείτε το επίσημο κείμενο στη Διαύγεια."
+            if lang == "el"
+            else "No reviewed summary is available yet. See the official Diavgeia source text."
+        )
+        return {"bill_id": bill_id, "summary": fallback, "cached": False, "lang": lang, "source": "fallback"}
+
+    # Redis cache only applies to generated Parliament summaries.
+    redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
+    r = aioredis.from_url(redis_url, decode_responses=True)
+    cache_key = f"bill_summary:{bill_id}:{lang}"
+    try:
+        cached = await r.get(cache_key)
+        if cached:
+            return {"bill_id": bill_id, "summary": cached, "cached": True, "lang": lang, "source": "cache"}
+    except Exception:
+        pass
 
     title = bill.title_el if lang == "el" else (bill.title_en or bill.title_el)
     content = bill.summary_long_el if lang == "el" else (bill.summary_long_en or bill.summary_long_el or "")
@@ -340,7 +360,7 @@ async def get_bill_summary(
     except Exception:
         pass
 
-    return {"bill_id": bill_id, "summary": summary, "cached": False, "lang": lang}
+    return {"bill_id": bill_id, "summary": summary, "cached": False, "lang": lang, "source": "generated"}
 
 
 @router.post("/{bill_id}/flag")

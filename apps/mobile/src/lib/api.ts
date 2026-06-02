@@ -60,10 +60,18 @@ export async function checkIdentityStatus(
 export interface Bill {
   id: string;
   title_el: string;
-  pill_el: string;
+  pill_el: string | null;
+  pill_en?: string | null;
+  summary_short_el?: string | null;
+  summary_short_en?: string | null;
+  summary_long_el?: string | null;
+  summary_long_en?: string | null;
   status: string;
   submitted_at: string;
   party_votes_parliament: Record<string, string> | null;
+  parliament_url?: string | null;
+  source?: string | null;
+  diavgeia_ada?: string | null;
   relevance_score: number;
 }
 
@@ -133,6 +141,11 @@ export interface BillResults {
   bill_id: string;
   title_el: string;
   status: string;
+  source?: string | null;
+  pill_el?: string | null;
+  summary_short_el?: string | null;
+  parliament_url?: string | null;
+  diavgeia_ada?: string | null;
   total_votes: number;
   yes_count: number;
   no_count: number;

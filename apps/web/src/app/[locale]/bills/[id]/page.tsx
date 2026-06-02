@@ -166,6 +166,11 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   const canVote = VOTABLE.includes(bill.status);
+  const officialUrl = bill.parliament_url || undefined;
+  const isDiavgeia = bill.source === "DIAVGEIA";
+  const officialLabel = isDiavgeia
+    ? (locale === "el" ? "Επίσημο κείμενο στη Διαύγεια →" : "Official Diavgeia text →")
+    : (locale === "el" ? "Επίσημο κείμενο στη Βουλή →" : "Official Parliament text →");
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -207,29 +212,31 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         )}
 
-        {/* Official Parliament Link + Jina Reader fallback (WAF bypass) */}
-        {(bill as any).parliament_url && (
+        {/* Official source link */}
+        {officialUrl && (
           <div className="flex items-center gap-2 flex-wrap mb-4">
             <a
-              href={(bill as any).parliament_url}
+              href={officialUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 transition-colors font-medium"
             >
-              🏛️ {locale === "el" ? "Επίσημο κείμενο στη Βουλή →" : "Official Parliament text →"}
+              {isDiavgeia ? "📋" : "🏛️"} {officialLabel}
             </a>
-            <span className="text-xs text-gray-400">
-              ({locale === "el" ? "αν δεν ανοίγει:" : "if blocked:"}
-              <a
-                href={`https://r.jina.ai/${(bill as any).parliament_url}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline ml-1 hover:text-gray-600"
-                title={locale === "el" ? "Μέσω Jina Reader — τρίτος πάροχος" : "Via Jina Reader — third-party provider"}
-              >
-                {locale === "el" ? "εναλλακτικός σύνδεσμος ↗" : "alternative link ↗"}
-              </a>)
-            </span>
+            {!isDiavgeia && (
+              <span className="text-xs text-gray-400">
+                ({locale === "el" ? "αν δεν ανοίγει:" : "if blocked:"}
+                <a
+                  href={`https://r.jina.ai/${officialUrl}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline ml-1 hover:text-gray-600"
+                  title={locale === "el" ? "Μέσω Jina Reader — τρίτος πάροχος" : "Via Jina Reader — third-party provider"}
+                >
+                  {locale === "el" ? "εναλλακτικός σύνδεσμος ↗" : "alternative link ↗"}
+                </a>)
+              </span>
+            )}
           </div>
         )}
 
@@ -288,7 +295,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
           </div>
           {expanded === "short" ? (
             <p className="text-gray-700 leading-relaxed">
-              {bill[shortKey as keyof Bill] as string || bill.pill_el || "—"}
+              {bill[shortKey as keyof Bill] as string || bill.pill_el || (locale === "el" ? "Δεν υπάρχει ακόμα ελεγμένη σύνοψη για αυτή την πράξη. Δείτε το επίσημο κείμενο στην πηγή." : "No reviewed summary is available yet. See the official source text.")}
             </p>
           ) : (
             <div className="text-gray-700 leading-relaxed">

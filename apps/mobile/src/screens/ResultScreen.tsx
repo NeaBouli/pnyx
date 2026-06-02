@@ -10,6 +10,8 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  TouchableOpacity,
+  Linking,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { StackScreenProps } from "@react-navigation/stack";
@@ -29,6 +31,15 @@ function Bar({ label, count, percent, color }: { label: string; count: number; p
       <Text style={styles.barValue}>{count} ({percent}%)</Text>
     </View>
   );
+}
+
+function readableText(value?: string | null) {
+  return Boolean(value && value.trim() && !value.includes("[unknown:"));
+}
+
+function sourceLabel(source?: string | null) {
+  if (source === "DIAVGEIA") return "Πηγή — Διαύγεια";
+  return "Πηγή — Βουλή των Ελλήνων";
 }
 
 export default function ResultScreen({ route }: Props) {
@@ -73,6 +84,7 @@ export default function ResultScreen({ route }: Props) {
   }
 
   const isHidden = data.results_hidden || (data.status === "ACTIVE" && data.total_votes === 0);
+  const summary = readableText(data.summary_short_el) ? data.summary_short_el : readableText(data.pill_el) ? data.pill_el : "";
 
   return (
     <ScrollView
@@ -82,6 +94,24 @@ export default function ResultScreen({ route }: Props) {
       }
     >
       <Text style={styles.title}>{data.title_el}</Text>
+
+      <View style={styles.summaryCard}>
+        <Text style={styles.summaryTitle}>Σύνοψη & Ανάλυση</Text>
+        <Text style={styles.summaryText}>
+          {summary || "Δεν υπάρχει ακόμα ελεγμένη σύνοψη για αυτή την πράξη. Δείτε το επίσημο κείμενο στην πηγή."}
+        </Text>
+      </View>
+
+      {data.parliament_url ? (
+        <TouchableOpacity
+          onPress={() => Linking.openURL(data.parliament_url || "")}
+          style={styles.sourceCard}
+        >
+          <Text style={styles.sourceIcon}>🔗</Text>
+          <Text style={styles.sourceText}>{sourceLabel(data.source)}</Text>
+          <Text style={styles.sourceArrow}>↗</Text>
+        </TouchableOpacity>
+      ) : null}
 
       {isHidden ? (
         <View style={styles.hiddenCard}>
@@ -156,6 +186,13 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 24, backgroundColor: colors.background },
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background },
   title: { fontSize: 20, fontWeight: "bold", color: colors.primary, marginBottom: 4 },
+  summaryCard: { backgroundColor: "#eff6ff", borderRadius: 12, padding: 14, marginTop: 12, marginBottom: 12 },
+  summaryTitle: { fontWeight: "700", color: "#1e40af", fontSize: 13, marginBottom: 6 },
+  summaryText: { color: "#374151", fontSize: 13, lineHeight: 20 },
+  sourceCard: { backgroundColor: "#eff6ff", borderRadius: 10, padding: 12, marginBottom: 12, flexDirection: "row", alignItems: "center" },
+  sourceIcon: { fontSize: 14, marginRight: 8 },
+  sourceText: { color: "#1d4ed8", fontSize: 13, fontWeight: "600", flex: 1 },
+  sourceArrow: { color: "#93c5fd", fontSize: 12 },
   totalVotes: { fontSize: 14, color: colors.textSecondary, marginBottom: 24 },
   barsContainer: { backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border },
   barRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },

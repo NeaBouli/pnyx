@@ -103,6 +103,7 @@ export default function BillsPage() {
 
   const titleKey = locale === "el" ? "title_el" : "title_en";
   const pillKey  = locale === "el" ? "pill_el"  : "pill_en";
+  const shortKey = locale === "el" ? "summary_short_el" : "summary_short_en";
   const isEl = locale === "el";
 
   return (
@@ -280,9 +281,9 @@ export default function BillsPage() {
                 {bill[titleKey as keyof Bill] as string || bill.title_el}
               </h2>
 
-              {bill[pillKey as keyof Bill] && (
+              {(bill[shortKey as keyof Bill] || bill[pillKey as keyof Bill]) && (
                 <p className="text-gray-500 text-sm leading-relaxed">
-                  {bill[pillKey as keyof Bill] as string}
+                  {(bill[shortKey as keyof Bill] || bill[pillKey as keyof Bill]) as string}
                 </p>
               )}
 

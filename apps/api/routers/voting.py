@@ -99,6 +99,11 @@ class BillResults(BaseModel):
     bill_id:          str
     title_el:         str
     status:           str
+    source:           str | None = "PARLIAMENT"
+    pill_el:          str | None = None
+    summary_short_el: str | None = None
+    parliament_url:   str | None = None
+    diavgeia_ada:     str | None = None
     total_votes:      int
     yes_count:        int
     no_count:         int
@@ -478,6 +483,11 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
         vote_date = bill.parliament_vote_date.strftime("%d/%m/%Y") if bill.parliament_vote_date else None
         return BillResults(
             bill_id=bill_id, title_el=bill.title_el, status=bill.status.value,
+            source=bill.source or "PARLIAMENT",
+            pill_el=bill.pill_el,
+            summary_short_el=bill.summary_short_el,
+            parliament_url=bill.parliament_url,
+            diavgeia_ada=bill.diavgeia_ada,
             total_votes=0, yes_count=0, no_count=0, abstain_count=0, unknown_count=0,
             yes_percent=0, no_percent=0, abstain_percent=0, divergence=None,
             representativity=compute_representativity(0),
@@ -507,6 +517,11 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
         bill_id=bill_id,
         title_el=bill.title_el,
         status=bill.status.value,
+        source=bill.source or "PARLIAMENT",
+        pill_el=bill.pill_el,
+        summary_short_el=bill.summary_short_el,
+        parliament_url=bill.parliament_url,
+        diavgeia_ada=bill.diavgeia_ada,
         total_votes=total,
         yes_count=yes_c,
         no_count=no_c,

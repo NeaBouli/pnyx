@@ -61,6 +61,9 @@ export interface Bill {
   ai_summary_reviewed?: boolean;
   relevance_score?: number;
   forum_topic_id?: number | null;
+  parliament_url?: string | null;
+  source?: string | null;
+  diavgeia_ada?: string | null;
 }
 
 export interface DivergenceResult {
