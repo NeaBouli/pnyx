@@ -5252,3 +5252,15 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 ### Operational Follow-up
 - Build/install APK once no parallel Gradle build is running.
 - Add fetcher/lifecycle repair task for `GR-5294` and other rows with `official_source_url=null`.
+
+---
+
+## 2026-06-03 — CC: vC30 Build-Probleme + Uebergabe an Codex
+
+### Build-Versuche (CC)
+1. CMake stale cache → cache geloescht
+2. settings.gradle Fehler → android/ geloescht
+3. hermesc exit 5 → TSC sauber, expo export OK, Gradle scheitert
+4. Gradle Lock durch parallele CC+Codex Builds → alle Prozesse gekillt
+
+### Uebergabe: Codex uebernimmt Build
