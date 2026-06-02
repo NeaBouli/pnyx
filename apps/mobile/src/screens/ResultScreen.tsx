@@ -109,16 +109,23 @@ export default function ResultScreen({ route }: Props) {
         ) : null}
       </View>
 
-      {(data.official_source_url || data.parliament_url) ? (
+      {data.official_source_url ? (
         <TouchableOpacity
-          onPress={() => Linking.openURL(data.official_source_url || data.parliament_url || "")}
+          onPress={() => Linking.openURL(data.official_source_url || "")}
           style={styles.sourceCard}
         >
           <Text style={styles.sourceIcon}>🔗</Text>
           <Text style={styles.sourceText}>{sourceLabel(data.source)}</Text>
           <Text style={styles.sourceArrow}>↗</Text>
         </TouchableOpacity>
-      ) : null}
+      ) : (
+        <View style={styles.sourceCard}>
+          <Text style={styles.sourceIcon}>ℹ️</Text>
+          <Text style={styles.sourceText}>
+            Το επίσημο κείμενο δεν είναι ακόμη διαθέσιμο σε αναγνώσιμη μορφή.
+          </Text>
+        </View>
+      )}
 
       {isHidden ? (
         <View style={styles.hiddenCard}>

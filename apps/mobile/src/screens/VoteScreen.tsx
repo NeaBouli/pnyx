@@ -69,7 +69,7 @@ export default function VoteScreen({ route, navigation }: Props) {
           setBillGovernance(d.governance_level || "NATIONAL");
           setBillSource(source);
           setBillPill(readableText(d.pill_el) ? d.pill_el : "");
-          setSourceUrl(d.official_source_url || d.parliament_url || "");
+          setSourceUrl(d.official_source_url || "");
           if (readableText(d.summary_short_el)) setSummary(d.summary_short_el);
           if (d.ai_summary_reviewed && readableText(d.summary_long_el)) setAnalysis(d.summary_long_el);
         }
@@ -251,6 +251,12 @@ export default function VoteScreen({ route, navigation }: Props) {
           <Text style={{ color: "#1d4ed8", fontSize: 13, fontWeight: "600", flex: 1 }}>{sourceLabel(billSource)}</Text>
           <Text style={{ color: "#93c5fd", fontSize: 12 }}>↗</Text>
         </TouchableOpacity>
+      ) : billLoaded ? (
+        <View style={{ backgroundColor: "#f8fafc", borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#e2e8f0" }}>
+          <Text style={{ color: "#64748b", fontSize: 13, lineHeight: 18 }}>
+            Το επίσημο κείμενο δεν είναι ακόμη διαθέσιμο σε αναγνώσιμη μορφή. Δεν ανοίγουμε σύνδεσμο που οδηγεί σε κενή ή μη προσβάσιμη σελίδα.
+          </Text>
+        </View>
       ) : null}
 
       {billStatus === "WINDOW_24H" && (

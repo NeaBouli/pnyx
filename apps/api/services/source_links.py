@@ -21,4 +21,4 @@ def official_source_url(bill: Any) -> str | None:
     for candidate in PARLIAMENT_PDF_RE.findall(bill.summary_long_el or ""):
         return candidate
 
-    return bill.parliament_url
+    return None
