@@ -4973,3 +4973,28 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 ### Naechster Quick Task
 - Dependabot critical zuerst untersuchen/fixen: `vitest <4.1.0` in `packages/crypto`.
 - Danach Mediums in separatem Lockfile-/Workspace-Update.
+
+---
+
+## 2026-06-02 — CC: F-Droid Launch-Crash Fix (GlassOnTin Community Test)
+
+### Problem
+- GlassOnTin (Community Tester) berichtet: App crasht bei Start auf Pixel 8 Pro
+- Root Cause: Hermes/JSC Engine-Mismatch
+  - Recipe patcht `hermesEnabled=false` → APK hat nur libjsc.so
+  - app.json hat kein `jsEngine` → Expo defaultet auf Hermes → Crash
+
+### Fix
+- fdroiddata Branch `ekklesia-v1.0.0`: jsEngine="jsc" Patch in app.json vor expo prebuild
+- Commit auf GitLab: `fix: pin jsEngine=jsc for F-Droid build`
+- Kommentar auf MR !38007 gepostet (ID: 3411597234)
+- Upstream app.json NICHT geaendert (Play/direct bleibt Hermes)
+
+### Static Notes (Follow-up, nicht Crash-Fix)
+- USE_FINGERPRINT: entfernen (USE_BIOMETRIC reicht)
+- SYSTEM_ALERT_WINDOW: pruefen/entfernen fuer Release
+- READ/WRITE_EXTERNAL_STORAGE: maxSdkVersion setzen
+
+### Naechster Schritt
+- Pipeline abwarten
+- Wenn gruen: GlassOnTin bitten erneut zu testen
