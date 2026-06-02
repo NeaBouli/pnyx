@@ -1,5 +1,50 @@
 # CC Response
 
+## 2026-06-02 — Codex/Gio Status fuer Claude Dev: vC29 + NEA-301b + T3 Arweave
+
+### Gesamtstand
+- **origin/main:** `a90d508`
+- **Server repo:** `a90d508`
+- **API container:** `b421b39` (vC29 API-Fixes live)
+- **Monitor container:** Hotfix aktiv via docker cp + restart; Repo persistent auf `a90d508`
+- **vC29 Release:** COMPLETE — APK live auf ekklesia.gr, AAB in Play Console hochgeladen
+- **Ollama:** RAM zurueck auf 2.4 GB Produktion, kein Backfill-Job aktiv
+
+### T3 Arweave Alerts — FIXED
+- Root Cause: `apps/monitor/monitor.py::check_arweave_pending` zaehlte PARLIAMENT_VOTED/OPEN_END ohne `arweave_tx_id`, aber ohne `party_votes_parliament` Guard.
+- Ausloeser: `GR-0490a766`
+- Policy: **nicht archivierbar**, weil `party_votes_parliament=NULL`.
+- Fix: `a90d508` — Monitor alertet nur noch Arweave-eligible Bills mit `source='PARLIAMENT'` und `party_votes_parliament IS NOT NULL`.
+- Verifiziert: Monitor-Log nach Restart: `All checks passed — no alerts`.
+- `GR-0490a766` unveraendert: `arweave_tx_id=NULL`, `party_votes_parliament=NULL`; kein fake Archive, kein fake Vote Data.
+
+### NEA-301b PARLIAMENT Backfill — DONE / Codex PASS
+- qwen2.5:14b genutzt, mit Sentence-boundary Validation, reject patterns, dry-run default, `--apply` explizit.
+- Applied: 12 PARLIAMENT Bills.
+- Existing: 5 PARLIAMENT Bills hatten bereits `summary_short_el`.
+- Live DB: 17/31 PARLIAMENT Bills mit `summary_short_el`.
+- Rest 14 ohne `summary_short_el`:
+  - 3 DEMO excluded: `DEMO-001`, `DEMO-002`, `DEMO-003`
+  - 2 flagged manual review: `GR-1b8eab9a`, `GR-9f7ad85a`
+  - 9 echte Bills ohne `summary_long_el`: `GR-fa1f20de`, `GR-622d5980`, `GR-d4c62ed4`, `GR-a3562ec6`, `GR-4a8dba43`, `GR-90563fd3`, `GR-3aba3e72`, `GR-37740bf1`, `GR-d71e9b04`
+- DIAVGEIA: **0/636 geaendert**, kein DIAVGEIA apply.
+
+### Naechste sinnvolle Reihenfolge
+1. **NEA-301 Fetcher/Text-Ingestion:** Fuer die 9 echten PARLIAMENT Bills `summary_long_el` holen; danach Backfill fortsetzen.
+2. **Manual Review:** `GR-1b8eab9a`, `GR-9f7ad85a` manuell pruefen oder mit besserem Prompt retry.
+3. **NEA-303:** `admin/test-account` Region permanent setzen (DB-Hotfix ist live, Code-Fix offen).
+4. **NEA-286:** Lifecycle Root Cause.
+5. **F-Droid !38007:** weiter auf linsui Test/Merge warten, kein Handlungsbedarf.
+6. **DIAVGEIA Backfill:** eigene Phase, neue Freigabe noetig; vorher RAM temporaer erhoehen und Dry-run/Qualitaet erneut zeigen.
+
+### Nicht tun
+- Kein DIAVGEIA `--apply`.
+- `scripts/backfill_summary_short.py` nicht verwenden; rejected Regex-Prototyp.
+- `GR-0490a766` nicht archivieren, solange `party_votes_parliament` fehlt.
+- Keine fake `party_votes_parliament` setzen.
+
+---
+
 ## 2026-06-02 — CC: NEA-301b PARLIAMENT Backfill DONE + Session Close
 
 ### PARLIAMENT Backfill — Codex PASS

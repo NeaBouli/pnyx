@@ -4934,3 +4934,8 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 - arweave_tx_id: NULL (unveraendert)
 - party_votes_parliament: NULL (unveraendert)
 - Kein fake Daten, kein Archive, kein Clear
+
+### Claude Dev Status
+- CC_RESPONSE.md oben aktualisiert mit Gesamtstatus fuer Claude Dev
+- PROJECT_STATE.md aktualisiert: T3 Arweave Alerts nicht mehr pending, Fix `a90d508` live/persistent
+- Naechster Fokus: NEA-301 Fetcher/Text-Ingestion fuer 9 PARLIAMENT Bills ohne `summary_long_el`
