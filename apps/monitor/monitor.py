@@ -266,8 +266,9 @@ def check_arweave_pending(conn) -> list[Alert]:
             SELECT COUNT(*) FROM parliament_bills
             WHERE status IN ('PARLIAMENT_VOTED', 'OPEN_END')
               AND arweave_tx_id IS NULL
+              AND party_votes_parliament IS NOT NULL
               AND id NOT LIKE 'DEMO-%%'
-              AND (source IS NULL OR source = 'PARLIAMENT')
+              AND source = 'PARLIAMENT'
               AND (status_changed_at IS NULL OR status_changed_at < NOW() - INTERVAL '24 hours')
         """)
         count = cur.fetchone()[0]

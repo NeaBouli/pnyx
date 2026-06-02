@@ -4915,3 +4915,22 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 - vC29: RELEASED (APK live, AAB Play Console)
 - NEA-301b PARLIAMENT: DONE
 - NEA-301b DIAVGEIA: OFFEN (eigene Phase)
+
+---
+
+## 2026-06-02 — CC: T3 Arweave Alert Fix
+
+### Problem
+- Monitor check_arweave_pending fehlte `party_votes_parliament IS NOT NULL` Guard
+- GR-0490a766 loeste false-positive T3 Alert alle 30 Min aus
+- Bill hat korrekt kein arweave_tx_id (NEA-304 Guard), aber Monitor wusste das nicht
+
+### Fix
+- `apps/monitor/monitor.py`: `party_votes_parliament IS NOT NULL` + `source = 'PARLIAMENT'` (statt `source IS NULL OR`)
+- Server: docker cp + restart ekklesia-monitor
+- Verifiziert: "All checks passed — no alerts" nach Restart
+
+### GR-0490a766
+- arweave_tx_id: NULL (unveraendert)
+- party_votes_parliament: NULL (unveraendert)
+- Kein fake Daten, kein Archive, kein Clear
