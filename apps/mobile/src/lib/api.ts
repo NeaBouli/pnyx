@@ -66,6 +66,7 @@ export interface Bill {
   summary_short_en?: string | null;
   summary_long_el?: string | null;
   summary_long_en?: string | null;
+  ai_summary_reviewed?: boolean;
   status: string;
   submitted_at: string;
   party_votes_parliament: Record<string, string> | null;
@@ -144,6 +145,8 @@ export interface BillResults {
   source?: string | null;
   pill_el?: string | null;
   summary_short_el?: string | null;
+  summary_long_el?: string | null;
+  ai_summary_reviewed?: boolean;
   parliament_url?: string | null;
   diavgeia_ada?: string | null;
   total_votes: number;

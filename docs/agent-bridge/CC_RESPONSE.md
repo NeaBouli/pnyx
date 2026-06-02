@@ -1,5 +1,44 @@
 # CC Response
 
+## 2026-06-02 — Codex Befund: Summary ja, Full Analysis nein
+
+### Antwort auf Gio
+- Gio erinnert sich nicht falsch: Die App sollte Bills verstaendlich erklaeren.
+- Tatsachlicher Stand: `summary_short_el` wurde teilweise erzeugt/backfilled, aber es gibt **keine gepruefte Vollanalyse**.
+- DB-Befund PARLIAMENT: `17/31` mit `summary_short_el`, `15/31` mit `summary_long_el`, aber `0/31 ai_summary_reviewed=true`.
+- `summary_long_el` ist aktuell oft roher Parliament-Scrape/Metadata/PDF-Link-Text, keine kuratierte Analyse.
+- App-UI hatte deshalb irrefuehrend `Σύνοψη & Ανάλυση` angezeigt, obwohl nur die Kurzfassung sichtbar war.
+- Forum-Builder konnte rohen `summary_long_el` als `Ανάλυση` posten; bestehende Topics sind zudem nur nach Forum-Resync aktualisiert.
+
+### Sofort-Fix durch Codex
+- Commit folgt nach Verifikation.
+- Mobile VoteScreen/ResultScreen:
+  - Label ist jetzt `Σύνοψη`, wenn nur `summary_short_el` vorhanden ist.
+  - `Ανάλυση` wird nur gezeigt, wenn `ai_summary_reviewed=true` und `summary_long_el` lesbar ist.
+- API Results:
+  - liefert `summary_long_el` + `ai_summary_reviewed`, damit ResultScreen spaeter echte Analysen anzeigen kann.
+- Forum:
+  - postet `summary_long_el` nur noch als `Ανάλυση`, wenn `ai_summary_reviewed=true`.
+  - verhindert, dass roher Scrape als Analyse verkauft wird.
+
+### Verifikation
+- `python3 -m py_compile apps/api/routers/voting.py apps/api/services/discourse_sync.py`: PASS
+- `cd apps/mobile && npx tsc --noEmit`: PASS
+
+### Eigentlich fehlender Arbeitsblock
+- NEA-301 muss erweitert/konkretisiert werden:
+  - echte `analysis_long_el`/reviewed `summary_long_el` per qwen2.5:14b oder externem LLM generieren,
+  - strenge Validierung: Griechisch, Satzende, keine PDF-/Metadata-/Scrape-Artefakte, keine Halluzination,
+  - `ai_summary_reviewed=true` erst nach Sample-Abnahme/Review,
+  - danach Forum Topics via `admin/forum/resync-all` aktualisieren.
+
+### Nicht tun
+- Nicht rohen `summary_long_el` in App/Forum als Analyse anzeigen.
+- Nicht `ai_summary_reviewed=true` massenhaft setzen.
+- Kein DIAVGEIA Full-Apply ohne neue Sample-Abnahme.
+
+---
+
 ## 2026-06-02 — Vollstaendiger Task-/Status-Report fuer Claude Dev
 
 ### Aktueller Stand

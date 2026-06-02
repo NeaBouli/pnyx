@@ -85,6 +85,7 @@ export default function ResultScreen({ route }: Props) {
 
   const isHidden = data.results_hidden || (data.status === "ACTIVE" && data.total_votes === 0);
   const summary = readableText(data.summary_short_el) ? data.summary_short_el : readableText(data.pill_el) ? data.pill_el : "";
+  const analysis = data.ai_summary_reviewed && readableText(data.summary_long_el) ? data.summary_long_el : "";
 
   return (
     <ScrollView
@@ -96,10 +97,16 @@ export default function ResultScreen({ route }: Props) {
       <Text style={styles.title}>{data.title_el}</Text>
 
       <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>Σύνοψη & Ανάλυση</Text>
+        <Text style={styles.summaryTitle}>Σύνοψη</Text>
         <Text style={styles.summaryText}>
           {summary || "Δεν υπάρχει ακόμα ελεγμένη σύνοψη για αυτή την πράξη. Δείτε το επίσημο κείμενο στην πηγή."}
         </Text>
+        {analysis ? (
+          <>
+            <Text style={[styles.summaryTitle, { marginTop: 12 }]}>Ανάλυση</Text>
+            <Text style={styles.summaryText}>{analysis}</Text>
+          </>
+        ) : null}
       </View>
 
       {data.parliament_url ? (

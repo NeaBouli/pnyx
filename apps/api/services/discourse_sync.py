@@ -215,7 +215,7 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
                 break
 
     long_text = ""
-    if bill.summary_long_el and not _is_bad_summary(bill.summary_long_el):
+    if bill.ai_summary_reviewed and bill.summary_long_el and not _is_bad_summary(bill.summary_long_el):
         long_text = _clean(bill.summary_long_el)
 
     # Safe title for body heading

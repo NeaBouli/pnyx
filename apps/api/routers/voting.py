@@ -102,6 +102,8 @@ class BillResults(BaseModel):
     source:           str | None = "PARLIAMENT"
     pill_el:          str | None = None
     summary_short_el: str | None = None
+    summary_long_el:  str | None = None
+    ai_summary_reviewed: bool = False
     parliament_url:   str | None = None
     diavgeia_ada:     str | None = None
     total_votes:      int
@@ -486,6 +488,8 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
             source=bill.source or "PARLIAMENT",
             pill_el=bill.pill_el,
             summary_short_el=bill.summary_short_el,
+            summary_long_el=bill.summary_long_el,
+            ai_summary_reviewed=bool(bill.ai_summary_reviewed),
             parliament_url=bill.parliament_url,
             diavgeia_ada=bill.diavgeia_ada,
             total_votes=0, yes_count=0, no_count=0, abstain_count=0, unknown_count=0,
@@ -520,6 +524,8 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
         source=bill.source or "PARLIAMENT",
         pill_el=bill.pill_el,
         summary_short_el=bill.summary_short_el,
+        summary_long_el=bill.summary_long_el,
+        ai_summary_reviewed=bool(bill.ai_summary_reviewed),
         parliament_url=bill.parliament_url,
         diavgeia_ada=bill.diavgeia_ada,
         total_votes=total,

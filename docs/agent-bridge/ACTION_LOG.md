@@ -5137,3 +5137,31 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 - NEA-303: test-account Region permanent code fix.
 - NEA-286: lifecycle root cause.
 - NEA-304: Arweave party_votes source + TX verification follow-up.
+
+## 2026-06-02 — Codex: Analysis Gap diagnosed and UI/forum guard fixed
+
+### Finding
+- Gio reported that Bills show summaries but no analysis; Forum topics also explain too little.
+- Diagnosis confirms this:
+  - PARLIAMENT DB: `17/31` have `summary_short_el`.
+  - PARLIAMENT DB: `15/31` have `summary_long_el`.
+  - PARLIAMENT DB: `0/31` have `ai_summary_reviewed=true`.
+  - Existing `summary_long_el` is raw scrape/metadata in many cases, not reviewed analysis.
+- Previous UI label `Σύνοψη & Ανάλυση` was misleading when only short summary existed.
+
+### Code Guard
+- Mobile VoteScreen/ResultScreen now label short content as `Σύνοψη`.
+- `Ανάλυση` renders only if `ai_summary_reviewed=true` and `summary_long_el` is readable.
+- Voting results API exposes `summary_long_el` and `ai_summary_reviewed` for future reviewed analyses.
+- Forum topic builder only includes `## Ανάλυση` when `ai_summary_reviewed=true`; raw scrape is no longer posted as analysis.
+
+### Verification
+- `python3 -m py_compile apps/api/routers/voting.py apps/api/services/discourse_sync.py`: PASS
+- `cd apps/mobile && npx tsc --noEmit`: PASS
+
+### Follow-up Required
+- Create/execute NEA-301 Analysis phase:
+  - Generate real long Greek analyses.
+  - Validate and review samples.
+  - Set `ai_summary_reviewed=true` only for accepted rows.
+  - Run Forum resync after accepted analyses are in DB.

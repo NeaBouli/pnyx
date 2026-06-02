@@ -44,6 +44,7 @@ export default function VoteScreen({ route, navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [summary, setSummary] = useState("");
+  const [analysis, setAnalysis] = useState("");
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [billStatus, setBillStatus] = useState<string>("");
   const [billLoaded, setBillLoaded] = useState(false);
@@ -70,6 +71,7 @@ export default function VoteScreen({ route, navigation }: Props) {
           setBillPill(readableText(d.pill_el) ? d.pill_el : "");
           setParliamentUrl(d.parliament_url || "");
           if (readableText(d.summary_short_el)) setSummary(d.summary_short_el);
+          if (d.ai_summary_reviewed && readableText(d.summary_long_el)) setAnalysis(d.summary_long_el);
         }
       })
       .catch(() => {})
@@ -181,13 +183,13 @@ export default function VoteScreen({ route, navigation }: Props) {
           <Text style={{ fontSize: 20, color: colors.primary }}>↗</Text>
         </TouchableOpacity>
       </View>
-      {/* AI Summary */}
+      {/* Reviewed summary/analysis */}
       {summaryLoading ? (
         <ActivityIndicator size="small" color={colors.textSecondary} style={{ marginBottom: 16 }} />
-      ) : summary || billPill || billLoaded ? (
+      ) : summary || analysis || billPill || billLoaded ? (
         <View style={{ backgroundColor: "#eff6ff", borderRadius: 12, padding: 14, marginBottom: 16 }}>
           <Text style={{ fontWeight: "700", color: "#1e40af", fontSize: 13, marginBottom: 6 }}>
-            Σύνοψη & Ανάλυση
+            Σύνοψη
           </Text>
           <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20 }}>
             {(summary || billPill || "Δεν υπάρχει ακόμα ελεγμένη σύνοψη για αυτή την πράξη. Δείτε το επίσημο κείμενο στην πηγή.").split(/(\*\*[^*]+\*\*|\*[^*]+\*)/).map((part, i) => {
@@ -198,6 +200,14 @@ export default function VoteScreen({ route, navigation }: Props) {
               return part;
             })}
           </Text>
+          {analysis ? (
+            <>
+              <Text style={{ fontWeight: "700", color: "#1e40af", fontSize: 13, marginTop: 12, marginBottom: 6 }}>
+                Ανάλυση
+              </Text>
+              <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20 }}>{analysis}</Text>
+            </>
+          ) : null}
         </View>
       ) : null}
 
