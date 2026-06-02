@@ -39,8 +39,17 @@
 - Direct resolver smoke test: PASS
 - `pytest` local blocked before tests by local SQLAlchemy mismatch: `async_sessionmaker` missing. CI/server env should run with project deps.
 
+### Deployment / Live Verification
+- Commit `7499837` pushed to `origin/main`.
+- API/Web deployed at `7499837`.
+- Live `/health`: OK.
+- Live `GR-5294` (`ACTIVE`): `official_source_url=None`, old blocked `parliament_url` remains internal only.
+- Live `GR-74e0cb08` (`OPEN_END`): `official_source_url=None`, old blocked `parliament_url` remains internal only.
+- Live `GR-0490a766` (`PARLIAMENT_VOTED`): `official_source_url` is official Parliament PDF.
+- Live DIAVGEIA sample: `official_source_url` is `diavgeia.gov.gr/decision/view/...`.
+- Live Web `https://ekklesia.gr/el/bills/GR-5294`: HTTP 200.
+
 ### Remaining
-- Deploy API + Web after commit.
 - Build/install APK after no parallel CC Gradle process is running.
 - Data repair still required for `GR-5294`: source ingestion/lifecycle inconsistency remains.
 

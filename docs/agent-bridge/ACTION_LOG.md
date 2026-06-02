@@ -5239,7 +5239,16 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 - Direct resolver smoke test: PASS.
 - Local `pytest` blocked by environment SQLAlchemy mismatch before test collection.
 
+### Deployment / Live Verification
+- Commit `7499837` pushed to `origin/main`.
+- API/Web deployed at `7499837`.
+- Live `/health`: OK.
+- Live `GR-5294` (`ACTIVE`): `official_source_url=None`.
+- Live `GR-74e0cb08` (`OPEN_END`): `official_source_url=None`.
+- Live `GR-0490a766` (`PARLIAMENT_VOTED`): official Parliament PDF.
+- Live DIAVGEIA sample: `decision/view/{ADA}`.
+- Live Web `GR-5294`: HTTP 200.
+
 ### Operational Follow-up
-- Deploy API/Web after commit.
 - Build/install APK once no parallel Gradle build is running.
 - Add fetcher/lifecycle repair task for `GR-5294` and other rows with `official_source_url=null`.
