@@ -1,5 +1,55 @@
 # CC Response
 
+## 2026-06-03 — Codex: vC30 Build + Bill Detail verification
+
+### Kurzfazit
+- Gio hatte recht: Die vorherigen Reports waren zu optimistisch.
+- App-Launch war nicht sauber verifiziert, und `Ανάλυση` fehlte nicht wegen UI-Laune, sondern weil `ai_summary_reviewed=false` bleibt.
+- Der aktuelle Stand ist jetzt auf dem S10 wirklich installiert und geprueft.
+
+### Hermes/JSC Klaerung
+- F-Droid: GlassOnTin hatte den Crash korrekt eingeordnet. Recipe deaktivierte Hermes, Runtime erwartete Hermes -> Launch-Crash.
+- Upstream Play/direct: JSC wurde testweise erzwungen, aber Expo SDK/RN 0.81 erzeugte weiterhin Runtime-Pfade, die Hermes laden wollten. Ergebnis auf S10: Crash.
+- Entscheidung fuer vC30 Play/direct: konsistenter Hermes-Build, `newArchEnabled=false`, native `isHermesEnabled` via Expo config plugin.
+- F-Droid JSC bleibt separates Recipe-Thema; nicht mit Play/direct vermischen.
+
+### Geaendert
+- `apps/mobile/app.json`
+  - explicit `jsEngine=hermes`
+  - `android.jsEngine=hermes`
+  - `newArchEnabled=false`
+- `apps/mobile/plugins/with-react-native-engine.js`
+  - durable prebuild patch fuer `MainApplication.kt`: `isHermesEnabled = BuildConfig.IS_HERMES_ENABLED`
+- `scripts/build-play.sh`
+  - EXIT trap stellt `distributionChannel=direct` auch nach fehlgeschlagenem Build wieder her.
+- `apps/mobile/src/screens/BillsScreen.tsx`
+  - Share-Link nicht mehr nur `↗`, sondern `Μοιραστείτε ↗`.
+- `apps/mobile/src/screens/VoteScreen.tsx` + `ResultScreen.tsx`
+  - `Ανάλυση` nur bei reviewed AI analysis.
+  - sonst `Επίσημο κείμενο` Fallback aus `summary_long_el`, damit Detail nicht leer wirkt und nicht falsche AI-Analyse behauptet.
+
+### Verifiziert
+- `cd apps/mobile && npx tsc --noEmit`: PASS.
+- `bash scripts/build-play.sh`: PASS.
+- `cd apps/mobile/android && ./gradlew bundlePlayRelease assemblePlayRelease`: PASS.
+- APK SHA256: `e73e72a25654f6246c6d957ae763bdf37455c40b1323aa00a6f56823935b0f7e`.
+- AAB SHA256: `795d96d7fe2e36bb369be3566202241cc75f4be46273de978e550bdb5ae60f6e`.
+- APK enthaelt Hermes libs + JS bundle.
+- S10 installiert: `versionCode=30`, `versionName=1.0.3`, `lastUpdateTime=2026-06-03 02:11:48`.
+- S10 Start: PASS, `MainActivity` focused, kein `FATAL EXCEPTION`.
+- S10 Bill Detail `GR-0490a766`: `Σύνοψη`, `Επίσημο κείμενο`, `Μοιραστείτε ↗` sichtbar.
+
+### Offen / Nicht schoenreden
+- Echte AI-Analyse ist noch nicht fertig.
+- Forum zeigt deshalb keine lange Analyse, weil `discourse_sync.py` korrekt nur reviewed long analysis postet.
+- Naechster echter Task: reviewed-analysis Pipeline:
+  - qwen/Ollama oder externer LLM erzeugt `summary_long_el` als echte Analyse,
+  - setzt `ai_summary_reviewed=true` nur nach Validation,
+  - repariert 9 Parliament Bills ohne `summary_long_el`,
+  - resynct Forum Topics.
+
+---
+
 ## 2026-06-03 — Codex: Durable source/analysis guard, not UI patching
 
 ### Ziel

@@ -139,7 +139,7 @@ export default function BillsScreen() {
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity onPress={(e) => { e.stopPropagation(); shareBill(item); }} hitSlop={8}>
-                    <Text style={s.shareBtn}>↗</Text>
+                    <Text style={s.shareBtn}>Μοιραστείτε ↗</Text>
                   </TouchableOpacity>
                   {VOTABLE.includes(item.status) && item.status !== "OPEN_END" && <Text style={s.voteHint}>Ψηφίστε →</Text>}
                   {item.status === "OPEN_END" && <Text style={[s.voteHint, { color: "#7c3aed" }]}>Αξιολόγηση →</Text>}

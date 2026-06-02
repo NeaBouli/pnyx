@@ -19,7 +19,7 @@
 - **API container:** `40e92a6` — Bill summaries/source-link fallback fix LIVE
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
 - **Web container:** `40e92a6` — Bill detail source-label/fallback fix LIVE
-- **S10:** vC29/1.0.2 Play-Release APK mit Bill summary/source fix installiert und interaktiv geprueft
+- **S10:** vC30/1.0.3 Play-Release APK installiert und interaktiv geprueft (02:11:48 Europe/Athens)
 - **Alembic:** `o801a2b3c4d5` (polis_tickets + polis_votes + polis_identity_keys)
 - **F-Droid !38007:** Community launch-crash fixed in fdroiddata `e42e014f`; pipeline `2570810919` green 9/9; GlassOnTin/linsui re-test requested
 - **POLIS Status:** App-internal Create/Vote LIVE
@@ -27,12 +27,12 @@
 - **GR-0490a766:** arweave_tx_id=NULL (bereinigt), party_votes_parliament=NULL, Guards verhindern Re-Archivierung
 - **Telegram Bot:** citizen_votes Query LIVE, governance Topic-Routing LIVE
 - **vC29 Release:** COMPLETE — APK live auf ekklesia.gr, AAB in Play Console hochgeladen
-- **Pending urgent:** Mobile rollout fuer Bill summary/source fix braucht vC30/Play Console Upload, weil vC29 bereits hochgeladen ist
+- **vC30 Mobile Build:** AAB/APK gebaut; APK auf S10 installiert; Launch-Crash behoben; Bill-Detail zeigt Summary + offiziellen Text-Fallback
 - **NEA-301b PARLIAMENT:** DONE (17/31 mit summary_short_el, 9 brauchen Fetcher, 3 DEMO + 2 flagged excluded, DIAVGEIA 0/636 eigene Phase)
 - **Ollama:** RAM zurueck auf 2.4 GB (Produktion), kein Job aktiv
 - **T3 Arweave Alerts:** FIXED `a90d508` — Monitor verlangt `party_votes_parliament IS NOT NULL`; false-positive fuer GR-0490a766 behoben
 - **Dependabot:** critical `vitest <4.1.0` fixed in `5553e13` and GitHub reports 0 open critical; 6 medium `postcss`/`uuid` remain
-- **Bill Summary/Source Fix:** `40e92a6` LIVE API/Web; S10 verified. Root cause: list API omitted summaries, voted bills skipped detail screen, ResultScreen lacked summary/source fields, DIAVGEIA summary endpoint could call LLM instead of honest fallback.
+- **Bill Summary/Source Fix:** API/Web live; vC30 mobile verified. Root cause update: Analysis fehlt, weil `ai_summary_reviewed=false` und kein automatischer reviewed-analysis Job existiert. Mobile zeigt jetzt statt leerer Analyse einen klaren `Επίσημο κείμενο` Fallback, wenn `summary_long_el` vorhanden ist.
 - **Pending high:** NEA-301 Fetcher (9 Bills ohne summary_long_el), NEA-303 test-account Region, NEA-304 follow-up, #79/NEA-281 F-Droid linsui merge, NEA-286 Lifecycle-Bug
 - **Pending medium/backlog:** NEA-260/GH#82 Forum SSO, NEA-277/GH#71 startup-check, NEA-278/GH#72 CLAUDE.md stale values, NEA-285/GH#83 Diavgeia org mapping, NEA-279/GH#77 ZK Wizard, NEA-262 weekly auto-newsletter
 - **Pending external/blocked:** NEA-282/GH#80 Off-site backup waits for first donation; NEA-249/GH#81 blocked on Mopro/React Native

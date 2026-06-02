@@ -7,7 +7,8 @@
     "icon": "./assets/pnx.png",
     "scheme": "ekklesia",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "jsEngine": "hermes",
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/pnx.png",
       "resizeMode": "contain",
@@ -24,6 +25,7 @@
         "backgroundColor": "#93c5fd"
       },
       "edgeToEdgeEnabled": false,
+      "jsEngine": "hermes",
       "package": "ekklesia.gr",
       "versionCode": 30,
       "permissions": [
@@ -38,6 +40,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "./plugins/with-react-native-engine",
       "expo-secure-store",
       [
         "expo-notifications",

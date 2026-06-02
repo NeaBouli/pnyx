@@ -8,6 +8,12 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR/../apps/mobile"
 
+restore_channel() {
+  sed -i '' 's/"distributionChannel": "play"/"distributionChannel": "direct"/' app.json
+}
+
+trap restore_channel EXIT
+
 # Set channel to "play" for this build
 sed -i '' 's/"distributionChannel": "direct"/"distributionChannel": "play"/' app.json
 
@@ -25,7 +31,8 @@ cd android
 
 # Restore channel to "direct"
 cd ..
-sed -i '' 's/"distributionChannel": "play"/"distributionChannel": "direct"/' app.json
+restore_channel
+trap - EXIT
 
 AAB="android/app/build/outputs/bundle/playRelease/app-play-release.aab"
 echo ""

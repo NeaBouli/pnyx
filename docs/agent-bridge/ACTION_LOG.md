@@ -5264,3 +5264,43 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 4. Gradle Lock durch parallele CC+Codex Builds → alle Prozesse gekillt
 
 ### Uebergabe: Codex uebernimmt Build
+
+---
+
+## 2026-06-03 — Codex: vC30 Hermes/JSC root cause + S10 verified build
+
+### Root Cause
+- F-Droid crash report was correct for the F-Droid recipe: native side was JSC-only while runtime expected Hermes.
+- Upstream Play/direct config had no durable explicit engine override and Expo/RN 0.81 still tried Hermes in generated native runtime paths when JSC was forced.
+- JSC + old architecture built, but S10 launch still failed with `libhermes.so`/`ReactContextInitParams` assertion.
+- Working Play/direct path is consistent Hermes for now; F-Droid JSC remains a separate recipe-specific concern.
+
+### Durable Mobile Fix
+- `apps/mobile/app.json`: explicit `jsEngine=hermes`, `android.jsEngine=hermes`, `newArchEnabled=false`.
+- `apps/mobile/plugins/with-react-native-engine.js`: Expo config plugin inserts `override val isHermesEnabled = BuildConfig.IS_HERMES_ENABLED` into generated `MainApplication.kt`.
+- `scripts/build-play.sh`: added EXIT trap to restore `distributionChannel=direct` after failed builds.
+
+### Bill Detail UX Fix
+- Mobile no longer shows an empty analysis area.
+- If `ai_summary_reviewed=true`, it shows `Ανάλυση`.
+- If only `summary_long_el` exists, it shows `Επίσημο κείμενο` with a note that reviewed AI analysis is not ready.
+- Bills list/detail share button now has text (`Μοιραστείτε ↗`) instead of a bare arrow.
+
+### Verification
+- `cd apps/mobile && npx tsc --noEmit`: PASS.
+- `bash scripts/build-play.sh`: PASS.
+- `cd apps/mobile/android && ./gradlew bundlePlayRelease assemblePlayRelease`: PASS.
+- APK SHA256: `e73e72a25654f6246c6d957ae763bdf37455c40b1323aa00a6f56823935b0f7e`.
+- AAB SHA256: `795d96d7fe2e36bb369be3566202241cc75f4be46273de978e550bdb5ae60f6e`.
+- APK contains `libhermes.so`, `libhermestooling.so`, and `assets/index.android.bundle`.
+- S10 installed: `versionCode=30`, `versionName=1.0.3`, `lastUpdateTime=2026-06-03 02:11:48`.
+- S10 launch: PASS, `MainActivity` focused, no `FATAL EXCEPTION`.
+- S10 Bill detail: PASS, `Σύνοψη`, `Επίσημο κείμενο`, `Μοιραστείτε ↗` visible.
+
+### Remaining Truth
+- This does not create real reviewed AI analysis.
+- Real fix for App/Web/Forum analysis is a data pipeline task:
+  - generate long reviewed analysis,
+  - set `ai_summary_reviewed=true`,
+  - resync forum topics,
+  - repair 9 Parliament bills without `summary_long_el`.

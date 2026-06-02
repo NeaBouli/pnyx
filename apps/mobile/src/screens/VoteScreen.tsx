@@ -34,6 +34,18 @@ function readableText(value?: string | null) {
   return Boolean(value && value.trim() && !value.includes("[unknown:"));
 }
 
+function cleanOfficialText(value?: string | null) {
+  if (!readableText(value)) return "";
+  return String(value)
+    .replace(/\[[^\]]*\]\(https?:\/\/[^)]*\)/g, "")
+    .replace(/\]\(/g, " ")
+    .replace(/[*_`]+/g, "")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 1400);
+}
+
 function sourceLabel(source: string) {
   if (source === "DIAVGEIA") return "Πηγή — Διαύγεια";
   return "Πηγή — Βουλή των Ελλήνων";
@@ -46,6 +58,7 @@ export default function VoteScreen({ route, navigation }: Props) {
   const [summary, setSummary] = useState("");
   const [analysis, setAnalysis] = useState("");
   const [summaryLoading, setSummaryLoading] = useState(true);
+  const [officialText, setOfficialText] = useState("");
   const [billStatus, setBillStatus] = useState<string>("");
   const [billLoaded, setBillLoaded] = useState(false);
   const [billGovernance, setBillGovernance] = useState<string>("NATIONAL");
@@ -72,6 +85,7 @@ export default function VoteScreen({ route, navigation }: Props) {
           setSourceUrl(d.official_source_url || "");
           if (readableText(d.summary_short_el)) setSummary(d.summary_short_el);
           if (d.ai_summary_reviewed && readableText(d.summary_long_el)) setAnalysis(d.summary_long_el);
+          if (!d.ai_summary_reviewed) setOfficialText(cleanOfficialText(d.summary_long_el));
         }
       })
       .catch(() => {})
@@ -180,13 +194,13 @@ export default function VoteScreen({ route, navigation }: Props) {
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
         <Text style={[styles.title, { flex: 1 }]}>{billTitle}</Text>
         <TouchableOpacity onPress={shareBill} style={{ padding: 8 }}>
-          <Text style={{ fontSize: 20, color: colors.primary }}>↗</Text>
+          <Text style={{ fontSize: 13, color: colors.primary, fontWeight: "700" }}>Μοιραστείτε ↗</Text>
         </TouchableOpacity>
       </View>
       {/* Reviewed summary/analysis */}
       {summaryLoading ? (
         <ActivityIndicator size="small" color={colors.textSecondary} style={{ marginBottom: 16 }} />
-      ) : summary || analysis || billPill || billLoaded ? (
+      ) : summary || analysis || officialText || billPill || billLoaded ? (
         <View style={{ backgroundColor: "#eff6ff", borderRadius: 12, padding: 14, marginBottom: 16 }}>
           <Text style={{ fontWeight: "700", color: "#1e40af", fontSize: 13, marginBottom: 6 }}>
             Σύνοψη
@@ -206,6 +220,16 @@ export default function VoteScreen({ route, navigation }: Props) {
                 Ανάλυση
               </Text>
               <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20 }}>{analysis}</Text>
+            </>
+          ) : officialText ? (
+            <>
+              <Text style={{ fontWeight: "700", color: "#1e40af", fontSize: 13, marginTop: 12, marginBottom: 6 }}>
+                Επίσημο κείμενο
+              </Text>
+              <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20 }}>{officialText}</Text>
+              <Text style={{ color: "#64748b", fontSize: 11, lineHeight: 16, marginTop: 8 }}>
+                Η πλήρης AI ανάλυση δεν έχει ακόμη ελεγχθεί. Εμφανίζεται απόσπασμα από την επίσημη πηγή.
+              </Text>
             </>
           ) : null}
         </View>
