@@ -5024,3 +5024,25 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 - F-Droid pipeline `2570810919`: SUCCESS 9/9
 - F-Droid !38007 wartet jetzt nur auf GlassOnTin/linsui Re-Test/Merge
 - Naechster interner High-Prio Punkt bleibt Dependabot critical `vitest <4.1.0` oder NEA-301 Fetcher/Text-Ingestion
+
+---
+
+## 2026-06-02 — Dependabot Critical Fix: vitest
+
+### Alerts
+- Critical: `vitest <4.1.0`
+- Manifests:
+  - `packages/crypto/package.json`
+  - `packages/crypto/package-lock.json`
+- Advisory: Vitest UI server can read/execute arbitrary files when exposed.
+- Impact: dev/test dependency in `packages/crypto`; still fixed first.
+
+### Fix
+- `packages/crypto` devDependency `vitest`: `^3.0.0` -> `^4.1.8`
+- Lockfile resolved `vitest`: `4.1.8`
+- Commit: `5553e13 fix(security): bump vitest >=4.1.0`
+
+### Verification
+- `npm test` in `packages/crypto`: PASS, 47/47 tests
+- `npm audit --omit=optional` in `packages/crypto`: 0 vulnerabilities
+- GitHub Dependabot re-check: 0 open critical alerts

@@ -3,7 +3,7 @@
 ## 2026-06-02 — Final Status fuer Claude Dev
 
 ### Heads
-- **pnyx origin/main:** `ce8ef09`
+- **pnyx origin/main:** `5553e13`
 - **fdroiddata branch:** `ekklesia-v1.0.0` at `e42e014f`
 - **F-Droid pipeline:** `2570810919` SUCCESS 9/9
 - **MR:** fdroiddata `!38007`
@@ -26,6 +26,7 @@
 - NEA-301b PARLIAMENT eligible backfill done and Codex-verified.
 - T3 Arweave false-positive fixed: monitor now requires `party_votes_parliament IS NOT NULL`.
 - F-Droid launch crash fixed in recipe, pipeline green.
+- Dependabot critical `vitest <4.1.0` fixed in `packages/crypto`; tests pass; GitHub reports 0 open critical alerts.
 
 ### Still Open
 | Ticket | Status |
@@ -33,7 +34,7 @@
 | NEA-301 | Fetcher/Text-Ingestion for 9 real PARLIAMENT Bills without `summary_long_el` |
 | NEA-301 | Manual review for `GR-1b8eab9a`, `GR-9f7ad85a` |
 | NEA-301b | DIAVGEIA backfill, separate phase, no apply yet |
-| Dependabot | 2 critical `vitest <4.1.0`, 6 medium `postcss`/`uuid` |
+| Dependabot | 0 open critical; 6 medium `postcss`/`uuid` remain |
 | NEA-303 | test-account Region permanent code-fix |
 | NEA-286 | Lifecycle root cause |
 | NEA-304 | Arweave party_votes source + TX verification |
