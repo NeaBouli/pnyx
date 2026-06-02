@@ -16,6 +16,7 @@ from database import get_db
 
 DISCOURSE_BASE = os.getenv("DISCOURSE_BASE_URL", "https://pnyx.ekklesia.gr")
 from dependencies import verify_admin_key
+from services.source_links import official_source_url
 from models import (
     ParliamentBill, BillStatus, BillStatusLog, BillRelevanceVote,
     CitizenVote, VoteChoice,
@@ -41,6 +42,7 @@ class BillSummary(BaseModel):
     governance_level:    str | None = "NATIONAL"
     parliament_vote_date: str | None
     parliament_url:      str | None = None
+    official_source_url: str | None = None
     relevance_score:     int | None = 0
     forum_topic_id:      int | None = None
     forum_topic_url:     str | None = None
@@ -72,6 +74,7 @@ class BillDetail(BaseModel):
     governance_level:       str | None = "NATIONAL"
     parliament_vote_date:   str | None
     parliament_url:         str | None = None
+    official_source_url:    str | None = None
     forum_topic_id:         int | None = None
     forum_topic_url:        str | None = None
     ai_summary_reviewed:    bool
@@ -193,6 +196,7 @@ async def get_bills(
         governance_level=b.governance_level.value if b.governance_level else "NATIONAL",
         parliament_vote_date=b.parliament_vote_date.isoformat() if b.parliament_vote_date else None,
         parliament_url=b.parliament_url,
+        official_source_url=official_source_url(b),
         forum_topic_id=b.forum_topic_id,
         forum_topic_url=f"{DISCOURSE_BASE}/t/{b.forum_topic_id}" if b.forum_topic_id else None,
         created_at=b.created_at.isoformat() if b.created_at else None,
@@ -252,6 +256,7 @@ async def get_trending(
         status=row[0].status.value,
         parliament_vote_date=row[0].parliament_vote_date.isoformat() if row[0].parliament_vote_date else None,
         parliament_url=row[0].parliament_url,
+        official_source_url=official_source_url(row[0]),
         relevance_score=row[1] or 0,
         forum_topic_id=row[0].forum_topic_id,
         forum_topic_url=f"{DISCOURSE_BASE}/t/{row[0].forum_topic_id}" if row[0].forum_topic_id else None,
@@ -284,6 +289,7 @@ async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db)):
         governance_level=bill.governance_level.value if bill.governance_level else "NATIONAL",
         parliament_vote_date=bill.parliament_vote_date.isoformat() if bill.parliament_vote_date else None,
         parliament_url=bill.parliament_url,
+        official_source_url=official_source_url(bill),
         forum_topic_id=bill.forum_topic_id,
         forum_topic_url=f"{DISCOURSE_BASE}/t/{bill.forum_topic_id}" if bill.forum_topic_id else None,
         ai_summary_reviewed=bill.ai_summary_reviewed or False,

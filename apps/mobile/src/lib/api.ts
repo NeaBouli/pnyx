@@ -71,6 +71,7 @@ export interface Bill {
   submitted_at: string;
   party_votes_parliament: Record<string, string> | null;
   parliament_url?: string | null;
+  official_source_url?: string | null;
   source?: string | null;
   diavgeia_ada?: string | null;
   relevance_score: number;
@@ -148,6 +149,7 @@ export interface BillResults {
   summary_long_el?: string | null;
   ai_summary_reviewed?: boolean;
   parliament_url?: string | null;
+  official_source_url?: string | null;
   diavgeia_ada?: string | null;
   total_votes: number;
   yes_count: number;

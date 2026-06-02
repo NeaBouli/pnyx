@@ -22,6 +22,7 @@ from models import (
     CitizenVote, VoteChoice, IdentityRecord, KeyStatus,
     ParliamentBill, BillStatus, BillRelevanceVote
 )
+from services.source_links import official_source_url
 
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../packages/crypto"))
@@ -105,6 +106,7 @@ class BillResults(BaseModel):
     summary_long_el:  str | None = None
     ai_summary_reviewed: bool = False
     parliament_url:   str | None = None
+    official_source_url: str | None = None
     diavgeia_ada:     str | None = None
     total_votes:      int
     yes_count:        int
@@ -491,6 +493,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
             summary_long_el=bill.summary_long_el,
             ai_summary_reviewed=bool(bill.ai_summary_reviewed),
             parliament_url=bill.parliament_url,
+            official_source_url=official_source_url(bill),
             diavgeia_ada=bill.diavgeia_ada,
             total_votes=0, yes_count=0, no_count=0, abstain_count=0, unknown_count=0,
             yes_percent=0, no_percent=0, abstain_percent=0, divergence=None,
@@ -527,6 +530,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
         summary_long_el=bill.summary_long_el,
         ai_summary_reviewed=bool(bill.ai_summary_reviewed),
         parliament_url=bill.parliament_url,
+        official_source_url=official_source_url(bill),
         diavgeia_ada=bill.diavgeia_ada,
         total_votes=total,
         yes_count=yes_c,

@@ -56,7 +56,7 @@ export default function VoteScreen({ route, navigation }: Props) {
   const [consensusScore, setConsensusScore] = useState(0);
   const [consensusSubmitting, setConsensusSubmitting] = useState(false);
   const [consensusDone, setConsensusDone] = useState(false);
-  const [parliamentUrl, setParliamentUrl] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
 
   React.useEffect(() => {
     const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
@@ -69,7 +69,7 @@ export default function VoteScreen({ route, navigation }: Props) {
           setBillGovernance(d.governance_level || "NATIONAL");
           setBillSource(source);
           setBillPill(readableText(d.pill_el) ? d.pill_el : "");
-          setParliamentUrl(d.parliament_url || "");
+          setSourceUrl(d.official_source_url || d.parliament_url || "");
           if (readableText(d.summary_short_el)) setSummary(d.summary_short_el);
           if (d.ai_summary_reviewed && readableText(d.summary_long_el)) setAnalysis(d.summary_long_el);
         }
@@ -242,9 +242,9 @@ export default function VoteScreen({ route, navigation }: Props) {
         </View>
       )}
 
-      {parliamentUrl ? (
+      {sourceUrl ? (
         <TouchableOpacity
-          onPress={() => Linking.openURL(parliamentUrl)}
+          onPress={() => Linking.openURL(sourceUrl)}
           style={{ backgroundColor: "#eff6ff", borderRadius: 10, padding: 12, marginBottom: 12, flexDirection: "row", alignItems: "center" }}
         >
           <Text style={{ fontSize: 14, marginRight: 8 }}>🔗</Text>

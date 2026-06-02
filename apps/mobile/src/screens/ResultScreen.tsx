@@ -109,9 +109,9 @@ export default function ResultScreen({ route }: Props) {
         ) : null}
       </View>
 
-      {data.parliament_url ? (
+      {(data.official_source_url || data.parliament_url) ? (
         <TouchableOpacity
-          onPress={() => Linking.openURL(data.parliament_url || "")}
+          onPress={() => Linking.openURL(data.official_source_url || data.parliament_url || "")}
           style={styles.sourceCard}
         >
           <Text style={styles.sourceIcon}>🔗</Text>
