@@ -5304,3 +5304,21 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
   - set `ai_summary_reviewed=true`,
   - resync forum topics,
   - repair 9 Parliament bills without `summary_long_el`.
+
+---
+
+## 2026-06-03 — Codex: vC30 APK landingpage deploy
+
+### Deploy
+- Final vC30 APK copied to `/opt/ekklesia/app/docs/download/ekklesia-latest.apk`.
+- Final vC30 APK copied into running `ekklesia-web:/app/public/download/ekklesia-latest.apk`.
+- SHA file updated on server and web container.
+- `docs/download/APK_MANIFEST.md` updated.
+- `docs/download/ekklesia-latest.apk.sha256` added.
+
+### Verification
+- Public URL: `https://ekklesia.gr/download/ekklesia-latest.apk`.
+- Live URL HTTP: 200.
+- Live URL SHA256: `e73e72a25654f6246c6d957ae763bdf37455c40b1323aa00a6f56823935b0f7e`.
+- APK size: 60,942,026 bytes.
+- S10 installed: `versionCode=30`, `versionName=1.0.3`.

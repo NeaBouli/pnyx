@@ -31,17 +31,17 @@ https://ekklesia.gr/representative/index.html
 | Version | 1.0.3 |
 | versionCode | 30 |
 | Package | ekklesia.gr |
-| APK SHA256 | `f434a9834fcc3b9cf0e6c9bfdf81f892231c2d2248502b163e239ba444d0c59d` |
-| AAB SHA256 | `5df1e04c40a39fa7ea3f1a6485583e97b6dcf7e17dfc412b4fb92ab03c2d747c` |
+| APK SHA256 | `e73e72a25654f6246c6d957ae763bdf37455c40b1323aa00a6f56823935b0f7e` |
+| AAB SHA256 | `795d96d7fe2e36bb369be3566202241cc75f4be46273de978e550bdb5ae60f6e` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
-| Build date | 2026-06-02 |
-| Release gate | PASS — Analysis Guard UI fix |
-| Includes | vC29 + Analysis Guard (ai_summary_reviewed), readableText filter, source link labels |
+| Build date | 2026-06-03 |
+| Release gate | PASS — S10 launch + Bill detail verified |
+| Includes | vC30 Hermes runtime alignment, source link labels, official text fallback for unreviewed analysis |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: f434a9834fcc3b9cf0e6c9bfdf81f892231c2d2248502b163e239ba444d0c59d
+# Expected: e73e72a25654f6246c6d957ae763bdf37455c40b1323aa00a6f56823935b0f7e
 ```
