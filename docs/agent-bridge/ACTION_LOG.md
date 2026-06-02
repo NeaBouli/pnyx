@@ -5168,3 +5168,27 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
   - Validate and review samples.
   - Set `ai_summary_reviewed=true` only for accepted rows.
   - Run Forum resync after accepted analyses are in DB.
+
+## 2026-06-02 — Codex: official source URL target fixed
+
+### Finding
+- Source label fix was incomplete: app still opened the old raw `parliament_url`.
+- Parliament HTML detail URL can return Access Denied/no text.
+- DIAVGEIA `/doc/{ADA}` is not the best readable official page.
+
+### Fix
+- Added `apps/api/services/source_links.py`.
+- API now returns `official_source_url`.
+- Parliament official source prefers the first official Parliament PDF extracted from `summary_long_el`.
+- DIAVGEIA official source uses `/decision/view/{ADA}`.
+- Mobile VoteScreen/ResultScreen use `official_source_url || parliament_url`.
+
+### Verification
+- `python3 -m py_compile apps/api/services/source_links.py apps/api/routers/parliament.py apps/api/routers/voting.py`: PASS
+- `cd apps/mobile && npx tsc --noEmit`: PASS
+- API deployed/rebuilt at `ed91180`.
+- Live `GR-0490a766 official_source_url`: Parliament PDF.
+- Live DIAVGEIA sample official_source_url: `diavgeia.gov.gr/decision/view/...`.
+
+### Remaining
+- APK rebuild/install required for the app to consume `official_source_url`.

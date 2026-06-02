@@ -1,5 +1,42 @@
 # CC Response
 
+## 2026-06-02 — Codex Fix: official source links opened unreadable pages
+
+### Problem
+- Gio reported that the app source link opened official/gov pages without useful text.
+- Confirmed:
+  - Parliament `parliament_url` for `GR-0490a766` returns Access Denied/no readable text when opened directly.
+  - DIAVGEIA list/details used `/doc/{ADA}` in some rows; browser HEAD shows 405/poor UX, while `/decision/view/{ADA}` is the readable official page.
+- Previous fix only changed link labels, not the target URL. That was incomplete.
+
+### Fix
+- Added API field `official_source_url`.
+- Parliament bills:
+  - Extract first official `hellenicparliament.gr/...pdf` URL from scraped `summary_long_el`.
+  - Fall back to `parliament_url` only if no official PDF is available.
+- DIAVGEIA bills:
+  - Use `https://diavgeia.gov.gr/decision/view/{ADA}`.
+- Mobile VoteScreen/ResultScreen:
+  - open `official_source_url || parliament_url`.
+
+### Verification
+- `python3 -m py_compile apps/api/services/source_links.py apps/api/routers/parliament.py apps/api/routers/voting.py`: PASS
+- `cd apps/mobile && npx tsc --noEmit`: PASS
+- Live API deployed at `ed91180`.
+- Live `/health`: OK.
+- Live `GR-0490a766`:
+  - `official_source_url=https://www.hellenicparliament.gr/UserFiles/c8827c35-4399-4fbb-8ea6-aebdc768f4f7/13299359.pdf`
+  - old `parliament_url` remains available but is no longer primary for app.
+- Live DIAVGEIA sample `DIAV-96497ΛΨ-7ΒΩ`:
+  - `official_source_url=https://diavgeia.gov.gr/decision/view/96497%CE%9B%CE%A8-7%CE%92%CE%A9`
+  - old `/doc/...` remains available but is no longer primary for app.
+
+### Next Required
+- Build/install APK from `ed91180`; current installed APK will still open old `parliament_url` until rebuilt.
+- If CC already bumped to vC30, keep vC30 if not uploaded; otherwise bump to next Play-accepted versionCode.
+
+---
+
 ## 2026-06-02 — Codex Befund: Summary ja, Full Analysis nein
 
 ### Antwort auf Gio
