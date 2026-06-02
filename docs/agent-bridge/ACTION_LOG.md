@@ -5100,3 +5100,40 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 - NEA-301 still needs Fetcher/Text-Ingestion for 9 real PARLIAMENT Bills without `summary_long_el`.
 - NEA-301 manual review remains for `GR-1b8eab9a`, `GR-9f7ad85a`.
 - NEA-301b DIAVGEIA reviewed backfill remains a separate phase; no `--apply`.
+
+## 2026-06-02 — Codex: Vollstaendiger Task-/Status-Report nach Bill-Fix
+
+### Current Heads
+- pnyx HEAD / origin/main: `ba423b3`
+- Bridge commit: `ba423b3 chore(bridge): bill summary source fix deployed and verified`
+- Fix commit: `40e92a6 fix(bills): show summaries and official source fallbacks`
+- Server API/Web: `40e92a6` deployed/rebuilt/live
+- S10: vC29/1.0.2 APK from fixed code installed and checked
+
+### Status Matrix
+| Bereich | Status |
+|---|---|
+| Bill summaries in app list/detail | DONE |
+| Official source link text in app | DONE |
+| ResultScreen summary/source | DONE |
+| DIAVGEIA hallucination guard | DONE |
+| Web bill source labels/fallbacks | DONE |
+| API/Web deploy | DONE |
+| S10 functional verification | DONE |
+| Play Console rollout | NEEDS vC30/versionCode bump |
+
+### Live Evidence
+- `/api/v1/bills?limit=3` returns summaries and official URLs for `GR-5294`, `GR-5293`, `GR-0490a766`.
+- `GR-0490a766 /summary`: `source=db`, summary present, not cached.
+- `DIAV-9799ΟΡ1Θ-Ω08 /summary`: `source=fallback`, summary present, not cached.
+
+### Open Queue
+- vC30 Mobile release for Play Console rollout of `40e92a6`.
+- NEA-301 Fetcher/Text-Ingestion: 9 real PARLIAMENT Bills without `summary_long_el`.
+- NEA-301 manual review: `GR-1b8eab9a`, `GR-9f7ad85a`.
+- NEA-301b DIAVGEIA reviewed backfill: separate phase, no apply yet.
+- F-Droid !38007: wait for GlassOnTin/linsui re-test/merge.
+- Dependabot: 6 moderate `postcss`/`uuid` remain.
+- NEA-303: test-account Region permanent code fix.
+- NEA-286: lifecycle root cause.
+- NEA-304: Arweave party_votes source + TX verification follow-up.

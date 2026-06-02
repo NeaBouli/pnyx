@@ -1,5 +1,93 @@
 # CC Response
 
+## 2026-06-02 — Vollstaendiger Task-/Status-Report fuer Claude Dev
+
+### Aktueller Stand
+- **pnyx HEAD / origin/main:** `ba423b3`
+- **Bridge commit:** `ba423b3 chore(bridge): bill summary source fix deployed and verified`
+- **Bill summary/source fix:** `40e92a6 fix(bills): show summaries and official source fallbacks`
+- **Server API/Web:** `40e92a6` deployed/rebuilt/live
+- **S10:** vC29/1.0.2 APK aus Fix-Stand installiert und interaktiv geprueft
+- **Play Console:** vC29 AAB bereits hochgeladen; fuer Mobile-Fix in Play ist vC30/versionCode-Bump noetig
+
+### Gerade abgeschlossen
+| Bereich | Status |
+|---|---|
+| Bills App Summary/Source UX | DONE + deployed |
+| Live API summary fields | DONE |
+| DIAVGEIA no-hallucination fallback | DONE |
+| Web Bill source labels/fallbacks | DONE |
+| S10 interaktiver Check | DONE |
+| Bridge Update | DONE |
+
+### Root Cause der App-Probleme
+- Bills-Liste lieferte keine `summary_short_el` Felder.
+- `PARLIAMENT_VOTED` Bills wurden aus der Liste direkt in `ResultScreen` geoeffnet.
+- `ResultScreen` hatte keine Summary-/Source-Felder aus der API.
+- DIAVGEIA konnte ueber `/summary` in einen generierten LLM-Fallback laufen; das war fuer nicht gepruefte Behoerdentexte falsch.
+- Web/Fallback-UX war bei offiziellen Links zu generisch.
+
+### Umgesetzter Fix
+- API:
+  - `BillSummary` enthaelt `summary_short_el/en`.
+  - Vote results enthalten `source`, `pill_el`, `summary_short_el`, `parliament_url`, `diavgeia_ada`.
+  - `/summary` nutzt DB-Summary zuerst; DIAVGEIA ohne gepruefte Summary bekommt ehrlichen Fallback (`source=fallback`), keine LLM-Halluzination.
+- Mobile:
+  - Cards zeigen `summary_short_el || pill_el`.
+  - Voted Bills oeffnen zuerst Detail, nicht direkt Result.
+  - VoteScreen und ResultScreen zeigen Summary + klaren offiziellen Quellenlink:
+    - `Πηγή — Βουλή των Ελλήνων`
+    - `Πηγή — Διαύγεια`
+- Web:
+  - Liste/Detail bevorzugen kurze Summary.
+  - Quellenlabel ist source-aware.
+  - Kein Jina-Fallback fuer DIAVGEIA.
+
+### Verifikation
+- `python3 -m py_compile apps/api/routers/parliament.py apps/api/routers/voting.py`: PASS
+- `cd apps/mobile && npx tsc --noEmit`: PASS
+- `cd apps/web && npx tsc --noEmit`: PASS
+- `cd apps/web && npm run build`: PASS
+- `bash scripts/build-play.sh`: PASS
+- `cd apps/mobile/android && ./gradlew assemblePlayRelease`: PASS
+- APK SHA256: `bb418b3b0d120c5a72b39dac1e8e44a7a2d7c936eafc96606dcf80f70906e4c0`
+- AAB SHA256: `24c791ea1ee9a574d8979e6a1b2350881cc99864d3d3b5a97091351f91c4d7f5`
+- Live API:
+  - `/api/v1/bills?limit=3`: `GR-5294`, `GR-5293`, `GR-0490a766` liefern `summary_short_el` + `parliament_url`
+  - `GR-0490a766 /summary`: `source=db`
+  - `DIAV-9799ΟΡ1Θ-Ω08 /summary`: `source=fallback`
+- S10:
+  - Bills-Liste zeigt echte Summaries.
+  - `GR-0490a766`: Summary + `Πηγή — Βουλή των Ελλήνων`.
+  - ANNOUNCED Detail: ehrlicher Fallback + Not-started Banner + Parliament source.
+  - DIAVGEIA Detail: ehrlicher Fallback + `Πηγή — Διαύγεια`.
+  - Keine `FATAL EXCEPTION`.
+
+### Wichtige Entscheidung
+- API/Web Fix ist bereits live.
+- Direct APK kann mit gleicher vC29 ersetzt werden, falls Gio das will.
+- Play Console akzeptiert diesen Mobile-Fix nur mit neuem `versionCode`; naechster Release-Schritt ist daher vC30.
+
+### Offene Tasks — priorisiert
+| Ticket | Status / naechster Schritt |
+|---|---|
+| vC30 Mobile rollout | VersionCode bump + Release build + S10 Test + Play upload fuer Summary/Source UI Fix |
+| NEA-301 Fetcher/Text-Ingestion | 9 echte PARLIAMENT Bills haben kein `summary_long_el`; Fetcher muss Quelltext nachziehen |
+| NEA-301 Manual Review | `GR-1b8eab9a`, `GR-9f7ad85a` manuell pruefen/summary korrigieren |
+| NEA-301b DIAVGEIA | Separate Phase; kein `--apply` ohne Sample-Abnahme |
+| F-Droid !38007 | Pipeline gruen; wartet auf GlassOnTin/linsui Re-Test/Merge |
+| Dependabot | 0 critical; 6 moderate `postcss`/`uuid` offen |
+| NEA-303 | test-account Region permanent im Code fixen |
+| NEA-286 | Lifecycle Root Cause |
+| NEA-304 | Arweave party_votes source + TX-Verifikation Follow-up |
+
+### Nicht tun
+- Kein DIAVGEIA Full-Apply.
+- Keine Arweave-Archivierung ohne echte `party_votes_parliament`.
+- Kein upstream `app.json` auf JSC umstellen; F-Droid JSC-Fix bleibt recipe-spezifisch.
+
+---
+
 ## 2026-06-02 — Codex Status fuer Claude Dev: Bill summaries + official source links fixed
 
 ### Heads
