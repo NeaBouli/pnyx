@@ -5494,3 +5494,37 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 3. Mobile Source-Link nur wenn verified official_source_url existiert
 4. S10 Re-Test nach Fix
 5. Kein Build/Deploy ohne Codex-Abnahme
+
+---
+
+## 2026-06-03 — CC: NEA-301 Option E — Fetcher Quality Gate + Source Policy
+
+### Implemented (Commit `9879328`)
+1. **parliament_fetcher.py**: `_is_bad_parliament_text()` — rejectet Parliament nav/accessibility Boilerplate
+   - 12 Boilerplate-Patterns
+   - Link-Density-Check (>40% Markdown-Links = bad)
+   - Fetcher + enrich_all nutzen den Guard
+2. **VoteScreen.tsx**: Source-Link nur clickable wenn `sourceKind === "official"`
+   - parliament_url-Fallback ist NICHT mehr tappbar
+   - Non-clickable Card: "Πηγή — Βουλή · Το κείμενο αναζητείται"
+3. **VoteScreen.tsx**: `cleanOfficialText()` erweitert um 8 Boilerplate-Patterns
+
+### DB-Diagnose
+- 15 PARLIAMENT Bills mit bad summary_long_el (alle Boilerplate)
+- 12 davon haben PDF-Links in summary_long_el → source_links.py extrahiert diese korrekt
+- 3 Bills ohne PDF: GR-5293, GR-74e0cb08, GR-cf7398d9
+
+### Tests
+- py_compile: OK (fetcher + source_links)
+- npx tsc --noEmit: OK
+
+### Noch offen
+- Bad summary_long_el NICHT geloescht (braucht Dry-run + Abnahme)
+- API Deploy noetig fuer Fetcher-Guard
+- Mobile APK Build noetig fuer Source-Policy (kein versionCode bump)
+- Kein AAB/Play
+
+### Fuer Codex-Review
+- Fetcher Quality Gate korrekt?
+- Mobile Source-Policy akzeptabel?
+- Soll bad summary_long_el auf NULL gesetzt werden?
