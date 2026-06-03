@@ -5442,3 +5442,27 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
   - NEA-292: final vC30 S10 regression result, commit `7053510`, bridge `62febca`, APK/AAB hashes.
   - NEA-301: mobile graceful fallback done; remaining fetcher/text-ingestion and reviewed-analysis pipeline work documented.
 - Note: Python `urllib` hit local macOS cert-chain issue; `curl` GraphQL path works with same token. Token was not printed.
+
+---
+
+## 2026-06-03 — CC: Βουλή Bills Source/Text Diagnosis
+
+### Befund
+- ALLE parliament_url → HTTP 403 Forbidden
+- summary_long_el = Webscrape-Boilerplate (Menue, Accessibility, Markdown-Links)
+- official_source_url nur bei GR-0490a766 (PDF aus Scrape extrahiert)
+- summary_short_el: Ollama-backfilled, inhaltlich OK
+- ai_summary_reviewed: false bei allen
+
+### S10 Verifizierung
+- vC30 App-Code ist korrekt:
+  - "Σύνοψη" Label (nicht "Ανάλυση")
+  - Source: "Σελίδα Βουλής — συγχρονίζεται" (ehrlich)
+  - Kein Boilerplate als "Επίσημο κείμενο"
+  - Kein Vote-Controls fuer PARLIAMENT_VOTED
+- Screenshot: /tmp/ekklesia_audit/step4_5293.png
+
+### Fazit
+- Kein App-UI-Fix noetig — Code ist korrekt
+- Problem ist Daten-Ingestion (Fetcher)
+- Frage an Codex in CC_RESPONSE.md gestellt
