@@ -5604,3 +5604,38 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
   - Landing APK not updated.
   - GitHub Release not updated.
   - AAB/Play not uploaded.
+
+---
+
+## 2026-06-04 — CC: Full S10 Audit — STOP RELEASE
+
+### AUDIT RESULTS
+
+| Bill | Source | Status | Σύνοψη | Source Link | Clickable | Boilerplate | Vote Controls | Verdict |
+|------|--------|--------|--------|-------------|-----------|-------------|---------------|---------|
+| GR-5294 | PARLIAMENT | ACTIVE | ✅ | Non-click Βουλή | NO (korrekt) | Clean | ✅ already-voted | PASS |
+| GR-5293 | PARLIAMENT | PARL_VOTED | ✅ | Non-click Βουλή | NO (korrekt) | Clean | ✅ keine | PASS |
+| GR-0490a766 | PARLIAMENT | PARL_VOTED | ✅ | Πηγή Βουλή + ↗ | YES (PDF) | Clean | ✅ keine | PASS |
+| DIAV-ΨΦΒΦ... | DIAVGEIA | OPEN_END | ❌ bounds=[0,0] | FEHLT | FEHLT | Clean | — | **FAIL** |
+
+### BESTAETIGTE DEFEKTE
+
+1. **BUG: DIAVGEIA Source-Link fehlt komplett im VoteScreen**
+   - API liefert `official_source_url` korrekt
+   - App setzt `sourceUrl`/`sourceKind` nicht korrekt fuer DIAVGEIA
+   - Source-Link-Element ist nicht im DOM
+   - "Σύνοψη" hat zero-size bounds — wird nicht angezeigt
+
+2. **BUG: DIAVGEIA Summary (pill_el) wird als "Σύνοψη" gezeigt statt echtem Summary**
+   - Angezeigter Text: "Διαύγεια: ΔΗΜΟΤΙΚΟ ΛΙΜΕΝΙΚΟ ΤΑΜΕΙΟ ΣΠΕΤΣΩΝ" — das ist org_label/pill, nicht Summary
+   - summary_short_el ist NULL fuer diese Bill
+   - Kein Ollama Backfill fuer DIAVGEIA (eigene Phase, nicht applied)
+
+### Screenshots
+- /tmp/ekklesia_full_audit_20260604/b01_GR5294.png — PASS
+- /tmp/ekklesia_full_audit_20260604/b02_GR5293.png — PASS
+- /tmp/ekklesia_full_audit_20260604/b03_GR0490.png — PASS
+- /tmp/ekklesia_full_audit_20260604/b05_diav_detail.png — FAIL
+- /tmp/ekklesia_full_audit_20260604/b06_diav_scrolled.png — FAIL
+
+### Kein Landing/GitHub/AAB/Play Update
