@@ -97,13 +97,12 @@ export default function VoteScreen({ route, navigation }: Props) {
         if (d?.status) {
           const source = d.source || "PARLIAMENT";
           const officialUrl = d.official_source_url || "";
-          const fallbackUrl = source === "PARLIAMENT" ? d.parliament_url || "" : "";
           setBillStatus(d.status);
           setBillGovernance(d.governance_level || "NATIONAL");
           setBillSource(source);
           setBillPill(readableText(d.pill_el) ? d.pill_el : "");
-          setSourceUrl(officialUrl || fallbackUrl);
-          setSourceKind(officialUrl ? "official" : fallbackUrl ? "page" : "none");
+          setSourceUrl(officialUrl);
+          setSourceKind(officialUrl ? "official" : "none");
           if (readableText(d.summary_short_el)) setSummary(d.summary_short_el);
           if (d.ai_summary_reviewed && readableText(d.summary_long_el)) setAnalysis(d.summary_long_el);
           if (!d.ai_summary_reviewed) setOfficialText(cleanOfficialText(d.summary_long_el));
@@ -236,8 +235,8 @@ export default function VoteScreen({ route, navigation }: Props) {
   const canCorrectVote = hasVoted && billStatus === "WINDOW_24H" && !isCorrected;
   const voteLocked = hasVoted && !canCorrectVote;
   const showVoteControls = billLoaded && (billStatus === "ACTIVE" || billStatus === "WINDOW_24H");
-  const summaryFallback = sourceUrl
-    ? "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα. Δείτε προσωρινά τη σελίδα της πηγής."
+  const summaryFallback = sourceUrl && sourceKind === "official"
+    ? "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα. Δείτε την επίσημη πηγή."
     : "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα.";
 
   return (

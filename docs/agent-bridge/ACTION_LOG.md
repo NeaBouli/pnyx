@@ -5528,3 +5528,26 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 - Fetcher Quality Gate korrekt?
 - Mobile Source-Policy akzeptabel?
 - Soll bad summary_long_el auf NULL gesetzt werden?
+
+## 2026-06-03 — Codex: NEA-301 Option E review fixes
+
+- Reviewed CC implementation `9879328`.
+- Finding: direction correct, but four gaps remained:
+  1. `fetch_bill_text()` could still return bad boilerplate to callers other than `enrich_*`.
+  2. `scheduled_completeness_check()` in `apps/api/main.py` could still write bad fetched text.
+  3. `VoteScreen.tsx` still kept `parliament_url` as an internal page fallback.
+  4. `ResultScreen.tsx` still rendered `parliament_url` as a clickable fallback.
+- Fixed:
+  - Quality gate now runs per fetch channel before returning text.
+  - Completeness job rejects bad text defensively before DB write.
+  - VoteScreen and ResultScreen show clickable source only for `official_source_url`.
+  - Parliament fallback is non-clickable: "Πηγή — Βουλή των Ελλήνων / Το κείμενο αναζητείται".
+- Verification:
+  - `python3 -m py_compile apps/api/services/parliament_fetcher.py apps/api/main.py apps/api/services/source_links.py` — OK
+  - `apps/api/.venv/bin/python -m pytest apps/api/tests/services/test_source_links.py -q` — 4 passed
+  - `cd apps/mobile && npx tsc --noEmit` — OK
+- Still open:
+  - Existing bad `summary_long_el` rows need dry-run cleanup + explicit apply approval.
+  - API deploy needed.
+  - Mobile APK rebuild/install needed.
+  - No AAB/Play/versionCode bump.

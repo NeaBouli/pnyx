@@ -441,11 +441,13 @@ async def scheduled_completeness_check():
                 # Try to scrape parliament text if summary missing
                 if not bill.summary_long_el and bill.parliament_url:
                     try:
-                        from services.parliament_fetcher import fetch_bill_text
+                        from services.parliament_fetcher import fetch_bill_text, _is_bad_parliament_text
                         text = await fetch_bill_text(bill.id, bill.parliament_url)
-                        if text:
+                        if text and not _is_bad_parliament_text(text):
                             bill.summary_long_el = text[:10000]
                             logger.info("[COMPLETENESS] Fetched text for %s", bill.id)
+                        elif text:
+                            logger.info("[COMPLETENESS] Rejected bad fetched text for %s", bill.id)
                     except Exception as e:
                         logger.warning("[COMPLETENESS] Text fetch failed for %s: %s", bill.id, e)
 

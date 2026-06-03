@@ -46,10 +46,17 @@ function cleanOfficialText(value?: string | null) {
     .replace(/https?:\/\/\S+/g, "")
     .replace(/\s+/g, " ")
     .trim();
-  if (
-    cleaned.startsWith("Μετάβαση στο κύριο περιεχόμενο") ||
-    cleaned.includes("Ανοίξτε το μενού προσβασιμότητας")
-  ) {
+  const badPatterns = [
+    "Μετάβαση στο κύριο περιεχόμενο",
+    "Ανοίξτε το μενού προσβασιμότητας",
+    "Νομοθετική Διαδικασία",
+    "Ημερ. Διάταξη Ολομέλειας",
+    "Εβδομαδιαίο Δελτίο",
+    "Εμφανίζονται τα σχέδια",
+    "Εμφανίζονται τα ψηφισθέντα",
+    "Κατατεθέντα Σ/Ν",
+  ];
+  if (badPatterns.some(p => cleaned.includes(p))) {
     return "";
   }
   return cleaned.slice(0, 1400);
@@ -106,10 +113,10 @@ export default function ResultScreen({ route }: Props) {
   const summary = readableText(data.summary_short_el) ? data.summary_short_el : readableText(data.pill_el) ? data.pill_el : "";
   const analysis = data.ai_summary_reviewed && readableText(data.summary_long_el) ? data.summary_long_el : "";
   const officialText = !analysis ? cleanOfficialText(data.summary_long_el) : "";
-  const sourceUrl = data.official_source_url || (data.source !== "DIAVGEIA" ? data.parliament_url || "" : "");
-  const sourceKind = data.official_source_url ? "official" : sourceUrl ? "page" : "none";
+  const sourceUrl = data.official_source_url || "";
+  const sourceKind = sourceUrl ? "official" : "none";
   const summaryFallback = sourceUrl
-    ? "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα. Δείτε προσωρινά τη σελίδα της πηγής."
+    ? "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα. Δείτε την επίσημη πηγή."
     : "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα.";
 
   return (
@@ -142,7 +149,7 @@ export default function ResultScreen({ route }: Props) {
         ) : null}
       </View>
 
-      {sourceUrl ? (
+      {sourceUrl && sourceKind === "official" ? (
         <TouchableOpacity
           onPress={() => Linking.openURL(sourceUrl)}
           style={styles.sourceCard}
@@ -151,6 +158,14 @@ export default function ResultScreen({ route }: Props) {
           <Text style={styles.sourceText}>{sourceLabel(data.source, sourceKind)}</Text>
           <Text style={styles.sourceArrow}>↗</Text>
         </TouchableOpacity>
+      ) : data.source === "PARLIAMENT" ? (
+        <View style={styles.sourceCard}>
+          <Text style={styles.sourceIcon}>🏛️</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.sourceText}>Πηγή — Βουλή των Ελλήνων</Text>
+            <Text style={styles.sourceNote}>Το κείμενο αναζητείται</Text>
+          </View>
+        </View>
       ) : (
         <View style={styles.sourceCard}>
           <Text style={styles.sourceIcon}>ℹ️</Text>

@@ -39,16 +39,20 @@ _BAD_TEXT_PATTERNS = [
 
 def _is_bad_parliament_text(text: str) -> bool:
     """Return True if text is Parliament navigation boilerplate, not real bill content."""
-    if not text or len(text.strip()) < 50:
+    if not text or len(text.strip()) < 200:
         return True
     # Check for boilerplate markers
     matches = sum(1 for pat in _BAD_TEXT_PATTERNS if pat in text)
-    if matches >= 2:
+    if matches >= 1:
         return True
-    # Mostly Markdown links (nav menus)
+    # Mostly Markdown links/images/nav menus
     lines = text.strip().split("\n")
-    link_lines = sum(1 for l in lines if l.strip().startswith("*") and "http" in l)
-    if len(lines) > 3 and link_lines / len(lines) > 0.4:
+    markdown_noise = sum(
+        1 for line in lines
+        if line.strip().startswith(("*", "#", "![", "["))
+        or ("http" in line and len(line.strip()) < 160)
+    )
+    if len(lines) > 3 and markdown_noise / len(lines) > 0.3:
         return True
     return False
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
@@ -288,29 +292,41 @@ async def fetch_bill_text(bill_id: str, parliament_url: str) -> str:
     # Kanal 1: Jina Markdown
     text = await _channel_jina_markdown(parliament_url)
     if text:
-        logger.info("[SCRAPER] Kanal 1 (Jina MD) OK: %s (%d chars)", bill_id, len(text))
-        return text
+        if _is_bad_parliament_text(text):
+            logger.info("[SCRAPER] Kanal 1 rejected boilerplate: %s (%d chars)", bill_id, len(text))
+        else:
+            logger.info("[SCRAPER] Kanal 1 (Jina MD) OK: %s (%d chars)", bill_id, len(text))
+            return text
 
     # Kanal 2: Jina Raw HTML
     await asyncio.sleep(2)
     text = await _channel_jina_html(parliament_url)
     if text:
-        logger.info("[SCRAPER] Kanal 2 (Jina HTML) OK: %s (%d chars)", bill_id, len(text))
-        return text
+        if _is_bad_parliament_text(text):
+            logger.info("[SCRAPER] Kanal 2 rejected boilerplate: %s (%d chars)", bill_id, len(text))
+        else:
+            logger.info("[SCRAPER] Kanal 2 (Jina HTML) OK: %s (%d chars)", bill_id, len(text))
+            return text
 
     # Kanal 3: Ollama
     await asyncio.sleep(2)
     text = await _channel_ollama_extract(parliament_url)
     if text:
-        logger.info("[SCRAPER] Kanal 3 (Ollama) OK: %s (%d chars)", bill_id, len(text))
-        return text
+        if _is_bad_parliament_text(text):
+            logger.info("[SCRAPER] Kanal 3 rejected boilerplate: %s (%d chars)", bill_id, len(text))
+        else:
+            logger.info("[SCRAPER] Kanal 3 (Ollama) OK: %s (%d chars)", bill_id, len(text))
+            return text
 
     # Kanal 4: Playwright (Not-Instanz)
     await asyncio.sleep(2)
     text = await _channel_playwright(parliament_url)
     if text:
-        logger.info("[SCRAPER] Kanal 4 (Playwright) OK: %s (%d chars)", bill_id, len(text))
-        return text
+        if _is_bad_parliament_text(text):
+            logger.info("[SCRAPER] Kanal 4 rejected boilerplate: %s (%d chars)", bill_id, len(text))
+        else:
+            logger.info("[SCRAPER] Kanal 4 (Playwright) OK: %s (%d chars)", bill_id, len(text))
+            return text
 
     # Alle fehlgeschlagen
     logger.error("[SCRAPER] ALLE 4 KANÄLE FEHLGESCHLAGEN: %s — %s", bill_id, parliament_url)
