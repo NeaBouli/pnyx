@@ -1,5 +1,89 @@
 # CC Response
 
+## 2026-06-03 — Codex: vC30 Release complete + CI/GitHub/Linear status
+
+### Executive Status
+- vC30 APK is live on landing page.
+- vC30 APK is installed on S10 and verified.
+- GitHub Release `v1.0.3` exists with APK+AAB assets.
+- CI is green after follow-up fix.
+- GitHub issues updated.
+- Linear update attempted but blocked by expired auth token.
+
+### Release Artifacts
+- Landing APK: `https://ekklesia.gr/download/ekklesia-latest.apk`
+- GitHub Release: `https://github.com/NeaBouli/pnyx/releases/tag/v1.0.3`
+- APK SHA256: `e73e72a25654f6246c6d957ae763bdf37455c40b1323aa00a6f56823935b0f7e`
+- AAB SHA256: `795d96d7fe2e36bb369be3566202241cc75f4be46273de978e550bdb5ae60f6e`
+- APK size: `60,942,026` bytes
+- AAB size: `29,650,251` bytes
+
+### S10 Verification
+- Installed package: `ekklesia.gr`
+- `versionCode=30`
+- `versionName=1.0.3`
+- Launch: PASS
+- `MainActivity` focused: PASS
+- Logcat crash scan: no `FATAL EXCEPTION`
+- Bill detail checked: `Σύνοψη`, `Επίσημο κείμενο`, `Μοιραστείτε ↗` visible
+
+### Landingpage Deploy
+- Copied final APK to server path:
+  - `/opt/ekklesia/app/docs/download/ekklesia-latest.apk`
+- Copied final APK into running web container:
+  - `ekklesia-web:/app/public/download/ekklesia-latest.apk`
+- Public URL SHA verified:
+  - `e73e72a25654f6246c6d957ae763bdf37455c40b1323aa00a6f56823935b0f7e`
+- Manifest updated:
+  - `docs/download/APK_MANIFEST.md`
+  - `docs/download/ekklesia-latest.apk.sha256`
+
+### GitHub
+- Release `v1.0.3` created.
+- Release assets uploaded:
+  - `app-play-release.apk`
+  - `app-play-release.aab`
+- Issues:
+  - `#78` closed: vC29 release gate superseded by vC30 release.
+  - `#97` closed: ANNOUNCED clickability/source-label/detail behavior verified.
+  - `#95` updated/open: reviewed-analysis pipeline still missing.
+  - `#96` updated/open: Arweave TX verification/fetcher follow-up remains.
+  - `#98` updated/open: permanent test-account region code fix remains.
+
+### CI / CodeRabbit
+- Initial CI after release failed in `tests/services/test_discourse_sync.py`.
+- Root cause: `bill.ai_summary_reviewed` direct access on a test `SimpleNamespace`.
+- Fix commit: `d74655f fix(api): tolerate missing reviewed flag in discourse sync`.
+- GitHub Actions on `d74655f`: PASS.
+  - `CI — Ekklesia.gr`: success.
+  - `Security Audit`: success.
+  - Python API Tests: success.
+  - Crypto Package Tests: success.
+  - Secret Detection: success.
+  - Dependency Audit: success.
+  - Security Summary: success.
+- CodeRabbit:
+  - No current release PR.
+  - Open Dependabot PRs show CodeRabbit `SUCCESS`, but still need human review.
+
+### Linear
+- Direct Linear update attempted via connector.
+- Blocked by expired auth token:
+  - `401 token_expired`
+- Copy this status manually into Linear or re-auth Linear, then update:
+  - NEA-275/vC30 release gate: complete.
+  - NEA-292: close/complete for mobile UI; remaining analysis pipeline belongs to NEA-301.
+  - NEA-301: keep open for reviewed-analysis pipeline and 9 missing `summary_long_el`.
+  - NEA-303: keep open for permanent region code fix.
+  - NEA-304: keep open for TX verification/fetcher follow-up.
+
+### Latest Repo State
+- Latest `origin/main`: `d74655f`.
+- Release metadata commit: `45b5ed8`.
+- Mobile runtime/UI fix commit: `2c3e321`.
+
+---
+
 ## 2026-06-03 — Codex: vC30 Build + Bill Detail verification
 
 ### Kurzfazit

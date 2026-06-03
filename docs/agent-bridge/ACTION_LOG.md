@@ -5322,3 +5322,44 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 - Live URL SHA256: `e73e72a25654f6246c6d957ae763bdf37455c40b1323aa00a6f56823935b0f7e`.
 - APK size: 60,942,026 bytes.
 - S10 installed: `versionCode=30`, `versionName=1.0.3`.
+
+---
+
+## 2026-06-03 — Codex: vC30 GitHub Release + CI/GitHub/Linear follow-up
+
+### GitHub Release
+- Created release: `v1.0.3`.
+- URL: `https://github.com/NeaBouli/pnyx/releases/tag/v1.0.3`.
+- Assets uploaded:
+  - APK: `app-play-release.apk`, SHA256 `e73e72a25654f6246c6d957ae763bdf37455c40b1323aa00a6f56823935b0f7e`.
+  - AAB: `app-play-release.aab`, SHA256 `795d96d7fe2e36bb369be3566202241cc75f4be46273de978e550bdb5ae60f6e`.
+
+### GitHub Issues
+- `#78` closed: vC29 release gate superseded by vC30 release.
+- `#97` closed: ANNOUNCED clickability/source-label/detail behavior verified on S10 in vC30.
+- `#95` updated and kept open: real reviewed-analysis pipeline still missing.
+- `#96` updated and kept open: Arweave guard fixed; TX verification/fetcher follow-up remains.
+- `#98` updated and kept open: DB hotfix passed, permanent test-account region code fix remains.
+
+### CI Fix
+- Latest CI failure root cause:
+  - `services/discourse_sync.py` accessed `bill.ai_summary_reviewed` directly.
+  - CI test used `SimpleNamespace` without that optional field.
+- Fix commit: `d74655f fix(api): tolerate missing reviewed flag in discourse sync`.
+- Local verification:
+  - `python3 -m py_compile apps/api/services/discourse_sync.py`: PASS.
+  - Local pytest remains blocked by local SQLAlchemy mismatch (`async_sessionmaker` unavailable in local Python 3.11 env).
+- GitHub Actions on `d74655f`: PASS.
+  - `CI — Ekklesia.gr`: success.
+  - `Security Audit`: success.
+  - Check runs: Python API Tests, Crypto Package Tests, Secret Detection, Dependency Audit, Security Summary all success.
+
+### CodeRabbit / PRs
+- No active release PR.
+- Open Dependabot PRs show CodeRabbit status `SUCCESS`, but still require human review.
+- No CodeRabbit blocker found for current release work.
+
+### Linear
+- Linear direct update attempted.
+- Result: blocked by expired Linear auth token (`401 token_expired`).
+- Status must be copied to Linear after re-auth/sign-in.
