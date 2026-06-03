@@ -60,8 +60,13 @@ function cleanOfficialText(value?: string | null) {
   return cleaned.slice(0, 1400);
 }
 
-function sourceLabel(source: string, sourceKind: string) {
+function isPdfUrl(url: string) {
+  return url?.toLowerCase().includes(".pdf");
+}
+
+function sourceLabel(source: string, sourceKind: string, url: string) {
   if (source === "DIAVGEIA") return "Πηγή — Διαύγεια";
+  if (isPdfUrl(url)) return "Πηγή — Βουλή (PDF)";
   if (sourceKind === "page") return "Σελίδα Βουλής — συγχρονίζεται το κείμενο";
   return "Πηγή — Βουλή των Ελλήνων";
 }
@@ -256,8 +261,11 @@ export default function VoteScreen({ route, navigation }: Props) {
           onPress={() => Linking.openURL(sourceUrl)}
           style={{ backgroundColor: "#eff6ff", borderRadius: 10, padding: 12, marginBottom: 12, flexDirection: "row", alignItems: "center" }}
         >
-          <Text style={{ fontSize: 14, marginRight: 8 }}>🔗</Text>
-          <Text style={{ color: "#1d4ed8", fontSize: 13, fontWeight: "600", flex: 1 }}>{sourceLabel(billSource, sourceKind)}</Text>
+          <Text style={{ fontSize: 14, marginRight: 8 }}>{isPdfUrl(sourceUrl) ? "📄" : "🔗"}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: "#1d4ed8", fontSize: 13, fontWeight: "600" }}>{sourceLabel(billSource, sourceKind, sourceUrl)}</Text>
+            {isPdfUrl(sourceUrl) && <Text style={{ color: "#93c5fd", fontSize: 11, marginTop: 2 }}>Ανοίγει ως έγγραφο PDF</Text>}
+          </View>
           <Text style={{ color: "#93c5fd", fontSize: 12 }}>↗</Text>
         </TouchableOpacity>
       ) : billLoaded && billSource === "PARLIAMENT" ? (
