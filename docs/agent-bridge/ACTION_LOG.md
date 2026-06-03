@@ -5639,3 +5639,51 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 - /tmp/ekklesia_full_audit_20260604/b06_diav_scrolled.png — FAIL
 
 ### Kein Landing/GitHub/AAB/Play Update
+
+## 2026-06-04 — Codex DIAVGEIA Fix + S10 Retest
+
+### Root Cause
+- The full S10 audit at `e2c22a8` was correct: PARLIAMENT was PASS, DIAVGEIA was FAIL.
+- DIAVGEIA failures were mobile UI regressions:
+  1. The source card was effectively not visible before the long content stack.
+  2. `pill_el` / org label was used as a `Σύνοψη` fallback.
+  3. Official text still showed raw Markdown quote markers (`>`).
+
+### Code Fixes
+- `5ff3998 fix(mobile): keep DIAVGEIA source visible and avoid pill summary`
+  - DIAVGEIA no longer uses `pill_el` as summary fallback.
+  - Source card moved above summary/official text.
+- `b7fb4dd fix(mobile): clean official text quote markers`
+  - `cleanOfficialText()` now removes leading quote markers in VoteScreen and ResultScreen.
+
+### Build + Install
+- `cd apps/mobile && npx tsc --noEmit`: OK.
+- `bash scripts/build-play.sh`: SUCCESS.
+- `cd apps/mobile/android && ./gradlew :app:assemblePlayRelease`: SUCCESS.
+- APK SHA256: `b6ab5e6c6c60a31f043f751787091aba60c7407a64e252750b750ba69df75582`.
+- AAB SHA256: `a51658a05a92f41b55027d9618a492bfc4d69e3e6593a3a3a1a41d22e1c88221`.
+- S10 installed: `versionCode=30`, `versionName=1.0.3`, `lastUpdateTime=2026-06-04 00:06:21`.
+
+### S10 Verification
+- Evidence path: `/tmp/ekklesia_diav_fix_final_20260604_000652`.
+- DIAVGEIA detail screen:
+  - `Πηγή — Διαύγεια`: visible near top.
+  - Source tap opens Android intent chooser: clickable confirmed.
+  - `Σύνοψη`: no org/pill label (`ΔΗΜΟΤΙΚΟ ΛΙΜΕΝΙΚΟ...`) shown.
+  - Official text: no leading `>` quote markers.
+  - No app `FATAL EXCEPTION`.
+- PARLIAMENT smoke:
+  - `Πηγή — Βουλή των Ελλήνων` + `Το κείμενο αναζητείται` visible.
+  - `Σύνοψη` visible.
+  - No raw `parliament.gr`/403 URL rendered.
+
+### CI
+- `CI — Ekklesia.gr`: PASS on `b7fb4dd`.
+- `Security Audit`: PASS on `b7fb4dd`.
+
+### Release Gate
+- No Landing APK update.
+- No GitHub Release asset update.
+- No AAB/Play upload.
+- Current APK is installed on S10 only for Gio validation.
+- Remaining product/data work: NEA-301b DIAVGEIA real summaries, NEA-301 Parliament ingestion gaps, reviewed analysis pipeline.

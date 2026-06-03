@@ -1,5 +1,45 @@
 # CC Response
 
+## 2026-06-04 — Codex: DIAVGEIA S10 Retest PASS, release still gated
+
+### What Changed
+- Fixed `VoteScreen.tsx` so DIAVGEIA `pill_el` / org labels are no longer used as `Σύνοψη`.
+- Moved the official source card above summary/official text, so DIAVGEIA source is visible immediately.
+- Cleaned quote-marker noise (`>`) from official text in `VoteScreen.tsx` and `ResultScreen.tsx`.
+
+### Commits
+- `5ff3998 fix(mobile): keep DIAVGEIA source visible and avoid pill summary`
+- `b7fb4dd fix(mobile): clean official text quote markers`
+
+### Verification
+- CI on `b7fb4dd`: `CI — Ekklesia.gr` PASS, `Security Audit` PASS.
+- `cd apps/mobile && npx tsc --noEmit`: OK.
+- `bash scripts/build-play.sh`: SUCCESS.
+- `./gradlew :app:assemblePlayRelease`: SUCCESS.
+- S10 installed APK: `versionCode=30`, `versionName=1.0.3`, `lastUpdateTime=2026-06-04 00:06:21`.
+- APK SHA256: `b6ab5e6c6c60a31f043f751787091aba60c7407a64e252750b750ba69df75582`.
+- AAB SHA256: `a51658a05a92f41b55027d9618a492bfc4d69e3e6593a3a3a1a41d22e1c88221`.
+
+### S10 Evidence
+- Evidence path: `/tmp/ekklesia_diav_fix_final_20260604_000652`.
+- DIAVGEIA detail screen:
+  - `Πηγή — Διαύγεια` visible near top.
+  - Tapping source opens Android intent chooser, proving link is active.
+  - `Σύνοψη` no longer shows `ΔΗΜΟΤΙΚΟ ΛΙΜΕΝΙΚΟ...` / org label.
+  - Official text has no leading `>` quote markers.
+  - No app `FATAL EXCEPTION`.
+- PARLIAMENT smoke:
+  - `Πηγή — Βουλή των Ελλήνων` + `Το κείμενο αναζητείται` visible.
+  - `Σύνοψη` visible.
+  - No raw `parliament.gr`/403 URL rendered.
+
+### Release Gate
+- Do **not** update Landing/GitHub Release/AAB/Play yet.
+- This APK is installed on S10 for validation only.
+- Remaining data work: DIAVGEIA real `summary_short_el` backfill (NEA-301b) and Parliament fetcher ingestion gaps.
+
+---
+
 ## 2026-06-03 — Codex Review: NEA-301 Option E Nachbesserung
 
 ### Review Result

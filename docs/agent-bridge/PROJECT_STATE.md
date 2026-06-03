@@ -15,11 +15,11 @@
 - **Branch:** `main`
 - **Lokaler HEAD:** siehe `git rev-parse --short HEAD`
 - **origin/main:** siehe `git rev-parse --short origin/main`
-- **Server repo HEAD:** `62febca` (deployed 02.06.2026)
+- **Server repo HEAD:** `15b49c9` API deployed for NEA-301 source policy; mobile-only fixes `5ff3998` + `b7fb4dd` are not server-deployed.
 - **API container:** `7053510` — vote-status endpoint + bill source fallback LIVE
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
 - **Web container:** `7053510` — final vC30 APK copied into `/app/public/download`
-- **S10:** vC30/1.0.3 Play-Release APK installiert und final interaktiv geprueft (10:30:54 Europe/Athens)
+- **S10:** vC30/1.0.3 Play-Release APK from `b7fb4dd` installed and DIAVGEIA/Βουλή retested (`lastUpdateTime=2026-06-04 00:06:21`)
 - **Alembic:** `o801a2b3c4d5` (polis_tickets + polis_votes + polis_identity_keys)
 - **F-Droid !38007:** Community launch-crash fixed in fdroiddata `e42e014f`; pipeline `2570810919` green 9/9; GlassOnTin/linsui re-test requested
 - **POLIS Status:** App-internal Create/Vote LIVE
@@ -28,15 +28,16 @@
 - **Telegram Bot:** citizen_votes Query LIVE, governance Topic-Routing LIVE
 - **vC29 Release:** COMPLETE — APK live auf ekklesia.gr, AAB in Play Console hochgeladen
 - **vC30 Mobile Build:** AAB/APK gebaut; APK auf S10 installiert; Launch-Crash behoben; Bill-Detail zeigt Summary + offiziellen Text-Fallback
-- **vC30 Landing APK:** LIVE `https://ekklesia.gr/download/ekklesia-latest.apk`, SHA256 `6b216b7d00823c34b2ba3b9dabee8cbe9de60d3310314690fa062fc23eb8a388`
-- **vC30 GitHub Release:** `v1.0.3` live with final APK+AAB assets; latest CI and Security Audit green at `62febca`
+- **vC30 Landing APK:** NOT updated after DIAVGEIA fixes; release remains gated until Gio acceptance.
+- **vC30 GitHub Release:** NOT updated after DIAVGEIA fixes; do not replace assets yet.
 - **Linear:** Token OK (`~/.claude/.env` → `LINEAR_API_KEY`), NEA-280 + NEA-292 geschlossen; Codex verified and commented NEA-292 + NEA-301
 - **NEA-301b PARLIAMENT:** DONE (17/31 mit summary_short_el, 9 brauchen Fetcher, 3 DEMO + 2 flagged excluded, DIAVGEIA 0/636 eigene Phase)
 - **Ollama:** RAM zurueck auf 2.4 GB (Produktion), kein Job aktiv
 - **T3 Arweave Alerts:** FIXED `a90d508` — Monitor verlangt `party_votes_parliament IS NOT NULL`; false-positive fuer GR-0490a766 behoben
 - **Dependabot:** critical `vitest <4.1.0` fixed in `5553e13` and GitHub reports 0 open critical; 6 medium `postcss`/`uuid` remain
-- **Bill Summary/Source Fix:** API/Web live; vC30 mobile verified. Root cause update: Analysis fehlt, weil `ai_summary_reviewed=false` und kein automatischer reviewed-analysis Job existiert. Mobile zeigt jetzt statt leerer Analyse einen klaren `Επίσημο κείμενο` Fallback, wenn `summary_long_el` vorhanden ist.
-- **Pending high:** NEA-301 Fetcher (9 Bills ohne summary_long_el), NEA-303 test-account Region, NEA-304 follow-up, #79/NEA-281 F-Droid linsui merge, NEA-286 Lifecycle-Bug
+- **Bill Summary/Source Fix:** API source policy live; mobile DIAVGEIA source + summary regression fixed in `5ff3998`/`b7fb4dd`, installed on S10 and verified. Root cause update: Analysis fehlt, weil `ai_summary_reviewed=false` und kein automatischer reviewed-analysis Job existiert. Mobile zeigt jetzt statt leerer Analyse einen klaren `Επίσημο κείμενο` Fallback, wenn `summary_long_el` vorhanden ist.
+- **DIAVGEIA S10 Retest:** PASS — source card visible/clickable (`Πηγή — Διαύγεια` opens Android intent chooser), org/pill no longer shown as `Σύνοψη`, quote markers removed. Evidence: `/tmp/ekklesia_diav_fix_final_20260604_000652`.
+- **Pending high:** NEA-301 Fetcher (9 Bills ohne summary_long_el), NEA-301b DIAVGEIA real summary backfill, NEA-303 test-account Region, NEA-304 follow-up, #79/NEA-281 F-Droid linsui merge, NEA-286 Lifecycle-Bug
 - **Pending medium/backlog:** NEA-260/GH#82 Forum SSO, NEA-277/GH#71 startup-check, NEA-278/GH#72 CLAUDE.md stale values, NEA-285/GH#83 Diavgeia org mapping, NEA-279/GH#77 ZK Wizard, NEA-262 weekly auto-newsletter
 - **Pending external/blocked:** NEA-282/GH#80 Off-site backup waits for first donation; NEA-249/GH#81 blocked on Mopro/React Native
 - **Neu live:** municipality/, article.html, Autodesmefsi PDF, Forum Topic #436
