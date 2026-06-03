@@ -42,6 +42,7 @@ function cleanOfficialText(value?: string | null) {
   const cleaned = String(value)
     .replace(/\[[^\]]*\]\(https?:\/\/[^)]*\)/g, "")
     .replace(/\]\(/g, " ")
+    .replace(/(^|\s)>\s*/g, "$1")
     .replace(/[*_`]+/g, "")
     .replace(/https?:\/\/\S+/g, "")
     .replace(/\s+/g, " ")
