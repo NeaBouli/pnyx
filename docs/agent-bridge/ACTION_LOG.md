@@ -5363,3 +5363,66 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 - Linear direct update attempted.
 - Result: blocked by expired Linear auth token (`401 token_expired`).
 - Status must be copied to Linear after re-auth/sign-in.
+
+## 2026-06-03 — Codex: Final vC30 mobile UI regression + landing/GitHub asset refresh
+
+### Trigger
+- Gio reported remaining mobile regressions before AAB upload:
+  - Bill-card preview actions used long text labels (`Μοιραστείτε`, `Ψηφίστε`, `Αξιολόγηση`) and overflowed on S10.
+  - ACTIVE bill detail showed stale/unhelpful official-text unavailable wording despite `parliament_url` being present.
+  - Already-voted ACTIVE bill allowed tapping vote buttons, then server returned duplicate-vote error.
+  - Βουλή bill details showed stale unavailable/source behavior and raw Parliament page boilerplate.
+
+### Fix Commit
+- `7053510 fix(mobile): polish bill source and vote states`
+
+### Code Changes
+- Mobile bill cards:
+  - Replaced Share/Vote/Evaluation text labels with compact icons: forum `💬`, share `↗`, vote `✓`, evaluation `⚖`.
+  - Footer layout now uses fixed icon actions to avoid card overflow.
+- API voting:
+  - Added `GET /api/v1/vote/{bill_id}/status?nullifier_hash=...`.
+  - Returns `has_voted`, `vote`, `is_correction`, `can_correct`, bill status.
+- Mobile vote detail:
+  - Fetches vote status before enabling controls.
+  - Already-voted ACTIVE bills show grey/locked vote buttons and text: `Έχετε ήδη ψηφίσει. Η ψήφος θα μπορεί να αλλάξει μόνο στο τελευταίο 24ωρο.`
+  - WINDOW_24H remains available for one correction.
+  - Vote controls only render for `ACTIVE` and `WINDOW_24H`; no controls for `PARLIAMENT_VOTED`.
+- Source/detail fallback:
+  - Uses `official_source_url` first; for Parliament bills falls back to `parliament_url` with label `Σελίδα Βουλής — συγχρονίζεται το κείμενο`.
+  - Replaced stale unavailable wording with sync wording.
+  - Filters Parliament web chrome/accessibility/menu boilerplate from unreviewed official text snippets.
+
+### Server / Deploy
+- API server repo and container updated to `7053510`.
+- API health verified.
+- Vote-status endpoint verified live for `GR-5294`.
+- Final APK installed on S10:
+  - `versionCode=30`
+  - `versionName=1.0.3`
+  - `lastUpdateTime=2026-06-03 10:30:54`
+- Final artifacts:
+  - APK SHA256: `6b216b7d00823c34b2ba3b9dabee8cbe9de60d3310314690fa062fc23eb8a388`
+  - AAB SHA256: `7cc92ddeb9be36a238bc62a375867eadc92f55a102a986e87220e524b76cdadc`
+- Landing updated in both required places:
+  - Host: `/opt/ekklesia/app/docs/download/ekklesia-latest.apk`
+  - Web container: `ekklesia-web:/app/public/download/ekklesia-latest.apk`
+- Public landing download verified by downloading from `https://ekklesia.gr/download/ekklesia-latest.apk` and hashing to APK SHA above.
+- GitHub Release `v1.0.3` assets refreshed with final APK/AAB; release asset digests verified.
+
+### S10 Final Regression Evidence
+- Screenshots/UI XML saved locally under `/tmp/ekklesia_final_fix_check`.
+- Checks:
+  - Bill-card forbidden text grep: PASS (no `Μοιραστείτε`, `Ψηφίστε`, `Αξιολόγηση` in cards).
+  - Bill-card icon evidence: PASS (`💬`, `↗`, `✓`).
+  - ACTIVE detail `GR-5294`: PASS (`Σελίδα Βουλής — συγχρονίζεται το κείμενο`, already-voted lock visible).
+  - Locked ACTIVE vote tap: PASS (no duplicate-vote error, no biometric prompt).
+  - Βουλή detail `GR-5293`: PASS (no stale unavailable text, no Parliament webchrome, no vote controls; source fallback visible).
+  - Logcat crash scan: PASS (no `FATAL EXCEPTION`, no `AndroidRuntime`).
+
+### Residual Work
+- NEA-301 remains open for real data ingestion:
+  - Some Parliament bills still lack `summary_long_el`; UI now handles this gracefully but fetcher must ingest real source text.
+  - Reviewed AI analysis pipeline still missing; mobile falls back to summary/source until `ai_summary_reviewed=true` content exists.
+- Play Console upload note:
+  - If vC30 AAB was already uploaded to Play, Play will require a future versionCode bump for another upload.

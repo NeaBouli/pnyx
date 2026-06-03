@@ -15,11 +15,11 @@
 - **Branch:** `main`
 - **Lokaler HEAD:** siehe `git rev-parse --short HEAD`
 - **origin/main:** siehe `git rev-parse --short origin/main`
-- **Server repo HEAD:** `40e92a6` (deployed 02.06.2026)
-- **API container:** `40e92a6` — Bill summaries/source-link fallback fix LIVE
+- **Server repo HEAD:** `7053510` (deployed 02.06.2026)
+- **API container:** `7053510` — vote-status endpoint + bill source fallback LIVE
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
-- **Web container:** `40e92a6` — Bill detail source-label/fallback fix LIVE
-- **S10:** vC30/1.0.3 Play-Release APK installiert und interaktiv geprueft (02:11:48 Europe/Athens)
+- **Web container:** `7053510` — final vC30 APK copied into `/app/public/download`
+- **S10:** vC30/1.0.3 Play-Release APK installiert und final interaktiv geprueft (10:30:54 Europe/Athens)
 - **Alembic:** `o801a2b3c4d5` (polis_tickets + polis_votes + polis_identity_keys)
 - **F-Droid !38007:** Community launch-crash fixed in fdroiddata `e42e014f`; pipeline `2570810919` green 9/9; GlassOnTin/linsui re-test requested
 - **POLIS Status:** App-internal Create/Vote LIVE
@@ -28,7 +28,7 @@
 - **Telegram Bot:** citizen_votes Query LIVE, governance Topic-Routing LIVE
 - **vC29 Release:** COMPLETE — APK live auf ekklesia.gr, AAB in Play Console hochgeladen
 - **vC30 Mobile Build:** AAB/APK gebaut; APK auf S10 installiert; Launch-Crash behoben; Bill-Detail zeigt Summary + offiziellen Text-Fallback
-- **vC30 Landing APK:** LIVE `https://ekklesia.gr/download/ekklesia-latest.apk`, SHA256 `e73e72a25654f6246c6d957ae763bdf37455c40b1323aa00a6f56823935b0f7e`
+- **vC30 Landing APK:** LIVE `https://ekklesia.gr/download/ekklesia-latest.apk`, SHA256 `6b216b7d00823c34b2ba3b9dabee8cbe9de60d3310314690fa062fc23eb8a388`
 - **vC30 GitHub Release:** `v1.0.3` live with APK+AAB assets; latest CI fixed and green at `d74655f`
 - **Linear:** direct update blocked by expired auth token (`401 token_expired`)
 - **NEA-301b PARLIAMENT:** DONE (17/31 mit summary_short_el, 9 brauchen Fetcher, 3 DEMO + 2 flagged excluded, DIAVGEIA 0/636 eigene Phase)

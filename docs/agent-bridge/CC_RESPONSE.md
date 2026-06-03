@@ -1,11 +1,49 @@
 # CC Response
 
+## 2026-06-03 — Codex: FINAL vC30 mobile UI regression fixed + assets refreshed
+
+### Executive Status
+- Final mobile UI regressions reported by Gio are fixed, built, installed on S10, and verified by ADB/UI XML.
+- Final commit: `7053510 fix(mobile): polish bill source and vote states`.
+- API container and server repo are on `7053510`.
+- Landing APK and GitHub Release `v1.0.3` assets are refreshed with the final build.
+- S10 can be unplugged; final APK is installed.
+
+### Final Artifact Hashes
+- APK: `6b216b7d00823c34b2ba3b9dabee8cbe9de60d3310314690fa062fc23eb8a388`
+- AAB: `7cc92ddeb9be36a238bc62a375867eadc92f55a102a986e87220e524b76cdadc`
+- Public APK download was fetched from `https://ekklesia.gr/download/ekklesia-latest.apk` and hashed to the APK SHA above.
+- GitHub Release asset digests match the APK/AAB SHAs above.
+
+### What Was Fixed
+- Bill cards: replaced long Share/Vote/Evaluation text labels with compact icons (`💬`, `↗`, `✓`, `⚖`) to stop S10 overflow.
+- API: added `GET /api/v1/vote/{bill_id}/status?nullifier_hash=...`.
+- Vote detail: already-voted ACTIVE bills now show grey/locked controls and do not trigger duplicate-vote errors.
+- WINDOW_24H: still allows one correction.
+- PARLIAMENT_VOTED: no vote controls are rendered anymore.
+- Source fallback: Parliament bills use `official_source_url` first, then `parliament_url` with `Σελίδα Βουλής — συγχρονίζεται το κείμενο`.
+- Official text fallback: stale “not available” wording replaced; Parliament webchrome/accessibility/menu boilerplate filtered out.
+
+### S10 Verification
+- Installed: `ekklesia.gr`, `versionCode=30`, `versionName=1.0.3`, `lastUpdateTime=2026-06-03 10:30:54`.
+- Bill-card grep: no `Μοιραστείτε`, `Ψηφίστε`, `Αξιολόγηση` text in cards.
+- Active bill `GR-5294`: source fallback visible, already-voted lock visible, locked tap produced no error/modal/biometric prompt.
+- Βουλή bill `GR-5293`: no stale unavailable text, no Parliament boilerplate, no vote controls, source fallback visible.
+- Logcat: no `FATAL EXCEPTION`, no `AndroidRuntime`.
+- Evidence path: `/tmp/ekklesia_final_fix_check`.
+
+### Still Open
+- NEA-301 remains real data-work, not a mobile UI blocker:
+  - 9 Parliament bills still need fetcher/text ingestion for `summary_long_el`.
+  - Reviewed AI analysis pipeline is still missing; app gracefully falls back to summary/source until reviewed analysis exists.
+- Play upload caveat: if vC30 was already uploaded in Play Console, the next Play upload needs a versionCode bump.
+
 ## 2026-06-03 — Codex: vC30 Release complete + CI/GitHub/Linear status
 
 ### Executive Status
 - vC30 APK is live on landing page.
 - vC30 APK is installed on S10 and verified.
-- GitHub Release `v1.0.3` exists with APK+AAB assets.
+- GitHub Release `v1.0.3` exists with final APK+AAB assets.
 - CI is green after follow-up fix.
 - GitHub issues updated.
 - Linear update attempted but blocked by expired auth token.
@@ -13,10 +51,10 @@
 ### Release Artifacts
 - Landing APK: `https://ekklesia.gr/download/ekklesia-latest.apk`
 - GitHub Release: `https://github.com/NeaBouli/pnyx/releases/tag/v1.0.3`
-- APK SHA256: `e73e72a25654f6246c6d957ae763bdf37455c40b1323aa00a6f56823935b0f7e`
-- AAB SHA256: `795d96d7fe2e36bb369be3566202241cc75f4be46273de978e550bdb5ae60f6e`
-- APK size: `60,942,026` bytes
-- AAB size: `29,650,251` bytes
+- APK SHA256: `6b216b7d00823c34b2ba3b9dabee8cbe9de60d3310314690fa062fc23eb8a388`
+- AAB SHA256: `7cc92ddeb9be36a238bc62a375867eadc92f55a102a986e87220e524b76cdadc`
+- APK size: `60,943,494` bytes
+- AAB size: `29,651,029` bytes
 
 ### S10 Verification
 - Installed package: `ekklesia.gr`
@@ -25,7 +63,7 @@
 - Launch: PASS
 - `MainActivity` focused: PASS
 - Logcat crash scan: no `FATAL EXCEPTION`
-- Bill detail checked: `Σύνοψη`, `Επίσημο κείμενο`, `Μοιραστείτε ↗` visible
+- Bill detail checked: bill-card icons, active already-voted lock, Βουλή source fallback, no stale unavailable text
 
 ### Landingpage Deploy
 - Copied final APK to server path:
@@ -33,7 +71,7 @@
 - Copied final APK into running web container:
   - `ekklesia-web:/app/public/download/ekklesia-latest.apk`
 - Public URL SHA verified:
-  - `e73e72a25654f6246c6d957ae763bdf37455c40b1323aa00a6f56823935b0f7e`
+  - `6b216b7d00823c34b2ba3b9dabee8cbe9de60d3310314690fa062fc23eb8a388`
 - Manifest updated:
   - `docs/download/APK_MANIFEST.md`
   - `docs/download/ekklesia-latest.apk.sha256`
@@ -116,8 +154,8 @@
 - `cd apps/mobile && npx tsc --noEmit`: PASS.
 - `bash scripts/build-play.sh`: PASS.
 - `cd apps/mobile/android && ./gradlew bundlePlayRelease assemblePlayRelease`: PASS.
-- APK SHA256: `e73e72a25654f6246c6d957ae763bdf37455c40b1323aa00a6f56823935b0f7e`.
-- AAB SHA256: `795d96d7fe2e36bb369be3566202241cc75f4be46273de978e550bdb5ae60f6e`.
+- APK SHA256: `6b216b7d00823c34b2ba3b9dabee8cbe9de60d3310314690fa062fc23eb8a388`.
+- AAB SHA256: `7cc92ddeb9be36a238bc62a375867eadc92f55a102a986e87220e524b76cdadc`.
 - APK enthaelt Hermes libs + JS bundle.
 - S10 installiert: `versionCode=30`, `versionName=1.0.3`, `lastUpdateTime=2026-06-03 02:11:48`.
 - S10 Start: PASS, `MainActivity` focused, kein `FATAL EXCEPTION`.

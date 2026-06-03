@@ -31,17 +31,17 @@ https://ekklesia.gr/representative/index.html
 | Version | 1.0.3 |
 | versionCode | 30 |
 | Package | ekklesia.gr |
-| APK SHA256 | `e73e72a25654f6246c6d957ae763bdf37455c40b1323aa00a6f56823935b0f7e` |
-| AAB SHA256 | `795d96d7fe2e36bb369be3566202241cc75f4be46273de978e550bdb5ae60f6e` |
+| APK SHA256 | `6b216b7d00823c34b2ba3b9dabee8cbe9de60d3310314690fa062fc23eb8a388` |
+| AAB SHA256 | `7cc92ddeb9be36a238bc62a375867eadc92f55a102a986e87220e524b76cdadc` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
 | Build date | 2026-06-03 |
-| Release gate | PASS — S10 launch + Bill detail verified |
-| Includes | vC30 Hermes runtime alignment, source link labels, official text fallback for unreviewed analysis |
+| Release gate | PASS — S10 final UI regression: bill-card icons, source fallback, already-voted lock, Βουλή detail |
+| Includes | vC30 Hermes runtime alignment, source link labels, official text fallback, vote-status lock, Βουλή boilerplate guard |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: e73e72a25654f6246c6d957ae763bdf37455c40b1323aa00a6f56823935b0f7e
+# Expected: 6b216b7d00823c34b2ba3b9dabee8cbe9de60d3310314690fa062fc23eb8a388
 ```
