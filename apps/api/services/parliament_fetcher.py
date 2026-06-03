@@ -19,6 +19,38 @@ logger = logging.getLogger(__name__)
 
 JINA_URL = "https://r.jina.ai/"
 USER_AGENT = "ekklesia.gr/1.0 (civic-tech; +https://ekklesia.gr/wiki/api.html)"
+
+# Boilerplate patterns that indicate Parliament navigation/chrome, not bill text
+_BAD_TEXT_PATTERNS = [
+    "Μετάβαση στο κύριο περιεχόμενο",
+    "Ενεργοποίηση προσβασιμότητας",
+    "Ανοίξτε το μενού προσβασιμότητας",
+    "Νομοθετική Διαδικασία",
+    "Ημερ. Διάταξη Ολομέλειας",
+    "Εβδομαδιαίο Δελτίο",
+    "Κατατεθέντα Σ/Ν ή Π/Ν",
+    "Επεξεργασία στις Επιτροπές",
+    "Συζητήσεις & Ψήφιση",
+    "Ψηφισθέντα Σ/Ν",
+    "Εμφανίζονται τα σχέδια ή οι προτάσεις",
+    "Εμφανίζονται τα ψηφισθέντα",
+]
+
+
+def _is_bad_parliament_text(text: str) -> bool:
+    """Return True if text is Parliament navigation boilerplate, not real bill content."""
+    if not text or len(text.strip()) < 50:
+        return True
+    # Check for boilerplate markers
+    matches = sum(1 for pat in _BAD_TEXT_PATTERNS if pat in text)
+    if matches >= 2:
+        return True
+    # Mostly Markdown links (nav menus)
+    lines = text.strip().split("\n")
+    link_lines = sum(1 for l in lines if l.strip().startswith("*") and "http" in l)
+    if len(lines) > 3 and link_lines / len(lines) > 0.4:
+        return True
+    return False
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
 MIN_TEXT_LENGTH = 200
@@ -302,6 +334,9 @@ async def enrich_bill_with_text(bill_id: str, db, redis=None) -> dict:
         return {"success": False, "error": "No parliament_url"}
 
     text = await fetch_bill_text(bill_id, bill.parliament_url)
+    if text and _is_bad_parliament_text(text):
+        logger.info("[SCRAPER] Rejected bad parliament text for %s (%d chars, boilerplate)", bill_id, len(text))
+        return {"success": False, "error": "Rejected: parliament boilerplate"}
     if text and len(text) >= MIN_TEXT_LENGTH:
         bill.summary_long_el = text
         await db.commit()
@@ -313,7 +348,7 @@ async def enrich_bill_with_text(bill_id: str, db, redis=None) -> dict:
                 pass
         return {"success": True, "text_length": len(text)}
 
-    return {"success": False, "error": "All 3 channels failed"}
+    return {"success": False, "error": "All channels failed or text too short"}
 
 
 async def enrich_all_bills(db) -> dict:
@@ -334,6 +369,10 @@ async def enrich_all_bills(db) -> dict:
 
     for bill in bills:
         text = await fetch_bill_text(bill.id, bill.parliament_url)
+        if text and _is_bad_parliament_text(text):
+            logger.info("[ENRICH-ALL] Skipped bad text: %s", bill.id)
+            stats["failed"] += 1
+            continue
         if text and len(text) >= MIN_TEXT_LENGTH:
             bill.summary_long_el = text
             stats["enriched"] += 1

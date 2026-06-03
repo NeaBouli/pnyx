@@ -43,10 +43,17 @@ function cleanOfficialText(value?: string | null) {
     .replace(/https?:\/\/\S+/g, "")
     .replace(/\s+/g, " ")
     .trim();
-  if (
-    cleaned.startsWith("Μετάβαση στο κύριο περιεχόμενο") ||
-    cleaned.includes("Ανοίξτε το μενού προσβασιμότητας")
-  ) {
+  const badPatterns = [
+    "Μετάβαση στο κύριο περιεχόμενο",
+    "Ανοίξτε το μενού προσβασιμότητας",
+    "Νομοθετική Διαδικασία",
+    "Ημερ. Διάταξη Ολομέλειας",
+    "Εβδομαδιαίο Δελτίο",
+    "Εμφανίζονται τα σχέδια",
+    "Εμφανίζονται τα ψηφισθέντα",
+    "Κατατεθέντα Σ/Ν",
+  ];
+  if (badPatterns.some(p => cleaned.includes(p))) {
     return "";
   }
   return cleaned.slice(0, 1400);
@@ -310,7 +317,7 @@ export default function VoteScreen({ route, navigation }: Props) {
         </View>
       )}
 
-      {sourceUrl ? (
+      {sourceUrl && sourceKind === "official" ? (
         <TouchableOpacity
           onPress={() => Linking.openURL(sourceUrl)}
           style={{ backgroundColor: "#eff6ff", borderRadius: 10, padding: 12, marginBottom: 12, flexDirection: "row", alignItems: "center" }}
@@ -319,11 +326,13 @@ export default function VoteScreen({ route, navigation }: Props) {
           <Text style={{ color: "#1d4ed8", fontSize: 13, fontWeight: "600", flex: 1 }}>{sourceLabel(billSource, sourceKind)}</Text>
           <Text style={{ color: "#93c5fd", fontSize: 12 }}>↗</Text>
         </TouchableOpacity>
-      ) : billLoaded ? (
-        <View style={{ backgroundColor: "#f8fafc", borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#e2e8f0" }}>
-          <Text style={{ color: "#64748b", fontSize: 13, lineHeight: 18 }}>
-            Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα.
-          </Text>
+      ) : billLoaded && billSource === "PARLIAMENT" ? (
+        <View style={{ backgroundColor: "#f8fafc", borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#e2e8f0", flexDirection: "row", alignItems: "center" }}>
+          <Text style={{ fontSize: 14, marginRight: 8 }}>🏛️</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: "#475569", fontSize: 13, fontWeight: "600" }}>Πηγή — Βουλή των Ελλήνων</Text>
+            <Text style={{ color: "#94a3b8", fontSize: 11, marginTop: 2 }}>Το κείμενο αναζητείται</Text>
+          </View>
         </View>
       ) : null}
 
