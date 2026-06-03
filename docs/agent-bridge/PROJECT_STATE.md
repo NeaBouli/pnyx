@@ -15,7 +15,7 @@
 - **Branch:** `main`
 - **Lokaler HEAD:** siehe `git rev-parse --short HEAD`
 - **origin/main:** siehe `git rev-parse --short origin/main`
-- **Server repo HEAD:** `7053510` (deployed 02.06.2026)
+- **Server repo HEAD:** `62febca` (deployed 02.06.2026)
 - **API container:** `7053510` — vote-status endpoint + bill source fallback LIVE
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
 - **Web container:** `7053510` — final vC30 APK copied into `/app/public/download`
@@ -29,8 +29,8 @@
 - **vC29 Release:** COMPLETE — APK live auf ekklesia.gr, AAB in Play Console hochgeladen
 - **vC30 Mobile Build:** AAB/APK gebaut; APK auf S10 installiert; Launch-Crash behoben; Bill-Detail zeigt Summary + offiziellen Text-Fallback
 - **vC30 Landing APK:** LIVE `https://ekklesia.gr/download/ekklesia-latest.apk`, SHA256 `6b216b7d00823c34b2ba3b9dabee8cbe9de60d3310314690fa062fc23eb8a388`
-- **vC30 GitHub Release:** `v1.0.3` live with APK+AAB assets; latest CI fixed and green at `d74655f`
-- **Linear:** Token OK (`~/.claude/.env` → `LINEAR_API_KEY`), NEA-280 + NEA-292 geschlossen
+- **vC30 GitHub Release:** `v1.0.3` live with final APK+AAB assets; latest CI and Security Audit green at `62febca`
+- **Linear:** Token OK (`~/.claude/.env` → `LINEAR_API_KEY`), NEA-280 + NEA-292 geschlossen; Codex verified and commented NEA-292 + NEA-301
 - **NEA-301b PARLIAMENT:** DONE (17/31 mit summary_short_el, 9 brauchen Fetcher, 3 DEMO + 2 flagged excluded, DIAVGEIA 0/636 eigene Phase)
 - **Ollama:** RAM zurueck auf 2.4 GB (Produktion), kein Job aktiv
 - **T3 Arweave Alerts:** FIXED `a90d508` — Monitor verlangt `party_votes_parliament IS NOT NULL`; false-positive fuer GR-0490a766 behoben

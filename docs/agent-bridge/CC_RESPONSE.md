@@ -116,8 +116,8 @@
   - NEA-304: keep open for TX verification/fetcher follow-up.
 
 ### Latest Repo State
-- Latest `origin/main`: `d74655f`.
-- Release metadata commit: `45b5ed8`.
+- Latest `origin/main`: `62febca`.
+- Final release/bridge commit: `62febca`.
 - Mobile runtime/UI fix commit: `2c3e321`.
 
 ---

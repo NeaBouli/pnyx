@@ -5426,3 +5426,19 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
   - Reviewed AI analysis pipeline still missing; mobile falls back to summary/source until `ai_summary_reviewed=true` content exists.
 - Play Console upload note:
   - If vC30 AAB was already uploaded to Play, Play will require a future versionCode bump for another upload.
+
+## 2026-06-03 — Codex: Linear token verified + NEA comments
+
+- Read Bridge and verified Linear access using `LINEAR_API_KEY` from `~/.claude/.env`.
+- Viewer verified: `Kaspartisan`.
+- Linear states verified:
+  - NEA-275: Done
+  - NEA-280: Done
+  - NEA-292: Done
+  - NEA-301: Backlog
+  - NEA-303: Backlog
+  - NEA-304: Backlog
+- Added Linear comments:
+  - NEA-292: final vC30 S10 regression result, commit `7053510`, bridge `62febca`, APK/AAB hashes.
+  - NEA-301: mobile graceful fallback done; remaining fetcher/text-ingestion and reviewed-analysis pipeline work documented.
+- Note: Python `urllib` hit local macOS cert-chain issue; `curl` GraphQL path works with same token. Token was not printed.
