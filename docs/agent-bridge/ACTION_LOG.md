@@ -5729,3 +5729,29 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 ### APK SHA
 - APK bereit fuer Landing/Release Update
 - Kein versionCode bump (gleiche vC30/1.0.3)
+
+---
+
+## 2026-06-04 — CC: Forum-Fallback in VoteScreen + ResultScreen wiederhergestellt (#101)
+
+### Root Cause
+- Beim NEA-301 Option-E-Umbau wurde der forum_topic_url Fallback aus VoteScreen + ResultScreen entfernt
+- BillsScreen hatte den Forum-Link noch (💬 Icon auf Cards)
+- Detail-Screens zeigten nur official_source_url (403 PDFs) oder "Το κείμενο αναζητείται"
+- 701 Bills haben funktionierenden forum_topic_id, API liefert forum_topic_url
+
+### Fix (Commit `32d3085`)
+- Source-Priorität: official_source_url → forum_topic_url → non-clickable
+- VoteScreen: sourceKind erweitert um "forum", 💬 Icon, "Διαβάστε & συζητήστε στο Φόρουμ"
+- ResultScreen: gleiche Logik
+- api.ts: BillResults Interface + forum_topic_id/url Felder
+- TSC: OK
+
+### API Verification
+- GR-5294: official=NULL, forum=pnyx.ekklesia.gr/t/132 → Forum-Link wird gezeigt
+- GR-5293: official=NULL, forum=pnyx.ekklesia.gr/t/131 → Forum-Link wird gezeigt
+- GR-0490a766: official=PDF (403), forum=pnyx.ekklesia.gr/t/438 → official zuerst, Forum Fallback
+
+### GitHub Issue #101 angelegt
+### APK Build laeuft — S10 Install + Visual-Check ausstehend
+### Kein versionCode bump, kein AAB/Play
