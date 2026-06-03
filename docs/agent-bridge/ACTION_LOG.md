@@ -5477,3 +5477,20 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
   - C/manual only as temporary generated backfill, not durable solution.
   - D rejected as final release behavior because tappable 403 source links are bad UX.
 - Additional finding: vC30 app code is only partially correct; it hides boilerplate/vote controls, but the `parliament_url` fallback should not be clickable when it resolves to 403.
+
+---
+
+## 2026-06-03 — CC: Session Close — Codex-Empfehlung gelesen
+
+### Codex-Empfehlung (612055b)
+- Option E: Quality Gate + verified source + PDF extraction + Playwright Fallback
+- Kein tappbarer 403 parliament_url Link in der App
+- Kein AAB/Play/versionCode bump bis Fetcher-Fix geprüft
+- Gelesen und akzeptiert
+
+### Naechste Session: NEA-301 Fetcher-Fix
+1. `_is_bad_parliament_text()` Quality Gate in parliament_fetcher.py
+2. PDF-Extraktion aus Jina Parliament Tabellen (scraper.py)
+3. Mobile Source-Link nur wenn verified official_source_url existiert
+4. S10 Re-Test nach Fix
+5. Kein Build/Deploy ohne Codex-Abnahme
