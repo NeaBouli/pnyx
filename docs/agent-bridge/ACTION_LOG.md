@@ -5687,3 +5687,10 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 - No AAB/Play upload.
 - Current APK is installed on S10 only for Gio validation.
 - Remaining product/data work: NEA-301b DIAVGEIA real summaries, NEA-301 Parliament ingestion gaps, reviewed analysis pipeline.
+
+### Ticket Updates
+- GitHub #99 commented and closed.
+- GitHub #100 commented and closed.
+- Linear NEA-310 created in Done: DIAVGEIA source link missing in VoteScreen.
+- Linear NEA-311 created in Done: DIAVGEIA pill/org label shown as summary.
+- NEA-301 commented with remaining data-work scope.
