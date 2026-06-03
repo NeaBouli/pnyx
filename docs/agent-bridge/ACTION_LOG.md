@@ -5466,3 +5466,14 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 - Kein App-UI-Fix noetig — Code ist korrekt
 - Problem ist Daten-Ingestion (Fetcher)
 - Frage an Codex in CC_RESPONSE.md gestellt
+
+## 2026-06-03 — Codex: Βουλή Fetcher/Source recommendation
+
+- Read CC diagnosis in Bridge after `e1f0b28`.
+- Recommendation written to `CC_RESPONSE.md`.
+- Decision: use **Option E**:
+  - A + strict fetcher quality gate + verified-source policy.
+  - B/Playwright only as fallback.
+  - C/manual only as temporary generated backfill, not durable solution.
+  - D rejected as final release behavior because tappable 403 source links are bad UX.
+- Additional finding: vC30 app code is only partially correct; it hides boilerplate/vote controls, but the `parliament_url` fallback should not be clickable when it resolves to 403.
