@@ -18,7 +18,7 @@ import * as LocalAuthentication from "expo-local-authentication";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { loadKeypair, loadNullifier, signVote, verifyVote } from "../lib/crypto-native";
-import { submitVote, correctVote } from "../lib/api";
+import { submitVote, correctVote, fetchVoteStatus } from "../lib/api";
 import { isDemoMode } from "../lib/demo";
 import { colors } from "../theme";
 
@@ -36,18 +36,25 @@ function readableText(value?: string | null) {
 
 function cleanOfficialText(value?: string | null) {
   if (!readableText(value)) return "";
-  return String(value)
+  const cleaned = String(value)
     .replace(/\[[^\]]*\]\(https?:\/\/[^)]*\)/g, "")
     .replace(/\]\(/g, " ")
     .replace(/[*_`]+/g, "")
     .replace(/https?:\/\/\S+/g, "")
     .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 1400);
+    .trim();
+  if (
+    cleaned.startsWith("Μετάβαση στο κύριο περιεχόμενο") ||
+    cleaned.includes("Ανοίξτε το μενού προσβασιμότητας")
+  ) {
+    return "";
+  }
+  return cleaned.slice(0, 1400);
 }
 
-function sourceLabel(source: string) {
+function sourceLabel(source: string, sourceKind: string) {
   if (source === "DIAVGEIA") return "Πηγή — Διαύγεια";
+  if (sourceKind === "page") return "Σελίδα Βουλής — συγχρονίζεται το κείμενο";
   return "Πηγή — Βουλή των Ελλήνων";
 }
 
@@ -70,26 +77,48 @@ export default function VoteScreen({ route, navigation }: Props) {
   const [consensusSubmitting, setConsensusSubmitting] = useState(false);
   const [consensusDone, setConsensusDone] = useState(false);
   const [sourceUrl, setSourceUrl] = useState("");
+  const [sourceKind, setSourceKind] = useState<"official" | "page" | "none">("none");
 
   React.useEffect(() => {
     const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
-    fetch(`${API}/api/v1/bills/${encodeURIComponent(billId)}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
+    let mounted = true;
+    (async () => {
+      try {
+        const r = await fetch(`${API}/api/v1/bills/${encodeURIComponent(billId)}`);
+        const d = r.ok ? await r.json() : null;
+        if (!mounted) return;
         if (d?.status) {
           const source = d.source || "PARLIAMENT";
+          const officialUrl = d.official_source_url || "";
+          const fallbackUrl = source === "PARLIAMENT" ? d.parliament_url || "" : "";
           setBillStatus(d.status);
           setBillGovernance(d.governance_level || "NATIONAL");
           setBillSource(source);
           setBillPill(readableText(d.pill_el) ? d.pill_el : "");
-          setSourceUrl(d.official_source_url || "");
+          setSourceUrl(officialUrl || fallbackUrl);
+          setSourceKind(officialUrl ? "official" : fallbackUrl ? "page" : "none");
           if (readableText(d.summary_short_el)) setSummary(d.summary_short_el);
           if (d.ai_summary_reviewed && readableText(d.summary_long_el)) setAnalysis(d.summary_long_el);
           if (!d.ai_summary_reviewed) setOfficialText(cleanOfficialText(d.summary_long_el));
         }
-      })
-      .catch(() => {})
-      .finally(() => { setBillLoaded(true); setSummaryLoading(false); });
+        const nullifier = await loadNullifier();
+        if (nullifier && mounted) {
+          const voteStatus = await fetchVoteStatus(nullifier, billId);
+          if (!mounted) return;
+          setHasVoted(voteStatus.has_voted);
+          setIsCorrected(voteStatus.is_correction);
+          if (voteStatus.vote) setSelected(voteStatus.vote);
+        }
+      } catch {
+        // Detail and vote-status failures must not block the screen.
+      } finally {
+        if (mounted) {
+          setBillLoaded(true);
+          setSummaryLoading(false);
+        }
+      }
+    })();
+    return () => { mounted = false; };
   }, [billId]);
 
   async function handleVote(choice: string) {
@@ -142,6 +171,8 @@ export default function VoteScreen({ route, navigation }: Props) {
       }
 
       const res = await submitVote(nullifier, billId, choice, signatureHex);
+      setHasVoted(true);
+      setSelected(choice);
 
       Alert.alert("Επιτυχία ✓", res.message, [
         {
@@ -150,7 +181,11 @@ export default function VoteScreen({ route, navigation }: Props) {
         },
       ]);
     } catch (err: any) {
-      Alert.alert("Σφάλμα", err.message || "Η ψηφοφορία απέτυχε.");
+      const message = err.message || "Η ψηφοφορία απέτυχε.";
+      if (message.includes("ήδη") || message.includes("already") || message.includes("409")) {
+        setHasVoted(true);
+      }
+      Alert.alert("Σφάλμα", message);
       setSelected(null);
     } finally {
       setLoading(false);
@@ -179,6 +214,8 @@ export default function VoteScreen({ route, navigation }: Props) {
       const signatureHex = signVote(keypair.privateKeyHex, voteParams);
       const res = await correctVote(nullifier, billId, choice, signatureHex);
       setIsCorrected(true);
+      setHasVoted(true);
+      setSelected(choice);
       Alert.alert("Διόρθωση ✓", "Η ψήφος σας διορθώθηκε επιτυχώς.", [
         { text: "Αποτελέσματα", onPress: () => navigation.replace("Result", { billId, billTitle, fromVote: true }) },
       ]);
@@ -189,12 +226,19 @@ export default function VoteScreen({ route, navigation }: Props) {
     }
   }
 
+  const canCorrectVote = hasVoted && billStatus === "WINDOW_24H" && !isCorrected;
+  const voteLocked = hasVoted && !canCorrectVote;
+  const showVoteControls = billLoaded && (billStatus === "ACTIVE" || billStatus === "WINDOW_24H");
+  const summaryFallback = sourceUrl
+    ? "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα. Δείτε προσωρινά τη σελίδα της πηγής."
+    : "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα.";
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
         <Text style={[styles.title, { flex: 1 }]}>{billTitle}</Text>
         <TouchableOpacity onPress={shareBill} style={{ padding: 8 }}>
-          <Text style={{ fontSize: 13, color: colors.primary, fontWeight: "700" }}>Μοιραστείτε ↗</Text>
+          <Text style={{ fontSize: 22, color: colors.primary, fontWeight: "800" }}>↗</Text>
         </TouchableOpacity>
       </View>
       {/* Reviewed summary/analysis */}
@@ -206,7 +250,7 @@ export default function VoteScreen({ route, navigation }: Props) {
             Σύνοψη
           </Text>
           <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20 }}>
-            {(summary || billPill || "Δεν υπάρχει ακόμα ελεγμένη σύνοψη για αυτή την πράξη. Δείτε το επίσημο κείμενο στην πηγή.").split(/(\*\*[^*]+\*\*|\*[^*]+\*)/).map((part, i) => {
+            {(summary || billPill || summaryFallback).split(/(\*\*[^*]+\*\*|\*[^*]+\*)/).map((part, i) => {
               if (part.startsWith("**") && part.endsWith("**"))
                 return <Text key={i} style={{ fontWeight: "700" }}>{part.slice(2, -2)}</Text>;
               if (part.startsWith("*") && part.endsWith("*"))
@@ -272,13 +316,13 @@ export default function VoteScreen({ route, navigation }: Props) {
           style={{ backgroundColor: "#eff6ff", borderRadius: 10, padding: 12, marginBottom: 12, flexDirection: "row", alignItems: "center" }}
         >
           <Text style={{ fontSize: 14, marginRight: 8 }}>🔗</Text>
-          <Text style={{ color: "#1d4ed8", fontSize: 13, fontWeight: "600", flex: 1 }}>{sourceLabel(billSource)}</Text>
+          <Text style={{ color: "#1d4ed8", fontSize: 13, fontWeight: "600", flex: 1 }}>{sourceLabel(billSource, sourceKind)}</Text>
           <Text style={{ color: "#93c5fd", fontSize: 12 }}>↗</Text>
         </TouchableOpacity>
       ) : billLoaded ? (
         <View style={{ backgroundColor: "#f8fafc", borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#e2e8f0" }}>
           <Text style={{ color: "#64748b", fontSize: 13, lineHeight: 18 }}>
-            Το επίσημο κείμενο δεν είναι ακόμη διαθέσιμο σε αναγνώσιμη μορφή. Δεν ανοίγουμε σύνδεσμο που οδηγεί σε κενή ή μη προσβάσιμη σελίδα.
+            Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα.
           </Text>
         </View>
       ) : null}
@@ -291,11 +335,13 @@ export default function VoteScreen({ route, navigation }: Props) {
         </View>
       )}
 
-      {billLoaded && billStatus !== "ANNOUNCED" && billStatus !== "OPEN_END" && (
+      {showVoteControls && (
         <>
           <Text style={styles.info}>
-            {hasVoted && billStatus === "WINDOW_24H" && !isCorrected
-              ? "Έχετε ήδη ψηφίσει. Επιλέξτε νέα ψήφο για διόρθωση."
+            {canCorrectVote
+              ? "Έχετε ήδη ψηφίσει. Μπορείτε να αλλάξετε την ψήφο σας μία φορά."
+              : voteLocked
+                ? "Έχετε ήδη ψηφίσει. Η ψήφος θα μπορεί να αλλάξει μόνο στο τελευταίο 24ωρο."
               : "Επιλέξτε την ψήφο σας. Απαιτείται βιομετρική πιστοποίηση."}
           </Text>
 
@@ -306,16 +352,18 @@ export default function VoteScreen({ route, navigation }: Props) {
                 style={[
                   styles.voteButton,
                   { borderColor: opt.color },
-                  selected === opt.key && { backgroundColor: opt.color },
+                  selected === opt.key && !voteLocked && { backgroundColor: opt.color },
+                  voteLocked && styles.voteButtonDisabled,
                 ]}
-                onPress={() => hasVoted && billStatus === "WINDOW_24H" && !isCorrected ? handleCorrection(opt.key) : handleVote(opt.key)}
-                disabled={loading}
+                onPress={() => canCorrectVote ? handleCorrection(opt.key) : handleVote(opt.key)}
+                disabled={loading || voteLocked}
               >
                 <Text style={styles.voteIcon}>{opt.icon}</Text>
                 <Text
                   style={[
                     styles.voteLabel,
-                    selected === opt.key && { color: "#fff" },
+                    selected === opt.key && !voteLocked && { color: "#fff" },
+                    voteLocked && styles.voteLabelDisabled,
                   ]}
                 >
                   {opt.label}
@@ -419,8 +467,13 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", backgroundColor: colors.surface,
     borderWidth: 2, borderRadius: 16, padding: 20, marginBottom: 12,
   },
+  voteButtonDisabled: {
+    opacity: 0.45,
+    borderColor: "#94a3b8",
+  },
   voteIcon: { fontSize: 28, marginRight: 16 },
   voteLabel: { fontSize: 20, fontWeight: "bold", color: colors.text },
+  voteLabelDisabled: { color: "#64748b" },
   loadingOverlay: { alignItems: "center", marginTop: 24 },
   loadingText: { marginTop: 8, color: colors.textSecondary },
   resultsLink: { marginTop: 32, alignItems: "center" },

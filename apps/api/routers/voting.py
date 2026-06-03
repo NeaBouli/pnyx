@@ -11,7 +11,7 @@ import json
 import gc
 import os
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Header, status
+from fastapi import APIRouter, Depends, HTTPException, Header, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, update
@@ -88,6 +88,14 @@ class VoteResponse(BaseModel):
     message:    str
     bill_id:    str
     vote:       str
+
+class VoteStatusResponse(BaseModel):
+    bill_id:        str
+    status:         str
+    has_voted:      bool
+    vote:           str | None = None
+    is_correction:  bool = False
+    can_correct:    bool = False
 
 class DivergenceResult(BaseModel):
     score:             float
@@ -337,6 +345,42 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
         message="Η ψήφος καταχωρήθηκε επιτυχώς. Ευχαριστούμε για τη συμμετοχή σας.",
         bill_id=req.bill_id,
         vote=vote_choice.value
+    )
+
+
+# ─── Citizen Vote Status ─────────────────────────────────────────────────────
+
+@router.get("/{bill_id}/status", response_model=VoteStatusResponse)
+async def get_vote_status(
+    bill_id: str,
+    nullifier_hash: str = Query(..., min_length=64, max_length=64),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return whether this anonymous identity has already voted for a bill."""
+    bill_result = await db.execute(
+        select(ParliamentBill).where(ParliamentBill.id == bill_id)
+    )
+    bill = bill_result.scalar_one_or_none()
+    if not bill:
+        raise HTTPException(404, f"Το νομοσχέδιο {bill_id} δεν βρέθηκε.")
+
+    vote_result = await db.execute(
+        select(CitizenVote).where(
+            CitizenVote.nullifier_hash == nullifier_hash,
+            CitizenVote.bill_id == bill_id,
+        )
+    )
+    vote = vote_result.scalar_one_or_none()
+    can_correct = bool(
+        vote and bill.status == BillStatus.WINDOW_24H and not vote.is_correction
+    )
+    return VoteStatusResponse(
+        bill_id=bill_id,
+        status=bill.status.value,
+        has_voted=vote is not None,
+        vote=vote.vote.value if vote else None,
+        is_correction=bool(vote.is_correction) if vote else False,
+        can_correct=can_correct,
     )
 
 

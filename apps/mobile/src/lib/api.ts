@@ -139,6 +139,24 @@ export async function correctVote(
   });
 }
 
+export interface VoteStatus {
+  bill_id: string;
+  status: string;
+  has_voted: boolean;
+  vote: string | null;
+  is_correction: boolean;
+  can_correct: boolean;
+}
+
+export async function fetchVoteStatus(
+  nullifierHash: string,
+  billId: string
+): Promise<VoteStatus> {
+  return request<VoteStatus>(
+    `/api/v1/vote/${encodeURIComponent(billId)}/status?nullifier_hash=${encodeURIComponent(nullifierHash)}`
+  );
+}
+
 export interface BillResults {
   bill_id: string;
   title_el: string;

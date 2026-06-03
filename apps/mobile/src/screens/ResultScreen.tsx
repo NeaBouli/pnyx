@@ -39,18 +39,25 @@ function readableText(value?: string | null) {
 
 function cleanOfficialText(value?: string | null) {
   if (!readableText(value)) return "";
-  return String(value)
+  const cleaned = String(value)
     .replace(/\[[^\]]*\]\(https?:\/\/[^)]*\)/g, "")
     .replace(/\]\(/g, " ")
     .replace(/[*_`]+/g, "")
     .replace(/https?:\/\/\S+/g, "")
     .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 1400);
+    .trim();
+  if (
+    cleaned.startsWith("Μετάβαση στο κύριο περιεχόμενο") ||
+    cleaned.includes("Ανοίξτε το μενού προσβασιμότητας")
+  ) {
+    return "";
+  }
+  return cleaned.slice(0, 1400);
 }
 
-function sourceLabel(source?: string | null) {
+function sourceLabel(source?: string | null, sourceKind?: string) {
   if (source === "DIAVGEIA") return "Πηγή — Διαύγεια";
+  if (sourceKind === "page") return "Σελίδα Βουλής — συγχρονίζεται το κείμενο";
   return "Πηγή — Βουλή των Ελλήνων";
 }
 
@@ -99,6 +106,11 @@ export default function ResultScreen({ route }: Props) {
   const summary = readableText(data.summary_short_el) ? data.summary_short_el : readableText(data.pill_el) ? data.pill_el : "";
   const analysis = data.ai_summary_reviewed && readableText(data.summary_long_el) ? data.summary_long_el : "";
   const officialText = !analysis ? cleanOfficialText(data.summary_long_el) : "";
+  const sourceUrl = data.official_source_url || (data.source !== "DIAVGEIA" ? data.parliament_url || "" : "");
+  const sourceKind = data.official_source_url ? "official" : sourceUrl ? "page" : "none";
+  const summaryFallback = sourceUrl
+    ? "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα. Δείτε προσωρινά τη σελίδα της πηγής."
+    : "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα.";
 
   return (
     <ScrollView
@@ -112,7 +124,7 @@ export default function ResultScreen({ route }: Props) {
       <View style={styles.summaryCard}>
         <Text style={styles.summaryTitle}>Σύνοψη</Text>
         <Text style={styles.summaryText}>
-          {summary || "Δεν υπάρχει ακόμα ελεγμένη σύνοψη για αυτή την πράξη. Δείτε το επίσημο κείμενο στην πηγή."}
+          {summary || summaryFallback}
         </Text>
         {analysis ? (
           <>
@@ -130,20 +142,20 @@ export default function ResultScreen({ route }: Props) {
         ) : null}
       </View>
 
-      {data.official_source_url ? (
+      {sourceUrl ? (
         <TouchableOpacity
-          onPress={() => Linking.openURL(data.official_source_url || "")}
+          onPress={() => Linking.openURL(sourceUrl)}
           style={styles.sourceCard}
         >
           <Text style={styles.sourceIcon}>🔗</Text>
-          <Text style={styles.sourceText}>{sourceLabel(data.source)}</Text>
+          <Text style={styles.sourceText}>{sourceLabel(data.source, sourceKind)}</Text>
           <Text style={styles.sourceArrow}>↗</Text>
         </TouchableOpacity>
       ) : (
         <View style={styles.sourceCard}>
           <Text style={styles.sourceIcon}>ℹ️</Text>
           <Text style={styles.sourceText}>
-            Το επίσημο κείμενο δεν είναι ακόμη διαθέσιμο σε αναγνώσιμη μορφή.
+            Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα.
           </Text>
         </View>
       )}

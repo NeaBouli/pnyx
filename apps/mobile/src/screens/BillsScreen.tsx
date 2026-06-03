@@ -127,7 +127,7 @@ export default function BillsScreen() {
                     </Text>
                   )}
                 </View>
-                <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+                <View style={s.cardActions}>
                   {item.arweave_tx_id != null && (
                     <TouchableOpacity onPress={(e) => { e.stopPropagation(); Linking.openURL(`https://viewblock.io/arweave/tx/${item.arweave_tx_id}`); }} hitSlop={8}>
                       <Text style={{ fontSize: 11, color: "#a855f7", fontWeight: "700" }}>⛓ {item.arweave_tx_id.substring(0, 8)}…</Text>
@@ -135,14 +135,14 @@ export default function BillsScreen() {
                   )}
                   {item.forum_topic_id != null && (
                     <TouchableOpacity onPress={(e) => { e.stopPropagation(); Linking.openURL(`${FORUM_BASE}${item.forum_topic_id}`); }} hitSlop={8}>
-                      <Text style={s.forumBtn}>💬</Text>
+                      <Text style={s.actionIcon}>💬</Text>
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity onPress={(e) => { e.stopPropagation(); shareBill(item); }} hitSlop={8}>
-                    <Text style={s.shareBtn}>Μοιραστείτε ↗</Text>
+                    <Text style={s.actionIcon}>↗</Text>
                   </TouchableOpacity>
-                  {VOTABLE.includes(item.status) && item.status !== "OPEN_END" && <Text style={s.voteHint}>Ψηφίστε →</Text>}
-                  {item.status === "OPEN_END" && <Text style={[s.voteHint, { color: "#7c3aed" }]}>Αξιολόγηση →</Text>}
+                  {VOTABLE.includes(item.status) && item.status !== "OPEN_END" && <Text style={s.actionIcon}>✓</Text>}
+                  {item.status === "OPEN_END" && <Text style={[s.actionIcon, { color: "#7c3aed" }]}>⚖</Text>}
                 </View>
               </View>
             </View>
@@ -167,10 +167,9 @@ const s = StyleSheet.create({
   cardContent: { flex: 1 },
   cardTitle: { fontSize: 14, fontWeight: "700", color: colors.text, marginBottom: 4 },
   cardPill: { fontSize: 12, color: colors.textSecondary, marginBottom: 6 },
-  cardFooter: { flexDirection: "row", justifyContent: "space-between" },
+  cardFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 },
   cardStatus: { fontSize: 11, fontWeight: "600" },
-  forumBtn: { fontSize: 14 },
-  shareBtn: { fontSize: 16, color: colors.primary, fontWeight: "700" },
-  voteHint: { fontSize: 11, color: colors.primary, fontWeight: "700" },
+  cardActions: { flexDirection: "row", gap: 10, alignItems: "center", flexShrink: 0 },
+  actionIcon: { fontSize: 16, color: colors.primary, fontWeight: "800" },
   empty: { color: colors.textSecondary, textAlign: "center", marginTop: 40 },
 });
