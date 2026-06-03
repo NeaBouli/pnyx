@@ -5694,3 +5694,24 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 - Linear NEA-310 created in Done: DIAVGEIA source link missing in VoteScreen.
 - Linear NEA-311 created in Done: DIAVGEIA pill/org label shown as summary.
 - NEA-301 commented with remaining data-work scope.
+
+---
+
+## 2026-06-04 — CC: 2 Defekte aus Screenshot-Audit gefixt
+
+### DEFEKT 1: GR-5294 summary_short_el = Titel
+- Problem: "Νόμος 5294 — Εθνικής Οικονομίας..." war nur Titel, kein Summary
+- Fix: Ollama qwen2.5:14b generierte echtes Summary
+- DB Update: "Ο νόμος ορίζει τη δημιουργία του Κοινωνικού Κλιματικού Ταμείου..."
+- Redis Cache geleert
+
+### DEFEKT 2: PDF-Link öffnet Download-Dialog
+- Problem: Πηγή-Link auf .pdf → Android zeigt Download-Dialog ohne Warnung
+- Fix: `isPdfUrl()` Check in VoteScreen.tsx
+  - Icon: 📄 statt 🔗
+  - Label: "Πηγή — Βουλή (PDF)"
+  - Subtext: "Ανοίγει ως έγγραφο PDF"
+
+### Commit: `00d4b2d`
+### Ollama RAM: temporär 12 GB → zurück auf 2.4 GB
+### APK Build + S10 Verifikation: ausstehend
