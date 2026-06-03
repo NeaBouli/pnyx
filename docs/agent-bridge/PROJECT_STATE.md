@@ -30,7 +30,7 @@
 - **vC30 Mobile Build:** AAB/APK gebaut; APK auf S10 installiert; Launch-Crash behoben; Bill-Detail zeigt Summary + offiziellen Text-Fallback
 - **vC30 Landing APK:** LIVE `https://ekklesia.gr/download/ekklesia-latest.apk`, SHA256 `6b216b7d00823c34b2ba3b9dabee8cbe9de60d3310314690fa062fc23eb8a388`
 - **vC30 GitHub Release:** `v1.0.3` live with APK+AAB assets; latest CI fixed and green at `d74655f`
-- **Linear:** direct update blocked by expired auth token (`401 token_expired`)
+- **Linear:** Token OK (`~/.claude/.env` → `LINEAR_API_KEY`), NEA-280 + NEA-292 geschlossen
 - **NEA-301b PARLIAMENT:** DONE (17/31 mit summary_short_el, 9 brauchen Fetcher, 3 DEMO + 2 flagged excluded, DIAVGEIA 0/636 eigene Phase)
 - **Ollama:** RAM zurueck auf 2.4 GB (Produktion), kein Job aktiv
 - **T3 Arweave Alerts:** FIXED `a90d508` — Monitor verlangt `party_votes_parliament IS NOT NULL`; false-positive fuer GR-0490a766 behoben

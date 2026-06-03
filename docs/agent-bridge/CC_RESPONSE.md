@@ -105,10 +105,10 @@
   - Open Dependabot PRs show CodeRabbit `SUCCESS`, but still need human review.
 
 ### Linear
-- Direct Linear update attempted via connector.
-- Blocked by expired auth token:
-  - `401 token_expired`
-- Copy this status manually into Linear or re-auth Linear, then update:
+- Token in `~/.claude/.env` als `LINEAR_API_KEY` (NICHT `LINEAR_API_TOKEN`) — verifiziert, funktioniert.
+- Codex hatte 401 weil falscher Variablenname oder .env nicht geladen.
+- CC hat NEA-280 + NEA-292 erfolgreich geschlossen via GraphQL API.
+- Status-Updates:
   - NEA-275/vC30 release gate: complete.
   - NEA-292: close/complete for mobile UI; remaining analysis pipeline belongs to NEA-301.
   - NEA-301: keep open for reviewed-analysis pipeline and 9 missing `summary_long_el`.
