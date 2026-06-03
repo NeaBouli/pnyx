@@ -5715,3 +5715,17 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 ### Commit: `00d4b2d`
 ### Ollama RAM: temporär 12 GB → zurück auf 2.4 GB
 ### APK Build + S10 Verifikation: ausstehend
+
+---
+
+## 2026-06-04 — CC: Beide Defekte verifiziert auf S10
+
+### S10 Verifikation
+- vC30/1.0.3, lastUpdateTime=2026-06-04 00:52:58
+- GR-5294: echtes Summary sichtbar ✅ ("Ο νόμος ορίζει τη δημιουργία...")
+- GR-0490a766: 📄 "Πηγή — Βουλή (PDF)" + "Ανοίγει ως έγγραφο PDF" ✅
+- 0 Crashes
+
+### APK SHA
+- APK bereit fuer Landing/Release Update
+- Kein versionCode bump (gleiche vC30/1.0.3)
