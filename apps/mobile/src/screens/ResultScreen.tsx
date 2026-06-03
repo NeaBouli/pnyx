@@ -63,9 +63,14 @@ function cleanOfficialText(value?: string | null) {
   return cleaned.slice(0, 1400);
 }
 
-function sourceLabel(source?: string | null, sourceKind?: string) {
+function isPdfUrl(url: string) {
+  return url?.toLowerCase().includes(".pdf");
+}
+
+function sourceLabel(source?: string | null, sourceKind?: string, url?: string) {
   if (source === "DIAVGEIA") return "Πηγή — Διαύγεια";
-  if (sourceKind === "page") return "Σελίδα Βουλής — συγχρονίζεται το κείμενο";
+  if (sourceKind === "forum") return "Διαβάστε & συζητήστε στο Φόρουμ";
+  if (isPdfUrl(url || "")) return "Πηγή — Βουλή (PDF)";
   return "Πηγή — Βουλή των Ελλήνων";
 }
 
@@ -114,10 +119,12 @@ export default function ResultScreen({ route }: Props) {
   const summary = readableText(data.summary_short_el) ? data.summary_short_el : readableText(data.pill_el) ? data.pill_el : "";
   const analysis = data.ai_summary_reviewed && readableText(data.summary_long_el) ? data.summary_long_el : "";
   const officialText = !analysis ? cleanOfficialText(data.summary_long_el) : "";
-  const sourceUrl = data.official_source_url || "";
-  const sourceKind = sourceUrl ? "official" : "none";
+  const officialUrl = data.official_source_url || "";
+  const forumUrl = data.forum_topic_url || "";
+  const sourceUrl = officialUrl || forumUrl;
+  const sourceKind = officialUrl ? "official" : forumUrl ? "forum" : "none";
   const summaryFallback = sourceUrl
-    ? "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα. Δείτε την επίσημη πηγή."
+    ? "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα. Δείτε την πηγή."
     : "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα.";
 
   return (
@@ -150,13 +157,16 @@ export default function ResultScreen({ route }: Props) {
         ) : null}
       </View>
 
-      {sourceUrl && sourceKind === "official" ? (
+      {sourceUrl && (sourceKind === "official" || sourceKind === "forum") ? (
         <TouchableOpacity
           onPress={() => Linking.openURL(sourceUrl)}
           style={styles.sourceCard}
         >
-          <Text style={styles.sourceIcon}>🔗</Text>
-          <Text style={styles.sourceText}>{sourceLabel(data.source, sourceKind)}</Text>
+          <Text style={styles.sourceIcon}>{sourceKind === "forum" ? "💬" : isPdfUrl(sourceUrl) ? "📄" : "🔗"}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.sourceText}>{sourceLabel(data.source, sourceKind, sourceUrl)}</Text>
+            {isPdfUrl(sourceUrl) && <Text style={styles.sourceNote}>Ανοίγει ως έγγραφο PDF</Text>}
+          </View>
           <Text style={styles.sourceArrow}>↗</Text>
         </TouchableOpacity>
       ) : data.source === "PARLIAMENT" ? (

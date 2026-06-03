@@ -66,8 +66,8 @@ function isPdfUrl(url: string) {
 
 function sourceLabel(source: string, sourceKind: string, url: string) {
   if (source === "DIAVGEIA") return "Πηγή — Διαύγεια";
+  if (sourceKind === "forum") return "Διαβάστε & συζητήστε στο Φόρουμ";
   if (isPdfUrl(url)) return "Πηγή — Βουλή (PDF)";
-  if (sourceKind === "page") return "Σελίδα Βουλής — συγχρονίζεται το κείμενο";
   return "Πηγή — Βουλή των Ελλήνων";
 }
 
@@ -90,7 +90,7 @@ export default function VoteScreen({ route, navigation }: Props) {
   const [consensusSubmitting, setConsensusSubmitting] = useState(false);
   const [consensusDone, setConsensusDone] = useState(false);
   const [sourceUrl, setSourceUrl] = useState("");
-  const [sourceKind, setSourceKind] = useState<"official" | "page" | "none">("none");
+  const [sourceKind, setSourceKind] = useState<"official" | "forum" | "page" | "none">("none");
 
   React.useEffect(() => {
     const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
@@ -103,12 +103,13 @@ export default function VoteScreen({ route, navigation }: Props) {
         if (d?.status) {
           const source = d.source || "PARLIAMENT";
           const officialUrl = d.official_source_url || "";
+          const forumUrl = d.forum_topic_url || "";
           setBillStatus(d.status);
           setBillGovernance(d.governance_level || "NATIONAL");
           setBillSource(source);
           setBillPill(readableText(d.pill_el) ? d.pill_el : "");
-          setSourceUrl(officialUrl);
-          setSourceKind(officialUrl ? "official" : "none");
+          setSourceUrl(officialUrl || forumUrl);
+          setSourceKind(officialUrl ? "official" : forumUrl ? "forum" : "none");
           if (readableText(d.summary_short_el)) setSummary(d.summary_short_el);
           if (d.ai_summary_reviewed && readableText(d.summary_long_el)) setAnalysis(d.summary_long_el);
           if (!d.ai_summary_reviewed) setOfficialText(cleanOfficialText(d.summary_long_el));
@@ -256,12 +257,12 @@ export default function VoteScreen({ route, navigation }: Props) {
         </TouchableOpacity>
       </View>
 
-      {sourceUrl && sourceKind === "official" ? (
+      {sourceUrl && (sourceKind === "official" || sourceKind === "forum") ? (
         <TouchableOpacity
           onPress={() => Linking.openURL(sourceUrl)}
           style={{ backgroundColor: "#eff6ff", borderRadius: 10, padding: 12, marginBottom: 12, flexDirection: "row", alignItems: "center" }}
         >
-          <Text style={{ fontSize: 14, marginRight: 8 }}>{isPdfUrl(sourceUrl) ? "📄" : "🔗"}</Text>
+          <Text style={{ fontSize: 14, marginRight: 8 }}>{sourceKind === "forum" ? "💬" : isPdfUrl(sourceUrl) ? "📄" : "🔗"}</Text>
           <View style={{ flex: 1 }}>
             <Text style={{ color: "#1d4ed8", fontSize: 13, fontWeight: "600" }}>{sourceLabel(billSource, sourceKind, sourceUrl)}</Text>
             {isPdfUrl(sourceUrl) && <Text style={{ color: "#93c5fd", fontSize: 11, marginTop: 2 }}>Ανοίγει ως έγγραφο PDF</Text>}
