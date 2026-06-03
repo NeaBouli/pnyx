@@ -235,9 +235,11 @@ export default function VoteScreen({ route, navigation }: Props) {
   const canCorrectVote = hasVoted && billStatus === "WINDOW_24H" && !isCorrected;
   const voteLocked = hasVoted && !canCorrectVote;
   const showVoteControls = billLoaded && (billStatus === "ACTIVE" || billStatus === "WINDOW_24H");
+  const canUsePillAsSummary = billSource !== "DIAVGEIA" && readableText(billPill);
   const summaryFallback = sourceUrl && sourceKind === "official"
     ? "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα. Δείτε την επίσημη πηγή."
     : "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα.";
+  const summaryText = summary || (canUsePillAsSummary ? billPill : "") || summaryFallback;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -247,16 +249,36 @@ export default function VoteScreen({ route, navigation }: Props) {
           <Text style={{ fontSize: 22, color: colors.primary, fontWeight: "800" }}>↗</Text>
         </TouchableOpacity>
       </View>
+
+      {sourceUrl && sourceKind === "official" ? (
+        <TouchableOpacity
+          onPress={() => Linking.openURL(sourceUrl)}
+          style={{ backgroundColor: "#eff6ff", borderRadius: 10, padding: 12, marginBottom: 12, flexDirection: "row", alignItems: "center" }}
+        >
+          <Text style={{ fontSize: 14, marginRight: 8 }}>🔗</Text>
+          <Text style={{ color: "#1d4ed8", fontSize: 13, fontWeight: "600", flex: 1 }}>{sourceLabel(billSource, sourceKind)}</Text>
+          <Text style={{ color: "#93c5fd", fontSize: 12 }}>↗</Text>
+        </TouchableOpacity>
+      ) : billLoaded && billSource === "PARLIAMENT" ? (
+        <View style={{ backgroundColor: "#f8fafc", borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#e2e8f0", flexDirection: "row", alignItems: "center" }}>
+          <Text style={{ fontSize: 14, marginRight: 8 }}>🏛️</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: "#475569", fontSize: 13, fontWeight: "600" }}>Πηγή — Βουλή των Ελλήνων</Text>
+            <Text style={{ color: "#94a3b8", fontSize: 11, marginTop: 2 }}>Το κείμενο αναζητείται</Text>
+          </View>
+        </View>
+      ) : null}
+
       {/* Reviewed summary/analysis */}
       {summaryLoading ? (
         <ActivityIndicator size="small" color={colors.textSecondary} style={{ marginBottom: 16 }} />
-      ) : summary || analysis || officialText || billPill || billLoaded ? (
+      ) : summaryText || analysis || officialText || billLoaded ? (
         <View style={{ backgroundColor: "#eff6ff", borderRadius: 12, padding: 14, marginBottom: 16 }}>
           <Text style={{ fontWeight: "700", color: "#1e40af", fontSize: 13, marginBottom: 6 }}>
             Σύνοψη
           </Text>
           <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20 }}>
-            {(summary || billPill || summaryFallback).split(/(\*\*[^*]+\*\*|\*[^*]+\*)/).map((part, i) => {
+            {summaryText.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/).map((part, i) => {
               if (part.startsWith("**") && part.endsWith("**"))
                 return <Text key={i} style={{ fontWeight: "700" }}>{part.slice(2, -2)}</Text>;
               if (part.startsWith("*") && part.endsWith("*"))
@@ -315,25 +337,6 @@ export default function VoteScreen({ route, navigation }: Props) {
           </Text>
         </View>
       )}
-
-      {sourceUrl && sourceKind === "official" ? (
-        <TouchableOpacity
-          onPress={() => Linking.openURL(sourceUrl)}
-          style={{ backgroundColor: "#eff6ff", borderRadius: 10, padding: 12, marginBottom: 12, flexDirection: "row", alignItems: "center" }}
-        >
-          <Text style={{ fontSize: 14, marginRight: 8 }}>🔗</Text>
-          <Text style={{ color: "#1d4ed8", fontSize: 13, fontWeight: "600", flex: 1 }}>{sourceLabel(billSource, sourceKind)}</Text>
-          <Text style={{ color: "#93c5fd", fontSize: 12 }}>↗</Text>
-        </TouchableOpacity>
-      ) : billLoaded && billSource === "PARLIAMENT" ? (
-        <View style={{ backgroundColor: "#f8fafc", borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#e2e8f0", flexDirection: "row", alignItems: "center" }}>
-          <Text style={{ fontSize: 14, marginRight: 8 }}>🏛️</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: "#475569", fontSize: 13, fontWeight: "600" }}>Πηγή — Βουλή των Ελλήνων</Text>
-            <Text style={{ color: "#94a3b8", fontSize: 11, marginTop: 2 }}>Το κείμενο αναζητείται</Text>
-          </View>
-        </View>
-      ) : null}
 
       {billStatus === "WINDOW_24H" && (
         <View style={{ backgroundColor: "#fef3c7", borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#f59e0b" }}>
