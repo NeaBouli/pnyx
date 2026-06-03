@@ -5551,3 +5551,56 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
   - API deploy needed.
   - Mobile APK rebuild/install needed.
   - No AAB/Play/versionCode bump.
+
+## 2026-06-03 — Codex: NEA-301 deploy + APK build + S10 verification
+
+- CI for `15b49c9`: PASS
+  - `CI — Ekklesia.gr`: success
+  - `Security Audit`: success
+- API deploy:
+  - Server repo fast-forwarded to `15b49c9`.
+  - Initial deploy attempt used wrong compose service name (`ekklesia-api`) and did not stop service.
+  - Correct service is `api`.
+  - Rebuild/deploy completed with `docker compose ... stop api && build api && up -d --no-deps api`.
+  - Important deploy note: `.env.production` must be exported before compose:
+    `set -a && source /opt/ekklesia/.env.production && set +a`.
+  - Without `set -a`, compose recreated API with blank DB env and caused `asyncpg.exceptions.InvalidPasswordError`.
+  - Fixed immediately by recreating `api` with exported env.
+  - API live health: `GET /health` 200.
+  - Container code verified:
+    - `_is_bad_parliament_text` present in `/app/services/parliament_fetcher.py`.
+    - completeness job contains `Rejected bad fetched text`.
+- API data verification:
+  - `GR-5293`: `source=PARLIAMENT`, `status=PARLIAMENT_VOTED`, `official_source_url=None`, summary short present, existing bad `summary_long_el` still present.
+  - `GR-5294`: `source=PARLIAMENT`, `status=ACTIVE`, `official_source_url=None`, summary short present, no nav boilerplate in long text.
+  - `GR-0490a766`: `source=PARLIAMENT`, `status=PARLIAMENT_VOTED`, `official_source_url=https://www.hellenicparliament.gr/UserFiles/.../13299359.pdf`.
+  - Existing bad PARLIAMENT `summary_long_el` rows: 13.
+- Local verification before build:
+  - `python3 -m py_compile apps/api/services/parliament_fetcher.py apps/api/main.py apps/api/services/source_links.py`: OK.
+  - `apps/api/.venv/bin/python -m pytest apps/api/tests/services/test_source_links.py -q`: 4 passed.
+  - `cd apps/mobile && npx tsc --noEmit`: OK.
+- Mobile build:
+  - `bash scripts/build-play.sh`: SUCCESS, AAB generated.
+  - AAB SHA256: `ee44f23fccb9aa017913003ecd1f8bf59860ef93472c525c99c3ae42d289c412`.
+  - `./gradlew :app:assemblePlayRelease`: SUCCESS, APK generated.
+  - APK SHA256: `780bb1fcee621cd87e64941e54fd9796a16a2b188829482bf93f3ed3e80ec5c2`.
+  - No versionCode bump.
+- S10 install:
+  - Device: `RF8N313QMFL`.
+  - Installed APK with `adb install -r`.
+  - Installed version: `versionCode=30`, `versionName=1.0.3`, `lastUpdateTime=2026-06-03 23:10:48`.
+- S10 verification evidence: `/tmp/ekklesia_nea301_s10`
+  - App start: PASS, no `FATAL EXCEPTION`.
+  - Bills screen: PASS, card actions use icons (`💬`, `↗`, `✓`, `⚖`), no long action text.
+  - ACTIVE `GR-5294`: PASS, source card is non-clickable Βουλή fallback:
+    `Πηγή — Βουλή των Ελλήνων` / `Το κείμενο αναζητείται`.
+  - ACTIVE already-voted state: PASS, lock message visible:
+    `Έχετε ήδη ψηφίσει. Η ψήφος θα μπορεί να αλλάξει μόνο στο τελευταίο 24ωρο.`
+  - PARLIAMENT_VOTED `GR-5293`: PASS, summary shown, no boilerplate official text, no vote controls, non-clickable Βουλή fallback.
+  - DIAVGEIA list/detail: PASS, official text still shown; Διαύγεια source path remains available through `official_source_url`.
+  - Logcat final check: no app `FATAL EXCEPTION` / no `AndroidRuntime` crash for ekklesia app.
+- Not done:
+  - Existing bad `summary_long_el` cleanup not applied; only counted/dry-run scope confirmed.
+  - Landing APK not updated.
+  - GitHub Release not updated.
+  - AAB/Play not uploaded.
