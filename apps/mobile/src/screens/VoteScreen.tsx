@@ -60,16 +60,7 @@ function cleanOfficialText(value?: string | null) {
   return cleaned.slice(0, 1400);
 }
 
-function isPdfUrl(url: string) {
-  return url?.toLowerCase().includes(".pdf");
-}
-
-function sourceLabel(source: string, sourceKind: string, url: string) {
-  if (source === "DIAVGEIA") return "Πηγή — Διαύγεια";
-  if (sourceKind === "forum") return "Διαβάστε & συζητήστε στο Φόρουμ";
-  if (isPdfUrl(url)) return "Πηγή — Βουλή (PDF)";
-  return "Πηγή — Βουλή των Ελλήνων";
-}
+import { resolveSource, isPdfUrl, sourceLabel } from "../lib/source-resolver";
 
 export default function VoteScreen({ route, navigation }: Props) {
   const { billId, billTitle } = route.params;
@@ -102,14 +93,13 @@ export default function VoteScreen({ route, navigation }: Props) {
         if (!mounted) return;
         if (d?.status) {
           const source = d.source || "PARLIAMENT";
-          const officialUrl = d.official_source_url || "";
-          const forumUrl = d.forum_topic_url || "";
+          const resolved = resolveSource(d.official_source_url, d.forum_topic_url);
           setBillStatus(d.status);
           setBillGovernance(d.governance_level || "NATIONAL");
           setBillSource(source);
           setBillPill(readableText(d.pill_el) ? d.pill_el : "");
-          setSourceUrl(officialUrl || forumUrl);
-          setSourceKind(officialUrl ? "official" : forumUrl ? "forum" : "none");
+          setSourceUrl(resolved.url);
+          setSourceKind(resolved.kind);
           if (readableText(d.summary_short_el)) setSummary(d.summary_short_el);
           if (d.ai_summary_reviewed && readableText(d.summary_long_el)) setAnalysis(d.summary_long_el);
           if (!d.ai_summary_reviewed) setOfficialText(cleanOfficialText(d.summary_long_el));

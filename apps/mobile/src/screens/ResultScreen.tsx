@@ -63,16 +63,7 @@ function cleanOfficialText(value?: string | null) {
   return cleaned.slice(0, 1400);
 }
 
-function isPdfUrl(url: string) {
-  return url?.toLowerCase().includes(".pdf");
-}
-
-function sourceLabel(source?: string | null, sourceKind?: string, url?: string) {
-  if (source === "DIAVGEIA") return "Πηγή — Διαύγεια";
-  if (sourceKind === "forum") return "Διαβάστε & συζητήστε στο Φόρουμ";
-  if (isPdfUrl(url || "")) return "Πηγή — Βουλή (PDF)";
-  return "Πηγή — Βουλή των Ελλήνων";
-}
+import { resolveSource, isPdfUrl, sourceLabel } from "../lib/source-resolver";
 
 export default function ResultScreen({ route }: Props) {
   const { billId, fromVote } = route.params;
@@ -119,10 +110,7 @@ export default function ResultScreen({ route }: Props) {
   const summary = readableText(data.summary_short_el) ? data.summary_short_el : readableText(data.pill_el) ? data.pill_el : "";
   const analysis = data.ai_summary_reviewed && readableText(data.summary_long_el) ? data.summary_long_el : "";
   const officialText = !analysis ? cleanOfficialText(data.summary_long_el) : "";
-  const officialUrl = data.official_source_url || "";
-  const forumUrl = data.forum_topic_url || "";
-  const sourceUrl = officialUrl || forumUrl;
-  const sourceKind = officialUrl ? "official" : forumUrl ? "forum" : "none";
+  const { url: sourceUrl, kind: sourceKind } = resolveSource(data.official_source_url, data.forum_topic_url);
   const summaryFallback = sourceUrl
     ? "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα. Δείτε την πηγή."
     : "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα.";
@@ -164,7 +152,7 @@ export default function ResultScreen({ route }: Props) {
         >
           <Text style={styles.sourceIcon}>{sourceKind === "forum" ? "💬" : isPdfUrl(sourceUrl) ? "📄" : "🔗"}</Text>
           <View style={{ flex: 1 }}>
-            <Text style={styles.sourceText}>{sourceLabel(data.source, sourceKind, sourceUrl)}</Text>
+            <Text style={styles.sourceText}>{sourceLabel(data.source || "PARLIAMENT", sourceKind, sourceUrl)}</Text>
             {isPdfUrl(sourceUrl) && <Text style={styles.sourceNote}>Ανοίγει ως έγγραφο PDF</Text>}
           </View>
           <Text style={styles.sourceArrow}>↗</Text>

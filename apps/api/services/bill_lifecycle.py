@@ -179,18 +179,23 @@ async def _hook_notify_new_bill(bill: ParliamentBill) -> None:
         logger.warning("[LIFECYCLE] Notify hook failed for %s: %s", bill.id, e)
 
 
-async def _hook_arweave_snapshot(db: AsyncSession, bill: ParliamentBill) -> None:
-    """Archive vote results to Arweave. Guards per NEA-304 policy."""
-    # Defensive guards — snapshot requires complete data
+def is_arweave_eligible(bill: ParliamentBill) -> tuple[bool, str]:
+    """Pure guard: check if a bill may be archived to Arweave. Returns (eligible, reason)."""
     source = getattr(bill, "source", None)
     if source and source != "PARLIAMENT":
-        logger.info("[LIFECYCLE] Arweave skipped: %s — source=%s (not PARLIAMENT)", bill.id, source)
-        return
+        return False, f"source={source} (not PARLIAMENT)"
     if bill.status not in (BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END):
-        logger.info("[LIFECYCLE] Arweave skipped: %s — status=%s (not eligible)", bill.id, bill.status.value)
-        return
+        return False, f"status={bill.status.value} (not eligible)"
     if not bill.party_votes_parliament:
-        logger.info("[LIFECYCLE] Arweave skipped: %s — missing party_votes_parliament", bill.id)
+        return False, "missing party_votes_parliament"
+    return True, "eligible"
+
+
+async def _hook_arweave_snapshot(db: AsyncSession, bill: ParliamentBill) -> None:
+    """Archive vote results to Arweave. Guards per NEA-304 policy."""
+    eligible, reason = is_arweave_eligible(bill)
+    if not eligible:
+        logger.info("[LIFECYCLE] Arweave skipped: %s — %s", bill.id, reason)
         return
 
     try:
