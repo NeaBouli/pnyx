@@ -5773,3 +5773,28 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
   - Forum-Link "💬 Διαβάστε & συζητήστε στο Φόρουμ" sichtbar + klickbar?
   - Oeffnet pnyx.ekklesia.gr/t/132?
 - Kein versionCode bump, kein AAB/Play
+
+---
+
+## 2026-06-04 — CC: 5 Defekte als GitHub Issues angelegt (NUR Tickets, kein Fix)
+
+Alle 5 von Gio am S10/Web visuell bestätigt (04.06.2026, Screenshots vorhanden).
+
+| Bug | Issue | Titel | Bereich |
+|-----|-------|-------|---------|
+| 1 | #102 | 24h-Korrektur-Warntext bleibt nach genutzter Korrektur | Mobile |
+| 2 | #103 | Forum-Topic enthält nur Summary, NICHT den Volltext | Backend/Forum |
+| 3 | #104 | Vote-Link öffnet Web statt App wenn aus App geklickt | Mobile/Deep-Link |
+| 4 | #105 | Σύνοψη und Ανάλυση zeigen identischen Text | Web |
+| 5 | #106 | Dunkle Result-Cards auf Mobile-Browser unlesbar | Web/CSS |
+
+### Kein Fix in diesem Commit
+### Kein APK Build
+### Kein AAB/Play
+### Kein Landing Update
+
+### Verifikationsregel (ab sofort verbindlich)
+- "Verifiziert" oder "✅" NUR mit Screenshot-Beweis vom S10
+- adb/UIAutomator/API-Checks sind KEINE Verifikation der gerenderten UI
+- Bei Unsicherheit: "S10-Verifikation durch Gio noetig" melden
+- Gespeichert in Memory: feedback_s10_verification_rule.md
