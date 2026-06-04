@@ -5957,3 +5957,15 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Code ist auf origin/main
 - Web Container muss rebuilt werden um Fix live zu sehen
 - S10-Verifikation durch Gio noetig (Mobile Browser)
+
+---
+
+## 2026-06-04 — CC: GH#106 Web deployed
+
+- Server HEAD: `fdaa805`
+- Web Container: rebuilt + running (Up 5s)
+- Live: HTTP 200 auf ekklesia.gr/el/bills/GR-0490a766
+- CSS-Klassen sind client-side gerendert (Next.js CSR) — nicht im static HTML
+- Gio Mobile-Browser Visual Check: PENDING
+
+### Kein API Deploy, kein DB, kein Discourse, kein Mobile APK
