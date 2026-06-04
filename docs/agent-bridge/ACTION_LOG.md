@@ -5860,3 +5860,30 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - **Total: 37 Tests, alle bestanden**
 
 ### Kein Deploy, kein APK Build, kein DB Update
+
+---
+
+## 2026-06-04 — CC: GH#103/NEA-313 Pilot Apply — Topic 438 aktualisiert
+
+### Pilot: NUR Topic 438 (GR-0490a766)
+- Backup: /tmp/forum_topic_backups/topic_438_before_20260604_134048.md (6853 chars)
+- first_post_id: 441 (verifiziert via API)
+- Sanity-Check: clean (kein TOC/Boilerplate)
+- Post 441 aktualisiert: version 4
+- Raw-Laenge vorher: 6853 → nachher: 9865 chars
+
+### Verifizierung (API-Ebene)
+- Σύνοψη: ✅ (Ollama aus echtem Αιτιολογική Έκθεση Text)
+- Ανάλυση: ✅ (4 Saetze, buergerfruendlich)
+- Αιτιολογική Έκθεση: ✅ (Fliesstext, kein TOC)
+- PDF-Links: ✅ (4 Links mit Seitenzahlen)
+- Vote-Link: ✅
+- Kein anderes Topic angefasst: ✅
+
+### Ollama-Hinweis
+- Summary + Analyse basieren auf 4000-Zeichen-Auszug (ΜΕΡΟΣ Α+Β Σκοπός/Αντικείμενο)
+- NICHT vollstaendiger 372k Text — klar als Pilot markiert im Footer
+- Ollama RAM zurueck auf 2.4 GB
+
+### KEIN weiteres Topic, KEIN DB Update, KEIN Deploy, KEIN APK
+### Gio soll Topic 438 im Browser/Forum pruefen
