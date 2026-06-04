@@ -5835,3 +5835,28 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 3. **Arweave Guards (party_votes + source)** — KEIN dedizierter Test. Nur Code-Review.
 4. **Telegram citizen_votes Count** — KEIN Test. War Bug.
 5. **_is_bad_parliament_text Quality Gate** — KEIN Test. Nur manual/dry-run.
+
+---
+
+## 2026-06-04 — CC: Golden Path Regression Tests (Commit `80b7b87`)
+
+### Tests hinzugefügt
+1. **source-resolver.test.ts** (vitest, 15 Tests): official→forum→none Kaskade, isPdfUrl, sourceLabel
+2. **test_parliament_fetcher.py** (pytest, 9 Tests): _is_bad_parliament_text — Boilerplate rejection
+3. **test_arweave_guards.py** (pytest, 9 Tests): DIAVGEIA blocked, party_votes required, status check
+
+### Helper extrahiert
+- `apps/mobile/src/lib/source-resolver.ts`: resolveSource(), isPdfUrl(), sourceLabel()
+  - VoteScreen + ResultScreen importieren jetzt von dort (statt inline Duplikation)
+- `apps/api/services/bill_lifecycle.py`: is_arweave_eligible() extrahiert aus _hook_arweave_snapshot()
+
+### Ergebnis
+- Source-Resolver: 15/15 ✅
+- Quality Gate: 9/9 ✅
+- Arweave Guards: 9/9 ✅
+- Existing source_links: 4/4 ✅
+- TSC: OK
+- py_compile: OK
+- **Total: 37 Tests, alle bestanden**
+
+### Kein Deploy, kein APK Build, kein DB Update
