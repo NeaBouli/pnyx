@@ -48,7 +48,7 @@ export default function BillResultReport({
   return (
     <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden mb-6">
       <div className="px-6 py-4 bg-gray-800 border-b border-gray-200">
-        <h2 className="font-black text-lg">{el("Πλήρης Έκθεση Αποτελεσμάτων", "Full Results Report")}</h2>
+        <h2 className="font-black text-lg text-white">{el("Πλήρης Έκθεση Αποτελεσμάτων", "Full Results Report")}</h2>
       </div>
       <div className="p-6 space-y-6">
 
@@ -150,13 +150,13 @@ export default function BillResultReport({
               </p>
               <div className="mb-2">
                 <div className="flex justify-between text-xs mb-1">
-                  <span className="text-gray-500">Score</span>
+                  <span className="text-gray-400">Score</span>
                   <span className="font-black" style={{ color: repColor }}>{repAnim.toFixed(1)}/100</span>
                 </div>
                 <div className="h-4 bg-gray-700 rounded-full overflow-hidden">
                   <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${repAnim}%`, backgroundColor: repColor }} />
                 </div>
-                <div className="flex justify-between text-xs text-gray-600 mt-1">
+                <div className="flex justify-between text-xs text-gray-400 mt-1">
                   <span style={{ color: "#ef4444" }}>0%</span>
                   <span style={{ color: "#f59e0b" }}>50%</span>
                   <span style={{ color: "#2563eb" }}>100%</span>
@@ -170,7 +170,7 @@ export default function BillResultReport({
           </div>
         )}
 
-        <p className="text-xs text-gray-600 text-center pt-2 border-t border-gray-200">
+        <p className="text-xs text-gray-500 text-center pt-2 border-t border-gray-200">
           {el("Η ψηφοφορία δεν είναι νομικά δεσμευτική.", "This vote is not legally binding.")}
         </p>
       </div>
