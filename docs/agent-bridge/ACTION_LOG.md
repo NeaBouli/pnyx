@@ -5812,3 +5812,26 @@ Alle 5 von Gio am S10/Web visuell bestätigt (04.06.2026, Screenshots vorhanden)
 | #106 | NEA-316 | Dark Cards Mobile unlesbar | Low |
 
 Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
+
+---
+
+## 2026-06-04 — CC: Golden Path Registry + Test-Inventar
+
+### WORKING_FEATURES.md angelegt
+- 14 Mobile Features dokumentiert (13 ✅, 1 needs recheck)
+- 10 Backend Features dokumentiert (alle ✅)
+- Deploy-Regeln festgehalten
+- Bekannte Defekte referenziert (#99-106)
+
+### Vorhandene Tests (Projekt-eigene)
+- API: 17 Testdateien (voting, identity, nullifier, parliament, polis, vaa, health, discourse_sync, source_links, diavgeia, agent)
+- Web: 2 crypto Tests
+- Packages/crypto: 1 Test
+- Mobile: KEINE Tests
+
+### Golden-Path-Features OHNE Test (Top 5 Regressions-Risiko)
+1. **Forum-Fallback in VoteScreen/ResultScreen** — KEIN Test. Wurde bei Option-E gekappt. Hoechstes Risiko.
+2. **Source-Policy (official → forum → none)** — test_source_links.py existiert (4 Tests), aber kein Test fuer forum_topic_url Fallback
+3. **Arweave Guards (party_votes + source)** — KEIN dedizierter Test. Nur Code-Review.
+4. **Telegram citizen_votes Count** — KEIN Test. War Bug.
+5. **_is_bad_parliament_text Quality Gate** — KEIN Test. Nur manual/dry-run.
