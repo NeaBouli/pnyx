@@ -5755,3 +5755,21 @@ Option C: llama3.2:3b mit besserem Prompt + strengerer Validation
 ### GitHub Issue #101 angelegt
 ### APK Build laeuft — S10 Install + Visual-Check ausstehend
 ### Kein versionCode bump, kein AAB/Play
+
+---
+
+## 2026-06-04 — CC: Forum-Fallback APK auf S10 installiert
+
+- APK Build: SUCCESS
+- S10: vC30/1.0.3, lastUpdateTime=2026-06-04 01:38:00
+- Commit: `32d3085` (forum fallback code)
+- API liefert forum_topic_url fuer alle 3 Test-Bills:
+  - GR-5294: pnyx.ekklesia.gr/t/132
+  - GR-5293: pnyx.ekklesia.gr/t/131
+  - GR-0490a766: pnyx.ekklesia.gr/t/438
+- Gio soll S10 visuell pruefen:
+  - App komplett schliessen (Recent-Apps wegwischen)
+  - GR-5294 oeffnen
+  - Forum-Link "💬 Διαβάστε & συζητήστε στο Φόρουμ" sichtbar + klickbar?
+  - Oeffnet pnyx.ekklesia.gr/t/132?
+- Kein versionCode bump, kein AAB/Play
