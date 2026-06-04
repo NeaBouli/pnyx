@@ -5798,3 +5798,17 @@ Alle 5 von Gio am S10/Web visuell bestätigt (04.06.2026, Screenshots vorhanden)
 - adb/UIAutomator/API-Checks sind KEINE Verifikation der gerenderten UI
 - Bei Unsicherheit: "S10-Verifikation durch Gio noetig" melden
 - Gespeichert in Memory: feedback_s10_verification_rule.md
+
+---
+
+## 2026-06-04 — CC: Linear-Tickets + Cross-Links (Dual Tracking)
+
+| GH | Linear | Titel | Prio |
+|----|--------|-------|------|
+| #102 | NEA-312 | 24h-Korrektur-Warntext | Medium |
+| #103 | NEA-313 | Forum nur Summary, kein Volltext | High |
+| #104 | NEA-314 | Deep-Link App vs Web | Medium |
+| #105 | NEA-315 | Σύνοψη = Ανάλυση identisch | High |
+| #106 | NEA-316 | Dark Cards Mobile unlesbar | Low |
+
+Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
