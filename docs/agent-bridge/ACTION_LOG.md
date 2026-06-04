@@ -5887,3 +5887,29 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### KEIN weiteres Topic, KEIN DB Update, KEIN Deploy, KEIN APK
 ### Gio soll Topic 438 im Browser/Forum pruefen
+
+---
+
+## 2026-06-04 — CC: GH#103 Topic 438 Pilot v3 — Sprachpolitur
+
+### Ollama-Prompt-Ergebnis
+- Verbesserter Prompt mit expliziten Grammatik-Regeln: Fehler blieben trotzdem ("τα επιχειρήσεις", "απληστική")
+- **Erkenntnis:** qwen2.5:14b kann griechische Artikel/Kasus nicht zuverlässig produzieren
+- **Lösung für Skalierung:** Post-Processing-Korrekturen ODER manuell polierte Templates für die wenigen Parliament-Bills
+
+### Was geändert wurde (Topic 438 v5)
+- Περίληψη: manuell poliert — sauberes offizielles Griechisch
+- Ανάλυση: manuell poliert — 5 Sätze, korrekte Kasus
+- Αιτιολογική Auszug: endet jetzt nach "...περισσότερες από μία φορές." (Satzgrenze, VOR Aufzählung)
+- PDF-Links: klickbar (Markdown-Format bestätigt, 5 Links)
+- Alle 4 bekannten Grammatikfehler: ✅ eliminiert
+
+### Zahlen
+- Backup: topic_438_before_20260604_135152.md (9865 chars)
+- Nachher: 5522 chars (kompakter, kein TOC-Dump mehr)
+- Post 441 version: 5
+
+### GH#103 bleibt OFFEN
+- Dies ist ein Pilot, kein finaler Fix
+- Skalierung auf andere Bills erst nach Format-Abnahme
+- Ollama RAM zurück auf 2.4 GB
