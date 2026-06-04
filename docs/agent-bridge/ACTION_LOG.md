@@ -5937,3 +5937,23 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Keine Skalierung gestartet
 - Kein weiterer Topic-Apply
 - Kein DB/Deploy/Resync
+
+---
+
+## 2026-06-04 — CC: GH#106/NEA-316 Dark Cards Mobile Fix
+
+### Root Cause
+- BillResultReport.tsx: Header "Πλήρης Έκθεση" hatte KEINE explizite Textfarbe auf bg-gray-800
+- Erbt text-gray-900 (fast schwarz) → schwarzer Text auf dunkelgrauem Hintergrund = unlesbar
+- Score/Scale Labels text-gray-500/600 waren zu dunkel auf dunklem Hintergrund
+
+### Fix (Commit `635a7b5`)
+- Header: + text-white
+- Score label: text-gray-500 → text-gray-400
+- Scale labels: text-gray-600 → text-gray-400
+- Disclaimer: text-gray-600 → text-gray-500
+
+### Web Deploy noetig
+- Code ist auf origin/main
+- Web Container muss rebuilt werden um Fix live zu sehen
+- S10-Verifikation durch Gio noetig (Mobile Browser)
