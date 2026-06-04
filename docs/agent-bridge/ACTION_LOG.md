@@ -5913,3 +5913,27 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Dies ist ein Pilot, kein finaler Fix
 - Skalierung auf andere Bills erst nach Format-Abnahme
 - Ollama RAM zurück auf 2.4 GB
+
+---
+
+## 2026-06-04 — CC: GH#103 Pilot accepted — Pipeline pending
+
+### Topic 438 Pilot
+- Visually reviewed by Gio — **accepted for this single pilot**
+- Raw-Links: 5 klickbare Markdown-Links bestätigt
+- Grammatik: sauber (manuell poliert)
+- Auszug: endet an Satzgrenze
+- Format: Metadaten → Περίληψη → Ανάλυση → Αιτιολογική Auszug → PDF-Links → Vote
+
+### Erkenntnisse fuer Skalierung
+- PDF-Klassifikation: "Αιτιολογική Έκθεση" = lesbar, "φωτοτυπημένο" = skip
+- qwen2.5:14b Griechischqualitaet: unzuverlaessig, braucht Post-Processing oder manuelles Polieren
+- Skalierung braucht Quality-Control-Strategie BEVOR Batch-Apply
+- Ollama CPU-Zeit: ~7 Min pro Bill fuer Summary+Analyse
+
+### Status
+- GH#103 kommentiert (nicht geschlossen)
+- NEA-313 kommentiert (nicht geschlossen)
+- Keine Skalierung gestartet
+- Kein weiterer Topic-Apply
+- Kein DB/Deploy/Resync
