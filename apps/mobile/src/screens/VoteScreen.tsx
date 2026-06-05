@@ -339,9 +339,11 @@ export default function VoteScreen({ route, navigation }: Props) {
       )}
 
       {billStatus === "WINDOW_24H" && (
-        <View style={{ backgroundColor: "#fef3c7", borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#f59e0b" }}>
-          <Text style={{ fontWeight: "700", color: "#92400e", fontSize: 13 }}>
-            ⚠️ Τελευταίες 24 ώρες — μπορείτε να διορθώσετε την ψήφο σας (μία φορά)
+        <View style={{ backgroundColor: isCorrected ? "#f0fdf4" : "#fef3c7", borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: isCorrected ? "#86efac" : "#f59e0b" }}>
+          <Text style={{ fontWeight: "700", color: isCorrected ? "#166534" : "#92400e", fontSize: 13 }}>
+            {isCorrected
+              ? "✅ Έχετε χρησιμοποιήσει το δικαίωμα της μίας διόρθωσης της ψήφου σας."
+              : "⚠️ Τελευταίες 24 ώρες — μπορείτε να διορθώσετε την ψήφο σας (μία φορά)"}
           </Text>
         </View>
       )}
