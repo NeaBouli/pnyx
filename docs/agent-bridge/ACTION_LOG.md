@@ -6194,3 +6194,32 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 3. Griechisch-QA-Strategie definieren
 4. Pilot an GR-0490a766 + GR-74e0cb08
 5. KEIN Batch-Apply ohne Abnahme
+
+---
+
+## 2026-06-06 — Session-Sicherung vor analysis_el Pipeline
+
+### Geschlossene Tickets diese Session
+- GH#104 / NEA-314: Deep-Link App vs Web ✅ (App-Open Banner)
+- GH#106 / NEA-316: Dark Cards Mobile ✅ (bereits geschlossen)
+
+### Status aller Tickets
+| GH | Linear | Status |
+|----|--------|--------|
+| #102 | NEA-312 | Code + Tests OK, visual blocked (kein WINDOW_24H) |
+| #103 | NEA-313 | Pilot T438 accepted, Pipeline Design fertig, analysis_el entschieden |
+| #104 | NEA-314 | ✅ CLOSED |
+| #105 | NEA-315 | Root Cause: kein analysis_el Feld → braucht Migration |
+| #106 | NEA-316 | ✅ CLOSED |
+| #99 | — | DIAVGEIA Source-Link offen |
+| #100 | — | DIAVGEIA pill statt Summary offen |
+
+### Architektur-Entscheidung (Gio + Codex)
+- Neues DB-Feld `analysis_el` (Alembic Migration)
+- `summary_long_el` NICHT umwidmen
+- Nur 3/8 Parliament-Bills haben PDF-Daten (Psifisthenta-URLs)
+- Nächster Schritt: Migration + 1-Bill Pilot (GR-0490a766)
+
+### Golden Path Tests: 38 total (alle gruen)
+### HEAD: `f5fb7dc`
+### Server: Web `252d674` deployed mit assetlinks.json + App-Open Banner
