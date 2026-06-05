@@ -6108,3 +6108,27 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Samsung Internet Browser kann eigene Link-Handling-Regeln haben.
 
 ### GH#104 bleibt offen bis Gio realen Forum-Klick bestätigt
+
+---
+
+## 2026-06-06 — CC: GH#104 App-Open Banner (Samsung Internet Workaround)
+
+### Problem
+- Samsung Internet ignoriert Android App Links trotz verified Domain + assetlinks.json
+- Echter Forum-Tap bleibt im Browser
+- Custom Scheme `ekklesia://` funktioniert direkt
+
+### Lösung
+- "Άνοιγμα στην εφαρμογή" Banner auf mobile Web Bill-Detail-Seite
+- Nutzt `ekklesia://el/bills/:id` Custom Scheme
+- Nur auf Mobile sichtbar (`md:hidden`)
+- Wenn App nicht installiert: nichts passiert (Custom Scheme wird ignoriert)
+
+### Flow
+1. User tappt Forum-Link → Browser öffnet ekklesia.gr/el/bills/:id
+2. Mobile Banner zeigt "📱 Άνοιγμα στην εφαρμογή εκκλησία →"
+3. User tappt Banner → App öffnet sich via custom scheme
+
+### Commit: `252d674`
+### Web Deploy: läuft
+### S10-Verifikation durch Gio nötig
