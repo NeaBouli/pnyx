@@ -74,3 +74,38 @@ describe("sourceLabel", () => {
     expect(sourceLabel("PARLIAMENT", "official", "https://x.gr/page")).toBe("Πηγή — Βουλή των Ελλήνων");
   });
 });
+
+// ─── GH#102: 24h Correction Banner ─────────────────────────────────────────
+
+import { correctionBanner } from "./source-resolver";
+
+describe("correctionBanner — Golden Path GH#102", () => {
+  it("WINDOW_24H + not corrected → available text", () => {
+    const r = correctionBanner("WINDOW_24H", false);
+    expect(r.visible).toBe(true);
+    expect(r.style).toBe("available");
+    expect(r.text).toContain("μπορείτε να διορθώσετε");
+  });
+
+  it("WINDOW_24H + already corrected → used text", () => {
+    const r = correctionBanner("WINDOW_24H", true);
+    expect(r.visible).toBe(true);
+    expect(r.style).toBe("used");
+    expect(r.text).toContain("χρησιμοποιήσει");
+  });
+
+  it("ACTIVE → no banner", () => {
+    const r = correctionBanner("ACTIVE", false);
+    expect(r.visible).toBe(false);
+  });
+
+  it("PARLIAMENT_VOTED → no banner", () => {
+    const r = correctionBanner("PARLIAMENT_VOTED", true);
+    expect(r.visible).toBe(false);
+  });
+
+  it("OPEN_END → no banner", () => {
+    const r = correctionBanner("OPEN_END", false);
+    expect(r.visible).toBe(false);
+  });
+});

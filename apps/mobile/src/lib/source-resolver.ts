@@ -38,3 +38,32 @@ export function sourceLabel(
   if (isPdfUrl(url)) return "Πηγή — Βουλή (PDF)";
   return "Πηγή — Βουλή των Ελλήνων";
 }
+
+// ─── 24h Correction Banner ─────────────────────────────────────────────────
+
+export interface CorrectionBannerState {
+  visible: boolean;
+  text: string;
+  style: "available" | "used" | "none";
+}
+
+export function correctionBanner(
+  billStatus: string,
+  isCorrected: boolean,
+): CorrectionBannerState {
+  if (billStatus !== "WINDOW_24H") {
+    return { visible: false, text: "", style: "none" };
+  }
+  if (isCorrected) {
+    return {
+      visible: true,
+      text: "Έχετε χρησιμοποιήσει το δικαίωμα της μίας διόρθωσης της ψήφου σας.",
+      style: "used",
+    };
+  }
+  return {
+    visible: true,
+    text: "Τελευταίες 24 ώρες — μπορείτε να διορθώσετε την ψήφο σας (μία φορά)",
+    style: "available",
+  };
+}
