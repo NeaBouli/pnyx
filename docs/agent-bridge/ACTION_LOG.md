@@ -6031,3 +6031,37 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Total Golden Path: 38 Tests
 
 ### HEAD: `18fc741`
+
+---
+
+## 2026-06-06 — CC: GH#104 App-Link Fingerprints
+
+### Upload/Release-Key SHA256 (aus APK extrahiert)
+- `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`
+- Extrahiert via apksigner aus der gebauten Play-Release APK
+- Keystore-Passwort ist Base64-kodiert in keystore-play.properties (nicht Klartext)
+
+### Google Play App Signing SHA256
+- **NICHT DOKUMENTIERT** — Gio muss in Play Console nachsehen:
+  Play Console → App → Setup → App integrity → App signing key certificate → SHA-256
+
+### assetlinks.json Zielstruktur
+```json
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "ekklesia.gr",
+    "sha256_cert_fingerprints": [
+      "D9:4C:24:D1:82:73:74:45:A6:2B:D9:63:73:97:CF:E9:54:07:B6:2F:34:D0:7E:B5:7E:F1:1B:30:E1:0E:5D:EC",
+      "GOOGLE_PLAY_APP_SIGNING_SHA256_HIER"
+    ]
+  }
+}]
+```
+
+### Blocker
+- Google Play App Signing SHA256 fehlt — Gio muss liefern
+- Ohne Google-SHA funktionieren App-Links nur fuer direkte APK-Installationen, nicht fuer Play-Store-Downloads
+
+### Kein Code-Fix, kein Build, kein Deploy
