@@ -32,7 +32,7 @@ export type RootStackParams = {
   Profile: undefined;
   NotificationSettings: undefined;
   Compass: undefined;
-  Vote: { billId: string; billTitle: string };
+  Vote: { billId: string; billTitle?: string };
   Result: { billId: string; billTitle?: string; fromVote?: boolean };
   Politikoi: undefined;
   EvaluatePolitician: { adaNumber: string; orgLabel: string };
@@ -98,11 +98,17 @@ export default function Navigation() {
   if (loading) return <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background }}><ActivityIndicator color={colors.primary} /></View>;
 
   const linking = {
-    prefixes: ["ekklesia://"],
+    prefixes: ["ekklesia://", "https://ekklesia.gr"],
     config: {
       screens: {
         PolisLogin: "polis-login",
         ImportAccount: "import-account",
+        Vote: {
+          path: "el/bills/:billId",
+          parse: {
+            billId: (id: string) => id,
+          },
+        },
       },
     },
   };

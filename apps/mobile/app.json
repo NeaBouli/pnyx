@@ -32,8 +32,26 @@
         "INTERNET",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
-        "USE_BIOMETRIC",
-        "USE_FINGERPRINT"
+        "USE_BIOMETRIC"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "ekklesia.gr",
+              "pathPrefix": "/el/bills/"
+            },
+            {
+              "scheme": "https",
+              "host": "ekklesia.gr",
+              "pathPrefix": "/en/bills/"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ]
     },
     "web": {

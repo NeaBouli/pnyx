@@ -1,0 +1,11 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "ekklesia.gr",
+    "sha256_cert_fingerprints": [
+      "31:BA:97:33:93:71:05:9C:BB:07:61:D2:AC:E2:58:98:23:E7:81:61:D1:4E:61:5E:CD:95:89:66:4C:41:12:3A",
+      "D9:4C:24:D1:82:73:74:45:A6:2B:D9:63:73:97:CF:E9:54:07:B6:2F:34:D0:7E:B5:7E:F1:1B:30:E1:0E:5D:EC"
+    ]
+  }
+}]
