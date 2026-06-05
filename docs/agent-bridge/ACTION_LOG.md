@@ -6223,3 +6223,31 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Golden Path Tests: 38 total (alle gruen)
 ### HEAD: `f5fb7dc`
 ### Server: Web `252d674` deployed mit assetlinks.json + App-Open Banner
+
+---
+
+## 2026-06-06 — CC: analysis_el Migration + Schema + Frontend (Commit `184eeff`)
+
+### Implementiert
+1. Alembic Migration `p901a2b3c4d5`: `analysis_el TEXT NULL`
+2. Model: `analysis_el` Spalte
+3. API: `BillDetail` Schema + Serialisierung inkl. `analysis_el`
+4. VoteScreen: Ανάλυση zeigt `analysis_el` (nicht mehr `summary_long_el` Duplikat)
+5. ResultScreen: gleiche Änderung
+6. Web: Ανάλυση zeigt `analysis_el`, Fallback "Η ανάλυση βρίσκεται υπό επεξεργασία."
+7. api.ts: `BillResults` Interface + `analysis_el`
+
+### Tests
+- py_compile: OK (models, parliament, migration)
+- TSC: OK (mobile + web)
+- pytest: 22 passed (source_links, quality gate, arweave guards)
+
+### Naechste Schritte (noch nicht gemacht)
+- API Deploy + Migration auf Server
+- Ollama Pilot: analysis_el für GR-0490a766 generieren
+- Forum Topic 438 Pilot Update
+- Kein Batch-Scaling
+
+### GH#105 Root Cause behoben
+- Ανάλυση zeigt jetzt `analysis_el`, nicht `summary_long_el` Duplikat
+- Aber `analysis_el` ist noch NULL für alle Bills → Fallback-Text
