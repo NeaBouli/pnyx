@@ -5969,3 +5969,20 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Gio Mobile-Browser Visual Check: PENDING
 
 ### Kein API Deploy, kein DB, kein Discourse, kein Mobile APK
+
+---
+
+## 2026-06-05 — CC: GH#106 geschlossen + GH#102 Fix
+
+### GH#106 / NEA-316 Dark Cards
+- CLOSED (GitHub + Linear)
+- Gio visual PASS auf Smartphone-Browser
+
+### GH#102 / NEA-312 24h-Korrektur-Warntext (Commit `c37db2d`)
+- State-Variable: `isCorrected` (aus `voteStatus.is_correction`)
+- Fix: Banner-Text und Farbe abhaengig von isCorrected:
+  - Available: gelbes Banner "⚠️ μπορείτε να διορθώσετε" (wie vorher)
+  - Used: grünes Banner "✅ Έχετε χρησιμοποιήσει το δικαίωμα"
+- Already-voted-Lock: NICHT angefasst (Golden Path)
+- TSC: OK (vitest Type-Import-Warnung in Testdatei ignoriert)
+- APK Build: laeuft
