@@ -6087,3 +6087,24 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - S10-Verifikation durch Gio noetig
 
 ### Kein versionCode bump, kein AAB/Play
+
+---
+
+## 2026-06-06 — CC: GH#104 Deep-Link — Selection State Fix
+
+### Root Cause
+- Domain verification: `verified` ✅
+- Selection state: `Disabled` ❌ — Android hatte App-Link-Übernahme deaktiviert
+- Discourse Link: korrekt (kein Redirect/Tracking), echte URL `https://ekklesia.gr/el/bills/...`
+- `adb shell pm set-app-links --package ekklesia.gr 2 all` → Status: `approved`
+
+### Nach Fix
+- ADB Intent Test: App öffnet sich ✅ (ekklesia.gr/.MainActivity)
+- S10-Verifikation durch Gio nötig: Forum-Link antippen → App statt Browser?
+
+### Caveat
+- `pm set-app-links` per ADB ist S10-lokal. Bei Neuinstallation könnte Selection wieder disabled sein.
+- Für Play-Store-Installationen sollte autoVerify + assetlinks ausreichen.
+- Samsung Internet Browser kann eigene Link-Handling-Regeln haben.
+
+### GH#104 bleibt offen bis Gio realen Forum-Klick bestätigt
