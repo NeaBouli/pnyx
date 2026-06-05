@@ -6065,3 +6065,25 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Ohne Google-SHA funktionieren App-Links nur fuer direkte APK-Installationen, nicht fuer Play-Store-Downloads
 
 ### Kein Code-Fix, kein Build, kein Deploy
+
+---
+
+## 2026-06-06 — CC: GH#104/NEA-314 Android App Links
+
+### Implementiert (Commit `91e5c98`)
+1. `assetlinks.json` mit Play App Signing + Upload Key SHA256 — HTTP 200 live
+2. `app.json` intentFilters fuer `https://ekklesia.gr/el/bills/*` + `/en/bills/*`
+3. `app.json` USE_FINGERPRINT entfernt (GlassOnTin-Feedback)
+4. Navigation linking: prefixes + Vote route `/el/bills/:billId`
+5. `billTitle` optional (Deep-Link hat keinen Titel)
+
+### ADB Test
+- `adb am start -d "https://ekklesia.gr/el/bills/GR-5294"` → `ekklesia.gr/.MainActivity` ✅
+- Vorher: Chrome WebAPK
+- Nachher: ekklesia App
+
+### S10
+- APK installiert: lastUpdateTime=2026-06-06 01:05:11
+- S10-Verifikation durch Gio noetig
+
+### Kein versionCode bump, kein AAB/Play
