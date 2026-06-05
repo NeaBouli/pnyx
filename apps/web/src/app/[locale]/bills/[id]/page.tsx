@@ -180,6 +180,18 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
           ← {locale === "el" ? "Πίσω στα Νομοσχέδια" : "Back to Bills"}
         </Link>
 
+        {/* App Open Banner — mobile only */}
+        <a
+          href={`ekklesia://el/bills/${billId}`}
+          className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 mt-2 text-blue-700 hover:bg-blue-100 transition-colors md:hidden"
+        >
+          <span className="text-2xl">📱</span>
+          <span className="text-sm font-semibold">
+            {locale === "el" ? "Άνοιγμα στην εφαρμογή εκκλησία" : "Open in ekklesia app"}
+          </span>
+          <span className="ml-auto text-blue-400">→</span>
+        </a>
+
         {/* Status + ID */}
         <div className="flex justify-between items-center mb-4 mt-4">
           <div className="flex items-center gap-2">
