@@ -108,7 +108,7 @@ export default function ResultScreen({ route }: Props) {
 
   const isHidden = data.results_hidden || (data.status === "ACTIVE" && data.total_votes === 0);
   const summary = readableText(data.summary_short_el) ? data.summary_short_el : readableText(data.pill_el) ? data.pill_el : "";
-  const analysis = data.ai_summary_reviewed && readableText(data.summary_long_el) ? data.summary_long_el : "";
+  const analysis = readableText(data.analysis_el) ? data.analysis_el : "";
   const officialText = !analysis ? cleanOfficialText(data.summary_long_el) : "";
   const { url: sourceUrl, kind: sourceKind } = resolveSource(data.official_source_url, data.forum_topic_url);
   const summaryFallback = sourceUrl

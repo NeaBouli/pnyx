@@ -137,8 +137,9 @@ class ParliamentBill(Base):
     pill_en             = Column(String(200), nullable=True)
     summary_short_el    = Column(Text, nullable=True)            # 3 Absätze
     summary_short_en    = Column(Text, nullable=True)
-    summary_long_el     = Column(Text, nullable=True)            # Vollanalyse
+    summary_long_el     = Column(Text, nullable=True)            # Offizieller/Langtext
     summary_long_en     = Column(Text, nullable=True)
+    analysis_el         = Column(Text, nullable=True)            # Ανάλυση: 5-8 Sätze analytisch
 
     categories          = Column(JSONB, nullable=True)           # ["Περιβάλλον", ...]
     party_votes_parliament = Column(JSONB, nullable=True)        # {"ΝΔ": "ΝΑΙ", ...}

@@ -168,6 +168,7 @@ export interface BillResults {
   ai_summary_reviewed?: boolean;
   parliament_url?: string | null;
   official_source_url?: string | null;
+  analysis_el?: string | null;
   forum_topic_id?: number | null;
   forum_topic_url?: string | null;
   diavgeia_ada?: string | null;

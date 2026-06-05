@@ -318,10 +318,10 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
               ) : aiSummary ? (
                 <div className="whitespace-pre-line">{aiSummary}</div>
-              ) : bill.ai_summary_reviewed && (bill.summary_long_el || bill.summary_long_en) ? (
-                <p>{locale === "el" ? bill.summary_long_el : (bill.summary_long_en || bill.summary_long_el)}</p>
+              ) : (bill as any).analysis_el ? (
+                <p>{(bill as any).analysis_el}</p>
               ) : (
-                <p className="text-gray-400">{locale === "el" ? "Δεν υπάρχει ανάλυση ακόμα." : "No analysis available yet."}</p>
+                <p className="text-gray-400">{locale === "el" ? "Η ανάλυση βρίσκεται υπό επεξεργασία." : "Analysis is being prepared."}</p>
               )}
             </div>
           )}

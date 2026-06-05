@@ -101,7 +101,7 @@ export default function VoteScreen({ route, navigation }: Props) {
           setSourceUrl(resolved.url);
           setSourceKind(resolved.kind);
           if (readableText(d.summary_short_el)) setSummary(d.summary_short_el);
-          if (d.ai_summary_reviewed && readableText(d.summary_long_el)) setAnalysis(d.summary_long_el);
+          if (readableText(d.analysis_el)) setAnalysis(d.analysis_el);
           if (!d.ai_summary_reviewed) setOfficialText(cleanOfficialText(d.summary_long_el));
         }
         const nullifier = await loadNullifier();

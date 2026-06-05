@@ -68,6 +68,7 @@ class BillDetail(BaseModel):
     summary_short_en:       str | None
     summary_long_el:        str | None
     summary_long_en:        str | None
+    analysis_el:            str | None = None
     categories:             list | None
     party_votes_parliament: dict | None
     status:                 str
@@ -283,6 +284,7 @@ async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db)):
         summary_short_en=bill.summary_short_en,
         summary_long_el=bill.summary_long_el,
         summary_long_en=bill.summary_long_en,
+        analysis_el=getattr(bill, "analysis_el", None),
         categories=bill.categories,
         party_votes_parliament=bill.party_votes_parliament,
         status=bill.status.value,
