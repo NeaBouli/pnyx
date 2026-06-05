@@ -6145,3 +6145,52 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Status
 - GH#104 / NEA-314: fixed via Samsung Internet fallback
 - Wichtig: Der Forum-Link öffnet in Samsung Internet weiterhin zuerst Web; akzeptierter robuster Pfad ist Web-Banner → App.
+
+---
+
+## 2026-06-06 — CC: GH#103+105 Analysis Pipeline Design — DIAGNOSE
+
+### GH#104/NEA-314 CLOSED ✅
+
+### STEP 1: Datenlage (8 reale PARLIAMENT Bills)
+| ID | Status | URL | short_len | long_quality |
+|---|---|---|---|---|
+| GR-5293 | PARL_VOTED | Anazitisi (kein Detail) | 104 | BOILERPLATE |
+| GR-5294 | PARL_VOTED | Anazitisi (kein Detail) | 228 | NULL |
+| GR-0490a766 | OPEN_END | Psifisthenta ✅ | 275 | BOILERPLATE |
+| GR-74e0cb08 | OPEN_END | Psifisthenta ✅ | 188 | BOILERPLATE |
+| GR-cf7398d9 | OPEN_END | Psifisthenta ✅ | 217 | BOILERPLATE |
+| GR-2024-0001 | OPEN_END | KEIN URL | 209 | NULL |
+| GR-2024-0002 | OPEN_END | KEIN URL | 196 | NULL |
+| GR-2025-0001 | OPEN_END | KEIN URL | 170 | NULL |
+
+### STEP 2: PDF-Klassifikation
+- **Psifisthenta-URLs** (3 Bills): haben PDFs mit Labels
+  - "Αιτιολογική Έκθεση" = GOOD (Maschinentext, 133-424 Seiten)
+  - "Επιστημονική Υπηρεσία" = GOOD
+  - "φωτοτυπημένο" = SKIP (OCR-Müll)
+- **Anazitisi-URLs** (2 Bills): KEINE PDFs — nur Listenansicht
+- **Kein URL** (3 Bills): Seed/manuelle Bills, kein PDF moeglich
+- Label-basierte Klassifikation funktioniert fuer Psifisthenta-Bills ✅
+
+### STEP 3: DB-Feld analysis_el
+- Existiert NICHT. Nur `summary_short_el`, `summary_long_el`, `ai_summary_reviewed`
+- Empfehlung: `summary_long_el` als Analysis nutzen (kein Migration), ODER Migration hinzufuegen
+- Risiko: `summary_long_el` ist aktuell mit Boilerplate belegt → muss erst geraeumt werden
+
+### STEP 4: Ollama
+- qwen2.5:14b (9 GB) — griechische Grammatik unzuverlaessig, 7 Min/4k Input
+- llama3.2:3b (2 GB) — zu schlecht fuer Griechisch
+- Kein "Greek editor" Modell vorhanden
+- Greek-Post-Processing waere noetig
+
+### Root Causes
+- GH#105 (Σύνοψη=Ανάλυση): `summary_short_el` und `summary_long_el` werden beide als "Analyse" angezeigt, aber es gibt kein separates Analyse-Feld
+- GH#103 (Forum Volltext): Pipeline fehlt — PDF→Text→Summary→Analysis→Forum
+
+### Naechster sicherer Schritt
+1. Architektur-Entscheidung: analysis_el Migration oder summary_long_el umwidmen?
+2. PDF-Extraktions-Helper bauen + testen (Label→URL→Jina→Text)
+3. Griechisch-QA-Strategie definieren
+4. Pilot an GR-0490a766 + GR-74e0cb08
+5. KEIN Batch-Apply ohne Abnahme
