@@ -6005,3 +6005,29 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Total source-resolver Tests: 20/20 passed
 
 ### Kein Deploy, kein APK nötig (nur Tests)
+
+---
+
+## 2026-06-05 — Session-Status
+
+### Geschlossen
+- GH#106 / NEA-316: Dark Cards ✅ visuell bestätigt + deployed
+
+### Offen (Code fertig, visual blocked)
+- GH#102 / NEA-312: Banner-Text ✅ Code + 5 Tests, blocked pending WINDOW_24H Bill
+
+### Offen (unbearbeitet)
+- GH#103 / NEA-313: Forum Volltext — Pilot Topic 438 accepted, Pipeline pending
+- GH#104 / NEA-314: Deep-Link App vs Web — nächster Fix
+- GH#105 / NEA-315: Σύνοψη = Ανάλυση — braucht LLM/Summary-Strategie
+- GH#99: DIAVGEIA Source-Link
+- GH#100: DIAVGEIA pill statt Summary
+
+### Tests
+- Source-Resolver: 15 Tests ✅
+- Correction Banner: 5 Tests ✅
+- Quality Gate: 9 Tests ✅
+- Arweave Guards: 9 Tests ✅
+- Total Golden Path: 38 Tests
+
+### HEAD: `18fc741`
