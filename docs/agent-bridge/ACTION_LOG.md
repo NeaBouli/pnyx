@@ -5986,3 +5986,22 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Already-voted-Lock: NICHT angefasst (Golden Path)
 - TSC: OK (vitest Type-Import-Warnung in Testdatei ignoriert)
 - APK Build: laeuft
+
+---
+
+## 2026-06-05 — CC: GH#102 Visual Verification BLOCKED + Tests added
+
+### Status
+- GR-5294 ist jetzt PARLIAMENT_VOTED, nicht WINDOW_24H
+- API hat 0 WINDOW_24H Bills → Banner kann nicht live getestet werden
+- GH#102 / NEA-312: NICHT geschlossen
+
+### Tests statt Visual
+- `correctionBanner()` als pure Helper extrahiert in source-resolver.ts
+- 5 neue Tests (vitest):
+  - WINDOW_24H + not corrected → available text ✅
+  - WINDOW_24H + corrected → used text ✅
+  - ACTIVE/PARLIAMENT_VOTED/OPEN_END → no banner ✅
+- Total source-resolver Tests: 20/20 passed
+
+### Kein Deploy, kein APK nötig (nur Tests)
