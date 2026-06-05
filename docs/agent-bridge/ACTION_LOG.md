@@ -6130,5 +6130,18 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 3. User tappt Banner → App öffnet sich via custom scheme
 
 ### Commit: `252d674`
-### Web Deploy: läuft
-### S10-Verifikation durch Gio nötig
+### Web Deploy: ✅ live
+
+### S10-Verifikation
+- Codex realer Test auf S10: ✅ PASS
+- Gio Rückmeldung: ✅ "passt"
+- Getesteter Pfad:
+  1. Samsung Internet → `pnyx.ekklesia.gr/t/438`
+  2. Forum-Link "Ψηφίστε τώρα στο ekklesia.gr" angetippt
+  3. Browser lädt `https://ekklesia.gr/el/bills/GR-0490a766`
+  4. Mobile Web Banner "📱 Άνοιγμα στην εφαρμογή εκκλησία →" sichtbar
+  5. Banner angetippt → `ekklesia.gr/.MainActivity` öffnet
+
+### Status
+- GH#104 / NEA-314: fixed via Samsung Internet fallback
+- Wichtig: Der Forum-Link öffnet in Samsung Internet weiterhin zuerst Web; akzeptierter robuster Pfad ist Web-Banner → App.
