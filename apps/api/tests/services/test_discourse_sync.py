@@ -76,7 +76,7 @@ def test_topic_body_uses_analysis_el_not_summary_long_as_analysis():
         summary_short_el="Σύντομη σύνοψη.",
         analysis_el="Ξεχωριστή ανάλυση από το νέο πεδίο.",
         pill_el=None,
-        summary_long_el="BOILERPLATE ΠΟΥ ΔΕΝ ΠΡΕΠΕΙ ΝΑ ΕΜΦΑΝΙΣΤΕΙ",
+        summary_long_el="Νομοθετική Διαδικασία BOILERPLATE ΠΟΥ ΔΕΝ ΠΡΕΠΕΙ ΝΑ ΕΜΦΑΝΙΣΤΕΙ",
         ai_summary_reviewed=True,
         status=SimpleNamespace(value="OPEN_END"),
         governance_level=SimpleNamespace(value="NATIONAL"),
@@ -95,6 +95,40 @@ def test_topic_body_uses_analysis_el_not_summary_long_as_analysis():
     assert "## Περίληψη\nΣύντομη σύνοψη." in body
     assert "## Ανάλυση\nΞεχωριστή ανάλυση από το νέο πεδίο." in body
     assert "BOILERPLATE" not in body
+
+
+def test_topic_body_renders_clean_official_text_as_own_section():
+    """GH#103: official text/PDF links belong in their own section, never in analysis."""
+    bill = SimpleNamespace(
+        id="GR-TEST",
+        title_el="Δοκιμαστικό νομοσχέδιο",
+        summary_short_el="Σύντομη σύνοψη.",
+        analysis_el="Ξεχωριστή ανάλυση.",
+        pill_el=None,
+        summary_long_el=(
+            "### Αιτιολογική Έκθεση — κύρια σημεία\n"
+            "Σκοπός του νόμου είναι η δοκιμή.\n\n"
+            "### Πλήρη έγγραφα\n"
+            "- [Αιτιολογική Έκθεση](https://www.hellenicparliament.gr/UserFiles/x/test.pdf)"
+        ),
+        ai_summary_reviewed=False,
+        status=SimpleNamespace(value="OPEN_END"),
+        governance_level=SimpleNamespace(value="NATIONAL"),
+        source="PARLIAMENT",
+        diavgeia_ada=None,
+        parliament_url=None,
+        official_source_url=None,
+        forum_topic_id=123,
+        forum_topic_url="https://pnyx.ekklesia.gr/t/123",
+        periferia_id=None,
+        dimos_id=None,
+    )
+
+    body = discourse_sync._build_topic_body(bill)
+
+    assert "## Ανάλυση\nΞεχωριστή ανάλυση." in body
+    assert "## Επίσημο κείμενο και έγγραφα" in body
+    assert "[Αιτιολογική Έκθεση](https://www.hellenicparliament.gr/UserFiles/x/test.pdf)" in body
 
 
 @pytest.mark.asyncio

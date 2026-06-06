@@ -41,7 +41,13 @@ def _read_env_file(path: str) -> None:
 
 
 def _http_text(url: str, timeout: int = 60) -> str:
-    req = urllib.request.Request(url, headers={"User-Agent": "ekklesia-analysis/1.0"})
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "ekklesia-analysis/1.0",
+            "X-Respond-With": "markdown",
+        },
+    )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return resp.read().decode("utf-8", errors="replace")
 
@@ -49,6 +55,23 @@ def _http_text(url: str, timeout: int = 60) -> str:
 def extract_pdf_links(markdown: str) -> list[dict[str, str]]:
     """Extract labeled PDF links from Jina markdown."""
     links: list[dict[str, str]] = []
+
+    # Parliament pages render document links as image links:
+    #   Αιτιολογική Έκθεση[![Image: .pdf](.../pdf.png)](.../file.pdf)
+    # The label is plain text immediately before the PDF icon, not the link text.
+    image_link_pattern = re.compile(
+        r"([^\[\]\n]{2,160})"
+        r"\[!\[[^\]]*\.pdf[^\]]*\]\(https?://[^)]*pdf\.png\)\]"
+        r"\((https?://[^)]+\.pdf[^)]*)\)",
+        re.IGNORECASE,
+    )
+    for match in image_link_pattern.finditer(markdown):
+        label = re.sub(r"\s+", " ", match.group(1)).strip()
+        label = re.split(r"(?:\]\(|https?://)", label)[-1].strip()
+        url = match.group(2).strip()
+        if not any(existing["url"] == url for existing in links):
+            links.append({"label": label, "url": url})
+
     pattern = re.compile(r"\[([^\]]+)\]\((https?://[^)]+\.pdf[^)]*)\)", re.IGNORECASE)
     for match in pattern.finditer(markdown):
         label = re.sub(r"\s+", " ", match.group(1)).strip()
@@ -102,6 +125,46 @@ def extract_useful_excerpt(text: str, max_chars: int = MAX_INPUT_CHARS) -> str:
         if cut > max_chars // 2:
             excerpt = excerpt[:cut + 1]
     return excerpt.strip()
+
+
+def build_official_text_block(excerpt: str, links: list[dict[str, str]], chosen: dict[str, str]) -> str:
+    """Build a compact official-text block for forum rendering and source links."""
+    text = excerpt.strip()
+    if len(text) > 3200:
+        cut = max(text[:3200].rfind("."), text[:3200].rfind(";"), text[:3200].rfind("·"))
+        text = text[:cut + 1 if cut > 1200 else 3200].strip()
+
+    preferred_labels = (
+        "Αιτιολογική",
+        "Επιστημονικής",
+        "Επιτροπής",
+        "Ψηφισθέν",
+        "Σ/Ν μετά",
+    )
+    docs: list[dict[str, str]] = []
+    for link in links:
+        label = link["label"]
+        if link["url"] == chosen["url"] or any(part in label for part in preferred_labels):
+            docs.append(link)
+        if len(docs) >= 5:
+            break
+    if chosen not in docs:
+        docs.insert(0, chosen)
+
+    lines = [
+        "### Αιτιολογική Έκθεση — κύρια σημεία",
+        text,
+        "",
+        "### Πλήρη έγγραφα",
+    ]
+    seen: set[str] = set()
+    for doc in docs:
+        if doc["url"] in seen:
+            continue
+        seen.add(doc["url"])
+        label = doc["label"].strip() or "Έγγραφο Βουλής"
+        lines.append(f"- [{label}]({doc['url']})")
+    return "\n".join(lines).strip()
 
 
 def call_claude(title: str, excerpt: str) -> tuple[dict, dict]:
@@ -227,6 +290,7 @@ async def main() -> None:
 
         pdf_text = _http_text(f"{JINA_BASE}{chosen['url']}", timeout=180)
         excerpt = extract_useful_excerpt(pdf_text)
+        official_text = build_official_text_block(excerpt, links, chosen)
         result, usage = call_claude(row["title_el"] or bill_id, excerpt)
         errors = validate_result(result, excerpt)
 
@@ -236,8 +300,10 @@ async def main() -> None:
             "chosen_pdf": chosen,
             "pdf_links": links,
             "input_chars": len(excerpt),
+            "official_text_chars": len(official_text),
             "apply": bool(args.apply),
             "result": result,
+            "official_text_el": official_text,
             "usage": usage,
             "validation_errors": errors,
         }
@@ -253,6 +319,8 @@ async def main() -> None:
             f.write((result.get("summary_short_el") or "").strip() + "\n\n")
             f.write("## Ανάλυση\n")
             f.write((result.get("analysis_el") or "").strip() + "\n\n")
+            f.write("## Επίσημο κείμενο και έγγραφα\n")
+            f.write(official_text + "\n\n")
             f.write(f"Validation errors: {errors or 'none'}\n")
             f.write(f"Usage: {usage}\n")
 
@@ -264,11 +332,12 @@ async def main() -> None:
             await conn.execute(
                 """
                 UPDATE parliament_bills
-                SET summary_short_el=$1, analysis_el=$2, updated_at=NOW()
-                WHERE id=$3
+                SET summary_short_el=$1, analysis_el=$2, summary_long_el=$3, updated_at=NOW()
+                WHERE id=$4
                 """,
                 (result.get("summary_short_el") or "").strip(),
                 (result.get("analysis_el") or "").strip(),
+                official_text,
                 bill_id,
             )
             print(f"{bill_id}: DB updated")

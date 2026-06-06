@@ -186,6 +186,15 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
         lower = val.lower()
         if "unknown" in lower:
             return True
+        bad_parliament_markers = (
+            "Μετάβαση στο κύριο περιεχόμενο",
+            "Ενεργοποίηση προσβασιμότητας",
+            "Νομοθετική Διαδικασία",
+            "Εμφανίζονται τα ψηφισθέντα",
+            "Εμφανίζονται τα σχέδια",
+        )
+        if any(marker in val for marker in bad_parliament_markers):
+            return True
         if re.match(r"^διαύγεια:\s*\[", val, re.IGNORECASE):
             return True
         if re.match(r"^διαύγεια:\s*\S+$", val, re.IGNORECASE) and len(val) < 80:
@@ -207,9 +216,24 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
                    and not re.match(r"^\s*\*?\s*\[Αρχική\]", l.strip())]
         return "\n".join(cleaned).strip()
 
+    def _clean_official_text(text: str) -> str:
+        if not text:
+            return ""
+        text = re.sub(r"<[^>]+>", "", text)
+        lines = text.split("\n")
+        cleaned = [l for l in lines
+                   if "Μετάβαση στο κύριο" not in l
+                   and "προσβασιμότητας" not in l
+                   and "Cookies" not in l
+                   and not re.match(r"^\s*\*?\s*\[Αρχική\]", l.strip())]
+        return "\n".join(cleaned).strip()
+
     # Build clean summary — never unknown
     summary = ""
-    for candidate in [bill.summary_short_el, bill.pill_el, bill.summary_long_el]:
+    summary_candidates = [bill.summary_short_el, bill.pill_el]
+    if source != "PARLIAMENT":
+        summary_candidates.append(bill.summary_long_el)
+    for candidate in summary_candidates:
         if candidate and not _is_bad_summary(candidate):
             summary = _clean(candidate)
             if summary:
@@ -221,8 +245,8 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
         analysis = _clean(analysis_el)
 
     official_excerpt = ""
-    if not analysis and getattr(bill, "ai_summary_reviewed", False) and bill.summary_long_el and not _is_bad_summary(bill.summary_long_el):
-        official_excerpt = _clean(bill.summary_long_el)
+    if source == "PARLIAMENT" and bill.summary_long_el and not _is_bad_summary(bill.summary_long_el):
+        official_excerpt = _clean_official_text(bill.summary_long_el)
 
     # Safe title for body heading
     title = bill.title_el or f"Απόφαση {bill.id}"
@@ -245,11 +269,8 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
         body += f"## Περίληψη\n{summary}\n\n"
     if analysis:
         body += f"## Ανάλυση\n{analysis}\n\n"
-    elif official_excerpt:
-        body += (
-            f"## Επίσημο κείμενο\n{official_excerpt[:2000]}\n\n"
-            "_Η πλήρης AI ανάλυση δεν έχει ακόμη ελεγχθεί. Εμφανίζεται απόσπασμα από την επίσημη πηγή._\n\n"
-        )
+    if official_excerpt:
+        body += f"## Επίσημο κείμενο και έγγραφα\n{official_excerpt}\n\n"
     if not summary and not analysis and not official_excerpt:
         if source == "DIAVGEIA" and getattr(bill, "diavgeia_ada", None):
             body += (
