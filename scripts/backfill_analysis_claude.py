@@ -67,7 +67,8 @@ def extract_pdf_links(markdown: str) -> list[dict[str, str]]:
     )
     for match in image_link_pattern.finditer(markdown):
         label = re.sub(r"\s+", " ", match.group(1)).strip()
-        label = re.split(r"(?:\]\(|https?://)", label)[-1].strip()
+        label = label.rsplit(")", 1)[-1].strip()
+        label = re.sub(r"^https?://\S+", "", label).strip()
         url = match.group(2).strip()
         if not any(existing["url"] == url for existing in links):
             links.append({"label": label, "url": url})
