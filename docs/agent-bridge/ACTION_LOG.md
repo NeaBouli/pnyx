@@ -6311,3 +6311,29 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Kein DB Apply, kein Forum Update
 ### Preview: /tmp/claude_eval_GR-0490a766.json (auf Server)
 ### GH#103 + GH#105 bleiben offen
+
+---
+
+## 2026-06-06 — CC: Claude Haiku Pilot Apply — GR-0490a766
+
+### DB Apply
+- summary_short_el: Claude Haiku (357ch) ✅
+- analysis_el: Claude Haiku (875ch) ✅
+- Distinct: ✅
+- Nur GR-0490a766 — 1 Row mit analysis_el bestätigt
+- Backup: /tmp/gr0490_before_claude_apply_20260606_081419.txt
+
+### API Verify
+- analysis_el wird korrekt ausgeliefert ✅
+- summary_short_el != analysis_el ✅
+
+### Forum Topic 438 Update
+- Backup: topic_438_before_claude_20260606_081523.md (5637 chars)
+- Updated: Post 441 version 7 (3695 → 6372 chars)
+- Σύνοψη: Claude summary sichtbar ✅
+- Ανάλυση: Claude analysis sichtbar ✅ (distinct!)
+- PDF-Links: 4 klickbare Links ✅
+
+### S10-Verifikation durch Gio nötig
+- App/Web: Ανάλυση Tab zeigt jetzt analysis_el statt summary Duplikat?
+- Forum: pnyx.ekklesia.gr/t/438 — Claude-Texte sichtbar?
