@@ -6279,3 +6279,35 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### GH#103 + GH#105 bleiben OFFEN
 - Kommentiert auf GitHub + Linear
+
+---
+
+## 2026-06-06 — CC: Claude API Eval — GR-0490a766 analysis_el
+
+### Ergebnis: RELEASE-TAUGLICH ✅
+
+### Vergleich qwen vs Claude
+| Check | qwen2.5:14b | Claude Haiku 4.5 |
+|---|---|---|
+| Zeit | 535s | **13s** |
+| Kosten | Lokal | **$0.0024** |
+| Grammatik | Fehlerhaft | ✅ Sauber |
+| Halluzination | "αθέμιτων παρόχων" ❌ | ✅ Keine |
+| Qualitaet | Mittelmäßig | Release-tauglich |
+
+### Output
+- summary_short_el (357ch): Professionelles Griechisch, korrekte Kasus
+- analysis_el (875ch): 5 Saetze, quellengebunden, distinct von summary
+- quality_notes: "Πληροφορίες ληφθείσες αποκλειστικά από το παρεχόμενο κείμενο"
+- Alle bekannten qwen-Fehler: CLEAN ✅
+
+### Input
+- PDF: Αιτιολογική Έκθεση (133 σελ.)
+- Abschnitt: Zeilen 288-400 + 690-760 (nach TOC)
+- Zeichen: 10992 → 6000 an Claude
+- Model: claude-haiku-4-5-20251001
+- Tokens: 4366 in + 1049 out
+
+### Kein DB Apply, kein Forum Update
+### Preview: /tmp/claude_eval_GR-0490a766.json (auf Server)
+### GH#103 + GH#105 bleiben offen
