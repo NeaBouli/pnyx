@@ -6251,3 +6251,31 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### GH#105 Root Cause behoben
 - Ανάλυση zeigt jetzt `analysis_el`, nicht `summary_long_el` Duplikat
 - Aber `analysis_el` ist noch NULL für alle Bills → Fallback-Text
+
+---
+
+## 2026-06-06 — CC: GH#103/#105 BLOCKED — qwen2.5:14b Release-Qualität nicht ausreichend
+
+### Pilot-Ergebnis GR-0490a766
+- summary_short_el (236ch): inhaltlich OK, "πρότυποι" falsch
+- analysis_el (659ch): inhaltlich teilweise OK, ABER:
+  - "αποτείνει" statt "αποσκοπεί"
+  - **Halluzination: "αθέμιτων παρόχων"** — Konzept nicht im Quelltext
+  - Mehrere Grammatikfehler
+- Summary != Analysis: ✅ DISTINCT
+- **Release-tauglich: NEIN**
+
+### Entscheidung
+- **Kein DB Apply** — analysis_el bleibt NULL ✅
+- **Kein Forum Topic Update** ✅
+- **Kein manuelles Polieren als Pipeline**
+- qwen2.5:14b für griechische Gesetzes-Analyse NICHT geeignet
+- Ollama RAM: zurück auf 2.4 GB ✅
+
+### Pipeline-Status
+- Mechanik steht: analysis_el Feld + Migration + API + Frontend ✅
+- Blocker: release-taugliches griechisches Analysemodell
+- Empfohlener Pfad: Claude Haiku/Sonnet API für analysis_el evaluieren
+
+### GH#103 + GH#105 bleiben OFFEN
+- Kommentiert auf GitHub + Linear
