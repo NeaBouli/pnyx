@@ -6475,3 +6475,26 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Verifikation
 - Tests: `test_arweave_guards.py` + `test_discourse_sync.py`: 26/26 ✅
 - GitHub #96 kommentiert + geschlossen ✅
+
+---
+
+## 2026-06-07 — Codex: GH#94 geschlossen — Lifecycle WINDOW_24H Stuck
+
+### Production Verification
+- `WINDOW_24H` Rows: 0 ✅
+- Status-Verteilung:
+  - DIAVGEIA `OPEN_END`: 731
+  - PARLIAMENT `ANNOUNCED`: 22
+  - PARLIAMENT `PARLIAMENT_VOTED`: 2
+  - PARLIAMENT `OPEN_END`: 6
+- Scheduler: `bill_lifecycle` registriert mit 1h Interval ✅
+- Redis `scraper:bill_lifecycle:last_run`: aktuell ✅
+- Manueller `run_bill_lifecycle()`:
+  - `checked=2`
+  - `transitioned=0`
+  - `errors=0`
+  - `arweave_catchup=0`
+
+### Status
+- Kein aktiver stuck Zustand mehr.
+- GitHub #94 kommentiert + geschlossen als resolved/stale ✅
