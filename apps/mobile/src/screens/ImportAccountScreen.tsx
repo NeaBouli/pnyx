@@ -23,12 +23,14 @@ export default function ImportAccountScreen({ route, navigation }: Props) {
   async function importAccount() {
     try {
       const params = route.params as {
-        key?: string; nullifier?: string; pubkey?: string;
+        key?: string; nullifier?: string; pubkey?: string; periferia_id?: string; dimos_id?: string;
       } | undefined;
 
       const privateKey = params?.key;
       const nullifier = params?.nullifier;
       const pubkey = params?.pubkey;
+      const periferiaId = params?.periferia_id;
+      const dimosId = params?.dimos_id;
 
       if (!privateKey || !nullifier) {
         setStatus("error");
@@ -41,6 +43,12 @@ export default function ImportAccountScreen({ route, navigation }: Props) {
       await SecureStore.setItemAsync("ekklesia_nullifier", nullifier);
       if (pubkey) {
         await SecureStore.setItemAsync("ekklesia_public_key", pubkey);
+      }
+      if (periferiaId) {
+        await SecureStore.setItemAsync("user_periferia_id", String(periferiaId));
+      }
+      if (dimosId) {
+        await SecureStore.setItemAsync("user_dimos_id", String(dimosId));
       }
       await SecureStore.setItemAsync("onboarding_completed", "true");
       await SecureStore.setItemAsync("user_profile_completed", "true");

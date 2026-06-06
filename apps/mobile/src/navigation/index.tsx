@@ -37,7 +37,7 @@ export type RootStackParams = {
   Politikoi: undefined;
   EvaluatePolitician: { adaNumber: string; orgLabel: string };
   PolisLogin: { session?: string; challenge?: string; purpose?: string; bill_id?: string };
-  ImportAccount: { key?: string; nullifier?: string; pubkey?: string };
+  ImportAccount: { key?: string; nullifier?: string; pubkey?: string; periferia_id?: string; dimos_id?: string };
 };
 
 export type TabParams = {

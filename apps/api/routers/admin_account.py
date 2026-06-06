@@ -8,12 +8,12 @@ import os
 import secrets
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Body, Depends, HTTPException
 from pydantic import BaseModel
 
 from database import get_db
 from dependencies import verify_admin_key
-from models import IdentityRecord, KeyStatus
+from models import Dimos, IdentityRecord, KeyStatus, Periferia
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -28,15 +28,39 @@ class TestAccountResponse(BaseModel):
     private_key_hex: str
     qr_data: str
     db_id: int
+    region_locked: bool
+    periferia_id: int | None = None
+    dimos_id: int | None = None
+
+
+class TestAccountRequest(BaseModel):
+    periferia_id: int | None = None
+    dimos_id: int | None = None
 
 
 @router.post("/test-account", response_model=TestAccountResponse)
 async def create_test_account(
+    req: TestAccountRequest | None = Body(default=None),
     _auth: bool = Depends(verify_admin_key),
     db: AsyncSession = Depends(get_db),
 ):
     """Generate a test account with Ed25519 keypair. For admin/dev testing only."""
     from nacl.signing import SigningKey
+    req = req or TestAccountRequest()
+
+    if req.periferia_id is not None:
+        periferia = await db.get(Periferia, req.periferia_id)
+        if not periferia:
+            raise HTTPException(status_code=400, detail=f"Invalid periferia_id: {req.periferia_id}")
+
+    if req.dimos_id is not None:
+        dimos = await db.get(Dimos, req.dimos_id)
+        if not dimos:
+            raise HTTPException(status_code=400, detail=f"Invalid dimos_id: {req.dimos_id}")
+        if req.periferia_id is None:
+            req.periferia_id = dimos.periferia_id
+        elif dimos.periferia_id != req.periferia_id:
+            raise HTTPException(status_code=400, detail="dimos_id does not belong to periferia_id")
 
     # Generate random keypair
     signing_key = SigningKey.generate()
@@ -55,6 +79,9 @@ async def create_test_account(
         public_key_hex=public_key_hex,
         status=KeyStatus.ACTIVE,
         source="ADMIN_TEST",
+        periferia_id=req.periferia_id,
+        dimos_id=req.dimos_id,
+        region_locked=bool(req.periferia_id or req.dimos_id),
         created_at=datetime.now(timezone.utc).replace(tzinfo=None),
     )
     db.add(record)
@@ -67,7 +94,13 @@ async def create_test_account(
         actor="admin_api_key",
         target_type="identity_record",
         target_id=str(record.id),
-        details={"reason": "test_account", "endpoint": "/admin/test-account"},
+        details={
+            "reason": "test_account",
+            "endpoint": "/admin/test-account",
+            "periferia_id": req.periferia_id,
+            "dimos_id": req.dimos_id,
+            "region_locked": bool(req.periferia_id or req.dimos_id),
+        },
     )
     db.add(audit)
 
@@ -81,6 +114,10 @@ async def create_test_account(
         f"&nullifier={nullifier_hash}"
         f"&pubkey={public_key_hex}"
     )
+    if record.periferia_id:
+        qr_data += f"&periferia_id={record.periferia_id}"
+    if record.dimos_id:
+        qr_data += f"&dimos_id={record.dimos_id}"
 
     logger.info("[ADMIN] Test account created: id=%d nullifier=%s...%s",
                 record.id, nullifier_hash[:8], nullifier_hash[-4:])
@@ -91,4 +128,7 @@ async def create_test_account(
         private_key_hex=private_key_hex,
         qr_data=qr_data,
         db_id=record.id,
+        region_locked=record.region_locked,
+        periferia_id=record.periferia_id,
+        dimos_id=record.dimos_id,
     )
