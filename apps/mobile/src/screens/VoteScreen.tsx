@@ -60,7 +60,7 @@ function cleanOfficialText(value?: string | null) {
   return cleaned.slice(0, 1400);
 }
 
-import { resolveSource, isPdfUrl, sourceLabel } from "../lib/source-resolver";
+import { correctionBanner, resolveSource, isPdfUrl, sourceLabel } from "../lib/source-resolver";
 
 export default function VoteScreen({ route, navigation }: Props) {
   const { billId, billTitle } = route.params;
@@ -232,6 +232,7 @@ export default function VoteScreen({ route, navigation }: Props) {
   const canCorrectVote = hasVoted && billStatus === "WINDOW_24H" && !isCorrected;
   const voteLocked = hasVoted && !canCorrectVote;
   const showVoteControls = billLoaded && (billStatus === "ACTIVE" || billStatus === "WINDOW_24H");
+  const correctionState = correctionBanner(billStatus, isCorrected);
   const canUsePillAsSummary = billSource !== "DIAVGEIA" && readableText(billPill);
   const summaryFallback = sourceUrl && sourceKind === "official"
     ? "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα. Δείτε την επίσημη πηγή."
@@ -338,12 +339,10 @@ export default function VoteScreen({ route, navigation }: Props) {
         </View>
       )}
 
-      {billStatus === "WINDOW_24H" && (
-        <View style={{ backgroundColor: isCorrected ? "#f0fdf4" : "#fef3c7", borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: isCorrected ? "#86efac" : "#f59e0b" }}>
-          <Text style={{ fontWeight: "700", color: isCorrected ? "#166534" : "#92400e", fontSize: 13 }}>
-            {isCorrected
-              ? "✅ Έχετε χρησιμοποιήσει το δικαίωμα της μίας διόρθωσης της ψήφου σας."
-              : "⚠️ Τελευταίες 24 ώρες — μπορείτε να διορθώσετε την ψήφο σας (μία φορά)"}
+      {correctionState.visible && (
+        <View style={{ backgroundColor: correctionState.style === "used" ? "#f0fdf4" : "#fef3c7", borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: correctionState.style === "used" ? "#86efac" : "#f59e0b" }}>
+          <Text style={{ fontWeight: "700", color: correctionState.style === "used" ? "#166534" : "#92400e", fontSize: 13 }}>
+            {correctionState.style === "used" ? "✅ " : "⚠️ "}{correctionState.text}
           </Text>
         </View>
       )}
