@@ -6428,3 +6428,25 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Status
 - GitHub #103 kommentiert + geschlossen ✅
 - Datenrealität: Bills ohne lesbare Parliament-PDFs behalten Fallback-Verhalten.
+
+---
+
+## 2026-06-07 — Codex: GH#95 geschlossen — summary_short_el Backfill
+
+### Fix
+- Preventive code fix:
+  - `diavgeia_scraper.py`: neue DIAVGEIA-Bills setzen `summary_short_el` aus dem offiziellen Betreff/Titel.
+  - `parliament.py` Admin-Create: wenn keine explizite Kurzfassung kommt, wird `summary_short_el = title_el` gesetzt.
+- Kein LLM fuer diesen Backfill, um Halluzinationen zu vermeiden.
+
+### Production Backfill
+- Nur leere `summary_short_el` befüllt, bestehende Summaries nicht überschrieben.
+- SQL-Regel: offizieller `title_el`/`pill_el`, whitespace-normalisiert, max. 600 Zeichen.
+
+### Ergebnis
+- DIAVGEIA: 731 aktualisiert → 731/731 mit `summary_short_el`, missing 0 ✅
+- PARLIAMENT: 13 aktualisiert → 30/30 mit `summary_short_el`, missing 0 ✅
+- API-Samples liefern `summary_short_el` für DIAV + Parliament ✅
+
+### Status
+- GitHub #95 kommentiert + geschlossen ✅
