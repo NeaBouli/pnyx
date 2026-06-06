@@ -6450,3 +6450,28 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### Status
 - GitHub #95 kommentiert + geschlossen ✅
+
+---
+
+## 2026-06-07 — Codex: GH#96 geschlossen — Arweave TX Verification
+
+### Fix
+- `publish_to_arweave()` speichert/returned TX-IDs nur noch, wenn `https://arweave.net/<tx>` nach Submit final erreichbar ist.
+- Direkter `PARLIAMENT_VOTED` Transition-Pfad nutzt jetzt `_hook_arweave_snapshot()` und damit denselben zentralen Guard wie Lifecycle/Catch-up.
+- Guard bleibt verbindlich:
+  - source `PARLIAMENT`
+  - status `PARLIAMENT_VOTED` oder `OPEN_END`
+  - `party_votes_parliament` vorhanden
+
+### Production Cleanup
+- 3 stale TXs mit finalem Gateway-404 auf `NULL` gesetzt:
+  - `GR-cf7398d9`
+  - `GR-74e0cb08`
+  - `GR-5293`
+- Verbleibende TXs: 3
+- Alle verbleibenden TXs liefern final HTTP 200 ✅
+- Alle verbleibenden TX-Rows haben `party_votes_parliament` ✅
+
+### Verifikation
+- Tests: `test_arweave_guards.py` + `test_discourse_sync.py`: 26/26 ✅
+- GitHub #96 kommentiert + geschlossen ✅
