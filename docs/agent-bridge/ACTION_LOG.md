@@ -6361,3 +6361,29 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Test-Hinweis
 - `apps/mobile` hat keine eigene Vitest-Dependency; direkter `npx vitest`/`tsc` gegen die Testdatei scheitert lokal mit `Cannot find module 'vitest'`.
 - Codepfad selbst ist durch S10/API/Forum verifiziert; Test-Infra-Luecke bleibt separat zu bereinigen.
+
+---
+
+## 2026-06-07 — Codex: GH#102 geschlossen
+
+### Problem
+- Der 24h-Korrekturtext musste den echten Zustand unterscheiden:
+  - Korrektur noch verfuegbar
+  - Korrektur bereits genutzt
+
+### Fix
+- VoteScreen nutzt jetzt den getesteten `correctionBanner()` Helper direkt.
+- Damit testet `source-resolver.test.ts` denselben Codepfad, den der Screen rendert.
+- Mobile Test-Infra ergaenzt: `vitest` in `apps/mobile` devDependencies.
+
+### Verifikation
+- `cd apps/mobile && npx tsc --noEmit`: ✅
+- `cd apps/mobile && npx vitest run src/lib/source-resolver.test.ts --run`: ✅ 20/20
+
+### Caveat
+- Es gibt aktuell keinen echten `WINDOW_24H` Bill in Production, daher keine Live-Visual-Reproduktion.
+- Der Textauswahl-Pfad ist aber deterministisch getestet und im Screen verdrahtet.
+
+### Status
+- Commit: `c29e09a`
+- GitHub #102 kommentiert + geschlossen ✅
