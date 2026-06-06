@@ -547,7 +547,7 @@ async def create_bill(
         title_en=req.title_en,
         pill_el=req.pill_el,
         pill_en=req.pill_en,
-        summary_short_el=req.summary_short_el,
+        summary_short_el=req.summary_short_el or req.title_el,
         summary_short_en=req.summary_short_en,
         categories=req.categories,
         parliament_vote_date=vote_date,

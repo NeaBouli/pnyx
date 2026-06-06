@@ -255,6 +255,7 @@ async def convert_decisions_to_bills(session: AsyncSession) -> dict:
             id=bill_id,
             title_el=title,
             pill_el=pill,
+            summary_short_el=title,
             status=BillStatus.OPEN_END,
             governance_level=gov,
             parliament_url=doc_url,
