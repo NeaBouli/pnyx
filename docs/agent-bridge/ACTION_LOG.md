@@ -6387,3 +6387,44 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Status
 - Commit: `c29e09a`
 - GitHub #102 kommentiert + geschlossen ✅
+
+---
+
+## 2026-06-07 — Codex: GH#103 geschlossen — Forum Volltext/Offizielle Dokumente
+
+### Fix
+- `scripts/backfill_analysis_claude.py` erweitert:
+  - Jina Markdown explizit via `X-Respond-With: markdown`
+  - Parliament-PDF-Links aus `Label[![pdf.png]](file.pdf)` korrekt extrahiert
+  - `Αιτιολογική Έκθεση` als primären lesbaren PDF-Typ gewählt
+  - `summary_short_el`, `analysis_el` und sauberer offizieller Text-/PDF-Block geschrieben
+  - `--official-only` ergänzt, um nur `summary_long_el` zu refreshen
+- `apps/api/services/discourse_sync.py` erweitert:
+  - `analysis_el` bleibt die einzige Quelle für `## Ανάλυση`
+  - `summary_long_el` wird als `## Επίσημο κείμενο και έγγραφα` gerendert
+  - Parliament-Boilerplate wird gefiltert
+  - Hellenic-Parliament-PDF-Links bleiben im offiziellen Dokumentenblock klickbar
+
+### Apply
+- DB aktualisiert:
+  - `GR-0490a766`: official text block refreshed, accepted Claude summary/analysis preserved
+  - `GR-74e0cb08`: Claude summary + analysis + official text block
+  - `GR-cf7398d9`: Claude summary + analysis + official text block
+- Forum Topics gezielt aktualisiert, kein globaler Resync:
+  - Topic 438 ✅
+  - Topic 253 ✅
+  - Topic 148 ✅
+
+### Verifikation
+- DB: alle 3 PDF-fähigen Parliament-Bills haben `summary_short_el`, `analysis_el`, `summary_long_el`
+- API: `api.ekklesia.gr` liefert distinct `summary_short_el` und `analysis_el`
+- Forum raw:
+  - alle 3 Topics enthalten `## Περίληψη`, `## Ανάλυση`, `## Επίσημο κείμενο και έγγραφα`
+  - alle 3 Topics enthalten 5 klickbare Parliament-PDF-Links
+- Tests:
+  - `apps/api/.venv/bin/python -m pytest apps/api/tests/services/test_discourse_sync.py apps/api/tests/services/test_parliament_fetcher.py -q`: 26/26 ✅
+  - `cd apps/mobile && npx tsc --noEmit && npx vitest run src/lib/source-resolver.test.ts --run`: 20/20 ✅
+
+### Status
+- GitHub #103 kommentiert + geschlossen ✅
+- Datenrealität: Bills ohne lesbare Parliament-PDFs behalten Fallback-Verhalten.
