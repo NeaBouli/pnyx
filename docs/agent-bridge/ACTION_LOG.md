@@ -6337,3 +6337,27 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### S10-Verifikation durch Gio nötig
 - App/Web: Ανάλυση Tab zeigt jetzt analysis_el statt summary Duplikat?
 - Forum: pnyx.ekklesia.gr/t/438 — Claude-Texte sichtbar?
+
+---
+
+## 2026-06-07 — Codex: GH#105 + GH#101 verifiziert und geschlossen
+
+### GH#105 / NEA-315 — Σύνοψη != Ανάλυση
+- API Detail `GET /api/v1/bills/GR-0490a766`: `summary_short_el` und `analysis_el` distinct ✅
+- Forum Topic 438: getrennte Sektionen `## Περίληψη` und `## Ανάλυση` sichtbar ✅
+- S10 App nach APK install (`versionCode=30`, `lastUpdateTime=2026-06-06 12:13:18`):
+  - `Σύνοψη` sichtbar ✅
+  - `Ανάλυση` sichtbar ✅
+  - Analyse beginnt mit eigenem `analysis_el` ("Η νομοθεσία δημιουργεί δομικές αλλαγές...") ✅
+- GitHub #105 kommentiert + geschlossen ✅
+- Wichtig: GH#103 bleibt offen fuer Volltext/Scaling.
+
+### GH#101 — forum_topic_url Source-Fallback
+- `resolveSource()` Kaskade: `official_source_url` → `forum_topic_url` → `none` ✅
+- VoteScreen + ResultScreen nutzen shared Helper ✅
+- Regression-Test `source-resolver.test.ts` deckt Forum-Fallback ab ✅
+- GitHub #101 kommentiert + geschlossen ✅
+
+### Test-Hinweis
+- `apps/mobile` hat keine eigene Vitest-Dependency; direkter `npx vitest`/`tsc` gegen die Testdatei scheitert lokal mit `Cannot find module 'vitest'`.
+- Codepfad selbst ist durch S10/API/Forum verifiziert; Test-Infra-Luecke bleibt separat zu bereinigen.
