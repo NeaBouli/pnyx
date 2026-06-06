@@ -215,9 +215,14 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
             if summary:
                 break
 
-    long_text = ""
-    if getattr(bill, "ai_summary_reviewed", False) and bill.summary_long_el and not _is_bad_summary(bill.summary_long_el):
-        long_text = _clean(bill.summary_long_el)
+    analysis = ""
+    analysis_el = getattr(bill, "analysis_el", None)
+    if analysis_el and not _is_bad_summary(analysis_el):
+        analysis = _clean(analysis_el)
+
+    official_excerpt = ""
+    if not analysis and getattr(bill, "ai_summary_reviewed", False) and bill.summary_long_el and not _is_bad_summary(bill.summary_long_el):
+        official_excerpt = _clean(bill.summary_long_el)
 
     # Safe title for body heading
     title = bill.title_el or f"Απόφαση {bill.id}"
@@ -235,12 +240,17 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
     body += f"| **ID** | `{bill.id}` |\n\n"
     body += "---\n\n"
 
-    # Content fallback: summary → long_text → diavgeia ADA → title+link
+    # Content fallback: summary → analysis_el → reviewed official excerpt → diavgeia ADA → title+link
     if summary:
         body += f"## Περίληψη\n{summary}\n\n"
-    if long_text:
-        body += f"## Ανάλυση\n{long_text[:2000]}\n\n"
-    if not summary and not long_text:
+    if analysis:
+        body += f"## Ανάλυση\n{analysis}\n\n"
+    elif official_excerpt:
+        body += (
+            f"## Επίσημο κείμενο\n{official_excerpt[:2000]}\n\n"
+            "_Η πλήρης AI ανάλυση δεν έχει ακόμη ελεγχθεί. Εμφανίζεται απόσπασμα από την επίσημη πηγή._\n\n"
+        )
+    if not summary and not analysis and not official_excerpt:
         if source == "DIAVGEIA" and getattr(bill, "diavgeia_ada", None):
             body += (
                 f"## Πληροφορίες\n"

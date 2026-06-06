@@ -68,6 +68,35 @@ def test_unique_title_suffix_prefers_ada_and_preserves_limit():
     assert len(result) == 255
 
 
+def test_topic_body_uses_analysis_el_not_summary_long_as_analysis():
+    """GH#103/GH#105: forum body must render distinct analysis_el, not summary_long_el."""
+    bill = SimpleNamespace(
+        id="GR-TEST",
+        title_el="Δοκιμαστικό νομοσχέδιο",
+        summary_short_el="Σύντομη σύνοψη.",
+        analysis_el="Ξεχωριστή ανάλυση από το νέο πεδίο.",
+        pill_el=None,
+        summary_long_el="BOILERPLATE ΠΟΥ ΔΕΝ ΠΡΕΠΕΙ ΝΑ ΕΜΦΑΝΙΣΤΕΙ",
+        ai_summary_reviewed=True,
+        status=SimpleNamespace(value="OPEN_END"),
+        governance_level=SimpleNamespace(value="NATIONAL"),
+        source="PARLIAMENT",
+        diavgeia_ada=None,
+        parliament_url=None,
+        official_source_url=None,
+        forum_topic_id=123,
+        forum_topic_url="https://pnyx.ekklesia.gr/t/123",
+        periferia_id=None,
+        dimos_id=None,
+    )
+
+    body = discourse_sync._build_topic_body(bill)
+
+    assert "## Περίληψη\nΣύντομη σύνοψη." in body
+    assert "## Ανάλυση\nΞεχωριστή ανάλυση από το νέο πεδίο." in body
+    assert "BOILERPLATE" not in body
+
+
 @pytest.mark.asyncio
 async def test_create_topic_retries_with_stable_suffix_when_duplicate_search_misses(monkeypatch):
     FakeAsyncClient.posts = []
