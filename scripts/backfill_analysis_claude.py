@@ -250,6 +250,7 @@ async def main() -> None:
     parser = argparse.ArgumentParser(description="Claude analysis_el backfill for explicit Parliament bills")
     parser.add_argument("--bill-id", action="append", required=True, help="Bill ID to process. Can be repeated.")
     parser.add_argument("--apply", action="store_true", help="Write summary_short_el + analysis_el to DB")
+    parser.add_argument("--official-only", action="store_true", help="Only refresh summary_long_el official text/PDF block")
     parser.add_argument("--out-dir", default="/tmp", help="Preview output directory")
     args = parser.parse_args()
 
@@ -291,8 +292,17 @@ async def main() -> None:
         pdf_text = _http_text(f"{JINA_BASE}{chosen['url']}", timeout=180)
         excerpt = extract_useful_excerpt(pdf_text)
         official_text = build_official_text_block(excerpt, links, chosen)
-        result, usage = call_claude(row["title_el"] or bill_id, excerpt)
-        errors = validate_result(result, excerpt)
+        if args.official_only:
+            result = {
+                "summary_short_el": row["summary_short_el"] or "",
+                "analysis_el": row["analysis_el"] or "",
+                "quality_notes": ["official-only refresh"],
+            }
+            usage = {}
+            errors = []
+        else:
+            result, usage = call_claude(row["title_el"] or bill_id, excerpt)
+            errors = validate_result(result, excerpt)
 
         preview = {
             "bill_id": bill_id,
@@ -329,17 +339,28 @@ async def main() -> None:
             print(f"{bill_id}: validation errors, not applying: {errors}")
             continue
         if args.apply:
-            await conn.execute(
-                """
-                UPDATE parliament_bills
-                SET summary_short_el=$1, analysis_el=$2, summary_long_el=$3, updated_at=NOW()
-                WHERE id=$4
-                """,
-                (result.get("summary_short_el") or "").strip(),
-                (result.get("analysis_el") or "").strip(),
-                official_text,
-                bill_id,
-            )
+            if args.official_only:
+                await conn.execute(
+                    """
+                    UPDATE parliament_bills
+                    SET summary_long_el=$1, updated_at=NOW()
+                    WHERE id=$2
+                    """,
+                    official_text,
+                    bill_id,
+                )
+            else:
+                await conn.execute(
+                    """
+                    UPDATE parliament_bills
+                    SET summary_short_el=$1, analysis_el=$2, summary_long_el=$3, updated_at=NOW()
+                    WHERE id=$4
+                    """,
+                    (result.get("summary_short_el") or "").strip(),
+                    (result.get("analysis_el") or "").strip(),
+                    official_text,
+                    bill_id,
+                )
             print(f"{bill_id}: DB updated")
         else:
             print(f"{bill_id}: dry-run only")
