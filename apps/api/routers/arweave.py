@@ -8,9 +8,11 @@ NIEMALS: Individual Votes, Nullifier Hashes, persönliche Daten.
 """
 import json
 import logging
+import asyncio
 from datetime import datetime, timezone
 from typing import Optional
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -113,12 +115,36 @@ async def publish_to_arweave(audit_trail: dict, bill_id: str) -> Optional[str]:
             logger.error(f"[MOD-08] Arweave TX invalid ID: {tx_id} für {bill_id}")
             return None
 
+        if not await _verify_arweave_tx(tx_id):
+            logger.error(f"[MOD-08] Arweave TX not reachable after submit: {tx_id} für {bill_id}")
+            return None
+
         logger.info(f"[MOD-08] Arweave TX published: {tx_id} für Bill {bill_id} (response: {str(response)[:100]})")
         return tx_id
 
     except Exception as e:
         logger.error(f"[MOD-08] Arweave publish failed für {bill_id}: {e}")
         return None
+
+
+async def _verify_arweave_tx(tx_id: str, attempts: int = 6, delay_sec: float = 5.0) -> bool:
+    """Return True only once the public gateway can serve the TX payload."""
+    url = f"https://arweave.net/{tx_id}"
+    async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+        for attempt in range(attempts):
+            try:
+                resp = await client.get(url)
+                if resp.status_code == 200 and resp.content:
+                    return True
+                logger.warning(
+                    "[MOD-08] Arweave verify attempt %d/%d for %s: HTTP %d",
+                    attempt + 1, attempts, tx_id, resp.status_code,
+                )
+            except Exception as e:
+                logger.warning("[MOD-08] Arweave verify attempt %d/%d failed for %s: %s", attempt + 1, attempts, tx_id, e)
+            if attempt < attempts - 1:
+                await asyncio.sleep(delay_sec)
+    return False
 
 
 @router.get("/status")

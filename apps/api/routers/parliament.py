@@ -458,46 +458,13 @@ async def transition_bill(
     arweave_tx_id = None
     if new_status == BillStatus.PARLIAMENT_VOTED:
         try:
-            from routers.arweave import build_audit_trail, publish_to_arweave
+            from services.bill_lifecycle import _hook_arweave_snapshot
 
-            logs_result = await db.execute(
-                select(BillStatusLog)
-                .where(BillStatusLog.bill_id == bill_id)
-                .order_by(BillStatusLog.changed_at)
-            )
-            status_logs = logs_result.scalars().all()
-
-            yes     = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.YES)) or 0
-            no      = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.NO)) or 0
-            abstain = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.ABSTAIN)) or 0
-            total   = yes + no + abstain
-
-            divergence = None
-            if total > 0 and bill.party_votes_parliament:
-                yes_pct = yes / total
-                parliament_yes = sum(1 for v in bill.party_votes_parliament.values() if v in ("ΝΑΙ", "YES"))
-                parliament_no  = sum(1 for v in bill.party_votes_parliament.values() if v in ("ΟΧΙ", "NO"))
-                authority_passed = parliament_yes >= parliament_no
-                divergence = round(abs(yes_pct - (1.0 if authority_passed else 0.0)), 3)
-
-            # Snapshot Timestamp — fixiert zum Zeitpunkt des Parlamentsbeschlusses
-            snapshot_timestamp = datetime.now(timezone.utc).isoformat()
-            logger.info(f"[MOD-08] Snapshot fixiert: {snapshot_timestamp} für {bill_id}")
-
-            audit_trail = build_audit_trail(
-                bill=bill,
-                status_logs=status_logs,
-                vote_results={"yes": yes, "no": no, "abstain": abstain, "total": total},
-                snapshot_timestamp=snapshot_timestamp,
-                divergence_score=divergence,
-            )
-
-            tx_id = await publish_to_arweave(audit_trail, bill_id)
-            if tx_id:
-                bill.arweave_tx_id = tx_id
+            await _hook_arweave_snapshot(db, bill)
+            if bill.arweave_tx_id:
                 await db.commit()
-                arweave_tx_id = tx_id
-                logger.info(f"[MOD-08] Arweave TX: {tx_id}")
+                arweave_tx_id = bill.arweave_tx_id
+                logger.info("[MOD-08] Arweave TX: %s", arweave_tx_id)
         except Exception as arweave_err:
             logger.error(f"[MOD-08] Arweave publish error: {arweave_err}")
 
