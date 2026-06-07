@@ -6609,3 +6609,40 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - RapidFuzz auto-matching is already active and deployed.
 - Remaining 28 unmatched dimoi are manual alias/review cases, not the old 3/101 blocker.
 - GitHub #83 kommentiert + geschlossen ✅
+
+---
+
+## 2026-06-07 — Codex: GH#82 geschlossen — Forum SSO Seamless Login
+
+### Fix
+- DiscourseConnect bleibt Discourse-initiiert; kein Pre-Auth-Bypass.
+- Neuer API-Endpunkt:
+  - `POST /api/v1/sso/discourse/qr-complete`
+  - akzeptiert `nonce` + POLIS `forum_login` QR-Session.
+  - validiert Redis SSO-Nonce, QR-Status `authenticated`, Purpose `forum_login`, aktive Identity.
+  - baut den normalen DiscourseConnect `sso`/`sig` Redirect und konsumiert beide Redis-Keys.
+- `sso-verify` Web-Seite zeigt jetzt einen echten QR-Code statt statischem Platzhalter, wenn im Browser kein lokaler Schlüssel liegt.
+- Mobile nutzt den bestehenden `ekklesia://polis-login` QR-Pfad und signiert wie bei POLIS/Tickets.
+
+### Tests
+- API: `test_sso_config.py` + Arweave guards: 14/14 ✅
+- Web: `npx tsc --noEmit` ✅
+- Web production build: `npm run build` ✅
+
+### Production Verification
+- API + Web rebuilt and deployed.
+- `https://api.ekklesia.gr/health`: HTTP 200 ✅
+- `https://ekklesia.gr/el/sso-verify`: HTTP 200 ✅
+- Synthetic live QR-complete:
+  - endpoint HTTP 200 ✅
+  - redirect contains Discourse `sso` + `sig` ✅
+  - SSO nonce consumed ✅
+  - QR session consumed ✅
+- Public `forum_login` QR session endpoint:
+  - purpose `forum_login` ✅
+  - `ekklesia://polis-login` deep-link ✅
+  - TTL 300 ✅
+
+### Status
+- GitHub #82 kommentiert + geschlossen ✅
+- Commit: `b5a1628`
