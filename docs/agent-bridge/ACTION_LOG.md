@@ -6733,3 +6733,58 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Status
 - No product ZK proving implementation is safe yet.
 - Issue remains open/blocked on native Mopro/Semaphore mobile prover feasibility.
+
+---
+
+## 2026-06-07 — Codex: GH#103/GH#105 Parliament official text + PDF recovery
+
+### Root Cause
+- New `Katatethenta` Parliament bills used PDF labels that the previous backfill script did not classify:
+  - `Διατάξεις Σχεδίου ή Πρότασης Νόμου`
+  - `Αιτιολογική-Εισηγητική Έκθεση`
+- Mobile/Web rendered `analysis_el` instead of `summary_long_el`, so official text was hidden once analysis existed.
+- Some Parliament PDFs are unreadable through Jina/OCR; those must not be published as text.
+
+### Fix
+- Extended `scripts/backfill_analysis_claude.py`:
+  - separates analysis PDFs from official-text PDFs
+  - understands `Διατάξεις Σχεδίου/Πρότασης Νόμου`
+  - tries multiple candidate PDFs and accepts only publishable text
+  - filters OCR-noise fragments
+  - falls back to PDF download links when full text cannot be safely extracted
+- Updated Mobile `VoteScreen` and `ResultScreen`:
+  - `Ανάλυση` no longer hides `Επίσημο κείμενο`
+- Updated Web bill detail page:
+  - renders official text and Markdown PDF links in the `Ανάλυση` tab.
+
+### Production Apply
+- `GR-536e9c79`:
+  - `summary_long_el`: 16,693 chars
+  - Forum topic `837`: updated, raw length 30,681 chars
+  - PDF links present: 3
+- `GR-c3ffc844`:
+  - Jina PDF text is not publishable as full text
+  - `summary_long_el`: PDF documents block only
+  - Forum topic `836`: updated, raw length 1,351 chars
+  - PDF link present: 1
+- Existing topics `438`, `253`, `148` verified:
+  - contain `## Ανάλυση`
+  - contain `## Επίσημο κείμενο και έγγραφα`
+  - contain Parliament PDF links
+
+### Verification
+- API tests: `26 passed`
+- `python3 -m py_compile scripts/backfill_analysis_claude.py`: OK
+- Mobile TypeScript: OK
+- Web TypeScript: OK
+- Web production build/deploy: OK
+- API health: `200`
+- Web bill page: `200`
+- APK built: `apps/mobile/android/app/build/outputs/apk/play/release/app-play-release.apk`
+  - SHA256: `39b4bd5d366ccbc65eb8420550b375c126d711e8656c8964cb098a2d10583464`
+  - S10 install: pending, ADB currently reports no connected device.
+
+### Notes
+- No global forum resync was run.
+- No OCR garbage was published as official text.
+- `GR-5293` / `GR-5294` Anazitisi pages still have no PDF list via Jina; they remain honest-source fallback unless a separate source is found.
