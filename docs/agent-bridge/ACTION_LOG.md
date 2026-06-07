@@ -6537,3 +6537,27 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### Status
 - GitHub #98 kommentiert + geschlossen ✅
+
+---
+
+## 2026-06-07 — Codex: GH#71 geschlossen — FORUM_SSO_SALT Startup-Check
+
+### Fix
+- Production startup validiert jetzt fail-closed:
+  - `DISCOURSE_SSO_SECRET`
+  - `FORUM_SSO_SALT`
+- Non-production warnt nur, damit lokale Tests/dev nicht blockieren.
+- `apps/api/main.py` ruft den Check während `lifespan()` vor dem Scheduler-Start auf.
+
+### Production Verification
+- Server Env korrigiert: `FORUM_SSO_SALT` explizit gesetzt, Wert nicht ausgegeben.
+- API Container mit frischer Env recreated.
+- Startup logs: `Application startup complete` ✅
+- `https://api.ekklesia.gr/health`: HTTP 200 ✅
+
+### Tests
+- `test_sso_config.py` + Arweave guard tests: 12/12 ✅
+
+### Status
+- GitHub #71 kommentiert + geschlossen ✅
+- Commit: `3d218ae`
