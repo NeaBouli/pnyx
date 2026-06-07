@@ -4,7 +4,7 @@
  * Risk: Option-E regression (forum fallback was removed once)
  */
 import { describe, it, expect } from "vitest";
-import { resolveSource, isPdfUrl, sourceLabel } from "./source-resolver";
+import { officialDocumentLinks, resolveSource, isPdfUrl, sourceLabel } from "./source-resolver";
 
 describe("resolveSource — Golden Path", () => {
   it("official wins when both present", () => {
@@ -72,6 +72,37 @@ describe("sourceLabel", () => {
 
   it("default is Βουλή", () => {
     expect(sourceLabel("PARLIAMENT", "official", "https://x.gr/page")).toBe("Πηγή — Βουλή των Ελλήνων");
+  });
+});
+
+describe("officialDocumentLinks", () => {
+  it("extracts parliament PDF markdown links", () => {
+    const links = officialDocumentLinks(`
+### Πλήρη έγγραφα
+- [Διατάξεις Σχεδίου ή Πρότασης Νόμου](https://www.hellenicparliament.gr/UserFiles/doc.pdf)
+`);
+    expect(links).toEqual([
+      {
+        label: "Διατάξεις Σχεδίου ή Πρότασης Νόμου",
+        url: "https://www.hellenicparliament.gr/UserFiles/doc.pdf",
+      },
+    ]);
+  });
+
+  it("deduplicates links", () => {
+    const links = officialDocumentLinks(
+      "[Α](https://x.gr/a.pdf)\n[Α ξανά](https://x.gr/a.pdf)",
+    );
+    expect(links).toHaveLength(1);
+  });
+
+  it("uses filename when label is only .pdf", () => {
+    const links = officialDocumentLinks("[.pdf](https://x.gr/13313922.pdf)");
+    expect(links[0].label).toBe("Έγγραφο Βουλής (13313922.pdf)");
+  });
+
+  it("ignores non-PDF links", () => {
+    expect(officialDocumentLinks("[Topic](https://pnyx.ekklesia.gr/t/1)")).toEqual([]);
   });
 });
 

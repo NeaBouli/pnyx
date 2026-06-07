@@ -12,8 +12,11 @@ build_official_text_block = backfill.build_official_text_block
 build_documents_block = backfill.build_documents_block
 choose_pdfs = backfill.choose_pdfs
 classify_pdf = backfill.classify_pdf
+display_label = backfill.display_label
 extract_pdf_links = backfill.extract_pdf_links
+fallback_pdf_candidates = backfill.fallback_pdf_candidates
 is_readable_pdf_text = backfill.is_readable_pdf_text
+strip_table_of_contents = backfill.strip_table_of_contents
 
 
 def test_extract_pdf_links_prefers_jina_image_alt_label():
@@ -96,3 +99,37 @@ def test_documents_block_keeps_download_links_when_text_is_unreadable():
     assert "### Πλήρη έγγραφα" in block
     assert "φωτοτυπημένο" not in block
     assert "[Διατάξεις Σχεδίου ή Πρότασης Νόμου](https://example.test/full.pdf)" in block
+
+
+def test_unknown_pdf_labels_still_become_document_candidates():
+    links = [
+        {"label": ".pdf", "url": "https://example.test/13313922.pdf"},
+        {"label": "Το φωτοτυπημένο σ/ν ή π/ν", "url": "https://example.test/scan.pdf"},
+    ]
+
+    candidates = fallback_pdf_candidates(links)
+    block = build_documents_block(links)
+
+    assert candidates == [links[0]]
+    assert display_label(links[0], 1) == "Έγγραφο Βουλής 1 (13313922.pdf)"
+    assert "[Έγγραφο Βουλής 1 (13313922.pdf)](https://example.test/13313922.pdf)" in block
+
+
+def test_strip_table_of_contents_prefers_second_article_body():
+    text = """
+ΣΧΕΔΙΟ ΝΟΜΟΥ
+ΠΙΝΑΚΑΣ ΠΕΡΙΕΧΟΜΕΝΩΝ
+Άρθρο 1 Σκοπός
+Άρθρο 2 Αντικείμενο
+
+ΜΕΡΟΣ Α'
+ΚΕΦΑΛΑΙΟ Α'
+Άρθρο 1
+Σκοπός του παρόντος είναι η ουσιαστική ρύθμιση.
+"""
+
+    stripped = strip_table_of_contents(text)
+
+    assert "ΠΙΝΑΚΑΣ ΠΕΡΙΕΧΟΜΕΝΩΝ" not in stripped
+    assert stripped.startswith("ΚΕΦΑΛΑΙΟ Α")
+    assert "Σκοπός του παρόντος" in stripped

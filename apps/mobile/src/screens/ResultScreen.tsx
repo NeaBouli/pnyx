@@ -65,7 +65,7 @@ function cleanOfficialText(value?: string | null) {
   return cleaned.slice(0, 1400);
 }
 
-import { resolveSource, isPdfUrl, sourceLabel } from "../lib/source-resolver";
+import { officialDocumentLinks, resolveSource, isPdfUrl, sourceLabel } from "../lib/source-resolver";
 
 export default function ResultScreen({ route }: Props) {
   const { billId, fromVote } = route.params;
@@ -112,6 +112,7 @@ export default function ResultScreen({ route }: Props) {
   const summary = readableText(data.summary_short_el) ? data.summary_short_el : readableText(data.pill_el) ? data.pill_el : "";
   const analysis = readableText(data.analysis_el) ? data.analysis_el : "";
   const officialText = cleanOfficialText(data.summary_long_el);
+  const officialDocs = officialDocumentLinks(data.summary_long_el);
   const { url: sourceUrl, kind: sourceKind } = resolveSource(data.official_source_url, data.forum_topic_url);
   const summaryFallback = sourceUrl
     ? "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα. Δείτε την πηγή."
@@ -141,6 +142,21 @@ export default function ResultScreen({ route }: Props) {
           <>
             <Text style={[styles.summaryTitle, { marginTop: 12 }]}>Επίσημο κείμενο</Text>
             <Text style={styles.summaryText}>{officialText}</Text>
+          </>
+        ) : null}
+        {officialDocs.length > 0 ? (
+          <>
+            <Text style={[styles.summaryTitle, { marginTop: 12 }]}>Πλήρη έγγραφα</Text>
+            {officialDocs.map((doc) => (
+              <TouchableOpacity
+                key={doc.url}
+                onPress={() => Linking.openURL(doc.url)}
+                style={styles.documentLink}
+              >
+                <Text style={styles.documentLinkText}>📄 {doc.label}</Text>
+                <Text style={styles.documentLinkNote}>Άνοιγμα πλήρους PDF ↗</Text>
+              </TouchableOpacity>
+            ))}
           </>
         ) : null}
       </View>
@@ -250,6 +266,9 @@ const styles = StyleSheet.create({
   summaryCard: { backgroundColor: "#eff6ff", borderRadius: 12, padding: 14, marginTop: 12, marginBottom: 12 },
   summaryTitle: { fontWeight: "700", color: "#1e40af", fontSize: 13, marginBottom: 6 },
   summaryText: { color: "#374151", fontSize: 13, lineHeight: 20 },
+  documentLink: { backgroundColor: "#dbeafe", borderRadius: 8, padding: 10, marginTop: 6 },
+  documentLinkText: { color: "#1d4ed8", fontSize: 13, fontWeight: "700" },
+  documentLinkNote: { color: "#60a5fa", fontSize: 11, marginTop: 2 },
   sourceCard: { backgroundColor: "#eff6ff", borderRadius: 10, padding: 12, marginBottom: 12, flexDirection: "row", alignItems: "center" },
   sourceIcon: { fontSize: 14, marginRight: 8 },
   sourceText: { color: "#1d4ed8", fontSize: 13, fontWeight: "600", flex: 1 },

@@ -62,7 +62,7 @@ function cleanOfficialText(value?: string | null) {
   return cleaned.slice(0, 1400);
 }
 
-import { correctionBanner, resolveSource, isPdfUrl, sourceLabel } from "../lib/source-resolver";
+import { correctionBanner, officialDocumentLinks, resolveSource, isPdfUrl, sourceLabel } from "../lib/source-resolver";
 
 export default function VoteScreen({ route, navigation }: Props) {
   const { billId, billTitle } = route.params;
@@ -72,6 +72,7 @@ export default function VoteScreen({ route, navigation }: Props) {
   const [analysis, setAnalysis] = useState("");
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [officialText, setOfficialText] = useState("");
+  const [officialDocs, setOfficialDocs] = useState<{ label: string; url: string }[]>([]);
   const [billStatus, setBillStatus] = useState<string>("");
   const [billLoaded, setBillLoaded] = useState(false);
   const [billGovernance, setBillGovernance] = useState<string>("NATIONAL");
@@ -105,6 +106,7 @@ export default function VoteScreen({ route, navigation }: Props) {
           if (readableText(d.summary_short_el)) setSummary(d.summary_short_el);
           if (readableText(d.analysis_el)) setAnalysis(d.analysis_el);
           setOfficialText(cleanOfficialText(d.summary_long_el));
+          setOfficialDocs(officialDocumentLinks(d.summary_long_el));
         }
         const nullifier = await loadNullifier();
         if (nullifier && mounted) {
@@ -275,7 +277,7 @@ export default function VoteScreen({ route, navigation }: Props) {
       {/* Reviewed summary/analysis */}
       {summaryLoading ? (
         <ActivityIndicator size="small" color={colors.textSecondary} style={{ marginBottom: 16 }} />
-      ) : summaryText || analysis || officialText || billLoaded ? (
+      ) : summaryText || analysis || officialText || officialDocs.length > 0 || billLoaded ? (
         <View style={{ backgroundColor: "#eff6ff", borderRadius: 12, padding: 14, marginBottom: 16 }}>
           <Text style={{ fontWeight: "700", color: "#1e40af", fontSize: 13, marginBottom: 6 }}>
             Σύνοψη
@@ -303,6 +305,23 @@ export default function VoteScreen({ route, navigation }: Props) {
                 Επίσημο κείμενο
               </Text>
               <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20 }}>{officialText}</Text>
+            </>
+          ) : null}
+          {officialDocs.length > 0 ? (
+            <>
+              <Text style={{ fontWeight: "700", color: "#1e40af", fontSize: 13, marginTop: 12, marginBottom: 6 }}>
+                Πλήρη έγγραφα
+              </Text>
+              {officialDocs.map((doc) => (
+                <TouchableOpacity
+                  key={doc.url}
+                  onPress={() => Linking.openURL(doc.url)}
+                  style={{ backgroundColor: "#dbeafe", borderRadius: 8, padding: 10, marginTop: 6 }}
+                >
+                  <Text style={{ color: "#1d4ed8", fontSize: 13, fontWeight: "700" }}>📄 {doc.label}</Text>
+                  <Text style={{ color: "#60a5fa", fontSize: 11, marginTop: 2 }}>Άνοιγμα πλήρους PDF ↗</Text>
+                </TouchableOpacity>
+              ))}
             </>
           ) : null}
         </View>

@@ -39,6 +39,31 @@ export function sourceLabel(
   return "Πηγή — Βουλή των Ελλήνων";
 }
 
+export interface OfficialDocumentLink {
+  label: string;
+  url: string;
+}
+
+export function officialDocumentLinks(value?: string | null): OfficialDocumentLink[] {
+  if (!value) return [];
+  const links: OfficialDocumentLink[] = [];
+  const seen = new Set<string>();
+  const markdownLink = /\[([^\]]+)\]\((https?:\/\/[^)]+\.pdf[^)]*)\)/gi;
+  let match: RegExpExecArray | null;
+  while ((match = markdownLink.exec(value)) !== null) {
+    const rawLabel = match[1].replace(/[*_`#-]+/g, " ").replace(/\s+/g, " ").trim();
+    const url = match[2].trim();
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    const filename = url.split("/").pop()?.split("?")[0] || "PDF";
+    const label = rawLabel && rawLabel.toLowerCase() !== ".pdf"
+      ? rawLabel
+      : `Έγγραφο Βουλής (${filename})`;
+    links.push({ label, url });
+  }
+  return links;
+}
+
 // ─── 24h Correction Banner ─────────────────────────────────────────────────
 
 export interface CorrectionBannerState {

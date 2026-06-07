@@ -6794,3 +6794,64 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - No global forum resync was run.
 - No OCR garbage was published as official text.
 - `GR-5293` / `GR-5294` Anazitisi pages still have no PDF list via Jina; they remain honest-source fallback unless a separate source is found.
+
+---
+
+## 2026-06-07 — Codex: Parliament official text completed across live bills
+
+### What Changed
+- Closed the remaining official-text gap for Parliament bills, including the first two list bills:
+  - `GR-5294`: official Βουλή PDF found and extracted via Jina.
+  - `GR-5293`: ΦΕΚ PDF source found and extracted via Jina.
+- Extended `scripts/backfill_analysis_claude.py` again:
+  - handles previously unclassified `.pdf` labels instead of dropping them
+  - adds `Ανάλυση Συνεπειών` as a readable analysis label
+  - skips table-of-contents text before publishing official extracts
+  - catches PDF fetch `HTTPError`, `URLError`, and timeouts so one bad PDF does not break the whole run
+  - produces safe document-link fallback blocks for PDFs where full text is not publishable
+- Mobile now exposes official PDF documents in bill detail screens:
+  - `VoteScreen`
+  - `ResultScreen`
+  - shared parser: `officialDocumentLinks()` in `source-resolver.ts`
+
+### Production Result
+- All live Parliament bills with `parliament_url` and non-DEMO status now have forum official text/documents:
+  - total checked: `27`
+  - with extracted official text: `21`
+  - with honest document/summary fallback: `6`
+  - empty official section: `0`
+- All 27 linked Discourse topics were checked after update:
+  - every topic contains `Επίσημο κείμενο και έγγραφα`
+  - every topic contains at least one clickable PDF/document link
+- No global `resync_all_topics()` was run. Topics were updated individually.
+- No OCR garbage was published.
+
+### Key Topics Verified
+- `GR-5294` / topic `132`:
+  - raw length after update: `51382`
+  - official section present: yes
+  - PDF links: `1`
+  - S10 visual: official text visible under `Επίσημο κείμενο`
+- `GR-5293` / topic `131`:
+  - raw length after update: `51999`
+  - official section present: yes
+  - PDF links: `1`
+  - S10 visual: official text visible under `Επίσημο κείμενο`
+
+### Full Forum Verification
+- `837`, `836`, `570`, `569`, `568`, `438`, `437`, `435`, `407`, `406`, `253`, `252`,
+  `148`, `144`, `143`, `142`, `141`, `140`, `139`, `138`, `137`, `136`, `135`, `134`,
+  `133`, `132`, `131`: official section present and PDF links present.
+
+### Verification
+- API focused tests: `7 passed`
+- Mobile source resolver tests: `24 passed`
+- Mobile TypeScript: OK
+- `python3 -m py_compile scripts/backfill_analysis_claude.py`: OK
+- APK built and installed on S10:
+  - `versionName=1.0.3`
+  - `lastUpdateTime=2026-06-07 13:16:33`
+- S10 screenshot evidence:
+  - `/tmp/pnyx-s10/gr5293-docs.png`
+  - `/tmp/pnyx-s10/gr5294-docs.png`
+  - `/tmp/pnyx-s10/gr5294-doc-buttons.png`

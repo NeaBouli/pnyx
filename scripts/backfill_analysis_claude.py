@@ -13,6 +13,7 @@ import re
 import sys
 import time
 import urllib.request
+from urllib.error import HTTPError, URLError
 
 
 JINA_BASE = "https://r.jina.ai/"
@@ -25,6 +26,7 @@ ANALYSIS_LABELS = (
     "Επιστημονικής",
     "Έκθεση της Επιτροπής",
     "Πρακτικό Έκθεση",
+    "Ανάλυση Συνεπειών",
 )
 OFFICIAL_TEXT_LABELS = (
     "Διατάξεις Σχεδίου",
@@ -118,6 +120,19 @@ def pdf_candidates(links: list[dict[str, str]], kind: str) -> list[dict[str, str
     return [link for link in links if classify_pdf(link["label"]) == kind]
 
 
+def fallback_pdf_candidates(links: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Use unclassified Parliament PDFs when labels are missing or rendered as '.pdf'."""
+    return [link for link in links if classify_pdf(link["label"]) != "skip"]
+
+
+def display_label(link: dict[str, str], index: int) -> str:
+    label = re.sub(r"\s+", " ", link["label"]).strip()
+    if not label or label.lower() == ".pdf":
+        filename = link["url"].rsplit("/", 1)[-1].split("?", 1)[0]
+        return f"Έγγραφο Βουλής {index} ({filename})"
+    return label
+
+
 def _looks_like_ocr_noise(line: str) -> bool:
     tokens = re.findall(r"[Α-ΩΆ-Ώα-ωά-ώA-Za-z0-9]+", line)
     if len(tokens) < 35:
@@ -139,6 +154,25 @@ def clean_pdf_text(text: str) -> str:
     return text.strip()
 
 
+def strip_table_of_contents(text: str) -> str:
+    """Skip PDF table-of-contents sections when a second article body exists."""
+    marker = "ΠΙΝΑΚΑΣ ΠΕΡΙΕΧΟΜΕΝΩΝ"
+    if marker not in text:
+        return text
+    article_hits = [match.start() for match in re.finditer(r"Άρθρο\s+1\b", text)]
+    if len(article_hits) < 2:
+        return text
+    body_start = article_hits[1]
+    prefix_start = max(
+        text.rfind("ΣΧΕΔΙΟ ΝΟΜΟΥ", 0, body_start),
+        text.rfind("ΜΕΡΟΣ", 0, body_start),
+        text.rfind("ΚΕΦΑΛΑΙΟ", 0, body_start),
+    )
+    if prefix_start >= 0 and body_start - prefix_start < 2500:
+        body_start = prefix_start
+    return text[body_start:].strip()
+
+
 def is_readable_pdf_text(text: str) -> bool:
     """Reject empty Jina PDF output and obvious OCR garbage."""
     text = clean_pdf_text(text)
@@ -158,11 +192,13 @@ def is_readable_pdf_text(text: str) -> bool:
 def build_documents_block(links: list[dict[str, str]]) -> str:
     lines = ["### Πλήρη έγγραφα"]
     seen: set[str] = set()
+    visible_index = 1
     for doc in links:
         if doc["url"] in seen or classify_pdf(doc["label"]) == "skip":
             continue
         seen.add(doc["url"])
-        label = doc["label"].strip() or "Έγγραφο Βουλής"
+        label = display_label(doc, visible_index)
+        visible_index += 1
         lines.append(f"- [{label}]({doc['url']})")
     return "\n".join(lines).strip()
 
@@ -190,7 +226,7 @@ def extract_useful_excerpt(text: str, max_chars: int = MAX_INPUT_CHARS) -> str:
 
 def build_official_text_block(text: str, links: list[dict[str, str]], chosen: dict[str, str]) -> str:
     """Build an official-text block for forum/app rendering and source links."""
-    text = clean_pdf_text(text)
+    text = strip_table_of_contents(clean_pdf_text(text))
     truncated = False
     if len(text) > MAX_FORUM_OFFICIAL_CHARS:
         limit_text = text[:MAX_FORUM_OFFICIAL_CHARS]
@@ -250,9 +286,15 @@ def build_official_text_block(text: str, links: list[dict[str, str]], chosen: di
 
 def fetch_first_readable_pdf(candidates: list[dict[str, str]]) -> tuple[dict[str, str] | None, str]:
     for candidate in candidates:
-        pdf_text = _http_text(f"{JINA_BASE}{candidate['url']}", timeout=180)
+        try:
+            pdf_text = _http_text(f"{JINA_BASE}{candidate['url']}", timeout=60)
+        except (HTTPError, URLError, TimeoutError) as exc:
+            print(f"skip PDF {candidate['url']}: {exc}", file=sys.stderr)
+            time.sleep(1.5)
+            continue
         if is_readable_pdf_text(pdf_text):
             return candidate, pdf_text
+        time.sleep(1.0)
     return None, ""
 
 
@@ -371,16 +413,27 @@ async def main() -> None:
             print(f"{bill_id}: no parliament_url, skip")
             continue
 
-        page_md = _http_text(f"{JINA_BASE}{row['parliament_url']}", timeout=90)
+        try:
+            page_md = _http_text(f"{JINA_BASE}{row['parliament_url']}", timeout=90)
+        except (HTTPError, URLError, TimeoutError) as exc:
+            print(f"{bill_id}: skip Parliament page: {exc}", file=sys.stderr)
+            time.sleep(2)
+            continue
         links = extract_pdf_links(page_md)
         analysis_candidates = pdf_candidates(links, "analysis")
         official_candidates = pdf_candidates(links, "official_text")
-        if not analysis_candidates and not official_candidates:
+        fallback_candidates = fallback_pdf_candidates(links)
+        if not analysis_candidates and not official_candidates and not fallback_candidates:
             print(f"{bill_id}: no readable Parliament document PDF found")
             continue
 
         official_pdf, official_pdf_text = fetch_first_readable_pdf(official_candidates)
+        if not official_pdf:
+            official_pdf, official_pdf_text = fetch_first_readable_pdf(fallback_candidates)
+
         analysis_pdf, analysis_pdf_text = fetch_first_readable_pdf(analysis_candidates)
+        if not analysis_pdf:
+            analysis_pdf, analysis_pdf_text = fetch_first_readable_pdf(fallback_candidates)
         if not official_pdf and analysis_pdf:
             official_pdf = analysis_pdf
             official_pdf_text = analysis_pdf_text
