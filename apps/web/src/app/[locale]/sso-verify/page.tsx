@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale } from "next-intl";
 import Link from "next/link";
+import { QRCodeSVG } from "qrcode.react";
 import { signPayload } from "@/lib/crypto";
 
 type State = "checking" | "nokey" | "verifying" | "success" | "error";
+type QrState = "idle" | "loading" | "ready" | "authenticated" | "expired" | "error";
 
 const LOCALSTORAGE_KEY = "ekklesia_private_key";
 const LOCALSTORAGE_PUBKEY = "ekklesia_public_key";
@@ -19,6 +21,9 @@ export default function SSOVerifyPage() {
 
   const [state, setState] = useState<State>("checking");
   const [errorMsg, setErrorMsg] = useState("");
+  const [qrState, setQrState] = useState<QrState>("idle");
+  const [qrData, setQrData] = useState<{ session_id: string; qr_data: string } | null>(null);
+  const [qrError, setQrError] = useState("");
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.ekklesia.gr";
   const isEl = locale === "el";
@@ -37,12 +42,84 @@ export default function SSOVerifyPage() {
 
     if (!pubKey || !privKey) {
       setState("nokey");
+      createForumQrSession();
       return;
     }
 
     authenticate(pubKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nonce, returnUrl]);
+
+  useEffect(() => {
+    if (state !== "nokey" || qrState !== "ready" || !qrData || !nonce) return;
+
+    const pollInterval = window.setInterval(async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/v1/polis/qr-session/${qrData.session_id}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.status === "authenticated") {
+          window.clearInterval(pollInterval);
+          setQrState("authenticated");
+          await completeForumQrLogin(qrData.session_id);
+        } else if (data.status === "expired") {
+          window.clearInterval(pollInterval);
+          setQrState("expired");
+        }
+      } catch {}
+    }, 2500);
+
+    const expireTimeout = window.setTimeout(() => {
+      setQrState("expired");
+      window.clearInterval(pollInterval);
+    }, 5 * 60 * 1000);
+
+    return () => {
+      window.clearInterval(pollInterval);
+      window.clearTimeout(expireTimeout);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, qrState, qrData, nonce]);
+
+  async function createForumQrSession() {
+    setQrState("loading");
+    setQrData(null);
+    setQrError("");
+    try {
+      const res = await fetch(`${API_URL}/api/v1/polis/qr-session?purpose=forum_login`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setQrData({ session_id: data.session_id, qr_data: data.qr_data });
+      setQrState("ready");
+    } catch (err) {
+      setQrError(err instanceof Error ? err.message : "connection error");
+      setQrState("error");
+    }
+  }
+
+  async function completeForumQrLogin(sessionId: string) {
+    try {
+      const res = await fetch(`${API_URL}/api/v1/sso/discourse/qr-complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nonce, session_id: sessionId }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (data.redirect_url) {
+        setState("success");
+        setTimeout(() => { window.location.href = data.redirect_url; }, 800);
+        return;
+      }
+      throw new Error("Missing redirect_url");
+    } catch (err) {
+      setQrError(err instanceof Error ? err.message : "connection error");
+      setQrState("error");
+    }
+  }
 
   async function authenticate(pubKeyHex: string) {
     setState("verifying");
@@ -133,20 +210,50 @@ export default function SSOVerifyPage() {
         {state === "nokey" && (
           <div>
             <div className="bg-gray-50 rounded-xl p-8 mb-6">
-              <div className="w-32 h-32 mx-auto mb-4 bg-white rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
-                <svg className="w-20 h-20 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <rect x="3" y="3" width="7" height="7" rx="1"/>
-                  <rect x="14" y="3" width="7" height="7" rx="1"/>
-                  <rect x="3" y="14" width="7" height="7" rx="1"/>
-                  <rect x="14" y="14" width="3" height="3"/>
-                  <rect x="18" y="18" width="3" height="3"/>
-                </svg>
-              </div>
+              {qrState === "loading" && (
+                <div className="w-32 h-32 mx-auto mb-4 bg-white rounded-lg flex items-center justify-center text-sm text-gray-400">
+                  {isEl ? "Φόρτωση..." : "Loading..."}
+                </div>
+              )}
+              {qrState === "ready" && qrData && (
+                <div className="w-40 h-40 mx-auto mb-4 bg-white rounded-lg p-3 shadow-sm flex items-center justify-center">
+                  <QRCodeSVG value={qrData.qr_data} size={136} level="M" includeMargin={false} />
+                </div>
+              )}
+              {qrState === "authenticated" && (
+                <div className="w-32 h-32 mx-auto mb-4 bg-white rounded-lg flex items-center justify-center text-5xl">
+                  ✅
+                </div>
+              )}
+              {(qrState === "expired" || qrState === "error") && (
+                <div className="w-32 h-32 mx-auto mb-4 bg-white rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-5xl">
+                  {qrState === "expired" ? "⏰" : "❌"}
+                </div>
+              )}
               <p className="text-sm text-gray-500 leading-relaxed">
                 {isEl
                   ? <>Σκανάρετε τον κωδικό QR με την εφαρμογή <strong>ekklesia</strong> για να συνδεθείτε.</>
                   : <>Scan the QR code with the <strong>ekklesia</strong> app to login.</>}
               </p>
+              {qrState === "expired" && (
+                <button
+                  onClick={createForumQrSession}
+                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold"
+                >
+                  {isEl ? "Νέος κωδικός QR" : "New QR code"}
+                </button>
+              )}
+              {qrState === "error" && (
+                <div className="mt-4 text-xs text-red-600 break-words">
+                  {qrError || (isEl ? "Σφάλμα QR σύνδεσης" : "QR login error")}
+                  <button
+                    onClick={createForumQrSession}
+                    className="block mx-auto mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold"
+                  >
+                    {isEl ? "Δοκιμάστε ξανά" : "Try again"}
+                  </button>
+                </div>
+              )}
             </div>
             <Link
               href={`/${locale}/verify`}

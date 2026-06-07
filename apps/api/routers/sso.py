@@ -12,6 +12,7 @@ import logging
 
 from fastapi import APIRouter, Depends, Query, HTTPException, Request
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import redis.asyncio as aioredis
@@ -63,6 +64,48 @@ def _build_payload(params: dict) -> tuple[str, str]:
         DISCOURSE_SSO_SECRET.encode(), encoded.encode(), hashlib.sha256
     ).hexdigest()
     return encoded, sig
+
+
+async def _build_discourse_redirect(
+    *,
+    nonce: str,
+    return_sso_url: str,
+    identity: IdentityRecord,
+    db: AsyncSession,
+) -> str:
+    """Build the DiscourseConnect return URL for a verified identity."""
+    dimos_name = ""
+    periferia_name = ""
+    if identity.dimos_id:
+        dimos = await db.get(Dimos, identity.dimos_id)
+        if dimos:
+            dimos_name = dimos.name_el
+    if identity.periferia_id:
+        periferia = await db.get(Periferia, identity.periferia_id)
+        if periferia:
+            periferia_name = periferia.name_el
+
+    # external_id is HMAC, not raw nullifier
+    external_id = hmac.new(
+        FORUM_SSO_SALT.encode(), identity.nullifier_hash.encode(), hashlib.sha256
+    ).hexdigest()[:32]
+
+    user_params = {
+        "nonce": nonce,
+        "external_id": external_id,
+        "username": f"citizen_{external_id[:8]}",
+        "email": f"{external_id[:16]}@noreply.ekklesia.gr",
+        "name": "Επαληθευμένος Πολίτης",
+        "add_groups": "verified-citizens",
+        "suppress_welcome_message": "true",
+    }
+    if dimos_name:
+        user_params["custom.dimos"] = dimos_name
+    if periferia_name:
+        user_params["custom.periferia"] = periferia_name
+
+    payload, sig = _build_payload(user_params)
+    return f"{return_sso_url}?sso={urllib.parse.quote(payload)}&sig={sig}"
 
 
 @router.get("/discourse/initiate")
@@ -135,41 +178,66 @@ async def discourse_sso_callback(
     if not identity:
         raise HTTPException(404, "Identity not found or not active")
 
-    # Resolve location names
-    dimos_name = ""
-    periferia_name = ""
-    if identity.dimos_id:
-        dimos = await db.get(Dimos, identity.dimos_id)
-        if dimos:
-            dimos_name = dimos.name_el
-    if identity.periferia_id:
-        periferia = await db.get(Periferia, identity.periferia_id)
-        if periferia:
-            periferia_name = periferia.name_el
-
-    # Build Discourse SSO payload — external_id is HMAC, not raw nullifier
-    external_id = hmac.new(
-        FORUM_SSO_SALT.encode(), identity.nullifier_hash.encode(), hashlib.sha256
-    ).hexdigest()[:32]
-
-    user_params = {
-        "nonce": nonce,
-        "external_id": external_id,
-        "username": f"citizen_{external_id[:8]}",
-        "email": f"{external_id[:16]}@noreply.ekklesia.gr",
-        "name": "Επαληθευμένος Πολίτης",
-        "add_groups": "verified-citizens",
-        "suppress_welcome_message": "true",
-    }
-    if dimos_name:
-        user_params["custom.dimos"] = dimos_name
-    if periferia_name:
-        user_params["custom.periferia"] = periferia_name
-
-    payload, sig = _build_payload(user_params)
+    redirect = await _build_discourse_redirect(
+        nonce=nonce,
+        return_sso_url=return_sso_url,
+        identity=identity,
+        db=db,
+    )
     await r.delete(f"sso:discourse:{nonce}")
 
-    logger.info("SSO login: external_id=%s... dimos=%s", external_id[:8], dimos_name)
+    logger.info("SSO login completed via browser key: pubkey=%s...", public_key_hex[:8])
+    return {"redirect_url": redirect}
 
-    redirect = f"{return_sso_url}?sso={urllib.parse.quote(payload)}&sig={sig}"
+
+class DiscourseQRCompleteRequest(BaseModel):
+    nonce: str = Field(..., min_length=8)
+    session_id: str = Field(..., min_length=10)
+
+
+@router.post("/discourse/qr-complete")
+async def discourse_sso_qr_complete(
+    req: DiscourseQRCompleteRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Complete DiscourseConnect after mobile app authenticated a forum_login QR session."""
+    r = await _redis()
+    return_sso_url = await r.get(f"sso:discourse:{req.nonce}")
+    if not return_sso_url:
+        raise HTTPException(410, "Nonce expired or invalid")
+
+    qr_data = await r.hgetall(f"polis_qr:{req.session_id}")
+    if not qr_data:
+        raise HTTPException(410, "QR session expired or invalid")
+    if qr_data.get("status") != "authenticated":
+        raise HTTPException(403, "QR session is not authenticated")
+    if qr_data.get("purpose") != "forum_login":
+        raise HTTPException(400, "QR session purpose is not forum_login")
+
+    nullifier_hash = qr_data.get("nullifier_hash") or ""
+    public_key_hex = qr_data.get("public_key_hex") or ""
+    if not nullifier_hash or not public_key_hex:
+        raise HTTPException(400, "QR session missing identity data")
+
+    result = await db.execute(
+        select(IdentityRecord).where(
+            IdentityRecord.nullifier_hash == nullifier_hash,
+            IdentityRecord.public_key_hex == public_key_hex,
+            IdentityRecord.status == KeyStatus.ACTIVE,
+        )
+    )
+    identity = result.scalar_one_or_none()
+    if not identity:
+        raise HTTPException(404, "Identity not found or not active")
+
+    redirect = await _build_discourse_redirect(
+        nonce=req.nonce,
+        return_sso_url=return_sso_url,
+        identity=identity,
+        db=db,
+    )
+    await r.delete(f"sso:discourse:{req.nonce}")
+    await r.delete(f"polis_qr:{req.session_id}")
+
+    logger.info("SSO login completed via forum QR: session=%s", req.session_id[:8])
     return {"redirect_url": redirect}
