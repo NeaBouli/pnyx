@@ -6498,3 +6498,42 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Status
 - Kein aktiver stuck Zustand mehr.
 - GitHub #94 kommentiert + geschlossen als resolved/stale ✅
+
+---
+
+## 2026-06-07 — Codex: GH#98 geschlossen — Admin Test Account Region
+
+### Fix
+- `POST /api/v1/admin/test-account` akzeptiert jetzt optional:
+  - `periferia_id`
+  - `dimos_id`
+- IDs werden validiert:
+  - `periferia_id` muss existieren
+  - `dimos_id` muss existieren
+  - wenn beide gesetzt sind, muss der Δήμος zur Περιφέρεια gehören
+- `IdentityRecord` setzt bei Region:
+  - `periferia_id`
+  - `dimos_id`
+  - `region_locked=true`
+- QR/Deep-Link enthält `periferia_id`/`dimos_id`.
+- Mobile `ImportAccountScreen` speichert diese Werte in `SecureStore`.
+
+### Production Verification
+- Live Admin-Testaccount erstellt mit `periferia_id=6`, `dimos_id=22`.
+- Response:
+  - `region_locked=true`
+  - QR enthält beide Region-Parameter ✅
+- Signierte Evaluation gegen `DEMO-123`:
+  - HTTP 200
+  - 3 Scores submitted ✅
+- APK gebaut + S10 installiert:
+  - `versionCode=30`
+  - `versionName=1.0.3`
+  - `lastUpdateTime=2026-06-07 03:12:39`
+
+### Tests
+- API: py_compile + arweave guard tests 9/9 ✅
+- Mobile: `tsc --noEmit` + Vitest source/correction tests 20/20 ✅
+
+### Status
+- GitHub #98 kommentiert + geschlossen ✅
