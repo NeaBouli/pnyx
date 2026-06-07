@@ -6696,3 +6696,40 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Status
 - Code/script side is ready.
 - Actual off-site backup remains externally blocked until Hetzner Storage Box credentials exist.
+
+---
+
+## 2026-06-07 — Codex: GH#79 status — F-Droid !38007 waiting on merge
+
+### Verification
+- GitLab MR !38007 is still `opened`.
+- Latest visible pipeline:
+  - `2570810919`
+  - status `success`
+  - sha `e42e014f2e23a8d6b88a80ba4d3737260ccca2ad`
+- Previous known green pipeline remains documented:
+  - `2564438256`
+  - sha `05a86ac0557d23dc4fa60dffd85bd8e33cb9ac02`
+- Public notes API returned `401 Unauthorized`; no new reviewer instruction was readable without auth.
+
+### Status
+- No pnyx code action required.
+- Issue remains open/waiting until F-Droid/linsui merges or posts new feedback.
+
+---
+
+## 2026-06-07 — Codex: GH#81 status — ZK V2 Semaphore blocked
+
+### Verification
+- ADR `docs/adr/NEA-249-zk-voting-v2-semaphore-hybrid.md` still states:
+  - `snarkjs` is incompatible with React Native.
+  - Mopro has no ready npm/Expo plugin path.
+  - Expo Go cannot be used for native proving.
+- GH#77 wizard shell now reflects this honestly:
+  - feature flag OFF
+  - runtime native prover detection false
+  - opt-in blocked
+
+### Status
+- No product ZK proving implementation is safe yet.
+- Issue remains open/blocked on native Mopro/Semaphore mobile prover feasibility.
