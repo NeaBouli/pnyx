@@ -6583,3 +6583,29 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### Status
 - GitHub #72 kommentiert + geschlossen ✅
+
+---
+
+## 2026-06-07 — Codex: GH#83 geschlossen — Diavgeia Org-Mapping
+
+### Verification
+- Issue-Text war stale: `3/101` trifft auf Produktion nicht mehr zu.
+- Live `dimos_diavgeia_orgs`:
+  - `total=1775`
+  - `dimoi=297`
+  - `primary_rows=297`
+- Production dry-run `scripts.seed_diavgeia_orgs`:
+  - `Total dimoi=325`
+  - `Auto-matched=263`
+  - `Needs review=34`
+  - `Unmatched=28`
+  - `Total mappings=1775`
+- Snapshot:
+  - 2507 Diavgeia organizations
+  - 337 municipality orgs
+  - 2170 subsidiary orgs
+
+### Status
+- RapidFuzz auto-matching is already active and deployed.
+- Remaining 28 unmatched dimoi are manual alias/review cases, not the old 3/101 blocker.
+- GitHub #83 kommentiert + geschlossen ✅
