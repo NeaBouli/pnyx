@@ -6561,3 +6561,25 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Status
 - GitHub #71 kommentiert + geschlossen ✅
 - Commit: `3d218ae`
+
+---
+
+## 2026-06-07 — Codex: GH#72 geschlossen — stale CLAUDE/Handover Werte
+
+### Fix
+- `CLAUDE.md`: Web-Stack von Next.js 14 auf Next.js 16 aktualisiert.
+- `docs/ekklesia_project_handover.md`:
+  - Web-Stack von Next.js 14 auf Next.js 16 aktualisiert.
+  - Hetzner Server von CX33 auf CX43 aktualisiert.
+  - CPU/RAM auf 8 vCPU / 16GB aktualisiert.
+  - Health-Module Hinweis von 22 auf 23 Live-Module (Spec: 25 Module) aktualisiert.
+- `docs/TODO.md`: Next.js Upgrade als Next.js 16 erledigt markiert.
+
+### Verification
+- `apps/web/package.json`: Next.js `16.2.6` ✅
+- Production server: 8 vCPU / 16GB-Klasse ✅
+- Live `/api/v1/health/modules`: 23 Module gemeldet ✅
+- Keine Treffer mehr für `CX33`, `Next.js 14`, `22 Module` in den betroffenen Docs ✅
+
+### Status
+- GitHub #72 kommentiert + geschlossen ✅

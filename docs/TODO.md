@@ -46,7 +46,7 @@ Hetzner-Secrets gesetzt sind.
 
 ### Web
 - [ ] Compass Engine Unit Tests (vitest) — engine.ts Berechnungen
-- [ ] Next.js 15 Upgrade (eslint Peer-Conflict lösen)
+- [x] Next.js 16 Upgrade
 - [ ] Secure Storage Hardening (localStorage → httpOnly Cookie)
 
 ### Mobile

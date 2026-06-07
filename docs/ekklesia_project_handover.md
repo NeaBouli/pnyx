@@ -53,7 +53,7 @@ pnyx/
 │   │   ├── main.py       → App-Einstieg + APScheduler Jobs
 │   │   ├── crypto/       → Ed25519 + Nullifier Kryptographie
 │   │   └── alembic/      → DB-Migrationen
-│   ├── web/              → Next.js 14 Frontend
+│   ├── web/              → Next.js 16 Frontend
 │   │   └── src/app/[locale]/  → Seiten (el/en)
 │   └── mobile/           → Expo React Native App
 │       └── src/screens/  → App-Screens
@@ -102,14 +102,14 @@ git push origin pre-session-DATUM
 | Parameter | Wert |
 |---|---|
 | Provider | Hetzner Cloud |
-| Typ | CX33 |
-| CPU | 4 vCPU |
-| RAM | 8GB |
+| Typ | CX43 |
+| CPU | 8 vCPU |
+| RAM | 16GB |
 | Disk | 80GB SSD (NVMe) |
 | OS | Ubuntu 24.04 LTS |
 | IP | 135.181.254.229 |
 | Standort | Helsinki, Finland |
-| Preis | ~15€/Monat |
+| Preis | ~30€/Monat |
 | SSH | ssh root@135.181.254.229 |
 
 ### Server-Zugang
@@ -317,7 +317,7 @@ apps/api/routers/
 ### Wichtige Endpoints
 ```
 GET  /health                          → System Health
-GET  /api/v1/health/modules           → 22 Module Status
+GET  /api/v1/health/modules           → 23 Live-Module Status (Spec: 25 Module)
 GET  /api/v1/bills                    → Alle Gesetze
 GET  /api/v1/bills/{id}               → Einzelnes Gesetz
 GET  /api/v1/bills/{id}/summary       → Ollama/DeepL Summary

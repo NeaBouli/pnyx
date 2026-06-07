@@ -896,7 +896,7 @@ OVERALL:         [0-100]
 
 ## Stack
 - apps/api      → Python FastAPI + Alembic + PostgreSQL + Redis
-- apps/web      → Next.js 14 (App Router, i18n el/en, Tailwind, recharts)
+- apps/web      → Next.js 16 (App Router, i18n el/en, Tailwind, recharts)
 - apps/mobile   → Expo / React Native (TODO — nächste Phase)
 - packages/crypto → Python + PyNaCl (Ed25519, Nullifier, HLR)
 - packages/db   → Alembic Migrations (9 Tabellen, 3 Enums)
