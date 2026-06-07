@@ -118,12 +118,23 @@ def pdf_candidates(links: list[dict[str, str]], kind: str) -> list[dict[str, str
     return [link for link in links if classify_pdf(link["label"]) == kind]
 
 
+def _looks_like_ocr_noise(line: str) -> bool:
+    tokens = re.findall(r"[Α-ΩΆ-Ώα-ωά-ώA-Za-z0-9]+", line)
+    if len(tokens) < 35:
+        return False
+    short_ratio = sum(1 for token in tokens if len(token) <= 2) / len(tokens)
+    common = {"και", "της", "των", "στο", "στη", "στην", "για", "που", "από", "προς", "νόμου", "άρθρο"}
+    common_ratio = sum(1 for token in tokens if token.lower() in common) / len(tokens)
+    return short_ratio > 0.42 and common_ratio < 0.10
+
+
 def clean_pdf_text(text: str) -> str:
     marker = "Markdown Content:"
     if marker in text:
         text = text.split(marker, 1)[1]
     text = re.sub(r"\r", "\n", text)
     text = re.sub(r"[ \t]+", " ", text)
+    text = "\n".join(line for line in text.splitlines() if not _looks_like_ocr_noise(line))
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
 
