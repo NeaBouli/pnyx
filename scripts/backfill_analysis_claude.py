@@ -152,7 +152,7 @@ def is_readable_pdf_text(text: str) -> bool:
     if common_hits / max(len(words), 1) < 0.035:
         return False
     useful_markers = ("Άρθρο", "ΑΙΤΙΟΛΟΓΙΚΗ", "Αιτιολογική", "Σκοπός", "Προς τη Βουλή", "ΚΕΦΑΛΑΙΟ")
-    return any(marker in text for marker in useful_markers)
+    return any(marker in text[:2500] for marker in useful_markers)
 
 
 def build_documents_block(links: list[dict[str, str]]) -> str:
