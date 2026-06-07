@@ -20,6 +20,53 @@ const VOTE_OPTIONS = [
 
 const VOTABLE = ["ACTIVE", "WINDOW_24H"];
 
+function readableText(value?: string | null) {
+  return Boolean(value && value.trim() && !value.includes("[unknown:"));
+}
+
+function cleanOfficialText(value?: string | null) {
+  if (!readableText(value)) return "";
+  const text = String(value).trim();
+  const badPatterns = [
+    "Μετάβαση στο κύριο περιεχόμενο",
+    "Ανοίξτε το μενού προσβασιμότητας",
+    "Νομοθετική Διαδικασία",
+    "Ημερ. Διάταξη Ολομέλειας",
+    "Εβδομαδιαίο Δελτίο",
+    "Εμφανίζονται τα σχέδια",
+    "Εμφανίζονται τα ψηφισθέντα",
+  ];
+  return badPatterns.some((pattern) => text.includes(pattern)) ? "" : text;
+}
+
+function renderOfficialLine(line: string, idx: number) {
+  const trimmed = line.trim();
+  if (!trimmed) return <div key={idx} className="h-3" />;
+  const heading = trimmed.match(/^###\s+(.+)$/);
+  if (heading) {
+    return <h4 key={idx} className="font-bold text-gray-900 mt-4 mb-2">{heading[1]}</h4>;
+  }
+  const link = trimmed.match(/^-?\s*\[([^\]]+)\]\((https?:\/\/[^)]+)\)$/);
+  if (link) {
+    return (
+      <a
+        key={idx}
+        href={link[2]}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block text-blue-600 hover:text-blue-700 underline underline-offset-2 my-1"
+      >
+        {link[1]} ↗
+      </a>
+    );
+  }
+  const note = trimmed.match(/^_(.+)_$/);
+  if (note) {
+    return <p key={idx} className="text-gray-500 italic">{note[1]}</p>;
+  }
+  return <p key={idx}>{line}</p>;
+}
+
 export default function BillDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const locale = useLocale();
@@ -167,6 +214,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
 
   const canVote = VOTABLE.includes(bill.status);
   const officialUrl = bill.official_source_url || undefined;
+  const officialText = cleanOfficialText(bill.summary_long_el);
   const isDiavgeia = bill.source === "DIAVGEIA";
   const officialLabel = isDiavgeia
     ? (locale === "el" ? "Επίσημο κείμενο στη Διαύγεια →" : "Official Diavgeia text →")
@@ -318,10 +366,20 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
               ) : aiSummary ? (
                 <div className="whitespace-pre-line">{aiSummary}</div>
-              ) : (bill as any).analysis_el ? (
-                <p>{(bill as any).analysis_el}</p>
+              ) : bill.analysis_el ? (
+                <p>{bill.analysis_el}</p>
               ) : (
                 <p className="text-gray-400">{locale === "el" ? "Η ανάλυση βρίσκεται υπό επεξεργασία." : "Analysis is being prepared."}</p>
+              )}
+              {officialText && (
+                <div className="mt-5 pt-5 border-t border-gray-200">
+                  <h3 className="font-bold text-gray-900 mb-3">
+                    {locale === "el" ? "Επίσημο κείμενο και έγγραφα" : "Official text and documents"}
+                  </h3>
+                  <div className="text-gray-700 leading-relaxed space-y-1 whitespace-pre-wrap">
+                    {officialText.split("\n").map(renderOfficialLine)}
+                  </div>
+                </div>
               )}
             </div>
           )}

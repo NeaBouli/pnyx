@@ -54,6 +54,7 @@ export interface Bill {
   summary_short_en: string | null;
   summary_long_el: string | null;
   summary_long_en: string | null;
+  analysis_el?: string | null;
   categories: string[] | null;
   party_votes_parliament: Record<string, string> | null;
   status: string;

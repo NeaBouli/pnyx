@@ -102,7 +102,7 @@ export default function VoteScreen({ route, navigation }: Props) {
           setSourceKind(resolved.kind);
           if (readableText(d.summary_short_el)) setSummary(d.summary_short_el);
           if (readableText(d.analysis_el)) setAnalysis(d.analysis_el);
-          if (!d.ai_summary_reviewed) setOfficialText(cleanOfficialText(d.summary_long_el));
+          setOfficialText(cleanOfficialText(d.summary_long_el));
         }
         const nullifier = await loadNullifier();
         if (nullifier && mounted) {
@@ -294,15 +294,13 @@ export default function VoteScreen({ route, navigation }: Props) {
               </Text>
               <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20 }}>{analysis}</Text>
             </>
-          ) : officialText ? (
+          ) : null}
+          {officialText ? (
             <>
               <Text style={{ fontWeight: "700", color: "#1e40af", fontSize: 13, marginTop: 12, marginBottom: 6 }}>
                 Επίσημο κείμενο
               </Text>
               <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20 }}>{officialText}</Text>
-              <Text style={{ color: "#64748b", fontSize: 11, lineHeight: 16, marginTop: 8 }}>
-                Η πλήρης AI ανάλυση δεν έχει ακόμη ελεγχθεί. Εμφανίζεται απόσπασμα από την επίσημη πηγή.
-              </Text>
             </>
           ) : null}
         </View>

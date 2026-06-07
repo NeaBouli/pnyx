@@ -109,7 +109,7 @@ export default function ResultScreen({ route }: Props) {
   const isHidden = data.results_hidden || (data.status === "ACTIVE" && data.total_votes === 0);
   const summary = readableText(data.summary_short_el) ? data.summary_short_el : readableText(data.pill_el) ? data.pill_el : "";
   const analysis = readableText(data.analysis_el) ? data.analysis_el : "";
-  const officialText = !analysis ? cleanOfficialText(data.summary_long_el) : "";
+  const officialText = cleanOfficialText(data.summary_long_el);
   const { url: sourceUrl, kind: sourceKind } = resolveSource(data.official_source_url, data.forum_topic_url);
   const summaryFallback = sourceUrl
     ? "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα. Δείτε την πηγή."
@@ -134,13 +134,11 @@ export default function ResultScreen({ route }: Props) {
             <Text style={[styles.summaryTitle, { marginTop: 12 }]}>Ανάλυση</Text>
             <Text style={styles.summaryText}>{analysis}</Text>
           </>
-        ) : officialText ? (
+        ) : null}
+        {officialText ? (
           <>
             <Text style={[styles.summaryTitle, { marginTop: 12 }]}>Επίσημο κείμενο</Text>
             <Text style={styles.summaryText}>{officialText}</Text>
-            <Text style={styles.sourceNote}>
-              Η πλήρης AI ανάλυση δεν έχει ακόμη ελεγχθεί. Εμφανίζεται απόσπασμα από την επίσημη πηγή.
-            </Text>
           </>
         ) : null}
       </View>

@@ -19,13 +19,24 @@ JINA_BASE = "https://r.jina.ai/"
 MODEL = "claude-haiku-4-5-20251001"
 MAX_INPUT_CHARS = 6000
 
-GOOD_LABELS = (
-    "Αιτιολογική Έκθεση",
-    "Έκθεση Επιστημονικής Υπηρεσίας",
-    "Πρακτικό Έκθεση της Επιτροπής",
+ANALYSIS_LABELS = (
+    "Αιτιολογική",
+    "Εισηγητική",
+    "Επιστημονικής",
+    "Έκθεση της Επιτροπής",
+    "Πρακτικό Έκθεση",
 )
-PRIMARY_LABEL = "Αιτιολογική Έκθεση"
+OFFICIAL_TEXT_LABELS = (
+    "Διατάξεις Σχεδίου",
+    "Διατάξεις Πρότασης",
+    "Σχέδιο ή Πρόταση Νόμου",
+    "Πρόταση Νόμου",
+    "Σχέδιο Νόμου",
+    "Ψηφισθέν Νομοσχέδιο",
+    "Σ/Ν μετά",
+)
 SKIP_LABEL_PARTS = ("φωτοτυπη", "Τροπολογ")
+MAX_FORUM_OFFICIAL_CHARS = 28000
 
 
 def _read_env_file(path: str) -> None:
@@ -60,16 +71,20 @@ def extract_pdf_links(markdown: str) -> list[dict[str, str]]:
     #   Αιτιολογική Έκθεση[![Image: .pdf](.../pdf.png)](.../file.pdf)
     # The label is plain text immediately before the PDF icon, not the link text.
     image_link_pattern = re.compile(
-        r"([^\[\]\n]{2,160})"
-        r"\[!\[[^\]]*\.pdf[^\]]*\]\(https?://[^)]*pdf\.png\)\]"
+        r"([^\[\]\n]{0,180})"
+        r"\[!\[([^\]]*)\]\(https?://[^)]*pdf\.png\)\]"
         r"\((https?://[^)]+\.pdf[^)]*)\)",
         re.IGNORECASE,
     )
     for match in image_link_pattern.finditer(markdown):
-        label = re.sub(r"\s+", " ", match.group(1)).strip()
-        label = label.rsplit(")", 1)[-1].strip()
-        label = re.sub(r"^https?://\S+", "", label).strip()
-        url = match.group(2).strip()
+        prefix = re.sub(r"\s+", " ", match.group(1)).strip()
+        prefix = prefix.rsplit(")", 1)[-1].strip()
+        prefix = re.sub(r"^https?://\S+", "", prefix).strip()
+        alt = re.sub(r"\s+", " ", match.group(2)).strip()
+        alt = re.sub(r"^Image\s+\d+:\s*", "", alt).strip()
+        alt = re.sub(r"^Image\s+\d+\s*", "", alt).strip()
+        label = alt or prefix
+        url = match.group(3).strip()
         if not any(existing["url"] == url for existing in links):
             links.append({"label": label, "url": url})
 
@@ -85,26 +100,60 @@ def extract_pdf_links(markdown: str) -> list[dict[str, str]]:
 def classify_pdf(label: str) -> str:
     if any(part.lower() in label.lower() for part in SKIP_LABEL_PARTS):
         return "skip"
-    if PRIMARY_LABEL.lower() in label.lower():
-        return "primary"
-    if any(good.lower() in label.lower() for good in GOOD_LABELS):
-        return "good"
+    if any(part.lower() in label.lower() for part in OFFICIAL_TEXT_LABELS):
+        return "official_text"
+    if any(part.lower() in label.lower() for part in ANALYSIS_LABELS):
+        return "analysis"
     return "unknown"
 
 
-def choose_pdf(links: list[dict[str, str]]) -> dict[str, str] | None:
-    primary = [link for link in links if classify_pdf(link["label"]) == "primary"]
-    if primary:
-        return primary[0]
-    good = [link for link in links if classify_pdf(link["label"]) == "good"]
-    return good[0] if good else None
+def choose_pdfs(links: list[dict[str, str]]) -> tuple[dict[str, str] | None, dict[str, str] | None]:
+    """Return the best PDF for analysis and the best PDF for official full text."""
+    analysis = pdf_candidates(links, "analysis")
+    official_text = pdf_candidates(links, "official_text")
+    return (analysis[0] if analysis else None, official_text[0] if official_text else None)
+
+
+def pdf_candidates(links: list[dict[str, str]], kind: str) -> list[dict[str, str]]:
+    return [link for link in links if classify_pdf(link["label"]) == kind]
 
 
 def clean_pdf_text(text: str) -> str:
+    marker = "Markdown Content:"
+    if marker in text:
+        text = text.split(marker, 1)[1]
     text = re.sub(r"\r", "\n", text)
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
+
+
+def is_readable_pdf_text(text: str) -> bool:
+    """Reject empty Jina PDF output and obvious OCR garbage."""
+    text = clean_pdf_text(text)
+    if len(text) < 800:
+        return False
+    words = re.findall(r"[Α-ΩΆ-Ώα-ωά-ώ]{3,}", text)
+    if len(words) < 120:
+        return False
+    common = {"και", "της", "των", "στο", "στη", "στην", "για", "που", "από", "προς", "νόμου", "άρθρο"}
+    common_hits = sum(1 for word in words if word.lower() in common)
+    if common_hits / max(len(words), 1) < 0.035:
+        return False
+    useful_markers = ("Άρθρο", "ΑΙΤΙΟΛΟΓΙΚΗ", "Αιτιολογική", "Σκοπός", "Προς τη Βουλή", "ΚΕΦΑΛΑΙΟ")
+    return any(marker in text for marker in useful_markers)
+
+
+def build_documents_block(links: list[dict[str, str]]) -> str:
+    lines = ["### Πλήρη έγγραφα"]
+    seen: set[str] = set()
+    for doc in links:
+        if doc["url"] in seen or classify_pdf(doc["label"]) == "skip":
+            continue
+        seen.add(doc["url"])
+        label = doc["label"].strip() or "Έγγραφο Βουλής"
+        lines.append(f"- [{label}]({doc['url']})")
+    return "\n".join(lines).strip()
 
 
 def extract_useful_excerpt(text: str, max_chars: int = MAX_INPUT_CHARS) -> str:
@@ -128,19 +177,31 @@ def extract_useful_excerpt(text: str, max_chars: int = MAX_INPUT_CHARS) -> str:
     return excerpt.strip()
 
 
-def build_official_text_block(excerpt: str, links: list[dict[str, str]], chosen: dict[str, str]) -> str:
-    """Build a compact official-text block for forum rendering and source links."""
-    text = excerpt.strip()
-    if len(text) > 3200:
-        cut = max(text[:3200].rfind("."), text[:3200].rfind(";"), text[:3200].rfind("·"))
-        text = text[:cut + 1 if cut > 1200 else 3200].strip()
+def build_official_text_block(text: str, links: list[dict[str, str]], chosen: dict[str, str]) -> str:
+    """Build an official-text block for forum/app rendering and source links."""
+    text = clean_pdf_text(text)
+    truncated = False
+    if len(text) > MAX_FORUM_OFFICIAL_CHARS:
+        limit_text = text[:MAX_FORUM_OFFICIAL_CHARS]
+        cut = max(
+            limit_text.rfind("\n\nΆρθρο"),
+            limit_text.rfind("."),
+            limit_text.rfind(";"),
+            limit_text.rfind("·"),
+        )
+        text = limit_text[:cut + 1 if cut > 12000 else MAX_FORUM_OFFICIAL_CHARS].strip()
+        truncated = True
 
     preferred_labels = (
-        "Αιτιολογική",
-        "Επιστημονικής",
-        "Επιτροπής",
+        "Διατάξεις",
+        "Σχέδιο",
+        "Πρόταση",
         "Ψηφισθέν",
         "Σ/Ν μετά",
+        "Αιτιολογική",
+        "Εισηγητική",
+        "Επιστημονικής",
+        "Επιτροπής",
     )
     docs: list[dict[str, str]] = []
     for link in links:
@@ -152,12 +213,20 @@ def build_official_text_block(excerpt: str, links: list[dict[str, str]], chosen:
     if chosen not in docs:
         docs.insert(0, chosen)
 
+    heading = chosen["label"].strip() or "Έγγραφο Βουλής"
     lines = [
-        "### Αιτιολογική Έκθεση — κύρια σημεία",
+        f"### {heading}",
         text,
+    ]
+    if truncated:
+        lines.extend([
+            "",
+            "_Το κείμενο συνεχίζεται στο πλήρες έγγραφο της Βουλής._",
+        ])
+    lines.extend([
         "",
         "### Πλήρη έγγραφα",
-    ]
+    ])
     seen: set[str] = set()
     for doc in docs:
         if doc["url"] in seen:
@@ -166,6 +235,14 @@ def build_official_text_block(excerpt: str, links: list[dict[str, str]], chosen:
         label = doc["label"].strip() or "Έγγραφο Βουλής"
         lines.append(f"- [{label}]({doc['url']})")
     return "\n".join(lines).strip()
+
+
+def fetch_first_readable_pdf(candidates: list[dict[str, str]]) -> tuple[dict[str, str] | None, str]:
+    for candidate in candidates:
+        pdf_text = _http_text(f"{JINA_BASE}{candidate['url']}", timeout=180)
+        if is_readable_pdf_text(pdf_text):
+            return candidate, pdf_text
+    return None, ""
 
 
 def call_claude(title: str, excerpt: str) -> tuple[dict, dict]:
@@ -285,14 +362,24 @@ async def main() -> None:
 
         page_md = _http_text(f"{JINA_BASE}{row['parliament_url']}", timeout=90)
         links = extract_pdf_links(page_md)
-        chosen = choose_pdf(links)
-        if not chosen:
-            print(f"{bill_id}: no readable GOOD PDF found")
+        analysis_candidates = pdf_candidates(links, "analysis")
+        official_candidates = pdf_candidates(links, "official_text")
+        if not analysis_candidates and not official_candidates:
+            print(f"{bill_id}: no readable Parliament document PDF found")
             continue
 
-        pdf_text = _http_text(f"{JINA_BASE}{chosen['url']}", timeout=180)
-        excerpt = extract_useful_excerpt(pdf_text)
-        official_text = build_official_text_block(excerpt, links, chosen)
+        official_pdf, official_pdf_text = fetch_first_readable_pdf(official_candidates)
+        analysis_pdf, analysis_pdf_text = fetch_first_readable_pdf(analysis_candidates)
+        if not official_pdf and analysis_pdf:
+            official_pdf = analysis_pdf
+            official_pdf_text = analysis_pdf_text
+
+        excerpt = extract_useful_excerpt(analysis_pdf_text or official_pdf_text)
+        official_text = (
+            build_official_text_block(official_pdf_text, links, official_pdf)
+            if official_pdf and official_pdf_text
+            else build_documents_block(links)
+        )
         if args.official_only:
             result = {
                 "summary_short_el": row["summary_short_el"] or "",
@@ -302,15 +389,20 @@ async def main() -> None:
             usage = {}
             errors = []
         else:
+            if not excerpt:
+                print(f"{bill_id}: no readable text for Claude analysis; use --official-only for PDF links")
+                continue
             result, usage = call_claude(row["title_el"] or bill_id, excerpt)
             errors = validate_result(result, excerpt)
 
         preview = {
             "bill_id": bill_id,
             "title_el": row["title_el"],
-            "chosen_pdf": chosen,
+            "analysis_pdf": analysis_pdf,
+            "official_pdf": official_pdf,
             "pdf_links": links,
             "input_chars": len(excerpt),
+            "official_pdf_chars": len(clean_pdf_text(official_pdf_text)),
             "official_text_chars": len(official_text),
             "apply": bool(args.apply),
             "result": result,
@@ -324,7 +416,10 @@ async def main() -> None:
             json.dump(preview, f, ensure_ascii=False, indent=2)
         with open(md_path, "w", encoding="utf-8") as f:
             f.write(f"# {bill_id}\n\n")
-            f.write(f"PDF: [{chosen['label']}]({chosen['url']})\n\n")
+            if analysis_pdf:
+                f.write(f"Analysis PDF: [{analysis_pdf['label']}]({analysis_pdf['url']})\n\n")
+            if official_pdf:
+                f.write(f"Official PDF: [{official_pdf['label']}]({official_pdf['url']})\n\n")
             f.write(f"Input chars: {len(excerpt)}\n\n")
             f.write("## Σύνοψη\n")
             f.write((result.get("summary_short_el") or "").strip() + "\n\n")
