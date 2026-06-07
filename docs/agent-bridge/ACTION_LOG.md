@@ -6646,3 +6646,53 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Status
 - GitHub #82 kommentiert + geschlossen ✅
 - Commit: `b5a1628`
+
+---
+
+## 2026-06-07 — Codex: GH#77 implemented — ZK Semaphore Wizard shell
+
+### Fix
+- Added dormant mobile ZK V2 capability framework:
+  - `zkSemaphoreCore.ts`: pure feature-flag and device/prover capability detection.
+  - `zkSemaphore.ts`: runtime wrapper using Expo constants/platform.
+  - `ZkSemaphoreScreen.tsx`: opt-in wizard shell.
+- Feature flag remains OFF in `apps/mobile/app.json`:
+  - `extra.zkSemaphoreEnabled=false`
+- Profile only exposes the wizard when the feature flag is enabled.
+- Wizard refuses opt-in unless:
+  - feature flag is enabled
+  - platform is Android/iOS
+  - app is not Expo Go
+  - native Mopro/Semaphore prover is bundled
+- Current runtime explicitly reports no native prover, matching GH#81 blocker.
+
+### Tests
+- Mobile `tsc --noEmit`: OK ✅
+- Mobile Vitest source/correction/ZK tests: 25 passed ✅
+
+### Status
+- No real Semaphore proving implemented.
+- No ZK claims exposed to production users.
+- GitHub #77 kommentiert + geschlossen ✅
+
+---
+
+## 2026-06-07 — Codex: GH#80 status — Off-site Backup waiting on Storage Box
+
+### Fix
+- Hardened `scripts/backup-offsite.sh`:
+  - requires explicit `STORAGE_BOX_USER` and `STORAGE_BOX_HOST`
+  - uses `POSTGRES_USER` / `POSTGRES_DB` env with production-safe defaults
+  - no longer hardcodes Postgres user `postgres`
+  - writes an empty Redis marker if Redis dump is unavailable, so archive creation is deterministic
+  - writes an Alembic fallback marker if version query fails
+
+### Verification
+- `bash -n scripts/backup-offsite.sh`: OK ✅
+- Production env check:
+  - `STORAGE_BOX_USER`: not set
+  - `STORAGE_BOX_HOST`: not set
+
+### Status
+- Code/script side is ready.
+- Actual off-site backup remains externally blocked until Hetzner Storage Box credentials exist.

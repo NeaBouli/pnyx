@@ -24,6 +24,7 @@ import PolisLoginScreen from "../screens/PolisLoginScreen";
 import ImportAccountScreen from "../screens/ImportAccountScreen";
 import PolitikoiScreen from "../screens/PolitikoiScreen";
 import EvaluatePoliticianScreen from "../screens/EvaluatePoliticianScreen";
+import ZkSemaphoreScreen from "../screens/ZkSemaphoreScreen";
 
 export type RootStackParams = {
   Onboarding: undefined;
@@ -38,6 +39,7 @@ export type RootStackParams = {
   EvaluatePolitician: { adaNumber: string; orgLabel: string };
   PolisLogin: { session?: string; challenge?: string; purpose?: string; bill_id?: string };
   ImportAccount: { key?: string; nullifier?: string; pubkey?: string; periferia_id?: string; dimos_id?: string };
+  ZkSemaphore: undefined;
 };
 
 export type TabParams = {
@@ -130,6 +132,7 @@ export default function Navigation() {
         <Stack.Screen name="EvaluatePolitician" component={EvaluatePoliticianScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Αξιολόγηση" }} />
         <Stack.Screen name="PolisLogin" component={PolisLoginScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "POLIS Login" }} />
         <Stack.Screen name="ImportAccount" component={ImportAccountScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Import Account" }} />
+        <Stack.Screen name="ZkSemaphore" component={ZkSemaphoreScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.headerBg }, headerTintColor: colors.headerText, title: "Semaphore ZK V2" }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

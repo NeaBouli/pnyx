@@ -6,6 +6,7 @@ import Constants from "expo-constants";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
+import { isZkSemaphoreFeatureEnabled } from "../lib/zkSemaphore";
 import { colors } from "../theme";
 
 type Nav = StackNavigationProp<RootStackParams>;
@@ -25,6 +26,7 @@ export default function ProfileScreen() {
   const [regionLocked, setRegionLocked] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "upToDate" | "updateAvailable">("idle");
   const [latestVersion, setLatestVersion] = useState<any>(null);
+  const zkFeatureEnabled = isZkSemaphoreFeatureEnabled(Constants.expoConfig?.extra as Record<string, unknown> | undefined);
 
   useEffect(() => {
     (async () => {
@@ -196,6 +198,13 @@ export default function ProfileScreen() {
         <Text style={s.skipBtnText}>Αργότερα</Text>
       </TouchableOpacity>
 
+      {zkFeatureEnabled && (
+        <TouchableOpacity style={s.zkBtn} onPress={() => nav.navigate("ZkSemaphore")}>
+          <Text style={s.zkTitle}>Semaphore ZK V2</Text>
+          <Text style={s.zkText}>Έλεγχος συσκευής και opt-in για μελλοντική ανώνυμη επαληθεύσιμη ψήφο</Text>
+        </TouchableOpacity>
+      )}
+
       {/* Version + Channel + Update Check */}
       <Text style={s.versionInfo}>
         Έκδοση: {Constants.expoConfig?.version ?? "?"} (v{Constants.expoConfig?.android?.versionCode ?? "?"}) | Κανάλι: {Constants.expoConfig?.extra?.distributionChannel === "play" ? "Google Play" : "Direct"}
@@ -299,6 +308,9 @@ const s = StyleSheet.create({
   downloadBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
   inviteBtn: { backgroundColor: colors.primaryLight, borderRadius: 12, padding: 14, alignItems: "center", marginTop: 24, borderWidth: 2, borderColor: colors.primary },
   inviteBtnText: { color: colors.primary, fontWeight: "800", fontSize: 15 },
+  zkBtn: { backgroundColor: colors.surface, borderRadius: 12, padding: 14, marginTop: 16, borderWidth: 1, borderColor: colors.border },
+  zkTitle: { color: colors.text, fontWeight: "900", fontSize: 15, marginBottom: 4 },
+  zkText: { color: colors.textSecondary, fontSize: 12, lineHeight: 17 },
   legalSection: { marginTop: 24, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border, gap: 8, alignItems: "center" },
   legalLink: { fontSize: 13, color: colors.primary, fontWeight: "600" },
 });

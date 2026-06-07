@@ -5,7 +5,7 @@
 # Prerequisites:
 #   1. Hetzner Storage Box ordered (BX11 = 1TB, ~3.81 EUR/mo)
 #   2. SSH key uploaded: ssh-copy-id -p 23 -s uXXXXXX@uXXXXXX.your-storagebox.de
-#   3. Set STORAGE_BOX_USER and STORAGE_BOX_HOST below
+#   3. Export STORAGE_BOX_USER and STORAGE_BOX_HOST in the cron environment
 #
 # What gets backed up:
 #   - PostgreSQL full dump (ekklesia_prod)
@@ -19,13 +19,14 @@
 set -euo pipefail
 
 # ─── Config ───────────────────────────────────────────────────────────────────
-STORAGE_BOX_USER="${STORAGE_BOX_USER:-uXXXXXX}"
-STORAGE_BOX_HOST="${STORAGE_BOX_HOST:-${STORAGE_BOX_USER}.your-storagebox.de}"
+STORAGE_BOX_USER="${STORAGE_BOX_USER:-}"
+STORAGE_BOX_HOST="${STORAGE_BOX_HOST:-}"
 STORAGE_BOX_PORT=23
 REMOTE_DIR="/backups/ekklesia"
 
 LOCAL_BACKUP_DIR="/opt/backups/ekklesia"
-DB_NAME="ekklesia_prod"
+DB_NAME="${POSTGRES_DB:-ekklesia_prod}"
+DB_USER="${POSTGRES_USER:-ekklesia}"
 DB_CONTAINER="ekklesia-db"
 REDIS_CONTAINER="ekklesia-redis"
 
@@ -39,23 +40,32 @@ LOG_PREFIX="[BACKUP ${DATE}]"
 
 echo "${LOG_PREFIX} Starting off-site backup..."
 
+if [ -z "${STORAGE_BOX_USER}" ] || [ -z "${STORAGE_BOX_HOST}" ]; then
+  echo "${LOG_PREFIX} ERROR: STORAGE_BOX_USER and STORAGE_BOX_HOST must be set" >&2
+  exit 2
+fi
+
 # ─── 1. PostgreSQL Dump ──────────────────────────────────────────────────────
 echo "${LOG_PREFIX} Dumping PostgreSQL..."
 mkdir -p "${LOCAL_BACKUP_DIR}/daily"
-docker exec "${DB_CONTAINER}" pg_dump -U postgres -Fc "${DB_NAME}" \
+docker exec "${DB_CONTAINER}" pg_dump -U "${DB_USER}" -Fc "${DB_NAME}" \
   > "${LOCAL_BACKUP_DIR}/daily/db-${TIMESTAMP}.dump"
 
 # ─── 2. Redis Snapshot ───────────────────────────────────────────────────────
 echo "${LOG_PREFIX} Saving Redis snapshot..."
 docker exec "${REDIS_CONTAINER}" redis-cli BGSAVE >/dev/null 2>&1 || true
 sleep 2
-docker cp "${REDIS_CONTAINER}:/data/dump.rdb" "${LOCAL_BACKUP_DIR}/daily/redis-${TIMESTAMP}.rdb" 2>/dev/null || true
+if ! docker cp "${REDIS_CONTAINER}:/data/dump.rdb" "${LOCAL_BACKUP_DIR}/daily/redis-${TIMESTAMP}.rdb" 2>/dev/null; then
+  echo "${LOG_PREFIX} Redis dump unavailable; writing empty marker"
+  : > "${LOCAL_BACKUP_DIR}/daily/redis-${TIMESTAMP}.rdb"
+fi
 
 # ─── 3. Alembic State ────────────────────────────────────────────────────────
 echo "${LOG_PREFIX} Capturing migration state..."
-docker exec "${DB_CONTAINER}" psql -U postgres -d "${DB_NAME}" \
+docker exec "${DB_CONTAINER}" psql -U "${DB_USER}" -d "${DB_NAME}" \
   -c "SELECT version_num FROM alembic_version;" \
-  > "${LOCAL_BACKUP_DIR}/daily/alembic-${TIMESTAMP}.txt" 2>/dev/null || true
+  > "${LOCAL_BACKUP_DIR}/daily/alembic-${TIMESTAMP}.txt" 2>/dev/null || \
+  echo "alembic_version unavailable" > "${LOCAL_BACKUP_DIR}/daily/alembic-${TIMESTAMP}.txt"
 
 # ─── 4. Pack Everything ──────────────────────────────────────────────────────
 echo "${LOG_PREFIX} Creating archive..."
