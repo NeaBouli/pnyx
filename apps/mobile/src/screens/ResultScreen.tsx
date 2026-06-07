@@ -41,6 +41,8 @@ function cleanOfficialText(value?: string | null) {
   if (!readableText(value)) return "";
   const cleaned = String(value)
     .replace(/\[[^\]]*\]\(https?:\/\/[^)]*\)/g, "")
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/^\s*-\s*/gm, "")
     .replace(/\]\(/g, " ")
     .replace(/(^|\s)>\s*/g, "$1")
     .replace(/[*_`]+/g, "")
