@@ -465,6 +465,7 @@ async def scheduled_completeness_check():
 @asynccontextmanager
 async def lifespan(app):
     # Startup
+    sso.validate_forum_sso_config()
     scheduler.add_job(scheduled_completeness_check, IntervalTrigger(hours=6), id="completeness_check", replace_existing=True)
     scheduler.add_job(scheduled_scrape, IntervalTrigger(hours=12), id="parliament_scrape", replace_existing=True)
     scheduler.add_job(scheduled_notify_new_bills, IntervalTrigger(minutes=30), id="notify_new_bills", replace_existing=True)

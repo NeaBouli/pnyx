@@ -23,12 +23,28 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/sso", tags=["SSO"])
 
 DISCOURSE_SSO_SECRET = os.getenv("DISCOURSE_SSO_SECRET", "")
-FORUM_SSO_SALT = os.getenv("FORUM_SSO_SALT", os.getenv("SERVER_SALT", ""))
+FORUM_SSO_SALT = os.getenv("FORUM_SSO_SALT", "")
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 
 
 async def _redis():
     return aioredis.from_url(REDIS_URL, decode_responses=True)
+
+
+def validate_forum_sso_config() -> None:
+    """Fail closed in production if Discourse SSO secrets are incomplete."""
+    environment = os.getenv("ENVIRONMENT", "production")
+    if DISCOURSE_SSO_SECRET and FORUM_SSO_SALT:
+        return
+    if environment != "production":
+        logger.warning("[SSO] Discourse SSO secret/salt incomplete in non-production")
+        return
+    missing = []
+    if not DISCOURSE_SSO_SECRET:
+        missing.append("DISCOURSE_SSO_SECRET")
+    if not FORUM_SSO_SALT:
+        missing.append("FORUM_SSO_SALT")
+    raise RuntimeError(f"Discourse SSO startup check failed: missing {', '.join(missing)}")
 
 
 def _verify_sig(payload: str, sig: str) -> bool:
