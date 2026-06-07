@@ -6855,3 +6855,10 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `/tmp/pnyx-s10/gr5293-docs.png`
   - `/tmp/pnyx-s10/gr5294-docs.png`
   - `/tmp/pnyx-s10/gr5294-doc-buttons.png`
+
+### Stable Checkpoint
+- Gio accepted current app state: app looks good.
+- Do not touch the running system unless explicitly requested.
+- Rollback tag pushed:
+  - `rollback-stable-app-good-20260607-1332`
+  - commit: `3cffb37`
