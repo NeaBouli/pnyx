@@ -6780,9 +6780,15 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Web production build/deploy: OK
 - API health: `200`
 - Web bill page: `200`
-- APK built: `apps/mobile/android/app/build/outputs/apk/play/release/app-play-release.apk`
-  - SHA256: `39b4bd5d366ccbc65eb8420550b375c126d711e8656c8964cb098a2d10583464`
-  - S10 install: pending, ADB currently reports no connected device.
+- APK built + installed on S10 `RF8N313QMFL`
+  - `versionName=1.0.3`
+  - `lastUpdateTime=2026-06-07 12:08:21`
+- S10 visual verification:
+  - `GR-536e9c79`: source card shows `Βουλή (PDF)`, `Σύνοψη` and `Επίσημο κείμενο` are visible, official text is readable, raw Markdown headings are stripped.
+  - `GR-c3ffc844`: source card shows `Βουλή (PDF)`, `Σύνοψη` and `Επίσημο κείμενο` are visible, fallback shows `Πλήρη έγγραφα`, no OCR garbage is shown.
+- Screenshot evidence:
+  - `/tmp/pnyx-s10/gr536-clean.png`
+  - `/tmp/pnyx-s10/grc3-clean.png`
 
 ### Notes
 - No global forum resync was run.
