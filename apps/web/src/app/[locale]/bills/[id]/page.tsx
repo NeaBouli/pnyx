@@ -80,8 +80,6 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
   const [selectedVote, setSelectedVote] = useState<string | null>(null);
   const [voteLoading, setVoteLoading] = useState(false);
   const [voteError, setVoteError] = useState<string | null>(null);
-  const [aiSummary, setAiSummary] = useState<string>("");
-  const [aiLoading, setAiLoading] = useState(false);
   const [qrSessionId, setQrSessionId] = useState<string | null>(null);
   const [consensusScore, setConsensusScore] = useState<number>(0);
   const [consensusSubmitting, setConsensusSubmitting] = useState(false);
@@ -100,17 +98,6 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
       setResults(resultsRes.data);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [billId]);
-
-  // Fetch AI summary when "Ανάλυση" tab is clicked
-  useEffect(() => {
-    if (expanded !== "long" || aiSummary || aiLoading) return;
-    setAiLoading(true);
-    fetch(`${API_URL}/api/v1/bills/${encodeURIComponent(billId)}/summary?lang=${locale}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.summary) setAiSummary(d.summary); })
-      .catch(() => {})
-      .finally(() => setAiLoading(false));
-  }, [expanded, billId, locale, aiSummary, aiLoading, API_URL]);
 
   async function handleVoteClick(choice: string) {
     const keypair = loadKeypair();
@@ -215,6 +202,13 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
   const canVote = VOTABLE.includes(bill.status);
   const officialUrl = bill.official_source_url || undefined;
   const officialText = cleanOfficialText(bill.summary_long_el);
+  const hasAnalysis = readableText(bill.analysis_el);
+  const hasOfficialContent = Boolean(officialText);
+  const longTabLabel = hasAnalysis
+    ? (locale === "el" ? "Ανάλυση" : "Analysis")
+    : hasOfficialContent
+      ? (locale === "el" ? "Επίσημο κείμενο" : "Official text")
+      : (locale === "el" ? "Πηγή" : "Source");
   const isDiavgeia = bill.source === "DIAVGEIA";
   const officialLabel = isDiavgeia
     ? (locale === "el" ? "Επίσημο κείμενο στη Διαύγεια →" : "Official Diavgeia text →")
@@ -339,7 +333,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
               >
                 {level === "short"
                   ? (locale === "el" ? "Σύνοψη" : "Summary")
-                  : (locale === "el" ? "Ανάλυση" : "Analysis")}
+                  : longTabLabel}
               </button>
             ))}
             {(bill as any).forum_topic_id && (
@@ -359,17 +353,20 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
             </p>
           ) : (
             <div className="text-gray-700 leading-relaxed">
-              {aiLoading ? (
-                <div className="flex items-center gap-2 text-gray-400 text-sm animate-pulse">
-                  <span>AI</span>
-                  {locale === "el" ? "Φόρτωση ανάλυσης..." : "Loading analysis..."}
-                </div>
-              ) : aiSummary ? (
-                <div className="whitespace-pre-line">{aiSummary}</div>
-              ) : bill.analysis_el ? (
+              {hasAnalysis ? (
                 <p>{bill.analysis_el}</p>
+              ) : hasOfficialContent ? (
+                <p className="text-gray-500">
+                  {locale === "el"
+                    ? "Δεν υπάρχει ξεχωριστή ελεγμένη ανάλυση. Παρακάτω εμφανίζεται το επίσημο κείμενο και τα έγγραφα."
+                    : "No separate reviewed analysis is available. The official text and documents are shown below."}
+                </p>
               ) : (
-                <p className="text-gray-400">{locale === "el" ? "Η ανάλυση βρίσκεται υπό επεξεργασία." : "Analysis is being prepared."}</p>
+                <p className="text-gray-400">
+                  {locale === "el"
+                    ? "Δεν υπάρχει ακόμα ελεγμένη ανάλυση. Δείτε την επίσημη πηγή."
+                    : "No reviewed analysis is available yet. See the official source."}
+                </p>
               )}
               {officialText && (
                 <div className="mt-5 pt-5 border-t border-gray-200">
