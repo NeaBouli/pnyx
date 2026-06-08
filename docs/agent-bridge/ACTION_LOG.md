@@ -7459,3 +7459,36 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Browser live check:
   - `GR-0490a766`: `Ανάλυση` tab shows distinct `analysis_el`; official text remains visible below; no old AI loading text.
   - `GR-5294`: no fake analysis; long tab is `Επίσημο κείμενο`; fallback note + official text/PDF block visible; no old AI loading text.
+
+## 2026-06-09 — Status for ClaudeDev handoff after GH#105 fallback
+
+### Current HEAD / health
+- `origin/main`: `c4451df`.
+- Runtime code deployed on server: `dd70c52` (`c4451df` is Bridge documentation only).
+- Working tree before handoff status check: clean.
+- `ekklesia-web`: running.
+- `ekklesia-api`: running.
+- API health: OK, 23 modules.
+- Live web check: `https://ekklesia.gr/el/bills/GR-5294` HTTP 200.
+
+### Completed
+- GH#105 handled conservatively on web:
+  - Removed dynamic `/summary` AI fetch from the long/analysis tab.
+  - `Ανάλυση` label appears only when reviewed `analysis_el` exists.
+  - Without reviewed analysis, web uses `Επίσημο κείμενο` / `Πηγή` fallback.
+  - Official text and PDF/document links stay visible.
+- This matches the agreed fallback-module approach: no hallucination-prone AI filler in production citizen text.
+
+### Verification recap
+- Web typecheck OK.
+- Web production build OK locally and in Docker deploy build.
+- Mobile TypeScript OK.
+- API targeted regressions: 31 passed.
+- Browser live checks:
+  - `GR-0490a766`: distinct `analysis_el` + official text.
+  - `GR-5294`: no fake analysis; official text fallback visible.
+
+### Watch-outs
+- `npm run lint` remains unusable in current Next.js 16 setup because `next lint` resolves `lint` as a project directory; this is pre-existing/project config, not caused by GH#105 fallback.
+- Do not reintroduce on-demand `/summary` as an analysis fallback without explicit QA/model decision.
+- CC should continue to be used for parallel server/S10/browser/Linear/GitHub cross-checks.
