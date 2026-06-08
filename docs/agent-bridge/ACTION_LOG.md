@@ -7044,3 +7044,45 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Tracking
 - GH#79 commented with current memo.
 - Linear NEA-281 commented with current memo.
+
+---
+
+## 2026-06-08 — Codex: NEA-277 FORUM_SSO_SALT Startup-Check cleanup
+
+### Diagnosis
+- GitHub #71 was already CLOSED.
+- Existing production startup guard is present:
+  - `apps/api/main.py` calls `sso.validate_forum_sso_config()` in lifespan startup.
+  - `apps/api/routers/sso.py` fails closed in production when `DISCOURSE_SSO_SECRET` or `FORUM_SSO_SALT` is missing.
+- Existing fix commit: `3d218ae`.
+- CC read-only review agreed: runtime code is sound; `.env.production.template` was incomplete.
+
+### Change
+- Runtime SSO logic: unchanged.
+- Added required production env documentation to `.env.production.template`:
+  - `ENVIRONMENT=production`
+  - `DISCOURSE_SSO_SECRET=REPLACE_WITH_64_CHAR_RANDOM_STRING`
+  - `FORUM_SSO_SALT=REPLACE_WITH_32_CHAR_RANDOM_STRING`
+- Expanded `apps/api/tests/test_sso_config.py` to explicitly cover production fail-closed cases:
+  - both missing
+  - secret missing
+  - salt missing
+
+### Verification
+- `cd apps/api && .venv/bin/python -m pytest tests/test_sso_config.py tests/test_voting.py -q`
+  - `22 passed, 2 xfailed`
+- `cd apps/api && python3 -m py_compile routers/sso.py main.py`
+  - OK
+- Production startup simulation with test secret/salt:
+  - `validation_passed`
+- Missing production secret/salt simulation:
+  - `Discourse SSO startup check failed: missing DISCOURSE_SSO_SECRET, FORUM_SSO_SALT`
+- Live API health:
+  - `https://api.ekklesia.gr/health` returned `status=ok`
+- Full `apps/api` test suite was attempted for broad regression awareness:
+  - `253 passed, 1 skipped, 25 xfailed, 6 failed`
+  - failures are existing local-environment issues: missing local Redis and admin-key expectation mismatches, not caused by this docs/test-only change.
+
+### Status
+- NEA-277 moved to Done.
+- No deploy performed.

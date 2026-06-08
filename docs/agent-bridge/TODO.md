@@ -49,7 +49,7 @@
 - [x] ekprosopos UI fixes + Logout Modal + APK Manifest
 - [x] F-Droid !38007 fix applied: `e72a2f44b` changes sed target from `app.json` to `package.json`, because `expo-modules-autolinking` reads `expo.autolinking.android.buildFromSource` from `package.json`. Pipeline #2554446253 green 9/9 (`fdroid build` + `check apk` success).
 - [x] AAB vC29 Upload zu Play Console (lokal gebaut, `app-play-release.aab`; SHA256 `d4d72bd733fdc0a5c2e2bfb85a8fe9d309cf688308ca0d128f720e2d118a4e2e`)
-- [ ] NEA-258: FORUM_SSO_SALT Startup-Check (LOW follow-up)
+- [x] NEA-258/NEA-277: FORUM_SSO_SALT Startup-Check (fail-closed vorhanden, Template + Tests ergänzt)
 - [ ] CLAUDE.md Aktualisierung (INFO — stale CX33, 22 Module, Next 14)
 
 ## Blocked

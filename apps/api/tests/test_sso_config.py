@@ -23,10 +23,18 @@ def _reload_sso(monkeypatch, *, environment: str, secret: str = "", salt: str = 
     return importlib.reload(sso)
 
 
-def test_forum_sso_config_fails_closed_in_production(monkeypatch):
-    sso = _reload_sso(monkeypatch, environment="production", secret="secret", salt="")
+@pytest.mark.parametrize(
+    ("secret", "salt", "missing"),
+    [
+        ("", "", "DISCOURSE_SSO_SECRET, FORUM_SSO_SALT"),
+        ("", "salt", "DISCOURSE_SSO_SECRET"),
+        ("secret", "", "FORUM_SSO_SALT"),
+    ],
+)
+def test_forum_sso_config_fails_closed_in_production(monkeypatch, secret, salt, missing):
+    sso = _reload_sso(monkeypatch, environment="production", secret=secret, salt=salt)
 
-    with pytest.raises(RuntimeError, match="FORUM_SSO_SALT"):
+    with pytest.raises(RuntimeError, match=missing):
         sso.validate_forum_sso_config()
 
 
