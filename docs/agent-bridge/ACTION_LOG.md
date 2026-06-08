@@ -7086,3 +7086,37 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Status
 - NEA-277 moved to Done.
 - No deploy performed.
+
+---
+
+## 2026-06-08 — Codex: NEA-278 CLAUDE.md stale values
+
+### Scope
+- Documentation only.
+- No runtime code, no build, no deploy, no DB.
+
+### Updated CLAUDE.md
+- Last session: 2026-03-29 -> 2026-06-08
+- Spec status: 25 modules -> 25 spec / 23 live modules
+- Stack: mobile no longer TODO; Android package `ekklesia.gr`, v1.0.3 / versionCode 30
+- Docker services: documented current compose service names (`api`, `web`, `db`, `redis`, `ollama`, `monitor`, `dashboard`, `docker-proxy`)
+- Tests section: replaced stale 2026-04-09 counts with current focused test guidance
+- Deploy notes: `npm ci`, service `api`, `set -a` env loading, stop-before-build deploy guard
+
+### Updated Handover Doku
+- Removed stale fixed HEAD `63c1c83`; point to `git rev-parse --short HEAD` + Action Log.
+- Stable rollback tag documented: `rollback-stable-app-good-20260607-1332`.
+- Docker service table updated from old container names to current compose service names.
+- Deploy commands updated from `ekklesia-api/ekklesia-web` to `api/web` and `set -a` env loading.
+- Mobile version updated: `1.0.3`, versionCode `30`, package `ekklesia.gr`.
+- F-Droid MR updated: `!38007`, package `ekklesia.gr`, latest green pipeline `2570810919` on `e42e014f`.
+
+### Verification
+- Live API health: 23 modules.
+- Server resources checked: 8 vCPU, 15Gi RAM visible, root disk 75G.
+- Compose services checked on server: `api dashboard db docker-proxy monitor ollama redis web`.
+- Mobile app config checked: version `1.0.3`, versionCode `30`, package `ekklesia.gr`.
+- `git diff --check`: OK.
+
+### Status
+- NEA-278 moved to Done.

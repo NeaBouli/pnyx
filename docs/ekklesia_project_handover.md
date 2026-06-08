@@ -37,8 +37,8 @@ ekklesia του έθνους ist eine unabhängige Open-Source-Bürgerinitiative
 ### Repository
 - **GitHub:** https://github.com/NeaBouli/pnyx
 - **Branch:** main (direkt, kein PR-Workflow)
-- **Aktueller HEAD:** 63c1c83
-- **Aktueller Tag:** pre-session-20260426
+- **Aktueller HEAD:** siehe `git rev-parse --short HEAD` und `docs/agent-bridge/ACTION_LOG.md`
+- **Aktueller stabiler Tag:** `rollback-stable-app-good-20260607-1332`
 - **Lokaler Pfad (Dev-Laptop):** /Users/gio/Desktop/pnyx/
 
 ### Repository-Struktur
@@ -145,7 +145,7 @@ ssh root@135.181.254.229 "cat /opt/hetzner-migration/memory/pnyx-forum/COORDINAT
 
 ## 4. DOCKER + CONTAINER
 
-### Alle 10 Container
+### Compose Services
 ```bash
 # Status prüfen:
 ssh root@135.181.254.229 "docker ps --format 'table {{.Names}}\t{{.Status}}'"
@@ -153,15 +153,14 @@ ssh root@135.181.254.229 "docker ps --format 'table {{.Names}}\t{{.Status}}'"
 
 | Container | Image | Zweck | Port (intern) |
 |---|---|---|---|
-| ekklesia-api | custom FastAPI | REST API | 8000 |
-| ekklesia-web | custom Next.js | Web Frontend | 3000 |
-| ekklesia-db | postgres:15-alpine | PostgreSQL | 5432 |
-| ekklesia-redis | redis:7-alpine | Cache + Sessions | 6379 |
-| ekklesia-ollama | ollama/ollama | AI (llama3.2:3b) | 11434 |
-| traefik-central | traefik:v3.6 | Reverse Proxy + SSL | 80/443 |
-| listmonk | listmonk | Newsletter | 9000 |
-| listmonk-db | postgres:15-alpine | Newsletter DB | 5433 |
-| listmonk-postfix | postfix | SMTP Relay | - |
+| api | custom FastAPI | REST API | 8000 |
+| web | custom Next.js/static web | Web Frontend | 3000 |
+| db | postgres:15-alpine | PostgreSQL | 5432 |
+| redis | redis:7-alpine | Cache + Sessions | 6379 |
+| ollama | ollama/ollama | AI (llama3.2:3b / qwen temporär) | 11434 |
+| monitor | custom | Health/Business Monitor | - |
+| dashboard | custom | Admin/Dashboard | - |
+| docker-proxy | docker-socket-proxy | Safe Docker API proxy | - |
 | app | discourse | Community Forum | - |
 
 ### Docker Networks
@@ -172,13 +171,15 @@ traefik        → Traefik Proxy
 
 ### Wichtige Docker-Befehle
 ```bash
-# Alle Container neu starten:
+# Alle Compose-Services neu starten:
 cd /opt/ekklesia/app
-source /opt/ekklesia/.env.production
+set -a && source /opt/ekklesia/.env.production && set +a
 docker compose -f infra/docker/docker-compose.prod.yml up -d
 
-# Einzelnen Container neu starten:
-docker compose -f infra/docker/docker-compose.prod.yml up -d --no-deps ekklesia-api
+# API sauber neu bauen/deployen:
+docker compose -f infra/docker/docker-compose.prod.yml stop api
+docker compose -f infra/docker/docker-compose.prod.yml build api
+docker compose -f infra/docker/docker-compose.prod.yml up -d api
 
 # Logs:
 docker logs ekklesia-api --tail 50
@@ -195,9 +196,10 @@ cd /var/discourse && ./launcher restart app
 ssh root@135.181.254.229 "
   cd /opt/ekklesia/app &&
   git pull origin main &&
-  source /opt/ekklesia/.env.production &&
-  docker compose -f infra/docker/docker-compose.prod.yml \
-    up -d --build ekklesia-api ekklesia-web
+  set -a && source /opt/ekklesia/.env.production && set +a &&
+  docker compose -f infra/docker/docker-compose.prod.yml stop api web &&
+  docker compose -f infra/docker/docker-compose.prod.yml build api web &&
+  docker compose -f infra/docker/docker-compose.prod.yml up -d api web
 "
 ```
 
@@ -269,7 +271,7 @@ alembic revision -m "beschreibung"
 # Auf Server anwenden:
 ssh root@135.181.254.229 "
   cd /opt/ekklesia/app &&
-  source /opt/ekklesia/.env.production &&
+  set -a && source /opt/ekklesia/.env.production && set +a &&
   docker exec ekklesia-api alembic upgrade head
 "
 ```
@@ -582,8 +584,9 @@ Alle Jobs laufen in main.py (async):
 ### Technologie
 - **Framework:** Expo / React Native
 - **Sprache:** TypeScript
-- **Aktueller versionCode:** 4
-- **Nächster versionCode:** 5 (01.05.2026)
+- **Aktuelle Version:** 1.0.3
+- **Aktueller versionCode:** 30
+- **Package:** ekklesia.gr
 
 ### App-Screens
 ```
@@ -608,15 +611,11 @@ bash scripts/build-fdroid.sh
 # → BUILD_FLAVOR=fdroid → IS_FDROID=true → expo-notifications deaktiviert
 ```
 
-### v5 Build (01.05.2026)
+### Play Build
 ```bash
-# 1. versionCode erhöhen (app.json: 4 → 5)
-# 2. EAS Reset abwarten (01.05)
-# 3. Build:
+# Build:
 bash scripts/build-play.sh
-# 4. AAB in Play Console hochladen
-# 5. ADR-022 Server Migration gleichzeitig
-# 6. F-Droid MR updaten (versionCode 5)
+# APK/AAB Artefakte unter apps/mobile/android/app/build/outputs/
 ```
 
 ---
@@ -624,10 +623,10 @@ bash scripts/build-play.sh
 ## 13. F-DROID
 
 ### Status
-- **MR:** https://gitlab.com/fdroid/fdroiddata/-/merge_requests/37087
-- **Status:** Open, nicht mehr Draft, wartet auf linsui Review
-- **Package:** gr.ekklesia.app
-- **versionCode im MR:** 5 (vorbereitet)
+- **MR:** https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007
+- **Status:** Open, `review-requested`, wartet auf F-Droid/linsui/community Re-Test + Merge
+- **Package:** ekklesia.gr
+- **Letzte grüne Pipeline:** #2570810919 (`e42e014f`, 2026-06-02)
 
 ### Wichtig
 - FCM (Firebase) vollständig entfernt im F-Droid Build
@@ -636,8 +635,7 @@ bash scripts/build-play.sh
 
 ### F-Droid MR über CLI
 ```bash
-GITLAB_TOKEN=$(grep GITLAB ~/.stealthx/credentials.env | cut -d= -f2)
-glab mr view 37087 --repo fdroid/fdroiddata
+glab mr view 38007 --repo fdroid/fdroiddata
 ```
 
 ---
@@ -845,7 +843,7 @@ ssh root@135.181.254.229 "docker logs app --tail 20"  # Discourse
 ```bash
 ssh root@135.181.254.229 "
   cd /opt/ekklesia/app &&
-  source /opt/ekklesia/.env.production &&
+  set -a && source /opt/ekklesia/.env.production && set +a &&
   docker exec ekklesia-api alembic current
 "
 ```
@@ -870,7 +868,7 @@ ssh root@135.181.254.229 "
 | Forum | https://pnyx.ekklesia.gr |
 | Community | https://ekklesia.gr/community.html |
 | GitHub Repo | https://github.com/NeaBouli/pnyx |
-| F-Droid MR | https://gitlab.com/fdroid/fdroiddata/-/merge_requests/37087 |
+| F-Droid MR | https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007 |
 | Play Console | https://play.google.com/console |
 | Hetzner Console | https://console.hetzner.cloud |
 | Papaki DNS | https://papaki.gr |
@@ -930,8 +928,10 @@ pnyx, lies pnyx-session-20260426.md
 git add . && git commit -m "beschreibung" && git push origin main
 # Dann auf Server:
 ssh root@135.181.254.229 "cd /opt/ekklesia/app && git pull && \
-  source /opt/ekklesia/.env.production && \
-  docker compose -f infra/docker/docker-compose.prod.yml up -d --build ekklesia-api ekklesia-web"
+  set -a && source /opt/ekklesia/.env.production && set +a && \
+  docker compose -f infra/docker/docker-compose.prod.yml stop api web && \
+  docker compose -f infra/docker/docker-compose.prod.yml build api web && \
+  docker compose -f infra/docker/docker-compose.prod.yml up -d api web"
 ```
 
 **Q: Wie prüfe ich ob alles läuft?**
