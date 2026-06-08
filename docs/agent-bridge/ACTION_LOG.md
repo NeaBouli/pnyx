@@ -7265,3 +7265,77 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Remaining
 - Retry later with cooldown for Jina-429 skipped bills: `GR-622d5980`, `GR-6d0ba7e0`, `GR-8c0aad10`.
 - `GR-5293` and `GR-5294` likely need alternate source strategy if separate analysis is required; full text/PDF already exists.
+
+---
+
+## 2026-06-08 — Codex: DIAVGEIA forum document links + scraper/monitor verification
+
+### User report
+- Gio asked why Forum topic 1104 had only a short summary and no full text/PDF.
+- Topic: `https://pnyx.ekklesia.gr/t/.../1104`
+- Telegram warnings mentioned:
+  - old T3 `arweave_pending` spam (`1 Parliament-Bills ohne Archivierung >24h`)
+  - T2 `Forum: 51/11 Bills ohne Topic`
+
+### Topic 1104 finding
+- Raw topic 1104 before fix had only:
+  - metadata
+  - `ΑΔΑ` link to `https://diavgeia.gov.gr/decision/view/98Κ3469Β7Δ-ΑΥΦ`
+  - short `Περίληψη`
+  - ekklesia evaluation link
+- DB row `DIAV-98Κ3469Β7Δ-Α` had:
+  - `source=DIAVGEIA`
+  - `diavgeia_ada=98Κ3469Β7Δ-ΑΥΦ`
+  - `parliament_url=https://diavgeia.gov.gr/doc/98Κ3469Β7Δ-ΑΥΦ`
+  - `summary_long_el` empty
+- Root cause: `discourse_sync._build_topic_body()` rendered DIAVGEIA ADA link but ignored the stored `diavgeia.gov.gr/doc/...` document URL.
+
+### Fix
+- Commit `ab7056f`: `fix(forum): show Diavgeia decision document link in topics`
+- `discourse_sync._build_topic_body()` now adds:
+  - `## Πλήρες έγγραφο`
+  - `[Κατεβάστε/διαβάστε την απόφαση στη Διαύγεια →](https://diavgeia.gov.gr/doc/...)`
+- Scope: DIAVGEIA-only, only URLs starting with `https://diavgeia.gov.gr/doc/`.
+- Parliament/Voting/Arweave untouched.
+
+### Tests
+- `py_compile`: `discourse_sync.py`, `diavgeia_scraper.py` OK.
+- `pytest` targeted: `test_discourse_sync.py`, `test_source_links.py`, `test_arweave_guards.py`, `test_sso_config.py` -> 38 passed.
+- New regression test: `test_diavgeia_topic_body_renders_document_link()`.
+
+### Deploy + verification
+- Deployed API only to server; web/mobile unchanged.
+- Server HEAD: `ab7056f`.
+- Topic 1104 targeted update succeeded.
+- Public raw topic 1104 now contains:
+  - `Περίληψη` YES
+  - `Πλήρες έγγραφο` YES
+  - `https://diavgeia.gov.gr/doc/98Κ3469Β7Δ-ΑΥΦ` YES
+  - `Αξιολογήστε` YES
+- Direct Diavgeia document link verified as PDF:
+  - `%PDF-1.5`, 2 pages.
+
+### Scraper verification
+- Diavgeia scraper dry-run via production API container:
+  - `decision_type_uids=['Α.2']`
+  - `published_after=now-2d`
+  - `max_pages=1`
+  - `dry_run=True`
+- Result: fetched 100, inserted 100 in dry-run accounting, errors 0.
+- DB unchanged: `diavgeia_decisions` count stayed `941 -> 941`.
+- Warnings `org ... not in snapshot` are label/snapshot gaps, not scrape failures.
+
+### Monitor / Telegram warnings
+- Live DB Arweave policy query with guard:
+  - PARLIAMENT + PARLIAMENT_VOTED + `arweave_tx_id IS NULL` + `party_votes_parliament IS NOT NULL` = 0.
+- Old/wrong query without `party_votes_parliament` guard would count `GR-5294` = 1.
+- Conclusion: old T3 arweave_pending spam was the known stale/false-positive guard issue; live system currently OK.
+- Forum missing topics live: 0.
+- Monitor logs last hours: All checks passed, no alerts.
+
+### Existing DIAVGEIA topic backfill
+- Attempted controlled existing-topic backfill for DIAVGEIA topics with doc URLs.
+- Candidates: 937.
+- Stopped after Discourse rate limits (`429`) and category action limits appeared.
+- Before stop: partial success (82 topics updated), many rate-limited failures.
+- Decision: do not brute-force existing 900+ topics. Future topics are fixed by code; remaining historical topics need a slow retry/backfill job with Discourse rate-limit awareness.
