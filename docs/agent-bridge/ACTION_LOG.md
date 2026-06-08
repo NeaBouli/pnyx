@@ -7343,3 +7343,12 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Follow-up ticket
 - GitHub #109: Historical DIAVGEIA forum topics — slow document-link backfill
 - Linear NEA-319: https://linear.app/neabouli/issue/NEA-319/follow-up-historical-diavgeia-forum-topics-slow-document-link-backfill
+
+### Last-10 DIAVGEIA verification/update
+- Gio clarified topic 1104 was only an example; requirement is: latest topics and all future topics must expose the document link.
+- Queried latest 10 DIAVGEIA topics with `diavgeia.gov.gr/doc/...` URL: topics `1095`-`1104`.
+- Slow update with 8s delay:
+  - Normal topic update succeeded for 8/10.
+  - Topics `1102` and `1099` returned Discourse HTTP 422 on topic metadata update; fixed via body-only first-post update.
+- Public raw verification for all 10 topics: `## Πλήρες έγγραφο` + `diavgeia.gov.gr/doc/...` present ✅.
+- This confirms latest 10 are fixed; future topics are covered by `ab7056f` body-builder regression test.
