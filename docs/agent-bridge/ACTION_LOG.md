@@ -7019,3 +7019,28 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - CC read-only support attempted:
   - CC confirmed git/GitHub basics (`HEAD=9a55ea1`, GH#107 open before closure, GH#108 closed)
   - CC CLI did not receive Bash tools in this mode, so live API/S10 checks were completed directly by Codex.
+
+---
+
+## 2026-06-08 — Codex: F-Droid !38007 reminder memo
+
+### Status Check
+- GitLab MR: https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007
+- State: open
+- Labels: `New App`, `review-requested`
+- Latest green pipeline: `2570810919`
+- Pipeline commit: `e42e014f`
+- Pipeline date: 2026-06-02
+
+### Memo
+- Community launch crash report from 2026-06-02 was addressed in fdroiddata.
+- Current artifact is JSC end-to-end:
+  - `assets/index.android.bundle` present
+  - `libjsc.so` present
+  - no `libhermes*`
+- Current blocker is external: waiting for F-Droid/linsui/community re-test and merge.
+- Do not push metadata changes unless new reviewer feedback appears.
+
+### Tracking
+- GH#79 commented with current memo.
+- Linear NEA-281 commented with current memo.
