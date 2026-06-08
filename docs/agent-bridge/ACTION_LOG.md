@@ -7352,3 +7352,19 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Topics `1102` and `1099` returned Discourse HTTP 422 on topic metadata update; fixed via body-only first-post update.
 - Public raw verification for all 10 topics: `## Πλήρες έγγραφο` + `diavgeia.gov.gr/doc/...` present ✅.
 - This confirms latest 10 are fixed; future topics are covered by `ab7056f` body-builder regression test.
+
+### Full DIAVGEIA historical body-only backfill
+- Gio requested the forum updates be performed immediately, not left as follow-up only.
+- Ran a conservative body-only Discourse backfill for all DIAVGEIA forum topics with `https://diavgeia.gov.gr/doc/...` URLs.
+- Scope: first-post raw/body only. No title, category, tags, DB, API deploy, web deploy, mobile build, or source data changes.
+- Candidates: 932.
+- Result: processed 932, updated 932, failures 0.
+- Discourse rate limits were respected automatically (`429` waits around 20-23s); no brute-force retry loop.
+- Public raw spot checks after completion:
+  - Topic 1104: `Πλήρες έγγραφο` YES, `diavgeia.gov.gr/doc/` YES.
+  - Topic 1095: `Πλήρες έγγραφο` YES, `diavgeia.gov.gr/doc/` YES.
+  - Topic 802: `Πλήρες έγγραφο` YES, `diavgeia.gov.gr/doc/` YES.
+  - Topic 390: `Πλήρες έγγραφο` YES, `diavgeia.gov.gr/doc/` YES.
+  - Topic 150: `Πλήρες έγγραφο` YES, `diavgeia.gov.gr/doc/` YES.
+- API health after backfill: OK.
+- Historical DIAVGEIA forum topics now have the direct official document link block; future DIAVGEIA topics remain covered by code fix `ab7056f`.
