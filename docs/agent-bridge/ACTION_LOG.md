@@ -7419,3 +7419,43 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Do not run broad Discourse metadata updates for historical topics; use body-only first-post updates when needed.
 - Do not perform core Discourse software upgrade/rebuild without explicit maintenance-window approval.
 - Continue using CC as helper for parallel checks, server verification, S10/browser validation, and Linear/GitHub cross-checks.
+
+## 2026-06-09 — Codex: GH#105 conservative analysis fallback
+
+### Decision
+- Gio chose the safer fallback-module approach: do not force a separate AI analysis when no reviewed `analysis_el` exists.
+- Keep official source text/PDFs as the reliable primary citizen-facing material.
+
+### Fix
+- Commit `dd70c52`: `fix(GH#105): use official text fallback instead of AI summary tab`.
+- Web bill detail no longer calls `/api/v1/bills/{id}/summary` when the long tab is opened.
+- Long tab label is now data-aware:
+  - `Ανάλυση` only when `analysis_el` exists.
+  - `Επίσημο κείμενο` when no analysis exists but official text exists.
+  - `Πηγή` when neither reviewed analysis nor official text is available.
+- If no reviewed analysis exists, the page shows a clear note and renders the official text/documents instead of AI-generated filler.
+
+### Safety scope
+- Web-only runtime change.
+- No DB migration, no fetcher changes, no forum backfill, no API deploy, no mobile build.
+- Existing mobile/forum behavior already followed the safe model: `analysis_el` only for analysis, official text rendered separately.
+
+### Verification
+- Web typecheck: OK.
+- Web production build: OK locally and inside production Docker build.
+- Mobile `npx tsc --noEmit`: OK.
+- API targeted regression tests via local venv:
+  - `test_discourse_sync.py`
+  - `test_source_links.py`
+  - `test_arweave_guards.py`
+  - Result: 31 passed.
+- `git diff --check`: OK.
+- `npm run lint`: not usable in current Next.js 16 setup (`next lint` invalid project directory); not caused by this change.
+
+### Deploy + live check
+- Web-only deploy performed; server repo HEAD: `dd70c52`.
+- API health after deploy: OK, 23 modules.
+- `https://ekklesia.gr/el/bills/GR-5294`: HTTP 200.
+- Browser live check:
+  - `GR-0490a766`: `Ανάλυση` tab shows distinct `analysis_el`; official text remains visible below; no old AI loading text.
+  - `GR-5294`: no fake analysis; long tab is `Επίσημο κείμενο`; fallback note + official text/PDF block visible; no old AI loading text.
