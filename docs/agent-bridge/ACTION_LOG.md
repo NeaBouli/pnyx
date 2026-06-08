@@ -6923,3 +6923,65 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   1. GH#107 / NEA-317 Pagination
   2. GH#108 / NEA-318 Votes-in-Progress
   3. GH#103 / GH#105 Analysis pipeline, blocked on model decision
+
+---
+
+## 2026-06-08 — Codex: GH#107/GH#108 unblocked feature build
+
+### Scope
+- Built only non-blocked roadmap items:
+  - GH#107 / NEA-317: Bills `Όλα` pagination, 10 per page.
+  - GH#108 / NEA-318: Landing `Votes in Progress` real aggregated data behind threshold.
+- Did not touch blocked items (#102, #103/#105 model decision, #79, #80, #81).
+
+### Code
+- Commit `8dc989b`: `feat(GH#107 GH#108): paginate bills list and gate landing vote ticker`
+- Commit `66db694`: `fix(GH#108): exclude seed bills from landing vote ticker`
+
+### GH#107 / NEA-317 Pagination
+- Mobile API supports `limit` + `offset` with existing filters.
+- BillsScreen `Όλα` loads `PAGE_SIZE=10` and exposes `Περισσότερα` for next page.
+- Live API verification:
+  - `/api/v1/bills?limit=10&offset=0` -> 10 bills
+  - `/api/v1/bills?limit=10&offset=10` -> 10 bills
+  - `/api/v1/bills?limit=10&offset=20` -> 10 bills
+- Verification:
+  - `apps/mobile` vitest: 27 passed
+  - `apps/mobile` TSC: OK
+  - APK built: `apps/mobile/android/app/build/outputs/apk/play/release/app-play-release.apk`
+  - Emulator install: OK, `lastUpdateTime=2026-06-08 12:28:35`
+- Caveat:
+  - S10 not connected during final install/visual pass.
+  - Emulator became unreliable during `uiautomator dump`/rapid scroll and showed system/launcher ANR; logcat showed `ekklesia.gr` at low CPU, so this is treated as emulator instability, not verified app failure.
+  - GH#107 remains open pending real S10 visual acceptance.
+
+### GH#108 / NEA-318 Votes in Progress
+- API endpoint added: `GET /api/v1/vote/results/in-progress`.
+- Data policy:
+  - aggregates only total/YES/NO/ABSTAIN and percentages
+  - no individual votes, no nullifiers
+  - excludes demo and seed/manual bills without official source
+- Production env:
+  - `VOTES_IN_PROGRESS_THRESHOLD=1` for testing; raise to `50` before normal public threshold policy.
+- Deploy:
+  - API + Web rebuilt/deployed on server.
+  - Server HEAD: `66db694`.
+- Live verification:
+  - Landing HTML references the real endpoint.
+  - Landing no longer contains old fake Votes-in-Progress ticker strings.
+  - Live endpoint returned `threshold=1`, `count=3`:
+    - `GR-5293` total_votes=2
+    - `GR-5294` total_votes=2
+    - `DIAV-ΨΕΨΚ46Ψ842-Θ` total_votes=1
+  - Seed bills absent.
+
+### Tests
+- `cd apps/mobile && npx vitest run src/lib/api.test.ts src/lib/source-resolver.test.ts`: 27 passed
+- `cd apps/mobile && npx tsc --noEmit`: OK
+- `cd apps/api && .venv/bin/python -m pytest tests/test_voting.py tests/test_parliament.py -q`: 23 passed, 4 xfailed
+- `cd apps/api && .venv/bin/python -m pytest tests/test_voting.py -q`: 15 passed, 2 xfailed after seed exclusion hotfix
+- `python3 -m py_compile apps/api/routers/voting.py`: OK
+
+### Status
+- GH#108 / NEA-318: implemented and live-verified.
+- GH#107 / NEA-317: implemented, API/test/build verified; real S10 visual acceptance pending.

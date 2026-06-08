@@ -3,13 +3,14 @@
 ## Aktive Roadmap — Stand 2026-06-08
 
 ### Aktiv baubar (Reihenfolge)
-1. [ ] Pagination `Όλα` — GH#107 / NEA-317
-   - isoliert, risikoarm, Regression-Test
-   - S10-Akzeptanz: erst 10 Bills, `Περισσότερα` lädt je +10
-2. [ ] Landing `Votes in Progress` — GH#108 / NEA-318
-   - nur aggregierte Daten, keine individuellen Stimmen/Nullifier
-   - Env-Schwelle: `VOTES_IN_PROGRESS_THRESHOLD`
-   - unter Schwelle: ehrlicher Hinweis `bald echte Daten`
+1. [~] Pagination `Όλα` — GH#107 / NEA-317
+   - gebaut: Mobile API `limit`/`offset`, BillsScreen lazy-load `PAGE_SIZE=10`, `Περισσότερα`
+   - verifiziert: Live API liefert `offset=0/10/20` je 10 Bills; mobile tests + TSC gruen; APK gebaut und Emulator installiert
+   - offen: echte S10-Visuellabnahme, weil aktuell nur Emulator sichtbar war und der Emulator bei UI-Dump/Scroll unzuverlaessig hing
+2. [x] Landing `Votes in Progress` — GH#108 / NEA-318
+   - gebaut/deployed: aggregierter Endpoint `/api/v1/vote/results/in-progress`
+   - Env-Schwelle: `VOTES_IN_PROGRESS_THRESHOLD=1` fuer Testbetrieb, spaeter auf `50` setzen
+   - verifiziert: Live Endpoint liefert nur aggregierte Daten, keine Seed-Bills, Landing hat keine alten Fake-Ticker-Strings
 3. [ ] Analysis-Pipeline — GH#103 / GH#105
    - BLOCKED auf Modell-Entscheidung
    - Optionen: Claude Haiku API für griechische Analyse vs. `Ανάλυση` weglassen
