@@ -7555,3 +7555,24 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Watch-outs
 - Linear connector returned `token_expired` during live sync attempt; Linear needs re-auth before direct updates.
 - No runtime deploy was needed for the lint/bridge cleanup.
+
+## 2026-06-09 — Codex: Linear API access restored via ~/.claude/.env
+
+### Finding
+- Codex app Linear connector OAuth still returns `401 token_expired`.
+- Historical Bridge entry from 2026-06-03 documented the working fallback: `LINEAR_API_KEY` from `~/.claude/.env`.
+- Verified direct Linear GraphQL access with that key:
+  - Viewer: Kaspartisan
+  - Organization: neabouli
+  - No token value was printed or committed.
+
+### Action
+- Read-test succeeded: recent Linear issues listed via `https://api.linear.app/graphql`.
+- Updated stale NEA-319 from Backlog to Done.
+- Added Linear comment to NEA-319 documenting the completed DIAVGEIA backfill: 932/932, 0 failures, GH#109 closed.
+
+### Operational note
+- For future Linear work while connector OAuth is expired, use:
+  - `set -a && source ~/.claude/.env && set +a`
+  - `curl https://api.linear.app/graphql -H "Authorization: $LINEAR_API_KEY" ...`
+- Do not echo or commit the key.
