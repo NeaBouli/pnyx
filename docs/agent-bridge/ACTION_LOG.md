@@ -7339,3 +7339,7 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Stopped after Discourse rate limits (`429`) and category action limits appeared.
 - Before stop: partial success (82 topics updated), many rate-limited failures.
 - Decision: do not brute-force existing 900+ topics. Future topics are fixed by code; remaining historical topics need a slow retry/backfill job with Discourse rate-limit awareness.
+
+### Follow-up ticket
+- GitHub #109: Historical DIAVGEIA forum topics — slow document-link backfill
+- Linear NEA-319: https://linear.app/neabouli/issue/NEA-319/follow-up-historical-diavgeia-forum-topics-slow-document-link-backfill
