@@ -543,6 +543,7 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
         JOIN citizen_votes cv ON cv.bill_id = b.id
         WHERE b.admin_hidden IS NOT TRUE
           AND b.id NOT LIKE 'DEMO-%'
+          AND (b.parliament_url IS NOT NULL OR b.diavgeia_ada IS NOT NULL)
           AND b.status::text IN ('ACTIVE', 'WINDOW_24H', 'PARLIAMENT_VOTED', 'OPEN_END')
         GROUP BY b.id, b.title_el, b.title_en, b.status, b.governance_level, b.created_at
         HAVING COUNT(cv.id) >= :threshold
