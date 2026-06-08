@@ -6862,3 +6862,64 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Rollback tag pushed:
   - `rollback-stable-app-good-20260607-1332`
   - commit: `3cffb37`
+
+---
+
+## 2026-06-08 — Codex: Final no-build verification + new feature tickets
+
+### Final Check Scope
+- No build.
+- No deploy.
+- No DB update.
+- No forum update.
+- No app install.
+- Verification only against live Web, live Forum, API health, and S10 device.
+
+### Codex Verification
+- Git:
+  - working tree clean before ticket docs
+  - stable rollback tag exists: `rollback-stable-app-good-20260607-1332`
+- Live HTTP:
+  - `https://ekklesia.gr/el/bills/GR-5294`: `200`
+  - `https://pnyx.ekklesia.gr/t/438`: reachable
+  - API health: `200`
+- S10:
+  - device: `RF8N313QMFL`
+  - app package: `ekklesia.gr`
+  - `versionName=1.0.3`
+  - `lastUpdateTime=2026-06-07 13:16:33`
+- S10 direct UI dump:
+  - `GR-5294`: `Σύνοψη` visible, `Επίσημο κείμενο` visible, document/source visible
+  - `GR-5293`: `Σύνοψη` visible, `Επίσημο κείμενο` visible, document/source visible
+- Web detail pages:
+  - `GR-5294`: `Ανάλυση` tab shows official text/documents
+  - `GR-5293`: `Ανάλυση` tab shows official text/documents after selecting the tab
+- Forum raw verification:
+  - 27/27 Parliament topics contain `Επίσημο κείμενο και έγγραφα`
+  - 27/27 contain at least one `.pdf` link
+  - 27/27 contain an `ekklesia.gr/el/bills/` vote link
+  - failed topics: `[]`
+
+### CC Verification Attempt
+- CC CLI was invoked read-only for independent verification.
+- Result: stopped by `--max-budget-usd 0.25`.
+- No CC edits/build/deploy happened.
+
+### New Feature Tickets
+- GH#107 / NEA-317:
+  - `FEATURE: Bills-Liste 'Όλα' — Pagination (lazy load, 10er-Schritte)`
+  - GitHub: https://github.com/NeaBouli/pnyx/issues/107
+  - Linear: https://linear.app/neabouli/issue/NEA-317/feature-bills-liste-ola-pagination-lazy-load-10er-schritte
+- GH#108 / NEA-318:
+  - `FEATURE: Landing 'Votes in Progress' — echte Daten ab Stimmen-Schwelle`
+  - GitHub: https://github.com/NeaBouli/pnyx/issues/108
+  - Linear: https://linear.app/neabouli/issue/NEA-318/feature-landing-votes-in-progress-echte-daten-ab-stimmen-schwelle
+- Cross-links:
+  - GitHub → Linear: yes
+  - Linear → GitHub: yes
+
+### Roadmap
+- `docs/agent-bridge/TODO.md` updated:
+  1. GH#107 / NEA-317 Pagination
+  2. GH#108 / NEA-318 Votes-in-Progress
+  3. GH#103 / GH#105 Analysis pipeline, blocked on model decision

@@ -1,5 +1,26 @@
 # TODO — Ekklesia.gr / pnyx
 
+## Aktive Roadmap — Stand 2026-06-08
+
+### Aktiv baubar (Reihenfolge)
+1. [ ] Pagination `Όλα` — GH#107 / NEA-317
+   - isoliert, risikoarm, Regression-Test
+   - S10-Akzeptanz: erst 10 Bills, `Περισσότερα` lädt je +10
+2. [ ] Landing `Votes in Progress` — GH#108 / NEA-318
+   - nur aggregierte Daten, keine individuellen Stimmen/Nullifier
+   - Env-Schwelle: `VOTES_IN_PROGRESS_THRESHOLD`
+   - unter Schwelle: ehrlicher Hinweis `bald echte Daten`
+3. [ ] Analysis-Pipeline — GH#103 / GH#105
+   - BLOCKED auf Modell-Entscheidung
+   - Optionen: Claude Haiku API für griechische Analyse vs. `Ανάλυση` weglassen
+   - qwen2.5:14b ist nicht release-tauglich (Halluzination `αθέμιτων παρόχων` bestätigt)
+
+### Blocked / Extern (kein Bau)
+- [ ] GH#102 / NEA-312 — echter `WINDOW_24H` Bill nötig
+- [ ] GH#79 — F-Droid !38007 wartet auf linsui Merge
+- [ ] GH#80 — Off-site Backup wartet auf Hetzner Storage Box / erste Spende
+- [ ] GH#81 — ZK V2 wartet auf nativen Mopro/Semaphore Mobile-Prover
+
 ## Tracking: GitHub Issues #71-#83 (Linear = read-only Archiv)
 
 ## Aktiv / In Progress
