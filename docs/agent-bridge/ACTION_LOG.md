@@ -7208,3 +7208,60 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Next
 - Deploy API + Web, verify `/api/v1/claude/budget` exposes new fields and community.html renders them.
 - Then run small Claude analysis dry-run for missing Parliament analysis rows before any DB apply.
+
+---
+
+## 2026-06-08 — Codex: Claude Haiku analysis batch + Community token tracking live
+
+### Decision
+- Gio approved Claude Haiku for Greek `analysis_el` after qwen2.5:14b was rejected for grammar/hallucination risk.
+- Principle preserved: no blind batch writes; dry-run first, apply only validated bills.
+
+### Deploy
+- Server repo updated to `bd589e5`.
+- Rebuilt and restarted only `api` + `web` from `/opt/ekklesia/app/infra/docker/docker-compose.prod.yml`.
+- No mobile build, no DB migration, no global forum resync.
+
+### Community AI Tile
+- `docs/community.html` now shows `AI Claude` for citizen Q&A + bill analysis.
+- Live API `/api/v1/claude/budget` now exposes:
+  - total tokens today/month
+  - chat tokens today/month
+  - analysis tokens today/month
+  - estimated USD cost today/month
+  - model name
+  - `balance_available=false` because no Anthropic account-balance endpoint is available for this tile.
+- Live after batch: `analysis_tokens_month=202986`, estimated cost `$0.385806`.
+
+### Analysis Batch
+- Dry-run: 24 missing Parliament bills with URL checked.
+- Dry-run result: 22 valid previews, 0 validation errors.
+- `GR-5293` and `GR-5294`: no readable analysis PDF found; they keep existing official full text/PDF blocks but no separate `analysis_el`.
+- Rollback tag set: `rollback-pre-haiku-analysis-20260608-1750`.
+- Apply run wrote 19 validated bills to DB.
+- 3 dry-run-valid bills were skipped during apply due Jina/Parliament `429 Too Many Requests`:
+  - `GR-622d5980`
+  - `GR-6d0ba7e0`
+  - `GR-8c0aad10`
+- Post-apply DB count: 22 Parliament bills with `analysis_el`, 5 URL bills still missing analysis.
+
+### Forum Update
+- Targeted update only for the 19 successfully written bills; no `resync_all_topics()`.
+- Updated topics: 137, 138, 134, 435, 569, 568, 837, 135, 142, 144, 141, 143, 133, 252, 836, 570, 140, 437, 407.
+- Result: 19/19 forum topic updates succeeded, 0 failed.
+
+### Verification
+- Local tests before deploy: `py_compile` OK; selected pytest suites `43 passed`.
+- Live API `/health`: OK.
+- Live `/api/v1/claude/budget`: new fields present.
+- Live `community.html`: `AI Claude`, `claudeAnalysis`, `claudeCost`, `claudeModel` present.
+- API sample `GET /api/v1/bills/GR-0d69b4e0` returns distinct `summary_short_el`, `analysis_el`, `summary_long_el`.
+- Forum raw samples:
+  - Topic 137: `Περίληψη`, `Ανάλυση`, `Πλήρη έγγραφα`, `Ψηφίστε` present.
+  - Topic 837: `Περίληψη`, `Ανάλυση`, `Πλήρη έγγραφα`, `Ψηφίστε` present.
+  - Topic 407: `Περίληψη`, `Ανάλυση`, `Πλήρη έγγραφα`, `Ψηφίστε` present.
+  - Topic 132 / `GR-5294`: official full text remains present; no `Ανάλυση` because no readable source PDF.
+
+### Remaining
+- Retry later with cooldown for Jina-429 skipped bills: `GR-622d5980`, `GR-6d0ba7e0`, `GR-8c0aad10`.
+- `GR-5293` and `GR-5294` likely need alternate source strategy if separate analysis is required; full text/PDF already exists.
