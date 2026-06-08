@@ -7368,3 +7368,15 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Topic 150: `Πλήρες έγγραφο` YES, `diavgeia.gov.gr/doc/` YES.
 - API health after backfill: OK.
 - Historical DIAVGEIA forum topics now have the direct official document link block; future DIAVGEIA topics remain covered by code fix `ab7056f`.
+
+### Discourse Upcoming Changes check
+- Gio clarified "forum updates" also referred to Discourse Admin -> Upcoming Changes feature flags.
+- Checked production Discourse via Rails runner; no Discourse rebuild performed.
+- Current Discourse version: `2026.5.0-latest.1`.
+- Forum health endpoint: OK.
+- Relevant upcoming-change settings:
+  - `enable_ideas_category_type_setup`: true.
+  - `enable_support_category_type_setup`: true.
+  - `enable_new_checkbox_style`: true.
+  - Required dependency `enable_simplified_category_creation`: true.
+- Conclusion: listed stable upcoming changes are already opted in. No action required; avoid core Discourse software upgrade/rebuild without explicit maintenance-window approval.
