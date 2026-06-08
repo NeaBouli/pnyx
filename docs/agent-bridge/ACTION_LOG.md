@@ -7380,3 +7380,42 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `enable_new_checkbox_style`: true.
   - Required dependency `enable_simplified_category_creation`: true.
 - Conclusion: listed stable upcoming changes are already opted in. No action required; avoid core Discourse software upgrade/rebuild without explicit maintenance-window approval.
+
+## 2026-06-08 — Status for ClaudeDev handoff
+
+### Current HEAD / health
+- `origin/main`: `56e9efe`.
+- Working tree before handoff status check: clean.
+- API health: OK (`ekklesia-api`, 23 modules).
+- Forum health: OK.
+
+### Completed in latest block
+- DIAVGEIA forum body fix shipped:
+  - New/future DIAVGEIA topics include `## Πλήρες έγγραφο` with direct `diavgeia.gov.gr/doc/...` link.
+  - Regression test added: `test_diavgeia_topic_body_renders_document_link`.
+  - Targeted tests for forum/source/arweave/sso passed: 38 passed.
+- Historical DIAVGEIA topics backfilled safely:
+  - Candidates: 932.
+  - Processed/updated: 932.
+  - Failures: 0.
+  - Body-only update: no title/category/tag/DB/source changes.
+  - Spot checks (1104, 1095, 802, 390, 150) confirmed document block + official link.
+- DIAVGEIA scraper checked:
+  - Dry-run fetched 100, errors 0.
+  - DB unchanged in dry-run.
+  - Snapshot warnings are label/snapshot gaps, not scraper failures.
+- Monitor warning check:
+  - Current valid Arweave pending query: 0.
+  - Historical T3 spam explained by stale query missing `party_votes_parliament IS NOT NULL` guard.
+  - Forum missing topics live: 0.
+- Discourse upcoming changes checked:
+  - `enable_ideas_category_type_setup`: true.
+  - `enable_support_category_type_setup`: true.
+  - `enable_new_checkbox_style`: true.
+  - `enable_simplified_category_creation`: true.
+  - No Discourse rebuild/upgrade performed.
+
+### Watch-outs
+- Do not run broad Discourse metadata updates for historical topics; use body-only first-post updates when needed.
+- Do not perform core Discourse software upgrade/rebuild without explicit maintenance-window approval.
+- Continue using CC as helper for parallel checks, server verification, S10/browser validation, and Linear/GitHub cross-checks.
