@@ -248,6 +248,12 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
     if source == "PARLIAMENT" and bill.summary_long_el and not _is_bad_summary(bill.summary_long_el):
         official_excerpt = _clean_official_text(bill.summary_long_el)
 
+    diavgeia_document_url = ""
+    if source == "DIAVGEIA":
+        candidate_url = (getattr(bill, "parliament_url", None) or "").strip()
+        if candidate_url.startswith("https://diavgeia.gov.gr/doc/"):
+            diavgeia_document_url = candidate_url
+
     # Safe title for body heading
     title = bill.title_el or f"Απόφαση {bill.id}"
 
@@ -271,6 +277,11 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
         body += f"## Ανάλυση\n{analysis}\n\n"
     if official_excerpt:
         body += f"## Επίσημο κείμενο και έγγραφα\n{official_excerpt}\n\n"
+    if diavgeia_document_url:
+        body += (
+            "## Πλήρες έγγραφο\n"
+            f"[Κατεβάστε/διαβάστε την απόφαση στη Διαύγεια →]({diavgeia_document_url})\n\n"
+        )
     if not summary and not analysis and not official_excerpt:
         if source == "DIAVGEIA" and getattr(bill, "diavgeia_ada", None):
             body += (

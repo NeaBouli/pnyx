@@ -131,6 +131,36 @@ def test_topic_body_renders_clean_official_text_as_own_section():
     assert "[Αιτιολογική Έκθεση](https://www.hellenicparliament.gr/UserFiles/x/test.pdf)" in body
 
 
+def test_diavgeia_topic_body_renders_document_link():
+    """DIAVGEIA forum topics must expose the decision document, not only the ADA page."""
+    bill = SimpleNamespace(
+        id="DIAV-98Κ3469Β7Δ-Α",
+        title_el="Ανάκληση απόφασης",
+        summary_short_el="Σύντομη περίληψη.",
+        analysis_el=None,
+        pill_el=None,
+        summary_long_el=None,
+        ai_summary_reviewed=False,
+        status=SimpleNamespace(value="OPEN_END"),
+        governance_level=SimpleNamespace(value="INSTITUTIONAL"),
+        source="DIAVGEIA",
+        diavgeia_ada="98Κ3469Β7Δ-ΑΥΦ",
+        parliament_url="https://diavgeia.gov.gr/doc/98Κ3469Β7Δ-ΑΥΦ",
+        official_source_url=None,
+        forum_topic_id=1104,
+        forum_topic_url="https://pnyx.ekklesia.gr/t/1104",
+        periferia_id=None,
+        dimos_id=None,
+    )
+
+    body = discourse_sync._build_topic_body(bill)
+
+    assert "## Περίληψη\nΣύντομη περίληψη." in body
+    assert "| **ΑΔΑ** | [98Κ3469Β7Δ-ΑΥΦ](https://diavgeia.gov.gr/decision/view/98Κ3469Β7Δ-ΑΥΦ) |" in body
+    assert "## Πλήρες έγγραφο" in body
+    assert "[Κατεβάστε/διαβάστε την απόφαση στη Διαύγεια →](https://diavgeia.gov.gr/doc/98Κ3469Β7Δ-ΑΥΦ)" in body
+
+
 @pytest.mark.asyncio
 async def test_create_topic_retries_with_stable_suffix_when_duplicate_search_misses(monkeypatch):
     FakeAsyncClient.posts = []
