@@ -6993,3 +6993,29 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - NEA-315 -> Done (GitHub #105 CLOSED)
 - NEA-317 remains In Progress pending S10 visual acceptance.
 - NEA-318 is Done.
+
+---
+
+## 2026-06-08 — Codex: GH#107 S10 acceptance completed
+
+### S10 Verification
+- Device: `RF8N313QMFL` (`SM-G973F`)
+- APK installed:
+  - `versionName=1.0.3`
+  - `lastUpdateTime=2026-06-08 16:08:36`
+- Bills tab `Όλα`:
+  - `Περισσότερα` footer visible after first page
+  - precise tap on footer loaded additional bills
+  - subsequent scroll showed newly loaded bill cards
+  - no ANR on S10
+- Evidence screenshots:
+  - `/tmp/pnyx-s10-bills-mid.png`
+  - `/tmp/pnyx-s10-bills-after-more2.png`
+  - `/tmp/pnyx-s10-bills-after-more-scroll.png`
+
+### Ticket Status
+- GH#107 closed after S10 acceptance.
+- NEA-317 moved to Done.
+- CC read-only support attempted:
+  - CC confirmed git/GitHub basics (`HEAD=9a55ea1`, GH#107 open before closure, GH#108 closed)
+  - CC CLI did not receive Bash tools in this mode, so live API/S10 checks were completed directly by Codex.

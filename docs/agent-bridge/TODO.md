@@ -3,10 +3,10 @@
 ## Aktive Roadmap — Stand 2026-06-08
 
 ### Aktiv baubar (Reihenfolge)
-1. [~] Pagination `Όλα` — GH#107 / NEA-317
+1. [x] Pagination `Όλα` — GH#107 / NEA-317
    - gebaut: Mobile API `limit`/`offset`, BillsScreen lazy-load `PAGE_SIZE=10`, `Περισσότερα`
-   - verifiziert: Live API liefert `offset=0/10/20` je 10 Bills; mobile tests + TSC gruen; APK gebaut und Emulator installiert
-   - offen: echte S10-Visuellabnahme, weil aktuell nur Emulator sichtbar war und der Emulator bei UI-Dump/Scroll unzuverlaessig hing
+   - verifiziert: Live API liefert `offset=0/10/20` je 10 Bills; mobile tests + TSC gruen; APK gebaut und S10 installiert
+   - S10-Akzeptanz: `Περισσότερα` sichtbar, Tap lädt weitere Bills, keine ANR
 2. [x] Landing `Votes in Progress` — GH#108 / NEA-318
    - gebaut/deployed: aggregierter Endpoint `/api/v1/vote/results/in-progress`
    - Env-Schwelle: `VOTES_IN_PROGRESS_THRESHOLD=1` fuer Testbetrieb, spaeter auf `50` setzen
