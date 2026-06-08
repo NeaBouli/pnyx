@@ -48,14 +48,24 @@
 - Ollama RAM: 2.4 GB Produktion, 12 GB nur temporär für qwen2.5:14b
 - Kein `--apply` auf Backfill-Scripts ohne Sample-Abnahme
 
-## Bekannte Defekte (NICHT fixen ohne Ticket + Bridge-Update)
+## Offene / blockierte Punkte (NICHT fixen ohne Ticket + Bridge-Update)
 
-| GH | Linear | Beschreibung |
+| GH / Linear | Status | Beschreibung |
 |---|---|---|
-| #102 | NEA-312 | 24h-Korrektur-Warntext bleibt |
-| #103 | NEA-313 | Forum nur Summary, kein Volltext |
-| #104 | NEA-314 | Deep-Link App vs Web |
-| #105 | NEA-315 | Σύνοψη = Ανάλυση identisch |
-| #106 | NEA-316 | Dark Cards Mobile unlesbar |
-| #99 | — | DIAVGEIA Source-Link fehlt (VoteScreen) |
-| #100 | — | DIAVGEIA zeigt pill statt Summary |
+| #79 | extern | F-Droid !38007 wartet auf linsui/F-Droid Merge |
+| #80 | extern | Off-site Backup wartet auf Hetzner Storage Box / Finanzierung |
+| #81 | blocked | ZK V2 Semaphore wartet auf nativen Mopro/Semaphore Mobile-Prover |
+| #102 / NEA-312 | waiting | 24h-Korrektur-Warntext: Code + Tests fertig, visuelle Prüfung wartet auf echten WINDOW_24H Bill |
+| NEA-286 | diagnose | Lifecycle WINDOW_24H Root Cause Diagnose offen |
+
+## Kürzlich erledigt / nicht mehr als Defekt behandeln
+
+| GH / Linear | Status | Ergebnis |
+|---|---|---|
+| #103 / NEA-313 | ✅ | Forum-Volltext/official text + PDF/document links vorhanden; DIAVGEIA historical backfill 932/932 |
+| #104 / NEA-314 | ✅ | Deep-Link/App-open via Android App Links + Samsung Internet fallback banner |
+| #105 / NEA-315 | ✅ | Keine doppelte Analyse mehr; `analysis_el` oder offizieller Text/PDF fallback |
+| #106 / NEA-316 | ✅ | Dark result cards auf Mobile lesbar |
+| #109 / NEA-319 | ✅ | Historical DIAVGEIA forum document-link backfill abgeschlossen |
+| #99 | ✅ | DIAVGEIA document/source link im Forum und Source-Link-Pfad vorhanden |
+| #100 | ✅ | DIAVGEIA Summary/Document fallback korrigiert; keine reine pill-only Darstellung für neue Forum-Topics |
