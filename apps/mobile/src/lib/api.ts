@@ -77,19 +77,36 @@ export interface Bill {
   relevance_score: number;
 }
 
+export function buildBillsQuery(params?: {
+  governance?: string;
+  source?: string;
+  periferia_id?: number;
+  dimos_id?: number;
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): string {
+  const qs = new URLSearchParams();
+  qs.set("limit", String(params?.limit ?? 200));
+  if (params?.offset != null) qs.set("offset", String(params.offset));
+  if (params?.status) qs.set("status", params.status);
+  if (params?.governance) qs.set("governance", params.governance);
+  if (params?.source) qs.set("source", params.source);
+  if (params?.periferia_id) qs.set("periferia_id", String(params.periferia_id));
+  if (params?.dimos_id) qs.set("dimos_id", String(params.dimos_id));
+  return qs.toString();
+}
+
 export async function fetchBills(params?: {
   governance?: string;
   source?: string;
   periferia_id?: number;
   dimos_id?: number;
+  status?: string;
+  limit?: number;
+  offset?: number;
 }): Promise<Bill[]> {
-  const qs = new URLSearchParams();
-  qs.set("limit", "200");
-  if (params?.governance) qs.set("governance", params.governance);
-  if (params?.source) qs.set("source", params.source);
-  if (params?.periferia_id) qs.set("periferia_id", String(params.periferia_id));
-  if (params?.dimos_id) qs.set("dimos_id", String(params.dimos_id));
-  return request<Bill[]>(`/api/v1/bills?${qs.toString()}`);
+  return request<Bill[]>(`/api/v1/bills?${buildBillsQuery(params)}`);
 }
 
 export async function fetchBill(id: string): Promise<Bill> {

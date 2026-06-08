@@ -3,7 +3,7 @@ Tests für MOD-04 CitizenVote + MOD-05 Divergence Score
 Keine DB nötig — alle Algorithmus-Tests sind rein.
 """
 import pytest
-from routers.voting import compute_divergence
+from routers.voting import compute_divergence, vote_percent, votes_in_progress_threshold
 
 
 class TestDivergenceScore:
@@ -66,6 +66,30 @@ class TestDivergenceScore:
         from routers.voting import BillResults
         fields = BillResults.model_fields
         assert "disclaimer_el" in fields
+
+
+class TestVotesInProgressHelpers:
+    def test_vote_percent_handles_zero_total(self):
+        assert vote_percent(3, 0) == 0
+
+    def test_vote_percent_rounds_whole_percent(self):
+        assert vote_percent(2, 3) == 67
+
+    def test_votes_in_progress_threshold_defaults_to_50(self, monkeypatch):
+        monkeypatch.delenv("VOTES_IN_PROGRESS_THRESHOLD", raising=False)
+        assert votes_in_progress_threshold() == 50
+
+    def test_votes_in_progress_threshold_uses_env(self, monkeypatch):
+        monkeypatch.setenv("VOTES_IN_PROGRESS_THRESHOLD", "3")
+        assert votes_in_progress_threshold() == 3
+
+    def test_votes_in_progress_threshold_rejects_invalid_values(self, monkeypatch):
+        monkeypatch.setenv("VOTES_IN_PROGRESS_THRESHOLD", "nope")
+        assert votes_in_progress_threshold() == 50
+
+    def test_votes_in_progress_threshold_minimum_one(self, monkeypatch):
+        monkeypatch.setenv("VOTES_IN_PROGRESS_THRESHOLD", "0")
+        assert votes_in_progress_threshold() == 1
 
 
 class TestVoteEndpointStructure:

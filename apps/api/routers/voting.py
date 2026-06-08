@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Header, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, update
+from sqlalchemy import select, func, update, text
 from sqlalchemy.exc import IntegrityError
 
 from database import get_db
@@ -35,6 +35,7 @@ router = APIRouter(prefix="/api/v1/vote", tags=["MOD-04 CitizenVote"])
 
 GREECE_ELIGIBLE_VOTERS = 9_900_000
 GREECE_POPULATION = 10_400_000
+VOTES_IN_PROGRESS_THRESHOLD_ENV = "VOTES_IN_PROGRESS_THRESHOLD"
 
 def compute_representativity(total_votes: int) -> dict:
     """Misst Repräsentativität basierend auf Beteiligung vs Wahlberechtigte."""
@@ -68,6 +69,19 @@ def compute_representativity(total_votes: int) -> dict:
         "is_representative": is_rep, "score": score,
         "headline_el": f"Η συμμετοχή ({pct:.3f}% εκλογέων) {'καθιστά τα αποτελέσματα αντιπροσωπευτικά' if is_rep else 'δεν είναι αρκετά αντιπροσωπευτική'}.",
     }
+
+
+def votes_in_progress_threshold() -> int:
+    """Return configured landing threshold; invalid values fall back to 50."""
+    raw = os.getenv(VOTES_IN_PROGRESS_THRESHOLD_ENV, "50")
+    try:
+        return max(1, int(raw))
+    except (TypeError, ValueError):
+        return 50
+
+
+def vote_percent(count: int, total: int) -> int:
+    return round(count / total * 100) if total > 0 else 0
 
 
 # ─── Schemas ──────────────────────────────────────────────────────────────────
@@ -508,6 +522,57 @@ async def get_latest_result(db: AsyncSession = Depends(get_db)):
                 "abstain_pct": round(abs_c / total * 100),
             }
     return {"bill_id": None, "total_votes": 0}
+
+
+@router.get("/results/in-progress")
+async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
+    """Landing page ticker data. Aggregated counts only; no nullifiers or vote rows."""
+    threshold = votes_in_progress_threshold()
+    result = await db.execute(text("""
+        SELECT
+            b.id,
+            b.title_el,
+            b.title_en,
+            b.status::text AS status,
+            b.governance_level::text AS governance_level,
+            COUNT(cv.id)::int AS total_votes,
+            SUM(CASE WHEN cv.vote::text = 'YES' THEN 1 ELSE 0 END)::int AS yes_count,
+            SUM(CASE WHEN cv.vote::text = 'NO' THEN 1 ELSE 0 END)::int AS no_count,
+            SUM(CASE WHEN cv.vote::text = 'ABSTAIN' THEN 1 ELSE 0 END)::int AS abstain_count
+        FROM parliament_bills b
+        JOIN citizen_votes cv ON cv.bill_id = b.id
+        WHERE b.admin_hidden IS NOT TRUE
+          AND b.id NOT LIKE 'DEMO-%'
+          AND b.status::text IN ('ACTIVE', 'WINDOW_24H', 'PARLIAMENT_VOTED', 'OPEN_END')
+        GROUP BY b.id, b.title_el, b.title_en, b.status, b.governance_level, b.created_at
+        HAVING COUNT(cv.id) >= :threshold
+        ORDER BY COUNT(cv.id) DESC, b.created_at DESC
+        LIMIT 6
+    """), {"threshold": threshold})
+    bills = []
+    for row in result.mappings():
+        total = row["total_votes"] or 0
+        yes = row["yes_count"] or 0
+        no = row["no_count"] or 0
+        abstain = row["abstain_count"] or 0
+        bills.append({
+            "bill_id": row["id"],
+            "title_el": row["title_el"],
+            "title_en": row["title_en"],
+            "status": row["status"],
+            "governance_level": row["governance_level"],
+            "total_votes": total,
+            "yes_pct": vote_percent(yes, total),
+            "no_pct": vote_percent(no, total),
+            "abstain_pct": vote_percent(abstain, total),
+        })
+    return {
+        "threshold": threshold,
+        "count": len(bills),
+        "bills": bills,
+        "message_el": "Σύντομα θα εμφανιστούν εδώ πραγματικές ψηφοφορίες με επαρκή συμμετοχή.",
+        "message_en": "Real votes with enough participation will appear here soon.",
+    }
 
 
 @router.get("/{bill_id}/results", response_model=BillResults)

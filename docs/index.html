@@ -343,6 +343,8 @@
     .t-fill { height: 100%; border-radius: 2px; background: var(--green); }
     .t-diverge { font-size: 0.72rem; font-weight: 700; color: var(--red); margin-top: 0.25rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .t-converge { font-size: 0.72rem; font-weight: 700; color: #16a34a; margin-top: 0.25rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .t-empty { color: var(--gray-400); display: flex; flex-direction: column; justify-content: center; gap: 0.35rem; }
+    .t-empty strong { color: var(--gray-700); font-size: 0.9rem; }
     .t-more { display: block; text-align: right; font-size: 0.78rem; font-weight: 700; color: var(--blue); text-decoration: none; margin-top: 0.5rem; }
     .wiki-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 1rem; }
     .wiki-card {
@@ -1083,72 +1085,21 @@
       <div class="fade-in">
         <h4><span class="dot"></span> <span data-el="Τρέχουσες" data-en="Active">Τρέχουσες</span></h4>
         <div class="ticker-cards-wrap" id="t1">
-          <a href="/el/bills" class="t-card al visible">
-            <span class="t-badge badge-green" data-el="Βουλή · Ανοιχτή" data-en="Parliament · Active">Βουλή · Ανοιχτή</span>
-            <span class="t-title" data-el="Νόμος Ανανεώσιμων Πηγών 2025" data-en="Renewable Energy Law 2025">Νόμος Ανανεώσιμων Πηγών 2025</span>
-            <span class="t-meta">1.247 ψήφοι</span>
-            <div class="t-bar"><div class="t-fill" style="width:67%"></div></div>
-          </a>
-          <a href="/el/bills" class="t-card al">
-            <span class="t-badge badge-yellow" data-el="Βουλή · 24ω" data-en="Parliament · 24h">Βουλή · 24ω</span>
-            <span class="t-title" data-el="Αύξηση Κατώτατου Μισθού 950€" data-en="Minimum Wage Increase €950">Αύξηση Κατώτατου Μισθού 950€</span>
-            <span class="t-meta">3.891 ψήφοι</span>
-            <div class="t-bar"><div class="t-fill" style="width:82%"></div></div>
-          </a>
-          <a href="/el/bills" class="t-card al">
-            <span class="t-badge badge-purple" data-el="Δήμος Αθηναίων" data-en="Athens">Δήμος Αθηναίων</span>
-            <span class="t-title" data-el="Ανάπλαση Πεδίου του Άρεως" data-en="Pedion Areos Renovation">Ανάπλαση Πεδίου του Άρεως</span>
-            <span class="t-meta">524 ψήφοι</span>
-            <div class="t-bar"><div class="t-fill" style="width:71%"></div></div>
-          </a>
+          <div class="t-card al t-empty visible"><strong data-el="Σύντομα πραγματικά δεδομένα" data-en="Real data soon">Σύντομα πραγματικά δεδομένα</strong><span data-el="Θα εμφανιστούν ψηφοφορίες όταν περάσουν το όριο συμμετοχής." data-en="Votes appear after they pass the participation threshold.">Θα εμφανιστούν ψηφοφορίες όταν περάσουν το όριο συμμετοχής.</span></div>
         </div>
         <a href="/el/bills" class="t-more" data-el="Όλες οι τρέχουσες →" data-en="All active →">Όλες οι τρέχουσες →</a>
       </div>
       <div class="fade-in">
         <h4><span class="dot"></span> <span data-el="Τελευταίες 24ω" data-en="Last 24h">Τελευταίες 24ω</span></h4>
         <div class="ticker-cards-wrap" id="t2">
-          <a href="/el/bills?status=WINDOW_24H" class="t-card rc visible">
-            <span class="t-badge badge-blue" data-el="Βουλή · 8ω πριν" data-en="Parliament · 8h ago">Βουλή · 8ω πριν</span>
-            <span class="t-title" data-el="Νόμος Ιδιωτικών Πανεπιστημίων" data-en="Private Universities Law">Νόμος Ιδιωτικών Πανεπιστημίων</span>
-            <span class="t-meta">2.103 ψήφοι</span>
-            <div class="t-diverge" data-el="⚠️ Απόκλιση 58%" data-en="⚠️ Divergence 58%">⚠️ Απόκλιση 58%</div>
-          </a>
-          <a href="/el/bills?status=WINDOW_24H" class="t-card rc">
-            <span class="t-badge badge-purple" data-el="Θεσσαλονίκη · 12ω" data-en="Thessaloniki · 12h">Θεσσαλονίκη · 12ω</span>
-            <span class="t-title" data-el="Νέα Κεντρική Αγορά" data-en="New Central Market">Νέα Κεντρική Αγορά</span>
-            <span class="t-meta">312 ψήφοι</span>
-            <div class="t-bar"><div class="t-fill" style="width:61%"></div></div>
-          </a>
-          <a href="/el/bills?status=WINDOW_24H" class="t-card rc">
-            <span class="t-badge badge-blue" data-el="Βουλή · 20ω πριν" data-en="Parliament · 20h">Βουλή · 20ω πριν</span>
-            <span class="t-title" data-el="Κλιματικός Νόμος 2025" data-en="Climate Law 2025">Κλιματικός Νόμος 2025</span>
-            <span class="t-meta">891 ψήφοι</span>
-            <div class="t-converge" data-el="✓ Σύγκλιση 78%" data-en="✓ Convergence 78%">✓ Σύγκλιση 78%</div>
-          </a>
+          <div class="t-card rc t-empty visible"><strong data-el="Καμία ψηφοφορία πάνω από το όριο" data-en="No vote above threshold">Καμία ψηφοφορία πάνω από το όριο</strong><span data-el="Μόνο πραγματικές, συγκεντρωτικές ψήφοι εμφανίζονται εδώ." data-en="Only real aggregated votes appear here.">Μόνο πραγματικές, συγκεντρωτικές ψήφοι εμφανίζονται εδώ.</span></div>
         </div>
         <a href="/el/bills?status=WINDOW_24H" class="t-more" data-el="Τελευταίες 24ω →" data-en="Last 24h →">Τελευταίες 24ω →</a>
       </div>
       <div class="fade-in">
         <h4><span class="dot"></span> <span data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</span></h4>
         <div class="ticker-cards-wrap" id="t3">
-          <a href="/el/results" class="t-card rs visible">
-            <span class="t-badge badge-blue" data-el="Εγκρίθηκε · Βουλή" data-en="Approved · Parliament">Εγκρίθηκε · Βουλή</span>
-            <span class="t-title" data-el="Νόμος Παιδείας 2024" data-en="Education Law 2024">Νόμος Παιδείας 2024</span>
-            <span class="t-meta">4.821 ψήφοι</span>
-            <div class="t-diverge" data-el="⚠️ 73% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ" data-en="⚠️ 73% NO — Parliament YES">⚠️ 73% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ</div>
-          </a>
-          <a href="/el/results" class="t-card rs">
-            <span class="t-badge badge-blue" data-el="Εγκρίθηκε · Βουλή" data-en="Approved · Parliament">Εγκρίθηκε · Βουλή</span>
-            <span class="t-title" data-el="Κλιματική Ουδετερότητα 2024" data-en="Climate Neutrality 2024">Κλιματική Ουδετερότητα 2024</span>
-            <span class="t-meta">2.341 ψήφοι</span>
-            <div class="t-converge" data-el="✓ Σύγκλιση 81%" data-en="✓ Convergence 81%">✓ Σύγκλιση 81%</div>
-          </a>
-          <a href="/el/results" class="t-card rs">
-            <span class="t-badge badge-purple" data-el="Εγκρίθηκε · Πειραιάς" data-en="Approved · Piraeus">Εγκρίθηκε · Πειραιάς</span>
-            <span class="t-title" data-el="Ποδηλατόδρομοι Πειραιά" data-en="Piraeus Bike Lanes">Ποδηλατόδρομοι Πειραιά</span>
-            <span class="t-meta">1.102 ψήφοι</span>
-            <div class="t-converge" data-el="✓ 94% Υπέρ" data-en="✓ 94% Yes">✓ 94% Υπέρ</div>
-          </a>
+          <div class="t-card rs t-empty visible"><strong data-el="Αποτελέσματα όταν υπάρχουν αρκετές ψήφοι" data-en="Results after enough votes">Αποτελέσματα όταν υπάρχουν αρκετές ψήφοι</strong><span data-el="Δεν προβάλλονται δοκιμαστικοί αριθμοί." data-en="No demo numbers are shown.">Δεν προβάλλονται δοκιμαστικοί αριθμοί.</span></div>
         </div>
         <a href="/el/results" class="t-more" data-el="Όλα τα αποτελέσματα →" data-en="All results →">Όλα τα αποτελέσματα →</a>
       </div>
@@ -1714,21 +1665,33 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     var title = (lang === "en" && b.title_en) ? b.title_en : b.title_el;
     var badge = lang === "en" ? s.en : s.el;
     var a = document.createElement("a");
-    a.href = "https://ekklesia.gr/" + lang + "/bills/" + b.id;
+    a.href = "https://ekklesia.gr/" + lang + "/bills/" + (b.bill_id || b.id);
     a.className = "t-card " + cssClass;
-    var arweaveHtml = '';
-    if (b.arweave_tx_id) {
-      arweaveHtml = '';
-    } else if (b.status === 'OPEN_END' || b.status === 'PARLIAMENT_VOTED') {
-      arweaveHtml = '';
-    }
+    var total = Number(b.total_votes || 0).toLocaleString(lang === "en" ? "en-US" : "el-GR");
+    var yesPct = Number(b.yes_pct || 0);
+    var meta = total + " " + (lang === "en" ? "votes" : "ψήφοι");
+    var result = yesPct + "% " + (lang === "en" ? "Yes" : "Υπέρ");
     a.innerHTML =
-      '<span class="t-badge ' + s.cls + '">' + badge + '</span>' +
-      '<span class="t-title">' + title + '</span>' +
-      '<span class="t-meta" style="font-size:0.65rem;opacity:0.6">' +
-        (b.categories && b.categories[0] ? b.categories[0] : "") + '</span>' +
-      arweaveHtml;
+      '<span class="t-badge ' + s.cls + '">' + escapeHtml(badge) + '</span>' +
+      '<span class="t-title">' + escapeHtml(title || "") + '</span>' +
+      '<span class="t-meta">' + escapeHtml(meta) + '</span>' +
+      '<div class="t-bar"><div class="t-fill" style="width:' + Math.max(0, Math.min(100, yesPct)) + '%"></div></div>' +
+      '<div class="t-converge">' + escapeHtml(result) + '</div>';
     return a;
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, function(ch) {
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch];
+    });
+  }
+
+  function emptyCard(cssClass, titleEl, titleEn, textEl, textEn) {
+    var card = document.createElement("div");
+    card.className = "t-card " + cssClass + " t-empty visible";
+    card.innerHTML = '<strong>' + escapeHtml(lang === "en" ? titleEn : titleEl) + '</strong>' +
+      '<span>' + escapeHtml(lang === "en" ? textEn : textEl) + '</span>';
+    return card;
   }
 
   function startCycle(trackId, interval) {
@@ -1753,6 +1716,13 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     bills.forEach(function(b) { track.appendChild(billCard(b, cssClass)); });
   }
 
+  function populateEmpty(trackId, cssClass, titleEl, titleEn, textEl, textEn) {
+    var track = document.getElementById(trackId);
+    if (!track) return;
+    track.innerHTML = "";
+    track.appendChild(emptyCard(cssClass, titleEl, titleEn, textEl, textEn));
+  }
+
   function shuffle(arr) {
     for (var i = arr.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
@@ -1761,26 +1731,31 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     return arr;
   }
 
-  fetch("https://api.ekklesia.gr/api/v1/bills")
+  fetch("https://api.ekklesia.gr/api/v1/vote/results/in-progress")
     .then(function(r) { return r.json(); })
-    .then(function(bills) {
-      if (!bills || !bills.length) throw new Error("empty");
+    .then(function(data) {
+      var bills = data && Array.isArray(data.bills) ? data.bills : [];
+      if (!bills.length) throw new Error("empty");
       var active = bills.filter(function(b) { return b.status === "ACTIVE" || b.status === "WINDOW_24H"; });
-      var announced = bills.filter(function(b) { return b.status === "ANNOUNCED"; });
+      var window24 = bills.filter(function(b) { return b.status === "WINDOW_24H"; });
       var finished = bills.filter(function(b) { return b.status === "OPEN_END" || b.status === "PARLIAMENT_VOTED"; });
-      // Fill t1 with active+announced, t2 with announced, t3 with finished
-      var t1Bills = shuffle(active.concat(announced)).slice(0, 5);
-      var t2Bills = shuffle(announced.concat(active)).slice(0, 5);
+      var t1Bills = shuffle(active).slice(0, 5);
+      var t2Bills = shuffle(window24).slice(0, 5);
       var t3Bills = shuffle(finished).slice(0, 5);
       if (t1Bills.length) populateTrack("t1", t1Bills, "al");
+      else populateEmpty("t1", "al", "Σύντομα πραγματικά δεδομένα", "Real data soon", "Καμία τρέχουσα ψηφοφορία δεν έχει περάσει ακόμη το όριο συμμετοχής.", "No current vote has passed the participation threshold yet.");
       if (t2Bills.length) populateTrack("t2", t2Bills, "rc");
+      else populateEmpty("t2", "rc", "Καμία ψηφοφορία 24ω πάνω από το όριο", "No 24h vote above threshold", "Θα εμφανιστεί αυτόματα όταν υπάρξουν αρκετές πραγματικές ψήφοι.", "It will appear automatically after enough real votes.");
       if (t3Bills.length) populateTrack("t3", t3Bills, "rs");
+      else populateEmpty("t3", "rs", "Αποτελέσματα όταν υπάρχουν αρκετές ψήφοι", "Results after enough votes", "Δεν προβάλλονται δοκιμαστικοί αριθμοί.", "No demo numbers are shown.");
       startCycle("t1", 3000);
       startCycle("t2", 3500);
       startCycle("t3", 4000);
     })
     .catch(function() {
-      // API unavailable or empty — keep static HTML fallback
+      populateEmpty("t1", "al", "Σύντομα πραγματικά δεδομένα", "Real data soon", "Θα εμφανιστούν ψηφοφορίες όταν περάσουν το όριο συμμετοχής.", "Votes appear after they pass the participation threshold.");
+      populateEmpty("t2", "rc", "Καμία ψηφοφορία πάνω από το όριο", "No vote above threshold", "Μόνο πραγματικές, συγκεντρωτικές ψήφοι εμφανίζονται εδώ.", "Only real aggregated votes appear here.");
+      populateEmpty("t3", "rs", "Αποτελέσματα όταν υπάρχουν αρκετές ψήφοι", "Results after enough votes", "Δεν προβάλλονται δοκιμαστικοί αριθμοί.", "No demo numbers are shown.");
       startCycle("t1", 3000);
       startCycle("t2", 3500);
       startCycle("t3", 4000);

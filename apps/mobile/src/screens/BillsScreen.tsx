@@ -8,6 +8,7 @@ import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
 
 const FORUM_BASE = "https://pnyx.ekklesia.gr/t/";
+const PAGE_SIZE = 10;
 
 type Nav = StackNavigationProp<RootStackParams, "Tabs">;
 
@@ -29,7 +30,9 @@ export default function BillsScreen() {
   const nav = useNavigation<Nav>();
   const [bills, setBills] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [filter, setFilter] = useState("ALL");
   const [userPeriferia, setUserPeriferia] = useState<number | null>(null);
   const [userDimos, setUserDimos] = useState<number | null>(null);
@@ -44,28 +47,42 @@ export default function BillsScreen() {
     })();
   }, []);
 
-  const load = useCallback(async () => {
+  const loadPage = useCallback(async (offset: number, reset: boolean) => {
     try {
-      const params: { periferia_id?: number; dimos_id?: number } = {};
+      const params: {
+        periferia_id?: number;
+        dimos_id?: number;
+        status?: string;
+        source?: string;
+        governance?: string;
+        limit: number;
+        offset: number;
+      } = { limit: PAGE_SIZE, offset };
       if (userPeriferia) params.periferia_id = userPeriferia;
       if (userDimos) params.dimos_id = userDimos;
+      if (["ACTIVE", "ANNOUNCED", "PARLIAMENT_VOTED", "OPEN_END", "WINDOW_24H"].includes(filter)) params.status = filter;
+      if (filter === "DIAVGEIA") params.source = "DIAVGEIA";
+      if (["MUNICIPAL", "REGIONAL", "INSTITUTIONAL"].includes(filter)) params.governance = filter;
       const data = await fetchBills(params);
-      setBills(Array.isArray(data) ? data : []);
+      const next = Array.isArray(data) ? data : [];
+      setBills(prev => reset ? next : [...prev, ...next]);
+      setHasMore(next.length === PAGE_SIZE);
     } catch { /* */ }
-    finally { setLoading(false); setRefreshing(false); }
-  }, [userPeriferia, userDimos]);
+    finally { setLoading(false); setRefreshing(false); setLoadingMore(false); }
+  }, [filter, userPeriferia, userDimos]);
 
-  useEffect(() => { load(); }, [load]);
+  const refreshBills = useCallback(() => loadPage(0, true), [loadPage]);
+  const loadMoreBills = useCallback(() => {
+    setLoadingMore(true);
+    loadPage(bills.length, false);
+  }, [bills.length, loadPage]);
+
+  useEffect(() => { refreshBills(); }, [refreshBills]);
 
   // Server filters by region — client only filters by status/source/tab
   const filtered = filter === "ALL" ? bills
     : filter === "ARWEAVE" ? bills.filter(b => b.arweave_tx_id)
-    : filter === "DIAVGEIA" ? bills.filter(b => b.source === "DIAVGEIA")
-    : filter === "MUNICIPAL" ? bills.filter(b => b.governance_level === "MUNICIPAL")
-    : filter === "REGIONAL" ? bills.filter(b => b.governance_level === "REGIONAL")
-    : filter === "INSTITUTIONAL" ? bills.filter(b => b.governance_level === "INSTITUTIONAL")
-    : filter === "OPEN_END" ? bills.filter(b => b.status === "OPEN_END")
-    : bills.filter(b => b.status === filter);
+    : bills;
 
   const shareBill = async (bill: any) => {
     try {
@@ -103,8 +120,21 @@ export default function BillsScreen() {
       <FlatList
         style={{ flex: 1 }}
         data={filtered} keyExtractor={b => b.id} contentContainerStyle={[s.list, { paddingBottom: 120 }]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); refreshBills(); }} tintColor={colors.primary} />}
         ListEmptyComponent={<Text style={s.empty}>Δεν βρέθηκαν ψηφοφορίες</Text>}
+        ListFooterComponent={hasMore ? (
+          <TouchableOpacity
+            style={s.moreBtn}
+            disabled={loadingMore}
+            onPress={loadMoreBills}
+          >
+            {loadingMore ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : (
+              <Text style={s.moreTxt}>Περισσότερα</Text>
+            )}
+          </TouchableOpacity>
+        ) : null}
         renderItem={({ item }) => (
           <TouchableOpacity style={s.card} onPress={() => {
             nav.navigate("Vote", { billId: item.id, billTitle: item.title_el });
@@ -172,4 +202,6 @@ const s = StyleSheet.create({
   cardActions: { flexDirection: "row", gap: 10, alignItems: "center", flexShrink: 0 },
   actionIcon: { fontSize: 16, color: colors.primary, fontWeight: "800" },
   empty: { color: colors.textSecondary, textAlign: "center", marginTop: 40 },
+  moreBtn: { marginTop: 8, marginBottom: 24, alignSelf: "center", borderRadius: 999, borderWidth: 1, borderColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: colors.surface },
+  moreTxt: { color: colors.primary, fontSize: 13, fontWeight: "800" },
 });
