@@ -7492,3 +7492,34 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `npm run lint` remains unusable in current Next.js 16 setup because `next lint` resolves `lint` as a project directory; this is pre-existing/project config, not caused by GH#105 fallback.
 - Do not reintroduce on-demand `/summary` as an analysis fallback without explicit QA/model decision.
 - CC should continue to be used for parallel server/S10/browser/Linear/GitHub cross-checks.
+
+## 2026-06-09 — Codex: Landing APK download refreshed
+
+### Context
+- Gio asked whether the APK currently linked from the landing page is the latest APK.
+- Landing links to `https://ekklesia.gr/download/ekklesia-latest.apk`.
+
+### Finding
+- Live APK and latest local Play APK were both `versionCode=30`, `versionName=1.0.3`, but hashes differed.
+- Latest local APK:
+  - Path: `apps/mobile/android/app/build/outputs/apk/play/release/app-play-release.apk`
+  - SHA256: `38c07fb1cef0017fe6f17bb992c301f3a66d4fb044f27615e7592bbe0b1f631f`
+  - Size: `60,954,998` bytes.
+
+### Action
+- Backed up old server APK:
+  - `/opt/ekklesia/app/docs/download/backups/ekklesia-latest-before-20260608_212617.apk`
+  - Old SHA256: `6b216b7d00823c34b2ba3b9dabee8cbe9de60d3310314690fa062fc23eb8a388`
+- Uploaded latest local APK to:
+  - `/opt/ekklesia/app/docs/download/ekklesia-latest.apk`
+- Rebuilt/restarted `web` only, because static download files are copied into the Next.js Docker image.
+
+### Verification
+- Public download URL now returns:
+  - HTTP 200.
+  - Content-Type: `application/vnd.android.package-archive`.
+  - Content-Length: `60954998`.
+  - SHA256: `38c07fb1cef0017fe6f17bb992c301f3a66d4fb044f27615e7592bbe0b1f631f`.
+  - `versionCode=30`, `versionName=1.0.3`.
+- Hash matches the latest local APK exactly.
+- Scope: APK artifact + web static rebuild only; no API, DB, forum, or mobile source changes.
