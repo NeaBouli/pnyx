@@ -56,7 +56,6 @@
 | #80 | extern | Off-site Backup wartet auf Hetzner Storage Box / Finanzierung |
 | #81 | blocked | ZK V2 Semaphore wartet auf nativen Mopro/Semaphore Mobile-Prover |
 | #102 / NEA-312 | waiting | 24h-Korrektur-Warntext: Code + Tests fertig, visuelle Prüfung wartet auf echten WINDOW_24H Bill |
-| NEA-286 | diagnose | Lifecycle WINDOW_24H Root Cause Diagnose offen |
 
 ## Kürzlich erledigt / nicht mehr als Defekt behandeln
 
@@ -68,4 +67,5 @@
 | #106 / NEA-316 | ✅ | Dark result cards auf Mobile lesbar |
 | #109 / NEA-319 | ✅ | Historical DIAVGEIA forum document-link backfill abgeschlossen |
 | #99 | ✅ | DIAVGEIA document/source link im Forum und Source-Link-Pfad vorhanden |
+| NEA-286 / GH#94 | ✅ | Lifecycle WINDOW_24H stuck resolved/stale; Production 2026-06-09 ohne stuck Rows, Scheduler healthy |
 | #100 | ✅ | DIAVGEIA Summary/Document fallback korrigiert; keine reine pill-only Darstellung für neue Forum-Topics |

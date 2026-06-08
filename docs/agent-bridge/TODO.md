@@ -1,6 +1,6 @@
 # TODO — Ekklesia.gr / pnyx
 
-## Aktive Roadmap — Stand 2026-06-08
+## Aktive Roadmap — Stand 2026-06-09
 
 ### Aktiv baubar (Reihenfolge)
 1. [x] Pagination `Όλα` — GH#107 / NEA-317
@@ -11,9 +11,9 @@
    - gebaut/deployed: aggregierter Endpoint `/api/v1/vote/results/in-progress`
    - Env-Schwelle: `VOTES_IN_PROGRESS_THRESHOLD=1` fuer Testbetrieb, spaeter auf `50` setzen
    - verifiziert: Live Endpoint liefert nur aggregierte Daten, keine Seed-Bills, Landing hat keine alten Fake-Ticker-Strings
-3. [ ] Analysis-Pipeline — GH#103 / GH#105
-   - BLOCKED auf Modell-Entscheidung
-   - Optionen: Claude Haiku API für griechische Analyse vs. `Ανάλυση` weglassen
+3. [x] Analysis-Fallback — GH#103 / GH#105
+   - konservativ geloest: keine KI-Analyse als Fallback ohne Review
+   - Web zeigt `analysis_el` nur wenn vorhanden; sonst `Επίσημο κείμενο` / offizieller Text + PDF-/Dokumentlinks
    - qwen2.5:14b ist nicht release-tauglich (Halluzination `αθέμιτων παρόχων` bestätigt)
 
 ### Blocked / Extern (kein Bau)
@@ -21,12 +21,12 @@
 - [ ] GH#79 — F-Droid !38007 wartet auf linsui Merge
 - [ ] GH#80 — Off-site Backup wartet auf Hetzner Storage Box / erste Spende
 - [ ] GH#81 — ZK V2 wartet auf nativen Mopro/Semaphore Mobile-Prover
+- [x] NEA-286 / GH#94 — Lifecycle WINDOW_24H stuck: resolved/stale; Production 2026-06-09 ohne stuck Rows, Scheduler healthy
 
 ## Tracking: GitHub Issues #71-#83 (Linear = read-only Archiv)
 
 ## Aktiv / In Progress
-- [ ] F-Droid !38007 (#79): Pipeline #2564438256 gruen, Kommentar an linsui gepostet, wartet auf linsui Merge
-- [ ] Demo-mode POLIS Guard: Demo-Nullifier soll POLIS Create/Vote nicht erlauben
+- [ ] F-Droid !38007 (#79): GitLab MR !38007 offen, mergeable, Diskussionen resolved, Pipeline gruen; wartet auf linsui/F-Droid Merge
 ## Done (Session 25-27.05.2026)
 - [x] vC29 Release Gate (#78/NEA-280): S10 Funktionstest PASS, APK live auf ekklesia.gr, AAB in Play Console hochgeladen (`5eb37cf`)
 - [x] vC29 Final Build Gate: versionCode 29/versionName 1.0.2, APK+AAB gebaut, SHA lokal/live verifiziert, Release abgeschlossen

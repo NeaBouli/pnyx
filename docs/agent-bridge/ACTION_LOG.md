@@ -7523,3 +7523,35 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `versionCode=30`, `versionName=1.0.3`.
 - Hash matches the latest local APK exactly.
 - Scope: APK artifact + web static rebuild only; no API, DB, forum, or mobile source changes.
+
+## 2026-06-09 — Codex: backlog sweep + lifecycle live recheck
+
+### Completed / confirmed
+- Closed stale GitHub #109 after DIAVGEIA forum body-link backfill was already completed and documented.
+- GitHub open issues are now only external/blocking: #79 F-Droid, #80 Off-site Backup, #81 ZK V2.
+- F-Droid MR !38007 live check via GitLab API: opened, mergeable, blocking discussions resolved, pipeline success, updated 2026-06-02.
+- Restored web lint command for Next.js 16: `apps/web` now uses `eslint .` with flat config.
+- Web lint exits 0 (warnings only, existing technical debt); web production build exits 0.
+
+### Lifecycle / NEA-286 live check
+- Production DB status 2026-06-09:
+  - DIAVGEIA OPEN_END: 937
+  - PARLIAMENT ANNOUNCED: 23
+  - PARLIAMENT ACTIVE: 2
+  - PARLIAMENT PARLIAMENT_VOTED: 1
+  - PARLIAMENT OPEN_END: 7
+- Stuck / overdue lifecycle rows: 0.
+- Redis scheduler state:
+  - `scraper:bill_lifecycle:last_run`: 2026-06-08T21:20:57Z
+  - `scraper:bill_lifecycle:last_success`: 2026-06-08T21:20:57Z
+  - `scraper:bill_lifecycle:error_count`: 0
+- Conclusion: NEA-286 / GH#94 remains resolved/stale, no active lifecycle bug to fix.
+
+### Live health
+- API health: `https://api.ekklesia.gr/health` HTTP 200, 23 modules.
+- Web root: HTTP 200.
+- Forum root: HTTP 200.
+
+### Watch-outs
+- Linear connector returned `token_expired` during live sync attempt; Linear needs re-auth before direct updates.
+- No runtime deploy was needed for the lint/bridge cleanup.
