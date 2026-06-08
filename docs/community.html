@@ -643,20 +643,23 @@
       <div class="fc-status" id="deeplStatus" style="background:#f0fdf4;color:#166534;margin-top:0.3rem">✅ <span data-el="AI Μετάφραση ενεργή" data-en="AI Translation active">AI Μετάφραση ενεργή</span></div>
     </div>
 
-    <!-- Claude AI Assistant — Budget Tracking -->
+    <!-- Claude AI Assistant + Bill Analysis — Budget Tracking -->
     <div class="fc" id="claudeCard" style="border-color:#86efac">
       <div class="fc-badge" id="claudeBadge" style="background:#22c55e" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
       <div class="fc-icon">🤖</div>
-      <div class="fc-title" data-el="AI Βοηθός (Claude)" data-en="AI Assistant (Claude)">AI Βοηθός (Claude)</div>
-      <div class="fc-sub" data-el="Claude Haiku — σύνθετες ερωτήσεις πολιτών" data-en="Claude Haiku — complex citizen questions">Claude Haiku — σύνθετες ερωτήσεις</div>
+      <div class="fc-title" data-el="AI Claude" data-en="AI Claude">AI Claude</div>
+      <div class="fc-sub" data-el="Claude Haiku — ερωτήσεις πολιτών + ανάλυση νομοσχεδίων" data-en="Claude Haiku — citizen Q&A + bill analysis">Claude Haiku — ερωτήσεις + ανάλυση</div>
       <div class="fc-info">
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Σήμερα:" data-en="Today:">Σήμερα:</span><strong id="claudeToday">—</strong></div>
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Μήνας:" data-en="Month:">Μήνας:</span><strong id="claudeMonth">—</strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Ανάλυση:" data-en="Analysis:">Ανάλυση:</span><strong id="claudeAnalysis">—</strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Εκτ. κόστος:" data-en="Est. cost:">Εκτ. κόστος:</span><strong id="claudeCost">—</strong></div>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.6rem;color:var(--gray-400);margin-top:0.4rem">
         <span class="fc-live"><span class="fc-live-dot"></span> Live</span>
+        <span id="claudeModel">Haiku 4.5</span>
       </div>
-      <div class="fc-status" id="claudeStatus" style="background:#f0fdf4;color:#166534;margin-top:0.3rem">✅ <span data-el="AI Βοηθός ενεργός" data-en="AI Assistant active">AI Βοηθός ενεργός</span></div>
+      <div class="fc-status" id="claudeStatus" style="background:#f0fdf4;color:#166534;margin-top:0.3rem">✅ <span data-el="AI ενεργή" data-en="AI active">AI ενεργή</span></div>
       <a id="claudeDonateBtn" href="https://www.paypal.com/paypalme/VendettaLabs" target="_blank" rel="noopener" style="display:none;text-align:center;padding:0.5rem;background:#ef4444;color:white;border-radius:0.4rem;font-weight:700;font-size:0.78rem;text-decoration:none;margin-top:0.4rem;animation:pulse-badge 1.5s ease-in-out infinite" data-el="💙 Υποστήριξε τον AI →" data-en="💙 Support AI →">💙 Υποστήριξε τον AI →</a>
     </div>
 
@@ -1564,9 +1567,18 @@ function copyAddr(id) {
       .then(function(r){return r.json()})
       .then(function(d){
         var today=document.getElementById("claudeToday");
-        if(today) today.textContent=d.tokens_today.toLocaleString()+" tokens";
+        if(today) today.textContent=(d.tokens_today || 0).toLocaleString()+" tokens";
         var month=document.getElementById("claudeMonth");
-        if(month) month.textContent=d.tokens_month.toLocaleString()+" tokens";
+        if(month) month.textContent=(d.tokens_month || 0).toLocaleString()+" tokens";
+        var analysis=document.getElementById("claudeAnalysis");
+        if(analysis) analysis.textContent=(d.analysis_tokens_month || 0).toLocaleString()+" tokens";
+        var cost=document.getElementById("claudeCost");
+        if(cost) {
+          var costVal = d.estimated_cost_usd_month;
+          cost.textContent = costVal != null ? "$" + Number(costVal).toFixed(4) : (currentLang==="en" ? "usage only" : "μόνο χρήση");
+        }
+        var model=document.getElementById("claudeModel");
+        if(model && d.model) model.textContent=String(d.model).replace("claude-","").replace("-20251001","");
         var card=document.getElementById("claudeCard");
         var badge=document.getElementById("claudeBadge");
         var status=document.getElementById("claudeStatus");
@@ -1574,7 +1586,7 @@ function copyAddr(id) {
         if(d.is_active){
           if(card)card.style.borderColor="#86efac";
           if(badge){badge.style.background="#22c55e";badge.textContent=currentLang==="en"?"ACTIVE":"ΕΝΕΡΓΟ";}
-          if(status){status.style.background="#f0fdf4";status.style.color="#166534";status.innerHTML="✅ "+(currentLang==="en"?"AI Assistant active":"AI Βοηθός ενεργός");}
+          if(status){status.style.background="#f0fdf4";status.style.color="#166534";status.innerHTML="✅ "+(currentLang==="en"?"AI active — chat + bill analysis":"AI ενεργή — chat + ανάλυση νόμων");}
           if(btn)btn.style.display="none";
         } else {
           if(card)card.style.borderColor="#fca5a5";

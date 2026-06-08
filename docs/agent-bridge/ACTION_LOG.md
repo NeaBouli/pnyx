@@ -7167,3 +7167,44 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Status
 - NEA-303 ready to move to Done.
 - No deploy performed.
+
+---
+
+## 2026-06-08 — Codex: Claude Haiku freigegeben + Analyse-Token-Tracking
+
+### Entscheidung
+- Gio hat Claude Haiku fuer `analysis_el` freigegeben, weil der Pilot release-taugliches Griechisch ohne Halluzination geliefert hat.
+- qwen2.5:14b bleibt fuer griechische Gesetzesanalyse verworfen.
+
+### Scope
+- Additive Tracking-/UI-Aenderung, kein Forum-Builder, kein Voting, keine Source-Policy beruehrt.
+- Ziel: Claude-Nutzung fuer Chat + Gesetzesanalyse gemeinsam live tracken.
+
+### Code
+- Neuer zentraler Helper: `apps/api/services/claude_usage.py`
+  - zaehlt `claude:tokens:*` gesamt
+  - zaehlt `claude:tokens:analysis:*` fuer Gesetzesanalyse
+  - zaehlt `claude:tokens:chat:*` indirekt via total-analysis
+  - schaetzt Kosten aus Haiku 4.5 Input/Output Tokens
+  - meldet `balance_available=false`, weil Anthropic keinen einfachen Account-Balance-Endpoint fuer diese Kachel liefert
+- `routers/claude_agent.py` und `routers/agent.py` verwenden denselben Helper.
+- `scripts/backfill_analysis_claude.py` zaehlt echte Claude-Analyse-Calls mit `purpose=analysis`.
+- `docs/community.html` Claude-Kachel zeigt jetzt:
+  - Chat + Gesetzesanalyse
+  - Tokens heute/Monat
+  - Analyse-Tokens Monat
+  - geschaetzte Kosten Monat
+  - Modellname
+
+### Verification
+- `py_compile`: `claude_usage.py`, `claude_agent.py`, `agent.py`, `backfill_analysis_claude.py` OK
+- `pytest`: `test_claude_usage.py`, `test_backfill_analysis_claude.py`, `test_discourse_sync.py`, `test_sso_config.py`, `test_arweave_guards.py` -> 43 passed
+- Direct FakeRedis budget shape test OK:
+  - total tokens 1200
+  - analysis tokens 1200
+  - estimated cost USD 0.002
+- Live API before deploy still returned old budget shape, as expected.
+
+### Next
+- Deploy API + Web, verify `/api/v1/claude/budget` exposes new fields and community.html renders them.
+- Then run small Claude analysis dry-run for missing Parliament analysis rows before any DB apply.

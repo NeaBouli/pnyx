@@ -19,6 +19,7 @@ import redis.asyncio as aioredis
 
 from database import get_db
 from models import ParliamentBill, BillStatus, KnowledgeBase
+from services.claude_usage import MODEL as CLAUDE_MODEL, track_usage
 from services.ollama_service import answer_citizen_question, ollama_available
 
 logger = logging.getLogger(__name__)
@@ -343,7 +344,7 @@ async def _claude_answer(question: str, context: str, lang: str) -> str | None:
                     "content-type": "application/json",
                 },
                 json={
-                    "model": "claude-haiku-4-5-20251001",
+                    "model": CLAUDE_MODEL,
                     "max_tokens": 400,
                     "system": system,
                     "messages": [{"role": "user", "content": question}],
@@ -353,15 +354,7 @@ async def _claude_answer(question: str, context: str, lang: str) -> str | None:
             data = resp.json()
 
             usage = data.get("usage", {})
-            total_tokens = usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
-
-            # Track tokens
-            today_key = f"claude:tokens:{now.strftime('%Y-%m-%d')}"
-            month_key = f"claude:tokens:{now.strftime('%Y-%m')}"
-            await r.incrby(today_key, total_tokens)
-            await r.expire(today_key, 86400 * 2)
-            await r.incrby(month_key, total_tokens)
-            await r.expire(month_key, 86400 * 35)
+            total_tokens = await track_usage(r, usage, purpose="chat")
 
             logger.info("[Hybrid] Claude answered (%d tokens)", total_tokens)
             return data["content"][0]["text"]

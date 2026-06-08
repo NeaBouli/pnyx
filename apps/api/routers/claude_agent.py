@@ -13,6 +13,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 import redis.asyncio as aioredis
 import httpx
+from services.claude_usage import MODEL, read_budget, track_usage
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +21,6 @@ router = APIRouter(prefix="/api/v1/claude", tags=["Claude Agent"])
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
-DAILY_TOKEN_LIMIT = 50000
-MONTHLY_BUDGET_EUR = float(os.getenv("CLAUDE_MONTHLY_BUDGET_EUR", "10.0"))
 
 SYSTEM_PROMPT = (
     "You are the ekklesia AI assistant — helping Greek citizens understand "
@@ -60,21 +59,7 @@ class ClaudeRequest(BaseModel):
 async def get_budget():
     """Live budget status for community.html tile."""
     r = await _redis()
-    now = datetime.now(timezone.utc)
-    today_key = f"claude:tokens:{now.strftime('%Y-%m-%d')}"
-    month_key = f"claude:tokens:{now.strftime('%Y-%m')}"
-
-    tokens_today = int(await r.get(today_key) or 0)
-    tokens_month = int(await r.get(month_key) or 0)
-    last_error = await r.get("claude:last_error") or ""
-    is_active = bool(ANTHROPIC_API_KEY) and last_error != "credit_balance"
-
-    return {
-        "tokens_today": tokens_today,
-        "tokens_month": tokens_month,
-        "is_active": is_active,
-        "error": last_error if last_error else None,
-    }
+    return await read_budget(r, api_key_configured=bool(ANTHROPIC_API_KEY))
 
 
 @router.post("/ask")
@@ -85,9 +70,6 @@ async def claude_ask(request: Request, req: ClaudeRequest):
         raise HTTPException(503, "Claude AI temporarily unavailable")
 
     r = await _redis()
-    now = datetime.now(timezone.utc)
-    today_key = f"claude:tokens:{now.strftime('%Y-%m-%d')}"
-    month_key = f"claude:tokens:{now.strftime('%Y-%m')}"
 
     # Check if credits depleted
     last_error = await r.get("claude:last_error") or ""
@@ -104,7 +86,7 @@ async def claude_ask(request: Request, req: ClaudeRequest):
                     "content-type": "application/json",
                 },
                 json={
-                    "model": "claude-haiku-4-5-20251001",
+                    "model": MODEL,
                     "max_tokens": 500,
                     "system": SYSTEM_PROMPT,
                     "messages": [{"role": "user", "content": req.question}],
@@ -114,13 +96,7 @@ async def claude_ask(request: Request, req: ClaudeRequest):
             data = resp.json()
 
             usage = data.get("usage", {})
-            total_tokens = usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
-
-            month_key = f"claude:tokens:{now.strftime('%Y-%m')}"
-            await r.incrby(today_key, total_tokens)
-            await r.expire(today_key, 86400 * 2)
-            await r.incrby(month_key, total_tokens)
-            await r.expire(month_key, 86400 * 35)
+            total_tokens = await track_usage(r, usage, purpose="chat")
 
             answer = data["content"][0]["text"]
 

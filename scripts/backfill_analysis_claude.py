@@ -41,6 +41,12 @@ SKIP_LABEL_PARTS = ("φωτοτυπη", "Τροπολογ")
 MAX_FORUM_OFFICIAL_CHARS = 28000
 
 
+def _add_api_path() -> None:
+    api_path = os.path.join(os.path.dirname(__file__), "..", "apps", "api")
+    if api_path not in sys.path:
+        sys.path.insert(0, api_path)
+
+
 def _read_env_file(path: str) -> None:
     if not os.path.exists(path):
         return
@@ -356,6 +362,21 @@ JSON schema:
     return parsed, usage
 
 
+async def track_analysis_usage(usage: dict) -> None:
+    if not usage:
+        return
+    _add_api_path()
+    import redis.asyncio as aioredis
+    from services.claude_usage import track_usage
+
+    redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
+    r = aioredis.from_url(redis_url, decode_responses=True)
+    try:
+        await track_usage(r, usage, purpose="analysis")
+    finally:
+        await r.aclose()
+
+
 def validate_result(result: dict, excerpt: str) -> list[str]:
     errors: list[str] = []
     short = (result.get("summary_short_el") or "").strip()
@@ -457,6 +478,7 @@ async def main() -> None:
                 print(f"{bill_id}: no readable text for Claude analysis; use --official-only for PDF links")
                 continue
             result, usage = call_claude(row["title_el"] or bill_id, excerpt)
+            await track_analysis_usage(usage)
             errors = validate_result(result, excerpt)
 
         preview = {
