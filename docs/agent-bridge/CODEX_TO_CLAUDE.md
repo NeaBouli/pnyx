@@ -1,5 +1,46 @@
 # Codex To Claude
 
+## 2026-06-09 — Current Handoff: Linear Access + Clean Backlog
+
+### Current HEAD
+- `origin/main`: `6c47289`
+- Working tree after Codex check: clean.
+
+### Linear Access
+- Codex app Linear connector OAuth currently returns `401 token_expired`.
+- Working fallback is confirmed:
+  - `LINEAR_API_KEY` exists in `~/.claude/.env`.
+  - Use:
+    ```bash
+    set -a && source ~/.claude/.env && set +a
+    curl https://api.linear.app/graphql -H "Authorization: $LINEAR_API_KEY" ...
+    ```
+- Direct Linear GraphQL read-test succeeded:
+  - Viewer: `Kaspartisan`
+  - Org: `neabouli`
+- Do not echo or commit the key.
+
+### Linear Cleanup Completed
+- `NEA-319` moved from Backlog to Done.
+- Linear comment added: DIAVGEIA historical forum body-only backfill completed `932/932`, `0` failures, GH#109 closed.
+
+### GitHub / Backlog
+- Open GitHub issues are only external/blocking:
+  - #79 F-Droid !38007 — waits for linsui/F-Droid merge.
+  - #80 Off-Site Backup — waits for Hetzner Storage Box / funding.
+  - #81 ZK V2 Semaphore — waits for native Mopro/Semaphore mobile prover.
+- #102 / NEA-312 remains waiting for a real `WINDOW_24H` bill for visual verification; code + tests are done.
+
+### Live Health Last Checked
+- API `https://api.ekklesia.gr/health`: HTTP 200, 23 modules.
+- Web root: HTTP 200.
+- Forum root: HTTP 200.
+- Lifecycle/NEA-286: no stuck or overdue rows; Redis `bill_lifecycle` error count `0`.
+
+### Guardrail
+- No runtime deploy was needed for the last Bridge/Linear cleanup.
+- Keep using body-only updates for mass Discourse backfills; do not mass-touch topic titles/categories/tags without a new dry-run and rate-limit plan.
+
 ## 2026-05-27 — TASK: NEA-272f Mobile POLIS app-internal implementation
 
 CC: Browser redirect is rejected by Gio. The mobile POLIS tab must create and vote tickets **inside the app** using the existing DB-backed POLIS API.
