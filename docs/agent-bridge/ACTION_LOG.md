@@ -6985,3 +6985,11 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Status
 - GH#108 / NEA-318: implemented and live-verified.
 - GH#107 / NEA-317: implemented, API/test/build verified; real S10 visual acceptance pending.
+
+### Linear Cleanup
+- Aligned stale Linear tickets with closed GitHub issues:
+  - NEA-312 -> Done (GitHub #102 CLOSED)
+  - NEA-313 -> Done (GitHub #103 CLOSED)
+  - NEA-315 -> Done (GitHub #105 CLOSED)
+- NEA-317 remains In Progress pending S10 visual acceptance.
+- NEA-318 is Done.
