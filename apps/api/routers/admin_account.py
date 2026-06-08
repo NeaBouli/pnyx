@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/admin", tags=["Admin"])
 
 SERVER_SALT = os.getenv("SERVER_SALT", "dev-salt")
+DEFAULT_TEST_PERIFERIA_ID = int(os.getenv("ADMIN_TEST_DEFAULT_PERIFERIA_ID", "6"))
+DEFAULT_TEST_DIMOS_ID = int(os.getenv("ADMIN_TEST_DEFAULT_DIMOS_ID", "22"))
 
 
 class TestAccountResponse(BaseModel):
@@ -47,6 +49,10 @@ async def create_test_account(
     """Generate a test account with Ed25519 keypair. For admin/dev testing only."""
     from nacl.signing import SigningKey
     req = req or TestAccountRequest()
+
+    if req.periferia_id is None and req.dimos_id is None:
+        req.periferia_id = DEFAULT_TEST_PERIFERIA_ID
+        req.dimos_id = DEFAULT_TEST_DIMOS_ID
 
     if req.periferia_id is not None:
         periferia = await db.get(Periferia, req.periferia_id)

@@ -37,8 +37,8 @@
 - **Dependabot:** critical `vitest <4.1.0` fixed in `5553e13` and GitHub reports 0 open critical; 6 medium `postcss`/`uuid` remain
 - **Bill Summary/Source Fix:** API source policy live; mobile DIAVGEIA source + summary regression fixed in `5ff3998`/`b7fb4dd`, installed on S10 and verified. Root cause update: Analysis fehlt, weil `ai_summary_reviewed=false` und kein automatischer reviewed-analysis Job existiert. Mobile zeigt jetzt statt leerer Analyse einen klaren `Επίσημο κείμενο` Fallback, wenn `summary_long_el` vorhanden ist.
 - **DIAVGEIA S10 Retest:** PASS — source card visible/clickable (`Πηγή — Διαύγεια` opens Android intent chooser), org/pill no longer shown as `Σύνοψη`, quote markers removed. Evidence: `/tmp/ekklesia_diav_fix_final_20260604_000652`.
-- **Pending high:** NEA-301 Fetcher (9 Bills ohne summary_long_el), NEA-301b DIAVGEIA real summary backfill, NEA-303 test-account Region, NEA-304 follow-up, #79/NEA-281 F-Droid linsui merge, NEA-286 Lifecycle-Bug
-- **Pending medium/backlog:** NEA-260/GH#82 Forum SSO, NEA-277/GH#71 startup-check, NEA-278/GH#72 CLAUDE.md stale values, NEA-285/GH#83 Diavgeia org mapping, NEA-279/GH#77 ZK Wizard, NEA-262 weekly auto-newsletter
+- **Pending high:** NEA-301 Fetcher (9 Bills ohne summary_long_el), NEA-301b DIAVGEIA real summary backfill, NEA-304 follow-up, #79/NEA-281 F-Droid linsui merge, NEA-286 Lifecycle-Bug
+- **Pending medium/backlog:** NEA-260/GH#82 Forum SSO, NEA-285/GH#83 Diavgeia org mapping, NEA-279/GH#77 ZK Wizard, NEA-262 weekly auto-newsletter
 - **Pending external/blocked:** NEA-282/GH#80 Off-site backup waits for first donation; NEA-249/GH#81 blocked on Mopro/React Native
 - **Neu live:** municipality/, article.html, Autodesmefsi PDF, Forum Topic #436
 

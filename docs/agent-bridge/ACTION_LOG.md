@@ -7120,3 +7120,50 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### Status
 - NEA-278 moved to Done.
+
+---
+
+## 2026-06-08 — Codex: NEA-303 Admin-Testaccount Region permanent
+
+### Scope
+- API-only, no deploy, no DB mutation.
+- Goal: remove manual DB-hotfix dependency for admin test accounts and DEMO-123 evaluation region matching.
+
+### Fix
+- `POST /api/v1/admin/test-account` now defaults to the verified test scope when no region is supplied:
+  - `periferia_id=6`
+  - `dimos_id=22`
+  - `region_locked=true`
+- Existing explicit `periferia_id` / `dimos_id` behavior is preserved and still validated.
+- `DEMO-123` representative verification now falls back to the same test scope if the invite has no region IDs.
+- Defaults are configurable in `.env.production.template`:
+  - `ADMIN_TEST_DEFAULT_PERIFERIA_ID`
+  - `ADMIN_TEST_DEFAULT_DIMOS_ID`
+  - `DEMO_REP_PERIFERIA_ID`
+  - `DEMO_REP_DIMOS_ID`
+  - `DEMO_REP_REGION`
+  - `DEMO_REP_MUNICIPALITY`
+
+### Regression Tests
+- Added `apps/api/tests/test_admin_test_region_defaults.py`:
+  - admin test account without body defaults to 6/22 and QR contains both IDs
+  - explicit matching region still works
+  - invalid/mismatched region is rejected
+  - `DEMO-123` without invite IDs defaults to 6/22
+  - `DEMO-123` with invite IDs preserves them
+
+### Verification
+- `apps/api/.venv/bin/python -m py_compile apps/api/routers/admin_account.py apps/api/routers/representative.py apps/api/tests/test_admin_test_region_defaults.py` — OK
+- `cd apps/api && .venv/bin/python -m pytest tests/test_admin_test_region_defaults.py -q` — 5 passed
+- `cd apps/api && .venv/bin/python -m pytest tests/test_admin_test_region_defaults.py tests/test_sso_config.py tests/test_health.py -q` — 14 passed
+- `cd apps/api && .venv/bin/python -m pytest tests/services/test_arweave_guards.py tests/test_voting.py -q` — 24 passed, 2 xfailed
+- `tests/test_identity.py::test_health_includes_mod01` + `test_verify_missing_phone` — 2 passed
+- Broad identity test `test_verify_invalid_number` still fails locally because Redis is not running on localhost:6379; this is an existing local-env dependency, not caused by NEA-303.
+- `git diff --check` — OK
+- Read-only production DB check:
+  - latest `ADMIN_TEST` records have `region_locked=true`, `periferia_id=6`, `dimos_id=22`
+  - `DEMO-123` has `evaluation_enabled=true`, `periferia_id=6`, `dimos_id=22`, `region='Πελοποννήσου'`
+
+### Status
+- NEA-303 ready to move to Done.
+- No deploy performed.

@@ -25,6 +25,10 @@ router = APIRouter(prefix="/api/v1/rep", tags=["Representative"])
 TOKEN_TTL_HOURS = 24
 INVITE_TTL_HOURS = 48
 ALLOWED_STATUSES = [BillStatus.WINDOW_24H, BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END]
+DEMO_PERIFERIA_ID = int(os.getenv("DEMO_REP_PERIFERIA_ID", "6"))
+DEMO_DIMOS_ID = int(os.getenv("DEMO_REP_DIMOS_ID", "22"))
+DEMO_REGION = os.getenv("DEMO_REP_REGION", "Πελοποννήσου")
+DEMO_MUNICIPALITY = os.getenv("DEMO_REP_MUNICIPALITY", "Καλαμάτας")
 
 VALID_ROLES = ["Βουλευτής", "Περιφερειάρχης", "Δήμαρχος", "Δημοτικός Σύμβουλος"]
 
@@ -216,6 +220,10 @@ async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(g
     # 2. Demo bypass
     if req.ada_number == "DEMO-123":
         ada_info = {"org_label": "Demo Δήμος", "subject": "Demo — Εκπρόσωπος"}
+        invite_periferia_id = invite_periferia_id or DEMO_PERIFERIA_ID
+        invite_dimos_id = invite_dimos_id or DEMO_DIMOS_ID
+        region = region or DEMO_REGION
+        municipality = municipality or DEMO_MUNICIPALITY
     else:
         # 3. Verify ADA via Diavgeia
         ada_info = await _verify_ada_diavgeia(req.ada_number)
