@@ -7576,3 +7576,34 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `set -a && source ~/.claude/.env && set +a`
   - `curl https://api.linear.app/graphql -H "Authorization: $LINEAR_API_KEY" ...`
 - Do not echo or commit the key.
+
+## 2026-06-10 — Codex: NEA-249/GH#81 Mopro/Semaphore native prover adapter spike
+
+### Safety first
+- Backup tag set before any work: `rollback-pre-mopro-20260610-001259` at `3e03d12`.
+- No production vote path changed. Ed25519/nullifier voting remains the default.
+- `zkSemaphoreEnabled` remains `false` in `apps/mobile/app.json`.
+
+### Current Mopro/Semaphore finding
+- Upstream now exists: `zkmopro/SemaphoreReactNative`.
+- It is documented as installable via GitHub dependency (`github:zkmopro/SemaphoreReactNative`), not published on npm.
+- Checked upstream HEAD: `afea48f0237c18846adc3d62e2ae8bbedadabe6d`.
+- Upstream is very young: no release tag, small commit history, package metadata still rough.
+- Android module exports native Expo modules named `Identity`, `Group`, `Proof` and bundles Mopro/Semaphore JNI libs.
+- A package-lock-only npm install test was aborted because GitHub dependency resolution/prepare hung too long; no repo files changed by that attempt.
+
+### Implemented
+- Added pure native-capability core: `apps/mobile/src/lib/zkSemaphoreNativeCore.ts`.
+- Added runtime Expo native-module adapter: `apps/mobile/src/lib/zkSemaphoreNative.ts`.
+- `getRuntimeZkCapability()` now checks whether `Identity`, `Group`, and `Proof` are actually bundled instead of hardcoding `hasNativeProver=false`.
+- Added tests for missing/partial/ready native module states.
+
+### Verification
+- `cd apps/mobile && npx vitest run src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreNative.test.ts`: 8 passed.
+- `cd apps/mobile && npx vitest run src/lib`: 35 passed.
+- `cd apps/mobile && npx tsc --noEmit`: OK.
+- `git diff --check`: OK.
+
+### Status
+- This is a safe Phase-0 adapter, not a production ZK voting launch.
+- Next step, separate guarded task: pin/add the GitHub native dependency or vendor it, build Android APK, and prove that native modules are detected on S10 before enabling any opt-in.

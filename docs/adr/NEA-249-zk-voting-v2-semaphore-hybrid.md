@@ -23,7 +23,7 @@ NEA-234 researched three approaches:
 
 Semaphore directly matches the product requirement: anonymous voting with publicly verifiable proofs.
 
-## Blocking Dependency
+## Mobile Prover Status
 
 **Mobile prover is unresolved.**
 
@@ -34,6 +34,13 @@ Phase 0 benchmark spike (2026-05-22) found:
 - Expo Go cannot be used; Dev Client with native modules is required
 
 **No implementation can proceed until a viable mobile proving path is established.**
+
+Update 2026-06-10:
+- `zkmopro/SemaphoreReactNative` now exists as a React Native / Expo module wrapper for Semaphore v4.
+- It is not published to npm as of this check; installation is documented via GitHub dependency only.
+- Repository has no release tag and only a small commit history, so production bundling must pin a commit and pass a native Android build before feature activation.
+- Ekklesia added a runtime capability adapter that detects bundled native modules `Identity`, `Group`, and `Proof`.
+- Production ZK remains disabled by feature flag until a pinned native prover build is verified on device.
 
 ## Explicit Non-Goals (Current State)
 
@@ -62,7 +69,7 @@ It does **not** prove device integrity, enrollment perfection, or individual Tie
 
 ## Next Steps
 
-1. **Mopro Native Expo Module Feasibility** — separate architecture/spike plan (no code yet)
+1. **Mopro Native Expo Module Feasibility** — runtime adapter added; native dependency build still requires pinned build verification
 2. **Cross-Tier Uniqueness Design** — prevent same person voting via both tiers
 3. **Phase 1** (only after mobile prover resolved) — DB schema + API skeleton, disabled by default
 
