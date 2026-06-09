@@ -7607,3 +7607,35 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Status
 - This is a safe Phase-0 adapter, not a production ZK voting launch.
 - Next step, separate guarded task: pin/add the GitHub native dependency or vendor it, build Android APK, and prove that native modules are detected on S10 before enabling any opt-in.
+
+## 2026-06-10 — Codex: NEA-249/GH#81 Android Mopro/Semaphore module vendored behind disabled flag
+
+### Safety first
+- Backup tag set before native vendoring: `rollback-pre-mopro-native-20260610-002820` at `4f886e1`.
+- `zkSemaphoreEnabled` remains `false` in `apps/mobile/app.json`.
+- No vote submission path, API contract, DB schema, Arweave path, or forum/web code changed.
+- The existing Ed25519/nullifier flow remains the only active voting path.
+
+### Implemented
+- Vendored upstream `zkmopro/SemaphoreReactNative` at commit `afea48f0237c18846adc3d62e2ae8bbedadabe6d` into `apps/mobile/modules/semaphore-react-native`.
+- Kept Android only and arm64-v8a only for the S10 / Play build.
+- Added local dependency: `semaphore-react-native: file:modules/semaphore-react-native`.
+- Kept package-lock diff minimal: only the local module link was added.
+- Removed generated module build outputs and added a local module `.gitignore`.
+
+### Verification
+- Expo autolinking detects `semaphore-react-native` with native modules:
+  - `expo.modules.semaphore.IdentityModule`
+  - `expo.modules.semaphore.GroupModule`
+  - `expo.modules.semaphore.ProofModule`
+- `cd apps/mobile && npx tsc --noEmit`: OK.
+- `cd apps/mobile && npx vitest run src/lib`: 35 passed.
+- `bash scripts/build-play.sh`: AAB build successful (`app-play-release.aab`, 49 MB).
+- `cd apps/mobile/android && ./gradlew assemblePlayRelease`: APK build successful (`app-play-release.apk`, 79 MB).
+- S10 install successful: `versionName=1.0.3`, `lastUpdateTime=2026-06-10 00:53:00`.
+- S10 launch smoke test: app process started, no relevant `FATAL EXCEPTION` / `AndroidRuntime` crash in logcat.
+
+### Status
+- Native Mopro/Semaphore can now be bundled by Android builds.
+- The feature is still deliberately disabled and not exposed to users.
+- GH#81 / NEA-283 remains a guarded ZK V2 track, not production voting.

@@ -1,0 +1,10 @@
+{
+    "platforms": ["android"],
+    "android": {
+        "modules": [
+            "expo.modules.semaphore.IdentityModule",
+            "expo.modules.semaphore.GroupModule",
+            "expo.modules.semaphore.ProofModule"
+        ]
+    }
+}

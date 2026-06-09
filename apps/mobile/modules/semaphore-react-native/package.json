@@ -1,0 +1,27 @@
+{
+    "name": "semaphore-react-native",
+    "version": "0.1.0",
+    "description": "Vendored Semaphore v4 native module for the ekklesia Android Mopro spike",
+    "main": "src/index.ts",
+    "types": "src/index.ts",
+    "keywords": [
+        "react-native",
+        "expo",
+        "mopro",
+        "semaphore"
+    ],
+    "repository": "https://github.com/zkmopro/SemaphoreReactNative",
+    "bugs": {
+        "url": "https://github.com/zkmopro/SemaphoreReactNative/issues"
+    },
+    "author": "Ya-wen, Jeng <vivi432@yahoo.com.tw> (zkmopro)",
+    "license": "MIT",
+    "homepage": "https://github.com/zkmopro/SemaphoreReactNative#readme",
+    "dependencies": {},
+    "peerDependencies": {
+        "expo": "*",
+        "react": "*",
+        "react-native": "*"
+    },
+    "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
+}
