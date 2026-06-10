@@ -44,6 +44,7 @@ services:
       REDIS_URL: redis://redis:6379
       OLLAMA_URL: http://ollama:11434
       ENVIRONMENT: production
+      TRUSTED_PROXY_COUNT: ${TRUSTED_PROXY_COUNT:-1}
     volumes:
       - /opt/ekklesia/arweave-wallet.json:/opt/ekklesia/arweave-wallet.json:ro
     depends_on:

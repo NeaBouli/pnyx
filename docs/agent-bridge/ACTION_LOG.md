@@ -8398,3 +8398,17 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Verification
 - `git diff --check`: OK.
 - README stale grep for `zero personal data`, `Personal data | Never collected`, `SMS`, `Next.js 14`, `62 endpoints`, `22 modules`, `Mobile TODO`: no matches.
+
+## 2026-06-10 — API proxy IP hardening explicit env
+
+### Scope
+- Config-only hardening follow-up for the already implemented IP-helper / Redis rate-limit privacy layer.
+- No application logic, DB, forum, web, mobile, or voting changes.
+
+### Changed
+- `infra/docker/docker-compose.prod.yml` now sets API `TRUSTED_PROXY_COUNT: ${TRUSTED_PROXY_COUNT:-1}` explicitly.
+- This preserves current behavior (the code already defaulted to `1`) while making the single-Traefik-proxy assumption visible in deployment config.
+
+### Verification
+- `git diff --check`: OK.
+- Local compose config cannot fully render without production `/opt/ekklesia/.env.production`; server-side compose config must be checked before API recreate.
