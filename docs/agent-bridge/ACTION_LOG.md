@@ -8412,3 +8412,9 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Verification
 - `git diff --check`: OK.
 - Local compose config cannot fully render without production `/opt/ekklesia/.env.production`; server-side compose config must be checked before API recreate.
+- Production deploy:
+  - server rollback tag: `rollback-pre-trusted-proxy-env-20260610_113332`
+  - server-side compose config rendered `TRUSTED_PROXY_COUNT: "1"`
+  - API recreated without image rebuild
+  - container env now includes `TRUSTED_PROXY_COUNT=1`
+  - `https://api.ekklesia.gr/health`: 200
