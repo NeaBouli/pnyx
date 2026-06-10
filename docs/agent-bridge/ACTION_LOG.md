@@ -8628,3 +8628,22 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Gate 0 now requires a Semaphore group-management trust model.
   - Cross-tier options now flag linkability risks, Ed25519-derived ZK identity is forbidden, and Tier 1/Tier 2 nullifier domains must be explicit.
   - Canary constraints now include small-anonymity-set risk, coarse/batched publication, tally isolation, Nullifier v2 interaction, and revocation semantics.
+
+## 2026-06-11 — Codex: GH#112 Gate 0 read-only diagnosis
+
+### Scope
+- Read-only diagnosis after the Gate Plan commit.
+- No runtime code, no API/DB/mobile voting changes, no deploy, no flag flip.
+
+### Findings
+- Mobile native module exports:
+  - `generateSemaphoreProof(...): Promise<string>`
+  - `verifySemaphoreProof(proof: string): Promise<boolean>`
+- Android Mopro/UniFFI binding also returns an opaque proof `String`.
+- Current self-test verifies locally but does not parse the proof string.
+- API currently has no Semaphore/Groth16 server verifier dependency or endpoint.
+
+### Next Safe Step
+- Capture a deterministic S10 test fixture using test identities only:
+  - message, scope, tree depth, group members/commitments, Merkle root if available, proof string, expected verification.
+- Prove server-side verification of that exact fixture before any DB/API/product integration.
