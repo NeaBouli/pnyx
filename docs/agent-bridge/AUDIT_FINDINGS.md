@@ -612,7 +612,7 @@ Verification:
 
 ## Sixth Pass — Remaining npm Moderate Advisories (2026-06-10)
 
-Status: **fixed in code/locks, deploy not required**.
+Status: **fixed and deployed where relevant**.
 
 Scope:
 - Dependency lock/package hardening only.
@@ -638,6 +638,17 @@ Verification:
 - `apps/mobile`: `npx tsc --noEmit` and Android `expo export` **OK**.
 - `apps/representative`: `npx tsc --noEmit` and Android `expo export` **OK**.
 - Claude Code reviewed the diff: **GO**, no regression risk identified.
+- Server deploy:
+  - `docker compose config`: **OK**
+  - rebuilt/recreated `web` and `dashboard`
+  - production image builds reported **0 npm vulnerabilities**
+- Live smoke:
+  - `https://ekklesia.gr/`: 200
+  - `https://ekklesia.gr/el/bills`: 200
+  - `https://dashboard.ekklesia.gr/`: 307 (expected redirect/auth behavior)
+  - `https://api.ekklesia.gr/health`: 200
+  - `web`, `dashboard`, `api`, `db`, and `redis` containers running
+- GitHub Dependabot API after push: **0 open alerts**.
 
 Remaining caveat:
-- GitHub Dependabot alert closure depends on GitHub's next dependency graph scan after push.
+- Mobile/representative APKs were not rebuilt because the patched packages are Expo build-tooling dependencies; Android export checks passed.

@@ -8151,6 +8151,7 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Dependency/security hardening only.
 - No API, DB, voting, identity, nullifier, forum, or runtime app logic change.
 - Local rollback tag: `rollback-pre-moderate-deps-*`.
+- Server rollback tag: `rollback-pre-moderate-deps-deploy-*`.
 
 ### Implemented
 - Closed the remaining moderate npm advisory class locally by pinning:
@@ -8172,6 +8173,17 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `cd apps/mobile && npx expo export --platform android --output-dir /tmp/pnyx-mobile-export`: OK.
 - `cd apps/representative && npx expo export --platform android --output-dir /tmp/pnyx-representative-export`: OK.
 - Claude Code reviewed the dependency diff: GO, no regression risk identified.
+- Server deploy:
+  - server `docker compose config`: OK.
+  - rebuilt/recreated only `web` and `dashboard`.
+  - production image builds reported 0 npm vulnerabilities for web/dashboard.
+- Live smoke:
+  - `https://ekklesia.gr/`: 200.
+  - `https://ekklesia.gr/el/bills`: 200.
+  - `https://dashboard.ekklesia.gr/`: 307 (expected app/auth redirect behavior).
+  - `https://api.ekklesia.gr/health`: 200.
+  - `web`, `dashboard`, `api`, `db`, and `redis` containers running.
+- GitHub Dependabot API: 0 open alerts.
 
 ### Notes
 - Web build still warns that the local Node version is below some dev-tool engine ranges (`22.11.0` vs `>=22.12/22.13` for newer ESLint/Vite tooling), but build succeeds.
@@ -8179,4 +8191,4 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### Result
 - Local `npm audit` is clean for web/dashboard/mobile/representative.
-- GitHub Dependabot alert closure will be confirmed after push/re-scan.
+- GitHub Dependabot is clean: 0 open alerts.
