@@ -7806,3 +7806,38 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Dependabot reports 8 vulnerabilities (2 critical, 6 moderate).
 - `SERVER_SALT` startup guard still pending.
 - Real-IP/rate-limit consolidation still pending.
+
+## 2026-06-10 — Codex + Claude Code: Dependabot critical shell-quote fixed
+
+### Scope
+- Fixed only the 2 critical Dependabot alerts for `shell-quote`.
+- Workspaces touched:
+  - `apps/mobile`
+  - `apps/representative`
+- No runtime app source, voting code, API code, DB, web deploy, or APK/AAB build changed.
+
+### Implemented
+- Added npm overrides:
+  - `apps/mobile/package.json`: `"shell-quote": "1.8.4"`
+  - `apps/representative/package.json`: `"shell-quote": "1.8.4"`
+- Refreshed only the affected lockfiles.
+- `shell-quote` resolved from `1.8.3` to patched `1.8.4` in both workspaces.
+
+### Verification
+- `npm ls shell-quote --package-lock-only`:
+  - mobile: `shell-quote@1.8.4 overridden`
+  - representative: `shell-quote@1.8.4 overridden`
+- `npm audit --json --omit=dev`:
+  - mobile: `critical=0`, `shellQuote=none`
+  - representative: `critical=0`, `shellQuote=none`
+- `cd apps/mobile && npm ci --ignore-scripts`: OK.
+- `cd apps/representative && npm ci --ignore-scripts`: OK.
+- `cd apps/mobile && npx tsc --noEmit`: OK.
+- `cd apps/mobile && npx vitest run src/lib/api.test.ts src/lib/source-resolver.test.ts src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreNative.test.ts`: 35 passed.
+- `cd apps/representative && npx tsc --noEmit`: OK.
+- `git diff --check`: OK.
+- Claude Code reviewed the diff: GO. Confirmed no broad dependency update and no runtime source changes.
+
+### Still open
+- Moderate `postcss` / `uuid` alerts remain and require separate handling.
+- `npm audit fix --force` would jump Expo to `56.0.9`; do not run blindly.
