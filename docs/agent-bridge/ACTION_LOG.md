@@ -7707,3 +7707,28 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Follow-up not included
 - `NEXT_LOCALE` cookie Secure flag remains a separate hardening task.
 - No migration to memory-hard server identity derivation was attempted in this pass because that would affect existing identities and recovery/vote uniqueness.
+
+## 2026-06-10 — Codex: CD handover snapshot after security wording fix
+
+### Current state
+- HEAD: `9f99f9b` (`fix(security): align public privacy wording with beta HLR flow`).
+- Working tree clean before this handover note.
+- No deploy, no DB update, no forum update, no APK rebuild/install in this fix pass.
+
+### What is now true publicly
+- Beta verification is documented as HLR SIM check without SMS.
+- Nullifier wording no longer claims absolute irreversibility; docs/API-agent now state server-salted SHA256, phone not stored, `SERVER_SALT` is critical.
+- IP wording no longer claims "never collected"; it states limited use for rate limiting / security and not linked to vote or identity.
+- Web build now suppresses `X-Powered-By` and emits `Referrer-Policy` + `Permissions-Policy`.
+
+### Verified
+- API focused tests: 17 passed.
+- Mobile TS: OK.
+- Mobile lib tests: 35 passed.
+- Web build: OK.
+- `git diff --check`: OK.
+- Claude Code independent diff review: GO, no voting/nullifier/DB logic changed.
+
+### Still open
+- `NEXT_LOCALE` cookie missing `Secure` flag: separate hardening task.
+- No server-side memory-hard nullifier migration attempted; needs a designed migration if ever pursued.
