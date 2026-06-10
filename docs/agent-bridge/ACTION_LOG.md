@@ -7755,3 +7755,54 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Add `SERVER_SALT` startup validation and unify no-default behavior.
 - Consolidate proxy-aware real-IP extraction and move contact/public API limiting to Redis/shared limiter.
 - Add `Secure` flag to `NEXT_LOCALE` cookie.
+
+## 2026-06-10 — Codex: Production deploy of security wording/header fix
+
+### Scope
+- Deployed already-tested `bc85b7f` to production.
+- Services touched: `api`, `web` only.
+- No DB migration, no forum/Discourse update, no APK/AAB build, no monitor/dashboard changes.
+
+### Safety
+- Server pre-deploy HEAD: `dd70c52`.
+- Server rollback tag: `rollback-pre-deploy-20260610-073044`.
+- Server had no tracked modifications; existing untracked artifacts were documented and left untouched:
+  - `apps/api/routers/identity.py.bak`
+  - `docs/community.html.bak`
+  - `docs/download/backups/`
+  - `docs/download/ekklesia-latest.apk`
+  - `docs/download/ekprosopos-latest.apk`
+  - `packages/crypto/hlr.py.bak`
+  - `tmp/`
+- Fast-forwarded `/opt/ekklesia/app` to `bc85b7f`.
+
+### Deploy
+- Followed deploy rule: stopped compose service `api` first.
+- Built `api` and `web` with `infra/docker/docker-compose.prod.yml`.
+- Started only `api` and `web` with `/opt/ekklesia/.env.production`.
+
+### Live verification
+- `https://api.ekklesia.gr/health`: 200, status OK.
+- `https://api.ekklesia.gr/api/v1/bills?limit=1`: 200.
+- `https://ekklesia.gr/`: 200.
+- `https://ekklesia.gr/el/bills`: 200.
+- `https://pnyx.ekklesia.gr/t/438`: 200 after redirect, forum smoke OK.
+- Live headers now include:
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`
+  - no `X-Powered-By` on `/el/bills`
+- Live landing text now shows HLR/no-SMS wording.
+- Live wiki privacy text now shows limited IP use for rate limiting/security.
+- Live architecture wiki now shows HLR/no-SMS and `server-salted hash`.
+- Containers after deploy:
+  - `ekklesia-api`: up
+  - `ekklesia-web`: up
+  - `ekklesia-db`: healthy
+  - `ekklesia-redis`: healthy
+- Recent API/Web logs: startup OK, no crash.
+
+### Still open
+- `NEXT_LOCALE` cookie still lacks `Secure` flag.
+- Dependabot reports 8 vulnerabilities (2 critical, 6 moderate).
+- `SERVER_SALT` startup guard still pending.
+- Real-IP/rate-limit consolidation still pending.
