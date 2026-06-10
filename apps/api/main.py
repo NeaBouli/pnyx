@@ -10,7 +10,7 @@ from apscheduler.triggers.cron import CronTrigger
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from ip_utils import get_client_ip
-from security_startup import validate_server_salt_config
+from security_startup import validate_identity_kdf_config, validate_server_salt_config
 
 logger = logging.getLogger(__name__)
 local_error_logger = logging.getLogger("ekklesia.errors")
@@ -460,6 +460,7 @@ async def scheduled_completeness_check():
 async def lifespan(app):
     # Startup
     validate_server_salt_config()
+    validate_identity_kdf_config()
     sso.validate_forum_sso_config()
     scheduler.add_job(scheduled_completeness_check, IntervalTrigger(hours=6), id="completeness_check", replace_existing=True)
     scheduler.add_job(scheduled_scrape, IntervalTrigger(hours=12), id="parliament_scrape", replace_existing=True)

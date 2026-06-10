@@ -8304,3 +8304,54 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Result
 - Argon2id is operationally plausible in the current API image, but parameters are **not final**.
 - Any implementation must still follow ADR-004: versioned immutable params, dual lookup/write, env rollback, focused tests.
+
+## 2026-06-10 — GH#110 / NEA-335 implementation scaffold (flag-gated v2, default v1)
+
+### Scope
+- Backend/API identity implementation scaffold for ADR-004.
+- No production env flip; default remains `IDENTITY_NULLIFIER_KDF_VERSION=v1`.
+- No mobile, web, forum, Arweave, or voting-table migration.
+- Rollback tag before work: `rollback-pre-110-kdf-20260610-1409`.
+- Claude Code availability check: unavailable due token limit; Codex proceeded with local/self verification.
+
+### Implemented
+- Added Alembic migration `q001a2b3c4d5_identity_nullifier_v2`:
+  - `identity_records.nullifier_hash_v2` nullable unique index
+  - `identity_records.nullifier_version` default `v1`
+  - `identity_records.nullifier_migrated_at`
+- Added model fields for the new nullable v2 identity-nullifier metadata.
+- Added v2 KDF helper in `packages/crypto/nullifier.py`:
+  - phone normalization for v2 only
+  - Argon2id v2 prefix (`v2:`)
+  - immutable parameters matching ADR-004 preliminary benchmark (`t=2`, `m=65536KiB`, `p=1`)
+  - lazy `argon2-cffi` import so local v1-only module import remains safe
+- Updated identity verify path:
+  - v1 compatibility nullifier remains the public/downstream anchor
+  - v2 is computed only when `IDENTITY_NULLIFIER_KDF_VERSION=v2`
+  - v2 lookup checks `nullifier_hash_v2 OR nullifier_hash`
+  - if v2 matches a legacy row, response keeps the stored v1 `nullifier_hash`
+  - multiple matched rows log a warning and prefer exact v1 anchor to avoid 500s
+- Added startup guard:
+  - invalid `IDENTITY_NULLIFIER_KDF_VERSION` fails closed
+  - `v2` requires `argon2-cffi` availability at API startup
+
+### Verification
+- Local API venv updated with `argon2-cffi>=25.1.0` to run v2 tests rather than skip them.
+- `py_compile`: OK for changed API/router/model/KDF/migration/test files.
+- Alembic head check: `q001a2b3c4d5`.
+- Focused regression:
+  - `tests/test_security_startup.py`
+  - `tests/test_identity_nullifier_kdf.py`
+  - `tests/test_voting.py`
+  - `tests/services/test_arweave_guards.py`
+  - `tests/services/test_source_links.py`
+  - `tests/test_sso_config.py`
+  - `tests/test_polis_binding.py`
+  - `tests/test_polis_endpoints.py`
+- Result: `68 passed, 6 xfailed`.
+- `tests/test_alpha_modules.py` still has pre-existing local env failures (Redis localhost/Admin key), not caused by this change.
+
+### Deploy Guardrail
+- Do not enable v2 in production yet.
+- Safe deploy path is migration + API deploy with env still default `v1`.
+- v2 flip requires explicit Gio approval after live smoke and rollback prep.

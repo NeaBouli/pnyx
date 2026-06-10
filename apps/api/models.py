@@ -51,6 +51,9 @@ class IdentityRecord(Base):
 
     id              = Column(Integer, primary_key=True)
     nullifier_hash  = Column(String(64), unique=True, nullable=False, index=True)
+    nullifier_hash_v2 = Column(String(128), unique=True, nullable=True, index=True)
+    nullifier_version = Column(String(8), default="v1", server_default="v1", nullable=False)
+    nullifier_migrated_at = Column(DateTime, nullable=True)
     public_key_hex  = Column(String(128), nullable=False)
     demographic_hash= Column(String(64), nullable=True)   # SHA256(region+gender+salt)
     age_group       = Column(String(20), nullable=True)   # AGE_18_25 .. AGE_65_PLUS

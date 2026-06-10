@@ -1,0 +1,92 @@
+import importlib.util
+import os
+import sys
+from types import SimpleNamespace
+
+import pytest
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../packages/crypto"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+import nullifier
+from routers.identity import _compatibility_nullifier, _identity_kdf_version, _select_identity_match
+
+
+def test_v1_nullifier_keeps_legacy_raw_input_compatibility(monkeypatch):
+    monkeypatch.setattr(nullifier, "SERVER_SALT", "test-salt")
+
+    raw = nullifier.generate_nullifier_hash("+30 690 000 0000")
+    normalized = nullifier.generate_nullifier_hash("+306900000000")
+
+    assert raw != normalized
+    assert len(raw) == 64
+    assert len(normalized) == 64
+
+
+@pytest.mark.parametrize(
+    ("phone", "expected"),
+    [
+        ("+30 690 000 0000", "+306900000000"),
+        ("00306900000000", "+306900000000"),
+        ("306900000000", "+306900000000"),
+        ("6900000000", "+306900000000"),
+    ],
+)
+def test_phone_normalization_for_v2(phone, expected):
+    assert nullifier.normalize_phone_number(phone) == expected
+
+
+def test_v2_nullifier_is_versioned_and_deterministic(monkeypatch):
+    if importlib.util.find_spec("argon2") is None:
+        pytest.skip("argon2-cffi not installed in this local Python environment")
+
+    monkeypatch.setattr(nullifier, "SERVER_SALT", "test-salt")
+
+    one = nullifier.generate_nullifier_hash_v2("+30 690 000 0000")
+    two = nullifier.generate_nullifier_hash_v2("6900000000")
+
+    assert one == two
+    assert one.startswith("v2:")
+    assert len(one) == 67
+    assert one != nullifier.generate_nullifier_hash("+30 690 000 0000")
+
+
+def test_identity_kdf_version_defaults_to_v1(monkeypatch):
+    monkeypatch.delenv("IDENTITY_NULLIFIER_KDF_VERSION", raising=False)
+
+    assert _identity_kdf_version() == "v1"
+
+
+def test_identity_kdf_version_accepts_v2(monkeypatch):
+    monkeypatch.setenv("IDENTITY_NULLIFIER_KDF_VERSION", "v2")
+
+    assert _identity_kdf_version() == "v2"
+
+
+def test_identity_kdf_version_rejects_unknown(monkeypatch):
+    monkeypatch.setenv("IDENTITY_NULLIFIER_KDF_VERSION", "banana")
+
+    assert _identity_kdf_version() == "v1"
+
+
+def test_existing_v2_match_keeps_stored_v1_compatibility_anchor():
+    existing = SimpleNamespace(nullifier_hash="a" * 64)
+
+    assert _compatibility_nullifier(existing, "b" * 64) == "a" * 64
+
+
+def test_new_identity_uses_computed_v1_compatibility_anchor():
+    assert _compatibility_nullifier(None, "b" * 64) == "b" * 64
+
+
+def test_identity_match_prefers_exact_v1_anchor_when_multiple_rows_match():
+    exact = SimpleNamespace(nullifier_hash="b" * 64)
+    v2_only = SimpleNamespace(nullifier_hash="a" * 64)
+
+    assert _select_identity_match([v2_only, exact], "b" * 64) is exact
+
+
+def test_identity_match_falls_back_to_first_v2_match():
+    v2_only = SimpleNamespace(nullifier_hash="a" * 64)
+
+    assert _select_identity_match([v2_only], "b" * 64) is v2_only

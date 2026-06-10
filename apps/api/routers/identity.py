@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, text
+from sqlalchemy import or_, select, update, text
 import redis.asyncio as aioredis
 
 from database import get_db
@@ -22,7 +22,7 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../packages/crypto"))
 sys.path.insert(0, "/packages/crypto")  # Docker container path
 from keypair import generate_keypair
-from nullifier import generate_nullifier_hash
+from nullifier import generate_nullifier_hash, generate_nullifier_hash_v2
 from hlr import verify_greek_number
 
 logger = logging.getLogger(__name__)
@@ -72,6 +72,29 @@ async def _get_hlr_usage(key: str) -> int:
     r = await _get_hlr_redis()
     val = await r.get(key)
     return int(val) if val else 0
+
+
+def _identity_kdf_version() -> str:
+    version = os.getenv("IDENTITY_NULLIFIER_KDF_VERSION", "v1").lower()
+    if version not in {"v1", "v2"}:
+        logger.warning("[MOD-01] Unknown IDENTITY_NULLIFIER_KDF_VERSION=%s; falling back to v1", version)
+        return "v1"
+    return version
+
+
+def _compatibility_nullifier(existing: IdentityRecord | None, computed_v1: str) -> str:
+    if existing is not None:
+        return existing.nullifier_hash
+    return computed_v1
+
+
+def _select_identity_match(matches: list[IdentityRecord], computed_v1: str) -> IdentityRecord | None:
+    existing = next((record for record in matches if record.nullifier_hash == computed_v1), None)
+    if existing is not None:
+        return existing
+    if matches:
+        return matches[0]
+    return None
 
 
 # ─── Schemas ──────────────────────────────────────────────────────────────────
@@ -130,30 +153,40 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
         )
 
     # 2. Nullifier Hash (Telefonnummer wird in der Funktion sofort gelöscht)
-    nullifier = generate_nullifier_hash(req.phone_number)
+    nullifier = generate_nullifier_hash(req.phone_number)  # v1 compatibility anchor
+    kdf_version = _identity_kdf_version()
+    nullifier_v2 = generate_nullifier_hash_v2(req.phone_number) if kdf_version == "v2" else None
     del req.phone_number
     gc.collect()
 
     # 3. Bestehenden Record prüfen
-    result = await db.execute(
-        select(IdentityRecord).where(IdentityRecord.nullifier_hash == nullifier)
-    )
-    existing = result.scalar_one_or_none()
+    identity_filter = IdentityRecord.nullifier_hash == nullifier
+    if nullifier_v2:
+        identity_filter = or_(IdentityRecord.nullifier_hash_v2 == nullifier_v2, identity_filter)
+    result = await db.execute(select(IdentityRecord).where(identity_filter))
+    matches = result.scalars().all()
+    if len(matches) > 1:
+        logger.warning("[MOD-01] Multiple identity rows matched v2 migration lookup; using v1-preferred anchor")
+    existing = _select_identity_match(matches, nullifier)
 
     if existing and existing.status == KeyStatus.ACTIVE:
         # Auto-revoke and re-register (user lost their key or reinstalled app)
         await db.execute(
             update(IdentityRecord)
-            .where(IdentityRecord.nullifier_hash == nullifier)
+            .where(IdentityRecord.id == existing.id)
             .values(status=KeyStatus.REVOKED)
         )
         await db.commit()
         # Refresh existing reference
         result = await db.execute(
-            select(IdentityRecord).where(IdentityRecord.nullifier_hash == nullifier)
+            select(IdentityRecord).where(IdentityRecord.id == existing.id)
         )
         existing = result.scalar_one_or_none()
         logger.info(f"[MOD-01] Auto-revoked existing key for re-registration")
+
+    # If v2 matched a legacy row, keep the existing v1 nullifier_hash as the
+    # public compatibility anchor for votes/status/downstream tables.
+    compatibility_nullifier = _compatibility_nullifier(existing, nullifier)
 
     # 4. Keypair erzeugen
     keypair = generate_keypair()
@@ -171,23 +204,33 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
     # 6. Nur Public Key + Nullifier speichern
     if existing:
         # Revoked record reaktivieren
+        update_values = {
+            "public_key_hex": keypair["public_key_hex"],
+            "status": KeyStatus.ACTIVE,
+            "demographic_hash": demographic_hash,
+            "age_group": req.age_group,
+            "region": req.region,
+            "gender_code": req.gender_code,
+            "revoked_at": None,
+            "created_at": datetime.now(timezone.utc).replace(tzinfo=None),
+        }
+        if nullifier_v2:
+            update_values.update({
+                "nullifier_hash_v2": nullifier_v2,
+                "nullifier_version": "v2",
+                "nullifier_migrated_at": datetime.now(timezone.utc).replace(tzinfo=None),
+            })
         await db.execute(
             update(IdentityRecord)
-            .where(IdentityRecord.nullifier_hash == nullifier)
-            .values(
-                public_key_hex=keypair["public_key_hex"],
-                status=KeyStatus.ACTIVE,
-                demographic_hash=demographic_hash,
-                age_group=req.age_group,
-                region=req.region,
-                gender_code=req.gender_code,
-                revoked_at=None,
-                created_at=datetime.now(timezone.utc).replace(tzinfo=None)
-            )
+            .where(IdentityRecord.id == existing.id)
+            .values(**update_values)
         )
     else:
         record = IdentityRecord(
             nullifier_hash=nullifier,
+            nullifier_hash_v2=nullifier_v2,
+            nullifier_version="v2" if nullifier_v2 else "v1",
+            nullifier_migrated_at=datetime.now(timezone.utc).replace(tzinfo=None) if nullifier_v2 else None,
             public_key_hex=keypair["public_key_hex"],
             demographic_hash=demographic_hash,
             age_group=req.age_group,
@@ -200,7 +243,7 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
     # Cascade: SurveyResponses (VAA — Art. 9 GDPR)
     await db.execute(
         text("DELETE FROM survey_responses WHERE user_hash = :nh"),
-        {"nh": nullifier}
+        {"nh": compatibility_nullifier}
     )
     await db.commit()
 
@@ -209,7 +252,7 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
         success=True,
         public_key_hex=keypair["public_key_hex"],
         private_key_hex=keypair["private_key_hex"],
-        nullifier_hash=nullifier,
+        nullifier_hash=compatibility_nullifier,
         message="Κλειδί δημιουργήθηκε. Αποθηκεύεται με ασφάλεια στη συσκευή σας. Δεν αποθηκεύεται στον server."
     )
 

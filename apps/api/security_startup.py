@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import importlib.util
 from collections.abc import Mapping
 
 logger = logging.getLogger(__name__)
@@ -34,3 +35,15 @@ def validate_server_salt_config(environ: Mapping[str, str] | None = None) -> Non
         raise RuntimeError(
             f"SERVER_SALT startup check failed: must be at least {MIN_SERVER_SALT_LENGTH} characters"
         )
+
+
+def validate_identity_kdf_config(environ: Mapping[str, str] | None = None) -> None:
+    """Fail closed if v2 identity nullifiers are enabled without Argon2 support."""
+    env = environ or os.environ
+    version = env.get("IDENTITY_NULLIFIER_KDF_VERSION", "v1").lower()
+
+    if version not in {"v1", "v2"}:
+        raise RuntimeError("IDENTITY_NULLIFIER_KDF_VERSION must be v1 or v2")
+
+    if version == "v2" and importlib.util.find_spec("argon2") is None:
+        raise RuntimeError("IDENTITY_NULLIFIER_KDF_VERSION=v2 requires argon2-cffi")
