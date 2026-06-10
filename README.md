@@ -31,8 +31,8 @@ The **ekklesia** was the popular assembly of ancient Athens &mdash; where every 
 - **Party Comparison** &mdash; Which party votes like the people?
 - **Municipal Governance** &mdash; Diavgeia decisions per region and municipality
 - **Politician Evaluation** &mdash; Rate elected officials on transparency and performance
-- **AI Assistant** &mdash; Ollama-powered bill summaries and citizen Q&A
-- **Full Anonymity** &mdash; Ed25519 signatures, nullifier hashes, zero personal data
+- **AI Assistant** &mdash; Ollama-powered citizen Q&A; reviewed summaries and official source text for bills
+- **Privacy by Design** &mdash; Ed25519 signatures, nullifier hashes, no phone-number storage
 
 > This platform is not affiliated with any government entity. All votes are informational only and carry no legal binding force.
 
@@ -54,19 +54,19 @@ This project uses publicly available government data from:
 | Party Ranking | Which party agrees most with citizens | Beta |
 | Municipal Governance | 13 regions, 325 municipalities, Diavgeia integration | Beta |
 | Politician Evaluation | Citizen ratings for elected officials | Beta |
-| AI Bill Summaries | Ollama (EN) + DeepL (EN&rarr;EL), cached in Redis | Beta |
+| Bill Text + Summaries | Official full text/PDF links plus reviewed short summaries | Beta |
 | RAG Agent | Citizen Q&A: Ollama + DeepL translation | Beta |
 | Auto-Healing Scraper | Ollama repairs broken CSS selectors | Beta |
 | Newsletter + Telegram | Brevo SMTP + Telegram cross-publish | Beta |
 | Push Notifications | Expo Push API, APScheduler | Beta |
 | Stripe Donations | Community-funded, auto-allocation | Beta |
-| Mobile App | Expo React Native, Ed25519, Compass | Beta |
+| Mobile App | Expo React Native, HLR SIM check, Ed25519, Compass | Beta |
 | Representative App | Role-based bill visibility for elected officials | Beta |
 | Discourse Forum | Automated topic sync per bill | Beta |
 | Arweave Archive | Immutable vote audit trail | Beta |
 | POLIS Tickets | Citizen issue tracker with Ed25519 auth | Beta |
 | Dashboard | Admin panel with GitHub OAuth, 15+ pages | Beta |
-| ZK Voting V2 | Semaphore-based anonymous proofs | ADR (blocked on mobile prover) |
+| ZK Voting V2 | Optional Semaphore-based anonymous proofs | ADR (blocked on native mobile prover) |
 
 ---
 
@@ -149,14 +149,14 @@ cd apps/web && npm run build
 
 | Data | Stored? |
 |---|---|
-| Mobile number | Deleted immediately after verification |
+| Mobile number | Used for HLR active-SIM verification, deleted immediately after verification |
 | Private key | Device only &mdash; never leaves your phone |
-| Personal data | Never collected |
-| Nullifier hash | Server-salted SHA256 for Beta identity uniqueness; phone not stored |
+| IP address | Limited to rate limiting / security; not linked to votes or identity |
+| Nullifier hash | Server-salted SHA256 for Beta identity uniqueness; phone not stored; Argon2id v2 scaffold prepared but disabled |
 | Public key | Ed25519 hex (anonymous) |
 | Votes | Anonymized, Arweave-archived |
 
-> Identity revocation is self-service only. The system does not store phone numbers after registration &mdash; Privacy by Design.
+> Identity revocation is self-service only. The system does not store phone numbers after registration. Current Beta nullifiers depend on `SERVER_SALT` secrecy; a versioned Argon2id migration is tracked separately.
 
 &rarr; Details: [Security Wiki](https://ekklesia.gr/wiki/security.html)
 

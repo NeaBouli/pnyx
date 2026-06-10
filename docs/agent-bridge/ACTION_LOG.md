@@ -8378,3 +8378,23 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `https://api.ekklesia.gr/health`: 200
   - `https://api.ekklesia.gr/api/v1/bills?limit=1`: 200
   - container KDF smoke: v1 nullifier length 64, KDF guard OK
+
+## 2026-06-10 — README audit wording update
+
+### Scope
+- Documentation-only cleanup after audit hardening.
+- No runtime, API, DB, forum, web, or mobile changes.
+
+### Changed
+- Replaced over-broad "zero personal data" / "Personal data never collected" wording with precise privacy wording:
+  - no phone-number storage
+  - HLR active-SIM verification
+  - limited IP use for rate limiting/security, not linked to votes or identity
+  - Beta nullifier is server-salted SHA256; Argon2id v2 scaffold is prepared but disabled
+- Updated feature table:
+  - bill text + summaries = official full text/PDF links plus reviewed summaries
+  - ZK/Semaphore remains optional and blocked on native mobile prover
+
+### Verification
+- `git diff --check`: OK.
+- README stale grep for `zero personal data`, `Personal data | Never collected`, `SMS`, `Next.js 14`, `62 endpoints`, `22 modules`, `Mobile TODO`: no matches.
