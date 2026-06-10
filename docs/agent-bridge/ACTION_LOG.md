@@ -8446,3 +8446,23 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Added `apps/api/tests/test_scraper_parliament.py`.
 - `apps/api/.venv/bin/python -m pytest -q tests/test_scraper_parliament.py tests/services/test_parliament_fetcher.py tests/services/test_discourse_sync.py tests/services/test_source_links.py tests/test_security_startup.py`: 43 passed.
 - Local live Jina dry-run is blocked by AS9009 reputation, so production/server-side dry-run is required after deploy.
+
+## 2026-06-10 — Parliament scraper metadata upsert fix
+
+### Root Cause Follow-up
+- After the all-laws parser fix, server dry-run showed the current Parliament entries.
+- Several current entries already existed in DB with older dates, so `scheduled_scrape()` skipped them entirely and did not refresh `submitted_date` / `parliament_vote_date`.
+
+### Fix
+- Existing Parliament rows are no longer blindly skipped.
+- Existing rows keep identity, status, votes, forum topic, and title intact.
+- Only safe scraper metadata is refreshed:
+  - `parliament_url`
+  - `submitted_date`
+  - `parliament_vote_date`
+  - `categories` only when empty and ministry exists
+- Telegram notifications now use the exact inserted rows, not `bills[:inserted]`, avoiding wrong notifications when updates precede new inserts.
+
+### Verification
+- `apps/api/.venv/bin/python -m py_compile main.py routers/scraper.py tests/test_scraper_parliament.py`: OK.
+- `apps/api/.venv/bin/python -m pytest -q tests/test_scraper_parliament.py tests/services/test_parliament_fetcher.py tests/services/test_discourse_sync.py tests/services/test_source_links.py tests/test_security_startup.py`: 43 passed.

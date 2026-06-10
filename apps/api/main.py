@@ -118,6 +118,8 @@ async def scheduled_scrape():
             return
 
         inserted = 0
+        updated = 0
+        inserted_notifications = []
         async with AsyncSessionLocal() as db:
             for b in bills:
                 title = (b.get("title_el") or "").strip()
@@ -134,13 +136,6 @@ async def scheduled_scrape():
                 else:
                     h = hashlib.sha256(title.encode()).hexdigest()[:8]
                     bill_id = f"GR-AUTO-{h}"
-
-                # Skip if already exists
-                existing = await db.execute(
-                    select(ParliamentBill.id).where(ParliamentBill.id == bill_id)
-                )
-                if existing.scalar_one_or_none():
-                    continue
 
                 # Parse vote date if available (strip tz for naive DB column)
                 vote_date = None
@@ -160,6 +155,30 @@ async def scheduled_scrape():
                     except (ValueError, TypeError):
                         pass
 
+                # Existing rows keep votes/forum/status, but scraper metadata may move
+                # forward as Parliament phases change on all-laws.
+                existing = await db.execute(
+                    select(ParliamentBill).where(ParliamentBill.id == bill_id)
+                )
+                existing_bill = existing.scalar_one_or_none()
+                if existing_bill:
+                    changed = False
+                    if b.get("url") and existing_bill.parliament_url != b.get("url"):
+                        existing_bill.parliament_url = b.get("url")
+                        changed = True
+                    if submitted_date and existing_bill.submitted_date != submitted_date:
+                        existing_bill.submitted_date = submitted_date
+                        changed = True
+                    if vote_date and existing_bill.parliament_vote_date != vote_date:
+                        existing_bill.parliament_vote_date = vote_date
+                        changed = True
+                    if b.get("ministry") and not existing_bill.categories:
+                        existing_bill.categories = [b["ministry"]]
+                        changed = True
+                    if changed:
+                        updated += 1
+                    continue
+
                 new_bill = ParliamentBill(
                     id=bill_id,
                     title_el=title,
@@ -171,14 +190,15 @@ async def scheduled_scrape():
                 )
                 db.add(new_bill)
                 inserted += 1
+                inserted_notifications.append(b)
 
-            if inserted > 0:
+            if inserted > 0 or updated > 0:
                 await db.commit()
-                logger.info("[MOD-03] Upserted %d new bills into DB", inserted)
+                logger.info("[MOD-03] Upserted %d new, updated %d existing bills into DB", inserted, updated)
                 # Notify community about new bills
                 try:
                     from services.telegram_community import notify_announced
-                    for b in bills[:inserted]:
+                    for b in inserted_notifications:
                         title = (b.get("title_el") or "")[:150]
                         if title:
                             await notify_announced(b.get("law_id", "")[:8] or "new", title, b.get("submitted_date"))
