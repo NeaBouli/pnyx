@@ -8466,3 +8466,19 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Verification
 - `apps/api/.venv/bin/python -m py_compile main.py routers/scraper.py tests/test_scraper_parliament.py`: OK.
 - `apps/api/.venv/bin/python -m pytest -q tests/test_scraper_parliament.py tests/services/test_parliament_fetcher.py tests/services/test_discourse_sync.py tests/services/test_source_links.py tests/test_security_startup.py`: 43 passed.
+
+## 2026-06-10 — Bills list sorting uses submitted_date fallback
+
+### Root Cause Follow-up
+- After Parliament metadata was refreshed, `/api/v1/bills` still did not show the 2026-06-10 submitted bill first.
+- The list sorted by `parliament_vote_date DESC NULLS LAST, created_at DESC`; submitted-only bills were pushed behind older voted/open-end rows.
+
+### Fix
+- Main bills API and public API now sort by:
+  - `COALESCE(parliament_vote_date, submitted_date, created_at) DESC`
+  - then `created_at DESC`
+- This keeps voted bills date-sorted while allowing newly submitted Parliament bills to appear at the top.
+
+### Verification
+- `apps/api/.venv/bin/python -m py_compile routers/parliament.py routers/public_api.py`: OK.
+- `apps/api/.venv/bin/python -m pytest -q tests/test_scraper_parliament.py tests/test_security_startup.py tests/services/test_source_links.py`: 16 passed.

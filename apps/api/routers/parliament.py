@@ -143,8 +143,12 @@ async def get_bills(
         ~ParliamentBill.id.like("DEMO-%"),
         ParliamentBill.admin_hidden != True,
     ).order_by(
-        ParliamentBill.parliament_vote_date.desc().nullslast(),
-        ParliamentBill.created_at.desc()
+        func.coalesce(
+            ParliamentBill.parliament_vote_date,
+            ParliamentBill.submitted_date,
+            ParliamentBill.created_at,
+        ).desc().nullslast(),
+        ParliamentBill.created_at.desc(),
     ).limit(limit).offset(offset)
 
     if status_filter:

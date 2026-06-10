@@ -145,7 +145,12 @@ async def public_bills(
 ):
     """Alle Gesetzentwürfe — öffentlich, CC BY 4.0."""
     query = select(ParliamentBill).order_by(
-        ParliamentBill.parliament_vote_date.desc().nullslast()
+        func.coalesce(
+            ParliamentBill.parliament_vote_date,
+            ParliamentBill.submitted_date,
+            ParliamentBill.created_at,
+        ).desc().nullslast(),
+        ParliamentBill.created_at.desc(),
     ).limit(min(limit, 100)).offset(offset)
 
     if status:
