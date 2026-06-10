@@ -8515,3 +8515,28 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `apps/api/.venv/bin/python -m pytest -q tests/test_monitor_parliament_freshness.py tests/test_scraper_parliament.py tests/test_security_startup.py`: 14 passed.
 - `python -m py_compile apps/monitor/monitor.py`: OK.
 - Rollback tag: `rollback-pre-parliament-freshness-guard-20260610-1449`.
+
+## 2026-06-10 — Lifecycle catch-up prevents stuck alert stair-step
+
+### Trigger
+- Admin Telegram showed repeated `lifecycle_stuck` alerts for:
+  - `GR-a3562ec6`
+  - `GR-d4c62ed4`
+  - `GR-fa1f20de`
+- The rows moved ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED/OPEN_END one hourly scheduler run at a time, causing repeated T3 alerts even though the lifecycle job was progressing.
+
+### Root Cause
+- `run_bill_lifecycle()` intentionally had `break  # Only one transition per cycle per bill`.
+- This is safe for normal future schedules, but wrong for catch-up rows whose `parliament_vote_date` is already in the past after scraper metadata repair.
+
+### Fix
+- Added pure helper `due_lifecycle_transitions(current_status, vote_date, now)`.
+- Overdue rows now apply every due transition in one lifecycle run, preserving audit log order.
+- Normal one-step transitions keep existing hook behavior.
+- Catch-up transitions suppress stale intermediate Telegram/push messages and only run the hook relevant to the final live status.
+
+### Verification
+- Added `apps/api/tests/services/test_bill_lifecycle_transitions.py`.
+- `apps/api/.venv/bin/python -m pytest -q tests/services/test_bill_lifecycle_transitions.py tests/services/test_arweave_guards.py tests/test_monitor_parliament_freshness.py tests/test_security_startup.py`: 25 passed.
+- `apps/api/.venv/bin/python -m py_compile services/bill_lifecycle.py tests/services/test_bill_lifecycle_transitions.py`: OK.
+- Rollback tag: `rollback-pre-lifecycle-catchup-20260610-2301`.

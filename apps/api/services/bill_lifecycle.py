@@ -28,6 +28,25 @@ LIFECYCLE_RULES = [
 ]
 
 
+def due_lifecycle_transitions(
+    current_status: BillStatus,
+    vote_date: datetime,
+    now: datetime,
+) -> list[BillStatus]:
+    """Return every lifecycle status now due, preserving transition order."""
+    due: list[BillStatus] = []
+    status = current_status
+    for from_status, offset, to_status in LIFECYCLE_RULES:
+        if status != from_status:
+            continue
+        trigger_time = vote_date + offset
+        if now < trigger_time:
+            break
+        due.append(to_status)
+        status = to_status
+    return due
+
+
 async def _transition_bill(
     db: AsyncSession,
     bill: ParliamentBill,
@@ -83,29 +102,35 @@ async def run_bill_lifecycle(db: AsyncSession) -> dict:
             vote_date = vote_date.replace(tzinfo=timezone.utc)
 
         try:
-            for from_status, offset, to_status in LIFECYCLE_RULES:
-                if bill.status != from_status:
-                    continue
+            due_transitions = due_lifecycle_transitions(bill.status, vote_date, now)
+            if not due_transitions:
+                continue
 
-                # Calculate trigger time
-                trigger_time = vote_date + offset
-                if now >= trigger_time:
-                    await _transition_bill(db, bill, to_status)
-                    stats["transitioned"] += 1
+            catch_up = len(due_transitions) > 1
+            for to_status in due_transitions:
+                await _transition_bill(db, bill, to_status)
+                stats["transitioned"] += 1
 
-                    # Hooks
-                    if to_status == BillStatus.ACTIVE:
-                        await _hook_notify_new_bill(bill)
-                        await _hook_telegram_community(bill, to_status)
-                    elif to_status == BillStatus.WINDOW_24H:
-                        await _hook_telegram_community(bill, to_status)
-                    elif to_status == BillStatus.PARLIAMENT_VOTED:
-                        await _hook_arweave_snapshot(db, bill)
-                        await _hook_telegram_community(bill, to_status, db=db)
-                    elif to_status == BillStatus.OPEN_END:
-                        pass  # no community post for OPEN_END
+            final_status = due_transitions[-1]
+            if catch_up:
+                logger.info(
+                    "[LIFECYCLE] %s catch-up applied %d transitions → %s",
+                    bill.id, len(due_transitions), final_status.value,
+                )
 
-                    break  # Only one transition per cycle per bill
+            # Hooks: normal one-step transitions preserve existing behavior.
+            # Catch-up suppresses stale intermediate Telegram/push messages and
+            # only runs the hook relevant to the final live status.
+            if final_status == BillStatus.ACTIVE:
+                await _hook_notify_new_bill(bill)
+                await _hook_telegram_community(bill, final_status)
+            elif final_status == BillStatus.WINDOW_24H:
+                await _hook_telegram_community(bill, final_status)
+            elif final_status == BillStatus.PARLIAMENT_VOTED:
+                await _hook_arweave_snapshot(db, bill)
+                await _hook_telegram_community(bill, final_status, db=db)
+            elif final_status == BillStatus.OPEN_END:
+                pass  # no community post for OPEN_END
 
         except Exception as e:
             logger.error("[LIFECYCLE] Error processing %s: %s", bill.id, e)
