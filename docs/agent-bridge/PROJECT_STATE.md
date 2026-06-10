@@ -39,7 +39,7 @@
 - **DIAVGEIA S10 Retest:** PASS — source card visible/clickable (`Πηγή — Διαύγεια` opens Android intent chooser), org/pill no longer shown as `Σύνοψη`, quote markers removed. Evidence: `/tmp/ekklesia_diav_fix_final_20260604_000652`.
 - **Pending high:** NEA-301 Fetcher (9 Bills ohne summary_long_el), NEA-301b DIAVGEIA real summary backfill, NEA-304 follow-up, #79/NEA-281 F-Droid linsui merge, NEA-286 Lifecycle-Bug
 - **Pending medium/backlog:** NEA-260/GH#82 Forum SSO, NEA-285/GH#83 Diavgeia org mapping, NEA-279/GH#77 ZK Wizard, NEA-262 weekly auto-newsletter
-- **Pending external/blocked:** NEA-282/GH#80 Off-site backup waits for first donation; NEA-249/GH#81 blocked on Mopro/React Native
+- **Pending external/blocked:** NEA-282/GH#80 Off-site backup waits for first donation; NEA-249/GH#81 Android native prover works on S10 but product ZK voting remains feature-flagged pending backend/Arweave integration
 - **Neu live:** municipality/, article.html, Autodesmefsi PDF, Forum Topic #436
 
 ## Uncommitted Aenderungen
@@ -110,7 +110,7 @@
 
 - Full security audit (NEA-251..258): 2 HIGH + 5 MEDIUM all resolved
 - Watcher 3-tier self-healing (NEA-241): live + T2 active
-- ZK V2 ADR (NEA-249): blocked on mobile prover
+- ZK V2 ADR (NEA-249): Android mobile prover self-test passes on S10; product integration still gated
 - Dashboard: /politicians + /monitor + /newsletter-admin (21 pages total)
 - Newsletter: Brevo compose + preview + draft + send
 - Forum SSO: ADR-only (NEA-260)
@@ -121,7 +121,7 @@
 
 ## Open / Backlog
 
-- NEA-249: ZK V2 — BLOCKED, Mopro feasibility needed
+- NEA-249: ZK V2 — Android Mopro/Semaphore prover feasible; next step is separate guarded product integration design
 - NEA-260: Forum SSO V1 — ADR, Discourse API investigation needed
 - NEA-258: FORUM_SSO_SALT startup check (LOW)
 - NEA-256: Alembic schema baseline repair migrations (ADR written, no DB changes)

@@ -42,9 +42,16 @@ Update 2026-06-10:
 - Ekklesia added a runtime capability adapter that detects bundled native modules `Identity`, `Group`, and `Proof`.
 - Production ZK remains disabled by feature flag until a pinned native prover build is verified on device.
 
+Update 2026-06-11:
+- Android native proving is feasible on the S10 test device.
+- Added an app-local Semaphore self-test that generates and verifies a test proof on-device without creating a vote or sending data to Ekklesia.
+- The vendored Android wrapper sets `TMPDIR` to app-owned storage before proof generation, allowing `semaphore-protocol` to download/cache its zkey artifact in a writable directory.
+- S10 verification passed: native proof generated and verified locally (`depth 16`, two-member test group, proof approximately 1 KB, first run after artifact setup ~2.3s).
+- Production ZK voting is still disabled by feature flag. This update proves mobile prover feasibility only; backend verification, group registry, Arweave bulletin board records, and a canary rollout remain separate product-integration work.
+
 ## Explicit Non-Goals (Current State)
 
-- No product code implementation
+- No production voting integration
 - No DB migrations
 - No API endpoints
 - No Arweave writes

@@ -20,7 +20,7 @@
 - [ ] GH#102 / NEA-312 — echter `WINDOW_24H` Bill nötig
 - [ ] GH#79 — F-Droid !38007 wartet auf linsui Merge
 - [ ] GH#80 — Off-site Backup wartet auf Hetzner Storage Box / erste Spende
-- [ ] GH#81 — ZK V2 wartet auf nativen Mopro/Semaphore Mobile-Prover
+- [x] GH#81 — Android Native-Prover Self-Test auf S10 erfolgreich; produktives ZK-Voting bleibt Feature-Flag-guarded bis Backend/Arweave-Integration
 - [x] NEA-286 / GH#94 — Lifecycle WINDOW_24H stuck: resolved/stale; Production 2026-06-09 ohne stuck Rows, Scheduler healthy
 
 ## Tracking: GitHub Issues #71-#83 (Linear = read-only Archiv)
@@ -55,7 +55,7 @@
 
 ## Blocked
 - [ ] NEA-249: ZK Voting V2 — BLOCKED (mobile prover unresolved, ADR geschrieben)
-- [ ] NEA-249 Follow-up: Mopro native Expo Module feasibility plan
+- [ ] NEA-249 Follow-up: ZK V2 Produktintegration nur mit eigenem Ticket: Backend verifier, Semaphore group registry, Arweave bulletin board, Canary
 
 ## Done (Session 25.05.2026)
 - [x] F-Droid !38007 autoupdate: `AutoUpdateMode: Version`, `UpdateCheckMode: Tags`, CurrentVersion 1.3.2/27 pushed to fdroiddata (`3d81d65c1`) + linsui comment posted

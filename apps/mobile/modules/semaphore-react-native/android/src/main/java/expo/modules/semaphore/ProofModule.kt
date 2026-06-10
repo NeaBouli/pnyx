@@ -1,11 +1,23 @@
 package expo.modules.semaphore
 
+import android.system.Os
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.kotlin.exception.CodedException
+import java.io.File
 import uniffi.mopro.*
 
 class ProofModule : Module() {
+
+  private fun prepareWritableProverDirectory() {
+    val reactContext = appContext.reactContext
+      ?: throw CodedException("ProofStorageError", "React context is not available for Semaphore prover storage.", null)
+    val proofDir = File(reactContext.filesDir, "semaphore-prover")
+    if (!proofDir.exists() && !proofDir.mkdirs()) {
+      throw CodedException("ProofStorageError", "Unable to create Semaphore prover storage directory.", null)
+    }
+    Os.setenv("TMPDIR", proofDir.absolutePath, true)
+  }
 
   override fun definition() = ModuleDefinition {
     Name("Proof")
@@ -18,6 +30,8 @@ class ProofModule : Module() {
       treeDepth: Int 
     ->
       try {
+        prepareWritableProverDirectory()
+
         // Create Identity from private key
         val identity = Identity(privateKey)
         
@@ -82,4 +96,4 @@ class ProofModule : Module() {
       }
     }
   }
-} 
+}

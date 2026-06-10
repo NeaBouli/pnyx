@@ -8555,3 +8555,46 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Redis `scraper:bill_lifecycle:error_count`: 0
   - DB overdue stuck query for `ANNOUNCED/ACTIVE/WINDOW_24H` older than 1 day: 0
   - Manual monitor run: `All checks passed — no alerts`, exit 0
+
+## 2026-06-11 — GH#81 / NEA-249: Android Semaphore native prover self-test passes on S10
+
+### Scope
+- Goal was to finish the mobile-prover feasibility blocker without touching production voting.
+- Production voting remains Ed25519/HMAC.
+- `zkSemaphoreEnabled` remains off; Semaphore is visible only as guarded settings/status and a manual native self-test.
+- No API changes, no DB migrations, no Arweave writes, no vote submission changes.
+
+### Fix
+- Added a pure/testable mobile self-test harness:
+  - `apps/mobile/src/lib/zkSemaphoreSelfTestCore.ts`
+  - `apps/mobile/src/lib/zkSemaphoreSelfTest.ts`
+  - `apps/mobile/src/lib/zkSemaphoreSelfTest.test.ts`
+- `ZkSemaphoreScreen` now exposes a manual `Έλεγχος Prover` button for devices where native modules are present.
+- The self-test creates a deterministic test identity/group, generates a Semaphore proof locally, verifies it locally, and sends nothing to Ekklesia.
+- Fixed Android zkey artifact storage for the vendored Mopro/Semaphore module:
+  - `semaphore-protocol` downloads zkey artifacts via `std::env::temp_dir()`.
+  - Android default temp path caused `Permission denied`.
+  - `ProofModule.kt` now sets `TMPDIR` to app-owned `filesDir/semaphore-prover` before proof/verify calls.
+
+### Verification
+- Rollback tag: `rollback-pre-gh81-selftest-20260611-0000`.
+- `cd apps/mobile && npx tsc --noEmit`: OK.
+- `cd apps/mobile && npx vitest run src/lib/api.test.ts src/lib/source-resolver.test.ts src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreNative.test.ts src/lib/zkSemaphoreSelfTest.test.ts`: 40 passed.
+- `cd apps/mobile/android && ./gradlew :app:assemblePlayRelease`: BUILD SUCCESSFUL.
+- S10 install:
+  - package: `ekklesia.gr`
+  - versionName: `1.0.3`
+  - final install `lastUpdateTime=2026-06-11 00:54:38`
+- S10 native self-test:
+  - Screen: Profile → Semaphore ZK V2 → `Έλεγχος Prover`
+  - Result: `✅ Native prover λειτουργεί`
+  - Proof verified locally in ~2.3s after artifact setup, depth 16, two-member test group, proof ~1038 bytes.
+  - No `AndroidRuntime` fatal crash.
+
+### Status
+- GH#81 mobile prover feasibility is no longer blocked on Mopro/React Native for Android.
+- Product ZK voting is still not live and must remain behind a separate guarded integration ticket:
+  - backend verifier
+  - Semaphore group registry
+  - per-vote Arweave bulletin-board records
+  - canary rollout and rollback plan
