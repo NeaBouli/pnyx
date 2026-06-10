@@ -55,7 +55,7 @@
 
 ## Blocked
 - [ ] NEA-249: ZK Voting V2 — BLOCKED (mobile prover unresolved, ADR geschrieben)
-- [ ] NEA-249 Follow-up: ZK V2 Produktintegration nur mit eigenem Ticket: Backend verifier, Semaphore group registry, Arweave bulletin board, Canary
+- [ ] GH#112 / NEA-249 Follow-up: ZK V2 Produktintegration nur mit eigenem Ticket: Backend verifier, Semaphore group registry, Arweave bulletin board, Canary
 
 ## Done (Session 25.05.2026)
 - [x] F-Droid !38007 autoupdate: `AutoUpdateMode: Version`, `UpdateCheckMode: Tags`, CurrentVersion 1.3.2/27 pushed to fdroiddata (`3d81d65c1`) + linsui comment posted
