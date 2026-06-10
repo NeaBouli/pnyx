@@ -1,6 +1,6 @@
 /**
  * VerifyScreen — Επαλήθευση Ταυτότητας
- * SMS → Ed25519 Keypair → Secure Enclave
+ * HLR SIM check → Ed25519 Keypair → Secure Enclave
  */
 import React, { useState } from "react";
 import {

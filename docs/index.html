@@ -536,7 +536,7 @@
       <div class="step fade-in">
         <div class="step-num">1</div>
         <h3 data-el="Επαλήθευση" data-en="Verification">Επαλήθευση</h3>
-        <p data-el="SMS στον αριθμό σας. Διαγράφεται αμέσως." data-en="SMS to your number. Deleted immediately.">SMS στον αριθμό σας. Διαγράφεται αμέσως.</p>
+        <p data-el="Έλεγχος ενεργής ελληνικής SIM μέσω HLR. Δεν στέλνεται SMS και ο αριθμός διαγράφεται αμέσως." data-en="Active Greek SIM check via HLR. No SMS is sent and the number is deleted immediately.">Έλεγχος ενεργής ελληνικής SIM μέσω HLR. Δεν στέλνεται SMS και ο αριθμός διαγράφεται αμέσως.</p>
       </div>
       <div class="step fade-in">
         <div class="step-num">2</div>
@@ -556,7 +556,7 @@
     </div>
     <figure class="ekk-visual-card ekk-visual-frame ekk-fade-up" style="margin-top:2rem">
       <img src="animations/svg/voting-flow.svg"
-           alt="Ροή ψήφου: SMS επαλήθευση, SHA256 hash, Ed25519 κλειδί στη συσκευή, υπογεγραμμένη ψήφος και δημόσιο αποτέλεσμα"
+           alt="Ροή ψήφου: HLR έλεγχος χωρίς SMS, nullifier hash, Ed25519 κλειδί στη συσκευή, υπογεγραμμένη ψήφος και δημόσιο αποτέλεσμα"
            loading="lazy" decoding="async">
     </figure>
   </div>
@@ -1169,7 +1169,7 @@
         <div class="roadmap-phase" style="color:var(--green)">Beta — <span data-el="Τώρα" data-en="Now">Τώρα</span></div>
         <h3>Beta Phase</h3>
         <ul>
-          <li data-el="SMS Επαλήθευση (HLR)" data-en="SMS Verification (HLR)">SMS Επαλήθευση (HLR)</li>
+          <li data-el="HLR έλεγχος ελληνικής SIM (χωρίς SMS)" data-en="Greek SIM HLR check (no SMS)">HLR έλεγχος ελληνικής SIM (χωρίς SMS)</li>
           <li data-el="Ψηφοφορία Πολιτών (Ed25519)" data-en="Citizen Voting (Ed25519)">Ψηφοφορία Πολιτών (Ed25519)</li>
           <li data-el="Δείκτης Απόκλισης" data-en="Divergence Score">Δείκτης Απόκλισης</li>
           <li data-el="Τοπική Αυτοδιοίκηση (Διαύγεια)" data-en="Local Governance (Diavgeia)">Τοπική Αυτοδιοίκηση (Διαύγεια)</li>
@@ -1177,7 +1177,7 @@
           <li data-el="Newsletter + Push Notifications" data-en="Newsletter + Push Notifications">Newsletter + Push</li>
           <li data-el="Stripe Δωρεές" data-en="Stripe Donations">Stripe Δωρεές</li>
           <li data-el="Mobile App (Android)" data-en="Mobile App (Android)">Mobile App (Android)</li>
-          <li data-el="εκπρόσωπος App + SMS Επαλήθευση" data-en="Representative App + SMS Verification">εκπρόσωπος App + SMS Επαλήθευση</li>
+          <li data-el="εκπρόσωπος App + HLR Επαλήθευση" data-en="Representative App + HLR Verification">εκπρόσωπος App + HLR Επαλήθευση</li>
           <li data-el="Πολιτικοί — Αξιολόγηση Εκπροσώπων" data-en="Politikoi — Representative Evaluation">Πολιτικοί — Αξιολόγηση Εκπροσώπων</li>
           <li data-el="Arweave Αρχειοθέτηση" data-en="Arweave Archival">Arweave Αρχειοθέτηση</li>
           <li data-el="Κλίμακα Συναίνεσης (-5 έως +5)" data-en="Consensus Scale (-5 to +5)">Κλίμακα Συναίνεσης (-5 έως +5)</li>
@@ -1190,7 +1190,7 @@
         <div class="roadmap-phase" style="color:#f59e0b" data-el="Alpha — Επόμενη Φάση" data-en="Alpha — Next Phase">Alpha — Επόμενη Φάση</div>
         <h3>Alpha Phase</h3>
         <ul>
-          <li data-el="gov.gr OAuth2.0 (αντικαθιστά SMS)" data-en="gov.gr OAuth2.0 (replaces SMS)">gov.gr OAuth2.0 (αντικαθιστά SMS)</li>
+          <li data-el="gov.gr OAuth2.0 (αντικαθιστά το HLR Beta)" data-en="gov.gr OAuth2.0 (replaces Beta HLR)">gov.gr OAuth2.0 (αντικαθιστά το HLR Beta)</li>
           <li data-el="Zero-Knowledge Proofs (Semaphore)" data-en="Zero-Knowledge Proofs (Semaphore)">Zero-Knowledge Proofs (Semaphore)</li>
           <li data-el="Πλήρης Ταυτοποίηση Ψηφοφόρων" data-en="Full Voter Verification">Πλήρης Ταυτοποίηση Ψηφοφόρων</li>
           <li data-el="Federation API" data-en="Federation API">Federation API</li>
@@ -1503,7 +1503,7 @@ async function submitNewsletter(e) {
 </div>
 <script>
 var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου / Privacy Policy</h2>'
-+'<p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP Address, Ηλικία, Φύλο.</p>'
++'<p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP συνδεδεμένη με ψήφο ή ταυτότητα, Ηλικία, Φύλο.</p>'
 +'<p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash (SHA256), Public Key (Ed25519), Ψήφοι (ανώνυμα YES/NO/ABSTAIN).</p>'
 +'<p><strong>k-Anonymity:</strong> Δημογραφικά μόνο όταν k ≥ 10 ψήφοι.</p>'
 +'<p><strong>GDPR:</strong> Servers στην Ευρώπη (Hetzner). Privacy by design. Κανένα personal data στον server.</p>'

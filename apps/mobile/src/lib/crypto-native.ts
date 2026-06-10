@@ -3,10 +3,10 @@
  *
  * Mirrors packages/crypto/src/nullifier.ts protocol exactly.
  * Uses expo-secure-store (Android Keystore / iOS Keychain) for hardware-backed storage.
- * Uses react-native-argon2 for key derivation (no WASM needed).
+ * Uses PBKDF2-SHA256 as a portable mobile fallback until native Argon2id is wired.
  *
  * Key hierarchy:
- *   phone → Argon2id → nullifier_root (hardware-stored, never leaves device)
+ *   phone → PBKDF2-SHA256 fallback → nullifier_root (hardware-stored, never leaves device)
  *   nullifier_root → HMAC → identity_commitment (sent to server)
  *   nullifier_root × bill_id → HMAC → ephemeral_seed → Ed25519 keypair (per vote)
  *   nullifier_root × bill_id → HMAC → vote_nullifier (unique per bill, not linkable)
@@ -98,7 +98,7 @@ function normalizePhone(raw: string): string {
 // ─── Key Derivation ──────────────────────────────────────────────────────────
 
 /**
- * Derive nullifier_root from phone number using Argon2id.
+ * Derive nullifier_root from phone number using the current PBKDF2-SHA256 fallback.
  * This is the master secret — stored in hardware keystore.
  */
 export async function deriveNullifierRoot(phone: string): Promise<Uint8Array> {
@@ -466,7 +466,7 @@ export function signVoteEphemeral(
 
 /**
  * Complete registration flow:
- * 1. Derive nullifier_root from phone (Argon2id)
+ * 1. Derive nullifier_root from phone (PBKDF2-SHA256 fallback)
  * 2. Derive identity_commitment
  * 3. Store nullifier_root in hardware keystore
  * 4. Return identity_commitment for server registration

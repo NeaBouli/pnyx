@@ -141,17 +141,17 @@ Current: `g001a2b3c4d5` (prepared but not deployed: `h101a2b3c4d5` for ADR-022 T
 
 ## 3. Authentication & User System
 
-### SMS Verification
+### HLR Verification
 
 - **Provider:** hlr-lookups.com (HLR Lookup, not SMS OTP)
-- **Flow:** Phone → HLR check (is SIM active?) → Argon2id hash → nullifier_root → Ed25519 keypair
+- **Flow:** Phone → HLR check (is SIM active?) → server-salted identity hash → Ed25519 keypair
 - **Phone number:** DELETED immediately after nullifier generation (never stored)
 
 ### Server-Side Storage per User
 
 ```python
 class IdentityRecord:
-    nullifier_hash   # SHA256 + Argon2id (64 hex chars, non-reversible)
+    nullifier_hash   # Server-salted SHA256 (64 hex chars); phone is not stored
     public_key_hex   # Ed25519 (128 hex chars)
     demographic_hash # Optional: SHA256(region + gender + salt)
     age_group        # Optional: AGE_18_25 .. AGE_65_PLUS

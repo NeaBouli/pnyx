@@ -345,10 +345,10 @@
       </tr>
       <tr>
         <td>api.ekklesia.gr</td>
+        <td><span class="badge badge-yellow" data-el="Περιορισμένα" data-en="Limited">Περιορισμένα</span></td>
+        <td><span class="badge badge-yellow" data-el="Περιορισμένα" data-en="Limited">Περιορισμένα</span></td>
         <td><span class="badge badge-green" data-el="Όχι" data-en="No">Όχι</span></td>
-        <td><span class="badge badge-green" data-el="Όχι" data-en="No">Όχι</span></td>
-        <td><span class="badge badge-green" data-el="Όχι" data-en="No">Όχι</span></td>
-        <td data-el="Μόνο εσωτερική IP proxy" data-en="Internal proxy IP only">Μόνο εσωτερική IP proxy</td>
+        <td data-el="Rate limiting / ασφάλεια, όχι σύνδεση με ψήφο ή ταυτότητα" data-en="Rate limiting / security, not linked to vote or identity">Rate limiting / ασφάλεια, όχι σύνδεση με ψήφο ή ταυτότητα</td>
       </tr>
       <tr>
         <td>pnyx.ekklesia.gr (Forum)</td>
@@ -367,7 +367,7 @@
 
   <h2 class="fade-in" data-el="Σύστημα Επαλήθευσης & Στάθμιση Ψήφων" data-en="Verification System & Vote Weighting">Σύστημα Επαλήθευσης & Στάθμιση Ψήφων</h2>
 
-  <h3 data-el="Φάση Beta — SMS Επαλήθευση" data-en="Phase Beta — SMS Verification">Φάση Beta — SMS Επαλήθευση</h3>
+  <h3 data-el="Φάση Beta — HLR Επαλήθευση" data-en="Phase Beta — HLR Verification">Φάση Beta — HLR Επαλήθευση</h3>
   <p data-el="Η βασική επαλήθευση γίνεται μέσω ελληνικής SIM (+30) και HLR lookup. Επιβεβαιώνει ότι ο χρήστης κατέχει ενεργή ελληνική SIM — δεν επαληθεύει εκλογικό δικαίωμα (ηλικία, υπηκοότητα). Οι ψήφοι Beta χρηστών έχουν βάρος <strong>1.0x</strong>." data-en="Basic verification is done via Greek SIM (+30) and HLR lookup. It confirms the user holds an active Greek SIM — it does not verify electoral eligibility (age, citizenship). Beta user votes have a weight of <strong>1.0x</strong>.">Η βασική επαλήθευση γίνεται μέσω ελληνικής SIM (+30) και HLR lookup. Επιβεβαιώνει ότι ο χρήστης κατέχει ενεργή ελληνική SIM — δεν επαληθεύει εκλογικό δικαίωμα (ηλικία, υπηκοότητα). Οι ψήφοι Beta χρηστών έχουν βάρος <strong>1.0x</strong>.</p>
 
   <h3 data-el="Φάση Alpha — gov.gr Επαλήθευση" data-en="Phase Alpha — gov.gr Verification">Φάση Alpha — gov.gr Επαλήθευση</h3>
@@ -385,7 +385,7 @@
       </tr>
       <tr>
         <td><span class="badge badge-yellow">Beta</span></td>
-        <td>HLR / SMS (+30)</td>
+        <td>HLR (+30, χωρίς SMS)</td>
         <td><strong>1.0x</strong></td>
         <td data-el="Ελληνική SIM" data-en="Greek SIM">Ελληνική SIM</td>
         <td style="color:var(--red);font-weight:700" data-el="Δεν επαληθεύεται" data-en="Not verified">Δεν επαληθεύεται</td>
@@ -461,7 +461,7 @@
   </div>
 </div>
 <script>
-var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP Address.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ανώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
+var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP συνδεδεμένη με ψήφο ή ταυτότητα.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ανώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
 var _deleteHtml='<h2 style="margin-top:0">Διαγραφή Λογαριασμού</h2><p>Απεγκαταστήστε την εφαρμογή — Private Key και Nullifier διαγράφονται αμέσως.</p><p><a href="delete-account.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#ef4444;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Αναλυτικές Οδηγίες Διαγραφής →</a></p>';
 function openLegalModal(t){document.getElementById("legalContent").innerHTML=t==="privacy"?_privacyHtml:_deleteHtml;document.getElementById("legalModal").style.display="flex"}
 function closeLegalModal(){document.getElementById("legalModal").style.display="none"}

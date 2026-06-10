@@ -888,7 +888,7 @@ OVERALL:         [0-100]
 - Produkt:     Ekklesia.gr — Ψηφιακή Πλατφόρμα Αμέσης Δημοκρατίας
 - Copyright:   © 2026 Vendetta Labs (MIT License)
 - Spec:        v10.0 (25 Module, 23 live)
-- Phase:       Beta — SMS Verifikation, VAA, CitizenVote, Politikoi Evaluation, Forum Sync, Self-Healing Monitor
+- Phase:       Beta — HLR SIM-Verifikation, VAA, CitizenVote, Politikoi Evaluation, Forum Sync, Self-Healing Monitor
 
 ## Externe Referenz (READ ONLY — niemals verändern)
 - /Users/gio/TrueRepublic — Cosmos SDK Blockchain, PnyxCoin
@@ -922,7 +922,7 @@ MOD-14: Relevance Signal (integriert in /relevance)
 /[locale]/compass    → Liquid Compass Dashboard (4 Modelle, AES-256-GCM verschlüsselt)
 /[locale]/bills      → Bills Feed (Filter + StatusBadge + Cards)
 /[locale]/bills/[id] → Bill Detail (Summary + Abstimmung + Divergence) → feeds Compass
-/[locale]/verify     → Identity Verify (SMS → Key → Success)
+/[locale]/verify     → Identity Verify (HLR SIM check → Key → Success)
 /[locale]/results    → Ergebnisse & Divergenz
 /[locale]/analytics  → Analytische Daten
 /[locale]/mp         → Parteien vs Bürger

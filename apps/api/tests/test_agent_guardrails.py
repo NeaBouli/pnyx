@@ -41,7 +41,8 @@ def test_nullifier_answer_separates_ed25519_from_hash_generation():
 
     assert response is not None
     answer = response["answer"].lower()
-    assert "non-reversible" in answer
+    assert "without storing the phone number" in answer
+    assert "server salt is a critical secret" in answer
     assert "ed25519 is used for vote signatures" in answer
     assert "not the mechanism that generates" in answer
 
@@ -63,4 +64,3 @@ def test_bill_question_includes_bills():
     assert _should_include_bills("What bills are active?") is True
     assert _should_include_bills("Tell me about bill GR-2025-0001") is True
     assert _should_include_bills("Τι νομοσχέδια είναι ενεργά;") is True
-

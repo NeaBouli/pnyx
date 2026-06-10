@@ -412,8 +412,8 @@ private_key = Ed25519PrivateKey.generate()
 public_key = private_key.public_key()
 
 # Nullifier (anonymer Identifier):
-nullifier_hash = SHA256(Argon2id(phone_number + salt))
-# → nicht umkehrbar, phone wird danach gelöscht
+nullifier_hash = SHA256(phone_number + SERVER_SALT)
+# → phone wird danach gelöscht; SERVER_SALT ist ein kritisches Secret
 
 # Vote Signing:
 signature = private_key.sign(vote_payload)
@@ -433,7 +433,7 @@ Neue Felder auf citizen_votes:
 
 ### Vote Scope Enforcement
 ```
-NATIONAL Bills  → alle SMS-verifizierten User
+NATIONAL Bills  → alle HLR-verifizierten User
 REGIONAL Bills  → User mit matching periferia_id
 MUNICIPAL Bills → User mit matching dimos_id
 ```

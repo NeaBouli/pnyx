@@ -228,7 +228,7 @@
       <tr><td data-el="Αριθμός κινητού" data-en="Phone number">Αριθμός κινητού</td><td style="color:var(--red);font-weight:700">❌ Ποτέ</td><td data-el="Διαγράφεται μετά το hashing" data-en="Deleted after hashing">Διαγράφεται μετά το hashing</td></tr>
       <tr><td>Private Key</td><td style="color:var(--red);font-weight:700">❌ Ποτέ</td><td data-el="Μόνο στη συσκευή" data-en="Device only">Μόνο στη συσκευή</td></tr>
       <tr><td data-el="Ηλικία, Φύλο" data-en="Age, Gender">Ηλικία, Φύλο</td><td style="color:var(--red);font-weight:700">❌ Ποτέ</td><td data-el="Μόνο μετά hash" data-en="Only after hash">Μόνο μετά hash</td></tr>
-      <tr><td>IP Address</td><td style="color:var(--red);font-weight:700">❌ Ποτέ</td><td data-el="Δεν καταγράφεται" data-en="Not logged">Δεν καταγράφεται</td></tr>
+      <tr><td>IP Address</td><td style="color:#f59e0b;font-weight:700" data-el="⚠️ Περιορισμένα" data-en="⚠️ Limited">⚠️ Περιορισμένα</td><td data-el="Μόνο για rate limiting / ασφάλεια, όχι σύνδεση με ψήφο ή ταυτότητα" data-en="Only for rate limiting / security, not linked to vote or identity">Μόνο για rate limiting / ασφάλεια, όχι σύνδεση με ψήφο ή ταυτότητα</td></tr>
     </table>
   </div>
 
@@ -338,7 +338,7 @@
   </div>
 </div>
 <script>
-var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP Address.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ανώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
+var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP συνδεδεμένη με ψήφο ή ταυτότητα.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ανώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
 var _deleteHtml='<h2 style="margin-top:0">Διαγραφή Λογαριασμού</h2><p>Απεγκαταστήστε την εφαρμογή — Private Key και Nullifier διαγράφονται αμέσως.</p><p><a href="delete-account.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#ef4444;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Αναλυτικές Οδηγίες Διαγραφής →</a></p>';
 function openLegalModal(t){document.getElementById("legalContent").innerHTML=t==="privacy"?_privacyHtml:_deleteHtml;document.getElementById("legalModal").style.display="flex"}
 function closeLegalModal(){document.getElementById("legalModal").style.display="none"}

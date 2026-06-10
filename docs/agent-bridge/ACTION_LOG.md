@@ -7675,3 +7675,35 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - GO for the current guarded app state.
 - No active voting behavior changed.
 - ZK/Mopro remains infrastructure-only and disabled.
+
+## 2026-06-10 — Codex + Claude Code: Security consistency wording + safe web headers
+
+### Scope
+- Fix applied after audit findings. No DB migration, deploy, vote submission change, key derivation change, Arweave change, or forum update.
+- Runtime changes were limited to:
+  - Web headers in `apps/web/next.config.mjs`.
+  - Canonical API-agent wording for the nullifier explanation.
+  - Mobile onboarding text from SMS wording to HLR-without-SMS wording.
+
+### Implemented
+- Replaced stale public SMS/OTP wording with HLR SIM check without SMS.
+- Replaced overly absolute "non-reversible / μη αναστρέψιμο" nullifier wording with the actual Beta model:
+  server-salted SHA256, phone not stored, `SERVER_SALT` is a critical secret.
+- Replaced "IP never collected" wording with "IP limited to rate limiting / security, not linked to vote or identity".
+- Corrected comments/docs that claimed mobile native Argon2id while the current mobile path uses PBKDF2-SHA256 fallback until native Argon2id is wired.
+- Added safe Next.js headers:
+  - `poweredByHeader: false`
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`
+
+### Verification
+- `apps/api/.venv/bin/python -m pytest apps/api/tests/test_agent_guardrails.py apps/api/tests/test_polis_binding.py -q`: 17 passed.
+- `cd apps/mobile && npx tsc --noEmit`: OK.
+- `cd apps/mobile && npx vitest run src/lib/api.test.ts src/lib/source-resolver.test.ts src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreNative.test.ts`: 35 passed.
+- `cd apps/web && npm run build`: OK.
+- `git diff --check`: OK.
+- Claude Code reviewed the final diff: GO. Confirmed no voting/nullifier/DB logic was changed and the new headers are PWA/CSP-safe.
+
+### Follow-up not included
+- `NEXT_LOCALE` cookie Secure flag remains a separate hardening task.
+- No migration to memory-hard server identity derivation was attempted in this pass because that would affect existing identities and recovery/vote uniqueness.

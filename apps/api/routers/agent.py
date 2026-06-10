@@ -144,14 +144,15 @@ def _canonical_response(question: str, lang: str) -> dict | None:
 
     if "nullifier" in q or "μηδενισ" in q or "κατακερματισ" in q:
         return resp(
-            "Το nullifier hash είναι ένας μη αναστρέψιμος κρυπτογραφικός "
-            "αναγνωριστής που επιτρέπει στο σύστημα να ελέγχει μοναδικότητα "
-            "χωρίς να αποθηκεύει τον αριθμό τηλεφώνου. Το Ed25519 χρησιμοποιείται "
-            "για ψηφιακές υπογραφές ψήφων, όχι ως γεννήτρια του nullifier.",
-            "A nullifier hash is a non-reversible cryptographic identifier used "
-            "to enforce uniqueness without storing the phone number. Ed25519 is "
-            "used for vote signatures; it is not the mechanism that generates the "
-            "nullifier hash.",
+            "Το nullifier hash επιτρέπει στο σύστημα να ελέγχει μοναδικότητα "
+            "χωρίς να αποθηκεύει τον αριθμό τηλεφώνου. Στη Beta παράγεται ως "
+            "server-salted hash, επομένως το server salt είναι κρίσιμο μυστικό. "
+            "Το Ed25519 χρησιμοποιείται για ψηφιακές υπογραφές ψήφων, όχι ως "
+            "γεννήτρια του nullifier.",
+            "A nullifier hash lets the system enforce uniqueness without storing "
+            "the phone number. In Beta it is generated as a server-salted hash, "
+            "so the server salt is a critical secret. Ed25519 is used for vote "
+            "signatures; it is not the mechanism that generates the nullifier hash.",
             "nullifier_hash",
         )
 

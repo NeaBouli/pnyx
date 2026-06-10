@@ -346,7 +346,7 @@
 
   <div class="faq-item fade-in">
     <div class="faq-q" data-el="Ποια δεδομένα αποθηκεύονται;" data-en="What data is stored?" onclick="this.parentElement.classList.toggle('open')">Ποια δεδομένα αποθηκεύονται;</div>
-    <div class="faq-a"><p data-el="Nullifier Hash (SHA256, μη αντιστρέψιμο), δημόσιο κλειδί Ed25519, επιλογή ψήφου (YES/NO/ABSTAIN), προαιρετικά περιοχή και φύλο ως hash. Ποτέ: αριθμός τηλεφώνου, όνομα, email, IP, ιδιωτικό κλειδί." data-en="Nullifier Hash (SHA256, irreversible), Ed25519 public key, vote choice (YES/NO/ABSTAIN), optionally region and gender as hash. Never: phone number, name, email, IP address, private key.">Nullifier Hash (SHA256, μη αντιστρέψιμο), δημόσιο κλειδί Ed25519, επιλογή ψήφου (YES/NO/ABSTAIN), προαιρετικά περιοχή και φύλο ως hash. Ποτέ: αριθμός τηλεφώνου, όνομα, email, IP, ιδιωτικό κλειδί.</p></div>
+    <div class="faq-a"><p data-el="Nullifier Hash (SHA256 με server salt), δημόσιο κλειδί Ed25519, επιλογή ψήφου (YES/NO/ABSTAIN), προαιρετικά περιοχή και φύλο ως hash. Ο αριθμός τηλεφώνου δεν αποθηκεύεται· το server salt είναι κρίσιμο μυστικό. Ποτέ: αριθμός τηλεφώνου, όνομα, email, IP συνδεδεμένη με ψήφο ή ταυτότητα, ιδιωτικό κλειδί." data-en="Nullifier Hash (SHA256 with server salt), Ed25519 public key, vote choice (YES/NO/ABSTAIN), optionally region and gender as hash. The phone number is not stored; the server salt is a critical secret. Never: phone number, name, email, IP linked to a vote or identity, private key.">Nullifier Hash (SHA256 με server salt), δημόσιο κλειδί Ed25519, επιλογή ψήφου (YES/NO/ABSTAIN), προαιρετικά περιοχή και φύλο ως hash. Ο αριθμός τηλεφώνου δεν αποθηκεύεται· το server salt είναι κρίσιμο μυστικό. Ποτέ: αριθμός τηλεφώνου, όνομα, email, IP συνδεδεμένη με ψήφο ή ταυτότητα, ιδιωτικό κλειδί.</p></div>
   </div>
 
   <div class="faq-item fade-in">
@@ -453,7 +453,7 @@
 
   <div class="faq-item fade-in">
     <div class="faq-q" data-el="Γιατί η ψήφος μου έχει διαφορετικό βάρος;" data-en="Why does my vote have different weight?" onclick="this.parentElement.classList.toggle('open')">Γιατί η ψήφος μου έχει διαφορετικό βάρος;</div>
-    <div class="faq-a"><p data-el="Το βάρος αντικατοπτρίζει το επίπεδο επαλήθευσης. Beta χρήστες (SMS/HLR) έχουν βάρος 1.0x — δεν έχει επιβεβαιωθεί εκλογικό δικαίωμα. Alpha χρήστες (gov.gr) έχουν βάρος 2.0x — πλήρης ταυτοποίηση ως εκλογέας. Τα αποτελέσματα εμφανίζουν πάντα και τις ακατέργαστες ψήφους (1 άτομο = 1 ψήφος) για πλήρη διαφάνεια." data-en="The weight reflects the verification level. Beta users (SMS/HLR) have 1.0x weight — electoral eligibility is not confirmed. Alpha users (gov.gr) have 2.0x weight — full voter identity verification. Results always show raw votes (1 person = 1 vote) as well, for full transparency.">Το βάρος αντικατοπτρίζει το επίπεδο επαλήθευσης. Beta χρήστες (SMS/HLR) έχουν βάρος 1.0x — δεν έχει επιβεβαιωθεί εκλογικό δικαίωμα. Alpha χρήστες (gov.gr) έχουν βάρος 2.0x — πλήρης ταυτοποίηση ως εκλογέας. Τα αποτελέσματα εμφανίζουν πάντα και τις ακατέργαστες ψήφους (1 άτομο = 1 ψήφος) για πλήρη διαφάνεια.</p></div>
+    <div class="faq-a"><p data-el="Το βάρος αντικατοπτρίζει το επίπεδο επαλήθευσης. Beta χρήστες (HLR) έχουν βάρος 1.0x — δεν έχει επιβεβαιωθεί εκλογικό δικαίωμα. Alpha χρήστες (gov.gr) έχουν βάρος 2.0x — πλήρης ταυτοποίηση ως εκλογέας. Τα αποτελέσματα εμφανίζουν πάντα και τις ακατέργαστες ψήφους (1 άτομο = 1 ψήφος) για πλήρη διαφάνεια." data-en="The weight reflects the verification level. Beta users (HLR) have 1.0x weight — electoral eligibility is not confirmed. Alpha users (gov.gr) have 2.0x weight — full voter identity verification. Results always show raw votes (1 person = 1 vote) as well, for full transparency.">Το βάρος αντικατοπτρίζει το επίπεδο επαλήθευσης. Beta χρήστες (HLR) έχουν βάρος 1.0x — δεν έχει επιβεβαιωθεί εκλογικό δικαίωμα. Alpha χρήστες (gov.gr) έχουν βάρος 2.0x — πλήρης ταυτοποίηση ως εκλογέας. Τα αποτελέσματα εμφανίζουν πάντα και τις ακατέργαστες ψήφους (1 άτομο = 1 ψήφος) για πλήρη διαφάνεια.</p></div>
   </div>
 
   <div class="faq-item fade-in">
@@ -522,7 +522,7 @@
   </div>
 </div>
 <script>
-var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP Address.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ανώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
+var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP συνδεδεμένη με ψήφο ή ταυτότητα.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ανώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
 var _deleteHtml='<h2 style="margin-top:0">Διαγραφή Λογαριασμού</h2><p>Απεγκαταστήστε την εφαρμογή — Private Key και Nullifier διαγράφονται αμέσως.</p><p><a href="delete-account.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#ef4444;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Αναλυτικές Οδηγίες Διαγραφής →</a></p>';
 function openLegalModal(t){document.getElementById("legalContent").innerHTML=t==="privacy"?_privacyHtml:_deleteHtml;document.getElementById("legalModal").style.display="flex"}
 function closeLegalModal(){document.getElementById("legalModal").style.display="none"}
@@ -739,7 +739,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
       "name": "Ποια δεδομένα αποθηκεύονται;",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Nullifier Hash (SHA256, μη αντιστρέψιμο), δημόσιο κλειδί Ed25519, επιλογή ψήφου (YES/NO/ABSTAIN), προαιρετικά περιοχή και φύλο ως hash. Ποτέ: αριθμός τηλεφώνου, όνομα, email, IP, ιδιωτικό κλειδί."
+        "text": "Nullifier Hash (SHA256 με server salt), δημόσιο κλειδί Ed25519, επιλογή ψήφου (YES/NO/ABSTAIN), προαιρετικά περιοχή και φύλο ως hash. Ο αριθμός τηλεφώνου δεν αποθηκεύεται· το server salt είναι κρίσιμο μυστικό. Ποτέ: αριθμός τηλεφώνου, όνομα, email, IP συνδεδεμένη με ψήφο ή ταυτότητα, ιδιωτικό κλειδί."
       }
     },
     {
@@ -891,7 +891,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
       "name": "Γιατί η ψήφος μου έχει διαφορετικό βάρος;",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Το βάρος αντικατοπτρίζει το επίπεδο επαλήθευσης. Beta χρήστες (SMS/HLR) έχουν βάρος 1.0x — δεν έχει επιβεβαιωθεί εκλογικό δικαίωμα. Alpha χρήστες (gov.gr) έχουν βάρος 2.0x — πλήρης ταυτοποίηση ως εκλογέας. Τα αποτελέσματα εμφανίζουν πάντα και τις ακατέργαστες ψήφους (1 άτομο = 1 ψήφος) για πλήρη διαφάνεια."
+        "text": "Το βάρος αντικατοπτρίζει το επίπεδο επαλήθευσης. Beta χρήστες (HLR) έχουν βάρος 1.0x — δεν έχει επιβεβαιωθεί εκλογικό δικαίωμα. Alpha χρήστες (gov.gr) έχουν βάρος 2.0x — πλήρης ταυτοποίηση ως εκλογέας. Τα αποτελέσματα εμφανίζουν πάντα και τις ακατέργαστες ψήφους (1 άτομο = 1 ψήφος) για πλήρη διαφάνεια."
       }
     },
     {

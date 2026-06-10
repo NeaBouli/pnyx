@@ -6,7 +6,7 @@
 Ziel: Eigenständige, leichtgewichtige Plattform ohne staatliche Abhängigkeit.
 
 - [x] Backend API (FastAPI, PostgreSQL, Redis)
-- [x] MOD-01 Identity (SMS HLR, Ed25519, Nullifier)
+- [x] MOD-01 Identity (HLR SIM check, Ed25519, Nullifier)
 - [x] MOD-02 VAA (Wahlkompass, Matching)
 - [x] MOD-03 Parliament (Bill Lifecycle, 5 States)
 - [x] MOD-04 CitizenVote (signierte Abstimmung)

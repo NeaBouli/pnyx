@@ -242,7 +242,7 @@ class TestEndToEndFlow:
     def test_complete_flow_identity_to_vote(self):
         """
         Full flow:
-        1. Identity creates keypair (simulating SMS verification)
+        1. Identity creates keypair (simulating HLR verification)
         2. Identity registers pk_polis (signed by identity key)
         3. Ticket created (signed by pk_polis)
         4. Different user votes (signed by their pk_polis)
@@ -250,7 +250,7 @@ class TestEndToEndFlow:
         6. Owner cannot self-vote
         """
         # Step 1: Two identities
-        id1_sk, id1_pk = _make_keypair()  # identity keypair (from SMS verify)
+        id1_sk, id1_pk = _make_keypair()  # identity keypair (from HLR verify)
         id2_sk, id2_pk = _make_keypair()
 
         # Step 2: Each derives a POLIS key

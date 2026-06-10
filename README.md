@@ -152,7 +152,7 @@ cd apps/web && npm run build
 | Mobile number | Deleted immediately after verification |
 | Private key | Device only &mdash; never leaves your phone |
 | Personal data | Never collected |
-| Nullifier hash | SHA256 + Argon2id (non-reversible) |
+| Nullifier hash | Server-salted SHA256 for Beta identity uniqueness; phone not stored |
 | Public key | Ed25519 hex (anonymous) |
 | Votes | Anonymized, Arweave-archived |
 

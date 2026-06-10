@@ -249,7 +249,7 @@ Change only in WINDOW_24H  → 409 if ACTIVE
 ### 7.1 Φάσεις / Phases
 
 **Beta** (Τώρα): Αυτόνομη πλατφόρμα χωρίς κρατική εξάρτηση
-- SMS επαλήθευση → Ed25519 → Nullifier
+- HLR έλεγχος ενεργής SIM χωρίς SMS → Ed25519 → Nullifier
 - Χωρίς gov.gr, χωρίς OAuth, χωρίς εξωτερικές εξαρτήσεις
 
 **Alpha** (Trigger: 500+ χρήστες + 3+ NGO-εταίροι):

@@ -1,6 +1,6 @@
 """
 MOD-01: Identity Router
-POST /api/v1/identity/verify  — SMS Verifikation → Ed25519 Keypair
+POST /api/v1/identity/verify  — HLR SIM check → Ed25519 Keypair
 POST /api/v1/identity/revoke  — Key Revokation
 GET  /api/v1/identity/status  — Key Status prüfen
 """

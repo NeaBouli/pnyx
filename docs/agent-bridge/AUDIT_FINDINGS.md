@@ -224,3 +224,176 @@ Recommendation:
   - sourceResolver fallback
   - Ed25519 signature payload compatibility
 - ZK/Mopro remains disabled unless explicitly enabled by a separate guarded rollout.
+
+---
+
+## Second Auditor — Supplementary Evidence & New Findings (2026-06-10, Claude Sonnet 4.6)
+
+This section adds exact file:line evidence and findings not captured in the first-pass above.
+No files were modified. Method: Grep + Read + live curl.
+
+---
+
+### A — Nullifier: Supplementary evidence
+
+**Server-side SHA256 confirmed** — exact implementation:
+
+`packages/crypto/nullifier.py:11-28`
+```python
+SERVER_SALT = os.environ.get("SERVER_SALT", "dev-salt-change-in-production")
+
+def generate_nullifier_hash(phone_number: str) -> str:
+    raw = f"{phone_number}:{SERVER_SALT}"
+    result = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    del raw
+    del phone_number
+    gc.collect()
+    return result
+```
+
+**Fallback in `SERVER_SALT`:** literal string `"dev-salt-change-in-production"`. If `SERVER_SALT` env var is unset in production, all nullifiers are computed with this known string. Status in prod: **unverifiable remotely — must be confirmed**.
+
+**Client-side Argon2id confirmed** — `packages/crypto/src/nullifier.ts:130-140`:
+```typescript
+export async function deriveNullifierRoot(phone: string): Promise<Uint8Array> {
+    const normalized = normalizePhone(phone);
+    const result = await argon2id({
+        password: normalized,
+        salt: REGISTRATION_SALT,  // "ekklesia.gr:registration:2026:v1" — public constant
+        time: 3, memory: 65536, parallelism: 1, hashLen: 32,
+    });
+```
+
+**Mobile (`apps/mobile/src/lib/crypto-native.ts`) — PBKDF2 fallback:**
+File header references Argon2id but native mobile path uses PBKDF2-SHA256 (100k iterations) as fallback for environments without hash-wasm. PBKDF2 is stronger than plain SHA256 but weaker than Argon2id for memory-hard resistance.
+
+**Demographic hash also SHA256** — `packages/crypto/nullifier.py:34-42`:
+```python
+def generate_demographic_hash(age_group, region, gender_code):
+    raw = f"{age_group}_{region}_{gender_code}_{SERVER_SALT}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+```
+Age group + region + gender is a much smaller search space than phone numbers. SHA256 with known SERVER_SALT would trivially invert this. Severity: **HIGH** (smaller brute-force space than phone).
+
+---
+
+### C — IP Logging: NEW finding — IP in Brevo email body
+
+**Severity: MEDIUM — not in first audit pass**
+
+`apps/api/routers/contact.py:85,113,143`:
+```python
+client_ip = request.client.host if request.client else "unknown"
+_check_rate_limit(client_ip)
+# ...
+f"<p style='color:#999;font-size:0.8em'>IP: {client_ip} | Consent: {body.consent}</p>"
+# ...
+logger.info("[CONTACT] Contact from %s — %s (%s)", client_ip, full_name, body.org)
+```
+
+IP is embedded verbatim in the HTML body of every contact form email sent to **Brevo** (3rd-party email processor). This means:
+- Brevo stores the IP as part of email content (not just metadata)
+- This is a 3rd-party data transfer under GDPR Art. 28
+- Privacy policy must cover this processing; "IP never collected" language is inconsistent with this
+
+Additionally, `logger.info` writes IP to **server logs** on every contact submission. Log retention policy determines persistence.
+
+**Sentry is correctly filtered** (`main.py:27-35`): `X-Forwarded-For` is explicitly popped before sending to Sentry. ✅
+
+**Redis rate-limit keys** in `public_api.py:103`: `ratelimit:keygen:{ip}` — ephemeral (TTL), acceptable.
+
+**DB and Arweave: IP never stored** — confirmed via export.py:199 `never_exported` list. ✅
+
+---
+
+### D — Security Headers: Supplementary evidence
+
+**Full header snapshot — 2026-06-10T06:39:52Z:**
+
+`https://ekklesia.gr` (root):
+```
+content-security-policy: default-src 'self' https://api.ekklesia.gr https://donate.stripe.com;
+  script-src 'self' 'unsafe-inline';
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data: https:;
+  connect-src 'self' https://api.ekklesia.gr https://api.coingecko.com
+    https://arweave.net https://api.github.com
+    https://polis-oauth-proxy.bergamolia.workers.dev;
+  frame-ancestors 'none'
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-xss-protection: 1; mode=block
+```
+
+`https://ekklesia.gr/el/bills` (additional):
+```
+x-powered-by: Next.js
+set-cookie: NEXT_LOCALE=el; Path=/; SameSite=lax   ← missing Secure flag
+```
+
+**Missing headers confirmed:**
+- `Referrer-Policy` — absent from both responses
+- `Permissions-Policy` — absent from both responses
+- Source: `apps/web/next.config.mjs` has **no `headers()` block** — no custom security headers set at framework level
+
+**NEW finding — NEXT_LOCALE cookie missing `Secure` flag** · Severity: MEDIUM
+`set-cookie: NEXT_LOCALE=el; Path=/; SameSite=lax` — no `Secure` attribute.
+HSTS preload provides a backstop but the `Secure` flag is defence-in-depth.
+Fix: add `Secure` attribute to locale cookie in Next.js middleware/config.
+
+**NEW finding — `img-src https:` in CSP** · Severity: LOW
+`https:` as img-src matches any HTTPS image host. Allows hot-linking/tracking pixels from arbitrary third-party domains if markup injection is achieved.
+Better: enumerate whitelisted image origins.
+
+**Note on `polis-oauth-proxy.bergamolia.workers.dev`** in CSP `connect-src`:
+This Cloudflare Worker domain is included in the allowed connection origins. Purpose not documented in any file found during audit. External 3rd-party proxy origins in CSP should be documented and reviewed — any data sent to it is outside the operator's control.
+
+---
+
+### F — API Security: NEW findings
+
+**NEW — CORS wildcard methods + headers with credentials** · Severity: MEDIUM
+
+`apps/api/main.py:530-542`:
+```python
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://ekklesia.gr", "https://www.ekklesia.gr",
+                   "https://api.ekklesia.gr", "https://dashboard.ekklesia.gr",
+                   "https://test.ekklesia.gr"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+```
+
+`allow_credentials=True` combined with `allow_methods=["*"]` and `allow_headers=["*"]` is overly permissive. Origin whitelist is strict (mitigates risk currently), but if any new origin is ever added carelessly, wildcard methods/headers amplify the blast radius. Best practice: enumerate explicitly.
+
+**Admin fail-closed logic confirmed correct** (`apps/api/dependencies.py:15-32`):
+- Raises HTTP 403 in production if `ADMIN_KEY` unset or equals `"dev-admin-key"` (line 21-24)
+- `"dev-admin-key"` is only accepted when `ENVIRONMENT != "production"` (line 26)
+- This is the only auth path used by all admin routers via `Depends(verify_admin_key)`
+
+**In-memory rate limiters (confirmed gap from first audit)**:
+`contact.py` and `public_api.py` use per-process in-memory dicts for rate limiting. Under multi-worker uvicorn deployment, effective limit = configured limit × number of workers. Move to Redis-backed slowapi for consistency.
+
+**Rate-limit key for API key generation uses raw IP** (`public_api.py:103`):
+`ratelimit:keygen:{ip}` — raw IP stored as Redis key prefix. Acceptable given TTL, but worth noting for privacy review.
+
+---
+
+### Summary of NEW findings vs first audit
+
+| ID | Finding | Severity | Status in first audit |
+|----|---------|----------|----------------------|
+| C2 | IP embedded verbatim in Brevo contact emails | MEDIUM | Not captured |
+| D7 | NEXT_LOCALE cookie missing `Secure` flag | MEDIUM | Not captured |
+| D8 | `img-src https:` CSP too permissive | LOW | Not captured |
+| D9 | `polis-oauth-proxy` in CSP — undocumented | INFO | Not captured |
+| F2 | CORS allow_methods/allow_headers=* with credentials | MEDIUM | Not captured |
+| A4 | Demographic hash also SHA256 (smaller brute-force space than phone) | HIGH | Not captured |
+
+All other findings from the first audit are **confirmed** with exact file:line evidence above.
+
+*Second audit completed: 2026-06-10 | Claude Code (Sonnet 4.6) | Read-only | No fixes applied*

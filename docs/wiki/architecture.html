@@ -249,28 +249,28 @@
 
   <figure class="ekk-visual-card ekk-visual-frame ekk-fade-up" style="margin:0 auto 2rem">
     <img src="../animations/svg/voting-flow.svg"
-         alt="Ροή επαλήθευσης ψήφου: SMS, HLR, Argon2id nullifier, Ed25519 κλειδί, υπογεγραμμένη ψήφος στον server"
+         alt="Ροή επαλήθευσης ψήφου: HLR χωρίς SMS, nullifier hash, Ed25519 κλειδί, υπογεγραμμένη ψήφος στον server"
          loading="lazy" decoding="async">
   </figure>
 
-  <h3 data-el="Beta Flow (SMS / HLR)" data-en="Beta Flow (SMS / HLR)">Beta Flow (SMS / HLR)</h3>
-  <div class="code-block fade-in" data-el="Phone (+30)  ──►  HLR Lookup  ──►  Argon2id  ──►  nullifier_root
+  <h3 data-el="Beta Flow (HLR χωρίς SMS)" data-en="Beta Flow (HLR without SMS)">Beta Flow (HLR χωρίς SMS)</h3>
+  <div class="code-block fade-in" data-el="Phone (+30)  ──►  HLR Lookup  ──►  server-salted hash  ──►  nullifier
                                            │
                                      (αριθμός διαγράφεται)
                                            │
-                              nullifier_root  ──►  HMAC  ──►  Ed25519 Keypair
+                                      Ed25519 Keypair
                                                                     │
-                                                              Vote (1.0x)" data-en="Phone (+30)  ──►  HLR Lookup  ──►  Argon2id  ──►  nullifier_root
+                                                              Vote (1.0x)" data-en="Phone (+30)  ──►  HLR Lookup  ──►  server-salted hash  ──►  nullifier
                                            │
                                      (number deleted)
                                            │
-                              nullifier_root  ──►  HMAC  ──►  Ed25519 Keypair
+                                      Ed25519 Keypair
                                                                     │
-                                                              Vote (1.0x)">Phone (+30)  ──►  HLR Lookup  ──►  Argon2id  ──►  nullifier_root
+                                                              Vote (1.0x)">Phone (+30)  ──►  HLR Lookup  ──►  server-salted hash  ──►  nullifier
                                            │
                                      (αριθμός διαγράφεται)
                                            │
-                              nullifier_root  ──►  HMAC  ──►  Ed25519 Keypair
+                                      Ed25519 Keypair
                                                                     │
                                                               Vote (1.0x)</div>
 
@@ -296,8 +296,8 @@
                                                                Vote (2.0x)</div>
 
   <div class="info-box fade-in">
-    <p data-el="Και στα δύο flows: τα ακατέργαστα δεδομένα (τηλέφωνο ή ΑΦΜ) διαγράφονται αμέσως μετά τη δημιουργία του nullifier. Ο server αποθηκεύει μόνο το nullifier hash και το δημόσιο κλειδί — ποτέ ανακτήσιμα προσωπικά δεδομένα." data-en="In both flows: raw data (phone or TIN) is deleted immediately after nullifier creation. The server stores only the nullifier hash and public key — never recoverable personal data.">
-      Και στα δύο flows: τα ακατέργαστα δεδομένα (τηλέφωνο ή ΑΦΜ) διαγράφονται αμέσως μετά τη δημιουργία του nullifier. Ο server αποθηκεύει μόνο το nullifier hash και το δημόσιο κλειδί — ποτέ ανακτήσιμα προσωπικά δεδομένα.
+    <p data-el="Και στα δύο flows: τα ακατέργαστα δεδομένα (τηλέφωνο ή ΑΦΜ) διαγράφονται αμέσως μετά τη δημιουργία του nullifier. Ο server αποθηκεύει μόνο το nullifier hash και το δημόσιο κλειδί — το server salt προστατεύεται ως κρίσιμο μυστικό." data-en="In both flows: raw data (phone or TIN) is deleted immediately after nullifier creation. The server stores only the nullifier hash and public key — the server salt is protected as a critical secret.">
+      Και στα δύο flows: τα ακατέργαστα δεδομένα (τηλέφωνο ή ΑΦΜ) διαγράφονται αμέσως μετά τη δημιουργία του nullifier. Ο server αποθηκεύει μόνο το nullifier hash και το δημόσιο κλειδί — το server salt προστατεύεται ως κρίσιμο μυστικό.
     </p>
   </div>
 
@@ -313,7 +313,7 @@
       <li data-el="<strong>Εθνική Έγκριση:</strong> Η κυβέρνηση (ΓΓΠΣ/GSRT) εγκρίνει πρόσβαση στο gov.gr OAuth για ολόκληρη την Ελλάδα → όλοι οι πολίτες μπορούν να χρησιμοποιήσουν gov.gr Auth (x2.0 βάρος ψήφου)" data-en="<strong>National Approval:</strong> Government (GSRT) grants gov.gr OAuth access for all of Greece → all citizens can use gov.gr Auth (x2.0 vote weight)"><strong>Εθνική Έγκριση:</strong> Η κυβέρνηση (ΓΓΠΣ/GSRT) εγκρίνει πρόσβαση → x2.0 βάρος</li>
       <li data-el="<strong>Κοινοτική Ενεργοποίηση (Pilot):</strong> Εκλεγμένοι εκπρόσωποι (Δήμαρχοι/Περιφερειάρχες) υποβάλλουν αίτημα στο Υπουργείο για τον δικό τους Δήμο/Περιφέρεια. Μετά την έγκριση: ο συγκεκριμένος Δήμος ενεργοποιείται στην πλατφόρμα για gov.gr Auth." data-en="<strong>Municipal Activation (Pilot):</strong> Elected officials (Mayors/Regional Governors) submit a request to the Ministry for their municipality/region. Upon approval: that specific area is activated on the platform for gov.gr Auth."><strong>Κοινοτική Ενεργοποίηση:</strong> Δήμαρχοι/Περιφερειάρχες υποβάλλουν αίτημα → <a href="../govgr-dimos.html" style="color:var(--blue)">Οδηγίες</a></li>
     </ol>
-    <p data-el="<strong>Μέχρι τότε:</strong> Επαλήθευση SMS (HLR) με x1.0 βάρος ψήφου. Αξιόπιστο, ανώνυμο, λειτουργεί χωρίς κρατική έγκριση." data-en="<strong>Until then:</strong> SMS Verification (HLR) with x1.0 vote weight. Reliable, anonymous, works without government approval."><strong>Μέχρι τότε:</strong> SMS (HLR) με x1.0 βάρος. Αξιόπιστο, ανώνυμο, χωρίς κρατική έγκριση.</p>
+    <p data-el="<strong>Μέχρι τότε:</strong> Επαλήθευση HLR χωρίς SMS με x1.0 βάρος ψήφου. Αξιόπιστο, ανώνυμο, λειτουργεί χωρίς κρατική έγκριση." data-en="<strong>Until then:</strong> HLR verification without SMS with x1.0 vote weight. Reliable, anonymous, works without government approval."><strong>Μέχρι τότε:</strong> HLR χωρίς SMS με x1.0 βάρος. Αξιόπιστο, ανώνυμο, χωρίς κρατική έγκριση.</p>
   </div>
 
   <h3 class="fade-in" data-el="Vote Scope — Τοπική Ψηφοφορία" data-en="Vote Scope — Local Voting">Vote Scope — Τοπική Ψηφοφορία</h3>
@@ -322,7 +322,7 @@
     <div class="table-wrap">
       <table>
         <tr><th data-el="Επίπεδο" data-en="Level">Επίπεδο</th><th data-el="Ψηφίζει" data-en="Who votes">Ψηφίζει</th><th data-el="Βάρος" data-en="Weight">Βάρος</th></tr>
-        <tr><td>PARLIAMENT</td><td data-el="Όλοι οι SMS-επαληθευμένοι" data-en="All SMS-verified users">Όλοι οι SMS-επαληθ.</td><td>x1.0</td></tr>
+        <tr><td>PARLIAMENT</td><td data-el="Όλοι οι HLR-επαληθευμένοι" data-en="All HLR-verified users">Όλοι οι HLR-επαληθ.</td><td>x1.0</td></tr>
         <tr><td>PERIFERIA</td><td data-el="Μόνο χρήστες στη σωστή Περιφέρεια" data-en="Only users in the correct Region">Χρήστες στη Περιφέρεια</td><td>x1.0</td></tr>
         <tr><td>DIMOS</td><td data-el="Μόνο χρήστες στο σωστό Δήμο" data-en="Only users in the correct Municipality">Χρήστες στο Δήμο</td><td>x1.0</td></tr>
         <tr><td data-el="gov.gr (μελλοντικό)" data-en="gov.gr (future)">gov.gr</td><td data-el="Όλοι — εθνικά/τοπικά" data-en="All — national/local">Όλοι</td><td>x2.0</td></tr>
@@ -355,7 +355,7 @@
   </div>
 </div>
 <script>
-var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP Address.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ανώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
+var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP συνδεδεμένη με ψήφο ή ταυτότητα.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ανώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
 var _deleteHtml='<h2 style="margin-top:0">Διαγραφή Λογαριασμού</h2><p>Απεγκαταστήστε την εφαρμογή — Private Key και Nullifier διαγράφονται αμέσως.</p><p><a href="delete-account.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#ef4444;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Αναλυτικές Οδηγίες Διαγραφής →</a></p>';
 function openLegalModal(t){document.getElementById("legalContent").innerHTML=t==="privacy"?_privacyHtml:_deleteHtml;document.getElementById("legalModal").style.display="flex"}
 function closeLegalModal(){document.getElementById("legalModal").style.display="none"}

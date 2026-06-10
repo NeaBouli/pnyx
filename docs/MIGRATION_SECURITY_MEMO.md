@@ -22,7 +22,7 @@
 - SERVER_SALT (kryptographisch stark, min 32 Zeichen)
 - REDIS_URL
 - ARWEAVE_WALLET_PATH (leer fuer Dry Run, Pfad fuer Production)
-- HLRLOOKUPS_USERNAME (SMS Verifikation)
+- HLRLOOKUPS_USERNAME (HLR SIM-Verifikation)
 - HLRLOOKUPS_PASSWORD
 - GOVGR_CLIENT_ID (gov.gr OAuth — Phase 2)
 - GOVGR_CLIENT_SECRET
