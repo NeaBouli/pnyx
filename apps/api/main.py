@@ -539,8 +539,9 @@ app.add_middleware(
         "https://test.ekklesia.gr",
     ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-API-Key", "X-Nullifier"],
+    expose_headers=["X-Data-License", "X-Rep-Role"],
 )
 
 
