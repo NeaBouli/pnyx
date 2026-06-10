@@ -7872,3 +7872,42 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Still open
 - Full Nullifier -> Argon2id/scrypt migration remains a separate design task.
 - `config.py`, `admin_account.py`, `govgr.py`, and `voting.py` still contain weak fallback strings in code, but production now fails at startup before serving if `SERVER_SALT` is weak/missing.
+
+## 2026-06-10 — Codex + Claude Code: SERVER_SALT guard deployed to production
+
+### Scope
+- Deployed the API-only `SERVER_SALT` startup guard from `eb3cdfa`.
+- No web deploy, no DB migration, no voting logic change, no nullifier derivation change.
+- Server rollback tag: `rollback-pre-server-salt-guard-deploy-20260610-083318`.
+
+### Pre-check
+- Server before deploy: `c0970e3`, branch `main`.
+- Production environment: `ENVIRONMENT=production`.
+- `SERVER_SALT` set: yes.
+- `SERVER_SALT` length: 64 chars.
+- `SERVER_SALT` weak/default: no.
+- `/opt/ekklesia/.env.production`: `600 ekklesia:ekklesia`.
+- `FORUM_SSO_SALT` set: yes.
+- `ADMIN_KEY` set: yes.
+
+### Deploy
+- Fast-forwarded production checkout to `eb3cdfa`.
+- Stopped only `api`.
+- Rebuilt only `api` with `docker compose build --no-cache api`.
+- Started only `api` with the production env file.
+
+### Verification
+- API startup logs: `Application startup complete` for both workers.
+- No `RuntimeError`, no `SERVER_SALT startup check failed`, no traceback in recent API logs.
+- `https://api.ekklesia.gr/health`: 200.
+- `https://api.ekklesia.gr/api/v1/bills?limit=1`: 200.
+- `POST https://api.ekklesia.gr/api/v1/identity/status` with dummy nullifier: 404 `Nullifier nicht gefunden.` (expected non-destructive path, no 500).
+- `https://api.ekklesia.gr/api/v1/arweave/status`: 200.
+- Containers after deploy:
+  - `ekklesia-api`: up
+  - `ekklesia-db`: healthy
+  - `ekklesia-redis`: healthy
+
+### Result
+- `SERVER_SALT` fail-closed protection is now live in production.
+- Full Nullifier -> Argon2id/scrypt migration remains a separate Alpha-roadmap design task.
