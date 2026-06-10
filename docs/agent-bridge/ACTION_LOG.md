@@ -8418,3 +8418,31 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - API recreated without image rebuild
   - container env now includes `TRUSTED_PROXY_COUNT=1`
   - `https://api.ekklesia.gr/health`: 200
+
+## 2026-06-10 — Parliament scraper all-laws fallback fix
+
+### Trigger
+- Gio noticed that no new Parliament bills appeared after the latest known DB date while DIAVGEIA/Gemeinden were still updating.
+- Production DB check:
+  - DIAVGEIA latest `created_at`: 2026-06-10
+  - PARLIAMENT latest `created_at`: 2026-06-05
+- Official Parliament pages via Jina showed current entries on `all-laws` for 2026-06-10 and 2026-06-09, so this was **not** a general summer pause.
+
+### Root Cause
+- `scrape_parliament_bills()` fell back to Jina only for `Katatethenta-Nomosxedia` and `Psifisthenta-Nomoschedia`.
+- Current Parliament entries are reliably visible on `/Nomothetiko-Ergo/all-laws`.
+- If Stage 1 API returned 403/empty, the fallback missed the current all-laws index.
+
+### Fix
+- `_parse_parliament_markdown()` now supports all-laws rows:
+  - `Title+Link | Type | Date | Phase`
+  - stores `law_id`, `type`, `phase`
+  - maps pre-vote phases such as `Έτοιμα` to `submitted_date`
+  - maps discussion/completion phases to `date`
+- Jina fallback now tries `all-laws` first, then `Katatethenta`, then `Psifisthenta`.
+- Fallback runs whenever Stage 1 produces no bills, not only on explicit 403.
+
+### Verification
+- Added `apps/api/tests/test_scraper_parliament.py`.
+- `apps/api/.venv/bin/python -m pytest -q tests/test_scraper_parliament.py tests/services/test_parliament_fetcher.py tests/services/test_discourse_sync.py tests/services/test_source_links.py tests/test_security_startup.py`: 43 passed.
+- Local live Jina dry-run is blocked by AS9009 reputation, so production/server-side dry-run is required after deploy.

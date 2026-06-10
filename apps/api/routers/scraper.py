@@ -277,12 +277,14 @@ async def _fetch_jina_markdown(url: str) -> Optional[str]:
 def _parse_parliament_markdown(md: str, source_url: str) -> list[dict]:
     """Parse Jina Markdown table rows into structured bill dicts.
 
-    Handles both Κατατεθέντα (submitted) and Ψηφισθέντα (voted) table formats.
+    Handles Κατατεθέντα, Ψηφισθέντα, and all-laws table formats.
     Κατατεθέντα columns: Date | Title+Link | Type | Ministry | PDFs
     Ψηφισθέντα columns:  Date | Title+Link | PDFs
+    all-laws columns:      Title+Link | Type | Date | Phase
     """
     bills = []
     is_katatethenta = "Katatethenta" in source_url
+    is_all_laws = "all-laws" in source_url
 
     for line in md.split("\n"):
         line = line.strip()
@@ -300,16 +302,22 @@ def _parse_parliament_markdown(md: str, source_url: str) -> list[dict]:
         if cells[0].startswith("[") and "SortBy" in cells[0]:
             continue
 
+        if is_all_laws:
+            title_cell = cells[0]
+            date_cell = cells[2] if len(cells) > 2 else ""
+        else:
+            title_cell = cells[1] if len(cells) > 1 else ""
+            date_cell = cells[0]
+
         # Parse date (DD/MM/YYYY)
-        date_match = re.match(r"(\d{2})/(\d{2})/(\d{4})", cells[0])
+        date_match = re.match(r"(\d{2})/(\d{2})/(\d{4})", date_cell)
         if not date_match:
             continue
 
         day, month, year = date_match.groups()
-        vote_date = f"{year}-{month}-{day}T00:00:00+00:00"
+        row_date = f"{year}-{month}-{day}T00:00:00+00:00"
 
-        # Parse title + URL from cell 1
-        title_cell = cells[1] if len(cells) > 1 else ""
+        # Parse title + URL
         title_match = re.search(r"\[([^\]]+)\]\(([^)]+)\)", title_cell)
         if not title_match:
             continue
@@ -321,12 +329,16 @@ def _parse_parliament_markdown(md: str, source_url: str) -> list[dict]:
         law_id_match = re.search(r"law_id=([a-f0-9-]+)", detail_url)
         law_id = law_id_match.group(1) if law_id_match else None
 
-        # Parse ministry (Κατατεθέντα column 3)
+        # Parse metadata
         ministry = None
         bill_type = None
+        phase = None
         if is_katatethenta and len(cells) > 3:
             bill_type = cells[2] if not cells[2].startswith("[") else None
             ministry = cells[3] if not cells[3].startswith("[") else None
+        elif is_all_laws:
+            bill_type = cells[1] if len(cells) > 1 and not cells[1].startswith("[") else None
+            phase = cells[3] if len(cells) > 3 and not cells[3].startswith("[") else None
 
         # Generate stable bill ID
         if law_id:
@@ -342,13 +354,17 @@ def _parse_parliament_markdown(md: str, source_url: str) -> list[dict]:
             "ministry": ministry,
             "type": bill_type,
             "law_id": law_id,
+            "phase": phase,
         }
-        # Κατατεθέντα date = submitted_date, Ψηφισθέντα date = parliament_vote_date
-        if is_katatethenta:
-            bill_data["submitted_date"] = vote_date
+        # Κατατεθέντα/all-laws pre-vote date = submitted_date.
+        # Ψηφισθέντα and all-laws discussion/completion rows = parliament_vote_date.
+        if is_katatethenta or (
+            is_all_laws and phase and any(marker in phase for marker in ("Έτοιμα", "Επεξεργασία", "Κατατεθέν"))
+        ):
+            bill_data["submitted_date"] = row_date
             bill_data["date"] = None  # no vote date yet
         else:
-            bill_data["date"] = vote_date  # actual vote date
+            bill_data["date"] = row_date  # actual/planned vote or discussion date
             bill_data["submitted_date"] = None
         bills.append(bill_data)
 
@@ -417,11 +433,12 @@ async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
     if bills:
         return bills[:limit]
 
-    # ── Stage 2: Jina Markdown Scrape (both pages) ─────────────────
-    if api_blocked:
+    # ── Stage 2: Jina Markdown Scrape (current index + specific pages) ───────
+    if api_blocked or not bills:
         fallback_used = "jina"
         try:
             jina_pages = [
+                f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/all-laws",                 # current index
                 f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Katatethenta-Nomosxedia",   # submitted
                 f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Psifisthenta-Nomoschedia",  # voted
             ]
