@@ -8072,6 +8072,15 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Result
 - Audit findings for raw-IP contact emails/logs, raw-IP Redis keygen buckets, and in-memory public/contact rate limiting are fixed and live.
 
+### 2026-06-10 Follow-up Trust-Chain Check
+- Rechecked after Parliament/lifecycle hardening because this path is security-sensitive.
+- Local focused tests still pass: `tests/test_ip_utils.py`, `tests/test_rate_limit_privacy.py`, `tests/test_cors_config.py`, `tests/test_security_startup.py` → 23 passed.
+- Production spoof probe:
+  - Sent public API request with fake `X-Forwarded-For: 203.0.113.123`.
+  - Checked Redis for the HMAC bucket that would correspond to that fake IP without printing the salt.
+  - Result: `SPOOF_MATCH=NO`.
+- Conclusion: current live path does not create rate-limit buckets from this client-supplied fake XFF header.
+
 ## 2026-06-10 — Codex + Claude Code: CSP image allowlist tightened
 
 ### Scope
