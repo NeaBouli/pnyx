@@ -7911,3 +7911,29 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Result
 - `SERVER_SALT` fail-closed protection is now live in production.
 - Full Nullifier -> Argon2id/scrypt migration remains a separate Alpha-roadmap design task.
+
+## 2026-06-10 — Codex + Claude Code: Semaphore ZK V2 settings visibility clarified
+
+### Scope
+- Mobile UI only.
+- No voting logic change, no API change, no DB change, no deploy.
+- Current production voting remains Ed25519 + active nullifier duplicate-vote protection.
+- Semaphore ZK V2 remains optional/future and is not used for production voting.
+
+### Implemented
+- Profile settings now always show the `Semaphore ZK V2` entry as an informational/optional check instead of hiding it behind the feature flag.
+- `ZkSemaphoreScreen` now gives Greek user-facing status text:
+  - feature not enabled yet
+  - unsupported device/platform
+  - missing native Mopro/Semaphore prover
+- Opt-in remains disabled unless `detectZkCapability()` reports `ready`.
+- `detectZkCapability()` now checks device/native prover capability before reporting a globally disabled feature flag, so unsupported devices get the correct technical explanation.
+
+### Verification
+- `cd apps/mobile && npx tsc --noEmit`: OK.
+- `cd apps/mobile && npx vitest run src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreNative.test.ts`: 9 passed.
+- `cd apps/mobile && npx vitest run src/lib/api.test.ts src/lib/source-resolver.test.ts src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreNative.test.ts`: 36 passed.
+
+### Result
+- Nullifier remains active and unchanged.
+- Semaphore remains guarded: visible as settings/status, not active in voting until feature flag + native prover support are both ready.
