@@ -607,3 +607,37 @@ Verification:
   - `https://ekklesia.gr/tickets/index.html`: 200
   - `https://api.ekklesia.gr/health`: 200
   - `web`, `api`, `db`, and `redis` containers running
+
+---
+
+## Sixth Pass — Remaining npm Moderate Advisories (2026-06-10)
+
+Status: **fixed in code/locks, deploy not required**.
+
+Scope:
+- Dependency lock/package hardening only.
+- No API, DB, voting, identity, nullifier, forum, or runtime application logic changes.
+
+Implemented:
+- `postcss` pinned to `8.5.15` across:
+  - `apps/web`
+  - `apps/dashboard`
+  - `apps/mobile`
+  - `apps/representative`
+- `uuid` pinned to `11.1.1` in Expo tooling chains for:
+  - `apps/mobile`
+  - `apps/representative`
+- `apps/representative/package.json` `main` fixed from stale `index.ts` to `expo/AppEntry` so the existing `App.tsx` can be exported by Expo.
+
+Verification:
+- `npm ci --ignore-scripts`: **OK** in all four apps.
+- `npm audit --audit-level=moderate`: **0 vulnerabilities** in all four apps.
+- `npm ls postcss uuid --depth=8`: patched versions resolved.
+- `apps/web`: `npm run build` **OK**.
+- `apps/dashboard`: `npm run build` **OK**.
+- `apps/mobile`: `npx tsc --noEmit` and Android `expo export` **OK**.
+- `apps/representative`: `npx tsc --noEmit` and Android `expo export` **OK**.
+- Claude Code reviewed the diff: **GO**, no regression risk identified.
+
+Remaining caveat:
+- GitHub Dependabot alert closure depends on GitHub's next dependency graph scan after push.

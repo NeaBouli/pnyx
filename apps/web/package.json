@@ -25,7 +25,8 @@
     "tailwind-merge": "^3.5.0"
   },
   "overrides": {
-    "serialize-javascript": ">=7.0.5"
+    "serialize-javascript": ">=7.0.5",
+    "postcss": "8.5.15"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.4",
@@ -34,7 +35,7 @@
     "@types/react-dom": "^19",
     "eslint": "^10",
     "eslint-config-next": "16.2.6",
-    "postcss": "^8",
+    "postcss": "8.5.15",
     "tailwindcss": "^4.2.4",
     "typescript": "^6",
     "vitest": "^4.1.6"

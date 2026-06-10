@@ -8144,3 +8144,39 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### Result
 - Public/security docs now match the audited nullifier threat model and are live.
+
+## 2026-06-10 — Codex + Claude Code: Dependabot moderate npm hardening
+
+### Scope
+- Dependency/security hardening only.
+- No API, DB, voting, identity, nullifier, forum, or runtime app logic change.
+- Local rollback tag: `rollback-pre-moderate-deps-*`.
+
+### Implemented
+- Closed the remaining moderate npm advisory class locally by pinning:
+  - `postcss` to `8.5.15` in `apps/web`, `apps/dashboard`, `apps/mobile`, `apps/representative`
+  - `uuid` to `11.1.1` in Expo apps (`apps/mobile`, `apps/representative`)
+- Added npm overrides where needed so nested `next`/Expo/Vite/PostCSS chains resolve to patched versions.
+- Fixed `apps/representative/package.json` `main` from stale `index.ts` to Expo-standard `expo/AppEntry`; this was required for `expo export` to work and matches the existing `App.tsx`.
+
+### Verification
+- `npm ci --ignore-scripts`: OK in all four apps.
+- `npm audit --audit-level=moderate`: 0 vulnerabilities in all four apps.
+- `npm ls postcss uuid --depth=8`:
+  - `postcss@8.5.15` resolved in all four apps.
+  - `uuid@11.1.1` resolved in mobile/representative Expo tooling.
+- `cd apps/web && npm run build`: OK.
+- `cd apps/dashboard && npm run build`: OK.
+- `cd apps/mobile && npx tsc --noEmit`: OK.
+- `cd apps/representative && npx tsc --noEmit`: OK.
+- `cd apps/mobile && npx expo export --platform android --output-dir /tmp/pnyx-mobile-export`: OK.
+- `cd apps/representative && npx expo export --platform android --output-dir /tmp/pnyx-representative-export`: OK.
+- Claude Code reviewed the dependency diff: GO, no regression risk identified.
+
+### Notes
+- Web build still warns that the local Node version is below some dev-tool engine ranges (`22.11.0` vs `>=22.12/22.13` for newer ESLint/Vite tooling), but build succeeds.
+- Dashboard `next-env.d.ts` and `tsconfig.json` were updated by Next.js 16 during build; CC reviewed these as standard framework-generated changes.
+
+### Result
+- Local `npm audit` is clean for web/dashboard/mobile/representative.
+- GitHub Dependabot alert closure will be confirmed after push/re-scan.

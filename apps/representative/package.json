@@ -1,7 +1,7 @@
 {
   "name": "representative",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "expo/AppEntry",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
@@ -22,7 +22,9 @@
     "typescript": "~5.9.2"
   },
   "overrides": {
-    "shell-quote": "1.8.4"
+    "shell-quote": "1.8.4",
+    "postcss": "8.5.15",
+    "uuid": "11.1.1"
   },
   "private": true
 }
