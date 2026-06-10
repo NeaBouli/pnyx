@@ -15,11 +15,11 @@
 - **Branch:** `main`
 - **Lokaler HEAD:** siehe `git rev-parse --short HEAD`
 - **origin/main:** siehe `git rev-parse --short origin/main`
-- **Server repo HEAD:** `15b49c9` API deployed for NEA-301 source policy; mobile-only fixes `5ff3998` + `b7fb4dd` are not server-deployed.
+- **Repo HEAD:** `8422f66` (GH#112 Gate 0 verifier compatibility + dependency-risk note)
 - **API container:** `7053510` — vote-status endpoint + bill source fallback LIVE
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
 - **Web container:** `7053510` — final vC30 APK copied into `/app/public/download`
-- **S10:** vC30/1.0.3 Play-Release APK from `b7fb4dd` installed and DIAVGEIA/Βουλή retested (`lastUpdateTime=2026-06-04 00:06:21`)
+- **S10:** vC30/1.0.3 Play-Release APK from `d1de18b` installed; GH#112 Semaphore Gate 0 fixture share verified (`lastUpdateTime=2026-06-11 01:30:36`)
 - **Alembic:** `o801a2b3c4d5` (polis_tickets + polis_votes + polis_identity_keys)
 - **F-Droid !38007:** Community launch-crash fixed in fdroiddata `e42e014f`; pipeline `2570810919` green 9/9; GlassOnTin/linsui re-test requested
 - **POLIS Status:** App-internal Create/Vote LIVE
@@ -34,17 +34,16 @@
 - **NEA-301b PARLIAMENT:** DONE (17/31 mit summary_short_el, 9 brauchen Fetcher, 3 DEMO + 2 flagged excluded, DIAVGEIA 0/636 eigene Phase)
 - **Ollama:** RAM zurueck auf 2.4 GB (Produktion), kein Job aktiv
 - **T3 Arweave Alerts:** FIXED `a90d508` — Monitor verlangt `party_votes_parliament IS NOT NULL`; false-positive fuer GR-0490a766 behoben
-- **Dependabot:** critical `vitest <4.1.0` fixed in `5553e13` and GitHub reports 0 open critical; 6 medium `postcss`/`uuid` remain
+- **Dependabot:** GitHub reports 0 open alerts. Do not add `@semaphore-protocol/proof@4.14.2` to production images without review; trial install showed 6 moderate + 8 high transitive findings.
 - **Bill Summary/Source Fix:** API source policy live; mobile DIAVGEIA source + summary regression fixed in `5ff3998`/`b7fb4dd`, installed on S10 and verified. Root cause update: Analysis fehlt, weil `ai_summary_reviewed=false` und kein automatischer reviewed-analysis Job existiert. Mobile zeigt jetzt statt leerer Analyse einen klaren `Επίσημο κείμενο` Fallback, wenn `summary_long_el` vorhanden ist.
 - **DIAVGEIA S10 Retest:** PASS — source card visible/clickable (`Πηγή — Διαύγεια` opens Android intent chooser), org/pill no longer shown as `Σύνοψη`, quote markers removed. Evidence: `/tmp/ekklesia_diav_fix_final_20260604_000652`.
-- **Pending high:** NEA-301 Fetcher (9 Bills ohne summary_long_el), NEA-301b DIAVGEIA real summary backfill, NEA-304 follow-up, #79/NEA-281 F-Droid linsui merge, NEA-286 Lifecycle-Bug
-- **Pending medium/backlog:** NEA-260/GH#82 Forum SSO, NEA-285/GH#83 Diavgeia org mapping, NEA-279/GH#77 ZK Wizard, NEA-262 weekly auto-newsletter
-- **Pending external/blocked:** NEA-282/GH#80 Off-site backup waits for first donation; NEA-249/GH#81 Android native prover works on S10 but product ZK voting remains feature-flagged pending backend/Arweave integration
+- **Open GitHub:** #79 F-Droid (external), #80 Off-site Backup (storage/funding), #111 Nullifier v2 activation (controlled canary window), #112 ZK V2 product integration (Gate Plan).
+- **ZK V2:** GH#81 closed; Android prover works on S10. GH#112 Gate 0 progressed: fixture export works, S10 proof verifies offline with official Semaphore JS verifier, but verifier dependency path is blocked on security/dependency review.
 - **Neu live:** municipality/, article.html, Autodesmefsi PDF, Forum Topic #436
 
 ## Uncommitted Aenderungen
 
-- `docs/agent-bridge/CODEX_FINDINGS.md` — lokal modifiziert (nicht committen ohne Codex)
+- None expected. Check with `git status --short`.
 
 ## Session 2026-05-31/06-01 — vC29 Release + Server-Status
 
@@ -110,7 +109,7 @@
 
 - Full security audit (NEA-251..258): 2 HIGH + 5 MEDIUM all resolved
 - Watcher 3-tier self-healing (NEA-241): live + T2 active
-- ZK V2 ADR (NEA-249): Android mobile prover self-test passes on S10; product integration still gated
+- ZK V2 ADR (NEA-249): Android mobile prover self-test passes on S10; GH#112 product integration remains gated. Gate 0 fixture export + offline verifier compatibility are documented.
 - Dashboard: /politicians + /monitor + /newsletter-admin (21 pages total)
 - Newsletter: Brevo compose + preview + draft + send
 - Forum SSO: ADR-only (NEA-260)
@@ -121,15 +120,10 @@
 
 ## Open / Backlog
 
-- NEA-249: ZK V2 — Android Mopro/Semaphore prover feasible; next step is separate guarded product integration design
-- NEA-260: Forum SSO V1 — ADR, Discourse API investigation needed
-- NEA-258: FORUM_SSO_SALT startup check (LOW)
-- NEA-256: Alembic schema baseline repair migrations (ADR written, no DB changes)
-- NEA-65: Off-site backup — waiting for first donation
-- AAB vC29 Upload zu Play Console (BEREIT, 45 MB)
-- F-Droid MR !38007 — in Test-Queue, linsui: "mostly ready"
-- AI Summaries: 640/645 aktive Bills fehlt summary_short_el — Scraper/Generator pruefen
-- Landingpage APK update (nach visuellem S10-Test)
+- #79 / F-Droid MR !38007 — external, waits for linsui/F-Droid merge.
+- #80 / Off-site backup — waits for Hetzner Storage Box / funding.
+- #111 / Nullifier v2 production activation — waits for explicit backup + canary window.
+- #112 / ZK V2 product integration — Gate 0 only until verifier architecture and cross-tier uniqueness design are reviewed.
 
 ## Architecture Decisions (ADRs)
 
