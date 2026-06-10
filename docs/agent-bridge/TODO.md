@@ -154,7 +154,7 @@
 - [ ] NEA-59: F-Droid MR !38007 — wartet auf linsui Review
 - [ ] NEA-65: Off-Site Backup — nach erster Spende
 - [ ] NEA-73: Embed-System — Low Prio
-- [ ] GH#110 / NEA-335: Nullifier -> Argon2id/scrypt Migration — nicht quick-fixen; Design steht in `docs/adr/ADR-004-nullifier-kdf-migration.md`
+- [ ] GH#110 / NEA-335: Nullifier v2 Activation — Scaffold + DB migration deployed, production remains v1; flip to v2 only via focused rollout checklist in `docs/adr/ADR-004-nullifier-kdf-migration.md`
 
 ## Done (Session 13.05.2026)
 - [x] Server CX33 → CX43 Upgrade

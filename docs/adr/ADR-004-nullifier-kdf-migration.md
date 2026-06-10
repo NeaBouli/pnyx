@@ -1,7 +1,7 @@
 # ADR-004: Versioned server identity nullifier KDF migration
 
 Date: 2026-06-10
-Status: Proposed
+Status: Partially implemented - v2 scaffold deployed, production activation pending
 Tracking: GH#110 / NEA-335
 
 ## Context
@@ -197,15 +197,25 @@ part of the versioned prefix and re-run the benchmark before enabling v2.
 
 ## Implementation Order
 
-1. Benchmark Argon2id and scrypt in the API container.
-2. Add migration fields/indexes.
-3. Add KDF helpers with version prefixes and tests.
-4. Add dual-lookup/dual-write verify path behind an env flag defaulting to v1.
-5. Run focused identity/voting/Polis/Diavgeia/evaluation tests.
-6. Deploy with env flag still v1.
-7. Flip env flag to v2 only after live smoke and rollback tag.
+1. [x] Benchmark Argon2id and scrypt in the API container.
+2. [x] Add migration fields/indexes.
+3. [x] Add KDF helpers with version prefixes and tests.
+4. [x] Add dual-lookup/dual-write verify path behind an env flag defaulting to v1.
+5. [x] Run focused identity/voting/Polis/Diavgeia/evaluation tests for the scaffold.
+6. [x] Deploy with env flag still v1.
+7. [ ] Flip env flag to v2 only after live smoke and rollback tag.
 
 ## Current Recommendation
 
-Do not implement this during a broad hardening session. The safe next step is a
-focused implementation ticket using this ADR as the checklist.
+Do not flip production to v2 during a broad hardening session. The scaffold is
+deployed and intentionally inactive by default. The remaining work is a focused
+activation rollout:
+
+- take a fresh `identity_records` backup,
+- enable `IDENTITY_NULLIFIER_KDF_VERSION=v2` in a controlled window,
+- verify existing-phone re-registration updates the same row instead of creating
+  a duplicate identity,
+- verify new-phone registration stores both v1 and v2 anchors,
+- verify already-voted / Polis / Diavgeia / evaluation lookups remain compatible,
+- monitor latency and errors,
+- keep rollback as `IDENTITY_NULLIFIER_KDF_VERSION=v1`.
