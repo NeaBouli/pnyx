@@ -8355,3 +8355,26 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Do not enable v2 in production yet.
 - Safe deploy path is migration + API deploy with env still default `v1`.
 - v2 flip requires explicit Gio approval after live smoke and rollback prep.
+
+### Production Deploy
+- Deployed on 2026-06-10 with production env still defaulting to `IDENTITY_NULLIFIER_KDF_VERSION=v1`.
+- Server pre-check:
+  - previous server HEAD: `5111562`
+  - `IDENTITY_NULLIFIER_KDF_VERSION`: `v1`
+  - `SERVER_SALT`: 64 chars
+  - API/DB/Web containers healthy
+- Rollback and backup:
+  - server rollback tag: `rollback-pre-110-kdf-deploy-20260610_112508`
+  - DB backup: `/tmp/ekklesia_db_backups/identity_records_pre_kdf_20260610_112508.sql`
+- Production Alembic drift found and handled:
+  - `parliament_bills.analysis_el` already existed in DB
+  - `alembic_version` still pointed to `o801a2b3c4d5`
+  - stamped existing real DB state to `p901a2b3c4d5`
+  - applied `q001a2b3c4d5` normally
+- Production verification:
+  - `alembic_version`: `q001a2b3c4d5`
+  - `identity_records.nullifier_hash_v2`, `nullifier_version`, `nullifier_migrated_at`: present
+  - API rebuilt/restarted successfully with two workers
+  - `https://api.ekklesia.gr/health`: 200
+  - `https://api.ekklesia.gr/api/v1/bills?limit=1`: 200
+  - container KDF smoke: v1 nullifier length 64, KDF guard OK
