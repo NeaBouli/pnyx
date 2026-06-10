@@ -8077,6 +8077,7 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Scope
 - Web/Traefik header hardening only.
 - No API, DB, voting, mobile, forum, identity, nullifier, or application logic change.
+- Server rollback tag: `rollback-pre-csp-imgsrc-deploy-*`.
 
 ### Diagnosis
 - Audit finding: CSP `img-src 'self' data: https:` allowed arbitrary HTTPS images.
@@ -8095,7 +8096,20 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Verification
 - `git diff --check`: OK.
 - Claude Code reviewed the CSP plan: GO, no missing image host found.
-- Local `docker compose config` cannot run because the production env file path `/opt/ekklesia/.env.production` is not present locally; compose validation will be run on the server before rollout.
+- Server `docker compose config`: OK.
+- Deployed by recreating only `web` to refresh Traefik labels.
+- Live headers:
+  - `img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com`
+  - `connect-src` still includes the documented POLIS Worker.
+  - `Referrer-Policy` and `Permissions-Policy` still present.
+  - `X-Powered-By` absent in checked headers.
+- Live smoke:
+  - `https://ekklesia.gr/`: 200.
+  - `https://ekklesia.gr/el/bills`: 200.
+  - `https://ekklesia.gr/tickets/index.html`: 200.
+  - `https://api.ekklesia.gr/health`: 200.
+  - `web`, `api`, `db`, `redis` containers running.
 
 ### Result
-- Code/docs prepared; deploy pending until server compose validation + web-only label rollout.
+- Audit finding `img-src https:` is fixed and live.
+- POLIS OAuth Worker purpose is documented.

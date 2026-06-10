@@ -573,7 +573,7 @@ Remaining caveat:
 
 ## Fifth Pass — CSP Image Allowlist + POLIS Worker Documentation (2026-06-10)
 
-Status: **implemented in code/docs, deploy pending**.
+Status: **fixed and live**.
 
 Scope:
 - Web/Traefik header hardening only.
@@ -595,5 +595,15 @@ Diagnosis:
 
 Verification:
 - `git diff --check`: **OK**.
-- Local `docker compose config` cannot validate this file because the production env file path `/opt/ekklesia/.env.production` is intentionally absent locally.
-- Server-side compose validation and live header verification are required before marking this fixed live.
+- Server `docker compose config`: **OK**.
+- Web-only rollout completed by recreating `web` to refresh Traefik labels.
+- Live CSP contains:
+  - `img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com`
+  - no broad `img-src https:`
+  - documented `connect-src https://polis-oauth-proxy.bergamolia.workers.dev`
+- Live smoke:
+  - `https://ekklesia.gr/`: 200
+  - `https://ekklesia.gr/el/bills`: 200
+  - `https://ekklesia.gr/tickets/index.html`: 200
+  - `https://api.ekklesia.gr/health`: 200
+  - `web`, `api`, `db`, and `redis` containers running
