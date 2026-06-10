@@ -61,7 +61,7 @@ comparison) and **Citizen Voting** (mirroring parliamentary decisions).
 │                    PNYX MONOREPO                         │
 │                                                          │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐  │
-│  │  Next.js 14 │  │  Expo RN    │  │   FastAPI        │  │
+│  │  Next.js 16 │  │  Expo RN    │  │   FastAPI        │  │
 │  │  (Web)      │  │  (Mobile)   │  │   Backend        │  │
 │  └──────┬──────┘  └──────┬──────┘  │                  │  │
 │         └────────────────┘         │  MOD-01 Identity  │  │
@@ -87,7 +87,7 @@ comparison) and **Citizen Voting** (mirroring parliamentary decisions).
 | Backend | Python FastAPI | Async, type-safe, OpenAPI native |
 | Database | PostgreSQL 15 | JSONB, reliable, GDPR-ready |
 | Cache | Redis 7 | PubSub, WebSocket relay |
-| Web | Next.js 14 | SSR, i18n, SEO |
+| Web | Next.js 16 | SSR, i18n, SEO |
 | Mobile | Expo React Native | iOS + Android + Web |
 | Crypto | PyNaCl + @noble/curves | Ed25519, battle-tested |
 | Infra | Docker + Traefik | Reproducible, SSL-auto |

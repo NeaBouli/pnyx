@@ -8,7 +8,7 @@
 
 | ID | Όνομα / Name | Κατάσταση / Status | Περιγραφή / Description |
 |---|---|---|---|
-| MOD-01 | Identity | ✅ Beta | SMS HLR, Ed25519, Nullifier, Revocation |
+| MOD-01 | Identity | ✅ Beta | HLR without SMS, Ed25519, Nullifier, Revocation |
 | MOD-02 | VAA | ✅ Beta | VoteCompass, 8 parties, 38 positions, matching |
 | MOD-02b | Liquid Compass | ✅ Beta | 4 models (Party/LR/2D/Radar), AES-256-GCM, client-only |
 | MOD-03 | Parliament | ✅ Beta | Βουλή API, Bill Lifecycle (5 States) |

@@ -8192,3 +8192,25 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Result
 - Local `npm audit` is clean for web/dashboard/mobile/representative.
 - GitHub Dependabot is clean: 0 open alerts.
+
+## 2026-06-10 — Public docs/wiki drift cleanup: Next.js 16, CX43, HLR-no-SMS
+
+### Scope
+- Documentation only.
+- No runtime code, no API/web/mobile build changes.
+- Rollback tag: `rollback-pre-docs-drift-20260610-1343`.
+
+### Implemented
+- Updated public docs/wiki references from `Next.js 14` to `Next.js 16`.
+- Updated API/module counts from stale `62 endpoints / 22 modules` to `70+ endpoints / 25 modules`.
+- Updated stale Hetzner `CX33` integration answer to `CX43` and avoided quoting stale runtime RAM as a fixed value.
+- Updated Wiki identity wording from SMS/SMS-HLR to HLR without SMS.
+- Updated bridge handoff context (`CLAUDE_TO_CODEX.md`, `PROJECT_STATE.md`) so future agents do not inherit stale stack/security wording.
+
+### Verification
+- Grep check over active docs/wiki sources: no remaining active matches for `Next.js 14`, `CX33`, `22 Modules`, `22 modules`, `62 endpoints`, `MOD-01 — MOD-22`, `SMS HLR`, `SMS →`, or stale SMS verification wording.
+- HTML tag count check for `docs/wiki/*.html`: OK.
+- Claude Code docs-only review requested: GO expected; no runtime risk because only documentation files were changed.
+
+### Result
+- Public docs and GitHub wiki source now match the current audited project state more closely.

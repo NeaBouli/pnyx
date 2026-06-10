@@ -11,12 +11,12 @@
 
 | Item | Value |
 |------|-------|
-| **Provider** | Hetzner CX33, Helsinki |
-| **Specs** | 4 vCPU / 8GB RAM / 80GB SSD |
-| **RAM used** | ~2.3GB / 8GB (5.3GB available + 1GB swap) |
+| **Provider** | Hetzner CX43, Helsinki |
+| **Specs** | 8 vCPU / 16GB RAM / 80GB SSD |
+| **RAM used** | Runtime value; check server before quoting |
 | **Disk used** | 18GB / 75GB (24%) |
 | **OS** | Ubuntu 24.04.4 LTS |
-| **Docker** | Yes — 9 containers active |
+| **Docker** | Yes — 11+ containers active |
 | **Reverse Proxy** | Traefik v3.6 (Docker Labels, no Nginx/Caddy) |
 | **SSL** | Let's Encrypt via Traefik certresolver (auto-renew) |
 | **Cloudflare** | DNS-only (not proxied). Direct IP: 135.181.254.229 |
@@ -25,7 +25,7 @@
 
 ```
 ekklesia-api       — FastAPI (port 8000 internal)
-ekklesia-web       — Next.js 14 (port 3000 internal)
+ekklesia-web       — Next.js 16 (port 3000 internal)
 ekklesia-db        — PostgreSQL 15-alpine (port 5432 internal)
 ekklesia-redis     — Redis 7-alpine (port 6379 internal)
 ekklesia-ollama    — Ollama llama3.2:3b (port 11434 internal)
@@ -230,7 +230,7 @@ All in `apps/api/main.py` (lines 31-100):
 | **Framework** | FastAPI (Python 3.12, fully async) |
 | **Base URL** | `https://api.ekklesia.gr/api/v1` |
 | **Public** | Yes, via Traefik (HTTPS) |
-| **Endpoints** | 70+ across 22 modules |
+| **Endpoints** | 70+ across 25 modules |
 | **Rate Limiting** | slowapi — 60 req/min/IP global, 5 req/min/IP for AI agent |
 | **Admin Auth** | `?admin_key=...` query parameter |
 | **CORS** | ekklesia.gr, www.ekklesia.gr, api.ekklesia.gr |
@@ -320,7 +320,7 @@ pnyx/
 │   │   ├── main.py             → FastAPI app + APScheduler + health endpoints
 │   │   ├── alembic/versions/   → 8 migration files
 │   │   └── requirements.txt
-│   ├── web/                    → Next.js 14 (App Router)
+│   ├── web/                    → Next.js 16 (App Router)
 │   │   ├── src/app/[locale]/   → /el/bills, /el/results, /el/mp, /el/admin, ...
 │   │   ├── src/components/     → NavHeader, StatusBadge, CompassCard, QRCodeVoteStub, ...
 │   │   ├── src/lib/            → api.ts, crypto.ts, compass/
@@ -347,7 +347,7 @@ pnyx/
 ├── newsletter/templates/       → weekly-digest.html, monthly-digest.html
 ├── scripts/                    → build-play.sh, build-fdroid.sh, build-direct.sh
 ├── .github/workflows/          → ci.yml, security.yml, scraper.yml, deploy.yml
-├── README.md                   → English, 22 modules documented
+├── README.md                   → English, 25 modules documented
 └── CLAUDE.md                   → Security audit system (in repo root)
 ```
 

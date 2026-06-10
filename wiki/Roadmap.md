@@ -10,7 +10,7 @@
 ## Φάση Beta (● Ενεργή τώρα / Active now)
 
 ### Ολοκληρωμένα / Completed ✅
-- MOD-01 Identity (SMS HLR, Ed25519, Nullifier, Revocation)
+- MOD-01 Identity (HLR without SMS, Ed25519, Nullifier, Revocation)
 - MOD-02 VAA (8 κόμματα, 38 θέσεις, Matching algorithm)
 - MOD-03 Parliament (Βουλή API, Bill Lifecycle 5 States)
 - MOD-04 CitizenVote (Ed25519 signed, vote change)

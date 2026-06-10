@@ -68,7 +68,7 @@
 | Komponente | Technologie |
 |---|---|
 | API | Python FastAPI + Alembic + PostgreSQL + Redis |
-| Web | Next.js 14 (App Router, i18n el/en, Tailwind, recharts) |
+| Web | Next.js 16 (App Router, i18n el/en, Tailwind, recharts) |
 | Mobile | Expo / React Native (versionCode 29 / versionName 1.0.2, S10 installiert, AAB+APK bereit) |
 | Representative | Expo / React Native WebView (versionCode 2 / v1.1.0, APK bereit) |
 | Crypto | Python + PyNaCl (Ed25519, Nullifier, HLR) |

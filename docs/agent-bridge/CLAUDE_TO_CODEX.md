@@ -12,7 +12,7 @@
 
 Buerger koennen anonym ueber echte Parlamentsgesetze abstimmen. Die Plattform vergleicht dann, wie die Buerger abgestimmt haben vs. wie das Parlament abgestimmt hat (**Divergence Score**). Zusaetzlich gibt es einen politischen Kompass (VAA), kommunale Governance, ein Discourse-Forum und eine Public API.
 
-**Kernprinzip:** Vollstaendige Anonymitaet. Keine Accounts, keine E-Mails, keine Cookies. Identitaet wird per SMS verifiziert (Nummer wird sofort geloescht), danach signiert der Buerger mit Ed25519 — Private Key bleibt ausschliesslich auf dem Geraet.
+**Kernprinzip:** Vollstaendige Anonymitaet. Keine Accounts, keine E-Mails, keine Cookies. Identitaet wird per HLR-Pruefung einer aktiven griechischen SIM verifiziert (ohne SMS; Nummer wird sofort geloescht), danach signiert der Buerger mit Ed25519 — Private Key bleibt ausschliesslich auf dem Geraet.
 
 **Owner:** Gio (Kaspartizan / NeaBouli), unabhaengiger Entwickler, Griechenland.
 **Organisation:** V-Labs Development
@@ -30,7 +30,7 @@ Buerger koennen anonym ueber echte Parlamentsgesetze abstimmen. Die Plattform ve
 pnyx/
 ├── apps/
 │   ├── api/          Python 3.12 FastAPI + Alembic + PostgreSQL + Redis
-│   ├── web/          Next.js 14.2.35 + React 19 + TypeScript 6 + Tailwind 4
+│   ├── web/          Next.js 16 + React 19 + TypeScript 6 + Tailwind 4
 │   └── mobile/       Expo SDK 54 + React Native 0.81.5 (Android, versionCode 5)
 ├── packages/
 │   ├── crypto/       Shared crypto (TS: @noble/curves, Python: PyNaCl)
@@ -51,13 +51,13 @@ pnyx/
 FastAPI, Uvicorn, SQLAlchemy asyncio, Alembic, asyncpg, Redis, Pydantic, PyNaCl, cryptography, python-jose, Argon2, httpx, APScheduler, SlowAPI.
 
 ### Web-Abhaengigkeiten
-Next.js 14, React 19, TypeScript 6, Tailwind CSS 4, next-intl (i18n el/en), TanStack Query, Recharts, lucide-react, Axios 1.14.0, Arweave SDK.
+Next.js 16, React 19, TypeScript 6, Tailwind CSS 4, next-intl (i18n el/en), TanStack Query, Recharts, lucide-react, Axios 1.14.0, Arweave SDK.
 
 ### Mobile-Abhaengigkeiten
 Expo SDK 54, React Native 0.81.5, Expo SecureStore/Crypto/Notifications/LocalAuthentication, React Navigation.
 
 ### Infrastruktur (Produktion)
-- **Server:** Hetzner CX33, Helsinki, Ubuntu 24.04.4 LTS (`root@135.181.254.229`)
+- **Server:** Hetzner CX43, Helsinki, Ubuntu 24.04.4 LTS (`root@135.181.254.229`)
 - **Container:** ~10 (api, web, db, redis, traefik, listmonk x3, discourse, discourse-db) — UNSICHER, Server-Check noetig
 - **Reverse Proxy:** Traefik
 - **Newsletter:** Listmonk + Brevo SMTP (forum@ekklesia.gr)
@@ -72,7 +72,7 @@ Die genaue Modulzahl ist UNSICHER (Drift zwischen 15/16/22/24 je nach Quelle —
 
 | Modul | Funktion | Status |
 |---|---|---|
-| MOD-01 | Identity Verify (SMS → Nullifier → Ed25519 Key) | LIVE |
+| MOD-01 | Identity Verify (HLR ohne SMS → Nullifier → Ed25519 Key) | LIVE |
 | MOD-02 | VAA (38 Thesen, 8 Parteien, 304 Positionen) | LIVE |
 | MOD-03 | Bills (Feed, Detail, Lifecycle, Admin) | LIVE |
 | MOD-04 | Voting (Ed25519, anonym, 3 Optionen) | LIVE |
@@ -119,7 +119,7 @@ Hinweis: CLAUDE.md sagt 13, Website sagt 16, Wiki sagt 70+ — Drift, siehe `PUB
 /[locale]/compass    Liquid Compass Dashboard
 /[locale]/bills      Bills Feed (Filter + StatusBadge)
 /[locale]/bills/[id] Bill Detail + Abstimmung + Divergence
-/[locale]/verify     Identity Verify (SMS → Key)
+/[locale]/verify     Identity Verify (HLR ohne SMS → Key)
 /[locale]/results    Ergebnisse + Divergenz
 /[locale]/analytics  Analytische Daten
 /[locale]/mp         Parteien vs. Buerger

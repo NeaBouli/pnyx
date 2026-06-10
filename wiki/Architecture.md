@@ -11,8 +11,8 @@
 pnyx/
 ├── apps/
 │   ├── api/        → Python FastAPI (Backend)
-│   ├── web/        → Next.js 14 (Web Frontend)
-│   └── mobile/     → Expo React Native (TODO)
+│   ├── web/        → Next.js 16 (Web Frontend)
+│   └── mobile/     → Expo React Native (Android)
 ├── packages/
 │   ├── crypto/     → Ed25519, Nullifier, HLR
 │   └── db/         → Alembic Migrations
@@ -32,7 +32,7 @@ pnyx/
 | Database | PostgreSQL 15+ | JSONB, reliable |
 | Cache/PubSub | Redis 7 | Sessions, WebSocket relay |
 | Migrations | Alembic | Versioned, async |
-| Web Frontend | Next.js 14 | SSR, i18n, SEO |
+| Web Frontend | Next.js 16 | SSR, i18n, SEO |
 | Styling | Tailwind CSS | Utility-first |
 | Charts | Recharts | React-native charts |
 | Crypto | PyNaCl + @noble/curves | Ed25519, battle-tested |
