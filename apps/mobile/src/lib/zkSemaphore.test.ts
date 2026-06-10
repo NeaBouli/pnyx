@@ -39,6 +39,19 @@ describe("detectZkCapability", () => {
     expect(result.reasons.join(" ")).toContain("Native Mopro/Semaphore prover");
   });
 
+  it("still reports unsupported devices while the feature flag is off", () => {
+    const result = detectZkCapability({
+      featureEnabled: false,
+      platformOS: "android",
+      appOwnership: "standalone",
+      hasNativeProver: false,
+    });
+
+    expect(result.status).toBe("unsupported");
+    expect(result.canOptIn).toBe(false);
+    expect(result.reasons.join(" ")).toContain("Native Mopro/Semaphore prover");
+  });
+
   it("allows opt-in only when feature flag and native prover are both present", () => {
     const result = detectZkCapability({
       featureEnabled: true,

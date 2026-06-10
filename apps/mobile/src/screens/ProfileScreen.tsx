@@ -6,7 +6,6 @@ import Constants from "expo-constants";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
-import { isZkSemaphoreFeatureEnabled } from "../lib/zkSemaphore";
 import { colors } from "../theme";
 
 type Nav = StackNavigationProp<RootStackParams>;
@@ -26,7 +25,6 @@ export default function ProfileScreen() {
   const [regionLocked, setRegionLocked] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "upToDate" | "updateAvailable">("idle");
   const [latestVersion, setLatestVersion] = useState<any>(null);
-  const zkFeatureEnabled = isZkSemaphoreFeatureEnabled(Constants.expoConfig?.extra as Record<string, unknown> | undefined);
 
   useEffect(() => {
     (async () => {
@@ -198,12 +196,12 @@ export default function ProfileScreen() {
         <Text style={s.skipBtnText}>Αργότερα</Text>
       </TouchableOpacity>
 
-      {zkFeatureEnabled && (
-        <TouchableOpacity style={s.zkBtn} onPress={() => nav.navigate("ZkSemaphore")}>
-          <Text style={s.zkTitle}>Semaphore ZK V2</Text>
-          <Text style={s.zkText}>Έλεγχος συσκευής και opt-in για μελλοντική ανώνυμη επαληθεύσιμη ψήφο</Text>
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity style={s.zkBtn} onPress={() => nav.navigate("ZkSemaphore")}>
+        <Text style={s.zkTitle}>Semaphore ZK V2</Text>
+        <Text style={s.zkText}>
+          Προαιρετικός έλεγχος συσκευής για μελλοντική ανώνυμη επαληθεύσιμη ψήφο.
+        </Text>
+      </TouchableOpacity>
 
       {/* Version + Channel + Update Check */}
       <Text style={s.versionInfo}>

@@ -24,14 +24,6 @@ export function isZkSemaphoreFeatureEnabled(
 export function detectZkCapability(input: ZkCapabilityInput): ZkCapability {
   const reasons: string[] = [];
 
-  if (!input.featureEnabled) {
-    return {
-      status: "disabled",
-      canOptIn: false,
-      reasons: ["ZK Semaphore V2 feature flag is off."],
-    };
-  }
-
   if (input.appOwnership === "expo") {
     reasons.push("Expo Go cannot load native proving modules.");
   }
@@ -44,6 +36,14 @@ export function detectZkCapability(input: ZkCapabilityInput): ZkCapability {
 
   if (reasons.length > 0) {
     return { status: "unsupported", canOptIn: false, reasons };
+  }
+
+  if (!input.featureEnabled) {
+    return {
+      status: "disabled",
+      canOptIn: false,
+      reasons: ["ZK Semaphore V2 feature flag is off."],
+    };
   }
 
   return { status: "ready", canOptIn: true, reasons: [] };

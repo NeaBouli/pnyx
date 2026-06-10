@@ -6,6 +6,28 @@ import { getRuntimeZkCapability, type ZkCapability } from "../lib/zkSemaphore";
 
 const OPT_IN_KEY = "zk_semaphore_v2_opt_in";
 
+function capabilityTitle(capability: ZkCapability): string {
+  if (capability.status === "ready") return "Έτοιμο για προαιρετική ενεργοποίηση";
+  if (capability.status === "disabled") return "Δεν είναι ακόμη ενεργό";
+  return "Δεν μπορεί να ενεργοποιηθεί σε αυτή τη συσκευή";
+}
+
+function capabilityReason(reason: string): string {
+  if (reason.includes("feature flag")) {
+    return "Η λειτουργία Semaphore ZK V2 δεν έχει ενεργοποιηθεί ακόμη για την εφαρμογή.";
+  }
+  if (reason.includes("Expo Go")) {
+    return "Το Expo Go δεν μπορεί να φορτώσει τα απαραίτητα native ZK modules.";
+  }
+  if (reason.includes("Android/iOS")) {
+    return "Η δημιουργία ZK αποδείξεων υποστηρίζεται μόνο σε Android ή iOS συσκευές.";
+  }
+  if (reason.includes("Native Mopro/Semaphore prover")) {
+    return "Η συσκευή ή η τρέχουσα έκδοση της εφαρμογής δεν διαθέτει τον απαραίτητο native Mopro/Semaphore prover.";
+  }
+  return reason;
+}
+
 export default function ZkSemaphoreScreen() {
   const [capability, setCapability] = useState<ZkCapability | null>(null);
   const [optedIn, setOptedIn] = useState(false);
@@ -42,19 +64,18 @@ export default function ZkSemaphoreScreen() {
       <Text style={s.title}>Semaphore ZK V2</Text>
       <Text style={s.subtitle}>
         Προαιρετική ανώνυμη ψήφος με δημόσια επαληθεύσιμη απόδειξη. Το τρέχον σύστημα
-        Ed25519 παραμένει το κανονικό μονοπάτι.
+        Ed25519 παραμένει το κανονικό μονοπάτι και δεν αλλάζει.
       </Text>
 
       <View style={[s.card, ready ? s.readyCard : s.blockedCard]}>
-        <Text style={s.cardTitle}>
-          {ready ? "Έτοιμο για opt-in" : capability.status === "disabled" ? "Ανενεργό feature flag" : "Μη διαθέσιμο στη συσκευή"}
-        </Text>
+        <Text style={s.cardTitle}>{capabilityTitle(capability)}</Text>
         {capability.reasons.map((reason) => (
-          <Text key={reason} style={s.reason}>• {reason}</Text>
+          <Text key={reason} style={s.reason}>• {capabilityReason(reason)}</Text>
         ))}
         {!ready && (
           <Text style={s.note}>
-            Δεν ενεργοποιείται κανένα ZK mode μέχρι να υπάρξει release-grade native prover.
+            Το Semaphore ZK V2 παραμένει ανενεργό μέχρι να πληρούνται όλες οι τεχνικές
+            προϋποθέσεις. Μπορείτε να συνεχίσετε κανονικά με το τρέχον σύστημα ψηφοφορίας.
           </Text>
         )}
       </View>
@@ -68,11 +89,11 @@ export default function ZkSemaphoreScreen() {
 
       {optedIn ? (
         <TouchableOpacity style={s.secondaryBtn} onPress={disableOptIn} disabled={saving}>
-          <Text style={s.secondaryText}>{saving ? "..." : "Απενεργοποίηση opt-in"}</Text>
+          <Text style={s.secondaryText}>{saving ? "..." : "Απενεργοποίηση"}</Text>
         </TouchableOpacity>
       ) : (
         <TouchableOpacity style={[s.primaryBtn, !ready && s.btnDisabled]} onPress={enableOptIn} disabled={!ready || saving}>
-          <Text style={s.primaryText}>{saving ? "..." : "Ενεργοποίηση opt-in"}</Text>
+          <Text style={s.primaryText}>{saving ? "..." : "Προαιρετική ενεργοποίηση"}</Text>
         </TouchableOpacity>
       )}
     </View>
