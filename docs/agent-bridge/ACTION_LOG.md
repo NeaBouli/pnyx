@@ -8131,6 +8131,16 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Verification
 - Grep check: no active/public doc still says `nicht umkehrbar`, `Δεν μπορεί να αντιστραφεί`, or `One-Way Hashing`.
 - Historical audit/chat transcripts intentionally left unchanged.
+- `cd apps/web && npm run build`: OK.
+- Server rollback tag: `rollback-pre-nullifier-docs-deploy-*`.
+- Web-only rebuild/recreate completed so copied `docs/wiki/` static content is live.
+- Live verification:
+  - `https://ekklesia.gr/wiki/security.html` contains `Server-Salted Hashing` and `SERVER_SALT είναι κρίσιμο μυστικό`.
+  - `https://ekklesia.gr/`: 200.
+  - `https://ekklesia.gr/wiki/security.html`: 200.
+  - `https://ekklesia.gr/el/bills`: 200.
+  - `https://api.ekklesia.gr/health`: 200.
+  - `web`, `api`, `db`, and `redis` containers running.
 
 ### Result
-- Public/security docs now match the audited nullifier threat model.
+- Public/security docs now match the audited nullifier threat model and are live.
