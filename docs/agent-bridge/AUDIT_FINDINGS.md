@@ -510,10 +510,9 @@ Verdict: no immediate auth bypass found; hardening tasks remain.
 
 ### Follow-up candidates
 
-1. `SERVER_SALT` startup guard:
-   - fail closed in production if missing/default/too short
-   - unify all salt defaults to no default
-   - add tests
+1. `SERVER_SALT` fallback cleanup:
+   - startup guard is implemented after this audit (`security_startup.py`)
+   - remaining cleanup: unify all weak fallback strings to no default in follow-up
 2. Real-IP helper consolidation:
    - one trusted helper for proxy-aware IP extraction
    - contact/public API use the same helper or Redis-backed limiter

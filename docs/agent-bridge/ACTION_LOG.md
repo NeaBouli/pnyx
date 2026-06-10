@@ -7841,3 +7841,34 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Still open
 - Moderate `postcss` / `uuid` alerts remain and require separate handling.
 - `npm audit fix --force` would jump Expo to `56.0.9`; do not run blindly.
+
+## 2026-06-10 — Codex + Claude Code: SERVER_SALT production startup guard
+
+### Scope
+- Added fail-closed API startup guard for `SERVER_SALT`.
+- No nullifier derivation change, no existing identity migration, no voting logic change, no DB migration, no deploy.
+- Rollback tag: `rollback-pre-server-salt-guard-20260610-1104`.
+
+### Implemented
+- New `apps/api/security_startup.py`:
+  - production fails if `SERVER_SALT` is missing
+  - production fails for known weak defaults: empty, `dev-salt`, `dev-salt-change-in-production`
+  - production fails if salt length is below 32 chars
+  - non-production logs warning only, preserving local/dev flows
+  - supports existing local compose flag order: `ENVIRONMENT` first, then legacy `ENV`
+- `apps/api/main.py` calls `validate_server_salt_config()` as first line of `lifespan()` before SSO config and before scheduler startup.
+
+### Verification
+- `apps/api/.venv/bin/python -m pytest apps/api/tests/test_security_startup.py apps/api/tests/test_sso_config.py apps/api/tests/test_health.py apps/api/tests/test_agent_guardrails.py -q`: 22 passed.
+- Broader API focused run excluding known local Redis-dependent identity test:
+  `apps/api/.venv/bin/python -m pytest apps/api/tests/test_security_startup.py apps/api/tests/test_sso_config.py apps/api/tests/test_health.py apps/api/tests/test_agent_guardrails.py apps/api/tests/test_voting.py apps/api/tests/services/test_arweave_guards.py -q`: 47 passed, 2 xfailed.
+- `apps/api/.venv/bin/python -m py_compile apps/api/security_startup.py apps/api/main.py`: OK.
+- `git diff --check`: OK.
+- Claude Code reviewed the diff: GO.
+
+### Known local test note
+- Including `apps/api/tests/test_identity.py` in the broad run still fails on local Redis `localhost:6379` unavailability in existing HLR usage code. This is pre-existing local test-env behavior and unrelated to the guard.
+
+### Still open
+- Full Nullifier -> Argon2id/scrypt migration remains a separate design task.
+- `config.py`, `admin_account.py`, `govgr.py`, and `voting.py` still contain weak fallback strings in code, but production now fails at startup before serving if `SERVER_SALT` is weak/missing.
