@@ -7732,3 +7732,26 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Still open
 - `NEXT_LOCALE` cookie missing `Secure` flag: separate hardening task.
 - No server-side memory-hard nullifier migration attempted; needs a designed migration if ever pursued.
+
+## 2026-06-10 — Codex + Claude Code: Audit second-pass evidence for A/C/E/F
+
+### Result
+- Completed the missing evidence pass after the wording/header fix.
+- Updated `docs/agent-bridge/AUDIT_FINDINGS.md` with production-safe evidence.
+- No production mutation performed.
+
+### Key findings
+- Public GitHub repo is current: local HEAD and `origin/main` both `e1a4622`.
+- Production `/opt/ekklesia/app` is behind at `dd70c52` and has untracked files; latest security wording/header fix is not live yet.
+- Production `SERVER_SALT` is set, 64 chars, not default/weak, and `.env.production` is `600 ekklesia:ekklesia`.
+- No startup fail-closed guard exists for missing/default/short `SERVER_SALT`; defaults are inconsistent across files.
+- API port is internal-only behind Traefik (`8000/tcp` not host-bound), so XFF spoofing is not currently a direct-port exposure.
+- Contact/public API use inconsistent IP extraction and in-memory limiters; contact emails/logs include IP with contact PII.
+- Admin auth remains fail-closed and Bearer-only.
+- CORS has a strict origin allowlist but broad `allow_methods=["*"]` / `allow_headers=["*"]`.
+
+### Follow-up candidates
+- Deploy pushed web/API wording/header fix.
+- Add `SERVER_SALT` startup validation and unify no-default behavior.
+- Consolidate proxy-aware real-IP extraction and move contact/public API limiting to Redis/shared limiter.
+- Add `Secure` flag to `NEXT_LOCALE` cookie.

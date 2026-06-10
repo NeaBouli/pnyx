@@ -397,3 +397,131 @@ app.add_middleware(
 All other findings from the first audit are **confirmed** with exact file:line evidence above.
 
 *Second audit completed: 2026-06-10 | Claude Code (Sonnet 4.6) | Read-only | No fixes applied*
+
+---
+
+## Third Pass — Open Audit Questions A/C/E/F Closed With Evidence (2026-06-10)
+
+This section answers the questions that remained after the wording/header fix at `9f99f9b`
+and the handover note at `e1a4622`.
+
+Method:
+- local grep/source review
+- GitHub CLI metadata check
+- production SSH checks that printed only booleans/lengths, never secret values
+- live `curl -I` response header check
+- independent Claude Code read-only review
+
+### Production / repo state
+
+Public repository:
+- `origin/main`: `e1a462263a038c5b81dea165f6771f2ebb39ade0`
+- local HEAD: `e1a462263a038c5b81dea165f6771f2ebb39ade0`
+- GitHub repo: `NeaBouli/pnyx`, visibility `PUBLIC`, default branch `main`, pushed `2026-06-10T07:15:00Z`
+
+Verdict: public GitHub repo is current with local Codex state.
+
+Production checkout:
+- `/opt/ekklesia/app` HEAD: `dd70c52` (`fix(GH#105): use official text fallback instead of AI summary tab`)
+- production app checkout has untracked files:
+  - `apps/api/routers/identity.py.bak`
+  - `docs/community.html.bak`
+  - `docs/download/backups/`
+  - `docs/download/ekklesia-latest.apk`
+  - `docs/download/ekprosopos-latest.apk`
+  - `packages/crypto/hlr.py.bak`
+  - `tmp/`
+- containers before any deploy:
+  - `ekklesia-web`: running, up 34h
+  - `ekklesia-api`: running, up 36h
+
+Verdict: the latest security wording/header fix is pushed but **not live** yet. Live response still shows old headers:
+- `x-powered-by: Next.js` present on `/el/bills`
+- no `Referrer-Policy`
+- no `Permissions-Policy`
+
+### A — SERVER_SALT truth
+
+Production check (no secret value printed):
+- `SERVER_SALT` set: YES
+- length: 64
+- default/weak value (`dev-salt-change-in-production`, `dev-salt`, empty): NO
+- `/opt/ekklesia/.env.production` permissions: `600 ekklesia:ekklesia`
+- `FORUM_SSO_SALT` set: YES
+- `ADMIN_KEY` set: YES
+- `ADMIN_KEY` default: NO
+
+Residual risks confirmed by source:
+- There is no startup fail-closed guard for weak/missing `SERVER_SALT`.
+- Defaults are inconsistent:
+  - `packages/crypto/nullifier.py`: `dev-salt-change-in-production`
+  - `apps/api/routers/admin_account.py`: `dev-salt`
+  - `apps/api/routers/govgr.py`: `dev-salt`
+  - `apps/api/routers/voting.py`: empty string fallback
+- `apps/api/config.py` also contains `server_salt: str = "dev-salt-change-in-production"`.
+
+Verdict: production is currently configured with a non-default 64-char salt and protected file permissions.
+The design still needs a separate hardening task: fail-closed startup validation and unified no-default behavior.
+
+### C — IP logging / rate-limiting truth
+
+Confirmed flows:
+- Global SlowAPI limiter in `apps/api/main.py` uses `_get_real_ip()` from `X-Forwarded-For`.
+- Sentry filter removes `X-Forwarded-For` and `Cookie` before sending events.
+- `apps/api/routers/agent.py` and `apps/api/routers/claude_agent.py` also trust `X-Forwarded-For`.
+- `apps/api/routers/contact.py` uses `request.client.host`, rate-limits in-memory, embeds `IP: {client_ip}` in Brevo email content, and logs IP with full name/org.
+- `apps/api/routers/public_api.py` uses `request.client.host` for anonymous public API rate limiting and Redis key `ratelimit:keygen:{ip}` for key generation.
+
+Production network check:
+- `ekklesia-api` port `8000/tcp` is **not** bound to host ports.
+- Traefik is the public entrypoint on ports 80/443.
+
+Verdict:
+- XFF spoofing is not an acute direct-port exposure right now, because API port is internal-only.
+- The infra invariant is important: API must remain internal behind Traefik.
+- Contact/public API rate limiting is inconsistent behind proxy because they use socket IP rather than the shared real-IP helper.
+- Brevo contact emails/logs include IP plus contact PII; privacy policy wording must cover this, and retention should be understood.
+
+### E — Public repo trust
+
+Verdict: GO.
+- Public repo is current with local HEAD.
+- External claim that the GitHub repo is only a stale mirror is not supported by current evidence.
+- Separate issue: production checkout is behind the public repo until a deploy is performed.
+
+### F — API security
+
+Admin auth:
+- `apps/api/dependencies.py` is fail-closed in production if `ADMIN_KEY` is missing or equals `dev-admin-key`.
+- Bearer-only auth; query-param admin key removed.
+- Admin routes use `Depends(verify_admin_key)` or wrappers.
+
+CORS:
+- Origin allowlist is explicit (`ekklesia.gr`, `www`, `api`, `dashboard`, `test`).
+- `allow_credentials=True`.
+- `allow_methods=["*"]` and `allow_headers=["*"]` remain broad. Claude Code judged this acceptable with the strict origin allowlist, but it remains a hardening candidate.
+
+Rate limiting:
+- Global SlowAPI: present.
+- Agent routes: limited.
+- Contact/public API: in-memory and inconsistent real-IP extraction; should be unified and preferably Redis-backed.
+
+Verdict: no immediate auth bypass found; hardening tasks remain.
+
+### Follow-up candidates
+
+1. `SERVER_SALT` startup guard:
+   - fail closed in production if missing/default/too short
+   - unify all salt defaults to no default
+   - add tests
+2. Real-IP helper consolidation:
+   - one trusted helper for proxy-aware IP extraction
+   - contact/public API use the same helper or Redis-backed limiter
+   - document "API must remain internal behind Traefik"
+3. Deploy pushed security wording/header fix:
+   - server currently behind at `dd70c52`
+   - web/API rebuild required for live headers/API-agent wording
+4. `NEXT_LOCALE` cookie `Secure` flag:
+   - separate Next.js hardening task
+
+*Third pass completed: 2026-06-10 | Codex + Claude Code | Mostly read-only; no production mutation*
