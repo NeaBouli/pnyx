@@ -54,7 +54,8 @@
 |---|---|---|
 | #79 | extern | F-Droid !38007 wartet auf linsui/F-Droid Merge |
 | #80 | extern | Off-site Backup wartet auf Hetzner Storage Box / Finanzierung |
-| #81 | guarded | Android Mopro/Semaphore Native-Prover auf S10 verifiziert; produktives ZK-Voting bleibt hinter Feature-Flag aus |
+| #81 | ✅ | Android Mopro/Semaphore Native-Prover auf S10 verifiziert; GH#112 trackt produktives ZK-Voting hinter Gate-Plan |
+| #112 / NEA-249 | gated | Produktives ZK-Voting nur nach Gate-Plan: Backend-Verifier, Registry, Cross-Tier-Guard, Arweave, Canary |
 | #102 / NEA-312 | waiting | 24h-Korrektur-Warntext: Code + Tests fertig, visuelle Prüfung wartet auf echten WINDOW_24H Bill |
 
 ## Kürzlich erledigt / nicht mehr als Defekt behandeln

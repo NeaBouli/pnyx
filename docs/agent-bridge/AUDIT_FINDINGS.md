@@ -159,7 +159,7 @@ Evidence:
   - Direct APK live
   - Google Play internal testing / review pending
   - F-Droid MR !38007
-  - ZK V2 blocked on mobile prover
+  - ZK V2 Android prover now verified on S10; production integration remains gated under GH#112
 
 Correction to external audit:
 - The claim that the public GitHub README still says "Mobile TODO", "Next.js 14", "no releases", and "13 endpoints" is not true for the current local/public state.

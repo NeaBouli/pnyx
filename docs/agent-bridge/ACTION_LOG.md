@@ -8402,7 +8402,7 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Beta nullifier is server-salted SHA256; Argon2id v2 scaffold is prepared but disabled
 - Updated feature table:
   - bill text + summaries = official full text/PDF links plus reviewed summaries
-  - ZK/Semaphore remains optional and blocked on native mobile prover
+  - ZK/Semaphore remains optional; at this point it was blocked on native mobile prover (superseded 2026-06-11 by GH#81 S10 self-test)
 
 ### Verification
 - `git diff --check`: OK.
@@ -8598,3 +8598,33 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Semaphore group registry
   - per-vote Arweave bulletin-board records
   - canary rollout and rollback plan
+
+## 2026-06-11 — Codex: GH#112 ZK V2 production gate documented
+
+### Scope
+- Bridge/documentation only.
+- No runtime code changes, no API/DB migration, no mobile rebuild, no deploy.
+- Goal was to prevent the resolved GH#81 prover milestone from being confused with production ZK voting activation.
+
+### Updates
+- Added `docs/agent-bridge/GH112_ZK_V2_PRODUCTION_GATE.md`.
+- Updated stale README / Bridge wording:
+  - Android Mopro/Semaphore prover is verified on S10.
+  - Product ZK voting is not live.
+  - GH#112 is the guarded production-integration track.
+
+### GH#112 Gate Summary
+- Gate 0: proof payload, server verifier fixture, canonical message/scope, cross-tier uniqueness design.
+- Gate 1: additive DB only.
+- Gate 2: disabled backend verifier flag.
+- Gate 3: cross-tier double-vote guard.
+- Gate 4: mobile opt-in.
+- Gate 5: Arweave bulletin board.
+- Gate 6: explicit canary with rollback.
+
+### Critical Invariant
+- Do not allow the same citizen to cast both a Tier 1 Ed25519/HMAC vote and a Tier 2 Semaphore vote for the same bill.
+- Claude Code review was incorporated before commit:
+  - Gate 0 now requires a Semaphore group-management trust model.
+  - Cross-tier options now flag linkability risks, Ed25519-derived ZK identity is forbidden, and Tier 1/Tier 2 nullifier domains must be explicit.
+  - Canary constraints now include small-anonymity-set risk, coarse/batched publication, tally isolation, Nullifier v2 interaction, and revocation semantics.

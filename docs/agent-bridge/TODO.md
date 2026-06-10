@@ -1,6 +1,6 @@
 # TODO — Ekklesia.gr / pnyx
 
-## Aktive Roadmap — Stand 2026-06-09
+## Aktive Roadmap — Stand 2026-06-11
 
 ### Aktiv baubar (Reihenfolge)
 1. [x] Pagination `Όλα` — GH#107 / NEA-317
@@ -53,9 +53,8 @@
 - [x] CLAUDE.md Aktualisierung (NEA-278 — stale CX33, 22 Module, Next 14 korrigiert)
 - [x] NEA-303: Admin-Testaccount + DEMO-123 Region permanent im Code gesetzt
 
-## Blocked
-- [ ] NEA-249: ZK Voting V2 — BLOCKED (mobile prover unresolved, ADR geschrieben)
-- [ ] GH#112 / NEA-249 Follow-up: ZK V2 Produktintegration nur mit eigenem Ticket: Backend verifier, Semaphore group registry, Arweave bulletin board, Canary
+## Guarded Follow-ups
+- [ ] GH#112 / NEA-249 Follow-up: ZK V2 Produktintegration nur nach Gate-Plan: Backend verifier, Semaphore group registry, Cross-Tier-Double-Vote-Guard, Arweave bulletin board, Canary
 
 ## Done (Session 25.05.2026)
 - [x] F-Droid !38007 autoupdate: `AutoUpdateMode: Version`, `UpdateCheckMode: Tags`, CurrentVersion 1.3.2/27 pushed to fdroiddata (`3d81d65c1`) + linsui comment posted
@@ -113,8 +112,8 @@
 - [x] Audit B: Code Security (7 findings, all resolved)
 
 ## Done (Session 22.05.2026)
-- [x] NEA-249: ADR geschrieben — Semaphore Hybrid V2, blocked (mobile prover)
-- [x] NEA-249: Phase 0 Spike STOP — snarkjs/Mopro/RN inkompatibel
+- [x] NEA-249: ADR geschrieben — Semaphore Hybrid V2
+- [x] NEA-249: Android Native-Prover auf S10 verifiziert; Produktintegration separat unter GH#112 gated
 - [x] NEA-222: Server-side Wahlbezirk-Filter (parliament.py periferia_id/dimos_id)
 - [x] NEA-188: votes-timeline DEMO filter + inline fix (500 bug)
 - [x] NEA-247: Web stale vote display fix + Mobile ResultScreen fromVote

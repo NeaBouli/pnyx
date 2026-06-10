@@ -66,7 +66,7 @@ This project uses publicly available government data from:
 | Arweave Archive | Immutable vote audit trail | Beta |
 | POLIS Tickets | Citizen issue tracker with Ed25519 auth | Beta |
 | Dashboard | Admin panel with GitHub OAuth, 15+ pages | Beta |
-| ZK Voting V2 | Optional Semaphore-based anonymous proofs | ADR (blocked on native mobile prover) |
+| ZK Voting V2 | Optional Semaphore-based anonymous proofs | Android prover verified; production integration gated |
 
 ---
 
@@ -191,7 +191,7 @@ cd apps/web && npm run build
 |---|---|---|
 | **Beta** | Now | Active |
 | **Alpha** | 500 users + 3 NGOs + gov.gr OAuth | Upcoming |
-| **V2** | ZK Voting (Semaphore) + Federation | ADR written, blocked on mobile prover |
+| **V2** | ZK Voting (Semaphore) + Federation | Android prover verified; production integration gated |
 
 &rarr; Details: [Roadmap](https://ekklesia.gr/wiki/roadmap.html)
 
