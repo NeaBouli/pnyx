@@ -391,7 +391,7 @@ app.add_middleware(
 | D7 | NEXT_LOCALE cookie missing `Secure` flag | MEDIUM | Fixed live 2026-06-10 (`8b15177`) |
 | D8 | `img-src https:` CSP too permissive | LOW | Not captured |
 | D9 | `polis-oauth-proxy` in CSP — undocumented | INFO | Not captured |
-| F2 | CORS allow_methods/allow_headers=* with credentials | MEDIUM | Not captured |
+| F2 | CORS allow_methods/allow_headers=* with credentials | MEDIUM | Fixed live 2026-06-10 (`d01be5f`) |
 | A4 | Demographic hash also SHA256 (smaller brute-force space than phone) | HIGH | Not captured |
 
 All other findings from the first audit are **confirmed** with exact file:line evidence above.
@@ -499,7 +499,8 @@ Admin auth:
 CORS:
 - Origin allowlist is explicit (`ekklesia.gr`, `www`, `api`, `dashboard`, `test`).
 - `allow_credentials=True`.
-- `allow_methods=["*"]` and `allow_headers=["*"]` remain broad. Claude Code judged this acceptable with the strict origin allowlist, but it remains a hardening candidate.
+- `allow_methods` and `allow_headers` are now explicit (`d01be5f`), not wildcards.
+- Live verification: allowed preflight from `https://ekklesia.gr` returns 200; unknown header and `TRACE` preflights return 400.
 
 Rate limiting:
 - Global SlowAPI: present.

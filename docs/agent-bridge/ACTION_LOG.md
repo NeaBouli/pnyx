@@ -7979,3 +7979,42 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### Result
 - Audit finding `NEXT_LOCALE cookie missing Secure flag` is fixed and live.
+
+## 2026-06-10 — Codex + Claude Code: API CORS methods/headers hardened
+
+### Scope
+- API-only CORS hardening.
+- No web deploy, no DB migration, no voting/nullifier logic change.
+- Local rollback tag: `rollback-pre-cors-hardening-*`.
+- Server rollback tag: `rollback-pre-cors-hardening-deploy-20260610-093235`.
+
+### Implemented
+- `apps/api/main.py` no longer uses wildcard CORS methods/headers.
+- Allowed methods:
+  - `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`
+- Allowed request headers:
+  - `Content-Type`, `Authorization`, `X-API-Key`, `X-Nullifier`
+- Exposed response headers:
+  - `X-Data-License`, `X-Rep-Role`
+- Added regression tests in `apps/api/tests/test_cors_config.py`:
+  - allowed origin/method/header preflight
+  - unknown request header rejected
+  - unknown origin rejected
+  - `TRACE` rejected
+
+### Verification
+- `apps/api/.venv/bin/python -m pytest apps/api/tests/test_cors_config.py apps/api/tests/test_health.py apps/api/tests/test_security_startup.py apps/api/tests/test_sso_config.py -q`: 20 passed.
+- `apps/api/.venv/bin/python -m py_compile apps/api/main.py apps/api/tests/test_cors_config.py`: OK.
+- Claude Code reviewed the diff/rationale: GO.
+- Deployed only `api`; `web`, `db`, and `redis` remained running.
+- Live smoke:
+  - `https://api.ekklesia.gr/health`: 200.
+  - `https://api.ekklesia.gr/api/v1/bills?limit=1`: 200.
+- Live CORS:
+  - allowed preflight from `https://ekklesia.gr`: 200.
+  - `access-control-allow-methods`: `GET, POST, PUT, PATCH, DELETE, OPTIONS`.
+  - unknown request header `X-Not-Allowed`: 400 `Disallowed CORS headers`.
+  - `TRACE`: 400 `Disallowed CORS method`.
+
+### Result
+- Audit finding `CORS allow_methods/allow_headers=* with credentials` is fixed and live.
