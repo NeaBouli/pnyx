@@ -8214,3 +8214,62 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### Result
 - Public docs and GitHub wiki source now match the current audited project state more closely.
+
+## 2026-06-10 — Final audit closeout: docs live + ADR-004 tracked
+
+### Scope
+- Bridge/status documentation only.
+- No runtime code, DB, API, mobile, voting, forum, or identity logic changes in this final closeout entry.
+
+### Current HEADs
+- Main repo / origin / server: `1c22f84`
+- GitHub wiki repo: `a41c18a`
+
+### Completed in final pass
+- Public static docs/wiki deployed live after drift cleanup:
+  - `Next.js 14` -> `Next.js 16`
+  - `CX33` -> `CX43`
+  - `62 endpoints / 22 modules` -> `70+ endpoints / 25 modules`
+  - SMS/SMS-HLR wording -> HLR without SMS
+- GitHub wiki source pushed:
+  - `pnyx.wiki.git` `master` -> `a41c18a`
+- Security design guardrail added:
+  - `docs/adr/ADR-004-nullifier-kdf-migration.md`
+  - Tracking: `GH#110 / NEA-335`
+- GitHub cross-link set on `GH#110`.
+- Linear ticket created:
+  - `NEA-335` — SEC: ADR-004 Argon2id identity nullifier KDF migration
+
+### Verification
+- GitHub Dependabot API: `0` open alerts.
+- Open GitHub issues after closeout:
+  - `#110` / `NEA-335` — Argon2id/scrypt identity nullifier migration (tracked, not quick-fix)
+  - `#81` — ZK V2 Semaphore, blocked on Mopro/native prover
+  - `#80` — Off-Site Backup, waiting on Hetzner Storage Box / funding
+  - `#79` — F-Droid MR !38007, waiting on external linsui merge
+- Live smoke:
+  - `https://ekklesia.gr/`: 200
+  - `https://ekklesia.gr/el/bills`: 200
+  - `https://api.ekklesia.gr/health`: 200
+  - `https://ekklesia.gr/wiki/api.html`: 200, shows `70+ endpoints, 25 modules`
+  - `https://ekklesia.gr/wiki/architecture.html`: 200, shows `Next.js 16`
+  - `https://ekklesia.gr/wiki/index.html`: 200, shows `70+ Endpoints, 25 Modules` and `MOD-01 — MOD-25`
+  - `https://ekklesia.gr/wiki/whitepaper.html`: 200, shows `Next.js 16` and `70+ endpoints, 25 modules`
+- Server containers checked:
+  - `web`, `api`, `db`, `redis` running
+  - `db` and `redis` healthy
+
+### Decision / Guardrail
+- Do not implement `GH#110 / NEA-335` as an incidental fix.
+- The nullifier KDF migration touches identity duplicate-prevention plus downstream vote, Polis, Diavgeia, and evaluation references.
+- Safe implementation must follow ADR-004:
+  - v1 compatibility retained
+  - v2 Argon2id/scrypt versioned
+  - dual lookup + dual write
+  - immutable KDF params per version
+  - env-flag rollback
+  - focused identity/voting/Polis/Diavgeia/evaluation tests
+
+### Result
+- Audit hardening is materially complete for the safe, bounded tasks.
+- Remaining substantive work is now explicitly tracked and scoped instead of hidden in notes.
