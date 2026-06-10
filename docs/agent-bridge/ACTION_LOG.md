@@ -8113,3 +8113,24 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Result
 - Audit finding `img-src https:` is fixed and live.
 - POLIS OAuth Worker purpose is documented.
+
+## 2026-06-10 — Codex: Nullifier wording truth cleanup
+
+### Scope
+- Documentation/static-content only.
+- No API, mobile, DB, voting, identity, nullifier, or deployment logic change.
+
+### Implemented
+- `CLAUDE.md`, `docs/agent-bridge/CLAUDE_TO_CODEX.md`, and `docs/WHITEPAPER.md` no longer call `SHA256(phone + SERVER_SALT)` absolutely non-reversible.
+- Public `docs/wiki/security.html` now says `Server-Salted Hashing` and explicitly notes that `SERVER_SALT` is a critical secret.
+- The actual current Beta model remains unchanged:
+  - phone number not stored
+  - server-salted SHA256 nullifier
+  - Argon2id/scrypt migration remains a separate design task
+
+### Verification
+- Grep check: no active/public doc still says `nicht umkehrbar`, `Δεν μπορεί να αντιστραφεί`, or `One-Way Hashing`.
+- Historical audit/chat transcripts intentionally left unchanged.
+
+### Result
+- Public/security docs now match the audited nullifier threat model.

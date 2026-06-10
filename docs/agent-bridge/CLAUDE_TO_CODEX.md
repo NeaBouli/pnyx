@@ -143,7 +143,7 @@ ANNOUNCED → (14 Tage) → ACTIVE → (24h) → WINDOW_24H → (Snapshot) → P
 
 - **Telefonnummer:** sofort nach Nullifier-Generierung geloescht (gc.collect())
 - **Private Key:** einmalig zurueckgegeben, NIE auf Server gespeichert
-- **Nullifier Hash:** SHA256(phone + SERVER_SALT) — nicht umkehrbar
+- **Nullifier Hash:** SHA256(phone + SERVER_SALT) — phone not stored; depends on SERVER_SALT secrecy. If salt leaks, Greek phone numbers are brute-forceable; Argon2id/scrypt migration is a separate design task.
 - **Ed25519:** Public Key auf Server, Private Key nur auf Geraet
 - **Demographic Hash:** SHA256(region + gender + SERVER_SALT)
 - **Compass-Daten:** 100% clientseitig, AES-256-GCM (HKDF vom Ed25519 Key), nie an Server

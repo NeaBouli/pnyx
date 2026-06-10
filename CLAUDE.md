@@ -962,7 +962,7 @@ ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END
 ## Sicherheitsprinzipien
 - Telefonnummer: sofort nach Nullifier-Generierung gelöscht (gc.collect())
 - Private Key: einmalig zurückgegeben, nie gespeichert
-- Nullifier Hash: SHA256(phone + SERVER_SALT) — nicht umkehrbar
+- Nullifier Hash: SHA256(phone + SERVER_SALT) — phone not stored; depends on SERVER_SALT secrecy. If salt leaks, Greek phone numbers are brute-forceable; Argon2id/scrypt migration is a separate design task.
 - Ed25519: Public Key auf Server, Private Key nur im Gerät
 - Demographic Hash: SHA256(region + gender + SERVER_SALT)
 
