@@ -8713,6 +8713,7 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `verifyProof(mappedS10Fixture)`: `true`
 - wrong-message mutation: `false`
 - Conclusion: Android Mopro proof payload is compatible with the official Semaphore JS verifier after snake_case→camelCase mapping.
+- Important safety finding: a trial isolated package install for `@semaphore-protocol/proof@4.14.2` reported 14 npm audit findings (6 moderate, 8 high) through transitive verifier/artifact tooling. The prototype package was not committed.
 
 ### Remaining Gate 0 Decision
 - Decide production server-verifier architecture:

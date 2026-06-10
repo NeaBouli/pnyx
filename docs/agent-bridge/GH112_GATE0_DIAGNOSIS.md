@@ -121,6 +121,7 @@ Current conclusion:
 
 - The Android native Mopro proof format is compatible with the official Semaphore JS verifier after a simple snake_case -> camelCase mapping.
 - No verifier dependency has been added to the repo yet.
+- A trial isolated `@semaphore-protocol/proof@4.14.2` package install reported 14 npm audit findings (6 moderate, 8 high) through transitive verifier/artifact tooling. Therefore it must not be added to production images without a dedicated dependency/security review.
 - Production/server integration still needs an explicit decision about whether the FastAPI backend should:
   - call a small internal Node verifier service,
   - embed a JS verifier through a controlled worker,
