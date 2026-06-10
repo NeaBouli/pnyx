@@ -20,6 +20,7 @@ import redis.asyncio as aioredis
 from database import get_db
 from models import ParliamentBill, BillStatus, KnowledgeBase
 from services.claude_usage import MODEL as CLAUDE_MODEL, track_usage
+from ip_utils import get_client_ip
 from services.ollama_service import answer_citizen_question, ollama_available
 
 logger = logging.getLogger(__name__)
@@ -29,14 +30,7 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "20"))
 
 
-def _get_real_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for", "")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
-
-
-limiter = Limiter(key_func=_get_real_ip)
+limiter = Limiter(key_func=get_client_ip)
 router = APIRouter(prefix="/api/v1/agent", tags=["agent"])
 
 

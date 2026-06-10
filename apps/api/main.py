@@ -8,8 +8,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
 from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from ip_utils import get_client_ip
 from security_startup import validate_server_salt_config
 
 logger = logging.getLogger(__name__)
@@ -61,14 +61,7 @@ def capture_error(error: Exception, context: dict = None):
     else:
         local_error_logger.error("[LOCAL] %s: %s | %s", type(error).__name__, error, context)
 
-def _get_real_ip(request: Request) -> str:
-    """Extract real client IP from X-Forwarded-For (behind Traefik)."""
-    forwarded = request.headers.get("x-forwarded-for", "")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return get_remote_address(request)
-
-limiter = Limiter(key_func=_get_real_ip, default_limits=["60/minute"])
+limiter = Limiter(key_func=get_client_ip, default_limits=["60/minute"])
 from routers import identity, vaa, parliament, voting
 from routers import arweave
 from routers import scraper

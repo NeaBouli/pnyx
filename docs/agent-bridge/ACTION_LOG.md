@@ -8018,3 +8018,48 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### Result
 - Audit finding `CORS allow_methods/allow_headers=* with credentials` is fixed and live.
+
+## 2026-06-10 — Codex + Claude Code: IP helper + Redis rate-limit privacy hardening
+
+### Scope
+- API-only privacy/rate-limit hardening.
+- No web, mobile, DB migration, forum, voting, identity, nullifier, or Arweave logic change.
+- Local rollback tag: `rollback-pre-ip-helper-limiter-*`.
+
+### Implemented
+- Added shared `apps/api/ip_utils.py`:
+  - proxy-aware `get_client_ip()` for rate limiting
+  - daily HMAC rate-limit buckets backed by `SERVER_SALT` / `RATE_LIMIT_SALT`
+  - redacted request refs (`ipref:...`) for logs/emails
+  - atomic Redis fixed-window limiter via Lua (`INCR` + `EXPIRE` together)
+- Replaced duplicate IP extraction in:
+  - `apps/api/main.py`
+  - `apps/api/routers/agent.py`
+  - `apps/api/routers/claude_agent.py`
+- Contact form:
+  - moved from in-memory per-worker limiter to Redis hashed-IP buckets
+  - removed raw IP from Brevo email body
+  - removed raw IP from contact logs
+- Public API:
+  - moved anonymous/API-key limiter from in-memory to Redis
+  - key-generation limiter uses hashed IP buckets, not raw-IP Redis keys
+  - invalid API keys count as anonymous IP traffic, avoiding per-fake-key bypass
+
+### Verification
+- `apps/api/.venv/bin/python -m pytest apps/api/tests/test_ip_utils.py apps/api/tests/test_rate_limit_privacy.py apps/api/tests/test_cors_config.py apps/api/tests/test_security_startup.py -q`: 20 passed.
+- `apps/api/.venv/bin/python -m py_compile apps/api/ip_utils.py apps/api/main.py apps/api/routers/contact.py apps/api/routers/public_api.py apps/api/routers/agent.py apps/api/routers/claude_agent.py apps/api/tests/test_ip_utils.py apps/api/tests/test_rate_limit_privacy.py`: OK.
+- `git diff --check`: OK.
+- Grep check: no remaining raw `request.client.host` / duplicate `_get_real_ip` / `ratelimit:keygen:{ip}` / contact `IP:` usage outside `ip_utils.py`.
+- Claude Code reviewed the diff:
+  - voting/nullifier paths untouched
+  - no raw IP in contact emails/logs
+  - tests cover raw-IP non-leakage and daily rotation
+  - low atomicity concern resolved with Redis Lua script
+
+### Known local-env note
+- Broader `test_alpha_modules.py::test_public_key_generate` and `::test_public_key_roundtrip` still require local Redis on `localhost:6379`; those fail in this local environment with Redis connection refused.
+- New fake-Redis regression tests cover the modified public-key/rate-limit code path without needing local Redis.
+
+### Result
+- Audit findings for raw-IP contact emails/logs, raw-IP Redis keygen buckets, and in-memory public/contact rate limiting are fixed in code.
+- Deploy pending until code commit and API-only production rollout.

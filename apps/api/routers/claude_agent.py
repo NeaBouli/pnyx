@@ -10,9 +10,9 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 import redis.asyncio as aioredis
 import httpx
+from ip_utils import get_client_ip
 from services.claude_usage import MODEL, read_budget, track_usage
 
 logger = logging.getLogger(__name__)
@@ -38,12 +38,7 @@ SYSTEM_PROMPT = (
 )
 
 
-def _get_real_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for", "")
-    return forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "unknown")
-
-
-limiter = Limiter(key_func=_get_real_ip)
+limiter = Limiter(key_func=get_client_ip)
 
 
 async def _redis():

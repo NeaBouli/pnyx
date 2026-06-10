@@ -518,6 +518,48 @@ Verdict: no immediate auth bypass found; hardening tasks remain.
    - one trusted helper for proxy-aware IP extraction
    - contact/public API use the same helper or Redis-backed limiter
    - document "API must remain internal behind Traefik"
+
+---
+
+## Fourth Pass — IP Helper + Redis Rate-Limit Hardening (2026-06-10)
+
+Status: **implemented in code, deploy pending**.
+
+Scope:
+- API-only privacy/rate-limit hardening.
+- No voting, identity, nullifier, DB, forum, web, mobile, or Arweave logic changes.
+
+Implemented:
+- Added shared `apps/api/ip_utils.py`.
+- Consolidated proxy-aware IP extraction for:
+  - global SlowAPI limiter (`apps/api/main.py`)
+  - citizen agent limiter (`apps/api/routers/agent.py`)
+  - Claude agent limiter (`apps/api/routers/claude_agent.py`)
+- Contact form (`apps/api/routers/contact.py`):
+  - in-memory per-worker limiter replaced with Redis fixed-window limiter
+  - rate-limit key uses daily HMAC bucket, not raw IP
+  - Brevo email body now contains `Request ref: ipref:...`, not raw IP
+  - server log line now contains `Contact ref=ipref:...`, not raw IP
+- Public API (`apps/api/routers/public_api.py`):
+  - anonymous/API-key rate limits moved from in-memory dict to Redis
+  - key-generation limiter uses daily HMAC bucket, not `ratelimit:keygen:{ip}`
+  - invalid API keys are treated as anonymous traffic for rate limiting, preventing per-fake-key bypass
+- Redis limiter uses Lua so `INCR` and `EXPIRE` are atomic.
+
+Verification:
+- `apps/api/.venv/bin/python -m pytest apps/api/tests/test_ip_utils.py apps/api/tests/test_rate_limit_privacy.py apps/api/tests/test_cors_config.py apps/api/tests/test_security_startup.py -q`: **20 passed**.
+- `apps/api/.venv/bin/python -m py_compile ...`: **OK**.
+- `git diff --check`: **OK**.
+- Grep check found no remaining raw `request.client.host`, duplicate `_get_real_ip`, `ratelimit:keygen:{ip}`, or contact-email `IP:` usage outside the centralized helper.
+- Claude Code reviewed the diff and confirmed:
+  - voting/nullifier paths untouched
+  - no raw IP in contact emails/logs
+  - tests cover raw-IP non-leakage and daily rotation
+  - Redis atomicity concern resolved by Lua script
+
+Remaining caveat:
+- `TRUSTED_PROXY_COUNT=1` assumes the current single Traefik public-entrypoint topology.
+- If a CDN/load balancer is added in front of Traefik, update `TRUSTED_PROXY_COUNT` and re-test IP extraction.
 3. Deploy pushed security wording/header fix:
    - server currently behind at `dd70c52`
    - web/API rebuild required for live headers/API-agent wording

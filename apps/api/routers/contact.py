@@ -1,43 +1,53 @@
 """Contact router — NGO contact form endpoint (POST /api/v1/contact/ngo).
 
 Sends notification email via Brevo (SendinBlue) API.
-Rate-limited: max 3 requests per IP per hour (in-memory).
+Rate-limited: max 3 requests per IP per hour (Redis, hashed IP bucket).
 """
 
 import os
-import time
 import logging
 import re
-from collections import defaultdict
-from typing import Dict, List, Tuple
+from typing import Optional, Tuple
 
 import httpx
+import redis.asyncio as aioredis
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr, field_validator
+from ip_utils import ip_reference, rate_limit_key_for_ip, redis_fixed_window_limit
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/contact", tags=["contact"])
 
 # ---------------------------------------------------------------------------
-# Rate limiter — simple in-memory dict (max 3 per IP per hour)
+# Rate limiter — Redis fixed window (max 3 per IP per hour)
 # ---------------------------------------------------------------------------
-_rate_store: Dict[str, List[float]] = defaultdict(list)
 RATE_LIMIT = 3
 RATE_WINDOW = 3600  # seconds
+_redis_client: Optional[aioredis.Redis] = None
 
 
-def _check_rate_limit(ip: str) -> None:
-    """Raise 429 if IP exceeded rate limit."""
-    now = time.time()
-    # Prune old entries
-    _rate_store[ip] = [t for t in _rate_store[ip] if now - t < RATE_WINDOW]
-    if len(_rate_store[ip]) >= RATE_LIMIT:
-        raise HTTPException(
-            status_code=429,
-            detail="Rate limit exceeded — max 3 requests per hour.",
+async def _get_redis() -> aioredis.Redis:
+    global _redis_client
+    if _redis_client is None:
+        url = os.getenv("REDIS_URL", "redis://localhost:6379")
+        _redis_client = aioredis.from_url(url, decode_responses=True)
+    return _redis_client
+
+
+async def _check_rate_limit(request: Request) -> None:
+    """Raise 429 if the hashed IP bucket exceeded the hourly limit."""
+    r = await _get_redis()
+    try:
+        await redis_fixed_window_limit(
+            r,
+            rate_limit_key_for_ip(request, "contact:ngo"),
+            RATE_LIMIT,
+            RATE_WINDOW,
         )
-    _rate_store[ip].append(now)
+    except HTTPException as exc:
+        exc.detail = "Rate limit exceeded — max 3 requests per hour."
+        raise exc
 
 
 # ---------------------------------------------------------------------------
@@ -82,8 +92,8 @@ RECIPIENT = os.getenv("CONTACT_RECIPIENT", "noreply@ekklesia.gr")
 @router.post("/ngo")
 async def contact_ngo(body: NgoContactRequest, request: Request) -> dict:
     """Handle contact form submission. Sends to admin via Brevo. No confirmation email to sender."""
-    client_ip = request.client.host if request.client else "unknown"
-    _check_rate_limit(client_ip)
+    await _check_rate_limit(request)
+    request_ref = ip_reference(request, "contact")
 
     if not body.consent:
         raise HTTPException(status_code=400, detail="Consent required")
@@ -110,7 +120,7 @@ async def contact_ngo(body: NgoContactRequest, request: Request) -> dict:
         f"<hr style='margin:1rem 0'/>"
         f"<p>{_escape(body.message)}</p>"
         f"<hr style='margin:1rem 0'/>"
-        f"<p style='color:#999;font-size:0.8em'>IP: {client_ip} | Consent: {body.consent}</p>"
+        f"<p style='color:#999;font-size:0.8em'>Request ref: {request_ref} | Consent: {body.consent}</p>"
     )
 
     payload = {
@@ -140,7 +150,7 @@ async def contact_ngo(body: NgoContactRequest, request: Request) -> dict:
         raise HTTPException(status_code=502, detail="Email service unreachable")
 
     # NO confirmation email to sender (by design)
-    logger.info("[CONTACT] Contact from %s — %s (%s)", client_ip, full_name, body.org)
+    logger.info("[CONTACT] Contact ref=%s — %s (%s)", request_ref, full_name, body.org)
     return {"status": "ok", "message": "Message sent successfully"}
 
 

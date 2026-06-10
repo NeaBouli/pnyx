@@ -13,8 +13,6 @@ import hashlib
 import json
 import secrets
 import logging
-import time
-from collections import defaultdict
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, Header
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,6 +20,7 @@ from sqlalchemy import select, func
 from typing import Optional
 
 from database import get_db
+from ip_utils import rate_limit_key_for_ip, redis_fixed_window_limit
 from models import (
     ParliamentBill, CitizenVote, Party,
     BillStatus, VoteChoice
@@ -57,19 +56,7 @@ async def verify_api_key(key: str) -> bool:
     return await r.hexists(REDIS_KEY_HASH, hash_key(key))
 
 
-# ── Rate Limiter (In-Memory — acceptable for single-instance) ────────────────
-
-request_counts: dict = defaultdict(list)
-
-def check_rate_limit(identifier: str, limit: int) -> bool:
-    now = time.time()
-    request_counts[identifier] = [
-        t for t in request_counts[identifier] if now - t < 60
-    ]
-    if len(request_counts[identifier]) >= limit:
-        return False
-    request_counts[identifier].append(now)
-    return True
+# ── Rate Limiter (Redis fixed window, privacy-preserving IP buckets) ─────────
 
 
 async def rate_limit_check(
@@ -77,9 +64,17 @@ async def rate_limit_check(
     x_api_key: Optional[str] = Header(None, alias="X-API-Key")
 ):
     """Dependency für Rate Limiting."""
-    identifier = x_api_key if x_api_key else (request.client.host if request.client else "unknown")
-    limit = 1000 if (x_api_key and await verify_api_key(x_api_key)) else 100
-    if not check_rate_limit(identifier, limit):
+    r = await get_redis()
+    valid_key = bool(x_api_key and await verify_api_key(x_api_key))
+    limit = 1000 if valid_key else 100
+    if valid_key and x_api_key:
+        rate_key = f"ratelimit:public_api:key:{hash_key(x_api_key)}"
+    else:
+        rate_key = rate_limit_key_for_ip(request, "public_api:anon")
+
+    try:
+        await redis_fixed_window_limit(r, rate_key, limit, 60)
+    except HTTPException:
         raise HTTPException(
             status_code=429,
             detail={
@@ -89,7 +84,7 @@ async def rate_limit_check(
                 "tip": "POST /api/v1/public/keys/generate for 1000 req/min"
             }
         )
-    return x_api_key
+    return x_api_key if valid_key else None
 
 
 # ── API Key Management ────────────────────────────────────────────────────────
@@ -99,12 +94,10 @@ async def generate_api_key(request: Request, label: str = "ekklesia-client"):
     """Generiert einen API Key — kein Konto nötig. Rate-limited: 5/hour per IP."""
     # Rate limit: max 5 key generations per hour per IP
     r = await get_redis()
-    ip = request.client.host if request.client else "unknown"
-    rate_key = f"ratelimit:keygen:{ip}"
-    count = await r.incr(rate_key)
-    if count == 1:
-        await r.expire(rate_key, 3600)
-    if count > 5:
+    rate_key = rate_limit_key_for_ip(request, "public_api:keygen")
+    try:
+        await redis_fixed_window_limit(r, rate_key, 5, 3600)
+    except HTTPException:
         raise HTTPException(status_code=429, detail="Zu viele Key-Generierungen. Max 5 pro Stunde.")
     key = f"ek_{secrets.token_urlsafe(32)}"
     hashed = hash_key(key)
