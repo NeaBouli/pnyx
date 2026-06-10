@@ -563,6 +563,7 @@ Verification:
   - `/api/v1/public/bills?limit=1`: 200
   - CORS preflight for `GET` + `X-API-Key`: 200
   - Redis public API bucket is hashed (`ratelimit:public_api:anon:2026-06-10:<hash>`)
+  - Spoof probe with client-supplied `X-Forwarded-For: 203.0.113.123` did **not** create the Redis bucket corresponding to that fake IP (`SPOOF_MATCH=NO`)
   - API logs after smoke: no errors
 
 Remaining caveat:
