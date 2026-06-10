@@ -8071,3 +8071,31 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### Result
 - Audit findings for raw-IP contact emails/logs, raw-IP Redis keygen buckets, and in-memory public/contact rate limiting are fixed and live.
+
+## 2026-06-10 — Codex + Claude Code: CSP image allowlist tightened
+
+### Scope
+- Web/Traefik header hardening only.
+- No API, DB, voting, mobile, forum, identity, nullifier, or application logic change.
+
+### Diagnosis
+- Audit finding: CSP `img-src 'self' data: https:` allowed arbitrary HTTPS images.
+- Actual image hosts found:
+  - local assets (`'self'`)
+  - `data:`
+  - POLIS QR images from `https://api.qrserver.com`
+  - GitHub avatars from `https://avatars.githubusercontent.com`
+- `connect-src https://polis-oauth-proxy.bergamolia.workers.dev` is legitimate: the POLIS Cloudflare Worker exchanges GitHub OAuth codes while keeping the GitHub client secret out of browser code.
+
+### Implemented
+- `infra/docker/docker-compose.prod.yml` CSP changed from broad `img-src ... https:` to:
+  - `img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com`
+- `docs/tickets/setup.md` documents the POLIS OAuth Worker purpose and secret-boundary.
+
+### Verification
+- `git diff --check`: OK.
+- Claude Code reviewed the CSP plan: GO, no missing image host found.
+- Local `docker compose config` cannot run because the production env file path `/opt/ekklesia/.env.production` is not present locally; compose validation will be run on the server before rollout.
+
+### Result
+- Code/docs prepared; deploy pending until server compose validation + web-only label rollout.

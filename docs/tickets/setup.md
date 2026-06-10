@@ -47,7 +47,10 @@ wrangler secret put GITHUB_CLIENT_SECRET # paste your Client Secret
 wrangler deploy
 ```
 
-Note the Worker URL (e.g., `https://polis-oauth-proxy.your-account.workers.dev`)
+Note the Worker URL (e.g., `https://polis-oauth-proxy.your-account.workers.dev`).
+The production ekklesia CSP allows `connect-src https://polis-oauth-proxy.bergamolia.workers.dev`
+because this Worker exchanges the GitHub OAuth `code` for an access token. The GitHub
+OAuth client secret must stay only in the Worker environment, never in browser code.
 
 ## 5. Update Configuration
 

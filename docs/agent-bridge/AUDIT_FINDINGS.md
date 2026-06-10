@@ -568,11 +568,32 @@ Verification:
 Remaining caveat:
 - `TRUSTED_PROXY_COUNT=1` assumes the current single Traefik public-entrypoint topology.
 - If a CDN/load balancer is added in front of Traefik, update `TRUSTED_PROXY_COUNT` and re-test IP extraction.
-3. Deploy pushed security wording/header fix:
-   - server currently behind at `dd70c52`
-   - web/API rebuild required for live headers/API-agent wording
-4. `NEXT_LOCALE` cookie `Secure` flag:
-   - fixed live 2026-06-10 (`8b15177`)
-   - verified header: `NEXT_LOCALE=el; Path=/; Secure; SameSite=lax`
 
-*Third pass completed: 2026-06-10 | Codex + Claude Code | Mostly read-only; no production mutation*
+---
+
+## Fifth Pass — CSP Image Allowlist + POLIS Worker Documentation (2026-06-10)
+
+Status: **implemented in code/docs, deploy pending**.
+
+Scope:
+- Web/Traefik header hardening only.
+- No API, DB, voting, identity, nullifier, mobile, forum, or app logic changes.
+
+Implemented:
+- `infra/docker/docker-compose.prod.yml` CSP tightened:
+  - before: `img-src 'self' data: https:`
+  - after: `img-src 'self' data: https://api.qrserver.com https://avatars.githubusercontent.com`
+- `docs/tickets/setup.md` now documents why `connect-src https://polis-oauth-proxy.bergamolia.workers.dev` exists:
+  - it is the POLIS Cloudflare Worker that exchanges GitHub OAuth `code` values for access tokens
+  - the GitHub OAuth client secret stays only in the Worker environment, never in browser code
+
+Diagnosis:
+- Local/static images are covered by `'self'`.
+- QR images used by POLIS are covered by `https://api.qrserver.com`.
+- GitHub avatar images are covered by `https://avatars.githubusercontent.com`.
+- Claude Code reviewed the plan: GO, no missing image host found.
+
+Verification:
+- `git diff --check`: **OK**.
+- Local `docker compose config` cannot validate this file because the production env file path `/opt/ekklesia/.env.production` is intentionally absent locally.
+- Server-side compose validation and live header verification are required before marking this fixed live.
