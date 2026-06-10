@@ -7639,3 +7639,39 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Native Mopro/Semaphore can now be bundled by Android builds.
 - The feature is still deliberately disabled and not exposed to users.
 - GH#81 / NEA-283 remains a guarded ZK V2 track, not production voting.
+
+## 2026-06-10 — Codex + Claude Code: Mobile app audit after Mopro vendoring
+
+### Scope
+- Audit only. No code fix, no deploy, no DB/API/forum/web changes.
+- Claude Code was invoked directly via `claude -p` from `/Users/gio/Desktop/repo/pnyx` as an independent read-only reviewer.
+- Codex then completed the device/emulator checks that Claude Code could not run because its shell did not have `adb` in PATH.
+
+### Claude Code audit result
+- HEAD: `014f1f8`.
+- Working tree clean: YES.
+- `cd apps/mobile && npx tsc --noEmit`: OK.
+- `cd apps/mobile && npx vitest run src/lib`: OK, 35 tests passed.
+- VoteScreen: OK. Ed25519/nullifier path remains active; no ZK path in VoteScreen.
+- ResultScreen: OK. `sourceResolver` fallback present.
+- BillsScreen: OK. Pagination / "Mehr laden" present.
+- ZK/Mopro: OK with LOW note. `zkSemaphoreEnabled=false`; native module is bundled but user-facing entry is disabled.
+- LOW note: `ZkSemaphoreScreen` remains registered in the navigator even while the profile entry is hidden. No production blocker, but future hardening can add a route-level guard.
+
+### Codex device/emulator completion
+- S10 (`RF8N313QMFL`) install successful:
+  - `versionName=1.0.3`
+  - `lastUpdateTime=2026-06-10 05:28:46`
+  - App launched via monkey; app process running.
+  - Crash log clean for relevant `FATAL EXCEPTION` / `AndroidRuntime` entries.
+- Android emulator (`Pixel_5` / `emulator-5554`) install successful:
+  - boot completed: `1`
+  - `versionName=1.0.3`
+  - `lastUpdateTime=2026-06-10 05:29:34`
+  - App launched via monkey; app process running.
+  - No app crash found. The only `AndroidRuntime` line was monkey exiting normally with result code 0.
+
+### Verdict
+- GO for the current guarded app state.
+- No active voting behavior changed.
+- ZK/Mopro remains infrastructure-only and disabled.
