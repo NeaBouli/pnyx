@@ -8540,3 +8540,9 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `apps/api/.venv/bin/python -m pytest -q tests/services/test_bill_lifecycle_transitions.py tests/services/test_arweave_guards.py tests/test_monitor_parliament_freshness.py tests/test_security_startup.py`: 25 passed.
 - `apps/api/.venv/bin/python -m py_compile services/bill_lifecycle.py tests/services/test_bill_lifecycle_transitions.py`: OK.
 - Rollback tag: `rollback-pre-lifecycle-catchup-20260610-2301`.
+- Production deploy:
+  - rollback tag: `rollback-pre-lifecycle-catchup-deploy-20260610_230223`
+  - API build/recreate successful, `https://api.ekklesia.gr/health`: 200, `https://ekklesia.gr/`: 200
+  - Redis `scraper:bill_lifecycle:error_count`: 0
+  - DB overdue stuck query for `ANNOUNCED/ACTIVE/WINDOW_24H` older than 1 day: 0
+  - Manual monitor run: `All checks passed — no alerts`, exit 0
