@@ -164,6 +164,30 @@ Operational tests:
 - HLR verification latency budget with KDF enabled.
 - Rollback env flag tested on staging or local prod clone.
 
+## Preliminary Production-Container Benchmark
+
+Measured on 2026-06-10 inside the running `ekklesia-api` container, with a test
+phone value and a non-secret test salt. No DB or identity state was touched.
+
+```text
+python 3.12.13
+argon2_spec True
+scrypt True
+scrypt n=16384 r=8 p=1 maxmem=128MiB ms=61.9
+scrypt n=32768 r=8 p=1 maxmem=128MiB ms=96.0
+scrypt n=65536 r=8 p=1 maxmem=128MiB ms=196.2
+argon2id t=2 m=16384KiB p=1 ms=28.4
+argon2id t=2 m=32768KiB p=1 ms=50.7
+argon2id t=2 m=65536KiB p=1 ms=107.8
+argon2id t=2 m=131072KiB p=1 ms=216.0
+```
+
+Preliminary conclusion: `argon2-cffi` is already available in the production API
+image. Argon2id with `time_cost=2`, `memory_cost=65536 KiB`, `parallelism=1`
+appears operationally plausible for identity verification latency, but this is
+not a final parameter decision. The final implementation must pin parameters as
+part of the versioned prefix and re-run the benchmark before enabling v2.
+
 ## Non-Goals
 
 - No historical vote nullifier migration.

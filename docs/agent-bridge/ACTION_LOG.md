@@ -8273,3 +8273,34 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Result
 - Audit hardening is materially complete for the safe, bounded tasks.
 - Remaining substantive work is now explicitly tracked and scoped instead of hidden in notes.
+
+## 2026-06-10 — GH#110 / NEA-335 preliminary KDF benchmark
+
+### Scope
+- Read-only production-container benchmark for ADR-004.
+- No DB, identity, voting, forum, mobile, or runtime code changes.
+- No secrets printed; benchmark used a test phone value and non-secret test salt.
+- Claude Code availability check: unavailable due token limit, resets 15:40 Europe/Athens.
+
+### Findings
+- `argon2-cffi` is available in the running `ekklesia-api` container.
+- Python `hashlib.scrypt` is available.
+- Measured inside `ekklesia-api`:
+  - `scrypt n=16384 r=8 p=1 maxmem=128MiB`: ~61.9 ms
+  - `scrypt n=32768 r=8 p=1 maxmem=128MiB`: ~96.0 ms
+  - `scrypt n=65536 r=8 p=1 maxmem=128MiB`: ~196.2 ms
+  - `argon2id t=2 m=16384KiB p=1`: ~28.4 ms
+  - `argon2id t=2 m=32768KiB p=1`: ~50.7 ms
+  - `argon2id t=2 m=65536KiB p=1`: ~107.8 ms
+  - `argon2id t=2 m=131072KiB p=1`: ~216.0 ms
+
+### Verification
+- Container resources after benchmark remained normal:
+  - `ekklesia-api`: ~292.5 MiB / 15.25 GiB, low CPU
+  - `ekklesia-db`, `ekklesia-redis`, `ekklesia-web`: normal
+- Benchmark results added to `docs/adr/ADR-004-nullifier-kdf-migration.md`.
+- GitHub `#110` and Linear `NEA-335` commented with the benchmark result.
+
+### Result
+- Argon2id is operationally plausible in the current API image, but parameters are **not final**.
+- Any implementation must still follow ADR-004: versioned immutable params, dual lookup/write, env rollback, focused tests.
