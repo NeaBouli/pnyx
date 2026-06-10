@@ -1,7 +1,7 @@
 """
 ekklesia.gr Business Logic Monitor — 3-Tier Auto-Recovery
 Runs every 30 minutes (daemon) or once daily at 06:00 UTC (cron).
-15 rules. Recovery: T1 API → T2 Docker Restart → T3 Telegram Escalation.
+16 rules. Recovery: T1 API → T2 Docker Restart → T3 Telegram Escalation.
 """
 import os
 import time
@@ -26,6 +26,8 @@ CHECK_INTERVAL = int(os.getenv("MONITOR_INTERVAL_SECONDS", "1800"))
 API_URL = os.getenv("API_URL", "http://api:8000")
 ADMIN_KEY = os.getenv("ADMIN_KEY", "")
 AUTO_RECOVERY_T2 = os.getenv("AUTO_RECOVERY_T2", "false").lower() == "true"
+PARLIAMENT_SOURCE_FRESHNESS_ENABLED = os.getenv("PARLIAMENT_SOURCE_FRESHNESS_ENABLED", "true").lower() == "true"
+PARLIAMENT_SOURCE_MAX_LAG_HOURS = int(os.getenv("PARLIAMENT_SOURCE_MAX_LAG_HOURS", "36"))
 
 # T2 Allowlist — HARDCODED, never restart DB/Redis/Traefik/Discourse
 T2_ALLOWED_SERVICES = {"ekklesia-api", "ekklesia-web"}
@@ -47,6 +49,7 @@ class Alert:
 
 T1_MAPPING = {
     "scraper_parliament_stale": "/api/v1/admin/scraper/catch-up",
+    "parliament_source_lag":     "/api/v1/admin/scraper/catch-up",
     "scraper_diavgeia_stale":   "/api/v1/admin/scraper/catch-up",
     "forum_sync_errors":        "/api/v1/admin/forum/resync-all",
     "forum_content_empty":      "/api/v1/admin/forum/resync-all",
@@ -221,6 +224,107 @@ def check_no_new_bills(conn) -> list[Alert]:
             if age > 7:
                 alerts.append(Alert("no_new_bills", "", "warning",
                                     f"Keine neuen Bills seit {age} Tagen", False))
+    return alerts
+
+
+def _as_utc_datetime(value) -> datetime | None:
+    """Normalize source/DB timestamps to aware UTC datetimes."""
+    if not value:
+        return None
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        if text.endswith("Z"):
+            text = text[:-1] + "+00:00"
+        try:
+            value = datetime.fromisoformat(text)
+        except ValueError:
+            return None
+    if not isinstance(value, datetime):
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _bill_source_activity(bill: dict) -> datetime | None:
+    """Return the official activity date from a scraped Parliament bill."""
+    return _as_utc_datetime(bill.get("date") or bill.get("submitted_date"))
+
+
+def _latest_source_activity(bills: list[dict]) -> datetime | None:
+    dates = [_bill_source_activity(bill) for bill in bills]
+    dates = [dt for dt in dates if dt is not None]
+    return max(dates) if dates else None
+
+
+def _db_latest_parliament_activity(conn) -> datetime | None:
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT MAX(GREATEST(
+                COALESCE(parliament_vote_date, TIMESTAMP '1970-01-01'),
+                COALESCE(submitted_date, TIMESTAMP '1970-01-01')
+            ))
+            FROM parliament_bills
+            WHERE source = 'PARLIAMENT'
+              AND id NOT LIKE 'DEMO-%%'
+        """)
+        return _as_utc_datetime(cur.fetchone()[0])
+
+
+def check_parliament_source_freshness(conn) -> list[Alert]:
+    """Compare live Parliament source freshness with DB freshness.
+
+    This catches the failure mode where the scraper still "runs" but misses a
+    newer official Parliament index format.
+    """
+    alerts = []
+    if not PARLIAMENT_SOURCE_FRESHNESS_ENABLED:
+        return alerts
+
+    try:
+        resp = httpx.get(f"{API_URL}/api/v1/scraper/parliament/latest?limit=5", timeout=45)
+        if resp.status_code != 200:
+            alerts.append(Alert(
+                "parliament_source_check_failed", "ekklesia-api", "warning",
+                f"Parliament source freshness check failed: HTTP {resp.status_code}", False,
+            ))
+            return alerts
+
+        payload = resp.json()
+        source_latest = _latest_source_activity(payload.get("bills", []))
+        if not source_latest:
+            alerts.append(Alert(
+                "parliament_source_check_failed", "ekklesia-api", "warning",
+                "Parliament source freshness check returned no dated bills", False,
+            ))
+            return alerts
+
+        db_latest = _db_latest_parliament_activity(conn)
+        if not db_latest:
+            alerts.append(Alert(
+                "parliament_source_lag", "ekklesia-api", "warning",
+                f"Parliament-DB leer, Quelle hat Bills bis {source_latest.strftime('%d.%m.%Y')}", True,
+            ))
+            return alerts
+
+        lag_h = (source_latest - db_latest).total_seconds() / 3600
+        if lag_h > PARLIAMENT_SOURCE_MAX_LAG_HOURS:
+            alerts.append(Alert(
+                "parliament_source_lag", "ekklesia-api", "warning",
+                (
+                    "Parliament-DB hinter Quelle: "
+                    f"Quelle {source_latest.strftime('%d.%m.%Y')}, "
+                    f"DB {db_latest.strftime('%d.%m.%Y')} ({lag_h:.0f}h)"
+                ),
+                True,
+            ))
+    except Exception as e:
+        alerts.append(Alert(
+            "parliament_source_check_failed", "ekklesia-api", "warning",
+            f"Parliament source freshness check error: {str(e)[:120]}", False,
+        ))
     return alerts
 
 
@@ -442,6 +546,7 @@ def run_checks():
     try:
         all_alerts.extend(check_scraper_stale(r))
         all_alerts.extend(check_no_new_bills(conn))
+        all_alerts.extend(check_parliament_source_freshness(conn))
         all_alerts.extend(check_lifecycle_stuck(conn, r))
         all_alerts.extend(check_forum_missing(conn))
         all_alerts.extend(check_arweave_pending(conn))

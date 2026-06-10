@@ -8494,3 +8494,24 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
     - `GR-3aba3e72`
     - `GR-fa1f20de`
     - `GR-d4c62ed4`
+
+## 2026-06-10 — Parliament source freshness guard
+
+### Trigger
+- Gio correctly flagged the Parliament scraper stale gap as project-critical: the app cannot ask citizens to vote if new Parliament activity silently fails to enter the system.
+- The previous monitor checked scraper run timestamps and DB `created_at`, but did not compare the official Parliament source against DB freshness.
+
+### Fix
+- Added a monitor guard that compares:
+  - live source freshness from `/api/v1/scraper/parliament/latest?limit=5`
+  - DB freshness from latest official Parliament activity date (`parliament_vote_date` or `submitted_date`)
+- New alert: `parliament_source_lag`
+  - default threshold: `PARLIAMENT_SOURCE_MAX_LAG_HOURS=36`
+  - recovery: existing T1 catch-up endpoint `/api/v1/admin/scraper/catch-up`
+- This catches the specific failure mode where the scraper still runs but misses a newer Parliament index format.
+
+### Verification
+- Added `apps/api/tests/test_monitor_parliament_freshness.py`.
+- `apps/api/.venv/bin/python -m pytest -q tests/test_monitor_parliament_freshness.py tests/test_scraper_parliament.py tests/test_security_startup.py`: 14 passed.
+- `python -m py_compile apps/monitor/monitor.py`: OK.
+- Rollback tag: `rollback-pre-parliament-freshness-guard-20260610-1449`.
