@@ -7945,3 +7945,37 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Result
 - Nullifier remains active and unchanged.
 - Semaphore remains guarded: visible as settings/status, not active in voting until feature flag + native prover support are both ready.
+
+## 2026-06-10 — Codex + Claude Code: NEXT_LOCALE Secure flag live
+
+### Scope
+- Web-only cookie hardening.
+- No API, DB, voting, mobile, forum, or nullifier logic change.
+- Rollback tag before code: `rollback-pre-next-locale-secure-*`.
+- Server rollback tag: `rollback-pre-next-locale-secure-deploy-20260610-092541`.
+
+### Implemented
+- `apps/web/src/i18n/routing.ts` now configures `next-intl` locale cookie explicitly:
+  - `name: "NEXT_LOCALE"`
+  - `sameSite: "lax"`
+  - `secure: process.env.NODE_ENV === "production"`
+- This preserves localhost/dev behavior while adding the `Secure` attribute in production.
+
+### Verification
+- `cd apps/web && npx tsc --noEmit`: OK.
+- `cd apps/web && npm run build`: OK.
+- Claude Code reviewed the diff: GO.
+- Deployed only `web`; `api`, `db`, and `redis` remained running.
+- Live smoke:
+  - `https://ekklesia.gr/`: 200.
+  - `https://ekklesia.gr/el/bills`: 200.
+  - `https://ekklesia.gr/el/bills/GR-5294`: 200.
+  - `https://api.ekklesia.gr/health`: 200.
+- Live cookie header:
+  - `set-cookie: NEXT_LOCALE=el; Path=/; Secure; SameSite=lax`
+- Existing security headers still present:
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`
+
+### Result
+- Audit finding `NEXT_LOCALE cookie missing Secure flag` is fixed and live.

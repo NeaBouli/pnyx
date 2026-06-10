@@ -388,7 +388,7 @@ app.add_middleware(
 | ID | Finding | Severity | Status in first audit |
 |----|---------|----------|----------------------|
 | C2 | IP embedded verbatim in Brevo contact emails | MEDIUM | Not captured |
-| D7 | NEXT_LOCALE cookie missing `Secure` flag | MEDIUM | Not captured |
+| D7 | NEXT_LOCALE cookie missing `Secure` flag | MEDIUM | Fixed live 2026-06-10 (`8b15177`) |
 | D8 | `img-src https:` CSP too permissive | LOW | Not captured |
 | D9 | `polis-oauth-proxy` in CSP — undocumented | INFO | Not captured |
 | F2 | CORS allow_methods/allow_headers=* with credentials | MEDIUM | Not captured |
@@ -521,6 +521,7 @@ Verdict: no immediate auth bypass found; hardening tasks remain.
    - server currently behind at `dd70c52`
    - web/API rebuild required for live headers/API-agent wording
 4. `NEXT_LOCALE` cookie `Secure` flag:
-   - separate Next.js hardening task
+   - fixed live 2026-06-10 (`8b15177`)
+   - verified header: `NEXT_LOCALE=el; Path=/; Secure; SameSite=lax`
 
 *Third pass completed: 2026-06-10 | Codex + Claude Code | Mostly read-only; no production mutation*
