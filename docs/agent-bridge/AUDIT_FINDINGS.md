@@ -706,3 +706,53 @@ Verification:
 
 Remaining caveat:
 - `docs/adr/ADR-004-nullifier-kdf-migration.md` is a design guardrail, not a fix. The actual Argon2id/scrypt migration remains a focused future implementation task.
+
+---
+
+## Eighth Pass — GH#110 / NEA-335 Nullifier KDF v2 Scaffold (2026-06-10)
+
+Status: **scaffold implemented and deployed; production still defaults to v1**.
+
+Scope:
+- Additive identity/nullifier hardening scaffold.
+- No production env flip to v2.
+- No vote, Arweave, forum, web, or mobile behavior change.
+
+Implemented:
+- Alembic migration `q001a2b3c4d5_identity_nullifier_v2`:
+  - `identity_records.nullifier_hash_v2`
+  - `identity_records.nullifier_version`
+  - `identity_records.nullifier_migrated_at`
+  - unique index `idx_identity_nullifier_v2`
+- Server-side v2 helper in `packages/crypto/nullifier.py`:
+  - normalized phone input
+  - Argon2id output with `v2:` prefix
+  - lazy `argon2-cffi` import
+- Identity verify path:
+  - default `IDENTITY_NULLIFIER_KDF_VERSION=v1`
+  - v2 computed only when explicitly enabled
+  - dual match against v1 compatibility anchor and v2 value
+  - existing v2 matches preserve the stored v1 compatibility anchor
+- Startup guard:
+  - invalid `IDENTITY_NULLIFIER_KDF_VERSION` fails closed
+  - `v2` requires `argon2-cffi`
+  - `SERVER_SALT` must be strong in production
+
+Production state:
+- Deployed with env still defaulting to v1.
+- Production DB has v2 columns and Alembic head `q001a2b3c4d5`.
+- Production `SERVER_SALT` is set; value was not printed.
+
+Verification:
+- `apps/api/tests/test_identity_nullifier_kdf.py` covers v1 compatibility, phone normalization, v2 determinism, version selection, and v1-anchor preservation.
+- `apps/api/tests/test_security_startup.py` covers SERVER_SALT and identity KDF startup guards.
+- Prior bridge verification recorded local tests and production deployment under GH#110 / NEA-335.
+
+Remaining caveat:
+- This intentionally does **not** make Argon2id v2 the live production default yet.
+- Before flipping production to `IDENTITY_NULLIFIER_KDF_VERSION=v2`, run a focused rollout plan:
+  - backup `identity_records`
+  - enable v2 in staging or short controlled window
+  - verify `/identity/verify` for existing and new identities
+  - verify vote status / already-voted lookup remains compatible
+  - monitor latency and error rate
