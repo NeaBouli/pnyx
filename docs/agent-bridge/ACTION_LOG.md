@@ -7933,6 +7933,14 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `cd apps/mobile && npx tsc --noEmit`: OK.
 - `cd apps/mobile && npx vitest run src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreNative.test.ts`: 9 passed.
 - `cd apps/mobile && npx vitest run src/lib/api.test.ts src/lib/source-resolver.test.ts src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreNative.test.ts`: 36 passed.
+- Built Play AAB: OK.
+- Built Play APK: OK.
+- Installed on S10: `versionCode=30`, `versionName=1.0.3`, `lastUpdateTime=2026-06-10 12:09:18`.
+- S10 visual/UI dump:
+  - Home opens and shows verified voting status.
+  - Profile shows `Semaphore ZK V2` settings entry.
+  - Semaphore screen shows Greek inactive/technical-prerequisite message.
+  - Opt-in control is disabled (`enabled=false`, `clickable=false`) while prerequisites are not met.
 
 ### Result
 - Nullifier remains active and unchanged.
