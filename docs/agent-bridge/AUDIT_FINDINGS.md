@@ -652,3 +652,56 @@ Verification:
 
 Remaining caveat:
 - Mobile/representative APKs were not rebuilt because the patched packages are Expo build-tooling dependencies; Android export checks passed.
+
+---
+
+## Seventh Pass — Public Docs Drift + Nullifier KDF Migration Design (2026-06-10)
+
+Status: **docs fixed live; KDF migration design proposed, not implemented**.
+
+Scope:
+- Public/static docs, GitHub wiki source, and bridge handoff documentation.
+- No voting, identity, DB, API, mobile, forum, or runtime application logic changes.
+
+Implemented:
+- Public wiki/docs drift fixed:
+  - `Next.js 14` -> `Next.js 16`
+  - `62 endpoints / 22 modules` -> `70+ endpoints / 25 modules`
+  - Hetzner `CX33` -> `CX43`
+  - stale SMS/SMS-HLR wording -> HLR without SMS
+- GitHub wiki source updated and pushed:
+  - `pnyx.wiki.git` `master` -> `a41c18a`
+- Main repo updated and deployed:
+  - `main` -> `b6fa8e0`
+  - `web` rebuilt/recreated so `docs/wiki/*.html` changes are live.
+- Added design-only ADR:
+  - `docs/adr/ADR-004-nullifier-kdf-migration.md`
+- Created follow-up tracking:
+  - GitHub: `GH#110`
+  - Linear: `NEA-335`
+
+Nullifier KDF design outcome:
+- Do **not** quick-fix `SHA256(phone:SERVER_SALT)` directly in place.
+- The safe migration requires versioned dual-lookup/dual-write semantics:
+  - keep existing `identity_records.nullifier_hash` v1 compatibility value
+  - add nullable v2 KDF field(s)
+  - compute both v1 and v2 during `/identity/verify`
+  - migrate existing v1 rows only when the same citizen re-verifies with the phone number
+  - preserve existing vote/Polis/Diavgeia/evaluation references
+- Implementation must be behind an env flag and benchmarked in the API container before production use.
+
+Verification:
+- Grep check over active docs/wiki sources: no active matches for stale `Next.js 14`, `CX33`, `22 Modules`, `22 modules`, `62 endpoints`, `MOD-01 — MOD-22`, `SMS HLR`, `SMS ->`, or stale SMS verification wording.
+- HTML tag-count check for `docs/wiki/*.html`: **OK**.
+- Claude Code docs-only review: **GO**.
+- Live smoke:
+  - `https://ekklesia.gr/wiki/api.html`: 200, shows `70+ endpoints, 25 modules`
+  - `https://ekklesia.gr/wiki/architecture.html`: 200, shows `Next.js 16`
+  - `https://ekklesia.gr/wiki/index.html`: 200, shows `70+ Endpoints, 25 Modules` and `MOD-01 — MOD-25`
+  - `https://ekklesia.gr/wiki/whitepaper.html`: 200, shows `Next.js 16` and `70+ endpoints, 25 modules`
+  - `https://ekklesia.gr/`: 200
+  - `https://ekklesia.gr/el/bills`: 200
+  - `https://api.ekklesia.gr/health`: 200
+
+Remaining caveat:
+- `docs/adr/ADR-004-nullifier-kdf-migration.md` is a design guardrail, not a fix. The actual Argon2id/scrypt migration remains a focused future implementation task.
