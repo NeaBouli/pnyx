@@ -536,7 +536,7 @@ def check_scraper_jobs(r) -> list[Alert]:
 # ─── Main Loop ───────────────────────────────────────────────────────────────
 
 def run_checks():
-    logger.info("Running 15 business logic checks...")
+    logger.info("Running 16 business logic checks...")
     all_alerts: list[Alert] = []
     recovery_results: dict[str, str] = {}
 
