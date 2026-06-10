@@ -711,7 +711,7 @@ Remaining caveat:
 
 ## Eighth Pass — GH#110 / NEA-335 Nullifier KDF v2 Scaffold (2026-06-10)
 
-Status: **scaffold implemented and deployed; production still defaults to v1**.
+Status: **scaffold implemented and deployed; GH#110 closed; production still defaults to v1**.
 
 Scope:
 - Additive identity/nullifier hardening scaffold.
@@ -750,6 +750,7 @@ Verification:
 
 Remaining caveat:
 - This intentionally does **not** make Argon2id v2 the live production default yet.
+- Production activation is tracked separately in `GH#111` to keep the risky env flip out of broad hardening work.
 - Before flipping production to `IDENTITY_NULLIFIER_KDF_VERSION=v2`, run a focused rollout plan:
   - backup `identity_records`
   - enable v2 in staging or short controlled window
