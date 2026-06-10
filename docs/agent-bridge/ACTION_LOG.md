@@ -8025,6 +8025,7 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - API-only privacy/rate-limit hardening.
 - No web, mobile, DB migration, forum, voting, identity, nullifier, or Arweave logic change.
 - Local rollback tag: `rollback-pre-ip-helper-limiter-*`.
+- Server rollback tag: `rollback-pre-ip-helper-deploy-*`.
 
 ### Implemented
 - Added shared `apps/api/ip_utils.py`:
@@ -8055,11 +8056,18 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - no raw IP in contact emails/logs
   - tests cover raw-IP non-leakage and daily rotation
   - low atomicity concern resolved with Redis Lua script
+- Deployed only `api`; `web`, `db`, and `redis` stayed running.
+- Live smoke:
+  - `https://api.ekklesia.gr/health`: 200.
+  - `https://api.ekklesia.gr/api/v1/bills?limit=1`: 200.
+  - `https://api.ekklesia.gr/api/v1/public/bills?limit=1`: 200.
+  - CORS preflight for `GET` + `X-API-Key`: 200.
+  - Redis scan showed hashed public API bucket: `ratelimit:public_api:anon:2026-06-10:<hash>`.
+  - API logs after smoke: no errors.
 
 ### Known local-env note
 - Broader `test_alpha_modules.py::test_public_key_generate` and `::test_public_key_roundtrip` still require local Redis on `localhost:6379`; those fail in this local environment with Redis connection refused.
 - New fake-Redis regression tests cover the modified public-key/rate-limit code path without needing local Redis.
 
 ### Result
-- Audit findings for raw-IP contact emails/logs, raw-IP Redis keygen buckets, and in-memory public/contact rate limiting are fixed in code.
-- Deploy pending until code commit and API-only production rollout.
+- Audit findings for raw-IP contact emails/logs, raw-IP Redis keygen buckets, and in-memory public/contact rate limiting are fixed and live.

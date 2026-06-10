@@ -523,7 +523,7 @@ Verdict: no immediate auth bypass found; hardening tasks remain.
 
 ## Fourth Pass — IP Helper + Redis Rate-Limit Hardening (2026-06-10)
 
-Status: **implemented in code, deploy pending**.
+Status: **fixed and live**.
 
 Scope:
 - API-only privacy/rate-limit hardening.
@@ -556,6 +556,14 @@ Verification:
   - no raw IP in contact emails/logs
   - tests cover raw-IP non-leakage and daily rotation
   - Redis atomicity concern resolved by Lua script
+- Production API-only deploy completed at HEAD `06f0183`.
+- Live smoke:
+  - `/health`: 200
+  - `/api/v1/bills?limit=1`: 200
+  - `/api/v1/public/bills?limit=1`: 200
+  - CORS preflight for `GET` + `X-API-Key`: 200
+  - Redis public API bucket is hashed (`ratelimit:public_api:anon:2026-06-10:<hash>`)
+  - API logs after smoke: no errors
 
 Remaining caveat:
 - `TRUSTED_PROXY_COUNT=1` assumes the current single Traefik public-entrypoint topology.
