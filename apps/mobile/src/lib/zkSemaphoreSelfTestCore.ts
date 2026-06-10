@@ -23,6 +23,17 @@ export interface SemaphoreModuleLike {
   verifySemaphoreProof(proof: string): Promise<boolean>;
 }
 
+export interface ZkSemaphoreFixture {
+  message: string;
+  scope: string;
+  treeDepth: number;
+  groupSize: number;
+  commitment: string;
+  groupRootHex: string;
+  memberHex: string[];
+  proof: string;
+}
+
 export interface ZkSemaphoreSelfTestSuccess {
   ok: true;
   verified: true;
@@ -31,6 +42,7 @@ export interface ZkSemaphoreSelfTestSuccess {
   proofDepth: number;
   groupSize: number;
   proofBytes: number;
+  fixture: ZkSemaphoreFixture;
 }
 
 export interface ZkSemaphoreSelfTestFailure {
@@ -61,6 +73,10 @@ const TEST_PRIVATE_KEY_B = Uint8Array.from([
 const SELF_TEST_MESSAGE = "ekklesia-zk-v2-self-test";
 const SELF_TEST_SCOPE = "ekklesia-gh81-device-proof-check";
 const SELF_TEST_TREE_DEPTH = 16;
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
 
 export function formatZkSelfTestError(error: unknown): string {
   if (error instanceof Error && error.message) return error.message;
@@ -105,6 +121,16 @@ export async function runZkSemaphoreSelfTestWithModule(
       proofDepth: SELF_TEST_TREE_DEPTH,
       groupSize: group.members().length,
       proofBytes: proof.length,
+      fixture: {
+        message: SELF_TEST_MESSAGE,
+        scope: SELF_TEST_SCOPE,
+        treeDepth: SELF_TEST_TREE_DEPTH,
+        groupSize: group.members().length,
+        commitment: identity.commitment(),
+        groupRootHex: bytesToHex(group.root()),
+        memberHex: group.members().map(bytesToHex),
+        proof,
+      },
     };
   } catch (error) {
     return {

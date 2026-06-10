@@ -1,13 +1,15 @@
 # GH#112 - Gate 0 Diagnosis
 
 Date: 2026-06-11
-Status: Read-only diagnosis, no runtime implementation
+Status: Gate 0 fixture export available on S10; no production implementation
 
 ## Scope
 
 This documents what is known before starting ZK V2 production integration.
 
-No code was changed for this diagnosis. No API, DB, mobile voting path, Arweave, deploy, or feature flag was touched.
+The first version of this document was read-only. A follow-up mobile diagnostic utility now exports the deterministic self-test fixture from the S10.
+
+No API, DB, mobile voting path, Arweave, deploy, or feature flag was touched.
 
 ## Mobile Proof Payload Shape
 
@@ -82,17 +84,23 @@ Capture from S10 self-test or a dedicated local fixture screen:
 
 The fixture must use deterministic test identities only, never a real voter identity.
 
+Current status:
+
+- The existing self-test now exposes a `fixture` object after successful local verification.
+- The S10 shows `Κοινοποίηση Gate 0 fixture` after a successful `Έλεγχος Prover`.
+- Android share sheet displays the exact JSON fixture, including the opaque proof string.
+- The captured fixture is diagnostic test data only and is not submitted to Ekklesia automatically.
+
 ## Immediate Gate 0 Tasks
 
-1. Add a temporary developer-only way to export a deterministic self-test proof fixture, or collect it via local debug tooling.
-2. Parse the proof string offline and identify its format.
-3. Choose a server-side verifier that verifies that exact fixture.
-4. Add a server test that verifies the fixture and rejects:
+1. Parse the exported proof string offline and identify its format.
+2. Choose a server-side verifier that verifies that exact fixture.
+3. Add a server test that verifies the fixture and rejects:
    - wrong message,
    - wrong scope,
    - wrong group/root,
    - malformed proof.
-5. Only after this, design DB/API integration.
+4. Only after this, design DB/API integration.
 
 ## Stop Conditions
 
@@ -102,4 +110,3 @@ Do not proceed beyond Gate 0 if:
 - The server verifier needs a different proof/public-signal format than mobile emits.
 - The only available cross-tier uniqueness design links Tier 1 identity to public ZK vote records.
 - The group-management model cannot explain inclusion, exclusion, root publication, and revocation.
-

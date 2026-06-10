@@ -64,6 +64,19 @@ describe("runZkSemaphoreSelfTestWithModule", () => {
       expect(result.proofDepth).toBe(16);
       expect(result.groupSize).toBe(2);
       expect(result.proofBytes).toBe("proof-json".length);
+      expect(result.fixture).toEqual({
+        message: "ekklesia-zk-v2-self-test",
+        scope: "ekklesia-gh81-device-proof-check",
+        treeDepth: 16,
+        groupSize: 2,
+        commitment: "commitment-101",
+        groupRootHex: "010203",
+        memberHex: [
+          "656b6b6c657369612d73656d6170686f72652d73656c66746573742d612d3031",
+          "656b6b6c657369612d73656d6170686f72652d73656c66746573742d622d3031",
+        ],
+        proof: "proof-json",
+      });
     }
   });
 

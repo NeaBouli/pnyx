@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { colors } from "../theme";
 import { getRuntimeZkCapability, type ZkCapability } from "../lib/zkSemaphore";
@@ -68,6 +68,14 @@ export default function ZkSemaphoreScreen() {
     setSelfTestRunning(false);
   }
 
+  async function shareSelfTestFixture() {
+    if (!selfTest?.ok) return;
+    await Share.share({
+      title: "Ekklesia Semaphore Gate 0 fixture",
+      message: JSON.stringify(selfTest.fixture, null, 2),
+    });
+  }
+
   if (!capability) {
     return <View style={s.center}><ActivityIndicator color={colors.primary} /></View>;
   }
@@ -117,10 +125,15 @@ export default function ZkSemaphoreScreen() {
               {selfTest.ok ? "✅ Native prover λειτουργεί" : "⚠️ Ο έλεγχος απέτυχε"}
             </Text>
             {selfTest.ok ? (
-              <Text style={s.selfTestText}>
-                Απόδειξη επαληθεύτηκε σε {Math.round(selfTest.durationMs / 100) / 10}s ·
-                depth {selfTest.proofDepth} · members {selfTest.groupSize} · proof {selfTest.proofBytes} bytes
-              </Text>
+              <>
+                <Text style={s.selfTestText}>
+                  Απόδειξη επαληθεύτηκε σε {Math.round(selfTest.durationMs / 100) / 10}s ·
+                  depth {selfTest.proofDepth} · members {selfTest.groupSize} · proof {selfTest.proofBytes} bytes
+                </Text>
+                <TouchableOpacity style={s.fixtureBtn} onPress={shareSelfTestFixture}>
+                  <Text style={s.fixtureText}>Κοινοποίηση Gate 0 fixture</Text>
+                </TouchableOpacity>
+              </>
             ) : (
               <Text style={s.selfTestText}>{selfTest.error}</Text>
             )}
@@ -176,4 +189,6 @@ const s = StyleSheet.create({
   selfTestFail: { backgroundColor: colors.errorBg, borderColor: colors.error },
   selfTestTitle: { color: colors.text, fontSize: 13, fontWeight: "900", marginBottom: 4 },
   selfTestText: { color: colors.textSecondary, fontSize: 12, lineHeight: 18 },
+  fixtureBtn: { marginTop: 10, borderColor: colors.success, borderWidth: 1, borderRadius: 10, padding: 10, alignItems: "center" },
+  fixtureText: { color: colors.success, fontSize: 12, fontWeight: "900" },
 });

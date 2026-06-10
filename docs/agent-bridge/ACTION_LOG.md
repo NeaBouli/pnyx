@@ -8647,3 +8647,46 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Capture a deterministic S10 test fixture using test identities only:
   - message, scope, tree depth, group members/commitments, Merkle root if available, proof string, expected verification.
 - Prove server-side verification of that exact fixture before any DB/API/product integration.
+
+## 2026-06-11 — Codex: GH#112 Gate 0 fixture export on S10
+
+### Scope
+- Mobile diagnostic utility only.
+- No API, DB, vote submission, Arweave, deploy, or `zkSemaphoreEnabled` change.
+- Existing Ed25519/HMAC voting path remains untouched.
+
+### Change
+- Extended the existing deterministic Semaphore self-test success result with a `fixture` object:
+  - message
+  - scope
+  - tree depth
+  - group size
+  - test identity commitment
+  - group root hex
+  - member hex values
+  - exact proof string
+- Added a `Κοινοποίηση Gate 0 fixture` button after a successful local self-test.
+- The fixture uses the existing deterministic test identities only; it is not tied to a real voter and sends nothing automatically.
+
+### Verification
+- Rollback tag: `rollback-pre-gh112-fixture-20260611-012747`.
+- `cd apps/mobile && npx vitest run src/lib/zkSemaphoreSelfTest.test.ts`: 4 passed.
+- `cd apps/mobile && npx tsc --noEmit`: OK.
+- `cd apps/mobile && npx vitest run src/lib/api.test.ts src/lib/source-resolver.test.ts src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreNative.test.ts src/lib/zkSemaphoreSelfTest.test.ts`: 40 passed.
+- `cd apps/mobile/android && ./gradlew :app:assemblePlayRelease`: BUILD SUCCESSFUL.
+- S10 install:
+  - `versionName=1.0.3`
+  - `versionCode=30`
+  - `lastUpdateTime=2026-06-11 01:30:36`
+- S10 UI verification:
+  - App starts to Home.
+  - Profile opens.
+  - Semaphore ZK V2 screen opens.
+  - Screen still states ZK is not production-active and current Ed25519 path remains normal.
+  - `Έλεγχος Prover` succeeds: `Native prover λειτουργεί`, depth 16, members 2, proof 1038 bytes.
+  - `Κοινοποίηση Gate 0 fixture` opens Android share sheet and displays the JSON fixture.
+  - No `FATAL EXCEPTION`, `ProofGenerationError`, or `ProofVerificationError` observed during the device check.
+
+### Next Safe Step
+- Use the exported deterministic fixture to evaluate a server-side verifier offline.
+- Do not add a production endpoint or DB tables until that exact fixture verifies server-side.
