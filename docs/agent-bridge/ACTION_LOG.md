@@ -8482,3 +8482,15 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Verification
 - `apps/api/.venv/bin/python -m py_compile routers/parliament.py routers/public_api.py`: OK.
 - `apps/api/.venv/bin/python -m pytest -q tests/test_scraper_parliament.py tests/test_security_startup.py tests/services/test_source_links.py`: 16 passed.
+- Production deploy:
+  - rollback tag: `rollback-pre-bills-sort-deploy-20260610_114624`
+  - API build/recreate successful
+  - `https://api.ekklesia.gr/health`: 200
+  - DB source summary after catch-up:
+    - DIAVGEIA latest created: 2026-06-10
+    - PARLIAMENT latest submitted: 2026-06-10
+    - PARLIAMENT latest vote/discussion date: 2026-06-09
+  - `GET /api/v1/bills?source=PARLIAMENT&limit=8` now returns current Parliament activity first:
+    - `GR-3aba3e72`
+    - `GR-fa1f20de`
+    - `GR-d4c62ed4`
