@@ -8690,3 +8690,33 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Next Safe Step
 - Use the exported deterministic fixture to evaluate a server-side verifier offline.
 - Do not add a production endpoint or DB tables until that exact fixture verifies server-side.
+
+## 2026-06-11 — Codex: GH#112 S10 fixture verifies with official Semaphore JS verifier offline
+
+### Scope
+- Offline verifier compatibility test only.
+- No repo dependency added, no API code, no DB, no deploy, no feature flag change.
+
+### Procedure
+- Extracted the S10 share-sheet JSON fixture to `/tmp/gh112-s10-fixture.json`.
+- Created a temporary Node project in `/tmp/gh112-semaphore-verify`.
+- Installed `@semaphore-protocol/proof@4.14.2` only in `/tmp`.
+- Mapped native proof fields:
+  - `merkle_tree_depth` → `merkleTreeDepth`
+  - `merkle_tree_root` → `merkleTreeRoot`
+  - `message` → `message`
+  - `nullifier` → `nullifier`
+  - `scope` → `scope`
+  - `points` → `points`
+
+### Result
+- `verifyProof(mappedS10Fixture)`: `true`
+- wrong-message mutation: `false`
+- Conclusion: Android Mopro proof payload is compatible with the official Semaphore JS verifier after snake_case→camelCase mapping.
+
+### Remaining Gate 0 Decision
+- Decide production server-verifier architecture:
+  - internal Node verifier service,
+  - controlled JS worker from FastAPI,
+  - or Python/Rust verifier with matching artifacts.
+- Do not add verifier dependencies to production images until runtime/artifact/security implications are reviewed.

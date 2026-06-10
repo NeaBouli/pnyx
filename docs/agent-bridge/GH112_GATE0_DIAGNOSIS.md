@@ -91,16 +91,52 @@ Current status:
 - Android share sheet displays the exact JSON fixture, including the opaque proof string.
 - The captured fixture is diagnostic test data only and is not submitted to Ekklesia automatically.
 
+## Offline Verifier Compatibility
+
+The exported S10 fixture was extracted locally to `/tmp/gh112-s10-fixture.json` and tested outside the repo in a temporary Node project.
+
+Temporary verifier package:
+
+- `@semaphore-protocol/proof@4.14.2`
+
+Native proof mapping:
+
+```ts
+{
+  merkleTreeDepth: nativeProof.merkle_tree_depth,
+  merkleTreeRoot: nativeProof.merkle_tree_root,
+  message: nativeProof.message,
+  nullifier: nativeProof.nullifier,
+  scope: nativeProof.scope,
+  points: nativeProof.points,
+}
+```
+
+Observed result:
+
+- `verifyProof(mappedS10Fixture) === true`
+- `verifyProof({...mappedS10Fixture, message: wrongMessage}) === false`
+
+Current conclusion:
+
+- The Android native Mopro proof format is compatible with the official Semaphore JS verifier after a simple snake_case -> camelCase mapping.
+- No verifier dependency has been added to the repo yet.
+- Production/server integration still needs an explicit decision about whether the FastAPI backend should:
+  - call a small internal Node verifier service,
+  - embed a JS verifier through a controlled worker,
+  - or use a Python/Rust verifier with matching artifacts.
+
+Do not silently add `@semaphore-protocol/proof` to the mobile app or API image without reviewing bundle size, Docker/runtime implications, artifact source, and worker lifecycle.
+
 ## Immediate Gate 0 Tasks
 
-1. Parse the exported proof string offline and identify its format.
-2. Choose a server-side verifier that verifies that exact fixture.
-3. Add a server test that verifies the fixture and rejects:
+1. Choose the production server verifier architecture.
+2. Add a server test that verifies the S10 fixture and rejects:
    - wrong message,
    - wrong scope,
    - wrong group/root,
    - malformed proof.
-4. Only after this, design DB/API integration.
+3. Only after this, design DB/API integration.
 
 ## Stop Conditions
 
