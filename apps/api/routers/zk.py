@@ -9,10 +9,15 @@ import os
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Path as FastAPIPath, Query, status
 from pydantic import BaseModel, Field
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
+from database import get_db
+from models import ZkVoteReceipt
+from services.zk_arweave_payload import build_public_zk_receipt_from_storage
 from services.zk_groth16_verifier import (
     SEMAPHORE_V4_DEPTH16_VKEY_SHA256,
     load_verification_key,
@@ -50,6 +55,13 @@ class ZkStatusResponse(BaseModel):
     message_el: str
 
 
+class ZkReceiptListResponse(BaseModel):
+    vote_scope_id: str
+    limit: int
+    offset: int
+    receipts: list[dict[str, Any]]
+
+
 def zk_voting_enabled() -> bool:
     return _env_enabled(ZK_VOTING_ENABLED_ENV)
 
@@ -73,6 +85,37 @@ async def get_zk_status() -> ZkStatusResponse:
             if production_enabled
             else "Η παραγωγική ZK ψηφοφορία δεν είναι ενεργή ακόμη."
         ),
+    )
+
+
+@router.get("/receipts/{vote_scope_id}", response_model=ZkReceiptListResponse)
+async def list_zk_receipts(
+    vote_scope_id: str = FastAPIPath(
+        ...,
+        min_length=6,
+        max_length=128,
+        pattern=r"^(bill|municipal|regional):[^/]{1,110}$",
+    ),
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db),
+) -> ZkReceiptListResponse:
+    result = await db.execute(
+        select(ZkVoteReceipt)
+        .where(ZkVoteReceipt.vote_scope_id == vote_scope_id)
+        .order_by(ZkVoteReceipt.id)
+        .offset(offset)
+        .limit(limit)
+    )
+    receipts = [
+        build_public_zk_receipt_from_storage(receipt)
+        for receipt in result.scalars().all()
+    ]
+    return ZkReceiptListResponse(
+        vote_scope_id=vote_scope_id,
+        limit=limit,
+        offset=offset,
+        receipts=receipts,
     )
 
 

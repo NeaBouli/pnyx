@@ -9348,3 +9348,21 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Verification
 - `cd apps/api && .venv/bin/python -m py_compile services/zk_arweave_payload.py`: PASS.
 - `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_arweave_payload.py -q`: PASS, 4 tests.
+
+## 2026-06-12 — Codex: GH#112 Gate 5 read-only public receipts endpoint
+
+### Scope
+- Added `GET /api/v1/zk/receipts/{vote_scope_id}`.
+- Endpoint returns public ZK receipt payloads for a vote scope.
+- Added `limit`/`offset` pagination and scope pattern validation.
+- It is read-only and uses the public receipt serializer.
+- No vote writes, no opt-in, no Arweave publishing, no production flag flip.
+
+### Safety
+- Response excludes `tier_guard_hash`, Tier-1 nullifier, identity record id, phone/IP/HLR, public key, and Semaphore identity secret fields.
+- Endpoint is safe when ZK voting is disabled; in current production it returns an empty list because no ZK receipts exist.
+- `arweave_pending` remains visible for transparency.
+
+### Verification
+- `cd apps/api && .venv/bin/python -m py_compile routers/zk.py services/zk_arweave_payload.py`: PASS.
+- `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py tests/services/test_zk_arweave_payload.py -q`: PASS, 12 tests.
