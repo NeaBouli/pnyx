@@ -9397,3 +9397,17 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Verification
 - `cd apps/mobile && npx tsc --noEmit`: PASS.
 - `cd apps/mobile && npx vitest run src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreNative.test.ts src/lib/zkSemaphoreSelfTest.test.ts`: PASS, 19 tests.
+
+## 2026-06-12 — Codex: F-Droid !38007 rechecked
+
+### Status
+- MR: https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007
+- State: open.
+- Merge status: `can_be_merged` / `mergeable`.
+- Labels: `New App`, `review-requested`.
+- Latest pipeline: `2570810919`, status `success`, commit `e42e014f2e23a8d6b88a80ba4d3737260ccca2ad`.
+- GitLab MR `updated_at`: `2026-06-02T15:37:08.642Z`.
+
+### Decision
+- No pnyx code or fdroiddata metadata action needed.
+- Continue waiting for F-Droid/linsui/community merge/retest.
