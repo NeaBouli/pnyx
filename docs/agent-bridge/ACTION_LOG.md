@@ -9003,3 +9003,17 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Next Gate
 - Apply migration only in a deliberate backup/canary window.
 - Do not build Gate 2+ in the same change.
+
+## 2026-06-11 — Codex: F-Droid !38007 recheck
+
+### Result
+- MR: https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007
+- State: open.
+- Labels: `New App`, `review-requested`.
+- Latest MR pipeline: `#2570810919`, status `success`, SHA `e42e014f2e23a8d6b88a80ba4d3737260ccca2ad`.
+- `blocking_discussions_resolved`: true.
+- Public notes API returned `401 Unauthorized`, so no private/new reviewer notes were readable from this session.
+
+### Decision
+- No fdroiddata mutation.
+- Still waiting on F-Droid/linsui/community retest or merge.
