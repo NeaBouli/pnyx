@@ -8952,6 +8952,23 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - APK SHA256: `aecbee101185a020427ee5b53d1058e78aa5682be7cde920e2f766aea097c576`
 - AAB SHA256: `5904cd60067f5a3b47e88d8e877c1fb1faef98be92e61b1fa37f6314bc8449f1`
 
-### Pending
-- Deploy `docs/download/ekklesia-latest.apk` to server and rebuild only `ekklesia-web`.
+### Live deployment
+- Commit: `782c36b`
+- Tag: `v1.0.5`
+- Server fast-forwarded to `782c36b`.
+- Server APK path updated: `/opt/ekklesia/app/docs/download/ekklesia-latest.apk`.
+- Server AAB backup stored: `/opt/ekklesia/build-artifacts/ekklesia-v1.0.5-vC32-PLAY.aab`.
+- `web` rebuilt/restarted only; no API/DB deploy.
+- Live download verified:
+  - URL: `https://ekklesia.gr/download/ekklesia-latest.apk`
+  - SHA256: `aecbee101185a020427ee5b53d1058e78aa5682be7cde920e2f766aea097c576`
+  - package `ekklesia.gr`, versionCode `32`, versionName `1.0.5`
+  - forbidden permissions absent
+- Health:
+  - `https://ekklesia.gr/`: 200
+  - `https://ekklesia.gr/download/ekklesia-latest.apk`: 200
+  - `https://api.ekklesia.gr/health`: 200
+  - `https://pnyx.ekklesia.gr/`: 200
+- Bouli API smoke:
+  - `/api/v1/bills?limit=5&offset=0&source=PARLIAMENT` returned current Parliament bills.
 - S10 install/visual verification pending because device is disconnected.
