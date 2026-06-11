@@ -9506,3 +9506,13 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### Verification
 - Server pre-check: `select count(*) from zk_identity_commitments` returned 0.
+- `cd apps/api && .venv/bin/python -m alembic heads`: `s201a2b3c4d5 (head)`.
+- `cd apps/api && .venv/bin/python -m py_compile models.py routers/zk.py routers/voting.py services/zk_tier_lock.py alembic/versions/s201a2b3c4d5_zk_commitment_scope.py`: PASS.
+- `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py tests/services/test_zk_tier_lock.py tests/test_voting.py tests/test_zk_gate1_schema.py -q`: PASS, 51 passed / 2 xfailed.
+- CC review: no blockers.
+- Rollback tag: `rollback-pre-zk-commitment-scope-20260612-025500`.
+- DB backup: `/opt/ekklesia/backups/pre_zk_commitment_scope_20260611-235519.dump`.
+- Server backup: `/opt/ekklesia/backups/pre_zk_commitment_scope_20260611-235519_api_crypto.tgz`.
+- Live Alembic: `s201a2b3c4d5 (head)`.
+- Live schema: `zk_identity_commitments.vote_scope_id` exists nullable, `idx_zk_commitments_scope` exists.
+- Live API: `/health` 200, `/api/v1/bills?limit=3` 200, `/api/v1/zk/status` gates false, `/api/v1/zk/opt-in` 503.
