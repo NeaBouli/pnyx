@@ -9318,3 +9318,17 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Verification
 - `cd apps/api && .venv/bin/python -m py_compile routers/zk.py services/zk_groth16_verifier.py services/zk_tier_lock.py services/zk_arweave_payload.py models.py`: PASS.
 - `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py tests/services/test_zk_groth16_verifier.py tests/services/test_zk_tier_lock.py tests/services/test_zk_arweave_payload.py tests/test_zk_gate1_schema.py -q`: PASS, 22 tests.
+
+### Deploy
+- Commit: `d4bba78`.
+- Rollback tag: `rollback-pre-zk-status-20260612-012408`.
+- API-only deploy; no web/mobile/DB migration.
+- First deploy attempt used Compose without sourcing `.env.production`; DB container was recreated with wrong healthcheck env and reported unhealthy.
+- Recovery: re-ran Compose with `/opt/ekklesia/.env.production` sourced; DB became healthy and API restarted.
+- Live verification after recovery:
+  - API health: HTTP 200.
+  - Bills endpoint: HTTP 200.
+  - `GET /api/v1/zk/status`: HTTP 200, all production gates `false`.
+  - `POST /api/v1/zk/verify`: HTTP 503, `ZK voting verifier is not enabled`.
+  - Alembic current: `r101a2b3c4d5 (head)`.
+  - Production counts: 1088 bills, 6 citizen votes, 0 ZK commitments.
