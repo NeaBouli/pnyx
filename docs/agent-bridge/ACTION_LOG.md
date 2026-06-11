@@ -9411,3 +9411,20 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Decision
 - No pnyx code or fdroiddata metadata action needed.
 - Continue waiting for F-Droid/linsui/community merge/retest.
+
+## 2026-06-12 — Codex: GH#112 Gate 3 tier-lock service helpers
+
+### Scope
+- Added DB helper functions for private ZK/Tier-1 lock checks and creation:
+  - `tier_lock_exists()`
+  - `create_tier_lock()`
+- No router, no mobile build, no vote endpoint change, no production flag flip.
+
+### Safety
+- Helpers use the private `zk_vote_tier_locks` table only.
+- `create_tier_lock()` flushes inside the caller transaction and rolls back on `IntegrityError`.
+- Public receipt exclusion remains separate; `tier_guard_hash` is still never exposed.
+
+### Verification
+- `cd apps/api && .venv/bin/python -m py_compile services/zk_tier_lock.py`: PASS.
+- `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_tier_lock.py -q`: PASS, 9 tests.

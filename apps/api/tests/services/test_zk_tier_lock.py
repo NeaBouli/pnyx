@@ -1,12 +1,48 @@
 """GH#112 Gate 3 private tier-lock helper tests."""
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from services.zk_tier_lock import (
     VoteScopeType,
     canonical_vote_scope_id,
+    create_tier_lock,
     derive_tier_guard_hash,
     public_zk_receipt_forbidden_fields,
+    tier_lock_exists,
 )
+
+
+class _FakeScalarResult:
+    def __init__(self, value):
+        self.value = value
+
+    def scalar_one_or_none(self):
+        return self.value
+
+
+class _FakeDb:
+    def __init__(self, scalar_value=None, flush_error=None):
+        self.scalar_value = scalar_value
+        self.flush_error = flush_error
+        self.added = []
+        self.executed = []
+        self.flushed = False
+        self.rolled_back = False
+
+    async def execute(self, statement):
+        self.executed.append(statement)
+        return _FakeScalarResult(self.scalar_value)
+
+    def add(self, value):
+        self.added.append(value)
+
+    async def flush(self):
+        self.flushed = True
+        if self.flush_error:
+            raise self.flush_error
+
+    async def rollback(self):
+        self.rolled_back = True
 
 
 def test_canonical_vote_scope_id_is_stable() -> None:
@@ -65,3 +101,42 @@ def test_public_zk_receipt_forbidden_fields_cover_identity_bridge() -> None:
     assert "tier1_nullifier_hash" in forbidden
     assert "identity_record_id" in forbidden
     assert "semaphore_identity_secret" in forbidden
+
+
+@pytest.mark.asyncio
+async def test_tier_lock_exists_returns_true_when_lock_id_found() -> None:
+    db = _FakeDb(scalar_value=123)
+
+    assert await tier_lock_exists(db, vote_scope_id="bill:GR-1", tier_guard_hash="a" * 64) is True
+    assert len(db.executed) == 1
+
+
+@pytest.mark.asyncio
+async def test_tier_lock_exists_returns_false_when_missing() -> None:
+    db = _FakeDb(scalar_value=None)
+
+    assert await tier_lock_exists(db, vote_scope_id="bill:GR-1", tier_guard_hash="a" * 64) is False
+
+
+@pytest.mark.asyncio
+async def test_create_tier_lock_adds_and_flushes_lock() -> None:
+    db = _FakeDb()
+
+    lock = await create_tier_lock(db, vote_scope_id="bill:GR-1", tier_guard_hash="a" * 64)
+
+    assert lock.vote_scope_id == "bill:GR-1"
+    assert lock.tier_guard_hash == "a" * 64
+    assert db.added == [lock]
+    assert db.flushed is True
+    assert db.rolled_back is False
+
+
+@pytest.mark.asyncio
+async def test_create_tier_lock_rolls_back_on_duplicate() -> None:
+    error = IntegrityError("statement", {}, Exception("duplicate"))
+    db = _FakeDb(flush_error=error)
+
+    with pytest.raises(IntegrityError):
+        await create_tier_lock(db, vote_scope_id="bill:GR-1", tier_guard_hash="a" * 64)
+
+    assert db.rolled_back is True

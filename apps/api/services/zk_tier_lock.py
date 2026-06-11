@@ -9,6 +9,12 @@ import hashlib
 import hmac
 from enum import Enum
 
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from models import ZkVoteTierLock
+
 
 class VoteScopeType(str, Enum):
     BILL = "bill"
@@ -43,6 +49,45 @@ def derive_tier_guard_hash(
         payload.encode("utf-8"),
         hashlib.sha256,
     ).hexdigest()
+
+
+async def tier_lock_exists(
+    db: AsyncSession,
+    *,
+    vote_scope_id: str,
+    tier_guard_hash: str,
+) -> bool:
+    result = await db.execute(
+        select(ZkVoteTierLock.id).where(
+            ZkVoteTierLock.vote_scope_id == vote_scope_id,
+            ZkVoteTierLock.tier_guard_hash == tier_guard_hash,
+        )
+    )
+    return result.scalar_one_or_none() is not None
+
+
+async def create_tier_lock(
+    db: AsyncSession,
+    *,
+    vote_scope_id: str,
+    tier_guard_hash: str,
+) -> ZkVoteTierLock:
+    """Create a private tier lock inside the caller transaction.
+
+    On IntegrityError the session is rolled back and the error is re-raised.
+    Callers must treat that path as terminal for the current write attempt.
+    """
+    lock = ZkVoteTierLock(
+        vote_scope_id=vote_scope_id,
+        tier_guard_hash=tier_guard_hash,
+    )
+    db.add(lock)
+    try:
+        await db.flush()
+    except IntegrityError:
+        await db.rollback()
+        raise
+    return lock
 
 
 def public_zk_receipt_forbidden_fields() -> set[str]:
