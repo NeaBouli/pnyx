@@ -9017,3 +9017,24 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Decision
 - No fdroiddata mutation.
 - Still waiting on F-Droid/linsui/community retest or merge.
+
+## 2026-06-11 — Codex + CC: GH#112 Gate 2 verifier preflight
+
+### Scope
+- Read-only dependency and fixture preflight.
+- Added `docs/agent-bridge/GH112_GATE2_VERIFIER_PREFLIGHT.md`.
+- No API dependency change.
+- No verifier endpoint.
+- No DB migration.
+- No `ZK_VOTING_ENABLED` / mobile flag flip.
+
+### Findings
+- S10 Gate-0 fixture still exists locally at `/tmp/gh112-s10-fixture.json`.
+- Fixture shape is depth 16, group size 2, native proof string 1038 bytes.
+- Isolated `/tmp` install of `@semaphore-protocol/proof@4.14.2` pulls `snarkjs`, `ethers`, and `@zk-kit/artifacts`.
+- Isolated `npm audit`: 6 moderate, 8 high, 0 critical.
+
+### Decision
+- Do not add the Semaphore JS verifier stack to the FastAPI/API production image.
+- Preferred next check: isolated Python/Rust Groth16 BN254 verifier with pinned depth-16 verification key and checksum guard.
+- Gate 2 endpoint work remains blocked until the selected verifier validates the exact S10 fixture.
