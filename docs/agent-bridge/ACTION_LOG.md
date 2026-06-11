@@ -8790,3 +8790,20 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `docs/agent-bridge/GH112_ZK_V2_PRODUCTION_GATE.md`
 - `docs/agent-bridge/NEA249_ZK_V2_BLUEPRINT.md`
 - `docs/adr/NEA-249-zk-voting-v2-semaphore-hybrid.md`
+
+## 2026-06-11 — Codex: GH#112 Arweave ZK bulletin-board payload clarified
+
+### Scope
+- Architecture/design documentation only.
+- No runtime code, DB migration, API endpoint, mobile feature flag, deploy, or production ZK vote path.
+
+### Decision
+- ZK proof data should be archived in Arweave as a public bulletin-board record, but only the public verifier payload.
+- Record includes scope, bill id, vote/commitment, Semaphore nullifier, root, depth, proof/public signals, verifier/artifact versions, group size, and coarse publication bucket.
+- Record never includes `tier_guard_hash`, Tier 1 nullifier, identity record id, phone, IP, HLR metadata, Tier 1 public key, raw Semaphore identity secret, or precise opt-in/vote timestamps.
+- Publication may be queued/batched instead of immediate to reduce timing correlation.
+
+### Files
+- `docs/agent-bridge/GH112_ZK_V2_PRODUCTION_GATE.md`
+- `docs/agent-bridge/NEA249_ZK_V2_BLUEPRINT.md`
+- `docs/adr/NEA-249-zk-voting-v2-semaphore-hybrid.md`

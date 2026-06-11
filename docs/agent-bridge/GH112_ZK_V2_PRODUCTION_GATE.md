@@ -283,15 +283,23 @@ Required S10 checks:
 
 ZK per-vote records must be independently verifiable but anonymous.
 
+Yes: ZK proof data should be archived, but only the public verifier payload.
+The Arweave record is the public bulletin-board entry, not an identity bridge.
+
 Record must include:
 
 - bill id
+- canonical `vote_scope_id`
 - vote choice or canonical vote commitment, depending final design
-- Semaphore nullifier
+- Semaphore nullifier / nullifier hash for duplicate detection
 - Merkle root
-- proof/public signals
+- Merkle tree depth
+- proof/public signals exactly as verified by the server
 - verifier/library version
-- timestamp
+- artifact/circuit version
+- schema version, e.g. `ekklesia.zk_vote.v1`
+- coarse timestamp or batch id
+- publication mode: `canary`, `production`, or `test`
 
 Record must not include:
 
@@ -300,18 +308,67 @@ Record must not include:
 - identity record id
 - public key tied to Tier 1 identity
 - raw private key or secret
+- `tier_guard_hash`
+- Tier 1 `nullifier_hash`
+- Semaphore `identity_commitment` unless the group-management design explicitly
+  decides that commitments are already public as part of the Merkle tree
+- precise opt-in timestamp
+- precise vote-submission timestamp when it can correlate a small anonymity set
+- admin/operator ids or HLR metadata
+
+Recommended record envelope:
+
+```json
+{
+  "schema": "ekklesia.zk_vote.v1",
+  "mode": "canary",
+  "vote_scope_id": "parliament:GR-0490a766",
+  "bill_id": "GR-0490a766",
+  "vote": "YES",
+  "semaphore_nullifier": "12345678901234567890",
+  "merkle_root": "12345678901234567890",
+  "merkle_tree_depth": 16,
+  "message": "sha256:...",
+  "scope": "ekklesia:v2:vote:parliament:GR-0490a766",
+  "proof": {
+    "protocol": "semaphore-v4",
+    "points": [],
+    "public_signals": {}
+  },
+  "verifier": {
+    "name": "@semaphore-protocol/proof",
+    "version": "4.14.2",
+    "artifact_set": "semaphore-v4-depth-16-pse-44690d9"
+  },
+  "root_publication": {
+    "root_epoch": 1,
+    "group_size": 25,
+    "published_at_bucket": "2026-06-11T12:00Z"
+  }
+}
+```
 
 Canary privacy constraints:
 
 - Do not publish per-vote Arweave records for a tiny anonymity set unless the canary users explicitly accept that reduced anonymity.
-- Prefer batched publication and coarse timestamps to avoid correlating vote time with server/mobile access logs.
+- Prefer queued/batched publication and coarse timestamps to avoid correlating vote time with server/mobile access logs.
+- Do not publish "accepted_at" or raw server receive timestamps.
+- If canary votes count in public tallies, the bulletin-board records are
+  append-only and must not be rolled back after publication.
 - Merkle roots must be published with enough context for independent verification, but the group size and root history must be documented.
 
 Required tests:
 
 - Arweave record shape snapshot.
 - Public verifier can recompute the tally from records.
+- Public verifier rejects a duplicate `semaphore_nullifier`.
+- Public verifier rejects records whose `scope`, `message`, or `merkle_root`
+  does not match the proof.
+- Serializer excludes `tier_guard_hash`, Tier 1 nullifier, identity record id,
+  phone, IP, public key, and precise opt-in/vote timestamps.
 - Failed Arweave write does not silently count a ZK vote as publicly verifiable.
+- UI/API distinguishes local acceptance from public Arweave verification:
+  unpublished records must show `arweave_pending=true` or equivalent.
 
 ## Gate 6 - Canary
 

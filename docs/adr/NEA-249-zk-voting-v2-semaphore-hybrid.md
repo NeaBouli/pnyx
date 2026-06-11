@@ -54,7 +54,7 @@ Update 2026-06-11:
 - No production voting integration
 - No DB migrations
 - No API endpoints
-- No Arweave writes
+- No Arweave writes until GH#112 Gate 5; when implemented, only public verifier payloads belong in the bulletin board, never Tier 1/nullifier/identity bridge data
 - No website/FAQ claims saying "in build" — wording stays "roadmap/planned"
 - No Helios
 - No custom ZK circuit or trusted setup ceremony

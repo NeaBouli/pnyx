@@ -532,26 +532,46 @@ Current behavior remains:
 
 ### V2 Addition: Per-Vote Bulletin Board
 
-For Tier 2 votes only, publish immediately after vote acceptance.
+For Tier 2 votes only, publish public verifier payloads to an Arweave bulletin
+board. Do not publish Tier 1 votes individually.
+
+Publication policy:
+
+- Accepting a ZK vote creates a local DB row and a pending bulletin-board record.
+- Publication may be queued/batched to reduce timing correlation.
+- Do not publish raw receive timestamps.
+- If a canary ZK vote counts in public tallies, the Arweave record is
+  append-only and must not be rolled back after publication.
 
 Record shape:
 
 ```json
 {
   "schema": "ekklesia.zk_vote.v1",
+  "mode": "canary",
+  "vote_scope_id": "parliament:GR-123",
   "bill_id": "GR-123",
   "vote": "YES",
-  "nullifier_hash": "12345678901234567890",
+  "semaphore_nullifier": "12345678901234567890",
   "merkle_root": "12345678901234567890",
-  "merkle_tree_depth": 24,
-  "zk_proof": {
+  "merkle_tree_depth": 16,
+  "message": "sha256:...",
+  "scope": "ekklesia:v2:vote:parliament:GR-123",
+  "proof": {
     "protocol": "semaphore-v4",
-    "proof": {},
+    "points": [],
     "public_signals": {}
   },
-  "artifact_set": "semaphore-v4-depth-24-pse-44690d9",
-  "server_verified_at": "2026-05-22T20:00:00Z",
-  "published_at": "2026-05-22T20:00:02Z",
+  "verifier": {
+    "name": "@semaphore-protocol/proof",
+    "version": "4.14.2",
+    "artifact_set": "semaphore-v4-depth-16-pse-44690d9"
+  },
+  "root_publication": {
+    "root_epoch": 1,
+    "group_size": 25,
+    "published_at_bucket": "2026-06-11T12:00Z"
+  },
   "app": {
     "name": "ekklesia.gr",
     "vote_tier": "TIER2_SEMAPHORE"
@@ -559,15 +579,27 @@ Record shape:
 }
 ```
 
+Never include in this record:
+
+- `tier_guard_hash`
+- Tier 1 `nullifier_hash`
+- `identity_record_id`
+- phone, IP, HLR metadata, admin/operator ids
+- public key tied to the Tier 1 identity
+- raw Semaphore identity secret
+- precise opt-in or vote-submission timestamp
+
 Arweave timing:
 
-- Publish immediately after accepted ZK vote.
+- Queue/publish after accepted ZK vote according to the privacy policy.
 - Do not wait for `PARLIAMENT_VOTED`.
 - If Arweave is temporarily unavailable:
   - store vote as accepted only if local DB commit succeeds
   - enqueue `arweave_vote_tx_id` backfill job
   - expose `arweave_pending=true` in receipt
   - monitor pending ZK vote publications separately from aggregate snapshots
+- A locally accepted but unpublished ZK vote is not publicly verifiable yet.
+  UI/API wording must say "pending publication", not "verified on Arweave".
 
 Backwards compatibility:
 
@@ -584,7 +616,7 @@ Anyone should be able to:
 
 1. Fetch all Tier 2 per-vote Arweave records for a bill.
 2. Verify each proof against published artifacts and root.
-3. Reject duplicate `nullifier_hash`.
+3. Reject duplicate `semaphore_nullifier`.
 4. Count votes.
 5. Compare to the Tier 2 subtotal in the final aggregate archive.
 
