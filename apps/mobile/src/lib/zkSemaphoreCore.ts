@@ -6,6 +6,16 @@ export interface ZkCapability {
   reasons: string[];
 }
 
+export interface ZkServerStatus {
+  production_enabled: boolean;
+  verifier_enabled: boolean;
+  opt_in_enabled: boolean;
+  canary_enabled: boolean;
+  merkle_tree_depth: number;
+  verifier_version: string;
+  message_el: string;
+}
+
 export interface ZkCapabilityInput {
   featureEnabled: boolean;
   platformOS: string;
@@ -47,4 +57,39 @@ export function detectZkCapability(input: ZkCapabilityInput): ZkCapability {
   }
 
   return { status: "ready", canOptIn: true, reasons: [] };
+}
+
+export function combineZkCapabilityWithServer(
+  local: ZkCapability,
+  serverStatus: ZkServerStatus | null,
+  serverError?: string | null,
+): ZkCapability {
+  if (local.status === "unsupported") return local;
+
+  if (serverError) {
+    return {
+      status: "disabled",
+      canOptIn: false,
+      reasons: [...local.reasons, "ZK server status could not be loaded."],
+    };
+  }
+
+  if (!serverStatus) {
+    return {
+      status: "disabled",
+      canOptIn: false,
+      reasons: [...local.reasons, "ZK server status is still loading."],
+    };
+  }
+
+  if (!serverStatus.opt_in_enabled) {
+    const reason = serverStatus.message_el.trim() || "ZK server opt-in gate is disabled.";
+    return {
+      status: "disabled",
+      canOptIn: false,
+      reasons: [...local.reasons, reason],
+    };
+  }
+
+  return local;
 }

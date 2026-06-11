@@ -2,7 +2,9 @@ import React, { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { colors } from "../theme";
+import { fetchZkStatus } from "../lib/api";
 import { getRuntimeZkCapability, type ZkCapability } from "../lib/zkSemaphore";
+import { combineZkCapabilityWithServer, type ZkServerStatus } from "../lib/zkSemaphoreCore";
 import {
   runZkSemaphoreSelfTest,
   type ZkSemaphoreSelfTestResult,
@@ -20,6 +22,12 @@ function capabilityReason(reason: string): string {
   if (reason.includes("feature flag")) {
     return "Η λειτουργία Semaphore ZK V2 δεν έχει ενεργοποιηθεί ακόμη για την εφαρμογή.";
   }
+  if (reason.includes("server status is still loading")) {
+    return "Γίνεται έλεγχος της κατάστασης ZK στον διακομιστή.";
+  }
+  if (reason.includes("server status could not be loaded")) {
+    return "Δεν ήταν δυνατός ο έλεγχος της κατάστασης ZK στον διακομιστή.";
+  }
   if (reason.includes("Expo Go")) {
     return "Το Expo Go δεν μπορεί να φορτώσει τα απαραίτητα native ZK modules.";
   }
@@ -34,6 +42,8 @@ function capabilityReason(reason: string): string {
 
 export default function ZkSemaphoreScreen() {
   const [capability, setCapability] = useState<ZkCapability | null>(null);
+  const [serverStatus, setServerStatus] = useState<ZkServerStatus | null>(null);
+  const [serverStatusError, setServerStatusError] = useState<string | null>(null);
   const [optedIn, setOptedIn] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selfTestRunning, setSelfTestRunning] = useState(false);
@@ -42,6 +52,15 @@ export default function ZkSemaphoreScreen() {
   useEffect(() => {
     setCapability(getRuntimeZkCapability());
     SecureStore.getItemAsync(OPT_IN_KEY).then((value) => setOptedIn(value === "true"));
+    fetchZkStatus()
+      .then((status) => {
+        setServerStatus(status);
+        setServerStatusError(null);
+      })
+      .catch((error) => {
+        setServerStatus(null);
+        setServerStatusError(error instanceof Error ? error.message : "unknown");
+      });
   }, []);
 
   async function enableOptIn() {
@@ -80,7 +99,9 @@ export default function ZkSemaphoreScreen() {
     return <View style={s.center}><ActivityIndicator color={colors.primary} /></View>;
   }
 
-  const ready = capability.status === "ready";
+  const effectiveCapability = combineZkCapabilityWithServer(capability, serverStatus, serverStatusError);
+  const ready = effectiveCapability.status === "ready";
+  // The self-test only checks the local native prover; it does not opt in or send a vote.
   const canRunSelfTest = capability.status !== "unsupported";
 
   return (
@@ -92,8 +113,8 @@ export default function ZkSemaphoreScreen() {
       </Text>
 
       <View style={[s.card, ready ? s.readyCard : s.blockedCard]}>
-        <Text style={s.cardTitle}>{capabilityTitle(capability)}</Text>
-        {capability.reasons.map((reason) => (
+        <Text style={s.cardTitle}>{capabilityTitle(effectiveCapability)}</Text>
+        {effectiveCapability.reasons.map((reason) => (
           <Text key={reason} style={s.reason}>• {capabilityReason(reason)}</Text>
         ))}
         {!ready && (

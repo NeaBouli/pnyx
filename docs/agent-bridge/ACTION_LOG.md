@@ -9379,3 +9379,21 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `GET /api/v1/zk/receipts/bill:GR-0490a766`: HTTP 200, empty receipt list.
   - `GET /api/v1/zk/receipts/not-a-scope`: HTTP 422.
   - `POST /api/v1/zk/verify`: HTTP 503, `ZK voting verifier is not enabled`.
+
+## 2026-06-12 — Codex: GH#112 mobile ZK opt-in also requires server gate
+
+### Scope
+- Added mobile API client for `GET /api/v1/zk/status`.
+- ZK Semaphore screen now combines local device capability with server gate status.
+- Opt-in remains disabled unless both local native capability and server `opt_in_enabled` are true.
+- No APK/AAB built or uploaded; this is vC35 preparation while vC34 remains in Play review.
+
+### Safety
+- Server status loading/error states are fail-closed.
+- Unsupported device/native-prover messages remain visible.
+- CC review findings addressed: single `ZkServerStatus` type source, server-error test, empty-message fallback, self-test comment.
+- Existing Ed25519/Tier-1 voting path is untouched.
+
+### Verification
+- `cd apps/mobile && npx tsc --noEmit`: PASS.
+- `cd apps/mobile && npx vitest run src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreNative.test.ts src/lib/zkSemaphoreSelfTest.test.ts`: PASS, 19 tests.

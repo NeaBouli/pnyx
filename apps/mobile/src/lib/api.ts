@@ -1,6 +1,7 @@
 /**
  * api.ts — API Client για Ekklesia Mobile
  */
+import type { ZkServerStatus } from "./zkSemaphoreCore";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
 
@@ -111,6 +112,12 @@ export async function fetchBills(params?: {
 
 export async function fetchBill(id: string): Promise<Bill> {
   return request<Bill>(`/api/v1/bills/${id}`);
+}
+
+// ─── ZK Semaphore ───────────────────────────────────────────────────────────
+
+export async function fetchZkStatus(): Promise<ZkServerStatus> {
+  return request<ZkServerStatus>("/api/v1/zk/status");
 }
 
 // ─── Voting ─────────────────────────────────────────────────────────────────
