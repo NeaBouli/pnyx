@@ -25,7 +25,7 @@ Semaphore directly matches the product requirement: anonymous voting with public
 
 ## Mobile Prover Status
 
-**Mobile prover is unresolved.**
+**Mobile prover feasibility is resolved for Android. Production ZK voting remains gated.**
 
 Phase 0 benchmark spike (2026-05-22) found:
 - `@semaphore-protocol/proof@4.14.2` depends on `snarkjs@0.7.5` which requires Node.js `fs`/`os`/`path`/`readline` — not available in React Native
@@ -33,7 +33,7 @@ Phase 0 benchmark spike (2026-05-22) found:
 - `react-native-snarkjs` is stale (2021), 43.6 MB, GPL-3, incompatible with RN 0.81
 - Expo Go cannot be used; Dev Client with native modules is required
 
-**No implementation can proceed until a viable mobile proving path is established.**
+This section records the original blocker and the resolution path. Product integration can proceed only through GH#112 gates; the production voting path remains disabled.
 
 Update 2026-06-10:
 - `zkmopro/SemaphoreReactNative` now exists as a React Native / Expo module wrapper for Semaphore v4.
@@ -76,9 +76,9 @@ It does **not** prove device integrity, enrollment perfection, or individual Tie
 
 ## Next Steps
 
-1. **Mopro Native Expo Module Feasibility** — runtime adapter added; native dependency build still requires pinned build verification
+1. **Mopro Native Expo Module Feasibility** — complete for Android S10 self-test; production builds still require pinned dependency review
 2. **Cross-Tier Uniqueness Design** — prevent same person voting via both tiers
-3. **Phase 1** (only after mobile prover resolved) — DB schema + API skeleton, disabled by default
+3. **Phase 1** — DB schema + API skeleton, disabled by default, only after the GH#112 verifier and group-management design is reviewed
 
 ## References
 

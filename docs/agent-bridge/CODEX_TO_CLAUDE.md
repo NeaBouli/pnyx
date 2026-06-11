@@ -25,10 +25,10 @@
 - Linear comment added: DIAVGEIA historical forum body-only backfill completed `932/932`, `0` failures, GH#109 closed.
 
 ### GitHub / Backlog
-- Open GitHub issues are only external/blocking:
+- Open GitHub issues at this older handoff were external/blocking:
   - #79 F-Droid !38007 — waits for linsui/F-Droid merge.
   - #80 Off-Site Backup — waits for Hetzner Storage Box / funding.
-  - #81 ZK V2 Semaphore — waits for native Mopro/Semaphore mobile prover.
+  - #81 ZK V2 Semaphore — superseded 2026-06-11: Android native prover verified on S10; GH#112 tracks production ZK integration.
 - #102 / NEA-312 remains waiting for a real `WINDOW_24H` bill for visual verification; code + tests are done.
 
 ### Live Health Last Checked

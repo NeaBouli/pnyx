@@ -8721,3 +8721,23 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - controlled JS worker from FastAPI,
   - or Python/Rust verifier with matching artifacts.
 - Do not add verifier dependencies to production images until runtime/artifact/security implications are reviewed.
+
+## 2026-06-11 — Codex: public ZK/Semaphore status wording aligned
+
+### Scope
+- Documentation/static-site wording only.
+- No runtime code, API, DB, mobile feature flag, deploy, or production ZK voting change.
+
+### Updated public surfaces
+- `README.md` was already correct: Android prover verified; production integration gated.
+- `docs/index.html`: landing roadmap wording now says Android prover verified, production ZK not active.
+- `docs/wiki/faq.html`: Semaphore FAQ no longer says blocked on native mobile proving.
+- `docs/wiki/roadmap.html`: Roadmap no longer says depends on mobile prover.
+- `docs/wiki/zk-voting.html`: page metadata, badge, status box updated to the same split.
+- `docs/WHITEPAPER.md` and `wiki/Whitepaper.md`: added ZK V2 status paragraph.
+- `docs/ROADMAP.md` and `wiki/Roadmap.md`: added V2 Semaphore status/gate note.
+- `docs/adr/NEA-249-zk-voting-v2-semaphore-hybrid.md`: updated stale mobile-prover blocker language.
+
+### Current truth
+- GH#81 is complete for Android prover feasibility: native Semaphore/Mopro proof generation and verification passed on S10.
+- Product ZK voting is not live and remains under GH#112 gates: backend verifier, Semaphore group registry, Arweave bulletin board, cross-tier double-vote guard, security review, and canary rollout.

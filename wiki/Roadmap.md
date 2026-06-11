@@ -43,4 +43,5 @@
 - MOD-13 My MP (Ο Βουλευτής μου)
 - WebSocket Live Counter (WINDOW_24H)
 - Deliberation Layer (pol.is model)
+- Semaphore ZK Voting — Android prover verified on S10; production remains gated until backend verifier, group registry, Arweave bulletin board, double-vote guard, security review, and canary rollout are ready
 - Commit-Reveal ZK voting
