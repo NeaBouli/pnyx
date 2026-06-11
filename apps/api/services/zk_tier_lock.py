@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import re
 from enum import Enum
 
 from sqlalchemy import select
@@ -14,6 +15,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import ZkVoteTierLock
+
+VOTE_SCOPE_OBJECT_ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 
 
 class VoteScopeType(str, Enum):
@@ -27,6 +30,8 @@ def canonical_vote_scope_id(scope_type: VoteScopeType | str, object_id: str) -> 
     clean_id = object_id.strip()
     if not clean_id:
         raise ValueError("vote scope object_id is required")
+    if not VOTE_SCOPE_OBJECT_ID_RE.fullmatch(clean_id):
+        raise ValueError("vote scope object_id contains invalid characters")
     return f"{scope.value}:{clean_id}"
 
 
@@ -64,6 +69,25 @@ async def tier_lock_exists(
         )
     )
     return result.scalar_one_or_none() is not None
+
+
+async def tier1_vote_blocked_by_zk_lock(
+    db: AsyncSession,
+    *,
+    server_salt: str,
+    vote_scope_id: str,
+    tier1_nullifier_hash: str,
+) -> bool:
+    tier_guard_hash = derive_tier_guard_hash(
+        server_salt=server_salt,
+        vote_scope_id=vote_scope_id,
+        tier1_nullifier_hash=tier1_nullifier_hash,
+    )
+    return await tier_lock_exists(
+        db,
+        vote_scope_id=vote_scope_id,
+        tier_guard_hash=tier_guard_hash,
+    )
 
 
 async def create_tier_lock(

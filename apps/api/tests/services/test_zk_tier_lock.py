@@ -8,6 +8,7 @@ from services.zk_tier_lock import (
     create_tier_lock,
     derive_tier_guard_hash,
     public_zk_receipt_forbidden_fields,
+    tier1_vote_blocked_by_zk_lock,
     tier_lock_exists,
 )
 
@@ -48,11 +49,20 @@ class _FakeDb:
 def test_canonical_vote_scope_id_is_stable() -> None:
     assert canonical_vote_scope_id(VoteScopeType.BILL, "GR-0490a766") == "bill:GR-0490a766"
     assert canonical_vote_scope_id("municipal", "ATH-001") == "municipal:ATH-001"
+    assert canonical_vote_scope_id(VoteScopeType.REGIONAL, "REG.006") == "regional:REG.006"
 
 
 def test_canonical_vote_scope_id_rejects_empty_object_id() -> None:
     with pytest.raises(ValueError):
         canonical_vote_scope_id("bill", "  ")
+
+
+def test_canonical_vote_scope_id_rejects_invalid_object_id_chars() -> None:
+    with pytest.raises(ValueError):
+        canonical_vote_scope_id("bill", "GR-1/bad")
+
+    with pytest.raises(ValueError):
+        canonical_vote_scope_id("bill", "GR-1:bad")
 
 
 def test_tier_guard_hash_is_deterministic_and_scope_bound() -> None:
@@ -140,3 +150,57 @@ async def test_create_tier_lock_rolls_back_on_duplicate() -> None:
         await create_tier_lock(db, vote_scope_id="bill:GR-1", tier_guard_hash="a" * 64)
 
     assert db.rolled_back is True
+
+
+@pytest.mark.asyncio
+async def test_tier1_vote_blocked_by_zk_lock_uses_derived_guard_hash() -> None:
+    db = _FakeDb(scalar_value=123)
+    salt = "s" * 64
+    nullifier = "a" * 64
+    scope = canonical_vote_scope_id("bill", "GR-0490a766")
+
+    blocked = await tier1_vote_blocked_by_zk_lock(
+        db,
+        server_salt=salt,
+        vote_scope_id=scope,
+        tier1_nullifier_hash=nullifier,
+    )
+
+    assert blocked is True
+    statement = str(db.executed[0])
+    assert "zk_vote_tier_locks" in statement
+
+
+@pytest.mark.asyncio
+async def test_tier1_vote_not_blocked_when_no_matching_lock_exists() -> None:
+    db = _FakeDb(scalar_value=None)
+
+    blocked = await tier1_vote_blocked_by_zk_lock(
+        db,
+        server_salt="s" * 64,
+        vote_scope_id=canonical_vote_scope_id("bill", "GR-0490a766"),
+        tier1_nullifier_hash="a" * 64,
+    )
+
+    assert blocked is False
+
+
+@pytest.mark.asyncio
+async def test_tier1_guard_hash_remains_scope_bound_for_block_checks() -> None:
+    salt = "s" * 64
+    nullifier = "a" * 64
+    first_scope = canonical_vote_scope_id("bill", "GR-0490a766")
+    second_scope = canonical_vote_scope_id("bill", "GR-5294")
+
+    first_guard = derive_tier_guard_hash(
+        server_salt=salt,
+        vote_scope_id=first_scope,
+        tier1_nullifier_hash=nullifier,
+    )
+    second_guard = derive_tier_guard_hash(
+        server_salt=salt,
+        vote_scope_id=second_scope,
+        tier1_nullifier_hash=nullifier,
+    )
+
+    assert first_guard != second_guard

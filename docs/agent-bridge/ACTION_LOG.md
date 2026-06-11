@@ -9428,3 +9428,20 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Verification
 - `cd apps/api && .venv/bin/python -m py_compile services/zk_tier_lock.py`: PASS.
 - `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_tier_lock.py -q`: PASS, 9 tests.
+
+## 2026-06-12 — Codex: GH#112 Gate 3 Tier-1 block-check helper
+
+### Scope
+- Added `tier1_vote_blocked_by_zk_lock()` helper.
+- It derives the private `tier_guard_hash` for a Tier-1 nullifier and checks whether a ZK tier lock already exists for the same vote scope.
+- No router, no `submit_vote` wiring, no production flag flip, no deploy.
+
+### Safety
+- Uses the same domain-separated HMAC derivation as opt-in lock creation.
+- Scope object ids are restricted to clear slug characters (`A-Z`, `a-z`, digits, `.`, `_`, `-`).
+- The guard remains scope-bound; same citizen across different scopes yields unrelated guard hashes.
+- This is a testable prep step only. Existing Tier-1 voting behavior is unchanged.
+
+### Verification
+- `cd apps/api && .venv/bin/python -m py_compile services/zk_tier_lock.py`: PASS.
+- `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_tier_lock.py -q`: PASS, 13 tests.
