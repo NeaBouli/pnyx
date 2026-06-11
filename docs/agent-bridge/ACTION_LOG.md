@@ -9126,3 +9126,27 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### Stop Condition
 - Do not wire this helper into `submit_vote` until the additive ZK tables are migrated in production and a backup/canary window is active.
+
+## 2026-06-11 — Codex: GH#112 Gate 5 public Arweave payload helper
+
+### Scope
+- Added public ZK Arweave record builder only.
+- No Arweave publishing.
+- No DB writes.
+- No API endpoint.
+- No production deploy.
+
+### Changes
+- Added `apps/api/services/zk_arweave_payload.py`.
+- Added tests for:
+  - public verifier payload shape
+  - coarse `publication_bucket`
+  - forbidden identity bridge fields excluded
+  - nested forbidden field rejection
+
+### Verification
+- `apps/api/.venv/bin/python -m py_compile apps/api/services/zk_arweave_payload.py apps/api/services/zk_tier_lock.py apps/api/services/zk_groth16_verifier.py apps/api/routers/zk.py apps/api/main.py`: PASS.
+- `apps/api/.venv/bin/python -m pytest -q apps/api/tests/services/test_zk_arweave_payload.py apps/api/tests/services/test_zk_tier_lock.py apps/api/tests/routers/test_zk_verify_api.py apps/api/tests/services/test_zk_groth16_verifier.py apps/api/tests/test_zk_gate1_schema.py apps/api/tests/test_voting.py apps/api/tests/test_identity_nullifier_kdf.py`: PASS, 48 passed, 2 xfailed.
+
+### Stop Condition
+- Do not publish ZK records until accepted ZK vote flow, pending status, batching, and public verifier/recount path are implemented.
