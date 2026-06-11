@@ -54,7 +54,7 @@
 - [x] NEA-303: Admin-Testaccount + DEMO-123 Region permanent im Code gesetzt
 
 ## Guarded Follow-ups
-- [ ] GH#112 / NEA-249 Follow-up: ZK V2 Produktintegration nur nach Gate-Plan: Backend verifier, Semaphore group registry, Cross-Tier-Double-Vote-Guard, Arweave bulletin board, Canary
+- [ ] GH#112 / NEA-249 Follow-up: ZK V2 Produktintegration nur nach `GH112_IMPLEMENTATION_PLAN.md`: Gate 1 DB additive first; no verifier/mobile/Arweave/canary mixed into same step
 
 ## Done (Session 25.05.2026)
 - [x] F-Droid !38007 autoupdate: `AutoUpdateMode: Version`, `UpdateCheckMode: Tags`, CurrentVersion 1.3.2/27 pushed to fdroiddata (`3d81d65c1`) + linsui comment posted

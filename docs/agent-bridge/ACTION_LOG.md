@@ -8807,3 +8807,25 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `docs/agent-bridge/GH112_ZK_V2_PRODUCTION_GATE.md`
 - `docs/agent-bridge/NEA249_ZK_V2_BLUEPRINT.md`
 - `docs/adr/NEA-249-zk-voting-v2-semaphore-hybrid.md`
+
+## 2026-06-11 — Codex: GH#112 implementation checklist created
+
+### Scope
+- Architecture/implementation planning only.
+- No runtime code, DB migration, API endpoint, mobile feature flag, deploy, or production ZK vote path.
+- S10 not required.
+
+### Created
+- `docs/agent-bridge/GH112_IMPLEMENTATION_PLAN.md`
+
+### Plan
+- Gate 1: additive DB/storage only.
+- Gate 2: backend verifier disabled by default.
+- Gate 3: private per-scope tier lock.
+- Gate 4: mobile opt-in.
+- Gate 5: Arweave bulletin board.
+- Gate 6: explicit canary.
+
+### Guardrail
+- Recommended next code step is Gate 1 only.
+- Do not mix verifier, mobile, Arweave, or canary work into the Gate 1 branch/commit.

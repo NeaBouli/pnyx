@@ -3,6 +3,7 @@
 Date: 2026-06-11
 Status: Gate plan, no runtime implementation
 Depends on: GH#81, NEA-249
+Implementation checklist: `docs/agent-bridge/GH112_IMPLEMENTATION_PLAN.md`
 
 ## Current Truth
 
