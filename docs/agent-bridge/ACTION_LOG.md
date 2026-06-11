@@ -9038,3 +9038,38 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Do not add the Semaphore JS verifier stack to the FastAPI/API production image.
 - Preferred next check: isolated Python/Rust Groth16 BN254 verifier with pinned depth-16 verification key and checksum guard.
 - Gate 2 endpoint work remains blocked until the selected verifier validates the exact S10 fixture.
+
+## 2026-06-11 — Codex: GH#112 Gate 2 Python verifier core
+
+### Scope
+- Added verifier core only; no router/endpoint.
+- No production migration.
+- No API/web/mobile deploy.
+- No ZK voting flag flip.
+- Existing Tier-1 voting path remains untouched.
+
+### Changes
+- Added `py-ecc==8.0.0` to API requirements.
+- Added `apps/api/services/zk_groth16_verifier.py`.
+- Added pinned Semaphore v4 depth-16 verification key:
+  - `apps/api/data/semaphore-v4-depth16-vkey.json`
+  - SHA-256 `6ef3f6ae5ad8c50982b8c2ed5ec9626d7f92881fce3488ac2b8089c6edca2319`
+- Added deterministic S10 Gate-0 fixture:
+  - `apps/api/tests/fixtures/gh112_s10_fixture.json`
+  - SHA-256 `6f23a15d814f26cadb3be2d2166dfb599044536bfc9771b48ba86ee244449c10`
+- Added tests for:
+  - checksum guard
+  - real S10 fixture verification
+  - mutated message/scope/root/nullifier rejection
+  - malformed point rejection
+  - native snake_case proof normalization
+  - official JS public-hash compatibility values
+
+### Verification
+- `apps/api/.venv/bin/python -m py_compile apps/api/services/zk_groth16_verifier.py apps/api/models.py apps/api/alembic/versions/r101a2b3c4d5_zk_gate1_storage.py`: PASS.
+- `apps/api/.venv/bin/python -m pytest -q apps/api/tests/services/test_zk_groth16_verifier.py apps/api/tests/test_zk_gate1_schema.py apps/api/tests/test_voting.py apps/api/tests/test_identity_nullifier_kdf.py`: PASS, 38 passed, 2 xfailed.
+
+### Next Gate
+- Add disabled API endpoint only after reviewing request/response shape and abuse limits.
+- Keep `ZK_VOTING_ENABLED=false` by default.
+- Do not accept production ZK votes before Gate 3 tier-lock and Gate 5 Arweave bulletin-board design are implemented.

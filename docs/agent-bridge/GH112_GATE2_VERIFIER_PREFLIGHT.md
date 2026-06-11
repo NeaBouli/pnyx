@@ -1,7 +1,7 @@
 # GH#112 Gate 2 Verifier Preflight
 
 Date: 2026-06-11
-Status: Preflight decision, no runtime implementation
+Status: Verifier core implemented, disabled; no endpoint or production activation
 
 ## Threat Model
 
@@ -88,3 +88,32 @@ Stop before endpoint work if:
 Evaluate `py_ecc` in an isolated temporary environment against the S10 fixture
 and extracted depth-16 verification key. If it matches the JS verifier, only
 then design a small API verifier module behind `ZK_VOTING_ENABLED=false`.
+
+## 2026-06-11 Follow-Up
+
+The `py_ecc` path was tested successfully:
+
+- Temporary venv: `/tmp/gh112-pyecc-venv`
+- Package: `py-ecc==8.0.0`
+- Verification key SHA-256:
+  `6ef3f6ae5ad8c50982b8c2ed5ec9626d7f92881fce3488ac2b8089c6edca2319`
+- S10 fixture SHA-256:
+  `6f23a15d814f26cadb3be2d2166dfb599044536bfc9771b48ba86ee244449c10`
+- Result:
+  - real S10 fixture verifies: `True`
+  - mutated message rejects: `False`
+
+Implemented in repo:
+
+- `apps/api/services/zk_groth16_verifier.py`
+- `apps/api/data/semaphore-v4-depth16-vkey.json`
+- `apps/api/tests/fixtures/gh112_s10_fixture.json`
+- `apps/api/tests/services/test_zk_groth16_verifier.py`
+
+Still not implemented:
+
+- no verifier endpoint
+- no production migration
+- no vote acceptance
+- no Arweave publication
+- no `ZK_VOTING_ENABLED` activation
