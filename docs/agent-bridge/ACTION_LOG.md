@@ -8741,3 +8741,7 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Current truth
 - GH#81 is complete for Android prover feasibility: native Semaphore/Mopro proof generation and verification passed on S10.
 - Product ZK voting is not live and remains under GH#112 gates: backend verifier, Semaphore group registry, Arweave bulletin board, cross-tier double-vote guard, security review, and canary rollout.
+- Tracker updates after push:
+  - GitHub #112 commented with the public-docs status update.
+  - Linear NEA-249 commented and left open for production ZK integration.
+  - Linear NEA-283 commented and moved to Done because the Mopro/native-prover blocker is resolved.
