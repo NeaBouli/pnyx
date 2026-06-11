@@ -8829,3 +8829,35 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Guardrail
 - Recommended next code step is Gate 1 only.
 - Do not mix verifier, mobile, Arweave, or canary work into the Gate 1 branch/commit.
+
+## 2026-06-11 — Codex: Android vC31 / 1.0.4 release artifacts prepared
+
+### Scope
+- Android release artifact refresh only.
+- No API, DB, voting logic, ZK production flag, or backend deploy.
+- S10 was disconnected; device install/visual verification remains pending.
+
+### Changes
+- Bumped ekklesia Android app to `versionCode=31`, `versionName=1.0.4`.
+- Added Android blocked permissions for release hardening:
+  - `android.permission.READ_EXTERNAL_STORAGE`
+  - `android.permission.WRITE_EXTERNAL_STORAGE`
+  - `android.permission.SYSTEM_ALERT_WINDOW`
+- Added `.gitignore` rules for server-side APK artifacts.
+- Refreshed `docs/download/APK_MANIFEST.md` and `docs/download/ekklesia-latest.apk.sha256`.
+
+### Verification
+- `cd apps/mobile && npm ci`: PASS, 0 vulnerabilities.
+- `cd apps/mobile && npx tsc --noEmit`: PASS.
+- `cd apps/mobile && npx vitest run src/lib/api.test.ts src/lib/source-resolver.test.ts src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreNative.test.ts`: PASS, 36 tests.
+- `bash scripts/build-play.sh`: PASS, Play AAB generated.
+- `cd apps/mobile/android && ./gradlew assemblePlayRelease`: PASS, Play APK generated.
+- APK audit: package `ekklesia.gr`, versionCode `31`, versionName `1.0.4`, signer SHA256 `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
+- Forbidden permissions absent from final APK: READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE, SYSTEM_ALERT_WINDOW.
+- AAB contains `base/manifest/AndroidManifest.xml`, `base/assets/index.android.bundle`, and native Semaphore marker files.
+
+### Artifacts
+- APK Desktop: `/Users/gio/Desktop/ekklesia-v1.0.4-vC31.apk`
+- AAB Desktop: `/Users/gio/Desktop/ekklesia-v1.0.4-vC31-PLAY.aab`
+- APK SHA256: `3a0913f87fac3670f429e7b5f1ff340046442583a28e489c4d2527a1c47be4ee`
+- AAB SHA256: `ea8a3c8b346f0f538a37291e7e5165199c28c65b2be6a4d44664117d8274a518`

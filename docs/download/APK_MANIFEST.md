@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.3 |
-| versionCode | 30 |
+| Version | 1.0.4 |
+| versionCode | 31 |
 | Package | ekklesia.gr |
-| APK SHA256 | `6b216b7d00823c34b2ba3b9dabee8cbe9de60d3310314690fa062fc23eb8a388` |
-| AAB SHA256 | `7cc92ddeb9be36a238bc62a375867eadc92f55a102a986e87220e524b76cdadc` |
+| APK SHA256 | `3a0913f87fac3670f429e7b5f1ff340046442583a28e489c4d2527a1c47be4ee` |
+| AAB SHA256 | `ea8a3c8b346f0f538a37291e7e5165199c28c65b2be6a4d44664117d8274a518` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
-| Build date | 2026-06-03 |
-| Release gate | PASS — S10 final UI regression: bill-card icons, source fallback, already-voted lock, Βουλή detail |
-| Includes | vC30 Hermes runtime alignment, source link labels, official text fallback, vote-status lock, Βουλή boilerplate guard |
+| Build date | 2026-06-11 |
+| Release gate | PASS — TypeScript, 36 mobile regression tests, local AAB/APK build, APK signature/version/permission audit |
+| Includes | vC31 current mobile state, ZK V2 settings/prover status, deep-link fallback, pagination, source/full-text policy, permission hardening |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: 6b216b7d00823c34b2ba3b9dabee8cbe9de60d3310314690fa062fc23eb8a388
+# Expected: 3a0913f87fac3670f429e7b5f1ff340046442583a28e489c4d2527a1c47be4ee
 ```
