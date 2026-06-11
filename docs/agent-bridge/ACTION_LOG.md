@@ -9332,3 +9332,19 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `POST /api/v1/zk/verify`: HTTP 503, `ZK voting verifier is not enabled`.
   - Alembic current: `r101a2b3c4d5 (head)`.
   - Production counts: 1088 bills, 6 citizen votes, 0 ZK commitments.
+
+## 2026-06-12 — Codex: GH#112 Gate 5 public receipt serializer
+
+### Scope
+- Added `build_public_zk_receipt_from_storage()` for future public ZK bulletin-board/API records.
+- Converts stored `ZkVoteReceipt`-like objects into a public verifier payload.
+- No endpoint, no DB writes, no Arweave publishing, no production flag flip.
+
+### Safety
+- Explicitly excludes private identity bridge fields from the public shape.
+- Rejects nested forbidden fields inside `proof_public_json`.
+- Keeps `arweave_pending` visible so local acceptance is not confused with public Arweave publication.
+
+### Verification
+- `cd apps/api && .venv/bin/python -m py_compile services/zk_arweave_payload.py`: PASS.
+- `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_arweave_payload.py -q`: PASS, 4 tests.
