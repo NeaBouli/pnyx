@@ -26,6 +26,7 @@ print('app.json patched: buildFlavor=fdroid')
 
 npm ci
 npx expo prebuild --clean --platform android
+python3 "$SCRIPT_DIR/patches/patch-android-manifest-package.py" android/app/src/main/AndroidManifest.xml ekklesia.gr
 
 # Remove google-services.json if present (FCM dependency)
 rm -f android/app/google-services.json

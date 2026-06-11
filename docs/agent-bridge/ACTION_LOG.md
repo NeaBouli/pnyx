@@ -8910,3 +8910,48 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Free Apple developer registration allows Xcode/device testing.
 - TestFlight/App Store distribution requires paid Apple Developer Program membership.
 - No iOS build produced and no Apple credentials changed.
+
+## 2026-06-11 — Codex: Mobile Bouli tab fix + Android vC32 / 1.0.5 artifacts
+
+### Problem
+- Gio reported that Bouli/Parliament bills did not appear in the app.
+- Backend was healthy:
+  - `/api/v1/bills?source=PARLIAMENT` returned 32 Parliament bills.
+  - `/api/v1/bills?governance=NATIONAL` included Parliament bills.
+- Root cause was mobile-only: the `Βουλή` tab used `status=PARLIAMENT_VOTED`, so announced/open Parliament bills were hidden.
+
+### Changes
+- `BillsScreen` now maps the `Βουλή` tab to `source=PARLIAMENT`.
+- Added regression coverage for the Parliament source query.
+- Bumped Android release to `versionCode=32`, `versionName=1.0.5`.
+- Fixed local Android build scripts after Expo prebuild:
+  - Source manifest is patched to expose package `ekklesia.gr` before React Native autolinking.
+  - Prevents generated `com.ekklhsia.BuildConfig` references from the Greek Gradle project-name fallback.
+  - Hardened `build-play.sh` restore trap to reset `app.json` from an absolute path after failed builds.
+
+### Verification
+- `cd apps/mobile && npx tsc --noEmit`: PASS.
+- `cd apps/mobile && npx vitest run src/lib/api.test.ts src/lib/source-resolver.test.ts src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreNative.test.ts`: PASS, 37 tests.
+- Live API smoke:
+  - `/api/v1/bills?limit=3&offset=0&source=PARLIAMENT` returns Parliament bills, including current announced Bouli items.
+- `bash scripts/build-direct.sh`: PASS, APK generated.
+- `bash scripts/build-play.sh`: PASS, Play AAB generated.
+- APK audit:
+  - package `ekklesia.gr`
+  - versionCode `32`
+  - versionName `1.0.5`
+  - forbidden permissions absent: READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE, SYSTEM_ALERT_WINDOW
+- AAB audit:
+  - contains `base/manifest/AndroidManifest.xml`
+  - contains `base/assets/index.android.bundle`
+  - contains `base/dex/classes.dex`
+
+### Artifacts
+- APK Desktop: `/Users/gio/Desktop/ekklesia-v1.0.5-vC32.apk`
+- AAB Desktop: `/Users/gio/Desktop/ekklesia-v1.0.5-vC32-PLAY.aab`
+- APK SHA256: `aecbee101185a020427ee5b53d1058e78aa5682be7cde920e2f766aea097c576`
+- AAB SHA256: `5904cd60067f5a3b47e88d8e877c1fb1faef98be92e61b1fa37f6314bc8449f1`
+
+### Pending
+- Deploy `docs/download/ekklesia-latest.apk` to server and rebuild only `ekklesia-web`.
+- S10 install/visual verification pending because device is disconnected.

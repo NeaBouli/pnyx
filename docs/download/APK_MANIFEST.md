@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.4 |
-| versionCode | 31 |
+| Version | 1.0.5 |
+| versionCode | 32 |
 | Package | ekklesia.gr |
-| APK SHA256 | `3a0913f87fac3670f429e7b5f1ff340046442583a28e489c4d2527a1c47be4ee` |
-| AAB SHA256 | `ea8a3c8b346f0f538a37291e7e5165199c28c65b2be6a4d44664117d8274a518` |
+| APK SHA256 | `aecbee101185a020427ee5b53d1058e78aa5682be7cde920e2f766aea097c576` |
+| AAB SHA256 | `5904cd60067f5a3b47e88d8e877c1fb1faef98be92e61b1fa37f6314bc8449f1` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
 | Build date | 2026-06-11 |
-| Release gate | PASS — TypeScript, 36 mobile regression tests, local AAB/APK build, APK signature/version/permission audit |
-| Includes | vC31 current mobile state, ZK V2 settings/prover status, deep-link fallback, pagination, source/full-text policy, permission hardening |
+| Release gate | PASS — TypeScript, 37 mobile regression tests, local AAB/APK build, APK signature/version/permission audit |
+| Includes | vC32 current mobile state, Bouli tab source filter, Android autolinking package build fix, ZK V2 settings/prover status, deep-link fallback, pagination, source/full-text policy, permission hardening |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: 3a0913f87fac3670f429e7b5f1ff340046442583a28e489c4d2527a1c47be4ee
+# Expected: aecbee101185a020427ee5b53d1058e78aa5682be7cde920e2f766aea097c576
 ```

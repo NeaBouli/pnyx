@@ -8,6 +8,7 @@ set -e
 cd "$(dirname "$0")/../apps/mobile"
 npx expo prebuild --platform android --clean
 echo "sdk.dir=$HOME/Library/Android/sdk" > android/local.properties
+python3 ../../scripts/patches/patch-android-manifest-package.py android/app/src/main/AndroidManifest.xml ekklesia.gr
 cd android
 ./gradlew assembleRelease
 

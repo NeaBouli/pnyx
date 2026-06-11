@@ -6,10 +6,11 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$SCRIPT_DIR/../apps/mobile"
+MOBILE_DIR="$SCRIPT_DIR/../apps/mobile"
+cd "$MOBILE_DIR"
 
 restore_channel() {
-  sed -i '' 's/"distributionChannel": "play"/"distributionChannel": "direct"/' app.json
+  sed -i '' 's/"distributionChannel": "play"/"distributionChannel": "direct"/' "$MOBILE_DIR/app.json"
 }
 
 trap restore_channel EXIT
@@ -22,6 +23,10 @@ npx expo prebuild --platform android --clean
 
 # Ensure local.properties has SDK path
 echo "sdk.dir=$HOME/Library/Android/sdk" > android/local.properties
+
+# Expo/RN autolinking falls back to a transliterated Gradle project name unless
+# the source manifest exposes the real package before Gradle generates entrypoints.
+python3 "$SCRIPT_DIR/patches/patch-android-manifest-package.py" android/app/src/main/AndroidManifest.xml ekklesia.gr
 
 # Patch build.gradle with Play signing + flavors
 python3 "$SCRIPT_DIR/patches/patch-play-flavors.py" android/app/build.gradle
