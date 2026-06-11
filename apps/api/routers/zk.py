@@ -24,6 +24,9 @@ router = APIRouter(prefix="/api/v1/zk", tags=["GH#112 ZK V2"])
 
 VKEY_PATH = Path(__file__).resolve().parents[1] / "data" / "semaphore-v4-depth16-vkey.json"
 ZK_VOTING_ENABLED_ENV = "ZK_VOTING_ENABLED"
+ZK_OPT_IN_ENABLED_ENV = "ZK_OPT_IN_ENABLED"
+ZK_CANARY_ENABLED_ENV = "ZK_CANARY_ENABLED"
+SEMAPHORE_MERKLE_TREE_DEPTH = 16
 
 
 class ZkVerifyRequest(BaseModel):
@@ -37,8 +40,40 @@ class ZkVerifyResponse(BaseModel):
     verifier_version: str
 
 
+class ZkStatusResponse(BaseModel):
+    production_enabled: bool
+    verifier_enabled: bool
+    opt_in_enabled: bool
+    canary_enabled: bool
+    merkle_tree_depth: int
+    verifier_version: str
+    message_el: str
+
+
 def zk_voting_enabled() -> bool:
-    return os.getenv(ZK_VOTING_ENABLED_ENV, "false").lower() == "true"
+    return _env_enabled(ZK_VOTING_ENABLED_ENV)
+
+
+def _env_enabled(name: str) -> bool:
+    return os.getenv(name, "false").lower() == "true"
+
+
+@router.get("/status", response_model=ZkStatusResponse)
+async def get_zk_status() -> ZkStatusResponse:
+    production_enabled = zk_voting_enabled()
+    return ZkStatusResponse(
+        production_enabled=production_enabled,
+        verifier_enabled=production_enabled,
+        opt_in_enabled=production_enabled and _env_enabled(ZK_OPT_IN_ENABLED_ENV),
+        canary_enabled=production_enabled and _env_enabled(ZK_CANARY_ENABLED_ENV),
+        merkle_tree_depth=SEMAPHORE_MERKLE_TREE_DEPTH,
+        verifier_version="py-ecc-groth16-bn254:v1:semaphore-v4-depth16",
+        message_el=(
+            "Η παραγωγική ZK ψηφοφορία είναι ενεργή."
+            if production_enabled
+            else "Η παραγωγική ZK ψηφοφορία δεν είναι ενεργή ακόμη."
+        ),
+    )
 
 
 @router.post("/verify", response_model=ZkVerifyResponse)

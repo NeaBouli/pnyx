@@ -9302,3 +9302,19 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Bills endpoint: HTTP 200.
 - `POST /api/v1/zk/verify` returns HTTP 503 with `ZK voting verifier is not enabled`.
 - Existing Tier 1 voting path remains the only production voting path.
+
+## 2026-06-12 — Codex: GH#112 Gate 2 status endpoint added
+
+### Scope
+- Added read-only `GET /api/v1/zk/status`.
+- Endpoint reports ZK production/verifier/opt-in/canary gates and Semaphore depth.
+- No DB writes, no vote endpoint changes, no mobile build, no Arweave publishing.
+
+### Safety
+- `opt_in_enabled` and `canary_enabled` are fail-closed behind `ZK_VOTING_ENABLED`.
+- Setting `ZK_OPT_IN_ENABLED=true` or `ZK_CANARY_ENABLED=true` alone cannot expose a subfeature.
+- Existing `POST /api/v1/zk/verify` behavior remains unchanged.
+
+### Verification
+- `cd apps/api && .venv/bin/python -m py_compile routers/zk.py services/zk_groth16_verifier.py services/zk_tier_lock.py services/zk_arweave_payload.py models.py`: PASS.
+- `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py tests/services/test_zk_groth16_verifier.py tests/services/test_zk_tier_lock.py tests/services/test_zk_arweave_payload.py tests/test_zk_gate1_schema.py -q`: PASS, 22 tests.
