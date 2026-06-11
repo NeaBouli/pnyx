@@ -62,6 +62,7 @@ export default function BillsScreen() {
       if (userDimos) params.dimos_id = userDimos;
       if (["ACTIVE", "ANNOUNCED", "PARLIAMENT_VOTED", "OPEN_END", "WINDOW_24H"].includes(filter)) params.status = filter;
       if (filter === "DIAVGEIA") params.source = "DIAVGEIA";
+      if (filter === "PARLIAMENT") params.source = "PARLIAMENT";
       if (["MUNICIPAL", "REGIONAL", "INSTITUTIONAL"].includes(filter)) params.governance = filter;
       const data = await fetchBills(params);
       const next = Array.isArray(data) ? data : [];
@@ -108,7 +109,7 @@ export default function BillsScreen() {
         </TouchableOpacity>
       )}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.filterRow} contentContainerStyle={{ gap: 6, paddingHorizontal: 12, alignItems: "center" }}>
-        {[["ALL", "Όλα"], ["ACTIVE", "Ενεργά"], ["ANNOUNCED", "Ανακοιν."], ["DIAVGEIA", "Διαύγεια"], ["MUNICIPAL", "Δήμος"], ["REGIONAL", "Περιφ."], ["INSTITUTIONAL", "Φορείς"], ["PARLIAMENT_VOTED", "Βουλή"], ["OPEN_END", "Αρχείο"], ["ARWEAVE", "⛓"]].map(([k, l]) => (
+        {[["ALL", "Όλα"], ["ACTIVE", "Ενεργά"], ["ANNOUNCED", "Ανακοιν."], ["DIAVGEIA", "Διαύγεια"], ["MUNICIPAL", "Δήμος"], ["REGIONAL", "Περιφ."], ["INSTITUTIONAL", "Φορείς"], ["PARLIAMENT", "Βουλή"], ["OPEN_END", "Αρχείο"], ["ARWEAVE", "⛓"]].map(([k, l]) => (
           <TouchableOpacity key={k} onPress={() => setFilter(k)} style={[s.filterBtn, filter === k && s.filterActive]}>
             <Text style={[s.filterTxt, filter === k && s.filterTxtActive]}>{l}</Text>
           </TouchableOpacity>

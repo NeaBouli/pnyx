@@ -21,4 +21,12 @@ describe("buildBillsQuery", () => {
       dimos_id: 2,
     })).toBe("limit=10&offset=0&status=ACTIVE&governance=MUNICIPAL&source=DIAVGEIA&periferia_id=1&dimos_id=2");
   });
+
+  it("supports Parliament source filtering for the Bouli tab", () => {
+    expect(buildBillsQuery({
+      limit: 10,
+      offset: 0,
+      source: "PARLIAMENT",
+    })).toBe("limit=10&offset=0&source=PARLIAMENT");
+  });
 });
