@@ -1,6 +1,6 @@
 # TODO — Ekklesia.gr / pnyx
 
-## Aktive Roadmap — Stand 2026-06-11
+## Aktive Roadmap — Stand 2026-06-12
 
 ### Aktiv baubar (Reihenfolge)
 1. [x] Pagination `Όλα` — GH#107 / NEA-317
@@ -60,7 +60,14 @@
 - [x] NEA-303: Admin-Testaccount + DEMO-123 Region permanent im Code gesetzt
 
 ## Guarded Follow-ups
-- [ ] GH#112 / NEA-249 Follow-up: ZK V2 Produktintegration nur nach `GH112_IMPLEMENTATION_PLAN.md`: Gate 1 DB additive first; no verifier/mobile/Arweave/canary mixed into same step
+- [ ] GH#112 / NEA-249 Follow-up: ZK V2 Produktintegration nur nach `GH112_IMPLEMENTATION_PLAN.md`
+  - [x] Gate 1: additive DB storage live (`r101a2b3c4d5`), Backup vorher, keine Tier-1-Änderung
+  - [x] Gate 2: `/api/v1/zk/status` live fail-closed; `/api/v1/zk/verify` bleibt 503 solange `ZK_VOTING_ENABLED=false`
+  - [x] Gate 5 prep: public receipt serializer + read-only `/api/v1/zk/receipts/{vote_scope_id}` live, aktuell leer
+  - [x] Mobile prep: ZK opt-in UI benötigt lokale native Fähigkeit UND Server `opt_in_enabled=true`; kein vC35 Build solange vC34 in Play Review
+  - [ ] Gate 3: echte Opt-in/Group-Registry/Tier-Lock-Verdrahtung nur mit Security-Review
+  - [ ] Gate 4: Mobile produktiver Opt-in erst nach Server-Gate + Canary
+  - [ ] Gate 6: Canary-Window; keine produktive Aktivierung ohne Backup/Review
 
 ## Done (Session 25.05.2026)
 - [x] F-Droid !38007 autoupdate: `AutoUpdateMode: Version`, `UpdateCheckMode: Tags`, CurrentVersion 1.3.2/27 pushed to fdroiddata (`3d81d65c1`) + linsui comment posted

@@ -32,7 +32,7 @@ Voraussetzung: 500+ Nutzer, 3+ NGO-Partner, öffentliche Legitimation.
 - [ ] MOD-13 Mein Abgeordneter
 - [ ] Deliberation (pol.is-Modell)
 - [ ] Commit-Reveal Abstimmung
-- [ ] Semaphore ZK Voting — Android prover auf S10 verifiziert; Production bleibt gated bis Backend-Verifier, Group Registry, Arweave Bulletin Board, Double-Vote-Guard, Security Review und Canary stehen
+- [ ] Semaphore ZK Voting — Android prover auf S10 verifiziert; additive Backend-Storage, fail-closed Status/Verifier und read-only Receipt-Bulletin sind vorbereitet. Production bleibt gated bis Opt-in/Group Registry, Double-Vote-Guard, Security Review und Canary stehen.
 - [ ] packages/crypto-rs (Rust + WASM)
 
 ## Transparenz
