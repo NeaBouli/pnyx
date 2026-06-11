@@ -103,6 +103,106 @@ The current Tier 1 table enforces:
 
 ZK adds a different nullifier domain, so it must not create a bypass.
 
+### Selected Gate-0 Design: Private Per-Scope Tier Lock
+
+Use a private, server-side tier lock created before a citizen is included in a
+Semaphore Merkle root for a voting scope.
+
+Rationale:
+
+- The ZK vote request itself must not reveal which registered identity is voting.
+- Therefore cross-tier uniqueness cannot be checked at ZK vote time by looking up
+  the real identity.
+- The lock must happen earlier, at ZK opt-in / Merkle-root construction time.
+- The lock is private operational state, not public audit data.
+
+Canonical voting scope:
+
+```text
+vote_scope_id = "{source}:{id}"
+```
+
+Examples:
+
+- `parliament:GR-0490a766`
+- future DIAVGEIA scope: `diavgeia:{ada}`
+
+The scope identifies the exact voting object. It must not prevent a citizen from
+voting on different legitimate objects at different governance levels.
+
+Tier-lock key:
+
+```text
+tier_guard_hash =
+  HMAC_SHA256(
+    SERVER_SALT,
+    "ekklesia:vote-tier-lock:v1:" + vote_scope_id + ":" + tier1_nullifier_hash
+  )
+```
+
+Notes:
+
+- `tier1_nullifier_hash` is the existing private Tier 1 voting anchor submitted
+  today to `/api/v1/vote`.
+- `tier_guard_hash` is never published to Arweave, analytics, forum, or public
+  verification APIs.
+- If the Tier 1 identity anchor changes in a future Nullifier v2 voting path,
+  this lock gets a new domain prefix (`vote-tier-lock:v2`) rather than mutating
+  v1 semantics.
+
+ZK opt-in flow for a bill/scope:
+
+1. User authenticates with the existing Tier 1 identity using an Ed25519
+   signature over:
+
+   ```text
+   zk-opt-in:{vote_scope_id}:{identity_commitment_hash}
+   ```
+
+2. Server verifies the Tier 1 identity is active.
+3. Server checks there is no existing Tier 1 vote for `(nullifier_hash, bill_id)`.
+4. Server computes `tier_guard_hash`.
+5. Server inserts an active lock:
+
+   ```text
+   vote_scope_id
+   tier_guard_hash
+   selected_tier = "TIER2_SEMAPHORE"
+   identity_commitment_hash
+   root_epoch
+   locked_at
+   ```
+
+6. The commitment is included in the bill/scope Merkle root.
+7. The Tier 1 endpoint rejects any later Tier 1 vote for the same
+   `(tier_guard_hash, vote_scope_id)`.
+8. The ZK vote endpoint verifies only the Semaphore proof, root, scope, message,
+   and Semaphore nullifier uniqueness. It does not look up the real identity.
+
+Root publication rule:
+
+- Before a commitment is included in a published root, the user may cancel ZK
+  opt-in and return to Tier 1.
+- After the commitment has been included in a published root for that scope, the
+  Tier 1 lock remains active for that scope, even if the user never casts the ZK
+  vote. This is conservative, but prevents using an old root/proof path and then
+  falling back to Tier 1.
+
+Privacy properties:
+
+- Public ZK vote records do not include `tier_guard_hash`, Tier 1 nullifier,
+  identity record id, phone, IP, or public key.
+- The server does know which verified identity opted into a given ZK scope. This
+  is a canary/Beta trust trade-off and must be documented.
+- The server must publish Merkle roots and proof-verification data so the public
+  can verify votes without access to the private tier-lock table.
+
+Rejected options for now:
+
+- Deriving the Semaphore identity from the Ed25519 keypair or public key.
+- A shared public voter key across Tier 1 and Tier 2.
+- Checking cross-tier uniqueness only after a ZK vote arrives.
+
 Acceptable canary options:
 
 1. ZK-only canary identities that are not allowed to cast Tier 1 votes during canary.
@@ -124,6 +224,8 @@ Required tests:
 - Tier 2 then Tier 1 same bill is rejected.
 - Tier 2 duplicate by Semaphore nullifier is rejected.
 - Same citizen can vote on different bills.
+- ZK opt-in then Tier 1 same scope is rejected even before a ZK vote is cast.
+- ZK opt-in can be cancelled only before the commitment is included in a published root.
 
 ## Gate 4 - Mobile Opt-In
 

@@ -232,15 +232,33 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_zk_vote_per_scope
 
 Do not remove existing `uq_one_vote_per_citizen`.
 
-Open design point before implementation:
+Gate-0 design decision:
 
-Tier 1 and Tier 2 use different nullifier domains. To prevent the same person from voting once via Tier 1 and once via Tier 2, V2 needs one of:
+Tier 1 and Tier 2 use different nullifier domains. To prevent the same person
+from voting once via Tier 1 and once via Tier 2, V2 uses a private per-scope
+tier lock created at ZK opt-in / Merkle-root construction time.
 
-- a shared per-bill `voter_scope_hash` derived during enrollment, or
-- a migration rule that disables Tier 1 for users once they enroll in ZK for that bill, or
-- a server-side confidential mapping from Tier 1 identity to ZK identity during opt-in.
+```text
+vote_scope_id = "{source}:{id}"
+tier_guard_hash = HMAC_SHA256(
+  SERVER_SALT,
+  "ekklesia:vote-tier-lock:v1:" + vote_scope_id + ":" + tier1_nullifier_hash
+)
+```
 
-For MVP, use feature flag and internal testers only until cross-tier uniqueness is specified and tested.
+When a citizen opts into ZK for a bill/scope, the server verifies the current
+Tier 1 identity with Ed25519, confirms no Tier 1 vote already exists for that
+scope, stores the private tier lock, and only then includes the Semaphore
+commitment in the Merkle root. The Tier 1 endpoint rejects later votes for the
+same private lock. The ZK vote endpoint verifies only the proof, root, message,
+scope, and Semaphore nullifier uniqueness; it does not look up the real identity.
+
+This is a canary/Beta trust trade-off: the server knows who opted into ZK for a
+scope, but public ZK vote records do not expose that mapping. Do not publish
+`tier_guard_hash`, Tier 1 nullifier, identity record id, phone, IP, or public key.
+
+For MVP, keep ZK behind feature flags and internal/canary testers until the
+tier-lock path is implemented and tested.
 
 ## 3. API Endpoints
 
@@ -754,9 +772,11 @@ The same person could potentially vote via Tier 1 and Tier 2 if uniqueness domai
 
 Mitigation:
 
-- Do not enable public ZK voting until cross-tier uniqueness is resolved.
+- Do not enable public ZK voting until the private per-scope tier-lock path is implemented.
 - MVP can be internal testers only.
-- Design `voter_scope_hash` before public rollout.
+- ZK opt-in must lock Tier 1 for the same voting scope before the commitment enters a published Merkle root.
+- ZK opt-in cancellation is allowed only before root publication.
+- Public ZK records must never expose `tier_guard_hash`, Tier 1 nullifier, identity record id, phone, IP, or public key.
 
 ### Risk: Mobile Proving Fails on Older Devices
 

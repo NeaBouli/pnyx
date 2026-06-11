@@ -8745,3 +8745,32 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - GitHub #112 commented with the public-docs status update.
   - Linear NEA-249 commented and left open for production ZK integration.
   - Linear NEA-283 commented and moved to Done because the Mopro/native-prover blocker is resolved.
+
+## 2026-06-11 — Codex: GH#112 Gate 0 cross-tier double-vote design selected
+
+### Scope
+- Architecture/design documentation only.
+- No runtime code, DB migration, API endpoint, mobile feature flag, deploy, or production ZK vote path.
+
+### Threat model
+- Prevent the same verified citizen from voting once via the current Ed25519/Tier 1 path and once via the future Semaphore/Tier 2 path for the same voting object.
+- Preserve ZK vote anonymity: the future ZK vote request itself must not reveal which registered identity is voting.
+
+### Decision
+- Use a private per-scope tier lock created at ZK opt-in / Merkle-root construction time.
+- Canonical scope: `vote_scope_id = "{source}:{id}"`, e.g. `parliament:GR-0490a766`.
+- Private lock key:
+  - `tier_guard_hash = HMAC_SHA256(SERVER_SALT, "ekklesia:vote-tier-lock:v1:" + vote_scope_id + ":" + tier1_nullifier_hash)`
+- Tier 1 vote endpoint will reject a vote when an active Tier 2 lock exists for the same `(tier_guard_hash, vote_scope_id)`.
+- ZK vote endpoint will verify only proof/root/message/scope/Semaphore-nullifier uniqueness and will not look up the real identity.
+
+### Privacy / rollout constraints
+- `tier_guard_hash`, Tier 1 nullifier, identity record id, phone, IP, public key are never public and never written to Arweave.
+- The server knows who opted into ZK for a scope; this is explicitly a canary/Beta trust trade-off.
+- ZK opt-in can be cancelled only before the commitment is included in a published Merkle root.
+- After root publication, the Tier 1 lock remains active for that scope even if the user never casts the ZK vote.
+
+### Files
+- `docs/agent-bridge/GH112_ZK_V2_PRODUCTION_GATE.md`
+- `docs/agent-bridge/NEA249_ZK_V2_BLUEPRINT.md`
+- `docs/adr/NEA-249-zk-voting-v2-semaphore-hybrid.md`
