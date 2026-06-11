@@ -9489,3 +9489,7 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `cd apps/api && .venv/bin/python -m py_compile routers/zk.py routers/voting.py services/zk_tier_lock.py`: PASS.
 - `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py tests/services/test_zk_tier_lock.py tests/test_voting.py -q`: PASS, 47 passed / 2 xfailed.
 - CC review: initial TOCTOU blocker found and fixed; final review no blockers.
+- Rollback tag: `rollback-pre-zk-opt-in-20260612-025030`.
+- Server backup: `/opt/ekklesia/backups/pre_zk_opt_in_20260611-235046_api_crypto.tgz`.
+- Live: `/health` 200, `/api/v1/bills?limit=3` 200, `/api/v1/zk/status` gates false, `/api/v1/zk/opt-in` 503, `/api/v1/zk/verify` 503 with valid body.
+- Live env: no `ZK_VOTING_ENABLED`, `ZK_OPT_IN_ENABLED`, `ZK_TIER1_GUARD_ENABLED`, or `ZK_CANARY_ENABLED` flags present.
