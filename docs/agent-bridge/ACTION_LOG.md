@@ -9451,7 +9451,7 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Scope
 - Wired the Tier-1 ZK-lock check into `submit_vote()` behind `ZK_TIER1_GUARD_ENABLED`.
 - Default remains disabled; production behavior is unchanged unless the env flag is explicitly set to `true`.
-- No deploy, no production flag flip, no mobile build.
+- Deployed to API with the production flag unset/absent; no production flag flip, no mobile build.
 
 ### Safety
 - Guard runs only after identity, bill status, governance scope, and Ed25519 signature checks pass.
@@ -9464,3 +9464,7 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `cd apps/api && .venv/bin/python -m py_compile routers/voting.py services/zk_tier_lock.py`: PASS.
 - `cd apps/api && .venv/bin/python -m pytest tests/test_voting.py tests/services/test_zk_tier_lock.py -q`: PASS, 34 passed / 2 xfailed.
 - CC review: no blockers; noted salt error handling and correction route, both addressed.
+- Rollback tag: `rollback-pre-zk-tier1-guard-20260612-023713`.
+- Server backup: `/opt/ekklesia/backups/pre_zk_tier1_guard_20260611-233729_api_crypto.tgz`.
+- Live: `/health` 200, `/api/v1/bills?limit=3` 200, `/api/v1/zk/status` gates false, `/api/v1/zk/verify` 503 with valid body, `/api/v1/zk/receipts/bill:GR-0490a766` 200 empty.
+- Live env: `ZK_TIER1_GUARD_ENABLED` absent, so the Tier-1 guard remains disabled.
