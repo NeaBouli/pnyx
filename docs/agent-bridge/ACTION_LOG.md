@@ -9241,3 +9241,17 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `cd apps/api && .venv/bin/python -m py_compile main.py routers/scraper.py services/discourse_sync.py services/source_links.py`: PASS.
 - Live Jina scrape simulation: `GR-357e304b` and `GR-f84ba259` now include PDF document blocks.
 - CC review of diff: NO BLOCKERS.
+
+### Deploy / Backfill
+- Commit: `2015e24`.
+- Rollback tag: `rollback-pre-bouli-pdf-20260611-2352`.
+- API deployed only; no DB migration, no mobile rebuild, no web rebuild.
+- Server repo had dirty landing/APK files, so runtime deploy synced only `apps/api` + `packages/crypto` from `origin/main`; dirty docs were not touched.
+- Targeted DB backfill updated only existing empty `summary_long_el` rows: `GR-357e304b` and `GR-f84ba259`.
+- Forum body-only update applied to Topic 1221 and Topic 1222 after raw backups.
+- Live verification:
+  - API/Web/Forum all HTTP 200.
+  - `/api/v1/bills/GR-f84ba259` exposes PDF `13324903.pdf`.
+  - `/api/v1/bills/GR-357e304b` exposes PDF `13325042.pdf`.
+  - Forum raw Topic 1221 contains 4 Bouli PDF links.
+  - Forum raw Topic 1222 contains 1 Bouli PDF link.
