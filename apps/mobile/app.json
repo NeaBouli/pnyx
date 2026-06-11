@@ -27,7 +27,7 @@
       "edgeToEdgeEnabled": false,
       "jsEngine": "hermes",
       "package": "ekklesia.gr",
-      "versionCode": 33,
+      "versionCode": 34,
       "permissions": [
         "INTERNET",
         "RECEIVE_BOOT_COMPLETED",

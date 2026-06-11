@@ -9190,3 +9190,35 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Verification
 - Live landing page contains `v1.0.5 · vC33`.
 - Smoke checks: Web 200, APK download 200.
+
+## 2026-06-11 — Codex: Mobile `Όλα` mixed feed shows Bouli bills
+
+### Scope
+- Fixed `Όλα` so Parliament bills are visible in the first mobile feed screen.
+- No API, DB, vote, Forum, or ZK runtime changes.
+
+### Root Cause
+- `Όλα` fetched the globally newest 10 bills.
+- High-volume Diavgeia items could fill the entire first page, making Bouli bills appear absent.
+
+### Changes
+- Added `apps/mobile/src/lib/bill-feed.ts` with a deduped merge helper.
+- `Όλα` first page now merges up to 4 current Parliament bills before the general feed.
+- Other tabs (`Βουλή`, `Διαύγεια`, `Δήμος`, etc.) keep their existing filters.
+- Bumped Android `versionCode` to 34.
+
+### Verification
+- `cd apps/mobile && npx tsc --noEmit`: PASS.
+- `cd apps/mobile && npx vitest run src/lib/api.test.ts src/lib/bill-feed.test.ts`: PASS, 6 tests.
+- S10 installed vC34 (`versionCode=34`, `versionName=1.0.5`).
+- S10 UI verified: `Όλα` first screen shows Bouli bills (`Πρόταση για τη Συνταγματική Αναθεώρηση...`, `ΚΩΔΙΚΑΣ ΤΟΠΙΚΗΣ ΑΥΤΟΔΙΟΙΚΗΣΗΣ`) before Diavgeia items.
+- `cd apps/mobile/android && ./gradlew assemblePlayRelease`: PASS.
+- `cd apps/mobile/android && ./gradlew assembleDirectRelease bundlePlayRelease`: PASS.
+- Landing APK updated to vC34 and HTTP SHA256 verified.
+- Smoke checks: API 200, Web 200, APK download 200.
+
+### Artifacts
+- Desktop APK: `/Users/gio/Desktop/ekklesia-v1.0.5-vC34.apk`.
+- Desktop Play AAB: `/Users/gio/Desktop/ekklesia-v1.0.5-vC34-PLAY.aab`.
+- APK SHA256: `d75541a9bb1b4e424d1fdb4cb06fcceb9a8e804f045859783e9a2aa186daa470`.
+- AAB SHA256: `9a96b6d79c9095e470496179642629c334a8ee935a78212d99d0244cf196363f`.

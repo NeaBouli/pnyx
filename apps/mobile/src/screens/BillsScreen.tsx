@@ -4,6 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import * as SecureStore from "expo-secure-store";
 import { fetchBills } from "../lib/api";
+import { mergeBillsUnique } from "../lib/bill-feed";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
 
@@ -64,9 +65,21 @@ export default function BillsScreen() {
       if (filter === "DIAVGEIA") params.source = "DIAVGEIA";
       if (filter === "PARLIAMENT") params.source = "PARLIAMENT";
       if (["MUNICIPAL", "REGIONAL", "INSTITUTIONAL"].includes(filter)) params.governance = filter;
-      const data = await fetchBills(params);
-      const next = Array.isArray(data) ? data : [];
-      setBills(prev => reset ? next : [...prev, ...next]);
+      let next: any[];
+      if (filter === "ALL" && reset && offset === 0) {
+        const [allData, parliamentData] = await Promise.all([
+          fetchBills({ ...params, limit: PAGE_SIZE * 2 }),
+          fetchBills({ ...params, source: "PARLIAMENT", limit: 4, offset: 0 }),
+        ]);
+        next = mergeBillsUnique(
+          Array.isArray(parliamentData) ? parliamentData : [],
+          Array.isArray(allData) ? allData : [],
+        );
+      } else {
+        const data = await fetchBills(params);
+        next = Array.isArray(data) ? data : [];
+      }
+      setBills(prev => reset ? next : mergeBillsUnique(prev, next, prev.length + next.length));
       setHasMore(next.length === PAGE_SIZE);
     } catch { /* */ }
     finally { setLoading(false); setRefreshing(false); setLoadingMore(false); }
