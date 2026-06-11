@@ -15,10 +15,10 @@
 - **Branch:** `main`
 - **Lokaler HEAD:** siehe `git rev-parse --short HEAD`
 - **origin/main:** siehe `git rev-parse --short origin/main`
-- **Repo HEAD:** `8422f66` (GH#112 Gate 0 verifier compatibility + dependency-risk note)
+- **Repo HEAD:** `081552d` (public Semaphore/ZK status docs live + tracker updates)
 - **API container:** `7053510` — vote-status endpoint + bill source fallback LIVE
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
-- **Web container:** `7053510` — final vC30 APK copied into `/app/public/download`
+- **Web container:** `081552d` — public Semaphore/ZK status wording live on landing/wiki
 - **S10:** vC30/1.0.3 Play-Release APK from `d1de18b` installed; GH#112 Semaphore Gate 0 fixture share verified (`lastUpdateTime=2026-06-11 01:30:36`)
 - **Alembic:** `o801a2b3c4d5` (polis_tickets + polis_votes + polis_identity_keys)
 - **F-Droid !38007:** Community launch-crash fixed in fdroiddata `e42e014f`; pipeline `2570810919` green 9/9; GlassOnTin/linsui re-test requested
@@ -38,7 +38,7 @@
 - **Bill Summary/Source Fix:** API source policy live; mobile DIAVGEIA source + summary regression fixed in `5ff3998`/`b7fb4dd`, installed on S10 and verified. Root cause update: Analysis fehlt, weil `ai_summary_reviewed=false` und kein automatischer reviewed-analysis Job existiert. Mobile zeigt jetzt statt leerer Analyse einen klaren `Επίσημο κείμενο` Fallback, wenn `summary_long_el` vorhanden ist.
 - **DIAVGEIA S10 Retest:** PASS — source card visible/clickable (`Πηγή — Διαύγεια` opens Android intent chooser), org/pill no longer shown as `Σύνοψη`, quote markers removed. Evidence: `/tmp/ekklesia_diav_fix_final_20260604_000652`.
 - **Open GitHub:** #79 F-Droid (external), #80 Off-site Backup (storage/funding), #111 Nullifier v2 activation (controlled canary window), #112 ZK V2 product integration (Gate Plan).
-- **ZK V2:** GH#81 closed; Android prover works on S10. GH#112 Gate 0 progressed: fixture export works, S10 proof verifies offline with official Semaphore JS verifier, but verifier dependency path is blocked on security/dependency review.
+- **ZK V2:** GH#81 closed; Android prover works on S10. GH#112 Gate 0 progressed: fixture export works, S10 proof verifies offline with official Semaphore JS verifier, but verifier dependency path is blocked on security/dependency review. Public docs now state: prover verified, production ZK voting not active.
 - **Neu live:** municipality/, article.html, Autodesmefsi PDF, Forum Topic #436
 
 ## Uncommitted Aenderungen
