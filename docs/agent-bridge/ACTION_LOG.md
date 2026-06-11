@@ -9222,3 +9222,22 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Desktop Play AAB: `/Users/gio/Desktop/ekklesia-v1.0.5-vC34-PLAY.aab`.
 - APK SHA256: `d75541a9bb1b4e424d1fdb4cb06fcceb9a8e804f045859783e9a2aa186daa470`.
 - AAB SHA256: `9a96b6d79c9095e470496179642629c334a8ee935a78212d99d0244cf196363f`.
+
+## 2026-06-11 — Codex: Parliament scraper preserves Bouli PDF document links
+
+### Root Cause
+- New `Katatethenta` Parliament rows already expose PDF links in the table, but the parser ignored the PDF column.
+- Stage 2 Jina fallback stopped after `all-laws`, so `Katatethenta`/`Psifisthenta` document columns were not merged back into the same `law_id`.
+- Rows with blank `type`/`ministry` cells lost column alignment, hiding PDFs for bills such as `GR-f84ba259`.
+
+### Changes
+- Parse PDF links from Parliament table PDF columns into a neutral `### Πλήρη έγγραφα` block.
+- Merge all Jina Parliament pages by `law_id` and fill missing document blocks without overwriting existing `summary_long_el`.
+- Preserve blank table cells so PDF columns do not shift.
+- Keep PDF labels neutral (`Έγγραφο Βουλής N (filename.pdf)`) because Bouli image alt labels can be stale/misleading.
+
+### Verification
+- `cd apps/api && .venv/bin/python -m pytest tests/test_scraper_parliament.py tests/services/test_source_links.py tests/services/test_discourse_sync.py -q`: PASS, 26 tests.
+- `cd apps/api && .venv/bin/python -m py_compile main.py routers/scraper.py services/discourse_sync.py services/source_links.py`: PASS.
+- Live Jina scrape simulation: `GR-357e304b` and `GR-f84ba259` now include PDF document blocks.
+- CC review of diff: NO BLOCKERS.

@@ -48,3 +48,37 @@ def test_parse_katatethenta_date_first_rows_remain_supported():
     assert bills[0]["date"] is None
     assert bills[0]["type"] == "Διεθνής Σύμβαση"
     assert bills[0]["ministry"] == "Εθνικής Άμυνας"
+
+
+def test_parse_katatethenta_pdf_column_into_document_block():
+    md = """
+| Ημ. Κατάθεσης | Τίτλος | Τύπος | Υπουργείο | PDFs |
+| 10/06/2026 | [ΚΩΔΙΚΑΣ ΤΟΠΙΚΗΣ ΑΥΤΟΔΙΟΙΚΗΣΗΣ](https://www.hellenicparliament.gr/Nomothetiko-Ergo/Katatethenta-Nomosxedia?law_id=357e304b-d7d7-410a-8bef-b465011c6f24) | Σχέδιο νόμου | Εσωτερικών | [![Image 1: Αιτιολογική Έκθεση & Λοιπές Συνοδευτικές Εκθέσεις](https://www.hellenicparliament.gr/images/mime/pdf.png)](https://www.hellenicparliament.gr/UserFiles/c8827c35/13325042.pdf)[![Image 2: Διατάξεις Σχεδίου ή Πρότασης Νόμου](https://www.hellenicparliament.gr/images/mime/pdf.png)](https://www.hellenicparliament.gr/UserFiles/c8827c35/13325043.pdf) |
+"""
+
+    bills = _parse_parliament_markdown(
+        md,
+        "https://www.hellenicparliament.gr/Nomothetiko-Ergo/Katatethenta-Nomosxedia",
+    )
+
+    assert len(bills) == 1
+    assert "### Πλήρη έγγραφα" in bills[0]["summary_long_el"]
+    assert "[Έγγραφο Βουλής 1 (13325042.pdf)](https://www.hellenicparliament.gr/UserFiles/c8827c35/13325042.pdf)" in bills[0]["summary_long_el"]
+    assert "[Έγγραφο Βουλής 2 (13325043.pdf)](https://www.hellenicparliament.gr/UserFiles/c8827c35/13325043.pdf)" in bills[0]["summary_long_el"]
+
+
+def test_parse_katatethenta_preserves_blank_type_ministry_before_pdf_column():
+    md = """
+| Ημ. Κατάθεσης | Τίτλος | Τύπος | Υπουργείο | PDFs |
+| 10/06/2026 | [Πρόταση για τη Συνταγματική Αναθεώρηση](https://www.hellenicparliament.gr/Nomothetiko-Ergo/Katatethenta-Nomosxedia?law_id=f84ba259-f13d-4155-bc09-b46600ac010a) |  |  | [![Image 5: Αιτιολογική Έκθεση & Λοιπές Συνοδευτικές Εκθέσεις](https://www.hellenicparliament.gr/images/mime/pdf.png)](https://www.hellenicparliament.gr/UserFiles/c8827c35/13324903.pdf) |
+"""
+
+    bills = _parse_parliament_markdown(
+        md,
+        "https://www.hellenicparliament.gr/Nomothetiko-Ergo/Katatethenta-Nomosxedia",
+    )
+
+    assert len(bills) == 1
+    assert bills[0]["type"] is None
+    assert bills[0]["ministry"] is None
+    assert "[Έγγραφο Βουλής 1 (13324903.pdf)](https://www.hellenicparliament.gr/UserFiles/c8827c35/13324903.pdf)" in bills[0]["summary_long_el"]

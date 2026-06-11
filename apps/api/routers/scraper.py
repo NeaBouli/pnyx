@@ -286,12 +286,41 @@ def _parse_parliament_markdown(md: str, source_url: str) -> list[dict]:
     is_katatethenta = "Katatethenta" in source_url
     is_all_laws = "all-laws" in source_url
 
+    def _extract_pdf_links(cells: list[str]) -> list[dict[str, str]]:
+        links: list[dict[str, str]] = []
+        joined = " ".join(cells)
+        pattern = re.compile(
+            r"\[!\[([^\]]*)\]\(https?://[^)]*pdf\.png\)\]"
+            r"\((https?://[^)]+\.pdf[^)]*)\)",
+            re.IGNORECASE,
+        )
+        for match in pattern.finditer(joined):
+            label = re.sub(r"\s+", " ", match.group(1)).strip()
+            label = re.sub(r"^Image\s+\d+:\s*", "", label).strip()
+            url = match.group(2).strip()
+            if not any(link["url"] == url for link in links):
+                links.append({"label": label or "Έγγραφο Βουλής", "url": url})
+        return links
+
+    def _build_document_block(links: list[dict[str, str]]) -> str | None:
+        if not links:
+            return None
+        lines = ["### Πλήρη έγγραφα"]
+        for index, link in enumerate(links, start=1):
+            filename = link["url"].rsplit("/", 1)[-1].split("?", 1)[0]
+            label = f"Έγγραφο Βουλής {index} ({filename})"
+            lines.append(f"- [{label}]({link['url']})")
+        return "\n".join(lines)
+
     for line in md.split("\n"):
         line = line.strip()
         if not line.startswith("|"):
             continue
         cells = [c.strip() for c in line.split("|")]
-        cells = [c for c in cells if c]  # remove empty from leading/trailing pipes
+        if cells and cells[0] == "":
+            cells = cells[1:]
+        if cells and cells[-1] == "":
+            cells = cells[:-1]
 
         if len(cells) < 2:
             continue
@@ -334,11 +363,16 @@ def _parse_parliament_markdown(md: str, source_url: str) -> list[dict]:
         bill_type = None
         phase = None
         if is_katatethenta and len(cells) > 3:
-            bill_type = cells[2] if not cells[2].startswith("[") else None
-            ministry = cells[3] if not cells[3].startswith("[") else None
+            bill_type = cells[2] if cells[2] and not cells[2].startswith("[") else None
+            ministry = cells[3] if cells[3] and not cells[3].startswith("[") else None
         elif is_all_laws:
-            bill_type = cells[1] if len(cells) > 1 and not cells[1].startswith("[") else None
-            phase = cells[3] if len(cells) > 3 and not cells[3].startswith("[") else None
+            bill_type = cells[1] if len(cells) > 1 and cells[1] and not cells[1].startswith("[") else None
+            phase = cells[3] if len(cells) > 3 and cells[3] and not cells[3].startswith("[") else None
+
+        pdf_cells: list[str] = []
+        if not is_all_laws:
+            pdf_cells = cells[4:] if is_katatethenta else cells[2:]
+        document_block = _build_document_block(_extract_pdf_links(pdf_cells))
 
         # Generate stable bill ID
         if law_id:
@@ -356,6 +390,8 @@ def _parse_parliament_markdown(md: str, source_url: str) -> list[dict]:
             "law_id": law_id,
             "phase": phase,
         }
+        if document_block:
+            bill_data["summary_long_el"] = document_block
         # Κατατεθέντα/all-laws pre-vote date = submitted_date.
         # Ψηφισθέντα and all-laws discussion/completion rows = parliament_vote_date.
         if is_katatethenta or (
@@ -442,13 +478,35 @@ async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
                 f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Katatethenta-Nomosxedia",   # submitted
                 f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Psifisthenta-Nomoschedia",  # voted
             ]
+            merged: dict[str, dict] = {}
             for page_url in jina_pages:
                 md = await _fetch_jina_markdown(page_url)
                 if md:
                     parsed = _parse_parliament_markdown(md, page_url)
-                    bills.extend(parsed)
-                if len(bills) >= limit:
-                    break
+                    for item in parsed:
+                        key = item.get("law_id") or item.get("url") or item.get("title_el")
+                        if not key:
+                            continue
+                        if key not in merged:
+                            merged[key] = item
+                            continue
+                        existing = merged[key]
+                        for field in (
+                            "summary_long_el",
+                            "submitted_date",
+                            "date",
+                            "ministry",
+                            "type",
+                            "phase",
+                            "law_num",
+                        ):
+                            if item.get(field) and not existing.get(field):
+                                existing[field] = item[field]
+            bills = sorted(
+                merged.values(),
+                key=lambda item: item.get("date") or item.get("submitted_date") or "",
+                reverse=True,
+            )
             if bills:
                 logger.info("[SCRAPER] Fallback 1→2: Jina returned %d bills from %d pages", len(bills), len(jina_pages))
                 return bills[:limit]
