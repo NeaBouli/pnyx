@@ -9262,3 +9262,43 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `/api/v1/bills/GR-357e304b` exposes PDF `13325042.pdf`.
   - Forum raw Topic 1221 contains 4 Bouli PDF links.
   - Forum raw Topic 1222 contains 1 Bouli PDF link.
+
+## 2026-06-12 — Codex: GH#112 Gate 1 production migration completed
+
+### Scope
+- Ran the additive-only ZK Gate 1 database migration in production.
+- No `ZK_VOTING_ENABLED` flag flip.
+- No mobile build, no vote endpoint change, no Arweave publishing, no nullifier-v2 activation.
+
+### Pre-Checks
+- Local ZK Gate test group passed: 20 tests.
+- Local API compile check passed for ZK router/services/models.
+- CC review: no blockers; migration is additive and safe to run.
+- Production backup created before migration:
+  - `/opt/ekklesia/backups/pre_zk_gate1_20260611_221114.dump` (2.7M).
+
+### Migration
+- Production Alembic revision moved from `q001a2b3c4d5` to `r101a2b3c4d5 (head)`.
+- Added tables:
+  - `zk_identity_commitments`
+  - `zk_merkle_roots`
+  - `zk_vote_receipts`
+  - `zk_vote_tier_locks`
+- Verified constraints:
+  - `ck_zk_commitment_depth_positive`
+  - `ck_zk_commitment_status`
+  - `ck_zk_receipt_depth_positive`
+  - `ck_zk_root_depth_positive`
+  - `ck_zk_root_group_size_nonnegative`
+  - `ck_zk_root_status`
+  - `uq_zk_identity_commitment`
+  - `uq_zk_scope_merkle_root`
+  - `uq_zk_scope_semaphore_nullifier`
+  - `uq_zk_tier_lock_scope_guard`
+
+### Live Verification
+- `citizen_votes` has no ZK/Semaphore/tier-guard columns.
+- API health: HTTP 200.
+- Bills endpoint: HTTP 200.
+- `POST /api/v1/zk/verify` returns HTTP 503 with `ZK voting verifier is not enabled`.
+- Existing Tier 1 voting path remains the only production voting path.
