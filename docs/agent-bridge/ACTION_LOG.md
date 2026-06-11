@@ -9223,6 +9223,13 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - APK SHA256: `d75541a9bb1b4e424d1fdb4cb06fcceb9a8e804f045859783e9a2aa186daa470`.
 - AAB SHA256: `9a96b6d79c9095e470496179642629c334a8ee935a78212d99d0244cf196363f`.
 
+### Play Console
+- Gio uploaded `ekklesia-v1.0.5-vC34-PLAY.aab` to Play Console on 2026-06-12.
+- Play Console warnings accepted for this upload:
+  - App bundle increases downloaded APK size; expected after native Semaphore/ZK prover inclusion.
+  - No deobfuscation/mapping file attached; current vC34 build does not produce a mapping file.
+- No new APK/AAB built after upload.
+
 ## 2026-06-11 — Codex: Parliament scraper preserves Bouli PDF document links
 
 ### Root Cause

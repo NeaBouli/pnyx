@@ -23,6 +23,12 @@
 - [x] GH#81 — Android Native-Prover Self-Test auf S10 erfolgreich; produktives ZK-Voting bleibt Feature-Flag-guarded bis Backend/Arweave-Integration
 - [x] NEA-286 / GH#94 — Lifecycle WINDOW_24H stuck: resolved/stale; Production 2026-06-09 ohne stuck Rows, Scheduler healthy
 
+### Release Follow-ups
+- [ ] vC35 Size/R8 Optimization — Play Console warned that vC34 download size increased.
+  - Cause: native Semaphore/ZK prover and multi-ABI native libraries.
+  - Do not quick-fix during vC34 review.
+  - Next pass: restrict release ABIs where safe, evaluate R8/ProGuard + `mapping.txt`, rebuild, install on S10, verify vote/source/ZK self-test paths.
+
 ## Tracking: GitHub Issues #71-#83 (Linear = read-only Archiv)
 
 ## Aktiv / In Progress
