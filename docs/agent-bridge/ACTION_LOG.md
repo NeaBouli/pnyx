@@ -9101,3 +9101,28 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Next Gate
 - Gate 3 private tier-lock before any production vote path.
 - Production deploy only after DB backup, migration plan, and explicit canary decision.
+
+## 2026-06-11 — Codex: GH#112 Gate 3 tier-lock helper
+
+### Scope
+- Added private tier-lock helper only.
+- No Tier-1 vote endpoint integration yet.
+- No DB query/write integration.
+- No production deploy.
+- Existing voting path remains untouched.
+
+### Changes
+- Added `apps/api/services/zk_tier_lock.py`.
+- Added tests for:
+  - canonical scope ids
+  - deterministic HMAC-SHA256 tier lock derivation
+  - cross-scope unlinkability
+  - weak input rejection
+  - public receipt forbidden identity bridge fields
+
+### Verification
+- `apps/api/.venv/bin/python -m py_compile apps/api/services/zk_tier_lock.py apps/api/services/zk_groth16_verifier.py apps/api/routers/zk.py apps/api/main.py`: PASS.
+- `apps/api/.venv/bin/python -m pytest -q apps/api/tests/services/test_zk_tier_lock.py apps/api/tests/routers/test_zk_verify_api.py apps/api/tests/services/test_zk_groth16_verifier.py apps/api/tests/test_zk_gate1_schema.py apps/api/tests/test_voting.py apps/api/tests/test_identity_nullifier_kdf.py`: PASS, 46 passed, 2 xfailed.
+
+### Stop Condition
+- Do not wire this helper into `submit_vote` until the additive ZK tables are migrated in production and a backup/canary window is active.
