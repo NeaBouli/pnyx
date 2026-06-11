@@ -9073,3 +9073,31 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Add disabled API endpoint only after reviewing request/response shape and abuse limits.
 - Keep `ZK_VOTING_ENABLED=false` by default.
 - Do not accept production ZK votes before Gate 3 tier-lock and Gate 5 Arweave bulletin-board design are implemented.
+
+## 2026-06-11 — Codex: GH#112 Gate 2 disabled verifier endpoint
+
+### Scope
+- Added `/api/v1/zk/verify` as a verifier-only endpoint.
+- Default behavior is fail-closed: `ZK_VOTING_ENABLED=false` returns HTTP 503.
+- When explicitly enabled, endpoint verifies public Semaphore proof payloads only.
+- No vote acceptance.
+- No DB writes.
+- No Arweave writes.
+- No production deploy.
+- Existing Tier-1 voting path remains untouched.
+
+### Changes
+- Added `apps/api/routers/zk.py`.
+- Included the router in `apps/api/main.py`.
+- Added router tests for:
+  - default disabled 503 response
+  - enabled S10 fixture verification
+  - enabled mutated proof rejection
+
+### Verification
+- `apps/api/.venv/bin/python -m py_compile apps/api/main.py apps/api/routers/zk.py apps/api/services/zk_groth16_verifier.py`: PASS.
+- `apps/api/.venv/bin/python -m pytest -q apps/api/tests/routers/test_zk_verify_api.py apps/api/tests/services/test_zk_groth16_verifier.py apps/api/tests/test_zk_gate1_schema.py apps/api/tests/test_voting.py apps/api/tests/test_identity_nullifier_kdf.py`: PASS, 41 passed, 2 xfailed.
+
+### Next Gate
+- Gate 3 private tier-lock before any production vote path.
+- Production deploy only after DB backup, migration plan, and explicit canary decision.
