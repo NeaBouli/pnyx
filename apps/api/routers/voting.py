@@ -281,9 +281,10 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
         )
 
     # 2. Bill-Status prüfen
-    bill_result = await db.execute(
-        select(ParliamentBill).where(ParliamentBill.id == req.bill_id)
-    )
+    bill_query = select(ParliamentBill).where(ParliamentBill.id == req.bill_id)
+    if zk_tier1_guard_enabled():
+        bill_query = bill_query.with_for_update()
+    bill_result = await db.execute(bill_query)
     bill = bill_result.scalar_one_or_none()
     if not bill:
         raise HTTPException(status_code=404, detail=f"Το νομοσχέδιο {req.bill_id} δεν βρέθηκε.")
@@ -463,9 +464,10 @@ async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = 
     - Ed25519 Signatur wird validiert
     """
     # 1. Bill laden + Status prüfen
-    bill_result = await db.execute(
-        select(ParliamentBill).where(ParliamentBill.id == bill_id)
-    )
+    bill_query = select(ParliamentBill).where(ParliamentBill.id == bill_id)
+    if zk_tier1_guard_enabled():
+        bill_query = bill_query.with_for_update()
+    bill_result = await db.execute(bill_query)
     bill = bill_result.scalar_one_or_none()
     if not bill:
         raise HTTPException(404, f"Το νομοσχέδιο {bill_id} δεν βρέθηκε.")

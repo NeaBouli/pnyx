@@ -156,6 +156,7 @@ class TestZkTier1Guard:
 
         assert exc.value.status_code == 409
         assert "Semaphore ZK" in exc.value.detail
+        assert "FOR UPDATE" in str(db.executed[1])
 
     @pytest.mark.asyncio
     async def test_zk_guard_misconfiguration_returns_controlled_503(self, monkeypatch):
@@ -230,6 +231,7 @@ class TestZkTier1Guard:
 
         assert exc.value.status_code == 409
         assert "Semaphore ZK" in exc.value.detail
+        assert "FOR UPDATE" in str(db.executed[0])
 
 
 class TestVoteEndpointStructure:

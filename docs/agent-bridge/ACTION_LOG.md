@@ -9468,3 +9468,24 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Server backup: `/opt/ekklesia/backups/pre_zk_tier1_guard_20260611-233729_api_crypto.tgz`.
 - Live: `/health` 200, `/api/v1/bills?limit=3` 200, `/api/v1/zk/status` gates false, `/api/v1/zk/verify` 503 with valid body, `/api/v1/zk/receipts/bill:GR-0490a766` 200 empty.
 - Live env: `ZK_TIER1_GUARD_ENABLED` absent, so the Tier-1 guard remains disabled.
+
+## 2026-06-12 — Codex: GH#112 ZK opt-in registry endpoint prepared behind disabled gates
+
+### Scope
+- Added `POST /api/v1/zk/opt-in` for future Semaphore commitment registration.
+- Endpoint is fail-closed unless both `ZK_VOTING_ENABLED=true` and `ZK_OPT_IN_ENABLED=true`.
+- On the enabled path, the endpoint verifies Ed25519 ownership, rejects existing Tier-1 votes for the same bill, creates the private tier lock, and stores the Semaphore commitment.
+- Opt-in requires `ZK_VOTING_ENABLED=true`, `ZK_OPT_IN_ENABLED=true`, and `ZK_TIER1_GUARD_ENABLED=true`.
+
+### Safety
+- No production flag flip, no mobile build, no ZK votes accepted.
+- Default production behavior remains unchanged: `/api/v1/zk/opt-in` returns HTTP 503.
+- Response excludes `tier_guard_hash`, Tier-1 nullifier, identity id, public key, and any private Semaphore material.
+- Cross-tier TOCTOU race addressed: opt-in, Tier-1 submit, and Tier-1 correction serialize on the same `ParliamentBill` row lock when the guard is enabled.
+- Read-only vote status does not take a row lock.
+
+### Verification
+- `cd apps/api && .venv/bin/python -m py_compile routers/zk.py services/zk_tier_lock.py`: PASS.
+- `cd apps/api && .venv/bin/python -m py_compile routers/zk.py routers/voting.py services/zk_tier_lock.py`: PASS.
+- `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py tests/services/test_zk_tier_lock.py tests/test_voting.py -q`: PASS, 47 passed / 2 xfailed.
+- CC review: initial TOCTOU blocker found and fixed; final review no blockers.
