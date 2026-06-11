@@ -257,6 +257,17 @@ This is a canary/Beta trust trade-off: the server knows who opted into ZK for a
 scope, but public ZK vote records do not expose that mapping. Do not publish
 `tier_guard_hash`, Tier 1 nullifier, identity record id, phone, IP, or public key.
 
+Security-review checkpoints before code:
+
+- Cross-scope unlinkability: `tier_guard_hash` must be scoped by
+  `vote_scope_id`, and the same citizen must not get a reusable public or
+  operator-facing ZK identifier across scopes.
+- Timing-correlation control: root publication should be batched/coarse-timed,
+  especially during canary, and reports must show group size.
+- Opt-in without vote: before root publication the user can cancel; after root
+  publication Tier 1 remains locked for that scope even if the ZK vote is never
+  cast. Mobile must explain this before opt-in.
+
 For MVP, keep ZK behind feature flags and internal/canary testers until the
 tier-lock path is implemented and tested.
 
@@ -777,6 +788,7 @@ Mitigation:
 - ZK opt-in must lock Tier 1 for the same voting scope before the commitment enters a published Merkle root.
 - ZK opt-in cancellation is allowed only before root publication.
 - Public ZK records must never expose `tier_guard_hash`, Tier 1 nullifier, identity record id, phone, IP, or public key.
+- Canary root publication must record group size and use coarse timing to reduce opt-in/vote correlation.
 
 ### Risk: Mobile Proving Fails on Older Devices
 

@@ -77,7 +77,7 @@ It does **not** prove device integrity, enrollment perfection, or individual Tie
 ## Next Steps
 
 1. **Mopro Native Expo Module Feasibility** — complete for Android S10 self-test; production builds still require pinned dependency review
-2. **Cross-Tier Uniqueness Design** — selected Gate-0 direction: private per-scope tier lock at ZK opt-in / Merkle-root construction time
+2. **Cross-Tier Uniqueness Design** — selected Gate-0 direction: private per-scope tier lock at ZK opt-in / Merkle-root construction time; implementation must pass cross-scope unlinkability, timing-correlation, and opt-in-without-vote review checkpoints
 3. **Phase 1** — DB schema + API skeleton, disabled by default, only after the GH#112 verifier and group-management design is reviewed
 
 ## References

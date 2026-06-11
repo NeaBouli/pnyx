@@ -197,6 +197,32 @@ Privacy properties:
 - The server must publish Merkle roots and proof-verification data so the public
   can verify votes without access to the private tier-lock table.
 
+Security-review checkpoints before implementation:
+
+1. Cross-scope unlinkability
+   - `tier_guard_hash` must include `vote_scope_id`.
+   - The same citizen opting into two different scopes must produce unrelated
+     lock values.
+   - No API, log, admin export, Arweave record, or analytics table may expose a
+     stable "ZK opt-in user id" across scopes.
+
+2. Timing-correlation control
+   - Do not publish a Merkle root immediately for a single opt-in unless the
+     canary user explicitly accepts the tiny anonymity set.
+   - Prefer batched root publication with coarse timestamps.
+   - Server logs for opt-in and ZK vote submission must avoid high-precision
+     correlation fields in operator-facing views.
+   - Canary reports must include group size and root publication timing.
+
+3. Opt-in without a later ZK vote
+   - Before root publication: user may cancel opt-in and return to Tier 1.
+   - After root publication: Tier 1 stays locked for that scope even if the ZK
+     vote is never cast.
+   - The mobile UI must explain this before opt-in: "After ZK activation for
+     this vote, your normal vote path is locked for this specific vote."
+   - Recovery must be an explicit admin/security-review flow, not an automatic
+     unlock, because an old root/proof may still exist.
+
 Rejected options for now:
 
 - Deriving the Semaphore identity from the Ed25519 keypair or public key.
@@ -226,6 +252,11 @@ Required tests:
 - Same citizen can vote on different bills.
 - ZK opt-in then Tier 1 same scope is rejected even before a ZK vote is cast.
 - ZK opt-in can be cancelled only before the commitment is included in a published root.
+- Same citizen opting into two different scopes produces different
+  `tier_guard_hash` values.
+- Public receipt / Arweave / analytics serialization excludes `tier_guard_hash`
+  and Tier 1 identifiers.
+- Root publication batching and group-size metadata are visible to operators.
 
 ## Gate 4 - Mobile Opt-In
 

@@ -8774,3 +8774,19 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `docs/agent-bridge/GH112_ZK_V2_PRODUCTION_GATE.md`
 - `docs/agent-bridge/NEA249_ZK_V2_BLUEPRINT.md`
 - `docs/adr/NEA-249-zk-voting-v2-semaphore-hybrid.md`
+
+## 2026-06-11 — Codex: GH#112 Gate 0 security-review checkpoints added
+
+### Scope
+- Architecture/design documentation only.
+- No runtime code, DB migration, API endpoint, mobile feature flag, deploy, or production ZK vote path.
+
+### Added checkpoints before implementation
+- Cross-scope unlinkability: same citizen across different scopes must not produce reusable public/operator-facing identifiers; `tier_guard_hash` is scoped by `vote_scope_id`.
+- Timing-correlation control: canary/root publication should be batched or coarse-timed, with group size visible to operators.
+- Opt-in without vote: cancel allowed before root publication; after publication Tier 1 remains locked for that scope even if no ZK vote is cast, and mobile must explain this before opt-in.
+
+### Files
+- `docs/agent-bridge/GH112_ZK_V2_PRODUCTION_GATE.md`
+- `docs/agent-bridge/NEA249_ZK_V2_BLUEPRINT.md`
+- `docs/adr/NEA-249-zk-voting-v2-semaphore-hybrid.md`
