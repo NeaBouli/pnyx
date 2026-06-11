@@ -9445,3 +9445,22 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Verification
 - `cd apps/api && .venv/bin/python -m py_compile services/zk_tier_lock.py`: PASS.
 - `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_tier_lock.py -q`: PASS, 13 tests.
+
+## 2026-06-12 — Codex: GH#112 Tier-1 ZK-lock guard wired behind disabled flag
+
+### Scope
+- Wired the Tier-1 ZK-lock check into `submit_vote()` behind `ZK_TIER1_GUARD_ENABLED`.
+- Default remains disabled; production behavior is unchanged unless the env flag is explicitly set to `true`.
+- No deploy, no production flag flip, no mobile build.
+
+### Safety
+- Guard runs only after identity, bill status, governance scope, and Ed25519 signature checks pass.
+- When enabled, an existing private ZK tier lock rejects normal Tier-1 submit/correct paths for the same bill/scope with HTTP 409.
+- When disabled, the helper is not called.
+- Missing/weak `SERVER_SALT` in the guarded path returns controlled HTTP 503 instead of a raw exception.
+- Existing DB uniqueness for normal votes remains unchanged.
+
+### Verification
+- `cd apps/api && .venv/bin/python -m py_compile routers/voting.py services/zk_tier_lock.py`: PASS.
+- `cd apps/api && .venv/bin/python -m pytest tests/test_voting.py tests/services/test_zk_tier_lock.py -q`: PASS, 34 passed / 2 xfailed.
+- CC review: no blockers; noted salt error handling and correction route, both addressed.

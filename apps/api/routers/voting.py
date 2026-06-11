@@ -23,6 +23,11 @@ from models import (
     ParliamentBill, BillStatus, BillRelevanceVote
 )
 from services.source_links import official_source_url
+from services.zk_tier_lock import (
+    VoteScopeType,
+    canonical_vote_scope_id,
+    tier1_vote_blocked_by_zk_lock,
+)
 
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../packages/crypto"))
@@ -36,6 +41,7 @@ router = APIRouter(prefix="/api/v1/vote", tags=["MOD-04 CitizenVote"])
 GREECE_ELIGIBLE_VOTERS = 9_900_000
 GREECE_POPULATION = 10_400_000
 VOTES_IN_PROGRESS_THRESHOLD_ENV = "VOTES_IN_PROGRESS_THRESHOLD"
+ZK_TIER1_GUARD_ENABLED_ENV = "ZK_TIER1_GUARD_ENABLED"
 
 def compute_representativity(total_votes: int) -> dict:
     """Misst Repräsentativität basierend auf Beteiligung vs Wahlberechtigte."""
@@ -78,6 +84,44 @@ def votes_in_progress_threshold() -> int:
         return max(1, int(raw))
     except (TypeError, ValueError):
         return 50
+
+
+def zk_tier1_guard_enabled() -> bool:
+    return os.getenv(ZK_TIER1_GUARD_ENABLED_ENV, "false").lower() == "true"
+
+
+async def raise_if_zk_tier1_locked(
+    db: AsyncSession,
+    *,
+    bill_id: str,
+    nullifier_hash: str,
+) -> None:
+    if not zk_tier1_guard_enabled():
+        return
+
+    server_salt = os.getenv("SERVER_SALT", "")
+    vote_scope_id = canonical_vote_scope_id(VoteScopeType.BILL, bill_id)
+    try:
+        blocked = await tier1_vote_blocked_by_zk_lock(
+            db,
+            server_salt=server_salt,
+            vote_scope_id=vote_scope_id,
+            tier1_nullifier_hash=nullifier_hash,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ZK tier-lock guard is not configured.",
+        ) from exc
+
+    if blocked:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Έχετε ενεργοποιήσει τη διαδρομή Semaphore ZK για αυτή την ψηφοφορία. "
+                "Η κανονική διαδρομή ψήφου είναι κλειδωμένη για το συγκεκριμένο αντικείμενο."
+            ),
+        )
 
 
 def vote_percent(count: int, total: int) -> int:
@@ -286,6 +330,8 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
             detail="Μη έγκυρη υπογραφή. Η ψήφος απορρίφθηκε."
         )
 
+    await raise_if_zk_tier1_locked(db, bill_id=req.bill_id, nullifier_hash=req.nullifier_hash)
+
     # 4b. Tier-1 validation (ADR-022) — if Tier-1 fields present
     if req.pk_eph and req.vote_nullifier and req.linkage_tag:
         try:
@@ -470,6 +516,8 @@ async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = 
 
     if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
         raise HTTPException(401, "Μη έγκυρη υπογραφή.")
+
+    await raise_if_zk_tier1_locked(db, bill_id=bill_id, nullifier_hash=req.nullifier_hash)
 
     # 7. Korrektur durchführen
     existing.original_vote = existing.vote.value
