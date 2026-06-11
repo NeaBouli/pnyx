@@ -230,6 +230,94 @@ class CitizenVote(Base):
     )
 
 
+class ZkIdentityCommitment(Base):
+    """Semaphore group commitment. No Semaphore private identity material is stored."""
+    __tablename__ = "zk_identity_commitments"
+
+    id                 = Column(Integer, primary_key=True, autoincrement=True)
+    identity_record_id = Column(Integer, ForeignKey("identity_records.id", ondelete="SET NULL"), nullable=True)
+    commitment         = Column(String(160), nullable=False)
+    commitment_version = Column(String(32), default="semaphore-v4", server_default="semaphore-v4", nullable=False)
+    merkle_depth       = Column(Integer, nullable=False)
+    status             = Column(String(20), default="ACTIVE", server_default="ACTIVE", nullable=False)
+    created_at         = Column(DateTime(timezone=True), server_default=text("NOW()"), nullable=False)
+    revoked_at         = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("commitment", name="uq_zk_identity_commitment"),
+        CheckConstraint("merkle_depth > 0", name="ck_zk_commitment_depth_positive"),
+        CheckConstraint("status IN ('ACTIVE', 'REVOKED')", name="ck_zk_commitment_status"),
+        Index("idx_zk_commitments_identity", "identity_record_id"),
+    )
+
+
+class ZkMerkleRoot(Base):
+    """Merkle root snapshot for a vote scope."""
+    __tablename__ = "zk_merkle_roots"
+
+    id                 = Column(Integer, primary_key=True, autoincrement=True)
+    vote_scope_id      = Column(String(128), nullable=False)
+    scope_type         = Column(String(32), default="BILL", server_default="BILL", nullable=False)
+    merkle_root        = Column(String(160), nullable=False)
+    merkle_depth       = Column(Integer, nullable=False)
+    group_size         = Column(Integer, nullable=False)
+    commitment_version = Column(String(32), default="semaphore-v4", server_default="semaphore-v4", nullable=False)
+    status             = Column(String(20), default="OPEN", server_default="OPEN", nullable=False)
+    created_at         = Column(DateTime(timezone=True), server_default=text("NOW()"), nullable=False)
+    closed_at          = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("vote_scope_id", "merkle_root", name="uq_zk_scope_merkle_root"),
+        CheckConstraint("merkle_depth > 0", name="ck_zk_root_depth_positive"),
+        CheckConstraint("group_size >= 0", name="ck_zk_root_group_size_nonnegative"),
+        CheckConstraint("status IN ('OPEN', 'CLOSED', 'ARCHIVED')", name="ck_zk_root_status"),
+        Index("idx_zk_roots_scope", "vote_scope_id"),
+    )
+
+
+class ZkVoteTierLock(Base):
+    """Private cross-tier lock. Never publish tier_guard_hash."""
+    __tablename__ = "zk_vote_tier_locks"
+
+    id              = Column(Integer, primary_key=True, autoincrement=True)
+    vote_scope_id   = Column(String(128), nullable=False)
+    tier_guard_hash = Column(String(128), nullable=False)
+    lock_version    = Column(String(32), default="tier-guard-v1", server_default="tier-guard-v1", nullable=False)
+    created_at      = Column(DateTime(timezone=True), server_default=text("NOW()"), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("vote_scope_id", "tier_guard_hash", name="uq_zk_tier_lock_scope_guard"),
+        Index("idx_zk_tier_locks_scope", "vote_scope_id"),
+    )
+
+
+class ZkVoteReceipt(Base):
+    """Public verifier payload storage for accepted ZK votes."""
+    __tablename__ = "zk_vote_receipts"
+
+    id                  = Column(Integer, primary_key=True, autoincrement=True)
+    vote_scope_id       = Column(String(128), nullable=False)
+    semaphore_nullifier = Column(String(160), nullable=False)
+    merkle_root         = Column(String(160), nullable=False)
+    merkle_depth        = Column(Integer, nullable=False)
+    signal_hash         = Column(String(128), nullable=False)
+    external_nullifier  = Column(String(160), nullable=False)
+    proof_public_json   = Column(JSONB, nullable=False)
+    verifier_version    = Column(String(64), nullable=False)
+    circuit_version     = Column(String(64), nullable=False)
+    arweave_tx_id       = Column(String(100), nullable=True)
+    arweave_pending     = Column(Boolean, default=True, server_default=text("true"), nullable=False)
+    publication_bucket  = Column(String(32), nullable=True)
+    created_at          = Column(DateTime(timezone=True), server_default=text("NOW()"), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("vote_scope_id", "semaphore_nullifier", name="uq_zk_scope_semaphore_nullifier"),
+        CheckConstraint("merkle_depth > 0", name="ck_zk_receipt_depth_positive"),
+        Index("idx_zk_receipts_scope", "vote_scope_id"),
+        Index("idx_zk_receipts_arweave_pending", "arweave_pending"),
+    )
+
+
 class BillRelevanceVote(Base):
     """
     Up/Down Relevanz-Signal (MOD-14): Bürger entscheiden was wichtig ist.

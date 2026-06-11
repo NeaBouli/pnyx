@@ -8972,3 +8972,34 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Bouli API smoke:
   - `/api/v1/bills?limit=5&offset=0&source=PARLIAMENT` returned current Parliament bills.
 - S10 install/visual verification pending because device is disconnected.
+
+## 2026-06-11 — Codex: GH#112 Gate 1 additive ZK storage
+
+### Scope
+- Built only the additive DB/model layer for the ZK V2 production plan.
+- No production migration was applied.
+- No API/web/mobile deploy.
+- No `zkSemaphoreEnabled` / `ZK_VOTING_ENABLED` flag change.
+- Existing Ed25519/Tier-1 voting path remains untouched.
+
+### Changes
+- Added Alembic migration `r101a2b3c4d5_zk_gate1_storage.py`.
+- Added SQLAlchemy models for:
+  - `zk_identity_commitments`
+  - `zk_merkle_roots`
+  - `zk_vote_tier_locks`
+  - `zk_vote_receipts`
+- Added regression checks that:
+  - Gate 1 tables are additive only.
+  - `citizen_votes` is not altered.
+  - ZK uniqueness guards exist.
+  - public receipt storage excludes identity bridge/private fields.
+  - migration chains after Nullifier v2 scaffold.
+
+### Verification
+- `apps/api/.venv/bin/python -m py_compile apps/api/models.py apps/api/alembic/versions/r101a2b3c4d5_zk_gate1_storage.py`: PASS.
+- `apps/api/.venv/bin/python -m pytest -q apps/api/tests/test_zk_gate1_schema.py apps/api/tests/test_voting.py apps/api/tests/test_identity_nullifier_kdf.py`: PASS, 32 passed, 2 xfailed.
+
+### Next Gate
+- Apply migration only in a deliberate backup/canary window.
+- Do not build Gate 2+ in the same change.
