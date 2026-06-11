@@ -29,15 +29,15 @@ https://ekklesia.gr/representative/index.html
 | Field | Value |
 |---|---|
 | Version | 1.0.5 |
-| versionCode | 32 |
+| versionCode | 33 |
 | Package | ekklesia.gr |
-| APK SHA256 | `aecbee101185a020427ee5b53d1058e78aa5682be7cde920e2f766aea097c576` |
-| AAB SHA256 | `5904cd60067f5a3b47e88d8e877c1fb1faef98be92e61b1fa37f6314bc8449f1` |
+| APK SHA256 | `70da885601b17549bda4a0b913dc4a508d93e4a5a6303ece3bc9842f5c231b0f` |
+| AAB SHA256 | `a6e40312a27635ee37ecdb5d55aabe436a5d5b6405db4d4a0bbb7424be831279` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
 | Build date | 2026-06-11 |
-| Release gate | PASS — TypeScript, 37 mobile regression tests, local AAB/APK build, APK signature/version/permission audit |
-| Includes | vC32 current mobile state, Bouli tab source filter, Android autolinking package build fix, ZK V2 settings/prover status, deep-link fallback, pagination, source/full-text policy, permission hardening |
+| Release gate | PASS — TypeScript, S10 UI verification, local AAB/APK build, APK signature/version/permission audit |
+| Includes | vC33 current mobile state, Bouli tab visible in first viewport, Bouli source filter, Android autolinking package build fix, ZK V2 settings/prover status, deep-link fallback, pagination, source/full-text policy, permission hardening |
 
 Validation command:
 

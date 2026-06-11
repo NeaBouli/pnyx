@@ -9179,3 +9179,14 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### Rollback
 - Server backup: `/opt/ekklesia/app/docs/download/backups/ekklesia-latest-before-vC33-20260611_192448.apk`.
+
+## 2026-06-11 — Codex: Landing APK version label
+
+### Scope
+- Added a small current APK version label to the Android download button.
+- Updated APK manifest metadata from vC32 to vC33.
+- No app, API, DB, or vote logic changes.
+
+### Verification
+- Live landing page contains `v1.0.5 · vC33`.
+- Smoke checks: Web 200, APK download 200.
