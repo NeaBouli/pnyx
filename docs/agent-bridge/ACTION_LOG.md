@@ -8861,3 +8861,52 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - AAB Desktop: `/Users/gio/Desktop/ekklesia-v1.0.4-vC31-PLAY.aab`
 - APK SHA256: `3a0913f87fac3670f429e7b5f1ff340046442583a28e489c4d2527a1c47be4ee`
 - AAB SHA256: `ea8a3c8b346f0f538a37291e7e5165199c28c65b2be6a4d44664117d8274a518`
+
+### Live deployment
+- Commit: `f8fe0a3`
+- Tag: `v1.0.4`
+- Server fast-forwarded to `f8fe0a3`.
+- Server APK path updated: `/opt/ekklesia/app/docs/download/ekklesia-latest.apk`.
+- `ekklesia-web` rebuilt/restarted only; no API/DB deploy.
+- Live download verified:
+  - URL: `https://ekklesia.gr/download/ekklesia-latest.apk`
+  - SHA256: `3a0913f87fac3670f429e7b5f1ff340046442583a28e489c4d2527a1c47be4ee`
+  - package `ekklesia.gr`, versionCode `31`, versionName `1.0.4`
+  - forbidden permissions absent
+- Health:
+  - `https://ekklesia.gr/`: 200
+  - `https://ekklesia.gr/download/ekklesia-latest.apk`: 200
+  - `https://api.ekklesia.gr/health`: 200
+
+## 2026-06-11 — Codex: F-Droid !38007 status rechecked
+
+### Result
+- MR: https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007
+- State: open
+- Labels: `New App`, `review-requested`
+- Last maintainer status from linsui: "mostly ready", F-Droid will test later; backlog may take time.
+- Community test on 2026-06-02 found a F-Droid JSC/Hermes mismatch crash in the MR artifact.
+- Fix was pushed to fdroiddata MR; latest pipeline `2570810919` is green.
+- Current state: waiting for F-Droid/community retest/merge.
+
+### Decision
+- No fdroiddata mutation in this pass.
+- Upstream pnyx tag `v1.0.4` exists for the new Android direct/Play release.
+
+## 2026-06-11 — Codex: iOS readiness checked
+
+### Result
+- Added `docs/agent-bridge/IOS_READINESS.md`.
+- Expo iOS config is present:
+  - bundle identifier `gr.ekklesia.app`
+  - version `1.0.4`
+  - owner `kaspartisan`
+  - EAS project `f6cfa7b1-ff85-4020-ac35-94d3774615fd`
+- EAS login works: `kaspartisan`.
+- Full Xcode is not active; `xcodebuild` reports Command Line Tools only.
+- Apple free registration page opened: https://developer.apple.com/register/
+
+### Apple account boundary
+- Free Apple developer registration allows Xcode/device testing.
+- TestFlight/App Store distribution requires paid Apple Developer Program membership.
+- No iOS build produced and no Apple credentials changed.
