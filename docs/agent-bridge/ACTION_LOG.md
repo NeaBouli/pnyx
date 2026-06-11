@@ -9150,3 +9150,32 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### Stop Condition
 - Do not publish ZK records until accepted ZK vote flow, pending status, batching, and public verifier/recount path are implemented.
+
+## 2026-06-11 — Codex: Mobile Βουλή tab visibility + vC33 release
+
+### Scope
+- Fixed the mobile Bills tab ordering so `Βουλή` is visible in the first tab viewport.
+- Kept the existing `source=PARLIAMENT` filter unchanged.
+- No API, DB, vote logic, or ZK runtime changes.
+
+### Changes
+- Moved `Βουλή` directly after `Όλα` in `apps/mobile/src/screens/BillsScreen.tsx`.
+- Bumped Android `versionCode` to 33, keeping `versionName` at 1.0.5.
+
+### Verification
+- `cd apps/mobile && npx tsc --noEmit`: PASS.
+- `cd apps/mobile/android && ./gradlew assemblePlayRelease`: PASS.
+- S10 installed vC33 (`versionCode=33`, `versionName=1.0.5`).
+- S10 UI verified: `Βουλή` visible without horizontal scrolling and loads Parliament bills including `Πρόταση για τη Συνταγματική Αναθεώρηση...` and `ΚΩΔΙΚΑΣ ΤΟΠΙΚΗΣ ΑΥΤΟΔΙΟΙΚΗΣΗΣ`.
+- `cd apps/mobile/android && ./gradlew assembleDirectRelease bundlePlayRelease`: PASS.
+- Landing APK updated and HTTP hash verified.
+- Smoke checks: API 200, Web 200, APK download 200.
+
+### Artifacts
+- Desktop APK: `/Users/gio/Desktop/ekklesia-v1.0.5-vC33.apk`.
+- Desktop Play AAB: `/Users/gio/Desktop/ekklesia-v1.0.5-vC33-PLAY.aab`.
+- APK SHA256: `70da885601b17549bda4a0b913dc4a508d93e4a5a6303ece3bc9842f5c231b0f`.
+- AAB SHA256: `a6e40312a27635ee37ecdb5d55aabe436a5d5b6405db4d4a0bbb7424be831279`.
+
+### Rollback
+- Server backup: `/opt/ekklesia/app/docs/download/backups/ekklesia-latest-before-vC33-20260611_192448.apk`.
