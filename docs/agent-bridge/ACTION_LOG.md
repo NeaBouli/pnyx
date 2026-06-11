@@ -9366,3 +9366,16 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Verification
 - `cd apps/api && .venv/bin/python -m py_compile routers/zk.py services/zk_arweave_payload.py`: PASS.
 - `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py tests/services/test_zk_arweave_payload.py -q`: PASS, 12 tests.
+
+### Deploy
+- Commit: `15aac1f`.
+- Rollback tag: `rollback-pre-zk-receipts-20260612-013810`.
+- API-only deploy with `/opt/ekklesia/.env.production` sourced.
+- No DB migration, no web/mobile build.
+- Live verification:
+  - API health: HTTP 200.
+  - Bills endpoint: HTTP 200.
+  - `GET /api/v1/zk/status`: HTTP 200, all production gates `false`.
+  - `GET /api/v1/zk/receipts/bill:GR-0490a766`: HTTP 200, empty receipt list.
+  - `GET /api/v1/zk/receipts/not-a-scope`: HTTP 422.
+  - `POST /api/v1/zk/verify`: HTTP 503, `ZK voting verifier is not enabled`.
