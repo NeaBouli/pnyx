@@ -209,6 +209,8 @@ async def test_zk_opt_in_creates_commitment_and_private_tier_lock(monkeypatch) -
     assert fake_db.committed is True
     assert any(isinstance(value, ZkIdentityCommitment) for value in fake_db.added)
     assert any(isinstance(value, ZkVoteTierLock) for value in fake_db.added)
+    stored_commitment = next(value for value in fake_db.added if isinstance(value, ZkIdentityCommitment))
+    assert stored_commitment.vote_scope_id == "bill:GR-0490a766"
 
 
 @pytest.mark.asyncio

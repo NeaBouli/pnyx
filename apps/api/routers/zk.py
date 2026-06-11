@@ -236,6 +236,7 @@ async def opt_in_zk(req: ZkOptInRequest, db: AsyncSession = Depends(get_db)) -> 
 
     commitment = ZkIdentityCommitment(
         identity_record_id=identity.id,
+        vote_scope_id=vote_scope_id,
         commitment=req.commitment,
         merkle_depth=SEMAPHORE_MERKLE_TREE_DEPTH,
     )

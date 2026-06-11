@@ -236,6 +236,7 @@ class ZkIdentityCommitment(Base):
 
     id                 = Column(Integer, primary_key=True, autoincrement=True)
     identity_record_id = Column(Integer, ForeignKey("identity_records.id", ondelete="SET NULL"), nullable=True)
+    vote_scope_id      = Column(String(128), nullable=True)
     commitment         = Column(String(160), nullable=False)
     commitment_version = Column(String(32), default="semaphore-v4", server_default="semaphore-v4", nullable=False)
     merkle_depth       = Column(Integer, nullable=False)
@@ -248,6 +249,7 @@ class ZkIdentityCommitment(Base):
         CheckConstraint("merkle_depth > 0", name="ck_zk_commitment_depth_positive"),
         CheckConstraint("status IN ('ACTIVE', 'REVOKED')", name="ck_zk_commitment_status"),
         Index("idx_zk_commitments_identity", "identity_record_id"),
+        Index("idx_zk_commitments_scope", "vote_scope_id"),
     )
 
 

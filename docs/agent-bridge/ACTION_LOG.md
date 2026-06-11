@@ -9493,3 +9493,16 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Server backup: `/opt/ekklesia/backups/pre_zk_opt_in_20260611-235046_api_crypto.tgz`.
 - Live: `/health` 200, `/api/v1/bills?limit=3` 200, `/api/v1/zk/status` gates false, `/api/v1/zk/opt-in` 503, `/api/v1/zk/verify` 503 with valid body.
 - Live env: no `ZK_VOTING_ENABLED`, `ZK_OPT_IN_ENABLED`, `ZK_TIER1_GUARD_ENABLED`, or `ZK_CANARY_ENABLED` flags present.
+
+## 2026-06-12 — Codex: GH#112 ZK commitment registry made scope-aware
+
+### Scope
+- Added additive Alembic migration `s201a2b3c4d5` with nullable `zk_identity_commitments.vote_scope_id` plus index.
+- ZK opt-in now stores the canonical `bill:<id>` scope on each commitment so future Merkle group construction can be per voting object.
+
+### Safety
+- Production table currently has 0 commitments; migration is additive/nullable.
+- No production flag flip, no ZK vote acceptance, no mobile build.
+
+### Verification
+- Server pre-check: `select count(*) from zk_identity_commitments` returned 0.
