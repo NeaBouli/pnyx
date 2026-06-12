@@ -9727,3 +9727,26 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py -q`: PASS, 26 passed.
 - `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py tests/services/test_zk_canary_prepare.py tests/services/test_bill_visibility.py tests/test_voting.py -q`: PASS, 58 passed / 2 xfailed.
 - CC review: no blockers; noted low-risk helper/status polish, fixed before commit.
+
+## 2026-06-12 — Codex: GH#112 admin canary preflight deployed
+
+### Scope
+- API-only deploy of admin canary preflight.
+- Server repo remains dirty from previous deploy state, so no `git pull` was used.
+- Synced `apps/api/routers/zk.py` plus the matching ZK service/data files needed by that router.
+- Rebuilt only compose service `api`.
+
+### Safety
+- File backup before router sync: `/opt/ekklesia/backups/gh112-canary-preflight-20260612_125044.tar.gz`.
+- ZK service backup before service sync: `/opt/ekklesia/backups/gh112-zk-service-sync-20260612_125227.tar.gz`.
+- No DB migration, no DB write, no mobile/web build, no root publication, no ZK vote acceptance, no feature flag flip.
+- First deploy attempt exposed the dirty-server mismatch: router expected `build_active_group_root_for_scope`, but server `zk_group_registry.py` was stale. Fixed by syncing the matching ZK service/data set and rebuilding API.
+
+### Verification
+- `https://api.ekklesia.gr/health`: 200.
+- `https://api.ekklesia.gr/api/v1/zk/status`: production/opt-in/canary all `false`.
+- Public detail `GET /api/v1/bills/ZK-CANARY-001`: 404.
+- Admin preflight `GET /api/v1/zk/canary/preflight/bill:ZK-CANARY-001`: 200.
+- Preflight confirms hidden canary row: `admin_hidden=true`, `source=ZK_CANARY`, no forum topic, no Arweave TX, zero commitments/locks/receipts/root.
+- Preflight readiness remains `false` because production flags/allowlist are intentionally unset.
+- GH#112 commented: https://github.com/NeaBouli/pnyx/issues/112#issuecomment-4689872359
