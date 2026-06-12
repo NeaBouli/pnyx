@@ -51,6 +51,9 @@ class _FakeScalarResult:
     def __init__(self, value):
         self.value = value
 
+    def scalar_one(self):
+        return self.value
+
     def scalar_one_or_none(self):
         return self.value
 
@@ -155,6 +158,107 @@ async def test_zk_status_keeps_opt_in_closed_without_tier1_guard(monkeypatch) ->
     payload = response.json()
     assert payload["production_enabled"] is True
     assert payload["opt_in_enabled"] is False
+
+
+@pytest.mark.asyncio
+async def test_zk_canary_preflight_reports_safe_hidden_scope_without_private_fields(monkeypatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("ADMIN_KEY", raising=False)
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    monkeypatch.setenv("ZK_OPT_IN_ENABLED", "true")
+    monkeypatch.setenv("ZK_TIER1_GUARD_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
+    monkeypatch.setenv("ZK_ROOT_PUBLICATION_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:ZK-CANARY-001")
+    bill = SimpleNamespace(
+        id="ZK-CANARY-001",
+        status=BillStatus.ACTIVE,
+        source="ZK_CANARY",
+        admin_hidden=True,
+        forum_topic_id=None,
+        arweave_tx_id=None,
+    )
+    root = SimpleNamespace(group_size=1, status="OPEN")
+    fake_db = _FakeSequenceDb([bill, 1, 1, 0, root])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/zk/canary/preflight/bill:ZK-CANARY-001",
+                headers={"Authorization": "Bearer dev-admin-key"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["allowlisted"] is True
+    assert payload["bill_exists"] is True
+    assert payload["bill_admin_hidden"] is True
+    assert payload["bill_source"] == "ZK_CANARY"
+    assert payload["forum_topic_absent"] is True
+    assert payload["arweave_absent"] is True
+    assert payload["active_commitments"] == 1
+    assert payload["tier_locks"] == 1
+    assert payload["receipts"] == 0
+    assert payload["latest_root_exists"] is True
+    assert payload["ready_for_canary_opt_in"] is True
+    assert payload["ready_to_publish_root"] is True
+    assert payload["private_fields_exposed"] is False
+    serialized = json.dumps(payload)
+    assert "tier_guard_hash" not in serialized
+    assert "identity_record_id" not in serialized
+    assert "nullifier_hash" not in serialized
+
+
+@pytest.mark.asyncio
+async def test_zk_canary_preflight_stays_not_ready_for_public_bill(monkeypatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("ADMIN_KEY", raising=False)
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    monkeypatch.setenv("ZK_OPT_IN_ENABLED", "true")
+    monkeypatch.setenv("ZK_TIER1_GUARD_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
+    monkeypatch.setenv("ZK_ROOT_PUBLICATION_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:ZK-CANARY-001")
+    bill = SimpleNamespace(
+        id="GR-0490a766",
+        status=BillStatus.ACTIVE,
+        source="PARLIAMENT",
+        admin_hidden=False,
+        forum_topic_id=438,
+        arweave_tx_id="ar_tx",
+    )
+    fake_db = _FakeSequenceDb([bill, 2, 0, 0, None])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/zk/canary/preflight/bill:GR-0490a766",
+                headers={"Authorization": "Bearer dev-admin-key"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["allowlisted"] is False
+    assert payload["bill_admin_hidden"] is False
+    assert payload["bill_source"] == "PARLIAMENT"
+    assert payload["forum_topic_absent"] is False
+    assert payload["arweave_absent"] is False
+    assert payload["ready_for_canary_opt_in"] is False
+    assert payload["ready_to_publish_root"] is False
 
 
 @pytest.mark.asyncio

@@ -11,7 +11,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Path as FastAPIPath, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
@@ -28,6 +28,7 @@ from models import (
     ParliamentBill,
     ZkIdentityCommitment,
     ZkMerkleRoot,
+    ZkVoteTierLock,
     ZkVoteReceipt,
 )
 from services.zk_arweave_payload import build_public_zk_receipt_from_storage
@@ -99,6 +100,36 @@ class ZkStatusResponse(BaseModel):
     merkle_tree_depth: int
     verifier_version: str
     message_el: str
+
+
+class ZkCanaryPreflightFlags(BaseModel):
+    production_enabled: bool
+    opt_in_enabled: bool
+    tier1_guard_enabled: bool
+    canary_enabled: bool
+    root_publication_enabled: bool
+
+
+class ZkCanaryPreflightResponse(BaseModel):
+    vote_scope_id: str
+    scope_type: str
+    allowlisted: bool
+    flags: ZkCanaryPreflightFlags
+    bill_exists: bool
+    bill_admin_hidden: bool | None
+    bill_source: str | None
+    bill_status: str | None
+    forum_topic_absent: bool | None
+    arweave_absent: bool | None
+    active_commitments: int
+    tier_locks: int
+    receipts: int
+    latest_root_exists: bool
+    latest_root_group_size: int | None
+    latest_root_status: str | None
+    ready_for_canary_opt_in: bool
+    ready_to_publish_root: bool
+    private_fields_exposed: bool = False
 
 
 class ZkReceiptListResponse(BaseModel):
@@ -234,6 +265,105 @@ async def get_zk_status() -> ZkStatusResponse:
             "Η παραγωγική ZK ψηφοφορία είναι ενεργή."
             if production_enabled
             else "Η παραγωγική ZK ψηφοφορία δεν είναι ενεργή ακόμη."
+        ),
+    )
+
+
+@router.get("/canary/preflight/{vote_scope_id}", response_model=ZkCanaryPreflightResponse)
+async def get_zk_canary_preflight(
+    vote_scope_id: str = FastAPIPath(
+        ...,
+        min_length=6,
+        max_length=128,
+        pattern=r"^(bill|municipal|regional):[^/]{1,110}$",
+    ),
+    _admin: bool = Depends(verify_admin_key),
+    db: AsyncSession = Depends(get_db),
+) -> ZkCanaryPreflightResponse:
+    scope = validate_vote_scope_id(vote_scope_id)
+    scope_type, scope_id = scope.split(":", 1)
+    allowlisted = scope in _canary_scope_allowlist()
+
+    bill: ParliamentBill | None = None
+    if scope_type == "bill":
+        bill_result = await db.execute(select(ParliamentBill).where(ParliamentBill.id == scope_id))
+        bill = bill_result.scalar_one_or_none()
+
+    active_commitments = await _count_rows(
+        db,
+        select(func.count(ZkIdentityCommitment.id)).where(
+            ZkIdentityCommitment.vote_scope_id == scope,
+            ZkIdentityCommitment.status == "ACTIVE",
+        ),
+    )
+    tier_locks = await _count_rows(
+        db,
+        select(func.count(ZkVoteTierLock.id)).where(ZkVoteTierLock.vote_scope_id == scope),
+    )
+    receipts = await _count_rows(
+        db,
+        select(func.count(ZkVoteReceipt.id)).where(ZkVoteReceipt.vote_scope_id == scope),
+    )
+    root_result = await db.execute(
+        select(ZkMerkleRoot)
+        .where(
+            ZkMerkleRoot.vote_scope_id == scope,
+            ZkMerkleRoot.status == "OPEN",
+        )
+        .order_by(ZkMerkleRoot.id.desc())
+        .limit(1)
+    )
+    latest_root = root_result.scalar_one_or_none()
+
+    flags = ZkCanaryPreflightFlags(
+        production_enabled=zk_voting_enabled(),
+        opt_in_enabled=_env_enabled(ZK_OPT_IN_ENABLED_ENV),
+        tier1_guard_enabled=_env_enabled(ZK_TIER1_GUARD_ENABLED_ENV),
+        canary_enabled=_env_enabled(ZK_CANARY_ENABLED_ENV),
+        root_publication_enabled=_env_enabled(ZK_ROOT_PUBLICATION_ENABLED_ENV),
+    )
+    bill_hidden = bool(bill.admin_hidden) if bill is not None else None
+    forum_absent = bill.forum_topic_id is None if bill is not None else None
+    arweave_absent = bill.arweave_tx_id is None if bill is not None else None
+    bill_is_safe_canary = (
+        bill is not None
+        and bill_hidden is True
+        and bill.source == "ZK_CANARY"
+        and forum_absent is True
+        and arweave_absent is True
+    )
+
+    return ZkCanaryPreflightResponse(
+        vote_scope_id=scope,
+        scope_type=scope_type,
+        allowlisted=allowlisted,
+        flags=flags,
+        bill_exists=bill is not None,
+        bill_admin_hidden=bill_hidden,
+        bill_source=bill.source if bill is not None else None,
+        bill_status=bill.status.value if bill is not None else None,
+        forum_topic_absent=forum_absent,
+        arweave_absent=arweave_absent,
+        active_commitments=active_commitments,
+        tier_locks=tier_locks,
+        receipts=receipts,
+        latest_root_exists=latest_root is not None,
+        latest_root_group_size=latest_root.group_size if latest_root is not None else None,
+        latest_root_status=str(latest_root.status) if latest_root is not None else None,
+        ready_for_canary_opt_in=(
+            flags.production_enabled
+            and flags.opt_in_enabled
+            and flags.tier1_guard_enabled
+            and flags.canary_enabled
+            and allowlisted
+            and bill_is_safe_canary
+        ),
+        ready_to_publish_root=(
+            flags.root_publication_enabled
+            and flags.canary_enabled
+            and allowlisted
+            and bill_is_safe_canary
+            and active_commitments > 0
         ),
     )
 
@@ -477,3 +607,8 @@ def _zk_root_response(root: ZkMerkleRoot) -> ZkRootResponse:
         status=root.status,
         root_id=root.id,
     )
+
+
+async def _count_rows(db: AsyncSession, statement: Any) -> int:
+    result = await db.execute(statement)
+    return int(result.scalar_one() or 0)
