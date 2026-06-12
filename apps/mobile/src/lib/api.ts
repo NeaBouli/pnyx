@@ -120,6 +120,70 @@ export async function fetchZkStatus(): Promise<ZkServerStatus> {
   return request<ZkServerStatus>("/api/v1/zk/status");
 }
 
+export interface ZkOptInResponse {
+  status: string;
+  vote_scope_id: string;
+  commitment_id: number;
+  tier_locked: boolean;
+  merkle_tree_depth: number;
+  message_el: string;
+}
+
+export async function submitZkOptIn(params: {
+  nullifierHash: string;
+  billId: string;
+  commitment: string;
+  signatureHex: string;
+}): Promise<ZkOptInResponse> {
+  return request<ZkOptInResponse>("/api/v1/zk/opt-in", {
+    method: "POST",
+    body: JSON.stringify({
+      nullifier_hash: params.nullifierHash,
+      bill_id: params.billId,
+      commitment: params.commitment,
+      signature_hex: params.signatureHex,
+    }),
+  });
+}
+
+export interface ZkRootResponse {
+  vote_scope_id: string;
+  merkle_root: string;
+  merkle_depth: number;
+  group_size: number;
+  commitment_version: string;
+  status: string;
+  root_id: number;
+}
+
+export async function fetchZkRoot(voteScopeId: string): Promise<ZkRootResponse> {
+  return request<ZkRootResponse>(`/api/v1/zk/roots/${encodeURIComponent(voteScopeId)}`);
+}
+
+export interface ZkVoteAcceptResponse {
+  accepted: boolean;
+  vote_scope_id: string;
+  receipt_id: number;
+  arweave_pending: boolean;
+  merkle_tree_depth: number;
+  verifier_version: string;
+}
+
+export async function submitZkVote(params: {
+  voteScopeId: string;
+  voteCommitment: string;
+  proof: Record<string, unknown>;
+}): Promise<ZkVoteAcceptResponse> {
+  return request<ZkVoteAcceptResponse>("/api/v1/zk/vote", {
+    method: "POST",
+    body: JSON.stringify({
+      vote_scope_id: params.voteScopeId,
+      vote_commitment: params.voteCommitment,
+      proof: params.proof,
+    }),
+  });
+}
+
 // ─── Voting ─────────────────────────────────────────────────────────────────
 
 export interface VoteResponse {

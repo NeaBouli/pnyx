@@ -380,6 +380,26 @@ export function signEvaluation(
   return bytesToHex(signature);
 }
 
+export async function signZkOptInPayload(
+  billId: string,
+  commitment: string,
+): Promise<{
+  nullifierHash: string;
+  signatureHex: string;
+}> {
+  const keypair = await loadKeypair();
+  const nullifierHash = await loadNullifier();
+  if (!keypair || !nullifierHash) {
+    throw new Error("No verified identity key available for ZK opt-in.");
+  }
+  const payload = utf8ToBytes(`zk_opt_in:${billId}:${commitment}:${nullifierHash}`);
+  const signature = ed25519.sign(payload, hexToBytes(keypair.privateKeyHex));
+  return {
+    nullifierHash,
+    signatureHex: bytesToHex(signature),
+  };
+}
+
 export function verifyVote(
   publicKeyHex: string,
   params: { bill_id: string; vote: string; nullifier_hash: string },
