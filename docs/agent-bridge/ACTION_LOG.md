@@ -10146,3 +10146,17 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Notes
 - Build warnings were dependency-level Expo/RN deprecations plus known `@noble/hashes/crypto.js` export fallback. No build blocker.
 - S10 was not connected during this build; direct device install remains pending until hardware is available.
+
+### Live deploy
+- Initial host-file copy did not affect HTTPS because `ekklesia-web` serves static assets baked into the running image.
+- Temporary `docker cp` into `ekklesia-web` confirmed the files were correct, but per the existing ADR-010 lesson this is not sufficient for restart persistence.
+- Persistent deploy was completed from a clean server clone at `/opt/ekklesia/release-builds/pnyx-vc35`, checked out to commit `3db8740`.
+- Because large APK binaries are not committed, `docs/download/ekklesia-latest.apk` was copied into the clean clone before the image build.
+- `docker compose -p docker -f docker-compose.prod.yml build web && up -d --no-deps web`: PASS.
+- Live HTTPS verification:
+  - Landing shows `v1.0.6 · vC35`.
+  - F-Droid link points to MR `!38007`.
+  - `https://ekklesia.gr/download/ekklesia-latest.apk.sha256` returns `306a530c0e2edfa701675d1cf37a4a52069005294be4cb60851fddae84be1f76`.
+  - Full live APK download hash matches `306a530c0e2edfa701675d1cf37a4a52069005294be4cb60851fddae84be1f76`.
+  - API `/health`: PASS.
+  - Monitor one-shot: PASS, 17 checks, `All checks passed — no alerts`.
