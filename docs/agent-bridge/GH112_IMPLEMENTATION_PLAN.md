@@ -288,6 +288,7 @@ Production Merkle root publication is blocked until the reviewed publish path is
 activated in an explicit canary window.
 
 See `docs/agent-bridge/GH112_MERKLE_ROOT_PREFLIGHT.md`.
+See `docs/agent-bridge/GH112_CANARY_ACTIVATION_PLAN.md`.
 
 Do not use a SHA/SHA256 Merkle placeholder. The next implementation step is a
 canary activation decision with backup/monitoring, not a broad flag flip.

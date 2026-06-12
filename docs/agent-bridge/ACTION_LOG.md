@@ -9613,3 +9613,19 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py -q`: PASS, 19 passed.
 - `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_merkle_root.py tests/services/test_zk_group_registry.py tests/services/test_zk_tier_lock.py tests/services/test_zk_arweave_payload.py tests/test_voting.py -q`: PASS, 61 passed / 2 xfailed.
 - CC review: no blockers.
+
+## 2026-06-12 — Codex: GH#112 canary activation plan documented
+
+### Scope
+- Added `docs/agent-bridge/GH112_CANARY_ACTIVATION_PLAN.md`.
+- Defined first canary as a non-production test scope: `bill:ZK-CANARY-001`.
+- Required explicit `ZK_CANARY_SCOPE_ALLOWLIST` before activation.
+
+### Safety
+- Documentation only.
+- No code, no deploy, no DB, no root publication, no ZK vote acceptance, no flag flip.
+- Plan requires DB backup, rollback tag, scope allowlist, monitoring, and rollback flags before activation.
+
+### Decision
+- Next implementation work is canary preparation code, especially scope allowlist enforcement.
+- Production activation remains blocked until explicit canary window.
