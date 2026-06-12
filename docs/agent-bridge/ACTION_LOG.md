@@ -9750,3 +9750,23 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Preflight confirms hidden canary row: `admin_hidden=true`, `source=ZK_CANARY`, no forum topic, no Arweave TX, zero commitments/locks/receipts/root.
 - Preflight readiness remains `false` because production flags/allowlist are intentionally unset.
 - GH#112 commented: https://github.com/NeaBouli/pnyx/issues/112#issuecomment-4689872359
+
+## 2026-06-12 — Codex: GH#112 canonical proof binding helpers added
+
+### Scope
+- Added API helper `services/zk_proof_binding.py`.
+- Added Mobile helper `src/lib/zkProofBinding.ts`.
+- Helpers produce canonical decimal Field values for Semaphore `message` and `scope` from `vote_scope_id` + `vote_commitment`.
+- Uses domain-separated `sha256(...) >> 8`, so values are below BN254 scalar field size and stable across Python/TypeScript.
+
+### Safety
+- No endpoint consumes this yet; no receipt acceptance, no root publication, no ZK vote acceptance, no flag flip.
+- Documents now explicitly block a receipt-accepting `/zk/vote` endpoint until canonical proof binding is checked before storage.
+- Helper reproduces S10 fixture short-text BigInt behavior for `message`/`scope`, and production vote binding uses hashed decimal strings instead of long raw text.
+
+### Verification
+- `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_proof_binding.py tests/routers/test_zk_verify_api.py -q`: PASS, 31 passed.
+- `cd apps/mobile && npx vitest run src/lib/zkProofBinding.test.ts src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreSelfTest.test.ts src/lib/zkSemaphoreNative.test.ts`: PASS, 23 passed.
+- `cd apps/mobile && npx tsc --noEmit`: PASS.
+- Cross-platform golden vector added for `bill:ZK-CANARY-001` / `YES`.
+- CC review: design sound; recommended golden vector added before commit.
