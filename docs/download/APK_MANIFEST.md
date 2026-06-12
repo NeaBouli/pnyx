@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.5 |
-| versionCode | 34 |
+| Version | 1.0.6 |
+| versionCode | 35 |
 | Package | ekklesia.gr |
-| APK SHA256 | `d75541a9bb1b4e424d1fdb4cb06fcceb9a8e804f045859783e9a2aa186daa470` |
-| AAB SHA256 | `9a96b6d79c9095e470496179642629c334a8ee935a78212d99d0244cf196363f` |
+| APK SHA256 | `306a530c0e2edfa701675d1cf37a4a52069005294be4cb60851fddae84be1f76` |
+| AAB SHA256 | `2af2971f225cd49f7c8bee950158abdd60d6939e47ff836704431e89e986194a` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
-| Build date | 2026-06-11 |
-| Release gate | PASS — TypeScript, S10 UI verification, local AAB/APK build, APK signature/version/permission audit |
-| Includes | vC34 current mobile state, Bouli bills visible in All feed and Bouli tab visible in first viewport, Bouli source filter, Android autolinking package build fix, ZK V2 settings/prover status, deep-link fallback, pagination, source/full-text policy, permission hardening |
+| Build date | 2026-06-13 |
+| Release gate | PASS — TypeScript, Vitest, local AAB/APK build, APK/AAB version audit, APK signature/version/permission audit |
+| Includes | vC35 current mobile state, Bouli bills visible in All feed and Bouli tab visible in first viewport, Bouli source filter, Android autolinking package build fix, ZK V2 settings/prover status, deep-link fallback, pagination, source/full-text policy, permission hardening |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: aecbee101185a020427ee5b53d1058e78aa5682be7cde920e2f766aea097c576
+# Expected: 306a530c0e2edfa701675d1cf37a4a52069005294be4cb60851fddae84be1f76
 ```

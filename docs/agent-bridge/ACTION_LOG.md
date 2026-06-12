@@ -10109,3 +10109,40 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - votes-in-progress / public statistics
   - newsletter / AI context / forum sync
 - Rule for future fixes: whenever a hidden technical object is added, audit all public and monitor queries for `admin_hidden` / source filters before deploying.
+
+## 2026-06-13 — Codex/CC: vC35 Android release artifacts
+
+### Scope
+- Prepared Android vC35 release artifacts for Google Play and direct APK download.
+- Bumped mobile source of truth to `versionName=1.0.6`, `versionCode=35`.
+- Updated landing APK button visible version from `v1.0.5 · vC34` to `v1.0.6 · vC35`.
+- Updated landing F-Droid link from stale MR `!37087` to current MR `!38007`.
+- Reconciled stale `docs/download/APK_MANIFEST.md` SHA drift.
+
+### Safety
+- Rollback tag: `rollback-pre-vc35-release-20260613-014359`.
+- R8/ProGuard was not enabled in this build; size optimization remains a separate runtime-tested task because Expo/RN/native Semaphore bindings can break under minification.
+- No API, DB, monitor, ZK flags, forum sync, or server runtime logic changed.
+
+### Verification
+- CC release-prep review: PASS, recommended `1.0.6` + `versionCode 35`.
+- Expo config direct: `1.0.6 35 direct direct`.
+- Expo config play: `1.0.6 35 play play`.
+- `cd apps/mobile && npx tsc --noEmit`: PASS.
+- `cd apps/mobile && npx vitest run`: PASS, 11 files / 68 tests.
+- `bash scripts/build-direct.sh`: PASS.
+- `bash scripts/build-play.sh`: PASS.
+- APK audit via `aapt`: package `ekklesia.gr`, `versionCode=35`, `versionName=1.0.6`, target SDK 36.
+- AAB audit via `bundletool`: package `ekklesia.gr`, `versionCode=35`, `versionName=1.0.6`.
+- AAB app config confirms `distributionChannel=play`, `buildFlavor=play`, `zkSemaphoreEnabled=false`.
+
+### Artifacts
+- Direct APK local/landing copy: `docs/download/ekklesia-latest.apk`.
+- Direct APK desktop copy: `/Users/gio/Desktop/ekklesia-v1.0.6-vC35.apk`.
+- Play AAB desktop copy: `/Users/gio/Desktop/ekklesia-v1.0.6-vC35-PLAY.aab`.
+- APK SHA256: `306a530c0e2edfa701675d1cf37a4a52069005294be4cb60851fddae84be1f76`.
+- AAB SHA256: `2af2971f225cd49f7c8bee950158abdd60d6939e47ff836704431e89e986194a`.
+
+### Notes
+- Build warnings were dependency-level Expo/RN deprecations plus known `@noble/hashes/crypto.js` export fallback. No build blocker.
+- S10 was not connected during this build; direct device install remains pending until hardware is available.

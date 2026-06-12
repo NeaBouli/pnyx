@@ -1,30 +1,32 @@
-# CC Review Request — GH#112 ZK monitor final diff
+# CC Review Request — vC35 release prep before build
 
-Mode: review only. Do not edit files.
+Mode: review/diagnosis first. Do not edit files.
 
-Please review the final monitor diff:
+Gio requested:
+- build a new Google Play AAB,
+- put the correct APK on the landing download buttons,
+- verify GitHub/repo status,
+- keep everything cautious with rollback and Bridge docs.
 
-```bash
-git diff -- apps/monitor/monitor.py apps/api/tests/test_monitor_zk_canary_health.py
-```
+Current state:
+- HEAD `d0fd022`, clean.
+- Mobile app currently `version=1.0.5`, Android `versionCode=34`.
+- vC34 AAB was already uploaded to Google Play closed/internal test.
+- `scripts/build-play.sh` sets `EKKLESIA_DISTRIBUTION_CHANNEL=play`, `EKKLESIA_BUILD_FLAVOR=play`.
+- `scripts/build-direct.sh` sets `direct/direct`.
+- Landing APK file appears to be `docs/download/ekklesia-latest.apk`.
 
-Context:
-- Added ZK observability check for old pending ZK receipts and invalid root statuses.
-- After your previous finding, added a missing-schema guard so older/non-migrated environments skip ZK monitoring instead of aborting the whole monitor cycle.
-- ZK alerts have `recovery_allowed=False` (direct T3 only).
-
-Verification:
-
-```bash
-python3 -m py_compile apps/monitor/monitor.py apps/api/tests/test_monitor_zk_canary_health.py
-cd apps/api && /tmp/pnyx-api-test-venv/bin/python -m pytest tests/test_monitor_zk_canary_health.py tests/test_monitor_parliament_freshness.py tests/routers/test_zk_verify_api.py -q
-# PASS: 44 passed, 1 existing Pydantic warning
-```
+Please inspect:
+- `apps/mobile/app.json`
+- `apps/mobile/app.config.js`
+- `scripts/build-play.sh`
+- `scripts/build-direct.sh`
+- landing/download files (`docs/`, `apps/web/`) that reference APK version/hash/download buttons.
 
 Questions:
-1. Does the missing-schema guard correctly avoid breaking the whole monitor cycle?
-2. Is the rollback after a missing-table error sufficient to clear Postgres aborted transaction state?
-3. Any alert-spam or false-positive risk before canary?
-4. Any blocker before commit/deploy?
+1. For vC35, should version bump be `versionCode 35` and `versionName 1.0.6`, or keep `1.0.5` with code 35?
+2. Does direct APK output path in `scripts/build-direct.sh` match the actual Gradle output?
+3. Which files must be updated so landing download button serves the new APK and shows the visible current version?
+4. Any known hazard before building AAB/APK from current HEAD?
 
-Report PASS/FAIL with concrete findings only.
+Report concrete findings and recommended exact next steps. No edits.
