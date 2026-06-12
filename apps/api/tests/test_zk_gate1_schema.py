@@ -46,8 +46,10 @@ def test_zk_gate1_uniqueness_guards() -> None:
 
 
 def test_zk_public_receipts_exclude_identity_bridge_fields() -> None:
-    receipt_columns = set(Base.metadata.tables["zk_vote_receipts"].columns.keys())
+    receipt_table = Base.metadata.tables["zk_vote_receipts"]
+    receipt_columns = set(receipt_table.columns.keys())
     assert "vote_commitment" in receipt_columns
+    assert receipt_table.columns["vote_commitment"].nullable is False
 
     forbidden = {
         "tier_guard_hash",
@@ -73,3 +75,18 @@ def test_zk_gate1_migration_chains_after_nullifier_v2() -> None:
     spec.loader.exec_module(migration)
     assert migration.revision == "r101a2b3c4d5"
     assert migration.down_revision == "q001a2b3c4d5"
+
+
+def test_zk_receipt_vote_commitment_not_null_migration_chains_after_t301() -> None:
+    migration_path = (
+        Path(__file__).resolve().parents[1]
+        / "alembic"
+        / "versions"
+        / "u401a2b3c4d5_zk_receipt_vote_commitment_not_null.py"
+    )
+    spec = importlib.util.spec_from_file_location("zk_receipt_vote_commitment_not_null", migration_path)
+    assert spec and spec.loader
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    assert migration.revision == "u401a2b3c4d5"
+    assert migration.down_revision == "t301a2b3c4d5"
