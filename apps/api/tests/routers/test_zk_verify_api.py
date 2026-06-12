@@ -8,8 +8,9 @@ from httpx import ASGITransport, AsyncClient
 
 from database import get_db
 from main import app
-from models import BillStatus, GovernanceLevel, ZkIdentityCommitment, ZkVoteTierLock
+from models import BillStatus, GovernanceLevel, ZkIdentityCommitment, ZkMerkleRoot, ZkVoteTierLock
 from routers import zk
+from services.zk_merkle_root import poseidon2
 
 FIXTURE_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "gh112_s10_fixture.json"
 
@@ -28,11 +29,14 @@ class _FakeScalars:
 
 
 class _FakeResult:
-    def __init__(self, values: list[SimpleNamespace]):
+    def __init__(self, values: list[object]):
         self._values = values
 
     def scalars(self) -> _FakeScalars:
         return _FakeScalars(self._values)
+
+    def scalar_one_or_none(self):
+        return self._values[0] if self._values else None
 
 
 class _FakeDb:
@@ -62,7 +66,10 @@ class _FakeSequenceDb:
 
     async def execute(self, statement):
         self.executed.append(statement)
-        return _FakeScalarResult(self.values.pop(0))
+        value = self.values.pop(0)
+        if isinstance(value, list):
+            return _FakeResult(value)
+        return _FakeScalarResult(value)
 
     def add(self, value):
         self.added.append(value)
@@ -78,6 +85,11 @@ class _FakeSequenceDb:
 
     async def rollback(self):
         self.rolled_back = True
+
+    async def refresh(self, value):
+        if getattr(value, "id", None) is None:
+            value.id = self._next_id
+            self._next_id += 1
 
 
 def _zk_opt_in_payload() -> dict:
@@ -342,6 +354,173 @@ async def test_zk_receipts_endpoint_rejects_invalid_scope() -> None:
         response = await client.get("/api/v1/zk/receipts/not-a-scope")
 
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_zk_current_root_endpoint_returns_public_payload_only() -> None:
+    root = SimpleNamespace(
+        id=42,
+        vote_scope_id="bill:GR-0490a766",
+        merkle_root="123",
+        merkle_depth=1,
+        group_size=2,
+        commitment_version="semaphore-v4",
+        status="OPEN",
+        tier_guard_hash="private",
+        identity_record_id=7,
+    )
+    fake_db = _FakeDb([root])
+
+    async def override_get_db():
+        yield fake_db
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/zk/roots/bill:GR-0490a766")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload == {
+        "vote_scope_id": "bill:GR-0490a766",
+        "merkle_root": "123",
+        "merkle_depth": 1,
+        "group_size": 2,
+        "commitment_version": "semaphore-v4",
+        "status": "OPEN",
+        "root_id": 42,
+    }
+    assert "tier_guard_hash" not in json.dumps(payload)
+    assert "identity_record_id" not in json.dumps(payload)
+
+
+@pytest.mark.asyncio
+async def test_zk_current_root_endpoint_returns_404_for_empty_scope() -> None:
+    fake_db = _FakeDb([])
+
+    async def override_get_db():
+        yield fake_db
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/zk/roots/bill:EMPTY")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "ZK root not found"
+
+
+@pytest.mark.asyncio
+async def test_zk_root_publish_is_fail_closed_even_for_admin(monkeypatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("ADMIN_KEY", raising=False)
+    monkeypatch.delenv("ZK_ROOT_PUBLICATION_ENABLED", raising=False)
+    fake_db = _FakeSequenceDb([])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/roots/bill:GR-0490a766/publish",
+                headers={"Authorization": "Bearer dev-admin-key"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "ZK root publication is not enabled"
+    assert fake_db.executed == []
+    assert fake_db.added == []
+
+
+@pytest.mark.asyncio
+async def test_zk_root_publish_requires_admin(monkeypatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.setenv("ZK_ROOT_PUBLICATION_ENABLED", "true")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/zk/roots/bill:GR-0490a766/publish")
+
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_zk_root_publish_creates_root_from_public_commitments(monkeypatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("ADMIN_KEY", raising=False)
+    monkeypatch.setenv("ZK_ROOT_PUBLICATION_ENABLED", "true")
+    fake_db = _FakeSequenceDb([["1", "2"], None])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/roots/bill:GR-0490a766/publish",
+                headers={"Authorization": "Bearer dev-admin-key"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["created"] is True
+    assert payload["vote_scope_id"] == "bill:GR-0490a766"
+    assert payload["merkle_root"] == str(poseidon2(1, 2))
+    assert payload["merkle_depth"] == 1
+    assert payload["group_size"] == 2
+    assert payload["root_id"] == 1
+    assert fake_db.committed is True
+    assert any(isinstance(value, ZkMerkleRoot) for value in fake_db.added)
+    assert "tier_guard_hash" not in json.dumps(payload)
+    assert "identity_record_id" not in json.dumps(payload)
+
+
+@pytest.mark.asyncio
+async def test_zk_root_publish_returns_existing_root_without_duplicate(monkeypatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("ADMIN_KEY", raising=False)
+    monkeypatch.setenv("ZK_ROOT_PUBLICATION_ENABLED", "true")
+    existing = SimpleNamespace(
+        id=9,
+        vote_scope_id="bill:GR-0490a766",
+        merkle_root=str(poseidon2(1, 2)),
+        merkle_depth=1,
+        group_size=2,
+        commitment_version="semaphore-v4",
+        status="OPEN",
+    )
+    fake_db = _FakeSequenceDb([["1", "2"], existing])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/roots/bill:GR-0490a766/publish",
+                headers={"Authorization": "Bearer dev-admin-key"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["created"] is False
+    assert fake_db.added == []
+    assert fake_db.committed is False
 
 
 @pytest.mark.asyncio

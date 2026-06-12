@@ -279,13 +279,15 @@ Acceptance:
 - ZK opt-in storage is prepared but production opt-in remains disabled.
 - Semaphore-compatible LeanIMT/Poseidon root helper is implemented and tested
   against the S10 fixture.
+- Root read/publish API is prepared; publish is admin-only and gated by
+  `ZK_ROOT_PUBLICATION_ENABLED`.
 
 ## Current Blocker
 
-Production Merkle root publication is blocked until the root helper is wired to
-an explicit reviewed publication path.
+Production Merkle root publication is blocked until the reviewed publish path is
+activated in an explicit canary window.
 
 See `docs/agent-bridge/GH112_MERKLE_ROOT_PREFLIGHT.md`.
 
 Do not use a SHA/SHA256 Merkle placeholder. The next implementation step is a
-reviewed root-publication decision, not a flag flip.
+canary activation decision with backup/monitoring, not a broad flag flip.

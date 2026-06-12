@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from database import get_db
+from dependencies import verify_admin_key
 from keypair import verify_signature
 from models import (
     BillStatus,
@@ -26,9 +27,11 @@ from models import (
     KeyStatus,
     ParliamentBill,
     ZkIdentityCommitment,
+    ZkMerkleRoot,
     ZkVoteReceipt,
 )
 from services.zk_arweave_payload import build_public_zk_receipt_from_storage
+from services.zk_group_registry import build_active_group_root_for_scope, validate_vote_scope_id
 from services.zk_groth16_verifier import (
     SEMAPHORE_V4_DEPTH16_VKEY_SHA256,
     load_verification_key,
@@ -50,6 +53,7 @@ ZK_VOTING_ENABLED_ENV = "ZK_VOTING_ENABLED"
 ZK_OPT_IN_ENABLED_ENV = "ZK_OPT_IN_ENABLED"
 ZK_CANARY_ENABLED_ENV = "ZK_CANARY_ENABLED"
 ZK_TIER1_GUARD_ENABLED_ENV = "ZK_TIER1_GUARD_ENABLED"
+ZK_ROOT_PUBLICATION_ENABLED_ENV = "ZK_ROOT_PUBLICATION_ENABLED"
 SEMAPHORE_MERKLE_TREE_DEPTH = 16
 
 
@@ -97,6 +101,20 @@ class ZkReceiptListResponse(BaseModel):
     receipts: list[dict[str, Any]]
 
 
+class ZkRootResponse(BaseModel):
+    vote_scope_id: str
+    merkle_root: str
+    merkle_depth: int
+    group_size: int
+    commitment_version: str
+    status: str
+    root_id: int
+
+
+class ZkRootPublishResponse(ZkRootResponse):
+    created: bool
+
+
 def zk_voting_enabled() -> bool:
     return _env_enabled(ZK_VOTING_ENABLED_ENV)
 
@@ -118,6 +136,14 @@ def _ensure_zk_opt_in_enabled() -> None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="ZK opt-in is not enabled",
+        )
+
+
+def _ensure_zk_root_publication_enabled() -> None:
+    if not _env_enabled(ZK_ROOT_PUBLICATION_ENABLED_ENV):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ZK root publication is not enabled",
         )
 
 
@@ -295,6 +321,82 @@ async def list_zk_receipts(
     )
 
 
+@router.get("/roots/{vote_scope_id}", response_model=ZkRootResponse)
+async def get_current_zk_root(
+    vote_scope_id: str = FastAPIPath(
+        ...,
+        min_length=6,
+        max_length=128,
+        pattern=r"^(bill|municipal|regional):[^/]{1,110}$",
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> ZkRootResponse:
+    scope = validate_vote_scope_id(vote_scope_id)
+    result = await db.execute(
+        select(ZkMerkleRoot)
+        .where(
+            ZkMerkleRoot.vote_scope_id == scope,
+            ZkMerkleRoot.status == "OPEN",
+        )
+        .order_by(ZkMerkleRoot.id.desc())
+        .limit(1)
+    )
+    root = result.scalar_one_or_none()
+    if not root:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ZK root not found")
+    return _zk_root_response(root)
+
+
+@router.post("/roots/{vote_scope_id}/publish", response_model=ZkRootPublishResponse)
+async def publish_zk_root(
+    vote_scope_id: str = FastAPIPath(
+        ...,
+        min_length=6,
+        max_length=128,
+        pattern=r"^(bill|municipal|regional):[^/]{1,110}$",
+    ),
+    _admin: bool = Depends(verify_admin_key),
+    db: AsyncSession = Depends(get_db),
+) -> ZkRootPublishResponse:
+    _ensure_zk_root_publication_enabled()
+    scope = validate_vote_scope_id(vote_scope_id)
+    try:
+        group = await build_active_group_root_for_scope(db, vote_scope_id=scope)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    existing_result = await db.execute(
+        select(ZkMerkleRoot).where(
+            ZkMerkleRoot.vote_scope_id == scope,
+            ZkMerkleRoot.merkle_root == str(group.root),
+        )
+    )
+    existing = existing_result.scalar_one_or_none()
+    if existing:
+        response = _zk_root_response(existing)
+        return ZkRootPublishResponse(**response.model_dump(), created=False)
+
+    root = ZkMerkleRoot(
+        vote_scope_id=scope,
+        scope_type=scope.split(":", 1)[0].upper(),
+        merkle_root=str(group.root),
+        merkle_depth=group.depth,
+        group_size=group.size,
+        commitment_version="semaphore-v4",
+        status="OPEN",
+    )
+    db.add(root)
+    try:
+        await db.commit()
+        await db.refresh(root)
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="ZK root already exists") from exc
+
+    response = _zk_root_response(root)
+    return ZkRootPublishResponse(**response.model_dump(), created=True)
+
+
 @router.post("/verify", response_model=ZkVerifyResponse)
 async def verify_zk_proof(req: ZkVerifyRequest) -> ZkVerifyResponse:
     if not zk_voting_enabled():
@@ -312,4 +414,16 @@ async def verify_zk_proof(req: ZkVerifyRequest) -> ZkVerifyResponse:
         proof_verified=verified,
         merkle_tree_depth=int(normalized["merkleTreeDepth"]),
         verifier_version="py-ecc-groth16-bn254:v1:semaphore-v4-depth16",
+    )
+
+
+def _zk_root_response(root: ZkMerkleRoot) -> ZkRootResponse:
+    return ZkRootResponse(
+        vote_scope_id=root.vote_scope_id,
+        merkle_root=root.merkle_root,
+        merkle_depth=root.merkle_depth,
+        group_size=root.group_size,
+        commitment_version=root.commitment_version,
+        status=root.status,
+        root_id=root.id,
     )

@@ -9594,3 +9594,22 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Voting regression: `tests/test_voting.py` 21 passed / 2 xfailed.
 - Router/schema regression: `tests/routers/test_zk_verify_api.py tests/test_zk_gate1_schema.py` 17 passed.
 - Service regressions: group registry 9 passed, tier lock 13 passed, arweave payload 4 passed, Groth16 verifier 6 passed.
+
+## 2026-06-12 — Codex: GH#112 root publication API prepared behind admin + flag
+
+### Scope
+- Added public read endpoint `GET /api/v1/zk/roots/{vote_scope_id}` for the latest open root.
+- Added admin-only publish endpoint `POST /api/v1/zk/roots/{vote_scope_id}/publish`.
+- Publish writes only `zk_merkle_roots` and is additionally gated by `ZK_ROOT_PUBLICATION_ENABLED=true`.
+
+### Safety
+- No ZK vote acceptance, no Arweave publication, no mobile build, no production flag flip.
+- Publish endpoint requires both admin bearer token and explicit root-publication flag.
+- Response excludes commitments, `tier_guard_hash`, identity ids, Tier-1 nullifiers, phone/IP/HLR metadata, and private Semaphore material.
+- Existing identical root returns `created=false` instead of inserting a duplicate.
+
+### Verification
+- `cd apps/api && .venv/bin/python -m py_compile routers/zk.py services/zk_group_registry.py services/zk_merkle_root.py`: PASS.
+- `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py -q`: PASS, 19 passed.
+- `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_merkle_root.py tests/services/test_zk_group_registry.py tests/services/test_zk_tier_lock.py tests/services/test_zk_arweave_payload.py tests/test_voting.py -q`: PASS, 61 passed / 2 xfailed.
+- CC review: no blockers.
