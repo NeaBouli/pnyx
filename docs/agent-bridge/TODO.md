@@ -64,6 +64,7 @@
   - [x] Gate 1: additive DB storage live (`r101a2b3c4d5`), Backup vorher, keine Tier-1-Änderung
   - [x] Gate 2: `/api/v1/zk/status` live fail-closed; `/api/v1/zk/verify` bleibt 503 solange `ZK_VOTING_ENABLED=false`
   - [x] Gate 5 prep: public receipt serializer + read-only `/api/v1/zk/receipts/{vote_scope_id}` live, aktuell leer
+  - [x] Canary prep: hidden `ZK-CANARY-001` scope + exact allowlist enforcement + admin-only preflight built/tested
   - [x] Mobile prep: ZK opt-in UI benötigt lokale native Fähigkeit UND Server `opt_in_enabled=true`; kein vC35 Build solange vC34 in Play Review
   - [ ] Gate 3: echte Opt-in/Group-Registry/Tier-Lock-Verdrahtung nur mit Security-Review
   - [ ] Gate 4: Mobile produktiver Opt-in erst nach Server-Gate + Canary

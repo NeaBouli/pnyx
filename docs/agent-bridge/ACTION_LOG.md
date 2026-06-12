@@ -9708,3 +9708,22 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Public Arweave `GET /api/v1/arweave/bill/ZK-CANARY-001`: 404.
 - Public stats stayed filtered: `total_bills=1085`, `forum_topics=1085`, no hidden canary counted.
 - Containers healthy/running: api, db, redis, web, monitor.
+
+## 2026-06-12 — Codex: GH#112 admin canary preflight built
+
+### Scope
+- Added admin-only `GET /api/v1/zk/canary/preflight/{vote_scope_id}`.
+- Reports canary readiness using only public/safe metadata and aggregate counts: flags, allowlist status, hidden bill isolation, active commitment count, tier-lock count, receipt count, and latest root status.
+- Response intentionally excludes private fields: no `tier_guard_hash`, no `identity_record_id`, no Tier-1 nullifier, no phone/HLR/IP.
+
+### Safety
+- Read-only endpoint; no DB writes, no root publication, no ZK vote acceptance.
+- Requires admin bearer auth.
+- `ready_for_canary_opt_in` and `ready_to_publish_root` require strict conjunction of flags, exact allowlist membership, hidden `ZK_CANARY` bill, no forum topic, and no Arweave TX.
+- No deploy, no mobile build, no production flag flip.
+
+### Verification
+- `cd apps/api && .venv/bin/python -m py_compile routers/zk.py tests/routers/test_zk_verify_api.py`: PASS.
+- `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py -q`: PASS, 26 passed.
+- `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py tests/services/test_zk_canary_prepare.py tests/services/test_bill_visibility.py tests/test_voting.py -q`: PASS, 58 passed / 2 xfailed.
+- CC review: no blockers; noted low-risk helper/status polish, fixed before commit.
