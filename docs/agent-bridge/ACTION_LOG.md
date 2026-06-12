@@ -9851,3 +9851,23 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Live `GET /api/v1/zk/roots/bill:ZK-CANARY-001/members`: 404 `ZK root not found` (expected before root publication).
 - Live `POST /api/v1/zk/vote`: 503 `ZK voting is not enabled`.
 - Live `GET /api/v1/bills/ZK-CANARY-001`: 404 (hidden canary isolation intact).
+
+## 2026-06-12 — Codex: GH#112 mobile ZK vote proof builder
+
+### Scope
+- Added mobile proof-builder library for published ZK roots.
+- Converts server decimal public commitments to Semaphore little-endian member bytes.
+- Generates canonical message/scope-bound proofs via native Semaphore module.
+- Added mobile client helper for `GET /api/v1/zk/roots/{scope}/members`.
+
+### Safety
+- Library-only change; no screen imports it yet.
+- No app build, no APK/AAB upload, no Play Console change, no server deploy, no feature flag flip.
+- Proof generation fails before native proof work if the local Semaphore identity is not included in the published group.
+- Core proof-builder is split from runtime wrapper so Vitest does not load native React Native modules.
+
+### Verification
+- `cd apps/mobile && npx vitest run src/lib/api.test.ts src/lib/zkVoteProof.test.ts src/lib/crypto-native-zk.test.ts src/lib/zkSemaphoreIdentity.test.ts src/lib/zkProofBinding.test.ts src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreSelfTest.test.ts src/lib/zkSemaphoreNative.test.ts`: PASS, 40 passed.
+- `cd apps/mobile && npx tsc --noEmit`: PASS.
+- Decimal commitment to little-endian conversion checked against S10 fixture member hex.
+- CC helper timed out after 60s; local tests/typecheck completed.
