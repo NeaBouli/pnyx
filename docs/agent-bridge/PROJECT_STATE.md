@@ -15,7 +15,7 @@
 - **Branch:** `main`
 - **Lokaler HEAD:** siehe `git rev-parse --short HEAD`
 - **origin/main:** siehe `git rev-parse --short origin/main`
-- **Repo HEAD:** `902d797` (GH#112 admin canary preflight bridge)
+- **Repo HEAD:** `0967946` (GH#112 admin canary preflight deployed)
 - **API container:** API-only deploy includes GH#112 canary isolation + hidden `ZK-CANARY-001` + admin canary preflight; ZK endpoints remain fail-closed
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
 - **Web container:** current public landing/wiki wording live; vC34 APK download/hash live
