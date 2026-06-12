@@ -1,7 +1,7 @@
 """
 ekklesia.gr Business Logic Monitor — 3-Tier Auto-Recovery
 Runs every 30 minutes (daemon) or once daily at 06:00 UTC (cron).
-16 rules. Recovery: T1 API → T2 Docker Restart → T3 Telegram Escalation.
+17 rules. Recovery: T1 API → T2 Docker Restart → T3 Telegram Escalation.
 """
 import os
 import time
@@ -28,6 +28,7 @@ ADMIN_KEY = os.getenv("ADMIN_KEY", "")
 AUTO_RECOVERY_T2 = os.getenv("AUTO_RECOVERY_T2", "false").lower() == "true"
 PARLIAMENT_SOURCE_FRESHNESS_ENABLED = os.getenv("PARLIAMENT_SOURCE_FRESHNESS_ENABLED", "true").lower() == "true"
 PARLIAMENT_SOURCE_MAX_LAG_HOURS = int(os.getenv("PARLIAMENT_SOURCE_MAX_LAG_HOURS", "36"))
+ZK_PENDING_MAX_HOURS = int(os.getenv("ZK_PENDING_MAX_HOURS", "24"))
 
 # T2 Allowlist — HARDCODED, never restart DB/Redis/Traefik/Discourse
 T2_ALLOWED_SERVICES = {"ekklesia-api", "ekklesia-web"}
@@ -201,7 +202,7 @@ def attempt_recovery(alert: Alert, r):
     return "T3"
 
 
-# ─── 15 Health Checks (return Alert objects) ────────────────────────────────
+# ─── Health Checks (return Alert objects) ───────────────────────────────────
 
 def check_scraper_stale(r) -> list[Alert]:
     alerts = []
@@ -533,10 +534,76 @@ def check_scraper_jobs(r) -> list[Alert]:
     return alerts
 
 
+def _rollback_if_possible(conn) -> None:
+    rollback = getattr(conn, "rollback", None)
+    if callable(rollback):
+        rollback()
+
+
+def _is_missing_zk_schema_error(exc: Exception) -> bool:
+    name = exc.__class__.__name__
+    if name in {"UndefinedTable", "UndefinedColumn"}:
+        return True
+    text = str(exc).lower()
+    return (
+        ("zk_vote_receipts" in text and "does not exist" in text)
+        or ("zk_merkle_roots" in text and "does not exist" in text)
+    )
+
+
+def check_zk_canary_health(conn) -> list[Alert]:
+    """Surface stuck ZK canary/publication states without auto-recovery."""
+    alerts = []
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT COUNT(*)
+                FROM zk_vote_receipts
+                WHERE arweave_pending = TRUE
+                  AND created_at < NOW() - (%s * INTERVAL '1 hour')
+                """,
+                (ZK_PENDING_MAX_HOURS,),
+            )
+            pending_count = cur.fetchone()[0]
+            if pending_count > 0:
+                alerts.append(Alert(
+                    "zk_receipts_pending",
+                    "ekklesia-api",
+                    "warning",
+                    f"ZK: {pending_count} vote receipts pending Arweave/publication >{ZK_PENDING_MAX_HOURS}h",
+                    False,
+                ))
+
+            cur.execute(
+                """
+                SELECT COUNT(*)
+                FROM zk_merkle_roots
+                WHERE status NOT IN ('OPEN', 'CLOSED', 'ARCHIVED')
+                """
+            )
+            invalid_roots = cur.fetchone()[0]
+            if invalid_roots > 0:
+                alerts.append(Alert(
+                    "zk_root_invalid",
+                    "ekklesia-api",
+                    "critical",
+                    f"ZK: {invalid_roots} Merkle roots have invalid status",
+                    False,
+                ))
+    except Exception as exc:
+        if _is_missing_zk_schema_error(exc):
+            _rollback_if_possible(conn)
+            logger.info("[ZK] Monitoring skipped; ZK storage schema is not present yet")
+            return []
+        raise
+    return alerts
+
+
 # ─── Main Loop ───────────────────────────────────────────────────────────────
 
 def run_checks():
-    logger.info("Running 16 business logic checks...")
+    logger.info("Running 17 business logic checks...")
     all_alerts: list[Alert] = []
     recovery_results: dict[str, str] = {}
 
@@ -560,6 +627,7 @@ def run_checks():
         all_alerts.extend(check_arweave_wallet())
         all_alerts.extend(check_forum_completeness(conn))
         all_alerts.extend(check_scraper_jobs(r))
+        all_alerts.extend(check_zk_canary_health(conn))
 
         # Recovery pass
         for alert in all_alerts:

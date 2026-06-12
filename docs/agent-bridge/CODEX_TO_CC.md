@@ -1,37 +1,30 @@
-# CC Review Request — GH#112 canary isolation test expansion
+# CC Review Request — GH#112 ZK monitor final diff
 
 Mode: review only. Do not edit files.
 
+Please review the final monitor diff:
+
+```bash
+git diff -- apps/monitor/monitor.py apps/api/tests/test_monitor_zk_canary_health.py
+```
+
 Context:
-- Runtime canary isolation guard is already live from `b6a5e0c` / deploy note `733ff04`.
-- Your previous review found no blockers, only a low note that per-endpoint public-bill rejection tests could be expanded.
-- Codex addressed that note with a test-only diff on top of `3163e05`.
+- Added ZK observability check for old pending ZK receipts and invalid root statuses.
+- After your previous finding, added a missing-schema guard so older/non-migrated environments skip ZK monitoring instead of aborting the whole monitor cycle.
+- ZK alerts have `recovery_allowed=False` (direct T3 only).
 
-Please review:
-
-```bash
-git diff -- apps/api/tests/routers/test_zk_verify_api.py docs/agent-bridge/ACTION_LOG.md
-```
-
-Expected scope:
-- Test-only coverage for public Parliament bill rejection in canary mode.
-- No runtime code changes.
-- No deploy, no DB migration, no mobile build, no Play upload.
-
-Verification already run:
+Verification:
 
 ```bash
-cd apps/api && /tmp/pnyx-api-test-venv/bin/python -m pytest tests/routers/test_zk_verify_api.py -q
-# PASS: 38 passed, 1 existing Pydantic deprecation warning
-
-cd apps/api && python3 -m py_compile routers/zk.py tests/routers/test_zk_verify_api.py
-# PASS
+python3 -m py_compile apps/monitor/monitor.py apps/api/tests/test_monitor_zk_canary_health.py
+cd apps/api && /tmp/pnyx-api-test-venv/bin/python -m pytest tests/test_monitor_zk_canary_health.py tests/test_monitor_parliament_freshness.py tests/routers/test_zk_verify_api.py -q
+# PASS: 44 passed, 1 existing Pydantic warning
 ```
 
-Review questions:
-1. Do the new tests correctly exercise canary-mode rejection of an allowlisted but public/non-isolated bill on receipts, root read, root members, and ZK vote accept?
-2. Are the fake DB result sequences correct for each endpoint?
-3. Did this accidentally make a runtime assumption weaker or hide a path that should still be covered?
-4. Any blockers before commit?
+Questions:
+1. Does the missing-schema guard correctly avoid breaking the whole monitor cycle?
+2. Is the rollback after a missing-table error sufficient to clear Postgres aborted transaction state?
+3. Any alert-spam or false-positive risk before canary?
+4. Any blocker before commit/deploy?
 
-Report PASS/FAIL with concrete file/line findings only.
+Report PASS/FAIL with concrete findings only.

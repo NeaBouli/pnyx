@@ -10065,3 +10065,22 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Conclusion
 - No new action for pnyx.
 - GH#79 remains external/waiting on F-Droid/linsui/community merge/retest.
+
+## 2026-06-13 — Codex/CC: GH#112 ZK monitor observability
+
+### Scope
+- Added a monitor-only ZK canary/publication health check.
+- New alerts:
+  - `zk_receipts_pending`: ZK vote receipts still `arweave_pending=true` after `ZK_PENDING_MAX_HOURS` (default 24h).
+  - `zk_root_invalid`: ZK Merkle roots with a status outside `OPEN/CLOSED/ARCHIVED`.
+- Both alerts are direct T3 only (`recovery_allowed=false`); no automatic recovery or restart.
+
+### Safety
+- Missing ZK schema is treated as "skip ZK monitoring" and rolls back the transaction, so older/non-migrated environments do not break the whole monitor cycle.
+- No ZK flags changed, no API/router behavior changed, no DB migration, no mobile build, no Play upload.
+
+### Verification
+- `python3 -m py_compile apps/monitor/monitor.py apps/api/tests/test_monitor_zk_canary_health.py`: PASS.
+- `cd apps/api && /tmp/pnyx-api-test-venv/bin/python -m pytest tests/test_monitor_zk_canary_health.py tests/test_monitor_parliament_freshness.py tests/routers/test_zk_verify_api.py -q`: PASS, 44 passed.
+- Final focused test: `tests/test_monitor_zk_canary_health.py`: PASS, 4 passed.
+- CC final review: PASS, no blockers.
