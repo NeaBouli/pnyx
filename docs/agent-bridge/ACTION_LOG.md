@@ -9516,3 +9516,18 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Live Alembic: `s201a2b3c4d5 (head)`.
 - Live schema: `zk_identity_commitments.vote_scope_id` exists nullable, `idx_zk_commitments_scope` exists.
 - Live API: `/health` 200, `/api/v1/bills?limit=3` 200, `/api/v1/zk/status` gates false, `/api/v1/zk/opt-in` 503.
+
+## 2026-06-12 — Codex: GH#112 scoped group registry helper prepared
+
+### Scope
+- Added `services/zk_group_registry.py` for listing/counting active Semaphore commitments by canonical vote scope.
+- Helper intentionally does not compute Merkle roots; root construction must use a real Semaphore-compatible Poseidon/Merkle implementation.
+
+### Safety
+- No router exposure, no DB migration, no production flag flip, no ZK vote acceptance.
+- Helper returns only commitment strings/counts; no identity id, tier lock, Tier-1 nullifier, public key, phone, or private Semaphore material.
+
+### Verification
+- `cd apps/api && .venv/bin/python -m py_compile services/zk_group_registry.py`: PASS.
+- `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_group_registry.py tests/routers/test_zk_verify_api.py tests/services/test_zk_tier_lock.py tests/test_voting.py tests/test_zk_gate1_schema.py -q`: PASS, 60 passed / 2 xfailed.
+- CC review: no blockers.

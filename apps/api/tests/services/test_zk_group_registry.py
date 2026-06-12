@@ -1,0 +1,82 @@
+"""GH#112 scoped ZK group registry helper tests."""
+import pytest
+
+from services.zk_group_registry import (
+    count_active_commitments_for_scope,
+    list_active_commitments_for_scope,
+    validate_vote_scope_id,
+)
+
+
+class _FakeScalars:
+    def __init__(self, values):
+        self.values = values
+
+    def all(self):
+        return self.values
+
+
+class _FakeResult:
+    def __init__(self, values=None, scalar=None):
+        self.values = values or []
+        self.scalar = scalar
+
+    def scalars(self):
+        return _FakeScalars(self.values)
+
+    def scalar_one(self):
+        return self.scalar
+
+
+class _FakeDb:
+    def __init__(self, result):
+        self.result = result
+        self.executed = []
+
+    async def execute(self, statement):
+        self.executed.append(statement)
+        return self.result
+
+
+def test_validate_vote_scope_id_accepts_expected_scopes() -> None:
+    assert validate_vote_scope_id("bill:GR-0490a766") == "bill:GR-0490a766"
+    assert validate_vote_scope_id("municipal:ATH_001") == "municipal:ATH_001"
+    assert validate_vote_scope_id("regional:REG.006") == "regional:REG.006"
+
+
+@pytest.mark.parametrize("value", ["", "bad", "bill:bad/slash", "bill:bad:colon", "x:GR-1"])
+def test_validate_vote_scope_id_rejects_invalid_scopes(value: str) -> None:
+    with pytest.raises(ValueError):
+        validate_vote_scope_id(value)
+
+
+@pytest.mark.asyncio
+async def test_list_active_commitments_for_scope_returns_public_commitments_only() -> None:
+    db = _FakeDb(_FakeResult(values=["123", 456]))
+
+    commitments = await list_active_commitments_for_scope(db, vote_scope_id="bill:GR-0490a766")
+
+    assert commitments == ["123", "456"]
+    statement = str(db.executed[0])
+    assert "zk_identity_commitments.commitment" in statement
+    assert "identity_record_id" not in statement
+    assert "tier_guard_hash" not in statement
+
+
+@pytest.mark.asyncio
+async def test_list_active_commitments_for_scope_rejects_unsafe_limit() -> None:
+    with pytest.raises(ValueError):
+        await list_active_commitments_for_scope(_FakeDb(_FakeResult()), vote_scope_id="bill:GR-1", limit=0)
+
+    with pytest.raises(ValueError):
+        await list_active_commitments_for_scope(_FakeDb(_FakeResult()), vote_scope_id="bill:GR-1", limit=5001)
+
+
+@pytest.mark.asyncio
+async def test_count_active_commitments_for_scope_returns_count() -> None:
+    db = _FakeDb(_FakeResult(scalar=2))
+
+    count = await count_active_commitments_for_scope(db, vote_scope_id="bill:GR-0490a766")
+
+    assert count == 2
+    assert "count" in str(db.executed[0]).lower()
