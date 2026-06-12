@@ -16,6 +16,7 @@ from database import get_db
 
 DISCOURSE_BASE = os.getenv("DISCOURSE_BASE_URL", "https://pnyx.ekklesia.gr")
 from dependencies import verify_admin_key
+from services.bill_visibility import is_public_bill, public_bill_with_demo_filter
 from services.source_links import official_source_url
 from models import (
     ParliamentBill, BillStatus, BillStatusLog, BillRelevanceVote,
@@ -140,8 +141,7 @@ async def get_bills(
     from models import GovernanceLevel
 
     query = select(ParliamentBill).where(
-        ~ParliamentBill.id.like("DEMO-%"),
-        ParliamentBill.admin_hidden != True,
+        public_bill_with_demo_filter(),
     ).order_by(
         func.coalesce(
             ParliamentBill.parliament_vote_date,
@@ -241,7 +241,7 @@ async def get_trending(
         select(ParliamentBill, relevance_subq.c.score)
         .outerjoin(relevance_subq, ParliamentBill.id == relevance_subq.c.bill_id)
         .where(ParliamentBill.status.in_([BillStatus.ACTIVE, BillStatus.WINDOW_24H]))
-        .where(~ParliamentBill.id.like("DEMO-%"))
+        .where(public_bill_with_demo_filter())
         .order_by(relevance_subq.c.score.desc().nullslast())
         .limit(limit)
     )
@@ -275,7 +275,7 @@ async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db)):
         select(ParliamentBill).where(ParliamentBill.id == bill_id)
     )
     bill = result.scalar_one_or_none()
-    if not bill:
+    if not bill or not is_public_bill(bill):
         raise HTTPException(status_code=404, detail=f"Gesetz {bill_id} nicht gefunden.")
 
     return BillDetail(
@@ -325,7 +325,7 @@ async def get_bill_summary(
         select(ParliamentBill).where(ParliamentBill.id == bill_id)
     )
     bill = result.scalar_one_or_none()
-    if not bill:
+    if not bill or not is_public_bill(bill):
         raise HTTPException(status_code=404, detail=f"Bill {bill_id} not found")
 
     stored_summary = bill.summary_short_el if lang == "el" else (bill.summary_short_en or bill.summary_short_el)
@@ -394,7 +394,7 @@ async def flag_bill(
         raise HTTPException(403, "Δεν έχετε επαληθευτεί.")
 
     bill = await db.get(ParliamentBill, bill_id)
-    if not bill:
+    if not bill or not is_public_bill(bill):
         raise HTTPException(404, f"Το νομοσχέδιο {bill_id} δεν βρέθηκε.")
 
     # Insert flag (unique per user+bill)

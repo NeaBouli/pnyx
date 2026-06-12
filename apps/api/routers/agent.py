@@ -19,6 +19,7 @@ import redis.asyncio as aioredis
 
 from database import get_db
 from models import ParliamentBill, BillStatus, KnowledgeBase
+from services.bill_visibility import public_bill_filter
 from services.claude_usage import MODEL as CLAUDE_MODEL, track_usage
 from ip_utils import get_client_ip
 from services.ollama_service import answer_citizen_question, ollama_available
@@ -283,6 +284,7 @@ async def _build_context(question: str, lang: str, db: AsyncSession) -> tuple[st
                 BillStatus.ACTIVE, BillStatus.ANNOUNCED, BillStatus.WINDOW_24H,
                 BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END,
             ]))
+            .where(public_bill_filter())
             .order_by(ParliamentBill.created_at.desc())
             .limit(10)
         )

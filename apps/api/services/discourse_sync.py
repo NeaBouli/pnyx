@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import ParliamentBill, BillStatus, Periferia, Dimos
+from services.bill_visibility import public_bill_filter
 from services.source_links import official_source_url
 
 logger = logging.getLogger(__name__)
@@ -474,7 +475,10 @@ async def resync_all_topics(db: AsyncSession) -> dict:
     """Re-categorize and re-tag ALL existing forum topics. Rate-limited to ~10/min."""
     import asyncio
     result = await db.execute(
-        select(ParliamentBill).where(ParliamentBill.forum_topic_id.isnot(None))
+        select(ParliamentBill).where(
+            ParliamentBill.forum_topic_id.isnot(None),
+            public_bill_filter(),
+        )
     )
     bills = result.scalars().all()
     updated = 0
@@ -513,6 +517,7 @@ async def sync_new_bills_to_forum(db: AsyncSession) -> None:
                 BillStatus.ANNOUNCED, BillStatus.OPEN_END,
                 BillStatus.PARLIAMENT_VOTED,
             ]),
+            public_bill_filter(),
             ParliamentBill.forum_topic_id.is_(None),
         )
         .limit(FORUM_SYNC_BATCH)

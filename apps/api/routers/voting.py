@@ -23,6 +23,7 @@ from models import (
     ParliamentBill, BillStatus, BillRelevanceVote
 )
 from services.source_links import official_source_url
+from services.bill_visibility import is_public_bill, public_bill_filter
 from services.zk_tier_lock import (
     VoteScopeType,
     canonical_vote_scope_id,
@@ -286,7 +287,7 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
         bill_query = bill_query.with_for_update()
     bill_result = await db.execute(bill_query)
     bill = bill_result.scalar_one_or_none()
-    if not bill:
+    if not bill or not is_public_bill(bill):
         raise HTTPException(status_code=404, detail=f"Το νομοσχέδιο {req.bill_id} δεν βρέθηκε.")
 
     votable_states = [BillStatus.ACTIVE, BillStatus.WINDOW_24H, BillStatus.OPEN_END]
@@ -422,7 +423,7 @@ async def get_vote_status(
         select(ParliamentBill).where(ParliamentBill.id == bill_id)
     )
     bill = bill_result.scalar_one_or_none()
-    if not bill:
+    if not bill or not is_public_bill(bill):
         raise HTTPException(404, f"Το νομοσχέδιο {bill_id} δεν βρέθηκε.")
 
     vote_result = await db.execute(
@@ -469,7 +470,7 @@ async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = 
         bill_query = bill_query.with_for_update()
     bill_result = await db.execute(bill_query)
     bill = bill_result.scalar_one_or_none()
-    if not bill:
+    if not bill or not is_public_bill(bill):
         raise HTTPException(404, f"Το νομοσχέδιο {bill_id} δεν βρέθηκε.")
 
     if bill.status != BillStatus.WINDOW_24H:
@@ -550,6 +551,7 @@ async def get_latest_result(db: AsyncSession = Depends(get_db)):
         .where(ParliamentBill.status.in_([
             BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END, BillStatus.ACTIVE,
         ]))
+        .where(public_bill_filter())
         .order_by(desc(ParliamentBill.created_at))
         .limit(5)
     )
@@ -637,7 +639,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
         select(ParliamentBill).where(ParliamentBill.id == bill_id)
     )
     bill = bill_result.scalar_one_or_none()
-    if not bill:
+    if not bill or not is_public_bill(bill):
         raise HTTPException(status_code=404, detail=f"Το νομοσχέδιο {bill_id} δεν βρέθηκε.")
 
     # Visibility check
@@ -728,6 +730,13 @@ async def vote_relevance(
     identity = id_result.scalar_one_or_none()
     if not identity:
         raise HTTPException(status_code=403, detail="Δεν έχετε επαληθευτεί.")
+
+    bill_result = await db.execute(
+        select(ParliamentBill).where(ParliamentBill.id == bill_id)
+    )
+    bill = bill_result.scalar_one_or_none()
+    if not bill or not is_public_bill(bill):
+        raise HTTPException(status_code=404, detail=f"Το νομοσχέδιο {bill_id} δεν βρέθηκε.")
 
     # Verify Ed25519 signature
     # Canonical payload: "relevance:{bill_id}:{signal}:{nullifier_hash}"
@@ -841,7 +850,7 @@ async def submit_consensus(
         select(ParliamentBill).where(ParliamentBill.id == bill_id)
     )
     bill = bill_result.scalar_one_or_none()
-    if not bill:
+    if not bill or not is_public_bill(bill):
         raise HTTPException(404, "Το νομοσχέδιο δεν βρέθηκε")
     if bill.status != BillStatus.OPEN_END:
         raise HTTPException(400, "Η συναίνεση είναι δυνατή μόνο για ψηφισμένα νομοσχέδια (OPEN_END)")

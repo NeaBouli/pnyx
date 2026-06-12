@@ -11,6 +11,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import ParliamentBill, BillStatus, CitizenVote, VoteChoice, Statement
+from services.bill_visibility import public_bill_filter
 from .ollama_service import deepl_translate, ollama_available, ollama_json_generate
 
 logger = logging.getLogger(__name__)
@@ -109,6 +110,7 @@ async def run_compass_update(db: AsyncSession) -> list[dict]:
     result = await db.execute(
         select(ParliamentBill)
         .where(ParliamentBill.created_at >= cutoff)
+        .where(public_bill_filter())
         .where(ParliamentBill.status.in_([
             BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END, BillStatus.ACTIVE,
         ]))

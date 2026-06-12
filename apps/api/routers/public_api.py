@@ -21,6 +21,7 @@ from typing import Optional
 
 from database import get_db
 from ip_utils import rate_limit_key_for_ip, redis_fixed_window_limit
+from services.bill_visibility import is_public_bill, public_bill_filter, public_bill_with_demo_filter
 from models import (
     ParliamentBill, CitizenVote, Party,
     BillStatus, VoteChoice
@@ -144,7 +145,7 @@ async def public_bills(
     db: AsyncSession = Depends(get_db)
 ):
     """Alle Gesetzentwürfe — öffentlich, CC BY 4.0."""
-    query = select(ParliamentBill).order_by(
+    query = select(ParliamentBill).where(public_bill_filter()).order_by(
         func.coalesce(
             ParliamentBill.parliament_vote_date,
             ParliamentBill.submitted_date,
@@ -205,7 +206,7 @@ async def public_bill_results(
 ):
     """Citizen Vote Ergebnisse — öffentlich."""
     bill = await db.get(ParliamentBill, bill_id)
-    if not bill:
+    if not bill or not is_public_bill(bill):
         raise HTTPException(404, f"Bill {bill_id} nicht gefunden")
 
     yes     = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.YES)) or 0
@@ -237,37 +238,44 @@ async def public_bill_results(
 async def public_stats(_key=Depends(rate_limit_check), db: AsyncSession = Depends(get_db)):
     """Plattform-Statistiken — öffentlich."""
     total_bills  = await db.scalar(
-        select(func.count(ParliamentBill.id)).where(~ParliamentBill.id.like("DEMO-%"))
+        select(func.count(ParliamentBill.id)).where(public_bill_with_demo_filter())
     ) or 0
     total_votes  = await db.scalar(
-        select(func.count(CitizenVote.id)).where(~CitizenVote.bill_id.like("DEMO-%"))
+        select(func.count(CitizenVote.id))
+        .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
+        .where(public_bill_filter(), ~CitizenVote.bill_id.like("DEMO-%"))
     ) or 0
     active_bills = await db.scalar(
         select(func.count(ParliamentBill.id)).where(
-            ParliamentBill.status.in_([BillStatus.ACTIVE, BillStatus.WINDOW_24H])
+            ParliamentBill.status.in_([BillStatus.ACTIVE, BillStatus.WINDOW_24H]),
+            public_bill_filter(),
         )
     ) or 0
 
     parliament_bills = await db.scalar(
         select(func.count(ParliamentBill.id)).where(
-            ParliamentBill.source == "PARLIAMENT", ~ParliamentBill.id.like("DEMO-%")
+            ParliamentBill.source == "PARLIAMENT", public_bill_with_demo_filter()
         )
     ) or 0
     diavgeia_bills = await db.scalar(
-        select(func.count(ParliamentBill.id)).where(ParliamentBill.source == "DIAVGEIA")
+        select(func.count(ParliamentBill.id)).where(
+            ParliamentBill.source == "DIAVGEIA", public_bill_filter()
+        )
     ) or 0
     archived_bills = await db.scalar(
         select(func.count(ParliamentBill.id)).where(
             ParliamentBill.status.in_([BillStatus.OPEN_END, BillStatus.PARLIAMENT_VOTED]),
-            ~ParliamentBill.id.like("DEMO-%"),
+            public_bill_with_demo_filter(),
         )
     ) or 0
     arweave_archived = await db.scalar(
-        select(func.count(ParliamentBill.id)).where(ParliamentBill.arweave_tx_id.isnot(None))
+        select(func.count(ParliamentBill.id)).where(
+            ParliamentBill.arweave_tx_id.isnot(None), public_bill_filter()
+        )
     ) or 0
     forum_topics = await db.scalar(
         select(func.count(ParliamentBill.id)).where(
-            ParliamentBill.forum_topic_id.isnot(None), ~ParliamentBill.id.like("DEMO-%")
+            ParliamentBill.forum_topic_id.isnot(None), public_bill_with_demo_filter()
         )
     ) or 0
 
@@ -338,9 +346,11 @@ async def public_scraper_status(db: AsyncSession = Depends(get_db)):
     last_success = await r.get("scraper:parliament:last_success") or None
 
     # Bills stats
-    total = await db.scalar(select(func.count(ParliamentBill.id))) or 0
+    total = await db.scalar(select(func.count(ParliamentBill.id)).where(public_bill_filter())) or 0
     with_arweave = await db.scalar(
-        select(func.count(ParliamentBill.id)).where(ParliamentBill.arweave_tx_id.isnot(None))
+        select(func.count(ParliamentBill.id)).where(
+            ParliamentBill.arweave_tx_id.isnot(None), public_bill_filter()
+        )
     ) or 0
 
     # Arweave balance

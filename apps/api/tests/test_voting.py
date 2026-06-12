@@ -159,6 +159,63 @@ class TestZkTier1Guard:
         assert "FOR UPDATE" in str(db.executed[1])
 
     @pytest.mark.asyncio
+    async def test_submit_vote_rejects_admin_hidden_bill_before_signature(self, monkeypatch):
+        monkeypatch.delenv("ZK_TIER1_GUARD_ENABLED", raising=False)
+        called = False
+
+        def fake_verify_signature(*_args):
+            nonlocal called
+            called = True
+            return True
+
+        monkeypatch.setattr(voting, "verify_signature", fake_verify_signature)
+        req = voting.VoteRequest(
+            nullifier_hash="a" * 64,
+            bill_id="ZK-CANARY-001",
+            vote="YES",
+            signature_hex="b" * 128,
+        )
+        identity = SimpleNamespace(public_key_hex="c" * 64, periferia_id=None, dimos_id=None)
+        bill = SimpleNamespace(
+            id="ZK-CANARY-001",
+            status=BillStatus.ACTIVE,
+            governance_level=GovernanceLevel.NATIONAL,
+            admin_hidden=True,
+        )
+        db = _FakeDb([identity, bill])
+
+        with pytest.raises(HTTPException) as exc:
+            await voting.submit_vote(req, db)
+
+        assert exc.value.status_code == 404
+        assert called is False
+
+    @pytest.mark.asyncio
+    async def test_vote_relevance_rejects_admin_hidden_bill_before_signature(self, monkeypatch):
+        called = False
+
+        def fake_verify_signature(*_args):
+            nonlocal called
+            called = True
+            return True
+
+        monkeypatch.setattr(voting, "verify_signature", fake_verify_signature)
+        req = voting.RelevanceRequest(
+            nullifier_hash="a" * 64,
+            signal=1,
+            signature_hex="b" * 128,
+        )
+        identity = SimpleNamespace(public_key_hex="c" * 64)
+        bill = SimpleNamespace(id="ZK-CANARY-001", admin_hidden=True)
+        db = _FakeDb([identity, bill])
+
+        with pytest.raises(HTTPException) as exc:
+            await voting.vote_relevance("ZK-CANARY-001", req, db)
+
+        assert exc.value.status_code == 404
+        assert called is False
+
+    @pytest.mark.asyncio
     async def test_zk_guard_misconfiguration_returns_controlled_503(self, monkeypatch):
         monkeypatch.setenv("ZK_TIER1_GUARD_ENABLED", "true")
         monkeypatch.delenv("SERVER_SALT", raising=False)

@@ -19,6 +19,7 @@ from sqlalchemy import select, func
 
 from database import get_db
 from models import ParliamentBill, CitizenVote, BillStatus, VoteChoice, Party
+from services.bill_visibility import public_bill_filter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/export", tags=["MOD-14 Data Export"])
@@ -27,7 +28,7 @@ router = APIRouter(prefix="/api/v1/export", tags=["MOD-14 Data Export"])
 async def get_all_results(db: AsyncSession) -> list[dict]:
     """Aggregierte Ergebnisse aller Bills."""
     result = await db.execute(
-        select(ParliamentBill).order_by(
+        select(ParliamentBill).where(public_bill_filter()).order_by(
             ParliamentBill.parliament_vote_date.desc().nullslast()
         )
     )

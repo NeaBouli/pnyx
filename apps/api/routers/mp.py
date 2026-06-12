@@ -15,6 +15,7 @@ from sqlalchemy import select, func
 
 from database import get_db
 from models import ParliamentBill, CitizenVote, Party, BillStatus, VoteChoice
+from services.bill_visibility import is_public_bill, public_bill_filter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/mp", tags=["MOD-12 MP Comparison"])
@@ -75,7 +76,8 @@ async def party_comparison(party_abbr: str, db: AsyncSession = Depends(get_db)):
 
     result = await db.execute(
         select(ParliamentBill).where(
-            ParliamentBill.status.in_([BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END])
+            ParliamentBill.status.in_([BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END]),
+            public_bill_filter(),
         ).order_by(ParliamentBill.parliament_vote_date.desc().nullslast())
     )
     bills = result.scalars().all()
@@ -139,7 +141,8 @@ async def party_ranking(db: AsyncSession = Depends(get_db)):
 
     bills_result = await db.execute(
         select(ParliamentBill).where(
-            ParliamentBill.status.in_([BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END])
+            ParliamentBill.status.in_([BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END]),
+            public_bill_filter(),
         )
     )
     bills = bills_result.scalars().all()
@@ -187,7 +190,7 @@ async def party_ranking(db: AsyncSession = Depends(get_db)):
 async def bill_party_breakdown(bill_id: str, db: AsyncSession = Depends(get_db)):
     """Alle Parteistimmen vs. Bürgermehrheit für ein Bill."""
     bill = await db.get(ParliamentBill, bill_id)
-    if not bill:
+    if not bill or not is_public_bill(bill):
         raise HTTPException(404, f"Bill {bill_id} nicht gefunden")
 
     majority, yes, no_cnt, total = await citizen_majority_for(db, bill_id)

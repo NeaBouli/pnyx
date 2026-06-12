@@ -15,6 +15,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import ParliamentBill, BillStatus, BillStatusLog
+from services.bill_visibility import public_bill_filter, is_public_bill
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +85,7 @@ async def run_bill_lifecycle(db: AsyncSession) -> dict:
     result = await db.execute(
         select(ParliamentBill).where(
             ParliamentBill.parliament_vote_date.isnot(None),
+            public_bill_filter(),
             ParliamentBill.status.in_([
                 BillStatus.ANNOUNCED,
                 BillStatus.ACTIVE,
@@ -158,6 +160,7 @@ async def _catchup_arweave(db: AsyncSession) -> int:
     result = await db.execute(
         select(ParliamentBill).where(
             ParliamentBill.arweave_tx_id.is_(None),
+            public_bill_filter(),
             ParliamentBill.source == "PARLIAMENT",
             ParliamentBill.party_votes_parliament.isnot(None),
             ParliamentBill.status.in_([
@@ -206,6 +209,8 @@ async def _hook_notify_new_bill(bill: ParliamentBill) -> None:
 
 def is_arweave_eligible(bill: ParliamentBill) -> tuple[bool, str]:
     """Pure guard: check if a bill may be archived to Arweave. Returns (eligible, reason)."""
+    if not is_public_bill(bill):
+        return False, "admin_hidden"
     source = getattr(bill, "source", None)
     if source and source != "PARLIAMENT":
         return False, f"source={source} (not PARLIAMENT)"

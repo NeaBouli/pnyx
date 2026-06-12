@@ -10,6 +10,8 @@ import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
+from services.bill_visibility import public_bill_filter
+
 logger = logging.getLogger(__name__)
 
 BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
@@ -101,23 +103,36 @@ async def send_monthly_report(db: AsyncSession) -> bool:
 
     # ── Stats ──────────────────────────────────────────────────────
     new_bills_count = await db.scalar(
-        select(func.count(ParliamentBill.id)).where(ParliamentBill.created_at >= month_start)
+        select(func.count(ParliamentBill.id)).where(
+            ParliamentBill.created_at >= month_start,
+            public_bill_filter(),
+        )
     ) or 0
 
     voted_count = await db.scalar(
-        select(func.count(ParliamentBill.id)).where(ParliamentBill.status == BillStatus.OPEN_END)
+        select(func.count(ParliamentBill.id)).where(
+            ParliamentBill.status == BillStatus.OPEN_END,
+            public_bill_filter(),
+        )
     ) or 0
 
-    total_votes = await db.scalar(select(func.count(CitizenVote.id))) or 0
+    total_votes = await db.scalar(
+        select(func.count(CitizenVote.id))
+        .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
+        .where(public_bill_filter())
+    ) or 0
 
     archived_count = await db.scalar(
-        select(func.count(ParliamentBill.id)).where(ParliamentBill.arweave_tx_id.isnot(None))
+        select(func.count(ParliamentBill.id)).where(
+            ParliamentBill.arweave_tx_id.isnot(None),
+            public_bill_filter(),
+        )
     ) or 0
 
     # ── Neue Bills (Titel-Liste) ──────────────────────────────────
     new_bills_result = await db.execute(
         select(ParliamentBill.id, ParliamentBill.title_el)
-        .where(ParliamentBill.created_at >= month_start)
+        .where(ParliamentBill.created_at >= month_start, public_bill_filter())
         .order_by(ParliamentBill.created_at.desc())
         .limit(10)
     )
@@ -128,6 +143,7 @@ async def send_monthly_report(db: AsyncSession) -> bool:
         select(ParliamentBill.id, ParliamentBill.title_el, ParliamentBill.parliament_vote_date)
         .where(
             ParliamentBill.status.in_([BillStatus.ACTIVE, BillStatus.ANNOUNCED]),
+            public_bill_filter(),
             ParliamentBill.parliament_vote_date.isnot(None),
             ParliamentBill.parliament_vote_date >= now.replace(tzinfo=None),
         )
@@ -146,6 +162,7 @@ async def send_monthly_report(db: AsyncSession) -> bool:
         FROM citizen_votes cv
         JOIN parliament_bills b ON b.id = cv.bill_id
         WHERE cv.created_at >= :month_start
+          AND b.admin_hidden IS NOT TRUE
         GROUP BY b.id, b.title_el
         ORDER BY total DESC LIMIT 5
     """), {"month_start": month_start})

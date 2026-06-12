@@ -14,6 +14,7 @@ import redis.asyncio as aioredis
 import os
 
 from models import CitizenVote, VoteChoice, ParliamentBill, BillStatus
+from services.bill_visibility import public_bill_filter
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,7 @@ async def compute_cplm(db: AsyncSession) -> dict:
     result = await db.execute(
         select(CitizenVote, ParliamentBill)
         .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
+        .where(public_bill_filter())
     )
     rows = result.all()
 

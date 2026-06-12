@@ -20,6 +20,7 @@ from sqlalchemy import select
 from database import get_db
 from models import ParliamentBill, BillStatusLog
 from config import settings
+from services.bill_visibility import is_public_bill
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/arweave", tags=["MOD-08 Arweave"])
@@ -190,7 +191,7 @@ async def get_arweave_record(bill_id: str, db: AsyncSession = Depends(get_db)):
         select(ParliamentBill).where(ParliamentBill.id == bill_id)
     )
     bill = result.scalar_one_or_none()
-    if not bill:
+    if not bill or not is_public_bill(bill):
         raise HTTPException(404, "Bill nicht gefunden")
 
     tx_id = bill.arweave_tx_id

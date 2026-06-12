@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from dependencies import verify_admin_key
 from models import ParliamentBill, BillStatus
+from services.bill_visibility import is_public_bill, public_bill_filter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/rep", tags=["Representative"])
@@ -283,6 +284,8 @@ def is_bill_visible_for_token(bill, rep: dict) -> bool:
     """Check if a bill is visible for the given representative token.
     Shared by /rep/bills, /rep/results, /rep/divergence.
     """
+    if not is_public_bill(bill):
+        return False
     role = rep.get("role", "")
     source = getattr(bill, "source", "PARLIAMENT") or "PARLIAMENT"
     gov = bill.governance_level.value if bill.governance_level else "NATIONAL"
@@ -325,7 +328,10 @@ async def get_rep_bills(
     region = rep.get("region", "")
     role_header = ROLE_HEADER_MAP.get(role, "UNKNOWN")
 
-    query = select(ParliamentBill).where(ParliamentBill.status.in_(ALLOWED_STATUSES))
+    query = select(ParliamentBill).where(
+        ParliamentBill.status.in_(ALLOWED_STATUSES),
+        public_bill_filter(),
+    )
 
     periferia_id = rep.get("periferia_id")
 

@@ -41,6 +41,12 @@ class TestArweaveGuards:
         assert not eligible
         assert "PARLIAMENT" in reason
 
+    def test_admin_hidden_never_archived(self):
+        bill = _bill(admin_hidden=True)
+        eligible, reason = is_arweave_eligible(bill)
+        assert not eligible
+        assert "admin_hidden" in reason
+
     def test_parliament_voted_with_party_votes_eligible(self):
         bill = _bill()
         eligible, _ = is_arweave_eligible(bill)

@@ -16,6 +16,7 @@ from sqlalchemy import select, func, and_, extract, Integer
 
 from database import get_db
 from models import ParliamentBill, CitizenVote, BillStatus, VoteChoice
+from services.bill_visibility import is_public_bill, public_bill_filter, public_bill_with_demo_filter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/analytics", tags=["MOD-06 Analytics"])
@@ -42,10 +43,13 @@ async def compute_divergence(db: AsyncSession, bill_id: str, bill: ParliamentBil
 @router.get("/overview")
 async def analytics_overview(db: AsyncSession = Depends(get_db)):
     """Plattform-weite Statistiken + Divergence Übersicht."""
-    _real = ~ParliamentBill.id.like("DEMO-%")
-    _real_vote = ~CitizenVote.bill_id.like("DEMO-%")
+    _real = public_bill_with_demo_filter()
     total_bills  = await db.scalar(select(func.count(ParliamentBill.id)).where(_real)) or 0
-    total_votes  = await db.scalar(select(func.count(CitizenVote.id)).where(_real_vote)) or 0
+    total_votes  = await db.scalar(
+        select(func.count(CitizenVote.id))
+        .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
+        .where(public_bill_filter(), ~CitizenVote.bill_id.like("DEMO-%"))
+    ) or 0
     active_bills = await db.scalar(
         select(func.count(ParliamentBill.id)).where(
             _real,
@@ -61,12 +65,16 @@ async def analytics_overview(db: AsyncSession = Depends(get_db)):
 
     week_ago = datetime.utcnow() - timedelta(days=7)  # naive to match DB column
     recent_votes = await db.scalar(
-        select(func.count(CitizenVote.id)).where(_real_vote, CitizenVote.created_at >= week_ago)
+        select(func.count(CitizenVote.id))
+        .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
+        .where(public_bill_filter(), ~CitizenVote.bill_id.like("DEMO-%"), CitizenVote.created_at >= week_ago)
     ) or 0
 
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     today_votes = await db.scalar(
-        select(func.count(CitizenVote.id)).where(_real_vote, CitizenVote.created_at >= today)
+        select(func.count(CitizenVote.id))
+        .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
+        .where(public_bill_filter(), ~CitizenVote.bill_id.like("DEMO-%"), CitizenVote.created_at >= today)
     ) or 0
 
     result = await db.execute(
@@ -111,6 +119,7 @@ async def divergence_trends(
         select(ParliamentBill).where(
             and_(
                 ParliamentBill.status == BillStatus.PARLIAMENT_VOTED,
+                public_bill_filter(),
                 ParliamentBill.parliament_vote_date >= since.date()
             )
         ).order_by(ParliamentBill.parliament_vote_date)
@@ -206,7 +215,10 @@ async def top_divergence(
 ):
     """Top Bills nach Divergence Score — höchste Abweichung zuerst."""
     result = await db.execute(
-        select(ParliamentBill).where(ParliamentBill.status == BillStatus.PARLIAMENT_VOTED)
+        select(ParliamentBill).where(
+            ParliamentBill.status == BillStatus.PARLIAMENT_VOTED,
+            public_bill_filter(),
+        )
     )
     bills = result.scalars().all()
 
@@ -248,7 +260,7 @@ async def top_divergence(
 async def bill_analytics(bill_id: str, db: AsyncSession = Depends(get_db)):
     """Vollständige Analytik für ein einzelnes Bill."""
     bill = await db.get(ParliamentBill, bill_id)
-    if not bill:
+    if not bill or not is_public_bill(bill):
         raise HTTPException(404, f"Bill {bill_id} nicht gefunden")
 
     yes     = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.YES)) or 0
@@ -304,7 +316,8 @@ async def cumulative_representation(db: AsyncSession = Depends(get_db)):
     # Alle Bills mit Votes
     bills_result = await db.execute(
         select(ParliamentBill).where(
-            ParliamentBill.status.in_([BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END])
+            ParliamentBill.status.in_([BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END]),
+            public_bill_filter(),
         )
     )
     bills = bills_result.scalars().all()
