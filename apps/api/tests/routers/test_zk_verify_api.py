@@ -105,6 +105,18 @@ def _zk_opt_in_payload() -> dict:
     }
 
 
+def _public_parliament_bill() -> SimpleNamespace:
+    return SimpleNamespace(
+        id="GR-0490a766",
+        status=BillStatus.ACTIVE,
+        governance_level=GovernanceLevel.NATIONAL,
+        source="PARLIAMENT",
+        admin_hidden=False,
+        forum_topic_id=438,
+        arweave_tx_id="ar_tx",
+    )
+
+
 async def _override_with(fake_db):
     yield fake_db
 
@@ -433,16 +445,7 @@ async def test_zk_opt_in_canary_rejects_allowlisted_public_bill(monkeypatch) -> 
     monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:GR-0490a766")
     monkeypatch.setattr(zk, "verify_signature", lambda *_args: True)
     identity = SimpleNamespace(id=7, public_key_hex="c" * 64, periferia_id=None, dimos_id=None)
-    bill = SimpleNamespace(
-        id="GR-0490a766",
-        status=BillStatus.ACTIVE,
-        governance_level=GovernanceLevel.NATIONAL,
-        source="PARLIAMENT",
-        admin_hidden=False,
-        forum_topic_id=438,
-        arweave_tx_id="ar_tx",
-    )
-    fake_db = _FakeSequenceDb([identity, bill])
+    fake_db = _FakeSequenceDb([identity, _public_parliament_bill()])
 
     async def override_get_db():
         async for value in _override_with(fake_db):
@@ -532,6 +535,27 @@ async def test_zk_receipts_endpoint_rejects_invalid_scope() -> None:
 
 
 @pytest.mark.asyncio
+async def test_zk_receipts_canary_rejects_allowlisted_public_bill(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:GR-0490a766")
+    fake_db = _FakeSequenceDb([_public_parliament_bill()])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/zk/receipts/bill:GR-0490a766")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "ZK canary bill is not isolated"
+
+
+@pytest.mark.asyncio
 async def test_zk_current_root_endpoint_returns_public_payload_only() -> None:
     root = SimpleNamespace(
         id=42,
@@ -587,6 +611,27 @@ async def test_zk_current_root_endpoint_returns_404_for_empty_scope() -> None:
 
     assert response.status_code == 404
     assert response.json()["detail"] == "ZK root not found"
+
+
+@pytest.mark.asyncio
+async def test_zk_current_root_canary_rejects_allowlisted_public_bill(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:GR-0490a766")
+    fake_db = _FakeSequenceDb([_public_parliament_bill()])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/zk/roots/bill:GR-0490a766")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "ZK canary bill is not isolated"
 
 
 @pytest.mark.asyncio
@@ -675,6 +720,27 @@ async def test_zk_root_members_canary_rejects_non_allowlisted_scope(monkeypatch)
     assert response.status_code == 403
     assert response.json()["detail"] == "ZK canary scope is not allowed"
     assert fake_db.executed == []
+
+
+@pytest.mark.asyncio
+async def test_zk_root_members_canary_rejects_allowlisted_public_bill(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:GR-0490a766")
+    fake_db = _FakeSequenceDb([_public_parliament_bill()])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/zk/roots/bill:GR-0490a766/members")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "ZK canary bill is not isolated"
 
 
 @pytest.mark.asyncio
@@ -926,6 +992,37 @@ async def test_zk_vote_rejects_proof_not_bound_to_scope_and_vote(monkeypatch) ->
     assert response.status_code == 400
     assert response.json()["detail"] == "ZK proof is not bound to this vote scope and commitment"
     assert fake_db.added == []
+
+
+@pytest.mark.asyncio
+async def test_zk_vote_canary_rejects_allowlisted_public_bill(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:GR-0490a766")
+    fake_db = _FakeSequenceDb([_public_parliament_bill()])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/vote",
+                json={
+                    "vote_scope_id": "bill:GR-0490a766",
+                    "vote_commitment": "YES",
+                    "proof": _native_proof(),
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "ZK canary bill is not isolated"
+    assert fake_db.added == []
+    assert fake_db.committed is False
 
 
 @pytest.mark.asyncio

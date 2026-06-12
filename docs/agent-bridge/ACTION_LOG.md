@@ -10019,3 +10019,22 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `cd apps/mobile && npx expo config --json`: `direct direct`.
 - `cd apps/mobile && EKKLESIA_DISTRIBUTION_CHANNEL=play EKKLESIA_BUILD_FLAVOR=play npx expo config --json`: `play play`.
 - `cd apps/mobile && npx tsc --noEmit`: PASS.
+
+## 2026-06-13 — Codex: GH#112 canary isolation endpoint test expansion
+
+### Scope
+- Addressed CC's remaining low review note with test-only coverage.
+- Added explicit public-bill rejection tests for canary mode on:
+  - `GET /zk/receipts/{scope}`
+  - `GET /zk/roots/{scope}`
+  - `GET /zk/roots/{scope}/members`
+  - `POST /zk/vote`
+- Reused a single public Parliament bill fixture (`source=PARLIAMENT`, visible, forum/arweave-linked).
+
+### Verification
+- `cd apps/api && /tmp/pnyx-api-test-venv/bin/python -m pytest tests/routers/test_zk_verify_api.py -q`: PASS, 38 passed, 1 existing Pydantic deprecation warning.
+- `cd apps/api && python3 -m py_compile routers/zk.py tests/routers/test_zk_verify_api.py`: PASS.
+- CC direct review: PASS, no blockers. Non-blocking fixture de-duplication applied and tests re-run: PASS, 38 passed.
+
+### Safety
+- Tests only. No runtime code, no deploy, no DB migration, no mobile build, no Play upload.
