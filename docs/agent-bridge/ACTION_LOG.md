@@ -9827,3 +9827,27 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Verification
 - `cd apps/mobile && npx vitest run src/lib/api.test.ts src/lib/crypto-native-zk.test.ts src/lib/zkSemaphoreIdentity.test.ts src/lib/zkProofBinding.test.ts src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreSelfTest.test.ts src/lib/zkSemaphoreNative.test.ts`: PASS, 35 passed.
 - `cd apps/mobile && npx tsc --noEmit`: PASS.
+
+## 2026-06-12 — Codex: GH#112 public ZK group members endpoint live
+
+### Scope
+- Added `GET /api/v1/zk/roots/{vote_scope_id}/members`.
+- Endpoint returns published root metadata plus public Semaphore commitments needed by the mobile prover.
+- It recomputes the current active group root and returns 409 if active commitments no longer match the published OPEN root.
+
+### Safety
+- Read-only endpoint; no DB writes, no vote acceptance, no root publication, no Arweave, no feature flag flip.
+- Canary allowlist is enforced when `ZK_CANARY_ENABLED=true`.
+- Response contains public commitments only; no `tier_guard_hash`, no identity id, no Tier-1 nullifier, no phone/HLR/IP.
+- API-only deploy; no mobile/web build and no Play Console change.
+- Server backup before sync: `/opt/ekklesia/backups/gh112-zk-members-endpoint-20260612_104731.tar.gz`.
+
+### Verification
+- `cd apps/api && .venv/bin/python -m py_compile routers/zk.py tests/routers/test_zk_verify_api.py`: PASS.
+- `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py tests/services/test_zk_group_registry.py tests/services/test_zk_merkle_root.py tests/services/test_zk_proof_binding.py -q`: PASS, 60 passed.
+- CC review: PASS; LOW scale note about caching/ETag for large future groups.
+- Live `https://api.ekklesia.gr/health`: 200.
+- Live `GET /api/v1/zk/status`: all ZK production flags false.
+- Live `GET /api/v1/zk/roots/bill:ZK-CANARY-001/members`: 404 `ZK root not found` (expected before root publication).
+- Live `POST /api/v1/zk/vote`: 503 `ZK voting is not enabled`.
+- Live `GET /api/v1/bills/ZK-CANARY-001`: 404 (hidden canary isolation intact).
