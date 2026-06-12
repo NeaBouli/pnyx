@@ -20,7 +20,7 @@
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
 - **Web container:** current public landing/wiki wording live; vC34 APK download/hash live
 - **S10:** vC34/1.0.5 verified before Play upload; S10 may be disconnected during ongoing work
-- **Alembic:** `t301a2b3c4d5` (ZK receipt `vote_commitment`, head)
+- **Alembic:** `u401a2b3c4d5` (ZK receipt `vote_commitment` NOT NULL, head)
 - **F-Droid !38007:** Community launch-crash fixed in fdroiddata `e42e014f`; pipeline `2570810919` green 9/9; GlassOnTin/linsui re-test requested
 - **POLIS Status:** App-internal Create/Vote LIVE
 - **Tracking:** Linear + GitHub Issues parallel. Cross-Links: GH#71-83 = NEA-277-285

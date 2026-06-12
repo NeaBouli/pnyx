@@ -9871,3 +9871,24 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `cd apps/mobile && npx tsc --noEmit`: PASS.
 - Decimal commitment to little-endian conversion checked against S10 fixture member hex.
 - CC helper timed out after 60s; local tests/typecheck completed.
+
+## 2026-06-12 — Codex: GH#112 ZK receipt schema hardened live
+
+### Scope
+- Added Alembic `u401a2b3c4d5` to require `zk_vote_receipts.vote_commitment` NOT NULL.
+- Updated SQLAlchemy model to match the route contract.
+
+### Safety
+- DB backup before migration: `/opt/ekklesia/backups/gh112-vote-commitment-not-null-db-20260612_110237.sql.gz`.
+- Live pre-check: `zk_vote_receipts` count was `0`.
+- No ZK flags set, no vote accepted, no root published, no Arweave write.
+- API-only deploy + Alembic upgrade.
+
+### Verification
+- `cd apps/api && .venv/bin/python -m py_compile models.py alembic/versions/u401a2b3c4d5_zk_receipt_vote_commitment_not_null.py tests/test_zk_gate1_schema.py`: PASS.
+- `cd apps/api && .venv/bin/python -m pytest tests/test_zk_gate1_schema.py tests/routers/test_zk_verify_api.py tests/services/test_zk_arweave_payload.py -q`: PASS, 41 passed.
+- CC review: PASS.
+- Server Alembic current: `u401a2b3c4d5 (head)`.
+- Live DB column `zk_vote_receipts.vote_commitment`: `is_nullable=NO`.
+- Live `https://api.ekklesia.gr/health`: 200.
+- Live `GET /api/v1/zk/status`: all ZK production flags false.
