@@ -9910,3 +9910,22 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `cd apps/mobile && npx vitest run src/lib/zkCanaryFlow.test.ts src/lib/api.test.ts src/lib/zkVoteProof.test.ts src/lib/crypto-native-zk.test.ts src/lib/zkSemaphoreIdentity.test.ts src/lib/zkProofBinding.test.ts src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreSelfTest.test.ts src/lib/zkSemaphoreNative.test.ts`: PASS, 42 passed.
 - `cd apps/mobile && npx tsc --noEmit`: PASS.
 - CC review: PASS; low note that `memberHex` is caller-facing but not private key material.
+
+## 2026-06-12 — Codex: Play tester download shows `1.0` note
+
+### Finding
+- Gio reported that the Google Play tester download UI shows Ekklesia AAB as `1.0`.
+- Local repo config says `apps/mobile/app.json` version `1.0.5`, Android `versionCode=34`.
+- Local Gradle config says `versionCode 34`, `versionName "1.0.5"`.
+- S10 installed package check: `versionCode=34`, `versionName=1.0.5`, `lastUpdateTime=2026-06-11 22:58:49`.
+- Local Play APK badging: package `ekklesia.gr`, `versionCode='34'`, `versionName='1.0.5'`.
+- Local Play AAB embedded Expo config: `version=1.0.5`, `versionCode=34`.
+
+### Interpretation
+- The uploaded vC34 artifact itself appears correctly versioned as `1.0.5` / `34`.
+- If Play tester UI shows `1.0`, likely candidates are Play release-name/track UI, tester cache, or an older artifact still served on that tester track.
+- Separate issue found: embedded Expo `extra.distributionChannel` is still `direct` even in the play AAB while `extra.buildFlavor` is `play`. This affects in-app channel text/logic, not the Android manifest version.
+
+### Follow-up
+- Do not upload a replacement while vC34 review is active.
+- For vC35: fix Play build channel metadata so Play AAB embeds `distributionChannel=play`, then rebuild and verify AAB before upload.
