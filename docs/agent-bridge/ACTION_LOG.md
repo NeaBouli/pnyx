@@ -9794,3 +9794,4 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Hidden canary detail `GET /api/v1/bills/ZK-CANARY-001`: 404.
 - File backup before sync: `/opt/ekklesia/backups/gh112-zk-vote-acceptance-20260612_132049.tar.gz`.
 - Deployment note: API startup lifecycle catch-up advanced `GR-c3ffc844` through existing lifecycle logic; unrelated to ZK.
+- CC review: no blockers; noted `zk_vote_receipts.vote_commitment` is still DB-nullable and should be hardened before production ZK once canary data policy is final.

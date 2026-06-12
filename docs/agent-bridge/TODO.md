@@ -65,7 +65,9 @@
   - [x] Gate 2: `/api/v1/zk/status` live fail-closed; `/api/v1/zk/verify` bleibt 503 solange `ZK_VOTING_ENABLED=false`
   - [x] Gate 5 prep: public receipt serializer + read-only `/api/v1/zk/receipts/{vote_scope_id}` live, aktuell leer
   - [x] Canary prep: hidden `ZK-CANARY-001` scope + exact allowlist enforcement + admin-only preflight built/tested
+  - [x] Gated `/api/v1/zk/vote` receipt path live fail-closed; no tallies/Arweave while flags are off
   - [x] Mobile prep: ZK opt-in UI benötigt lokale native Fähigkeit UND Server `opt_in_enabled=true`; kein vC35 Build solange vC34 in Play Review
+  - [ ] Schema hardening before production ZK: make `zk_vote_receipts.vote_commitment` non-null/check-constrained after canary data policy is final
   - [ ] Gate 3: echte Opt-in/Group-Registry/Tier-Lock-Verdrahtung nur mit Security-Review
   - [ ] Gate 4: Mobile produktiver Opt-in erst nach Server-Gate + Canary
   - [ ] Gate 6: Canary-Window; keine produktive Aktivierung ohne Backup/Review
