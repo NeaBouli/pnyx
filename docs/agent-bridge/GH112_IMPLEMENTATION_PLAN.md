@@ -270,10 +270,20 @@ Acceptance:
 - Public verifier can recompute the ZK subtotal.
 - Current Tier 1 voting remains green.
 
-## Recommended Next Code Step
+## Current Gate Status
 
-Build Gate 1 only.
+- Gate 1 additive DB/storage is live.
+- Gate 2 verifier scaffolding is disabled/fail-closed.
+- Gate 3 tier-lock helpers and guarded Tier 1 checks are prepared behind
+  default-off flags.
+- ZK opt-in storage is prepared but production opt-in remains disabled.
 
-Do not build Gate 2+ in the same branch/commit. Gate 1 is the only step that can
-be deployed safely as an additive database/storage change, and even then only
-after a DB backup and migration test.
+## Current Blocker
+
+Production Merkle root publication is blocked until the server can reproduce
+Semaphore-compatible LeanIMT/Poseidon roots exactly.
+
+See `docs/agent-bridge/GH112_MERKLE_ROOT_PREFLIGHT.md`.
+
+Do not use a SHA/SHA256 Merkle placeholder. The next implementation step is a
+reviewed root-builder decision, not a flag flip.

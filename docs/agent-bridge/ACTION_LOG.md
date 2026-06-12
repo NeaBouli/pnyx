@@ -9555,3 +9555,21 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Live Alembic: `t301a2b3c4d5 (head)`.
 - Live schema: `zk_vote_receipts.vote_commitment` exists nullable.
 - Live API: `/health` 200, `/api/v1/bills?limit=3` 200, `/api/v1/zk/status` gates false, `/api/v1/zk/opt-in` 503.
+
+## 2026-06-12 — Codex: GH#112 Semaphore Merkle root preflight documented
+
+### Scope
+- Documented root-construction preflight in `docs/agent-bridge/GH112_MERKLE_ROOT_PREFLIGHT.md`.
+- Verified in isolated `/tmp/gh112-root-preflight` that official `@semaphore-protocol/group@4.14.2` reproduces the S10 proof root only when native `memberHex` bytes are interpreted little-endian.
+- Recorded that SHA/SHA256 Merkle placeholders are rejected for Semaphore groups.
+
+### Findings
+- Official JS group root with big-endian members does not match the S10 proof root.
+- Official JS group root with little-endian member bytes matches exactly.
+- Isolated `@semaphore-protocol/group` audit footprint: 5 moderate, 0 high, 0 critical; no dependency was added to the production repo or API image.
+- Open detail: JS group reports dynamic depth 1 for two members while the fixture uses the depth-16 verifier artifact; this must be documented before production root publication.
+
+### Safety
+- Documentation only.
+- No production dependency added.
+- No runtime code, no server deploy, no mobile build, no flag flip.

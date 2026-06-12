@@ -394,10 +394,14 @@ Canary acceptance:
 
 ## Current Recommendation
 
-Next implementation step should be Gate 0 only:
+Gate 0 design, Gate 1 storage, Gate 2 disabled verifier scaffolding, and Gate 3
+tier-lock helpers are prepared.
 
-- collect native proof payload sample,
-- write server verification fixture,
-- finalize cross-tier uniqueness design.
+The next ZK architecture decision is the production Merkle root builder:
 
-Do not build Gate 1+ until Gate 0 is reviewed.
+- It must reproduce Semaphore LeanIMT/Poseidon roots exactly.
+- It must match the S10 fixture and the official Semaphore JS group behavior.
+- It must document the native little-endian member encoding found in preflight.
+- It must not use a SHA/SHA256 placeholder.
+
+See `docs/agent-bridge/GH112_MERKLE_ROOT_PREFLIGHT.md`.
