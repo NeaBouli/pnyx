@@ -156,8 +156,16 @@ export interface ZkRootResponse {
   root_id: number;
 }
 
+export interface ZkRootMembersResponse extends ZkRootResponse {
+  members: string[];
+}
+
 export async function fetchZkRoot(voteScopeId: string): Promise<ZkRootResponse> {
   return request<ZkRootResponse>(`/api/v1/zk/roots/${encodeURIComponent(voteScopeId)}`);
+}
+
+export async function fetchZkRootMembers(voteScopeId: string): Promise<ZkRootMembersResponse> {
+  return request<ZkRootMembersResponse>(`/api/v1/zk/roots/${encodeURIComponent(voteScopeId)}/members`);
 }
 
 export interface ZkVoteAcceptResponse {

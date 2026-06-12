@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildBillsQuery,
   fetchZkRoot,
+  fetchZkRootMembers,
   submitZkOptIn,
   submitZkVote,
 } from "./api";
@@ -90,6 +91,32 @@ describe("ZK API helpers", () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.ekklesia.gr/api/v1/zk/roots/bill%3AZK-CANARY-001",
+      expect.any(Object),
+    );
+  });
+
+  it("fetches public root members for mobile proof generation", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        vote_scope_id: "bill:ZK-CANARY-001",
+        merkle_root: "1",
+        merkle_depth: 16,
+        group_size: 2,
+        commitment_version: "semaphore-v4",
+        status: "OPEN",
+        root_id: 3,
+        members: ["1", "2"],
+      }),
+    } as Response);
+
+    await expect(fetchZkRootMembers("bill:ZK-CANARY-001")).resolves.toMatchObject({
+      members: ["1", "2"],
+      group_size: 2,
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.ekklesia.gr/api/v1/zk/roots/bill%3AZK-CANARY-001/members",
       expect.any(Object),
     );
   });
