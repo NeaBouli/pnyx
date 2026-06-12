@@ -9629,3 +9629,23 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Decision
 - Next implementation work is canary preparation code, especially scope allowlist enforcement.
 - Production activation remains blocked until explicit canary window.
+
+## 2026-06-12 — Codex: GH#112 canary scope allowlist enforced
+
+### Scope
+- Added `ZK_CANARY_SCOPE_ALLOWLIST` parsing/validation.
+- Enforced allowlist on ZK opt-in, root publish, and verifier requests when `ZK_CANARY_ENABLED=true`.
+- `verify` now accepts optional `vote_scope_id`; canary mode requires it.
+
+### Safety
+- Missing/empty canary allowlist returns fail-closed 503.
+- Non-allowlisted scopes return 403.
+- No wildcard support; exact scope match only.
+- Public read endpoints remain read-only and public.
+- No deploy, no DB migration, no mobile build, no production flag flip.
+
+### Verification
+- `cd apps/api && .venv/bin/python -m py_compile routers/zk.py`: PASS.
+- `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py -q`: PASS, 24 passed.
+- `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_merkle_root.py tests/services/test_zk_group_registry.py tests/services/test_zk_tier_lock.py tests/services/test_zk_arweave_payload.py tests/test_voting.py -q`: PASS, 61 passed / 2 xfailed.
+- CC review: no blockers.

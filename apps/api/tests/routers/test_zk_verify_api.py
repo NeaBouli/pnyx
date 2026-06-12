@@ -287,6 +287,39 @@ async def test_zk_opt_in_rejects_invalid_signature(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
+async def test_zk_opt_in_canary_rejects_non_allowlisted_scope(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    monkeypatch.setenv("ZK_OPT_IN_ENABLED", "true")
+    monkeypatch.setenv("ZK_TIER1_GUARD_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:ZK-CANARY-001")
+    monkeypatch.setattr(zk, "verify_signature", lambda *_args: True)
+    identity = SimpleNamespace(id=7, public_key_hex="c" * 64, periferia_id=None, dimos_id=None)
+    bill = SimpleNamespace(
+        id="GR-0490a766",
+        status=BillStatus.ACTIVE,
+        governance_level=GovernanceLevel.NATIONAL,
+    )
+    fake_db = _FakeSequenceDb([identity, bill])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post("/api/v1/zk/opt-in", json=_zk_opt_in_payload())
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "ZK canary scope is not allowed"
+    assert fake_db.committed is False
+    assert fake_db.added == []
+
+
+@pytest.mark.asyncio
 async def test_zk_receipts_endpoint_returns_public_payload_only() -> None:
     receipt = SimpleNamespace(
         vote_scope_id="bill:GR-0490a766",
@@ -524,6 +557,35 @@ async def test_zk_root_publish_returns_existing_root_without_duplicate(monkeypat
 
 
 @pytest.mark.asyncio
+async def test_zk_root_publish_canary_rejects_non_allowlisted_scope(monkeypatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("ADMIN_KEY", raising=False)
+    monkeypatch.setenv("ZK_ROOT_PUBLICATION_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:ZK-CANARY-001")
+    fake_db = _FakeSequenceDb([])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/roots/bill:GR-0490a766/publish",
+                headers={"Authorization": "Bearer dev-admin-key"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "ZK canary scope is not allowed"
+    assert fake_db.executed == []
+    assert fake_db.added == []
+
+
+@pytest.mark.asyncio
 async def test_zk_verify_endpoint_is_disabled_by_default(monkeypatch) -> None:
     monkeypatch.delenv("ZK_VOTING_ENABLED", raising=False)
 
@@ -560,3 +622,48 @@ async def test_zk_verify_endpoint_rejects_mutated_fixture_when_enabled(monkeypat
 
     assert response.status_code == 200
     assert response.json()["proof_verified"] is False
+
+
+@pytest.mark.asyncio
+async def test_zk_verify_canary_requires_vote_scope_id(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:ZK-CANARY-001")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/zk/verify", json={"proof": _native_proof()})
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "ZK vote_scope_id is required in canary mode"
+
+
+@pytest.mark.asyncio
+async def test_zk_verify_canary_rejects_non_allowlisted_scope(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:ZK-CANARY-001")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/zk/verify",
+            json={"proof": _native_proof(), "vote_scope_id": "bill:GR-0490a766"},
+        )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "ZK canary scope is not allowed"
+
+
+@pytest.mark.asyncio
+async def test_zk_verify_canary_accepts_allowlisted_scope(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:ZK-CANARY-001")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/zk/verify",
+            json={"proof": _native_proof(), "vote_scope_id": "bill:ZK-CANARY-001"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["proof_verified"] is True

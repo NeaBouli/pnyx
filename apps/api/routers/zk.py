@@ -54,11 +54,18 @@ ZK_OPT_IN_ENABLED_ENV = "ZK_OPT_IN_ENABLED"
 ZK_CANARY_ENABLED_ENV = "ZK_CANARY_ENABLED"
 ZK_TIER1_GUARD_ENABLED_ENV = "ZK_TIER1_GUARD_ENABLED"
 ZK_ROOT_PUBLICATION_ENABLED_ENV = "ZK_ROOT_PUBLICATION_ENABLED"
+ZK_CANARY_SCOPE_ALLOWLIST_ENV = "ZK_CANARY_SCOPE_ALLOWLIST"
 SEMAPHORE_MERKLE_TREE_DEPTH = 16
 
 
 class ZkVerifyRequest(BaseModel):
     proof: dict[str, Any] = Field(..., description="Public Semaphore proof payload only")
+    vote_scope_id: str | None = Field(
+        default=None,
+        min_length=6,
+        max_length=128,
+        pattern=r"^(bill|municipal|regional):[^/]{1,110}$",
+    )
 
 
 class ZkOptInRequest(BaseModel):
@@ -147,6 +154,45 @@ def _ensure_zk_root_publication_enabled() -> None:
         )
 
 
+def _canary_scope_allowlist() -> set[str]:
+    raw = os.getenv(ZK_CANARY_SCOPE_ALLOWLIST_ENV, "")
+    scopes: set[str] = set()
+    for value in raw.split(","):
+        clean = value.strip()
+        if clean:
+            scopes.add(validate_vote_scope_id(clean))
+    return scopes
+
+
+def _ensure_canary_scope_allowed(vote_scope_id: str | None) -> str:
+    if not _env_enabled(ZK_CANARY_ENABLED_ENV):
+        if vote_scope_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="ZK vote_scope_id is required",
+            )
+        return validate_vote_scope_id(vote_scope_id)
+
+    allowlist = _canary_scope_allowlist()
+    if not allowlist:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ZK canary scope allowlist is not configured",
+        )
+    if vote_scope_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ZK vote_scope_id is required in canary mode",
+        )
+    scope = validate_vote_scope_id(vote_scope_id)
+    if scope not in allowlist:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="ZK canary scope is not allowed",
+        )
+    return scope
+
+
 def _ensure_bill_scope_allowed(identity: IdentityRecord, bill: ParliamentBill) -> None:
     gov_level = getattr(bill, "governance_level", None)
     if gov_level in (None, GovernanceLevel.NATIONAL, GovernanceLevel.INSTITUTIONAL):
@@ -223,6 +269,8 @@ async def opt_in_zk(req: ZkOptInRequest, db: AsyncSession = Depends(get_db)) -> 
         )
 
     _ensure_bill_scope_allowed(identity, bill)
+    vote_scope_id = canonical_vote_scope_id(VoteScopeType.BILL, req.bill_id)
+    _ensure_canary_scope_allowed(vote_scope_id)
 
     payload = f"zk_opt_in:{req.bill_id}:{req.commitment}:{req.nullifier_hash}".encode()
     if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
@@ -241,7 +289,6 @@ async def opt_in_zk(req: ZkOptInRequest, db: AsyncSession = Depends(get_db)) -> 
         )
 
     server_salt = os.getenv("SERVER_SALT", "")
-    vote_scope_id = canonical_vote_scope_id(VoteScopeType.BILL, req.bill_id)
     try:
         tier_guard_hash = derive_tier_guard_hash(
             server_salt=server_salt,
@@ -360,6 +407,7 @@ async def publish_zk_root(
 ) -> ZkRootPublishResponse:
     _ensure_zk_root_publication_enabled()
     scope = validate_vote_scope_id(vote_scope_id)
+    _ensure_canary_scope_allowed(scope)
     try:
         group = await build_active_group_root_for_scope(db, vote_scope_id=scope)
     except ValueError as exc:
@@ -404,6 +452,8 @@ async def verify_zk_proof(req: ZkVerifyRequest) -> ZkVerifyResponse:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="ZK voting verifier is not enabled",
         )
+    if _env_enabled(ZK_CANARY_ENABLED_ENV):
+        _ensure_canary_scope_allowed(req.vote_scope_id)
 
     normalized = normalize_native_proof(req.proof) if "merkle_tree_depth" in req.proof else req.proof
     vkey = load_verification_key(VKEY_PATH, SEMAPHORE_V4_DEPTH16_VKEY_SHA256)
