@@ -15,7 +15,7 @@
 - **Branch:** `main`
 - **Lokaler HEAD:** siehe `git rev-parse --short HEAD`
 - **origin/main:** siehe `git rev-parse --short origin/main`
-- **Repo HEAD:** `a559667` (GH#112 Semaphore Merkle root preflight documented)
+- **Repo HEAD:** `64a9586` (GH#112 Semaphore LeanIMT/Poseidon root helper implemented)
 - **API container:** `867fb9a` — ZK receipt `vote_commitment` storage live; ZK endpoints fail-closed
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
 - **Web container:** current public landing/wiki wording live; vC34 APK download/hash live
@@ -37,7 +37,7 @@
 - **Bill Summary/Source Fix:** API source policy live; mobile DIAVGEIA source + summary regression fixed in `5ff3998`/`b7fb4dd`, installed on S10 and verified. Root cause update: Analysis fehlt, weil `ai_summary_reviewed=false` und kein automatischer reviewed-analysis Job existiert. Mobile zeigt jetzt statt leerer Analyse einen klaren `Επίσημο κείμενο` Fallback, wenn `summary_long_el` vorhanden ist.
 - **DIAVGEIA S10 Retest:** PASS — source card visible/clickable (`Πηγή — Διαύγεια` opens Android intent chooser), org/pill no longer shown as `Σύνοψη`, quote markers removed. Evidence: `/tmp/ekklesia_diav_fix_final_20260604_000652`.
 - **Open GitHub:** #79 F-Droid (external), #80 Off-site Backup (storage/funding), #111 Nullifier v2 activation (controlled canary window), #112 ZK V2 production integration (gated).
-- **ZK V2:** GH#81 closed; Android prover works on S10. GH#112 Gates 0-3 prepared: additive DB/storage live, disabled verifier/status/receipts live, opt-in fail-closed, tier-lock helpers tested. Production flags remain off. Current blocker: reviewed Semaphore LeanIMT/Poseidon root builder; SHA placeholders rejected. See `docs/agent-bridge/GH112_MERKLE_ROOT_PREFLIGHT.md`.
+- **ZK V2:** GH#81 closed; Android prover works on S10. GH#112 Gates 0-3 prepared: additive DB/storage live, disabled verifier/status/receipts live, opt-in fail-closed, tier-lock helpers tested. Semaphore LeanIMT/Poseidon root helper now matches the S10 fixture. Production flags remain off; next blocker is reviewed root publication/canary, not root construction.
 - **Neu live:** municipality/, article.html, Autodesmefsi PDF, Forum Topic #436
 
 ## Uncommitted Aenderungen
