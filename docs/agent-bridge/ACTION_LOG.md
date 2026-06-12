@@ -9770,3 +9770,27 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `cd apps/mobile && npx tsc --noEmit`: PASS.
 - Cross-platform golden vector added for `bill:ZK-CANARY-001` / `YES`.
 - CC review: design sound; recommended golden vector added before commit.
+
+## 2026-06-12 — Codex: GH#112 gated ZK vote receipt acceptance live fail-closed
+
+### Scope
+- Added gated `POST /api/v1/zk/vote`.
+- Endpoint stores only `zk_vote_receipts` when enabled; it does not write `citizen_votes`, party tallies, public results, or Arweave records.
+- Receipt acceptance requires canonical `message`/`scope` binding, matching published root, matching Merkle depth, and valid Groth16 proof before storage.
+
+### Safety
+- Default remains fail-closed: if `ZK_VOTING_ENABLED` is absent/false, `/zk/vote` returns 503 before DB access.
+- Canary allowlist still applies when `ZK_CANARY_ENABLED=true`.
+- Duplicate `(vote_scope_id, semaphore_nullifier)` is protected by DB uniqueness and mapped to 409.
+- No production ZK flags were set; no root was published; no ZK vote was accepted.
+- No mobile build uploaded; vC34 Play review remains untouched.
+
+### Verification
+- `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_proof_binding.py tests/routers/test_zk_verify_api.py tests/services/test_zk_arweave_payload.py tests/services/test_zk_tier_lock.py -q`: PASS, 51 passed.
+- `https://api.ekklesia.gr/health`: 200.
+- `https://api.ekklesia.gr/api/v1/zk/status`: production/opt-in/canary all `false`.
+- `POST https://api.ekklesia.gr/api/v1/zk/vote`: 503, `ZK voting is not enabled`.
+- Public list `GET /api/v1/bills?limit=3`: 200.
+- Hidden canary detail `GET /api/v1/bills/ZK-CANARY-001`: 404.
+- File backup before sync: `/opt/ekklesia/backups/gh112-zk-vote-acceptance-20260612_132049.tar.gz`.
+- Deployment note: API startup lifecycle catch-up advanced `GR-c3ffc844` through existing lifecycle logic; unrelated to ZK.
