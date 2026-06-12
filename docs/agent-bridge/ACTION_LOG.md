@@ -9945,3 +9945,20 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Notes
 - First import attempt exposed the root cause: Android shell parsed `&` in the deep link, so only the `key` parameter reached the app. Retried with remote-shell-safe quoting; full deep link imported correctly.
 - No QR/private key/nullifier values recorded in Bridge.
+
+## 2026-06-13 — Codex: vC35 Play metadata prep (no build/upload)
+
+### Scope
+- Prepared the vC35 Play metadata fix without producing a new AAB while vC34 review is active.
+- Added Expo dynamic config so build metadata is explicit per channel:
+  - Play build: `EKKLESIA_DISTRIBUTION_CHANNEL=play`, `EKKLESIA_BUILD_FLAVOR=play`.
+  - Direct build: `EKKLESIA_DISTRIBUTION_CHANNEL=direct`, `EKKLESIA_BUILD_FLAVOR=direct`.
+- Removed fragile `sed` mutation from `scripts/build-play.sh`.
+
+### Verification
+- `EKKLESIA_DISTRIBUTION_CHANNEL=play EKKLESIA_BUILD_FLAVOR=play npx expo config --json`: `play play 1.0.5 34`.
+- `EKKLESIA_DISTRIBUTION_CHANNEL=direct EKKLESIA_BUILD_FLAVOR=direct npx expo config --json`: `direct direct 1.0.5 34`.
+- `cd apps/mobile && npx tsc --noEmit`: PASS.
+
+### Safety
+- No APK/AAB build, no Play Console upload, no deploy, no versionCode bump.

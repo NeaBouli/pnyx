@@ -6,6 +6,8 @@
 set -e
 
 cd "$(dirname "$0")/../apps/mobile"
+export EKKLESIA_DISTRIBUTION_CHANNEL=direct
+export EKKLESIA_BUILD_FLAVOR=direct
 npx expo prebuild --platform android --clean
 echo "sdk.dir=$HOME/Library/Android/sdk" > android/local.properties
 python3 ../../scripts/patches/patch-android-manifest-package.py android/app/src/main/AndroidManifest.xml ekklesia.gr

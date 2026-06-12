@@ -9,14 +9,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 MOBILE_DIR="$SCRIPT_DIR/../apps/mobile"
 cd "$MOBILE_DIR"
 
-restore_channel() {
-  sed -i '' 's/"distributionChannel": "play"/"distributionChannel": "direct"/' "$MOBILE_DIR/app.json"
-}
-
-trap restore_channel EXIT
-
-# Set channel to "play" for this build
-sed -i '' 's/"distributionChannel": "direct"/"distributionChannel": "play"/' app.json
+export EKKLESIA_DISTRIBUTION_CHANNEL=play
+export EKKLESIA_BUILD_FLAVOR=play
 
 # Prebuild native project
 npx expo prebuild --platform android --clean
@@ -33,11 +27,6 @@ python3 "$SCRIPT_DIR/patches/patch-play-flavors.py" android/app/build.gradle
 
 cd android
 ./gradlew bundlePlayRelease
-
-# Restore channel to "direct"
-cd ..
-restore_channel
-trap - EXIT
 
 AAB="android/app/build/outputs/bundle/playRelease/app-play-release.aab"
 echo ""
