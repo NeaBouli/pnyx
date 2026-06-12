@@ -357,6 +357,8 @@ def check_forum_missing(conn) -> list[Alert]:
         cur.execute("""
             SELECT id, title_el FROM parliament_bills
             WHERE status = 'ACTIVE' AND forum_topic_id IS NULL
+              AND COALESCE(admin_hidden, FALSE) = FALSE
+              AND (source IS NULL OR source != 'ZK_CANARY')
         """)
         for bill_id, title in cur.fetchall():
             alerts.append(Alert("forum_missing", "ekklesia-api", "warning",
@@ -510,6 +512,8 @@ def check_forum_completeness(conn) -> list[Alert]:
             WHERE status IN ('ACTIVE', 'WINDOW_24H', 'OPEN_END')
               AND forum_topic_id IS NULL
               AND id NOT LIKE 'DEMO-%%'
+              AND COALESCE(admin_hidden, FALSE) = FALSE
+              AND (source IS NULL OR source != 'ZK_CANARY')
               AND created_at < NOW() - INTERVAL '1 hour'
         """)
         count = cur.fetchone()[0]

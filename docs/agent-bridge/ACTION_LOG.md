@@ -10084,3 +10084,10 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `cd apps/api && /tmp/pnyx-api-test-venv/bin/python -m pytest tests/test_monitor_zk_canary_health.py tests/test_monitor_parliament_freshness.py tests/routers/test_zk_verify_api.py -q`: PASS, 44 passed.
 - Final focused test: `tests/test_monitor_zk_canary_health.py`: PASS, 4 passed.
 - CC final review: PASS, no blockers.
+
+### Deploy preflight finding
+- First live `monitor.py --once` exposed an existing false-positive path: hidden `ZK-CANARY-001` matched old forum-missing checks because it is `ACTIVE` with no forum topic by design.
+- Follow-up fix excludes `admin_hidden=true` / `source='ZK_CANARY'` rows from `check_forum_missing()` and `check_forum_completeness()`.
+- Added `tests/test_monitor_hidden_bills.py`.
+- Verification: `python3 -m py_compile apps/monitor/monitor.py apps/api/tests/test_monitor_zk_canary_health.py apps/api/tests/test_monitor_hidden_bills.py`: PASS.
+- Verification: `cd apps/api && /tmp/pnyx-api-test-venv/bin/python -m pytest tests/test_monitor_zk_canary_health.py tests/test_monitor_hidden_bills.py tests/test_monitor_parliament_freshness.py -q`: PASS, 8 passed.
