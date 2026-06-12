@@ -10038,3 +10038,30 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### Safety
 - Tests only. No runtime code, no deploy, no DB migration, no mobile build, no Play upload.
+
+## 2026-06-13 — Codex: GH#112 pre-canary receipt schema recheck
+
+### Scope
+- Rechecked CC's previous non-blocking note that `zk_vote_receipts.vote_commitment` must be hardened before production ZK receipt acceptance.
+- Current code already has `ZkVoteReceipt.vote_commitment` as `nullable=False`.
+- Production Alembic is at `u401a2b3c4d5 (head)`.
+
+### Verification
+- `cd apps/api && /tmp/pnyx-api-test-venv/bin/python -m pytest tests/test_zk_gate1_schema.py -q`: PASS, 5 passed.
+- Production DB: `zk_vote_receipts.vote_commitment` is `is_nullable=NO`, varchar(160).
+- Production DB: `count(*) where vote_commitment is null = 0`.
+
+### Safety
+- Read-only verification only. No schema change, no deploy, no flags changed.
+
+## 2026-06-13 — Codex: F-Droid !38007 recheck
+
+### Status
+- GitLab MR !38007 remains open.
+- MR state: opened, not draft, no conflicts, blocking discussions resolved.
+- Latest MR update remains 2026-06-02T15:37:08Z.
+- Latest pipeline remains success: `2570810919` on `e42e014f`, updated 2026-06-02T15:32:20Z.
+
+### Conclusion
+- No new action for pnyx.
+- GH#79 remains external/waiting on F-Droid/linsui/community merge/retest.
