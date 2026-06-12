@@ -9549,3 +9549,9 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `cd apps/api && .venv/bin/python -m py_compile models.py services/zk_arweave_payload.py alembic/versions/t301a2b3c4d5_zk_receipt_vote_commitment.py`: PASS.
 - `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_arweave_payload.py tests/test_zk_gate1_schema.py tests/services/test_zk_group_registry.py tests/routers/test_zk_verify_api.py tests/services/test_zk_tier_lock.py tests/test_voting.py -q`: PASS, 64 passed / 2 xfailed.
 - CC review: no blockers.
+- Rollback tag: `rollback-pre-zk-receipt-vote-commitment-20260612-030556`.
+- DB backup: `/opt/ekklesia/backups/pre_zk_receipt_vote_commitment_20260612-000617.dump`.
+- Server backup: `/opt/ekklesia/backups/pre_zk_receipt_vote_commitment_20260612-000617_api_crypto.tgz`.
+- Live Alembic: `t301a2b3c4d5 (head)`.
+- Live schema: `zk_vote_receipts.vote_commitment` exists nullable.
+- Live API: `/health` 200, `/api/v1/bills?limit=3` 200, `/api/v1/zk/status` gates false, `/api/v1/zk/opt-in` 503.
