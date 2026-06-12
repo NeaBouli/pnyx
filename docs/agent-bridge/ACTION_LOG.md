@@ -10000,3 +10000,22 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### Safety
 - ZK remains fail-closed. No flags changed, no DB migration, no mobile build, no Play upload.
+
+## 2026-06-13 — Codex/CC: canary isolation review + metadata default cleanup
+
+### CC review
+- Direct CC review of `5f032e5..733ff04`: PASS, no blocking findings.
+- Low findings only:
+  - ad-hoc Expo config default was `distributionChannel=direct` but `buildFlavor=play` when env vars were absent.
+  - Optional per-endpoint canary isolation rejection tests could be expanded later.
+
+### Follow-up applied
+- Set `apps/mobile/app.json` default `extra.buildFlavor` to `direct`, matching `extra.distributionChannel`.
+- Scripted builds still override explicitly:
+  - Play: `play/play`
+  - Direct: `direct/direct`
+
+### Verification
+- `cd apps/mobile && npx expo config --json`: `direct direct`.
+- `cd apps/mobile && EKKLESIA_DISTRIBUTION_CHANNEL=play EKKLESIA_BUILD_FLAVOR=play npx expo config --json`: `play play`.
+- `cd apps/mobile && npx tsc --noEmit`: PASS.
