@@ -9982,3 +9982,21 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Safety
 - No production flags changed. ZK remains fail-closed unless explicitly enabled.
 - No DB migration, no mobile build, no Play upload.
+
+## 2026-06-13 — Codex: GH#112 Canary isolation API deploy
+
+### Deploy
+- Server worktree was dirty with prior deployed ZK artifacts, so no server `git pull` was used.
+- Deployed only `apps/api/routers/zk.py` to production API.
+- Server backup before overwrite: `/opt/ekklesia/backups/zk-router-before-canary-isolation-20260613_002359.py`.
+- API rebuilt/restarted with production env loaded after an initial Compose run exposed missing-env healthcheck warnings.
+
+### Live verification
+- `https://api.ekklesia.gr/health`: 200.
+- `GET /api/v1/zk/status`: all production/canary/opt-in flags false.
+- `GET /api/v1/bills?limit=3`: 200.
+- `GET /api/v1/zk/canary/preflight/bill:ZK-CANARY-001`: 200, isolated canary bill exists, `ready_for_canary_opt_in=false`, `ready_to_publish_root=false`, no private fields.
+- Containers: `ekklesia-api` up, `ekklesia-db` healthy, `ekklesia-redis` healthy.
+
+### Safety
+- ZK remains fail-closed. No flags changed, no DB migration, no mobile build, no Play upload.
