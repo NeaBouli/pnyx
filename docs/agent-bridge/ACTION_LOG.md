@@ -9813,3 +9813,17 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `cd apps/mobile && npx tsc --noEmit`: PASS.
 - `cd apps/mobile && npx vitest run src/lib/zkProofBinding.test.ts src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreSelfTest.test.ts src/lib/zkSemaphoreNative.test.ts`: PASS, 23 passed.
 - CC helper process hung without output; local checks were completed and the scope is non-activating.
+
+## 2026-06-12 — Codex: GH#112 mobile ZK helper regression tests
+
+### Scope
+- Added tests for the mobile ZK API request contracts, Tier-1-signed opt-in payload, and separate SecureStore-backed Semaphore identity.
+- Tests verify that ZK helper storage uses a separate key and can be cleared without touching Tier-1 keys.
+
+### Safety
+- Test-only change; no app runtime, no build, no upload, no server deploy.
+- CC helper timed out after 60s; local test/typecheck evidence used.
+
+### Verification
+- `cd apps/mobile && npx vitest run src/lib/api.test.ts src/lib/crypto-native-zk.test.ts src/lib/zkSemaphoreIdentity.test.ts src/lib/zkProofBinding.test.ts src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreSelfTest.test.ts src/lib/zkSemaphoreNative.test.ts`: PASS, 35 passed.
+- `cd apps/mobile && npx tsc --noEmit`: PASS.
