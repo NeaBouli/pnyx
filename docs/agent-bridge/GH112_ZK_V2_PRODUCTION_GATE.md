@@ -394,14 +394,24 @@ Canary acceptance:
 
 ## Current Recommendation
 
-Gate 0 design, Gate 1 storage, Gate 2 disabled verifier scaffolding, and Gate 3
-tier-lock helpers are prepared.
+Gate 0 design, Gate 1 storage, Gate 2 disabled verifier scaffolding, Gate 3
+tier-lock helpers, Semaphore LeanIMT/Poseidon root building, root read/publish,
+exact canary allowlisting, hidden canary scope setup, and admin canary preflight
+are prepared.
 
-The next ZK architecture decision is the production Merkle root builder:
+The next ZK step is not a broad production flag flip. It is a controlled
+canary window for `bill:ZK-CANARY-001` only:
 
-- It must reproduce Semaphore LeanIMT/Poseidon roots exactly.
-- It must match the S10 fixture and the official Semaphore JS group behavior.
-- It must document the native little-endian member encoding found in preflight.
-- It must not use a SHA/SHA256 placeholder.
+- take a fresh DB backup immediately before activation,
+- verify `/api/v1/zk/canary/preflight/bill:ZK-CANARY-001`,
+- set only the documented canary flags and exact allowlist,
+- perform one known canary opt-in,
+- publish one root,
+- verify one proof,
+- keep normal Tier-1 voting green,
+- document rollback before and after the test.
 
-See `docs/agent-bridge/GH112_MERKLE_ROOT_PREFLIGHT.md`.
+Do not publish per-vote Arweave records or count canary ZK votes in public
+tallies until the canary tally policy is explicitly reviewed.
+
+See `docs/agent-bridge/GH112_CANARY_ACTIVATION_PLAN.md`.
