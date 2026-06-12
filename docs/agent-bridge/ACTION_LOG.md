@@ -9892,3 +9892,21 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Live DB column `zk_vote_receipts.vote_commitment`: `is_nullable=NO`.
 - Live `https://api.ekklesia.gr/health`: 200.
 - Live `GET /api/v1/zk/status`: all ZK production flags false.
+
+## 2026-06-12 — Codex: GH#112 mobile canary flow helpers
+
+### Scope
+- Added mobile orchestration helpers for the two ZK canary phases:
+  - `submitZkOptInForBill()`: creates/reuses local Semaphore identity, signs opt-in with Tier-1 identity, submits backend opt-in.
+  - `submitZkVoteWithPublishedRoot()`: fetches published root members, generates a canonical proof, submits gated ZK receipt.
+
+### Safety
+- Library-only change; no UI imports these helpers yet.
+- No app build, no APK/AAB upload, no Play Console change, no server deploy, no feature flag flip.
+- Vote helper always fetches published root members before proof generation; no bypass path.
+- Private Semaphore key is never returned or sent over network.
+
+### Verification
+- `cd apps/mobile && npx vitest run src/lib/zkCanaryFlow.test.ts src/lib/api.test.ts src/lib/zkVoteProof.test.ts src/lib/crypto-native-zk.test.ts src/lib/zkSemaphoreIdentity.test.ts src/lib/zkProofBinding.test.ts src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreSelfTest.test.ts src/lib/zkSemaphoreNative.test.ts`: PASS, 42 passed.
+- `cd apps/mobile && npx tsc --noEmit`: PASS.
+- CC review: PASS; low note that `memberHex` is caller-facing but not private key material.
