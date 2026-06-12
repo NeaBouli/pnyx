@@ -15,21 +15,20 @@
 - **Branch:** `main`
 - **Lokaler HEAD:** siehe `git rev-parse --short HEAD`
 - **origin/main:** siehe `git rev-parse --short origin/main`
-- **Repo HEAD:** `081552d` (public Semaphore/ZK status docs live + tracker updates)
-- **API container:** `7053510` — vote-status endpoint + bill source fallback LIVE
+- **Repo HEAD:** `a559667` (GH#112 Semaphore Merkle root preflight documented)
+- **API container:** `867fb9a` — ZK receipt `vote_commitment` storage live; ZK endpoints fail-closed
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
-- **Web container:** `081552d` — public Semaphore/ZK status wording live on landing/wiki
-- **S10:** vC30/1.0.3 Play-Release APK from `d1de18b` installed; GH#112 Semaphore Gate 0 fixture share verified (`lastUpdateTime=2026-06-11 01:30:36`)
-- **Alembic:** `o801a2b3c4d5` (polis_tickets + polis_votes + polis_identity_keys)
+- **Web container:** current public landing/wiki wording live; vC34 APK download/hash live
+- **S10:** vC34/1.0.5 verified before Play upload; S10 may be disconnected during ongoing work
+- **Alembic:** `t301a2b3c4d5` (ZK receipt `vote_commitment`, head)
 - **F-Droid !38007:** Community launch-crash fixed in fdroiddata `e42e014f`; pipeline `2570810919` green 9/9; GlassOnTin/linsui re-test requested
 - **POLIS Status:** App-internal Create/Vote LIVE
 - **Tracking:** Linear + GitHub Issues parallel. Cross-Links: GH#71-83 = NEA-277-285
 - **GR-0490a766:** arweave_tx_id=NULL (bereinigt), party_votes_parliament=NULL, Guards verhindern Re-Archivierung
 - **Telegram Bot:** citizen_votes Query LIVE, governance Topic-Routing LIVE
-- **vC29 Release:** COMPLETE — APK live auf ekklesia.gr, AAB in Play Console hochgeladen
-- **vC30 Mobile Build:** AAB/APK gebaut; APK auf S10 installiert; Launch-Crash behoben; Bill-Detail zeigt Summary + offiziellen Text-Fallback
-- **vC30 Landing APK:** NOT updated after DIAVGEIA fixes; release remains gated until Gio acceptance.
-- **vC30 GitHub Release:** NOT updated after DIAVGEIA fixes; do not replace assets yet.
+- **vC34 Release:** AAB uploaded to Play Console on 2026-06-12; do not upload a new build while review is running.
+- **vC34 Landing APK:** live on ekklesia.gr with version/hash; direct APK available for sideload testing.
+- **vC35 Follow-Up:** R8/size optimization and mapping.txt after vC34 review, not during review.
 - **Linear:** Token OK (`~/.claude/.env` → `LINEAR_API_KEY`), NEA-280 + NEA-292 geschlossen; Codex verified and commented NEA-292 + NEA-301
 - **NEA-301b PARLIAMENT:** DONE (17/31 mit summary_short_el, 9 brauchen Fetcher, 3 DEMO + 2 flagged excluded, DIAVGEIA 0/636 eigene Phase)
 - **Ollama:** RAM zurueck auf 2.4 GB (Produktion), kein Job aktiv
@@ -37,8 +36,8 @@
 - **Dependabot:** GitHub reports 0 open alerts. Do not add `@semaphore-protocol/proof@4.14.2` to production images without review; trial install showed 6 moderate + 8 high transitive findings.
 - **Bill Summary/Source Fix:** API source policy live; mobile DIAVGEIA source + summary regression fixed in `5ff3998`/`b7fb4dd`, installed on S10 and verified. Root cause update: Analysis fehlt, weil `ai_summary_reviewed=false` und kein automatischer reviewed-analysis Job existiert. Mobile zeigt jetzt statt leerer Analyse einen klaren `Επίσημο κείμενο` Fallback, wenn `summary_long_el` vorhanden ist.
 - **DIAVGEIA S10 Retest:** PASS — source card visible/clickable (`Πηγή — Διαύγεια` opens Android intent chooser), org/pill no longer shown as `Σύνοψη`, quote markers removed. Evidence: `/tmp/ekklesia_diav_fix_final_20260604_000652`.
-- **Open GitHub:** #79 F-Droid (external), #80 Off-site Backup (storage/funding), #111 Nullifier v2 activation (controlled canary window), #112 ZK V2 product integration (Gate Plan).
-- **ZK V2:** GH#81 closed; Android prover works on S10. GH#112 Gate 0 progressed: fixture export works, S10 proof verifies offline with official Semaphore JS verifier, but verifier dependency path is blocked on security/dependency review. Public docs now state: prover verified, production ZK voting not active.
+- **Open GitHub:** #79 F-Droid (external), #80 Off-site Backup (storage/funding), #111 Nullifier v2 activation (controlled canary window), #112 ZK V2 production integration (gated).
+- **ZK V2:** GH#81 closed; Android prover works on S10. GH#112 Gates 0-3 prepared: additive DB/storage live, disabled verifier/status/receipts live, opt-in fail-closed, tier-lock helpers tested. Production flags remain off. Current blocker: reviewed Semaphore LeanIMT/Poseidon root builder; SHA placeholders rejected. See `docs/agent-bridge/GH112_MERKLE_ROOT_PREFLIGHT.md`.
 - **Neu live:** municipality/, article.html, Autodesmefsi PDF, Forum Topic #436
 
 ## Uncommitted Aenderungen
