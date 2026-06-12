@@ -553,6 +553,94 @@ async def test_zk_current_root_endpoint_returns_404_for_empty_scope() -> None:
 
 
 @pytest.mark.asyncio
+async def test_zk_root_members_endpoint_returns_public_commitments_only(monkeypatch) -> None:
+    monkeypatch.delenv("ZK_CANARY_ENABLED", raising=False)
+    root = SimpleNamespace(
+        id=42,
+        vote_scope_id="bill:GR-0490a766",
+        merkle_root=str(poseidon2(1, 2)),
+        merkle_depth=1,
+        group_size=2,
+        commitment_version="semaphore-v4",
+        status="OPEN",
+        tier_guard_hash="private",
+        identity_record_id=7,
+    )
+    fake_db = _FakeSequenceDb([root, ["1", "2"]])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/zk/roots/bill:GR-0490a766/members")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["members"] == ["1", "2"]
+    assert payload["merkle_root"] == str(poseidon2(1, 2))
+    assert payload["group_size"] == 2
+    serialized = json.dumps(payload)
+    assert "tier_guard_hash" not in serialized
+    assert "identity_record_id" not in serialized
+
+
+@pytest.mark.asyncio
+async def test_zk_root_members_endpoint_rejects_stale_root(monkeypatch) -> None:
+    monkeypatch.delenv("ZK_CANARY_ENABLED", raising=False)
+    root = SimpleNamespace(
+        id=42,
+        vote_scope_id="bill:GR-0490a766",
+        merkle_root=str(poseidon2(1, 2)),
+        merkle_depth=1,
+        group_size=2,
+        commitment_version="semaphore-v4",
+        status="OPEN",
+    )
+    fake_db = _FakeSequenceDb([root, ["1", "2", "3"]])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/zk/roots/bill:GR-0490a766/members")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "ZK root is stale; publish a fresh root before proof generation"
+
+
+@pytest.mark.asyncio
+async def test_zk_root_members_canary_rejects_non_allowlisted_scope(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:ZK-CANARY-001")
+    fake_db = _FakeSequenceDb([])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/zk/roots/bill:GR-0490a766/members")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "ZK canary scope is not allowed"
+    assert fake_db.executed == []
+
+
+@pytest.mark.asyncio
 async def test_zk_root_publish_is_fail_closed_even_for_admin(monkeypatch) -> None:
     monkeypatch.setenv("ENVIRONMENT", "development")
     monkeypatch.delenv("ADMIN_KEY", raising=False)

@@ -32,13 +32,18 @@ from models import (
     ZkVoteReceipt,
 )
 from services.zk_arweave_payload import build_public_zk_receipt_from_storage
-from services.zk_group_registry import build_active_group_root_for_scope, validate_vote_scope_id
+from services.zk_group_registry import (
+    build_active_group_root_for_scope,
+    list_active_commitments_for_scope,
+    validate_vote_scope_id,
+)
 from services.zk_groth16_verifier import (
     SEMAPHORE_V4_DEPTH16_VKEY_SHA256,
     load_verification_key,
     normalize_native_proof,
     verify_semaphore_proof,
 )
+from services.zk_merkle_root import build_semaphore_group_root
 from services.zk_proof_binding import proof_matches_canonical_binding
 from services.zk_tier_lock import (
     VoteScopeType,
@@ -172,6 +177,10 @@ class ZkRootResponse(BaseModel):
 
 class ZkRootPublishResponse(ZkRootResponse):
     created: bool
+
+
+class ZkRootMembersResponse(ZkRootResponse):
+    members: list[str]
 
 
 def zk_voting_enabled() -> bool:
@@ -543,6 +552,49 @@ async def get_current_zk_root(
     if not root:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ZK root not found")
     return _zk_root_response(root)
+
+
+@router.get("/roots/{vote_scope_id}/members", response_model=ZkRootMembersResponse)
+async def get_current_zk_root_members(
+    vote_scope_id: str = FastAPIPath(
+        ...,
+        min_length=6,
+        max_length=128,
+        pattern=r"^(bill|municipal|regional):[^/]{1,110}$",
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> ZkRootMembersResponse:
+    scope = validate_vote_scope_id(vote_scope_id)
+    if _env_enabled(ZK_CANARY_ENABLED_ENV):
+        _ensure_canary_scope_allowed(scope)
+
+    result = await db.execute(
+        select(ZkMerkleRoot)
+        .where(
+            ZkMerkleRoot.vote_scope_id == scope,
+            ZkMerkleRoot.status == "OPEN",
+        )
+        .order_by(ZkMerkleRoot.id.desc())
+        .limit(1)
+    )
+    root = result.scalar_one_or_none()
+    if not root:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ZK root not found")
+
+    members = await list_active_commitments_for_scope(db, vote_scope_id=scope)
+    current_group = build_semaphore_group_root(members)
+    if (
+        str(current_group.root) != str(root.merkle_root)
+        or current_group.depth != int(root.merkle_depth)
+        or current_group.size != int(root.group_size)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="ZK root is stale; publish a fresh root before proof generation",
+        )
+
+    response = _zk_root_response(root)
+    return ZkRootMembersResponse(**response.model_dump(), members=members)
 
 
 @router.post("/roots/{vote_scope_id}/publish", response_model=ZkRootPublishResponse)
