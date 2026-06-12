@@ -9667,3 +9667,21 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Target suite: `tests/services/test_bill_visibility.py tests/services/test_arweave_guards.py tests/test_voting.py tests/routers/test_zk_verify_api.py tests/test_parliament.py tests/test_ip_utils.py tests/test_cors_config.py -q`: PASS, 79 passed / 4 xfailed.
 - Smoke subset after final relevance guard: `tests/services/test_bill_visibility.py tests/services/test_arweave_guards.py tests/test_voting.py -q`: PASS, 38 passed / 2 xfailed.
 - CC review: no blockers; final relevance signal gap fixed before commit.
+
+## 2026-06-12 — Codex: GH#112 hidden canary scope prepare script added
+
+### Scope
+- Added `apps/api/scripts/prepare_zk_canary_scope.py`.
+- Default mode is dry-run; DB writes require explicit `--apply`.
+- Prepares hidden test bill `ZK-CANARY-001` / scope `bill:ZK-CANARY-001` with `admin_hidden=true`, `source=ZK_CANARY`, `status=ACTIVE`, and `results_visibility=HIDDEN`.
+
+### Safety
+- Script refuses to reuse an existing row if it is not hidden.
+- Script refuses an existing canary row that already has `forum_topic_id` or `arweave_tx_id`.
+- Script does not enable any ZK flags and does not publish roots, votes, receipts, forum topics, or Arweave records.
+
+### Verification
+- `cd apps/api && .venv/bin/python -m py_compile scripts/prepare_zk_canary_scope.py tests/services/test_zk_canary_prepare.py`: PASS.
+- `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_canary_prepare.py tests/services/test_bill_visibility.py tests/test_voting.py -q`: PASS, 32 passed / 2 xfailed.
+- `cd apps/api && .venv/bin/python -m scripts.prepare_zk_canary_scope --help`: PASS.
+- Local no-apply DB dry-run could not connect because local PostgreSQL was not running on `localhost:5432`; no DB write attempted.
