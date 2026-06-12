@@ -58,6 +58,7 @@ def test_zk_arweave_record_rejects_nested_identity_bridge_fields() -> None:
 def test_public_zk_receipt_from_storage_excludes_identity_bridge_fields() -> None:
     receipt = SimpleNamespace(
         vote_scope_id="bill:GR-0490a766",
+        vote_commitment="commitment:yes:example",
         semaphore_nullifier="123",
         merkle_root="456",
         merkle_depth=16,
@@ -78,6 +79,7 @@ def test_public_zk_receipt_from_storage_excludes_identity_bridge_fields() -> Non
 
     assert payload["schema"] == ZK_PUBLIC_RECEIPT_VERSION
     assert payload["vote_scope_id"] == "bill:GR-0490a766"
+    assert payload["vote_commitment"] == "commitment:yes:example"
     assert payload["arweave_pending"] is True
     assert payload["arweave_tx_id"] is None
 
@@ -89,6 +91,7 @@ def test_public_zk_receipt_from_storage_excludes_identity_bridge_fields() -> Non
 def test_public_zk_receipt_from_storage_rejects_nested_private_fields() -> None:
     receipt = SimpleNamespace(
         vote_scope_id="bill:GR-0490a766",
+        vote_commitment="commitment:yes:example",
         semaphore_nullifier="123",
         merkle_root="456",
         merkle_depth=16,

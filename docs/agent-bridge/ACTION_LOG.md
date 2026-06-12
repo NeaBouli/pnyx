@@ -9531,3 +9531,21 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `cd apps/api && .venv/bin/python -m py_compile services/zk_group_registry.py`: PASS.
 - `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_group_registry.py tests/routers/test_zk_verify_api.py tests/services/test_zk_tier_lock.py tests/test_voting.py tests/test_zk_gate1_schema.py -q`: PASS, 60 passed / 2 xfailed.
 - CC review: no blockers.
+
+## 2026-06-12 — Codex: GH#112 ZK receipt storage prepared for vote commitments
+
+### Scope
+- Added additive Alembic migration `t301a2b3c4d5` with nullable `zk_vote_receipts.vote_commitment`.
+- Public ZK receipt serialization now includes `vote_commitment`, matching the existing Arweave `ekklesia.zk_vote.v1` record shape.
+
+### Safety
+- Production receipt table currently has 0 rows; migration is additive/nullable.
+- No production flag flip, no ZK vote acceptance, no mobile build.
+- `vote_commitment` is public verifier/recount data, not an identity bridge.
+
+### Verification
+- Server pre-check: `select count(*) from zk_vote_receipts` returned 0.
+- `cd apps/api && .venv/bin/python -m alembic heads`: `t301a2b3c4d5 (head)`.
+- `cd apps/api && .venv/bin/python -m py_compile models.py services/zk_arweave_payload.py alembic/versions/t301a2b3c4d5_zk_receipt_vote_commitment.py`: PASS.
+- `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_arweave_payload.py tests/test_zk_gate1_schema.py tests/services/test_zk_group_registry.py tests/routers/test_zk_verify_api.py tests/services/test_zk_tier_lock.py tests/test_voting.py -q`: PASS, 64 passed / 2 xfailed.
+- CC review: no blockers.

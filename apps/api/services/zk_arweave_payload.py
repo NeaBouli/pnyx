@@ -58,6 +58,7 @@ def build_public_zk_receipt_from_storage(receipt: Any) -> dict[str, Any]:
     record = {
         "schema": ZK_PUBLIC_RECEIPT_VERSION,
         "vote_scope_id": receipt.vote_scope_id,
+        "vote_commitment": getattr(receipt, "vote_commitment", None),
         "semaphore_nullifier": receipt.semaphore_nullifier,
         "merkle_root": receipt.merkle_root,
         "merkle_depth": receipt.merkle_depth,

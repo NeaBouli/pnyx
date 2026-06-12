@@ -47,6 +47,8 @@ def test_zk_gate1_uniqueness_guards() -> None:
 
 def test_zk_public_receipts_exclude_identity_bridge_fields() -> None:
     receipt_columns = set(Base.metadata.tables["zk_vote_receipts"].columns.keys())
+    assert "vote_commitment" in receipt_columns
+
     forbidden = {
         "tier_guard_hash",
         "identity_record_id",

@@ -299,6 +299,7 @@ class ZkVoteReceipt(Base):
 
     id                  = Column(Integer, primary_key=True, autoincrement=True)
     vote_scope_id       = Column(String(128), nullable=False)
+    vote_commitment     = Column(String(160), nullable=True)
     semaphore_nullifier = Column(String(160), nullable=False)
     merkle_root         = Column(String(160), nullable=False)
     merkle_depth        = Column(Integer, nullable=False)
