@@ -9929,3 +9929,19 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Follow-up
 - Do not upload a replacement while vC34 review is active.
 - For vC35: fix Play build channel metadata so Play AAB embeds `distributionChannel=play`, then rebuild and verify AAB before upload.
+
+## 2026-06-12 — Codex: S10 vC34 AAB install + verified test account restored
+
+### Scope
+- Installed the current Play AAB on the connected S10 via `bundletool` device-specific split APKs.
+- Created an admin test identity through `POST /api/v1/admin/test-account` and imported it with the existing `ekklesia://import-account` flow.
+- No app data wipe, no uninstall, no code change, no build, no deploy, no Play Console change.
+
+### Verification
+- S10 package: `versionCode=34`, `versionName=1.0.5`, `lastUpdateTime=2026-06-12 22:37:23`.
+- App launch verified: `ekklesia.gr/ekklesia.gr.MainActivity` focused.
+- UI dump after import shows `✓ Επαληθευμένος` and `Μπορείτε να ψηφίσετε`.
+
+### Notes
+- First import attempt exposed the root cause: Android shell parsed `&` in the deep link, so only the `key` parameter reached the app. Retried with remote-shell-safe quoting; full deep link imported correctly.
+- No QR/private key/nullifier values recorded in Bridge.
