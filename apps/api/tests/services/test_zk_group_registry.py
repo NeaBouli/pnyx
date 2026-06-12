@@ -2,10 +2,12 @@
 import pytest
 
 from services.zk_group_registry import (
+    build_active_group_root_for_scope,
     count_active_commitments_for_scope,
     list_active_commitments_for_scope,
     validate_vote_scope_id,
 )
+from services.zk_merkle_root import poseidon2
 
 
 class _FakeScalars:
@@ -80,3 +82,18 @@ async def test_count_active_commitments_for_scope_returns_count() -> None:
 
     assert count == 2
     assert "count" in str(db.executed[0]).lower()
+
+
+@pytest.mark.asyncio
+async def test_build_active_group_root_for_scope_uses_public_commitments() -> None:
+    db = _FakeDb(_FakeResult(values=["1", "2", "3"]))
+
+    group = await build_active_group_root_for_scope(db, vote_scope_id="bill:GR-0490a766")
+
+    assert group.root == poseidon2(poseidon2(1, 2), 3)
+    assert group.depth == 2
+    assert group.size == 3
+    statement = str(db.executed[0])
+    assert "zk_identity_commitments.commitment" in statement
+    assert "identity_record_id" not in statement
+    assert "tier_guard_hash" not in statement

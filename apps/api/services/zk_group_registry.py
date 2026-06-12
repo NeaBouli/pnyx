@@ -12,6 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import ZkIdentityCommitment
+from services.zk_merkle_root import SemaphoreGroupRoot, build_semaphore_group_root
 
 VOTE_SCOPE_ID_RE = re.compile(r"^(bill|municipal|regional):[A-Za-z0-9._-]{1,110}$")
 
@@ -58,3 +59,17 @@ async def count_active_commitments_for_scope(
         )
     )
     return int(result.scalar_one())
+
+
+async def build_active_group_root_for_scope(
+    db: AsyncSession,
+    *,
+    vote_scope_id: str,
+    limit: int = 5000,
+) -> SemaphoreGroupRoot:
+    commitments = await list_active_commitments_for_scope(
+        db,
+        vote_scope_id=vote_scope_id,
+        limit=limit,
+    )
+    return build_semaphore_group_root(commitments)

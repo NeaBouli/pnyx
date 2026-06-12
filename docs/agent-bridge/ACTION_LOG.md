@@ -9573,3 +9573,24 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Documentation only.
 - No production dependency added.
 - No runtime code, no server deploy, no mobile build, no flag flip.
+
+## 2026-06-12 — Codex: GH#112 Semaphore LeanIMT/Poseidon root helper implemented
+
+### Scope
+- Added `apps/api/services/zk_merkle_root.py`.
+- Added pinned `apps/api/data/poseidon2_constants.json` generated from `poseidon-lite@0.3.0`.
+- Added internal `build_active_group_root_for_scope()` helper to compute roots from public scoped commitments.
+
+### Safety
+- No router exposure, no root publication, no ZK vote acceptance, no mobile build, no production flag flip.
+- Service rejects non-field members and never receives identity secrets, HLR metadata, Tier-1 nullifiers, or `tier_guard_hash`.
+- Constants file SHA-256 is pinned in code.
+
+### Verification
+- Python `poseidon2(1,2)` matches `poseidon-lite` reference.
+- Python root from S10 `memberHex` fixture matches native proof `merkle_tree_root` exactly.
+- Tests: `tests/services/test_zk_merkle_root.py` 13 passed.
+- Tests: `tests/services/test_zk_merkle_root.py tests/services/test_zk_group_registry.py` 23 passed.
+- Voting regression: `tests/test_voting.py` 21 passed / 2 xfailed.
+- Router/schema regression: `tests/routers/test_zk_verify_api.py tests/test_zk_gate1_schema.py` 17 passed.
+- Service regressions: group registry 9 passed, tier lock 13 passed, arweave payload 4 passed, Groth16 verifier 6 passed.

@@ -277,13 +277,15 @@ Acceptance:
 - Gate 3 tier-lock helpers and guarded Tier 1 checks are prepared behind
   default-off flags.
 - ZK opt-in storage is prepared but production opt-in remains disabled.
+- Semaphore-compatible LeanIMT/Poseidon root helper is implemented and tested
+  against the S10 fixture.
 
 ## Current Blocker
 
-Production Merkle root publication is blocked until the server can reproduce
-Semaphore-compatible LeanIMT/Poseidon roots exactly.
+Production Merkle root publication is blocked until the root helper is wired to
+an explicit reviewed publication path.
 
 See `docs/agent-bridge/GH112_MERKLE_ROOT_PREFLIGHT.md`.
 
 Do not use a SHA/SHA256 Merkle placeholder. The next implementation step is a
-reviewed root-builder decision, not a flag flip.
+reviewed root-publication decision, not a flag flip.

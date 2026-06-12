@@ -1,7 +1,7 @@
 # GH#112 - Semaphore Merkle Root Preflight
 
 Date: 2026-06-12
-Status: Research finding only; no runtime implementation
+Status: Root-builder helper implemented; no root publication or ZK activation
 
 ## Purpose
 
@@ -122,6 +122,13 @@ Stop before production root publication if:
 
 ## Decision
 
-Root construction remains blocked on a reviewed Semaphore-compatible
-LeanIMT/Poseidon implementation. The group registry helper may list commitments,
-but it must not publish roots until this preflight is resolved.
+Root construction helper is now implemented in
+`apps/api/services/zk_merkle_root.py` and covered by tests against the S10
+fixture and `poseidon-lite` reference values.
+
+Still blocked before production root publication:
+
+- dynamic-depth versus depth-16 artifact relationship must be documented in the
+  public root/receipt model,
+- root publication endpoint or job must be reviewed separately,
+- production ZK flags remain off until canary.
