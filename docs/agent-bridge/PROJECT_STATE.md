@@ -15,7 +15,7 @@
 - **Branch:** `main`
 - **Lokaler HEAD:** siehe `git rev-parse --short HEAD`
 - **origin/main:** siehe `git rev-parse --short origin/main`
-- **Repo HEAD:** `64a9586` (GH#112 Semaphore LeanIMT/Poseidon root helper implemented)
+- **Repo HEAD:** `c4f2bfa` (GH#112 Semaphore LeanIMT/Poseidon root helper + bridge status)
 - **API container:** `867fb9a` — ZK receipt `vote_commitment` storage live; ZK endpoints fail-closed
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
 - **Web container:** current public landing/wiki wording live; vC34 APK download/hash live
