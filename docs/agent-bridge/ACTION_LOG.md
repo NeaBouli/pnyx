@@ -10091,3 +10091,10 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Added `tests/test_monitor_hidden_bills.py`.
 - Verification: `python3 -m py_compile apps/monitor/monitor.py apps/api/tests/test_monitor_zk_canary_health.py apps/api/tests/test_monitor_hidden_bills.py`: PASS.
 - Verification: `cd apps/api && /tmp/pnyx-api-test-venv/bin/python -m pytest tests/test_monitor_zk_canary_health.py tests/test_monitor_hidden_bills.py tests/test_monitor_parliament_freshness.py -q`: PASS, 8 passed.
+
+### Live deploy
+- Deployed only `apps/monitor/monitor.py` to `ekklesia-monitor`.
+- Server backups:
+  - `/opt/ekklesia/backups/monitor-before-zk-health-20260613_012126.py`
+  - `/opt/ekklesia/backups/monitor-before-hidden-canary-filter-20260613_012446.py`
+- `docker exec ekklesia-monitor python /app/monitor.py --once`: PASS, `All checks passed — no alerts`.
