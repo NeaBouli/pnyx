@@ -39,6 +39,7 @@ from services.zk_groth16_verifier import (
     normalize_native_proof,
     verify_semaphore_proof,
 )
+from services.zk_proof_binding import proof_matches_canonical_binding
 from services.zk_tier_lock import (
     VoteScopeType,
     canonical_vote_scope_id,
@@ -69,6 +70,17 @@ class ZkVerifyRequest(BaseModel):
     )
 
 
+class ZkVoteRequest(BaseModel):
+    vote_scope_id: str = Field(
+        ...,
+        min_length=6,
+        max_length=128,
+        pattern=r"^(bill|municipal|regional):[^/]{1,110}$",
+    )
+    vote_commitment: str = Field(..., min_length=1, max_length=160)
+    proof: dict[str, Any] = Field(..., description="Public Semaphore proof payload only")
+
+
 class ZkOptInRequest(BaseModel):
     nullifier_hash: str = Field(..., min_length=64, max_length=64)
     bill_id: str = Field(..., min_length=1, max_length=50)
@@ -88,6 +100,15 @@ class ZkOptInResponse(BaseModel):
 class ZkVerifyResponse(BaseModel):
     enabled: bool
     proof_verified: bool
+    merkle_tree_depth: int
+    verifier_version: str
+
+
+class ZkVoteAcceptResponse(BaseModel):
+    accepted: bool
+    vote_scope_id: str
+    receipt_id: int
+    arweave_pending: bool
     merkle_tree_depth: int
     verifier_version: str
 
@@ -575,6 +596,93 @@ async def publish_zk_root(
     return ZkRootPublishResponse(**response.model_dump(), created=True)
 
 
+@router.post("/vote", response_model=ZkVoteAcceptResponse)
+async def accept_zk_vote(req: ZkVoteRequest, db: AsyncSession = Depends(get_db)) -> ZkVoteAcceptResponse:
+    if not zk_voting_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ZK voting is not enabled",
+        )
+
+    scope = _ensure_canary_scope_allowed(req.vote_scope_id)
+    vote_commitment = req.vote_commitment.strip()
+    normalized = _normalize_public_proof(req.proof)
+
+    if not proof_matches_canonical_binding(
+        proof_message=normalized["message"],
+        proof_scope=normalized["scope"],
+        vote_scope_id=scope,
+        vote_commitment=vote_commitment,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ZK proof is not bound to this vote scope and commitment",
+        )
+
+    root_result = await db.execute(
+        select(ZkMerkleRoot)
+        .where(
+            ZkMerkleRoot.vote_scope_id == scope,
+            ZkMerkleRoot.merkle_root == str(normalized["merkleTreeRoot"]),
+            ZkMerkleRoot.status == "OPEN",
+        )
+        .order_by(ZkMerkleRoot.id.desc())
+        .limit(1)
+    )
+    root = root_result.scalar_one_or_none()
+    if not root:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="ZK root is not published for this scope",
+        )
+    if int(normalized["merkleTreeDepth"]) != int(root.merkle_depth):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ZK proof merkle depth does not match the published root",
+        )
+
+    vkey = load_verification_key(VKEY_PATH, SEMAPHORE_V4_DEPTH16_VKEY_SHA256)
+    verified = await run_in_threadpool(verify_semaphore_proof, normalized, vkey)
+    if not verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ZK proof failed verification",
+        )
+
+    receipt = ZkVoteReceipt(
+        vote_scope_id=scope,
+        vote_commitment=vote_commitment,
+        semaphore_nullifier=str(normalized["nullifier"]),
+        merkle_root=str(normalized["merkleTreeRoot"]),
+        merkle_depth=int(normalized["merkleTreeDepth"]),
+        signal_hash=str(normalized["message"]),
+        external_nullifier=str(normalized["scope"]),
+        proof_public_json=normalized,
+        verifier_version="py-ecc-groth16-bn254:v1:semaphore-v4-depth16",
+        circuit_version="semaphore-v4-depth16",
+        arweave_pending=True,
+    )
+    db.add(receipt)
+    try:
+        await db.commit()
+        await db.refresh(receipt)
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="ZK vote already exists for this scope",
+        ) from exc
+
+    return ZkVoteAcceptResponse(
+        accepted=True,
+        vote_scope_id=scope,
+        receipt_id=receipt.id,
+        arweave_pending=True,
+        merkle_tree_depth=receipt.merkle_depth,
+        verifier_version=receipt.verifier_version,
+    )
+
+
 @router.post("/verify", response_model=ZkVerifyResponse)
 async def verify_zk_proof(req: ZkVerifyRequest) -> ZkVerifyResponse:
     if not zk_voting_enabled():
@@ -585,7 +693,7 @@ async def verify_zk_proof(req: ZkVerifyRequest) -> ZkVerifyResponse:
     if _env_enabled(ZK_CANARY_ENABLED_ENV):
         _ensure_canary_scope_allowed(req.vote_scope_id)
 
-    normalized = normalize_native_proof(req.proof) if "merkle_tree_depth" in req.proof else req.proof
+    normalized = _normalize_public_proof(req.proof)
     vkey = load_verification_key(VKEY_PATH, SEMAPHORE_V4_DEPTH16_VKEY_SHA256)
     verified = await run_in_threadpool(verify_semaphore_proof, normalized, vkey)
 
@@ -612,3 +720,7 @@ def _zk_root_response(root: ZkMerkleRoot) -> ZkRootResponse:
 async def _count_rows(db: AsyncSession, statement: Any) -> int:
     result = await db.execute(statement)
     return int(result.scalar_one() or 0)
+
+
+def _normalize_public_proof(proof: dict[str, Any]) -> dict[str, Any]:
+    return normalize_native_proof(proof) if "merkle_tree_depth" in proof else proof

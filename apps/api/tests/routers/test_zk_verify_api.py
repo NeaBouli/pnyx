@@ -8,8 +8,9 @@ from httpx import ASGITransport, AsyncClient
 
 from database import get_db
 from main import app
-from models import BillStatus, GovernanceLevel, ZkIdentityCommitment, ZkMerkleRoot, ZkVoteTierLock
+from models import BillStatus, GovernanceLevel, ZkIdentityCommitment, ZkMerkleRoot, ZkVoteReceipt, ZkVoteTierLock
 from routers import zk
+from services.zk_proof_binding import canonical_zk_message_value, canonical_zk_scope_value
 from services.zk_merkle_root import poseidon2
 
 FIXTURE_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "gh112_s10_fixture.json"
@@ -698,6 +699,125 @@ async def test_zk_verify_endpoint_is_disabled_by_default(monkeypatch) -> None:
 
     assert response.status_code == 503
     assert response.json()["detail"] == "ZK voting verifier is not enabled"
+
+
+@pytest.mark.asyncio
+async def test_zk_vote_endpoint_is_fail_closed_by_default(monkeypatch) -> None:
+    monkeypatch.delenv("ZK_VOTING_ENABLED", raising=False)
+    fake_db = _FakeSequenceDb([])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/vote",
+                json={
+                    "vote_scope_id": "bill:ZK-CANARY-001",
+                    "vote_commitment": "YES",
+                    "proof": _native_proof(),
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "ZK voting is not enabled"
+    assert fake_db.executed == []
+    assert fake_db.added == []
+
+
+@pytest.mark.asyncio
+async def test_zk_vote_rejects_proof_not_bound_to_scope_and_vote(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:ZK-CANARY-001")
+    fake_db = _FakeSequenceDb([])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/vote",
+                json={
+                    "vote_scope_id": "bill:ZK-CANARY-001",
+                    "vote_commitment": "YES",
+                    "proof": _native_proof(),
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "ZK proof is not bound to this vote scope and commitment"
+    assert fake_db.executed == []
+    assert fake_db.added == []
+
+
+@pytest.mark.asyncio
+async def test_zk_vote_accepts_bound_proof_and_stores_public_receipt(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:ZK-CANARY-001")
+    monkeypatch.setattr(zk, "verify_semaphore_proof", lambda *_args: True)
+    scope = "bill:ZK-CANARY-001"
+    vote_commitment = "YES"
+    root = SimpleNamespace(id=8, merkle_depth=16)
+    fake_db = _FakeSequenceDb([root])
+    proof = {
+        "merkleTreeDepth": 16,
+        "merkleTreeRoot": "123456789",
+        "message": canonical_zk_message_value(
+            vote_scope_id=scope,
+            vote_commitment=vote_commitment,
+        ),
+        "nullifier": "987654321",
+        "scope": canonical_zk_scope_value(scope),
+        "points": ["1", "2", "3", "4", "5", "6", "7", "8"],
+    }
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/vote",
+                json={
+                    "vote_scope_id": scope,
+                    "vote_commitment": vote_commitment,
+                    "proof": proof,
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["accepted"] is True
+    assert payload["vote_scope_id"] == scope
+    assert payload["arweave_pending"] is True
+    assert fake_db.committed is True
+    receipt = next(value for value in fake_db.added if isinstance(value, ZkVoteReceipt))
+    assert receipt.vote_scope_id == scope
+    assert receipt.vote_commitment == vote_commitment
+    assert receipt.semaphore_nullifier == "987654321"
+    assert receipt.merkle_root == "123456789"
+    assert receipt.signal_hash == proof["message"]
+    assert receipt.external_nullifier == proof["scope"]
+    assert receipt.proof_public_json == proof
+    serialized = json.dumps(payload)
+    assert "tier_guard_hash" not in serialized
+    assert "identity_record_id" not in serialized
 
 
 @pytest.mark.asyncio
