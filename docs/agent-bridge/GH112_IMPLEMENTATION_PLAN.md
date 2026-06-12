@@ -236,6 +236,11 @@ Rules:
 - Pending publication must be visible as `arweave_pending=true` or equivalent.
 - Publication may be queued/batched to reduce timing correlation.
 - Failed Arweave write must not silently claim public verification.
+- Do not add a receipt-accepting `/zk/vote` endpoint until the backend can
+  recompute and compare the expected Semaphore `message` and `scope` values
+  from canonical `vote_scope_id` + `vote_commitment` inputs.
+- A Groth16-valid proof alone is not sufficient for vote acceptance: it must
+  also be bound to the exact logical vote scope and vote commitment.
 
 Tests:
 
@@ -244,6 +249,9 @@ Tests:
 - Public verifier recomputes Tier 2 subtotal.
 - Duplicate Semaphore nullifier is rejected.
 - Wrong scope/message/root fails proof validation.
+- Wrong logical `vote_scope_id` with otherwise valid proof fails receipt
+  acceptance.
+- Wrong `vote_commitment` with otherwise valid proof fails receipt acceptance.
 - Pending publication status is exposed honestly.
 
 ## Gate 6 - Canary

@@ -365,6 +365,9 @@ Required tests:
 - Public verifier rejects a duplicate `semaphore_nullifier`.
 - Public verifier rejects records whose `scope`, `message`, or `merkle_root`
   does not match the proof.
+- Receipt acceptance rejects a proof whose logical `vote_scope_id` or
+  `vote_commitment` does not match the canonical Semaphore `scope`/`message`
+  binding.
 - Serializer excludes `tier_guard_hash`, Tier 1 nullifier, identity record id,
   phone, IP, public key, and precise opt-in/vote timestamps.
 - Failed Arweave write does not silently count a ZK vote as publicly verifiable.
@@ -413,5 +416,9 @@ canary window for `bill:ZK-CANARY-001` only:
 
 Do not publish per-vote Arweave records or count canary ZK votes in public
 tallies until the canary tally policy is explicitly reviewed.
+
+Do not implement a receipt-accepting `/zk/vote` endpoint until the backend can
+derive the same canonical Semaphore `message` and `scope` values as the native
+mobile prover and reject mismatches before storing `zk_vote_receipts`.
 
 See `docs/agent-bridge/GH112_CANARY_ACTIVATION_PLAN.md`.
