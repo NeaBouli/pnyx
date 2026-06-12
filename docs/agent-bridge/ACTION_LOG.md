@@ -9685,3 +9685,26 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_canary_prepare.py tests/services/test_bill_visibility.py tests/test_voting.py -q`: PASS, 32 passed / 2 xfailed.
 - `cd apps/api && .venv/bin/python -m scripts.prepare_zk_canary_scope --help`: PASS.
 - Local no-apply DB dry-run could not connect because local PostgreSQL was not running on `localhost:5432`; no DB write attempted.
+
+## 2026-06-12 — Codex: GH#112 canary isolation deployed + hidden scope created
+
+### Scope
+- API-only deploy of GH#112 canary isolation + prepare script.
+- Server repo is dirty from previous deployment state, so no `git pull` was used.
+- Synced only the touched API files to `/opt/ekklesia/app`, rebuilt only compose service `api`.
+- Ran `python -m scripts.prepare_zk_canary_scope --apply` inside the API container.
+
+### Safety
+- File backup before sync: `/opt/ekklesia/backups/gh112-canary-isolation-20260612_123044.tar.gz`.
+- Row rollback SQL created: `/opt/ekklesia/backups/rollback-gh112-zk-canary-001-20260612_123155.sql`.
+- No DB migration, no mobile/web build, no root publication, no ZK vote acceptance, no feature flag flip.
+- Production ZK remains fail-closed.
+
+### Verification
+- `https://api.ekklesia.gr/health`: 200.
+- `https://api.ekklesia.gr/api/v1/zk/status`: production/opt-in/canary all `false`.
+- DB row exists: `ZK-CANARY-001 | admin_hidden=true | source=ZK_CANARY | status=ACTIVE | forum_topic_id NULL | arweave_tx_id NULL`.
+- Public detail `GET /api/v1/bills/ZK-CANARY-001`: 404.
+- Public Arweave `GET /api/v1/arweave/bill/ZK-CANARY-001`: 404.
+- Public stats stayed filtered: `total_bills=1085`, `forum_topics=1085`, no hidden canary counted.
+- Containers healthy/running: api, db, redis, web, monitor.
