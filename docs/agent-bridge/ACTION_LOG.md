@@ -9795,3 +9795,21 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - File backup before sync: `/opt/ekklesia/backups/gh112-zk-vote-acceptance-20260612_132049.tar.gz`.
 - Deployment note: API startup lifecycle catch-up advanced `GR-c3ffc844` through existing lifecycle logic; unrelated to ZK.
 - CC review: no blockers; noted `zk_vote_receipts.vote_commitment` is still DB-nullable and should be hardened before production ZK once canary data policy is final.
+
+## 2026-06-12 — Codex: GH#112 mobile ZK library groundwork
+
+### Scope
+- Added mobile API helpers for ZK opt-in, root fetch, and gated ZK vote receipt submission.
+- Added mobile helper to sign the backend ZK opt-in payload with the existing Tier-1 Ed25519 identity.
+- Added a separate SecureStore-backed Semaphore identity helper for ZK membership.
+
+### Safety
+- Mobile library-only change: no screen imports these helpers yet.
+- No app build, no APK/AAB upload, no Play Console change; vC34 review remains untouched.
+- No server deploy, no DB migration, no ZK flag flip, no vote-path activation.
+- ZK secret is stored under a separate SecureStore key and is not derived from Tier-1 voting material.
+
+### Verification
+- `cd apps/mobile && npx tsc --noEmit`: PASS.
+- `cd apps/mobile && npx vitest run src/lib/zkProofBinding.test.ts src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreSelfTest.test.ts src/lib/zkSemaphoreNative.test.ts`: PASS, 23 passed.
+- CC helper process hung without output; local checks were completed and the scope is non-activating.
