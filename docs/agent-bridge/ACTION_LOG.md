@@ -9649,3 +9649,21 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py -q`: PASS, 24 passed.
 - `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_merkle_root.py tests/services/test_zk_group_registry.py tests/services/test_zk_tier_lock.py tests/services/test_zk_arweave_payload.py tests/test_voting.py -q`: PASS, 61 passed / 2 xfailed.
 - CC review: no blockers.
+
+## 2026-06-12 — Codex: GH#112 canary bill isolation hardened
+
+### Scope
+- Added shared `services/bill_visibility.py` guards for public bill surfaces.
+- Applied `admin_hidden IS NOT TRUE` consistently across public/app-visible APIs, forum sync, lifecycle/arweave catch-up, analytics, representative views, public exports, AI-agent bill context, CPLM, newsletter stats, QR vote/consensus, and normal Tier-1 vote/relevance paths.
+- Direct `admin_hidden` bills now behave as not found on public/direct user paths while admin/scraper/operator paths remain manageable.
+
+### Safety
+- No DB migration, no deploy, no mobile build, no production flag flip.
+- Hidden canary bills remain usable for controlled ZK setup paths but cannot leak into app lists, forum topics, Arweave snapshots, public statistics, CPLM, newsletter, AI context, or Tier-1 vote/relevance writes.
+- Rollback tag: `rollback-pre-gh112-canary-isolation-20260612-1222`.
+
+### Verification
+- `cd apps/api && .venv/bin/python -m py_compile ...`: PASS for touched routers/services.
+- Target suite: `tests/services/test_bill_visibility.py tests/services/test_arweave_guards.py tests/test_voting.py tests/routers/test_zk_verify_api.py tests/test_parliament.py tests/test_ip_utils.py tests/test_cors_config.py -q`: PASS, 79 passed / 4 xfailed.
+- Smoke subset after final relevance guard: `tests/services/test_bill_visibility.py tests/services/test_arweave_guards.py tests/test_voting.py -q`: PASS, 38 passed / 2 xfailed.
+- CC review: no blockers; final relevance signal gap fixed before commit.
