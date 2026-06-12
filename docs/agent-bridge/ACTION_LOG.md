@@ -10098,3 +10098,14 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `/opt/ekklesia/backups/monitor-before-zk-health-20260613_012126.py`
   - `/opt/ekklesia/backups/monitor-before-hidden-canary-filter-20260613_012446.py`
 - `docker exec ekklesia-monitor python /app/monitor.py --once`: PASS, `All checks passed — no alerts`.
+
+### Lesson learned
+- T3 does not automatically mean data loss or broken voting; it means the monitor escalated to a human because no safe auto-recovery exists or T1/T2 did not resolve it.
+- Repeated false-positive T3 alerts are still harmful because they create alert fatigue and hide real incidents.
+- Any future internal/test object (`admin_hidden=true`, `source='ZK_CANARY'`, or equivalent) must be excluded explicitly from public/operational checks that assume a real citizen-facing bill:
+  - forum-missing / forum-completeness checks
+  - public bill lists
+  - Arweave eligibility checks
+  - votes-in-progress / public statistics
+  - newsletter / AI context / forum sync
+- Rule for future fixes: whenever a hidden technical object is added, audit all public and monitor queries for `admin_hidden` / source filters before deploying.
