@@ -254,6 +254,36 @@ def _ensure_canary_scope_allowed(vote_scope_id: str | None) -> str:
     return scope
 
 
+def _is_safe_canary_bill(bill: ParliamentBill | None) -> bool:
+    return (
+        bill is not None
+        and bool(getattr(bill, "admin_hidden", False)) is True
+        and getattr(bill, "source", None) == "ZK_CANARY"
+        and getattr(bill, "forum_topic_id", None) is None
+        and getattr(bill, "arweave_tx_id", None) is None
+    )
+
+
+def _ensure_canary_bill_isolated(bill: ParliamentBill | None) -> None:
+    if not _env_enabled(ZK_CANARY_ENABLED_ENV):
+        return
+    if not _is_safe_canary_bill(bill):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="ZK canary bill is not isolated",
+        )
+
+
+async def _ensure_canary_scope_isolated(db: AsyncSession, vote_scope_id: str) -> None:
+    if not _env_enabled(ZK_CANARY_ENABLED_ENV):
+        return
+    scope_type, scope_id = validate_vote_scope_id(vote_scope_id).split(":", 1)
+    if scope_type != "bill":
+        return
+    bill_result = await db.execute(select(ParliamentBill).where(ParliamentBill.id == scope_id))
+    _ensure_canary_bill_isolated(bill_result.scalar_one_or_none())
+
+
 def _ensure_bill_scope_allowed(identity: IdentityRecord, bill: ParliamentBill) -> None:
     gov_level = getattr(bill, "governance_level", None)
     if gov_level in (None, GovernanceLevel.NATIONAL, GovernanceLevel.INSTITUTIONAL):
@@ -355,13 +385,7 @@ async def get_zk_canary_preflight(
     bill_hidden = bool(bill.admin_hidden) if bill is not None else None
     forum_absent = bill.forum_topic_id is None if bill is not None else None
     arweave_absent = bill.arweave_tx_id is None if bill is not None else None
-    bill_is_safe_canary = (
-        bill is not None
-        and bill_hidden is True
-        and bill.source == "ZK_CANARY"
-        and forum_absent is True
-        and arweave_absent is True
-    )
+    bill_is_safe_canary = _is_safe_canary_bill(bill)
 
     return ZkCanaryPreflightResponse(
         vote_scope_id=scope,
@@ -431,6 +455,7 @@ async def opt_in_zk(req: ZkOptInRequest, db: AsyncSession = Depends(get_db)) -> 
     _ensure_bill_scope_allowed(identity, bill)
     vote_scope_id = canonical_vote_scope_id(VoteScopeType.BILL, req.bill_id)
     _ensure_canary_scope_allowed(vote_scope_id)
+    _ensure_canary_bill_isolated(bill)
 
     payload = f"zk_opt_in:{req.bill_id}:{req.commitment}:{req.nullifier_hash}".encode()
     if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
@@ -509,9 +534,13 @@ async def list_zk_receipts(
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
 ) -> ZkReceiptListResponse:
+    scope = validate_vote_scope_id(vote_scope_id)
+    if _env_enabled(ZK_CANARY_ENABLED_ENV):
+        _ensure_canary_scope_allowed(scope)
+        await _ensure_canary_scope_isolated(db, scope)
     result = await db.execute(
         select(ZkVoteReceipt)
-        .where(ZkVoteReceipt.vote_scope_id == vote_scope_id)
+        .where(ZkVoteReceipt.vote_scope_id == scope)
         .order_by(ZkVoteReceipt.id)
         .offset(offset)
         .limit(limit)
@@ -521,7 +550,7 @@ async def list_zk_receipts(
         for receipt in result.scalars().all()
     ]
     return ZkReceiptListResponse(
-        vote_scope_id=vote_scope_id,
+        vote_scope_id=scope,
         limit=limit,
         offset=offset,
         receipts=receipts,
@@ -539,6 +568,9 @@ async def get_current_zk_root(
     db: AsyncSession = Depends(get_db),
 ) -> ZkRootResponse:
     scope = validate_vote_scope_id(vote_scope_id)
+    if _env_enabled(ZK_CANARY_ENABLED_ENV):
+        _ensure_canary_scope_allowed(scope)
+        await _ensure_canary_scope_isolated(db, scope)
     result = await db.execute(
         select(ZkMerkleRoot)
         .where(
@@ -567,6 +599,7 @@ async def get_current_zk_root_members(
     scope = validate_vote_scope_id(vote_scope_id)
     if _env_enabled(ZK_CANARY_ENABLED_ENV):
         _ensure_canary_scope_allowed(scope)
+        await _ensure_canary_scope_isolated(db, scope)
 
     result = await db.execute(
         select(ZkMerkleRoot)
@@ -611,6 +644,7 @@ async def publish_zk_root(
     _ensure_zk_root_publication_enabled()
     scope = validate_vote_scope_id(vote_scope_id)
     _ensure_canary_scope_allowed(scope)
+    await _ensure_canary_scope_isolated(db, scope)
     try:
         group = await build_active_group_root_for_scope(db, vote_scope_id=scope)
     except ValueError as exc:
@@ -657,6 +691,7 @@ async def accept_zk_vote(req: ZkVoteRequest, db: AsyncSession = Depends(get_db))
         )
 
     scope = _ensure_canary_scope_allowed(req.vote_scope_id)
+    await _ensure_canary_scope_isolated(db, scope)
     vote_commitment = req.vote_commitment.strip()
     normalized = _normalize_public_proof(req.proof)
 

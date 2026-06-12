@@ -9962,3 +9962,23 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### Safety
 - No APK/AAB build, no Play Console upload, no deploy, no versionCode bump.
+
+## 2026-06-13 — Codex: GH#112 Canary isolation enforced at runtime
+
+### Scope
+- Hardened the ZK canary path so the allowlist alone is not sufficient.
+- In canary mode, bill scopes now require an isolated bill row before opt-in, root read, root members, root publish, receipt list, or ZK vote acceptance:
+  - `admin_hidden = true`
+  - `source = 'ZK_CANARY'`
+  - no `forum_topic_id`
+  - no `arweave_tx_id`
+- This prevents accidental activation against a public Parliament/Diavgeia bill even if the allowlist is misconfigured.
+
+### Verification
+- Temporary clean API venv used because local `apps/api/.venv` points to a removed Miniconda path.
+- `cd apps/api && /tmp/pnyx-api-test-venv/bin/python -m pytest tests/routers/test_zk_verify_api.py -q`: PASS, 34 passed, 1 existing Pydantic deprecation warning.
+- `cd apps/api && python3 -m py_compile routers/zk.py tests/routers/test_zk_verify_api.py`: PASS.
+
+### Safety
+- No production flags changed. ZK remains fail-closed unless explicitly enabled.
+- No DB migration, no mobile build, no Play upload.
