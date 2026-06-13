@@ -10181,6 +10181,7 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 
 ### Scope
 - Added `docs/agent-bridge/GH112_CANARY_ACTIVATION_RUNBOOK.md`.
+- Added `docs/agent-bridge/GH112_CANARY_OPERATOR_CHECKLIST.md`.
 - Doku-only preparation for the future ZK canary window.
 - No flags changed, no deploy, no DB mutation, no ZK activation.
 
@@ -10200,3 +10201,4 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Current decision
 - The runbook is preparation only.
 - Do not start the canary flag window without explicit operator approval, fresh DB backup, and a named canary test identity.
+- The operator start phrase is: `Start GH#112 ZK Canary now. S10 is ready. Use my verified S10 test account.`
