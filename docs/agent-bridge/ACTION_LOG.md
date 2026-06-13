@@ -10171,3 +10171,8 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `ekklesia.gr/.MainActivity` is resumed and current focused window on the S10.
   - Logcat check found no `FATAL EXCEPTION`, `AndroidRuntime`, or `ReactNativeJS` crash entries in the sampled launch window.
 - Result: vC35 is installed and smoke-verified on S10 via the Play/AAB signing path.
+
+### Google Play upload
+- Gio uploaded `/Users/gio/Desktop/ekklesia-v1.0.6-vC35-PLAY.aab` to Google Play after S10 verification.
+- Clarification: vC35 did not enable R8/ProGuard minification (`android.enableMinifyInReleaseBuilds` defaults to `false`; shrink resources defaults to `false`), so there is no `mapping.txt` to upload for this artifact.
+- If Play Console shows a "no deobfuscation file" warning for vC35, it is informational for this build, not a release blocker.
