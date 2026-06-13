@@ -10160,3 +10160,14 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Full live APK download hash matches `306a530c0e2edfa701675d1cf37a4a52069005294be4cb60851fddae84be1f76`.
   - API `/health`: PASS.
   - Monitor one-shot: PASS, 17 checks, `All checks passed — no alerts`.
+
+### S10 verification
+- S10 connected later: `SM-G973F`.
+- Direct APK install over the existing app was correctly rejected by Android with `INSTALL_FAILED_UPDATE_INCOMPATIBLE` because the installed vC34 app used a different signing lineage than the direct APK.
+- To preserve app data/test-account state, the existing app was not uninstalled.
+- Built a connected-device APK set from `/Users/gio/Desktop/ekklesia-v1.0.6-vC35-PLAY.aab` with `bundletool build-apks --connected-device` and installed it with `bundletool install-apks`.
+- Installed package now reports `versionCode=35`, `versionName=1.0.6`, `lastUpdateTime=2026-06-13 09:09:04`.
+- App launch verification:
+  - `ekklesia.gr/.MainActivity` is resumed and current focused window on the S10.
+  - Logcat check found no `FATAL EXCEPTION`, `AndroidRuntime`, or `ReactNativeJS` crash entries in the sampled launch window.
+- Result: vC35 is installed and smoke-verified on S10 via the Play/AAB signing path.
