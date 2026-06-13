@@ -10176,3 +10176,27 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Gio uploaded `/Users/gio/Desktop/ekklesia-v1.0.6-vC35-PLAY.aab` to Google Play after S10 verification.
 - Clarification: vC35 did not enable R8/ProGuard minification (`android.enableMinifyInReleaseBuilds` defaults to `false`; shrink resources defaults to `false`), so there is no `mapping.txt` to upload for this artifact.
 - If Play Console shows a "no deobfuscation file" warning for vC35, it is informational for this build, not a release blocker.
+
+## 2026-06-13 — GH#112 ZK canary activation runbook drafted
+
+### Scope
+- Added `docs/agent-bridge/GH112_CANARY_ACTIVATION_RUNBOOK.md`.
+- Doku-only preparation for the future ZK canary window.
+- No flags changed, no deploy, no DB mutation, no ZK activation.
+
+### Guardrails recorded
+- Canary scope is fixed to `bill:ZK-CANARY-001`.
+- Hard-stop rules cover non-canary scopes, public bill leakage, Arweave publication, private-field leakage, backup absence, and failed proof mutation checks.
+- Flag window is explicitly gated by `ZK_VOTING_ENABLED`, `ZK_OPT_IN_ENABLED`, `ZK_TIER1_GUARD_ENABLED`, `ZK_CANARY_ENABLED`, `ZK_ROOT_PUBLICATION_ENABLED`, and exact `ZK_CANARY_SCOPE_ALLOWLIST`.
+- Runbook requires DB backup before any future flag change and primary rollback via flags off.
+
+### Review
+- CC reviewed the runbook and found no blockers.
+- Follow-up improvements from review were applied:
+  - SQL checks are wrapped as explicit production DB container commands.
+  - The first canary receipt must be checked for `arweave_published = 0` and `arweave_pending = 1`.
+  - Tier-1 regression check is listed after the canary window.
+
+### Current decision
+- The runbook is preparation only.
+- Do not start the canary flag window without explicit operator approval, fresh DB backup, and a named canary test identity.
