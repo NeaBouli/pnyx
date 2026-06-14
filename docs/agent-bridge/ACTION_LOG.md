@@ -10515,3 +10515,29 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Tests: `tests/test_monitor_zk_canary_health.py`, `tests/test_monitor_hidden_bills.py`, `tests/test_monitor_parliament_freshness.py` — `9 passed`.
 - Deployed via clean `ekklesia-monitor` image rebuild.
 - Live monitor after deploy: PASS, 17 checks, `All checks passed — no alerts`.
+
+## 2026-06-15 — Codex: public ZK status + vC38 direct APK deployed
+
+- Commit: `c862df1`.
+- Rollback tag: `rollback-pre-zk-docs-vc38-20260615-0032`.
+- Public docs updated:
+  - README, Roadmap, Whitepaper, FAQ, ZK wiki, llms.txt.
+  - Wording now says Android prover + hidden S10 canary passed, while global ZK rollout remains gated.
+  - ZK wiki clarifies Arweave policy: canary published nothing to Arweave; production may archive only public verifier payloads, never identity bridge fields or secrets.
+- Direct APK:
+  - Rebuilt `assemblePlayRelease` from vC38 / v1.0.9.
+  - `docs/download/ekklesia-latest.apk` SHA256: `5f725627da5d088136cff6d4430e9c7266779fae26bf9567150837a40e49dc66`.
+  - Landing download label now shows `v1.0.9 · vC38`.
+- Server deploy:
+  - Server dirty working tree was preserved with stash `pre-c862df1-server-dirty-20260615-0033`.
+  - Server pulled `c862df1`.
+  - Ignored APK binary copied separately to `/opt/ekklesia/app/docs/download/ekklesia-latest.apk`.
+  - Clean `ekklesia-web` image rebuild; no API/DB change.
+- Live verification:
+  - Landing shows S10 canary status and `v1.0.9 · vC38`.
+  - Live APK SHA matches manifest.
+  - ZK wiki shows S10 canary passed and Arweave/public payload policy.
+  - `/api/v1/zk/status`: all production/canary flags `false`.
+  - `ZK-CANARY-001` hidden from public bills API and landing.
+  - Monitor PASS, 17 checks, no alerts.
+  - GitHub CI + Security Audit for `c862df1`: success.

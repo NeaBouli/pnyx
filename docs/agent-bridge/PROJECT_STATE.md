@@ -18,7 +18,7 @@
 - **Repo HEAD:** siehe `git rev-parse --short HEAD` (latest: GH#112 hidden S10 canary passed; public docs/download status refresh)
 - **API container:** GH#112 canary isolation + hidden `ZK-CANARY-001` + root publish/group members + gated `/zk/vote`; production ZK flags remain off
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
-- **Web container:** pending rebuild for public ZK status wording + vC38 APK download/hash
+- **Web container:** `c862df1` rebuilt live; public ZK status wording + vC38 APK download/hash verified on ekklesia.gr
 - **S10:** vC38/1.0.9 verified via hidden ZK canary; S10 may be disconnected after canary verification
 - **Alembic:** `u401a2b3c4d5` (ZK receipt `vote_commitment` NOT NULL, head)
 - **F-Droid !38007:** Community launch-crash fixed in fdroiddata `e42e014f`; pipeline `2570810919` green 9/9; GlassOnTin/linsui re-test requested
@@ -27,7 +27,7 @@
 - **GR-0490a766:** arweave_tx_id=NULL (bereinigt), party_votes_parliament=NULL, Guards verhindern Re-Archivierung
 - **Telegram Bot:** citizen_votes Query LIVE, governance Topic-Routing LIVE
 - **vC38 Release:** AAB `/Users/gio/Desktop/ekklesia-v1.0.9-vC38-PLAY.aab` uploaded to Play Console after vC37 was superseded by the ZK binding fix.
-- **vC38 Landing APK:** docs/download now points to v1.0.9/vC38; deploy web to make it live.
+- **vC38 Landing APK:** live on ekklesia.gr as v1.0.9/vC38; SHA256 `5f725627da5d088136cff6d4430e9c7266779fae26bf9567150837a40e49dc66`
 - **R8/mapping.txt:** still off for vC38 (`minify=false`); mapping warning in Play is informational until a future Production/R8 build.
 - **Linear:** Token OK (`~/.claude/.env` → `LINEAR_API_KEY`), NEA-280 + NEA-292 geschlossen; Codex verified and commented NEA-292 + NEA-301
 - **NEA-301b PARLIAMENT:** DONE (17/31 mit summary_short_el, 9 brauchen Fetcher, 3 DEMO + 2 flagged excluded, DIAVGEIA 0/636 eigene Phase)
