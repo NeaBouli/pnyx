@@ -67,9 +67,10 @@
   - [x] Canary prep: hidden `ZK-CANARY-001` scope + exact allowlist enforcement + admin-only preflight built/tested
   - [x] Gated `/api/v1/zk/vote` receipt path live fail-closed; no tallies/Arweave while flags are off
   - [x] Mobile prep: ZK opt-in UI benötigt lokale native Fähigkeit UND Server `opt_in_enabled=true`; kein vC35 Build solange vC34 in Play Review
+  - [x] Mobile vC36 prep: hidden operator canary path can submit real S10 opt-in/vote payloads; visible only after server canary flag + local long-press unlock
   - [ ] Schema hardening before production ZK: make `zk_vote_receipts.vote_commitment` non-null/check-constrained after canary data policy is final
   - [ ] Gate 3: echte Opt-in/Group-Registry/Tier-Lock-Verdrahtung nur mit Security-Review
-  - [ ] Gate 4: Mobile produktiver Opt-in erst nach Server-Gate + Canary
+  - [ ] Gate 4: Mobile produktiver Opt-in erst nach Server-Gate + Canary; vC36 operator path is test-only and does not enable production ZK
   - [ ] Gate 6: Canary-Window; keine produktive Aktivierung ohne Backup/Review
 
 ## Done (Session 25.05.2026)

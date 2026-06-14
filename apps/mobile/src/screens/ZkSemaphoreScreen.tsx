@@ -1,16 +1,31 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { colors } from "../theme";
 import { fetchZkStatus } from "../lib/api";
 import { getRuntimeZkCapability, type ZkCapability } from "../lib/zkSemaphore";
 import { combineZkCapabilityWithServer, type ZkServerStatus } from "../lib/zkSemaphoreCore";
+import { submitZkOptInForBill, submitZkVoteWithPublishedRoot } from "../lib/zkCanaryFlow";
+import {
+  canShowZkCanaryOperator,
+  canRunZkCanaryOptIn,
+  canRunZkCanaryVote,
+  ZK_CANARY_BILL_ID,
+  ZK_CANARY_SCOPE_ID,
+  ZK_CANARY_VOTE_COMMITMENT,
+} from "../lib/zkCanaryOperator";
 import {
   runZkSemaphoreSelfTest,
   type ZkSemaphoreSelfTestResult,
 } from "../lib/zkSemaphoreSelfTest";
 
 const OPT_IN_KEY = "zk_semaphore_v2_opt_in";
+
+type CanaryStepResult = {
+  ok: boolean;
+  title: string;
+  detail: string;
+};
 
 function capabilityTitle(capability: ZkCapability): string {
   if (capability.status === "ready") return "Έτοιμο για προαιρετική ενεργοποίηση";
@@ -48,6 +63,9 @@ export default function ZkSemaphoreScreen() {
   const [saving, setSaving] = useState(false);
   const [selfTestRunning, setSelfTestRunning] = useState(false);
   const [selfTest, setSelfTest] = useState<ZkSemaphoreSelfTestResult | null>(null);
+  const [operatorUnlocked, setOperatorUnlocked] = useState(false);
+  const [canaryRunning, setCanaryRunning] = useState<"opt-in" | "vote" | null>(null);
+  const [canaryResult, setCanaryResult] = useState<CanaryStepResult | null>(null);
 
   useEffect(() => {
     setCapability(getRuntimeZkCapability());
@@ -95,6 +113,84 @@ export default function ZkSemaphoreScreen() {
     });
   }
 
+  function formatPreview(value: string): string {
+    if (value.length <= 18) return value;
+    return `${value.slice(0, 10)}...${value.slice(-6)}`;
+  }
+
+  async function runCanaryOptIn() {
+    if (canaryRunning) return;
+    Alert.alert(
+      "Internal ZK Canary",
+      `Θα δημιουργηθεί πραγματικό ZK opt-in μόνο για ${ZK_CANARY_BILL_ID}. Συνέχεια;`,
+      [
+        { text: "Άκυρο", style: "cancel" },
+        {
+          text: "Συνέχεια",
+          style: "destructive",
+          onPress: async () => {
+            setCanaryRunning("opt-in");
+            setCanaryResult(null);
+            try {
+              const result = await submitZkOptInForBill(ZK_CANARY_BILL_ID);
+              setCanaryResult({
+                ok: true,
+                title: "Canary opt-in ολοκληρώθηκε",
+                detail: `commitment ${formatPreview(result.commitment)} · member ${formatPreview(result.memberHex)} · id ${result.response.commitment_id}`,
+              });
+            } catch (error) {
+              setCanaryResult({
+                ok: false,
+                title: "Canary opt-in απέτυχε",
+                detail: error instanceof Error ? error.message : "unknown error",
+              });
+            } finally {
+              setCanaryRunning(null);
+            }
+          },
+        },
+      ],
+    );
+  }
+
+  async function runCanaryVote() {
+    if (canaryRunning) return;
+    Alert.alert(
+      "Internal ZK Canary",
+      `Θα σταλεί πραγματική ZK ψήφος ${ZK_CANARY_VOTE_COMMITMENT} μόνο για ${ZK_CANARY_SCOPE_ID}. Συνέχεια;`,
+      [
+        { text: "Άκυρο", style: "cancel" },
+        {
+          text: "Συνέχεια",
+          style: "destructive",
+          onPress: async () => {
+            setCanaryRunning("vote");
+            setCanaryResult(null);
+            try {
+              const result = await submitZkVoteWithPublishedRoot({
+                voteScopeId: ZK_CANARY_SCOPE_ID,
+                voteCommitment: ZK_CANARY_VOTE_COMMITMENT,
+              });
+              setCanaryResult({
+                ok: result.accepted,
+                title: result.accepted ? "Canary ZK vote έγινε αποδεκτό" : "Canary ZK vote δεν έγινε αποδεκτό",
+                detail: `receipt ${result.receipt_id} · arweave_pending=${String(result.arweave_pending)} · verifier ${result.verifier_version}`,
+              });
+            } catch (error) {
+              setCanaryResult({
+                ok: false,
+                title: "Canary ZK vote απέτυχε",
+                detail: error instanceof Error ? error.message : "unknown error",
+              });
+            } finally {
+              setCanaryRunning(null);
+            }
+          },
+        },
+      ],
+    );
+  }
+
   if (!capability) {
     return <View style={s.center}><ActivityIndicator color={colors.primary} /></View>;
   }
@@ -103,10 +199,15 @@ export default function ZkSemaphoreScreen() {
   const ready = effectiveCapability.status === "ready";
   // The self-test only checks the local native prover; it does not opt in or send a vote.
   const canRunSelfTest = capability.status !== "unsupported";
+  const showCanaryOperator = canShowZkCanaryOperator({ serverStatus, operatorUnlocked });
+  const canaryOptInReady = canRunZkCanaryOptIn({ serverStatus, capability: effectiveCapability, optedIn });
+  const canaryVoteReady = canRunZkCanaryVote({ serverStatus, capability: effectiveCapability, optedIn });
 
   return (
     <ScrollView style={s.container} contentContainerStyle={s.content}>
-      <Text style={s.title}>Semaphore ZK V2</Text>
+      <TouchableOpacity onLongPress={() => setOperatorUnlocked(true)} activeOpacity={0.9}>
+        <Text style={s.title}>Semaphore ZK V2</Text>
+      </TouchableOpacity>
       <Text style={s.subtitle}>
         Προαιρετική ανώνυμη ψήφος με δημόσια επαληθεύσιμη απόδειξη. Το τρέχον σύστημα
         Ed25519 παραμένει το κανονικό μονοπάτι και δεν αλλάζει.
@@ -178,6 +279,46 @@ export default function ZkSemaphoreScreen() {
           <Text style={s.primaryText}>{saving ? "..." : "Προαιρετική ενεργοποίηση"}</Text>
         </TouchableOpacity>
       )}
+
+      {showCanaryOperator && (
+        <View style={[s.card, s.operatorCard]}>
+          <Text style={s.cardTitle}>Internal ZK Canary</Text>
+          <Text style={s.note}>
+            Μόνο για χειριστή. Εκτελεί πραγματικό opt-in και δοκιμαστική ZK ψήφο στο κρυφό
+            scope {ZK_CANARY_SCOPE_ID}. Δεν εμφανίζεται όταν το canary flag είναι κλειστό.
+          </Text>
+          {!optedIn && (
+            <Text style={s.reason}>• Ενεργοποιήστε πρώτα το προαιρετικό ZK opt-in πιο πάνω.</Text>
+          )}
+          {!serverStatus?.verifier_enabled && (
+            <Text style={s.reason}>• Η ψήφος θα ενεργοποιηθεί μόνο όταν ανοίξει το verifier gate.</Text>
+          )}
+          <TouchableOpacity
+            style={[s.secondaryBtn, (!canaryOptInReady || canaryRunning !== null) && s.btnDisabled]}
+            onPress={runCanaryOptIn}
+            disabled={!canaryOptInReady || canaryRunning !== null}
+          >
+            <Text style={[s.secondaryText, (!canaryOptInReady || canaryRunning !== null) && s.disabledButtonText]}>
+              {canaryRunning === "opt-in" ? "Canary opt-in..." : "1. Canary opt-in"}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.primaryBtn, s.operatorVoteBtn, (!canaryVoteReady || canaryRunning !== null) && s.btnDisabled]}
+            onPress={runCanaryVote}
+            disabled={!canaryVoteReady || canaryRunning !== null}
+          >
+            <Text style={s.primaryText}>
+              {canaryRunning === "vote" ? "Canary vote..." : `2. Canary vote ${ZK_CANARY_VOTE_COMMITMENT}`}
+            </Text>
+          </TouchableOpacity>
+          {canaryResult && (
+            <View style={[s.selfTestResult, canaryResult.ok ? s.selfTestOk : s.selfTestFail]}>
+              <Text style={s.selfTestTitle}>{canaryResult.title}</Text>
+              <Text style={s.selfTestText}>{canaryResult.detail}</Text>
+            </View>
+          )}
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -212,4 +353,6 @@ const s = StyleSheet.create({
   selfTestText: { color: colors.textSecondary, fontSize: 12, lineHeight: 18 },
   fixtureBtn: { marginTop: 10, borderColor: colors.success, borderWidth: 1, borderRadius: 10, padding: 10, alignItems: "center" },
   fixtureText: { color: colors.success, fontSize: 12, fontWeight: "900" },
+  operatorCard: { backgroundColor: "#f8fafc", borderColor: colors.primary },
+  operatorVoteBtn: { marginTop: 10 },
 });

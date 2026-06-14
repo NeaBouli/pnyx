@@ -10286,3 +10286,46 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - `cd packages/crypto && npm ls vite esbuild --all`: PASS, `esbuild@0.28.1 overridden`.
 - `cd packages/crypto && npm test`: PASS, 1 file / 47 tests.
 - Dynamic local Security Audit loop across all lockfiles: PASS, 0 vulnerabilities.
+
+## 2026-06-14 — GH#112 vC36 hidden mobile canary operator path
+
+### Reason
+- The first GH#112 canary window stopped safely with `CANARY_NOT_STARTED`
+  because vC35 could not execute a real server canary opt-in/vote payload from
+  the release-signed S10 app.
+
+### Fix
+- Added `apps/mobile/src/lib/zkCanaryOperator.ts` with fixed canary constants:
+  `ZK-CANARY-001`, `bill:ZK-CANARY-001`, and vote commitment `YES`.
+- Added a hidden in-app operator card to `ZkSemaphoreScreen`.
+- Controls are visible only when:
+  - server `canary_enabled=true`;
+  - the operator long-presses the `Semaphore ZK V2` title;
+  - the device/app capability is ready and local ZK opt-in is enabled.
+- The opt-in button calls `submitZkOptInForBill("ZK-CANARY-001")`.
+- The vote button calls `submitZkVoteWithPublishedRoot({ voteScopeId:
+  "bill:ZK-CANARY-001", voteCommitment: "YES" })`.
+- Bumped mobile to vC36 / v1.0.7 and enabled the app-side ZK capability flag;
+  server flags still gate all real behavior.
+
+### Verification
+- `cd apps/mobile && npx tsc --noEmit`: PASS.
+- `cd apps/mobile && npx vitest run`: PASS, 12 files / 73 tests.
+- No API, DB, Arweave, forum, or production ZK flag changes.
+- `bash scripts/build-play.sh`: PASS, AAB `versionCode=36`, `versionName=1.0.7`.
+- `cd apps/mobile/android && ./gradlew assemblePlayRelease`: PASS.
+- S10 install via Play-signed APK: PASS, `versionCode=36`, `versionName=1.0.7`,
+  `lastUpdateTime=2026-06-14 12:45:29`.
+- App launch smoke: `ekklesia.gr.MainActivity` focused; no sampled
+  `FATAL EXCEPTION`, `AndroidRuntime`, or `ReactNativeJS` crash.
+- Desktop artifacts:
+  - `/Users/gio/Desktop/ekklesia-v1.0.7-vC36-PLAY.aab`
+    SHA256 `1e5a3fd02888dc2a7cf40fec2e2674a1b91512af134aa64a8489f22111559dab`
+  - `/Users/gio/Desktop/ekklesia-v1.0.7-vC36-PLAY.apk`
+    SHA256 `d08d85b6cd786eeafeafb1e29228bad15fbfd64e5f607b5b9f9b1d319f83a14b`
+
+### Notes
+- vC36 is an operator/canary-enabling build. It was installed on S10 for the
+  next GH#112 window, but it was not published to the landing download button.
+- Do not start the canary from vC35 or older; only vC36+ has the executable
+  in-app server canary path.

@@ -32,6 +32,8 @@ Stop immediately if any of these is true:
 - No reviewed executable S10 canary payload/flow exists. Do not activate flags
   if the installed app can only run the local prover self-test but cannot submit
   the server canary opt-in and vote payload.
+- The installed S10 build is older than vC36. vC35 and older builds expose only
+  the local prover self-test, not the hidden server canary operator path.
 - `ZK-CANARY-001` is visible in public bill lists, forum checks, votes-in-progress,
   Arweave eligibility, newsletter context, or forum sync.
 - `ZK_CANARY_SCOPE_ALLOWLIST` contains anything except `bill:ZK-CANARY-001`.
@@ -55,6 +57,8 @@ Before activating flags, Gio must explicitly decide:
   reviewed one-time canary payload. A local prover self-test fixture is not
   enough for the `/zk/vote` step because the production vote endpoint requires
   proof binding to `bill:ZK-CANARY-001` and the selected vote commitment.
+- vC36 adds the reviewed in-app operator flow. It remains hidden unless the
+  server canary flag is on and the operator long-presses the Semaphore title.
 
 ## Pre-Window Checklist
 
