@@ -70,7 +70,7 @@
   - [x] Mobile vC37 prep: hidden operator canary path can submit real S10 opt-in/vote payloads and requires verify-only mutation checks before vote
   - [ ] Schema hardening before production ZK: make `zk_vote_receipts.vote_commitment` non-null/check-constrained after canary data policy is final
   - [ ] Gate 3: echte Opt-in/Group-Registry/Tier-Lock-Verdrahtung nur mit Security-Review
-  - [ ] Gate 4: Mobile produktiver Opt-in erst nach Server-Gate + Canary; vC36 operator path is test-only and does not enable production ZK
+  - [ ] Gate 4: Mobile produktiver Opt-in erst nach Server-Gate + Canary; vC37 operator path is test-only and does not enable production ZK
   - [ ] Gate 6: Canary-Window; keine produktive Aktivierung ohne Backup/Review
 
 ## Done (Session 25.05.2026)

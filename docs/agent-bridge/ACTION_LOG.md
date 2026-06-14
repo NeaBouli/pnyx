@@ -10327,8 +10327,8 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Notes
 - vC36 is an operator/canary-enabling build. It was installed on S10 for the
   next GH#112 window, but it was not published to the landing download button.
-- Do not start the canary from vC35 or older; only vC36+ has the executable
-  in-app server canary path.
+- Do not start the canary from vC36 or older; only vC37+ has the executable
+  in-app server canary path with the required verify-only mutation gate.
 
 ## 2026-06-14 — GH#112 vC37 canary verify-only gate
 
@@ -10353,3 +10353,22 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 ### Verification
 - `cd apps/mobile && npx tsc --noEmit`: PASS.
 - `cd apps/mobile && npx vitest run`: PASS, 12 files / 75 tests.
+- `bash scripts/build-play.sh`: PASS, AAB `versionCode=37`, `versionName=1.0.8`.
+- `cd apps/mobile/android && ./gradlew assemblePlayRelease`: PASS.
+- S10 install via Play-signed APK: PASS, `versionCode=37`, `versionName=1.0.8`,
+  `lastUpdateTime=2026-06-14 13:08:54`.
+- App launch smoke: `ekklesia.gr.MainActivity` focused; no sampled
+  `FATAL EXCEPTION`, `AndroidRuntime`, or `ReactNativeJS` crash.
+- `/api/v1/zk/status`: PASS, all production/canary flags still false.
+- Bundle check: PASS, vC37 contains `Canary verify proof`.
+- Desktop artifacts:
+  - `/Users/gio/Desktop/ekklesia-v1.0.8-vC37-PLAY.aab`
+    SHA256 `c9c1512da79e93158e64d17052edbbc41378e5ae879d470f28c59621974523db`
+  - `/Users/gio/Desktop/ekklesia-v1.0.8-vC37-PLAY.apk`
+    SHA256 `753ffcb9c158a7d58db30da399409016cf9f873f4b73d937b775be29911c98ab`
+
+### Notes
+- vC37 is the minimum build for the first GH#112 canary flag window.
+- Do not upload vC37 to Play automatically; Gio controls Play Console uploads.
+- Do not start the flag window without the exact operator phrase, fresh backup,
+  and S10 ready.
