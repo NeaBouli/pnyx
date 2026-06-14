@@ -10372,3 +10372,18 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Do not upload vC37 to Play automatically; Gio controls Play Console uploads.
 - Do not start the flag window without the exact operator phrase, fresh backup,
   and S10 ready.
+
+## 2026-06-14 — vC37 Play Console upload noted
+
+### Status
+- Gio uploaded `versionCode=37` / `versionName=1.0.8` AAB to Google Play.
+- Play Console shows the expected warning that no deobfuscation/mapping file is
+  attached.
+
+### Decision
+- No mapping file is required for vC37 because R8/ProGuard minification remains
+  disabled (`minify=false`).
+- Keep R8/mapping.txt as a separate production-release hardening task; do not
+  enable it during the vC37 canary/operator flow.
+- S10 will be disconnected until the evening; do not start the GH#112 canary
+  flag window while the device is unavailable.
