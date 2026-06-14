@@ -10508,3 +10508,10 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - This was a hidden one-scope canary only.
 - Production ZK voting remains disabled.
 - Do not enable ZK globally without a separate security review, publication-policy decision for pending ZK receipts, and explicit production rollout plan.
+
+### Follow-up Monitor Guard
+- `c29efc9` excludes hidden `ZK_CANARY` bill receipts from the generic pending-publication monitor query.
+- Reason: the hidden canary receipt intentionally remains `arweave_pending=true` and `arweave_tx_id=NULL`; without the exclusion it would become a false T3 `zk_receipts_pending` alert after 24h.
+- Tests: `tests/test_monitor_zk_canary_health.py`, `tests/test_monitor_hidden_bills.py`, `tests/test_monitor_parliament_freshness.py` — `9 passed`.
+- Deployed via clean `ekklesia-monitor` image rebuild.
+- Live monitor after deploy: PASS, 17 checks, `All checks passed — no alerts`.
