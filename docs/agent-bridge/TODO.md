@@ -69,8 +69,9 @@
   - [x] Mobile prep: ZK opt-in UI benötigt lokale native Fähigkeit UND Server `opt_in_enabled=true`
   - [x] Hidden operator canary path submits real S10 opt-in/vote payloads and requires verify-only mutation checks before vote
   - [x] Hidden S10 Canary passed end-to-end with vC38 (`bill:ZK-CANARY-001`); production flags returned OFF
-  - [ ] Public verifier payload / Arweave publication policy before global rollout
-  - [ ] Tally/UI policy before showing ZK votes outside the hidden canary scope
+  - [x] Production scope safety gates: canary allowlist, production allowlist, optional global rollout flag
+  - [x] Tally/API policy: public results aggregate Tier-1 votes + valid ZK receipts; hidden canary remains excluded by `admin_hidden`
+  - [x] Public verifier payload / Arweave publication policy: admin + flag-gated pending receipt publisher, public verifier payload only, no identity bridge fields, no canary Arweave publication
   - [ ] Security review before global production ZK activation
 
 ## Done (Session 25.05.2026)

@@ -302,6 +302,7 @@ async def test_zk_opt_in_creates_commitment_and_private_tier_lock(monkeypatch) -
     monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
     monkeypatch.setenv("ZK_OPT_IN_ENABLED", "true")
     monkeypatch.setenv("ZK_TIER1_GUARD_ENABLED", "true")
+    monkeypatch.setenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", "bill:GR-0490a766")
     monkeypatch.setenv("SERVER_SALT", "s" * 64)
     monkeypatch.setattr(zk, "verify_signature", lambda *_args: True)
     identity = SimpleNamespace(
@@ -347,6 +348,7 @@ async def test_zk_opt_in_rejects_existing_tier1_vote(monkeypatch) -> None:
     monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
     monkeypatch.setenv("ZK_OPT_IN_ENABLED", "true")
     monkeypatch.setenv("ZK_TIER1_GUARD_ENABLED", "true")
+    monkeypatch.setenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", "bill:GR-0490a766")
     monkeypatch.setenv("SERVER_SALT", "s" * 64)
     monkeypatch.setattr(zk, "verify_signature", lambda *_args: True)
     identity = SimpleNamespace(id=7, public_key_hex="c" * 64, periferia_id=None, dimos_id=None)
@@ -378,6 +380,7 @@ async def test_zk_opt_in_rejects_invalid_signature(monkeypatch) -> None:
     monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
     monkeypatch.setenv("ZK_OPT_IN_ENABLED", "true")
     monkeypatch.setenv("ZK_TIER1_GUARD_ENABLED", "true")
+    monkeypatch.setenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", "bill:GR-0490a766")
     monkeypatch.setattr(zk, "verify_signature", lambda *_args: False)
     identity = SimpleNamespace(id=7, public_key_hex="c" * 64, periferia_id=None, dimos_id=None)
     bill = SimpleNamespace(
@@ -648,7 +651,7 @@ async def test_zk_root_members_endpoint_returns_public_commitments_only(monkeypa
         tier_guard_hash="private",
         identity_record_id=7,
     )
-    fake_db = _FakeSequenceDb([root, ["1", "2"]])
+    fake_db = _FakeSequenceDb([_public_parliament_bill(), root, ["1", "2"]])
 
     async def override_get_db():
         async for value in _override_with(fake_db):
@@ -683,7 +686,7 @@ async def test_zk_root_members_endpoint_rejects_stale_root(monkeypatch) -> None:
         commitment_version="semaphore-v4",
         status="OPEN",
     )
-    fake_db = _FakeSequenceDb([root, ["1", "2", "3"]])
+    fake_db = _FakeSequenceDb([_public_parliament_bill(), root, ["1", "2", "3"]])
 
     async def override_get_db():
         async for value in _override_with(fake_db):
@@ -782,11 +785,41 @@ async def test_zk_root_publish_requires_admin(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
+async def test_zk_root_publish_requires_production_scope_allowlist(monkeypatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("ADMIN_KEY", raising=False)
+    monkeypatch.setenv("ZK_ROOT_PUBLICATION_ENABLED", "true")
+    monkeypatch.delenv("ZK_CANARY_ENABLED", raising=False)
+    monkeypatch.delenv("ZK_GLOBAL_ROLLOUT_ENABLED", raising=False)
+    monkeypatch.delenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", raising=False)
+    fake_db = _FakeSequenceDb([])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/roots/bill:GR-0490a766/publish",
+                headers={"Authorization": "Bearer dev-admin-key"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "ZK production scope allowlist is not configured"
+    assert fake_db.executed == []
+
+
+@pytest.mark.asyncio
 async def test_zk_root_publish_creates_root_from_public_commitments(monkeypatch) -> None:
     monkeypatch.setenv("ENVIRONMENT", "development")
     monkeypatch.delenv("ADMIN_KEY", raising=False)
     monkeypatch.setenv("ZK_ROOT_PUBLICATION_ENABLED", "true")
-    fake_db = _FakeSequenceDb([["1", "2"], None])
+    monkeypatch.setenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", "bill:GR-0490a766")
+    fake_db = _FakeSequenceDb([_public_parliament_bill(), ["1", "2"], None])
 
     async def override_get_db():
         async for value in _override_with(fake_db):
@@ -821,6 +854,7 @@ async def test_zk_root_publish_returns_existing_root_without_duplicate(monkeypat
     monkeypatch.setenv("ENVIRONMENT", "development")
     monkeypatch.delenv("ADMIN_KEY", raising=False)
     monkeypatch.setenv("ZK_ROOT_PUBLICATION_ENABLED", "true")
+    monkeypatch.setenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", "bill:GR-0490a766")
     existing = SimpleNamespace(
         id=9,
         vote_scope_id="bill:GR-0490a766",
@@ -830,7 +864,7 @@ async def test_zk_root_publish_returns_existing_root_without_duplicate(monkeypat
         commitment_version="semaphore-v4",
         status="OPEN",
     )
-    fake_db = _FakeSequenceDb([["1", "2"], existing])
+    fake_db = _FakeSequenceDb([_public_parliament_bill(), ["1", "2"], existing])
 
     async def override_get_db():
         async for value in _override_with(fake_db):
@@ -1034,6 +1068,43 @@ async def test_zk_vote_rejects_mixed_native_and_canonical_proof_fields(monkeypat
 
 
 @pytest.mark.asyncio
+async def test_zk_vote_rejects_invalid_vote_commitment(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:ZK-CANARY-001")
+    bill = SimpleNamespace(
+        id="ZK-CANARY-001",
+        source="ZK_CANARY",
+        admin_hidden=True,
+        forum_topic_id=None,
+        arweave_tx_id=None,
+    )
+    fake_db = _FakeSequenceDb([bill])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/vote",
+                json={
+                    "vote_scope_id": "bill:ZK-CANARY-001",
+                    "vote_commitment": "MAYBE",
+                    "proof": _native_proof(),
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "ZK vote_commitment must be YES, NO, ABSTAIN, or UNKNOWN"
+    assert fake_db.added == []
+
+
+@pytest.mark.asyncio
 async def test_zk_vote_canary_rejects_allowlisted_public_bill(monkeypatch) -> None:
     monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
     monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
@@ -1128,6 +1199,123 @@ async def test_zk_vote_accepts_bound_proof_and_stores_public_receipt(monkeypatch
     serialized = json.dumps(payload)
     assert "tier_guard_hash" not in serialized
     assert "identity_record_id" not in serialized
+
+
+@pytest.mark.asyncio
+async def test_zk_pending_receipt_publish_is_fail_closed_without_flag(monkeypatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("ADMIN_KEY", raising=False)
+    monkeypatch.delenv("ZK_ARWEAVE_PUBLICATION_ENABLED", raising=False)
+    fake_db = _FakeSequenceDb([])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/receipts/bill:GR-0490a766/publish-pending",
+                headers={"Authorization": "Bearer dev-admin-key"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "ZK Arweave publication is not enabled"
+    assert fake_db.executed == []
+
+
+@pytest.mark.asyncio
+async def test_zk_pending_receipt_publish_rejects_canary_mode(monkeypatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("ADMIN_KEY", raising=False)
+    monkeypatch.setenv("ZK_ARWEAVE_PUBLICATION_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:ZK-CANARY-001")
+    fake_db = _FakeSequenceDb([])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/receipts/bill:ZK-CANARY-001/publish-pending",
+                headers={"Authorization": "Bearer dev-admin-key"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "ZK canary receipts are not published to Arweave"
+    assert fake_db.executed == []
+
+
+@pytest.mark.asyncio
+async def test_zk_pending_receipt_publish_updates_only_public_receipt_fields(monkeypatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("ADMIN_KEY", raising=False)
+    monkeypatch.setenv("ZK_ARWEAVE_PUBLICATION_ENABLED", "true")
+    monkeypatch.setenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", "bill:GR-0490a766")
+
+    async def fake_publish_to_arweave(record, bill_id):
+        assert record["vote_scope_id"] == "bill:GR-0490a766"
+        assert record["bill_id"] == "GR-0490a766"
+        serialized = json.dumps(record)
+        assert "tier_guard_hash" not in serialized
+        assert "identity_record_id" not in serialized
+        return f"DRY_RUN_{bill_id}"
+
+    import routers.arweave as arweave_router
+
+    monkeypatch.setattr(arweave_router, "publish_to_arweave", fake_publish_to_arweave)
+    receipt = SimpleNamespace(
+        id=12,
+        vote_scope_id="bill:GR-0490a766",
+        vote_commitment="YES",
+        semaphore_nullifier="123",
+        merkle_root="456",
+        merkle_depth=16,
+        signal_hash="789",
+        external_nullifier="101112",
+        proof_public_json={"proof": {"pi_a": ["1", "2"]}},
+        verifier_version="py-ecc-groth16-bn254:v1:semaphore-v4-depth16",
+        circuit_version="semaphore-v4-depth16",
+        arweave_tx_id=None,
+        arweave_pending=True,
+        publication_bucket=None,
+    )
+    root = SimpleNamespace(group_size=2)
+    fake_db = _FakeSequenceDb([_public_parliament_bill(), [receipt], root])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/receipts/bill:GR-0490a766/publish-pending",
+                headers={"Authorization": "Bearer dev-admin-key"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["attempted"] == 1
+    assert payload["published"] == 1
+    assert payload["failed"] == 0
+    assert payload["tx_ids"] == ["DRY_RUN_zk-GR-0490a766-12"]
+    assert receipt.arweave_pending is False
+    assert receipt.arweave_tx_id == "DRY_RUN_zk-GR-0490a766-12"
+    assert receipt.publication_bucket
+    assert fake_db.committed is True
 
 
 @pytest.mark.asyncio

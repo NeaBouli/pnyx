@@ -81,6 +81,8 @@ export interface BillResults {
   title_el: string;
   status: string;
   total_votes: number;
+  tier1_vote_count?: number;
+  zk_vote_count?: number;
   yes_count: number;
   no_count: number;
   abstain_count: number;

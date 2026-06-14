@@ -15,8 +15,8 @@
 - **Branch:** `main`
 - **Lokaler HEAD:** siehe `git rev-parse --short HEAD`
 - **origin/main:** siehe `git rev-parse --short origin/main`
-- **Repo HEAD:** siehe `git rev-parse --short HEAD` (latest: GH#112 hidden S10 canary passed; public docs/download status refresh)
-- **API container:** GH#112 canary isolation + hidden `ZK-CANARY-001` + root publish/group members + gated `/zk/vote`; production ZK flags remain off
+- **Repo HEAD:** siehe `git rev-parse --short HEAD` (latest: GH#112 production ZK backend logic prepared: scoped rollout gates, ZK tally, public Arweave receipt publisher)
+- **API container:** GH#112 canary isolation + hidden `ZK-CANARY-001` + root publish/group members + gated `/zk/vote`; production ZK flags remain off until explicit scoped rollout
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
 - **Web container:** `c862df1` rebuilt live; public ZK status wording + vC38 APK download/hash verified on ekklesia.gr
 - **S10:** vC38/1.0.9 verified via hidden ZK canary; S10 may be disconnected after canary verification
@@ -36,8 +36,8 @@
 - **Dependabot:** GitHub reports 0 open alerts. Do not add `@semaphore-protocol/proof@4.14.2` to production images without review; trial install showed 6 moderate + 8 high transitive findings.
 - **Bill Summary/Source Fix:** API source policy live; mobile DIAVGEIA source + summary regression fixed in `5ff3998`/`b7fb4dd`, installed on S10 and verified. Root cause update: Analysis fehlt, weil `ai_summary_reviewed=false` und kein automatischer reviewed-analysis Job existiert. Mobile zeigt jetzt statt leerer Analyse einen klaren `Επίσημο κείμενο` Fallback, wenn `summary_long_el` vorhanden ist.
 - **DIAVGEIA S10 Retest:** PASS — source card visible/clickable (`Πηγή — Διαύγεια` opens Android intent chooser), org/pill no longer shown as `Σύνοψη`, quote markers removed. Evidence: `/tmp/ekklesia_diav_fix_final_20260604_000652`.
-- **Open GitHub:** #79 F-Droid (external), #80 Off-site Backup (storage/funding), #111 Nullifier v2 activation (controlled canary window), #112 ZK V2 production integration (gated).
-- **ZK V2:** GH#81 closed; Android prover works on S10. GH#112 hidden S10 canary passed end-to-end for `bill:ZK-CANARY-001` with vC38: opt-in, root publish, native proof, server verify, mutation rejection, and test ZK vote. Production flags remain off. Global rollout is gated on security review, Arweave/publication policy for public verifier payloads, tally/UI policy, and staged release. Hidden canary state stays isolated from public/app/forum/Arweave/analytics/CPLM surfaces and monitor false positives.
+- **Open GitHub:** #79 F-Droid (external), #80 Off-site Backup (storage/funding), #111 Nullifier v2 activation (controlled canary window), #112 ZK V2 production integration (staged rollout).
+- **ZK V2:** GH#81 closed; Android prover works on S10. GH#112 hidden S10 canary passed end-to-end for `bill:ZK-CANARY-001` with vC38: opt-in, root publish, native proof, server verify, mutation rejection, and test ZK vote. Production backend logic is prepared behind flags: exact canary/production scope gates, Tier-1+ZK result aggregation, and admin/flag-gated Arweave publication of public verifier payloads only. Production flags remain off until explicit security review + scoped rollout. Hidden canary state stays isolated from public/app/forum/Arweave/analytics/CPLM surfaces and monitor false positives.
 - **Neu live:** municipality/, article.html, Autodesmefsi PDF, Forum Topic #436
 
 ## Uncommitted Aenderungen
@@ -108,7 +108,7 @@
 
 - Full security audit (NEA-251..258): 2 HIGH + 5 MEDIUM all resolved
 - Watcher 3-tier self-healing (NEA-241): live + T2 active
-- ZK V2 ADR (NEA-249): Android mobile prover self-test passes on S10. GH#112 hidden S10 canary passed for `bill:ZK-CANARY-001` with vC38; production ZK remains OFF pending separate global rollout/security review.
+- ZK V2 ADR (NEA-249): Android mobile prover self-test passes on S10. GH#112 hidden S10 canary passed for `bill:ZK-CANARY-001` with vC38; production backend logic exists behind flags, production ZK remains OFF pending separate scoped rollout/security review.
 - Dashboard: /politicians + /monitor + /newsletter-admin (21 pages total)
 - Newsletter: Brevo compose + preview + draft + send
 - Forum SSO: ADR-only (NEA-260)
@@ -122,7 +122,7 @@
 - #79 / F-Droid MR !38007 — external, waits for linsui/F-Droid merge.
 - #80 / Off-site backup — waits for Hetzner Storage Box / funding.
 - #111 / Nullifier v2 production activation — waits for explicit backup + canary window.
-- #112 / ZK V2 production rollout — hidden one-scope S10 canary passed; global activation remains gated on security review, publication policy, and explicit production rollout.
+- #112 / ZK V2 production rollout — hidden one-scope S10 canary passed; production backend logic prepared; global activation remains gated on security review and explicit scoped rollout.
 
 ## Architecture Decisions (ADRs)
 

@@ -10541,3 +10541,36 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `ZK-CANARY-001` hidden from public bills API and landing.
   - Monitor PASS, 17 checks, no alerts.
   - GitHub CI + Security Audit for `c862df1`: success.
+
+## 2026-06-15 — Codex: GH#112 production ZK backend logic prepared
+
+- Rollback tag before work: `rollback-pre-zk-prod-20260615-0055`.
+- Threat model handled:
+  - Do not let a flag accidentally open every public bill for ZK.
+  - Do not leak `tier_guard_hash`, Tier-1 nullifiers, identity IDs, phone/IP/HLR, or Semaphore secrets.
+  - Do not accept arbitrary vote commitments that cannot be tallied.
+  - Do not count hidden canary data in public results.
+- Backend changes:
+  - Added production scope safety gates:
+    - `ZK_CANARY_SCOPE_ALLOWLIST` for canary.
+    - `ZK_PRODUCTION_SCOPE_ALLOWLIST` for staged production scopes.
+    - `ZK_GLOBAL_ROLLOUT_ENABLED` for an explicit future global rollout.
+  - Write paths (`/zk/opt-in`, root publish, `/zk/vote`, ZK receipt Arweave publish) are fail-closed unless canary/production scope is explicitly allowed.
+  - Public read paths reject hidden bill scopes while still returning normal 404s for empty/unknown scopes.
+  - `/zk/vote` now accepts only tallyable `vote_commitment` values: `YES`, `NO`, `ABSTAIN`, `UNKNOWN`.
+  - Added `services/zk_vote_aggregation.py`: public results now aggregate Tier-1 `citizen_votes` + valid `zk_vote_receipts`.
+  - `/api/v1/vote/{bill_id}/results`, `/results/latest`, and `/results/in-progress` include ZK receipts in totals for public bills; canary remains excluded via `admin_hidden`.
+  - Added admin + flag gated `/api/v1/zk/receipts/{vote_scope_id}/publish-pending`.
+    - Publishes only public verifier payloads to Arweave.
+    - Never includes identity bridge fields.
+    - Refuses canary mode; hidden canary receipts remain unpublished.
+  - Web/mobile API result types gained optional `tier1_vote_count` and `zk_vote_count`.
+- No live flags changed. No DB migration. No mobile build required for this backend-only production logic.
+- Verification:
+  - `python -m py_compile apps/api/routers/zk.py apps/api/routers/voting.py apps/api/services/zk_vote_aggregation.py`: PASS.
+  - `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py tests/services/test_zk_vote_aggregation.py tests/services/test_zk_arweave_payload.py tests/services/test_zk_group_registry.py tests/services/test_zk_tier_lock.py tests/test_voting.py tests/test_zk_gate1_schema.py -q`: PASS, `107 passed, 2 xfailed`.
+  - `cd apps/web && npx tsc --noEmit`: PASS.
+  - `cd apps/mobile && npx tsc --noEmit`: PASS.
+- Remaining GH#112 boundary:
+  - Production ZK flags remain OFF until an explicit security review and scoped rollout decision.
+  - R8/mapping remains a separate future Production-release task; Play warning is informational while `minify=false`.

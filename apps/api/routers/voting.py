@@ -29,6 +29,7 @@ from services.zk_tier_lock import (
     canonical_vote_scope_id,
     tier1_vote_blocked_by_zk_lock,
 )
+from services.zk_vote_aggregation import aggregate_bill_vote_totals
 
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../packages/crypto"))
@@ -176,6 +177,8 @@ class BillResults(BaseModel):
     official_source_url: str | None = None
     diavgeia_ada:     str | None = None
     total_votes:      int
+    tier1_vote_count: int = 0
+    zk_vote_count:    int = 0
     yes_count:        int
     no_count:         int
     abstain_count:    int
@@ -557,11 +560,9 @@ async def get_latest_result(db: AsyncSession = Depends(get_db)):
     )
     bills = result.scalars().all()
     for bill in bills:
-        yes_r = await db.execute(select(func.count()).where(CitizenVote.bill_id == bill.id, CitizenVote.vote == VoteChoice.YES))
-        no_r = await db.execute(select(func.count()).where(CitizenVote.bill_id == bill.id, CitizenVote.vote == VoteChoice.NO))
-        abs_r = await db.execute(select(func.count()).where(CitizenVote.bill_id == bill.id, CitizenVote.vote == VoteChoice.ABSTAIN))
-        yes_c, no_c, abs_c = yes_r.scalar() or 0, no_r.scalar() or 0, abs_r.scalar() or 0
-        total = yes_c + no_c + abs_c
+        totals = await aggregate_bill_vote_totals(db, bill.id)
+        yes_c, no_c, abs_c = totals.yes, totals.no, totals.abstain
+        total = totals.total
         if total > 0:
             return {
                 "bill_id": bill.id,
@@ -587,19 +588,39 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
             b.title_en,
             b.status::text AS status,
             b.governance_level::text AS governance_level,
-            COUNT(cv.id)::int AS total_votes,
-            SUM(CASE WHEN cv.vote::text = 'YES' THEN 1 ELSE 0 END)::int AS yes_count,
-            SUM(CASE WHEN cv.vote::text = 'NO' THEN 1 ELSE 0 END)::int AS no_count,
-            SUM(CASE WHEN cv.vote::text = 'ABSTAIN' THEN 1 ELSE 0 END)::int AS abstain_count
+            (COALESCE(tier.total_votes, 0) + COALESCE(zk.total_votes, 0))::int AS total_votes,
+            (COALESCE(tier.yes_count, 0) + COALESCE(zk.yes_count, 0))::int AS yes_count,
+            (COALESCE(tier.no_count, 0) + COALESCE(zk.no_count, 0))::int AS no_count,
+            (COALESCE(tier.abstain_count, 0) + COALESCE(zk.abstain_count, 0))::int AS abstain_count
         FROM parliament_bills b
-        JOIN citizen_votes cv ON cv.bill_id = b.id
+        LEFT JOIN (
+            SELECT
+                bill_id,
+                COUNT(id)::int AS total_votes,
+                SUM(CASE WHEN vote::text = 'YES' THEN 1 ELSE 0 END)::int AS yes_count,
+                SUM(CASE WHEN vote::text = 'NO' THEN 1 ELSE 0 END)::int AS no_count,
+                SUM(CASE WHEN vote::text = 'ABSTAIN' THEN 1 ELSE 0 END)::int AS abstain_count
+            FROM citizen_votes
+            GROUP BY bill_id
+        ) tier ON tier.bill_id = b.id
+        LEFT JOIN (
+            SELECT
+                regexp_replace(vote_scope_id, '^bill:', '') AS bill_id,
+                COUNT(id)::int AS total_votes,
+                SUM(CASE WHEN vote_commitment = 'YES' THEN 1 ELSE 0 END)::int AS yes_count,
+                SUM(CASE WHEN vote_commitment = 'NO' THEN 1 ELSE 0 END)::int AS no_count,
+                SUM(CASE WHEN vote_commitment = 'ABSTAIN' THEN 1 ELSE 0 END)::int AS abstain_count
+            FROM zk_vote_receipts
+            WHERE vote_scope_id LIKE 'bill:%'
+              AND vote_commitment IN ('YES', 'NO', 'ABSTAIN', 'UNKNOWN')
+            GROUP BY regexp_replace(vote_scope_id, '^bill:', '')
+        ) zk ON zk.bill_id = b.id
         WHERE b.admin_hidden IS NOT TRUE
           AND b.id NOT LIKE 'DEMO-%'
           AND (b.parliament_url IS NOT NULL OR b.diavgeia_ada IS NOT NULL)
           AND b.status::text IN ('ACTIVE', 'WINDOW_24H', 'PARLIAMENT_VOTED', 'OPEN_END')
-        GROUP BY b.id, b.title_el, b.title_en, b.status, b.governance_level, b.created_at
-        HAVING COUNT(cv.id) >= :threshold
-        ORDER BY COUNT(cv.id) DESC, b.created_at DESC
+          AND (COALESCE(tier.total_votes, 0) + COALESCE(zk.total_votes, 0)) >= :threshold
+        ORDER BY (COALESCE(tier.total_votes, 0) + COALESCE(zk.total_votes, 0)) DESC, b.created_at DESC
         LIMIT 6
     """), {"threshold": threshold})
     bills = []
@@ -658,6 +679,8 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
             official_source_url=official_source_url(bill),
             diavgeia_ada=bill.diavgeia_ada,
             total_votes=0, yes_count=0, no_count=0, abstain_count=0, unknown_count=0,
+            tier1_vote_count=0,
+            zk_vote_count=0,
             yes_percent=0, no_percent=0, abstain_percent=0, divergence=None,
             representativity=compute_representativity(0),
             results_hidden=True,
@@ -665,17 +688,12 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
             disclaimer_el="Τα αποτελέσματα θα είναι ορατά μετά τη λήξη της ψηφοφορίας.",
         )
 
-    # Einzelne Counts
-    yes_r = await db.execute(select(func.count()).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.YES))
-    no_r  = await db.execute(select(func.count()).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.NO))
-    abs_r = await db.execute(select(func.count()).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.ABSTAIN))
-    unk_r = await db.execute(select(func.count()).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.UNKNOWN))
-
-    yes_c = yes_r.scalar() or 0
-    no_c  = no_r.scalar()  or 0
-    abs_c = abs_r.scalar() or 0
-    unk_c = unk_r.scalar() or 0
-    total = yes_c + no_c + abs_c + unk_c
+    totals = await aggregate_bill_vote_totals(db, bill_id)
+    yes_c = totals.yes
+    no_c = totals.no
+    abs_c = totals.abstain
+    unk_c = totals.unknown
+    total = totals.total
 
     def pct(n): return round(n / total * 100, 1) if total > 0 else 0.0
 
@@ -695,6 +713,8 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
         official_source_url=official_source_url(bill),
         diavgeia_ada=bill.diavgeia_ada,
         total_votes=total,
+        tier1_vote_count=totals.tier1_total,
+        zk_vote_count=totals.zk_total,
         yes_count=yes_c,
         no_count=no_c,
         abstain_count=abs_c,

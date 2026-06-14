@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import Any
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Path as FastAPIPath, Query, status
 from pydantic import BaseModel, Field
@@ -26,6 +27,7 @@ from models import (
     IdentityRecord,
     KeyStatus,
     ParliamentBill,
+    VoteChoice,
     ZkIdentityCommitment,
     ZkMerkleRoot,
     ZkVoteTierLock,
@@ -38,6 +40,7 @@ from services.zk_group_registry import (
     list_active_commitments_for_scope,
     validate_vote_scope_id,
 )
+from services.bill_visibility import is_public_bill
 from services.zk_groth16_verifier import (
     SEMAPHORE_V4_DEPTH16_VKEY_SHA256,
     load_verification_key,
@@ -63,6 +66,9 @@ ZK_CANARY_ENABLED_ENV = "ZK_CANARY_ENABLED"
 ZK_TIER1_GUARD_ENABLED_ENV = "ZK_TIER1_GUARD_ENABLED"
 ZK_ROOT_PUBLICATION_ENABLED_ENV = "ZK_ROOT_PUBLICATION_ENABLED"
 ZK_CANARY_SCOPE_ALLOWLIST_ENV = "ZK_CANARY_SCOPE_ALLOWLIST"
+ZK_PRODUCTION_SCOPE_ALLOWLIST_ENV = "ZK_PRODUCTION_SCOPE_ALLOWLIST"
+ZK_GLOBAL_ROLLOUT_ENABLED_ENV = "ZK_GLOBAL_ROLLOUT_ENABLED"
+ZK_ARWEAVE_PUBLICATION_ENABLED_ENV = "ZK_ARWEAVE_PUBLICATION_ENABLED"
 SEMAPHORE_MERKLE_TREE_DEPTH = 16
 NATIVE_PROOF_KEYS = {"merkle_tree_depth", "merkle_tree_root"}
 CANONICAL_PROOF_KEYS = {"merkleTreeDepth", "merkleTreeRoot"}
@@ -126,6 +132,10 @@ class ZkStatusResponse(BaseModel):
     verifier_enabled: bool
     opt_in_enabled: bool
     canary_enabled: bool
+    root_publication_enabled: bool
+    arweave_publication_enabled: bool
+    global_rollout_enabled: bool
+    production_scope_allowlist_configured: bool
     merkle_tree_depth: int
     verifier_version: str
     message_el: str
@@ -186,6 +196,14 @@ class ZkRootMembersResponse(ZkRootResponse):
     members: list[str]
 
 
+class ZkReceiptPublishResponse(BaseModel):
+    vote_scope_id: str
+    attempted: int
+    published: int
+    failed: int
+    tx_ids: list[str]
+
+
 def zk_voting_enabled() -> bool:
     return _env_enabled(ZK_VOTING_ENABLED_ENV)
 
@@ -219,13 +237,25 @@ def _ensure_zk_root_publication_enabled() -> None:
 
 
 def _canary_scope_allowlist() -> set[str]:
-    raw = os.getenv(ZK_CANARY_SCOPE_ALLOWLIST_ENV, "")
+    return _scope_allowlist(ZK_CANARY_SCOPE_ALLOWLIST_ENV)
+
+
+def _production_scope_allowlist() -> set[str]:
+    return _scope_allowlist(ZK_PRODUCTION_SCOPE_ALLOWLIST_ENV)
+
+
+def _scope_allowlist(env_name: str) -> set[str]:
     scopes: set[str] = set()
+    raw = os.getenv(env_name, "")
     for value in raw.split(","):
         clean = value.strip()
         if clean:
             scopes.add(validate_vote_scope_id(clean))
     return scopes
+
+
+def _global_rollout_enabled() -> bool:
+    return _env_enabled(ZK_GLOBAL_ROLLOUT_ENABLED_ENV)
 
 
 def _ensure_canary_scope_allowed(vote_scope_id: str | None) -> str:
@@ -253,6 +283,34 @@ def _ensure_canary_scope_allowed(vote_scope_id: str | None) -> str:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="ZK canary scope is not allowed",
+        )
+    return scope
+
+
+def _ensure_zk_write_scope_allowed(vote_scope_id: str | None) -> str:
+    """Fail closed unless canary, explicit production allowlist, or global rollout is configured."""
+    if _env_enabled(ZK_CANARY_ENABLED_ENV):
+        return _ensure_canary_scope_allowed(vote_scope_id)
+    if vote_scope_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ZK vote_scope_id is required",
+        )
+
+    scope = validate_vote_scope_id(vote_scope_id)
+    if _global_rollout_enabled():
+        return scope
+
+    allowlist = _production_scope_allowlist()
+    if not allowlist:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ZK production scope allowlist is not configured",
+        )
+    if scope not in allowlist:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="ZK production scope is not allowed",
         )
     return scope
 
@@ -285,6 +343,39 @@ async def _ensure_canary_scope_isolated(db: AsyncSession, vote_scope_id: str) ->
         return
     bill_result = await db.execute(select(ParliamentBill).where(ParliamentBill.id == scope_id))
     _ensure_canary_bill_isolated(bill_result.scalar_one_or_none())
+
+
+async def _ensure_scope_public_or_safe_canary(
+    db: AsyncSession,
+    vote_scope_id: str,
+    *,
+    require_existing_bill: bool = False,
+) -> None:
+    if _env_enabled(ZK_CANARY_ENABLED_ENV):
+        scope = _ensure_canary_scope_allowed(vote_scope_id)
+        await _ensure_canary_scope_isolated(db, scope)
+        return
+
+    scope_type, scope_id = validate_vote_scope_id(vote_scope_id).split(":", 1)
+    if scope_type != "bill":
+        return
+
+    bill_result = await db.execute(select(ParliamentBill).where(ParliamentBill.id == scope_id))
+    bill = bill_result.scalar_one_or_none()
+    if bill is None and not require_existing_bill:
+        return
+    if not bill or not is_public_bill(bill):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ZK vote scope not found")
+
+
+def _zk_vote_choice(vote_commitment: str) -> VoteChoice:
+    try:
+        return VoteChoice(vote_commitment.strip().upper())
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ZK vote_commitment must be YES, NO, ABSTAIN, or UNKNOWN",
+        ) from exc
 
 
 def _ensure_bill_scope_allowed(identity: IdentityRecord, bill: ParliamentBill) -> None:
@@ -322,6 +413,10 @@ async def get_zk_status() -> ZkStatusResponse:
         verifier_enabled=production_enabled,
         opt_in_enabled=zk_opt_in_enabled(),
         canary_enabled=production_enabled and _env_enabled(ZK_CANARY_ENABLED_ENV),
+        root_publication_enabled=_env_enabled(ZK_ROOT_PUBLICATION_ENABLED_ENV),
+        arweave_publication_enabled=_env_enabled(ZK_ARWEAVE_PUBLICATION_ENABLED_ENV),
+        global_rollout_enabled=_global_rollout_enabled(),
+        production_scope_allowlist_configured=bool(_production_scope_allowlist()),
         merkle_tree_depth=SEMAPHORE_MERKLE_TREE_DEPTH,
         verifier_version="py-ecc-groth16-bn254:v1:semaphore-v4-depth16",
         message_el=(
@@ -457,8 +552,11 @@ async def opt_in_zk(req: ZkOptInRequest, db: AsyncSession = Depends(get_db)) -> 
 
     _ensure_bill_scope_allowed(identity, bill)
     vote_scope_id = canonical_vote_scope_id(VoteScopeType.BILL, req.bill_id)
-    _ensure_canary_scope_allowed(vote_scope_id)
-    _ensure_canary_bill_isolated(bill)
+    _ensure_zk_write_scope_allowed(vote_scope_id)
+    if _env_enabled(ZK_CANARY_ENABLED_ENV):
+        _ensure_canary_bill_isolated(bill)
+    elif not is_public_bill(bill):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Το νομοσχέδιο {req.bill_id} δεν βρέθηκε.")
 
     payload = f"zk_opt_in:{req.bill_id}:{req.commitment}:{req.nullifier_hash}".encode()
     if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
@@ -538,9 +636,7 @@ async def list_zk_receipts(
     db: AsyncSession = Depends(get_db),
 ) -> ZkReceiptListResponse:
     scope = validate_vote_scope_id(vote_scope_id)
-    if _env_enabled(ZK_CANARY_ENABLED_ENV):
-        _ensure_canary_scope_allowed(scope)
-        await _ensure_canary_scope_isolated(db, scope)
+    await _ensure_scope_public_or_safe_canary(db, scope)
     result = await db.execute(
         select(ZkVoteReceipt)
         .where(ZkVoteReceipt.vote_scope_id == scope)
@@ -571,9 +667,7 @@ async def get_current_zk_root(
     db: AsyncSession = Depends(get_db),
 ) -> ZkRootResponse:
     scope = validate_vote_scope_id(vote_scope_id)
-    if _env_enabled(ZK_CANARY_ENABLED_ENV):
-        _ensure_canary_scope_allowed(scope)
-        await _ensure_canary_scope_isolated(db, scope)
+    await _ensure_scope_public_or_safe_canary(db, scope)
     result = await db.execute(
         select(ZkMerkleRoot)
         .where(
@@ -600,9 +694,7 @@ async def get_current_zk_root_members(
     db: AsyncSession = Depends(get_db),
 ) -> ZkRootMembersResponse:
     scope = validate_vote_scope_id(vote_scope_id)
-    if _env_enabled(ZK_CANARY_ENABLED_ENV):
-        _ensure_canary_scope_allowed(scope)
-        await _ensure_canary_scope_isolated(db, scope)
+    await _ensure_scope_public_or_safe_canary(db, scope)
 
     result = await db.execute(
         select(ZkMerkleRoot)
@@ -645,9 +737,8 @@ async def publish_zk_root(
     db: AsyncSession = Depends(get_db),
 ) -> ZkRootPublishResponse:
     _ensure_zk_root_publication_enabled()
-    scope = validate_vote_scope_id(vote_scope_id)
-    _ensure_canary_scope_allowed(scope)
-    await _ensure_canary_scope_isolated(db, scope)
+    scope = _ensure_zk_write_scope_allowed(vote_scope_id)
+    await _ensure_scope_public_or_safe_canary(db, scope, require_existing_bill=True)
     try:
         group = await build_active_group_root_for_scope(db, vote_scope_id=scope)
     except ValueError as exc:
@@ -693,9 +784,10 @@ async def accept_zk_vote(req: ZkVoteRequest, db: AsyncSession = Depends(get_db))
             detail="ZK voting is not enabled",
         )
 
-    scope = _ensure_canary_scope_allowed(req.vote_scope_id)
-    await _ensure_canary_scope_isolated(db, scope)
+    scope = _ensure_zk_write_scope_allowed(req.vote_scope_id)
+    await _ensure_scope_public_or_safe_canary(db, scope, require_existing_bill=True)
     vote_commitment = req.vote_commitment.strip()
+    vote_choice = _zk_vote_choice(vote_commitment)
     try:
         normalized = _normalize_public_proof(req.proof)
     except (KeyError, TypeError, ValueError) as exc:
@@ -705,7 +797,7 @@ async def accept_zk_vote(req: ZkVoteRequest, db: AsyncSession = Depends(get_db))
         proof_message=normalized["message"],
         proof_scope=normalized["scope"],
         vote_scope_id=scope,
-        vote_commitment=vote_commitment,
+        vote_commitment=vote_choice.value,
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -787,8 +879,7 @@ async def verify_zk_proof(req: ZkVerifyRequest, db: AsyncSession = Depends(get_d
     if _env_enabled(ZK_CANARY_ENABLED_ENV):
         scope = _ensure_canary_scope_allowed(req.vote_scope_id)
     elif req.vote_scope_id is not None:
-        scope = validate_vote_scope_id(req.vote_scope_id)
-
+        scope = _ensure_zk_write_scope_allowed(req.vote_scope_id)
     try:
         normalized = _normalize_public_proof(req.proof)
     except (KeyError, TypeError, ValueError):
@@ -817,6 +908,110 @@ async def verify_zk_proof(req: ZkVerifyRequest, db: AsyncSession = Depends(get_d
     )
 
 
+@router.post("/receipts/{vote_scope_id}/publish-pending", response_model=ZkReceiptPublishResponse)
+async def publish_pending_zk_receipts(
+    vote_scope_id: str = FastAPIPath(
+        ...,
+        min_length=6,
+        max_length=128,
+        pattern=r"^(bill|municipal|regional):[^/]{1,110}$",
+    ),
+    limit: int = Query(25, ge=1, le=100),
+    _admin: bool = Depends(verify_admin_key),
+    db: AsyncSession = Depends(get_db),
+) -> ZkReceiptPublishResponse:
+    if not _env_enabled(ZK_ARWEAVE_PUBLICATION_ENABLED_ENV):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ZK Arweave publication is not enabled",
+        )
+    if _env_enabled(ZK_CANARY_ENABLED_ENV):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="ZK canary receipts are not published to Arweave",
+        )
+
+    scope = _ensure_zk_write_scope_allowed(vote_scope_id)
+    await _ensure_scope_public_or_safe_canary(db, scope, require_existing_bill=True)
+    scope_type, scope_id = scope.split(":", 1)
+    if scope_type != "bill":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ZK Arweave publication currently supports bill scopes only",
+        )
+
+    result = await db.execute(
+        select(ZkVoteReceipt)
+        .where(
+            ZkVoteReceipt.vote_scope_id == scope,
+            ZkVoteReceipt.arweave_pending.is_(True),
+        )
+        .order_by(ZkVoteReceipt.id)
+        .limit(limit)
+    )
+    receipts = result.scalars().all()
+    if not receipts:
+        return ZkReceiptPublishResponse(
+            vote_scope_id=scope,
+            attempted=0,
+            published=0,
+            failed=0,
+            tx_ids=[],
+        )
+
+    tx_ids: list[str] = []
+    failed = 0
+    publication_bucket = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    from routers.arweave import publish_to_arweave
+    from services.zk_arweave_payload import build_zk_vote_arweave_record
+
+    for receipt in receipts:
+        root_result = await db.execute(
+            select(ZkMerkleRoot)
+            .where(
+                ZkMerkleRoot.vote_scope_id == scope,
+                ZkMerkleRoot.merkle_root == receipt.merkle_root,
+            )
+            .order_by(ZkMerkleRoot.id.desc())
+            .limit(1)
+        )
+        root = root_result.scalar_one_or_none()
+        if root is None:
+            failed += 1
+            continue
+
+        record = build_zk_vote_arweave_record(
+            vote_scope_id=scope,
+            bill_id=scope_id,
+            vote_commitment=receipt.vote_commitment,
+            semaphore_nullifier=receipt.semaphore_nullifier,
+            merkle_root=receipt.merkle_root,
+            merkle_depth=receipt.merkle_depth,
+            proof_public=receipt.proof_public_json,
+            verifier_version=receipt.verifier_version,
+            circuit_version=receipt.circuit_version,
+            group_size=root.group_size,
+            publication_bucket=publication_bucket,
+        )
+        tx_id = await publish_to_arweave(record, f"zk-{scope_id}-{receipt.id}")
+        if not tx_id:
+            failed += 1
+            continue
+        receipt.arweave_tx_id = tx_id
+        receipt.arweave_pending = False
+        receipt.publication_bucket = publication_bucket
+        tx_ids.append(tx_id)
+
+    await db.commit()
+    return ZkReceiptPublishResponse(
+        vote_scope_id=scope,
+        attempted=len(receipts),
+        published=len(tx_ids),
+        failed=failed,
+        tx_ids=tx_ids,
+    )
+
+
 def _zk_root_response(root: ZkMerkleRoot) -> ZkRootResponse:
     return ZkRootResponse(
         vote_scope_id=root.vote_scope_id,
@@ -835,8 +1030,7 @@ async def _count_rows(db: AsyncSession, statement: Any) -> int:
 
 
 async def _proof_matches_published_root(db: AsyncSession, scope: str, normalized: dict[str, Any]) -> bool:
-    if _env_enabled(ZK_CANARY_ENABLED_ENV):
-        await _ensure_canary_scope_isolated(db, scope)
+    await _ensure_scope_public_or_safe_canary(db, scope)
 
     root_result = await db.execute(
         select(ZkMerkleRoot)

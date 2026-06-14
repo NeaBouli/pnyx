@@ -289,6 +289,8 @@ export interface BillResults {
   forum_topic_url?: string | null;
   diavgeia_ada?: string | null;
   total_votes: number;
+  tier1_vote_count?: number;
+  zk_vote_count?: number;
   yes_count: number;
   no_count: number;
   abstain_count: number;
