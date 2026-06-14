@@ -10387,3 +10387,19 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   enable it during the vC37 canary/operator flow.
 - S10 will be disconnected until the evening; do not start the GH#112 canary
   flag window while the device is unavailable.
+
+## 2026-06-14 — GH#112 vC37 evening preflight
+
+### Status
+- S10 reconnected: `SM-G973F`, app `versionCode=37`, `versionName=1.0.8`.
+- `/api/v1/zk/status`: all production/canary flags remain false.
+- GitHub main CI + Security Audit for `802ce13`: PASS.
+- Dependabot open alerts: 0.
+- App launch smoke: `ekklesia.gr.MainActivity` focused.
+- Logcat: no sampled `FATAL EXCEPTION` or `AndroidRuntime`; only the normal
+  React Native Legacy Architecture warning.
+
+### Decision
+- vC37 operator build is ready for the next GH#112 canary window.
+- Canary flag window still not started; requires explicit operator start phrase
+  and fresh backup immediately before flags.
