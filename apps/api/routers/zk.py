@@ -64,6 +64,8 @@ ZK_TIER1_GUARD_ENABLED_ENV = "ZK_TIER1_GUARD_ENABLED"
 ZK_ROOT_PUBLICATION_ENABLED_ENV = "ZK_ROOT_PUBLICATION_ENABLED"
 ZK_CANARY_SCOPE_ALLOWLIST_ENV = "ZK_CANARY_SCOPE_ALLOWLIST"
 SEMAPHORE_MERKLE_TREE_DEPTH = 16
+NATIVE_PROOF_KEYS = {"merkle_tree_depth", "merkle_tree_root"}
+CANONICAL_PROOF_KEYS = {"merkleTreeDepth", "merkleTreeRoot"}
 
 
 class ZkVerifyRequest(BaseModel):
@@ -694,7 +696,10 @@ async def accept_zk_vote(req: ZkVoteRequest, db: AsyncSession = Depends(get_db))
     scope = _ensure_canary_scope_allowed(req.vote_scope_id)
     await _ensure_canary_scope_isolated(db, scope)
     vote_commitment = req.vote_commitment.strip()
-    normalized = _normalize_public_proof(req.proof)
+    try:
+        normalized = _normalize_public_proof(req.proof)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Malformed ZK proof") from exc
 
     if not proof_matches_canonical_binding(
         proof_message=normalized["message"],
@@ -784,7 +789,15 @@ async def verify_zk_proof(req: ZkVerifyRequest, db: AsyncSession = Depends(get_d
     elif req.vote_scope_id is not None:
         scope = validate_vote_scope_id(req.vote_scope_id)
 
-    normalized = _normalize_public_proof(req.proof)
+    try:
+        normalized = _normalize_public_proof(req.proof)
+    except (KeyError, TypeError, ValueError):
+        return ZkVerifyResponse(
+            enabled=True,
+            proof_verified=False,
+            merkle_tree_depth=SEMAPHORE_MERKLE_TREE_DEPTH,
+            verifier_version="py-ecc-groth16-bn254:v1:semaphore-v4-depth16",
+        )
     if scope is not None and not await _proof_matches_published_root(db, scope, normalized):
         return ZkVerifyResponse(
             enabled=True,
@@ -840,4 +853,6 @@ async def _proof_matches_published_root(db: AsyncSession, scope: str, normalized
 
 
 def _normalize_public_proof(proof: dict[str, Any]) -> dict[str, Any]:
+    if NATIVE_PROOF_KEYS.intersection(proof) and CANONICAL_PROOF_KEYS.intersection(proof):
+        raise ValueError("ZK proof mixes native and canonical field names")
     return normalize_native_proof(proof) if "merkle_tree_depth" in proof else proof

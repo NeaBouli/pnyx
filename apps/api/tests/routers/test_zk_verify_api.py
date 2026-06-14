@@ -995,6 +995,45 @@ async def test_zk_vote_rejects_proof_not_bound_to_scope_and_vote(monkeypatch) ->
 
 
 @pytest.mark.asyncio
+async def test_zk_vote_rejects_mixed_native_and_canonical_proof_fields(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:ZK-CANARY-001")
+    bill = SimpleNamespace(
+        id="ZK-CANARY-001",
+        source="ZK_CANARY",
+        admin_hidden=True,
+        forum_topic_id=None,
+        arweave_tx_id=None,
+    )
+    fake_db = _FakeSequenceDb([bill])
+    proof = _native_proof()
+    proof["merkleTreeDepth"] = proof["merkle_tree_depth"]
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/vote",
+                json={
+                    "vote_scope_id": "bill:ZK-CANARY-001",
+                    "vote_commitment": "YES",
+                    "proof": proof,
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Malformed ZK proof"
+    assert fake_db.added == []
+
+
+@pytest.mark.asyncio
 async def test_zk_vote_canary_rejects_allowlisted_public_bill(monkeypatch) -> None:
     monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
     monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
@@ -1111,6 +1150,19 @@ async def test_zk_verify_endpoint_rejects_mutated_fixture_when_enabled(monkeypat
     monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
     proof = _native_proof()
     proof["scope"] = str(int(proof["scope"]) + 1)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/zk/verify", json={"proof": proof})
+
+    assert response.status_code == 200
+    assert response.json()["proof_verified"] is False
+
+
+@pytest.mark.asyncio
+async def test_zk_verify_rejects_mixed_native_and_canonical_proof_fields(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    proof = _native_proof()
+    proof["merkleTreeDepth"] = proof["merkle_tree_depth"]
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post("/api/v1/zk/verify", json={"proof": proof})
