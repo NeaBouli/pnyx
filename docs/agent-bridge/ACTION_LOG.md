@@ -10574,3 +10574,21 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Remaining GH#112 boundary:
   - Production ZK flags remain OFF until an explicit security review and scoped rollout decision.
   - R8/mapping remains a separate future Production-release task; Play warning is informational while `minify=false`.
+
+### Server deploy note
+- Commit deployed to server/API: `77306a0`.
+- API-only intent, no DB migration.
+- **Important deployment lesson:** the first `docker compose -f infra/docker/docker-compose.prod.yml up -d api` was run without loading `/opt/ekklesia/.env.production`.
+  - Compose recreated `ekklesia-db` with a blank healthcheck user (`pg_isready -U `), causing DB unhealthy and API not to start.
+  - Data was not reinitialized (`PostgreSQL Database directory appears to contain a database; Skipping initialization`).
+  - Recovery command used the correct env load:
+    `cd /opt/ekklesia/app && set -a && . /opt/ekklesia/.env.production && set +a && docker compose -f infra/docker/docker-compose.prod.yml up -d db redis && docker compose -f infra/docker/docker-compose.prod.yml up -d api`
+  - Final DB healthcheck: `pg_isready -U ekklesia`.
+- Live verification after recovery:
+  - `https://api.ekklesia.gr/health`: 200.
+  - `/api/v1/zk/status`: all production/canary/root/arweave/global flags false.
+  - `parliament_bills`: 1171 rows; `citizen_votes`: 6 rows.
+  - `ZK-CANARY-001`: hidden from public list and direct bill API returns 404.
+  - `/api/v1/vote/GR-5294/results`: includes `tier1_vote_count=2`, `zk_vote_count=0`, `total_votes=2`.
+  - Monitor single run: PASS, 17 checks, no alerts.
+  - API logs since deploy: no `ERROR`, `Traceback`, `Exception`, or `FATAL`.

@@ -16,7 +16,7 @@
 - **Lokaler HEAD:** siehe `git rev-parse --short HEAD`
 - **origin/main:** siehe `git rev-parse --short origin/main`
 - **Repo HEAD:** siehe `git rev-parse --short HEAD` (latest: GH#112 production ZK backend logic prepared: scoped rollout gates, ZK tally, public Arweave receipt publisher)
-- **API container:** GH#112 canary isolation + hidden `ZK-CANARY-001` + root publish/group members + gated `/zk/vote`; production ZK flags remain off until explicit scoped rollout
+- **API container:** `77306a0` live; GH#112 production backend prepared (scoped ZK gates, Tier-1+ZK tally, public receipt Arweave publisher); production ZK flags remain off until explicit scoped rollout
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
 - **Web container:** `c862df1` rebuilt live; public ZK status wording + vC38 APK download/hash verified on ekklesia.gr
 - **S10:** vC38/1.0.9 verified via hidden ZK canary; S10 may be disconnected after canary verification
