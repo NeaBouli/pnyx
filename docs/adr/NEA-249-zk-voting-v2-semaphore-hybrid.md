@@ -47,13 +47,18 @@ Update 2026-06-11:
 - Added an app-local Semaphore self-test that generates and verifies a test proof on-device without creating a vote or sending data to Ekklesia.
 - The vendored Android wrapper sets `TMPDIR` to app-owned storage before proof generation, allowing `semaphore-protocol` to download/cache its zkey artifact in a writable directory.
 - S10 verification passed: native proof generated and verified locally (`depth 16`, two-member test group, proof approximately 1 KB, first run after artifact setup ~2.3s).
-- Production ZK voting is still disabled by feature flag. This update proves mobile prover feasibility only; backend verification, group registry, Arweave bulletin board records, and a canary rollout remain separate product-integration work.
+- At this point, production ZK voting was still disabled by feature flag. This 2026-06-11 update proved mobile prover feasibility only; the 2026-06-14 update below supersedes the old integration-blocker list.
+
+Update 2026-06-14:
+- GH#112 hidden S10 canary passed end-to-end for `bill:ZK-CANARY-001`: mobile opt-in, published group root, native proof generation, server verification, mutation rejection, and a test ZK vote.
+- Global production ZK voting remains disabled. The remaining gates are security review, Arweave/publication policy for public verifier payloads, tally/UI policy, and staged rollout.
+- The canary did not publish proof payloads to Arweave. Production archival must include only public verifier payloads and must never include identity bridge fields such as phone, IP, HLR, `identity_record_id`, `tier_guard_hash`, Tier-1 nullifier, or Semaphore secret.
 
 ## Explicit Non-Goals (Current State)
 
-- No production voting integration
-- No DB migrations
-- No API endpoints
+- Production voting integration remains disabled by feature flag
+- Additive DB/API gates exist and the hidden S10 canary passed
+- No global ZK rollout until security review and publication policy are complete
 - No Arweave writes until GH#112 Gate 5; when implemented, only public verifier payloads belong in the bulletin board, never Tier 1/nullifier/identity bridge data
 - No website/FAQ claims saying "in build" — wording stays "roadmap/planned"
 - No Helios

@@ -24,10 +24,10 @@
 - [x] NEA-286 / GH#94 — Lifecycle WINDOW_24H stuck: resolved/stale; Production 2026-06-09 ohne stuck Rows, Scheduler healthy
 
 ### Release Follow-ups
-- [ ] vC35 Size/R8 Optimization — Play Console warned that vC34 download size increased.
-  - Cause: native Semaphore/ZK prover and multi-ABI native libraries.
-  - Do not quick-fix during vC34 review.
-  - Next pass: restrict release ABIs where safe, evaluate R8/ProGuard + `mapping.txt`, rebuild, install on S10, verify vote/source/ZK self-test paths.
+- [ ] Future Production Size/R8 Optimization — Play Console warns about size/mapping when R8 is not active.
+  - Current Play/direct build: vC38 / v1.0.9; R8/minify remains OFF, so no `mapping.txt` exists for this artifact.
+  - Cause of size: native Semaphore/ZK prover and multi-ABI native libraries.
+  - Next pass before Production (not Closed Testing): evaluate ABI restrictions and R8/ProGuard + `mapping.txt`, rebuild, install on S10, verify vote/source/ZK paths.
 
 ## Tracking: GitHub Issues #71-#83 (Linear = read-only Archiv)
 
@@ -66,12 +66,12 @@
   - [x] Gate 5 prep: public receipt serializer + read-only `/api/v1/zk/receipts/{vote_scope_id}` live, aktuell leer
   - [x] Canary prep: hidden `ZK-CANARY-001` scope + exact allowlist enforcement + admin-only preflight built/tested
   - [x] Gated `/api/v1/zk/vote` receipt path live fail-closed; no tallies/Arweave while flags are off
-  - [x] Mobile prep: ZK opt-in UI benötigt lokale native Fähigkeit UND Server `opt_in_enabled=true`; kein vC35 Build solange vC34 in Play Review
-  - [x] Mobile vC37 prep: hidden operator canary path can submit real S10 opt-in/vote payloads and requires verify-only mutation checks before vote
-  - [ ] Schema hardening before production ZK: make `zk_vote_receipts.vote_commitment` non-null/check-constrained after canary data policy is final
-  - [ ] Gate 3: echte Opt-in/Group-Registry/Tier-Lock-Verdrahtung nur mit Security-Review
-  - [ ] Gate 4: Mobile produktiver Opt-in erst nach Server-Gate + Canary; vC37 operator path is test-only and does not enable production ZK
-  - [ ] Gate 6: Canary-Window; keine produktive Aktivierung ohne Backup/Review
+  - [x] Mobile prep: ZK opt-in UI benötigt lokale native Fähigkeit UND Server `opt_in_enabled=true`
+  - [x] Hidden operator canary path submits real S10 opt-in/vote payloads and requires verify-only mutation checks before vote
+  - [x] Hidden S10 Canary passed end-to-end with vC38 (`bill:ZK-CANARY-001`); production flags returned OFF
+  - [ ] Public verifier payload / Arweave publication policy before global rollout
+  - [ ] Tally/UI policy before showing ZK votes outside the hidden canary scope
+  - [ ] Security review before global production ZK activation
 
 ## Done (Session 25.05.2026)
 - [x] F-Droid !38007 autoupdate: `AutoUpdateMode: Version`, `UpdateCheckMode: Tags`, CurrentVersion 1.3.2/27 pushed to fdroiddata (`3d81d65c1`) + linsui comment posted
@@ -172,7 +172,7 @@
 - [ ] NEA-73: Embed-System — Low Prio
 - [ ] GH#111 / NEA-335 follow-up: Nullifier v2 Production Activation — WAITING/BLOCKED on Gio controlled canary window; GH#110 scaffold is closed, production remains v1 until focused rollout checklist in `docs/adr/ADR-004-nullifier-kdf-migration.md`
 - [x] GH#112 / ZK V2: Hidden S10 canary executed successfully (`bill:ZK-CANARY-001`, vC38). Production ZK remains OFF; global rollout needs separate security review/publication policy.
-- [x] vC35 Play metadata prep: dynamic Expo config sets Play AAB channel to `play`; build/upload still waits until vC34 review completes.
+- [x] vC38 Play/direct release: AAB uploaded, S10 hidden canary passed, direct APK/hash/landing metadata refreshed.
 
 ## Done (Session 13.05.2026)
 - [x] Server CX33 → CX43 Upgrade

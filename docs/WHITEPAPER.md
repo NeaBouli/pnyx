@@ -336,11 +336,11 @@ TrueRepublic (Blockchain Layer)
 
 ## 10.1 ZK Voting V2 Status / Κατάσταση
 
-Ο native Android Semaphore/Mopro prover έχει επαληθευτεί σε πραγματική συσκευή S10: η εφαρμογή μπορεί να δημιουργήσει και να επαληθεύσει τοπικά δοκιμαστικό ZK proof χωρίς αποστολή δεδομένων στο ekklesia.
+Ο native Android Semaphore/Mopro prover έχει επαληθευτεί σε πραγματική συσκευή S10. Το κρυφό canary scope `ZK-CANARY-001` ολοκληρώθηκε end-to-end με πραγματικό S10 proof: opt-in, δημοσιευμένο group root, server verification, rejected mutation checks και δοκιμαστική ZK ψήφος.
 
-Η παραγωγική ZK ψηφοφορία δεν είναι ακόμη ενεργή. Πριν ενεργοποιηθεί απαιτούνται backend verifier, Semaphore group registry, Arweave bulletin board, cross-tier double-vote guard, security review και canary rollout. Η τρέχουσα παραγωγική ψηφοφορία παραμένει Ed25519 + nullifier chain.
+Η γενική παραγωγική ZK ψηφοφορία δεν είναι ακόμη ενεργή. Τα production flags παραμένουν κλειστά και η τρέχουσα κανονική ψηφοφορία παραμένει Ed25519 + nullifier chain. Πριν από global rollout απαιτούνται security review, πολιτική δημοσίευσης/Arweave για τα δημόσια verifier payloads, απόφαση tally/UI και staged rollout.
 
-Native Android Semaphore/Mopro proving has been verified on a real S10 device. Production ZK voting is not active yet; it remains gated behind backend verification, group registry, Arweave bulletin board, cross-tier double-vote protection, security review, and canary rollout.
+Native Android Semaphore/Mopro proving and a hidden S10 end-to-end canary have passed. Global production ZK voting is still disabled; rollout remains gated on security review, publication policy for public verifier payloads, tally/UI policy, and staged release.
 
 ---
 

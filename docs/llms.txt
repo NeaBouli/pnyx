@@ -33,20 +33,20 @@ ekklesia.gr (εκκλησία του έθνους) is an independent civic initi
 
 - Backend: Python FastAPI, PostgreSQL 15, Redis 7
 - Frontend: Next.js 16 (SSR, i18n el/en)
-- Mobile: Expo React Native (Android, vC27)
+- Mobile: Expo React Native (Android, current Play build vC38 / v1.0.9)
 - Crypto: Ed25519 (PyNaCl + @noble/curves), HMAC nullifier chain
 - AI: Ollama (local) + Claude API (hybrid)
 - Forum: Discourse (pnyx.ekklesia.gr)
 - Archiving: Arweave permanent storage
 - Hosting: Hetzner (Helsinki, EU)
-- ZK Voting V2: Semaphore-based, planned (blocked on mobile prover feasibility)
+- ZK Voting V2: Semaphore-based; Android prover and hidden S10 canary passed; global production rollout gated
 
 ## Status
 
 - Tier 1: Active (25 modules, 11+ containers)
 - Newsletter: Brevo + Telegram cross-publish
 - Monitor: 3-tier self-healing (API recovery, Docker restart, Telegram escalation)
-- ZK Voting V2: Planned, currently blocked on mobile snarkjs/Mopro compatibility
+- ZK Voting V2: Hidden S10 canary passed; production flags remain off pending security review, publication policy, and staged rollout
 
 ## URLs
 

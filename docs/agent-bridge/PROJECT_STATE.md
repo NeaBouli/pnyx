@@ -15,20 +15,20 @@
 - **Branch:** `main`
 - **Lokaler HEAD:** siehe `git rev-parse --short HEAD`
 - **origin/main:** siehe `git rev-parse --short origin/main`
-- **Repo HEAD:** siehe `git rev-parse --short HEAD` (latest: GH#112 admin canary preflight deployed)
-- **API container:** API-only deploy includes GH#112 canary isolation + hidden `ZK-CANARY-001` + admin canary preflight + public ZK group members endpoint + gated `/zk/vote`; ZK endpoints remain fail-closed
+- **Repo HEAD:** siehe `git rev-parse --short HEAD` (latest: GH#112 hidden S10 canary passed; public docs/download status refresh)
+- **API container:** GH#112 canary isolation + hidden `ZK-CANARY-001` + root publish/group members + gated `/zk/vote`; production ZK flags remain off
 - **Dashboard container:** `1964e1f` (NEA-269+267+270+271)
-- **Web container:** current public landing/wiki wording live; vC34 APK download/hash live
-- **S10:** vC34/1.0.5 verified before Play upload; S10 may be disconnected during ongoing work
+- **Web container:** pending rebuild for public ZK status wording + vC38 APK download/hash
+- **S10:** vC38/1.0.9 verified via hidden ZK canary; S10 may be disconnected after canary verification
 - **Alembic:** `u401a2b3c4d5` (ZK receipt `vote_commitment` NOT NULL, head)
 - **F-Droid !38007:** Community launch-crash fixed in fdroiddata `e42e014f`; pipeline `2570810919` green 9/9; GlassOnTin/linsui re-test requested
 - **POLIS Status:** App-internal Create/Vote LIVE
 - **Tracking:** Linear + GitHub Issues parallel. Cross-Links: GH#71-83 = NEA-277-285
 - **GR-0490a766:** arweave_tx_id=NULL (bereinigt), party_votes_parliament=NULL, Guards verhindern Re-Archivierung
 - **Telegram Bot:** citizen_votes Query LIVE, governance Topic-Routing LIVE
-- **vC34 Release:** AAB uploaded to Play Console on 2026-06-12; do not upload a new build while review is running.
-- **vC34 Landing APK:** live on ekklesia.gr with version/hash; direct APK available for sideload testing.
-- **vC35 Follow-Up:** R8/size optimization and mapping.txt after vC34 review, not during review.
+- **vC38 Release:** AAB `/Users/gio/Desktop/ekklesia-v1.0.9-vC38-PLAY.aab` uploaded to Play Console after vC37 was superseded by the ZK binding fix.
+- **vC38 Landing APK:** docs/download now points to v1.0.9/vC38; deploy web to make it live.
+- **R8/mapping.txt:** still off for vC38 (`minify=false`); mapping warning in Play is informational until a future Production/R8 build.
 - **Linear:** Token OK (`~/.claude/.env` → `LINEAR_API_KEY`), NEA-280 + NEA-292 geschlossen; Codex verified and commented NEA-292 + NEA-301
 - **NEA-301b PARLIAMENT:** DONE (17/31 mit summary_short_el, 9 brauchen Fetcher, 3 DEMO + 2 flagged excluded, DIAVGEIA 0/636 eigene Phase)
 - **Ollama:** RAM zurueck auf 2.4 GB (Produktion), kein Job aktiv
@@ -37,7 +37,7 @@
 - **Bill Summary/Source Fix:** API source policy live; mobile DIAVGEIA source + summary regression fixed in `5ff3998`/`b7fb4dd`, installed on S10 and verified. Root cause update: Analysis fehlt, weil `ai_summary_reviewed=false` und kein automatischer reviewed-analysis Job existiert. Mobile zeigt jetzt statt leerer Analyse einen klaren `Επίσημο κείμενο` Fallback, wenn `summary_long_el` vorhanden ist.
 - **DIAVGEIA S10 Retest:** PASS — source card visible/clickable (`Πηγή — Διαύγεια` opens Android intent chooser), org/pill no longer shown as `Σύνοψη`, quote markers removed. Evidence: `/tmp/ekklesia_diav_fix_final_20260604_000652`.
 - **Open GitHub:** #79 F-Droid (external), #80 Off-site Backup (storage/funding), #111 Nullifier v2 activation (controlled canary window), #112 ZK V2 production integration (gated).
-- **ZK V2:** GH#81 closed; Android prover works on S10. GH#112 Gates 0-4 prepared: additive DB/storage live, disabled verifier/status/receipts live, opt-in fail-closed, tier-lock helpers tested, Semaphore LeanIMT/Poseidon root helper matches S10, root read/publish API prepared. Canary activation plan exists; `ZK_CANARY_SCOPE_ALLOWLIST` is enforced in code. Hidden canary bill `ZK-CANARY-001` exists live and is isolated from public/app/forum/Arweave/analytics/CPLM surfaces. Admin-only canary preflight is live and returns ready=false until flags/allowlist are explicitly set. Public group members endpoint is live for proof generation and returns 409 on stale roots. Canonical ZK proof binding helpers exist in API+Mobile. Gated `/zk/vote` receipt acceptance is live but returns 503 until ZK flags are explicitly set. Mobile ZK opt-in/root/vote/proof-builder/canary-flow library helpers exist with regression tests but are not wired into UI. Production flags remain off.
+- **ZK V2:** GH#81 closed; Android prover works on S10. GH#112 hidden S10 canary passed end-to-end for `bill:ZK-CANARY-001` with vC38: opt-in, root publish, native proof, server verify, mutation rejection, and test ZK vote. Production flags remain off. Global rollout is gated on security review, Arweave/publication policy for public verifier payloads, tally/UI policy, and staged release. Hidden canary state stays isolated from public/app/forum/Arweave/analytics/CPLM surfaces and monitor false positives.
 - **Neu live:** municipality/, article.html, Autodesmefsi PDF, Forum Topic #436
 
 ## Uncommitted Aenderungen

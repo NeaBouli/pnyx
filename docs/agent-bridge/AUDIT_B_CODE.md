@@ -128,4 +128,4 @@ Open PRs: only Dependabot PR `#67` (`recharts` 2.15.4 -> 3.8.1) is open. Dependa
 
 ### B6 ADR Consistency
 
-Only one ADR file exists: `docs/adr/NEA-249-zk-voting-v2-semaphore-hybrid.md`. Status remains non-production: no ZK product implementation, no DB/API ZK endpoints, no per-vote Arweave bulletin board. Update: Android mobile prover feasibility is resolved on S10, but production ZK voting remains gated under GH#112.
+Only one ADR file exists: `docs/adr/NEA-249-zk-voting-v2-semaphore-hybrid.md`. Status remains non-production for global users: Android proving works on S10 and GH#112 hidden canary passed end-to-end, but production ZK flags remain off. Global rollout is gated on security review, Arweave/publication policy for public verifier payloads, tally/UI policy, and staged release.

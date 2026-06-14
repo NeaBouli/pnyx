@@ -4,13 +4,13 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>ZK Voting — Semaphore | εκκλησία Wiki</title>
-  <meta name="description" content="Semaphore ZK Voting — Android prover verified on S10; production ZK voting remains gated."/>
+  <meta name="description" content="Semaphore ZK Voting — Android prover and hidden S10 canary passed; production ZK rollout remains gated."/>
   <meta name="robots" content="index, follow"/>
   <link rel="canonical" href="https://ekklesia.gr/wiki/zk-voting.html"/>
   <meta property="og:type" content="website"/>
   <meta property="og:url" content="https://ekklesia.gr/wiki/zk-voting.html"/>
   <meta property="og:title" content="ZK Voting — Semaphore | εκκλησία Wiki"/>
-  <meta property="og:description" content="Semaphore ZK Voting — Android prover verified on S10; production ZK voting remains gated."/>
+  <meta property="og:description" content="Semaphore ZK Voting — Android prover and hidden S10 canary passed; production ZK rollout remains gated."/>
   <meta property="og:image" content="https://ekklesia.gr/assets/og-image.png"/>
   <meta property="og:locale" content="el_GR"/>
   <link rel="alternate" hreflang="el" href="https://ekklesia.gr/wiki/zk-voting.html"/>
@@ -22,7 +22,7 @@
     "@context": "https://schema.org",
     "@type": "TechArticle",
     "headline": "ZK Voting — Semaphore V2",
-    "description": "Κρυπτογραφικά επαληθεύσιμη ψηφοφορία με Semaphore Zero-Knowledge Proofs. Tier 1 (Ed25519) ενεργό, Android prover επαληθευμένος, παραγωγική ZK ψηφοφορία μη ενεργή.",
+    "description": "Κρυπτογραφικά επαληθεύσιμη ψηφοφορία με Semaphore Zero-Knowledge Proofs. Tier 1 (Ed25519) ενεργό, Android prover και κρυφό S10 canary πετυχημένα, global rollout gated.",
     "url": "https://ekklesia.gr/wiki/zk-voting.html",
     "inLanguage": "el",
     "author": {"@type": "Organization", "name": "V-Labs Development", "url": "https://ekklesia.gr"},
@@ -64,7 +64,7 @@
 
 <div class="content">
   <h1 data-el="ZK Voting — Semaphore" data-en="ZK Voting — Semaphore">ZK Voting — Semaphore</h1>
-  <span class="badge" data-el="Prover επαληθευμένος · Παραγωγή μη ενεργή" data-en="Prover verified · Production gated">Prover επαληθευμένος · Παραγωγή μη ενεργή</span>
+  <span class="badge" data-el="S10 canary πετυχημένο · Global rollout gated" data-en="S10 canary passed · Global rollout gated">S10 canary πετυχημένο · Global rollout gated</span>
 
   <h2 data-el="Τι είναι το ZK Voting;" data-en="What is ZK Voting?">Τι είναι το ZK Voting;</h2>
   <p data-el="Φανταστείτε έναν κρυπτογραφικό κασσετίνα: αποδεικνύει ότι ψηφίσατε, χωρίς να αποκαλύπτει τι ψηφίσατε ή ποιος είστε. Αυτό κάνει ένα Zero-Knowledge Proof." data-en="Imagine a cryptographic receipt: it proves you voted, without revealing what you voted or who you are. That's what a Zero-Knowledge Proof does.">
@@ -79,7 +79,7 @@
     </p>
   </div>
 
-  <h2 data-el="Tier 2 — Prover επαληθευμένος, παραγωγή μη ενεργή" data-en="Tier 2 — Prover verified, production gated">Tier 2 — Prover επαληθευμένος, παραγωγή μη ενεργή</h2>
+  <h2 data-el="Tier 2 — S10 canary πετυχημένο, global rollout gated" data-en="Tier 2 — S10 canary passed, global rollout gated">Tier 2 — S10 canary πετυχημένο, global rollout gated</h2>
   <div class="card">
     <h3>Semaphore ZK Proofs + Arweave Bulletin Board</h3>
     <p data-el="Κάθε ψήφος θα λαμβάνει μια κρυπτογραφική απόδειξη (Semaphore) που αποδεικνύει ότι ανήκετε στην ομάδα επαληθευμένων ψηφοφόρων — χωρίς να αποκαλύπτει ποιος είστε. Οι αποδείξεις θα δημοσιεύονται ανώνυμα στο Arweave, ώστε οποιοσδήποτε να μπορεί να επαληθεύσει ανεξάρτητα τα αποτελέσματα." data-en="Each vote will receive a cryptographic proof (Semaphore) proving you belong to the group of verified voters — without revealing who you are. Proofs will be published anonymously on Arweave, so anyone can independently verify results.">
@@ -87,10 +87,17 @@
     </p>
     <div class="warn">
       <strong data-el="Κατάσταση:" data-en="Status:">Κατάσταση:</strong>
-      <span data-el="Ο native Android prover έχει επαληθευτεί σε πραγματική συσκευή S10. Η παραγωγική ZK ψηφοφορία δεν είναι ακόμη ενεργή: απαιτούνται backend verifier, Semaphore group registry, Arweave bulletin board, cross-tier double-vote guard και canary rollout." data-en="The native Android prover has been verified on a real S10 device. Production ZK voting is not active yet: it still requires a backend verifier, Semaphore group registry, Arweave bulletin board, cross-tier double-vote guard, and canary rollout.">
-        Ο native Android prover έχει επαληθευτεί σε S10. Η παραγωγική ZK ψηφοφορία δεν είναι ακόμη ενεργή: απαιτούνται backend verifier, registry, Arweave bulletin board και canary rollout.
+      <span data-el="Ο native Android prover και ένα κρυφό end-to-end canary σε S10 έχουν περάσει. Η γενική παραγωγική ZK ψηφοφορία παραμένει απενεργοποιημένη: απαιτούνται security review, πολιτική Arweave/publication για δημόσια verifier payloads, απόφαση tally/UI και staged rollout." data-en="The native Android prover and a hidden end-to-end S10 canary have passed. Global production ZK voting remains disabled: it still requires security review, Arweave/publication policy for public verifier payloads, tally/UI policy, and staged rollout.">
+        Ο native Android prover και ένα κρυφό S10 canary έχουν περάσει. Το global ZK rollout παραμένει gated μέχρι security review, Arweave/publication policy και staged rollout.
       </span>
     </div>
+  </div>
+
+  <h2 data-el="Τι ανεβαίνει στο Arweave;" data-en="What is uploaded to Arweave?">Τι ανεβαίνει στο Arweave;</h2>
+  <div class="card">
+    <p data-el="Στο κρυφό canary δεν δημοσιεύτηκε τίποτα στο Arweave. Για παραγωγή, μόνο δημόσια verifier payloads θα είναι υποψήφια για Arweave: proof/public signals, Merkle root, Semaphore nullifier, circuit/verifier version και group size/publication bucket. Ποτέ δεν δημοσιεύονται phone, IP, HLR, identity_record_id, tier_guard_hash, Tier-1 nullifier ή Semaphore secret." data-en="Nothing was published to Arweave during the hidden canary. For production, only public verifier payloads may be archived: proof/public signals, Merkle root, Semaphore nullifier, circuit/verifier version, and group size/publication bucket. Phone, IP, HLR, identity_record_id, tier_guard_hash, Tier-1 nullifier, and Semaphore secret are never published.">
+      Στο κρυφό canary δεν δημοσιεύτηκε τίποτα στο Arweave. Για παραγωγή, μόνο δημόσια verifier payloads μπορούν να αρχειοθετηθούν — ποτέ στοιχεία ταυτότητας ή μυστικά.
+    </p>
   </div>
 
   <h2 data-el="Γιατί όχι Helios;" data-en="Why not Helios?">Γιατί όχι Helios;</h2>

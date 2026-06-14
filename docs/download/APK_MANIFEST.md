@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.6 |
-| versionCode | 35 |
+| Version | 1.0.9 |
+| versionCode | 38 |
 | Package | ekklesia.gr |
-| APK SHA256 | `306a530c0e2edfa701675d1cf37a4a52069005294be4cb60851fddae84be1f76` |
-| AAB SHA256 | `2af2971f225cd49f7c8bee950158abdd60d6939e47ff836704431e89e986194a` |
+| APK SHA256 | `5f725627da5d088136cff6d4430e9c7266779fae26bf9567150837a40e49dc66` |
+| AAB SHA256 | `46dce5d1f528266c0dfdf98d364124e84653dfa360ab426462005226da087b28` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
-| Build date | 2026-06-13 |
-| Release gate | PASS — TypeScript, Vitest, local AAB/APK build, APK/AAB version audit, APK signature/version/permission audit |
-| Includes | vC35 current mobile state, Bouli bills visible in All feed and Bouli tab visible in first viewport, Bouli source filter, Android autolinking package build fix, ZK V2 settings/prover status, deep-link fallback, pagination, source/full-text policy, permission hardening |
+| Build date | 2026-06-15 |
+| Release gate | PASS — TypeScript/Vitest history, local AAB/APK build, APK/AAB version audit, S10 hidden ZK canary passed on vC38 |
+| Includes | vC38 current mobile state, Bouli bills visible in All feed and Bouli tab, ZK V2 native prover, hidden S10 canary operator path, ZK proof binding fix, deep-link fallback, pagination, source/full-text policy, permission hardening |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: 306a530c0e2edfa701675d1cf37a4a52069005294be4cb60851fddae84be1f76
+# Expected: 5f725627da5d088136cff6d4430e9c7266779fae26bf9567150837a40e49dc66
 ```
