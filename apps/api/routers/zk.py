@@ -772,16 +772,27 @@ async def accept_zk_vote(req: ZkVoteRequest, db: AsyncSession = Depends(get_db))
 
 
 @router.post("/verify", response_model=ZkVerifyResponse)
-async def verify_zk_proof(req: ZkVerifyRequest) -> ZkVerifyResponse:
+async def verify_zk_proof(req: ZkVerifyRequest, db: AsyncSession = Depends(get_db)) -> ZkVerifyResponse:
     if not zk_voting_enabled():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="ZK voting verifier is not enabled",
         )
+    scope: str | None = None
     if _env_enabled(ZK_CANARY_ENABLED_ENV):
-        _ensure_canary_scope_allowed(req.vote_scope_id)
+        scope = _ensure_canary_scope_allowed(req.vote_scope_id)
+    elif req.vote_scope_id is not None:
+        scope = validate_vote_scope_id(req.vote_scope_id)
 
     normalized = _normalize_public_proof(req.proof)
+    if scope is not None and not await _proof_matches_published_root(db, scope, normalized):
+        return ZkVerifyResponse(
+            enabled=True,
+            proof_verified=False,
+            merkle_tree_depth=int(normalized["merkleTreeDepth"]),
+            verifier_version="py-ecc-groth16-bn254:v1:semaphore-v4-depth16",
+        )
+
     vkey = load_verification_key(VKEY_PATH, SEMAPHORE_V4_DEPTH16_VKEY_SHA256)
     verified = await run_in_threadpool(verify_semaphore_proof, normalized, vkey)
 
@@ -808,6 +819,24 @@ def _zk_root_response(root: ZkMerkleRoot) -> ZkRootResponse:
 async def _count_rows(db: AsyncSession, statement: Any) -> int:
     result = await db.execute(statement)
     return int(result.scalar_one() or 0)
+
+
+async def _proof_matches_published_root(db: AsyncSession, scope: str, normalized: dict[str, Any]) -> bool:
+    if _env_enabled(ZK_CANARY_ENABLED_ENV):
+        await _ensure_canary_scope_isolated(db, scope)
+
+    root_result = await db.execute(
+        select(ZkMerkleRoot)
+        .where(
+            ZkMerkleRoot.vote_scope_id == scope,
+            ZkMerkleRoot.merkle_root == str(normalized["merkleTreeRoot"]),
+            ZkMerkleRoot.status == "OPEN",
+        )
+        .order_by(ZkMerkleRoot.id.desc())
+        .limit(1)
+    )
+    root = root_result.scalar_one_or_none()
+    return root is not None and int(normalized["merkleTreeDepth"]) == int(root.merkle_depth)
 
 
 def _normalize_public_proof(proof: dict[str, Any]) -> dict[str, Any]:

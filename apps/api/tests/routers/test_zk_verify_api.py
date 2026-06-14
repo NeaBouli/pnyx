@@ -1153,12 +1153,65 @@ async def test_zk_verify_canary_accepts_allowlisted_scope(monkeypatch) -> None:
     monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
     monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
     monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:ZK-CANARY-001")
+    proof = _native_proof()
+    bill = SimpleNamespace(
+        id="ZK-CANARY-001",
+        source="ZK_CANARY",
+        admin_hidden=True,
+        forum_topic_id=None,
+        arweave_tx_id=None,
+    )
+    root = SimpleNamespace(merkle_depth=int(proof["merkle_tree_depth"]))
+    fake_db = _FakeSequenceDb([bill, root])
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.post(
-            "/api/v1/zk/verify",
-            json={"proof": _native_proof(), "vote_scope_id": "bill:ZK-CANARY-001"},
-        )
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/verify",
+                json={"proof": proof, "vote_scope_id": "bill:ZK-CANARY-001"},
+            )
+    finally:
+        app.dependency_overrides.clear()
 
     assert response.status_code == 200
     assert response.json()["proof_verified"] is True
+
+
+@pytest.mark.asyncio
+async def test_zk_verify_with_scope_rejects_depth_not_matching_published_root(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_ENABLED", "true")
+    monkeypatch.setenv("ZK_CANARY_SCOPE_ALLOWLIST", "bill:ZK-CANARY-001")
+    proof = _native_proof()
+    proof["merkle_tree_depth"] = int(proof["merkle_tree_depth"]) + 1
+    bill = SimpleNamespace(
+        id="ZK-CANARY-001",
+        source="ZK_CANARY",
+        admin_hidden=True,
+        forum_topic_id=None,
+        arweave_tx_id=None,
+    )
+    root = SimpleNamespace(merkle_depth=16)
+    fake_db = _FakeSequenceDb([bill, root])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/verify",
+                json={"proof": proof, "vote_scope_id": "bill:ZK-CANARY-001"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["proof_verified"] is False
