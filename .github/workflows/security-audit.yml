@@ -41,14 +41,11 @@ jobs:
       - name: npm audit (all workspaces)
         run: |
           failed=0
-          for dir in . apps/web apps/dashboard apps/mobile apps/representative; do
-            if [ -f "$dir/package-lock.json" ]; then
-              echo "=== npm audit: $dir ==="
-              cd "$dir"
-              npm audit --audit-level=high || failed=1
-              cd "$GITHUB_WORKSPACE"
-            fi
-          done
+          while IFS= read -r lockfile; do
+            dir="$(dirname "$lockfile")"
+            echo "=== npm audit: $dir ==="
+            (cd "$dir" && npm audit --audit-level=high) || failed=1
+          done < <(find . -maxdepth 3 -name package-lock.json -not -path "*/node_modules/*" | sort)
           exit $failed
 
       - name: cargo audit (informational — no Rust workspace in pnyx)

@@ -10265,3 +10265,24 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   either a hidden admin-only in-app canary action or a one-time signed canary
   payload generator that can use the verified S10 test identity without exposing
   secrets or enabling public ZK.
+
+## 2026-06-14 — packages/crypto esbuild alert fixed
+
+### Root cause
+- GitHub Dependabot still reported one open high alert after the mobile fix.
+- The remaining alert was the same esbuild advisory in
+  `packages/crypto/package-lock.json`.
+- The `Security Audit` workflow only audited hard-coded app directories and
+  missed `packages/crypto`, while Dependabot correctly scanned the lockfile.
+
+### Fix
+- Added `packages/crypto` npm override for `esbuild@0.28.1`.
+- Regenerated `packages/crypto/package-lock.json` with scripts disabled.
+- Updated `.github/workflows/security-audit.yml` to audit every
+  `package-lock.json` found up to depth 3, excluding `node_modules`.
+
+### Verification
+- `cd packages/crypto && npm ci --ignore-scripts`: PASS, 0 vulnerabilities.
+- `cd packages/crypto && npm ls vite esbuild --all`: PASS, `esbuild@0.28.1 overridden`.
+- `cd packages/crypto && npm test`: PASS, 1 file / 47 tests.
+- Dynamic local Security Audit loop across all lockfiles: PASS, 0 vulnerabilities.
