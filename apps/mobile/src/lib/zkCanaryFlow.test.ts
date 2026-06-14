@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   fetchZkRootMembers: vi.fn(),
   submitZkOptIn: vi.fn(),
   submitZkVote: vi.fn(),
+  verifyZkProof: vi.fn(),
   signZkOptInPayload: vi.fn(),
   getOrCreateZkSemaphoreIdentity: vi.fn(),
   generateZkVoteProof: vi.fn(),
@@ -13,6 +14,7 @@ vi.mock("./api", () => ({
   fetchZkRootMembers: mocks.fetchZkRootMembers,
   submitZkOptIn: mocks.submitZkOptIn,
   submitZkVote: mocks.submitZkVote,
+  verifyZkProof: mocks.verifyZkProof,
 }));
 
 vi.mock("./crypto-native", () => ({
@@ -27,7 +29,7 @@ vi.mock("./zkVoteProof", () => ({
   generateZkVoteProof: mocks.generateZkVoteProof,
 }));
 
-import { submitZkOptInForBill, submitZkVoteWithPublishedRoot } from "./zkCanaryFlow";
+import { submitZkOptInForBill, submitZkVoteWithPublishedRoot, verifyZkVoteWithPublishedRoot } from "./zkCanaryFlow";
 
 describe("zkCanaryFlow", () => {
   beforeEach(() => {
@@ -112,5 +114,50 @@ describe("zkCanaryFlow", () => {
       proof: { merkleTreeRoot: "root", nullifier: "nullifier" },
     });
     expect(result.accepted).toBe(true);
+  });
+
+  it("verifies the real proof and rejects mutated public signals before voting", async () => {
+    mocks.fetchZkRootMembers.mockResolvedValue({
+      vote_scope_id: "bill:ZK-CANARY-001",
+      merkle_root: "root",
+      merkle_depth: 16,
+      group_size: 2,
+      commitment_version: "semaphore-v4",
+      status: "OPEN",
+      root_id: 4,
+      members: ["1", "2"],
+    });
+    mocks.generateZkVoteProof.mockResolvedValue({
+      voteScopeId: "bill:ZK-CANARY-001",
+      voteCommitment: "YES",
+      message: "message",
+      scope: "scope",
+      groupSize: 2,
+      proof: {
+        merkleTreeDepth: 16,
+        merkleTreeRoot: "10",
+        message: "20",
+        scope: "30",
+      },
+    });
+    mocks.verifyZkProof
+      .mockResolvedValueOnce({ enabled: true, proof_verified: true, merkle_tree_depth: 16, verifier_version: "v" })
+      .mockResolvedValue({ enabled: true, proof_verified: false, merkle_tree_depth: 16, verifier_version: "v" });
+
+    const result = await verifyZkVoteWithPublishedRoot({
+      voteScopeId: "bill:ZK-CANARY-001",
+      voteCommitment: "YES",
+    });
+
+    expect(result.real.proof_verified).toBe(true);
+    expect(Object.values(result.mutations).every((mutation) => mutation.proof_verified === false)).toBe(true);
+    expect(mocks.verifyZkProof).toHaveBeenCalledTimes(5);
+    expect(mocks.verifyZkProof).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      voteScopeId: "bill:ZK-CANARY-001",
+      proof: expect.objectContaining({ message: "21" }),
+    }));
+    expect(mocks.verifyZkProof).toHaveBeenNthCalledWith(5, expect.objectContaining({
+      proof: expect.objectContaining({ merkleTreeDepth: 17 }),
+    }));
   });
 });

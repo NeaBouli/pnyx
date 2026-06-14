@@ -5,7 +5,7 @@ import { colors } from "../theme";
 import { fetchZkStatus } from "../lib/api";
 import { getRuntimeZkCapability, type ZkCapability } from "../lib/zkSemaphore";
 import { combineZkCapabilityWithServer, type ZkServerStatus } from "../lib/zkSemaphoreCore";
-import { submitZkOptInForBill, submitZkVoteWithPublishedRoot } from "../lib/zkCanaryFlow";
+import { submitZkOptInForBill, submitZkVoteWithPublishedRoot, verifyZkVoteWithPublishedRoot } from "../lib/zkCanaryFlow";
 import {
   canShowZkCanaryOperator,
   canRunZkCanaryOptIn,
@@ -64,7 +64,8 @@ export default function ZkSemaphoreScreen() {
   const [selfTestRunning, setSelfTestRunning] = useState(false);
   const [selfTest, setSelfTest] = useState<ZkSemaphoreSelfTestResult | null>(null);
   const [operatorUnlocked, setOperatorUnlocked] = useState(false);
-  const [canaryRunning, setCanaryRunning] = useState<"opt-in" | "vote" | null>(null);
+  const [canaryRunning, setCanaryRunning] = useState<"opt-in" | "verify" | "vote" | null>(null);
+  const [canaryVerified, setCanaryVerified] = useState(false);
   const [canaryResult, setCanaryResult] = useState<CanaryStepResult | null>(null);
 
   useEffect(() => {
@@ -133,6 +134,7 @@ export default function ZkSemaphoreScreen() {
             setCanaryResult(null);
             try {
               const result = await submitZkOptInForBill(ZK_CANARY_BILL_ID);
+              setCanaryVerified(false);
               setCanaryResult({
                 ok: true,
                 title: "Canary opt-in ολοκληρώθηκε",
@@ -189,6 +191,35 @@ export default function ZkSemaphoreScreen() {
         },
       ],
     );
+  }
+
+  async function runCanaryVerify() {
+    if (canaryRunning) return;
+    setCanaryRunning("verify");
+    setCanaryVerified(false);
+    setCanaryResult(null);
+    try {
+      const result = await verifyZkVoteWithPublishedRoot({
+        voteScopeId: ZK_CANARY_SCOPE_ID,
+        voteCommitment: ZK_CANARY_VOTE_COMMITMENT,
+      });
+      const mutationsRejected = Object.values(result.mutations).every((mutation) => mutation.proof_verified === false);
+      const passed = result.real.proof_verified && mutationsRejected;
+      setCanaryVerified(passed);
+      setCanaryResult({
+        ok: passed,
+        title: passed ? "Canary proof verification πέρασε" : "Canary proof verification απέτυχε",
+        detail: `real=${String(result.real.proof_verified)} · mutated=${mutationsRejected ? "rejected" : "accepted"} · members=${result.groupSize}`,
+      });
+    } catch (error) {
+      setCanaryResult({
+        ok: false,
+        title: "Canary proof verification απέτυχε",
+        detail: error instanceof Error ? error.message : "unknown error",
+      });
+    } finally {
+      setCanaryRunning(null);
+    }
   }
 
   if (!capability) {
@@ -293,6 +324,9 @@ export default function ZkSemaphoreScreen() {
           {!serverStatus?.verifier_enabled && (
             <Text style={s.reason}>• Η ψήφος θα ενεργοποιηθεί μόνο όταν ανοίξει το verifier gate.</Text>
           )}
+          {!canaryVerified && canaryVoteReady && (
+            <Text style={s.reason}>• Πριν από την ψήφο πρέπει να περάσει ο verify-only έλεγχος.</Text>
+          )}
           <TouchableOpacity
             style={[s.secondaryBtn, (!canaryOptInReady || canaryRunning !== null) && s.btnDisabled]}
             onPress={runCanaryOptIn}
@@ -303,12 +337,21 @@ export default function ZkSemaphoreScreen() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[s.primaryBtn, s.operatorVoteBtn, (!canaryVoteReady || canaryRunning !== null) && s.btnDisabled]}
-            onPress={runCanaryVote}
+            style={[s.secondaryBtn, s.operatorVoteBtn, (!canaryVoteReady || canaryRunning !== null) && s.btnDisabled]}
+            onPress={runCanaryVerify}
             disabled={!canaryVoteReady || canaryRunning !== null}
           >
+            <Text style={[s.secondaryText, (!canaryVoteReady || canaryRunning !== null) && s.disabledButtonText]}>
+              {canaryRunning === "verify" ? "Canary verify..." : "2. Canary verify proof"}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.primaryBtn, s.operatorVoteBtn, (!canaryVoteReady || !canaryVerified || canaryRunning !== null) && s.btnDisabled]}
+            onPress={runCanaryVote}
+            disabled={!canaryVoteReady || !canaryVerified || canaryRunning !== null}
+          >
             <Text style={s.primaryText}>
-              {canaryRunning === "vote" ? "Canary vote..." : `2. Canary vote ${ZK_CANARY_VOTE_COMMITMENT}`}
+              {canaryRunning === "vote" ? "Canary vote..." : `3. Canary vote ${ZK_CANARY_VOTE_COMMITMENT}`}
             </Text>
           </TouchableOpacity>
           {canaryResult && (

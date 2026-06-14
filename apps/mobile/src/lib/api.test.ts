@@ -5,6 +5,7 @@ import {
   fetchZkRootMembers,
   submitZkOptIn,
   submitZkVote,
+  verifyZkProof,
 } from "./api";
 
 describe("buildBillsQuery", () => {
@@ -146,6 +147,31 @@ describe("ZK API helpers", () => {
         vote_scope_id: "bill:ZK-CANARY-001",
         vote_commitment: "YES",
         proof: { merkle_tree_root: "1", semaphore_nullifier: "2" },
+      }),
+    }));
+  });
+
+  it("verifies a public ZK proof without storing a vote", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        enabled: true,
+        proof_verified: true,
+        merkle_tree_depth: 16,
+        verifier_version: "py-ecc-groth16-bn254:v1:semaphore-v4-depth16",
+      }),
+    } as Response);
+
+    await expect(verifyZkProof({
+      voteScopeId: "bill:ZK-CANARY-001",
+      proof: { merkleTreeRoot: "1", scope: "2" },
+    })).resolves.toMatchObject({ proof_verified: true });
+
+    expect(fetchMock).toHaveBeenCalledWith("https://api.ekklesia.gr/api/v1/zk/verify", expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({
+        proof: { merkleTreeRoot: "1", scope: "2" },
+        vote_scope_id: "bill:ZK-CANARY-001",
       }),
     }));
   });

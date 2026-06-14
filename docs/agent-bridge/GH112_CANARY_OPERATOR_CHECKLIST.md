@@ -29,7 +29,8 @@ Before saying "start canary", Gio must have:
    not enough; the test must be able to submit the server opt-in and one
    `bill:ZK-CANARY-001` vote payload. This means a hidden admin canary action
    in the app or a one-time signed operator payload generator.
-7. vC36 or newer installed if using the hidden in-app operator path. The
+7. vC37 or newer installed if using the hidden in-app operator path. vC37 adds
+   the required verify-only mutation checks before the vote button unlocks. The
    operator controls appear only while the server canary flag is on and after a
    long-press on the `Semaphore ZK V2` title.
 

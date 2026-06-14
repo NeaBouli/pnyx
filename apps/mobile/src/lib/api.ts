@@ -168,6 +168,26 @@ export async function fetchZkRootMembers(voteScopeId: string): Promise<ZkRootMem
   return request<ZkRootMembersResponse>(`/api/v1/zk/roots/${encodeURIComponent(voteScopeId)}/members`);
 }
 
+export interface ZkVerifyResponse {
+  enabled: boolean;
+  proof_verified: boolean;
+  merkle_tree_depth: number;
+  verifier_version: string;
+}
+
+export async function verifyZkProof(params: {
+  proof: Record<string, unknown>;
+  voteScopeId?: string;
+}): Promise<ZkVerifyResponse> {
+  return request<ZkVerifyResponse>("/api/v1/zk/verify", {
+    method: "POST",
+    body: JSON.stringify({
+      proof: params.proof,
+      vote_scope_id: params.voteScopeId,
+    }),
+  });
+}
+
 export interface ZkVoteAcceptResponse {
   accepted: boolean;
   vote_scope_id: string;

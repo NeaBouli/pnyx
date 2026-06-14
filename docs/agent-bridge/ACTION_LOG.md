@@ -10329,3 +10329,27 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   next GH#112 window, but it was not published to the landing download button.
 - Do not start the canary from vC35 or older; only vC36+ has the executable
   in-app server canary path.
+
+## 2026-06-14 — GH#112 vC37 canary verify-only gate
+
+### Reason
+- The vC36 operator path could submit real S10 opt-in/vote payloads, but the
+  runbook requires a verify-only proof check and negative mutation checks before
+  accepting a canary vote.
+- Starting the flag window without this would be another partial canary.
+
+### Fix
+- Added mobile `verifyZkProof()` API helper for `/api/v1/zk/verify`.
+- Added `verifyZkVoteWithPublishedRoot()` to generate the real S10 proof,
+  verify it, and verify that mutated `message`, `scope`, `merkleTreeRoot`, and
+  `merkleTreeDepth` are rejected.
+- Updated the hidden operator card sequence:
+  1. Canary opt-in
+  2. Canary verify proof
+  3. Canary vote YES
+- The vote button remains disabled until the verify-only step passes.
+- Bumped mobile to vC37 / v1.0.8.
+
+### Verification
+- `cd apps/mobile && npx tsc --noEmit`: PASS.
+- `cd apps/mobile && npx vitest run`: PASS, 12 files / 75 tests.
