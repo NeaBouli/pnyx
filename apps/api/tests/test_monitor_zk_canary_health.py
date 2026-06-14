@@ -80,6 +80,19 @@ def test_zk_canary_health_alerts_on_old_pending_receipts(monkeypatch):
     assert ">24h" in alerts[0].message
 
 
+def test_zk_canary_health_excludes_hidden_canary_receipts_from_pending_query(monkeypatch):
+    monkeypatch.setattr(monitor, "ZK_PENDING_MAX_HOURS", 24)
+    conn = FakeConn([0, 0])
+
+    alerts = monitor.check_zk_canary_health(conn)
+
+    assert alerts == []
+    pending_statement = conn.cursor_obj.statements[0][0]
+    assert "LEFT JOIN parliament_bills" in pending_statement
+    assert "admin_hidden" in pending_statement
+    assert "ZK_CANARY" in pending_statement
+
+
 def test_zk_canary_health_alerts_on_invalid_root_status():
     conn = FakeConn([0, 1])
 

@@ -563,9 +563,13 @@ def check_zk_canary_health(conn) -> list[Alert]:
             cur.execute(
                 """
                 SELECT COUNT(*)
-                FROM zk_vote_receipts
-                WHERE arweave_pending = TRUE
-                  AND created_at < NOW() - (%s * INTERVAL '1 hour')
+                FROM zk_vote_receipts r
+                LEFT JOIN parliament_bills b
+                  ON r.vote_scope_id = ('bill:' || b.id)
+                WHERE r.arweave_pending = TRUE
+                  AND r.created_at < NOW() - (%s * INTERVAL '1 hour')
+                  AND COALESCE(b.admin_hidden, FALSE) IS NOT TRUE
+                  AND COALESCE(b.source, '') <> 'ZK_CANARY'
                 """,
                 (ZK_PENDING_MAX_HOURS,),
             )
