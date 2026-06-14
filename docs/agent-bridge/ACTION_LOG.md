@@ -10403,3 +10403,34 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - vC37 operator build is ready for the next GH#112 canary window.
 - Canary flag window still not started; requires explicit operator start phrase
   and fresh backup immediately before flags.
+
+## 2026-06-14 — GH#112 pre-canary server preflight + backup
+
+### Read-only Preflight
+- Public leak checks:
+  - `GET /api/v1/bills?limit=50`: `ZK-CANARY-001` not present.
+  - Landing page: `ZK-CANARY-001` not present.
+  - `GET /api/v1/bills/ZK-CANARY-001`: 404.
+- Production DB row:
+  - `id=ZK-CANARY-001`
+  - `source=ZK_CANARY`
+  - `status=ACTIVE`
+  - `admin_hidden=true`
+  - `forum_topic_id=NULL`
+  - `arweave_tx_id=NULL`
+- Canary tables for `bill:ZK-CANARY-001` are empty:
+  - `zk_identity_commitments`: 0
+  - `zk_merkle_roots`: 0
+  - `zk_vote_receipts`: 0
+  - `zk_vote_tier_locks`: 0
+
+### Backup
+- Fresh DB backup created before any flag change:
+  `/opt/ekklesia/backups/pre_zk_canary_20260614_191133.dump`
+- Size: 2.9M
+- SHA256: `ef05fda870874cbd8936172c69d3262321c133c922176ea61e5325c133f536ce`
+
+### Decision
+- Preflight is green.
+- No ZK/canary flags were changed.
+- Next action is the explicit GH#112 canary flag window only.
