@@ -108,7 +108,7 @@
 
 - Full security audit (NEA-251..258): 2 HIGH + 5 MEDIUM all resolved
 - Watcher 3-tier self-healing (NEA-241): live + T2 active
-- ZK V2 ADR (NEA-249): Android mobile prover self-test passes on S10; GH#112 product integration remains gated. Gate 0 fixture export + offline verifier compatibility are documented.
+- ZK V2 ADR (NEA-249): Android mobile prover self-test passes on S10. GH#112 hidden S10 canary passed for `bill:ZK-CANARY-001` with vC38; production ZK remains OFF pending separate global rollout/security review.
 - Dashboard: /politicians + /monitor + /newsletter-admin (21 pages total)
 - Newsletter: Brevo compose + preview + draft + send
 - Forum SSO: ADR-only (NEA-260)
@@ -122,7 +122,7 @@
 - #79 / F-Droid MR !38007 — external, waits for linsui/F-Droid merge.
 - #80 / Off-site backup — waits for Hetzner Storage Box / funding.
 - #111 / Nullifier v2 production activation — waits for explicit backup + canary window.
-- #112 / ZK V2 product integration — Gate 0 only until verifier architecture and cross-tier uniqueness design are reviewed.
+- #112 / ZK V2 production rollout — hidden one-scope S10 canary passed; global activation remains gated on security review, publication policy, and explicit production rollout.
 
 ## Architecture Decisions (ADRs)
 

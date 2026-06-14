@@ -171,7 +171,7 @@
 - [ ] NEA-65: Off-Site Backup — nach erster Spende
 - [ ] NEA-73: Embed-System — Low Prio
 - [ ] GH#111 / NEA-335 follow-up: Nullifier v2 Production Activation — WAITING/BLOCKED on Gio controlled canary window; GH#110 scaffold is closed, production remains v1 until focused rollout checklist in `docs/adr/ADR-004-nullifier-kdf-migration.md`
-- [ ] GH#112 / ZK V2: Wire mobile ZK helpers into a canary-only UI after vC34 Play review and before any production ZK flag flip.
+- [x] GH#112 / ZK V2: Hidden S10 canary executed successfully (`bill:ZK-CANARY-001`, vC38). Production ZK remains OFF; global rollout needs separate security review/publication policy.
 - [x] vC35 Play metadata prep: dynamic Expo config sets Play AAB channel to `play`; build/upload still waits until vC34 review completes.
 
 ## Done (Session 13.05.2026)

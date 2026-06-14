@@ -10434,3 +10434,77 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Preflight is green.
 - No ZK/canary flags were changed.
 - Next action is the explicit GH#112 canary flag window only.
+
+## 2026-06-15 — GH#112 ZK Canary executed on S10
+
+### Result
+- **CANARY PASSED** for the hidden scope `bill:ZK-CANARY-001`.
+- Device path was real S10 release-app flow, not ADB/JS debug:
+  - S10 `SM-G973F`
+  - app `versionCode=38`, `versionName=1.0.9`
+  - verified account preserved
+- Final ZK flags are **OFF**:
+  - `ZK_VOTING_ENABLED=false`
+  - `ZK_OPT_IN_ENABLED=false`
+  - `ZK_TIER1_GUARD_ENABLED=false`
+  - `ZK_CANARY_ENABLED=false`
+  - `ZK_ROOT_PUBLICATION_ENABLED=false`
+
+### Backups / Rollback Points
+- Existing pre-canary DB backup:
+  `/opt/ekklesia/backups/pre_zk_canary_20260614_193535.dump`
+  SHA256 `52d4e3a64f5eca0678e63abbd3b89686978c62d449cf394d3d61df523181d472`
+- API source backups before runtime hotfix deploys:
+  - `/opt/ekklesia/backups/source_pre_zk_padding_20260614_233933`
+  - `/opt/ekklesia/backups/source_pre_zk_verify_guard_20260614_235336`
+  - `/opt/ekklesia/backups/source_pre_zk_alias_guard_20260615_000106`
+- Git rollback tag:
+  `rollback-pre-zk-padding-20260614-2339`
+
+### Fixes Discovered During Canary
+- `f0c98a0` — sparse/singleton ZK groups are padded with a deterministic public dummy member.
+  - Reason: S10 native prover stalled on singleton group.
+  - Root after fix: `root_id=4`, `group_size=2`, `merkle_depth=16`.
+  - Padding carries no identity, phone, nullifier, or tier-lock data.
+- `02da7ba` — `/zk/verify` with `vote_scope_id` now checks the proof root/depth against the published root.
+  - Reason: `merkleTreeDepth` is not a Groth16 public signal by itself; verify-only must still prove "this proof belongs to the published group".
+- `74bcc04` — API rejects mixed native snake_case and canonical camelCase proof field aliases.
+  - Reason: vC38 negative test added camelCase fields to native snake_case proof payloads; without an alias guard those extra fields were ignored by normalization.
+  - This closes a proof-field smuggling/test-hole and makes the verify-only mutation gate meaningful.
+
+### Verification
+- Local API tests:
+  - `tests/services/test_zk_group_registry.py`
+  - `tests/services/test_zk_merkle_root.py`
+  - `tests/routers/test_zk_verify_api.py`
+  - Latest run: `68 passed, 1 known Pydantic warning`.
+- Server:
+  - `/api/v1/zk/status`: final OFF.
+  - `/api/v1/zk/roots/bill:ZK-CANARY-001/members`: `group_size=2` during the window.
+- S10 operator UI:
+  - `Canary proof verification πέρασε`
+  - `real=true · mutated=rejected · members=2`
+  - `Canary ZK vote έγινε αποδεκτό`
+  - `receipt 1 · arweave_pending=true`
+- Production DB final counts for `bill:ZK-CANARY-001`:
+  - `zk_identity_commitments`: 1
+  - `zk_merkle_roots`: 2
+  - `zk_vote_receipts`: 1
+  - `zk_vote_tier_locks`: 1
+  - receipt state: `1 receipt | 0 arweave_tx_id | 1 arweave_pending`
+- Public leak checks after the window:
+  - direct bill API: 404
+  - public bills list: 0 occurrences
+  - landing page: 0 occurrences
+- Monitor:
+  - `docker exec ekklesia-monitor python /app/monitor.py --once`
+  - PASS, 17 checks, `All checks passed — no alerts`.
+
+### Play / Mobile Note
+- vC38 (`ekklesia-v1.0.9-vC38-PLAY.aab`, SHA256 `46dce5d1f528266c0dfdf98d364124e84653dfa360ab426462005226da087b28`) is the build used for the successful canary.
+- vC37 was uploaded to Play earlier, but vC38 supersedes it for the ZK operator path because vC37 still has the pre-fix long BigUint binding issue.
+
+### Remaining Boundary
+- This was a hidden one-scope canary only.
+- Production ZK voting remains disabled.
+- Do not enable ZK globally without a separate security review, publication-policy decision for pending ZK receipts, and explicit production rollout plan.
