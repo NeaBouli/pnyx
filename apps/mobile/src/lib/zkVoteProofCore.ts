@@ -1,4 +1,9 @@
-import { canonicalZkMessageValue, canonicalZkScopeValue } from "./zkProofBinding";
+import {
+  canonicalZkMessageText,
+  canonicalZkMessageValue,
+  canonicalZkScopeText,
+  canonicalZkScopeValue,
+} from "./zkProofBinding";
 
 const BN254_FIELD_MODULUS = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
 
@@ -81,16 +86,21 @@ export async function generateZkVoteProofWithModule(
   }
 
   const group = new semaphoreModule.Group(memberBytes);
+  const messageText = canonicalZkMessageText(input.voteScopeId, input.voteCommitment);
+  const scopeText = canonicalZkScopeText(input.voteScopeId);
   const message = canonicalZkMessageValue(input.voteScopeId, input.voteCommitment);
   const scope = canonicalZkScopeValue(input.voteScopeId);
   const proofJson = await semaphoreModule.generateSemaphoreProof(
     identity,
     group,
-    message,
-    scope,
+    messageText,
+    scopeText,
     input.merkleDepth,
   );
   const proof = JSON.parse(proofJson) as Record<string, unknown>;
+  if (String(proof.message) !== message || String(proof.scope) !== scope) {
+    throw new Error("Semaphore proof binding mismatch");
+  }
 
   return {
     voteScopeId: input.voteScopeId,

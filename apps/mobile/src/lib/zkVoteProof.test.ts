@@ -7,6 +7,7 @@ import {
   type SemaphoreVoteIdentityLike,
   type SemaphoreVoteModuleLike,
 } from "./zkVoteProofCore";
+import { canonicalZkMessageText, canonicalZkScopeText, semaphoreTextToBigIntString } from "./zkProofBinding";
 
 class FakeIdentity implements SemaphoreVoteIdentityLike {
   constructor(private readonly privateKey: Uint8Array) {}
@@ -32,8 +33,8 @@ function fakeModule(capture: string[]): SemaphoreVoteModuleLike {
       capture.push(`${message}:${scope}:${depth}:${group.members().length}`);
       return JSON.stringify({
         merkleTreeRoot: "root",
-        message,
-        scope,
+        message: semaphoreTextToBigIntString(message),
+        scope: semaphoreTextToBigIntString(scope),
         merkleTreeDepth: depth,
         nullifier: "nullifier",
       });
@@ -80,7 +81,9 @@ describe("generateZkVoteProofWithModule", () => {
       scope: result.scope,
       merkleTreeDepth: 16,
     });
-    expect(capture[0]).toBe(`${result.message}:${result.scope}:16:2`);
+    expect(capture[0]).toBe(
+      `${canonicalZkMessageText("bill:ZK-CANARY-001", "YES")}:${canonicalZkScopeText("bill:ZK-CANARY-001")}:16:2`,
+    );
   });
 
   it("fails before proof generation when the local identity is not in the published group", async () => {

@@ -5,7 +5,9 @@ from pathlib import Path
 import pytest
 
 from services.zk_proof_binding import (
+    canonical_zk_message_text,
     canonical_zk_message_value,
+    canonical_zk_scope_text,
     canonical_zk_scope_value,
     proof_matches_canonical_binding,
     semaphore_text_to_bigint_string,
@@ -28,6 +30,11 @@ def test_semaphore_text_to_bigint_rejects_long_text() -> None:
 
 
 def test_canonical_zk_binding_is_stable_and_distinct_per_scope_and_vote() -> None:
+    scope_text = canonical_zk_scope_text("bill:ZK-CANARY-001")
+    yes_text = canonical_zk_message_text(
+        vote_scope_id="bill:ZK-CANARY-001",
+        vote_commitment="YES",
+    )
     yes = canonical_zk_message_value(
         vote_scope_id="bill:ZK-CANARY-001",
         vote_commitment="YES",
@@ -41,6 +48,10 @@ def test_canonical_zk_binding_is_stable_and_distinct_per_scope_and_vote() -> Non
         vote_commitment="YES",
     )
 
+    assert len(scope_text.encode("utf-8")) <= 32
+    assert len(yes_text.encode("utf-8")) <= 32
+    assert scope_text.startswith("zks:")
+    assert yes_text.startswith("zkm:")
     assert canonical_zk_scope_value("bill:ZK-CANARY-001").isdigit()
     assert yes.isdigit()
     assert yes != no
@@ -48,16 +59,24 @@ def test_canonical_zk_binding_is_stable_and_distinct_per_scope_and_vote() -> Non
 
 
 def test_canonical_zk_binding_matches_cross_platform_golden_vector() -> None:
+    assert canonical_zk_scope_text("bill:ZK-CANARY-001") == "zks:0e4NG-4g8ttGB4S3oNnvrvmirLeN"
+    assert (
+        canonical_zk_message_text(
+            vote_scope_id="bill:ZK-CANARY-001",
+            vote_commitment="YES",
+        )
+        == "zkm:5mTOk-0X_3vcqb8k_khYt92TxVfV"
+    )
     assert (
         canonical_zk_scope_value("bill:ZK-CANARY-001")
-        == "370914005589917494686899888002103101308908263382419550513130591364723151628"
+        == "55372015432693197156684210389612366682933503607061176685521685831438937384270"
     )
     assert (
         canonical_zk_message_value(
             vote_scope_id="bill:ZK-CANARY-001",
             vote_commitment="YES",
         )
-        == "407070568861162468786934533009590942791872866516897520794260496866694851506"
+        == "55371974022745020309936148062986343275232691383944616415973239990294343476822"
     )
 
 

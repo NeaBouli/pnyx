@@ -1,12 +1,13 @@
 """Canonical Semaphore message/scope binding for GH#112.
 
 The native prover receives message/scope as strings and returns their BigInt
-values in the public proof. For production votes we pass decimal field strings,
-derived from a domain-separated SHA-256 digest, so the backend can recompute and
-compare the exact logical vote binding before storing any receipt.
+values in the public proof. Mopro accepts only short text inputs here, so
+production votes use 32-byte-safe domain-separated digest text; the backend
+recomputes the exact public BigInt before storing any receipt.
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 
 from services.zk_group_registry import validate_vote_scope_id
@@ -14,6 +15,9 @@ from services.zk_group_registry import validate_vote_scope_id
 ZK_PROOF_BINDING_VERSION = "ekklesia.zk.binding.v1"
 ZK_SCOPE_DOMAIN = f"{ZK_PROOF_BINDING_VERSION}:scope:"
 ZK_MESSAGE_DOMAIN = f"{ZK_PROOF_BINDING_VERSION}:message:"
+ZK_SCOPE_TEXT_PREFIX = "zks:"
+ZK_MESSAGE_TEXT_PREFIX = "zkm:"
+DIGEST_TEXT_CHARS = 28
 
 
 def semaphore_text_to_bigint_string(value: str) -> str:
@@ -30,17 +34,33 @@ def semaphore_text_to_bigint_string(value: str) -> str:
 
 
 def canonical_zk_scope_value(vote_scope_id: str) -> str:
-    scope = validate_vote_scope_id(vote_scope_id)
-    return _sha256_to_field_decimal(f"{ZK_SCOPE_DOMAIN}{scope}".encode("utf-8"))
+    return semaphore_text_to_bigint_string(canonical_zk_scope_text(vote_scope_id))
 
 
 def canonical_zk_message_value(*, vote_scope_id: str, vote_commitment: str) -> str:
+    return semaphore_text_to_bigint_string(
+        canonical_zk_message_text(
+            vote_scope_id=vote_scope_id,
+            vote_commitment=vote_commitment,
+        )
+    )
+
+
+def canonical_zk_scope_text(vote_scope_id: str) -> str:
+    scope = validate_vote_scope_id(vote_scope_id)
+    return _sha256_to_semaphore_text(
+        ZK_SCOPE_TEXT_PREFIX,
+        f"{ZK_SCOPE_DOMAIN}{scope}".encode("utf-8"),
+    )
+
+
+def canonical_zk_message_text(*, vote_scope_id: str, vote_commitment: str) -> str:
     scope = validate_vote_scope_id(vote_scope_id)
     clean_commitment = vote_commitment.strip()
     if not clean_commitment or len(clean_commitment) > 160:
         raise ValueError("vote_commitment must be 1..160 characters")
     payload = f"{ZK_MESSAGE_DOMAIN}{scope}:{clean_commitment}".encode("utf-8")
-    return _sha256_to_field_decimal(payload)
+    return _sha256_to_semaphore_text(ZK_MESSAGE_TEXT_PREFIX, payload)
 
 
 def proof_matches_canonical_binding(
@@ -60,6 +80,10 @@ def proof_matches_canonical_binding(
     )
 
 
-def _sha256_to_field_decimal(payload: bytes) -> str:
-    # Shift away 8 bits so the value is safely below the BN254 scalar modulus.
-    return str(int.from_bytes(hashlib.sha256(payload).digest(), "big") >> 8)
+def _sha256_to_semaphore_text(prefix: str, payload: bytes) -> str:
+    digest = hashlib.sha256(payload).digest()
+    suffix = base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")[:DIGEST_TEXT_CHARS]
+    text = f"{prefix}{suffix}"
+    if len(text.encode("utf-8")) > 32:
+        raise ValueError("canonical Semaphore binding text must fit 32 UTF-8 bytes")
+    return text
