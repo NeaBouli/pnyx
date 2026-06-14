@@ -618,8 +618,8 @@ async def get_current_zk_root_members(
     current_group = build_semaphore_group_root(members)
     if (
         str(current_group.root) != str(root.merkle_root)
-        or current_group.depth != int(root.merkle_depth)
         or current_group.size != int(root.group_size)
+        or int(root.merkle_depth) != SEMAPHORE_MERKLE_TREE_DEPTH
     ):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -665,7 +665,7 @@ async def publish_zk_root(
         vote_scope_id=scope,
         scope_type=scope.split(":", 1)[0].upper(),
         merkle_root=str(group.root),
-        merkle_depth=group.depth,
+        merkle_depth=SEMAPHORE_MERKLE_TREE_DEPTH,
         group_size=group.size,
         commitment_version="semaphore-v4",
         status="OPEN",

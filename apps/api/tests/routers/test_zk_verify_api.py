@@ -641,7 +641,7 @@ async def test_zk_root_members_endpoint_returns_public_commitments_only(monkeypa
         id=42,
         vote_scope_id="bill:GR-0490a766",
         merkle_root=str(poseidon2(1, 2)),
-        merkle_depth=1,
+        merkle_depth=16,
         group_size=2,
         commitment_version="semaphore-v4",
         status="OPEN",
@@ -807,7 +807,7 @@ async def test_zk_root_publish_creates_root_from_public_commitments(monkeypatch)
     assert payload["created"] is True
     assert payload["vote_scope_id"] == "bill:GR-0490a766"
     assert payload["merkle_root"] == str(poseidon2(1, 2))
-    assert payload["merkle_depth"] == 1
+    assert payload["merkle_depth"] == 16
     assert payload["group_size"] == 2
     assert payload["root_id"] == 1
     assert fake_db.committed is True
