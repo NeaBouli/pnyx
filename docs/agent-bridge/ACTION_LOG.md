@@ -10202,3 +10202,23 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - The runbook is preparation only.
 - Do not start the canary flag window without explicit operator approval, fresh DB backup, and a named canary test identity.
 - The operator start phrase is: `Start GH#112 ZK Canary now. S10 is ready. Use my verified S10 test account.`
+
+## 2026-06-14 — GitHub Security Audit red fixed
+
+### Root cause
+- GitHub Actions `Security Audit` failed on `apps/mobile`.
+- Failing dependency chain: `vitest@4.1.8 -> vite@6.4.3 -> esbuild@0.25.12`.
+- Advisory: GHSA-gv7w-rqvm-qjhr, high severity, vulnerable range `>=0.17.0 <0.28.1`.
+- Main CI (`CI — Ekklesia.gr`) was green; only the dependency audit job was red.
+
+### Fix
+- Added a surgical `apps/mobile` npm override for `esbuild@0.28.1`.
+- Regenerated `apps/mobile/package-lock.json` with `npm install --package-lock-only --ignore-scripts`.
+- No Expo/RN upgrade, no app runtime logic, no API/DB/ZK flags changed.
+
+### Verification
+- `cd apps/mobile && npm ci --ignore-scripts`: PASS, 0 vulnerabilities.
+- `cd apps/mobile && npm ls vite esbuild --all`: PASS, `esbuild@0.28.1 overridden`.
+- Local Security Audit workflow loop over `apps/web`, `apps/dashboard`, `apps/mobile`, `apps/representative`: PASS, 0 vulnerabilities.
+- `cd apps/mobile && npx tsc --noEmit`: PASS.
+- `cd apps/mobile && npx vitest run`: PASS, 11 files / 68 tests.
