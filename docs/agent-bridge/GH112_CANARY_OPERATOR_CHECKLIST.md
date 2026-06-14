@@ -25,6 +25,10 @@ Before saying "start canary", Gio must have:
 4. 20-30 minutes where the app is not used for unrelated testing.
 5. Explicit agreement that the canary vote is test-only and does not count in
    public tallies.
+6. A reviewed executable canary path available. The local prover self-test is
+   not enough; the test must be able to submit the server opt-in and one
+   `bill:ZK-CANARY-001` vote payload. This means a hidden admin canary action
+   in the app or a one-time signed operator payload generator.
 
 ## What Gio Says To Start
 
@@ -74,6 +78,8 @@ Gio should:
 Stop and rollback if any of these happens:
 
 - Backup fails.
+- The S10 app can only run the local prover self-test and cannot submit the
+  reviewed server canary opt-in/vote flow.
 - `ZK-CANARY-001` appears publicly.
 - Any non-canary scope is accepted by a ZK endpoint.
 - Any normal bill is blocked by the ZK Tier 1 guard.
@@ -98,4 +104,3 @@ Failed/aborted canary end state:
 - Backup path recorded.
 - Failure reason documented.
 - No retry until the cause is fixed.
-

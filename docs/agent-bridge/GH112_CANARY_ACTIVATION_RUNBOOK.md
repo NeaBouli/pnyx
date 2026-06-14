@@ -29,6 +29,9 @@ Stop immediately if any of these is true:
 
 - `git status --short` is not clean before the window.
 - Production DB backup fails or cannot be located.
+- No reviewed executable S10 canary payload/flow exists. Do not activate flags
+  if the installed app can only run the local prover self-test but cannot submit
+  the server canary opt-in and vote payload.
 - `ZK-CANARY-001` is visible in public bill lists, forum checks, votes-in-progress,
   Arweave eligibility, newsletter context, or forum sync.
 - `ZK_CANARY_SCOPE_ALLOWLIST` contains anything except `bill:ZK-CANARY-001`.
@@ -48,6 +51,10 @@ Before activating flags, Gio must explicitly decide:
 - No Arweave publication for the first canary unless separately approved.
 - If a user opts in after root publication and never votes, Tier 1 remains locked
   for that canary scope. The UI/operator notes must explain this before opt-in.
+- The installed S10 build must expose an executable server canary flow or a
+  reviewed one-time canary payload. A local prover self-test fixture is not
+  enough for the `/zk/vote` step because the production vote endpoint requires
+  proof binding to `bill:ZK-CANARY-001` and the selected vote commitment.
 
 ## Pre-Window Checklist
 
@@ -164,6 +171,24 @@ Expected for first window:
 - roots: `0` before first publish, unless deliberately reusing a previous
   inert canary root
 - commitments/locks: `0` or the exact planned canary count
+
+Check canary execution path:
+
+```bash
+export PATH="$HOME/Library/Android/sdk/platform-tools:$PATH"
+adb shell run-as ekklesia.gr ls
+```
+
+Expected for the current Play/release build:
+
+```text
+run-as: package not debuggable: ekklesia.gr
+```
+
+This is fine for release security, but it means Codex cannot inject or call
+internal JavaScript helpers from the installed app. If the visible app UI does
+not expose the server canary flow, stop before the flag window and build a
+reviewed operator path first.
 
 ## Backup
 

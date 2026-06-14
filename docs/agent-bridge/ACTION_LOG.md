@@ -10222,3 +10222,46 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Local Security Audit workflow loop over `apps/web`, `apps/dashboard`, `apps/mobile`, `apps/representative`: PASS, 0 vulnerabilities.
 - `cd apps/mobile && npx tsc --noEmit`: PASS.
 - `cd apps/mobile && npx vitest run`: PASS, 11 files / 68 tests.
+
+## 2026-06-14 — GH#112 Canary start aborted before flags
+
+### Operator approval
+- Gio explicitly approved the canary flag window with the required phrase:
+  `Start GH#112 ZK Canary now. S10 is ready. Use my verified S10 test account.`
+
+### Completed preflight
+- Git clean at `5f2ec10`.
+- S10 connected: `SM-G973F`, app `versionCode=35`, `versionName=1.0.6`.
+- Local ZK/voting regression before the window: `103 passed, 2 xfailed`.
+- Production Alembic: `u401a2b3c4d5 (head)`.
+- ZK flags were all OFF/empty.
+- `ZK-CANARY-001` was isolated: `admin_hidden=true`, no forum topic, no Arweave TX.
+- Public leak checks passed: not visible in public bills API or landing page.
+- Fresh DB backup created before any flag change:
+  `/opt/ekklesia/backups/pre_zk_canary_20260614_083609.dump`
+  (`sha256=42abfb9898432fc3a36f91d7187b654d852eb7b2b0702b3e82c539d45fb873db`).
+
+### Stop reason
+- The installed vC35 release app contains the native prover and canary libraries,
+  but the visible UI only exposes the local prover self-test / preference gate.
+- The visible app does not expose a reviewed server canary flow for
+  `submitZkOptInForBill("ZK-CANARY-001")` and `submitZkVoteWithPublishedRoot(...)`.
+- The release app is not debuggable (`run-as: package not debuggable: ekklesia.gr`),
+  so Codex cannot inject/call internal JavaScript helpers or extract the verified
+  S10 test identity state.
+- A Gate-0 self-test fixture is not sufficient for `/api/v1/zk/vote` because the
+  production vote endpoint requires proof binding to `bill:ZK-CANARY-001` and the
+  selected vote commitment.
+
+### Exit state
+- `CANARY_NOT_STARTED`.
+- No ZK flags were enabled.
+- No commitments, roots, receipts, or tier locks were created for
+  `bill:ZK-CANARY-001`.
+- `/api/v1/zk/status` remained production OFF/canary OFF.
+
+### Lesson
+- Before the next canary flag window, build and S10-test a reviewed operator canary path:
+  either a hidden admin-only in-app canary action or a one-time signed canary
+  payload generator that can use the verified S10 test identity without exposing
+  secrets or enabling public ZK.
