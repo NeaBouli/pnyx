@@ -34,6 +34,7 @@ from models import (
 from services.zk_arweave_payload import build_public_zk_receipt_from_storage
 from services.zk_group_registry import (
     build_active_group_root_for_scope,
+    list_public_group_members_for_scope,
     list_active_commitments_for_scope,
     validate_vote_scope_id,
 )
@@ -614,7 +615,7 @@ async def get_current_zk_root_members(
     if not root:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ZK root not found")
 
-    members = await list_active_commitments_for_scope(db, vote_scope_id=scope)
+    members = await list_public_group_members_for_scope(db, vote_scope_id=scope)
     current_group = build_semaphore_group_root(members)
     if (
         str(current_group.root) != str(root.merkle_root)
