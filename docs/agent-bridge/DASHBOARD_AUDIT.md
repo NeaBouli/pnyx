@@ -23,6 +23,7 @@ Remediation status:
 - Dashboard admin proxy auth: **FIXED** in `a84b200` and deployed.
 - Dashboard route/module auth: **FIXED** in `cc08d1b` and deployed.
 - Dashboard Dockerfile hygiene: **FIXED** in `cc08d1b` (`npm ci` only).
+- Dashboard `X-Powered-By` header: **FIXED** in `8709b90` and deployed.
 
 The dashboard is now protected at the page layer and admin-proxy layer. It is still an internal admin surface with some intentionally Phase-2 sections, but the critical unauthenticated admin proxy and navigation-only authorization gaps are closed.
 
@@ -299,9 +300,13 @@ Implemented fix:
 
 ### Live Header Note
 
-`https://dashboard.ekklesia.gr` currently returns `X-Powered-By: Next.js`.
+Status: **FIXED** in `8709b90`.
 
-This is a hardening note, not the main issue. The unauthenticated proxy is the priority.
+`apps/dashboard/next.config.js` now sets `poweredByHeader: false`.
+
+Post-deploy live check:
+
+- `curl -I https://dashboard.ekklesia.gr/login`: no `X-Powered-By` header.
 
 ## Overall Dashboard Assessment
 
@@ -316,6 +321,7 @@ Completed remediation:
 3. Route/module authorization added beyond Sidebar filtering.
 4. Live unauthenticated probes re-tested.
 5. Dockerfile fallback `npm ci || npm install` removed.
+6. `X-Powered-By` dashboard header removed.
 
 Remaining non-critical dashboard work:
 

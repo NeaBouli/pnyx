@@ -10713,3 +10713,24 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Security Audit `27533200874`: success.
 - Note:
   - A later `docker compose ps` without sourced env produced compose interpolation warnings only; it did not recreate or mutate services. Future server compose commands should continue to load `/opt/ekklesia/.env.production` first.
+
+## 2026-06-15 — Codex: dashboard powered-by header removed
+
+- Finding source: `docs/agent-bridge/DASHBOARD_AUDIT.md` live header note.
+- Fix commit: `8709b90`.
+- Code change:
+  - `apps/dashboard/next.config.js` now sets `poweredByHeader: false`.
+- Local verification:
+  - `cd apps/dashboard && npx tsc --noEmit --incremental false`: PASS.
+  - `cd apps/dashboard && npm run build`: PASS.
+- Deploy:
+  - Dashboard-only image rebuild/recreate with `/opt/ekklesia/.env.production` sourced before compose.
+  - Server HEAD after deploy: `8709b90`.
+  - No API/DB/mobile/web deploy.
+- Live verification:
+  - `curl -I https://dashboard.ekklesia.gr/login`: no `X-Powered-By` header.
+  - `GET https://dashboard.ekklesia.gr/`: `307` to `/login?callbackUrl=%2F`.
+  - `GET https://dashboard.ekklesia.gr/api/proxy/admin/stats`: `401`.
+  - `https://ekklesia.gr/`: `200`.
+  - `https://api.ekklesia.gr/api/v1/bills?limit=1`: `200`.
+  - `https://api.ekklesia.gr/api/v1/zk/status`: `200`.
