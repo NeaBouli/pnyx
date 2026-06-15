@@ -10592,3 +10592,34 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `/api/v1/vote/GR-5294/results`: includes `tier1_vote_count=2`, `zk_vote_count=0`, `total_votes=2`.
   - Monitor single run: PASS, 17 checks, no alerts.
   - API logs since deploy: no `ERROR`, `Traceback`, `Exception`, or `FATAL`.
+
+## 2026-06-15 — Codex: post-deploy DB integrity + disk cleanup check
+
+- Scope: read-only DB/API/monitor integrity check after the GH#112 production backend deploy recovery, plus conservative disk cleanup.
+- Repo/server baseline:
+  - Local/server HEAD: `b62c7cb`.
+  - API code live from `77306a0`; bridge/docs at `b62c7cb`.
+  - Core containers healthy: `ekklesia-api`, `ekklesia-db`, `ekklesia-redis`, `ekklesia-web`, `ekklesia-monitor`.
+- DB integrity checks:
+  - `parliament_bills`: 1171 rows.
+  - Sources: `DIAVGEIA=1133`, `PARLIAMENT=37`, `ZK_CANARY=1`.
+  - Statuses: `OPEN_END=1143`, `ANNOUNCED=22`, `ACTIVE=3`, `PARLIAMENT_VOTED=3`.
+  - `citizen_votes`: 6 rows.
+  - ZK canary storage: `zk_identity_commitments=1`, `zk_merkle_roots=2`, `zk_vote_receipts=1`, `zk_vote_tier_locks=1`.
+  - `ZK-CANARY-001`: `admin_hidden=true`, no forum topic, no Arweave TX, public direct bill API returns 404.
+  - Canary receipt remains pending/unpublished: `arweave_pending=1`, `published=0`.
+- API checks:
+  - `GET /health`: 200.
+  - `GET /api/v1/zk/status`: all production/canary/root/arweave/global flags false.
+  - `GET /api/v1/vote/GR-5294/results`: `tier1_vote_count=2`, `zk_vote_count=0`, `total_votes=2`.
+  - `GET /api/v1/vote/results/in-progress`: returns real aggregate data.
+- Monitor:
+  - `docker exec ekklesia-monitor python /app/monitor.py --once`: PASS, 17 checks, no alerts.
+- Disk cleanup:
+  - Before: `/` 75G total, 62G used, 11G free, 86%.
+  - Docker diagnosis: images were the safe cleanup target; `/opt/ekklesia` and `/opt/backups` were not the issue.
+  - Ran only `docker image prune -f` to remove one dangling, unreferenced image. No volumes, backups, containers, or build cache were deleted.
+  - After: `/` 75G total, 55G used, 18G free, 77%.
+- Notes:
+  - Hetzner snapshots should not be deleted as a first response to server disk pressure; snapshots are external rollback points and do not explain `/` usage.
+  - Remaining reclaimable Docker build cache/tagged images were left intact because disk pressure is no longer acute and rollback/build comfort is more valuable than chasing the last few GB.
