@@ -10746,3 +10746,35 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - GitHub issue updated: https://github.com/NeaBouli/pnyx/issues/79#issuecomment-4706076381
 - Result: no pnyx-side action available. Still waiting for F-Droid/linsui/community retest or merge.
 - Guardrail: do not mutate `fdroiddata` unless new reviewer feedback appears.
+
+## 2026-06-15 — Codex: final safety/status sweep after dashboard hardening
+
+- Scope: read-only production status sweep after dashboard hardening and F-Droid recheck.
+- Current repo/server docs HEAD at time of sweep: `5388df3`.
+- Dashboard:
+  - `https://dashboard.ekklesia.gr/login`: `200`.
+  - `https://dashboard.ekklesia.gr/api/proxy/admin/stats`: `401` without session.
+  - `X-Powered-By` header is absent from `/login`.
+- Public/API:
+  - `https://ekklesia.gr/`: `200`.
+  - `https://api.ekklesia.gr/api/v1/bills?limit=1`: `200`.
+  - `https://api.ekklesia.gr/api/v1/zk/status`: `200`.
+- Monitor:
+  - `docker exec ekklesia-monitor python /app/monitor.py --once`: PASS.
+  - 17 business checks, no alerts.
+- Containers:
+  - `ekklesia-dashboard`, `ekklesia-api`, `ekklesia-web`, `ekklesia-monitor` up.
+  - `ekklesia-db` and `ekklesia-redis` healthy.
+- Disk:
+  - `/`: 75G total, 57G used, 16G free, 79%.
+- GH#111 nullifier-v2 activation preflight (read-only):
+  - `IDENTITY_NULLIFIER_KDF_VERSION`: currently `v1`.
+  - `SERVER_SALT` length inside API container: 64.
+  - `argon2`: available.
+  - Alembic current: `u401a2b3c4d5 (head)`.
+  - `identity_records`: 17 total, 0 with `nullifier_hash_v2`, 0 `nullifier_version='v2'` (expected while v1 flag is active).
+  - Production-container focused tests: `tests/test_identity_nullifier_kdf.py tests/test_security_startup.py`: `23 passed`.
+- GH#111 decision boundary:
+  - Do not flip `IDENTITY_NULLIFIER_KDF_VERSION=v2` without an explicit operator canary using a real HLR/identity verification path.
+  - Reason: phone numbers are not stored; existing-phone same-row migration cannot be proven from DB alone without a controlled re-registration.
+  - Safe state: scaffold ready, rollback is env back to `v1`, activation remains a focused operator window.
