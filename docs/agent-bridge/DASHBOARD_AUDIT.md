@@ -21,6 +21,8 @@ The dashboard is therefore **not production-audited/complete yet**. It is useful
 
 ## A — GitHub Releases
 
+Status: **FIXED**. GitHub Release `v1.0.9` / `εκκλησία v1.0.9 (vC38)` is now the latest release.
+
 ### Current State
 
 `gh release list --repo NeaBouli/pnyx --limit 20`:
@@ -48,7 +50,15 @@ Current verified release is **v1.0.9 / vC38**:
 
 Landing already shows `v1.0.9 · vC38`.
 
-No local Git tag currently exists for `v1.0.9` or `vC38`.
+At diagnosis time, no local Git tag existed for `v1.0.9` or `vC38`.
+
+Updated state after fix:
+
+- GitHub tag `v1.0.9` exists and points to `cd973f4`.
+- `gh release list` now shows `εκκλησία v1.0.9 (vC38)` as `Latest`.
+- Assets:
+  - `ekklesia-v1.0.9-vC38.apk`
+  - `ekklesia-v1.0.9-vC38-PLAY.aab`
 
 ### Release Plan
 
@@ -64,7 +74,7 @@ Recommended follow-up:
   - R8/minify remains off; Play mapping warning is informational for this build
 - Leave older releases untouched or add wording that they are superseded.
 
-No release was created during this diagnosis.
+Release was not created during the initial diagnosis, but was created in the follow-up remediation pass.
 
 ## B — Dashboard Audit
 

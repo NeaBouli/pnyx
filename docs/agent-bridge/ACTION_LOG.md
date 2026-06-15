@@ -10654,3 +10654,24 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Remaining dashboard work:
   - Add finer path/module authorization before onboarding non-`SUPER_ADMIN` dashboard roles.
   - Remove `npm ci || npm install` fallback from dashboard Dockerfile in a separate hardening pass.
+
+## 2026-06-15 — Codex: GitHub Release v1.0.9/vC38 published as latest
+
+- Finding source: `docs/agent-bridge/DASHBOARD_AUDIT.md` confirmed that GitHub Releases still showed `v1.0.3 / vC30` as `latest` while the current verified mobile release was `v1.0.9 / vC38`.
+- Created GitHub Release:
+  - URL: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.9
+  - Title: `εκκλησία v1.0.9 (vC38)`.
+  - Tag: `v1.0.9` -> `cd973f4`.
+  - Marked as latest.
+- Assets:
+  - `ekklesia-v1.0.9-vC38.apk`
+    - SHA256: `5f725627da5d088136cff6d4430e9c7266779fae26bf9567150837a40e49dc66`
+  - `ekklesia-v1.0.9-vC38-PLAY.aab`
+    - SHA256: `46dce5d1f528266c0dfdf98d364124e84653dfa360ab426462005226da087b28`
+- Release notes clarify:
+  - S10 hidden ZK canary passed.
+  - Production/global ZK remains gated/off pending explicit scoped rollout and security review.
+  - R8/minify is intentionally off; Play mapping warning is informational for this build.
+- Verification:
+  - `gh release list --repo NeaBouli/pnyx --limit 5` now shows `εκκλησία v1.0.9 (vC38)` as `Latest`.
+  - Asset names and SHA256 digests verified via `gh release view v1.0.9 --json assets`.
