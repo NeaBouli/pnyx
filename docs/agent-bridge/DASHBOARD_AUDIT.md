@@ -17,7 +17,14 @@ Two separate issues were confirmed:
 1. **GitHub Releases are stale.** GitHub still marks `v1.0.3 / vC30` as the latest release, while the current verified mobile release is `v1.0.9 / vC38`.
 2. **Dashboard has a live high-risk auth gap.** Dashboard pages redirect unauthenticated users to `/login`, but the server-side `/api/proxy/[...path]` route forwards requests with the production admin bearer key without checking the NextAuth session. Live unauthenticated GET probes returned admin/system data.
 
-The dashboard is therefore **not production-audited/complete yet**. It is useful as an internal control surface, but it currently needs an urgent auth fix before it should be considered safe.
+Remediation status:
+
+- GitHub Releases: **FIXED**. `v1.0.9 / vC38` is now the latest GitHub Release.
+- Dashboard admin proxy auth: **FIXED** in `a84b200` and deployed.
+- Dashboard route/module auth: **FIXED** in `cc08d1b` and deployed.
+- Dashboard Dockerfile hygiene: **FIXED** in `cc08d1b` (`npm ci` only).
+
+The dashboard is now protected at the page layer and admin-proxy layer. It is still an internal admin surface with some intentionally Phase-2 sections, but the critical unauthenticated admin proxy and navigation-only authorization gaps are closed.
 
 ## A — GitHub Releases
 
@@ -186,6 +193,8 @@ Post-deploy live probes without cookies/session:
 
 Severity: **MEDIUM**
 
+Status: **FIXED** in `cc08d1b` and deployed to `dashboard.ekklesia.gr`.
+
 Evidence:
 
 - `apps/dashboard/src/components/layout/Sidebar.tsx` filters visible links by role.
@@ -201,6 +210,25 @@ Recommended fix:
 
 - Add a route/module authorization layer for dashboard pages.
 - Keep API proxy authorization independent from UI navigation filtering.
+
+Implemented fix:
+
+- Added `apps/dashboard/src/proxy.ts` using the Next.js 16 `proxy` convention.
+- Unauthenticated dashboard page requests redirect to `/login`.
+- Authenticated requests are checked against the dashboard role/module matrix before page access.
+- `/login`, `/api/auth/*`, Next internals, and favicon remain reachable.
+- API proxy authorization remains independent and still requires `SUPER_ADMIN`.
+
+Post-deploy live probes without cookies/session:
+
+| Probe | Result |
+|---|---:|
+| `GET /` | `307` to `/login?callbackUrl=%2F` |
+| `GET /settings` | `307` to `/login?callbackUrl=%2Fsettings` |
+| `GET /monitor` | `307` to `/login?callbackUrl=%2Fmonitor` |
+| `GET /api/discourse` | `401` |
+| `GET /api/proxy/admin/stats` | `401` |
+| `POST /api/proxy/admin/scraper/heal-status` | `401` |
 
 ### Finding B3 — Incomplete / Placeholder Dashboard Areas
 
@@ -249,6 +277,8 @@ No dashboard code reference to ZK flags, ZK canary, root publication, or ZK allo
 
 Severity: **LOW**
 
+Status: **FIXED** in `cc08d1b`.
+
 `apps/dashboard/Dockerfile.prod:4` uses:
 
 ```dockerfile
@@ -262,6 +292,11 @@ Recommended fix:
 - Use `RUN npm ci` only.
 - Fail the build if lockfile state is invalid.
 
+Implemented fix:
+
+- `apps/dashboard/Dockerfile.prod` now uses `RUN npm ci`.
+- Server dashboard image rebuilt successfully with this stricter install path.
+
 ### Live Header Note
 
 `https://dashboard.ekklesia.gr` currently returns `X-Powered-By: Next.js`.
@@ -270,14 +305,19 @@ This is a hardening note, not the main issue. The unauthenticated proxy is the p
 
 ## Overall Dashboard Assessment
 
-Status: **lueckenhaft und sicherheitsrelevant nicht freigegeben**
+Status: **critical auth findings remediated; internal admin surface remains in controlled use**
 
-The dashboard page shell has GitHub allowlist auth, but the admin proxy route is not protected by that same auth boundary. Because the proxy carries the server-side admin bearer key, this is a high-priority issue and should be fixed before any broader dashboard use or ZK production rollout.
+The dashboard page shell has GitHub allowlist auth, route/module authorization, and the server-side admin proxy now requires a valid `SUPER_ADMIN` dashboard session before forwarding with the production admin bearer key.
 
-Suggested next order:
+Completed remediation:
 
-1. Fix unauthenticated `/api/proxy/[...path]` access immediately.
-2. Add route/module authorization beyond Sidebar filtering.
-3. Re-test live unauthenticated probes.
-4. Then clean up placeholders/Phase-2 surfaces.
-5. Create GitHub Release `v1.0.9 / vC38` with current APK/AAB and release notes.
+1. GitHub Release `v1.0.9 / vC38` created and marked latest.
+2. Unauthenticated `/api/proxy/[...path]` access fixed.
+3. Route/module authorization added beyond Sidebar filtering.
+4. Live unauthenticated probes re-tested.
+5. Dockerfile fallback `npm ci || npm install` removed.
+
+Remaining non-critical dashboard work:
+
+- Clean up or explicitly label placeholder/Phase-2 surfaces as product scope evolves.
+- Add deeper role-specific authenticated browser tests before adding more allowlisted dashboard users.

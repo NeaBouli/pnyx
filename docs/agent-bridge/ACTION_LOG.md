@@ -10675,3 +10675,41 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Verification:
   - `gh release list --repo NeaBouli/pnyx --limit 5` now shows `εκκλησία v1.0.9 (vC38)` as `Latest`.
   - Asset names and SHA256 digests verified via `gh release view v1.0.9 --json assets`.
+
+## 2026-06-15 — Codex: dashboard route/module auth guard + npm-ci-only build
+
+- Finding source: `docs/agent-bridge/DASHBOARD_AUDIT.md` B2 and deployment hygiene finding.
+- Rollback tag before fix: `rollback-pre-dashboard-hardening-20260615-1110`.
+- Fix commit: `cc08d1b`.
+- Code change:
+  - Added `apps/dashboard/src/proxy.ts` using the Next.js 16 `proxy` convention.
+  - Dashboard page routes now require a valid NextAuth session before rendering.
+  - Route/module authorization now mirrors the dashboard role/module model instead of relying only on Sidebar visibility.
+  - `/login`, `/api/auth/*`, Next internals, and favicon remain reachable as expected.
+  - `apps/dashboard/Dockerfile.prod` now uses `RUN npm ci` only; the previous `npm ci || npm install` fallback is removed.
+- Local verification:
+  - `cd apps/dashboard && npx tsc --noEmit --incremental false`: PASS.
+  - `cd apps/dashboard && npm run build`: PASS.
+- Deploy:
+  - Dashboard-only image rebuild/recreate with `/opt/ekklesia/.env.production` sourced before compose.
+  - Server HEAD after deploy: `cc08d1b`.
+  - No API/DB/mobile/web deploy.
+- Live regression probes without cookies/session:
+  - `GET https://dashboard.ekklesia.gr/`: `307` to `/login?callbackUrl=%2F`.
+  - `GET https://dashboard.ekklesia.gr/login`: `200`.
+  - `GET https://dashboard.ekklesia.gr/settings`: `307` to `/login?callbackUrl=%2Fsettings`.
+  - `GET https://dashboard.ekklesia.gr/monitor`: `307` to `/login?callbackUrl=%2Fmonitor`.
+  - `GET https://dashboard.ekklesia.gr/api/discourse`: `401`.
+  - `GET https://dashboard.ekklesia.gr/api/proxy/admin/stats`: `401`.
+  - `POST https://dashboard.ekklesia.gr/api/proxy/admin/scraper/heal-status`: `401`.
+- Platform sanity checks after dashboard deploy:
+  - `https://ekklesia.gr/`: `200`.
+  - `https://api.ekklesia.gr/api/v1/health/modules`: `200`.
+  - `https://api.ekklesia.gr/api/v1/bills?limit=1`: `200`.
+  - `https://api.ekklesia.gr/api/v1/zk/status`: `200`.
+  - Core containers remain up; `ekklesia-db` and `ekklesia-redis` healthy.
+- GitHub verification:
+  - CI `27533200856`: success.
+  - Security Audit `27533200874`: success.
+- Note:
+  - A later `docker compose ps` without sourced env produced compose interpolation warnings only; it did not recreate or mutate services. Future server compose commands should continue to load `/opt/ekklesia/.env.production` first.
