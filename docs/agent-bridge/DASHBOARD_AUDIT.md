@@ -121,6 +121,8 @@ Live page behavior:
 
 Severity: **HIGH**
 
+Status: **FIXED** in `a84b200` and deployed to `dashboard.ekklesia.gr`.
+
 The proxy route forwards any path under `/api/proxy/...` to the API using the dashboard's server-side admin key:
 
 - `apps/dashboard/src/app/api/proxy/[...path]/route.ts:3-4` loads `EKKLESIA_API` and `ADMIN_KEY`.
@@ -152,7 +154,23 @@ Recommended fix:
 - Return `401` for unauthenticated, `403` for unauthorized.
 - Add regression tests or at least live probes verifying unauthenticated proxy requests return `401/403`.
 
-No fix was applied in this diagnosis.
+Implemented fix:
+
+- `apps/dashboard/src/app/api/proxy/[...path]/route.ts` now calls `auth()` before building/forwarding the upstream API request.
+- Unauthenticated requests return `401`.
+- Signed-in users without `SUPER_ADMIN` role return `403`.
+- Missing dashboard admin key returns `503` before any upstream request.
+- `GET`, `POST`, and `PATCH` share the same guard.
+
+Post-deploy live probes without cookies/session:
+
+| Probe | Before fix | After fix |
+|---|---:|---:|
+| `GET /api/proxy/admin/stats` | `200` | `401` |
+| `GET /api/proxy/admin/logs/containers` | `200` | `401` |
+| `GET /api/proxy/health/modules` | `200` | `401` |
+| `POST /api/proxy/admin/scraper/heal-status` | not probed before, vulnerable by code path | `401` |
+| `PATCH /api/proxy/admin/bills/1` | not probed before, vulnerable by code path | `401` |
 
 ### Finding B2 — Role Checks Are Mostly Navigation-Level
 

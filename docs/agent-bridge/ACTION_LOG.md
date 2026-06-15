@@ -10623,3 +10623,34 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Notes:
   - Hetzner snapshots should not be deleted as a first response to server disk pressure; snapshots are external rollback points and do not explain `/` usage.
   - Remaining reclaimable Docker build cache/tagged images were left intact because disk pressure is no longer acute and rollback/build comfort is more valuable than chasing the last few GB.
+
+## 2026-06-15 — Codex: dashboard admin proxy auth gap fixed
+
+- Finding source: `docs/agent-bridge/DASHBOARD_AUDIT.md` confirmed that dashboard pages redirected unauthenticated users to `/login`, but `/api/proxy/[...path]` still forwarded requests with the dashboard server-side admin key without checking the NextAuth session.
+- Rollback tag before fix: `rollback-pre-dashboard-proxy-auth-20260615-1035`.
+- Fix commit: `a84b200`.
+- Code change:
+  - `apps/dashboard/src/app/api/proxy/[...path]/route.ts` now calls `auth()` before forwarding.
+  - Unauthenticated requests return `401`.
+  - Authenticated non-`SUPER_ADMIN` sessions return `403`.
+  - Missing dashboard admin key returns `503`.
+  - `GET`, `POST`, and `PATCH` use the same guard.
+- Local verification:
+  - `cd apps/dashboard && npx tsc --noEmit`: PASS.
+  - `cd apps/dashboard && npm run build`: PASS.
+- Deploy:
+  - Dashboard-only image rebuild/recreate with `.env.production` sourced before compose.
+  - No API/DB/mobile/web deploy.
+- Live regression probes without cookies/session:
+  - `GET https://dashboard.ekklesia.gr/api/proxy/admin/stats`: `401`.
+  - `GET https://dashboard.ekklesia.gr/api/proxy/admin/logs/containers`: `401`.
+  - `GET https://dashboard.ekklesia.gr/api/proxy/health/modules`: `401`.
+  - `POST https://dashboard.ekklesia.gr/api/proxy/admin/scraper/heal-status`: `401`.
+  - `PATCH https://dashboard.ekklesia.gr/api/proxy/admin/bills/1`: `401`.
+- Normal checks:
+  - `https://dashboard.ekklesia.gr`: still `307` to `/login`.
+  - `https://dashboard.ekklesia.gr/login`: `200`.
+  - `https://api.ekklesia.gr/health`: `200`.
+- Remaining dashboard work:
+  - Add finer path/module authorization before onboarding non-`SUPER_ADMIN` dashboard roles.
+  - Remove `npm ci || npm install` fallback from dashboard Dockerfile in a separate hardening pass.
