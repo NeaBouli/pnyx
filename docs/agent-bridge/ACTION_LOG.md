@@ -10734,3 +10734,15 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `https://ekklesia.gr/`: `200`.
   - `https://api.ekklesia.gr/api/v1/bills?limit=1`: `200`.
   - `https://api.ekklesia.gr/api/v1/zk/status`: `200`.
+
+## 2026-06-15 — Codex: F-Droid !38007 status rechecked
+
+- Direct GitLab check via `glab mr view 38007 --repo fdroid/fdroiddata --output json`.
+- MR state: open, not draft.
+- Labels: `New App`, `review-requested`.
+- Conflicts: none.
+- Blocking discussions: resolved.
+- Latest pipeline: `2570810919`, success on `e42e014f`, finished 2026-06-02.
+- GitHub issue updated: https://github.com/NeaBouli/pnyx/issues/79#issuecomment-4706076381
+- Result: no pnyx-side action available. Still waiting for F-Droid/linsui/community retest or merge.
+- Guardrail: do not mutate `fdroiddata` unless new reviewer feedback appears.
