@@ -19,7 +19,7 @@ export async function generateZkVoteProof(params: {
   members: string[];
   merkleDepth: number;
 }): Promise<ZkVoteProofResult> {
-  const identity = await getOrCreateZkSemaphoreIdentity();
+  const identity = await getOrCreateZkSemaphoreIdentity(params.voteScopeId);
   const runtimeSemaphore = require("semaphore-react-native") as SemaphoreVoteModuleLike;
   return generateZkVoteProofWithModule(runtimeSemaphore, {
     privateKey: identity.privateKey,

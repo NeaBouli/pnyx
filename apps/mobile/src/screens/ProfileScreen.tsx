@@ -199,7 +199,7 @@ export default function ProfileScreen() {
       <TouchableOpacity style={s.zkBtn} onPress={() => nav.navigate("ZkSemaphore")}>
         <Text style={s.zkTitle}>Semaphore ZK V2</Text>
         <Text style={s.zkText}>
-          Προαιρετικός έλεγχος συσκευής για μελλοντική ανώνυμη επαληθεύσιμη ψήφο.
+          Προαιρετικός έλεγχος συσκευής για ανώνυμη επαληθεύσιμη ψήφο όταν ενεργοποιηθεί σε συγκεκριμένη ψηφοφορία.
         </Text>
       </TouchableOpacity>
 

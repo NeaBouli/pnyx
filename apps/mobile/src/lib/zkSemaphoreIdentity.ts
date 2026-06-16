@@ -12,17 +12,24 @@ export interface StoredZkSemaphoreIdentity {
   memberHex: string;
 }
 
-export async function getOrCreateZkSemaphorePrivateKey(): Promise<Uint8Array> {
-  const stored = await SecureStore.getItemAsync(ZK_SEMAPHORE_PRIVATE_KEY);
+function scopedSemaphoreKey(voteScopeId?: string): string {
+  if (!voteScopeId) return ZK_SEMAPHORE_PRIVATE_KEY;
+  const safeScope = voteScopeId.trim().replace(/[^A-Za-z0-9._-]/g, "_");
+  return `${ZK_SEMAPHORE_PRIVATE_KEY}:${safeScope}`;
+}
+
+export async function getOrCreateZkSemaphorePrivateKey(voteScopeId?: string): Promise<Uint8Array> {
+  const key = scopedSemaphoreKey(voteScopeId);
+  const stored = await SecureStore.getItemAsync(key);
   if (stored) return hexToBytes(stored);
 
   const privateKey = Crypto.getRandomBytes(32);
-  await SecureStore.setItemAsync(ZK_SEMAPHORE_PRIVATE_KEY, bytesToHex(privateKey));
+  await SecureStore.setItemAsync(key, bytesToHex(privateKey));
   return privateKey;
 }
 
-export async function getOrCreateZkSemaphoreIdentity(): Promise<StoredZkSemaphoreIdentity> {
-  const privateKey = await getOrCreateZkSemaphorePrivateKey();
+export async function getOrCreateZkSemaphoreIdentity(voteScopeId?: string): Promise<StoredZkSemaphoreIdentity> {
+  const privateKey = await getOrCreateZkSemaphorePrivateKey(voteScopeId);
   const identity = new Identity(privateKey);
   return {
     privateKey,
@@ -31,6 +38,6 @@ export async function getOrCreateZkSemaphoreIdentity(): Promise<StoredZkSemaphor
   };
 }
 
-export async function clearZkSemaphoreIdentity(): Promise<void> {
-  await SecureStore.deleteItemAsync(ZK_SEMAPHORE_PRIVATE_KEY);
+export async function clearZkSemaphoreIdentity(voteScopeId?: string): Promise<void> {
+  await SecureStore.deleteItemAsync(scopedSemaphoreKey(voteScopeId));
 }

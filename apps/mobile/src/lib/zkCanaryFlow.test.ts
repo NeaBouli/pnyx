@@ -57,6 +57,7 @@ describe("zkCanaryFlow", () => {
 
     const result = await submitZkOptInForBill("ZK-CANARY-001");
 
+    expect(mocks.getOrCreateZkSemaphoreIdentity).toHaveBeenCalledWith("bill:ZK-CANARY-001");
     expect(mocks.signZkOptInPayload).toHaveBeenCalledWith("ZK-CANARY-001", "123456");
     expect(mocks.submitZkOptIn).toHaveBeenCalledWith({
       nullifierHash: "n".repeat(64),

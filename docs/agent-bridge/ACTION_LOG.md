@@ -10828,3 +10828,28 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Do not flip `IDENTITY_NULLIFIER_KDF_VERSION=v2` without an explicit operator canary using a real HLR/identity verification path.
   - Reason: phone numbers are not stored; existing-phone same-row migration cannot be proven from DB alone without a controlled re-registration.
   - Safe state: scaffold ready, rollback is env back to `v1`, activation remains a focused operator window.
+
+## 2026-06-16 — Codex: GH#112 scoped ZK security review + mobile scope identity fix
+
+- Goal: clarify Semaphore/ZK status before any new APK/AAB and remove non-blocked release risks.
+- Rollback tag: `rollback-pre-gh112-security-review-20260616-234342`.
+- Live API status:
+  - `https://api.ekklesia.gr/api/v1/zk/status`: HTTP 200.
+  - All ZK production/canary/root/Arweave/global flags are `false`.
+- Security review:
+  - New document: `docs/agent-bridge/GH112_SECURITY_REVIEW.md`.
+  - Result: PASS for **scoped production rollout readiness**.
+  - Explicit boundary: no global rollout; first real use must be one public bill scope via `ZK_PRODUCTION_SCOPE_ALLOWLIST`, backup, monitoring, and no `ZK_GLOBAL_ROLLOUT_ENABLED`.
+- Release finding fixed:
+  - Mobile previously reused one global Semaphore identity; this was okay for the one-scope hidden canary but not for multi-bill production use.
+  - Mobile now stores Semaphore identity keys per `vote_scope_id`; opt-in/proof generation uses `bill:<id>`.
+  - This prevents cross-scope commitment reuse/linkability and avoids second-scope failures against the server commitment uniqueness guard.
+- Public/app wording updated:
+  - README, Roadmap, Whitepaper, ZK wiki, wiki roadmap, llms.txt.
+  - App Profile/ZK screen now says ZK opens only for specific vote scopes.
+- Verification:
+  - `cd apps/mobile && npx vitest run`: PASS, 12 files / 77 tests.
+  - `cd apps/mobile && npx tsc --noEmit --incremental false`: PASS.
+  - `cd apps/web && npx tsc --noEmit --incremental false`: PASS.
+  - `cd apps/api && /tmp/pnyx-api-test-venv/bin/python -m pytest tests/routers/test_zk_verify_api.py tests/services/test_zk_merkle_root.py tests/services/test_zk_group_registry.py tests/services/test_zk_tier_lock.py tests/services/test_zk_arweave_payload.py tests/services/test_zk_vote_aggregation.py tests/test_voting.py -q`: PASS, 115 passed / 2 xfailed.
+- No server flags changed. No DB mutation. No deploy in this step.

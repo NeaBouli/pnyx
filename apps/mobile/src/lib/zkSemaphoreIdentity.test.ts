@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const secureStore = vi.hoisted(() => new Map<string, string>());
+const cryptoState = vi.hoisted(() => ({ calls: 0 }));
 
 vi.mock("expo-crypto", () => ({
-  getRandomBytes: vi.fn((length: number) => Uint8Array.from({ length }, (_, index) => index + 1)),
+  getRandomBytes: vi.fn((length: number) => {
+    const offset = cryptoState.calls * length;
+    cryptoState.calls += 1;
+    return Uint8Array.from({ length }, (_, index) => ((offset + index + 1) % 256));
+  }),
 }));
 
 vi.mock("expo-secure-store", () => ({
@@ -42,6 +47,7 @@ import {
 describe("zkSemaphoreIdentity", () => {
   beforeEach(() => {
     secureStore.clear();
+    cryptoState.calls = 0;
   });
 
   it("creates and reuses a separate Semaphore private key", async () => {
@@ -51,6 +57,18 @@ describe("zkSemaphoreIdentity", () => {
     expect(bytesToHex(first)).toBe("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20");
     expect(bytesToHex(second)).toBe(bytesToHex(first));
     expect(secureStore.has("ekklesia_zk_semaphore_private_key_v1")).toBe(true);
+  });
+
+  it("separates Semaphore private keys per vote scope", async () => {
+    const first = await getOrCreateZkSemaphorePrivateKey("bill:GR-1");
+    const second = await getOrCreateZkSemaphorePrivateKey("bill:GR-2");
+    const firstAgain = await getOrCreateZkSemaphorePrivateKey("bill:GR-1");
+
+    expect(bytesToHex(first)).toBe("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20");
+    expect(bytesToHex(second)).not.toBe(bytesToHex(first));
+    expect(bytesToHex(firstAgain)).toBe(bytesToHex(first));
+    expect(secureStore.has("ekklesia_zk_semaphore_private_key_v1:bill_GR-1")).toBe(true);
+    expect(secureStore.has("ekklesia_zk_semaphore_private_key_v1:bill_GR-2")).toBe(true);
   });
 
   it("exposes only the commitment/member representation for opt-in", async () => {
@@ -69,5 +87,15 @@ describe("zkSemaphoreIdentity", () => {
 
     expect(secureStore.has("ekklesia_zk_semaphore_private_key_v1")).toBe(false);
     expect(secureStore.get("ekklesia_private_key")).toBe("tier1");
+  });
+
+  it("can clear only one scoped ZK identity", async () => {
+    await getOrCreateZkSemaphorePrivateKey("bill:GR-1");
+    await getOrCreateZkSemaphorePrivateKey("bill:GR-2");
+
+    await clearZkSemaphoreIdentity("bill:GR-1");
+
+    expect(secureStore.has("ekklesia_zk_semaphore_private_key_v1:bill_GR-1")).toBe(false);
+    expect(secureStore.has("ekklesia_zk_semaphore_private_key_v1:bill_GR-2")).toBe(true);
   });
 });

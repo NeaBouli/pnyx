@@ -29,7 +29,8 @@ export interface ZkCanaryVerifyFlowResult {
 }
 
 export async function submitZkOptInForBill(billId: string): Promise<ZkOptInFlowResult> {
-  const identity = await getOrCreateZkSemaphoreIdentity();
+  const voteScopeId = `bill:${billId}`;
+  const identity = await getOrCreateZkSemaphoreIdentity(voteScopeId);
   const signature = await signZkOptInPayload(billId, identity.commitment);
   const response = await submitZkOptIn({
     nullifierHash: signature.nullifierHash,

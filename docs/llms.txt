@@ -39,7 +39,7 @@ ekklesia.gr (εκκλησία του έθνους) is an independent civic initi
 - Forum: Discourse (pnyx.ekklesia.gr)
 - Archiving: Arweave permanent storage
 - Hosting: Hetzner (Helsinki, EU)
-- ZK Voting V2: Semaphore-based; Android prover and hidden S10 canary passed; global production rollout gated
+- ZK Voting V2: Semaphore-based; Android prover, hidden S10 canary, and security review passed for scoped rollout; global production rollout gated
 
 ## Status
 

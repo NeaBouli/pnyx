@@ -72,7 +72,8 @@
   - [x] Production scope safety gates: canary allowlist, production allowlist, optional global rollout flag
   - [x] Tally/API policy: public results aggregate Tier-1 votes + valid ZK receipts; hidden canary remains excluded by `admin_hidden`
   - [x] Public verifier payload / Arweave publication policy: admin + flag-gated pending receipt publisher, public verifier payload only, no identity bridge fields, no canary Arweave publication
-  - [ ] Security review before global production ZK activation
+  - [x] Security review for scoped production rollout readiness (`GH112_SECURITY_REVIEW.md`)
+  - [ ] First public scoped ZK rollout window (one explicit bill scope, backup, monitoring; no global flag)
 
 ## Done (Session 25.05.2026)
 - [x] F-Droid !38007 autoupdate: `AutoUpdateMode: Version`, `UpdateCheckMode: Tags`, CurrentVersion 1.3.2/27 pushed to fdroiddata (`3d81d65c1`) + linsui comment posted

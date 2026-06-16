@@ -32,7 +32,7 @@ Voraussetzung: 500+ Nutzer, 3+ NGO-Partner, öffentliche Legitimation.
 - [ ] MOD-13 Mein Abgeordneter
 - [ ] Deliberation (pol.is-Modell)
 - [ ] Commit-Reveal Abstimmung
-- [ ] Semaphore ZK Voting — Android prover und hidden S10 canary bestanden. Production bleibt OFF/gated bis Security Review, Arweave-/Publication-Policy, Tally/UI-Policy und staged rollout abgeschlossen sind.
+- [ ] Semaphore ZK Voting — Android prover, hidden S10 canary und Security Review bestanden. Scoped Production-Rollout ist vorbereitet; globaler Rollout bleibt OFF/gated bis mindestens ein öffentlicher Scope erfolgreich gelaufen ist.
 - [ ] packages/crypto-rs (Rust + WASM)
 
 ## Transparenz
