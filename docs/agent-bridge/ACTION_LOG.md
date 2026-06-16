@@ -1,5 +1,25 @@
 # Action Log
 
+## 2026-06-16 — Codex: app voting availability diagnosis
+
+- Scope: diagnosis only; no code change, no deploy, no flags.
+- User symptom: current app bills show 0 citizen votes and no normal vote buttons.
+- Production findings:
+  - Public `ACTIVE` API feed is empty: `GET /api/v1/bills?status=ACTIVE` returns `count=0`.
+  - Public `WINDOW_24H` API feed is empty: `GET /api/v1/bills?status=WINDOW_24H` returns `count=0`.
+  - The only DB `ACTIVE` rows are legacy `DEMO-001`/`DEMO-002` plus hidden `ZK-CANARY-001`; public surfaces exclude them.
+  - Current visible Parliament examples:
+    - `GR-056b74d6`, `GR-030bc127`, `GR-09e240aa`: `ANNOUNCED`, 0 citizen votes; normal voting is not open yet.
+    - `GR-5294`: `OPEN_END`, 2 tier-1 citizen votes; app shows consensus slider instead of normal yes/no vote.
+- Code findings:
+  - API `submit_vote` allows `ACTIVE`, `WINDOW_24H`, `OPEN_END`.
+  - Mobile `VoteScreen` shows normal yes/no vote controls only for `ACTIVE` and `WINDOW_24H`.
+  - Mobile `OPEN_END` path is the consensus slider (`Κλίμακα Συναίνεσης`), not the normal yes/no voting UI.
+- Conclusion:
+  - No evidence of ZK/Tier-Guard/signature regression.
+  - User-visible "cannot vote" is expected for current real Parliament bills because none are publicly in `ACTIVE`/`WINDOW_24H`.
+  - UX follow-up worth considering: make the difference between `ANNOUNCED`, `OPEN_END` consensus, and active voting clearer in the app.
+
 ## 2026-05-31 — Codex: Post-crash Bridge Sync auf `a1f6c56`
 
 - **Anlass:** Gio meldet Rechnerabsturz; CC-Handoff war teils auf altem Stand (`2b0f78a`).
