@@ -15,21 +15,21 @@
 - **Branch:** `main`
 - **Lokaler HEAD:** siehe `git rev-parse --short HEAD`
 - **origin/main:** siehe `git rev-parse --short origin/main`
-- **Repo HEAD:** siehe `git rev-parse --short HEAD` (latest: GH#112 production ZK backend logic prepared: scoped rollout gates, ZK tally, public Arweave receipt publisher)
-- **API container:** `77306a0` live; GH#112 production backend prepared (scoped ZK gates, Tier-1+ZK tally, public receipt Arweave publisher); production ZK flags remain off until explicit scoped rollout
+- **Repo HEAD:** siehe `git rev-parse --short HEAD` (latest: vC41/v1.0.12 Android release metadata + GH#112 scoped public ZK UI/API gate)
+- **API container:** `7ac6d79` live; GH#112 scoped ZK status endpoint live and invalid scopes return HTTP 400; production ZK flags remain off until explicit scoped rollout
 - **Dashboard container:** `8709b90` live; admin proxy requires `SUPER_ADMIN`, route/module auth enforced by Next.js proxy, Docker build uses `npm ci` only, `X-Powered-By` disabled
-- **Web container:** `508a033` rebuilt live; public ZK status wording + vC39 APK download/hash verified on ekklesia.gr.
-- **S10:** vC39/1.0.10 installed as update over vC38 without deinstall; app launch smoke test passed, no fatal Logcat crash.
+- **Web container:** `5ea7518` rebuilt live; vC41 APK download badge/hash verified on ekklesia.gr.
+- **S10:** vC41/1.0.12 installed; app launch smoke test passed, no fatal Logcat crash.
 - **Alembic:** `u401a2b3c4d5` (ZK receipt `vote_commitment` NOT NULL, head)
 - **F-Droid !38007:** Still open/mergeable on GitLab (checked 2026-06-17); no conflicts, blocking discussions resolved, latest pipeline `2570810919` success; waiting on fdroiddata maintainer merge/re-test.
 - **POLIS Status:** App-internal Create/Vote LIVE
 - **Tracking:** Linear + GitHub Issues parallel. Cross-Links: GH#71-83 = NEA-277-285
 - **GR-0490a766:** arweave_tx_id=NULL (bereinigt), party_votes_parliament=NULL, Guards verhindern Re-Archivierung
 - **Telegram Bot:** citizen_votes Query LIVE, governance Topic-Routing LIVE
-- **vC39 Release:** AAB `/Users/gio/Desktop/ekklesia-v1.0.10-vC39-PLAY.aab`, SHA256 `d4cf9037407513f020cf711b849438a69c4bbe2aa6139259ab39060ee2ccd66b`; APK `/Users/gio/Desktop/ekklesia-v1.0.10-vC39-PLAY.apk`, SHA256 `444b5c4735a4c98a14517d8a7543457a19bff965c0d923b55078446683412611`.
-- **vC39 GitHub Release:** https://github.com/NeaBouli/pnyx/releases/tag/v1.0.10
-- **vC39 Landing APK:** live on ekklesia.gr as v1.0.10/vC39; SHA256 `444b5c4735a4c98a14517d8a7543457a19bff965c0d923b55078446683412611`.
-- **R8/mapping.txt:** still off for vC39 (`minify=false`); mapping warning in Play is informational until a future Production/R8 build.
+- **vC41 Release:** AAB `/Users/gio/Desktop/ekklesia-v1.0.12-vC41-PLAY.aab`, SHA256 `59d28635408589dc026d530771e1cd6025994101ee6be715d690269370d75958`; APK `/Users/gio/Desktop/ekklesia-v1.0.12-vC41-PLAY.apk`, SHA256 `e558eac36afedadc09baf05d4149cc240911949d926fc81f490590f5811d6468`.
+- **vC41 GitHub Release:** https://github.com/NeaBouli/pnyx/releases/tag/v1.0.12
+- **vC41 Landing APK:** live on ekklesia.gr as v1.0.12/vC41; SHA256 `e558eac36afedadc09baf05d4149cc240911949d926fc81f490590f5811d6468`.
+- **R8/mapping.txt:** still off for vC41 (`minify=false`); mapping warning in Play is informational until a future Production/R8 build.
 - **Linear:** Token OK (`~/.claude/.env` → `LINEAR_API_KEY`), NEA-280 + NEA-292 geschlossen; Codex verified and commented NEA-292 + NEA-301
 - **NEA-301b PARLIAMENT:** DONE (17/31 mit summary_short_el, 9 brauchen Fetcher, 3 DEMO + 2 flagged excluded, DIAVGEIA 0/636 eigene Phase)
 - **Ollama:** RAM zurueck auf 2.4 GB (Produktion), kein Job aktiv
@@ -38,7 +38,7 @@
 - **Bill Summary/Source Fix:** API source policy live; mobile DIAVGEIA source + summary regression fixed in `5ff3998`/`b7fb4dd`, installed on S10 and verified. Root cause update: Analysis fehlt, weil `ai_summary_reviewed=false` und kein automatischer reviewed-analysis Job existiert. Mobile zeigt jetzt statt leerer Analyse einen klaren `Επίσημο κείμενο` Fallback, wenn `summary_long_el` vorhanden ist.
 - **DIAVGEIA S10 Retest:** PASS — source card visible/clickable (`Πηγή — Διαύγεια` opens Android intent chooser), org/pill no longer shown as `Σύνοψη`, quote markers removed. Evidence: `/tmp/ekklesia_diav_fix_final_20260604_000652`.
 - **Open GitHub:** #79 F-Droid (external), #80 Off-site Backup (storage/funding), #111 Nullifier v2 activation (controlled canary window), #112 first public scoped ZK rollout.
-- **ZK V2:** GH#81 closed; Android prover works on S10. GH#112 hidden S10 canary passed end-to-end for `bill:ZK-CANARY-001` with vC38: opt-in, root publish, native proof, server verify, mutation rejection, and test ZK vote. Production backend logic is prepared behind flags: exact canary/production scope gates, Tier-1+ZK result aggregation, and admin/flag-gated Arweave publication of public verifier payloads only. GH#112 security review passed for scoped production rollout readiness, and vC39 fixes mobile Semaphore identity storage to be per vote scope. Public scoped rollout runbook + read-only preflight script now exist. Production flags remain off until one explicit eligible public bill scope is chosen. Global rollout remains disabled/gated.
+- **ZK V2:** GH#81 closed; Android prover works on S10. GH#112 hidden S10 canary passed end-to-end for `bill:ZK-CANARY-001`. Production backend logic is prepared behind flags, and vC41 adds public scoped ZK UI plus scope status API for exactly allowlisted bills. Security review passed for scoped rollout readiness. Production flags remain off until one explicit eligible public bill scope is chosen. Global rollout remains disabled/gated.
 - **Neu live:** municipality/, article.html, Autodesmefsi PDF, Forum Topic #436
 
 ## Uncommitted Aenderungen

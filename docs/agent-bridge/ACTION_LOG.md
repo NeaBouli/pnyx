@@ -1,5 +1,35 @@
 # Action Log
 
+## 2026-06-17 — Codex: vC41 Android release + scoped public ZK UI/API gate
+
+- Version bump:
+  - Mobile `versionName`: `1.0.10` -> `1.0.12`.
+  - Android `versionCode`: `39` -> `41`.
+  - vC40 was built but superseded before release by the invalid-scope guard fix; use vC41 only.
+- GH#112 preparation:
+  - Added read-only `GET /api/v1/zk/scopes/{vote_scope_id}/status`.
+  - Added mobile public ZK pilot UI gated by global status, exact scope status, local capability, Parliament source, and voteable bill status.
+  - Invalid or non-canonical ZK scope IDs now return HTTP 400 instead of 500.
+  - Diavgeia bills no longer trigger per-scope ZK status calls from mobile.
+- Build artifacts:
+  - AAB: `/Users/gio/Desktop/ekklesia-v1.0.12-vC41-PLAY.aab`, SHA256 `59d28635408589dc026d530771e1cd6025994101ee6be715d690269370d75958`.
+  - APK: `/Users/gio/Desktop/ekklesia-v1.0.12-vC41-PLAY.apk`, SHA256 `e558eac36afedadc09baf05d4149cc240911949d926fc81f490590f5811d6468`.
+- Verification:
+  - Mobile TypeScript: PASS.
+  - Mobile ZK Vitest suite: PASS.
+  - API ZK verify/status suite: PASS, 50 tests.
+  - S10 installed vC41/v1.0.12 and launch smoke test showed no fatal Logcat crash.
+  - Live API health OK; invalid scope returns HTTP 400.
+  - Live landing shows `v1.0.12 · vC41`; live APK SHA256 matches manifest.
+  - GitHub CI + Security Audit green for `5ea7518`.
+- Release:
+  - GitHub latest release: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.12
+  - Assets uploaded: vC41 APK + AAB.
+- ZK safety boundary:
+  - No production ZK flags changed.
+  - `ZK_GLOBAL_ROLLOUT_ENABLED` remains false.
+  - First public scoped rollout still requires fresh backup, exact one-scope allowlist, and operator monitoring.
+
 ## 2026-06-16 — Codex: app voting availability diagnosis
 
 - Scope: diagnosis only; no code change, no deploy, no flags.
