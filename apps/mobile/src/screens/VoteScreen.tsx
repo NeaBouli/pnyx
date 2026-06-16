@@ -62,6 +62,33 @@ function cleanOfficialText(value?: string | null) {
   return cleaned.slice(0, 1400);
 }
 
+function votingStatusNotice(status: string, source: string) {
+  if (status === "ANNOUNCED") {
+    return {
+      icon: "🏛️",
+      title: "Η ψηφοφορία δεν έχει ξεκινήσει ακόμα",
+      body: "Το θέμα έχει δημοσιευθεί για ενημέρωση. Η ψήφος θα ανοίξει όταν περάσει σε ενεργή κατάσταση.",
+    };
+  }
+  if (status === "PARLIAMENT_VOTED") {
+    return {
+      icon: "🏛️",
+      title: "Η ψηφοφορία στη Βουλή ολοκληρώθηκε",
+      body: "Η κανονική ψήφος πολιτών έχει κλείσει. Μπορείτε να δείτε τα αποτελέσματα και τα επίσημα έγγραφα.",
+    };
+  }
+  if (status === "OPEN_END") {
+    return {
+      icon: "⚖️",
+      title: source === "DIAVGEIA" ? "Ανοιχτή αξιολόγηση απόφασης" : "Ανοιχτή κλίμακα συναίνεσης",
+      body: source === "DIAVGEIA"
+        ? "Δεν πρόκειται για κανονική ψηφοφορία ΝΑΙ/ΟΧΙ. Μπορείτε να βαθμολογήσετε πόσο συμφωνείτε με την απόφαση."
+        : "Η κανονική ψήφος ΝΑΙ/ΟΧΙ έχει ολοκληρωθεί. Εδώ μπορείτε να βαθμολογήσετε τη συμφωνία σας με την απόφαση της Βουλής.",
+    };
+  }
+  return null;
+}
+
 import { correctionBanner, officialDocumentLinks, resolveSource, isPdfUrl, sourceLabel } from "../lib/source-resolver";
 
 export default function VoteScreen({ route, navigation }: Props) {
@@ -242,6 +269,7 @@ export default function VoteScreen({ route, navigation }: Props) {
     ? "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα. Δείτε την επίσημη πηγή."
     : "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα.";
   const summaryText = summary || (canUsePillAsSummary ? billPill : "") || summaryFallback;
+  const statusNotice = billLoaded && !showVoteControls ? votingStatusNotice(billStatus, billSource) : null;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -346,14 +374,14 @@ export default function VoteScreen({ route, navigation }: Props) {
         </View>
       ) : null}
 
-      {billStatus === "ANNOUNCED" && (
-        <View style={{ backgroundColor: "#f1f5f9", borderRadius: 12, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: "#94a3b8", alignItems: "center" }}>
-          <Text style={{ fontSize: 36, marginBottom: 8 }}>🏛️</Text>
-          <Text style={{ fontWeight: "700", color: "#475569", fontSize: 15, textAlign: "center", marginBottom: 6 }}>
-            Η ψηφοφορία δεν έχει ξεκινήσει ακόμα
+      {statusNotice && (
+        <View style={styles.statusNotice}>
+          <Text style={styles.statusNoticeIcon}>{statusNotice.icon}</Text>
+          <Text style={styles.statusNoticeTitle}>
+            {statusNotice.title}
           </Text>
-          <Text style={{ color: "#64748b", fontSize: 13, textAlign: "center", lineHeight: 18 }}>
-            Αυτό το νομοσχέδιο έχει ανακοινωθεί αλλά δεν είναι ακόμα ανοιχτό για ψηφοφορία. Θα ειδοποιηθείτε μόλις γίνει ενεργό.
+          <Text style={styles.statusNoticeBody}>
+            {statusNotice.body}
           </Text>
         </View>
       )}
@@ -505,6 +533,29 @@ const styles = StyleSheet.create({
   voteIcon: { fontSize: 28, marginRight: 16 },
   voteLabel: { fontSize: 20, fontWeight: "bold", color: colors.text },
   voteLabelDisabled: { color: "#64748b" },
+  statusNotice: {
+    backgroundColor: "#f1f5f9",
+    borderRadius: 12,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    alignItems: "center",
+  },
+  statusNoticeIcon: { fontSize: 32, marginBottom: 8 },
+  statusNoticeTitle: {
+    fontWeight: "700",
+    color: "#475569",
+    fontSize: 15,
+    textAlign: "center",
+    marginBottom: 6,
+  },
+  statusNoticeBody: {
+    color: "#64748b",
+    fontSize: 13,
+    textAlign: "center",
+    lineHeight: 18,
+  },
   loadingOverlay: { alignItems: "center", marginTop: 24 },
   loadingText: { marginTop: 8, color: colors.textSecondary },
   resultsLink: { marginTop: 32, alignItems: "center" },

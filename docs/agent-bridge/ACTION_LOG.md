@@ -20,6 +20,19 @@
   - User-visible "cannot vote" is expected for current real Parliament bills because none are publicly in `ACTIVE`/`WINDOW_24H`.
   - UX follow-up worth considering: make the difference between `ANNOUNCED`, `OPEN_END` consensus, and active voting clearer in the app.
 
+## 2026-06-16 — Codex: mobile voting status UX clarification
+
+- Scope: mobile UI copy only; no API, DB, vote, ZK, or deploy changes.
+- Rollback tag before edit: `rollback-pre-voting-ux-20260616-225826`.
+- Changes:
+  - `VoteScreen` now shows explicit non-voting explanations for `ANNOUNCED`, `PARLIAMENT_VOTED`, and `OPEN_END`.
+  - `OPEN_END` wording clarifies that this is the consensus/evaluation path, not the normal YES/NO vote.
+  - `BillsScreen` empty state for the `ACTIVE` tab now says there are no open votes right now.
+- Verification:
+  - `cd apps/mobile && npx tsc --noEmit --incremental false`: PASS.
+  - `cd apps/mobile && npx vitest run ...`: PASS, 12 files / 75 tests.
+- Runtime status: not built, not installed, not deployed.
+
 ## 2026-05-31 — Codex: Post-crash Bridge Sync auf `a1f6c56`
 
 - **Anlass:** Gio meldet Rechnerabsturz; CC-Handoff war teils auf altem Stand (`2b0f78a`).

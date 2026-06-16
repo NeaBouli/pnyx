@@ -27,6 +27,22 @@ function readableText(value?: string | null) {
   return Boolean(value && value.trim() && !value.includes("[unknown:"));
 }
 
+function emptyListMessage(filter: string) {
+  if (filter === "ACTIVE") {
+    return "Δεν υπάρχουν ανοιχτές ψηφοφορίες αυτή τη στιγμή";
+  }
+  if (filter === "ANNOUNCED") {
+    return "Δεν υπάρχουν νέες ανακοινώσεις αυτή τη στιγμή";
+  }
+  if (filter === "PARLIAMENT") {
+    return "Δεν βρέθηκαν θέματα της Βουλής";
+  }
+  if (filter === "OPEN_END") {
+    return "Δεν υπάρχουν αρχειοθετημένες ψηφοφορίες";
+  }
+  return "Δεν βρέθηκαν ψηφοφορίες";
+}
+
 export default function BillsScreen() {
   const nav = useNavigation<Nav>();
   const [bills, setBills] = useState<any[]>([]);
@@ -135,7 +151,7 @@ export default function BillsScreen() {
         style={{ flex: 1 }}
         data={filtered} keyExtractor={b => b.id} contentContainerStyle={[s.list, { paddingBottom: 120 }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); refreshBills(); }} tintColor={colors.primary} />}
-        ListEmptyComponent={<Text style={s.empty}>Δεν βρέθηκαν ψηφοφορίες</Text>}
+        ListEmptyComponent={<Text style={s.empty}>{emptyListMessage(filter)}</Text>}
         ListFooterComponent={hasMore ? (
           <TouchableOpacity
             style={s.moreBtn}
