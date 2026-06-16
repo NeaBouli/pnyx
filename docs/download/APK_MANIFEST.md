@@ -36,7 +36,7 @@ https://ekklesia.gr/representative/index.html
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
 | Build date | 2026-06-17 |
-| Release gate | PASS — mobile Vitest/TypeScript, API ZK/voting/security suite, GitHub CI/Security Audit, local AAB/APK build, APK version audit |
+| Release gate | PASS — mobile Vitest/TypeScript, API ZK/voting/security suite, GitHub CI/Security Audit, local AAB/APK build, APK version audit, S10 update/install smoke test |
 | Includes | vC39 current mobile state, per-scope Semaphore identities, scoped-production-ready ZK wording, Bouli bills visible in All feed and Bouli tab, ZK V2 native prover, hidden S10 canary operator path, deep-link fallback, pagination, source/full-text policy, permission hardening |
 
 Validation command:

@@ -18,8 +18,8 @@
 - **Repo HEAD:** siehe `git rev-parse --short HEAD` (latest: GH#112 production ZK backend logic prepared: scoped rollout gates, ZK tally, public Arweave receipt publisher)
 - **API container:** `77306a0` live; GH#112 production backend prepared (scoped ZK gates, Tier-1+ZK tally, public receipt Arweave publisher); production ZK flags remain off until explicit scoped rollout
 - **Dashboard container:** `8709b90` live; admin proxy requires `SUPER_ADMIN`, route/module auth enforced by Next.js proxy, Docker build uses `npm ci` only, `X-Powered-By` disabled
-- **Web container:** `c862df1` rebuilt live; public ZK status wording verified. vC39 APK metadata prepared locally; live deploy verification pending in current release step.
-- **S10:** vC38/1.0.9 verified via hidden ZK canary; vC39/1.0.10 built after scoped identity fix, S10 runtime verification pending if device is connected.
+- **Web container:** `508a033` rebuilt live; public ZK status wording + vC39 APK download/hash verified on ekklesia.gr.
+- **S10:** vC39/1.0.10 installed as update over vC38 without deinstall; app launch smoke test passed, no fatal Logcat crash.
 - **Alembic:** `u401a2b3c4d5` (ZK receipt `vote_commitment` NOT NULL, head)
 - **F-Droid !38007:** Community launch-crash fixed in fdroiddata `e42e014f`; pipeline `2570810919` green 9/9; GlassOnTin/linsui re-test requested
 - **POLIS Status:** App-internal Create/Vote LIVE
@@ -27,7 +27,7 @@
 - **GR-0490a766:** arweave_tx_id=NULL (bereinigt), party_votes_parliament=NULL, Guards verhindern Re-Archivierung
 - **Telegram Bot:** citizen_votes Query LIVE, governance Topic-Routing LIVE
 - **vC39 Release:** AAB `/Users/gio/Desktop/ekklesia-v1.0.10-vC39-PLAY.aab`, SHA256 `d4cf9037407513f020cf711b849438a69c4bbe2aa6139259ab39060ee2ccd66b`; APK `/Users/gio/Desktop/ekklesia-v1.0.10-vC39-PLAY.apk`, SHA256 `444b5c4735a4c98a14517d8a7543457a19bff965c0d923b55078446683412611`.
-- **vC39 Landing APK:** local `docs/download/ekklesia-latest.apk` refreshed; server/live verification pending in current release step.
+- **vC39 Landing APK:** live on ekklesia.gr as v1.0.10/vC39; SHA256 `444b5c4735a4c98a14517d8a7543457a19bff965c0d923b55078446683412611`.
 - **R8/mapping.txt:** still off for vC39 (`minify=false`); mapping warning in Play is informational until a future Production/R8 build.
 - **Linear:** Token OK (`~/.claude/.env` → `LINEAR_API_KEY`), NEA-280 + NEA-292 geschlossen; Codex verified and commented NEA-292 + NEA-301
 - **NEA-301b PARLIAMENT:** DONE (17/31 mit summary_short_el, 9 brauchen Fetcher, 3 DEMO + 2 flagged excluded, DIAVGEIA 0/636 eigene Phase)

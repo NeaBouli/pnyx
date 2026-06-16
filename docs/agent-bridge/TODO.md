@@ -174,7 +174,7 @@
 - [ ] NEA-73: Embed-System — Low Prio
 - [ ] GH#111 / NEA-335 follow-up: Nullifier v2 Production Activation — scaffold deployed and production preflight green, but production remains v1 until an explicit operator canary with a real HLR/identity re-registration path proves same-row v1->v2 migration; checklist in `docs/adr/ADR-004-nullifier-kdf-migration.md`
 - [x] GH#112 / ZK V2: Hidden S10 canary executed successfully (`bill:ZK-CANARY-001`, vC38). Production ZK remains OFF; global rollout needs separate security review/publication policy.
-- [x] vC39 Play/direct release prep: AAB/APK built, hashes verified, landing metadata refreshed locally. Upload/live verification tracked in the current release step.
+- [x] vC39 Play/direct release: AAB/APK built, hashes verified, landing APK/hash live, S10 update/install smoke test passed.
 
 ## Done (Session 13.05.2026)
 - [x] Server CX33 → CX43 Upgrade

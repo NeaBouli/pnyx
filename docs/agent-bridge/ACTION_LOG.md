@@ -10871,3 +10871,32 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - 2 moderate `js-yaml` alerts in React Native/tooling package-lock files.
   - No high/critical alerts.
 - No runtime code path changed. No deploy. No ZK flags changed.
+
+## 2026-06-17 — Codex: vC39 mobile release build + landing APK deploy
+
+- Version bump:
+  - Mobile `versionName`: `1.0.9` -> `1.0.10`.
+  - Android `versionCode`: `38` -> `39`.
+- Build:
+  - AAB: `/Users/gio/Desktop/ekklesia-v1.0.10-vC39-PLAY.aab`.
+  - APK: `/Users/gio/Desktop/ekklesia-v1.0.10-vC39-PLAY.apk`.
+  - AAB SHA256: `d4cf9037407513f020cf711b849438a69c4bbe2aa6139259ab39060ee2ccd66b`.
+  - APK SHA256: `444b5c4735a4c98a14517d8a7543457a19bff965c0d923b55078446683412611`.
+- Verification before deploy:
+  - Mobile Vitest: PASS, 77 passed.
+  - Mobile TypeScript: PASS.
+  - APK manifest: package `ekklesia.gr`, `versionCode=39`, `versionName=1.0.10`, target SDK 36.
+  - GitHub latest HEAD before build: CI + Security Audit PASS.
+- Deploy:
+  - Server fast-forwarded to `508a033`.
+  - Web image rebuilt via `infra/docker/docker-compose.prod.yml`.
+  - Live landing shows `v1.0.10 · vC39`.
+  - Live APK SHA256 matches `444b5c4735a4c98a14517d8a7543457a19bff965c0d923b55078446683412611`.
+  - Health checks: `https://ekklesia.gr/` 200, bills API 200, ZK status 200.
+- S10:
+  - Updated from vC38 to vC39 with `adb install -r`; no deinstall, verified test state preserved.
+  - `dumpsys`: `versionCode=39`, `versionName=1.0.10`.
+  - Launch smoke test passed; no `FATAL EXCEPTION`, `AndroidRuntime`, or `ReactNativeJS` crash in recent Logcat.
+- ZK safety boundary:
+  - No server ZK flags changed.
+  - Production ZK remains scoped/gated; global rollout remains disabled.
