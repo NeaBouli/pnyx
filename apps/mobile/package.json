@@ -39,7 +39,24 @@
     "shell-quote": "1.8.4",
     "postcss": "8.5.15",
     "uuid": "11.1.1",
-    "esbuild": "0.28.1"
+    "esbuild": "0.28.1",
+    "@babel/core": "7.29.7",
+    "tar": "7.5.16",
+    "@react-native/dev-middleware": {
+      "ws": "6.2.4"
+    },
+    "react-native": {
+      "ws": "6.2.4"
+    },
+    "react-devtools-core": {
+      "ws": "7.5.11"
+    },
+    "metro": {
+      "ws": "7.5.11"
+    },
+    "@expo/cli": {
+      "ws": "8.21.0"
+    }
   },
   "private": true
 }

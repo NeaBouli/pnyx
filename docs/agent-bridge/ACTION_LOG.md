@@ -33,6 +33,23 @@
   - `cd apps/mobile && npx vitest run ...`: PASS, 12 files / 75 tests.
 - Runtime status: not built, not installed, not deployed.
 
+## 2026-06-16 — Codex: Security Audit high findings remediated
+
+- Trigger: GitHub `Security Audit` workflow failed on dependency audit after `95fb4f9`/`5954365`.
+- Scope: package overrides + lockfile refresh only; no runtime code, no Expo/RN/Next major upgrade, no `npm audit fix --force`.
+- Fix strategy:
+  - Mobile + Representative: pin vulnerable transitive `ws` majors to patched same-major lines (`6.2.4`, `7.5.11`, `8.21.0` by parent), plus `@babel/core@7.29.7` and `tar@7.5.16`.
+  - Web: pin `form-data@4.0.6`, `vite@8.0.16`, `@babel/core@7.29.7`.
+  - Lockfiles refreshed with `npm install --package-lock-only --ignore-scripts`.
+- Verification:
+  - `npm audit --audit-level=high`: PASS for mobile, representative, web, dashboard, crypto.
+  - `cd apps/mobile && npx tsc --noEmit --incremental false`: PASS.
+  - Mobile Vitest: 12 files / 75 tests PASS.
+  - `cd apps/representative && npx tsc --noEmit --incremental false`: PASS.
+  - `cd apps/web && npm run build`: PASS.
+- Residual known issue:
+  - Mobile/Representative still report 6 moderate `js-yaml` findings through React Native tooling; npm only offers a breaking RN downgrade/major path. Left unchanged intentionally.
+
 ## 2026-05-31 — Codex: Post-crash Bridge Sync auf `a1f6c56`
 
 - **Anlass:** Gio meldet Rechnerabsturz; CC-Handoff war teils auf altem Stand (`2b0f78a`).

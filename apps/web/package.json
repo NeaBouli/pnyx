@@ -26,7 +26,10 @@
   },
   "overrides": {
     "serialize-javascript": ">=7.0.5",
-    "postcss": "8.5.15"
+    "postcss": "8.5.15",
+    "@babel/core": "7.29.7",
+    "form-data": "4.0.6",
+    "vite": "8.0.16"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.4",
