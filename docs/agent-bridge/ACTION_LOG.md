@@ -10893,6 +10893,9 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Live landing shows `v1.0.10 · vC39`.
   - Live APK SHA256 matches `444b5c4735a4c98a14517d8a7543457a19bff965c0d923b55078446683412611`.
   - Health checks: `https://ekklesia.gr/` 200, bills API 200, ZK status 200.
+- GitHub:
+  - Release created: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.10
+  - Assets uploaded: `ekklesia-v1.0.10-vC39-PLAY.aab`, `ekklesia-v1.0.10-vC39-PLAY.apk`.
 - S10:
   - Updated from vC38 to vC39 with `adb install -r`; no deinstall, verified test state preserved.
   - `dumpsys`: `versionCode=39`, `versionName=1.0.10`.

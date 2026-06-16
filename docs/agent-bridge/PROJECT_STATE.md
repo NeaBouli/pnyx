@@ -27,6 +27,7 @@
 - **GR-0490a766:** arweave_tx_id=NULL (bereinigt), party_votes_parliament=NULL, Guards verhindern Re-Archivierung
 - **Telegram Bot:** citizen_votes Query LIVE, governance Topic-Routing LIVE
 - **vC39 Release:** AAB `/Users/gio/Desktop/ekklesia-v1.0.10-vC39-PLAY.aab`, SHA256 `d4cf9037407513f020cf711b849438a69c4bbe2aa6139259ab39060ee2ccd66b`; APK `/Users/gio/Desktop/ekklesia-v1.0.10-vC39-PLAY.apk`, SHA256 `444b5c4735a4c98a14517d8a7543457a19bff965c0d923b55078446683412611`.
+- **vC39 GitHub Release:** https://github.com/NeaBouli/pnyx/releases/tag/v1.0.10
 - **vC39 Landing APK:** live on ekklesia.gr as v1.0.10/vC39; SHA256 `444b5c4735a4c98a14517d8a7543457a19bff965c0d923b55078446683412611`.
 - **R8/mapping.txt:** still off for vC39 (`minify=false`); mapping warning in Play is informational until a future Production/R8 build.
 - **Linear:** Token OK (`~/.claude/.env` → `LINEAR_API_KEY`), NEA-280 + NEA-292 geschlossen; Codex verified and commented NEA-292 + NEA-301
