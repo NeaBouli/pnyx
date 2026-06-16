@@ -19,7 +19,7 @@ pydantic-settings==2.14.0
 
 # Crypto
 PyNaCl==1.6.2
-cryptography==48.0.0
+cryptography==48.0.1
 python-jose[cryptography]==3.5.0
 argon2-cffi>=25.1.0
 py-ecc==8.0.0
@@ -43,7 +43,7 @@ stripe==15.1.0
 apscheduler==3.11.2
 
 # Forms
-python-multipart==0.0.29
+python-multipart==0.0.31
 
 # Diavgeia Integration (MOD-21)
 rapidfuzz>=3.14.5
