@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.10 |
-| versionCode | 39 |
+| Version | 1.0.12 |
+| versionCode | 41 |
 | Package | ekklesia.gr |
-| APK SHA256 | `444b5c4735a4c98a14517d8a7543457a19bff965c0d923b55078446683412611` |
-| AAB SHA256 | `d4cf9037407513f020cf711b849438a69c4bbe2aa6139259ab39060ee2ccd66b` |
+| APK SHA256 | `e558eac36afedadc09baf05d4149cc240911949d926fc81f490590f5811d6468` |
+| AAB SHA256 | `59d28635408589dc026d530771e1cd6025994101ee6be715d690269370d75958` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
 | Build date | 2026-06-17 |
-| Release gate | PASS — mobile Vitest/TypeScript, API ZK/voting/security suite, GitHub CI/Security Audit, local AAB/APK build, APK version audit, S10 update/install smoke test |
-| Includes | vC39 current mobile state, per-scope Semaphore identities, scoped-production-ready ZK wording, Bouli bills visible in All feed and Bouli tab, ZK V2 native prover, hidden S10 canary operator path, deep-link fallback, pagination, source/full-text policy, permission hardening |
+| Release gate | PASS — mobile Vitest/TypeScript, API ZK router tests, local AAB/APK build, APK version audit, S10 update/install smoke test |
+| Includes | vC41 scoped public ZK voting UI, scope-specific ZK status gate, per-scope Semaphore identities, Bouli bills visible in All feed and Bouli tab, ZK V2 native prover, hidden S10 canary operator path, deep-link fallback, pagination, source/full-text policy, permission hardening |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: 444b5c4735a4c98a14517d8a7543457a19bff965c0d923b55078446683412611
+# Expected: e558eac36afedadc09baf05d4149cc240911949d926fc81f490590f5811d6468
 ```
