@@ -455,7 +455,10 @@ async def get_zk_scope_status(
     ),
     db: AsyncSession = Depends(get_db),
 ) -> ZkScopeStatusResponse:
-    scope = validate_vote_scope_id(vote_scope_id)
+    try:
+        scope = validate_vote_scope_id(vote_scope_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid vote_scope_id") from exc
     scope_type, _scope_id = scope.split(":", 1)
     await _ensure_scope_public_or_safe_canary(db, scope, require_existing_bill=(scope_type == "bill"))
 

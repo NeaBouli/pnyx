@@ -130,8 +130,10 @@ export default function VoteScreen({ route, navigation }: Props) {
         const r = await fetch(`${API}/api/v1/bills/${encodeURIComponent(billId)}`);
         const d = r.ok ? await r.json() : null;
         if (!mounted) return;
+        let loadedSource = "";
         if (d?.status) {
           const source = d.source || "PARLIAMENT";
+          loadedSource = source;
           const resolved = resolveSource(d.official_source_url, d.forum_topic_url);
           setBillStatus(d.status);
           setBillGovernance(d.governance_level || "NATIONAL");
@@ -159,13 +161,17 @@ export default function VoteScreen({ route, navigation }: Props) {
           .catch(() => {
             if (mounted) setZkStatus(null);
           });
-        fetchZkScopeStatus(publicZkVoteScopeForBill(billId))
-          .then((status) => {
-            if (mounted) setZkScopeStatus(status);
-          })
-          .catch(() => {
-            if (mounted) setZkScopeStatus(null);
-          });
+        if (loadedSource === "PARLIAMENT") {
+          fetchZkScopeStatus(publicZkVoteScopeForBill(billId))
+            .then((status) => {
+              if (mounted) setZkScopeStatus(status);
+            })
+            .catch(() => {
+              if (mounted) setZkScopeStatus(null);
+            });
+        } else {
+          setZkScopeStatus(null);
+        }
       } catch {
         // Detail and vote-status failures must not block the screen.
       } finally {

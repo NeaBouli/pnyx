@@ -200,6 +200,15 @@ async def test_zk_scope_status_requires_exact_production_allowlist(monkeypatch) 
 
 
 @pytest.mark.asyncio
+async def test_zk_scope_status_rejects_invalid_scope_without_500() -> None:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/api/v1/zk/scopes/bill:DIAV-%CE%A8/status")
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "invalid vote_scope_id"
+
+
+@pytest.mark.asyncio
 async def test_zk_scope_status_allows_opt_in_for_exact_public_scope(monkeypatch) -> None:
     monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
     monkeypatch.setenv("ZK_OPT_IN_ENABLED", "true")
