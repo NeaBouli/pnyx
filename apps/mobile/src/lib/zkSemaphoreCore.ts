@@ -11,6 +11,10 @@ export interface ZkServerStatus {
   verifier_enabled: boolean;
   opt_in_enabled: boolean;
   canary_enabled: boolean;
+  root_publication_enabled?: boolean;
+  arweave_publication_enabled?: boolean;
+  global_rollout_enabled?: boolean;
+  production_scope_allowlist_configured?: boolean;
   merkle_tree_depth: number;
   verifier_version: string;
   message_el: string;

@@ -174,6 +174,88 @@ async def test_zk_status_keeps_opt_in_closed_without_tier1_guard(monkeypatch) ->
 
 
 @pytest.mark.asyncio
+async def test_zk_scope_status_requires_exact_production_allowlist(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    monkeypatch.setenv("ZK_OPT_IN_ENABLED", "true")
+    monkeypatch.setenv("ZK_TIER1_GUARD_ENABLED", "true")
+    monkeypatch.setenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", "bill:OTHER")
+    fake_db = _FakeSequenceDb([_public_parliament_bill(), 0, None])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/zk/scopes/bill:GR-0490a766/status")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["allowlisted"] is False
+    assert payload["can_opt_in"] is False
+    assert payload["can_vote"] is False
+
+
+@pytest.mark.asyncio
+async def test_zk_scope_status_allows_opt_in_for_exact_public_scope(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    monkeypatch.setenv("ZK_OPT_IN_ENABLED", "true")
+    monkeypatch.setenv("ZK_TIER1_GUARD_ENABLED", "true")
+    monkeypatch.setenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", "bill:GR-0490a766")
+    fake_db = _FakeSequenceDb([_public_parliament_bill(), 1, None])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/zk/scopes/bill:GR-0490a766/status")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["allowlisted"] is True
+    assert payload["active_commitments"] == 1
+    assert payload["root_published"] is False
+    assert payload["can_opt_in"] is True
+    assert payload["can_vote"] is False
+
+
+@pytest.mark.asyncio
+async def test_zk_scope_status_reports_vote_ready_only_after_root(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    monkeypatch.setenv("ZK_OPT_IN_ENABLED", "true")
+    monkeypatch.setenv("ZK_TIER1_GUARD_ENABLED", "true")
+    monkeypatch.setenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", "bill:GR-0490a766")
+    root = SimpleNamespace(id=1, status="OPEN")
+    fake_db = _FakeSequenceDb([_public_parliament_bill(), 1, root])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/zk/scopes/bill:GR-0490a766/status")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["allowlisted"] is True
+    assert payload["root_published"] is True
+    assert payload["can_opt_in"] is True
+    assert payload["can_vote"] is True
+
+
+@pytest.mark.asyncio
 async def test_zk_canary_preflight_reports_safe_hidden_scope_without_private_fields(monkeypatch) -> None:
     monkeypatch.setenv("ENVIRONMENT", "development")
     monkeypatch.delenv("ADMIN_KEY", raising=False)

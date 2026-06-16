@@ -18,9 +18,12 @@ import * as LocalAuthentication from "expo-local-authentication";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { loadKeypair, loadNullifier, signVote, verifyVote } from "../lib/crypto-native";
-import { submitVote, correctVote, fetchVoteStatus } from "../lib/api";
+import { submitVote, correctVote, fetchVoteStatus, fetchZkStatus, fetchZkScopeStatus, type ZkScopeStatus } from "../lib/api";
 import { isDemoMode } from "../lib/demo";
 import { colors } from "../theme";
+import { submitZkOptInForBill, submitZkVoteWithPublishedRoot, verifyZkVoteWithPublishedRoot } from "../lib/zkCanaryFlow";
+import { canShowPublicZkVoting, canSubmitPublicZkVote, publicZkVoteScopeForBill } from "../lib/zkPublicVoting";
+import type { ZkServerStatus } from "../lib/zkSemaphoreCore";
 
 type Props = StackScreenProps<RootStackParams, "Vote">;
 
@@ -112,6 +115,12 @@ export default function VoteScreen({ route, navigation }: Props) {
   const [consensusDone, setConsensusDone] = useState(false);
   const [sourceUrl, setSourceUrl] = useState("");
   const [sourceKind, setSourceKind] = useState<"official" | "forum" | "page" | "none">("none");
+  const [zkStatus, setZkStatus] = useState<ZkServerStatus | null>(null);
+  const [zkScopeStatus, setZkScopeStatus] = useState<ZkScopeStatus | null>(null);
+  const [zkOptedIn, setZkOptedIn] = useState(false);
+  const [zkVerifiedChoice, setZkVerifiedChoice] = useState<string | null>(null);
+  const [zkBusy, setZkBusy] = useState<"opt-in" | "verify" | "vote" | null>(null);
+  const [zkResult, setZkResult] = useState<{ ok: boolean; title: string; detail: string } | null>(null);
 
   React.useEffect(() => {
     const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
@@ -143,6 +152,20 @@ export default function VoteScreen({ route, navigation }: Props) {
           setIsCorrected(voteStatus.is_correction);
           if (voteStatus.vote) setSelected(voteStatus.vote);
         }
+        fetchZkStatus()
+          .then((status) => {
+            if (mounted) setZkStatus(status);
+          })
+          .catch(() => {
+            if (mounted) setZkStatus(null);
+          });
+        fetchZkScopeStatus(publicZkVoteScopeForBill(billId))
+          .then((status) => {
+            if (mounted) setZkScopeStatus(status);
+          })
+          .catch(() => {
+            if (mounted) setZkScopeStatus(null);
+          });
       } catch {
         // Detail and vote-status failures must not block the screen.
       } finally {
@@ -154,6 +177,122 @@ export default function VoteScreen({ route, navigation }: Props) {
     })();
     return () => { mounted = false; };
   }, [billId]);
+
+  function shortValue(value: string): string {
+    if (value.length <= 18) return value;
+    return `${value.slice(0, 10)}...${value.slice(-6)}`;
+  }
+
+  async function handleZkOptIn() {
+    if (zkBusy) return;
+    Alert.alert(
+      "Semaphore ZK",
+      "Η προαιρετική ZK διαδρομή θα κλειδώσει την κανονική ψήφο για αυτό το θέμα, ώστε να μην υπάρξει διπλή ψήφος. Συνέχεια;",
+      [
+        { text: "Άκυρο", style: "cancel" },
+        {
+          text: "Συνέχεια",
+          style: "destructive",
+          onPress: async () => {
+            setZkBusy("opt-in");
+            setZkResult(null);
+            try {
+              const result = await submitZkOptInForBill(billId);
+              const scopeStatus = await fetchZkScopeStatus(publicZkVoteScopeForBill(billId)).catch(() => null);
+              setZkOptedIn(true);
+              setZkScopeStatus(scopeStatus);
+              setZkVerifiedChoice(null);
+              setZkResult({
+                ok: true,
+                title: "ZK opt-in ολοκληρώθηκε",
+                detail: `commitment ${shortValue(result.commitment)} · id ${result.response.commitment_id}. Η κανονική ψήφος κλειδώθηκε για αυτό το θέμα.`,
+              });
+            } catch (error) {
+              setZkResult({
+                ok: false,
+                title: "ZK opt-in απέτυχε",
+                detail: error instanceof Error ? error.message : "unknown error",
+              });
+            } finally {
+              setZkBusy(null);
+            }
+          },
+        },
+      ],
+    );
+  }
+
+  async function handleZkVerify(choice: string) {
+    if (zkBusy || !canSubmitPublicZkVote(zkScopeStatus)) return;
+    setZkBusy("verify");
+    setZkResult(null);
+    setZkVerifiedChoice(null);
+    try {
+      const result = await verifyZkVoteWithPublishedRoot({
+        voteScopeId: publicZkVoteScopeForBill(billId),
+        voteCommitment: choice,
+      });
+      const mutationsRejected = Object.values(result.mutations).every((mutation) => mutation.proof_verified === false);
+      const ok = result.real.proof_verified === true && mutationsRejected;
+      setZkVerifiedChoice(ok ? choice : null);
+      setZkResult({
+        ok,
+        title: ok ? "ZK proof verification πέρασε" : "ZK proof verification απέτυχε",
+        detail: `real=${String(result.real.proof_verified)} · mutated=${mutationsRejected ? "rejected" : "accepted"} · members=${result.groupSize}`,
+      });
+    } catch (error) {
+      setZkResult({
+        ok: false,
+        title: "ZK proof verification απέτυχε",
+        detail: error instanceof Error ? error.message : "unknown error",
+      });
+    } finally {
+      setZkBusy(null);
+    }
+  }
+
+  async function handleZkVote(choice: string) {
+    if (zkBusy || zkVerifiedChoice !== choice || !canSubmitPublicZkVote(zkScopeStatus)) return;
+    Alert.alert(
+      "Semaphore ZK",
+      `Θα υποβληθεί ανώνυμη ZK ψήφος: ${choice}. Συνέχεια;`,
+      [
+        { text: "Άκυρο", style: "cancel" },
+        {
+          text: "Υποβολή",
+          style: "destructive",
+          onPress: async () => {
+            setZkBusy("vote");
+            setZkResult(null);
+            try {
+              const result = await submitZkVoteWithPublishedRoot({
+                voteScopeId: publicZkVoteScopeForBill(billId),
+                voteCommitment: choice,
+              });
+              setHasVoted(true);
+              setSelected(choice);
+              setZkResult({
+                ok: result.accepted,
+                title: result.accepted ? "ZK ψήφος έγινε αποδεκτή" : "ZK ψήφος δεν έγινε αποδεκτή",
+                detail: `receipt ${result.receipt_id} · arweave_pending=${String(result.arweave_pending)} · verifier ${result.verifier_version}`,
+              });
+              Alert.alert("Επιτυχία ✓", "Η ανώνυμη ZK ψήφος καταγράφηκε.", [
+                { text: "Αποτελέσματα", onPress: () => navigation.replace("Result", { billId, billTitle, fromVote: true }) },
+              ]);
+            } catch (error) {
+              setZkResult({
+                ok: false,
+                title: "ZK ψήφος απέτυχε",
+                detail: error instanceof Error ? error.message : "unknown error",
+              });
+            } finally {
+              setZkBusy(null);
+            }
+          },
+        },
+      ],
+    );
+  }
 
   async function handleVote(choice: string) {
     setSelected(choice);
@@ -270,6 +409,14 @@ export default function VoteScreen({ route, navigation }: Props) {
     : "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα.";
   const summaryText = summary || (canUsePillAsSummary ? billPill : "") || summaryFallback;
   const statusNotice = billLoaded && !showVoteControls ? votingStatusNotice(billStatus, billSource) : null;
+  const showPublicZkVoting = canShowPublicZkVoting({
+    serverStatus: zkStatus,
+    scopeStatus: zkScopeStatus,
+    billStatus,
+    billSource,
+    billLoaded,
+  });
+  const publicZkVoteReady = canSubmitPublicZkVote(zkScopeStatus);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -440,6 +587,63 @@ export default function VoteScreen({ route, navigation }: Props) {
         </View>
       )}
 
+      {showPublicZkVoting && (
+        <View style={styles.zkCard}>
+          <Text style={styles.zkTitle}>Semaphore ZK Pilot</Text>
+          <Text style={styles.zkBody}>
+            Προαιρετική ανώνυμη ψήφος για αυτό το θέμα. Μετά το ZK opt-in η κανονική
+            ψήφος κλειδώνει για το ίδιο θέμα, ώστε να μη γίνει διπλή ψήφος.
+          </Text>
+          {!publicZkVoteReady && (
+            <Text style={styles.zkHint}>
+              Μετά το opt-in θα δημοσιευτεί νέος ZK root για αυτό το θέμα πριν ενεργοποιηθεί η ανώνυμη ψήφος.
+            </Text>
+          )}
+          <TouchableOpacity
+            style={[styles.secondaryAction, (zkOptedIn || zkBusy !== null) && styles.voteButtonDisabled]}
+            onPress={handleZkOptIn}
+            disabled={zkOptedIn || zkBusy !== null}
+          >
+            <Text style={styles.secondaryActionText}>
+              {zkBusy === "opt-in" ? "ZK opt-in..." : zkOptedIn ? "ZK opt-in ενεργό" : "1. ZK opt-in"}
+            </Text>
+          </TouchableOpacity>
+          <View style={styles.zkChoices}>
+            {VOTE_OPTIONS.map((opt) => (
+              <View key={opt.key} style={styles.zkChoiceRow}>
+                <Text style={styles.zkChoiceLabel}>{opt.icon} {opt.label}</Text>
+                <View style={styles.zkChoiceActions}>
+                  <TouchableOpacity
+                    style={[styles.zkSmallButton, (!zkOptedIn || !publicZkVoteReady || zkBusy !== null) && styles.voteButtonDisabled]}
+                    onPress={() => handleZkVerify(opt.key)}
+                    disabled={!zkOptedIn || !publicZkVoteReady || zkBusy !== null}
+                  >
+                    <Text style={styles.zkSmallButtonText}>
+                      {zkBusy === "verify" ? "..." : "Verify"}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.zkSmallButton, styles.zkSubmitButton, (zkVerifiedChoice !== opt.key || !publicZkVoteReady || zkBusy !== null) && styles.voteButtonDisabled]}
+                    onPress={() => handleZkVote(opt.key)}
+                    disabled={zkVerifiedChoice !== opt.key || !publicZkVoteReady || zkBusy !== null}
+                  >
+                    <Text style={styles.zkSubmitText}>
+                      {zkBusy === "vote" ? "..." : "Vote"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+          {zkResult && (
+            <View style={[styles.zkResult, zkResult.ok ? styles.zkResultOk : styles.zkResultFail]}>
+              <Text style={styles.zkResultTitle}>{zkResult.title}</Text>
+              <Text style={styles.zkResultText}>{zkResult.detail}</Text>
+            </View>
+          )}
+        </View>
+      )}
+
       {/* Consensus Slider for OPEN_END Bills */}
       {billStatus === "OPEN_END" && !consensusDone && (
         <View style={{ backgroundColor: "#faf5ff", borderRadius: 12, padding: 16, marginTop: 24, borderWidth: 1, borderColor: "#a855f7" }}>
@@ -560,4 +764,30 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 8, color: colors.textSecondary },
   resultsLink: { marginTop: 32, alignItems: "center" },
   resultsLinkText: { color: colors.primary, fontSize: 14 },
+  zkCard: {
+    backgroundColor: "#f5f3ff",
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: "#8b5cf6",
+  },
+  zkTitle: { color: "#5b21b6", fontSize: 15, fontWeight: "900", marginBottom: 8 },
+  zkBody: { color: "#6d28d9", fontSize: 12, lineHeight: 18, marginBottom: 12 },
+  zkHint: { color: "#6d28d9", fontSize: 11, lineHeight: 16, marginBottom: 12, fontWeight: "700" },
+  secondaryAction: { borderColor: "#7c3aed", borderWidth: 1, borderRadius: 10, padding: 12, alignItems: "center", marginBottom: 12 },
+  secondaryActionText: { color: "#6d28d9", fontWeight: "900", fontSize: 13 },
+  zkChoices: { gap: 10 },
+  zkChoiceRow: { backgroundColor: "#faf5ff", borderRadius: 10, padding: 10, borderWidth: 1, borderColor: "#ddd6fe" },
+  zkChoiceLabel: { color: "#4c1d95", fontWeight: "800", fontSize: 13, marginBottom: 8 },
+  zkChoiceActions: { flexDirection: "row", gap: 8 },
+  zkSmallButton: { flex: 1, borderColor: "#7c3aed", borderWidth: 1, borderRadius: 8, padding: 10, alignItems: "center" },
+  zkSmallButtonText: { color: "#6d28d9", fontWeight: "800", fontSize: 12 },
+  zkSubmitButton: { backgroundColor: "#7c3aed" },
+  zkSubmitText: { color: "#fff", fontWeight: "800", fontSize: 12 },
+  zkResult: { marginTop: 12, borderRadius: 10, padding: 12, borderWidth: 1 },
+  zkResultOk: { backgroundColor: "#f0fdf4", borderColor: "#22c55e" },
+  zkResultFail: { backgroundColor: "#fef2f2", borderColor: "#ef4444" },
+  zkResultTitle: { color: colors.text, fontSize: 13, fontWeight: "900", marginBottom: 4 },
+  zkResultText: { color: colors.textSecondary, fontSize: 12, lineHeight: 18 },
 });

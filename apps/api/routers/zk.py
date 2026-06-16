@@ -141,6 +141,24 @@ class ZkStatusResponse(BaseModel):
     message_el: str
 
 
+class ZkScopeStatusResponse(BaseModel):
+    vote_scope_id: str
+    scope_type: str
+    production_enabled: bool
+    verifier_enabled: bool
+    opt_in_enabled: bool
+    canary_enabled: bool
+    allowlisted: bool
+    global_rollout_enabled: bool
+    root_published: bool
+    active_commitments: int
+    can_opt_in: bool
+    can_vote: bool
+    merkle_tree_depth: int
+    verifier_version: str
+    message_el: str
+
+
 class ZkCanaryPreflightFlags(BaseModel):
     production_enabled: bool
     opt_in_enabled: bool
@@ -423,6 +441,69 @@ async def get_zk_status() -> ZkStatusResponse:
             "Η παραγωγική ZK ψηφοφορία είναι ενεργή."
             if production_enabled
             else "Η παραγωγική ZK ψηφοφορία δεν είναι ενεργή ακόμη."
+        ),
+    )
+
+
+@router.get("/scopes/{vote_scope_id}/status", response_model=ZkScopeStatusResponse)
+async def get_zk_scope_status(
+    vote_scope_id: str = FastAPIPath(
+        ...,
+        min_length=6,
+        max_length=128,
+        pattern=r"^(bill|municipal|regional):[^/]{1,110}$",
+    ),
+    db: AsyncSession = Depends(get_db),
+) -> ZkScopeStatusResponse:
+    scope = validate_vote_scope_id(vote_scope_id)
+    scope_type, _scope_id = scope.split(":", 1)
+    await _ensure_scope_public_or_safe_canary(db, scope, require_existing_bill=(scope_type == "bill"))
+
+    production_enabled = zk_voting_enabled()
+    opt_in_enabled = zk_opt_in_enabled()
+    canary_enabled = production_enabled and _env_enabled(ZK_CANARY_ENABLED_ENV)
+    global_rollout = _global_rollout_enabled()
+    allowlisted = scope in _production_scope_allowlist()
+
+    active_commitments = await _count_rows(
+        db,
+        select(func.count(ZkIdentityCommitment.id)).where(
+            ZkIdentityCommitment.vote_scope_id == scope,
+            ZkIdentityCommitment.status == "ACTIVE",
+        ),
+    )
+    root_result = await db.execute(
+        select(ZkMerkleRoot)
+        .where(
+            ZkMerkleRoot.vote_scope_id == scope,
+            ZkMerkleRoot.status == "OPEN",
+        )
+        .order_by(ZkMerkleRoot.id.desc())
+        .limit(1)
+    )
+    root_published = root_result.scalar_one_or_none() is not None
+    scope_allowed = (allowlisted or global_rollout) and not canary_enabled
+    can_opt_in = production_enabled and opt_in_enabled and scope_allowed
+    can_vote = can_opt_in and root_published
+    return ZkScopeStatusResponse(
+        vote_scope_id=scope,
+        scope_type=scope_type,
+        production_enabled=production_enabled,
+        verifier_enabled=production_enabled,
+        opt_in_enabled=opt_in_enabled,
+        canary_enabled=canary_enabled,
+        allowlisted=allowlisted,
+        global_rollout_enabled=global_rollout,
+        root_published=root_published,
+        active_commitments=active_commitments,
+        can_opt_in=can_opt_in,
+        can_vote=can_vote,
+        merkle_tree_depth=SEMAPHORE_MERKLE_TREE_DEPTH,
+        verifier_version="py-ecc-groth16-bn254:v1:semaphore-v4-depth16",
+        message_el=(
+            "Η προαιρετική ZK διαδρομή είναι διαθέσιμη για αυτό το θέμα."
+            if can_opt_in
+            else "Η προαιρετική ZK διαδρομή δεν είναι διαθέσιμη για αυτό το θέμα."
         ),
     )
 

@@ -120,6 +120,28 @@ export async function fetchZkStatus(): Promise<ZkServerStatus> {
   return request<ZkServerStatus>("/api/v1/zk/status");
 }
 
+export interface ZkScopeStatus {
+  vote_scope_id: string;
+  scope_type: string;
+  production_enabled: boolean;
+  verifier_enabled: boolean;
+  opt_in_enabled: boolean;
+  canary_enabled: boolean;
+  allowlisted: boolean;
+  global_rollout_enabled: boolean;
+  root_published: boolean;
+  active_commitments: number;
+  can_opt_in: boolean;
+  can_vote: boolean;
+  merkle_tree_depth: number;
+  verifier_version: string;
+  message_el: string;
+}
+
+export async function fetchZkScopeStatus(voteScopeId: string): Promise<ZkScopeStatus> {
+  return request<ZkScopeStatus>(`/api/v1/zk/scopes/${encodeURIComponent(voteScopeId)}/status`);
+}
+
 export interface ZkOptInResponse {
   status: string;
   vote_scope_id: string;
