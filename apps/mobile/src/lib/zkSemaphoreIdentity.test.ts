@@ -2,6 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const secureStore = vi.hoisted(() => new Map<string, string>());
 const cryptoState = vi.hoisted(() => ({ calls: 0 }));
+const assertValidSecureStoreKey = vi.hoisted(() => (key: string) => {
+  if (!key || !/^[A-Za-z0-9._-]+$/.test(key)) {
+    throw new Error(`Invalid key provided to SecureStore: ${key}`);
+  }
+});
 
 vi.mock("expo-crypto", () => ({
   getRandomBytes: vi.fn((length: number) => {
@@ -12,12 +17,17 @@ vi.mock("expo-crypto", () => ({
 }));
 
 vi.mock("expo-secure-store", () => ({
-  getItemAsync: vi.fn((key: string) => Promise.resolve(secureStore.get(key) ?? null)),
+  getItemAsync: vi.fn((key: string) => {
+    assertValidSecureStoreKey(key);
+    return Promise.resolve(secureStore.get(key) ?? null);
+  }),
   setItemAsync: vi.fn((key: string, value: string) => {
+    assertValidSecureStoreKey(key);
     secureStore.set(key, value);
     return Promise.resolve();
   }),
   deleteItemAsync: vi.fn((key: string) => {
+    assertValidSecureStoreKey(key);
     secureStore.delete(key);
     return Promise.resolve();
   }),
@@ -67,8 +77,8 @@ describe("zkSemaphoreIdentity", () => {
     expect(bytesToHex(first)).toBe("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20");
     expect(bytesToHex(second)).not.toBe(bytesToHex(first));
     expect(bytesToHex(firstAgain)).toBe(bytesToHex(first));
-    expect(secureStore.has("ekklesia_zk_semaphore_private_key_v1:bill_GR-1")).toBe(true);
-    expect(secureStore.has("ekklesia_zk_semaphore_private_key_v1:bill_GR-2")).toBe(true);
+    expect(secureStore.has("ekklesia_zk_semaphore_private_key_v1_bill_GR-1")).toBe(true);
+    expect(secureStore.has("ekklesia_zk_semaphore_private_key_v1_bill_GR-2")).toBe(true);
   });
 
   it("exposes only the commitment/member representation for opt-in", async () => {
@@ -95,7 +105,7 @@ describe("zkSemaphoreIdentity", () => {
 
     await clearZkSemaphoreIdentity("bill:GR-1");
 
-    expect(secureStore.has("ekklesia_zk_semaphore_private_key_v1:bill_GR-1")).toBe(false);
-    expect(secureStore.has("ekklesia_zk_semaphore_private_key_v1:bill_GR-2")).toBe(true);
+    expect(secureStore.has("ekklesia_zk_semaphore_private_key_v1_bill_GR-1")).toBe(false);
+    expect(secureStore.has("ekklesia_zk_semaphore_private_key_v1_bill_GR-2")).toBe(true);
   });
 });

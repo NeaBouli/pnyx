@@ -15,7 +15,7 @@ export interface StoredZkSemaphoreIdentity {
 function scopedSemaphoreKey(voteScopeId?: string): string {
   if (!voteScopeId) return ZK_SEMAPHORE_PRIVATE_KEY;
   const safeScope = voteScopeId.trim().replace(/[^A-Za-z0-9._-]/g, "_");
-  return `${ZK_SEMAPHORE_PRIVATE_KEY}:${safeScope}`;
+  return `${ZK_SEMAPHORE_PRIVATE_KEY}_${safeScope}`;
 }
 
 export async function getOrCreateZkSemaphorePrivateKey(voteScopeId?: string): Promise<Uint8Array> {
