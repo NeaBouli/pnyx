@@ -10853,3 +10853,21 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `cd apps/web && npx tsc --noEmit --incremental false`: PASS.
   - `cd apps/api && /tmp/pnyx-api-test-venv/bin/python -m pytest tests/routers/test_zk_verify_api.py tests/services/test_zk_merkle_root.py tests/services/test_zk_group_registry.py tests/services/test_zk_tier_lock.py tests/services/test_zk_arweave_payload.py tests/services/test_zk_vote_aggregation.py tests/test_voting.py -q`: PASS, 115 passed / 2 xfailed.
 - No server flags changed. No DB mutation. No deploy in this step.
+
+## 2026-06-16 — Codex: API dependency CVE bump after GH#112 review
+
+- GitHub reported high pip alerts after the GH#112 review commit:
+  - `cryptography < 48.0.1`
+  - `python-multipart < 0.0.30 / < 0.0.31`
+- Fix:
+  - `apps/api/requirements.txt`: `cryptography==48.0.1`, `python-multipart==0.0.31`.
+- Verification:
+  - `pip check`: PASS.
+  - `python -m pip_audit -r apps/api/requirements.txt`: PASS, no known vulnerabilities.
+  - API focused suite including ZK/voting/startup security: PASS, 125 passed / 2 xfailed.
+  - GitHub Security Audit `27647933371`: PASS.
+  - GitHub CI `27647933375`: PASS.
+- Remaining Dependabot state after dependency graph refresh:
+  - 2 moderate `js-yaml` alerts in React Native/tooling package-lock files.
+  - No high/critical alerts.
+- No runtime code path changed. No deploy. No ZK flags changed.
