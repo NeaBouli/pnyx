@@ -173,7 +173,7 @@
 - [ ] NEA-65: Off-Site Backup — nach erster Spende
 - [ ] NEA-73: Embed-System — Low Prio
 - [ ] GH#111 / NEA-335 follow-up: Nullifier v2 Production Activation — scaffold deployed and production preflight green, but production remains v1 until an explicit operator canary with a real HLR/identity re-registration path proves same-row v1->v2 migration; checklist in `docs/adr/ADR-004-nullifier-kdf-migration.md`
-- [x] GH#112 / ZK V2: Hidden S10 canary executed successfully (`bill:ZK-CANARY-001`, vC38). Production ZK remains OFF; global rollout needs separate security review/publication policy.
+- [ ] GH#112 / ZK V2 first public scoped rollout — hidden S10 canary passed; security review passed for scoped rollout; production preflight/runbook exists. Next: choose exactly one eligible public bill scope (`ACTIVE`, `WINDOW_24H`, or accepted `OPEN_END`), backup, enable scoped flags only, no global rollout.
 - [x] vC39 Play/direct release: AAB/APK built, hashes verified, landing APK/hash live, S10 update/install smoke test passed.
 
 ## Done (Session 13.05.2026)

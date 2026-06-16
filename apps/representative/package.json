@@ -25,6 +25,7 @@
     "shell-quote": "1.8.4",
     "postcss": "8.5.15",
     "uuid": "11.1.1",
+    "js-yaml": "4.2.0",
     "@babel/core": "7.29.7",
     "tar": "7.5.16",
     "@react-native/dev-middleware": {

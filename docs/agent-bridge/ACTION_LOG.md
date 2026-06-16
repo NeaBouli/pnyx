@@ -10903,3 +10903,28 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - ZK safety boundary:
   - No server ZK flags changed.
   - Production ZK remains scoped/gated; global rollout remains disabled.
+
+## 2026-06-17 — Codex: GH#112 public ZK rollout preflight + js-yaml remediation
+
+- Clarified live ZK state:
+  - `GET https://api.ekklesia.gr/api/v1/zk/status`: production/verifier/opt-in/canary/root/Arweave/global flags all `false`.
+  - Hidden S10 canary proof path is rolled out and proven; public Production ZK voting is not globally active.
+- Added read-only public rollout preflight:
+  - `apps/api/scripts/preflight_zk_public_scope.py`
+  - `apps/api/tests/services/test_zk_public_scope_preflight.py`
+  - `docs/agent-bridge/GH112_PUBLIC_SCOPED_ROLLOUT_RUNBOOK.md`
+- Preflight policy:
+  - Allows only explicit public bill scopes for first rollout.
+  - Blocks `ANNOUNCED`, `DEMO-*`, `ZK_CANARY`, `admin_hidden=true`, non-Parliament sources, and non-first-rollout governance scopes.
+  - Warnings include missing Arweave archive, missing forum topic, hidden active results, or existing ZK state.
+- Live candidate finding:
+  - Newest real Bouli bills are currently `ANNOUNCED`; do not activate them for ZK.
+  - Existing real `OPEN_END` Parliament bills are technically voteable and may be considered if Gio accepts that as the first public scoped rollout target.
+- Dependabot/js-yaml:
+  - Added `js-yaml: 4.2.0` overrides in `apps/mobile` and `apps/representative`.
+  - Refreshed only package locks with scripts disabled.
+  - Local locks now contain `js-yaml@4.2.0`; local npm audits report 0 vulnerabilities.
+- F-Droid !38007:
+  - GitLab API check: MR remains open, mergeable, no conflicts, blocking discussions resolved.
+  - Latest MR pipeline `2570810919` is success; waiting on fdroiddata maintainer.
+- No production ZK flags changed. No server deploy. No DB mutation.
