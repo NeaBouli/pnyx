@@ -58,6 +58,16 @@ SQL
 
 Expected before first activation: KDF v1/unset, monitor clean, `with_v2=0`, `version_v2=0`.
 
+Structured read-only preflight helper:
+
+```bash
+cd /opt/ekklesia/app/infra/docker
+docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.yml exec -T api \
+  python scripts/gh111_nullifier_v2_canary_check.py snapshot --preflight \
+  --output /tmp/gh111_before.json
+docker cp ekklesia-api:/tmp/gh111_before.json /opt/ekklesia/backups/gh111_before.json
+```
+
 ## Fresh Backup
 
 Use a fresh backup immediately before the real canary, even though an older preflight backup exists:
@@ -144,6 +154,24 @@ Always run:
 
 ```bash
 docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.yml exec -T monitor python /app/monitor.py --once
+```
+
+Then run the structured post-check. Choose exactly one mode:
+
+```bash
+# Existing-phone re-registration:
+docker cp /opt/ekklesia/backups/gh111_before.json ekklesia-api:/tmp/gh111_before.json
+docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.yml exec -T api \
+  python scripts/gh111_nullifier_v2_canary_check.py compare \
+  --before /tmp/gh111_before.json \
+  --mode existing-reregistration
+
+# New-phone registration:
+docker cp /opt/ekklesia/backups/gh111_before.json ekklesia-api:/tmp/gh111_before.json
+docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.yml exec -T api \
+  python scripts/gh111_nullifier_v2_canary_check.py compare \
+  --before /tmp/gh111_before.json \
+  --mode new-registration
 ```
 
 ## Rollback

@@ -53,6 +53,10 @@ CREATE TABLE IF NOT EXISTS identity_records (
     age_group TEXT,
     region TEXT,
     gender_code TEXT,
+    periferia_id INTEGER,
+    dimos_id INTEGER,
+    region_locked BOOLEAN DEFAULT 0 NOT NULL,
+    source TEXT DEFAULT 'SMS' NOT NULL,
     status TEXT DEFAULT 'ACTIVE' NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     revoked_at TIMESTAMP

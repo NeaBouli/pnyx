@@ -1,5 +1,26 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 operator check hardening
+
+- Context:
+  - GH#111 still requires a real phone/HLR verification window before `IDENTITY_NULLIFIER_KDF_VERSION=v2` can be considered complete.
+  - Live preflight stayed clean: production KDF unset/v1, 17 active identities, `nullifier_hash_v2=0`, monitor PASS.
+- Added:
+  - `apps/api/scripts/gh111_nullifier_v2_canary_check.py` read-only snapshot/compare helper.
+  - `apps/api/tests/services/test_gh111_nullifier_v2_canary_check.py` for preflight and before/after canary verdicts.
+  - `aiosqlite==0.22.1` so the focused `/identity/verify` endpoint test runs in CI instead of skipping.
+- Fixed:
+  - `test_identity_nullifier_v2_endpoint.py` SQLite schema updated for current `IdentityRecord` fields (`periferia_id`, `dimos_id`, `region_locked`, `source`).
+  - `test_identity.py` now mocks HLR usage counting for the invalid-number test, so the test checks identity validation rather than local Redis availability.
+- Verification:
+  - Focused GH#111 tests: PASS, 8 passed.
+  - Identity suite: PASS, 24 passed.
+  - `python3 -m py_compile` + `git diff --check`: PASS.
+  - `pip-audit -r apps/api/requirements.txt`: PASS, no known vulnerabilities.
+- Safety boundary:
+  - No production env flip, no identity mutation, no KDF activation.
+  - New helper is read-only and only reduces operator error for the later real HLR canary.
+
 ## 2026-06-17 — Codex: vC45 / v1.0.16 Android release build
 
 - Context:
