@@ -1,5 +1,24 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 v2 health diagnosis + runbook hardening
+
+- Finding:
+  - Previous GH#111 activation attempt had stopped before HLR because immediate external `/health` returned HTTP 500 after flipping `IDENTITY_NULLIFIER_KDF_VERSION=v2`; rollback to v1 recovered.
+- Diagnosis:
+  - Production API container one-off process with `IDENTITY_NULLIFIER_KDF_VERSION=v2` confirms `argon2` is installed and `generate_nullifier_hash_v2()` works.
+  - Full FastAPI lifespan probe in the production API image with `IDENTITY_NULLIFIER_KDF_VERSION=v2` returns `/health` 200 and `/api/v1/app/version` 200.
+  - Evidence points to rebuild/readiness timing around the previous live flip, not a v2 KDF code failure.
+- Changed:
+  - Added regression coverage: `test_health_lifespan_starts_with_identity_kdf_v2`.
+  - Hardened `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md` with an isolated v2 lifespan probe before any production flag mutation.
+  - Replaced the single immediate post-rebuild health check with a retry loop and explicit rollback boundary.
+- Verification:
+  - `PYTHONPATH=apps/api:packages/crypto /tmp/pnyx-api-test-venv/bin/pytest apps/api/tests/test_health.py -q`: PASS, 3 passed.
+  - `PYTHONPATH=apps/api:packages/crypto /tmp/pnyx-api-test-venv/bin/pytest apps/api/tests/test_security_startup.py apps/api/tests/test_identity_nullifier_kdf.py apps/api/tests/test_identity_nullifier_v2_endpoint.py -q`: PASS, 33 passed.
+- Boundary:
+  - Production remains `IDENTITY_NULLIFIER_KDF_VERSION=v1`.
+  - No HLR request, no identity mutation, no v2 activation window completed yet.
+
 ## 2026-06-17 — Codex: vC48 / v1.0.19 Android release build
 
 - Scope:

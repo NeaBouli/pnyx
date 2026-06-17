@@ -109,7 +109,27 @@ sha256sum "$BACKUP_DIR/identity_records_audit_alembic.sql"
 ## Activation Window
 
 1. Make sure Gio has the S10, the app is installed, and a real Greek mobile number can be entered in `VerifyScreen`.
-2. Set the production env flag:
+2. Before changing production flags, prove the current API image can boot its
+   app lifespan under `IDENTITY_NULLIFIER_KDF_VERSION=v2` in an isolated
+   process. This does **not** mutate `/opt/ekklesia/.env.production`:
+
+```bash
+cd /opt/ekklesia/app/infra/docker
+docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.yml exec -T api \
+  env PYTHONPATH=/app:/packages/crypto IDENTITY_NULLIFIER_KDF_VERSION=v2 python - <<'PY'
+from fastapi.testclient import TestClient
+import main
+
+with TestClient(main.app) as c:
+    r = c.get("/health")
+    r.raise_for_status()
+    print(r.json()["status"])
+PY
+```
+
+Abort before the flag flip if this probe fails.
+
+3. Set the production env flag:
 
 ```bash
 cd /opt/ekklesia/app
@@ -134,15 +154,28 @@ cd /opt/ekklesia/app/infra/docker
 docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.yml up -d --build api
 ```
 
-3. Verify API startup:
+4. Verify API startup with retry. Do not treat a single immediate 500 during
+   container replacement as success or failure; wait for a stable external
+   health response:
 
 ```bash
+for i in $(seq 1 45); do
+  if curl -fsS https://api.ekklesia.gr/health >/dev/null; then
+    echo "health-ok"
+    break
+  fi
+  sleep 2
+done
+
 curl -fsS https://api.ekklesia.gr/health >/dev/null
 docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.yml logs --tail=80 api | grep -iE 'IDENTITY_NULLIFIER|argon2|error|traceback' || true
 ```
 
-4. On S10, open the app and run real phone verification through `VerifyScreen`.
-5. Record whether this is:
+If the final health check still fails, run the rollback section immediately.
+Do not ask Gio to perform HLR verification while health is unstable.
+
+5. On S10, open the app and run real phone verification through `VerifyScreen`.
+6. Record whether this is:
    - existing-phone re-registration, or
    - new-phone registration.
 

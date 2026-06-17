@@ -28,9 +28,10 @@ Current state:
 - vC48 keeps the controlled Profile -> Verify entrypoint for a real HLR re-verification canary; it does NOT activate Nullifier v2 by itself.
 - GH#111 preflight on 2026-06-17: production KDF still v1; `identity_records` 17 total / 17 active / 0 v2; `active_with_v2=0`, `v2_without_version=0`, `version_without_v2=0`, `malformed_v2=0`; Argon2id v2 helper works in API container at about 131 ms per derivation.
 - GH#111 fresh preflight backup exists: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_042119` (snapshot/report/dump SHA256 recorded in `ACTION_LOG.md`).
-- GH#111 runbook exists: `docs/agent-bridge/GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`.
+- GH#111 runbook exists: `docs/agent-bridge/GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`; it now includes an isolated v2 lifespan probe before any env flip and a retrying external health check after API rebuild.
 - GH#111 focused tests exist: `tests/test_identity_nullifier_v2_endpoint.py` proves same-row v1->v2 migration, Redis in-flight locking, and atomic row-locked existing-identity re-registration with mocked HLR; `scripts/gh111_nullifier_v2_canary_check.py` snapshots/compares real before/after canary counts and v2 invariants; latest focused set passed `37 passed`.
 - GH#111 S10 UI path was verified without mutation: Profile -> `Επαλήθευση / Νέο κλειδί` opens VerifyScreen with warning; no phone submitted, no HLR call, DB remains 17 active / 0 v2 / KDF unset.
+- GH#111 v2 health diagnosis: production API image passes one-off Argon2/v2 generation and full FastAPI lifespan `/health` under `IDENTITY_NULLIFIER_KDF_VERSION=v2`; previous live 500 is treated as rebuild/readiness timing until contradicted.
 - Disk-critical alert was resolved by pruning Docker build cache only: `/` went from 94% used / 4.4 GB free to 77% used / 17 GB free; monitor then passed 17/17.
 
 If asked to continue:
@@ -41,4 +42,4 @@ If asked to continue:
 5. Keep production ZK scoped by exact allowlist; do not wildcard scopes.
 6. GH#111 Nullifier v2 is a separate canary with HLR/identity re-registration risk; do not mix it into GH#112 rollout work.
 7. Do not activate `IDENTITY_NULLIFIER_KDF_VERSION=v2` from DB/admin-test data alone. The proof requires a real phone/HLR verify or re-registration path so same-row v1->v2 migration can be observed. Follow `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`.
-8. During the real GH#111 window, use `python scripts/gh111_nullifier_v2_canary_check.py snapshot --preflight --output /tmp/gh111_before_snapshot.json --report-output /tmp/gh111_preflight_report.json` before the flag flip and `compare --before /tmp/gh111_before_snapshot.json --mode existing-reregistration|new-registration --report-output /tmp/gh111_compare_report.json` after the HLR step.
+8. During the real GH#111 window, run the runbook's v2 lifespan probe before the flag flip, then use `python scripts/gh111_nullifier_v2_canary_check.py snapshot --preflight --output /tmp/gh111_before_snapshot.json --report-output /tmp/gh111_preflight_report.json` before the flag flip and `compare --before /tmp/gh111_before_snapshot.json --mode existing-reregistration|new-registration --report-output /tmp/gh111_compare_report.json` after the HLR step.

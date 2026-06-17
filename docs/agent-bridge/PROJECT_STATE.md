@@ -23,7 +23,7 @@
 - **Alembic:** `u401a2b3c4d5` (ZK receipt `vote_commitment` NOT NULL, head)
 - **Disk:** 2026-06-17 build-cache cleanup resolved `disk_critical` alert; `/` now 77% used / 17 GB free; monitor PASS.
 - **GH#111 Backup:** latest fresh preflight backup `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_042119`; KDF remains v1, no identity mutation.
-- **GH#111 Runbook/Test:** `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md` + read-only `gh111_nullifier_v2_canary_check.py`; endpoint/evaluator regression proves v2 same-row migration with mocked HLR, Redis in-flight lock, atomic row-locked existing-identity re-registration, before/after canary verdicts, report artifacts, and v2 invariant counters (`37 passed` focused set).
+- **GH#111 Runbook/Test:** `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md` + read-only `gh111_nullifier_v2_canary_check.py`; endpoint/evaluator regression proves v2 same-row migration with mocked HLR, Redis in-flight lock, atomic row-locked existing-identity re-registration, before/after canary verdicts, report artifacts, and v2 invariant counters. Runbook now includes v2 lifespan probe + retrying health check after the previous pre-HLR 500/readiness abort.
 - **GH#111 S10 UI Path:** Profile -> `Επαλήθευση / Νέο κλειδί` -> VerifyScreen verified on S10 without submit/HLR; vC48 keeps this path, DB invariant remains: 17 active identities, 0 v2 rows, KDF v1/unset, `active_with_v2=0`, malformed/mismatched v2 counters all 0.
 - **F-Droid !38007:** Still open/mergeable on GitLab (checked 2026-06-17); no conflicts, blocking discussions resolved, latest pipeline `2570810919` success; waiting on fdroiddata maintainer merge/re-test.
 - **POLIS Status:** App-internal Create/Vote LIVE
