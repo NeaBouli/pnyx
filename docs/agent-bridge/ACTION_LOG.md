@@ -16,6 +16,13 @@
 - Verification:
   - `python3 -m py_compile apps/api/scripts/gh111_nullifier_v2_canary_check.py`: PASS.
   - Focused GH#111 pytest set: PASS, 23 passed.
+  - API container rebuilt on server with rollback tag `rollback-pre-gh111-report-output-retry-20260617-031152`.
+  - Live API health: PASS.
+  - Live helper `snapshot --preflight --report-output`: PASS, `preflight_blockers=[]`, `total=17`, `active=17`, `with_v2=0`, `version_v2=0`, `kdf_env=unset`.
+  - Saved live artifacts:
+    - `/opt/ekklesia/backups/gh111_preflight/gh111_before_snapshot_e78cee8_20260617_031234.json`, SHA256 `874c883d00435db3a56e5aadbff379aa13a2d580b6d004cafc8a7db86965e461`.
+    - `/opt/ekklesia/backups/gh111_preflight/gh111_preflight_report_e78cee8_20260617_031234.json`, SHA256 `8788317f5b8be1bbda9ef02299291975ff6c835346399e172fd3082b8e881034`.
+  - Live monitor once after API rebuild: PASS, 17 checks, no alerts.
 - Safety boundary:
   - GH#111 remains open/waiting for an explicit real phone/HLR operator canary.
   - Do not activate `IDENTITY_NULLIFIER_KDF_VERSION=v2` from DB/admin-test data alone.
