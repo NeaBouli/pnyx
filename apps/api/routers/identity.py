@@ -170,19 +170,9 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
     existing = _select_identity_match(matches, nullifier)
 
     if existing and existing.status == KeyStatus.ACTIVE:
-        # Auto-revoke and re-register (user lost their key or reinstalled app)
-        await db.execute(
-            update(IdentityRecord)
-            .where(IdentityRecord.id == existing.id)
-            .values(status=KeyStatus.REVOKED)
-        )
-        await db.commit()
-        # Refresh existing reference
-        result = await db.execute(
-            select(IdentityRecord).where(IdentityRecord.id == existing.id)
-        )
-        existing = result.scalar_one_or_none()
-        logger.info(f"[MOD-01] Auto-revoked existing key for re-registration")
+        # Re-register in one transaction so an interrupted key rotation cannot
+        # leave a valid citizen identity stuck in REVOKED.
+        logger.info("[MOD-01] Re-registering existing active key atomically")
 
     # If v2 matched a legacy row, keep the existing v1 nullifier_hash as the
     # public compatibility anchor for votes/status/downstream tables.

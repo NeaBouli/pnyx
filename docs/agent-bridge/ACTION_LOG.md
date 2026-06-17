@@ -1,5 +1,25 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 atomic re-registration hardening
+
+- Scope:
+  - Hardened the real `/api/v1/identity/verify` re-registration path before the Nullifier v2 canary.
+  - No production env flags changed, no HLR request made, no identity mutation.
+- Risk found:
+  - Existing active identities were temporarily updated to `REVOKED` and committed before the replacement key/v2 fields were written.
+  - A failure between those steps could leave a valid citizen identity stuck in `REVOKED` during the GH#111 real HLR window.
+- Changed:
+  - Existing active identities now re-register atomically in one transaction.
+  - The final successful behavior is unchanged: same row, returned v1 compatibility nullifier, optional v2 fields when KDF is active.
+  - Added regression coverage proving a simulated key-generation failure leaves the existing identity `ACTIVE` with the old public key and no v2 fields.
+  - Updated the GH#111 runbook with the atomicity invariant.
+- Verification:
+  - `python3 -m py_compile apps/api/routers/identity.py apps/api/tests/test_identity_nullifier_v2_endpoint.py`: PASS.
+  - Focused GH#111 pytest set: PASS, 28 passed.
+- Safety boundary:
+  - GH#111 remains open/waiting for an explicit real phone/HLR operator canary.
+  - Do not activate `IDENTITY_NULLIFIER_KDF_VERSION=v2` from DB/admin-test data alone.
+
 ## 2026-06-17 — Codex: GH#111 operator evidence output hardening
 
 - Scope:

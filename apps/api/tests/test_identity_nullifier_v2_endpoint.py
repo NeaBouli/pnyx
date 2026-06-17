@@ -165,6 +165,41 @@ async def test_v2_verify_migrates_existing_v1_identity_same_row(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_existing_identity_stays_active_if_reregistration_key_generation_fails(monkeypatch):
+    monkeypatch.setenv("IDENTITY_NULLIFIER_KDF_VERSION", "v2")
+
+    async with _SessionLocal() as db:
+        await db.execute(
+            text(
+                """
+                INSERT INTO identity_records
+                  (id, nullifier_hash, public_key_hex, status, nullifier_version)
+                VALUES (7, :v1, :pub, 'ACTIVE', 'v1')
+                """
+            ),
+            {"v1": V1, "pub": PUB_OLD},
+        )
+        await db.commit()
+
+    def failing_keypair() -> dict[str, str]:
+        raise RuntimeError("simulated key generation failure")
+
+    monkeypatch.setattr(identity, "generate_keypair", failing_keypair)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        with pytest.raises(RuntimeError, match="simulated key generation failure"):
+            await client.post("/api/v1/identity/verify", json={"phone_number": "+306900000001"})
+
+    rows = await _identity_rows()
+    assert len(rows) == 1
+    assert rows[0]["id"] == 7
+    assert rows[0]["status"] == "ACTIVE"
+    assert rows[0]["public_key_hex"] == PUB_OLD
+    assert rows[0]["nullifier_hash_v2"] is None
+    assert rows[0]["nullifier_version"] == "v1"
+
+
+@pytest.mark.asyncio
 async def test_v2_verify_new_identity_writes_v1_anchor_and_v2_hash(monkeypatch):
     monkeypatch.setenv("IDENTITY_NULLIFIER_KDF_VERSION", "v2")
 

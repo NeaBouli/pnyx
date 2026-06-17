@@ -10,6 +10,8 @@ GH#111 activates the server-side identity nullifier v2 path from ADR-004:
 - v1 compatibility anchor remains `identity_records.nullifier_hash`.
 - v2 adds `identity_records.nullifier_hash_v2` with Argon2id and prefix `v2:`.
 - Existing v1 identities must migrate in the **same DB row** during real HLR re-verification.
+- Existing active identities are re-registered atomically: no intermediate `REVOKED`
+  commit is allowed before the replacement key/v2 fields are written.
 - No phone number is stored.
 
 This is separate from GH#112 ZK voting. Do not mix both rollout windows.
@@ -157,6 +159,7 @@ Expected:
 - `nullifier_hash_v2` is populated and starts with `v2:`,
 - `nullifier_version='v2'`,
 - row is `ACTIVE`,
+- the row was not left `REVOKED` during a partial failure,
 - no duplicate active identity was created for the same phone.
 
 For new-phone registration:
