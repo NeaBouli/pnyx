@@ -25,7 +25,7 @@
 
 ### Release Follow-ups
 - [ ] Future Production Size/R8 Optimization — Play Console warns about size/mapping when R8 is not active.
-  - Current Play/direct build: vC43 / v1.0.14; R8/minify remains OFF, so no `mapping.txt` exists for this artifact.
+  - Current Play/direct build: vC44 / v1.0.15; R8/minify remains OFF, so no `mapping.txt` exists for this artifact.
   - Cause of size: native Semaphore/ZK prover and multi-ABI native libraries.
   - Next pass before Production (not Closed Testing): evaluate ABI restrictions and R8/ProGuard + `mapping.txt`, rebuild, install on S10, verify vote/source/ZK paths.
 
@@ -175,7 +175,7 @@
 - [ ] NEA-73: Embed-System — Low Prio
 - [ ] GH#111 / NEA-335 follow-up: Nullifier v2 Production Activation — scaffold deployed, production preflight green, identity backup exists at `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_004847`, and focused endpoint regression proves same-row v1->v2 migration with mocked HLR. Production remains v1 until an explicit operator canary with a real phone/HLR identity re-registration path is run. Admin-test identities are not sufficient. Runbook: `docs/agent-bridge/GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`; design checklist: `docs/adr/ADR-004-nullifier-kdf-migration.md`.
 - [ ] GH#112 / ZK V2 staged/global follow-up — first public scoped rollout passed for `bill:GR-d4c62ed4`; production ZK remains scoped by exact allowlist; global rollout and ZK Arweave publisher remain OFF pending review.
-- [x] vC43 Play/direct release: AAB/APK built, hashes verified, landing APK/hash live, GitHub latest release updated, S10 public scoped ZK vote passed.
+- [x] vC44 Play/direct release prep: AAB/APK built, hashes verified, S10 install/launch passed; landing/GitHub release deploy pending.
 
 ## Done (Session 13.05.2026)
 - [x] Server CX33 → CX43 Upgrade

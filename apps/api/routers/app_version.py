@@ -8,13 +8,13 @@ from fastapi import APIRouter
 router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
-LATEST_VERSION = "1.3.5"
-LATEST_VERSION_CODE = 21
+LATEST_VERSION = "1.0.15"
+LATEST_VERSION_CODE = 44
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v18 — Ζωντανοί μετρητές, Φίλτρα Φορέων, Κλίμακα Συναίνεσης, Έλεγχος Περιφέρειας"
-RELEASE_NOTES_EN = "v18 — Live stats, Institutional filters, Consensus scale, Region auth checks"
+RELEASE_NOTES_EL = "v1.0.15 — Στοχευμένη ZK ψηφοφορία, βελτιωμένος έλεγχος πηγών και νεότερη έκδοση Android."
+RELEASE_NOTES_EN = "v1.0.15 — Scoped ZK voting, improved source checks, and latest Android release metadata."
 
 FDROID_URL = ""  # Not live yet — MR !38007 pending
 PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=ekklesia.gr"

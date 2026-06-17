@@ -15,11 +15,11 @@
 - **Branch:** `main`
 - **Lokaler HEAD:** siehe `git rev-parse --short HEAD`
 - **origin/main:** siehe `git rev-parse --short origin/main`
-- **Repo HEAD:** siehe `git rev-parse --short HEAD` (latest: vC43/v1.0.14 release metadata + first public scoped GH#112 ZK rollout + forum sync rate-limit fix)
+- **Repo HEAD:** siehe `git rev-parse --short HEAD` (latest: vC44/v1.0.15 release metadata + first public scoped GH#112 ZK rollout + forum sync rate-limit fix)
 - **API container:** `4aa6f71` live; scoped production ZK enabled only for `bill:GR-d4c62ed4`; global rollout and ZK Arweave publisher remain off
 - **Dashboard container:** `8709b90` live; admin proxy requires `SUPER_ADMIN`, route/module auth enforced by Next.js proxy, Docker build uses `npm ci` only, `X-Powered-By` disabled
-- **Web container:** `f51dbf0` rebuilt live; vC43 APK download badge/hash verified on ekklesia.gr.
-- **S10:** vC43/1.0.14 installed; public scoped ZK opt-in/proof/vote succeeded for `GR-d4c62ed4`, no fatal Logcat crash.
+- **Web container:** `f51dbf0` rebuilt live; vC44 APK download badge/hash pending deploy verification.
+- **S10:** vC44/1.0.15 installed; launch smoke test passed with no fatal Logcat crash. Public scoped ZK opt-in/proof/vote previously succeeded for `GR-d4c62ed4`.
 - **Alembic:** `u401a2b3c4d5` (ZK receipt `vote_commitment` NOT NULL, head)
 - **Disk:** 2026-06-17 build-cache cleanup resolved `disk_critical` alert; `/` now 77% used / 17 GB free; monitor PASS.
 - **GH#111 Backup:** `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_004847`; KDF remains v1, no identity mutation.
@@ -29,10 +29,10 @@
 - **Tracking:** Linear + GitHub Issues parallel. Cross-Links: GH#71-83 = NEA-277-285
 - **GR-0490a766:** arweave_tx_id=NULL (bereinigt), party_votes_parliament=NULL, Guards verhindern Re-Archivierung
 - **Telegram Bot:** citizen_votes Query LIVE, governance Topic-Routing LIVE
-- **vC43 Release:** AAB `/Users/gio/Desktop/ekklesia-v1.0.14-vC43-PLAY.aab`, SHA256 `1d17a49af327d702769acb4f39a8bbf86c875d971a8a068d1da7e815af717fef`; APK `/Users/gio/Desktop/ekklesia-v1.0.14-vC43-PLAY.apk`, SHA256 `21e346ae9b01993354fa9c8f0dd5c21541f115d2260d4b1dbe3f8dc66f2e29a5`.
-- **vC43 GitHub Release:** https://github.com/NeaBouli/pnyx/releases/tag/v1.0.14
-- **vC43 Landing APK:** live on ekklesia.gr as v1.0.14/vC43; SHA256 `21e346ae9b01993354fa9c8f0dd5c21541f115d2260d4b1dbe3f8dc66f2e29a5`.
-- **R8/mapping.txt:** still off for vC43 (`minify=false`); mapping warning in Play is informational until a future Production/R8 build.
+- **vC44 Release:** AAB `/Users/gio/Desktop/ekklesia-v1.0.15-vC44-PLAY.aab`, SHA256 `29fd70798e822f49c70b91225db9d7539865179d886cc0dd771d962f4288607c`; APK `/Users/gio/Desktop/ekklesia-v1.0.15-vC44-PLAY.apk`, SHA256 `29332e6f1c4ccc8049fbcb45430e1aab229f113807d07e03983f7f9d1d029964`.
+- **vC44 GitHub Release:** pending until release asset upload.
+- **vC44 Landing APK:** pending deploy as v1.0.15/vC44; SHA256 `29332e6f1c4ccc8049fbcb45430e1aab229f113807d07e03983f7f9d1d029964`.
+- **R8/mapping.txt:** still off for vC44 (`minify=false`); mapping warning in Play is informational until a future Production/R8 build.
 - **Linear:** Token OK (`~/.claude/.env` → `LINEAR_API_KEY`), NEA-280 + NEA-292 geschlossen; Codex verified and commented NEA-292 + NEA-301
 - **NEA-301b PARLIAMENT:** DONE (17/31 mit summary_short_el, 9 brauchen Fetcher, 3 DEMO + 2 flagged excluded, DIAVGEIA 0/636 eigene Phase)
 - **Ollama:** RAM zurueck auf 2.4 GB (Produktion), kein Job aktiv

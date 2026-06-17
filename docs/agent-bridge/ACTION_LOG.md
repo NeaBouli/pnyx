@@ -1,5 +1,32 @@
 # Action Log
 
+## 2026-06-17 — Codex: vC44 / v1.0.15 Android release build
+
+- Context:
+  - Gio asked for a new `vC40` with a new version number.
+  - Local/current release was already `vC43 / v1.0.14`; Android/Google Play cannot accept a lower `versionCode`.
+  - Safe decision: build next monotonic release `vC44 / v1.0.15`.
+- Changed:
+  - `apps/mobile/app.json`: `1.0.14` -> `1.0.15`, `versionCode 43` -> `44`.
+  - `apps/mobile/android/app/build.gradle`: `versionCode 44`, `versionName "1.0.15"`.
+  - `apps/api/routers/app_version.py`: latest app version endpoint updated to `1.0.15` / `44`.
+  - Landing/download badge updated to `v1.0.15 · vC44`.
+- Built artifacts:
+  - AAB: `/Users/gio/Desktop/ekklesia-v1.0.15-vC44-PLAY.aab`, SHA256 `29fd70798e822f49c70b91225db9d7539865179d886cc0dd771d962f4288607c`.
+  - APK: `/Users/gio/Desktop/ekklesia-v1.0.15-vC44-PLAY.apk`, SHA256 `29332e6f1c4ccc8049fbcb45430e1aab229f113807d07e03983f7f9d1d029964`.
+- Verification:
+  - `python3 -m py_compile apps/api/routers/app_version.py` PASS.
+  - `cd apps/mobile && npx tsc --noEmit` PASS.
+  - `bash scripts/build-play.sh` PASS.
+  - `cd apps/mobile/android && ./gradlew assemblePlayRelease` PASS.
+  - APK badging: package `ekklesia.gr`, `versionCode=44`, `versionName=1.0.15`, target SDK 36.
+  - APK signer SHA256: `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
+  - S10 update install PASS; device reports `versionCode=44`, `versionName=1.0.15`.
+  - S10 launch PASS; narrow Logcat crash filter returned no fatal runtime/React errors.
+- Notes:
+  - R8/minify remains OFF; Play mapping warning remains informational for this artifact.
+  - `vC40` must not be used; it was already superseded by later monotonic version codes.
+
 ## 2026-06-17 — Codex: GH#111 endpoint regression tests + operator runbook
 
 - Scope:
