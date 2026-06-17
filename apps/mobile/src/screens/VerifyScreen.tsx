@@ -85,6 +85,11 @@ export default function VerifyScreen({ navigation }: Props) {
         Εισάγετε τον ελληνικό αριθμό κινητού σας. Μετά την επαλήθευση, ο αριθμός
         διαγράφεται αμέσως — αποθηκεύεται μόνο ένα ανώνυμο αναγνωριστικό.
       </Text>
+      <View style={styles.reverifyNote}>
+        <Text style={styles.reverifyText}>
+          Αν έχετε ήδη επαληθευτεί, η επανάληψη δημιουργεί νέο τοπικό κλειδί στη συσκευή σας.
+        </Text>
+      </View>
 
       <TextInput
         style={styles.input}
@@ -138,6 +143,15 @@ const styles = StyleSheet.create({
   securityNote: {
     backgroundColor: colors.primaryLight, padding: 16, borderRadius: 12,
   },
+  reverifyNote: {
+    backgroundColor: "#fff7ed",
+    borderColor: "#fb923c",
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  reverifyText: { color: "#9a3412", fontSize: 12, lineHeight: 17, fontWeight: "600" },
   securityTitle: { fontSize: 14, fontWeight: "bold", color: colors.primary, marginBottom: 8 },
   securityText: { fontSize: 13, color: colors.text, lineHeight: 20 },
 });

@@ -203,6 +203,13 @@ export default function ProfileScreen() {
         </Text>
       </TouchableOpacity>
 
+      <TouchableOpacity style={s.verifyBtn} onPress={() => nav.navigate("Verify")}>
+        <Text style={s.verifyTitle}>Επαλήθευση / Νέο κλειδί</Text>
+        <Text style={s.verifyText}>
+          Για επανεγγραφή ή ελεγχόμενο operator canary. Χρησιμοποιεί HLR και αντικαθιστά το τοπικό κλειδί στη συσκευή.
+        </Text>
+      </TouchableOpacity>
+
       {/* Version + Channel + Update Check */}
       <Text style={s.versionInfo}>
         Έκδοση: {Constants.expoConfig?.version ?? "?"} (v{Constants.expoConfig?.android?.versionCode ?? "?"}) | Κανάλι: {Constants.expoConfig?.extra?.distributionChannel === "play" ? "Google Play" : "Direct"}
@@ -238,12 +245,14 @@ export default function ProfileScreen() {
           onPress={() => {
             try {
               const channel = Constants.expoConfig?.extra?.distributionChannel;
-              const url = channel === "play" ? latestVersion.playStoreUrl : (latestVersion.downloadUrl || "https://ekklesia.gr/download");
+              const url = channel === "play"
+                ? (latestVersion.playstore_url || "https://play.google.com/store/apps/details?id=ekklesia.gr")
+                : (latestVersion.direct_apk_url || "https://ekklesia.gr/download/");
               Linking.openURL(url);
             } catch {}
           }}
         >
-          <Text style={s.downloadBtnText}>Λήψη έκδοσης {latestVersion.version} →</Text>
+          <Text style={s.downloadBtnText}>Λήψη έκδοσης {latestVersion.latest_version ?? "νέας"} →</Text>
         </TouchableOpacity>
       )}
 
@@ -309,6 +318,9 @@ const s = StyleSheet.create({
   zkBtn: { backgroundColor: colors.surface, borderRadius: 12, padding: 14, marginTop: 16, borderWidth: 1, borderColor: colors.border },
   zkTitle: { color: colors.text, fontWeight: "900", fontSize: 15, marginBottom: 4 },
   zkText: { color: colors.textSecondary, fontSize: 12, lineHeight: 17 },
+  verifyBtn: { backgroundColor: "#fff7ed", borderRadius: 12, padding: 14, marginTop: 12, borderWidth: 1, borderColor: "#fb923c" },
+  verifyTitle: { color: "#9a3412", fontWeight: "900", fontSize: 15, marginBottom: 4 },
+  verifyText: { color: "#9a3412", fontSize: 12, lineHeight: 17 },
   legalSection: { marginTop: 24, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border, gap: 8, alignItems: "center" },
   legalLink: { fontSize: 13, color: colors.primary, fontWeight: "600" },
 });

@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.15 |
-| versionCode | 44 |
+| Version | 1.0.16 |
+| versionCode | 45 |
 | Package | ekklesia.gr |
-| APK SHA256 | `29332e6f1c4ccc8049fbcb45430e1aab229f113807d07e03983f7f9d1d029964` |
-| AAB SHA256 | `29fd70798e822f49c70b91225db9d7539865179d886cc0dd771d962f4288607c` |
+| APK SHA256 | `770c947cecd273f4b08b1d3f967ff8ff954a28132c699116ddfcb9bfec8f0621` |
+| AAB SHA256 | `fc5694c37a7e21d721acd4963a4713e9b872388b02d80a5b1fbb1ed8aebcbf95` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
 | Build date | 2026-06-17 |
-| Release gate | PASS — API version syntax, mobile TypeScript, local AAB/APK build, APK version/signature audit, S10 install/launch, no fatal Logcat crash |
-| Includes | vC44 release metadata, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, ZK V2 native prover, hidden S10 canary operator path, deep-link fallback, pagination, source/full-text policy, permission hardening |
+| Release gate | PASS — API version syntax, mobile TypeScript, local AAB/APK build, APK version/signature audit, S10 install/launch, verified-account state preserved, no fatal Logcat crash |
+| Includes | vC45 release metadata, controlled HLR re-verification entrypoint for the Nullifier v2 canary, fixed profile update links, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, ZK V2 native prover, hidden S10 canary operator path, deep-link fallback, pagination, source/full-text policy, permission hardening |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: 29332e6f1c4ccc8049fbcb45430e1aab229f113807d07e03983f7f9d1d029964
+# Expected: 770c947cecd273f4b08b1d3f967ff8ff954a28132c699116ddfcb9bfec8f0621
 ```

@@ -1,5 +1,32 @@
 # Action Log
 
+## 2026-06-17 — Codex: vC45 / v1.0.16 Android release build
+
+- Context:
+  - GH#111 needs a real phone/HLR re-verification path before the Nullifier v2 canary can be activated safely.
+  - This release prepares the operator path in the app; it does **not** flip `IDENTITY_NULLIFIER_KDF_VERSION=v2`.
+- Changed:
+  - `ProfileScreen`: added controlled `Επαλήθευση / Νέο κλειδί` entrypoint to the existing Verify flow.
+  - `VerifyScreen`: added warning that re-verification creates a new local device key.
+  - Profile update links now use the API's snake_case fields (`playstore_url`, `direct_apk_url`, `latest_version`).
+  - Mobile/API/Landing bumped to `v1.0.16 / vC45`.
+- Built artifacts:
+  - AAB: `/Users/gio/Desktop/ekklesia-v1.0.16-vC45-PLAY.aab`, SHA256 `fc5694c37a7e21d721acd4963a4713e9b872388b02d80a5b1fbb1ed8aebcbf95`.
+  - APK: `/Users/gio/Desktop/ekklesia-v1.0.16-vC45-PLAY.apk`, SHA256 `770c947cecd273f4b08b1d3f967ff8ff954a28132c699116ddfcb9bfec8f0621`.
+- Verification before deploy:
+  - `python3 -m py_compile apps/api/routers/app_version.py` PASS.
+  - `git diff --check` PASS.
+  - `cd apps/mobile && npx tsc --noEmit` PASS.
+  - `bash scripts/build-play.sh` PASS.
+  - `cd apps/mobile/android && ./gradlew assemblePlayRelease` PASS.
+  - APK badging: package `ekklesia.gr`, `versionCode=45`, `versionName=1.0.16`, target SDK 36.
+  - APK signer SHA256: `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
+  - S10 update install PASS; device reports `versionCode=45`, `versionName=1.0.16`.
+  - S10 launch PASS; app foreground verified, verified-account state preserved, no fatal runtime/React errors in narrow Logcat filter.
+- Safety boundary:
+  - GH#111 remains unactivated until explicit backup + real phone/HLR operator canary.
+  - No server ZK/KDF flags changed in this build step.
+
 ## 2026-06-17 — Codex: vC44 / v1.0.15 Android release build
 
 - Context:
