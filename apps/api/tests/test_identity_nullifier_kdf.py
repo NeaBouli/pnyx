@@ -4,12 +4,14 @@ import sys
 from types import SimpleNamespace
 
 import pytest
+from sqlalchemy.dialects import postgresql
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../packages/crypto"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import nullifier
-from routers.identity import _compatibility_nullifier, _identity_kdf_version, _select_identity_match
+from models import IdentityRecord
+from routers.identity import _compatibility_nullifier, _identity_kdf_version, _identity_match_query, _select_identity_match
 
 
 def test_v1_nullifier_keeps_legacy_raw_input_compatibility(monkeypatch):
@@ -90,3 +92,11 @@ def test_identity_match_falls_back_to_first_v2_match():
     v2_only = SimpleNamespace(nullifier_hash="a" * 64)
 
     assert _select_identity_match([v2_only], "b" * 64) is v2_only
+
+
+def test_identity_match_query_locks_rows_for_reregistration():
+    query = _identity_match_query(IdentityRecord.nullifier_hash == "a" * 64)
+
+    compiled = str(query.compile(dialect=postgresql.dialect()))
+
+    assert "FOR UPDATE" in compiled

@@ -12,6 +12,9 @@ GH#111 activates the server-side identity nullifier v2 path from ADR-004:
 - Existing v1 identities must migrate in the **same DB row** during real HLR re-verification.
 - Existing active identities are re-registered atomically: no intermediate `REVOKED`
   commit is allowed before the replacement key/v2 fields are written.
+- Existing identity rows are selected with a DB row lock (`FOR UPDATE`) during
+  verification so parallel re-registration requests cannot issue two private
+  keys while only the last public key remains stored.
 - No phone number is stored.
 
 This is separate from GH#112 ZK voting. Do not mix both rollout windows.

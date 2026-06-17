@@ -1,5 +1,24 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 re-registration row-lock hardening
+
+- Scope:
+  - Hardened the real `/api/v1/identity/verify` lookup path before the Nullifier v2 canary.
+  - No production env flags changed, no HLR request made, no identity mutation.
+- Risk found:
+  - Two parallel real-phone re-registration requests could select the same identity row, generate two keypairs, and race to write the final public key.
+  - The losing client could receive a private key that no longer matches the stored public key.
+- Changed:
+  - Existing identity match lookup now uses a `FOR UPDATE` row lock.
+  - Added regression coverage that compiles the lookup for PostgreSQL and asserts `FOR UPDATE`.
+  - Updated the GH#111 runbook with the row-lock invariant.
+- Verification:
+  - `python3 -m py_compile apps/api/routers/identity.py apps/api/tests/test_identity_nullifier_kdf.py`: PASS.
+  - Focused GH#111/Identity pytest set: PASS, 32 passed.
+- Safety boundary:
+  - GH#111 remains open/waiting for an explicit real phone/HLR operator canary.
+  - Do not activate `IDENTITY_NULLIFIER_KDF_VERSION=v2` from DB/admin-test data alone.
+
 ## 2026-06-17 — Codex: GH#111 atomic re-registration hardening
 
 - Scope:

@@ -12,7 +12,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import or_, select, update, text
+from sqlalchemy import ColumnElement, or_, select, update, text
+from sqlalchemy.sql import Select
 import redis.asyncio as aioredis
 
 from database import get_db
@@ -97,6 +98,10 @@ def _select_identity_match(matches: list[IdentityRecord], computed_v1: str) -> I
     return None
 
 
+def _identity_match_query(identity_filter: ColumnElement[bool]) -> Select:
+    return select(IdentityRecord).where(identity_filter).with_for_update()
+
+
 # ─── Schemas ──────────────────────────────────────────────────────────────────
 
 class VerifyRequest(BaseModel):
@@ -163,7 +168,7 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
     identity_filter = IdentityRecord.nullifier_hash == nullifier
     if nullifier_v2:
         identity_filter = or_(IdentityRecord.nullifier_hash_v2 == nullifier_v2, identity_filter)
-    result = await db.execute(select(IdentityRecord).where(identity_filter))
+    result = await db.execute(_identity_match_query(identity_filter))
     matches = result.scalars().all()
     if len(matches) > 1:
         logger.warning("[MOD-01] Multiple identity rows matched v2 migration lookup; using v1-preferred anchor")
