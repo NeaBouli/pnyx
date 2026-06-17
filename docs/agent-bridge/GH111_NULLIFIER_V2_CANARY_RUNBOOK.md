@@ -51,7 +51,7 @@ Use the guarded host-side preparation script immediately before any real
 operator window. It creates a fresh evidence/backup directory, runs the monitor,
 captures the KDF env rewrite plan, stores the read-only identity snapshot and
 preflight report, dumps the identity/audit/alembic tables, runs the isolated v2
-lifespan probe, and writes SHA-256 checksums.
+lifespan probe, writes SHA-256 checksums, and validates the evidence package.
 
 This script does **not** edit `/opt/ekklesia/.env.production`, does **not** set
 `IDENTITY_NULLIFIER_KDF_VERSION=v2`, and does **not** trigger HLR.
@@ -72,6 +72,14 @@ GH111_NEXT_STEP=Use GH111_NULLIFIER_V2_CANARY_RUNBOOK.md Activation Window only 
 Use the printed `GH111_BACKUP_DIR` as `BACKUP_DIR` in the activation window.
 If this preparation script fails at any step, abort before the flag flip and
 document the failed artifact.
+
+The preparation script writes `package_check.json`. It must contain `"ok": true`
+before the activation window starts. To re-check the package manually:
+
+```bash
+cd /opt/ekklesia/app
+python3 apps/api/scripts/gh111_preflight_package_check.py --backup-dir "$BACKUP_DIR"
+```
 
 ## Pre-Window Checks
 

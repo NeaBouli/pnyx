@@ -1,5 +1,21 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 preflight package checker
+
+- Scope:
+  - Added a read-only package validator for the GH#111 no-mutation preflight evidence directory.
+  - No production env flag changed, no HLR request, no identity mutation.
+- Changed:
+  - New script: `apps/api/scripts/gh111_preflight_package_check.py`.
+  - New tests: `apps/api/tests/services/test_gh111_preflight_package_check.py`.
+  - `scripts/gh111-prepare-nullifier-v2-window.sh` now runs the package checker and writes `package_check.json`.
+  - `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md` now requires `"ok": true` in `package_check.json` before activation starts.
+- Safety properties:
+  - Verifies required artifacts, SHA-256 sums, preflight blockers, KDF plan target/current state, v2 lifespan probe, and monitor traceback markers.
+  - Read-only: no env edit, no DB write, no HLR call.
+- Boundary:
+  - GH#111 still requires the real activation window with S10/HLR and compare report.
+
 ## 2026-06-17 — Codex: GH#111 runbook stale-path cleanup
 
 - Scope:

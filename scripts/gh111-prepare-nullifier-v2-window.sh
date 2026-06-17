@@ -67,11 +67,16 @@ with TestClient(main.app) as c:
     print(r.json()["status"])
 PY
 
-echo "[6/6] Checksums"
+echo "[6/7] Checksums"
 find "$BACKUP_DIR" -type f ! -name SHA256SUMS -print0 \
   | sort -z \
   | xargs -0 sha256sum \
   > "$BACKUP_DIR/SHA256SUMS"
+
+echo "[7/7] Validate preflight package"
+python3 apps/api/scripts/gh111_preflight_package_check.py \
+  --backup-dir "$BACKUP_DIR" \
+  | tee "$BACKUP_DIR/package_check.json"
 
 echo "GH111_PREPARED=1"
 echo "GH111_BACKUP_DIR=$BACKUP_DIR"
