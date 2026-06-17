@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.17 |
-| versionCode | 46 |
+| Version | 1.0.18 |
+| versionCode | 47 |
 | Package | ekklesia.gr |
-| APK SHA256 | `f05ae534f52f913c5e7ee596214540fad4c3f5ea116f275b049f25a3473216c4` |
-| AAB SHA256 | `9a59e1e4f1cabaeb9cb0cf81ed49b8aff633fd1ec4cb69fffd9a5f106af9dbfa` |
+| APK SHA256 | `cb9fde33c9ca039413c38cc111b62f8b0deab4c6ba466d5d9243ce584919e9b9` |
+| AAB SHA256 | `f8b70de981d4fb3f5e799d1a8c229665aa1d72cf08a850f5b0fa8baede5a70ae` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
 | Build date | 2026-06-17 |
-| Release gate | PASS — API version syntax, mobile TypeScript, local AAB/APK build, APK version/signature audit, S10 install/launch, verified-account state preserved, no fatal Logcat crash |
-| Includes | vC46 release metadata, monitor token-log redaction hardening, controlled HLR re-verification entrypoint for the Nullifier v2 canary, fixed profile update links, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, ZK V2 native prover, hidden S10 canary operator path, deep-link fallback, pagination, source/full-text policy, permission hardening |
+| Release gate | PASS — API version syntax, mobile TypeScript, mobile Vitest, local AAB/APK build, APK version/signature audit, S10 install/launch smoke test |
+| Includes | vC47 release metadata, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, ZK V2 native prover, hidden S10 canary operator path, deep-link fallback, pagination, source/full-text policy, permission hardening |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: f05ae534f52f913c5e7ee596214540fad4c3f5ea116f275b049f25a3473216c4
+# Expected: cb9fde33c9ca039413c38cc111b62f8b0deab4c6ba466d5d9243ce584919e9b9
 ```

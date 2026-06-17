@@ -1,5 +1,50 @@
 # Action Log
 
+## 2026-06-17 — Codex: vC47 / v1.0.18 Android release build
+
+- Scope:
+  - Gio requested a new mobile version; requested `vC40` is older than current source/Play lineage, so the safe monotonic release is `vC47 / v1.0.18`.
+  - No Vote/ZK/Identity runtime logic changed in this release bump.
+- Changed:
+  - `apps/mobile/app.json`: `version=1.0.18`, `android.versionCode=47`.
+  - `apps/mobile/android/app/build.gradle`: `versionName "1.0.18"`, `versionCode 47`.
+  - `apps/api/routers/app_version.py`: latest version endpoint bumped to `1.0.18 / 47`.
+  - `docs/index.html`: visible APK badge bumped to `v1.0.18 · vC47`.
+  - `docs/download/APK_MANIFEST.md` and `docs/download/ekklesia-latest.apk.sha256` updated.
+- Artifacts:
+  - AAB: `/Users/gio/Desktop/ekklesia-v1.0.18-vC47-PLAY.aab`, SHA256 `f8b70de981d4fb3f5e799d1a8c229665aa1d72cf08a850f5b0fa8baede5a70ae`.
+  - APK: `/Users/gio/Desktop/ekklesia-v1.0.18-vC47-PLAY.apk`, SHA256 `cb9fde33c9ca039413c38cc111b62f8b0deab4c6ba466d5d9243ce584919e9b9`.
+- Verification:
+  - `python3 -m py_compile apps/api/routers/app_version.py`: PASS.
+  - `cd apps/mobile && npx tsc --noEmit`: PASS.
+  - `cd apps/mobile && npx vitest run`: PASS, 86 passed.
+  - `cd apps/mobile/android && EKKLESIA_DISTRIBUTION_CHANNEL=play EKKLESIA_BUILD_FLAVOR=play ./gradlew bundlePlayRelease assemblePlayRelease`: PASS.
+  - APK badging: package `ekklesia.gr`, `versionCode=47`, `versionName=1.0.18`, target SDK 36.
+  - APK signer SHA-256 digest: `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
+  - S10 `RF8N313QMFL`: `adb install -r` PASS, `versionCode=47`, `versionName=1.0.18`, launch smoke test with no fatal Logcat crash.
+- Pending:
+  - Server download/API deploy, GitHub release, CI/Security Audit after commit.
+
+## 2026-06-17 — Codex: GH#111 identity verify in-flight lock
+
+- Scope:
+  - Hardened the real `/api/v1/identity/verify` path before the Nullifier v2 canary.
+  - No production env flags changed, no HLR request made, no identity mutation.
+- Risk found:
+  - A DB row lock serializes writes, but two overlapping verify requests for the same phone could still issue two private keys if the second request starts before the first finishes.
+  - The first returned private key could become stale if the second request overwrote the public key afterwards.
+- Changed:
+  - Added a short Redis in-flight lock per v1 identity nullifier: `identity:verify:lock:{nullifier}`.
+  - Concurrent verify for the same identity now returns HTTP 409 before a second keypair is issued.
+  - Lock release is token-checked and best-effort, so a Redis release failure cannot convert a successful identity verification into a lost private-key response.
+  - Updated the GH#111 runbook with the in-flight lock invariant.
+- Verification:
+  - `python3 -m py_compile apps/api/routers/identity.py apps/api/tests/test_identity_nullifier_kdf.py apps/api/tests/test_identity_nullifier_v2_endpoint.py`: PASS.
+  - Focused GH#111/Identity pytest set: PASS, 37 passed.
+- Safety boundary:
+  - GH#111 remains open/waiting for an explicit real phone/HLR operator canary.
+  - Do not activate `IDENTITY_NULLIFIER_KDF_VERSION=v2` from DB/admin-test data alone.
+
 ## 2026-06-17 — Codex: GH#111 re-registration row-lock hardening
 
 - Scope:

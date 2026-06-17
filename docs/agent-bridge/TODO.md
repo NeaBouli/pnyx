@@ -25,7 +25,7 @@
 
 ### Release Follow-ups
 - [ ] Future Production Size/R8 Optimization — Play Console warns about size/mapping when R8 is not active.
-  - Current Play/direct build: vC46 / v1.0.17; R8/minify remains OFF, so no `mapping.txt` exists for this artifact.
+  - Current prepared Play/direct build: vC47 / v1.0.18; R8/minify remains OFF, so no `mapping.txt` exists for this artifact.
   - Cause of size: native Semaphore/ZK prover and multi-ABI native libraries.
   - Next pass before Production (not Closed Testing): evaluate ABI restrictions and R8/ProGuard + `mapping.txt`, rebuild, install on S10, verify vote/source/ZK paths.
 
@@ -173,9 +173,10 @@
 - [ ] NEA-59: F-Droid MR !38007 — wartet auf linsui Review
 - [ ] NEA-65: Off-Site Backup — nach erster Spende
 - [ ] NEA-73: Embed-System — Low Prio
-- [ ] GH#111 / NEA-335 follow-up: Nullifier v2 Production Activation — scaffold deployed, production preflight green, identity backup exists at `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_004847`, focused endpoint regression proves same-row v1->v2 migration and atomic row-locked existing-identity re-registration with mocked HLR, read-only snapshot/compare/report helper is ready with v2 invariant counters, and the S10 UI path to VerifyScreen is verified without mutation. Production remains v1 until an explicit operator canary with a real phone/HLR identity re-registration path is run. Admin-test identities are not sufficient. Runbook: `docs/agent-bridge/GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`; design checklist: `docs/adr/ADR-004-nullifier-kdf-migration.md`.
+- [ ] GH#111 / NEA-335 follow-up: Nullifier v2 Production Activation — scaffold deployed, production preflight green, identity backup exists at `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_004847`, focused endpoint regression proves same-row v1->v2 migration, Redis in-flight locking, and atomic row-locked existing-identity re-registration with mocked HLR, read-only snapshot/compare/report helper is ready with v2 invariant counters (`37 passed` focused set), and the S10 UI path to VerifyScreen is verified without mutation. Production remains v1 until an explicit operator canary with a real phone/HLR identity re-registration path is run. Admin-test identities are not sufficient. Runbook: `docs/agent-bridge/GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`; design checklist: `docs/adr/ADR-004-nullifier-kdf-migration.md`.
 - [ ] GH#112 / ZK V2 staged/global follow-up — first public scoped rollout passed for `bill:GR-d4c62ed4`; production ZK remains scoped by exact allowlist; global rollout and ZK Arweave publisher remain OFF pending review.
 - [x] vC46 Play/direct release: AAB/APK built, hashes verified, S10 install/launch passed, verified-account state preserved, landing/API version live.
+- [ ] vC47 Play/direct release finalization: AAB/APK built, hashes verified, S10 install passed; deploy/GitHub release/CI pending.
 
 ## Done (Session 13.05.2026)
 - [x] Server CX33 → CX43 Upgrade
