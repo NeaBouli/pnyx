@@ -36,12 +36,14 @@ Reason: admin-test identities use random nullifiers and do not exercise the real
 - Code scaffold: deployed.
 - DB columns: present.
 - Production default: v1.
-- Latest fresh identity backup: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_042119`.
-- Preflight on 2026-06-17:
+- Latest no-mutation production preflight package: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_064644`.
+- Preflight on 2026-06-17 06:46 UTC:
   - `identity_records`: 17 total, 17 active.
   - `nullifier_hash_v2`: 0 rows.
   - `nullifier_version='v2'`: 0 rows.
-  - Argon2id helper in API container: about 131 ms per derivation.
+  - `preflight_blockers=[]`.
+  - Monitor: PASS, 17 checks, no alerts.
+  - Isolated v2 lifespan probe: PASS with scheduler no-op in the test process.
 
 ## Preferred Pre-Window Preparation
 
@@ -103,8 +105,9 @@ docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.y
   python scripts/gh111_nullifier_v2_canary_check.py snapshot --preflight \
   --output /tmp/gh111_before_snapshot.json \
   --report-output /tmp/gh111_preflight_report.json
-docker cp ekklesia-api:/tmp/gh111_before_snapshot.json /opt/ekklesia/backups/gh111_before_snapshot.json
-docker cp ekklesia-api:/tmp/gh111_preflight_report.json /opt/ekklesia/backups/gh111_preflight_report.json
+: "${BACKUP_DIR:?Set BACKUP_DIR from the fresh backup step before copying artifacts}"
+docker cp ekklesia-api:/tmp/gh111_before_snapshot.json "$BACKUP_DIR/gh111_before_snapshot.json"
+docker cp ekklesia-api:/tmp/gh111_preflight_report.json "$BACKUP_DIR/gh111_preflight_report.json"
 ```
 
 `gh111_before_snapshot.json` is the machine-readable input for `compare`.
@@ -150,6 +153,18 @@ docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.y
   env PYTHONPATH=/app:/packages/crypto IDENTITY_NULLIFIER_KDF_VERSION=v2 python - <<'PY'
 from fastapi.testclient import TestClient
 import main
+
+class NoopScheduler:
+    def add_job(self, *args, **kwargs):
+        return None
+
+    def start(self):
+        return None
+
+    def shutdown(self):
+        return None
+
+main.scheduler = NoopScheduler()
 
 with TestClient(main.app) as c:
     r = c.get("/health")
@@ -242,22 +257,24 @@ Then run the structured post-check. Choose exactly one mode:
 
 ```bash
 # Existing-phone re-registration:
-docker cp /opt/ekklesia/backups/gh111_before_snapshot.json ekklesia-api:/tmp/gh111_before_snapshot.json
+: "${BACKUP_DIR:?Set BACKUP_DIR from the fresh backup step before compare}"
+docker cp "$BACKUP_DIR/gh111_before_snapshot.json" ekklesia-api:/tmp/gh111_before_snapshot.json
 docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.yml exec -T api \
   python scripts/gh111_nullifier_v2_canary_check.py compare \
   --before /tmp/gh111_before_snapshot.json \
   --mode existing-reregistration \
   --report-output /tmp/gh111_compare_report.json
-docker cp ekklesia-api:/tmp/gh111_compare_report.json /opt/ekklesia/backups/gh111_compare_report.json
+docker cp ekklesia-api:/tmp/gh111_compare_report.json "$BACKUP_DIR/gh111_compare_report.json"
 
 # New-phone registration:
-docker cp /opt/ekklesia/backups/gh111_before_snapshot.json ekklesia-api:/tmp/gh111_before_snapshot.json
+: "${BACKUP_DIR:?Set BACKUP_DIR from the fresh backup step before compare}"
+docker cp "$BACKUP_DIR/gh111_before_snapshot.json" ekklesia-api:/tmp/gh111_before_snapshot.json
 docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.yml exec -T api \
   python scripts/gh111_nullifier_v2_canary_check.py compare \
   --before /tmp/gh111_before_snapshot.json \
   --mode new-registration \
   --report-output /tmp/gh111_compare_report.json
-docker cp ekklesia-api:/tmp/gh111_compare_report.json /opt/ekklesia/backups/gh111_compare_report.json
+docker cp ekklesia-api:/tmp/gh111_compare_report.json "$BACKUP_DIR/gh111_compare_report.json"
 ```
 
 ## Rollback
@@ -271,7 +288,7 @@ python3 apps/api/scripts/gh111_kdf_env_guard.py plan \
   --target v1
 python3 apps/api/scripts/gh111_kdf_env_guard.py write \
   --env-file /opt/ekklesia/.env.production \
-  --backup-dir /opt/ekklesia/backups \
+  --backup-dir "${BACKUP_DIR:-/opt/ekklesia/backups}" \
   --target v1 \
   --confirm GH111-KDF-WRITE
 cd /opt/ekklesia/app/infra/docker

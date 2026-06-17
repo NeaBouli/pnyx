@@ -1,5 +1,25 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 runbook stale-path cleanup
+
+- Scope:
+  - Hardened the GH#111 operator runbook after the clean no-mutation production preflight package.
+  - Documentation only; no env flag changed, no HLR request, no identity mutation.
+- Changed:
+  - Current prepared state now points to `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_064644`.
+  - Manual v2 lifespan probe now uses the scheduler no-op pattern that prevented the previous one-off scheduler trace.
+  - Manual preflight and compare artifacts now copy to the active `BACKUP_DIR` instead of generic `/opt/ekklesia/backups/gh111_*.json` paths.
+  - Rollback helper uses `BACKUP_DIR` for the env-file backup when available.
+- Verification:
+  - Stale-path search in the runbook/bridge: PASS.
+  - `git diff --check`: PASS.
+  - `bash -n scripts/gh111-prepare-nullifier-v2-window.sh`: PASS.
+  - `python -m py_compile apps/api/scripts/gh111_kdf_env_guard.py apps/api/scripts/gh111_nullifier_v2_canary_check.py`: PASS.
+  - Focused GH#111 pytest set: PASS, 54 passed.
+  - S10 connected and still on vC50/v1.0.21.
+- Boundary:
+  - GH#111 is still not activated. Production remains `IDENTITY_NULLIFIER_KDF_VERSION=v1` until an explicit real S10/HLR operator window.
+
 ## 2026-06-17 — Codex: GH#111 no-mutation production preflight package
 
 - Scope:
