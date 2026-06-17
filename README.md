@@ -66,7 +66,7 @@ This project uses publicly available government data from:
 | Arweave Archive | Immutable vote audit trail | Beta |
 | POLIS Tickets | Citizen issue tracker with Ed25519 auth | Beta |
 | Dashboard | Admin panel with GitHub OAuth, 15+ pages | Beta |
-| ZK Voting V2 | Optional Semaphore-based anonymous proofs | First public scoped rollout passed; global rollout gated |
+| ZK Voting V2 | Optional Semaphore-based anonymous proofs | First public scoped rollout passed; global rollout + ZK Arweave publishing gated by exact allowlists |
 
 ---
 
@@ -179,8 +179,9 @@ cd apps/web && npm run build
 
 | Channel | Status | Link |
 |---|---|---|
-| Direct APK | Live | [ekklesia.gr](https://ekklesia.gr) |
-| Google Play | Review pending | Internal testing |
+| Direct APK | Live v1.0.21 / vC50 | [ekklesia.gr](https://ekklesia.gr) |
+| Google Play | v1.0.21 / vC50 uploaded | Closed testing |
+| GitHub Release | Latest v1.0.21 / vC50 | [v1.0.21](https://github.com/NeaBouli/pnyx/releases/tag/v1.0.21) |
 | F-Droid | MR pending review | [MR !38007](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007) |
 
 ---
@@ -191,7 +192,7 @@ cd apps/web && npm run build
 |---|---|---|
 | **Beta** | Now | Active |
 | **Alpha** | 500 users + 3 NGOs + gov.gr OAuth | Upcoming |
-| **V2** | ZK Voting (Semaphore) + Federation | First public scoped rollout passed; global rollout gated |
+| **V2** | ZK Voting (Semaphore) + Federation | First public scoped rollout passed; global rollout + ZK Arweave publishing gated by exact allowlists |
 
 &rarr; Details: [Roadmap](https://ekklesia.gr/wiki/roadmap.html)
 

@@ -11976,3 +11976,24 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
     503, `ZK Arweave publication is not enabled`.
   - Monitor once: PASS, 17 checks, no alerts.
   - Disk after safe cleanup/build: `/` about 86% used / 11G free.
+
+## 2026-06-18 — Codex: GitHub labels + vC50 download/release verification
+
+- GitHub labels created/applied:
+  - GH#112: `zk`, `gated`, `arweave` added alongside existing
+    `security`, `feature`, `mobile`.
+  - GH#79 and GH#80: `external` added.
+- README updated:
+  - Distribution table now states Direct APK v1.0.21/vC50, Google Play
+    v1.0.21/vC50 uploaded, and GitHub latest release v1.0.21/vC50.
+  - ZK wording now says global rollout + ZK Arweave publishing are gated by
+    exact allowlists.
+- Verification:
+  - Live landing download points to `https://ekklesia.gr/download/ekklesia-latest.apk`.
+  - Downloaded live APK SHA256:
+    `989c5f92ff37b4a8498e6410f362dedbfd91e362042ec5e6685479385c14685d`.
+  - `aapt dump badging` on live APK: `versionCode=50`, `versionName=1.0.21`.
+  - GitHub latest release API returns `v1.0.21` with assets:
+    `ekklesia-v1.0.21-vC50-PLAY.aab`,
+    `ekklesia-v1.0.21-vC50-PLAY.apk`.
+  - GitHub asset digests match the known vC50 AAB/APK hashes.
