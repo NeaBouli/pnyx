@@ -28,7 +28,7 @@
 - **GH#111 Status Helper:** `scripts/gh111-status-nullifier-v2-window.sh` reports KDF env, API health, package verdict, and live preflight snapshot without writes/rebuild/HLR.
 - **GH#111 Operator Checklist:** `docs/agent-bridge/GH111_NULLIFIER_V2_OPERATOR_CHECKLIST.md` is the short handoff sheet for the real S10/HLR window; it does not replace the runbook.
 - **GH#111 S10 HLR Canary:** Profile -> `Επαλήθευση / Νέο κλειδί` -> VerifyScreen completed on S10 with real HLR. Post-verify mode `new-registration`: before 17 active / 0 v2, after 18 active / 1 v2, compare `ok=true`, monitor PASS, no fatal Logcat crash. Sensitive input is not recorded.
-- **F-Droid !38007:** Still open/mergeable on GitLab (checked 2026-06-17); no conflicts, blocking discussions resolved, latest pipeline `2570810919` success; waiting on fdroiddata maintainer merge/re-test.
+- **F-Droid !38007:** Still open/mergeable on GitLab (updated 2026-06-18 to vC50/v1.0.21); no conflicts, blocking discussions resolved, MR commit `d711780bf`, manual pipeline `2609790099` success; waiting on fdroiddata maintainer/community re-test + merge.
 - **POLIS Status:** App-internal Create/Vote LIVE
 - **Tracking:** Linear + GitHub Issues parallel. Cross-Links: GH#71-83 = NEA-277-285
 - **GR-0490a766:** arweave_tx_id=NULL (bereinigt), party_votes_parliament=NULL, Guards verhindern Re-Archivierung

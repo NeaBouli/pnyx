@@ -27,7 +27,7 @@ Current state:
 - Forum/monitor fix `4aa6f71` is live: Discourse 429 handling, `/api/v1/admin/forum/sync-new`, monitor recovery remapped to sync-new, DIAVGEIA backlog grace 6h.
 - Monitor once after deploy: PASS, 17 checks, no alerts.
 - CI + Security Audit are green for `4aa6f71` and `f51dbf0`.
-- F-Droid !38007 is still open/mergeable, latest pipeline success, waiting on fdroiddata maintainer.
+- F-Droid !38007 is still open/mergeable and was updated to vC50/v1.0.21 on 2026-06-18. MR commit `d711780bf`, manual pipeline `2609790099` success, waiting on fdroiddata maintainer/community re-test + merge.
 - GH#111 Nullifier v2 canary completed on 2026-06-17 with real S10/HLR verification. Keep `IDENTITY_NULLIFIER_KDF_VERSION=v2` active.
 - vC50 keeps the controlled Profile -> Verify entrypoint; it was used for the GH#111 real HLR canary.
 - GH#111 activation package: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_200157` (package validation PASS with `ok=true` and no blockers/warnings).

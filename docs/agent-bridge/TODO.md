@@ -18,7 +18,7 @@
 
 ### Blocked / Extern (kein Bau)
 - [ ] GH#102 / NEA-312 — echter `WINDOW_24H` Bill nötig
-- [ ] GH#79 — F-Droid !38007 wartet auf linsui Merge
+- [ ] GH#79 — F-Droid !38007 updated to vC50/v1.0.21, pipeline `2609790099` green; wartet auf linsui/F-Droid Merge
 - [ ] GH#80 — Off-site Backup wartet auf Hetzner Storage Box / erste Spende
 - [x] GH#81 — Android Native-Prover Self-Test auf S10 erfolgreich; produktives ZK-Voting bleibt Feature-Flag-guarded bis Backend/Arweave-Integration
 - [x] NEA-286 / GH#94 — Lifecycle WINDOW_24H stuck: resolved/stale; Production 2026-06-09 ohne stuck Rows, Scheduler healthy
@@ -32,7 +32,7 @@
 ## Tracking: GitHub Issues #71-#83 (Linear = read-only Archiv)
 
 ## Aktiv / In Progress
-- [ ] F-Droid !38007 (#79): GitLab MR !38007 offen, mergeable, Diskussionen resolved, Pipeline gruen; wartet auf linsui/F-Droid Merge
+- [ ] F-Droid !38007 (#79): GitLab MR !38007 offen, mergeable, Diskussionen resolved, vC50/v1.0.21 Metadata pushed (`d711780bf`), Pipeline `2609790099` gruen; wartet auf linsui/F-Droid Merge
 ## Done (Session 25-27.05.2026)
 - [x] vC29 Release Gate (#78/NEA-280): S10 Funktionstest PASS, APK live auf ekklesia.gr, AAB in Play Console hochgeladen (`5eb37cf`)
 - [x] vC29 Final Build Gate: versionCode 29/versionName 1.0.2, APK+AAB gebaut, SHA lokal/live verifiziert, Release abgeschlossen

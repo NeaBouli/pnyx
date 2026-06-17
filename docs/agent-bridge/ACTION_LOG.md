@@ -11916,3 +11916,30 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
     - monitor once PASS, 17 checks, no alerts.
   - Post-deploy safe cleanup repeated (`docker builder prune`, `docker image
     prune`; no volumes/backups): `/` returned to `81% used / 14G free`.
+
+## 2026-06-18 — Codex: F-Droid MR !38007 updated to vC50
+
+- Updated GitLab F-Droid MR !38007 after vC50/Google Play release:
+  - branch: `TrueRepublic/fdroiddata:ekklesia-v1.0.0`
+  - commit: `d711780bf` (`ekklesia.gr: update to v1.0.21`)
+  - `metadata/ekklesia.gr.yml` only changed:
+    - `versionName: 1.0.21`
+    - `versionCode: 50`
+    - `commit: e38f5e009b84a455db535c790980515fa9d08a78`
+    - `CurrentVersion: 1.0.21`
+    - `CurrentVersionCode: 50`
+  - the previously reviewed F-Droid build recipe was intentionally left
+    unchanged.
+- Verification:
+  - GitHub tag `v1.0.21` contains mobile `version=1.0.21` and
+    `android.versionCode=50`.
+  - YAML parse: PASS.
+  - `git diff --check`: PASS.
+  - `fdroid lint ekklesia.gr`: only pre-existing trailing-space warning in the
+    old multiline shell recipe; no new diff whitespace.
+  - manual GitLab pipeline `2609790099`: SUCCESS.
+- MR comment posted:
+  - https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007#note_3467153648
+- Current external state:
+  - MR remains open/mergeable with `review-requested`.
+  - Waiting on F-Droid maintainer/community re-test + merge.
