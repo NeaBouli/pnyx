@@ -23,8 +23,17 @@
   - APK badging: package `ekklesia.gr`, `versionCode=48`, `versionName=1.0.19`, target SDK 36.
   - APK signer SHA-256 digest: `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
   - S10 `RF8N313QMFL`: `adb install -r` PASS, `versionCode=48`, `versionName=1.0.19`, launch smoke test with no fatal Logcat crash.
-- Pending:
-  - Commit/push, server deploy for API/Web/Landing, GitHub release, CI/Security Audit.
+- Live deploy:
+  - Local rollback tag: `rollback-pre-vc48-20260617-074347`.
+  - Server rollback tag: `rollback-pre-vc48-20260617-074422`.
+  - Server HEAD: `ea65bae`.
+  - API/Web rebuilt from `/opt/ekklesia/app/infra/docker`.
+  - Live API version: `latest_version=1.0.19`, `latest_version_code=48`.
+  - Live APK URL SHA256 matches `1e0a15b027afb231178d381f608fc8640fb2960ae3ebfc1bac9de65206a55016`.
+  - Live landing badge shows `v1.0.19 · vC48`.
+  - Monitor once: PASS, 17 checks, no alerts.
+  - GitHub release created and marked latest: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.19.
+  - CI + Security Audit PASS for vC48 commit.
 
 ## 2026-06-17 — Codex: GH#111 fresh preflight backup
 
