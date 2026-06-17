@@ -1,5 +1,22 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 guarded activation helper
+
+- Scope:
+  - Added a guarded host-side helper for the eventual real GH#111 operator window.
+  - No production env flag changed, no HLR request, no identity mutation.
+- Changed:
+  - New script: `scripts/gh111-activate-nullifier-v2-window.sh`.
+  - Runbook now prefers the guarded helper for `activate-v2` and `rollback-v1`.
+- Safety properties:
+  - `activate-v2` requires `BACKUP_DIR`, `GH111_OPERATOR_CONFIRM=GH111-ACTIVATE-V2`, and `package_check.json` with `ok=true`.
+  - `rollback-v1` requires `BACKUP_DIR` and `GH111_OPERATOR_CONFIRM=GH111-ROLLBACK-V1`.
+  - Both paths use `gh111_kdf_env_guard.py`; no shell-sourcing of `.env.production`.
+  - If `activate-v2` fails after the KDF env write, the helper attempts emergency rollback to v1 and records `emergency_rollback_after_failed_activation.txt`.
+  - Helper does not perform HLR/S10 verification; Gio still performs the real app verification after successful activation.
+- Boundary:
+  - Script added but not run. Production remains `IDENTITY_NULLIFIER_KDF_VERSION=v1`.
+
 ## 2026-06-17 — Codex: GH#111 preflight package checker
 
 - Scope:

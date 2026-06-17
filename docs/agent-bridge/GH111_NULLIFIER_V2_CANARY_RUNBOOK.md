@@ -151,6 +151,25 @@ sha256sum "$BACKUP_DIR/identity_records_audit_alembic.sql"
 ## Activation Window
 
 1. Make sure Gio has the S10, the app is installed, and a real Greek mobile number can be entered in `VerifyScreen`.
+2. Prefer the guarded activation helper. It validates `package_check.json`,
+   re-runs the isolated v2 lifespan probe, writes only the KDF env key through
+   `gh111_kdf_env_guard.py`, rebuilds only the API, waits for external health,
+   and runs monitor once. If activation fails after the KDF env write, it
+   attempts an automatic emergency rollback to v1 and writes
+   `emergency_rollback_after_failed_activation.txt` into `BACKUP_DIR`. It does
+   **not** trigger HLR.
+
+```bash
+cd /opt/ekklesia/app
+: "${BACKUP_DIR:?Set BACKUP_DIR from the fresh preparation script}"
+GH111_OPERATOR_CONFIRM=GH111-ACTIVATE-V2 \
+  scripts/gh111-activate-nullifier-v2-window.sh activate-v2
+```
+
+After this command succeeds, Gio performs the real S10 verification in the app.
+
+Manual fallback:
+
 2. Before changing production flags, prove the current API image can boot its
    app lifespan under `IDENTITY_NULLIFIER_KDF_VERSION=v2` in an isolated
    process. This does **not** mutate `/opt/ekklesia/.env.production`:
@@ -288,6 +307,17 @@ docker cp ekklesia-api:/tmp/gh111_compare_report.json "$BACKUP_DIR/gh111_compare
 ## Rollback
 
 Rollback is env-only unless the operator explicitly chooses to restore the backup.
+
+Preferred rollback helper:
+
+```bash
+cd /opt/ekklesia/app
+: "${BACKUP_DIR:?Set BACKUP_DIR from the fresh preparation script}"
+GH111_OPERATOR_CONFIRM=GH111-ROLLBACK-V1 \
+  scripts/gh111-activate-nullifier-v2-window.sh rollback-v1
+```
+
+Manual fallback:
 
 ```bash
 cd /opt/ekklesia/app
