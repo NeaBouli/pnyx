@@ -14,6 +14,10 @@
   - Monitor focused tests: PASS, 8 passed.
   - `python3 -m py_compile apps/monitor/monitor.py apps/api/tests/test_monitor_secret_redaction.py`: PASS.
   - `git diff --check`: PASS.
+  - Server rollback tag: `rollback-pre-monitor-redaction-20260617-023152`.
+  - Monitor container rebuilt and restarted.
+  - Live monitor run: PASS, 17 checks, no alerts.
+  - Live dummy log self-test redacts Telegram URL as `https://api.telegram.org/bot<redacted>/...`.
 - Safety boundary:
   - No API/DB/ZK/KDF flags changed.
   - This is monitor log hardening only.
