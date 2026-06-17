@@ -15,6 +15,9 @@ GH#111 activates the server-side identity nullifier v2 path from ADR-004:
 - Existing identity rows are selected with a DB row lock (`FOR UPDATE`) during
   verification so parallel re-registration requests cannot issue two private
   keys while only the last public key remains stored.
+- A short Redis in-flight lock (`identity:verify:lock:{nullifier}`) rejects
+  concurrent verification requests for the same identity with HTTP 409, before
+  any second keypair can be issued.
 - No phone number is stored.
 
 This is separate from GH#112 ZK voting. Do not mix both rollout windows.

@@ -4,6 +4,7 @@ import sys
 from types import SimpleNamespace
 
 import pytest
+from fastapi import HTTPException
 from sqlalchemy.dialects import postgresql
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../packages/crypto"))
@@ -11,7 +12,16 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import nullifier
 from models import IdentityRecord
-from routers.identity import _compatibility_nullifier, _identity_kdf_version, _identity_match_query, _select_identity_match
+from routers import identity
+from routers.identity import (
+    IDENTITY_VERIFY_LOCK_TTL_SECONDS,
+    _acquire_identity_verify_lock,
+    _compatibility_nullifier,
+    _identity_kdf_version,
+    _identity_match_query,
+    _release_identity_verify_lock,
+    _select_identity_match,
+)
 
 
 def test_v1_nullifier_keeps_legacy_raw_input_compatibility(monkeypatch):
@@ -100,3 +110,84 @@ def test_identity_match_query_locks_rows_for_reregistration():
     compiled = str(query.compile(dialect=postgresql.dialect()))
 
     assert "FOR UPDATE" in compiled
+
+
+class _FakeRedis:
+    def __init__(self, set_result=True, eval_error: Exception | None = None):
+        self.set_result = set_result
+        self.eval_error = eval_error
+        self.set_calls = []
+        self.eval_calls = []
+
+    async def set(self, *args, **kwargs):
+        self.set_calls.append((args, kwargs))
+        return self.set_result
+
+    async def eval(self, *args):
+        self.eval_calls.append(args)
+        if self.eval_error:
+            raise self.eval_error
+        return 1
+
+
+@pytest.mark.asyncio
+async def test_identity_verify_lock_uses_nx_ttl(monkeypatch):
+    redis = _FakeRedis(set_result=True)
+
+    async def fake_redis():
+        return redis
+
+    monkeypatch.setattr(identity, "_get_hlr_redis", fake_redis)
+
+    lock_key, token = await _acquire_identity_verify_lock("a" * 64)
+
+    assert lock_key == "identity:verify:lock:" + "a" * 64
+    assert token
+    assert redis.set_calls == [
+        (
+            (lock_key, token),
+            {"ex": IDENTITY_VERIFY_LOCK_TTL_SECONDS, "nx": True},
+        )
+    ]
+
+
+@pytest.mark.asyncio
+async def test_identity_verify_lock_conflict_returns_409(monkeypatch):
+    redis = _FakeRedis(set_result=False)
+
+    async def fake_redis():
+        return redis
+
+    monkeypatch.setattr(identity, "_get_hlr_redis", fake_redis)
+
+    with pytest.raises(HTTPException) as exc:
+        await _acquire_identity_verify_lock("a" * 64)
+
+    assert exc.value.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_identity_verify_lock_release_uses_owner_token(monkeypatch):
+    redis = _FakeRedis()
+
+    async def fake_redis():
+        return redis
+
+    monkeypatch.setattr(identity, "_get_hlr_redis", fake_redis)
+
+    await _release_identity_verify_lock("identity:verify:lock:test", "token")
+
+    assert redis.eval_calls
+    assert redis.eval_calls[0][1:] == (1, "identity:verify:lock:test", "token")
+
+
+@pytest.mark.asyncio
+async def test_identity_verify_lock_release_is_best_effort(monkeypatch):
+    redis = _FakeRedis(eval_error=RuntimeError("redis down"))
+
+    async def fake_redis():
+        return redis
+
+    monkeypatch.setattr(identity, "_get_hlr_redis", fake_redis)
+
+    await _release_identity_verify_lock("identity:verify:lock:test", "token")

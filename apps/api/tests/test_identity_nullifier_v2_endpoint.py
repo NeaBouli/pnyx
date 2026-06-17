@@ -13,6 +13,7 @@ import pytest
 
 pytest.importorskip("aiosqlite", reason="aiosqlite required for SQLite router tests")
 
+from fastapi import HTTPException
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import event, text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -89,8 +90,16 @@ async def setup_db(monkeypatch):
     async def fake_increment_hlr_usage() -> int:
         return 1
 
+    async def fake_acquire_identity_verify_lock(_nullifier_hash: str) -> tuple[str, str]:
+        return ("identity:verify:lock:test", "token")
+
+    async def fake_release_identity_verify_lock(_lock_key: str, _token: str) -> None:
+        return None
+
     monkeypatch.setattr(identity, "verify_greek_number", fake_hlr)
     monkeypatch.setattr(identity, "_increment_hlr_usage", fake_increment_hlr_usage)
+    monkeypatch.setattr(identity, "_acquire_identity_verify_lock", fake_acquire_identity_verify_lock)
+    monkeypatch.setattr(identity, "_release_identity_verify_lock", fake_release_identity_verify_lock)
     monkeypatch.setattr(identity, "generate_nullifier_hash", lambda _phone: V1)
     monkeypatch.setattr(identity, "generate_nullifier_hash_v2", lambda _phone: V2)
     monkeypatch.setattr(
@@ -197,6 +206,27 @@ async def test_existing_identity_stays_active_if_reregistration_key_generation_f
     assert rows[0]["public_key_hex"] == PUB_OLD
     assert rows[0]["nullifier_hash_v2"] is None
     assert rows[0]["nullifier_version"] == "v1"
+
+
+@pytest.mark.asyncio
+async def test_verify_lock_conflict_returns_409_before_keypair_generation(monkeypatch):
+    monkeypatch.setenv("IDENTITY_NULLIFIER_KDF_VERSION", "v2")
+
+    async def busy_lock(_nullifier_hash: str) -> tuple[str, str]:
+        raise HTTPException(status_code=409, detail="verify already in progress")
+
+    def failing_keypair() -> dict[str, str]:
+        raise AssertionError("keypair must not be generated when verify lock is busy")
+
+    monkeypatch.setattr(identity, "_acquire_identity_verify_lock", busy_lock)
+    monkeypatch.setattr(identity, "generate_keypair", failing_keypair)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post("/api/v1/identity/verify", json={"phone_number": "+306900000001"})
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "verify already in progress"
+    assert await _identity_rows() == []
 
 
 @pytest.mark.asyncio

@@ -8,6 +8,7 @@ import gc
 import logging
 import json
 from datetime import datetime, timezone
+from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -43,6 +44,7 @@ HLR_PRIMARY_REDIS_KEY = "hlr:hlrlookupcom:used"
 HLR_FALLBACK_INITIAL_CREDITS = 1000  # hlr-lookups.com
 HLR_FALLBACK_COST_PER_QUERY = 0.01   # 0.01€
 HLR_FALLBACK_REDIS_KEY = "hlr:used"  # legacy key
+IDENTITY_VERIFY_LOCK_TTL_SECONDS = 90
 
 _hlr_redis: aioredis.Redis | None = None
 
@@ -102,6 +104,39 @@ def _identity_match_query(identity_filter: ColumnElement[bool]) -> Select:
     return select(IdentityRecord).where(identity_filter).with_for_update()
 
 
+async def _acquire_identity_verify_lock(nullifier_hash: str) -> tuple[str, str]:
+    """Acquire a short in-flight lock for one identity verification."""
+    lock_key = f"identity:verify:lock:{nullifier_hash}"
+    token = uuid4().hex
+    r = await _get_hlr_redis()
+    acquired = await r.set(lock_key, token, ex=IDENTITY_VERIFY_LOCK_TTL_SECONDS, nx=True)
+    if not acquired:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Η επαλήθευση είναι ήδη σε εξέλιξη. Δοκιμάστε ξανά σε λίγα δευτερόλεπτα.",
+        )
+    return lock_key, token
+
+
+async def _release_identity_verify_lock(lock_key: str, token: str) -> None:
+    """Release only the lock owned by this request."""
+    try:
+        r = await _get_hlr_redis()
+        await r.eval(
+            """
+            if redis.call("get", KEYS[1]) == ARGV[1] then
+                return redis.call("del", KEYS[1])
+            end
+            return 0
+            """,
+            1,
+            lock_key,
+            token,
+        )
+    except Exception:
+        logger.warning("[MOD-01] Failed to release identity verify lock %s", lock_key, exc_info=True)
+
+
 # ─── Schemas ──────────────────────────────────────────────────────────────────
 
 class VerifyRequest(BaseModel):
@@ -159,97 +194,101 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
 
     # 2. Nullifier Hash (Telefonnummer wird in der Funktion sofort gelöscht)
     nullifier = generate_nullifier_hash(req.phone_number)  # v1 compatibility anchor
-    kdf_version = _identity_kdf_version()
-    nullifier_v2 = generate_nullifier_hash_v2(req.phone_number) if kdf_version == "v2" else None
-    del req.phone_number
-    gc.collect()
+    lock_key, lock_token = await _acquire_identity_verify_lock(nullifier)
+    try:
+        kdf_version = _identity_kdf_version()
+        nullifier_v2 = generate_nullifier_hash_v2(req.phone_number) if kdf_version == "v2" else None
+        del req.phone_number
+        gc.collect()
 
-    # 3. Bestehenden Record prüfen
-    identity_filter = IdentityRecord.nullifier_hash == nullifier
-    if nullifier_v2:
-        identity_filter = or_(IdentityRecord.nullifier_hash_v2 == nullifier_v2, identity_filter)
-    result = await db.execute(_identity_match_query(identity_filter))
-    matches = result.scalars().all()
-    if len(matches) > 1:
-        logger.warning("[MOD-01] Multiple identity rows matched v2 migration lookup; using v1-preferred anchor")
-    existing = _select_identity_match(matches, nullifier)
-
-    if existing and existing.status == KeyStatus.ACTIVE:
-        # Re-register in one transaction so an interrupted key rotation cannot
-        # leave a valid citizen identity stuck in REVOKED.
-        logger.info("[MOD-01] Re-registering existing active key atomically")
-
-    # If v2 matched a legacy row, keep the existing v1 nullifier_hash as the
-    # public compatibility anchor for votes/status/downstream tables.
-    compatibility_nullifier = _compatibility_nullifier(existing, nullifier)
-
-    # 4. Keypair erzeugen
-    keypair = generate_keypair()
-
-    # 5. Demographischen Hash berechnen (optional, Beta)
-    demographic_hash = None
-    if req.age_group and req.region:
-        from nullifier import generate_demographic_hash
-        demographic_hash = generate_demographic_hash(
-            req.age_group,
-            req.region,
-            req.gender_code or "GENDER_NO_ANSWER"
-        )
-
-    # 6. Nur Public Key + Nullifier speichern
-    if existing:
-        # Revoked record reaktivieren
-        update_values = {
-            "public_key_hex": keypair["public_key_hex"],
-            "status": KeyStatus.ACTIVE,
-            "demographic_hash": demographic_hash,
-            "age_group": req.age_group,
-            "region": req.region,
-            "gender_code": req.gender_code,
-            "revoked_at": None,
-            "created_at": datetime.now(timezone.utc).replace(tzinfo=None),
-        }
+        # 3. Bestehenden Record prüfen
+        identity_filter = IdentityRecord.nullifier_hash == nullifier
         if nullifier_v2:
-            update_values.update({
-                "nullifier_hash_v2": nullifier_v2,
-                "nullifier_version": "v2",
-                "nullifier_migrated_at": datetime.now(timezone.utc).replace(tzinfo=None),
-            })
+            identity_filter = or_(IdentityRecord.nullifier_hash_v2 == nullifier_v2, identity_filter)
+        result = await db.execute(_identity_match_query(identity_filter))
+        matches = result.scalars().all()
+        if len(matches) > 1:
+            logger.warning("[MOD-01] Multiple identity rows matched v2 migration lookup; using v1-preferred anchor")
+        existing = _select_identity_match(matches, nullifier)
+
+        if existing and existing.status == KeyStatus.ACTIVE:
+            # Re-register in one transaction so an interrupted key rotation cannot
+            # leave a valid citizen identity stuck in REVOKED.
+            logger.info("[MOD-01] Re-registering existing active key atomically")
+
+        # If v2 matched a legacy row, keep the existing v1 nullifier_hash as the
+        # public compatibility anchor for votes/status/downstream tables.
+        compatibility_nullifier = _compatibility_nullifier(existing, nullifier)
+
+        # 4. Keypair erzeugen
+        keypair = generate_keypair()
+
+        # 5. Demographischen Hash berechnen (optional, Beta)
+        demographic_hash = None
+        if req.age_group and req.region:
+            from nullifier import generate_demographic_hash
+            demographic_hash = generate_demographic_hash(
+                req.age_group,
+                req.region,
+                req.gender_code or "GENDER_NO_ANSWER"
+            )
+
+        # 6. Nur Public Key + Nullifier speichern
+        if existing:
+            # Revoked record reaktivieren
+            update_values = {
+                "public_key_hex": keypair["public_key_hex"],
+                "status": KeyStatus.ACTIVE,
+                "demographic_hash": demographic_hash,
+                "age_group": req.age_group,
+                "region": req.region,
+                "gender_code": req.gender_code,
+                "revoked_at": None,
+                "created_at": datetime.now(timezone.utc).replace(tzinfo=None),
+            }
+            if nullifier_v2:
+                update_values.update({
+                    "nullifier_hash_v2": nullifier_v2,
+                    "nullifier_version": "v2",
+                    "nullifier_migrated_at": datetime.now(timezone.utc).replace(tzinfo=None),
+                })
+            await db.execute(
+                update(IdentityRecord)
+                .where(IdentityRecord.id == existing.id)
+                .values(**update_values)
+            )
+        else:
+            record = IdentityRecord(
+                nullifier_hash=nullifier,
+                nullifier_hash_v2=nullifier_v2,
+                nullifier_version="v2" if nullifier_v2 else "v1",
+                nullifier_migrated_at=datetime.now(timezone.utc).replace(tzinfo=None) if nullifier_v2 else None,
+                public_key_hex=keypair["public_key_hex"],
+                demographic_hash=demographic_hash,
+                age_group=req.age_group,
+                region=req.region,
+                gender_code=req.gender_code,
+                status=KeyStatus.ACTIVE,
+            )
+            db.add(record)
+
+        # Cascade: SurveyResponses (VAA — Art. 9 GDPR)
         await db.execute(
-            update(IdentityRecord)
-            .where(IdentityRecord.id == existing.id)
-            .values(**update_values)
+            text("DELETE FROM survey_responses WHERE user_hash = :nh"),
+            {"nh": compatibility_nullifier}
         )
-    else:
-        record = IdentityRecord(
-            nullifier_hash=nullifier,
-            nullifier_hash_v2=nullifier_v2,
-            nullifier_version="v2" if nullifier_v2 else "v1",
-            nullifier_migrated_at=datetime.now(timezone.utc).replace(tzinfo=None) if nullifier_v2 else None,
+        await db.commit()
+
+        # 7. Private Key einmalig zurückgeben — danach nie wieder verfügbar
+        return VerifyResponse(
+            success=True,
             public_key_hex=keypair["public_key_hex"],
-            demographic_hash=demographic_hash,
-            age_group=req.age_group,
-            region=req.region,
-            gender_code=req.gender_code,
-            status=KeyStatus.ACTIVE,
+            private_key_hex=keypair["private_key_hex"],
+            nullifier_hash=compatibility_nullifier,
+            message="Κλειδί δημιουργήθηκε. Αποθηκεύεται με ασφάλεια στη συσκευή σας. Δεν αποθηκεύεται στον server."
         )
-        db.add(record)
-
-    # Cascade: SurveyResponses (VAA — Art. 9 GDPR)
-    await db.execute(
-        text("DELETE FROM survey_responses WHERE user_hash = :nh"),
-        {"nh": compatibility_nullifier}
-    )
-    await db.commit()
-
-    # 7. Private Key einmalig zurückgeben — danach nie wieder verfügbar
-    return VerifyResponse(
-        success=True,
-        public_key_hex=keypair["public_key_hex"],
-        private_key_hex=keypair["private_key_hex"],
-        nullifier_hash=compatibility_nullifier,
-        message="Κλειδί δημιουργήθηκε. Αποθηκεύεται με ασφάλεια στη συσκευή σας. Δεν αποθηκεύεται στον server."
-    )
+    finally:
+        await _release_identity_verify_lock(lock_key, lock_token)
 
 
 @router.post("/revoke")
