@@ -39,14 +39,14 @@ ekklesia.gr (εκκλησία του έθνους) is an independent civic initi
 - Forum: Discourse (pnyx.ekklesia.gr)
 - Archiving: Arweave permanent storage
 - Hosting: Hetzner (Helsinki, EU)
-- ZK Voting V2: Semaphore-based; Android prover, hidden S10 canary, and security review passed for scoped rollout; global production rollout gated
+- ZK Voting V2: Semaphore-based; Android prover, hidden S10 canary, security review, and first public one-bill scoped rollout passed; global production rollout gated
 
 ## Status
 
 - Tier 1: Active (25 modules, 11+ containers)
 - Newsletter: Brevo + Telegram cross-publish
 - Monitor: 3-tier self-healing (API recovery, Docker restart, Telegram escalation)
-- ZK Voting V2: Hidden S10 canary passed and first public scoped rollout is live for one exact bill scope; global rollout and ZK Arweave publication remain off pending review
+- ZK Voting V2: Hidden S10 canary passed and first public scoped rollout completed for one exact bill scope (`bill:GR-d4c62ed4`); global rollout and ZK Arweave publication remain off pending review
 
 ## URLs
 

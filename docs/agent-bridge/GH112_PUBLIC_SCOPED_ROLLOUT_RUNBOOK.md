@@ -1,19 +1,20 @@
 # GH#112 — Public Scoped ZK Rollout Runbook
 
 Date: 2026-06-17
-Status: preparation only; no production scope activated
+Status: first public scoped rollout complete for `bill:GR-d4c62ed4`; use this
+runbook for any next exact-scope rollout.
 
 ## Boundary
 
-The hidden S10 canary proved the Semaphore ZK path end to end. Public
-production ZK is still gated. The first public rollout must use exactly one
-eligible bill scope and must not enable global rollout.
+The hidden S10 canary proved the Semaphore ZK path end to end. The first public
+one-bill rollout then passed for `bill:GR-d4c62ed4`. Further production ZK use
+must still remain exact-scope gated and must not enable global rollout.
 
 ## Current Meaning Of "ZK Is Rolled Out"
 
 - Rolled out technically: Android native prover, backend verifier, Merkle root
-  builder, receipt storage, public verifier payload policy, and hidden S10
-  canary have all passed.
+  builder, receipt storage, public verifier payload policy, hidden S10 canary,
+  and the first public one-bill scope have all passed.
 - Not rolled out globally: live production flags remain off and
   `ZK_GLOBAL_ROLLOUT_ENABLED` must stay off.
 - Public rollout shape: one explicit scope in `ZK_PRODUCTION_SCOPE_ALLOWLIST`,
@@ -30,7 +31,7 @@ python -m scripts.preflight_zk_public_scope --list-candidates
 python -m scripts.preflight_zk_public_scope --bill-id GR-5294
 ```
 
-The first public rollout is conservative:
+Each public scoped rollout is conservative:
 
 - allowed source: `PARLIAMENT`
 - allowed statuses: `ACTIVE`, `WINDOW_24H`, `OPEN_END`
@@ -52,7 +53,7 @@ ZK_TIER1_GUARD_ENABLED=true
 ZK_ROOT_PUBLICATION_ENABLED=true
 ```
 
-Keep off for the first public rollout:
+Keep off for scoped rollout unless separately reviewed:
 
 ```text
 ZK_CANARY_ENABLED=false
@@ -91,7 +92,7 @@ Stop and roll back flags if:
 
 ## Current Candidate Reality
 
-As of 2026-06-17, the newest real Bouli bills are `ANNOUNCED`, so they are not
-eligible. Existing real `OPEN_END` Parliament bills are technically voteable and
-can be considered for the first public scoped rollout if Gio accepts that
-product choice.
+As of 2026-06-17, the first public scoped rollout completed for
+`bill:GR-d4c62ed4`. Newest real Bouli bills that are still `ANNOUNCED` are not
+eligible. Future exact-scope rollouts should use this runbook and a fresh
+preflight for the selected bill.

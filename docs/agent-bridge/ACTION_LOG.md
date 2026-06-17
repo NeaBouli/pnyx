@@ -11879,3 +11879,29 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - repeated multi-project Docker builds on the shared CX43 can recreate this
     pressure quickly; prefer BuildKit cache cleanup before deleting backups or
     snapshots.
+
+## 2026-06-18 — Codex: Public ZK status wording + vC50 Play notes
+
+- Updated public wording after GH#112/GH#111 completion:
+  - README,
+  - landing page,
+  - wiki FAQ,
+  - wiki Roadmap,
+  - wiki ZK Voting page,
+  - whitepaper mirrors,
+  - `llms.txt`.
+- Wording boundary:
+  - Android native Semaphore prover: passed on S10.
+  - Hidden S10 canary: passed.
+  - First public one-bill scoped rollout: passed for `bill:GR-d4c62ed4`.
+  - Production ZK remains exact-scope gated.
+  - `ZK_GLOBAL_ROLLOUT_ENABLED=false`.
+  - `ZK_ARWEAVE_PUBLICATION_ENABLED=false`; ZK receipts remain pending until
+    public verifier-payload policy/review.
+- Updated internal GH#112 runbook/security review from "first public rollout
+  pending" to "first public scoped rollout complete; use exact-scope runbook
+  for any next scope".
+- Added Google Play Closed Testing release notes:
+  `docs/agent-bridge/PLAY_RELEASE_NOTES_v1.0.21_vC50.md`.
+- Verification:
+  - `cd apps/web && npm run build`: PASS.

@@ -43,5 +43,5 @@
 - MOD-13 My MP (Ο Βουλευτής μου)
 - WebSocket Live Counter (WINDOW_24H)
 - Deliberation Layer (pol.is model)
-- Semaphore ZK Voting — Android prover and hidden S10 canary passed; global production rollout remains gated until security review, Arweave/publication policy, tally/UI policy, and staged release are complete
+- Semaphore ZK Voting — Android prover, hidden S10 canary, security review, and first public one-bill scoped rollout passed; global rollout and ZK Arweave publication remain gated
 - Commit-Reveal ZK voting

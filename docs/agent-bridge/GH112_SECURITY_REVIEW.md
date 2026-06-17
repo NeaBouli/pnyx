@@ -7,13 +7,14 @@ public receipt/Arweave policy, tally integration, hidden S10 canary evidence.
 
 ## Decision
 
-Semaphore ZK V2 is **ready for a scoped production rollout window**, not for
-unconditional global activation.
+Semaphore ZK V2 passed its first public scoped production rollout. It remains
+**approved only for exact-scope rollout**, not for unconditional global
+activation.
 
 Safe activation shape:
 
 - one explicit public vote scope at a time via `ZK_PRODUCTION_SCOPE_ALLOWLIST`
-- no `ZK_GLOBAL_ROLLOUT_ENABLED` for the first public rollout
+- no `ZK_GLOBAL_ROLLOUT_ENABLED` until a separate global-rollout review
 - DB backup immediately before the window
 - root publication and receipt publication kept as separate admin actions
 - Arweave publication only after receipts exist and the public payload is checked
@@ -38,6 +39,9 @@ Reviewed against these failure modes:
 - Hidden S10 canary passed for `bill:ZK-CANARY-001`:
   opt-in, root publish, native proof, server verify, mutated proof rejection,
   accepted canary ZK vote, flags returned off.
+- First public scoped rollout passed for `bill:GR-d4c62ed4`:
+  S10 proof accepted, public receipt recorded, `zk_vote_count=1`, `total_votes=1`.
+  ZK Arweave publication stayed off; receipt remains pending publication.
 - Live API status on 2026-06-16:
   `https://api.ekklesia.gr/api/v1/zk/status` returns HTTP 200 and all production,
   canary, root, Arweave, and global rollout flags are `false`.
@@ -56,7 +60,8 @@ The production backend is fail-closed by default and write paths require an
 explicit canary scope, explicit production scope allowlist, or a separate global
 rollout flag.
 
-`ZK_GLOBAL_ROLLOUT_ENABLED` must remain off for first production use.
+`ZK_GLOBAL_ROLLOUT_ENABLED` must remain off until a dedicated global-rollout
+review is completed.
 
 ### F1 — Cross-scope mobile identity reuse
 
@@ -110,8 +115,9 @@ ZK write paths are gated:
 Canary mode requires `ZK_CANARY_SCOPE_ALLOWLIST`; production mode requires
 `ZK_PRODUCTION_SCOPE_ALLOWLIST` unless the explicit global flag is enabled.
 
-Recommendation: do not use the global flag until at least one public scoped
-rollout has completed and been reviewed.
+Recommendation: continue using exact scope allowlists. Do not use the global
+flag until a dedicated global-rollout review covers multi-scope privacy,
+monitoring, UI wording, and Arweave publication policy.
 
 ### F4 — Proof binding
 
@@ -204,7 +210,8 @@ When a real public scope is selected:
 
 ## Current Status
 
-Review result: **PASS for scoped production rollout readiness.**
+Review result: **PASS for exact-scope production rollout.**
 
-Remaining boundary: no global rollout. Global production ZK requires at least
-one successful public scoped rollout and a follow-up review.
+Remaining boundary: no global rollout. Global production ZK still requires a
+follow-up review; ZK Arweave publication also remains gated until the public
+payload policy is reviewed.
