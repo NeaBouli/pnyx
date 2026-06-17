@@ -1,5 +1,24 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 health-hardened preflight backup
+
+- Scope:
+  - Prepared the next GH#111 operator window after v2 health hardening.
+  - No env flag changed, no HLR request, no identity mutation.
+- Artifacts:
+  - Backup dir: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_health_hardened_20260617_050528`.
+  - Snapshot SHA256: `f2bbe1f9d765c28c4367bdd47e4cbaffa730f68c205119bb14b4abc8b9faeac1`.
+  - Preflight report SHA256: `162fc019087cf02054e8bd4b51ad25e9a9ec5cb5ede9d7fb9d7231cb196f8ed7`.
+  - Identity/audit/alembic dump SHA256: `7045d4e1056da03c12f3321542e3c374581200f3131896f3940b7be97568f029`.
+  - Isolated v2 lifespan probe SHA256: `633e5cf116c3a401fa0a2329b77534870fe711ef751973f3bd1666e6f6f60d14`.
+- Preflight:
+  - `preflight_blockers=[]`.
+  - `identity_records`: 17 total, 17 active, 0 revoked.
+  - v2 counters all 0: `with_v2`, `version_v2`, `active_with_v2`, `v2_without_version`, `version_without_v2`, `malformed_v2`.
+  - Production KDF remains `v1`.
+- Boundary:
+  - GH#111 still requires a real S10/HLR verification window before completion.
+
 ## 2026-06-17 — Codex: GH#111 v2 health diagnosis + runbook hardening
 
 - Finding:
