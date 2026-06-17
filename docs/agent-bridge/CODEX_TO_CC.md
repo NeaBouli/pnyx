@@ -1,18 +1,18 @@
-# CC Context — Current pnyx status after vC47 release
+# CC Context — Current pnyx status after vC48 release prep
 
 Mode: support/review when asked. Do not assume old vC35/vC37/vC38/vC41 tasks are current.
 
 Current state:
-- Mobile vC47 / v1.0.18 is the current Play/direct build.
-- AAB ready for Google Play Closed Testing: `/Users/gio/Desktop/ekklesia-v1.0.18-vC47-PLAY.aab`.
-- Direct APK is live on ekklesia.gr as v1.0.18 / vC47; SHA256 `cb9fde33c9ca039413c38cc111b62f8b0deab4c6ba466d5d9243ce584919e9b9`.
-- GitHub latest release target is live: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.18
-- APK SHA256: `cb9fde33c9ca039413c38cc111b62f8b0deab4c6ba466d5d9243ce584919e9b9`.
-- AAB SHA256: `f8b70de981d4fb3f5e799d1a8c229665aa1d72cf08a850f5b0fa8baede5a70ae`.
-- R8/minify is still OFF for vC47; no `mapping.txt` exists. Play's no-mapping warning is informational for this artifact.
+- Mobile vC48 / v1.0.19 is the current prepared Play/direct build. Gio asked for `vC40`, but Play requires monotonic versionCode; vC48 is the safe next code after vC47.
+- AAB ready for Google Play Closed Testing: `/Users/gio/Desktop/ekklesia-v1.0.19-vC48-PLAY.aab`.
+- Direct APK local artifact is ready as v1.0.19 / vC48; SHA256 `1e0a15b027afb231178d381f608fc8640fb2960ae3ebfc1bac9de65206a55016`.
+- GitHub latest release target is pending for v1.0.19.
+- APK SHA256: `1e0a15b027afb231178d381f608fc8640fb2960ae3ebfc1bac9de65206a55016`.
+- AAB SHA256: `af4a490a480113ada18e2e91f050eca8232c9443ae23f69966b4f4331ad4f2f5`.
+- R8/minify is still OFF for vC48; no `mapping.txt` exists. Play's no-mapping warning is informational for this artifact.
 - Monitor Telegram Bot API URL logging is redacted live. Do not repeat raw Telegram tokens from terminal logs.
 - GH#112 hidden S10 canary passed earlier for `bill:ZK-CANARY-001`.
-- GH#112 first public scoped rollout passed for `bill:GR-d4c62ed4`; vC47 S10 install/launch smoke test passed.
+- GH#112 first public scoped rollout passed for `bill:GR-d4c62ed4`; vC48 S10 install/launch smoke test passed.
 - Public scoped ZK result for `GR-d4c62ed4`: `total_votes=1`, `tier1_vote_count=0`, `zk_vote_count=1`, `yes_count=1`.
 - Public receipt exists with `vote_commitment=YES`, `arweave_pending=true`, `arweave_tx_id=null`.
 - Production ZK is currently scoped to exactly `bill:GR-d4c62ed4` through `ZK_PRODUCTION_SCOPE_ALLOWLIST`.
@@ -25,7 +25,7 @@ Current state:
 - CI + Security Audit are green for `4aa6f71` and `f51dbf0`.
 - F-Droid !38007 is still open/mergeable, latest pipeline success, waiting on fdroiddata maintainer.
 - GH#111 Nullifier v2 canary remains separate and is NOT activated.
-- vC47 keeps the controlled Profile -> Verify entrypoint for a real HLR re-verification canary; it does NOT activate Nullifier v2 by itself.
+- vC48 keeps the controlled Profile -> Verify entrypoint for a real HLR re-verification canary; it does NOT activate Nullifier v2 by itself.
 - GH#111 preflight on 2026-06-17: production KDF still v1; `identity_records` 17 total / 17 active / 0 v2; `active_with_v2=0`, `v2_without_version=0`, `version_without_v2=0`, `malformed_v2=0`; Argon2id v2 helper works in API container at about 131 ms per derivation.
 - GH#111 fresh preflight backup exists: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_042119` (snapshot/report/dump SHA256 recorded in `ACTION_LOG.md`).
 - GH#111 runbook exists: `docs/agent-bridge/GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`.
