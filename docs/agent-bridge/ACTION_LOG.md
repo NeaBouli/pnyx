@@ -1,5 +1,25 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111/GH#112 post-vC46 status refresh
+
+- Scope:
+  - Read-only post-release verification after vC46.
+  - No ZK/KDF/env flags changed.
+- GH#111 Nullifier v2:
+  - Live preflight in API container: PASS, `preflight_blockers=[]`.
+  - Snapshot: `total=17`, `active=17`, `revoked=0`, `with_v2=0`, `version_v2=0`, `kdf_env=unset`.
+  - Saved server artifact: `/opt/ekklesia/backups/gh111_preflight/gh111_preflight_vc46_20260617_030101.json`.
+  - Artifact SHA256: `874c883d00435db3a56e5aadbff379aa13a2d580b6d004cafc8a7db86965e461`.
+  - GH#111 remains open/waiting because completion requires a real phone/HLR verification canary.
+- GH#112 ZK:
+  - `/api/v1/zk/status`: production/verifier/opt-in enabled for scoped production, `global_rollout_enabled=false`, `arweave_publication_enabled=false`.
+  - Public scope `bill:GR-d4c62ed4` still has one public ZK receipt, `arweave_pending=true`.
+  - `/api/v1/vote/GR-d4c62ed4/results`: `total_votes=1`, `tier1_vote_count=0`, `zk_vote_count=1`, `yes_count=1`, `results_hidden=false`.
+  - GH#112 remains open for staged/global rollout and ZK Arweave policy follow-up.
+- System:
+  - Monitor once: PASS, 17 checks, no alerts.
+  - S10 still connected and reports `versionCode=46`, `versionName=1.0.17`.
+
 ## 2026-06-17 — Codex: vC46 / v1.0.17 Android release build
 
 - Context:
