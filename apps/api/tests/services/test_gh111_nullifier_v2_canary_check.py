@@ -2,6 +2,9 @@ from scripts.gh111_nullifier_v2_canary_check import (
     IdentityKdfSnapshot,
     evaluate_canary,
     evaluate_preflight,
+    read_snapshot,
+    write_report,
+    write_snapshot,
 )
 
 
@@ -60,3 +63,27 @@ def test_canary_blocks_when_v2_flag_not_observed_after_window() -> None:
 
     assert verdict.ok is False
     assert "after_kdf_env_not_v2" in verdict.blockers
+
+
+def test_snapshot_output_stays_compatible_with_compare_input(tmp_path) -> None:
+    snapshot = IdentityKdfSnapshot(kdf_env="v1", total=17, with_v2=0, version_v2=0, active=17, revoked=0)
+    path = tmp_path / "before.json"
+
+    write_snapshot(snapshot, path)
+
+    assert read_snapshot(path) == snapshot
+
+
+def test_report_output_can_include_preflight_blockers(tmp_path) -> None:
+    snapshot = IdentityKdfSnapshot(kdf_env="v1", total=17, with_v2=0, version_v2=0, active=17, revoked=0)
+    path = tmp_path / "preflight_report.json"
+
+    write_report(
+        {
+            "snapshot": snapshot.__dict__,
+            "preflight_blockers": [],
+        },
+        path,
+    )
+
+    assert '"preflight_blockers": []' in path.read_text()

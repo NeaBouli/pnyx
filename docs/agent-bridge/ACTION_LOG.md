@@ -1,5 +1,25 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 operator evidence output hardening
+
+- Scope:
+  - Hardened the remaining Nullifier v2 canary operator tooling only.
+  - No production env flags changed, no HLR request made, no identity mutation.
+- Changed:
+  - `apps/api/scripts/gh111_nullifier_v2_canary_check.py` now supports `--report-output` for both `snapshot` and `compare`.
+  - Existing `--output` snapshot stays backward-compatible and remains the machine-readable `compare --before` input.
+  - `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md` now writes two explicit artifacts before the flag window:
+    - `gh111_before_snapshot.json` for compare input.
+    - `gh111_preflight_report.json` with `preflight_blockers`.
+  - The post-window compare step now writes `gh111_compare_report.json` as the audit artifact.
+  - `CODEX_TO_CC.md` updated with the new exact commands.
+- Verification:
+  - `python3 -m py_compile apps/api/scripts/gh111_nullifier_v2_canary_check.py`: PASS.
+  - Focused GH#111 pytest set: PASS, 23 passed.
+- Safety boundary:
+  - GH#111 remains open/waiting for an explicit real phone/HLR operator canary.
+  - Do not activate `IDENTITY_NULLIFIER_KDF_VERSION=v2` from DB/admin-test data alone.
+
 ## 2026-06-17 — Codex: GH#111/GH#112 post-vC46 status refresh
 
 - Scope:

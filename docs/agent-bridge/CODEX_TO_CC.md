@@ -41,4 +41,4 @@ If asked to continue:
 5. Keep production ZK scoped by exact allowlist; do not wildcard scopes.
 6. GH#111 Nullifier v2 is a separate canary with HLR/identity re-registration risk; do not mix it into GH#112 rollout work.
 7. Do not activate `IDENTITY_NULLIFIER_KDF_VERSION=v2` from DB/admin-test data alone. The proof requires a real phone/HLR verify or re-registration path so same-row v1->v2 migration can be observed. Follow `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`.
-8. During the real GH#111 window, use `python scripts/gh111_nullifier_v2_canary_check.py snapshot --preflight --output /tmp/gh111_before.json` before the flag flip and `compare --mode existing-reregistration|new-registration` after the HLR step.
+8. During the real GH#111 window, use `python scripts/gh111_nullifier_v2_canary_check.py snapshot --preflight --output /tmp/gh111_before_snapshot.json --report-output /tmp/gh111_preflight_report.json` before the flag flip and `compare --before /tmp/gh111_before_snapshot.json --mode existing-reregistration|new-registration --report-output /tmp/gh111_compare_report.json` after the HLR step.

@@ -138,6 +138,10 @@ def write_snapshot(snapshot: IdentityKdfSnapshot, output: Path) -> None:
     output.write_text(json.dumps(asdict(snapshot), indent=2, sort_keys=True) + "\n")
 
 
+def write_report(payload: object, output: Path) -> None:
+    output.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+
+
 def read_snapshot(path: Path) -> IdentityKdfSnapshot:
     payload = json.loads(path.read_text())
     return IdentityKdfSnapshot(
@@ -159,7 +163,10 @@ async def _cmd_snapshot(args: argparse.Namespace) -> int:
     if args.output:
         write_snapshot(snapshot, Path(args.output))
     blockers = evaluate_preflight(snapshot) if args.preflight else []
-    _print_json({"snapshot": asdict(snapshot), "preflight_blockers": blockers})
+    payload = {"snapshot": asdict(snapshot), "preflight_blockers": blockers}
+    if args.report_output:
+        write_report(payload, Path(args.report_output))
+    _print_json(payload)
     return 1 if blockers else 0
 
 
@@ -167,7 +174,10 @@ async def _cmd_compare(args: argparse.Namespace) -> int:
     before = read_snapshot(Path(args.before))
     after = await collect_snapshot()
     verdict = evaluate_canary(before, after, args.mode)
-    _print_json(asdict(verdict))
+    payload = asdict(verdict)
+    if args.report_output:
+        write_report(payload, Path(args.report_output))
+    _print_json(payload)
     return 0 if verdict.ok else 1
 
 
@@ -177,10 +187,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     snapshot = sub.add_parser("snapshot", help="Capture current identity KDF state")
     snapshot.add_argument("--output", help="Optional JSON snapshot output path")
+    snapshot.add_argument("--report-output", help="Optional full JSON report output path")
     snapshot.add_argument("--preflight", action="store_true", help="Fail if first-activation preflight is not clean")
 
     compare = sub.add_parser("compare", help="Compare current state with a pre-window snapshot")
     compare.add_argument("--before", required=True, help="JSON snapshot captured before the canary")
+    compare.add_argument("--report-output", help="Optional full JSON verdict output path")
     compare.add_argument(
         "--mode",
         required=True,

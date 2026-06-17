@@ -64,9 +64,15 @@ Structured read-only preflight helper:
 cd /opt/ekklesia/app/infra/docker
 docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.yml exec -T api \
   python scripts/gh111_nullifier_v2_canary_check.py snapshot --preflight \
-  --output /tmp/gh111_before.json
-docker cp ekklesia-api:/tmp/gh111_before.json /opt/ekklesia/backups/gh111_before.json
+  --output /tmp/gh111_before_snapshot.json \
+  --report-output /tmp/gh111_preflight_report.json
+docker cp ekklesia-api:/tmp/gh111_before_snapshot.json /opt/ekklesia/backups/gh111_before_snapshot.json
+docker cp ekklesia-api:/tmp/gh111_preflight_report.json /opt/ekklesia/backups/gh111_preflight_report.json
 ```
+
+`gh111_before_snapshot.json` is the machine-readable input for `compare`.
+`gh111_preflight_report.json` is the operator/audit artifact and includes
+`preflight_blockers`.
 
 ## Fresh Backup
 
@@ -160,18 +166,22 @@ Then run the structured post-check. Choose exactly one mode:
 
 ```bash
 # Existing-phone re-registration:
-docker cp /opt/ekklesia/backups/gh111_before.json ekklesia-api:/tmp/gh111_before.json
+docker cp /opt/ekklesia/backups/gh111_before_snapshot.json ekklesia-api:/tmp/gh111_before_snapshot.json
 docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.yml exec -T api \
   python scripts/gh111_nullifier_v2_canary_check.py compare \
-  --before /tmp/gh111_before.json \
-  --mode existing-reregistration
+  --before /tmp/gh111_before_snapshot.json \
+  --mode existing-reregistration \
+  --report-output /tmp/gh111_compare_report.json
+docker cp ekklesia-api:/tmp/gh111_compare_report.json /opt/ekklesia/backups/gh111_compare_report.json
 
 # New-phone registration:
-docker cp /opt/ekklesia/backups/gh111_before.json ekklesia-api:/tmp/gh111_before.json
+docker cp /opt/ekklesia/backups/gh111_before_snapshot.json ekklesia-api:/tmp/gh111_before_snapshot.json
 docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.yml exec -T api \
   python scripts/gh111_nullifier_v2_canary_check.py compare \
-  --before /tmp/gh111_before.json \
-  --mode new-registration
+  --before /tmp/gh111_before_snapshot.json \
+  --mode new-registration \
+  --report-output /tmp/gh111_compare_report.json
+docker cp ekklesia-api:/tmp/gh111_compare_report.json /opt/ekklesia/backups/gh111_compare_report.json
 ```
 
 ## Rollback
