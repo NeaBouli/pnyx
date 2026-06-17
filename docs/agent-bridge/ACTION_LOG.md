@@ -20,6 +20,12 @@
 - Safety boundary:
   - No production env flip, no identity mutation, no KDF activation.
   - New helper is read-only and only reduces operator error for the later real HLR canary.
+- Deploy:
+  - Server fast-forwarded and API rebuilt; final rollback tag `rollback-pre-gh111-cleanjson-20260617-020754`.
+  - Live helper check: `python scripts/gh111_nullifier_v2_canary_check.py snapshot --preflight` returns clean JSON with `preflight_blockers=[]`, `total=17`, `active=17`, `with_v2=0`, `version_v2=0`, `kdf_env=unset`.
+  - Health check: PASS.
+  - Monitor after API settle: PASS, 17 checks, no alerts.
+  - GitHub CI + Security Audit for final helper commit: PASS.
 
 ## 2026-06-17 — Codex: vC45 / v1.0.16 Android release build
 
