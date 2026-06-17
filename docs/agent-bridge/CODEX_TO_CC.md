@@ -38,7 +38,8 @@ Current state:
 - GH#111 focused tests exist: `tests/test_identity_nullifier_v2_endpoint.py` proves same-row v1->v2 migration, Redis in-flight locking, and atomic row-locked existing-identity re-registration with mocked HLR; `scripts/gh111_nullifier_v2_canary_check.py` snapshots/compares real before/after canary counts and v2 invariants; `scripts/gh111_kdf_env_guard.py` edits only the KDF env key with backup and no shell-source; `scripts/gh111_preflight_package_check.py` validates the preflight evidence package; `scripts/gh111-prepare-nullifier-v2-window.sh` creates the no-mutation backup/preflight package and writes `package_check.json`. Latest focused set passed: 59 GH#111 tests.
 - GH#111 S10 UI path was verified without mutation: Profile -> `Επαλήθευση / Νέο κλειδί` opens VerifyScreen with warning; no phone submitted, no HLR call, DB remains 17 active / 0 v2 / KDF unset.
 - GH#111 v2 health diagnosis: production API image passes one-off Argon2/v2 generation and full FastAPI lifespan `/health` under `IDENTITY_NULLIFIER_KDF_VERSION=v2`; previous live 500 is treated as rebuild/readiness timing until contradicted.
-- Disk-critical alert was resolved by pruning Docker build cache only: `/` went from 94% used / 4.4 GB free to 77% used / 17 GB free; monitor then passed 17/17.
+- Disk-critical alerts were rechecked on 2026-06-18. Cause was Docker BuildKit/cache/dangling images under `/var/lib`, not deleted Hetzner snapshots or `/opt/backups`. Safe cleanup only (`docker builder prune`, `docker image prune`, journal vacuum; no volumes/backups deleted) moved `/` from 93% used / 5.1 GB free to 81% used / 14 GB free; monitor passed 17/17.
+- Forum missing Telegram alerts from 2026-06-17 were transient sync/backfill progress. Current DB: `public_missing_forum=0`; only hidden `ZK-CANARY-001` has no forum topic, by design.
 
 If asked to continue:
 1. Prefer review/diagnosis first.

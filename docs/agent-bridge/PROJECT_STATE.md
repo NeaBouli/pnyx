@@ -21,7 +21,7 @@
 - **Web container:** rebuilt live for vC50; APK download badge/hash verified on ekklesia.gr.
 - **S10:** vC50/v1.0.21 installed via `adb install -r`; launch smoke test passed with no fatal Logcat crash. Public scoped ZK opt-in/proof/vote previously succeeded for `GR-d4c62ed4`.
 - **Alembic:** `u401a2b3c4d5` (ZK receipt `vote_commitment` NOT NULL, head)
-- **Disk:** 2026-06-17 build-cache cleanup during GH#111 activation resolved `disk_critical`; final check `/` 88% used / 8.7 GB free; monitor PASS.
+- **Disk:** 2026-06-18 Telegram alert follow-up confirmed the pressure was Docker BuildKit/cache/dangling images under `/var/lib`, not deleted Hetzner snapshots or `/opt/backups`. Safe cleanup only (`docker builder prune`, `docker image prune`, journal vacuum; no volumes/backups deleted) moved `/` from 93% used / 5.1 GB free to 81% used / 14 GB free; monitor PASS.
 - **GH#111 Backup:** activation/preflight package `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_200157`; package validation PASS (`ok=true`, no blockers/warnings).
 - **GH#111/GH#112 Completion Audit:** `docs/agent-bridge/GH111_GH112_COMPLETION_AUDIT.md` records the current proof boundary: GH#112 first public scoped rollout is complete for `bill:GR-d4c62ed4`; GH#111 Nullifier v2 activation is complete and v2 remains active.
 - **GH#111 Runbook/Test:** `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md` + `scripts/gh111-prepare-nullifier-v2-window.sh` + guarded activation/rollback helper `scripts/gh111-activate-nullifier-v2-window.sh` + read-only post-verify helper `scripts/gh111-postverify-nullifier-v2-window.sh` + read-only `gh111_nullifier_v2_canary_check.py` + `gh111_kdf_env_guard.py` + `gh111_preflight_package_check.py`; endpoint/evaluator regression proves v2 same-row migration with mocked HLR, Redis in-flight lock, atomic row-locked existing-identity re-registration, before/after canary verdicts, report artifacts, and v2 invariant counters. Runbook now includes one-command no-mutation prep, v2 lifespan probe, retrying health check after the previous pre-HLR 500/readiness abort, confirmed env-file write/rollback helper, mandatory `package_check.json` with `"ok": true`, emergency rollback attempt if activation fails after KDF write, and read-only compare/monitor helper after real S10 verification.
@@ -45,6 +45,7 @@
 - **Bill Summary/Source Fix:** API source policy live; mobile DIAVGEIA source + summary regression fixed in `5ff3998`/`b7fb4dd`, installed on S10 and verified. Root cause update: Analysis fehlt, weil `ai_summary_reviewed=false` und kein automatischer reviewed-analysis Job existiert. Mobile zeigt jetzt statt leerer Analyse einen klaren `Επίσημο κείμενο` Fallback, wenn `summary_long_el` vorhanden ist.
 - **DIAVGEIA S10 Retest:** PASS — source card visible/clickable (`Πηγή — Διαύγεια` opens Android intent chooser), org/pill no longer shown as `Σύνοψη`, quote markers removed. Evidence: `/tmp/ekklesia_diav_fix_final_20260604_000652`.
 - **Open GitHub:** #79 F-Droid (external), #80 Off-site Backup (storage/funding), #112 staged/global follow-up after first public scoped rollout.
+- **Forum Missing Alerts:** 2026-06-17 Telegram `forum_missing` counts were transient sync/backfill progress. Current DB check: `public_missing_forum=0`; only `ZK-CANARY-001` lacks a forum topic and is `admin_hidden=true` by design.
 - **ZK V2:** GH#81 closed; Android prover works on S10. GH#112 hidden S10 canary passed end-to-end for `bill:ZK-CANARY-001`. First public scoped rollout passed for `bill:GR-d4c62ed4`: S10 proof accepted, public receipt recorded, API results show `tier1=0`, `zk=1`, `total=1`. Production ZK remains scoped by exact allowlist; `ZK_GLOBAL_ROLLOUT_ENABLED=false`; `ZK_ARWEAVE_PUBLICATION_ENABLED=false`.
 - **Forum Monitor:** `4aa6f71` live; Discourse 429 handling + `/admin/forum/sync-new`; monitor once PASS, 17 checks, no alerts.
 - **Neu live:** municipality/, article.html, Autodesmefsi PDF, Forum Topic #436
@@ -130,7 +131,6 @@
 
 - #79 / F-Droid MR !38007 — external, waits for linsui/F-Droid merge.
 - #80 / Off-site backup — waits for Hetzner Storage Box / funding.
-- #111 / Nullifier v2 production activation — waits for explicit backup + canary window.
 - #112 / ZK V2 production rollout — hidden one-scope S10 canary passed; production backend logic prepared; global activation remains gated on security review and explicit scoped rollout.
 
 ## Architecture Decisions (ADRs)

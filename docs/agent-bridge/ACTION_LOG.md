@@ -11848,3 +11848,34 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - GH#111 remains open for real S10/HLR v2 activation + post-verify compare.
 - CI + Security Audit for `bd463f6`: green.
 - No flag changes, no deploy, no DB mutation, no HLR request.
+
+## 2026-06-18 — Codex: Telegram alert follow-up + disk cleanup
+
+- Investigated Gio's Telegram alerts from 2026-06-17:
+  - `forum_missing` backlog counts (`212 -> 172 -> 152 -> 146`) were transient
+    backfill/sync progress.
+  - current DB check: `public_missing_forum=0`.
+  - the only bill without `forum_topic_id` is `ZK-CANARY-001`, and it is
+    `admin_hidden=true`; this is intentionally not public and should not create
+    a forum topic.
+  - current monitor once: PASS, 17 checks, no alerts.
+- Investigated disk-critical alerts:
+  - deleted Hetzner snapshots were not the cause.
+  - `/opt/backups` is small (`~19M`); `/opt/ekklesia` is small (`~1.4G`).
+  - disk pressure was in Docker under `/var/lib`, mainly BuildKit cache and
+    dangling images created during repeated app/API builds.
+- Safe cleanup performed:
+  - `docker builder prune -f`
+  - `docker image prune -f`
+  - `docker builder prune -af`
+  - `journalctl --vacuum-size=200M`
+  - no Docker volumes pruned, no DB volumes touched, no backups deleted.
+- Result:
+  - `/` moved from `93% used / 5.1G free` to `81% used / 14G free`.
+  - API health: OK.
+  - Web health: OK.
+  - Monitor: PASS, 17 checks, no alerts.
+- Watch-out:
+  - repeated multi-project Docker builds on the shared CX43 can recreate this
+    pressure quickly; prefer BuildKit cache cleanup before deleting backups or
+    snapshots.
