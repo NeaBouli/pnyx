@@ -11768,3 +11768,29 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
     `GH111_NEXT_STEP=review-status-before-any-action`.
 - CI + Security Audit for `da4010a`: green.
 - No flag changes, no deploy, no DB mutation, no HLR request.
+
+## 2026-06-17 — Codex: GH#111/GH#112 current evidence snapshot
+
+- Current local/origin/server HEAD: `bd463f6`.
+- API health: `status=ok`.
+- GH#112 first public ZK scope evidence:
+  - `GR-d4c62ed4` results: `total_votes=1`, `tier1_vote_count=0`,
+    `zk_vote_count=1`, `yes_count=1`, `results_hidden=false`.
+  - Production flags: `ZK_PRODUCTION_SCOPE_ALLOWLIST=bill:GR-d4c62ed4`,
+    `ZK_GLOBAL_ROLLOUT_ENABLED=false`,
+    `ZK_ARWEAVE_PUBLICATION_ENABLED=false`,
+    `ZK_CANARY_ENABLED=false`.
+- GH#111 current status helper evidence:
+  - `KDF_ENV=v1`.
+  - `API_HEALTH=ok`.
+  - `PACKAGE_OK=true`.
+  - `LIVE_PREFLIGHT_OK=true`.
+  - live snapshot: `17` active identities, `0` v2 rows, no malformed or
+    inconsistent v2 counters.
+  - next step remains:
+    `prepare-or-activate-only-when-Gio-ready-with-S10-and-real-HLR`.
+- GitHub:
+  - GH#112 remains open for staged/global rollout follow-up.
+  - GH#111 remains open for real S10/HLR v2 activation + post-verify compare.
+- CI + Security Audit for `bd463f6`: green.
+- No flag changes, no deploy, no DB mutation, no HLR request.
