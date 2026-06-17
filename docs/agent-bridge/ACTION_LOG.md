@@ -13,7 +13,7 @@
   - `docs/download/APK_MANIFEST.md` and `docs/download/ekklesia-latest.apk.sha256` updated.
 - Artifacts:
   - AAB: `/Users/gio/Desktop/ekklesia-v1.0.20-vC49-PLAY.aab`, SHA256 `125e8dece542f756dc0e746dbc05f494103919efa4cb2cf7b921ff273aa0ef68`.
-  - APK: `/Users/gio/Desktop/ekklesia-v1.0.20-vC49-PLAY.apk`, SHA256 `c6ee98a9d9081f5711c31505ddec22359fc2043c3251ff3f26d044ea50130a52`.
+  - APK: `/Users/gio/Desktop/ekklesia-v1.0.20-vC49-PLAY.apk`, SHA256 `7d0cf0c2e09779b5f8e6f9ee8b984ca5a0b26e87273282f68a2acae57cc7712e`.
 - Verification:
   - `python -m py_compile apps/api/routers/app_version.py`: PASS.
   - `npm --prefix apps/mobile run typecheck --if-present`: PASS.
@@ -21,21 +21,25 @@
   - `cd apps/mobile && npx vitest run`: PASS, 86 passed.
   - `bash scripts/build-play.sh`: PASS.
   - `bash scripts/build-direct.sh`: PASS.
+  - `cd apps/mobile/android && EKKLESIA_DISTRIBUTION_CHANNEL=play EKKLESIA_BUILD_FLAVOR=play ./gradlew assemblePlayRelease`: PASS; replaced the debug-signed direct APK with the play-flavor APK after signature audit.
   - AAB manifest: package `ekklesia.gr`, `versionCode=49`, `versionName=1.0.20`.
   - APK badging: package `ekklesia.gr`, `versionCode=49`, `versionName=1.0.20`, target SDK 36.
+  - APK signer SHA-256 digest: `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
+  - S10 `RF8N313QMFL`: `adb install -r` PASS, `versionCode=49`, `versionName=1.0.20`, launch smoke test with no fatal Logcat crash.
 - Live deploy:
   - Local rollback tag: `rollback-pre-vc49-20260617-081520`.
   - Server rollback tag: `rollback-pre-vc49-server-20260617-053109`.
   - Server HEAD: `4c078af`.
   - API/Web rebuilt from `/opt/ekklesia/app/infra/docker`.
   - Live API version: `latest_version=1.0.20`, `latest_version_code=49`.
-  - Live APK URL SHA256 matches `c6ee98a9d9081f5711c31505ddec22359fc2043c3251ff3f26d044ea50130a52`.
+  - Live APK URL SHA256 matches `7d0cf0c2e09779b5f8e6f9ee8b984ca5a0b26e87273282f68a2acae57cc7712e` after play-signature correction.
   - Live landing badge shows `v1.0.20 · vC49`.
   - Monitor once: PASS, 17 checks, no alerts.
   - GitHub release created and marked latest: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.20.
   - CI + Security Audit PASS for vC49 commit.
-- Pending:
-  - S10 install/launch smoke test when device is connected.
+- Correction:
+  - Initial direct APK artifact was debug-signed and rejected by S10 update install; replaced with `assemblePlayRelease` APK signed by ekklesia upload key (`d94c24d...`).
+  - GitHub release APK asset replaced with corrected APK.
 
 ## 2026-06-17 — Codex: GH#111 health-hardened preflight backup
 

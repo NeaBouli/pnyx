@@ -31,17 +31,17 @@ https://ekklesia.gr/representative/index.html
 | Version | 1.0.20 |
 | versionCode | 49 |
 | Package | ekklesia.gr |
-| APK SHA256 | `c6ee98a9d9081f5711c31505ddec22359fc2043c3251ff3f26d044ea50130a52` |
+| APK SHA256 | `7d0cf0c2e09779b5f8e6f9ee8b984ca5a0b26e87273282f68a2acae57cc7712e` |
 | AAB SHA256 | `125e8dece542f756dc0e746dbc05f494103919efa4cb2cf7b921ff273aa0ef68` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
 | Build date | 2026-06-17 |
-| Release gate | PASS — API version syntax, mobile TypeScript, mobile Vitest, local AAB/APK build, APK/AAB version audit |
+| Release gate | PASS — API version syntax, mobile TypeScript, mobile Vitest, local AAB/APK build, APK/AAB version audit, APK signature audit, S10 install/launch smoke test |
 | Includes | vC49 release metadata, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, ZK V2 native prover, hidden S10 canary operator path, deep-link fallback, pagination, source/full-text policy, permission hardening |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: c6ee98a9d9081f5711c31505ddec22359fc2043c3251ff3f26d044ea50130a52
+# Expected: 7d0cf0c2e09779b5f8e6f9ee8b984ca5a0b26e87273282f68a2acae57cc7712e
 ```
