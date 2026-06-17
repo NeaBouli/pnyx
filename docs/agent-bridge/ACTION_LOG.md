@@ -23,8 +23,18 @@
   - APK badging: package `ekklesia.gr`, `versionCode=50`, `versionName=1.0.21`, target SDK 36.
   - APK signer SHA-256 digest: `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
   - S10 `RF8N313QMFL`: `adb install -r` PASS, `versionCode=50`, `versionName=1.0.21`, launch smoke test with no fatal Logcat crash.
-- Pending:
-  - Commit/push, server deploy for API/Web/download, live hash verification, GitHub release, CI/Security Audit.
+- Live deploy:
+  - Local rollback tag: `rollback-pre-vc50-local-20260617-092333`.
+  - Server rollback tag: `rollback-pre-vc50-server-20260617-062333`.
+  - Server HEAD: `e38f5e0`.
+  - API/Web rebuilt from `/opt/ekklesia/app/infra/docker`.
+  - Live API version: `latest_version=1.0.21`, `latest_version_code=50`.
+  - Live APK URL SHA256 matches `989c5f92ff37b4a8498e6410f362dedbfd91e362042ec5e6685479385c14685d`.
+  - Live landing badge shows `v1.0.21 · vC50`.
+  - Monitor once: PASS, 17 checks, no alerts.
+  - GitHub release created and marked latest: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.21.
+  - CI + Security Audit PASS for vC50 commit.
+- Boundary:
   - GH#111 remains v1; no HLR request, no identity mutation, no `IDENTITY_NULLIFIER_KDF_VERSION=v2` activation.
 
 ## 2026-06-17 — Codex: GH#111 KDF env guard helper

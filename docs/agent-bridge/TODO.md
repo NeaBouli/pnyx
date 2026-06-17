@@ -184,7 +184,7 @@
 - [x] vC48 Play/direct release: AAB/APK built, hashes verified, S10 install passed, landing/API live, GitHub release live, CI/Security Audit green.
 - [x] vC49 Play/direct release: AAB/APK built, hashes verified, S10 install passed, landing/API live, GitHub release live, CI/Security Audit green.
 - [x] vC49 corrected play-signed APK redeployed to landing/GitHub release after signature audit.
-- [ ] vC50 Play/direct release: AAB/APK built, hashes verified, S10 install passed; deploy/GitHub release/CI still pending.
+- [x] vC50 Play/direct release: AAB/APK built, hashes verified, S10 install passed, landing/API live, GitHub release live, CI/Security Audit green.
 
 ## Done (Session 13.05.2026)
 - [x] Server CX33 → CX43 Upgrade
