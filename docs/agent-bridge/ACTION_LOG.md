@@ -11753,8 +11753,13 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   `GH111_NEXT_STEP=prepare-or-activate-only-when-Gio-ready-with-S10-and-real-HLR`
   is printed only when all are true:
   - current KDF is `v1`,
+  - API health is `ok`,
   - live preflight succeeds,
   - package verdict is `PACKAGE_OK=true`.
+- Added focused regression coverage:
+  - `apps/api/tests/services/test_gh111_status_helper.py`.
+  - Covers ready state, package failure, live snapshot failure, API health
+    failure, and non-v1 KDF.
 - Server verification on `da4010a`:
   - normal latest package: `PACKAGE_OK=true`, `LIVE_PREFLIGHT_OK=true`,
     `GH111_NEXT_STEP=prepare-or-activate-only-when-Gio-ready-with-S10-and-real-HLR`.

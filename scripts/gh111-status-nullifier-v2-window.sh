@@ -85,8 +85,10 @@ KDF_ENV_VALUE="$(read_kdf_env)"
 echo "KDF_ENV=$KDF_ENV_VALUE"
 
 if curl -fsS --max-time 10 https://api.ekklesia.gr/health >/dev/null; then
+  API_HEALTH_VALUE="ok"
   echo "API_HEALTH=ok"
 else
+  API_HEALTH_VALUE="failed"
   echo "API_HEALTH=failed"
 fi
 
@@ -128,7 +130,7 @@ echo "LIVE_PREFLIGHT_BLOCKERS=$(safe_json_field "$LIVE_JSON" preflight_blockers 
 echo "LIVE_SNAPSHOT=$(safe_json_field "$LIVE_JSON" snapshot '{}')"
 rm -f "$LIVE_JSON"
 
-if [[ "$KDF_ENV_VALUE" == "v1" && "$LIVE_EXIT" == "0" && "$PACKAGE_OK_VALUE" == "true" ]]; then
+if [[ "$KDF_ENV_VALUE" == "v1" && "$LIVE_EXIT" == "0" && "$PACKAGE_OK_VALUE" == "true" && "$API_HEALTH_VALUE" == "ok" ]]; then
   echo "GH111_NEXT_STEP=prepare-or-activate-only-when-Gio-ready-with-S10-and-real-HLR"
 else
   echo "GH111_NEXT_STEP=review-status-before-any-action"
