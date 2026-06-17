@@ -11738,7 +11738,9 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - no DB writes,
   - no rebuild,
   - no HLR,
-  - no flag activation.
+  - no flag activation,
+  - JSON/package/snapshot read failures are reported as blockers instead of
+    crashing the status helper.
 - Referenced from:
   - `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`,
   - `GH111_NULLIFIER_V2_OPERATOR_CHECKLIST.md`,

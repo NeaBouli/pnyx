@@ -66,9 +66,23 @@ else:
 PY
 }
 
+safe_json_field() {
+  local file_path="$1"
+  local expression="$2"
+  local fallback="$3"
+  if [[ ! -s "$file_path" ]]; then
+    printf '%s\n' "$fallback"
+    return
+  fi
+  if ! json_field "$file_path" "$expression" 2>/dev/null; then
+    printf '%s\n' "$fallback"
+  fi
+}
+
 echo "GH111_STATUS_READ_ONLY=1"
 echo "APP_HEAD=$(git rev-parse --short HEAD)"
-echo "KDF_ENV=$(read_kdf_env)"
+KDF_ENV_VALUE="$(read_kdf_env)"
+echo "KDF_ENV=$KDF_ENV_VALUE"
 
 if curl -fsS --max-time 10 https://api.ekklesia.gr/health >/dev/null; then
   echo "API_HEALTH=ok"
@@ -87,12 +101,12 @@ else
   PACKAGE_JSON="$(mktemp)"
   if python3 apps/api/scripts/gh111_preflight_package_check.py \
     --backup-dir "$RESOLVED_BACKUP_DIR" >"$PACKAGE_JSON"; then
-    echo "PACKAGE_OK=$(json_field "$PACKAGE_JSON" ok)"
+    echo "PACKAGE_OK=$(safe_json_field "$PACKAGE_JSON" ok false)"
   else
     echo "PACKAGE_OK=false"
   fi
-  echo "PACKAGE_BLOCKERS=$(json_field "$PACKAGE_JSON" blockers)"
-  echo "PACKAGE_WARNINGS=$(json_field "$PACKAGE_JSON" warnings)"
+  echo "PACKAGE_BLOCKERS=$(safe_json_field "$PACKAGE_JSON" blockers '["package_check_unreadable"]')"
+  echo "PACKAGE_WARNINGS=$(safe_json_field "$PACKAGE_JSON" warnings '[]')"
   rm -f "$PACKAGE_JSON"
 fi
 
@@ -108,11 +122,11 @@ if [[ "$LIVE_EXIT" == "0" ]]; then
 else
   echo "LIVE_PREFLIGHT_OK=false"
 fi
-echo "LIVE_PREFLIGHT_BLOCKERS=$(json_field "$LIVE_JSON" preflight_blockers)"
-echo "LIVE_SNAPSHOT=$(json_field "$LIVE_JSON" snapshot)"
+echo "LIVE_PREFLIGHT_BLOCKERS=$(safe_json_field "$LIVE_JSON" preflight_blockers '["live_snapshot_unreadable"]')"
+echo "LIVE_SNAPSHOT=$(safe_json_field "$LIVE_JSON" snapshot '{}')"
 rm -f "$LIVE_JSON"
 
-if [[ "$(read_kdf_env)" == "v1" && "$LIVE_EXIT" == "0" ]]; then
+if [[ "$KDF_ENV_VALUE" == "v1" && "$LIVE_EXIT" == "0" ]]; then
   echo "GH111_NEXT_STEP=prepare-or-activate-only-when-Gio-ready-with-S10-and-real-HLR"
 else
   echo "GH111_NEXT_STEP=review-status-before-any-action"
