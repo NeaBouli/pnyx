@@ -12,7 +12,12 @@
   - `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md` now requires `"ok": true` in `package_check.json` before activation starts.
 - Safety properties:
   - Verifies required artifacts, SHA-256 sums, preflight blockers, KDF plan target/current state, v2 lifespan probe, and monitor traceback markers.
+  - Host-safe: no SQLAlchemy/API dependency imports, so it can run from `/opt/ekklesia/app` with system Python during the operator prep script.
   - Read-only: no env edit, no DB write, no HLR call.
+- Verification:
+  - Host dependency issue found by remote read-only execution (`ModuleNotFoundError: sqlalchemy`) and fixed by making the checker self-contained.
+  - `python -m py_compile apps/api/scripts/gh111_preflight_package_check.py`: PASS.
+  - Focused checker/KDF tests: PASS, 23 passed.
 - Boundary:
   - GH#111 still requires the real activation window with S10/HLR and compare report.
 

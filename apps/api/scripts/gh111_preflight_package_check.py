@@ -9,19 +9,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
-
-SCRIPT_DIR = Path(__file__).resolve().parent
-API_DIR = SCRIPT_DIR.parent
-if str(SCRIPT_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPT_DIR))
-if str(API_DIR) not in sys.path:
-    sys.path.insert(0, str(API_DIR))
-
-from gh111_nullifier_v2_canary_check import IdentityKdfSnapshot, evaluate_preflight
 
 
 REQUIRED_FILES = (
@@ -38,12 +28,48 @@ REQUIRED_FILES = (
 
 
 @dataclass(frozen=True)
+class IdentityKdfSnapshot:
+    kdf_env: str
+    total: int
+    with_v2: int
+    version_v2: int
+    active: int
+    revoked: int
+    active_with_v2: int = 0
+    v2_without_version: int = 0
+    version_without_v2: int = 0
+    malformed_v2: int = 0
+
+
+@dataclass(frozen=True)
 class Gh111PreflightPackageVerdict:
     ok: bool
     backup_dir: str
     blockers: list[str]
     warnings: list[str]
     required_files: list[str]
+
+
+def evaluate_preflight(snapshot: IdentityKdfSnapshot) -> list[str]:
+    """Return blockers that must be resolved before first GH#111 activation."""
+    blockers: list[str] = []
+    if snapshot.kdf_env not in {"unset", "v1"}:
+        blockers.append("kdf_env_not_v1_or_unset")
+    if snapshot.with_v2 != 0:
+        blockers.append("v2_rows_already_present")
+    if snapshot.version_v2 != 0:
+        blockers.append("version_v2_rows_already_present")
+    if snapshot.active_with_v2 != 0:
+        blockers.append("active_v2_rows_already_present")
+    if snapshot.v2_without_version != 0:
+        blockers.append("v2_hash_without_v2_version_present")
+    if snapshot.version_without_v2 != 0:
+        blockers.append("v2_version_without_v2_hash_present")
+    if snapshot.malformed_v2 != 0:
+        blockers.append("malformed_v2_hash_present")
+    if snapshot.total <= 0:
+        blockers.append("no_identity_rows_to_canary")
+    return blockers
 
 
 def _load_json(path: Path) -> dict[str, Any]:
