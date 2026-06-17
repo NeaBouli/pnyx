@@ -5,7 +5,7 @@ Mode: support/review when asked. Do not assume old vC35/vC37/vC38/vC41 tasks are
 Current state:
 - Completion boundary audit added: `docs/agent-bridge/GH111_GH112_COMPLETION_AUDIT.md`.
 - GH#112 first public scoped rollout is proven complete for `bill:GR-d4c62ed4`; staged/global rollout and ZK Arweave publication remain gated/off.
-- GH#111 is prepared but not complete; production KDF remains `v1` and no real S10/HLR v2 activation has run.
+- GH#111 is complete; production KDF is `v2` after a real S10/HLR canary and clean post-verify compare.
 - Mobile vC50 / v1.0.21 is the current prepared Play/direct build. Gio asked for `vC40`, but Play requires monotonic versionCode; vC50 is the safe next code after vC49.
 - AAB ready for Google Play Closed Testing: `/Users/gio/Desktop/ekklesia-v1.0.21-vC50-PLAY.aab`.
 - Direct APK is live on ekklesia.gr as the play-signed vC50 APK; SHA256 `989c5f92ff37b4a8498e6410f362dedbfd91e362042ec5e6685479385c14685d`.
@@ -28,10 +28,10 @@ Current state:
 - Monitor once after deploy: PASS, 17 checks, no alerts.
 - CI + Security Audit are green for `4aa6f71` and `f51dbf0`.
 - F-Droid !38007 is still open/mergeable, latest pipeline success, waiting on fdroiddata maintainer.
-- GH#111 Nullifier v2 canary remains separate and is NOT activated.
-- vC50 keeps the controlled Profile -> Verify entrypoint for a real HLR re-verification canary; it does NOT activate Nullifier v2 by itself.
-- GH#111 latest no-mutation production preflight ran on 2026-06-17 20:01 UTC after S10 reconnect: production KDF still v1; `identity_records` 17 total / 17 active / 0 revoked / 0 v2; `active_with_v2=0`, `v2_without_version=0`, `version_without_v2=0`, `malformed_v2=0`; monitor PASS; isolated v2 lifespan probe PASS with scheduler no-op.
-- GH#111 latest preflight package exists: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_200157` (monitor, KDF plan, snapshot/report, identity/audit/alembic dump, v2-lifespan-probe, SHA256/package validation recorded in `ACTION_LOG.md`; package validation PASS with `ok=true` and no blockers/warnings).
+- GH#111 Nullifier v2 canary completed on 2026-06-17 with real S10/HLR verification. Keep `IDENTITY_NULLIFIER_KDF_VERSION=v2` active.
+- vC50 keeps the controlled Profile -> Verify entrypoint; it was used for the GH#111 real HLR canary.
+- GH#111 activation package: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_200157` (package validation PASS with `ok=true` and no blockers/warnings).
+- GH#111 post-verify mode: `new-registration`; compare `ok=true`, `blockers=[]`, `warnings=[]`; before 17 total / 17 active / 0 v2, after 18 total / 18 active / 1 v2; malformed/mismatched v2 counters all 0; monitor PASS.
 - GH#111 runbook exists: `docs/agent-bridge/GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`; it now includes the preferred host-side prep command `scripts/gh111-prepare-nullifier-v2-window.sh`, guarded activation/rollback helper `scripts/gh111-activate-nullifier-v2-window.sh`, read-only post-verify helper `scripts/gh111-postverify-nullifier-v2-window.sh`, an isolated v2 lifespan probe before any env flip, a retrying external health check after API rebuild, `gh111_kdf_env_guard.py` for env-file plan/write/rollback with explicit `GH111-KDF-WRITE` confirmation, and mandatory `package_check.json` with `"ok": true` before activation.
 - GH#111 read-only status helper exists: `scripts/gh111-status-nullifier-v2-window.sh`; it reports current KDF, API health, latest package verdict, and live preflight snapshot without env writes, DB writes, rebuilds, or HLR. Package/snapshot read failures are reported as blockers instead of crashing the helper. It only prints the activation-ready next step if KDF is v1, API health is ok, live preflight is ok, and package verdict is ok; focused tests cover ready state and each blocking condition.
 - GH#111 short operator checklist exists: `docs/agent-bridge/GH111_NULLIFIER_V2_OPERATOR_CHECKLIST.md`; use it as the handoff sheet during the real S10/HLR window, but keep the runbook as source of truth.
@@ -46,7 +46,6 @@ If asked to continue:
 3. Do not add Arweave publication for ZK proofs until the public-payload policy is reviewed.
 4. Do not enable R8/ProGuard unless the resulting build is installed on S10 and vote/source/ZK paths are verified.
 5. Keep production ZK scoped by exact allowlist; do not wildcard scopes.
-6. GH#111 Nullifier v2 is a separate canary with HLR/identity re-registration risk; do not mix it into GH#112 rollout work.
-7. Do not activate `IDENTITY_NULLIFIER_KDF_VERSION=v2` from DB/admin-test data alone. The proof requires a real phone/HLR verify or re-registration path so same-row v1->v2 migration can be observed. Follow `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`.
-8. During the real GH#111 window, first run `scripts/gh111-prepare-nullifier-v2-window.sh` on the production host and use its printed `GH111_BACKUP_DIR` as `BACKUP_DIR`. After the HLR step, run `compare --before /tmp/gh111_before_snapshot.json --mode existing-reregistration|new-registration --report-output /tmp/gh111_compare_report.json`.
-9. Do not hand-edit `/opt/ekklesia/.env.production` during GH#111. Use `python3 apps/api/scripts/gh111_kdf_env_guard.py plan ...` first, then `write ... --confirm GH111-KDF-WRITE`.
+6. GH#111 is complete. Do not roll back to v1 unless a concrete production blocker appears.
+7. Do not record operator phone numbers, raw nullifiers, or private keys in Bridge/GitHub/Linear/docs/log excerpts.
+8. Keep monitoring v2 invariant counters; any malformed/mismatched v2 row is a T3 issue.

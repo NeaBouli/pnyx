@@ -1,5 +1,35 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 Nullifier v2 production activation complete
+
+- Scope:
+  - Completed the real GH#111 Nullifier v2 operator window on production.
+  - Sensitive input was used only for the live HLR flow and is not recorded in Bridge/GitHub.
+- Activation:
+  - Backup/evidence dir: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_200157`.
+  - Guarded activation helper changed `IDENTITY_NULLIFIER_KDF_VERSION` from `v1` to `v2`.
+  - API rebuild completed and external `/health` returned `ok`.
+  - Initial activation monitor stopped on `disk_critical` only; no API/identity blocker.
+- Disk recovery:
+  - Removed Docker build cache only, not volumes/backups.
+  - Disk moved from 95% used / 4.3 GB free to 85% used / 11 GB free, then final 88% used / 8.7 GB free after checks.
+  - Monitor after cleanup: PASS, 17 checks, no alerts.
+- Real HLR/S10 proof:
+  - S10 app path: Profile -> `Επαλήθευση / Νέο κλειδί` -> VerifyScreen.
+  - Real HLR verification succeeded on the S10 app.
+  - App displayed success and stored a new local key.
+  - No fatal `AndroidRuntime` / `ReactNativeJS` crash in recent Logcat.
+- Post-verify:
+  - Ran `scripts/gh111-postverify-nullifier-v2-window.sh new-registration`.
+  - Compare verdict: `ok=true`, `blockers=[]`, `warnings=[]`.
+  - Before: 17 total / 17 active / 0 revoked / 0 v2.
+  - After: 18 total / 18 active / 0 revoked / 1 v2.
+  - v2 invariants clean: malformed v2 = 0, v2 without version = 0, version without v2 = 0.
+  - Monitor after post-verify: PASS, 17 checks, no alerts.
+- Decision:
+  - Keep `IDENTITY_NULLIFIER_KDF_VERSION=v2` active.
+  - GH#111 completion criteria are satisfied; close GH#111 after Bridge/GitHub update.
+
 ## 2026-06-17 — Codex: GH#111 fresh S10 + no-mutation preflight refresh
 
 - Scope:

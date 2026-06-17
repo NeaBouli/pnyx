@@ -1,9 +1,9 @@
 # GH#111 / GH#112 Completion Audit
 
 Date: 2026-06-17
-Runtime/code HEAD audited: `586d52c`
-Audit bridge commit: `2ca8671`
-Server bridge checkout after audit: `2ca8671` (docs-only fast-forward, no rebuild)
+Runtime/code HEAD audited: `858be23`
+Audit bridge update: current document revision
+Server bridge checkout after audit: fast-forward after commit, no rebuild
 
 This document records the current completion boundary for the two sensitive
 identity/ZK workstreams. It is intentionally evidence-based: a task is only
@@ -15,8 +15,8 @@ marked complete when the current production state proves it.
 |---|---:|---|
 | GH#112 first public ZK scope | PASS | First public scoped rollout is complete for `bill:GR-d4c62ed4`. |
 | GH#112 staged/global follow-up | OPEN | Global rollout and ZK Arweave publication remain gated/off. |
-| GH#111 Nullifier v2 canary | PREPARED | Runbook, helpers, tests, and preflight package are ready. |
-| GH#111 Nullifier v2 activation | NOT COMPLETE | Production KDF is still `v1`; no real HLR/S10 v2 migration has run. |
+| GH#111 Nullifier v2 canary | PASS | Real S10/HLR canary completed in production. |
+| GH#111 Nullifier v2 activation | PASS | Production KDF is `v2`; post-verify compare is clean. |
 
 ## GH#112 Evidence
 
@@ -57,52 +57,39 @@ S10/HLR identity verification path, then compared against a before snapshot.
 Authoritative evidence inspected:
 
 - Production flag:
-  - `IDENTITY_NULLIFIER_KDF_VERSION=v1`
-- Latest preflight package:
-  - `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_064644`
+  - `IDENTITY_NULLIFIER_KDF_VERSION=v2`
+- Activation package:
+  - `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_200157`
   - `package_check.json`: `ok=true`, `blockers=[]`, `warnings=[]`
-- Bridge state records:
-  - 17 active identities.
-  - 0 revoked identities.
-  - 0 v2 rows before activation.
-- Guarded helpers exist:
+- Guarded helpers used:
   - `scripts/gh111-prepare-nullifier-v2-window.sh`
   - `scripts/gh111-activate-nullifier-v2-window.sh`
   - `scripts/gh111-postverify-nullifier-v2-window.sh`
-- Operator checklist exists:
-  - `docs/agent-bridge/GH111_NULLIFIER_V2_OPERATOR_CHECKLIST.md`
+- Real S10/HLR result:
+  - App verification succeeded and stored a new local key.
+  - No phone number, raw nullifier, or private key is recorded in this document.
+- Post-verify compare:
+  - Mode: `new-registration`
+  - Verdict: `ok=true`, `blockers=[]`, `warnings=[]`
+  - Before: 17 total / 17 active / 0 revoked / 0 v2 rows.
+  - After: 18 total / 18 active / 0 revoked / 1 v2 row.
+  - Clean invariants: malformed v2 = 0, v2 without version = 0, version without v2 = 0.
+- Monitor:
+  - Post-verify monitor once: PASS, 17 checks, no alerts.
 
-Verdict: GH#111 is prepared, but not complete.
-
-Missing completion evidence:
-
-- Explicit operator window with S10 and real phone/HLR ready.
-- `scripts/gh111-activate-nullifier-v2-window.sh activate-v2` using a fresh
-  `BACKUP_DIR` and `GH111_OPERATOR_CONFIRM=GH111-ACTIVATE-V2`.
-- Real app verification/re-registration while KDF v2 is active.
-- Read-only post-verify compare report proving the expected v2 state.
-- Keep-v2 or rollback-v1 decision recorded after the compare.
-- Bridge/GitHub/Linear update after the real canary result.
+Verdict: GH#111 is complete. Decision: keep v2 active.
 
 ## Safety Invariants
 
-- Do not mark GH#111 complete while `IDENTITY_NULLIFIER_KDF_VERSION=v1`.
-- Do not infer GH#111 completion from DB/admin-test data. Phone numbers are not
-  stored, so the real proof requires the HLR verification path.
+- Do not roll GH#111 back to v1 unless a concrete production blocker appears.
+- Do not record the operator phone number, raw nullifier, or private key in
+  Bridge, GitHub, Linear, logs, screenshots, or docs.
 - Do not mix GH#111 and GH#112 windows.
 - Do not enable global ZK rollout or ZK Arweave publication from this audit.
 - Keep production ZK scoped by exact allowlist until a separate rollout review.
 
 ## Next Real Step
 
-The next real GH#111 step is an explicit operator canary window:
-
-1. S10 connected and verified account ready.
-2. Fresh `scripts/gh111-prepare-nullifier-v2-window.sh`.
-3. Confirm `package_check.json` has `"ok": true`.
-4. Activate v2 through the guarded helper.
-5. Perform real S10 HLR verification.
-6. Run the post-verify helper and compare report.
-7. Decide keep-v2 or rollback-v1.
-
-Until those steps are done, GH#111 remains prepared, not complete.
+GH#111 has no remaining activation work. Future identity work should monitor the
+v2 invariants during normal operation and treat any malformed/mismatched v2
+counter as a T3 issue.
