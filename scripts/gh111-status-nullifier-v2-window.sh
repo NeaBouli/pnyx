@@ -93,6 +93,7 @@ fi
 RESOLVED_BACKUP_DIR="$(latest_backup_dir || true)"
 if [[ -z "$RESOLVED_BACKUP_DIR" ]]; then
   echo "PACKAGE_DIR=missing"
+  PACKAGE_OK_VALUE="false"
   echo "PACKAGE_OK=false"
   echo "PACKAGE_BLOCKERS=[\"backup_dir_missing\"]"
   echo "PACKAGE_WARNINGS=[]"
@@ -101,10 +102,11 @@ else
   PACKAGE_JSON="$(mktemp)"
   if python3 apps/api/scripts/gh111_preflight_package_check.py \
     --backup-dir "$RESOLVED_BACKUP_DIR" >"$PACKAGE_JSON"; then
-    echo "PACKAGE_OK=$(safe_json_field "$PACKAGE_JSON" ok false)"
+    PACKAGE_OK_VALUE="$(safe_json_field "$PACKAGE_JSON" ok false)"
   else
-    echo "PACKAGE_OK=false"
+    PACKAGE_OK_VALUE="false"
   fi
+  echo "PACKAGE_OK=$PACKAGE_OK_VALUE"
   echo "PACKAGE_BLOCKERS=$(safe_json_field "$PACKAGE_JSON" blockers '["package_check_unreadable"]')"
   echo "PACKAGE_WARNINGS=$(safe_json_field "$PACKAGE_JSON" warnings '[]')"
   rm -f "$PACKAGE_JSON"
@@ -126,7 +128,7 @@ echo "LIVE_PREFLIGHT_BLOCKERS=$(safe_json_field "$LIVE_JSON" preflight_blockers 
 echo "LIVE_SNAPSHOT=$(safe_json_field "$LIVE_JSON" snapshot '{}')"
 rm -f "$LIVE_JSON"
 
-if [[ "$KDF_ENV_VALUE" == "v1" && "$LIVE_EXIT" == "0" ]]; then
+if [[ "$KDF_ENV_VALUE" == "v1" && "$LIVE_EXIT" == "0" && "$PACKAGE_OK_VALUE" == "true" ]]; then
   echo "GH111_NEXT_STEP=prepare-or-activate-only-when-Gio-ready-with-S10-and-real-HLR"
 else
   echo "GH111_NEXT_STEP=review-status-before-any-action"
