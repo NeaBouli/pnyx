@@ -1,5 +1,27 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 no-mutation production preflight package
+
+- Scope:
+  - Ran the guarded GH#111 preparation script on production after deploying `4914bdb`.
+  - No production env flag changed, no HLR request, no identity mutation.
+- Artifact:
+  - Backup/evidence dir: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_064644`.
+- Results:
+  - Monitor preflight: PASS, 17 checks, no alerts.
+  - KDF env plan: one active key, current `v1`, target would be `v2`, no duplicates.
+  - Identity preflight: `preflight_blockers=[]`, 17 total / 17 active / 0 revoked / 0 v2 rows.
+  - v2 invariant counters all 0: `active_with_v2`, `v2_without_version`, `version_without_v2`, `malformed_v2`.
+  - Isolated v2 lifespan probe: PASS (`ok`) with scheduler no-op in the test process.
+  - Production after preflight: `IDENTITY_NULLIFIER_KDF_VERSION=v1`, `/health` OK.
+- Key SHA256:
+  - `gh111_before_snapshot.json`: `f2bbe1f9d765c28c4367bdd47e4cbaffa730f68c205119bb14b4abc8b9faeac1`.
+  - `gh111_preflight_report.json`: `162fc019087cf02054e8bd4b51ad25e9a9ec5cb5ede9d7fb9d7231cb196f8ed7`.
+  - `identity_records_audit_alembic.sql`: `a98f3ff195bbec3f5f138418f5933d4548a2150de0b3456240e05c889f0bc94f`.
+  - `v2_lifespan_probe.txt`: `ccef73acd7db2fa33eb91fe4efc76bb91e180b93d2bf7530780f6f41e27d3ed0`.
+- Boundary:
+  - GH#111 still requires the real activation window: set v2 via `gh111_kdf_env_guard.py`, rebuild API, perform real S10/HLR verification, run compare report, then decide keep v2 or rollback.
+
 ## 2026-06-17 — Codex: GH#111 pre-window preparation script
 
 - Scope:
