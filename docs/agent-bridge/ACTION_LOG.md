@@ -23,6 +23,11 @@
   - APK signer SHA256: `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
   - S10 update install PASS; device reports `versionCode=44`, `versionName=1.0.15`.
   - S10 launch PASS; narrow Logcat crash filter returned no fatal runtime/React errors.
+  - GitHub release created: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.15 with APK+AAB assets.
+  - Live API `/api/v1/app/version`: `latest_version=1.0.15`, `latest_version_code=44`.
+  - Live landing shows `v1.0.15 · vC44`; live APK SHA256 matches `29332e6f1c4ccc8049fbcb45430e1aab229f113807d07e03983f7f9d1d029964`.
+  - Server rollback tag: `rollback-pre-vc44-20260617-012010`.
+  - Monitor once after deploy: PASS, 17 checks, no alerts.
 - Notes:
   - R8/minify remains OFF; Play mapping warning remains informational for this artifact.
   - `vC40` must not be used; it was already superseded by later monotonic version codes.

@@ -3,10 +3,10 @@
 Mode: support/review when asked. Do not assume old vC35/vC37/vC38/vC41 tasks are current.
 
 Current state:
-- Mobile vC44 / v1.0.15 is the current local Play/direct build.
-- Gio should upload `/Users/gio/Desktop/ekklesia-v1.0.15-vC44-PLAY.aab` to Google Play Closed Testing after release deploy verification.
-- Direct APK deploy is pending; expected SHA256 `29332e6f1c4ccc8049fbcb45430e1aab229f113807d07e03983f7f9d1d029964`.
-- GitHub latest release target: `v1.0.15` with APK+AAB assets.
+- Mobile vC44 / v1.0.15 is the current Play/direct build.
+- Gio should upload `/Users/gio/Desktop/ekklesia-v1.0.15-vC44-PLAY.aab` to Google Play Closed Testing when ready.
+- Direct APK is live on ekklesia.gr as v1.0.15 / vC44; SHA256 `29332e6f1c4ccc8049fbcb45430e1aab229f113807d07e03983f7f9d1d029964`.
+- GitHub latest release target is live: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.15
 - APK SHA256: `21e346ae9b01993354fa9c8f0dd5c21541f115d2260d4b1dbe3f8dc66f2e29a5`.
 - AAB SHA256: `1d17a49af327d702769acb4f39a8bbf86c875d971a8a068d1da7e815af717fef`.
 - R8/minify is still OFF for vC44; no `mapping.txt` exists. Play's no-mapping warning is informational for this artifact.
