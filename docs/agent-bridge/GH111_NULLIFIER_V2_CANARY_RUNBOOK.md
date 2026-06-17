@@ -133,23 +133,15 @@ Abort before the flag flip if this probe fails.
 
 ```bash
 cd /opt/ekklesia/app
-cp /opt/ekklesia/.env.production "/opt/ekklesia/backups/env_pre_gh111_$(date -u +%Y%m%d_%H%M%S).production"
-python3 - <<'PY'
-from pathlib import Path
-path = Path("/opt/ekklesia/.env.production")
-lines = path.read_text().splitlines()
-out = []
-seen = False
-for line in lines:
-    if line.startswith("IDENTITY_NULLIFIER_KDF_VERSION="):
-        out.append("IDENTITY_NULLIFIER_KDF_VERSION=v2")
-        seen = True
-    else:
-        out.append(line)
-if not seen:
-    out.append("IDENTITY_NULLIFIER_KDF_VERSION=v2")
-path.write_text("\n".join(out) + "\n")
-PY
+: "${BACKUP_DIR:?Set BACKUP_DIR from the fresh backup step before activation}"
+python3 apps/api/scripts/gh111_kdf_env_guard.py plan \
+  --env-file /opt/ekklesia/.env.production \
+  --target v2
+python3 apps/api/scripts/gh111_kdf_env_guard.py write \
+  --env-file /opt/ekklesia/.env.production \
+  --backup-dir "$BACKUP_DIR" \
+  --target v2 \
+  --confirm GH111-KDF-WRITE
 cd /opt/ekklesia/app/infra/docker
 docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.yml up -d --build api
 ```
@@ -242,22 +234,15 @@ docker cp ekklesia-api:/tmp/gh111_compare_report.json /opt/ekklesia/backups/gh11
 Rollback is env-only unless the operator explicitly chooses to restore the backup.
 
 ```bash
-python3 - <<'PY'
-from pathlib import Path
-path = Path("/opt/ekklesia/.env.production")
-lines = path.read_text().splitlines()
-out = []
-seen = False
-for line in lines:
-    if line.startswith("IDENTITY_NULLIFIER_KDF_VERSION="):
-        out.append("IDENTITY_NULLIFIER_KDF_VERSION=v1")
-        seen = True
-    else:
-        out.append(line)
-if not seen:
-    out.append("IDENTITY_NULLIFIER_KDF_VERSION=v1")
-path.write_text("\n".join(out) + "\n")
-PY
+cd /opt/ekklesia/app
+python3 apps/api/scripts/gh111_kdf_env_guard.py plan \
+  --env-file /opt/ekklesia/.env.production \
+  --target v1
+python3 apps/api/scripts/gh111_kdf_env_guard.py write \
+  --env-file /opt/ekklesia/.env.production \
+  --backup-dir /opt/ekklesia/backups \
+  --target v1 \
+  --confirm GH111-KDF-WRITE
 cd /opt/ekklesia/app/infra/docker
 docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.yml up -d --build api
 curl -fsS https://api.ekklesia.gr/health >/dev/null

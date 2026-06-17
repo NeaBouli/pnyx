@@ -1,5 +1,27 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 KDF env guard helper
+
+- Scope:
+  - Added a dedicated GH#111 env-file guard for the final Nullifier v2 operator window.
+  - No production env flag changed, no HLR request, no identity mutation.
+- Changed:
+  - New script: `apps/api/scripts/gh111_kdf_env_guard.py`.
+  - New tests: `apps/api/tests/services/test_gh111_kdf_env_guard.py`.
+  - `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md` now uses `plan` + explicit `write --confirm GH111-KDF-WRITE` for both v2 activation and v1 rollback instead of inline Python snippets.
+- Safety properties:
+  - Edits only `IDENTITY_NULLIFIER_KDF_VERSION`.
+  - Reads/writes the env file as literal text and never shell-sources it, so unrelated secret values containing `$` remain intact.
+  - Writes create a timestamped backup before mutation.
+  - Duplicate active KDF keys are collapsed into one authoritative value and reported in the redacted plan.
+- Verification:
+  - `python -m py_compile apps/api/scripts/gh111_kdf_env_guard.py apps/api/scripts/gh111_nullifier_v2_canary_check.py`: PASS.
+  - `PYTHONPATH=apps/api:packages/crypto /tmp/pnyx-api-test-venv/bin/pytest apps/api/tests/services/test_gh111_kdf_env_guard.py apps/api/tests/services/test_gh111_nullifier_v2_canary_check.py -q`: PASS, 18 passed.
+  - `PYTHONPATH=apps/api:packages/crypto /tmp/pnyx-api-test-venv/bin/pytest apps/api/tests/test_health.py apps/api/tests/test_security_startup.py apps/api/tests/test_identity_nullifier_kdf.py apps/api/tests/test_identity_nullifier_v2_endpoint.py -q`: PASS, 36 passed.
+- Boundary:
+  - Production remains `IDENTITY_NULLIFIER_KDF_VERSION=v1`.
+  - GH#111 still requires a real S10/HLR verification window before completion.
+
 ## 2026-06-17 — Codex: vC49 / v1.0.20 Android release build
 
 - Scope:

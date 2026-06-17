@@ -60,6 +60,11 @@
 - [x] NEA-303: Admin-Testaccount + DEMO-123 Region permanent im Code gesetzt
 
 ## Guarded Follow-ups
+- [ ] GH#111 Nullifier v2 Canary — only in a real S10/HLR operator window.
+  - [x] v2 KDF endpoint logic, same-row migration, Redis lock, and health startup tests.
+  - [x] Runbook with backup/preflight/health retry and `gh111_kdf_env_guard.py` env write/rollback helper.
+  - [ ] Real `/api/v1/identity/verify` with real Greek mobile number while `IDENTITY_NULLIFIER_KDF_VERSION=v2` is active.
+  - [ ] Before/after `gh111_nullifier_v2_canary_check.py compare` report proving exactly one active v2 identity and no malformed/inconsistent v2 state.
 - [ ] GH#112 / NEA-249 Follow-up: ZK V2 Produktintegration nur nach `GH112_IMPLEMENTATION_PLAN.md`
   - [x] Gate 1: additive DB storage live (`r101a2b3c4d5`), Backup vorher, keine Tier-1-Änderung
   - [x] Gate 2: `/api/v1/zk/status` live fail-closed; `/api/v1/zk/verify` bleibt 503 solange `ZK_VOTING_ENABLED=false`
