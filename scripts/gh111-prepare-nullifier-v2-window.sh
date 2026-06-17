@@ -22,7 +22,7 @@ echo "GH111_APP_HEAD=$(git rev-parse --short HEAD)" | tee -a "$BACKUP_DIR/README
 
 echo "[1/6] Monitor preflight"
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T monitor \
-  python /app/monitor.py --once | tee "$BACKUP_DIR/monitor_once.txt"
+  python /app/monitor.py --once 2>&1 | tee "$BACKUP_DIR/monitor_once.txt"
 
 echo "[2/6] KDF env plan (read-only)"
 python3 apps/api/scripts/gh111_kdf_env_guard.py plan \
@@ -44,10 +44,22 @@ docker exec -i ekklesia-db sh -lc 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" --
 
 echo "[5/6] Isolated v2 lifespan probe (read-only)"
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T api \
-  env PYTHONPATH=/app:/packages/crypto IDENTITY_NULLIFIER_KDF_VERSION=v2 python - <<'PY' \
+  env PYTHONPATH=/app:/packages/crypto IDENTITY_NULLIFIER_KDF_VERSION=v2 python - <<'PY' 2>&1 \
   | tee "$BACKUP_DIR/v2_lifespan_probe.txt"
 from fastapi.testclient import TestClient
 import main
+
+class NoopScheduler:
+    def add_job(self, *args, **kwargs):
+        return None
+
+    def start(self):
+        return None
+
+    def shutdown(self):
+        return None
+
+main.scheduler = NoopScheduler()
 
 with TestClient(main.app) as c:
     r = c.get("/health")
