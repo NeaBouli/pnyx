@@ -11721,3 +11721,26 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `CODEX_TO_CC.md`
   - `TODO.md`
 - No flag changes, no deploy, no DB mutation, no HLR request.
+
+## 2026-06-17 — Codex: GH#111 read-only status helper
+
+- Added `scripts/gh111-status-nullifier-v2-window.sh`.
+- Purpose: one-command, read-only GH#111 readiness/status summary before an
+  operator window.
+- Reports:
+  - app HEAD,
+  - current `IDENTITY_NULLIFIER_KDF_VERSION`,
+  - external API health,
+  - latest or explicit preflight package verdict,
+  - live identity KDF preflight snapshot/blockers.
+- Safety:
+  - no env writes,
+  - no DB writes,
+  - no rebuild,
+  - no HLR,
+  - no flag activation.
+- Referenced from:
+  - `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`,
+  - `GH111_NULLIFIER_V2_OPERATOR_CHECKLIST.md`,
+  - `CODEX_TO_CC.md`,
+  - `TODO.md`.

@@ -41,6 +41,16 @@ Abort before activation if any item is true:
 
 ## Safe Start Sequence
 
+Optional read-only status check:
+
+```bash
+cd /opt/ekklesia/app
+scripts/gh111-status-nullifier-v2-window.sh
+```
+
+This command must not be treated as activation. It only reports current KDF,
+API health, latest package status, and live preflight counters.
+
 Run on the production host:
 
 ```bash

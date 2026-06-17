@@ -90,6 +90,13 @@ python3 apps/api/scripts/gh111_preflight_package_check.py --backup-dir "$BACKUP_
 The script above is the preferred path. The commands below are the manual
 fallback/reference checks to run before changing any env flag:
 
+Quick read-only status helper:
+
+```bash
+cd /opt/ekklesia/app
+scripts/gh111-status-nullifier-v2-window.sh
+```
+
 ```bash
 cd /opt/ekklesia/app/infra/docker
 
