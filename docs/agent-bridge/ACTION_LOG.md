@@ -11746,3 +11746,20 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `GH111_NULLIFIER_V2_OPERATOR_CHECKLIST.md`,
   - `CODEX_TO_CC.md`,
   - `TODO.md`.
+
+## 2026-06-17 — Codex: GH#111 status helper readiness correction
+
+- Hardened `scripts/gh111-status-nullifier-v2-window.sh` so
+  `GH111_NEXT_STEP=prepare-or-activate-only-when-Gio-ready-with-S10-and-real-HLR`
+  is printed only when all are true:
+  - current KDF is `v1`,
+  - live preflight succeeds,
+  - package verdict is `PACKAGE_OK=true`.
+- Server verification on `da4010a`:
+  - normal latest package: `PACKAGE_OK=true`, `LIVE_PREFLIGHT_OK=true`,
+    `GH111_NEXT_STEP=prepare-or-activate-only-when-Gio-ready-with-S10-and-real-HLR`.
+  - forced bad backup path: `PACKAGE_OK=false`,
+    `PACKAGE_BLOCKERS=["backup_dir_missing"]`,
+    `GH111_NEXT_STEP=review-status-before-any-action`.
+- CI + Security Audit for `da4010a`: green.
+- No flag changes, no deploy, no DB mutation, no HLR request.
