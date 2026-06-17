@@ -1,8 +1,9 @@
 # GH#111 / GH#112 Completion Audit
 
 Date: 2026-06-17
-Repo HEAD audited: `586d52c`
-Server HEAD audited: `586d52c`
+Runtime/code HEAD audited: `586d52c`
+Audit bridge commit: `2ca8671`
+Server bridge checkout after audit: `2ca8671` (docs-only fast-forward, no rebuild)
 
 This document records the current completion boundary for the two sensitive
 identity/ZK workstreams. It is intentionally evidence-based: a task is only
@@ -36,6 +37,11 @@ Authoritative evidence inspected:
   - `ZK_ARWEAVE_PUBLICATION_ENABLED=false`
   - `ZK_CANARY_ENABLED=false`
 - API health: `status=ok`.
+- Audit publication:
+  - Bridge commit `2ca8671` was fast-forwarded on the server after evidence
+    capture.
+  - No container rebuild, runtime flag change, or DB mutation was performed for
+    the audit publication.
 
 Verdict: GH#112 first public scoped rollout is complete for the single public
 scope `bill:GR-d4c62ed4`.

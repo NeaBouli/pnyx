@@ -11697,4 +11697,7 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - GH#112 first public scoped rollout is complete for `bill:GR-d4c62ed4`.
   - GH#112 staged/global rollout remains open and gated.
   - GH#111 is prepared, not complete; real S10/HLR v2 activation and post-verify compare are still required.
-- No flag changes, no deploy, no DB mutation.
+- Publication:
+  - Bridge audit committed as `2ca8671`.
+  - Server checkout fast-forwarded to `2ca8671` docs-only.
+  - No container rebuild, runtime flag change, deploy, or DB mutation.
