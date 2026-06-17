@@ -5,6 +5,7 @@ Mode: support/review when asked. Do not assume old vC35/vC37/vC38/vC41 tasks are
 Current state:
 - Completion boundary audit added: `docs/agent-bridge/GH111_GH112_COMPLETION_AUDIT.md`.
 - GH#112 first public scoped rollout is proven complete for `bill:GR-d4c62ed4`; staged/global rollout and ZK Arweave publication remain gated/off.
+- ZK Arweave publication now has its own exact scope allowlist (`ZK_ARWEAVE_SCOPE_ALLOWLIST`) and minimum group-size guard (`ZK_ARWEAVE_MIN_GROUP_SIZE`, default 5); do not rely on `ZK_GLOBAL_ROLLOUT_ENABLED` for Arweave publishing.
 - GH#111 is complete; production KDF is `v2` after a real S10/HLR canary and clean post-verify compare.
 - Mobile vC50 / v1.0.21 is the current prepared Play/direct build. Gio asked for `vC40`, but Play requires monotonic versionCode; vC50 is the safe next code after vC49.
 - AAB ready for Google Play Closed Testing: `/Users/gio/Desktop/ekklesia-v1.0.21-vC50-PLAY.aab`.
@@ -23,7 +24,7 @@ Current state:
 - `ZK_GLOBAL_ROLLOUT_ENABLED=false`.
 - `ZK_ARWEAVE_PUBLICATION_ENABLED=false`.
 - `ZK_CANARY_ENABLED=false`.
-- ZK Arweave publication policy still needs review before enabling any publisher.
+- ZK Arweave publication policy still needs review before enabling any publisher; code now also requires dedicated Arweave scope allowlist + min anonymity threshold.
 - Forum/monitor fix `4aa6f71` is live: Discourse 429 handling, `/api/v1/admin/forum/sync-new`, monitor recovery remapped to sync-new, DIAVGEIA backlog grace 6h.
 - Monitor once after deploy: PASS, 17 checks, no alerts.
 - CI + Security Audit are green for `4aa6f71` and `f51dbf0`.
@@ -44,7 +45,7 @@ Current state:
 If asked to continue:
 1. Prefer review/diagnosis first.
 2. Do not enable global ZK rollout without Gio's explicit instruction, fresh backup, and staged rollout plan.
-3. Do not add Arweave publication for ZK proofs until the public-payload policy is reviewed.
+3. Do not run Arweave publication for ZK proofs until the public-payload policy is reviewed and `ZK_ARWEAVE_SCOPE_ALLOWLIST` is set to the exact approved scope.
 4. Do not enable R8/ProGuard unless the resulting build is installed on S10 and vote/source/ZK paths are verified.
 5. Keep production ZK scoped by exact allowlist; do not wildcard scopes.
 6. GH#111 is complete. Do not roll back to v1 unless a concrete production blocker appears.

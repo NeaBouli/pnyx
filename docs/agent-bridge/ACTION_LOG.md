@@ -11943,3 +11943,26 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Current external state:
   - MR remains open/mergeable with `review-requested`.
   - Waiting on F-Droid maintainer/community re-test + merge.
+
+## 2026-06-18 — Codex: GH#112 ZK Arweave publication hardening
+
+- Added a dedicated ZK Arweave publisher guard before any publication is enabled:
+  - `ZK_ARWEAVE_PUBLICATION_ENABLED=true` is no longer sufficient by itself.
+  - `ZK_ARWEAVE_SCOPE_ALLOWLIST` must explicitly contain the exact scope.
+  - `ZK_ARWEAVE_MIN_GROUP_SIZE` defaults to 5 and must be >=2.
+- Rationale:
+  - `ZK_GLOBAL_ROLLOUT_ENABLED=true` must not automatically authorize Arweave
+    publication for every pending ZK receipt.
+  - very small anonymity sets must not be published accidentally.
+- Runtime status:
+  - no production flag flipped,
+  - no Arweave publication run,
+  - global rollout remains off.
+- Verification:
+  - `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py -q`:
+    PASS, 54 passed.
+  - `cd apps/api && .venv/bin/python -m pytest tests/services/test_zk_arweave_payload.py -q`:
+    PASS, 4 passed.
+  - Broader ZK/voting guard:
+    `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py tests/services/test_zk_arweave_payload.py tests/services/test_zk_tier_lock.py tests/services/test_zk_group_registry.py tests/test_voting.py -q`:
+    PASS, 108 passed / 2 xfailed.

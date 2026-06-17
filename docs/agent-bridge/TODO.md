@@ -80,6 +80,7 @@
   - [x] Production scope safety gates: canary allowlist, production allowlist, optional global rollout flag
   - [x] Tally/API policy: public results aggregate Tier-1 votes + valid ZK receipts; hidden canary remains excluded by `admin_hidden`
   - [x] Public verifier payload / Arweave publication policy: admin + flag-gated pending receipt publisher, public verifier payload only, no identity bridge fields, no canary Arweave publication
+  - [x] ZK Arweave publication hardening: separate exact `ZK_ARWEAVE_SCOPE_ALLOWLIST` plus `ZK_ARWEAVE_MIN_GROUP_SIZE` guard; global rollout does not automatically authorize Arweave publishing
   - [x] Security review for scoped production rollout readiness (`GH112_SECURITY_REVIEW.md`)
   - [x] First public scoped ZK rollout window PASS for `bill:GR-d4c62ed4` with vC43/S10; public result `tier1=0`, `zk=1`, `total=1`; global rollout remains OFF; ZK Arweave publisher remains OFF
   - [x] Completion boundary audit documents first public scoped rollout as complete and keeps staged/global follow-up open
@@ -183,7 +184,7 @@
 - [ ] NEA-65: Off-Site Backup — nach erster Spende
 - [ ] NEA-73: Embed-System — Low Prio
 - [x] GH#111 / NEA-335 follow-up: Nullifier v2 Production Activation — complete. Real S10/HLR canary ran with guarded activation package `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_200157`; production KDF remains `v2`; post-verify mode `new-registration` returned `ok=true`, before 17 active / 0 v2, after 18 active / 1 v2, malformed/mismatched v2 counters 0, monitor PASS. Sensitive input not recorded.
-- [ ] GH#112 / ZK V2 staged/global follow-up — first public scoped rollout passed for `bill:GR-d4c62ed4`; production ZK remains scoped by exact allowlist; global rollout and ZK Arweave publisher remain OFF pending review.
+- [ ] GH#112 / ZK V2 staged/global follow-up — first public scoped rollout passed for `bill:GR-d4c62ed4`; production ZK remains scoped by exact allowlist; global rollout and ZK Arweave publisher remain OFF pending review. ZK Arweave publisher now also requires dedicated exact scope allowlist + min group-size guard.
 - [x] vC46 Play/direct release: AAB/APK built, hashes verified, S10 install/launch passed, verified-account state preserved, landing/API version live.
 - [x] vC48 Play/direct release: AAB/APK built, hashes verified, S10 install passed, landing/API live, GitHub release live, CI/Security Audit green.
 - [x] vC49 Play/direct release: AAB/APK built, hashes verified, S10 install passed, landing/API live, GitHub release live, CI/Security Audit green.

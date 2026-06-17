@@ -16,7 +16,7 @@
 - **Lokaler HEAD:** siehe `git rev-parse --short HEAD`
 - **origin/main:** siehe `git rev-parse --short origin/main`
 - **Repo HEAD:** siehe `git rev-parse --short HEAD` (latest local work: vC50/v1.0.21 release metadata)
-- **API container:** rebuilt during GH#111 activation; `IDENTITY_NULLIFIER_KDF_VERSION=v2`; scoped production ZK enabled only for `bill:GR-d4c62ed4`; global rollout and ZK Arweave publisher remain off
+- **API container:** rebuilt during GH#111 activation; `IDENTITY_NULLIFIER_KDF_VERSION=v2`; scoped production ZK enabled only for `bill:GR-d4c62ed4`; global rollout and ZK Arweave publisher remain off. ZK Arweave publication now requires its own exact `ZK_ARWEAVE_SCOPE_ALLOWLIST` and min group size guard before any publish run.
 - **Dashboard container:** `8709b90` live; admin proxy requires `SUPER_ADMIN`, route/module auth enforced by Next.js proxy, Docker build uses `npm ci` only, `X-Powered-By` disabled
 - **Web container:** rebuilt live for vC50; APK download badge/hash verified on ekklesia.gr.
 - **S10:** vC50/v1.0.21 installed via `adb install -r`; launch smoke test passed with no fatal Logcat crash. Public scoped ZK opt-in/proof/vote previously succeeded for `GR-d4c62ed4`.
@@ -46,7 +46,7 @@
 - **DIAVGEIA S10 Retest:** PASS — source card visible/clickable (`Πηγή — Διαύγεια` opens Android intent chooser), org/pill no longer shown as `Σύνοψη`, quote markers removed. Evidence: `/tmp/ekklesia_diav_fix_final_20260604_000652`.
 - **Open GitHub:** #79 F-Droid (external), #80 Off-site Backup (storage/funding), #112 staged/global follow-up after first public scoped rollout.
 - **Forum Missing Alerts:** 2026-06-17 Telegram `forum_missing` counts were transient sync/backfill progress. Current DB check: `public_missing_forum=0`; only `ZK-CANARY-001` lacks a forum topic and is `admin_hidden=true` by design.
-- **ZK V2:** GH#81 closed; Android prover works on S10. GH#112 hidden S10 canary passed end-to-end for `bill:ZK-CANARY-001`. First public scoped rollout passed for `bill:GR-d4c62ed4`: S10 proof accepted, public receipt recorded, API results show `tier1=0`, `zk=1`, `total=1`. Production ZK remains scoped by exact allowlist; `ZK_GLOBAL_ROLLOUT_ENABLED=false`; `ZK_ARWEAVE_PUBLICATION_ENABLED=false`.
+- **ZK V2:** GH#81 closed; Android prover works on S10. GH#112 hidden S10 canary passed end-to-end for `bill:ZK-CANARY-001`. First public scoped rollout passed for `bill:GR-d4c62ed4`: S10 proof accepted, public receipt recorded, API results show `tier1=0`, `zk=1`, `total=1`. Production ZK remains scoped by exact allowlist; `ZK_GLOBAL_ROLLOUT_ENABLED=false`; `ZK_ARWEAVE_PUBLICATION_ENABLED=false`. ZK Arweave publishing is additionally guarded by `ZK_ARWEAVE_SCOPE_ALLOWLIST` and `ZK_ARWEAVE_MIN_GROUP_SIZE`.
 - **Forum Monitor:** `4aa6f71` live; Discourse 429 handling + `/admin/forum/sync-new`; monitor once PASS, 17 checks, no alerts.
 - **Neu live:** municipality/, article.html, Autodesmefsi PDF, Forum Topic #436
 

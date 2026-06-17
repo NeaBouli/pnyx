@@ -174,6 +174,22 @@ async def test_zk_status_keeps_opt_in_closed_without_tier1_guard(monkeypatch) ->
 
 
 @pytest.mark.asyncio
+async def test_zk_status_reports_arweave_publication_guards(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_ARWEAVE_PUBLICATION_ENABLED", "true")
+    monkeypatch.setenv("ZK_ARWEAVE_SCOPE_ALLOWLIST", "bill:GR-0490a766")
+    monkeypatch.setenv("ZK_ARWEAVE_MIN_GROUP_SIZE", "7")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/api/v1/zk/status")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["arweave_publication_enabled"] is True
+    assert payload["arweave_scope_allowlist_configured"] is True
+    assert payload["arweave_min_group_size"] == 7
+
+
+@pytest.mark.asyncio
 async def test_zk_scope_status_requires_exact_production_allowlist(monkeypatch) -> None:
     monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
     monkeypatch.setenv("ZK_OPT_IN_ENABLED", "true")
@@ -1347,11 +1363,66 @@ async def test_zk_pending_receipt_publish_rejects_canary_mode(monkeypatch) -> No
 
 
 @pytest.mark.asyncio
+async def test_zk_pending_receipt_publish_requires_arweave_scope_allowlist(monkeypatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("ADMIN_KEY", raising=False)
+    monkeypatch.setenv("ZK_ARWEAVE_PUBLICATION_ENABLED", "true")
+    monkeypatch.setenv("ZK_GLOBAL_ROLLOUT_ENABLED", "true")
+    monkeypatch.delenv("ZK_ARWEAVE_SCOPE_ALLOWLIST", raising=False)
+    fake_db = _FakeSequenceDb([])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/receipts/bill:GR-0490a766/publish-pending",
+                headers={"Authorization": "Bearer dev-admin-key"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "ZK Arweave scope allowlist is not configured"
+    assert fake_db.executed == []
+
+
+@pytest.mark.asyncio
+async def test_zk_pending_receipt_publish_rejects_non_arweave_allowlisted_scope(monkeypatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("ADMIN_KEY", raising=False)
+    monkeypatch.setenv("ZK_ARWEAVE_PUBLICATION_ENABLED", "true")
+    monkeypatch.setenv("ZK_ARWEAVE_SCOPE_ALLOWLIST", "bill:GR-0490a766")
+    fake_db = _FakeSequenceDb([])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/receipts/bill:GR-d4c62ed4/publish-pending",
+                headers={"Authorization": "Bearer dev-admin-key"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "ZK Arweave scope is not allowed"
+    assert fake_db.executed == []
+
+
+@pytest.mark.asyncio
 async def test_zk_pending_receipt_publish_updates_only_public_receipt_fields(monkeypatch) -> None:
     monkeypatch.setenv("ENVIRONMENT", "development")
     monkeypatch.delenv("ADMIN_KEY", raising=False)
     monkeypatch.setenv("ZK_ARWEAVE_PUBLICATION_ENABLED", "true")
-    monkeypatch.setenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", "bill:GR-0490a766")
+    monkeypatch.setenv("ZK_ARWEAVE_SCOPE_ALLOWLIST", "bill:GR-0490a766")
 
     async def fake_publish_to_arweave(record, bill_id):
         assert record["vote_scope_id"] == "bill:GR-0490a766"
@@ -1380,7 +1451,7 @@ async def test_zk_pending_receipt_publish_updates_only_public_receipt_fields(mon
         arweave_pending=True,
         publication_bucket=None,
     )
-    root = SimpleNamespace(group_size=2)
+    root = SimpleNamespace(group_size=5)
     fake_db = _FakeSequenceDb([_public_parliament_bill(), [receipt], root])
 
     async def override_get_db():
@@ -1407,6 +1478,62 @@ async def test_zk_pending_receipt_publish_updates_only_public_receipt_fields(mon
     assert receipt.arweave_tx_id == "DRY_RUN_zk-GR-0490a766-12"
     assert receipt.publication_bucket
     assert fake_db.committed is True
+
+
+@pytest.mark.asyncio
+async def test_zk_pending_receipt_publish_rejects_too_small_group(monkeypatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("ADMIN_KEY", raising=False)
+    monkeypatch.setenv("ZK_ARWEAVE_PUBLICATION_ENABLED", "true")
+    monkeypatch.setenv("ZK_ARWEAVE_SCOPE_ALLOWLIST", "bill:GR-0490a766")
+    monkeypatch.setenv("ZK_ARWEAVE_MIN_GROUP_SIZE", "5")
+
+    async def fake_publish_to_arweave(_record, _bill_id):
+        raise AssertionError("must not publish a ZK receipt below the anonymity threshold")
+
+    import routers.arweave as arweave_router
+
+    monkeypatch.setattr(arweave_router, "publish_to_arweave", fake_publish_to_arweave)
+    receipt = SimpleNamespace(
+        id=12,
+        vote_scope_id="bill:GR-0490a766",
+        vote_commitment="YES",
+        semaphore_nullifier="123",
+        merkle_root="456",
+        merkle_depth=16,
+        signal_hash="789",
+        external_nullifier="101112",
+        proof_public_json={"proof": {"pi_a": ["1", "2"]}},
+        verifier_version="py-ecc-groth16-bn254:v1:semaphore-v4-depth16",
+        circuit_version="semaphore-v4-depth16",
+        arweave_tx_id=None,
+        arweave_pending=True,
+        publication_bucket=None,
+    )
+    root = SimpleNamespace(group_size=1)
+    fake_db = _FakeSequenceDb([_public_parliament_bill(), [receipt], root])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/receipts/bill:GR-0490a766/publish-pending",
+                headers={"Authorization": "Bearer dev-admin-key"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == (
+        "ZK Arweave publication requires group size >= 5; current group size is 1"
+    )
+    assert receipt.arweave_pending is True
+    assert receipt.arweave_tx_id is None
+    assert fake_db.committed is False
 
 
 @pytest.mark.asyncio

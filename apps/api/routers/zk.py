@@ -69,6 +69,9 @@ ZK_CANARY_SCOPE_ALLOWLIST_ENV = "ZK_CANARY_SCOPE_ALLOWLIST"
 ZK_PRODUCTION_SCOPE_ALLOWLIST_ENV = "ZK_PRODUCTION_SCOPE_ALLOWLIST"
 ZK_GLOBAL_ROLLOUT_ENABLED_ENV = "ZK_GLOBAL_ROLLOUT_ENABLED"
 ZK_ARWEAVE_PUBLICATION_ENABLED_ENV = "ZK_ARWEAVE_PUBLICATION_ENABLED"
+ZK_ARWEAVE_SCOPE_ALLOWLIST_ENV = "ZK_ARWEAVE_SCOPE_ALLOWLIST"
+ZK_ARWEAVE_MIN_GROUP_SIZE_ENV = "ZK_ARWEAVE_MIN_GROUP_SIZE"
+ZK_ARWEAVE_MIN_GROUP_SIZE_DEFAULT = 5
 SEMAPHORE_MERKLE_TREE_DEPTH = 16
 NATIVE_PROOF_KEYS = {"merkle_tree_depth", "merkle_tree_root"}
 CANONICAL_PROOF_KEYS = {"merkleTreeDepth", "merkleTreeRoot"}
@@ -134,6 +137,8 @@ class ZkStatusResponse(BaseModel):
     canary_enabled: bool
     root_publication_enabled: bool
     arweave_publication_enabled: bool
+    arweave_scope_allowlist_configured: bool
+    arweave_min_group_size: int
     global_rollout_enabled: bool
     production_scope_allowlist_configured: bool
     merkle_tree_depth: int
@@ -262,6 +267,10 @@ def _production_scope_allowlist() -> set[str]:
     return _scope_allowlist(ZK_PRODUCTION_SCOPE_ALLOWLIST_ENV)
 
 
+def _arweave_scope_allowlist() -> set[str]:
+    return _scope_allowlist(ZK_ARWEAVE_SCOPE_ALLOWLIST_ENV)
+
+
 def _scope_allowlist(env_name: str) -> set[str]:
     scopes: set[str] = set()
     raw = os.getenv(env_name, "")
@@ -274,6 +283,44 @@ def _scope_allowlist(env_name: str) -> set[str]:
 
 def _global_rollout_enabled() -> bool:
     return _env_enabled(ZK_GLOBAL_ROLLOUT_ENABLED_ENV)
+
+
+def _zk_arweave_min_group_size() -> int:
+    raw = os.getenv(ZK_ARWEAVE_MIN_GROUP_SIZE_ENV, str(ZK_ARWEAVE_MIN_GROUP_SIZE_DEFAULT)).strip()
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ZK Arweave minimum group size is invalid",
+        ) from exc
+    if value < 2:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ZK Arweave minimum group size is too low",
+        )
+    return value
+
+
+def _ensure_zk_arweave_scope_allowed(vote_scope_id: str | None) -> str:
+    if vote_scope_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ZK vote_scope_id is required",
+        )
+    scope = validate_vote_scope_id(vote_scope_id)
+    allowlist = _arweave_scope_allowlist()
+    if not allowlist:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ZK Arweave scope allowlist is not configured",
+        )
+    if scope not in allowlist:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="ZK Arweave scope is not allowed",
+        )
+    return scope
 
 
 def _ensure_canary_scope_allowed(vote_scope_id: str | None) -> str:
@@ -433,6 +480,8 @@ async def get_zk_status() -> ZkStatusResponse:
         canary_enabled=production_enabled and _env_enabled(ZK_CANARY_ENABLED_ENV),
         root_publication_enabled=_env_enabled(ZK_ROOT_PUBLICATION_ENABLED_ENV),
         arweave_publication_enabled=_env_enabled(ZK_ARWEAVE_PUBLICATION_ENABLED_ENV),
+        arweave_scope_allowlist_configured=bool(_arweave_scope_allowlist()),
+        arweave_min_group_size=_zk_arweave_min_group_size(),
         global_rollout_enabled=_global_rollout_enabled(),
         production_scope_allowlist_configured=bool(_production_scope_allowlist()),
         merkle_tree_depth=SEMAPHORE_MERKLE_TREE_DEPTH,
@@ -1015,7 +1064,7 @@ async def publish_pending_zk_receipts(
             detail="ZK canary receipts are not published to Arweave",
         )
 
-    scope = _ensure_zk_write_scope_allowed(vote_scope_id)
+    scope = _ensure_zk_arweave_scope_allowed(vote_scope_id)
     await _ensure_scope_public_or_safe_canary(db, scope, require_existing_bill=True)
     scope_type, scope_id = scope.split(":", 1)
     if scope_type != "bill":
@@ -1043,11 +1092,10 @@ async def publish_pending_zk_receipts(
             tx_ids=[],
         )
 
-    tx_ids: list[str] = []
+    publishable: list[tuple[ZkVoteReceipt, ZkMerkleRoot]] = []
     failed = 0
+    min_group_size = _zk_arweave_min_group_size()
     publication_bucket = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    from routers.arweave import publish_to_arweave
-    from services.zk_arweave_payload import build_zk_vote_arweave_record
 
     for receipt in receipts:
         root_result = await db.execute(
@@ -1063,7 +1111,21 @@ async def publish_pending_zk_receipts(
         if root is None:
             failed += 1
             continue
+        if int(root.group_size) < min_group_size:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    "ZK Arweave publication requires group size "
+                    f">= {min_group_size}; current group size is {root.group_size}"
+                ),
+            )
+        publishable.append((receipt, root))
 
+    tx_ids: list[str] = []
+    from routers.arweave import publish_to_arweave
+    from services.zk_arweave_payload import build_zk_vote_arweave_record
+
+    for receipt, root in publishable:
         record = build_zk_vote_arweave_record(
             vote_scope_id=scope,
             bill_id=scope_id,

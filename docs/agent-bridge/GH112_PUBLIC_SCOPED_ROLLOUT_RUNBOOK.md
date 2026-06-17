@@ -62,6 +62,18 @@ ZK_ARWEAVE_PUBLICATION_ENABLED=false
 ```
 
 ZK Arweave publication is a separate admin step after receipt payload review.
+It is not controlled by the production/global rollout gates alone. Before any
+ZK receipt is published to Arweave, configure the dedicated publication guards:
+
+```text
+ZK_ARWEAVE_PUBLICATION_ENABLED=true
+ZK_ARWEAVE_SCOPE_ALLOWLIST=bill:<bill_id>
+ZK_ARWEAVE_MIN_GROUP_SIZE=5
+```
+
+Do not use wildcards. Do not rely on `ZK_GLOBAL_ROLLOUT_ENABLED` to authorize
+Arweave publication. Keep the minimum group size at 5 or higher unless a
+separate privacy review explicitly accepts a smaller anonymity set.
 
 ## Operator Steps
 
@@ -76,6 +88,8 @@ ZK Arweave publication is a separate admin step after receipt payload review.
 9. Confirm mutated proof/message/root tests still reject.
 10. Confirm Tier-1 remains available outside the selected scope.
 11. Keep Arweave publication off until the public verifier payload is inspected.
+    If publishing, set the dedicated Arweave scope allowlist and verify the
+    group size meets the minimum anonymity threshold.
 12. Turn flags off after the window unless Gio explicitly keeps the scope open.
 
 ## Stop Conditions

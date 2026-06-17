@@ -156,8 +156,14 @@ Public receipt builders exclude:
 - Tier-1 public key
 - Semaphore secret
 
-Arweave publishing is disabled unless `ZK_ARWEAVE_PUBLICATION_ENABLED=true` and
-is refused in canary mode. Receipts remain `arweave_pending=true` until a real
+Arweave publishing is disabled unless `ZK_ARWEAVE_PUBLICATION_ENABLED=true`,
+is refused in canary mode, and now also requires a dedicated exact
+`ZK_ARWEAVE_SCOPE_ALLOWLIST`. This publisher allowlist is intentionally separate
+from `ZK_PRODUCTION_SCOPE_ALLOWLIST` and `ZK_GLOBAL_ROLLOUT_ENABLED`, so global
+ZK voting cannot automatically publish all pending ZK receipts to Arweave.
+
+The publisher also enforces `ZK_ARWEAVE_MIN_GROUP_SIZE` (default: 5) before a
+receipt can be archived. Receipts remain `arweave_pending=true` until a real
 publication transaction exists.
 
 ### F7 — Tally integration
@@ -204,7 +210,9 @@ When a real public scope is selected:
 6. Monitor Tier-1 rejections, ZK verify failures, root freshness, and pending receipts.
 7. Publish the root after opt-in collection.
 8. Accept ZK votes only against the published root.
-9. Publish pending ZK receipts to Arweave only after checking public payload shape.
+9. Publish pending ZK receipts to Arweave only after checking public payload shape
+   and setting `ZK_ARWEAVE_SCOPE_ALLOWLIST=bill:<id>` plus an anonymity threshold
+   via `ZK_ARWEAVE_MIN_GROUP_SIZE`.
 10. Turn flags off after the scoped window unless intentionally keeping that one
     scope open.
 
@@ -213,5 +221,6 @@ When a real public scope is selected:
 Review result: **PASS for exact-scope production rollout.**
 
 Remaining boundary: no global rollout. Global production ZK still requires a
-follow-up review; ZK Arweave publication also remains gated until the public
-payload policy is reviewed.
+follow-up review. ZK Arweave publication is safer now because it has a separate
+scope allowlist and anonymity threshold, but it remains gated until the public
+payload policy and the chosen scope are explicitly approved.
