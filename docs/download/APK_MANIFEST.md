@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.19 |
-| versionCode | 48 |
+| Version | 1.0.20 |
+| versionCode | 49 |
 | Package | ekklesia.gr |
-| APK SHA256 | `1e0a15b027afb231178d381f608fc8640fb2960ae3ebfc1bac9de65206a55016` |
-| AAB SHA256 | `af4a490a480113ada18e2e91f050eca8232c9443ae23f69966b4f4331ad4f2f5` |
+| APK SHA256 | `c6ee98a9d9081f5711c31505ddec22359fc2043c3251ff3f26d044ea50130a52` |
+| AAB SHA256 | `125e8dece542f756dc0e746dbc05f494103919efa4cb2cf7b921ff273aa0ef68` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
 | Build date | 2026-06-17 |
-| Release gate | PASS — API version syntax, mobile TypeScript, mobile Vitest, local AAB/APK build, APK version/signature audit, S10 install/launch smoke test |
-| Includes | vC48 release metadata, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, ZK V2 native prover, hidden S10 canary operator path, deep-link fallback, pagination, source/full-text policy, permission hardening |
+| Release gate | PASS — API version syntax, mobile TypeScript, mobile Vitest, local AAB/APK build, APK/AAB version audit |
+| Includes | vC49 release metadata, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, ZK V2 native prover, hidden S10 canary operator path, deep-link fallback, pagination, source/full-text policy, permission hardening |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: 1e0a15b027afb231178d381f608fc8640fb2960ae3ebfc1bac9de65206a55016
+# Expected: c6ee98a9d9081f5711c31505ddec22359fc2043c3251ff3f26d044ea50130a52
 ```

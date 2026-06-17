@@ -1,5 +1,30 @@
 # Action Log
 
+## 2026-06-17 — Codex: vC49 / v1.0.20 Android release build
+
+- Scope:
+  - Gio requested a new `vC40` with a new version number; `vC40` is older than the current Play/source lineage, so the safe monotonic release is `vC49 / v1.0.20`.
+  - No Vote/ZK/Identity runtime logic changed in this release bump.
+- Changed:
+  - `apps/mobile/app.json`: `version=1.0.20`, `android.versionCode=49`.
+  - `apps/mobile/android/app/build.gradle`: `versionName "1.0.20"`, `versionCode 49`.
+  - `apps/api/routers/app_version.py`: latest version endpoint bumped to `1.0.20 / 49`.
+  - `docs/index.html`: visible APK badge bumped to `v1.0.20 · vC49`.
+  - `docs/download/APK_MANIFEST.md` and `docs/download/ekklesia-latest.apk.sha256` updated.
+- Artifacts:
+  - AAB: `/Users/gio/Desktop/ekklesia-v1.0.20-vC49-PLAY.aab`, SHA256 `125e8dece542f756dc0e746dbc05f494103919efa4cb2cf7b921ff273aa0ef68`.
+  - APK: `/Users/gio/Desktop/ekklesia-v1.0.20-vC49-PLAY.apk`, SHA256 `c6ee98a9d9081f5711c31505ddec22359fc2043c3251ff3f26d044ea50130a52`.
+- Verification:
+  - `python -m py_compile apps/api/routers/app_version.py`: PASS.
+  - `npm --prefix apps/mobile run typecheck --if-present`: PASS.
+  - `npm --prefix apps/web run typecheck --if-present`: PASS.
+  - `bash scripts/build-play.sh`: PASS.
+  - `bash scripts/build-direct.sh`: PASS.
+  - AAB manifest: package `ekklesia.gr`, `versionCode=49`, `versionName=1.0.20`.
+  - APK badging: package `ekklesia.gr`, `versionCode=49`, `versionName=1.0.20`, target SDK 36.
+- Pending:
+  - Deploy API/Web/download, create GitHub release, run CI/Security Audit, install on S10 when connected.
+
 ## 2026-06-17 — Codex: GH#111 health-hardened preflight backup
 
 - Scope:
