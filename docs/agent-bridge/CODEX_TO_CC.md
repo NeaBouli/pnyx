@@ -1,19 +1,19 @@
-# CC Context — Current pnyx status after vC49 release
+# CC Context — Current pnyx status after vC50 release
 
 Mode: support/review when asked. Do not assume old vC35/vC37/vC38/vC41 tasks are current.
 
 Current state:
-- Mobile vC49 / v1.0.20 is the current Play/direct build. Gio asked for `vC40`, but Play requires monotonic versionCode; vC49 is the safe next code after vC48.
-- AAB ready for Google Play Closed Testing: `/Users/gio/Desktop/ekklesia-v1.0.20-vC49-PLAY.aab`.
-- Direct APK is live on ekklesia.gr as the play-signed vC49 APK; SHA256 `7d0cf0c2e09779b5f8e6f9ee8b984ca5a0b26e87273282f68a2acae57cc7712e`.
-- GitHub latest release: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.20.
-- APK SHA256: `7d0cf0c2e09779b5f8e6f9ee8b984ca5a0b26e87273282f68a2acae57cc7712e`.
-- AAB SHA256: `125e8dece542f756dc0e746dbc05f494103919efa4cb2cf7b921ff273aa0ef68`.
-- R8/minify is still OFF for vC49; no `mapping.txt` exists. Play's no-mapping warning is informational for this artifact.
+- Mobile vC50 / v1.0.21 is the current prepared Play/direct build. Gio asked for `vC40`, but Play requires monotonic versionCode; vC50 is the safe next code after vC49.
+- AAB ready for Google Play Closed Testing: `/Users/gio/Desktop/ekklesia-v1.0.21-vC50-PLAY.aab`.
+- Direct APK prepared from the vC50 AAB as a play-signed universal APK; SHA256 `989c5f92ff37b4a8498e6410f362dedbfd91e362042ec5e6685479385c14685d`.
+- GitHub latest release still needs to be updated after the vC50 commit.
+- APK SHA256: `989c5f92ff37b4a8498e6410f362dedbfd91e362042ec5e6685479385c14685d`.
+- AAB SHA256: `709cb2cee17f30f48ed417ecda9e1b8831f1b61a446286292a61f1454e3ad5e6`.
+- R8/minify is still OFF for vC50; no `mapping.txt` exists. Play's no-mapping warning is informational for this artifact.
 - Monitor Telegram Bot API URL logging is redacted live. Do not repeat raw Telegram tokens from terminal logs.
 - GH#112 hidden S10 canary passed earlier for `bill:ZK-CANARY-001`.
-- GH#112 first public scoped rollout passed for `bill:GR-d4c62ed4`; vC49 S10 install/launch smoke test passed.
-- vC49 live deploy checks passed: API version 1.0.20/49, landing badge vC49, play-signed APK hash match, S10 install/launch smoke test, monitor once 17/17, CI + Security Audit green.
+- GH#112 first public scoped rollout passed for `bill:GR-d4c62ed4`; vC50 S10 install/launch smoke test passed.
+- vC50 local release checks passed: API version source 1.0.21/50, landing badge source vC50, AAB/APK metadata and signature verified, S10 install/launch smoke test passed. Deploy/GitHub release/CI still need the final commit/push/deploy cycle.
 - Public scoped ZK result for `GR-d4c62ed4`: `total_votes=1`, `tier1_vote_count=0`, `zk_vote_count=1`, `yes_count=1`.
 - Public receipt exists with `vote_commitment=YES`, `arweave_pending=true`, `arweave_tx_id=null`.
 - Production ZK is currently scoped to exactly `bill:GR-d4c62ed4` through `ZK_PRODUCTION_SCOPE_ALLOWLIST`.
@@ -26,7 +26,7 @@ Current state:
 - CI + Security Audit are green for `4aa6f71` and `f51dbf0`.
 - F-Droid !38007 is still open/mergeable, latest pipeline success, waiting on fdroiddata maintainer.
 - GH#111 Nullifier v2 canary remains separate and is NOT activated.
-- vC49 keeps the controlled Profile -> Verify entrypoint for a real HLR re-verification canary; it does NOT activate Nullifier v2 by itself.
+- vC50 keeps the controlled Profile -> Verify entrypoint for a real HLR re-verification canary; it does NOT activate Nullifier v2 by itself.
 - GH#111 preflight on 2026-06-17 05:05 UTC: production KDF still v1; `identity_records` 17 total / 17 active / 0 revoked / 0 v2; `active_with_v2=0`, `v2_without_version=0`, `version_without_v2=0`, `malformed_v2=0`; Argon2id v2 helper and full app lifespan work in the API container.
 - GH#111 latest health-hardened preflight backup exists: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_health_hardened_20260617_050528` (snapshot/report/dump/v2-lifespan-probe SHA256 recorded in `ACTION_LOG.md`).
 - GH#111 runbook exists: `docs/agent-bridge/GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`; it now includes an isolated v2 lifespan probe before any env flip, a retrying external health check after API rebuild, and `gh111_kdf_env_guard.py` for env-file plan/write/rollback with explicit `GH111-KDF-WRITE` confirmation.

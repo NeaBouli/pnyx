@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.20 |
-| versionCode | 49 |
+| Version | 1.0.21 |
+| versionCode | 50 |
 | Package | ekklesia.gr |
-| APK SHA256 | `7d0cf0c2e09779b5f8e6f9ee8b984ca5a0b26e87273282f68a2acae57cc7712e` |
-| AAB SHA256 | `125e8dece542f756dc0e746dbc05f494103919efa4cb2cf7b921ff273aa0ef68` |
+| APK SHA256 | `989c5f92ff37b4a8498e6410f362dedbfd91e362042ec5e6685479385c14685d` |
+| AAB SHA256 | `709cb2cee17f30f48ed417ecda9e1b8831f1b61a446286292a61f1454e3ad5e6` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
 | Build date | 2026-06-17 |
-| Release gate | PASS — API version syntax, mobile TypeScript, mobile Vitest, local AAB/APK build, APK/AAB version audit, APK signature audit, S10 install/launch smoke test |
-| Includes | vC49 release metadata, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, ZK V2 native prover, hidden S10 canary operator path, deep-link fallback, pagination, source/full-text policy, permission hardening |
+| Release gate | PASS — API version syntax, mobile TypeScript, mobile Vitest, local AAB build, universal APK from AAB, APK/AAB version audit, APK signature audit, S10 install/launch smoke test |
+| Includes | vC50 release metadata, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, ZK V2 native prover, hidden S10 canary operator path, deep-link fallback, pagination, source/full-text policy, permission hardening |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: 7d0cf0c2e09779b5f8e6f9ee8b984ca5a0b26e87273282f68a2acae57cc7712e
+# Expected: 989c5f92ff37b4a8498e6410f362dedbfd91e362042ec5e6685479385c14685d
 ```

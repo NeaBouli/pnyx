@@ -25,7 +25,7 @@
 
 ### Release Follow-ups
 - [ ] Future Production Size/R8 Optimization — Play Console warns about size/mapping when R8 is not active.
-  - Current prepared Play/direct build: vC49 / v1.0.20; R8/minify remains OFF, so no `mapping.txt` exists for this artifact.
+  - Current prepared Play/direct build: vC50 / v1.0.21; R8/minify remains OFF, so no `mapping.txt` exists for this artifact.
   - Cause of size: native Semaphore/ZK prover and multi-ABI native libraries.
   - Next pass before Production (not Closed Testing): evaluate ABI restrictions and R8/ProGuard + `mapping.txt`, rebuild, install on S10, verify vote/source/ZK paths.
 
@@ -184,6 +184,7 @@
 - [x] vC48 Play/direct release: AAB/APK built, hashes verified, S10 install passed, landing/API live, GitHub release live, CI/Security Audit green.
 - [x] vC49 Play/direct release: AAB/APK built, hashes verified, S10 install passed, landing/API live, GitHub release live, CI/Security Audit green.
 - [x] vC49 corrected play-signed APK redeployed to landing/GitHub release after signature audit.
+- [ ] vC50 Play/direct release: AAB/APK built, hashes verified, S10 install passed; deploy/GitHub release/CI still pending.
 
 ## Done (Session 13.05.2026)
 - [x] Server CX33 → CX43 Upgrade

@@ -1,5 +1,32 @@
 # Action Log
 
+## 2026-06-17 — Codex: vC50 / v1.0.21 Android release build
+
+- Scope:
+  - Gio requested a new `vC40` with a new version number; `vC40` is older than the current Play/source lineage, so the safe monotonic release is `vC50 / v1.0.21`.
+  - No Vote/ZK/Identity runtime logic changed in this release bump.
+- Changed:
+  - `apps/mobile/app.json`: `version=1.0.21`, `android.versionCode=50`.
+  - `apps/mobile/android/app/build.gradle`: `versionName "1.0.21"`, `versionCode 50`.
+  - `apps/api/routers/app_version.py`: latest version endpoint bumped to `1.0.21 / 50`.
+  - `docs/index.html`: visible APK badge bumped to `v1.0.21 · vC50`.
+  - `docs/download/APK_MANIFEST.md` and `docs/download/ekklesia-latest.apk.sha256` updated.
+- Artifacts:
+  - AAB: `/Users/gio/Desktop/ekklesia-v1.0.21-vC50-PLAY.aab`, SHA256 `709cb2cee17f30f48ed417ecda9e1b8831f1b61a446286292a61f1454e3ad5e6`.
+  - APK: `/Users/gio/Desktop/ekklesia-v1.0.21-vC50-PLAY.apk`, SHA256 `989c5f92ff37b4a8498e6410f362dedbfd91e362042ec5e6685479385c14685d`.
+- Verification:
+  - `python -m py_compile apps/api/routers/app_version.py`: PASS.
+  - `npx --prefix apps/mobile tsc --noEmit -p apps/mobile/tsconfig.json`: PASS.
+  - `cd apps/mobile && npx vitest run`: PASS, 86 passed.
+  - `bash scripts/build-play.sh`: PASS.
+  - AAB manifest: package `ekklesia.gr`, `versionCode=50`, `versionName=1.0.21`.
+  - APK badging: package `ekklesia.gr`, `versionCode=50`, `versionName=1.0.21`, target SDK 36.
+  - APK signer SHA-256 digest: `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
+  - S10 `RF8N313QMFL`: `adb install -r` PASS, `versionCode=50`, `versionName=1.0.21`, launch smoke test with no fatal Logcat crash.
+- Pending:
+  - Commit/push, server deploy for API/Web/download, live hash verification, GitHub release, CI/Security Audit.
+  - GH#111 remains v1; no HLR request, no identity mutation, no `IDENTITY_NULLIFIER_KDF_VERSION=v2` activation.
+
 ## 2026-06-17 — Codex: GH#111 KDF env guard helper
 
 - Scope:

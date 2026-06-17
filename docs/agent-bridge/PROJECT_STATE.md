@@ -15,25 +15,25 @@
 - **Branch:** `main`
 - **Lokaler HEAD:** siehe `git rev-parse --short HEAD`
 - **origin/main:** siehe `git rev-parse --short origin/main`
-- **Repo HEAD:** siehe `git rev-parse --short HEAD` (latest: vC49/v1.0.20 release metadata)
+- **Repo HEAD:** siehe `git rev-parse --short HEAD` (latest local work: vC50/v1.0.21 release metadata)
 - **API container:** rebuilt from `033ceb4` for GH#111 operator helper hardening; scoped production ZK enabled only for `bill:GR-d4c62ed4`; global rollout and ZK Arweave publisher remain off
 - **Dashboard container:** `8709b90` live; admin proxy requires `SUPER_ADMIN`, route/module auth enforced by Next.js proxy, Docker build uses `npm ci` only, `X-Powered-By` disabled
-- **Web container:** rebuilt live for vC49; APK download badge/hash verified on ekklesia.gr.
-- **S10:** vC49/v1.0.20 installed via `adb install -r`; launch smoke test passed with no fatal Logcat crash. Public scoped ZK opt-in/proof/vote previously succeeded for `GR-d4c62ed4`.
+- **Web container:** latest live state may still be vC49 until vC50 deploy; vC50 source/download metadata is prepared.
+- **S10:** vC50/v1.0.21 installed via `adb install -r`; launch smoke test passed with no fatal Logcat crash. Public scoped ZK opt-in/proof/vote previously succeeded for `GR-d4c62ed4`.
 - **Alembic:** `u401a2b3c4d5` (ZK receipt `vote_commitment` NOT NULL, head)
 - **Disk:** 2026-06-17 build-cache cleanup resolved `disk_critical` alert; `/` now 77% used / 17 GB free; monitor PASS.
 - **GH#111 Backup:** latest health-hardened preflight backup `/opt/ekklesia/backups/pre_gh111_nullifier_v2_health_hardened_20260617_050528`; KDF remains v1, no identity mutation, 17 active / 0 revoked / 0 v2 rows.
 - **GH#111 Runbook/Test:** `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md` + read-only `gh111_nullifier_v2_canary_check.py` + `gh111_kdf_env_guard.py`; endpoint/evaluator regression proves v2 same-row migration with mocked HLR, Redis in-flight lock, atomic row-locked existing-identity re-registration, before/after canary verdicts, report artifacts, and v2 invariant counters. Runbook now includes v2 lifespan probe, retrying health check after the previous pre-HLR 500/readiness abort, and confirmed env-file write/rollback helper.
-- **GH#111 S10 UI Path:** Profile -> `Επαλήθευση / Νέο κλειδί` -> VerifyScreen verified on S10 without submit/HLR; vC49 keeps this path, DB invariant remains: 17 active identities, 0 v2 rows, KDF v1/unset, `active_with_v2=0`, malformed/mismatched v2 counters all 0.
+- **GH#111 S10 UI Path:** Profile -> `Επαλήθευση / Νέο κλειδί` -> VerifyScreen verified on S10 without submit/HLR; vC50 keeps this path, DB invariant remains: 17 active identities, 0 v2 rows, KDF v1/unset, `active_with_v2=0`, malformed/mismatched v2 counters all 0.
 - **F-Droid !38007:** Still open/mergeable on GitLab (checked 2026-06-17); no conflicts, blocking discussions resolved, latest pipeline `2570810919` success; waiting on fdroiddata maintainer merge/re-test.
 - **POLIS Status:** App-internal Create/Vote LIVE
 - **Tracking:** Linear + GitHub Issues parallel. Cross-Links: GH#71-83 = NEA-277-285
 - **GR-0490a766:** arweave_tx_id=NULL (bereinigt), party_votes_parliament=NULL, Guards verhindern Re-Archivierung
 - **Telegram Bot:** citizen_votes Query LIVE, governance Topic-Routing LIVE
-- **vC49 Release:** AAB `/Users/gio/Desktop/ekklesia-v1.0.20-vC49-PLAY.aab`, SHA256 `125e8dece542f756dc0e746dbc05f494103919efa4cb2cf7b921ff273aa0ef68`; APK `/Users/gio/Desktop/ekklesia-v1.0.20-vC49-PLAY.apk`, SHA256 `7d0cf0c2e09779b5f8e6f9ee8b984ca5a0b26e87273282f68a2acae57cc7712e`.
-- **vC49 GitHub Release:** https://github.com/NeaBouli/pnyx/releases/tag/v1.0.20
-- **vC49 Landing APK:** live on ekklesia.gr as v1.0.20/vC49; SHA256 `7d0cf0c2e09779b5f8e6f9ee8b984ca5a0b26e87273282f68a2acae57cc7712e`.
-- **R8/mapping.txt:** still off for vC49 (`minify=false`); mapping warning in Play is informational until a future Production/R8 build.
+- **vC50 Release:** AAB `/Users/gio/Desktop/ekklesia-v1.0.21-vC50-PLAY.aab`, SHA256 `709cb2cee17f30f48ed417ecda9e1b8831f1b61a446286292a61f1454e3ad5e6`; APK `/Users/gio/Desktop/ekklesia-v1.0.21-vC50-PLAY.apk`, SHA256 `989c5f92ff37b4a8498e6410f362dedbfd91e362042ec5e6685479385c14685d`.
+- **vC50 GitHub Release:** pending after commit/push.
+- **vC50 Landing APK:** source artifact prepared as v1.0.21/vC50; live deploy still pending in this working copy.
+- **R8/mapping.txt:** still off for vC50 (`minify=false`); mapping warning in Play is informational until a future Production/R8 build.
 - **Linear:** Token OK (`~/.claude/.env` → `LINEAR_API_KEY`), NEA-280 + NEA-292 geschlossen; Codex verified and commented NEA-292 + NEA-301
 - **NEA-301b PARLIAMENT:** DONE (17/31 mit summary_short_el, 9 brauchen Fetcher, 3 DEMO + 2 flagged excluded, DIAVGEIA 0/636 eigene Phase)
 - **Ollama:** RAM zurueck auf 2.4 GB (Produktion), kein Job aktiv
