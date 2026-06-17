@@ -1,29 +1,34 @@
-# CC Context — Current pnyx status after vC41 / GH#112 scoped ZK UI
+# CC Context — Current pnyx status after vC43 / first public scoped ZK rollout
 
-Mode: support/review when asked. Do not assume old vC35/vC37/vC38 tasks are current.
+Mode: support/review when asked. Do not assume old vC35/vC37/vC38/vC41 tasks are current.
 
 Current state:
-- Mobile vC41 / v1.0.12 is the current Play/direct build.
-- Gio should upload `/Users/gio/Desktop/ekklesia-v1.0.12-vC41-PLAY.aab` to Google Play if not already uploaded.
-- Direct APK is live on ekklesia.gr as v1.0.12 / vC41.
-- GitHub latest release is `v1.0.12` with APK+AAB assets.
-- APK SHA256: `e558eac36afedadc09baf05d4149cc240911949d926fc81f490590f5811d6468`.
-- AAB SHA256: `59d28635408589dc026d530771e1cd6025994101ee6be715d690269370d75958`.
-- R8/minify is still OFF for vC41; no `mapping.txt` exists. Play's no-mapping warning is informational for this artifact.
-- GH#112 hidden S10 canary passed end-to-end for `bill:ZK-CANARY-001`; production ZK flags are OFF again.
-- Nothing from the hidden canary was published to Arweave.
-- GH#112 security review passed for scoped rollout readiness; global ZK rollout remains disabled.
-- New vC41 prep: public scoped ZK UI behind exact server allowlist + read-only scope status endpoint.
-- Live API endpoint: `GET /api/v1/zk/scopes/{vote_scope_id}/status`.
-- Invalid scopes now return HTTP 400, not 500.
-- Current public candidates are real `OPEN_END` Parliament bills; newest Bouli bills are `ANNOUNCED` and must not be activated for ZK until lifecycle opens voting.
-- GitHub CI + Security Audit are green at `5ea7518`.
+- Mobile vC43 / v1.0.14 is the current Play/direct build.
+- Gio should upload `/Users/gio/Desktop/ekklesia-v1.0.14-vC43-PLAY.aab` to Google Play Closed Testing if not already uploaded.
+- Direct APK is live on ekklesia.gr as v1.0.14 / vC43.
+- GitHub latest release is `v1.0.14` with APK+AAB assets: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.14
+- APK SHA256: `21e346ae9b01993354fa9c8f0dd5c21541f115d2260d4b1dbe3f8dc66f2e29a5`.
+- AAB SHA256: `1d17a49af327d702769acb4f39a8bbf86c875d971a8a068d1da7e815af717fef`.
+- R8/minify is still OFF for vC43; no `mapping.txt` exists. Play's no-mapping warning is informational for this artifact.
+- GH#112 hidden S10 canary passed earlier for `bill:ZK-CANARY-001`.
+- GH#112 first public scoped rollout also passed for `bill:GR-d4c62ed4` with vC43 on S10.
+- Public scoped ZK result for `GR-d4c62ed4`: `total_votes=1`, `tier1_vote_count=0`, `zk_vote_count=1`, `yes_count=1`.
+- Public receipt exists with `vote_commitment=YES`, `arweave_pending=true`, `arweave_tx_id=null`.
+- Production ZK is currently scoped to exactly `bill:GR-d4c62ed4` through `ZK_PRODUCTION_SCOPE_ALLOWLIST`.
+- `ZK_GLOBAL_ROLLOUT_ENABLED=false`.
+- `ZK_ARWEAVE_PUBLICATION_ENABLED=false`.
+- `ZK_CANARY_ENABLED=false`.
+- ZK Arweave publication policy still needs review before enabling any publisher.
+- Forum/monitor fix `4aa6f71` is live: Discourse 429 handling, `/api/v1/admin/forum/sync-new`, monitor recovery remapped to sync-new, DIAVGEIA backlog grace 6h.
+- Monitor once after deploy: PASS, 17 checks, no alerts.
+- CI + Security Audit are green for `4aa6f71` and `f51dbf0`.
 - F-Droid !38007 is still open/mergeable, latest pipeline success, waiting on fdroiddata maintainer.
+- GH#111 Nullifier v2 canary remains separate and is NOT activated.
 
 If asked to continue:
 1. Prefer review/diagnosis first.
-2. Do not flip production ZK flags without Gio's explicit instruction and a fresh backup.
+2. Do not enable global ZK rollout without Gio's explicit instruction, fresh backup, and staged rollout plan.
 3. Do not add Arweave publication for ZK proofs until the public-payload policy is reviewed.
-4. Do not enable R8/ProGuard unless the resulting build is installed on S10 and ZK paths are verified.
-5. For first public ZK rollout, use exactly one scope in `ZK_PRODUCTION_SCOPE_ALLOWLIST`; keep `ZK_GLOBAL_ROLLOUT_ENABLED=false`.
-6. For the first public ZK scope, vC41 must be installed on the S10 because older builds do not contain the scoped public ZK UI.
+4. Do not enable R8/ProGuard unless the resulting build is installed on S10 and vote/source/ZK paths are verified.
+5. Keep production ZK scoped by exact allowlist; do not wildcard scopes.
+6. GH#111 Nullifier v2 is a separate canary with HLR/identity re-registration risk; do not mix it into GH#112 rollout work.

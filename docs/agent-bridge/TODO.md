@@ -25,7 +25,7 @@
 
 ### Release Follow-ups
 - [ ] Future Production Size/R8 Optimization — Play Console warns about size/mapping when R8 is not active.
-  - Current Play/direct build: vC41 / v1.0.12; R8/minify remains OFF, so no `mapping.txt` exists for this artifact.
+  - Current Play/direct build: vC43 / v1.0.14; R8/minify remains OFF, so no `mapping.txt` exists for this artifact.
   - Cause of size: native Semaphore/ZK prover and multi-ABI native libraries.
   - Next pass before Production (not Closed Testing): evaluate ABI restrictions and R8/ProGuard + `mapping.txt`, rebuild, install on S10, verify vote/source/ZK paths.
 
@@ -73,7 +73,8 @@
   - [x] Tally/API policy: public results aggregate Tier-1 votes + valid ZK receipts; hidden canary remains excluded by `admin_hidden`
   - [x] Public verifier payload / Arweave publication policy: admin + flag-gated pending receipt publisher, public verifier payload only, no identity bridge fields, no canary Arweave publication
   - [x] Security review for scoped production rollout readiness (`GH112_SECURITY_REVIEW.md`)
-  - [ ] First public scoped ZK rollout window (one explicit bill scope, backup, monitoring; no global flag)
+  - [x] First public scoped ZK rollout window PASS for `bill:GR-d4c62ed4` with vC43/S10; public result `tier1=0`, `zk=1`, `total=1`; global rollout remains OFF; ZK Arweave publisher remains OFF
+  - [ ] Staged/global ZK rollout follow-up: only after review of rollout policy, Arweave publication policy, and per-scope monitoring
 
 ## Done (Session 25.05.2026)
 - [x] F-Droid !38007 autoupdate: `AutoUpdateMode: Version`, `UpdateCheckMode: Tags`, CurrentVersion 1.3.2/27 pushed to fdroiddata (`3d81d65c1`) + linsui comment posted
@@ -173,8 +174,8 @@
 - [ ] NEA-65: Off-Site Backup — nach erster Spende
 - [ ] NEA-73: Embed-System — Low Prio
 - [ ] GH#111 / NEA-335 follow-up: Nullifier v2 Production Activation — scaffold deployed and production preflight green, but production remains v1 until an explicit operator canary with a real HLR/identity re-registration path proves same-row v1->v2 migration; checklist in `docs/adr/ADR-004-nullifier-kdf-migration.md`
-- [ ] GH#112 / ZK V2 first public scoped rollout — hidden S10 canary passed; vC41 scoped public ZK UI/API gate is live; security review passed for scoped rollout. Next: choose exactly one eligible public bill scope (`ACTIVE`, `WINDOW_24H`, or accepted `OPEN_END`), backup, enable scoped flags only, no global rollout.
-- [x] vC41 Play/direct release: AAB/APK built, hashes verified, landing APK/hash live, GitHub latest release updated, S10 update/install smoke test passed.
+- [ ] GH#112 / ZK V2 staged/global follow-up — first public scoped rollout passed for `bill:GR-d4c62ed4`; production ZK remains scoped by exact allowlist; global rollout and ZK Arweave publisher remain OFF pending review.
+- [x] vC43 Play/direct release: AAB/APK built, hashes verified, landing APK/hash live, GitHub latest release updated, S10 public scoped ZK vote passed.
 
 ## Done (Session 13.05.2026)
 - [x] Server CX33 → CX43 Upgrade

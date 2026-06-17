@@ -1,5 +1,36 @@
 # Action Log
 
+## 2026-06-17 — Codex: vC43 public scoped ZK rollout + forum monitor recovery fix
+
+- Current HEAD after release metadata: `f51dbf0`.
+- Mobile release:
+  - Current Android build: vC43 / v1.0.14.
+  - APK: `/Users/gio/Desktop/ekklesia-v1.0.14-vC43-PLAY.apk`, SHA256 `21e346ae9b01993354fa9c8f0dd5c21541f115d2260d4b1dbe3f8dc66f2e29a5`.
+  - AAB: `/Users/gio/Desktop/ekklesia-v1.0.14-vC43-PLAY.aab`, SHA256 `1d17a49af327d702769acb4f39a8bbf86c875d971a8a068d1da7e815af717fef`.
+  - S10 installed vC43 and verified public scoped ZK path.
+  - GitHub latest release: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.14
+  - Landing/download live: `https://ekklesia.gr/download/ekklesia-latest.apk`, SHA256 verified live.
+- GH#112 first public scoped rollout:
+  - Scope: `bill:GR-d4c62ed4` only.
+  - Bill: `GR-d4c62ed4` (`OPEN_END`, Parliament, public, forum topic 570).
+  - Backup before rollout: `/opt/ekklesia/backups/pre_gh112_public_scope_20260616_234425`.
+  - Flags: production ZK ON, opt-in ON, tier1 guard ON, root publication ON, production allowlist exactly `bill:GR-d4c62ed4`; global rollout OFF; Arweave publication OFF; canary OFF.
+  - S10 proof path: opt-in succeeded, root published, proof verified, ZK vote submitted.
+  - Public API result: `total_votes=1`, `tier1_vote_count=0`, `zk_vote_count=1`, `yes_count=1`.
+  - Public receipt is present with `vote_commitment=YES`, `arweave_pending=true`, `arweave_tx_id=null`.
+  - Boundary: scoped production ZK is live for this one bill only; global rollout and ZK Arweave publisher remain disabled.
+- Forum/monitor fix:
+  - Monitor exposed DIAVGEIA forum backlog after the rollout checks.
+  - Root cause: Discourse returned HTTP 429 and `sync_new_bills_to_forum()` retried too fast; monitor recovery also called `resync-all` although missing new topics need `sync-new`.
+  - Fix `4aa6f71`: Discourse 429 wait/retry helper, per-topic delay, new admin endpoint `/api/v1/admin/forum/sync-new`, monitor recovery remapped to `sync-new`, DIAVGEIA backlog grace extended to 6h.
+  - Tests: `py_compile` PASS; `tests/services/test_discourse_sync.py` + `tests/test_monitor_hidden_bills.py` PASS, 22 passed.
+  - Deployed API + monitor; `docker compose exec monitor python /app/monitor.py --once` PASS, 17 checks, no alerts.
+- CI:
+  - CI + Security Audit green for `4aa6f71` and `f51dbf0`.
+- Still open:
+  - #111 Nullifier v2 canary remains separate and not activated.
+  - #79 F-Droid external; #80 Off-site Backup waits on storage/funding.
+
 ## 2026-06-17 — Codex: vC41 Android release + scoped public ZK UI/API gate
 
 - Version bump:
