@@ -26,6 +26,15 @@
 - Safety boundary:
   - GH#111 remains unactivated until explicit backup + real phone/HLR operator canary.
   - No server ZK/KDF flags changed in this build step.
+- Deploy:
+  - Server fast-forwarded to `5efe3f5` with rollback tag `rollback-pre-vc45-20260617-014607`.
+  - API and Web rebuilt via `docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.yml`.
+  - Live API `/api/v1/app/version`: `latest_version=1.0.16`, `latest_version_code=45`.
+  - Live landing shows `v1.0.16 · vC45`.
+  - Live APK SHA256 matches `770c947cecd273f4b08b1d3f967ff8ff954a28132c699116ddfcb9bfec8f0621`.
+  - Monitor once after deploy: PASS, 17 checks, no alerts.
+  - GitHub CI + Security Audit for `5efe3f5`: PASS.
+  - GitHub release created: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.16 with APK+AAB assets.
 
 ## 2026-06-17 — Codex: vC44 / v1.0.15 Android release build
 

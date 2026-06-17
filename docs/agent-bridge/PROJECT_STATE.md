@@ -18,7 +18,7 @@
 - **Repo HEAD:** siehe `git rev-parse --short HEAD` (latest: vC45/v1.0.16 release metadata + GH#111 controlled HLR re-verification entrypoint)
 - **API container:** `4aa6f71` live; scoped production ZK enabled only for `bill:GR-d4c62ed4`; global rollout and ZK Arweave publisher remain off
 - **Dashboard container:** `8709b90` live; admin proxy requires `SUPER_ADMIN`, route/module auth enforced by Next.js proxy, Docker build uses `npm ci` only, `X-Powered-By` disabled
-- **Web container:** pending vC45 deploy; vC44 APK download currently live until deploy finishes.
+- **Web container:** `5efe3f5` rebuilt live; vC45 APK download badge/hash verified on ekklesia.gr.
 - **S10:** vC45/1.0.16 installed; verified-account state preserved, launch smoke test passed with no fatal Logcat crash. Public scoped ZK opt-in/proof/vote previously succeeded for `GR-d4c62ed4`.
 - **Alembic:** `u401a2b3c4d5` (ZK receipt `vote_commitment` NOT NULL, head)
 - **Disk:** 2026-06-17 build-cache cleanup resolved `disk_critical` alert; `/` now 77% used / 17 GB free; monitor PASS.
@@ -30,8 +30,8 @@
 - **GR-0490a766:** arweave_tx_id=NULL (bereinigt), party_votes_parliament=NULL, Guards verhindern Re-Archivierung
 - **Telegram Bot:** citizen_votes Query LIVE, governance Topic-Routing LIVE
 - **vC45 Release:** AAB `/Users/gio/Desktop/ekklesia-v1.0.16-vC45-PLAY.aab`, SHA256 `fc5694c37a7e21d721acd4963a4713e9b872388b02d80a5b1fbb1ed8aebcbf95`; APK `/Users/gio/Desktop/ekklesia-v1.0.16-vC45-PLAY.apk`, SHA256 `770c947cecd273f4b08b1d3f967ff8ff954a28132c699116ddfcb9bfec8f0621`.
-- **vC45 GitHub Release:** pending after commit/push.
-- **vC45 Landing APK:** pending deploy; local manifest prepared as v1.0.16/vC45.
+- **vC45 GitHub Release:** https://github.com/NeaBouli/pnyx/releases/tag/v1.0.16
+- **vC45 Landing APK:** live on ekklesia.gr as v1.0.16/vC45; SHA256 `770c947cecd273f4b08b1d3f967ff8ff954a28132c699116ddfcb9bfec8f0621`.
 - **R8/mapping.txt:** still off for vC45 (`minify=false`); mapping warning in Play is informational until a future Production/R8 build.
 - **Linear:** Token OK (`~/.claude/.env` → `LINEAR_API_KEY`), NEA-280 + NEA-292 geschlossen; Codex verified and commented NEA-292 + NEA-301
 - **NEA-301b PARLIAMENT:** DONE (17/31 mit summary_short_el, 9 brauchen Fetcher, 3 DEMO + 2 flagged excluded, DIAVGEIA 0/636 eigene Phase)

@@ -3,10 +3,10 @@
 Mode: support/review when asked. Do not assume old vC35/vC37/vC38/vC41 tasks are current.
 
 Current state:
-- Mobile vC45 / v1.0.16 is the current prepared Play/direct build.
+- Mobile vC45 / v1.0.16 is the current Play/direct build.
 - AAB ready for Google Play Closed Testing: `/Users/gio/Desktop/ekklesia-v1.0.16-vC45-PLAY.aab`.
-- Direct APK prepared for ekklesia.gr download; SHA256 `770c947cecd273f4b08b1d3f967ff8ff954a28132c699116ddfcb9bfec8f0621`.
-- GitHub latest release target: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.16 after commit/push.
+- Direct APK is live on ekklesia.gr as v1.0.16 / vC45; SHA256 `770c947cecd273f4b08b1d3f967ff8ff954a28132c699116ddfcb9bfec8f0621`.
+- GitHub latest release target is live: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.16
 - APK SHA256: `770c947cecd273f4b08b1d3f967ff8ff954a28132c699116ddfcb9bfec8f0621`.
 - AAB SHA256: `fc5694c37a7e21d721acd4963a4713e9b872388b02d80a5b1fbb1ed8aebcbf95`.
 - R8/minify is still OFF for vC45; no `mapping.txt` exists. Play's no-mapping warning is informational for this artifact.
