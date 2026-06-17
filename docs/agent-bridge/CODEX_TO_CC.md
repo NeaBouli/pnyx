@@ -1,4 +1,4 @@
-# CC Context — Current pnyx status after vC47 release prep
+# CC Context — Current pnyx status after vC47 release
 
 Mode: support/review when asked. Do not assume old vC35/vC37/vC38/vC41 tasks are current.
 
@@ -6,7 +6,7 @@ Current state:
 - Mobile vC47 / v1.0.18 is the current Play/direct build.
 - AAB ready for Google Play Closed Testing: `/Users/gio/Desktop/ekklesia-v1.0.18-vC47-PLAY.aab`.
 - Direct APK is live on ekklesia.gr as v1.0.18 / vC47; SHA256 `cb9fde33c9ca039413c38cc111b62f8b0deab4c6ba466d5d9243ce584919e9b9`.
-- GitHub latest release target: pending v1.0.18 release.
+- GitHub latest release target is live: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.18
 - APK SHA256: `cb9fde33c9ca039413c38cc111b62f8b0deab4c6ba466d5d9243ce584919e9b9`.
 - AAB SHA256: `f8b70de981d4fb3f5e799d1a8c229665aa1d72cf08a850f5b0fa8baede5a70ae`.
 - R8/minify is still OFF for vC47; no `mapping.txt` exists. Play's no-mapping warning is informational for this artifact.

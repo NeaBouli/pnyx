@@ -31,7 +31,7 @@
 - **GR-0490a766:** arweave_tx_id=NULL (bereinigt), party_votes_parliament=NULL, Guards verhindern Re-Archivierung
 - **Telegram Bot:** citizen_votes Query LIVE, governance Topic-Routing LIVE
 - **vC47 Release:** AAB `/Users/gio/Desktop/ekklesia-v1.0.18-vC47-PLAY.aab`, SHA256 `f8b70de981d4fb3f5e799d1a8c229665aa1d72cf08a850f5b0fa8baede5a70ae`; APK `/Users/gio/Desktop/ekklesia-v1.0.18-vC47-PLAY.apk`, SHA256 `cb9fde33c9ca039413c38cc111b62f8b0deab4c6ba466d5d9243ce584919e9b9`.
-- **vC47 GitHub Release:** pending.
+- **vC47 GitHub Release:** https://github.com/NeaBouli/pnyx/releases/tag/v1.0.18
 - **vC47 Landing APK:** live on ekklesia.gr as v1.0.18/vC47; SHA256 `cb9fde33c9ca039413c38cc111b62f8b0deab4c6ba466d5d9243ce584919e9b9`.
 - **R8/mapping.txt:** still off for vC47 (`minify=false`); mapping warning in Play is informational until a future Production/R8 build.
 - **Linear:** Token OK (`~/.claude/.env` → `LINEAR_API_KEY`), NEA-280 + NEA-292 geschlossen; Codex verified and commented NEA-292 + NEA-301

@@ -32,8 +32,8 @@
   - Live landing badge shows `v1.0.18 · vC47`.
   - GH#111 live preflight remains clean: 17 active identities, 0 v2 rows, no blockers.
   - Monitor once: PASS, 17 checks, no alerts.
-- Pending:
-  - GitHub release, CI final wait.
+  - GitHub release created and marked latest: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.18.
+  - CI + Security Audit PASS for vC47 commits.
 
 ## 2026-06-17 — Codex: GH#111 identity verify in-flight lock
 
