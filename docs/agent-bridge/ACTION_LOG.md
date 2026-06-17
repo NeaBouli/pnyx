@@ -1,5 +1,31 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 preflight backup + disk critical recovery
+
+- Context:
+  - After vC43/GH#112 public scoped ZK rollout, Gio asked to continue with GH#111 Nullifier v2 Canary.
+  - Decision boundary confirmed: GH#111 cannot be proven with admin-test identities because they are random/nullifier-only and do not exercise the real HLR/phone re-registration path.
+- Read-only GH#111 preflight:
+  - Production `IDENTITY_NULLIFIER_KDF_VERSION` is unset/default `v1`.
+  - `identity_records`: 17 total, 17 active, 0 with `nullifier_hash_v2`, 0 with `nullifier_version='v2'`.
+  - Production Argon2id v2 helper works in API container; one test derivation measured about 131 ms.
+- Backup:
+  - Created identity-focused backup before any possible GH#111 canary: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_004847`.
+  - Files:
+    - `identity_records_audit_alembic.sql`, SHA256 `44d34d6e4c2272fe86903edafc7014f85d55ce99012f4e5fdbdb99e006f37d94`.
+    - `pre_counts.txt`, SHA256 `be1808aa1433043f3ff5b9e94b5c575276aecf33473187e7c3f395de0c32e041`.
+  - No env flip, no identity mutation, no HLR request made.
+- Disk critical recovery:
+  - Monitor exposed `disk_critical`: `/` at 94%, 4.4 GB free.
+  - Docker diagnosis showed Build Cache 14.15 GB.
+  - Ran `docker builder prune -af` only; did not delete volumes, backups, snapshots, or active images.
+  - Result: `/` at 77%, 17 GB free; Build Cache 0B.
+  - Monitor re-run PASS: 17 checks, no alerts.
+- CI:
+  - Bridge commit `4bc2ddf` CI + Security Audit green.
+- Still open:
+  - GH#111 activation still requires an explicit operator canary with a real phone/HLR verify or re-registration path; do not activate v2 from DB/admin-test data alone.
+
 ## 2026-06-17 — Codex: vC43 public scoped ZK rollout + forum monitor recovery fix
 
 - Current HEAD after release metadata: `f51dbf0`.
