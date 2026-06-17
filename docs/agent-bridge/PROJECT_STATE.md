@@ -18,7 +18,7 @@
 - **Repo HEAD:** siehe `git rev-parse --short HEAD` (latest: vC47/v1.0.18 release metadata)
 - **API container:** rebuilt from `033ceb4` for GH#111 operator helper hardening; scoped production ZK enabled only for `bill:GR-d4c62ed4`; global rollout and ZK Arweave publisher remain off
 - **Dashboard container:** `8709b90` live; admin proxy requires `SUPER_ADMIN`, route/module auth enforced by Next.js proxy, Docker build uses `npm ci` only, `X-Powered-By` disabled
-- **Web container:** vC47 download badge/hash prepared locally; live deploy pending after commit.
+- **Web container:** rebuilt live for vC47; APK download badge/hash verified on ekklesia.gr.
 - **S10:** vC47/1.0.18 installed via `adb install -r`; launch smoke test passed with no fatal Logcat crash. Public scoped ZK opt-in/proof/vote previously succeeded for `GR-d4c62ed4`.
 - **Alembic:** `u401a2b3c4d5` (ZK receipt `vote_commitment` NOT NULL, head)
 - **Disk:** 2026-06-17 build-cache cleanup resolved `disk_critical` alert; `/` now 77% used / 17 GB free; monitor PASS.
@@ -31,8 +31,8 @@
 - **GR-0490a766:** arweave_tx_id=NULL (bereinigt), party_votes_parliament=NULL, Guards verhindern Re-Archivierung
 - **Telegram Bot:** citizen_votes Query LIVE, governance Topic-Routing LIVE
 - **vC47 Release:** AAB `/Users/gio/Desktop/ekklesia-v1.0.18-vC47-PLAY.aab`, SHA256 `f8b70de981d4fb3f5e799d1a8c229665aa1d72cf08a850f5b0fa8baede5a70ae`; APK `/Users/gio/Desktop/ekklesia-v1.0.18-vC47-PLAY.apk`, SHA256 `cb9fde33c9ca039413c38cc111b62f8b0deab4c6ba466d5d9243ce584919e9b9`.
-- **vC47 GitHub Release:** pending after commit.
-- **vC47 Landing APK:** prepared locally as v1.0.18/vC47; live deploy pending.
+- **vC47 GitHub Release:** pending.
+- **vC47 Landing APK:** live on ekklesia.gr as v1.0.18/vC47; SHA256 `cb9fde33c9ca039413c38cc111b62f8b0deab4c6ba466d5d9243ce584919e9b9`.
 - **R8/mapping.txt:** still off for vC47 (`minify=false`); mapping warning in Play is informational until a future Production/R8 build.
 - **Linear:** Token OK (`~/.claude/.env` → `LINEAR_API_KEY`), NEA-280 + NEA-292 geschlossen; Codex verified and commented NEA-292 + NEA-301
 - **NEA-301b PARLIAMENT:** DONE (17/31 mit summary_short_el, 9 brauchen Fetcher, 3 DEMO + 2 flagged excluded, DIAVGEIA 0/636 eigene Phase)

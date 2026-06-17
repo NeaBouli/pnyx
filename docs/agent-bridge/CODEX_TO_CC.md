@@ -3,16 +3,16 @@
 Mode: support/review when asked. Do not assume old vC35/vC37/vC38/vC41 tasks are current.
 
 Current state:
-- Mobile vC47 / v1.0.18 is the prepared next Play/direct build.
+- Mobile vC47 / v1.0.18 is the current Play/direct build.
 - AAB ready for Google Play Closed Testing: `/Users/gio/Desktop/ekklesia-v1.0.18-vC47-PLAY.aab`.
-- Direct APK prepared locally as v1.0.18 / vC47; live deploy pending until commit/deploy.
-- GitHub latest release target: pending v1.0.18 release after commit.
+- Direct APK is live on ekklesia.gr as v1.0.18 / vC47; SHA256 `cb9fde33c9ca039413c38cc111b62f8b0deab4c6ba466d5d9243ce584919e9b9`.
+- GitHub latest release target: pending v1.0.18 release.
 - APK SHA256: `cb9fde33c9ca039413c38cc111b62f8b0deab4c6ba466d5d9243ce584919e9b9`.
 - AAB SHA256: `f8b70de981d4fb3f5e799d1a8c229665aa1d72cf08a850f5b0fa8baede5a70ae`.
 - R8/minify is still OFF for vC47; no `mapping.txt` exists. Play's no-mapping warning is informational for this artifact.
 - Monitor Telegram Bot API URL logging is redacted live. Do not repeat raw Telegram tokens from terminal logs.
 - GH#112 hidden S10 canary passed earlier for `bill:ZK-CANARY-001`.
-- GH#112 first public scoped rollout passed for `bill:GR-d4c62ed4`; latest verified installed state before this bump was vC46 and verified-account state was preserved.
+- GH#112 first public scoped rollout passed for `bill:GR-d4c62ed4`; vC47 S10 install/launch smoke test passed.
 - Public scoped ZK result for `GR-d4c62ed4`: `total_votes=1`, `tier1_vote_count=0`, `zk_vote_count=1`, `yes_count=1`.
 - Public receipt exists with `vote_commitment=YES`, `arweave_pending=true`, `arweave_tx_id=null`.
 - Production ZK is currently scoped to exactly `bill:GR-d4c62ed4` through `ZK_PRODUCTION_SCOPE_ALLOWLIST`.

@@ -23,7 +23,17 @@
   - APK signer SHA-256 digest: `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
   - S10 `RF8N313QMFL`: `adb install -r` PASS, `versionCode=47`, `versionName=1.0.18`, launch smoke test with no fatal Logcat crash.
 - Pending:
-  - Server download/API deploy, GitHub release, CI/Security Audit after commit.
+- Live deploy:
+  - Server rollback tag: `rollback-pre-vc47-20260617-041012`.
+  - Server HEAD: `3f532ae`.
+  - API/Web rebuilt from `/opt/ekklesia/app/infra/docker`.
+  - Live API version: `latest_version=1.0.18`, `latest_version_code=47`.
+  - Live APK URL SHA256 matches `cb9fde33c9ca039413c38cc111b62f8b0deab4c6ba466d5d9243ce584919e9b9`.
+  - Live landing badge shows `v1.0.18 · vC47`.
+  - GH#111 live preflight remains clean: 17 active identities, 0 v2 rows, no blockers.
+  - Monitor once: PASS, 17 checks, no alerts.
+- Pending:
+  - GitHub release, CI final wait.
 
 ## 2026-06-17 — Codex: GH#111 identity verify in-flight lock
 
