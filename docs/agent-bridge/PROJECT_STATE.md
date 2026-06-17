@@ -24,6 +24,7 @@
 - **Disk:** 2026-06-17 build-cache cleanup resolved `disk_critical` alert; `/` now 77% used / 17 GB free; monitor PASS.
 - **GH#111 Backup:** `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_004847`; KDF remains v1, no identity mutation.
 - **GH#111 Runbook/Test:** `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md` + read-only `gh111_nullifier_v2_canary_check.py`; endpoint/evaluator regression proves v2 same-row migration with mocked HLR and before/after canary verdicts (`8 passed` focused set).
+- **GH#111 S10 UI Path:** vC45 Profile -> `Επαλήθευση / Νέο κλειδί` -> VerifyScreen verified on S10 without submit/HLR; DB invariant after test: 17 active identities, 0 v2 rows, KDF unset.
 - **F-Droid !38007:** Still open/mergeable on GitLab (checked 2026-06-17); no conflicts, blocking discussions resolved, latest pipeline `2570810919` success; waiting on fdroiddata maintainer merge/re-test.
 - **POLIS Status:** App-internal Create/Vote LIVE
 - **Tracking:** Linear + GitHub Issues parallel. Cross-Links: GH#71-83 = NEA-277-285

@@ -1,5 +1,25 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 vC45 S10 re-verification UI path verified
+
+- Scope:
+  - Non-mutating device verification only.
+  - No phone number submitted, no HLR lookup, no env flag change, no identity mutation.
+- S10 evidence:
+  - Device connected: `SM-G973F`.
+  - App vC45 / v1.0.16 already installed.
+  - Profile screen opened from Home.
+  - New `Επαλήθευση / Νέο κλειδί` button visible in Profile.
+  - Button opens `VerifyScreen`.
+  - Re-verification warning visible: `Αν έχετε ήδη επαληθευτεί, η επανάληψη δημιουργεί νέο τοπικό κλειδί στη συσκευή σας.`
+  - Screenshot evidence: `/tmp/ekklesia-gh111-verify-screen.png`.
+  - Narrow Logcat crash filter: no fatal runtime / ReactNativeJS crash.
+- Server invariant after UI-only test:
+  - `gh111_nullifier_v2_canary_check.py snapshot --preflight`: `preflight_blockers=[]`, `total=17`, `active=17`, `with_v2=0`, `version_v2=0`, `kdf_env=unset`.
+- Status:
+  - GH#111 operator path is reachable on real hardware.
+  - GH#111 is still not activated; completion still requires a real HLR verification window.
+
 ## 2026-06-17 — Codex: GH#111 operator check hardening
 
 - Context:
