@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.16 |
-| versionCode | 45 |
+| Version | 1.0.17 |
+| versionCode | 46 |
 | Package | ekklesia.gr |
-| APK SHA256 | `770c947cecd273f4b08b1d3f967ff8ff954a28132c699116ddfcb9bfec8f0621` |
-| AAB SHA256 | `fc5694c37a7e21d721acd4963a4713e9b872388b02d80a5b1fbb1ed8aebcbf95` |
+| APK SHA256 | `f05ae534f52f913c5e7ee596214540fad4c3f5ea116f275b049f25a3473216c4` |
+| AAB SHA256 | `9a59e1e4f1cabaeb9cb0cf81ed49b8aff633fd1ec4cb69fffd9a5f106af9dbfa` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
 | Build date | 2026-06-17 |
 | Release gate | PASS — API version syntax, mobile TypeScript, local AAB/APK build, APK version/signature audit, S10 install/launch, verified-account state preserved, no fatal Logcat crash |
-| Includes | vC45 release metadata, controlled HLR re-verification entrypoint for the Nullifier v2 canary, fixed profile update links, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, ZK V2 native prover, hidden S10 canary operator path, deep-link fallback, pagination, source/full-text policy, permission hardening |
+| Includes | vC46 release metadata, monitor token-log redaction hardening, controlled HLR re-verification entrypoint for the Nullifier v2 canary, fixed profile update links, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, ZK V2 native prover, hidden S10 canary operator path, deep-link fallback, pagination, source/full-text policy, permission hardening |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: 770c947cecd273f4b08b1d3f967ff8ff954a28132c699116ddfcb9bfec8f0621
+# Expected: f05ae534f52f913c5e7ee596214540fad4c3f5ea116f275b049f25a3473216c4
 ```

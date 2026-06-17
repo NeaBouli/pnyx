@@ -1,5 +1,37 @@
 # Action Log
 
+## 2026-06-17 — Codex: vC46 / v1.0.17 Android release build
+
+- Context:
+  - Gio requested a new mobile version. Requested `vC40` is older than current Play/source `vC45`, so the safe monotonic release is `vC46 / v1.0.17`.
+  - No ZK/KDF/global rollout flags changed.
+- Changed:
+  - `apps/mobile/app.json`: `version=1.0.17`, `android.versionCode=46`.
+  - `apps/mobile/android/app/build.gradle`: `versionName "1.0.17"`, `versionCode 46`.
+  - `apps/api/routers/app_version.py`: latest version endpoint bumped to `1.0.17 / 46`.
+  - `docs/index.html`: visible APK badge bumped to `v1.0.17 · vC46`.
+  - `docs/download/APK_MANIFEST.md`, `PROJECT_STATE.md`, `CODEX_TO_CC.md`, `TODO.md` updated.
+- Artifacts:
+  - AAB: `/Users/gio/Desktop/ekklesia-v1.0.17-vC46-PLAY.aab`, SHA256 `9a59e1e4f1cabaeb9cb0cf81ed49b8aff633fd1ec4cb69fffd9a5f106af9dbfa`.
+  - APK: `/Users/gio/Desktop/ekklesia-v1.0.17-vC46-PLAY.apk`, SHA256 `f05ae534f52f913c5e7ee596214540fad4c3f5ea116f275b049f25a3473216c4`.
+- Verification:
+  - `npx tsc --noEmit`: PASS.
+  - Focused mobile Vitest: PASS, 25 passed.
+  - Focused API/monitor pytest: PASS, 5 passed.
+  - `bash scripts/build-play.sh`: PASS.
+  - `./gradlew assemblePlayRelease`: PASS.
+  - APK badging: package `ekklesia.gr`, `versionCode=46`, `versionName=1.0.17`, target SDK 36.
+  - APK signer SHA256: `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
+  - S10 update install PASS; app foregrounded as `ekklesia.gr/.MainActivity`; no fatal runtime / ReactNativeJS crash in checked Logcat window.
+  - Server rollback tag: `rollback-pre-vc46-release-20260617-024345`.
+  - Live API: `latest_version=1.0.17`, `latest_version_code=46`.
+  - Live APK URL SHA256 matches `f05ae534f52f913c5e7ee596214540fad4c3f5ea116f275b049f25a3473216c4`.
+  - Monitor once after deploy: PASS, 17 checks, no alerts.
+- Safety boundary:
+  - R8/minify remains OFF; no mapping.txt expected.
+  - GH#111 remains v1/unset; no identity mutation.
+  - GH#112 remains scoped; no global rollout and no ZK Arweave publication.
+
 ## 2026-06-17 — Codex: Monitor Telegram token log redaction
 
 - Context:
