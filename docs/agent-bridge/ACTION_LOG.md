@@ -11701,3 +11701,23 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Bridge audit committed as `2ca8671`.
   - Server checkout fast-forwarded to `2ca8671` docs-only.
   - No container rebuild, runtime flag change, deploy, or DB mutation.
+
+## 2026-06-17 — Codex: GH#111 operator checklist
+
+- Added `docs/agent-bridge/GH111_NULLIFIER_V2_OPERATOR_CHECKLIST.md`.
+- Purpose: short handoff sheet for the real Nullifier v2 S10/HLR operator
+  window, separate from the longer technical runbook.
+- Captures:
+  - start preconditions,
+  - strict no-go conditions,
+  - guarded activation command shape,
+  - Gio's S10 app step,
+  - post-verify compare modes,
+  - success criteria,
+  - rollback command shape.
+- Updated references in:
+  - `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`
+  - `GH111_GH112_COMPLETION_AUDIT.md`
+  - `CODEX_TO_CC.md`
+  - `TODO.md`
+- No flag changes, no deploy, no DB mutation, no HLR request.

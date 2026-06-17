@@ -22,6 +22,10 @@ GH#111 activates the server-side identity nullifier v2 path from ADR-004:
 
 This is separate from GH#112 ZK voting. Do not mix both rollout windows.
 
+For the short operator-facing checklist, use
+`docs/agent-bridge/GH111_NULLIFIER_V2_OPERATOR_CHECKLIST.md`. The runbook below
+remains the detailed technical source of truth.
+
 ## Non-Negotiable Boundary
 
 Do not activate `IDENTITY_NULLIFIER_KDF_VERSION=v2` based only on DB inspection or admin-test accounts.

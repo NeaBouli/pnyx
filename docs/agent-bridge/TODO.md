@@ -62,6 +62,7 @@
 ## Guarded Follow-ups
 - [ ] GH#111 Nullifier v2 Canary — only in a real S10/HLR operator window.
   - Completion boundary audit: `docs/agent-bridge/GH111_GH112_COMPLETION_AUDIT.md`.
+  - Operator checklist: `docs/agent-bridge/GH111_NULLIFIER_V2_OPERATOR_CHECKLIST.md`.
   - [x] v2 KDF endpoint logic, same-row migration, Redis lock, and health startup tests.
   - [x] Runbook with backup/preflight/health retry, one-command no-mutation prep script, and `gh111_kdf_env_guard.py` env write/rollback helper.
   - [ ] Real `/api/v1/identity/verify` with real Greek mobile number while `IDENTITY_NULLIFIER_KDF_VERSION=v2` is active.

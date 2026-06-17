@@ -69,6 +69,8 @@ Authoritative evidence inspected:
   - `scripts/gh111-prepare-nullifier-v2-window.sh`
   - `scripts/gh111-activate-nullifier-v2-window.sh`
   - `scripts/gh111-postverify-nullifier-v2-window.sh`
+- Operator checklist exists:
+  - `docs/agent-bridge/GH111_NULLIFIER_V2_OPERATOR_CHECKLIST.md`
 
 Verdict: GH#111 is prepared, but not complete.
 
