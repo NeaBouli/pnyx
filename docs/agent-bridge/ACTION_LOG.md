@@ -1,5 +1,22 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 fresh preflight backup
+
+- Scope:
+  - Prepared the next GH#111 Nullifier v2 operator window without changing production flags.
+  - No HLR request, no identity mutation, no KDF activation.
+- Artifacts:
+  - Backup dir: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_042119`.
+  - Snapshot SHA256: `d8e4043d4b6e4c7b93ec9a473004f247b0f80f624c97f9df640e484f9a35c3a1`.
+  - Preflight report SHA256: `0953ee0ce43f662d024616ac572fe34a469f33d9645e4b4532e6f5800d1cb24a`.
+  - Identity/audit/alembic dump SHA256: `50707934d236393e9d76331ced522dd85051742c115c91fe290541c51c2fadd9`.
+- Preflight:
+  - `preflight_blockers=[]`.
+  - 17 active identities, 0 revoked, 0 v2 rows, production KDF unset/v1.
+  - v2 invariant counters remain 0: `active_with_v2`, `v2_without_version`, `version_without_v2`, `malformed_v2`.
+- Boundary:
+  - GH#111 still requires a real S10/HLR verification window before activation can be called complete.
+
 ## 2026-06-17 — Codex: vC47 / v1.0.18 Android release build
 
 - Scope:

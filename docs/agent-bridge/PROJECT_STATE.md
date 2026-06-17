@@ -22,7 +22,7 @@
 - **S10:** vC47/1.0.18 installed via `adb install -r`; launch smoke test passed with no fatal Logcat crash. Public scoped ZK opt-in/proof/vote previously succeeded for `GR-d4c62ed4`.
 - **Alembic:** `u401a2b3c4d5` (ZK receipt `vote_commitment` NOT NULL, head)
 - **Disk:** 2026-06-17 build-cache cleanup resolved `disk_critical` alert; `/` now 77% used / 17 GB free; monitor PASS.
-- **GH#111 Backup:** `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_004847`; KDF remains v1, no identity mutation.
+- **GH#111 Backup:** latest fresh preflight backup `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_042119`; KDF remains v1, no identity mutation.
 - **GH#111 Runbook/Test:** `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md` + read-only `gh111_nullifier_v2_canary_check.py`; endpoint/evaluator regression proves v2 same-row migration with mocked HLR, Redis in-flight lock, atomic row-locked existing-identity re-registration, before/after canary verdicts, report artifacts, and v2 invariant counters (`37 passed` focused set).
 - **GH#111 S10 UI Path:** Profile -> `Επαλήθευση / Νέο κλειδί` -> VerifyScreen verified on S10 without submit/HLR; vC47 keeps this path, DB invariant remains: 17 active identities, 0 v2 rows, KDF unset, `active_with_v2=0`, malformed/mismatched v2 counters all 0.
 - **F-Droid !38007:** Still open/mergeable on GitLab (checked 2026-06-17); no conflicts, blocking discussions resolved, latest pipeline `2570810919` success; waiting on fdroiddata maintainer merge/re-test.

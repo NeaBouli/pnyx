@@ -27,7 +27,7 @@ Current state:
 - GH#111 Nullifier v2 canary remains separate and is NOT activated.
 - vC47 keeps the controlled Profile -> Verify entrypoint for a real HLR re-verification canary; it does NOT activate Nullifier v2 by itself.
 - GH#111 preflight on 2026-06-17: production KDF still v1; `identity_records` 17 total / 17 active / 0 v2; `active_with_v2=0`, `v2_without_version=0`, `version_without_v2=0`, `malformed_v2=0`; Argon2id v2 helper works in API container at about 131 ms per derivation.
-- GH#111 identity backup exists: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_004847`.
+- GH#111 fresh preflight backup exists: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_042119` (snapshot/report/dump SHA256 recorded in `ACTION_LOG.md`).
 - GH#111 runbook exists: `docs/agent-bridge/GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`.
 - GH#111 focused tests exist: `tests/test_identity_nullifier_v2_endpoint.py` proves same-row v1->v2 migration, Redis in-flight locking, and atomic row-locked existing-identity re-registration with mocked HLR; `scripts/gh111_nullifier_v2_canary_check.py` snapshots/compares real before/after canary counts and v2 invariants; latest focused set passed `37 passed`.
 - GH#111 S10 UI path was verified without mutation: Profile -> `Επαλήθευση / Νέο κλειδί` opens VerifyScreen with warning; no phone submitted, no HLR call, DB remains 17 active / 0 v2 / KDF unset.

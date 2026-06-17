@@ -36,7 +36,7 @@ Reason: admin-test identities use random nullifiers and do not exercise the real
 - Code scaffold: deployed.
 - DB columns: present.
 - Production default: v1.
-- Identity backup: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_004847`.
+- Latest fresh identity backup: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_042119`.
 - Preflight on 2026-06-17:
   - `identity_records`: 17 total, 17 active.
   - `nullifier_hash_v2`: 0 rows.
