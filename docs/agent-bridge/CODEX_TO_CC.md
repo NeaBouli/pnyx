@@ -1,18 +1,19 @@
-# CC Context — Current pnyx status after vC49 build
+# CC Context — Current pnyx status after vC49 release
 
 Mode: support/review when asked. Do not assume old vC35/vC37/vC38/vC41 tasks are current.
 
 Current state:
-- Mobile vC49 / v1.0.20 is the prepared Play/direct build. Gio asked for `vC40`, but Play requires monotonic versionCode; vC49 is the safe next code after vC48.
+- Mobile vC49 / v1.0.20 is the current Play/direct build. Gio asked for `vC40`, but Play requires monotonic versionCode; vC49 is the safe next code after vC48.
 - AAB ready for Google Play Closed Testing: `/Users/gio/Desktop/ekklesia-v1.0.20-vC49-PLAY.aab`.
-- Direct APK prepared for ekklesia.gr as v1.0.20 / vC49; SHA256 `c6ee98a9d9081f5711c31505ddec22359fc2043c3251ff3f26d044ea50130a52`.
-- GitHub latest release target: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.20 after commit/push.
+- Direct APK is live on ekklesia.gr as v1.0.20 / vC49; SHA256 `c6ee98a9d9081f5711c31505ddec22359fc2043c3251ff3f26d044ea50130a52`.
+- GitHub latest release: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.20.
 - APK SHA256: `c6ee98a9d9081f5711c31505ddec22359fc2043c3251ff3f26d044ea50130a52`.
 - AAB SHA256: `125e8dece542f756dc0e746dbc05f494103919efa4cb2cf7b921ff273aa0ef68`.
 - R8/minify is still OFF for vC49; no `mapping.txt` exists. Play's no-mapping warning is informational for this artifact.
 - Monitor Telegram Bot API URL logging is redacted live. Do not repeat raw Telegram tokens from terminal logs.
 - GH#112 hidden S10 canary passed earlier for `bill:ZK-CANARY-001`.
 - GH#112 first public scoped rollout passed for `bill:GR-d4c62ed4`; vC49 S10 install/launch smoke test is still pending until device is connected.
+- vC49 live deploy checks passed: API version 1.0.20/49, landing badge vC49, APK hash match, monitor once 17/17, CI + Security Audit green.
 - Public scoped ZK result for `GR-d4c62ed4`: `total_votes=1`, `tier1_vote_count=0`, `zk_vote_count=1`, `yes_count=1`.
 - Public receipt exists with `vote_commitment=YES`, `arweave_pending=true`, `arweave_tx_id=null`.
 - Production ZK is currently scoped to exactly `bill:GR-d4c62ed4` through `ZK_PRODUCTION_SCOPE_ALLOWLIST`.

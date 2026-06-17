@@ -177,7 +177,8 @@
 - [ ] GH#112 / ZK V2 staged/global follow-up — first public scoped rollout passed for `bill:GR-d4c62ed4`; production ZK remains scoped by exact allowlist; global rollout and ZK Arweave publisher remain OFF pending review.
 - [x] vC46 Play/direct release: AAB/APK built, hashes verified, S10 install/launch passed, verified-account state preserved, landing/API version live.
 - [x] vC48 Play/direct release: AAB/APK built, hashes verified, S10 install passed, landing/API live, GitHub release live, CI/Security Audit green.
-- [ ] vC49 Play/direct release: AAB/APK built, hashes verified; pending deploy, GitHub release, CI/Security Audit, and S10 install smoke test.
+- [x] vC49 Play/direct release: AAB/APK built, hashes verified, landing/API live, GitHub release live, CI/Security Audit green.
+- [ ] vC49 S10 install/launch smoke test when device is connected.
 
 ## Done (Session 13.05.2026)
 - [x] Server CX33 → CX43 Upgrade

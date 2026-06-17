@@ -18,12 +18,24 @@
   - `python -m py_compile apps/api/routers/app_version.py`: PASS.
   - `npm --prefix apps/mobile run typecheck --if-present`: PASS.
   - `npm --prefix apps/web run typecheck --if-present`: PASS.
+  - `cd apps/mobile && npx vitest run`: PASS, 86 passed.
   - `bash scripts/build-play.sh`: PASS.
   - `bash scripts/build-direct.sh`: PASS.
   - AAB manifest: package `ekklesia.gr`, `versionCode=49`, `versionName=1.0.20`.
   - APK badging: package `ekklesia.gr`, `versionCode=49`, `versionName=1.0.20`, target SDK 36.
+- Live deploy:
+  - Local rollback tag: `rollback-pre-vc49-20260617-081520`.
+  - Server rollback tag: `rollback-pre-vc49-server-20260617-053109`.
+  - Server HEAD: `4c078af`.
+  - API/Web rebuilt from `/opt/ekklesia/app/infra/docker`.
+  - Live API version: `latest_version=1.0.20`, `latest_version_code=49`.
+  - Live APK URL SHA256 matches `c6ee98a9d9081f5711c31505ddec22359fc2043c3251ff3f26d044ea50130a52`.
+  - Live landing badge shows `v1.0.20 · vC49`.
+  - Monitor once: PASS, 17 checks, no alerts.
+  - GitHub release created and marked latest: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.20.
+  - CI + Security Audit PASS for vC49 commit.
 - Pending:
-  - Deploy API/Web/download, create GitHub release, run CI/Security Audit, install on S10 when connected.
+  - S10 install/launch smoke test when device is connected.
 
 ## 2026-06-17 — Codex: GH#111 health-hardened preflight backup
 
