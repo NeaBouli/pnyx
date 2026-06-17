@@ -26,6 +26,10 @@
   - Server rollback tag: `rollback-pre-vc46-release-20260617-024345`.
   - Live API: `latest_version=1.0.17`, `latest_version_code=46`.
   - Live APK URL SHA256 matches `f05ae534f52f913c5e7ee596214540fad4c3f5ea116f275b049f25a3473216c4`.
+  - Live landing badge shows `v1.0.17 · vC46`.
+  - GitHub release created and marked latest: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.17.
+  - GitHub release asset digests match local AAB/APK SHA256 values.
+  - CI + Security Audit PASS for vC46 commits.
   - Monitor once after deploy: PASS, 17 checks, no alerts.
 - Safety boundary:
   - R8/minify remains OFF; no mapping.txt expected.
