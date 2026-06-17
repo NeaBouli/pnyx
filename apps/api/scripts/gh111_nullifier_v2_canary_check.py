@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import logging
 import os
 import sys
 from dataclasses import asdict, dataclass
@@ -45,6 +46,7 @@ class NullifierV2CanaryVerdict:
 
 async def collect_snapshot() -> IdentityKdfSnapshot:
     """Collect the current identity KDF state without mutating production data."""
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
     from database import AsyncSessionLocal
 
     kdf_env = os.getenv("IDENTITY_NULLIFIER_KDF_VERSION", "unset").strip().lower() or "unset"
