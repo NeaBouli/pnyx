@@ -47,7 +47,10 @@ class NullifierV2CanaryVerdict:
 async def collect_snapshot() -> IdentityKdfSnapshot:
     """Collect the current identity KDF state without mutating production data."""
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
-    from database import AsyncSessionLocal
+    logging.getLogger("sqlalchemy.engine.Engine").setLevel(logging.WARNING)
+    from database import AsyncSessionLocal, engine
+
+    engine.echo = False
 
     kdf_env = os.getenv("IDENTITY_NULLIFIER_KDF_VERSION", "unset").strip().lower() or "unset"
     async with AsyncSessionLocal() as db:
