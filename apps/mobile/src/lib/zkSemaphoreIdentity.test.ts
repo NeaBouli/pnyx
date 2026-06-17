@@ -52,6 +52,7 @@ import {
   clearZkSemaphoreIdentity,
   getOrCreateZkSemaphoreIdentity,
   getOrCreateZkSemaphorePrivateKey,
+  hasZkSemaphoreIdentity,
 } from "./zkSemaphoreIdentity";
 
 describe("zkSemaphoreIdentity", () => {
@@ -107,5 +108,15 @@ describe("zkSemaphoreIdentity", () => {
 
     expect(secureStore.has("ekklesia_zk_semaphore_private_key_v1_bill_GR-1")).toBe(false);
     expect(secureStore.has("ekklesia_zk_semaphore_private_key_v1_bill_GR-2")).toBe(true);
+  });
+
+  it("can detect an existing scoped identity without creating one", async () => {
+    await expect(hasZkSemaphoreIdentity("bill:GR-1")).resolves.toBe(false);
+    expect(secureStore.size).toBe(0);
+
+    await getOrCreateZkSemaphorePrivateKey("bill:GR-1");
+
+    await expect(hasZkSemaphoreIdentity("bill:GR-1")).resolves.toBe(true);
+    await expect(hasZkSemaphoreIdentity("bill:GR-2")).resolves.toBe(false);
   });
 });

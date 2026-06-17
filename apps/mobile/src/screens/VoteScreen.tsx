@@ -22,6 +22,7 @@ import { submitVote, correctVote, fetchVoteStatus, fetchZkStatus, fetchZkScopeSt
 import { isDemoMode } from "../lib/demo";
 import { colors } from "../theme";
 import { submitZkOptInForBill, submitZkVoteWithPublishedRoot, verifyZkVoteWithPublishedRoot } from "../lib/zkCanaryFlow";
+import { hasZkSemaphoreIdentity } from "../lib/zkSemaphoreIdentity";
 import { canShowPublicZkVoting, canSubmitPublicZkVote, publicZkVoteScopeForBill } from "../lib/zkPublicVoting";
 import type { ZkServerStatus } from "../lib/zkSemaphoreCore";
 
@@ -162,7 +163,13 @@ export default function VoteScreen({ route, navigation }: Props) {
             if (mounted) setZkStatus(null);
           });
         if (loadedSource === "PARLIAMENT") {
-          fetchZkScopeStatus(publicZkVoteScopeForBill(billId))
+          const voteScopeId = publicZkVoteScopeForBill(billId);
+          hasZkSemaphoreIdentity(voteScopeId)
+            .then((exists) => {
+              if (mounted && exists) setZkOptedIn(true);
+            })
+            .catch(() => undefined);
+          fetchZkScopeStatus(voteScopeId)
             .then((status) => {
               if (mounted) setZkScopeStatus(status);
             })
@@ -423,6 +430,25 @@ export default function VoteScreen({ route, navigation }: Props) {
     billLoaded,
   });
   const publicZkVoteReady = canSubmitPublicZkVote(zkScopeStatus);
+
+  React.useEffect(() => {
+    if (!showPublicZkVoting || !zkOptedIn || publicZkVoteReady) return;
+    let active = true;
+    const voteScopeId = publicZkVoteScopeForBill(billId);
+    const refresh = () => {
+      fetchZkScopeStatus(voteScopeId)
+        .then((status) => {
+          if (active) setZkScopeStatus(status);
+        })
+        .catch(() => undefined);
+    };
+    refresh();
+    const timer = setInterval(refresh, 5000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [billId, publicZkVoteReady, showPublicZkVoting, zkOptedIn]);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>

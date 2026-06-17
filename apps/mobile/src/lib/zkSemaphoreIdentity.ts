@@ -28,6 +28,10 @@ export async function getOrCreateZkSemaphorePrivateKey(voteScopeId?: string): Pr
   return privateKey;
 }
 
+export async function hasZkSemaphoreIdentity(voteScopeId?: string): Promise<boolean> {
+  return (await SecureStore.getItemAsync(scopedSemaphoreKey(voteScopeId))) !== null;
+}
+
 export async function getOrCreateZkSemaphoreIdentity(voteScopeId?: string): Promise<StoredZkSemaphoreIdentity> {
   const privateKey = await getOrCreateZkSemaphorePrivateKey(voteScopeId);
   const identity = new Identity(privateKey);
