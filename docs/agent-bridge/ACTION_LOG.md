@@ -18,6 +18,9 @@
   - Host dependency issue found by remote read-only execution (`ModuleNotFoundError: sqlalchemy`) and fixed by making the checker self-contained.
   - `python -m py_compile apps/api/scripts/gh111_preflight_package_check.py`: PASS.
   - Focused checker/KDF tests: PASS, 23 passed.
+  - Server worktree fast-forwarded to `43d5c49` without rebuild.
+  - Remote read-only package check for `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_064644`: PASS, `"ok": true`, `blockers=[]`, `warnings=[]`.
+  - Wrote `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_064644/package_check.json` as the operator evidence artifact.
 - Boundary:
   - GH#111 still requires the real activation window with S10/HLR and compare report.
 
