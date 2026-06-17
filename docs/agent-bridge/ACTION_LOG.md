@@ -1,5 +1,23 @@
 # Action Log
 
+## 2026-06-17 — Codex: Monitor Telegram token log redaction
+
+- Context:
+  - During GH#111/GH#112 monitoring, `httpx` can log full Telegram Bot API URLs.
+  - Full Telegram URLs include the bot token and must never appear in monitor logs or future terminal reports.
+- Changed:
+  - `apps/monitor/monitor.py`: installed a `SecretRedactionFilter` on root/httpx/httpcore/monitor loggers.
+  - Telegram Bot API URLs are redacted as `https://api.telegram.org/bot<redacted>/...`.
+  - Non-secret non-string log args are preserved so numeric formatting such as `%d` keeps working.
+  - Added `apps/api/tests/test_monitor_secret_redaction.py`.
+- Verification:
+  - Monitor focused tests: PASS, 8 passed.
+  - `python3 -m py_compile apps/monitor/monitor.py apps/api/tests/test_monitor_secret_redaction.py`: PASS.
+  - `git diff --check`: PASS.
+- Safety boundary:
+  - No API/DB/ZK/KDF flags changed.
+  - This is monitor log hardening only.
+
 ## 2026-06-17 — Codex: GH#111 vC45 S10 re-verification UI path verified
 
 - Scope:

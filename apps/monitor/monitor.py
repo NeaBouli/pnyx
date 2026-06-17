@@ -6,8 +6,10 @@ Runs every 30 minutes (daemon) or once daily at 06:00 UTC (cron).
 import os
 import time
 import logging
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
+from typing import Any
 
 import httpx
 import psycopg2
@@ -15,6 +17,47 @@ import redis
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("monitor")
+
+_TELEGRAM_BOT_URL_RE = re.compile(r"(https://api\.telegram\.org/bot)[^/\s\"']+")
+
+
+def _redact_log_secrets(value: Any) -> Any:
+    if isinstance(value, str):
+        return _TELEGRAM_BOT_URL_RE.sub(r"\1<redacted>", value)
+    return value
+
+
+def _redact_log_arg(value: Any) -> Any:
+    if isinstance(value, str):
+        return _redact_log_secrets(value)
+    rendered = str(value)
+    redacted = _redact_log_secrets(rendered)
+    if redacted != rendered:
+        return redacted
+    return value
+
+
+class SecretRedactionFilter(logging.Filter):
+    """Redact bearer-style secrets from third-party request logs."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.msg = _redact_log_secrets(record.msg)
+        if isinstance(record.args, tuple):
+            record.args = tuple(_redact_log_arg(arg) for arg in record.args)
+        elif isinstance(record.args, dict):
+            record.args = {key: _redact_log_arg(value) for key, value in record.args.items()}
+        return True
+
+
+def _install_secret_redaction_filter() -> None:
+    redaction_filter = SecretRedactionFilter()
+    for handler in logging.getLogger().handlers:
+        handler.addFilter(redaction_filter)
+    for name in ("httpx", "httpcore", "monitor"):
+        logging.getLogger(name).addFilter(redaction_filter)
+
+
+_install_secret_redaction_filter()
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 
