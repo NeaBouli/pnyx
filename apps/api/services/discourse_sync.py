@@ -5,6 +5,7 @@ Creates one topic per bill, stores forum_topic_id back in DB.
 """
 import os
 import re
+import asyncio
 import logging
 import httpx
 from sqlalchemy import select
@@ -20,6 +21,8 @@ DISCOURSE_API_KEY = os.getenv("DISCOURSE_API_KEY", "")
 DISCOURSE_API_URL = os.getenv("DISCOURSE_API_URL", "https://pnyx.ekklesia.gr")
 FORUM_SYNC_ENABLED = os.getenv("FORUM_SYNC_ENABLED", "false").lower() == "true"
 FORUM_SYNC_BATCH = int(os.getenv("FORUM_SYNC_BATCH_SIZE", "20"))
+FORUM_SYNC_TOPIC_DELAY_SECONDS = float(os.getenv("FORUM_SYNC_TOPIC_DELAY_SECONDS", "8"))
+DISCOURSE_RATE_LIMIT_RETRIES = int(os.getenv("DISCOURSE_RATE_LIMIT_RETRIES", "3"))
 
 _category_cache: dict[str, int] = {}
 
@@ -32,6 +35,48 @@ def _headers() -> dict:
     }
 
 
+def _discourse_rate_limit_wait(response: httpx.Response) -> float | None:
+    """Return Discourse rate-limit wait seconds when present."""
+    if response.status_code != 429:
+        return None
+    retry_after = response.headers.get("Retry-After")
+    if retry_after:
+        try:
+            return max(float(retry_after), 1.0)
+        except ValueError:
+            pass
+    try:
+        wait = response.json().get("extras", {}).get("wait_seconds")
+        if wait is not None:
+            return max(float(wait), 1.0)
+    except Exception:
+        pass
+    match = re.search(r'"wait_seconds"\s*:\s*(\d+)', response.text or "")
+    if match:
+        return max(float(match.group(1)), 1.0)
+    return 10.0
+
+
+async def _request_discourse(client: httpx.AsyncClient, method: str, url: str, **kwargs) -> httpx.Response:
+    """Call Discourse, respecting 429 wait_seconds before retrying."""
+    request = getattr(client, method.lower())
+    last_response = None
+    for attempt in range(DISCOURSE_RATE_LIMIT_RETRIES + 1):
+        response = await request(url, **kwargs)
+        wait_seconds = _discourse_rate_limit_wait(response)
+        if wait_seconds is None:
+            return response
+        last_response = response
+        if attempt >= DISCOURSE_RATE_LIMIT_RETRIES:
+            return response
+        sleep_for = wait_seconds + 1.0
+        logger.warning("Discourse rate limited (%s %s). Sleeping %.1fs before retry %d/%d",
+                       method.upper(), url, sleep_for, attempt + 1, DISCOURSE_RATE_LIMIT_RETRIES)
+        await asyncio.sleep(sleep_for)
+    assert last_response is not None
+    return last_response
+
+
 async def get_or_create_category(name: str, parent_id: int | None = None) -> int:
     """Get or create a Discourse category by name. Searches all categories incl. subcategories."""
     cache_key = f"{parent_id}:{name}"
@@ -40,7 +85,7 @@ async def get_or_create_category(name: str, parent_id: int | None = None) -> int
 
     async with httpx.AsyncClient(timeout=15) as client:
         # Fetch all categories including subcategories
-        r = await client.get(
+        r = await _request_discourse(client, "get",
             f"{DISCOURSE_API_URL}/categories.json",
             params={"include_subcategories": "true"},
             headers=_headers(),
@@ -64,7 +109,7 @@ async def get_or_create_category(name: str, parent_id: int | None = None) -> int
         if parent_id:
             payload["parent_category_id"] = parent_id
 
-        r = await client.post(
+        r = await _request_discourse(client, "post",
             f"{DISCOURSE_API_URL}/categories.json", json=payload, headers=_headers()
         )
         resp = r.json()
@@ -343,7 +388,7 @@ async def _search_existing_topic(title: str) -> int | None:
     """Search Discourse for an existing topic by title. Returns topic_id or None."""
     try:
         async with httpx.AsyncClient(timeout=15) as client:
-            r = await client.get(
+            r = await _request_discourse(client, "get",
                 f"{DISCOURSE_API_URL}/search.json",
                 params={"q": f'title:"{title[:100]}"'},
                 headers=_headers(),
@@ -381,7 +426,7 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
     tags = _build_topic_tags(bill)
 
     async with httpx.AsyncClient(timeout=30) as client:
-        r = await client.post(
+        r = await _request_discourse(client, "post",
             f"{DISCOURSE_API_URL}/posts.json",
             json={
                 "title": topic_title,
@@ -407,7 +452,7 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
             logger.warning("Title duplicate but search found nothing for %s", bill.id)
 
             fallback_title = _with_unique_title_suffix(topic_title, bill)
-            retry = await client.post(
+            retry = await _request_discourse(client, "post",
                 f"{DISCOURSE_API_URL}/posts.json",
                 json={
                     "title": fallback_title,
@@ -438,7 +483,7 @@ async def update_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> bool
 
         async with httpx.AsyncClient(timeout=15) as client:
             # Update topic category + tags + title
-            r = await client.put(
+            r = await _request_discourse(client, "put",
                 f"{DISCOURSE_API_URL}/t/-/{bill.forum_topic_id}.json",
                 json={"category_id": category_id, "tags": tags, "title": topic_title},
                 headers=_headers(),
@@ -448,7 +493,7 @@ async def update_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> bool
                 return False
 
             # Get first post ID
-            t = await client.get(
+            t = await _request_discourse(client, "get",
                 f"{DISCOURSE_API_URL}/t/{bill.forum_topic_id}.json",
                 headers=_headers(),
             )
@@ -457,7 +502,7 @@ async def update_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> bool
                 if posts:
                     post_id = posts[0]["id"]
                     # Update first post body
-                    await client.put(
+                    await _request_discourse(client, "put",
                         f"{DISCOURSE_API_URL}/posts/{post_id}.json",
                         json={"post": {"raw": body}},
                         headers=_headers(),
@@ -537,6 +582,8 @@ async def sync_new_bills_to_forum(db: AsyncSession) -> None:
             bill.forum_topic_id = topic_id
             await db.commit()
             logger.info("Forum topic %d ← bill %s", topic_id, bill.id)
+            if FORUM_SYNC_TOPIC_DELAY_SECONDS > 0:
+                await asyncio.sleep(FORUM_SYNC_TOPIC_DELAY_SECONDS)
         except Exception as e:
             logger.error("Forum sync failed for bill %s: %s", bill.id, e)
             await db.rollback()

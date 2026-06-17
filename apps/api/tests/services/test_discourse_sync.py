@@ -11,10 +11,17 @@ from services.diavgeia_scraper import _clean_org_label
 
 
 class FakeResponse:
-    def __init__(self, status_code: int, data: dict | None = None, text: str = ""):
+    def __init__(
+        self,
+        status_code: int,
+        data: dict | None = None,
+        text: str = "",
+        headers: dict | None = None,
+    ):
         self.status_code = status_code
         self._data = data or {}
         self.text = text
+        self.headers = headers or {}
 
     def json(self) -> dict:
         return self._data
@@ -194,6 +201,35 @@ async def test_create_topic_retries_with_stable_suffix_when_duplicate_search_mis
     assert len(FakeAsyncClient.posts) == 2
     assert FakeAsyncClient.posts[0]["title"] == "[Φορέας] ΑΝΑΘΕΣΗ ΕΡΓΟΥ"
     assert FakeAsyncClient.posts[1]["title"] == "[Φορέας] ΑΝΑΘΕΣΗ ΕΡΓΟΥ — ΨΙΗΕ465ΕΦ5-Λ"
+
+
+@pytest.mark.asyncio
+async def test_discourse_request_retries_after_rate_limit(monkeypatch):
+    sleeps = []
+
+    async def fake_sleep(seconds):
+        sleeps.append(seconds)
+
+    class RateLimitedClient:
+        def __init__(self):
+            self.calls = 0
+
+        async def post(self, *_args, **_kwargs):
+            self.calls += 1
+            if self.calls == 1:
+                return FakeResponse(429, {"extras": {"wait_seconds": 1}})
+            return FakeResponse(200, {"ok": True})
+
+    monkeypatch.setattr(discourse_sync.asyncio, "sleep", fake_sleep)
+    client = RateLimitedClient()
+
+    response = await discourse_sync._request_discourse(
+        client, "post", "https://pnyx.ekklesia.gr/posts.json", json={}, headers={}
+    )
+
+    assert response.status_code == 200
+    assert client.calls == 2
+    assert sleeps == [2.0]
 
 
 @pytest.mark.asyncio

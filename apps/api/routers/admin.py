@@ -11,7 +11,7 @@ import re
 import logging
 from datetime import datetime, timezone
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text
@@ -210,6 +210,17 @@ async def admin_resync_forum(
     from services.discourse_sync import resync_all_topics
     stats = await resync_all_topics(db)
     return {"success": True, **stats}
+
+
+@router.post("/forum/sync-new", status_code=202)
+async def admin_sync_new_forum(
+    background_tasks: BackgroundTasks,
+    _key=Depends(verify_admin),
+):
+    """Trigger missing forum-topic creation in the background."""
+    import main as app_main
+    background_tasks.add_task(app_main.scheduled_forum_sync)
+    return {"success": True, "queued": "forum_sync"}
 
 
 @router.post("/scraper/catch-up")

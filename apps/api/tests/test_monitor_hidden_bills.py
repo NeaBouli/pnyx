@@ -58,3 +58,14 @@ def test_forum_completeness_query_excludes_hidden_canary_bills():
     sql = cursor.statements[0]
     assert "COALESCE(admin_hidden, FALSE) = FALSE" in sql
     assert "(source IS NULL OR source != 'ZK_CANARY')" in sql
+
+
+def test_forum_completeness_gives_diavgeia_backlog_longer_grace():
+    cursor = FakeCursor(one=0)
+    monitor.check_forum_completeness(FakeConn(cursor))
+
+    sql = cursor.statements[0]
+    assert "COALESCE(source, 'PARLIAMENT') = 'PARLIAMENT'" in sql
+    assert "INTERVAL '1 hour'" in sql
+    assert "COALESCE(source, 'PARLIAMENT') != 'PARLIAMENT'" in sql
+    assert "INTERVAL '6 hours'" in sql

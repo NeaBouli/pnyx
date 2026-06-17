@@ -52,13 +52,14 @@ T1_MAPPING = {
     "scraper_parliament_stale": "/api/v1/admin/scraper/catch-up",
     "parliament_source_lag":     "/api/v1/admin/scraper/catch-up",
     "scraper_diavgeia_stale":   "/api/v1/admin/scraper/catch-up",
-    "forum_sync_errors":        "/api/v1/admin/forum/resync-all",
-    "forum_content_empty":      "/api/v1/admin/forum/resync-all",
+    "forum_sync_errors":        "/api/v1/admin/forum/sync-new",
+    "forum_content_empty":      "/api/v1/admin/forum/sync-new",
 }
 
 # Longer cooldown for expensive operations
 T1_LOCK_TTL = {
     "/api/v1/admin/forum/resync-all": 7200,  # 2h
+    "/api/v1/admin/forum/sync-new": 1800,    # 30m
 }
 T1_DEFAULT_LOCK_TTL = 3600  # 1h
 
@@ -514,7 +515,13 @@ def check_forum_completeness(conn) -> list[Alert]:
               AND id NOT LIKE 'DEMO-%%'
               AND COALESCE(admin_hidden, FALSE) = FALSE
               AND (source IS NULL OR source != 'ZK_CANARY')
-              AND created_at < NOW() - INTERVAL '1 hour'
+              AND (
+                  (COALESCE(source, 'PARLIAMENT') = 'PARLIAMENT'
+                   AND created_at < NOW() - INTERVAL '1 hour')
+                  OR
+                  (COALESCE(source, 'PARLIAMENT') != 'PARLIAMENT'
+                   AND created_at < NOW() - INTERVAL '6 hours')
+              )
         """)
         count = cur.fetchone()[0]
         if count > 0:
