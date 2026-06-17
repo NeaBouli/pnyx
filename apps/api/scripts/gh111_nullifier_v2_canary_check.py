@@ -32,6 +32,10 @@ class IdentityKdfSnapshot:
     version_v2: int
     active: int
     revoked: int
+    active_with_v2: int = 0
+    v2_without_version: int = 0
+    version_without_v2: int = 0
+    malformed_v2: int = 0
 
 
 @dataclass(frozen=True)
@@ -61,7 +65,17 @@ async def collect_snapshot() -> IdentityKdfSnapshot:
                        COUNT(*) FILTER (WHERE nullifier_hash_v2 IS NOT NULL) AS with_v2,
                        COUNT(*) FILTER (WHERE nullifier_version = 'v2') AS version_v2,
                        COUNT(*) FILTER (WHERE status = 'ACTIVE') AS active,
-                       COUNT(*) FILTER (WHERE status = 'REVOKED') AS revoked
+                       COUNT(*) FILTER (WHERE status = 'REVOKED') AS revoked,
+                       COUNT(*) FILTER (WHERE nullifier_hash_v2 IS NOT NULL AND status = 'ACTIVE') AS active_with_v2,
+                       COUNT(*) FILTER (WHERE nullifier_hash_v2 IS NOT NULL AND nullifier_version != 'v2') AS v2_without_version,
+                       COUNT(*) FILTER (WHERE nullifier_hash_v2 IS NULL AND nullifier_version = 'v2') AS version_without_v2,
+                       COUNT(*) FILTER (
+                         WHERE nullifier_hash_v2 IS NOT NULL
+                           AND (
+                             nullifier_hash_v2 NOT LIKE 'v2:%'
+                             OR length(nullifier_hash_v2) != 67
+                           )
+                       ) AS malformed_v2
                 FROM identity_records
                 """
             )
@@ -74,6 +88,10 @@ async def collect_snapshot() -> IdentityKdfSnapshot:
         version_v2=int(row["version_v2"]),
         active=int(row["active"]),
         revoked=int(row["revoked"]),
+        active_with_v2=int(row["active_with_v2"]),
+        v2_without_version=int(row["v2_without_version"]),
+        version_without_v2=int(row["version_without_v2"]),
+        malformed_v2=int(row["malformed_v2"]),
     )
 
 
@@ -86,6 +104,14 @@ def evaluate_preflight(snapshot: IdentityKdfSnapshot) -> list[str]:
         blockers.append("v2_rows_already_present")
     if snapshot.version_v2 != 0:
         blockers.append("version_v2_rows_already_present")
+    if snapshot.active_with_v2 != 0:
+        blockers.append("active_v2_rows_already_present")
+    if snapshot.v2_without_version != 0:
+        blockers.append("v2_hash_without_v2_version_present")
+    if snapshot.version_without_v2 != 0:
+        blockers.append("v2_version_without_v2_hash_present")
+    if snapshot.malformed_v2 != 0:
+        blockers.append("malformed_v2_hash_present")
     if snapshot.total <= 0:
         blockers.append("no_identity_rows_to_canary")
     return blockers
@@ -108,6 +134,14 @@ def evaluate_canary(
         blockers.append("no_new_version_v2_row_observed")
     if after.with_v2 != after.version_v2:
         blockers.append("v2_hash_and_version_counts_diverge")
+    if after.active_with_v2 <= before.active_with_v2:
+        blockers.append("no_new_active_v2_identity_observed")
+    if after.v2_without_version != 0:
+        blockers.append("v2_hash_without_v2_version_present")
+    if after.version_without_v2 != 0:
+        blockers.append("v2_version_without_v2_hash_present")
+    if after.malformed_v2 != 0:
+        blockers.append("malformed_v2_hash_present")
 
     if mode == "existing-reregistration":
         if after.total != before.total:
@@ -151,6 +185,10 @@ def read_snapshot(path: Path) -> IdentityKdfSnapshot:
         version_v2=int(payload["version_v2"]),
         active=int(payload["active"]),
         revoked=int(payload["revoked"]),
+        active_with_v2=int(payload.get("active_with_v2", 0)),
+        v2_without_version=int(payload.get("v2_without_version", 0)),
+        version_without_v2=int(payload.get("version_without_v2", 0)),
+        malformed_v2=int(payload.get("malformed_v2", 0)),
     )
 
 

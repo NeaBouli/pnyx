@@ -74,6 +74,15 @@ docker cp ekklesia-api:/tmp/gh111_preflight_report.json /opt/ekklesia/backups/gh
 `gh111_preflight_report.json` is the operator/audit artifact and includes
 `preflight_blockers`.
 
+The preflight report also records aggregate v2 safety counters:
+
+- `active_with_v2`
+- `v2_without_version`
+- `version_without_v2`
+- `malformed_v2`
+
+All four must be `0` before the first activation.
+
 ## Fresh Backup
 
 Use a fresh backup immediately before the real canary, even though an older preflight backup exists:
@@ -155,6 +164,8 @@ For new-phone registration:
 - new identity row contains both v1 and v2 anchors,
 - response to the app still returns the v1 compatibility `nullifier_hash`,
 - regular Tier-1 vote/status paths still use the returned v1 anchor.
+- `active_with_v2` increased by exactly one.
+- `v2_without_version`, `version_without_v2`, and `malformed_v2` remain `0`.
 
 Always run:
 

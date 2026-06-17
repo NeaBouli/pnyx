@@ -7,6 +7,9 @@
   - No production env flags changed, no HLR request made, no identity mutation.
 - Changed:
   - `apps/api/scripts/gh111_nullifier_v2_canary_check.py` now supports `--report-output` for both `snapshot` and `compare`.
+  - The checker now also records v2 aggregate safety counters: `active_with_v2`, `v2_without_version`, `version_without_v2`, and `malformed_v2`.
+  - Preflight blocks if any v2 active row, hash/version mismatch, or malformed `v2:` hash already exists before first activation.
+  - Post-window compare blocks if no new active v2 identity appears or if v2 hash/version/prefix invariants diverge.
   - Existing `--output` snapshot stays backward-compatible and remains the machine-readable `compare --before` input.
   - `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md` now writes two explicit artifacts before the flag window:
     - `gh111_before_snapshot.json` for compare input.
@@ -15,7 +18,7 @@
   - `CODEX_TO_CC.md` updated with the new exact commands.
 - Verification:
   - `python3 -m py_compile apps/api/scripts/gh111_nullifier_v2_canary_check.py`: PASS.
-  - Focused GH#111 pytest set: PASS, 23 passed.
+  - Focused GH#111 pytest set: PASS, 27 passed.
   - API container rebuilt on server with rollback tag `rollback-pre-gh111-report-output-retry-20260617-031152`.
   - Live API health: PASS.
   - Live helper `snapshot --preflight --report-output`: PASS, `preflight_blockers=[]`, `total=17`, `active=17`, `with_v2=0`, `version_v2=0`, `kdf_env=unset`.
