@@ -16,7 +16,7 @@
 - **Lokaler HEAD:** siehe `git rev-parse --short HEAD`
 - **origin/main:** siehe `git rev-parse --short origin/main`
 - **Repo HEAD:** siehe `git rev-parse --short HEAD` (latest local work: vC50/v1.0.21 release metadata)
-- **API container:** rebuilt during GH#111 activation; `IDENTITY_NULLIFIER_KDF_VERSION=v2`; scoped production ZK enabled only for `bill:GR-d4c62ed4`; global rollout and ZK Arweave publisher remain off. ZK Arweave publication now requires its own exact `ZK_ARWEAVE_SCOPE_ALLOWLIST` and min group size guard before any publish run.
+- **API container:** rebuilt live at `4291045` for GH#112 ZK Arweave publication hardening; `IDENTITY_NULLIFIER_KDF_VERSION=v2`; scoped production ZK enabled only for `bill:GR-d4c62ed4`; global rollout and ZK Arweave publisher remain off. ZK Arweave publication now requires its own exact `ZK_ARWEAVE_SCOPE_ALLOWLIST` and min group size guard before any publish run.
 - **Dashboard container:** `8709b90` live; admin proxy requires `SUPER_ADMIN`, route/module auth enforced by Next.js proxy, Docker build uses `npm ci` only, `X-Powered-By` disabled
 - **Web container:** rebuilt live for vC50; APK download badge/hash verified on ekklesia.gr.
 - **S10:** vC50/v1.0.21 installed via `adb install -r`; launch smoke test passed with no fatal Logcat crash. Public scoped ZK opt-in/proof/vote previously succeeded for `GR-d4c62ed4`.

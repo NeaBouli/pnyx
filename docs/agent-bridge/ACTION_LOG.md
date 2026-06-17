@@ -11955,6 +11955,7 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
     publication for every pending ZK receipt.
   - very small anonymity sets must not be published accidentally.
 - Runtime status:
+  - API rebuilt/restarted live at `4291045`,
   - no production flag flipped,
   - no Arweave publication run,
   - global rollout remains off.
@@ -11966,3 +11967,12 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Broader ZK/voting guard:
     `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py tests/services/test_zk_arweave_payload.py tests/services/test_zk_tier_lock.py tests/services/test_zk_group_registry.py tests/test_voting.py -q`:
     PASS, 108 passed / 2 xfailed.
+  - Rollback tag on server: `rollback-pre-zk-arweave-gates-20260617-223715`.
+  - Live `GET /api/v1/zk/status`: PASS; shows
+    `arweave_publication_enabled=false`,
+    `arweave_scope_allowlist_configured=false`,
+    `arweave_min_group_size=5`, `global_rollout_enabled=false`.
+  - Live admin `POST /api/v1/zk/receipts/bill:GR-d4c62ed4/publish-pending`:
+    503, `ZK Arweave publication is not enabled`.
+  - Monitor once: PASS, 17 checks, no alerts.
+  - Disk after safe cleanup/build: `/` about 86% used / 11G free.
