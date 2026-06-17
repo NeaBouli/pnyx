@@ -8,13 +8,13 @@ from fastapi import APIRouter
 router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
-LATEST_VERSION = "1.0.16"
-LATEST_VERSION_CODE = 45
+LATEST_VERSION = "1.0.17"
+LATEST_VERSION_CODE = 46
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v1.0.16 — Ελεγχόμενη επανεπαλήθευση HLR για ασφαλές Nullifier v2 canary και διορθωμένος σύνδεσμος ενημέρωσης."
-RELEASE_NOTES_EN = "v1.0.16 — Controlled HLR re-verification path for the Nullifier v2 canary and fixed profile update links."
+RELEASE_NOTES_EL = "v1.0.17 — Ενημέρωση ασφάλειας και σταθερότητας χωρίς αλλαγή στη ροή ψήφου."
+RELEASE_NOTES_EN = "v1.0.17 — Security and stability update with no change to the voting flow."
 
 FDROID_URL = ""  # Not live yet — MR !38007 pending
 PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=ekklesia.gr"
