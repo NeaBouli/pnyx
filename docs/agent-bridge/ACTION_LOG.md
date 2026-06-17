@@ -1,5 +1,20 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 read-only post-verify helper
+
+- Scope:
+  - Added a read-only helper for the post-S10/HLR verification step in the eventual real GH#111 operator window.
+  - No production env flag changed, no HLR request, no identity mutation.
+- Changed:
+  - New script: `scripts/gh111-postverify-nullifier-v2-window.sh`.
+  - Runbook now prefers the helper for the structured compare/monitor/evidence step after Gio completes real S10 verification.
+- Safety properties:
+  - Requires `BACKUP_DIR`, valid mode (`existing-reregistration` or `new-registration`), `package_check.json ok=true`, and `gh111_before_snapshot.json`.
+  - Runs only read-only compare + monitor, writes evidence artifacts and refreshed `SHA256SUMS`.
+  - Does not edit env, rebuild containers, write DB rows, or trigger HLR.
+- Boundary:
+  - Script added but not run. GH#111 remains inactive until an explicit real S10/HLR activation window.
+
 ## 2026-06-17 — Codex: GH#111 guarded activation helper
 
 - Scope:

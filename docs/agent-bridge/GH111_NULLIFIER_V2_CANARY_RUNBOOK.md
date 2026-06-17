@@ -280,7 +280,24 @@ Always run:
 docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.yml exec -T monitor python /app/monitor.py --once
 ```
 
-Then run the structured post-check. Choose exactly one mode:
+Then run the structured post-check. Choose exactly one mode. Preferred helper:
+
+```bash
+cd /opt/ekklesia/app
+: "${BACKUP_DIR:?Set BACKUP_DIR from the fresh preparation script}"
+
+# Existing-phone re-registration:
+scripts/gh111-postverify-nullifier-v2-window.sh existing-reregistration
+
+# OR new-phone registration:
+scripts/gh111-postverify-nullifier-v2-window.sh new-registration
+```
+
+The helper is read-only: it runs the compare helper, copies
+`gh111_compare_report_<mode>.json` into `BACKUP_DIR`, runs monitor once, and
+refreshes `SHA256SUMS`.
+
+Manual fallback:
 
 ```bash
 # Existing-phone re-registration:
