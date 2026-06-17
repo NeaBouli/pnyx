@@ -11905,3 +11905,14 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   `docs/agent-bridge/PLAY_RELEASE_NOTES_v1.0.21_vC50.md`.
 - Verification:
   - `cd apps/web && npm run build`: PASS.
+  - Server fast-forwarded to `da59bc7`.
+  - Rebuilt/restarted only `ekklesia-web`.
+  - Live checks PASS:
+    - landing contains `first public scoped rollout passed`,
+    - `/wiki/zk-voting.html` contains the updated first-public-scope status,
+    - `/wiki/faq.html` contains the updated one-bill scoped rollout wording,
+    - `/llms.txt` contains the updated ZK status,
+    - API health OK,
+    - monitor once PASS, 17 checks, no alerts.
+  - Post-deploy safe cleanup repeated (`docker builder prune`, `docker image
+    prune`; no volumes/backups): `/` returned to `81% used / 14G free`.
