@@ -1,5 +1,29 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 fresh S10 + no-mutation preflight refresh
+
+- Scope:
+  - Refreshed the GH#111 operator-window evidence after Gio reconnected the S10.
+  - No production env flag changed, no HLR request, no identity mutation.
+- S10 readiness:
+  - Device detected via ADB: `SM-G973F` / `RF8N313QMFL`.
+  - Installed app: `versionCode=50`, `versionName=1.0.21`, `lastUpdateTime=2026-06-17 09:17:32`.
+  - Launch smoke test via `monkey -p ekklesia.gr 1`: PASS, no `FATAL EXCEPTION` / `AndroidRuntime` / `ReactNativeJS` crash in recent Logcat.
+- Production read-only status:
+  - `scripts/gh111-status-nullifier-v2-window.sh`: `KDF_ENV=v1`, `API_HEALTH=ok`, latest previous package OK, live preflight OK.
+  - Live snapshot before refresh: 17 active identities, 0 v2 rows, malformed/mismatched v2 counters 0.
+- Fresh no-mutation preflight:
+  - Ran `scripts/gh111-prepare-nullifier-v2-window.sh` on production.
+  - Backup/evidence dir: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_200157`.
+  - Monitor preflight: PASS, 17 checks, no alerts.
+  - KDF env plan: target `v2`, previous `v1`, `would_append=false`, `would_remove_duplicates=false`.
+  - Identity snapshot: 17 active identities, 0 revoked, 0 v2 rows, malformed/mismatched v2 counters 0.
+  - Isolated v2 lifespan probe: PASS.
+  - Package validation: PASS, `"ok": true`, `blockers=[]`, `warnings=[]`.
+- Boundary:
+  - GH#111 is still not activated. Production remains `IDENTITY_NULLIFIER_KDF_VERSION=v1`.
+  - Next step still requires an explicit real S10/HLR verification window and post-verify compare before GH#111 can be closed.
+
 ## 2026-06-17 — Codex: GH#111 read-only post-verify helper
 
 - Scope:
