@@ -173,7 +173,7 @@
 - [ ] NEA-59: F-Droid MR !38007 — wartet auf linsui Review
 - [ ] NEA-65: Off-Site Backup — nach erster Spende
 - [ ] NEA-73: Embed-System — Low Prio
-- [ ] GH#111 / NEA-335 follow-up: Nullifier v2 Production Activation — scaffold deployed, production preflight green, and identity backup exists at `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_004847`; production remains v1 until an explicit operator canary with a real phone/HLR identity re-registration path proves same-row v1->v2 migration. Admin-test identities are not sufficient for this proof. Checklist in `docs/adr/ADR-004-nullifier-kdf-migration.md`.
+- [ ] GH#111 / NEA-335 follow-up: Nullifier v2 Production Activation — scaffold deployed, production preflight green, identity backup exists at `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_004847`, and focused endpoint regression proves same-row v1->v2 migration with mocked HLR. Production remains v1 until an explicit operator canary with a real phone/HLR identity re-registration path is run. Admin-test identities are not sufficient. Runbook: `docs/agent-bridge/GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`; design checklist: `docs/adr/ADR-004-nullifier-kdf-migration.md`.
 - [ ] GH#112 / ZK V2 staged/global follow-up — first public scoped rollout passed for `bill:GR-d4c62ed4`; production ZK remains scoped by exact allowlist; global rollout and ZK Arweave publisher remain OFF pending review.
 - [x] vC43 Play/direct release: AAB/APK built, hashes verified, landing APK/hash live, GitHub latest release updated, S10 public scoped ZK vote passed.
 

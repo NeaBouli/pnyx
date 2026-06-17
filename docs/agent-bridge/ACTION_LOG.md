@@ -1,5 +1,26 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 endpoint regression tests + operator runbook
+
+- Scope:
+  - No production env flip, no deploy, no identity mutation.
+  - Added focused proof coverage and operator documentation for the remaining Nullifier v2 canary.
+- Added `apps/api/tests/test_identity_nullifier_v2_endpoint.py`:
+  - Exercises real `/api/v1/identity/verify` router path with in-memory SQLite.
+  - HLR and key generation are mocked; no real phone lookup and no secrets.
+  - Proves existing v1 identity re-registration under v2 updates the same row, preserves the v1 compatibility anchor, writes `nullifier_hash_v2`, sets `nullifier_version='v2'`, and does not create a duplicate identity.
+  - Proves new v2 identity stores both v1 and v2 anchors.
+  - Proves default v1 leaves v2 fields empty.
+- Added `docs/agent-bridge/GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`:
+  - Pre-window checks, fresh backup, activation commands, S10 operator step, SQL success checks, rollback, abort conditions, completion criteria.
+  - Explicit boundary: admin-test identities are not sufficient; the real proof requires phone/HLR `/identity/verify`.
+- Verification:
+  - `python3 -m py_compile apps/api/routers/identity.py packages/crypto/nullifier.py apps/api/tests/test_identity_nullifier_v2_endpoint.py` PASS.
+  - `cd apps/api && /tmp/pnyx-api-test-venv/bin/python -m pytest tests/test_identity_nullifier_v2_endpoint.py tests/test_identity_nullifier_kdf.py tests/test_security_startup.py -q` PASS: 23 passed, 1 skipped.
+  - `git diff --check` PASS.
+- Status:
+  - GH#111 remains not activated; production KDF remains v1 until a real operator phone/HLR canary is run.
+
 ## 2026-06-17 — Codex: GH#111 preflight backup + disk critical recovery
 
 - Context:
