@@ -11682,3 +11682,19 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - GitLab API check: MR remains open, mergeable, no conflicts, blocking discussions resolved.
   - Latest MR pipeline `2570810919` is success; waiting on fdroiddata maintainer.
 - No production ZK flags changed. No server deploy. No DB mutation.
+
+## 2026-06-17 — Codex: GH#111/GH#112 completion boundary audit
+
+- Added `docs/agent-bridge/GH111_GH112_COMPLETION_AUDIT.md`.
+- Evidence captured:
+  - Local/server HEAD: `586d52c`.
+  - API health: `status=ok`.
+  - First public ZK scoped result for `GR-d4c62ed4`: `total_votes=1`, `tier1_vote_count=0`, `zk_vote_count=1`, `yes_count=1`, `results_hidden=false`.
+  - Production ZK flags: exact allowlist `bill:GR-d4c62ed4`, global rollout `false`, ZK Arweave publication `false`, canary `false`.
+  - GH#111 production KDF remains `v1`.
+  - Latest GH#111 preflight package `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_064644` has `package_check.json` `ok=true`, no blockers/warnings.
+- Verdict:
+  - GH#112 first public scoped rollout is complete for `bill:GR-d4c62ed4`.
+  - GH#112 staged/global rollout remains open and gated.
+  - GH#111 is prepared, not complete; real S10/HLR v2 activation and post-verify compare are still required.
+- No flag changes, no deploy, no DB mutation.

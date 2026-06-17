@@ -61,6 +61,7 @@
 
 ## Guarded Follow-ups
 - [ ] GH#111 Nullifier v2 Canary — only in a real S10/HLR operator window.
+  - Completion boundary audit: `docs/agent-bridge/GH111_GH112_COMPLETION_AUDIT.md`.
   - [x] v2 KDF endpoint logic, same-row migration, Redis lock, and health startup tests.
   - [x] Runbook with backup/preflight/health retry, one-command no-mutation prep script, and `gh111_kdf_env_guard.py` env write/rollback helper.
   - [ ] Real `/api/v1/identity/verify` with real Greek mobile number while `IDENTITY_NULLIFIER_KDF_VERSION=v2` is active.
@@ -79,6 +80,7 @@
   - [x] Public verifier payload / Arweave publication policy: admin + flag-gated pending receipt publisher, public verifier payload only, no identity bridge fields, no canary Arweave publication
   - [x] Security review for scoped production rollout readiness (`GH112_SECURITY_REVIEW.md`)
   - [x] First public scoped ZK rollout window PASS for `bill:GR-d4c62ed4` with vC43/S10; public result `tier1=0`, `zk=1`, `total=1`; global rollout remains OFF; ZK Arweave publisher remains OFF
+  - [x] Completion boundary audit documents first public scoped rollout as complete and keeps staged/global follow-up open
   - [ ] Staged/global ZK rollout follow-up: only after review of rollout policy, Arweave publication policy, and per-scope monitoring
 
 ## Done (Session 25.05.2026)
