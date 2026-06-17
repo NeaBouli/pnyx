@@ -1,5 +1,28 @@
 # Action Log
 
+## 2026-06-17 — Codex: GH#111 pre-window preparation script
+
+- Scope:
+  - Added a host-side preparation script for the real GH#111 Nullifier v2 operator window.
+  - No production env flag changed, no HLR request, no identity mutation.
+- Changed:
+  - New script: `scripts/gh111-prepare-nullifier-v2-window.sh`.
+  - `GH111_NULLIFIER_V2_CANARY_RUNBOOK.md` now points operators to the script as the preferred pre-window preparation path.
+- Safety properties:
+  - Runs monitor preflight.
+  - Captures `gh111_kdf_env_guard.py plan --target v2` without writing.
+  - Captures read-only identity snapshot and preflight report.
+  - Dumps `identity_records`, `audit_log`, and `alembic_version`.
+  - Runs an isolated FastAPI lifespan probe with `IDENTITY_NULLIFIER_KDF_VERSION=v2`.
+  - Writes SHA-256 checksums for every generated artifact.
+  - Does not edit `/opt/ekklesia/.env.production` and does not trigger HLR.
+- Verification:
+  - `bash -n scripts/gh111-prepare-nullifier-v2-window.sh`: PASS.
+  - `python -m py_compile apps/api/scripts/gh111_kdf_env_guard.py apps/api/scripts/gh111_nullifier_v2_canary_check.py`: PASS.
+  - Focused GH#111 pytest set: PASS, 54 passed.
+- Boundary:
+  - GH#111 is still not complete until a real S10/HLR verification succeeds while v2 is active and the before/after compare report passes.
+
 ## 2026-06-17 — Codex: vC50 / v1.0.21 Android release build
 
 - Scope:

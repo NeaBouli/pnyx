@@ -43,9 +43,38 @@ Reason: admin-test identities use random nullifiers and do not exercise the real
   - `nullifier_version='v2'`: 0 rows.
   - Argon2id helper in API container: about 131 ms per derivation.
 
+## Preferred Pre-Window Preparation
+
+Use the guarded host-side preparation script immediately before any real
+operator window. It creates a fresh evidence/backup directory, runs the monitor,
+captures the KDF env rewrite plan, stores the read-only identity snapshot and
+preflight report, dumps the identity/audit/alembic tables, runs the isolated v2
+lifespan probe, and writes SHA-256 checksums.
+
+This script does **not** edit `/opt/ekklesia/.env.production`, does **not** set
+`IDENTITY_NULLIFIER_KDF_VERSION=v2`, and does **not** trigger HLR.
+
+```bash
+cd /opt/ekklesia/app
+scripts/gh111-prepare-nullifier-v2-window.sh
+```
+
+Expected final lines:
+
+```text
+GH111_PREPARED=1
+GH111_BACKUP_DIR=/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_...
+GH111_NEXT_STEP=Use GH111_NULLIFIER_V2_CANARY_RUNBOOK.md Activation Window only when Gio is ready with S10 and real HLR verification.
+```
+
+Use the printed `GH111_BACKUP_DIR` as `BACKUP_DIR` in the activation window.
+If this preparation script fails at any step, abort before the flag flip and
+document the failed artifact.
+
 ## Pre-Window Checks
 
-Run before changing any env flag:
+The script above is the preferred path. The commands below are the manual
+fallback/reference checks to run before changing any env flag:
 
 ```bash
 cd /opt/ekklesia/app/infra/docker
@@ -93,7 +122,9 @@ All four must be `0` before the first activation.
 
 ## Fresh Backup
 
-Use a fresh backup immediately before the real canary, even though an older preflight backup exists:
+The preferred preparation script already creates the fresh backup. If the script
+cannot be used, create a fresh backup manually immediately before the real
+canary, even though an older preflight backup exists:
 
 ```bash
 TS=$(date -u +%Y%m%d_%H%M%S)

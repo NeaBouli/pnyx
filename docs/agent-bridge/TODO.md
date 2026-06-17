@@ -62,7 +62,7 @@
 ## Guarded Follow-ups
 - [ ] GH#111 Nullifier v2 Canary — only in a real S10/HLR operator window.
   - [x] v2 KDF endpoint logic, same-row migration, Redis lock, and health startup tests.
-  - [x] Runbook with backup/preflight/health retry and `gh111_kdf_env_guard.py` env write/rollback helper.
+  - [x] Runbook with backup/preflight/health retry, one-command no-mutation prep script, and `gh111_kdf_env_guard.py` env write/rollback helper.
   - [ ] Real `/api/v1/identity/verify` with real Greek mobile number while `IDENTITY_NULLIFIER_KDF_VERSION=v2` is active.
   - [ ] Before/after `gh111_nullifier_v2_canary_check.py compare` report proving exactly one active v2 identity and no malformed/inconsistent v2 state.
 - [ ] GH#112 / NEA-249 Follow-up: ZK V2 Produktintegration nur nach `GH112_IMPLEMENTATION_PLAN.md`
@@ -178,7 +178,7 @@
 - [ ] NEA-59: F-Droid MR !38007 — wartet auf linsui Review
 - [ ] NEA-65: Off-Site Backup — nach erster Spende
 - [ ] NEA-73: Embed-System — Low Prio
-- [ ] GH#111 / NEA-335 follow-up: Nullifier v2 Production Activation — scaffold deployed, production preflight green, latest health-hardened identity backup exists at `/opt/ekklesia/backups/pre_gh111_nullifier_v2_health_hardened_20260617_050528`, focused endpoint regression proves same-row v1->v2 migration, Redis in-flight locking, and atomic row-locked existing-identity re-registration with mocked HLR, read-only snapshot/compare/report helper is ready with v2 invariant counters, v2 lifespan health probe is documented, and the S10 UI path to VerifyScreen is verified without mutation. Production remains v1 until an explicit operator canary with a real phone/HLR identity re-registration path is run. Admin-test identities are not sufficient. Runbook: `docs/agent-bridge/GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`; design checklist: `docs/adr/ADR-004-nullifier-kdf-migration.md`.
+- [ ] GH#111 / NEA-335 follow-up: Nullifier v2 Production Activation — scaffold deployed, production preflight green, latest health-hardened identity backup exists at `/opt/ekklesia/backups/pre_gh111_nullifier_v2_health_hardened_20260617_050528`, focused endpoint regression proves same-row v1->v2 migration, Redis in-flight locking, and atomic row-locked existing-identity re-registration with mocked HLR, read-only snapshot/compare/report helper is ready with v2 invariant counters, one-command no-mutation prep script is ready, v2 lifespan health probe is documented, and the S10 UI path to VerifyScreen is verified without mutation. Production remains v1 until an explicit operator canary with a real phone/HLR identity re-registration path is run. Admin-test identities are not sufficient. Runbook: `docs/agent-bridge/GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`; design checklist: `docs/adr/ADR-004-nullifier-kdf-migration.md`.
 - [ ] GH#112 / ZK V2 staged/global follow-up — first public scoped rollout passed for `bill:GR-d4c62ed4`; production ZK remains scoped by exact allowlist; global rollout and ZK Arweave publisher remain OFF pending review.
 - [x] vC46 Play/direct release: AAB/APK built, hashes verified, S10 install/launch passed, verified-account state preserved, landing/API version live.
 - [x] vC48 Play/direct release: AAB/APK built, hashes verified, S10 install passed, landing/API live, GitHub release live, CI/Security Audit green.
