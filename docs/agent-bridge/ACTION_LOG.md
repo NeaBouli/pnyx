@@ -12029,3 +12029,44 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - ZK Arweave publication remains off,
   - pending ZK receipts are not data loss and not a T3 issue while publisher is
     off.
+
+## 2026-06-19 — Codex: Parliament-only automatic ZK rollout guard + lifecycle race fix
+
+- Threat model for this change:
+  - no wildcard ZK activation for non-Parliament sources,
+  - no DIAVGEIA/DEMO/hidden/canary/test scope may become publicly active through global rollout,
+  - no Arweave publication may be enabled implicitly by global rollout,
+  - no Tier-1 vote may be blocked outside approved public Parliament bill scopes.
+- Code changes:
+  - `apps/api/routers/zk.py`: `ZK_GLOBAL_ROLLOUT_ENABLED=true` now only authorizes public PARLIAMENT bills in `ACTIVE`, `WINDOW_24H`, or `OPEN_END`.
+  - Global rollout guard is enforced on scope status, opt-in, root publish, verify, and ZK vote acceptance.
+  - Exact `ZK_PRODUCTION_SCOPE_ALLOWLIST` still works for staged/manual scopes.
+  - Mobile public ZK gate now accepts either exact production allowlist or guarded global rollout, while still requiring Parliament source + votable bill status + server `can_opt_in`.
+  - `apps/api/main.py`: scheduled Parliament scrape now runs existing lifecycle catch-up immediately after inserting/updating bills.
+  - `apps/monitor/monitor.py`: lifecycle stuck monitor gives newly updated scraper rows a 30-minute grace, while still alerting real old stuck rows.
+- Tests:
+  - `cd apps/api && .venv/bin/python -m pytest tests/routers/test_zk_verify_api.py -q`: PASS, 59 passed.
+  - Broader API/ZK/Voting/Monitor set: PASS, 130 passed / 2 xfailed.
+  - `cd apps/mobile && npx vitest run src/lib/zkPublicVoting.test.ts src/lib/zkCanaryFlow.test.ts src/lib/zkSemaphore.test.ts src/lib/zkSemaphoreNative.test.ts src/lib/zkVoteProofCore.test.ts`: PASS, 27 passed.
+  - `cd apps/mobile && npx tsc --noEmit`: PASS.
+  - `py_compile main.py monitor.py routers/zk.py`: PASS.
+  - `git diff --check`: PASS.
+- Commits:
+  - `87f83a0` — restrict automatic ZK rollout to Parliament bill scopes.
+  - `74ea10f` — suppress transient lifecycle alerts after Parliament scrape.
+- Deploy:
+  - Server fast-forwarded to `74ea10f`.
+  - Rollback tag created before deploy: `rollback-pre-zk-parliament-lifecycle-20260618-225028`.
+  - Rebuilt/restarted only `ekklesia-api` and `ekklesia-monitor` via `/opt/ekklesia/app/infra/docker/docker-compose.prod.yml`.
+  - No DB migration, no global flag flip, no Arweave flag flip.
+- Live verification:
+  - `https://api.ekklesia.gr/health`: PASS.
+  - `GET /api/v1/zk/status`: production ZK true, global rollout false, production allowlist configured true, Arweave publication false.
+  - `GET /api/v1/zk/scopes/bill:GR-d4c62ed4/status`: `can_opt_in=true`, `can_vote=true`, `root_published=true`.
+  - Lifecycle catch-up run once manually: `checked=4`, `transitioned=6`, `errors=0`, `arweave_catchup=0`.
+  - Bills `GR-d71e9b04` and `GR-4a8dba43` advanced from `ANNOUNCED` to `PARLIAMENT_VOTED`.
+  - `docker exec ekklesia-monitor python /app/monitor.py --once`: PASS, 17 checks, no alerts.
+- Current policy:
+  - Scoped ZK remains live for `bill:GR-d4c62ed4`.
+  - Automatic/global ZK rollout code is safe for Parliament-only scopes, but `ZK_GLOBAL_ROLLOUT_ENABLED=false` remains unchanged.
+  - ZK Arweave publication remains off and requires a separate exact allowlist + minimum group size.

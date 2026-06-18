@@ -3,10 +3,11 @@
 Mode: support/review when asked. Do not assume old vC35/vC37/vC38/vC41 tasks are current.
 
 Current state:
-- Current HEAD/server: `dc6db38`.
+- Current HEAD/server: `74ea10f`.
 - Completion boundary audit added: `docs/agent-bridge/GH111_GH112_COMPLETION_AUDIT.md`.
 - GH#112 first public scoped rollout is proven complete for `bill:GR-d4c62ed4`; staged/global rollout and ZK Arweave publication remain gated/off.
-- ZK Arweave publication now has its own exact scope allowlist (`ZK_ARWEAVE_SCOPE_ALLOWLIST`) and minimum group-size guard (`ZK_ARWEAVE_MIN_GROUP_SIZE`, default 5); do not rely on `ZK_GLOBAL_ROLLOUT_ENABLED` for Arweave publishing.
+- Automatic/global ZK rollout is code-ready but server-enforced to public PARLIAMENT bill scopes only (`ACTIVE`, `WINDOW_24H`, `OPEN_END`). DIAVGEIA, DEMO, hidden, canary, and non-public scopes must not become opt-in/root/vote scopes through the global flag.
+- ZK Arweave publication has its own exact scope allowlist (`ZK_ARWEAVE_SCOPE_ALLOWLIST`) and minimum group-size guard (`ZK_ARWEAVE_MIN_GROUP_SIZE`, default 5); do not rely on `ZK_GLOBAL_ROLLOUT_ENABLED` for Arweave publishing.
 - Monitor policy now follows the same gates: pending ZK receipts only alert when `ZK_ARWEAVE_PUBLICATION_ENABLED=true` and the scope is in `ZK_ARWEAVE_SCOPE_ALLOWLIST`; when publisher is off, pending receipts are expected and no T3 alert is sent.
 - GH#111 is complete; production KDF is `v2` after a real S10/HLR canary and clean post-verify compare.
 - Mobile vC50 / v1.0.21 is the current prepared Play/direct build. Gio asked for `vC40`, but Play requires monotonic versionCode; vC50 is the safe next code after vC49.
@@ -28,7 +29,8 @@ Current state:
 - `ZK_CANARY_ENABLED=false`.
 - ZK Arweave publication policy still needs review before enabling any publisher; code now also requires dedicated Arweave scope allowlist + min anonymity threshold.
 - Forum/monitor fix `4aa6f71` is live: Discourse 429 handling, `/api/v1/admin/forum/sync-new`, monitor recovery remapped to sync-new, DIAVGEIA backlog grace 6h.
-- Monitor once after latest monitor deploy (`dc6db38`): PASS, 17 checks, no alerts.
+- Monitor once after latest monitor deploy (`74ea10f`): PASS, 17 checks, no alerts.
+- Post-scrape lifecycle catch-up is live; two newly scraped Parliament rows with past vote dates (`GR-d71e9b04`, `GR-4a8dba43`) were advanced to `PARLIAMENT_VOTED`. Monitor lifecycle check has a short grace for freshly updated scraper rows to prevent scrape/lifecycle race alerts.
 - CI + Security Audit are green for `4aa6f71` and `f51dbf0`.
 - F-Droid !38007 is still open/mergeable and was updated to vC50/v1.0.21 on 2026-06-18. MR commit `d711780bf`; manual branch pipeline `2609790099` was success, but current MR-event head pipeline `2609789968` is failed. Inspect/fix the GitLab MR pipeline if maintainers require it before merge.
 - GH#111 Nullifier v2 canary completed on 2026-06-17 with real S10/HLR verification. Keep `IDENTITY_NULLIFIER_KDF_VERSION=v2` active.
@@ -46,7 +48,7 @@ Current state:
 
 If asked to continue:
 1. Prefer review/diagnosis first.
-2. Do not enable global ZK rollout without Gio's explicit instruction, fresh backup, and staged rollout plan.
+2. Do not enable global ZK rollout without Gio's explicit instruction, fresh backup, and staged rollout plan. The code guard is Parliament-only, but the flag is still off.
 3. Do not run Arweave publication for ZK proofs until the public-payload policy is reviewed and `ZK_ARWEAVE_SCOPE_ALLOWLIST` is set to the exact approved scope.
 4. Do not enable R8/ProGuard unless the resulting build is installed on S10 and vote/source/ZK paths are verified.
 5. Keep production ZK scoped by exact allowlist; do not wildcard scopes.

@@ -7,14 +7,16 @@ public receipt/Arweave policy, tally integration, hidden S10 canary evidence.
 
 ## Decision
 
-Semaphore ZK V2 passed its first public scoped production rollout. It remains
-**approved only for exact-scope rollout**, not for unconditional global
-activation.
+Semaphore ZK V2 passed its first public scoped production rollout. Exact-scope
+rollout is live for the first approved bill. Automatic/global rollout is now
+code-guarded for public Parliament bills only, but the production flag remains
+off until Gio deliberately enables the wider rollout window.
 
 Safe activation shape:
 
 - one explicit public vote scope at a time via `ZK_PRODUCTION_SCOPE_ALLOWLIST`
-- no `ZK_GLOBAL_ROLLOUT_ENABLED` until a separate global-rollout review
+- optional automatic/global rollout only for public PARLIAMENT bills in
+  `ACTIVE`, `WINDOW_24H`, or `OPEN_END`
 - DB backup immediately before the window
 - root publication and receipt publication kept as separate admin actions
 - Arweave publication only after receipts exist and the public payload is checked
@@ -25,6 +27,8 @@ Safe activation shape:
 Reviewed against these failure modes:
 
 - accidental global ZK activation
+- global rollout accidentally enabling DIAVGEIA, DEMO, hidden, canary, or
+  otherwise non-public scopes
 - accepting a proof for the wrong bill, message, root, or vote commitment
 - double voting through Tier 1 and ZK
 - linking a public ZK receipt back to phone, HLR, Tier-1 nullifier, or identity row
@@ -57,11 +61,13 @@ Reviewed against these failure modes:
 ### No HIGH or MEDIUM blockers for scoped rollout
 
 The production backend is fail-closed by default and write paths require an
-explicit canary scope, explicit production scope allowlist, or a separate global
-rollout flag.
+explicit canary scope, explicit production scope allowlist, or the guarded
+global rollout flag. The global flag no longer means wildcard: server write
+paths only accept public PARLIAMENT bill scopes in `ACTIVE`, `WINDOW_24H`, or
+`OPEN_END`. DIAVGEIA, DEMO, hidden, canary, and non-public scopes are rejected.
 
-`ZK_GLOBAL_ROLLOUT_ENABLED` must remain off until a dedicated global-rollout
-review is completed.
+`ZK_GLOBAL_ROLLOUT_ENABLED` remains off in production until Gio deliberately
+opens the wider rollout window.
 
 ### F1 — Cross-scope mobile identity reuse
 
@@ -113,11 +119,14 @@ ZK write paths are gated:
 - `/zk/receipts/{scope}/publish-pending`
 
 Canary mode requires `ZK_CANARY_SCOPE_ALLOWLIST`; production mode requires
-`ZK_PRODUCTION_SCOPE_ALLOWLIST` unless the explicit global flag is enabled.
+`ZK_PRODUCTION_SCOPE_ALLOWLIST` unless the guarded global flag is enabled.
+When global rollout is enabled, the server still requires a public PARLIAMENT
+bill in a votable status before opt-in, root publish, verify, or ZK vote
+acceptance.
 
-Recommendation: continue using exact scope allowlists. Do not use the global
-flag until a dedicated global-rollout review covers multi-scope privacy,
-monitoring, UI wording, and Arweave publication policy.
+Recommendation: continue using exact scope allowlists until Gio intentionally
+opens the broader Parliament-only window. Arweave publication remains a separate
+decision and must not follow the global voting flag automatically.
 
 ### F4 — Proof binding
 
@@ -220,7 +229,8 @@ When a real public scope is selected:
 
 Review result: **PASS for exact-scope production rollout.**
 
-Remaining boundary: no global rollout. Global production ZK still requires a
-follow-up review. ZK Arweave publication is safer now because it has a separate
-scope allowlist and anonymity threshold, but it remains gated until the public
-payload policy and the chosen scope are explicitly approved.
+Remaining boundary: global rollout flag is still off. The global code path is
+Parliament-only and fail-closed, but enabling it is an operator decision. ZK
+Arweave publication is safer now because it has a separate scope allowlist and
+anonymity threshold, but it remains gated until the public payload policy and
+the chosen scope are explicitly approved.

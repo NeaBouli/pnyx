@@ -82,6 +82,7 @@
   - [x] Public verifier payload / Arweave publication policy: admin + flag-gated pending receipt publisher, public verifier payload only, no identity bridge fields, no canary Arweave publication
   - [x] ZK Arweave publication hardening: separate exact `ZK_ARWEAVE_SCOPE_ALLOWLIST` plus `ZK_ARWEAVE_MIN_GROUP_SIZE` guard; global rollout does not automatically authorize Arweave publishing
   - [x] Monitor policy follows ZK Arweave gates: pending ZK receipts do not alert while publisher is off; when publisher is on, only exact Arweave-allowlisted scopes are monitored.
+  - [x] Automatic/global rollout safety guard: server write paths allow global rollout only for public PARLIAMENT bills in `ACTIVE`, `WINDOW_24H`, or `OPEN_END`; DIAVGEIA/DEMO/hidden/canary/non-public scopes are rejected.
   - [x] Security review for scoped production rollout readiness (`GH112_SECURITY_REVIEW.md`)
   - [x] First public scoped ZK rollout window PASS for `bill:GR-d4c62ed4` with vC43/S10; public result `tier1=0`, `zk=1`, `total=1`; global rollout remains OFF; ZK Arweave publisher remains OFF
   - [x] Completion boundary audit documents first public scoped rollout as complete and keeps staged/global follow-up open
