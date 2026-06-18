@@ -3,7 +3,7 @@
 Mode: support/review when asked. Do not assume old vC35/vC37/vC38/vC41 tasks are current.
 
 Current state:
-- Current HEAD/server: `74ea10f`.
+- Current repo/server git HEAD: latest `main`; API/monitor containers were rebuilt from code commit `74ea10f`.
 - Completion boundary audit added: `docs/agent-bridge/GH111_GH112_COMPLETION_AUDIT.md`.
 - GH#112 first public scoped rollout is proven complete for `bill:GR-d4c62ed4`; staged/global rollout and ZK Arweave publication remain gated/off.
 - Automatic/global ZK rollout is code-ready but server-enforced to public PARLIAMENT bill scopes only (`ACTIVE`, `WINDOW_24H`, `OPEN_END`). DIAVGEIA, DEMO, hidden, canary, and non-public scopes must not become opt-in/root/vote scopes through the global flag.
