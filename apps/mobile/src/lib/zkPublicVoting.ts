@@ -20,11 +20,14 @@ export function canShowPublicZkVoting(params: {
   if (!ZK_PUBLIC_VOTABLE_STATUSES.has(billStatus)) return false;
   if (serverStatus.canary_enabled) return false;
   if (!scopeStatus.can_opt_in) return false;
+  const productionScopeConfigured =
+    serverStatus.production_scope_allowlist_configured === true ||
+    serverStatus.global_rollout_enabled === true;
   return (
     serverStatus.production_enabled === true &&
     serverStatus.verifier_enabled === true &&
     serverStatus.opt_in_enabled === true &&
-    serverStatus.production_scope_allowlist_configured === true &&
+    productionScopeConfigured &&
     scopeStatus.vote_scope_id.startsWith("bill:")
   );
 }

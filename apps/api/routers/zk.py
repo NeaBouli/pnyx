@@ -75,6 +75,7 @@ ZK_ARWEAVE_MIN_GROUP_SIZE_DEFAULT = 5
 SEMAPHORE_MERKLE_TREE_DEPTH = 16
 NATIVE_PROOF_KEYS = {"merkle_tree_depth", "merkle_tree_root"}
 CANONICAL_PROOF_KEYS = {"merkleTreeDepth", "merkleTreeRoot"}
+ZK_GLOBAL_ROLLOUT_STATUSES = {BillStatus.ACTIVE, BillStatus.WINDOW_24H, BillStatus.OPEN_END}
 
 
 class ZkVerifyRequest(BaseModel):
@@ -353,7 +354,7 @@ def _ensure_canary_scope_allowed(vote_scope_id: str | None) -> str:
 
 
 def _ensure_zk_write_scope_allowed(vote_scope_id: str | None) -> str:
-    """Fail closed unless canary, explicit production allowlist, or global rollout is configured."""
+    """Fail closed unless canary, explicit allowlist, or guarded global rollout allows the scope."""
     if _env_enabled(ZK_CANARY_ENABLED_ENV):
         return _ensure_canary_scope_allowed(vote_scope_id)
     if vote_scope_id is None:
@@ -363,21 +364,65 @@ def _ensure_zk_write_scope_allowed(vote_scope_id: str | None) -> str:
         )
 
     scope = validate_vote_scope_id(vote_scope_id)
+    allowlist = _production_scope_allowlist()
+    if scope in allowlist:
+        return scope
+
     if _global_rollout_enabled():
         return scope
 
-    allowlist = _production_scope_allowlist()
     if not allowlist:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="ZK production scope allowlist is not configured",
         )
-    if scope not in allowlist:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="ZK production scope is not allowed",
+    )
+
+
+def _is_public_parliament_bill_scope(bill: ParliamentBill | None) -> bool:
+    """Object-level guard for automatic/global ZK rollout."""
+    if bill is None or not is_public_bill(bill):
+        return False
+    if str(getattr(bill, "id", "")).startswith("DEMO-"):
+        return False
+    if getattr(bill, "source", None) != "PARLIAMENT":
+        return False
+    bill_status = getattr(bill, "status", None)
+    if isinstance(bill_status, str):
+        try:
+            bill_status = BillStatus(bill_status)
+        except ValueError:
+            return False
+    if bill_status not in ZK_GLOBAL_ROLLOUT_STATUSES:
+        return False
+    return True
+
+
+def _ensure_public_parliament_bill_scope(bill: ParliamentBill | None) -> None:
+    if not _is_public_parliament_bill_scope(bill):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ZK vote scope not found")
+
+
+def _global_rollout_applies_to_scope(scope: str) -> bool:
+    return _global_rollout_enabled() and scope not in _production_scope_allowlist()
+
+
+async def _ensure_global_rollout_scope_allowed(db: AsyncSession, scope: str) -> None:
+    """Guard the automatic/global path so it can only expose Parliament bill scopes."""
+    if not _global_rollout_applies_to_scope(scope):
+        return
+
+    scope_type, scope_id = validate_vote_scope_id(scope).split(":", 1)
+    if scope_type != "bill":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="ZK production scope is not allowed",
+            detail="ZK global rollout supports Parliament bill scopes only",
         )
-    return scope
+    bill_result = await db.execute(select(ParliamentBill).where(ParliamentBill.id == scope_id))
+    _ensure_public_parliament_bill_scope(bill_result.scalar_one_or_none())
 
 
 def _is_safe_canary_bill(bill: ParliamentBill | None) -> bool:
@@ -516,6 +561,11 @@ async def get_zk_scope_status(
     canary_enabled = production_enabled and _env_enabled(ZK_CANARY_ENABLED_ENV)
     global_rollout = _global_rollout_enabled()
     allowlisted = scope in _production_scope_allowlist()
+    global_scope_allowed = False
+    if global_rollout and not allowlisted:
+        if scope_type == "bill":
+            bill_result = await db.execute(select(ParliamentBill).where(ParliamentBill.id == _scope_id))
+            global_scope_allowed = _is_public_parliament_bill_scope(bill_result.scalar_one_or_none())
 
     active_commitments = await _count_rows(
         db,
@@ -534,7 +584,7 @@ async def get_zk_scope_status(
         .limit(1)
     )
     root_published = root_result.scalar_one_or_none() is not None
-    scope_allowed = (allowlisted or global_rollout) and not canary_enabled
+    scope_allowed = (allowlisted or global_scope_allowed) and not canary_enabled
     can_opt_in = production_enabled and opt_in_enabled and scope_allowed
     can_vote = can_opt_in and root_published
     return ZkScopeStatusResponse(
@@ -686,6 +736,8 @@ async def opt_in_zk(req: ZkOptInRequest, db: AsyncSession = Depends(get_db)) -> 
     _ensure_bill_scope_allowed(identity, bill)
     vote_scope_id = canonical_vote_scope_id(VoteScopeType.BILL, req.bill_id)
     _ensure_zk_write_scope_allowed(vote_scope_id)
+    if _global_rollout_applies_to_scope(vote_scope_id):
+        _ensure_public_parliament_bill_scope(bill)
     if _env_enabled(ZK_CANARY_ENABLED_ENV):
         _ensure_canary_bill_isolated(bill)
     elif not is_public_bill(bill):
@@ -871,6 +923,7 @@ async def publish_zk_root(
 ) -> ZkRootPublishResponse:
     _ensure_zk_root_publication_enabled()
     scope = _ensure_zk_write_scope_allowed(vote_scope_id)
+    await _ensure_global_rollout_scope_allowed(db, scope)
     await _ensure_scope_public_or_safe_canary(db, scope, require_existing_bill=True)
     try:
         group = await build_active_group_root_for_scope(db, vote_scope_id=scope)
@@ -918,6 +971,7 @@ async def accept_zk_vote(req: ZkVoteRequest, db: AsyncSession = Depends(get_db))
         )
 
     scope = _ensure_zk_write_scope_allowed(req.vote_scope_id)
+    await _ensure_global_rollout_scope_allowed(db, scope)
     await _ensure_scope_public_or_safe_canary(db, scope, require_existing_bill=True)
     vote_commitment = req.vote_commitment.strip()
     vote_choice = _zk_vote_choice(vote_commitment)
@@ -1013,6 +1067,7 @@ async def verify_zk_proof(req: ZkVerifyRequest, db: AsyncSession = Depends(get_d
         scope = _ensure_canary_scope_allowed(req.vote_scope_id)
     elif req.vote_scope_id is not None:
         scope = _ensure_zk_write_scope_allowed(req.vote_scope_id)
+        await _ensure_global_rollout_scope_allowed(db, scope)
     try:
         normalized = _normalize_public_proof(req.proof)
     except (KeyError, TypeError, ValueError):

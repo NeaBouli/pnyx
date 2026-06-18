@@ -83,6 +83,23 @@ describe("public ZK voting visibility", () => {
     })).toBe(false);
   });
 
+  it("allows Parliament scopes through the guarded global rollout gate", () => {
+    expect(canShowPublicZkVoting({
+      serverStatus: status({
+        production_scope_allowlist_configured: false,
+        global_rollout_enabled: true,
+      }),
+      scopeStatus: scopeStatus({
+        allowlisted: false,
+        global_rollout_enabled: true,
+        can_opt_in: true,
+      }),
+      billStatus: "OPEN_END",
+      billSource: "PARLIAMENT",
+      billLoaded: true,
+    })).toBe(true);
+  });
+
   it("blocks canary mode from public bill UI", () => {
     expect(canShowPublicZkVoting({
       serverStatus: status({ canary_enabled: true }),

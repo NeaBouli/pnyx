@@ -117,6 +117,18 @@ def _public_parliament_bill() -> SimpleNamespace:
     )
 
 
+def _public_diavgeia_bill() -> SimpleNamespace:
+    return SimpleNamespace(
+        id="DIAV-001",
+        status=BillStatus.ACTIVE,
+        governance_level=GovernanceLevel.INSTITUTIONAL,
+        source="DIAVGEIA",
+        admin_hidden=False,
+        forum_topic_id=1104,
+        arweave_tx_id="ar_tx",
+    )
+
+
 async def _override_with(fake_db):
     yield fake_db
 
@@ -278,6 +290,62 @@ async def test_zk_scope_status_reports_vote_ready_only_after_root(monkeypatch) -
     assert payload["root_published"] is True
     assert payload["can_opt_in"] is True
     assert payload["can_vote"] is True
+
+
+@pytest.mark.asyncio
+async def test_zk_scope_status_global_rollout_allows_public_parliament_bill(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    monkeypatch.setenv("ZK_OPT_IN_ENABLED", "true")
+    monkeypatch.setenv("ZK_TIER1_GUARD_ENABLED", "true")
+    monkeypatch.setenv("ZK_GLOBAL_ROLLOUT_ENABLED", "true")
+    monkeypatch.delenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", raising=False)
+    fake_db = _FakeSequenceDb([_public_parliament_bill(), _public_parliament_bill(), 1, None])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/zk/scopes/bill:GR-0490a766/status")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["allowlisted"] is False
+    assert payload["global_rollout_enabled"] is True
+    assert payload["can_opt_in"] is True
+    assert payload["can_vote"] is False
+
+
+@pytest.mark.asyncio
+async def test_zk_scope_status_global_rollout_does_not_allow_diavgeia_bill(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    monkeypatch.setenv("ZK_OPT_IN_ENABLED", "true")
+    monkeypatch.setenv("ZK_TIER1_GUARD_ENABLED", "true")
+    monkeypatch.setenv("ZK_GLOBAL_ROLLOUT_ENABLED", "true")
+    monkeypatch.delenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", raising=False)
+    fake_db = _FakeSequenceDb([_public_diavgeia_bill(), _public_diavgeia_bill(), 0, None])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/zk/scopes/bill:DIAV-001/status")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["allowlisted"] is False
+    assert payload["global_rollout_enabled"] is True
+    assert payload["can_opt_in"] is False
+    assert payload["can_vote"] is False
 
 
 @pytest.mark.asyncio
@@ -448,6 +516,44 @@ async def test_zk_opt_in_creates_commitment_and_private_tier_lock(monkeypatch) -
     assert any(isinstance(value, ZkVoteTierLock) for value in fake_db.added)
     stored_commitment = next(value for value in fake_db.added if isinstance(value, ZkIdentityCommitment))
     assert stored_commitment.vote_scope_id == "bill:GR-0490a766"
+
+
+@pytest.mark.asyncio
+async def test_zk_opt_in_global_rollout_rejects_diavgeia_bill(monkeypatch) -> None:
+    monkeypatch.setenv("ZK_VOTING_ENABLED", "true")
+    monkeypatch.setenv("ZK_OPT_IN_ENABLED", "true")
+    monkeypatch.setenv("ZK_TIER1_GUARD_ENABLED", "true")
+    monkeypatch.setenv("ZK_GLOBAL_ROLLOUT_ENABLED", "true")
+    monkeypatch.delenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", raising=False)
+    monkeypatch.setenv("SERVER_SALT", "s" * 64)
+    monkeypatch.setattr(zk, "verify_signature", lambda *_args: True)
+    identity = SimpleNamespace(
+        id=7,
+        public_key_hex="c" * 64,
+        periferia_id=None,
+        dimos_id=None,
+    )
+    fake_db = _FakeSequenceDb([identity, _public_diavgeia_bill()])
+    payload = {
+        **_zk_opt_in_payload(),
+        "bill_id": "DIAV-001",
+    }
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post("/api/v1/zk/opt-in", json=payload)
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "ZK vote scope not found"
+    assert fake_db.added == []
+    assert fake_db.committed is False
 
 
 @pytest.mark.asyncio
@@ -918,6 +1024,66 @@ async def test_zk_root_publish_requires_production_scope_allowlist(monkeypatch) 
     assert response.status_code == 503
     assert response.json()["detail"] == "ZK production scope allowlist is not configured"
     assert fake_db.executed == []
+
+
+@pytest.mark.asyncio
+async def test_zk_root_publish_global_rollout_allows_public_parliament_bill(monkeypatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("ADMIN_KEY", raising=False)
+    monkeypatch.setenv("ZK_ROOT_PUBLICATION_ENABLED", "true")
+    monkeypatch.setenv("ZK_GLOBAL_ROLLOUT_ENABLED", "true")
+    monkeypatch.delenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", raising=False)
+    fake_db = _FakeSequenceDb([_public_parliament_bill(), _public_parliament_bill(), ["1", "2"], None])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/roots/bill:GR-0490a766/publish",
+                headers={"Authorization": "Bearer dev-admin-key"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["created"] is True
+    assert payload["vote_scope_id"] == "bill:GR-0490a766"
+    assert payload["merkle_root"] == str(poseidon2(1, 2))
+    assert fake_db.committed is True
+
+
+@pytest.mark.asyncio
+async def test_zk_root_publish_global_rollout_rejects_diavgeia_bill(monkeypatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("ADMIN_KEY", raising=False)
+    monkeypatch.setenv("ZK_ROOT_PUBLICATION_ENABLED", "true")
+    monkeypatch.setenv("ZK_GLOBAL_ROLLOUT_ENABLED", "true")
+    monkeypatch.delenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", raising=False)
+    fake_db = _FakeSequenceDb([_public_diavgeia_bill()])
+
+    async def override_get_db():
+        async for value in _override_with(fake_db):
+            yield value
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.post(
+                "/api/v1/zk/roots/bill:DIAV-001/publish",
+                headers={"Authorization": "Bearer dev-admin-key"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "ZK vote scope not found"
+    assert fake_db.added == []
+    assert fake_db.committed is False
 
 
 @pytest.mark.asyncio
