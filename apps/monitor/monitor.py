@@ -387,8 +387,9 @@ def check_lifecycle_stuck(conn, r=None) -> list[Alert]:
             SELECT id, status, parliament_vote_date FROM parliament_bills
             WHERE parliament_vote_date IS NOT NULL
               AND parliament_vote_date < %s
+              AND COALESCE(updated_at, TIMESTAMP '1970-01-01') < %s
               AND status IN ('ANNOUNCED', 'ACTIVE', 'WINDOW_24H')
-        """, (now - timedelta(days=1),))
+        """, (now - timedelta(days=1), now - timedelta(minutes=30)))
         for bill_id, status, vote_date in cur.fetchall():
             # Cooldown: suppress same bill alert for 1h
             if r:

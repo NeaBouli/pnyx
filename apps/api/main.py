@@ -210,6 +210,18 @@ async def scheduled_scrape():
                 except Exception as e:
                     logger.warning("[MOD-03] Telegram notify failed: %s", e)
 
+                # Parliament may surface bills after the vote date has already
+                # passed. Run the existing lifecycle catch-up immediately after
+                # scrape/upsert so monitor does not alert before the hourly job.
+                try:
+                    from services.bill_lifecycle import run_bill_lifecycle
+
+                    lifecycle_stats = await run_bill_lifecycle(db)
+                    if lifecycle_stats.get("transitioned", 0) > 0:
+                        logger.info("[MOD-03] Post-scrape lifecycle catch-up: %s", lifecycle_stats)
+                except Exception as e:
+                    logger.warning("[MOD-03] Post-scrape lifecycle catch-up failed: %s", e)
+
         await record_success(name)
     except Exception as e:
         logger.error(f"[MOD-03] Scheduled scrape failed: {e}")

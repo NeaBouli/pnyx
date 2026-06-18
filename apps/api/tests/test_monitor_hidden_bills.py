@@ -15,6 +15,7 @@ class FakeCursor:
         self.rows = rows or []
         self.one = one
         self.statements = []
+        self.params = []
 
     def __enter__(self):
         return self
@@ -22,8 +23,9 @@ class FakeCursor:
     def __exit__(self, exc_type, exc, tb):
         return False
 
-    def execute(self, statement, *_args, **_kwargs):
+    def execute(self, statement, *args, **_kwargs):
         self.statements.append(statement)
+        self.params.append(args[0] if args else None)
 
     def fetchall(self):
         return self.rows
@@ -69,3 +71,14 @@ def test_forum_completeness_gives_diavgeia_backlog_longer_grace():
     assert "INTERVAL '1 hour'" in sql
     assert "COALESCE(source, 'PARLIAMENT') != 'PARLIAMENT'" in sql
     assert "INTERVAL '6 hours'" in sql
+
+
+def test_lifecycle_stuck_query_gives_recent_scraper_updates_short_grace():
+    cursor = FakeCursor(rows=[])
+    alerts = monitor.check_lifecycle_stuck(FakeConn(cursor))
+
+    assert alerts == []
+    sql = cursor.statements[0]
+    assert "parliament_vote_date < %s" in sql
+    assert "COALESCE(updated_at, TIMESTAMP '1970-01-01') < %s" in sql
+    assert len(cursor.params[0]) == 2
