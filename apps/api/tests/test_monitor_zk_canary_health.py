@@ -68,6 +68,8 @@ class FailingConn:
 
 def test_zk_canary_health_alerts_on_old_pending_receipts(monkeypatch):
     monkeypatch.setattr(monitor, "ZK_PENDING_MAX_HOURS", 24)
+    monkeypatch.setattr(monitor, "ZK_ARWEAVE_PUBLICATION_ENABLED", True)
+    monkeypatch.setattr(monitor, "ZK_ARWEAVE_SCOPE_ALLOWLIST", {"bill:GR-0490a766"})
     conn = FakeConn([2, 0])
 
     alerts = monitor.check_zk_canary_health(conn)
@@ -78,23 +80,38 @@ def test_zk_canary_health_alerts_on_old_pending_receipts(monkeypatch):
     assert alerts[0].severity == "warning"
     assert alerts[0].recovery_allowed is False
     assert ">24h" in alerts[0].message
+    pending_statement, params = conn.cursor_obj.statements[0]
+    assert "ANY" in pending_statement
+    assert params == (24, ["bill:GR-0490a766"])
 
 
-def test_zk_canary_health_excludes_hidden_canary_receipts_from_pending_query(monkeypatch):
+def test_zk_canary_health_skips_pending_receipts_when_publication_is_gated_off(monkeypatch):
     monkeypatch.setattr(monitor, "ZK_PENDING_MAX_HOURS", 24)
-    conn = FakeConn([0, 0])
+    monkeypatch.setattr(monitor, "ZK_ARWEAVE_PUBLICATION_ENABLED", False)
+    monkeypatch.setattr(monitor, "ZK_ARWEAVE_SCOPE_ALLOWLIST", set())
+    conn = FakeConn([0])
 
     alerts = monitor.check_zk_canary_health(conn)
 
     assert alerts == []
-    pending_statement = conn.cursor_obj.statements[0][0]
-    assert "LEFT JOIN parliament_bills" in pending_statement
-    assert "admin_hidden" in pending_statement
-    assert "ZK_CANARY" in pending_statement
+    assert len(conn.cursor_obj.statements) == 1
+    assert "zk_merkle_roots" in conn.cursor_obj.statements[0][0]
+
+
+def test_zk_canary_health_alerts_when_publication_enabled_without_allowlist(monkeypatch):
+    monkeypatch.setattr(monitor, "ZK_ARWEAVE_PUBLICATION_ENABLED", True)
+    monkeypatch.setattr(monitor, "ZK_ARWEAVE_SCOPE_ALLOWLIST", set())
+    conn = FakeConn([0])
+
+    alerts = monitor.check_zk_canary_health(conn)
+
+    assert len(alerts) == 1
+    assert alerts[0].type == "zk_publication_config"
+    assert "without scope allowlist" in alerts[0].message
 
 
 def test_zk_canary_health_alerts_on_invalid_root_status():
-    conn = FakeConn([0, 1])
+    conn = FakeConn([1])
 
     alerts = monitor.check_zk_canary_health(conn)
 

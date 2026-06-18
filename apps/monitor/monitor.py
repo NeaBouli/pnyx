@@ -72,6 +72,12 @@ AUTO_RECOVERY_T2 = os.getenv("AUTO_RECOVERY_T2", "false").lower() == "true"
 PARLIAMENT_SOURCE_FRESHNESS_ENABLED = os.getenv("PARLIAMENT_SOURCE_FRESHNESS_ENABLED", "true").lower() == "true"
 PARLIAMENT_SOURCE_MAX_LAG_HOURS = int(os.getenv("PARLIAMENT_SOURCE_MAX_LAG_HOURS", "36"))
 ZK_PENDING_MAX_HOURS = int(os.getenv("ZK_PENDING_MAX_HOURS", "24"))
+ZK_ARWEAVE_PUBLICATION_ENABLED = os.getenv("ZK_ARWEAVE_PUBLICATION_ENABLED", "false").lower() == "true"
+ZK_ARWEAVE_SCOPE_ALLOWLIST = {
+    value.strip()
+    for value in os.getenv("ZK_ARWEAVE_SCOPE_ALLOWLIST", "").split(",")
+    if value.strip()
+}
 
 # T2 Allowlist — HARDCODED, never restart DB/Redis/Traefik/Discourse
 T2_ALLOWED_SERVICES = {"ekklesia-api", "ekklesia-web"}
@@ -610,28 +616,41 @@ def check_zk_canary_health(conn) -> list[Alert]:
     alerts = []
     try:
         with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT COUNT(*)
-                FROM zk_vote_receipts r
-                LEFT JOIN parliament_bills b
-                  ON r.vote_scope_id = ('bill:' || b.id)
-                WHERE r.arweave_pending = TRUE
-                  AND r.created_at < NOW() - (%s * INTERVAL '1 hour')
-                  AND COALESCE(b.admin_hidden, FALSE) IS NOT TRUE
-                  AND COALESCE(b.source, '') <> 'ZK_CANARY'
-                """,
-                (ZK_PENDING_MAX_HOURS,),
-            )
-            pending_count = cur.fetchone()[0]
-            if pending_count > 0:
+            if ZK_ARWEAVE_PUBLICATION_ENABLED and not ZK_ARWEAVE_SCOPE_ALLOWLIST:
                 alerts.append(Alert(
-                    "zk_receipts_pending",
+                    "zk_publication_config",
                     "ekklesia-api",
                     "warning",
-                    f"ZK: {pending_count} vote receipts pending Arweave/publication >{ZK_PENDING_MAX_HOURS}h",
+                    "ZK Arweave publication enabled without scope allowlist",
                     False,
                 ))
+            elif ZK_ARWEAVE_PUBLICATION_ENABLED:
+                cur.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM zk_vote_receipts r
+                    LEFT JOIN parliament_bills b
+                      ON r.vote_scope_id = ('bill:' || b.id)
+                    WHERE r.arweave_pending = TRUE
+                      AND r.created_at < NOW() - (%s * INTERVAL '1 hour')
+                      AND r.vote_scope_id = ANY(%s)
+                      AND COALESCE(b.admin_hidden, FALSE) IS NOT TRUE
+                      AND COALESCE(b.source, '') <> 'ZK_CANARY'
+                    """,
+                    (ZK_PENDING_MAX_HOURS, list(ZK_ARWEAVE_SCOPE_ALLOWLIST)),
+                )
+                pending_count = cur.fetchone()[0]
+                if pending_count > 0:
+                    alerts.append(Alert(
+                        "zk_receipts_pending",
+                        "ekklesia-api",
+                        "warning",
+                        (
+                            f"ZK: {pending_count} allowlisted vote receipts pending "
+                            f"Arweave/publication >{ZK_PENDING_MAX_HOURS}h"
+                        ),
+                        False,
+                    ))
 
             cur.execute(
                 """
