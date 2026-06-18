@@ -11997,3 +11997,35 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
     `ekklesia-v1.0.21-vC50-PLAY.aab`,
     `ekklesia-v1.0.21-vC50-PLAY.apk`.
   - GitHub asset digests match the known vC50 AAB/APK hashes.
+
+## 2026-06-18 — Codex: ZK Arweave monitor policy follows publication gates
+
+- Fixed a false-positive monitor escalation:
+  - observed alert: `zk_receipts_pending` for one public ZK receipt older than 24h,
+  - root cause: ZK Arweave publication is deliberately disabled/gated, but the
+    monitor still treated pending publication as T3,
+  - decision: pending ZK receipts are expected while
+    `ZK_ARWEAVE_PUBLICATION_ENABLED=false`.
+- Code change:
+  - monitor now reads `ZK_ARWEAVE_PUBLICATION_ENABLED` and
+    `ZK_ARWEAVE_SCOPE_ALLOWLIST`,
+  - pending receipt alerts run only when publication is enabled and only for
+    exact allowlisted Arweave scopes,
+  - if publication is enabled without an allowlist, monitor emits
+    `zk_publication_config` instead of silently monitoring every scope.
+- Docker compose:
+  - added ZK Arweave publication env passthrough to `ekklesia-monitor`.
+- Verification:
+  - `cd apps/api && .venv/bin/python -m pytest tests/test_monitor_zk_canary_health.py tests/test_monitor_parliament_freshness.py tests/test_monitor_hidden_bills.py tests/test_health.py -q`: PASS, 14 passed.
+  - `git diff --check`: PASS.
+  - commit: `dc6db38`.
+  - server fast-forwarded to `dc6db38`.
+  - rollback tag created before deploy: `rollback-pre-zk-monitor-policy-*`.
+  - rebuilt/restarted only `ekklesia-monitor`; API/Web/DB were not restarted.
+  - manual `docker exec ekklesia-monitor python /app/monitor.py --once`:
+    PASS, 17 checks, no alerts.
+- Current policy:
+  - scoped ZK voting is live for the approved scope,
+  - ZK Arweave publication remains off,
+  - pending ZK receipts are not data loss and not a T3 issue while publisher is
+    off.

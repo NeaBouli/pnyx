@@ -18,7 +18,7 @@
 
 ### Blocked / Extern (kein Bau)
 - [ ] GH#102 / NEA-312 — echter `WINDOW_24H` Bill nötig
-- [ ] GH#79 — F-Droid !38007 updated to vC50/v1.0.21, pipeline `2609790099` green; wartet auf linsui/F-Droid Merge
+- [ ] GH#79 — F-Droid !38007 updated to vC50/v1.0.21; MR open/mergeable. Manual branch pipeline `2609790099` was green, current MR-event pipeline `2609789968` is failed; inspect/fix if required by F-Droid maintainers, otherwise waits on linsui/F-Droid merge.
 - [ ] GH#80 — Off-site Backup wartet auf Hetzner Storage Box / erste Spende
 - [x] GH#81 — Android Native-Prover Self-Test auf S10 erfolgreich; produktives ZK-Voting bleibt Feature-Flag-guarded bis Backend/Arweave-Integration
 - [x] NEA-286 / GH#94 — Lifecycle WINDOW_24H stuck: resolved/stale; Production 2026-06-09 ohne stuck Rows, Scheduler healthy
@@ -32,7 +32,7 @@
 ## Tracking: GitHub Issues #71-#83 (Linear = read-only Archiv)
 
 ## Aktiv / In Progress
-- [ ] F-Droid !38007 (#79): GitLab MR !38007 offen, mergeable, Diskussionen resolved, vC50/v1.0.21 Metadata pushed (`d711780bf`), Pipeline `2609790099` gruen; wartet auf linsui/F-Droid Merge
+- [ ] F-Droid !38007 (#79): GitLab MR !38007 offen, mergeable, Diskussionen resolved, vC50/v1.0.21 Metadata pushed (`d711780bf`). Manual branch pipeline `2609790099` war gruen; aktuelle MR-event Pipeline `2609789968` ist failed. Naechster Schritt: Pipeline-Fehler inspizieren/fixen, falls F-Droid das vor Merge verlangt; sonst wartet es auf linsui/F-Droid Merge.
 ## Done (Session 25-27.05.2026)
 - [x] vC29 Release Gate (#78/NEA-280): S10 Funktionstest PASS, APK live auf ekklesia.gr, AAB in Play Console hochgeladen (`5eb37cf`)
 - [x] vC29 Final Build Gate: versionCode 29/versionName 1.0.2, APK+AAB gebaut, SHA lokal/live verifiziert, Release abgeschlossen
@@ -60,14 +60,14 @@
 - [x] NEA-303: Admin-Testaccount + DEMO-123 Region permanent im Code gesetzt
 
 ## Guarded Follow-ups
-- [ ] GH#111 Nullifier v2 Canary — only in a real S10/HLR operator window.
+- [x] GH#111 Nullifier v2 Canary — complete after real S10/HLR operator window.
   - Completion boundary audit: `docs/agent-bridge/GH111_GH112_COMPLETION_AUDIT.md`.
   - Operator checklist: `docs/agent-bridge/GH111_NULLIFIER_V2_OPERATOR_CHECKLIST.md`.
   - Read-only status helper: `scripts/gh111-status-nullifier-v2-window.sh`.
   - [x] v2 KDF endpoint logic, same-row migration, Redis lock, and health startup tests.
   - [x] Runbook with backup/preflight/health retry, one-command no-mutation prep script, and `gh111_kdf_env_guard.py` env write/rollback helper.
-  - [ ] Real `/api/v1/identity/verify` with real Greek mobile number while `IDENTITY_NULLIFIER_KDF_VERSION=v2` is active.
-  - [ ] Before/after `gh111_nullifier_v2_canary_check.py compare` report proving exactly one active v2 identity and no malformed/inconsistent v2 state.
+  - [x] Real `/api/v1/identity/verify` with real Greek mobile number while `IDENTITY_NULLIFIER_KDF_VERSION=v2` is active.
+  - [x] Before/after `gh111_nullifier_v2_canary_check.py compare` report proving exactly one active v2 identity and no malformed/inconsistent v2 state.
 - [ ] GH#112 / NEA-249 Follow-up: ZK V2 Produktintegration nur nach `GH112_IMPLEMENTATION_PLAN.md`
   - [x] Gate 1: additive DB storage live (`r101a2b3c4d5`), Backup vorher, keine Tier-1-Änderung
   - [x] Gate 2: `/api/v1/zk/status` live fail-closed; `/api/v1/zk/verify` bleibt 503 solange `ZK_VOTING_ENABLED=false`
@@ -81,6 +81,7 @@
   - [x] Tally/API policy: public results aggregate Tier-1 votes + valid ZK receipts; hidden canary remains excluded by `admin_hidden`
   - [x] Public verifier payload / Arweave publication policy: admin + flag-gated pending receipt publisher, public verifier payload only, no identity bridge fields, no canary Arweave publication
   - [x] ZK Arweave publication hardening: separate exact `ZK_ARWEAVE_SCOPE_ALLOWLIST` plus `ZK_ARWEAVE_MIN_GROUP_SIZE` guard; global rollout does not automatically authorize Arweave publishing
+  - [x] Monitor policy follows ZK Arweave gates: pending ZK receipts do not alert while publisher is off; when publisher is on, only exact Arweave-allowlisted scopes are monitored.
   - [x] Security review for scoped production rollout readiness (`GH112_SECURITY_REVIEW.md`)
   - [x] First public scoped ZK rollout window PASS for `bill:GR-d4c62ed4` with vC43/S10; public result `tier1=0`, `zk=1`, `total=1`; global rollout remains OFF; ZK Arweave publisher remains OFF
   - [x] Completion boundary audit documents first public scoped rollout as complete and keeps staged/global follow-up open

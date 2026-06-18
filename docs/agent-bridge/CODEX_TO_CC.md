@@ -3,9 +3,11 @@
 Mode: support/review when asked. Do not assume old vC35/vC37/vC38/vC41 tasks are current.
 
 Current state:
+- Current HEAD/server: `dc6db38`.
 - Completion boundary audit added: `docs/agent-bridge/GH111_GH112_COMPLETION_AUDIT.md`.
 - GH#112 first public scoped rollout is proven complete for `bill:GR-d4c62ed4`; staged/global rollout and ZK Arweave publication remain gated/off.
 - ZK Arweave publication now has its own exact scope allowlist (`ZK_ARWEAVE_SCOPE_ALLOWLIST`) and minimum group-size guard (`ZK_ARWEAVE_MIN_GROUP_SIZE`, default 5); do not rely on `ZK_GLOBAL_ROLLOUT_ENABLED` for Arweave publishing.
+- Monitor policy now follows the same gates: pending ZK receipts only alert when `ZK_ARWEAVE_PUBLICATION_ENABLED=true` and the scope is in `ZK_ARWEAVE_SCOPE_ALLOWLIST`; when publisher is off, pending receipts are expected and no T3 alert is sent.
 - GH#111 is complete; production KDF is `v2` after a real S10/HLR canary and clean post-verify compare.
 - Mobile vC50 / v1.0.21 is the current prepared Play/direct build. Gio asked for `vC40`, but Play requires monotonic versionCode; vC50 is the safe next code after vC49.
 - AAB ready for Google Play Closed Testing: `/Users/gio/Desktop/ekklesia-v1.0.21-vC50-PLAY.aab`.
@@ -26,9 +28,9 @@ Current state:
 - `ZK_CANARY_ENABLED=false`.
 - ZK Arweave publication policy still needs review before enabling any publisher; code now also requires dedicated Arweave scope allowlist + min anonymity threshold.
 - Forum/monitor fix `4aa6f71` is live: Discourse 429 handling, `/api/v1/admin/forum/sync-new`, monitor recovery remapped to sync-new, DIAVGEIA backlog grace 6h.
-- Monitor once after deploy: PASS, 17 checks, no alerts.
+- Monitor once after latest monitor deploy (`dc6db38`): PASS, 17 checks, no alerts.
 - CI + Security Audit are green for `4aa6f71` and `f51dbf0`.
-- F-Droid !38007 is still open/mergeable and was updated to vC50/v1.0.21 on 2026-06-18. MR commit `d711780bf`, manual pipeline `2609790099` success, waiting on fdroiddata maintainer/community re-test + merge.
+- F-Droid !38007 is still open/mergeable and was updated to vC50/v1.0.21 on 2026-06-18. MR commit `d711780bf`; manual branch pipeline `2609790099` was success, but current MR-event head pipeline `2609789968` is failed. Inspect/fix the GitLab MR pipeline if maintainers require it before merge.
 - GH#111 Nullifier v2 canary completed on 2026-06-17 with real S10/HLR verification. Keep `IDENTITY_NULLIFIER_KDF_VERSION=v2` active.
 - vC50 keeps the controlled Profile -> Verify entrypoint; it was used for the GH#111 real HLR canary.
 - GH#111 activation package: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_200157` (package validation PASS with `ok=true` and no blockers/warnings).
