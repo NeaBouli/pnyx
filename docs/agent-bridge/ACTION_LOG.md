@@ -12172,3 +12172,30 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `https://api.ekklesia.gr/health`: OK.
   - `https://ekklesia.gr`: HTTP 200.
   - Monitor single run: PASS, 17 checks, no alerts.
+
+## 2026-06-21 — Codex: Sandbox CX33 SSH access restored
+
+- Scope: verify second Hetzner server access and restore Codex SSH reachability.
+- Production `135.181.254.229`: not changed.
+- Sandbox:
+  - IPv4: `204.168.165.143`.
+  - IPv6: `2a01:4f9:c014:187d::1`.
+  - Hostname: `Sandbox`.
+  - Plan: CX33, 4 vCPU, 8 GB RAM, 80 GB local disk.
+- Previous helper-agent actions reported:
+  - Rescue mode used, no rebuild, no data deletion, nothing installed.
+  - `/root/.ssh/authorized_keys` repaired.
+  - SSHD drop-in added: `/etc/ssh/sshd_config.d/00-codex-root-pubkey.conf`.
+  - Effective SSH policy: root pubkey login enabled, password auth disabled.
+- Codex verification:
+  - Local direct IPv6 route failed from current network, but SSH via Production jump host worked.
+  - Fail2ban `sshd` jail had banned current Codex IP `169.150.201.14` and previous Codex IP `94.64.120.112`.
+  - Unbanned only those two IPs via the working IPv6/jump path.
+  - Left unrelated banned IP `103.88.76.27` untouched.
+- Result:
+  - Direct IPv4 SSH now works: `ssh root@204.168.165.143`.
+  - Disk `/`: `75G total / 28G used / 45G free / 39%`.
+  - RAM: `7.6Gi total / 2.8Gi available` at check time.
+  - Docker is running.
+  - `/opt` contains `containerd`, `crm`, `hub`, `hub-backups`.
+  - Running containers include `hub_*`, `crm_*`, `hub_nginx`, `hub_dashboard`, `hub_nextcloud`, `hub_wikijs`, `hub_jitsi_*`.
