@@ -12199,3 +12199,38 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Docker is running.
   - `/opt` contains `containerd`, `crm`, `hub`, `hub-backups`.
   - Running containers include `hub_*`, `crm_*`, `hub_nginx`, `hub_dashboard`, `hub_nextcloud`, `hub_wikijs`, `hub_jitsi_*`.
+
+## 2026-06-21 — Codex: Sandbox read-only mirror online
+
+- Scope: create first ekklesia mirror on the Sandbox CX33 and update the first mirror tile on `community.html`.
+- Project separation:
+  - Did not modify `/opt/hub`, Hub Nginx, CRM, Nextcloud, Wiki.js, Jitsi, or any existing Sandbox project.
+  - Created a separate ekklesia mirror stack under `/opt/ekklesia-mirror`.
+  - New container: `ekklesia-mirror-web`.
+  - New public port: `18100`.
+- Public mirror URL:
+  - `http://mirror.204.168.165.143.nip.io:18100`
+- Mirror behavior:
+  - Static public ekklesia pages/assets only.
+  - Internal docs such as `docs/agent-bridge` and memos are not copied to the mirror.
+  - `/api/*` allows only `GET`, `HEAD`, and `OPTIONS` and proxies read-only requests to `https://api.ekklesia.gr/api/*`.
+  - Write methods such as `POST /api/v1/vote` return `405`.
+  - Votes/identity remain on the primary ekklesia service.
+- Repo files added:
+  - `infra/mirror/sandbox/docker-compose.yml`
+  - `infra/mirror/sandbox/nginx/default.conf`
+  - `infra/mirror/sandbox/README.md`
+- Community page:
+  - First mirror row changed from `1.ekklesia.gr` available to `Sandbox Mirror` online/read-only.
+- Production deploy:
+  - Commit deployed: `344e69d`.
+  - Rollback tag on Production: `rollback-pre-sandbox-mirror-community-20260620-234923`.
+  - Rebuilt/restarted only `ekklesia-web`.
+  - No API/DB/Ollama/monitor restart.
+- Verification:
+  - Sandbox mirror health: PASS (`/health` returns `ok`).
+  - Sandbox mirror container: healthy.
+  - Mirror API GET: `GET /api/v1/bills?limit=1` returned data.
+  - Mirror write guard: `POST /api/v1/vote` returned `405`.
+  - Production `https://ekklesia.gr/community.html` contains the Sandbox Mirror link.
+  - Ekklesia monitor single run: PASS, 17 checks, no alerts.
