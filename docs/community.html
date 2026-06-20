@@ -258,6 +258,23 @@
     .fc-live { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; color: var(--gray-400); }
     .fc-live-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; animation: blink 2s infinite; }
     @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .mirror-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; padding: 0.3rem 0.5rem; border-radius: 0.3rem; border: 1px solid #e2e8f0; background: #f8fafc; transition: background 0.25s, border-color 0.25s; gap: 0.5rem; }
+    .mirror-row-online { background: #f0fdf4; border-color: #86efac; }
+    .mirror-row-degraded { background: #fefce8; border-color: #fde047; }
+    .mirror-row-offline { background: #fef2f2; border-color: #fca5a5; }
+    .mirror-state { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.7rem; font-weight: 700; white-space: nowrap; }
+    .mirror-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; background: var(--gray-400); }
+    .mirror-dot-online { background: var(--green); animation: mirror-pulse-green 1.7s ease-in-out infinite; }
+    .mirror-dot-degraded { background: var(--yellow); }
+    .mirror-dot-offline { background: var(--red); animation: mirror-pulse-red 1.2s ease-in-out infinite; }
+    @keyframes mirror-pulse-green {
+      0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.45); }
+      50% { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+    }
+    @keyframes mirror-pulse-red {
+      0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.55); }
+      50% { box-shadow: 0 0 0 7px rgba(239,68,68,0); }
+    }
     .fc-balance { font-size: 1.1rem; font-weight: 900; font-family: monospace; margin: 0.3rem 0; }
     .fc-balance-sub { font-size: 0.68rem; color: var(--gray-400); }
     /* Payment buttons row */
@@ -408,9 +425,9 @@
       <div class="fc-sub" data-el="Ανώνυμα αντίγραφα — κανείς δεν μπορεί να κλείσει την πλατφόρμα" data-en="Anonymous mirrors — nobody can shut down the platform">Ανώνυμα αντίγραφα — κανείς δεν μπορεί να κλείσει την πλατφόρμα</div>
       <!-- Mirror Status Counter -->
       <div style="margin:0.5rem 0;display:flex;flex-direction:column;gap:0.3rem" id="mirrorList">
-        <div style="display:flex;align-items:center;justify-content:space-between;font-size:0.75rem;padding:0.3rem 0.5rem;background:#f0fdf4;border-radius:0.3rem;border:1px solid #86efac">
-          <a href="http://mirror.204.168.165.143.nip.io:18100" target="_blank" rel="noopener noreferrer" style="color:#166534;text-decoration:none;font-weight:700">Sandbox Mirror</a>
-          <span id="m1" style="font-size:0.7rem;color:#166534">✅ <span data-el="Online · read-only" data-en="Online · read-only">Online · read-only</span></span>
+        <div class="mirror-row mirror-row-online" id="mirrorSandboxRow">
+          <a href="http://mirror.204.168.165.143.nip.io:18100" target="_blank" rel="noopener noreferrer" style="color:#166534;text-decoration:none;font-weight:700">1.ekklesia.gr</a>
+          <span class="mirror-state" id="m1" style="color:#166534"><span class="mirror-dot mirror-dot-online" id="mirrorSandboxDot"></span><span id="mirrorSandboxText" data-el="Online · read-only" data-en="Online · read-only">Online · read-only</span></span>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;font-size:0.75rem;padding:0.3rem 0.5rem;background:#faf5ff;border-radius:0.3rem">
           <a href="https://2.ekklesia.gr" target="_blank" style="color:#6b21a8;text-decoration:none;font-weight:600">2.ekklesia.gr</a>
@@ -1052,6 +1069,54 @@ function copyAddr(id) {
   // Bilingual text helper — uses global currentLang from toggle
   function t(el, en) { return (typeof currentLang !== "undefined" && currentLang === "en") ? en : el; }
 
+  function setMirrorStatus(status, latencyMs) {
+    var row = document.getElementById("mirrorSandboxRow");
+    var dot = document.getElementById("mirrorSandboxDot");
+    var text = document.getElementById("mirrorSandboxText");
+    var label = "";
+    var color = "#64748b";
+    if (!row || !dot || !text) return;
+
+    row.className = "mirror-row";
+    dot.className = "mirror-dot";
+
+    if (status === "online") {
+      row.classList.add("mirror-row-online");
+      dot.classList.add("mirror-dot-online");
+      color = "#166534";
+      label = t("Online · read-only", "Online · read-only");
+      if (typeof latencyMs === "number") label += " · " + latencyMs + "ms";
+    } else if (status === "degraded") {
+      row.classList.add("mirror-row-degraded");
+      dot.classList.add("mirror-dot-degraded");
+      color = "#92400e";
+      label = t("Μερική διαταραχή", "Partial disruption");
+    } else {
+      row.classList.add("mirror-row-offline");
+      dot.classList.add("mirror-dot-offline");
+      color = "#991b1b";
+      label = t("Offline", "Offline");
+    }
+
+    text.textContent = label;
+    document.getElementById("m1").style.color = color;
+  }
+
+  function fetchMirrorStatus() {
+    fetch("https://api.ekklesia.gr/api/v1/public/mirrors/status", { cache: "no-store" })
+      .then(function(r) {
+        if (!r.ok) throw new Error("mirror status http " + r.status);
+        return r.json();
+      })
+      .then(function(d) {
+        var mirror = d.mirrors && d.mirrors[0];
+        setMirrorStatus(mirror && mirror.status ? mirror.status : "offline", mirror ? mirror.latency_ms : null);
+      })
+      .catch(function() {
+        setMirrorStatus("offline", null);
+      });
+  }
+
   function fmt(ms) {
     if (ms <= 0) return "00:00:00:00";
     var s=Math.floor(ms/1000),m=Math.floor(s/60);s%=60;
@@ -1491,12 +1556,14 @@ function copyAddr(id) {
 
   // Fetch live data
   fetchPaymentStatus();
+  fetchMirrorStatus();
   fetchArweaveBalance();
   fetchArweavePrice();
   fetchHlrCredits();
   fetchCryptoPrices();
   fetchNewsletterStats();
   setInterval(fetchPaymentStatus, 60000);    // Server/Domain balances every 60s
+  setInterval(fetchMirrorStatus, 30000);     // Mirror health every 30s
   setInterval(fetchArweaveBalance, 60000);   // AR balance every 60s
   setInterval(fetchArweavePrice, 300000);    // AR price every 5min
   setInterval(fetchHlrCredits, 30000);       // HLR credits every 30s

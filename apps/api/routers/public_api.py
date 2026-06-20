@@ -10,14 +10,17 @@ Rate Limits:
 @ai-anchor MOD11_PUBLIC_API
 """
 import hashlib
+import os
 import json
 import secrets
 import logging
+import time
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import Optional
+import httpx
 
 from database import get_db
 from ip_utils import rate_limit_key_for_ip, redis_fixed_window_limit
@@ -34,10 +37,16 @@ router = APIRouter(prefix="/api/v1/public", tags=["MOD-11 Public API"])
 # ── Redis-backed API Key Store ────────────────────────────────────────────────
 
 import redis.asyncio as aioredis
-import os
 
 _redis_client: Optional[aioredis.Redis] = None
 REDIS_KEY_HASH = "public_api:keys"
+MIRROR_SANDBOX_URL = os.getenv(
+    "MIRROR_SANDBOX_URL",
+    "http://mirror.204.168.165.143.nip.io:18100",
+).rstrip("/")
+MIRROR_STATUS_CACHE_SECONDS = 20
+_mirror_status_cache: dict[str, object] | None = None
+_mirror_status_cache_until = 0.0
 
 
 async def get_redis() -> aioredis.Redis:
@@ -55,6 +64,63 @@ def hash_key(key: str) -> str:
 async def verify_api_key(key: str) -> bool:
     r = await get_redis()
     return await r.hexists(REDIS_KEY_HASH, hash_key(key))
+
+
+def _classify_mirror_status(checks: dict[str, bool]) -> str:
+    """Return traffic-light state for a fixed read-only mirror."""
+    if not checks.get("health"):
+        return "offline"
+    if checks.get("status") and checks.get("api"):
+        return "online"
+    return "degraded"
+
+
+async def _mirror_get_ok(client: httpx.AsyncClient, url: str) -> bool:
+    response = await client.get(url)
+    return response.status_code == 200
+
+
+async def _build_mirror_status() -> dict[str, object]:
+    global _mirror_status_cache, _mirror_status_cache_until
+
+    now = time.monotonic()
+    if _mirror_status_cache is not None and now < _mirror_status_cache_until:
+        return _mirror_status_cache
+
+    checked_at = datetime.now(timezone.utc)
+    checks = {"health": False, "status": False, "api": False}
+    latency_ms: int | None = None
+
+    started = time.monotonic()
+    try:
+        async with httpx.AsyncClient(timeout=3.0, follow_redirects=True) as client:
+            checks["health"] = await _mirror_get_ok(client, f"{MIRROR_SANDBOX_URL}/health")
+            if checks["health"]:
+                checks["status"] = await _mirror_get_ok(client, f"{MIRROR_SANDBOX_URL}/mirror-status.json")
+                checks["api"] = await _mirror_get_ok(client, f"{MIRROR_SANDBOX_URL}/api/v1/bills?limit=1")
+            latency_ms = int((time.monotonic() - started) * 1000)
+    except httpx.HTTPError:
+        latency_ms = int((time.monotonic() - started) * 1000)
+
+    status = _classify_mirror_status(checks)
+    payload: dict[str, object] = {
+        "updated_at": checked_at.isoformat(),
+        "cache_seconds": MIRROR_STATUS_CACHE_SECONDS,
+        "mirrors": [
+            {
+                "id": "sandbox-1",
+                "name": "1.ekklesia.gr",
+                "url": MIRROR_SANDBOX_URL,
+                "role": "sandbox-read-only-mirror",
+                "status": status,
+                "latency_ms": latency_ms,
+                "checks": checks,
+            }
+        ],
+    }
+    _mirror_status_cache = payload
+    _mirror_status_cache_until = now + MIRROR_STATUS_CACHE_SECONDS
+    return payload
 
 
 # ── Rate Limiter (Redis fixed window, privacy-preserving IP buckets) ─────────
@@ -375,6 +441,12 @@ async def public_scraper_status(db: AsyncSession = Depends(get_db)):
     }
 
 
+@router.get("/mirrors/status")
+async def public_mirror_status():
+    """Live read-only mirror health for the community page traffic light."""
+    return await _build_mirror_status()
+
+
 @router.post("/share")
 async def record_share():
     """Anonymous share counter — no tracking, just a number."""
@@ -435,6 +507,7 @@ async def api_info():
             "GET /api/v1/public/cplm":              "CPLM — Political Mirror (X/Y Aggregate)",
             "GET /api/v1/public/cplm/history":      "CPLM Historical Snapshots",
             "GET /api/v1/public/representation":    "Parliament Representativeness",
+            "GET /api/v1/public/mirrors/status":    "Read-only Mirror Health",
             "POST /api/v1/public/keys/generate":     "API Key generieren",
             "GET /api/v1/public/keys/status":        "API Key Status",
         },
