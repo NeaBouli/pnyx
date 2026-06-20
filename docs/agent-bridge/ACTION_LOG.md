@@ -12150,3 +12150,25 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - API health GET returned `200 ok`.
   - Ekklesia containers remained up; `ekklesia-ollama` healthy.
   - Monitor single run: PASS, 17 checks, no alerts.
+
+## 2026-06-20 — Codex: Post-cleanup server health check
+
+- Scope: read-only verification after qwen model removal.
+- Disk:
+  - `/`: `75G total / 57G used / 16G free / 79%`.
+  - Inodes: `18%` used.
+  - `/opt/ekklesia`: `1.4G`.
+  - Ollama volume: `1.9G`.
+- Ollama:
+  - Only `llama3.2:3b` remains installed.
+  - `qwen2.5:14b` remains removed.
+- Runtime:
+  - `ekklesia-api`: up.
+  - `ekklesia-web`: up.
+  - `ekklesia-db`: healthy.
+  - `ekklesia-redis`: healthy.
+  - `ekklesia-ollama`: healthy.
+- Live checks:
+  - `https://api.ekklesia.gr/health`: OK.
+  - `https://ekklesia.gr`: HTTP 200.
+  - Monitor single run: PASS, 17 checks, no alerts.
