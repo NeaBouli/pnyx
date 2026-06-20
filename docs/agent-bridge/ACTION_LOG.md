@@ -12070,3 +12070,42 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Scoped ZK remains live for `bill:GR-d4c62ed4`.
   - Automatic/global ZK rollout code is safe for Parliament-only scopes, but `ZK_GLOBAL_ROLLOUT_ENABLED=false` remains unchanged.
   - ZK Arweave publication remains off and requires a separate exact allowlist + minimum group size.
+
+## 2026-06-20 — Codex: Server disk-trash audit and cleanup policy
+
+- Scope: read-only audit of `root@135.181.254.229` for unnecessary data growth and safe continuous cleanup options.
+- No deletion, no service restart, no Docker prune, no volume change.
+- Measurements:
+  - `/`: 75G total, 64G used, 8.4G free, 89%.
+  - Inodes: 17% used.
+  - `/opt/ekklesia`: ~1.4G.
+  - `/var/lib/docker/volumes`: ~14G.
+  - `/var/lib/containerd`: ~30G.
+  - Docker build cache: 0B.
+  - Journald: ~220M.
+  - `/var/lib/snapd/cache`: ~2.0G.
+- Main ekklesia-specific candidate:
+  - `volumes_ekklesia_ollama`: ~11G.
+  - Ollama models: `qwen2.5:14b` ~9.0G and `llama3.2:3b` ~2.0G.
+  - Production env/code references `OLLAMA_MODEL=llama3.2:3b`; qwen was previously rejected for release-quality Greek analysis.
+  - Do not auto-delete qwen; manual operator confirmation only.
+- Smaller artifact candidates:
+  - `/opt/ekklesia/build-artifacts`: ~98M.
+  - `/opt/ekklesia/release-builds`: ~154M.
+  - `/opt/ekklesia/downloads`: ~145M.
+  - `/opt/ekklesia/backups`: ~354M.
+  - `/opt/ekklesia/app/docs/download/backups`: ~353M.
+- Policy added:
+  - `docs/agent-bridge/SERVER_CLEANUP_POLICY.md` classifies Never Auto-Delete, Safe Automatic Cleanup, Manual Confirmation Cleanup, and Not Trash / Capacity Planning.
+- Helper added:
+  - `scripts/server-disk-maintenance.sh`.
+  - Default `audit` mode is read-only.
+  - `safe-clean` requires `EKKLESIA_DISK_CLEANUP_CONFIRM=EKKLESIA-SAFE-CLEANUP`.
+  - Safe-clean only touches dangling images, stopped containers older than 24h, old Docker builder cache, apt cache, and journald cap.
+  - It never prunes Docker volumes, never removes Ollama models, and never removes backups.
+- Verification:
+  - `bash -n scripts/server-disk-maintenance.sh`: PASS.
+  - `git diff --check`: PASS.
+- Recommendation:
+  - Immediate high-impact option, if Gio confirms: remove `qwen2.5:14b` via `docker exec ekklesia-ollama ollama rm qwen2.5:14b`, expected reclaim ~9G.
+  - Continuous option: weekly read-only audit plus optional safe-clean gate; no automatic model/backups/volume deletion.
