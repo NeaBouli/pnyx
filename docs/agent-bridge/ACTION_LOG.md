@@ -12119,6 +12119,7 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Running container env references found only `ekklesia-api` with `OLLAMA_URL=http://ollama:11434` and `OLLAMA_MODEL=llama3.2:3b`.
   - Ollama logs over the checked window showed health/tag/ps calls and no qwen generate calls.
   - Cron/systemd scan found no qwen backfill job.
+  - `/opt` scan found remaining qwen references only in historical release artifacts and old architecture/migration notes, not in running env, cron, or current executable app code.
 - Code findings:
   - Removed the hardcoded `qwen2.5:14b` default from `scripts/backfill_summary_ollama.py`.
   - Script now defaults to `OLLAMA_MODEL` or `llama3.2:3b` and accepts `--model` for explicit operator runs.
