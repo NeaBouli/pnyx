@@ -35,6 +35,8 @@ Main ekklesia-related candidate:
     calls for `qwen2.5:14b`.
   - The manual `scripts/backfill_summary_ollama.py` no longer hardcodes qwen;
     it defaults to `OLLAMA_MODEL` or `llama3.2:3b` and accepts `--model`.
+  - Targeted project scan found no Ollama/qwen references in `/opt/parlay`,
+    `/opt/vlabs`, `/opt/stealthx`, `/opt/inferno`, or `/opt/plausible`.
   - `/opt` scan found remaining qwen references only in historical release
     artifacts (`/opt/ekklesia/release-builds/pnyx-vc35`) and old migration/
     architecture notes (`/opt/hetzner-migration`), not in running env, cron, or
