@@ -2,15 +2,15 @@
 
 ## Current commit
 
-- Local repo: `33aa421 docs(bridge): record other-project Ollama scan`
-- Server checkout: `/opt/ekklesia/app` at `33aa421`
-- Local working tree was clean before this handoff file was added.
+- Local repo before qwen removal: `73bdcd3 docs(bridge): add restart handoff for Ollama disk audit`
+- Server checkout before qwen removal: `/opt/ekklesia/app` at `73bdcd3`
 
 ## Runtime status
 
-- No service restart, no deploy, no Docker prune, no model deletion was performed during the Ollama/qwen audit.
+- No service restart, no deploy, no Docker prune, no Docker volume deletion, and no backup deletion was performed.
 - Ekklesia runtime still uses Ollama with `OLLAMA_MODEL=llama3.2:3b`.
-- `qwen2.5:14b` is still installed in the Ollama model store and uses about 9 GB.
+- `qwen2.5:14b` was removed after explicit Gio confirmation and final prechecks.
+- `llama3.2:3b` remains installed and production-configured.
 
 ## Ollama/qwen audit result
 
@@ -35,19 +35,11 @@
 - Policy: `docs/agent-bridge/SERVER_CLEANUP_POLICY.md`
 - Helper: `scripts/server-disk-maintenance.sh`
 - Safe cleanup never deletes Docker volumes, backups, or Ollama models.
-- Removing `qwen2.5:14b` remains a manual operator-confirmed action only.
+- `qwen2.5:14b` has already been removed; do not re-pull it unless Gio explicitly asks.
 
-## Next step after restart
+## Current cleanup result
 
-If Gio explicitly confirms model deletion, do a final precheck, then remove only qwen:
-
-```bash
-docker exec ekklesia-ollama ollama ps
-docker exec ekklesia-ollama ollama list
-docker exec ekklesia-ollama ollama rm qwen2.5:14b
-df -h /
-docker exec ekklesia-ollama ollama list
-docker exec ekklesia-monitor python3 monitor.py --once
-```
-
-Do not remove `llama3.2:3b`; it is the production-configured model.
+- `/` improved from 91% used / 6.7G free to 79% used / 16G free.
+- Ollama volume improved from 11G to 1.9G.
+- Monitor single run passed 17 checks with no alerts.
+- Do not remove `llama3.2:3b`; it is the production-configured model.

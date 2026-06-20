@@ -12129,3 +12129,24 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Ollama itself is still part of the ekklesia stack.
   - Current runtime/code does not require `qwen2.5:14b`.
   - Do not auto-delete the model; deletion remains a manual operator-confirmed action.
+
+## 2026-06-20 — Codex: Removed unused Ollama qwen model
+
+- Scope: delete only `qwen2.5:14b` after Gio explicitly confirmed removal.
+- No service restart, no deploy, no Docker prune, no Docker volume deletion, no backup deletion.
+- Final precheck:
+  - `ollama ps`: no loaded models.
+  - `ollama list`: `qwen2.5:14b` 9.0 GB and `llama3.2:3b` 2.0 GB present.
+  - Running container env: only `ekklesia-api` uses `OLLAMA_MODEL=llama3.2:3b` and `OLLAMA_URL=http://ollama:11434`.
+  - Cron/systemd: no qwen/Ollama backfill job.
+  - Logs: no qwen generate/chat calls in checked window.
+- Command:
+  - `docker exec ekklesia-ollama ollama rm qwen2.5:14b`
+- Result:
+  - `qwen2.5:14b` deleted.
+  - `llama3.2:3b` retained.
+  - `/`: before `75G total / 66G used / 6.7G free / 91%`; after `75G total / 57G used / 16G free / 79%`.
+  - Ollama volume: before `11G`; after `1.9G`.
+  - API health GET returned `200 ok`.
+  - Ekklesia containers remained up; `ekklesia-ollama` healthy.
+  - Monitor single run: PASS, 17 checks, no alerts.

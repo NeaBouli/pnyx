@@ -20,12 +20,12 @@ Latest read-only measurement:
 - Journald: about 220M.
 - `/var/lib/snapd/cache`: about 2.0G.
 
-Main ekklesia-related candidate:
+Main ekklesia-related cleanup result:
 
-- `volumes_ekklesia_ollama`: about 11G.
-- Ollama models present:
-  - `qwen2.5:14b`: about 9.0G, not the configured production model.
-  - `llama3.2:3b`: about 2.0G, current `OLLAMA_MODEL`.
+- `volumes_ekklesia_ollama`: about 11G before qwen removal, 1.9G after.
+- Ollama models:
+  - `qwen2.5:14b`: removed on 2026-06-20 after explicit Gio confirmation.
+  - `llama3.2:3b`: retained; current `OLLAMA_MODEL`.
 - Cross-project/runtime check:
   - Ollama is not exposed on a host port (`11434/tcp` has no host binding).
   - Only containers on `net_ekklesia` can reach the `ollama` network alias.
@@ -126,15 +126,20 @@ These are large but functional:
    because they change rollback/build comfort.
 5. Do not enable automatic volume pruning.
 
-## Immediate Recommendation
+## Completed qwen Cleanup
 
-The safest high-impact cleanup is removing `qwen2.5:14b`, because it was already
-rejected for release-quality Greek analysis and the configured production model
-is `llama3.2:3b`. The previous manual backfill script qwen default has been
-removed, so current code has no hard qwen runtime dependency.
+`qwen2.5:14b` was removed manually on 2026-06-20 after final prechecks:
 
-Do not remove it automatically. Operator should confirm after checking no current
-job depends on `qwen2.5:14b`.
+- no model loaded in `ollama ps`;
+- running container env referenced only `OLLAMA_MODEL=llama3.2:3b`;
+- no cron/systemd qwen job found;
+- targeted project scan found no other active project using Ollama/qwen;
+- `llama3.2:3b` remained installed after removal;
+- monitor single run passed 17 checks with no alerts.
 
-Expected result if removed: about 9G recovered, likely moving `/` from 89% to
-about 77-78% used without touching databases or backups.
+Result:
+
+- `/` improved from 91% used / 6.7G free to 79% used / 16G free.
+- Ollama volume improved from 11G to 1.9G.
+- No service restart, deploy, Docker prune, volume deletion, or backup deletion
+  was performed.
