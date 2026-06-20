@@ -7,13 +7,14 @@ Usage:
   python3 scripts/backfill_summary_ollama.py --limit 20         # dry-run, 20 bills
   python3 scripts/backfill_summary_ollama.py --source PARLIAMENT # only parliament
   python3 scripts/backfill_summary_ollama.py --apply --limit 50 # apply to 50 bills
+  python3 scripts/backfill_summary_ollama.py --model llama3.2:3b
 
 Rules:
 - --dry-run is DEFAULT (no DB writes)
 - NEVER overwrite existing summary_short_el or non-empty pill_el
 - Rate-limited: 5s between Ollama requests
 - CSV audit log for every change
-- Ollama model: qwen2.5:14b (better Greek) with llama3.2:3b fallback
+- Ollama model: OLLAMA_MODEL env or --model, defaults to llama3.2:3b
 """
 import argparse
 import asyncio
@@ -27,7 +28,7 @@ import urllib.request
 import urllib.error
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
-MODEL = "qwen2.5:14b"
+DEFAULT_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
 RATE_LIMIT_SEC = 5
 MAX_INPUT_CHARS = 2000
 
@@ -54,11 +55,11 @@ def clean_input_text(text: str) -> str:
     return text[:MAX_INPUT_CHARS]
 
 
-def call_ollama(prompt: str, retries: int = 2) -> dict | None:
+def call_ollama(prompt: str, model: str, retries: int = 2) -> dict | None:
     """Call Ollama API, return parsed JSON or None. Retries on failure."""
     for attempt in range(retries):
         data = json.dumps({
-            "model": MODEL,
+            "model": model,
             "prompt": prompt,
             "stream": False,
             "options": {"num_predict": 800, "temperature": 0.2},
@@ -160,6 +161,7 @@ async def main():
     parser.add_argument("--apply", action="store_true", help="Write to DB (default: dry-run)")
     parser.add_argument("--limit", type=int, default=10, help="Limit bills (default 10)")
     parser.add_argument("--source", choices=["PARLIAMENT", "DIAVGEIA", "ALL"], default="ALL")
+    parser.add_argument("--model", default=DEFAULT_MODEL, help=f"Ollama model (default: {DEFAULT_MODEL})")
     args = parser.parse_args()
 
     dry_run = not args.apply
@@ -193,7 +195,12 @@ async def main():
     """
 
     rows = await conn.fetch(query)
-    print(f"{'DRY-RUN' if dry_run else 'APPLY'} mode — {args.source} — {len(rows)} bills")
+    model = args.model.strip()
+    if not model:
+        print("ERROR: --model must not be empty")
+        sys.exit(1)
+
+    print(f"{'DRY-RUN' if dry_run else 'APPLY'} mode — {args.source} — {len(rows)} bills — model {model}")
     print("=" * 80)
 
     # CSV audit
@@ -231,8 +238,8 @@ async def main():
 
         prompt = PROMPT_TEMPLATE.format(title=title[:200], text=cleaned)
 
-        result = call_ollama(prompt)
-        model_used = MODEL
+        result = call_ollama(prompt, model)
+        model_used = model
 
         if not result:
             writer.writerow([bill_id, row["source"], row["status"], "", "", "ERROR", model_used])

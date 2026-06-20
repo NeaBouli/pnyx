@@ -26,6 +26,15 @@ Main ekklesia-related candidate:
 - Ollama models present:
   - `qwen2.5:14b`: about 9.0G, not the configured production model.
   - `llama3.2:3b`: about 2.0G, current `OLLAMA_MODEL`.
+- Cross-project/runtime check:
+  - Ollama is not exposed on a host port (`11434/tcp` has no host binding).
+  - Only containers on `net_ekklesia` can reach the `ollama` network alias.
+  - Running container env inspection found only `ekklesia-api` with
+    `OLLAMA_URL=http://ollama:11434` and `OLLAMA_MODEL=llama3.2:3b`.
+  - Ollama logs over the checked window showed health/tag/ps calls, no generate
+    calls for `qwen2.5:14b`.
+  - The manual `scripts/backfill_summary_ollama.py` no longer hardcodes qwen;
+    it defaults to `OLLAMA_MODEL` or `llama3.2:3b` and accepts `--model`.
 
 Smaller project artifact candidates:
 
@@ -115,11 +124,11 @@ These are large but functional:
 
 The safest high-impact cleanup is removing `qwen2.5:14b`, because it was already
 rejected for release-quality Greek analysis and the configured production model
-is `llama3.2:3b`.
+is `llama3.2:3b`. The previous manual backfill script qwen default has been
+removed, so current code has no hard qwen runtime dependency.
 
 Do not remove it automatically. Operator should confirm after checking no current
 job depends on `qwen2.5:14b`.
 
 Expected result if removed: about 9G recovered, likely moving `/` from 89% to
 about 77-78% used without touching databases or backups.
-

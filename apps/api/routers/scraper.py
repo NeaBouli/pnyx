@@ -14,7 +14,7 @@ Scraping Fallback-Kette:
 
 @ai-anchor MOD10_SCRAPER
 @update-hint Ollama URL in .env: OLLAMA_URL=http://ollama:11434
-@update-hint Ollama Modell: OLLAMA_MODEL=llama3.2 oder mistral oder qwen2.5
+@update-hint Ollama Modell: OLLAMA_MODEL=llama3.2:3b
 """
 import os
 import re

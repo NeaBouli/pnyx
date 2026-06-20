@@ -12109,3 +12109,21 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Recommendation:
   - Immediate high-impact option, if Gio confirms: remove `qwen2.5:14b` via `docker exec ekklesia-ollama ollama rm qwen2.5:14b`, expected reclaim ~9G.
   - Continuous option: weekly read-only audit plus optional safe-clean gate; no automatic model/backups/volume deletion.
+
+## 2026-06-20 — Codex: Ollama/qwen dependency audit
+
+- Scope: verify whether `qwen2.5:14b` is still required before considering model deletion.
+- No deletion, no service restart, no Docker prune, no model removal.
+- Server runtime findings:
+  - `ekklesia-ollama` has no host port binding for `11434`; only `net_ekklesia` containers can reach the `ollama` alias.
+  - Running container env references found only `ekklesia-api` with `OLLAMA_URL=http://ollama:11434` and `OLLAMA_MODEL=llama3.2:3b`.
+  - Ollama logs over the checked window showed health/tag/ps calls and no qwen generate calls.
+  - Cron/systemd scan found no qwen backfill job.
+- Code findings:
+  - Removed the hardcoded `qwen2.5:14b` default from `scripts/backfill_summary_ollama.py`.
+  - Script now defaults to `OLLAMA_MODEL` or `llama3.2:3b` and accepts `--model` for explicit operator runs.
+  - Removed the stale qwen recommendation from the scraper update-hint.
+- Conclusion:
+  - Ollama itself is still part of the ekklesia stack.
+  - Current runtime/code does not require `qwen2.5:14b`.
+  - Do not auto-delete the model; deletion remains a manual operator-confirmed action.
