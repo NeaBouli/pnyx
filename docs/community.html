@@ -427,7 +427,7 @@
       <div style="margin:0.5rem 0;display:flex;flex-direction:column;gap:0.3rem" id="mirrorList">
         <div class="mirror-row mirror-row-online" id="mirrorSandboxRow">
           <a href="http://mirror.204.168.165.143.nip.io:18100" target="_blank" rel="noopener noreferrer" style="color:#166534;text-decoration:none;font-weight:700">1.ekklesia.gr</a>
-          <span class="mirror-state" id="m1" style="color:#166534"><span class="mirror-dot mirror-dot-online" id="mirrorSandboxDot"></span><span id="mirrorSandboxText" data-el="Online · read-only" data-en="Online · read-only">Online · read-only</span></span>
+          <span class="mirror-state" id="m1" style="color:#166534"><span class="mirror-dot mirror-dot-online" id="mirrorSandboxDot"></span><span id="mirrorSandboxText" data-el="read-only" data-en="read-only">read-only</span></span>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;font-size:0.75rem;padding:0.3rem 0.5rem;background:#faf5ff;border-radius:0.3rem">
           <a href="https://2.ekklesia.gr" target="_blank" style="color:#6b21a8;text-decoration:none;font-weight:600">2.ekklesia.gr</a>
@@ -1084,7 +1084,7 @@ function copyAddr(id) {
       row.classList.add("mirror-row-online");
       dot.classList.add("mirror-dot-online");
       color = "#166534";
-      label = t("Online · read-only", "Online · read-only");
+      label = t("read-only", "read-only");
       if (typeof latencyMs === "number") label += " · " + latencyMs + "ms";
     } else if (status === "degraded") {
       row.classList.add("mirror-row-degraded");
