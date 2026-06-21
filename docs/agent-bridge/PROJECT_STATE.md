@@ -118,6 +118,7 @@
 
 ## Completed previous cycle (Session 21-23.05.2026)
 
+- Mirror #1: `1.ekklesia.gr` live-tracked on `community.html` via public read-only API endpoint (`/api/v1/public/mirrors/status`), green/yellow/red status dot, code `e19900d`, live.
 - Full security audit (NEA-251..258): 2 HIGH + 5 MEDIUM all resolved
 - Watcher 3-tier self-healing (NEA-241): live + T2 active
 - ZK V2 ADR (NEA-249): Android mobile prover self-test passes on S10. GH#112 hidden S10 canary passed for `bill:ZK-CANARY-001` with vC38; production backend logic exists behind flags, security review passed for scoped rollout, production ZK remains OFF pending an explicit one-bill rollout window.

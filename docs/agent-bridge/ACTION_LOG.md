@@ -12234,3 +12234,37 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Mirror write guard: `POST /api/v1/vote` returned `405`.
   - Production `https://ekklesia.gr/community.html` contains the Sandbox Mirror link.
   - Ekklesia monitor single run: PASS, 17 checks, no alerts.
+
+## 2026-06-21 — Codex: First mirror live status tracking
+
+- Scope: make the first Community mirror tile show a live traffic-light status.
+- Public label:
+  - The tile now shows `1.ekklesia.gr` instead of the internal name `Sandbox Mirror`.
+  - Current link target remains the Sandbox mirror URL: `http://mirror.204.168.165.143.nip.io:18100`.
+- Implementation:
+  - Added public read-only API endpoint: `GET /api/v1/public/mirrors/status`.
+  - The endpoint server-side checks the fixed mirror URL, avoiding browser mixed-content problems from HTTPS `community.html` to HTTP mirror port `18100`.
+  - Health classification:
+    - `online`: `/health`, `/mirror-status.json`, and read-only API proxy are all OK.
+    - `degraded`: container health is OK, but status/API proxy check has a disruption.
+    - `offline`: `/health` fails or times out.
+  - Community tile polls the endpoint every 30 seconds.
+  - UI state:
+    - Green pulsing dot for online.
+    - Yellow dot for disruption/degraded.
+    - Red pulsing dot for total outage/offline.
+- Safety:
+  - No DB schema changes.
+  - No vote/ZK/identity logic touched.
+  - No Sandbox `/opt/hub` or other projects touched.
+  - Production deploy rebuilt/restarted only `api` and `web`.
+- Verification:
+  - Local API tests: `apps/api/.venv/bin/python -m pytest -q apps/api/tests/test_public_mirror_status.py` -> 4 passed.
+  - `python -m py_compile apps/api/routers/public_api.py`: OK.
+  - Mirror direct checks: `/health`, `/mirror-status.json`, and `GET /api/v1/bills?limit=1`: OK.
+  - Live endpoint: `https://api.ekklesia.gr/api/v1/public/mirrors/status` reports `1.ekklesia.gr` as `online`.
+  - Live Community page contains `1.ekklesia.gr`, `mirrorSandboxDot`, and `mirrors/status`.
+  - Ekklesia monitor single run: PASS, 17 checks, no alerts.
+- Deploy:
+  - Code commit: `e19900d`.
+  - Production rollback tag: `rollback-pre-live-mirror-status-20260620-235954`.
