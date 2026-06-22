@@ -12370,3 +12370,47 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Monitor startup log shows `startup_grace: 90s`.
   - Manual production `monitor --once`: 18 checks, `All checks passed — no alerts`.
   - First daemon run after 90s grace: 18 checks, `All checks passed — no alerts`.
+
+## 2026-06-22 — Codex: Parliament source-lag recovery skipped forced scrape
+
+- Scope: investigate Gio Telegram monitor alerts:
+  - `parliament_source_check_failed`: no dated bills / connection refused.
+  - `parliament_source_lag`: `Quelle 22.06.2026, DB 19.06.2026 (72h)`.
+- Finding:
+  - 15:04 UTC connection-refused alerts matched planned API/Web restart during deploy; later startup-grace fix covers this class.
+  - 19:44+ UTC source-lag alerts were real.
+  - Live `/api/v1/scraper/parliament/latest?limit=5` returned source date `2026-06-22`.
+  - Production DB max Parliament activity was still `2026-06-19`.
+  - Affected examples:
+    - `GR-030bc127`: source `date=2026-06-22`, DB `parliament_vote_date=2026-06-18`.
+    - `GR-09e240aa`: source `date=2026-06-22`, DB `parliament_vote_date=2026-06-18`.
+    - `GR-3927520d`: source `submitted_date=2026-06-22`, missing from DB.
+  - T1 Recovery called `/api/v1/admin/scraper/catch-up` and got HTTP 200, but Redis `scraper:parliament:last_run=2026-06-22T12:00:44Z`; the endpoint skipped Parliament because the normal 12h interval had not elapsed.
+- Production mitigation:
+  - Ran `scheduled_scrape()` manually in the API container with stdin correctly attached.
+  - Result:
+    - `GR-030bc127` updated to `parliament_vote_date=2026-06-22`.
+    - `GR-09e240aa` updated to `parliament_vote_date=2026-06-22`.
+    - `GR-3927520d` inserted as `ANNOUNCED`, `submitted_date=2026-06-22`.
+  - Production DB max Parliament activity is now `2026-06-22`.
+  - Production `monitor --once`: 18 checks, `All checks passed — no alerts`.
+- Local fix:
+  - `apps/monitor/monitor.py`
+    - `parliament_source_lag` T1 Recovery now calls `/api/v1/admin/scraper/catch-up?force=parliament`.
+  - `apps/api/routers/admin.py`
+    - Added `force` query parameter for catch-up jobs.
+    - Forced jobs bypass the normal `last_run` interval check.
+    - Normal stale/catch-up paths remain interval-based.
+  - `apps/api/tests/test_admin_scraper_catchup.py`
+    - Covers forced, recent, and overdue catch-up decisions.
+  - `apps/api/tests/test_monitor_parliament_freshness.py`
+    - Covers source-lag mapping to forced Parliament catch-up.
+- Verification:
+  - `apps/api/.venv/bin/python -m pytest -q apps/api/tests/test_admin_scraper_catchup.py apps/api/tests/test_monitor_parliament_freshness.py`: 5 passed.
+  - `apps/api/.venv/bin/python -m pytest -q apps/api/tests/test_admin_scraper_catchup.py apps/api/tests/test_monitor_parliament_freshness.py apps/api/tests/test_monitor_hidden_bills.py apps/api/tests/test_monitor_zk_canary_health.py apps/api/tests/test_monitor_secret_redaction.py apps/api/tests/services/test_bill_lifecycle_transitions.py`: 28 passed.
+  - `apps/api/.venv/bin/python -m py_compile apps/api/routers/admin.py apps/monitor/monitor.py`: PASS.
+  - `git diff --check`: PASS.
+- Tracking:
+  - GitHub: `#115` BUG: Parliament source-lag recovery can skip forced scrape.
+  - Linear: `NEA-391` BUG: Parliament Source-Lag Recovery ueberspringt erzwungenen Scrape.
+- Not deployed yet in this entry.

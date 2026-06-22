@@ -63,6 +63,7 @@ def test_parliament_source_freshness_alerts_when_source_is_newer_than_db(monkeyp
     assert len(alerts) == 1
     assert alerts[0].type == "parliament_source_lag"
     assert alerts[0].recovery_allowed is True
+    assert monitor.T1_MAPPING["parliament_source_lag"].endswith("?force=parliament")
     assert "Quelle 10.06.2026" in alerts[0].message
     assert "DB 08.06.2026" in alerts[0].message
 
@@ -82,4 +83,3 @@ def test_parliament_source_freshness_passes_when_db_matches_source(monkeypatch):
     )
 
     assert alerts == []
-

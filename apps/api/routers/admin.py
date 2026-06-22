@@ -34,6 +34,33 @@ def verify_admin(key: bool = Depends(verify_admin_key)):
     return key
 
 
+def _catchup_decision(
+    last_run: str | None,
+    interval_sec: int,
+    *,
+    force: bool = False,
+    now: datetime | None = None,
+) -> tuple[bool, str]:
+    """Return whether a catch-up job should run and the reason."""
+    if force:
+        return True, "forced"
+    if not last_run:
+        return False, "never_run"
+
+    try:
+        lr = datetime.fromisoformat(last_run)
+        current = now or datetime.now(timezone.utc)
+        age = (current - lr).total_seconds()
+    except Exception:
+        return False, "invalid_last_run"
+
+    if age < 600:
+        return False, "recent"
+    if age >= interval_sec:
+        return True, "overdue"
+    return False, "not_due"
+
+
 class BillUpdateRequest(BaseModel):
     title_el:              Optional[str] = None
     title_en:              Optional[str] = None
@@ -225,6 +252,10 @@ async def admin_sync_new_forum(
 
 @router.post("/scraper/catch-up")
 async def admin_scraper_catchup(
+    force: str | None = Query(
+        None,
+        pattern="^(parliament|diavgeia_municipal|bill_lifecycle|forum_sync|cplm_refresh|all)$",
+    ),
     _key=Depends(verify_admin),
 ):
     """Trigger catch-up for overdue scraper jobs (background, idempotent)."""
@@ -245,32 +276,26 @@ async def admin_scraper_catchup(
 
     for name, (func_name, interval_sec) in catchup_jobs.items():
         last_run = await r.get(f"scraper:{name}:last_run")
-        if last_run:
-            try:
-                lr = datetime.fromisoformat(last_run)
-                age = (datetime.now(timezone.utc) - lr).total_seconds()
-                if age < 600:  # run less than 10 min ago → skip
-                    skipped.append(name)
-                    continue
-                if age >= interval_sec:
-                    # Import and trigger in background
-                    import main as app_main
-                    func = getattr(app_main, func_name, None)
-                    if func:
-                        asyncio.create_task(func())
-                        triggered.append(name)
-                    else:
-                        skipped.append(name)
-                else:
-                    skipped.append(name)
-            except Exception:
-                skipped.append(name)
+        should_trigger, reason = _catchup_decision(
+            last_run,
+            interval_sec,
+            force=force in (name, "all"),
+        )
+        if should_trigger:
+            # Import and trigger in background
+            import main as app_main
+            func = getattr(app_main, func_name, None)
+            if func:
+                asyncio.create_task(func())
+                triggered.append(name)
+            else:
+                skipped.append(f"{name}:missing_func")
         else:
-            skipped.append(name)
+            skipped.append(f"{name}:{reason}")
 
     await r.aclose()
     logger.info("[CATCHUP] Triggered: %s, Skipped: %s", triggered, skipped)
-    return {"accepted": True, "jobs_triggered": triggered, "skipped": skipped}
+    return {"accepted": True, "jobs_triggered": triggered, "skipped": skipped, "force": force}
 
 
 @router.post("/diavgeia/resolve-orgs")

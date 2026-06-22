@@ -100,7 +100,7 @@ class Alert:
 
 T1_MAPPING = {
     "scraper_parliament_stale": "/api/v1/admin/scraper/catch-up",
-    "parliament_source_lag":     "/api/v1/admin/scraper/catch-up",
+    "parliament_source_lag":     "/api/v1/admin/scraper/catch-up?force=parliament",
     "scraper_diavgeia_stale":   "/api/v1/admin/scraper/catch-up",
     "forum_sync_errors":        "/api/v1/admin/forum/sync-new",
     "forum_content_empty":      "/api/v1/admin/forum/sync-new",
