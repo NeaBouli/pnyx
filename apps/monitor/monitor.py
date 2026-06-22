@@ -1,7 +1,7 @@
 """
 ekklesia.gr Business Logic Monitor — 3-Tier Auto-Recovery
 Runs every 30 minutes (daemon) or once daily at 06:00 UTC (cron).
-17 rules. Recovery: T1 API → T2 Docker Restart → T3 Telegram Escalation.
+18 rules. Recovery: T1 API → T2 Docker Restart → T3 Telegram Escalation.
 """
 import os
 import time
@@ -66,6 +66,7 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TG_CHAT = os.getenv("TELEGRAM_ADMIN_CHAT_ID", "")
 CHECK_INTERVAL = int(os.getenv("MONITOR_INTERVAL_SECONDS", "1800"))
+STARTUP_GRACE_SECONDS = max(0, int(os.getenv("MONITOR_STARTUP_GRACE_SECONDS", "90")))
 API_URL = os.getenv("API_URL", "http://api:8000")
 ADMIN_KEY = os.getenv("ADMIN_KEY", "")
 AUTO_RECOVERY_T2 = os.getenv("AUTO_RECOVERY_T2", "false").lower() == "true"
@@ -790,6 +791,14 @@ def run_checks():
     return all_alerts
 
 
+def apply_startup_grace() -> None:
+    """Delay the first daemon check so planned deploy restarts do not trigger recovery."""
+    if STARTUP_GRACE_SECONDS <= 0:
+        return
+    logger.info("Startup grace active (%ds); delaying first monitor check", STARTUP_GRACE_SECONDS)
+    time.sleep(STARTUP_GRACE_SECONDS)
+
+
 if __name__ == "__main__":
     import sys
     if "--once" in sys.argv:
@@ -797,7 +806,13 @@ if __name__ == "__main__":
         alerts = run_checks()
         sys.exit(1 if alerts else 0)
     else:
-        logger.info("ekklesia.gr Monitor started (interval: %ds, T2: %s)", CHECK_INTERVAL, AUTO_RECOVERY_T2)
+        logger.info(
+            "ekklesia.gr Monitor started (interval: %ds, startup_grace: %ds, T2: %s)",
+            CHECK_INTERVAL,
+            STARTUP_GRACE_SECONDS,
+            AUTO_RECOVERY_T2,
+        )
+        apply_startup_grace()
         while True:
             try:
                 run_checks()

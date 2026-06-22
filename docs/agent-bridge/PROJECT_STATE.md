@@ -136,6 +136,7 @@
 - #79 / F-Droid MR !38007 — external, waits for linsui/F-Droid merge.
 - #80 / Off-site backup — waits for Hetzner Storage Box / funding.
 - #112 / ZK V2 production rollout — hidden one-scope S10 canary passed; production backend logic prepared; global activation remains gated on security review and explicit scoped rollout.
+- #114 / NEA-390 Monitor startup grace — local fix built/tested; deploy pending.
 
 ## Completed 2026-06-22
 

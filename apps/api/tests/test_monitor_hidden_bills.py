@@ -102,3 +102,23 @@ def test_lifecycle_fast_forward_alerts_on_skipped_public_window():
     assert "l.changed_at > NOW() - INTERVAL '24 hours'" in sql
     assert "voted_at - window_at < INTERVAL '24 hours'" in sql
     assert "COALESCE(b.source, 'PARLIAMENT') = 'PARLIAMENT'" in sql
+
+
+def test_monitor_startup_grace_delays_first_daemon_check(monkeypatch):
+    sleeps = []
+    monkeypatch.setattr(monitor, "STARTUP_GRACE_SECONDS", 3)
+    monkeypatch.setattr(monitor.time, "sleep", sleeps.append)
+
+    monitor.apply_startup_grace()
+
+    assert sleeps == [3]
+
+
+def test_monitor_startup_grace_can_be_disabled(monkeypatch):
+    sleeps = []
+    monkeypatch.setattr(monitor, "STARTUP_GRACE_SECONDS", 0)
+    monkeypatch.setattr(monitor.time, "sleep", sleeps.append)
+
+    monitor.apply_startup_grace()
+
+    assert sleeps == []

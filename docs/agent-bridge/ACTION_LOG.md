@@ -12337,3 +12337,27 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Production DB fast-forward probe for last 24h: `0` rows.
   - Fresh API logs show normal startup and successful `/health`/bill requests.
   - Monitor had one transient startup race alert while API/web were restarting; manual post-deploy `--once` run passed cleanly.
+
+## 2026-06-22 — Codex: Monitor startup grace for planned deploys
+
+- Scope: prevent planned Compose restarts from triggering monitor T2/T3 recovery before API/Web settle.
+- Trigger:
+  - During the `8bd6871` production deploy, the monitor daemon started while API/Web were still restarting and produced one transient alert/recovery attempt.
+  - Manual post-deploy `monitor --once` passed immediately afterward, so this was a deploy-start race, not an app regression.
+- Local fix:
+  - `apps/monitor/monitor.py`
+    - Added `MONITOR_STARTUP_GRACE_SECONDS`, default `90`.
+    - Daemon mode sleeps once before the first scheduled `run_checks()`.
+    - `--once` mode is unchanged and remains immediate for deploy verification.
+    - Header updated from 17 to 18 rules.
+  - `apps/api/tests/test_monitor_hidden_bills.py`
+    - Added tests for startup grace enabled and disabled.
+- Verification:
+  - `apps/api/.venv/bin/python -m pytest -q apps/api/tests/test_monitor_hidden_bills.py apps/api/tests/test_monitor_parliament_freshness.py apps/api/tests/test_monitor_zk_canary_health.py apps/api/tests/test_monitor_secret_redaction.py`: 18 passed.
+  - `apps/api/.venv/bin/python -m pytest -q apps/api/tests/services/test_bill_lifecycle_transitions.py apps/api/tests/test_monitor_hidden_bills.py apps/api/tests/test_monitor_parliament_freshness.py apps/api/tests/test_monitor_zk_canary_health.py apps/api/tests/test_monitor_secret_redaction.py`: 25 passed.
+  - `apps/api/.venv/bin/python -m py_compile apps/monitor/monitor.py`: PASS.
+  - `git diff --check`: PASS.
+- Tracking:
+  - GitHub: `#114` BUG: Monitor daemon can run before planned deploy restart settles.
+  - Linear: `NEA-390` BUG: Monitor daemon startet vor geplantem Deploy-Restart-Ende.
+- Not deployed yet in this entry.
