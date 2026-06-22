@@ -3,11 +3,13 @@
 ## Aktive Roadmap — Stand 2026-06-12
 
 ### Aktiv baubar (Reihenfolge)
-0. [ ] Monitor Startup Grace — GH#114 / NEA-390
+0. [x] Monitor Startup Grace — GH#114 / NEA-390
    - Befund: Monitor-Daemon startete waehrend geplantem API/Web Compose-Restart und loeste transient T2/T3 aus.
    - Local fix gebaut: `MONITOR_STARTUP_GRACE_SECONDS=90` default nur fuer Daemonstart; `--once` bleibt sofort.
    - Verifiziert lokal: Monitor suite 18 passed; Lifecycle+Monitor 25 passed; `py_compile` und `git diff --check` gruen.
-   - Offen: Commit/push/deploy monitor, live `--once`, Bridge/GitHub/Linear Abschluss.
+   - Deployed: commit `da025c4` live auf Production; Rollback-Tag `rollback-pre-monitor-startup-grace-20260622-1511`.
+   - Live verifiziert: API `/health` PASS; Monitor log zeigt `startup_grace: 90s`; Production `--once` PASS; erster Daemon-Lauf nach 90s PASS.
+   - Tracking abgeschlossen: GitHub `#114` als completed geschlossen; Linear `NEA-390` auf Done.
 1. [x] Lifecycle Catch-up No-Skip — GH#113 / NEA-389
    - Befund: Bills `GR-d71e9b04`, `GR-09e240aa`, `GR-030bc127`, `GR-4a8dba43` liefen am 2026-06-18 in Millisekunden durch `ANNOUNCED -> ACTIVE -> WINDOW_24H -> PARLIAMENT_VOTED`; `citizen_votes=0`.
    - Local fix gebaut: pro Scheduler-Lauf max. ein Lifecycle-Schritt; `WINDOW_24H -> PARLIAMENT_VOTED` erst nach 24 realen Stunden in `WINDOW_24H`.
@@ -45,7 +47,7 @@
 ## Tracking: GitHub Issues + Bridge primary; Linear periodically synchronized
 
 - 2026-06-22 Linear cleanup done: `NEA-286` and `NEA-133` set to Done; `NEA-249`, `NEA-301`, `NEA-59`, `NEA-65` received sync comments.
-- Active GitHub truth remains: `#79` F-Droid, `#80` Off-site Backup, `#112` ZK V2 staged/global follow-up, `#114` monitor startup grace.
+- Active GitHub truth remains: `#79` F-Droid, `#80` Off-site Backup, `#112` ZK V2 staged/global follow-up.
 
 ## Aktiv / In Progress
 - [ ] F-Droid !38007 (#79): GitLab MR !38007 offen, mergeable, Diskussionen resolved, vC50/v1.0.21 Metadata pushed (`d711780bf`). Manual branch pipeline `2609790099` war gruen; aktuelle MR-event Pipeline `2609789968` ist failed. Naechster Schritt: Pipeline-Fehler inspizieren/fixen, falls F-Droid das vor Merge verlangt; sonst wartet es auf linsui/F-Droid Merge.

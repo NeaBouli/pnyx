@@ -12358,6 +12358,15 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `apps/api/.venv/bin/python -m py_compile apps/monitor/monitor.py`: PASS.
   - `git diff --check`: PASS.
 - Tracking:
-  - GitHub: `#114` BUG: Monitor daemon can run before planned deploy restart settles.
-  - Linear: `NEA-390` BUG: Monitor daemon startet vor geplantem Deploy-Restart-Ende.
-- Not deployed yet in this entry.
+  - GitHub: `#114` BUG: Monitor daemon can run before planned deploy restart settles — closed as completed after live verification.
+  - Linear: `NEA-390` BUG: Monitor daemon startet vor geplantem Deploy-Restart-Ende — Done after live verification.
+- Deploy:
+  - Commit `da025c4` pushed to `origin/main`.
+  - Production rollback tag set before deploy: `rollback-pre-monitor-startup-grace-20260622-1511`.
+  - Production `/opt/ekklesia/app` fast-forwarded to `da025c4`.
+  - Rebuilt/restarted only `monitor`; API/Web were not restarted.
+- Live verification:
+  - `https://api.ekklesia.gr/health`: PASS (`status=ok`).
+  - Monitor startup log shows `startup_grace: 90s`.
+  - Manual production `monitor --once`: 18 checks, `All checks passed — no alerts`.
+  - First daemon run after 90s grace: 18 checks, `All checks passed — no alerts`.
