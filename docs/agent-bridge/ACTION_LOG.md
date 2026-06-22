@@ -12456,6 +12456,15 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `apps/api/.venv/bin/python -m py_compile apps/monitor/monitor.py`: PASS.
   - `git diff --check`: PASS.
 - Tracking:
-  - GitHub: `#116` FEATURE: Verified autonomous recovery for Parliament source lag.
-  - Linear: `NEA-392` FEATURE: Verified Autonomous Recovery fuer Parliament Source-Lag.
-- Not deployed yet in this entry.
+  - GitHub: `#116` FEATURE: Verified autonomous recovery for Parliament source lag — closed as completed after live verification.
+  - Linear: `NEA-392` FEATURE: Verified Autonomous Recovery fuer Parliament Source-Lag — Done after live verification.
+- Deploy:
+  - Commit `6c98126` pushed to `origin/main`.
+  - Production rollback tag set before deploy: `rollback-pre-verified-recovery-20260623`.
+  - Production `/opt/ekklesia/app` fast-forwarded to `6c98126`.
+  - Rebuilt/restarted only `monitor`; API/Web were not restarted.
+- Live verification:
+  - `https://api.ekklesia.gr/health`: PASS (`status=ok`).
+  - Production `monitor --once`: 18 checks, `All checks passed — no alerts`.
+  - Production read-only proof function: `(True, 'source=2026-06-22 db=2026-06-22 lag=0h')`.
+  - First monitor daemon run after 90s startup grace: 18 checks, `All checks passed — no alerts`.

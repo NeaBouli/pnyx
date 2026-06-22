@@ -3,13 +3,15 @@
 ## Aktive Roadmap — Stand 2026-06-12
 
 ### Aktiv baubar (Reihenfolge)
-0. [ ] Verified Autonomous Recovery Phase 1 — GH#116 / NEA-392
+0. [x] Verified Autonomous Recovery Phase 1 — GH#116 / NEA-392
    - Ziel: Monitor darf eine Auto-Reparatur erst als erledigt melden, wenn der Zielzustand bewiesen ist.
    - Scope bewusst eng: nur `parliament_source_lag`; Repair via `catch-up?force=parliament`; Proof via Quelle-latest vs DB-latest.
    - Safety: keine Vote-Aenderung, kein Status-Rewind, keine Arweave-Aenderung, keine Identity/nullifier/KDF-Aenderung, kein Governance-Reopen.
    - Local fix gebaut: `T1V` verified recovery, `T1L` lock/no-success, separate Telegram `Auto-Recovery verified`, `--once` failt nur bei unresolved alerts.
    - Verifiziert lokal: verified recovery + monitor/lifecycle suite 31 passed; `py_compile` und `git diff --check` gruen.
-   - Offen: Commit/push/deploy monitor, live `--once`, ggf. controlled verification smoke, Bridge/GitHub/Linear Abschluss.
+   - Deployed: commit `6c98126` live auf Production; Rollback-Tag `rollback-pre-verified-recovery-20260623`.
+   - Live verifiziert: API `/health` PASS; Monitor `--once` PASS; read-only Proof `(True, source=2026-06-22 db=2026-06-22 lag=0h)`; erster Daemon-Lauf nach Grace PASS.
+   - Tracking abgeschlossen: GitHub `#116` als completed geschlossen; Linear `NEA-392` auf Done.
 1. [x] Parliament Source-Lag Forced Catch-up — GH#115 / NEA-391
    - Befund: Quelle hatte `2026-06-22`, DB hing bei `2026-06-19`; T1 `/scraper/catch-up` meldete HTTP 200, uebersprang Parliament aber wegen frischem Redis `last_run`.
    - Production mitigiert: manueller `scheduled_scrape()` aktualisierte `GR-030bc127` und `GR-09e240aa` auf 22.06. und fuegte `GR-3927520d` ein; Monitor `--once` danach PASS.
@@ -62,7 +64,7 @@
 ## Tracking: GitHub Issues + Bridge primary; Linear periodically synchronized
 
 - 2026-06-22 Linear cleanup done: `NEA-286` and `NEA-133` set to Done; `NEA-249`, `NEA-301`, `NEA-59`, `NEA-65` received sync comments.
-- Active GitHub truth remains: `#79` F-Droid, `#80` Off-site Backup, `#112` ZK V2 staged/global follow-up, `#116` verified autonomous recovery.
+- Active GitHub truth remains: `#79` F-Droid, `#80` Off-site Backup, `#112` ZK V2 staged/global follow-up.
 
 ## Aktiv / In Progress
 - [ ] F-Droid !38007 (#79): GitLab MR !38007 offen, mergeable, Diskussionen resolved, vC50/v1.0.21 Metadata pushed (`d711780bf`). Manual branch pipeline `2609790099` war gruen; aktuelle MR-event Pipeline `2609789968` ist failed. Naechster Schritt: Pipeline-Fehler inspizieren/fixen, falls F-Droid das vor Merge verlangt; sonst wartet es auf linsui/F-Droid Merge.
