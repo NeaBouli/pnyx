@@ -241,6 +241,22 @@
     </div>
   </div>
 
+  <h2 class="fade-in" data-el="Ασφάλεια Auto-Recovery" data-en="Auto-Recovery Safety">Ασφάλεια Auto-Recovery</h2>
+  <div class="info-box fade-in">
+    <p data-el="Ο Watcher/Monitor μπορεί να εκτελέσει αυτόματη αποκατάσταση μόνο για ρητά allowlisted runbooks. Στη Φάση 1 επιτρέπεται μόνο το <strong>parliament_source_lag</strong>: αναγκαστικό scrape της πηγής Βουλής και μετά read-only proof ότι η νεότερη ημερομηνία πηγής και DB συμφωνούν." data-en="The watcher/monitor may run autonomous recovery only for explicitly allowlisted runbooks. In Phase 1 only <strong>parliament_source_lag</strong> is allowed: force the Parliament scrape, then require read-only proof that latest source date and DB date match.">
+      Ο Watcher/Monitor μπορεί να εκτελέσει αυτόματη αποκατάσταση μόνο για ρητά allowlisted runbooks. Στη Φάση 1 επιτρέπεται μόνο το <strong>parliament_source_lag</strong>: αναγκαστικό scrape της πηγής Βουλής και μετά read-only proof ότι η νεότερη ημερομηνία πηγής και DB συμφωνούν.
+    </p>
+  </div>
+  <div class="table-wrap fade-in">
+    <table>
+      <tr><th data-el="Κανόνας" data-en="Rule">Κανόνας</th><th data-el="Εγγύηση" data-en="Guarantee">Εγγύηση</th></tr>
+      <tr><td>T1V</td><td data-el="Μόνο μετά από proof. HTTP 200 από repair endpoint δεν αρκεί." data-en="Only after proof. HTTP 200 from the repair endpoint is not enough.">Μόνο μετά από proof. HTTP 200 από repair endpoint δεν αρκεί.</td></tr>
+      <tr><td>T1 / T1L</td><td data-el="Αν το proof αποτύχει ή υπάρχει lock, το alert μένει ανοιχτό." data-en="If proof fails or a lock exists, the alert remains open.">Αν το proof αποτύχει ή υπάρχει lock, το alert μένει ανοιχτό.</td></tr>
+      <tr><td data-el="Απαγορεύεται" data-en="Forbidden">Απαγορεύεται</td><td data-el="Καμία αλλαγή ψήφων, κανένα status rewind, καμία αλλαγή Arweave, καμία αλλαγή identity/nullifier/KDF, κανένα reopen governance." data-en="No vote writes, no status rewind, no Arweave change, no identity/nullifier/KDF change, no governance reopen.">Καμία αλλαγή ψήφων, κανένα status rewind, καμία αλλαγή Arweave, καμία αλλαγή identity/nullifier/KDF, κανένα reopen governance.</td></tr>
+      <tr><td data-el="Κόστος tokens" data-en="Token cost">Κόστος tokens</td><td data-el="0 AI tokens στη Φάση 1. Ο μηχανισμός χρησιμοποιεί local monitor, API call και read-only DB/source proof." data-en="0 AI tokens in Phase 1. The mechanism uses the local monitor, an API call, and read-only DB/source proof.">0 AI tokens στη Φάση 1. Ο μηχανισμός χρησιμοποιεί local monitor, API call και read-only DB/source proof.</td></tr>
+    </table>
+  </div>
+
   <h2 class="fade-in" data-el="Ροή Επαλήθευσης" data-en="Verification Flow">Ροή Επαλήθευσης</h2>
   <div class="flow fade-in">
     <div class="fnode">+306xxx</div><div class="farr">→</div>

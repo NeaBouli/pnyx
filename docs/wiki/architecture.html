@@ -236,6 +236,24 @@
     </table>
   </div>
 
+  <h2 class="fade-in" data-el="Verified Autonomous Recovery" data-en="Verified Autonomous Recovery">Verified Autonomous Recovery</h2>
+  <div class="flow fade-in">
+    <div class="fnode fnode-y">Alert</div><div class="farr">→</div>
+    <div class="fnode">Allowlist</div><div class="farr">→</div>
+    <div class="fnode fnode-b">Repair</div><div class="farr">→</div>
+    <div class="fnode">Read-only Proof</div><div class="farr">→</div>
+    <div class="fnode fnode-g">T1V</div>
+  </div>
+  <div class="table-wrap fade-in">
+    <table>
+      <tr><th data-el="Στάδιο" data-en="Stage">Στάδιο</th><th data-el="Συμπεριφορά" data-en="Behavior">Συμπεριφορά</th></tr>
+      <tr><td>parliament_source_lag</td><td data-el="Μόνο αυτό το runbook επιτρέπεται στη Φάση 1. Εκτελεί forced Parliament catch-up." data-en="Only this runbook is allowed in Phase 1. It runs forced Parliament catch-up.">Μόνο αυτό το runbook επιτρέπεται στη Φάση 1. Εκτελεί forced Parliament catch-up.</td></tr>
+      <tr><td>Proof</td><td data-el="Μετά το repair, ο monitor περιμένει και συγκρίνει νεότερη ημερομηνία πηγής με νεότερη ημερομηνία DB." data-en="After repair, the monitor waits and compares latest source date with latest DB date.">Μετά το repair, ο monitor περιμένει και συγκρίνει νεότερη ημερομηνία πηγής με νεότερη ημερομηνία DB.</td></tr>
+      <tr><td>Telegram</td><td data-el="Μόνο verified repair στέλνει ξεχωριστό Auto-Recovery verified. Failed proof μένει ως alert." data-en="Only verified repair sends a separate Auto-Recovery verified message. Failed proof remains an alert.">Μόνο verified repair στέλνει ξεχωριστό Auto-Recovery verified. Failed proof μένει ως alert.</td></tr>
+      <tr><td data-el="Κόστος" data-en="Cost">Κόστος</td><td data-el="0 AI tokens/run στη Φάση 1. Αν μελλοντικό runbook χρησιμοποιήσει paid AI tokens, πρέπει να εμφανίζεται στη Community live calculation πριν ενεργοποιηθεί." data-en="0 AI tokens/run in Phase 1. If a future runbook uses paid AI tokens, it must appear in the Community live calculation before activation.">0 AI tokens/run στη Φάση 1. Αν μελλοντικό runbook χρησιμοποιήσει paid AI tokens, πρέπει να εμφανίζεται στη Community live calculation πριν ενεργοποιηθεί.</td></tr>
+    </table>
+  </div>
+
   <h2 class="fade-in" data-el="Bill Lifecycle" data-en="Bill Lifecycle">Bill Lifecycle</h2>
   <div class="flow fade-in">
     <div class="fnode">ANNOUNCED</div><div class="farr">→</div>

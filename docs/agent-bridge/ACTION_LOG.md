@@ -1,5 +1,24 @@
 # Action Log
 
+## 2026-06-23 — Codex: GH#117 / NEA-393 recovery transparency docs in progress
+
+- Scope:
+  - Publish verified autonomous recovery boundaries publicly on ekklesia.gr Community + Wiki.
+  - Track costs transparently: Phase 1 `parliament_source_lag` recovery uses 0 AI tokens and 0 EUR token cost.
+- Changed locally:
+  - `docs/community.html`: added Auto-Recovery Watcher cost/status card and live summary tile.
+  - `docs/wiki/security.html` + `wiki/Security.md`: documented allowlist, proof-before-success, forbidden writes, and token-cost boundary.
+  - `docs/wiki/architecture.html` + `wiki/Architecture.md`: documented Alert -> allowlist -> repair -> read-only proof -> T1V flow.
+- Local verification:
+  - `git diff --check` PASS.
+  - Local Chrome render probe against static docs: Community/Security/Architecture desktop+mobile all contain Auto-Recovery/T1V/0-token/source-lag text.
+  - Local Community CORS errors are expected from 127.0.0.1 calling production API; production-origin check still pending.
+- Tracking:
+  - GitHub `#117` open.
+  - Linear `NEA-393` In Progress.
+- Pending:
+  - Commit, deploy web static docs, verify live URLs, then close GH#117 / NEA-393 and mark this entry complete.
+
 ## 2026-06-17 — Codex: GH#111 Nullifier v2 production activation complete
 
 - Scope:

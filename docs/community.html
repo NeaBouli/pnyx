@@ -680,6 +680,28 @@
       <a id="claudeDonateBtn" href="https://www.paypal.com/paypalme/VendettaLabs" target="_blank" rel="noopener" style="display:none;text-align:center;padding:0.5rem;background:#ef4444;color:white;border-radius:0.4rem;font-weight:700;font-size:0.78rem;text-decoration:none;margin-top:0.4rem;animation:pulse-badge 1.5s ease-in-out infinite" data-el="💙 Υποστήριξε τον AI →" data-en="💙 Support AI →">💙 Υποστήριξε τον AI →</a>
     </div>
 
+    <!-- Verified Autonomous Recovery — transparent cost boundary -->
+    <div class="fc" id="autoRecoveryCard" style="border-color:#86efac">
+      <div class="fc-badge" style="background:#22c55e" data-el="ΕΠΑΛΗΘΕΥΜΕΝΟ" data-en="VERIFIED">ΕΠΑΛΗΘΕΥΜΕΝΟ</div>
+      <div class="fc-icon">🛡️</div>
+      <div class="fc-title" data-el="Auto-Recovery Watcher" data-en="Auto-Recovery Watcher">Auto-Recovery Watcher</div>
+      <div class="fc-sub" data-el="Monitor T1V — μόνο αποδεδειγμένη αποκατάσταση" data-en="Monitor T1V — proof before success">Monitor T1V — proof before success</div>
+      <div class="fc-info">
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="AI tokens/run:" data-en="AI tokens/run:">AI tokens/run:</span><strong id="autoRecoveryTokens">0</strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος tokens:" data-en="Token cost:">Κόστος tokens:</span><strong id="autoRecoveryCost" style="color:#166534">0€</strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Runbooks:" data-en="Runbooks:">Runbooks:</span><strong id="autoRecoveryRunbooks">1</strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Αναμονή proof:" data-en="Proof wait:">Αναμονή proof:</span><strong id="autoRecoveryWait">30s</strong></div>
+      </div>
+      <div class="fc-info" style="margin-top:0.4rem;font-size:0.68rem">
+        <div class="fc-row"><span>parliament_source_lag</span><strong style="color:#166534">allowlist</strong></div>
+        <div class="fc-row"><span>T1V</span><strong data-el="μόνο με proof" data-en="proof only">μόνο με proof</strong></div>
+        <div class="fc-row"><span>T1L/T1</span><strong data-el="μένει alert" data-en="stays alert">μένει alert</strong></div>
+        <div class="fc-row"><span data-el="Ψήφοι/ταυτότητα" data-en="Votes/identity">Ψήφοι/ταυτότητα</span><strong style="color:#dc2626" data-el="καμία εγγραφή" data-en="no writes">καμία εγγραφή</strong></div>
+      </div>
+      <div class="fc-status" id="autoRecoveryStatus" style="background:#f0fdf4;color:#166534;margin-top:0.3rem">✅ <span data-el="0 AI tokens — μόνο local monitor + API proof" data-en="0 AI tokens — local monitor + API proof only">0 AI tokens — μόνο local monitor + API proof</span></div>
+      <div style="font-size:0.58rem;color:#64748b;margin-top:0.4rem" id="autoRecoveryFormula">tokens_per_run × runs = 0 × live = 0</div>
+    </div>
+
     <!-- DEVELOPER DONATIONS — PayPal (freier Betrag, nicht getrackt) -->
     <div class="fc" style="border-color:#0070ba">
       <div class="fc-badge" style="background:#0070ba" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
@@ -727,6 +749,11 @@
         <div style="font-size:0.6rem;color:#64748b;margin-bottom:0.2rem" data-el="Δωρεές" data-en="Donations">Δωρεές</div>
         <div style="font-size:1.2rem;font-weight:800;color:#2563eb" id="tranDonations">—</div>
         <div style="font-size:0.55rem;color:#94a3b8" data-el="συνολικές" data-en="total">συνολικές</div>
+      </div>
+      <div style="background:white;border-radius:0.5rem;padding:0.75rem;border:1px solid #e2e8f0">
+        <div style="font-size:0.6rem;color:#64748b;margin-bottom:0.2rem" data-el="Recovery Tokens" data-en="Recovery Tokens">Recovery Tokens</div>
+        <div style="font-size:1.2rem;font-weight:800;color:#166534" id="tranRecoveryTokens">0</div>
+        <div style="font-size:0.55rem;color:#94a3b8" data-el="AI tokens / run" data-en="AI tokens / run">AI tokens / run</div>
       </div>
     </div>
   </div>
@@ -1041,6 +1068,10 @@ function copyAddr(id) {
   var DOMAIN_EXPIRY = new Date("2028-03-29T00:00:00");
   var DOMAIN_YELLOW_DAYS = 365;
   var DOMAIN_RED_DAYS = 183;
+  var AUTO_RECOVERY_TOKENS_PER_RUN = 0;
+  var AUTO_RECOVERY_TOKEN_COST_EUR = 0;
+  var AUTO_RECOVERY_ALLOWED_RUNBOOKS = 1;
+  var AUTO_RECOVERY_PROOF_WAIT_SECONDS = 30;
 
   // Live data from API (updated by fetchPaymentStatus)
   var liveServerData = { received: 20, cost_total: 10, balance: 10 };
@@ -1068,6 +1099,26 @@ function copyAddr(id) {
   // ═══════════════════════════════════════════════════════════
   // Bilingual text helper — uses global currentLang from toggle
   function t(el, en) { return (typeof currentLang !== "undefined" && currentLang === "en") ? en : el; }
+
+  function updateAutoRecoveryTransparency() {
+    var tokenEl = document.getElementById("autoRecoveryTokens");
+    var costEl = document.getElementById("autoRecoveryCost");
+    var runbookEl = document.getElementById("autoRecoveryRunbooks");
+    var waitEl = document.getElementById("autoRecoveryWait");
+    var formulaEl = document.getElementById("autoRecoveryFormula");
+    var summaryEl = document.getElementById("tranRecoveryTokens");
+    if (tokenEl) tokenEl.textContent = AUTO_RECOVERY_TOKENS_PER_RUN.toLocaleString("el-GR");
+    if (costEl) costEl.textContent = AUTO_RECOVERY_TOKEN_COST_EUR.toLocaleString("el-GR", { minimumFractionDigits: 0, maximumFractionDigits: 4 }) + "\u20AC";
+    if (runbookEl) runbookEl.textContent = String(AUTO_RECOVERY_ALLOWED_RUNBOOKS);
+    if (waitEl) waitEl.textContent = AUTO_RECOVERY_PROOF_WAIT_SECONDS + "s";
+    if (summaryEl) summaryEl.textContent = AUTO_RECOVERY_TOKENS_PER_RUN.toLocaleString("el-GR");
+    if (formulaEl) {
+      formulaEl.textContent = t(
+        "Υπολογισμός: " + AUTO_RECOVERY_TOKENS_PER_RUN + " AI tokens/run × allowlisted T1V runbook = " + AUTO_RECOVERY_TOKEN_COST_EUR + "\u20AC token κόστος",
+        "Calculation: " + AUTO_RECOVERY_TOKENS_PER_RUN + " AI tokens/run × allowlisted T1V runbook = " + AUTO_RECOVERY_TOKEN_COST_EUR + "\u20AC token cost"
+      );
+    }
+  }
 
   function setMirrorStatus(status, latencyMs) {
     var row = document.getElementById("mirrorSandboxRow");
@@ -1548,6 +1599,7 @@ function copyAddr(id) {
   function tick() {
     updateServerTile();
     updateDomainTile();
+    updateAutoRecoveryTransparency();
   }
 
   // Init

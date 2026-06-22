@@ -12,6 +12,19 @@
 2. **Το ιδιωτικό κλειδί μένει στη συσκευή** — Ο server βλέπει μόνο το δημόσιο κλειδί
 3. **Μονόδρομο Hashing** — SHA256(data + SERVER_SALT), μη αντιστρέψιμο
 
+## Auto-Recovery Safety
+
+The watcher/monitor may run autonomous recovery only for explicitly allowlisted runbooks.
+Phase 1 allows only `parliament_source_lag`: force the Parliament scrape, then prove with
+read-only source/DB checks that the latest Parliament source date and latest DB date match.
+
+| Rule | Guarantee |
+|---|---|
+| `T1V` | Success is reported only after proof. HTTP 200 from the repair endpoint is not enough. |
+| `T1` / `T1L` | Failed proof or an active lock keeps the alert open. |
+| Forbidden writes | No vote changes, no status rewind, no Arweave mutation, no identity/nullifier/KDF change, no governance reopen. |
+| Token cost | `0` AI tokens in Phase 1. It uses local monitor logic, API call, and read-only proof. |
+
 ## Ροή Επαλήθευσης (Beta) / Verification Flow
 ```
 Ο χρήστης εισάγει αριθμό κινητού

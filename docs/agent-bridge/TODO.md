@@ -3,6 +3,14 @@
 ## Aktive Roadmap — Stand 2026-06-12
 
 ### Aktiv baubar (Reihenfolge)
+0. [ ] Public Recovery Transparency Docs — GH#117 / NEA-393
+   - Ziel: Verified autonomous recovery muss auf Website/Wiki transparent dokumentiert sein.
+   - Scope: Community-Kostenkachel + Wiki Security/Architecture + Markdown-Spiegel.
+   - Kosten: Phase 1 `parliament_source_lag` nutzt 0 AI tokens/run und 0 EUR token cost; future paid-AI runbooks muessen vor Aktivierung in der Community live calculation erscheinen.
+   - Safety-Doku: T1V nur nach read-only Proof; T1/T1L bleiben Alerts; keine Vote-Aenderung, kein Status-Rewind, keine Arweave-Aenderung, keine Identity/nullifier/KDF-Aenderung, kein Governance-Reopen.
+   - Local verification: `git diff --check` PASS; local Chrome static render fuer Community/Security/Architecture auf desktop+mobile PASS (nur erwartete local CORS fuer Community live APIs).
+   - Pending: commit, web deploy, live URL checks, Bridge finalisieren, GH#117/NEA-393 schliessen.
+
 0. [x] Verified Autonomous Recovery Phase 1 — GH#116 / NEA-392
    - Ziel: Monitor darf eine Auto-Reparatur erst als erledigt melden, wenn der Zielzustand bewiesen ist.
    - Scope bewusst eng: nur `parliament_source_lag`; Repair via `catch-up?force=parliament`; Proof via Quelle-latest vs DB-latest.

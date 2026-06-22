@@ -39,6 +39,19 @@ pnyx/
 | Container | Docker Compose | Reproducible |
 | CI/CD | GitHub Actions | Free for public repos |
 
+## Verified Autonomous Recovery
+
+```
+Alert -> allowlist check -> surgical repair -> read-only proof -> T1V
+```
+
+| Stage | Behavior |
+|---|---|
+| `parliament_source_lag` | Only allowlisted Phase 1 recovery. Runs forced Parliament catch-up. |
+| Proof | After repair, monitor waits and compares latest source date with latest DB date. |
+| Telegram | Only verified repair sends `Auto-Recovery verified`; failed proof remains an alert. |
+| Cost | `0` AI tokens/run in Phase 1. Future paid-AI runbooks must appear in the Community live calculation before activation. |
+
 ## Bill Lifecycle State Machine
 ```
 ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END
