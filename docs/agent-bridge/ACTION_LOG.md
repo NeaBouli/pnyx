@@ -12411,6 +12411,20 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `apps/api/.venv/bin/python -m py_compile apps/api/routers/admin.py apps/monitor/monitor.py`: PASS.
   - `git diff --check`: PASS.
 - Tracking:
-  - GitHub: `#115` BUG: Parliament source-lag recovery can skip forced scrape.
-  - Linear: `NEA-391` BUG: Parliament Source-Lag Recovery ueberspringt erzwungenen Scrape.
-- Not deployed yet in this entry.
+  - GitHub: `#115` BUG: Parliament source-lag recovery can skip forced scrape — closed as completed after live verification.
+  - Linear: `NEA-391` BUG: Parliament Source-Lag Recovery ueberspringt erzwungenen Scrape — Done after live verification.
+- Deploy:
+  - Commit `15148d8` pushed to `origin/main`.
+  - Production rollback tag set before deploy: `rollback-pre-source-lag-force-20260622-2057`.
+  - Production `/opt/ekklesia/app` fast-forwarded to `15148d8`.
+  - Rebuilt/restarted `api` and `monitor`; `web` not restarted.
+- Live verification:
+  - `https://api.ekklesia.gr/health`: PASS (`status=ok`).
+  - Internal forced endpoint smoke:
+    - `POST /api/v1/admin/scraper/catch-up?force=parliament`: HTTP 200.
+    - Response included `jobs_triggered:["parliament"]`.
+    - Other jobs remained interval-gated.
+  - Production `monitor --once`: 18 checks, `All checks passed — no alerts`.
+  - First monitor daemon run after 90s startup grace: 18 checks, `All checks passed — no alerts`.
+  - Production DB max Parliament activity remains `2026-06-22`.
+  - Stage 1 Parliament API still returns 403 and falls back to Jina; fallback is working.

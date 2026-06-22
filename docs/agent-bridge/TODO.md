@@ -3,12 +3,14 @@
 ## Aktive Roadmap — Stand 2026-06-12
 
 ### Aktiv baubar (Reihenfolge)
-0. [ ] Parliament Source-Lag Forced Catch-up — GH#115 / NEA-391
+0. [x] Parliament Source-Lag Forced Catch-up — GH#115 / NEA-391
    - Befund: Quelle hatte `2026-06-22`, DB hing bei `2026-06-19`; T1 `/scraper/catch-up` meldete HTTP 200, uebersprang Parliament aber wegen frischem Redis `last_run`.
    - Production mitigiert: manueller `scheduled_scrape()` aktualisierte `GR-030bc127` und `GR-09e240aa` auf 22.06. und fuegte `GR-3927520d` ein; Monitor `--once` danach PASS.
    - Local fix gebaut: `parliament_source_lag` ruft `catch-up?force=parliament`; Admin-Catchup kann gezielt forced Jobs ausfuehren.
    - Verifiziert lokal: admin+freshness 5 passed; admin+monitor+lifecycle 28 passed; `py_compile` und `git diff --check` gruen.
-   - Offen: Commit/push/deploy API+monitor, live forced endpoint smoke, live monitor run, Bridge/GitHub/Linear Abschluss.
+   - Deployed: commit `15148d8` live auf Production; Rollback-Tag `rollback-pre-source-lag-force-20260622-2057`.
+   - Live verifiziert: API `/health` PASS; `catch-up?force=parliament` HTTP 200 mit `jobs_triggered:["parliament"]`; Monitor `--once` PASS; erster Daemon-Lauf nach Grace PASS.
+   - Tracking abgeschlossen: GitHub `#115` als completed geschlossen; Linear `NEA-391` auf Done.
 1. [x] Monitor Startup Grace — GH#114 / NEA-390
    - Befund: Monitor-Daemon startete waehrend geplantem API/Web Compose-Restart und loeste transient T2/T3 aus.
    - Local fix gebaut: `MONITOR_STARTUP_GRACE_SECONDS=90` default nur fuer Daemonstart; `--once` bleibt sofort.
@@ -53,7 +55,7 @@
 ## Tracking: GitHub Issues + Bridge primary; Linear periodically synchronized
 
 - 2026-06-22 Linear cleanup done: `NEA-286` and `NEA-133` set to Done; `NEA-249`, `NEA-301`, `NEA-59`, `NEA-65` received sync comments.
-- Active GitHub truth remains: `#79` F-Droid, `#80` Off-site Backup, `#112` ZK V2 staged/global follow-up, `#115` source-lag forced catch-up.
+- Active GitHub truth remains: `#79` F-Droid, `#80` Off-site Backup, `#112` ZK V2 staged/global follow-up.
 
 ## Aktiv / In Progress
 - [ ] F-Droid !38007 (#79): GitLab MR !38007 offen, mergeable, Diskussionen resolved, vC50/v1.0.21 Metadata pushed (`d711780bf`). Manual branch pipeline `2609790099` war gruen; aktuelle MR-event Pipeline `2609789968` ist failed. Naechster Schritt: Pipeline-Fehler inspizieren/fixen, falls F-Droid das vor Merge verlangt; sonst wartet es auf linsui/F-Droid Merge.
