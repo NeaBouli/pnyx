@@ -39,14 +39,15 @@
 - **vC50 GitHub Release:** https://github.com/NeaBouli/pnyx/releases/tag/v1.0.21
 - **vC50 Landing APK:** live on ekklesia.gr as v1.0.21/vC50; SHA256 `989c5f92ff37b4a8498e6410f362dedbfd91e362042ec5e6685479385c14685d`.
 - **R8/mapping.txt:** still off for vC50 (`minify=false`); mapping warning in Play is informational until a future Production/R8 build.
-- **Linear:** Token OK (`~/.claude/.env` → `LINEAR_API_KEY`), NEA-280 + NEA-292 geschlossen; Codex verified and commented NEA-292 + NEA-301
+- **Linear:** Token OK (`~/.claude/.env` -> `LINEAR_API_KEY`). 2026-06-22 cleanup: `NEA-286` and `NEA-133` moved to Done; sync comments added to `NEA-249`, `NEA-301`, `NEA-59`, `NEA-65`. GitHub + Bridge remain primary truth for active work.
 - **NEA-301b PARLIAMENT:** DONE (17/31 mit summary_short_el, 9 brauchen Fetcher, 3 DEMO + 2 flagged excluded, DIAVGEIA 0/636 eigene Phase)
 - **Ollama:** RAM zurueck auf 2.4 GB (Produktion), kein Job aktiv
 - **T3 Arweave Alerts:** FIXED `a90d508` — Monitor verlangt `party_votes_parliament IS NOT NULL`; false-positive fuer GR-0490a766 behoben
 - **Dependabot:** Local js-yaml remediation applied for mobile/representative locks (`js-yaml@4.2.0`, local audits 0); wait for GitHub dependency graph refresh. Do not add `@semaphore-protocol/proof@4.14.2` to production images without review; trial install showed 6 moderate + 8 high transitive findings.
 - **Bill Summary/Source Fix:** API source policy live; mobile DIAVGEIA source + summary regression fixed in `5ff3998`/`b7fb4dd`, installed on S10 and verified. Root cause update: Analysis fehlt, weil `ai_summary_reviewed=false` und kein automatischer reviewed-analysis Job existiert. Mobile zeigt jetzt statt leerer Analyse einen klaren `Επίσημο κείμενο` Fallback, wenn `summary_long_el` vorhanden ist.
 - **DIAVGEIA S10 Retest:** PASS — source card visible/clickable (`Πηγή — Διαύγεια` opens Android intent chooser), org/pill no longer shown as `Σύνοψη`, quote markers removed. Evidence: `/tmp/ekklesia_diav_fix_final_20260604_000652`.
-- **Open GitHub:** #79 F-Droid (external), #80 Off-site Backup (storage/funding), #112 staged/global follow-up after first public scoped rollout.
+- **Open GitHub:** #79 F-Droid (external), #80 Off-site Backup (storage/funding), #112 staged/global follow-up after first public scoped rollout, #113 lifecycle catch-up skipped citizen voting window (local fix/tested, not deployed yet).
+- **Open Linear:** `NEA-389` tracks GitHub #113 lifecycle catch-up / skipped citizen voting window.
 - **Forum Missing Alerts:** 2026-06-17 Telegram `forum_missing` counts were transient sync/backfill progress. Current DB check: `public_missing_forum=0`; only `ZK-CANARY-001` lacks a forum topic and is `admin_hidden=true` by design.
 - **ZK V2:** GH#81 closed; Android prover works on S10. GH#112 hidden S10 canary passed end-to-end for `bill:ZK-CANARY-001`. First public scoped rollout passed for `bill:GR-d4c62ed4`: S10 proof accepted, public receipt recorded, API results show `tier1=0`, `zk=1`, `total=1`. Production ZK remains scoped by exact allowlist; `ZK_GLOBAL_ROLLOUT_ENABLED=false`; `ZK_ARWEAVE_PUBLICATION_ENABLED=false`. Automatic/global rollout is code-ready but server-enforced Parliament-only; ZK Arweave publishing is separately guarded by `ZK_ARWEAVE_SCOPE_ALLOWLIST` and `ZK_ARWEAVE_MIN_GROUP_SIZE`.
 - **Forum Monitor:** `4aa6f71` live; Discourse 429 handling + `/admin/forum/sync-new`; monitor once PASS, 17 checks, no alerts.

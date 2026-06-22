@@ -29,23 +29,43 @@ LIFECYCLE_RULES = [
 ]
 
 
+MIN_WINDOW_24H_AGE = timedelta(hours=24)
+
+
+def _as_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
 def due_lifecycle_transitions(
     current_status: BillStatus,
     vote_date: datetime,
     now: datetime,
+    status_changed_at: datetime | None = None,
 ) -> list[BillStatus]:
-    """Return every lifecycle status now due, preserving transition order."""
-    due: list[BillStatus] = []
-    status = current_status
+    """Return the next lifecycle status now due.
+
+    A late scrape can discover a parliament vote date after its trigger time.
+    In that case, never collapse multiple public voting states into one run:
+    citizens must see at least one real ACTIVE/WINDOW_24H interval before
+    PARLIAMENT_VOTED closes the normal vote UI.
+    """
     for from_status, offset, to_status in LIFECYCLE_RULES:
-        if status != from_status:
+        if current_status != from_status:
             continue
         trigger_time = vote_date + offset
         if now < trigger_time:
             break
-        due.append(to_status)
-        status = to_status
-    return due
+        if (
+            current_status == BillStatus.WINDOW_24H
+            and to_status == BillStatus.PARLIAMENT_VOTED
+            and status_changed_at is not None
+            and now < _as_utc(status_changed_at) + MIN_WINDOW_24H_AGE
+        ):
+            return []
+        return [to_status]
+    return []
 
 
 async def _transition_bill(
@@ -104,7 +124,12 @@ async def run_bill_lifecycle(db: AsyncSession) -> dict:
             vote_date = vote_date.replace(tzinfo=timezone.utc)
 
         try:
-            due_transitions = due_lifecycle_transitions(bill.status, vote_date, now)
+            due_transitions = due_lifecycle_transitions(
+                bill.status,
+                vote_date,
+                now,
+                status_changed_at=bill.status_changed_at,
+            )
             if not due_transitions:
                 continue
 

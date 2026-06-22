@@ -1,6 +1,7 @@
 import os
 import sys
 import types
+from datetime import datetime, timedelta
 
 
 sys.modules.setdefault("psycopg2", types.SimpleNamespace(connect=lambda *args, **kwargs: None))
@@ -82,3 +83,22 @@ def test_lifecycle_stuck_query_gives_recent_scraper_updates_short_grace():
     assert "parliament_vote_date < %s" in sql
     assert "COALESCE(updated_at, TIMESTAMP '1970-01-01') < %s" in sql
     assert len(cursor.params[0]) == 2
+
+
+def test_lifecycle_fast_forward_alerts_on_skipped_public_window():
+    voted_at = datetime(2026, 6, 18, 11, 38)
+    window_at = voted_at - timedelta(minutes=0)
+    active_at = voted_at - timedelta(minutes=1)
+    cursor = FakeCursor(rows=[("GR-09e240aa", active_at, window_at, voted_at)])
+
+    alerts = monitor.check_lifecycle_fast_forward(FakeConn(cursor))
+
+    assert len(alerts) == 1
+    assert alerts[0].type == "lifecycle_fast_forward"
+    assert alerts[0].recovery_allowed is False
+    assert "GR-09e240aa" in alerts[0].message
+    sql = cursor.statements[0]
+    assert "bill_status_logs" in sql
+    assert "l.changed_at > NOW() - INTERVAL '24 hours'" in sql
+    assert "voted_at - window_at < INTERVAL '24 hours'" in sql
+    assert "COALESCE(b.source, 'PARLIAMENT') = 'PARLIAMENT'" in sql

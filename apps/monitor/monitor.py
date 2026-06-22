@@ -402,6 +402,62 @@ def check_lifecycle_stuck(conn, r=None) -> list[Alert]:
     return alerts
 
 
+def check_lifecycle_fast_forward(conn) -> list[Alert]:
+    """Detect bills whose public voting window was skipped too quickly.
+
+    This is intentionally alert-only. Rewinding vote lifecycle state is a
+    governance decision, not an automatic recovery action.
+    """
+    alerts = []
+    with conn.cursor() as cur:
+        cur.execute("""
+            WITH lifecycle AS (
+                SELECT
+                    l.bill_id,
+                    MIN(l.changed_at) FILTER (
+                        WHERE l.from_status = 'ANNOUNCED'
+                          AND l.to_status = 'ACTIVE'
+                    ) AS active_at,
+                    MIN(l.changed_at) FILTER (
+                        WHERE l.from_status = 'ACTIVE'
+                          AND l.to_status = 'WINDOW_24H'
+                    ) AS window_at,
+                    MIN(l.changed_at) FILTER (
+                        WHERE l.from_status = 'WINDOW_24H'
+                          AND l.to_status = 'PARLIAMENT_VOTED'
+                    ) AS voted_at
+                FROM bill_status_logs l
+                JOIN parliament_bills b ON b.id = l.bill_id
+                WHERE l.changed_at > NOW() - INTERVAL '24 hours'
+                  AND b.id NOT LIKE 'DEMO-%%'
+                  AND COALESCE(b.admin_hidden, FALSE) = FALSE
+                  AND COALESCE(b.source, 'PARLIAMENT') = 'PARLIAMENT'
+                GROUP BY l.bill_id
+            )
+            SELECT bill_id, active_at, window_at, voted_at
+            FROM lifecycle
+            WHERE active_at IS NOT NULL
+              AND window_at IS NOT NULL
+              AND voted_at IS NOT NULL
+              AND voted_at - window_at < INTERVAL '24 hours'
+            ORDER BY voted_at DESC
+            LIMIT 10
+        """)
+        for bill_id, active_at, window_at, voted_at in cur.fetchall():
+            minutes = int((voted_at - window_at).total_seconds() / 60)
+            alerts.append(Alert(
+                "lifecycle_fast_forward",
+                "ekklesia-api",
+                "warning",
+                (
+                    f"Bill {bill_id} skipped public WINDOW_24H "
+                    f"({minutes} min from WINDOW_24H to PARLIAMENT_VOTED)"
+                ),
+                False,
+            ))
+    return alerts
+
+
 def check_forum_missing(conn) -> list[Alert]:
     alerts = []
     with conn.cursor() as cur:
@@ -681,7 +737,7 @@ def check_zk_canary_health(conn) -> list[Alert]:
 # ─── Main Loop ───────────────────────────────────────────────────────────────
 
 def run_checks():
-    logger.info("Running 17 business logic checks...")
+    logger.info("Running 18 business logic checks...")
     all_alerts: list[Alert] = []
     recovery_results: dict[str, str] = {}
 
@@ -693,6 +749,7 @@ def run_checks():
         all_alerts.extend(check_no_new_bills(conn))
         all_alerts.extend(check_parliament_source_freshness(conn))
         all_alerts.extend(check_lifecycle_stuck(conn, r))
+        all_alerts.extend(check_lifecycle_fast_forward(conn))
         all_alerts.extend(check_forum_missing(conn))
         all_alerts.extend(check_arweave_pending(conn))
         all_alerts.extend(check_hlr_credits())

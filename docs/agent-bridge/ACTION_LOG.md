@@ -12268,3 +12268,61 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Deploy:
   - Code commit: `e19900d`.
   - Production rollback tag: `rollback-pre-live-mirror-status-20260620-235954`.
+
+## 2026-06-22 — Codex: Linear/GitHub tracker cleanup after crash recovery
+
+- Scope: reconcile live GitHub Issues, Linear, and the local bridge after Codex crash recovery.
+- GitHub live state:
+  - Open issues remain `#79` F-Droid, `#80` Off-site Backup, and `#112` ZK V2 staged/global follow-up.
+- Linear cleanup:
+  - Moved `NEA-286` to `Done` because lifecycle WINDOW_24H stuck is resolved/stale and production has no stuck rows.
+  - Moved `NEA-133` to `Done` because business-logic monitor / 3-tier recovery is live and monitor checks pass.
+  - Added sync comments to `NEA-249`, `NEA-301`, `NEA-59`, and `NEA-65`.
+- Linear tickets intentionally left open:
+  - `NEA-59` maps to GitHub `#79`; still external/waiting on F-Droid.
+  - `NEA-65` maps to GitHub `#80`; blocked on Hetzner Storage Box / funding.
+  - `NEA-249` maps to GitHub `#112`; first scoped rollout is complete, staged/global rollout remains guarded.
+  - `NEA-301` remains real data work: missing Parliament text ingestion/manual review plus separate DIAVGEIA phase.
+- No code, deploy, server, DB, or runtime changes were made.
+
+## 2026-06-22 — Codex: Lifecycle catch-up skipped citizen voting window
+
+- Scope: investigate Gio screenshots showing Telegram `Η Βουλή ψήφισε` posts with `0` citizen votes and mobile app message that normal citizen voting was already closed.
+- Finding:
+  - Gio did not miss the vote window.
+  - Four Parliament bills with `parliament_vote_date=2026-06-18` transitioned through `ANNOUNCED -> ACTIVE -> WINDOW_24H -> PARLIAMENT_VOTED` in milliseconds.
+  - Betroffene Beispiele:
+    - `GR-d71e9b04` — Bosnia/Defense protocol from Telegram screenshot.
+    - `GR-09e240aa` — sports memorandum from mobile screenshot.
+    - `GR-030bc127`
+    - `GR-4a8dba43`
+  - Production `citizen_votes` count for all four: `0`.
+  - `party_votes_parliament` is still missing for all four, so Arweave guard correctly did not archive them.
+- Root cause:
+  - `due_lifecycle_transitions()` returned all due lifecycle states.
+  - For late discovered or already overdue `parliament_vote_date`, `run_bill_lifecycle()` closed the public voting UI in the same scheduler run.
+- Local fix:
+  - `apps/api/services/bill_lifecycle.py`
+    - lifecycle now returns at most the next due transition per run.
+    - `WINDOW_24H -> PARLIAMENT_VOTED` requires at least 24 real hours in `WINDOW_24H` when `status_changed_at` is known.
+  - `apps/api/tests/services/test_bill_lifecycle_transitions.py`
+    - tests updated for no-skip behavior and 24h window-age guard.
+  - `apps/monitor/monitor.py`
+    - added alert-only `check_lifecycle_fast_forward()` for future fast-forward regressions.
+    - monitor now runs 18 business-logic checks.
+    - check is limited to the last 24h so historical known rows do not make every `--once` run fail.
+  - `apps/api/tests/test_monitor_hidden_bills.py`
+    - monitor regression test covers fast-forward alert query and no auto-recovery.
+- Verification:
+  - `apps/api/.venv/bin/python -m py_compile apps/api/services/bill_lifecycle.py`: PASS.
+  - `apps/api/.venv/bin/python -m pytest -q apps/api/tests/services/test_bill_lifecycle_transitions.py`: 7 passed.
+  - `apps/api/.venv/bin/python -m pytest -q apps/api/tests/test_parliament.py apps/api/tests/test_voting.py apps/api/tests/services/test_arweave_guards.py apps/api/tests/services/test_bill_lifecycle_transitions.py`: 48 passed, 4 xfailed.
+  - `apps/api/.venv/bin/python -m pytest -q apps/api/tests/test_parliament.py apps/api/tests/test_voting.py apps/api/tests/services/test_arweave_guards.py apps/api/tests/services/test_bill_lifecycle_transitions.py apps/api/tests/test_monitor_hidden_bills.py apps/api/tests/test_monitor_parliament_freshness.py apps/api/tests/test_monitor_zk_canary_health.py apps/api/tests/test_monitor_secret_redaction.py`: 64 passed, 4 xfailed.
+  - `apps/api/.venv/bin/python -m py_compile apps/api/services/bill_lifecycle.py apps/monitor/monitor.py`: PASS.
+  - Local simulation of `ANNOUNCED` with already-past `vote_date` now opens `ACTIVE`, then `WINDOW_24H`, then closes only after 24h in window.
+  - Production read-only probe for new monitor fast-forward query over last 24h returned 0 rows.
+  - Full local API suite attempted: 508 passed, 2 skipped, 24 xfailed, 1 xpassed, 5 failed. Failures were local environment/test-config related (`dev-admin-key` rejected as 403 in two admin tests; no local Redis at `localhost:6379` for three public-key tests), not lifecycle-related.
+- Tracking:
+  - GitHub: `#113` BUG: Lifecycle catch-up skipped citizen voting window.
+  - Linear: `NEA-389` BUG: Lifecycle catch-up ueberspringt Buerger-Abstimmungsfenster.
+- Not deployed yet in this entry.
