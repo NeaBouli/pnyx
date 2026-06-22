@@ -67,6 +67,7 @@ TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TG_CHAT = os.getenv("TELEGRAM_ADMIN_CHAT_ID", "")
 CHECK_INTERVAL = int(os.getenv("MONITOR_INTERVAL_SECONDS", "1800"))
 STARTUP_GRACE_SECONDS = max(0, int(os.getenv("MONITOR_STARTUP_GRACE_SECONDS", "90")))
+REPAIR_VERIFY_WAIT_SECONDS = max(0, int(os.getenv("MONITOR_REPAIR_VERIFY_WAIT_SECONDS", "30")))
 API_URL = os.getenv("API_URL", "http://api:8000")
 ADMIN_KEY = os.getenv("ADMIN_KEY", "")
 AUTO_RECOVERY_T2 = os.getenv("AUTO_RECOVERY_T2", "false").lower() == "true"
@@ -113,6 +114,10 @@ T1_LOCK_TTL = {
 }
 T1_DEFAULT_LOCK_TTL = 3600  # 1h
 
+# Verified repairs are intentionally tiny and allowlisted. They may only call
+# idempotent admin endpoints, then prove the exact alert condition is gone.
+VERIFIED_T1_ALERTS = {"parliament_source_lag"}
+
 
 # ─── Telegram ────────────────────────────────────────────────────────────────
 
@@ -147,17 +152,17 @@ def get_redis():
 
 # ─── 3-Tier Recovery ────────────────────────────────────────────────────────
 
-def attempt_tier1(alert: Alert, r) -> bool:
+def attempt_tier1(alert: Alert, r) -> str:
     """Tier 1: Trigger API recovery endpoint."""
     endpoint = T1_MAPPING.get(alert.type)
     if not endpoint or not ADMIN_KEY:
-        return False
+        return "unavailable"
 
     lock_key = f"lock:recovery:{alert.type}"
     ttl = T1_LOCK_TTL.get(endpoint, T1_DEFAULT_LOCK_TTL)
     if not r.set(lock_key, "1", ex=ttl, nx=True):
         logger.info("[T1] Lock active for %s — skipping (cooldown %ds)", alert.type, ttl)
-        return True  # Already attempted recently, treat as handled
+        return "locked"
 
     try:
         resp = httpx.post(
@@ -167,14 +172,69 @@ def attempt_tier1(alert: Alert, r) -> bool:
         )
         if resp.status_code in (200, 202):
             logger.info("[T1] Recovery OK: %s → %s → HTTP %d", alert.type, endpoint, resp.status_code)
-            return True
+            return "ok"
         logger.warning("[T1] Recovery FAILED: %s → %s → HTTP %d", alert.type, endpoint, resp.status_code)
     except Exception as e:
         logger.error("[T1] Recovery ERROR: %s → %s: %s", alert.type, endpoint, e)
 
     # Remove lock on failure so next cycle can retry
     r.delete(lock_key)
-    return False
+    return "failed"
+
+
+def verify_parliament_source_lag_repaired(conn) -> tuple[bool, str]:
+    """Prove Parliament source freshness no longer exceeds the alert threshold."""
+    try:
+        resp = httpx.get(f"{API_URL}/api/v1/scraper/parliament/latest?limit=5", timeout=45)
+        if resp.status_code != 200:
+            return False, f"source_check_http_{resp.status_code}"
+
+        source_latest = _latest_source_activity(resp.json().get("bills", []))
+        if not source_latest:
+            return False, "source_has_no_dated_bills"
+
+        db_latest = _db_latest_parliament_activity(conn)
+        if not db_latest:
+            return False, "db_has_no_parliament_activity"
+
+        lag_h = (source_latest - db_latest).total_seconds() / 3600
+        if lag_h <= PARLIAMENT_SOURCE_MAX_LAG_HOURS:
+            return True, (
+                f"source={source_latest.strftime('%Y-%m-%d')} "
+                f"db={db_latest.strftime('%Y-%m-%d')} lag={lag_h:.0f}h"
+            )
+        return False, (
+            f"source={source_latest.strftime('%Y-%m-%d')} "
+            f"db={db_latest.strftime('%Y-%m-%d')} lag={lag_h:.0f}h"
+        )
+    except Exception as exc:
+        return False, f"verify_error:{str(exc)[:120]}"
+
+
+def verify_tier1_repair(alert: Alert, conn) -> tuple[bool, str]:
+    if alert.type == "parliament_source_lag":
+        if REPAIR_VERIFY_WAIT_SECONDS:
+            logger.info(
+                "[T1V] Waiting %ds before verifying %s",
+                REPAIR_VERIFY_WAIT_SECONDS,
+                alert.type,
+            )
+            time.sleep(REPAIR_VERIFY_WAIT_SECONDS)
+        return verify_parliament_source_lag_repaired(conn)
+    return False, "no_verified_runbook"
+
+
+def send_verified_recovery(alert: Alert, detail: str) -> None:
+    msg = (
+        "🟢 <b>Auto-Recovery verified</b>\n\n"
+        f"<b>Type:</b> {alert.type}\n"
+        f"<b>Service:</b> {alert.service or '—'}\n"
+        f"<b>Message:</b> {alert.message}\n"
+        f"<b>Proof:</b> {detail}\n"
+        f"\n<i>{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}</i>"
+    )
+    send_telegram(msg)
+    logger.info("[T1V] Verified recovery for %s — %s", alert.type, detail)
 
 
 def attempt_tier2(alert: Alert, r) -> bool:
@@ -232,7 +292,7 @@ def escalate_tier3(alert: Alert, recovery_result: str = ""):
     logger.warning("[T3] Escalated: %s — %s", alert.type, alert.message)
 
 
-def attempt_recovery(alert: Alert, r):
+def attempt_recovery(alert: Alert, r, conn=None):
     """Dispatcher: T1 → T2 → T3."""
     if not alert.recovery_allowed:
         escalate_tier3(alert, "Direct T3 — no auto-recovery for this type")
@@ -240,7 +300,17 @@ def attempt_recovery(alert: Alert, r):
 
     # Tier 1
     if alert.type in T1_MAPPING:
-        if attempt_tier1(alert, r):
+        t1_result = attempt_tier1(alert, r)
+        if t1_result == "ok" and alert.type in VERIFIED_T1_ALERTS and conn is not None:
+            verified, detail = verify_tier1_repair(alert, conn)
+            if verified:
+                send_verified_recovery(alert, detail)
+                return "T1V"
+            logger.warning("[T1V] Verification failed for %s — %s", alert.type, detail)
+            return "T1"
+        if t1_result == "locked" and alert.type in VERIFIED_T1_ALERTS:
+            return "T1L"
+        if t1_result in ("ok", "locked"):
             return "T1"
 
     # Tier 2
@@ -767,28 +837,36 @@ def run_checks():
 
         # Recovery pass
         for alert in all_alerts:
-            tier = attempt_recovery(alert, r)
+            tier = attempt_recovery(alert, r, conn)
             recovery_results[alert.type] = tier
 
     finally:
         conn.close()
         r.close()
 
-    if all_alerts:
-        msg = f"<b>ekklesia.gr Monitor — {len(all_alerts)} Alerts</b>\n\n"
-        for i, alert in enumerate(all_alerts, 1):
+    unresolved_alerts = [
+        alert for alert in all_alerts
+        if recovery_results.get(alert.type) != "T1V"
+    ]
+
+    if unresolved_alerts:
+        msg = f"<b>ekklesia.gr Monitor — {len(unresolved_alerts)} Alerts</b>\n\n"
+        for i, alert in enumerate(unresolved_alerts, 1):
             tier = recovery_results.get(alert.type, "—")
             icon = "✓" if tier in ("T1", "T2") else "✗"
             msg += f"{i}. [{icon}{tier}] {alert.message}\n"
         msg += f"\n<i>{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}</i>"
         if len(msg) > 4000:
-            msg = msg[:3950] + f"\n\n... (+{len(all_alerts)} total)"
+            msg = msg[:3950] + f"\n\n... (+{len(unresolved_alerts)} total)"
         send_telegram(msg)
-        logger.warning("ALERTS: %d issues found", len(all_alerts))
+        logger.warning("ALERTS: %d issues found", len(unresolved_alerts))
     else:
-        logger.info("All checks passed — no alerts")
+        if all_alerts:
+            logger.info("All alerts were repaired and verified")
+        else:
+            logger.info("All checks passed — no alerts")
 
-    return all_alerts
+    return unresolved_alerts
 
 
 def apply_startup_grace() -> None:

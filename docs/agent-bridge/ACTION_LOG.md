@@ -12428,3 +12428,34 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - First monitor daemon run after 90s startup grace: 18 checks, `All checks passed — no alerts`.
   - Production DB max Parliament activity remains `2026-06-22`.
   - Stage 1 Parliament API still returns 403 and falls back to Jina; fallback is working.
+
+## 2026-06-23 — Codex: Verified autonomous recovery Phase 1
+
+- Scope: make monitor auto-recovery surgical by proving repair success before suppressing an alert.
+- Safety boundary:
+  - Only `parliament_source_lag` is allowlisted for verified auto-recovery in this phase.
+  - Repair action remains the existing idempotent admin endpoint `/api/v1/admin/scraper/catch-up?force=parliament`.
+  - Verification is read-only: fetch live Parliament source latest and DB Parliament latest, then compare lag.
+  - No votes, bill status rewind, Arweave records, identity/nullifier/KDF, or governance reopen paths are touched.
+- Local fix:
+  - `apps/monitor/monitor.py`
+    - Added `MONITOR_REPAIR_VERIFY_WAIT_SECONDS`, default `30`.
+    - Added `VERIFIED_T1_ALERTS = {"parliament_source_lag"}`.
+    - `attempt_tier1()` now returns explicit states: `ok`, `locked`, `failed`, `unavailable`.
+    - `parliament_source_lag` can return `T1V` only after proof that source/DB lag is within `PARLIAMENT_SOURCE_MAX_LAG_HOURS`.
+    - If proof fails, alert remains unresolved and is still reported.
+    - If lock/cooldown is active, monitor returns `T1L` and does not claim success.
+    - Verified repairs send a separate Telegram `Auto-Recovery verified` message.
+    - `run_checks()` returns unresolved alerts only, so a repaired+verified alert does not fail `--once`.
+  - `apps/api/tests/test_monitor_verified_recovery.py`
+    - Covers proof success -> `T1V`.
+    - Covers proof failure -> unresolved `T1`.
+    - Covers lock active -> `T1L` and no success claim.
+- Verification:
+  - `apps/api/.venv/bin/python -m pytest -q apps/api/tests/test_monitor_verified_recovery.py apps/api/tests/test_monitor_parliament_freshness.py apps/api/tests/test_monitor_hidden_bills.py apps/api/tests/test_monitor_zk_canary_health.py apps/api/tests/test_monitor_secret_redaction.py apps/api/tests/test_admin_scraper_catchup.py apps/api/tests/services/test_bill_lifecycle_transitions.py`: 31 passed.
+  - `apps/api/.venv/bin/python -m py_compile apps/monitor/monitor.py`: PASS.
+  - `git diff --check`: PASS.
+- Tracking:
+  - GitHub: `#116` FEATURE: Verified autonomous recovery for Parliament source lag.
+  - Linear: `NEA-392` FEATURE: Verified Autonomous Recovery fuer Parliament Source-Lag.
+- Not deployed yet in this entry.

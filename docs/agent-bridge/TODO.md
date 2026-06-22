@@ -3,7 +3,14 @@
 ## Aktive Roadmap — Stand 2026-06-12
 
 ### Aktiv baubar (Reihenfolge)
-0. [x] Parliament Source-Lag Forced Catch-up — GH#115 / NEA-391
+0. [ ] Verified Autonomous Recovery Phase 1 — GH#116 / NEA-392
+   - Ziel: Monitor darf eine Auto-Reparatur erst als erledigt melden, wenn der Zielzustand bewiesen ist.
+   - Scope bewusst eng: nur `parliament_source_lag`; Repair via `catch-up?force=parliament`; Proof via Quelle-latest vs DB-latest.
+   - Safety: keine Vote-Aenderung, kein Status-Rewind, keine Arweave-Aenderung, keine Identity/nullifier/KDF-Aenderung, kein Governance-Reopen.
+   - Local fix gebaut: `T1V` verified recovery, `T1L` lock/no-success, separate Telegram `Auto-Recovery verified`, `--once` failt nur bei unresolved alerts.
+   - Verifiziert lokal: verified recovery + monitor/lifecycle suite 31 passed; `py_compile` und `git diff --check` gruen.
+   - Offen: Commit/push/deploy monitor, live `--once`, ggf. controlled verification smoke, Bridge/GitHub/Linear Abschluss.
+1. [x] Parliament Source-Lag Forced Catch-up — GH#115 / NEA-391
    - Befund: Quelle hatte `2026-06-22`, DB hing bei `2026-06-19`; T1 `/scraper/catch-up` meldete HTTP 200, uebersprang Parliament aber wegen frischem Redis `last_run`.
    - Production mitigiert: manueller `scheduled_scrape()` aktualisierte `GR-030bc127` und `GR-09e240aa` auf 22.06. und fuegte `GR-3927520d` ein; Monitor `--once` danach PASS.
    - Local fix gebaut: `parliament_source_lag` ruft `catch-up?force=parliament`; Admin-Catchup kann gezielt forced Jobs ausfuehren.
@@ -11,14 +18,14 @@
    - Deployed: commit `15148d8` live auf Production; Rollback-Tag `rollback-pre-source-lag-force-20260622-2057`.
    - Live verifiziert: API `/health` PASS; `catch-up?force=parliament` HTTP 200 mit `jobs_triggered:["parliament"]`; Monitor `--once` PASS; erster Daemon-Lauf nach Grace PASS.
    - Tracking abgeschlossen: GitHub `#115` als completed geschlossen; Linear `NEA-391` auf Done.
-1. [x] Monitor Startup Grace — GH#114 / NEA-390
+2. [x] Monitor Startup Grace — GH#114 / NEA-390
    - Befund: Monitor-Daemon startete waehrend geplantem API/Web Compose-Restart und loeste transient T2/T3 aus.
    - Local fix gebaut: `MONITOR_STARTUP_GRACE_SECONDS=90` default nur fuer Daemonstart; `--once` bleibt sofort.
    - Verifiziert lokal: Monitor suite 18 passed; Lifecycle+Monitor 25 passed; `py_compile` und `git diff --check` gruen.
    - Deployed: commit `da025c4` live auf Production; Rollback-Tag `rollback-pre-monitor-startup-grace-20260622-1511`.
    - Live verifiziert: API `/health` PASS; Monitor log zeigt `startup_grace: 90s`; Production `--once` PASS; erster Daemon-Lauf nach 90s PASS.
    - Tracking abgeschlossen: GitHub `#114` als completed geschlossen; Linear `NEA-390` auf Done.
-2. [x] Lifecycle Catch-up No-Skip — GH#113 / NEA-389
+3. [x] Lifecycle Catch-up No-Skip — GH#113 / NEA-389
    - Befund: Bills `GR-d71e9b04`, `GR-09e240aa`, `GR-030bc127`, `GR-4a8dba43` liefen am 2026-06-18 in Millisekunden durch `ANNOUNCED -> ACTIVE -> WINDOW_24H -> PARLIAMENT_VOTED`; `citizen_votes=0`.
    - Local fix gebaut: pro Scheduler-Lauf max. ein Lifecycle-Schritt; `WINDOW_24H -> PARLIAMENT_VOTED` erst nach 24 realen Stunden in `WINDOW_24H`.
    - Safety net gebaut: Monitor `check_lifecycle_fast_forward()` alarmiert auf neue Fast-Forward-Spuren ohne Auto-Recovery; Monitor jetzt 18 Checks.
@@ -26,15 +33,15 @@
    - Deployed: commit `8bd6871` live auf Production; Rollback-Tag `rollback-pre-lifecycle-noskip-20260622-150244`.
    - Live verifiziert: API `/health` PASS; Production Monitor `--once` PASS mit 18 Checks; Fast-Forward-Probe letzte 24h = `0`.
    - Tracking abgeschlossen: GitHub `#113` als completed geschlossen; Linear `NEA-389` auf Done.
-3. [x] Pagination `Όλα` — GH#107 / NEA-317
+4. [x] Pagination `Όλα` — GH#107 / NEA-317
    - gebaut: Mobile API `limit`/`offset`, BillsScreen lazy-load `PAGE_SIZE=10`, `Περισσότερα`
    - verifiziert: Live API liefert `offset=0/10/20` je 10 Bills; mobile tests + TSC gruen; APK gebaut und S10 installiert
    - S10-Akzeptanz: `Περισσότερα` sichtbar, Tap lädt weitere Bills, keine ANR
-4. [x] Landing `Votes in Progress` — GH#108 / NEA-318
+5. [x] Landing `Votes in Progress` — GH#108 / NEA-318
    - gebaut/deployed: aggregierter Endpoint `/api/v1/vote/results/in-progress`
    - Env-Schwelle: `VOTES_IN_PROGRESS_THRESHOLD=1` fuer Testbetrieb, spaeter auf `50` setzen
    - verifiziert: Live Endpoint liefert nur aggregierte Daten, keine Seed-Bills, Landing hat keine alten Fake-Ticker-Strings
-5. [x] Analysis-Fallback — GH#103 / GH#105
+6. [x] Analysis-Fallback — GH#103 / GH#105
    - konservativ geloest: keine KI-Analyse als Fallback ohne Review
    - Web zeigt `analysis_el` nur wenn vorhanden; sonst `Επίσημο κείμενο` / offizieller Text + PDF-/Dokumentlinks
    - qwen2.5:14b ist nicht release-tauglich (Halluzination `αθέμιτων παρόχων` bestätigt)
@@ -55,7 +62,7 @@
 ## Tracking: GitHub Issues + Bridge primary; Linear periodically synchronized
 
 - 2026-06-22 Linear cleanup done: `NEA-286` and `NEA-133` set to Done; `NEA-249`, `NEA-301`, `NEA-59`, `NEA-65` received sync comments.
-- Active GitHub truth remains: `#79` F-Droid, `#80` Off-site Backup, `#112` ZK V2 staged/global follow-up.
+- Active GitHub truth remains: `#79` F-Droid, `#80` Off-site Backup, `#112` ZK V2 staged/global follow-up, `#116` verified autonomous recovery.
 
 ## Aktiv / In Progress
 - [ ] F-Droid !38007 (#79): GitLab MR !38007 offen, mergeable, Diskussionen resolved, vC50/v1.0.21 Metadata pushed (`d711780bf`). Manual branch pipeline `2609790099` war gruen; aktuelle MR-event Pipeline `2609789968` ist failed. Naechster Schritt: Pipeline-Fehler inspizieren/fixen, falls F-Droid das vor Merge verlangt; sonst wartet es auf linsui/F-Droid Merge.
