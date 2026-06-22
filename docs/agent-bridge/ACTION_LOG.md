@@ -12323,6 +12323,17 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Production read-only probe for new monitor fast-forward query over last 24h returned 0 rows.
   - Full local API suite attempted: 508 passed, 2 skipped, 24 xfailed, 1 xpassed, 5 failed. Failures were local environment/test-config related (`dev-admin-key` rejected as 403 in two admin tests; no local Redis at `localhost:6379` for three public-key tests), not lifecycle-related.
 - Tracking:
-  - GitHub: `#113` BUG: Lifecycle catch-up skipped citizen voting window.
-  - Linear: `NEA-389` BUG: Lifecycle catch-up ueberspringt Buerger-Abstimmungsfenster.
-- Not deployed yet in this entry.
+  - GitHub: `#113` BUG: Lifecycle catch-up skipped citizen voting window — closed as completed after live verification.
+  - Linear: `NEA-389` BUG: Lifecycle catch-up ueberspringt Buerger-Abstimmungsfenster — Done after live verification.
+- Deploy:
+  - Commit `8bd6871` pushed to `origin/main`.
+  - Production rollback tag set before deploy: `rollback-pre-lifecycle-noskip-20260622-150244`.
+  - Production `/opt/ekklesia/app` fast-forwarded to `8bd6871`.
+  - Rebuilt/restarted only `api` and `monitor`.
+- Live verification:
+  - `https://api.ekklesia.gr/health`: PASS (`status=ok`).
+  - Containers after deploy: `ekklesia-api`, `ekklesia-monitor`, `ekklesia-db`, `ekklesia-redis`, `ekklesia-web` running; DB/Redis healthy.
+  - Monitor single-run in production: 18 checks, `All checks passed — no alerts`.
+  - Production DB fast-forward probe for last 24h: `0` rows.
+  - Fresh API logs show normal startup and successful `/health`/bill requests.
+  - Monitor had one transient startup race alert while API/web were restarting; manual post-deploy `--once` run passed cleanly.

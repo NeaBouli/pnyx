@@ -3,12 +3,14 @@
 ## Aktive Roadmap — Stand 2026-06-12
 
 ### Aktiv baubar (Reihenfolge)
-0. [ ] Lifecycle Catch-up No-Skip — GH#113 / NEA-389
+0. [x] Lifecycle Catch-up No-Skip — GH#113 / NEA-389
    - Befund: Bills `GR-d71e9b04`, `GR-09e240aa`, `GR-030bc127`, `GR-4a8dba43` liefen am 2026-06-18 in Millisekunden durch `ANNOUNCED -> ACTIVE -> WINDOW_24H -> PARLIAMENT_VOTED`; `citizen_votes=0`.
    - Local fix gebaut: pro Scheduler-Lauf max. ein Lifecycle-Schritt; `WINDOW_24H -> PARLIAMENT_VOTED` erst nach 24 realen Stunden in `WINDOW_24H`.
    - Safety net gebaut: Monitor `check_lifecycle_fast_forward()` alarmiert auf neue Fast-Forward-Spuren ohne Auto-Recovery; Monitor jetzt 18 Checks.
    - Verifiziert lokal: lifecycle/monitor 23 passed; relevante API+monitor suites 64 passed / 4 xfailed; `py_compile` und `git diff --check` gruen.
-   - Offen: Review, commit/push/deploy API+monitor, live monitor run, Bridge/TODO/GitHub/Linear Abschluss.
+   - Deployed: commit `8bd6871` live auf Production; Rollback-Tag `rollback-pre-lifecycle-noskip-20260622-150244`.
+   - Live verifiziert: API `/health` PASS; Production Monitor `--once` PASS mit 18 Checks; Fast-Forward-Probe letzte 24h = `0`.
+   - Tracking abgeschlossen: GitHub `#113` als completed geschlossen; Linear `NEA-389` auf Done.
 1. [x] Pagination `Όλα` — GH#107 / NEA-317
    - gebaut: Mobile API `limit`/`offset`, BillsScreen lazy-load `PAGE_SIZE=10`, `Περισσότερα`
    - verifiziert: Live API liefert `offset=0/10/20` je 10 Bills; mobile tests + TSC gruen; APK gebaut und S10 installiert
@@ -38,7 +40,7 @@
 ## Tracking: GitHub Issues + Bridge primary; Linear periodically synchronized
 
 - 2026-06-22 Linear cleanup done: `NEA-286` and `NEA-133` set to Done; `NEA-249`, `NEA-301`, `NEA-59`, `NEA-65` received sync comments.
-- Active GitHub truth remains: `#79` F-Droid, `#80` Off-site Backup, `#112` ZK V2 staged/global follow-up, `#113` lifecycle catch-up no-skip.
+- Active GitHub truth remains: `#79` F-Droid, `#80` Off-site Backup, `#112` ZK V2 staged/global follow-up.
 
 ## Aktiv / In Progress
 - [ ] F-Droid !38007 (#79): GitLab MR !38007 offen, mergeable, Diskussionen resolved, vC50/v1.0.21 Metadata pushed (`d711780bf`). Manual branch pipeline `2609790099` war gruen; aktuelle MR-event Pipeline `2609789968` ist failed. Naechster Schritt: Pipeline-Fehler inspizieren/fixen, falls F-Droid das vor Merge verlangt; sonst wartet es auf linsui/F-Droid Merge.

@@ -137,6 +137,10 @@
 - #80 / Off-site backup — waits for Hetzner Storage Box / funding.
 - #112 / ZK V2 production rollout — hidden one-scope S10 canary passed; production backend logic prepared; global activation remains gated on security review and explicit scoped rollout.
 
+## Completed 2026-06-22
+
+- #113 / NEA-389 Lifecycle catch-up no-skip — root cause confirmed, fix `8bd6871` deployed live; API health PASS, monitor 18 checks PASS, last-24h fast-forward probe `0`; GitHub closed completed, Linear Done.
+
 ## Architecture Decisions (ADRs)
 
 - docs/adr/NEA-249-zk-voting-v2-semaphore-hybrid.md
