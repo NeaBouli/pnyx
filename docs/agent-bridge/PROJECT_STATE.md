@@ -33,7 +33,7 @@
 - **F-Droid !38007:** Still open/mergeable on GitLab (updated 2026-06-18 to vC50/v1.0.21); no conflicts, blocking discussions resolved, MR commit `d711780bf`. Manual branch pipeline `2609790099` was success, but current MR-event head pipeline `2609789968` is failed; inspect/fix if F-Droid maintainers require that pipeline before merge.
 - **POLIS Status:** App-internal Create/Vote LIVE
 - **Tracking:** Linear + GitHub Issues parallel. Cross-Links: GH#71-83 = NEA-277-285
-- **GH#117 / NEA-393:** Public recovery transparency docs in progress. Community + Wiki now document verified autonomous recovery boundaries, 0 AI token cost for Phase 1 `parliament_source_lag`, proof-before-success (`T1V`), and forbidden writes. Local static Chrome render PASS; deploy/live checks pending.
+- **GH#117 / NEA-393:** DONE. Public recovery transparency docs live on Community + Wiki. They document verified autonomous recovery boundaries, 0 AI token cost for Phase 1 `parliament_source_lag`, proof-before-success (`T1V`), and forbidden writes. Commit `2f27fab`; rollback tag `rollback-pre-recovery-transparency-docs-20260623`; live curl + Chrome desktop/mobile PASS; production monitor PASS (18 checks, no alerts).
 - **GR-0490a766:** arweave_tx_id=NULL (bereinigt), party_votes_parliament=NULL, Guards verhindern Re-Archivierung
 - **Telegram Bot:** citizen_votes Query LIVE, governance Topic-Routing LIVE
 - **vC50 Release:** AAB `/Users/gio/Desktop/ekklesia-v1.0.21-vC50-PLAY.aab`, SHA256 `709cb2cee17f30f48ed417ecda9e1b8831f1b61a446286292a61f1454e3ad5e6`; APK `/Users/gio/Desktop/ekklesia-v1.0.21-vC50-PLAY.apk`, SHA256 `989c5f92ff37b4a8498e6410f362dedbfd91e362042ec5e6685479385c14685d`.

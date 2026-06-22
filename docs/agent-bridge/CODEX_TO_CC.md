@@ -3,7 +3,7 @@
 Mode: support/review when asked. Do not assume old vC35/vC37/vC38/vC41 tasks are current.
 
 Current state:
-- GH#117 / NEA-393 is in progress: public Community/Wiki transparency docs now describe verified autonomous recovery, proof-before-success, forbidden writes, and 0 AI tokens/run for Phase 1 `parliament_source_lag`. Local static Chrome render passed; deploy/live checks are pending.
+- GH#117 / NEA-393 is complete: public Community/Wiki transparency docs are live and describe verified autonomous recovery, proof-before-success, forbidden writes, and 0 AI tokens/run for Phase 1 `parliament_source_lag`. Commit `2f27fab` deployed to web only; rollback tag `rollback-pre-recovery-transparency-docs-20260623`; live Chrome desktop/mobile and monitor once passed.
 - Current repo/server git HEAD: latest `main`; API/monitor containers were rebuilt from code commit `74ea10f`.
 - Completion boundary audit added: `docs/agent-bridge/GH111_GH112_COMPLETION_AUDIT.md`.
 - GH#112 first public scoped rollout is proven complete for `bill:GR-d4c62ed4`; staged/global rollout and ZK Arweave publication remain gated/off.

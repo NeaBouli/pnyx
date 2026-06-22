@@ -1,6 +1,6 @@
 # Action Log
 
-## 2026-06-23 — Codex: GH#117 / NEA-393 recovery transparency docs in progress
+## 2026-06-23 — Codex: GH#117 / NEA-393 recovery transparency docs complete
 
 - Scope:
   - Publish verified autonomous recovery boundaries publicly on ekklesia.gr Community + Wiki.
@@ -13,11 +13,19 @@
   - `git diff --check` PASS.
   - Local Chrome render probe against static docs: Community/Security/Architecture desktop+mobile all contain Auto-Recovery/T1V/0-token/source-lag text.
   - Local Community CORS errors are expected from 127.0.0.1 calling production API; production-origin check still pending.
+- Deploy:
+  - Commit `2f27fab` pushed to `main`.
+  - Rollback tag: `rollback-pre-recovery-transparency-docs-20260623` -> `a9e1bc9`.
+  - Production repo `/opt/ekklesia/app` fast-forwarded to `2f27fab`.
+  - Web container rebuilt/restarted only; API and monitor code unchanged.
+- Live verification:
+  - `curl` confirmed new Community/Wiki content on `https://ekklesia.gr/community.html`, `/wiki/security.html`, `/wiki/architecture.html`.
+  - Chrome live-origin render probe desktop+mobile: all three pages contain Auto-Recovery/T1V/0-token/source-lag text, console errors `[]`.
+  - API `/health` PASS.
+  - Production monitor `--once` PASS: 18 checks, no alerts.
 - Tracking:
-  - GitHub `#117` open.
-  - Linear `NEA-393` In Progress.
-- Pending:
-  - Commit, deploy web static docs, verify live URLs, then close GH#117 / NEA-393 and mark this entry complete.
+  - GitHub `#117` closed as completed.
+  - Linear `NEA-393` moved to Done.
 
 ## 2026-06-17 — Codex: GH#111 Nullifier v2 production activation complete
 
