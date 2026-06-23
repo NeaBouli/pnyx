@@ -1,5 +1,45 @@
 # Action Log
 
+## 2026-06-23 — Codex: F-Droid !38007 pipeline diagnosis opened
+
+- Scope:
+  - Read-only GitLab recheck for F-Droid MR `!38007` before any fdroiddata or pnyx runtime changes.
+  - Create an explicit Bridge-local work item because GitHub already has `#79` and no new external ticket is needed unless a concrete fix is found.
+- Live GitLab state:
+  - MR `!38007` remains open and mergeable.
+  - `has_conflicts=false`, `blocking_discussions_resolved=true`.
+  - Latest MR commit: `d711780bf324b5d39dfdcfcfcf61860485ead838`.
+  - Current MR-event pipeline: `2609789968`, status `failed`.
+- Job breakdown:
+  - `fdroid build` failed: job `14910335871`.
+  - `check apk` skipped.
+  - `checkupdates`, `git redirect`, `fdroid lint`, `fdroid rewritemeta`, `tools check scripts`, `schema validation`, and `check source code` all passed.
+- Limitation:
+  - Public API trace for failed job requires auth/returns unavailable from this local environment, so the exact build error must be obtained either from authenticated GitLab UI or by local fdroiddata reproduction.
+- Bridge ticket:
+  - `FDROID-TRACE-20260623`: reproduce or inspect the `fdroid build` failure for MR pipeline `2609789968`.
+  - Guardrail: do not touch production pnyx runtime; if a fix is needed, patch only the fdroiddata branch after validation.
+- Root cause found:
+  - GitLab trace shows F-Droid scanner stopped on prebuilt Semaphore native libraries:
+    `libc++_shared.so`, `libsemaphore_bindings.so`, `libcircom_witnesscalc-7fc145e67b078802.so`, and `libjnidispatch.so` under `apps/mobile/modules/semaphore-react-native/android/src/main/jniLibs/arm64-v8a/`.
+  - This is an F-Droid source-build policy issue, not a Play/Direct runtime regression.
+- Fix applied in separate fdroiddata checkout only:
+  - Commits `c7cd667e1` + `c3fa4e605` + `ed88b84ff` + `d6e767bc1` on `TrueRepublic/fdroiddata:ekklesia-v1.0.0` (`d6e767bc1` is current MR head).
+  - F-Droid prebuild now removes bundled Semaphore `jniLibs` before scanner.
+  - F-Droid flavor sets `extra.zkSemaphoreEnabled=false`.
+  - Existing Play/Direct pnyx vC50 behavior is unchanged; Semaphore remains available there.
+  - Portable Python edits replaced fragile sed prebuild edits.
+- Validation:
+  - `fdroid rewritemeta ekklesia.gr` PASS locally, then fdroidserver-master `rewritemeta` applied to match GitLab CI formatting.
+  - Local `fdroid build -v -l ekklesia.gr` passes the former scanner blocker; it now stops only at local macOS missing `gradlew-fdroid`, which is not the GitLab failure.
+  - New GitLab MR-event pipeline `2622515254` on `d6e767bc1` PASS.
+  - `fdroid build` success: job `14988015866`.
+  - `check apk` success: job `14988015874`.
+  - Result: #79 is no longer an active technical pnyx/fdroiddata blocker; it is back to external F-Droid/linsui review + merge.
+- Tracker updates:
+  - GitLab MR note posted: `3483333269`.
+  - GitHub #79 comment posted: https://github.com/NeaBouli/pnyx/issues/79#issuecomment-4778133310.
+
 ## 2026-06-23 — Codex: Security Audit und Server-Disk wieder gruen
 
 - Scope:

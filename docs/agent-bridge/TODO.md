@@ -66,7 +66,7 @@
 
 ### Blocked / Extern (kein Bau)
 - [ ] GH#102 / NEA-312 — echter `WINDOW_24H` Bill nötig
-- [ ] GH#79 — F-Droid !38007 updated to vC50/v1.0.21; MR open/mergeable. Manual branch pipeline `2609790099` was green, current MR-event pipeline `2609789968` is failed; inspect/fix if required by F-Droid maintainers, otherwise waits on linsui/F-Droid merge.
+- [ ] GH#79 — F-Droid !38007 updated to vC50/v1.0.21; MR open/mergeable. Former MR-event failure `2609789968` was fixed in fdroiddata; current MR-event pipeline `2622515254` is green. Now waits on linsui/F-Droid review + merge.
 - [ ] GH#80 — Off-site Backup wartet auf Hetzner Storage Box / erste Spende
 - [x] GH#81 — Android Native-Prover Self-Test auf S10 erfolgreich; produktives ZK-Voting bleibt Feature-Flag-guarded bis Backend/Arweave-Integration
 - [x] NEA-286 / GH#94 — Lifecycle WINDOW_24H stuck: resolved/stale; Production 2026-06-09 ohne stuck Rows, Scheduler healthy
@@ -83,7 +83,9 @@
 - Active GitHub truth remains: `#79` F-Droid, `#80` Off-site Backup, `#112` ZK V2 staged/global follow-up.
 
 ## Aktiv / In Progress
-- [ ] F-Droid !38007 (#79): GitLab MR !38007 offen, mergeable, Diskussionen resolved, vC50/v1.0.21 Metadata pushed (`d711780bf`). Manual branch pipeline `2609790099` war gruen; aktuelle MR-event Pipeline `2609789968` ist failed. Naechster Schritt: Pipeline-Fehler inspizieren/fixen, falls F-Droid das vor Merge verlangt; sonst wartet es auf linsui/F-Droid Merge.
+- [x] FDROID-TRACE-20260623 (Bridge-local): diagnosed and patched in fdroiddata only. Local validation: local `fdroid rewritemeta` PASS, fdroidserver-master formatting applied for CI, local `fdroid build` passes former scanner blocker and stops only on local missing `gradlew-fdroid`.
+- [ ] No active technical pnyx/fdroiddata work remains for #79 after green MR-event pipeline `2622515254`; it is tracked under Blocked/Extern until linsui/F-Droid merge.
+
 ## Done (Session 25-27.05.2026)
 - [x] vC29 Release Gate (#78/NEA-280): S10 Funktionstest PASS, APK live auf ekklesia.gr, AAB in Play Console hochgeladen (`5eb37cf`)
 - [x] vC29 Final Build Gate: versionCode 29/versionName 1.0.2, APK+AAB gebaut, SHA lokal/live verifiziert, Release abgeschlossen
