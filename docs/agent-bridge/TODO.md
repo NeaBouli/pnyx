@@ -72,6 +72,10 @@
 - [x] NEA-286 / GH#94 — Lifecycle WINDOW_24H stuck: resolved/stale; Production 2026-06-09 ohne stuck Rows, Scheduler healthy
 
 ### Release Follow-ups
+- [ ] API/App Date Visibility Follow-up — `submitted_date` ist DB-/Sortier-/Monitor-seitig vorhanden, wird aber im normalen `BillSummary`/`BillDetail` API-Schema aktuell nicht exportiert.
+  - Aktueller Zustand ist funktional korrekt: App-Liste/Detail, Forum-Links und Arweave-Guards wurden am 2026-06-23 read-only geprueft; Forum und Arweave sind sauber.
+  - Wenn Gio das offizielle Aktivitaets-/Quelle-Datum sichtbar in der App/Web-UI sehen will: API-Schema erweitern, Mobile/Web UI sparsam anzeigen, Regression-Test fuer PARLIAMENT + DIAVGEIA.
+  - Keine Dringlichkeit, kein Produktionsfehler; als UX-/Transparenz-Follow-up behandeln.
 - [ ] Future Production Size/R8 Optimization — Play Console warns about size/mapping when R8 is not active.
   - Current prepared Play/direct build: vC50 / v1.0.21; R8/minify remains OFF, so no `mapping.txt` exists for this artifact.
   - Cause of size: native Semaphore/ZK prover and multi-ABI native libraries.
