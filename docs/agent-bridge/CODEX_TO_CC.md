@@ -47,7 +47,7 @@ Current state:
 - GH#111 v2 health diagnosis: production API image passes one-off Argon2/v2 generation and full FastAPI lifespan `/health` under `IDENTITY_NULLIFIER_KDF_VERSION=v2`; previous live 500 is treated as rebuild/readiness timing until contradicted.
 - Disk-critical alerts were rechecked again on 2026-06-23. Cause was Docker Build Cache, not snapshots/backups. Safe cleanup only (`docker builder prune -af`; no volumes/images/backups/data deleted) moved `/` from 90% used / 7.5 GB free to 82% used / 14 GB free; monitor passed 18/18.
 - Forum missing Telegram alerts from 2026-06-17 were transient sync/backfill progress. Current DB: `public_missing_forum=0`; only hidden `ZK-CANARY-001` has no forum topic, by design.
-- 2026-06-23 Dependabot #19: `pydantic-settings` moderate alert fixed in source by bumping `2.14.0` -> `2.14.2`; focused API config tests passed (11 passed).
+- 2026-06-23 Dependabot #19: `pydantic-settings` moderate alert fixed in source by bumping `2.14.0` -> `2.14.2`; focused API config tests passed (11 passed) and isolated target-version import test passed. `b34d30d` CI/Security/Dependency Graph/Dependabot workflows passed; production API was rebuilt and now verifies `pydantic-settings 2.14.2` inside `ekklesia-api`; monitor PASS 18/18.
 
 If asked to continue:
 1. Prefer review/diagnosis first.

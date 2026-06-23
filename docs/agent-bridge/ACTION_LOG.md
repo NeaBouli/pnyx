@@ -13,6 +13,15 @@
 - Validation:
   - `python3 -m py_compile apps/api/config.py apps/api/main.py` PASS.
   - `apps/api/.venv/bin/python -m pytest apps/api/tests/test_cors_config.py apps/api/tests/test_sso_config.py -q` PASS: 11 passed, 1 pydantic deprecation warning.
+  - Isolated temp-venv import test with `pydantic[email]==2.13.4` + `pydantic-settings==2.14.2` PASS (`from config import settings`).
+- CI / Deploy:
+  - GitHub `Security Audit`, `Dependency Graph`, `Dependabot Updates`, and `CI — Ekklesia.gr` PASS on `b34d30d`.
+  - Rollback tag pushed: `rollback-pre-pydantic-settings-20260623-102604` -> `d3dda5d`.
+  - Production repo fast-forwarded `d3dda5d` -> `b34d30d`.
+  - API image rebuilt and `ekklesia-api` recreated with `pydantic-settings 2.14.2` verified inside container.
+  - Public checks PASS: `https://api.ekklesia.gr/health`, `/api/v1/app/version`, `/api/v1/bills?limit=1`, `/api/v1/zk/status`.
+  - Production monitor single run PASS: 18 checks, no alerts.
+  - Disk after safe builder-cache cleanup + rebuild: `/` 82% used, 14G free.
 
 ## 2026-06-23 — Codex: F-Droid !38007 pipeline diagnosis opened
 
