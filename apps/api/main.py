@@ -111,11 +111,11 @@ async def scheduled_scrape():
         return
     await record_run(name)
     try:
-        bills = await scrape_parliament_bills(limit=20)
+        bills = await scrape_parliament_bills(limit=20, require_dates=True)
         logger.info(f"[MOD-03] Scheduled scrape: {len(bills)} bills fetched from API")
 
         if not bills:
-            await record_success(name)
+            await record_failure(name, "no dated Parliament bills fetched")
             return
 
         inserted = 0
@@ -324,11 +324,14 @@ async def scheduled_diavgeia_scrape():
 
         # NEA-199: Convert new decisions to votable bills
         try:
-            from services.diavgeia_scraper import convert_decisions_to_bills
+            from services.diavgeia_scraper import backfill_diavgeia_bill_dates, convert_decisions_to_bills
             async with AsyncSessionLocal() as session:
                 conv = await convert_decisions_to_bills(session)
                 if conv["created"] > 0:
                     logger.info("[NEA-199] Converted %d Diavgeia decisions to bills", conv["created"])
+                backfilled = await backfill_diavgeia_bill_dates(session)
+                if backfilled > 0:
+                    logger.info("[NEA-199] Backfilled %d Diavgeia bill source dates", backfilled)
         except Exception as e:
             logger.warning("[NEA-199] Conversion failed (non-blocking): %s", e)
 

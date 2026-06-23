@@ -1,9 +1,12 @@
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from routers.scraper import _parse_parliament_markdown
+from routers import scraper as scraper_router
+from routers.scraper import _finalize_scraped_bills, _parse_parliament_markdown
 
 
 def test_parse_all_laws_current_rows_with_date_and_phase():
@@ -82,3 +85,79 @@ def test_parse_katatethenta_preserves_blank_type_ministry_before_pdf_column():
     assert bills[0]["type"] is None
     assert bills[0]["ministry"] is None
     assert "[Έγγραφο Βουλής 1 (13324903.pdf)](https://www.hellenicparliament.gr/UserFiles/c8827c35/13324903.pdf)" in bills[0]["summary_long_el"]
+
+
+def test_finalize_scraped_bills_can_filter_undated_fallback_rows():
+    bills = [
+        {"title_el": "title-only fallback", "date": None, "submitted_date": None},
+        {"title_el": "dated row", "date": None, "submitted_date": "2026-06-23T00:00:00+00:00"},
+    ]
+
+    strict = _finalize_scraped_bills(bills, limit=10, require_dates=True)
+    loose = _finalize_scraped_bills(bills, limit=10, require_dates=False)
+
+    assert strict == [bills[1]]
+    assert loose == bills
+
+
+@pytest.mark.asyncio
+async def test_parliament_freshness_probe_requires_dated_scraper(monkeypatch):
+    async def fake_scrape(limit: int, require_dates: bool = False):
+        assert limit == 20
+        assert require_dates is True
+        return [
+            {"title_el": "submitted", "date": None, "submitted_date": "2026-06-23T00:00:00+00:00"},
+            {"title_el": "voted", "date": "2026-06-22T00:00:00+00:00", "submitted_date": None},
+        ]
+
+    monkeypatch.setattr(scraper_router, "scrape_parliament_bills", fake_scrape)
+
+    payload = await scraper_router.get_parliament_freshness_probe(limit=20)
+
+    assert payload["count"] == 2
+    assert payload["dated_count"] == 2
+    assert payload["source_latest"] == "2026-06-23T00:00:00+00:00"
+
+
+@pytest.mark.asyncio
+async def test_strict_scrape_falls_back_when_stage_one_has_only_undated_rows(monkeypatch):
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return {
+                "Data": [
+                    {
+                        "Title": "Undated API row that should not stop strict fallback",
+                        "LawPhaseDate": "",
+                        "ID": "undated-stage-one",
+                    }
+                ]
+            }
+
+    class FakeClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def get(self, *_args, **_kwargs):
+            return FakeResponse()
+
+    async def fake_fetch_jina_markdown(url: str):
+        if "all-laws" not in url:
+            return ""
+        return """
+| [Dated fallback row](https://www.hellenicparliament.gr/Nomothetiko-Ergo/Anazitisi-Nomothetikou-Ergou?law_id=3aba3e72-d5b0-414b-8649-b45901603f92) | Σχέδιο νόμου | 23/06/2026 | Κατατεθέντα |
+"""
+
+    monkeypatch.setattr(scraper_router.httpx, "AsyncClient", lambda *args, **kwargs: FakeClient())
+    monkeypatch.setattr(scraper_router, "_fetch_jina_markdown", fake_fetch_jina_markdown)
+    monkeypatch.setattr(scraper_router, "SCRAPE_DELAY_SECONDS", 0)
+
+    bills = await scraper_router.scrape_parliament_bills(limit=10, require_dates=True)
+
+    assert len(bills) == 1
+    assert bills[0]["law_id"] == "3aba3e72-d5b0-414b-8649-b45901603f92"
+    assert bills[0]["submitted_date"] == "2026-06-23T00:00:00+00:00"

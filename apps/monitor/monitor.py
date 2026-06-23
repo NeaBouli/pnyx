@@ -73,6 +73,12 @@ ADMIN_KEY = os.getenv("ADMIN_KEY", "")
 AUTO_RECOVERY_T2 = os.getenv("AUTO_RECOVERY_T2", "false").lower() == "true"
 PARLIAMENT_SOURCE_FRESHNESS_ENABLED = os.getenv("PARLIAMENT_SOURCE_FRESHNESS_ENABLED", "true").lower() == "true"
 PARLIAMENT_SOURCE_MAX_LAG_HOURS = int(os.getenv("PARLIAMENT_SOURCE_MAX_LAG_HOURS", "36"))
+PARLIAMENT_SOURCE_SAMPLE_LIMIT = min(20, max(5, int(os.getenv("PARLIAMENT_SOURCE_SAMPLE_LIMIT", "20"))))
+PARLIAMENT_SOURCE_HTTP_RETRIES = max(1, int(os.getenv("PARLIAMENT_SOURCE_HTTP_RETRIES", "2")))
+PARLIAMENT_SOURCE_HTTP_RETRY_DELAY_SECONDS = max(
+    0,
+    int(os.getenv("PARLIAMENT_SOURCE_HTTP_RETRY_DELAY_SECONDS", "5")),
+)
 ZK_PENDING_MAX_HOURS = int(os.getenv("ZK_PENDING_MAX_HOURS", "24"))
 ZK_ARWEAVE_PUBLICATION_ENABLED = os.getenv("ZK_ARWEAVE_PUBLICATION_ENABLED", "false").lower() == "true"
 ZK_ARWEAVE_SCOPE_ALLOWLIST = {
@@ -117,6 +123,31 @@ T1_DEFAULT_LOCK_TTL = 3600  # 1h
 # Verified repairs are intentionally tiny and allowlisted. They may only call
 # idempotent admin endpoints, then prove the exact alert condition is gone.
 VERIFIED_T1_ALERTS = {"parliament_source_lag"}
+
+
+def _parliament_freshness_url() -> str:
+    return f"{API_URL}/api/v1/scraper/parliament/freshness?limit={PARLIAMENT_SOURCE_SAMPLE_LIMIT}"
+
+
+def _get_parliament_freshness_response(timeout: int = 45) -> httpx.Response:
+    last_exc: Exception | None = None
+    for attempt in range(1, PARLIAMENT_SOURCE_HTTP_RETRIES + 1):
+        try:
+            return httpx.get(_parliament_freshness_url(), timeout=timeout)
+        except Exception as exc:
+            last_exc = exc
+            if attempt >= PARLIAMENT_SOURCE_HTTP_RETRIES:
+                break
+            logger.warning(
+                "[PARLIAMENT_SOURCE] Probe attempt %d/%d failed: %s; retrying in %ds",
+                attempt,
+                PARLIAMENT_SOURCE_HTTP_RETRIES,
+                str(exc)[:120],
+                PARLIAMENT_SOURCE_HTTP_RETRY_DELAY_SECONDS,
+            )
+            if PARLIAMENT_SOURCE_HTTP_RETRY_DELAY_SECONDS:
+                time.sleep(PARLIAMENT_SOURCE_HTTP_RETRY_DELAY_SECONDS)
+    raise last_exc or RuntimeError("Parliament source probe failed")
 
 
 # ─── Telegram ────────────────────────────────────────────────────────────────
@@ -185,11 +216,14 @@ def attempt_tier1(alert: Alert, r) -> str:
 def verify_parliament_source_lag_repaired(conn) -> tuple[bool, str]:
     """Prove Parliament source freshness no longer exceeds the alert threshold."""
     try:
-        resp = httpx.get(f"{API_URL}/api/v1/scraper/parliament/latest?limit=5", timeout=45)
+        resp = _get_parliament_freshness_response(timeout=45)
         if resp.status_code != 200:
             return False, f"source_check_http_{resp.status_code}"
 
-        source_latest = _latest_source_activity(resp.json().get("bills", []))
+        payload = resp.json()
+        source_latest = _as_utc_datetime(payload.get("source_latest"))
+        if source_latest is None:
+            source_latest = _latest_source_activity(payload.get("bills", []))
         if not source_latest:
             return False, "source_has_no_dated_bills"
 
@@ -406,7 +440,7 @@ def check_parliament_source_freshness(conn) -> list[Alert]:
         return alerts
 
     try:
-        resp = httpx.get(f"{API_URL}/api/v1/scraper/parliament/latest?limit=5", timeout=45)
+        resp = _get_parliament_freshness_response(timeout=45)
         if resp.status_code != 200:
             alerts.append(Alert(
                 "parliament_source_check_failed", "ekklesia-api", "warning",
@@ -415,11 +449,19 @@ def check_parliament_source_freshness(conn) -> list[Alert]:
             return alerts
 
         payload = resp.json()
-        source_latest = _latest_source_activity(payload.get("bills", []))
+        source_latest = _as_utc_datetime(payload.get("source_latest"))
+        if source_latest is None:
+            source_latest = _latest_source_activity(payload.get("bills", []))
         if not source_latest:
+            count = payload.get("count", 0)
+            dated_count = payload.get("dated_count", 0)
             alerts.append(Alert(
                 "parliament_source_check_failed", "ekklesia-api", "warning",
-                "Parliament source freshness check returned no dated bills", False,
+                (
+                    "Parliament source freshness check returned no dated bills "
+                    f"(count={count}, dated_count={dated_count})"
+                ),
+                False,
             ))
             return alerts
 

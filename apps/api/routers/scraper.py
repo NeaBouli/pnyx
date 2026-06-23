@@ -262,6 +262,30 @@ SCRAPE_DELAY_SECONDS = 5
 SCRAPE_MAX_REQUESTS = 20
 
 
+def _has_official_activity_date(bill: dict) -> bool:
+    """True when a scraped Parliament row has a usable official date."""
+    return bool(bill.get("date") or bill.get("submitted_date"))
+
+
+def _finalize_scraped_bills(
+    bills: list[dict],
+    *,
+    limit: int,
+    require_dates: bool = False,
+) -> list[dict]:
+    if not require_dates:
+        return bills[:limit]
+
+    dated = [bill for bill in bills if _has_official_activity_date(bill)]
+    skipped = len(bills) - len(dated)
+    if skipped:
+        logger.warning(
+            "[SCRAPER] Skipped %d undated Parliament fallback rows while require_dates=true",
+            skipped,
+        )
+    return dated[:limit]
+
+
 async def _fetch_jina_markdown(url: str) -> Optional[str]:
     """Fetch a URL via Jina Reader and return Markdown content."""
     try:
@@ -407,7 +431,10 @@ def _parse_parliament_markdown(md: str, source_url: str) -> list[dict]:
     return bills
 
 
-async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
+async def scrape_parliament_bills(
+    limit: int = 10,
+    require_dates: bool = False,
+) -> list[dict]:
     """Fetches latest bills from hellenicparliament.gr.
 
     3-stage fallback chain:
@@ -415,6 +442,8 @@ async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
       2. Jina HTML scrape — if API returns 403 or fails
       3. Direct HTML parse — if Jina also fails
     Each fallback is logged. Total failure = empty list + log warning.
+    Set require_dates=True for scheduled/monitor paths so title-only fallback
+    rows cannot masquerade as a healthy source freshness check.
     """
     import asyncio
     from datetime import timezone as _tz
@@ -467,7 +496,11 @@ async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
         api_blocked = True
 
     if bills:
-        return bills[:limit]
+        finalized = _finalize_scraped_bills(bills, limit=limit, require_dates=require_dates)
+        if finalized or not require_dates:
+            return finalized
+        logger.warning("[SCRAPER] Stage 1 returned only undated rows — falling back to Jina")
+        bills = []
 
     # ── Stage 2: Jina Markdown Scrape (current index + specific pages) ───────
     if api_blocked or not bills:
@@ -509,7 +542,11 @@ async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
             )
             if bills:
                 logger.info("[SCRAPER] Fallback 1→2: Jina returned %d bills from %d pages", len(bills), len(jina_pages))
-                return bills[:limit]
+                finalized = _finalize_scraped_bills(bills, limit=limit, require_dates=require_dates)
+                if finalized or not require_dates:
+                    return finalized
+                logger.warning("[SCRAPER] Stage 2 returned only undated rows — falling back to direct HTML")
+                bills = []
         except Exception as e:
             logger.warning("[SCRAPER] Stage 2 (Jina) error: %s — falling back to direct HTML", e)
 
@@ -540,7 +577,7 @@ async def scrape_parliament_bills(limit: int = 10) -> list[dict]:
     if not bills:
         logger.warning("[SCRAPER] ALL 3 STAGES FAILED — 0 bills. Next run in 6-12h.")
 
-    return bills[:limit]
+    return _finalize_scraped_bills(bills, limit=limit, require_dates=require_dates)
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -595,6 +632,24 @@ async def get_latest_from_parliament(limit: int = Query(10, le=20)):
     """Scraped aktuelle Gesetzentwürfe von hellenicparliament.gr."""
     bills = await scrape_parliament_bills(limit=limit)
     return {"source": "hellenicparliament.gr", "count": len(bills), "bills": bills}
+
+
+@router.get("/parliament/freshness")
+async def get_parliament_freshness_probe(limit: int = Query(20, le=20)):
+    """Strict Parliament source probe for monitor freshness checks."""
+    bills = await scrape_parliament_bills(limit=limit, require_dates=True)
+    dates = [
+        bill.get("date") or bill.get("submitted_date")
+        for bill in bills
+        if bill.get("date") or bill.get("submitted_date")
+    ]
+    return {
+        "source": "hellenicparliament.gr",
+        "count": len(bills),
+        "dated_count": len(dates),
+        "source_latest": max(dates) if dates else None,
+        "bills": bills,
+    }
 
 
 @router.post("/fetch")

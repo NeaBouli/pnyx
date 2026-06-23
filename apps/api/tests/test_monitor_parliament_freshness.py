@@ -83,3 +83,32 @@ def test_parliament_source_freshness_passes_when_db_matches_source(monkeypatch):
     )
 
     assert alerts == []
+
+
+def test_parliament_source_freshness_reports_probe_without_dated_bills(monkeypatch):
+    class EmptyProbeResponse(FakeResponse):
+        def json(self):
+            return {
+                "count": 3,
+                "dated_count": 0,
+                "source_latest": None,
+                "bills": [
+                    {"title_el": "title only", "date": None, "submitted_date": None},
+                ],
+            }
+
+    monkeypatch.setattr(
+        monitor.httpx,
+        "get",
+        lambda *_args, **_kwargs: EmptyProbeResponse([]),
+    )
+
+    alerts = monitor.check_parliament_source_freshness(
+        FakeConn(datetime(2026, 6, 10, tzinfo=timezone.utc))
+    )
+
+    assert len(alerts) == 1
+    assert alerts[0].type == "parliament_source_check_failed"
+    assert alerts[0].recovery_allowed is False
+    assert "count=3" in alerts[0].message
+    assert "dated_count=0" in alerts[0].message

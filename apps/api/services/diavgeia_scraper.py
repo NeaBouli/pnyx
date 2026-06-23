@@ -215,6 +215,14 @@ _GOV_LEVEL_MAP = {
 CONVERTIBLE_TYPES = {"Α.2"}
 
 
+def _to_naive_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(timezone.utc).replace(tzinfo=None)
+
+
 async def convert_decisions_to_bills(session: AsyncSession) -> dict:
     """
     Convert new Diavgeia Α.2 decisions into parliament_bills (ANNOUNCED).
@@ -259,6 +267,7 @@ async def convert_decisions_to_bills(session: AsyncSession) -> dict:
             status=BillStatus.OPEN_END,
             governance_level=gov,
             parliament_url=doc_url,
+            submitted_date=_to_naive_utc(pub_ts),
             dimos_id=dimos_id,
             periferia_id=periferia_id,
             source="DIAVGEIA",
@@ -283,3 +292,26 @@ async def convert_decisions_to_bills(session: AsyncSession) -> dict:
     stats = {"created": created, "skipped": skipped, "total_checked": len(rows)}
     logger.info("[NEA-199] Conversion complete: %s", stats)
     return stats
+
+
+async def backfill_diavgeia_bill_dates(session: AsyncSession) -> int:
+    """Copy Diavgeia publish timestamps to imported bill activity dates.
+
+    Existing DIAVGEIA rows predate the source-date mapping. This backfill is
+    intentionally narrow: it only fills missing submitted_date for DIAVGEIA
+    rows from the already stored public publish_timestamp.
+    """
+    result = await session.execute(text("""
+        UPDATE parliament_bills pb
+        SET submitted_date = dd.publish_timestamp AT TIME ZONE 'UTC'
+        FROM diavgeia_decisions dd
+        WHERE pb.source = 'DIAVGEIA'
+          AND pb.diavgeia_ada = dd.ada
+          AND pb.submitted_date IS NULL
+          AND dd.publish_timestamp IS NOT NULL
+        RETURNING pb.id
+    """))
+    rows = result.fetchall()
+    if rows:
+        await session.commit()
+    return len(rows)
