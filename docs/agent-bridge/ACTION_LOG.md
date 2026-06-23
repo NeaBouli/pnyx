@@ -1,5 +1,19 @@
 # Action Log
 
+## 2026-06-23 — Codex: Dependabot #19 pydantic-settings fixed
+
+- Trigger:
+  - GitHub push after Bridge commit reported 1 new moderate Dependabot alert.
+- Finding:
+  - Alert `#19`, package `pydantic-settings`, manifest `apps/api/requirements.txt`.
+  - Advisory: `pydantic-settings >=2.12.0, <2.14.2` may follow symlinks outside `secrets_dir`.
+- Fix:
+  - Bumped `pydantic-settings==2.14.0` -> `2.14.2`.
+  - No API code, DB, mobile, dashboard, or ZK logic changed.
+- Validation:
+  - `python3 -m py_compile apps/api/config.py apps/api/main.py` PASS.
+  - `apps/api/.venv/bin/python -m pytest apps/api/tests/test_cors_config.py apps/api/tests/test_sso_config.py -q` PASS: 11 passed, 1 pydantic deprecation warning.
+
 ## 2026-06-23 — Codex: F-Droid !38007 pipeline diagnosis opened
 
 - Scope:
