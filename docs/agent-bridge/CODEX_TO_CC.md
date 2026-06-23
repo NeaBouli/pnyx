@@ -4,7 +4,9 @@ Mode: support/review when asked. Do not assume old vC35/vC37/vC38/vC41 tasks are
 
 Current state:
 - GH#117 / NEA-393 is complete: public Community/Wiki transparency docs are live and describe verified autonomous recovery, proof-before-success, forbidden writes, and 0 AI tokens/run for Phase 1 `parliament_source_lag`. Commit `2f27fab` deployed to web only; rollback tag `rollback-pre-recovery-transparency-docs-20260623`; live Chrome desktop/mobile and monitor once passed.
-- Current repo/server git HEAD: latest `main`; API/monitor containers were rebuilt from code commit `74ea10f`.
+- Current repo/server git HEAD: latest `main`; API/monitor containers were rebuilt from code commit `ef7f2c1`.
+- Parliament source-date hardening is live: monitor uses `/api/v1/scraper/parliament/freshness` strict dated probe with retries, scheduled Parliament scrape requires dated rows, and DIAVGEIA imported bills now receive the public `publish_timestamp` as `submitted_date`.
+- DIAVGEIA source-date backfill completed: backup CSV `/opt/ekklesia/backups/diavgeia_submitted_date_pre_20260623-213409.csv`, rows backfilled `2441`, remaining eligible rows `0`.
 - Completion boundary audit added: `docs/agent-bridge/GH111_GH112_COMPLETION_AUDIT.md`.
 - GH#112 first public scoped rollout is proven complete for `bill:GR-d4c62ed4`; staged/global rollout and ZK Arweave publication remain gated/off.
 - Automatic/global ZK rollout is code-ready but server-enforced to public PARLIAMENT bill scopes only (`ACTIVE`, `WINDOW_24H`, `OPEN_END`). DIAVGEIA, DEMO, hidden, canary, and non-public scopes must not become opt-in/root/vote scopes through the global flag.
@@ -45,7 +47,7 @@ Current state:
 - GH#111 focused tests exist: `tests/test_identity_nullifier_v2_endpoint.py` proves same-row v1->v2 migration, Redis in-flight locking, and atomic row-locked existing-identity re-registration with mocked HLR; `scripts/gh111_nullifier_v2_canary_check.py` snapshots/compares real before/after canary counts and v2 invariants; `scripts/gh111_kdf_env_guard.py` edits only the KDF env key with backup and no shell-source; `scripts/gh111_preflight_package_check.py` validates the preflight evidence package; `scripts/gh111-prepare-nullifier-v2-window.sh` creates the no-mutation backup/preflight package and writes `package_check.json`. Latest focused set passed: 59 GH#111 tests.
 - GH#111 S10 UI path was verified without mutation: Profile -> `Επαλήθευση / Νέο κλειδί` opens VerifyScreen with warning; no phone submitted, no HLR call, DB remains 17 active / 0 v2 / KDF unset.
 - GH#111 v2 health diagnosis: production API image passes one-off Argon2/v2 generation and full FastAPI lifespan `/health` under `IDENTITY_NULLIFIER_KDF_VERSION=v2`; previous live 500 is treated as rebuild/readiness timing until contradicted.
-- Disk-critical alerts were rechecked again on 2026-06-23. Cause was Docker Build Cache, not snapshots/backups. Safe cleanup only (`docker builder prune -af`; no volumes/images/backups/data deleted) moved `/` from 90% used / 7.5 GB free to 82% used / 14 GB free; monitor passed 18/18.
+- Disk-critical alerts were rechecked again on 2026-06-23/24. Cause was `/var/lib` Docker footprint, with Build Cache as the only safe reclaim target. Safe cleanup only (`docker builder prune -af`; no volumes/images/backups/data deleted) moved `/` from 91% used / 6.9 GB free to 84% used / 12 GB free after rebuild; monitor passed 18/18.
 - Forum missing Telegram alerts from 2026-06-17 were transient sync/backfill progress. Current DB: `public_missing_forum=0`; only hidden `ZK-CANARY-001` has no forum topic, by design.
 - 2026-06-23 Dependabot #19: `pydantic-settings` moderate alert fixed in source by bumping `2.14.0` -> `2.14.2`; focused API config tests passed (11 passed) and isolated target-version import test passed. `b34d30d` CI/Security/Dependency Graph/Dependabot workflows passed; production API was rebuilt and now verifies `pydantic-settings 2.14.2` inside `ekklesia-api`; monitor PASS 18/18.
 
@@ -58,3 +60,4 @@ If asked to continue:
 6. GH#111 is complete. Do not roll back to v1 unless a concrete production blocker appears.
 7. Do not record operator phone numbers, raw nullifiers, or private keys in Bridge/GitHub/Linear/docs/log excerpts.
 8. Keep monitoring v2 invariant counters; any malformed/mismatched v2 row is a T3 issue.
+9. If Parliament freshness alerts recur, check the strict freshness endpoint first: it should return `dated_count > 0` and `source_latest`; title-only fallback rows are no longer accepted as healthy.

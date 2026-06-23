@@ -12582,3 +12582,50 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Production `monitor --once`: 18 checks, `All checks passed — no alerts`.
   - Production read-only proof function: `(True, 'source=2026-06-22 db=2026-06-22 lag=0h')`.
   - First monitor daemon run after 90s startup grace: 18 checks, `All checks passed — no alerts`.
+
+## 2026-06-23 — Codex: Parliament source-date hardening + DIAVGEIA date backfill
+
+- Scope: fix recurring `parliament_source_check_failed` / `no dated bills` monitor alerts and make non-Bouli DIAVGEIA bills carry a real public source timestamp.
+- Safety boundary:
+  - No mobile, web, voting, identity, ZK, Arweave, forum metadata, or lifecycle vote-state paths changed.
+  - Existing loose Parliament endpoint `/api/v1/scraper/parliament/latest` remains compatible.
+  - New strict path is only for scheduled scrape/monitor freshness, so title-only fallback rows cannot masquerade as healthy source data.
+  - DIAVGEIA backfill is narrow: `source='DIAVGEIA'`, `submitted_date IS NULL`, matched by stored `diavgeia_ada`, and uses public `diavgeia_decisions.publish_timestamp`.
+- Local rollback:
+  - `rollback-pre-source-date-hardening-20260623-211829` at local pre-fix HEAD `8e2daca`.
+- Local fix:
+  - `apps/api/routers/scraper.py`
+    - Added strict `require_dates` mode and `/api/v1/scraper/parliament/freshness`.
+    - Strict mode falls through to the next fallback stage if a stage returns only undated rows.
+  - `apps/api/main.py`
+    - Scheduled Parliament scrape now requires dated rows and records failure on zero dated rows.
+    - Scheduled DIAVGEIA scrape now runs source-date backfill after conversion.
+  - `apps/api/services/diavgeia_scraper.py`
+    - New DIAVGEIA bill conversion sets `submitted_date` from `publish_timestamp`.
+    - Added `backfill_diavgeia_bill_dates()`.
+  - `apps/monitor/monitor.py`
+    - Parliament source freshness now calls the strict endpoint, includes `count/dated_count` in no-date alerts, and retries transient HTTP connection failures.
+- Verification before deploy:
+  - `python3 -m py_compile apps/api/routers/scraper.py apps/api/main.py apps/api/services/diavgeia_scraper.py apps/monitor/monitor.py`: PASS.
+  - Focused pytest: 14 passed.
+  - Causal pytest block: 137 passed, 6 xfailed, 1 xpassed, 1 warning.
+  - `git diff --check`: PASS.
+  - Local live source emulation: strict Parliament scrape returned 5/5 dated rows; latest `2026-06-23`.
+  - CC/Claude Code helper unavailable: CLI returned `401 Invalid authentication credentials`; Codex performed manual review + broader tests.
+- Deploy:
+  - Commit `ef7f2c1` pushed to `origin/main`.
+  - Production rollback tag set before deploy: `rollback-pre-source-date-hardening-prod-20260623-213207` at `b34d30d`.
+  - Production `/opt/ekklesia/app` fast-forwarded to `ef7f2c1`.
+  - Rebuilt/restarted only `api` and `monitor`; web/mobile not touched.
+- Data operation:
+  - Before backfill, rollback CSV exported to `/opt/ekklesia/backups/diavgeia_submitted_date_pre_20260623-213409.csv`.
+  - Backfilled `2441` DIAVGEIA bill `submitted_date` values.
+  - Remaining DIAVGEIA rows needing this backfill: `0`.
+- Server cleanup:
+  - Read-only disk audit showed `/var/lib` and Docker Build Cache as the issue.
+  - Ran only `docker builder prune -af`; no Docker images, volumes, backups, snapshots, or project data removed.
+  - Disk after rebuild: `/` 84% used / 12 GB free; DB healthy.
+- Live verification:
+  - `https://api.ekklesia.gr/health`: PASS (`status=ok`).
+  - `https://api.ekklesia.gr/api/v1/scraper/parliament/freshness?limit=5`: PASS (`count=5`, `dated_count=5`, `source_latest=2026-06-23T00:00:00+00:00`).
+  - Production `monitor --once`: 18 checks, `All checks passed — no alerts`.
