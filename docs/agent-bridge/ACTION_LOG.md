@@ -1,5 +1,29 @@
 # Action Log
 
+## 2026-06-23 — Codex: Security Audit und Server-Disk wieder gruen
+
+- Scope:
+  - Fix the current red GitHub `Security Audit` workflow without touching runtime logic.
+  - Recover production disk space using cache-only cleanup; no volumes, images, backups, DB, or app data removed.
+- Security Audit finding:
+  - GitHub run `27986334575` failed on `undici <=6.26.0` in `apps/mobile` and `apps/representative`.
+  - Applied minimal npm overrides to keep `undici` on safe major 6: `undici@6.27.0`.
+  - Changed only package manifests and lockfiles; no Mobile/App/API/ZK runtime code changed.
+- Validation:
+  - Exact Security Audit loop over all lockfiles: PASS, all `npm audit --audit-level=high` checks report `found 0 vulnerabilities`.
+  - `apps/mobile`: `npx tsc --noEmit` PASS.
+  - `apps/representative`: `npx tsc --noEmit` PASS.
+  - `apps/mobile`: no Vitest config present for an additional local unit run.
+- Production disk cleanup:
+  - Before: `/` 90% used, 7.5 GB free; Docker Build Cache 7.43 GB.
+  - Action: `docker builder prune -af` only.
+  - After: `/` 82% used, 14 GB free; Build Cache 0 B.
+  - Containers remained up; DB remained healthy.
+  - Production monitor `--once`: PASS, 18 checks, no alerts.
+- Current ZK boundary rechecked:
+  - `bill:GR-d4c62ed4` remains the only public scoped ZK rollout proof point: `can_opt_in=true`, `can_vote=true`, public receipt pending Arweave, API result `zk_vote_count=1`.
+  - `ZK_GLOBAL_ROLLOUT_ENABLED=false` and `ZK_ARWEAVE_PUBLICATION_ENABLED=false` remain the intentional unfinished gates.
+
 ## 2026-06-23 — Codex: GH#117 / NEA-393 recovery transparency docs complete
 
 - Scope:

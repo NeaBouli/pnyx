@@ -3,6 +3,12 @@
 ## Aktive Roadmap — Stand 2026-06-12
 
 ### Aktiv baubar (Reihenfolge)
+0. [x] Security Audit und Disk Hygiene — 2026-06-23
+   - Befund: GitHub `Security Audit` rot wegen `undici<=6.26.0` in `apps/mobile` + `apps/representative`.
+   - Fix: minimaler Override/Lockfile-Pin auf `undici@6.27.0`, kein Runtime-/Vote-/ZK-Code geaendert.
+   - Verifiziert: exakter Audit-Loop ueber alle package-locks PASS; mobile + representative `tsc --noEmit` PASS.
+   - Disk: Docker Build Cache-only cleanup; `/` 90% -> 82%, 14 GB frei; Monitor PASS 18 Checks/no alerts.
+
 0. [x] Public Recovery Transparency Docs — GH#117 / NEA-393
    - Ziel: Verified autonomous recovery muss auf Website/Wiki transparent dokumentiert sein.
    - Scope: Community-Kostenkachel + Wiki Security/Architecture + Markdown-Spiegel.

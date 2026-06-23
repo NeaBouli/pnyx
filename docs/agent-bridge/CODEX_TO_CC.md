@@ -21,7 +21,8 @@ Current state:
 - Monitor Telegram Bot API URL logging is redacted live. Do not repeat raw Telegram tokens from terminal logs.
 - GH#112 hidden S10 canary passed earlier for `bill:ZK-CANARY-001`.
 - GH#112 first public scoped rollout passed for `bill:GR-d4c62ed4`; vC50 S10 install/launch smoke test passed.
-- vC50 live deploy checks passed: API version 1.0.21/50, landing badge vC50, live APK hash match, GitHub release assets hash match, S10 install/launch smoke test, monitor once 17/17, CI + Security Audit green.
+- vC50 live deploy checks passed: API version 1.0.21/50, landing badge vC50, live APK hash match, GitHub release assets hash match, S10 install/launch smoke test. Latest production monitor `--once` now reports 18 checks/no alerts.
+- 2026-06-23 Security Audit correction: run `27986334575` failed on `undici<=6.26.0` in `apps/mobile` + `apps/representative`. Minimal override/lockfile fix pins `undici@6.27.0`; exact local Security Audit loop over all package-locks PASS with 0 high vulnerabilities; mobile + representative `tsc --noEmit` PASS.
 - Public scoped ZK result for `GR-d4c62ed4`: `total_votes=1`, `tier1_vote_count=0`, `zk_vote_count=1`, `yes_count=1`.
 - Public receipt exists with `vote_commitment=YES`, `arweave_pending=true`, `arweave_tx_id=null`.
 - Production ZK is currently scoped to exactly `bill:GR-d4c62ed4` through `ZK_PRODUCTION_SCOPE_ALLOWLIST`.
@@ -44,7 +45,7 @@ Current state:
 - GH#111 focused tests exist: `tests/test_identity_nullifier_v2_endpoint.py` proves same-row v1->v2 migration, Redis in-flight locking, and atomic row-locked existing-identity re-registration with mocked HLR; `scripts/gh111_nullifier_v2_canary_check.py` snapshots/compares real before/after canary counts and v2 invariants; `scripts/gh111_kdf_env_guard.py` edits only the KDF env key with backup and no shell-source; `scripts/gh111_preflight_package_check.py` validates the preflight evidence package; `scripts/gh111-prepare-nullifier-v2-window.sh` creates the no-mutation backup/preflight package and writes `package_check.json`. Latest focused set passed: 59 GH#111 tests.
 - GH#111 S10 UI path was verified without mutation: Profile -> `Επαλήθευση / Νέο κλειδί` opens VerifyScreen with warning; no phone submitted, no HLR call, DB remains 17 active / 0 v2 / KDF unset.
 - GH#111 v2 health diagnosis: production API image passes one-off Argon2/v2 generation and full FastAPI lifespan `/health` under `IDENTITY_NULLIFIER_KDF_VERSION=v2`; previous live 500 is treated as rebuild/readiness timing until contradicted.
-- Disk-critical alerts were rechecked on 2026-06-18. Cause was Docker BuildKit/cache/dangling images under `/var/lib`, not deleted Hetzner snapshots or `/opt/backups`. Safe cleanup only (`docker builder prune`, `docker image prune`, journal vacuum; no volumes/backups deleted) moved `/` from 93% used / 5.1 GB free to 81% used / 14 GB free; monitor passed 17/17.
+- Disk-critical alerts were rechecked again on 2026-06-23. Cause was Docker Build Cache, not snapshots/backups. Safe cleanup only (`docker builder prune -af`; no volumes/images/backups/data deleted) moved `/` from 90% used / 7.5 GB free to 82% used / 14 GB free; monitor passed 18/18.
 - Forum missing Telegram alerts from 2026-06-17 were transient sync/backfill progress. Current DB: `public_missing_forum=0`; only hidden `ZK-CANARY-001` has no forum topic, by design.
 
 If asked to continue:
