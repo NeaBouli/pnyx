@@ -1,6 +1,6 @@
 # Server Cleanup Policy — ekklesia.gr
 
-Date: 2026-06-20
+Date: 2026-06-24
 Scope: `root@135.181.254.229`, ekklesia/pnyx runtime and shared Docker host.
 
 ## Current Finding
@@ -10,13 +10,13 @@ application code.
 
 Latest read-only measurement:
 
-- `/`: 75G total, 64G used, 8.4G free, 89%.
+- `/`: 75G total, 67G used, 5.3G free, 93%.
 - Inodes: 17% used, not a problem.
 - `/opt/ekklesia`: about 1.4G.
-- `/var/lib/docker/volumes`: about 14G.
-- `/var/lib/containerd`: about 30G.
-- Docker images: about 31G, all currently attached to running containers.
-- Docker build cache: 0B at measurement time.
+- `/var/lib/docker/volumes`: about 5.8G.
+- `/var/lib/containerd`: about 40G.
+- Docker images: about 42G, all currently attached to running containers.
+- Docker build cache: about 2.8G, but only old cache is auto-cleaned.
 - Journald: about 220M.
 - `/var/lib/snapd/cache`: about 2.0G.
 
@@ -109,6 +109,44 @@ These are large but functional:
 - Parlay/other project images: shared host usage, not ekklesia trash.
 - `/var/lib/containerd`: mostly active image/snapshot data for running Docker
   workloads. Do not delete manually.
+
+## Installed Hourly Guard
+
+Production has an hourly host-level guard:
+
+- Timer: `safe-disk-guard.timer`
+- Service: `safe-disk-guard.service`
+- Script: `/usr/local/sbin/safe-disk-guard`
+- Repo source: `scripts/safe-disk-guard`
+- Log: `/var/log/safe-disk-guard.log`
+- Status: `/var/log/safe-disk-guard.status`
+
+The guard is intentionally conservative. At or above `CLEAN_PERCENT=90`, it only:
+
+- rotates Docker container logs using `/etc/logrotate.d/docker-containers`;
+- caps journald via `journalctl --vacuum-size=300M`;
+- runs `apt-get clean`;
+- prunes old Docker builder cache with `docker builder prune -af --filter until=72h`.
+
+It does **not** prune Docker volumes, active images, active containers, backups,
+database data, Arweave data, or `/var/lib/containerd` snapshots directly.
+
+As of 2026-06-24, the guard writes an explicit status when safe cleanup is not
+enough:
+
+- `state=cleanup_ineffective`: usage stayed at or above cleanup threshold and
+  did not decrease after safe cleanup. This means manual capacity review is
+  required; likely active Docker/containerd data is outside the automatic policy.
+- `state=cleanup_incomplete`: usage decreased but remains at or above cleanup
+  threshold. This also requires manual capacity review before deleting active
+  images, volumes, backups, or project data.
+
+Verification on 2026-06-24:
+
+- Rollback copy: `/usr/local/sbin/safe-disk-guard.rollback-20260624-211233`.
+- Test run: `/` usage `93% -> 93%`.
+- Status written:
+  `state=cleanup_ineffective before=93% after=93% threshold=90% action=manual_capacity_review`.
 
 ## Proposed Continuous Cleanup Design
 

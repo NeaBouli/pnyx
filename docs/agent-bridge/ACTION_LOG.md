@@ -12629,3 +12629,33 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - `https://api.ekklesia.gr/health`: PASS (`status=ok`).
   - `https://api.ekklesia.gr/api/v1/scraper/parliament/freshness?limit=5`: PASS (`count=5`, `dated_count=5`, `source_latest=2026-06-23T00:00:00+00:00`).
   - Production `monitor --once`: 18 checks, `All checks passed — no alerts`.
+
+## 2026-06-24 — Codex: safe-disk-guard cleanup-ineffective status
+
+- Scope: improve the already-installed hourly server cleanup guard so it clearly reports when safe automatic cleanup did not materially reduce disk pressure.
+- Safety boundary:
+  - No Docker volumes, active images, active containers, backups, DB data, Arweave data, or project files deleted.
+  - No service restart and no app deploy.
+  - The guard still only runs the previously allowed conservative actions: Docker log rotation, journald cap, `apt-get clean`, and old BuildKit cache prune.
+- Diagnosis:
+  - `safe-disk-guard.timer` is enabled and active.
+  - Last pre-change runs succeeded but logged `DONE: / usage 93% -> 93%`.
+  - Root cause: disk pressure is mostly active Docker/containerd data; this is outside automatic cleanup policy.
+- Rollback:
+  - Server rollback copy created before install:
+    `/usr/local/sbin/safe-disk-guard.rollback-20260624-211233`.
+- Change:
+  - Added repo-tracked source: `scripts/safe-disk-guard`.
+  - Installed to `/usr/local/sbin/safe-disk-guard`.
+  - Added `/var/log/safe-disk-guard.status`.
+  - Added explicit states:
+    - `cleanup_ineffective`: cleanup ran but usage did not decrease and remains at/above cleanup threshold.
+    - `cleanup_incomplete`: cleanup reduced usage but remains at/above cleanup threshold.
+    - `ok`, `warning`, and `locked` for normal guard outcomes.
+- Verification:
+  - `bash -n scripts/safe-disk-guard`: PASS.
+  - `bash -n /usr/local/sbin/safe-disk-guard`: PASS.
+  - Manual guarded run on production: PASS.
+  - Result: `/` usage `93% -> 93%`.
+  - Status file now says:
+    `state=cleanup_ineffective before=93% after=93% threshold=90% action=manual_capacity_review`.

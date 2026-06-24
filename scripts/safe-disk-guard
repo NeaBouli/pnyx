@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+ROOT_PATH="${ROOT_PATH:-/}"
+WARN_PERCENT="${WARN_PERCENT:-85}"
+CLEAN_PERCENT="${CLEAN_PERCENT:-90}"
+CRITICAL_PERCENT="${CRITICAL_PERCENT:-95}"
+BUILD_CACHE_MIN_AGE="${BUILD_CACHE_MIN_AGE:-72h}"
+JOURNAL_MAX_SIZE="${JOURNAL_MAX_SIZE:-300M}"
+LOGROTATE_CONFIG="${LOGROTATE_CONFIG:-/etc/logrotate.d/docker-containers}"
+LOG_FILE="${LOG_FILE:-/var/log/safe-disk-guard.log}"
+STATUS_FILE="${STATUS_FILE:-/var/log/safe-disk-guard.status}"
+LOCK_FILE="${LOCK_FILE:-/run/safe-disk-guard.lock}"
+
+log() {
+  printf '%s %s\n' "$(date -Is)" "$*" | tee -a "$LOG_FILE"
+}
+
+write_status() {
+  local state="$1"
+  shift
+  printf '%s state=%s %s\n' "$(date -Is)" "$state" "$*" >"$STATUS_FILE"
+}
+
+usage_percent() {
+  df --output=pcent "$ROOT_PATH" | awk 'NR == 2 { gsub(/%/, "", $1); print $1 }'
+}
+
+has_active_docker_build() {
+  ps -eo args= | grep -E '(^|[[:space:]])(docker|docker-compose|buildctl)([[:space:]].*)?(build|buildx|bake)([[:space:]]|$)' | grep -v grep >/dev/null 2>&1
+}
+
+run_cmd() {
+  log "RUN: $*"
+  "$@" >>"$LOG_FILE" 2>&1 || log "WARN: command failed: $*"
+}
+
+safe_log_maintenance() {
+  if [ -f "$LOGROTATE_CONFIG" ]; then
+    run_cmd logrotate "$LOGROTATE_CONFIG"
+  fi
+
+  if [ -d /var/lib/docker/containers ]; then
+    find /var/lib/docker/containers -type f \
+      \( -name '*-json.log.[0-9]' -o -name '*-json.log.[0-9][0-9]' \) \
+      -size +50M -print -exec gzip -f -- {} \; >>"$LOG_FILE" 2>&1 || true
+  fi
+
+  if command -v journalctl >/dev/null 2>&1; then
+    run_cmd journalctl --vacuum-size="$JOURNAL_MAX_SIZE"
+  fi
+}
+
+safe_cache_maintenance() {
+  run_cmd apt-get clean
+
+  if ! command -v docker >/dev/null 2>&1; then
+    log "SKIP: docker not installed"
+    return
+  fi
+
+  if has_active_docker_build; then
+    log "SKIP: active docker build detected; not pruning build cache"
+    return
+  fi
+
+  run_cmd docker builder prune -af --filter "until=$BUILD_CACHE_MIN_AGE"
+}
+
+record_cleanup_result() {
+  local before="$1"
+  local after="$2"
+
+  if [ "$after" -lt "$CLEAN_PERCENT" ]; then
+    write_status "ok" "before=${before}% after=${after}% threshold=${CLEAN_PERCENT}%"
+    return
+  fi
+
+  if [ "$after" -ge "$before" ]; then
+    log "WARN: cleanup ineffective; usage remains ${after}% after safe cleanup. Manual capacity review needed; likely active Docker/containerd data outside automatic cleanup policy."
+    write_status "cleanup_ineffective" "before=${before}% after=${after}% threshold=${CLEAN_PERCENT}% action=manual_capacity_review"
+    return
+  fi
+
+  log "WARN: cleanup incomplete; usage still ${after}% after safe cleanup. Manual capacity review needed before deleting active images, volumes, backups, or project data."
+  write_status "cleanup_incomplete" "before=${before}% after=${after}% threshold=${CLEAN_PERCENT}% action=manual_capacity_review"
+}
+
+main() {
+  mkdir -p "$(dirname "$LOG_FILE")" "$(dirname "$STATUS_FILE")"
+
+  exec 9>"$LOCK_FILE"
+  if ! flock -n 9; then
+    log "SKIP: another safe-disk-guard run is active"
+    write_status "locked" "root=${ROOT_PATH}"
+    exit 0
+  fi
+
+  local before after
+  before="$(usage_percent)"
+  log "START: ${ROOT_PATH} usage ${before}%"
+
+  if [ "$before" -lt "$WARN_PERCENT" ]; then
+    log "OK: below warn threshold ${WARN_PERCENT}%"
+    write_status "ok" "before=${before}% threshold=${WARN_PERCENT}%"
+    exit 0
+  fi
+
+  if [ "$before" -lt "$CLEAN_PERCENT" ]; then
+    log "WARN: above ${WARN_PERCENT}% but below cleanup threshold ${CLEAN_PERCENT}%; no cleanup"
+    write_status "warning" "before=${before}% warn=${WARN_PERCENT}% cleanup=${CLEAN_PERCENT}%"
+    exit 0
+  fi
+
+  safe_log_maintenance
+  safe_cache_maintenance
+
+  after="$(usage_percent)"
+  log "DONE: ${ROOT_PATH} usage ${before}% -> ${after}%"
+  record_cleanup_result "$before" "$after"
+
+  if [ "$after" -ge "$CRITICAL_PERCENT" ]; then
+    log "CRITICAL: still above ${CRITICAL_PERCENT}%; manual review required"
+  fi
+}
+
+main "$@"
