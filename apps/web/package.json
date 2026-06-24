@@ -11,7 +11,7 @@
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
     "@noble/curves": "^2.2.0",
-    "@tanstack/react-query": "^5.99.2",
+    "@tanstack/react-query": "^5.100.14",
     "arweave": "^1.15.7",
     "axios": "^1.16.0",
     "clsx": "^2.1.1",
