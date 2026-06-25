@@ -26,7 +26,18 @@
   - AST syntax parse: PASS.
   - `git diff --check`: PASS.
 - Release note:
-  - Requires API deploy to affect production scheduler.
+  - Commit `3edd88c` pushed to `origin/main`.
+  - GitHub checks green: `Security Audit` success; `CI — Ekklesia.gr` success (`Python API Tests`, `Crypto Package Tests`).
+  - Production rollback tag: `rollback-pre-gh124-lifecycle-lock-20260625-1659`.
+  - Production `/opt/ekklesia/app` fast-forwarded from `d118682` to `3edd88c`.
+  - Rebuilt/restarted only `api`; `web`, `db`, and `monitor` were not rebuilt.
+  - Live verification:
+    - `https://api.ekklesia.gr/health`: PASS.
+    - Container syntax compile for `services/bill_lifecycle.py`: PASS.
+    - Container SQL compile probe: `FOR UPDATE SKIP LOCKED` present.
+    - Duplicate transition-log probe for last 2h: 0 rows.
+    - Production monitor `--once`: 18 checks, `All checks passed — no alerts`.
+    - Disk after API rebuild: `/` 91% used / 7.0 GB free.
   - Historical duplicate audit rows remain as evidence; this guard prevents new duplicate scheduler claims.
 
 ## 2026-06-25 — Codex: Mobile update channel guard prepared
