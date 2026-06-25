@@ -18,7 +18,7 @@ RELEASE_NOTES_EN = "v1.0.21 — Version and stability update with no change to t
 
 FDROID_URL = ""  # Not live yet — MR !38007 pending
 PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=ekklesia.gr"
-DIRECT_APK_URL = "https://ekklesia.gr/download/"
+DIRECT_APK_URL = "https://ekklesia.gr/download/ekklesia-latest.apk"
 
 
 @router.get("/version")
