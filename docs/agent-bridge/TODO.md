@@ -112,9 +112,11 @@
   - Safety: no timing rule changes, no status rewrites, no historical log cleanup, no DB schema migration, no mobile/web/forum/Arweave/ZK changes.
   - Verified: lifecycle tests 8 passed; lifecycle+monitor+Arweave+Parliament subset 36 passed / 2 xfailed; AST parse + `git diff --check` PASS.
   - Deployed: commit `3edd88c`; rollback tag `rollback-pre-gh124-lifecycle-lock-20260625-1659`; API-only rebuild; live API health + monitor PASS.
-- [ ] GH#125 — F-Droid !38007 linsui feedback: replace inline python prebuild edits with `sed`.
-  - Befund 2026-06-25: MR pipeline is green, but linsui requested `sed` for readability.
-  - Next step: explain fdroiddata-only metadata patch + risks to Gio before implementation.
+- [x] GH#125 — F-Droid !38007 linsui feedback: replace inline python prebuild edits with `sed`.
+  - Fix 2026-06-25: fdroiddata metadata-only commit `2bf46a733` replaces inline Python prebuild edits with readable `sed`/shell commands.
+  - Safety: no pnyx runtime/app code, no version bump, no APK/AAB, no Play/Landing changes.
+  - Verified: local `fdroid rewritemeta ekklesia.gr` PASS, local `git diff --check` PASS, MR-event pipeline `2630143862` PASS (`fdroid lint`, `fdroid rewritemeta`, `fdroid build`, `check apk`).
+  - linsui/F-Droid MR comment posted: https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007#note_3494920439.
 - [x] GH#126 — Samsung A12 Direct-update links open `ekklesia.gr` 404.
   - Befund 2026-06-25: AAB tester on Samsung A12 has installed `v1.0.5 (v34) · Direct`; both home update banner and Profile update flow detect `v1.0.21` but open browser to `ekklesia.gr` 404.
   - Fix: API version endpoint now returns direct APK file URL `https://ekklesia.gr/download/ekklesia-latest.apk` instead of the missing `/download/` page route.
@@ -122,7 +124,7 @@
   - Safety: API + Web middleware only; no vote, ZK, forum, Arweave, identity, PDF/source-link, scraper, DB schema, mobile code, APK/AAB, or production data changed.
   - Verified: app-version regression tests 2 passed; web lint/build/typecheck PASS; API health PASS; live version endpoint returns APK URL; stale `/el/download` now 302->APK and final 200 APK MIME type.
 - [x] FDROID-TRACE-20260623 (Bridge-local): diagnosed and patched in fdroiddata only. Local validation: local `fdroid rewritemeta` PASS, fdroidserver-master formatting applied for CI, local `fdroid build` passes former scanner blocker and stops only on local missing `gradlew-fdroid`.
-- [ ] No active technical pnyx/fdroiddata work remains for #79 after green MR-event pipeline `2622515254`; it is tracked under Blocked/Extern until linsui/F-Droid merge.
+- [ ] No active technical pnyx/fdroiddata work remains for #79 after green MR-event pipeline `2630143862`; it is tracked under Blocked/Extern until linsui/F-Droid merge.
 
 ## Done (Session 25-27.05.2026)
 - [x] vC29 Release Gate (#78/NEA-280): S10 Funktionstest PASS, APK live auf ekklesia.gr, AAB in Play Console hochgeladen (`5eb37cf`)

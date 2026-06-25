@@ -1,5 +1,27 @@
 # Action Log
 
+## 2026-06-25 — Codex: GH#125 F-Droid linsui sed feedback resolved
+
+- Scope: fdroiddata metadata-only fix for MR `!38007`; no pnyx runtime/app code, no deploy, no version bump, no APK/AAB, no Play/Landing changes.
+- Trigger:
+  - linsui reviewed MR `!38007` and requested: "Please use sed instead of inline python code. It's not very readable."
+- Change:
+  - fdroiddata commit `2bf46a733` replaces inline Python prebuild edits in `metadata/ekklesia.gr.yml` with `sed`/shell commands.
+  - Kept existing F-Droid behavior: remove bundled Semaphore `jniLibs`, exclude `expo-notifications`, set F-Droid channel/flavor, disable ZK Semaphore in the F-Droid flavor, switch JS engine to JSC, keep Java 21 RN Gradle patch, disable New Arch/Hermes after Expo prebuild.
+- Safety boundary:
+  - No changes to pnyx production code or mobile release artifacts.
+  - Direct/Play vC50 runtime remains untouched.
+- Verification:
+  - Local `fdroid rewritemeta ekklesia.gr`: PASS.
+  - Local `git diff --check`: PASS.
+  - Local `fdroid lint ekklesia.gr` showed only local fdroidserver catalog mismatch warnings; GitLab `fdroid lint` passed.
+  - MR-event pipeline `2630143862`: PASS (`fdroid lint`, `fdroid rewritemeta`, `fdroid build`, `check apk`).
+- External communication:
+  - Comment posted to MR: https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007#note_3494920439.
+- Status:
+  - GH#125 resolved.
+  - GH#79 remains open/external until linsui/F-Droid merges MR `!38007`.
+
 ## 2026-06-25 — Codex: GH#124 lifecycle duplicate-transition guard prepared
 
 - Scope: prevent duplicate lifecycle transition logs/hooks when more than one API worker scheduler sees the same due bill at the same time.
