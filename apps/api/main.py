@@ -455,17 +455,45 @@ async def scheduled_completeness_check():
         async with AsyncSessionLocal() as db:
             from sqlalchemy import select, or_
             from models import ParliamentBill, BillStatus
-            # Find PARLIAMENT_VOTED/OPEN_END bills with missing data
+            from services.parliament_fetcher import (
+                _DOCUMENT_BLOCK_HEADING,
+                _is_bad_parliament_text,
+                _is_parliament_document_block_only,
+                _merge_text_with_existing_document_block,
+                fetch_bill_text,
+            )
+
+            text_candidate_statuses = [
+                BillStatus.ACTIVE,
+                BillStatus.WINDOW_24H,
+                BillStatus.PARLIAMENT_VOTED,
+                BillStatus.OPEN_END,
+            ]
+            result = await db.execute(
+                select(ParliamentBill).where(
+                    ParliamentBill.source == "PARLIAMENT",
+                    ParliamentBill.parliament_url.isnot(None),
+                    ParliamentBill.status.in_(text_candidate_statuses),
+                    or_(
+                        ParliamentBill.summary_long_el.is_(None),
+                        ParliamentBill.summary_long_el.like(f"{_DOCUMENT_BLOCK_HEADING}%"),
+                    ),
+                )
+            )
+            text_candidates = [
+                bill for bill in result.scalars().all()
+                if bill.summary_long_el is None or _is_parliament_document_block_only(bill.summary_long_el)
+            ]
+
+            # Find PARLIAMENT_VOTED/OPEN_END bills with missing party votes
             result = await db.execute(
                 select(ParliamentBill).where(
                     ParliamentBill.status.in_([BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END]),
-                    or_(
-                        ParliamentBill.party_votes_parliament.is_(None),
-                        ParliamentBill.summary_long_el.is_(None),
-                    )
+                    ParliamentBill.party_votes_parliament.is_(None),
                 )
             )
-            incomplete = result.scalars().all()
+            party_vote_candidates = result.scalars().all()
+            incomplete = list({bill.id: bill for bill in [*text_candidates, *party_vote_candidates]}.values())
             if not incomplete:
                 await record_success(name)
                 return
@@ -473,12 +501,17 @@ async def scheduled_completeness_check():
             logger.info("[COMPLETENESS] %d bills with missing data", len(incomplete))
             for bill in incomplete:
                 # Try to scrape parliament text if summary missing
-                if not bill.summary_long_el and bill.parliament_url:
+                if (
+                    bill.parliament_url
+                    and (bill.summary_long_el is None or _is_parliament_document_block_only(bill.summary_long_el))
+                ):
                     try:
-                        from services.parliament_fetcher import fetch_bill_text, _is_bad_parliament_text
                         text = await fetch_bill_text(bill.id, bill.parliament_url)
                         if text and not _is_bad_parliament_text(text):
-                            bill.summary_long_el = text[:10000]
+                            bill.summary_long_el = _merge_text_with_existing_document_block(
+                                text[:10000],
+                                bill.summary_long_el,
+                            )
                             logger.info("[COMPLETENESS] Fetched text for %s", bill.id)
                         elif text:
                             logger.info("[COMPLETENESS] Rejected bad fetched text for %s", bill.id)

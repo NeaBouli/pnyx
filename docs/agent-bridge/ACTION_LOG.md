@@ -1,5 +1,37 @@
 # Action Log
 
+## 2026-06-25 — Codex: GH#123 PDF-only Parliament blocks no longer block enrichment
+
+- Scope: protect the already-working Parliament PDF link fallback while allowing those PDF-only rows to be enriched later with real text.
+- Rollback:
+  - Local tag: `rollback-pre-gh123-pdf-only-enrichment-20260625-141738`.
+- Pre-fix live read-only count:
+  - `pdf_only_no_short=8`
+  - `pdf_only_total=8`
+  - `real_long_text=27`
+  - `missing_long=6`
+- Change:
+  - `apps/api/services/parliament_fetcher.py`
+    - Added strict PDF-only document-block detector for scraper-generated Parliament PDF blocks.
+    - Added merge helper that preserves existing PDF links below fetched text when enrichment succeeds.
+    - `enrich_all_bills()` now selects `summary_long_el IS NULL` plus strict PDF-only fallback candidates, and filters in Python before mutation.
+  - `apps/api/main.py`
+    - `scheduled_completeness_check()` now treats active/votable Parliament bills with missing or PDF-only text as text candidates.
+    - Existing party-vote completeness remains limited to `PARLIAMENT_VOTED` / `OPEN_END`.
+- Safety boundary:
+  - No DB schema, mobile, web, forum metadata, Arweave, voting, ZK, or release artifacts changed.
+  - Failed text fetch leaves the existing PDF-only document block untouched.
+  - Real long text is not selected by the broad job and is not overwritten.
+- Verification:
+  - `py_compile main.py services/parliament_fetcher.py`: PASS.
+  - Parliament fetcher unit tests: 14 passed.
+  - Scraper + Discourse + Source links + Monitor freshness: 47 passed.
+  - Admin catchup + scraper + fetcher + Discourse + Source links + Monitor freshness: 50 passed.
+  - `git diff --check`: PASS.
+- Follow-up:
+  - Deploy API only, then verify health/monitor.
+  - Run a careful live backfill/enrichment only after deploy verification; first canary one bill if needed, then the small remaining set.
+
 ## 2026-06-25 — Codex: GH#122 Active tab includes `WINDOW_24H` bills
 
 - Scope: fix Mobile `Ενεργά` list semantics so active/votable `WINDOW_24H` bills are visible in the active tab.

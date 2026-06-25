@@ -93,10 +93,13 @@
   - Safety: no voting, lifecycle, ZK, forum, Arweave, DB schema, or release artifact changed.
   - Verified: mobile Vitest all 88 passed; mobile `tsc --noEmit` PASS; API parliament/voting/lifecycle/monitor subset 44 passed, 4 xfailed; `py_compile` + `git diff --check` PASS.
   - Pending: S10 visual retest + APK/AAB release when device is available.
-- [ ] GH#123 — Parliament PDF-only document blocks prevent full-text enrichment.
+- [x] GH#123 — Parliament PDF-only document blocks prevent full-text enrichment.
   - Befund 2026-06-25: 8 Parliament bills have no `summary_short_el` and `summary_long_el` is only the PDF document block.
-  - Root cause candidate: enrichment selects only `summary_long_el IS NULL`, so PDF-only fallback blocks later enrichment.
-  - Next step: explain safe detector/backfill strategy + risks to Gio before implementation.
+  - Fix: PDF-only Parliament document blocks are detected as fallback-only, selected for enrichment, and preserved below fetched text if enrichment succeeds.
+  - Automatic completeness check now includes active/votable Parliament statuses for text-only recovery, but still never overwrites real text.
+  - Safety: failed fetch leaves existing PDF links untouched; genuine long text is excluded; forum/source/PDF rendering tests pass.
+  - Verified: local candidate count `8` PDF-only; tests 50 passed; `py_compile` + `git diff --check` PASS.
+  - Pending: production deploy/backfill/live verification status recorded in `ACTION_LOG.md`.
 - [ ] GH#124 — Lifecycle `WINDOW_24H` T3 alerts and duplicate transition logs.
   - Befund 2026-06-25: old T3 for `GR-056b74d6` resolved, but duplicate `ACTIVE -> WINDOW_24H` logs suggest possible scheduler/race issue.
   - Next step: explain lifecycle lock/idempotency diagnosis plan + risks to Gio before implementation.

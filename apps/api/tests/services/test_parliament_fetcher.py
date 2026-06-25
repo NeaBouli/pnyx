@@ -8,7 +8,11 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
-from services.parliament_fetcher import _is_bad_parliament_text
+from services.parliament_fetcher import (
+    _is_bad_parliament_text,
+    _is_parliament_document_block_only,
+    _merge_text_with_existing_document_block,
+)
 
 
 class TestIsBadParliamentText:
@@ -63,3 +67,56 @@ class TestIsBadParliamentText:
             "διευκολύνσεων στο πλαίσιο του διεθνούς αγώνα."
         )
         assert _is_bad_parliament_text(text) is False
+
+
+class TestParliamentDocumentBlockOnly:
+    """PDF fallback blocks must stay usable but should not block enrichment."""
+
+    def test_pdf_only_document_block_is_detected(self):
+        text = (
+            "### Πλήρη έγγραφα\n"
+            "- [Έγγραφο Βουλής 1 (13325042.pdf)](https://www.hellenicparliament.gr/UserFiles/c8827c35/13325042.pdf)\n"
+            "- [Έγγραφο Βουλής 2 (13325043.pdf)](https://www.hellenicparliament.gr/UserFiles/c8827c35/13325043.pdf)"
+        )
+
+        assert _is_parliament_document_block_only(text) is True
+
+    def test_real_text_plus_document_block_is_not_pdf_only(self):
+        text = (
+            "Σκοπός του νόμου είναι η οργάνωση της τοπικής αυτοδιοίκησης "
+            "και η αποσαφήνιση αρμοδιοτήτων για τους δήμους και τις περιφέρειες.\n\n"
+            "### Πλήρη έγγραφα\n"
+            "- [Έγγραφο Βουλής 1 (13325042.pdf)](https://www.hellenicparliament.gr/UserFiles/c8827c35/13325042.pdf)"
+        )
+
+        assert _is_parliament_document_block_only(text) is False
+
+    def test_document_block_detector_rejects_non_parliament_links(self):
+        text = (
+            "### Πλήρη έγγραφα\n"
+            "- [Έγγραφο](https://example.com/13325042.pdf)"
+        )
+
+        assert _is_parliament_document_block_only(text) is False
+
+    def test_merge_preserves_existing_pdf_links_after_fetch_success(self):
+        fetched_text = (
+            "Σκοπός του νόμου είναι η οργάνωση της τοπικής αυτοδιοίκησης "
+            "και η αποσαφήνιση αρμοδιοτήτων για τους δήμους και τις περιφέρειες."
+        )
+        document_block = (
+            "### Πλήρη έγγραφα\n"
+            "- [Έγγραφο Βουλής 1 (13325042.pdf)](https://www.hellenicparliament.gr/UserFiles/c8827c35/13325042.pdf)"
+        )
+
+        merged = _merge_text_with_existing_document_block(fetched_text, document_block)
+
+        assert merged.startswith(fetched_text)
+        assert "### Πλήρη έγγραφα" in merged
+        assert "13325042.pdf" in merged
+
+    def test_merge_does_not_append_when_existing_summary_is_real_text(self):
+        fetched_text = "Νέο καθαρό κείμενο νόμου με επαρκές περιεχόμενο."
+        existing_text = "Παλαιότερο πραγματικό κείμενο νόμου, όχι απλός σύνδεσμος PDF."
+
+        assert _merge_text_with_existing_document_block(fetched_text, existing_text) == fetched_text

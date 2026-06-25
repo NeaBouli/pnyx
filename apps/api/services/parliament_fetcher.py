@@ -37,7 +37,42 @@ _BAD_TEXT_PATTERNS = [
 ]
 
 
-def _is_bad_parliament_text(text: str) -> bool:
+_DOCUMENT_BLOCK_HEADING = "### Πλήρη έγγραφα"
+_DOCUMENT_BLOCK_LINK_RE = re.compile(
+    r"^-\s+\[[^\]]+\]\(https?://(?:www\.)?hellenicparliament\.gr/[^)]+\.pdf[^)]*\)$",
+    re.IGNORECASE,
+)
+
+
+def _is_parliament_document_block_only(text: str | None) -> bool:
+    """Return True only for the scraper's PDF-only Parliament document fallback block."""
+    if not text:
+        return False
+
+    stripped = text.strip()
+    if not stripped.startswith(_DOCUMENT_BLOCK_HEADING):
+        return False
+
+    lines = [line.strip() for line in stripped.splitlines() if line.strip()]
+    if len(lines) < 2 or lines[0] != _DOCUMENT_BLOCK_HEADING:
+        return False
+
+    document_links = 0
+    for line in lines[1:]:
+        if not _DOCUMENT_BLOCK_LINK_RE.match(line):
+            return False
+        document_links += 1
+    return document_links > 0
+
+
+def _merge_text_with_existing_document_block(text: str, existing_summary: str | None) -> str:
+    """Preserve working PDF links when replacing a PDF-only fallback with fetched text."""
+    if _is_parliament_document_block_only(existing_summary):
+        return f"{text.rstrip()}\n\n{existing_summary.strip()}"
+    return text
+
+
+def _is_bad_parliament_text(text: str | None) -> bool:
     """Return True if text is Parliament navigation boilerplate, not real bill content."""
     if not text or len(text.strip()) < 200:
         return True
@@ -354,7 +389,7 @@ async def enrich_bill_with_text(bill_id: str, db, redis=None) -> dict:
         logger.info("[SCRAPER] Rejected bad parliament text for %s (%d chars, boilerplate)", bill_id, len(text))
         return {"success": False, "error": "Rejected: parliament boilerplate"}
     if text and len(text) >= MIN_TEXT_LENGTH:
-        bill.summary_long_el = text
+        bill.summary_long_el = _merge_text_with_existing_document_block(text, bill.summary_long_el)
         await db.commit()
         if redis:
             try:
@@ -368,18 +403,28 @@ async def enrich_bill_with_text(bill_id: str, db, redis=None) -> dict:
 
 
 async def enrich_all_bills(db) -> dict:
-    """Enrich all parliament bills that have no summary_long_el."""
-    from sqlalchemy import select
+    """Enrich parliament bills with no real full text.
+
+    Existing PDF-only document blocks are kept as a fallback and appended to fetched text.
+    Real text is never selected by this broad job.
+    """
+    from sqlalchemy import or_, select
     from models import ParliamentBill
 
     result = await db.execute(
         select(ParliamentBill).where(
-            ParliamentBill.summary_long_el.is_(None),
+            or_(
+                ParliamentBill.summary_long_el.is_(None),
+                ParliamentBill.summary_long_el.like(f"{_DOCUMENT_BLOCK_HEADING}%"),
+            ),
             ParliamentBill.parliament_url.isnot(None),
             ParliamentBill.source == "PARLIAMENT",
         )
     )
-    bills = result.scalars().all()
+    bills = [
+        bill for bill in result.scalars().all()
+        if bill.summary_long_el is None or _is_parliament_document_block_only(bill.summary_long_el)
+    ]
 
     stats = {"total": len(bills), "enriched": 0, "failed": 0, "channels": {"ch1": 0, "ch2": 0, "ch3": 0}}
 
@@ -390,7 +435,7 @@ async def enrich_all_bills(db) -> dict:
             stats["failed"] += 1
             continue
         if text and len(text) >= MIN_TEXT_LENGTH:
-            bill.summary_long_el = text
+            bill.summary_long_el = _merge_text_with_existing_document_block(text, bill.summary_long_el)
             stats["enriched"] += 1
         else:
             stats["failed"] += 1
