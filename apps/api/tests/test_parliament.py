@@ -1,7 +1,8 @@
 """Tests für MOD-03 Parliament — Lifecycle Validator"""
 import pytest
 from models import BillStatus
-from routers.parliament import VALID_TRANSITIONS
+from fastapi import HTTPException
+from routers.parliament import VALID_TRANSITIONS, _parse_status_any
 
 
 class TestLifecycle:
@@ -31,6 +32,23 @@ class TestLifecycle:
     def test_all_states_have_entry(self):
         for status in BillStatus:
             assert status in VALID_TRANSITIONS, f"{status} fehlt in VALID_TRANSITIONS"
+
+
+class TestStatusAny:
+    def test_parse_status_any_keeps_active_and_window_24h(self):
+        assert _parse_status_any("ACTIVE,WINDOW_24H") == [
+            BillStatus.ACTIVE,
+            BillStatus.WINDOW_24H,
+        ]
+
+    def test_parse_status_any_ignores_empty_and_duplicate_values(self):
+        assert _parse_status_any("ACTIVE,, active ") == [BillStatus.ACTIVE]
+
+    def test_parse_status_any_rejects_invalid_values(self):
+        with pytest.raises(HTTPException) as exc:
+            _parse_status_any("ACTIVE,NOT_A_STATUS")
+
+        assert exc.value.status_code == 400
 
 
 @pytest.mark.asyncio

@@ -122,11 +122,32 @@ STATUS_LABELS = {
 }
 
 
+def _parse_status_any(status_any: str | None) -> list[BillStatus]:
+    if not status_any:
+        return []
+
+    statuses: list[BillStatus] = []
+    seen: set[BillStatus] = set()
+    for raw_status in status_any.split(","):
+        value = raw_status.strip().upper()
+        if not value:
+            continue
+        try:
+            status = BillStatus(value)
+        except ValueError:
+            raise HTTPException(400, f"Ungültiger Status: {raw_status.strip()}") from None
+        if status not in seen:
+            seen.add(status)
+            statuses.append(status)
+    return statuses
+
+
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
 @router.get("", response_model=list[BillSummary])
 async def get_bills(
     status_filter: str | None = Query(None, alias="status"),
+    status_any: str | None = Query(None),
     category: str | None = Query(None),
     governance: str | None = Query(None),
     source: str | None = Query(None),
@@ -151,7 +172,10 @@ async def get_bills(
         ParliamentBill.created_at.desc(),
     ).limit(limit).offset(offset)
 
-    if status_filter:
+    status_any_values = _parse_status_any(status_any)
+    if status_any_values:
+        query = query.where(ParliamentBill.status.in_(status_any_values))
+    elif status_filter:
         try:
             s = BillStatus(status_filter.upper())
             query = query.where(ParliamentBill.status == s)

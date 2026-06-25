@@ -84,6 +84,7 @@ export function buildBillsQuery(params?: {
   periferia_id?: number;
   dimos_id?: number;
   status?: string;
+  status_any?: string;
   limit?: number;
   offset?: number;
 }): string {
@@ -91,6 +92,7 @@ export function buildBillsQuery(params?: {
   qs.set("limit", String(params?.limit ?? 200));
   if (params?.offset != null) qs.set("offset", String(params.offset));
   if (params?.status) qs.set("status", params.status);
+  if (params?.status_any) qs.set("status_any", params.status_any);
   if (params?.governance) qs.set("governance", params.governance);
   if (params?.source) qs.set("source", params.source);
   if (params?.periferia_id) qs.set("periferia_id", String(params.periferia_id));
@@ -104,6 +106,7 @@ export async function fetchBills(params?: {
   periferia_id?: number;
   dimos_id?: number;
   status?: string;
+  status_any?: string;
   limit?: number;
   offset?: number;
 }): Promise<Bill[]> {

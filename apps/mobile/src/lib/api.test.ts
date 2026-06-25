@@ -36,6 +36,14 @@ describe("buildBillsQuery", () => {
       source: "PARLIAMENT",
     })).toBe("limit=10&offset=0&source=PARLIAMENT");
   });
+
+  it("supports multi-status filtering for the Active tab", () => {
+    expect(buildBillsQuery({
+      limit: 10,
+      offset: 0,
+      status_any: "ACTIVE,WINDOW_24H",
+    })).toBe("limit=10&offset=0&status_any=ACTIVE%2CWINDOW_24H");
+  });
 });
 
 describe("ZK API helpers", () => {

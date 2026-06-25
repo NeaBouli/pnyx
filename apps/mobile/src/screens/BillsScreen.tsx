@@ -72,12 +72,17 @@ export default function BillsScreen() {
         status?: string;
         source?: string;
         governance?: string;
+        status_any?: string;
         limit: number;
         offset: number;
       } = { limit: PAGE_SIZE, offset };
       if (userPeriferia) params.periferia_id = userPeriferia;
       if (userDimos) params.dimos_id = userDimos;
-      if (["ACTIVE", "ANNOUNCED", "PARLIAMENT_VOTED", "OPEN_END", "WINDOW_24H"].includes(filter)) params.status = filter;
+      if (filter === "ACTIVE") {
+        params.status_any = "ACTIVE,WINDOW_24H";
+      } else if (["ANNOUNCED", "PARLIAMENT_VOTED", "OPEN_END", "WINDOW_24H"].includes(filter)) {
+        params.status = filter;
+      }
       if (filter === "DIAVGEIA") params.source = "DIAVGEIA";
       if (filter === "PARLIAMENT") params.source = "PARLIAMENT";
       if (["MUNICIPAL", "REGIONAL", "INSTITUTIONAL"].includes(filter)) params.governance = filter;

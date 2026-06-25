@@ -87,10 +87,12 @@
 - Active GitHub truth remains: `#79` F-Droid, `#80` Off-site Backup, `#112` ZK V2 staged/global follow-up.
 
 ## Aktiv / In Progress
-- [ ] GH#122 — Mobile `Ενεργά` tab must include `WINDOW_24H` bills.
+- [x] GH#122 — Mobile `Ενεργά` tab must include `WINDOW_24H` bills.
   - Befund 2026-06-25: S10 zeigt `24ω` Bill in `Βουλή`, aber nicht in `Ενεργά`.
-  - Root cause candidate: Mobile filter sends exact `status=ACTIVE`; `WINDOW_24H` is votable but excluded from that tab.
-  - Next step: explain proposed fix + risks to Gio before implementation.
+  - Fix: API supports optional `status_any=ACTIVE,WINDOW_24H`; Mobile `Ενεργά` uses that multi-status query while all old `status=` calls stay unchanged.
+  - Safety: no voting, lifecycle, ZK, forum, Arweave, DB schema, or release artifact changed.
+  - Verified: mobile Vitest all 88 passed; mobile `tsc --noEmit` PASS; API parliament/voting/lifecycle/monitor subset 44 passed, 4 xfailed; `py_compile` + `git diff --check` PASS.
+  - Pending: S10 visual retest + APK/AAB release when device is available.
 - [ ] GH#123 — Parliament PDF-only document blocks prevent full-text enrichment.
   - Befund 2026-06-25: 8 Parliament bills have no `summary_short_el` and `summary_long_el` is only the PDF document block.
   - Root cause candidate: enrichment selects only `summary_long_el IS NULL`, so PDF-only fallback blocks later enrichment.

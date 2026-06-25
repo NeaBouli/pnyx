@@ -1,5 +1,31 @@
 # Action Log
 
+## 2026-06-25 — Codex: GH#122 Active tab includes `WINDOW_24H` bills
+
+- Scope: fix Mobile `Ενεργά` list semantics so active/votable `WINDOW_24H` bills are visible in the active tab.
+- Rollback:
+  - Local tag: `rollback-pre-gh122-active-window24h-20260625-135302`.
+- Change:
+  - `apps/api/routers/parliament.py`
+    - Added backward-compatible optional `status_any` query parameter for `/api/v1/bills`.
+    - Existing `status=` behavior remains unchanged; `status_any` is only used when explicitly provided.
+  - `apps/mobile/src/lib/api.ts`
+    - Added `status_any` to `buildBillsQuery()` / `fetchBills()`.
+  - `apps/mobile/src/screens/BillsScreen.tsx`
+    - `Ενεργά` now requests `status_any=ACTIVE,WINDOW_24H`; other tabs still use their existing single-status/source/governance filters.
+- Safety boundary:
+  - No voting, lifecycle, ZK, forum, Arweave, DB schema, release artifact, or production data changed.
+  - No S10 install/release performed because the device is not currently available.
+- Verification:
+  - `py_compile routers/parliament.py`: PASS.
+  - API focused block: 44 passed, 4 expected xfailed.
+  - Mobile Vitest: 13 files passed, 88 tests passed.
+  - Mobile `tsc --noEmit`: PASS.
+  - `git diff --check`: PASS.
+- Follow-up:
+  - S10 visual retest: `Βουλή` and `Ενεργά` should both show `WINDOW_24H` bills, while `Όλα`/`Ανακοιν.`/`Διαύγεια` remain unchanged.
+  - Build/upload a new APK/AAB only after S10 verification or when Gio explicitly requests a release without device verification.
+
 ## 2026-06-25 — Codex: Ticketing for S10 voting-list/Text/T3/F-Droid review findings
 
 - Scope: create tracking tickets only; no product code, no deploy, no DB changes.
