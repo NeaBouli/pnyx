@@ -1,8 +1,18 @@
-# CC Context — Current pnyx status after vC51 preparation
+# CC Context — Current pnyx status after vC51 release
 
 Mode: support/review when asked. Do not assume old vC35/vC37/vC38/vC41 tasks are current.
 
 Current state:
+- Mobile vC51 / v1.0.22 is live on ekklesia.gr and GitHub release `v1.0.22`.
+- Commit `49b9aea` is pushed and deployed for API/Web.
+- App version endpoint returns `latest_version=1.0.22`, `latest_version_code=51`, and direct APK URL `https://ekklesia.gr/download/ekklesia-latest.apk`.
+- Landing badge shows `v1.0.22 · vC51`.
+- Live direct APK SHA256 is `e83a310d0fa932bdfa53ac87286e6a58bba5a98e9eee0259a142303e74b44b83`.
+- GitHub release assets uploaded: `ekklesia-v1.0.22-vC51-DIRECT.apk` and `ekklesia-v1.0.22-vC51-PLAY.aab`.
+- Production monitor `--once` after vC51 deploy: PASS, 18 checks, no alerts.
+- vC51 S10 visual/install retest is still pending; do not mark GH#122 fully hardware-verified until a device test is done.
+- Deploy incident to remember: first server attempt used `docker-compose.yml` instead of `docker-compose.prod.yml`, briefly creating an accidental dev API container. Production recovery used `docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.yml ...`.
+- During vC51 deploy recovery, DB failed with `No space left on device`; DB data was present and not reinitialized. Safe cleanup was `docker builder prune -af` only. Current disk is about 91% used / 6.9 GB free, so capacity remains a warning.
 - GH#117 / NEA-393 is complete: public Community/Wiki transparency docs are live and describe verified autonomous recovery, proof-before-success, forbidden writes, and 0 AI tokens/run for Phase 1 `parliament_source_lag`. Commit `2f27fab` deployed to web only; rollback tag `rollback-pre-recovery-transparency-docs-20260623`; live Chrome desktop/mobile and monitor once passed.
 - Current repo/server git HEAD: latest `main`; API/monitor containers were rebuilt from code commit `ef7f2c1`.
 - Parliament source-date hardening is live: monitor uses `/api/v1/scraper/parliament/freshness` strict dated probe with retries, scheduled Parliament scrape requires dated rows, and DIAVGEIA imported bills now receive the public `publish_timestamp` as `submitted_date`.
@@ -13,17 +23,17 @@ Current state:
 - ZK Arweave publication has its own exact scope allowlist (`ZK_ARWEAVE_SCOPE_ALLOWLIST`) and minimum group-size guard (`ZK_ARWEAVE_MIN_GROUP_SIZE`, default 5); do not rely on `ZK_GLOBAL_ROLLOUT_ENABLED` for Arweave publishing.
 - Monitor policy now follows the same gates: pending ZK receipts only alert when `ZK_ARWEAVE_PUBLICATION_ENABLED=true` and the scope is in `ZK_ARWEAVE_SCOPE_ALLOWLIST`; when publisher is off, pending receipts are expected and no T3 alert is sent.
 - GH#111 is complete; production KDF is `v2` after a real S10/HLR canary and clean post-verify compare.
-- Mobile vC51 / v1.0.22 is prepared locally for the next release. It includes GH#122 (`Ενεργά` includes `WINDOW_24H`) and the safer Direct/Play update-channel separation.
+- Mobile vC51 / v1.0.22 includes GH#122 (`Ενεργά` includes `WINDOW_24H`) and the safer Direct/Play update-channel separation.
 - AAB ready for Google Play Closed Testing: `/Users/gio/Desktop/ekklesia-release-vC51/ekklesia-v1.0.22-vC51-PLAY.aab`, SHA256 `a0176d4597d8da1d2862a66f08aeb84deeaf516287a51ed422dcc2ecadeb45eb`.
 - Direct APK ready for ekklesia.gr/GitHub: `/Users/gio/Desktop/ekklesia-release-vC51/ekklesia-v1.0.22-vC51-DIRECT.apk`, SHA256 `e83a310d0fa932bdfa53ac87286e6a58bba5a98e9eee0259a142303e74b44b83`.
 - Channel audit: Direct APK embeds `distributionChannel=direct`, `buildFlavor=direct`; Play AAB embeds `distributionChannel=play`, `buildFlavor=play`; both are versionCode 51 / versionName 1.0.22.
 - Direct APK signer SHA-256 digest: `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
 - R8/minify is still OFF for vC51; no `mapping.txt` exists. Play's no-mapping warning is informational for this artifact.
-- S10 install/visual retest for vC51 is pending because no device was attached during the build.
+- S10 install/visual retest for vC51 is pending because no device was attached during the build/deploy.
 - Monitor Telegram Bot API URL logging is redacted live. Do not repeat raw Telegram tokens from terminal logs.
 - GH#112 hidden S10 canary passed earlier for `bill:ZK-CANARY-001`.
 - GH#112 first public scoped rollout passed for `bill:GR-d4c62ed4`; latest hardware install/launch smoke test remains vC50.
-- vC51 local checks passed: API version syntax, API app/parliament tests 13 passed/2 xfailed, mobile TypeScript PASS, mobile Vitest 92 passed, Play AAB build PASS, Direct APK build PASS, APK/AAB channel audit PASS.
+- vC51 checks passed: API version syntax, API app/parliament tests 13 passed/2 xfailed, mobile TypeScript PASS, mobile Vitest 92 passed, Play AAB build PASS, Direct APK build PASS, APK/AAB channel audit PASS, API/Web live checks PASS.
 - 2026-06-23 Security Audit correction: run `27986334575` failed on `undici<=6.26.0` in `apps/mobile` + `apps/representative`. Minimal override/lockfile fix pins `undici@6.27.0`; exact local Security Audit loop over all package-locks PASS with 0 high vulnerabilities; mobile + representative `tsc --noEmit` PASS.
 - Public scoped ZK result for `GR-d4c62ed4`: `total_votes=1`, `tier1_vote_count=0`, `zk_vote_count=1`, `yes_count=1`.
 - Public receipt exists with `vote_commitment=YES`, `arweave_pending=true`, `arweave_tx_id=null`.

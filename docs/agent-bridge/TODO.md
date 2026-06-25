@@ -72,13 +72,14 @@
 - [x] NEA-286 / GH#94 — Lifecycle WINDOW_24H stuck: resolved/stale; Production 2026-06-09 ohne stuck Rows, Scheduler healthy
 
 ### Release Follow-ups
-- [x] vC51 Mobile Release Prep — include GH#122 + update-channel guard in the next APK/AAB.
-  - Prepared build: v1.0.22 / versionCode 51.
+- [x] vC51 Mobile Release — include GH#122 + update-channel guard in APK/AAB.
+  - Live build: v1.0.22 / versionCode 51.
   - Play/AAB builds resolve updates only to Play Store; Direct/APK builds resolve updates only to `https://ekklesia.gr/download/ekklesia-latest.apk`.
   - Direct APK is now explicitly `assembleDirectRelease`, embeds `distributionChannel=direct`, and is signed with the same upload key digest as prior public APKs.
   - Play AAB embeds `distributionChannel=play`.
   - Local verification: app/parliament API tests 13 passed/2 xfailed; mobile TypeScript PASS; mobile Vitest 92 passed; Play AAB build PASS; Direct APK build PASS; APK/AAB version/channel/signature audit PASS.
-  - Pending: S10 visual/install retest + live deploy/GitHub release/upload gate.
+  - Live verification: API app-version endpoint, landing badge, Direct APK download, SHA file, GitHub release, and monitor `--once` all PASS.
+  - Pending: S10 visual/install retest.
 - [ ] API/App Date Visibility Follow-up — `submitted_date` ist DB-/Sortier-/Monitor-seitig vorhanden, wird aber im normalen `BillSummary`/`BillDetail` API-Schema aktuell nicht exportiert.
   - Aktueller Zustand ist funktional korrekt: App-Liste/Detail, Forum-Links und Arweave-Guards wurden am 2026-06-23 read-only geprueft; Forum und Arweave sind sauber.
   - Wenn Gio das offizielle Aktivitaets-/Quelle-Datum sichtbar in der App/Web-UI sehen will: API-Schema erweitern, Mobile/Web UI sparsam anzeigen, Regression-Test fuer PARLIAMENT + DIAVGEIA.
@@ -91,7 +92,7 @@
 ## Tracking: GitHub Issues + Bridge primary; Linear periodically synchronized
 
 - 2026-06-22 Linear cleanup done: `NEA-286` and `NEA-133` set to Done; `NEA-249`, `NEA-301`, `NEA-59`, `NEA-65` received sync comments.
-- Active GitHub truth remains: `#79` F-Droid, `#80` Off-site Backup, `#112` ZK V2 staged/global follow-up.
+- Active GitHub truth remains: `#122` S10 visual retest, `#79` F-Droid, `#80` Off-site Backup, `#112` ZK V2 staged/global follow-up.
 
 ## Aktiv / In Progress
 - [x] GH#122 — Mobile `Ενεργά` tab must include `WINDOW_24H` bills.
@@ -99,7 +100,7 @@
   - Fix: API supports optional `status_any=ACTIVE,WINDOW_24H`; Mobile `Ενεργά` uses that multi-status query while all old `status=` calls stay unchanged.
   - Safety: no voting, lifecycle, ZK, forum, Arweave, DB schema, or release artifact changed.
   - Verified: mobile Vitest all 88 passed; mobile `tsc --noEmit` PASS; API parliament/voting/lifecycle/monitor subset 44 passed, 4 xfailed; `py_compile` + `git diff --check` PASS.
-  - vC51 follow-up: APK/AAB built with this fix; S10 visual retest and live release still pending.
+  - vC51 follow-up: APK/AAB built and released live with this fix; S10 visual retest pending.
 - [x] GH#123 — Parliament PDF-only document blocks prevent full-text enrichment.
   - Befund 2026-06-25: 8 Parliament bills have no `summary_short_el` and `summary_long_el` is only the PDF document block.
   - Fix: PDF-only Parliament document blocks are detected as fallback-only, selected for enrichment, and preserved below fetched text if enrichment succeeds.

@@ -12958,3 +12958,52 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
   - Result: `/` usage `93% -> 93%`.
   - Status file now says:
     `state=cleanup_ineffective before=93% after=93% threshold=90% action=manual_capacity_review`.
+
+## 2026-06-25 — Codex: vC51 release live + deploy incident recovery
+
+- Scope: release Mobile vC51 / v1.0.22 with GH#122 (`Ενεργά` includes `WINDOW_24H`) and safer Direct/Play update-channel separation.
+- Local rollback:
+  - `rollback-pre-vc51-mobile-release-20260625-2347` before the release commit.
+- Production rollback:
+  - `/opt/ekklesia/app` tag `rollback-pre-vc51-server-20260625-2124` before server fast-forward.
+- Built artifacts:
+  - Play AAB: `/Users/gio/Desktop/ekklesia-release-vC51/ekklesia-v1.0.22-vC51-PLAY.aab`
+    - SHA256: `a0176d4597d8da1d2862a66f08aeb84deeaf516287a51ed422dcc2ecadeb45eb`
+    - Embedded channel: `distributionChannel=play`, `buildFlavor=play`, versionCode `51`, versionName `1.0.22`.
+  - Direct APK: `/Users/gio/Desktop/ekklesia-release-vC51/ekklesia-v1.0.22-vC51-DIRECT.apk`
+    - SHA256: `e83a310d0fa932bdfa53ac87286e6a58bba5a98e9eee0259a142303e74b44b83`
+    - Embedded channel: `distributionChannel=direct`, `buildFlavor=direct`, versionCode `51`, versionName `1.0.22`.
+    - Signer SHA-256 digest: `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
+- Local verification:
+  - `python3 -m py_compile apps/api/routers/app_version.py scripts/patches/patch-play-flavors.py`: PASS.
+  - API focused tests: 13 passed, 2 expected xfailed.
+  - Mobile `npx tsc --noEmit`: PASS.
+  - Mobile `npx vitest run`: PASS, 92 passed.
+  - Play AAB build: PASS.
+  - Direct APK build: PASS.
+  - APK/AAB embedded app config audit: PASS.
+  - `git diff --check`: PASS.
+- Deploy:
+  - Commit `49b9aea` pushed to `origin/main`.
+  - Production `/opt/ekklesia/app` fast-forwarded to `49b9aea`.
+  - Direct APK copied to persistent server paths:
+    - `/opt/ekklesia/app/docs/download/ekklesia-latest.apk`
+    - `/opt/ekklesia/downloads/ekklesia-latest.apk`
+  - Production `api` + `web` rebuilt/restarted with `docker-compose.prod.yml` and `/opt/ekklesia/.env.production`.
+  - GitHub release created: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.22
+- Live verification:
+  - API health: PASS.
+  - App version endpoint: `latest_version=1.0.22`, `latest_version_code=51`, `direct_apk_url=https://ekklesia.gr/download/ekklesia-latest.apk`.
+  - Landing badge: `v1.0.22 · vC51`.
+  - Live APK headers: HTTP 200, `content-type: application/vnd.android.package-archive`, `content-length: 82672891`, range reads supported.
+  - Live SHA file: `e83a310d0fa932bdfa53ac87286e6a58bba5a98e9eee0259a142303e74b44b83  ekklesia-latest.apk`.
+  - Production monitor `--once`: PASS, 18 checks, `All checks passed — no alerts`.
+- Incident / lesson learned:
+  - First server rebuild accidentally used `docker-compose.yml` instead of `docker-compose.prod.yml`, creating a dev API container and leaving the real API fail-closed because production SSO env was missing.
+  - Recovery: stopped/removed accidental dev API, restarted production services with `docker compose --env-file /opt/ekklesia/.env.production -f docker-compose.prod.yml ...`.
+  - During recovery, PostgreSQL initially failed with `No space left on device`; DB directory was present and skipped initialization, so this was disk pressure, not data loss.
+  - Safe cleanup: `docker builder prune -af` only. No volumes, DB data, backups, snapshots, active project data, or user files deleted.
+  - Disk after recovery: `/` 91% used / 6.9 GB free. This is functional but still a capacity-warning state.
+- Pending:
+  - S10 visual/install retest for vC51 remains pending because no device was attached during the release build/deploy.
+  - User still needs to upload the Play AAB to Google Play Closed Testing if not already done.
