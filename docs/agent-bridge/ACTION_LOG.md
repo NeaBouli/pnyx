@@ -1,5 +1,34 @@
 # Action Log
 
+## 2026-06-25 — Codex: GH#124 lifecycle duplicate-transition guard prepared
+
+- Scope: prevent duplicate lifecycle transition logs/hooks when more than one API worker scheduler sees the same due bill at the same time.
+- Trigger:
+  - Telegram T3 screenshots showed `GR-056b74d6` stuck in `WINDOW_24H`.
+  - Read-only production diagnosis found the stuck state had already resolved, but duplicate transition logs existed:
+    - `GR-056b74d6`: `ACTIVE -> WINDOW_24H` logged twice within milliseconds.
+    - `GR-357e304b`: `ANNOUNCED -> ACTIVE` and `ACTIVE -> WINDOW_24H` logged twice within milliseconds.
+- Root-cause assessment:
+  - `due_lifecycle_transitions()` already limits lifecycle to one step per run.
+  - Duplicate logs point to parallel scheduler execution, likely multiple API worker processes each running APScheduler.
+  - Fix therefore belongs at DB row-claim level, not in UI/mobile or status timing logic.
+- Change:
+  - `apps/api/services/bill_lifecycle.py` now builds lifecycle candidates with PostgreSQL `FOR UPDATE SKIP LOCKED`.
+  - A due bill row is claimed before transition hooks/logs run; parallel workers skip already-locked rows.
+  - Added regression test proving the lifecycle candidate query compiles with `FOR UPDATE SKIP LOCKED`.
+- Safety boundary:
+  - API lifecycle scheduler only.
+  - No lifecycle timings changed, no manual status rewrite, no cleanup of historical duplicate logs, no DB schema migration.
+  - No mobile, web, forum, Arweave policy, ZK, identity, scraper, PDF/source handling, or release artifacts changed.
+- Verification:
+  - Lifecycle tests: 8 passed.
+  - Lifecycle + monitor + Arweave guard + Parliament API tests: 36 passed, 2 xfailed.
+  - AST syntax parse: PASS.
+  - `git diff --check`: PASS.
+- Release note:
+  - Requires API deploy to affect production scheduler.
+  - Historical duplicate audit rows remain as evidence; this guard prevents new duplicate scheduler claims.
+
 ## 2026-06-25 — Codex: Mobile update channel guard prepared
 
 - Scope: keep Google Play/AAB users on the Play Store update path and Direct/APK users on the direct APK update path.

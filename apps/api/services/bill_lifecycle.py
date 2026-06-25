@@ -93,17 +93,16 @@ async def _transition_bill(
     )
 
 
-async def run_bill_lifecycle(db: AsyncSession) -> dict:
-    """
-    Check all bills with parliament_vote_date and auto-transition.
-    Returns stats dict.
-    """
-    now = datetime.now(timezone.utc)
-    stats = {"checked": 0, "transitioned": 0, "errors": 0}
+def _lifecycle_candidate_statement():
+    """Build the locked candidate query used by the lifecycle scheduler.
 
-    # Only bills that have a vote date and are not terminal (OPEN_END)
-    result = await db.execute(
-        select(ParliamentBill).where(
+    The API can run more than one worker process. Each worker starts its own
+    APScheduler instance, so a due bill must be claimed at the database row
+    level before transition hooks/logs run.
+    """
+    return (
+        select(ParliamentBill)
+        .where(
             ParliamentBill.parliament_vote_date.isnot(None),
             public_bill_filter(),
             ParliamentBill.status.in_([
@@ -113,7 +112,21 @@ async def run_bill_lifecycle(db: AsyncSession) -> dict:
                 BillStatus.PARLIAMENT_VOTED,
             ]),
         )
+        .with_for_update(skip_locked=True)
     )
+
+
+async def run_bill_lifecycle(db: AsyncSession) -> dict:
+    """
+    Check all bills with parliament_vote_date and auto-transition.
+    Returns stats dict.
+    """
+    now = datetime.now(timezone.utc)
+    stats = {"checked": 0, "transitioned": 0, "errors": 0}
+
+    # Only bills that have a vote date and are not terminal (OPEN_END).
+    # Rows are locked so parallel API workers cannot duplicate lifecycle logs.
+    result = await db.execute(_lifecycle_candidate_statement())
     bills = result.scalars().all()
     stats["checked"] = len(bills)
 

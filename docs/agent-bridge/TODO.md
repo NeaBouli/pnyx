@@ -105,9 +105,13 @@
   - Safety: failed fetch leaves existing PDF links untouched; genuine long text is excluded; forum/source/PDF rendering tests pass.
   - Verified: tests 50 passed; `py_compile` + `git diff --check` PASS; production API health PASS; monitor `--once` PASS.
   - Live: 6 PDF-only Parliament bills enriched and their Discourse topics updated; 2 ANNOUNCED bills remain PDF-only because fetched text failed the quality threshold.
-- [ ] GH#124 — Lifecycle `WINDOW_24H` T3 alerts and duplicate transition logs.
+- [x] GH#124 — Lifecycle `WINDOW_24H` T3 alerts and duplicate transition logs.
   - Befund 2026-06-25: old T3 for `GR-056b74d6` resolved, but duplicate `ACTIVE -> WINDOW_24H` logs suggest possible scheduler/race issue.
-  - Next step: explain lifecycle lock/idempotency diagnosis plan + risks to Gio before implementation.
+  - Production read-only diagnosis: `GR-056b74d6` and `GR-357e304b` had duplicate lifecycle logs within milliseconds; current status is not stuck.
+  - Fix: lifecycle candidate query now uses `FOR UPDATE SKIP LOCKED`, so parallel API worker schedulers cannot claim/log/hook the same due bill at the same time.
+  - Safety: no timing rule changes, no status rewrites, no historical log cleanup, no DB schema migration, no mobile/web/forum/Arweave/ZK changes.
+  - Verified: lifecycle tests 8 passed; lifecycle+monitor+Arweave+Parliament subset 36 passed / 2 xfailed; AST parse + `git diff --check` PASS.
+  - Pending: API deploy + live monitor verification.
 - [ ] GH#125 — F-Droid !38007 linsui feedback: replace inline python prebuild edits with `sed`.
   - Befund 2026-06-25: MR pipeline is green, but linsui requested `sed` for readability.
   - Next step: explain fdroiddata-only metadata patch + risks to Gio before implementation.

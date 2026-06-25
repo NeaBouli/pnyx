@@ -6,7 +6,19 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 from models import BillStatus  # noqa: E402
-from services.bill_lifecycle import due_lifecycle_transitions  # noqa: E402
+from sqlalchemy.dialects import postgresql  # noqa: E402
+from services.bill_lifecycle import (  # noqa: E402
+    _lifecycle_candidate_statement,
+    due_lifecycle_transitions,
+)
+
+
+def test_lifecycle_candidates_are_row_locked_to_prevent_duplicate_workers():
+    sql = str(_lifecycle_candidate_statement().compile(dialect=postgresql.dialect()))
+
+    assert "FOR UPDATE SKIP LOCKED" in sql
+    assert "parliament_vote_date IS NOT NULL" in sql
+    assert "OPEN_END" not in sql
 
 
 def test_overdue_announced_bill_opens_only_one_step_per_run():
