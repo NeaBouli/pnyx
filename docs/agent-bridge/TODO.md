@@ -109,8 +109,9 @@
 - [x] GH#126 — Samsung A12 Direct-update links open `ekklesia.gr` 404.
   - Befund 2026-06-25: AAB tester on Samsung A12 has installed `v1.0.5 (v34) · Direct`; both home update banner and Profile update flow detect `v1.0.21` but open browser to `ekklesia.gr` 404.
   - Fix: API version endpoint now returns direct APK file URL `https://ekklesia.gr/download/ekklesia-latest.apk` instead of the missing `/download/` page route.
-  - Safety: API-only; no vote, ZK, forum, Arweave, identity, PDF/source-link, scraper, DB schema, mobile code, APK/AAB, or production data changed.
-  - Verified: app-version regression tests 2 passed; API health PASS; live version endpoint returns APK URL; APK HEAD 200 with APK MIME type; monitor `--once` PASS.
+  - Follow-up: Web middleware now also redirects stale/cached `/download`, `/download/`, `/el/download`, and `/en/download` to `/download/ekklesia-latest.apk`.
+  - Safety: API + Web middleware only; no vote, ZK, forum, Arweave, identity, PDF/source-link, scraper, DB schema, mobile code, APK/AAB, or production data changed.
+  - Verified: app-version regression tests 2 passed; web lint/build/typecheck PASS; API health PASS; live version endpoint returns APK URL; stale `/el/download` now 302->APK and final 200 APK MIME type.
 - [x] FDROID-TRACE-20260623 (Bridge-local): diagnosed and patched in fdroiddata only. Local validation: local `fdroid rewritemeta` PASS, fdroidserver-master formatting applied for CI, local `fdroid build` passes former scanner blocker and stops only on local missing `gradlew-fdroid`.
 - [ ] No active technical pnyx/fdroiddata work remains for #79 after green MR-event pipeline `2622515254`; it is tracked under Blocked/Extern until linsui/F-Droid merge.
 

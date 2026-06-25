@@ -36,6 +36,43 @@
 - Ops note:
   - Disk remains a separate capacity item: `/` 91% used / 6.9 GB free after API rebuild.
 
+## 2026-06-25 — Codex: GH#126 follow-up web fallback for cached `/el/download`
+
+- Trigger:
+  - Gio reported that the A12 tester still landed on `https://ekklesia.gr/el/download` after the API URL fix.
+  - Root cause: old clients/browser tabs can still carry the historical `/download` page route; API-only correction does not repair already-opened/cached Web routes.
+- Change:
+  - `apps/web/src/middleware.ts` now redirects legacy download page routes directly to the APK file:
+    - `/download`
+    - `/download/`
+    - `/el/download`
+    - `/en/download`
+  - Redirect target: `/download/ekklesia-latest.apk`.
+  - Redirect status: `302`, deliberately not permanent, to avoid hard-caching a recovery route.
+- Safety boundary:
+  - Web-only middleware change.
+  - No mobile code, APK/AAB, API data, voting, ZK, forum, Arweave, identity, PDF/source-link, scraper, or DB schema changed.
+  - Existing landing page `/`, `/el/bills`, and API health paths verified after deploy.
+- Verification before deploy:
+  - `apps/web` lint: 0 errors, existing warnings only.
+  - `npx tsc --noEmit --incremental false`: PASS.
+  - `npm run build`: PASS.
+  - `git diff --check`: PASS.
+- Deploy:
+  - Commit `d118682` pushed to `origin/main`.
+  - Production rollback tag set before web deploy.
+  - Production `/opt/ekklesia/app` fast-forwarded to `d118682`.
+  - Rebuilt/restarted only `web` with `infra/docker/docker-compose.prod.yml`.
+- Live verification:
+  - `https://ekklesia.gr/el/download`: 302 to `/download/ekklesia-latest.apk`.
+  - `https://ekklesia.gr/download`: 302 to `/download/ekklesia-latest.apk`.
+  - `curl -L https://ekklesia.gr/el/download`: final 200, `application/vnd.android.package-archive`, content length `82759592`.
+  - `https://ekklesia.gr/`, `https://ekklesia.gr/el/bills`, and `https://api.ekklesia.gr/health`: PASS.
+- Ops note:
+  - Web rebuild temporarily pushed disk to 95% and triggered `disk_critical`.
+  - Ran only `docker builder prune -af`; no images, volumes, backups, DB data, Arweave data, or project files deleted.
+  - Disk after build-cache prune: `/` 90% used / 7.2 GB free. Capacity remains a separate open ops item.
+
 ## 2026-06-25 — Codex: GH#123 PDF-only Parliament blocks no longer block enrichment
 
 - Scope: protect the already-working Parliament PDF link fallback while allowing those PDF-only rows to be enriched later with real text.
