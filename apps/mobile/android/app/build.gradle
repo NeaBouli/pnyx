@@ -92,8 +92,8 @@ android {
         applicationId 'ekklesia.gr'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 50
-        versionName "1.0.21"
+        versionCode 51
+        versionName "1.0.22"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
@@ -121,6 +121,7 @@ android {
         direct {
             dimension "distribution"
             resValue "string", "distribution_channel", "direct"
+            signingConfig signingConfigs.playRelease
         }
         play {
             dimension "distribution"
@@ -133,7 +134,7 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            // Signing handled per flavor (direct=debug, play=playRelease)
+            // Signing handled per flavor (direct/play=playRelease)
             signingConfig null
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()

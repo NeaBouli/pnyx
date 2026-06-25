@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.21 |
-| versionCode | 50 |
+| Version | 1.0.22 |
+| versionCode | 51 |
 | Package | ekklesia.gr |
-| APK SHA256 | `989c5f92ff37b4a8498e6410f362dedbfd91e362042ec5e6685479385c14685d` |
-| AAB SHA256 | `709cb2cee17f30f48ed417ecda9e1b8831f1b61a446286292a61f1454e3ad5e6` |
+| APK SHA256 | `e83a310d0fa932bdfa53ac87286e6a58bba5a98e9eee0259a142303e74b44b83` |
+| AAB SHA256 | `a0176d4597d8da1d2862a66f08aeb84deeaf516287a51ed422dcc2ecadeb45eb` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
-| Build date | 2026-06-17 |
-| Release gate | PASS — API version syntax, mobile TypeScript, mobile Vitest, local AAB build, universal APK from AAB, APK/AAB version audit, APK signature audit, S10 install/launch smoke test |
-| Includes | vC50 release metadata, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, ZK V2 native prover, hidden S10 canary operator path, deep-link fallback, pagination, source/full-text policy, permission hardening |
+| Build date | 2026-06-26 |
+| Release gate | PASS — API version syntax, API status_any tests, mobile TypeScript, mobile Vitest, local Play AAB build, local Direct APK build, APK/AAB version audit, APK signature audit, Direct/Play channel audit |
+| Includes | vC51 release metadata, Active tab includes 24h voting-window bills, safer Direct/Play update routing, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, ZK V2 native prover, hidden S10 canary operator path, deep-link fallback, pagination, source/full-text policy, permission hardening |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: 989c5f92ff37b4a8498e6410f362dedbfd91e362042ec5e6685479385c14685d
+# Expected: e83a310d0fa932bdfa53ac87286e6a58bba5a98e9eee0259a142303e74b44b83
 ```

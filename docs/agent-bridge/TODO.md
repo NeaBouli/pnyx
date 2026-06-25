@@ -66,23 +66,25 @@
 
 ### Blocked / Extern (kein Bau)
 - [ ] GH#102 / NEA-312 — echter `WINDOW_24H` Bill nötig
-- [ ] GH#79 — F-Droid !38007 updated to vC50/v1.0.21; MR open/mergeable. Former MR-event failure `2609789968` was fixed in fdroiddata; current MR-event pipeline `2622515254` is green. Now waits on linsui/F-Droid review + merge.
+- [ ] GH#79 — F-Droid !38007 updated to vC50/v1.0.21; MR open/mergeable. Latest linsui feedback was fixed in fdroiddata commit `2bf46a733`; MR-event pipeline `2630143862` is green. Now waits on linsui/F-Droid review + merge.
 - [ ] GH#80 — Off-site Backup wartet auf Hetzner Storage Box / erste Spende
 - [x] GH#81 — Android Native-Prover Self-Test auf S10 erfolgreich; produktives ZK-Voting bleibt Feature-Flag-guarded bis Backend/Arweave-Integration
 - [x] NEA-286 / GH#94 — Lifecycle WINDOW_24H stuck: resolved/stale; Production 2026-06-09 ohne stuck Rows, Scheduler healthy
 
 ### Release Follow-ups
-- [ ] Next Mobile Release — include update-channel guard in the next APK/AAB.
-  - Current prepared fix: Play/AAB builds resolve updates only to Play Store; Direct/APK builds resolve updates only to `https://ekklesia.gr/download/ekklesia-latest.apk`.
-  - Reason: Android install signatures/sources must stay separated; a Play user should not be pushed to a Direct APK, and a Direct user should not be forced through Play.
-  - Local verification: mobile resolver tests 4 passed; mobile lib tests 92 passed; mobile TypeScript PASS.
-  - Build/upload only during the next explicit mobile release gate.
+- [x] vC51 Mobile Release Prep — include GH#122 + update-channel guard in the next APK/AAB.
+  - Prepared build: v1.0.22 / versionCode 51.
+  - Play/AAB builds resolve updates only to Play Store; Direct/APK builds resolve updates only to `https://ekklesia.gr/download/ekklesia-latest.apk`.
+  - Direct APK is now explicitly `assembleDirectRelease`, embeds `distributionChannel=direct`, and is signed with the same upload key digest as prior public APKs.
+  - Play AAB embeds `distributionChannel=play`.
+  - Local verification: app/parliament API tests 13 passed/2 xfailed; mobile TypeScript PASS; mobile Vitest 92 passed; Play AAB build PASS; Direct APK build PASS; APK/AAB version/channel/signature audit PASS.
+  - Pending: S10 visual/install retest + live deploy/GitHub release/upload gate.
 - [ ] API/App Date Visibility Follow-up — `submitted_date` ist DB-/Sortier-/Monitor-seitig vorhanden, wird aber im normalen `BillSummary`/`BillDetail` API-Schema aktuell nicht exportiert.
   - Aktueller Zustand ist funktional korrekt: App-Liste/Detail, Forum-Links und Arweave-Guards wurden am 2026-06-23 read-only geprueft; Forum und Arweave sind sauber.
   - Wenn Gio das offizielle Aktivitaets-/Quelle-Datum sichtbar in der App/Web-UI sehen will: API-Schema erweitern, Mobile/Web UI sparsam anzeigen, Regression-Test fuer PARLIAMENT + DIAVGEIA.
   - Keine Dringlichkeit, kein Produktionsfehler; als UX-/Transparenz-Follow-up behandeln.
 - [ ] Future Production Size/R8 Optimization — Play Console warns about size/mapping when R8 is not active.
-  - Current prepared Play/direct build: vC50 / v1.0.21; R8/minify remains OFF, so no `mapping.txt` exists for this artifact.
+  - Current prepared Play/direct build: vC51 / v1.0.22; R8/minify remains OFF, so no `mapping.txt` exists for this artifact.
   - Cause of size: native Semaphore/ZK prover and multi-ABI native libraries.
   - Next pass before Production (not Closed Testing): evaluate ABI restrictions and R8/ProGuard + `mapping.txt`, rebuild, install on S10, verify vote/source/ZK paths.
 
@@ -97,7 +99,7 @@
   - Fix: API supports optional `status_any=ACTIVE,WINDOW_24H`; Mobile `Ενεργά` uses that multi-status query while all old `status=` calls stay unchanged.
   - Safety: no voting, lifecycle, ZK, forum, Arweave, DB schema, or release artifact changed.
   - Verified: mobile Vitest all 88 passed; mobile `tsc --noEmit` PASS; API parliament/voting/lifecycle/monitor subset 44 passed, 4 xfailed; `py_compile` + `git diff --check` PASS.
-  - Pending: S10 visual retest + APK/AAB release when device is available.
+  - vC51 follow-up: APK/AAB built with this fix; S10 visual retest and live release still pending.
 - [x] GH#123 — Parliament PDF-only document blocks prevent full-text enrichment.
   - Befund 2026-06-25: 8 Parliament bills have no `summary_short_el` and `summary_long_el` is only the PDF document block.
   - Fix: PDF-only Parliament document blocks are detected as fallback-only, selected for enrichment, and preserved below fetched text if enrichment succeeds.

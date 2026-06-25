@@ -36,13 +36,15 @@ content = re.sub(
     flags=re.DOTALL,
 )
 
-# 2. Add flavorDimensions + productFlavors before buildTypes
-# play flavor gets signingConfig directly here
+# 2. Add flavorDimensions + productFlavors before buildTypes.
+# Both release flavors use the upload key so direct APK updates remain
+# signature-compatible with previous public APKs and Google Play AABs.
 flavors_patch = """    flavorDimensions "distribution"
     productFlavors {
         direct {
             dimension "distribution"
             resValue "string", "distribution_channel", "direct"
+            signingConfig signingConfigs.playRelease
         }
         play {
             dimension "distribution"
@@ -54,15 +56,14 @@ flavors_patch = """    flavorDimensions "distribution"
 
 content = content.replace("    buildTypes {", flavors_patch + "    buildTypes {")
 
-# 3. In buildTypes.release: remove signingConfig so flavor's config is used
-# For 'direct' flavor we still want debug key, so set it only if no flavor override
+# 3. In buildTypes.release: remove signingConfig so flavor's config is used.
 # AGP behavior: if flavor sets signingConfig AND buildType sets signingConfig,
 # the buildType wins. So we must remove signingConfig from release buildType.
 content = content.replace(
     "            // Caution! In production, you need to generate your own keystore file.\n"
     "            // see https://reactnative.dev/docs/signed-apk-android.\n"
     "            signingConfig signingConfigs.debug",
-    "            // Signing handled per flavor (direct=debug, play=playRelease)\n"
+    "            // Signing handled per flavor (direct/play=playRelease)\n"
     "            signingConfig null"
 )
 

@@ -1,4 +1,4 @@
-# CC Context — Current pnyx status after vC50 release
+# CC Context — Current pnyx status after vC51 preparation
 
 Mode: support/review when asked. Do not assume old vC35/vC37/vC38/vC41 tasks are current.
 
@@ -13,17 +13,17 @@ Current state:
 - ZK Arweave publication has its own exact scope allowlist (`ZK_ARWEAVE_SCOPE_ALLOWLIST`) and minimum group-size guard (`ZK_ARWEAVE_MIN_GROUP_SIZE`, default 5); do not rely on `ZK_GLOBAL_ROLLOUT_ENABLED` for Arweave publishing.
 - Monitor policy now follows the same gates: pending ZK receipts only alert when `ZK_ARWEAVE_PUBLICATION_ENABLED=true` and the scope is in `ZK_ARWEAVE_SCOPE_ALLOWLIST`; when publisher is off, pending receipts are expected and no T3 alert is sent.
 - GH#111 is complete; production KDF is `v2` after a real S10/HLR canary and clean post-verify compare.
-- Mobile vC50 / v1.0.21 is the current prepared Play/direct build. Gio asked for `vC40`, but Play requires monotonic versionCode; vC50 is the safe next code after vC49.
-- AAB ready for Google Play Closed Testing: `/Users/gio/Desktop/ekklesia-v1.0.21-vC50-PLAY.aab`.
-- Direct APK is live on ekklesia.gr as the play-signed vC50 APK; SHA256 `989c5f92ff37b4a8498e6410f362dedbfd91e362042ec5e6685479385c14685d`.
-- GitHub latest release: https://github.com/NeaBouli/pnyx/releases/tag/v1.0.21.
-- APK SHA256: `989c5f92ff37b4a8498e6410f362dedbfd91e362042ec5e6685479385c14685d`.
-- AAB SHA256: `709cb2cee17f30f48ed417ecda9e1b8831f1b61a446286292a61f1454e3ad5e6`.
-- R8/minify is still OFF for vC50; no `mapping.txt` exists. Play's no-mapping warning is informational for this artifact.
+- Mobile vC51 / v1.0.22 is prepared locally for the next release. It includes GH#122 (`Ενεργά` includes `WINDOW_24H`) and the safer Direct/Play update-channel separation.
+- AAB ready for Google Play Closed Testing: `/Users/gio/Desktop/ekklesia-release-vC51/ekklesia-v1.0.22-vC51-PLAY.aab`, SHA256 `a0176d4597d8da1d2862a66f08aeb84deeaf516287a51ed422dcc2ecadeb45eb`.
+- Direct APK ready for ekklesia.gr/GitHub: `/Users/gio/Desktop/ekklesia-release-vC51/ekklesia-v1.0.22-vC51-DIRECT.apk`, SHA256 `e83a310d0fa932bdfa53ac87286e6a58bba5a98e9eee0259a142303e74b44b83`.
+- Channel audit: Direct APK embeds `distributionChannel=direct`, `buildFlavor=direct`; Play AAB embeds `distributionChannel=play`, `buildFlavor=play`; both are versionCode 51 / versionName 1.0.22.
+- Direct APK signer SHA-256 digest: `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
+- R8/minify is still OFF for vC51; no `mapping.txt` exists. Play's no-mapping warning is informational for this artifact.
+- S10 install/visual retest for vC51 is pending because no device was attached during the build.
 - Monitor Telegram Bot API URL logging is redacted live. Do not repeat raw Telegram tokens from terminal logs.
 - GH#112 hidden S10 canary passed earlier for `bill:ZK-CANARY-001`.
-- GH#112 first public scoped rollout passed for `bill:GR-d4c62ed4`; vC50 S10 install/launch smoke test passed.
-- vC50 live deploy checks passed: API version 1.0.21/50, landing badge vC50, live APK hash match, GitHub release assets hash match, S10 install/launch smoke test. Latest production monitor `--once` now reports 18 checks/no alerts.
+- GH#112 first public scoped rollout passed for `bill:GR-d4c62ed4`; latest hardware install/launch smoke test remains vC50.
+- vC51 local checks passed: API version syntax, API app/parliament tests 13 passed/2 xfailed, mobile TypeScript PASS, mobile Vitest 92 passed, Play AAB build PASS, Direct APK build PASS, APK/AAB channel audit PASS.
 - 2026-06-23 Security Audit correction: run `27986334575` failed on `undici<=6.26.0` in `apps/mobile` + `apps/representative`. Minimal override/lockfile fix pins `undici@6.27.0`; exact local Security Audit loop over all package-locks PASS with 0 high vulnerabilities; mobile + representative `tsc --noEmit` PASS.
 - Public scoped ZK result for `GR-d4c62ed4`: `total_votes=1`, `tier1_vote_count=0`, `zk_vote_count=1`, `yes_count=1`.
 - Public receipt exists with `vote_commitment=YES`, `arweave_pending=true`, `arweave_tx_id=null`.
@@ -38,7 +38,7 @@ Current state:
 - CI + Security Audit are green for `4aa6f71` and `f51dbf0`.
 - F-Droid !38007 is still open/mergeable. Latest linsui feedback ("Please use sed instead of inline python code") is addressed in fdroiddata commit `2bf46a733`: inline Python prebuild edits were replaced with `sed`/shell commands. MR-event pipeline `2630143862` PASS (`fdroid lint`, `fdroid rewritemeta`, `fdroid build`, `check apk`); comment posted at https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007#note_3494920439. Play/Direct pnyx vC50 runtime unchanged; #79 is now external/waiting on linsui/F-Droid merge.
 - GH#111 Nullifier v2 canary completed on 2026-06-17 with real S10/HLR verification. Keep `IDENTITY_NULLIFIER_KDF_VERSION=v2` active.
-- vC50 keeps the controlled Profile -> Verify entrypoint; it was used for the GH#111 real HLR canary.
+- vC51 keeps the controlled Profile -> Verify entrypoint; GH#111 is already complete and remains on KDF v2.
 - GH#111 activation package: `/opt/ekklesia/backups/pre_gh111_nullifier_v2_canary_20260617_200157` (package validation PASS with `ok=true` and no blockers/warnings).
 - GH#111 post-verify mode: `new-registration`; compare `ok=true`, `blockers=[]`, `warnings=[]`; before 17 total / 17 active / 0 v2, after 18 total / 18 active / 1 v2; malformed/mismatched v2 counters all 0; monitor PASS.
 - GH#111 runbook exists: `docs/agent-bridge/GH111_NULLIFIER_V2_CANARY_RUNBOOK.md`; it now includes the preferred host-side prep command `scripts/gh111-prepare-nullifier-v2-window.sh`, guarded activation/rollback helper `scripts/gh111-activate-nullifier-v2-window.sh`, read-only post-verify helper `scripts/gh111-postverify-nullifier-v2-window.sh`, an isolated v2 lifespan probe before any env flip, a retrying external health check after API rebuild, `gh111_kdf_env_guard.py` for env-file plan/write/rollback with explicit `GH111-KDF-WRITE` confirmation, and mandatory `package_check.json` with `"ok": true` before activation.

@@ -8,13 +8,13 @@ from fastapi import APIRouter
 router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
-LATEST_VERSION = "1.0.21"
-LATEST_VERSION_CODE = 50
+LATEST_VERSION = "1.0.22"
+LATEST_VERSION_CODE = 51
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v1.0.21 — Ενημέρωση έκδοσης και σταθερότητας χωρίς αλλαγή στη ροή ψήφου."
-RELEASE_NOTES_EN = "v1.0.21 — Version and stability update with no change to the voting flow."
+RELEASE_NOTES_EL = "v1.0.22 — Η καρτέλα Ενεργά εμφανίζει πλέον και τις ψηφοφορίες 24ω, με ασφαλέστερη ροή ενημέρωσης εφαρμογής."
+RELEASE_NOTES_EN = "v1.0.22 — Active now also shows 24h voting-window bills, with safer app update routing."
 
 FDROID_URL = ""  # Not live yet — MR !38007 pending
 PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=ekklesia.gr"

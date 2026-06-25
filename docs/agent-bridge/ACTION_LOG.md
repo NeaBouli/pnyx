@@ -1,5 +1,42 @@
 # Action Log
 
+## 2026-06-26 — Codex: vC51 / v1.0.22 mobile release prepared
+
+- Scope:
+  - Prepare the next Android release with GH#122 (`Ενεργά` includes `WINDOW_24H`) and safer Direct/Play update routing.
+  - No vote, lifecycle, ZK production flags, forum, Arweave, scraper, DB schema, or production data changed.
+- Rollback:
+  - Local rollback tag: `rollback-pre-vc51-mobile-release-20260625-2347`.
+- Changed:
+  - `apps/mobile/app.json`: `version=1.0.22`, `android.versionCode=51`.
+  - `apps/mobile/android/app/build.gradle`: `versionName "1.0.22"`, `versionCode 51`; direct and play release flavors now both use the upload key.
+  - `scripts/build-direct.sh`: builds `assembleDirectRelease` and applies the release flavor/signing patch.
+  - `scripts/patches/patch-play-flavors.py`: direct APK releases are upload-key signed while keeping `distribution_channel=direct`.
+  - `apps/api/routers/app_version.py`: latest version endpoint bumped to `1.0.22 / 51` with GH#122/update-routing release notes.
+  - `docs/index.html`, `docs/download/APK_MANIFEST.md`, `docs/download/ekklesia-latest.apk.sha256`, and `docs/agent-bridge/PLAY_RELEASE_NOTES_v1.0.22_vC51.md` updated.
+- Artifacts:
+  - Direct APK: `/Users/gio/Desktop/ekklesia-release-vC51/ekklesia-v1.0.22-vC51-DIRECT.apk`.
+  - Direct APK SHA256: `e83a310d0fa932bdfa53ac87286e6a58bba5a98e9eee0259a142303e74b44b83`.
+  - Play AAB: `/Users/gio/Desktop/ekklesia-release-vC51/ekklesia-v1.0.22-vC51-PLAY.aab`.
+  - Play AAB SHA256: `a0176d4597d8da1d2862a66f08aeb84deeaf516287a51ed422dcc2ecadeb45eb`.
+- Artifact audit:
+  - Direct APK badging: package `ekklesia.gr`, `versionCode=51`, `versionName=1.0.22`, target SDK 36.
+  - Direct APK signer SHA-256 digest: `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
+  - Direct APK embedded config: `distributionChannel=direct`, `buildFlavor=direct`, `zkSemaphoreEnabled=true`.
+  - Play AAB embedded config: `distributionChannel=play`, `buildFlavor=play`, `zkSemaphoreEnabled=true`.
+- Verification:
+  - `python3 -m py_compile apps/api/routers/app_version.py scripts/patches/patch-play-flavors.py`: PASS.
+  - `cd apps/api && .venv/bin/python -m pytest tests/test_app_version.py tests/test_parliament.py -q`: PASS, 13 passed, 2 xfailed.
+  - `cd apps/mobile && npx tsc --noEmit`: PASS.
+  - `cd apps/mobile && npx vitest run`: PASS, 92 passed.
+  - `bash scripts/build-play.sh`: PASS.
+  - `bash scripts/build-direct.sh`: PASS.
+- Pending:
+  - S10 install/visual retest is pending because no device was attached in this shell.
+  - Live deploy of API/Web/download artifact is pending.
+  - GitHub latest release update is pending.
+  - Google Play upload remains Gio/operator action.
+
 ## 2026-06-25 — Codex: GH#125 F-Droid linsui sed feedback resolved
 
 - Scope: fdroiddata metadata-only fix for MR `!38007`; no pnyx runtime/app code, no deploy, no version bump, no APK/AAB, no Play/Landing changes.
