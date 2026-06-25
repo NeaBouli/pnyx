@@ -20,7 +20,18 @@
   - Comment posted to MR: https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007#note_3494920439.
 - Status:
   - GH#125 resolved.
+  - GH#125 closed on GitHub after MR-event pipeline `2630143862` passed.
   - GH#79 remains open/external until linsui/F-Droid merges MR `!38007`.
+
+## 2026-06-25 — Codex: GH#123 closed after deployed PDF-only enrichment fix
+
+- Scope: GitHub/Bridge hygiene only; no code, deploy, DB, forum, app, or release artifact changes.
+- Status:
+  - GH#123 was already deployed and verified: strict PDF-only Parliament fallback blocks are enrichable while working PDF links are preserved.
+  - Live backfill previously enriched 6 bills and updated exactly their 6 Discourse topics.
+  - 2 ANNOUNCED bills remain PDF-only because fetched text failed the quality threshold; this is expected fallback behavior, not the original blocker.
+- Action:
+  - Closed GH#123 as completed.
 
 ## 2026-06-25 — Codex: GH#124 lifecycle duplicate-transition guard prepared
 

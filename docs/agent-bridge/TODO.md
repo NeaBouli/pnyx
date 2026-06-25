@@ -105,6 +105,7 @@
   - Safety: failed fetch leaves existing PDF links untouched; genuine long text is excluded; forum/source/PDF rendering tests pass.
   - Verified: tests 50 passed; `py_compile` + `git diff --check` PASS; production API health PASS; monitor `--once` PASS.
   - Live: 6 PDF-only Parliament bills enriched and their Discourse topics updated; 2 ANNOUNCED bills remain PDF-only because fetched text failed the quality threshold.
+  - GitHub: closed.
 - [x] GH#124 — Lifecycle `WINDOW_24H` T3 alerts and duplicate transition logs.
   - Befund 2026-06-25: old T3 for `GR-056b74d6` resolved, but duplicate `ACTIVE -> WINDOW_24H` logs suggest possible scheduler/race issue.
   - Production read-only diagnosis: `GR-056b74d6` and `GR-357e304b` had duplicate lifecycle logs within milliseconds; current status is not stuck.
@@ -112,11 +113,13 @@
   - Safety: no timing rule changes, no status rewrites, no historical log cleanup, no DB schema migration, no mobile/web/forum/Arweave/ZK changes.
   - Verified: lifecycle tests 8 passed; lifecycle+monitor+Arweave+Parliament subset 36 passed / 2 xfailed; AST parse + `git diff --check` PASS.
   - Deployed: commit `3edd88c`; rollback tag `rollback-pre-gh124-lifecycle-lock-20260625-1659`; API-only rebuild; live API health + monitor PASS.
+  - GitHub: closed.
 - [x] GH#125 — F-Droid !38007 linsui feedback: replace inline python prebuild edits with `sed`.
   - Fix 2026-06-25: fdroiddata metadata-only commit `2bf46a733` replaces inline Python prebuild edits with readable `sed`/shell commands.
   - Safety: no pnyx runtime/app code, no version bump, no APK/AAB, no Play/Landing changes.
   - Verified: local `fdroid rewritemeta ekklesia.gr` PASS, local `git diff --check` PASS, MR-event pipeline `2630143862` PASS (`fdroid lint`, `fdroid rewritemeta`, `fdroid build`, `check apk`).
   - linsui/F-Droid MR comment posted: https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007#note_3494920439.
+  - GitHub: closed.
 - [x] GH#126 — Samsung A12 Direct-update links open `ekklesia.gr` 404.
   - Befund 2026-06-25: AAB tester on Samsung A12 has installed `v1.0.5 (v34) · Direct`; both home update banner and Profile update flow detect `v1.0.21` but open browser to `ekklesia.gr` 404.
   - Fix: API version endpoint now returns direct APK file URL `https://ekklesia.gr/download/ekklesia-latest.apk` instead of the missing `/download/` page route.
