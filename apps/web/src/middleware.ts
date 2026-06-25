@@ -13,6 +13,13 @@ const WIKI_PAGES = new Set([
 export default function middleware(request: NextRequest) {
   const p = request.nextUrl.pathname;
 
+  // Old Direct-channel Android clients and Samsung Internet may still open the
+  // historical download page route. Keep it functional by sending it straight
+  // to the canonical APK file instead of the locale page, which does not exist.
+  if (p === "/download" || p === "/download/" || p === "/el/download" || p === "/en/download") {
+    return NextResponse.redirect(new URL("/download/ekklesia-latest.apk", request.url), 302);
+  }
+
   // Serve docs/index.html (static landing page) at /
   if (p === "/") {
     return NextResponse.rewrite(new URL("/index.html", request.url));
