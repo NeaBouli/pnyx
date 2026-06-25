@@ -72,6 +72,11 @@
 - [x] NEA-286 / GH#94 — Lifecycle WINDOW_24H stuck: resolved/stale; Production 2026-06-09 ohne stuck Rows, Scheduler healthy
 
 ### Release Follow-ups
+- [ ] Next Mobile Release — include update-channel guard in the next APK/AAB.
+  - Current prepared fix: Play/AAB builds resolve updates only to Play Store; Direct/APK builds resolve updates only to `https://ekklesia.gr/download/ekklesia-latest.apk`.
+  - Reason: Android install signatures/sources must stay separated; a Play user should not be pushed to a Direct APK, and a Direct user should not be forced through Play.
+  - Local verification: mobile resolver tests 4 passed; mobile lib tests 92 passed; mobile TypeScript PASS.
+  - Build/upload only during the next explicit mobile release gate.
 - [ ] API/App Date Visibility Follow-up — `submitted_date` ist DB-/Sortier-/Monitor-seitig vorhanden, wird aber im normalen `BillSummary`/`BillDetail` API-Schema aktuell nicht exportiert.
   - Aktueller Zustand ist funktional korrekt: App-Liste/Detail, Forum-Links und Arweave-Guards wurden am 2026-06-23 read-only geprueft; Forum und Arweave sind sauber.
   - Wenn Gio das offizielle Aktivitaets-/Quelle-Datum sichtbar in der App/Web-UI sehen will: API-Schema erweitern, Mobile/Web UI sparsam anzeigen, Regression-Test fuer PARLIAMENT + DIAVGEIA.

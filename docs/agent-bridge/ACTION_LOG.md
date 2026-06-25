@@ -1,5 +1,29 @@
 # Action Log
 
+## 2026-06-25 — Codex: Mobile update channel guard prepared
+
+- Scope: keep Google Play/AAB users on the Play Store update path and Direct/APK users on the direct APK update path.
+- Trigger:
+  - Samsung A12 Direct-user screenshots showed old `v1.0.5 (v34) · Direct` opening the update flow through a missing `/el/download` page.
+  - After GH#126 server/web fallback, Gio clarified the permanent rule: Play users must receive Play updates; APK users must receive repo/direct APK updates. Mixing channels can fail because signatures/install sources differ.
+- Change:
+  - Added `apps/mobile/src/lib/update-channel.ts` with one resolver for channel-aware update URLs.
+  - `UpdateBanner`, `HomeScreen`, and `ProfileScreen` now use the same resolver.
+  - Play channel resolves only to `playstore_url` or the canonical Play Store fallback.
+  - Direct/unknown channel resolves only to `direct_apk_url` or `https://ekklesia.gr/download/ekklesia-latest.apk`.
+- Safety boundary:
+  - Mobile-code only.
+  - No API, web, server deploy, DB, voting, ZK, forum, Arweave, identity, scraper, source/PDF handling, or release artifact changed.
+  - Existing GH#126 server/web fallback still protects already-installed old Direct clients.
+- Verification:
+  - New resolver unit tests: 4 passed.
+  - Mobile lib tests: 14 files / 92 tests passed.
+  - Mobile TypeScript: `npx tsc --noEmit --incremental false` PASS.
+  - `git diff --check`: PASS.
+- Release note:
+  - This mobile-code fix requires the next APK/AAB build to reach installed clients.
+  - Do not build/upload immediately unless Gio explicitly starts the next mobile release gate.
+
 ## 2026-06-25 — Codex: GH#126 Samsung A12 Direct-update 404 fixed
 
 - Scope: fix old Direct-channel Android clients opening a 404 page when using the in-app update banner/profile update action.

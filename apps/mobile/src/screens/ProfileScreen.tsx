@@ -6,6 +6,7 @@ import Constants from "expo-constants";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
+import { resolveUpdateUrl } from "../lib/update-channel";
 import { colors } from "../theme";
 
 type Nav = StackNavigationProp<RootStackParams>;
@@ -245,9 +246,7 @@ export default function ProfileScreen() {
           onPress={() => {
             try {
               const channel = Constants.expoConfig?.extra?.distributionChannel;
-              const url = channel === "play"
-                ? (latestVersion.playstore_url || "https://play.google.com/store/apps/details?id=ekklesia.gr")
-                : (latestVersion.direct_apk_url || "https://ekklesia.gr/download/");
+              const url = resolveUpdateUrl(latestVersion, channel);
               Linking.openURL(url);
             } catch {}
           }}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Text, TouchableOpacity, StyleSheet, Linking, Animated } from "react-native";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
+import { resolveUpdateUrl } from "../lib/update-channel";
 import { colors } from "../theme";
 
 const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
@@ -29,9 +30,10 @@ export function UpdateBanner(): React.JSX.Element | null {
         const res = await fetch(`${API}/api/v1/app/version`);
         const data = await res.json();
         if (data.latest_version_code > currentVC) {
+          const channel = Constants.expoConfig?.extra?.distributionChannel;
           setUpdate({
             version: data.latest_version,
-            url: data.direct_apk_url || data.playstore_url || "https://ekklesia.gr/download/",
+            url: resolveUpdateUrl(data, channel),
           });
         }
       } catch { /* silent */ }

@@ -7,6 +7,7 @@ import { fetchAnalyticsOverview } from "../lib/api";
 import { isDemoMode } from "../lib/demo";
 import { getResult } from "../lib/compassStore";
 import { registerForPushNotifications } from "../lib/notifications";
+import { resolveUpdateUrl } from "../lib/update-channel";
 import type { CompassResult } from "../compass/types";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
@@ -47,10 +48,11 @@ export default function HomeScreen() {
       .then(r => r.json())
       .then(data => {
         if (data.latest_version_code > currentVC) {
+          const channel = Constants.expoConfig?.extra?.distributionChannel;
           setUpdateAvailable({
             version: data.latest_version,
             notes: data.release_notes_el,
-            url: data.direct_apk_url || data.playstore_url || "https://ekklesia.gr/download",
+            url: resolveUpdateUrl(data, channel),
             force: data.force_update || false,
           });
         }
