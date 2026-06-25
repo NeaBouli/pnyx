@@ -1,5 +1,41 @@
 # Action Log
 
+## 2026-06-25 — Codex: GH#126 Samsung A12 Direct-update 404 fixed
+
+- Scope: fix old Direct-channel Android clients opening a 404 page when using the in-app update banner/profile update action.
+- Trigger:
+  - Samsung A12 tester on `v1.0.5 (v34) · Direct` saw the update banner and profile update button detect `v1.0.21`, but both opened Samsung Internet to `ekklesia.gr` 404.
+- Diagnosis:
+  - `/api/v1/app/version` returned `direct_apk_url=https://ekklesia.gr/download/`.
+  - `https://ekklesia.gr/download/` redirects through `/download` to `/el/download`, which returns 404.
+  - The actual APK artifact is live at `https://ekklesia.gr/download/ekklesia-latest.apk` and returns 200 with `application/vnd.android.package-archive`.
+- Safety boundary:
+  - API-only change.
+  - No mobile code, APK/AAB, voting, ZK, forum, Arweave, identity, PDF/source-link, scraper, DB schema, or production data changed.
+  - Because old clients read the URL dynamically from the version endpoint, the fix applies to v34 Direct clients without requiring a new app build.
+- Change:
+  - `apps/api/routers/app_version.py`: `DIRECT_APK_URL` now points to `https://ekklesia.gr/download/ekklesia-latest.apk`.
+  - Added `apps/api/tests/test_app_version.py` covering both `/api/v1/app/version` and legacy `/api/v1/version`.
+- Verification before deploy:
+  - `tests/test_app_version.py`: 2 passed.
+  - `tests/test_app_version.py tests/test_health.py tests/test_cors_config.py`: 9 passed.
+  - In-memory syntax compile for `routers/app_version.py`, `main.py`, and `tests/test_app_version.py`: PASS.
+  - `git diff --check`: PASS.
+  - Live APK URL HEAD check before deploy: 200, APK MIME type.
+- Deploy:
+  - Commit `c59261c` pushed to `origin/main`.
+  - Production rollback tag set before deploy.
+  - Production `/opt/ekklesia/app` fast-forwarded to `c59261c`.
+  - Rebuilt/restarted only `api` with `infra/docker/docker-compose.prod.yml`.
+- Live verification:
+  - `https://api.ekklesia.gr/health`: PASS.
+  - `https://api.ekklesia.gr/api/v1/app/version`: `direct_apk_url=https://ekklesia.gr/download/ekklesia-latest.apk`.
+  - `https://ekklesia.gr/download/ekklesia-latest.apk`: 200, `application/vnd.android.package-archive`.
+  - Container syntax probe: PASS.
+  - Production monitor `--once`: 18 checks, `All checks passed — no alerts`.
+- Ops note:
+  - Disk remains a separate capacity item: `/` 91% used / 6.9 GB free after API rebuild.
+
 ## 2026-06-25 — Codex: GH#123 PDF-only Parliament blocks no longer block enrichment
 
 - Scope: protect the already-working Parliament PDF link fallback while allowing those PDF-only rows to be enriched later with real text.

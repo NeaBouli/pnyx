@@ -106,11 +106,11 @@
 - [ ] GH#125 — F-Droid !38007 linsui feedback: replace inline python prebuild edits with `sed`.
   - Befund 2026-06-25: MR pipeline is green, but linsui requested `sed` for readability.
   - Next step: explain fdroiddata-only metadata patch + risks to Gio before implementation.
-- [ ] GH#126 — Samsung A12 Direct-update links open `ekklesia.gr` 404.
+- [x] GH#126 — Samsung A12 Direct-update links open `ekklesia.gr` 404.
   - Befund 2026-06-25: AAB tester on Samsung A12 has installed `v1.0.5 (v34) · Direct`; both home update banner and Profile update flow detect `v1.0.21` but open browser to `ekklesia.gr` 404.
-  - Expected: Direct channel opens a valid APK/download route; Play channel should prefer Play/package route where applicable.
-  - Safety: no vote, ZK, forum, Arweave, identity, PDF/source-link, or API data-flow changes.
-  - Next step: diagnose update URL resolver + version endpoint contract; add tests before fixing. If Mobile code changes, schedule new APK/AAB after verification.
+  - Fix: API version endpoint now returns direct APK file URL `https://ekklesia.gr/download/ekklesia-latest.apk` instead of the missing `/download/` page route.
+  - Safety: API-only; no vote, ZK, forum, Arweave, identity, PDF/source-link, scraper, DB schema, mobile code, APK/AAB, or production data changed.
+  - Verified: app-version regression tests 2 passed; API health PASS; live version endpoint returns APK URL; APK HEAD 200 with APK MIME type; monitor `--once` PASS.
 - [x] FDROID-TRACE-20260623 (Bridge-local): diagnosed and patched in fdroiddata only. Local validation: local `fdroid rewritemeta` PASS, fdroidserver-master formatting applied for CI, local `fdroid build` passes former scanner blocker and stops only on local missing `gradlew-fdroid`.
 - [ ] No active technical pnyx/fdroiddata work remains for #79 after green MR-event pipeline `2622515254`; it is tracked under Blocked/Extern until linsui/F-Droid merge.
 
