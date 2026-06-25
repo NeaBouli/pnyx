@@ -1,5 +1,21 @@
 # Action Log
 
+## 2026-06-25 — Codex: Ticketing for S10 voting-list/Text/T3/F-Droid review findings
+
+- Scope: create tracking tickets only; no product code, no deploy, no DB changes.
+- Input:
+  - S10 screenshots showed a `WINDOW_24H` (`24ω`) Parliament bill visible under `Βουλή`, but absent from `Ενεργά`.
+  - S10 detail view showed fallback/PDF document blocks instead of processed text for a new Parliament bill.
+  - Telegram T3 showed `GR-056b74d6 stuck in WINDOW_24H`; later monitor was green, but read-only diagnosis found duplicate lifecycle transition logs.
+  - GitLab/F-Droid MR `!38007` received linsui feedback: "Please use sed instead of inline python code. It's not very readable."
+- GitHub tickets created:
+  - GH#122 — Mobile `Ενεργά` tab must include `WINDOW_24H` bills.
+  - GH#123 — Parliament PDF-only document blocks prevent full-text enrichment.
+  - GH#124 — Lifecycle `WINDOW_24H` T3 alerts and duplicate transition logs.
+  - GH#125 — F-Droid !38007 linsui feedback: replace inline python prebuild edits with `sed`.
+- Bridge:
+  - `docs/agent-bridge/TODO.md` updated with the four new tracked items and next-step policy: explain proposed fix + risks to Gio before implementation.
+
 ## 2026-06-23 — Codex: Dependabot #19 pydantic-settings fixed
 
 - Trigger:

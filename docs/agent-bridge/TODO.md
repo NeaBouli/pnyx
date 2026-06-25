@@ -87,6 +87,20 @@
 - Active GitHub truth remains: `#79` F-Droid, `#80` Off-site Backup, `#112` ZK V2 staged/global follow-up.
 
 ## Aktiv / In Progress
+- [ ] GH#122 — Mobile `Ενεργά` tab must include `WINDOW_24H` bills.
+  - Befund 2026-06-25: S10 zeigt `24ω` Bill in `Βουλή`, aber nicht in `Ενεργά`.
+  - Root cause candidate: Mobile filter sends exact `status=ACTIVE`; `WINDOW_24H` is votable but excluded from that tab.
+  - Next step: explain proposed fix + risks to Gio before implementation.
+- [ ] GH#123 — Parliament PDF-only document blocks prevent full-text enrichment.
+  - Befund 2026-06-25: 8 Parliament bills have no `summary_short_el` and `summary_long_el` is only the PDF document block.
+  - Root cause candidate: enrichment selects only `summary_long_el IS NULL`, so PDF-only fallback blocks later enrichment.
+  - Next step: explain safe detector/backfill strategy + risks to Gio before implementation.
+- [ ] GH#124 — Lifecycle `WINDOW_24H` T3 alerts and duplicate transition logs.
+  - Befund 2026-06-25: old T3 for `GR-056b74d6` resolved, but duplicate `ACTIVE -> WINDOW_24H` logs suggest possible scheduler/race issue.
+  - Next step: explain lifecycle lock/idempotency diagnosis plan + risks to Gio before implementation.
+- [ ] GH#125 — F-Droid !38007 linsui feedback: replace inline python prebuild edits with `sed`.
+  - Befund 2026-06-25: MR pipeline is green, but linsui requested `sed` for readability.
+  - Next step: explain fdroiddata-only metadata patch + risks to Gio before implementation.
 - [x] FDROID-TRACE-20260623 (Bridge-local): diagnosed and patched in fdroiddata only. Local validation: local `fdroid rewritemeta` PASS, fdroidserver-master formatting applied for CI, local `fdroid build` passes former scanner blocker and stops only on local missing `gradlew-fdroid`.
 - [ ] No active technical pnyx/fdroiddata work remains for #79 after green MR-event pipeline `2622515254`; it is tracked under Blocked/Extern until linsui/F-Droid merge.
 
