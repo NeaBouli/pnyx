@@ -98,8 +98,8 @@
   - Fix: PDF-only Parliament document blocks are detected as fallback-only, selected for enrichment, and preserved below fetched text if enrichment succeeds.
   - Automatic completeness check now includes active/votable Parliament statuses for text-only recovery, but still never overwrites real text.
   - Safety: failed fetch leaves existing PDF links untouched; genuine long text is excluded; forum/source/PDF rendering tests pass.
-  - Verified: local candidate count `8` PDF-only; tests 50 passed; `py_compile` + `git diff --check` PASS.
-  - Pending: production deploy/backfill/live verification status recorded in `ACTION_LOG.md`.
+  - Verified: tests 50 passed; `py_compile` + `git diff --check` PASS; production API health PASS; monitor `--once` PASS.
+  - Live: 6 PDF-only Parliament bills enriched and their Discourse topics updated; 2 ANNOUNCED bills remain PDF-only because fetched text failed the quality threshold.
 - [ ] GH#124 — Lifecycle `WINDOW_24H` T3 alerts and duplicate transition logs.
   - Befund 2026-06-25: old T3 for `GR-056b74d6` resolved, but duplicate `ACTIVE -> WINDOW_24H` logs suggest possible scheduler/race issue.
   - Next step: explain lifecycle lock/idempotency diagnosis plan + risks to Gio before implementation.

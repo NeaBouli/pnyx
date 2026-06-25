@@ -5,6 +5,7 @@
 - Scope: protect the already-working Parliament PDF link fallback while allowing those PDF-only rows to be enriched later with real text.
 - Rollback:
   - Local tag: `rollback-pre-gh123-pdf-only-enrichment-20260625-141738`.
+  - Production rollback tag was set before API deploy.
 - Pre-fix live read-only count:
   - `pdf_only_no_short=8`
   - `pdf_only_total=8`
@@ -28,9 +29,26 @@
   - Scraper + Discourse + Source links + Monitor freshness: 47 passed.
   - Admin catchup + scraper + fetcher + Discourse + Source links + Monitor freshness: 50 passed.
   - `git diff --check`: PASS.
-- Follow-up:
-  - Deploy API only, then verify health/monitor.
-  - Run a careful live backfill/enrichment only after deploy verification; first canary one bill if needed, then the small remaining set.
+- Deploy + live verification:
+  - Commit `d1b5aa1` pushed to `origin/main`.
+  - Production `/opt/ekklesia/app` fast-forwarded to `d1b5aa1`.
+  - Rebuilt/restarted only `api` with `infra/docker/docker-compose.prod.yml`; web/mobile/monitor were not rebuilt for this fix.
+  - `https://api.ekklesia.gr/health`: PASS.
+  - `status_any=ACTIVE,WINDOW_24H` endpoint live: PASS (`GR-357e304b` visible as `WINDOW_24H`).
+  - Container `py_compile main.py services/parliament_fetcher.py`: PASS.
+  - Detector probe inside API container: strict PDF-only block returns `True`.
+- Live data operation:
+  - Canary row backup: `/opt/ekklesia/backups/gh123_GR-357e304b_pre_20260625-114335.csv`.
+  - Remaining PDF-only batch backup: `/opt/ekklesia/backups/gh123_pdf_only_remaining_pre_20260625-114651.csv`.
+  - One-bill canary `GR-357e304b`: SUCCESS, fetched text stored and existing Parliament PDF links preserved.
+  - Remaining PDF-only set: 5 additional bills enriched successfully; 2 ANNOUNCED bills stayed PDF-only because all fetch channels returned text too short.
+  - Updated exactly 6 related Discourse topics using existing `update_discourse_topic()`; no global forum resync.
+  - Example forum live check topic `1221`: `Επίσημο κείμενο και έγγραφα` + `13325042.pdf` present.
+  - Post-backfill counts: `pdf_only_total=2`, `real_long_text=32`, `missing_long=6`.
+- Ops note:
+  - Production monitor `--once`: 18 checks, `All checks passed — no alerts`.
+  - Disk remains high after API rebuild: `/` 91% used / 7.1 GB free.
+  - Ran only `docker builder prune -af`; no images, volumes, backups, DB data, Arweave data, or project files deleted.
 
 ## 2026-06-25 — Codex: GH#122 Active tab includes `WINDOW_24H` bills
 
