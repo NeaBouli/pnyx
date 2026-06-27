@@ -19,18 +19,22 @@
   - Updated `CurrentVersionCode` to `514`.
   - fdroiddata follow-up commit `116cbe6a23` attempted local `fdroid rewritemeta` formatting, but GitLab CI normalizes these command lines differently.
   - fdroiddata follow-up commit `f11a3c605e` matches the GitLab CI `rewritemeta` normalization with single-line `sed` command entries.
+  - fdroiddata follow-up commit `11770592c7` removes the last four CI-only trailing spaces in `buildFromSource`.
 - Verification:
   - Local `fdroid rewritemeta ekklesia.gr`: PASS.
   - Local `fdroid lint ekklesia.gr` is not authoritative in this checkout: it flags existing official `fdroiddata` examples for `NonFreeNet`, `Ads`, `Connectivity`, etc.; treated as local catalog/tooling mismatch, same as previous sessions.
   - MR pipeline for `c23b4b2cd7` failed only the `fdroid rewritemeta` comparison because local whitespace cleanup diverged from the canonical formatter.
   - MR pipeline for `116cbe6a23` also failed `fdroid rewritemeta` because local and CI formatter output differ.
-  - New MR pipeline for `f11a3c605e` is running: https://gitlab.com/TrueRepublic/fdroiddata/-/pipelines/2634059166.
+  - MR pipeline for `f11a3c605e` failed only because GitLab `rewritemeta` expected four trailing spaces on `buildFromSource`.
+  - MR pipeline for `11770592c7` passed: https://gitlab.com/TrueRepublic/fdroiddata/-/pipelines/2634279484.
+  - Green jobs include `fdroid lint`, `fdroid rewritemeta`, `fdroid build`, and `check apk`.
 - External communication:
   - Comment posted to MR: https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007#note_3500436982.
   - Follow-up comment posted: https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007#note_3500444433.
   - Follow-up 2 comment posted: https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007#note_3500456585.
+  - Follow-up 3 comment posted: https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007#note_3500656015.
 - Follow-up:
-  - Wait for GitLab/F-Droid pipeline + linsui review.
+  - Wait for linsui/F-Droid review + merge.
   - New monitor feature request recorded: when a previously active alert key clears, the monitor should be able to post a one-time Telegram "resolved/Entwarnung" message. Not implemented yet; requires alert-state/dedupe design so Telegram does not spam.
 
 ## 2026-06-26 — Codex: vC51 / v1.0.22 mobile release prepared
