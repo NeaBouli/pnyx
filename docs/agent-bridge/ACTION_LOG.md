@@ -1,5 +1,33 @@
 # Action Log
 
+## 2026-06-27 — Codex: F-Droid ABI split feedback addressed + monitor-resolved follow-up noted
+
+- Scope:
+  - F-Droid metadata-only work in `/Users/gio/Desktop/fdroiddata` for MR `!38007`.
+  - No pnyx runtime/app/server code, no deploy, no APK/AAB, no Play/Landing change.
+- Trigger:
+  - linsui commented on MR `!38007`: "Set abiFilter and remove those mips libs." and requested ABI split per F-Droid docs.
+- Change:
+  - fdroiddata commit `c23b4b2cd7` splits `ekklesia.gr` into four ABI-specific builds:
+    - `511` `armeabi-v7a`
+    - `512` `arm64-v8a`
+    - `513` `x86`
+    - `514` `x86_64`
+  - Added per-build `ndk { abiFilters "..." }`.
+  - Added prebuild removal for `mips` / `mips64` directories.
+  - Added `VercodeOperation` for the four ABI version codes.
+  - Updated `CurrentVersionCode` to `514`.
+- Verification:
+  - Local `fdroid rewritemeta ekklesia.gr`: PASS.
+  - Local `git diff --check`: PASS.
+  - Local `fdroid lint ekklesia.gr` is not authoritative in this checkout: it flags existing official `fdroiddata` examples for `NonFreeNet`, `Ads`, `Connectivity`, etc.; treated as local catalog/tooling mismatch, same as previous sessions.
+  - MR pipeline for `c23b4b2cd7` is running: https://gitlab.com/TrueRepublic/fdroiddata/-/pipelines/2634045842.
+- External communication:
+  - Comment posted to MR: https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007#note_3500436982.
+- Follow-up:
+  - Wait for GitLab/F-Droid pipeline + linsui review.
+  - New monitor feature request recorded: when a previously active alert key clears, the monitor should be able to post a one-time Telegram "resolved/Entwarnung" message. Not implemented yet; requires alert-state/dedupe design so Telegram does not spam.
+
 ## 2026-06-26 — Codex: vC51 / v1.0.22 mobile release prepared
 
 - Scope:

@@ -66,7 +66,7 @@
 
 ### Blocked / Extern (kein Bau)
 - [ ] GH#102 / NEA-312 — echter `WINDOW_24H` Bill nötig
-- [ ] GH#79 — F-Droid !38007 updated to vC50/v1.0.21; MR open/mergeable. Latest linsui feedback was fixed in fdroiddata commit `2bf46a733`; MR-event pipeline `2630143862` is green. Now waits on linsui/F-Droid review + merge.
+- [ ] GH#79 — F-Droid !38007 open/mergeable. Sed feedback fixed in fdroiddata `2bf46a733` and MR-event pipeline `2630143862` was green. Latest ABI feedback fixed in fdroiddata `c23b4b2cd7` (ABI split `511-514`, `abiFilters`, remove `mips/mips64`, `VercodeOperation`, `CurrentVersionCode=514`). Local `rewritemeta` + `git diff --check` PASS; new pipeline `2634045842` running. Now waits on pipeline result + linsui/F-Droid review + merge.
 - [ ] GH#80 — Off-site Backup wartet auf Hetzner Storage Box / erste Spende
 - [x] GH#81 — Android Native-Prover Self-Test auf S10 erfolgreich; produktives ZK-Voting bleibt Feature-Flag-guarded bis Backend/Arweave-Integration
 - [x] NEA-286 / GH#94 — Lifecycle WINDOW_24H stuck: resolved/stale; Production 2026-06-09 ohne stuck Rows, Scheduler healthy
@@ -84,6 +84,10 @@
   - Aktueller Zustand ist funktional korrekt: App-Liste/Detail, Forum-Links und Arweave-Guards wurden am 2026-06-23 read-only geprueft; Forum und Arweave sind sauber.
   - Wenn Gio das offizielle Aktivitaets-/Quelle-Datum sichtbar in der App/Web-UI sehen will: API-Schema erweitern, Mobile/Web UI sparsam anzeigen, Regression-Test fuer PARLIAMENT + DIAVGEIA.
   - Keine Dringlichkeit, kein Produktionsfehler; als UX-/Transparenz-Follow-up behandeln.
+- [ ] Monitor resolved/Entwarnung follow-up — when a previously active alert key clears, Telegram should optionally post one one-time resolved message.
+  - Requested 2026-06-27 after transient T3/T2 alerts had already self-cleared.
+  - Needs alert-state/dedupe design before implementation; avoid Telegram spam and avoid claiming recovery for alerts that were never active in persisted state.
+  - Should be separate from T1/T2/T3 auto-recovery semantics: this is a notification-state feature, not a repair action.
 - [ ] Future Production Size/R8 Optimization — Play Console warns about size/mapping when R8 is not active.
   - Current prepared Play/direct build: vC51 / v1.0.22; R8/minify remains OFF, so no `mapping.txt` exists for this artifact.
   - Cause of size: native Semaphore/ZK prover and multi-ABI native libraries.
