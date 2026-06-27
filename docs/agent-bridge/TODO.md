@@ -66,7 +66,7 @@
 
 ### Blocked / Extern (kein Bau)
 - [ ] GH#102 / NEA-312 — echter `WINDOW_24H` Bill nötig
-- [ ] GH#79 — F-Droid !38007 open/mergeable. Sed feedback fixed in fdroiddata `2bf46a733` and MR-event pipeline `2630143862` was green. Latest ABI feedback fixed in fdroiddata `c23b4b2cd7` (ABI split `511-514`, `abiFilters`, remove `mips/mips64`, `VercodeOperation`, `CurrentVersionCode=514`). Local `rewritemeta` + `git diff --check` PASS; new pipeline `2634045842` running. Now waits on pipeline result + linsui/F-Droid review + merge.
+- [ ] GH#79 — F-Droid !38007 open/mergeable. Sed feedback fixed in fdroiddata `2bf46a733` and MR-event pipeline `2630143862` was green. Latest ABI feedback fixed in fdroiddata `c23b4b2cd7` + `116cbe6a23` (ABI split `511-514`, `abiFilters`, remove `mips/mips64`, `VercodeOperation`, `CurrentVersionCode=514`, exact `fdroid rewritemeta` formatting). Pipeline `2634045842` failed only formatter comparison before the follow-up; new pipeline `2634051871` running. Now waits on pipeline result + linsui/F-Droid review + merge.
 - [ ] GH#80 — Off-site Backup wartet auf Hetzner Storage Box / erste Spende
 - [x] GH#81 — Android Native-Prover Self-Test auf S10 erfolgreich; produktives ZK-Voting bleibt Feature-Flag-guarded bis Backend/Arweave-Integration
 - [x] NEA-286 / GH#94 — Lifecycle WINDOW_24H stuck: resolved/stale; Production 2026-06-09 ohne stuck Rows, Scheduler healthy
