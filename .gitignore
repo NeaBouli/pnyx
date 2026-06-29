@@ -45,3 +45,6 @@ apps/api/services/greek_topics_scraper.py
 builds/
 docs/download/*.apk
 docs/download/backups/
+
+# Local agent handoff / bridge notes — private, never publish
+docs/agent-bridge/
