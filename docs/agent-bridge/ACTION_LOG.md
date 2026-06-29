@@ -13044,3 +13044,24 @@ Cross-Links: GH-Kommentare mit Linear-URLs gesetzt.
 - Pending:
   - S10 visual/install retest for vC51 remains pending because no device was attached during the release build/deploy.
   - User still needs to upload the Play AAB to Google Play Closed Testing if not already done.
+
+## 2026-06-29 — Codex: monitor T3 dedupe + Entwarnung
+
+- Scope: reduce repeated Telegram T3 spam for the same active alert, prompted by repeated `disk_critical` messages every monitor cycle (`Disk 92% voll`, free GB wobbling between 2.5 and 2.7 GB).
+- Safety boundary:
+  - Monitor notification logic only; no API, DB schema, voting, ZK, forum, Arweave, mobile, or web behavior changed.
+  - First occurrence of an incident still notifies immediately.
+  - Repeated active incidents are cooldown-gated by stable alert identity, default `ALERT_NOTIFY_COOLDOWN_SECONDS=21600` (6h).
+  - New alert identities and severity changes still notify.
+  - Redis failures fail open: alerts continue to send rather than being hidden.
+- Change:
+  - Added stable alert identity excluding volatile message text so `disk_critical` free-GB wobble does not create a fresh incident every 30 minutes.
+  - Added active alert state in Redis (`monitor:alerts:active`) and per-alert last-sent cooldown keys.
+  - Added one-time Telegram `Monitor Entwarnung` when a previously active alert disappears.
+  - Applied dedupe to both individual T3 escalation and the monitor summary message.
+- Tests:
+  - `python3 -m py_compile apps/monitor/monitor.py`: PASS.
+  - `apps/api/.venv/bin/python -m py_compile apps/monitor/monitor.py apps/api/tests/test_monitor_alert_dedupe.py`: PASS.
+  - `apps/api/.venv/bin/python -m pytest apps/api/tests/test_monitor_alert_dedupe.py apps/api/tests/test_monitor_verified_recovery.py apps/api/tests/test_monitor_hidden_bills.py apps/api/tests/test_monitor_zk_canary_health.py apps/api/tests/test_monitor_parliament_freshness.py apps/api/tests/test_monitor_secret_redaction.py -q`: PASS, 26 passed / 1 warning.
+- Important:
+  - This reduces Telegram noise only. The disk alert itself remains real while `/` is above the critical threshold and still requires capacity cleanup/expansion.

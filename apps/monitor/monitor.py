@@ -3,6 +3,8 @@ ekklesia.gr Business Logic Monitor — 3-Tier Auto-Recovery
 Runs every 30 minutes (daemon) or once daily at 06:00 UTC (cron).
 18 rules. Recovery: T1 API → T2 Docker Restart → T3 Telegram Escalation.
 """
+import hashlib
+import json
 import os
 import time
 import logging
@@ -86,6 +88,12 @@ ZK_ARWEAVE_SCOPE_ALLOWLIST = {
     for value in os.getenv("ZK_ARWEAVE_SCOPE_ALLOWLIST", "").split(",")
     if value.strip()
 }
+ALERT_NOTIFY_COOLDOWN_SECONDS = max(0, int(os.getenv("ALERT_NOTIFY_COOLDOWN_SECONDS", "21600")))
+ALERT_RESOLVED_NOTIFICATIONS_ENABLED = (
+    os.getenv("ALERT_RESOLVED_NOTIFICATIONS_ENABLED", "true").lower() == "true"
+)
+ALERT_STATE_SET_KEY = "monitor:alerts:active"
+ALERT_STATE_TTL_SECONDS = max(ALERT_NOTIFY_COOLDOWN_SECONDS * 2, 86400)
 
 # T2 Allowlist — HARDCODED, never restart DB/Redis/Traefik/Discourse
 T2_ALLOWED_SERVICES = {"ekklesia-api", "ekklesia-web"}
@@ -101,6 +109,195 @@ class Alert:
     severity: str       # "warning" | "critical"
     message: str
     recovery_allowed: bool
+
+
+def _alert_scope(alert: Alert) -> str:
+    """Return the stable affected object for alert dedupe without hashing volatile text."""
+    if alert.type in {"lifecycle_stuck", "lifecycle_fast_forward", "forum_missing"}:
+        match = re.search(r"\bBill\s+([A-Za-z0-9_-]+)", alert.message)
+        if match:
+            return match.group(1)
+    if alert.type == "web_down":
+        match = re.search(r"\bWeb\s+([^:]+)", alert.message)
+        if match:
+            return match.group(1).strip()
+    if alert.type == "scraper_job_errors":
+        match = re.search(r"\bJob\s+([^:]+)", alert.message)
+        if match:
+            return match.group(1).strip()
+    return alert.service or "_global"
+
+
+def alert_identity(alert: Alert) -> str:
+    """Stable identity used for cooldown/resolved tracking.
+
+    The message is intentionally excluded: disk free GB and lag hours can wobble
+    between checks, but that is still the same active incident.
+    """
+    return f"{alert.type}|{alert.service or '_'}|{_alert_scope(alert)}"
+
+
+def _alert_state_key(alert_key: str) -> str:
+    digest = hashlib.sha256(alert_key.encode("utf-8")).hexdigest()[:20]
+    return f"monitor:alert:{digest}"
+
+
+def _safe_redis_get(r, key: str) -> str | None:
+    try:
+        return r.get(key)
+    except Exception as exc:
+        logger.warning("[ALERT_DEDUPE] Redis get failed for %s: %s", key, exc)
+        return None
+
+
+def _safe_redis_set(r, key: str, value: str, *, ex: int | None = None) -> bool:
+    try:
+        r.set(key, value, ex=ex)
+        return True
+    except Exception as exc:
+        logger.warning("[ALERT_DEDUPE] Redis set failed for %s: %s", key, exc)
+        return False
+
+
+def _safe_redis_delete(r, *keys: str) -> None:
+    try:
+        if keys:
+            r.delete(*keys)
+    except Exception as exc:
+        logger.warning("[ALERT_DEDUPE] Redis delete failed: %s", exc)
+
+
+def _safe_redis_smembers(r, key: str) -> set[str]:
+    try:
+        values = r.smembers(key)
+        return {str(value) for value in values}
+    except Exception as exc:
+        logger.warning("[ALERT_DEDUPE] Redis smembers failed for %s: %s", key, exc)
+        return set()
+
+
+def _safe_redis_sadd(r, key: str, *values: str) -> None:
+    try:
+        if values:
+            r.sadd(key, *values)
+    except Exception as exc:
+        logger.warning("[ALERT_DEDUPE] Redis sadd failed for %s: %s", key, exc)
+
+
+def _safe_redis_srem(r, key: str, *values: str) -> None:
+    try:
+        if values:
+            r.srem(key, *values)
+    except Exception as exc:
+        logger.warning("[ALERT_DEDUPE] Redis srem failed for %s: %s", key, exc)
+
+
+def _alert_state_payload(alert: Alert, now: datetime) -> dict[str, str]:
+    return {
+        "identity": alert_identity(alert),
+        "type": alert.type,
+        "service": alert.service or "—",
+        "severity": alert.severity,
+        "message": alert.message,
+        "last_seen": now.isoformat(),
+    }
+
+
+def _load_alert_state(r, alert_key: str) -> dict[str, str] | None:
+    raw = _safe_redis_get(r, _alert_state_key(alert_key))
+    if not raw:
+        return None
+    try:
+        payload = json.loads(raw)
+    except (TypeError, ValueError):
+        return None
+    if isinstance(payload, dict):
+        return {str(key): str(value) for key, value in payload.items()}
+    return None
+
+
+def prepare_alert_notifications(
+    alerts: list[Alert],
+    r,
+    now: datetime | None = None,
+) -> dict[str, bool]:
+    """Decide which incidents deserve Telegram now.
+
+    This intentionally does not mark alerts active. Recovery may repair a
+    condition in the same run; only unresolved alerts are persisted later.
+    """
+    now = now or datetime.now(timezone.utc)
+    notification_due: dict[str, bool] = {}
+
+    for alert in alerts:
+        identity = alert_identity(alert)
+        state = _load_alert_state(r, identity)
+        last_sent_key = f"{_alert_state_key(identity)}:last_sent"
+        cooldown_active = bool(_safe_redis_get(r, last_sent_key))
+        severity_changed = bool(state and state.get("severity") != alert.severity)
+        due = not cooldown_active or severity_changed
+
+        notification_due[identity] = due
+        if due and ALERT_NOTIFY_COOLDOWN_SECONDS > 0:
+            _safe_redis_set(r, last_sent_key, "1", ex=ALERT_NOTIFY_COOLDOWN_SECONDS)
+
+    return notification_due
+
+
+def record_active_alerts(
+    current_alerts: list[Alert],
+    r,
+    now: datetime | None = None,
+) -> None:
+    """Persist only alerts that remain unresolved after recovery attempts."""
+    now = now or datetime.now(timezone.utc)
+    current_keys = {alert_identity(alert) for alert in current_alerts}
+    previous_keys = _safe_redis_smembers(r, ALERT_STATE_SET_KEY)
+
+    for stale_key in previous_keys - current_keys:
+        _safe_redis_srem(r, ALERT_STATE_SET_KEY, stale_key)
+
+    for alert in current_alerts:
+        identity = alert_identity(alert)
+        _safe_redis_set(
+            r,
+            _alert_state_key(identity),
+            json.dumps(_alert_state_payload(alert, now), ensure_ascii=False),
+            ex=ALERT_STATE_TTL_SECONDS,
+        )
+        _safe_redis_sadd(r, ALERT_STATE_SET_KEY, identity)
+
+
+def send_resolved_notifications(
+    current_alerts: list[Alert],
+    r,
+    now: datetime | None = None,
+    previous_keys: set[str] | None = None,
+) -> None:
+    """Send one-time Entwarnung messages for alerts that disappeared."""
+    if not ALERT_RESOLVED_NOTIFICATIONS_ENABLED:
+        return
+
+    now = now or datetime.now(timezone.utc)
+    current_keys = {alert_identity(alert) for alert in current_alerts}
+    if previous_keys is None:
+        previous_keys = _safe_redis_smembers(r, ALERT_STATE_SET_KEY)
+    resolved_keys = previous_keys - current_keys
+
+    for identity in sorted(resolved_keys):
+        state_key = _alert_state_key(identity)
+        state = _load_alert_state(r, identity) or {}
+        msg = (
+            "🟢 <b>Monitor Entwarnung</b>\n\n"
+            f"<b>Type:</b> {state.get('type', identity)}\n"
+            f"<b>Service:</b> {state.get('service', '—')}\n"
+            f"<b>Vorher:</b> {state.get('message', identity)}\n"
+            f"\n<i>{now.strftime('%Y-%m-%d %H:%M UTC')}</i>"
+        )
+        send_telegram(msg)
+        logger.info("[RESOLVED] Alert cleared: %s", identity)
+        _safe_redis_srem(r, ALERT_STATE_SET_KEY, identity)
+        _safe_redis_delete(r, state_key, f"{state_key}:last_sent")
 
 
 # ─── T1 Mapping: alert.type → API endpoint ───────────────────────────────────
@@ -309,8 +506,12 @@ def attempt_tier2(alert: Alert, r) -> bool:
     return False
 
 
-def escalate_tier3(alert: Alert, recovery_result: str = ""):
-    """Tier 3: Telegram escalation — always fires as last resort."""
+def escalate_tier3(alert: Alert, recovery_result: str = "", *, notify: bool = True):
+    """Tier 3: Telegram escalation, cooldown-gated per active incident."""
+    if not notify:
+        logger.warning("[T3] Suppressed by cooldown: %s — %s", alert.type, alert.message)
+        return
+
     severity_icon = "🔴" if alert.severity == "critical" else "🟡"
     msg = (
         f"{severity_icon} <b>T3 Escalation</b>\n\n"
@@ -326,10 +527,10 @@ def escalate_tier3(alert: Alert, recovery_result: str = ""):
     logger.warning("[T3] Escalated: %s — %s", alert.type, alert.message)
 
 
-def attempt_recovery(alert: Alert, r, conn=None):
+def attempt_recovery(alert: Alert, r, conn=None, *, notify: bool = True):
     """Dispatcher: T1 → T2 → T3."""
     if not alert.recovery_allowed:
-        escalate_tier3(alert, "Direct T3 — no auto-recovery for this type")
+        escalate_tier3(alert, "Direct T3 — no auto-recovery for this type", notify=notify)
         return "T3"
 
     # Tier 1
@@ -353,7 +554,7 @@ def attempt_recovery(alert: Alert, r, conn=None):
             return "T2"
 
     # Tier 3
-    escalate_tier3(alert, "T1+T2 failed or not applicable")
+    escalate_tier3(alert, "T1+T2 failed or not applicable", notify=notify)
     return "T3"
 
 
@@ -853,11 +1054,15 @@ def run_checks():
     logger.info("Running 18 business logic checks...")
     all_alerts: list[Alert] = []
     recovery_results: dict[str, str] = {}
+    notification_due: dict[str, bool] = {}
+    previous_active_alerts: set[str] = set()
 
     r = get_redis()
     conn = get_db()
 
     try:
+        previous_active_alerts = _safe_redis_smembers(r, ALERT_STATE_SET_KEY)
+
         all_alerts.extend(check_scraper_stale(r))
         all_alerts.extend(check_no_new_bills(conn))
         all_alerts.extend(check_parliament_source_freshness(conn))
@@ -877,38 +1082,62 @@ def run_checks():
         all_alerts.extend(check_scraper_jobs(r))
         all_alerts.extend(check_zk_canary_health(conn))
 
+        notification_due = prepare_alert_notifications(all_alerts, r)
+
         # Recovery pass
         for alert in all_alerts:
-            tier = attempt_recovery(alert, r, conn)
+            tier = attempt_recovery(
+                alert,
+                r,
+                conn,
+                notify=notification_due.get(alert_identity(alert), True),
+            )
             recovery_results[alert.type] = tier
+
+        unresolved_alerts = [
+            alert for alert in all_alerts
+            if recovery_results.get(alert.type) != "T1V"
+        ]
+
+        send_resolved_notifications(
+            unresolved_alerts,
+            r,
+            previous_keys=previous_active_alerts,
+        )
+        record_active_alerts(unresolved_alerts, r)
+
+        alerts_for_summary = [
+            alert for alert in unresolved_alerts
+            if notification_due.get(alert_identity(alert), True)
+        ]
+
+        if unresolved_alerts and alerts_for_summary:
+            msg = f"<b>ekklesia.gr Monitor — {len(unresolved_alerts)} Alerts</b>\n\n"
+            for i, alert in enumerate(unresolved_alerts, 1):
+                tier = recovery_results.get(alert.type, "—")
+                icon = "✓" if tier in ("T1", "T2") else "✗"
+                msg += f"{i}. [{icon}{tier}] {alert.message}\n"
+            msg += f"\n<i>{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}</i>"
+            if len(msg) > 4000:
+                msg = msg[:3950] + f"\n\n... (+{len(unresolved_alerts)} total)"
+            send_telegram(msg)
+            logger.warning("ALERTS: %d issues found", len(unresolved_alerts))
+        elif unresolved_alerts:
+            logger.warning(
+                "ALERTS: %d active issues found; Telegram suppressed by cooldown",
+                len(unresolved_alerts),
+            )
+        else:
+            if all_alerts:
+                logger.info("All alerts were repaired and verified")
+            else:
+                logger.info("All checks passed — no alerts")
+
+        return unresolved_alerts
 
     finally:
         conn.close()
         r.close()
-
-    unresolved_alerts = [
-        alert for alert in all_alerts
-        if recovery_results.get(alert.type) != "T1V"
-    ]
-
-    if unresolved_alerts:
-        msg = f"<b>ekklesia.gr Monitor — {len(unresolved_alerts)} Alerts</b>\n\n"
-        for i, alert in enumerate(unresolved_alerts, 1):
-            tier = recovery_results.get(alert.type, "—")
-            icon = "✓" if tier in ("T1", "T2") else "✗"
-            msg += f"{i}. [{icon}{tier}] {alert.message}\n"
-        msg += f"\n<i>{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}</i>"
-        if len(msg) > 4000:
-            msg = msg[:3950] + f"\n\n... (+{len(unresolved_alerts)} total)"
-        send_telegram(msg)
-        logger.warning("ALERTS: %d issues found", len(unresolved_alerts))
-    else:
-        if all_alerts:
-            logger.info("All alerts were repaired and verified")
-        else:
-            logger.info("All checks passed — no alerts")
-
-    return unresolved_alerts
 
 
 def apply_startup_grace() -> None:

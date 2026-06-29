@@ -84,10 +84,12 @@
   - Aktueller Zustand ist funktional korrekt: App-Liste/Detail, Forum-Links und Arweave-Guards wurden am 2026-06-23 read-only geprueft; Forum und Arweave sind sauber.
   - Wenn Gio das offizielle Aktivitaets-/Quelle-Datum sichtbar in der App/Web-UI sehen will: API-Schema erweitern, Mobile/Web UI sparsam anzeigen, Regression-Test fuer PARLIAMENT + DIAVGEIA.
   - Keine Dringlichkeit, kein Produktionsfehler; als UX-/Transparenz-Follow-up behandeln.
-- [ ] Monitor resolved/Entwarnung follow-up — when a previously active alert key clears, Telegram should optionally post one one-time resolved message.
-  - Requested 2026-06-27 after transient T3/T2 alerts had already self-cleared.
-  - Needs alert-state/dedupe design before implementation; avoid Telegram spam and avoid claiming recovery for alerts that were never active in persisted state.
-  - Should be separate from T1/T2/T3 auto-recovery semantics: this is a notification-state feature, not a repair action.
+- [x] Monitor alert dedupe + resolved/Entwarnung follow-up.
+  - Implemented 2026-06-29 after repeated `disk_critical` T3 Telegram spam at 92% disk usage.
+  - Stable alert identity excludes volatile message details such as free GB / lag hours, so the same active incident is not resent every monitor cycle.
+  - First alert still sends immediately; changed/new identities still notify; active repeats are cooldown-gated by `ALERT_NOTIFY_COOLDOWN_SECONDS` (default 6h).
+  - Previously active alerts now post one optional Telegram Entwarnung when they disappear.
+  - This is notification-state only, not auto-repair. Disk pressure remains a real capacity issue and still needs cleanup/expansion if it persists.
 - [ ] Future Production Size/R8 Optimization — Play Console warns about size/mapping when R8 is not active.
   - Current prepared Play/direct build: vC51 / v1.0.22; R8/minify remains OFF, so no `mapping.txt` exists for this artifact.
   - Cause of size: native Semaphore/ZK prover and multi-ABI native libraries.
