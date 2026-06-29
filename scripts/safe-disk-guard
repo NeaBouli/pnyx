@@ -7,6 +7,9 @@ ROOT_PATH="${ROOT_PATH:-/}"
 WARN_PERCENT="${WARN_PERCENT:-85}"
 CLEAN_PERCENT="${CLEAN_PERCENT:-90}"
 CRITICAL_PERCENT="${CRITICAL_PERCENT:-95}"
+EXTRA_CAPACITY_PATHS="${EXTRA_CAPACITY_PATHS:-}"
+EXTRA_WARN_PERCENT="${EXTRA_WARN_PERCENT:-85}"
+EXTRA_CRITICAL_PERCENT="${EXTRA_CRITICAL_PERCENT:-95}"
 BUILD_CACHE_MIN_AGE="${BUILD_CACHE_MIN_AGE:-72h}"
 JOURNAL_MAX_SIZE="${JOURNAL_MAX_SIZE:-300M}"
 LOGROTATE_CONFIG="${LOGROTATE_CONFIG:-/etc/logrotate.d/docker-containers}"
@@ -26,6 +29,50 @@ write_status() {
 
 usage_percent() {
   df --output=pcent "$ROOT_PATH" | awk 'NR == 2 { gsub(/%/, "", $1); print $1 }'
+}
+
+path_usage_percent() {
+  local path="$1"
+  df --output=pcent "$path" | awk 'NR == 2 { gsub(/%/, "", $1); print $1 }'
+}
+
+path_available() {
+  local path="$1"
+  df -h --output=avail "$path" | awk 'NR == 2 { print $1 }'
+}
+
+path_source() {
+  local path="$1"
+  df --output=source "$path" | awk 'NR == 2 { print $1 }'
+}
+
+extra_capacity_status() {
+  local status=""
+  local path usage avail source state
+
+  for path in $EXTRA_CAPACITY_PATHS; do
+    if ! df "$path" >/dev/null 2>&1; then
+      log "EXTRA: ${path} unavailable" >/dev/null
+      status="${status} extra:${path}=unavailable"
+      continue
+    fi
+
+    usage="$(path_usage_percent "$path")"
+    avail="$(path_available "$path")"
+    source="$(path_source "$path")"
+    state="ok"
+
+    if [ "$usage" -ge "$EXTRA_CRITICAL_PERCENT" ]; then
+      state="critical"
+    elif [ "$usage" -ge "$EXTRA_WARN_PERCENT" ]; then
+      state="warning"
+    fi
+
+    log "EXTRA: ${path} source=${source} usage=${usage}% avail=${avail} state=${state}" >/dev/null
+    status="${status} extra:${path}=${usage}%/${avail}/${state}"
+  done
+
+  printf '%s' "$status"
 }
 
 has_active_docker_build() {
@@ -101,16 +148,18 @@ main() {
   local before after
   before="$(usage_percent)"
   log "START: ${ROOT_PATH} usage ${before}%"
+  local extra_status
+  extra_status="$(extra_capacity_status)"
 
   if [ "$before" -lt "$WARN_PERCENT" ]; then
     log "OK: below warn threshold ${WARN_PERCENT}%"
-    write_status "ok" "before=${before}% threshold=${WARN_PERCENT}%"
+    write_status "ok" "before=${before}% threshold=${WARN_PERCENT}%${extra_status}"
     exit 0
   fi
 
   if [ "$before" -lt "$CLEAN_PERCENT" ]; then
     log "WARN: above ${WARN_PERCENT}% but below cleanup threshold ${CLEAN_PERCENT}%; no cleanup"
-    write_status "warning" "before=${before}% warn=${WARN_PERCENT}% cleanup=${CLEAN_PERCENT}%"
+    write_status "warning" "before=${before}% warn=${WARN_PERCENT}% cleanup=${CLEAN_PERCENT}%${extra_status}"
     exit 0
   fi
 
@@ -120,6 +169,12 @@ main() {
   after="$(usage_percent)"
   log "DONE: ${ROOT_PATH} usage ${before}% -> ${after}%"
   record_cleanup_result "$before" "$after"
+
+  if [ -n "$extra_status" ]; then
+    local current_status
+    current_status="$(cat "$STATUS_FILE" 2>/dev/null || true)"
+    printf '%s%s\n' "$current_status" "$extra_status" >"$STATUS_FILE"
+  fi
 
   if [ "$after" -ge "$CRITICAL_PERCENT" ]; then
     log "CRITICAL: still above ${CRITICAL_PERCENT}%; manual review required"
