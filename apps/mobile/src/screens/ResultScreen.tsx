@@ -38,7 +38,7 @@ function readableText(value?: string | null) {
 }
 
 function cleanOfficialText(value?: string | null) {
-  if (!readableText(value)) return "";
+  if (!readableText(value) || isOfficialDocumentBlockOnly(value)) return "";
   const cleaned = String(value)
     .replace(/\[[^\]]*\]\(https?:\/\/[^)]*\)/g, "")
     .replace(/^#{1,6}\s*/gm, "")
@@ -65,7 +65,7 @@ function cleanOfficialText(value?: string | null) {
   return cleaned.slice(0, 1400);
 }
 
-import { officialDocumentLinks, resolveSource, isPdfUrl, sourceLabel } from "../lib/source-resolver";
+import { officialDocumentLinks, resolveSource, isPdfUrl, sourceLabel, isOfficialDocumentBlockOnly } from "../lib/source-resolver";
 
 export default function ResultScreen({ route }: Props) {
   const { billId, fromVote } = route.params;

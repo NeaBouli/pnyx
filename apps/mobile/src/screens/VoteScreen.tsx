@@ -39,7 +39,7 @@ function readableText(value?: string | null) {
 }
 
 function cleanOfficialText(value?: string | null) {
-  if (!readableText(value)) return "";
+  if (!readableText(value) || isOfficialDocumentBlockOnly(value)) return "";
   const cleaned = String(value)
     .replace(/\[[^\]]*\]\(https?:\/\/[^)]*\)/g, "")
     .replace(/^#{1,6}\s*/gm, "")
@@ -93,10 +93,11 @@ function votingStatusNotice(status: string, source: string) {
   return null;
 }
 
-import { correctionBanner, officialDocumentLinks, resolveSource, isPdfUrl, sourceLabel } from "../lib/source-resolver";
+import { correctionBanner, officialDocumentLinks, resolveSource, isPdfUrl, sourceLabel, isOfficialDocumentBlockOnly } from "../lib/source-resolver";
 
 export default function VoteScreen({ route, navigation }: Props) {
   const { billId, billTitle } = route.params;
+  const [displayTitle, setDisplayTitle] = useState(billTitle);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [summary, setSummary] = useState("");
@@ -137,6 +138,7 @@ export default function VoteScreen({ route, navigation }: Props) {
           loadedSource = source;
           const resolved = resolveSource(d.official_source_url, d.forum_topic_url);
           setBillStatus(d.status);
+          if (readableText(d.title_el)) setDisplayTitle(d.title_el);
           setBillGovernance(d.governance_level || "NATIONAL");
           setBillSource(source);
           setBillPill(readableText(d.pill_el) ? d.pill_el : "");
@@ -290,7 +292,7 @@ export default function VoteScreen({ route, navigation }: Props) {
                 detail: `receipt ${result.receipt_id} · arweave_pending=${String(result.arweave_pending)} · verifier ${result.verifier_version}`,
               });
               Alert.alert("Επιτυχία ✓", "Η ανώνυμη ZK ψήφος καταγράφηκε.", [
-                { text: "Αποτελέσματα", onPress: () => navigation.replace("Result", { billId, billTitle, fromVote: true }) },
+                { text: "Αποτελέσματα", onPress: () => navigation.replace("Result", { billId, billTitle: displayTitle, fromVote: true }) },
               ]);
             } catch (error) {
               setZkResult({
@@ -331,7 +333,7 @@ export default function VoteScreen({ route, navigation }: Props) {
         Alert.alert(
           "Demo ✓",
           "Demo — ψήφος δεν καταγράφεται",
-          [{ text: "Αποτελέσματα", onPress: () => navigation.replace("Result", { billId, billTitle, fromVote: true }) }]
+          [{ text: "Αποτελέσματα", onPress: () => navigation.replace("Result", { billId, billTitle: displayTitle, fromVote: true }) }]
         );
         return;
       }
@@ -363,7 +365,7 @@ export default function VoteScreen({ route, navigation }: Props) {
       Alert.alert("Επιτυχία ✓", res.message, [
         {
           text: "Αποτελέσματα",
-          onPress: () => navigation.replace("Result", { billId, billTitle, fromVote: true }),
+          onPress: () => navigation.replace("Result", { billId, billTitle: displayTitle, fromVote: true }),
         },
       ]);
     } catch (err: any) {
@@ -381,8 +383,8 @@ export default function VoteScreen({ route, navigation }: Props) {
   const shareBill = async () => {
     try {
       await Share.share({
-        title: billTitle,
-        message: `${billTitle}\n\nΨήφισε ανώνυμα στην εκκλησία:\nhttps://ekklesia.gr/el/bills/${billId}`,
+        title: displayTitle,
+        message: `${displayTitle}\n\nΨήφισε ανώνυμα στην εκκλησία:\nhttps://ekklesia.gr/el/bills/${billId}`,
       });
     } catch {}
   };
@@ -403,7 +405,7 @@ export default function VoteScreen({ route, navigation }: Props) {
       setHasVoted(true);
       setSelected(choice);
       Alert.alert("Διόρθωση ✓", "Η ψήφος σας διορθώθηκε επιτυχώς.", [
-        { text: "Αποτελέσματα", onPress: () => navigation.replace("Result", { billId, billTitle, fromVote: true }) },
+        { text: "Αποτελέσματα", onPress: () => navigation.replace("Result", { billId, billTitle: displayTitle, fromVote: true }) },
       ]);
     } catch (err: any) {
       Alert.alert("Σφάλμα", err.message || "Η διόρθωση απέτυχε.");
@@ -453,7 +455,7 @@ export default function VoteScreen({ route, navigation }: Props) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <Text style={[styles.title, { flex: 1 }]}>{billTitle}</Text>
+        <Text style={[styles.title, { flex: 1 }]}>{displayTitle}</Text>
         <TouchableOpacity onPress={shareBill} style={{ padding: 8 }}>
           <Text style={{ fontSize: 22, color: colors.primary, fontWeight: "800" }}>↗</Text>
         </TouchableOpacity>
@@ -742,7 +744,7 @@ export default function VoteScreen({ route, navigation }: Props) {
       {billStatus !== "ANNOUNCED" && (
         <TouchableOpacity
           style={styles.resultsLink}
-          onPress={() => navigation.navigate("Result", { billId, billTitle })}
+          onPress={() => navigation.navigate("Result", { billId, billTitle: displayTitle })}
         >
           <Text style={styles.resultsLinkText}>
             Δείτε τα τρέχοντα αποτελέσματα →

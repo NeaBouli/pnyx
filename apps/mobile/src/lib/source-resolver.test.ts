@@ -4,7 +4,7 @@
  * Risk: Option-E regression (forum fallback was removed once)
  */
 import { describe, it, expect } from "vitest";
-import { officialDocumentLinks, resolveSource, isPdfUrl, sourceLabel } from "./source-resolver";
+import { officialDocumentLinks, resolveSource, isPdfUrl, sourceLabel, isOfficialDocumentBlockOnly } from "./source-resolver";
 
 describe("resolveSource — Golden Path", () => {
   it("official wins when both present", () => {
@@ -103,6 +103,30 @@ describe("officialDocumentLinks", () => {
 
   it("ignores non-PDF links", () => {
     expect(officialDocumentLinks("[Topic](https://pnyx.ekklesia.gr/t/1)")).toEqual([]);
+  });
+});
+
+describe("isOfficialDocumentBlockOnly", () => {
+  it("detects PDF-only parliament document blocks", () => {
+    expect(isOfficialDocumentBlockOnly(`
+### Πλήρη έγγραφα
+- [Έγγραφο Βουλής 1 (13338120.pdf)](https://www.hellenicparliament.gr/UserFiles/13338120.pdf)
+- [Έγγραφο Βουλής 2 (13338121.pdf)](https://www.hellenicparliament.gr/UserFiles/13338121.pdf)
+`)).toBe(true);
+  });
+
+  it("does not treat real text plus document links as PDF-only", () => {
+    expect(isOfficialDocumentBlockOnly(`
+### Αιτιολογική Έκθεση
+Το σχέδιο νόμου ρυθμίζει ουσιαστικά ζητήματα.
+
+### Πλήρη έγγραφα
+- [Έγγραφο Βουλής](https://www.hellenicparliament.gr/UserFiles/13338120.pdf)
+`)).toBe(false);
+  });
+
+  it("does not treat arbitrary PDF links as a parliament document block", () => {
+    expect(isOfficialDocumentBlockOnly("[Έγγραφο](https://x.gr/a.pdf)")).toBe(false);
   });
 });
 

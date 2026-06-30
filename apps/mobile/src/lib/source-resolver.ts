@@ -64,6 +64,22 @@ export function officialDocumentLinks(value?: string | null): OfficialDocumentLi
   return links;
 }
 
+export function isOfficialDocumentBlockOnly(value?: string | null): boolean {
+  if (!value) return false;
+  const lines = value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length < 2) return false;
+
+  const heading = lines[0].replace(/^#{1,6}\s*/, "").trim();
+  if (heading !== "Πλήρη έγγραφα") return false;
+
+  return lines.slice(1).every((line) =>
+    /^-?\s*\[[^\]]+\]\(https?:\/\/[^)]+\.pdf[^)]*\)$/i.test(line),
+  );
+}
+
 // ─── 24h Correction Banner ─────────────────────────────────────────────────
 
 export interface CorrectionBannerState {
