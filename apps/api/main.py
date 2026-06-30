@@ -98,7 +98,7 @@ async def scheduled_scrape():
     """Scrape parliament bills every 12 hours (MOD-03 cron + MOD-10 scraper).
     Fetches from hellenicparliament.gr API and upserts new bills into DB.
     """
-    from routers.scraper import scrape_parliament_bills
+    from routers.scraper import prefer_scraped_title, scrape_parliament_bills
     from services.scraper_state import record_run, record_success, record_failure, is_circuit_open
     from database import AsyncSessionLocal
     from models import ParliamentBill, BillStatus
@@ -164,6 +164,10 @@ async def scheduled_scrape():
                 existing_bill = existing.scalar_one_or_none()
                 if existing_bill:
                     changed = False
+                    preferred_title = prefer_scraped_title(existing_bill.title_el, title)
+                    if preferred_title and preferred_title != existing_bill.title_el:
+                        existing_bill.title_el = preferred_title
+                        changed = True
                     if b.get("url") and existing_bill.parliament_url != b.get("url"):
                         existing_bill.parliament_url = b.get("url")
                         changed = True

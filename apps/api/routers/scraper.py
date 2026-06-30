@@ -267,6 +267,30 @@ def _has_official_activity_date(bill: dict) -> bool:
     return bool(bill.get("date") or bill.get("submitted_date"))
 
 
+def _normalize_scraped_title(title: str | None) -> str:
+    """Normalize scraped Parliament titles without shortening them."""
+    return re.sub(r"\s+", " ", title or "").strip()
+
+
+def _looks_truncated_title(title: str | None) -> bool:
+    """Detect UI/source ellipsis titles that should not overwrite fuller titles."""
+    normalized = _normalize_scraped_title(title)
+    return normalized.endswith("...") or normalized.endswith("…")
+
+
+def prefer_scraped_title(existing_title: str | None, candidate_title: str | None) -> str:
+    """Prefer complete scraped titles, but keep existing full titles stable."""
+    existing = _normalize_scraped_title(existing_title)
+    candidate = _normalize_scraped_title(candidate_title)
+    if not candidate:
+        return existing
+    if not existing:
+        return candidate
+    if _looks_truncated_title(existing) and not _looks_truncated_title(candidate):
+        return candidate
+    return existing
+
+
 def _finalize_scraped_bills(
     bills: list[dict],
     *,
@@ -375,7 +399,7 @@ def _parse_parliament_markdown(md: str, source_url: str) -> list[dict]:
         if not title_match:
             continue
 
-        title_el = title_match.group(1).strip()[:200]
+        title_el = _normalize_scraped_title(title_match.group(1))
         detail_url = title_match.group(2).strip()
 
         # Extract law_id from URL
@@ -482,7 +506,7 @@ async def scrape_parliament_bills(
                         if ts_match:
                             date = datetime.fromtimestamp(int(ts_match.group(1)) / 1000, tz=_tz.utc).isoformat()
                     bills.append({
-                        "title_el": item.get("Title", "")[:200],
+                        "title_el": _normalize_scraped_title(item.get("Title")),
                         "url": f"{PARLIAMENT_BASE}/Nomothetiko-Ergo/Anazitisi-Nomothetikon-Ergon?law_id={item.get('ID', '')}",
                         "date": date,
                         "law_num": item.get("LawNum"),
@@ -524,6 +548,12 @@ async def scrape_parliament_bills(
                             merged[key] = item
                             continue
                         existing = merged[key]
+                        preferred_title = prefer_scraped_title(
+                            existing.get("title_el"),
+                            item.get("title_el"),
+                        )
+                        if preferred_title != existing.get("title_el"):
+                            existing["title_el"] = preferred_title
                         for field in (
                             "summary_long_el",
                             "submitted_date",
@@ -566,7 +596,7 @@ async def scrape_parliament_bills(
                         href = link.get("href", "")
                         if len(text) > 20 and any(kw in text.lower() for kw in ["νόμος", "νομοσχέδιο", "ν.", "κύρωση"]):
                             full_url = href if href.startswith("http") else f"{PARLIAMENT_BASE}{href}"
-                            bills.append({"title_el": text[:200], "url": full_url, "date": None})
+                            bills.append({"title_el": _normalize_scraped_title(text), "url": full_url, "date": None})
                         if len(bills) >= limit:
                             break
                     if bills:

@@ -6,7 +6,7 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from routers import scraper as scraper_router
-from routers.scraper import _finalize_scraped_bills, _parse_parliament_markdown
+from routers.scraper import _finalize_scraped_bills, _parse_parliament_markdown, prefer_scraped_title
 
 
 def test_parse_all_laws_current_rows_with_date_and_phase():
@@ -32,6 +32,29 @@ def test_parse_all_laws_current_rows_with_date_and_phase():
     assert bills[0]["phase"] == "Έτοιμα για συζήτηση στη Βουλή"
     assert bills[1]["submitted_date"] is None
     assert bills[1]["date"] == "2026-06-09T00:00:00+00:00"
+
+
+def test_parse_preserves_long_title_without_artificial_200_char_cutoff():
+    long_title = ("Κύρωση " + ("της διεθνούς συμφωνίας " * 12)).strip()
+    md = f"""
+| [ {long_title} ](https://www.hellenicparliament.gr/Nomothetiko-Ergo/Anazitisi-Nomothetikou-Ergou?law_id=3aba3e72-d5b0-414b-8649-b45901603f92) | Σχέδιο νόμου | 10/06/2026 | Κατατεθέντα |
+"""
+
+    bills = _parse_parliament_markdown(
+        md,
+        "https://www.hellenicparliament.gr/Nomothetiko-Ergo/all-laws",
+    )
+
+    assert bills[0]["title_el"] == long_title
+    assert len(bills[0]["title_el"]) > 200
+
+
+def test_prefer_scraped_title_replaces_only_truncated_existing_title():
+    truncated = "Κύρωση της υπ’ αριθμόν 1 Τροποποίησης της Συμφωνίας μεταξύ της Κυβέρνησης..."
+    full = "Κύρωση της υπ’ αριθμόν 1 Τροποποίησης της Συμφωνίας μεταξύ της Κυβέρνησης της Ελληνικής Δημοκρατίας και της Κυβέρνησης της Κυπριακής Δημοκρατίας"
+
+    assert prefer_scraped_title(truncated, full) == full
+    assert prefer_scraped_title(full, truncated) == full
 
 
 def test_parse_katatethenta_date_first_rows_remain_supported():
