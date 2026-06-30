@@ -3,6 +3,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from routers.agent import _canonical_response, _safety_response, _should_include_bills
 
 
@@ -11,6 +13,11 @@ DATASET = (
     / "docs"
     / "agent-bridge"
     / "LANDING_CHAT_TRAINING_DATA_20260502.jsonl"
+)
+
+pytestmark = pytest.mark.skipif(
+    not DATASET.exists(),
+    reason="Local agent-bridge training dataset is intentionally gitignored.",
 )
 
 
@@ -57,4 +64,3 @@ def test_training_dataset_general_questions_do_not_attach_bill_sources():
     for record in _records():
         if record["category"] in {"identity", "legal", "privacy", "crypto", "limits"}:
             assert _should_include_bills(record["question"]) is False
-
