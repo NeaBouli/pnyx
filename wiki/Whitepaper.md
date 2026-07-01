@@ -338,9 +338,9 @@ TrueRepublic (Blockchain Layer)
 
 Ο native Android Semaphore/Mopro prover έχει επαληθευτεί σε πραγματική συσκευή S10. Το κρυφό canary scope `ZK-CANARY-001` ολοκληρώθηκε end-to-end με πραγματικό S10 proof: opt-in, δημοσιευμένο group root, server verification, rejected mutation checks και δοκιμαστική ZK ψήφος. Το πρώτο δημόσιο scoped rollout ολοκληρώθηκε για ένα συγκεκριμένο νομοσχέδιο (`bill:GR-d4c62ed4`) με πραγματική ZK ψήφο και δημόσιο receipt.
 
-Η ZK παραγωγή είναι ενεργή μόνο για explicit scoped allowlist. Το global rollout παραμένει κλειστό και η κανονική ψηφοφορία παραμένει Ed25519 + nullifier chain εκτός των επιτρεπόμενων ZK scopes. Η δημοσίευση ZK verifier payloads στο Arweave παραμένει απενεργοποιημένη μέχρι ξεχωριστή πολιτική/έλεγχο payload.
+Η ZK παραγωγή είναι ενεργή με φυλασσόμενο Parliament rollout: επιτρέπονται μόνο δημόσια scopes νομοσχεδίων Βουλής και test/canary/hidden scopes απορρίπτονται. Η δημοσίευση ZK verifier payloads στο Arweave είναι ενεργή μόνο για επιλέξιμα δημόσια Parliament scopes, με ελάχιστο μέγεθος ομάδας 5, ώστε να μειώνεται ο κίνδυνος συσχέτισης.
 
-Native Android Semaphore/Mopro proving, hidden S10 canary, and the first public one-bill scoped rollout have passed. Production ZK remains exact-scope gated; global rollout and ZK Arweave publication remain disabled pending a separate review.
+Native Android Semaphore/Mopro proving, hidden S10 canary, and the first public one-bill scoped rollout have passed. Guarded Parliament ZK rollout is live, and ZK Arweave auto-publication is enabled only for eligible public Parliament scopes with minimum group size 5.
 
 ---
 

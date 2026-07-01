@@ -46,7 +46,7 @@ ekklesia.gr (εκκλησία του έθνους) is an independent civic initi
 - Tier 1: Active (25 modules, 11+ containers)
 - Newsletter: Brevo + Telegram cross-publish
 - Monitor: 3-tier self-healing (API recovery, Docker restart, Telegram escalation)
-- ZK Voting V2: Hidden S10 canary passed and first public scoped rollout completed for one exact bill scope (`bill:GR-d4c62ed4`); global rollout and ZK Arweave publication remain off pending review
+- ZK Voting V2: Hidden S10 canary passed and first public scoped rollout completed for one exact bill scope (`bill:GR-d4c62ed4`); guarded Parliament rollout is live; ZK Arweave auto-publication is active only for eligible public Parliament scopes with minimum group size 5
 
 ## URLs
 

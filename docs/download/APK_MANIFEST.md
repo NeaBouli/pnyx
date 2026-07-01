@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.22 |
-| versionCode | 51 |
+| Version | 1.0.23 |
+| versionCode | 52 |
 | Package | ekklesia.gr |
-| APK SHA256 | `e83a310d0fa932bdfa53ac87286e6a58bba5a98e9eee0259a142303e74b44b83` |
-| AAB SHA256 | `a0176d4597d8da1d2862a66f08aeb84deeaf516287a51ed422dcc2ecadeb45eb` |
+| APK SHA256 | `9bac08017222181281c4942ec8cb2f4e44bd8bbd05bed2d7fb82c3d01e6c25dc` |
+| AAB SHA256 | `6bdcf2516385aac90dd4c08f151d6d4e4ce7b125b3fe0bc32730090249498a67` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
-| Build date | 2026-06-26 |
-| Release gate | PASS — API version syntax, API status_any tests, mobile TypeScript, mobile Vitest, local Play AAB build, local Direct APK build, APK/AAB version audit, APK signature audit, Direct/Play channel audit |
-| Includes | vC51 release metadata, Active tab includes 24h voting-window bills, safer Direct/Play update routing, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, ZK V2 native prover, hidden S10 canary operator path, deep-link fallback, pagination, source/full-text policy, permission hardening |
+| Build date | 2026-07-02 |
+| Release gate | PASS — API version tests, mobile TypeScript, mobile Vitest, web build, local Play AAB build, local Direct APK build, APK badging/signature audit, Direct/Play channel audit |
+| Includes | vC52 release metadata, no duplicate Parliament PDF document blocks, clearer Parliament source/document display, guarded Parliament Semaphore ZK rollout live, ZK Arweave auto-publication for eligible public Parliament scopes with minimum group size 5, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, native Semaphore prover, deep-link fallback, pagination, source/full-text policy, permission hardening |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: e83a310d0fa932bdfa53ac87286e6a58bba5a98e9eee0259a142303e74b44b83
+# Expected: 9bac08017222181281c4942ec8cb2f4e44bd8bbd05bed2d7fb82c3d01e6c25dc
 ```
