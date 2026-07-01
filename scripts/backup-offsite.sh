@@ -6,6 +6,7 @@
 #   1. Hetzner Storage Box ordered (BX11 = 1TB, ~3.81 EUR/mo)
 #   2. SSH key uploaded: ssh-copy-id -p 23 -s uXXXXXX@uXXXXXX.your-storagebox.de
 #   3. Export STORAGE_BOX_USER and STORAGE_BOX_HOST in the cron environment
+#   4. Optional fallback target: set STORAGE_BOX_PORT, STORAGE_BOX_PATH, STORAGE_BOX_IDENTITY_FILE
 #
 # What gets backed up:
 #   - PostgreSQL full dump (ekklesia_prod)
@@ -21,8 +22,10 @@ set -euo pipefail
 # ─── Config ───────────────────────────────────────────────────────────────────
 STORAGE_BOX_USER="${STORAGE_BOX_USER:-}"
 STORAGE_BOX_HOST="${STORAGE_BOX_HOST:-}"
-STORAGE_BOX_PORT=23
-REMOTE_DIR="/backups/ekklesia"
+STORAGE_BOX_PORT="${STORAGE_BOX_PORT:-23}"
+STORAGE_BOX_PATH="${STORAGE_BOX_PATH:-/backups/ekklesia}"
+STORAGE_BOX_IDENTITY_FILE="${STORAGE_BOX_IDENTITY_FILE:-}"
+REMOTE_DIR="${STORAGE_BOX_PATH}"
 
 LOCAL_BACKUP_DIR="/opt/backups/ekklesia"
 DB_NAME="${POSTGRES_DB:-ekklesia_prod}"
@@ -43,6 +46,11 @@ echo "${LOG_PREFIX} Starting off-site backup..."
 if [ -z "${STORAGE_BOX_USER}" ] || [ -z "${STORAGE_BOX_HOST}" ]; then
   echo "${LOG_PREFIX} ERROR: STORAGE_BOX_USER and STORAGE_BOX_HOST must be set" >&2
   exit 2
+fi
+
+SFTP_OPTS=(-P "${STORAGE_BOX_PORT}" -o BatchMode=yes)
+if [ -n "${STORAGE_BOX_IDENTITY_FILE}" ]; then
+  SFTP_OPTS+=(-i "${STORAGE_BOX_IDENTITY_FILE}")
 fi
 
 # ─── 1. PostgreSQL Dump ──────────────────────────────────────────────────────
@@ -76,9 +84,9 @@ tar -czf "${LOCAL_BACKUP_DIR}/${BACKUP_FILE}" \
   "alembic-${TIMESTAMP}.txt" \
   2>/dev/null
 
-# ─── 5. Upload to Storage Box ────────────────────────────────────────────────
-echo "${LOG_PREFIX} Uploading to Hetzner Storage Box..."
-sftp -P "${STORAGE_BOX_PORT}" -o BatchMode=yes "${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}" <<SFTP
+# ─── 5. Upload to off-site target ────────────────────────────────────────────
+echo "${LOG_PREFIX} Uploading to off-site target..."
+sftp "${SFTP_OPTS[@]}" "${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}" <<SFTP
   -mkdir ${REMOTE_DIR}
   -mkdir ${REMOTE_DIR}/daily
   -mkdir ${REMOTE_DIR}/weekly
@@ -89,14 +97,14 @@ SFTP
 # ─── 6. Weekly + Monthly Copies ──────────────────────────────────────────────
 if [ "${DAY_OF_WEEK}" = "7" ]; then
   echo "${LOG_PREFIX} Sunday — creating weekly copy..."
-  sftp -P "${STORAGE_BOX_PORT}" -o BatchMode=yes "${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}" <<SFTP
+  sftp "${SFTP_OPTS[@]}" "${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}" <<SFTP
     put ${LOCAL_BACKUP_DIR}/${BACKUP_FILE} ${REMOTE_DIR}/weekly/${BACKUP_FILE}
 SFTP
 fi
 
 if [ "${DAY_OF_MONTH}" = "01" ]; then
   echo "${LOG_PREFIX} 1st of month — creating monthly copy..."
-  sftp -P "${STORAGE_BOX_PORT}" -o BatchMode=yes "${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}" <<SFTP
+  sftp "${SFTP_OPTS[@]}" "${STORAGE_BOX_USER}@${STORAGE_BOX_HOST}" <<SFTP
     put ${LOCAL_BACKUP_DIR}/${BACKUP_FILE} ${REMOTE_DIR}/monthly/${BACKUP_FILE}
 SFTP
 fi
