@@ -83,6 +83,8 @@ PARLIAMENT_SOURCE_HTTP_RETRY_DELAY_SECONDS = max(
 )
 ZK_PENDING_MAX_HOURS = int(os.getenv("ZK_PENDING_MAX_HOURS", "24"))
 ZK_ARWEAVE_PUBLICATION_ENABLED = os.getenv("ZK_ARWEAVE_PUBLICATION_ENABLED", "false").lower() == "true"
+ZK_ARWEAVE_AUTO_PARLIAMENT_ENABLED = os.getenv("ZK_ARWEAVE_AUTO_PARLIAMENT_ENABLED", "false").lower() == "true"
+ZK_ARWEAVE_MIN_GROUP_SIZE = max(2, int(os.getenv("ZK_ARWEAVE_MIN_GROUP_SIZE", "5")))
 ZK_ARWEAVE_SCOPE_ALLOWLIST = {
     value.strip()
     for value in os.getenv("ZK_ARWEAVE_SCOPE_ALLOWLIST", "").split(",")
@@ -987,12 +989,16 @@ def check_zk_canary_health(conn) -> list[Alert]:
     alerts = []
     try:
         with conn.cursor() as cur:
-            if ZK_ARWEAVE_PUBLICATION_ENABLED and not ZK_ARWEAVE_SCOPE_ALLOWLIST:
+            if (
+                ZK_ARWEAVE_PUBLICATION_ENABLED
+                and not ZK_ARWEAVE_SCOPE_ALLOWLIST
+                and not ZK_ARWEAVE_AUTO_PARLIAMENT_ENABLED
+            ):
                 alerts.append(Alert(
                     "zk_publication_config",
                     "ekklesia-api",
                     "warning",
-                    "ZK Arweave publication enabled without scope allowlist",
+                    "ZK Arweave publication enabled without scope allowlist or Parliament auto mode",
                     False,
                 ))
             elif ZK_ARWEAVE_PUBLICATION_ENABLED:
@@ -1002,13 +1008,31 @@ def check_zk_canary_health(conn) -> list[Alert]:
                     FROM zk_vote_receipts r
                     LEFT JOIN parliament_bills b
                       ON r.vote_scope_id = ('bill:' || b.id)
+                    LEFT JOIN zk_merkle_roots root
+                      ON root.vote_scope_id = r.vote_scope_id
+                     AND root.merkle_root = r.merkle_root
                     WHERE r.arweave_pending = TRUE
                       AND r.created_at < NOW() - (%s * INTERVAL '1 hour')
-                      AND r.vote_scope_id = ANY(%s)
+                      AND root.group_size >= %s
+                      AND (
+                        r.vote_scope_id = ANY(%s)
+                        OR (
+                          %s = TRUE
+                          AND b.source = 'PARLIAMENT'
+                          AND COALESCE(b.admin_hidden, FALSE) IS NOT TRUE
+                          AND b.status::text IN ('ACTIVE', 'WINDOW_24H', 'OPEN_END')
+                          AND b.id NOT LIKE 'DEMO-%%'
+                        )
+                      )
                       AND COALESCE(b.admin_hidden, FALSE) IS NOT TRUE
                       AND COALESCE(b.source, '') <> 'ZK_CANARY'
                     """,
-                    (ZK_PENDING_MAX_HOURS, list(ZK_ARWEAVE_SCOPE_ALLOWLIST)),
+                    (
+                        ZK_PENDING_MAX_HOURS,
+                        ZK_ARWEAVE_MIN_GROUP_SIZE,
+                        list(ZK_ARWEAVE_SCOPE_ALLOWLIST),
+                        ZK_ARWEAVE_AUTO_PARLIAMENT_ENABLED,
+                    ),
                 )
                 pending_count = cur.fetchone()[0]
                 if pending_count > 0:

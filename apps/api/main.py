@@ -533,6 +533,29 @@ async def scheduled_completeness_check():
         await record_failure(name, str(e))
 
 
+async def scheduled_zk_arweave_publication():
+    """Publish eligible pending ZK receipts once their anonymity set is large enough."""
+    from database import AsyncSessionLocal
+    from services.zk_arweave_publisher import publish_auto_zk_arweave_receipts
+
+    try:
+        async with AsyncSessionLocal() as db:
+            results = await publish_auto_zk_arweave_receipts(db)
+        if results:
+            published = sum(item.published for item in results)
+            skipped = sum(item.skipped_small_group for item in results)
+            failed = sum(item.failed for item in results)
+            logger.info(
+                "[ZK-ARWEAVE] Auto publication checked %d scopes: published=%d skipped_small_group=%d failed=%d",
+                len(results),
+                published,
+                skipped,
+                failed,
+            )
+    except Exception as e:
+        logger.warning("[ZK-ARWEAVE] Auto publication failed: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(app):
     # Startup
@@ -546,11 +569,12 @@ async def lifespan(app):
     scheduler.add_job(scheduled_diavgeia_scrape, IntervalTrigger(hours=48), id="diavgeia_municipal", replace_existing=True)
     scheduler.add_job(scheduled_forum_sync, IntervalTrigger(minutes=10), id="forum_sync", replace_existing=True)
     scheduler.add_job(scheduled_bill_lifecycle, IntervalTrigger(hours=1), id="bill_lifecycle", replace_existing=True)
+    scheduler.add_job(scheduled_zk_arweave_publication, IntervalTrigger(minutes=30), id="zk_arweave_publication", replace_existing=True)
     scheduler.add_job(scheduled_cplm_refresh, IntervalTrigger(hours=6), id="cplm_refresh", replace_existing=True)
     scheduler.add_job(scheduled_greek_topics, IntervalTrigger(hours=6), id="greek_topics", replace_existing=True)
     scheduler.add_job(scheduled_monthly_newsletter, CronTrigger(day=1, hour=9, minute=0), id="monthly_newsletter", replace_existing=True)
     scheduler.start()
-    logger.info("[Scheduler] Started — completeness 6h, lifecycle 1h, parliament 12h, diavgeia 48h, notify-bills 30m, notify-results 1h, forum-sync 10m, greek-topics 6h, newsletter 1st/month")
+    logger.info("[Scheduler] Started — completeness 6h, lifecycle 1h, ZK-Arweave 30m, parliament 12h, diavgeia 48h, notify-bills 30m, notify-results 1h, forum-sync 10m, greek-topics 6h, newsletter 1st/month")
 
     # Catch-up: trigger overdue jobs immediately after restart
     try:

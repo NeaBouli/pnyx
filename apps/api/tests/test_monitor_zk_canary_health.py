@@ -69,6 +69,8 @@ class FailingConn:
 def test_zk_canary_health_alerts_on_old_pending_receipts(monkeypatch):
     monkeypatch.setattr(monitor, "ZK_PENDING_MAX_HOURS", 24)
     monkeypatch.setattr(monitor, "ZK_ARWEAVE_PUBLICATION_ENABLED", True)
+    monkeypatch.setattr(monitor, "ZK_ARWEAVE_AUTO_PARLIAMENT_ENABLED", False)
+    monkeypatch.setattr(monitor, "ZK_ARWEAVE_MIN_GROUP_SIZE", 5)
     monkeypatch.setattr(monitor, "ZK_ARWEAVE_SCOPE_ALLOWLIST", {"bill:GR-0490a766"})
     conn = FakeConn([2, 0])
 
@@ -82,12 +84,14 @@ def test_zk_canary_health_alerts_on_old_pending_receipts(monkeypatch):
     assert ">24h" in alerts[0].message
     pending_statement, params = conn.cursor_obj.statements[0]
     assert "ANY" in pending_statement
-    assert params == (24, ["bill:GR-0490a766"])
+    assert "root.group_size >= %s" in pending_statement
+    assert params == (24, 5, ["bill:GR-0490a766"], False)
 
 
 def test_zk_canary_health_skips_pending_receipts_when_publication_is_gated_off(monkeypatch):
     monkeypatch.setattr(monitor, "ZK_PENDING_MAX_HOURS", 24)
     monkeypatch.setattr(monitor, "ZK_ARWEAVE_PUBLICATION_ENABLED", False)
+    monkeypatch.setattr(monitor, "ZK_ARWEAVE_AUTO_PARLIAMENT_ENABLED", False)
     monkeypatch.setattr(monitor, "ZK_ARWEAVE_SCOPE_ALLOWLIST", set())
     conn = FakeConn([0])
 
@@ -100,6 +104,7 @@ def test_zk_canary_health_skips_pending_receipts_when_publication_is_gated_off(m
 
 def test_zk_canary_health_alerts_when_publication_enabled_without_allowlist(monkeypatch):
     monkeypatch.setattr(monitor, "ZK_ARWEAVE_PUBLICATION_ENABLED", True)
+    monkeypatch.setattr(monitor, "ZK_ARWEAVE_AUTO_PARLIAMENT_ENABLED", False)
     monkeypatch.setattr(monitor, "ZK_ARWEAVE_SCOPE_ALLOWLIST", set())
     conn = FakeConn([0])
 
@@ -107,7 +112,23 @@ def test_zk_canary_health_alerts_when_publication_enabled_without_allowlist(monk
 
     assert len(alerts) == 1
     assert alerts[0].type == "zk_publication_config"
-    assert "without scope allowlist" in alerts[0].message
+    assert "without scope allowlist or Parliament auto mode" in alerts[0].message
+
+
+def test_zk_canary_health_allows_parliament_auto_mode_without_allowlist(monkeypatch):
+    monkeypatch.setattr(monitor, "ZK_PENDING_MAX_HOURS", 24)
+    monkeypatch.setattr(monitor, "ZK_ARWEAVE_PUBLICATION_ENABLED", True)
+    monkeypatch.setattr(monitor, "ZK_ARWEAVE_AUTO_PARLIAMENT_ENABLED", True)
+    monkeypatch.setattr(monitor, "ZK_ARWEAVE_MIN_GROUP_SIZE", 5)
+    monkeypatch.setattr(monitor, "ZK_ARWEAVE_SCOPE_ALLOWLIST", set())
+    conn = FakeConn([0, 0])
+
+    alerts = monitor.check_zk_canary_health(conn)
+
+    assert alerts == []
+    pending_statement, params = conn.cursor_obj.statements[0]
+    assert "b.source = 'PARLIAMENT'" in pending_statement
+    assert params == (24, 5, [], True)
 
 
 def test_zk_canary_health_alerts_on_invalid_root_status():

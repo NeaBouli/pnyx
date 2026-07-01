@@ -8,7 +8,6 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import Any
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Path as FastAPIPath, Query, status
 from pydantic import BaseModel, Field
@@ -34,6 +33,13 @@ from models import (
     ZkVoteReceipt,
 )
 from services.zk_arweave_payload import build_public_zk_receipt_from_storage
+from services.zk_arweave_publisher import (
+    ZkArweavePublicationError,
+    publish_pending_zk_receipts_for_scope,
+    zk_arweave_auto_parliament_enabled,
+    zk_arweave_min_group_size,
+    zk_arweave_scope_allowlist,
+)
 from services.zk_group_registry import (
     build_active_group_root_for_scope,
     list_public_group_members_for_scope,
@@ -139,6 +145,7 @@ class ZkStatusResponse(BaseModel):
     root_publication_enabled: bool
     arweave_publication_enabled: bool
     arweave_scope_allowlist_configured: bool
+    arweave_auto_parliament_enabled: bool
     arweave_min_group_size: int
     global_rollout_enabled: bool
     production_scope_allowlist_configured: bool
@@ -269,7 +276,7 @@ def _production_scope_allowlist() -> set[str]:
 
 
 def _arweave_scope_allowlist() -> set[str]:
-    return _scope_allowlist(ZK_ARWEAVE_SCOPE_ALLOWLIST_ENV)
+    return zk_arweave_scope_allowlist()
 
 
 def _scope_allowlist(env_name: str) -> set[str]:
@@ -287,20 +294,10 @@ def _global_rollout_enabled() -> bool:
 
 
 def _zk_arweave_min_group_size() -> int:
-    raw = os.getenv(ZK_ARWEAVE_MIN_GROUP_SIZE_ENV, str(ZK_ARWEAVE_MIN_GROUP_SIZE_DEFAULT)).strip()
     try:
-        value = int(raw)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="ZK Arweave minimum group size is invalid",
-        ) from exc
-    if value < 2:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="ZK Arweave minimum group size is too low",
-        )
-    return value
+        return zk_arweave_min_group_size()
+    except ZkArweavePublicationError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
 def _ensure_zk_arweave_scope_allowed(vote_scope_id: str | None) -> str:
@@ -526,6 +523,7 @@ async def get_zk_status() -> ZkStatusResponse:
         root_publication_enabled=_env_enabled(ZK_ROOT_PUBLICATION_ENABLED_ENV),
         arweave_publication_enabled=_env_enabled(ZK_ARWEAVE_PUBLICATION_ENABLED_ENV),
         arweave_scope_allowlist_configured=bool(_arweave_scope_allowlist()),
+        arweave_auto_parliament_enabled=zk_arweave_auto_parliament_enabled(),
         arweave_min_group_size=_zk_arweave_min_group_size(),
         global_rollout_enabled=_global_rollout_enabled(),
         production_scope_allowlist_configured=bool(_production_scope_allowlist()),
@@ -1108,108 +1106,23 @@ async def publish_pending_zk_receipts(
     _admin: bool = Depends(verify_admin_key),
     db: AsyncSession = Depends(get_db),
 ) -> ZkReceiptPublishResponse:
-    if not _env_enabled(ZK_ARWEAVE_PUBLICATION_ENABLED_ENV):
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="ZK Arweave publication is not enabled",
+    try:
+        stats = await publish_pending_zk_receipts_for_scope(
+            db,
+            vote_scope_id=vote_scope_id,
+            limit=limit,
+            require_allowlist=True,
+            raise_on_small_group=True,
         )
-    if _env_enabled(ZK_CANARY_ENABLED_ENV):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="ZK canary receipts are not published to Arweave",
-        )
+    except ZkArweavePublicationError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
-    scope = _ensure_zk_arweave_scope_allowed(vote_scope_id)
-    await _ensure_scope_public_or_safe_canary(db, scope, require_existing_bill=True)
-    scope_type, scope_id = scope.split(":", 1)
-    if scope_type != "bill":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="ZK Arweave publication currently supports bill scopes only",
-        )
-
-    result = await db.execute(
-        select(ZkVoteReceipt)
-        .where(
-            ZkVoteReceipt.vote_scope_id == scope,
-            ZkVoteReceipt.arweave_pending.is_(True),
-        )
-        .order_by(ZkVoteReceipt.id)
-        .limit(limit)
-    )
-    receipts = result.scalars().all()
-    if not receipts:
-        return ZkReceiptPublishResponse(
-            vote_scope_id=scope,
-            attempted=0,
-            published=0,
-            failed=0,
-            tx_ids=[],
-        )
-
-    publishable: list[tuple[ZkVoteReceipt, ZkMerkleRoot]] = []
-    failed = 0
-    min_group_size = _zk_arweave_min_group_size()
-    publication_bucket = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-
-    for receipt in receipts:
-        root_result = await db.execute(
-            select(ZkMerkleRoot)
-            .where(
-                ZkMerkleRoot.vote_scope_id == scope,
-                ZkMerkleRoot.merkle_root == receipt.merkle_root,
-            )
-            .order_by(ZkMerkleRoot.id.desc())
-            .limit(1)
-        )
-        root = root_result.scalar_one_or_none()
-        if root is None:
-            failed += 1
-            continue
-        if int(root.group_size) < min_group_size:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=(
-                    "ZK Arweave publication requires group size "
-                    f">= {min_group_size}; current group size is {root.group_size}"
-                ),
-            )
-        publishable.append((receipt, root))
-
-    tx_ids: list[str] = []
-    from routers.arweave import publish_to_arweave
-    from services.zk_arweave_payload import build_zk_vote_arweave_record
-
-    for receipt, root in publishable:
-        record = build_zk_vote_arweave_record(
-            vote_scope_id=scope,
-            bill_id=scope_id,
-            vote_commitment=receipt.vote_commitment,
-            semaphore_nullifier=receipt.semaphore_nullifier,
-            merkle_root=receipt.merkle_root,
-            merkle_depth=receipt.merkle_depth,
-            proof_public=receipt.proof_public_json,
-            verifier_version=receipt.verifier_version,
-            circuit_version=receipt.circuit_version,
-            group_size=root.group_size,
-            publication_bucket=publication_bucket,
-        )
-        tx_id = await publish_to_arweave(record, f"zk-{scope_id}-{receipt.id}")
-        if not tx_id:
-            failed += 1
-            continue
-        receipt.arweave_tx_id = tx_id
-        receipt.arweave_pending = False
-        receipt.publication_bucket = publication_bucket
-        tx_ids.append(tx_id)
-
-    await db.commit()
     return ZkReceiptPublishResponse(
-        vote_scope_id=scope,
-        attempted=len(receipts),
-        published=len(tx_ids),
-        failed=failed,
-        tx_ids=tx_ids,
+        vote_scope_id=stats.vote_scope_id,
+        attempted=stats.attempted,
+        published=stats.published,
+        failed=stats.failed,
+        tx_ids=stats.tx_ids,
     )
 
 
