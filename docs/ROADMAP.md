@@ -32,7 +32,7 @@ Voraussetzung: 500+ Nutzer, 3+ NGO-Partner, öffentliche Legitimation.
 - [ ] MOD-13 Mein Abgeordneter
 - [ ] Deliberation (pol.is-Modell)
 - [ ] Commit-Reveal Abstimmung
-- [x] Semaphore ZK Voting — Android prover, hidden S10 canary, Security Review und erster öffentlicher One-Bill-Scope (`bill:GR-d4c62ed4`) bestanden. Globaler Rollout und ZK-Arweave-Publisher bleiben OFF/gated bis zur separaten Review.
+- [x] Semaphore ZK Voting — Android prover, hidden S10 canary, Security Review und erster öffentlicher One-Bill-Scope (`bill:GR-d4c62ed4`) bestanden. Guarded Parliament rollout ist live; ZK-Arweave-Auto-Publikation ist live für eligible öffentliche Parliament scopes ab `group_size >= 5`.
 - [ ] packages/crypto-rs (Rust + WASM)
 
 ## Transparenz
