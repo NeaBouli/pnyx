@@ -310,14 +310,38 @@ def _finalize_scraped_bills(
     return dated[:limit]
 
 
-async def _fetch_jina_markdown(url: str) -> Optional[str]:
+def _record_probe_error(probe_errors: list[str] | None, code: str) -> None:
+    if probe_errors is not None and code not in probe_errors:
+        probe_errors.append(code)
+
+
+def _looks_like_access_denied_body(text: str) -> bool:
+    lowered = text.lower()
+    return (
+        "access denied" in lowered
+        or "authenticationrequirederror" in lowered
+        or "blocked from performing anonymous queries" in lowered
+        or "you don't have permission to access" in lowered
+    )
+
+
+async def _fetch_jina_markdown(url: str, probe_errors: list[str] | None = None) -> Optional[str]:
     """Fetch a URL via Jina Reader and return Markdown content."""
     try:
         async with httpx.AsyncClient(timeout=25.0) as client:
             r = await client.get(f"https://r.jina.ai/{url}", headers={"Accept": "text/plain"})
+            if r.status_code == 401:
+                _record_probe_error(probe_errors, "jina_http_401")
+                return None
+            if r.status_code == 200 and _looks_like_access_denied_body(r.text):
+                _record_probe_error(probe_errors, "jina_target_access_denied")
+                return None
             if r.status_code == 200 and len(r.text) > 200:
                 return r.text
+            if r.status_code != 200:
+                _record_probe_error(probe_errors, f"jina_http_{r.status_code}")
     except Exception as e:
+        _record_probe_error(probe_errors, "jina_error")
         logger.warning("[SCRAPER] Jina fetch failed for %s: %s", url[:60], e)
     return None
 
@@ -458,6 +482,7 @@ def _parse_parliament_markdown(md: str, source_url: str) -> list[dict]:
 async def scrape_parliament_bills(
     limit: int = 10,
     require_dates: bool = False,
+    probe_errors: list[str] | None = None,
 ) -> list[dict]:
     """Fetches latest bills from hellenicparliament.gr.
 
@@ -492,10 +517,12 @@ async def scrape_parliament_bills(
                              "Accept": "application/json", "Accept-Language": "el-GR,el;q=0.9"},
                 )
                 if r.status_code == 403:
+                    _record_probe_error(probe_errors, "api_http_403")
                     logger.warning("[SCRAPER] Stage 1 blocked (403) — falling back to Jina")
                     api_blocked = True
                     break
                 if r.status_code != 200:
+                    _record_probe_error(probe_errors, f"api_http_{r.status_code}")
                     continue
                 data = r.json()
                 for item in data.get("Data", []):
@@ -516,6 +543,7 @@ async def scrape_parliament_bills(
                 if len(bills) >= limit:
                     break
     except Exception as e:
+        _record_probe_error(probe_errors, "api_error")
         logger.warning("[SCRAPER] Stage 1 error: %s — falling back to Jina", e)
         api_blocked = True
 
@@ -537,7 +565,7 @@ async def scrape_parliament_bills(
             ]
             merged: dict[str, dict] = {}
             for page_url in jina_pages:
-                md = await _fetch_jina_markdown(page_url)
+                md = await _fetch_jina_markdown(page_url, probe_errors=probe_errors)
                 if md:
                     parsed = _parse_parliament_markdown(md, page_url)
                     for item in parsed:
@@ -578,6 +606,7 @@ async def scrape_parliament_bills(
                 logger.warning("[SCRAPER] Stage 2 returned only undated rows — falling back to direct HTML")
                 bills = []
         except Exception as e:
+            _record_probe_error(probe_errors, "jina_stage_error")
             logger.warning("[SCRAPER] Stage 2 (Jina) error: %s — falling back to direct HTML", e)
 
     # ── Stage 3: Direct HTML parse (no proxy) ────────────────────────
@@ -590,6 +619,9 @@ async def scrape_parliament_bills(
                     headers={"User-Agent": SCRAPE_USER_AGENT, "Accept-Language": "el-GR,el;q=0.9"},
                 )
                 if r.status_code == 200:
+                    if _looks_like_access_denied_body(r.text):
+                        _record_probe_error(probe_errors, "direct_html_access_denied")
+                        return _finalize_scraped_bills(bills, limit=limit, require_dates=require_dates)
                     soup = BeautifulSoup(r.text, "html.parser")
                     for link in soup.find_all("a", href=True):
                         text = link.get_text(strip=True)
@@ -601,7 +633,10 @@ async def scrape_parliament_bills(
                             break
                     if bills:
                         logger.info("[SCRAPER] Fallback 2→3: Direct HTML returned %d bills", len(bills))
+                else:
+                    _record_probe_error(probe_errors, f"direct_html_http_{r.status_code}")
         except Exception as e:
+            _record_probe_error(probe_errors, "direct_html_error")
             logger.warning("[SCRAPER] Stage 3 (direct HTML) error: %s", e)
 
     if not bills:
@@ -667,14 +702,20 @@ async def get_latest_from_parliament(limit: int = Query(10, le=20)):
 @router.get("/parliament/freshness")
 async def get_parliament_freshness_probe(limit: int = Query(20, le=20)):
     """Strict Parliament source probe for monitor freshness checks."""
-    bills = await scrape_parliament_bills(limit=limit, require_dates=True)
+    probe_errors: list[str] = []
+    bills = await scrape_parliament_bills(limit=limit, require_dates=True, probe_errors=probe_errors)
     dates = [
         bill.get("date") or bill.get("submitted_date")
         for bill in bills
         if bill.get("date") or bill.get("submitted_date")
     ]
+    source_status = "ok" if dates else "empty"
+    if not dates and any("403" in error or "access_denied" in error or "401" in error for error in probe_errors):
+        source_status = "blocked"
     return {
         "source": "hellenicparliament.gr",
+        "source_status": source_status,
+        "probe_errors": probe_errors,
         "count": len(bills),
         "dated_count": len(dates),
         "source_latest": max(dates) if dates else None,

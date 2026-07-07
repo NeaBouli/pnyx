@@ -112,3 +112,32 @@ def test_parliament_source_freshness_reports_probe_without_dated_bills(monkeypat
     assert alerts[0].recovery_allowed is False
     assert "count=3" in alerts[0].message
     assert "dated_count=0" in alerts[0].message
+
+
+def test_parliament_source_freshness_reports_blocked_upstream(monkeypatch):
+    class BlockedProbeResponse(FakeResponse):
+        def json(self):
+            return {
+                "source_status": "blocked",
+                "probe_errors": ["api_http_403", "jina_target_access_denied"],
+                "count": 0,
+                "dated_count": 0,
+                "source_latest": None,
+                "bills": [],
+            }
+
+    monkeypatch.setattr(
+        monitor.httpx,
+        "get",
+        lambda *_args, **_kwargs: BlockedProbeResponse([]),
+    )
+
+    alerts = monitor.check_parliament_source_freshness(
+        FakeConn(datetime(2026, 6, 10, tzinfo=timezone.utc))
+    )
+
+    assert len(alerts) == 1
+    assert alerts[0].type == "parliament_source_blocked"
+    assert alerts[0].recovery_allowed is False
+    assert "upstream blocks" in alerts[0].message
+    assert "api_http_403" in alerts[0].message

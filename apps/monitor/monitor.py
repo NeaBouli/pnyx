@@ -652,12 +652,25 @@ def check_parliament_source_freshness(conn) -> list[Alert]:
             return alerts
 
         payload = resp.json()
+        source_status = str(payload.get("source_status") or "unknown")
+        probe_errors = payload.get("probe_errors") or []
         source_latest = _as_utc_datetime(payload.get("source_latest"))
         if source_latest is None:
             source_latest = _latest_source_activity(payload.get("bills", []))
         if not source_latest:
             count = payload.get("count", 0)
             dated_count = payload.get("dated_count", 0)
+            if source_status == "blocked":
+                detail = ", ".join(str(error) for error in probe_errors[:4]) or "unknown"
+                alerts.append(Alert(
+                    "parliament_source_blocked", "ekklesia-api", "warning",
+                    (
+                        "Parliament source freshness unavailable: upstream blocks "
+                        f"server/proxy access ({detail})"
+                    ),
+                    False,
+                ))
+                return alerts
             alerts.append(Alert(
                 "parliament_source_check_failed", "ekklesia-api", "warning",
                 (

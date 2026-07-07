@@ -125,7 +125,7 @@ def test_finalize_scraped_bills_can_filter_undated_fallback_rows():
 
 @pytest.mark.asyncio
 async def test_parliament_freshness_probe_requires_dated_scraper(monkeypatch):
-    async def fake_scrape(limit: int, require_dates: bool = False):
+    async def fake_scrape(limit: int, require_dates: bool = False, probe_errors=None):
         assert limit == 20
         assert require_dates is True
         return [
@@ -168,7 +168,7 @@ async def test_strict_scrape_falls_back_when_stage_one_has_only_undated_rows(mon
         async def get(self, *_args, **_kwargs):
             return FakeResponse()
 
-    async def fake_fetch_jina_markdown(url: str):
+    async def fake_fetch_jina_markdown(url: str, probe_errors=None):
         if "all-laws" not in url:
             return ""
         return """
@@ -184,3 +184,50 @@ async def test_strict_scrape_falls_back_when_stage_one_has_only_undated_rows(mon
     assert len(bills) == 1
     assert bills[0]["law_id"] == "3aba3e72-d5b0-414b-8649-b45901603f92"
     assert bills[0]["submitted_date"] == "2026-06-23T00:00:00+00:00"
+
+
+@pytest.mark.asyncio
+async def test_jina_access_denied_markdown_is_reported_as_blocked(monkeypatch):
+    class ApiBlockedResponse:
+        status_code = 403
+
+        def json(self):
+            return {}
+
+    class DirectBlockedResponse:
+        status_code = 403
+        text = "Access Denied"
+
+    class FakeClient:
+        def __init__(self):
+            self.calls = 0
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def get(self, *_args, **_kwargs):
+            self.calls += 1
+            if self.calls == 1:
+                return ApiBlockedResponse()
+            return DirectBlockedResponse()
+
+    async def fake_fetch_jina_markdown(_url: str, probe_errors=None):
+        if probe_errors is not None and "jina_target_access_denied" not in probe_errors:
+            probe_errors.append("jina_target_access_denied")
+        return None
+
+    monkeypatch.setattr(scraper_router.httpx, "AsyncClient", lambda *args, **kwargs: FakeClient())
+    monkeypatch.setattr(scraper_router, "_fetch_jina_markdown", fake_fetch_jina_markdown)
+    monkeypatch.setattr(scraper_router, "SCRAPE_DELAY_SECONDS", 0)
+
+    payload = await scraper_router.get_parliament_freshness_probe(limit=20)
+
+    assert payload["source_status"] == "blocked"
+    assert payload["count"] == 0
+    assert payload["dated_count"] == 0
+    assert "api_http_403" in payload["probe_errors"]
+    assert "jina_target_access_denied" in payload["probe_errors"]
+    assert "direct_html_http_403" in payload["probe_errors"]
