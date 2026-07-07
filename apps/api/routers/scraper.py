@@ -291,6 +291,62 @@ def prefer_scraped_title(existing_title: str | None, candidate_title: str | None
     return existing
 
 
+def _format_parliament_date(value: str | None) -> str | None:
+    """Render scraper ISO dates as Greek user-facing dates without changing stored values."""
+    if not value:
+        return None
+    match = re.match(r"(\d{4})-(\d{2})-(\d{2})", value)
+    if not match:
+        return None
+    year, month, day = match.groups()
+    return f"{day}/{month}/{year}"
+
+
+def _build_parliament_metadata_summary(
+    *,
+    title_el: str,
+    bill_type: str | None = None,
+    ministry: str | None = None,
+    phase: str | None = None,
+    submitted_date: str | None = None,
+    vote_date: str | None = None,
+) -> str:
+    """Build a safe metadata-only summary when no real Parliament text is available."""
+    facts: list[str] = []
+    if bill_type:
+        facts.append(f"Τύπος: {bill_type}")
+    if ministry:
+        facts.append(f"Υπουργείο: {ministry}")
+    if phase:
+        facts.append(f"Φάση: {phase}")
+    submitted = _format_parliament_date(submitted_date)
+    if submitted:
+        facts.append(f"Ημερομηνία κατάθεσης: {submitted}")
+    voted = _format_parliament_date(vote_date)
+    if voted:
+        facts.append(f"Ημερομηνία συζήτησης/ψήφισης: {voted}")
+
+    lines = [f"Η Βουλή δημοσίευσε εγγραφή για: {title_el}."]
+    if facts:
+        lines.append("; ".join(facts) + ".")
+    lines.append("Για το πλήρες περιεχόμενο δείτε τα επίσημα έγγραφα της Βουλής.")
+    return "\n".join(lines)
+
+
+def _build_parliament_metadata_pill(
+    *,
+    title_el: str,
+    bill_type: str | None = None,
+    ministry: str | None = None,
+) -> str:
+    """Build a short non-interpretive Parliament pill."""
+    if bill_type and ministry:
+        return f"{bill_type} — {ministry}"[:200]
+    if bill_type:
+        return bill_type[:200]
+    return title_el[:200]
+
+
 def _finalize_scraped_bills(
     bills: list[dict],
     *,
@@ -474,6 +530,19 @@ def _parse_parliament_markdown(md: str, source_url: str) -> list[dict]:
         else:
             bill_data["date"] = row_date  # actual/planned vote or discussion date
             bill_data["submitted_date"] = None
+        bill_data["pill_el"] = _build_parliament_metadata_pill(
+            title_el=title_el,
+            bill_type=bill_type,
+            ministry=ministry,
+        )
+        bill_data["summary_short_el"] = _build_parliament_metadata_summary(
+            title_el=title_el,
+            bill_type=bill_type,
+            ministry=ministry,
+            phase=phase,
+            submitted_date=bill_data.get("submitted_date"),
+            vote_date=bill_data.get("date"),
+        )
         bills.append(bill_data)
 
     return bills

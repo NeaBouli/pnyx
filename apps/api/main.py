@@ -174,6 +174,12 @@ async def scheduled_scrape():
                     if b.get("summary_long_el") and not existing_bill.summary_long_el:
                         existing_bill.summary_long_el = b.get("summary_long_el")
                         changed = True
+                    if b.get("summary_short_el") and not existing_bill.summary_short_el:
+                        existing_bill.summary_short_el = b.get("summary_short_el")
+                        changed = True
+                    if b.get("pill_el") and not existing_bill.pill_el:
+                        existing_bill.pill_el = b.get("pill_el")
+                        changed = True
                     if submitted_date and existing_bill.submitted_date != submitted_date:
                         existing_bill.submitted_date = submitted_date
                         changed = True
@@ -194,6 +200,8 @@ async def scheduled_scrape():
                     parliament_url=b.get("url"),
                     parliament_vote_date=vote_date,
                     submitted_date=submitted_date,
+                    pill_el=b.get("pill_el"),
+                    summary_short_el=b.get("summary_short_el"),
                     summary_long_el=b.get("summary_long_el"),
                     categories=[b["ministry"]] if b.get("ministry") else None,
                 )

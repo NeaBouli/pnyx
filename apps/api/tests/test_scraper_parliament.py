@@ -6,7 +6,12 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from routers import scraper as scraper_router
-from routers.scraper import _finalize_scraped_bills, _parse_parliament_markdown, prefer_scraped_title
+from routers.scraper import (
+    _build_parliament_metadata_summary,
+    _finalize_scraped_bills,
+    _parse_parliament_markdown,
+    prefer_scraped_title,
+)
 
 
 def test_parse_all_laws_current_rows_with_date_and_phase():
@@ -88,6 +93,12 @@ def test_parse_katatethenta_pdf_column_into_document_block():
     )
 
     assert len(bills) == 1
+    assert bills[0]["pill_el"] == "Σχέδιο νόμου — Εσωτερικών"
+    assert "Η Βουλή δημοσίευσε εγγραφή για: ΚΩΔΙΚΑΣ ΤΟΠΙΚΗΣ ΑΥΤΟΔΙΟΙΚΗΣΗΣ." in bills[0]["summary_short_el"]
+    assert "Τύπος: Σχέδιο νόμου" in bills[0]["summary_short_el"]
+    assert "Υπουργείο: Εσωτερικών" in bills[0]["summary_short_el"]
+    assert "Ημερομηνία κατάθεσης: 10/06/2026" in bills[0]["summary_short_el"]
+    assert "Για το πλήρες περιεχόμενο δείτε τα επίσημα έγγραφα της Βουλής." in bills[0]["summary_short_el"]
     assert "### Πλήρη έγγραφα" in bills[0]["summary_long_el"]
     assert "[Έγγραφο Βουλής 1 (13325042.pdf)](https://www.hellenicparliament.gr/UserFiles/c8827c35/13325042.pdf)" in bills[0]["summary_long_el"]
     assert "[Έγγραφο Βουλής 2 (13325043.pdf)](https://www.hellenicparliament.gr/UserFiles/c8827c35/13325043.pdf)" in bills[0]["summary_long_el"]
@@ -107,7 +118,26 @@ def test_parse_katatethenta_preserves_blank_type_ministry_before_pdf_column():
     assert len(bills) == 1
     assert bills[0]["type"] is None
     assert bills[0]["ministry"] is None
+    assert bills[0]["pill_el"] == "Πρόταση για τη Συνταγματική Αναθεώρηση"
+    assert "Η Βουλή δημοσίευσε εγγραφή για: Πρόταση για τη Συνταγματική Αναθεώρηση." in bills[0]["summary_short_el"]
+    assert "Ημερομηνία κατάθεσης: 10/06/2026" in bills[0]["summary_short_el"]
     assert "[Έγγραφο Βουλής 1 (13324903.pdf)](https://www.hellenicparliament.gr/UserFiles/c8827c35/13324903.pdf)" in bills[0]["summary_long_el"]
+
+
+def test_metadata_summary_is_descriptive_not_interpretive():
+    summary = _build_parliament_metadata_summary(
+        title_el="Παράδειγμα νομοσχεδίου",
+        bill_type="Σχέδιο νόμου",
+        ministry="Υπουργείο Δοκιμής",
+        phase="Κατατεθέντα",
+        submitted_date="2026-07-02T00:00:00+00:00",
+        vote_date=None,
+    )
+
+    assert "Η Βουλή δημοσίευσε εγγραφή" in summary
+    assert "Για το πλήρες περιεχόμενο" in summary
+    assert "ρυθμίζει" not in summary
+    assert "αποσκοπεί" not in summary
 
 
 def test_finalize_scraped_bills_can_filter_undated_fallback_rows():
