@@ -44,6 +44,16 @@ describe("buildBillsQuery", () => {
       status_any: "ACTIVE,WINDOW_24H",
     })).toBe("limit=10&offset=0&status_any=ACTIVE%2CWINDOW_24H");
   });
+
+  it("can exclude institutional Diavgeia from the mixed All feed", () => {
+    expect(buildBillsQuery({
+      limit: 20,
+      offset: 0,
+      periferia_id: 1,
+      dimos_id: 2,
+      include_institutional: false,
+    })).toBe("limit=20&offset=0&periferia_id=1&dimos_id=2&include_institutional=false");
+  });
 });
 
 describe("ZK API helpers", () => {

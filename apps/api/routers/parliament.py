@@ -20,7 +20,7 @@ from services.bill_visibility import is_public_bill, public_bill_with_demo_filte
 from services.source_links import official_source_url
 from models import (
     ParliamentBill, BillStatus, BillStatusLog, BillRelevanceVote,
-    CitizenVote, VoteChoice,
+    CitizenVote, VoteChoice, GovernanceLevel,
 )
 
 logger = logging.getLogger(__name__)
@@ -142,6 +142,35 @@ def _parse_status_any(status_any: str | None) -> list[BillStatus]:
     return statuses
 
 
+def _region_filter_conditions(
+    *,
+    periferia_id: int | None,
+    dimos_id: int | None,
+    include_institutional: bool,
+):
+    """Build region visibility conditions for public bill lists."""
+    from sqlalchemy import and_
+
+    region_conditions = [
+        ParliamentBill.governance_level == GovernanceLevel.NATIONAL,
+    ]
+    if include_institutional:
+        region_conditions.append(
+            ParliamentBill.governance_level == GovernanceLevel.INSTITUTIONAL
+        )
+    if periferia_id is not None:
+        region_conditions.append(
+            and_(ParliamentBill.governance_level == GovernanceLevel.REGIONAL,
+                 ParliamentBill.periferia_id == periferia_id)
+        )
+    if dimos_id is not None:
+        region_conditions.append(
+            and_(ParliamentBill.governance_level == GovernanceLevel.MUNICIPAL,
+                 ParliamentBill.dimos_id == dimos_id)
+        )
+    return region_conditions
+
+
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
 @router.get("", response_model=list[BillSummary])
@@ -153,13 +182,13 @@ async def get_bills(
     source: str | None = Query(None),
     periferia_id: int | None = Query(None),
     dimos_id: int | None = Query(None),
+    include_institutional: bool = Query(True),
     limit: int = Query(20, le=500),
     offset: int = Query(0),
     db: AsyncSession = Depends(get_db)
 ):
     """Gibt Gesetzentwürfe zurück, optional gefiltert nach Status/Kategorie/Governance/Source/Region."""
-    from sqlalchemy import or_, and_
-    from models import GovernanceLevel
+    from sqlalchemy import or_
 
     query = select(ParliamentBill).where(
         public_bill_with_demo_filter(),
@@ -193,20 +222,11 @@ async def get_bills(
 
     # Region filter: show NATIONAL + INSTITUTIONAL + matching REGIONAL/MUNICIPAL
     if periferia_id is not None or dimos_id is not None:
-        region_conditions = [
-            ParliamentBill.governance_level == GovernanceLevel.NATIONAL,
-            ParliamentBill.governance_level == GovernanceLevel.INSTITUTIONAL,
-        ]
-        if periferia_id is not None:
-            region_conditions.append(
-                and_(ParliamentBill.governance_level == GovernanceLevel.REGIONAL,
-                     ParliamentBill.periferia_id == periferia_id)
-            )
-        if dimos_id is not None:
-            region_conditions.append(
-                and_(ParliamentBill.governance_level == GovernanceLevel.MUNICIPAL,
-                     ParliamentBill.dimos_id == dimos_id)
-            )
+        region_conditions = _region_filter_conditions(
+            periferia_id=periferia_id,
+            dimos_id=dimos_id,
+            include_institutional=include_institutional,
+        )
         query = query.where(or_(*region_conditions))
 
     result = await db.execute(query)

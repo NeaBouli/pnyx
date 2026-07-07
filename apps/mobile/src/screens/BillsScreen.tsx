@@ -73,6 +73,7 @@ export default function BillsScreen() {
         source?: string;
         governance?: string;
         status_any?: string;
+        include_institutional?: boolean;
         limit: number;
         offset: number;
       } = { limit: PAGE_SIZE, offset };
@@ -89,7 +90,7 @@ export default function BillsScreen() {
       let next: any[];
       if (filter === "ALL" && reset && offset === 0) {
         const [allData, parliamentData] = await Promise.all([
-          fetchBills({ ...params, limit: PAGE_SIZE * 2 }),
+          fetchBills({ ...params, include_institutional: false, limit: PAGE_SIZE * 2 }),
           fetchBills({ ...params, source: "PARLIAMENT", limit: 4, offset: 0 }),
         ]);
         next = mergeBillsUnique(

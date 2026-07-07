@@ -2,7 +2,14 @@
 import pytest
 from models import BillStatus
 from fastapi import HTTPException
-from routers.parliament import VALID_TRANSITIONS, _parse_status_any
+from routers.parliament import VALID_TRANSITIONS, _parse_status_any, _region_filter_conditions
+
+
+def _compiled_conditions(conditions):
+    return " ".join(
+        str(condition.compile(compile_kwargs={"literal_binds": True}))
+        for condition in conditions
+    )
 
 
 class TestLifecycle:
@@ -49,6 +56,34 @@ class TestStatusAny:
             _parse_status_any("ACTIVE,NOT_A_STATUS")
 
         assert exc.value.status_code == 400
+
+
+class TestRegionFilterConditions:
+    def test_region_filter_includes_institutional_by_default_when_requested(self):
+        conditions = _region_filter_conditions(
+            periferia_id=1,
+            dimos_id=2,
+            include_institutional=True,
+        )
+        sql = _compiled_conditions(conditions)
+
+        assert len(conditions) == 4
+        assert "INSTITUTIONAL" in sql
+        assert "REGIONAL" in sql
+        assert "MUNICIPAL" in sql
+
+    def test_region_filter_can_exclude_institutional_for_mixed_all_feed(self):
+        conditions = _region_filter_conditions(
+            periferia_id=1,
+            dimos_id=2,
+            include_institutional=False,
+        )
+        sql = _compiled_conditions(conditions)
+
+        assert len(conditions) == 3
+        assert "INSTITUTIONAL" not in sql
+        assert "REGIONAL" in sql
+        assert "MUNICIPAL" in sql
 
 
 @pytest.mark.asyncio

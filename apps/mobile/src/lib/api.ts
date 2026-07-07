@@ -85,6 +85,7 @@ export function buildBillsQuery(params?: {
   dimos_id?: number;
   status?: string;
   status_any?: string;
+  include_institutional?: boolean;
   limit?: number;
   offset?: number;
 }): string {
@@ -97,6 +98,9 @@ export function buildBillsQuery(params?: {
   if (params?.source) qs.set("source", params.source);
   if (params?.periferia_id) qs.set("periferia_id", String(params.periferia_id));
   if (params?.dimos_id) qs.set("dimos_id", String(params.dimos_id));
+  if (params?.include_institutional != null) {
+    qs.set("include_institutional", String(params.include_institutional));
+  }
   return qs.toString();
 }
 
@@ -107,6 +111,7 @@ export async function fetchBills(params?: {
   dimos_id?: number;
   status?: string;
   status_any?: string;
+  include_institutional?: boolean;
   limit?: number;
   offset?: number;
 }): Promise<Bill[]> {
