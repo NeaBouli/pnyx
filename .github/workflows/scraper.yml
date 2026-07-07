@@ -49,6 +49,7 @@ jobs:
           RESP=$(curl -sS --max-time 30 \
             -X POST "https://api.ekklesia.gr/api/v1/scraper/import" \
             -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.EKKLESIA_ADMIN_KEY }}" \
             --data-binary @/tmp/payload.json)
 
           echo "Response: $RESP"
