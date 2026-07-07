@@ -843,7 +843,15 @@ class BillImportItem(BaseModel):
     title_el: str
     ministry: str = ""
     law_num: str = ""
+    law_id: str | None = None
+    url: str | None = None
+    type: str | None = None
+    phase: str | None = None
+    submitted_date: str | None = None  # ISO format
     vote_date: str | None = None  # ISO format
+    pill_el: str | None = None
+    summary_short_el: str | None = None
+    summary_long_el: str | None = None
 
 
 class BillImportRequest(BaseModel):
@@ -864,37 +872,98 @@ async def import_parliament_bills(
     """
 
     imported = 0
+    updated = 0
     skipped = 0
 
+    def _parse_date(value: str | None) -> datetime | None:
+        if not value:
+            return None
+        try:
+            return datetime.fromisoformat(value).replace(tzinfo=None)
+        except ValueError:
+            return None
+
     for item in req.bills:
+        title = (item.title_el or "").strip()
+        if not title or len(title) < 10:
+            skipped += 1
+            continue
+
         existing = await db.execute(
             select(ParliamentBill).where(ParliamentBill.id == item.bill_id)
         )
-        if existing.scalar_one_or_none():
+        existing_bill = existing.scalar_one_or_none()
+
+        vote_date = _parse_date(item.vote_date)
+        submitted_date = _parse_date(item.submitted_date)
+        pill_el = item.pill_el or _build_parliament_metadata_pill(
+            title_el=title,
+            bill_type=item.type,
+            ministry=item.ministry or None,
+        )
+        summary_short_el = item.summary_short_el or _build_parliament_metadata_summary(
+            title_el=title,
+            bill_type=item.type,
+            ministry=item.ministry or None,
+            phase=item.phase,
+            submitted_date=item.submitted_date,
+            vote_date=item.vote_date,
+        )
+
+        if existing_bill:
+            changed = False
+            preferred_title = prefer_scraped_title(existing_bill.title_el, title)
+            if preferred_title and preferred_title != existing_bill.title_el:
+                existing_bill.title_el = preferred_title
+                changed = True
+            if item.url and existing_bill.parliament_url != item.url:
+                existing_bill.parliament_url = item.url
+                changed = True
+            if submitted_date and existing_bill.submitted_date != submitted_date:
+                existing_bill.submitted_date = submitted_date
+                changed = True
+            if vote_date and existing_bill.parliament_vote_date != vote_date:
+                existing_bill.parliament_vote_date = vote_date
+                changed = True
+            if pill_el and not existing_bill.pill_el:
+                existing_bill.pill_el = pill_el
+                changed = True
+            if summary_short_el and not existing_bill.summary_short_el:
+                existing_bill.summary_short_el = summary_short_el
+                changed = True
+            if item.summary_long_el and not existing_bill.summary_long_el:
+                existing_bill.summary_long_el = item.summary_long_el
+                changed = True
+            if item.ministry and not existing_bill.categories:
+                existing_bill.categories = [item.ministry]
+                changed = True
+            if changed:
+                updated += 1
+            else:
+                skipped += 1
+            continue
+
+        if not submitted_date and not vote_date:
             skipped += 1
             continue
 
         summaries = summarize_rule_based(item.title_el, item.title_el)
-        date = None
-        if item.vote_date:
-            try:
-                date = datetime.fromisoformat(item.vote_date)
-            except ValueError:
-                pass
-
         bill = ParliamentBill(
-            id=item.bill_id, title_el=item.title_el,
-            pill_el=f"Ν. {item.law_num}: {item.title_el[:100]}" if item.law_num else item.title_el[:120],
+            id=item.bill_id, title_el=title,
+            pill_el=pill_el,
             pill_en=f"Law {item.law_num}: {item.ministry[:80]}" if item.law_num else "",
-            summary_short_el=f"Νόμος {item.law_num} — {item.ministry}. {item.title_el}" if item.law_num else item.title_el,
+            summary_short_el=summary_short_el,
             summary_short_en=f"Law {item.law_num} by {item.ministry}." if item.law_num else "",
+            summary_long_el=item.summary_long_el,
             categories=summaries.get("categories", ["Νομοθεσία"]),
             status=BillStatus.ANNOUNCED,
-            parliament_vote_date=date,
+            parliament_url=item.url,
+            parliament_vote_date=vote_date,
+            submitted_date=submitted_date,
         )
         db.add(bill)
         imported += 1
 
     await db.commit()
-    logger.info(f"[MOD-10] Import: {imported} new, {skipped} skipped")
-    return {"success": True, "imported": imported, "skipped": skipped}
+    logger.info(f"[MOD-10] Import: {imported} new, {updated} updated, {skipped} skipped")
+    return {"success": True, "imported": imported, "updated": updated, "skipped": skipped}

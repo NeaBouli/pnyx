@@ -7,11 +7,15 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from routers import scraper as scraper_router
 from routers.scraper import (
+    BillImportItem,
+    BillImportRequest,
     _build_parliament_metadata_summary,
     _finalize_scraped_bills,
     _parse_parliament_markdown,
+    import_parliament_bills,
     prefer_scraped_title,
 )
+from models import BillStatus
 
 
 def test_parse_all_laws_current_rows_with_date_and_phase():
@@ -261,3 +265,108 @@ async def test_jina_access_denied_markdown_is_reported_as_blocked(monkeypatch):
     assert "api_http_403" in payload["probe_errors"]
     assert "jina_target_access_denied" in payload["probe_errors"]
     assert "direct_html_http_403" in payload["probe_errors"]
+
+
+class _FakeScalarResult:
+    def __init__(self, row):
+        self.row = row
+
+    def scalar_one_or_none(self):
+        return self.row
+
+
+class _FakeImportDb:
+    def __init__(self, existing=None):
+        self.existing = existing
+        self.added = []
+        self.committed = False
+
+    async def execute(self, *_args, **_kwargs):
+        return _FakeScalarResult(self.existing)
+
+    def add(self, row):
+        self.added.append(row)
+
+    async def commit(self):
+        self.committed = True
+
+
+@pytest.mark.asyncio
+async def test_github_import_fills_missing_metadata_without_touching_status():
+    existing = type("ExistingBill", (), {})()
+    existing.title_el = "Κύρωση συμφωνίας..."
+    existing.parliament_url = None
+    existing.submitted_date = None
+    existing.parliament_vote_date = None
+    existing.pill_el = None
+    existing.summary_short_el = None
+    existing.summary_long_el = None
+    existing.categories = None
+    existing.status = BillStatus.ACTIVE
+
+    db = _FakeImportDb(existing)
+    payload = BillImportRequest(
+        admin_key="test",
+        bills=[
+            BillImportItem(
+                bill_id="GR-e744abc6",
+                title_el="Κύρωση συμφωνίας με πλήρη τίτλο",
+                ministry="Εξωτερικών",
+                type="Διεθνής Σύμβαση",
+                url="https://www.hellenicparliament.gr/Nomothetiko-Ergo/Anazitisi-Nomothetikou-Ergou?law_id=e744abc6-3e81-4e56-a4cd-b47f0174f2b1",
+                submitted_date="2026-07-06T00:00:00+00:00",
+                summary_long_el="### Πλήρη έγγραφα\n- [Έγγραφο Βουλής 1](https://example.test/doc.pdf)",
+            )
+        ],
+    )
+
+    result = await import_parliament_bills(payload, _auth=True, db=db)
+
+    assert result == {"success": True, "imported": 0, "updated": 1, "skipped": 0}
+    assert existing.status == BillStatus.ACTIVE
+    assert existing.title_el == "Κύρωση συμφωνίας με πλήρη τίτλο"
+    assert existing.pill_el == "Διεθνής Σύμβαση — Εξωτερικών"
+    assert existing.summary_short_el.startswith("Η Βουλή δημοσίευσε εγγραφή")
+    assert existing.summary_long_el.startswith("### Πλήρη έγγραφα")
+    assert existing.categories == ["Εξωτερικών"]
+    assert db.committed is True
+
+
+@pytest.mark.asyncio
+async def test_github_import_does_not_overwrite_existing_official_text():
+    existing = type("ExistingBill", (), {})()
+    existing.title_el = "Πλήρης υπάρχων τίτλος"
+    existing.parliament_url = "https://old.example.test"
+    existing.submitted_date = None
+    existing.parliament_vote_date = None
+    existing.pill_el = "Υπάρχον pill"
+    existing.summary_short_el = "Υπάρχουσα σύνοψη"
+    existing.summary_long_el = "Υπάρχον επίσημο κείμενο"
+    existing.categories = ["Υπάρχουσα"]
+    existing.status = BillStatus.WINDOW_24H
+
+    db = _FakeImportDb(existing)
+    payload = BillImportRequest(
+        admin_key="test",
+        bills=[
+            BillImportItem(
+                bill_id="GR-e744abc6",
+                title_el="Πλήρης υπάρχων τίτλος...",
+                ministry="Νέο υπουργείο",
+                url="https://new.example.test",
+                summary_short_el="Νέα σύνοψη",
+                summary_long_el="Νέο επίσημο κείμενο",
+            )
+        ],
+    )
+
+    result = await import_parliament_bills(payload, _auth=True, db=db)
+
+    assert result["updated"] == 1
+    assert existing.status == BillStatus.WINDOW_24H
+    assert existing.title_el == "Πλήρης υπάρχων τίτλος"
+    assert existing.parliament_url == "https://new.example.test"
+    assert existing.pill_el == "Υπάρχον pill"
+    assert existing.summary_short_el == "Υπάρχουσα σύνοψη"
+    assert existing.summary_long_el == "Υπάρχον επίσημο κείμενο"
+    assert existing.categories == ["Υπάρχουσα"]
