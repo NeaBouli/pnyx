@@ -1,6 +1,7 @@
 """
 MOD-02: VAA (Voting Advice Application) Router
 GET  /api/v1/vaa/statements        — Alle Thesen (el/en)
+GET  /api/v1/vaa/questions         — Alias für externe Clients
 GET  /api/v1/vaa/parties           — Alle Parteien
 POST /api/v1/vaa/match             — Matching-Algorithmus
 """
@@ -90,6 +91,20 @@ async def get_statements(
     db: AsyncSession = Depends(get_db)
 ):
     """Gibt aktive Thesen zurück. Mit limit>0: zufällige Auswahl aus dem Pool."""
+    return await _load_active_statements(db=db, limit=limit)
+
+
+@router.get("/questions", response_model=list[StatementOut])
+async def get_questions(
+    lang: str = Query("el", description="Sprache: el oder en"),
+    limit: int = Query(0, description="Max questions (0=all). Random selection if >0 and pool is larger."),
+    db: AsyncSession = Depends(get_db),
+):
+    """Public alias for partner projects that call the VAA items 'questions'."""
+    return await _load_active_statements(db=db, limit=limit)
+
+
+async def _load_active_statements(db: AsyncSession, limit: int) -> list[Statement]:
     result = await db.execute(
         select(Statement)
         .where(Statement.is_active == True)

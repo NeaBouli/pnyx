@@ -475,6 +475,47 @@ async def _ensure_scope_public_or_safe_canary(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ZK vote scope not found")
 
 
+async def _publish_current_root_after_opt_in_if_enabled(db: AsyncSession, vote_scope_id: str) -> bool:
+    """Publish the current group root inside a valid opt-in transaction when enabled.
+
+    Without this, a user can successfully opt in, lock the normal Tier-1 path,
+    and still be unable to generate a ZK proof until an operator publishes a
+    root. The same gate as the admin root publication endpoint controls this
+    automatic path.
+    """
+    if not _env_enabled(ZK_ROOT_PUBLICATION_ENABLED_ENV):
+        return False
+
+    try:
+        group = await build_active_group_root_for_scope(db, vote_scope_id=vote_scope_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ZK root publication failed after opt-in",
+        ) from exc
+    existing_result = await db.execute(
+        select(ZkMerkleRoot).where(
+            ZkMerkleRoot.vote_scope_id == vote_scope_id,
+            ZkMerkleRoot.merkle_root == str(group.root),
+        )
+    )
+    if existing_result.scalar_one_or_none() is not None:
+        return True
+
+    root = ZkMerkleRoot(
+        vote_scope_id=vote_scope_id,
+        scope_type=vote_scope_id.split(":", 1)[0].upper(),
+        merkle_root=str(group.root),
+        merkle_depth=SEMAPHORE_MERKLE_TREE_DEPTH,
+        group_size=group.size,
+        commitment_version="semaphore-v4",
+        status="OPEN",
+    )
+    db.add(root)
+    await db.flush()
+    return True
+
+
 def _zk_vote_choice(vote_commitment: str) -> VoteChoice:
     try:
         return VoteChoice(vote_commitment.strip().upper())
@@ -783,8 +824,10 @@ async def opt_in_zk(req: ZkOptInRequest, db: AsyncSession = Depends(get_db)) -> 
         merkle_depth=SEMAPHORE_MERKLE_TREE_DEPTH,
     )
     db.add(commitment)
+    root_published = False
     try:
         await create_tier_lock(db, vote_scope_id=vote_scope_id, tier_guard_hash=tier_guard_hash)
+        root_published = await _publish_current_root_after_opt_in_if_enabled(db, vote_scope_id)
         await db.commit()
     except IntegrityError as exc:
         await db.rollback()
@@ -794,13 +837,16 @@ async def opt_in_zk(req: ZkOptInRequest, db: AsyncSession = Depends(get_db)) -> 
         ) from exc
 
     return ZkOptInResponse(
-        status="pending_root",
+        status="root_published" if root_published else "pending_root",
         vote_scope_id=vote_scope_id,
         commitment_id=commitment.id,
         tier_locked=True,
         merkle_tree_depth=SEMAPHORE_MERKLE_TREE_DEPTH,
         message_el=(
-            "Η δέσμευση Semaphore καταχωρήθηκε. Η κανονική διαδρομή ψήφου "
+            "Η δέσμευση Semaphore καταχωρήθηκε και δημοσιεύτηκε νέος ZK root. "
+            "Μπορείτε πλέον να συνεχίσετε με ανώνυμη ψήφο."
+            if root_published
+            else "Η δέσμευση Semaphore καταχωρήθηκε. Η κανονική διαδρομή ψήφου "
             "είναι πλέον κλειδωμένη για αυτό το αντικείμενο."
         ),
     )

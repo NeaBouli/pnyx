@@ -36,6 +36,10 @@ _BAD_TEXT_PATTERNS = [
     "Εμφανίζονται τα ψηφισθέντα",
 ]
 
+_BAD_TEXT_PREFIXES = [
+    "Αναζήτηση Τίτλος",
+]
+
 
 _DOCUMENT_BLOCK_HEADING = "### Πλήρη έγγραφα"
 _DOCUMENT_BLOCK_LINK_RE = re.compile(
@@ -75,6 +79,9 @@ def _merge_text_with_existing_document_block(text: str, existing_summary: str | 
 def _is_bad_parliament_text(text: str | None) -> bool:
     """Return True if text is Parliament navigation boilerplate, not real bill content."""
     if not text or len(text.strip()) < 200:
+        return True
+    stripped = text.strip()
+    if any(stripped.startswith(prefix) for prefix in _BAD_TEXT_PREFIXES):
         return True
     # Check for boilerplate markers
     matches = sum(1 for pat in _BAD_TEXT_PATTERNS if pat in text)
