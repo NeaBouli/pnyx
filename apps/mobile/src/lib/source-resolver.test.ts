@@ -4,7 +4,14 @@
  * Risk: Option-E regression (forum fallback was removed once)
  */
 import { describe, it, expect } from "vitest";
-import { officialDocumentLinks, resolveSource, isPdfUrl, sourceLabel, isOfficialDocumentBlockOnly } from "./source-resolver";
+import {
+  cleanOfficialText,
+  officialDocumentLinks,
+  resolveSource,
+  isPdfUrl,
+  sourceLabel,
+  isOfficialDocumentBlockOnly,
+} from "./source-resolver";
 
 describe("resolveSource — Golden Path", () => {
   it("official wins when both present", () => {
@@ -127,6 +134,36 @@ describe("isOfficialDocumentBlockOnly", () => {
 
   it("does not treat arbitrary PDF links as a parliament document block", () => {
     expect(isOfficialDocumentBlockOnly("[Έγγραφο](https://x.gr/a.pdf)")).toBe(false);
+  });
+});
+
+describe("cleanOfficialText", () => {
+  it("returns empty text for PDF-only document blocks", () => {
+    expect(cleanOfficialText(`
+### Πλήρη έγγραφα
+- [Έγγραφο Βουλής 1 (13338120.pdf)](https://www.hellenicparliament.gr/UserFiles/13338120.pdf)
+`)).toBe("");
+  });
+
+  it("removes the appended PDF document block but keeps official text", () => {
+    const value = `
+Το σχέδιο νόμου περιλαμβάνει επίσημο κείμενο για ενημέρωση των πολιτών.
+
+### Πλήρη έγγραφα
+- [Έγγραφο Βουλής 1 (13338120.pdf)](https://www.hellenicparliament.gr/UserFiles/13338120.pdf)
+- [Έγγραφο Βουλής 2 (13338121.pdf)](https://www.hellenicparliament.gr/UserFiles/13338121.pdf)
+`;
+
+    expect(cleanOfficialText(value)).toBe(
+      "Το σχέδιο νόμου περιλαμβάνει επίσημο κείμενο για ενημέρωση των πολιτών.",
+    );
+    expect(officialDocumentLinks(value)).toHaveLength(2);
+  });
+
+  it("hides old Parliament search-boilerplate text", () => {
+    expect(cleanOfficialText(
+      "Αναζήτηση Τίτλος Ενίσχυση της εφαρμογής της ισότητας της αμοιβής",
+    )).toBe("");
   });
 });
 

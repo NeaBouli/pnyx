@@ -38,34 +38,6 @@ function readableText(value?: string | null) {
   return Boolean(value && value.trim() && !value.includes("[unknown:"));
 }
 
-function cleanOfficialText(value?: string | null) {
-  if (!readableText(value) || isOfficialDocumentBlockOnly(value)) return "";
-  const cleaned = String(value)
-    .replace(/\[[^\]]*\]\(https?:\/\/[^)]*\)/g, "")
-    .replace(/^#{1,6}\s*/gm, "")
-    .replace(/^\s*-\s*/gm, "")
-    .replace(/\]\(/g, " ")
-    .replace(/(^|\s)>\s*/g, "$1")
-    .replace(/[*_`]+/g, "")
-    .replace(/https?:\/\/\S+/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  const badPatterns = [
-    "Μετάβαση στο κύριο περιεχόμενο",
-    "Ανοίξτε το μενού προσβασιμότητας",
-    "Νομοθετική Διαδικασία",
-    "Ημερ. Διάταξη Ολομέλειας",
-    "Εβδομαδιαίο Δελτίο",
-    "Εμφανίζονται τα σχέδια",
-    "Εμφανίζονται τα ψηφισθέντα",
-    "Κατατεθέντα Σ/Ν",
-  ];
-  if (badPatterns.some(p => cleaned.includes(p))) {
-    return "";
-  }
-  return cleaned.slice(0, 1400);
-}
-
 function votingStatusNotice(status: string, source: string) {
   if (status === "ANNOUNCED") {
     return {
@@ -93,7 +65,7 @@ function votingStatusNotice(status: string, source: string) {
   return null;
 }
 
-import { correctionBanner, officialDocumentLinks, resolveSource, isPdfUrl, sourceLabel, isOfficialDocumentBlockOnly } from "../lib/source-resolver";
+import { cleanOfficialText, correctionBanner, officialDocumentLinks, resolveSource, isPdfUrl, sourceLabel } from "../lib/source-resolver";
 
 export default function VoteScreen({ route, navigation }: Props) {
   const { billId, billTitle } = route.params;

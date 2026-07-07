@@ -44,6 +44,9 @@ export interface OfficialDocumentLink {
   url: string;
 }
 
+const DOCUMENT_BLOCK_HEADING = "Πλήρη έγγραφα";
+const PDF_MARKDOWN_LINE = /^-?\s*\[[^\]]+\]\(https?:\/\/[^)]+\.pdf[^)]*\)$/i;
+
 export function officialDocumentLinks(value?: string | null): OfficialDocumentLink[] {
   if (!value) return [];
   const links: OfficialDocumentLink[] = [];
@@ -73,11 +76,68 @@ export function isOfficialDocumentBlockOnly(value?: string | null): boolean {
   if (lines.length < 2) return false;
 
   const heading = lines[0].replace(/^#{1,6}\s*/, "").trim();
-  if (heading !== "Πλήρη έγγραφα") return false;
+  if (heading !== DOCUMENT_BLOCK_HEADING) return false;
 
-  return lines.slice(1).every((line) =>
-    /^-?\s*\[[^\]]+\]\(https?:\/\/[^)]+\.pdf[^)]*\)$/i.test(line),
-  );
+  return lines.slice(1).every((line) => PDF_MARKDOWN_LINE.test(line));
+}
+
+function stripOfficialDocumentBlock(value: string): string {
+  const output: string[] = [];
+  let skippingDocuments = false;
+
+  for (const rawLine of value.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    const heading = line.replace(/^#{1,6}\s*/, "").trim();
+
+    if (heading === DOCUMENT_BLOCK_HEADING) {
+      skippingDocuments = true;
+      continue;
+    }
+    if (skippingDocuments) {
+      if (!line || PDF_MARKDOWN_LINE.test(line)) {
+        continue;
+      }
+      skippingDocuments = false;
+    }
+    output.push(rawLine);
+  }
+
+  return output.join("\n");
+}
+
+export function cleanOfficialText(value?: string | null): string {
+  if (!value || !value.trim() || value.includes("[unknown:") || isOfficialDocumentBlockOnly(value)) {
+    return "";
+  }
+  const withoutDocumentBlock = stripOfficialDocumentBlock(String(value));
+  const cleaned = withoutDocumentBlock
+    .replace(/\[[^\]]*\]\(https?:\/\/[^)]*\)/g, "")
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/^\s*-\s*/gm, "")
+    .replace(/\]\(/g, " ")
+    .replace(/(^|\s)>\s*/g, "$1")
+    .replace(/[*_`]+/g, "")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const badPatterns = [
+    "Μετάβαση στο κύριο περιεχόμενο",
+    "Ανοίξτε το μενού προσβασιμότητας",
+    "Νομοθετική Διαδικασία",
+    "Ημερ. Διάταξη Ολομέλειας",
+    "Εβδομαδιαίο Δελτίο",
+    "Εμφανίζονται τα σχέδια",
+    "Εμφανίζονται τα ψηφισθέντα",
+    "Κατατεθέντα Σ/Ν",
+  ];
+  if (badPatterns.some((pattern) => cleaned.includes(pattern))) {
+    return "";
+  }
+  if (cleaned.startsWith("Αναζήτηση Τίτλος")) {
+    return "";
+  }
+  return cleaned.slice(0, 1400);
 }
 
 // ─── 24h Correction Banner ─────────────────────────────────────────────────
