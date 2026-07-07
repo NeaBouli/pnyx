@@ -661,6 +661,17 @@ def check_parliament_source_freshness(conn) -> list[Alert]:
             count = payload.get("count", 0)
             dated_count = payload.get("dated_count", 0)
             if source_status == "blocked":
+                db_latest = _db_latest_parliament_activity(conn)
+                if db_latest:
+                    db_age_h = (datetime.now(timezone.utc) - db_latest).total_seconds() / 3600
+                    if db_age_h <= PARLIAMENT_SOURCE_MAX_LAG_HOURS:
+                        logger.warning(
+                            "[PARLIAMENT_SOURCE] Upstream blocked, but DB is fresh "
+                            "(latest=%s, age=%.0fh) — suppressing alert",
+                            db_latest.strftime("%Y-%m-%d"),
+                            db_age_h,
+                        )
+                        return alerts
                 detail = ", ".join(str(error) for error in probe_errors[:4]) or "unknown"
                 alerts.append(Alert(
                     "parliament_source_blocked", "ekklesia-api", "warning",
