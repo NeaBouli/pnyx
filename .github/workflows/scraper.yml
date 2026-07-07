@@ -46,13 +46,19 @@ jobs:
             '{admin_key: $admin_key, bills: $bills[0][:20]}' \
             > /tmp/payload.json
 
-          RESP=$(curl -sS --max-time 30 \
+          RESP=$(curl -fsS --max-time 30 \
             -X POST "https://api.ekklesia.gr/api/v1/scraper/import" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.EKKLESIA_ADMIN_KEY }}" \
             --data-binary @/tmp/payload.json)
 
           echo "Response: $RESP"
+
+          success=$(echo "$RESP" | jq -r '.success // false')
+          if [ "$success" != "true" ]; then
+            echo "::error::Import endpoint did not return success=true"
+            exit 1
+          fi
 
           imported=$(echo "$RESP" | jq -r '.imported // 0')
           skipped=$(echo "$RESP" | jq -r '.skipped // 0')
