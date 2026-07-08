@@ -8,13 +8,13 @@ from fastapi import APIRouter
 router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
-LATEST_VERSION = "1.0.24"
-LATEST_VERSION_CODE = 53
+LATEST_VERSION = "1.0.25"
+LATEST_VERSION_CODE = 54
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v1.0.24 — Προστέθηκε ασφαλής εφεδρική ανάγνωση από καθρέφτη μόνο για δημόσια δεδομένα, χωρίς αλλαγή στη ροή ψήφου."
-RELEASE_NOTES_EN = "v1.0.24 — Added safe read-only mirror fallback for public data only, with no change to the voting flow."
+RELEASE_NOTES_EL = "v1.0.25 — Προστέθηκε ασφαλής λειτουργία μόνο ανάγνωσης από HTTPS mirror όταν ο κύριος server δεν είναι διαθέσιμος. Η ψήφος παραμένει κλειδωμένη στον κύριο server."
+RELEASE_NOTES_EN = "v1.0.25 — Added safe read-only mode from an HTTPS mirror when the primary server is unavailable. Voting remains locked to the primary server."
 
 FDROID_URL = ""  # Not live yet — MR !38007 pending
 PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=ekklesia.gr"
