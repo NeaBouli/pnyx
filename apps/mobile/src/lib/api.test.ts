@@ -1,8 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildBillsQuery,
+  fetchBills,
+  fetchVoteStatus,
   fetchZkRoot,
   fetchZkRootMembers,
+  submitVote,
   submitZkOptIn,
   submitZkVote,
   verifyZkProof,
@@ -192,5 +195,92 @@ describe("ZK API helpers", () => {
         vote_scope_id: "bill:ZK-CANARY-001",
       }),
     }));
+  });
+});
+
+describe("read-only mirror fallback", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("falls back to the mirror for public bill reads when primary is unavailable", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+      .mockRejectedValueOnce(new TypeError("Network request failed"))
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ([{
+          id: "GR-1",
+          title_el: "Τίτλος",
+          pill_el: "Σύντομο",
+          status: "ANNOUNCED",
+          submitted_at: "2026-07-08T00:00:00Z",
+          party_votes_parliament: null,
+          relevance_score: 0,
+        }]),
+      } as Response);
+
+    await expect(fetchBills({ limit: 1 })).resolves.toHaveLength(1);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "https://api.ekklesia.gr/api/v1/bills?limit=1",
+      expect.any(Object),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "https://1.ekklesia.gr/api/v1/bills?limit=1",
+      expect.any(Object),
+    );
+  });
+
+  it("falls back to the mirror for temporary primary server errors", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 503,
+        statusText: "Service Unavailable",
+        json: async () => ({ detail: "temporary" }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ([]),
+      } as Response);
+
+    await expect(fetchBills({ limit: 1 })).resolves.toEqual([]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[1][0]).toBe("https://1.ekklesia.gr/api/v1/bills?limit=1");
+  });
+
+  it("does not use the mirror for primary 404 responses", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: "Not Found",
+      json: async () => ({ detail: "not found" }),
+    } as Response);
+
+    await expect(fetchBills({ limit: 1 })).rejects.toThrow("not found");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api.ekklesia.gr/api/v1/bills?limit=1");
+  });
+
+  it("never falls back to the mirror for vote writes", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Network request failed"));
+
+    await expect(submitVote("nullifier", "GR-1", "YES", "signature")).rejects.toThrow("Network request failed");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api.ekklesia.gr/api/v1/vote");
+  });
+
+  it("does not mirror nullifier-bearing vote status reads", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Network request failed"));
+
+    await expect(fetchVoteStatus("nullifier", "GR-1")).rejects.toThrow("Network request failed");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toContain("https://api.ekklesia.gr/api/v1/vote/GR-1/status");
   });
 });

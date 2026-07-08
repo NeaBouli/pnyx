@@ -4,15 +4,36 @@
 import type { ZkServerStatus } from "./zkSemaphoreCore";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
+const API_MIRROR_BASE = process.env.EXPO_PUBLIC_API_MIRROR_URL || "https://1.ekklesia.gr";
+
+function shouldRetryOnMirror(res: Response): boolean {
+  return res.status >= 500 || res.status === 408 || res.status === 429;
+}
 
 async function request<T>(
   path: string,
-  options?: RequestInit
+  options?: RequestInit,
+  opts?: { mirrorFallback?: boolean },
 ): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const method = (options?.method || "GET").toUpperCase();
+  const init = {
     headers: { "Content-Type": "application/json", ...options?.headers },
     ...options,
-  });
+  };
+  const allowMirror = opts?.mirrorFallback === true && method === "GET";
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, init);
+  } catch (primaryError) {
+    if (!allowMirror) throw primaryError;
+    res = await fetch(`${API_MIRROR_BASE}${path}`, init);
+  }
+
+  if (!res.ok && allowMirror && shouldRetryOnMirror(res)) {
+    res = await fetch(`${API_MIRROR_BASE}${path}`, init);
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
     throw new Error(err.detail || `HTTP ${res.status}`);
@@ -115,11 +136,11 @@ export async function fetchBills(params?: {
   limit?: number;
   offset?: number;
 }): Promise<Bill[]> {
-  return request<Bill[]>(`/api/v1/bills?${buildBillsQuery(params)}`);
+  return request<Bill[]>(`/api/v1/bills?${buildBillsQuery(params)}`, undefined, { mirrorFallback: true });
 }
 
 export async function fetchBill(id: string): Promise<Bill> {
-  return request<Bill>(`/api/v1/bills/${id}`);
+  return request<Bill>(`/api/v1/bills/${id}`, undefined, { mirrorFallback: true });
 }
 
 // ─── ZK Semaphore ───────────────────────────────────────────────────────────
@@ -341,21 +362,21 @@ export interface BillResults {
 }
 
 export async function fetchResults(billId: string): Promise<BillResults> {
-  return request<BillResults>(`/api/v1/vote/${billId}/results`);
+  return request<BillResults>(`/api/v1/vote/${billId}/results`, undefined, { mirrorFallback: true });
 }
 
 // ─── Trending + Analytics + MP ──────────────────────────────────────────────
 
 export async function fetchTrending(limit = 10): Promise<Bill[]> {
-  return request<Bill[]>(`/api/v1/bills/trending?limit=${limit}`);
+  return request<Bill[]>(`/api/v1/bills/trending?limit=${limit}`, undefined, { mirrorFallback: true });
 }
 
 export async function fetchAnalyticsOverview(): Promise<any> {
-  return request<any>("/api/v1/analytics/overview");
+  return request<any>("/api/v1/analytics/overview", undefined, { mirrorFallback: true });
 }
 
 export async function fetchMPRanking(): Promise<any> {
-  return request<any>("/api/v1/mp/ranking");
+  return request<any>("/api/v1/mp/ranking", undefined, { mirrorFallback: true });
 }
 
 // ─── NEA-189: Politician Evaluation ────────────────────────────────────────
@@ -386,11 +407,15 @@ export interface EvalScores {
 }
 
 export async function fetchPoliticians(): Promise<Politician[]> {
-  return request<Politician[]>("/api/v1/politicians/");
+  return request<Politician[]>("/api/v1/politicians/", undefined, { mirrorFallback: true });
 }
 
 export async function fetchPoliticianQuestions(adaNumber: string): Promise<EvalQuestion[]> {
-  return request<EvalQuestion[]>(`/api/v1/politicians/${encodeURIComponent(adaNumber)}/questions`);
+  return request<EvalQuestion[]>(
+    `/api/v1/politicians/${encodeURIComponent(adaNumber)}/questions`,
+    undefined,
+    { mirrorFallback: true },
+  );
 }
 
 export async function submitEvaluation(
@@ -406,7 +431,11 @@ export async function submitEvaluation(
 }
 
 export async function fetchPoliticianScores(adaNumber: string): Promise<EvalScores> {
-  return request<EvalScores>(`/api/v1/politicians/${encodeURIComponent(adaNumber)}/scores`);
+  return request<EvalScores>(
+    `/api/v1/politicians/${encodeURIComponent(adaNumber)}/scores`,
+    undefined,
+    { mirrorFallback: true },
+  );
 }
 
 export interface MyEvaluation {
@@ -443,7 +472,7 @@ export interface PolisTicket {
 
 export async function fetchPolisTickets(category?: string): Promise<{ tickets: PolisTicket[]; total: number }> {
   const params = category ? `?category=${category}` : "";
-  return request(`/api/v1/polis/tickets${params}`);
+  return request(`/api/v1/polis/tickets${params}`, undefined, { mirrorFallback: true });
 }
 
 export async function registerPolisKey(payload: {
