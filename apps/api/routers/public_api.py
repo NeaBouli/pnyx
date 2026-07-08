@@ -42,7 +42,7 @@ _redis_client: Optional[aioredis.Redis] = None
 REDIS_KEY_HASH = "public_api:keys"
 MIRROR_SANDBOX_URL = os.getenv(
     "MIRROR_SANDBOX_URL",
-    "http://mirror.204.168.165.143.nip.io",
+    "https://mirror.204.168.165.143.nip.io",
 ).rstrip("/")
 MIRROR_STATUS_CACHE_SECONDS = 20
 _mirror_status_cache: dict[str, object] | None = None

@@ -2,6 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildBillsQuery,
   fetchBills,
+  getApiTransportState,
+  resetApiTransportStateForTests,
+  subscribeApiTransport,
   fetchVoteStatus,
   fetchZkRoot,
   fetchZkRootMembers,
@@ -62,6 +65,7 @@ describe("buildBillsQuery", () => {
 describe("ZK API helpers", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    resetApiTransportStateForTests();
   });
 
   it("submits the backend ZK opt-in payload shape", async () => {
@@ -228,9 +232,13 @@ describe("read-only mirror fallback", () => {
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      "https://1.ekklesia.gr/api/v1/bills?limit=1",
+      "https://mirror.204.168.165.143.nip.io/api/v1/bills?limit=1",
       expect.any(Object),
     );
+    expect(getApiTransportState()).toEqual({
+      mode: "mirror_readonly",
+      mirrorUrl: "https://mirror.204.168.165.143.nip.io",
+    });
   });
 
   it("falls back to the mirror for temporary primary server errors", async () => {
@@ -249,7 +257,31 @@ describe("read-only mirror fallback", () => {
     await expect(fetchBills({ limit: 1 })).resolves.toEqual([]);
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock.mock.calls[1][0]).toBe("https://1.ekklesia.gr/api/v1/bills?limit=1");
+    expect(fetchMock.mock.calls[1][0]).toBe("https://mirror.204.168.165.143.nip.io/api/v1/bills?limit=1");
+    expect(getApiTransportState().mode).toBe("mirror_readonly");
+  });
+
+  it("notifies subscribers when public reads switch to mirror read-only mode and back", async () => {
+    const states: string[] = [];
+    const unsubscribe = subscribeApiTransport((state) => states.push(state.mode));
+    const fetchMock = vi.spyOn(globalThis, "fetch")
+      .mockRejectedValueOnce(new TypeError("Network request failed"))
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ([]),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ([]),
+      } as Response);
+
+    await fetchBills({ limit: 1 });
+    await fetchBills({ limit: 1 });
+    unsubscribe();
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(states).toContain("mirror_readonly");
+    expect(states.at(-1)).toBe("primary");
   });
 
   it("does not use the mirror for primary 404 responses", async () => {

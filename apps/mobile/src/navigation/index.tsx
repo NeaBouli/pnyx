@@ -6,6 +6,7 @@ import { Text, ActivityIndicator, View } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { colors } from "../theme";
 import { ChannelNotice } from "../components/ChannelNotice";
+import { MirrorReadOnlyBanner } from "../components/MirrorReadOnlyBanner";
 import { UpdateBanner } from "../components/UpdateBanner";
 
 import OnboardingScreen from "../screens/OnboardingScreen";
@@ -119,6 +120,7 @@ export default function Navigation() {
     <NavigationContainer linking={linking}>
       <ChannelNotice />
       <UpdateBanner />
+      <MirrorReadOnlyBanner />
       <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={onboarded ? "Tabs" : "Onboarding"}>
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         <Stack.Screen name="Tabs" component={TabNavigator} />

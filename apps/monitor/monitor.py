@@ -71,6 +71,7 @@ CHECK_INTERVAL = int(os.getenv("MONITOR_INTERVAL_SECONDS", "1800"))
 STARTUP_GRACE_SECONDS = max(0, int(os.getenv("MONITOR_STARTUP_GRACE_SECONDS", "90")))
 REPAIR_VERIFY_WAIT_SECONDS = max(0, int(os.getenv("MONITOR_REPAIR_VERIFY_WAIT_SECONDS", "30")))
 API_URL = os.getenv("API_URL", "http://api:8000")
+MIRROR_READONLY_URL = os.getenv("MIRROR_READONLY_URL", "https://mirror.204.168.165.143.nip.io")
 ADMIN_KEY = os.getenv("ADMIN_KEY", "")
 AUTO_RECOVERY_T2 = os.getenv("AUTO_RECOVERY_T2", "false").lower() == "true"
 PARLIAMENT_SOURCE_FRESHNESS_ENABLED = os.getenv("PARLIAMENT_SOURCE_FRESHNESS_ENABLED", "true").lower() == "true"
@@ -865,11 +866,25 @@ def check_api_health() -> list[Alert]:
         resp = httpx.get(f"{API_URL}/api/v1/bills?limit=1", timeout=10)
         if resp.status_code != 200:
             alerts.append(Alert("api_unhealthy", "ekklesia-api", "critical",
-                                f"API Health-Check FAIL: HTTP {resp.status_code}", True))
+                                f"API Health-Check FAIL: HTTP {resp.status_code}; {_mirror_readonly_status_note()}", True))
     except Exception as e:
         alerts.append(Alert("api_unhealthy", "ekklesia-api", "critical",
-                            f"API nicht erreichbar: {e}", True))
+                            f"API nicht erreichbar: {e}; {_mirror_readonly_status_note()}", True))
     return alerts
+
+
+def _mirror_readonly_status_note() -> str:
+    """Operator-facing note for primary outage alerts; never a write failover."""
+    if not MIRROR_READONLY_URL:
+        return "Mirror read-only nicht konfiguriert"
+    try:
+        status = httpx.get(f"{MIRROR_READONLY_URL}/mirror-status.json", timeout=6)
+        api = httpx.get(f"{MIRROR_READONLY_URL}/api/v1/bills?limit=1", timeout=6)
+        if status.status_code == 200 and api.status_code == 200:
+            return "Mirror serving read-only"
+        return f"Mirror read-only degraded (status={status.status_code}, api={api.status_code})"
+    except Exception as exc:
+        return f"Mirror read-only nicht erreichbar: {exc}"
 
 
 def check_disk_usage() -> list[Alert]:

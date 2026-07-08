@@ -4,7 +4,43 @@
 import type { ZkServerStatus } from "./zkSemaphoreCore";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
-const API_MIRROR_BASE = process.env.EXPO_PUBLIC_API_MIRROR_URL || "https://1.ekklesia.gr";
+const API_MIRROR_BASE = process.env.EXPO_PUBLIC_API_MIRROR_URL || "https://mirror.204.168.165.143.nip.io";
+
+export type ApiTransportMode = "primary" | "mirror_readonly";
+
+export interface ApiTransportState {
+  mode: ApiTransportMode;
+  mirrorUrl: string | null;
+}
+
+type ApiTransportListener = (state: ApiTransportState) => void;
+
+let apiTransportState: ApiTransportState = { mode: "primary", mirrorUrl: null };
+const apiTransportListeners = new Set<ApiTransportListener>();
+
+function setApiTransportState(next: ApiTransportState): void {
+  if (apiTransportState.mode === next.mode && apiTransportState.mirrorUrl === next.mirrorUrl) {
+    return;
+  }
+  apiTransportState = next;
+  apiTransportListeners.forEach((listener) => listener(apiTransportState));
+}
+
+export function getApiTransportState(): ApiTransportState {
+  return apiTransportState;
+}
+
+export function subscribeApiTransport(listener: ApiTransportListener): () => void {
+  apiTransportListeners.add(listener);
+  listener(apiTransportState);
+  return () => {
+    apiTransportListeners.delete(listener);
+  };
+}
+
+export function resetApiTransportStateForTests(): void {
+  setApiTransportState({ mode: "primary", mirrorUrl: null });
+}
 
 function shouldRetryOnMirror(res: Response): boolean {
   return res.status >= 500 || res.status === 408 || res.status === 429;
@@ -25,13 +61,22 @@ async function request<T>(
   let res: Response;
   try {
     res = await fetch(`${API_BASE}${path}`, init);
+    if (res.ok) {
+      setApiTransportState({ mode: "primary", mirrorUrl: null });
+    }
   } catch (primaryError) {
     if (!allowMirror) throw primaryError;
     res = await fetch(`${API_MIRROR_BASE}${path}`, init);
+    if (res.ok) {
+      setApiTransportState({ mode: "mirror_readonly", mirrorUrl: API_MIRROR_BASE });
+    }
   }
 
   if (!res.ok && allowMirror && shouldRetryOnMirror(res)) {
     res = await fetch(`${API_MIRROR_BASE}${path}`, init);
+    if (res.ok) {
+      setApiTransportState({ mode: "mirror_readonly", mirrorUrl: API_MIRROR_BASE });
+    }
   }
 
   if (!res.ok) {
