@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.23 |
-| versionCode | 52 |
+| Version | 1.0.24 |
+| versionCode | 53 |
 | Package | ekklesia.gr |
-| APK SHA256 | `9bac08017222181281c4942ec8cb2f4e44bd8bbd05bed2d7fb82c3d01e6c25dc` |
-| AAB SHA256 | `6bdcf2516385aac90dd4c08f151d6d4e4ce7b125b3fe0bc32730090249498a67` |
+| APK SHA256 | `1847b64a8a5e40a739d83d2e98a87541edf12ae15ea0819e271e797de0678f2d` |
+| AAB SHA256 | `757dc15509578f117cb00585cd7b1e2057b9afb83cd177b2c9e2761f1ccf9695` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
-| Build date | 2026-07-02 |
+| Build date | 2026-07-08 |
 | Release gate | PASS — API version tests, mobile TypeScript, mobile Vitest, web build, local Play AAB build, local Direct APK build, APK badging/signature audit, Direct/Play channel audit |
-| Includes | vC52 release metadata, no duplicate Parliament PDF document blocks, clearer Parliament source/document display, guarded Parliament Semaphore ZK rollout live, ZK Arweave auto-publication for eligible public Parliament scopes with minimum group size 5, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, native Semaphore prover, deep-link fallback, pagination, source/full-text policy, permission hardening |
+| Includes | vC53 release metadata, safe read-only mirror fallback guard for public data, no duplicate Parliament PDF document blocks, clearer Parliament source/document display, guarded Parliament Semaphore ZK rollout live, ZK Arweave auto-publication for eligible public Parliament scopes with minimum group size 5, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, native Semaphore prover, deep-link fallback, pagination, source/full-text policy, permission hardening |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: 9bac08017222181281c4942ec8cb2f4e44bd8bbd05bed2d7fb82c3d01e6c25dc
+# Expected: 1847b64a8a5e40a739d83d2e98a87541edf12ae15ea0819e271e797de0678f2d
 ```

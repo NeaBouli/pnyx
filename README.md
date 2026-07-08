@@ -179,9 +179,9 @@ cd apps/web && npm run build
 
 | Channel | Status | Link |
 |---|---|---|
-| Direct APK | Live v1.0.23 / vC52 | [ekklesia.gr](https://ekklesia.gr) |
-| Google Play | v1.0.23 / vC52 ready | Closed testing |
-| GitHub Release | Latest v1.0.23 / vC52 | [v1.0.23](https://github.com/NeaBouli/pnyx/releases/tag/v1.0.23) |
+| Direct APK | Live v1.0.24 / vC53 | [ekklesia.gr](https://ekklesia.gr) |
+| Google Play | v1.0.24 / vC53 ready | Closed testing |
+| GitHub Release | Latest v1.0.24 / vC53 | [v1.0.24](https://github.com/NeaBouli/pnyx/releases/tag/v1.0.24) |
 | F-Droid | MR pending review | [MR !38007](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007) |
 
 ---
