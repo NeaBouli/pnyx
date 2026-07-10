@@ -40,10 +40,11 @@ import redis.asyncio as aioredis
 
 _redis_client: Optional[aioredis.Redis] = None
 REDIS_KEY_HASH = "public_api:keys"
-MIRROR_SANDBOX_URL = os.getenv(
-    "MIRROR_SANDBOX_URL",
-    "https://mirror.204.168.165.143.nip.io",
-).rstrip("/")
+DEFAULT_MIRROR_TARGETS = [
+    ("sandbox-1", "1.ekklesia.gr", "https://1.ekklesia.gr"),
+    ("sandbox-2", "2.ekklesia.gr", "https://2.ekklesia.gr"),
+    ("sandbox-3", "3.ekklesia.gr", "https://3.ekklesia.gr"),
+]
 MIRROR_STATUS_CACHE_SECONDS = 20
 _mirror_status_cache: dict[str, object] | None = None
 _mirror_status_cache_until = 0.0
@@ -75,9 +76,61 @@ def _classify_mirror_status(checks: dict[str, bool]) -> str:
     return "degraded"
 
 
+def _mirror_targets() -> list[tuple[str, str, str]]:
+    """Return configured public read-only mirrors as id, label, base-url triples."""
+    configured = os.getenv("MIRROR_READONLY_URLS")
+    if configured:
+        targets: list[tuple[str, str, str]] = []
+        for index, raw_url in enumerate(configured.split(","), start=1):
+            url = raw_url.strip().rstrip("/")
+            if not url:
+                continue
+            host = url.split("://", 1)[-1].split("/", 1)[0]
+            targets.append((f"sandbox-{index}", host, url))
+        if targets:
+            return targets
+
+    legacy_url = os.getenv("MIRROR_SANDBOX_URL")
+    if legacy_url:
+        url = legacy_url.rstrip("/")
+        host = url.split("://", 1)[-1].split("/", 1)[0]
+        return [("sandbox-1", "1.ekklesia.gr", url if host == "1.ekklesia.gr" else url)]
+
+    return DEFAULT_MIRROR_TARGETS
+
+
 async def _mirror_get_ok(client: httpx.AsyncClient, url: str) -> bool:
     response = await client.get(url)
     return response.status_code == 200
+
+
+async def _check_mirror_target(
+    client: httpx.AsyncClient,
+    mirror_id: str,
+    name: str,
+    base_url: str,
+) -> dict[str, object]:
+    checks = {"health": False, "status": False, "api": False}
+    latency_ms: int | None = None
+    started = time.monotonic()
+    try:
+        checks["health"] = await _mirror_get_ok(client, f"{base_url}/health")
+        if checks["health"]:
+            checks["status"] = await _mirror_get_ok(client, f"{base_url}/mirror-status.json")
+            checks["api"] = await _mirror_get_ok(client, f"{base_url}/api/v1/bills?limit=1")
+        latency_ms = int((time.monotonic() - started) * 1000)
+    except httpx.HTTPError:
+        latency_ms = int((time.monotonic() - started) * 1000)
+
+    return {
+        "id": mirror_id,
+        "name": name,
+        "url": base_url,
+        "role": "sandbox-read-only-mirror",
+        "status": _classify_mirror_status(checks),
+        "latency_ms": latency_ms,
+        "checks": checks,
+    }
 
 
 async def _build_mirror_status() -> dict[str, object]:
@@ -88,35 +141,18 @@ async def _build_mirror_status() -> dict[str, object]:
         return _mirror_status_cache
 
     checked_at = datetime.now(timezone.utc)
-    checks = {"health": False, "status": False, "api": False}
-    latency_ms: int | None = None
-
-    started = time.monotonic()
+    mirrors: list[dict[str, object]] = []
     try:
         async with httpx.AsyncClient(timeout=3.0, follow_redirects=True) as client:
-            checks["health"] = await _mirror_get_ok(client, f"{MIRROR_SANDBOX_URL}/health")
-            if checks["health"]:
-                checks["status"] = await _mirror_get_ok(client, f"{MIRROR_SANDBOX_URL}/mirror-status.json")
-                checks["api"] = await _mirror_get_ok(client, f"{MIRROR_SANDBOX_URL}/api/v1/bills?limit=1")
-            latency_ms = int((time.monotonic() - started) * 1000)
-    except httpx.HTTPError:
-        latency_ms = int((time.monotonic() - started) * 1000)
+            for mirror_id, name, base_url in _mirror_targets():
+                mirrors.append(await _check_mirror_target(client, mirror_id, name, base_url))
+    except httpx.HTTPError as exc:
+        logger.warning("mirror status check failed before target loop completed: %s", exc)
 
-    status = _classify_mirror_status(checks)
     payload: dict[str, object] = {
         "updated_at": checked_at.isoformat(),
         "cache_seconds": MIRROR_STATUS_CACHE_SECONDS,
-        "mirrors": [
-            {
-                "id": "sandbox-1",
-                "name": "1.ekklesia.gr",
-                "url": MIRROR_SANDBOX_URL,
-                "role": "sandbox-read-only-mirror",
-                "status": status,
-                "latency_ms": latency_ms,
-                "checks": checks,
-            }
-        ],
+        "mirrors": mirrors,
     }
     _mirror_status_cache = payload
     _mirror_status_cache_until = now + MIRROR_STATUS_CACHE_SECONDS

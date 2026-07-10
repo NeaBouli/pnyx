@@ -71,7 +71,7 @@ CHECK_INTERVAL = int(os.getenv("MONITOR_INTERVAL_SECONDS", "1800"))
 STARTUP_GRACE_SECONDS = max(0, int(os.getenv("MONITOR_STARTUP_GRACE_SECONDS", "90")))
 REPAIR_VERIFY_WAIT_SECONDS = max(0, int(os.getenv("MONITOR_REPAIR_VERIFY_WAIT_SECONDS", "30")))
 API_URL = os.getenv("API_URL", "http://api:8000")
-MIRROR_READONLY_URL = os.getenv("MIRROR_READONLY_URL", "https://mirror.204.168.165.143.nip.io")
+MIRROR_READONLY_URL = os.getenv("MIRROR_READONLY_URL", "https://1.ekklesia.gr")
 ADMIN_KEY = os.getenv("ADMIN_KEY", "")
 AUTO_RECOVERY_T2 = os.getenv("AUTO_RECOVERY_T2", "false").lower() == "true"
 PARLIAMENT_SOURCE_FRESHNESS_ENABLED = os.getenv("PARLIAMENT_SOURCE_FRESHNESS_ENABLED", "true").lower() == "true"
