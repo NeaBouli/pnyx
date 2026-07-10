@@ -25,6 +25,7 @@ import httpx
 from database import get_db
 from ip_utils import rate_limit_key_for_ip, redis_fixed_window_limit
 from services.bill_visibility import is_public_bill, public_bill_filter, public_bill_with_demo_filter
+from services.zk_vote_aggregation import aggregate_bill_vote_totals
 from models import (
     ParliamentBill, CitizenVote, Party,
     BillStatus, VoteChoice
@@ -311,10 +312,12 @@ async def public_bill_results(
     if not bill or not is_public_bill(bill):
         raise HTTPException(404, f"Bill {bill_id} nicht gefunden")
 
-    yes     = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.YES)) or 0
-    no      = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.NO)) or 0
-    abstain = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.ABSTAIN)) or 0
-    total = yes + no + abstain
+    totals = await aggregate_bill_vote_totals(db, bill_id)
+    yes = totals.yes
+    no = totals.no
+    abstain = totals.abstain
+    unknown = totals.unknown
+    total = totals.total
 
     def pct(n): return round(n / total * 100, 1) if total > 0 else 0.0
 
@@ -327,8 +330,18 @@ async def public_bill_results(
 
     return {
         "bill_id": bill_id, "title_el": bill.title_el, "status": bill.status.value,
-        "citizen_votes": {"yes": yes, "no": no, "abstain": abstain, "total": total,
-                          "yes_pct": pct(yes), "no_pct": pct(no), "abstain_pct": pct(abstain)},
+        "citizen_votes": {
+            "yes": yes,
+            "no": no,
+            "abstain": abstain,
+            "unknown": unknown,
+            "total": total,
+            "tier1_total": totals.tier1_total,
+            "zk_total": totals.zk_total,
+            "yes_pct": pct(yes),
+            "no_pct": pct(no),
+            "abstain_pct": pct(abstain),
+        },
         "parliament_votes": bill.party_votes_parliament,
         "divergence_score": divergence,
         "arweave_tx": bill.arweave_tx_id,
