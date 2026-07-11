@@ -22,7 +22,9 @@ import hashlib
 import json
 import logging
 import os
+from decimal import Decimal, InvalidOperation
 from datetime import datetime, timezone
+from urllib.parse import parse_qs
 from fastapi import APIRouter, Depends, Request, HTTPException
 import httpx
 import redis.asyncio as aioredis
@@ -55,6 +57,19 @@ R_SERVER_RECEIVED = "donations:server:received"  # float
 R_DOMAIN_RECEIVED = "donations:domain:received"  # float
 R_RESERVE = "donations:reserve"       # float
 R_STRIPE_SESSION_PREFIX = "donations:stripe:session:"
+
+ALLOWED_PAYMENT_PURPOSES = {"infrastructure_support", "developer_support", "hlr_credits"}
+MIN_PAYMENT_CENTS = 100
+MAX_PAYMENT_CENTS = 1_000_000
+
+
+def _payment_intake_enabled() -> bool:
+    return os.getenv("PAYMENTS_INTAKE_GATE", "") == "legal_recipient_confirmed"
+
+
+def _payment_purpose(value: str) -> str | None:
+    normalized = value.strip().lower()
+    return normalized if normalized in ALLOWED_PAYMENT_PURPOSES else None
 
 
 def _public_payment_record(record: dict | None) -> dict | None:
@@ -157,6 +172,8 @@ async def stripe_webhook(request: Request):
     sig_header = request.headers.get("stripe-signature", "")
     webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
+    if not _payment_intake_enabled():
+        raise HTTPException(status_code=503, detail="Payment intake is awaiting legal recipient approval")
     if not webhook_secret:
         logger.error("[MOD-18] Stripe webhook disabled: STRIPE_WEBHOOK_SECRET missing")
         raise HTTPException(status_code=503, detail="Stripe webhook is not configured")
@@ -182,13 +199,23 @@ async def stripe_webhook(request: Request):
     session = event.get("data", {}).get("object", {})
     if session.get("payment_status") != "paid":
         return {"received": True, "processed": False}
+    if session.get("mode") != "payment" or str(session.get("currency", "")).lower() != "eur":
+        raise HTTPException(status_code=400, detail="Invalid Stripe payment mode or currency")
+
+    purpose = _payment_purpose((session.get("metadata") or {}).get("payment_purpose", ""))
+    if not purpose:
+        raise HTTPException(status_code=400, detail="Missing or invalid payment purpose")
 
     session_id = session.get("id", "")
     if not isinstance(session_id, str) or not session_id.startswith("cs_"):
         raise HTTPException(status_code=400, detail="Invalid Stripe Checkout Session")
 
-    amount_total = session.get("amount_total", 0) / 100  # Cents → EUR
-    customer_email = (session.get("customer_details") or {}).get("email", "anonym")
+    amount_cents = session.get("amount_total")
+    if not isinstance(amount_cents, int) or not MIN_PAYMENT_CENTS <= amount_cents <= MAX_PAYMENT_CENTS:
+        raise HTTPException(status_code=400, detail="Invalid Stripe payment amount")
+    amount_total = amount_cents / 100  # Cents → EUR
+    customer_email = (session.get("customer_details") or {}).get("email", "")
+    customer_hash = hashlib.sha256(customer_email.encode()).hexdigest()[:12] if customer_email else "anonym"
 
     if amount_total <= 0:
         return {"received": True, "processed": False}
@@ -201,20 +228,28 @@ async def stripe_webhook(request: Request):
     if not claimed:
         return {"received": True, "processed": False, "duplicate": True}
 
+    allocation_applied = False
     try:
         allocation = await allocate_donation(amount_total, r)
+        allocation_applied = True
         record = {
             "date": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
             "amount": amount_total,
             "allocation": allocation,
-            "from": customer_email,
+            "from": customer_hash,
             "method": "stripe",
             "stripe_session": session_id,
+            "currency": "EUR",
+            "purpose": purpose,
+            "requires_accounting_review": True,
         }
         await r.rpush(R_PAYMENTS, json.dumps(record))
         await r.set(idempotency_key, "processed")
     except Exception:
-        await r.delete(idempotency_key)
+        if allocation_applied:
+            await r.set(idempotency_key, "accounting_review_required")
+        else:
+            await r.delete(idempotency_key)
         raise
 
     logger.info(f"[MOD-18] Donation {amount_total}€ allocated: {allocation}")
@@ -311,12 +346,17 @@ async def paypal_ipn_webhook(request: Request):
     """
     PayPal IPN Webhook.
     1. Verify IPN mit PayPal Server
-    2. Wenn VERIFIED + Completed: Spende verbuchen
-    3. HLR Credits automatisch aufladen (15€ = 2500 Credits)
-    4. Idempotency: txn_id nur einmal verarbeiten
+    2. Empfaenger, EUR, Betrag und expliziten Zahlungszweck pruefen
+    3. Support versus HLR-Kauf fuer Accounting-Review trennen
+    4. Idempotency: txn_id atomar nur einmal verarbeiten
     """
     payload = await request.body()
-    form = dict(x.split("=", 1) for x in payload.decode().split("&") if "=" in x)
+    if not _payment_intake_enabled():
+        raise HTTPException(status_code=503, detail="Payment intake is awaiting legal recipient approval")
+    try:
+        form = {key: values[-1] for key, values in parse_qs(payload.decode("utf-8"), keep_blank_values=True).items()}
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid PayPal IPN encoding")
 
     # Parse IPN fields
     payment_status = form.get("payment_status", "")
@@ -325,6 +365,9 @@ async def paypal_ipn_webhook(request: Request):
     mc_currency = form.get("mc_currency", "EUR")
     item_name = form.get("item_name", "")
     payer_email = form.get("payer_email", "")
+    receiver_email = form.get("receiver_email", "").strip().lower()
+    receiver_id = form.get("receiver_id", "").strip()
+    purpose = _payment_purpose(form.get("custom", ""))
 
     logger.info("[PayPal] IPN received: txn=%s status=%s amount=%s %s",
                 txn_id, payment_status, mc_gross, mc_currency)
@@ -336,6 +379,17 @@ async def paypal_ipn_webhook(request: Request):
     if not txn_id:
         return {"received": True, "processed": False, "reason": "no_txn_id"}
 
+    expected_receiver_email = os.getenv("PAYPAL_RECEIVER_EMAIL", "").strip().lower()
+    expected_receiver_id = os.getenv("PAYPAL_MERCHANT_ID", "").strip()
+    if not expected_receiver_email and not expected_receiver_id:
+        raise HTTPException(status_code=503, detail="PayPal merchant binding is not configured")
+    if (expected_receiver_email and receiver_email != expected_receiver_email) or (
+        expected_receiver_id and receiver_id != expected_receiver_id
+    ):
+        raise HTTPException(status_code=400, detail="PayPal receiver mismatch")
+    if mc_currency.upper() != "EUR" or not purpose:
+        raise HTTPException(status_code=400, detail="Invalid PayPal currency or payment purpose")
+
     # Verify with PayPal
     verified = await _verify_paypal_ipn(payload)
     if not verified:
@@ -344,64 +398,62 @@ async def paypal_ipn_webhook(request: Request):
 
     r = await _get_redis()
 
-    # Idempotency: check if txn already processed
+    # Idempotency: atomically claim before any accounting mutation.
     txn_key = f"{R_PAYPAL_TXN}{txn_id}"
-    already = await r.exists(txn_key)
-    if already:
+    claimed = await r.set(txn_key, "processing", nx=True, ex=900)
+    if not claimed:
         logger.info("[PayPal] Duplicate IPN for txn=%s — skipping", txn_id)
         return {"received": True, "processed": False, "reason": "duplicate"}
 
     # Parse amount
     try:
-        amount = float(mc_gross)
-    except ValueError:
-        amount = 0.0
+        amount_decimal = Decimal(mc_gross).quantize(Decimal("0.01"))
+    except (InvalidOperation, ValueError):
+        amount_decimal = Decimal("0")
 
-    if amount <= 0:
+    amount_cents = int(amount_decimal * 100)
+    if not MIN_PAYMENT_CENTS <= amount_cents <= MAX_PAYMENT_CENTS:
+        await r.delete(txn_key)
         return {"received": True, "processed": False, "reason": "zero_amount"}
+    amount = float(amount_decimal)
 
-    # Mark txn as processed (90 days TTL)
-    await r.setex(txn_key, 86400 * 90, "processed")
+    accounting_mutated = False
+    try:
+        await r.incrbyfloat(R_PAYPAL_DONATIONS, amount)
+        accounting_mutated = True
+        await r.incr(R_PAYPAL_COUNT)
+        await _init_seed_payments(r)
+        allocation = await allocate_donation(amount, r)
 
-    # Track PayPal donations
-    await r.incrbyfloat(R_PAYPAL_DONATIONS, amount)
-    await r.incr(R_PAYPAL_COUNT)
+        # HLR credits are a purchase with consideration, never inferred from amount.
+        hlr_credits_pending = HLR_CREDITS_PER_15EUR if purpose == "hlr_credits" and amount_cents == 1500 else 0
 
-    # Allocate donation (same as Stripe)
-    await _init_seed_payments(r)
-    allocation = await allocate_donation(amount, r)
-
-    # HLR Credits auto-reload if amount >= 15€
-    hlr_credits_added = 0
-    if amount >= 14.99:
-        hlr_credits_added = HLR_CREDITS_PER_15EUR
-        # Note: actual credit reload requires hlrlookup.com API purchase
-        # For now, log the intent — manual reload needed
-        await r.setex("hlr:paypal:pending_reload", 86400 * 7, json.dumps({
+        # Log payment without storing the payer email.
+        payer_hash = hashlib.sha256(payer_email.encode()).hexdigest()[:12] if payer_email else "anonym"
+        record = {
+            "date": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
             "amount": amount,
-            "credits": hlr_credits_added,
+            "currency": "EUR",
+            "allocation": allocation,
+            "from": payer_hash,
+            "method": "paypal",
             "txn_id": txn_id,
-            "date": datetime.now(timezone.utc).isoformat(),
-        }))
-        logger.info("[PayPal] HLR reload pending: %d credits from %.2f EUR", hlr_credits_added, amount)
+            "item_name": item_name,
+            "purpose": purpose,
+            "hlr_credits_pending": hlr_credits_pending,
+            "requires_accounting_review": True,
+        }
+        await r.rpush(R_PAYMENTS, json.dumps(record))
+        await r.setex(txn_key, 86400 * 90, "processed")
+    except Exception:
+        if accounting_mutated:
+            await r.setex(txn_key, 86400 * 90, "accounting_review_required")
+        else:
+            await r.delete(txn_key)
+        raise
 
-    # Log payment
-    payer_hash = hashlib.sha256(payer_email.encode()).hexdigest()[:12] if payer_email else "anonym"
-    record = {
-        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
-        "amount": amount,
-        "currency": mc_currency,
-        "allocation": allocation,
-        "from": payer_hash,
-        "method": "paypal",
-        "txn_id": txn_id,
-        "item_name": item_name,
-        "hlr_credits_added": hlr_credits_added,
-    }
-    await r.rpush(R_PAYMENTS, json.dumps(record))
-
-    logger.info("[PayPal] Donation %.2f %s allocated: %s (HLR: +%d)",
-                amount, mc_currency, allocation, hlr_credits_added)
+    logger.info("[PayPal] Payment %.2f %s allocated: %s (HLR pending: %d)",
+                amount, mc_currency, allocation, hlr_credits_pending)
 
     return {"received": True, "processed": True, "allocation": allocation}
 
