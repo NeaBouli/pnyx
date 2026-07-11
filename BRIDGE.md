@@ -1,5 +1,11 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-07-11 — Payment PR Merged (Codex)
+
+- Payment/funding PR #128 was squash-merged to `main` as `34881c7`.
+- Codex remains owner of Stripe, PayPal, crypto-accounting boundaries and private VLABS Etimologio handoff; the Core-Dev owns non-payment product work.
+- Public contribution links remain paused. No deployment, payment, invoice, provider or AADE request occurred. Legal recipient and tax/document classification remain Gio/Accountant gates.
+
 ## 2026-07-11 — Payment/Etimologio Ownership and Safety (Codex)
 
 - Codex owns Stripe, PayPal, crypto-payment accounting boundaries and the
