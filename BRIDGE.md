@@ -1,5 +1,11 @@
 # Pnyx / ekklesia.gr Bridge
 
+## Public Payment Data Boundary
+
+- This repository is public. Operational payment, donation-classification and Etimologio information is stored only in private `NeaBouli/vlabs` at `docs/finance-integrations/projects/ekklesia.md`.
+- Never publish legal-recipient identity, tax/personal identifiers, wallet ownership, secrets, provider/account IDs, donor/customer/invoice data, MARK/UID values or runtime values here.
+- Public Bridge entries are limited to the private reference, ownership, generic status and production-disabled/paused state.
+
 ## 2026-07-11 — Payment PR Merged (Codex)
 
 - Payment/funding PR #128 was squash-merged to `main` as `34881c7`.
