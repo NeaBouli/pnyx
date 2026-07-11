@@ -51,6 +51,8 @@ def test_forum_missing_query_excludes_hidden_canary_bills():
     sql = cursor.statements[0]
     assert "COALESCE(admin_hidden, FALSE) = FALSE" in sql
     assert "(source IS NULL OR source != 'ZK_CANARY')" in sql
+    assert "source = 'DIAVGEIA'" in sql
+    assert "%ασθεν%" in sql
 
 
 def test_forum_completeness_query_excludes_hidden_canary_bills():
@@ -61,6 +63,8 @@ def test_forum_completeness_query_excludes_hidden_canary_bills():
     sql = cursor.statements[0]
     assert "COALESCE(admin_hidden, FALSE) = FALSE" in sql
     assert "(source IS NULL OR source != 'ZK_CANARY')" in sql
+    assert "source = 'DIAVGEIA'" in sql
+    assert "%ασθεν%" in sql
 
 
 def test_forum_completeness_gives_diavgeia_backlog_longer_grace():

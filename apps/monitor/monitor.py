@@ -807,6 +807,14 @@ def check_forum_missing(conn) -> list[Alert]:
             WHERE status = 'ACTIVE' AND forum_topic_id IS NULL
               AND COALESCE(admin_hidden, FALSE) = FALSE
               AND (source IS NULL OR source != 'ZK_CANARY')
+              AND NOT (
+                  source = 'DIAVGEIA'
+                  AND (
+                      LOWER(COALESCE(title_el, '')) LIKE ANY (ARRAY['%αμκα%', '%α.μ.κ.α%', '%amka%', '%ασθεν%', '%εοπυυ%', '%eopyy%'])
+                      OR LOWER(COALESCE(summary_short_el, '')) LIKE ANY (ARRAY['%αμκα%', '%α.μ.κ.α%', '%amka%', '%ασθεν%', '%εοπυυ%', '%eopyy%'])
+                      OR LOWER(COALESCE(summary_long_el, '')) LIKE ANY (ARRAY['%αμκα%', '%α.μ.κ.α%', '%amka%', '%ασθεν%', '%εοπυυ%', '%eopyy%'])
+                  )
+              )
         """)
         for bill_id, title in cur.fetchall():
             alerts.append(Alert("forum_missing", "ekklesia-api", "warning",
@@ -976,6 +984,14 @@ def check_forum_completeness(conn) -> list[Alert]:
               AND id NOT LIKE 'DEMO-%%'
               AND COALESCE(admin_hidden, FALSE) = FALSE
               AND (source IS NULL OR source != 'ZK_CANARY')
+              AND NOT (
+                  source = 'DIAVGEIA'
+                  AND (
+                      LOWER(COALESCE(title_el, '')) LIKE ANY (ARRAY['%αμκα%', '%α.μ.κ.α%', '%amka%', '%ασθεν%', '%εοπυυ%', '%eopyy%'])
+                      OR LOWER(COALESCE(summary_short_el, '')) LIKE ANY (ARRAY['%αμκα%', '%α.μ.κ.α%', '%amka%', '%ασθεν%', '%εοπυυ%', '%eopyy%'])
+                      OR LOWER(COALESCE(summary_long_el, '')) LIKE ANY (ARRAY['%αμκα%', '%α.μ.κ.α%', '%amka%', '%ασθεν%', '%εοπυυ%', '%eopyy%'])
+                  )
+              )
               AND (
                   (COALESCE(source, 'PARLIAMENT') = 'PARLIAMENT'
                    AND created_at < NOW() - INTERVAL '1 hour')
