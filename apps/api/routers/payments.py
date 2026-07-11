@@ -54,6 +54,15 @@ R_PAYMENTS = "donations:log"          # List of JSON payment records
 R_SERVER_RECEIVED = "donations:server:received"  # float
 R_DOMAIN_RECEIVED = "donations:domain:received"  # float
 R_RESERVE = "donations:reserve"       # float
+R_STRIPE_SESSION_PREFIX = "donations:stripe:session:"
+
+
+def _public_payment_record(record: dict | None) -> dict | None:
+    """Return transparency fields without donor or processor identifiers."""
+    if not record:
+        return None
+    allowed = ("date", "amount", "allocation", "to", "method")
+    return {key: record[key] for key in allowed if key in record}
 
 
 async def _init_seed_payments(r: aioredis.Redis) -> None:
@@ -144,27 +153,26 @@ async def stripe_webhook(request: Request):
     Stripe Webhook — verarbeitet checkout.session.completed Events.
     Signatur wird verifiziert wenn STRIPE_WEBHOOK_SECRET gesetzt ist.
     """
-    import stripe
-
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature", "")
     webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
-    # Signatur verifizieren
-    if webhook_secret:
-        if not sig_header:
-            raise HTTPException(status_code=400, detail="Missing stripe-signature header")
-        try:
-            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
-        except stripe.error.SignatureVerificationError:
-            logger.warning("[MOD-18] Stripe signature verification failed")
-            raise HTTPException(status_code=400, detail="Invalid signature")
-        except Exception as e:
-            logger.error(f"[MOD-18] Webhook error: {e}")
-            raise HTTPException(status_code=400, detail=str(e))
-    else:
-        # Kein Secret → parse raw (dev/testing)
-        event = json.loads(payload)
+    if not webhook_secret:
+        logger.error("[MOD-18] Stripe webhook disabled: STRIPE_WEBHOOK_SECRET missing")
+        raise HTTPException(status_code=503, detail="Stripe webhook is not configured")
+    if not sig_header:
+        raise HTTPException(status_code=400, detail="Missing stripe-signature header")
+
+    import stripe
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+    except stripe.error.SignatureVerificationError:
+        logger.warning("[MOD-18] Stripe signature verification failed")
+        raise HTTPException(status_code=400, detail="Invalid signature")
+    except Exception as e:
+        logger.error("[MOD-18] Stripe webhook payload rejected: %s", type(e).__name__)
+        raise HTTPException(status_code=400, detail="Invalid Stripe webhook payload")
 
     # Nur completed sessions verarbeiten
     event_type = event.get("type", "")
@@ -172,8 +180,15 @@ async def stripe_webhook(request: Request):
         return {"received": True, "processed": False}
 
     session = event.get("data", {}).get("object", {})
+    if session.get("payment_status") != "paid":
+        return {"received": True, "processed": False}
+
+    session_id = session.get("id", "")
+    if not isinstance(session_id, str) or not session_id.startswith("cs_"):
+        raise HTTPException(status_code=400, detail="Invalid Stripe Checkout Session")
+
     amount_total = session.get("amount_total", 0) / 100  # Cents → EUR
-    customer_email = session.get("customer_details", {}).get("email", "anonym")
+    customer_email = (session.get("customer_details") or {}).get("email", "anonym")
 
     if amount_total <= 0:
         return {"received": True, "processed": False}
@@ -181,19 +196,26 @@ async def stripe_webhook(request: Request):
     r = await _get_redis()
     await _init_seed_payments(r)
 
-    # Spende verteilen
-    allocation = await allocate_donation(amount_total, r)
+    idempotency_key = f"{R_STRIPE_SESSION_PREFIX}{session_id}"
+    claimed = await r.set(idempotency_key, "processing", nx=True, ex=900)
+    if not claimed:
+        return {"received": True, "processed": False, "duplicate": True}
 
-    # Log
-    record = {
-        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
-        "amount": amount_total,
-        "allocation": allocation,
-        "from": customer_email,
-        "method": "stripe",
-        "stripe_session": session.get("id", ""),
-    }
-    await r.rpush(R_PAYMENTS, json.dumps(record))
+    try:
+        allocation = await allocate_donation(amount_total, r)
+        record = {
+            "date": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
+            "amount": amount_total,
+            "allocation": allocation,
+            "from": customer_email,
+            "method": "stripe",
+            "stripe_session": session_id,
+        }
+        await r.rpush(R_PAYMENTS, json.dumps(record))
+        await r.set(idempotency_key, "processed")
+    except Exception:
+        await r.delete(idempotency_key)
+        raise
 
     logger.info(f"[MOD-18] Donation {amount_total}€ allocated: {allocation}")
     return {"received": True, "processed": True, "allocation": allocation}
@@ -227,7 +249,7 @@ async def payment_status():
     if log_len > 0:
         last_raw = await r.lindex(R_PAYMENTS, -1)
         if last_raw:
-            last_payment = json.loads(last_raw)
+            last_payment = _public_payment_record(json.loads(last_raw))
 
     # Alle Zahlungen summieren
     total_received = server_received + domain_received + reserve
