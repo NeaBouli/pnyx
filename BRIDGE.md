@@ -1,5 +1,22 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-07-13 — Private Finance Export Prepared (Codex)
+
+- Codex prepared a default-off, HMAC-signed exporter from the PII-free Redis
+  finance outbox to the private VLABS receiver. This public repository contains
+  only generic code and empty environment variable names.
+- Donation captures remain distinct from invoices. Provider references are
+  hashed before export; queue rows are removed only after an exact receiver ACK.
+- HTTPS path pinning, bounded batches, a Redis ownership lock, exact ACK checks,
+  retry-safe record IDs and failure retention are covered by focused tests.
+- Verification: 24/24 finance/payment tests and the full API suite with Redis
+  (`616 passed, 4 skipped, 25 expected xfail`) PASS; compile, diff and public
+  secret/identity scan PASS.
+- Payment intake, finance export and public contribution links remain disabled.
+  No payment, invoice, receipt, provider/AADE request or deployment occurred.
+- Runtime endpoints, secrets, recipient/tax identity and accounting decisions
+  remain exclusively in the private VLABS finance files.
+
 ## 2026-07-12 — Donation and Client Readiness Merged (Codex)
 
 - Codex hardened the donation boundary and validated all shipped clients in an

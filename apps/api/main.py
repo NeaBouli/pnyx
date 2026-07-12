@@ -564,6 +564,21 @@ async def scheduled_zk_arweave_publication():
         logger.warning("[ZK-ARWEAVE] Auto publication failed: %s", e)
 
 
+async def scheduled_finance_export() -> None:
+    """Export PII-free donation events when the private runtime gate is open."""
+    from routers.payments import _get_redis
+    from services.finance_export import FinanceExportError, export_pending_finance_events
+
+    try:
+        result = await export_pending_finance_events(await _get_redis())
+        if result.exported:
+            logger.info("[FINANCE-EXPORT] Exported %d PII-free events", result.exported)
+    except FinanceExportError as exc:
+        logger.warning("[FINANCE-EXPORT] Batch retained: %s", exc)
+    except Exception as exc:
+        logger.warning("[FINANCE-EXPORT] Batch retained after %s", type(exc).__name__)
+
+
 @asynccontextmanager
 async def lifespan(app):
     # Startup
@@ -578,6 +593,7 @@ async def lifespan(app):
     scheduler.add_job(scheduled_forum_sync, IntervalTrigger(minutes=10), id="forum_sync", replace_existing=True)
     scheduler.add_job(scheduled_bill_lifecycle, IntervalTrigger(hours=1), id="bill_lifecycle", replace_existing=True)
     scheduler.add_job(scheduled_zk_arweave_publication, IntervalTrigger(minutes=30), id="zk_arweave_publication", replace_existing=True)
+    scheduler.add_job(scheduled_finance_export, IntervalTrigger(minutes=5), id="finance_export", replace_existing=True)
     scheduler.add_job(scheduled_cplm_refresh, IntervalTrigger(hours=6), id="cplm_refresh", replace_existing=True)
     scheduler.add_job(scheduled_greek_topics, IntervalTrigger(hours=6), id="greek_topics", replace_existing=True)
     scheduler.add_job(scheduled_monthly_newsletter, CronTrigger(day=1, hour=9, minute=0), id="monthly_newsletter", replace_existing=True)
