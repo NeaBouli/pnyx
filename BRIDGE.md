@@ -1,6 +1,6 @@
 # Pnyx / ekklesia.gr Bridge
 
-## 2026-07-12 — Donation and Client Readiness Verified Locally (Codex)
+## 2026-07-12 — Donation and Client Readiness Merged (Codex)
 
 - Codex hardened the donation boundary and validated all shipped clients in an
   isolated worktree; no deployment or live transaction occurred.
@@ -14,7 +14,11 @@
 - Web, Dashboard, Mobile, Representative, shared crypto and focused API/agent
   checks are green. Both Expo Android exports complete successfully.
 - Full public verification matrix: `docs/SOFTWARE_READINESS_2026-07-12.md`.
-- PR/GitHub CI and merge are the remaining autonomous steps for this block.
+- PR #131 was squash-merged to `main` as `a99a12b`; all required GitHub
+  checks passed. The automated CodeRabbit review was rate-limited, so the
+  change also received a local self-review before merge.
+- Remaining gates require private runtime configuration, legal/accounting
+  confirmation, sandbox E2E approval and controlled deployment.
 - Detailed provider, tax and document decisions remain only in private VLABS.
 
 ## Public Payment Data Boundary
