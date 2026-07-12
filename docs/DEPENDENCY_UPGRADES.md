@@ -28,3 +28,12 @@
 
 - Dependabot wird diese PRs erneut öffnen — ggf. `ignore` Regeln in `.github/dependabot.yml` setzen
 - Vor jeder Migration: lokalen Branch erstellen, vollständige Testsuite durchlaufen
+# Open Upstream Security Exception
+
+- `PYSEC-2026-1325` affects `ecdsa`, pulled transitively by
+  `arweave-python-client==1.0.19`. Ekklesia uses only the library's RSA Arweave
+  wallet/signing path, but the package cannot currently be installed without
+  `python-jose` and `ecdsa`.
+- The security workflow ignores only this advisory. Remove the exception when
+  an upstream Arweave client release drops the dependency or when MOD-08 moves
+  to a maintained client.

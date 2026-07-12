@@ -48,6 +48,21 @@ class _SuccessRedis:
     async def rpush(self, key, value):
         self.pushed.append((key, value))
 
+    async def get(self, _key):
+        return None
+
+    async def setex(self, key, ttl, value):
+        self.set_calls.append((key, value, {"ex": ttl}))
+
+    async def delete(self, key):
+        self.set_calls.append((key, None, {"delete": True}))
+
+    async def incrbyfloat(self, _key, _value):
+        return 1.0
+
+    async def incr(self, _key):
+        return 1
+
 
 def test_public_payment_record_redacts_identity_and_processor_ids():
     result = payments._public_payment_record(
@@ -74,7 +89,9 @@ def test_public_community_page_keeps_payment_links_paused():
     assert "donate.stripe.com" not in community
     assert "paypal.com/paypalme" not in community.lower()
     assert 'id="payment-intake-paused"' in community
-    assert "HLR credits is not a donation" in community
+    assert "HLR credits are procured privately" in community
+    assert "BTC → HLR" not in community
+    assert "LTC → HLR" not in community
 
 
 @pytest.mark.asyncio
@@ -111,6 +128,7 @@ async def test_stripe_webhook_rejects_invalid_signature(monkeypatch):
 @pytest.mark.asyncio
 async def test_unpaid_checkout_is_ignored(monkeypatch):
     event = {
+        "id": "evt_test_duplicate",
         "type": "checkout.session.completed",
         "data": {"object": {"id": "cs_test_unpaid", "payment_status": "unpaid"}},
     }
@@ -129,6 +147,7 @@ async def test_unpaid_checkout_is_ignored(monkeypatch):
 @pytest.mark.asyncio
 async def test_duplicate_stripe_session_is_not_allocated(monkeypatch):
     event = {
+        "id": "evt_test_duplicate",
         "type": "checkout.session.completed",
         "data": {
             "object": {
@@ -138,7 +157,7 @@ async def test_duplicate_stripe_session_is_not_allocated(monkeypatch):
                 "currency": "eur",
                 "metadata": {"payment_purpose": "infrastructure_support"},
                 "amount_total": 1000,
-                "customer_details": {"email": "donor@example.com"},
+                "payment_intent": "pi_test_duplicate",
             }
         },
     }
@@ -170,6 +189,7 @@ async def test_duplicate_stripe_session_is_not_allocated(monkeypatch):
 @pytest.mark.asyncio
 async def test_paid_checkout_is_processed_once_and_logged(monkeypatch):
     event = {
+        "id": "evt_test_paid",
         "type": "checkout.session.completed",
         "data": {
             "object": {
@@ -179,7 +199,7 @@ async def test_paid_checkout_is_processed_once_and_logged(monkeypatch):
                 "currency": "eur",
                 "metadata": {"payment_purpose": "infrastructure_support"},
                 "amount_total": 2500,
-                "customer_details": {"email": "donor@example.com"},
+                "payment_intent": "pi_test_paid",
             }
         },
     }
@@ -217,15 +237,23 @@ async def test_paid_checkout_is_processed_once_and_logged(monkeypatch):
         "processed",
         {},
     )
-    assert len(redis.pushed) == 1
+    assert len(redis.pushed) == 2
     key, raw_record = redis.pushed[0]
     assert key == payments.R_PAYMENTS
     record = __import__("json").loads(raw_record)
     assert record["amount"] == 25.0
-    assert record["from"] == __import__("hashlib").sha256(b"donor@example.com").hexdigest()[:12]
+    assert "from" not in record
     assert record["stripe_session"] == "cs_test_paid"
+    assert record["payment_intent"] == "pi_test_paid"
     assert record["purpose"] == "infrastructure_support"
+    assert record["category"] == "donation"
     assert record["requires_accounting_review"] is True
+    finance_key, raw_event = redis.pushed[1]
+    assert finance_key == payments.R_FINANCE_EVENTS
+    finance_event = __import__("json").loads(raw_event)
+    assert finance_event["event_id"] == "evt_test_paid"
+    assert finance_event["event_type"] == "payment_captured"
+    assert finance_event["amount_cents"] == 2500
 
 
 @pytest.mark.asyncio
@@ -242,6 +270,7 @@ async def test_payment_intake_gate_blocks_before_stripe_processing(monkeypatch):
 @pytest.mark.asyncio
 async def test_paid_stripe_checkout_requires_eur_payment_mode_and_explicit_purpose(monkeypatch):
     event = {
+        "id": "evt_test_wrong_currency",
         "type": "checkout.session.completed",
         "data": {"object": {
             "id": "cs_test_wrong_currency",
@@ -249,6 +278,7 @@ async def test_paid_stripe_checkout_requires_eur_payment_mode_and_explicit_purpo
             "mode": "payment",
             "currency": "usd",
             "amount_total": 1000,
+            "payment_intent": "pi_test_wrong_currency",
             "metadata": {},
         }},
     }
@@ -266,6 +296,82 @@ async def test_paid_stripe_checkout_requires_eur_payment_mode_and_explicit_purpo
 
 
 @pytest.mark.asyncio
+async def test_hlr_provider_credits_cannot_be_sold_through_donation_intake(monkeypatch):
+    event = {
+        "id": "evt_test_hlr",
+        "type": "checkout.session.completed",
+        "data": {"object": {
+            "id": "cs_test_hlr",
+            "payment_status": "paid",
+            "mode": "payment",
+            "currency": "eur",
+            "amount_total": 1500,
+            "payment_intent": "pi_test_hlr",
+            "metadata": {"payment_purpose": "hlr_credits"},
+        }},
+    }
+    stripe_module = SimpleNamespace(
+        Webhook=SimpleNamespace(construct_event=lambda *_args: event),
+        error=SimpleNamespace(SignatureVerificationError=ValueError),
+    )
+    allocation_called = False
+
+    async def fake_allocate(_amount, _redis):
+        nonlocal allocation_called
+        allocation_called = True
+        return {}
+
+    monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", "whsec_test")
+    monkeypatch.setitem(sys.modules, "stripe", stripe_module)
+    monkeypatch.setattr(payments, "allocate_donation", fake_allocate)
+
+    with pytest.raises(HTTPException) as exc:
+        await payments.stripe_webhook(_Request(signature="test-signature"))
+
+    assert exc.value.status_code == 400
+    assert allocation_called is False
+
+
+@pytest.mark.asyncio
+async def test_stripe_dispute_emits_adjustment_without_customer_data(monkeypatch):
+    event = {
+        "id": "evt_test_dispute",
+        "type": "charge.dispute.created",
+        "data": {"object": {
+            "payment_intent": "pi_test_hlr",
+            "currency": "eur",
+            "amount": 1500,
+        }},
+    }
+    stripe_module = SimpleNamespace(
+        Webhook=SimpleNamespace(construct_event=lambda *_args: event),
+        error=SimpleNamespace(SignatureVerificationError=ValueError),
+    )
+    redis = _SuccessRedis()
+
+    async def fake_get(key):
+        if key == f"{payments.R_STRIPE_PAYMENT_PREFIX}pi_test_hlr":
+            return "cs_test_hlr"
+        return None
+
+    redis.get = fake_get
+
+    async def fake_get_redis():
+        return redis
+
+    monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", "whsec_test")
+    monkeypatch.setitem(sys.modules, "stripe", stripe_module)
+    monkeypatch.setattr(payments, "_get_redis", fake_get_redis)
+
+    result = await payments.stripe_webhook(_Request(signature="test-signature"))
+
+    assert result == {"received": True, "processed": True, "requires_manual_review": False}
+    finance_event = __import__("json").loads(redis.pushed[0][1])
+    assert finance_event["adjustment_state"] == "dispute_open"
+    assert "customer" not in __import__("json").dumps(finance_event).lower()
+
+
+@pytest.mark.asyncio
 async def test_paypal_ipn_requires_bound_receiver_and_explicit_purpose(monkeypatch):
     monkeypatch.setenv("PAYPAL_RECEIVER_EMAIL", "owner@example.test")
     payload = (
@@ -277,3 +383,62 @@ async def test_paypal_ipn_requires_bound_receiver_and_explicit_purpose(monkeypat
         await payments.paypal_ipn_webhook(_Request(body=payload))
 
     assert exc.value.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_paypal_donation_is_logged_without_payer_data(monkeypatch):
+    redis = _SuccessRedis()
+    payload = (
+        b"payment_status=Completed&txn_id=txn_donation&mc_gross=15.00&mc_currency=EUR"
+        b"&receiver_email=owner%40example.test&custom=developer_support"
+        b"&payer_email=person%40example.test"
+    )
+
+    async def fake_get_redis():
+        return redis
+
+    async def fake_allocate(amount, _redis):
+        return {"server": amount, "domain": 0.0, "reserve": 0.0}
+
+    monkeypatch.setenv("PAYPAL_RECEIVER_EMAIL", "owner@example.test")
+
+    async def verified(_payload):
+        return True
+
+    monkeypatch.setattr(payments, "_verify_paypal_ipn", verified)
+    monkeypatch.setattr(payments, "_get_redis", fake_get_redis)
+    monkeypatch.setattr(payments, "allocate_donation", fake_allocate)
+
+    result = await payments.paypal_ipn_webhook(_Request(body=payload))
+
+    assert result["processed"] is True
+    record = __import__("json").loads(redis.pushed[0][1])
+    assert record["category"] == "donation"
+    assert "payer" not in __import__("json").dumps(record).lower()
+    assert "person@example.test" not in __import__("json").dumps(redis.pushed)
+
+
+@pytest.mark.asyncio
+async def test_paypal_refund_emits_finance_adjustment(monkeypatch):
+    redis = _SuccessRedis()
+    payload = (
+        b"payment_status=Refunded&txn_id=txn_refund&parent_txn_id=txn_donation"
+        b"&mc_gross=-15.00&mc_currency=EUR&receiver_email=owner%40example.test"
+    )
+
+    async def fake_get_redis():
+        return redis
+
+    async def verified(_payload):
+        return True
+
+    monkeypatch.setenv("PAYPAL_RECEIVER_EMAIL", "owner@example.test")
+    monkeypatch.setattr(payments, "_verify_paypal_ipn", verified)
+    monkeypatch.setattr(payments, "_get_redis", fake_get_redis)
+
+    result = await payments.paypal_ipn_webhook(_Request(body=payload))
+
+    assert result["adjustment_state"] == "refund_reported"
+    event = __import__("json").loads(redis.pushed[0][1])
+    assert event["event_type"] == "refunded"
+    assert event["amount_cents_reported"] == 1500

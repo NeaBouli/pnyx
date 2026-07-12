@@ -63,8 +63,8 @@ export const proxy = auth((request) => {
     return loginRedirect(request)
   }
 
-  const module = moduleForPath(pathname)
-  if (module && !canAccess(request.auth.user.role as DashboardRole, module)) {
+  const requiredModule = moduleForPath(pathname)
+  if (requiredModule && !canAccess(request.auth.user.role as DashboardRole, requiredModule)) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }

@@ -8,6 +8,9 @@ on:
   schedule:
     - cron: '0 3 * * 1'
 
+permissions:
+  contents: read
+
 jobs:
   secret-scan:
     name: Secret Detection
@@ -62,10 +65,13 @@ jobs:
         run: |
           pip install pip-audit
           failed=0
-          find . -maxdepth 3 -name "requirements.txt" -print | while read req; do
+          while IFS= read -r req; do
             echo "=== pip-audit: $req ==="
-            pip-audit -r "$req" || failed=1
-          done
+            # arweave-python-client 1.0.19 hard-depends on python-jose/ecdsa,
+            # while this project uses only its RSA Arweave wallet path. Upstream
+            # has no fixed release yet; keep this single scoped exception visible.
+            pip-audit --ignore-vuln PYSEC-2026-1325 -r "$req" || failed=1
+          done < <(find . -maxdepth 3 -name "requirements.txt" -print | sort)
           exit $failed
 
   security-summary:

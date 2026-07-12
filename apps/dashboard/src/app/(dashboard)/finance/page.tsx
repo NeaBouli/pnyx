@@ -340,10 +340,11 @@ HLR credits (εφεδρική): ${ovHlrFallback?.remaining != null ? String(ovHl
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-gray-500 break-all flex-1">
-                    {String(ovBtc?.address ?? 'bc1q83370mce8qfkyyepspg6xf42f577s47rtl3mhx')}
+                    {String(ovBtc?.address ?? 'Δεν έχει ρυθμιστεί')}
                   </span>
                   <button
-                    onClick={() => copyToClipboard(String(ovBtc?.address ?? 'bc1q83370mce8qfkyyepspg6xf42f577s47rtl3mhx'))}
+                    onClick={() => typeof ovBtc?.address === 'string' && copyToClipboard(ovBtc.address)}
+                    disabled={typeof ovBtc?.address !== 'string'}
                     className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
                     title="Αντιγραφή"
                   >
@@ -388,10 +389,11 @@ HLR credits (εφεδρική): ${ovHlrFallback?.remaining != null ? String(ovHl
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-gray-500 break-all flex-1">
-                    {String(ovLtc?.address ?? 'ltc1qmr467kl8w0e8axplq5uyrpws3mc4sclpu4ds8w')}
+                    {String(ovLtc?.address ?? 'Δεν έχει ρυθμιστεί')}
                   </span>
                   <button
-                    onClick={() => copyToClipboard(String(ovLtc?.address ?? 'ltc1qmr467kl8w0e8axplq5uyrpws3mc4sclpu4ds8w'))}
+                    onClick={() => typeof ovLtc?.address === 'string' && copyToClipboard(ovLtc.address)}
+                    disabled={typeof ovLtc?.address !== 'string'}
                     className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
                     title="Αντιγραφή"
                   >
@@ -425,10 +427,14 @@ HLR credits (εφεδρική): ${ovHlrFallback?.remaining != null ? String(ovHl
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-gray-500 break-all flex-1">
-                    {String(ovAr?.address ?? arweave?.wallet_address ?? '2hkK3Bcr6garERqyBCLCiJ-d8zZzM5ZWe3_AzGdhBTs')}
+                    {String(ovAr?.address ?? arweave?.wallet_address ?? 'Δεν έχει ρυθμιστεί')}
                   </span>
                   <button
-                    onClick={() => copyToClipboard(String(ovAr?.address ?? arweave?.wallet_address ?? '2hkK3Bcr6garERqyBCLCiJ-d8zZzM5ZWe3_AzGdhBTs'))}
+                    onClick={() => {
+                      const address = ovAr?.address ?? arweave?.wallet_address
+                      if (typeof address === 'string') copyToClipboard(address)
+                    }}
+                    disabled={typeof (ovAr?.address ?? arweave?.wallet_address) !== 'string'}
                     className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
                     title="Αντιγραφή"
                   >
@@ -597,32 +603,21 @@ HLR credits (εφεδρική): ${ovHlrFallback?.remaining != null ? String(ovHl
                 </div>
               )}
 
-              {/* Donations addresses */}
+              {/* Donation intake status */}
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                 <h2 className="text-base font-semibold text-gray-800 mb-4">Δωρεές & Υποστήριξη</h2>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between py-2 border-b border-gray-100">
                     <span className="text-sm text-gray-600">PayPal</span>
-                    <a
-                      href="https://www.paypal.com/paypalme/VendettaLabs"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      Δωρεά μέσω PayPal
-                    </a>
+                    <span className="text-sm text-amber-700">Προσωρινά σε παύση</span>
                   </div>
                   <div className="flex items-center justify-between py-2 border-b border-gray-100">
                     <span className="text-sm text-gray-600">Bitcoin (BTC)</span>
-                    <span className="text-xs font-mono text-gray-500 select-all">
-                      bc1q83370mce8qfkyyepspg6xf42f577s47rtl3mhx
-                    </span>
+                    <span className="text-xs text-gray-500">Ιδιωτική ρύθμιση</span>
                   </div>
                   <div className="flex items-center justify-between py-2 border-b border-gray-100">
                     <span className="text-sm text-gray-600">Litecoin (LTC)</span>
-                    <span className="text-xs font-mono text-gray-500 select-all">
-                      ltc1qmr467kl8w0e8axplq5uyrpws3mc4sclpu4ds8w
-                    </span>
+                    <span className="text-xs text-gray-500">Ιδιωτική ρύθμιση</span>
                   </div>
                 </div>
               </div>

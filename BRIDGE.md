@@ -1,5 +1,22 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-07-12 — Donation and Client Readiness Verified Locally (Codex)
+
+- Codex hardened the donation boundary and validated all shipped clients in an
+  isolated worktree; no deployment or live transaction occurred.
+- Ekklesia Stripe/PayPal intake is limited to voluntary donations without
+  consideration. HLR provider credits are an operating expense procured
+  privately and are not a customer product or accepted payment purpose.
+- Customer identity and payer hashes are removed from new payment records;
+  legacy rows are projected through an explicit PII-free admin schema.
+- Signed capture/refund/dispute events are prepared for the private VLABS
+  finance handoff. Public donation links and runtime intake remain paused.
+- Web, Dashboard, Mobile, Representative, shared crypto and focused API/agent
+  checks are green. Both Expo Android exports complete successfully.
+- Full public verification matrix: `docs/SOFTWARE_READINESS_2026-07-12.md`.
+- PR/GitHub CI and merge are the remaining autonomous steps for this block.
+- Detailed provider, tax and document decisions remain only in private VLABS.
+
 ## Public Payment Data Boundary
 
 - This repository is public. Operational payment, donation-classification and Etimologio information is stored only in private `NeaBouli/vlabs` at `docs/finance-integrations/projects/ekklesia.md`.
@@ -20,8 +37,9 @@
 - Public contribution links are paused until Gio/Accountant confirms the legal
   recipient, legal form, tax treatment, document policy and whether each flow
   is a donation, support income or sale.
-- Important classification: `15 EUR = 2500 HLR Credits` has consideration and
-  is a product purchase, not a donation.
+- Important classification: `15 EUR = 2500 HLR Credits` is Ekklesia's private
+  provider procurement expense, not an incoming community payment. The former
+  public HLR payment purpose has been removed.
 - Webhooks now require the explicit `PAYMENTS_INTAKE_GATE`, verified provider
   signature/IPN, EUR, bounded positive amount and explicit payment purpose.
 - Stripe additionally requires paid `payment` Checkout mode. PayPal additionally
@@ -37,8 +55,8 @@
 
 1. Gio/Accountant: identify the legal recipient and approve donation versus
    taxable support/service/product treatment per flow.
-2. Configure separate Stripe/PayPal products with explicit purpose metadata;
-   do not reuse PayPalMe amount alone to infer HLR purchases.
+2. Configure donation-only Stripe/PayPal flows with explicit voluntary-support
+   purpose metadata; never infer HLR provider procurement from donor amounts.
 3. Decide invoice/receipt, VAT/myDATA and refund treatment, then connect the
    private VLABS finance ingest.
 4. Run Stripe and PayPal sandbox/test E2E before restoring public links.

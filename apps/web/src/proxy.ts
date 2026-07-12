@@ -10,7 +10,7 @@ const WIKI_PAGES = new Set([
   "database", "modules", "privacy", "roadmap", "security", "whitepaper",
 ]);
 
-export default function middleware(request: NextRequest) {
+export default function proxy(request: NextRequest) {
   const p = request.nextUrl.pathname;
 
   // Old Direct-channel Android clients and Samsung Internet may still open the
