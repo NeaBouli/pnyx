@@ -573,6 +573,8 @@ async def scheduled_finance_export() -> None:
         result = await export_pending_finance_events(await _get_redis())
         if result.exported:
             logger.info("[FINANCE-EXPORT] Exported %d PII-free events", result.exported)
+        if result.quarantined:
+            logger.error("[FINANCE-EXPORT] Quarantined %d invalid event; private review required", result.quarantined)
     except FinanceExportError as exc:
         logger.warning("[FINANCE-EXPORT] Batch retained: %s", exc)
     except Exception as exc:

@@ -26,6 +26,8 @@ class _Redis:
         self.events = list(events)
         self.lock = None
         self.trim_calls = []
+        self.dead_letter: list[str] = []
+        self.counters: dict[str, int] = {}
 
     async def set(self, _key: str, value: str, *, nx: bool = False, ex: int | None = None) -> bool:
         assert nx is True
@@ -42,11 +44,35 @@ class _Redis:
         self.trim_calls.append((start, end))
         self.events = self.events[start:]
 
-    async def eval(self, _script: str, _keys: int, _key: str, token: str) -> int:
-        if self.lock == token:
-            self.lock = None
-            return 1
-        return 0
+    async def eval(self, _script: str, keys: int, *args: Any) -> int:
+        if keys == 1:
+            _key, token = args
+            if self.lock == token:
+                self.lock = None
+                return 1
+            return 0
+        assert keys == 2
+        _source, _dead_letter, index, expected, _marker = args
+        if int(index) >= len(self.events) or self.events[int(index)] != expected:
+            return 0
+        self.dead_letter.append(self.events.pop(int(index)))
+        return 1
+
+    async def incr(self, key: str) -> int:
+        self.counters[key] = self.counters.get(key, 0) + 1
+        return self.counters[key]
+
+    async def expire(self, _key: str, seconds: int) -> bool:
+        assert seconds == finance_export.FINANCE_EXPORT_FAILURE_TTL_SECONDS
+        return True
+
+    async def delete(self, *keys: str) -> int:
+        deleted = 0
+        for key in keys:
+            if key in self.counters:
+                del self.counters[key]
+                deleted += 1
+        return deleted
 
 
 def _capture_event() -> str:
@@ -220,4 +246,49 @@ async def test_malformed_queue_event_is_retained(monkeypatch: pytest.MonkeyPatch
         await finance_export.export_pending_finance_events(redis)
 
     assert redis.events == ["not-json"]
+    assert redis.dead_letter == []
     assert redis.lock is None
+
+
+@pytest.mark.asyncio
+async def test_repeated_malformed_event_is_quarantined_without_blocking_healthy_tail(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    redis = _Redis(["not-json", _capture_event()])
+    monkeypatch.setenv("FINANCE_EXPORT_ENABLED", "true")
+    monkeypatch.setenv("FINANCE_EXPORT_URL", "https://private.example.test/api/finance/ingest")
+    monkeypatch.setenv("FINANCE_EXPORT_SECRET", "x" * 32)
+
+    for _attempt in range(finance_export.FINANCE_EXPORT_QUARANTINE_THRESHOLD - 1):
+        with pytest.raises(finance_export.FinanceExportError, match="finance_event_invalid_json"):
+            await finance_export.export_pending_finance_events(redis)
+
+    result = await finance_export.export_pending_finance_events(redis)
+
+    assert result == finance_export.FinanceExportResult(status="quarantined", quarantined=1)
+    assert redis.events == [_capture_event()]
+    assert redis.dead_letter == ["not-json"]
+    assert redis.counters == {}
+    assert redis.lock is None
+
+
+@pytest.mark.asyncio
+async def test_busy_empty_and_short_secret_paths_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("FINANCE_EXPORT_ENABLED", "true")
+    monkeypatch.setenv("FINANCE_EXPORT_URL", "https://private.example.test/api/finance/ingest")
+    monkeypatch.setenv("FINANCE_EXPORT_SECRET", "short")
+    with pytest.raises(finance_export.FinanceExportError, match="finance_export_secret_invalid"):
+        await finance_export.export_pending_finance_events(object())
+
+    monkeypatch.setenv("FINANCE_EXPORT_SECRET", "x" * 32)
+    busy_redis = _Redis([])
+    busy_redis.lock = "other-exporter"
+    assert await finance_export.export_pending_finance_events(busy_redis) == finance_export.FinanceExportResult(
+        status="busy"
+    )
+
+    empty_redis = _Redis([])
+    assert await finance_export.export_pending_finance_events(empty_redis) == finance_export.FinanceExportResult(
+        status="empty"
+    )
+    assert empty_redis.lock is None

@@ -16,12 +16,16 @@ import httpx
 
 
 FINANCE_EVENTS_KEY = "payments:finance_events"
+FINANCE_DEAD_LETTER_KEY = "payments:finance_events:dead_letter"
 FINANCE_EXPORT_LOCK_KEY = "payments:finance_export_lock"
+FINANCE_EXPORT_FAILURE_PREFIX = "payments:finance_export_failure:"
 FINANCE_EXPORT_SOURCE = "ekklesia"
 FINANCE_EXPORT_SCHEMA = "vlabs.finance.ingest.v1"
 FINANCE_EXPORT_BATCH_SIZE = 25
 FINANCE_EXPORT_LOCK_SECONDS = 120
 MAX_FINANCE_AMOUNT_MINOR = 1_000_000
+FINANCE_EXPORT_QUARANTINE_THRESHOLD = 3
+FINANCE_EXPORT_FAILURE_TTL_SECONDS = 7 * 24 * 60 * 60
 
 PostFunction = Callable[[str, dict[str, str], bytes], Awaitable[Any]]
 
@@ -30,10 +34,16 @@ PostFunction = Callable[[str, dict[str, str], bytes], Awaitable[Any]]
 class FinanceExportResult:
     status: str
     exported: int = 0
+    quarantined: int = 0
 
 
 class FinanceExportError(RuntimeError):
     """Raised when an export cannot be acknowledged safely."""
+
+    def __init__(self, code: str, *, event_index: int | None = None) -> None:
+        super().__init__(code)
+        self.code = code
+        self.event_index = event_index
 
 
 def _export_enabled() -> bool:
@@ -153,14 +163,17 @@ def _event_record(event: dict[str, Any]) -> dict[str, Any]:
 
 def _payload(raw_events: list[str]) -> tuple[bytes, list[str]]:
     records: list[dict[str, Any]] = []
-    for raw_event in raw_events:
+    for index, raw_event in enumerate(raw_events):
         try:
             event = json.loads(raw_event)
         except (json.JSONDecodeError, TypeError) as exc:
-            raise FinanceExportError("finance_event_invalid_json") from exc
+            raise FinanceExportError("finance_event_invalid_json", event_index=index) from exc
         if not isinstance(event, dict):
-            raise FinanceExportError("finance_event_invalid")
-        records.append(_event_record(event))
+            raise FinanceExportError("finance_event_invalid", event_index=index)
+        try:
+            records.append(_event_record(event))
+        except FinanceExportError as exc:
+            raise FinanceExportError(exc.code, event_index=index) from exc
 
     body = json.dumps(
         {"schema": FINANCE_EXPORT_SCHEMA, "source": FINANCE_EXPORT_SOURCE, "records": records},
@@ -180,6 +193,46 @@ async def _release_lock(redis: Any, token: str) -> None:
         "return redis.call('del', KEYS[1]) else return 0 end"
     )
     await redis.eval(script, 1, FINANCE_EXPORT_LOCK_KEY, token)
+
+
+def _failure_key(raw_event: str) -> str:
+    return f"{FINANCE_EXPORT_FAILURE_PREFIX}{hashlib.sha256(raw_event.encode('utf-8')).hexdigest()}"
+
+
+async def _register_invalid_event(
+    redis: Any,
+    raw_events: list[str],
+    error: FinanceExportError,
+) -> bool:
+    if error.event_index is None or error.event_index >= len(raw_events):
+        return False
+    raw_event = raw_events[error.event_index]
+    failure_key = _failure_key(raw_event)
+    failures = await redis.incr(failure_key)
+    await redis.expire(failure_key, FINANCE_EXPORT_FAILURE_TTL_SECONDS)
+    if failures < FINANCE_EXPORT_QUARANTINE_THRESHOLD:
+        return False
+
+    marker = f"__finance_quarantine__{secrets.token_hex(24)}"
+    script = (
+        "if redis.call('lindex', KEYS[1], ARGV[1]) == ARGV[2] then "
+        "redis.call('lset', KEYS[1], ARGV[1], ARGV[3]); "
+        "redis.call('lrem', KEYS[1], 1, ARGV[3]); "
+        "redis.call('rpush', KEYS[2], ARGV[2]); return 1 else return 0 end"
+    )
+    moved = await redis.eval(
+        script,
+        2,
+        FINANCE_EVENTS_KEY,
+        FINANCE_DEAD_LETTER_KEY,
+        error.event_index,
+        raw_event,
+        marker,
+    )
+    if moved != 1:
+        raise FinanceExportError("finance_event_quarantine_conflict")
+    await redis.delete(failure_key)
+    return True
 
 
 async def export_pending_finance_events(
@@ -208,7 +261,12 @@ async def export_pending_finance_events(
         if not raw_events:
             return FinanceExportResult(status="empty")
 
-        body, expected_ids = _payload(raw_events)
+        try:
+            body, expected_ids = _payload(raw_events)
+        except FinanceExportError as exc:
+            if await _register_invalid_event(redis, raw_events, exc):
+                return FinanceExportResult(status="quarantined", quarantined=1)
+            raise
         timestamp = now_ms if now_ms is not None else int(time.time() * 1000)
         signature = hmac.new(
             secret.encode("utf-8"),
@@ -235,6 +293,8 @@ async def export_pending_finance_events(
         ):
             raise FinanceExportError("finance_receiver_invalid_ack")
 
+        failure_keys = [_failure_key(raw_event) for raw_event in raw_events]
+        await redis.delete(*failure_keys)
         await redis.ltrim(FINANCE_EVENTS_KEY, len(raw_events), -1)
         return FinanceExportResult(status="exported", exported=len(raw_events))
     finally:

@@ -9,9 +9,13 @@
   hashed before export; queue rows are removed only after an exact receiver ACK.
 - HTTPS path pinning, bounded batches, a Redis ownership lock, exact ACK checks,
   retry-safe record IDs and failure retention are covered by focused tests.
-- Verification: 24/24 finance/payment tests and the full API suite with Redis
-  (`616 passed, 4 skipped, 25 expected xfail`) PASS; compile, diff and public
-  secret/identity scan PASS.
+  Repeated malformed events are atomically retained in a private dead-letter
+  queue after three attempts so they cannot block later valid events.
+- CodeRabbit's poison-queue finding was addressed with retry counting, atomic
+  quarantine and explicit scheduler observability.
+- Verification: 26/26 focused finance/payment tests, real-Redis quarantine/
+  recovery and the full API suite (`618 passed, 4 skipped, 25 expected xfail`)
+  PASS; compile, diff and public secret/identity scan PASS.
 - Payment intake, finance export and public contribution links remain disabled.
   No payment, invoice, receipt, provider/AADE request or deployment occurred.
 - Runtime endpoints, secrets, recipient/tax identity and accounting decisions
