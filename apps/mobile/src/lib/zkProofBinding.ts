@@ -1,4 +1,4 @@
-import { sha256 } from "@noble/hashes/sha256";
+import { sha256 } from "@noble/hashes/sha2.js";
 
 export const ZK_PROOF_BINDING_VERSION = "ekklesia.zk.binding.v1";
 const ZK_SCOPE_DOMAIN = `${ZK_PROOF_BINDING_VERSION}:scope:`;

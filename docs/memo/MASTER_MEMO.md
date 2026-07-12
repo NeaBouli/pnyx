@@ -150,7 +150,7 @@ Tag: v0.3.0-alpha | Datum: 2026-04-01
 - ~~VAA UI — Wahlkompass Seite~~ — Skip, Party Detail, Share, Top Match
 - ~~Results Dashboard~~ — /results mit Divergence Übersicht + animierter DivergenceCard
 - ~~HLR Provider aktivieren~~ — verify_greek_number() implementiert, Dry Run aktiv
-- ~~Arweave Wallet erstellen~~ — 2hkK3Bcr6g...GdhBTs, community.html aktiviert
+- ~~Arweave Wallet erstellen~~ — private Runtime-Konfiguration, community status aktiviert
 - ~~Parliament API Scraper~~ — MOD-10 Ollama L1 + HuggingFace L2 + Rule-based L3
 
 ---

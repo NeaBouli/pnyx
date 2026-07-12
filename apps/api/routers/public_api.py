@@ -408,7 +408,6 @@ async def public_stats(_key=Depends(rate_limit_check), db: AsyncSession = Depend
         },
         "license": "MIT", "source_code": "https://github.com/NeaBouli/pnyx",
         "data_license": "CC BY 4.0",
-        "arweave_wallet": "2hkK3Bcr6garERqyBCLCiJ-d8zZzM5ZWe3_AzGdhBTs",
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 

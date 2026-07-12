@@ -9,13 +9,14 @@
  * Tests use a pre-derived root constant to keep suite fast.
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect } from "vitest";
 import { ed25519 }  from "@noble/curves/ed25519";
 import { sha256 }   from "@noble/hashes/sha256";
 import { hmac }     from "@noble/hashes/hmac";
 import { bytesToHex, hexToBytes, utf8ToBytes } from "@noble/hashes/utils";
 
 import {
+  deriveNullifierRoot,
   deriveIdentityCommitment,
   deriveVoteNullifier,
   deriveLinkageTag,
@@ -56,6 +57,14 @@ const SERVER_SK = ed25519.utils.randomPrivateKey();
 const SERVER_PK = ed25519.getPublicKey(SERVER_SK);
 
 // ─── nullifier.ts tests ───────────────────────────────────────────────────────
+
+describe("deriveNullifierRoot", () => {
+  it("runs Argon2id with the configured production parameters", async () => {
+    const root = await deriveNullifierRoot("+306912345678");
+    expect(root).toBeInstanceOf(Uint8Array);
+    expect(root).toHaveLength(32);
+  }, 30_000);
+});
 
 describe("deriveIdentityCommitment", () => {
   it("returns 64-char hex string", () => {

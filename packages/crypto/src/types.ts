@@ -11,10 +11,10 @@ export const PROTO_VERSION = "ekklesia:v1" as const;
 
 /** Argon2id parameters — chosen for ~500ms on mid-range device (2025). */
 export const ARGON2_PARAMS = {
-  time:    3,
-  memory:  65536,   // 64 MiB
+  iterations: 3,
+  memorySize: 65536,   // 64 MiB
   parallelism: 1,
-  hashLen: 32,
+  hashLength: 32,
   outputType: "binary",
 } as const;
 

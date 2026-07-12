@@ -15,9 +15,9 @@
  * @module ekklesia/crypto-native
  */
 import * as SecureStore from "expo-secure-store";
-import { hmac } from "@noble/hashes/hmac";
-import { sha256 } from "@noble/hashes/sha256";
-import { pbkdf2 } from "@noble/hashes/pbkdf2";
+import { hmac } from "@noble/hashes/hmac.js";
+import { sha256 } from "@noble/hashes/sha2.js";
+import { pbkdf2 } from "@noble/hashes/pbkdf2.js";
 import { ed25519 } from "@noble/curves/ed25519.js";
 // NOTE: Argon2id preferred but react-native-argon2 requires native build config.
 // Using PBKDF2-SHA256 (100k iterations) as portable fallback.

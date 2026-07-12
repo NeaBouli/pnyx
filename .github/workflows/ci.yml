@@ -7,6 +7,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   test-api:
     name: Python API Tests
@@ -79,3 +82,44 @@ jobs:
           SERVER_SALT: ci-test-salt-not-production
         run: |
           python -m pytest tests/ -v --tb=short
+
+  test-clients:
+    name: Client ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Web
+            path: apps/web
+            verify: npm run lint && npm run typecheck && npm test && npm run build
+          - name: Dashboard
+            path: apps/dashboard
+            verify: npm run lint && npm run typecheck && npm run build
+          - name: Mobile
+            path: apps/mobile
+            verify: npm run typecheck && npm test
+          - name: Representative
+            path: apps/representative
+            verify: npm run typecheck
+          - name: Crypto-TS
+            path: packages/crypto
+            verify: npm run typecheck && npm test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: ${{ matrix.path }}/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.path }}
+        run: npm ci
+
+      - name: Verify ${{ matrix.name }}
+        working-directory: ${{ matrix.path }}
+        run: ${{ matrix.verify }}

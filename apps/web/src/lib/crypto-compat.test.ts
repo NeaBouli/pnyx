@@ -23,31 +23,18 @@ import {
 // These must match the Python backend's verify_signature() output.
 
 describe("Cross-Platform Crypto Compatibility", () => {
-  // Test vector: known keypair for reproducible tests
-  const TEST_PRIVATE_KEY = "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60";
   const TEST_BILL_ID = "GR-2024-0042";
   const TEST_NULLIFIER = "a".repeat(64); // 64-char hex
   const TEST_VOTE = "YES";
 
-  it("buildVoteMessage produces sorted JSON matching Python sort_keys=True", () => {
+  it("buildVoteMessage matches the API and mobile canonical payload", () => {
     const msg = buildVoteMessage({
       bill_id: TEST_BILL_ID,
       vote: TEST_VOTE,
       nullifier_hash: TEST_NULLIFIER,
     });
 
-    // Python: json.dumps({"bill_id": ..., "nullifier_hash": ..., "vote": ...}, sort_keys=True)
-    // Keys MUST be alphabetically sorted: bill_id < nullifier_hash < vote
-    const parsed = JSON.parse(msg);
-    const keys = Object.keys(parsed);
-    expect(keys).toEqual(["bill_id", "nullifier_hash", "vote"]);
-
-    // No spaces in compact JSON
-    expect(msg).not.toContain(": ");
-    expect(msg).not.toContain(", ");
-
-    // Vote is uppercased
-    expect(parsed.vote).toBe("YES");
+    expect(msg).toBe(`${TEST_BILL_ID}:YES:${TEST_NULLIFIER}`);
   });
 
   it("buildVoteMessage uppercases vote value", () => {
@@ -56,7 +43,7 @@ describe("Cross-Platform Crypto Compatibility", () => {
       vote: "yes",
       nullifier_hash: TEST_NULLIFIER,
     });
-    expect(JSON.parse(msg).vote).toBe("YES");
+    expect(msg).toBe(`${TEST_BILL_ID}:YES:${TEST_NULLIFIER}`);
   });
 
   it("sign → verify round-trip succeeds with generated keypair", () => {

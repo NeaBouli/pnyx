@@ -15,6 +15,7 @@ venv/
 # Node
 node_modules/
 .next/
+*.tsbuildinfo
 dist/
 .expo/
 

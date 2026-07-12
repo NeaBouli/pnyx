@@ -59,7 +59,7 @@ This project uses publicly available government data from:
 | Auto-Healing Scraper | Ollama repairs broken CSS selectors | Beta |
 | Newsletter + Telegram | Brevo SMTP + Telegram cross-publish | Beta |
 | Push Notifications | Expo Push API, APScheduler | Beta |
-| Stripe Donations | Community-funded, auto-allocation | Beta |
+| Stripe / PayPal Donations | Voluntary support; runtime intake and public links fail-closed | Paused pending legal/provider E2E |
 | Mobile App | Expo React Native, HLR SIM check, Ed25519, Compass | Beta |
 | Representative App | Role-based bill visibility for elected officials | Beta |
 | Discourse Forum | Automated topic sync per bill | Beta |

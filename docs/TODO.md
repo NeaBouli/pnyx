@@ -2,6 +2,20 @@
 # Copyright (c) 2026 V-Labs Development — MIT License
 # Stand: 2026-04-13 — Session 3 komplett, Rollback pre-session4-20260413
 
+## 2026-07-12 — Current Release Gates
+
+- [x] Web, Dashboard, Mobile, Representative and shared crypto verification
+  added to pull-request CI.
+- [x] Citizen and Representative Android bundles exported locally.
+- [x] Donation intake is PII-free, donations-only and fail-closed.
+- [x] Public donation links and public wallet/account identifiers removed.
+- [ ] GitHub PR checks and merge for the 2026-07-12 readiness block.
+- [ ] Legal recipient, donation/tax/document policy and sandbox E2E approval.
+- [ ] Signed EAS builds, physical-device HLR/voting canary and controlled deploy.
+
+See `docs/SOFTWARE_READINESS_2026-07-12.md` for the current matrix. Older
+session notes below are historical and must not be used as current HEAD status.
+
 ---
 
 ## 🚀 STARTFLOW FÜR NÄCHSTE SESSION

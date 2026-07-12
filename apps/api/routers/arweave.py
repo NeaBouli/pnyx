@@ -171,7 +171,6 @@ async def arweave_status():
         return {
             "status":            "active",
             "wallet_configured": True,
-            "wallet_address":    wallet.address,
             "balance_ar":        float(balance),
             "message":           "Arweave wallet aktiv",
         }

@@ -53,15 +53,13 @@ describe("Key Generation", () => {
 });
 
 describe("Vote Message Format", () => {
-  it("sorts keys alphabetically (bill_id, nullifier_hash, vote)", () => {
+  it("uses bill, vote and nullifier in API order", () => {
     const msg = buildVoteMessage({
       vote: "YES",
       bill_id: "GR-2025-0001",
       nullifier_hash: "a".repeat(64),
     });
-    const parsed = JSON.parse(msg);
-    const keys = Object.keys(parsed);
-    expect(keys).toEqual(["bill_id", "nullifier_hash", "vote"]);
+    expect(msg).toBe(`GR-2025-0001:YES:${"a".repeat(64)}`);
   });
 
   it("uppercases vote", () => {
@@ -70,7 +68,7 @@ describe("Vote Message Format", () => {
       vote: "yes",
       nullifier_hash: "b".repeat(64),
     });
-    expect(JSON.parse(msg).vote).toBe("YES");
+    expect(msg).toBe(`GR-2025-0001:YES:${"b".repeat(64)}`);
   });
 
   it("produces deterministic output", () => {
@@ -84,16 +82,13 @@ describe("Vote Message Format", () => {
     expect(msg1).toBe(msg2);
   });
 
-  it("matches Python json.dumps(sort_keys=True) format", () => {
-    // Python: json.dumps({"bill_id":"X","vote":"YES","nullifier_hash":"N"}, sort_keys=True)
-    // => {"bill_id": "X", "nullifier_hash": "N", "vote": "YES"}
+  it("matches the Python API colon-separated format", () => {
     const msg = buildVoteMessage({
       bill_id: "X",
       vote: "YES",
       nullifier_hash: "N",
     });
-    // JSON.stringify produces no spaces after colons/commas
-    expect(msg).toBe('{"bill_id":"X","nullifier_hash":"N","vote":"YES"}');
+    expect(msg).toBe("X:YES:N");
   });
 });
 

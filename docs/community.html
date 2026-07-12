@@ -344,7 +344,7 @@
 
   <h2 class="fade-in" style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap"><span data-el="Χρηματοδότηση &amp; Βιωσιμότητα" data-en="Funding &amp; Sustainability">Χρηματοδότηση &amp; Βιωσιμότητα</span> <span style="display:inline-flex;align-items:center;gap:0.35rem;background:#dcfce7;border:1px solid #86efac;border-radius:2rem;padding:0.2rem 0.75rem;font-size:0.65rem;font-weight:700;color:#166534;white-space:nowrap;animation:pulse-green 2s ease-in-out infinite"><span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;animation:blink 2s infinite"></span> <span data-el="Διαδραστικός Ζωντανός Υπολογισμός" data-en="Interactive Live Calculation">Διαδραστικός Ζωντανός Υπολογισμός</span></span></h2>
   <p class="fade-in" data-el="Όσο μεγαλύτερη η υποστήριξη της κοινότητας, τόσο ισχυρότερο το σύστημα. Μεγαλύτεροι servers σημαίνουν καλύτερη απόδοση, ισχυρότερη AI και περισσότερη ασφάλεια. Η υποδομή είναι επεκτάσιμη — αναπτύσσεται μαζί με την κοινότητα. Όλα τα κόστη δημοσιεύονται διαφανώς." data-en="The greater the community support, the stronger the system. Larger servers mean better performance, more powerful AI and greater security. The infrastructure is scalable — it grows with the community. All costs are published transparently.">Όσο μεγαλύτερη η υποστήριξη της κοινότητας, τόσο ισχυρότερο το σύστημα. Μεγαλύτεροι servers σημαίνουν καλύτερη απόδοση, ισχυρότερη AI και περισσότερη ασφάλεια. Η υποδομή είναι επεκτάσιμη — αναπτύσσεται μαζί με την κοινότητα. Όλα τα κόστη δημοσιεύονται διαφανώς.</p>
-  <div id="payment-intake-paused" class="fade-in" style="margin:1rem 0;padding:0.9rem 1rem;border:1px solid #f59e0b;background:#fffbeb;border-radius:0.6rem;color:#92400e;font-size:0.82rem;font-weight:600" data-el="Οι οικονομικές συνεισφορές είναι προσωρινά σε παύση μέχρι να επιβεβαιωθούν ο νόμιμος δικαιούχος, η φορολογική μεταχείριση και η διαδικασία παραστατικών. Η αγορά HLR credits δεν αποτελεί δωρεά και θα επανέλθει ως ξεχωριστό προϊόν." data-en="Financial contributions are temporarily paused until the legal recipient, tax treatment and document process are confirmed. Purchasing HLR credits is not a donation and will return as a separate product.">Οι οικονομικές συνεισφορές είναι προσωρινά σε παύση μέχρι να επιβεβαιωθούν ο νόμιμος δικαιούχος, η φορολογική μεταχείριση και η διαδικασία παραστατικών. Η αγορά HLR credits δεν αποτελεί δωρεά και θα επανέλθει ως ξεχωριστό προϊόν.</div>
+  <div id="payment-intake-paused" class="fade-in" style="margin:1rem 0;padding:0.9rem 1rem;border:1px solid #f59e0b;background:#fffbeb;border-radius:0.6rem;color:#92400e;font-size:0.82rem;font-weight:600" data-el="Οι προαιρετικές δωρεές είναι προσωρινά σε παύση μέχρι να επιβεβαιωθούν ο νόμιμος δικαιούχος, η φορολογική μεταχείριση και η διαδικασία παραστατικών. Τα HLR credits αγοράζονται ιδιωτικά από τον πάροχο ως λειτουργικό έξοδο και δεν πωλούνται εδώ." data-en="Voluntary donations are temporarily paused until the legal recipient, tax treatment and document process are confirmed. HLR credits are procured privately from the provider as an operating expense and are not sold here.">Οι προαιρετικές δωρεές είναι προσωρινά σε παύση μέχρι να επιβεβαιωθούν ο νόμιμος δικαιούχος, η φορολογική μεταχείριση και η διαδικασία παραστατικών. Τα HLR credits αγοράζονται ιδιωτικά από τον πάροχο ως λειτουργικό έξοδο και δεν πωλούνται εδώ.</div>
 
   <div id="finance" class="finance-grid fade-in">
 
@@ -471,15 +471,7 @@
         <div class="fc-balance-sub" id="arBalanceUsd">≈ $—</div>
       </div>
       <div class="fc-status" id="arStatus" style="background:#f0fdf4;color:#166534;margin-top:0.3rem">✅ <span id="arStatusText" data-el="Φόρτωση..." data-en="Loading...">Φόρτωση...</span></div>
-      <!-- AR Wallet — collapsed -->
-      <button onclick="toggleCoin('ar')" style="width:100%;margin-top:0.5rem;padding:0.35rem;background:#22222218;border:1px solid #33333340;border-radius:0.4rem;cursor:pointer;font-weight:800;font-size:0.78rem;color:var(--gray-700);transition:all 0.2s" data-el="AR Wallet Adresse" data-en="AR Wallet Address">AR Wallet</button>
-      <div id="arPanel" style="display:none;margin-top:0.35rem;background:var(--gray-100);border:1px solid #e2e8f0;border-radius:0.4rem;padding:0.5rem">
-        <div style="display:flex;align-items:center;gap:0.3rem;background:white;border:1px solid #e2e8f0;border-radius:0.3rem;padding:0.25rem 0.4rem">
-          <code style="font-size:0.55rem;color:var(--gray-700);word-break:break-all;flex:1;user-select:all" id="arAddr">2hkK3Bcr6garERqyBCLCiJ-d8zZzM5ZWe3_AzGdhBTs</code>
-          <button onclick="copyAddr('arAddr')" style="background:none;border:1px solid #e2e8f0;border-radius:0.25rem;padding:0.15rem 0.35rem;cursor:pointer;font-size:0.6rem;color:var(--gray-500)" title="Copy">📋</button>
-        </div>
-        <a href="https://viewblock.io/arweave/address/2hkK3Bcr6garERqyBCLCiJ-d8zZzM5ZWe3_AzGdhBTs" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;font-size:0.6rem;color:var(--blue);margin-top:0.25rem;text-decoration:none" data-el="Viewblock Explorer →" data-en="Viewblock Explorer →">Viewblock Explorer →</a>
-      </div>
+      <div class="fc-status" style="background:#f8fafc;color:#64748b;margin-top:0.5rem" data-el="Οι διευθύνσεις λειτουργίας διαχειρίζονται ιδιωτικά." data-en="Operational addresses are managed privately.">Οι διευθύνσεις λειτουργίας διαχειρίζονται ιδιωτικά.</div>
     </div>
 
     <!-- HLR — SMS VERIFICATION (TABBED: PRIMARY + FALLBACK) -->
@@ -553,7 +545,7 @@
         <div class="fc-status" id="hlrStatusBox" style="background:#f0fdf4;color:#166534;margin-top:0.5rem">✅ <span id="hlrStatusText" data-el="Φόρτωση..." data-en="Loading...">Φόρτωση...</span></div>
         <!-- PayPal Donate -->
         <div style="margin-top:0.5rem">
-          <a href="#payment-intake-paused" aria-disabled="true" style="display:block;padding:0.4rem;background:#64748b;color:white;border-radius:0.4rem;text-align:center;font-weight:700;font-size:0.75rem;text-decoration:none" data-el="HLR αγορά προσωρινά σε παύση" data-en="HLR purchase temporarily paused">HLR αγορά προσωρινά σε παύση</a>
+          <a href="#payment-intake-paused" aria-disabled="true" style="display:block;padding:0.4rem;background:#64748b;color:white;border-radius:0.4rem;text-align:center;font-weight:700;font-size:0.75rem;text-decoration:none" data-el="Ιδιωτική προμήθεια παρόχου — δεν πωλείται" data-en="Private provider procurement — not sold here">Ιδιωτική προμήθεια παρόχου — δεν πωλείται</a>
         </div>
       </div>
 
@@ -580,37 +572,7 @@
           <span class="fc-live"><span class="fc-live-dot"></span> Live</span>
         </div>
         <div class="fc-status" id="hlrFbStatusBox" style="background:#f0fdf4;color:#166534;margin-top:0.5rem">✅ <span id="hlrFbStatusText" data-el="Φόρτωση..." data-en="Loading...">Φόρτωση...</span></div>
-        <!-- BTC/LTC Donation — collapsed by default -->
-        <div style="display:flex;gap:0.4rem;margin-top:0.5rem">
-          <button onclick="toggleCoin('btc')" style="flex:1;padding:0.35rem;background:#f7931a18;border:1px solid #f7931a40;border-radius:0.4rem;cursor:pointer;font-weight:800;font-size:0.78rem;color:#f7931a;transition:all 0.2s">BTC → HLR</button>
-          <button onclick="toggleCoin('ltc')" style="flex:1;padding:0.35rem;background:#34568018;border:1px solid #34568050;border-radius:0.4rem;cursor:pointer;font-weight:800;font-size:0.78rem;color:#345680;transition:all 0.2s">LTC → HLR</button>
-        </div>
-        <!-- BTC Panel (hidden) -->
-        <div id="btcPanel" style="display:none;margin-top:0.35rem;background:#f7931a0d;border:1px solid #f7931a40;border-radius:0.4rem;padding:0.5rem">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem">
-            <span style="font-weight:800;color:#f7931a;font-size:0.82rem">Bitcoin</span>
-            <span style="font-size:0.62rem;color:var(--gray-400)" id="btcPrice">—</span>
-          </div>
-          <div style="font-size:0.72rem;font-weight:700;color:var(--gray-700);margin-bottom:0.25rem" id="btcAmount">—</div>
-          <div style="display:flex;align-items:center;gap:0.3rem;background:white;border:1px solid #e2e8f0;border-radius:0.3rem;padding:0.25rem 0.4rem">
-            <code style="font-size:0.55rem;color:var(--gray-700);word-break:break-all;flex:1;user-select:all" id="btcAddr">bc1q83370mce8qfkyyepspg6xf42f577s47rtl3mhx</code>
-            <button onclick="copyAddr('btcAddr')" style="background:none;border:1px solid #e2e8f0;border-radius:0.25rem;padding:0.15rem 0.35rem;cursor:pointer;font-size:0.6rem;color:var(--gray-500)" title="Copy">📋</button>
-          </div>
-          <div style="font-size:0.55rem;color:var(--gray-400);text-align:center;margin-top:0.2rem" data-el="Live — πριν τη μεταφορά ελέγξτε το ποσό" data-en="Live — check amount before transfer">Live — πριν τη μεταφορά ελέγξτε το ποσό</div>
-        </div>
-        <!-- LTC Panel (hidden) -->
-        <div id="ltcPanel" style="display:none;margin-top:0.35rem;background:#34568018;border:1px solid #34568050;border-radius:0.4rem;padding:0.5rem">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem">
-            <span style="font-weight:800;color:#345680;font-size:0.82rem">Litecoin</span>
-            <span style="font-size:0.62rem;color:var(--gray-400)" id="ltcPrice">—</span>
-          </div>
-          <div style="font-size:0.72rem;font-weight:700;color:var(--gray-700);margin-bottom:0.25rem" id="ltcAmount">—</div>
-          <div style="display:flex;align-items:center;gap:0.3rem;background:white;border:1px solid #e2e8f0;border-radius:0.3rem;padding:0.25rem 0.4rem">
-            <code style="font-size:0.55rem;color:var(--gray-700);word-break:break-all;flex:1;user-select:all" id="ltcAddr">ltc1qmr467kl8w0e8axplq5uyrpws3mc4sclpu4ds8w</code>
-            <button onclick="copyAddr('ltcAddr')" style="background:none;border:1px solid #e2e8f0;border-radius:0.25rem;padding:0.15rem 0.35rem;cursor:pointer;font-size:0.6rem;color:var(--gray-500)" title="Copy">📋</button>
-          </div>
-          <div style="font-size:0.55rem;color:var(--gray-400);text-align:center;margin-top:0.2rem" data-el="Live — πριν τη μεταφορά ελέγξτε το ποσό" data-en="Live — check amount before transfer">Live — πριν τη μεταφορά ελέγξτε το ποσό</div>
-        </div>
+        <a href="#payment-intake-paused" aria-disabled="true" style="display:block;margin-top:0.5rem;padding:0.4rem;background:#64748b;color:white;border-radius:0.4rem;text-align:center;font-weight:700;font-size:0.75rem;text-decoration:none" data-el="Ιδιωτική προμήθεια παρόχου — δεν πωλείται" data-en="Private provider procurement — not sold here">Ιδιωτική προμήθεια παρόχου — δεν πωλείται</a>
       </div>
     </div>
 
@@ -705,13 +667,13 @@
 
     <!-- DEVELOPER DONATIONS — PayPal (freier Betrag, nicht getrackt) -->
     <div class="fc" style="border-color:#0070ba">
-      <div class="fc-badge" style="background:#0070ba" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
+      <div class="fc-badge" style="background:#64748b" data-el="ΠΑΥΣΗ" data-en="PAUSED">ΠΑΥΣΗ</div>
       <div class="fc-icon">👨‍💻</div>
       <div class="fc-title" data-el="Στήριξη Ανάπτυξης" data-en="Support Development">Στήριξη Ανάπτυξης</div>
       <div class="fc-sub" data-el="Προαιρετική δωρεά στους προγραμματιστές" data-en="Optional donation to developers">Προαιρετική δωρεά στους προγραμματιστές</div>
       <div class="fc-info">
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Μέσω:" data-en="Via:">Μέσω:</span><strong>PayPal</strong></div>
-        <div class="fc-row"><span style="color:var(--gray-700)">Account:</span><strong>VendettaLabs</strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κατάσταση:" data-en="Status:">Κατάσταση:</span><strong data-el="Προσωρινά σε παύση" data-en="Temporarily paused">Προσωρινά σε παύση</strong></div>
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Ποσό:" data-en="Amount:">Ποσό:</span><strong data-el="Ελεύθερο" data-en="Any amount">Ελεύθερο</strong></div>
       </div>
       <div class="fc-info" style="margin-top:0.4rem;font-size:0.68rem">
@@ -1035,26 +997,6 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
 </script>
 
 <script>
-// Toggle BTC/LTC panels (accordion — only one open at a time)
-function toggleCoin(coin) {
-  var panels = ["btcPanel","ltcPanel","arPanel"];
-  panels.forEach(function(p) {
-    var el = document.getElementById(p);
-    if (!el) return;
-    if (p === coin + "Panel") { el.style.display = el.style.display === "none" ? "block" : "none"; }
-    else { el.style.display = "none"; }
-  });
-}
-// Copy address to clipboard
-function copyAddr(id) {
-  var el = document.getElementById(id);
-  if (!el) return;
-  var text = el.textContent.trim();
-  navigator.clipboard.writeText(text).then(function() {
-    var btn = el.parentElement.querySelector("button");
-    if (btn) { var orig = btn.textContent; btn.textContent = "✅"; btn.parentElement.classList.add("copy-ok"); setTimeout(function(){ btn.textContent = orig; btn.parentElement.classList.remove("copy-ok"); }, 1500); }
-  });
-}
 </script>
 
 <script>
@@ -1090,8 +1032,6 @@ function copyAddr(id) {
       })
       .catch(function() { /* use fallback values */ });
   }
-  // Arweave wallet
-  var AR_WALLET = "2hkK3Bcr6garERqyBCLCiJ-d8zZzM5ZWe3_AzGdhBTs";
   var AR_WARN_THRESHOLD = 1.0;  // AR — yellow below this
   var AR_CRIT_THRESHOLD = 0.1;  // AR — red below this
 
@@ -1339,10 +1279,10 @@ function copyAddr(id) {
   var arLastPrice = null;
 
   function fetchArweaveBalance() {
-    fetch("https://arweave.net/wallet/" + AR_WALLET + "/balance")
-      .then(function(r) { return r.text(); })
-      .then(function(winston) {
-        arLastBalance = parseInt(winston, 10) / 1e12; // winston → AR
+    fetch("https://api.ekklesia.gr/api/v1/arweave/status")
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        arLastBalance = typeof data.balance_ar === "number" ? data.balance_ar : null;
         updateArweaveTile();
       })
       .catch(function() {
@@ -1394,38 +1334,6 @@ function copyAddr(id) {
       if (statusBox) { statusBox.style.background = "#f0fdf4"; statusBox.style.color = "#166534"; }
       if (statusEl) statusEl.textContent = t("Wallet ενεργό — ","Wallet active — ") + arLastBalance.toFixed(2) + " AR";
     }
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // BTC/LTC LIVE PRICE CALCULATOR (for HLR donations)
-  // ═══════════════════════════════════════════════════════════
-  var HLR_DONATE_EUR = 10; // target donation amount
-  var PRICE_BUFFER = 1.03; // +3% tolerance
-
-  function fetchCryptoPrices() {
-    fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,litecoin&vs_currencies=eur")
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        if (data.bitcoin && data.bitcoin.eur) updateCryptoCalc("btc", data.bitcoin.eur);
-        if (data.litecoin && data.litecoin.eur) updateCryptoCalc("ltc", data.litecoin.eur);
-      })
-      .catch(function() {
-        var bp = document.getElementById("btcPrice");
-        var lp = document.getElementById("ltcPrice");
-        if (bp) bp.textContent = t("Τιμή: μη διαθέσιμη","Price: unavailable");
-        if (lp) lp.textContent = t("Τιμή: μη διαθέσιμη","Price: unavailable");
-      });
-  }
-
-  function updateCryptoCalc(coin, priceEur) {
-    var amount = (HLR_DONATE_EUR / priceEur) * PRICE_BUFFER;
-    var priceEl = document.getElementById(coin + "Price");
-    var amountEl = document.getElementById(coin + "Amount");
-    var decimals = coin === "btc" ? 8 : 6;
-    var symbol = coin.toUpperCase();
-
-    if (priceEl) priceEl.textContent = "1 " + symbol + " = " + priceEur.toLocaleString("de-DE", {minimumFractionDigits:2, maximumFractionDigits:2}) + "\u20AC";
-    if (amountEl) amountEl.textContent = "10\u20AC \u2248 " + amount.toFixed(decimals) + " " + symbol + t(" (συμπ. 3% περιθώριο)"," (incl. 3% buffer)");
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -1613,14 +1521,12 @@ function copyAddr(id) {
   fetchArweaveBalance();
   fetchArweavePrice();
   fetchHlrCredits();
-  fetchCryptoPrices();
   fetchNewsletterStats();
   setInterval(fetchPaymentStatus, 60000);    // Server/Domain balances every 60s
   setInterval(fetchMirrorStatus, 30000);     // Mirror health every 30s
   setInterval(fetchArweaveBalance, 60000);   // AR balance every 60s
   setInterval(fetchArweavePrice, 300000);    // AR price every 5min
   setInterval(fetchHlrCredits, 30000);       // HLR credits every 30s
-  setInterval(fetchCryptoPrices, 60000);     // BTC/LTC prices every 60s
   setInterval(fetchNewsletterStats, 60000);  // Newsletter stats every 60s
 
   // Transparenz Live-Daten

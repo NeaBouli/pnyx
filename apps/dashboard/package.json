@@ -6,7 +6,8 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
-    "lint": "next lint"
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "next": "16.2.6",
@@ -16,12 +17,16 @@
     "recharts": "^2.12.0"
   },
   "devDependencies": {
+    "@next/eslint-plugin-next": "16.2.6",
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
     "autoprefixer": "^10.4.0",
     "postcss": "8.5.15",
     "tailwindcss": "^3.4.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "typescript-eslint": "^8.59.4"
   },
   "overrides": {
     "postcss": "8.5.15"
