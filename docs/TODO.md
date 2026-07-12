@@ -9,7 +9,8 @@
 - [x] Citizen and Representative Android bundles exported locally.
 - [x] Donation intake is PII-free, donations-only and fail-closed.
 - [x] Public donation links and public wallet/account identifiers removed.
-- [ ] GitHub PR checks and merge for the 2026-07-12 readiness block.
+- [x] GitHub PR checks and merge for the 2026-07-12 readiness block (#131,
+  `a99a12b`).
 - [ ] Legal recipient, donation/tax/document policy and sandbox E2E approval.
 - [ ] Signed EAS builds, physical-device HLR/voting canary and controlled deploy.
 
