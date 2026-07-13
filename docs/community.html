@@ -1017,8 +1017,8 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
   var AUTO_RECOVERY_PROOF_WAIT_SECONDS = 30;
 
   // Live data from API (updated by fetchPaymentStatus)
-  var liveServerData = { received: 20, cost_total: 10, balance: 10 };
-  var liveDomainData = { received: 9.30, cost_total: 9.30, balance: 0 };
+  var liveServerData = { received: 0, cost_total: 10, balance: -10 };
+  var liveDomainData = { received: 0, cost_total: 9.30, balance: -9.30 };
 
   function fetchPaymentStatus() {
     fetch("https://api.ekklesia.gr/api/v1/payments/status")

@@ -49,6 +49,8 @@ SERVER_COST_MONTHLY = 10.00
 SERVER_START = "2026-04-16"
 DOMAIN_COST_YEARLY = 9.30
 DOMAIN_EXPIRY = "2028-03-29"
+INITIAL_SERVER_FUNDING = os.getenv("INITIAL_SERVER_FUNDING_EUR", "0")
+INITIAL_DOMAIN_FUNDING = os.getenv("INITIAL_DOMAIN_FUNDING_EUR", "0")
 
 # Redis keys
 R_PAYMENTS = "donations:log"          # List of JSON payment records
@@ -124,6 +126,7 @@ async def _process_stripe_adjustment(event: dict, event_type: str) -> dict:
             "event_type": event_type,
             "occurred_at": datetime.now(timezone.utc).isoformat(),
             "provider": "stripe",
+            "provider_mode": "live" if event.get("livemode") is True else "test",
             "provider_reference": session_id,
             "payment_reference": payment_intent,
             "amount_cents_reported": amount_cents,
@@ -151,31 +154,101 @@ def _public_payment_record(record: dict | None) -> dict | None:
     return {key: record[key] for key in allowed if key in record}
 
 
+def _public_support_amount(value: object) -> Decimal | None:
+    try:
+        amount = Decimal(str(value)).quantize(Decimal("0.01"))
+    except (InvalidOperation, ValueError):
+        return None
+    return amount if amount > 0 else None
+
+
+def _public_allocation_amount(value: object) -> Decimal | None:
+    try:
+        amount = Decimal(str(value)).quantize(Decimal("0.01"))
+    except (InvalidOperation, ValueError):
+        return None
+    return amount if amount >= 0 else None
+
+
+def _is_public_support_record(record: object) -> bool:
+    """Accept only current, processor-verified support records for public totals."""
+    if not isinstance(record, dict):
+        return False
+    if record.get("method") not in {"stripe", "paypal"}:
+        return False
+    if record.get("category") != "donation":
+        return False
+    if record.get("purpose") not in SUPPORT_PURPOSES:
+        return False
+    if record.get("currency") != "EUR":
+        return False
+    if record.get("fulfillment_state") != "not_applicable":
+        return False
+    if record.get("provider_mode") != "live":
+        return False
+    if _public_support_amount(record.get("amount")) is None:
+        return False
+    allocation = record.get("allocation")
+    if not isinstance(allocation, dict):
+        return False
+    allocated = [_public_allocation_amount(allocation.get(key)) for key in ("server", "domain", "reserve")]
+    if any(value is None for value in allocated):
+        return False
+    return sum(allocated, Decimal("0")) == _public_support_amount(record.get("amount"))
+
+
+async def _load_public_support_records(r: aioredis.Redis) -> list[dict]:
+    """Build a fail-closed public view without seed, manual or test records."""
+    raw_records = await r.lrange(R_PAYMENTS, 0, -1)
+    records: list[dict] = []
+    for raw in raw_records:
+        try:
+            record = json.loads(raw)
+        except (TypeError, json.JSONDecodeError):
+            continue
+        if _is_public_support_record(record):
+            records.append(record)
+    return records
+
+
+def _public_support_totals(records: list[dict]) -> dict[str, float]:
+    totals = {
+        "server": Decimal("0"),
+        "domain": Decimal("0"),
+        "reserve": Decimal("0"),
+        "received": Decimal("0"),
+    }
+    for record in records:
+        amount = _public_support_amount(record.get("amount"))
+        if amount is None:
+            continue
+        totals["received"] += amount
+        allocation = record.get("allocation", {})
+        for destination in ("server", "domain", "reserve"):
+            allocated = _public_allocation_amount(allocation.get(destination))
+            if allocated is not None:
+                totals[destination] += allocated
+    return {key: float(value.quantize(Decimal("0.01"))) for key, value in totals.items()}
+
+
 def _admin_payment_record(record: dict) -> dict:
     """Project legacy rows onto an explicit PII-free admin schema."""
     allowed = (
         "date", "amount", "currency", "allocation", "method", "purpose",
         "category", "fulfillment_state", "requires_accounting_review",
-        "stripe_session", "payment_intent", "txn_id",
+        "provider_mode", "stripe_session", "payment_intent", "txn_id",
     )
     return {key: record[key] for key in allowed if key in record}
 
 
-async def _init_seed_payments(r: aioredis.Redis) -> None:
-    """Seed initial payments if Redis is empty (first boot)."""
+async def _init_operating_funding(r: aioredis.Redis) -> None:
+    """Initialize private operator funding without creating payment records."""
     exists = await r.exists(R_SERVER_RECEIVED)
     if not exists:
-        # Seed: 20€ initial for server, 9.30€ for domain
-        await r.set(R_SERVER_RECEIVED, "20.00")
-        await r.set(R_DOMAIN_RECEIVED, "9.30")
+        await r.set(R_SERVER_RECEIVED, INITIAL_SERVER_FUNDING)
+        await r.set(R_DOMAIN_RECEIVED, INITIAL_DOMAIN_FUNDING)
         await r.set(R_RESERVE, "0.00")
-        seed = [
-            {"date": "2026-04-16", "amount": 20.00, "to": "server", "from": "V-Labs Development (Seed)", "method": "manual"},
-            {"date": "2026-03-29", "amount": 9.30, "to": "domain", "from": "V-Labs Development (Registration)", "method": "manual"},
-        ]
-        for p in seed:
-            await r.rpush(R_PAYMENTS, json.dumps(p))
-        logger.info("[MOD-18] Seeded initial donation records")
+        logger.info("[MOD-18] Initialized private operator funding balances")
 
 
 # ── Verteilungsalgorithmus ────────────────────────────────────────────────────
@@ -310,7 +383,7 @@ async def stripe_webhook(request: Request):
         raise HTTPException(status_code=400, detail="Invalid Stripe payment reference")
 
     r = await _get_redis()
-    await _init_seed_payments(r)
+    await _init_operating_funding(r)
 
     idempotency_key = f"{R_STRIPE_SESSION_PREFIX}{session_id}"
     claimed = await r.set(idempotency_key, "processing", nx=True, ex=900)
@@ -333,6 +406,7 @@ async def stripe_webhook(request: Request):
             "currency": "EUR",
             "purpose": purpose,
             "category": category,
+            "provider_mode": "live" if session.get("livemode") is True else "test",
             "fulfillment_state": fulfillment_state,
             "requires_accounting_review": True,
         }
@@ -347,6 +421,7 @@ async def stripe_webhook(request: Request):
             "payment_reference": payment_intent,
             "purpose": purpose,
             "category": category,
+            "provider_mode": "live" if session.get("livemode") is True else "test",
             "amount_cents": amount_cents,
             "currency": "EUR",
             "fulfillment_state": fulfillment_state,
@@ -374,11 +449,11 @@ async def payment_status():
     Liefert aktuelle Kontostände für community.html Kacheln.
     """
     r = await _get_redis()
-    await _init_seed_payments(r)
-
-    server_received = float(await r.get(R_SERVER_RECEIVED) or "0")
-    domain_received = float(await r.get(R_DOMAIN_RECEIVED) or "0")
-    reserve = float(await r.get(R_RESERVE) or "0")
+    public_records = await _load_public_support_records(r)
+    public_totals = _public_support_totals(public_records)
+    server_received = public_totals["server"]
+    domain_received = public_totals["domain"]
+    reserve = public_totals["reserve"]
 
     months_elapsed = _months_elapsed(SERVER_START)
     server_cost_total = months_elapsed * SERVER_COST_MONTHLY
@@ -389,14 +464,12 @@ async def payment_status():
 
     # Letzte Zahlung
     last_payment = None
-    log_len = await r.llen(R_PAYMENTS)
-    if log_len > 0:
-        last_raw = await r.lindex(R_PAYMENTS, -1)
-        if last_raw:
-            last_payment = _public_payment_record(json.loads(last_raw))
+    log_len = len(public_records)
+    if public_records:
+        last_payment = _public_payment_record(public_records[-1])
 
     # Alle Zahlungen summieren
-    total_received = server_received + domain_received + reserve
+    total_received = public_totals["received"]
 
     return {
         "server": {
@@ -426,9 +499,10 @@ R_PAYPAL_TXN = "paypal:txn:"  # Set of processed txn_ids
 R_PAYPAL_DONATIONS = "paypal:donations:total"
 R_PAYPAL_COUNT = "paypal:donations:count"
 
+PAYPAL_IPN_PRODUCTION_URL = "https://ipnpb.paypal.com/cgi-bin/webscr"
 PAYPAL_IPN_URL = os.getenv(
     "PAYPAL_IPN_URL",
-    "https://ipnpb.paypal.com/cgi-bin/webscr"  # Production
+    PAYPAL_IPN_PRODUCTION_URL,
 )
 
 async def _verify_paypal_ipn(payload: bytes) -> bool:
@@ -472,6 +546,11 @@ async def paypal_ipn_webhook(request: Request):
     receiver_email = form.get("receiver_email", "").strip().lower()
     receiver_id = form.get("receiver_id", "").strip()
     purpose = _payment_purpose(form.get("custom", ""))
+    provider_mode = (
+        "live"
+        if PAYPAL_IPN_URL == PAYPAL_IPN_PRODUCTION_URL and form.get("test_ipn") != "1"
+        else "test"
+    )
 
     logger.info("[PayPal] IPN received: txn=%s status=%s amount=%s %s",
                 txn_id, payment_status, mc_gross, mc_currency)
@@ -529,6 +608,7 @@ async def paypal_ipn_webhook(request: Request):
                 "event_type": payment_status.lower(),
                 "occurred_at": datetime.now(timezone.utc).isoformat(),
                 "provider": "paypal",
+                "provider_mode": provider_mode,
                 "provider_reference": parent_txn_id,
                 "adjustment_reference": txn_id,
                 "amount_cents_reported": adjustment_cents,
@@ -556,7 +636,7 @@ async def paypal_ipn_webhook(request: Request):
 
     accounting_mutated = False
     try:
-        await _init_seed_payments(r)
+        await _init_operating_funding(r)
         await r.incrbyfloat(R_PAYPAL_DONATIONS, amount)
         accounting_mutated = True
         await r.incr(R_PAYPAL_COUNT)
@@ -572,6 +652,7 @@ async def paypal_ipn_webhook(request: Request):
             "txn_id": txn_id,
             "purpose": purpose,
             "category": category,
+            "provider_mode": provider_mode,
             "fulfillment_state": fulfillment_state,
             "requires_accounting_review": True,
         }
@@ -585,6 +666,7 @@ async def paypal_ipn_webhook(request: Request):
             "provider_reference": txn_id,
             "purpose": purpose,
             "category": category,
+            "provider_mode": provider_mode,
             "amount_cents": amount_cents,
             "currency": "EUR",
             "fulfillment_state": fulfillment_state,
@@ -763,7 +845,7 @@ async def ltc_balance(_auth: bool = Depends(verify_admin_key)):
 async def finance_overview(_auth: bool = Depends(verify_admin_key)):
     """Vollstaendige Finanzuebersicht — alle Quellen kombiniert."""
     r = await _get_redis()
-    await _init_seed_payments(r)
+    await _init_operating_funding(r)
 
     # Einnahmen
     server_received = float(await r.get(R_SERVER_RECEIVED) or "0")
@@ -841,16 +923,15 @@ async def finance_overview(_auth: bool = Depends(verify_admin_key)):
 async def public_finance_overview():
     """Oeffentlicher Transparenz-Endpoint — nur Summen, keine Details."""
     r = await _get_redis()
-    await _init_seed_payments(r)
-
-    server_received = float(await r.get(R_SERVER_RECEIVED) or "0")
+    public_records = await _load_public_support_records(r)
+    server_received = _public_support_totals(public_records)["server"]
     months = _months_elapsed(SERVER_START)
     server_cost = months * HETZNER_MONTHLY
     server_balance = round(server_received - server_cost, 2)
     runway = int(server_balance / HETZNER_MONTHLY) if server_balance > 0 else 0
 
     hlr_remaining = max(0, 2499 - int(await r.get("hlr:hlrlookupcom:used") or "0"))
-    payment_count = await r.llen(R_PAYMENTS)
+    payment_count = len(public_records)
 
     return {
         "server_gedeckt_monate": runway,

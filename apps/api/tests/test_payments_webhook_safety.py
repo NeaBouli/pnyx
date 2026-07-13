@@ -64,6 +64,32 @@ class _SuccessRedis:
         return 1
 
 
+class _PublicProjectionRedis:
+    def __init__(self, records):
+        self.records = [__import__("json").dumps(record) for record in records]
+
+    async def lrange(self, _key, _start, _end):
+        return self.records
+
+    async def get(self, _key):
+        return None
+
+
+def _verified_public_record(amount=10.0, allocation=None):
+    return {
+        "date": "2026-07-13 12:00",
+        "amount": amount,
+        "currency": "EUR",
+        "allocation": allocation or {"server": amount, "domain": 0.0, "reserve": 0.0},
+        "method": "stripe",
+        "purpose": "infrastructure_support",
+        "category": "donation",
+        "provider_mode": "live",
+        "fulfillment_state": "not_applicable",
+        "requires_accounting_review": True,
+    }
+
+
 def test_public_payment_record_redacts_identity_and_processor_ids():
     result = payments._public_payment_record(
         {
@@ -84,6 +110,92 @@ def test_public_payment_record_redacts_identity_and_processor_ids():
     }
 
 
+def test_public_support_projection_rejects_seed_test_and_incomplete_records():
+    assert payments._is_public_support_record(_verified_public_record()) is True
+    assert payments._is_public_support_record({
+        **_verified_public_record(),
+        "method": "paypal",
+    }) is True
+    assert payments._is_public_support_record({
+        "date": "2026-04-16",
+        "amount": 20.0,
+        "method": "manual",
+        "to": "server",
+    }) is False
+    assert payments._is_public_support_record({
+        **_verified_public_record(),
+        "method": "test",
+    }) is False
+    assert payments._is_public_support_record({
+        **_verified_public_record(),
+        "purpose": "",
+    }) is False
+    assert payments._is_public_support_record({
+        **_verified_public_record(),
+        "provider_mode": "test",
+    }) is False
+    assert payments._is_public_support_record({
+        **_verified_public_record(),
+        "allocation": {"server": 9.0, "domain": 0.0, "reserve": 0.0},
+    }) is False
+    assert payments._is_public_support_record({
+        **_verified_public_record(),
+        "allocation": {"server": 11.0, "domain": 0.0, "reserve": -1.0},
+    }) is False
+
+
+@pytest.mark.asyncio
+async def test_public_status_excludes_seed_and_test_records(monkeypatch):
+    redis = _PublicProjectionRedis([
+        {"date": "2026-04-16", "amount": 20.0, "method": "manual", "to": "server"},
+        {**_verified_public_record(), "method": "test"},
+    ])
+
+    async def fake_get_redis():
+        return redis
+
+    monkeypatch.setattr(payments, "_get_redis", fake_get_redis)
+
+    result = await payments.payment_status()
+
+    assert result["server"]["received"] == 0.0
+    assert result["domain"]["received"] == 0.0
+    assert result["total_received"] == 0.0
+    assert result["last_payment"] is None
+    assert result["payment_count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_public_status_uses_only_verified_support_records(monkeypatch):
+    verified = _verified_public_record(
+        amount=25.0,
+        allocation={"server": 20.0, "domain": 5.0, "reserve": 0.0},
+    )
+    redis = _PublicProjectionRedis([
+        {"date": "2026-04-16", "amount": 20.0, "method": "manual", "to": "server"},
+        verified,
+        {**verified, "method": "test", "amount": 999.0},
+    ])
+
+    async def fake_get_redis():
+        return redis
+
+    monkeypatch.setattr(payments, "_get_redis", fake_get_redis)
+
+    result = await payments.payment_status()
+
+    assert result["server"]["received"] == 20.0
+    assert result["domain"]["received"] == 5.0
+    assert result["total_received"] == 25.0
+    assert result["payment_count"] == 1
+    assert result["last_payment"] == {
+        "date": "2026-07-13 12:00",
+        "amount": 25.0,
+        "allocation": {"server": 20.0, "domain": 5.0, "reserve": 0.0},
+        "method": "stripe",
+    }
+
+
 def test_public_community_page_keeps_payment_links_paused():
     community = (Path(__file__).parents[3] / "docs" / "community.html").read_text(encoding="utf-8")
     assert "donate.stripe.com" not in community
@@ -92,6 +204,8 @@ def test_public_community_page_keeps_payment_links_paused():
     assert "HLR credits are procured privately" in community
     assert "BTC → HLR" not in community
     assert "LTC → HLR" not in community
+    assert "liveServerData = { received: 20" not in community
+    assert "liveDomainData = { received: 9.30" not in community
 
 
 @pytest.mark.asyncio
@@ -247,12 +361,14 @@ async def test_paid_checkout_is_processed_once_and_logged(monkeypatch):
     assert record["payment_intent"] == "pi_test_paid"
     assert record["purpose"] == "infrastructure_support"
     assert record["category"] == "donation"
+    assert record["provider_mode"] == "test"
     assert record["requires_accounting_review"] is True
     finance_key, raw_event = redis.pushed[1]
     assert finance_key == payments.R_FINANCE_EVENTS
     finance_event = __import__("json").loads(raw_event)
     assert finance_event["event_id"] == "evt_test_paid"
     assert finance_event["event_type"] == "payment_captured"
+    assert finance_event["provider_mode"] == "test"
     assert finance_event["amount_cents"] == 2500
 
 
@@ -414,6 +530,7 @@ async def test_paypal_donation_is_logged_without_payer_data(monkeypatch):
     assert result["processed"] is True
     record = __import__("json").loads(redis.pushed[0][1])
     assert record["category"] == "donation"
+    assert record["provider_mode"] == "live"
     assert "payer" not in __import__("json").dumps(record).lower()
     assert "person@example.test" not in __import__("json").dumps(redis.pushed)
 
