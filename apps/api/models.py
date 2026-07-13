@@ -143,6 +143,7 @@ class ParliamentBill(Base):
     summary_long_el     = Column(Text, nullable=True)            # Offizieller/Langtext
     summary_long_en     = Column(Text, nullable=True)
     analysis_el         = Column(Text, nullable=True)            # Ανάλυση: 5-8 Sätze analytisch
+    generated_content_provenance = Column(JSONB, nullable=True)  # SHA-256 ownership guards
 
     categories          = Column(JSONB, nullable=True)           # ["Περιβάλλον", ...]
     party_votes_parliament = Column(JSONB, nullable=True)        # {"ΝΔ": "ΝΑΙ", ...}

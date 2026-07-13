@@ -21,6 +21,7 @@ from models import (
     ParliamentBill, CitizenVote, BillStatus,
     BillStatusLog, VoteChoice, Party, Statement
 )
+from services.content_provenance import clear_generated_content
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/admin", tags=["MOD-15 Admin"])
@@ -194,6 +195,8 @@ async def admin_update_bill(
     updates = req.model_dump(exclude_none=True)
     for field, value in updates.items():
         setattr(bill, field, value)
+        if field in {"pill_el", "summary_short_el"}:
+            clear_generated_content(bill, field)
     await db.commit()
 
     logger.info(f"[MOD-15] Bill aktualisiert: {bill_id} — {list(updates.keys())}")
@@ -210,6 +213,9 @@ async def admin_review_summary(
     if not bill:
         raise HTTPException(404, f"Bill {bill_id} nicht gefunden")
     bill.ai_summary_reviewed = approved
+    if approved:
+        clear_generated_content(bill, "pill_el")
+        clear_generated_content(bill, "summary_short_el")
     await db.commit()
     return {"success": True, "bill_id": bill_id, "reviewed": approved}
 

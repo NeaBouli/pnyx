@@ -37,6 +37,7 @@ from services.ollama_service import (
     ollama_available,
     ollama_json_generate,
 )
+from services.content_provenance import apply_generated_content, record_generated_content
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/scraper", tags=["MOD-10 AI Scraper"])
@@ -823,6 +824,10 @@ async def fetch_and_store(
         categories=summaries.get("categories", []),
         status=BillStatus.ANNOUNCED,
     )
+    record_generated_content(bill, "pill_el", summaries.get("pill_el"))
+    record_generated_content(
+        bill, "summary_short_el", summaries.get("summary_short_el")
+    )
     db.add(bill)
     await db.commit()
 
@@ -925,11 +930,9 @@ async def import_parliament_bills(
             if vote_date and existing_bill.parliament_vote_date != vote_date:
                 existing_bill.parliament_vote_date = vote_date
                 changed = True
-            if pill_el and not existing_bill.pill_el:
-                existing_bill.pill_el = pill_el
+            if apply_generated_content(existing_bill, "pill_el", pill_el):
                 changed = True
-            if summary_short_el and not existing_bill.summary_short_el:
-                existing_bill.summary_short_el = summary_short_el
+            if apply_generated_content(existing_bill, "summary_short_el", summary_short_el):
                 changed = True
             if item.summary_long_el and not existing_bill.summary_long_el:
                 existing_bill.summary_long_el = item.summary_long_el
@@ -961,6 +964,8 @@ async def import_parliament_bills(
             parliament_vote_date=vote_date,
             submitted_date=submitted_date,
         )
+        record_generated_content(bill, "pill_el", pill_el)
+        record_generated_content(bill, "summary_short_el", summary_short_el)
         db.add(bill)
         imported += 1
 

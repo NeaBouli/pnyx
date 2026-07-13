@@ -201,6 +201,125 @@ async def test_create_topic_retries_with_stable_suffix_when_duplicate_search_mis
     assert len(FakeAsyncClient.posts) == 2
     assert FakeAsyncClient.posts[0]["title"] == "[Φορέας] ΑΝΑΘΕΣΗ ΕΡΓΟΥ"
     assert FakeAsyncClient.posts[1]["title"] == "[Φορέας] ΑΝΑΘΕΣΗ ΕΡΓΟΥ — ΨΙΗΕ465ΕΦ5-Λ"
+    assert bill.generated_content_provenance.get("forum_body")
+
+
+def _forum_bill(summary: str) -> SimpleNamespace:
+    return SimpleNamespace(
+        id="GR-PROVENANCE",
+        title_el="Δοκιμή προέλευσης",
+        summary_short_el=summary,
+        analysis_el=None,
+        pill_el=None,
+        summary_long_el=(
+            "### Πλήρη έγγραφα\n"
+            "- [Έγγραφο](https://www.hellenicparliament.gr/UserFiles/x/test.pdf)"
+        ),
+        ai_summary_reviewed=False,
+        status=SimpleNamespace(value="ACTIVE"),
+        governance_level=SimpleNamespace(value="NATIONAL"),
+        source="PARLIAMENT",
+        diavgeia_ada=None,
+        parliament_url="https://www.hellenicparliament.gr/test",
+        official_source_url=None,
+        forum_topic_id=123,
+        forum_topic_url="https://pnyx.ekklesia.gr/t/123",
+        periferia_id=None,
+        dimos_id=None,
+        generated_content_provenance=None,
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_topic_refreshes_owned_body_and_keeps_pdf_block(monkeypatch):
+    from services.content_provenance import FORUM_BODY_FIELD, record_generated_content
+
+    bill = _forum_bill("Παλιά αυτόματη σύνοψη.")
+    old_body = discourse_sync._build_topic_body(bill)
+    record_generated_content(bill, FORUM_BODY_FIELD, old_body)
+    bill.summary_short_el = "Νέα αυτόματη σύνοψη."
+    calls = []
+
+    async def fake_resolve_category(_bill, _db):
+        return 42
+
+    async def fake_region(_bill, _db):
+        return ""
+
+    async def fake_title(_bill, _db):
+        return "[Βουλή] Δοκιμή προέλευσης"
+
+    async def fake_request(_client, method, url, **kwargs):
+        calls.append((method, url, kwargs.get("json")))
+        if method == "put" and "/t/-/" in url:
+            return FakeResponse(200)
+        if method == "get" and "/t/123.json" in url:
+            return FakeResponse(200, {"post_stream": {"posts": [{"id": 55}]}})
+        if method == "get" and "/posts/55.json" in url:
+            return FakeResponse(200, {"raw": old_body})
+        if method == "put" and "/posts/55.json" in url:
+            return FakeResponse(200)
+        raise AssertionError((method, url))
+
+    monkeypatch.setattr(discourse_sync, "_resolve_category", fake_resolve_category)
+    monkeypatch.setattr(discourse_sync, "_region_name_for_body", fake_region)
+    monkeypatch.setattr(discourse_sync, "_build_topic_title", fake_title)
+    monkeypatch.setattr(discourse_sync, "_request_discourse", fake_request)
+    monkeypatch.setattr(discourse_sync, "DISCOURSE_API_KEY", "test-key")
+
+    result = await discourse_sync.update_discourse_topic(bill, db=None)
+    assert result is True, calls
+
+    body_updates = [call for call in calls if call[0] == "put" and "/posts/55.json" in call[1]]
+    assert len(body_updates) == 1
+    new_body = body_updates[0][2]["post"]["raw"]
+    assert "Νέα αυτόματη σύνοψη." in new_body
+    assert "https://www.hellenicparliament.gr/UserFiles/x/test.pdf" in new_body
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("with_provenance", [False, True])
+async def test_update_topic_never_overwrites_legacy_or_manually_edited_body(
+    monkeypatch, with_provenance
+):
+    from services.content_provenance import FORUM_BODY_FIELD, record_generated_content
+
+    bill = _forum_bill("Αυτόματη σύνοψη.")
+    generated_body = discourse_sync._build_topic_body(bill)
+    if with_provenance:
+        record_generated_content(bill, FORUM_BODY_FIELD, generated_body)
+    current_raw = "Χειροκίνητη παρέμβαση συντονιστή" if with_provenance else generated_body
+    calls = []
+
+    async def fake_resolve_category(_bill, _db):
+        return 42
+
+    async def fake_region(_bill, _db):
+        return ""
+
+    async def fake_title(_bill, _db):
+        return "[Βουλή] Δοκιμή προέλευσης"
+
+    async def fake_request(_client, method, url, **kwargs):
+        calls.append((method, url))
+        if method == "put" and "/t/-/" in url:
+            return FakeResponse(200)
+        if method == "get" and "/t/123.json" in url:
+            return FakeResponse(200, {"post_stream": {"posts": [{"id": 55}]}})
+        if method == "get" and "/posts/55.json" in url:
+            return FakeResponse(200, {"raw": current_raw})
+        raise AssertionError((method, url))
+
+    monkeypatch.setattr(discourse_sync, "_resolve_category", fake_resolve_category)
+    monkeypatch.setattr(discourse_sync, "_region_name_for_body", fake_region)
+    monkeypatch.setattr(discourse_sync, "_build_topic_title", fake_title)
+    monkeypatch.setattr(discourse_sync, "_request_discourse", fake_request)
+    monkeypatch.setattr(discourse_sync, "DISCOURSE_API_KEY", "test-key")
+
+    result = await discourse_sync.update_discourse_topic(bill, db=None)
+    assert result is True, calls
+    assert not any(method == "put" and "/posts/55.json" in url for method, url in calls)
+    assert not bill.generated_content_provenance
 
 
 @pytest.mark.asyncio

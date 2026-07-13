@@ -370,3 +370,83 @@ async def test_github_import_does_not_overwrite_existing_official_text():
     assert existing.summary_short_el == "Υπάρχουσα σύνοψη"
     assert existing.summary_long_el == "Υπάρχον επίσημο κείμενο"
     assert existing.categories == ["Υπάρχουσα"]
+
+
+@pytest.mark.asyncio
+async def test_github_import_refreshes_only_unchanged_generated_summary():
+    from services.content_provenance import record_generated_content
+
+    existing = type("ExistingBill", (), {})()
+    existing.title_el = "Πλήρης τίτλος"
+    existing.parliament_url = None
+    existing.submitted_date = None
+    existing.parliament_vote_date = None
+    existing.pill_el = "Παλιό pill"
+    existing.summary_short_el = "Παλιά αυτόματη σύνοψη"
+    existing.summary_long_el = "### Πλήρη έγγραφα\n- [PDF](https://example.test/doc.pdf)"
+    existing.categories = None
+    existing.status = BillStatus.ACTIVE
+    existing.ai_summary_reviewed = False
+    existing.generated_content_provenance = None
+    record_generated_content(existing, "pill_el", existing.pill_el)
+    record_generated_content(existing, "summary_short_el", existing.summary_short_el)
+
+    db = _FakeImportDb(existing)
+    payload = BillImportRequest(
+        admin_key="test",
+        bills=[
+            BillImportItem(
+                bill_id="GR-refresh",
+                title_el="Πλήρης τίτλος",
+                pill_el="Νέο pill",
+                summary_short_el="Νέα αυτόματη σύνοψη",
+                summary_long_el="Νέο κείμενο που δεν επιτρέπεται να αντικαταστήσει το PDF",
+            )
+        ],
+    )
+
+    result = await import_parliament_bills(payload, _auth=True, db=db)
+
+    assert result["updated"] == 1
+    assert existing.pill_el == "Νέο pill"
+    assert existing.summary_short_el == "Νέα αυτόματη σύνοψη"
+    assert existing.summary_long_el.startswith("### Πλήρη έγγραφα")
+
+
+@pytest.mark.asyncio
+async def test_github_import_preserves_manual_summary_after_generated_version_changed():
+    from services.content_provenance import record_generated_content
+
+    existing = type("ExistingBill", (), {})()
+    existing.title_el = "Πλήρης τίτλος"
+    existing.parliament_url = None
+    existing.submitted_date = None
+    existing.parliament_vote_date = None
+    existing.pill_el = "Χειροκίνητο pill"
+    existing.summary_short_el = "Αυτόματη σύνοψη"
+    existing.summary_long_el = "Επίσημο κείμενο"
+    existing.categories = ["Υπάρχουσα"]
+    existing.status = BillStatus.ACTIVE
+    existing.ai_summary_reviewed = False
+    existing.generated_content_provenance = None
+    record_generated_content(existing, "summary_short_el", existing.summary_short_el)
+    existing.summary_short_el = "Χειροκίνητη διόρθωση"
+
+    db = _FakeImportDb(existing)
+    payload = BillImportRequest(
+        admin_key="test",
+        bills=[
+            BillImportItem(
+                bill_id="GR-manual",
+                title_el="Πλήρης τίτλος",
+                pill_el="Νεότερο pill",
+                summary_short_el="Νεότερη αυτόματη σύνοψη",
+            )
+        ],
+    )
+
+    await import_parliament_bills(payload, _auth=True, db=db)
+
+    assert existing.pill_el == "Χειροκίνητο pill"
+    assert existing.summary_short_el == "Χειροκίνητη διόρθωση"
+    assert existing.summary_long_el == "Επίσημο κείμενο"

@@ -100,6 +100,7 @@ async def scheduled_scrape():
     """
     from routers.scraper import prefer_scraped_title, scrape_parliament_bills
     from services.scraper_state import record_run, record_success, record_failure, is_circuit_open
+    from services.content_provenance import apply_generated_content, record_generated_content
     from database import AsyncSessionLocal
     from models import ParliamentBill, BillStatus
     from sqlalchemy import select
@@ -174,11 +175,11 @@ async def scheduled_scrape():
                     if b.get("summary_long_el") and not existing_bill.summary_long_el:
                         existing_bill.summary_long_el = b.get("summary_long_el")
                         changed = True
-                    if b.get("summary_short_el") and not existing_bill.summary_short_el:
-                        existing_bill.summary_short_el = b.get("summary_short_el")
+                    if apply_generated_content(
+                        existing_bill, "summary_short_el", b.get("summary_short_el")
+                    ):
                         changed = True
-                    if b.get("pill_el") and not existing_bill.pill_el:
-                        existing_bill.pill_el = b.get("pill_el")
+                    if apply_generated_content(existing_bill, "pill_el", b.get("pill_el")):
                         changed = True
                     if submitted_date and existing_bill.submitted_date != submitted_date:
                         existing_bill.submitted_date = submitted_date
@@ -204,6 +205,10 @@ async def scheduled_scrape():
                     summary_short_el=b.get("summary_short_el"),
                     summary_long_el=b.get("summary_long_el"),
                     categories=[b["ministry"]] if b.get("ministry") else None,
+                )
+                record_generated_content(new_bill, "pill_el", b.get("pill_el"))
+                record_generated_content(
+                    new_bill, "summary_short_el", b.get("summary_short_el")
                 )
                 db.add(new_bill)
                 inserted += 1

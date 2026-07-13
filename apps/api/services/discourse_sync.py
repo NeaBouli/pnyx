@@ -13,6 +13,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import ParliamentBill, BillStatus, Periferia, Dimos
 from services.bill_visibility import public_bill_filter
+from services.content_provenance import (
+    FORUM_BODY_FIELD,
+    clear_generated_content,
+    has_generated_content_provenance,
+    is_generated_content_unchanged,
+    record_generated_content,
+)
 from services.source_links import official_source_url
 
 logger = logging.getLogger(__name__)
@@ -437,6 +444,7 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
             headers=_headers(),
         )
         if r.status_code in (200, 201):
+            record_generated_content(bill, FORUM_BODY_FIELD, body)
             return r.json()["topic_id"]
 
         # Title already exists — search for existing topic and link it
@@ -464,6 +472,7 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
             )
             if retry.status_code in (200, 201):
                 logger.info("Created topic with fallback title for bill %s", bill.id)
+                record_generated_content(bill, FORUM_BODY_FIELD, body)
                 return retry.json()["topic_id"]
 
         raise RuntimeError(f"Discourse API error {r.status_code}: {r.text[:200]}")
@@ -492,7 +501,12 @@ async def update_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> bool
                 logger.warning("Topic update failed for %s: HTTP %d", bill.id, r.status_code)
                 return False
 
-            # Get first post ID
+            if not has_generated_content_provenance(bill, FORUM_BODY_FIELD):
+                logger.info("Preserved legacy forum body for bill %s", bill.id)
+                return True
+
+            # A body is writable only when this service created it and the
+            # current raw text still matches the recorded digest.
             t = await _request_discourse(client, "get",
                 f"{DISCOURSE_API_URL}/t/{bill.forum_topic_id}.json",
                 headers=_headers(),
@@ -501,14 +515,39 @@ async def update_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> bool
                 posts = t.json().get("post_stream", {}).get("posts", [])
                 if posts:
                     post_id = posts[0]["id"]
-                    # Update first post body
-                    await _request_discourse(client, "put",
+                    current = await _request_discourse(
+                        client,
+                        "get",
                         f"{DISCOURSE_API_URL}/posts/{post_id}.json",
-                        json={"post": {"raw": body}},
                         headers=_headers(),
                     )
+                    current_raw = current.json().get("raw") if current.status_code == 200 else None
+                    if not is_generated_content_unchanged(
+                        bill, FORUM_BODY_FIELD, current_raw
+                    ):
+                        clear_generated_content(bill, FORUM_BODY_FIELD)
+                        logger.info(
+                            "Preserved externally owned forum body for bill %s",
+                            bill.id,
+                        )
+                    elif current_raw != body:
+                        body_update = await _request_discourse(
+                            client,
+                            "put",
+                            f"{DISCOURSE_API_URL}/posts/{post_id}.json",
+                            json={"post": {"raw": body}},
+                            headers=_headers(),
+                        )
+                        if body_update.status_code != 200:
+                            logger.warning(
+                                "First-post update failed for %s: HTTP %d",
+                                bill.id,
+                                body_update.status_code,
+                            )
+                            return False
+                        record_generated_content(bill, FORUM_BODY_FIELD, body)
 
-            logger.info("Updated topic %d for bill %s (cat+tags+body)",
+            logger.info("Updated topic %d for bill %s (metadata; guarded body)",
                         bill.forum_topic_id, bill.id)
             return True
     except Exception as e:
@@ -538,6 +577,8 @@ async def resync_all_topics(db: AsyncSession) -> dict:
         # Discourse rate limit: ~20 req/min, but update does 3 calls per topic
         if (i + 1) % 5 == 0:
             await asyncio.sleep(15)
+
+    await db.commit()
 
     return {"total": len(bills), "updated": updated, "failed": failed}
 
