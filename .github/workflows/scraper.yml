@@ -2,7 +2,8 @@ name: Parliament Bill Scraper
 
 # Fetches latest bills from hellenicparliament.gr Open Data API
 # and imports them into ekklesia.gr via POST /api/v1/scraper/import.
-# Runs on GitHub's IPs (not blocked by parliament WAF, unlike Hetzner).
+# Tries GitHub runner source access first. If all runner-side source paths are
+# blocked, it validates the canonical Production freshness probe before import.
 
 on:
   schedule:
@@ -24,7 +25,10 @@ jobs:
 
       - name: Fetch bills from hellenicparliament.gr with fallbacks
         run: |
-          python3 scripts/parliament_scraper.py --limit 20 --output /tmp/bills.json
+          python3 scripts/parliament_scraper.py \
+            --limit 20 \
+            --output /tmp/bills.json \
+            --fallback-url "https://api.ekklesia.gr/api/v1/scraper/parliament/freshness?limit=20"
           jq length /tmp/bills.json
 
       - name: Import into ekklesia.gr

@@ -14,6 +14,7 @@ import hashlib
 import html
 import json
 import re
+import ssl
 import sys
 import time
 import urllib.error
@@ -45,6 +46,15 @@ class FetchResult:
     error: str | None = None
 
 
+def _verified_ssl_context() -> ssl.SSLContext:
+    """Return a CA-verified TLS context without weakening hostname checks."""
+    try:
+        import certifi
+    except ImportError:
+        return ssl.create_default_context()
+    return ssl.create_default_context(cafile=certifi.where())
+
+
 def _http_get(url: str, *, accept: str = "*/*", timeout: int = 30) -> FetchResult:
     req = urllib.request.Request(
         url,
@@ -55,7 +65,7 @@ def _http_get(url: str, *, accept: str = "*/*", timeout: int = 30) -> FetchResul
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with urllib.request.urlopen(req, timeout=timeout, context=_verified_ssl_context()) as resp:
             charset = resp.headers.get_content_charset() or "utf-8"
             return FetchResult(
                 url=url,
@@ -440,14 +450,93 @@ def scrape(limit: int) -> tuple[list[dict[str, Any]], list[str]]:
     return bills[:limit], errors
 
 
+def normalize_server_fallback_payload(
+    payload: dict[str, Any],
+    *,
+    limit: int,
+) -> list[dict[str, Any]]:
+    """Validate and normalize the canonical Production freshness response.
+
+    The server response uses ``date`` for Parliament vote/discussion dates and
+    does not expose the workflow's stable ``bill_id``. Never pass it directly
+    to the import endpoint.
+    """
+    if payload.get("source_status") != "ok":
+        raise ValueError("server fallback did not prove an available source")
+    try:
+        dated_count = int(payload.get("dated_count") or 0)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("server fallback returned an invalid dated_count") from exc
+    if dated_count < 1:
+        raise ValueError("server fallback returned no dated bills")
+
+    raw_bills = payload.get("bills")
+    if not isinstance(raw_bills, list) or not raw_bills:
+        raise ValueError("server fallback returned no bill records")
+
+    normalized: list[dict[str, Any]] = []
+    for raw in raw_bills[:limit]:
+        if not isinstance(raw, dict):
+            continue
+        submitted_date = raw.get("submitted_date")
+        vote_date = raw.get("vote_date") or raw.get("date")
+        if not submitted_date and not vote_date:
+            continue
+
+        bill = _finalize_bill(
+            title_el=str(raw.get("title_el") or ""),
+            url=str(raw.get("url") or ""),
+            law_id=raw.get("law_id"),
+            law_num=raw.get("law_num"),
+            ministry=raw.get("ministry"),
+            bill_type=raw.get("type"),
+            phase=raw.get("phase"),
+            submitted_date=submitted_date,
+            vote_date=vote_date,
+        )
+        if bill is None:
+            continue
+
+        for field in ("pill_el", "summary_short_el", "summary_long_el"):
+            value = raw.get(field)
+            if isinstance(value, str) and value.strip():
+                bill[field] = value
+        normalized.append(bill)
+
+    if not normalized:
+        raise ValueError("server fallback records failed date/title validation")
+    return normalized
+
+
+def fetch_server_fallback(url: str, *, limit: int) -> list[dict[str, Any]]:
+    """Fetch the canonical server probe only after runner-side sources fail."""
+    result = _http_get(url, accept="application/json", timeout=45)
+    if result.status != 200 or not result.text or _access_blocked(result.text):
+        raise ValueError(f"server fallback unavailable: {result.error or result.status}")
+    try:
+        payload = json.loads(result.text)
+    except json.JSONDecodeError as exc:
+        raise ValueError("server fallback returned invalid JSON") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("server fallback returned an invalid payload")
+    return normalize_server_fallback_payload(payload, limit=limit)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, default=20)
     parser.add_argument("--output", required=True)
     parser.add_argument("--allow-empty", action="store_true")
+    parser.add_argument("--fallback-url")
     args = parser.parse_args()
 
     bills, errors = scrape(args.limit)
+    if not bills and args.fallback_url:
+        try:
+            bills = fetch_server_fallback(args.fallback_url, limit=args.limit)
+            print(f"Production freshness fallback returned {len(bills)} dated bills")
+        except ValueError as exc:
+            errors.append(f"production_fallback_failed:{exc}")
     Path(args.output).write_text(json.dumps(bills, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Fetched {len(bills)} Parliament bills")
     if errors:
