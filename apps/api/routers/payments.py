@@ -279,9 +279,13 @@ async def _append_payment_record(r: aioredis.Redis, record: dict) -> None:
     pipe.rpush(R_PAYMENTS, payload)
     if _is_public_support_record(record):
         allocation = record["allocation"]
-        pipe.incrbyfloat(R_PUBLIC_SERVER_RECEIVED, str(allocation["server"]))
-        pipe.incrbyfloat(R_PUBLIC_DOMAIN_RECEIVED, str(allocation["domain"]))
-        pipe.incrbyfloat(R_PUBLIC_RESERVE, str(allocation["reserve"]))
+        public_allocation = {
+            key: _public_allocation_amount(allocation[key])
+            for key in ("server", "domain", "reserve")
+        }
+        pipe.incrbyfloat(R_PUBLIC_SERVER_RECEIVED, format(public_allocation["server"], "f"))
+        pipe.incrbyfloat(R_PUBLIC_DOMAIN_RECEIVED, format(public_allocation["domain"], "f"))
+        pipe.incrbyfloat(R_PUBLIC_RESERVE, format(public_allocation["reserve"], "f"))
         pipe.incr(R_PUBLIC_PAYMENT_COUNT)
         pipe.set(R_PUBLIC_LAST_PAYMENT, json.dumps(_public_payment_record(record), separators=(",", ":")))
     await pipe.execute()
