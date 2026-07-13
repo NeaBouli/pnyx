@@ -224,6 +224,44 @@ class TestZkTier1Guard:
             await voting.raise_if_zk_tier1_locked(
                 _FakeDb([]),
                 bill_id="GR-0490a766",
+                bill_source="PARLIAMENT",
+                nullifier_hash="a" * 64,
+            )
+
+        assert exc.value.status_code == 503
+        assert "not configured" in exc.value.detail
+
+    @pytest.mark.asyncio
+    async def test_zk_guard_skips_diavgeia_bill_when_enabled(self, monkeypatch):
+        monkeypatch.setenv("ZK_TIER1_GUARD_ENABLED", "true")
+        called = False
+
+        async def locked(*_args, **_kwargs):
+            nonlocal called
+            called = True
+            return True
+
+        monkeypatch.setattr(voting, "tier1_vote_blocked_by_zk_lock", locked)
+
+        await voting.raise_if_zk_tier1_locked(
+            _FakeDb([]),
+            bill_id="DIAV-Ρ9Ζ546ΜΤΛΒ-Η",
+            bill_source="DIAVGEIA",
+            nullifier_hash="a" * 64,
+        )
+
+        assert called is False
+
+    @pytest.mark.asyncio
+    async def test_zk_guard_invalid_parliament_scope_returns_controlled_503(self, monkeypatch):
+        monkeypatch.setenv("ZK_TIER1_GUARD_ENABLED", "true")
+        monkeypatch.setenv("SERVER_SALT", "s" * 64)
+
+        with pytest.raises(HTTPException) as exc:
+            await voting.raise_if_zk_tier1_locked(
+                _FakeDb([]),
+                bill_id="GR-ΜΗ-ΕΓΚΥΡΟ",
+                bill_source="PARLIAMENT",
                 nullifier_hash="a" * 64,
             )
 

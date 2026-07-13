@@ -1,7 +1,7 @@
 """
 ekklesia.gr Business Logic Monitor — 3-Tier Auto-Recovery
 Runs every 30 minutes (daemon) or once daily at 06:00 UTC (cron).
-18 rules. Recovery: T1 API → T2 Docker Restart → T3 Telegram Escalation.
+19 rules. Recovery: T1 API → T2 Docker Restart → T3 Telegram Escalation.
 """
 import hashlib
 import json
@@ -881,6 +881,30 @@ def check_api_health() -> list[Alert]:
     return alerts
 
 
+def check_vote_results_health() -> list[Alert]:
+    """Detect result aggregation regressions without causing restart loops."""
+    alerts = []
+    try:
+        resp = httpx.get(f"{API_URL}/api/v1/vote/results/latest", timeout=10)
+        if resp.status_code != 200:
+            alerts.append(Alert(
+                "vote_results_unhealthy",
+                "ekklesia-api",
+                "warning",
+                f"Vote results latest: HTTP {resp.status_code}",
+                False,
+            ))
+    except Exception as exc:
+        alerts.append(Alert(
+            "vote_results_unhealthy",
+            "ekklesia-api",
+            "warning",
+            f"Vote results latest nicht erreichbar: {str(exc)[:120]}",
+            False,
+        ))
+    return alerts
+
+
 def _mirror_readonly_status_note() -> str:
     """Operator-facing note for primary outage alerts; never a write failover."""
     if not MIRROR_READONLY_URL:
@@ -1152,6 +1176,7 @@ def run_checks():
         all_alerts.extend(check_hlr_credits())
         all_alerts.extend(check_forum_sync_errors(r))
         all_alerts.extend(check_api_health())
+        all_alerts.extend(check_vote_results_health())
         all_alerts.extend(check_disk_usage())
         all_alerts.extend(check_db_consistency(conn))
         all_alerts.extend(check_diavgeia_scraper(r))

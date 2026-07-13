@@ -31,7 +31,11 @@ async def test_aggregate_bill_vote_totals_combines_tier1_and_zk_votes() -> None:
         ]
     )
 
-    totals = await aggregate_bill_vote_totals(db, "GR-0490a766")
+    totals = await aggregate_bill_vote_totals(
+        db,
+        "GR-0490a766",
+        include_zk=True,
+    )
 
     assert totals.yes == 3
     assert totals.no == 1
@@ -52,7 +56,33 @@ async def test_aggregate_bill_vote_totals_handles_zk_only_bill() -> None:
         ]
     )
 
-    totals = await aggregate_bill_vote_totals(db, "GR-0490a766")
+    totals = await aggregate_bill_vote_totals(
+        db,
+        "GR-0490a766",
+        include_zk=True,
+    )
 
     assert totals.yes == 1
     assert totals.total == 1
+
+
+@pytest.mark.asyncio
+async def test_aggregate_bill_vote_totals_skips_zk_for_diavgeia_bill() -> None:
+    db = _FakeDb(
+        [
+            [(VoteChoice.YES, 2), (VoteChoice.ABSTAIN, 1)],
+        ]
+    )
+
+    totals = await aggregate_bill_vote_totals(
+        db,
+        "DIAV-Ρ9Ζ546ΜΤΛΒ-Η",
+        include_zk=False,
+    )
+
+    assert totals.yes == 2
+    assert totals.abstain == 1
+    assert totals.tier1_total == 3
+    assert totals.zk_total == 0
+    assert totals.total == 3
+    assert len(db.executed) == 1

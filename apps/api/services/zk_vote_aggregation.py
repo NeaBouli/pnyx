@@ -24,9 +24,14 @@ class VoteTotals:
         return self.yes + self.no + self.abstain + self.unknown
 
 
-async def aggregate_bill_vote_totals(db: AsyncSession, bill_id: str) -> VoteTotals:
+async def aggregate_bill_vote_totals(
+    db: AsyncSession,
+    bill_id: str,
+    *,
+    include_zk: bool,
+) -> VoteTotals:
     tier_counts = await _count_tier1_votes(db, bill_id)
-    zk_counts = await _count_zk_votes(db, bill_id)
+    zk_counts = await _count_zk_votes(db, bill_id) if include_zk else _empty_counts()
     return VoteTotals(
         yes=tier_counts[VoteChoice.YES] + zk_counts[VoteChoice.YES],
         no=tier_counts[VoteChoice.NO] + zk_counts[VoteChoice.NO],

@@ -34,8 +34,9 @@ def _bill(**overrides):
 
 @pytest.mark.asyncio
 async def test_public_bill_results_aggregate_zk_receipts(monkeypatch):
-    async def fake_aggregate(_db, bill_id):
+    async def fake_aggregate(_db, bill_id, *, include_zk):
         assert bill_id == "GR-d4c62ed4"
+        assert include_zk is True
         return VoteTotals(
             yes=1,
             no=0,
@@ -69,8 +70,38 @@ async def test_public_bill_results_aggregate_zk_receipts(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_public_diavgeia_results_do_not_query_zk_receipts(monkeypatch):
+    async def fake_aggregate(_db, bill_id, *, include_zk):
+        assert bill_id == "DIAV-Ρ9Ζ546ΜΤΛΒ-Η"
+        assert include_zk is False
+        return VoteTotals(
+            yes=2,
+            no=1,
+            abstain=0,
+            unknown=0,
+            tier1_total=3,
+            zk_total=0,
+        )
+
+    monkeypatch.setattr(public_api, "is_public_bill", lambda _bill: True)
+    monkeypatch.setattr(public_api, "aggregate_bill_vote_totals", fake_aggregate)
+
+    result = await public_api.public_bill_results(
+        "DIAV-Ρ9Ζ546ΜΤΛΒ-Η",
+        _key=True,
+        db=FakeDb(_bill(
+            id="DIAV-Ρ9Ζ546ΜΤΛΒ-Η",
+            source="DIAVGEIA",
+        )),
+    )
+
+    assert result["citizen_votes"]["total"] == 3
+    assert result["citizen_votes"]["zk_total"] == 0
+
+
+@pytest.mark.asyncio
 async def test_public_bill_results_hidden_bill_does_not_aggregate(monkeypatch):
-    async def fake_aggregate(_db, _bill_id):
+    async def fake_aggregate(_db, _bill_id, *, include_zk):
         raise AssertionError("hidden bills must not aggregate results")
 
     monkeypatch.setattr(public_api, "is_public_bill", lambda _bill: False)

@@ -96,14 +96,17 @@ async def raise_if_zk_tier1_locked(
     db: AsyncSession,
     *,
     bill_id: str,
+    bill_source: str | None,
     nullifier_hash: str,
 ) -> None:
+    if (bill_source or "PARLIAMENT") != "PARLIAMENT":
+        return
     if not zk_tier1_guard_enabled():
         return
 
     server_salt = os.getenv("SERVER_SALT", "")
-    vote_scope_id = canonical_vote_scope_id(VoteScopeType.BILL, bill_id)
     try:
+        vote_scope_id = canonical_vote_scope_id(VoteScopeType.BILL, bill_id)
         blocked = await tier1_vote_blocked_by_zk_lock(
             db,
             server_salt=server_salt,
@@ -335,7 +338,12 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
             detail="Μη έγκυρη υπογραφή. Η ψήφος απορρίφθηκε."
         )
 
-    await raise_if_zk_tier1_locked(db, bill_id=req.bill_id, nullifier_hash=req.nullifier_hash)
+    await raise_if_zk_tier1_locked(
+        db,
+        bill_id=req.bill_id,
+        bill_source=getattr(bill, "source", None),
+        nullifier_hash=req.nullifier_hash,
+    )
 
     # 4b. Tier-1 validation (ADR-022) — if Tier-1 fields present
     if req.pk_eph and req.vote_nullifier and req.linkage_tag:
@@ -523,7 +531,12 @@ async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = 
     if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
         raise HTTPException(401, "Μη έγκυρη υπογραφή.")
 
-    await raise_if_zk_tier1_locked(db, bill_id=bill_id, nullifier_hash=req.nullifier_hash)
+    await raise_if_zk_tier1_locked(
+        db,
+        bill_id=bill_id,
+        bill_source=getattr(bill, "source", None),
+        nullifier_hash=req.nullifier_hash,
+    )
 
     # 7. Korrektur durchführen
     existing.original_vote = existing.vote.value
@@ -560,7 +573,11 @@ async def get_latest_result(db: AsyncSession = Depends(get_db)):
     )
     bills = result.scalars().all()
     for bill in bills:
-        totals = await aggregate_bill_vote_totals(db, bill.id)
+        totals = await aggregate_bill_vote_totals(
+            db,
+            bill.id,
+            include_zk=(bill.source or "PARLIAMENT") == "PARLIAMENT",
+        )
         yes_c, no_c, abs_c = totals.yes, totals.no, totals.abstain
         total = totals.total
         if total > 0:
@@ -615,6 +632,7 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
               AND vote_commitment IN ('YES', 'NO', 'ABSTAIN', 'UNKNOWN')
             GROUP BY regexp_replace(vote_scope_id, '^bill:', '')
         ) zk ON zk.bill_id = b.id
+            AND COALESCE(b.source, 'PARLIAMENT') = 'PARLIAMENT'
         WHERE b.admin_hidden IS NOT TRUE
           AND b.id NOT LIKE 'DEMO-%'
           AND (b.parliament_url IS NOT NULL OR b.diavgeia_ada IS NOT NULL)
@@ -688,7 +706,11 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
             disclaimer_el="Τα αποτελέσματα θα είναι ορατά μετά τη λήξη της ψηφοφορίας.",
         )
 
-    totals = await aggregate_bill_vote_totals(db, bill_id)
+    totals = await aggregate_bill_vote_totals(
+        db,
+        bill_id,
+        include_zk=(bill.source or "PARLIAMENT") == "PARLIAMENT",
+    )
     yes_c = totals.yes
     no_c = totals.no
     abs_c = totals.abstain

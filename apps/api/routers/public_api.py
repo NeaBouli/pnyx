@@ -312,7 +312,11 @@ async def public_bill_results(
     if not bill or not is_public_bill(bill):
         raise HTTPException(404, f"Bill {bill_id} nicht gefunden")
 
-    totals = await aggregate_bill_vote_totals(db, bill_id)
+    totals = await aggregate_bill_vote_totals(
+        db,
+        bill_id,
+        include_zk=(bill.source or "PARLIAMENT") == "PARLIAMENT",
+    )
     yes = totals.yes
     no = totals.no
     abstain = totals.abstain
