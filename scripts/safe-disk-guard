@@ -9,6 +9,7 @@ CLEAN_PERCENT="${CLEAN_PERCENT:-90}"
 CRITICAL_PERCENT="${CRITICAL_PERCENT:-95}"
 EXTRA_CAPACITY_PATHS="${EXTRA_CAPACITY_PATHS:-}"
 EXTRA_WARN_PERCENT="${EXTRA_WARN_PERCENT:-85}"
+EXTRA_CLEAN_PERCENT="${EXTRA_CLEAN_PERCENT:-90}"
 EXTRA_CRITICAL_PERCENT="${EXTRA_CRITICAL_PERCENT:-95}"
 BUILD_CACHE_MIN_AGE="${BUILD_CACHE_MIN_AGE:-72h}"
 JOURNAL_MAX_SIZE="${JOURNAL_MAX_SIZE:-300M}"
@@ -75,6 +76,23 @@ extra_capacity_status() {
   printf '%s' "$status"
 }
 
+extra_capacity_max_usage() {
+  local maximum=0
+  local path usage
+
+  for path in $EXTRA_CAPACITY_PATHS; do
+    if ! df "$path" >/dev/null 2>&1; then
+      continue
+    fi
+    usage="$(path_usage_percent "$path")"
+    if [ "$usage" -gt "$maximum" ]; then
+      maximum="$usage"
+    fi
+  done
+
+  printf '%s' "$maximum"
+}
+
 has_active_docker_build() {
   ps -eo args= | grep -E '(^|[[:space:]])(docker|docker-compose|buildctl)([[:space:]].*)?(build|buildx|bake)([[:space:]]|$)' | grep -v grep >/dev/null 2>&1
 }
@@ -101,6 +119,7 @@ safe_log_maintenance() {
 }
 
 safe_cache_maintenance() {
+  local emergency="${1:-false}"
   run_cmd apt-get clean
 
   if ! command -v docker >/dev/null 2>&1; then
@@ -113,7 +132,11 @@ safe_cache_maintenance() {
     return
   fi
 
-  run_cmd docker builder prune -af --filter "until=$BUILD_CACHE_MIN_AGE"
+  if [ "$emergency" = "true" ]; then
+    run_cmd docker builder prune -af
+  else
+    run_cmd docker builder prune -af --filter "until=$BUILD_CACHE_MIN_AGE"
+  fi
 }
 
 record_cleanup_result() {
@@ -145,39 +168,55 @@ main() {
     exit 0
   fi
 
-  local before after
+  local before after extra_before extra_after effective_before effective_after emergency
   before="$(usage_percent)"
   log "START: ${ROOT_PATH} usage ${before}%"
   local extra_status
   extra_status="$(extra_capacity_status)"
+  extra_before="$(extra_capacity_max_usage)"
 
-  if [ "$before" -lt "$WARN_PERCENT" ]; then
-    log "OK: below warn threshold ${WARN_PERCENT}%"
+  if [ "$before" -lt "$WARN_PERCENT" ] && [ "$extra_before" -lt "$EXTRA_WARN_PERCENT" ]; then
+    log "OK: root and extra capacity below warn thresholds"
     write_status "ok" "before=${before}% threshold=${WARN_PERCENT}%${extra_status}"
     exit 0
   fi
 
-  if [ "$before" -lt "$CLEAN_PERCENT" ]; then
-    log "WARN: above ${WARN_PERCENT}% but below cleanup threshold ${CLEAN_PERCENT}%; no cleanup"
+  if [ "$before" -lt "$CLEAN_PERCENT" ] && [ "$extra_before" -lt "$EXTRA_CLEAN_PERCENT" ]; then
+    log "WARN: capacity above a warn threshold but below cleanup thresholds; no cleanup"
     write_status "warning" "before=${before}% warn=${WARN_PERCENT}% cleanup=${CLEAN_PERCENT}%${extra_status}"
     exit 0
   fi
 
+  emergency="false"
+  if [ "$before" -ge "$CRITICAL_PERCENT" ] || [ "$extra_before" -ge "$EXTRA_CRITICAL_PERCENT" ]; then
+    emergency="true"
+  fi
+
   safe_log_maintenance
-  safe_cache_maintenance
+  safe_cache_maintenance "$emergency"
 
   after="$(usage_percent)"
-  log "DONE: ${ROOT_PATH} usage ${before}% -> ${after}%"
-  record_cleanup_result "$before" "$after"
+  extra_after="$(extra_capacity_max_usage)"
+  effective_before="$before"
+  effective_after="$after"
+  if [ "$extra_before" -gt "$effective_before" ]; then
+    effective_before="$extra_before"
+  fi
+  if [ "$extra_after" -gt "$effective_after" ]; then
+    effective_after="$extra_after"
+  fi
+  log "DONE: root ${before}% -> ${after}%; max extra ${extra_before}% -> ${extra_after}%"
+  record_cleanup_result "$effective_before" "$effective_after"
 
+  extra_status="$(extra_capacity_status)"
   if [ -n "$extra_status" ]; then
     local current_status
     current_status="$(cat "$STATUS_FILE" 2>/dev/null || true)"
     printf '%s%s\n' "$current_status" "$extra_status" >"$STATUS_FILE"
   fi
 
-  if [ "$after" -ge "$CRITICAL_PERCENT" ]; then
-    log "CRITICAL: still above ${CRITICAL_PERCENT}%; manual review required"
+  if [ "$after" -ge "$CRITICAL_PERCENT" ] || [ "$extra_after" -ge "$EXTRA_CRITICAL_PERCENT" ]; then
+    log "CRITICAL: a capacity path remains above its critical threshold; manual review required"
   fi
 }
 
