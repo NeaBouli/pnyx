@@ -1,5 +1,19 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-07-13 — Docker Capacity Guard Fix Prepared (Codex)
+
+- A production incident exposed a guard logic gap: an extra Docker capacity
+  filesystem could be reported critical while a healthy root filesystem caused
+  an early exit without safe cache cleanup.
+- The fix evaluates root and configured extra paths together. It remains
+  limited to logs, apt cache and unused Docker build cache; it never prunes
+  images, containers, volumes, backups or application/database data.
+- Linux container verification covers extra-path warning, age-filtered normal
+  cleanup and critical unfiltered unused-build-cache cleanup; Bash syntax and
+  diff checks pass.
+- Payment intake and private finance export remain disabled. No payment,
+  invoice, receipt, provider/AADE request or finance export occurred.
+
 ## 2026-07-13 — Private Finance Export Prepared (Codex)
 
 - Codex prepared a default-off, HMAC-signed exporter from the PII-free Redis
