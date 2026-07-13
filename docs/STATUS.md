@@ -65,7 +65,7 @@
 | Ed25519 Signing (Backend) | OK — PyNaCl |
 | Ed25519 Signing (Web)     | OK — @noble/curves |
 | Ed25519 Signing (Mobile)  | OK — @noble/curves + self-verify |
-| Nullifier Hash            | OK — SHA256(phone:salt) |
+| Identity Nullifiers       | OK — Argon2id v2 + SHA256 compatibility anchor |
 | Compass Encryption        | OK — AES-256-GCM via HKDF-SHA256 |
 | Cross-Platform Compat     | VERIFIZIERT — 12 Tests |
 

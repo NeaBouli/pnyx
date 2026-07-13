@@ -25,7 +25,7 @@ ekklesia.gr (εκκλησία του έθνους) is an independent civic initi
 
 - Phone number used ONLY for HLR verification, deleted immediately after nullifier generation
 - No accounts, no email, no cookies, no tracking
-- Only nullifier hash (SHA256, non-reversible) + public key stored on server
+- Versioned identity nullifiers: Argon2id v2 hash for new/reverified identities plus a legacy SHA256 compatibility anchor; public key stored, phone deleted
 - Private key stored only on user device (Android Keystore / iOS Keychain)
 - Votes cannot be linked to identity
 
@@ -33,10 +33,11 @@ ekklesia.gr (εκκλησία του έθνους) is an independent civic initi
 
 - Backend: Python FastAPI, PostgreSQL 15, Redis 7
 - Frontend: Next.js 16 (SSR, i18n el/en)
-- Mobile: Expo React Native (Android, current public build vC53 / v1.0.24)
+- Mobile: Expo React Native (Android, current public build vC54 / v1.0.25)
 - Crypto: Ed25519 (PyNaCl + @noble/curves), HMAC nullifier chain
 - AI: Ollama (local) + Claude API (hybrid)
 - Forum: Discourse (pnyx.ekklesia.gr)
+- Generated-content ownership: system summaries/forum bodies refresh only while their SHA-256 ownership digest still matches; admin/moderator edits are preserved
 - Archiving: Arweave permanent storage
 - Hosting: Hetzner (Helsinki, EU)
 - ZK Voting V2: Semaphore-based; Android prover, hidden S10 canary, security review, and first public one-bill scoped rollout passed; guarded Parliament rollout live; ZK Arweave auto-publication live for eligible public Parliament scopes with minimum group size 5

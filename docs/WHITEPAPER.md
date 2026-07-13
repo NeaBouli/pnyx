@@ -114,7 +114,7 @@ comparison) and **Citizen Voting** (mirroring parliamentary decisions).
 HLR Lookup → μόνο πραγματικά GR κινητά
 │
 ▼
-Nullifier Hash = SHA256(phone + SERVER_SALT)
+SHA256 compatibility anchor + Argon2id v2 identity hash
 │
 ▼
 Τηλέφωνο ΔΙΑΓΡΑΦΕΤΑΙ (gc.collect())
@@ -130,10 +130,17 @@ Ed25519 Keypair δημιουργείται
 
 Το **Nullifier** είναι ο κρυπτογραφικός αναγνωριστής του χρήστη:
 ```python
-nullifier = SHA256(f"{phone_number}:{SERVER_SALT}")
+compatibility_anchor = SHA256(f"{phone_number}:{SERVER_SALT}")
+identity_nullifier_v2 = "v2:" + Argon2id(
+    normalized_phone,
+    salt=SHA256("ekklesia:identity-nullifier:v2" + SERVER_SALT),
+    memory=64_MiB,
+    iterations=2,
+)
 ```
 
-- Δεν αποθηκεύει τον αριθμό τηλεφώνου. Η προστασία εξαρτάται από το μυστικό `SERVER_SALT`: αν αυτό διαρρεύσει, ο μικρός χώρος ελληνικών κινητών μπορεί να ελεγχθεί offline. Μελλοντική μετανάστευση σε slow KDF (Argon2id/scrypt) παραμένει ξεχωριστό security task.
+- Η παραγωγική ρύθμιση είναι `v2`. Νέες και επανεπαληθευμένες ταυτότητες λαμβάνουν memory-hard Argon2id hash. Το παλιό SHA256 παραμένει ως compatibility anchor για υπάρχοντα vote interfaces και ασφαλή migration lookup.
+- Δεν αποθηκεύεται ο αριθμός τηλεφώνου. Το `SERVER_SALT` παραμένει κρίσιμο μυστικό και ελέγχεται fail-closed κατά την εκκίνηση.
 - Αποτρέπει διπλή εγγραφή (UNIQUE constraint)
 - Ενεργοποιείται αμέσως, τηλέφωνο διαγράφεται
 
@@ -167,6 +174,8 @@ ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END
 | OPEN_END | ✅ | ✅ Πάντα | Trend analysis |
 
 ### 4.2 Αυτόματη Δημοσίευση / Automatic Publication
+
+Οι νέες αυτόματα παραγόμενες σύντομες περιλήψεις και τα πρώτα posts του forum καταγράφουν SHA-256 ownership digest. Αυτόματη ανανέωση επιτρέπεται μόνο όσο το τρέχον περιεχόμενο ταιριάζει με το digest. Review από admin ή αλλαγή από moderator αφαιρεί το αυτόματο ownership και το χειροκίνητο κείμενο διατηρείται. Υπάρχον Beta περιεχόμενο δεν χαρακτηρίστηκε αναδρομικά· επίσημο long text και PDF links δεν ανήκουν σε αυτό το update path.
 
 Κατά τη μετάβαση σε PARLIAMENT_VOTED:
 1. Δημοσίευση αποτελεσμάτων (Redis cache)

@@ -346,7 +346,7 @@
 
   <div class="faq-item fade-in">
     <div class="faq-q" data-el="Ποια δεδομένα αποθηκεύονται;" data-en="What data is stored?" onclick="this.parentElement.classList.toggle('open')">Ποια δεδομένα αποθηκεύονται;</div>
-    <div class="faq-a"><p data-el="Nullifier Hash (SHA256 με server salt), δημόσιο κλειδί Ed25519, επιλογή ψήφου (YES/NO/ABSTAIN), προαιρετικά περιοχή και φύλο ως hash. Ο αριθμός τηλεφώνου δεν αποθηκεύεται· το server salt είναι κρίσιμο μυστικό. Ποτέ: αριθμός τηλεφώνου, όνομα, email, IP συνδεδεμένη με ψήφο ή ταυτότητα, ιδιωτικό κλειδί." data-en="Nullifier Hash (SHA256 with server salt), Ed25519 public key, vote choice (YES/NO/ABSTAIN), optionally region and gender as hash. The phone number is not stored; the server salt is a critical secret. Never: phone number, name, email, IP linked to a vote or identity, private key.">Nullifier Hash (SHA256 με server salt), δημόσιο κλειδί Ed25519, επιλογή ψήφου (YES/NO/ABSTAIN), προαιρετικά περιοχή και φύλο ως hash. Ο αριθμός τηλεφώνου δεν αποθηκεύεται· το server salt είναι κρίσιμο μυστικό. Ποτέ: αριθμός τηλεφώνου, όνομα, email, IP συνδεδεμένη με ψήφο ή ταυτότητα, ιδιωτικό κλειδί.</p></div>
+    <div class="faq-a"><p data-el="Για νέες και επανεπαληθευμένες ταυτότητες αποθηκεύεται Argon2id v2 identity hash μαζί με SHA256 compatibility anchor, καθώς και το δημόσιο κλειδί Ed25519 και η επιλογή ψήφου (YES/NO/ABSTAIN). Ο αριθμός τηλεφώνου διαγράφεται αμέσως· το server salt παραμένει κρίσιμο μυστικό. Ποτέ: αριθμός τηλεφώνου, όνομα, email, IP συνδεδεμένη με ψήφο ή ταυτότητα, ιδιωτικό κλειδί." data-en="For new and reverified identities, an Argon2id v2 identity hash is stored together with a SHA256 compatibility anchor, plus the Ed25519 public key and vote choice (YES/NO/ABSTAIN). The phone number is deleted immediately; the server salt remains a critical secret. Never: phone number, name, email, IP linked to a vote or identity, private key.">Για νέες και επανεπαληθευμένες ταυτότητες: Argon2id v2 identity hash + SHA256 compatibility anchor, δημόσιο κλειδί Ed25519 και επιλογή ψήφου. Ο αριθμός τηλεφώνου διαγράφεται αμέσως.</p></div>
   </div>
 
   <div class="faq-item fade-in">
@@ -739,7 +739,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
       "name": "Ποια δεδομένα αποθηκεύονται;",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Nullifier Hash (SHA256 με server salt), δημόσιο κλειδί Ed25519, επιλογή ψήφου (YES/NO/ABSTAIN), προαιρετικά περιοχή και φύλο ως hash. Ο αριθμός τηλεφώνου δεν αποθηκεύεται· το server salt είναι κρίσιμο μυστικό. Ποτέ: αριθμός τηλεφώνου, όνομα, email, IP συνδεδεμένη με ψήφο ή ταυτότητα, ιδιωτικό κλειδί."
+        "text": "Για νέες και επανεπαληθευμένες ταυτότητες αποθηκεύεται Argon2id v2 identity hash μαζί με SHA256 compatibility anchor, καθώς και το δημόσιο κλειδί Ed25519 και η επιλογή ψήφου. Ο αριθμός τηλεφώνου διαγράφεται αμέσως· το server salt παραμένει κρίσιμο μυστικό. Ποτέ: αριθμός τηλεφώνου, όνομα, email, IP συνδεδεμένη με ψήφο ή ταυτότητα, ιδιωτικό κλειδί."
       }
     },
     {

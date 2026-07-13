@@ -54,7 +54,7 @@ This project uses publicly available government data from:
 | Party Ranking | Which party agrees most with citizens | Beta |
 | Municipal Governance | 13 regions, 325 municipalities, Diavgeia integration | Beta |
 | Politician Evaluation | Citizen ratings for elected officials | Beta |
-| Bill Text + Summaries | Official full text/PDF links plus reviewed short summaries | Beta |
+| Bill Text + Summaries | Official full text/PDF links plus short summaries or safe metadata context; reviewed/manual text is pinned | Beta |
 | RAG Agent | Citizen Q&A: Ollama + DeepL translation | Beta |
 | Auto-Healing Scraper | Ollama repairs broken CSS selectors | Beta |
 | Newsletter + Telegram | Brevo SMTP + Telegram cross-publish | Beta |
@@ -62,7 +62,7 @@ This project uses publicly available government data from:
 | Stripe / PayPal Donations | Voluntary support; runtime intake and public links fail-closed | Paused pending legal/provider E2E |
 | Mobile App | Expo React Native, HLR SIM check, Ed25519, Compass | Beta |
 | Representative App | Role-based bill visibility for elected officials | Beta |
-| Discourse Forum | Automated topic sync per bill | Beta |
+| Discourse Forum | Automated topic sync per bill; moderator-edited first posts are checksum-protected from automation | Beta |
 | Arweave Archive | Immutable vote audit trail | Beta |
 | POLIS Tickets | Citizen issue tracker with Ed25519 auth | Beta |
 | Dashboard | Admin panel with GitHub OAuth, 15+ pages | Beta |
@@ -152,11 +152,15 @@ cd apps/web && npm run build
 | Mobile number | Used for HLR active-SIM verification, deleted immediately after verification |
 | Private key | Device only &mdash; never leaves your phone |
 | IP address | Limited to rate limiting / security; not linked to votes or identity |
-| Nullifier hash | Server-salted SHA256 for Beta identity uniqueness; phone not stored; Argon2id v2 scaffold prepared but disabled |
+| Identity nullifiers | Argon2id v2 identity hash for new/reverified identities plus a legacy SHA256 compatibility anchor; phone not stored |
 | Public key | Ed25519 hex (anonymous) |
 | Votes | Anonymized, Arweave-archived |
 
-> Identity revocation is self-service only. The system does not store phone numbers after registration. Current Beta nullifiers depend on `SERVER_SALT` secrecy; a versioned Argon2id migration is tracked separately.
+> Identity revocation is self-service. The system does not store phone numbers after registration. Production identity KDF v2 is active: new and reverified identities receive a memory-hard Argon2id hash, while the existing SHA256 value remains as a compatibility anchor for established vote interfaces and migration lookup.
+
+### Generated-content safety
+
+New system-generated bill pills, short summaries, and forum first-post bodies carry a SHA-256 ownership digest. Automation may refresh them only while the live value still matches that digest. An admin review/edit or a Discourse moderator edit revokes automatic ownership, so manual content is preserved. Existing Beta content was not retroactively claimed; official long text and PDF links are outside this update path.
 
 &rarr; Details: [Security Wiki](https://ekklesia.gr/wiki/security.html)
 
@@ -179,9 +183,9 @@ cd apps/web && npm run build
 
 | Channel | Status | Link |
 |---|---|---|
-| Direct APK | Live v1.0.24 / vC53 | [ekklesia.gr](https://ekklesia.gr) |
-| Google Play | v1.0.24 / vC53 ready | Closed testing |
-| GitHub Release | Latest v1.0.24 / vC53 | [v1.0.24](https://github.com/NeaBouli/pnyx/releases/tag/v1.0.24) |
+| Direct APK | Live v1.0.25 / vC54 | [ekklesia.gr](https://ekklesia.gr) |
+| Google Play | v1.0.25 / vC54 | Closed testing |
+| GitHub Release | Latest v1.0.25 / vC54 | [v1.0.25](https://github.com/NeaBouli/pnyx/releases/tag/v1.0.25) |
 | F-Droid | MR pending review | [MR !38007](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007) |
 
 ---
