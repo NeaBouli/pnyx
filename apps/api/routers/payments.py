@@ -62,6 +62,11 @@ R_STRIPE_EVENT_PREFIX = "payments:stripe:event:"
 R_STRIPE_PAYMENT_PREFIX = "payments:stripe:payment_intent:"
 R_FINANCE_EVENTS = "payments:finance_events"
 R_ADJUSTMENT_STATE_PREFIX = "payments:adjustment_state:"
+R_PUBLIC_SERVER_RECEIVED = "donations:public:server:received"
+R_PUBLIC_DOMAIN_RECEIVED = "donations:public:domain:received"
+R_PUBLIC_RESERVE = "donations:public:reserve"
+R_PUBLIC_PAYMENT_COUNT = "donations:public:count"
+R_PUBLIC_LAST_PAYMENT = "donations:public:last"
 
 SUPPORT_PURPOSES = {"infrastructure_support", "developer_support"}
 ALLOWED_PAYMENT_PURPOSES = SUPPORT_PURPOSES
@@ -159,7 +164,7 @@ def _public_support_amount(value: object) -> Decimal | None:
         amount = Decimal(str(value)).quantize(Decimal("0.01"))
     except (InvalidOperation, ValueError):
         return None
-    return amount if amount > 0 else None
+    return amount if amount.is_finite() and amount > 0 else None
 
 
 def _public_allocation_amount(value: object) -> Decimal | None:
@@ -167,7 +172,7 @@ def _public_allocation_amount(value: object) -> Decimal | None:
         amount = Decimal(str(value)).quantize(Decimal("0.01"))
     except (InvalidOperation, ValueError):
         return None
-    return amount if amount >= 0 else None
+    return amount if amount.is_finite() and amount >= 0 else None
 
 
 def _is_public_support_record(record: object) -> bool:
@@ -197,38 +202,89 @@ def _is_public_support_record(record: object) -> bool:
     return sum(allocated, Decimal("0")) == _public_support_amount(record.get("amount"))
 
 
-async def _load_public_support_records(r: aioredis.Redis) -> list[dict]:
-    """Build a fail-closed public view without seed, manual or test records."""
-    raw_records = await r.lrange(R_PAYMENTS, 0, -1)
-    records: list[dict] = []
-    for raw in raw_records:
-        try:
-            record = json.loads(raw)
-        except (TypeError, json.JSONDecodeError):
-            continue
-        if _is_public_support_record(record):
-            records.append(record)
-    return records
-
-
-def _public_support_totals(records: list[dict]) -> dict[str, float]:
-    totals = {
-        "server": Decimal("0"),
-        "domain": Decimal("0"),
-        "reserve": Decimal("0"),
-        "received": Decimal("0"),
+def _empty_public_projection() -> dict:
+    return {
+        "server": 0.0,
+        "domain": 0.0,
+        "reserve": 0.0,
+        "received": 0.0,
+        "count": 0,
+        "last_payment": None,
     }
-    for record in records:
-        amount = _public_support_amount(record.get("amount"))
-        if amount is None:
-            continue
-        totals["received"] += amount
-        allocation = record.get("allocation", {})
-        for destination in ("server", "domain", "reserve"):
-            allocated = _public_allocation_amount(allocation.get(destination))
-            if allocated is not None:
-                totals[destination] += allocated
-    return {key: float(value.quantize(Decimal("0.01"))) for key, value in totals.items()}
+
+
+async def _load_public_support_projection(r: aioredis.Redis) -> dict:
+    """Read the bounded projection maintained atomically with verified records."""
+    raw_totals = await r.mget(R_PUBLIC_SERVER_RECEIVED, R_PUBLIC_DOMAIN_RECEIVED, R_PUBLIC_RESERVE)
+    if all(value is None for value in raw_totals):
+        return _empty_public_projection()
+    if any(value is None for value in raw_totals):
+        logger.error("[MOD-18] Public support projection is incomplete")
+        return _empty_public_projection()
+
+    totals = [_public_allocation_amount(value) for value in raw_totals]
+    if any(value is None for value in totals):
+        logger.error("[MOD-18] Public support projection contains invalid totals")
+        return _empty_public_projection()
+
+    raw_count = await r.get(R_PUBLIC_PAYMENT_COUNT)
+    if raw_count is None:
+        logger.error("[MOD-18] Public support projection count is missing")
+        return _empty_public_projection()
+    try:
+        count = int(raw_count)
+    except (TypeError, ValueError):
+        return _empty_public_projection()
+    if count < 0:
+        return _empty_public_projection()
+
+    last_payment = None
+    raw_last = await r.get(R_PUBLIC_LAST_PAYMENT)
+    if count > 0 and raw_last:
+        try:
+            candidate = json.loads(raw_last)
+        except (TypeError, json.JSONDecodeError):
+            candidate = None
+        if isinstance(candidate, dict):
+            amount = _public_support_amount(candidate.get("amount"))
+            allocation = candidate.get("allocation")
+            allocated = [
+                _public_allocation_amount(allocation.get(key)) if isinstance(allocation, dict) else None
+                for key in ("server", "domain", "reserve")
+            ]
+            if (
+                candidate.get("method") in {"stripe", "paypal"}
+                and amount is not None
+                and all(value is not None for value in allocated)
+                and sum(allocated, Decimal("0")) == amount
+            ):
+                last_payment = candidate
+
+    server, domain, reserve = totals
+    received = server + domain + reserve
+    return {
+        "server": float(server),
+        "domain": float(domain),
+        "reserve": float(reserve),
+        "received": float(received),
+        "count": count,
+        "last_payment": last_payment,
+    }
+
+
+async def _append_payment_record(r: aioredis.Redis, record: dict) -> None:
+    """Append the private record and its verified public projection atomically."""
+    payload = json.dumps(record)
+    pipe = r.pipeline(transaction=True)
+    pipe.rpush(R_PAYMENTS, payload)
+    if _is_public_support_record(record):
+        allocation = record["allocation"]
+        pipe.incrbyfloat(R_PUBLIC_SERVER_RECEIVED, str(allocation["server"]))
+        pipe.incrbyfloat(R_PUBLIC_DOMAIN_RECEIVED, str(allocation["domain"]))
+        pipe.incrbyfloat(R_PUBLIC_RESERVE, str(allocation["reserve"]))
+        pipe.incr(R_PUBLIC_PAYMENT_COUNT)
+        pipe.set(R_PUBLIC_LAST_PAYMENT, json.dumps(_public_payment_record(record), separators=(",", ":")))
+    await pipe.execute()
 
 
 def _admin_payment_record(record: dict) -> dict:
@@ -243,11 +299,16 @@ def _admin_payment_record(record: dict) -> dict:
 
 async def _init_operating_funding(r: aioredis.Redis) -> None:
     """Initialize private operator funding without creating payment records."""
-    exists = await r.exists(R_SERVER_RECEIVED)
-    if not exists:
-        await r.set(R_SERVER_RECEIVED, INITIAL_SERVER_FUNDING)
-        await r.set(R_DOMAIN_RECEIVED, INITIAL_DOMAIN_FUNDING)
-        await r.set(R_RESERVE, "0.00")
+    keys = (R_SERVER_RECEIVED, R_DOMAIN_RECEIVED, R_RESERVE)
+    current = await r.mget(*keys)
+    if all(value is not None for value in current):
+        return
+    pipe = r.pipeline(transaction=True)
+    pipe.set(R_SERVER_RECEIVED, INITIAL_SERVER_FUNDING, nx=True)
+    pipe.set(R_DOMAIN_RECEIVED, INITIAL_DOMAIN_FUNDING, nx=True)
+    pipe.set(R_RESERVE, "0.00", nx=True)
+    initialized = await pipe.execute()
+    if any(initialized):
         logger.info("[MOD-18] Initialized private operator funding balances")
 
 
@@ -410,7 +471,7 @@ async def stripe_webhook(request: Request):
             "fulfillment_state": fulfillment_state,
             "requires_accounting_review": True,
         }
-        await r.rpush(R_PAYMENTS, json.dumps(record))
+        await _append_payment_record(r, record)
         durable_mutation_applied = True
         await _append_finance_event(r, {
             "event_id": event_id,
@@ -449,11 +510,10 @@ async def payment_status():
     Liefert aktuelle Kontostände für community.html Kacheln.
     """
     r = await _get_redis()
-    public_records = await _load_public_support_records(r)
-    public_totals = _public_support_totals(public_records)
-    server_received = public_totals["server"]
-    domain_received = public_totals["domain"]
-    reserve = public_totals["reserve"]
+    projection = await _load_public_support_projection(r)
+    server_received = projection["server"]
+    domain_received = projection["domain"]
+    reserve = projection["reserve"]
 
     months_elapsed = _months_elapsed(SERVER_START)
     server_cost_total = months_elapsed * SERVER_COST_MONTHLY
@@ -463,13 +523,11 @@ async def payment_status():
     domain_balance = round(domain_received - domain_cost_total, 2)
 
     # Letzte Zahlung
-    last_payment = None
-    log_len = len(public_records)
-    if public_records:
-        last_payment = _public_payment_record(public_records[-1])
+    last_payment = projection["last_payment"]
+    log_len = projection["count"]
 
     # Alle Zahlungen summieren
-    total_received = public_totals["received"]
+    total_received = projection["received"]
 
     return {
         "server": {
@@ -656,7 +714,7 @@ async def paypal_ipn_webhook(request: Request):
             "fulfillment_state": fulfillment_state,
             "requires_accounting_review": True,
         }
-        await r.rpush(R_PAYMENTS, json.dumps(record))
+        await _append_payment_record(r, record)
         accounting_mutated = True
         await _append_finance_event(r, {
             "event_id": f"paypal:{txn_id}",
@@ -923,15 +981,15 @@ async def finance_overview(_auth: bool = Depends(verify_admin_key)):
 async def public_finance_overview():
     """Oeffentlicher Transparenz-Endpoint — nur Summen, keine Details."""
     r = await _get_redis()
-    public_records = await _load_public_support_records(r)
-    server_received = _public_support_totals(public_records)["server"]
+    projection = await _load_public_support_projection(r)
+    server_received = projection["server"]
     months = _months_elapsed(SERVER_START)
     server_cost = months * HETZNER_MONTHLY
     server_balance = round(server_received - server_cost, 2)
     runway = int(server_balance / HETZNER_MONTHLY) if server_balance > 0 else 0
 
     hlr_remaining = max(0, 2499 - int(await r.get("hlr:hlrlookupcom:used") or "0"))
-    payment_count = len(public_records)
+    payment_count = projection["count"]
 
     return {
         "server_gedeckt_monate": runway,

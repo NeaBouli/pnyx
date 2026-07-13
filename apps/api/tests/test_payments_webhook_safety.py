@@ -26,30 +26,56 @@ class _Request:
 
 
 class _DuplicateRedis:
-    async def exists(self, _key):
-        return True
+    async def mget(self, *_keys):
+        return ["0", "0", "0"]
 
     async def set(self, _key, _value, **_kwargs):
         return None
+
+
+class _Pipeline:
+    def __init__(self, redis):
+        self.redis = redis
+        self.commands = []
+
+    def __getattr__(self, name):
+        def queue(*args, **kwargs):
+            self.commands.append((name, args, kwargs))
+            return self
+        return queue
+
+    async def execute(self):
+        return [await getattr(self.redis, name)(*args, **kwargs) for name, args, kwargs in self.commands]
 
 
 class _SuccessRedis:
     def __init__(self):
         self.set_calls = []
         self.pushed = []
+        self.values = {
+            payments.R_SERVER_RECEIVED: "0",
+            payments.R_DOMAIN_RECEIVED: "0",
+            payments.R_RESERVE: "0",
+        }
 
-    async def exists(self, _key):
-        return True
+    def pipeline(self, **_kwargs):
+        return _Pipeline(self)
+
+    async def mget(self, *keys):
+        return [self.values.get(key) for key in keys]
 
     async def set(self, key, value, **kwargs):
         self.set_calls.append((key, value, kwargs))
+        if kwargs.get("nx") and key in self.values:
+            return None
+        self.values[key] = str(value)
         return True
 
     async def rpush(self, key, value):
         self.pushed.append((key, value))
 
-    async def get(self, _key):
-        return None
+    async def get(self, key):
+        return self.values.get(key)
 
     async def setex(self, key, ttl, value):
         self.set_calls.append((key, value, {"ex": ttl}))
@@ -58,21 +84,31 @@ class _SuccessRedis:
         self.set_calls.append((key, None, {"delete": True}))
 
     async def incrbyfloat(self, _key, _value):
-        return 1.0
+        value = float(self.values.get(_key, "0")) + float(_value)
+        self.values[_key] = str(value)
+        return value
 
     async def incr(self, _key):
-        return 1
+        value = int(self.values.get(_key, "0")) + 1
+        self.values[_key] = str(value)
+        return value
 
 
 class _PublicProjectionRedis:
-    def __init__(self, records):
-        self.records = [__import__("json").dumps(record) for record in records]
+    def __init__(self, *, server=None, domain=None, reserve=None, count=None, last=None):
+        self.values = {
+            payments.R_PUBLIC_SERVER_RECEIVED: server,
+            payments.R_PUBLIC_DOMAIN_RECEIVED: domain,
+            payments.R_PUBLIC_RESERVE: reserve,
+            payments.R_PUBLIC_PAYMENT_COUNT: count,
+            payments.R_PUBLIC_LAST_PAYMENT: __import__("json").dumps(last) if last else None,
+        }
 
-    async def lrange(self, _key, _start, _end):
-        return self.records
+    async def mget(self, *keys):
+        return [self.values.get(key) for key in keys]
 
-    async def get(self, _key):
-        return None
+    async def get(self, key):
+        return self.values.get(key)
 
 
 def _verified_public_record(amount=10.0, allocation=None):
@@ -142,14 +178,21 @@ def test_public_support_projection_rejects_seed_test_and_incomplete_records():
         **_verified_public_record(),
         "allocation": {"server": 11.0, "domain": 0.0, "reserve": -1.0},
     }) is False
+    assert payments._is_public_support_record({
+        **_verified_public_record(),
+        "amount": "NaN",
+    }) is False
+    assert payments._is_public_support_record({
+        **_verified_public_record(),
+        "allocation": {"server": "NaN", "domain": 0.0, "reserve": 0.0},
+    }) is False
+    assert payments._public_support_amount("Infinity") is None
+    assert payments._public_allocation_amount("-Infinity") is None
 
 
 @pytest.mark.asyncio
 async def test_public_status_excludes_seed_and_test_records(monkeypatch):
-    redis = _PublicProjectionRedis([
-        {"date": "2026-04-16", "amount": 20.0, "method": "manual", "to": "server"},
-        {**_verified_public_record(), "method": "test"},
-    ])
+    redis = _PublicProjectionRedis()
 
     async def fake_get_redis():
         return redis
@@ -171,11 +214,13 @@ async def test_public_status_uses_only_verified_support_records(monkeypatch):
         amount=25.0,
         allocation={"server": 20.0, "domain": 5.0, "reserve": 0.0},
     )
-    redis = _PublicProjectionRedis([
-        {"date": "2026-04-16", "amount": 20.0, "method": "manual", "to": "server"},
-        verified,
-        {**verified, "method": "test", "amount": 999.0},
-    ])
+    redis = _PublicProjectionRedis(
+        server="20.00",
+        domain="5.00",
+        reserve="0.00",
+        count="1",
+        last=payments._public_payment_record(verified),
+    )
 
     async def fake_get_redis():
         return redis
@@ -204,8 +249,26 @@ def test_public_community_page_keeps_payment_links_paused():
     assert "HLR credits are procured privately" in community
     assert "BTC → HLR" not in community
     assert "LTC → HLR" not in community
-    assert "liveServerData = { received: 20" not in community
-    assert "liveDomainData = { received: 9.30" not in community
+    assert "var liveServerData = { received: 0, cost_total: 10, balance: -10 };" in community
+    assert "var liveDomainData = { received: 0, cost_total: 9.30, balance: -9.30 };" in community
+
+
+@pytest.mark.asyncio
+async def test_operating_funding_initialization_is_atomic_and_preserves_existing_values():
+    redis = _SuccessRedis()
+    redis.values[payments.R_SERVER_RECEIVED] = "7.50"
+    redis.values.pop(payments.R_DOMAIN_RECEIVED)
+    redis.values.pop(payments.R_RESERVE)
+
+    await payments._init_operating_funding(redis)
+
+    assert redis.values[payments.R_SERVER_RECEIVED] == "7.50"
+    assert redis.values[payments.R_DOMAIN_RECEIVED] == payments.INITIAL_DOMAIN_FUNDING
+    assert redis.values[payments.R_RESERVE] == "0.00"
+    init_calls = [call for call in redis.set_calls if call[0] in {
+        payments.R_SERVER_RECEIVED, payments.R_DOMAIN_RECEIVED, payments.R_RESERVE,
+    }]
+    assert all(call[2] == {"nx": True} for call in init_calls)
 
 
 @pytest.mark.asyncio
@@ -517,6 +580,7 @@ async def test_paypal_donation_is_logged_without_payer_data(monkeypatch):
         return {"server": amount, "domain": 0.0, "reserve": 0.0}
 
     monkeypatch.setenv("PAYPAL_RECEIVER_EMAIL", "owner@example.test")
+    monkeypatch.setattr(payments, "PAYPAL_IPN_URL", payments.PAYPAL_IPN_PRODUCTION_URL)
 
     async def verified(_payload):
         return True
@@ -531,6 +595,8 @@ async def test_paypal_donation_is_logged_without_payer_data(monkeypatch):
     record = __import__("json").loads(redis.pushed[0][1])
     assert record["category"] == "donation"
     assert record["provider_mode"] == "live"
+    assert redis.values[payments.R_PUBLIC_PAYMENT_COUNT] == "1"
+    assert redis.values[payments.R_PUBLIC_SERVER_RECEIVED] == "15.0"
     assert "payer" not in __import__("json").dumps(record).lower()
     assert "person@example.test" not in __import__("json").dumps(redis.pushed)
 
