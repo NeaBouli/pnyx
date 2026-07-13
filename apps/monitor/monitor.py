@@ -1154,7 +1154,7 @@ def check_zk_canary_health(conn) -> list[Alert]:
 # ─── Main Loop ───────────────────────────────────────────────────────────────
 
 def run_checks():
-    logger.info("Running 18 business logic checks...")
+    logger.info("Running 19 business logic checks...")
     all_alerts: list[Alert] = []
     recovery_results: dict[str, str] = {}
     notification_due: dict[str, bool] = {}
