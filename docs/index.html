@@ -585,9 +585,9 @@
       <div class="demo-label" data-el="Ψηφοφορία Πολιτών" data-en="Citizen Vote">Ψηφοφορία Πολιτών</div>
       <div class="demo-bar-row" id="barRow" style="display:block">
         <div class="demo-bar-wrap"><div class="demo-bar demo-bar-yes" id="yesBar"></div></div>
-        <div class="demo-pct" data-el="33% Υπέρ" data-en="33% Yes">33% Υπέρ</div>
+        <div class="demo-pct" id="demoYesLabel" data-el="— Υπέρ" data-en="— Yes">— Υπέρ</div>
         <div class="demo-bar-wrap" style="margin-top:3px"><div class="demo-bar demo-bar-no" id="noBar"></div></div>
-        <div class="demo-pct" data-el="67% Κατά" data-en="67% No">67% Κατά</div>
+        <div class="demo-pct" id="demoNoLabel" data-el="— Κατά" data-en="— No">— Κατά</div>
       </div>
     </div>
     <div class="demo-box" id="dBox5">
@@ -606,34 +606,28 @@
       <div>
         <div style="font-weight:800;color:var(--gray-500);margin-bottom:0.5rem;font-size:0.82rem">🏛️ <span data-el="Απόφαση Βουλής" data-en="Parliament Decision">Απόφαση Βουλής</span></div>
         <div id="rParlData" style="opacity:0;transition:opacity 0.6s">
-          <div style="color:rgba(255,255,255,0.7);margin-bottom:0.4rem">17.05.2024 — Ν. 4933 Ιδιωτικά Πανεπιστήμια</div>
-          <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.5rem">
-            <span style="background:#166534;color:#86efac;padding:0.15rem 0.4rem;border-radius:0.25rem;font-size:0.65rem;font-weight:700">ΝΔ ΝΑΙ</span>
-            <span style="background:#7f1d1d;color:#fca5a5;padding:0.15rem 0.4rem;border-radius:0.25rem;font-size:0.65rem;font-weight:700">ΣΥΡΙΖΑ ΟΧΙ</span>
-            <span style="background:#7f1d1d;color:#fca5a5;padding:0.15rem 0.4rem;border-radius:0.25rem;font-size:0.65rem;font-weight:700">ΠΑΣΟΚ ΟΧΙ</span>
-            <span style="background:#166534;color:#86efac;padding:0.15rem 0.4rem;border-radius:0.25rem;font-size:0.65rem;font-weight:700">ΕΛ ΝΑΙ</span>
-          </div>
-          <div style="font-weight:700;color:#86efac" data-el="ΕΓΚΡΙΘΗΚΕ" data-en="APPROVED">ΕΓΚΡΙΘΗΚΕ</div>
+          <div id="latestBillTitle" style="color:var(--gray-600);margin-bottom:0.4rem" data-el="Αναμονή πραγματικών δεδομένων" data-en="Waiting for real data">Αναμονή πραγματικών δεδομένων</div>
+          <div id="latestBillStatus" style="font-weight:700;color:var(--gray-500)" data-el="Δεν υπάρχει ακόμη αποτέλεσμα με ψήφους" data-en="No voted result is available yet">Δεν υπάρχει ακόμη αποτέλεσμα με ψήφους</div>
         </div>
       </div>
       <!-- Πολίτες -->
       <div>
         <div style="font-weight:800;color:var(--gray-500);margin-bottom:0.5rem;font-size:0.82rem">🗳️ <span data-el="Βούληση Πολιτών" data-en="Citizen Will">Βούληση Πολιτών</span></div>
         <div id="rCitizenData" style="opacity:0;transition:opacity 0.6s">
-          <div style="margin-bottom:0.4rem">1.247 <span data-el="ψήφοι" data-en="votes">ψήφοι</span></div>
+          <div id="resultTotal" style="margin-bottom:0.4rem" data-el="— ψήφοι" data-en="— votes">— ψήφοι</div>
           <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.3rem">
             <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
               <div id="resultYes" style="height:100%;width:0;background:#22c55e;border-radius:4px;transition:width 1s"></div>
             </div>
-            <span style="font-weight:700;color:#22c55e;width:50px;text-align:right" data-el="33% Υπέρ" data-en="33% Yes">33% Υπέρ</span>
+            <span id="resultYesLabel" style="font-weight:700;color:#22c55e;width:50px;text-align:right" data-el="— Υπέρ" data-en="— Yes">— Υπέρ</span>
           </div>
           <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem">
             <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
               <div id="resultNo" style="height:100%;width:0;background:#ef4444;border-radius:4px;transition:width 1s"></div>
             </div>
-            <span style="font-weight:700;color:#ef4444;width:50px;text-align:right" data-el="67% Κατά" data-en="67% No">67% Κατά</span>
+            <span id="resultNoLabel" style="font-weight:700;color:#ef4444;width:50px;text-align:right" data-el="— Κατά" data-en="— No">— Κατά</span>
           </div>
-          <div style="font-weight:700;color:#ef4444" data-el="Πλειοψηφία: ΚΑΤΑ" data-en="Majority: AGAINST">Πλειοψηφία: ΚΑΤΑ</div>
+          <div id="resultMajority" style="font-weight:700;color:var(--gray-500)" data-el="Αναμονή πραγματικών δεδομένων" data-en="Waiting for real data">Αναμονή πραγματικών δεδομένων</div>
         </div>
       </div>
     </div>
@@ -649,9 +643,9 @@
           <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
             <div id="repBar" style="height:100%;width:0;border-radius:4px;transition:width 1s;background:#ef4444"></div>
           </div>
-          <span id="repPct" style="font-size:0.72rem;font-weight:700;color:#f59e0b;white-space:nowrap;opacity:0;transition:opacity 0.5s">0.013%</span>
+          <span id="repPct" style="font-size:0.72rem;font-weight:700;color:#f59e0b;white-space:nowrap;opacity:0;transition:opacity 0.5s">—</span>
         </div>
-        <div id="repLabel" style="font-size:0.62rem;color:rgba(255,255,255,0.4);margin-top:0.2rem;opacity:0;transition:opacity 0.5s" data-el="1.247 / 9.810.040 — Χαμηλή" data-en="1,247 / 9,810,040 — Low">1.247 / 9.810.040 — Χαμηλή</div>
+        <div id="repLabel" style="font-size:0.62rem;color:var(--gray-500);margin-top:0.2rem;opacity:0;transition:opacity 0.5s" data-el="Αναμονή πραγματικών δεδομένων" data-en="Waiting for real data">Αναμονή πραγματικών δεδομένων</div>
       </div>
     </div>
   </div>
@@ -1536,7 +1530,7 @@ function toggleLang() {
   document.getElementById("langFlag").textContent = currentLang === "el" ? "EN" : "ΕΛ";
   document.querySelectorAll("[data-el]").forEach(function(el) {
     var t = el.getAttribute("data-" + currentLang);
-    if (t) el.innerHTML = t;
+    if (t) el.textContent = t;
   });
 }
 var obs = new IntersectionObserver(function(entries) {
@@ -1577,19 +1571,58 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     var rp=document.getElementById("repPct"); if(rp) rp.style.opacity="0";
     var rl=document.getElementById("repLabel"); if(rl) rl.style.opacity="0";
   }
+  function setLiveText(id, elText, enText) {
+    var node=document.getElementById(id);
+    if(!node) return;
+    node.setAttribute("data-el", elText);
+    node.setAttribute("data-en", enText);
+    node.textContent=currentLang==="en"?enText:elText;
+  }
+  function renderLiveResult(data) {
+    var total=Number(data.total_votes||0);
+    var yes=Math.max(0,Math.min(100,Number(data.yes_pct||0)));
+    var no=Math.max(0,Math.min(100,Number(data.no_pct||0)));
+    var abstain=Math.max(0,Math.min(100,Number(data.abstain_pct||0)));
+    var titleEl=data.title_el||data.bill_id;
+    var titleEn=data.title_en||titleEl;
+    var majorityEl="Πλειοψηφία: ΑΠΟΧΗ";
+    var majorityEn="Majority: ABSTAIN";
+    if(yes>=no&&yes>=abstain) { majorityEl="Πλειοψηφία: ΥΠΕΡ"; majorityEn="Majority: YES"; }
+    else if(no>=yes&&no>=abstain) { majorityEl="Πλειοψηφία: ΚΑΤΑ"; majorityEn="Majority: NO"; }
+    var electorate=9810040;
+    var participation=total/electorate*100;
+
+    setLiveText("latestBillTitle",titleEl,titleEn);
+    setLiveText("latestBillStatus","Πραγματικό αποτέλεσμα · "+data.status,"Real result · "+data.status);
+    setLiveText("demoYesLabel",yes+"% Υπέρ",yes+"% Yes");
+    setLiveText("demoNoLabel",no+"% Κατά",no+"% No");
+    setLiveText("resultTotal",total.toLocaleString("el-GR")+" ψήφοι",total.toLocaleString("en-US")+" votes");
+    setLiveText("resultYesLabel",yes+"% Υπέρ",yes+"% Yes");
+    setLiveText("resultNoLabel",no+"% Κατά",no+"% No");
+    setLiveText("resultMajority",majorityEl,majorityEn);
+    var rp=document.getElementById("repPct"); if(rp) rp.textContent=participation.toFixed(4)+"%";
+    setLiveText("repLabel",total.toLocaleString("el-GR")+" / 9.810.040",total.toLocaleString("en-US")+" / 9,810,040");
+  }
   function fillResultData() {
+    var live=window._liveResult;
+    if(!live||!live.bill_id||Number(live.total_votes)<1) {
+      clearResultData();
+      var waitingParl=document.getElementById("rParlData"); if(waitingParl) waitingParl.style.opacity="1";
+      var waitingCitizen=document.getElementById("rCitizenData"); if(waitingCitizen) waitingCitizen.style.opacity="1";
+      return;
+    }
     var box6=document.getElementById("dBox6"); if(box6) box6.style.borderColor="rgba(37,99,235,0.5)";
     var pd=document.getElementById("rParlData"); if(pd) pd.style.opacity="1";
     setTimeout(function() {
       var cd=document.getElementById("rCitizenData"); if(cd) cd.style.opacity="1";
     }, 300);
     setTimeout(function() {
-      var ry=document.getElementById("resultYes"); if(ry) ry.style.width="33%";
-      var rn=document.getElementById("resultNo"); if(rn) rn.style.width="67%";
+      var ry=document.getElementById("resultYes"); if(ry) ry.style.width=live.yes_pct+"%";
+      var rn=document.getElementById("resultNo"); if(rn) rn.style.width=live.no_pct+"%";
     }, 600);
     setTimeout(function() {
-      var b=document.getElementById("divBadge"); if(b) { b.style.display="block"; b.textContent="⚠️ 67% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ"; }
-      var rep=document.getElementById("repBar"); if(rep) rep.style.width="12%";
+      var b=document.getElementById("divBadge"); if(b) b.style.display="none";
+      var rep=document.getElementById("repBar"); if(rep) rep.style.width=Math.min(100,Number(live.total_votes||0)/9810040*100)+"%";
       var rp=document.getElementById("repPct"); if(rp) rp.style.opacity="1";
       var rl=document.getElementById("repLabel"); if(rl) rl.style.opacity="1";
     }, 900);
@@ -1622,7 +1655,9 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
         clearResultData();
         setTimeout(function() {
           var y=document.getElementById("yesBar"); var n=document.getElementById("noBar");
-          if(y) y.style.width="33%"; if(n) n.style.width="67%";
+          var live=window._liveResult;
+          if(y) y.style.width=(live?live.yes_pct:0)+"%";
+          if(n) n.style.width=(live?live.no_pct:0)+"%";
         }, 300);
       }
       // Step 5: Ergebnis — Daten füllen sich wieder
@@ -1644,10 +1679,8 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     .then(function(r){return r.json()})
     .then(function(data){
       if(!data||!data.bill_id||data.total_votes<1) return;
-      // Override demo values with real data
       window._liveResult=data;
-      var pct=document.querySelector(".demo-pct");
-      if(pct) pct.textContent=data.no_pct+"% "+(currentLang==="en"?"No":"Κατά");
+      renderLiveResult(data);
     }).catch(function(){});
 })();
 

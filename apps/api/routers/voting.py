@@ -14,13 +14,13 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Header, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, update, text
+from sqlalchemy import and_, or_, select, func, union, update, text
 from sqlalchemy.exc import IntegrityError
 
 from database import get_db
 from models import (
     CitizenVote, VoteChoice, IdentityRecord, KeyStatus,
-    ParliamentBill, BillStatus, BillRelevanceVote
+    ParliamentBill, BillStatus, BillRelevanceVote, ZkVoteReceipt
 )
 from services.source_links import official_source_url
 from services.bill_visibility import is_public_bill, public_bill_filter
@@ -561,37 +561,62 @@ async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = 
 async def get_latest_result(db: AsyncSession = Depends(get_db)):
     """Most recent bill with at least 1 vote — for landing page live data."""
     from sqlalchemy import desc
-    # Find bill with most votes
+    candidate_bill_ids = union(
+        select(CitizenVote.bill_id.label("bill_id")),
+        select(
+            func.substring(ZkVoteReceipt.vote_scope_id, 6).label("bill_id")
+        ).where(ZkVoteReceipt.vote_scope_id.like("bill:%")),
+    ).subquery()
+    tier1_vote_exists = (
+        select(CitizenVote.id)
+        .where(CitizenVote.bill_id == ParliamentBill.id)
+        .exists()
+    )
+    parliament_zk_vote_exists = and_(
+        func.coalesce(ParliamentBill.source, "PARLIAMENT") == "PARLIAMENT",
+        (
+            select(ZkVoteReceipt.id)
+            .where(
+                ZkVoteReceipt.vote_scope_id
+                == func.concat("bill:", ParliamentBill.id)
+            )
+            .exists()
+        ),
+    )
     result = await db.execute(
         select(ParliamentBill)
+        .join(candidate_bill_ids, candidate_bill_ids.c.bill_id == ParliamentBill.id)
         .where(ParliamentBill.status.in_([
             BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END, BillStatus.ACTIVE,
         ]))
         .where(public_bill_filter())
+        .where(or_(tier1_vote_exists, parliament_zk_vote_exists))
         .order_by(desc(ParliamentBill.created_at))
-        .limit(5)
+        .limit(1)
     )
-    bills = result.scalars().all()
-    for bill in bills:
-        totals = await aggregate_bill_vote_totals(
-            db,
-            bill.id,
-            include_zk=(bill.source or "PARLIAMENT") == "PARLIAMENT",
-        )
-        yes_c, no_c, abs_c = totals.yes, totals.no, totals.abstain
-        total = totals.total
-        if total > 0:
-            return {
-                "bill_id": bill.id,
-                "title_el": bill.title_el,
-                "title_en": bill.title_en,
-                "status": bill.status.value,
-                "total_votes": total,
-                "yes_pct": round(yes_c / total * 100),
-                "no_pct": round(no_c / total * 100),
-                "abstain_pct": round(abs_c / total * 100),
-            }
-    return {"bill_id": None, "total_votes": 0}
+    bill = result.scalar_one_or_none()
+    if bill is None:
+        return {"bill_id": None, "total_votes": 0}
+
+    totals = await aggregate_bill_vote_totals(
+        db,
+        bill.id,
+        include_zk=(bill.source or "PARLIAMENT") == "PARLIAMENT",
+    )
+    total = totals.total
+    if total < 1:
+        return {"bill_id": None, "total_votes": 0}
+
+    return {
+        "bill_id": bill.id,
+        "title_el": bill.title_el,
+        "title_en": bill.title_en,
+        "status": bill.status.value,
+        "total_votes": total,
+        "yes_pct": round(totals.yes / total * 100),
+        "no_pct": round(totals.no / total * 100),
+        "abstain_pct": round(totals.abstain / total * 100),
+    }
 
 
 @router.get("/results/in-progress")

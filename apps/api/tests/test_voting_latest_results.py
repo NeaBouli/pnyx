@@ -24,8 +24,10 @@ class _ScalarRows:
 class _FakeDb:
     def __init__(self, bills):
         self._bills = bills
+        self.statement = None
 
-    async def execute(self, _statement):
+    async def execute(self, statement):
+        self.statement = statement
         return _ScalarRows(self._bills)
 
 
@@ -110,6 +112,22 @@ async def test_latest_result_uses_source_specific_vote_aggregation(
     assert calls == [(bill_id, expected_include_zk)]
     assert result["bill_id"] == bill_id
     assert result["total_votes"] == 3
+
+
+@pytest.mark.asyncio
+async def test_latest_result_query_requires_real_tier1_or_parliament_zk_votes() -> None:
+    db = _FakeDb([])
+
+    result = await voting.get_latest_result(db=db)
+
+    statement = str(db.statement)
+    assert "JOIN (SELECT citizen_votes.bill_id AS bill_id" in statement
+    assert "UNION SELECT substring(zk_vote_receipts.vote_scope_id" in statement
+    assert "citizen_votes.bill_id = parliament_bills.id" in statement
+    assert "zk_vote_receipts.vote_scope_id = concat" in statement.lower()
+    assert "coalesce(parliament_bills.source" in statement.lower()
+    assert "PARLIAMENT" in db.statement.compile().params.values()
+    assert result == {"bill_id": None, "total_votes": 0}
 
 
 @pytest.mark.asyncio
