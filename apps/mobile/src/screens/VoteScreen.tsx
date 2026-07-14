@@ -425,7 +425,7 @@ export default function VoteScreen({ route, navigation }: Props) {
   }, [billId, publicZkVoteReady, showPublicZkVoting, zkOptedIn]);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
         <Text style={[styles.title, { flex: 1 }]}>{displayTitle}</Text>
         <TouchableOpacity onPress={shareBill} style={{ padding: 8 }}>
@@ -728,7 +728,8 @@ export default function VoteScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.background },
+  contentContainer: { padding: 24, paddingBottom: 40 },
   title: { fontSize: 20, fontWeight: "bold", color: colors.primary, marginBottom: 8 },
   info: { fontSize: 14, color: colors.textSecondary, marginBottom: 32 },
   options: { gap: 16 },

@@ -83,6 +83,8 @@ def _access_blocked(text: str) -> bool:
     lowered = text.lower()
     return (
         "access denied" in lowered
+        or "you don't have permission to access" in lowered
+        or "errors.edgesuite.net" in lowered
         or "authenticationrequirederror" in lowered
         or "blocked from performing anonymous queries" in lowered
     )

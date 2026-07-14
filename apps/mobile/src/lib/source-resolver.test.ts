@@ -165,6 +165,29 @@ describe("cleanOfficialText", () => {
       "Αναζήτηση Τίτλος Ενίσχυση της εφαρμογής της ισότητας της αμοιβής",
     )).toBe("");
   });
+
+  it("hides an upstream access-denial page while preserving PDF links", () => {
+    const value = `
+You don't have permission to access "/" on this server. Reference #18.63c7cf17.1783640051.9520c14
+
+### Πλήρη έγγραφα
+- [Έγγραφο Βουλής 1 (13351763.pdf)](https://www.hellenicparliament.gr/UserFiles/13351763.pdf)
+`;
+
+    expect(cleanOfficialText(value)).toBe("");
+    expect(officialDocumentLinks(value)).toEqual([
+      {
+        label: "Έγγραφο Βουλής 1 (13351763.pdf)",
+        url: "https://www.hellenicparliament.gr/UserFiles/13351763.pdf",
+      },
+    ]);
+  });
+
+  it("does not hide legitimate text that merely mentions access denied", () => {
+    expect(cleanOfficialText(
+      "Η φράση Access Denied αναφέρεται ως τεχνικός όρος μέσα σε νόμιμο επίσημο κείμενο.",
+    )).toContain("Access Denied");
+  });
 });
 
 // ─── GH#102: 24h Correction Banner ─────────────────────────────────────────

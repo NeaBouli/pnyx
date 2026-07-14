@@ -138,6 +138,39 @@ def test_topic_body_renders_clean_official_text_as_own_section():
     assert "[Αιτιολογική Έκθεση](https://www.hellenicparliament.gr/UserFiles/x/test.pdf)" in body
 
 
+def test_topic_body_hides_access_denial_but_keeps_parliament_documents():
+    bill = SimpleNamespace(
+        id="GR-DENIED",
+        title_el="Δοκιμαστικό νομοσχέδιο",
+        summary_short_el="Σύντομη σύνοψη.",
+        analysis_el=None,
+        pill_el=None,
+        summary_long_el=(
+            "You don't have permission to access '/' on this server. "
+            "Reference #18.63c7cf17.1783640051.9520c14\n\n"
+            "### Πλήρη έγγραφα\n"
+            "- [Έγγραφο Βουλής](https://www.hellenicparliament.gr/UserFiles/x/test.pdf)"
+        ),
+        ai_summary_reviewed=False,
+        status=SimpleNamespace(value="OPEN_END"),
+        governance_level=SimpleNamespace(value="NATIONAL"),
+        source="PARLIAMENT",
+        diavgeia_ada=None,
+        parliament_url=None,
+        official_source_url=None,
+        forum_topic_id=123,
+        forum_topic_url="https://pnyx.ekklesia.gr/t/123",
+        periferia_id=None,
+        dimos_id=None,
+    )
+
+    body = discourse_sync._build_topic_body(bill)
+
+    assert "permission to access" not in body
+    assert "Reference #" not in body
+    assert "[Έγγραφο Βουλής](https://www.hellenicparliament.gr/UserFiles/x/test.pdf)" in body
+
+
 def test_diavgeia_topic_body_renders_document_link():
     """DIAVGEIA forum topics must expose the decision document, not only the ADA page."""
     bill = SimpleNamespace(

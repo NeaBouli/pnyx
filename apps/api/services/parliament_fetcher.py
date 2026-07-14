@@ -40,6 +40,11 @@ _BAD_TEXT_PREFIXES = [
     "Αναζήτηση Τίτλος",
 ]
 
+_ACCESS_DENIAL_PATTERNS = (
+    "you don't have permission to access",
+    "errors.edgesuite.net",
+)
+
 
 _DOCUMENT_BLOCK_HEADING = "### Πλήρη έγγραφα"
 _DOCUMENT_BLOCK_LINK_RE = re.compile(
@@ -81,6 +86,12 @@ def _is_bad_parliament_text(text: str | None) -> bool:
     if not text or len(text.strip()) < 200:
         return True
     stripped = text.strip()
+    lowered = stripped.lower()
+    if (
+        any(pattern in lowered for pattern in _ACCESS_DENIAL_PATTERNS)
+        or ("access denied" in lowered and "reference #" in lowered)
+    ):
+        return True
     if any(stripped.startswith(prefix) for prefix in _BAD_TEXT_PREFIXES):
         return True
     # Check for boilerplate markers

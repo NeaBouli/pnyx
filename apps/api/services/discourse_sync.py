@@ -239,6 +239,12 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
         lower = val.lower()
         if "unknown" in lower:
             return True
+        if (
+            "you don't have permission to access" in lower
+            or "errors.edgesuite.net" in lower
+            or ("access denied" in lower and "reference #" in lower)
+        ):
+            return True
         bad_parliament_markers = (
             "Μετάβαση στο κύριο περιεχόμενο",
             "Ενεργοποίηση προσβασιμότητας",
@@ -272,6 +278,18 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
     def _clean_official_text(text: str) -> str:
         if not text:
             return ""
+        lowered = text.lower()
+        access_denial_patterns = (
+            "you don't have permission to access",
+            "errors.edgesuite.net",
+        )
+        is_access_denial = (
+            any(pattern in lowered for pattern in access_denial_patterns)
+            or ("access denied" in lowered and "reference #" in lowered)
+        )
+        if is_access_denial:
+            document_block_index = text.find("### Πλήρη έγγραφα")
+            text = text[document_block_index:] if document_block_index >= 0 else ""
         text = re.sub(r"<[^>]+>", "", text)
         lines = text.split("\n")
         cleaned = [l for l in lines
@@ -298,8 +316,10 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
         analysis = _clean(analysis_el)
 
     official_excerpt = ""
-    if source == "PARLIAMENT" and bill.summary_long_el and not _is_bad_summary(bill.summary_long_el):
-        official_excerpt = _clean_official_text(bill.summary_long_el)
+    if source == "PARLIAMENT" and bill.summary_long_el:
+        cleaned_official = _clean_official_text(bill.summary_long_el)
+        if cleaned_official and not _is_bad_summary(cleaned_official):
+            official_excerpt = cleaned_official
 
     diavgeia_document_url = ""
     if source == "DIAVGEIA":

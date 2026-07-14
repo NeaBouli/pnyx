@@ -10,6 +10,7 @@ import RelevanceButtons from "@/components/RelevanceButtons";
 import BillResultReport from "@/components/BillResultReport";
 // CompassCard removed — compass is mobile-app only
 import QRCodeVoteStub from "@/components/QRCodeVoteStub";
+import { cleanOfficialText } from "@/lib/official-text";
 
 const VOTE_OPTIONS = [
   { value: "YES",     label_el: "Υπέρ",               label_en: "Yes",            color: "bg-green-600 hover:bg-green-700 border-green-500 text-white" },
@@ -22,21 +23,6 @@ const VOTABLE = ["ACTIVE", "WINDOW_24H"];
 
 function readableText(value?: string | null) {
   return Boolean(value && value.trim() && !value.includes("[unknown:"));
-}
-
-function cleanOfficialText(value?: string | null) {
-  if (!readableText(value)) return "";
-  const text = String(value).trim();
-  const badPatterns = [
-    "Μετάβαση στο κύριο περιεχόμενο",
-    "Ανοίξτε το μενού προσβασιμότητας",
-    "Νομοθετική Διαδικασία",
-    "Ημερ. Διάταξη Ολομέλειας",
-    "Εβδομαδιαίο Δελτίο",
-    "Εμφανίζονται τα σχέδια",
-    "Εμφανίζονται τα ψηφισθέντα",
-  ];
-  return badPatterns.some((pattern) => text.includes(pattern)) ? "" : text;
 }
 
 function renderOfficialLine(line: string, idx: number) {
@@ -216,7 +202,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <div className="max-w-2xl mx-auto px-6 py-10">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Back link */}
         <Link href="../bills" className="text-blue-600 text-sm hover:text-blue-700 mb-6 inline-flex items-center gap-1 font-medium">
           ← {locale === "el" ? "Πίσω στα Νομοσχέδια" : "Back to Bills"}
@@ -260,7 +246,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
             <span className="text-blue-500 ml-2">{locale === "el" ? "— Αφορά μόνο τους κατοίκους του Δήμου" : "— Only for residents of this municipality"}</span>
           </div>
         )}
-        {(bill as any).governance_level === "INSTITUTIONAL" && bill.pill_el && (
+        {(bill as any).governance_level === "INSTITUTIONAL" && readableText(bill.pill_el) && (
           <div className="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 mb-4 text-sm">
             <span className="font-bold text-purple-700">🏢 {bill.pill_el}</span>
           </div>
@@ -295,7 +281,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
         )}
 
         {/* Relevance */}
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex flex-col items-start gap-2 mb-4 sm:flex-row sm:items-center sm:gap-3">
           <span className="text-sm text-gray-500">
             {locale === "el" ? "Σημαντικότητα:" : "Importance:"}
           </span>
@@ -319,8 +305,8 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
         )}
 
         {/* Summary */}
-        <div className="bg-white rounded-2xl p-6 mb-6 border border-gray-200">
-          <div className="flex gap-3 mb-4">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 mb-6 border border-gray-200 overflow-hidden">
+          <div className="flex flex-wrap gap-2 sm:gap-3 mb-4">
             {["short", "long"].map(level => (
               <button
                 key={level}
