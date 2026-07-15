@@ -311,6 +311,87 @@ async def test_update_topic_refreshes_owned_body_and_keeps_pdf_block(monkeypatch
 
 
 @pytest.mark.asyncio
+async def test_scheduled_sync_refreshes_changed_owned_existing_topic(monkeypatch):
+    from services.content_provenance import FORUM_BODY_FIELD, record_generated_content
+
+    bill = _forum_bill("Παλιά αυτόματη σύνοψη.")
+    record_generated_content(bill, FORUM_BODY_FIELD, discourse_sync._build_topic_body(bill))
+    bill.summary_short_el = "Νέα αυτόματη σύνοψη."
+    updated: list[str] = []
+
+    class ScalarRows:
+        @staticmethod
+        def all():
+            return [bill]
+
+    class QueryResult:
+        @staticmethod
+        def scalars():
+            return ScalarRows()
+
+    class CountResult:
+        @staticmethod
+        def scalar_one():
+            return 1
+
+    class Db:
+        commits = 0
+        executes = 0
+
+        async def execute(self, _query):
+            self.executes += 1
+            if self.executes == 1:
+                return CountResult()
+            return QueryResult()
+
+        async def commit(self):
+            self.commits += 1
+
+    async def fake_region(_bill, _db):
+        return ""
+
+    async def fake_update(target, _db):
+        updated.append(target.id)
+        return True
+
+    monkeypatch.setattr(discourse_sync, "_region_name_for_body", fake_region)
+    monkeypatch.setattr(discourse_sync, "update_discourse_topic", fake_update)
+    monkeypatch.setattr(discourse_sync, "FORUM_SYNC_TOPIC_DELAY_SECONDS", 0)
+    db = Db()
+
+    stats = await discourse_sync.sync_changed_bills_to_forum(db)
+
+    assert stats == {
+        "total": 1,
+        "offset": 0,
+        "scanned": 1,
+        "refreshed": 1,
+        "failed": 0,
+    }
+    assert updated == [bill.id]
+    assert db.commits == 1
+
+
+def test_forum_refresh_offset_rotates_first_attempt_across_candidates(monkeypatch):
+    monkeypatch.setattr(discourse_sync, "FORUM_REFRESH_SCAN", 40)
+    monkeypatch.setattr(discourse_sync, "FORUM_REFRESH_BATCH", 2)
+    monkeypatch.setattr(discourse_sync, "FORUM_REFRESH_INTERVAL_SECONDS", 600)
+
+    offsets = [
+        discourse_sync._forum_refresh_offset(6, now=slot * 600)
+        for slot in range(3)
+    ]
+
+    assert offsets == [0, 2, 4]
+    attempted = {
+        candidate
+        for offset in offsets
+        for candidate in (offset, (offset + 1) % 6)
+    }
+    assert attempted == set(range(6))
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("with_provenance", [False, True])
 async def test_update_topic_never_overwrites_legacy_or_manually_edited_body(
     monkeypatch, with_provenance

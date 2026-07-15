@@ -361,7 +361,13 @@ async def scheduled_diavgeia_scrape():
 
 async def scheduled_forum_sync():
     """Sync bills to Discourse forum every 10 min."""
-    from services.discourse_sync import sync_new_bills_to_forum, FORUM_SYNC_ENABLED, DISCOURSE_API_KEY, _category_cache
+    from services.discourse_sync import (
+        DISCOURSE_API_KEY,
+        FORUM_SYNC_ENABLED,
+        _category_cache,
+        sync_changed_bills_to_forum,
+        sync_new_bills_to_forum,
+    )
     from services.scraper_state import record_run, record_success, record_failure
     _category_cache.clear()
     name = "forum_sync"
@@ -377,6 +383,9 @@ async def scheduled_forum_sync():
     try:
         async with session_factory() as db:
             await sync_new_bills_to_forum(db)
+            refresh_stats = await sync_changed_bills_to_forum(db)
+            if refresh_stats["refreshed"] or refresh_stats["failed"]:
+                logger.info("[Forum] Existing topic refresh: %s", refresh_stats)
         await record_success(name)
     except Exception as e:
         logger.error("[Forum] Sync failed: %s", e)

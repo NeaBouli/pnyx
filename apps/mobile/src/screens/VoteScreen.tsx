@@ -65,7 +65,7 @@ function votingStatusNotice(status: string, source: string) {
   return null;
 }
 
-import { cleanOfficialText, correctionBanner, officialDocumentLinks, resolveSource, isPdfUrl, sourceLabel } from "../lib/source-resolver";
+import { cleanOfficialText, correctionBanner, officialDocumentLinks, officialDocumentOpenChoices, resolveSource, isPdfUrl, sourceLabel, summarySectionLabel } from "../lib/source-resolver";
 
 export default function VoteScreen({ route, navigation }: Props) {
   const { billId, billTitle } = route.params;
@@ -95,6 +95,19 @@ export default function VoteScreen({ route, navigation }: Props) {
   const [zkVerifiedChoice, setZkVerifiedChoice] = useState<string | null>(null);
   const [zkBusy, setZkBusy] = useState<"opt-in" | "verify" | "vote" | null>(null);
   const [zkResult, setZkResult] = useState<{ ok: boolean; title: string; detail: string } | null>(null);
+
+  function openOfficialDocument(url: string) {
+    const choices = officialDocumentOpenChoices(billId, url);
+    Alert.alert(
+      "Έγγραφο Βουλής",
+      "Η Βουλή ενδέχεται να περιορίζει ορισμένες συσκευές. Επιλέξτε ασφαλή ανάγνωση ή το πρωτότυπο PDF.",
+      [
+        { text: "Ακύρωση", style: "cancel" },
+        { text: "Ασφαλής ανάγνωση", onPress: () => Linking.openURL(choices.readableUrl) },
+        { text: "Πρωτότυπο PDF", onPress: () => Linking.openURL(choices.officialUrl) },
+      ],
+    );
+  }
 
   React.useEffect(() => {
     const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
@@ -395,6 +408,7 @@ export default function VoteScreen({ route, navigation }: Props) {
     ? "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα. Δείτε την επίσημη πηγή."
     : "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα.";
   const summaryText = summary || (canUsePillAsSummary ? billPill : "") || summaryFallback;
+  const summaryLabel = summarySectionLabel(billSource, summaryText);
   const statusNotice = billLoaded && !showVoteControls ? votingStatusNotice(billStatus, billSource) : null;
   const showPublicZkVoting = canShowPublicZkVoting({
     serverStatus: zkStatus,
@@ -435,13 +449,13 @@ export default function VoteScreen({ route, navigation }: Props) {
 
       {sourceUrl && (sourceKind === "official" || sourceKind === "forum") ? (
         <TouchableOpacity
-          onPress={() => Linking.openURL(sourceUrl)}
+          onPress={() => isPdfUrl(sourceUrl) ? openOfficialDocument(sourceUrl) : Linking.openURL(sourceUrl)}
           style={{ backgroundColor: "#eff6ff", borderRadius: 10, padding: 12, marginBottom: 12, flexDirection: "row", alignItems: "center" }}
         >
           <Text style={{ fontSize: 14, marginRight: 8 }}>{sourceKind === "forum" ? "💬" : isPdfUrl(sourceUrl) ? "📄" : "🔗"}</Text>
           <View style={{ flex: 1 }}>
             <Text style={{ color: "#1d4ed8", fontSize: 13, fontWeight: "600" }}>{sourceLabel(billSource, sourceKind, sourceUrl)}</Text>
-            {isPdfUrl(sourceUrl) && <Text style={{ color: "#93c5fd", fontSize: 11, marginTop: 2 }}>Ανοίγει ως έγγραφο PDF</Text>}
+            {isPdfUrl(sourceUrl) && <Text style={{ color: "#93c5fd", fontSize: 11, marginTop: 2 }}>PDF ή ασφαλής σελίδα ανάγνωσης</Text>}
           </View>
           <Text style={{ color: "#93c5fd", fontSize: 12 }}>↗</Text>
         </TouchableOpacity>
@@ -461,7 +475,7 @@ export default function VoteScreen({ route, navigation }: Props) {
       ) : summaryText || analysis || officialText || officialDocs.length > 0 || billLoaded ? (
         <View style={{ backgroundColor: "#eff6ff", borderRadius: 12, padding: 14, marginBottom: 16 }}>
           <Text style={{ fontWeight: "700", color: "#1e40af", fontSize: 13, marginBottom: 6 }}>
-            Σύνοψη
+            {summaryLabel}
           </Text>
           <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20 }}>
             {summaryText.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/).map((part, i) => {
@@ -496,11 +510,11 @@ export default function VoteScreen({ route, navigation }: Props) {
               {officialDocs.map((doc) => (
                 <TouchableOpacity
                   key={doc.url}
-                  onPress={() => Linking.openURL(doc.url)}
+                  onPress={() => openOfficialDocument(doc.url)}
                   style={{ backgroundColor: "#dbeafe", borderRadius: 8, padding: 10, marginTop: 6 }}
                 >
                   <Text style={{ color: "#1d4ed8", fontSize: 13, fontWeight: "700" }}>📄 {doc.label}</Text>
-                  <Text style={{ color: "#60a5fa", fontSize: 11, marginTop: 2 }}>Άνοιγμα πλήρους PDF ↗</Text>
+                  <Text style={{ color: "#60a5fa", fontSize: 11, marginTop: 2 }}>PDF ή ασφαλής σελίδα ανάγνωσης ↗</Text>
                 </TouchableOpacity>
               ))}
             </>

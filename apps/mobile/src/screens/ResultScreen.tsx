@@ -12,6 +12,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   Linking,
+  Alert,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { StackScreenProps } from "@react-navigation/stack";
@@ -37,13 +38,26 @@ function readableText(value?: string | null) {
   return Boolean(value && value.trim() && !value.includes("[unknown:"));
 }
 
-import { cleanOfficialText, officialDocumentLinks, resolveSource, isPdfUrl, sourceLabel } from "../lib/source-resolver";
+import { cleanOfficialText, officialDocumentLinks, officialDocumentOpenChoices, resolveSource, isPdfUrl, sourceLabel, summarySectionLabel } from "../lib/source-resolver";
 
 export default function ResultScreen({ route }: Props) {
   const { billId, fromVote } = route.params;
   const [data, setData] = useState<BillResults | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  function openOfficialDocument(url: string) {
+    const choices = officialDocumentOpenChoices(billId, url);
+    Alert.alert(
+      "Έγγραφο Βουλής",
+      "Η Βουλή ενδέχεται να περιορίζει ορισμένες συσκευές. Επιλέξτε ασφαλή ανάγνωση ή το πρωτότυπο PDF.",
+      [
+        { text: "Ακύρωση", style: "cancel" },
+        { text: "Ασφαλής ανάγνωση", onPress: () => Linking.openURL(choices.readableUrl) },
+        { text: "Πρωτότυπο PDF", onPress: () => Linking.openURL(choices.officialUrl) },
+      ],
+    );
+  }
 
   const load = useCallback(async () => {
     try {
@@ -89,6 +103,8 @@ export default function ResultScreen({ route }: Props) {
   const summaryFallback = sourceUrl
     ? "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα. Δείτε την πηγή."
     : "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα.";
+  const summaryText = summary || summaryFallback;
+  const summaryLabel = summarySectionLabel(data.source || "PARLIAMENT", summaryText);
 
   return (
     <ScrollView
@@ -100,9 +116,9 @@ export default function ResultScreen({ route }: Props) {
       <Text style={styles.title}>{data.title_el}</Text>
 
       <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>Σύνοψη</Text>
+        <Text style={styles.summaryTitle}>{summaryLabel}</Text>
         <Text style={styles.summaryText}>
-          {summary || summaryFallback}
+          {summaryText}
         </Text>
         {analysis ? (
           <>
@@ -122,11 +138,11 @@ export default function ResultScreen({ route }: Props) {
             {officialDocs.map((doc) => (
               <TouchableOpacity
                 key={doc.url}
-                onPress={() => Linking.openURL(doc.url)}
+                onPress={() => openOfficialDocument(doc.url)}
                 style={styles.documentLink}
               >
                 <Text style={styles.documentLinkText}>📄 {doc.label}</Text>
-                <Text style={styles.documentLinkNote}>Άνοιγμα πλήρους PDF ↗</Text>
+                <Text style={styles.documentLinkNote}>PDF ή ασφαλής σελίδα ανάγνωσης ↗</Text>
               </TouchableOpacity>
             ))}
           </>
@@ -135,13 +151,13 @@ export default function ResultScreen({ route }: Props) {
 
       {sourceUrl && (sourceKind === "official" || sourceKind === "forum") ? (
         <TouchableOpacity
-          onPress={() => Linking.openURL(sourceUrl)}
+          onPress={() => isPdfUrl(sourceUrl) ? openOfficialDocument(sourceUrl) : Linking.openURL(sourceUrl)}
           style={styles.sourceCard}
         >
           <Text style={styles.sourceIcon}>{sourceKind === "forum" ? "💬" : isPdfUrl(sourceUrl) ? "📄" : "🔗"}</Text>
           <View style={{ flex: 1 }}>
             <Text style={styles.sourceText}>{sourceLabel(data.source || "PARLIAMENT", sourceKind, sourceUrl)}</Text>
-            {isPdfUrl(sourceUrl) && <Text style={styles.sourceNote}>Ανοίγει ως έγγραφο PDF</Text>}
+            {isPdfUrl(sourceUrl) && <Text style={styles.sourceNote}>PDF ή ασφαλής σελίδα ανάγνωσης</Text>}
           </View>
           <Text style={styles.sourceArrow}>↗</Text>
         </TouchableOpacity>

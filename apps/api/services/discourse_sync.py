@@ -7,8 +7,9 @@ import os
 import re
 import asyncio
 import logging
+import time
 import httpx
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import ParliamentBill, BillStatus, Periferia, Dimos
@@ -16,6 +17,7 @@ from services.bill_visibility import public_bill_filter
 from services.content_provenance import (
     FORUM_BODY_FIELD,
     clear_generated_content,
+    content_sha256,
     has_generated_content_provenance,
     is_generated_content_unchanged,
     record_generated_content,
@@ -29,6 +31,9 @@ DISCOURSE_API_URL = os.getenv("DISCOURSE_API_URL", "https://pnyx.ekklesia.gr")
 FORUM_SYNC_ENABLED = os.getenv("FORUM_SYNC_ENABLED", "false").lower() == "true"
 FORUM_SYNC_BATCH = int(os.getenv("FORUM_SYNC_BATCH_SIZE", "20"))
 FORUM_SYNC_TOPIC_DELAY_SECONDS = float(os.getenv("FORUM_SYNC_TOPIC_DELAY_SECONDS", "8"))
+FORUM_REFRESH_BATCH = int(os.getenv("FORUM_REFRESH_BATCH_SIZE", "2"))
+FORUM_REFRESH_SCAN = int(os.getenv("FORUM_REFRESH_SCAN_SIZE", "40"))
+FORUM_REFRESH_INTERVAL_SECONDS = int(os.getenv("FORUM_REFRESH_INTERVAL_SECONDS", "600"))
 DISCOURSE_RATE_LIMIT_RETRIES = int(os.getenv("DISCOURSE_RATE_LIMIT_RETRIES", "3"))
 
 _category_cache: dict[str, int] = {}
@@ -601,6 +606,70 @@ async def resync_all_topics(db: AsyncSession) -> dict:
     await db.commit()
 
     return {"total": len(bills), "updated": updated, "failed": failed}
+
+
+def _generated_forum_body_needs_refresh(bill: ParliamentBill, desired_body: str) -> bool:
+    provenance = getattr(bill, "generated_content_provenance", None)
+    expected = provenance.get(FORUM_BODY_FIELD) if isinstance(provenance, dict) else None
+    return bool(expected and expected != content_sha256(desired_body))
+
+
+def _forum_refresh_offset(total: int, *, now: float | None = None) -> int:
+    """Rotate the first attempted candidate so persistent failures cannot starve others."""
+    if total <= 0:
+        return 0
+    slot = int((time.time() if now is None else now) // FORUM_REFRESH_INTERVAL_SECONDS)
+    return (slot * max(FORUM_REFRESH_BATCH, 1)) % total
+
+
+async def sync_changed_bills_to_forum(db: AsyncSession) -> dict[str, int]:
+    """Refresh a small recent batch, preserving every legacy or manually edited topic body."""
+    filters = (
+        ParliamentBill.forum_topic_id.isnot(None),
+        ParliamentBill.generated_content_provenance.isnot(None),
+        public_bill_filter(),
+    )
+    count_result = await db.execute(
+        select(func.count()).select_from(ParliamentBill).where(*filters)
+    )
+    total = int(count_result.scalar_one() or 0)
+    if total == 0:
+        return {"total": 0, "offset": 0, "scanned": 0, "refreshed": 0, "failed": 0}
+
+    offset = _forum_refresh_offset(total)
+    result = await db.execute(
+        select(ParliamentBill)
+        .where(*filters)
+        .order_by(ParliamentBill.id.asc())
+        .offset(offset)
+        .limit(FORUM_REFRESH_SCAN)
+    )
+    candidates = result.scalars().all()
+    refreshed = 0
+    failed = 0
+
+    for bill in candidates:
+        region_name = await _region_name_for_body(bill, db)
+        desired_body = _build_topic_body(bill, region_name=region_name)
+        if not _generated_forum_body_needs_refresh(bill, desired_body):
+            continue
+        if await update_discourse_topic(bill, db):
+            refreshed += 1
+        else:
+            failed += 1
+        await db.commit()
+        if refreshed + failed >= FORUM_REFRESH_BATCH:
+            break
+        if FORUM_SYNC_TOPIC_DELAY_SECONDS > 0:
+            await asyncio.sleep(FORUM_SYNC_TOPIC_DELAY_SECONDS)
+
+    return {
+        "total": total,
+        "offset": offset,
+        "scanned": len(candidates),
+        "refreshed": refreshed,
+        "failed": failed,
+    }
 
 
 async def sync_new_bills_to_forum(db: AsyncSession) -> None:

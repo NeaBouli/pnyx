@@ -39,9 +39,33 @@ export function sourceLabel(
   return "Πηγή — Βουλή των Ελλήνων";
 }
 
+const PARLIAMENT_METADATA_SUMMARY_PREFIX = "Η Βουλή δημοσίευσε εγγραφή για:";
+
+export function summarySectionLabel(source: string, summary?: string | null): string {
+  if (source === "PARLIAMENT" && summary?.trim().startsWith(PARLIAMENT_METADATA_SUMMARY_PREFIX)) {
+    return "Στοιχεία Βουλής";
+  }
+  return "Σύνοψη";
+}
+
 export interface OfficialDocumentLink {
   label: string;
   url: string;
+}
+
+export interface OfficialDocumentOpenChoices {
+  readableUrl: string;
+  officialUrl: string;
+}
+
+export function officialDocumentOpenChoices(
+  billId: string,
+  officialUrl: string,
+): OfficialDocumentOpenChoices {
+  return {
+    readableUrl: `https://ekklesia.gr/el/bills/${encodeURIComponent(billId)}`,
+    officialUrl,
+  };
 }
 
 const DOCUMENT_BLOCK_HEADING = "Πλήρη έγγραφα";
