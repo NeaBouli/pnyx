@@ -90,6 +90,7 @@ from routers import app_version
 from routers import evaluation
 from routers import newsletter_admin
 from routers import zk
+from routers import consensus_results
 
 scheduler = AsyncIOScheduler()
 
@@ -710,6 +711,7 @@ app.include_router(app_version.router)
 app.include_router(evaluation.router)
 app.include_router(newsletter_admin.router)
 app.include_router(zk.router)
+app.include_router(consensus_results.router)
 
 @app.get("/health")
 async def health():

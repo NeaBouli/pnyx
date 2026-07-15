@@ -152,6 +152,12 @@ export default function BillsScreen() {
         <TouchableOpacity onPress={() => nav.navigate("Politikoi" as any)} style={[s.filterBtn, { backgroundColor: "#ede9fe", borderColor: "#a855f7" }]}>
           <Text style={[s.filterTxt, { color: "#7c3aed", fontWeight: "800" }]}>Πολιτικοί</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => nav.navigate("DiavgeiaResults")}
+          style={[s.filterBtn, { backgroundColor: "#ecfdf5", borderColor: "#10b981" }]}
+        >
+          <Text style={[s.filterTxt, { color: "#047857", fontWeight: "800" }]}>Αποτελέσματα</Text>
+        </TouchableOpacity>
       </ScrollView>
       <FlatList
         style={{ flex: 1 }}

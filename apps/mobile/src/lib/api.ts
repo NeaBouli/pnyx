@@ -410,6 +410,71 @@ export async function fetchResults(billId: string): Promise<BillResults> {
   return request<BillResults>(`/api/v1/vote/${billId}/results`, undefined, { mirrorFallback: true });
 }
 
+export interface ConsensusRepresentationBill {
+  bill_id: string;
+  title_el: string;
+  governance_level: "MUNICIPAL" | "REGIONAL" | "NATIONAL";
+  dimos_id: number | null;
+  periferia_id: number | null;
+  org_label: string | null;
+  diavgeia_ada: string | null;
+  consensus_score: number;
+  consensus_count: number;
+  updated_at: string | null;
+}
+
+export interface ConsensusRepresentationView {
+  view: "municipal" | "regional" | "national";
+  available: boolean;
+  bill_count: number;
+  consensus_vote_count: number;
+  weighted_score: number | null;
+  bills: ConsensusRepresentationBill[];
+}
+
+export interface ConsensusRepresentation {
+  source: "DIAVGEIA";
+  privacy: "aggregate_only";
+  institutional_excluded: boolean;
+  unmapped_geographic_excluded: boolean;
+  coverage: {
+    total_diavgeia_bills: number;
+    geographically_represented_bills: number;
+    institutional_or_unresolved_bills: number;
+    geographic_mapping_gaps: number;
+    complete_geographic_representation: boolean;
+  };
+  dimos_id: number | null;
+  periferia_id: number | null;
+  views: {
+    municipal: ConsensusRepresentationView;
+    regional: ConsensusRepresentationView;
+    national: ConsensusRepresentationView;
+  };
+}
+
+export function buildConsensusRepresentationQuery(params?: {
+  dimos_id?: number | null;
+  periferia_id?: number | null;
+  limit?: number;
+}): string {
+  const qs = new URLSearchParams();
+  if (params?.dimos_id) qs.set("dimos_id", String(params.dimos_id));
+  if (params?.periferia_id) qs.set("periferia_id", String(params.periferia_id));
+  qs.set("limit", String(params?.limit ?? 20));
+  return qs.toString();
+}
+
+export async function fetchConsensusRepresentation(params?: {
+  dimos_id?: number | null;
+  periferia_id?: number | null;
+  limit?: number;
+}): Promise<ConsensusRepresentation> {
+  return request<ConsensusRepresentation>(
+    `/api/v1/consensus/representation?${buildConsensusRepresentationQuery(params)}`,
+  );
+}
+
 // ─── Trending + Analytics + MP ──────────────────────────────────────────────
 
 export async function fetchTrending(limit = 10): Promise<Bill[]> {
