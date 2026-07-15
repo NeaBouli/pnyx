@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.25 |
-| versionCode | 54 |
+| Version | 1.0.26 |
+| versionCode | 55 |
 | Package | ekklesia.gr |
-| APK SHA256 | `97881af7ebeec5da51571183ed40bcbe56bdd530c36df576d2308aa47e05c09f` |
-| AAB SHA256 | `5a069df320414f47b8bd749f5791faa27883e5d863c08c1686a54511e53226a3` |
+| APK SHA256 | `a0695f72cf8382995d18c0d9805da66b0fb3b86f6a40376ea2791d435b05fef4` |
+| AAB SHA256 | `36f1897b99bfe847ca2f587d9db435d4163381e208815ea9300b6f826a726606` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
-| Build date | 2026-07-09 |
-| Release gate | PASS — API version tests, mobile TypeScript, mobile Vitest, web build, local Play AAB build, local Direct APK build, APK badging/signature audit, Direct/Play channel audit |
-| Includes | vC54 release metadata, HTTPS read-only mirror fallback with visible read-only banner, safe public-data-only failover guard, no duplicate Parliament PDF document blocks, clearer Parliament source/document display, guarded Parliament Semaphore ZK rollout live, ZK Arweave auto-publication for eligible public Parliament scopes with minimum group size 5, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, native Semaphore prover, deep-link fallback, pagination, source/full-text policy, permission hardening |
+| Build date | 2026-07-15 |
+| Release gate | PASS — API consensus/privacy tests, mobile TypeScript, mobile Vitest, emulator visual checks, web build, local Play AAB build, local Direct APK build, APK/AAB signature and metadata audit |
+| Includes | vC55 release metadata, aggregate Diavgeia consensus results by municipality, region and nationwide, server-side sensitive-decision filtering, safe Parliament text/document display, HTTPS read-only mirror fallback, guarded Parliament Semaphore ZK rollout, ZK Arweave publication for eligible scopes, current app-version endpoint, native Semaphore prover, deep-link fallback, pagination and permission hardening |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: 97881af7ebeec5da51571183ed40bcbe56bdd530c36df576d2308aa47e05c09f
+# Expected: a0695f72cf8382995d18c0d9805da66b0fb3b86f6a40376ea2791d435b05fef4
 ```

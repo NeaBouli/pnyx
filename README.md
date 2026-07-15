@@ -29,7 +29,7 @@ The **ekklesia** was the popular assembly of ancient Athens &mdash; where every 
 - **Citizen Voting** &mdash; Vote on real bills from the Hellenic Parliament
 - **Divergence Score** &mdash; See how Parliament votes vs. citizens
 - **Party Comparison** &mdash; Which party votes like the people?
-- **Municipal Governance** &mdash; Diavgeia decisions per region and municipality
+- **Municipal Governance** &mdash; Diavgeia decisions and aggregate consensus results by municipality, region, and nationwide
 - **Politician Evaluation** &mdash; Rate elected officials on transparency and performance
 - **AI Assistant** &mdash; Ollama-powered citizen Q&A; reviewed summaries and official source text for bills
 - **Privacy by Design** &mdash; Ed25519 signatures, nullifier hashes, no phone-number storage
@@ -183,9 +183,9 @@ New system-generated bill pills, short summaries, and forum first-post bodies ca
 
 | Channel | Status | Link |
 |---|---|---|
-| Direct APK | Live v1.0.25 / vC54 | [ekklesia.gr](https://ekklesia.gr) |
-| Google Play | v1.0.25 / vC54 | Closed testing |
-| GitHub Release | Latest v1.0.25 / vC54 | [v1.0.25](https://github.com/NeaBouli/pnyx/releases/tag/v1.0.25) |
+| Direct APK | Live v1.0.26 / vC55 | [ekklesia.gr](https://ekklesia.gr) |
+| Google Play | v1.0.26 / vC55 | Closed testing |
+| GitHub Release | Latest v1.0.26 / vC55 | [v1.0.26](https://github.com/NeaBouli/pnyx/releases/tag/v1.0.26) |
 | F-Droid | MR pending review | [MR !38007](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/38007) |
 
 ---
