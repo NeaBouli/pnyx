@@ -203,7 +203,8 @@ New system-generated bill pills, short summaries, and forum first-post bodies ca
 The future gov.gr verification path is documented as an Alpha-only security
 design in [Gov.gr Document Verification](docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md).
 It is not active in Beta, and a document QR alone is never treated as proof of
-the holder's identity.
+the holder's identity. The public gov.gr validity check confirms a document,
+not the identity or eligibility of the person presenting it.
 
 ---
 

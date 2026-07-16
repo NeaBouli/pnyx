@@ -19,8 +19,8 @@ ENTRIES = [
      '["privacy","anonymity","cryptography","Ed25519","nullifier","phone"]', 1),
 
     ("process", "Πώς ψηφίζω;", "How do I vote?",
-     "1. Κατέβασε την εφαρμογή ekklesia. 2. Επαλήθευσε τον αριθμό τηλεφώνου (HLR — δεν στέλνεται SMS). 3. Επέλεξε Δήμο (για τοπικές αποφάσεις). 4. Ψήφισε ΝΑΙ/ΟΧΙ/ΑΠΟΧΗ σε νομοσχέδια. 5. Κάθε ψήφος βαρύνει x1 (SMS) ή x2 (gov.gr). Μπορείς να ψηφίσεις σε εθνικά, περιφερειακά και δημοτικά νομοσχέδια.",
-     "1. Download ekklesia app. 2. Verify phone (HLR — no SMS). 3. Select municipality (for local decisions). 4. Vote YES/NO/ABSTAIN on bills. 5. Vote weighs x1 (SMS) or x2 (gov.gr). Vote on national, regional and municipal bills.",
+     "1. Κατέβασε την εφαρμογή ekklesia. 2. Ολοκλήρωσε τον έλεγχο HLR, ο οποίος ελέγχει μόνο κατάσταση και συμβατότητα ελληνικού αριθμού χωρίς SMS. 3. Δήλωσε Περιφέρεια και Δήμο για τις τοπικές αποφάσεις. 4. Ψήφισε ΝΑΙ/ΟΧΙ/ΑΠΟΧΗ μόνο στα εθνικά θέματα και στα τοπικά scopes όπου δικαιούσαι. 5. Κάθε έγκυρη ψήφος έχει το ίδιο βάρος: ένα άτομο = μία ψήφος.",
+     "1. Download the ekklesia app. 2. Complete the HLR check, which checks only Greek-number status and compatibility without SMS. 3. Set your Region and Municipality for local decisions. 4. Vote YES/NO/ABSTAIN only on national matters and local scopes where you are eligible. 5. Every valid vote has equal weight: one person equals one vote.",
      '["vote","process","HLR","verification","app","download"]', 1),
 
     ("process", "Μπορώ να διορθώσω την ψήφο μου;", "Can I correct my vote?",
@@ -29,13 +29,13 @@ ENTRIES = [
      '["vote","correction","change vote","WINDOW_24H","duplicate","bill"]', 1),
 
     ("faq", "Πόσο ζυγίζει η ψήφος μου;", "How much does my vote weigh?",
-     "SMS/HLR Επαληθευμένος: x1.0 (βασική ψήφος). gov.gr Επαληθευμένος: x2.0 (ισχυρή ψήφος). Το gov.gr OAuth αναμένει κυβερνητική έγκριση.",
-     "SMS/HLR Verified: x1.0 (basic vote). gov.gr Verified: x2.0 (strong vote). gov.gr OAuth pending government approval.",
-     '["vote","weight","gov.gr","verification","x1","x2"]', 1),
+     "Κάθε έγκυρη ψήφος έχει βάρος x1.0, ανεξάρτητα από τη μέθοδο επαλήθευσης: ένα άτομο = μία ψήφος. Η ισχυρότερη επαλήθευση περιορίζει τις διπλές εγγραφές· δεν πολλαπλασιάζει την ψήφο. Η gov.gr μέθοδος είναι μόνο σχεδιασμός Alpha και δεν είναι ενεργή στη Beta.",
+     "Every valid vote has weight x1.0 regardless of verification method. Stronger verification limits duplicate registrations; it does not multiply a vote. The gov.gr method is an Alpha design only and is not active in Beta.",
+     '["vote","weight","gov.gr","verification","x1","equal"]', 1),
 
     ("govgr", "Τι είναι το gov.gr OAuth;", "What is gov.gr OAuth?",
-     "Το gov.gr OAuth είναι τεχνικά προβλεπόμενο αλλά δεν θεωρείται ενεργό παραγωγικά. Είναι deferred/gated και χρειάζεται επίσημη έγκριση/ενεργοποίηση. Μέχρι τότε χρησιμοποιείται η επαλήθευση HLR όπου είναι διαθέσιμη.",
-     "gov.gr OAuth is technically planned but must not be treated as active in production. It is deferred/gated and requires official approval/activation. Until then, HLR verification is used where available.",
+     "Το gov.gr OAuth ή η επαλήθευση νέου εγγράφου QR/PDF είναι σχεδιασμός Alpha και δεν είναι ενεργός στη Beta. Ο QR ή ο κωδικός ελέγχει την εγκυρότητα του εγγράφου, όχι από μόνος του την ταυτότητα του προσώπου που το παρουσιάζει. Απαιτούνται εγκεκριμένη επίσημη μέθοδος, challenge μιας χρήσης, έλεγχος κατοχής, DPIA και ανεξάρτητος έλεγχος ασφαλείας.",
+     "Gov.gr OAuth or fresh QR/PDF document verification is an Alpha design and is not active in Beta. A QR code or verification code checks document validity; by itself it does not authenticate the person presenting it. An approved official method, one-time challenge, holder proof, DPIA, and independent security review are required.",
      '["gov.gr","OAuth","government","approval","AMKA","mayor","deferred","gated"]', 1),
 
     ("faq", "Είναι ασφαλής η εφαρμογή;", "Is the app safe?",

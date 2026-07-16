@@ -12,14 +12,19 @@ and one anonymous ekklesia credential. It must not increase vote weight:
 one eligible person remains one vote per scope.
 
 Gov.gr documents can be checked with their verification code or QR code and
-carry an advanced electronic seal. These mechanisms prove document
-authenticity. A QR code by itself does not prove that the person presenting the
-document is its subject and therefore cannot replace holder authentication.
+carry an advanced electronic seal. The public validity check does not require
+the person performing the check to authenticate. These mechanisms prove
+document authenticity, not possession by or identity of the presenter. A QR
+code by itself therefore cannot replace holder authentication.
 
 Official references:
 
 - [Gov.gr document validity check](https://www.gov.gr/ipiresies/polites-kai-kathemerinoteta/psephiaka-eggrapha-gov-gr/elegkhos-egkurotetas-eggraphon-gov-gr)
 - [Gov.gr step-by-step QR and verification-code guide](https://howto.gov.gr/mod/book/tool/print/index.php?id=844)
+
+The future app screen may offer camera scanning or file selection only after an
+approved holder-authenticated route exists. Until then, there is deliberately
+no Beta scanner, upload endpoint, or automated identity upgrade.
 
 ## Threat Model
 
