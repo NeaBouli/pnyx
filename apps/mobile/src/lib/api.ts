@@ -115,10 +115,35 @@ export async function verifyIdentity(
 
 export async function checkIdentityStatus(
   nullifierHash: string
-): Promise<{ status: string; created_at: string | null }> {
+): Promise<{
+  status: string;
+  created_at: string | null;
+  region_locked: boolean;
+  periferia_id: number | null;
+  dimos_id: number | null;
+}> {
   return request("/api/v1/identity/status", {
     method: "POST",
     body: JSON.stringify({ nullifier_hash: nullifierHash }),
+  });
+}
+
+export interface ProfileLocationResponse {
+  success: boolean;
+  periferia_id: number | null;
+  dimos_id: number | null;
+  region_locked: boolean;
+}
+
+export async function updateIdentityLocation(payload: {
+  nullifier_hash: string;
+  periferia_id: number | null;
+  dimos_id: number | null;
+  signature_hex: string;
+}): Promise<ProfileLocationResponse> {
+  return request<ProfileLocationResponse>("/api/v1/identity/profile/location", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
   });
 }
 
@@ -142,6 +167,9 @@ export interface Bill {
   source?: string | null;
   diavgeia_ada?: string | null;
   relevance_score: number;
+  governance_level?: string | null;
+  periferia_id?: number | null;
+  dimos_id?: number | null;
 }
 
 export function buildBillsQuery(params?: {

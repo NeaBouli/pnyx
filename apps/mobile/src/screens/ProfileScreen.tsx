@@ -7,6 +7,13 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { resolveUpdateUrl } from "../lib/update-channel";
+import { loadKeypair } from "../lib/crypto-native";
+import {
+  loadPendingProfileLocation,
+  loadStoredProfileLocation,
+  storeProfileLocation,
+  syncProfileLocation,
+} from "../lib/profile-location";
 import { colors } from "../theme";
 
 type Nav = StackNavigationProp<RootStackParams>;
@@ -26,6 +33,7 @@ export default function ProfileScreen() {
   const [regionLocked, setRegionLocked] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "upToDate" | "updateAvailable">("idle");
   const [latestVersion, setLatestVersion] = useState<any>(null);
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -36,18 +44,18 @@ export default function ProfileScreen() {
         setPeriferias(data);
       } catch {}
 
-      // Load saved preferences
-      const savedP = await SecureStore.getItemAsync("user_periferia_id");
-      const savedD = await SecureStore.getItemAsync("user_dimos_id");
+      const nullifier = await SecureStore.getItemAsync("ekklesia_nullifier")
+        || await SecureStore.getItemAsync("ekklesia:nullifier:v1");
+
+      // Load only an unverified selection or a cache bound to this identity.
+      const savedLocation = await loadStoredProfileLocation(nullifier);
       const savedL = await SecureStore.getItemAsync("user_language");
-      if (savedP) setSelectedPeriferia(Number(savedP));
-      if (savedD) setSelectedDimos(Number(savedD));
+      if (savedLocation.periferiaId) setSelectedPeriferia(savedLocation.periferiaId);
+      if (savedLocation.dimosId) setSelectedDimos(savedLocation.dimosId);
       if (savedL === "en") setLanguage("en");
 
       // Check region_locked from server
       try {
-        const nullifier = await SecureStore.getItemAsync("ekklesia_nullifier")
-          || await SecureStore.getItemAsync("ekklesia:nullifier:v1");
         if (nullifier) {
           const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
           const statusRes = await fetch(`${API}/api/v1/identity/status`, {
@@ -57,13 +65,20 @@ export default function ProfileScreen() {
           if (statusRes.ok) {
             const st = await statusRes.json();
             if (st.region_locked) setRegionLocked(true);
-            if (st.periferia_id) {
-              await SecureStore.setItemAsync("user_periferia_id", String(st.periferia_id));
-              setSelectedPeriferia(st.periferia_id);
-            }
-            if (st.dimos_id) {
-              await SecureStore.setItemAsync("user_dimos_id", String(st.dimos_id));
-              setSelectedDimos(st.dimos_id);
+            const serverLocation = {
+              periferiaId: st.periferia_id ?? null,
+              dimosId: st.dimos_id ?? null,
+            };
+            if (serverLocation.periferiaId !== null || serverLocation.dimosId !== null) {
+              await storeProfileLocation(serverLocation, nullifier);
+              setSelectedPeriferia(serverLocation.periferiaId);
+              setSelectedDimos(serverLocation.dimosId);
+            } else {
+              // A pre-verification selection is only a candidate. The newly
+              // verified user must explicitly confirm it before the API locks it.
+              const pendingLocation = await loadPendingProfileLocation();
+              setSelectedPeriferia(pendingLocation.periferiaId);
+              setSelectedDimos(pendingLocation.dimosId);
             }
           }
         }
@@ -82,35 +97,39 @@ export default function ProfileScreen() {
 
   const save = async () => {
     setSaving(true);
-    if (selectedPeriferia) await SecureStore.setItemAsync("user_periferia_id", String(selectedPeriferia));
-    else await SecureStore.deleteItemAsync("user_periferia_id");
-    if (selectedDimos) await SecureStore.setItemAsync("user_dimos_id", String(selectedDimos));
-    else await SecureStore.deleteItemAsync("user_dimos_id");
+    setSaveError("");
     await SecureStore.setItemAsync("user_language", language);
-    await SecureStore.setItemAsync("user_profile_completed", "true");
 
     // Sync location to server (enables vote scope enforcement)
     try {
       const nullifier = await SecureStore.getItemAsync("ekklesia_nullifier")
         || await SecureStore.getItemAsync("ekklesia:nullifier:v1");
       if (nullifier && !regionLocked) {
-        const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
-        const r = await fetch(`${API}/api/v1/identity/profile/location`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            nullifier_hash: nullifier,
-            periferia_id: selectedPeriferia || 0,
-            dimos_id: selectedDimos || 0,
-          }),
+        const keypair = await loadKeypair();
+        if (!keypair) throw new Error("Δεν βρέθηκε το κλειδί επαλήθευσης της συσκευής.");
+        const data = await syncProfileLocation({
+          nullifierHash: nullifier,
+          privateKeyHex: keypair.privateKeyHex,
+          selection: { periferiaId: selectedPeriferia, dimosId: selectedDimos },
         });
-        if (r.ok) {
-          const data = await r.json();
-          if (data.region_locked) setRegionLocked(true);
-        }
+        setSelectedPeriferia(data.periferia_id);
+        setSelectedDimos(data.dimos_id);
+        if (data.region_locked) setRegionLocked(true);
+      } else if (!nullifier) {
+        // Unverified users may keep a read-only preference. Verification
+        // discards it; a verified user must select and sign the scope again.
+        await storeProfileLocation({
+          periferiaId: selectedPeriferia,
+          dimosId: selectedDimos,
+        });
       }
-    } catch {} // offline-first: local save always works
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Η γεωγραφική ρύθμιση δεν αποθηκεύτηκε.");
+      setSaving(false);
+      return;
+    }
 
+    await SecureStore.setItemAsync("user_profile_completed", "true");
     setSaving(false);
     nav.navigate("Tabs");
   };
@@ -125,34 +144,35 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={s.container} contentContainerStyle={s.content}>
       <Text style={s.title}>Προφίλ</Text>
-      <Text style={s.subtitle}>Προαιρετικό — μπορείτε να αλλάξετε αργότερα</Text>
+      <Text style={s.subtitle}>Προαιρετικό — η γεωγραφική δήλωση κλειδώνει μετά την επιβεβαίωση</Text>
 
       {/* Info banner */}
       <View style={s.infoBanner}>
         <Text style={s.infoText}>ℹ️ Χωρίς δήλωση: μόνο Βουλή</Text>
         <Text style={s.infoText}>📍 Με Περιφέρεια: + Περιφερειακές αποφάσεις</Text>
         <Text style={s.infoText}>🏘️ Με Δήμο: + Δημοτικές αποφάσεις</Text>
-        <Text style={s.infoTextSmall}>Διαβάζεις τα πάντα ανεξαρτήτως</Text>
+        <Text style={s.infoTextSmall}>Η εφαρμογή δείχνει τη Βουλή και μόνο τη δηλωμένη γεωγραφική εμβέλειά σας.</Text>
       </View>
 
       {/* Region Lock Warning */}
+      {saveError ? <Text style={s.saveError}>{saveError}</Text> : null}
       {!regionLocked && (selectedPeriferia || selectedDimos) && (
         <View style={{ backgroundColor: "#fef3c7", borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#f59e0b" }}>
           <Text style={{ fontWeight: "700", color: "#92400e", fontSize: 12 }}>
-            ⚠️ Προσοχή: Ο εκλογικός κύκλος ορίζεται μία φορά και δεν μπορεί να αλλαχθεί.
+            ⚠️ Προσοχή: Η δηλωμένη γεωγραφική περιοχή ορίζεται μία φορά και δεν μπορεί να αλλαχθεί.
           </Text>
         </View>
       )}
       {regionLocked && (
         <View style={{ backgroundColor: "#f0fdf4", borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#22c55e" }}>
           <Text style={{ fontWeight: "700", color: "#166534", fontSize: 12 }}>
-            🔒 Ο εκλογικός κύκλος έχει οριστεί και δεν μπορεί να αλλαχθεί.
+            🔒 Η δηλωμένη γεωγραφική περιοχή έχει οριστεί και δεν μπορεί να αλλαχθεί.
           </Text>
         </View>
       )}
 
       {/* Periferia */}
-      <Text style={s.sectionTitle}>Εκλογική Περιφέρεια {regionLocked ? "(κλειδωμένο)" : "(προαιρετικό)"}</Text>
+      <Text style={s.sectionTitle}>Δηλωμένη Περιφέρεια {regionLocked ? "(κλειδωμένο)" : "(προαιρετικό)"}</Text>
       <View style={[s.pickerWrap, regionLocked && { opacity: 0.5 }]}>
         <Picker
           selectedValue={selectedPeriferia}
@@ -295,6 +315,7 @@ const s = StyleSheet.create({
   infoBanner: { backgroundColor: colors.primaryLight, borderRadius: 12, padding: 14, marginBottom: 20, borderWidth: 1, borderColor: colors.primary + "30" },
   infoText: { fontSize: 13, color: colors.primary, marginBottom: 3 },
   infoTextSmall: { fontSize: 11, color: colors.textSecondary, marginTop: 4, fontStyle: "italic" },
+  saveError: { color: colors.error, backgroundColor: colors.errorBg, borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 12, fontWeight: "700" },
   sectionTitle: { fontSize: 14, fontWeight: "800", color: colors.text, marginTop: 16, marginBottom: 8 },
   pickerWrap: { backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1, borderColor: colors.border, overflow: "hidden", marginBottom: 8 },
   picker: { color: colors.text },

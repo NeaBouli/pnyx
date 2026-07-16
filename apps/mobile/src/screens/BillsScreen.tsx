@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Share, Linking, ScrollView } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import * as SecureStore from "expo-secure-store";
 import { fetchBills } from "../lib/api";
-import { mergeBillsUnique } from "../lib/bill-feed";
+import { mergeBillsUnique, prioritizeBillsPage } from "../lib/bill-feed";
+import { availableGeographicFilters, scopedBillQuery } from "../lib/bill-scope";
+import { loadUserBillScope } from "../lib/bill-scope-storage";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
 
@@ -50,22 +51,31 @@ export default function BillsScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [nextOffset, setNextOffset] = useState(0);
   const [filter, setFilter] = useState("ALL");
   const [userPeriferia, setUserPeriferia] = useState<number | null>(null);
   const [userDimos, setUserDimos] = useState<number | null>(null);
   const [hasRegion, setHasRegion] = useState(false);
+  const [locationReady, setLocationReady] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const requestSequence = useRef(0);
 
   useEffect(() => {
     (async () => {
-      const p = await SecureStore.getItemAsync("user_periferia_id");
-      const d = await SecureStore.getItemAsync("user_dimos_id");
-      if (p) { setUserPeriferia(Number(p)); setHasRegion(true); }
-      if (d) setUserDimos(Number(d));
+      const { periferiaId, dimosId } = await loadUserBillScope();
+
+      setUserPeriferia(periferiaId);
+      setUserDimos(dimosId);
+      setHasRegion(periferiaId !== null);
+      setLocationReady(true);
     })();
   }, []);
 
   const loadPage = useCallback(async (offset: number, reset: boolean) => {
+    const requestId = reset ? ++requestSequence.current : requestSequence.current;
     try {
+      if (!locationReady) return;
+      const scopeParams = scopedBillQuery({ periferiaId: userPeriferia, dimosId: userDimos });
       const params: {
         periferia_id?: number;
         dimos_id?: number;
@@ -76,9 +86,7 @@ export default function BillsScreen() {
         include_institutional?: boolean;
         limit: number;
         offset: number;
-      } = { limit: PAGE_SIZE, offset };
-      if (userPeriferia) params.periferia_id = userPeriferia;
-      if (userDimos) params.dimos_id = userDimos;
+      } = { ...scopeParams, limit: PAGE_SIZE, offset };
       if (filter === "ACTIVE") {
         params.status_any = "ACTIVE,WINDOW_24H";
       } else if (["ANNOUNCED", "PARLIAMENT_VOTED", "OPEN_END", "WINDOW_24H"].includes(filter)) {
@@ -86,34 +94,58 @@ export default function BillsScreen() {
       }
       if (filter === "DIAVGEIA") params.source = "DIAVGEIA";
       if (filter === "PARLIAMENT") params.source = "PARLIAMENT";
-      if (["MUNICIPAL", "REGIONAL", "INSTITUTIONAL"].includes(filter)) params.governance = filter;
+      if (["MUNICIPAL", "REGIONAL"].includes(filter)) params.governance = filter;
       let next: any[];
+      let followingOffset: number;
+      let moreAvailable: boolean;
       if (filter === "ALL" && reset && offset === 0) {
+        const mixedFetchLimit = PAGE_SIZE * 2;
         const [allData, parliamentData] = await Promise.all([
-          fetchBills({ ...params, include_institutional: false, limit: PAGE_SIZE * 2 }),
-          fetchBills({ ...params, source: "PARLIAMENT", limit: 4, offset: 0 }),
+          fetchBills({ ...params, limit: mixedFetchLimit }),
+          fetchBills({ ...params, governance: "NATIONAL", source: "PARLIAMENT", limit: 4, offset: 0 }),
         ]);
-        next = mergeBillsUnique(
+        const page = prioritizeBillsPage(
           Array.isArray(parliamentData) ? parliamentData : [],
           Array.isArray(allData) ? allData : [],
+          PAGE_SIZE,
         );
+        next = page.items;
+        const allCount = Array.isArray(allData) ? allData.length : 0;
+        followingOffset = page.secondaryConsumed;
+        moreAvailable = page.secondaryConsumed < allCount || allCount === mixedFetchLimit;
       } else {
         const data = await fetchBills(params);
         next = Array.isArray(data) ? data : [];
+        followingOffset = offset + next.length;
+        moreAvailable = next.length === PAGE_SIZE;
       }
+      if (requestId !== requestSequence.current) return;
+      setNextOffset(followingOffset);
+      setHasMore(moreAvailable);
       setBills(prev => reset ? next : mergeBillsUnique(prev, next, prev.length + next.length));
-      setHasMore(next.length === PAGE_SIZE);
-    } catch { /* */ }
-    finally { setLoading(false); setRefreshing(false); setLoadingMore(false); }
-  }, [filter, userPeriferia, userDimos]);
+      setLoadError(null);
+    } catch {
+      if (requestId !== requestSequence.current) return;
+      setLoadError("Δεν ήταν δυνατή η φόρτωση των ψηφοφοριών. Δοκιμάστε ξανά.");
+      if (reset) setBills([]);
+    }
+    finally {
+      if (requestId === requestSequence.current) {
+        setLoading(false);
+        setRefreshing(false);
+        setLoadingMore(false);
+      }
+    }
+  }, [filter, userPeriferia, userDimos, locationReady]);
 
   const refreshBills = useCallback(() => loadPage(0, true), [loadPage]);
   const loadMoreBills = useCallback(() => {
+    if (!hasMore || loadingMore) return;
     setLoadingMore(true);
-    loadPage(bills.length, false);
-  }, [bills.length, loadPage]);
+    loadPage(nextOffset, false);
+  }, [hasMore, loadingMore, loadPage, nextOffset]);
 
-  useEffect(() => { refreshBills(); }, [refreshBills]);
+  useEffect(() => { if (locationReady) refreshBills(); }, [locationReady, refreshBills]);
 
   // Server filters by region — client only filters by status/source/tab
   const filtered = filter === "ALL" ? bills
@@ -129,7 +161,16 @@ export default function BillsScreen() {
     } catch {}
   };
 
-  if (loading) return <View style={s.center}><ActivityIndicator color={colors.primary} size="large" /></View>;
+  if (loading || !locationReady) return <View style={s.center}><ActivityIndicator color={colors.primary} size="large" /></View>;
+
+  const geographicFilters = availableGeographicFilters({ periferiaId: userPeriferia, dimosId: userDimos });
+  const filterOptions = [
+    ["ALL", "Όλα"], ["PARLIAMENT", "Βουλή"], ["ACTIVE", "Ενεργά"],
+    ["ANNOUNCED", "Ανακοιν."], ["DIAVGEIA", "Διαύγεια"],
+    ...(geographicFilters.includes("MUNICIPAL") ? [["MUNICIPAL", "Δήμος"]] : []),
+    ...(geographicFilters.includes("REGIONAL") ? [["REGIONAL", "Περιφ."]] : []),
+    ["OPEN_END", "Αρχείο"], ["ARWEAVE", "⛓"],
+  ];
 
   return (
     <View style={s.container}>
@@ -139,12 +180,12 @@ export default function BillsScreen() {
           onPress={() => nav.navigate("Profile" as any)}
         >
           <Text style={{ color: "#1e40af", fontSize: 12, textAlign: "center", fontWeight: "600" }}>
-            💡 Ορίστε εκλογική περιφέρεια στο Προφίλ για εξατομικευμένη προβολή
+            💡 Δηλώστε γεωγραφική περιοχή στο Προφίλ για εξατομικευμένη προβολή
           </Text>
         </TouchableOpacity>
       )}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.filterRow} contentContainerStyle={{ gap: 6, paddingHorizontal: 12, alignItems: "center" }}>
-        {[["ALL", "Όλα"], ["PARLIAMENT", "Βουλή"], ["ACTIVE", "Ενεργά"], ["ANNOUNCED", "Ανακοιν."], ["DIAVGEIA", "Διαύγεια"], ["MUNICIPAL", "Δήμος"], ["REGIONAL", "Περιφ."], ["INSTITUTIONAL", "Φορείς"], ["OPEN_END", "Αρχείο"], ["ARWEAVE", "⛓"]].map(([k, l]) => (
+        {filterOptions.map(([k, l]) => (
           <TouchableOpacity key={k} onPress={() => setFilter(k)} style={[s.filterBtn, filter === k && s.filterActive]}>
             <Text style={[s.filterTxt, filter === k && s.filterTxtActive]}>{l}</Text>
           </TouchableOpacity>
@@ -159,6 +200,11 @@ export default function BillsScreen() {
           <Text style={[s.filterTxt, { color: "#047857", fontWeight: "800" }]}>Αποτελέσματα</Text>
         </TouchableOpacity>
       </ScrollView>
+      {loadError ? (
+        <TouchableOpacity style={s.errorBanner} onPress={refreshBills}>
+          <Text style={s.errorText}>{loadError}</Text>
+        </TouchableOpacity>
+      ) : null}
       <FlatList
         style={{ flex: 1 }}
         data={filtered} keyExtractor={b => b.id} contentContainerStyle={[s.list, { paddingBottom: 120 }]}
@@ -246,4 +292,6 @@ const s = StyleSheet.create({
   empty: { color: colors.textSecondary, textAlign: "center", marginTop: 40 },
   moreBtn: { marginTop: 8, marginBottom: 24, alignSelf: "center", borderRadius: 999, borderWidth: 1, borderColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: colors.surface },
   moreTxt: { color: colors.primary, fontSize: 13, fontWeight: "800" },
+  errorBanner: { backgroundColor: colors.errorBg, borderBottomWidth: 1, borderBottomColor: colors.error, padding: 10 },
+  errorText: { color: colors.error, textAlign: "center", fontSize: 12, fontWeight: "700" },
 });

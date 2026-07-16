@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { StackScreenProps } from "@react-navigation/stack";
-import * as SecureStore from "expo-secure-store";
 
 import type { RootStackParams } from "../navigation";
 import {
@@ -25,6 +24,7 @@ import {
   unavailableViewMessage,
 } from "../lib/consensus-results";
 import { colors } from "../theme";
+import { loadUserBillScope } from "../lib/bill-scope-storage";
 
 type Props = StackScreenProps<RootStackParams, "DiavgeiaResults">;
 
@@ -44,13 +44,10 @@ export default function DiavgeiaResultsScreen({ navigation }: Props) {
 
   const load = useCallback(async () => {
     try {
-      const [storedDimos, storedPeriferia] = await Promise.all([
-        SecureStore.getItemAsync("user_dimos_id"),
-        SecureStore.getItemAsync("user_periferia_id"),
-      ]);
+      const scope = await loadUserBillScope();
       const result = await fetchConsensusRepresentation({
-        dimos_id: storedDimos ? Number(storedDimos) : null,
-        periferia_id: storedPeriferia ? Number(storedPeriferia) : null,
+        dimos_id: scope.dimosId,
+        periferia_id: scope.periferiaId,
       });
       setData(result);
       setError("");

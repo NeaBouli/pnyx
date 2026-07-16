@@ -5,10 +5,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity, FlatList,
-  Dimensions, Image, ActivityIndicator,
+  Dimensions, Image, Alert,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import * as SecureStore from "expo-secure-store";
+import { loadKeypair } from "../lib/crypto-native";
+import { storeProfileLocation, syncProfileLocation } from "../lib/profile-location";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
@@ -45,26 +47,30 @@ export default function OnboardingScreen({ navigation }: Props) {
 
   const complete = async () => {
     // Save dimos if selected
-    if (selPeriferia) await SecureStore.setItemAsync("user_periferia_id", String(selPeriferia));
-    if (selDimos) await SecureStore.setItemAsync("user_dimos_id", String(selDimos));
-    await SecureStore.setItemAsync("onboarding_completed", "true");
+    await storeProfileLocation({ periferiaId: selPeriferia, dimosId: selDimos });
 
     // Sync to server if nullifier exists
     try {
-      const nullifier = await SecureStore.getItemAsync("ekklesia:nullifier:v1");
+      const nullifier = await SecureStore.getItemAsync("ekklesia:nullifier:v1")
+        || await SecureStore.getItemAsync("ekklesia_nullifier");
       if (nullifier && (selPeriferia || selDimos)) {
-        await fetch(`${API}/api/v1/identity/profile/location`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            nullifier_hash: nullifier,
-            periferia_id: selPeriferia || 0,
-            dimos_id: selDimos || 0,
-          }),
+        const keypair = await loadKeypair();
+        if (!keypair) throw new Error("missing identity key");
+        await syncProfileLocation({
+          nullifierHash: nullifier,
+          privateKeyHex: keypair.privateKeyHex,
+          selection: { periferiaId: selPeriferia, dimosId: selDimos },
         });
       }
-    } catch {}
+    } catch {
+      Alert.alert(
+        "Σφάλμα γεωγραφικού προφίλ",
+        "Η επιλογή Δήμου δεν επιβεβαιώθηκε από τον διακομιστή. Δοκιμάστε ξανά από το Προφίλ.",
+      );
+      return;
+    }
 
+    await SecureStore.setItemAsync("onboarding_completed", "true");
     navigation.replace("Tabs");
   };
 

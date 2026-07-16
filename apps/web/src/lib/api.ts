@@ -66,6 +66,9 @@ export interface Bill {
   official_source_url?: string | null;
   source?: string | null;
   diavgeia_ada?: string | null;
+  governance_level?: string;
+  periferia_id?: number | null;
+  dimos_id?: number | null;
 }
 
 export interface DivergenceResult {
@@ -103,8 +106,17 @@ export const ekklesia = {
     api.post("/api/v1/vaa/match", { answers }),
 
   // Parliament
-  getBills:    (status?: string) =>
-    api.get<Bill[]>("/api/v1/bills", { params: { limit: 200, ...(status ? { status } : {}) } }),
+  getBills: (params: BillQueryParams = {}) => {
+    const { status_any, ...rest } = params;
+    return api.get<Bill[]>("/api/v1/bills", {
+      params: {
+        limit: 200,
+        ...rest,
+        ...(status_any?.length ? { status_any: status_any.join(",") } : {}),
+        ...(params.status ? { status: params.status } : {}),
+      },
+    });
+  },
   getTrending: () => api.get<Bill[]>("/api/v1/bills/trending"),
   getBill:     (id: string) => api.get<Bill>(`/api/v1/bills/${id}`),
   getResults:  (id: string) => api.get<BillResults>(`/api/v1/vote/${id}/results`),
@@ -189,4 +201,24 @@ export async function voteRelevance(
     signature_hex: signatureHex,
   });
   return res.data;
+}
+export type BillStatusFilter =
+  | "ANNOUNCED"
+  | "ACTIVE"
+  | "WINDOW_24H"
+  | "PARLIAMENT_VOTED"
+  | "OPEN_END"
+  | string;
+
+export interface BillQueryParams {
+  status?: BillStatusFilter;
+  status_any?: BillStatusFilter[];
+  governance?: string;
+  source?: string;
+  q?: string;
+  periferia_id?: number;
+  dimos_id?: number;
+  include_institutional?: boolean;
+  limit?: number;
+  offset?: number;
 }

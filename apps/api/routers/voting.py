@@ -20,7 +20,7 @@ from sqlalchemy.exc import IntegrityError
 from database import get_db
 from models import (
     CitizenVote, VoteChoice, IdentityRecord, KeyStatus,
-    ParliamentBill, BillStatus, BillRelevanceVote, ZkVoteReceipt
+    ParliamentBill, BillStatus, BillRelevanceVote, GovernanceLevel, ZkVoteReceipt
 )
 from services.source_links import official_source_url
 from services.bill_visibility import is_public_bill, public_bill_filter
@@ -30,6 +30,7 @@ from services.zk_tier_lock import (
     tier1_vote_blocked_by_zk_lock,
 )
 from services.zk_vote_aggregation import aggregate_bill_vote_totals
+from services.vote_scope import ScopeAction, ensure_bill_scope_allowed
 
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../packages/crypto"))
@@ -45,13 +46,70 @@ GREECE_POPULATION = 10_400_000
 VOTES_IN_PROGRESS_THRESHOLD_ENV = "VOTES_IN_PROGRESS_THRESHOLD"
 ZK_TIER1_GUARD_ENABLED_ENV = "ZK_TIER1_GUARD_ENABLED"
 
-def compute_representativity(total_votes: int) -> dict:
-    """Misst Repräsentativität basierend auf Beteiligung vs Wahlberechtigte."""
-    if total_votes == 0:
-        return {"participation_pct": 0, "level": "none", "color": "#94a3b8",
-                "label_el": "Δεν υπάρχουν ψήφοι", "is_representative": False, "score": 0}
+def compute_representativity(
+    total_votes: int,
+    *,
+    eligible_voters: int | None = GREECE_ELIGIBLE_VOTERS,
+    population: int | None = GREECE_POPULATION,
+    scope_label_el: str = "Επικράτεια",
+) -> dict:
+    """Compute participation without inventing local eligible-voter counts."""
+    participation_pct = (
+        round(total_votes / eligible_voters * 100, 4)
+        if eligible_voters and eligible_voters > 0
+        else None
+    )
+    population_pct = (
+        round(total_votes / population * 100, 4)
+        if population and population > 0
+        else None
+    )
+    basis_pct = participation_pct
 
-    pct = round(total_votes / GREECE_ELIGIBLE_VOTERS * 100, 4)
+    base = {
+        "total_votes": total_votes,
+        "eligible_voters": eligible_voters,
+        "population": population,
+        "participation_pct": participation_pct,
+        "population_pct": population_pct,
+        "scope_label_el": scope_label_el,
+    }
+    if total_votes == 0:
+        return {
+            **base,
+            "level": "none",
+            "color": "#94a3b8",
+            "label_el": "Δεν υπάρχουν ψήφοι",
+            "is_representative": False,
+            "score": 0,
+            "headline_el": "Δεν υπάρχουν ακόμη ψήφοι για αυτή την εμβέλεια.",
+        }
+    if eligible_voters is None and population_pct is not None:
+        return {
+            **base,
+            "level": "population_coverage",
+            "color": "#64748b",
+            "label_el": "Κάλυψη πληθυσμού",
+            "is_representative": False,
+            "score": 0,
+            "headline_el": (
+                f"Οι ψήφοι αντιστοιχούν στο {population_pct:.4f}% του πληθυσμού "
+                f"({scope_label_el}). Δεν υπάρχουν ακόμη επίσημα τοπικά στοιχεία "
+                "εκλογικού σώματος, επομένως δεν υπολογίζεται αντιπροσωπευτικότητα."
+            ),
+        }
+    if basis_pct is None:
+        return {
+            **base,
+            "level": "unknown",
+            "color": "#94a3b8",
+            "label_el": "Δεν υπάρχει βάση σύγκρισης",
+            "is_representative": False,
+            "score": 0,
+            "headline_el": "Δεν υπάρχουν διαθέσιμα στοιχεία πληθυσμού ή εκλογικού σώματος.",
+        }
+
+    pct = basis_pct
 
     if pct >= 1.0:
         level, color, label = "very_high", "#2563eb", "Πολύ Υψηλή Συμμετοχή"
@@ -64,19 +122,64 @@ def compute_representativity(total_votes: int) -> dict:
     else:
         level, color, label = "very_low", "#ef4444", "Πολύ Χαμηλή Συμμετοχή"
 
-    is_rep = pct >= 0.5
+    # A legal representativity claim requires an eligible-voter denominator.
+    is_rep = participation_pct is not None and participation_pct >= 0.5
     score = min(100, round(pct / 1.0 * 100, 1))
 
+    headline = (
+        f"Η συμμετοχή ({participation_pct:.3f}% των εκλογέων) "
+        f"{'καθιστά τα αποτελέσματα αντιπροσωπευτικά' if is_rep else 'δεν είναι ακόμη αρκετά αντιπροσωπευτική'}."
+    )
+
     return {
-        "total_votes": total_votes,
-        "eligible_voters": GREECE_ELIGIBLE_VOTERS,
-        "population": GREECE_POPULATION,
-        "participation_pct": pct,
-        "population_pct": round(total_votes / GREECE_POPULATION * 100, 4),
+        **base,
         "level": level, "color": color, "label_el": label,
         "is_representative": is_rep, "score": score,
-        "headline_el": f"Η συμμετοχή ({pct:.3f}% εκλογέων) {'καθιστά τα αποτελέσματα αντιπροσωπευτικά' if is_rep else 'δεν είναι αρκετά αντιπροσωπευτική'}.",
+        "headline_el": headline,
     }
+
+
+async def representativity_for_bill(
+    db: AsyncSession,
+    bill: ParliamentBill,
+    total_votes: int,
+) -> dict:
+    level = getattr(bill, "governance_level", None) or GovernanceLevel.NATIONAL
+    if level == GovernanceLevel.NATIONAL:
+        return compute_representativity(total_votes)
+    if level == GovernanceLevel.MUNICIPAL and getattr(bill, "dimos_id", None):
+        result = await db.execute(
+            text("SELECT population FROM dimos WHERE id = :dimos_id AND is_active IS TRUE"),
+            {"dimos_id": bill.dimos_id},
+        )
+        population = result.scalar_one_or_none()
+        return compute_representativity(
+            total_votes,
+            eligible_voters=None,
+            population=population,
+            scope_label_el="Δήμος",
+        )
+    if level == GovernanceLevel.REGIONAL and getattr(bill, "periferia_id", None):
+        result = await db.execute(
+            text(
+                "SELECT COALESCE(SUM(population), 0) FROM dimos "
+                "WHERE periferia_id = :periferia_id AND is_active IS TRUE"
+            ),
+            {"periferia_id": bill.periferia_id},
+        )
+        population = result.scalar_one_or_none() or None
+        return compute_representativity(
+            total_votes,
+            eligible_voters=None,
+            population=population,
+            scope_label_el="Περιφέρεια",
+        )
+    return compute_representativity(
+        total_votes,
+        eligible_voters=None,
+        population=None,
+        scope_label_el="Θεσμική εμβέλεια",
+    )
 
 
 def votes_in_progress_threshold() -> int:
@@ -304,22 +407,8 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
                    f"Επιτρέπεται: ACTIVE, WINDOW_24H, OPEN_END."
         )
 
-    # 2b. Vote Scope: check governance_level permission
-    from models import GovernanceLevel
-    gov_level = getattr(bill, "governance_level", None)
-    if gov_level and gov_level not in (GovernanceLevel.NATIONAL, GovernanceLevel.INSTITUTIONAL):
-        if gov_level == GovernanceLevel.REGIONAL:
-            if not identity.periferia_id or identity.periferia_id != bill.periferia_id:
-                raise HTTPException(
-                    status_code=403,
-                    detail="Αυτή η ψηφοφορία αφορά μόνο κατοίκους αυτής της Περιφέρειας."
-                )
-        elif gov_level == GovernanceLevel.MUNICIPAL:
-            if not identity.dimos_id or identity.dimos_id != bill.dimos_id:
-                raise HTTPException(
-                    status_code=403,
-                    detail="Αυτή η ψηφοφορία αφορά μόνο κατοίκους αυτού του Δήμου."
-                )
+    # 2b. Geographic authorization uses the same fail-closed policy in every path.
+    ensure_bill_scope_allowed(identity, bill)
 
     # 3. Stimme validieren
     try:
@@ -500,6 +589,9 @@ async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = 
     identity = id_result.scalar_one_or_none()
     if not identity:
         raise HTTPException(403, "Δεν έχετε επαληθευτεί ή το κλειδί σας έχει ανακληθεί.")
+
+    # A correction must never bypass the geographic authorization of the vote.
+    ensure_bill_scope_allowed(identity, bill)
 
     # 3. Existing Vote laden
     vote_result = await db.execute(
@@ -725,7 +817,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
             tier1_vote_count=0,
             zk_vote_count=0,
             yes_percent=0, no_percent=0, abstain_percent=0, divergence=None,
-            representativity=compute_representativity(0),
+            representativity=await representativity_for_bill(db, bill, 0),
             results_hidden=True,
             parliament_vote_date=vote_date,
             disclaimer_el="Τα αποτελέσματα θα είναι ορατά μετά τη λήξη της ψηφοφορίας.",
@@ -770,7 +862,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
         no_percent=pct(no_c),
         abstain_percent=pct(abs_c),
         divergence=divergence,
-        representativity=compute_representativity(total),
+        representativity=await representativity_for_bill(db, bill, total),
         results_hidden=False,
         parliament_vote_date=vote_date,
         disclaimer_el="Η ψηφοφορία αυτή δεν είναι νομικά δεσμευτική και εκφράζει μόνο τη γνώμη των εγγεγραμμένων χρηστών της πλατφόρμας.",
@@ -810,6 +902,10 @@ async def vote_relevance(
     payload = f"relevance:{bill_id}:{req.signal}:{req.nullifier_hash}"
     if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
         raise HTTPException(status_code=401, detail="Μη έγκυρη υπογραφή.")
+
+    # Relevance changes public prioritisation and therefore follows the same
+    # geographic authorization policy as voting and consensus.
+    ensure_bill_scope_allowed(identity, bill)
 
     # Upsert Relevanz-Signal
     existing = await db.execute(
@@ -933,16 +1029,7 @@ async def submit_consensus(
     if not identity:
         raise HTTPException(403, "Η ταυτότητα δεν βρέθηκε ή έχει ανακληθεί")
 
-    # Region-Berechtigung prüfen (gleiche Logik wie Vote)
-    from models import GovernanceLevel
-    gov_level = getattr(bill, "governance_level", None)
-    if gov_level and gov_level not in (GovernanceLevel.NATIONAL, GovernanceLevel.INSTITUTIONAL):
-        if gov_level == GovernanceLevel.REGIONAL:
-            if not identity.periferia_id or identity.periferia_id != bill.periferia_id:
-                raise HTTPException(403, "Αυτή η αξιολόγηση αφορά μόνο κατοίκους αυτής της Περιφέρειας.")
-        elif gov_level == GovernanceLevel.MUNICIPAL:
-            if not identity.dimos_id or identity.dimos_id != bill.dimos_id:
-                raise HTTPException(403, "Αυτή η αξιολόγηση αφορά μόνο κατοίκους αυτού του Δήμου.")
+    ensure_bill_scope_allowed(identity, bill, action=ScopeAction.CONSENSUS)
 
     # Ed25519 Signatur verifizieren
     consensus_payload = f"{bill_id}:{req.score}:{req.nullifier_hash}".encode()

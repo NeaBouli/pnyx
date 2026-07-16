@@ -62,6 +62,7 @@ from services.zk_tier_lock import (
     derive_tier_guard_hash,
     tier_lock_exists,
 )
+from services.vote_scope import ensure_bill_scope_allowed
 
 router = APIRouter(prefix="/api/v1/zk", tags=["GH#112 ZK V2"])
 
@@ -527,30 +528,7 @@ def _zk_vote_choice(vote_commitment: str) -> VoteChoice:
 
 
 def _ensure_bill_scope_allowed(identity: IdentityRecord, bill: ParliamentBill) -> None:
-    gov_level = getattr(bill, "governance_level", None)
-    if gov_level in (None, GovernanceLevel.NATIONAL, GovernanceLevel.INSTITUTIONAL):
-        return
-
-    if gov_level == GovernanceLevel.REGIONAL:
-        if not identity.periferia_id or identity.periferia_id != bill.periferia_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Αυτή η ψηφοφορία αφορά μόνο κατοίκους αυτής της Περιφέρειας.",
-            )
-        return
-
-    if gov_level == GovernanceLevel.MUNICIPAL:
-        if not identity.dimos_id or identity.dimos_id != bill.dimos_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Αυτή η ψηφοφορία αφορά μόνο κατοίκους αυτού του Δήμου.",
-            )
-        return
-
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="Αυτό το επίπεδο ψηφοφορίας δεν υποστηρίζεται ακόμη για Semaphore ZK.",
-    )
+    ensure_bill_scope_allowed(identity, bill)
 
 
 @router.get("/status", response_model=ZkStatusResponse)

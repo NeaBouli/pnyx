@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocale } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ekklesia, Bill } from "@/lib/api";
+import { ekklesia, municipal, Bill, BillQueryParams } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
 import RelevanceButtons from "@/components/RelevanceButtons";
+
+type Periferia = { id: number; name_el: string };
+type Dimos = { id: number; name_el: string };
 
 const STATUS_FILTERS = [
   { key: "",                label_el: "Όλα",             label_en: "All" },
@@ -18,7 +21,7 @@ const STATUS_FILTERS = [
 
 const LEVEL_FILTERS = [
   { key: "",          label_el: "Όλα",        label_en: "All" },
-  { key: "NATIONAL",  label_el: "Βουλή",      label_en: "Parliament" },
+  { key: "NATIONAL",  label_el: "Επικράτεια / Βουλή", label_en: "Nationwide / Parliament" },
   { key: "REGIONAL",  label_el: "Περιφέρεια", label_en: "Region" },
   { key: "MUNICIPAL", label_el: "Δήμος",      label_en: "Municipality" },
   { key: "DIAVGEIA",       label_el: "Διαύγεια",   label_en: "Diavgeia" },
@@ -37,10 +40,15 @@ export default function BillsPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [periferiaList, setPeriferiaList] = useState<{id: number; name_el: string}[]>([]);
+  const [periferiaList, setPeriferiaList] = useState<Periferia[]>([]);
+  const [dimosList, setDimosList] = useState<Dimos[]>([]);
   const [regionSearch, setRegionSearch] = useState("");
+  const [dimosSearch, setDimosSearch] = useState("");
   const [selectedPeriferia, setSelectedPeriferia] = useState<number | null>(null);
   const [selectedPeriferiaName, setSelectedPeriferiaName] = useState("");
+  const [selectedDimos, setSelectedDimos] = useState<number | null>(null);
+  const [selectedDimosName, setSelectedDimosName] = useState("");
+  const requestSequence = useRef(0);
 
   // Sync URL ?status= param on mount and navigation
   useEffect(() => {
@@ -56,50 +64,98 @@ export default function BillsPage() {
   }, []);
 
   useEffect(() => {
-    setLoading(true);
-    ekklesia.getBills(statusFilter || undefined)
-      .then(r => { setBills(r.data); setError(null); })
-      .catch(() => setError(locale === "el" ? "Σφάλμα σύνδεσης API" : "API connection error"))
-      .finally(() => setLoading(false));
-  }, [statusFilter, locale]);
+    if (selectedPeriferia === null) {
+      setDimosList([]);
+      setSelectedDimos(null);
+      setSelectedDimosName("");
+      setDimosSearch("");
+      return;
+    }
 
-  // Client-side filtering: search + governance level / source + region
-  const filtered = useMemo(() => {
-    let result = bills;
-    // Region filter (Periferia)
-    if (selectedPeriferia) {
-      result = result.filter(b => {
-        const gov = (b as any).governance_level;
-        if (!gov || gov === "NATIONAL" || gov === "INSTITUTIONAL") return true;
-        if (gov === "REGIONAL" && (b as any).periferia_id === selectedPeriferia) return true;
-        if (gov === "MUNICIPAL" && (b as any).periferia_id === selectedPeriferia) return true;
-        return false;
-      });
+    municipal.dimoi(selectedPeriferia)
+      .then(setDimosList)
+      .catch(() => setDimosList([]));
+  }, [selectedPeriferia]);
+
+  useEffect(() => {
+    if (levelFilter !== "REGIONAL" && levelFilter !== "MUNICIPAL") {
+      setSelectedPeriferia(null);
+      setSelectedPeriferiaName("");
+      setRegionSearch("");
     }
-    if (levelFilter === "DIAVGEIA") {
-      result = result.filter(b => (b as any).source === "DIAVGEIA");
-    } else if (levelFilter === "INSTITUTIONAL") {
-      result = result.filter(b => (b as any).governance_level === "INSTITUTIONAL");
-    } else if (levelFilter) {
-      result = result.filter(b => (b as any).governance_level === levelFilter);
+
+    if (levelFilter !== "MUNICIPAL") {
+      setSelectedDimos(null);
+      setSelectedDimosName("");
+      setDimosSearch("");
     }
+  }, [levelFilter]);
+
+  const billQueryParams: BillQueryParams = useMemo(() => {
+    const params: BillQueryParams = {
+      limit: PAGE_SIZE + 1,
+      offset: (page - 1) * PAGE_SIZE,
+      include_institutional: true,
+    };
+
+    if (statusFilter) {
+      params.status = statusFilter;
+    }
+
     if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(b =>
-        (b.title_el?.toLowerCase().includes(q)) ||
-        (b.title_en?.toLowerCase().includes(q)) ||
-        (b.id?.toLowerCase().includes(q))
-      );
+      params.q = search.trim();
     }
-    return result;
-  }, [bills, levelFilter, search, selectedPeriferia]);
 
-  // Pagination
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    if (levelFilter === "NATIONAL") {
+      params.governance = "NATIONAL";
+    } else if (levelFilter === "REGIONAL") {
+      params.governance = "REGIONAL";
+      if (selectedPeriferia) params.periferia_id = selectedPeriferia;
+    } else if (levelFilter === "MUNICIPAL") {
+      params.governance = "MUNICIPAL";
+      if (selectedDimos) {
+        params.dimos_id = selectedDimos;
+        if (selectedPeriferia) {
+          params.periferia_id = selectedPeriferia;
+        }
+      }
+    }
+
+    if (levelFilter === "DIAVGEIA") {
+      params.source = "DIAVGEIA";
+    }
+
+    if (levelFilter === "INSTITUTIONAL") {
+      params.governance = "INSTITUTIONAL";
+    }
+
+    return params;
+  }, [statusFilter, levelFilter, selectedPeriferia, selectedDimos, search, page]);
+
+  useEffect(() => {
+    const requestId = ++requestSequence.current;
+    setLoading(true);
+    ekklesia.getBills(billQueryParams)
+      .then(r => {
+        if (requestId !== requestSequence.current) return;
+        setBills(r.data);
+        setError(null);
+      })
+      .catch(() => {
+        if (requestId === requestSequence.current) {
+          setError(locale === "el" ? "Σφάλμα σύνδεσης API" : "API connection error");
+        }
+      })
+      .finally(() => {
+        if (requestId === requestSequence.current) setLoading(false);
+      });
+  }, [billQueryParams, locale]);
+
+  const hasNextPage = bills.length > PAGE_SIZE;
+  const paginated = bills.slice(0, PAGE_SIZE);
 
   // Reset page when filters change
-  useEffect(() => { setPage(1); }, [statusFilter, levelFilter, search, selectedPeriferia]);
+  useEffect(() => { setPage(1); }, [statusFilter, levelFilter, search, selectedPeriferia, selectedDimos]);
 
   const titleKey = locale === "el" ? "title_el" : "title_en";
   const pillKey  = locale === "el" ? "pill_el"  : "pill_en";
@@ -149,13 +205,70 @@ export default function BillsPage() {
         {/* Region Typeahead */}
         <div className="mb-4 relative">
           {selectedPeriferia ? (
-            <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-300 rounded-xl text-sm">
-              <span className="text-blue-700 font-semibold">📍 {selectedPeriferiaName}</span>
-              <button
-                onClick={() => { setSelectedPeriferia(null); setSelectedPeriferiaName(""); setRegionSearch(""); }}
-                className="ml-auto text-blue-400 hover:text-blue-600 font-bold text-lg"
-              >×</button>
-            </div>
+            <>
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-300 rounded-xl text-sm">
+                <span className="text-blue-700 font-semibold">📍 {selectedPeriferiaName}</span>
+                <button
+                  onClick={() => {
+                    setSelectedPeriferia(null);
+                    setSelectedPeriferiaName("");
+                    setRegionSearch("");
+                  }}
+                  className="ml-auto text-blue-400 hover:text-blue-600 font-bold text-lg"
+                >×</button>
+              </div>
+              <div className="mb-4 relative mt-3">
+                {selectedDimos ? (
+                  <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-300 rounded-xl text-sm">
+                    <span className="text-blue-700 font-semibold">🏘️ {selectedDimosName}</span>
+                    <button
+                      onClick={() => {
+                        setSelectedDimos(null);
+                        setSelectedDimosName("");
+                        setDimosSearch("");
+                        setLevelFilter("REGIONAL");
+                      }}
+                      className="ml-auto text-blue-400 hover:text-blue-600 font-bold text-lg"
+                    >×</button>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      value={dimosSearch}
+                      onChange={e => setDimosSearch(e.target.value)}
+                      placeholder={isEl ? "🔍 Αναζήτηση Δήμου..." : "🔍 Search Municipality..."}
+                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
+                    />
+                    {dimosSearch.length >= 2 && (
+                      <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                        {dimosList
+                          .filter(dimos => dimos.name_el.toLowerCase().includes(dimosSearch.toLowerCase()))
+                          .map(dimos => (
+                            <button
+                              key={dimos.id}
+                              onClick={() => {
+                                setSelectedDimos(dimos.id);
+                                setSelectedDimosName(dimos.name_el);
+                                setDimosSearch("");
+                                setLevelFilter("MUNICIPAL");
+                              }}
+                              className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                            >
+                              🏘️ {dimos.name_el}
+                            </button>
+                          ))}
+                        {dimosList
+                          .filter(dimos => dimos.name_el.toLowerCase().includes(dimosSearch.toLowerCase()))
+                          .length === 0 && (
+                            <p className="px-4 py-2.5 text-sm text-gray-400">{isEl ? "Δεν βρέθηκε" : "Not found"}</p>
+                          )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </>
           ) : (
             <>
               <input
@@ -172,7 +285,14 @@ export default function BillsPage() {
                     .map(p => (
                       <button
                         key={p.id}
-                        onClick={() => { setSelectedPeriferia(p.id); setSelectedPeriferiaName(p.name_el); setRegionSearch(""); }}
+                        onClick={() => {
+                          setSelectedPeriferia(p.id);
+                          setSelectedPeriferiaName(p.name_el);
+                          setLevelFilter("REGIONAL");
+                          setRegionSearch("");
+                          setSelectedDimos(null);
+                          setSelectedDimosName("");
+                        }}
                         className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
                       >
                         📍 {p.name_el}
@@ -241,7 +361,7 @@ export default function BillsPage() {
         )}
 
         {/* Empty State */}
-        {!loading && filtered.length === 0 && !error && (
+        {!loading && bills.length === 0 && !error && (
           <div className="text-center py-16 text-gray-400">
             <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">
               🏛️
@@ -334,12 +454,12 @@ export default function BillsPage() {
         </div>
 
         {/* Pagination */}
-        {!loading && filtered.length > PAGE_SIZE && (
+        {!loading && (page > 1 || hasNextPage) && (
           <div className="flex items-center justify-between mt-8 bg-white rounded-xl p-4 border border-gray-200">
             <span className="text-sm text-gray-500">
               {isEl
-                ? `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, filtered.length)} από ${filtered.length}`
-                : `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, filtered.length)} of ${filtered.length}`}
+                ? `Σελίδα ${page}`
+                : `Page ${page}`}
             </span>
             <div className="flex gap-2">
               <button
@@ -350,11 +470,11 @@ export default function BillsPage() {
                 ◀
               </button>
               <span className="flex items-center px-3 text-sm font-semibold text-gray-700">
-                {page} / {totalPages}
+                {page}
               </span>
               <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
+                onClick={() => setPage(p => p + 1)}
+                disabled={!hasNextPage}
                 className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-bold"
               >
                 ▶

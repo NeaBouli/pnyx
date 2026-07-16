@@ -24,6 +24,7 @@ import redis.asyncio as aioredis
 
 from database import get_db
 from services.bill_visibility import is_public_bill
+from services.vote_scope import ScopeAction, ensure_bill_scope_allowed
 from models import (
     IdentityRecord, KeyStatus, CitizenVote, VoteChoice,
     ParliamentBill, BillStatus,
@@ -47,9 +48,85 @@ router = APIRouter(prefix="/api/v1/polis", tags=["POLIS QR Auth"])
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 SESSION_TTL = 300  # 5 minutes
 
+_AUTHENTICATE_SESSION_LUA = """
+if redis.call('EXISTS', KEYS[1]) == 0 then
+  return -1
+end
+if redis.call('HGET', KEYS[1], 'status') ~= 'pending' then
+  return 0
+end
+redis.call('HSET', KEYS[1],
+  'status', 'authenticated',
+  'nullifier_hash', ARGV[1],
+  'public_key_hex', ARGV[2])
+redis.call('EXPIRE', KEYS[1], 60)
+return 1
+"""
+
+_CLAIM_SESSION_LUA = """
+if redis.call('EXISTS', KEYS[1]) == 0 then
+  return -1
+end
+if redis.call('HGET', KEYS[1], 'status') ~= 'authenticated' then
+  return 0
+end
+redis.call('HSET', KEYS[1], 'status', 'processing')
+return 1
+"""
+
+_RESTORE_SESSION_LUA = """
+if redis.call('HGET', KEYS[1], 'status') == 'processing' then
+  redis.call('HSET', KEYS[1], 'status', 'authenticated')
+  return 1
+end
+return 0
+"""
+
 
 async def _redis():
     return aioredis.from_url(REDIS_URL, decode_responses=True)
+
+
+async def _authenticate_session_once(
+    redis_client,
+    session_key: str,
+    nullifier_hash: str,
+    public_key_hex: str,
+) -> None:
+    result = int(await redis_client.eval(
+        _AUTHENTICATE_SESSION_LUA,
+        1,
+        session_key,
+        nullifier_hash,
+        public_key_hex,
+    ))
+    if result == -1:
+        raise HTTPException(410, "Session expired")
+    if result != 1:
+        raise HTTPException(409, "Session already used — generate a new QR code")
+
+
+async def _claim_authenticated_session(redis_client, session_key: str) -> None:
+    result = int(await redis_client.eval(_CLAIM_SESSION_LUA, 1, session_key))
+    if result == -1:
+        raise HTTPException(410, "Session expired — scan QR again")
+    if result != 1:
+        raise HTTPException(409, "Session is already being processed or was used")
+
+
+async def _restore_authenticated_session(redis_client, session_key: str) -> None:
+    await redis_client.eval(_RESTORE_SESSION_LUA, 1, session_key)
+
+
+async def _mark_session_used(redis_client, session_key: str) -> None:
+    try:
+        await redis_client.hset(session_key, mapping={"status": "used"})
+        await redis_client.hdel(session_key, "nullifier_hash", "public_key_hex")
+        await redis_client.expire(session_key, 60)
+    except Exception:
+        # The vote is already committed. Leaving the session in "processing"
+        # is fail-closed and prevents a duplicate retry.
+        logger.exception("Could not finalize consumed QR session %s", session_key[-8:])
 
 
 @router.get("/qr-session")
@@ -179,14 +256,14 @@ async def authenticate_qr(req: QRAuthRequest, db: AsyncSession = Depends(get_db)
     if not verify_challenge(req.public_key_hex, challenge, req.signature_hex):
         raise HTTPException(401, "Invalid signature")
 
-    # Mark session as authenticated (one-time use)
-    await r.hset(f"polis_qr:{req.session_id}", mapping={
-        "status": "authenticated",
-        "nullifier_hash": req.nullifier_hash,
-        "public_key_hex": req.public_key_hex,
-    })
-    # Short TTL for browser to pickup, then auto-expire
-    await r.expire(f"polis_qr:{req.session_id}", 60)
+    # Atomically bind the pending session. Concurrent auth requests cannot
+    # overwrite the identity selected by the first valid signature.
+    await _authenticate_session_once(
+        r,
+        f"polis_qr:{req.session_id}",
+        req.nullifier_hash,
+        req.public_key_hex,
+    )
 
     logger.info("QR auth success: session=%s purpose=%s bill=%s",
                 req.session_id[:8], session_purpose, session_bill_id or "-")
@@ -258,16 +335,7 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
     if bill.status not in votable:
         raise HTTPException(400, f"Voting closed. Status: {bill.status.value}")
 
-    # Governance scope check (same as normal vote)
-    from models import GovernanceLevel
-    gov = getattr(bill, "governance_level", None)
-    if gov and gov not in (GovernanceLevel.NATIONAL, GovernanceLevel.INSTITUTIONAL):
-        if gov == GovernanceLevel.REGIONAL:
-            if not identity.periferia_id or identity.periferia_id != bill.periferia_id:
-                raise HTTPException(403, "Αυτή η ψηφοφορία αφορά μόνο κατοίκους αυτής της Περιφέρειας.")
-        elif gov == GovernanceLevel.MUNICIPAL:
-            if not identity.dimos_id or identity.dimos_id != bill.dimos_id:
-                raise HTTPException(403, "Αυτή η ψηφοφορία αφορά μόνο κατοίκους αυτού του Δήμου.")
+    ensure_bill_scope_allowed(identity, bill)
 
     vote_choice = VoteChoice(req.vote)
 
@@ -281,17 +349,19 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
     )
     existing_vote = existing.scalar_one_or_none()
 
-    if existing_vote:
-        if bill.status == BillStatus.ACTIVE:
-            raise HTTPException(409, "Already voted. Correction available during 24h window.")
-        from datetime import datetime, timezone
-        existing_vote.vote = vote_choice
-        existing_vote.signature_hex = f"qr-session:{req.session_id[:16]}"
-        existing_vote.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-        await db.commit()
-        msg = "Vote corrected via QR session."
-    else:
-        try:
+    if existing_vote and bill.status == BillStatus.ACTIVE:
+        raise HTTPException(409, "Already voted. Correction available during 24h window.")
+
+    session_key = f"polis_qr:{req.session_id}"
+    await _claim_authenticated_session(r, session_key)
+    try:
+        if existing_vote:
+            from datetime import datetime, timezone
+            existing_vote.vote = vote_choice
+            existing_vote.signature_hex = f"qr-session:{req.session_id[:16]}"
+            existing_vote.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            msg = "Vote corrected via QR session."
+        else:
             new_vote = CitizenVote(
                 nullifier_hash=nullifier_hash,
                 bill_id=req.bill_id,
@@ -299,14 +369,18 @@ async def qr_web_vote(req: QRVoteRequest, db: AsyncSession = Depends(get_db)):
                 signature_hex=f"qr-session:{req.session_id[:16]}",
             )
             db.add(new_vote)
-            await db.commit()
             msg = "Vote submitted via QR session."
-        except IntegrityError:
-            await db.rollback()
-            raise HTTPException(409, "Already voted (race condition)")
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        await _restore_authenticated_session(r, session_key)
+        raise HTTPException(409, "Already voted (race condition)")
+    except Exception:
+        await db.rollback()
+        await _restore_authenticated_session(r, session_key)
+        raise
 
-    # Consume session — one vote per session
-    await r.delete(f"polis_qr:{req.session_id}")
+    await _mark_session_used(r, session_key)
 
     logger.info("QR web vote: bill=%s vote=%s nullifier=%s...",
                 req.bill_id, req.vote, nullifier_hash[:8])
@@ -369,44 +443,41 @@ async def qr_web_consensus(req: QRConsensusRequest, db: AsyncSession = Depends(g
     if bill.status != BillStatus.OPEN_END:
         raise HTTPException(400, "Η συναίνεση είναι δυνατή μόνο για OPEN_END")
 
-    # Governance scope check
-    from models import GovernanceLevel
-    gov = getattr(bill, "governance_level", None)
-    if gov and gov not in (GovernanceLevel.NATIONAL, GovernanceLevel.INSTITUTIONAL):
-        if gov == GovernanceLevel.REGIONAL:
-            if not identity.periferia_id or identity.periferia_id != bill.periferia_id:
-                raise HTTPException(403, "Αυτή η αξιολόγηση αφορά μόνο κατοίκους αυτής της Περιφέρειας.")
-        elif gov == GovernanceLevel.MUNICIPAL:
-            if not identity.dimos_id or identity.dimos_id != bill.dimos_id:
-                raise HTTPException(403, "Αυτή η αξιολόγηση αφορά μόνο κατοίκους αυτού του Δήμου.")
+    ensure_bill_scope_allowed(identity, bill, action=ScopeAction.CONSENSUS)
 
-    # Upsert consensus vote
-    await db.execute(sql_text("""
-        INSERT INTO consensus_votes (nullifier_hash, bill_id, score)
-        VALUES (:nullifier, :bill_id, :score)
-        ON CONFLICT (nullifier_hash, bill_id)
-        DO UPDATE SET score = :score, created_at = NOW()
-    """), {"nullifier": nullifier_hash, "bill_id": req.bill_id, "score": req.score})
+    session_key = f"polis_qr:{req.session_id}"
+    await _claim_authenticated_session(r, session_key)
+    try:
+        # Upsert consensus vote
+        await db.execute(sql_text("""
+            INSERT INTO consensus_votes (nullifier_hash, bill_id, score)
+            VALUES (:nullifier, :bill_id, :score)
+            ON CONFLICT (nullifier_hash, bill_id)
+            DO UPDATE SET score = :score, created_at = NOW()
+        """), {"nullifier": nullifier_hash, "bill_id": req.bill_id, "score": req.score})
 
-    # Update aggregate
-    agg = await db.execute(sql_text("""
-        SELECT AVG(score)::float, COUNT(*) FROM consensus_votes WHERE bill_id = :bill_id
-    """), {"bill_id": req.bill_id})
-    row = agg.fetchone()
-    bill.consensus_score = round(row[0], 2) if row[0] is not None else 0.0
-    bill.consensus_count = row[1] or 0
+        # Update aggregate
+        agg = await db.execute(sql_text("""
+            SELECT AVG(score)::float, COUNT(*) FROM consensus_votes WHERE bill_id = :bill_id
+        """), {"bill_id": req.bill_id})
+        row = agg.fetchone()
+        bill.consensus_score = round(row[0], 2) if row[0] is not None else 0.0
+        bill.consensus_count = row[1] or 0
 
-    # Record in cplm_history (same as normal consensus)
-    weight = req.score / 5.0
-    await db.execute(sql_text("""
-        INSERT INTO cplm_history (nullifier_hash, economic_score, social_score, trigger_type, trigger_bill_id)
-        VALUES (:nh, :econ, :soc, 'consensus', :bill_id)
-    """), {"nh": nullifier_hash, "econ": weight * 0.05, "soc": 0.0, "bill_id": req.bill_id})
+        # Record in cplm_history (same as normal consensus)
+        weight = req.score / 5.0
+        await db.execute(sql_text("""
+            INSERT INTO cplm_history (nullifier_hash, economic_score, social_score, trigger_type, trigger_bill_id)
+            VALUES (:nh, :econ, :soc, 'consensus', :bill_id)
+        """), {"nh": nullifier_hash, "econ": weight * 0.05, "soc": 0.0, "bill_id": req.bill_id})
 
-    await db.commit()
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        await _restore_authenticated_session(r, session_key)
+        raise
 
-    # Consume session
-    await r.delete(f"polis_qr:{req.session_id}")
+    await _mark_session_used(r, session_key)
 
     logger.info("QR consensus: bill=%s score=%d nullifier=%s...",
                 req.bill_id, req.score, nullifier_hash[:8])

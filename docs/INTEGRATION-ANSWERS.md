@@ -179,8 +179,8 @@ class IdentityRecord:
 ```
 POST /api/v1/identity/verify      — HLR verify → Ed25519 keypair
 POST /api/v1/identity/revoke      — Revoke key
-GET  /api/v1/identity/status      — Check key status
-PATCH /api/v1/identity/profile/location — Sync dimos/periferia
+POST /api/v1/identity/status      — Check key status by nullifier hash
+PATCH /api/v1/identity/profile/location — One-time signed dimos/periferia lock (Ed25519)
 ```
 
 ---

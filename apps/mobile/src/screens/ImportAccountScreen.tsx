@@ -8,6 +8,7 @@ import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
+import { storeProfileLocation } from "../lib/profile-location";
 import { colors } from "../theme";
 
 type Props = StackScreenProps<RootStackParams, "ImportAccount">;
@@ -44,12 +45,10 @@ export default function ImportAccountScreen({ route, navigation }: Props) {
       if (pubkey) {
         await SecureStore.setItemAsync("ekklesia_public_key", pubkey);
       }
-      if (periferiaId) {
-        await SecureStore.setItemAsync("user_periferia_id", String(periferiaId));
-      }
-      if (dimosId) {
-        await SecureStore.setItemAsync("user_dimos_id", String(dimosId));
-      }
+      await storeProfileLocation({
+        periferiaId: periferiaId ? Number(periferiaId) : null,
+        dimosId: dimosId ? Number(dimosId) : null,
+      }, nullifier);
       await SecureStore.setItemAsync("onboarding_completed", "true");
       await SecureStore.setItemAsync("user_profile_completed", "true");
 

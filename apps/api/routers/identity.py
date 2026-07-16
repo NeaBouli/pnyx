@@ -18,12 +18,12 @@ from sqlalchemy.sql import Select
 import redis.asyncio as aioredis
 
 from database import get_db
-from models import IdentityRecord, KeyStatus
+from models import Dimos, IdentityRecord, KeyStatus, Periferia
 
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../packages/crypto"))
 sys.path.insert(0, "/packages/crypto")  # Docker container path
-from keypair import generate_keypair
+from keypair import generate_keypair, verify_signature
 from nullifier import generate_nullifier_hash, generate_nullifier_hash_v2
 from hlr import verify_greek_number
 
@@ -416,6 +416,7 @@ class LocationUpdateRequest(BaseModel):
     nullifier_hash: str = Field(..., min_length=16, max_length=64)
     periferia_id: int | None = None
     dimos_id: int | None = None
+    signature_hex: str = Field(..., min_length=128, max_length=128)
 
 
 @router.patch("/profile/location")
@@ -433,11 +434,18 @@ async def update_profile_location(
         select(IdentityRecord).where(
             IdentityRecord.nullifier_hash == req.nullifier_hash,
             IdentityRecord.status == KeyStatus.ACTIVE,
-        )
+        ).with_for_update()
     )
     identity = result.scalar_one_or_none()
     if not identity:
         raise HTTPException(403, "Nullifier nicht gefunden oder revoziert.")
+
+    payload = (
+        f"profile-location:{req.periferia_id or 0}:{req.dimos_id or 0}:"
+        f"{req.nullifier_hash}"
+    ).encode()
+    if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
+        raise HTTPException(401, "Μη έγκυρη υπογραφή γεωγραφικού προφίλ.")
 
     # Region lock: einmalig setzbar, danach gesperrt
     if identity.region_locked:
@@ -446,11 +454,33 @@ async def update_profile_location(
             "Ο εκλογικός σας κύκλος έχει ήδη οριστεί και δεν μπορεί να αλλαχθεί."
         )
 
-    # Update location
-    if req.periferia_id is not None:
-        identity.periferia_id = req.periferia_id if req.periferia_id > 0 else None
-    if req.dimos_id is not None:
-        identity.dimos_id = req.dimos_id if req.dimos_id > 0 else None
+    requested_periferia = req.periferia_id if req.periferia_id and req.periferia_id > 0 else None
+    requested_dimos = req.dimos_id if req.dimos_id and req.dimos_id > 0 else None
+
+    # Validate against authoritative geography and derive the Periferia from the
+    # Dimos. A client must not be able to create an impossible location pair.
+    if requested_dimos is not None:
+        dimos_result = await db.execute(
+            select(Dimos).where(Dimos.id == requested_dimos, Dimos.is_active.is_(True))
+        )
+        dimos = dimos_result.scalar_one_or_none()
+        if dimos is None:
+            raise HTTPException(400, "Ο επιλεγμένος Δήμος δεν είναι έγκυρος.")
+        if requested_periferia is not None and requested_periferia != dimos.periferia_id:
+            raise HTTPException(400, "Ο Δήμος δεν ανήκει στην επιλεγμένη Περιφέρεια.")
+        requested_periferia = dimos.periferia_id
+    elif requested_periferia is not None:
+        periferia_result = await db.execute(
+            select(Periferia).where(
+                Periferia.id == requested_periferia,
+                Periferia.is_active.is_(True),
+            )
+        )
+        if periferia_result.scalar_one_or_none() is None:
+            raise HTTPException(400, "Η επιλεγμένη Περιφέρεια δεν είναι έγκυρη.")
+
+    identity.periferia_id = requested_periferia
+    identity.dimos_id = requested_dimos
 
     # Lock after first meaningful set
     if identity.periferia_id or identity.dimos_id:
