@@ -21,6 +21,7 @@ Alles in Redis gespeichert — kein DB-Schema nötig.
 import json
 import logging
 import os
+import secrets
 from decimal import Decimal, InvalidOperation
 from datetime import datetime, timezone
 from urllib.parse import parse_qs
@@ -67,6 +68,56 @@ R_PUBLIC_DOMAIN_RECEIVED = "donations:public:domain:received"
 R_PUBLIC_RESERVE = "donations:public:reserve"
 R_PUBLIC_PAYMENT_COUNT = "donations:public:count"
 R_PUBLIC_LAST_PAYMENT = "donations:public:last"
+R_PUBLIC_PAYMENT_STATE_PREFIX = "donations:public:payment:v2:"
+R_PUBLIC_PAYMENT_LOCK_PREFIX = "donations:public:payment-lock:v2:"
+R_PENDING_STRIPE_ADJUSTMENT_PREFIX = "payments:pending-adjustment:stripe:"
+R_PENDING_PAYPAL_ADJUSTMENT_PREFIX = "payments:pending-adjustment:paypal:"
+R_CAPTURE_STATE_PREFIX = "payments:capture-state:v2:"
+R_PENDING_DRAIN_LOCK_PREFIX = "payments:pending-adjustment-drain-lock:v2:"
+R_ADJUSTMENT_APPLIED_PREFIX = "payments:adjustment-applied:v2:"
+
+PROJECTION_ADJUSTMENT_COMMIT_SCRIPT = """
+-- payment_projection_commit_v2
+if redis.call('get', KEYS[1]) ~= ARGV[1] then
+  return 0
+end
+if redis.call('exists', KEYS[2]) == 1 then
+  return 2
+end
+for index = 1, 3 do
+  local delta = ARGV[index + 1]
+  if delta ~= '0' then
+    redis.call('incrbyfloat', KEYS[index + 2], delta)
+    redis.call('incrbyfloat', KEYS[index + 5], delta)
+  end
+end
+local count_delta = tonumber(ARGV[5])
+if count_delta ~= 0 then
+  redis.call('incrby', KEYS[9], count_delta)
+end
+if ARGV[6] ~= 'none' then
+  local current_last = redis.call('get', KEYS[10])
+  local valid_last, decoded_last = pcall(cjson.decode, current_last or '')
+  if valid_last and decoded_last['projection_reference'] == ARGV[11] then
+    if ARGV[6] == 'delete' then
+      redis.call('del', KEYS[10])
+    elseif ARGV[6] == 'set' then
+      redis.call('set', KEYS[10], ARGV[7])
+    end
+  end
+end
+local paypal_delta = ARGV[9]
+if paypal_delta ~= '0' then
+  redis.call('incrbyfloat', KEYS[12], paypal_delta)
+end
+local paypal_count_delta = tonumber(ARGV[10])
+if paypal_count_delta ~= 0 then
+  redis.call('incrby', KEYS[13], paypal_count_delta)
+end
+redis.call('set', KEYS[11], ARGV[8])
+redis.call('set', KEYS[2], 'processed')
+return 1
+"""
 
 SUPPORT_PURPOSES = {"infrastructure_support", "developer_support"}
 ALLOWED_PAYMENT_PURPOSES = SUPPORT_PURPOSES
@@ -96,6 +147,18 @@ async def _append_finance_event(r: aioredis.Redis, event: dict) -> None:
     await r.rpush(R_FINANCE_EVENTS, json.dumps(event, separators=(",", ":")))
 
 
+def _stripe_adjustment_kind(event_type: str, adjustment: dict) -> str:
+    if event_type == "charge.refunded":
+        return "stripe_refund_cumulative"
+    if event_type == "charge.dispute.created":
+        return "stripe_dispute_open"
+    return (
+        "stripe_dispute_won"
+        if str(adjustment.get("status", "")).lower() == "won"
+        else "stripe_dispute_lost"
+    )
+
+
 async def _process_stripe_adjustment(event: dict, event_type: str) -> dict:
     event_id = event.get("id", "")
     adjustment = event.get("data", {}).get("object", {})
@@ -113,41 +176,100 @@ async def _process_stripe_adjustment(event: dict, event_type: str) -> dict:
 
     r = await _get_redis()
     event_key = f"{R_STRIPE_EVENT_PREFIX}{event_id}"
+    pending_key = f"{R_PENDING_STRIPE_ADJUSTMENT_PREFIX}{payment_intent}"
     claimed = await r.set(event_key, "processing", nx=True, ex=900)
     if not claimed:
+        existing_claim = await r.get(event_key)
+        if existing_claim == "pending_payment":
+            session_id = await r.get(f"{R_STRIPE_PAYMENT_PREFIX}{payment_intent}")
+            if session_id:
+                processed = await _drain_pending_adjustments(
+                    r,
+                    pending_key,
+                    f"stripe:{session_id}",
+                )
+                if processed == 0:
+                    raise HTTPException(status_code=503, detail="Payment projection retry is pending")
+                return {
+                    "received": True,
+                    "processed": True,
+                    "requires_manual_review": False,
+                }
         return {"received": True, "processed": False, "duplicate": True}
 
     session_id = await r.get(f"{R_STRIPE_PAYMENT_PREFIX}{payment_intent}")
+    live_mode = event.get("livemode") is True
+    adjustment_kind = _stripe_adjustment_kind(event_type, adjustment)
     state = {
         "charge.refunded": "refund_reported",
         "charge.dispute.created": "dispute_open",
         "charge.dispute.closed": "dispute_closed",
     }[event_type]
     try:
+        projection_result = {"applied": False, "reason": "test_mode"}
         if session_id:
             await r.set(f"{R_ADJUSTMENT_STATE_PREFIX}{session_id}", state)
+            if live_mode:
+                projection_result = await _apply_public_payment_adjustment(
+                    r,
+                    f"stripe:{session_id}",
+                    amount_cents,
+                    adjustment_kind,
+                    event_id,
+                )
+                if projection_result.get("reason") in {"payment_projection_missing", "payment_projection_busy"}:
+                    await _queue_pending_adjustment(r, pending_key, {
+                        "event_key": event_key,
+                        "adjustment_id": event_id,
+                        "amount_cents": amount_cents,
+                        "adjustment_kind": adjustment_kind,
+                    })
+        elif live_mode:
+            await _queue_pending_adjustment(r, pending_key, {
+                "event_key": event_key,
+                "adjustment_id": event_id,
+                "amount_cents": amount_cents,
+                "adjustment_kind": adjustment_kind,
+            })
+            projection_result = {"applied": False, "reason": "payment_projection_pending"}
+            late_session_id = await r.get(f"{R_STRIPE_PAYMENT_PREFIX}{payment_intent}")
+            if late_session_id:
+                session_id = late_session_id
+                await _drain_pending_adjustments(r, pending_key, f"stripe:{session_id}")
+                projection_result = {"applied": True, "reason": "reconciled"}
+        projection_pending = live_mode and projection_result.get("reason") in {
+            "payment_projection_missing", "payment_projection_pending", "payment_projection_busy",
+        }
+        retry_required = live_mode and projection_result.get("reason") == "payment_projection_busy"
+        requires_manual_review = not bool(session_id) or projection_pending
         await _append_finance_event(r, {
             "event_id": event_id,
             "event_type": event_type,
             "occurred_at": datetime.now(timezone.utc).isoformat(),
             "provider": "stripe",
-            "provider_mode": "live" if event.get("livemode") is True else "test",
+            "provider_mode": "live" if live_mode else "test",
             "provider_reference": session_id,
             "payment_reference": payment_intent,
             "amount_cents_reported": amount_cents,
             "currency": currency,
             "adjustment_state": state,
-            "requires_manual_review": not bool(session_id),
+            "requires_manual_review": requires_manual_review,
         })
-        await r.set(event_key, "processed" if session_id else "accounting_review_required")
+        await r.set(
+            event_key,
+            "pending_payment" if projection_pending else "processed" if session_id else "accounting_review_required",
+        )
     except Exception:
         await r.set(event_key, "accounting_review_required")
         raise
 
+    if retry_required:
+        raise HTTPException(status_code=503, detail="Payment projection is busy")
+
     return {
         "received": True,
-        "processed": bool(session_id),
-        "requires_manual_review": not bool(session_id),
+        "processed": bool(session_id) and not projection_pending,
+        "requires_manual_review": requires_manual_review,
     }
 
 
@@ -155,8 +277,59 @@ def _public_payment_record(record: dict | None) -> dict | None:
     """Return transparency fields without donor or processor identifiers."""
     if not record:
         return None
-    allowed = ("date", "amount", "allocation", "to", "method")
+    allowed = ("amount", "allocation", "to")
     return {key: record[key] for key in allowed if key in record}
+
+
+def _projection_reference(record: dict) -> str | None:
+    if (
+        record.get("method") == "stripe"
+        and isinstance(record.get("stripe_session"), str)
+        and record["stripe_session"].startswith("cs_")
+    ):
+        return f"stripe:{record['stripe_session']}"
+    if (
+        record.get("method") == "paypal"
+        and isinstance(record.get("txn_id"), str)
+        and 1 <= len(record["txn_id"]) <= 127
+    ):
+        return f"paypal:{record['txn_id']}"
+    return None
+
+
+def _amount_to_cents(value: object) -> int | None:
+    amount = _public_allocation_amount(value)
+    if amount is None:
+        return None
+    cents = amount * 100
+    return int(cents) if cents == cents.to_integral_value() else None
+
+
+def _projection_state(record: dict) -> tuple[str, dict] | None:
+    if not _is_public_support_record(record):
+        return None
+    reference = _projection_reference(record)
+    amount_cents = _amount_to_cents(record.get("amount"))
+    allocation_cents = {
+        key: _amount_to_cents(record["allocation"].get(key))
+        for key in ("server", "domain", "reserve")
+    }
+    if not reference or amount_cents is None or any(value is None for value in allocation_cents.values()):
+        return None
+    if sum(allocation_cents.values()) != amount_cents:
+        return None
+    return reference, {
+        "schema": "ekklesia.public-payment-state.v2",
+        "reference": reference,
+        "provider": record["method"],
+        "amount_cents": amount_cents,
+        "original_allocation_cents": allocation_cents,
+        "remaining_allocation_cents": allocation_cents,
+        "refund_cents": 0,
+        "dispute_cents": 0,
+        "dispute_terminal": False,
+        "adjusted_cents": 0,
+    }
 
 
 def _public_support_amount(value: object) -> Decimal | None:
@@ -215,7 +388,14 @@ def _empty_public_projection() -> dict:
 
 async def _load_public_support_projection(r: aioredis.Redis) -> dict:
     """Read the bounded projection maintained atomically with verified records."""
-    raw_totals = await r.mget(R_PUBLIC_SERVER_RECEIVED, R_PUBLIC_DOMAIN_RECEIVED, R_PUBLIC_RESERVE)
+    snapshot = await r.mget(
+        R_PUBLIC_SERVER_RECEIVED,
+        R_PUBLIC_DOMAIN_RECEIVED,
+        R_PUBLIC_RESERVE,
+        R_PUBLIC_PAYMENT_COUNT,
+        R_PUBLIC_LAST_PAYMENT,
+    )
+    raw_totals = snapshot[:3]
     if all(value is None for value in raw_totals):
         return _empty_public_projection()
     if any(value is None for value in raw_totals):
@@ -227,7 +407,7 @@ async def _load_public_support_projection(r: aioredis.Redis) -> dict:
         logger.error("[MOD-18] Public support projection contains invalid totals")
         return _empty_public_projection()
 
-    raw_count = await r.get(R_PUBLIC_PAYMENT_COUNT)
+    raw_count = snapshot[3]
     if raw_count is None:
         logger.error("[MOD-18] Public support projection count is missing")
         return _empty_public_projection()
@@ -239,7 +419,7 @@ async def _load_public_support_projection(r: aioredis.Redis) -> dict:
         return _empty_public_projection()
 
     last_payment = None
-    raw_last = await r.get(R_PUBLIC_LAST_PAYMENT)
+    raw_last = snapshot[4]
     if count > 0 and raw_last:
         try:
             candidate = json.loads(raw_last)
@@ -253,12 +433,11 @@ async def _load_public_support_projection(r: aioredis.Redis) -> dict:
                 for key in ("server", "domain", "reserve")
             ]
             if (
-                candidate.get("method") in {"stripe", "paypal"}
-                and amount is not None
+                amount is not None
                 and all(value is not None for value in allocated)
                 and sum(allocated, Decimal("0")) == amount
             ):
-                last_payment = candidate
+                last_payment = _public_payment_record(candidate)
 
     server, domain, reserve = totals
     received = server + domain + reserve
@@ -277,18 +456,303 @@ async def _append_payment_record(r: aioredis.Redis, record: dict) -> None:
     payload = json.dumps(record)
     pipe = r.pipeline(transaction=True)
     pipe.rpush(R_PAYMENTS, payload)
+    reference = _projection_reference(record)
+    if not reference:
+        raise ValueError("invalid_payment_reference")
+    pipe.set(f"{R_CAPTURE_STATE_PREFIX}{reference}", "recorded", nx=True)
     if _is_public_support_record(record):
         allocation = record["allocation"]
         public_allocation = {
             key: _public_allocation_amount(allocation[key])
             for key in ("server", "domain", "reserve")
         }
+        pipe.incrbyfloat(R_SERVER_RECEIVED, format(public_allocation["server"], "f"))
+        pipe.incrbyfloat(R_DOMAIN_RECEIVED, format(public_allocation["domain"], "f"))
+        pipe.incrbyfloat(R_RESERVE, format(public_allocation["reserve"], "f"))
+        if record["method"] == "paypal":
+            pipe.incrbyfloat(R_PAYPAL_DONATIONS, format(_public_support_amount(record["amount"]), "f"))
+            pipe.incr(R_PAYPAL_COUNT)
         pipe.incrbyfloat(R_PUBLIC_SERVER_RECEIVED, format(public_allocation["server"], "f"))
         pipe.incrbyfloat(R_PUBLIC_DOMAIN_RECEIVED, format(public_allocation["domain"], "f"))
         pipe.incrbyfloat(R_PUBLIC_RESERVE, format(public_allocation["reserve"], "f"))
         pipe.incr(R_PUBLIC_PAYMENT_COUNT)
-        pipe.set(R_PUBLIC_LAST_PAYMENT, json.dumps(_public_payment_record(record), separators=(",", ":")))
+        state_entry = _projection_state(record)
+        if state_entry is None:
+            raise ValueError("invalid_public_projection_state")
+        reference, state = state_entry
+        public_last = {
+            **_public_payment_record(record),
+            "projection_reference": reference,
+        }
+        pipe.set(R_PUBLIC_LAST_PAYMENT, json.dumps(public_last, separators=(",", ":")))
+        pipe.set(
+            f"{R_PUBLIC_PAYMENT_STATE_PREFIX}{reference}",
+            json.dumps(state, separators=(",", ":")),
+            nx=True,
+        )
     await pipe.execute()
+
+
+def _target_remaining_allocation(state: dict, adjusted_cents: int) -> dict[str, int]:
+    amount_cents = state["amount_cents"]
+    remaining_total = max(0, amount_cents - adjusted_cents)
+    original = state["original_allocation_cents"]
+    keys = ("server", "domain", "reserve")
+    numerators = {key: int(original[key]) * remaining_total for key in keys}
+    target = {key: numerators[key] // amount_cents for key in keys}
+    residual = remaining_total - sum(target.values())
+    ranked = sorted(keys, key=lambda key: (numerators[key] % amount_cents, -keys.index(key)), reverse=True)
+    for key in ranked[:residual]:
+        target[key] += 1
+    return target
+
+
+def _validated_projection_state(state: object, reference: str) -> dict:
+    if not isinstance(state, dict) or state.get("schema") != "ekklesia.public-payment-state.v2":
+        raise ValueError("invalid_projection_state")
+    if state.get("reference") != reference or state.get("provider") not in {"stripe", "paypal"}:
+        raise ValueError("invalid_projection_state")
+    total_cents = state.get("amount_cents")
+    refund_cents = state.get("refund_cents", 0)
+    dispute_cents = state.get("dispute_cents", 0)
+    dispute_terminal = state.get("dispute_terminal", False)
+    adjusted_cents = state.get("adjusted_cents", 0)
+    if (
+        not isinstance(total_cents, int) or not MIN_PAYMENT_CENTS <= total_cents <= MAX_PAYMENT_CENTS
+        or any(not isinstance(value, int) or not 0 <= value <= total_cents
+               for value in (refund_cents, dispute_cents, adjusted_cents))
+        or not isinstance(dispute_terminal, bool)
+        or adjusted_cents != min(total_cents, refund_cents + dispute_cents)
+    ):
+        raise ValueError("invalid_projection_state")
+    try:
+        original = {key: state["original_allocation_cents"][key] for key in ("server", "domain", "reserve")}
+        remaining = {key: state["remaining_allocation_cents"][key] for key in ("server", "domain", "reserve")}
+    except (KeyError, TypeError):
+        raise ValueError("invalid_projection_state")
+    if (
+        any(not isinstance(value, int) or value < 0 for value in (*original.values(), *remaining.values()))
+        or sum(original.values()) != total_cents
+        or sum(remaining.values()) != total_cents - adjusted_cents
+    ):
+        raise ValueError("invalid_projection_state")
+    return state
+
+
+async def _release_projection_lock(r: aioredis.Redis, lock_key: str, token: str) -> None:
+    script = (
+        "if redis.call('get', KEYS[1]) == ARGV[1] then "
+        "return redis.call('del', KEYS[1]) else return 0 end"
+    )
+    await r.eval(script, 1, lock_key, token)
+
+
+async def _recover_projection_state(r: aioredis.Redis, reference: str) -> dict | None:
+    """Backfill adjustment state for verified records created before state v2."""
+    record_count = await r.llen(R_PAYMENTS)
+    end = record_count - 1
+    while end >= 0:
+        start = max(0, end - 999)
+        raw_records = await r.lrange(R_PAYMENTS, start, end)
+        for raw_record in reversed(raw_records):
+            try:
+                record = json.loads(raw_record)
+            except (TypeError, json.JSONDecodeError):
+                continue
+            state_entry = _projection_state(record) if isinstance(record, dict) else None
+            if state_entry and state_entry[0] == reference:
+                state = state_entry[1]
+                await r.set(
+                    f"{R_PUBLIC_PAYMENT_STATE_PREFIX}{reference}",
+                    json.dumps(state, separators=(",", ":")),
+                    nx=True,
+                )
+                return state
+        end = start - 1
+    return None
+
+
+async def _apply_public_payment_adjustment(
+    r: aioredis.Redis,
+    reference: str,
+    amount_cents: int,
+    adjustment_kind: str,
+    adjustment_id: str,
+) -> dict:
+    """Apply a refund/reversal to private balances and the public projection once."""
+    if not isinstance(amount_cents, int) or amount_cents <= 0:
+        raise ValueError("invalid_adjustment_amount")
+    if not isinstance(adjustment_id, str) or not 1 <= len(adjustment_id) <= 255:
+        raise ValueError("invalid_adjustment_id")
+    state_key = f"{R_PUBLIC_PAYMENT_STATE_PREFIX}{reference}"
+    lock_key = f"{R_PUBLIC_PAYMENT_LOCK_PREFIX}{reference}"
+    applied_key = f"{R_ADJUSTMENT_APPLIED_PREFIX}{adjustment_id}"
+    token = secrets.token_hex(16)
+    if not await r.set(lock_key, token, nx=True, ex=120):
+        return {"applied": False, "reason": "payment_projection_busy"}
+    try:
+        if await r.get(applied_key):
+            return {"applied": False, "reason": "duplicate_adjustment"}
+        raw_state = await r.get(state_key)
+        recovered_state = None
+        if not raw_state:
+            recovered_state = await _recover_projection_state(r, reference)
+            if not recovered_state:
+                return {"applied": False, "reason": "payment_projection_missing"}
+        try:
+            state = _validated_projection_state(recovered_state or json.loads(raw_state), reference)
+            total_cents = int(state["amount_cents"])
+            previous_adjusted = int(state.get("adjusted_cents", 0))
+            previous_remaining = {
+                key: int(state["remaining_allocation_cents"][key])
+                for key in ("server", "domain", "reserve")
+            }
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+            raise HTTPException(status_code=503, detail="Payment projection state is invalid")
+
+        refund_cents = int(state.get("refund_cents", 0))
+        dispute_cents = int(state.get("dispute_cents", 0))
+        dispute_terminal = state.get("dispute_terminal", False)
+        if adjustment_kind == "stripe_refund_cumulative":
+            refund_cents = max(refund_cents, min(total_cents, amount_cents))
+        elif adjustment_kind == "paypal_refund_delta":
+            refund_cents = min(total_cents, refund_cents + amount_cents)
+        elif adjustment_kind in {"stripe_dispute_open", "paypal_reversal"}:
+            if dispute_terminal:
+                await r.set(applied_key, "processed")
+                return {"applied": False, "reason": "terminal_dispute_state"}
+            dispute_cents = max(dispute_cents, min(total_cents, amount_cents))
+        elif adjustment_kind in {"stripe_dispute_won", "paypal_reversal_cancelled"}:
+            dispute_cents = 0
+            dispute_terminal = True
+        elif adjustment_kind == "stripe_dispute_lost":
+            dispute_cents = max(dispute_cents, min(total_cents, amount_cents))
+            dispute_terminal = True
+        else:
+            raise ValueError("invalid_adjustment_kind")
+
+        adjusted_cents = min(total_cents, refund_cents + dispute_cents)
+        target_remaining = _target_remaining_allocation(state, adjusted_cents)
+        allocation_delta = {
+            key: previous_remaining[key] - target_remaining[key]
+            for key in ("server", "domain", "reserve")
+        }
+        previous_full = previous_adjusted >= total_cents
+        current_full = adjusted_cents >= total_cents
+        count_delta = 1 if previous_full and not current_full else -1 if not previous_full and current_full else 0
+
+        state.update({
+            "remaining_allocation_cents": target_remaining,
+            "refund_cents": refund_cents,
+            "dispute_cents": dispute_cents,
+            "dispute_terminal": dispute_terminal,
+            "adjusted_cents": adjusted_cents,
+        })
+        raw_last = await r.get(R_PUBLIC_LAST_PAYMENT)
+        try:
+            last = json.loads(raw_last) if raw_last else None
+        except (TypeError, json.JSONDecodeError):
+            last = None
+        last_action = "none"
+        last_payload = ""
+        if isinstance(last, dict) and last.get("projection_reference") == reference:
+            if current_full:
+                last_action = "delete"
+            else:
+                last.update({
+                    "amount": (total_cents - adjusted_cents) / 100,
+                    "allocation": {key: target_remaining[key] / 100 for key in target_remaining},
+                })
+                last_action = "set"
+                last_payload = json.dumps(last, separators=(",", ":"))
+
+        paypal_delta = Decimal("0")
+        paypal_count_delta = 0
+        if state.get("provider") == "paypal":
+            payment_delta_cents = adjusted_cents - previous_adjusted
+            if payment_delta_cents:
+                paypal_delta = Decimal(-payment_delta_cents) / 100
+            if count_delta:
+                paypal_count_delta = count_delta
+
+        allocation_deltas = [
+            format(Decimal(-allocation_delta[key]) / 100, "f")
+            for key in ("server", "domain", "reserve")
+        ]
+        commit_result = await r.eval(
+            PROJECTION_ADJUSTMENT_COMMIT_SCRIPT,
+            13,
+            lock_key,
+            applied_key,
+            R_PUBLIC_SERVER_RECEIVED,
+            R_PUBLIC_DOMAIN_RECEIVED,
+            R_PUBLIC_RESERVE,
+            R_SERVER_RECEIVED,
+            R_DOMAIN_RECEIVED,
+            R_RESERVE,
+            R_PUBLIC_PAYMENT_COUNT,
+            R_PUBLIC_LAST_PAYMENT,
+            state_key,
+            R_PAYPAL_DONATIONS,
+            R_PAYPAL_COUNT,
+            token,
+            *allocation_deltas,
+            str(count_delta),
+            last_action,
+            last_payload,
+            json.dumps(state, separators=(",", ":")),
+            format(paypal_delta, "f"),
+            str(paypal_count_delta),
+            reference,
+        )
+        if commit_result == 0:
+            raise HTTPException(status_code=503, detail="Payment projection lock expired")
+        if commit_result == 2:
+            return {"applied": False, "reason": "duplicate_adjustment"}
+        return {
+            "applied": adjusted_cents != previous_adjusted,
+            "adjusted_cents": adjusted_cents,
+            "fully_adjusted": current_full,
+        }
+    finally:
+        await _release_projection_lock(r, lock_key, token)
+
+
+async def _queue_pending_adjustment(r: aioredis.Redis, key: str, adjustment: dict) -> None:
+    await r.rpush(key, json.dumps(adjustment, separators=(",", ":")))
+
+
+async def _drain_pending_adjustments(r: aioredis.Redis, key: str, reference: str) -> int:
+    processing_key = f"{key}:processing"
+    lock_key = f"{R_PENDING_DRAIN_LOCK_PREFIX}{reference}"
+    token = secrets.token_hex(16)
+    if not await r.set(lock_key, token, nx=True, ex=120):
+        return 0
+    try:
+        while await r.lmove(processing_key, key, "RIGHT", "LEFT") is not None:
+            pass
+        processed = 0
+        while True:
+            raw = await r.lmove(key, processing_key, "LEFT", "RIGHT")
+            if raw is None:
+                return processed
+            adjustment = json.loads(raw)
+            result = await _apply_public_payment_adjustment(
+                r,
+                reference,
+                adjustment["amount_cents"],
+                adjustment["adjustment_kind"],
+                adjustment["adjustment_id"],
+            )
+            if result.get("reason") == "payment_projection_busy":
+                raise HTTPException(status_code=503, detail="Payment projection is busy")
+            event_key = adjustment.get("event_key")
+            if isinstance(event_key, str) and event_key:
+                await r.set(event_key, "processed")
+            await r.lrem(processing_key, 1, raw)
+            processed += 1
+    finally:
+        await _release_projection_lock(r, lock_key, token)
 
 
 def _admin_payment_record(record: dict) -> dict:
@@ -358,14 +822,6 @@ async def allocate_donation(amount: float, r: aioredis.Redis) -> dict:
         # Overflow geht primär an Server
         allocation["server"] += remaining
         remaining = 0
-
-    # Redis aktualisieren
-    if allocation["server"] > 0:
-        await r.incrbyfloat(R_SERVER_RECEIVED, allocation["server"])
-    if allocation["domain"] > 0:
-        await r.incrbyfloat(R_DOMAIN_RECEIVED, allocation["domain"])
-    if allocation["reserve"] > 0:
-        await r.incrbyfloat(R_RESERVE, allocation["reserve"])
 
     return allocation
 
@@ -451,32 +907,46 @@ async def stripe_webhook(request: Request):
     await _init_operating_funding(r)
 
     idempotency_key = f"{R_STRIPE_SESSION_PREFIX}{session_id}"
+    capture_key = f"{R_CAPTURE_STATE_PREFIX}stripe:{session_id}"
     claimed = await r.set(idempotency_key, "processing", nx=True, ex=900)
     if not claimed:
+        existing_claim = await r.get(idempotency_key)
+        capture_state = await r.get(capture_key)
+        if existing_claim == "accounting_review_required" and capture_state == "recorded":
+            await r.set(idempotency_key, "processing", ex=900)
+        else:
+            return {"received": True, "processed": False, "duplicate": True}
+
+    capture_state = await r.get(capture_key)
+    if capture_state == "processed":
+        await r.set(idempotency_key, "processed")
         return {"received": True, "processed": False, "duplicate": True}
 
     durable_mutation_applied = False
     try:
         category = _payment_category(purpose)
-        allocation = await allocate_donation(amount_total, r)
-        durable_mutation_applied = True
         fulfillment_state = "not_applicable"
-        record = {
-            "date": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
-            "amount": amount_total,
-            "allocation": allocation,
-            "method": "stripe",
-            "stripe_session": session_id,
-            "payment_intent": payment_intent,
-            "currency": "EUR",
-            "purpose": purpose,
-            "category": category,
-            "provider_mode": "live" if session.get("livemode") is True else "test",
-            "fulfillment_state": fulfillment_state,
-            "requires_accounting_review": True,
-        }
-        await _append_payment_record(r, record)
-        durable_mutation_applied = True
+        allocation = None
+        if capture_state != "recorded":
+            allocation = await allocate_donation(amount_total, r)
+            record = {
+                "date": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
+                "amount": amount_total,
+                "allocation": allocation,
+                "method": "stripe",
+                "stripe_session": session_id,
+                "payment_intent": payment_intent,
+                "currency": "EUR",
+                "purpose": purpose,
+                "category": category,
+                "provider_mode": "live" if session.get("livemode") is True else "test",
+                "fulfillment_state": fulfillment_state,
+                "requires_accounting_review": True,
+            }
+            await _append_payment_record(r, record)
+            durable_mutation_applied = True
+        else:
+            durable_mutation_applied = True
         await _append_finance_event(r, {
             "event_id": event_id,
             "event_type": "payment_captured",
@@ -492,6 +962,13 @@ async def stripe_webhook(request: Request):
             "fulfillment_state": fulfillment_state,
         })
         await r.set(f"{R_STRIPE_PAYMENT_PREFIX}{payment_intent}", session_id)
+        if session.get("livemode") is True:
+            await _drain_pending_adjustments(
+                r,
+                f"{R_PENDING_STRIPE_ADJUSTMENT_PREFIX}{payment_intent}",
+                f"stripe:{session_id}",
+            )
+        await r.set(capture_key, "processed")
         await r.set(f"{R_STRIPE_EVENT_PREFIX}{event_id}", "processed")
         await r.set(idempotency_key, "processed")
     except Exception:
@@ -502,7 +979,10 @@ async def stripe_webhook(request: Request):
         raise
 
     logger.info(f"[MOD-18] Donation {amount_total}€ allocated: {allocation}")
-    return {"received": True, "processed": True, "allocation": allocation}
+    result = {"received": True, "processed": True, "allocation": allocation}
+    if capture_state == "recorded":
+        result["recovered"] = True
+    return result
 
 
 # ── Public Status Endpoint ────────────────────────────────────────────────────
@@ -617,7 +1097,7 @@ async def paypal_ipn_webhook(request: Request):
     logger.info("[PayPal] IPN received: txn=%s status=%s amount=%s %s",
                 txn_id, payment_status, mc_gross, mc_currency)
 
-    allowed_statuses = {"Completed", "Refunded", "Reversed"}
+    allowed_statuses = {"Completed", "Refunded", "Reversed", "Canceled_Reversal"}
     if payment_status not in allowed_statuses:
         return {"received": True, "processed": False, "reason": "not_completed"}
 
@@ -647,24 +1127,88 @@ async def paypal_ipn_webhook(request: Request):
 
     # Idempotency: atomically claim before any accounting mutation.
     txn_key = f"{R_PAYPAL_TXN}{txn_id}"
+    capture_key = f"{R_CAPTURE_STATE_PREFIX}paypal:{txn_id}"
     claimed = await r.set(txn_key, "processing", nx=True, ex=900)
     if not claimed:
-        logger.info("[PayPal] Duplicate IPN for txn=%s — skipping", txn_id)
-        return {"received": True, "processed": False, "reason": "duplicate"}
+        existing_claim = await r.get(txn_key)
+        capture_state = await r.get(capture_key)
+        resumable_capture = (
+            payment_status == "Completed"
+            and existing_claim == "accounting_review_required"
+            and capture_state == "recorded"
+        )
+        resumable_adjustment = (
+            payment_status in {"Refunded", "Reversed", "Canceled_Reversal"}
+            and provider_mode == "live"
+            and existing_claim == "pending_payment"
+        )
+        if resumable_capture or resumable_adjustment:
+            await r.set(txn_key, "processing", ex=900)
+        else:
+            logger.info("[PayPal] Duplicate IPN for txn=%s — skipping", txn_id)
+            return {"received": True, "processed": False, "reason": "duplicate"}
 
-    if payment_status in {"Refunded", "Reversed"}:
+    if payment_status in {"Refunded", "Reversed", "Canceled_Reversal"}:
         parent_txn_id = form.get("parent_txn_id", "").strip()
         try:
-            adjustment_cents = abs(int(Decimal(mc_gross).quantize(Decimal("0.01")) * 100))
-        except (InvalidOperation, ValueError):
+            adjustment_amount = Decimal(mc_gross).quantize(Decimal("0.01"))
+            adjustment_cents = abs(int(adjustment_amount * 100)) if adjustment_amount.is_finite() else 0
+        except (InvalidOperation, ValueError, OverflowError):
             adjustment_cents = 0
         if not parent_txn_id or adjustment_cents <= 0:
             await r.delete(txn_key)
             return {"received": True, "processed": False, "reason": "invalid_adjustment"}
 
-        state = "refund_reported" if payment_status == "Refunded" else "reversal_reported"
+        state = {
+            "Refunded": "refund_reported",
+            "Reversed": "reversal_reported",
+            "Canceled_Reversal": "reversal_cancelled",
+        }[payment_status]
         try:
             await r.set(f"{R_ADJUSTMENT_STATE_PREFIX}{parent_txn_id}", state)
+            projection_result = await _apply_public_payment_adjustment(
+                r,
+                f"paypal:{parent_txn_id}",
+                adjustment_cents,
+                {
+                    "Refunded": "paypal_refund_delta",
+                    "Reversed": "paypal_reversal",
+                    "Canceled_Reversal": "paypal_reversal_cancelled",
+                }[payment_status],
+                f"paypal:{txn_id}",
+            ) if provider_mode == "live" else {"applied": False, "reason": "test_mode"}
+            pending_key = f"{R_PENDING_PAYPAL_ADJUSTMENT_PREFIX}{parent_txn_id}"
+            if projection_result.get("reason") in {"payment_projection_missing", "payment_projection_busy"}:
+                await _queue_pending_adjustment(
+                    r,
+                    pending_key,
+                    {
+                        "event_key": txn_key,
+                        "adjustment_id": f"paypal:{txn_id}",
+                        "amount_cents": adjustment_cents,
+                        "adjustment_kind": {
+                            "Refunded": "paypal_refund_delta",
+                            "Reversed": "paypal_reversal",
+                            "Canceled_Reversal": "paypal_reversal_cancelled",
+                        }[payment_status],
+                    },
+                )
+            elif provider_mode == "live":
+                await _drain_pending_adjustments(
+                    r,
+                    pending_key,
+                    f"paypal:{parent_txn_id}",
+                )
+            projection_pending = (
+                provider_mode == "live"
+                and projection_result.get("reason") in {
+                    "payment_projection_missing", "payment_projection_busy",
+                }
+            )
+            retry_required = (
+                provider_mode == "live"
+                and projection_result.get("reason") == "payment_projection_busy"
+            )
             await _append_finance_event(r, {
                 "event_id": f"paypal:{txn_id}",
                 "event_type": payment_status.lower(),
@@ -676,50 +1220,65 @@ async def paypal_ipn_webhook(request: Request):
                 "amount_cents_reported": adjustment_cents,
                 "currency": "EUR",
                 "adjustment_state": state,
+                "requires_manual_review": projection_pending,
             })
-            await r.setex(txn_key, 86400 * 90, "processed")
+            await r.set(txn_key, "pending_payment" if projection_pending else "processed")
         except Exception:
-            await r.setex(txn_key, 86400 * 90, "accounting_review_required")
+            await r.set(txn_key, "accounting_review_required")
             raise
-        return {"received": True, "processed": True, "adjustment_state": state}
+        if retry_required:
+            await r.set(txn_key, "pending_payment")
+            raise HTTPException(status_code=503, detail="Payment projection is busy")
+        return {
+            "received": True,
+            "processed": not projection_pending,
+            "adjustment_state": state,
+            "requires_manual_review": projection_pending,
+        }
 
     # Parse amount
     try:
         amount_decimal = Decimal(mc_gross).quantize(Decimal("0.01"))
-    except (InvalidOperation, ValueError):
+        if not amount_decimal.is_finite():
+            raise InvalidOperation
+        amount_cents = int(amount_decimal * 100)
+    except (InvalidOperation, ValueError, OverflowError):
         amount_decimal = Decimal("0")
-
-    amount_cents = int(amount_decimal * 100)
+        amount_cents = 0
     if not purpose or not _validate_payment_amount(purpose, amount_cents):
         await r.delete(txn_key)
         return {"received": True, "processed": False, "reason": "invalid_amount"}
     amount = float(amount_decimal)
     category = _payment_category(purpose)
+    capture_state = await r.get(capture_key)
+    if capture_state == "processed":
+        await r.set(txn_key, "processed")
+        return {"received": True, "processed": False, "reason": "duplicate"}
 
     accounting_mutated = False
     try:
         await _init_operating_funding(r)
-        await r.incrbyfloat(R_PAYPAL_DONATIONS, amount)
-        accounting_mutated = True
-        await r.incr(R_PAYPAL_COUNT)
-        allocation = await allocate_donation(amount, r)
         fulfillment_state = "not_applicable"
-
-        record = {
-            "date": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
-            "amount": amount,
-            "currency": "EUR",
-            "allocation": allocation,
-            "method": "paypal",
-            "txn_id": txn_id,
-            "purpose": purpose,
-            "category": category,
-            "provider_mode": provider_mode,
-            "fulfillment_state": fulfillment_state,
-            "requires_accounting_review": True,
-        }
-        await _append_payment_record(r, record)
-        accounting_mutated = True
+        allocation = None
+        if capture_state != "recorded":
+            allocation = await allocate_donation(amount, r)
+            record = {
+                "date": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
+                "amount": amount,
+                "currency": "EUR",
+                "allocation": allocation,
+                "method": "paypal",
+                "txn_id": txn_id,
+                "purpose": purpose,
+                "category": category,
+                "provider_mode": provider_mode,
+                "fulfillment_state": fulfillment_state,
+                "requires_accounting_review": True,
+            }
+            await _append_payment_record(r, record)
+            accounting_mutated = True
+        else:
+            accounting_mutated = True
         await _append_finance_event(r, {
             "event_id": f"paypal:{txn_id}",
             "event_type": "payment_captured",
@@ -733,17 +1292,27 @@ async def paypal_ipn_webhook(request: Request):
             "currency": "EUR",
             "fulfillment_state": fulfillment_state,
         })
-        await r.setex(txn_key, 86400 * 90, "processed")
+        if provider_mode == "live":
+            await _drain_pending_adjustments(
+                r,
+                f"{R_PENDING_PAYPAL_ADJUSTMENT_PREFIX}{txn_id}",
+                f"paypal:{txn_id}",
+            )
+        await r.set(capture_key, "processed")
+        await r.set(txn_key, "processed")
     except Exception:
         if accounting_mutated:
-            await r.setex(txn_key, 86400 * 90, "accounting_review_required")
+            await r.set(txn_key, "accounting_review_required")
         else:
             await r.delete(txn_key)
         raise
 
     logger.info("[PayPal] Payment %.2f %s classified as %s", amount, mc_currency, category)
 
-    return {"received": True, "processed": True, "allocation": allocation}
+    result = {"received": True, "processed": True, "allocation": allocation}
+    if capture_state == "recorded":
+        result["recovered"] = True
+    return result
 
 
 # ── Admin Payment Logs ───────────────────────────────────────────────────────
