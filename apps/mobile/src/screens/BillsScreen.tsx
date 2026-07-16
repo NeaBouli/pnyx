@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Share, Linking, ScrollView } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import { fetchBills } from "../lib/api";
 import { mergeBillsUnique, prioritizeBillsPage } from "../lib/bill-feed";
@@ -60,16 +60,30 @@ export default function BillsScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const requestSequence = useRef(0);
 
-  useEffect(() => {
-    (async () => {
-      const { periferiaId, dimosId } = await loadUserBillScope();
+  useFocusEffect(useCallback(() => {
+    let cancelled = false;
+    setLocationReady(false);
 
-      setUserPeriferia(periferiaId);
-      setUserDimos(dimosId);
-      setHasRegion(periferiaId !== null);
-      setLocationReady(true);
+    (async () => {
+      try {
+        const { periferiaId, dimosId } = await loadUserBillScope();
+        if (cancelled) return;
+        setUserPeriferia(periferiaId);
+        setUserDimos(dimosId);
+        setHasRegion(periferiaId !== null);
+      } catch {
+        if (cancelled) return;
+        // Never retain a previous identity's local scope after a failed refresh.
+        setUserPeriferia(null);
+        setUserDimos(null);
+        setHasRegion(false);
+      } finally {
+        if (!cancelled) setLocationReady(true);
+      }
     })();
-  }, []);
+
+    return () => { cancelled = true; };
+  }, []));
 
   const loadPage = useCallback(async (offset: number, reset: boolean) => {
     const requestId = reset ? ++requestSequence.current : requestSequence.current;
