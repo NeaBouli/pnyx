@@ -5,10 +5,9 @@
  */
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
-import * as SecureStore from "expo-secure-store";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
-import { storeProfileLocation } from "../lib/profile-location";
+import { importAccountCredentials } from "../lib/import-account";
 import { colors } from "../theme";
 
 type Props = StackScreenProps<RootStackParams, "ImportAccount">;
@@ -24,33 +23,24 @@ export default function ImportAccountScreen({ route, navigation }: Props) {
   async function importAccount() {
     try {
       const params = route.params as {
-        key?: string; nullifier?: string; pubkey?: string; periferia_id?: string; dimos_id?: string;
+        key?: string; nullifier?: string; pubkey?: string;
       } | undefined;
 
       const privateKey = params?.key;
       const nullifier = params?.nullifier;
       const pubkey = params?.pubkey;
-      const periferiaId = params?.periferia_id;
-      const dimosId = params?.dimos_id;
 
-      if (!privateKey || !nullifier) {
+      if (!privateKey || !nullifier || !pubkey) {
         setStatus("error");
         setMessage("Μη έγκυρος σύνδεσμος — λείπουν παράμετροι.");
         return;
       }
 
-      // Store in SecureStore (same keys as crypto-native.ts)
-      await SecureStore.setItemAsync("ekklesia_private_key", privateKey);
-      await SecureStore.setItemAsync("ekklesia_nullifier", nullifier);
-      if (pubkey) {
-        await SecureStore.setItemAsync("ekklesia_public_key", pubkey);
-      }
-      await storeProfileLocation({
-        periferiaId: periferiaId ? Number(periferiaId) : null,
-        dimosId: dimosId ? Number(dimosId) : null,
-      }, nullifier);
-      await SecureStore.setItemAsync("onboarding_completed", "true");
-      await SecureStore.setItemAsync("user_profile_completed", "true");
+      await importAccountCredentials({
+        privateKey,
+        nullifier,
+        publicKey: pubkey,
+      });
 
       setStatus("success");
       setMessage("Λογαριασμός εισήχθη επιτυχώς!");
