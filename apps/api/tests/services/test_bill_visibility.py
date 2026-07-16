@@ -1,7 +1,13 @@
 """Regression tests for hidden/operator-only bill isolation."""
 from types import SimpleNamespace
 
-from services.bill_visibility import is_public_bill, public_bill_filter, public_bill_with_demo_filter
+from services.bill_visibility import (
+    is_public_bill,
+    is_public_raw_diavgeia_decision,
+    public_bill_filter,
+    public_bill_with_demo_filter,
+    public_raw_diavgeia_filter,
+)
 
 
 def _compiled_literal(expr) -> str:
@@ -84,3 +90,16 @@ def test_sensitive_diavgeia_filter_compiles_marker_checks() -> None:
     assert "diavgeia" in compiled
     assert "amka" in compiled
     assert "ασθεν" in compiled
+
+
+def test_raw_diavgeia_filter_and_object_guard_block_patient_markers() -> None:
+    compiled = _compiled_literal(public_raw_diavgeia_filter()).lower()
+    assert "diavgeia_decisions.subject" in compiled
+    assert "amka" in compiled
+    assert "ασθεν" in compiled
+    assert is_public_raw_diavgeia_decision(
+        SimpleNamespace(subject="Δαπάνη για ασθενή με ΑΜΚΑ 123")
+    ) is False
+    assert is_public_raw_diavgeia_decision(
+        SimpleNamespace(subject="Απόφαση δημοτικού συμβουλίου")
+    ) is True

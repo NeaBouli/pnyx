@@ -4,6 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from fastapi import HTTPException
 from httpx import ASGITransport, AsyncClient
 
 from database import get_db
@@ -127,6 +128,20 @@ def _public_diavgeia_bill() -> SimpleNamespace:
         forum_topic_id=1104,
         arweave_tx_id="ar_tx",
     )
+
+
+@pytest.mark.asyncio
+async def test_explicit_production_allowlist_cannot_enable_diavgeia_scope(monkeypatch) -> None:
+    monkeypatch.delenv("ZK_CANARY_ENABLED", raising=False)
+    monkeypatch.setenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", "bill:DIAV-001")
+    scope = zk._ensure_zk_write_scope_allowed("bill:DIAV-001")
+    fake_db = _FakeSequenceDb([_public_diavgeia_bill()])
+
+    with pytest.raises(HTTPException) as exc:
+        await zk._ensure_production_scope_allowed(fake_db, scope)
+
+    assert exc.value.status_code == 404
+    assert exc.value.detail == "ZK vote scope not found"
 
 
 async def _override_with(fake_db):
@@ -340,12 +355,8 @@ async def test_zk_scope_status_global_rollout_does_not_allow_diavgeia_bill(monke
     finally:
         app.dependency_overrides.clear()
 
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["allowlisted"] is False
-    assert payload["global_rollout_enabled"] is True
-    assert payload["can_opt_in"] is False
-    assert payload["can_vote"] is False
+    assert response.status_code == 404
+    assert response.json()["detail"] == "ZK vote scope not found"
 
 
 @pytest.mark.asyncio
@@ -486,11 +497,7 @@ async def test_zk_opt_in_creates_commitment_and_private_tier_lock(monkeypatch) -
         periferia_id=None,
         dimos_id=None,
     )
-    bill = SimpleNamespace(
-        id="GR-0490a766",
-        status=BillStatus.ACTIVE,
-        governance_level=GovernanceLevel.NATIONAL,
-    )
+    bill = _public_parliament_bill()
     fake_db = _FakeSequenceDb([identity, bill, None, None])
 
     async def override_get_db():
@@ -533,11 +540,7 @@ async def test_zk_opt_in_publishes_root_when_publication_gate_is_enabled(monkeyp
         periferia_id=None,
         dimos_id=None,
     )
-    bill = SimpleNamespace(
-        id="GR-0490a766",
-        status=BillStatus.ACTIVE,
-        governance_level=GovernanceLevel.NATIONAL,
-    )
+    bill = _public_parliament_bill()
     commitment = _zk_opt_in_payload()["commitment"]
     fake_db = _FakeSequenceDb([identity, bill, None, None, [commitment], None])
 
@@ -609,11 +612,7 @@ async def test_zk_opt_in_rejects_existing_tier1_vote(monkeypatch) -> None:
     monkeypatch.setenv("SERVER_SALT", "s" * 64)
     monkeypatch.setattr(zk, "verify_signature", lambda *_args: True)
     identity = SimpleNamespace(id=7, public_key_hex="c" * 64, periferia_id=None, dimos_id=None)
-    bill = SimpleNamespace(
-        id="GR-0490a766",
-        status=BillStatus.ACTIVE,
-        governance_level=GovernanceLevel.NATIONAL,
-    )
+    bill = _public_parliament_bill()
     fake_db = _FakeSequenceDb([identity, bill, 99])
 
     async def override_get_db():
@@ -640,11 +639,7 @@ async def test_zk_opt_in_rejects_invalid_signature(monkeypatch) -> None:
     monkeypatch.setenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", "bill:GR-0490a766")
     monkeypatch.setattr(zk, "verify_signature", lambda *_args: False)
     identity = SimpleNamespace(id=7, public_key_hex="c" * 64, periferia_id=None, dimos_id=None)
-    bill = SimpleNamespace(
-        id="GR-0490a766",
-        status=BillStatus.ACTIVE,
-        governance_level=GovernanceLevel.NATIONAL,
-    )
+    bill = _public_parliament_bill()
     fake_db = _FakeSequenceDb([identity, bill])
 
     async def override_get_db():
@@ -743,7 +738,7 @@ async def test_zk_receipts_endpoint_returns_public_payload_only() -> None:
         tier1_nullifier_hash="private",
         identity_record_id=7,
     )
-    fake_db = _FakeDb([receipt])
+    fake_db = _FakeSequenceDb([_public_parliament_bill(), [receipt]])
 
     async def override_get_db():
         yield fake_db
@@ -770,7 +765,7 @@ async def test_zk_receipts_endpoint_returns_public_payload_only() -> None:
 
 @pytest.mark.asyncio
 async def test_zk_receipts_endpoint_returns_empty_list() -> None:
-    fake_db = _FakeDb([])
+    fake_db = _FakeSequenceDb([_public_parliament_bill(), []])
 
     async def override_get_db():
         yield fake_db
@@ -828,7 +823,7 @@ async def test_zk_current_root_endpoint_returns_public_payload_only() -> None:
         tier_guard_hash="private",
         identity_record_id=7,
     )
-    fake_db = _FakeDb([root])
+    fake_db = _FakeSequenceDb([_public_parliament_bill(), root])
 
     async def override_get_db():
         yield fake_db
@@ -857,7 +852,7 @@ async def test_zk_current_root_endpoint_returns_public_payload_only() -> None:
 
 @pytest.mark.asyncio
 async def test_zk_current_root_endpoint_returns_404_for_empty_scope() -> None:
-    fake_db = _FakeDb([])
+    fake_db = _FakeSequenceDb([_public_parliament_bill(), None])
 
     async def override_get_db():
         yield fake_db
@@ -1077,7 +1072,7 @@ async def test_zk_root_publish_global_rollout_allows_public_parliament_bill(monk
     monkeypatch.setenv("ZK_ROOT_PUBLICATION_ENABLED", "true")
     monkeypatch.setenv("ZK_GLOBAL_ROLLOUT_ENABLED", "true")
     monkeypatch.delenv("ZK_PRODUCTION_SCOPE_ALLOWLIST", raising=False)
-    fake_db = _FakeSequenceDb([_public_parliament_bill(), _public_parliament_bill(), ["1", "2"], None])
+    fake_db = _FakeSequenceDb([_public_parliament_bill(), ["1", "2"], None])
 
     async def override_get_db():
         async for value in _override_with(fake_db):

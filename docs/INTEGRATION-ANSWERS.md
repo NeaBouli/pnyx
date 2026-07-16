@@ -144,7 +144,7 @@ Current: `g001a2b3c4d5` (prepared but not deployed: `h101a2b3c4d5` for ADR-022 T
 ### HLR Verification
 
 - **Provider:** hlr-lookups.com (HLR Lookup, not SMS OTP)
-- **Flow:** Phone → HLR check (is SIM active?) → server-salted identity hash → Ed25519 keypair
+- **Flow:** Phone → HLR network-status/compatibility check (not proof of SIM possession or identity) → server-salted identity hash → Ed25519 keypair
 - **Phone number:** DELETED immediately after nullifier generation (never stored)
 
 ### Server-Side Storage per User

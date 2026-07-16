@@ -16,7 +16,7 @@ import secrets
 import logging
 import time
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Request, Header
+from fastapi import APIRouter, Depends, HTTPException, Request, Header, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import Optional
@@ -25,7 +25,7 @@ import httpx
 from database import get_db
 from ip_utils import rate_limit_key_for_ip, redis_fixed_window_limit
 from services.bill_visibility import is_public_bill, public_bill_filter, public_bill_with_demo_filter
-from services.zk_vote_aggregation import aggregate_bill_vote_totals
+from services.zk_vote_aggregation import aggregate_bill_vote_totals, count_public_votes
 from models import (
     ParliamentBill, CitizenVote, Party,
     BillStatus, VoteChoice
@@ -243,19 +243,13 @@ async def public_bills(
     status: Optional[str] = None,
     governance: Optional[str] = None,
     source: Optional[str] = None,
-    limit: int = 20, offset: int = 0,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     _key=Depends(rate_limit_check),
     db: AsyncSession = Depends(get_db)
 ):
     """Alle Gesetzentwürfe — öffentlich, CC BY 4.0."""
-    query = select(ParliamentBill).where(public_bill_filter()).order_by(
-        func.coalesce(
-            ParliamentBill.parliament_vote_date,
-            ParliamentBill.submitted_date,
-            ParliamentBill.created_at,
-        ).desc().nullslast(),
-        ParliamentBill.created_at.desc(),
-    ).limit(min(limit, 100)).offset(offset)
+    query = select(ParliamentBill).where(public_bill_filter())
 
     if status:
         try:
@@ -268,12 +262,24 @@ async def public_bills(
         try:
             query = query.where(ParliamentBill.governance_level == GovernanceLevel(governance.upper()))
         except ValueError:
-            pass
+            raise HTTPException(400, f"Ungültige Governance-Ebene: {governance}") from None
 
     if source:
         query = query.where(ParliamentBill.source == source.upper())
 
-    result = await db.execute(query)
+    total = int(await db.scalar(
+        select(func.count()).select_from(query.order_by(None).subquery())
+    ) or 0)
+    result = await db.execute(
+        query.order_by(
+            func.coalesce(
+                ParliamentBill.parliament_vote_date,
+                ParliamentBill.submitted_date,
+                ParliamentBill.created_at,
+            ).desc().nullslast(),
+            ParliamentBill.created_at.desc(),
+        ).limit(limit).offset(offset)
+    )
     bills = result.scalars().all()
 
     return {
@@ -296,7 +302,7 @@ async def public_bills(
             "consensus_count":     b.consensus_count or 0,
             "flag_count":          b.flag_count or 0,
         } for b in bills],
-        "meta": {"total": len(bills), "limit": limit, "offset": offset,
+        "meta": {"total": total, "limit": limit, "offset": offset,
                  "source": "ekklesia.gr", "license": "CC BY 4.0"},
     }
 
@@ -345,6 +351,7 @@ async def public_bill_results(
             "yes_pct": pct(yes),
             "no_pct": pct(no),
             "abstain_pct": pct(abstain),
+            "unknown_pct": pct(unknown),
         },
         "parliament_votes": bill.party_votes_parliament,
         "divergence_score": divergence,
@@ -359,11 +366,7 @@ async def public_stats(_key=Depends(rate_limit_check), db: AsyncSession = Depend
     total_bills  = await db.scalar(
         select(func.count(ParliamentBill.id)).where(public_bill_with_demo_filter())
     ) or 0
-    total_votes  = await db.scalar(
-        select(func.count(CitizenVote.id))
-        .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
-        .where(public_bill_filter(), ~CitizenVote.bill_id.like("DEMO-%"))
-    ) or 0
+    total_votes = await count_public_votes(db)
     active_bills = await db.scalar(
         select(func.count(ParliamentBill.id)).where(
             ParliamentBill.status.in_([BillStatus.ACTIVE, BillStatus.WINDOW_24H]),

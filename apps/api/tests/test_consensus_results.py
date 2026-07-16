@@ -4,6 +4,7 @@ import pytest
 from fastapi import HTTPException
 
 from routers.consensus_results import (
+    K_ANONYMITY_MIN,
     _public_visibility_sql,
     _scope_sql,
     _view_payload,
@@ -35,8 +36,10 @@ class _Session:
     def __init__(self, results):
         self.results = list(results)
         self.params = []
+        self.statements = []
 
-    async def execute(self, _statement, params=None):
+    async def execute(self, statement, params=None):
+        self.statements.append(str(statement))
         self.params.append(params or {})
         return self.results.pop(0)
 
@@ -67,10 +70,10 @@ def test_view_payload_is_weighted_by_vote_count_and_aggregate_only():
             "diavgeia_ada": "ADA-1",
             "updated_at": datetime(2026, 7, 15),
             "consensus_score": 5.0,
-            "consensus_count": 1,
+            "consensus_count": 10,
             "total_bills": 2,
-            "total_consensus_votes": 4,
-            "weighted_score_sum": -10.0,
+            "total_consensus_votes": 40,
+            "weighted_score_sum": -100.0,
         },
         {
             "bill_id": "DIAV-2",
@@ -82,17 +85,17 @@ def test_view_payload_is_weighted_by_vote_count_and_aggregate_only():
             "diavgeia_ada": "ADA-2",
             "updated_at": datetime(2026, 7, 14),
             "consensus_score": -5.0,
-            "consensus_count": 3,
+            "consensus_count": 30,
             "total_bills": 2,
-            "total_consensus_votes": 4,
-            "weighted_score_sum": -10.0,
+            "total_consensus_votes": 40,
+            "weighted_score_sum": -100.0,
         },
     ]
 
     payload = _view_payload("municipal", rows)
 
     assert payload["weighted_score"] == -2.5
-    assert payload["consensus_vote_count"] == 4
+    assert payload["consensus_vote_count"] == 40
     assert payload["bill_count"] == 2
     assert "nullifier_hash" not in str(payload)
     assert "identity" not in str(payload)
@@ -128,7 +131,7 @@ def test_public_visibility_guard_matches_sensitive_diavgeia_policy():
 
 @pytest.mark.asyncio
 async def test_representation_rejects_mismatched_dimos_and_periferia():
-    db = _Session([_Result(scalar=None)])
+    db = _Session([_Result(scalar=1), _Result(scalar=6)])
 
     with pytest.raises(HTTPException) as exc_info:
         await get_consensus_representation(dimos_id=22, periferia_id=7, limit=20, db=db)
@@ -161,6 +164,7 @@ async def test_representation_endpoint_keeps_views_separate_and_public():
     }
     db = _Session([
         _Result(scalar=1),
+        _Result(scalar=6),
         _Result(one=coverage),
         _Result(rows=[row]),
         _Result(rows=[]),
@@ -172,8 +176,11 @@ async def test_representation_endpoint_keeps_views_separate_and_public():
     )
 
     assert result["privacy"] == "aggregate_only"
+    assert result["minimum_group_size"] == K_ANONYMITY_MIN
     assert result["views"]["municipal"]["bill_count"] == 1
     assert result["views"]["regional"]["bill_count"] == 0
     assert result["views"]["national"]["consensus_vote_count"] == 2
     assert result["coverage"]["complete_geographic_representation"] is False
-    assert all("sensitive_term_0" in params for params in db.params[1:])
+    assert all("sensitive_term_0" in params for params in db.params[2:])
+    assert all(params["k_anonymity_min"] == K_ANONYMITY_MIN for params in db.params[3:])
+    assert all("HAVING COUNT(*) >= :k_anonymity_min" in statement for statement in db.statements[3:])

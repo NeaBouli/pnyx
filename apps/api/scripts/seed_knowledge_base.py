@@ -29,13 +29,13 @@ ENTRIES = [
      '["vote","correction","change vote","WINDOW_24H","duplicate","bill"]', 1),
 
     ("faq", "Πόσο ζυγίζει η ψήφος μου;", "How much does my vote weigh?",
-     "Κάθε έγκυρη ψήφος έχει βάρος x1.0, ανεξάρτητα από τη μέθοδο επαλήθευσης: ένα άτομο = μία ψήφος. Η ισχυρότερη επαλήθευση περιορίζει τις διπλές εγγραφές· δεν πολλαπλασιάζει την ψήφο. Η gov.gr μέθοδος είναι μόνο σχεδιασμός Alpha και δεν είναι ενεργή στη Beta.",
-     "Every valid vote has weight x1.0 regardless of verification method. Stronger verification limits duplicate registrations; it does not multiply a vote. The gov.gr method is an Alpha design only and is not active in Beta.",
+     "Κάθε έγκυρη ψήφος έχει βάρος x1.0, ανεξάρτητα από τη μέθοδο επαλήθευσης: ένα άτομο = μία ψήφος. Η ισχυρότερη επαλήθευση περιορίζει τις διπλές εγγραφές· δεν πολλαπλασιάζει την ψήφο. Η gov.gr μέθοδος είναι μόνο σχεδιασμός Alpha 0.1 και δεν είναι ενεργή στη Beta.",
+     "Every valid vote has weight x1.0 regardless of verification method. Stronger verification limits duplicate registrations; it does not multiply a vote. The gov.gr method is an Alpha 0.1 design only and is not active in Beta.",
      '["vote","weight","gov.gr","verification","x1","equal"]', 1),
 
     ("govgr", "Τι είναι το gov.gr OAuth;", "What is gov.gr OAuth?",
-     "Το gov.gr OAuth ή η επαλήθευση νέου εγγράφου QR/PDF είναι σχεδιασμός Alpha και δεν είναι ενεργός στη Beta. Ο QR ή ο κωδικός ελέγχει την εγκυρότητα του εγγράφου, όχι από μόνος του την ταυτότητα του προσώπου που το παρουσιάζει. Απαιτούνται εγκεκριμένη επίσημη μέθοδος, challenge μιας χρήσης, έλεγχος κατοχής, DPIA και ανεξάρτητος έλεγχος ασφαλείας.",
-     "Gov.gr OAuth or fresh QR/PDF document verification is an Alpha design and is not active in Beta. A QR code or verification code checks document validity; by itself it does not authenticate the person presenting it. An approved official method, one-time challenge, holder proof, DPIA, and independent security review are required.",
+     "Το gov.gr OAuth ή η επαλήθευση νέου challenge-bound QR/PDF είναι σχεδιασμός Alpha 0.1 και δεν είναι ενεργός στη Beta. Ο QR ή ο κωδικός ελέγχει την εγκυρότητα του εγγράφου, όχι από μόνος του την ταυτότητα του προσώπου που το παρουσιάζει. Απαιτούνται εγκεκριμένη επίσημη διασύνδεση ή πλήρης eSeal validation, έλεγχος κατόχου, DPIA, σχέδιο credential migration, ανεξάρτητος security/privacy review και sandbox canary.",
+     "Gov.gr OAuth or fresh challenge-bound QR/PDF verification is an Alpha 0.1 design and is not active in Beta. A QR code or verification code checks document validity; by itself it does not authenticate the person presenting it. An approved official integration or full eSeal validation, holder authentication, DPIA, credential-migration design, independent security/privacy review and sandbox canary are required.",
      '["gov.gr","OAuth","government","approval","AMKA","mayor","deferred","gated"]', 1),
 
     ("faq", "Είναι ασφαλής η εφαρμογή;", "Is the app safe?",

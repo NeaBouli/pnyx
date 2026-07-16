@@ -25,8 +25,17 @@ def _governance_level(value: Any) -> GovernanceLevel | None:
         return None
     if isinstance(value, GovernanceLevel):
         return value
+    normalized = str(value).upper()
+    aliases = {
+        "REGION": GovernanceLevel.REGIONAL,
+        "MUNICIPALITY": GovernanceLevel.MUNICIPAL,
+        "CENTRAL": GovernanceLevel.NATIONAL,
+        "OTHER": GovernanceLevel.INSTITUTIONAL,
+    }
+    if normalized in aliases:
+        return aliases[normalized]
     try:
-        return GovernanceLevel(str(value).upper())
+        return GovernanceLevel(normalized)
     except ValueError:
         return None
 
@@ -39,17 +48,35 @@ def evaluate_bill_scope(
 ) -> ScopeDecision:
     """Return the geographic authorization decision without mutating state.
 
-    NATIONAL and INSTITUTIONAL preserve the existing country-wide behavior.
-    Every geographically scoped or unsupported level fails closed unless its
-    required bill scope is configured and matches the server-side identity.
+    NATIONAL preserves country-wide access. INSTITUTIONAL is intentionally
+    read-only because it has no deterministic voter geography. Every scoped or
+    unsupported level fails closed unless its required bill scope is configured
+    and matches the server-side identity.
     """
     raw_level = getattr(bill, "governance_level", None)
     level = _governance_level(raw_level)
     noun = "αξιολόγηση" if action == ScopeAction.CONSENSUS else "ψηφοφορία"
 
-    # Historical Parliament rows without an explicit level are national.
-    if raw_level is None or level in (GovernanceLevel.NATIONAL, GovernanceLevel.INSTITUTIONAL):
+    if raw_level is None:
+        if getattr(bill, "dimos_id", None) is not None:
+            level = GovernanceLevel.MUNICIPAL
+        elif getattr(bill, "periferia_id", None) is not None:
+            level = GovernanceLevel.REGIONAL
+        elif hasattr(bill, "ada") or str(getattr(bill, "source", "")).upper() == "DIAVGEIA":
+            level = GovernanceLevel.INSTITUTIONAL
+        else:
+            # Historical Parliament rows without an explicit level are national.
+            level = GovernanceLevel.NATIONAL
+
+    if level == GovernanceLevel.NATIONAL:
         return ScopeDecision(True, "country_wide", "")
+
+    if level == GovernanceLevel.INSTITUTIONAL:
+        return ScopeDecision(
+            False,
+            "institutional_scope_unassigned",
+            f"Η {noun} δεν είναι διαθέσιμη επειδή δεν έχει αντιστοιχιστεί γεωγραφική αρμοδιότητα.",
+        )
 
     if level == GovernanceLevel.REGIONAL:
         bill_periferia = getattr(bill, "periferia_id", None)

@@ -12,11 +12,18 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, extract, Integer
+from sqlalchemy import DateTime, String, cast, select, func, and_, extract, Integer, union_all
 
 from database import get_db
-from models import ParliamentBill, CitizenVote, BillStatus, VoteChoice
+from models import ParliamentBill, CitizenVote, BillStatus, VoteChoice, ZkVoteReceipt
 from services.bill_visibility import is_public_bill, public_bill_filter, public_bill_with_demo_filter
+from services.zk_vote_aggregation import (
+    VoteTotals,
+    aggregate_bill_vote_totals,
+    bill_vote_events_query,
+    count_public_votes,
+    include_zk_for_bill,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/analytics", tags=["MOD-06 Analytics"])
@@ -24,16 +31,23 @@ router = APIRouter(prefix="/api/v1/analytics", tags=["MOD-06 Analytics"])
 K_ANONYMITY_MIN = 10
 
 
-async def compute_divergence(db: AsyncSession, bill_id: str, bill: ParliamentBill) -> Optional[float]:
-    yes     = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.YES)) or 0
-    no      = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.NO)) or 0
-    abstain = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.ABSTAIN)) or 0
-    total = yes + no + abstain
+async def compute_divergence(
+    db: AsyncSession,
+    bill_id: str,
+    bill: ParliamentBill,
+    totals: VoteTotals | None = None,
+) -> Optional[float]:
+    totals = totals or await aggregate_bill_vote_totals(
+        db,
+        bill_id,
+        include_zk=include_zk_for_bill(bill),
+    )
+    total = totals.total
 
     if total < K_ANONYMITY_MIN or not bill.party_votes_parliament:
         return None
 
-    yes_pct  = yes / total
+    yes_pct = totals.yes / total
     parl_yes = sum(1 for v in bill.party_votes_parliament.values() if v in ("ΝΑΙ", "YES"))
     parl_no  = sum(1 for v in bill.party_votes_parliament.values() if v in ("ΟΧΙ", "NO"))
     passed   = parl_yes >= parl_no
@@ -45,11 +59,7 @@ async def analytics_overview(db: AsyncSession = Depends(get_db)):
     """Plattform-weite Statistiken + Divergence Übersicht."""
     _real = public_bill_with_demo_filter()
     total_bills  = await db.scalar(select(func.count(ParliamentBill.id)).where(_real)) or 0
-    total_votes  = await db.scalar(
-        select(func.count(CitizenVote.id))
-        .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
-        .where(public_bill_filter(), ~CitizenVote.bill_id.like("DEMO-%"))
-    ) or 0
+    total_votes = await count_public_votes(db)
     active_bills = await db.scalar(
         select(func.count(ParliamentBill.id)).where(
             _real,
@@ -64,18 +74,10 @@ async def analytics_overview(db: AsyncSession = Depends(get_db)):
     ) or 0
 
     week_ago = datetime.utcnow() - timedelta(days=7)  # naive to match DB column
-    recent_votes = await db.scalar(
-        select(func.count(CitizenVote.id))
-        .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
-        .where(public_bill_filter(), ~CitizenVote.bill_id.like("DEMO-%"), CitizenVote.created_at >= week_ago)
-    ) or 0
+    recent_votes = await count_public_votes(db, since=week_ago)
 
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    today_votes = await db.scalar(
-        select(func.count(CitizenVote.id))
-        .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
-        .where(public_bill_filter(), ~CitizenVote.bill_id.like("DEMO-%"), CitizenVote.created_at >= today)
-    ) or 0
+    today_votes = await count_public_votes(db, since=today)
 
     result = await db.execute(
         select(ParliamentBill).where(_real, ParliamentBill.status == BillStatus.PARLIAMENT_VOTED)
@@ -130,13 +132,16 @@ async def divergence_trends(
     cat_divergence: dict = {}
 
     for bill in bills:
-        score = await compute_divergence(db, bill.id, bill)
+        totals = await aggregate_bill_vote_totals(
+            db,
+            bill.id,
+            include_zk=include_zk_for_bill(bill),
+        )
+        score = await compute_divergence(db, bill.id, bill, totals)
         if score is None:
             continue
 
-        yes   = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill.id, CitizenVote.vote == VoteChoice.YES)) or 0
-        no    = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill.id, CitizenVote.vote == VoteChoice.NO)) or 0
-        total = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill.id)) or 0
+        total = totals.total
 
         parl_yes = sum(1 for v in (bill.party_votes_parliament or {}).values() if v in ("ΝΑΙ", "YES"))
         parl_no  = sum(1 for v in (bill.party_votes_parliament or {}).values() if v in ("ΟΧΙ", "NO"))
@@ -148,7 +153,7 @@ async def divergence_trends(
             "divergence_score": score,
             "divergence_label": "high" if score > 0.4 else "medium" if score > 0.2 else "low",
             "citizen_total":    total,
-            "citizen_yes_pct":  round(yes / total * 100, 1) if total > 0 else 0,
+            "citizen_yes_pct":  round(totals.yes / total * 100, 1) if total > 0 else 0,
             "parliament_result": "APPROVED" if parl_yes >= parl_no else "REJECTED",
             "categories":       bill.categories or [],
         })
@@ -177,14 +182,43 @@ async def votes_timeline(
     """Abstimmungs-Zeitverlauf aggregiert nach Tag."""
     try:
         since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
-        day_col = func.date_trunc("day", CitizenVote.created_at).label("day")
-        filters = [CitizenVote.created_at >= since, ~CitizenVote.bill_id.like("DEMO-%")]
         if bill_id:
-            filters.append(CitizenVote.bill_id == bill_id)
+            bill = await db.get(ParliamentBill, bill_id)
+            if not bill or not is_public_bill(bill):
+                raise HTTPException(404, f"Bill {bill_id} nicht gefunden")
+            events = bill_vote_events_query(
+                bill_id,
+                include_zk=include_zk_for_bill(bill),
+            )
+        else:
+            tier1_events = (
+                select(
+                    cast(CitizenVote.created_at, DateTime(timezone=False)).label("created_at"),
+                    cast(CitizenVote.vote, String).label("vote"),
+                )
+                .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
+                .where(public_bill_filter(), ~CitizenVote.bill_id.like("DEMO-%"))
+            )
+            zk_events = (
+                select(
+                    cast(ZkVoteReceipt.created_at, DateTime(timezone=False)).label("created_at"),
+                    ZkVoteReceipt.vote_commitment.label("vote"),
+                )
+                .join(ParliamentBill, ZkVoteReceipt.vote_scope_id == func.concat("bill:", ParliamentBill.id))
+                .where(
+                    public_bill_filter(),
+                    ParliamentBill.source == "PARLIAMENT",
+                    ~ParliamentBill.id.like("DEMO-%"),
+                    ZkVoteReceipt.vote_commitment.in_([choice.value for choice in VoteChoice]),
+                )
+            )
+            events = union_all(tier1_events, zk_events).subquery("public_vote_events")
+
+        day_col = func.date_trunc("day", events.c.created_at).label("day")
         query = (
-            select(day_col, CitizenVote.vote, func.count(CitizenVote.id).label("count"))
-            .where(*filters)
-            .group_by(day_col, CitizenVote.vote)
+            select(day_col, events.c.vote, func.count().label("count"))
+            .where(events.c.created_at >= since)
+            .group_by(day_col, events.c.vote)
             .order_by(day_col)
         )
         result = await db.execute(query)
@@ -193,8 +227,15 @@ async def votes_timeline(
         for row in rows:
             day = row.day.strftime("%Y-%m-%d") if row.day else "unknown"
             if day not in timeline:
-                timeline[day] = {"date": day, "yes": 0, "no": 0, "abstain": 0, "total": 0}
-            vote_key = row.vote.value.lower() if hasattr(row.vote, "value") else str(row.vote).lower()
+                timeline[day] = {
+                    "date": day,
+                    "yes": 0,
+                    "no": 0,
+                    "abstain": 0,
+                    "unknown": 0,
+                    "total": 0,
+                }
+            vote_key = str(row.vote).lower()
             if vote_key in timeline[day]:
                 timeline[day][vote_key] = row.count
             timeline[day]["total"] += row.count
@@ -224,13 +265,14 @@ async def top_divergence(
 
     ranked = []
     for bill in bills:
-        score = await compute_divergence(db, bill.id, bill)
+        totals = await aggregate_bill_vote_totals(
+            db,
+            bill.id,
+            include_zk=include_zk_for_bill(bill),
+        )
+        score = await compute_divergence(db, bill.id, bill, totals)
         if score is None:
             continue
-
-        total = await db.scalar(
-            select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill.id)
-        ) or 0
 
         parl_yes = sum(1 for v in (bill.party_votes_parliament or {}).values() if v in ("ΝΑΙ", "YES"))
         parl_no  = sum(1 for v in (bill.party_votes_parliament or {}).values() if v in ("ΟΧΙ", "NO"))
@@ -240,7 +282,7 @@ async def top_divergence(
             "title_el":         bill.title_el,
             "divergence_score": score,
             "divergence_pct":   round(score * 100, 1),
-            "citizen_total":    total,
+            "citizen_total":    totals.total,
             "parliament_result": "APPROVED" if parl_yes >= parl_no else "REJECTED",
             "categories":       bill.categories or [],
             "arweave_url":      f"https://arweave.net/{bill.arweave_tx_id}" if bill.arweave_tx_id else None,
@@ -263,21 +305,27 @@ async def bill_analytics(bill_id: str, db: AsyncSession = Depends(get_db)):
     if not bill or not is_public_bill(bill):
         raise HTTPException(404, f"Bill {bill_id} nicht gefunden")
 
-    yes     = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.YES)) or 0
-    no      = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.NO)) or 0
-    abstain = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill_id, CitizenVote.vote == VoteChoice.ABSTAIN)) or 0
-    total = yes + no + abstain
+    totals = await aggregate_bill_vote_totals(
+        db,
+        bill_id,
+        include_zk=include_zk_for_bill(bill),
+    )
+    yes, no, abstain, unknown = totals.yes, totals.no, totals.abstain, totals.unknown
+    total = totals.total
 
     def pct(n): return round(n / total * 100, 1) if total > 0 else 0.0
 
-    divergence = await compute_divergence(db, bill_id, bill)
+    divergence = await compute_divergence(db, bill_id, bill, totals)
 
+    events = bill_vote_events_query(
+        bill_id,
+        include_zk=include_zk_for_bill(bill),
+    )
     weekday_result = await db.execute(
         select(
-            extract("dow", CitizenVote.created_at).cast(Integer).label("weekday"),
-            func.count(CitizenVote.id).label("count")
-        ).where(CitizenVote.bill_id == bill_id
-        ).group_by(extract("dow", CitizenVote.created_at).cast(Integer))
+            extract("dow", events.c.created_at).cast(Integer).label("weekday"),
+            func.count().label("count")
+        ).group_by(extract("dow", events.c.created_at).cast(Integer))
     )
     DAYS = ["Κυρ", "Δευ", "Τρι", "Τετ", "Πεμ", "Παρ", "Σαβ"]
     by_weekday = [
@@ -288,12 +336,14 @@ async def bill_analytics(bill_id: str, db: AsyncSession = Depends(get_db)):
 
     return {
         "bill_id": bill_id, "title_el": bill.title_el, "status": bill.status.value,
-        "votes": {"yes": yes, "no": no, "abstain": abstain, "total": total,
-                  "yes_pct": pct(yes), "no_pct": pct(no), "abstain_pct": pct(abstain)},
+        "votes": {"yes": yes, "no": no, "abstain": abstain, "unknown": unknown, "total": total,
+                  "tier1_total": totals.tier1_total, "zk_total": totals.zk_total,
+                  "yes_pct": pct(yes), "no_pct": pct(no), "abstain_pct": pct(abstain),
+                  "unknown_pct": pct(unknown)},
         "divergence": {
             "score": divergence,
-            "pct": round(divergence * 100, 1) if divergence else None,
-            "label": "high" if divergence and divergence > 0.4 else "medium" if divergence and divergence > 0.2 else "low",
+            "pct": round(divergence * 100, 1) if divergence is not None else None,
+            "label": "high" if divergence is not None and divergence > 0.4 else "medium" if divergence is not None and divergence > 0.2 else "low",
             "available": divergence is not None,
         },
         "by_weekday": by_weekday,
@@ -301,8 +351,7 @@ async def bill_analytics(bill_id: str, db: AsyncSession = Depends(get_db)):
     }
 
 
-@router.get("/representation")
-async def cumulative_representation(db: AsyncSession = Depends(get_db)):
+async def compute_cumulative_representation(db: AsyncSession) -> dict:
     """
     Kumulative Repräsentation: Durchschnittliche Übereinstimmung zwischen
     Bürgermeinung und Parlamentsentscheid über alle abgestimmten Bills.
@@ -311,8 +360,6 @@ async def cumulative_representation(db: AsyncSession = Depends(get_db)):
     Berechnet über ALLE Bills mit Status PARLIAMENT_VOTED oder OPEN_END
     die mindestens 1 Citizen-Vote haben.
     """
-    from models import CitizenVote
-
     # Alle Bills mit Votes
     bills_result = await db.execute(
         select(ParliamentBill).where(
@@ -327,17 +374,12 @@ async def cumulative_representation(db: AsyncSession = Depends(get_db)):
     total_citizen_votes = 0
 
     for bill in bills:
-        # Count votes for this bill
-        vote_counts = await db.execute(
-            select(
-                func.sum(func.cast(CitizenVote.vote == "YES", Integer)).label("yes"),
-                func.sum(func.cast(CitizenVote.vote == "NO", Integer)).label("no"),
-                func.sum(func.cast(CitizenVote.vote == "ABSTAIN", Integer)).label("abstain"),
-            ).where(CitizenVote.bill_id == bill.id)
+        totals = await aggregate_bill_vote_totals(
+            db,
+            bill.id,
+            include_zk=include_zk_for_bill(bill),
         )
-        row = vote_counts.one()
-        yes, no, abstain = row.yes or 0, row.no or 0, row.abstain or 0
-        total = yes + no + abstain
+        total = totals.total
 
         if total == 0:
             continue
@@ -345,7 +387,7 @@ async def cumulative_representation(db: AsyncSession = Depends(get_db)):
         total_citizen_votes += total
 
         # Compute divergence for this bill
-        div_score = await compute_divergence(db, bill.id, bill)
+        div_score = await compute_divergence(db, bill.id, bill, totals)
         if div_score is not None:
             scores.append(div_score)
             representation = round((1.0 - div_score) * 100, 1)
@@ -391,6 +433,11 @@ async def cumulative_representation(db: AsyncSession = Depends(get_db)):
         "last_bill": bill_details[-1] if bill_details else None,
         "bills": bill_details,
     }
+
+
+@router.get("/representation")
+async def cumulative_representation(db: AsyncSession = Depends(get_db)):
+    return await compute_cumulative_representation(db)
 
 
 @router.get("/info")

@@ -8,7 +8,7 @@ Features:
 • Party Comparison — Which party agrees most with the people?
 • Municipal Governance — Diavgeia integration for regional decisions
 • AI Summaries — Bill analysis powered by Ollama + DeepL
-• Full Anonymity — Ed25519 cryptographic signatures, nullifier hashes, zero PII
+• Anonymous voting — Ed25519 signatures and nullifier hashes; HLR checks Greek-number network status but does not prove SIM possession or identity
 
 Security:
 • No personal data stored — phone number deleted after verification

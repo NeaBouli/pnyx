@@ -18,6 +18,7 @@ DISCOURSE_BASE = os.getenv("DISCOURSE_BASE_URL", "https://pnyx.ekklesia.gr")
 from dependencies import verify_admin_key
 from services.bill_visibility import is_public_bill, public_bill_with_demo_filter
 from services.source_links import official_source_url
+from services.geographic_scope import validate_region_filter
 from models import (
     ParliamentBill, BillStatus, BillStatusLog, BillRelevanceVote,
     CitizenVote, VoteChoice, GovernanceLevel,
@@ -248,6 +249,11 @@ async def get_bills(
 
     # Region filter: show NATIONAL + INSTITUTIONAL + matching REGIONAL/MUNICIPAL
     if periferia_id is not None or dimos_id is not None:
+        await validate_region_filter(
+            db,
+            periferia_id=periferia_id,
+            dimos_id=dimos_id,
+        )
         region_conditions = _region_filter_conditions(
             periferia_id=periferia_id,
             dimos_id=dimos_id,

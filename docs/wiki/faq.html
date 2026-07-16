@@ -302,7 +302,7 @@
 
   <div class="faq-item fade-in">
     <div class="faq-q" data-el="Χρειάζομαι λογαριασμό;" data-en="Do I need an account?" onclick="this.parentElement.classList.toggle('open')">Χρειάζομαι λογαριασμό;</div>
-    <div class="faq-a"><p data-el="Όχι. Δεν υπάρχουν λογαριασμοί, email ή κωδικοί. Η ταυτότητα επαληθεύεται εφάπαξ μέσω της ελληνικής κάρτας SIM." data-en="No. There are no accounts, emails or passwords. Identity is verified once via the Greek SIM card.">Όχι. Δεν υπάρχουν λογαριασμοί, email ή κωδικοί. Η ταυτότητα επαληθεύεται εφάπαξ μέσω της ελληνικής κάρτας SIM.</p></div>
+    <div class="faq-a"><p data-el="Όχι. Δεν υπάρχουν λογαριασμοί, email ή κωδικοί. Στη Beta γίνεται έλεγχος κατάστασης ελληνικού αριθμού μέσω HLR· δεν αποτελεί απόδειξη κατοχής SIM ή ταυτότητας. Ισχυρότερη επίσημη επαλήθευση σχεδιάζεται για την Alpha 0.1 (GH#141), αλλά δεν είναι ενεργή." data-en="No. There are no accounts, emails or passwords. Beta performs a Greek-number network-status check through HLR; it does not prove SIM possession or identity. Stronger official verification is planned for Alpha 0.1 (GH#141), but is not active.">Όχι. Στη Beta γίνεται μόνο έλεγχος κατάστασης ελληνικού αριθμού μέσω HLR· δεν αποδεικνύει κατοχή SIM ή ταυτότητα.</p></div>
   </div>
 
   <div class="faq-item fade-in">
@@ -312,12 +312,12 @@
 
   <div class="faq-item fade-in">
     <div class="faq-q" data-el="Γιατί μόνο ελληνικοί αριθμοί (+30);" data-en="Why only Greek numbers (+30)?" onclick="this.parentElement.classList.toggle('open')">Γιατί μόνο ελληνικοί αριθμοί (+30);</div>
-    <div class="faq-a"><p data-el="Ο περιορισμός +30 είναι ένα προσωρινό Beta gate για ελληνικούς αριθμούς. Ο HLR δεν αποδεικνύει ότι ο τρέχων χρήστης κατέχει τη SIM, ούτε ελληνική διαμονή, ταυτότητα ή εκλογικό δικαίωμα. Ισχυρότερη επίσημη επαλήθευση εξετάζεται για την Alpha (GH#141)." data-en="The +30 restriction is a temporary Beta gate for Greek numbers. HLR does not prove that the current user possesses the SIM, nor Greek residence, identity, or electoral eligibility. Stronger official verification is being evaluated for Alpha (GH#141).">Το +30 είναι προσωρινό Beta gate. Ο HLR δεν αποδεικνύει κατοχή SIM, διαμονή, ταυτότητα ή εκλογικό δικαίωμα.</p></div>
+    <div class="faq-a"><p data-el="Ο περιορισμός +30 είναι ένα προσωρινό Beta gate για ελληνικούς αριθμούς. Ο HLR δεν αποδεικνύει ότι ο τρέχων χρήστης κατέχει τη SIM, ούτε ελληνική διαμονή, ταυτότητα ή εκλογικό δικαίωμα. Ισχυρότερη επίσημη επαλήθευση εξετάζεται για την Alpha 0.1 (GH#141), αλλά δεν είναι ενεργή." data-en="The +30 restriction is a temporary Beta gate for Greek numbers. HLR does not prove that the current user possesses the SIM, nor Greek residence, identity, or electoral eligibility. Stronger official verification is being evaluated for Alpha 0.1 (GH#141), but is not active.">Το +30 είναι προσωρινό Beta gate. Ο HLR δεν αποδεικνύει κατοχή SIM, διαμονή, ταυτότητα ή εκλογικό δικαίωμα.</p></div>
   </div>
 
   <div class="faq-item fade-in">
     <div class="faq-q" data-el="Επαληθεύεται αν είμαι εκλογέας;" data-en="Is my electoral eligibility verified?" onclick="this.parentElement.classList.toggle('open')">Επαληθεύεται αν είμαι εκλογέας;</div>
-    <div class="faq-a"><p data-el="Όχι στη Beta. Ο HLR δεν αποδεικνύει εκλογική ικανότητα. Η Alpha σχεδιάζει προαιρετική επίσημη επαλήθευση, αλλά ηλικία, υπηκοότητα, κατοικία ή εκλογικό δικαίωμα θα θεωρούνται επαληθευμένα μόνο αν η εγκεκριμένη επίσημη μέθοδος παρέχει ρητά αυτά τα claims." data-en="Not in Beta. HLR does not prove electoral eligibility. Alpha plans optional official verification, but age, citizenship, residence, or eligibility will be considered verified only if the approved official method explicitly supplies those claims.">Όχι στη Beta. Η Alpha μέθοδος είναι ακόμη σχεδιασμός και θα χρησιμοποιεί μόνο ρητά αποδεδειγμένα επίσημα claims.</p></div>
+    <div class="faq-a"><p data-el="Όχι στη Beta. Ο HLR δεν αποδεικνύει εκλογική ικανότητα. Η Alpha 0.1 σχεδιάζει προαιρετική επίσημη επαλήθευση, αλλά ηλικία, υπηκοότητα, κατοικία ή εκλογικό δικαίωμα θα θεωρούνται επαληθευμένα μόνο αν η εγκεκριμένη επίσημη μέθοδος παρέχει ρητά αυτά τα claims και έχουν περάσει όλα τα δημοσιευμένα gates." data-en="Not in Beta. HLR does not prove electoral eligibility. Alpha 0.1 plans optional official verification, but age, citizenship, residence, or eligibility will be considered verified only if the approved official method explicitly supplies those claims and all published gates have passed.">Όχι στη Beta. Η Alpha 0.1 μέθοδος είναι ακόμη πλήρως gated σχεδιασμός και θα χρησιμοποιεί μόνο ρητά αποδεδειγμένα επίσημα claims.</p></div>
   </div>
 
   <div class="faq-item fade-in">
@@ -434,7 +434,7 @@
 
   <div class="faq-item fade-in">
     <div class="faq-q" data-el="Τι ακολουθεί;" data-en="What comes next?" onclick="this.parentElement.classList.toggle('open')">Τι ακολουθεί;</div>
-    <div class="faq-a"><p data-el="Φάση Alpha: gov.gr OAuth2.0 (μετά από 500 χρήστες + 3 ΜΚΟ), WebAuthn/Passkeys για ασφαλή αποθήκευση κλειδιών, iOS App. V2: TrueRepublic Bridge, ZK Identity, Rust Crypto." data-en="Alpha phase: gov.gr OAuth2.0 (after 500 users + 3 NGO partnerships), WebAuthn/Passkeys for secure key storage, iOS App. V2: TrueRepublic Bridge, ZK Identity, Rust Crypto.">Φάση Alpha: gov.gr OAuth2.0 (μετά από 500 χρήστες + 3 ΜΚΟ), WebAuthn/Passkeys για ασφαλή αποθήκευση κλειδιών, iOS App. V2: TrueRepublic Bridge, ZK Identity, Rust Crypto.</p></div>
+    <div class="faq-a"><p data-el="Φάση Alpha 0.1: μελλοντικό επίσημο gov.gr OAuth ή challenge-bound QR/eSeal, μόνο μετά από έλεγχο κατόχου, DPIA, σχέδιο migration, ανεξάρτητο security/privacy review και sandbox canary. Δεν είναι ενεργό στη Beta. Επίσης σχεδιάζονται WebAuthn/Passkeys και iOS." data-en="Alpha 0.1: future official gov.gr OAuth or challenge-bound QR/eSeal, only after holder authentication, DPIA, migration design, independent security/privacy review and sandbox canary. It is not active in Beta. WebAuthn/Passkeys and iOS are also planned.">Φάση Alpha 0.1: πλήρως gated gov.gr σχεδιασμός, όχι ενεργός στη Beta.</p></div>
   </div>
 
   <div class="faq-item fade-in">
@@ -452,7 +452,7 @@
 
   <div class="faq-item fade-in">
     <div class="faq-q" data-el="Ποια η διαφορά Beta και Alpha επαλήθευσης;" data-en="What's the difference between Beta and Alpha verification?" onclick="this.parentElement.classList.toggle('open')">Ποια η διαφορά Beta και Alpha επαλήθευσης;</div>
-    <div class="faq-a"><p data-el="Στη Beta ο HLR ελέγχει μόνο την κατάσταση και συμβατότητα ελληνικού αριθμού (+30)· δεν αποδεικνύει κατοχή SIM, ταυτότητα, ηλικία, υπηκοότητα, κατοικία ή εκλογικό δικαίωμα. Για την Alpha εξετάζεται επίσημο gov.gr OAuth ή νέο έγγραφο QR/PDF δεσμευμένο σε challenge και ελεγμένο μέσω επίσημου API ή eSeal. Η Alpha μέθοδος δεν είναι ακόμη ενεργή. Δείτε το κανονικό σχέδιο GH#141." data-en="In Beta, HLR checks only the status and compatibility of a Greek number (+30); it does not prove SIM possession, identity, age, citizenship, residence, or electoral eligibility. Alpha evaluates official gov.gr OAuth or a fresh challenge-bound QR/PDF document validated through an official API or eSeal. The Alpha method is not active yet. See the canonical GH#141 design.">Στη Beta ο HLR ελέγχει μόνο την κατάσταση ελληνικού αριθμού. Η Alpha gov.gr/QR/eSeal μέθοδος είναι σχεδιασμός και δεν είναι ακόμη ενεργή. <a href="https://github.com/NeaBouli/pnyx/blob/main/docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md">Κανονικό σχέδιο GH#141 →</a></p></div>
+    <div class="faq-a"><p data-el="Στη Beta ο HLR ελέγχει μόνο την κατάσταση και συμβατότητα ελληνικού αριθμού (+30)· δεν αποδεικνύει κατοχή SIM, ταυτότητα, ηλικία, υπηκοότητα, κατοικία ή εκλογικό δικαίωμα. Για την Alpha 0.1 εξετάζεται επίσημο gov.gr OAuth ή νέο challenge-bound QR/PDF με έλεγχο κατόχου και επίσημο API ή πλήρη eSeal validation. Απαιτούνται DPIA, σχέδιο migration, ανεξάρτητο security/privacy review και sandbox canary. Η μέθοδος δεν είναι ενεργή." data-en="In Beta, HLR checks only the status and compatibility of a Greek number (+30); it does not prove SIM possession, identity, age, citizenship, residence, or electoral eligibility. Alpha 0.1 evaluates official gov.gr OAuth or a fresh challenge-bound QR/PDF with holder authentication and an official API or full eSeal validation. DPIA, migration design, independent security/privacy review and sandbox canary are required. The method is not active.">Στη Beta ο HLR ελέγχει μόνο την κατάσταση ελληνικού αριθμού. Η Alpha 0.1 gov.gr/QR/eSeal μέθοδος είναι πλήρως gated σχεδιασμός και δεν είναι ενεργή. <a href="https://github.com/NeaBouli/pnyx/blob/main/docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md">Κανονικό σχέδιο GH#141 →</a></p></div>
   </div>
 
   <div class="faq-item fade-in">
@@ -471,8 +471,8 @@
   </div>
 
   <div class="faq-item fade-in">
-    <div class="faq-q" data-el="Μπορώ να αναβαθμίσω από Beta σε Alpha;" data-en="Can I upgrade from Beta to Alpha?" onclick="this.parentElement.classList.toggle('open')">Μπορώ να αναβαθμίσω από Beta σε Alpha;</div>
-    <div class="faq-a"><p data-el="Όχι ακόμη. Δεν υπάρχει ενεργή Alpha migration. Πριν διατεθεί χρειάζεται επίσημη μέθοδος επαλήθευσης, privacy/security review και ασφαλής μετάβαση των nullifiers χωρίς σύνδεση παλιών και νέων ψήφων. Το βάρος ψήφου παραμένει ίσο." data-en="Not yet. There is no active Alpha migration. Before release it requires an official verification method, privacy/security review, and a safe nullifier migration without linking old and new votes. Vote weight remains equal.">Όχι ακόμη. Δεν υπάρχει ενεργή Alpha migration. Απαιτούνται επίσημη μέθοδος και privacy/security review. Το βάρος ψήφου παραμένει ίσο.</p></div>
+    <div class="faq-q" data-el="Μπορώ να αναβαθμίσω από Beta σε Alpha 0.1;" data-en="Can I upgrade from Beta to Alpha 0.1?" onclick="this.parentElement.classList.toggle('open')">Μπορώ να αναβαθμίσω από Beta σε Alpha 0.1;</div>
+    <div class="faq-a"><p data-el="Όχι ακόμη. Δεν υπάρχει ενεργή Alpha 0.1 migration. Πριν διατεθεί χρειάζονται επίσημη διασύνδεση ή πλήρης eSeal validation, έλεγχος κατόχου, DPIA, ασφαλές σχέδιο credential/nullifier migration χωρίς σύνδεση παλιών και νέων ψήφων, ανεξάρτητος security/privacy review και sandbox canary. Το βάρος ψήφου παραμένει ίσο." data-en="Not yet. There is no active Alpha 0.1 migration. Before release it requires an official integration or full eSeal validation, holder authentication, DPIA, a safe credential/nullifier migration design without linking old and new votes, independent security/privacy review and sandbox canary. Vote weight remains equal.">Όχι ακόμη. Δεν υπάρχει ενεργή Alpha 0.1 migration. Απαιτούνται όλα τα δημοσιευμένα gates. Το βάρος ψήφου παραμένει ίσο.</p></div>
   </div>
 
   <div class="faq-item fade-in">
@@ -671,7 +671,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
       "name": "Χρειάζομαι λογαριασμό;",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Όχι. Δεν υπάρχουν λογαριασμοί, email ή κωδικοί. Η ταυτότητα επαληθεύεται εφάπαξ μέσω της ελληνικής κάρτας SIM."
+        "text": "Όχι. Δεν υπάρχουν λογαριασμοί, email ή κωδικοί. Στη Beta γίνεται μόνο έλεγχος κατάστασης ελληνικού αριθμού μέσω HLR· δεν αποδεικνύει κατοχή SIM ή ταυτότητα."
       }
     },
     {
@@ -687,7 +687,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
       "name": "Γιατί μόνο ελληνικοί αριθμοί (+30);",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Το +30 είναι προσωρινό Beta gate. Ο HLR δεν αποδεικνύει κατοχή SIM, διαμονή, ταυτότητα ή εκλογικό δικαίωμα. Ισχυρότερη επίσημη επαλήθευση εξετάζεται για την Alpha (GH#141)."
+        "text": "Το +30 είναι προσωρινό Beta gate. Ο HLR δεν αποδεικνύει κατοχή SIM, διαμονή, ταυτότητα ή εκλογικό δικαίωμα. Ισχυρότερη επίσημη επαλήθευση εξετάζεται για την Alpha 0.1 (GH#141), αλλά δεν είναι ενεργή."
       }
     },
     {
@@ -695,7 +695,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
       "name": "Επαληθεύεται αν είμαι εκλογέας;",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Όχι στη Beta. Ο HLR δεν αποδεικνύει εκλογική ικανότητα. Η Alpha μέθοδος είναι ακόμη σχεδιασμός και θα χρησιμοποιεί μόνο claims που αποδεικνύονται ρητά από εγκεκριμένη επίσημη μέθοδο."
+        "text": "Όχι στη Beta. Ο HLR δεν αποδεικνύει εκλογική ικανότητα. Η Alpha 0.1 μέθοδος είναι πλήρως gated σχεδιασμός: απαιτούνται επίσημη διασύνδεση ή πλήρης eSeal validation, έλεγχος κατόχου, DPIA, credential migration, ανεξάρτητος security/privacy review και sandbox canary. Θα χρησιμοποιεί μόνο ρητά αποδεδειγμένα επίσημα claims."
       }
     },
     {
@@ -863,7 +863,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
       "name": "Τι ακολουθεί;",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Φάση Alpha: gov.gr OAuth2.0 (μετά από 500 χρήστες + 3 ΜΚΟ), WebAuthn/Passkeys για ασφαλή αποθήκευση κλειδιών, iOS App. V2: TrueRepublic Bridge, ZK Identity, Rust Crypto."
+        "text": "Φάση Alpha 0.1: gov.gr OAuth ή challenge-bound QR/eSeal μόνο μετά από έλεγχο κατόχου, DPIA, σχέδιο migration, ανεξάρτητο security/privacy review και sandbox canary. Δεν είναι ενεργό στη Beta."
       }
     },
     {
@@ -887,7 +887,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
       "name": "Ποια η διαφορά Beta και Alpha επαλήθευσης;",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Στη Beta ο HLR ελέγχει μόνο την κατάσταση ελληνικού αριθμού και δεν αποδεικνύει κατοχή SIM ή ταυτότητα. Η Alpha gov.gr/QR/eSeal μέθοδος είναι σχεδιασμός και δεν είναι ακόμη ενεργή (GH#141)."
+        "text": "Στη Beta ο HLR ελέγχει μόνο την κατάσταση ελληνικού αριθμού και δεν αποδεικνύει κατοχή SIM ή ταυτότητα. Η Alpha 0.1 gov.gr/QR/eSeal μέθοδος απαιτεί έλεγχο κατόχου, DPIA, σχέδιο migration, ανεξάρτητο security/privacy review και sandbox canary· δεν είναι ενεργή (GH#141)."
       }
     },
     {
@@ -916,10 +916,10 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     },
     {
       "@type": "Question",
-      "name": "Μπορώ να αναβαθμίσω από Beta σε Alpha;",
+      "name": "Μπορώ να αναβαθμίσω από Beta σε Alpha 0.1;",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Όχι ακόμη. Δεν υπάρχει ενεργή Alpha migration. Απαιτούνται επίσημη μέθοδος επαλήθευσης και privacy/security review. Το βάρος ψήφου παραμένει ίσο."
+        "text": "Όχι ακόμη. Δεν υπάρχει ενεργή Alpha 0.1 migration. Απαιτούνται επίσημη διασύνδεση ή πλήρης eSeal validation, έλεγχος κατόχου, DPIA, ασφαλές σχέδιο credential/nullifier migration, ανεξάρτητος security/privacy review και sandbox canary. Το βάρος ψήφου παραμένει ίσο."
       }
     },
     {

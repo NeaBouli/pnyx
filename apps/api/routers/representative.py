@@ -12,13 +12,18 @@ from datetime import datetime, timezone, timedelta
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel, Field
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from dependencies import verify_admin_key
 from models import ParliamentBill, BillStatus
 from services.bill_visibility import is_public_bill, public_bill_filter
+from services.zk_vote_aggregation import (
+    aggregate_bill_vote_totals,
+    bill_vote_events_query,
+    include_zk_for_bill,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/rep", tags=["Representative"])
@@ -299,9 +304,17 @@ def is_bill_visible_for_token(bill, rep: dict) -> bool:
         if gov == "REGIONAL" and getattr(bill, "periferia_id", None) == rep["periferia_id"]:
             return True
         return False
-    elif role in ("Δήμαρχος", "Δημοτικός Σύμβουλος"):
-        # PARLIAMENT always visible + DIAVGEIA MUNICIPAL
-        return source == "PARLIAMENT" or source is None or (source == "DIAVGEIA" and gov == "MUNICIPAL")
+    elif role in ("Δήμαρχος", "Δημοτικός Σύμβουλος") and rep.get("dimos_id"):
+        # Parliament plus municipal decisions for the representative's own Dimos.
+        return (
+            source == "PARLIAMENT"
+            or source is None
+            or (
+                source == "DIAVGEIA"
+                and gov == "MUNICIPAL"
+                and getattr(bill, "dimos_id", None) == rep["dimos_id"]
+            )
+        )
     else:
         # Fallback (role=None, Περιφερειάρχης without periferia_id): PARLIAMENT only
         return source == "PARLIAMENT" or source is None
@@ -316,7 +329,7 @@ async def get_rep_bills(
 
     Visibility rules:
     - Βουλευτής: all bills
-    - Δήμαρχος/Δημοτικός Σύμβουλος: PARLIAMENT + MUNICIPAL DIAVGEIA (Known Limitation: all municipal, not own-specific)
+    - Δήμαρχος/Δημοτικός Σύμβουλος: PARLIAMENT + own-Dimos MUNICIPAL DIAVGEIA
     - Περιφερειάρχης (with periferia_id): PARLIAMENT + own-region REGIONAL bills (deterministic FK match)
     - Περιφερειάρχης (without periferia_id): PARLIAMENT only (safe fallback)
     - role=None / unknown: PARLIAMENT only (safe fallback)
@@ -334,6 +347,7 @@ async def get_rep_bills(
     )
 
     periferia_id = rep.get("periferia_id")
+    dimos_id = rep.get("dimos_id")
 
     if role == "Βουλευτής":
         pass  # No additional filter — sees all
@@ -345,11 +359,15 @@ async def get_rep_bills(
             and_(ParliamentBill.governance_level == "REGIONAL",
                  ParliamentBill.periferia_id == periferia_id),
         ))
-    elif role in ("Δήμαρχος", "Δημοτικός Σύμβουλος"):
+    elif role in ("Δήμαρχος", "Δημοτικός Σύμβουλος") and dimos_id:
         query = query.where(or_(
             ParliamentBill.source == "PARLIAMENT",
             ParliamentBill.source.is_(None),
-            and_(ParliamentBill.source == "DIAVGEIA", ParliamentBill.governance_level == "MUNICIPAL"),
+            and_(
+                ParliamentBill.source == "DIAVGEIA",
+                ParliamentBill.governance_level == "MUNICIPAL",
+                ParliamentBill.dimos_id == dimos_id,
+            ),
         ))
     else:
         # Fallback: role=None or Περιφερειάρχης without periferia_id → PARLIAMENT only
@@ -393,34 +411,38 @@ async def get_rep_results(
     if not is_bill_visible_for_token(bill, rep):
         raise HTTPException(403, "Αυτό το νομοσχέδιο δεν είναι ορατό για τον ρόλο σας.")
 
-    # Vote counts
-    counts = await db.execute(text("""
-        SELECT vote, COUNT(*) FROM citizen_votes WHERE bill_id = :bid GROUP BY vote
-    """), {"bid": bill_id})
-    vote_map = {r[0]: r[1] for r in counts}
-    yes = vote_map.get("YES", 0)
-    no = vote_map.get("NO", 0)
-    abstain = vote_map.get("ABSTAIN", 0)
-    total = yes + no + abstain
+    totals = await aggregate_bill_vote_totals(
+        db,
+        bill_id,
+        include_zk=include_zk_for_bill(bill),
+    )
+    yes, no, abstain, unknown = totals.yes, totals.no, totals.abstain, totals.unknown
+    total = totals.total
 
     # Hourly timeline (last 48h)
-    timeline = await db.execute(text("""
-        SELECT date_trunc('hour', created_at) as hour, vote, COUNT(*)
-        FROM citizen_votes WHERE bill_id = :bid AND created_at > NOW() - INTERVAL '48 hours'
-        GROUP BY hour, vote ORDER BY hour
-    """), {"bid": bill_id})
+    events = bill_vote_events_query(bill_id, include_zk=include_zk_for_bill(bill))
+    hour_col = func.date_trunc("hour", events.c.created_at).label("hour")
+    timeline = await db.execute(
+        select(hour_col, events.c.vote, func.count().label("count"))
+        .where(events.c.created_at > func.now() - text("INTERVAL '48 hours'"))
+        .group_by(hour_col, events.c.vote)
+        .order_by(hour_col)
+    )
     hourly = {}
     for hour, vote, count in timeline:
         h = hour.isoformat() if hour else "?"
         if h not in hourly:
-            hourly[h] = {"hour": h, "yes": 0, "no": 0, "abstain": 0}
+            hourly[h] = {"hour": h, "yes": 0, "no": 0, "abstain": 0, "unknown": 0}
         hourly[h][vote.lower()] = count
 
     return {
         "bill_id": bill_id, "title_el": bill.title_el, "status": bill.status.value,
-        "yes": yes, "no": no, "abstain": abstain, "total": total,
+        "yes": yes, "no": no, "abstain": abstain, "unknown": unknown, "total": total,
+        "tier1_total": totals.tier1_total, "zk_total": totals.zk_total,
         "yes_pct": round(yes / total * 100, 1) if total else 0,
         "no_pct": round(no / total * 100, 1) if total else 0,
+        "abstain_pct": round(abstain / total * 100, 1) if total else 0,
+        "unknown_pct": round(unknown / total * 100, 1) if total else 0,
         "consensus_score": bill.consensus_score,
         "consensus_count": bill.consensus_count or 0,
         "party_votes": bill.party_votes_parliament,
@@ -445,14 +467,13 @@ async def get_rep_divergence(
     if bill.status not in ALLOWED_STATUSES:
         raise HTTPException(403, "Divergence not available for this bill status")
 
-    counts = await db.execute(text("""
-        SELECT vote, COUNT(*) FROM citizen_votes WHERE bill_id = :bid GROUP BY vote
-    """), {"bid": bill_id})
-    vote_map = {r[0]: r[1] for r in counts}
-    yes = vote_map.get("YES", 0)
-    no = vote_map.get("NO", 0)
-    total = yes + no
-    citizen_yes_pct = round(yes / total * 100, 1) if total else 0
+    totals = await aggregate_bill_vote_totals(
+        db,
+        bill_id,
+        include_zk=include_zk_for_bill(bill),
+    )
+    total = totals.total
+    citizen_yes_pct = round(totals.yes / total * 100, 1) if total else 0
 
     # Parliament result
     pv = bill.party_votes_parliament or {}
@@ -465,7 +486,12 @@ async def get_rep_divergence(
 
     return {
         "bill_id": bill_id, "title_el": bill.title_el,
-        "citizen": {"yes_pct": citizen_yes_pct, "total": total},
+        "citizen": {
+            "yes_pct": citizen_yes_pct,
+            "total": total,
+            "tier1_total": totals.tier1_total,
+            "zk_total": totals.zk_total,
+        },
         "parliament": {"yes_pct": parl_yes_pct, "total": parl_total, "parties": pv},
         "divergence_pct": divergence,
         "governance_level": bill.governance_level.value if bill.governance_level else "NATIONAL",

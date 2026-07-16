@@ -19,9 +19,15 @@ def bill(level, *, periferia_id=None, dimos_id=None):
     )
 
 
-@pytest.mark.parametrize("level", [None, GovernanceLevel.NATIONAL, GovernanceLevel.INSTITUTIONAL])
+@pytest.mark.parametrize("level", [None, GovernanceLevel.NATIONAL])
 def test_country_wide_levels_preserve_existing_access(level):
     assert evaluate_bill_scope(identity(), bill(level)).allowed is True
+
+
+def test_institutional_scope_without_geography_is_read_only():
+    decision = evaluate_bill_scope(identity(periferia_id=6, dimos_id=22), bill(GovernanceLevel.INSTITUTIONAL))
+    assert decision.allowed is False
+    assert decision.reason == "institutional_scope_unassigned"
 
 
 def test_regional_scope_requires_matching_server_identity():
@@ -38,6 +44,36 @@ def test_municipal_scope_requires_matching_server_identity():
     denied = evaluate_bill_scope(identity(dimos_id=23), target)
     assert denied.allowed is False
     assert denied.reason == "municipal_scope_mismatch"
+
+
+def test_legacy_diavgeia_region_alias_requires_matching_identity():
+    target = bill("REGION", periferia_id=6)
+    assert evaluate_bill_scope(identity(periferia_id=6), target).allowed is True
+    denied = evaluate_bill_scope(identity(periferia_id=7), target)
+    assert denied.reason == "regional_scope_mismatch"
+
+
+def test_raw_diavgeia_without_level_infers_municipal_scope():
+    target = SimpleNamespace(
+        ada="ADA-LEGACY-1",
+        governance_level=None,
+        periferia_id=6,
+        dimos_id=22,
+    )
+    assert evaluate_bill_scope(identity(dimos_id=22), target).allowed is True
+    denied = evaluate_bill_scope(identity(dimos_id=23), target)
+    assert denied.reason == "municipal_scope_mismatch"
+
+
+def test_unmapped_raw_diavgeia_without_level_fails_closed():
+    target = SimpleNamespace(
+        ada="ADA-UNMAPPED-1",
+        governance_level=None,
+        periferia_id=None,
+        dimos_id=None,
+    )
+    denied = evaluate_bill_scope(identity(periferia_id=6, dimos_id=22), target)
+    assert denied.reason == "institutional_scope_unassigned"
 
 
 @pytest.mark.parametrize(

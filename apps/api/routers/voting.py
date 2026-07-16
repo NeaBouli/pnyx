@@ -23,7 +23,7 @@ from models import (
     ParliamentBill, BillStatus, BillRelevanceVote, GovernanceLevel, ZkVoteReceipt
 )
 from services.source_links import official_source_url
-from services.bill_visibility import is_public_bill, public_bill_filter
+from services.bill_visibility import is_public_bill, public_bill_filter, public_bill_raw_sql
 from services.zk_tier_lock import (
     VoteScopeType,
     canonical_vote_scope_id,
@@ -292,6 +292,7 @@ class BillResults(BaseModel):
     yes_percent:      float
     no_percent:       float
     abstain_percent:  float
+    unknown_percent:  float
     divergence:       DivergenceResult | None
     representativity: dict | None = None
     results_hidden:   bool = False
@@ -308,13 +309,14 @@ class RelevanceRequest(BaseModel):
 
 def compute_divergence(
     yes: int, no: int, abstain: int,
-    parliament_votes: dict | None
+    parliament_votes: dict | None,
+    unknown: int = 0,
 ) -> DivergenceResult | None:
     """
     Berechnet die Abweichung zwischen Bürgermehrheit und Parlamentsentscheid.
     Nur wenn parliament_votes vorhanden (PARLIAMENT_VOTED oder OPEN_END).
     """
-    total = yes + no + abstain
+    total = yes + no + abstain + unknown
     if total == 0 or not parliament_votes:
         return None
 
@@ -708,6 +710,7 @@ async def get_latest_result(db: AsyncSession = Depends(get_db)):
         "yes_pct": round(totals.yes / total * 100),
         "no_pct": round(totals.no / total * 100),
         "abstain_pct": round(totals.abstain / total * 100),
+        "unknown_pct": round(totals.unknown / total * 100),
     }
 
 
@@ -715,7 +718,11 @@ async def get_latest_result(db: AsyncSession = Depends(get_db)):
 async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
     """Landing page ticker data. Aggregated counts only; no nullifiers or vote rows."""
     threshold = votes_in_progress_threshold()
-    result = await db.execute(text("""
+    visibility_sql, visibility_params = public_bill_raw_sql(
+        "b",
+        param_prefix="in_progress_sensitive",
+    )
+    result = await db.execute(text(f"""
         SELECT
             b.id,
             b.title_el,
@@ -725,7 +732,8 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
             (COALESCE(tier.total_votes, 0) + COALESCE(zk.total_votes, 0))::int AS total_votes,
             (COALESCE(tier.yes_count, 0) + COALESCE(zk.yes_count, 0))::int AS yes_count,
             (COALESCE(tier.no_count, 0) + COALESCE(zk.no_count, 0))::int AS no_count,
-            (COALESCE(tier.abstain_count, 0) + COALESCE(zk.abstain_count, 0))::int AS abstain_count
+            (COALESCE(tier.abstain_count, 0) + COALESCE(zk.abstain_count, 0))::int AS abstain_count,
+            (COALESCE(tier.unknown_count, 0) + COALESCE(zk.unknown_count, 0))::int AS unknown_count
         FROM parliament_bills b
         LEFT JOIN (
             SELECT
@@ -733,7 +741,8 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
                 COUNT(id)::int AS total_votes,
                 SUM(CASE WHEN vote::text = 'YES' THEN 1 ELSE 0 END)::int AS yes_count,
                 SUM(CASE WHEN vote::text = 'NO' THEN 1 ELSE 0 END)::int AS no_count,
-                SUM(CASE WHEN vote::text = 'ABSTAIN' THEN 1 ELSE 0 END)::int AS abstain_count
+                SUM(CASE WHEN vote::text = 'ABSTAIN' THEN 1 ELSE 0 END)::int AS abstain_count,
+                SUM(CASE WHEN vote::text = 'UNKNOWN' THEN 1 ELSE 0 END)::int AS unknown_count
             FROM citizen_votes
             GROUP BY bill_id
         ) tier ON tier.bill_id = b.id
@@ -743,27 +752,29 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
                 COUNT(id)::int AS total_votes,
                 SUM(CASE WHEN vote_commitment = 'YES' THEN 1 ELSE 0 END)::int AS yes_count,
                 SUM(CASE WHEN vote_commitment = 'NO' THEN 1 ELSE 0 END)::int AS no_count,
-                SUM(CASE WHEN vote_commitment = 'ABSTAIN' THEN 1 ELSE 0 END)::int AS abstain_count
+                SUM(CASE WHEN vote_commitment = 'ABSTAIN' THEN 1 ELSE 0 END)::int AS abstain_count,
+                SUM(CASE WHEN vote_commitment = 'UNKNOWN' THEN 1 ELSE 0 END)::int AS unknown_count
             FROM zk_vote_receipts
             WHERE vote_scope_id LIKE 'bill:%'
               AND vote_commitment IN ('YES', 'NO', 'ABSTAIN', 'UNKNOWN')
             GROUP BY regexp_replace(vote_scope_id, '^bill:', '')
         ) zk ON zk.bill_id = b.id
             AND COALESCE(b.source, 'PARLIAMENT') = 'PARLIAMENT'
-        WHERE b.admin_hidden IS NOT TRUE
+        WHERE {visibility_sql}
           AND b.id NOT LIKE 'DEMO-%'
           AND (b.parliament_url IS NOT NULL OR b.diavgeia_ada IS NOT NULL)
           AND b.status::text IN ('ACTIVE', 'WINDOW_24H', 'PARLIAMENT_VOTED', 'OPEN_END')
           AND (COALESCE(tier.total_votes, 0) + COALESCE(zk.total_votes, 0)) >= :threshold
         ORDER BY (COALESCE(tier.total_votes, 0) + COALESCE(zk.total_votes, 0)) DESC, b.created_at DESC
         LIMIT 6
-    """), {"threshold": threshold})
+    """), {"threshold": threshold, **visibility_params})
     bills = []
     for row in result.mappings():
         total = row["total_votes"] or 0
         yes = row["yes_count"] or 0
         no = row["no_count"] or 0
         abstain = row["abstain_count"] or 0
+        unknown = row["unknown_count"] or 0
         bills.append({
             "bill_id": row["id"],
             "title_el": row["title_el"],
@@ -774,6 +785,7 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
             "yes_pct": vote_percent(yes, total),
             "no_pct": vote_percent(no, total),
             "abstain_pct": vote_percent(abstain, total),
+            "unknown_pct": vote_percent(unknown, total),
         })
     return {
         "threshold": threshold,
@@ -816,7 +828,8 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
             total_votes=0, yes_count=0, no_count=0, abstain_count=0, unknown_count=0,
             tier1_vote_count=0,
             zk_vote_count=0,
-            yes_percent=0, no_percent=0, abstain_percent=0, divergence=None,
+            yes_percent=0, no_percent=0, abstain_percent=0, unknown_percent=0,
+            divergence=None,
             representativity=await representativity_for_bill(db, bill, 0),
             results_hidden=True,
             parliament_vote_date=vote_date,
@@ -836,7 +849,13 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
 
     def pct(n): return round(n / total * 100, 1) if total > 0 else 0.0
 
-    divergence = compute_divergence(yes_c, no_c, abs_c, bill.party_votes_parliament)
+    divergence = compute_divergence(
+        yes_c,
+        no_c,
+        abs_c,
+        bill.party_votes_parliament,
+        unknown=unk_c,
+    )
 
     vote_date = bill.parliament_vote_date.strftime("%d/%m/%Y") if bill.parliament_vote_date else None
     return BillResults(
@@ -861,6 +880,7 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
         yes_percent=pct(yes_c),
         no_percent=pct(no_c),
         abstain_percent=pct(abs_c),
+        unknown_percent=pct(unk_c),
         divergence=divergence,
         representativity=await representativity_for_bill(db, bill, total),
         results_hidden=False,

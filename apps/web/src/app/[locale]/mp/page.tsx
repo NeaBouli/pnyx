@@ -16,7 +16,7 @@ export default function MPPage() {
   const el = (a: string, b: string) => locale === "el" ? a : b;
 
   useEffect(() => {
-    mp.ranking().then(r => setRanking(r.ranking || []))
+    mp.ranking().then(r => setRanking((r.ranking || []) as any[]))
       .finally(() => setLoading(false));
   }, []);
 

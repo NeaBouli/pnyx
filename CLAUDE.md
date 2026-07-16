@@ -906,7 +906,7 @@ OVERALL:         [0-100]
 - packages/crypto-rs → Rust + WASM (ed25519-dalek, wasm-bindgen)
   → Krypto direkt im Browser, kein Server-Trust nötig
 - MOD-08 TrueRepublic Bridge → Cosmos SDK / PnyxCoin
-- MOD-09 gov.gr OAuth2.0 → Alpha nach 500 Nutzern + 3 NGOs
+- MOD-09 gov.gr OAuth2.0 → Alpha 0.1 design-only; 500 Nutzer + 3 NGOs reichen nicht. Erforderlich sind alle offiziellen Holder-, DPIA-, Migration-, unabhängigen Review- und Sandbox-Canary-Gates sowie expliziter Runtime-Schalter, Credentials und starker Server-Salt.
 
 ## API Endpoints (70+ total — 23 Live-Module / Spec 25)
 MOD-01: POST /api/v1/identity/verify | revoke | status

@@ -1,4 +1,4 @@
-# Gov.gr Document Verification — Alpha Design
+# Gov.gr Document Verification — Alpha 0.1 Design
 
 Status: design only. This flow is not active in Beta and no gov.gr credentials,
 document upload, QR scanner, or production identity migration are enabled.

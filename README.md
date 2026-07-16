@@ -60,7 +60,7 @@ This project uses publicly available government data from:
 | Newsletter + Telegram | Brevo SMTP + Telegram cross-publish | Beta |
 | Push Notifications | Expo Push API, APScheduler | Beta |
 | Stripe / PayPal Donations | Voluntary support; runtime intake and public links fail-closed | Paused pending legal/provider E2E |
-| Mobile App | Expo React Native, HLR SIM check, Ed25519, Compass | Beta |
+| Mobile App | Expo React Native, HLR Greek-number network-status check, Ed25519, Compass | Beta |
 | Representative App | Role-based bill visibility for elected officials | Beta |
 | Discourse Forum | Automated topic sync per bill; moderator-edited first posts are checksum-protected from automation | Beta |
 | Arweave Archive | Immutable vote audit trail | Beta |
@@ -149,7 +149,7 @@ cd apps/web && npm run build
 
 | Data | Stored? |
 |---|---|
-| Mobile number | Used for HLR active-SIM verification, deleted immediately after verification |
+| Mobile number | Used only for an HLR Greek-number network-status check; this does not prove SIM possession or identity. Deleted immediately after verification |
 | Private key | Device only &mdash; never leaves your phone |
 | IP address | Limited to rate limiting / security; not linked to votes or identity |
 | Identity nullifiers | Argon2id v2 identity hash for new/reverified identities plus a legacy SHA256 compatibility anchor; phone not stored |
@@ -195,7 +195,7 @@ New system-generated bill pills, short summaries, and forum first-post bodies ca
 | Phase | Trigger | Status |
 |---|---|---|
 | **Beta** | Now | Active |
-| **Alpha** | 500 users + 3 NGOs + official gov.gr verification gate | Upcoming: OAuth or fresh QR/eSeal document verification is designed in [GH#141](https://github.com/NeaBouli/pnyx/issues/141), not live in Beta |
+| **Alpha 0.1** | 500 users + 3 NGOs + all official verification gates | Upcoming: holder-authenticated OAuth or fresh challenge-bound QR/eSeal verification is designed in [GH#141](https://github.com/NeaBouli/pnyx/issues/141). It requires an official integration, DPIA, credential-migration design, independent security/privacy review and a sandbox canary; it is not live in Beta |
 | **V2** | ZK Voting (Semaphore) + Federation | Guarded Parliament rollout live; ZK Arweave auto-publication live for eligible public Parliament scopes (min group size 5) |
 
 &rarr; Details: [Roadmap](https://ekklesia.gr/wiki/roadmap.html)

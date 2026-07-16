@@ -17,6 +17,8 @@ from models import (
     Periferia, Dimos, Decision, GovernanceLevel, BillStatus,
     DiavgeiaDecision, DiavgeiaVote, IdentityRecord, KeyStatus, VoteChoice,
 )
+from services.vote_scope import ensure_bill_scope_allowed
+from services.bill_visibility import is_public_raw_diavgeia_decision, public_raw_diavgeia_filter
 
 router = APIRouter(prefix="/api/v1", tags=["MOD-16 Municipal"])
 
@@ -146,6 +148,7 @@ async def get_voteable_decisions(
         .where(
             DiavgeiaDecision.dimos_id == dimos_id,
             DiavgeiaDecision.publish_timestamp >= cutoff,
+            public_raw_diavgeia_filter(),
         )
         .order_by(DiavgeiaDecision.publish_timestamp.desc())
         .limit(20)
@@ -204,23 +207,23 @@ async def vote_on_decision(req: DecisionVoteRequest, db: AsyncSession = Depends(
     except ValueError:
         raise HTTPException(400, f"Ungültige Stimme: {req.vote}")
 
-    # 3. Verify Ed25519 signature
-    # Canonical payload: "municipal:{ada}:{VOTE}:{nullifier_hash}"
-    payload = f"municipal:{req.ada}:{vote_choice.value}:{req.nullifier_hash}"
-    if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
-        raise HTTPException(401, "Μη έγκυρη υπογραφή.")
-
-    # 4. Check decision exists
+    # 3. Check decision and geographic authorization before crypto work.
     dec_result = await db.execute(
         select(DiavgeiaDecision).where(DiavgeiaDecision.ada == req.ada)
     )
     decision = dec_result.scalar_one_or_none()
     if not decision:
         raise HTTPException(404, f"Decision {req.ada} nicht gefunden.")
+    if not is_public_raw_diavgeia_decision(decision):
+        raise HTTPException(404, f"Decision {req.ada} nicht gefunden.")
 
-    # 5. Vote scope: user must be in same dimos
-    if decision.dimos_id and identity.dimos_id != decision.dimos_id:
-        raise HTTPException(403, "Αυτή η απόφαση αφορά μόνο κατοίκους αυτού του Δήμου.")
+    ensure_bill_scope_allowed(identity, decision)
+
+    # 4. Verify Ed25519 signature.
+    # Canonical payload: "municipal:{ada}:{VOTE}:{nullifier_hash}"
+    payload = f"municipal:{req.ada}:{vote_choice.value}:{req.nullifier_hash}"
+    if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
+        raise HTTPException(401, "Μη έγκυρη υπογραφή.")
 
     # 5. Check duplicate
     existing = await db.execute(

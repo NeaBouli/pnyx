@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import and_, func, not_, or_
 from sqlalchemy.sql.elements import ColumnElement
 
-from models import ParliamentBill
+from models import DiavgeiaDecision, ParliamentBill
 
 DIAVGEIA_SENSITIVE_PUBLIC_TERMS = (
     "αμκα",
@@ -16,6 +16,33 @@ DIAVGEIA_SENSITIVE_PUBLIC_TERMS = (
     "εοπυυ",
     "eopyy",
 )
+
+
+def public_bill_raw_sql(
+    alias: str,
+    *,
+    param_prefix: str = "sensitive_term",
+) -> tuple[str, dict[str, str]]:
+    """Return the shared public-bill guard for parameterized raw SQL."""
+    if not alias.replace("_", "").isalnum():
+        raise ValueError("SQL alias must be an identifier")
+
+    checks: list[str] = []
+    params: dict[str, str] = {}
+    for index, term in enumerate(DIAVGEIA_SENSITIVE_PUBLIC_TERMS):
+        name = f"{param_prefix}_{index}"
+        params[name] = f"%{term}%"
+        checks.extend((
+            f"LOWER(COALESCE({alias}.title_el, '')) LIKE :{name}",
+            f"LOWER(COALESCE({alias}.summary_short_el, '')) LIKE :{name}",
+            f"LOWER(COALESCE({alias}.summary_long_el, '')) LIKE :{name}",
+        ))
+    return (
+        f"COALESCE({alias}.admin_hidden, FALSE) = FALSE AND NOT ("
+        + " OR ".join(checks)
+        + ")",
+        params,
+    )
 
 
 def _text_contains_sensitive_diavgeia_marker(value: str | None) -> bool:
@@ -46,6 +73,24 @@ def sensitive_diavgeia_filter() -> ColumnElement[bool]:
         ParliamentBill.source == "DIAVGEIA",
         or_(*term_checks),
     )
+
+
+def sensitive_raw_diavgeia_filter() -> ColumnElement[bool]:
+    """Predicate for sensitive markers in raw DIAVGEIA decisions."""
+    subject = func.lower(func.coalesce(DiavgeiaDecision.subject, ""))
+    return or_(*(subject.contains(term) for term in DIAVGEIA_SENSITIVE_PUBLIC_TERMS))
+
+
+def public_raw_diavgeia_filter() -> ColumnElement[bool]:
+    """Exclude raw decisions that must not be exposed by public endpoints."""
+    return not_(sensitive_raw_diavgeia_filter())
+
+
+def is_public_raw_diavgeia_decision(decision: Any) -> bool:
+    """Object-level equivalent of public_raw_diavgeia_filter()."""
+    if decision is None:
+        return False
+    return not _text_contains_sensitive_diavgeia_marker(getattr(decision, "subject", None))
 
 
 def public_bill_filter() -> ColumnElement[bool]:

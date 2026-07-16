@@ -7,30 +7,19 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
-from services.bill_visibility import DIAVGEIA_SENSITIVE_PUBLIC_TERMS
+from services.bill_visibility import public_bill_raw_sql
+from services.geographic_scope import validate_region_filter
 
 
 router = APIRouter(prefix="/api/v1/consensus", tags=["consensus-results"])
 
 ViewName = Literal["municipal", "regional", "national"]
+K_ANONYMITY_MIN = 10
 
 
 def _public_visibility_sql() -> tuple[str, dict[str, str]]:
     """Mirror the shared public DIAVGEIA guard with bound raw-SQL terms."""
-    checks: list[str] = []
-    params: dict[str, str] = {}
-    for index, term in enumerate(DIAVGEIA_SENSITIVE_PUBLIC_TERMS):
-        name = f"sensitive_term_{index}"
-        params[name] = f"%{term}%"
-        checks.extend((
-            f"LOWER(COALESCE(pb.title_el, '')) LIKE :{name}",
-            f"LOWER(COALESCE(pb.summary_short_el, '')) LIKE :{name}",
-            f"LOWER(COALESCE(pb.summary_long_el, '')) LIKE :{name}",
-        ))
-    return (
-        "COALESCE(pb.admin_hidden, FALSE) = FALSE AND NOT (" + " OR ".join(checks) + ")",
-        params,
-    )
+    return public_bill_raw_sql("pb")
 
 
 def _scope_sql(view: ViewName) -> str:
@@ -115,6 +104,7 @@ async def _load_view(
                 COUNT(*)::integer AS consensus_count
             FROM consensus_votes cv
             GROUP BY cv.bill_id
+            HAVING COUNT(*) >= :k_anonymity_min
         ), scoped AS (
             SELECT
                 pb.id AS bill_id,
@@ -146,6 +136,7 @@ async def _load_view(
         **visibility_params,
         "dimos_id": dimos_id,
         "periferia_id": periferia_id,
+        "k_anonymity_min": K_ANONYMITY_MIN,
         "limit": limit,
     })
     return _view_payload(view, [dict(row) for row in result.mappings().all()])
@@ -159,14 +150,12 @@ async def get_consensus_representation(
     db: AsyncSession = Depends(get_db),
 ):
     """Return separate aggregate views; never return individual consensus rows."""
-    if dimos_id is not None and periferia_id is not None:
-        pair = await db.execute(text("""
-            SELECT 1
-            FROM dimos
-            WHERE id = :dimos_id AND periferia_id = :periferia_id
-        """), {"dimos_id": dimos_id, "periferia_id": periferia_id})
-        if pair.scalar_one_or_none() is None:
-            raise HTTPException(status_code=400, detail="dimos_id does not belong to periferia_id")
+    if dimos_id is not None or periferia_id is not None:
+        await validate_region_filter(
+            db,
+            periferia_id=periferia_id,
+            dimos_id=dimos_id,
+        )
 
     visibility_sql, visibility_params = _public_visibility_sql()
     coverage_result = await db.execute(text(f"""
@@ -204,6 +193,7 @@ async def get_consensus_representation(
     return {
         "source": "DIAVGEIA",
         "privacy": "aggregate_only",
+        "minimum_group_size": K_ANONYMITY_MIN,
         "institutional_excluded": True,
         "unmapped_geographic_excluded": True,
         "coverage": {

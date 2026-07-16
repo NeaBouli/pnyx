@@ -9,9 +9,11 @@ interface Props {
   yesCount: number;
   noCount: number;
   abstainCount: number;
+  unknownCount: number;
   yesPct: number;
   noPct: number;
   abstainPct: number;
+  unknownPct?: number;
   divergence: { score: number; label_el: string; citizen_majority: string; parliament_result: string | null; headline_el?: string } | null;
   representativity: { total_votes: number; eligible_voters: number | null; population: number | null; participation_pct: number | null; population_pct: number | null; scope_label_el?: string; level: string; color: string; label_el: string; is_representative: boolean; score: number; headline_el: string } | null;
   partyVotes: Record<string, string> | null;
@@ -21,6 +23,7 @@ interface Props {
 
 export default function BillResultReport({
   totalVotes, yesCount, noCount, abstainCount, yesPct, noPct, abstainPct,
+  unknownCount, unknownPct,
   divergence, representativity, partyVotes, parliamentVoteDate, locale,
 }: Props) {
   const [repAnim, setRepAnim] = useState(0);
@@ -101,6 +104,9 @@ export default function BillResultReport({
               { label: el("Υπέρ", "Yes"), pct: yesPct, count: yesCount, color: "bg-green-500", tc: "text-green-400" },
               { label: el("Κατά", "No"), pct: noPct, count: noCount, color: "bg-red-500", tc: "text-red-400" },
               { label: el("Αποχή", "Abstain"), pct: abstainPct, count: abstainCount, color: "bg-gray-500", tc: "text-gray-400" },
+              ...(unknownCount > 0
+                ? [{ label: el("ΑΓΝΩΣΤΟ", "UNKNOWN"), pct: unknownPct || 0, count: unknownCount, color: "bg-purple-500", tc: "text-purple-400" }]
+                : []),
             ].map(b => (
               <div key={b.label} className="mb-3">
                 <div className="flex justify-between text-sm mb-1">

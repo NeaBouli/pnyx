@@ -6,7 +6,7 @@
 Ziel: Eigenständige, leichtgewichtige Plattform ohne staatliche Abhängigkeit.
 
 - [x] Backend API (FastAPI, PostgreSQL, Redis)
-- [x] MOD-01 Identity (HLR SIM check, Ed25519, Nullifier)
+- [x] MOD-01 Beta credential (HLR Greek-number network-status check, Ed25519, Nullifier; not proof of SIM possession or identity)
 - [x] MOD-02 VAA (Wahlkompass, Matching)
 - [x] MOD-03 Parliament (Bill Lifecycle, 5 States)
 - [x] MOD-04 CitizenVote (signierte Abstimmung)
@@ -18,11 +18,11 @@ Ziel: Eigenständige, leichtgewichtige Plattform ohne staatliche Abhängigkeit.
 - [x] Docker Production Deployment (Hetzner)
 - [ ] Öffentlicher Launch Beta
 
-## Phase Alpha
-Voraussetzung: 500+ Nutzer, 3+ NGO-Partner, öffentliche Legitimation.
+## Phase Alpha 0.1
+Voraussetzung: 500+ Nutzer, 3+ NGO-Partner, offizielle Schnittstelle, Holder-Authentifizierung, DPIA, Credential-Migrationsplan, unabhängiger Security/Privacy-Review und Sandbox-Canary.
 
 - [ ] MOD-09 gov.gr OAuth2.0 Integration
-- [ ] [GH#141 privacy-preserving gov.gr document verification](GOVGR_DOCUMENT_VERIFICATION_ALPHA.md) (fresh nonce-bound QR/PDF, official API or full eSeal validation; Alpha only, not live in Beta)
+- [ ] [GH#141 privacy-preserving gov.gr document verification](GOVGR_DOCUMENT_VERIFICATION_ALPHA.md) (fresh nonce-bound QR/PDF, holder-authenticated official method, official API or full eSeal validation; all gates above required; Alpha 0.1 only, not live in Beta)
 - [ ] Demographische Verifikation (Altersgruppe + Region)
 - [ ] Sandbox-Anfrage an AADE/gov.gr
 - [ ] Externe Sicherheitsaudit

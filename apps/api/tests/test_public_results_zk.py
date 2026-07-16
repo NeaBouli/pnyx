@@ -66,6 +66,7 @@ async def test_public_bill_results_aggregate_zk_receipts(monkeypatch):
         "yes_pct": 50.0,
         "no_pct": 0.0,
         "abstain_pct": 50.0,
+        "unknown_pct": 0.0,
     }
 
 

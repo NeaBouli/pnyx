@@ -422,6 +422,7 @@ export interface BillResults {
   yes_percent: number;
   no_percent: number;
   abstain_percent: number;
+  unknown_percent: number;
   divergence: {
     score: number;
     label_el: string;

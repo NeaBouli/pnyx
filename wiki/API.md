@@ -14,7 +14,7 @@ Swagger UI: `http://localhost:8000/docs`
 
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/identity/verify` | HLR without SMS → Ed25519 Keypair |
+| POST | `/identity/verify` | HLR Greek-number network-status check without SMS (not identity proof) → Ed25519 Keypair |
 | POST | `/identity/revoke` | Revoke key |
 | POST | `/identity/status` | Check status |
 

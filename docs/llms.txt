@@ -68,7 +68,7 @@ ekklesia.gr (εκκλησία του έθνους) is an independent civic initi
 ekklesia.gr offers specialized tools for elected representatives (MPs, Mayors, Municipal Councillors):
 - Representative app (εκπρόσωπος): exclusive mobile app for viewing bills, citizen evaluations, and divergence scores for their region.
 - Commitment Declaration (Δήλωση Αυτοδέσμευσης): public document candidates sign before elections with measurable obligations: transparency, citizen will, accountability. PDF: https://ekklesia.gr/download/Autodesmefsi_Ekklesia_v6.pdf
-- Future Alpha design for official gov.gr OAuth or fresh QR/eSeal document verification; not active in Beta.
+- Future Alpha 0.1 design for official gov.gr OAuth or holder-authenticated fresh challenge-bound QR/eSeal verification. It requires an official integration, DPIA, credential-migration design, independent security/privacy review and sandbox canary; it is not active in Beta.
 - Arweave immutable archiving of all voting results.
 - Full page: https://ekklesia.gr/municipality/
 - Article: https://ekklesia.gr/municipality/article.html

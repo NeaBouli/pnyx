@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>gov.gr Επαλήθευση — Σχεδιασμός Alpha | εκκλησία</title>
-  <meta name="description" content="Σχεδιασμός Alpha για προαιρετική επαλήθευση μέσω επίσημης διασύνδεσης gov.gr ή νέου εγγράφου QR/eSeal. Δεν είναι ενεργό στη Beta."/>
+  <title>gov.gr Επαλήθευση — Σχεδιασμός Alpha 0.1 | εκκλησία</title>
+  <meta name="description" content="Σχεδιασμός Alpha 0.1 για προαιρετική επαλήθευση μέσω επίσημης διασύνδεσης gov.gr ή νέου challenge-bound QR/eSeal με έλεγχο κατόχου. Δεν είναι ενεργό στη Beta."/>
   <meta name="keywords" content="gov.gr, Δήμος, Περιφέρεια, OAuth, ekklesia, ψηφοφορία, ενεργοποίηση"/>
   <meta name="author" content="V-Labs Development — Community"/>
   <meta name="robots" content="index, follow"/>
@@ -12,16 +12,16 @@
 
   <meta property="og:type" content="website"/>
   <meta property="og:url" content="https://ekklesia.gr/govgr-dimos.html"/>
-  <meta property="og:title" content="gov.gr Επαλήθευση — Σχεδιασμός Alpha | εκκλησία"/>
-  <meta property="og:description" content="Μελλοντική, προαιρετική επαλήθευση gov.gr. Δεν είναι ενεργή στη Beta και δεν αλλάζει το βάρος ψήφου."/>
+  <meta property="og:title" content="gov.gr Επαλήθευση — Σχεδιασμός Alpha 0.1 | εκκλησία"/>
+  <meta property="og:description" content="Μελλοντικός πλήρως gated σχεδιασμός gov.gr με έλεγχο κατόχου, DPIA, ανεξάρτητο review και sandbox canary. Δεν είναι ενεργός στη Beta."/>
   <meta property="og:image" content="https://ekklesia.gr/pnx.png"/>
   <meta property="og:locale" content="el_GR"/>
   <meta property="og:locale:alternate" content="en_US"/>
   <meta property="og:site_name" content="εκκλησία"/>
 
   <meta name="twitter:card" content="summary"/>
-  <meta name="twitter:title" content="gov.gr Επαλήθευση — Σχεδιασμός Alpha | εκκλησία"/>
-  <meta name="twitter:description" content="Μελλοντική, προαιρετική επαλήθευση gov.gr. Δεν είναι ενεργή στη Beta."/>
+  <meta name="twitter:title" content="gov.gr Επαλήθευση — Σχεδιασμός Alpha 0.1 | εκκλησία"/>
+  <meta name="twitter:description" content="Πλήρως gated gov.gr σχεδιασμός Alpha 0.1. Δεν είναι ενεργός στη Beta."/>
   <meta name="twitter:image" content="https://ekklesia.gr/pnx.png"/>
 
   <link rel="alternate" hreflang="el" href="https://ekklesia.gr/govgr-dimos.html"/>
@@ -33,8 +33,8 @@
 {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  "name": "gov.gr Επαλήθευση — Σχεδιασμός Alpha",
-  "description": "Τεχνικός σχεδιασμός μελλοντικής επαλήθευσης gov.gr. Δεν είναι ενεργή λειτουργία Beta.",
+  "name": "gov.gr Επαλήθευση — Σχεδιασμός Alpha 0.1",
+  "description": "Πλήρως gated τεχνικός σχεδιασμός Alpha 0.1 με έλεγχο κατόχου, DPIA, ανεξάρτητο review και sandbox canary. Δεν είναι ενεργή λειτουργία Beta.",
   "author": {"@type": "Organization", "name": "V-Labs Development"},
   "publisher": {"@type": "Organization", "name": "ekklesia.gr", "url": "https://ekklesia.gr"},
   "inLanguage": "el",
@@ -219,7 +219,7 @@
 
 <!-- HERO -->
 <div class="hero">
-  <h1 data-el="gov.gr Επαλήθευση — Σχεδιασμός Alpha" data-en="gov.gr Verification — Alpha Design">gov.gr Επαλήθευση — Σχεδιασμός Alpha</h1>
+  <h1 data-el="gov.gr Επαλήθευση — Σχεδιασμός Alpha 0.1" data-en="gov.gr Verification — Alpha 0.1 Design">gov.gr Επαλήθευση — Σχεδιασμός Alpha 0.1</h1>
   <p data-el="Μελλοντική, προαιρετική ισχυρότερη επαλήθευση μέσω επίσημης διασύνδεσης ή νέου εγγράφου QR/eSeal." data-en="Future optional stronger verification through an official integration or a fresh QR/eSeal document.">Μελλοντική, προαιρετική ισχυρότερη επαλήθευση μέσω επίσημης διασύνδεσης ή νέου εγγράφου QR/eSeal.</p>
   <a href="./" class="back-link" data-el="← Αρχική" data-en="← Home">← Αρχική</a>
 </div>
@@ -227,7 +227,7 @@
 <div class="layout">
 
   <div class="warn-box fade-in">
-    <p data-el="⚠️ <strong>Δεν είναι ενεργό στη Beta.</strong> Δεν υπάρχει ακόμη εγκεκριμένη παραγωγική διασύνδεση gov.gr, σάρωση εγγράφου στην εφαρμογή ή αυτόματη κρατική ταυτοποίηση. Η υλοποίηση παρακολουθείται στο GH#141 και απαιτεί επίσημη μέθοδο επαλήθευσης, privacy review και security review. Ισχύει πάντα: ένα άτομο = μία ψήφος." data-en="⚠️ <strong>Not active in Beta.</strong> There is no approved production gov.gr integration, in-app document scan, or automatic government identity verification yet. Implementation is tracked in GH#141 and requires an official verification method, privacy review, and security review. One person always equals one vote.">
+    <p data-el="⚠️ <strong>Δεν είναι ενεργό στη Beta.</strong> Δεν υπάρχει ακόμη εγκεκριμένη παραγωγική διασύνδεση gov.gr, σάρωση εγγράφου στην εφαρμογή ή αυτόματη κρατική ταυτοποίηση. Η υλοποίηση Alpha 0.1 απαιτεί έλεγχο κατόχου, επίσημη διασύνδεση ή πλήρη eSeal validation, DPIA, σχέδιο migration, ανεξάρτητο security/privacy review και sandbox canary. Ισχύει πάντα: ένα άτομο = μία ψήφος." data-en="⚠️ <strong>Not active in Beta.</strong> There is no approved production gov.gr integration, in-app document scan, or automatic government identity verification. Alpha 0.1 requires holder authentication, an official integration or full eSeal validation, DPIA, migration design, independent security/privacy review and a sandbox canary. One person always equals one vote.">
       ⚠️ <strong>Δεν είναι ενεργό στη Beta.</strong> Δεν υπάρχει ακόμη εγκεκριμένη παραγωγική διασύνδεση gov.gr, σάρωση εγγράφου στην εφαρμογή ή αυτόματη κρατική ταυτοποίηση. Δείτε το <a href="https://github.com/NeaBouli/pnyx/blob/main/docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md">κανονικό σχέδιο ασφαλείας</a> και το <a href="https://github.com/NeaBouli/pnyx/issues/141">GH#141</a>. Ισχύει πάντα: ένα άτομο = μία ψήφος.
     </p>
   </div>

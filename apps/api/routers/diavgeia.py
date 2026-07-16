@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from models import DiavgeiaDecision, DimosDiavgeiaOrg, Dimos, Periferia
+from services.bill_visibility import public_raw_diavgeia_filter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["MOD-21 Diavgeia"])
@@ -54,7 +55,7 @@ async def admin_scrape_diavgeia(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Manually trigger Diavgeia scrape. Admin-only."""
-    from services.diavgeia_scraper import scrape_decisions
+    from services.diavgeia_scraper import convert_decisions_to_bills, scrape_decisions
 
     result = await scrape_decisions(
         session=db,
@@ -63,7 +64,10 @@ async def admin_scrape_diavgeia(
         max_pages=req.max_pages,
         dry_run=req.dry_run,
     )
-    return result.to_dict()
+    payload = result.to_dict()
+    if not req.dry_run:
+        payload["conversion"] = await convert_decisions_to_bills(db)
+    return payload
 
 
 # ─── POST /api/v1/admin/diavgeia/refresh-orgs-cache ─────────────────────────
@@ -187,6 +191,7 @@ async def list_municipal_decisions(
     stmt = (
         select(DiavgeiaDecision)
         .where(DiavgeiaDecision.dimos_id == dimos_id)
+        .where(public_raw_diavgeia_filter())
     )
     if decision_type_uid:
         stmt = stmt.where(DiavgeiaDecision.decision_type_uid == decision_type_uid)
@@ -237,6 +242,7 @@ async def list_regional_decisions(
     stmt = (
         select(DiavgeiaDecision)
         .where(DiavgeiaDecision.periferia_id == periferia_id)
+        .where(public_raw_diavgeia_filter())
     )
     if decision_type_uid:
         stmt = stmt.where(DiavgeiaDecision.decision_type_uid == decision_type_uid)

@@ -206,6 +206,9 @@ export default function ResultScreen({ route }: Props) {
             <Bar label="ΝΑΙ" count={data.yes_count} percent={data.yes_percent} color="#2e7d32" />
             <Bar label="ΟΧΙ" count={data.no_count} percent={data.no_percent} color="#c62828" />
             <Bar label="ΑΠΟΧΗ" count={data.abstain_count} percent={data.abstain_percent} color="#f57f17" />
+            {data.unknown_count > 0 && (
+              <Bar label="ΑΓΝΩΣΤΟ" count={data.unknown_count} percent={data.unknown_percent} color="#7c3aed" />
+            )}
           </View>
 
           {data.divergence ? (

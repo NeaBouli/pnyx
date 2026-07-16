@@ -76,6 +76,21 @@ async def _resolve_org(
     return None, None, "OTHER"
 
 
+def _upsert_update_values(stmt) -> dict:
+    """Keep mutable organization scope fields synchronized on re-import."""
+    return {
+        "subject": stmt.excluded.subject,
+        "decision_type_label": stmt.excluded.decision_type_label,
+        "organization_label": stmt.excluded.organization_label,
+        "document_url": stmt.excluded.document_url,
+        "raw_payload": stmt.excluded.raw_payload,
+        "dimos_id": stmt.excluded.dimos_id,
+        "periferia_id": stmt.excluded.periferia_id,
+        "governance_level": stmt.excluded.governance_level,
+        "fetched_at": stmt.excluded.fetched_at,
+    }
+
+
 async def scrape_decisions(
     session: AsyncSession,
     decision_type_uids: list[str] | None = None,
@@ -160,16 +175,7 @@ async def scrape_decisions(
                 stmt = pg_insert(DiavgeiaDecision).values(**row_data)
                 stmt = stmt.on_conflict_do_update(
                     index_elements=["ada"],
-                    set_={
-                        "subject": stmt.excluded.subject,
-                        "decision_type_label": stmt.excluded.decision_type_label,
-                        "organization_label": stmt.excluded.organization_label,
-                        "document_url": stmt.excluded.document_url,
-                        "raw_payload": stmt.excluded.raw_payload,
-                        "dimos_id": stmt.excluded.dimos_id,
-                        "periferia_id": stmt.excluded.periferia_id,
-                        "fetched_at": stmt.excluded.fetched_at,
-                    },
+                    set_=_upsert_update_values(stmt),
                 )
 
                 try:
@@ -215,6 +221,73 @@ _GOV_LEVEL_MAP = {
 CONVERTIBLE_TYPES = {"Α.2"}
 
 
+def _canonical_bill_scope(
+    raw_level: str | None,
+    dimos_id: int | None,
+    periferia_id: int | None,
+) -> tuple[GovernanceLevel, int | None, int | None]:
+    """Translate raw DIAVGEIA scope without ever defaulting unknown rows to national."""
+    level = _GOV_LEVEL_MAP.get(
+        (raw_level or "OTHER").upper(),
+        GovernanceLevel.INSTITUTIONAL,
+    )
+    if level == GovernanceLevel.MUNICIPAL:
+        return level, dimos_id, periferia_id
+    if level == GovernanceLevel.REGIONAL:
+        return level, None, periferia_id
+    return level, None, None
+
+
+async def _sync_existing_decision_bill_scopes(session: AsyncSession) -> int:
+    """Repair only geographic metadata on already converted DIAVGEIA bills."""
+    result = await session.execute(text("""
+        SELECT
+            pb.id AS bill_id,
+            pb.governance_level::text AS bill_governance_level,
+            pb.dimos_id AS bill_dimos_id,
+            pb.periferia_id AS bill_periferia_id,
+            d.governance_level AS raw_governance_level,
+            d.dimos_id AS raw_dimos_id,
+            d.periferia_id AS raw_periferia_id
+        FROM parliament_bills pb
+        JOIN diavgeia_decisions d ON d.ada = pb.diavgeia_ada
+        WHERE pb.source = 'DIAVGEIA'
+    """))
+
+    updated = 0
+    for row in result.mappings().all():
+        level, dimos_id, periferia_id = _canonical_bill_scope(
+            row["raw_governance_level"],
+            row["raw_dimos_id"],
+            row["raw_periferia_id"],
+        )
+        current = (
+            str(row["bill_governance_level"]),
+            row["bill_dimos_id"],
+            row["bill_periferia_id"],
+        )
+        expected = (level.value, dimos_id, periferia_id)
+        if current == expected:
+            continue
+
+        await session.execute(text("""
+            UPDATE parliament_bills
+            SET governance_level = CAST(:governance_level AS governancelevel),
+                dimos_id = :dimos_id,
+                periferia_id = :periferia_id,
+                updated_at = NOW()
+            WHERE id = :bill_id
+              AND source = 'DIAVGEIA'
+        """), {
+            "bill_id": row["bill_id"],
+            "governance_level": level.value,
+            "dimos_id": dimos_id,
+            "periferia_id": periferia_id,
+        })
+        updated += 1
+    return updated
+
+
 def _to_naive_utc(value: datetime | None) -> datetime | None:
     if value is None:
         return None
@@ -228,6 +301,8 @@ async def convert_decisions_to_bills(session: AsyncSession) -> dict:
     Convert new Diavgeia Α.2 decisions into parliament_bills (ANNOUNCED).
     Skips decisions already imported (by diavgeia_ada).
     """
+    scope_synced = await _sync_existing_decision_bill_scopes(session)
+
     # Find Α.2 decisions not yet in parliament_bills
     result = await session.execute(text("""
         SELECT d.ada, d.subject, d.decision_type_uid, d.organization_label,
@@ -253,7 +328,11 @@ async def convert_decisions_to_bills(session: AsyncSession) -> dict:
             continue
 
         bill_id = f"DIAV-{ada[:12]}"
-        gov = _GOV_LEVEL_MAP.get(gov_level or "OTHER", GovernanceLevel.NATIONAL)
+        gov, dimos_id, periferia_id = _canonical_bill_scope(
+            gov_level,
+            dimos_id,
+            periferia_id,
+        )
 
         # Prefix title with org label for context
         title = f"{subject.strip()}"
@@ -286,10 +365,15 @@ async def convert_decisions_to_bills(session: AsyncSession) -> dict:
             skipped += 1
             logger.warning("[NEA-199] Skip ADA %s: %s", ada, e)
 
-    if created > 0:
+    if created > 0 or scope_synced > 0:
         await session.commit()
 
-    stats = {"created": created, "skipped": skipped, "total_checked": len(rows)}
+    stats = {
+        "created": created,
+        "skipped": skipped,
+        "scope_synced": scope_synced,
+        "total_checked": len(rows),
+    }
     logger.info("[NEA-199] Conversion complete: %s", stats)
     return stats
 

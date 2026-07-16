@@ -39,9 +39,11 @@ class _EmptyMappings:
 class _SqlCaptureDb:
     def __init__(self):
         self.statement = None
+        self.params = None
 
-    async def execute(self, statement, _params):
+    async def execute(self, statement, params):
         self.statement = str(statement)
+        self.params = params
         return _EmptyMappings()
 
 
@@ -160,6 +162,36 @@ async def test_bill_result_uses_tier1_only_for_diavgeia(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
+async def test_bill_result_exposes_unknown_share_without_changing_total(monkeypatch) -> None:
+    bill_id = "GR-UNKNOWN"
+
+    async def fake_aggregate(_db, received_bill_id, *, include_zk):
+        assert received_bill_id == bill_id
+        assert include_zk is True
+        return VoteTotals(
+            yes=1,
+            no=0,
+            abstain=0,
+            unknown=1,
+            tier1_total=1,
+            zk_total=1,
+        )
+
+    monkeypatch.setattr(voting, "is_public_bill", lambda _bill: True)
+    monkeypatch.setattr(voting, "aggregate_bill_vote_totals", fake_aggregate)
+
+    result = await voting.get_results(
+        bill_id,
+        db=_FakeDb([_result_bill(bill_id=bill_id, source="PARLIAMENT")]),
+    )
+
+    assert result.total_votes == 2
+    assert result.yes_percent == 50.0
+    assert result.unknown_count == 1
+    assert result.unknown_percent == 50.0
+
+
+@pytest.mark.asyncio
 async def test_in_progress_zk_join_is_limited_to_parliament_sources(monkeypatch) -> None:
     monkeypatch.setenv("VOTES_IN_PROGRESS_THRESHOLD", "1")
     db = _SqlCaptureDb()
@@ -167,4 +199,14 @@ async def test_in_progress_zk_join_is_limited_to_parliament_sources(monkeypatch)
     result = await voting.get_votes_in_progress(db=db)
 
     assert "COALESCE(b.source, 'PARLIAMENT') = 'PARLIAMENT'" in db.statement
+    assert "unknown_count" in db.statement
+    assert "summary_short_el" in db.statement
+    assert "in_progress_sensitive_0" in db.statement
+    sensitive_params = {
+        name: value
+        for name, value in db.params.items()
+        if name.startswith("in_progress_sensitive_")
+    }
+    assert sensitive_params
+    assert all(term not in db.statement for term in sensitive_params.values())
     assert result["count"] == 0

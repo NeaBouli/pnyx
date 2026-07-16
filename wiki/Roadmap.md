@@ -1,6 +1,6 @@
 <!--
 @wiki-page ROADMAP
-@update-hint Update on phase transitions. Beta→Alpha trigger: 500 users + 3 NGOs.
+@update-hint Update on phase transitions. Beta→Alpha 0.1 requires all published official-integration, holder-authentication, DPIA, migration, independent-review and sandbox-canary gates; 500 users + 3 NGOs alone are insufficient.
 @ai-anchor WIKI_ROADMAP
 -->
 
@@ -10,7 +10,7 @@
 ## Φάση Beta (● Ενεργή τώρα / Active now)
 
 ### Ολοκληρωμένα / Completed ✅
-- MOD-01 Identity (HLR without SMS, Ed25519, Nullifier, Revocation)
+- MOD-01 Beta credential (HLR Greek-number network-status check without SMS, Ed25519, Nullifier, Revocation; not proof of SIM possession or identity)
 - MOD-02 VAA (8 κόμματα, 38 θέσεις, Matching algorithm)
 - MOD-03 Parliament (Βουλή API, Bill Lifecycle 5 States)
 - MOD-04 CitizenVote (Ed25519 signed, vote change)
@@ -26,11 +26,11 @@
 - End-to-End test (full flow)
 - Expo Mobile App (iOS + Android)
 
-## Φάση Alpha
-**Trigger:** 500+ χρήστες + 3+ NGO partners + public roadmap
+## Φάση Alpha 0.1
+**Trigger:** 500+ χρήστες + 3+ NGO partners + official integration + holder authentication + DPIA + migration design + independent security/privacy review + sandbox canary
 
 - MOD-09 gov.gr OAuth2.0 Integration
-- [GH#141 privacy-preserving gov.gr document verification](https://github.com/NeaBouli/pnyx/blob/main/docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md): fresh nonce-bound QR/PDF, official API or full eSeal validation; Alpha design only, not active in Beta
+- [GH#141 privacy-preserving gov.gr document verification](https://github.com/NeaBouli/pnyx/blob/main/docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md): fresh nonce-bound QR/PDF, holder-authenticated official method, official API or full eSeal validation; all Alpha gates above required; design only, not active in Beta
 - Demographic verification (age group + region)
 - Sandbox request to AADE/gov.gr
 - External security audit

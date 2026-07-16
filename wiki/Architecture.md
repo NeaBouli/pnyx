@@ -69,4 +69,4 @@ ANNOUNCED → ACTIVE → WINDOW_24H → PARLIAMENT_VOTED → OPEN_END
 
 - `packages/crypto-rs` → Rust + WASM (ed25519-dalek, wasm-bindgen)
 - MOD-08 TrueRepublic Bridge → Cosmos SDK / PnyxCoin
-- MOD-09 [gov.gr OAuth or fresh QR/eSeal document verification](https://github.com/NeaBouli/pnyx/blob/main/docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md) (Alpha design, not active)
+- MOD-09 [gov.gr OAuth or holder-authenticated fresh challenge-bound QR/eSeal verification](https://github.com/NeaBouli/pnyx/blob/main/docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md) (Alpha 0.1 design only; official integration, DPIA, migration design, independent review and sandbox canary required; not active in Beta)

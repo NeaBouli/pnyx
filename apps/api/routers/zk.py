@@ -408,16 +408,16 @@ def _global_rollout_applies_to_scope(scope: str) -> bool:
     return _global_rollout_enabled() and scope not in _production_scope_allowlist()
 
 
-async def _ensure_global_rollout_scope_allowed(db: AsyncSession, scope: str) -> None:
-    """Guard the automatic/global path so it can only expose Parliament bill scopes."""
-    if not _global_rollout_applies_to_scope(scope):
+async def _ensure_production_scope_allowed(db: AsyncSession, scope: str) -> None:
+    """Ensure every non-canary ZK scope is a public Parliament bill."""
+    if _env_enabled(ZK_CANARY_ENABLED_ENV):
         return
 
     scope_type, scope_id = validate_vote_scope_id(scope).split(":", 1)
     if scope_type != "bill":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="ZK global rollout supports Parliament bill scopes only",
+            detail="ZK production supports Parliament bill scopes only",
         )
     bill_result = await db.execute(select(ParliamentBill).where(ParliamentBill.id == scope_id))
     _ensure_public_parliament_bill_scope(bill_result.scalar_one_or_none())
@@ -459,6 +459,7 @@ async def _ensure_scope_public_or_safe_canary(
     *,
     require_existing_bill: bool = False,
 ) -> None:
+    """Hide every non-canary ZK surface unless it targets a public Parliament bill."""
     if _env_enabled(ZK_CANARY_ENABLED_ENV):
         scope = _ensure_canary_scope_allowed(vote_scope_id)
         await _ensure_canary_scope_isolated(db, scope)
@@ -466,14 +467,11 @@ async def _ensure_scope_public_or_safe_canary(
 
     scope_type, scope_id = validate_vote_scope_id(vote_scope_id).split(":", 1)
     if scope_type != "bill":
-        return
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ZK vote scope not found")
 
     bill_result = await db.execute(select(ParliamentBill).where(ParliamentBill.id == scope_id))
     bill = bill_result.scalar_one_or_none()
-    if bill is None and not require_existing_bill:
-        return
-    if not bill or not is_public_bill(bill):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ZK vote scope not found")
+    _ensure_public_parliament_bill_scope(bill)
 
 
 async def _publish_current_root_after_opt_in_if_enabled(db: AsyncSession, vote_scope_id: str) -> bool:
@@ -750,15 +748,15 @@ async def opt_in_zk(req: ZkOptInRequest, db: AsyncSession = Depends(get_db)) -> 
             detail=f"Η ZK ενεργοποίηση δεν είναι δυνατή. Κατάσταση: {bill.status.value}.",
         )
 
-    _ensure_bill_scope_allowed(identity, bill)
     vote_scope_id = canonical_vote_scope_id(VoteScopeType.BILL, req.bill_id)
-    _ensure_zk_write_scope_allowed(vote_scope_id)
-    if _global_rollout_applies_to_scope(vote_scope_id):
-        _ensure_public_parliament_bill_scope(bill)
     if _env_enabled(ZK_CANARY_ENABLED_ENV):
+        _ensure_zk_write_scope_allowed(vote_scope_id)
         _ensure_canary_bill_isolated(bill)
-    elif not is_public_bill(bill):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Το νομοσχέδιο {req.bill_id} δεν βρέθηκε.")
+    else:
+        _ensure_public_parliament_bill_scope(bill)
+    _ensure_bill_scope_allowed(identity, bill)
+    if not _env_enabled(ZK_CANARY_ENABLED_ENV):
+        _ensure_zk_write_scope_allowed(vote_scope_id)
 
     payload = f"zk_opt_in:{req.bill_id}:{req.commitment}:{req.nullifier_hash}".encode()
     if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
@@ -945,7 +943,6 @@ async def publish_zk_root(
 ) -> ZkRootPublishResponse:
     _ensure_zk_root_publication_enabled()
     scope = _ensure_zk_write_scope_allowed(vote_scope_id)
-    await _ensure_global_rollout_scope_allowed(db, scope)
     await _ensure_scope_public_or_safe_canary(db, scope, require_existing_bill=True)
     try:
         group = await build_active_group_root_for_scope(db, vote_scope_id=scope)
@@ -993,7 +990,6 @@ async def accept_zk_vote(req: ZkVoteRequest, db: AsyncSession = Depends(get_db))
         )
 
     scope = _ensure_zk_write_scope_allowed(req.vote_scope_id)
-    await _ensure_global_rollout_scope_allowed(db, scope)
     await _ensure_scope_public_or_safe_canary(db, scope, require_existing_bill=True)
     vote_commitment = req.vote_commitment.strip()
     vote_choice = _zk_vote_choice(vote_commitment)
@@ -1089,7 +1085,7 @@ async def verify_zk_proof(req: ZkVerifyRequest, db: AsyncSession = Depends(get_d
         scope = _ensure_canary_scope_allowed(req.vote_scope_id)
     elif req.vote_scope_id is not None:
         scope = _ensure_zk_write_scope_allowed(req.vote_scope_id)
-        await _ensure_global_rollout_scope_allowed(db, scope)
+        await _ensure_scope_public_or_safe_canary(db, scope, require_existing_bill=True)
     try:
         normalized = _normalize_public_proof(req.proof)
     except (KeyError, TypeError, ValueError):

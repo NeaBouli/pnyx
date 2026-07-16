@@ -738,8 +738,8 @@ Let's Encrypt via Traefik (auto-renew). Zertifikate in /data/acme.json im Traefi
 [ ] Vote Scope UI Mobile (Banner wenn falscher Dimos)
 [ ] ADR-022 Tier-1 blocking validation aktivieren
 [ ] Ollama Upgrade → mistral:7b (nach Server-Upgrade CX43)
-[ ] gov.gr OAuth (wartet auf Regierungsfreigabe)
-[ ] 500 User Gate + 3 NGO Gate
+[ ] gov.gr Alpha 0.1 (design-only, nicht aktiv): offizielle Freigabe und Holder-Authentifizierung
+[ ] Vollständige Gates: 500 Nutzer, 3 NGOs, Roadmap, DPIA, Credential-Migration, unabhängiger Security/Privacy-Review, Sandbox-Canary, expliziter Runtime-Schalter, Credentials und starker Server-Salt
 ```
 
 ### 🔒 Sicherheit (ganz am Ende)
