@@ -299,46 +299,46 @@
                                                                     │
                                                               Vote (1.0x)</div>
 
-  <h3 data-el="Alpha Flow (gov.gr OAuth)" data-en="Alpha Flow (gov.gr OAuth)">Alpha Flow (gov.gr OAuth)</h3>
-  <div class="code-block fade-in" data-el="gov.gr OAuth  ──►  AFM hash  ──►  HMAC  ──►  nullifier_root
+  <h3 data-el="Alpha Flow (σχεδιασμός, όχι ενεργό)" data-en="Alpha Flow (design, not active)">Alpha Flow (σχεδιασμός, όχι ενεργό)</h3>
+  <div class="code-block fade-in" data-el="Νέο challenge μιας χρήσης ──► επίσημο gov.gr OAuth ή νέο έγγραφο QR/PDF
                                             │
-                                      (AMKA/AFM διαγράφεται)
+                              επίσημο API ή τοπικός έλεγχος eSeal
                                             │
-                               nullifier_root  ──►  HMAC  ──►  Ed25519 Keypair
-                                                                     │
-                                                               Vote (2.0x)" data-en="gov.gr OAuth  ──►  TIN hash  ──►  HMAC  ──►  nullifier_root
+                        μυστικό credential nullifier ──► διαγραφή εγγράφου/PII
                                             │
-                                      (AMKA/TIN deleted)
+                                  Ed25519 / Semaphore ──► Vote (1 άτομο = 1 ψήφος)" data-en="Fresh one-time challenge ──► official gov.gr OAuth or fresh QR/PDF document
                                             │
-                               nullifier_root  ──►  HMAC  ──►  Ed25519 Keypair
-                                                                     │
-                                                               Vote (2.0x)">gov.gr OAuth  ──►  AFM hash  ──►  HMAC  ──►  nullifier_root
+                               official API or local eSeal validation
                                             │
-                                      (AMKA/AFM διαγράφεται)
+                      secret credential nullifier ──► discard document/PII
                                             │
-                               nullifier_root  ──►  HMAC  ──►  Ed25519 Keypair
-                                                                     │
-                                                               Vote (2.0x)</div>
+                                  Ed25519 / Semaphore ──► Vote (1 person = 1 vote)">Νέο challenge μιας χρήσης ──► επίσημο gov.gr OAuth ή νέο έγγραφο QR/PDF
+                                            │
+                              επίσημο API ή τοπικός έλεγχος eSeal
+                                            │
+                        μυστικό credential nullifier ──► διαγραφή εγγράφου/PII
+                                            │
+                                  Ed25519 / Semaphore ──► Vote (1 άτομο = 1 ψήφος)</div>
 
   <div class="info-box fade-in">
-    <p data-el="Και στα δύο flows: τα ακατέργαστα δεδομένα (τηλέφωνο ή ΑΦΜ) διαγράφονται αμέσως μετά τη δημιουργία του nullifier. Ο server αποθηκεύει μόνο το nullifier hash και το δημόσιο κλειδί — το server salt προστατεύεται ως κρίσιμο μυστικό." data-en="In both flows: raw data (phone or TIN) is deleted immediately after nullifier creation. The server stores only the nullifier hash and public key — the server salt is protected as a critical secret.">
-      Και στα δύο flows: τα ακατέργαστα δεδομένα (τηλέφωνο ή ΑΦΜ) διαγράφονται αμέσως μετά τη δημιουργία του nullifier. Ο server αποθηκεύει μόνο το nullifier hash και το δημόσιο κλειδί — το server salt προστατεύεται ως κρίσιμο μυστικό.
+    <p data-el="Το Alpha flow είναι ακόμη threat model, όχι runtime. Πριν ενεργοποιηθεί πρέπει να αποδειχθεί η επίσημη επαλήθευση, η κατοχή του εγγράφου/τηλεφώνου και η ασφαλής παραγωγή unlinkable credential χωρίς διατήρηση εγγράφου ή προσωπικών στοιχείων." data-en="The Alpha flow is still a threat model, not runtime. Before activation it must prove official validation, possession of the document/phone, and safe generation of an unlinkable credential without retaining the document or personal data.">
+      Το Alpha flow είναι ακόμη threat model, όχι runtime. Πριν ενεργοποιηθεί πρέπει να αποδειχθεί η επίσημη επαλήθευση, η κατοχή του εγγράφου/τηλεφώνου και η ασφαλής παραγωγή unlinkable credential χωρίς διατήρηση εγγράφου ή προσωπικών στοιχείων.
     </p>
   </div>
 
   <h3 class="fade-in" data-el="gov.gr OAuth — Κατάσταση & Ενεργοποίηση" data-en="gov.gr OAuth — Status & Activation">gov.gr OAuth — Κατάσταση & Ενεργοποίηση</h3>
   <div class="warn-box fade-in">
-    <p data-el="⚠️ <strong>DEFERRED</strong> — Η σύνδεση gov.gr OAuth είναι τεχνικά υλοποιημένη (MOD-09) αλλά απαιτεί επίσημη κυβερνητική έγκριση για ενεργοποίηση." data-en="⚠️ <strong>DEFERRED</strong> — gov.gr OAuth is technically implemented (MOD-09) but requires official government approval for activation.">
-      ⚠️ <strong>DEFERRED</strong> — Η σύνδεση gov.gr OAuth είναι τεχνικά υλοποιημένη (MOD-09) αλλά απαιτεί επίσημη κυβερνητική έγκριση για ενεργοποίηση.
+    <p data-el="⚠️ <strong>ΣΧΕΔΙΑΣΜΟΣ ALPHA — ΟΧΙ ΕΝΕΡΓΟ:</strong> το MOD-09 είναι αρχιτεκτονική προετοιμασία, όχι ενεργή κρατική ταυτοποίηση. Εξετάζονται επίσημο OAuth και νέο έγγραφο QR/PDF με challenge και eSeal. Δείτε το κανονικό σχέδιο GH#141." data-en="⚠️ <strong>ALPHA DESIGN — NOT ACTIVE:</strong> MOD-09 is architecture preparation, not active government identity verification. Official OAuth and a fresh challenge-bound QR/PDF document with eSeal are being evaluated. See the canonical GH#141 design.">
+      ⚠️ <strong>ΣΧΕΔΙΑΣΜΟΣ ALPHA — ΟΧΙ ΕΝΕΡΓΟ:</strong> το MOD-09 είναι αρχιτεκτονική προετοιμασία, όχι ενεργή κρατική ταυτοποίηση. <a href="https://github.com/NeaBouli/pnyx/blob/main/docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md">Κανονικό σχέδιο GH#141 →</a>
     </p>
   </div>
   <div class="fade-in" style="margin-top:1rem">
-    <p data-el="<strong>Δύο τρόποι ενεργοποίησης:</strong>" data-en="<strong>Two activation paths:</strong>"><strong>Δύο τρόποι ενεργοποίησης:</strong></p>
+    <p data-el="<strong>Δύο υποψήφιες διαδρομές προς αξιολόγηση:</strong>" data-en="<strong>Two candidate paths under evaluation:</strong>"><strong>Δύο υποψήφιες διαδρομές προς αξιολόγηση:</strong></p>
     <ol>
-      <li data-el="<strong>Εθνική Έγκριση:</strong> Η κυβέρνηση (ΓΓΠΣ/GSRT) εγκρίνει πρόσβαση στο gov.gr OAuth για ολόκληρη την Ελλάδα → όλοι οι πολίτες μπορούν να χρησιμοποιήσουν gov.gr Auth (x2.0 βάρος ψήφου)" data-en="<strong>National Approval:</strong> Government (GSRT) grants gov.gr OAuth access for all of Greece → all citizens can use gov.gr Auth (x2.0 vote weight)"><strong>Εθνική Έγκριση:</strong> Η κυβέρνηση (ΓΓΠΣ/GSRT) εγκρίνει πρόσβαση → x2.0 βάρος</li>
-      <li data-el="<strong>Κοινοτική Ενεργοποίηση (Pilot):</strong> Εκλεγμένοι εκπρόσωποι (Δήμαρχοι/Περιφερειάρχες) υποβάλλουν αίτημα στο Υπουργείο για τον δικό τους Δήμο/Περιφέρεια. Μετά την έγκριση: ο συγκεκριμένος Δήμος ενεργοποιείται στην πλατφόρμα για gov.gr Auth." data-en="<strong>Municipal Activation (Pilot):</strong> Elected officials (Mayors/Regional Governors) submit a request to the Ministry for their municipality/region. Upon approval: that specific area is activated on the platform for gov.gr Auth."><strong>Κοινοτική Ενεργοποίηση:</strong> Δήμαρχοι/Περιφερειάρχες υποβάλλουν αίτημα → <a href="../govgr-dimos.html" style="color:var(--blue)">Οδηγίες</a></li>
+      <li data-el="<strong>Επίσημο OAuth:</strong> χρήση μόνο μετά από γραπτή έγκριση, τεκμηριωμένα claims και ανεξάρτητο privacy/security review" data-en="<strong>Official OAuth:</strong> use only after written approval, documented claims, and an independent privacy/security review"><strong>Επίσημο OAuth:</strong> μόνο μετά από έγκριση και review</li>
+      <li data-el="<strong>Δημοτική αξιολόγηση (μελλοντικό pilot):</strong> ένας Δήμος μπορεί να ζητήσει επίσημη τεχνική αξιολόγηση. Καμία ενεργοποίηση δεν γίνεται μόνο με μια έγκριση: απαιτούνται τεκμηριωμένα claims, νομική βάση/DPIA, migration, recovery, revocation, ανεξάρτητοι έλεγχοι και επιτυχές canary." data-en="<strong>Municipal evaluation (future pilot):</strong> a municipality may request an official technical evaluation. Approval alone never activates the flow: documented claims, legal basis/DPIA, migration, recovery, revocation, independent reviews, and a successful canary are all required."><strong>Δημοτική αξιολόγηση:</strong> αίτημα για μελλοντικό pilot, χωρίς αυτόματη ενεργοποίηση → <a href="../govgr-dimos.html" style="color:var(--blue)">Σχεδιασμός Alpha</a></li>
     </ol>
-    <p data-el="<strong>Μέχρι τότε:</strong> Επαλήθευση HLR χωρίς SMS με x1.0 βάρος ψήφου. Αξιόπιστο, ανώνυμο, λειτουργεί χωρίς κρατική έγκριση." data-en="<strong>Until then:</strong> HLR verification without SMS with x1.0 vote weight. Reliable, anonymous, works without government approval."><strong>Μέχρι τότε:</strong> HLR χωρίς SMS με x1.0 βάρος. Αξιόπιστο, ανώνυμο, χωρίς κρατική έγκριση.</p>
+    <p data-el="<strong>Στη Beta:</strong> ο HLR ελέγχει μόνο την κατάσταση/συμβατότητα ελληνικού αριθμού. Δεν αποδεικνύει κατοχή SIM, ταυτότητα, ηλικία, υπηκοότητα, κατοικία ή εκλογικό δικαίωμα." data-en="<strong>In Beta:</strong> HLR checks only the status/compatibility of a Greek number. It does not prove SIM possession, identity, age, citizenship, residence, or electoral eligibility."><strong>Στη Beta:</strong> ο HLR δεν αποτελεί κρατική ταυτοποίηση ή απόδειξη εκλογικού δικαιώματος.</p>
   </div>
 
   <h3 class="fade-in" data-el="Vote Scope — Τοπική Ψηφοφορία" data-en="Vote Scope — Local Voting">Vote Scope — Τοπική Ψηφοφορία</h3>
@@ -350,7 +350,7 @@
         <tr><td>PARLIAMENT</td><td data-el="Όλοι οι HLR-επαληθευμένοι" data-en="All HLR-verified users">Όλοι οι HLR-επαληθ.</td><td>x1.0</td></tr>
         <tr><td>PERIFERIA</td><td data-el="Μόνο χρήστες στη σωστή Περιφέρεια" data-en="Only users in the correct Region">Χρήστες στη Περιφέρεια</td><td>x1.0</td></tr>
         <tr><td>DIMOS</td><td data-el="Μόνο χρήστες στο σωστό Δήμο" data-en="Only users in the correct Municipality">Χρήστες στο Δήμο</td><td>x1.0</td></tr>
-        <tr><td data-el="gov.gr (μελλοντικό)" data-en="gov.gr (future)">gov.gr</td><td data-el="Όλοι — εθνικά/τοπικά" data-en="All — national/local">Όλοι</td><td>x2.0</td></tr>
+        <tr><td data-el="gov.gr (μελλοντικό)" data-en="gov.gr (future)">gov.gr</td><td data-el="Μόνο claims που θα αποδεικνύονται επίσημα" data-en="Only claims proven by an official method">Μόνο επίσημα claims</td><td>x1.0</td></tr>
       </table>
     </div>
   </div>

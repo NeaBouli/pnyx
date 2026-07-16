@@ -195,10 +195,15 @@ New system-generated bill pills, short summaries, and forum first-post bodies ca
 | Phase | Trigger | Status |
 |---|---|---|
 | **Beta** | Now | Active |
-| **Alpha** | 500 users + 3 NGOs + gov.gr OAuth | Upcoming |
+| **Alpha** | 500 users + 3 NGOs + official gov.gr verification gate | Upcoming: OAuth or fresh QR/eSeal document verification is designed in [GH#141](https://github.com/NeaBouli/pnyx/issues/141), not live in Beta |
 | **V2** | ZK Voting (Semaphore) + Federation | Guarded Parliament rollout live; ZK Arweave auto-publication live for eligible public Parliament scopes (min group size 5) |
 
 &rarr; Details: [Roadmap](https://ekklesia.gr/wiki/roadmap.html)
+
+The future gov.gr verification path is documented as an Alpha-only security
+design in [Gov.gr Document Verification](docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md).
+It is not active in Beta, and a document QR alone is never treated as proof of
+the holder's identity.
 
 ---
 

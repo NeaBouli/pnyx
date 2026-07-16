@@ -265,8 +265,8 @@
         Η πλατφόρμα βρίσκεται σε φάση Beta. Σήμερα λειτουργεί ως εξής:
       </p>
       <ol>
-        <li data-el="Δίνετε τον αριθμό κινητού σας για έλεγχο ενεργής ελληνικής SIM μέσω HLR. Δεν στέλνεται SMS." data-en="You provide your mobile number for an active Greek SIM check via HLR. No SMS is sent.">Δίνετε τον αριθμό κινητού σας για έλεγχο ενεργής ελληνικής SIM μέσω HLR. Δεν στέλνεται SMS.</li>
-        <li data-el="Το σύστημα επιβεβαιώνει ότι ο αριθμός σας είναι ενεργός ελληνικός αριθμός (+30) και μετά διαγράφει τον αριθμό." data-en="The system confirms the number is an active Greek number (+30) and then deletes the number.">Το σύστημα επιβεβαιώνει ότι ο αριθμός σας είναι ενεργός ελληνικός αριθμός (+30) και μετά διαγράφει τον αριθμό.</li>
+        <li data-el="Δίνετε τον αριθμό κινητού σας για έλεγχο κατάστασης δικτύου μέσω HLR. Δεν στέλνεται SMS." data-en="You provide your mobile number for a network-status check via HLR. No SMS is sent.">Δίνετε τον αριθμό κινητού σας για έλεγχο κατάστασης δικτύου μέσω HLR. Δεν στέλνεται SMS.</li>
+        <li data-el="Ο έλεγχος επιβεβαιώνει συμβατότητα ελληνικού αριθμού (+30), όχι κατοχή SIM, ταυτότητα ή εκλογικό δικαίωμα. Μετά ο αριθμός διαγράφεται." data-en="The check confirms Greek-number (+30) compatibility, not SIM possession, identity, or electoral eligibility. The number is then deleted.">Ο έλεγχος δεν αποδεικνύει κατοχή SIM ή ταυτότητα. Μετά ο αριθμός διαγράφεται.</li>
         <li data-el="Δημιουργείται αυτόματα ένα μοναδικό κρυπτογραφικό κλειδί στη συσκευή σας. Αυτό είναι η «ταυτότητά» σας στην πλατφόρμα." data-en="A unique cryptographic key is automatically created on your device. This is your 'identity' on the platform.">Δημιουργείται αυτόματα ένα μοναδικό κρυπτογραφικό κλειδί στη συσκευή σας. Αυτό είναι η «ταυτότητά» σας στην πλατφόρμα.</li>
         <li data-el="Ψηφίζετε! Κάθε ψήφος σας έχει βαρύτητα 1.0x." data-en="You vote! Each vote has a weight of 1.0x.">Ψηφίζετε! Κάθε ψήφος σας έχει βαρύτητα 1.0x.</li>
         <li data-el="Αξιολογείτε αποφάσεις μέσω Κλίμακας Συναίνεσης (-5 έως +5)." data-en="Evaluate decisions via Consensus Scale (-5 to +5).">Κλίμακα Συναίνεσης (-5 έως +5) για αξιολόγηση αποφάσεων.</li>
@@ -309,13 +309,14 @@
   <div class="roadmap-section fade-in" onclick="toggleSection(this)">
     <h3 data-el="Φάση Α — Έρχεται" data-en="Phase A — Coming Soon"><span class="section-icon">🏗️</span> Φάση Α — Έρχεται</h3>
     <div class="roadmap-content">
-      <p data-el="Στην επόμενη φάση, θα μπορείτε να συνδεθείτε μέσω gov.gr — την πλατφόρμα του ελληνικού Δημοσίου." data-en="In the next phase, you will be able to log in through gov.gr — the Greek government platform.">
-        Στην επόμενη φάση, θα μπορείτε να συνδεθείτε μέσω <strong>gov.gr</strong> — την πλατφόρμα του ελληνικού Δημοσίου.
+      <p data-el="Στην Alpha διερευνώνται δύο επίσημες διαδρομές gov.gr: OAuth ή επαλήθευση νέου εγγράφου QR/PDF με ηλεκτρονική σφραγίδα. Καμία δεν είναι ενεργή στη Beta." data-en="Alpha evaluates two official gov.gr paths: OAuth or verification of a freshly issued QR/PDF document with an electronic seal. Neither is active in Beta.">
+        Στην Alpha διερευνώνται δύο επίσημες διαδρομές <strong>gov.gr</strong>: OAuth ή επαλήθευση νέου εγγράφου QR/PDF με ηλεκτρονική σφραγίδα. Καμία δεν είναι ενεργή στη Beta.
       </p>
       <ul>
         <li data-el="Σύνδεση μέσω gov.gr OAuth (ίδιος κωδικός που χρησιμοποιείτε για taxisnet, e-ΕΦΚΑ κ.λπ.)." data-en="Login via gov.gr OAuth (same credentials you use for taxisnet, e-EFKA etc.).">Σύνδεση μέσω gov.gr OAuth (ίδιος κωδικός που χρησιμοποιείτε για taxisnet, e-ΕΦΚΑ κ.λπ.).</li>
+        <li data-el="Εναλλακτικά: νέο έγγραφο gov.gr δεσμευμένο σε μοναδικό challenge της εφαρμογής, με επίσημο API ή πλήρη έλεγχο eSeal. Το έγγραφο και τα προσωπικά στοιχεία απορρίπτονται μετά τον έλεγχο. Ο QR μόνος του δεν αποδεικνύει την ταυτότητα του κατόχου (GH#141)." data-en="Alternative: a freshly issued gov.gr document bound to a one-time app challenge, validated through an official API or full eSeal verification. The document and personal data are discarded after validation. The QR alone does not prove holder identity (GH#141).">Εναλλακτικά: νέο έγγραφο gov.gr με μοναδικό challenge και πλήρη έλεγχο QR/eSeal — ο QR μόνος του δεν αποδεικνύει ταυτότητα (<a href="https://github.com/NeaBouli/pnyx/blob/main/docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md">GH#141</a>).</li>
         <li data-el="Οι Δήμοι ενεργοποιούν τοπικές ψηφοφορίες για τη γειτονιά σας." data-en="Municipalities activate local votes for your neighborhood.">Οι Δήμοι ενεργοποιούν τοπικές ψηφοφορίες για τη γειτονιά σας.</li>
-        <li data-el="Η ψήφος σας αποκτά βαρύτητα 2.0x — διπλάσια ισχύ." data-en="Your vote gets a weight of 2.0x — double the power.">Η ψήφος σας αποκτά βαρύτητα <strong>2.0x</strong> — διπλάσια ισχύ.</li>
+        <li data-el="Η ισχυρότερη επαλήθευση δεν αλλάζει το βάρος: ένα άτομο = μία ψήφος." data-en="Stronger verification does not change vote weight: one person equals one vote.">Η ισχυρότερη επαλήθευση δεν αλλάζει το βάρος: <strong>ένα άτομο = μία ψήφος</strong>.</li>
         <li data-el="gov.gr OAuth για Εκπροσώπους — αξιολόγηση με κυβερνητική ταυτοποίηση (προγραμματισμένο)" data-en="gov.gr OAuth for Representatives — evaluation with government authentication (planned)">gov.gr OAuth για Εκπροσώπους (προγραμματισμένο)</li>
       </ul>
       <div class="info-box">
@@ -329,8 +330,8 @@
   <div class="roadmap-section fade-in" onclick="toggleSection(this)">
     <h3 data-el="Πώς υπολογίζεται η ψήφος σας" data-en="How your vote is calculated"><span class="section-icon">⚖️</span> Πώς υπολογίζεται η ψήφος σας</h3>
     <div class="roadmap-content">
-      <p data-el="Κάθε ψήφος μετράει, αλλά η βαρύτητα εξαρτάται από τον τρόπο επαλήθευσής σας:" data-en="Every vote counts, but the weight depends on your verification method:">
-        Κάθε ψήφος μετράει, αλλά η βαρύτητα εξαρτάται από τον τρόπο επαλήθευσής σας:
+      <p data-el="Κάθε έγκυρη ψήφος πολίτη έχει το ίδιο βάρος. Η μέθοδος επαλήθευσης είναι metadata ασφάλειας, όχι πολλαπλασιαστής ψήφου:" data-en="Every valid citizen vote has equal weight. Verification method is security metadata, not a vote multiplier:">
+        Κάθε έγκυρη ψήφος πολίτη έχει το ίδιο βάρος. Η μέθοδος επαλήθευσης είναι metadata ασφάλειας, όχι πολλαπλασιαστής ψήφου:
       </p>
       <div class="table-wrap">
         <table>
@@ -349,19 +350,19 @@
             </tr>
             <tr>
               <td data-el="HLR + Πολιτική Πυξίδα" data-en="HLR + Political Compass">HLR + Πολιτική Πυξίδα</td>
-              <td><strong>1.2x</strong></td>
+              <td><strong>1.0x</strong></td>
               <td><span class="badge badge-green" data-el="Ενεργό" data-en="Active">Ενεργό</span></td>
             </tr>
             <tr>
               <td data-el="gov.gr OAuth" data-en="gov.gr OAuth">gov.gr OAuth</td>
-              <td><strong>2.0x</strong></td>
+              <td><strong>1.0x</strong></td>
               <td><span class="badge badge-yellow" data-el="Φάση Α" data-en="Phase A">Φάση Α</span></td>
             </tr>
           </tbody>
         </table>
       </div>
       <div class="info-box">
-        <p data-el="Η βαρύτητα 1.2x δίνεται αυτόματα αν έχετε συμπληρώσει την Πολιτική Πυξίδα. Δεν χρειάζεται κάποια άλλη ενέργεια." data-en="The 1.2x weight is given automatically if you complete the Political Compass. No further action needed.">Η βαρύτητα 1.2x δίνεται αυτόματα αν έχετε συμπληρώσει την Πολιτική Πυξίδα. Δεν χρειάζεται κάποια άλλη ενέργεια.</p>
+        <p data-el="Η Πολιτική Πυξίδα είναι προσωπικό εργαλείο κατανόησης και δεν αυξάνει το βάρος της ψήφου. Το gov.gr Alpha gate επίσης δεν θα πολλαπλασιάζει ψήφους." data-en="The Political Compass is a personal insight tool and does not increase vote weight. The gov.gr Alpha gate will not multiply votes either.">Η Πολιτική Πυξίδα είναι προσωπικό εργαλείο κατανόησης και δεν αυξάνει το βάρος της ψήφου.</p>
       </div>
     </div>
   </div>
@@ -414,13 +415,13 @@
       </p>
       <ul>
         <li data-el="Π.χ. «Να γίνει πεζόδρομος η οδός Ερμού;» — ψηφίζουν μόνο οι κάτοικοι του Δήμου." data-en="E.g. 'Should Ermou Street be pedestrianized?' — only the municipality's residents vote.">Π.χ. «Να γίνει πεζόδρομος η οδός Ερμού;» — ψηφίζουν μόνο οι κάτοικοι του Δήμου.</li>
-        <li data-el="Η ταυτοποίηση γίνεται μέσω gov.gr — ο Δήμος δεν βλέπει ποιος ψήφισε τι." data-en="Identification is through gov.gr — the municipality does not see who voted for what.">Η ταυτοποίηση γίνεται μέσω gov.gr — ο Δήμος δεν βλέπει ποιος ψήφισε τι.</li>
+        <li data-el="Η μελλοντική επαλήθευση θα χρησιμοποιεί μόνο claims που αποδεικνύονται από εγκεκριμένη επίσημη μέθοδο. Η μέθοδος και τα διαθέσιμα claims δεν έχουν ακόμη εγκριθεί." data-en="Future verification will use only claims proven by an approved official method. The method and available claims have not yet been approved.">Η μελλοντική επαλήθευση απαιτεί εγκεκριμένη επίσημη μέθοδο και αποδεδειγμένα claims.</li>
         <li data-el="Τα αποτελέσματα δημοσιεύονται ανοιχτά." data-en="Results are published openly.">Τα αποτελέσματα δημοσιεύονται ανοιχτά.</li>
       </ul>
       <div class="success-box">
-        <p data-el="Είστε Δήμαρχος ή εργάζεστε σε Δήμο; Μάθετε πώς να ενεργοποιήσετε τον Δήμο σας." data-en="Are you a Mayor or work at a municipality? Learn how to activate your municipality.">
+        <p data-el="Είστε Δήμαρχος ή εργάζεστε σε Δήμο; Δείτε τον σχεδιασμό Alpha και τις προϋποθέσεις ενός μελλοντικού pilot." data-en="Are you a Mayor or work at a municipality? Review the Alpha design and prerequisites for a future pilot.">
           Είστε Δήμαρχος ή εργάζεστε σε Δήμο;
-          <a href="../govgr-dimos.html" style="color:var(--blue);font-weight:700" data-el="Μάθετε πώς να ενεργοποιήσετε τον Δήμο σας →" data-en="Learn how to activate your municipality →"> Μάθετε πώς να ενεργοποιήσετε τον Δήμο σας →</a>
+          <a href="../govgr-dimos.html" style="color:var(--blue);font-weight:700" data-el="Δείτε τον σχεδιασμό Alpha →" data-en="Review the Alpha design →"> Δείτε τον σχεδιασμό Alpha →</a>
         </p>
       </div>
     </div>

@@ -536,7 +536,7 @@
       <div class="step fade-in">
         <div class="step-num">1</div>
         <h3 data-el="Επαλήθευση" data-en="Verification">Επαλήθευση</h3>
-        <p data-el="Έλεγχος ενεργής ελληνικής SIM μέσω HLR. Δεν στέλνεται SMS και ο αριθμός διαγράφεται αμέσως." data-en="Active Greek SIM check via HLR. No SMS is sent and the number is deleted immediately.">Έλεγχος ενεργής ελληνικής SIM μέσω HLR. Δεν στέλνεται SMS και ο αριθμός διαγράφεται αμέσως.</p>
+        <p data-el="Έλεγχος κατάστασης ελληνικού αριθμού κινητού μέσω HLR. Δεν αποδεικνύει κατοχή SIM ή ταυτότητα· δεν στέλνεται SMS και ο αριθμός διαγράφεται αμέσως." data-en="Greek mobile-number status check via HLR. It does not prove SIM possession or identity; no SMS is sent and the number is deleted immediately.">Έλεγχος κατάστασης ελληνικού αριθμού μέσω HLR. Δεν αποδεικνύει κατοχή SIM ή ταυτότητα.</p>
       </div>
       <div class="step fade-in">
         <div class="step-num">2</div>
@@ -987,7 +987,7 @@
             <li>🔮 <span data-el="Κρυπτογραφικά επαληθεύσιμο πρωτόκολλο" data-en="Cryptographically verifiable protocol">Κρυπτογραφικά επαληθεύσιμο πρωτόκολλο</span></li>
             <li>🔮 <span data-el="Κάθε πολίτης μπορεί να επαληθεύσει μόνος" data-en="Every citizen can verify independently">Κάθε πολίτης μπορεί να επαληθεύσει μόνος</span></li>
             <li>🔮 <span data-el="Zero-Knowledge Proofs — μαθηματικά αποδείξιμο" data-en="Zero-Knowledge Proofs — mathematically provable">Zero-Knowledge Proofs — μαθηματικά αποδείξιμο</span></li>
-            <li>🔮 <span data-el="gov.gr OAuth — κρατική ταυτοποίηση" data-en="gov.gr OAuth — government authentication">gov.gr OAuth — κρατική ταυτοποίηση</span></li>
+            <li>🔮 <span data-el="gov.gr — OAuth ή έλεγχος νέου εγγράφου QR/eSeal (σχεδιασμός Alpha, όχι ενεργό στη Beta)" data-en="gov.gr — OAuth or fresh QR/eSeal document verification (Alpha design, not active in Beta)">gov.gr — OAuth ή έλεγχος νέου εγγράφου QR/eSeal (σχεδιασμός Alpha)</span></li>
           </ul>
         </div>
       </div>
@@ -1027,7 +1027,7 @@
           <p style="color:rgba(255,255,255,0.7);font-size:0.78rem;margin-bottom:0.75rem;line-height:1.5" data-el="Ενεργοποίηση δήμου, εφαρμογή εκπρόσωπος, δείκτης απόκλισης." data-en="Municipality activation, representative app, divergence index.">Ενεργοποίηση δήμου, εφαρμογή εκπρόσωπος, δείκτης απόκλισης.</p>
           <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
             <a href="municipality/" style="padding:0.4rem 0.8rem;background:#f59e0b;color:#0f172a;border-radius:0.4rem;text-decoration:none;font-weight:700;font-size:0.75rem" data-el="Περισσότερα →" data-en="Learn more →">Περισσότερα →</a>
-            <a href="govgr-dimos.html" style="padding:0.4rem 0.8rem;background:transparent;border:1px solid rgba(255,255,255,0.3);color:rgba(255,255,255,0.8);border-radius:0.4rem;text-decoration:none;font-weight:700;font-size:0.75rem" data-el="Ενεργοποίηση Δήμου" data-en="Activate Municipality">Ενεργοποίηση Δήμου</a>
+            <a href="govgr-dimos.html" style="padding:0.4rem 0.8rem;background:transparent;border:1px solid rgba(255,255,255,0.3);color:rgba(255,255,255,0.8);border-radius:0.4rem;text-decoration:none;font-weight:700;font-size:0.75rem" data-el="Σχεδιασμός Alpha" data-en="Alpha design">Σχεδιασμός Alpha</a>
           </div>
         </div>
       </div>
@@ -1185,9 +1185,9 @@
         <div class="roadmap-phase" style="color:#f59e0b" data-el="Alpha — Επόμενη Φάση" data-en="Alpha — Next Phase">Alpha — Επόμενη Φάση</div>
         <h3>Alpha Phase</h3>
         <ul>
-          <li data-el="gov.gr OAuth2.0 (αντικαθιστά το HLR Beta)" data-en="gov.gr OAuth2.0 (replaces Beta HLR)">gov.gr OAuth2.0 (αντικαθιστά το HLR Beta)</li>
+          <li data-el="gov.gr OAuth2.0 ή επαλήθευση νέου εγγράφου QR/eSeal — απαιτεί επίσημη διασύνδεση και έλεγχο απορρήτου, δεν είναι ενεργό στη Beta" data-en="gov.gr OAuth2.0 or fresh QR/eSeal document verification — requires an official integration and privacy review; not active in Beta">gov.gr OAuth2.0 ή επαλήθευση νέου εγγράφου QR/eSeal (σχεδιασμός Alpha)</li>
           <li data-el="Zero-Knowledge Proofs (Semaphore)" data-en="Zero-Knowledge Proofs (Semaphore)">Zero-Knowledge Proofs (Semaphore)</li>
-          <li data-el="Πλήρης Ταυτοποίηση Ψηφοφόρων" data-en="Full Voter Verification">Πλήρης Ταυτοποίηση Ψηφοφόρων</li>
+          <li data-el="Επίσημα αποδεδειγμένα claims — περιορισμένος σχεδιασμός Alpha" data-en="Officially proven claims — limited Alpha design">Επίσημα αποδεδειγμένα claims — σχεδιασμός Alpha</li>
           <li data-el="Federation API" data-en="Federation API">Federation API</li>
           <li data-el="iOS App" data-en="iOS App">iOS App</li>
           <li data-el="500+ Χρήστες + 3 NGOs" data-en="500+ Users + 3 NGOs">500+ Χρήστες + 3 NGOs</li>
@@ -1258,7 +1258,7 @@
     <div style="max-width:800px;margin:1.25rem auto 0;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:0.75rem;padding:0.75rem 1.25rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem" class="fade-in">
       <div style="display:flex;align-items:center;gap:0.5rem">
         <span style="font-size:1.1rem">🏛️</span>
-        <span style="font-size:0.78rem;color:#1e40af" data-el="Δημόσιοι φορείς, Δήμοι & Περιφέρειες — ενεργοποιήστε το gov.gr OAuth για τους πολίτες σας" data-en="Public bodies, Municipalities & Regions — activate gov.gr OAuth for your citizens">Δημόσιοι φορείς & Δήμοι — ενεργοποιήστε το gov.gr OAuth</span>
+        <span style="font-size:0.78rem;color:#1e40af" data-el="Σχεδιασμός Alpha για μελλοντική επαλήθευση gov.gr — δεν είναι ενεργό στη Beta" data-en="Alpha design for future gov.gr verification — not active in Beta">Σχεδιασμός Alpha για μελλοντική επαλήθευση gov.gr — δεν είναι ενεργό στη Beta</span>
       </div>
       <a href="govgr-dimos.html" style="display:inline-block;padding:0.35rem 0.9rem;background:#2563eb;color:white;border-radius:0.4rem;font-size:0.75rem;font-weight:700;text-decoration:none;white-space:nowrap" data-el="Περισσότερα →" data-en="Learn more →">Περισσότερα →</a>
     </div>

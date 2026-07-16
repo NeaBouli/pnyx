@@ -30,6 +30,7 @@
 **Trigger:** 500+ χρήστες + 3+ NGO partners + public roadmap
 
 - MOD-09 gov.gr OAuth2.0 Integration
+- [GH#141 privacy-preserving gov.gr document verification](https://github.com/NeaBouli/pnyx/blob/main/docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md): fresh nonce-bound QR/PDF, official API or full eSeal validation; Alpha design only, not active in Beta
 - Demographic verification (age group + region)
 - Sandbox request to AADE/gov.gr
 - External security audit

@@ -15,13 +15,14 @@ Ziel: Eigenständige, leichtgewichtige Plattform ohne staatliche Abhängigkeit.
 - [x] Next.js Web Frontend (el/en) — 5 Seiten + NavHeader + i18n
 - [x] Ed25519 Signing Web + Mobile (@noble/curves)
 - [x] Expo Mobile App — 7 Screens, Biometrie, Secure Enclave
-- [ ] Docker Production Deployment (Hetzner)
+- [x] Docker Production Deployment (Hetzner)
 - [ ] Öffentlicher Launch Beta
 
 ## Phase Alpha
 Voraussetzung: 500+ Nutzer, 3+ NGO-Partner, öffentliche Legitimation.
 
 - [ ] MOD-09 gov.gr OAuth2.0 Integration
+- [ ] [GH#141 privacy-preserving gov.gr document verification](GOVGR_DOCUMENT_VERIFICATION_ALPHA.md) (fresh nonce-bound QR/PDF, official API or full eSeal validation; Alpha only, not live in Beta)
 - [ ] Demographische Verifikation (Altersgruppe + Region)
 - [ ] Sandbox-Anfrage an AADE/gov.gr
 - [ ] Externe Sicherheitsaudit

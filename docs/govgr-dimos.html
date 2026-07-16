@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>gov.gr Ενεργοποίηση Δήμου | εκκλησία</title>
-  <meta name="description" content="Ενεργοποιήστε το gov.gr OAuth για τον Δήμο σας — επαληθευμένη ταυτότητα πολιτών με 2.0x βάρος ψήφου."/>
+  <title>gov.gr Επαλήθευση — Σχεδιασμός Alpha | εκκλησία</title>
+  <meta name="description" content="Σχεδιασμός Alpha για προαιρετική επαλήθευση μέσω επίσημης διασύνδεσης gov.gr ή νέου εγγράφου QR/eSeal. Δεν είναι ενεργό στη Beta."/>
   <meta name="keywords" content="gov.gr, Δήμος, Περιφέρεια, OAuth, ekklesia, ψηφοφορία, ενεργοποίηση"/>
   <meta name="author" content="V-Labs Development — Community"/>
   <meta name="robots" content="index, follow"/>
@@ -12,16 +12,16 @@
 
   <meta property="og:type" content="website"/>
   <meta property="og:url" content="https://ekklesia.gr/govgr-dimos.html"/>
-  <meta property="og:title" content="gov.gr Ενεργοποίηση Δήμου | εκκλησία"/>
-  <meta property="og:description" content="Ενεργοποιήστε το gov.gr OAuth για τον Δήμο σας — επαληθευμένη ταυτότητα πολιτών με 2.0x βάρος ψήφου."/>
+  <meta property="og:title" content="gov.gr Επαλήθευση — Σχεδιασμός Alpha | εκκλησία"/>
+  <meta property="og:description" content="Μελλοντική, προαιρετική επαλήθευση gov.gr. Δεν είναι ενεργή στη Beta και δεν αλλάζει το βάρος ψήφου."/>
   <meta property="og:image" content="https://ekklesia.gr/pnx.png"/>
   <meta property="og:locale" content="el_GR"/>
   <meta property="og:locale:alternate" content="en_US"/>
   <meta property="og:site_name" content="εκκλησία"/>
 
   <meta name="twitter:card" content="summary"/>
-  <meta name="twitter:title" content="gov.gr Ενεργοποίηση Δήμου | εκκλησία"/>
-  <meta name="twitter:description" content="Ενεργοποιήστε το gov.gr OAuth για τον Δήμο σας — επαληθευμένη ταυτότητα πολιτών με 2.0x βάρος ψήφου."/>
+  <meta name="twitter:title" content="gov.gr Επαλήθευση — Σχεδιασμός Alpha | εκκλησία"/>
+  <meta name="twitter:description" content="Μελλοντική, προαιρετική επαλήθευση gov.gr. Δεν είναι ενεργή στη Beta."/>
   <meta name="twitter:image" content="https://ekklesia.gr/pnx.png"/>
 
   <link rel="alternate" hreflang="el" href="https://ekklesia.gr/govgr-dimos.html"/>
@@ -33,8 +33,8 @@
 {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  "name": "gov.gr Ενεργοποίηση Δήμου",
-  "description": "Οδηγός ενεργοποίησης gov.gr OAuth για Δήμους — επαληθευμένη ταυτότητα πολιτών στο ekklesia.gr.",
+  "name": "gov.gr Επαλήθευση — Σχεδιασμός Alpha",
+  "description": "Τεχνικός σχεδιασμός μελλοντικής επαλήθευσης gov.gr. Δεν είναι ενεργή λειτουργία Beta.",
   "author": {"@type": "Organization", "name": "V-Labs Development"},
   "publisher": {"@type": "Organization", "name": "ekklesia.gr", "url": "https://ekklesia.gr"},
   "inLanguage": "el",
@@ -219,12 +219,18 @@
 
 <!-- HERO -->
 <div class="hero">
-  <h1 data-el="gov.gr Ενεργοποίηση για τον Δήμο σας" data-en="gov.gr Activation for your Municipality">gov.gr Ενεργοποίηση για τον Δήμο σας</h1>
-  <p data-el="Δώστε στους πολίτες σας επαληθευμένη ταυτότητα μέσω gov.gr OAuth — αναβαθμίστε τη δημοτική δημοκρατία." data-en="Give your citizens verified identity via gov.gr OAuth — upgrade your municipal democracy.">Δώστε στους πολίτες σας επαληθευμένη ταυτότητα μέσω gov.gr OAuth — αναβαθμίστε τη δημοτική δημοκρατία.</p>
+  <h1 data-el="gov.gr Επαλήθευση — Σχεδιασμός Alpha" data-en="gov.gr Verification — Alpha Design">gov.gr Επαλήθευση — Σχεδιασμός Alpha</h1>
+  <p data-el="Μελλοντική, προαιρετική ισχυρότερη επαλήθευση μέσω επίσημης διασύνδεσης ή νέου εγγράφου QR/eSeal." data-en="Future optional stronger verification through an official integration or a fresh QR/eSeal document.">Μελλοντική, προαιρετική ισχυρότερη επαλήθευση μέσω επίσημης διασύνδεσης ή νέου εγγράφου QR/eSeal.</p>
   <a href="./" class="back-link" data-el="← Αρχική" data-en="← Home">← Αρχική</a>
 </div>
 
 <div class="layout">
+
+  <div class="warn-box fade-in">
+    <p data-el="⚠️ <strong>Δεν είναι ενεργό στη Beta.</strong> Δεν υπάρχει ακόμη εγκεκριμένη παραγωγική διασύνδεση gov.gr, σάρωση εγγράφου στην εφαρμογή ή αυτόματη κρατική ταυτοποίηση. Η υλοποίηση παρακολουθείται στο GH#141 και απαιτεί επίσημη μέθοδο επαλήθευσης, privacy review και security review. Ισχύει πάντα: ένα άτομο = μία ψήφος." data-en="⚠️ <strong>Not active in Beta.</strong> There is no approved production gov.gr integration, in-app document scan, or automatic government identity verification yet. Implementation is tracked in GH#141 and requires an official verification method, privacy review, and security review. One person always equals one vote.">
+      ⚠️ <strong>Δεν είναι ενεργό στη Beta.</strong> Δεν υπάρχει ακόμη εγκεκριμένη παραγωγική διασύνδεση gov.gr, σάρωση εγγράφου στην εφαρμογή ή αυτόματη κρατική ταυτοποίηση. Δείτε το <a href="https://github.com/NeaBouli/pnyx/blob/main/docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md">κανονικό σχέδιο ασφαλείας</a> και το <a href="https://github.com/NeaBouli/pnyx/issues/141">GH#141</a>. Ισχύει πάντα: ένα άτομο = μία ψήφος.
+    </p>
+  </div>
 
   <!-- SECTION 1: What it means -->
   <h2 class="fade-in" data-el="Τι σημαίνει για τους πολίτες" data-en="What it means for citizens">Τι σημαίνει για τους πολίτες</h2>
@@ -232,12 +238,12 @@
     <div class="card" style="border-color:#93c5fd;background:var(--blue-l)">
       <div class="card-icon">🪪</div>
       <h4 style="color:var(--blue-d)" data-el="Επαληθευμένη Ταυτότητα" data-en="Verified Identity">Επαληθευμένη Ταυτότητα</h4>
-      <p data-el="Taxisnet login μέσω gov.gr OAuth2.0" data-en="Taxisnet login via gov.gr OAuth2.0">Taxisnet login μέσω gov.gr OAuth2.0</p>
+      <p data-el="Υποψήφιο επίσημο OAuth ή νέο έγγραφο QR/eSeal — όχι ενεργό" data-en="Candidate official OAuth or fresh QR/eSeal document — not active">Υποψήφιο OAuth ή QR/eSeal — όχι ενεργό</p>
     </div>
     <div class="card" style="border-color:#86efac;background:#f0fdf4">
       <div class="card-icon">⚖️</div>
-      <h4 style="color:#166534" data-el="2.0x Βάρος Ψήφου" data-en="2.0x Vote Weight">2.0x Βάρος Ψήφου</h4>
-      <p data-el="Διπλάσια αντιπροσωπευτική ισχύ λόγω πλήρους ταυτοποίησης" data-en="Double representative power from full identity verification">Διπλάσια αντιπροσωπευτική ισχύ λόγω πλήρους ταυτοποίησης</p>
+      <h4 style="color:#166534" data-el="Ίσο Βάρος Ψήφου" data-en="Equal Vote Weight">Ίσο Βάρος Ψήφου</h4>
+      <p data-el="Η ισχυρότερη επαλήθευση δεν αυξάνει το βάρος της ψήφου" data-en="Stronger verification does not increase vote weight">Η ισχυρότερη επαλήθευση δεν αυξάνει το βάρος της ψήφου</p>
     </div>
     <div class="card" style="border-color:#c4b5fd;background:#faf5ff">
       <div class="card-icon">🏘️</div>
@@ -247,8 +253,8 @@
   </div>
 
   <div class="info-box fade-in">
-    <p data-el="Οι πολίτες που επαληθεύονται μέσω gov.gr αναβαθμίζονται αυτόματα από <strong>Beta (1.0x)</strong> σε <strong>Alpha (2.0x)</strong> — χωρίς κανένα προσωπικό δεδομένο να αποθηκεύεται στον server." data-en="Citizens verified via gov.gr are automatically upgraded from <strong>Beta (1.0x)</strong> to <strong>Alpha (2.0x)</strong> — without any personal data stored on the server.">
-      Οι πολίτες που επαληθεύονται μέσω gov.gr αναβαθμίζονται αυτόματα από <strong>Beta (1.0x)</strong> σε <strong>Alpha (2.0x)</strong> — χωρίς κανένα προσωπικό δεδομένο να αποθηκεύεται στον server.
+    <p data-el="Ο στόχος του Alpha είναι ισχυρότερη δέσμευση μίας φυσικής ταυτότητας σε ένα ανώνυμο credential, όχι διαφορετική στάθμιση ψήφου. Το έγγραφο και τα προσωπικά στοιχεία δεν πρέπει να διατηρούνται μετά την επαλήθευση." data-en="The Alpha goal is stronger binding of one physical identity to one anonymous credential, not different vote weighting. The document and personal data must not be retained after verification.">
+      Ο στόχος του Alpha είναι ισχυρότερη δέσμευση μίας φυσικής ταυτότητας σε ένα ανώνυμο credential, όχι διαφορετική στάθμιση ψήφου. Το έγγραφο και τα προσωπικά στοιχεία δεν πρέπει να διατηρούνται μετά την επαλήθευση.
     </p>
   </div>
 
@@ -273,71 +279,71 @@
   </div>
 
   <div class="warn-box fade-in">
-    <p data-el="Η πρόσβαση στο gov.gr OAuth <strong>δεν</strong> παρέχεται σε ιδιωτικές πλατφόρμες ή εμπορικές εφαρμογές. Μόνο φορείς δημοσίου συμφέροντος." data-en="gov.gr OAuth access is <strong>not</strong> available to private platforms or commercial applications. Only public interest bodies.">
-      Η πρόσβαση στο gov.gr OAuth <strong>δεν</strong> παρέχεται σε ιδιωτικές πλατφόρμες ή εμπορικές εφαρμογές. Μόνο φορείς δημοσίου συμφέροντος.
+    <p data-el="Δεν έχει επιβεβαιωθεί δημόσια διαθέσιμη παραγωγική πρόσβαση gov.gr για αυτό το use case. Απαιτείται επίσημη έγκριση· η ekklesia δεν διαθέτει σήμερα credentials." data-en="No publicly available production gov.gr access has been confirmed for this use case. Official approval is required; ekklesia has no credentials today.">
+      Δεν έχει επιβεβαιωθεί παραγωγική πρόσβαση gov.gr για αυτό το use case. Η ekklesia δεν διαθέτει σήμερα credentials.
     </p>
   </div>
 
-  <!-- SECTION 3: How to apply -->
-  <h2 class="fade-in" data-el="Πώς γίνεται η αίτηση" data-en="How to apply">Πώς γίνεται η αίτηση</h2>
-  <p class="fade-in" data-el="Η ενεργοποίηση του gov.gr OAuth γίνεται μέσω επίσημων καναλιών της <strong>Γενικής Γραμματείας Πληροφοριακών Συστημάτων Δημόσιας Διοίκησης (ΓΓΠΣΔΔ)</strong>." data-en="gov.gr OAuth activation is done through official channels of the <strong>General Secretariat for Information Systems of Public Administration (GSRT)</strong>.">Η ενεργοποίηση του gov.gr OAuth γίνεται μέσω επίσημων καναλιών της <strong>Γενικής Γραμματείας Πληροφοριακών Συστημάτων Δημόσιας Διοίκησης (ΓΓΠΣΔΔ)</strong>.</p>
+  <!-- SECTION 3: Candidate approval path -->
+  <h2 class="fade-in" data-el="Υποψήφια επίσημη διαδικασία" data-en="Candidate official process">Υποψήφια επίσημη διαδικασία</h2>
+  <p class="fade-in" data-el="Το ακόλουθο είναι σχέδιο αξιολόγησης για το Alpha και όχι διαθέσιμη υπηρεσία. Οποιαδήποτε υλοποίηση προϋποθέτει εγκεκριμένη επίσημη μέθοδο, τεχνική τεκμηρίωση και ανεξάρτητο privacy/security review." data-en="The following is an Alpha evaluation design, not an available service. Any implementation requires an approved official method, technical documentation, and independent privacy/security review.">Το ακόλουθο είναι σχέδιο αξιολόγησης για το Alpha και όχι διαθέσιμη υπηρεσία.</p>
 
   <div class="step-grid fade-in">
     <div class="step">
-      <h4 data-el="Αίτηση στη ΓΓΠΣΔΔ" data-en="Apply to GSRT">Αίτηση στη ΓΓΠΣΔΔ</h4>
-      <p data-el="Ο Δήμος υποβάλλει επίσημο αίτημα για gov.gr OAuth integration" data-en="The Municipality submits an official request for gov.gr OAuth integration">Ο Δήμος υποβάλλει επίσημο αίτημα για gov.gr OAuth integration</p>
+      <h4 data-el="Επίσημη διερεύνηση" data-en="Official discovery">Επίσημη διερεύνηση</h4>
+      <p data-el="Διερευνάται αν υπάρχει εγκεκριμένη διαδικασία OAuth ή επαλήθευσης ηλεκτρονικού εγγράφου για το συγκεκριμένο use case" data-en="Determine whether an approved OAuth or electronic-document verification process exists for this use case">Διερεύνηση εγκεκριμένης επίσημης μεθόδου</p>
     </div>
     <div class="step">
       <h4 data-el="Τεχνική Αξιολόγηση" data-en="Technical Review">Τεχνική Αξιολόγηση</h4>
-      <p data-el="Η ΓΓΠΣΔΔ αξιολογεί την πλατφόρμα και τα μέτρα ασφαλείας" data-en="GSRT evaluates the platform and security measures">Η ΓΓΠΣΔΔ αξιολογεί την πλατφόρμα και τα μέτρα ασφαλείας</p>
+      <p data-el="Αξιολόγηση claims, συγκατάθεσης, ελαχιστοποίησης δεδομένων, ανάκλησης και αποτροπής διπλής εγγραφής" data-en="Review claims, consent, data minimization, revocation, and duplicate-registration prevention">Αξιολόγηση claims, privacy και ασφάλειας</p>
     </div>
     <div class="step">
-      <h4 data-el="Έγκριση & Credentials" data-en="Approval & Credentials">Έγκριση & Credentials</h4>
-      <p data-el="Παροχή OAuth2.0 client credentials για τον συγκεκριμένο Δήμο" data-en="OAuth2.0 client credentials issued for the specific Municipality">Παροχή OAuth2.0 client credentials για τον συγκεκριμένο Δήμο</p>
+      <h4 data-el="Sandbox & ανεξάρτητος έλεγχος" data-en="Sandbox & independent review">Sandbox & ανεξάρτητος έλεγχος</h4>
+      <p data-el="Μόνο μετά από επίσημη αποδοχή: sandbox, test vectors, threat model και ανεξάρτητο security/privacy audit" data-en="Only after official acceptance: sandbox, test vectors, threat model, and independent security/privacy audit">Sandbox, test vectors και ανεξάρτητος έλεγχος</p>
     </div>
     <div class="step">
-      <h4 data-el="Ενεργοποίηση" data-en="Activation">Ενεργοποίηση</h4>
-      <p data-el="Οι πολίτες του Δήμου μπορούν πλέον να χρησιμοποιούν gov.gr" data-en="Citizens of the Municipality can now use gov.gr">Οι πολίτες του Δήμου μπορούν πλέον να χρησιμοποιούν gov.gr</p>
+      <h4 data-el="Gated Alpha pilot" data-en="Gated Alpha pilot">Gated Alpha pilot</h4>
+      <p data-el="Περιορισμένο pilot μόνο αν όλα τα προηγούμενα gates περάσουν· χωρίς αλλαγή βάρους ψήφου" data-en="Limited pilot only if all previous gates pass; without changing vote weight">Περιορισμένο pilot μόνο μετά από όλα τα gates</p>
     </div>
   </div>
 
-  <!-- SECTION 4: What happens after approval -->
-  <h2 class="fade-in" data-el="Τι συμβαίνει μετά την έγκριση" data-en="What happens after approval">Τι συμβαίνει μετά την έγκριση</h2>
+  <!-- SECTION 4: Candidate future flow -->
+  <h2 class="fade-in" data-el="Υποψήφια μελλοντική ροή" data-en="Candidate future flow">Υποψήφια μελλοντική ροή</h2>
 
   <div class="flow fade-in">
-    <div class="fnode fnode-b" data-el="Δήμος εγκρίνεται" data-en="Municipality approved">Δήμος εγκρίνεται</div><div class="farr">→</div>
-    <div class="fnode" data-el="Εκλογικός κύκλος ενεργοποιείται" data-en="Constituency activated">Εκλογικός κύκλος ενεργοποιείται</div><div class="farr">→</div>
-    <div class="fnode fnode-b" data-el="Πολίτες κάνουν login μέσω Taxisnet" data-en="Citizens login via Taxisnet">Πολίτες κάνουν login μέσω Taxisnet</div><div class="farr">→</div>
-    <div class="fnode fnode-g" data-el="Αναβάθμιση σε Alpha (2.0x)" data-en="Upgrade to Alpha (2.0x)">Αναβάθμιση σε Alpha (2.0x)</div>
+    <div class="fnode fnode-b" data-el="Επίσημη μέθοδος εγκρίνεται" data-en="Official method approved">Επίσημη μέθοδος εγκρίνεται</div><div class="farr">→</div>
+    <div class="fnode" data-el="Challenge μιας χρήσης" data-en="One-time challenge">Challenge μιας χρήσης</div><div class="farr">→</div>
+    <div class="fnode fnode-b" data-el="OAuth ή νέο QR/eSeal" data-en="OAuth or fresh QR/eSeal">OAuth ή νέο QR/eSeal</div><div class="farr">→</div>
+    <div class="fnode fnode-g" data-el="Ανώνυμο credential — ίδιο βάρος ψήφου" data-en="Anonymous credential — equal vote weight">Ανώνυμο credential — ίδιο βάρος ψήφου</div>
   </div>
 
   <ul class="fade-in">
-    <li data-el="Οι πολίτες στον εκλογικό κύκλο του Δήμου μπορούν να αναβαθμιστούν σε <strong>Alpha</strong> μέσω gov.gr OAuth" data-en="Citizens in the Municipality's constituency can upgrade to <strong>Alpha</strong> via gov.gr OAuth">Οι πολίτες στον εκλογικό κύκλο του Δήμου μπορούν να αναβαθμιστούν σε <strong>Alpha</strong> μέσω gov.gr OAuth</li>
-    <li data-el="Ξεκλειδώνονται δημοτικές και περιφερειακές ψηφοφορίες" data-en="Municipal and regional voting is unlocked">Ξεκλειδώνονται δημοτικές και περιφερειακές ψηφοφορίες</li>
-    <li data-el="Το βάρος ψήφου αυξάνεται αυτόματα σε <strong>2.0x</strong>" data-en="Vote weight automatically increases to <strong>2.0x</strong>">Το βάρος ψήφου αυξάνεται αυτόματα σε <strong>2.0x</strong></li>
-    <li data-el="Κανένα προσωπικό δεδομένο δεν αποθηκεύεται — GDPR by design" data-en="No personal data is stored — GDPR by design">Κανένα προσωπικό δεδομένο δεν αποθηκεύεται — GDPR by design</li>
+    <li data-el="Το Alpha pilot θα είναι προαιρετικό και περιορισμένο σε εγκεκριμένα scopes" data-en="The Alpha pilot will be optional and limited to approved scopes">Προαιρετικό Alpha pilot σε εγκεκριμένα scopes</li>
+    <li data-el="Δεν ενεργοποιείται τίποτα πριν ολοκληρωθούν migration, recovery και revocation tests" data-en="Nothing is enabled before migration, recovery, and revocation tests pass">Πρώτα migration, recovery και revocation tests</li>
+    <li data-el="Το βάρος ψήφου παραμένει ίσο: <strong>ένα άτομο = μία ψήφος</strong>" data-en="Vote weight remains equal: <strong>one person = one vote</strong>">Το βάρος ψήφου παραμένει ίσο: <strong>ένα άτομο = μία ψήφος</strong></li>
+    <li data-el="Το έγγραφο και τα ακατέργαστα αναγνωριστικά δεν διατηρούνται. Μόνο ψευδωνυμικός credential handle και ελάχιστα audit metadata μπορούν να παραμείνουν μετά από DPIA." data-en="The document and raw identifiers are not retained. Only a pseudonymous credential handle and minimal audit metadata may remain after a DPIA.">Δεν διατηρούνται έγγραφο ή ακατέργαστα αναγνωριστικά· μόνο ελάχιστο ψευδωνυμικό state μετά από DPIA</li>
   </ul>
 
   <!-- SECTION 5: Approved municipalities -->
-  <h2 class="fade-in" data-el="Εγκεκριμένοι Δήμοι" data-en="Approved Municipalities">Εγκεκριμένοι Δήμοι</h2>
+  <h2 class="fade-in" data-el="Alpha συνεργασίες" data-en="Alpha collaborations">Alpha συνεργασίες</h2>
   <div class="empty-card fade-in">
     <div style="font-size:2.5rem;margin-bottom:0.75rem">🏛️</div>
     <h4 style="font-size:1.1rem;font-weight:900;margin-bottom:0.5rem;color:var(--gray-500)" data-el="Σύντομα" data-en="Coming Soon">Σύντομα</h4>
-    <p style="color:var(--gray-400);font-size:0.85rem;margin:0" data-el="Η λίστα θα ενημερώνεται καθώς εγκρίνονται νέοι Δήμοι." data-en="This list will be updated as new Municipalities are approved.">Η λίστα θα ενημερώνεται καθώς εγκρίνονται νέοι Δήμοι.</p>
+    <p style="color:var(--gray-400);font-size:0.85rem;margin:0" data-el="Δεν υπάρχει ακόμη ενεργό gov.gr pilot ή εγκεκριμένος παραγωγικός Δήμος." data-en="There is no active gov.gr pilot or approved production municipality yet.">Δεν υπάρχει ακόμη ενεργό gov.gr pilot.</p>
   </div>
 
   <!-- SECTION 6: CTA -->
   <div class="cta-section fade-in">
     <h3 data-el="Είστε εκπρόσωπος Δήμου;" data-en="Are you a Municipality representative?">Είστε εκπρόσωπος Δήμου;</h3>
-    <p data-el="Επικοινωνήστε μαζί μας για να ξεκινήσουμε τη διαδικασία ενεργοποίησης gov.gr OAuth για τον Δήμο σας." data-en="Contact us to start the gov.gr OAuth activation process for your Municipality.">Επικοινωνήστε μαζί μας για να ξεκινήσουμε τη διαδικασία ενεργοποίησης gov.gr OAuth για τον Δήμο σας.</p>
+    <p data-el="Επικοινωνήστε μαζί μας μόνο για ερευνητική συνεργασία ή επίσημη αξιολόγηση του Alpha σχεδιασμού. Δεν παρέχεται ακόμη παραγωγική ενεργοποίηση gov.gr." data-en="Contact us only for research collaboration or official evaluation of the Alpha design. Production gov.gr activation is not yet available.">Επικοινωνήστε μαζί μας για ερευνητική συνεργασία ή επίσημη αξιολόγηση του Alpha σχεδιασμού.</p>
     <button class="cta-btn" onclick="openNgoModal()" data-el="Επικοινωνία" data-en="Contact Us">Επικοινωνία</button>
   </div>
 
   <!-- SECTION 7: Contact / Technical Support -->
   <h2 class="fade-in" data-el="Τεχνική Υποστήριξη" data-en="Technical Support">Τεχνική Υποστήριξη</h2>
   <div class="success-box fade-in">
-    <p data-el="Επικοινωνήστε μαζί μας για τεχνική υποστήριξη σχετικά με την ενσωμάτωση gov.gr OAuth στον Δήμο σας. Η ομάδα μας θα σας καθοδηγήσει σε κάθε βήμα της διαδικασίας." data-en="Contact us for technical support regarding gov.gr OAuth integration for your Municipality. Our team will guide you through every step of the process.">
-      Επικοινωνήστε μαζί μας για τεχνική υποστήριξη σχετικά με την ενσωμάτωση gov.gr OAuth στον Δήμο σας. Η ομάδα μας θα σας καθοδηγήσει σε κάθε βήμα της διαδικασίας.
+    <p data-el="Επικοινωνήστε για τεχνική αξιολόγηση του Alpha σχεδιασμού ή για συμμετοχή σε μελλοντικό sandbox. Δεν παρέχεται σήμερα εγκατάσταση ή ενεργοποίηση gov.gr." data-en="Contact us for technical review of the Alpha design or participation in a future sandbox. No gov.gr installation or activation is currently offered.">
+      Επικοινωνήστε για τεχνική αξιολόγηση του Alpha σχεδιασμού. Δεν παρέχεται σήμερα ενεργοποίηση gov.gr.
     </p>
   </div>
   <div class="card-grid fade-in">
@@ -362,14 +368,14 @@
 
 <!-- ═══ SEKTION: Τριεπίπεδη Ασφάλεια ═══ -->
 <div style="max-width:900px;margin:0 auto;padding:2rem 1.5rem">
-  <h2 style="font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:0.5rem" data-el="Τριεπίπεδη Ασφάλεια" data-en="Three-Layer Security">Τριεπίπεδη Ασφάλεια</h2>
-  <p style="text-align:center;color:var(--gray-500);margin-bottom:2rem;font-size:0.88rem" data-el="Κάθε πρόσβαση περνά από τρία ανεξάρτητα επίπεδα ελέγχου." data-en="Every access passes through three independent control layers.">Κάθε πρόσβαση περνά από τρία ανεξάρτητα επίπεδα ελέγχου.</p>
+  <h2 style="font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:0.5rem" data-el="Υποψήφια επίπεδα ασφάλειας" data-en="Candidate security layers">Υποψήφια επίπεδα ασφάλειας</h2>
+  <p style="text-align:center;color:var(--gray-500);margin-bottom:2rem;font-size:0.88rem" data-el="Τα παρακάτω είναι απαιτήσεις σχεδιασμού για μελλοντικό Alpha pilot, όχι ενεργά Beta controls." data-en="The following are design requirements for a future Alpha pilot, not active Beta controls.">Απαιτήσεις σχεδιασμού για μελλοντικό Alpha pilot — όχι ενεργά Beta controls.</p>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.25rem">
 
     <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0">
       <div style="font-size:2rem;margin-bottom:0.5rem">🏛️</div>
-      <h3 style="font-weight:800;font-size:0.95rem;color:var(--blue);margin-bottom:0.4rem" data-el="Ταυτότητα — gov.gr OAuth" data-en="Identity — gov.gr OAuth">Ταυτότητα — gov.gr OAuth</h3>
-      <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Αυθεντικοποίηση μέσω gov.gr με χρήση ΑΦΜ. Μόνο εξουσιοδοτημένοι αιρετοί και δημόσιοι υπάλληλοι αποκτούν πρόσβαση." data-en="Authentication via gov.gr using Tax ID (AFM). Only authorized elected officials and civil servants gain access.">Αυθεντικοποίηση μέσω gov.gr με χρήση ΑΦΜ. Μόνο εξουσιοδοτημένοι αιρετοί και δημόσιοι υπάλληλοι αποκτούν πρόσβαση.</p>
+      <h3 style="font-weight:800;font-size:0.95rem;color:var(--blue);margin-bottom:0.4rem" data-el="Επίσημη μέθοδος — υπό αξιολόγηση" data-en="Official method — under review">Επίσημη μέθοδος — υπό αξιολόγηση</h3>
+      <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="OAuth ή νέο QR/eSeal μόνο αν μια επίσημη μέθοδος αποδεικνύει τα απαιτούμενα claims. ΑΦΜ και έγγραφα δεν επιτρέπεται να διατηρούνται." data-en="OAuth or fresh QR/eSeal only if an official method proves the required claims. Tax IDs and documents must not be retained.">OAuth ή νέο QR/eSeal μόνο μετά από επίσημη έγκριση και audit.</p>
     </div>
 
     <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0">
@@ -381,7 +387,7 @@
     <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0">
       <div style="font-size:2rem;margin-bottom:0.5rem">🔐</div>
       <h3 style="font-weight:800;font-size:0.95rem;color:var(--blue);margin-bottom:0.4rem" data-el="2FA — Διπλή Επαλήθευση" data-en="2FA — Double Verification">2FA — Διπλή Επαλήθευση</h3>
-      <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Google Authenticator (TOTP) ή SMS. Email αποκλείεται ρητά ως 2FA μέθοδος λόγω ευπάθειας. Session: 8 ώρες." data-en="Google Authenticator (TOTP) or SMS. Email is explicitly excluded as 2FA method due to vulnerability. Session: 8 hours.">Google Authenticator (TOTP) ή SMS. Email αποκλείεται ρητά ως 2FA μέθοδος λόγω ευπάθειας. Session: 8 ώρες.</p>
+      <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Οποιοδήποτε μελλοντικό admin flow απαιτεί phishing-resistant 2FA, σύντομες συνεδρίες, least privilege και ξεχωριστό authorization audit. Η τελική μέθοδος δεν έχει επιλεγεί." data-en="Any future admin flow requires phishing-resistant 2FA, short sessions, least privilege, and a separate authorization audit. The final method has not been selected.">Μελλοντική απαίτηση: ισχυρό 2FA, σύντομες συνεδρίες και least privilege.</p>
     </div>
 
   </div>
@@ -389,7 +395,7 @@
 
 <!-- ═══ SEKTION: Διαδικασία Ενεργοποίησης (Timeline) ═══ -->
 <div style="max-width:900px;margin:0 auto;padding:2rem 1.5rem">
-  <h2 style="font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:2rem" data-el="Διαδικασία Ενεργοποίησης" data-en="Activation Process">Διαδικασία Ενεργοποίησης</h2>
+  <h2 style="font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:2rem" data-el="Σχέδιο Alpha — όχι ενεργή διαδικασία" data-en="Alpha design — not an active process">Σχέδιο Alpha — όχι ενεργή διαδικασία</h2>
 
   <div style="position:relative;padding-left:2.5rem">
     <!-- Vertical line -->
@@ -401,9 +407,9 @@
       <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.25rem;border-left:3px solid var(--blue)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
           <h3 style="font-weight:800;font-size:0.95rem;color:var(--gray-900)" data-el="Υποβολή Αίτησης" data-en="Application">Υποβολή Αίτησης</h3>
-          <span style="background:#dcfce7;color:#166534;font-size:0.65rem;font-weight:700;padding:0.15rem 0.6rem;border-radius:1rem" data-el="Αυτόματο" data-en="Automatic">Αυτόματο</span>
+          <span style="background:#fef3c7;color:#92400e;font-size:0.65rem;font-weight:700;padding:0.15rem 0.6rem;border-radius:1rem" data-el="Σχεδιασμός" data-en="Design">Σχεδιασμός</span>
         </div>
-        <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Ο Δήμαρχος ή εξουσιοδοτημένος εκπρόσωπος υποβάλλει αίτηση μέσω gov.gr OAuth. Το ΑΦΜ επαληθεύεται αυτόματα." data-en="The Mayor or authorized representative submits an application via gov.gr OAuth. The Tax ID is verified automatically.">Ο Δήμαρχος ή εξουσιοδοτημένος εκπρόσωπος υποβάλλει αίτηση μέσω gov.gr OAuth. Το ΑΦΜ επαληθεύεται αυτόματα.</p>
+        <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Μελλοντικό βήμα: εξουσιοδοτημένος εκπρόσωπος υποβάλλει αίτηση μόνο μέσω εγκεκριμένης επίσημης διαδικασίας. Δεν υπάρχει αυτόματη επαλήθευση ΑΦΜ στη Beta." data-en="Future step: an authorized representative applies only through an approved official process. There is no automatic TIN verification in Beta.">Μελλοντικό βήμα — δεν υπάρχει αυτόματη επαλήθευση ΑΦΜ στη Beta.</p>
       </div>
     </div>
 
@@ -413,7 +419,7 @@
       <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.25rem;border-left:3px solid var(--blue)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
           <h3 style="font-weight:800;font-size:0.95rem;color:var(--gray-900)" data-el="Επιλογή Υποδομής" data-en="Infrastructure Choice">Επιλογή Υποδομής</h3>
-          <span style="background:#dcfce7;color:#166534;font-size:0.65rem;font-weight:700;padding:0.15rem 0.6rem;border-radius:1rem" data-el="Wizard" data-en="Wizard">Wizard</span>
+          <span style="background:#fef3c7;color:#92400e;font-size:0.65rem;font-weight:700;padding:0.15rem 0.6rem;border-radius:1rem" data-el="Υπό αξιολόγηση" data-en="Under review">Υπό αξιολόγηση</span>
         </div>
         <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7;margin-bottom:0.75rem" data-el="Ο Δήμος επιλέγει μεταξύ δύο μοντέλων λειτουργίας:" data-en="The municipality chooses between two operating models:">Ο Δήμος επιλέγει μεταξύ δύο μοντέλων λειτουργίας:</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
@@ -437,9 +443,9 @@
       <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.25rem;border-left:3px solid var(--blue)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
           <h3 style="font-weight:800;font-size:0.95rem;color:var(--gray-900)" data-el="Επαλήθευση μέσω ΔΙ.ΑΥΓΕΙΑ" data-en="Verification via DI.AVGIA">Επαλήθευση μέσω ΔΙ.ΑΥΓΕΙΑ</h3>
-          <span style="background:#dcfce7;color:#166534;font-size:0.65rem;font-weight:700;padding:0.15rem 0.6rem;border-radius:1rem" data-el="Αυτόματο" data-en="Automatic">Αυτόματο</span>
+          <span style="background:#fef3c7;color:#92400e;font-size:0.65rem;font-weight:700;padding:0.15rem 0.6rem;border-radius:1rem" data-el="Υπό αξιολόγηση" data-en="Under review">Υπό αξιολόγηση</span>
         </div>
-        <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Το σύστημα επαληθεύει αυτόματα το αξίωμα μέσω ΔΙ.ΑΥΓΕΙΑ (diavgeia.gov.gr). Κάθε διορισμός δημάρχου δημοσιεύεται υποχρεωτικά με ΑΔΑ — η εκκλησία αντιπαραβάλλει αυτόματα το ΑΦΜ με τη δημόσια πράξη διορισμού. Κανένα χειροκίνητο βήμα, κανένας μεσάζοντας." data-en="The system automatically verifies the office via DI.AVGIA (diavgeia.gov.gr). Every mayor's appointment is mandatorily published with an ADA number — ekklesia automatically cross-references the Tax ID with the public appointment act. No manual step, no intermediary.">Το σύστημα επαληθεύει αυτόματα το αξίωμα μέσω ΔΙ.ΑΥΓΕΙΑ (diavgeia.gov.gr). Κάθε διορισμός δημάρχου δημοσιεύεται υποχρεωτικά με ΑΔΑ — η εκκλησία αντιπαραβάλλει αυτόματα το ΑΦΜ με τη δημόσια πράξη διορισμού. Κανένα χειροκίνητο βήμα.</p>
+        <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Υποψήφιο μελλοντικό control: δημόσια πράξη ΔΙ.ΑΥΓΕΙΑ μπορεί να χρησιμοποιείται ως ένα στοιχείο ελέγχου αξιώματος. Δεν υφίσταται σήμερα αυτόματη αντιπαραβολή ΑΦΜ ή παραγωγική ροή." data-en="Candidate future control: a public DI.AVGIA act may be used as one element of office verification. There is currently no automatic TIN cross-check or production flow.">Υποψήφιο μελλοντικό control — δεν υπάρχει αυτόματη αντιπαραβολή ΑΦΜ στη Beta.</p>
       </div>
     </div>
 
@@ -448,10 +454,10 @@
       <div style="position:absolute;left:-2.15rem;top:0.2rem;width:1.5rem;height:1.5rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:0.7rem;font-weight:900">4</div>
       <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.25rem;border-left:3px solid var(--blue)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
-          <h3 style="font-weight:800;font-size:0.95rem;color:var(--gray-900)" data-el="Ενεργοποίηση Dashboard" data-en="Dashboard Activation">Ενεργοποίηση Dashboard</h3>
-          <span style="background:#dcfce7;color:#166534;font-size:0.65rem;font-weight:700;padding:0.15rem 0.6rem;border-radius:1rem" data-el="Αυτόματο" data-en="Automatic">Αυτόματο</span>
+          <h3 style="font-weight:800;font-size:0.95rem;color:var(--gray-900)" data-el="Prototype Dashboard" data-en="Prototype Dashboard">Prototype Dashboard</h3>
+          <span style="background:#fef3c7;color:#92400e;font-size:0.65rem;font-weight:700;padding:0.15rem 0.6rem;border-radius:1rem" data-el="Δεν είναι ενεργό" data-en="Not active">Δεν είναι ενεργό</span>
         </div>
-        <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Μοναδικός κωδικός ενεργοποίησης + gov.gr OAuth + ρύθμιση 2FA. Πλήρης πρόσβαση στα δεδομένα του δήμου σας." data-en="Unique activation code + gov.gr OAuth + 2FA setup. Full access to your municipality's data.">Μοναδικός κωδικός ενεργοποίησης + gov.gr OAuth + ρύθμιση 2FA. Πλήρης πρόσβαση στα δεδομένα του δήμου σας.</p>
+        <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Υποψήφιο prototype μόνο μετά από επίσημη έγκριση, role review, 2FA και audit. Δεν υπάρχει παραγωγική πρόσβαση σήμερα." data-en="Candidate prototype only after official approval, role review, 2FA, and audit. There is no production access today.">Υποψήφιο prototype — δεν υπάρχει παραγωγική πρόσβαση σήμερα.</p>
       </div>
     </div>
 
@@ -461,9 +467,9 @@
       <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.25rem;border-left:3px solid var(--blue)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
           <h3 style="font-weight:800;font-size:0.95rem;color:var(--gray-900)" data-el="Πρόσκληση Συνεργατών" data-en="Team Management">Πρόσκληση Συνεργατών</h3>
-          <span style="background:#dcfce7;color:#166534;font-size:0.65rem;font-weight:700;padding:0.15rem 0.6rem;border-radius:1rem" data-el="Αυτόματο" data-en="Automatic">Αυτόματο</span>
+          <span style="background:#fef3c7;color:#92400e;font-size:0.65rem;font-weight:700;padding:0.15rem 0.6rem;border-radius:1rem" data-el="Δεν είναι ενεργό" data-en="Not active">Δεν είναι ενεργό</span>
         </div>
-        <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Ο Δήμαρχος προσκαλεί συνεργάτες μέσω υπογεγραμμένου συνδέσμου (48h ισχύς). Κάθε συνεργάτης: gov.gr OAuth + 2FA. Δικαιώματα: μόνο ανάγνωση / εισαγωγή δεδομένων / πλήρης πρόσβαση εντός δήμου." data-en="The Mayor invites team members via signed link (48h validity). Each member: gov.gr OAuth + 2FA. Permissions: read-only / data entry / full access within municipality.">Ο Δήμαρχος προσκαλεί συνεργάτες μέσω υπογεγραμμένου συνδέσμου (48h ισχύς). Κάθε συνεργάτης: gov.gr OAuth + 2FA. Δικαιώματα: μόνο ανάγνωση / εισαγωγή δεδομένων / πλήρης πρόσβαση εντός δήμου.</p>
+        <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Μελλοντικός role-based σχεδιασμός. Απαιτεί υπογεγραμμένες προσκλήσεις, 2FA, ελάχιστα δικαιώματα και ξεχωριστό authorization audit πριν υλοποιηθεί." data-en="Future role-based design. It requires signed invitations, 2FA, least privilege, and a separate authorization audit before implementation.">Μελλοντικός role-based σχεδιασμός — δεν είναι ενεργός.</p>
       </div>
     </div>
 
@@ -648,11 +654,11 @@
 
   <!-- Info Box -->
   <div style="background:var(--blue-l);border-left:4px solid var(--blue);border-radius:0.5rem;padding:1rem 1.25rem;margin-bottom:2.5rem">
-    <p style="margin:0;font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Το ekklesia.gr παρέχει δωρεάν: την subdomain [δήμος].ekklesia.gr, τεχνική υποστήριξη εγκατάστασης, και αυτόματες ενημερώσεις ασφαλείας." data-en="ekklesia.gr provides free of charge: the subdomain [municipality].ekklesia.gr, technical installation support, and automatic security updates.">Το ekklesia.gr παρέχει δωρεάν: την subdomain [δήμος].ekklesia.gr, τεχνική υποστήριξη εγκατάστασης, και αυτόματες ενημερώσεις ασφαλείας.</p>
+    <p style="margin:0;font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Υποψήφιο μοντέλο μελλοντικού pilot: subdomain, τεχνική υποστήριξη και ενημερώσεις ασφαλείας. Δεν προσφέρεται σήμερα και εξαρτάται από όλα τα επίσημα, νομικά και τεχνικά gates." data-en="Candidate model for a future pilot: subdomain, technical support, and security updates. It is not currently offered and depends on all official, legal, and technical gates.">Υποψήφιο μοντέλο μελλοντικού pilot — δεν προσφέρεται σήμερα και απαιτεί όλα τα επίσημα, νομικά και τεχνικά gates.</p>
   </div>
 
   <!-- ΒΗΜΑΤΑ ΜΕΤΑ ΤΗΝ ΕΓΚΑΤΑΣΤΑΣΗ -->
-  <h3 style="font-size:1.1rem;font-weight:900;text-align:center;margin-bottom:1.25rem;color:var(--gray-900)" data-el="Βήματα μετά την εγκατάσταση" data-en="Post-installation steps">Βήματα μετά την εγκατάσταση</h3>
+  <h3 style="font-size:1.1rem;font-weight:900;text-align:center;margin-bottom:1.25rem;color:var(--gray-900)" data-el="Υποψήφια βήματα μελλοντικού pilot" data-en="Candidate future pilot steps">Υποψήφια βήματα μελλοντικού pilot</h3>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2.5rem;counter-reset:poststep">
     <div style="background:var(--white);border-radius:var(--radius);padding:1.25rem;border:2px solid #e2e8f0;position:relative;padding-top:2.5rem">
       <div style="position:absolute;top:0.75rem;left:0.75rem;background:var(--blue);color:white;width:1.5rem;height:1.5rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:900">1</div>
@@ -662,12 +668,12 @@
     <div style="background:var(--white);border-radius:var(--radius);padding:1.25rem;border:2px solid #e2e8f0;position:relative;padding-top:2.5rem">
       <div style="position:absolute;top:0.75rem;left:0.75rem;background:var(--blue);color:white;width:1.5rem;height:1.5rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:900">2</div>
       <h4 style="font-weight:800;font-size:0.88rem;margin-bottom:0.35rem" data-el="Ειδοποίηση ekklesia.gr" data-en="Notify ekklesia.gr">Ειδοποίηση ekklesia.gr</h4>
-      <p style="font-size:0.8rem;color:var(--gray-500);margin:0" data-el="Στείλτε email: gov@ekklesia.gr — Ενεργοποίηση εντός 48 ωρών" data-en="Send email: gov@ekklesia.gr — Activation within 48 hours">Στείλτε email: gov@ekklesia.gr — Ενεργοποίηση εντός 48 ωρών</p>
+      <p style="font-size:0.8rem;color:var(--gray-500);margin:0" data-el="Ερευνητική επικοινωνία — χωρίς υπόσχεση ή χρονοδιάγραμμα ενεργοποίησης" data-en="Research contact — without an activation promise or timeline">Ερευνητική επικοινωνία — χωρίς ενεργοποίηση</p>
     </div>
     <div style="background:var(--white);border-radius:var(--radius);padding:1.25rem;border:2px solid #e2e8f0;position:relative;padding-top:2.5rem">
       <div style="position:absolute;top:0.75rem;left:0.75rem;background:var(--blue);color:white;width:1.5rem;height:1.5rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:900">3</div>
-      <h4 style="font-weight:800;font-size:0.88rem;margin-bottom:0.35rem" data-el="gov.gr OAuth Αίτηση" data-en="gov.gr OAuth Application">gov.gr OAuth Αίτηση</h4>
-      <p style="font-size:0.8rem;color:var(--gray-500);margin:0" data-el="Υποβάλετε αίτηση OAuth για το domain σας στο gov.gr" data-en="Submit OAuth application for your domain to gov.gr">Υποβάλετε αίτηση OAuth για το domain σας στο gov.gr</p>
+      <h4 style="font-weight:800;font-size:0.88rem;margin-bottom:0.35rem" data-el="Επίσημη αξιολόγηση" data-en="Official evaluation">Επίσημη αξιολόγηση</h4>
+      <p style="font-size:0.8rem;color:var(--gray-500);margin:0" data-el="Διερεύνηση διαθέσιμης επίσημης μεθόδου πριν από οποιαδήποτε ανάπτυξη" data-en="Determine an available official method before any implementation">Πρώτα εγκεκριμένη επίσημη μέθοδος</p>
     </div>
   </div>
 
@@ -678,7 +684,7 @@
       <!-- Box 1: Citizen -->
       <rect x="20" y="30" width="160" height="70" rx="12" fill="#2563eb" stroke="#1d4ed8" stroke-width="2"/>
       <text x="100" y="60" text-anchor="middle" fill="white" font-size="14" font-weight="bold" data-el="Πολίτης" data-en="Citizen">Πολίτης</text>
-      <text x="100" y="82" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10" data-el="gov.gr OAuth (lokal im Δήμο)" data-en="gov.gr OAuth (local in municipality)">gov.gr OAuth (τοπικά)</text>
+      <text x="100" y="82" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10" data-el="Alpha credential (σχεδιασμός)" data-en="Alpha credential (design)">Alpha credential (σχεδιασμός)</text>
 
       <!-- Arrow 1 -->
       <line x1="185" y1="65" x2="240" y2="65" stroke="#2563eb" stroke-width="2" marker-end="url(#arrowhead)"/>
@@ -743,13 +749,13 @@
 <!-- ═══ SEKTION: CTA ═══ -->
 <div style="max-width:900px;margin:0 auto;padding:2rem 1.5rem">
   <div style="background:linear-gradient(135deg,#eff6ff 0%,#dbeafe 100%);border-radius:var(--radius);padding:2.5rem;text-align:center;border:2px solid #bfdbfe">
-    <h2 style="font-size:1.3rem;font-weight:900;margin-bottom:0.5rem" data-el="Ενδιαφέρεστε για ενεργοποίηση του δήμου σας;" data-en="Interested in activating your municipality?">Ενδιαφέρεστε για ενεργοποίηση του δήμου σας;</h2>
-    <p style="color:var(--gray-500);font-size:0.88rem;margin-bottom:1.5rem" data-el="Η εκκλησία του έθνους είναι δωρεάν για όλους τους δήμους κατά τη φάση Beta." data-en="ekklesia is free for all municipalities during the Beta phase.">Η εκκλησία είναι δωρεάν για δήμους κατά τη φάση Beta.</p>
+    <h2 style="font-size:1.3rem;font-weight:900;margin-bottom:0.5rem" data-el="Ενδιαφέρεστε για έρευνα ή επίσημη αξιολόγηση;" data-en="Interested in research or official evaluation?">Ενδιαφέρεστε για έρευνα ή επίσημη αξιολόγηση;</h2>
+    <p style="color:var(--gray-500);font-size:0.88rem;margin-bottom:1.5rem" data-el="Μπορείτε να επικοινωνήσετε για συνεργασία στον σχεδιασμό Alpha. Δεν προσφέρεται ενεργοποίηση gov.gr στη Beta." data-en="You can contact us about Alpha design collaboration. gov.gr activation is not offered in Beta.">Συνεργασία στον σχεδιασμό Alpha — όχι ενεργοποίηση Beta.</p>
     <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:1rem">
-      <a href="#" onclick="openNgoModal();return false;" style="display:inline-block;padding:0.75rem 2rem;background:var(--blue);color:white;border-radius:0.75rem;font-weight:800;font-size:0.95rem;text-decoration:none;transition:all 0.2s;cursor:pointer" onmouseenter="this.style.background='#1d4ed8'" onmouseleave="this.style.background='#2563eb'" data-el="Υποβολή Αίτησης →" data-en="Submit Application →">Υποβολή Αίτησης →</a>
+      <a href="#" onclick="openNgoModal();return false;" style="display:inline-block;padding:0.75rem 2rem;background:var(--blue);color:white;border-radius:0.75rem;font-weight:800;font-size:0.95rem;text-decoration:none;transition:all 0.2s;cursor:pointer" onmouseenter="this.style.background='#1d4ed8'" onmouseleave="this.style.background='#2563eb'" data-el="Επικοινωνία για Alpha →" data-en="Alpha research contact →">Επικοινωνία για Alpha →</a>
       <a href="wiki/api.html" style="display:inline-block;padding:0.75rem 2rem;background:transparent;color:var(--blue);border:2px solid var(--blue);border-radius:0.75rem;font-weight:800;font-size:0.95rem;text-decoration:none;transition:all 0.2s" onmouseenter="this.style.background='#eff6ff'" onmouseleave="this.style.background='transparent'" data-el="Τεχνική Τεκμηρίωση →" data-en="Technical Documentation →">Τεχνική Τεκμηρίωση →</a>
     </div>
-    <p style="font-size:0.72rem;color:var(--gray-400)" data-el="Απάντηση εντός 48 ωρών. Χωρίς κόστος για δήμους κατά τη φάση Beta." data-en="Response within 48 hours. Free for municipalities during Beta phase.">Απάντηση εντός 48 ωρών. Χωρίς κόστος κατά τη φάση Beta.</p>
+    <p style="font-size:0.72rem;color:var(--gray-400)" data-el="Η επικοινωνία δεν αποτελεί έγκριση, κρατική διασύνδεση ή παραγωγική ενεργοποίηση." data-en="Contact does not constitute approval, government integration, or production activation.">Η επικοινωνία δεν αποτελεί παραγωγική ενεργοποίηση.</p>
   </div>
 </div>
 
@@ -776,7 +782,7 @@
       <div style="margin-bottom:0.6rem">
         <label style="display:block;font-size:0.75rem;font-weight:700;margin-bottom:0.2rem" data-el="Θέμα" data-en="Subject">Θέμα</label>
         <select name="subject" style="width:100%;padding:0.45rem;border:2px solid #e2e8f0;border-radius:0.4rem;font-size:0.82rem;background:white">
-          <option value="gov.gr Ενεργοποίηση Δήμου" data-el="gov.gr Ενεργοποίηση Δήμου" data-en="gov.gr Municipality Activation">gov.gr Ενεργοποίηση Δήμου</option>
+          <option value="gov.gr Alpha σχεδιασμός" data-el="gov.gr Alpha σχεδιασμός" data-en="gov.gr Alpha design">gov.gr Alpha σχεδιασμός</option>
           <option value="Τεχνική Υποστήριξη" data-el="Τεχνική Υποστήριξη" data-en="Technical Support">Τεχνική Υποστήριξη</option>
           <option value="Συνεργασία" data-el="Συνεργασία" data-en="Partnership">Συνεργασία</option>
           <option value="Γενική Ερώτηση" data-el="Γενική Ερώτηση" data-en="General Question">Γενική Ερώτηση</option>

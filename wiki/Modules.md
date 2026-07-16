@@ -18,7 +18,7 @@
 | MOD-07 | Notifications | 🔜 V2 | Push (Expo), WebSocket, RSS |
 | MOD-17 | Smart Notifications | 🔜 Geplant | Category filter, ping-only push, 3 content modes (manual/auto/headline), local templates |
 | MOD-08 | TrueRepublic | 🔜 V2 | Cosmos SDK Bridge, PnyxCoin |
-| MOD-09 | Demographics | 🔜 Alpha | gov.gr OAuth2.0, Demographic Hash |
+| MOD-09 | Demographics | 🔜 Alpha design | [Official gov.gr OAuth or fresh QR/eSeal document verification](https://github.com/NeaBouli/pnyx/blob/main/docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md); not active in Beta |
 | MOD-10 | Scraper | 🔜 V2 | Crawl4AI, Graceful Fallback |
 | MOD-11 | AI Summarizer | 🔜 V2 | Claude API, 3-level summary |
 | MOD-12 | Public API | ✅ Beta | REST + Embed Widget + RSS |
