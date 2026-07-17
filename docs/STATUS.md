@@ -9,7 +9,7 @@ Last verified: 2026-07-17
 | Phase | Beta |
 | Android | v1.0.27 / versionCode 56 |
 | Direct APK | Live; signed and verified on Samsung S10 and through the public download URL |
-| Google Play | Play-signed AAB built and verified; Closed Testing upload pending |
+| Google Play | v1.0.27 / vC56 uploaded to Closed Testing; Google review/distribution pending |
 | iOS | Preparation only; no public build |
 | F-Droid | External MR !38007 pending |
 
