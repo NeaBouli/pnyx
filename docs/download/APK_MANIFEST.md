@@ -36,7 +36,7 @@ https://ekklesia.gr/representative/index.html
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
 | Build date | 2026-07-17 |
-| Release gate | PASS locally — 144 Mobile tests, TypeScript, S10 update-in-place and visual scope checks, APK/AAB signature, embedded channel and native Semaphore library audit; CI and production publication are the remaining release steps |
+| Release gate | PASS — 144 Mobile tests, full API/Web/Crypto regression, S10 update-in-place and visual scope checks, APK/AAB signature and channel audit, GitHub CI/Security, Production deploy and public APK hash verification |
 | Includes | Verified municipality/region bill visibility with nationwide Parliament access, server-authoritative vote eligibility, canonical SecureStore identity handling, safer account import, unified Tier-1 and Semaphore ZK counting, aggregate Diavgeia results, safe Parliament text/PDF display, HTTPS read-only mirror fallback, guarded Parliament ZK rollout and eligible-scope Arweave publication |
 
 Validation command:

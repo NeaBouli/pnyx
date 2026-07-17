@@ -7,8 +7,8 @@ Last verified: 2026-07-17
 | Item | Status |
 |---|---|
 | Phase | Beta |
-| Android | v1.0.27 / versionCode 56 release candidate |
-| Direct APK | Built, signed and verified on Samsung S10; production publication pending final CI gate |
+| Android | v1.0.27 / versionCode 56 |
+| Direct APK | Live; signed and verified on Samsung S10 and through the public download URL |
 | Google Play | Play-signed AAB built and verified; Closed Testing upload pending |
 | iOS | Preparation only; no public build |
 | F-Droid | External MR !38007 pending |
@@ -24,7 +24,7 @@ Last verified: 2026-07-17
 - The direct APK and Google Play channels are kept separate so each channel receives compatible updates.
 - During a primary outage the mobile app can use the HTTPS mirror for read-only data; voting stays disabled until the primary is healthy.
 
-## vC56 release gate
+## vC56 release gate (passed)
 
 - Mobile Vitest: 144/144 passed.
 - Mobile TypeScript: passed.
@@ -32,6 +32,7 @@ Last verified: 2026-07-17
 - Direct APK: v1.0.27 (56), `direct` channel, v2 signature valid, native Semaphore library present.
 - Play AAB: v1.0.27 (56), `play` channel, JAR signature valid, native Semaphore library present.
 - Canonical identity storage uses only `ekklesia_nullifier`; invalid legacy SecureStore keys are not accessed.
+- GitHub CI and Security Audit passed; Production API/Web deploy, database invariants, public download hash, Forum and all three mirrors were verified.
 
 ## Deliberately gated or external
 
