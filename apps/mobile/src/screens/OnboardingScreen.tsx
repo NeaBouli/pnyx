@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import * as SecureStore from "expo-secure-store";
-import { loadKeypair } from "../lib/crypto-native";
+import { loadKeypair, loadNullifier } from "../lib/crypto-native";
 import { storeProfileLocation, syncProfileLocation } from "../lib/profile-location";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
@@ -51,8 +51,7 @@ export default function OnboardingScreen({ navigation }: Props) {
 
     // Sync to server if nullifier exists
     try {
-      const nullifier = await SecureStore.getItemAsync("ekklesia:nullifier:v1")
-        || await SecureStore.getItemAsync("ekklesia_nullifier");
+      const nullifier = await loadNullifier();
       if (nullifier && (selPeriferia || selDimos)) {
         const keypair = await loadKeypair();
         if (!keypair) throw new Error("missing identity key");

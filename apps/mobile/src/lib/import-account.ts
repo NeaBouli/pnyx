@@ -14,7 +14,6 @@ const IMPORT_STATE_KEYS = [
   "ekklesia_private_key",
   "ekklesia_public_key",
   "ekklesia_nullifier",
-  "ekklesia:nullifier:v1",
   "ekklesia_nullifier_root",
   "ekklesia_identity_commitment",
   "polis_registered",
@@ -77,7 +76,6 @@ export async function importAccountCredentials(
     await SecureStore.setItemAsync("ekklesia_private_key", credentials.privateKey);
     await SecureStore.setItemAsync("ekklesia_public_key", credentials.publicKey);
     await SecureStore.setItemAsync("ekklesia_nullifier", credentials.nullifier);
-    await SecureStore.deleteItemAsync("ekklesia:nullifier:v1");
     await SecureStore.deleteItemAsync("ekklesia_nullifier_root");
     await SecureStore.deleteItemAsync("ekklesia_identity_commitment");
     await SecureStore.deleteItemAsync("polis_registered");

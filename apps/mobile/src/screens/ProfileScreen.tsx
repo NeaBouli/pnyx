@@ -7,7 +7,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { resolveUpdateUrl } from "../lib/update-channel";
-import { loadKeypair } from "../lib/crypto-native";
+import { loadKeypair, loadNullifier } from "../lib/crypto-native";
 import {
   loadPendingProfileLocation,
   loadStoredProfileLocation,
@@ -44,8 +44,7 @@ export default function ProfileScreen() {
         setPeriferias(data);
       } catch {}
 
-      const nullifier = await SecureStore.getItemAsync("ekklesia_nullifier")
-        || await SecureStore.getItemAsync("ekklesia:nullifier:v1");
+      const nullifier = await loadNullifier();
 
       // Load only an unverified selection or a cache bound to this identity.
       const savedLocation = await loadStoredProfileLocation(nullifier);
@@ -102,8 +101,7 @@ export default function ProfileScreen() {
 
     // Sync location to server (enables vote scope enforcement)
     try {
-      const nullifier = await SecureStore.getItemAsync("ekklesia_nullifier")
-        || await SecureStore.getItemAsync("ekklesia:nullifier:v1");
+      const nullifier = await loadNullifier();
       if (nullifier && !regionLocked) {
         const keypair = await loadKeypair();
         if (!keypair) throw new Error("Δεν βρέθηκε το κλειδί επαλήθευσης της συσκευής.");

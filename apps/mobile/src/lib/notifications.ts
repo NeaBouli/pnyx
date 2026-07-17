@@ -61,7 +61,6 @@ export async function registerForPushNotifications(): Promise<string | null> {
   await SecureStore.setItemAsync(TOKEN_KEY, token);
 
   // Register with server (anonymous)
-  const nullifier = await SecureStore.getItemAsync("ekklesia:nullifier:v1");
   try {
     await fetch(`${API_BASE}/api/v1/notify/register`, {
       method: "POST",

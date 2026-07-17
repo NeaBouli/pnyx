@@ -29,18 +29,16 @@ async function clearScopeCache(): Promise<void> {
 }
 
 export async function loadUserBillScope(): Promise<UserBillScope> {
-  const [storedPeriferia, storedDimos, scopeOwner, currentNullifier, legacyNullifier] = await Promise.all([
+  const [storedPeriferia, storedDimos, scopeOwner, nullifier] = await Promise.all([
     SecureStore.getItemAsync(PERIFERIA_KEY),
     SecureStore.getItemAsync(DIMOS_KEY),
     SecureStore.getItemAsync(SCOPE_OWNER_KEY),
-    SecureStore.getItemAsync("ekklesia:nullifier:v1"),
     SecureStore.getItemAsync("ekklesia_nullifier"),
   ]);
   const cached = {
     periferiaId: positiveId(storedPeriferia),
     dimosId: positiveId(storedDimos),
   };
-  const nullifier = currentNullifier || legacyNullifier;
   if (!nullifier) {
     // A stored location is authoritative only while it is bound to the
     // currently active anonymous identity. Logged-out/new users fail closed.
@@ -58,7 +56,14 @@ export async function loadUserBillScope(): Promise<UserBillScope> {
       periferiaId: server.periferia_id ?? null,
       dimosId: server.dimos_id ?? null,
     };
-    await cacheScope(authoritative, nullifier);
+    try {
+      await cacheScope(authoritative, nullifier);
+    } catch {
+      // The online server response remains authoritative. A local cache write
+      // failure must not downgrade a verified user to NATIONAL-only; the next
+      // focused refresh will retry persistence. Offline fallback remains
+      // identity-bound below and therefore does not trust a partial cache.
+    }
     return authoritative;
   } catch {
     // Read-only mirror/offline mode may use only this identity's last

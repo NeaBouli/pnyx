@@ -8,7 +8,10 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("expo-secure-store", () => ({
-  getItemAsync: vi.fn(async (key: string) => state.values.get(key) ?? null),
+  getItemAsync: vi.fn(async (key: string) => {
+    if (key.includes(":")) throw new Error(`invalid SecureStore key: ${key}`);
+    return state.values.get(key) ?? null;
+  }),
   setItemAsync: vi.fn(async (key: string, value: string) => {
     if (state.failOnceForKey === key) {
       state.failOnceForKey = null;
@@ -17,6 +20,7 @@ vi.mock("expo-secure-store", () => ({
     state.values.set(key, value);
   }),
   deleteItemAsync: vi.fn(async (key: string) => {
+    if (key.includes(":")) throw new Error(`invalid SecureStore key: ${key}`);
     state.values.delete(key);
   }),
 }));
@@ -58,8 +62,7 @@ describe("importAccountCredentials", () => {
     });
   });
 
-  it("removes a stale v1 identity and caches only the imported server scope", async () => {
-    state.values.set("ekklesia:nullifier:v1", "a".repeat(64));
+  it("caches only the imported server scope without invalid legacy-key access", async () => {
     state.values.set("user_periferia_id", "7");
     state.values.set("user_dimos_id", "33");
     state.values.set("user_bill_scope_owner", "a".repeat(64));
@@ -70,7 +73,6 @@ describe("importAccountCredentials", () => {
     await importAccountCredentials(NEW_ACCOUNT);
 
     expect(state.checkIdentityStatus).toHaveBeenCalledWith(NEW_ACCOUNT.nullifier);
-    expect(state.values.get("ekklesia:nullifier:v1")).toBeUndefined();
     expect(state.values.get("user_periferia_id")).toBe("6");
     expect(state.values.get("user_dimos_id")).toBe("22");
     expect(state.values.get("user_bill_scope_owner")).toBe(NEW_ACCOUNT.nullifier);
@@ -99,7 +101,6 @@ describe("importAccountCredentials", () => {
       ["ekklesia_private_key", "a".repeat(64)],
       ["ekklesia_public_key", "b".repeat(64)],
       ["ekklesia_nullifier", "c".repeat(64)],
-      ["ekklesia:nullifier:v1", "d".repeat(64)],
       ["ekklesia_nullifier_root", "e".repeat(64)],
       ["ekklesia_identity_commitment", "old-commitment"],
       ["polis_registered", "old-polis-key"],

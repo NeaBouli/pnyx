@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.26 |
-| versionCode | 55 |
+| Version | 1.0.27 |
+| versionCode | 56 |
 | Package | ekklesia.gr |
-| APK SHA256 | `a0695f72cf8382995d18c0d9805da66b0fb3b86f6a40376ea2791d435b05fef4` |
-| AAB SHA256 | `36f1897b99bfe847ca2f587d9db435d4163381e208815ea9300b6f826a726606` |
+| APK SHA256 | `a3720382a3814175ed1582b456236c0a71dc3f39a788c63d91194248e38cd737` |
+| AAB SHA256 | `27e99a2a7da84bc2c4bcb2e1de98cac71df2cc78e76ddc10bfd8ba3fd97550a6` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
-| Build date | 2026-07-15 |
-| Release gate | PASS — API consensus/privacy tests, mobile TypeScript, mobile Vitest, emulator visual checks, web build, local Play AAB build, local Direct APK build, APK/AAB signature and metadata audit |
-| Includes | vC55 release metadata, aggregate Diavgeia consensus results by municipality, region and nationwide, server-side sensitive-decision filtering, safe Parliament text/document display, HTTPS read-only mirror fallback, guarded Parliament Semaphore ZK rollout, ZK Arweave publication for eligible scopes, current app-version endpoint, native Semaphore prover, deep-link fallback, pagination and permission hardening |
+| Build date | 2026-07-17 |
+| Release gate | PASS locally — 144 Mobile tests, TypeScript, S10 update-in-place and visual scope checks, APK/AAB signature, embedded channel and native Semaphore library audit; CI and production publication are the remaining release steps |
+| Includes | Verified municipality/region bill visibility with nationwide Parliament access, server-authoritative vote eligibility, canonical SecureStore identity handling, safer account import, unified Tier-1 and Semaphore ZK counting, aggregate Diavgeia results, safe Parliament text/PDF display, HTTPS read-only mirror fallback, guarded Parliament ZK rollout and eligible-scope Arweave publication |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: a0695f72cf8382995d18c0d9805da66b0fb3b86f6a40376ea2791d435b05fef4
+# Expected: a3720382a3814175ed1582b456236c0a71dc3f39a788c63d91194248e38cd737
 ```
