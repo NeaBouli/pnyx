@@ -25,6 +25,7 @@ import { submitZkOptInForBill, submitZkVoteWithPublishedRoot, verifyZkVoteWithPu
 import { hasZkSemaphoreIdentity } from "../lib/zkSemaphoreIdentity";
 import { canShowPublicZkVoting, canSubmitPublicZkVote, publicZkVoteScopeForBill } from "../lib/zkPublicVoting";
 import type { ZkServerStatus } from "../lib/zkSemaphoreCore";
+import { formatZkPilotErrorMessage } from "../lib/zkPilotError";
 
 type Props = StackScreenProps<RootStackParams, "Vote">;
 
@@ -93,6 +94,7 @@ export default function VoteScreen({ route, navigation }: Props) {
   const [zkScopeStatus, setZkScopeStatus] = useState<ZkScopeStatus | null>(null);
   const [zkOptedIn, setZkOptedIn] = useState(false);
   const [zkVerifiedChoice, setZkVerifiedChoice] = useState<string | null>(null);
+  const [zkSubmittedChoice, setZkSubmittedChoice] = useState<string | null>(null);
   const [zkBusy, setZkBusy] = useState<"opt-in" | "verify" | "vote" | null>(null);
   const [zkResult, setZkResult] = useState<{ ok: boolean; title: string; detail: string } | null>(null);
 
@@ -201,6 +203,7 @@ export default function VoteScreen({ route, navigation }: Props) {
               const scopeStatus = await fetchZkScopeStatus(publicZkVoteScopeForBill(billId)).catch(() => null);
               setZkOptedIn(true);
               setZkScopeStatus(scopeStatus);
+              setZkSubmittedChoice(null);
               setZkVerifiedChoice(null);
               setZkResult({
                 ok: true,
@@ -211,7 +214,7 @@ export default function VoteScreen({ route, navigation }: Props) {
               setZkResult({
                 ok: false,
                 title: "ZK opt-in απέτυχε",
-                detail: error instanceof Error ? error.message : "unknown error",
+                detail: formatZkPilotErrorMessage(error, "optIn"),
               });
             } finally {
               setZkBusy(null);
@@ -237,14 +240,16 @@ export default function VoteScreen({ route, navigation }: Props) {
       setZkVerifiedChoice(ok ? choice : null);
       setZkResult({
         ok,
-        title: ok ? "ZK proof verification πέρασε" : "ZK proof verification απέτυχε",
-        detail: `real=${String(result.real.proof_verified)} · mutated=${mutationsRejected ? "rejected" : "accepted"} · members=${result.groupSize}`,
+        title: ok ? "Η επαλήθευση ZK ολοκληρώθηκε" : "Η επαλήθευση ZK απέτυχε",
+        detail: ok
+          ? `Το γνήσιο αποδεικτικό επαληθεύτηκε και οι δοκιμαστικές αλλοιώσεις απορρίφθηκαν. Μέλη ομάδας: ${result.groupSize}.`
+          : "Το αποδεικτικό δεν πέρασε όλους τους ελέγχους ακεραιότητας.",
       });
     } catch (error) {
       setZkResult({
         ok: false,
-        title: "ZK proof verification απέτυχε",
-        detail: error instanceof Error ? error.message : "unknown error",
+        title: "Η επαλήθευση ZK απέτυχε",
+        detail: formatZkPilotErrorMessage(error, "verify"),
       });
     } finally {
       setZkBusy(null);
@@ -269,8 +274,9 @@ export default function VoteScreen({ route, navigation }: Props) {
                 voteScopeId: publicZkVoteScopeForBill(billId),
                 voteCommitment: choice,
               });
-              setHasVoted(true);
-              setSelected(choice);
+              if (result.accepted) {
+                setZkSubmittedChoice(choice);
+              }
               setZkResult({
                 ok: result.accepted,
                 title: result.accepted ? "ZK ψήφος έγινε αποδεκτή" : "ZK ψήφος δεν έγινε αποδεκτή",
@@ -283,7 +289,7 @@ export default function VoteScreen({ route, navigation }: Props) {
               setZkResult({
                 ok: false,
                 title: "ZK ψήφος απέτυχε",
-                detail: error instanceof Error ? error.message : "unknown error",
+                detail: formatZkPilotErrorMessage(error, "vote"),
               });
             } finally {
               setZkBusy(null);
@@ -295,6 +301,13 @@ export default function VoteScreen({ route, navigation }: Props) {
   }
 
   async function handleVote(choice: string) {
+    if (zkOptedIn) {
+      Alert.alert(
+        "Semaphore ZK",
+        "Η κανονική ψήφος είναι κλειδωμένη για αυτό το θέμα, επειδή έχετε ενεργοποιήσει την ανώνυμη διαδρομή ZK.",
+      );
+      return;
+    }
     setSelected(choice);
 
     // Βιομετρική πιστοποίηση
@@ -399,8 +412,9 @@ export default function VoteScreen({ route, navigation }: Props) {
     }
   }
 
-  const canCorrectVote = hasVoted && billStatus === "WINDOW_24H" && !isCorrected;
-  const voteLocked = hasVoted && !canCorrectVote;
+  const tier1LockedByZk = zkOptedIn && billSource === "PARLIAMENT";
+  const canCorrectVote = hasVoted && billStatus === "WINDOW_24H" && !isCorrected && !tier1LockedByZk;
+  const voteLocked = tier1LockedByZk || (hasVoted && !canCorrectVote);
   const showVoteControls = billLoaded && (billStatus === "ACTIVE" || billStatus === "WINDOW_24H");
   const correctionState = correctionBanner(billStatus, isCorrected);
   const canUsePillAsSummary = billSource !== "DIAVGEIA" && readableText(billPill);
@@ -564,7 +578,9 @@ export default function VoteScreen({ route, navigation }: Props) {
       {showVoteControls && (
         <>
           <Text style={styles.info}>
-            {canCorrectVote
+            {tier1LockedByZk
+              ? "Η κανονική ψήφος είναι κλειδωμένη για αυτό το θέμα. Χρησιμοποιήστε την ανώνυμη διαδρομή Semaphore ZK παρακάτω."
+              : canCorrectVote
               ? "Έχετε ήδη ψηφίσει. Μπορείτε να αλλάξετε την ψήφο σας μία φορά."
               : voteLocked
                 ? "Έχετε ήδη ψηφίσει. Η ψήφος θα μπορεί να αλλάξει μόνο στο τελευταίο 24ωρο."
@@ -625,30 +641,59 @@ export default function VoteScreen({ route, navigation }: Props) {
             disabled={zkOptedIn || zkBusy !== null}
           >
             <Text style={styles.secondaryActionText}>
-              {zkBusy === "opt-in" ? "ZK opt-in..." : zkOptedIn ? "ZK opt-in ενεργό" : "1. ZK opt-in"}
+              {zkBusy === "opt-in" ? "Ενεργοποίηση ZK..." : zkOptedIn ? "Η ενεργοποίηση ZK ολοκληρώθηκε" : "1. Ενεργοποίηση ZK"}
             </Text>
           </TouchableOpacity>
           <View style={styles.zkChoices}>
             {VOTE_OPTIONS.map((opt) => (
-              <View key={opt.key} style={styles.zkChoiceRow}>
-                <Text style={styles.zkChoiceLabel}>{opt.icon} {opt.label}</Text>
+              <View
+                key={opt.key}
+                style={[
+                  styles.zkChoiceRow,
+                  zkSubmittedChoice !== null && zkSubmittedChoice !== opt.key && styles.zkChoiceRowDisabled,
+                  zkSubmittedChoice === opt.key && [
+                    styles.zkChoiceRowSubmitted,
+                    { borderColor: opt.color },
+                  ],
+                ]}
+              >
+                <Text style={styles.zkChoiceLabel}>
+                  {opt.icon} {opt.label}{zkSubmittedChoice === opt.key ? " · Επιλέχθηκε ✓" : ""}
+                </Text>
                 <View style={styles.zkChoiceActions}>
                   <TouchableOpacity
-                    style={[styles.zkSmallButton, (!zkOptedIn || !publicZkVoteReady || zkBusy !== null) && styles.voteButtonDisabled]}
+                    style={[
+                      styles.zkSmallButton,
+                      (!zkOptedIn || !publicZkVoteReady || zkBusy !== null || zkSubmittedChoice !== null) && styles.voteButtonDisabled,
+                    ]}
                     onPress={() => handleZkVerify(opt.key)}
-                    disabled={!zkOptedIn || !publicZkVoteReady || zkBusy !== null}
+                    disabled={
+                      !zkOptedIn ||
+                      !publicZkVoteReady ||
+                      zkBusy !== null ||
+                      zkSubmittedChoice !== null
+                    }
                   >
                     <Text style={styles.zkSmallButtonText}>
-                      {zkBusy === "verify" ? "..." : "Verify"}
+                      {zkBusy === "verify" ? "..." : "Επαλήθευση"}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.zkSmallButton, styles.zkSubmitButton, (zkVerifiedChoice !== opt.key || !publicZkVoteReady || zkBusy !== null) && styles.voteButtonDisabled]}
+                    style={[
+                      styles.zkSmallButton,
+                      styles.zkSubmitButton,
+                      (zkVerifiedChoice !== opt.key || !publicZkVoteReady || zkBusy !== null || zkSubmittedChoice !== null) && styles.voteButtonDisabled,
+                    ]}
                     onPress={() => handleZkVote(opt.key)}
-                    disabled={zkVerifiedChoice !== opt.key || !publicZkVoteReady || zkBusy !== null}
+                    disabled={
+                      zkVerifiedChoice !== opt.key ||
+                      !publicZkVoteReady ||
+                      zkBusy !== null ||
+                      zkSubmittedChoice !== null
+                    }
                   >
                     <Text style={styles.zkSubmitText}>
-                      {zkBusy === "vote" ? "..." : "Vote"}
+                      {zkBusy === "vote" ? "..." : "Υποβολή"}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -800,6 +845,8 @@ const styles = StyleSheet.create({
   secondaryActionText: { color: "#6d28d9", fontWeight: "900", fontSize: 13 },
   zkChoices: { gap: 10 },
   zkChoiceRow: { backgroundColor: "#faf5ff", borderRadius: 10, padding: 10, borderWidth: 1, borderColor: "#ddd6fe" },
+  zkChoiceRowDisabled: { opacity: 0.45 },
+  zkChoiceRowSubmitted: { backgroundColor: "#e9d5ff" },
   zkChoiceLabel: { color: "#4c1d95", fontWeight: "800", fontSize: 13, marginBottom: 8 },
   zkChoiceActions: { flexDirection: "row", gap: 8 },
   zkSmallButton: { flex: 1, borderColor: "#7c3aed", borderWidth: 1, borderRadius: 8, padding: 10, alignItems: "center" },
