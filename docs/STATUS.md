@@ -7,9 +7,9 @@ Last verified: 2026-07-18
 | Item | Status |
 |---|---|
 | Phase | Beta |
-| Android | v1.0.28 / versionCode 57 release candidate |
-| Direct APK | Build and artifact verification pending |
-| Google Play | AAB build and Closed Testing upload pending |
+| Android | v1.0.28 / versionCode 57 released |
+| Direct APK | Live on ekklesia.gr; SHA-256 verified |
+| Google Play | AAB submitted to Closed Testing review |
 | iOS | Preparation only; no public build |
 | F-Droid | External MR !38007 pending |
 
@@ -24,12 +24,15 @@ Last verified: 2026-07-18
 - The direct APK and Google Play channels are kept separate so each channel receives compatible updates.
 - During a primary outage the mobile app can use the HTTPS mirror for read-only data; voting stays disabled until the primary is healthy.
 
-## vC57 release gate (artifact checks passed)
+## vC57 release verification
 
 - Mobile Vitest: 149/149 passed; TypeScript passed.
 - Direct APK: v1.0.28 (57), `direct` channel, v2 signature valid, native ARM64 Semaphore library present.
 - Play AAB: v1.0.28 (57), `play` channel, JAR signature valid, native ARM64 Semaphore library present.
-- GitHub CI and Security Audit passed for the release-candidate commit.
+- GitHub CI and Security Audit passed for the release commit.
+- Production API and web were rebuilt from the tagged commit; health, bills, forum, download hashes and unchanged DB counters were verified after deployment.
+- GitHub Release v1.0.28 is published as latest with checksum-verified APK and AAB assets.
+- The vC57 AAB is submitted to Google Play Closed Testing review; production access still depends on Google's tester and duration requirements.
 - The vC57 scope is limited to clearer Semaphore ZK vote-state UX plus the already-tested Parliament metadata synchronization hardening.
 - The local Pixel 5 AVD remained offline after cold boot; a fresh vC57 S10 visual pass is therefore still recommended. The unchanged native prover and production Canary were already verified on S10 before this UI-only release.
 
