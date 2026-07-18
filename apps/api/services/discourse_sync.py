@@ -434,6 +434,38 @@ async def _search_existing_topic(title: str) -> int | None:
     return None
 
 
+async def _record_matching_existing_topic_body(
+    client: httpx.AsyncClient,
+    topic_id: int,
+    bill: ParliamentBill,
+    generated_body: str,
+) -> None:
+    """Adopt ownership only when an existing topic still has our exact body."""
+    topic = await _request_discourse(
+        client,
+        "get",
+        f"{DISCOURSE_API_URL}/t/{topic_id}.json",
+        headers=_headers(),
+    )
+    if topic.status_code != 200:
+        return
+    posts = topic.json().get("post_stream", {}).get("posts", [])
+    if not posts:
+        return
+
+    post = await _request_discourse(
+        client,
+        "get",
+        f"{DISCOURSE_API_URL}/posts/{posts[0]['id']}.json",
+        headers=_headers(),
+    )
+    if post.status_code != 200:
+        return
+    current_raw = post.json().get("raw")
+    if content_sha256(current_raw) == content_sha256(generated_body):
+        record_generated_content(bill, FORUM_BODY_FIELD, generated_body)
+
+
 async def _region_name_for_body(bill: ParliamentBill, db: AsyncSession) -> str:
     """Build region name string for topic body metadata."""
     gov = bill.governance_level.value if bill.governance_level else "NATIONAL"
@@ -481,6 +513,15 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
                 existing_id = await _search_existing_topic(bill.title_el)
             if existing_id:
                 logger.info("Found existing topic %d for bill %s", existing_id, bill.id)
+                # Multiple API workers can race while creating the same topic.
+                # Claim the body only when the winning worker wrote the exact
+                # generated content; otherwise preserve it as externally owned.
+                await _record_matching_existing_topic_body(
+                    client,
+                    existing_id,
+                    bill,
+                    body,
+                )
                 return existing_id
             logger.warning("Title duplicate but search found nothing for %s", bill.id)
 

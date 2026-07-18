@@ -237,6 +237,33 @@ async def test_create_topic_retries_with_stable_suffix_when_duplicate_search_mis
     assert bill.generated_content_provenance.get("forum_body")
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("body_matches", [True, False])
+async def test_duplicate_topic_adopts_only_identical_generated_body(monkeypatch, body_matches):
+    bill = _forum_bill("Αυτόματη σύνοψη.")
+    generated_body = discourse_sync._build_topic_body(bill)
+
+    async def fake_request(_client, method, url, **_kwargs):
+        if method == "get" and "/t/321.json" in url:
+            return FakeResponse(200, {"post_stream": {"posts": [{"id": 654}]}})
+        if method == "get" and "/posts/654.json" in url:
+            raw = generated_body if body_matches else "Χειροκίνητη παρέμβαση"
+            return FakeResponse(200, {"raw": raw})
+        raise AssertionError((method, url))
+
+    monkeypatch.setattr(discourse_sync, "_request_discourse", fake_request)
+
+    await discourse_sync._record_matching_existing_topic_body(
+        object(),
+        321,
+        bill,
+        generated_body,
+    )
+
+    provenance = getattr(bill, "generated_content_provenance", None) or {}
+    assert bool(provenance.get("forum_body")) is body_matches
+
+
 def _forum_bill(summary: str) -> SimpleNamespace:
     return SimpleNamespace(
         id="GR-PROVENANCE",
