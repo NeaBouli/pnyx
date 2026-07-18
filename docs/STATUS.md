@@ -24,13 +24,14 @@ Last verified: 2026-07-18
 - The direct APK and Google Play channels are kept separate so each channel receives compatible updates.
 - During a primary outage the mobile app can use the HTTPS mirror for read-only data; voting stays disabled until the primary is healthy.
 
-## vC57 release gate (in progress)
+## vC57 release gate (artifact checks passed)
 
-- Mobile Vitest and TypeScript must pass before artifacts are published.
-- Emulator runtime and visual checks are required because the S10 is not currently connected.
-- Direct APK and Play AAB signatures, channels, versions and native Semaphore library must be audited before publication.
-- GitHub CI and Security Audit must pass before production metadata and downloads are updated.
+- Mobile Vitest: 149/149 passed; TypeScript passed.
+- Direct APK: v1.0.28 (57), `direct` channel, v2 signature valid, native ARM64 Semaphore library present.
+- Play AAB: v1.0.28 (57), `play` channel, JAR signature valid, native ARM64 Semaphore library present.
+- GitHub CI and Security Audit passed for the release-candidate commit.
 - The vC57 scope is limited to clearer Semaphore ZK vote-state UX plus the already-tested Parliament metadata synchronization hardening.
+- The local Pixel 5 AVD remained offline after cold boot; a fresh vC57 S10 visual pass is therefore still recommended. The unchanged native prover and production Canary were already verified on S10 before this UI-only release.
 
 ## Deliberately gated or external
 

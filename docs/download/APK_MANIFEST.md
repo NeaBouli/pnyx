@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.27 |
-| versionCode | 56 |
+| Version | 1.0.28 |
+| versionCode | 57 |
 | Package | ekklesia.gr |
-| APK SHA256 | `a3720382a3814175ed1582b456236c0a71dc3f39a788c63d91194248e38cd737` |
-| AAB SHA256 | `27e99a2a7da84bc2c4bcb2e1de98cac71df2cc78e76ddc10bfd8ba3fd97550a6` |
+| APK SHA256 | `d21c265cf4f330c79c7437744ed28d873480d2ab7631dfa5127c67e8148ef9a5` |
+| AAB SHA256 | `c5799c62f12949a1f250da118b87804a55d200d978ff35641a2a25037fde6d08` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
-| Build date | 2026-07-17 |
-| Release gate | PASS — 144 Mobile tests, full API/Web/Crypto regression, S10 update-in-place and visual scope checks, APK/AAB signature and channel audit, GitHub CI/Security, Production deploy and public APK hash verification |
-| Includes | Verified municipality/region bill visibility with nationwide Parliament access, server-authoritative vote eligibility, canonical SecureStore identity handling, safer account import, unified Tier-1 and Semaphore ZK counting, aggregate Diavgeia results, safe Parliament text/PDF display, HTTPS read-only mirror fallback, guarded Parliament ZK rollout and eligible-scope Arweave publication |
+| Build date | 2026-07-18 |
+| Release gate | PASS for code and artifacts — 149 Mobile tests, TypeScript, APK/AAB signature and channel audit, native Semaphore library present, GitHub CI/Security green. The vC57 UI-only delta still awaits an optional fresh S10 visual pass because the local Pixel 5 AVD remained offline; the unchanged ARM64 prover path was already verified on S10 in vC56 and the production Canary. |
+| Includes | Clearer Semaphore ZK vote-state UX and Greek duplicate/error messages; verified municipality/region bill visibility with nationwide Parliament access; stronger full-title/summary/document synchronization for new Parliament bills; server-authoritative vote eligibility; unified Tier-1 and Semaphore ZK counting; aggregate Diavgeia results; HTTPS read-only mirror fallback; guarded Parliament ZK rollout and eligible-scope Arweave publication |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: a3720382a3814175ed1582b456236c0a71dc3f39a788c63d91194248e38cd737
+# Expected: d21c265cf4f330c79c7437744ed28d873480d2ab7631dfa5127c67e8148ef9a5
 ```
