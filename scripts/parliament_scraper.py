@@ -237,6 +237,33 @@ def _detail_field(markdown: str, label: str) -> str | None:
     return None
 
 
+def _inline_detail_fields(markdown: str) -> dict[str, str]:
+    """Parse the compact field sequence currently emitted by Jina.
+
+    The official detail page sometimes collapses all ``dt``/``dd`` pairs onto
+    one line. Keep this fallback deliberately strict: every captured value is
+    bounded by the next official label, and the caller still binds the title
+    to the bill before accepting any enrichment.
+    """
+    compact = _normalize_text(markdown)
+    match = re.search(
+        r"(?:^|\s)Τίτλος\s+(?P<title>.{1,1000}?)"
+        r"Τύπος\s+(?P<type>.{1,200}?)"
+        r"Υπουργείο\s+(?P<ministry>.{1,300}?)"
+        r"Επιτροπή\s+(?P<committee>.{1,500}?)"
+        r"Φάση Επεξεργασίας\s+(?P<phase>.{1,300}?)"
+        r"Ημερ/νια Φάσης επεξεργασίας(?:\s+|$)",
+        compact,
+    )
+    if not match:
+        return {}
+    return {
+        key: _normalize_text(value)
+        for key, value in match.groupdict().items()
+        if value and _normalize_text(value)
+    }
+
+
 def _extract_labeled_pdf_links(markdown: str) -> list[dict[str, str]]:
     links: list[dict[str, str]] = []
     pattern = re.compile(
@@ -271,11 +298,12 @@ def _extract_labeled_pdf_links(markdown: str) -> list[dict[str, str]]:
 
 def parse_detail_markdown(markdown: str) -> dict[str, Any]:
     """Extract only explicit labeled facts from one official Parliament detail page."""
+    inline = _inline_detail_fields(markdown)
     return {
-        "title_el": _detail_field(markdown, "Τίτλος"),
-        "type": _detail_field(markdown, "Τύπος"),
-        "ministry": _detail_field(markdown, "Υπουργείο"),
-        "phase": _detail_field(markdown, "Φάση Επεξεργασίας"),
+        "title_el": _detail_field(markdown, "Τίτλος") or inline.get("title"),
+        "type": _detail_field(markdown, "Τύπος") or inline.get("type"),
+        "ministry": _detail_field(markdown, "Υπουργείο") or inline.get("ministry"),
+        "phase": _detail_field(markdown, "Φάση Επεξεργασίας") or inline.get("phase"),
         "pdf_links": _extract_labeled_pdf_links(markdown),
     }
 

@@ -155,6 +155,53 @@ Markdown Content:
     assert parliament_scraper.prefer_complete_title(truncated, detail["title_el"]) == full
 
 
+def test_parse_detail_markdown_recovers_compact_jina_fields():
+    full = (
+        "Κύρωση σύμβασης παραχώρησης του δικαιώματος διοίκησης, διαχείρισης, "
+        "λειτουργίας, ανάπτυξης, επέκτασης, συντήρησης και εκμετάλλευσης του "
+        "Διεθνούς Αερολιμένα Καλαμάτας «Καπετάν Βασ. Κωνσταντακόπουλος»"
+    )
+    markdown = (
+        "# Αναζήτηση\n\n"
+        f"Τίτλος {full}"
+        "Τύπος Σχέδιο νόμου "
+        "Υπουργείο Εθνικής Οικονομίας και Οικονομικών "
+        "Επιτροπή Διαρκής Επιτροπή Οικονομικών Υποθέσεων "
+        "Φάση Επεξεργασίας Κατατεθέντα "
+        "Ημερ/νια Φάσης επεξεργασίας 17/07/2026 "
+        "Το φωτοτυπημένο σ/ν ή π/ν δεν αποτελεί το τελικό κείμενο"
+    )
+
+    detail = parliament_scraper.parse_detail_markdown(markdown)
+
+    assert detail["title_el"] == full
+    assert detail["type"] == "Σχέδιο νόμου"
+    assert detail["ministry"] == "Εθνικής Οικονομίας και Οικονομικών"
+    assert detail["phase"] == "Κατατεθέντα"
+
+
+def test_compact_detail_enrichment_still_rejects_another_bill():
+    bill = {
+        "title_el": "Κύρωση της Συμφωνίας μεταξύ Ελλάδας και...",
+        "type": "Διεθνής Σύμβαση",
+        "ministry": "Εθνικής Άμυνας",
+        "summary_short_el": "Ασφαλή μεταδεδομένα",
+        "summary_long_el": None,
+    }
+    markdown = (
+        "Τίτλος Ρυθμίσεις για την αγορά ενέργειας και την προστασία καταναλωτών"
+        "Τύπος Σχέδιο νόμου "
+        "Υπουργείο Περιβάλλοντος και Ενέργειας "
+        "Επιτροπή Διαρκής Επιτροπή Παραγωγής και Εμπορίου "
+        "Φάση Επεξεργασίας Κατατεθέντα "
+        "Ημερ/νια Φάσης επεξεργασίας 17/07/2026"
+    )
+
+    assert parliament_scraper.enrich_bill_from_detail(bill, markdown) == []
+    assert bill["title_el"] == "Κύρωση της Συμφωνίας μεταξύ Ελλάδας και..."
+    assert bill["ministry"] == "Εθνικής Άμυνας"
+
+
 def test_detail_enrichment_rejects_title_from_another_bill():
     current = "Κύρωση της Συμφωνίας μεταξύ Ελλάδας και..."
     unrelated = "Ρυθμίσεις για την αγορά ενέργειας και την προστασία καταναλωτών"
