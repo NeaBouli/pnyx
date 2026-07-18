@@ -1,15 +1,15 @@
 # Ekklesia.gr - Project Status
 
-Last verified: 2026-07-17
+Last verified: 2026-07-18
 
 ## Current release
 
 | Item | Status |
 |---|---|
 | Phase | Beta |
-| Android | v1.0.27 / versionCode 56 |
-| Direct APK | Live; signed and verified on Samsung S10 and through the public download URL |
-| Google Play | v1.0.27 / vC56 uploaded to Closed Testing; Google review/distribution pending |
+| Android | v1.0.28 / versionCode 57 release candidate |
+| Direct APK | Build and artifact verification pending |
+| Google Play | AAB build and Closed Testing upload pending |
 | iOS | Preparation only; no public build |
 | F-Droid | External MR !38007 pending |
 
@@ -24,21 +24,19 @@ Last verified: 2026-07-17
 - The direct APK and Google Play channels are kept separate so each channel receives compatible updates.
 - During a primary outage the mobile app can use the HTTPS mirror for read-only data; voting stays disabled until the primary is healthy.
 
-## vC56 release gate (passed)
+## vC57 release gate (in progress)
 
-- Mobile Vitest: 144/144 passed.
-- Mobile TypeScript: passed.
-- Samsung S10: update-in-place passed; verified municipality/region loaded; Parliament and local filters rendered; no fatal runtime exception.
-- Direct APK: v1.0.27 (56), `direct` channel, v2 signature valid, native Semaphore library present.
-- Play AAB: v1.0.27 (56), `play` channel, JAR signature valid, native Semaphore library present.
-- Canonical identity storage uses only `ekklesia_nullifier`; invalid legacy SecureStore keys are not accessed.
-- GitHub CI and Security Audit passed; Production API/Web deploy, database invariants, public download hash, Forum and all three mirrors were verified.
+- Mobile Vitest and TypeScript must pass before artifacts are published.
+- Emulator runtime and visual checks are required because the S10 is not currently connected.
+- Direct APK and Play AAB signatures, channels, versions and native Semaphore library must be audited before publication.
+- GitHub CI and Security Audit must pass before production metadata and downloads are updated.
+- The vC57 scope is limited to clearer Semaphore ZK vote-state UX plus the already-tested Parliament metadata synchronization hardening.
 
 ## Deliberately gated or external
 
 - Alpha 0.1 official gov.gr holder verification is design-only (GH#141), pending official integration, DPIA, migration design, independent review and sandbox canary.
 - Off-site backup currently uses the separated sandbox fallback until funded dedicated storage is available.
 - F-Droid publication depends on external review and merge.
-- R8/ProGuard remains disabled; therefore no mapping file is produced for vC56. A future R8 production build requires a separate native/ZK regression gate and `mapping.txt` publication.
+- R8/ProGuard remains disabled; therefore no mapping file is produced for vC57. A future R8 production build requires a separate native/ZK regression gate and `mapping.txt` publication.
 
 Operational details and rollback history are maintained in the local, non-public agent bridge.

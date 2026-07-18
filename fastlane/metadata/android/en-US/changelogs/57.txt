@@ -1,0 +1,4 @@
+- Clearer Semaphore ZK voting flow with the submitted choice visibly selected.
+- Alternative choices are disabled after submission to avoid confusion.
+- Clear Greek messages for duplicate or failed anonymous votes.
+- Stronger synchronization of full Parliament titles, summaries, and documents.

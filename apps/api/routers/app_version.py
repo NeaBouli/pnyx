@@ -8,13 +8,13 @@ from fastapi import APIRouter
 router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
-LATEST_VERSION = "1.0.27"
-LATEST_VERSION_CODE = 56
+LATEST_VERSION = "1.0.28"
+LATEST_VERSION_CODE = 57
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v1.0.27 — Οι ψηφοφορίες προσαρμόζονται πλέον με ασφάλεια στον επαληθευμένο Δήμο και την Περιφέρεια, ενώ τα νομοσχέδια της Βουλής παραμένουν διαθέσιμα πανελλαδικά. Ενισχύθηκαν οι έλεγχοι δικαιώματος ψήφου, η ασφαλής εισαγωγή λογαριασμού και η ενιαία καταμέτρηση Tier-1 και Semaphore ZK."
-RELEASE_NOTES_EN = "v1.0.27 — Voting lists now safely follow the verified municipality and region, while Parliament bills remain available nationwide. Vote eligibility, secure account import, and unified Tier-1 plus Semaphore ZK counting were also strengthened."
+RELEASE_NOTES_EL = "v1.0.28 — Η ροή ψηφοφορίας Semaphore ZK δείχνει καθαρά την επιλογή που υποβλήθηκε, απενεργοποιεί τις άλλες επιλογές και εμφανίζει σαφή ελληνικά μηνύματα. Ενισχύθηκε επίσης ο συγχρονισμός πλήρων τίτλων, συνόψεων και εγγράφων των νέων νομοσχεδίων της Βουλής."
+RELEASE_NOTES_EN = "v1.0.28 — The Semaphore ZK voting flow now clearly shows the submitted choice, disables alternatives, and provides clear Greek messages. Synchronization of full titles, summaries, and documents for new Parliament bills was also strengthened."
 
 FDROID_URL = ""  # Not live yet — MR !38007 pending
 PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=ekklesia.gr"
