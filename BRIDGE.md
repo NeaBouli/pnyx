@@ -1,5 +1,11 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-07-16 — Payment Projection Reconciliation Prepared (Codex)
+
+- Codex completed another independent donation-boundary review and prepared retry-safe projection reconciliation for provider captures and later adjustments in PR #136.
+- Focused payment/finance tests pass; the public status exposes only minimized aggregate information. Detailed provider, recipient and accounting operations remain exclusively in the private VLABS control center.
+- Payment intake and public contribution links remain paused. No payment, refund, invoice/receipt, provider/AADE request, runtime secret change or deployment occurred.
+
 ## 2026-07-13 — Docker Capacity Guard Fix Prepared (Codex)
 
 - A production incident exposed a guard logic gap: an extra Docker capacity
