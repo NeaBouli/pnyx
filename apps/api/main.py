@@ -382,10 +382,17 @@ async def scheduled_forum_sync():
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     try:
         async with session_factory() as db:
-            await sync_new_bills_to_forum(db)
+            creation_stats = await sync_new_bills_to_forum(db)
             refresh_stats = await sync_changed_bills_to_forum(db)
+            if creation_stats["created"] or creation_stats["failed"]:
+                logger.info("[Forum] New topic sync: %s", creation_stats)
             if refresh_stats["refreshed"] or refresh_stats["failed"]:
                 logger.info("[Forum] Existing topic refresh: %s", refresh_stats)
+            if creation_stats["failed"] or refresh_stats["failed"]:
+                raise RuntimeError(
+                    "Forum sync completed with failures: "
+                    f"new={creation_stats['failed']}, refresh={refresh_stats['failed']}"
+                )
         await record_success(name)
     except Exception as e:
         logger.error("[Forum] Sync failed: %s", e)
