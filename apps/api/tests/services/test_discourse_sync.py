@@ -75,6 +75,34 @@ def test_unique_title_suffix_prefers_ada_and_preserves_limit():
     assert len(result) == 255
 
 
+@pytest.mark.parametrize(
+    "governance,source,status,periferia_id,dimos_id,expected",
+    [
+        ("NATIONAL", "PARLIAMENT", "ACTIVE", None, None,
+         ["ekklesia", "national", "parliament"]),
+        ("INSTITUTIONAL", "DIAVGEIA", "OPEN_END", None, None,
+         ["ekklesia", "institutional", "diavgeia"]),
+        ("MUNICIPAL", "DIAVGEIA", "OPEN_END", 2, 17,
+         ["ekklesia", "municipal", "diavgeia"]),
+    ],
+)
+def test_topic_tags_respect_discourse_limit(
+    governance, source, status, periferia_id, dimos_id, expected
+):
+    bill = SimpleNamespace(
+        governance_level=SimpleNamespace(value=governance),
+        source=source,
+        status=SimpleNamespace(value=status),
+        periferia_id=periferia_id,
+        dimos_id=dimos_id,
+    )
+
+    tags = discourse_sync._build_topic_tags(bill)
+
+    assert tags == expected
+    assert len(tags) == 3
+
+
 def test_topic_body_uses_analysis_el_not_summary_long_as_analysis():
     """GH#103/GH#105: forum body must render distinct analysis_el, not summary_long_el."""
     bill = SimpleNamespace(
@@ -397,6 +425,61 @@ async def test_scheduled_sync_refreshes_changed_owned_existing_topic(monkeypatch
     }
     assert updated == [bill.id]
     assert db.commits == 1
+
+
+@pytest.mark.asyncio
+async def test_new_topic_sync_reports_partial_failures(monkeypatch):
+    first = _forum_bill("Πρώτη σύνοψη.")
+    first.id = "GR-CREATED"
+    first.forum_topic_id = None
+    second = _forum_bill("Δεύτερη σύνοψη.")
+    second.id = "GR-FAILED"
+    second.forum_topic_id = None
+
+    class ScalarRows:
+        @staticmethod
+        def all():
+            return [first, second]
+
+    class QueryResult:
+        @staticmethod
+        def scalars():
+            return ScalarRows()
+
+    class Db:
+        commits = 0
+        rollbacks = 0
+
+        async def execute(self, _query):
+            return QueryResult()
+
+        async def refresh(self, _bill):
+            return None
+
+        async def commit(self):
+            self.commits += 1
+
+        async def rollback(self):
+            self.rollbacks += 1
+
+    async def fake_create(bill, _db):
+        if bill.id == "GR-FAILED":
+            raise RuntimeError("Discourse rejected topic")
+        return 456
+
+    monkeypatch.setattr(discourse_sync, "create_discourse_topic", fake_create)
+    monkeypatch.setattr(discourse_sync, "FORUM_SYNC_ENABLED", True)
+    monkeypatch.setattr(discourse_sync, "DISCOURSE_API_KEY", "test-key")
+    monkeypatch.setattr(discourse_sync, "FORUM_SYNC_TOPIC_DELAY_SECONDS", 0)
+    db = Db()
+
+    stats = await discourse_sync.sync_new_bills_to_forum(db)
+
+    assert stats == {"selected": 2, "created": 1, "failed": 1}
+    assert first.forum_topic_id == 456
+    assert second.forum_topic_id is None
+    assert db.commits == 1
+    assert db.rollbacks == 1
 
 
 def test_forum_refresh_offset_rotates_first_attempt_across_candidates(monkeypatch):

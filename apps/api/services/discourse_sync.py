@@ -394,17 +394,12 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
 
 
 def _build_topic_tags(bill: ParliamentBill) -> list[str]:
-    tags = [
+    # Discourse accepts three tags; geography remains encoded in the category.
+    return [
         "ekklesia",
         (bill.governance_level.value if bill.governance_level else "national").lower(),
         (getattr(bill, "source", "PARLIAMENT") or "PARLIAMENT").lower(),
-        bill.status.value.lower().replace("_", "-") if bill.status else "active",
     ]
-    if bill.periferia_id:
-        tags.append(f"periferia-{bill.periferia_id}")
-    if bill.dimos_id:
-        tags.append(f"dimos-{bill.dimos_id}")
-    return tags
 
 
 def _with_unique_title_suffix(title: str, bill: ParliamentBill) -> str:
@@ -713,17 +708,18 @@ async def sync_changed_bills_to_forum(db: AsyncSession) -> dict[str, int]:
     }
 
 
-async def sync_new_bills_to_forum(db: AsyncSession) -> None:
+async def sync_new_bills_to_forum(db: AsyncSession) -> dict[str, int]:
     """
     APScheduler job — every 10 min.
     Finds ACTIVE bills without forum_topic_id → creates Discourse topic.
     Idempotent: forum_topic_id is set after creation.
     """
+    stats = {"selected": 0, "created": 0, "failed": 0}
     if not FORUM_SYNC_ENABLED:
-        return
+        return stats
     if not DISCOURSE_API_KEY:
         logger.warning("DISCOURSE_API_KEY not set — skipping forum sync")
-        return
+        return stats
 
     result = await db.execute(
         select(ParliamentBill)
@@ -739,9 +735,10 @@ async def sync_new_bills_to_forum(db: AsyncSession) -> None:
         .limit(FORUM_SYNC_BATCH)
     )
     bills = result.scalars().all()
+    stats["selected"] = len(bills)
 
     if not bills:
-        return
+        return stats
 
     logger.info("Forum sync: %d bills to create", len(bills))
 
@@ -752,9 +749,13 @@ async def sync_new_bills_to_forum(db: AsyncSession) -> None:
             topic_id = await create_discourse_topic(bill, db)
             bill.forum_topic_id = topic_id
             await db.commit()
+            stats["created"] += 1
             logger.info("Forum topic %d ← bill %s", topic_id, bill.id)
             if FORUM_SYNC_TOPIC_DELAY_SECONDS > 0:
                 await asyncio.sleep(FORUM_SYNC_TOPIC_DELAY_SECONDS)
         except Exception as e:
+            stats["failed"] += 1
             logger.error("Forum sync failed for bill %s: %s", bill.id, e)
             await db.rollback()
+
+    return stats
