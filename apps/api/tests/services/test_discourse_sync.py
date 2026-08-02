@@ -482,6 +482,81 @@ async def test_new_topic_sync_reports_partial_failures(monkeypatch):
     assert db.rollbacks == 1
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "enabled,api_key",
+    [(False, "test-key"), (True, "")],
+)
+async def test_new_topic_sync_disabled_returns_zero_stats(monkeypatch, enabled, api_key):
+    class Db:
+        async def execute(self, _query):
+            raise AssertionError("disabled sync must not query the database")
+
+    monkeypatch.setattr(discourse_sync, "FORUM_SYNC_ENABLED", enabled)
+    monkeypatch.setattr(discourse_sync, "DISCOURSE_API_KEY", api_key)
+
+    stats = await discourse_sync.sync_new_bills_to_forum(Db())
+
+    assert stats == {"selected": 0, "created": 0, "failed": 0}
+
+
+@pytest.mark.asyncio
+async def test_scheduled_forum_sync_records_partial_failure(monkeypatch):
+    import database
+    import main as app_main
+    import services.scraper_state as scraper_state
+    import sqlalchemy.ext.asyncio as sqlalchemy_asyncio
+
+    events: list[tuple[str, str, str | None]] = []
+
+    async def fake_record_run(name):
+        events.append(("run", name, None))
+
+    async def fake_record_success(name):
+        events.append(("success", name, None))
+
+    async def fake_record_failure(name, error):
+        events.append(("failure", name, error))
+
+    async def fake_new_sync(_db):
+        return {"selected": 2, "created": 1, "failed": 1}
+
+    async def fake_refresh_sync(_db):
+        return {"total": 0, "offset": 0, "scanned": 0, "refreshed": 0, "failed": 0}
+
+    class SessionContext:
+        async def __aenter__(self):
+            return object()
+
+        async def __aexit__(self, *_args):
+            return None
+
+    class SessionFactory:
+        def __call__(self):
+            return SessionContext()
+
+    monkeypatch.setattr(discourse_sync, "FORUM_SYNC_ENABLED", True)
+    monkeypatch.setattr(discourse_sync, "DISCOURSE_API_KEY", "test-key")
+    monkeypatch.setattr(discourse_sync, "sync_new_bills_to_forum", fake_new_sync)
+    monkeypatch.setattr(discourse_sync, "sync_changed_bills_to_forum", fake_refresh_sync)
+    monkeypatch.setattr(scraper_state, "record_run", fake_record_run)
+    monkeypatch.setattr(scraper_state, "record_success", fake_record_success)
+    monkeypatch.setattr(scraper_state, "record_failure", fake_record_failure)
+    monkeypatch.setattr(database, "engine", object())
+    monkeypatch.setattr(
+        sqlalchemy_asyncio,
+        "async_sessionmaker",
+        lambda *_args, **_kwargs: SessionFactory(),
+    )
+
+    await app_main.scheduled_forum_sync()
+
+    assert events[0] == ("run", "forum_sync", None)
+    assert not any(event[0] == "success" for event in events)
+    assert events[1][0:2] == ("failure", "forum_sync")
+    assert "new=1, refresh=0" in (events[1][2] or "")
+
+
 def test_forum_refresh_offset_rotates_first_attempt_across_candidates(monkeypatch):
     monkeypatch.setattr(discourse_sync, "FORUM_REFRESH_SCAN", 40)
     monkeypatch.setattr(discourse_sync, "FORUM_REFRESH_BATCH", 2)
