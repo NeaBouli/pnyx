@@ -52,6 +52,12 @@
     },
     "@expo/cli": {
       "ws": "8.21.0"
+    },
+    "minimatch@3.1.5": {
+      "brace-expansion": "1.1.17"
+    },
+    "minimatch@9.0.9": {
+      "brace-expansion": "2.1.3"
     }
   },
   "private": true
