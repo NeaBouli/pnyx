@@ -103,6 +103,28 @@ def test_unique_title_suffix_prefers_ada_and_preserves_limit():
             (False, None),
         ),
         (
+            FakeResponse(
+                422,
+                {
+                    "errors": [
+                        "This title has already been used by another topic.",
+                        "Unrelated reference: https://pnyx.ekklesia.gr/t/other/99",
+                    ]
+                },
+            ),
+            (True, None),
+        ),
+        (
+            FakeResponse(
+                422,
+                text=(
+                    "This title has already been used by "
+                    "https://pnyx.ekklesia.gr/t/3721/6"
+                ),
+            ),
+            (True, 3721),
+        ),
+        (
             FakeResponse(200, text="https://pnyx.ekklesia.gr/t/unrelated/3721"),
             (False, None),
         ),
@@ -305,7 +327,7 @@ async def test_create_topic_retries_with_stable_suffix_when_duplicate_search_mis
 @pytest.mark.asyncio
 async def test_create_topic_reuses_id_from_english_duplicate_response(monkeypatch):
     bill = _forum_bill("Αυτόματη σύνοψη.")
-    bill.id = "DIAV-95Δ946ΜΤΛΒ-2"
+    bill.id = "DIAV-95Δ946ΜΤΛΒ-2"  # noqa: RUF001 - exact production ID
     bill.forum_topic_id = None
     generated_body = discourse_sync._build_topic_body(bill)
     calls: list[tuple[str, str]] = []

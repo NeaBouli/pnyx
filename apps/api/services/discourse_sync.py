@@ -413,7 +413,8 @@ def _with_unique_title_suffix(title: str, bill: ParliamentBill) -> str:
 
 _DUPLICATE_TITLE_MARKERS = ("already been used", "χρησιμοποιηθεί")
 _DISCOURSE_TOPIC_LINK_RE = re.compile(
-    r"/t/(?:[^/\s'\"<>]+/)?(\d+)(?=[/?#\s'\"<>]|$)"
+    r"/t/(?:(?P<topic_id>\d+)(?:/\d+)?|"
+    r"[^/\s'\"<>]+/(?P<slug_topic_id>\d+))(?=[/?#.\s'\"<>]|$)"
 )
 
 
@@ -426,7 +427,7 @@ def _discourse_error_messages(response: httpx.Response) -> list[str]:
             messages.extend(str(error) for error in data["errors"])
     except (TypeError, ValueError):
         pass
-    if response.text:
+    if not messages and response.text:
         messages.append(response.text)
     return messages
 
@@ -437,20 +438,17 @@ def _duplicate_title_details(response: httpx.Response) -> tuple[bool, int | None
         return False, None
 
     messages = _discourse_error_messages(response)
-    duplicate = any(
-        marker in message.casefold()
-        for message in messages
-        for marker in _DUPLICATE_TITLE_MARKERS
-    )
-    if not duplicate:
-        return False, None
-
+    duplicate = False
     for message in messages:
+        if not any(marker in message.casefold() for marker in _DUPLICATE_TITLE_MARKERS):
+            continue
+        duplicate = True
         match = _DISCOURSE_TOPIC_LINK_RE.search(message)
         if match:
-            return True, int(match.group(1))
+            topic_id = match.group("topic_id") or match.group("slug_topic_id")
+            return True, int(topic_id)
 
-    return True, None
+    return duplicate, None
 
 
 async def _search_existing_topic(title: str) -> int | None:
