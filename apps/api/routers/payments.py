@@ -18,6 +18,7 @@ PayPal IPN:
 
 Alles in Redis gespeichert — kein DB-Schema nötig.
 """
+import hashlib
 import json
 import logging
 import os
@@ -62,6 +63,7 @@ R_STRIPE_SESSION_PREFIX = "donations:stripe:session:"
 R_STRIPE_EVENT_PREFIX = "payments:stripe:event:"
 R_STRIPE_PAYMENT_PREFIX = "payments:stripe:payment_intent:"
 R_FINANCE_EVENTS = "payments:finance_events"
+R_FINANCE_EVENT_MARKER_PREFIX = "payments:finance-event:v1:"
 R_ADJUSTMENT_STATE_PREFIX = "payments:adjustment_state:"
 R_PUBLIC_SERVER_RECEIVED = "donations:public:server:received"
 R_PUBLIC_DOMAIN_RECEIVED = "donations:public:domain:received"
@@ -98,7 +100,7 @@ end
 if ARGV[6] ~= 'none' then
   local current_last = redis.call('get', KEYS[10])
   local valid_last, decoded_last = pcall(cjson.decode, current_last or '')
-  if valid_last and decoded_last['projection_reference'] == ARGV[11] then
+  if valid_last and type(decoded_last) == 'table' and decoded_last['projection_reference'] == ARGV[11] then
     if ARGV[6] == 'delete' then
       redis.call('del', KEYS[10])
     elseif ARGV[6] == 'set' then
@@ -119,6 +121,25 @@ redis.call('set', KEYS[2], 'processed')
 return 1
 """
 
+FINANCE_EVENT_APPEND_SCRIPT = """
+-- finance_event_append_v1
+if redis.call('exists', KEYS[2]) == 1 then
+  return 0
+end
+redis.call('rpush', KEYS[1], ARGV[1])
+redis.call('set', KEYS[2], 'recorded')
+return 1
+"""
+
+PENDING_ADJUSTMENT_QUARANTINE_SCRIPT = """
+-- pending_adjustment_quarantine_v1
+local removed = redis.call('lrem', KEYS[1], 1, ARGV[1])
+if removed == 1 then
+  redis.call('rpush', KEYS[2], ARGV[1])
+end
+return removed
+"""
+
 WEBHOOK_CLAIM_RESUME_SCRIPT = """
 -- webhook_claim_resume_v1
 if redis.call('get', KEYS[1]) ~= ARGV[1] then
@@ -132,6 +153,15 @@ SUPPORT_PURPOSES = {"infrastructure_support", "developer_support"}
 ALLOWED_PAYMENT_PURPOSES = SUPPORT_PURPOSES
 MIN_PAYMENT_CENTS = 100
 MAX_PAYMENT_CENTS = 1_000_000
+ADJUSTMENT_KINDS = frozenset({
+    "stripe_refund_cumulative",
+    "paypal_refund_delta",
+    "stripe_dispute_open",
+    "paypal_reversal",
+    "stripe_dispute_won",
+    "paypal_reversal_cancelled",
+    "stripe_dispute_lost",
+})
 
 
 def _payment_intake_enabled() -> bool:
@@ -151,9 +181,21 @@ def _validate_payment_amount(purpose: str, amount_cents: int) -> bool:
     return purpose in SUPPORT_PURPOSES and MIN_PAYMENT_CENTS <= amount_cents <= MAX_PAYMENT_CENTS
 
 
-async def _append_finance_event(r: aioredis.Redis, event: dict) -> None:
-    """Append a PII-free event for private finance/provider ingestion."""
-    await r.rpush(R_FINANCE_EVENTS, json.dumps(event, separators=(",", ":")))
+async def _append_finance_event(r: aioredis.Redis, event: dict) -> bool:
+    """Append a PII-free event exactly once for private finance ingestion."""
+    event_id = event.get("event_id")
+    if not isinstance(event_id, str) or not 1 <= len(event_id) <= 255:
+        raise ValueError("invalid_finance_event_id")
+    marker_digest = hashlib.sha256(event_id.encode("utf-8")).hexdigest()
+    marker_key = f"{R_FINANCE_EVENT_MARKER_PREFIX}{marker_digest}"
+    payload = json.dumps(event, separators=(",", ":"))
+    return bool(await r.eval(
+        FINANCE_EVENT_APPEND_SCRIPT,
+        2,
+        R_FINANCE_EVENTS,
+        marker_key,
+        payload,
+    ))
 
 
 async def _resume_webhook_claim(r: aioredis.Redis, key: str, expected_state: str) -> bool:
@@ -258,8 +300,12 @@ async def _process_stripe_adjustment(event: dict, event_type: str) -> dict:
             late_session_id = await r.get(f"{R_STRIPE_PAYMENT_PREFIX}{payment_intent}")
             if late_session_id:
                 session_id = late_session_id
-                await _drain_pending_adjustments(r, pending_key, f"stripe:{session_id}")
-                projection_result = {"applied": True, "reason": "reconciled"}
+                drained = await _drain_pending_adjustments(r, pending_key, f"stripe:{session_id}")
+                projection_result = (
+                    {"applied": True, "reason": "reconciled"}
+                    if drained
+                    else {"applied": False, "reason": "payment_projection_busy"}
+                )
         projection_pending = live_mode and projection_result.get("reason") in {
             "payment_projection_missing", "payment_projection_pending", "payment_projection_busy",
         }
@@ -745,8 +791,31 @@ async def _queue_pending_adjustment(r: aioredis.Redis, key: str, adjustment: dic
     await r.rpush(key, json.dumps(adjustment, separators=(",", ":")))
 
 
+def _validated_pending_adjustment(raw: str) -> dict | None:
+    try:
+        adjustment = json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        return None
+    if not isinstance(adjustment, dict):
+        return None
+    amount_cents = adjustment.get("amount_cents")
+    adjustment_kind = adjustment.get("adjustment_kind")
+    adjustment_id = adjustment.get("adjustment_id")
+    event_key = adjustment.get("event_key")
+    if type(amount_cents) is not int or amount_cents <= 0:
+        return None
+    if adjustment_kind not in ADJUSTMENT_KINDS:
+        return None
+    if not isinstance(adjustment_id, str) or not 1 <= len(adjustment_id) <= 255:
+        return None
+    if event_key is not None and (not isinstance(event_key, str) or not event_key):
+        return None
+    return adjustment
+
+
 async def _drain_pending_adjustments(r: aioredis.Redis, key: str, reference: str) -> int:
     processing_key = f"{key}:processing"
+    quarantine_key = f"{key}:quarantine"
     lock_key = f"{R_PENDING_DRAIN_LOCK_PREFIX}{reference}"
     token = secrets.token_hex(16)
     if not await r.set(lock_key, token, nx=True, ex=120):
@@ -759,7 +828,19 @@ async def _drain_pending_adjustments(r: aioredis.Redis, key: str, reference: str
             raw = await r.lmove(key, processing_key, "LEFT", "RIGHT")
             if raw is None:
                 return processed
-            adjustment = json.loads(raw)
+            adjustment = _validated_pending_adjustment(raw)
+            if adjustment is None:
+                quarantined = await r.eval(
+                    PENDING_ADJUSTMENT_QUARANTINE_SCRIPT,
+                    2,
+                    processing_key,
+                    quarantine_key,
+                    raw,
+                )
+                if quarantined != 1:
+                    raise HTTPException(status_code=503, detail="Pending adjustment quarantine failed")
+                logger.error("[MOD-18] Quarantined malformed pending adjustment for %s", reference)
+                continue
             result = await _apply_public_payment_adjustment(
                 r,
                 reference,

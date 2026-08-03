@@ -146,12 +146,24 @@ class _SuccessRedis:
     async def eval(self, script, numkeys, *args):
         keys = args[:numkeys]
         argv = args[numkeys:]
+        if "finance_event_append_v1" in script:
+            if keys[1] in self.values:
+                return 0
+            self.pushed.append((keys[0], argv[0]))
+            self.values[keys[1]] = "recorded"
+            return 1
+        if "pending_adjustment_quarantine_v1" in script:
+            removed = await self.lrem(keys[0], 1, argv[0])
+            if removed == 1:
+                self.pushed.append((keys[1], argv[0]))
+            return removed
         if "webhook_claim_resume_v1" in script:
             if self.values.get(keys[0]) != argv[0]:
                 return 0
             self.values[keys[0]] = "processing"
             return 1
         if "payment_projection_commit_v2" in script:
+            # Keep this emulation aligned with PROJECTION_ADJUSTMENT_COMMIT_SCRIPT.
             lock_key, applied_key = keys[:2]
             if self.values.get(lock_key) != argv[0]:
                 return 0
@@ -534,6 +546,10 @@ async def test_stripe_capture_recovers_after_atomic_record_commit(monkeypatch):
         "payment_intent": "pi_live_recovery",
     })
     redis.values[f"{payments.R_STRIPE_SESSION_PREFIX}cs_live_recovery"] = "accounting_review_required"
+    await payments._append_finance_event(redis, {
+        "event_id": "evt_live_recovery",
+        "event_type": "payment_captured",
+    })
     event = {
         "id": "evt_live_recovery",
         "type": "checkout.session.completed",
@@ -576,6 +592,20 @@ async def test_stripe_capture_recovers_after_atomic_record_commit(monkeypatch):
     assert redis.values[payments.R_PUBLIC_SERVER_RECEIVED] == "15.0"
     assert redis.values[payments.R_PUBLIC_PAYMENT_COUNT] == "1"
     assert len([item for item in redis.pushed if item[0] == payments.R_PAYMENTS]) == 1
+    assert len([item for item in redis.pushed if item[0] == payments.R_FINANCE_EVENTS]) == 1
+
+
+@pytest.mark.asyncio
+async def test_finance_event_append_is_idempotent():
+    redis = _SuccessRedis()
+    event = {"event_id": "evt_finance_once", "event_type": "payment_captured"}
+
+    assert await payments._append_finance_event(redis, event) is True
+    assert await payments._append_finance_event(redis, {**event, "occurred_at": "later"}) is False
+
+    raw_events = [value for key, value in redis.pushed if key == payments.R_FINANCE_EVENTS]
+    assert len(raw_events) == 1
+    assert __import__("json").loads(raw_events[0]) == event
 
 
 @pytest.mark.asyncio
@@ -638,7 +668,41 @@ async def test_pending_adjustment_stays_queued_while_projection_is_missing():
 
     assert exc.value.status_code == 503
     assert (processing_key, raw) in redis.pushed
+    assert not [item for item in redis.pushed if item[0] == f"{pending_key}:quarantine"]
     assert f"{payments.R_STRIPE_EVENT_PREFIX}evt_missing" not in redis.values
+
+
+@pytest.mark.asyncio
+async def test_malformed_pending_adjustment_is_quarantined_and_tail_drains():
+    redis = _SuccessRedis()
+    await payments._append_payment_record(redis, {
+        **_verified_public_record(amount=15.0),
+        "stripe_session": "cs_live_quarantine",
+    })
+    pending_key = f"{payments.R_PENDING_STRIPE_ADJUSTMENT_PREFIX}pi_live_quarantine"
+    processing_key = f"{pending_key}:processing"
+    quarantine_key = f"{pending_key}:quarantine"
+    malformed = "not-json"
+    valid = __import__("json").dumps({
+        "event_key": f"{payments.R_STRIPE_EVENT_PREFIX}evt_after_poison",
+        "adjustment_id": "evt_after_poison",
+        "amount_cents": 500,
+        "adjustment_kind": "stripe_refund_cumulative",
+    }, separators=(",", ":"))
+    await redis.rpush(pending_key, malformed)
+    await redis.rpush(pending_key, valid)
+
+    processed = await payments._drain_pending_adjustments(
+        redis,
+        pending_key,
+        "stripe:cs_live_quarantine",
+    )
+
+    assert processed == 1
+    assert (quarantine_key, malformed) in redis.pushed
+    assert not [item for item in redis.pushed if item[0] in {pending_key, processing_key}]
+    assert redis.values[payments.R_PUBLIC_SERVER_RECEIVED] == "10.0"
+    assert redis.values[f"{payments.R_STRIPE_EVENT_PREFIX}evt_after_poison"] == "processed"
 
 
 @pytest.mark.asyncio
@@ -700,6 +764,33 @@ async def test_adjustment_does_not_replace_a_newer_last_payment():
 
     assert __import__("json").loads(redis.values[payments.R_PUBLIC_LAST_PAYMENT]) == newer_last
     assert redis.values[payments.R_PUBLIC_SERVER_RECEIVED] == "0.0"
+
+
+@pytest.mark.asyncio
+async def test_adjustment_commit_tolerates_scalar_last_payment():
+    class _ConcurrentScalarLastRedis(_SuccessRedis):
+        async def eval(self, script, numkeys, *args):
+            if "payment_projection_commit_v2" in script:
+                self.values[payments.R_PUBLIC_LAST_PAYMENT] = "5"
+            return await super().eval(script, numkeys, *args)
+
+    redis = _ConcurrentScalarLastRedis()
+    await payments._append_payment_record(redis, {
+        **_verified_public_record(amount=15.0),
+        "stripe_session": "cs_live_scalar_last",
+    })
+
+    result = await payments._apply_public_payment_adjustment(
+        redis,
+        "stripe:cs_live_scalar_last",
+        500,
+        "stripe_refund_cumulative",
+        "evt_live_scalar_last",
+    )
+
+    assert result["applied"] is True
+    assert redis.values[payments.R_PUBLIC_LAST_PAYMENT] == "5"
+    assert redis.values[payments.R_PUBLIC_SERVER_RECEIVED] == "10.0"
 
 
 @pytest.mark.asyncio
@@ -799,6 +890,52 @@ async def test_stripe_adjustment_resumes_after_accounting_review_failure(monkeyp
     assert result["processed"] is True
     assert redis.values[event_key] == "processed"
     assert redis.values[payments.R_PUBLIC_SERVER_RECEIVED] == "10.0"
+
+
+@pytest.mark.asyncio
+async def test_late_stripe_projection_lock_contention_remains_retryable(monkeypatch):
+    payment_intent_key = f"{payments.R_STRIPE_PAYMENT_PREFIX}pi_late_busy"
+
+    class _LateSessionRedis(_SuccessRedis):
+        def __init__(self):
+            super().__init__()
+            self.payment_intent_reads = 0
+
+        async def get(self, key):
+            if key == payment_intent_key:
+                self.payment_intent_reads += 1
+                return None if self.payment_intent_reads == 1 else "cs_late_busy"
+            return await super().get(key)
+
+    redis = _LateSessionRedis()
+    event = {
+        "id": "evt_late_busy",
+        "type": "charge.refunded",
+        "livemode": True,
+        "data": {"object": {
+            "payment_intent": "pi_late_busy",
+            "currency": "eur",
+            "amount_refunded": 500,
+        }},
+    }
+
+    async def fake_get_redis():
+        return redis
+
+    async def busy_drain(*_args):
+        return 0
+
+    monkeypatch.setattr(payments, "_get_redis", fake_get_redis)
+    monkeypatch.setattr(payments, "_drain_pending_adjustments", busy_drain)
+
+    with pytest.raises(HTTPException) as exc:
+        await payments._process_stripe_adjustment(event, "charge.refunded")
+
+    event_key = f"{payments.R_STRIPE_EVENT_PREFIX}evt_late_busy"
+    pending_key = f"{payments.R_PENDING_STRIPE_ADJUSTMENT_PREFIX}pi_late_busy"
+    assert exc.value.status_code == 503
+    assert redis.values[event_key] == "pending_payment"
+    assert await redis.llen(pending_key) == 1
 
 
 @pytest.mark.asyncio
@@ -1311,6 +1448,10 @@ async def test_paypal_capture_recovers_after_atomic_record_commit(monkeypatch):
         "txn_id": "txn_recovery",
     })
     redis.values[f"{payments.R_PAYPAL_TXN}txn_recovery"] = "accounting_review_required"
+    await payments._append_finance_event(redis, {
+        "event_id": "paypal:txn_recovery",
+        "event_type": "payment_captured",
+    })
     payload = (
         b"payment_status=Completed&txn_id=txn_recovery&mc_gross=15.00&mc_currency=EUR"
         b"&receiver_email=owner%40example.test&custom=developer_support"
@@ -1343,6 +1484,7 @@ async def test_paypal_capture_recovers_after_atomic_record_commit(monkeypatch):
     assert redis.values[payments.R_PUBLIC_SERVER_RECEIVED] == "15.0"
     assert redis.values[payments.R_PUBLIC_PAYMENT_COUNT] == "1"
     assert len([item for item in redis.pushed if item[0] == payments.R_PAYMENTS]) == 1
+    assert len([item for item in redis.pushed if item[0] == payments.R_FINANCE_EVENTS]) == 1
 
 
 @pytest.mark.asyncio
