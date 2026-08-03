@@ -1060,15 +1060,9 @@ def check_forum_completeness(conn) -> list[Alert]:
         return []
 
     excluded = sum(
-        catalog[category]
-        for category in (
-            "technical_test",
-            "demo_legacy",
-            "operator_hidden",
-            "sensitive_diavgeia",
-            "sync_grace",
-            "lifecycle_not_eligible",
-        )
+        value
+        for category, value in catalog.items()
+        if category != "public_actionable"
     )
     return [Alert(
         "forum_content_empty",

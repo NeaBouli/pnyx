@@ -106,6 +106,23 @@ def test_forum_completeness_alert_separates_public_and_catalogued_counts():
     assert "sensitive" not in alerts[0].message
 
 
+def test_forum_completeness_counts_future_non_actionable_categories(monkeypatch):
+    monkeypatch.setattr(
+        monitor,
+        "FORUM_MISSING_CATEGORIES",
+        (*monitor.FORUM_MISSING_CATEGORIES, "future_non_actionable"),
+    )
+    cursor = FakeCursor(rows=[
+        ("public_actionable", 1),
+        ("future_non_actionable", 3),
+    ])
+
+    alerts = monitor.check_forum_completeness(FakeConn(cursor))
+
+    assert len(alerts) == 1
+    assert "3 katalogisiert, nicht alarmierend" in alerts[0].message
+
+
 def test_forum_completeness_gives_diavgeia_backlog_longer_grace():
     cursor = FakeCursor(rows=[])
     monitor.check_forum_completeness(FakeConn(cursor))
