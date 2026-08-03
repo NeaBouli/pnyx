@@ -90,6 +90,7 @@ from routers import app_version
 from routers import evaluation
 from routers import newsletter_admin
 from routers import zk
+from routers import consensus_results
 
 scheduler = AsyncIOScheduler()
 
@@ -360,7 +361,13 @@ async def scheduled_diavgeia_scrape():
 
 async def scheduled_forum_sync():
     """Sync bills to Discourse forum every 10 min."""
-    from services.discourse_sync import sync_new_bills_to_forum, FORUM_SYNC_ENABLED, DISCOURSE_API_KEY, _category_cache
+    from services.discourse_sync import (
+        DISCOURSE_API_KEY,
+        FORUM_SYNC_ENABLED,
+        _category_cache,
+        sync_changed_bills_to_forum,
+        sync_new_bills_to_forum,
+    )
     from services.scraper_state import record_run, record_success, record_failure
     _category_cache.clear()
     name = "forum_sync"
@@ -375,7 +382,17 @@ async def scheduled_forum_sync():
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     try:
         async with session_factory() as db:
-            await sync_new_bills_to_forum(db)
+            creation_stats = await sync_new_bills_to_forum(db)
+            refresh_stats = await sync_changed_bills_to_forum(db)
+            if creation_stats["created"] or creation_stats["failed"]:
+                logger.info("[Forum] New topic sync: %s", creation_stats)
+            if refresh_stats["refreshed"] or refresh_stats["failed"]:
+                logger.info("[Forum] Existing topic refresh: %s", refresh_stats)
+            if creation_stats["failed"] or refresh_stats["failed"]:
+                raise RuntimeError(
+                    "Forum sync completed with failures: "
+                    f"new={creation_stats['failed']}, refresh={refresh_stats['failed']}"
+                )
         await record_success(name)
     except Exception as e:
         logger.error("[Forum] Sync failed: %s", e)
@@ -710,6 +727,7 @@ app.include_router(app_version.router)
 app.include_router(evaluation.router)
 app.include_router(newsletter_admin.router)
 app.include_router(zk.router)
+app.include_router(consensus_results.router)
 
 @app.get("/health")
 async def health():

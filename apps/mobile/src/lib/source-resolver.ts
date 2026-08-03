@@ -39,13 +39,41 @@ export function sourceLabel(
   return "Πηγή — Βουλή των Ελλήνων";
 }
 
+const PARLIAMENT_METADATA_SUMMARY_PREFIX = "Η Βουλή δημοσίευσε εγγραφή για:";
+
+export function summarySectionLabel(source: string, summary?: string | null): string {
+  if (source === "PARLIAMENT" && summary?.trim().startsWith(PARLIAMENT_METADATA_SUMMARY_PREFIX)) {
+    return "Στοιχεία Βουλής";
+  }
+  return "Σύνοψη";
+}
+
 export interface OfficialDocumentLink {
   label: string;
   url: string;
 }
 
+export interface OfficialDocumentOpenChoices {
+  readableUrl: string;
+  officialUrl: string;
+}
+
+export function officialDocumentOpenChoices(
+  billId: string,
+  officialUrl: string,
+): OfficialDocumentOpenChoices {
+  return {
+    readableUrl: `https://ekklesia.gr/el/bills/${encodeURIComponent(billId)}`,
+    officialUrl,
+  };
+}
+
 const DOCUMENT_BLOCK_HEADING = "Πλήρη έγγραφα";
 const PDF_MARKDOWN_LINE = /^-?\s*\[[^\]]+\]\(https?:\/\/[^)]+\.pdf[^)]*\)$/i;
+const ACCESS_DENIAL_PATTERNS = [
+  "you don't have permission to access",
+  "errors.edgesuite.net",
+];
 
 export function officialDocumentLinks(value?: string | null): OfficialDocumentLink[] {
   if (!value) return [];
@@ -132,6 +160,13 @@ export function cleanOfficialText(value?: string | null): string {
     "Κατατεθέντα Σ/Ν",
   ];
   if (badPatterns.some((pattern) => cleaned.includes(pattern))) {
+    return "";
+  }
+  const lowered = cleaned.toLowerCase();
+  if (
+    ACCESS_DENIAL_PATTERNS.some((pattern) => lowered.includes(pattern))
+    || (lowered.includes("access denied") && lowered.includes("reference #"))
+  ) {
     return "";
   }
   if (cleaned.startsWith("Αναζήτηση Τίτλος")) {

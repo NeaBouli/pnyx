@@ -1,6 +1,6 @@
 Open-source platform for anonymous civic participation in Greece.
 
-Vote on real Hellenic Parliament bills anonymously using cryptographic identity verification. Your phone number is never stored — only a cryptographic nullifier hash is kept.
+Vote on real Hellenic Parliament bills anonymously after a Greek-number HLR network-status check. HLR does not prove SIM possession or identity. Your phone number is never stored — only a protected cryptographic nullifier is kept.
 
 Features:
 • Vote YES/NO/ABSTAIN on real parliamentary bills

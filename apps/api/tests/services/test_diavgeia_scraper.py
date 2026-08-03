@@ -5,6 +5,7 @@ Uses respx for HTTP mocking. DB calls are mocked/xfailed (no local PG).
 import json
 import os
 import sys
+from types import SimpleNamespace
 
 import pytest
 from httpx import AsyncClient, ASGITransport
@@ -133,3 +134,156 @@ def test_scrape_result_defaults():
     sr = ScrapeResult()
     assert sr.fetched == 0
     assert sr.errors == []
+
+
+@pytest.mark.asyncio
+async def test_manual_scrape_runs_scope_sync_via_conversion(monkeypatch):
+    from routers import diavgeia
+    from services.diavgeia_scraper import ScrapeResult
+
+    calls = []
+
+    async def scrape_decisions(**kwargs):
+        calls.append(("scrape", kwargs["dry_run"]))
+        return ScrapeResult(fetched=1, inserted=1)
+
+    async def convert_decisions_to_bills(session):
+        calls.append(("convert", session))
+        return {"created": 0, "skipped": 0, "scope_synced": 1, "total_checked": 0}
+
+    monkeypatch.setattr("services.diavgeia_scraper.scrape_decisions", scrape_decisions)
+    monkeypatch.setattr(
+        "services.diavgeia_scraper.convert_decisions_to_bills",
+        convert_decisions_to_bills,
+    )
+    db = object()
+    result = await diavgeia.admin_scrape_diavgeia(
+        diavgeia.ScrapeRequest(max_pages=1),
+        _key="admin",
+        db=db,
+    )
+
+    assert calls == [("scrape", False), ("convert", db)]
+    assert result["conversion"]["scope_synced"] == 1
+
+
+@pytest.mark.asyncio
+async def test_manual_scrape_dry_run_never_converts_or_mutates(monkeypatch):
+    from routers import diavgeia
+    from services.diavgeia_scraper import ScrapeResult
+
+    async def scrape_decisions(**kwargs):
+        assert kwargs["dry_run"] is True
+        return ScrapeResult(fetched=1, inserted=1)
+
+    async def convert_decisions_to_bills(_session):
+        raise AssertionError("dry-run must not convert")
+
+    monkeypatch.setattr("services.diavgeia_scraper.scrape_decisions", scrape_decisions)
+    monkeypatch.setattr(
+        "services.diavgeia_scraper.convert_decisions_to_bills",
+        convert_decisions_to_bills,
+    )
+    result = await diavgeia.admin_scrape_diavgeia(
+        diavgeia.ScrapeRequest(max_pages=1, dry_run=True),
+        _key="admin",
+        db=object(),
+    )
+
+    assert "conversion" not in result
+
+
+def test_upsert_refreshes_geographic_scope_fields():
+    from services.diavgeia_scraper import _upsert_update_values
+
+    excluded = SimpleNamespace(**{
+        name: object()
+        for name in (
+            "subject",
+            "decision_type_label",
+            "organization_label",
+            "document_url",
+            "raw_payload",
+            "dimos_id",
+            "periferia_id",
+            "governance_level",
+            "fetched_at",
+        )
+    })
+    values = _upsert_update_values(SimpleNamespace(excluded=excluded))
+
+    assert set(values) == {
+        "subject",
+        "decision_type_label",
+        "organization_label",
+        "document_url",
+        "raw_payload",
+        "dimos_id",
+        "periferia_id",
+        "governance_level",
+        "fetched_at",
+    }
+
+
+def test_unknown_raw_scope_never_defaults_to_national():
+    from models import GovernanceLevel
+    from services.diavgeia_scraper import _canonical_bill_scope
+
+    assert _canonical_bill_scope("UNKNOWN", None, None) == (
+        GovernanceLevel.INSTITUTIONAL,
+        None,
+        None,
+    )
+    assert _canonical_bill_scope("REGION", None, 6) == (
+        GovernanceLevel.REGIONAL,
+        None,
+        6,
+    )
+    assert _canonical_bill_scope("MUNICIPAL", 22, 6) == (
+        GovernanceLevel.MUNICIPAL,
+        22,
+        6,
+    )
+
+
+@pytest.mark.asyncio
+async def test_scope_sync_repairs_only_geographic_metadata():
+    from services.diavgeia_scraper import _sync_existing_decision_bill_scopes
+
+    class Result:
+        def mappings(self):
+            return self
+
+        def all(self):
+            return [{
+                "bill_id": "DIAV-TEST",
+                "bill_governance_level": "NATIONAL",
+                "bill_dimos_id": None,
+                "bill_periferia_id": None,
+                "raw_governance_level": "MUNICIPAL",
+                "raw_dimos_id": 22,
+                "raw_periferia_id": 6,
+            }]
+
+    class Session:
+        def __init__(self):
+            self.calls = []
+
+        async def execute(self, statement, params=None):
+            self.calls.append((str(statement), params))
+            return Result()
+
+    session = Session()
+    updated = await _sync_existing_decision_bill_scopes(session)
+
+    assert updated == 1
+    update_sql, params = session.calls[1]
+    assert "UPDATE parliament_bills" in update_sql
+    assert "title_el" not in update_sql
+    assert "status" not in update_sql
+    assert params == {
+        "bill_id": "DIAV-TEST",
+        "governance_level": "MUNICIPAL",
+        "dimos_id": 22,
+        "periferia_id": 6,
+    }

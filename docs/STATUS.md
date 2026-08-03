@@ -1,87 +1,46 @@
-# Ekklesia.gr — Projektstatus
-# Copyright (c) 2026 V-Labs Development — MIT License
-# Stand: 2026-04-09 — Session 3 komplett (alle Commits gepusht)
+# Ekklesia.gr - Project Status
 
----
+Last verified: 2026-07-18
 
-## Kurzübersicht
+## Current release
 
-| Eigenschaft         | Wert                                              |
-|---------------------|---------------------------------------------------|
-| **Projekt**         | Ekklesia.gr — Digitale Direkte Demokratie (GR)    |
-| **Codename**        | pnyx                                              |
-| **Repo**            | https://github.com/NeaBouli/pnyx                  |
-| **HEAD**            | `99ae8ea` (main, Remote synchron)                 |
-| **Rollback**        | Tag `pre-session3-20260409` → `cd050e5`           |
-| **Phase**           | Beta — Kernmodule + Liquid Compass komplett        |
-| **Lizenz**          | MIT — (c) 2026 V-Labs Development                      |
+| Item | Status |
+|---|---|
+| Phase | Beta |
+| Android | v1.0.28 / versionCode 57 released |
+| Direct APK | Live on ekklesia.gr; SHA-256 verified |
+| Google Play | AAB submitted to Closed Testing review |
+| iOS | Preparation only; no public build |
+| F-Droid | External MR !38007 pending |
 
----
+## Verified product behavior
 
-## Session 3 — Abgeschlossene Arbeit (10 Commits)
+- Parliament bills remain visible nationwide.
+- Municipality and region bills follow the location locked to the active anonymous identity.
+- The server enforces vote eligibility independently of the client filters.
+- A missing, revoked or unverifiable identity fails closed and never grants additional local voting rights.
+- Tier-1 and valid Semaphore ZK receipts are counted once in aggregate results.
+- The guarded Parliament Semaphore rollout and eligible-scope Arweave publication remain controlled by server-side policy and minimum group size.
+- The direct APK and Google Play channels are kept separate so each channel receives compatible updates.
+- During a primary outage the mobile app can use the HTTPS mirror for read-only data; voting stays disabled until the primary is healthy.
 
-### 1. Header-Bug + Tailwind 4
-- 9 doppelte `<header>` entfernt, Tailwind 4 PostCSS migriert
+## vC57 release verification
 
-### 2. Mobile Ed25519 Signing
-- `@noble/curves` auf Expo, `signVote()` + `verifyVote()`, Nullifier `:` Bug gefixt
+- Mobile Vitest: 149/149 passed; TypeScript passed.
+- Direct APK: v1.0.28 (57), `direct` channel, v2 signature valid, native ARM64 Semaphore library present.
+- Play AAB: v1.0.28 (57), `play` channel, JAR signature valid, native ARM64 Semaphore library present.
+- GitHub CI and Security Audit passed for the release commit.
+- Production API and web were rebuilt from the tagged commit; health, bills, forum, download hashes and unchanged DB counters were verified after deployment.
+- GitHub Release v1.0.28 is published as latest with checksum-verified APK and AAB assets.
+- The vC57 AAB is submitted to Google Play Closed Testing review; production access still depends on Google's tester and duration requirements.
+- The vC57 scope is limited to clearer Semaphore ZK vote-state UX plus the already-tested Parliament metadata synchronization hardening.
+- The local Pixel 5 AVD remained offline after cold boot; a fresh vC57 S10 visual pass is therefore still recommended. The unchanged native prover and production Canary were already verified on S10 before this UI-only release.
 
-### 3. Cross-Platform Krypto-Tests
-- 12 neue Tests: Web ↔ Mobile ↔ Backend Signatur-Kompatibilität
+## Deliberately gated or external
 
-### 4. VAA Erweiterung 15 → 38 Thesen
-- 23 neue Statements (echte griechische Debatten 2024-2026)
-- 304 verifizierte Parteipositionen (8 × 38)
+- Alpha 0.1 official gov.gr holder verification is design-only (GH#141), pending official integration, DPIA, migration design, independent review and sandbox canary.
+- Off-site backup currently uses the separated sandbox fallback until funded dedicated storage is available.
+- F-Droid publication depends on external review and merge.
+- R8/ProGuard remains disabled; therefore no mapping file is produced for vC57. A future R8 production build requires a separate native/ZK regression gate and `mapping.txt` publication.
 
-### 5. Liquid Political Compass (NEU)
-- **4 Modelle:** Party Match, Links-Rechts, 2D Kompass, Thematischer Radar
-- **User wählt:** Modell aktivieren/deaktivieren, oder Kompass komplett aus
-- **Liquid:** VAA = optionaler Einstieg, jede Bill-Abstimmung aktualisiert den Kompass
-- **Privacy:** AES-256-GCM verschlüsselt (HKDF vom Ed25519 Key), 100% clientseitig
-- **Nie auf Server:** Kompass-Daten verlassen nie das Gerät
-- **30 Kategorien** gemappt auf politische Dimensionen
-- **Route:** `/[locale]/compass` — vollständiges Dashboard
-
----
-
-## Modulstatus
-
-| Modul   | Name                  | Status       | Plattform          |
-|---------|-----------------------|--------------|--------------------|
-| MOD-01  | Identity              | KOMPLETT     | API + Web + Mobile |
-| MOD-02  | VAA Wahlkompass       | KOMPLETT     | API + Web (38 Thesen) |
-| MOD-02b | Liquid Compass        | KOMPLETT     | Web (4 Modelle, AES-256-GCM) |
-| MOD-03  | Parliament Bills      | KOMPLETT     | API + Web + Mobile |
-| MOD-04  | CitizenVote           | KOMPLETT     | API + Web + Mobile |
-| MOD-05  | Divergence Score      | KOMPLETT     | API + Web + Mobile |
-| MOD-14  | Relevance Up/Down     | KOMPLETT     | API + Web        |
-
----
-
-## Kryptographie
-
-| Komponente                | Status      |
-|---------------------------|-------------|
-| Ed25519 Signing (Backend) | OK — PyNaCl |
-| Ed25519 Signing (Web)     | OK — @noble/curves |
-| Ed25519 Signing (Mobile)  | OK — @noble/curves + self-verify |
-| Identity Nullifiers       | OK — Argon2id v2 + SHA256 compatibility anchor |
-| Compass Encryption        | OK — AES-256-GCM via HKDF-SHA256 |
-| Cross-Platform Compat     | VERIFIZIERT — 12 Tests |
-
----
-
-## Tests
-
-| Suite              | Tests | Ergebnis |
-|--------------------|-------|----------|
-| Web (vitest)       | 29    | 29 passed |
-| Python Crypto      | 12    | 12 passed |
-| API (pytest)       | 67    | 51 passed, 16 xfailed |
-| Web Build          | —     | next build OK (10 Routes) |
-| Mobile tsc         | —     | clean |
-| **TOTAL**          | **92**| **92 passed** |
-
----
-
-*Stand: 2026-04-09. Nächstes Update: Session 4.*
+Operational details and rollback history are maintained in the local, non-public agent bridge.

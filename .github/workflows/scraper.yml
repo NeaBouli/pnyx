@@ -22,8 +22,14 @@ jobs:
             echo "::error::EKKLESIA_ADMIN_KEY secret not set"
             exit 1
           fi
+          if [ -z "${{ secrets.PARLIAMENT_IMPORT_ATTESTATION_KEY }}" ]; then
+            echo "::error::PARLIAMENT_IMPORT_ATTESTATION_KEY secret not set"
+            exit 1
+          fi
 
       - name: Fetch bills from hellenicparliament.gr with fallbacks
+        env:
+          PARLIAMENT_IMPORT_ATTESTATION_KEY: ${{ secrets.PARLIAMENT_IMPORT_ATTESTATION_KEY }}
         run: |
           python3 scripts/parliament_scraper.py \
             --limit 20 \

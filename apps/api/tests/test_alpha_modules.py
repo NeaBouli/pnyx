@@ -5,6 +5,7 @@ Kein DB nötig — testet Route-Existenz, Validierung, Auth-Schutz.
 import pytest
 from httpx import AsyncClient, ASGITransport
 from main import app
+from routers import govgr
 
 
 @pytest.fixture
@@ -88,7 +89,9 @@ async def test_notifications_publish_requires_admin():
 
 
 @pytest.mark.asyncio
-async def test_notifications_publish_valid():
+async def test_notifications_publish_valid(monkeypatch):
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.setenv("ADMIN_KEY", "dev-admin-key")
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         r = await c.post(
             "/api/v1/notifications/test/publish?event_type=test&bill_id=T",
@@ -117,6 +120,23 @@ async def test_govgr_gates():
     gates = r.json()["gates"]
     assert gates["roadmap_publiziert"] is True
     assert gates["500_aktive_nutzer"] is False
+    assert gates["holder_auth_geprueft"] is False
+    assert gates["dpia_genehmigt"] is False
+    assert gates["security_review"] is False
+    assert gates["sandbox_canary"] is False
+
+
+def test_govgr_old_gates_cannot_activate_unreviewed_flow(monkeypatch):
+    monkeypatch.setattr(govgr, "GOVGR_FLOW_ENABLED", True)
+    monkeypatch.setattr(govgr, "GOVGR_CLIENT_ID", "client")
+    monkeypatch.setattr(govgr, "GOVGR_CLIENT_SECRET", "secret")
+    monkeypatch.setattr(govgr, "REGISTRATION_SALT", "s" * 32)
+    monkeypatch.setitem(govgr.ACTIVATION_GATES, "users_500", True)
+    monkeypatch.setitem(govgr.ACTIVATION_GATES, "ngos_3", True)
+    monkeypatch.setitem(govgr.ACTIVATION_GATES, "govgr_approved", True)
+
+    assert govgr.ACTIVATION_GATES["holder_authentication_reviewed"] is False
+    assert govgr.is_active() is False
 
 
 @pytest.mark.asyncio
@@ -156,7 +176,11 @@ async def test_public_info():
 
 
 @pytest.mark.asyncio
-async def test_public_key_generate():
+async def test_public_key_generate(monkeypatch):
+    async def allow_key_generation(*_args, **_kwargs):
+        return 1
+
+    monkeypatch.setattr("routers.public_api.redis_fixed_window_limit", allow_key_generation)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         r = await c.post("/api/v1/public/keys/generate?label=test")
     assert r.status_code == 200
@@ -181,7 +205,11 @@ async def test_public_key_status_invalid():
 
 
 @pytest.mark.asyncio
-async def test_public_key_roundtrip():
+async def test_public_key_roundtrip(monkeypatch):
+    async def allow_key_generation(*_args, **_kwargs):
+        return 1
+
+    monkeypatch.setattr("routers.public_api.redis_fixed_window_limit", allow_key_generation)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         gen = await c.post("/api/v1/public/keys/generate?label=roundtrip")
         key = gen.json()["api_key"]

@@ -16,6 +16,7 @@ import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { verifyIdentity } from "../lib/api";
 import { storeKeypair, storeNullifier } from "../lib/crypto-native";
+import { clearPendingProfileLocation, loadPendingProfileLocation } from "../lib/profile-location";
 import { isDemoNumber, activateDemo } from "../lib/demo";
 import { colors } from "../theme";
 
@@ -54,10 +55,21 @@ export default function VerifyScreen({ navigation }: Props) {
       await storeKeypair(res.private_key_hex, res.public_key_hex);
       await storeNullifier(res.nullifier_hash);
 
+      const pendingLocation = await loadPendingProfileLocation();
+      const needsLocationConfirmation = pendingLocation.periferiaId !== null
+        || pendingLocation.dimosId !== null;
+      await clearPendingProfileLocation();
+      const locationNotice = needsLocationConfirmation
+        ? "\n\nΓια την ασφάλειά σας, επιλέξτε ξανά και επιβεβαιώστε τη γεωγραφική περιοχή στο Προφίλ."
+        : "";
+
       Alert.alert(
         "Επιτυχία ✓",
-        "Το κλειδί σας αποθηκεύτηκε με ασφάλεια. Μπορείτε τώρα να ψηφίσετε.",
-        [{ text: "Συνέχεια", onPress: () => navigation.navigate("Tabs") }]
+        `Το κλειδί σας αποθηκεύτηκε με ασφάλεια. Μπορείτε τώρα να ψηφίσετε.${locationNotice}`,
+        [{
+          text: "Συνέχεια",
+          onPress: () => navigation.navigate(needsLocationConfirmation ? "Profile" : "Tabs"),
+        }]
       );
     } catch (err: any) {
       const msg = err.message || "";

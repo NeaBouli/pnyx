@@ -75,6 +75,93 @@ def test_unique_title_suffix_prefers_ada_and_preserves_limit():
     assert len(result) == 255
 
 
+@pytest.mark.parametrize(
+    "response,expected",
+    [
+        (
+            FakeResponse(
+                422,
+                {
+                    "errors": [
+                        "This title has already been used by "
+                        "<a href='https://pnyx.ekklesia.gr/t/"
+                        "foreas-proswrines-kykloforiakes-rythmiseis/3721'>"
+                        "another topic</a>."
+                    ]
+                },
+            ),
+            (True, 3721),
+        ),
+        (FakeResponse(422, text="Τίτλος έχει ήδη χρησιμοποιηθεί"), (True, None)),
+        (FakeResponse(422, text="This title has already been used"), (True, None)),
+        (FakeResponse(422, text="Title is too short"), (False, None)),
+        (
+            FakeResponse(
+                422,
+                text="A similar topic exists at https://pnyx.ekklesia.gr/t/similar/99",
+            ),
+            (False, None),
+        ),
+        (
+            FakeResponse(
+                422,
+                {
+                    "errors": [
+                        "This title has already been used by another topic.",
+                        "Unrelated reference: https://pnyx.ekklesia.gr/t/other/99",
+                    ]
+                },
+            ),
+            (True, None),
+        ),
+        (
+            FakeResponse(
+                422,
+                text=(
+                    "This title has already been used by "
+                    "https://pnyx.ekklesia.gr/t/3721/6"
+                ),
+            ),
+            (True, 3721),
+        ),
+        (
+            FakeResponse(200, text="https://pnyx.ekklesia.gr/t/unrelated/3721"),
+            (False, None),
+        ),
+    ],
+)
+def test_duplicate_title_details_handles_live_response_and_fallbacks(response, expected):
+    assert discourse_sync._duplicate_title_details(response) == expected
+
+
+@pytest.mark.parametrize(
+    "governance,source,status,periferia_id,dimos_id,expected",
+    [
+        ("NATIONAL", "PARLIAMENT", "ACTIVE", None, None,
+         ["ekklesia", "national", "parliament"]),
+        ("INSTITUTIONAL", "DIAVGEIA", "OPEN_END", None, None,
+         ["ekklesia", "institutional", "diavgeia"]),
+        ("MUNICIPAL", "DIAVGEIA", "OPEN_END", 2, 17,
+         ["ekklesia", "municipal", "diavgeia"]),
+    ],
+)
+def test_topic_tags_respect_discourse_limit(
+    governance, source, status, periferia_id, dimos_id, expected
+):
+    bill = SimpleNamespace(
+        governance_level=SimpleNamespace(value=governance),
+        source=source,
+        status=SimpleNamespace(value=status),
+        periferia_id=periferia_id,
+        dimos_id=dimos_id,
+    )
+
+    tags = discourse_sync._build_topic_tags(bill)
+
+    assert tags == expected
+    assert len(tags) == 3
+
+
 def test_topic_body_uses_analysis_el_not_summary_long_as_analysis():
     """GH#103/GH#105: forum body must render distinct analysis_el, not summary_long_el."""
     bill = SimpleNamespace(
@@ -136,6 +223,39 @@ def test_topic_body_renders_clean_official_text_as_own_section():
     assert "## Ανάλυση\nΞεχωριστή ανάλυση." in body
     assert "## Επίσημο κείμενο και έγγραφα" in body
     assert "[Αιτιολογική Έκθεση](https://www.hellenicparliament.gr/UserFiles/x/test.pdf)" in body
+
+
+def test_topic_body_hides_access_denial_but_keeps_parliament_documents():
+    bill = SimpleNamespace(
+        id="GR-DENIED",
+        title_el="Δοκιμαστικό νομοσχέδιο",
+        summary_short_el="Σύντομη σύνοψη.",
+        analysis_el=None,
+        pill_el=None,
+        summary_long_el=(
+            "You don't have permission to access '/' on this server. "
+            "Reference #18.63c7cf17.1783640051.9520c14\n\n"
+            "### Πλήρη έγγραφα\n"
+            "- [Έγγραφο Βουλής](https://www.hellenicparliament.gr/UserFiles/x/test.pdf)"
+        ),
+        ai_summary_reviewed=False,
+        status=SimpleNamespace(value="OPEN_END"),
+        governance_level=SimpleNamespace(value="NATIONAL"),
+        source="PARLIAMENT",
+        diavgeia_ada=None,
+        parliament_url=None,
+        official_source_url=None,
+        forum_topic_id=123,
+        forum_topic_url="https://pnyx.ekklesia.gr/t/123",
+        periferia_id=None,
+        dimos_id=None,
+    )
+
+    body = discourse_sync._build_topic_body(bill)
+
+    assert "permission to access" not in body
+    assert "Reference #" not in body
+    assert "[Έγγραφο Βουλής](https://www.hellenicparliament.gr/UserFiles/x/test.pdf)" in body
 
 
 def test_diavgeia_topic_body_renders_document_link():
@@ -202,6 +322,79 @@ async def test_create_topic_retries_with_stable_suffix_when_duplicate_search_mis
     assert FakeAsyncClient.posts[0]["title"] == "[Φορέας] ΑΝΑΘΕΣΗ ΕΡΓΟΥ"
     assert FakeAsyncClient.posts[1]["title"] == "[Φορέας] ΑΝΑΘΕΣΗ ΕΡΓΟΥ — ΨΙΗΕ465ΕΦ5-Λ"
     assert bill.generated_content_provenance.get("forum_body")
+
+
+@pytest.mark.asyncio
+async def test_create_topic_reuses_id_from_english_duplicate_response(monkeypatch):
+    bill = _forum_bill("Αυτόματη σύνοψη.")
+    bill.id = "DIAV-95Δ946ΜΤΛΒ-2"  # noqa: RUF001 - exact production ID
+    bill.forum_topic_id = None
+    generated_body = discourse_sync._build_topic_body(bill)
+    calls: list[tuple[str, str]] = []
+
+    async def fake_resolve_category(_bill, _db):
+        return 42
+
+    async def fail_search(_title):
+        raise AssertionError("referenced topic id must avoid eventual-consistency search")
+
+    async def fake_request(_client, method, url, **_kwargs):
+        calls.append((method, url))
+        if method == "post" and url.endswith("/posts.json"):
+            return FakeResponse(
+                422,
+                {
+                    "errors": [
+                        "This title has already been used by "
+                        "<a href='https://pnyx.ekklesia.gr/t/"
+                        "foreas-proswrines-kykloforiakes-rythmiseis/3721'>"
+                        "another topic</a>."
+                    ]
+                },
+            )
+        if method == "get" and url.endswith("/t/3721.json"):
+            return FakeResponse(200, {"post_stream": {"posts": [{"id": 654}]}})
+        if method == "get" and url.endswith("/posts/654.json"):
+            return FakeResponse(200, {"raw": generated_body})
+        raise AssertionError((method, url))
+
+    monkeypatch.setattr(discourse_sync, "_resolve_category", fake_resolve_category)
+    monkeypatch.setattr(discourse_sync, "_search_existing_topic", fail_search)
+    monkeypatch.setattr(discourse_sync, "_request_discourse", fake_request)
+
+    topic_id = await discourse_sync.create_discourse_topic(bill, db=None)
+
+    assert topic_id == 3721
+    assert calls[0][0] == "post"
+    assert sum(method == "post" for method, _url in calls) == 1
+    assert bill.generated_content_provenance.get("forum_body")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("body_matches", [True, False])
+async def test_duplicate_topic_adopts_only_identical_generated_body(monkeypatch, body_matches):
+    bill = _forum_bill("Αυτόματη σύνοψη.")
+    generated_body = discourse_sync._build_topic_body(bill)
+
+    async def fake_request(_client, method, url, **_kwargs):
+        if method == "get" and "/t/321.json" in url:
+            return FakeResponse(200, {"post_stream": {"posts": [{"id": 654}]}})
+        if method == "get" and "/posts/654.json" in url:
+            raw = generated_body if body_matches else "Χειροκίνητη παρέμβαση"
+            return FakeResponse(200, {"raw": raw})
+        raise AssertionError((method, url))
+
+    monkeypatch.setattr(discourse_sync, "_request_discourse", fake_request)
+
+    await discourse_sync._record_matching_existing_topic_body(
+        object(),
+        321,
+        bill,
+        generated_body,
+    )
+
+    provenance = getattr(bill, "generated_content_provenance", None) or {}
+    assert bool(provenance.get("forum_body")) is body_matches
 
 
 def _forum_bill(summary: str) -> SimpleNamespace:
@@ -275,6 +468,217 @@ async def test_update_topic_refreshes_owned_body_and_keeps_pdf_block(monkeypatch
     new_body = body_updates[0][2]["post"]["raw"]
     assert "Νέα αυτόματη σύνοψη." in new_body
     assert "https://www.hellenicparliament.gr/UserFiles/x/test.pdf" in new_body
+
+
+@pytest.mark.asyncio
+async def test_scheduled_sync_refreshes_changed_owned_existing_topic(monkeypatch):
+    from services.content_provenance import FORUM_BODY_FIELD, record_generated_content
+
+    bill = _forum_bill("Παλιά αυτόματη σύνοψη.")
+    record_generated_content(bill, FORUM_BODY_FIELD, discourse_sync._build_topic_body(bill))
+    bill.summary_short_el = "Νέα αυτόματη σύνοψη."
+    updated: list[str] = []
+
+    class ScalarRows:
+        @staticmethod
+        def all():
+            return [bill]
+
+    class QueryResult:
+        @staticmethod
+        def scalars():
+            return ScalarRows()
+
+    class CountResult:
+        @staticmethod
+        def scalar_one():
+            return 1
+
+    class Db:
+        commits = 0
+        executes = 0
+
+        async def execute(self, _query):
+            self.executes += 1
+            if self.executes == 1:
+                return CountResult()
+            return QueryResult()
+
+        async def commit(self):
+            self.commits += 1
+
+    async def fake_region(_bill, _db):
+        return ""
+
+    async def fake_update(target, _db):
+        updated.append(target.id)
+        return True
+
+    monkeypatch.setattr(discourse_sync, "_region_name_for_body", fake_region)
+    monkeypatch.setattr(discourse_sync, "update_discourse_topic", fake_update)
+    monkeypatch.setattr(discourse_sync, "FORUM_SYNC_TOPIC_DELAY_SECONDS", 0)
+    db = Db()
+
+    stats = await discourse_sync.sync_changed_bills_to_forum(db)
+
+    assert stats == {
+        "total": 1,
+        "offset": 0,
+        "scanned": 1,
+        "refreshed": 1,
+        "failed": 0,
+    }
+    assert updated == [bill.id]
+    assert db.commits == 1
+
+
+@pytest.mark.asyncio
+async def test_new_topic_sync_reports_partial_failures(monkeypatch):
+    first = _forum_bill("Πρώτη σύνοψη.")
+    first.id = "GR-CREATED"
+    first.forum_topic_id = None
+    second = _forum_bill("Δεύτερη σύνοψη.")
+    second.id = "GR-FAILED"
+    second.forum_topic_id = None
+
+    class ScalarRows:
+        @staticmethod
+        def all():
+            return [first, second]
+
+    class QueryResult:
+        @staticmethod
+        def scalars():
+            return ScalarRows()
+
+    class Db:
+        commits = 0
+        rollbacks = 0
+
+        async def execute(self, _query):
+            return QueryResult()
+
+        async def refresh(self, _bill):
+            return None
+
+        async def commit(self):
+            self.commits += 1
+
+        async def rollback(self):
+            self.rollbacks += 1
+
+    async def fake_create(bill, _db):
+        if bill.id == "GR-FAILED":
+            raise RuntimeError("Discourse rejected topic")
+        return 456
+
+    monkeypatch.setattr(discourse_sync, "create_discourse_topic", fake_create)
+    monkeypatch.setattr(discourse_sync, "FORUM_SYNC_ENABLED", True)
+    monkeypatch.setattr(discourse_sync, "DISCOURSE_API_KEY", "test-key")
+    monkeypatch.setattr(discourse_sync, "FORUM_SYNC_TOPIC_DELAY_SECONDS", 0)
+    db = Db()
+
+    stats = await discourse_sync.sync_new_bills_to_forum(db)
+
+    assert stats == {"selected": 2, "created": 1, "failed": 1}
+    assert first.forum_topic_id == 456
+    assert second.forum_topic_id is None
+    assert db.commits == 1
+    assert db.rollbacks == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "enabled,api_key",
+    [(False, "test-key"), (True, "")],
+)
+async def test_new_topic_sync_disabled_returns_zero_stats(monkeypatch, enabled, api_key):
+    class Db:
+        async def execute(self, _query):
+            raise AssertionError("disabled sync must not query the database")
+
+    monkeypatch.setattr(discourse_sync, "FORUM_SYNC_ENABLED", enabled)
+    monkeypatch.setattr(discourse_sync, "DISCOURSE_API_KEY", api_key)
+
+    stats = await discourse_sync.sync_new_bills_to_forum(Db())
+
+    assert stats == {"selected": 0, "created": 0, "failed": 0}
+
+
+@pytest.mark.asyncio
+async def test_scheduled_forum_sync_records_partial_failure(monkeypatch):
+    import database
+    import main as app_main
+    import services.scraper_state as scraper_state
+    import sqlalchemy.ext.asyncio as sqlalchemy_asyncio
+
+    events: list[tuple[str, str, str | None]] = []
+
+    async def fake_record_run(name):
+        events.append(("run", name, None))
+
+    async def fake_record_success(name):
+        events.append(("success", name, None))
+
+    async def fake_record_failure(name, error):
+        events.append(("failure", name, error))
+
+    async def fake_new_sync(_db):
+        return {"selected": 2, "created": 1, "failed": 1}
+
+    async def fake_refresh_sync(_db):
+        return {"total": 0, "offset": 0, "scanned": 0, "refreshed": 0, "failed": 0}
+
+    class SessionContext:
+        async def __aenter__(self):
+            return object()
+
+        async def __aexit__(self, *_args):
+            return None
+
+    class SessionFactory:
+        def __call__(self):
+            return SessionContext()
+
+    monkeypatch.setattr(discourse_sync, "FORUM_SYNC_ENABLED", True)
+    monkeypatch.setattr(discourse_sync, "DISCOURSE_API_KEY", "test-key")
+    monkeypatch.setattr(discourse_sync, "sync_new_bills_to_forum", fake_new_sync)
+    monkeypatch.setattr(discourse_sync, "sync_changed_bills_to_forum", fake_refresh_sync)
+    monkeypatch.setattr(scraper_state, "record_run", fake_record_run)
+    monkeypatch.setattr(scraper_state, "record_success", fake_record_success)
+    monkeypatch.setattr(scraper_state, "record_failure", fake_record_failure)
+    monkeypatch.setattr(database, "engine", object())
+    monkeypatch.setattr(
+        sqlalchemy_asyncio,
+        "async_sessionmaker",
+        lambda *_args, **_kwargs: SessionFactory(),
+    )
+
+    await app_main.scheduled_forum_sync()
+
+    assert events[0] == ("run", "forum_sync", None)
+    assert not any(event[0] == "success" for event in events)
+    assert events[1][0:2] == ("failure", "forum_sync")
+    assert "new=1, refresh=0" in (events[1][2] or "")
+
+
+def test_forum_refresh_offset_rotates_first_attempt_across_candidates(monkeypatch):
+    monkeypatch.setattr(discourse_sync, "FORUM_REFRESH_SCAN", 40)
+    monkeypatch.setattr(discourse_sync, "FORUM_REFRESH_BATCH", 2)
+    monkeypatch.setattr(discourse_sync, "FORUM_REFRESH_INTERVAL_SECONDS", 600)
+
+    offsets = [
+        discourse_sync._forum_refresh_offset(6, now=slot * 600)
+        for slot in range(3)
+    ]
+
+    assert offsets == [0, 2, 4]
+    attempted = {
+        candidate
+        for offset in offsets
+        for candidate in (offset, (offset + 1) % 6)
+    }
+    assert attempted == set(range(6))
 
 
 @pytest.mark.asyncio

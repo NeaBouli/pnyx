@@ -380,6 +380,18 @@ export function signEvaluation(
   return bytesToHex(signature);
 }
 
+export function signProfileLocation(
+  privateKeyHex: string,
+  periferiaId: number | null,
+  dimosId: number | null,
+  nullifierHash: string,
+): string {
+  const payload = utf8ToBytes(
+    `profile-location:${periferiaId || 0}:${dimosId || 0}:${nullifierHash}`,
+  );
+  return bytesToHex(ed25519.sign(payload, hexToBytes(privateKeyHex)));
+}
+
 export async function signZkOptInPayload(
   billId: string,
   commitment: string,

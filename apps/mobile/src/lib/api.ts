@@ -115,10 +115,35 @@ export async function verifyIdentity(
 
 export async function checkIdentityStatus(
   nullifierHash: string
-): Promise<{ status: string; created_at: string | null }> {
+): Promise<{
+  status: string;
+  created_at: string | null;
+  region_locked: boolean;
+  periferia_id: number | null;
+  dimos_id: number | null;
+}> {
   return request("/api/v1/identity/status", {
     method: "POST",
     body: JSON.stringify({ nullifier_hash: nullifierHash }),
+  });
+}
+
+export interface ProfileLocationResponse {
+  success: boolean;
+  periferia_id: number | null;
+  dimos_id: number | null;
+  region_locked: boolean;
+}
+
+export async function updateIdentityLocation(payload: {
+  nullifier_hash: string;
+  periferia_id: number | null;
+  dimos_id: number | null;
+  signature_hex: string;
+}): Promise<ProfileLocationResponse> {
+  return request<ProfileLocationResponse>("/api/v1/identity/profile/location", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
   });
 }
 
@@ -142,6 +167,9 @@ export interface Bill {
   source?: string | null;
   diavgeia_ada?: string | null;
   relevance_score: number;
+  governance_level?: string | null;
+  periferia_id?: number | null;
+  dimos_id?: number | null;
 }
 
 export function buildBillsQuery(params?: {
@@ -394,6 +422,7 @@ export interface BillResults {
   yes_percent: number;
   no_percent: number;
   abstain_percent: number;
+  unknown_percent: number;
   divergence: {
     score: number;
     label_el: string;
@@ -408,6 +437,71 @@ export interface BillResults {
 
 export async function fetchResults(billId: string): Promise<BillResults> {
   return request<BillResults>(`/api/v1/vote/${billId}/results`, undefined, { mirrorFallback: true });
+}
+
+export interface ConsensusRepresentationBill {
+  bill_id: string;
+  title_el: string;
+  governance_level: "MUNICIPAL" | "REGIONAL" | "NATIONAL";
+  dimos_id: number | null;
+  periferia_id: number | null;
+  org_label: string | null;
+  diavgeia_ada: string | null;
+  consensus_score: number;
+  consensus_count: number;
+  updated_at: string | null;
+}
+
+export interface ConsensusRepresentationView {
+  view: "municipal" | "regional" | "national";
+  available: boolean;
+  bill_count: number;
+  consensus_vote_count: number;
+  weighted_score: number | null;
+  bills: ConsensusRepresentationBill[];
+}
+
+export interface ConsensusRepresentation {
+  source: "DIAVGEIA";
+  privacy: "aggregate_only";
+  institutional_excluded: boolean;
+  unmapped_geographic_excluded: boolean;
+  coverage: {
+    total_diavgeia_bills: number;
+    geographically_represented_bills: number;
+    institutional_or_unresolved_bills: number;
+    geographic_mapping_gaps: number;
+    complete_geographic_representation: boolean;
+  };
+  dimos_id: number | null;
+  periferia_id: number | null;
+  views: {
+    municipal: ConsensusRepresentationView;
+    regional: ConsensusRepresentationView;
+    national: ConsensusRepresentationView;
+  };
+}
+
+export function buildConsensusRepresentationQuery(params?: {
+  dimos_id?: number | null;
+  periferia_id?: number | null;
+  limit?: number;
+}): string {
+  const qs = new URLSearchParams();
+  if (params?.dimos_id) qs.set("dimos_id", String(params.dimos_id));
+  if (params?.periferia_id) qs.set("periferia_id", String(params.periferia_id));
+  qs.set("limit", String(params?.limit ?? 20));
+  return qs.toString();
+}
+
+export async function fetchConsensusRepresentation(params?: {
+  dimos_id?: number | null;
+  periferia_id?: number | null;
+  limit?: number;
+}): Promise<ConsensusRepresentation> {
+  return request<ConsensusRepresentation>(
+    `/api/v1/consensus/representation?${buildConsensusRepresentationQuery(params)}`,
+  );
 }
 
 // ─── Trending + Analytics + MP ──────────────────────────────────────────────

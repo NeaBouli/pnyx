@@ -1,7 +1,7 @@
 import pytest
 
 from models import VoteChoice
-from services.zk_vote_aggregation import aggregate_bill_vote_totals
+from services.zk_vote_aggregation import aggregate_bill_vote_totals, count_public_votes
 
 
 class _RowsResult:
@@ -20,6 +20,16 @@ class _FakeDb:
     async def execute(self, statement):
         self.executed.append(statement)
         return _RowsResult(self.results.pop(0))
+
+
+class _ScalarDb:
+    def __init__(self, values):
+        self.values = list(values)
+        self.statements = []
+
+    async def scalar(self, statement):
+        self.statements.append(statement)
+        return self.values.pop(0)
 
 
 @pytest.mark.asyncio
@@ -86,3 +96,19 @@ async def test_aggregate_bill_vote_totals_skips_zk_for_diavgeia_bill() -> None:
     assert totals.zk_total == 0
     assert totals.total == 3
     assert len(db.executed) == 1
+
+
+@pytest.mark.asyncio
+async def test_count_public_votes_combines_tier1_and_zk_with_visibility_guards() -> None:
+    db = _ScalarDb([7, 3])
+    total = await count_public_votes(db)
+
+    assert total == 10
+    assert len(db.statements) == 2
+    compiled = " ".join(
+        str(statement.compile(compile_kwargs={"literal_binds": True}))
+        for statement in db.statements
+    )
+    assert "admin_hidden" in compiled
+    assert "zk_vote_receipts" in compiled
+    assert "PARLIAMENT" in compiled

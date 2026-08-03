@@ -14,16 +14,22 @@ PHASE A FLOW (Browser — Desktop + Mobile):
   9. KEINE persönlichen Daten gespeichert — nur kryptographischer Hash
 
 PHASE B FLOW (aktuell aktiv — Smartphone-Only):
-  - HLR-Verifikation über griechische SIM
+  - HLR-Netzstatusprüfung für eine griechische Mobilnummer
   - Key-Speicherung im Android Keystore / iOS Keychain
+
+HLR beweist weder SIM-Besitz noch Identität, Alter, Staatsbürgerschaft,
+Wohnsitz oder Wahlberechtigung.
 
 AKTIVIERUNG Phase A NUR WENN:
 - 500+ aktive Nutzer
 - 3+ NGO Partnerschaften
 - gov.gr OAuth-Zugang genehmigt (GSRT)
+- Holder-Authentifizierung und verfügbare Claims offiziell dokumentiert
+- DPIA, Credential-Migration und unabhängiger Security-Review abgeschlossen
+- Sandbox-Canary bestanden und expliziter Runtime-Schalter aktiviert
 
 @ai-anchor MOD09_GOVGR_OAUTH
-@activation-gate 500_users + 3_ngos + govgr_approved
+@activation-gate explicit_enable + official_approval + holder_auth + DPIA + security_review + canary
 """
 import os
 import secrets
@@ -38,23 +44,35 @@ import httpx
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/auth/govgr", tags=["MOD-09 gov.gr OAuth"])
 
+GOVGR_CLIENT_ID = os.getenv("GOVGR_CLIENT_ID", "")
+GOVGR_CLIENT_SECRET = os.getenv("GOVGR_CLIENT_SECRET", "")
+GOVGR_REDIRECT_URI = os.getenv("GOVGR_REDIRECT_URI", "https://ekklesia.gr/auth/govgr/callback")
+GOVGR_FLOW_ENABLED = os.getenv("GOVGR_FLOW_ENABLED", "false").lower() == "true"
+GOVGR_AUTH_URL = "https://oauth2.gov.gr/oauth2/authorize"
+GOVGR_TOKEN_URL = "https://oauth2.gov.gr/oauth2/token"
+GOVGR_USERINFO_URL = "https://oauth2.gov.gr/oauth2/userinfo"
+REGISTRATION_SALT = os.getenv("SERVER_SALT", "")
+
 ACTIVATION_GATES = {
-    "users_500":         False,
-    "ngos_3":            False,
-    "roadmap_published": True,
-    "govgr_approved":    False,
+    "users_500":                    False,
+    "ngos_3":                       False,
+    "roadmap_published":            True,
+    "govgr_approved":               False,
+    "holder_authentication_reviewed": False,
+    "privacy_dpia_approved":        False,
+    "credential_migration_reviewed": False,
+    "security_review_passed":       False,
+    "sandbox_canary_passed":        False,
 }
 
-def is_active() -> bool:
-    return all(ACTIVATION_GATES.values())
 
-GOVGR_CLIENT_ID     = os.getenv("GOVGR_CLIENT_ID", "")
-GOVGR_CLIENT_SECRET = os.getenv("GOVGR_CLIENT_SECRET", "")
-GOVGR_REDIRECT_URI  = os.getenv("GOVGR_REDIRECT_URI", "https://ekklesia.gr/auth/govgr/callback")
-GOVGR_AUTH_URL      = "https://oauth2.gov.gr/oauth2/authorize"
-GOVGR_TOKEN_URL     = "https://oauth2.gov.gr/oauth2/token"
-GOVGR_USERINFO_URL  = "https://oauth2.gov.gr/oauth2/userinfo"
-REGISTRATION_SALT   = os.getenv("SERVER_SALT", "dev-salt")
+def is_active() -> bool:
+    return (
+        GOVGR_FLOW_ENABLED
+        and all(ACTIVATION_GATES.values())
+        and bool(GOVGR_CLIENT_ID and GOVGR_CLIENT_SECRET)
+        and len(REGISTRATION_SALT) >= 32
+    )
 
 # In-memory state store (production: Redis)
 _oauth_states: dict[str, dict] = {}
@@ -73,9 +91,19 @@ async def govgr_status():
             "3_ngo_partnerschaften": ACTIVATION_GATES["ngos_3"],
             "roadmap_publiziert":    ACTIVATION_GATES["roadmap_published"],
             "govgr_genehmigung":     ACTIVATION_GATES["govgr_approved"],
+            "holder_auth_geprueft":  ACTIVATION_GATES["holder_authentication_reviewed"],
+            "dpia_genehmigt":        ACTIVATION_GATES["privacy_dpia_approved"],
+            "migration_geprueft":    ACTIVATION_GATES["credential_migration_reviewed"],
+            "security_review":       ACTIVATION_GATES["security_review_passed"],
+            "sandbox_canary":        ACTIVATION_GATES["sandbox_canary_passed"],
         },
-        "alternative": {"module": "MOD-01 HLR", "endpoint": "/api/v1/identity/verify"},
-        "env_configured": bool(GOVGR_CLIENT_ID),
+        "alternative": {
+            "module": "MOD-01 HLR",
+            "endpoint": "/api/v1/identity/verify",
+            "assurance": "network_status_only",
+        },
+        "runtime_enabled": GOVGR_FLOW_ENABLED,
+        "env_configured": bool(GOVGR_CLIENT_ID and GOVGR_CLIENT_SECRET),
     }
 
 
@@ -88,10 +116,14 @@ async def govgr_login(redirect_after: str = Query("/")):
     if not is_active():
         raise HTTPException(503, detail={
             "error": "govgr_not_active",
-            "message_el": "Η σύνδεση με gov.gr δεν είναι ακόμη ενεργή. Χρησιμοποιήστε HLR Επαλήθευση (smartphone).",
-            "message_en": "gov.gr login is not yet active. Use HLR Verification (smartphone).",
+            "message_el": "Η σύνδεση με gov.gr δεν είναι ακόμη ενεργή. Στη Beta διατίθεται μόνο HLR έλεγχος κατάστασης ελληνικού αριθμού· δεν αποδεικνύει κατοχή SIM ή ταυτότητα.",
+            "message_en": "gov.gr login is not active. Beta provides only an HLR Greek-number network-status check; it does not prove SIM possession or identity.",
             "gates": ACTIVATION_GATES,
-            "alternative": {"method": "HLR", "endpoint": "/api/v1/identity/verify"},
+            "alternative": {
+                "method": "HLR_NETWORK_STATUS",
+                "endpoint": "/api/v1/identity/verify",
+                "assurance": "network_status_only",
+            },
         })
 
     state = secrets.token_urlsafe(32)
@@ -214,7 +246,9 @@ async def family_verify_stub():
 @router.get("/info")
 async def govgr_info():
     return {
-        "name": "MOD-09: gov.gr OAuth2.0", "phase": "Alpha (Stub)",
+        "name": "MOD-09: gov.gr OAuth2.0", "phase": "Alpha 0.1 (design-only stub)",
+        "runtime_enabled": GOVGR_FLOW_ENABLED,
+        "assurance": "No gov.gr, holder, citizenship, residence, age or eligibility claim is active in Beta.",
         "flow": {
             "1": "Nutzer klickt 'Mit gov.gr anmelden'",
             "2": "Redirect zu oauth2.gov.gr",

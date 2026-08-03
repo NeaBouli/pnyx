@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeBillsUnique } from "./bill-feed";
+import { mergeBillsUnique, prioritizeBillsPage } from "./bill-feed";
 
 describe("mergeBillsUnique", () => {
   it("keeps Parliament bills visible first in the mixed All feed", () => {
@@ -30,5 +30,23 @@ describe("mergeBillsUnique", () => {
       "GR-2",
       "DIAV-1",
     ]);
+  });
+});
+
+describe("prioritizeBillsPage", () => {
+  it("tracks the server offset without skipping displaced feed rows", () => {
+    const parliament = [{ id: "GR-1" }, { id: "GR-2" }];
+    const all = [
+      { id: "DIAV-1" },
+      { id: "GR-1" },
+      { id: "DIAV-2" },
+      { id: "DIAV-3" },
+      { id: "DIAV-4" },
+    ];
+
+    expect(prioritizeBillsPage(parliament, all, 4)).toEqual({
+      items: [{ id: "GR-1" }, { id: "GR-2" }, { id: "DIAV-1" }, { id: "DIAV-2" }],
+      secondaryConsumed: 3,
+    });
   });
 });

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildBillsQuery,
+  buildConsensusRepresentationQuery,
   fetchBills,
   getApiTransportState,
   resetApiTransportStateForTests,
@@ -59,6 +60,17 @@ describe("buildBillsQuery", () => {
       dimos_id: 2,
       include_institutional: false,
     })).toBe("limit=20&offset=0&periferia_id=1&dimos_id=2&include_institutional=false");
+  });
+});
+
+describe("buildConsensusRepresentationQuery", () => {
+  it("sends exact stored Dimos and Periferia IDs", () => {
+    expect(buildConsensusRepresentationQuery({ dimos_id: 22, periferia_id: 6, limit: 20 }))
+      .toBe("dimos_id=22&periferia_id=6&limit=20");
+  });
+
+  it("allows a nationwide aggregate without location IDs", () => {
+    expect(buildConsensusRepresentationQuery()).toBe("limit=20");
   });
 });
 

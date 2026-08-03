@@ -9,11 +9,13 @@ interface Props {
   yesCount: number;
   noCount: number;
   abstainCount: number;
+  unknownCount: number;
   yesPct: number;
   noPct: number;
   abstainPct: number;
+  unknownPct?: number;
   divergence: { score: number; label_el: string; citizen_majority: string; parliament_result: string | null; headline_el?: string } | null;
-  representativity: { total_votes: number; eligible_voters: number; population: number; participation_pct: number; population_pct: number; level: string; color: string; label_el: string; is_representative: boolean; score: number; headline_el: string } | null;
+  representativity: { total_votes: number; eligible_voters: number | null; population: number | null; participation_pct: number | null; population_pct: number | null; scope_label_el?: string; level: string; color: string; label_el: string; is_representative: boolean; score: number; headline_el: string } | null;
   partyVotes: Record<string, string> | null;
   parliamentVoteDate: string | null;
   locale: string;
@@ -21,6 +23,7 @@ interface Props {
 
 export default function BillResultReport({
   totalVotes, yesCount, noCount, abstainCount, yesPct, noPct, abstainPct,
+  unknownCount, unknownPct,
   divergence, representativity, partyVotes, parliamentVoteDate, locale,
 }: Props) {
   const [repAnim, setRepAnim] = useState(0);
@@ -101,6 +104,9 @@ export default function BillResultReport({
               { label: el("Υπέρ", "Yes"), pct: yesPct, count: yesCount, color: "bg-green-500", tc: "text-green-400" },
               { label: el("Κατά", "No"), pct: noPct, count: noCount, color: "bg-red-500", tc: "text-red-400" },
               { label: el("Αποχή", "Abstain"), pct: abstainPct, count: abstainCount, color: "bg-gray-500", tc: "text-gray-400" },
+              ...(unknownCount > 0
+                ? [{ label: el("ΑΓΝΩΣΤΟ", "UNKNOWN"), pct: unknownPct || 0, count: unknownCount, color: "bg-purple-500", tc: "text-purple-400" }]
+                : []),
             ].map(b => (
               <div key={b.label} className="mb-3">
                 <div className="flex justify-between text-sm mb-1">
@@ -142,30 +148,47 @@ export default function BillResultReport({
             </h3>
             <div className="bg-gray-800 rounded-xl p-4">
               <p className="text-sm text-gray-300 mb-3">
-                {totalVotes.toLocaleString()} / {representativity.eligible_voters.toLocaleString()} {el("εκλογείς", "voters")} ={" "}
-                <strong style={{ color: repColor }}>{representativity.participation_pct.toFixed(4)}%</strong>.{" "}
+                {representativity.eligible_voters !== null && representativity.participation_pct !== null ? (
+                  <>
+                    {totalVotes.toLocaleString()} / {representativity.eligible_voters.toLocaleString()} {el("εκλογείς", "voters")} ={" "}
+                    <strong style={{ color: repColor }}>{representativity.participation_pct.toFixed(4)}%</strong>.{" "}
+                  </>
+                ) : representativity.population !== null && representativity.population_pct !== null ? (
+                  <>
+                    {totalVotes.toLocaleString()} / {representativity.population.toLocaleString()} {el("κάτοικοι", "residents")} ={" "}
+                    <strong style={{ color: repColor }}>{representativity.population_pct.toFixed(4)}%</strong>.{" "}
+                  </>
+                ) : null}
                 <span className={representativity.is_representative ? "text-green-300" : "text-yellow-300"}>
                   {representativity.headline_el}
                 </span>
               </p>
-              <div className="mb-2">
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-gray-400">Score</span>
-                  <span className="font-black" style={{ color: repColor }}>{repAnim.toFixed(1)}/100</span>
-                </div>
-                <div className="h-4 bg-gray-700 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${repAnim}%`, backgroundColor: repColor }} />
-                </div>
-                <div className="flex justify-between text-xs text-gray-400 mt-1">
-                  <span style={{ color: "#ef4444" }}>0%</span>
-                  <span style={{ color: "#f59e0b" }}>50%</span>
-                  <span style={{ color: "#2563eb" }}>100%</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: repColor }} />
-                <span className="font-bold text-sm" style={{ color: repColor }}>{representativity.label_el}</span>
-              </div>
+              {representativity.eligible_voters !== null ? (
+                <>
+                  <div className="mb-2">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-gray-400">Score</span>
+                      <span className="font-black" style={{ color: repColor }}>{repAnim.toFixed(1)}/100</span>
+                    </div>
+                    <div className="h-4 bg-gray-700 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${repAnim}%`, backgroundColor: repColor }} />
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                      <span style={{ color: "#ef4444" }}>0%</span>
+                      <span style={{ color: "#f59e0b" }}>50%</span>
+                      <span style={{ color: "#2563eb" }}>100%</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: repColor }} />
+                    <span className="font-bold text-sm" style={{ color: repColor }}>{representativity.label_el}</span>
+                  </div>
+                </>
+              ) : (
+                <p className="mt-3 text-xs font-semibold text-gray-400">
+                  {representativity.label_el} · {el("χωρίς βαθμό αντιπροσωπευτικότητας", "no representativeness score")}
+                </p>
+              )}
             </div>
           </div>
         )}

@@ -92,9 +92,11 @@ export default function QRCodeVoteStub({ billId, purpose = "ticket", onAuthentic
       background: "#f0f6ff",
       border: "1.5px solid #2563eb22",
       borderRadius: 16,
-      padding: "32px 24px",
+      padding: "clamp(16px, 6vw, 32px) clamp(12px, 4vw, 24px)",
       textAlign: "center",
       marginTop: 24,
+      maxWidth: "100%",
+      overflow: "hidden",
     }}>
       <h3 style={{ color: "#2563eb", fontWeight: 800, fontSize: 18, marginBottom: 8 }}>
         {isEl ? "Ψηφίστε μέσω QR Code" : "Vote via QR Code"}
@@ -122,12 +124,16 @@ export default function QRCodeVoteStub({ billId, purpose = "ticket", onAuthentic
             borderRadius: 12,
             boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
             marginBottom: 16,
+            width: "min(232px, 100%)",
+            maxWidth: "100%",
+            boxSizing: "border-box",
           }}>
             <QRCodeSVG
               value={session.qr_data}
               size={200}
               level="M"
               includeMargin={false}
+              style={{ display: "block", width: "100%", height: "auto" }}
             />
           </div>
           <p style={{ color: "#9ca3af", fontSize: 12, marginBottom: 16 }}>

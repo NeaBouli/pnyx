@@ -66,6 +66,9 @@ export interface Bill {
   official_source_url?: string | null;
   source?: string | null;
   diavgeia_ada?: string | null;
+  governance_level?: string;
+  periferia_id?: number | null;
+  dimos_id?: number | null;
 }
 
 export interface DivergenceResult {
@@ -86,11 +89,79 @@ export interface BillResults {
   yes_count: number;
   no_count: number;
   abstain_count: number;
+  unknown_count?: number;
   yes_percent: number;
   no_percent: number;
   abstain_percent: number;
+  unknown_percent?: number;
   divergence: DivergenceResult | null;
   disclaimer_el: string;
+}
+
+export interface PeriferiaSummary {
+  id: number;
+  name_el: string;
+  name_en: string | null;
+  code: string;
+}
+
+export interface DimosSummary {
+  id: number;
+  name_el: string;
+  name_en: string | null;
+  population: number | null;
+}
+
+export interface ConsensusRepresentationBill {
+  bill_id: string;
+  title_el: string;
+  governance_level: string;
+  dimos_id: number | null;
+  periferia_id: number | null;
+  org_label: string | null;
+  diavgeia_ada: string | null;
+  consensus_score: number;
+  consensus_count: number;
+  updated_at: string | null;
+}
+
+export interface ConsensusRepresentationView {
+  view: "municipal" | "regional" | "national";
+  available: boolean;
+  bill_count: number;
+  consensus_vote_count: number;
+  weighted_score: number | null;
+  bills: ConsensusRepresentationBill[];
+}
+
+export interface ConsensusRepresentationCoverage {
+  total_diavgeia_bills: number;
+  geographically_represented_bills: number;
+  institutional_or_unresolved_bills: number;
+  geographic_mapping_gaps: number;
+  complete_geographic_representation: boolean;
+}
+
+export interface ConsensusRepresentationResponse {
+  source: string;
+  privacy: "aggregate_only" | string;
+  minimum_group_size: number;
+  institutional_excluded: boolean;
+  unmapped_geographic_excluded: boolean;
+  coverage: ConsensusRepresentationCoverage;
+  dimos_id: number | null;
+  periferia_id: number | null;
+  views: {
+    municipal: ConsensusRepresentationView;
+    regional: ConsensusRepresentationView;
+    national: ConsensusRepresentationView;
+  };
+}
+
+export interface ConsensusRepresentationQuery {
+  dimos_id?: number;
+  periferia_id?: number;
+  limit?: number;
 }
 
 // ─── API Calls ────────────────────────────────────────────────────────────────
@@ -103,8 +174,17 @@ export const ekklesia = {
     api.post("/api/v1/vaa/match", { answers }),
 
   // Parliament
-  getBills:    (status?: string) =>
-    api.get<Bill[]>("/api/v1/bills", { params: { limit: 200, ...(status ? { status } : {}) } }),
+  getBills: (params: BillQueryParams = {}) => {
+    const { status_any, ...rest } = params;
+    return api.get<Bill[]>("/api/v1/bills", {
+      params: {
+        limit: 200,
+        ...rest,
+        ...(status_any?.length ? { status_any: status_any.join(",") } : {}),
+        ...(params.status ? { status: params.status } : {}),
+      },
+    });
+  },
   getTrending: () => api.get<Bill[]>("/api/v1/bills/trending"),
   getBill:     (id: string) => api.get<Bill>(`/api/v1/bills/${id}`),
   getResults:  (id: string) => api.get<BillResults>(`/api/v1/vote/${id}/results`),
@@ -120,7 +200,7 @@ export const ekklesia = {
 
 // ─── Fetch Helpers ───────────────────────────────────────────────────────────
 
-async function _get(path: string) {
+async function _get<T = unknown>(path: string): Promise<T> {
   const res = await fetch(`${API_URL}/api/v1${path}`);
   return res.json();
 }
@@ -140,23 +220,33 @@ export const analytics = {
   trends:         (days = 30)     => _get(`/analytics/divergence-trends?days=${days}`),
   timeline:       (billId?: string, days = 30) =>
     _get(`/analytics/votes-timeline?days=${days}${billId ? `&bill_id=${billId}` : ""}`),
-  topDivergence:  (limit = 10)    => _get(`/analytics/top-divergence?limit=${limit}`),
+  topDivergence:  (limit = 10)    => _get<{ data?: unknown[] }>(`/analytics/top-divergence?limit=${limit}`),
 };
 
 // MOD-12: MP Comparison
 export const mp = {
   parties: () => _get("/mp/parties"),
-  ranking: () => _get("/mp/ranking"),
+  ranking: () => _get<{ ranking?: unknown[] }>("/mp/ranking"),
   compare: (abbr: string) => _get(`/mp/compare/${encodeURIComponent(abbr)}`),
   bill:    (id: string)   => _get(`/mp/bill/${id}`),
 };
 
 // MOD-16: Municipal
 export const municipal = {
-  periferias: ()              => _get("/periferia"),
-  dimoi:      (id: number)    => _get(`/periferia/${id}/dimos`),
+  periferias: ()              => _get<PeriferiaSummary[]>("/periferia"),
+  dimoi:      (id: number)    => _get<DimosSummary[]>(`/periferia/${id}/dimos`),
   decisions:  ()              => _get("/decisions"),
+  getConsensusRepresentation: (params: ConsensusRepresentationQuery = {}) =>
+    _get<ConsensusRepresentationResponse>(`/consensus/representation${queryString(params)}`),
 };
+
+function queryString(params: ConsensusRepresentationQuery): string {
+  const search = new URLSearchParams();
+  if (params.dimos_id !== undefined) search.set("dimos_id", String(params.dimos_id));
+  if (params.periferia_id !== undefined) search.set("periferia_id", String(params.periferia_id));
+  if (params.limit !== undefined) search.set("limit", String(params.limit));
+  return search.toString() ? `?${search.toString()}` : "";
+}
 
 // MOD-14: Export URLs
 export const exportUrls = {
@@ -189,4 +279,24 @@ export async function voteRelevance(
     signature_hex: signatureHex,
   });
   return res.data;
+}
+export type BillStatusFilter =
+  | "ANNOUNCED"
+  | "ACTIVE"
+  | "WINDOW_24H"
+  | "PARLIAMENT_VOTED"
+  | "OPEN_END"
+  | string;
+
+export interface BillQueryParams {
+  status?: BillStatusFilter;
+  status_any?: BillStatusFilter[];
+  governance?: string;
+  source?: string;
+  q?: string;
+  periferia_id?: number;
+  dimos_id?: number;
+  include_institutional?: boolean;
+  limit?: number;
+  offset?: number;
 }

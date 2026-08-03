@@ -7,7 +7,13 @@ from types import SimpleNamespace
 import pytest
 from fastapi import HTTPException
 from routers import voting
-from routers.voting import compute_divergence, vote_percent, votes_in_progress_threshold
+from routers.voting import (
+    compute_divergence,
+    compute_representativity,
+    representativity_for_bill,
+    vote_percent,
+    votes_in_progress_threshold,
+)
 from models import BillStatus, GovernanceLevel, VoteChoice
 
 
@@ -115,6 +121,76 @@ class TestVotesInProgressHelpers:
         assert votes_in_progress_threshold() == 1
 
 
+class TestRepresentativity:
+    def test_national_scope_uses_eligible_voters(self):
+        result = compute_representativity(99_000)
+        assert result["eligible_voters"] == 9_900_000
+        assert result["participation_pct"] == 1.0
+        assert result["is_representative"] is True
+
+    def test_local_scope_uses_population_without_claiming_electoral_representativity(self):
+        result = compute_representativity(
+            1_000,
+            eligible_voters=None,
+            population=100_000,
+            scope_label_el="Δήμος",
+        )
+        assert result["eligible_voters"] is None
+        assert result["participation_pct"] is None
+        assert result["population_pct"] == 1.0
+        assert result["is_representative"] is False
+        assert result["level"] == "population_coverage"
+        assert result["score"] == 0
+        assert "πληθυσμού" in result["headline_el"]
+        assert "δεν υπολογίζεται αντιπροσωπευτικότητα" in result["headline_el"]
+
+    def test_unknown_denominator_is_explicit(self):
+        result = compute_representativity(7, eligible_voters=None, population=None)
+        assert result["level"] == "unknown"
+        assert result["participation_pct"] is None
+        assert result["population_pct"] is None
+
+    @pytest.mark.asyncio
+    async def test_municipal_scope_uses_parameterized_population_query(self):
+        class Db:
+            executed = None
+
+            async def execute(self, statement, params):
+                self.executed = (str(statement), params)
+                return _FakeScalarResult(123_456)
+
+        db = Db()
+        result = await representativity_for_bill(
+            db,
+            SimpleNamespace(governance_level=GovernanceLevel.MUNICIPAL, dimos_id=22),
+            100,
+        )
+        assert db.executed[1] == {"dimos_id": 22}
+        assert result["population"] == 123_456
+        assert result["eligible_voters"] is None
+        assert result["is_representative"] is False
+
+    @pytest.mark.asyncio
+    async def test_regional_scope_sums_only_the_requested_periferia(self):
+        class Db:
+            executed = None
+
+            async def execute(self, statement, params):
+                self.executed = (str(statement), params)
+                return _FakeScalarResult(987_654)
+
+        db = Db()
+        result = await representativity_for_bill(
+            db,
+            SimpleNamespace(governance_level=GovernanceLevel.REGIONAL, periferia_id=6),
+            100,
+        )
+        assert db.executed[1] == {"periferia_id": 6}
+        assert "SUM(population)" in db.executed[0]
+        assert result["population"] == 987_654
+        assert result["eligible_voters"] is None
+
+
 class TestZkTier1Guard:
     def test_zk_tier1_guard_defaults_to_disabled(self, monkeypatch):
         monkeypatch.delenv("ZK_TIER1_GUARD_ENABLED", raising=False)
@@ -191,6 +267,39 @@ class TestZkTier1Guard:
         assert called is False
 
     @pytest.mark.asyncio
+    async def test_correction_rechecks_geographic_scope_before_loading_vote(self, monkeypatch):
+        called = False
+
+        def fake_verify_signature(*_args):
+            nonlocal called
+            called = True
+            return True
+
+        monkeypatch.setattr(voting, "verify_signature", fake_verify_signature)
+        req = voting.CorrectionRequest(
+            nullifier_hash="a" * 64,
+            bill_id="REGIONAL-1",
+            vote="NO",
+            signature_hex="b" * 128,
+        )
+        bill = SimpleNamespace(
+            id="REGIONAL-1",
+            status=BillStatus.WINDOW_24H,
+            governance_level=GovernanceLevel.REGIONAL,
+            periferia_id=6,
+            admin_hidden=False,
+        )
+        identity = SimpleNamespace(public_key_hex="c" * 64, periferia_id=7, dimos_id=None)
+        db = _FakeDb([bill, identity])
+
+        with pytest.raises(HTTPException) as exc:
+            await voting.correct_vote("REGIONAL-1", req, db)
+
+        assert exc.value.status_code == 403
+        assert len(db.executed) == 2
+        assert called is False
+
+    @pytest.mark.asyncio
     async def test_vote_relevance_rejects_admin_hidden_bill_before_signature(self, monkeypatch):
         called = False
 
@@ -214,6 +323,29 @@ class TestZkTier1Guard:
 
         assert exc.value.status_code == 404
         assert called is False
+
+    @pytest.mark.asyncio
+    async def test_vote_relevance_enforces_geographic_scope(self, monkeypatch):
+        monkeypatch.setattr(voting, "verify_signature", lambda *_args: True)
+        req = voting.RelevanceRequest(
+            nullifier_hash="a" * 64,
+            signal=1,
+            signature_hex="b" * 128,
+        )
+        identity = SimpleNamespace(public_key_hex="c" * 64, periferia_id=7, dimos_id=None)
+        bill = SimpleNamespace(
+            id="REGIONAL-1",
+            admin_hidden=False,
+            governance_level=GovernanceLevel.REGIONAL,
+            periferia_id=6,
+        )
+        db = _FakeDb([identity, bill])
+
+        with pytest.raises(HTTPException) as exc:
+            await voting.vote_relevance("REGIONAL-1", req, db)
+
+        assert exc.value.status_code == 403
+        assert len(db.executed) == 2
 
     @pytest.mark.asyncio
     async def test_zk_guard_misconfiguration_returns_controlled_503(self, monkeypatch):

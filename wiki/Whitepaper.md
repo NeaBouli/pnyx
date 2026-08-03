@@ -111,10 +111,10 @@ comparison) and **Citizen Voting** (mirroring parliamentary decisions).
 Αριθμός κινητού (+306xxxxxxxxx)
 │
 ▼
-HLR Lookup → μόνο πραγματικά GR κινητά
+HLR Lookup → κατάσταση δικτύου/συμβατότητα GR αριθμού, όχι απόδειξη κατοχής SIM ή ταυτότητας
 │
 ▼
-Nullifier Hash = SHA256(phone + SERVER_SALT)
+SHA256 compatibility anchor + Argon2id v2 identity hash
 │
 ▼
 Τηλέφωνο ΔΙΑΓΡΑΦΕΤΑΙ (gc.collect())
@@ -249,11 +249,12 @@ Change only in WINDOW_24H  → 409 if ACTIVE
 ### 7.1 Φάσεις / Phases
 
 **Beta** (Τώρα): Αυτόνομη πλατφόρμα χωρίς κρατική εξάρτηση
-- SMS επαλήθευση → Ed25519 → Nullifier
+- HLR έλεγχος κατάστασης ελληνικού αριθμού χωρίς SMS → Ed25519 → Nullifier (δεν αποδεικνύει κατοχή SIM ή ταυτότητα)
 - Χωρίς gov.gr, χωρίς OAuth, χωρίς εξωτερικές εξαρτήσεις
 
-**Alpha** (Trigger: 500+ χρήστες + 3+ NGO-εταίροι):
+**Alpha 0.1** (Trigger: 500+ χρήστες + 3+ NGO-εταίροι και όλα τα security gates):
 - gov.gr OAuth2.0 ενσωμάτωση
+- Προαιρετική επαλήθευση gov.gr με επίσημο OAuth ή νέο challenge-bound QR/PDF, έλεγχο κατόχου και επίσημο API ή πλήρη έλεγχο ηλεκτρονικής σφραγίδας. Πρόκειται για σχεδιασμό Alpha 0.1 (GH#141), όχι ενεργή λειτουργία Beta. Απαιτούνται DPIA, σχέδιο credential migration, ανεξάρτητο security/privacy review και sandbox canary. Το έγγραφο και τα ακατέργαστα αναγνωριστικά δεν διατηρούνται.
 - Αίτηση Sandbox στην ΑΑΑΔΕ
 - Μια άρνηση θα ήταν πολιτικά δύσκολη με δημόσια υποστήριξη
 

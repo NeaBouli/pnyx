@@ -68,6 +68,7 @@ class TestRegionFilterConditions:
         sql = _compiled_conditions(conditions)
 
         assert len(conditions) == 4
+        assert "IS NULL" in sql
         assert "INSTITUTIONAL" in sql
         assert "REGIONAL" in sql
         assert "MUNICIPAL" in sql
@@ -81,6 +82,7 @@ class TestRegionFilterConditions:
         sql = _compiled_conditions(conditions)
 
         assert len(conditions) == 3
+        assert "IS NULL" in sql
         assert "INSTITUTIONAL" not in sql
         assert "REGIONAL" in sql
         assert "MUNICIPAL" in sql

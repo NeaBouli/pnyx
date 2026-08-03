@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
@@ -15,7 +15,6 @@ export const metadata: Metadata = {
   authors: [{ name: "V-Labs Development", url: "https://github.com/NeaBouli" }],
   robots: { index: true, follow: true },
   manifest: "/manifest.json",
-  themeColor: "#2563eb",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -28,6 +27,10 @@ export const metadata: Metadata = {
     alternateLocale: "en_US",
     type: "website",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#2563eb",
 };
 
 export default async function LocaleLayout({

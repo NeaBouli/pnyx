@@ -1,3 +1,4 @@
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -9,6 +10,9 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     truerepublic_enabled: bool = False
     arweave_wallet_path: str = ""  # MOD-08: Pfad zur Arweave Wallet JSON
-    env: str = "development"
+    env: str = Field(
+        default="development",
+        validation_alias=AliasChoices("ENVIRONMENT", "ENV"),
+    )
 
 settings = Settings()

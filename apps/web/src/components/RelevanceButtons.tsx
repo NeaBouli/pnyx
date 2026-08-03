@@ -45,11 +45,11 @@ export default function RelevanceButtons({
   }
 
   const btnBase = compact
-    ? "flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-all border-2"
-    : "flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all border-2";
+    ? "flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-all border-2 whitespace-nowrap"
+    : "flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all border-2 whitespace-nowrap";
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2 max-w-full">
       <button
         onClick={() => handleVote(1)}
         disabled={loading || voted !== null}
@@ -60,7 +60,7 @@ export default function RelevanceButtons({
             : "bg-transparent border-gray-700 text-gray-400 hover:border-blue-500 hover:text-blue-400"
         } ${loading || voted !== null ? "opacity-60 cursor-not-allowed" : ""}`}
       >
-        ▲{!compact && ` ${locale === "el" ? "Σημαντικό" : "Important"}`}
+        ▲{!compact && <span className="hidden sm:inline">{locale === "el" ? "Σημαντικό" : "Important"}</span>}
       </button>
 
       <span
@@ -82,7 +82,7 @@ export default function RelevanceButtons({
             : "bg-transparent border-gray-700 text-gray-600 hover:border-gray-500 hover:text-gray-400"
         } ${loading || voted !== null ? "opacity-60 cursor-not-allowed" : ""}`}
       >
-        ▼{!compact && ` ${locale === "el" ? "Λιγότερο" : "Less"}`}
+        ▼{!compact && <span className="hidden sm:inline">{locale === "el" ? "Λιγότερο" : "Less"}</span>}
       </button>
 
       {voted !== null && (

@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.25 |
-| versionCode | 54 |
+| Version | 1.0.28 |
+| versionCode | 57 |
 | Package | ekklesia.gr |
-| APK SHA256 | `97881af7ebeec5da51571183ed40bcbe56bdd530c36df576d2308aa47e05c09f` |
-| AAB SHA256 | `5a069df320414f47b8bd749f5791faa27883e5d863c08c1686a54511e53226a3` |
+| APK SHA256 | `d21c265cf4f330c79c7437744ed28d873480d2ab7631dfa5127c67e8148ef9a5` |
+| AAB SHA256 | `c5799c62f12949a1f250da118b87804a55d200d978ff35641a2a25037fde6d08` |
 | Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
 | Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
-| Build date | 2026-07-09 |
-| Release gate | PASS — API version tests, mobile TypeScript, mobile Vitest, web build, local Play AAB build, local Direct APK build, APK badging/signature audit, Direct/Play channel audit |
-| Includes | vC54 release metadata, HTTPS read-only mirror fallback with visible read-only banner, safe public-data-only failover guard, no duplicate Parliament PDF document blocks, clearer Parliament source/document display, guarded Parliament Semaphore ZK rollout live, ZK Arweave auto-publication for eligible public Parliament scopes with minimum group size 5, current app-version endpoint, scoped public ZK voting UI, root-status polling after opt-in, SecureStore-safe scoped Semaphore identity keys, Bouli bills visible in All feed and Bouli tab, native Semaphore prover, deep-link fallback, pagination, source/full-text policy, permission hardening |
+| Build date | 2026-07-18 |
+| Release gate | PASS for code and artifacts — 149 Mobile tests, TypeScript, APK/AAB signature and channel audit, native Semaphore library present, GitHub CI/Security green. The vC57 UI-only delta still awaits an optional fresh S10 visual pass because the local Pixel 5 AVD remained offline; the unchanged ARM64 prover path was already verified on S10 in vC56 and the production Canary. |
+| Includes | Clearer Semaphore ZK vote-state UX and Greek duplicate/error messages; verified municipality/region bill visibility with nationwide Parliament access; stronger full-title/summary/document synchronization for new Parliament bills; server-authoritative vote eligibility; unified Tier-1 and Semaphore ZK counting; aggregate Diavgeia results; HTTPS read-only mirror fallback; guarded Parliament ZK rollout and eligible-scope Arweave publication |
 
 Validation command:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: 97881af7ebeec5da51571183ed40bcbe56bdd530c36df576d2308aa47e05c09f
+# Expected: d21c265cf4f330c79c7437744ed28d873480d2ab7631dfa5127c67e8148ef9a5
 ```

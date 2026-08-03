@@ -19,8 +19,10 @@ Scraping Fallback-Kette:
 import os
 import re
 import hashlib
+import hmac
 import logging
 import httpx
+import urllib.parse
 from bs4 import BeautifulSoup
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -38,6 +40,10 @@ from services.ollama_service import (
     ollama_json_generate,
 )
 from services.content_provenance import apply_generated_content, record_generated_content
+from services.parliament_fetcher import (
+    _is_bad_parliament_text,
+    _is_parliament_document_block_only,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/scraper", tags=["MOD-10 AI Scraper"])
@@ -288,7 +294,10 @@ def prefer_scraped_title(existing_title: str | None, candidate_title: str | None
     if not existing:
         return candidate
     if _looks_truncated_title(existing) and not _looks_truncated_title(candidate):
-        return candidate
+        stem = re.sub(r"(?:\.\.\.|…)$", "", existing).rstrip()
+        comparison = stem[: min(len(stem), 80)]
+        if len(candidate) > len(stem) and candidate.startswith(comparison):
+            return candidate
     return existing
 
 
@@ -857,11 +866,151 @@ class BillImportItem(BaseModel):
     pill_el: str | None = None
     summary_short_el: str | None = None
     summary_long_el: str | None = None
+    official_text_verified: bool = False
+    official_text_source_url: str | None = None
+    official_text_attestation: str | None = None
 
 
 class BillImportRequest(BaseModel):
     admin_key: str
     bills: List[BillImportItem]
+
+
+_PARLIAMENT_METADATA_PREFIX = "Η Βουλή δημοσίευσε εγγραφή για:"
+_PARLIAMENT_METADATA_SUFFIX = "Για το πλήρες περιεχόμενο δείτε τα επίσημα έγγραφα της Βουλής."
+
+
+def _is_safe_legacy_metadata_summary(value: str | None) -> bool:
+    """Recognize only our deterministic pre-provenance Parliament fallback."""
+    text = (value or "").strip()
+    return text.startswith(_PARLIAMENT_METADATA_PREFIX) and text.endswith(_PARLIAMENT_METADATA_SUFFIX)
+
+
+def _is_safe_verified_short_summary(value: str | None) -> bool:
+    text = (value or "").strip()
+    lowered = text.lower()
+    greek_words = re.findall(r"[Α-ΩΆ-Ώα-ωά-ώ]{3,}", text)
+    return bool(
+        80 <= len(text) <= 500
+        and len(greek_words) >= 10
+        and not text.startswith(_PARLIAMENT_METADATA_PREFIX)
+        and "access denied" not in lowered
+        and "you don't have permission" not in lowered
+        and "errors.edgesuite.net" not in lowered
+    )
+
+
+def _canonical_parliament_detail_url(value: str | None, law_id: str | None) -> str | None:
+    """Accept only an HTTPS Parliament legislative-detail URL bound to this law id."""
+    if not value or not law_id:
+        return None
+    try:
+        parsed = urllib.parse.urlsplit(value.strip())
+        port = parsed.port
+    except ValueError:
+        return None
+    if (
+        parsed.scheme.lower() != "https"
+        or parsed.hostname not in {"hellenicparliament.gr", "www.hellenicparliament.gr"}
+        or parsed.username
+        or parsed.password
+        or port not in {None, 443}
+        or not parsed.path.startswith("/Nomothetiko-Ergo/")
+    ):
+        return None
+    query_law_ids = urllib.parse.parse_qs(parsed.query).get("law_id", [])
+    if len(query_law_ids) != 1 or query_law_ids[0].lower() != law_id.lower():
+        return None
+    return value.strip()
+
+
+def _has_real_official_text(value: str | None) -> bool:
+    return bool(
+        value
+        and not _is_parliament_document_block_only(value)
+        and not _is_bad_parliament_text(value.split("### Πλήρη έγγραφα", 1)[0].strip())
+    )
+
+
+def _official_text_attestation_message(item: BillImportItem) -> bytes:
+    """Versioned, deterministic evidence envelope shared with the GitHub scraper."""
+    fields = (
+        "v1",
+        item.bill_id or "",
+        item.law_id or "",
+        item.url or "",
+        item.official_text_source_url or "",
+        hashlib.sha256((item.summary_short_el or "").encode("utf-8")).hexdigest(),
+        hashlib.sha256((item.summary_long_el or "").encode("utf-8")).hexdigest(),
+    )
+    return "\n".join(fields).encode("utf-8")
+
+
+def _official_text_attestation_valid(item: BillImportItem, key: str) -> bool:
+    supplied = (item.official_text_attestation or "").strip().lower()
+    if len(key) < 32 or not re.fullmatch(r"[a-f0-9]{64}", supplied):
+        return False
+    expected = hmac.new(
+        key.encode("utf-8"),
+        _official_text_attestation_message(item),
+        hashlib.sha256,
+    ).hexdigest()
+    return hmac.compare_digest(expected, supplied)
+
+
+def _verified_official_payload_is_bound(
+    item: BillImportItem,
+    *,
+    existing_parliament_url: str | None = None,
+) -> bool:
+    """Require one identity/source chain before accepting verified official content."""
+    if not item.official_text_verified or not item.summary_long_el:
+        return False
+
+    candidate_links = re.findall(r"https?://[^\s)\]]+\.pdf[^\s)\]]*", item.summary_long_el)
+    links_are_official = bool(candidate_links) and all(
+        re.match(r"^https://(?:www\.)?hellenicparliament\.gr/", link, re.IGNORECASE)
+        for link in candidate_links
+    )
+    source_url = (item.official_text_source_url or "").strip()
+    canonical_item_url = _canonical_parliament_detail_url(item.url, item.law_id)
+    law_id = (item.law_id or "").lower()
+    canonical_existing_url = (
+        _canonical_parliament_detail_url(existing_parliament_url, law_id)
+        if existing_parliament_url
+        else None
+    )
+    expected_bill_ids = {f"GR-{law_id[:8]}"} if law_id else set()
+    if item.law_num:
+        expected_bill_ids.add(f"GR-{item.law_num}".replace(" ", "-")[:50])
+
+    identity_is_bound = bool(
+        law_id
+        and item.bill_id in expected_bill_ids
+        and canonical_item_url
+        and (
+            not existing_parliament_url
+            or canonical_existing_url
+        )
+    )
+    source_is_bound = bool(
+        source_url
+        and source_url in candidate_links
+        and re.match(
+            r"^https://(?:www\.)?hellenicparliament\.gr/.*\.pdf(?:[?#].*)?$",
+            source_url,
+            re.IGNORECASE,
+        )
+    )
+    official_text_body = item.summary_long_el.split("### Πλήρη έγγραφα", 1)[0].strip()
+    return bool(
+        links_are_official
+        and identity_is_bound
+        and source_is_bound
+        and not _is_parliament_document_block_only(item.summary_long_el)
+        and not _is_bad_parliament_text(official_text_body)
+        and _is_safe_verified_short_summary(item.summary_short_el)
+    )
 
 
 @router.post("/import")
@@ -889,6 +1038,19 @@ async def import_parliament_bills(
             return None
 
     for item in req.bills:
+        if item.official_text_verified:
+            attestation_key = os.getenv("PARLIAMENT_IMPORT_ATTESTATION_KEY", "")
+            if len(attestation_key) < 32:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Parliament import attestation is not configured",
+                )
+            if not _official_text_attestation_valid(item, attestation_key):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Invalid Parliament import attestation",
+                )
+
         title = (item.title_el or "").strip()
         if not title or len(title) < 10:
             skipped += 1
@@ -906,13 +1068,23 @@ async def import_parliament_bills(
             bill_type=item.type,
             ministry=item.ministry or None,
         )
-        summary_short_el = item.summary_short_el or _build_parliament_metadata_summary(
+        metadata_summary_short_el = _build_parliament_metadata_summary(
             title_el=title,
             bill_type=item.type,
             ministry=item.ministry or None,
             phase=item.phase,
             submitted_date=item.submitted_date,
             vote_date=item.vote_date,
+        )
+        verified_payload_is_bound = _verified_official_payload_is_bound(
+            item,
+            existing_parliament_url=existing_bill.parliament_url if existing_bill else None,
+        )
+        canonical_item_url = _canonical_parliament_detail_url(item.url, item.law_id)
+        summary_short_el = (
+            item.summary_short_el
+            if item.summary_short_el and (not item.official_text_verified or verified_payload_is_bound)
+            else metadata_summary_short_el
         )
 
         if existing_bill:
@@ -921,8 +1093,8 @@ async def import_parliament_bills(
             if preferred_title and preferred_title != existing_bill.title_el:
                 existing_bill.title_el = preferred_title
                 changed = True
-            if item.url and existing_bill.parliament_url != item.url:
-                existing_bill.parliament_url = item.url
+            if canonical_item_url and existing_bill.parliament_url != canonical_item_url:
+                existing_bill.parliament_url = canonical_item_url
                 changed = True
             if submitted_date and existing_bill.submitted_date != submitted_date:
                 existing_bill.submitted_date = submitted_date
@@ -932,11 +1104,40 @@ async def import_parliament_bills(
                 changed = True
             if apply_generated_content(existing_bill, "pill_el", pill_el):
                 changed = True
-            if apply_generated_content(existing_bill, "summary_short_el", summary_short_el):
-                changed = True
-            if item.summary_long_el and not existing_bill.summary_long_el:
-                existing_bill.summary_long_el = item.summary_long_el
-                changed = True
+            if not item.official_text_verified:
+                preserve_verified_summary = bool(
+                    _has_real_official_text(existing_bill.summary_long_el)
+                    and not _is_safe_legacy_metadata_summary(existing_bill.summary_short_el)
+                )
+                if (
+                    not preserve_verified_summary
+                    and apply_generated_content(existing_bill, "summary_short_el", summary_short_el)
+                ):
+                    changed = True
+                if (
+                    item.summary_long_el
+                    and not existing_bill.summary_long_el
+                    and _is_parliament_document_block_only(item.summary_long_el)
+                ):
+                    existing_bill.summary_long_el = item.summary_long_el
+                    changed = True
+            elif verified_payload_is_bound:
+                if apply_generated_content(existing_bill, "summary_short_el", summary_short_el):
+                    changed = True
+                elif (
+                    not getattr(existing_bill, "ai_summary_reviewed", False)
+                    and _is_safe_legacy_metadata_summary(existing_bill.summary_short_el)
+                    and existing_bill.summary_short_el != summary_short_el
+                ):
+                    existing_bill.summary_short_el = summary_short_el
+                    record_generated_content(existing_bill, "summary_short_el", summary_short_el)
+                    changed = True
+                if (
+                    not existing_bill.summary_long_el
+                    or _is_parliament_document_block_only(existing_bill.summary_long_el)
+                ):
+                    existing_bill.summary_long_el = item.summary_long_el
+                    changed = True
             if item.ministry and not existing_bill.categories:
                 existing_bill.categories = [item.ministry]
                 changed = True
@@ -951,16 +1152,24 @@ async def import_parliament_bills(
             continue
 
         summaries = summarize_rule_based(item.title_el, item.title_el)
+        safe_summary_long_el = None
+        if item.summary_long_el:
+            if verified_payload_is_bound or (
+                not item.official_text_verified
+                and _is_parliament_document_block_only(item.summary_long_el)
+            ):
+                safe_summary_long_el = item.summary_long_el
+
         bill = ParliamentBill(
             id=item.bill_id, title_el=title,
             pill_el=pill_el,
             pill_en=f"Law {item.law_num}: {item.ministry[:80]}" if item.law_num else "",
             summary_short_el=summary_short_el,
             summary_short_en=f"Law {item.law_num} by {item.ministry}." if item.law_num else "",
-            summary_long_el=item.summary_long_el,
+            summary_long_el=safe_summary_long_el,
             categories=summaries.get("categories", ["Νομοθεσία"]),
             status=BillStatus.ANNOUNCED,
-            parliament_url=item.url,
+            parliament_url=canonical_item_url,
             parliament_vote_date=vote_date,
             submitted_date=submitted_date,
         )

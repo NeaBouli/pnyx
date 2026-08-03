@@ -25,8 +25,8 @@ INSERT INTO knowledge_base (category, title_el, title_en, content_el, content_en
  '["δεδομένα","data","Arweave","blockchain"]', 1),
 
 ('process', 'Πώς ψηφίζω;', 'How do I vote?',
- 'Βήμα 1: Κατεβάστε την εφαρμογή εκκλησία (Android APK ή Play Store). Βήμα 2: Επαληθεύστε ότι είστε Έλληνας πολίτης μέσω του αριθμού κινητού (+30). Η επαλήθευση γίνεται μέσω HLR Lookup χωρίς SMS. Βήμα 3: Δημιουργείται αυτόματα ένα κρυπτογραφικό κλειδί Ed25519. Βήμα 4: Ψηφίστε ΝΑΙ, ΟΧΙ ή ΑΠΟΧΗ σε ενεργά νομοσχέδια. Η ψήφος υπογράφεται ψηφιακά στη συσκευή σας. Μπορείτε επίσης να ψηφίσετε μέσω web στο ekklesia.gr/el/bills.',
- 'Step 1: Download the ekklesia app. Step 2: Verify Greek citizenship via mobile number (+30). Step 3: Ed25519 key is generated on device. Step 4: Vote YES, NO or ABSTAIN. Vote is digitally signed on device. Also available at ekklesia.gr/el/bills.',
+ 'Βήμα 1: Κατεβάστε την εφαρμογή εκκλησία (Android APK ή Play Store). Βήμα 2: Ολοκληρώστε το προσωρινό Beta gate HLR για κατάσταση και συμβατότητα ελληνικού αριθμού (+30), χωρίς SMS. Ο HLR δεν αποδεικνύει κατοχή SIM, ταυτότητα, υπηκοότητα, διαμονή ή εκλογικό δικαίωμα. Βήμα 3: Δημιουργείται αυτόματα ένα κρυπτογραφικό κλειδί Ed25519. Βήμα 4: Ψηφίστε ΝΑΙ, ΟΧΙ ή ΑΠΟΧΗ μόνο στα ενεργά scopes όπου σας επιτρέπει ο server. Η ψήφος υπογράφεται ψηφιακά στη συσκευή σας.',
+ 'Step 1: Download the ekklesia app. Step 2: Complete the temporary Beta HLR gate for Greek-number (+30) network status and compatibility, without SMS. HLR does not prove SIM possession, identity, citizenship, residence or electoral eligibility. Step 3: An Ed25519 key is generated on device. Step 4: Vote YES, NO or ABSTAIN only in active scopes allowed by the server. The vote is digitally signed on device.',
  '["ψήφος","vote","εφαρμογή","app","επαλήθευση","verification"]', 1),
 
 ('process', 'Τι είναι ο Δείκτης Απόκλισης;', 'What is the Divergence Score?',
@@ -45,8 +45,8 @@ INSERT INTO knowledge_base (category, title_el, title_en, content_el, content_en
  '["λογαριασμός","account","email","κωδικός"]', 1),
 
 ('faq', 'Μπορώ να ψηφίσω από το εξωτερικό;', 'Can I vote from abroad?',
- 'Ναι, αρκεί να έχετε ελληνικό αριθμό κινητού (+30) με ενεργή SIM. Η επαλήθευση HLR ελέγχει μόνο αν ο αριθμός είναι έγκυρος ελληνικός αριθμός.',
- 'Yes, as long as you have a Greek mobile number (+30) with an active SIM.',
+ 'Ναι, εφόσον ολοκληρωθεί το Beta gate για ελληνικό αριθμό (+30). Ο HLR ελέγχει μόνο κατάσταση δικτύου και συμβατότητα αριθμού· δεν αποδεικνύει κατοχή SIM, ταυτότητα, διαμονή ή εκλογικό δικαίωμα.',
+ 'Yes, if the Greek-number (+30) Beta gate is completed. HLR checks only network status and number compatibility; it does not prove SIM possession, identity, residence or electoral eligibility.',
  '["εξωτερικό","abroad","SIM","diaspora"]', 1),
 
 ('faq', 'Είναι νόμιμο;', 'Is it legal?',
@@ -60,13 +60,13 @@ INSERT INTO knowledge_base (category, title_el, title_en, content_el, content_en
  '["κόστος","cost","δωρεάν","free","δωρεές"]', 1),
 
 ('faq', 'Πόσο ζυγίζει η ψήφος μου;', 'How much does my vote weigh?',
- 'Με SMS/HLR επαλήθευση: x1.0 βάρος. Με gov.gr OAuth επαλήθευση (μελλοντικό): x2.0 βάρος. Η gov.gr επαλήθευση αναμένει κυβερνητική έγκριση. Κάθε πολίτης μπορεί να ψηφίσει μόνο μία φορά ανά νομοσχέδιο.',
- 'With SMS/HLR verification: x1.0 weight. With gov.gr OAuth (future): x2.0 weight. One vote per bill per citizen.',
+ 'Κάθε έγκυρη ψήφος έχει ακριβώς το ίδιο βάρος x1.0, ανεξάρτητα από τη μέθοδο επαλήθευσης: ένα άτομο = μία ψήφος ανά scope. Η ισχυρότερη μελλοντική επαλήθευση δεν πολλαπλασιάζει ποτέ το βάρος.',
+ 'Every valid vote has exactly the same x1.0 weight regardless of verification method: one person equals one vote per scope. Stronger future verification never multiplies vote weight.',
  '["βάρος","weight","ψήφος","vote"]', 1),
 
 ('faq', 'Είναι ασφαλής η πλατφόρμα;', 'Is the platform secure?',
- 'Η πλατφόρμα χρησιμοποιεί: Ed25519 κρυπτογραφία, HTTPS/TLS σε όλες τις συνδέσεις, PostgreSQL με parameterized queries (χωρίς SQL injection), rate limiting σε όλα τα endpoints, HLR Lookup αντί SMS (ανθεκτικό σε SIM swap), Arweave blockchain για μόνιμη αρχειοθέτηση. Ο κώδικας είναι open source και μπορεί να ελεγχθεί από οποιονδήποτε.',
- 'The platform uses: Ed25519 cryptography, HTTPS/TLS, parameterized SQL queries, rate limiting, HLR Lookup, Arweave blockchain archiving. Code is open source and auditable.',
+ 'Η πλατφόρμα χρησιμοποιεί Ed25519 για υπογραφές ψήφων, HTTPS/TLS, parameterized SQL queries, rate limiting και Arweave για επιλέξιμη μόνιμη αρχειοθέτηση. Ο HLR ελέγχει μόνο κατάσταση ελληνικού αριθμού και δεν αποδεικνύει κατοχή SIM ή ταυτότητα. Ο κώδικας είναι open source και ελέγξιμος.',
+ 'The platform uses Ed25519 vote signatures, HTTPS/TLS, parameterized SQL queries, rate limiting and Arweave for eligible permanent archives. HLR checks only Greek-number network status and does not prove SIM possession or identity. The code is open source and auditable.',
  '["ασφάλεια","security","Ed25519","HTTPS","open source"]', 1),
 
 ('features', 'Τι υπηρεσίες προσφέρει η εκκλησία;', 'What services does ekklesia offer?',
@@ -85,6 +85,6 @@ INSERT INTO knowledge_base (category, title_el, title_en, content_el, content_en
  '["AI","chatbot","Ollama","RAG","βοηθός"]', 2),
 
 ('govgr', 'Τι είναι η gov.gr επαλήθευση;', 'What is gov.gr verification?',
- 'Η gov.gr OAuth επαλήθευση είναι τεχνικά υλοποιημένη αλλά αναμένει κυβερνητική έγκριση. Με τη gov.gr επαλήθευση, η ψήφος θα ζυγίζει x2.0 αντί x1.0. Δύο τρόποι ενεργοποίησης: (1) Εθνική Έγκριση από ΓΓΠΣ/GSRT, ή (2) Αίτημα Δημάρχου/Περιφερειάρχη. Μέχρι τότε, SMS (HLR) επαλήθευση λειτουργεί κανονικά.',
- 'gov.gr OAuth is technically implemented but awaits government approval. Would give x2.0 vote weight. Two activation paths: national approval or municipal request.',
+ 'Η gov.gr επαλήθευση είναι μόνο σχεδιασμός Alpha 0.1 και δεν είναι ενεργή στη Beta. Απαιτεί επίσημη διασύνδεση ή πλήρη eSeal validation, challenge μιας χρήσης, έλεγχο κατόχου, DPIA, σχέδιο credential migration, ανεξάρτητο security/privacy review και sandbox canary. Ο QR μόνος του δεν αποδεικνύει ταυτότητα. Κάθε έγκυρη ψήφος παραμένει x1.0.',
+ 'Gov.gr verification is an Alpha 0.1 design only and is not active in Beta. It requires an official integration or full eSeal validation, a one-time challenge, holder authentication, DPIA, credential-migration design, independent security/privacy review and sandbox canary. A QR code alone does not prove identity. Every valid vote remains x1.0.',
  '["gov.gr","OAuth","επαλήθευση","ΓΓΠΣ","βάρος"]', 2);

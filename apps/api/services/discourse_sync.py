@@ -7,8 +7,9 @@ import os
 import re
 import asyncio
 import logging
+import time
 import httpx
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import ParliamentBill, BillStatus, Periferia, Dimos
@@ -16,6 +17,7 @@ from services.bill_visibility import public_bill_filter
 from services.content_provenance import (
     FORUM_BODY_FIELD,
     clear_generated_content,
+    content_sha256,
     has_generated_content_provenance,
     is_generated_content_unchanged,
     record_generated_content,
@@ -29,6 +31,9 @@ DISCOURSE_API_URL = os.getenv("DISCOURSE_API_URL", "https://pnyx.ekklesia.gr")
 FORUM_SYNC_ENABLED = os.getenv("FORUM_SYNC_ENABLED", "false").lower() == "true"
 FORUM_SYNC_BATCH = int(os.getenv("FORUM_SYNC_BATCH_SIZE", "20"))
 FORUM_SYNC_TOPIC_DELAY_SECONDS = float(os.getenv("FORUM_SYNC_TOPIC_DELAY_SECONDS", "8"))
+FORUM_REFRESH_BATCH = int(os.getenv("FORUM_REFRESH_BATCH_SIZE", "2"))
+FORUM_REFRESH_SCAN = int(os.getenv("FORUM_REFRESH_SCAN_SIZE", "40"))
+FORUM_REFRESH_INTERVAL_SECONDS = int(os.getenv("FORUM_REFRESH_INTERVAL_SECONDS", "600"))
 DISCOURSE_RATE_LIMIT_RETRIES = int(os.getenv("DISCOURSE_RATE_LIMIT_RETRIES", "3"))
 
 _category_cache: dict[str, int] = {}
@@ -239,6 +244,12 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
         lower = val.lower()
         if "unknown" in lower:
             return True
+        if (
+            "you don't have permission to access" in lower
+            or "errors.edgesuite.net" in lower
+            or ("access denied" in lower and "reference #" in lower)
+        ):
+            return True
         bad_parliament_markers = (
             "Μετάβαση στο κύριο περιεχόμενο",
             "Ενεργοποίηση προσβασιμότητας",
@@ -272,6 +283,18 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
     def _clean_official_text(text: str) -> str:
         if not text:
             return ""
+        lowered = text.lower()
+        access_denial_patterns = (
+            "you don't have permission to access",
+            "errors.edgesuite.net",
+        )
+        is_access_denial = (
+            any(pattern in lowered for pattern in access_denial_patterns)
+            or ("access denied" in lowered and "reference #" in lowered)
+        )
+        if is_access_denial:
+            document_block_index = text.find("### Πλήρη έγγραφα")
+            text = text[document_block_index:] if document_block_index >= 0 else ""
         text = re.sub(r"<[^>]+>", "", text)
         lines = text.split("\n")
         cleaned = [l for l in lines
@@ -298,8 +321,10 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
         analysis = _clean(analysis_el)
 
     official_excerpt = ""
-    if source == "PARLIAMENT" and bill.summary_long_el and not _is_bad_summary(bill.summary_long_el):
-        official_excerpt = _clean_official_text(bill.summary_long_el)
+    if source == "PARLIAMENT" and bill.summary_long_el:
+        cleaned_official = _clean_official_text(bill.summary_long_el)
+        if cleaned_official and not _is_bad_summary(cleaned_official):
+            official_excerpt = cleaned_official
 
     diavgeia_document_url = ""
     if source == "DIAVGEIA":
@@ -369,17 +394,12 @@ def _build_topic_body(bill: ParliamentBill, region_name: str = "") -> str:
 
 
 def _build_topic_tags(bill: ParliamentBill) -> list[str]:
-    tags = [
+    # Discourse accepts three tags; geography remains encoded in the category.
+    return [
         "ekklesia",
         (bill.governance_level.value if bill.governance_level else "national").lower(),
         (getattr(bill, "source", "PARLIAMENT") or "PARLIAMENT").lower(),
-        bill.status.value.lower().replace("_", "-") if bill.status else "active",
     ]
-    if bill.periferia_id:
-        tags.append(f"periferia-{bill.periferia_id}")
-    if bill.dimos_id:
-        tags.append(f"dimos-{bill.dimos_id}")
-    return tags
 
 
 def _with_unique_title_suffix(title: str, bill: ParliamentBill) -> str:
@@ -389,6 +409,46 @@ def _with_unique_title_suffix(title: str, bill: ParliamentBill) -> str:
     if title.endswith(suffix):
         return title
     return f"{title[:255 - len(suffix)]}{suffix}"
+
+
+_DUPLICATE_TITLE_MARKERS = ("already been used", "χρησιμοποιηθεί")
+_DISCOURSE_TOPIC_LINK_RE = re.compile(
+    r"/t/(?:(?P<topic_id>\d+)(?:/\d+)?|"
+    r"[^/\s'\"<>]+/(?P<slug_topic_id>\d+))(?=[/?#.\s'\"<>]|$)"
+)
+
+
+def _discourse_error_messages(response: httpx.Response) -> list[str]:
+    """Collect error messages from structured and plain Discourse responses."""
+    messages: list[str] = []
+    try:
+        data = response.json()
+        if isinstance(data, dict) and isinstance(data.get("errors"), list):
+            messages.extend(str(error) for error in data["errors"])
+    except (TypeError, ValueError):
+        pass
+    if not messages and response.text:
+        messages.append(response.text)
+    return messages
+
+
+def _duplicate_title_details(response: httpx.Response) -> tuple[bool, int | None]:
+    """Identify a duplicate-title response and its referenced topic, if present."""
+    if response.status_code != 422:
+        return False, None
+
+    messages = _discourse_error_messages(response)
+    duplicate = False
+    for message in messages:
+        if not any(marker in message.casefold() for marker in _DUPLICATE_TITLE_MARKERS):
+            continue
+        duplicate = True
+        match = _DISCOURSE_TOPIC_LINK_RE.search(message)
+        if match:
+            topic_id = match.group("topic_id") or match.group("slug_topic_id")
+            return True, int(topic_id)
+
+    return duplicate, None
 
 
 async def _search_existing_topic(title: str) -> int | None:
@@ -407,6 +467,38 @@ async def _search_existing_topic(title: str) -> int | None:
     except Exception as e:
         logger.warning("Discourse topic search failed: %s", e)
     return None
+
+
+async def _record_matching_existing_topic_body(
+    client: httpx.AsyncClient,
+    topic_id: int,
+    bill: ParliamentBill,
+    generated_body: str,
+) -> None:
+    """Adopt ownership only when an existing topic still has our exact body."""
+    topic = await _request_discourse(
+        client,
+        "get",
+        f"{DISCOURSE_API_URL}/t/{topic_id}.json",
+        headers=_headers(),
+    )
+    if topic.status_code != 200:
+        return
+    posts = topic.json().get("post_stream", {}).get("posts", [])
+    if not posts:
+        return
+
+    post = await _request_discourse(
+        client,
+        "get",
+        f"{DISCOURSE_API_URL}/posts/{posts[0]['id']}.json",
+        headers=_headers(),
+    )
+    if post.status_code != 200:
+        return
+    current_raw = post.json().get("raw")
+    if content_sha256(current_raw) == content_sha256(generated_body):
+        record_generated_content(bill, FORUM_BODY_FIELD, generated_body)
 
 
 async def _region_name_for_body(bill: ParliamentBill, db: AsyncSession) -> str:
@@ -447,15 +539,25 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
             record_generated_content(bill, FORUM_BODY_FIELD, body)
             return r.json()["topic_id"]
 
-        # Title already exists — search for existing topic and link it
-        if r.status_code == 422 and "χρησιμοποιηθεί" in r.text:
-            logger.info("Topic title already exists for %s — searching Discourse", bill.id)
-            # Search with new prefixed title first, then raw title
-            existing_id = await _search_existing_topic(topic_title)
+        # Title already exists — reuse the referenced topic or search for it.
+        is_duplicate, existing_id = _duplicate_title_details(r)
+        if is_duplicate:
+            logger.info("Topic title already exists for %s — resolving Discourse topic", bill.id)
+            if not existing_id:
+                existing_id = await _search_existing_topic(topic_title)
             if not existing_id and bill.title_el:
                 existing_id = await _search_existing_topic(bill.title_el)
             if existing_id:
                 logger.info("Found existing topic %d for bill %s", existing_id, bill.id)
+                # Multiple API workers can race while creating the same topic.
+                # Claim the body only when the winning worker wrote the exact
+                # generated content; otherwise preserve it as externally owned.
+                await _record_matching_existing_topic_body(
+                    client,
+                    existing_id,
+                    bill,
+                    body,
+                )
                 return existing_id
             logger.warning("Title duplicate but search found nothing for %s", bill.id)
 
@@ -583,17 +685,82 @@ async def resync_all_topics(db: AsyncSession) -> dict:
     return {"total": len(bills), "updated": updated, "failed": failed}
 
 
-async def sync_new_bills_to_forum(db: AsyncSession) -> None:
+def _generated_forum_body_needs_refresh(bill: ParliamentBill, desired_body: str) -> bool:
+    provenance = getattr(bill, "generated_content_provenance", None)
+    expected = provenance.get(FORUM_BODY_FIELD) if isinstance(provenance, dict) else None
+    return bool(expected and expected != content_sha256(desired_body))
+
+
+def _forum_refresh_offset(total: int, *, now: float | None = None) -> int:
+    """Rotate the first attempted candidate so persistent failures cannot starve others."""
+    if total <= 0:
+        return 0
+    slot = int((time.time() if now is None else now) // FORUM_REFRESH_INTERVAL_SECONDS)
+    return (slot * max(FORUM_REFRESH_BATCH, 1)) % total
+
+
+async def sync_changed_bills_to_forum(db: AsyncSession) -> dict[str, int]:
+    """Refresh a small recent batch, preserving every legacy or manually edited topic body."""
+    filters = (
+        ParliamentBill.forum_topic_id.isnot(None),
+        ParliamentBill.generated_content_provenance.isnot(None),
+        public_bill_filter(),
+    )
+    count_result = await db.execute(
+        select(func.count()).select_from(ParliamentBill).where(*filters)
+    )
+    total = int(count_result.scalar_one() or 0)
+    if total == 0:
+        return {"total": 0, "offset": 0, "scanned": 0, "refreshed": 0, "failed": 0}
+
+    offset = _forum_refresh_offset(total)
+    result = await db.execute(
+        select(ParliamentBill)
+        .where(*filters)
+        .order_by(ParliamentBill.id.asc())
+        .offset(offset)
+        .limit(FORUM_REFRESH_SCAN)
+    )
+    candidates = result.scalars().all()
+    refreshed = 0
+    failed = 0
+
+    for bill in candidates:
+        region_name = await _region_name_for_body(bill, db)
+        desired_body = _build_topic_body(bill, region_name=region_name)
+        if not _generated_forum_body_needs_refresh(bill, desired_body):
+            continue
+        if await update_discourse_topic(bill, db):
+            refreshed += 1
+        else:
+            failed += 1
+        await db.commit()
+        if refreshed + failed >= FORUM_REFRESH_BATCH:
+            break
+        if FORUM_SYNC_TOPIC_DELAY_SECONDS > 0:
+            await asyncio.sleep(FORUM_SYNC_TOPIC_DELAY_SECONDS)
+
+    return {
+        "total": total,
+        "offset": offset,
+        "scanned": len(candidates),
+        "refreshed": refreshed,
+        "failed": failed,
+    }
+
+
+async def sync_new_bills_to_forum(db: AsyncSession) -> dict[str, int]:
     """
     APScheduler job — every 10 min.
     Finds ACTIVE bills without forum_topic_id → creates Discourse topic.
     Idempotent: forum_topic_id is set after creation.
     """
+    stats = {"selected": 0, "created": 0, "failed": 0}
     if not FORUM_SYNC_ENABLED:
-        return
+        return stats
     if not DISCOURSE_API_KEY:
         logger.warning("DISCOURSE_API_KEY not set — skipping forum sync")
-        return
+        return stats
 
     result = await db.execute(
         select(ParliamentBill)
@@ -609,9 +776,10 @@ async def sync_new_bills_to_forum(db: AsyncSession) -> None:
         .limit(FORUM_SYNC_BATCH)
     )
     bills = result.scalars().all()
+    stats["selected"] = len(bills)
 
     if not bills:
-        return
+        return stats
 
     logger.info("Forum sync: %d bills to create", len(bills))
 
@@ -622,9 +790,13 @@ async def sync_new_bills_to_forum(db: AsyncSession) -> None:
             topic_id = await create_discourse_topic(bill, db)
             bill.forum_topic_id = topic_id
             await db.commit()
+            stats["created"] += 1
             logger.info("Forum topic %d ← bill %s", topic_id, bill.id)
             if FORUM_SYNC_TOPIC_DELAY_SECONDS > 0:
                 await asyncio.sleep(FORUM_SYNC_TOPIC_DELAY_SECONDS)
         except Exception as e:
+            stats["failed"] += 1
             logger.error("Forum sync failed for bill %s: %s", bill.id, e)
             await db.rollback()
+
+    return stats

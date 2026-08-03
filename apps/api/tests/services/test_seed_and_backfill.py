@@ -185,8 +185,10 @@ async def test_refresh_orgs_cache_wrong_key():
 
 
 @pytest.mark.asyncio
-async def test_refresh_orgs_cache_status_not_found():
+async def test_refresh_orgs_cache_status_not_found(monkeypatch):
     """GET /refresh-orgs-cache/badid with valid Bearer -> 404."""
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.setenv("ADMIN_KEY", "dev-admin-key")
     from main import app
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         r = await c.get(

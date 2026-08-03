@@ -11,7 +11,7 @@
 
 ## Description
 Open-source anonymous civic participation platform for Greek citizens.
-Vote on real Hellenic Parliament bills using cryptographic identity verification.
+Vote on real Hellenic Parliament bills after a Greek-number HLR network-status check. HLR does not prove SIM possession or identity.
 No account required. No data stored. Ed25519 cryptography.
 
 ## Anti-Features

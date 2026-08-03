@@ -28,7 +28,7 @@ python3 "$SCRIPT_DIR/patches/patch-play-flavors.py" android/app/build.gradle
 cd android
 ./gradlew bundlePlayRelease
 
-AAB="android/app/build/outputs/bundle/playRelease/app-play-release.aab"
+AAB="app/build/outputs/bundle/playRelease/app-play-release.aab"
 echo ""
 echo "AAB ready: $AAB"
 echo "Upload to: Google Play Console → Internal Testing → New Release"

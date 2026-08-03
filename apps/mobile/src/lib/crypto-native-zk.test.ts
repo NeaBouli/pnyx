@@ -18,10 +18,26 @@ vi.mock("expo-secure-store", () => ({
 import {
   bytesToHex,
   hexToBytes,
+  signProfileLocation,
   signZkOptInPayload,
   storeKeypair,
   storeNullifier,
 } from "./crypto-native";
+
+describe("signProfileLocation", () => {
+  it("signs the exact backend canonical geography payload", () => {
+    const privateKeyHex = "02".repeat(32);
+    const publicKey = ed25519.getPublicKey(hexToBytes(privateKeyHex));
+    const nullifier = "n".repeat(64);
+    const signature = signProfileLocation(privateKeyHex, 6, 22, nullifier);
+
+    expect(ed25519.verify(
+      hexToBytes(signature),
+      new TextEncoder().encode(`profile-location:6:22:${nullifier}`),
+      publicKey,
+    )).toBe(true);
+  });
+});
 
 describe("signZkOptInPayload", () => {
   beforeEach(() => {

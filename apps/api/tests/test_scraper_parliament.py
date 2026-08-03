@@ -1,7 +1,10 @@
 import os
 import sys
+import hashlib
+import hmac
 
 import pytest
+from fastapi import HTTPException
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -10,12 +13,28 @@ from routers.scraper import (
     BillImportItem,
     BillImportRequest,
     _build_parliament_metadata_summary,
+    _canonical_parliament_detail_url,
+    _official_text_attestation_message,
     _finalize_scraped_bills,
     _parse_parliament_markdown,
     import_parliament_bills,
     prefer_scraped_title,
 )
 from models import BillStatus
+
+
+_ATTESTATION_KEY = "test-parliament-attestation-key-32-chars-minimum"
+
+
+def _attest_verified_items(payload: BillImportRequest, monkeypatch) -> None:
+    monkeypatch.setenv("PARLIAMENT_IMPORT_ATTESTATION_KEY", _ATTESTATION_KEY)
+    for item in payload.bills:
+        if item.official_text_verified:
+            item.official_text_attestation = hmac.new(
+                _ATTESTATION_KEY.encode("utf-8"),
+                _official_text_attestation_message(item),
+                hashlib.sha256,
+            ).hexdigest()
 
 
 def test_parse_all_laws_current_rows_with_date_and_phase():
@@ -64,6 +83,57 @@ def test_prefer_scraped_title_replaces_only_truncated_existing_title():
 
     assert prefer_scraped_title(truncated, full) == full
     assert prefer_scraped_title(full, truncated) == full
+
+
+def test_prefer_scraped_title_rejects_unrelated_full_title():
+    truncated = "Κύρωση συμφωνίας μεταξύ της Ελληνικής Δημοκρατίας και..."
+    unrelated = "Ρυθμίσεις για την αγορά ενέργειας και την προστασία καταναλωτών"
+
+    assert prefer_scraped_title(truncated, unrelated) == truncated
+
+
+def test_canonical_parliament_detail_url_rejects_lookalike_hosts():
+    law_id = "daceffb6-deca-4695-a9f0-b4830135158e"
+    valid = (
+        "https://www.hellenicparliament.gr/Nomothetiko-Ergo/all-laws"
+        f"?law_id={law_id}"
+    )
+
+    assert _canonical_parliament_detail_url(valid, law_id) == valid
+    assert _canonical_parliament_detail_url(
+        f"https://www.hellenicparliament.gr.evil.example/Nomothetiko-Ergo/all-laws?law_id={law_id}",
+        law_id,
+    ) is None
+    assert _canonical_parliament_detail_url(
+        f"https://evil.example/?law_id={law_id}",
+        law_id,
+    ) is None
+
+
+@pytest.mark.asyncio
+async def test_verified_import_fails_closed_without_attestation_key(monkeypatch):
+    monkeypatch.delenv("PARLIAMENT_IMPORT_ATTESTATION_KEY", raising=False)
+    payload = BillImportRequest(
+        admin_key="test",
+        bills=[BillImportItem(
+            bill_id="GR-daceffb6",
+            law_id="daceffb6-deca-4695-a9f0-b4830135158e",
+            title_el="Πλήρης τίτλος νομοσχεδίου",
+            url=(
+                "https://www.hellenicparliament.gr/Nomothetiko-Ergo/all-laws"
+                "?law_id=daceffb6-deca-4695-a9f0-b4830135158e"
+            ),
+            summary_short_el="Σκοπός του νόμου είναι η ασφαλής δοκιμή της επίσημης ροής εισαγωγής.",
+            summary_long_el="Σκοπός του νόμου είναι η ασφαλής δοκιμή. " * 30,
+            official_text_verified=True,
+            official_text_source_url="https://www.hellenicparliament.gr/UserFiles/doc.pdf",
+        )],
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await import_parliament_bills(payload, _auth=True, db=_FakeImportDb())
+
+    assert exc_info.value.status_code == 503
 
 
 def test_parse_katatethenta_date_first_rows_remain_supported():
@@ -315,7 +385,10 @@ async def test_github_import_fills_missing_metadata_without_touching_status():
                 type="Διεθνής Σύμβαση",
                 url="https://www.hellenicparliament.gr/Nomothetiko-Ergo/Anazitisi-Nomothetikou-Ergou?law_id=e744abc6-3e81-4e56-a4cd-b47f0174f2b1",
                 submitted_date="2026-07-06T00:00:00+00:00",
-                summary_long_el="### Πλήρη έγγραφα\n- [Έγγραφο Βουλής 1](https://example.test/doc.pdf)",
+                summary_long_el=(
+                    "### Πλήρη έγγραφα\n"
+                    "- [Έγγραφο Βουλής 1](https://www.hellenicparliament.gr/UserFiles/doc.pdf)"
+                ),
             )
         ],
     )
@@ -362,10 +435,10 @@ async def test_github_import_does_not_overwrite_existing_official_text():
 
     result = await import_parliament_bills(payload, _auth=True, db=db)
 
-    assert result["updated"] == 1
+    assert result["skipped"] == 1
     assert existing.status == BillStatus.WINDOW_24H
     assert existing.title_el == "Πλήρης υπάρχων τίτλος"
-    assert existing.parliament_url == "https://new.example.test"
+    assert existing.parliament_url == "https://old.example.test"
     assert existing.pill_el == "Υπάρχον pill"
     assert existing.summary_short_el == "Υπάρχουσα σύνοψη"
     assert existing.summary_long_el == "Υπάρχον επίσημο κείμενο"
@@ -411,6 +484,365 @@ async def test_github_import_refreshes_only_unchanged_generated_summary():
     assert existing.pill_el == "Νέο pill"
     assert existing.summary_short_el == "Νέα αυτόματη σύνοψη"
     assert existing.summary_long_el.startswith("### Πλήρη έγγραφα")
+
+
+@pytest.mark.asyncio
+async def test_github_import_replaces_pdf_only_block_with_verified_official_text(monkeypatch):
+    existing = type("ExistingBill", (), {})()
+    existing.title_el = "Πλήρης τίτλος"
+    existing.parliament_url = None
+    existing.submitted_date = None
+    existing.parliament_vote_date = None
+    existing.pill_el = "Υπάρχον pill"
+    existing.summary_short_el = "Υπάρχουσα σύνοψη"
+    existing.summary_long_el = (
+        "### Πλήρη έγγραφα\n"
+        "- [PDF](https://www.hellenicparliament.gr/UserFiles/doc.pdf)"
+    )
+    existing.categories = None
+    existing.status = BillStatus.ACTIVE
+    existing.ai_summary_reviewed = False
+    existing.generated_content_provenance = None
+
+    db = _FakeImportDb(existing)
+    official_text = (
+        "Σκοπός του σχεδίου νόμου είναι η οργάνωση των δημόσιων υπηρεσιών "
+        "και η καθιέρωση σαφών προθεσμιών για την εξυπηρέτηση των πολιτών. "
+    ) * 3
+    payload = BillImportRequest(
+        admin_key="test",
+        bills=[
+            BillImportItem(
+                bill_id="GR-e744abc6",
+                law_id="e744abc6-3e81-4e56-a4cd-b47f0174f2b1",
+                title_el="Πλήρης τίτλος",
+                url=(
+                    "https://www.hellenicparliament.gr/Nomothetiko-Ergo/all-laws"
+                    "?law_id=e744abc6-3e81-4e56-a4cd-b47f0174f2b1"
+                ),
+                submitted_date="2026-07-15T00:00:00+00:00",
+                summary_short_el=(
+                    "Σκοπός του σχεδίου νόμου είναι η οργάνωση των δημόσιων υπηρεσιών "
+                    "και η καθιέρωση σαφών προθεσμιών για την εξυπηρέτηση των πολιτών."
+                ),
+                summary_long_el=(
+                    official_text
+                    + "\n\n### Πλήρη έγγραφα\n"
+                    + "- [PDF](https://www.hellenicparliament.gr/UserFiles/doc.pdf)"
+                ),
+                official_text_verified=True,
+                official_text_source_url=(
+                    "https://www.hellenicparliament.gr/UserFiles/doc.pdf"
+                ),
+            )
+        ],
+    )
+    _attest_verified_items(payload, monkeypatch)
+
+    result = await import_parliament_bills(payload, _auth=True, db=db)
+
+    assert result["updated"] == 1
+    assert existing.summary_long_el.startswith("Σκοπός του σχεδίου νόμου")
+    assert "### Πλήρη έγγραφα" in existing.summary_long_el
+
+
+@pytest.mark.asyncio
+async def test_github_import_rejects_verified_text_with_mismatched_bill_identity(monkeypatch):
+    existing = type("ExistingBill", (), {})()
+    existing.title_el = "Πλήρης τίτλος"
+    existing.parliament_url = (
+        "https://www.hellenicparliament.gr/Nomothetiko-Ergo/all-laws"
+        "?law_id=e744abc6-3e81-4e56-a4cd-b47f0174f2b1"
+    )
+    existing.submitted_date = None
+    existing.parliament_vote_date = None
+    existing.pill_el = "Υπάρχον pill"
+    existing.summary_short_el = "Υπάρχουσα σύνοψη"
+    existing.summary_long_el = (
+        "### Πλήρη έγγραφα\n"
+        "- [PDF](https://www.hellenicparliament.gr/UserFiles/doc.pdf)"
+    )
+    existing.categories = None
+    existing.status = BillStatus.ACTIVE
+    existing.ai_summary_reviewed = False
+    existing.generated_content_provenance = None
+
+    payload = BillImportRequest(
+        admin_key="test",
+        bills=[
+            BillImportItem(
+                bill_id="GR-e744abc6",
+                law_id="deadbeef-3e81-4e56-a4cd-b47f0174f2b1",
+                title_el="Πλήρης τίτλος",
+                url=(
+                    "https://www.hellenicparliament.gr/Nomothetiko-Ergo/all-laws"
+                    "?law_id=deadbeef-3e81-4e56-a4cd-b47f0174f2b1"
+                ),
+                summary_short_el=(
+                    "Σκοπός του σχεδίου νόμου είναι η οργάνωση των δημόσιων υπηρεσιών "
+                    "και η καθιέρωση σαφών προθεσμιών για την εξυπηρέτηση των πολιτών."
+                ),
+                summary_long_el=(
+                    "Σκοπός του σχεδίου νόμου είναι η οργάνωση των δημόσιων υπηρεσιών. " * 5
+                    + "\n\n### Πλήρη έγγραφα\n"
+                    + "- [PDF](https://www.hellenicparliament.gr/UserFiles/doc.pdf)"
+                ),
+                official_text_verified=True,
+                official_text_source_url="https://www.hellenicparliament.gr/UserFiles/doc.pdf",
+            )
+        ],
+    )
+    _attest_verified_items(payload, monkeypatch)
+
+    await import_parliament_bills(payload, _auth=True, db=_FakeImportDb(existing))
+
+    assert existing.summary_long_el.startswith("### Πλήρη έγγραφα")
+
+
+@pytest.mark.asyncio
+async def test_github_import_rejects_verified_text_from_non_parliament_detail_url(monkeypatch):
+    law_id = "e744abc6-3e81-4e56-a4cd-b47f0174f2b1"
+    official_url = (
+        "https://www.hellenicparliament.gr/Nomothetiko-Ergo/all-laws"
+        f"?law_id={law_id}"
+    )
+    existing = type("ExistingBill", (), {})()
+    existing.title_el = "Πλήρης τίτλος"
+    existing.parliament_url = official_url
+    existing.submitted_date = None
+    existing.parliament_vote_date = None
+    existing.pill_el = "Υπάρχον pill"
+    existing.summary_short_el = "Υπάρχουσα σύνοψη"
+    existing.summary_long_el = (
+        "### Πλήρη έγγραφα\n"
+        "- [PDF](https://www.hellenicparliament.gr/UserFiles/doc.pdf)"
+    )
+    existing.categories = None
+    existing.status = BillStatus.ACTIVE
+    existing.ai_summary_reviewed = False
+    existing.generated_content_provenance = None
+
+    payload = BillImportRequest(
+        admin_key="test",
+        bills=[BillImportItem(
+            bill_id="GR-e744abc6",
+            law_id=law_id,
+            title_el="Πλήρης τίτλος",
+            url=f"https://evil.example/import?law_id={law_id}",
+            summary_short_el=(
+                "Σκοπός του νόμου είναι η οργάνωση των δημόσιων υπηρεσιών και η "
+                "καθιέρωση σαφών προθεσμιών για την εξυπηρέτηση των πολιτών."
+            ),
+            summary_long_el=(
+                "Σκοπός του νόμου είναι η οργάνωση των δημόσιων υπηρεσιών. " * 5
+                + "\n\n### Πλήρη έγγραφα\n"
+                + "- [PDF](https://www.hellenicparliament.gr/UserFiles/doc.pdf)"
+            ),
+            official_text_verified=True,
+            official_text_source_url="https://www.hellenicparliament.gr/UserFiles/doc.pdf",
+        )],
+    )
+    _attest_verified_items(payload, monkeypatch)
+
+    await import_parliament_bills(payload, _auth=True, db=_FakeImportDb(existing))
+
+    assert existing.parliament_url == official_url
+    assert existing.summary_short_el == "Υπάρχουσα σύνοψη"
+    assert existing.summary_long_el.startswith("### Πλήρη έγγραφα")
+
+
+@pytest.mark.asyncio
+async def test_github_import_accepts_verified_text_for_law_number_bill_id(monkeypatch):
+    existing = type("ExistingBill", (), {})()
+    existing.title_el = "Πλήρης τίτλος"
+    existing.parliament_url = None
+    existing.submitted_date = None
+    existing.parliament_vote_date = None
+    existing.pill_el = "Υπάρχον pill"
+    existing.summary_short_el = "Υπάρχουσα σύνοψη"
+    existing.summary_long_el = (
+        "### Πλήρη έγγραφα\n"
+        "- [PDF](https://www.hellenicparliament.gr/UserFiles/doc.pdf)"
+    )
+    existing.categories = None
+    existing.status = BillStatus.ACTIVE
+    existing.ai_summary_reviewed = False
+    existing.generated_content_provenance = None
+    official_text = (
+        "Σκοπός του νόμου είναι η οργάνωση των δημόσιων υπηρεσιών και η "
+        "καθιέρωση σαφών προθεσμιών για την εξυπηρέτηση των πολιτών. "
+    ) * 3
+
+    payload = BillImportRequest(
+        admin_key="test",
+        bills=[
+            BillImportItem(
+                bill_id="GR-5288",
+                law_num="5288",
+                law_id="e744abc6-3e81-4e56-a4cd-b47f0174f2b1",
+                title_el="Πλήρης τίτλος",
+                url=(
+                    "https://www.hellenicparliament.gr/Nomothetiko-Ergo/all-laws"
+                    "?law_id=e744abc6-3e81-4e56-a4cd-b47f0174f2b1"
+                ),
+                summary_short_el=(
+                    "Σκοπός του νόμου είναι η οργάνωση των δημόσιων υπηρεσιών και η "
+                    "καθιέρωση σαφών προθεσμιών για την εξυπηρέτηση των πολιτών."
+                ),
+                summary_long_el=(
+                    official_text
+                    + "\n\n### Πλήρη έγγραφα\n"
+                    + "- [PDF](https://www.hellenicparliament.gr/UserFiles/doc.pdf)"
+                ),
+                official_text_verified=True,
+                official_text_source_url="https://www.hellenicparliament.gr/UserFiles/doc.pdf",
+            )
+        ],
+    )
+    _attest_verified_items(payload, monkeypatch)
+
+    await import_parliament_bills(payload, _auth=True, db=_FakeImportDb(existing))
+
+    assert existing.summary_long_el.startswith("Σκοπός του νόμου")
+
+
+@pytest.mark.asyncio
+async def test_verified_text_replaces_only_exact_legacy_metadata_summary(monkeypatch):
+    existing = type("ExistingBill", (), {})()
+    existing.title_el = "Κύρωση συμφωνίας..."
+    existing.parliament_url = (
+        "https://www.hellenicparliament.gr/Nomothetiko-Ergo/all-laws"
+        "?law_id=daceffb6-deca-4695-a9f0-b4830135158e"
+    )
+    existing.submitted_date = None
+    existing.parliament_vote_date = None
+    existing.pill_el = "Διεθνής Σύμβαση"
+    existing.summary_short_el = (
+        "Η Βουλή δημοσίευσε εγγραφή για: Κύρωση συμφωνίας....\n"
+        "Τύπος: Διεθνής Σύμβαση.\n"
+        "Για το πλήρες περιεχόμενο δείτε τα επίσημα έγγραφα της Βουλής."
+    )
+    existing.summary_long_el = (
+        "### Πλήρη έγγραφα\n"
+        "- [PDF](https://www.hellenicparliament.gr/UserFiles/c8827c35/doc.pdf)"
+    )
+    existing.categories = None
+    existing.status = BillStatus.WINDOW_24H
+    existing.ai_summary_reviewed = False
+    existing.generated_content_provenance = None
+    official_summary = (
+        "Σκοπός της συμφωνίας είναι η παροχή υποστήριξης προς το ελληνικό "
+        "στρατιωτικό απόσπασμα για την εκτέλεση αποστολών εναέριας περιπολίας."
+    )
+    official_text = (official_summary + " ") * 4
+    source_url = "https://www.hellenicparliament.gr/UserFiles/c8827c35/doc.pdf"
+
+    payload = BillImportRequest(
+        admin_key="test",
+        bills=[BillImportItem(
+            bill_id="GR-daceffb6",
+            law_id="daceffb6-deca-4695-a9f0-b4830135158e",
+            title_el="Κύρωση συμφωνίας με πλήρη επίσημο τίτλο",
+            url=(
+                "https://www.hellenicparliament.gr/Nomothetiko-Ergo/all-laws"
+                "?law_id=daceffb6-deca-4695-a9f0-b4830135158e"
+            ),
+            summary_short_el=official_summary,
+            summary_long_el=(
+                official_text
+                + "\n\n### Πλήρη έγγραφα\n"
+                + f"- [PDF]({source_url})"
+            ),
+            official_text_verified=True,
+            official_text_source_url=source_url,
+        )],
+    )
+    _attest_verified_items(payload, monkeypatch)
+
+    await import_parliament_bills(payload, _auth=True, db=_FakeImportDb(existing))
+
+    assert existing.summary_short_el == official_summary
+    assert existing.summary_long_el.startswith(official_summary)
+    assert existing.generated_content_provenance["summary_short_el"]
+
+
+@pytest.mark.asyncio
+async def test_non_enriched_import_does_not_downgrade_verified_summary():
+    from services.content_provenance import record_generated_content
+
+    law_id = "daceffb6-deca-4695-a9f0-b4830135158e"
+    verified_summary = (
+        "Σκοπός της συμφωνίας είναι η παροχή υποστήριξης προς το ελληνικό "
+        "στρατιωτικό απόσπασμα για αποστολές εναέριας περιπολίας."
+    )
+    existing = type("ExistingBill", (), {})()
+    existing.title_el = "Πλήρης τίτλος"
+    existing.parliament_url = (
+        "https://www.hellenicparliament.gr/Nomothetiko-Ergo/all-laws"
+        f"?law_id={law_id}"
+    )
+    existing.submitted_date = None
+    existing.parliament_vote_date = None
+    existing.pill_el = "Διεθνής Σύμβαση"
+    existing.summary_short_el = verified_summary
+    existing.summary_long_el = (verified_summary + " ") * 8
+    existing.categories = None
+    existing.status = BillStatus.ACTIVE
+    existing.ai_summary_reviewed = False
+    existing.generated_content_provenance = None
+    record_generated_content(existing, "summary_short_el", verified_summary)
+
+    payload = BillImportRequest(
+        admin_key="test",
+        bills=[BillImportItem(
+            bill_id="GR-daceffb6",
+            law_id=law_id,
+            title_el="Πλήρης τίτλος",
+            url=existing.parliament_url,
+            phase="Κατατεθέντα",
+        )],
+    )
+
+    await import_parliament_bills(payload, _auth=True, db=_FakeImportDb(existing))
+
+    assert existing.summary_short_el == verified_summary
+    assert existing.generated_content_provenance["summary_short_el"]
+
+
+@pytest.mark.asyncio
+async def test_unbound_verified_payload_cannot_publish_content_for_new_bill(monkeypatch):
+    payload = BillImportRequest(
+        admin_key="test",
+        bills=[BillImportItem(
+            bill_id="GR-daceffb6",
+            law_id="different-deca-4695-a9f0-b4830135158e",
+            title_el="Κύρωση συμφωνίας με πλήρη επίσημο τίτλο",
+            url=(
+                "https://www.hellenicparliament.gr/Nomothetiko-Ergo/all-laws"
+                "?law_id=different-deca-4695-a9f0-b4830135158e"
+            ),
+            submitted_date="2026-07-15T00:00:00+00:00",
+            summary_short_el=(
+                "Σκοπός του νόμου είναι η οργάνωση των δημόσιων υπηρεσιών και η "
+                "καθιέρωση σαφών προθεσμιών για την εξυπηρέτηση των πολιτών."
+            ),
+            summary_long_el=(
+                "Σκοπός του νόμου είναι η οργάνωση των δημόσιων υπηρεσιών. " * 5
+                + "\n\n### Πλήρη έγγραφα\n"
+                + "- [PDF](https://www.hellenicparliament.gr/UserFiles/doc.pdf)"
+            ),
+            official_text_verified=True,
+            official_text_source_url="https://www.hellenicparliament.gr/UserFiles/doc.pdf",
+        )],
+    )
+    _attest_verified_items(payload, monkeypatch)
+    db = _FakeImportDb()
+
+    await import_parliament_bills(payload, _auth=True, db=db)
+
+    assert len(db.added) == 1
+    assert db.added[0].summary_short_el.startswith("Η Βουλή δημοσίευσε εγγραφή")
+    assert db.added[0].summary_long_el is None
 
 
 @pytest.mark.asyncio

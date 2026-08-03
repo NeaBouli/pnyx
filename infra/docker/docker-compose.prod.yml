@@ -1,8 +1,15 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "3"
+
 services:
   db:
     image: postgres:15-alpine
     container_name: ekklesia-db
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -21,6 +28,7 @@ services:
     image: redis:7-alpine
     container_name: ekklesia-redis
     restart: unless-stopped
+    logging: *default-logging
     volumes:
       - redis-data:/data
     networks:
@@ -37,6 +45,7 @@ services:
       dockerfile: apps/api/Dockerfile.prod
     container_name: ekklesia-api
     restart: unless-stopped
+    logging: *default-logging
     env_file:
       - /opt/ekklesia/.env.production
     environment:
@@ -76,6 +85,7 @@ services:
       dockerfile: apps/web/Dockerfile.prod
     container_name: ekklesia-web
     restart: unless-stopped
+    logging: *default-logging
     environment:
       NEXT_PUBLIC_API_URL: https://api.ekklesia.gr
       NODE_ENV: production
@@ -109,6 +119,7 @@ services:
     container_name: ekklesia-ollama
     profiles: ["ollama"]
     restart: unless-stopped
+    logging: *default-logging
     mem_limit: 2500m
     volumes:
       - ollama-data:/root/.ollama
@@ -126,6 +137,7 @@ services:
       dockerfile: Dockerfile.prod
     container_name: ekklesia-dashboard
     restart: unless-stopped
+    logging: *default-logging
     environment:
       NEXTAUTH_URL: https://dashboard.ekklesia.gr
       NEXTAUTH_SECRET: ${DASHBOARD_SECRET}
@@ -147,6 +159,7 @@ services:
     image: ghcr.io/tecnativa/docker-socket-proxy:latest
     container_name: ekklesia-docker-proxy
     restart: unless-stopped
+    logging: *default-logging
     environment:
       CONTAINERS: 1
       POST: 1
@@ -162,6 +175,7 @@ services:
       dockerfile: Dockerfile
     container_name: ekklesia-monitor
     restart: unless-stopped
+    logging: *default-logging
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379

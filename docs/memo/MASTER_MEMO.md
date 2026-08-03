@@ -1,16 +1,16 @@
 # Ekklesia.gr — Master Memo
 # Alle Architektur-Entscheidungen, TODOs, Specs
-# Zuletzt aktualisiert: 2026-04-01
+# Zuletzt aktualisiert: 2026-07-16
 
 ---
 
-## ALPHA PHASE — ABGESCHLOSSEN
-Tag: v0.3.0-alpha | Datum: 2026-04-01
+## HISTORISCHER ALPHA-MODULBAU — NICHT PRODUKTIV AKTIVIERT
+Tag: v0.3.0-alpha | Historischer Stand: 2026-04-01
 
-### Alle 8 Alpha-Module gebaut:
+### Acht historische Modulgerüste gebaut:
 - MOD-06: Analytics + Divergence Trends + k-Anonymity
 - MOD-07: Push Notifications (SSE + WebSocket + Event Bus)
-- MOD-09: gov.gr OAuth Stub (1/4 Gates)
+- MOD-09: gov.gr OAuth Stub (1/9 Design-Gates; zusätzlich expliziter Runtime-Schalter, Credentials und starker Server-Salt erforderlich). Alpha 0.1 ist nicht aktiv; siehe `docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md`.
 - MOD-11: Public API + Rate Limiting + API Keys (CC BY 4.0)
 - MOD-12: MP Comparison — Partei vs. Bürgermehrheit + Ranking
 - MOD-13: Relevance Voting FE — RelevanceButtons + Trending
@@ -92,10 +92,10 @@ Tag: v0.3.0-alpha | Datum: 2026-04-01
 
 ### Identity (MOD-01)
 - HLR Verifikation — kein SMS OTP
-- Griechische SIM (+30) = Ausweis-registriert per Gesetz
+- Griechischer Mobilfunknummernstatus (+30) wird per HLR geprüft; das beweist weder SIM-Besitz noch Identität, Wohnsitz, Staatsbürgerschaft oder Wahlberechtigung
 - HLR Provider: HLR Lookups / Melrose Labs / Telnyx (~$0.002/Query)
 - Bezahlung: Community Crypto Wallet (öffentlich auf community.html)
-- Beta → Alpha: gov.gr OAuth übernimmt
+- Beta → Alpha 0.1: gov.gr OAuth oder holder-authenticated QR/eSeal bleibt ein deaktivierter Sicherheitsentwurf bis offizielle Schnittstelle, DPIA und Review vorliegen
 
 ### Liquid Democracy
 - NUR mit taxisnet/gov.gr verifizierten Verwandten 1. Grades
@@ -170,8 +170,8 @@ Tag: v0.3.0-alpha | Datum: 2026-04-01
 - Stub: POST /api/v1/notifications/subscribe
 
 ### MOD-09: gov.gr OAuth2.0 Stub
-- Stub-Endpoints für OAuth Flow
-- Aktivierung nach: 500 Nutzer + 3 NGOs + publiziertes Roadmap
+- Design-only Stub-Endpoints; nicht aktiv in Beta
+- Aktivierung nur nach allen Alpha-0.1-Gates: 500 Nutzer, 3 NGOs, Roadmap, offizielle Genehmigung, Holder-Authentifizierung, DPIA, Credential-Migrationsreview, unabhängiger Security/Privacy-Review und Sandbox-Canary; zusätzlich expliziter Runtime-Schalter, Credentials und starker Server-Salt
 - Endpoint: GET /api/v1/auth/govgr/login
 - Endpoint: GET /api/v1/auth/govgr/callback
 
@@ -502,8 +502,8 @@ erst auf dem Hetzner Server unter app.ekklesia.gr.
 - MiCA greift voraussichtlich nicht — by deliberate design
 
 **gov.gr OAuth / eIDAS**
-- Bereits korrekt gate-blocked (500 Nutzer + 3 NGOs)
-- Rechtliche Vorarbeit parallel zu Milestones: ΥΨΗΔ + DPIA (Art. 35)
+- Fail-closed hinter neun Alpha-0.1-Design-Gates sowie explizitem Runtime-Schalter, Credentials und starkem Server-Salt
+- Voraussetzungen: 500 Nutzer, 3 NGOs, Roadmap, offizielle Genehmigung, Holder-Authentifizierung, DPIA, Credential-Migration, unabhängiger Security/Privacy-Review und Sandbox-Canary
 
 **Parliament Scraper (MOD-10)**
 - hellenicparliament.gr robots.txt prüfen vor Hetzner Deploy

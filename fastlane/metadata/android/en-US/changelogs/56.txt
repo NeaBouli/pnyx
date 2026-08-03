@@ -1,0 +1,4 @@
+- Safe voting lists based on the verified municipality and region.
+- Parliament bills remain available nationwide.
+- Stronger vote-eligibility checks and safer account import.
+- Unified Tier-1 and Semaphore ZK counting with privacy safeguards.

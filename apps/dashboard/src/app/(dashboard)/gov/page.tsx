@@ -30,6 +30,11 @@ interface GovGrGates {
   '3_ngo_partnerschaften': boolean
   roadmap_publiziert: boolean
   govgr_genehmigung: boolean
+  holder_auth_geprueft: boolean
+  dpia_genehmigt: boolean
+  migration_geprueft: boolean
+  security_review: boolean
+  sandbox_canary: boolean
 }
 
 interface GovGrStatus {
@@ -38,6 +43,7 @@ interface GovGrStatus {
   progress: string
   gates: GovGrGates
   env_configured: boolean
+  runtime_enabled: boolean
 }
 
 const APP_STATUS_LABELS: Record<ApplicationStatus, string> = {
@@ -59,6 +65,11 @@ const GATE_LABELS: { key: keyof GovGrGates; label: string; description: string }
   { key: '3_ngo_partnerschaften', label: '3 Συνεργασίες ΜΚΟ', description: 'Συνεργασίες με τουλάχιστον 3 αναγνωρισμένες ΜΚΟ' },
   { key: 'roadmap_publiziert', label: 'Δημοσιευμένο Roadmap', description: 'Δημόσιο roadmap με δέσμευση διαφάνειας' },
   { key: 'govgr_genehmigung', label: 'Έγκριση gov.gr', description: 'Επίσημη έγκριση από το gov.gr για ενσωμάτωση OAuth 2.0' },
+  { key: 'holder_auth_geprueft', label: 'Έλεγχος Κατόχου', description: 'Η επίσημη μέθοδος συνδέει με ασφάλεια το αποδεικτικό με τον κάτοχό του' },
+  { key: 'dpia_genehmigt', label: 'DPIA & Νομική Βάση', description: 'Ολοκληρωμένη αξιολόγηση αντικτύπου και πολιτική διατήρησης' },
+  { key: 'migration_geprueft', label: 'Σχέδιο Migration', description: 'Ελεγμένη μετάβαση υφιστάμενων Beta credentials χωρίς διπλές εγγραφές' },
+  { key: 'security_review', label: 'Ανεξάρτητος Έλεγχος', description: 'Ολοκληρωμένος ανεξάρτητος security και privacy review' },
+  { key: 'sandbox_canary', label: 'Sandbox Canary', description: 'Επιτυχής απομονωμένη δοκιμή με backup και rollback' },
 ]
 
 export default function GovPage() {
@@ -148,7 +159,7 @@ export default function GovPage() {
             <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
               <h2 className="font-semibold text-gray-800">Προϋποθέσεις Ενεργοποίησης</h2>
               <span className="text-sm font-medium text-gray-500">
-                {govGr?.progress ?? `${fulfilledCount}/4`} Προϋποθέσεις
+                {govGr?.progress ?? `${fulfilledCount}/${GATE_LABELS.length}`} Προϋποθέσεις
               </span>
             </div>
             <div className="p-5">
@@ -156,7 +167,7 @@ export default function GovPage() {
               <div className="w-full bg-gray-100 rounded-full h-3 mb-6">
                 <div
                   className="bg-blue-500 h-3 rounded-full transition-all"
-                  style={{ width: `${(fulfilledCount / 4) * 100}%` }}
+                  style={{ width: `${(fulfilledCount / GATE_LABELS.length) * 100}%` }}
                 />
               </div>
 
@@ -186,16 +197,18 @@ export default function GovPage() {
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
             <div className="font-semibold text-blue-800 mb-1">gov.gr OAuth 2.0</div>
             <div className="text-sm text-blue-700">
-              Το gov.gr OAuth θα ενεργοποιηθεί μόλις πληρωθούν και οι 4 προϋποθέσεις.
-              Μέχρι τότε χρησιμοποιείται το MOD-01 HLR για επαλήθευση ταυτότητας.
+              Το Alpha 0.1 gov.gr flow παραμένει ανενεργό μέχρι να πληρωθούν και οι εννέα προϋποθέσεις,
+              να υπάρχουν έγκυρα credentials και να ενεργοποιηθεί ρητά το runtime flag. Μέχρι τότε το
+              MOD-01 HLR ελέγχει μόνο κατάσταση και συμβατότητα ελληνικού αριθμού· δεν αποδεικνύει κατοχή SIM ή ταυτότητα.
             </div>
           </div>
 
           <div className="bg-orange-50 border border-orange-200 rounded-xl p-5">
             <div className="font-semibold text-orange-800 mb-1">Τρέχουσα Κατάσταση: {govGr?.module ?? 'MOD-09'}</div>
             <div className="text-sm text-orange-700">
-              Αυτή τη στιγμή χρησιμοποιείται το MOD-01 HLR για επαλήθευση ταυτότητας. Η ενσωμάτωση
-              gov.gr OAuth 2.0 είναι σε αναμονή και θα ενεργοποιηθεί μετά την πλήρωση όλων των προϋποθέσεων.
+              Αυτή τη στιγμή το MOD-01 HLR παρέχει μόνο έλεγχο κατάστασης ελληνικού αριθμού. Η ενσωμάτωση
+              gov.gr Alpha 0.1 είναι σχεδιασμός και δεν ενεργοποιείται πριν από όλα τα gates, τα credentials
+              και τον ξεχωριστό runtime διακόπτη.
             </div>
             {govGr?.env_configured === false && (
               <div className="text-xs text-orange-600 mt-2">

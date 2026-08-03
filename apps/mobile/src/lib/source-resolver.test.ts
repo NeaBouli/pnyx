@@ -7,9 +7,11 @@ import { describe, it, expect } from "vitest";
 import {
   cleanOfficialText,
   officialDocumentLinks,
+  officialDocumentOpenChoices,
   resolveSource,
   isPdfUrl,
   sourceLabel,
+  summarySectionLabel,
   isOfficialDocumentBlockOnly,
 } from "./source-resolver";
 
@@ -82,6 +84,27 @@ describe("sourceLabel", () => {
   });
 });
 
+describe("summarySectionLabel", () => {
+  it("labels Parliament metadata honestly instead of calling it a summary", () => {
+    expect(summarySectionLabel(
+      "PARLIAMENT",
+      "Η Βουλή δημοσίευσε εγγραφή για: Κύρωση συμφωνίας. Τύπος: Διεθνής Σύμβαση.",
+    )).toBe("Στοιχεία Βουλής");
+  });
+
+  it("keeps the summary label for extracted official content", () => {
+    expect(summarySectionLabel(
+      "PARLIAMENT",
+      "Σκοπός του σχεδίου νόμου είναι η ενίσχυση της διοικητικής διαφάνειας.",
+    )).toBe("Σύνοψη");
+  });
+
+  it("does not relabel non-Parliament summaries", () => {
+    expect(summarySectionLabel("DIAVGEIA", "Η Βουλή δημοσίευσε εγγραφή για: δοκιμή"))
+      .toBe("Σύνοψη");
+  });
+});
+
 describe("officialDocumentLinks", () => {
   it("extracts parliament PDF markdown links", () => {
     const links = officialDocumentLinks(`
@@ -110,6 +133,18 @@ describe("officialDocumentLinks", () => {
 
   it("ignores non-PDF links", () => {
     expect(officialDocumentLinks("[Topic](https://pnyx.ekklesia.gr/t/1)")).toEqual([]);
+  });
+});
+
+describe("officialDocumentOpenChoices", () => {
+  it("always preserves both the safe reading page and original PDF", () => {
+    expect(officialDocumentOpenChoices(
+      "GR-test/id",
+      "https://www.hellenicparliament.gr/UserFiles/doc.pdf",
+    )).toEqual({
+      readableUrl: "https://ekklesia.gr/el/bills/GR-test%2Fid",
+      officialUrl: "https://www.hellenicparliament.gr/UserFiles/doc.pdf",
+    });
   });
 });
 
@@ -164,6 +199,29 @@ describe("cleanOfficialText", () => {
     expect(cleanOfficialText(
       "Αναζήτηση Τίτλος Ενίσχυση της εφαρμογής της ισότητας της αμοιβής",
     )).toBe("");
+  });
+
+  it("hides an upstream access-denial page while preserving PDF links", () => {
+    const value = `
+You don't have permission to access "/" on this server. Reference #18.63c7cf17.1783640051.9520c14
+
+### Πλήρη έγγραφα
+- [Έγγραφο Βουλής 1 (13351763.pdf)](https://www.hellenicparliament.gr/UserFiles/13351763.pdf)
+`;
+
+    expect(cleanOfficialText(value)).toBe("");
+    expect(officialDocumentLinks(value)).toEqual([
+      {
+        label: "Έγγραφο Βουλής 1 (13351763.pdf)",
+        url: "https://www.hellenicparliament.gr/UserFiles/13351763.pdf",
+      },
+    ]);
+  });
+
+  it("does not hide legitimate text that merely mentions access denied", () => {
+    expect(cleanOfficialText(
+      "Η φράση Access Denied αναφέρεται ως τεχνικός όρος μέσα σε νόμιμο επίσημο κείμενο.",
+    )).toContain("Access Denied");
   });
 });
 

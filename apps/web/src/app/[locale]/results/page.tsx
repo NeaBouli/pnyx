@@ -214,6 +214,9 @@ export default function ResultsPage() {
                     { label: isEl ? "Υπέρ" : "Yes",     pct: results.yes_percent,     color: "bg-green-500" },
                     { label: isEl ? "Κατά" : "No",      pct: results.no_percent,      color: "bg-red-500" },
                     { label: isEl ? "Αποχή" : "Abstain",pct: results.abstain_percent, color: "bg-gray-400" },
+                    ...(results.unknown_count
+                      ? [{ label: isEl ? "ΑΓΝΩΣΤΟ" : "UNKNOWN", pct: results.unknown_percent ?? 0, color: "bg-purple-500" }]
+                      : []),
                   ].map(bar => (
                     <div key={bar.label}>
                       <div className="flex justify-between text-xs mb-1">

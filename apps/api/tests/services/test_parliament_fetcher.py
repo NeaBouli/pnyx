@@ -55,6 +55,24 @@ class TestIsBadParliamentText:
 
         assert _is_bad_parliament_text(text) is True
 
+    def test_upstream_access_denial_is_bad(self):
+        text = (
+            "You don't have permission to access '/' on this server. "
+            "Reference #18.63c7cf17.1783640051.9520c14 "
+            "https://errors.edgesuite.net/18.63c7cf17.1783640051.9520c14 "
+        ) * 3
+
+        assert _is_bad_parliament_text(text) is True
+
+    def test_access_denied_words_alone_do_not_reject_real_text(self):
+        text = (
+            "Η φράση Access Denied αναφέρεται ως τεχνικός όρος μέσα σε νόμιμο "
+            "επίσημο κείμενο. Το υπόλοιπο άρθρο περιγράφει αναλυτικά τις "
+            "προϋποθέσεις, τις αρμοδιότητες και τις εγγυήσεις εφαρμογής. "
+        ) * 3
+
+        assert _is_bad_parliament_text(text) is False
+
     def test_markdown_links_mostly_is_bad(self):
         lines = ["* [Link](https://hellenicparliament.gr/page) text"] * 10
         lines.append("Ένα κείμενο.")

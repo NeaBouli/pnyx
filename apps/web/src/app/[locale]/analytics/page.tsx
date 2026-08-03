@@ -21,7 +21,7 @@ export default function AnalyticsPage() {
       analytics.trends(days),
       analytics.topDivergence(10),
     ]).then(([ov, tr, td]) => {
-      setOverview(ov); setTrends(tr); setTopDiv(td?.data || []);
+      setOverview(ov); setTrends(tr); setTopDiv((td.data || []) as any[]);
     }).finally(() => setLoading(false));
   }, [days]);
 

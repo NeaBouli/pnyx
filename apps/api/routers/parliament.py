@@ -18,6 +18,7 @@ DISCOURSE_BASE = os.getenv("DISCOURSE_BASE_URL", "https://pnyx.ekklesia.gr")
 from dependencies import verify_admin_key
 from services.bill_visibility import is_public_bill, public_bill_with_demo_filter
 from services.source_links import official_source_url
+from services.geographic_scope import validate_region_filter
 from models import (
     ParliamentBill, BillStatus, BillStatusLog, BillRelevanceVote,
     CitizenVote, VoteChoice, GovernanceLevel,
@@ -86,6 +87,8 @@ class BillDetail(BaseModel):
     consensus_score:        float | None = None
     consensus_count:        int | None = 0
     flag_count:             int | None = 0
+    periferia_id:           int | None = None
+    dimos_id:               int | None = None
 
 class TransitionRequest(BaseModel):
     new_status: str
@@ -149,10 +152,13 @@ def _region_filter_conditions(
     include_institutional: bool,
 ):
     """Build region visibility conditions for public bill lists."""
-    from sqlalchemy import and_
+    from sqlalchemy import and_, or_
 
     region_conditions = [
-        ParliamentBill.governance_level == GovernanceLevel.NATIONAL,
+        or_(
+            ParliamentBill.governance_level == GovernanceLevel.NATIONAL,
+            ParliamentBill.governance_level.is_(None),
+        ),
     ]
     if include_institutional:
         region_conditions.append(
@@ -180,6 +186,7 @@ async def get_bills(
     category: str | None = Query(None),
     governance: str | None = Query(None),
     source: str | None = Query(None),
+    q: str | None = Query(None, min_length=1, max_length=200),
     periferia_id: int | None = Query(None),
     dimos_id: int | None = Query(None),
     include_institutional: bool = Query(True),
@@ -213,15 +220,40 @@ async def get_bills(
 
     if governance:
         try:
-            query = query.where(ParliamentBill.governance_level == GovernanceLevel(governance.upper()))
+            governance_level = GovernanceLevel(governance.upper())
+            if governance_level == GovernanceLevel.NATIONAL:
+                # Historical Parliament rows predate governance_level and have
+                # always been treated as nationwide by the vote policy.
+                query = query.where(or_(
+                    ParliamentBill.governance_level == GovernanceLevel.NATIONAL,
+                    ParliamentBill.governance_level.is_(None),
+                ))
+            else:
+                query = query.where(ParliamentBill.governance_level == governance_level)
         except ValueError:
-            pass
+            raise HTTPException(400, f"Ungültige Governance-Ebene: {governance}")
 
     if source:
         query = query.where(ParliamentBill.source == source.upper())
 
+    if q and q.strip():
+        pattern = f"%{q.strip()}%"
+        query = query.where(
+            or_(
+                ParliamentBill.id.ilike(pattern),
+                ParliamentBill.title_el.ilike(pattern),
+                ParliamentBill.title_en.ilike(pattern),
+                ParliamentBill.summary_short_el.ilike(pattern),
+            )
+        )
+
     # Region filter: show NATIONAL + INSTITUTIONAL + matching REGIONAL/MUNICIPAL
     if periferia_id is not None or dimos_id is not None:
+        await validate_region_filter(
+            db,
+            periferia_id=periferia_id,
+            dimos_id=dimos_id,
+        )
         region_conditions = _region_filter_conditions(
             periferia_id=periferia_id,
             dimos_id=dimos_id,
@@ -349,6 +381,8 @@ async def get_bill(bill_id: str, db: AsyncSession = Depends(get_db)):
         consensus_score=bill.consensus_score,
         consensus_count=bill.consensus_count or 0,
         flag_count=bill.flag_count or 0,
+        periferia_id=bill.periferia_id,
+        dimos_id=bill.dimos_id,
     )
 
 
