@@ -76,6 +76,43 @@ def test_unique_title_suffix_prefers_ada_and_preserves_limit():
 
 
 @pytest.mark.parametrize(
+    "response,expected",
+    [
+        (
+            FakeResponse(
+                422,
+                {
+                    "errors": [
+                        "This title has already been used by "
+                        "<a href='https://pnyx.ekklesia.gr/t/"
+                        "foreas-proswrines-kykloforiakes-rythmiseis/3721'>"
+                        "another topic</a>."
+                    ]
+                },
+            ),
+            (True, 3721),
+        ),
+        (FakeResponse(422, text="Τίτλος έχει ήδη χρησιμοποιηθεί"), (True, None)),
+        (FakeResponse(422, text="This title has already been used"), (True, None)),
+        (FakeResponse(422, text="Title is too short"), (False, None)),
+        (
+            FakeResponse(
+                422,
+                text="A similar topic exists at https://pnyx.ekklesia.gr/t/similar/99",
+            ),
+            (False, None),
+        ),
+        (
+            FakeResponse(200, text="https://pnyx.ekklesia.gr/t/unrelated/3721"),
+            (False, None),
+        ),
+    ],
+)
+def test_duplicate_title_details_handles_live_response_and_fallbacks(response, expected):
+    assert discourse_sync._duplicate_title_details(response) == expected
+
+
+@pytest.mark.parametrize(
     "governance,source,status,periferia_id,dimos_id,expected",
     [
         ("NATIONAL", "PARLIAMENT", "ACTIVE", None, None,
@@ -262,6 +299,52 @@ async def test_create_topic_retries_with_stable_suffix_when_duplicate_search_mis
     assert len(FakeAsyncClient.posts) == 2
     assert FakeAsyncClient.posts[0]["title"] == "[Φορέας] ΑΝΑΘΕΣΗ ΕΡΓΟΥ"
     assert FakeAsyncClient.posts[1]["title"] == "[Φορέας] ΑΝΑΘΕΣΗ ΕΡΓΟΥ — ΨΙΗΕ465ΕΦ5-Λ"
+    assert bill.generated_content_provenance.get("forum_body")
+
+
+@pytest.mark.asyncio
+async def test_create_topic_reuses_id_from_english_duplicate_response(monkeypatch):
+    bill = _forum_bill("Αυτόματη σύνοψη.")
+    bill.id = "DIAV-95Δ946ΜΤΛΒ-2"
+    bill.forum_topic_id = None
+    generated_body = discourse_sync._build_topic_body(bill)
+    calls: list[tuple[str, str]] = []
+
+    async def fake_resolve_category(_bill, _db):
+        return 42
+
+    async def fail_search(_title):
+        raise AssertionError("referenced topic id must avoid eventual-consistency search")
+
+    async def fake_request(_client, method, url, **_kwargs):
+        calls.append((method, url))
+        if method == "post" and url.endswith("/posts.json"):
+            return FakeResponse(
+                422,
+                {
+                    "errors": [
+                        "This title has already been used by "
+                        "<a href='https://pnyx.ekklesia.gr/t/"
+                        "foreas-proswrines-kykloforiakes-rythmiseis/3721'>"
+                        "another topic</a>."
+                    ]
+                },
+            )
+        if method == "get" and url.endswith("/t/3721.json"):
+            return FakeResponse(200, {"post_stream": {"posts": [{"id": 654}]}})
+        if method == "get" and url.endswith("/posts/654.json"):
+            return FakeResponse(200, {"raw": generated_body})
+        raise AssertionError((method, url))
+
+    monkeypatch.setattr(discourse_sync, "_resolve_category", fake_resolve_category)
+    monkeypatch.setattr(discourse_sync, "_search_existing_topic", fail_search)
+    monkeypatch.setattr(discourse_sync, "_request_discourse", fake_request)
+
+    topic_id = await discourse_sync.create_discourse_topic(bill, db=None)
+
+    assert topic_id == 3721
+    assert calls[0][0] == "post"
+    assert sum(method == "post" for method, _url in calls) == 1
     assert bill.generated_content_provenance.get("forum_body")
 
 

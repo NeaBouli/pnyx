@@ -411,6 +411,48 @@ def _with_unique_title_suffix(title: str, bill: ParliamentBill) -> str:
     return f"{title[:255 - len(suffix)]}{suffix}"
 
 
+_DUPLICATE_TITLE_MARKERS = ("already been used", "χρησιμοποιηθεί")
+_DISCOURSE_TOPIC_LINK_RE = re.compile(
+    r"/t/(?:[^/\s'\"<>]+/)?(\d+)(?=[/?#\s'\"<>]|$)"
+)
+
+
+def _discourse_error_messages(response: httpx.Response) -> list[str]:
+    """Collect error messages from structured and plain Discourse responses."""
+    messages: list[str] = []
+    try:
+        data = response.json()
+        if isinstance(data, dict) and isinstance(data.get("errors"), list):
+            messages.extend(str(error) for error in data["errors"])
+    except (TypeError, ValueError):
+        pass
+    if response.text:
+        messages.append(response.text)
+    return messages
+
+
+def _duplicate_title_details(response: httpx.Response) -> tuple[bool, int | None]:
+    """Identify a duplicate-title response and its referenced topic, if present."""
+    if response.status_code != 422:
+        return False, None
+
+    messages = _discourse_error_messages(response)
+    duplicate = any(
+        marker in message.casefold()
+        for message in messages
+        for marker in _DUPLICATE_TITLE_MARKERS
+    )
+    if not duplicate:
+        return False, None
+
+    for message in messages:
+        match = _DISCOURSE_TOPIC_LINK_RE.search(message)
+        if match:
+            return True, int(match.group(1))
+
+    return True, None
+
+
 async def _search_existing_topic(title: str) -> int | None:
     """Search Discourse for an existing topic by title. Returns topic_id or None."""
     try:
@@ -499,11 +541,12 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
             record_generated_content(bill, FORUM_BODY_FIELD, body)
             return r.json()["topic_id"]
 
-        # Title already exists — search for existing topic and link it
-        if r.status_code == 422 and "χρησιμοποιηθεί" in r.text:
-            logger.info("Topic title already exists for %s — searching Discourse", bill.id)
-            # Search with new prefixed title first, then raw title
-            existing_id = await _search_existing_topic(topic_title)
+        # Title already exists — reuse the referenced topic or search for it.
+        is_duplicate, existing_id = _duplicate_title_details(r)
+        if is_duplicate:
+            logger.info("Topic title already exists for %s — resolving Discourse topic", bill.id)
+            if not existing_id:
+                existing_id = await _search_existing_topic(topic_title)
             if not existing_id and bill.title_el:
                 existing_id = await _search_existing_topic(bill.title_el)
             if existing_id:
