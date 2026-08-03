@@ -119,6 +119,15 @@ redis.call('set', KEYS[2], 'processed')
 return 1
 """
 
+WEBHOOK_CLAIM_RESUME_SCRIPT = """
+-- webhook_claim_resume_v1
+if redis.call('get', KEYS[1]) ~= ARGV[1] then
+  return 0
+end
+redis.call('set', KEYS[1], 'processing', 'EX', 900)
+return 1
+"""
+
 SUPPORT_PURPOSES = {"infrastructure_support", "developer_support"}
 ALLOWED_PAYMENT_PURPOSES = SUPPORT_PURPOSES
 MIN_PAYMENT_CENTS = 100
@@ -145,6 +154,11 @@ def _validate_payment_amount(purpose: str, amount_cents: int) -> bool:
 async def _append_finance_event(r: aioredis.Redis, event: dict) -> None:
     """Append a PII-free event for private finance/provider ingestion."""
     await r.rpush(R_FINANCE_EVENTS, json.dumps(event, separators=(",", ":")))
+
+
+async def _resume_webhook_claim(r: aioredis.Redis, key: str, expected_state: str) -> bool:
+    """Atomically resume a failed or deferred provider event."""
+    return bool(await r.eval(WEBHOOK_CLAIM_RESUME_SCRIPT, 1, key, expected_state))
 
 
 def _stripe_adjustment_kind(event_type: str, adjustment: dict) -> str:
@@ -180,6 +194,8 @@ async def _process_stripe_adjustment(event: dict, event_type: str) -> dict:
     claimed = await r.set(event_key, "processing", nx=True, ex=900)
     if not claimed:
         existing_claim = await r.get(event_key)
+        if existing_claim == "processing":
+            raise HTTPException(status_code=503, detail="Stripe adjustment is already processing")
         if existing_claim == "pending_payment":
             session_id = await r.get(f"{R_STRIPE_PAYMENT_PREFIX}{payment_intent}")
             if session_id:
@@ -195,7 +211,14 @@ async def _process_stripe_adjustment(event: dict, event_type: str) -> dict:
                     "processed": True,
                     "requires_manual_review": False,
                 }
-        return {"received": True, "processed": False, "duplicate": True}
+            raise HTTPException(status_code=503, detail="Payment projection retry is pending")
+        if existing_claim == "accounting_review_required":
+            if not await _resume_webhook_claim(r, event_key, existing_claim):
+                raise HTTPException(status_code=503, detail="Stripe adjustment retry is already processing")
+        elif existing_claim == "processed":
+            return {"received": True, "processed": False, "duplicate": True}
+        else:
+            raise HTTPException(status_code=503, detail="Stripe adjustment claim is not ready")
 
     session_id = await r.get(f"{R_STRIPE_PAYMENT_PREFIX}{payment_intent}")
     live_mode = event.get("livemode") is True
@@ -744,8 +767,8 @@ async def _drain_pending_adjustments(r: aioredis.Redis, key: str, reference: str
                 adjustment["adjustment_kind"],
                 adjustment["adjustment_id"],
             )
-            if result.get("reason") == "payment_projection_busy":
-                raise HTTPException(status_code=503, detail="Payment projection is busy")
+            if result.get("reason") in {"payment_projection_busy", "payment_projection_missing"}:
+                raise HTTPException(status_code=503, detail="Payment projection is not ready")
             event_key = adjustment.get("event_key")
             if isinstance(event_key, str) and event_key:
                 await r.set(event_key, "processed")
@@ -847,8 +870,6 @@ async def stripe_webhook(request: Request):
     sig_header = request.headers.get("stripe-signature", "")
     webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
-    if not _payment_intake_enabled():
-        raise HTTPException(status_code=503, detail="Payment intake is awaiting legal recipient approval")
     if not webhook_secret:
         logger.error("[MOD-18] Stripe webhook disabled: STRIPE_WEBHOOK_SECRET missing")
         raise HTTPException(status_code=503, detail="Stripe webhook is not configured")
@@ -873,6 +894,9 @@ async def stripe_webhook(request: Request):
     # Nur completed sessions verarbeiten
     if event_type != "checkout.session.completed":
         return {"received": True, "processed": False}
+
+    if not _payment_intake_enabled():
+        raise HTTPException(status_code=503, detail="Payment intake is awaiting legal recipient approval")
 
     session = event.get("data", {}).get("object", {})
     if session.get("payment_status") != "paid":
@@ -912,10 +936,15 @@ async def stripe_webhook(request: Request):
     if not claimed:
         existing_claim = await r.get(idempotency_key)
         capture_state = await r.get(capture_key)
+        if existing_claim == "processing":
+            raise HTTPException(status_code=503, detail="Stripe capture is already processing")
         if existing_claim == "accounting_review_required" and capture_state == "recorded":
-            await r.set(idempotency_key, "processing", ex=900)
-        else:
+            if not await _resume_webhook_claim(r, idempotency_key, existing_claim):
+                raise HTTPException(status_code=503, detail="Stripe capture retry is already processing")
+        elif existing_claim == "processed":
             return {"received": True, "processed": False, "duplicate": True}
+        else:
+            raise HTTPException(status_code=503, detail="Stripe capture claim is not ready")
 
     capture_state = await r.get(capture_key)
     if capture_state == "processed":
@@ -1073,8 +1102,6 @@ async def paypal_ipn_webhook(request: Request):
     4. Idempotency: txn_id atomar nur einmal verarbeiten
     """
     payload = await request.body()
-    if not _payment_intake_enabled():
-        raise HTTPException(status_code=503, detail="Payment intake is awaiting legal recipient approval")
     try:
         form = {key: values[-1] for key, values in parse_qs(payload.decode("utf-8"), keep_blank_values=True).items()}
     except UnicodeDecodeError:
@@ -1123,6 +1150,9 @@ async def paypal_ipn_webhook(request: Request):
         logger.warning("[PayPal] IPN verification FAILED for txn=%s", txn_id)
         return {"received": True, "processed": False, "reason": "verification_failed"}
 
+    if payment_status == "Completed" and not _payment_intake_enabled():
+        raise HTTPException(status_code=503, detail="Payment intake is awaiting legal recipient approval")
+
     r = await _get_redis()
 
     # Idempotency: atomically claim before any accounting mutation.
@@ -1132,6 +1162,8 @@ async def paypal_ipn_webhook(request: Request):
     if not claimed:
         existing_claim = await r.get(txn_key)
         capture_state = await r.get(capture_key)
+        if existing_claim == "processing":
+            raise HTTPException(status_code=503, detail="PayPal event is already processing")
         resumable_capture = (
             payment_status == "Completed"
             and existing_claim == "accounting_review_required"
@@ -1140,13 +1172,16 @@ async def paypal_ipn_webhook(request: Request):
         resumable_adjustment = (
             payment_status in {"Refunded", "Reversed", "Canceled_Reversal"}
             and provider_mode == "live"
-            and existing_claim == "pending_payment"
+            and existing_claim in {"pending_payment", "accounting_review_required"}
         )
         if resumable_capture or resumable_adjustment:
-            await r.set(txn_key, "processing", ex=900)
-        else:
+            if not await _resume_webhook_claim(r, txn_key, existing_claim):
+                raise HTTPException(status_code=503, detail="PayPal event retry is already processing")
+        elif existing_claim == "processed":
             logger.info("[PayPal] Duplicate IPN for txn=%s — skipping", txn_id)
             return {"received": True, "processed": False, "reason": "duplicate"}
+        else:
+            raise HTTPException(status_code=503, detail="PayPal event claim is not ready")
 
     if payment_status in {"Refunded", "Reversed", "Canceled_Reversal"}:
         parent_txn_id = form.get("parent_txn_id", "").strip()

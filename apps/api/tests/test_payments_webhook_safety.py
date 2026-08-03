@@ -146,6 +146,11 @@ class _SuccessRedis:
     async def eval(self, script, numkeys, *args):
         keys = args[:numkeys]
         argv = args[numkeys:]
+        if "webhook_claim_resume_v1" in script:
+            if self.values.get(keys[0]) != argv[0]:
+                return 0
+            self.values[keys[0]] = "processing"
+            return 1
         if "payment_projection_commit_v2" in script:
             lock_key, applied_key = keys[:2]
             if self.values.get(lock_key) != argv[0]:
@@ -616,6 +621,27 @@ async def test_pending_adjustment_survives_lock_contention_and_redrives():
 
 
 @pytest.mark.asyncio
+async def test_pending_adjustment_stays_queued_while_projection_is_missing():
+    redis = _SuccessRedis()
+    pending_key = f"{payments.R_PENDING_STRIPE_ADJUSTMENT_PREFIX}pi_missing"
+    processing_key = f"{pending_key}:processing"
+    raw = __import__("json").dumps({
+        "event_key": f"{payments.R_STRIPE_EVENT_PREFIX}evt_missing",
+        "adjustment_id": "evt_missing",
+        "amount_cents": 500,
+        "adjustment_kind": "stripe_refund_cumulative",
+    }, separators=(",", ":"))
+    redis.pushed.append((pending_key, raw))
+
+    with pytest.raises(HTTPException) as exc:
+        await payments._drain_pending_adjustments(redis, pending_key, "stripe:cs_missing")
+
+    assert exc.value.status_code == 503
+    assert (processing_key, raw) in redis.pushed
+    assert f"{payments.R_STRIPE_EVENT_PREFIX}evt_missing" not in redis.values
+
+
+@pytest.mark.asyncio
 async def test_adjustment_commit_rejects_expired_lock_without_mutation():
     class _ExpiringLockRedis(_SuccessRedis):
         async def eval(self, script, numkeys, *args):
@@ -677,9 +703,204 @@ async def test_adjustment_does_not_replace_a_newer_last_payment():
 
 
 @pytest.mark.asyncio
-async def test_payment_intake_gate_blocks_before_stripe_processing(monkeypatch):
+async def test_payment_intake_gate_blocks_before_stripe_capture_processing(monkeypatch):
+    event = {
+        "id": "evt_gate_closed",
+        "type": "checkout.session.completed",
+        "data": {"object": {}},
+    }
+    stripe_module = SimpleNamespace(
+        Webhook=SimpleNamespace(construct_event=lambda *_args: event),
+        error=SimpleNamespace(SignatureVerificationError=ValueError),
+    )
     monkeypatch.delenv("PAYMENTS_INTAKE_GATE", raising=False)
     monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", "whsec_test")
+    monkeypatch.setitem(sys.modules, "stripe", stripe_module)
+
+    with pytest.raises(HTTPException) as exc:
+        await payments.stripe_webhook(_Request(signature="test-signature"))
+
+    assert exc.value.status_code == 503
+
+
+@pytest.mark.asyncio
+async def test_closed_intake_still_processes_signed_stripe_adjustments(monkeypatch):
+    redis = _SuccessRedis()
+    await payments._append_payment_record(redis, {
+        **_verified_public_record(amount=15.0),
+        "stripe_session": "cs_closed_gate",
+        "payment_intent": "pi_closed_gate",
+    })
+    redis.values[f"{payments.R_STRIPE_PAYMENT_PREFIX}pi_closed_gate"] = "cs_closed_gate"
+    event = {
+        "id": "evt_closed_gate_refund",
+        "type": "charge.refunded",
+        "livemode": True,
+        "data": {"object": {
+            "payment_intent": "pi_closed_gate",
+            "currency": "eur",
+            "amount_refunded": 500,
+        }},
+    }
+    stripe_module = SimpleNamespace(
+        Webhook=SimpleNamespace(construct_event=lambda *_args: event),
+        error=SimpleNamespace(SignatureVerificationError=ValueError),
+    )
+
+    async def fake_get_redis():
+        return redis
+
+    monkeypatch.delenv("PAYMENTS_INTAKE_GATE", raising=False)
+    monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", "whsec_test")
+    monkeypatch.setitem(sys.modules, "stripe", stripe_module)
+    monkeypatch.setattr(payments, "_get_redis", fake_get_redis)
+
+    result = await payments.stripe_webhook(_Request(signature="test-signature"))
+
+    assert result["processed"] is True
+    assert redis.values[payments.R_PUBLIC_SERVER_RECEIVED] == "10.0"
+
+
+@pytest.mark.asyncio
+async def test_stripe_adjustment_resumes_after_accounting_review_failure(monkeypatch):
+    redis = _SuccessRedis()
+    await payments._append_payment_record(redis, {
+        **_verified_public_record(amount=15.0),
+        "stripe_session": "cs_retry_adjustment",
+        "payment_intent": "pi_retry_adjustment",
+    })
+    redis.values[f"{payments.R_STRIPE_PAYMENT_PREFIX}pi_retry_adjustment"] = "cs_retry_adjustment"
+    event_key = f"{payments.R_STRIPE_EVENT_PREFIX}evt_retry_adjustment"
+    redis.values[event_key] = "accounting_review_required"
+    event = {
+        "id": "evt_retry_adjustment",
+        "type": "charge.refunded",
+        "livemode": True,
+        "data": {"object": {
+            "payment_intent": "pi_retry_adjustment",
+            "currency": "eur",
+            "amount_refunded": 500,
+        }},
+    }
+    stripe_module = SimpleNamespace(
+        Webhook=SimpleNamespace(construct_event=lambda *_args: event),
+        error=SimpleNamespace(SignatureVerificationError=ValueError),
+    )
+
+    async def fake_get_redis():
+        return redis
+
+    monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", "whsec_test")
+    monkeypatch.setitem(sys.modules, "stripe", stripe_module)
+    monkeypatch.setattr(payments, "_get_redis", fake_get_redis)
+
+    result = await payments.stripe_webhook(_Request(signature="test-signature"))
+
+    assert result["processed"] is True
+    assert redis.values[event_key] == "processed"
+    assert redis.values[payments.R_PUBLIC_SERVER_RECEIVED] == "10.0"
+
+
+@pytest.mark.asyncio
+async def test_stripe_processing_claim_returns_retryable_status(monkeypatch):
+    event = {
+        "id": "evt_processing",
+        "type": "charge.refunded",
+        "livemode": True,
+        "data": {"object": {
+            "payment_intent": "pi_processing",
+            "currency": "eur",
+            "amount_refunded": 500,
+        }},
+    }
+    stripe_module = SimpleNamespace(
+        Webhook=SimpleNamespace(construct_event=lambda *_args: event),
+        error=SimpleNamespace(SignatureVerificationError=ValueError),
+    )
+    redis = _SuccessRedis()
+    redis.values[f"{payments.R_STRIPE_EVENT_PREFIX}evt_processing"] = "processing"
+
+    async def fake_get_redis():
+        return redis
+
+    monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", "whsec_test")
+    monkeypatch.setitem(sys.modules, "stripe", stripe_module)
+    monkeypatch.setattr(payments, "_get_redis", fake_get_redis)
+
+    with pytest.raises(HTTPException) as exc:
+        await payments.stripe_webhook(_Request(signature="test-signature"))
+
+    assert exc.value.status_code == 503
+
+
+@pytest.mark.asyncio
+async def test_stripe_expired_claim_race_returns_retryable_status(monkeypatch):
+    class _ExpiredClaimRedis(_SuccessRedis):
+        async def set(self, key, value, **kwargs):
+            if kwargs.get("nx"):
+                return None
+            return await super().set(key, value, **kwargs)
+
+        async def get(self, _key):
+            return None
+
+    event = {
+        "id": "evt_expired_claim",
+        "type": "charge.refunded",
+        "livemode": True,
+        "data": {"object": {
+            "payment_intent": "pi_expired_claim",
+            "currency": "eur",
+            "amount_refunded": 500,
+        }},
+    }
+    stripe_module = SimpleNamespace(
+        Webhook=SimpleNamespace(construct_event=lambda *_args: event),
+        error=SimpleNamespace(SignatureVerificationError=ValueError),
+    )
+    redis = _ExpiredClaimRedis()
+
+    async def fake_get_redis():
+        return redis
+
+    monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", "whsec_test")
+    monkeypatch.setitem(sys.modules, "stripe", stripe_module)
+    monkeypatch.setattr(payments, "_get_redis", fake_get_redis)
+
+    with pytest.raises(HTTPException) as exc:
+        await payments.stripe_webhook(_Request(signature="test-signature"))
+
+    assert exc.value.status_code == 503
+
+
+@pytest.mark.asyncio
+async def test_stripe_capture_processing_claim_returns_retryable_status(monkeypatch):
+    event = {
+        "id": "evt_capture_processing",
+        "type": "checkout.session.completed",
+        "data": {"object": {
+            "id": "cs_capture_processing",
+            "payment_status": "paid",
+            "mode": "payment",
+            "currency": "eur",
+            "metadata": {"payment_purpose": "infrastructure_support"},
+            "amount_total": 1500,
+            "payment_intent": "pi_capture_processing",
+        }},
+    }
+    stripe_module = SimpleNamespace(
+        Webhook=SimpleNamespace(construct_event=lambda *_args: event),
+        error=SimpleNamespace(SignatureVerificationError=ValueError),
+    )
+    redis = _SuccessRedis()
+    redis.values[f"{payments.R_STRIPE_SESSION_PREFIX}cs_capture_processing"] = "processing"
+
+    async def fake_get_redis():
+        return redis
+
+    monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", "whsec_test")
+    monkeypatch.setitem(sys.modules, "stripe", stripe_module)
+    monkeypatch.setattr(payments, "_get_redis", fake_get_redis)
 
     with pytest.raises(HTTPException) as exc:
         await payments.stripe_webhook(_Request(signature="test-signature"))
@@ -969,6 +1190,116 @@ async def test_paypal_non_finite_amount_fails_closed(monkeypatch):
 
     assert result == {"received": True, "processed": False, "reason": "invalid_amount"}
     assert redis.pushed == []
+
+
+@pytest.mark.asyncio
+async def test_closed_intake_blocks_verified_paypal_capture(monkeypatch):
+    payload = (
+        b"payment_status=Completed&txn_id=txn_gate_closed&mc_gross=15.00&mc_currency=EUR"
+        b"&receiver_email=owner%40example.test&custom=developer_support"
+    )
+
+    async def verified(_payload):
+        return True
+
+    monkeypatch.delenv("PAYMENTS_INTAKE_GATE", raising=False)
+    monkeypatch.setenv("PAYPAL_RECEIVER_EMAIL", "owner@example.test")
+    monkeypatch.setattr(payments, "_verify_paypal_ipn", verified)
+
+    with pytest.raises(HTTPException) as exc:
+        await payments.paypal_ipn_webhook(_Request(body=payload))
+
+    assert exc.value.status_code == 503
+
+
+@pytest.mark.asyncio
+async def test_closed_intake_still_processes_verified_paypal_adjustments(monkeypatch):
+    redis = _SuccessRedis()
+    await payments._append_payment_record(redis, {
+        **_verified_public_record(amount=15.0),
+        "method": "paypal",
+        "txn_id": "txn_gate_parent",
+    })
+    payload = (
+        b"payment_status=Refunded&txn_id=txn_gate_refund&parent_txn_id=txn_gate_parent"
+        b"&mc_gross=-5.00&mc_currency=EUR&receiver_email=owner%40example.test"
+    )
+
+    async def verified(_payload):
+        return True
+
+    async def fake_get_redis():
+        return redis
+
+    monkeypatch.delenv("PAYMENTS_INTAKE_GATE", raising=False)
+    monkeypatch.setenv("PAYPAL_RECEIVER_EMAIL", "owner@example.test")
+    monkeypatch.setattr(payments, "PAYPAL_IPN_URL", payments.PAYPAL_IPN_PRODUCTION_URL)
+    monkeypatch.setattr(payments, "_verify_paypal_ipn", verified)
+    monkeypatch.setattr(payments, "_get_redis", fake_get_redis)
+
+    result = await payments.paypal_ipn_webhook(_Request(body=payload))
+
+    assert result["processed"] is True
+    assert redis.values[payments.R_PUBLIC_SERVER_RECEIVED] == "10.0"
+
+
+@pytest.mark.asyncio
+async def test_paypal_adjustment_resumes_after_accounting_review_failure(monkeypatch):
+    redis = _SuccessRedis()
+    await payments._append_payment_record(redis, {
+        **_verified_public_record(amount=15.0),
+        "method": "paypal",
+        "txn_id": "txn_retry_parent",
+    })
+    txn_key = f"{payments.R_PAYPAL_TXN}txn_retry_refund"
+    redis.values[txn_key] = "accounting_review_required"
+    payload = (
+        b"payment_status=Refunded&txn_id=txn_retry_refund&parent_txn_id=txn_retry_parent"
+        b"&mc_gross=-5.00&mc_currency=EUR&receiver_email=owner%40example.test"
+    )
+
+    async def verified(_payload):
+        return True
+
+    async def fake_get_redis():
+        return redis
+
+    monkeypatch.setenv("PAYPAL_RECEIVER_EMAIL", "owner@example.test")
+    monkeypatch.setattr(payments, "PAYPAL_IPN_URL", payments.PAYPAL_IPN_PRODUCTION_URL)
+    monkeypatch.setattr(payments, "_verify_paypal_ipn", verified)
+    monkeypatch.setattr(payments, "_get_redis", fake_get_redis)
+
+    result = await payments.paypal_ipn_webhook(_Request(body=payload))
+
+    assert result["processed"] is True
+    assert redis.values[txn_key] == "processed"
+    assert redis.values[payments.R_PUBLIC_SERVER_RECEIVED] == "10.0"
+
+
+@pytest.mark.asyncio
+async def test_paypal_processing_claim_returns_retryable_status(monkeypatch):
+    redis = _SuccessRedis()
+    redis.values[f"{payments.R_PAYPAL_TXN}txn_processing"] = "processing"
+    payload = (
+        b"payment_status=Refunded&txn_id=txn_processing&parent_txn_id=txn_parent"
+        b"&mc_gross=-5.00&mc_currency=EUR&receiver_email=owner%40example.test"
+    )
+
+    async def verified(_payload):
+        return True
+
+    async def fake_get_redis():
+        return redis
+
+    monkeypatch.setenv("PAYPAL_RECEIVER_EMAIL", "owner@example.test")
+    monkeypatch.setattr(payments, "PAYPAL_IPN_URL", payments.PAYPAL_IPN_PRODUCTION_URL)
+    monkeypatch.setattr(payments, "_verify_paypal_ipn", verified)
+    monkeypatch.setattr(payments, "_get_redis", fake_get_redis)
+
+    with pytest.raises(HTTPException) as exc:
+        await payments.paypal_ipn_webhook(_Request(body=payload))
+
+    assert exc.value.status_code == 503
 
 
 @pytest.mark.asyncio
