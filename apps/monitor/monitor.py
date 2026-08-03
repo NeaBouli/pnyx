@@ -102,6 +102,52 @@ ALERT_STATE_TTL_SECONDS = max(ALERT_NOTIFY_COOLDOWN_SECONDS * 2, 86400)
 T2_ALLOWED_SERVICES = {"ekklesia-api", "ekklesia-web"}
 T2_MAX_RESTARTS_PER_HOUR = 2
 
+FORUM_MISSING_CATEGORIES = (
+    "public_actionable",
+    "technical_test",
+    "demo_legacy",
+    "operator_hidden",
+    "sensitive_diavgeia",
+    "sync_grace",
+    "lifecycle_not_eligible",
+)
+
+# Every row without a topic receives exactly one category. The CASE order is
+# intentional: technical/demo identity is more specific than visibility flags.
+FORUM_MISSING_CLASSIFICATION_SQL = """
+    SELECT id, title_el,
+           CASE
+               WHEN COALESCE(source, '') = 'ZK_CANARY'
+                    OR id LIKE 'ZK-CANARY-%%'
+                   THEN 'technical_test'
+               WHEN id LIKE 'DEMO-%%'
+                   THEN 'demo_legacy'
+               WHEN COALESCE(admin_hidden, FALSE) = TRUE
+                   THEN 'operator_hidden'
+               WHEN source = 'DIAVGEIA'
+                    AND (
+                        LOWER(COALESCE(title_el, '')) LIKE ANY (ARRAY['%%αμκα%%', '%%α.μ.κ.α%%', '%%amka%%', '%%ασθεν%%', '%%εοπυυ%%', '%%eopyy%%'])
+                        OR LOWER(COALESCE(summary_short_el, '')) LIKE ANY (ARRAY['%%αμκα%%', '%%α.μ.κ.α%%', '%%amka%%', '%%ασθεν%%', '%%εοπυυ%%', '%%eopyy%%'])
+                        OR LOWER(COALESCE(summary_long_el, '')) LIKE ANY (ARRAY['%%αμκα%%', '%%α.μ.κ.α%%', '%%amka%%', '%%ασθεν%%', '%%εοπυυ%%', '%%eopyy%%'])
+                    )
+                   THEN 'sensitive_diavgeia'
+               WHEN status IN ('ACTIVE', 'WINDOW_24H', 'OPEN_END')
+                    AND (
+                        (COALESCE(source, 'PARLIAMENT') = 'PARLIAMENT'
+                         AND created_at < NOW() - INTERVAL '1 hour')
+                        OR
+                        (COALESCE(source, 'PARLIAMENT') != 'PARLIAMENT'
+                         AND created_at < NOW() - INTERVAL '6 hours')
+                    )
+                   THEN 'public_actionable'
+               WHEN status IN ('ACTIVE', 'WINDOW_24H', 'OPEN_END')
+                   THEN 'sync_grace'
+               ELSE 'lifecycle_not_eligible'
+           END AS category
+    FROM parliament_bills
+    WHERE forum_topic_id IS NULL
+"""
+
 
 # ─── Alert Dataclass ─────────────────────────────────────────────────────────
 
@@ -802,24 +848,31 @@ def check_lifecycle_fast_forward(conn) -> list[Alert]:
 def check_forum_missing(conn) -> list[Alert]:
     alerts = []
     with conn.cursor() as cur:
-        cur.execute("""
-            SELECT id, title_el FROM parliament_bills
-            WHERE status = 'ACTIVE' AND forum_topic_id IS NULL
-              AND COALESCE(admin_hidden, FALSE) = FALSE
-              AND (source IS NULL OR source != 'ZK_CANARY')
-              AND NOT (
-                  source = 'DIAVGEIA'
-                  AND (
-                      LOWER(COALESCE(title_el, '')) LIKE ANY (ARRAY['%αμκα%', '%α.μ.κ.α%', '%amka%', '%ασθεν%', '%εοπυυ%', '%eopyy%'])
-                      OR LOWER(COALESCE(summary_short_el, '')) LIKE ANY (ARRAY['%αμκα%', '%α.μ.κ.α%', '%amka%', '%ασθεν%', '%εοπυυ%', '%eopyy%'])
-                      OR LOWER(COALESCE(summary_long_el, '')) LIKE ANY (ARRAY['%αμκα%', '%α.μ.κ.α%', '%amka%', '%ασθεν%', '%εοπυυ%', '%eopyy%'])
-                  )
-              )
+        cur.execute(f"""
+            SELECT id, title_el
+            FROM ({FORUM_MISSING_CLASSIFICATION_SQL}) AS forum_missing
+            WHERE category = 'public_actionable'
         """)
         for bill_id, title in cur.fetchall():
             alerts.append(Alert("forum_missing", "ekklesia-api", "warning",
-                                f"Bill {bill_id} ACTIVE ohne Forum: {title[:50]}", False))
+                                f"Bill {bill_id} ohne Forum-Topic: {str(title or '')[:50]}", False))
     return alerts
+
+
+def get_forum_missing_catalog(conn) -> dict[str, int]:
+    """Return aggregate counts for every bill without a forum topic."""
+    catalog = {category: 0 for category in FORUM_MISSING_CATEGORIES}
+    with conn.cursor() as cur:
+        cur.execute(f"""
+            SELECT category, COUNT(*)
+            FROM ({FORUM_MISSING_CLASSIFICATION_SQL}) AS forum_missing
+            GROUP BY category
+        """)
+        for category, count in cur.fetchall():
+            if category not in catalog:
+                raise ValueError(f"Unknown forum-missing category: {category}")
+            catalog[category] = int(count)
+    return catalog
 
 
 def check_arweave_pending(conn) -> list[Alert]:
@@ -999,36 +1052,32 @@ def check_arweave_wallet() -> list[Alert]:
 
 
 def check_forum_completeness(conn) -> list[Alert]:
-    alerts = []
-    with conn.cursor() as cur:
-        cur.execute("""
-            SELECT COUNT(*) FROM parliament_bills
-            WHERE status IN ('ACTIVE', 'WINDOW_24H', 'OPEN_END')
-              AND forum_topic_id IS NULL
-              AND id NOT LIKE 'DEMO-%%'
-              AND COALESCE(admin_hidden, FALSE) = FALSE
-              AND (source IS NULL OR source != 'ZK_CANARY')
-              AND NOT (
-                  source = 'DIAVGEIA'
-                  AND (
-                      LOWER(COALESCE(title_el, '')) LIKE ANY (ARRAY['%αμκα%', '%α.μ.κ.α%', '%amka%', '%ασθεν%', '%εοπυυ%', '%eopyy%'])
-                      OR LOWER(COALESCE(summary_short_el, '')) LIKE ANY (ARRAY['%αμκα%', '%α.μ.κ.α%', '%amka%', '%ασθεν%', '%εοπυυ%', '%eopyy%'])
-                      OR LOWER(COALESCE(summary_long_el, '')) LIKE ANY (ARRAY['%αμκα%', '%α.μ.κ.α%', '%amka%', '%ασθεν%', '%εοπυυ%', '%eopyy%'])
-                  )
-              )
-              AND (
-                  (COALESCE(source, 'PARLIAMENT') = 'PARLIAMENT'
-                   AND created_at < NOW() - INTERVAL '1 hour')
-                  OR
-                  (COALESCE(source, 'PARLIAMENT') != 'PARLIAMENT'
-                   AND created_at < NOW() - INTERVAL '6 hours')
-              )
-        """)
-        count = cur.fetchone()[0]
-        if count > 0:
-            alerts.append(Alert("forum_content_empty", "ekklesia-api", "warning",
-                                f"Forum: {count} Bills ohne Topic", True))
-    return alerts
+    catalog = get_forum_missing_catalog(conn)
+    logger.info("[FORUM_CATALOG] %s", json.dumps(catalog, sort_keys=True))
+
+    count = catalog["public_actionable"]
+    if count == 0:
+        return []
+
+    excluded = sum(
+        catalog[category]
+        for category in (
+            "technical_test",
+            "demo_legacy",
+            "operator_hidden",
+            "sensitive_diavgeia",
+            "sync_grace",
+            "lifecycle_not_eligible",
+        )
+    )
+    return [Alert(
+        "forum_content_empty",
+        "ekklesia-api",
+        "warning",
+        f"Forum: {count} öffentliche fällige Bills ohne Topic "
+        f"({excluded} katalogisiert, nicht alarmierend)",
+        True,
+    )]
 
 
 def check_scraper_jobs(r) -> list[Alert]:
