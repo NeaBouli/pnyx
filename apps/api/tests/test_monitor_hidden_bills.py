@@ -3,6 +3,8 @@ import sys
 import types
 from datetime import datetime, timedelta
 
+import pytest
+
 
 sys.modules.setdefault("psycopg2", types.SimpleNamespace(connect=lambda *args, **kwargs: None))
 sys.modules.setdefault("redis", types.SimpleNamespace(from_url=lambda *args, **kwargs: None))
@@ -43,32 +45,86 @@ class FakeConn:
         return self.cursor_obj
 
 
-def test_forum_missing_query_excludes_hidden_canary_bills():
+def test_forum_missing_query_selects_only_public_actionable_bills():
     cursor = FakeCursor(rows=[])
     alerts = monitor.check_forum_missing(FakeConn(cursor))
 
     assert alerts == []
     sql = cursor.statements[0]
-    assert "COALESCE(admin_hidden, FALSE) = FALSE" in sql
-    assert "(source IS NULL OR source != 'ZK_CANARY')" in sql
-    assert "source = 'DIAVGEIA'" in sql
-    assert "%ασθεν%" in sql
+    assert "category = 'public_actionable'" in sql
+    assert "THEN 'technical_test'" in sql
+    assert "THEN 'operator_hidden'" in sql
+    assert "THEN 'sensitive_diavgeia'" in sql
 
 
-def test_forum_completeness_query_excludes_hidden_canary_bills():
-    cursor = FakeCursor(one=0)
+def test_forum_completeness_catalogs_non_public_rows_without_alerting():
+    cursor = FakeCursor(rows=[
+        ("technical_test", 1),
+        ("operator_hidden", 3),
+        ("sensitive_diavgeia", 4),
+    ])
     alerts = monitor.check_forum_completeness(FakeConn(cursor))
 
     assert alerts == []
     sql = cursor.statements[0]
-    assert "COALESCE(admin_hidden, FALSE) = FALSE" in sql
-    assert "(source IS NULL OR source != 'ZK_CANARY')" in sql
-    assert "source = 'DIAVGEIA'" in sql
-    assert "%ασθεν%" in sql
+    assert "GROUP BY category" in sql
+    assert "forum_topic_id IS NULL" in sql
+
+
+def test_forum_catalog_has_stable_mutually_exclusive_categories():
+    cursor = FakeCursor(rows=[("public_actionable", 2), ("sync_grace", 5)])
+
+    catalog = monitor.get_forum_missing_catalog(FakeConn(cursor))
+
+    assert set(catalog) == set(monitor.FORUM_MISSING_CATEGORIES)
+    assert catalog["public_actionable"] == 2
+    assert catalog["sync_grace"] == 5
+    assert catalog["technical_test"] == 0
+    assert sum(catalog.values()) == 7
+
+
+def test_forum_catalog_rejects_unknown_categories():
+    cursor = FakeCursor(rows=[("uncatalogued", 1)])
+
+    with pytest.raises(ValueError, match="uncatalogued"):
+        monitor.get_forum_missing_catalog(FakeConn(cursor))
+
+
+def test_forum_completeness_alert_separates_public_and_catalogued_counts():
+    cursor = FakeCursor(rows=[
+        ("public_actionable", 2),
+        ("technical_test", 1),
+        ("sensitive_diavgeia", 7),
+    ])
+
+    alerts = monitor.check_forum_completeness(FakeConn(cursor))
+
+    assert len(alerts) == 1
+    assert alerts[0].type == "forum_content_empty"
+    assert "2 öffentliche fällige Bills" in alerts[0].message
+    assert "8 katalogisiert, nicht alarmierend" in alerts[0].message
+    assert "sensitive" not in alerts[0].message
+
+
+def test_forum_completeness_counts_future_non_actionable_categories(monkeypatch):
+    monkeypatch.setattr(
+        monitor,
+        "FORUM_MISSING_CATEGORIES",
+        (*monitor.FORUM_MISSING_CATEGORIES, "future_non_actionable"),
+    )
+    cursor = FakeCursor(rows=[
+        ("public_actionable", 1),
+        ("future_non_actionable", 3),
+    ])
+
+    alerts = monitor.check_forum_completeness(FakeConn(cursor))
+
+    assert len(alerts) == 1
+    assert "3 katalogisiert, nicht alarmierend" in alerts[0].message
 
 
 def test_forum_completeness_gives_diavgeia_backlog_longer_grace():
-    cursor = FakeCursor(one=0)
+    cursor = FakeCursor(rows=[])
     monitor.check_forum_completeness(FakeConn(cursor))
 
     sql = cursor.statements[0]
