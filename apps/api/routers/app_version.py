@@ -8,13 +8,13 @@ from fastapi import APIRouter
 router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
-LATEST_VERSION = "1.0.28"
-LATEST_VERSION_CODE = 57
+LATEST_VERSION = "1.0.29"
+LATEST_VERSION_CODE = 58
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v1.0.28 — Η ροή ψηφοφορίας Semaphore ZK δείχνει καθαρά την επιλογή που υποβλήθηκε, απενεργοποιεί τις άλλες επιλογές και εμφανίζει σαφή ελληνικά μηνύματα. Ενισχύθηκε επίσης ο συγχρονισμός πλήρων τίτλων, συνόψεων και εγγράφων των νέων νομοσχεδίων της Βουλής."
-RELEASE_NOTES_EN = "v1.0.28 — The Semaphore ZK voting flow now clearly shows the submitted choice, disables alternatives, and provides clear Greek messages. Synchronization of full titles, summaries, and documents for new Parliament bills was also strengthened."
+RELEASE_NOTES_EL = "v1.0.29 — Διορθώθηκε η εισαγωγή ελληνικών αριθμών κινητού κατά την επαλήθευση. Υποστηρίζονται με ασφάλεια οι μορφές +30, 0030 και η επικόλληση πλήρους αριθμού χωρίς εσφαλμένη απόρριψη ή περικοπή ψηφίων. Περιλαμβάνονται επίσης ενημερώσεις ασφάλειας εξαρτήσεων."
+RELEASE_NOTES_EN = "v1.0.29 — Fixed Greek mobile-number entry during verification. +30, 0030, and full-number paste formats are now handled safely without false rejection or digit truncation. Dependency security updates are also included."
 
 FDROID_URL = ""  # Not live yet — MR !38007 pending
 PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=ekklesia.gr"
