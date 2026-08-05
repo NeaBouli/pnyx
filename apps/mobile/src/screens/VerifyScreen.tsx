@@ -18,6 +18,7 @@ import { verifyIdentity } from "../lib/api";
 import { storeKeypair, storeNullifier } from "../lib/crypto-native";
 import { clearPendingProfileLocation, loadPendingProfileLocation } from "../lib/profile-location";
 import { isDemoNumber, activateDemo } from "../lib/demo";
+import { normalizeGreekMobileInput } from "../lib/phone";
 import { colors } from "../theme";
 
 type Props = StackScreenProps<RootStackParams, "Verify">;
@@ -27,15 +28,21 @@ export default function VerifyScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
 
   async function handleVerify() {
-    if (phone.length < 8) {
-      Alert.alert("Σφάλμα", "Εισάγετε έγκυρο αριθμό κινητού.");
+    const normalizedPhone = normalizeGreekMobileInput(phone);
+    if (!normalizedPhone) {
+      Alert.alert(
+        "Σφάλμα",
+        "Εισάγετε έγκυρο ελληνικό αριθμό κινητού (π.χ. +30 69X XXX XXXX).",
+      );
       return;
     }
+
+    setPhone(normalizedPhone);
 
     setLoading(true);
     try {
       // Demo mode for Play Store reviewer
-      if (isDemoNumber(phone)) {
+      if (isDemoNumber(normalizedPhone)) {
         const demoKey = "a".repeat(64);
         const demoPub = "b".repeat(64);
         await storeKeypair(demoKey, demoPub);
@@ -49,7 +56,7 @@ export default function VerifyScreen({ navigation }: Props) {
         return;
       }
 
-      const res = await verifyIdentity(phone);
+      const res = await verifyIdentity(normalizedPhone);
 
       // Αποθήκευση στο Secure Enclave
       await storeKeypair(res.private_key_hex, res.public_key_hex);
@@ -110,7 +117,7 @@ export default function VerifyScreen({ navigation }: Props) {
         placeholder="+30 69X XXX XXXX"
         keyboardType="phone-pad"
         autoComplete="tel"
-        maxLength={15}
+        maxLength={24}
       />
 
       <TouchableOpacity
