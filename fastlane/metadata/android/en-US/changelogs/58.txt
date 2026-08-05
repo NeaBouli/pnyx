@@ -1,0 +1,3 @@
+- Fixed Greek mobile verification for +30 and 0030 number formats.
+- Pasting a full number no longer causes false rejection or digit truncation.
+- Updated dependencies for stronger security.
