@@ -28,20 +28,20 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.28 |
-| versionCode | 57 |
+| Version | 1.0.29 |
+| versionCode | 58 |
 | Package | ekklesia.gr |
-| APK SHA256 | `d21c265cf4f330c79c7437744ed28d873480d2ab7631dfa5127c67e8148ef9a5` |
-| AAB SHA256 | `c5799c62f12949a1f250da118b87804a55d200d978ff35641a2a25037fde6d08` |
-| Server | `/opt/ekklesia/app/docs/download/ekklesia-latest.apk` |
-| Public URL | `https://ekklesia.gr/download/ekklesia-latest.apk` |
-| Build date | 2026-07-18 |
-| Release gate | PASS for code and artifacts — 149 Mobile tests, TypeScript, APK/AAB signature and channel audit, native Semaphore library present, GitHub CI/Security green. The vC57 UI-only delta still awaits an optional fresh S10 visual pass because the local Pixel 5 AVD remained offline; the unchanged ARM64 prover path was already verified on S10 in vC56 and the production Canary. |
-| Includes | Clearer Semaphore ZK vote-state UX and Greek duplicate/error messages; verified municipality/region bill visibility with nationwide Parliament access; stronger full-title/summary/document synchronization for new Parliament bills; server-authoritative vote eligibility; unified Tier-1 and Semaphore ZK counting; aggregate Diavgeia results; HTTPS read-only mirror fallback; guarded Parliament ZK rollout and eligible-scope Arweave publication |
+| APK SHA256 | `6a9b6e4a8c9a37153efe5e27676a8b88a044695d96c6fdc174bcb1ae420a793a` |
+| AAB SHA256 | `f5b29d3eaaa72fb2e031df6bebbaf12ff3706689819db3c8a3549f7794ab1ee1` |
+| Canonical APK URL | `https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/ekklesia-v1.0.29-vC58-DIRECT.apk` |
+| Legacy server alias | `https://ekklesia.gr/download/ekklesia-latest.apk` still serves v1.0.28 / vC57 until a separately controlled production deployment |
+| Build date | 2026-08-06 |
+| Release gate | PASS for code and artifacts — 168 Mobile tests, TypeScript, APK/AAB signatures, direct-upgrade certificate continuity, native Semaphore library, GitHub CI and Security green. Google Play confirms vC58 is available to selected Closed Testing users. |
+| Includes | Correct Greek mobile normalization for local, `+30` and `0030` formats; safe full-number paste handling; dependency security updates; existing server-authoritative voting, guarded Semaphore ZK and read-only mirror behavior remain unchanged. |
 
-Validation command:
+Validation command for the canonical v1.0.29 asset:
 
 ```bash
-sha256sum /opt/ekklesia/app/docs/download/ekklesia-latest.apk
-# Expected: d21c265cf4f330c79c7437744ed28d873480d2ab7631dfa5127c67e8148ef9a5
+curl -fsSL https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/ekklesia-v1.0.29-vC58-DIRECT.apk | sha256sum
+# Expected: 6a9b6e4a8c9a37153efe5e27676a8b88a044695d96c6fdc174bcb1ae420a793a
 ```

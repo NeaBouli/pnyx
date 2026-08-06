@@ -898,7 +898,7 @@ async def legacy_app_version():
         "minSupportedCode": MIN_REQUIRED_VERSION_CODE,
         "releaseNotes": {"el": RELEASE_NOTES_EL, "en": RELEASE_NOTES_EN},
         "downloadUrl": DIRECT_APK_URL,
-        "playStoreUrl": "https://play.google.com/store/apps/details?id=ekklesia.gr",
+        "playStoreUrl": PLAYSTORE_URL,
     }
 
 @app.get("/api/v1/admin/sentry/status")

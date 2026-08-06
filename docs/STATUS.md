@@ -1,15 +1,15 @@
 # Ekklesia.gr - Project Status
 
-Last verified: 2026-07-18
+Last verified: 2026-08-06
 
 ## Current release
 
 | Item | Status |
 |---|---|
 | Phase | Beta |
-| Android | v1.0.28 / versionCode 57 released |
-| Direct APK | Live on ekklesia.gr; SHA-256 verified |
-| Google Play | AAB submitted to Closed Testing review |
+| Android | v1.0.29 / versionCode 58 released |
+| Direct APK | GitHub Release published; SHA-256 and upgrade signature verified |
+| Google Play | vC58 available to selected Closed Testing users since 2026-08-06 |
 | iOS | Preparation only; no public build |
 | F-Droid | External MR !38007 pending |
 
@@ -24,23 +24,23 @@ Last verified: 2026-07-18
 - The direct APK and Google Play channels are kept separate so each channel receives compatible updates.
 - During a primary outage the mobile app can use the HTTPS mirror for read-only data; voting stays disabled until the primary is healthy.
 
-## vC57 release verification
+## vC58 release verification
 
-- Mobile Vitest: 149/149 passed; TypeScript passed.
-- Direct APK: v1.0.28 (57), `direct` channel, v2 signature valid, native ARM64 Semaphore library present.
-- Play AAB: v1.0.28 (57), `play` channel, JAR signature valid, native ARM64 Semaphore library present.
+- Mobile Vitest: 168/168 passed; TypeScript passed.
+- Direct APK: v1.0.29 (58), `direct` channel, v2 signature valid, native ARM64 Semaphore library present.
+- Direct APK signing certificate matches vC57, preserving the direct-install upgrade path.
+- Play AAB: v1.0.29 (58), `play` channel, JAR signature valid, native ARM64 Semaphore library present.
 - GitHub CI and Security Audit passed for the release commit.
-- Production API and web were rebuilt from the tagged commit; health, bills, forum, download hashes and unchanged DB counters were verified after deployment.
-- GitHub Release v1.0.28 is published as latest with checksum-verified APK and AAB assets.
-- The vC57 AAB is submitted to Google Play Closed Testing review; production access still depends on Google's tester and duration requirements.
-- The vC57 scope is limited to clearer Semaphore ZK vote-state UX plus the already-tested Parliament metadata synchronization hardening.
-- The local Pixel 5 AVD remained offline after cold boot; a fresh vC57 S10 visual pass is therefore still recommended. The unchanged native prover and production Canary were already verified on S10 before this UI-only release.
+- GitHub Release v1.0.29 is published as latest with checksum-verified APK and AAB assets.
+- Google Play confirms release 58 (1.0.29) was published to the Closed Testing Alpha track on 2026-08-06 and is available to selected testers.
+- The vC58 scope is limited to Greek mobile-number input normalization plus already-merged dependency security updates; production API, voting and ZK policy are unchanged.
+- No Android emulator was attached during the artifact verification; runtime confirmation continues through the active Closed Testing track.
 
 ## Deliberately gated or external
 
 - Alpha 0.1 official gov.gr holder verification is design-only (GH#141), pending official integration, DPIA, migration design, independent review and sandbox canary.
 - Off-site backup currently uses the separated sandbox fallback until funded dedicated storage is available.
 - F-Droid publication depends on external review and merge.
-- R8/ProGuard remains disabled; therefore no mapping file is produced for vC57. A future R8 production build requires a separate native/ZK regression gate and `mapping.txt` publication.
+- R8/ProGuard remains disabled; therefore no mapping file is produced for vC58. A future R8 production build requires a separate native/ZK regression gate and `mapping.txt` publication.
 
 Operational details and rollback history are maintained in the local, non-public agent bridge.
