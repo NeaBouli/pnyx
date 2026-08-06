@@ -8,8 +8,9 @@ import {
 
 describe("update channel resolver", () => {
   const payload = {
-    direct_apk_url: "https://ekklesia.gr/download/ekklesia-latest.apk",
-    playstore_url: "https://play.google.com/store/apps/details?id=ekklesia.gr",
+    direct_apk_url:
+      "https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/ekklesia-v1.0.29-vC58-DIRECT.apk",
+    playstore_url: "https://play.google.com/apps/testing/ekklesia.gr",
   };
 
   it("keeps Play builds on the Play Store update path", () => {

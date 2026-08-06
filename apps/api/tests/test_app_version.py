@@ -34,8 +34,12 @@ async def test_app_version_direct_apk_url_points_to_file() -> None:
 
     assert response.status_code == 200
     data = response.json()
-    assert data["direct_apk_url"] == "https://ekklesia.gr/download/ekklesia-latest.apk"
+    assert data["direct_apk_url"] == (
+        "https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/"
+        "ekklesia-v1.0.29-vC58-DIRECT.apk"
+    )
     assert not data["direct_apk_url"].endswith("/download/")
+    assert data["playstore_url"] == "https://play.google.com/apps/testing/ekklesia.gr"
 
 
 @pytest.mark.asyncio
@@ -45,5 +49,9 @@ async def test_legacy_version_download_url_matches_direct_apk_file() -> None:
 
     assert response.status_code == 200
     data = response.json()
-    assert data["downloadUrl"] == "https://ekklesia.gr/download/ekklesia-latest.apk"
+    assert data["downloadUrl"] == (
+        "https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/"
+        "ekklesia-v1.0.29-vC58-DIRECT.apk"
+    )
     assert not data["downloadUrl"].endswith("/download/")
+    assert data["playStoreUrl"] == "https://play.google.com/apps/testing/ekklesia.gr"
