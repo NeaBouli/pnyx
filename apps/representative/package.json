@@ -14,6 +14,7 @@
     "expo-local-authentication": "^55.0.14",
     "expo-secure-store": "^55.0.14",
     "expo-status-bar": "~3.0.9",
+    "image-size": "file:../../vendor/image-size/image-size-1.2.2-pnyx.0.tgz",
     "react": "19.1.0",
     "react-native": "0.81.5",
     "react-native-webview": "^13.16.1"
@@ -27,10 +28,10 @@
     "postcss": "8.5.23",
     "uuid": "11.1.1",
     "@expo/xcpretty": {
-      "js-yaml": "4.3.0"
+      "js-yaml": "4.3.1"
     },
     "@istanbuljs/load-nyc-config": {
-      "js-yaml": "3.15.0"
+      "js-yaml": "3.15.1"
     },
     "@babel/core": "7.29.7",
     "undici": "6.28.0",
@@ -48,6 +49,7 @@
       "ws": "7.5.11"
     },
     "metro": {
+      "image-size": "$image-size",
       "ws": "7.5.11"
     },
     "@expo/cli": {
