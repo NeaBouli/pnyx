@@ -30,15 +30,16 @@ A [Node](https://nodejs.org/en/) module to get dimensions of any image file
 
 ## Programmatic Usage
 
-```shell
-npm install image-size --save
+This repository uses the reviewed local security backport, not the public
+registry package. Keep this exact dependency in the consuming `package.json`:
+
+```json
+"image-size": "file:../../vendor/image-size/image-size-1.2.2-pnyx.0.tgz"
 ```
 
-or
-
-```shell
-yarn add image-size
-```
+Install it with the repository lockfile by running `npm ci` in the consuming
+workspace. Installing `image-size` from the public registry is unsupported for
+this backport.
 
 ### Synchronous
 
@@ -160,20 +161,11 @@ console.log(dimensions.orientation)
 
 ## Command-Line Usage (CLI)
 
-```shell
-npm install image-size --global
-```
-
-or
+Do not install the public registry package globally. From a consuming workspace
+that already installed the reviewed local package with `npm ci`, run:
 
 ```shell
-yarn global add image-size
-```
-
-followed by
-
-```shell
-image-size image1 [image2] [image3] ...
+npx --no-install image-size image1 [image2] [image3] ...
 ```
 
 ## Credits

@@ -395,7 +395,12 @@ async def verify_greek_number(phone: str) -> dict:
         fallback_was_queried = fallback.get("status") != "FALLBACK_NOT_CONFIGURED"
         providers_queried = ["primary", "fallback"] if fallback_was_queried else ["primary"]
         fallback["_providers_queried"] = providers_queried
-        if fallback.get("status") not in ("FALLBACK_NOT_CONFIGURED", "ERROR", "AUTH_ERROR"):
+        if fallback.get("status") not in (
+            "FALLBACK_NOT_CONFIGURED",
+            "ERROR",
+            "AUTH_ERROR",
+            "TIMEOUT",
+        ):
             return fallback
         else:
             logger.error(f"[MOD-01] Fallback also failed: {fallback.get('status')}")

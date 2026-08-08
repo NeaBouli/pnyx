@@ -276,7 +276,10 @@ async def test_unconfigured_fallback_is_not_counted_as_queried(monkeypatch) -> N
 
 
 @pytest.mark.asyncio
-async def test_failed_fallback_is_still_counted_as_queried(monkeypatch) -> None:
+@pytest.mark.parametrize("fallback_status", ["ERROR", "TIMEOUT"])
+async def test_failed_fallback_is_still_counted_as_queried(
+    monkeypatch, fallback_status: str
+) -> None:
     async def fake_primary(phone: str) -> dict:
         return {
             "valid": False,
@@ -286,7 +289,11 @@ async def test_failed_fallback_is_still_counted_as_queried(monkeypatch) -> None:
         }
 
     async def fake_fallback(phone: str) -> dict:
-        return {"valid": False, "status": "ERROR", "error": "provider error"}
+        return {
+            "valid": False,
+            "status": fallback_status,
+            "error": "provider error",
+        }
 
     async def enough_credits() -> int:
         return 100
