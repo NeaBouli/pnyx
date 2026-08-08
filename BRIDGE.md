@@ -10,7 +10,8 @@
 - The local `image-size@1.2.2-pnyx.0` backport remains linked to open Dependabot
   alerts #78–#81 because upstream has no published fixed release. The alerts are
   not dismissed or hidden; the backport is retired only when a maintained,
-  Metro-compatible fixed release exists.
+  Metro-compatible release contains equivalent fixes and passes the complete
+  repository CI and Security Audit.
 - No production, DNS, server, secret or Google Play mutation occurred.
 
 ## 2026-07-16 — Payment Projection Reconciliation Prepared (Codex)
