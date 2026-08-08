@@ -12,7 +12,25 @@
   not dismissed or hidden; the backport is retired only when a maintained,
   Metro-compatible release contains equivalent fixes and passes the complete
   repository CI and Security Audit.
-- No production, DNS, server, secret or Google Play mutation occurred.
+- Owner-approved API-only production rollout completed on 2026-08-08. The
+  production checkout fast-forwarded cleanly from `c010064` to current `main`
+  `0da7dbc`; no migration ran and no web, mobile, database, DNS, secret, IAM or
+  Google Play change was made.
+- The previous API image `c801db36a657` is retained as
+  `docker-api:rollback-hlr-c010064-20260808`. The running API image is
+  `d5ae1e32c0ef`; its `/packages/crypto/hlr.py` SHA-256 matches the server
+  checkout (`898f76be312e...`).
+- Pre-switch tests in the built image passed: HLR provider `16/16` and identity
+  usage `2/2`. Post-switch verification passed: public `/health`, HLR credits,
+  app-version and payment read endpoints return HTTP 200; MOD-01 is `ok`; the
+  API container has exit code 0 and restart count 0. All four accepted Greek
+  input formats normalize to the same E.164 value. No real phone number or
+  paid HLR query was used for verification.
+- Separate pre-existing operations findings remain open and were not caused by
+  this rollout: MOD-24 forum sync reports two Discourse 422 failures, and
+  `docker system df` reports a missing unrelated content blob
+  (`sha256:6858a8be...35ca1`). Neither finding affected API/HLR health; no image
+  cleanup or destructive Docker repair was attempted.
 
 ## 2026-07-16 — Payment Projection Reconciliation Prepared (Codex)
 
