@@ -21,3 +21,22 @@ The package API, supported formats, and all other distributed files are
 unchanged from `image-size@1.2.1`. Run
 `node --test security-regression.test.mjs` from this directory to verify the
 malformed HEIF, JXL, and ICNS inputs terminate and fail closed.
+
+## Monitoring and retirement
+
+GitHub Dependabot alerts `#78` through `#81` remain open because the dependency
+graph matches the original package name and the advisory range has no published
+patched version. They cover the two advisories above in the Mobile and
+Representative lockfiles. The alerts are intentionally not dismissed or
+suppressed, even though the reviewed local tarball contains the backported
+guards and the repository security audit passes.
+
+Do not rename the package or assign a version outside the advisory range solely
+to make these alerts disappear. Keeping the upstream package identity preserves
+future advisory visibility. Replace this backport when a maintained,
+Metro-compatible release contains equivalent fixes, then let the dependency
+graph close the alerts from the actual dependency change.
+
+The regression test covers zero-length and undersized non-zero HEIF/JXL boxes,
+plus zero-length and out-of-bounds ICNS entries. It must run against the
+installed tarball in both consuming workspaces before this backport is changed.

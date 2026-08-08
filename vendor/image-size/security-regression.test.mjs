@@ -53,6 +53,51 @@ const payloads = {
   },
 }
 
+function withUInt32BE(bytes, offset, value) {
+  const copy = [...bytes]
+  copy[offset] = (value >>> 24) & 0xff
+  copy[offset + 1] = (value >>> 16) & 0xff
+  copy[offset + 2] = (value >>> 8) & 0xff
+  copy[offset + 3] = value & 0xff
+  return copy
+}
+
+const testCases = [
+  ['heif zero-length box', payloads.heif],
+  [
+    'heif undersized non-zero box',
+    { ...payloads.heif, bytes: withUInt32BE(payloads.heif.bytes, 44, 7) },
+  ],
+  ['jxl zero-length box', payloads.jxl],
+  [
+    'jxl undersized non-zero box',
+    { ...payloads.jxl, bytes: withUInt32BE(payloads.jxl.bytes, 24, 7) },
+  ],
+  ['icns zero-length entry', payloads.icns],
+  [
+    'icns entry exceeds declared file length',
+    {
+      ...payloads.icns,
+      bytes: withUInt32BE(
+        withUInt32BE(payloads.icns.bytes, 4, 12),
+        12,
+        8,
+      ),
+    },
+  ],
+  [
+    'icns entry exceeds actual input length',
+    {
+      ...payloads.icns,
+      bytes: withUInt32BE(
+        withUInt32BE(payloads.icns.bytes, 4, 32),
+        12,
+        24,
+      ),
+    },
+  ],
+]
+
 function runInWorker(testCase) {
   return new Promise((resolve, reject) => {
     const worker = new Worker(
@@ -86,8 +131,8 @@ function runInWorker(testCase) {
   })
 }
 
-for (const [format, testCase] of Object.entries(payloads)) {
-  test(`${format} zero-length input terminates and fails closed`, async () => {
+for (const [name, testCase] of testCases) {
+  test(`${name} terminates and fails closed`, async () => {
     assert.deepEqual(await runInWorker(testCase), {
       status: 'rejected',
       message: testCase.expectedError,

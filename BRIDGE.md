@@ -1,5 +1,18 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-08-08 — HLR Fix Merged and Parser Backport Tracked (Codex)
+
+- PR #169 was squash-merged to `main` as `080c68e`; main CI and Security Audit
+  passed, including Python API, Crypto, all clients, dependency audit and secret
+  detection.
+- The Greek HLR correction is server-side. No Android source or release
+  metadata changed, so no APK/AAB rebuild or Google Play upload is required.
+- The local `image-size@1.2.2-pnyx.0` backport remains linked to open Dependabot
+  alerts #78–#81 because upstream has no published fixed release. The alerts are
+  not dismissed or hidden; the backport is retired only when a maintained,
+  Metro-compatible fixed release exists.
+- No production, DNS, server, secret or Google Play mutation occurred.
+
 ## 2026-07-16 — Payment Projection Reconciliation Prepared (Codex)
 
 - Codex completed another independent donation-boundary review and prepared retry-safe projection reconciliation for provider captures and later adjustments in PR #136.
