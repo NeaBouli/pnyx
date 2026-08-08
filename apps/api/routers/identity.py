@@ -55,21 +55,16 @@ async def _get_hlr_redis() -> aioredis.Redis:
         _hlr_redis = aioredis.from_url(url, decode_responses=True)
     return _hlr_redis
 
-async def _increment_hlr_usage() -> int:
-    """Increment usage for the currently active provider.
-
-    On failover (Trigger A: timeout/error), the primary provider already
-    consumed a credit before failing, so both counters must be incremented.
-    """
+async def _increment_hlr_usage(providers: list[str]) -> int:
+    """Increment the providers queried by this verification request."""
     r = await _get_hlr_redis()
-    failover_active = (await r.get("hlr:failover:active")) == "true"
-    failover_reason = await r.get("hlr:failover:reason") or ""
-    if failover_active:
-        if "timeout" in failover_reason or "error" in failover_reason:
-            await r.incr(HLR_PRIMARY_REDIS_KEY)
-        return await r.incr(HLR_FALLBACK_REDIS_KEY)
-    else:
-        return await r.incr(HLR_PRIMARY_REDIS_KEY)
+    usage = 0
+    for provider in dict.fromkeys(providers):
+        if provider == "primary":
+            usage = await r.incr(HLR_PRIMARY_REDIS_KEY)
+        elif provider == "fallback":
+            usage = await r.incr(HLR_FALLBACK_REDIS_KEY)
+    return usage
 
 async def _get_hlr_usage(key: str) -> int:
     r = await _get_hlr_redis()
@@ -185,7 +180,7 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
     hlr_result = await verify_greek_number(req.phone_number)
     # Track HLR usage (even failed lookups cost a credit if not DRY_RUN)
     if hlr_result.get("status") != "DRY_RUN":
-        await _increment_hlr_usage()
+        await _increment_hlr_usage(hlr_result.get("_providers_queried", ["primary"]))
     if not hlr_result["valid"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
