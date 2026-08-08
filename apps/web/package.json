@@ -24,7 +24,7 @@
     "react": "^19",
     "react-dom": "^19",
     "recharts": "^3.8.1",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.6.0"
   },
   "overrides": {
     "js-yaml": "4.3.1",
