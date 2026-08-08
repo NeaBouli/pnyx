@@ -11,7 +11,7 @@ from routers import identity
 @pytest.mark.asyncio
 async def test_verify_invalid_number(monkeypatch):
     """Festnetznummer wird abgelehnt"""
-    async def fake_increment_hlr_usage() -> int:
+    async def fake_increment_hlr_usage(_providers: list[str]) -> int:
         return 1
 
     monkeypatch.setattr(identity, "_increment_hlr_usage", fake_increment_hlr_usage)

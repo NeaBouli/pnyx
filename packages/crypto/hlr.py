@@ -19,6 +19,7 @@ Auto-Failover Trigger:
 A) Primary TIMEOUT oder ERROR
 B) Primary Credits < 50
 C) Primary HTTP 401/403 (Auth-Problem)
+D) Primary liefert fuer eine Mobilnummer nur einen temporaer unklaren Status
 
 @ai-anchor MOD01_HLR
 @update-hint Provider-Wechsel: hlr_lookup() url + auth anpassen
@@ -66,6 +67,19 @@ def is_valid_greek_mobile(phone: str) -> bool:
 
 HLRLOOKUP_COM_URL = "https://api.hlrlookup.com/apiv2/hlr"
 
+_PRIMARY_INDETERMINATE_STATUSES = frozenset({
+    "ABSENT_SUBSCRIBER",
+    "INCONCLUSIVE",
+    "NO_COVERAGE",
+    "NO_TELESERVICE_PROVISIONED",
+    "NOT_AVAILABLE_NETWORK_ONLY",
+})
+
+_TEMPORARY_VERIFICATION_ERROR = (
+    "Η κατάσταση του αριθμού δεν μπόρεσε να επιβεβαιωθεί προσωρινά. "
+    "Δοκιμάστε ξανά αργότερα."
+)
+
 
 async def hlr_lookup_hlrlookupcom(phone: str) -> dict:
     """
@@ -99,7 +113,14 @@ async def hlr_lookup_hlrlookupcom(phone: str) -> dict:
                 json={
                     "api_key": api_key,
                     "api_secret": api_secret,
-                    "requests": [{"telephone_number": normalized}]
+                    "requests": [{
+                        # hlrlookup.com expects E.164 digits without a leading plus.
+                        "telephone_number": normalized.removeprefix("+"),
+                        # Identity verification must not reuse or publish stale results.
+                        "cache_days_private": 0,
+                        "cache_days_global": 0,
+                        "save_to_cache": "NO",
+                    }]
                 },
                 headers={"Content-Type": "application/json"},
             )
@@ -139,6 +160,9 @@ async def hlr_lookup_hlrlookupcom(phone: str) -> dict:
             is_greek = country_iso in ("GRC", "GR") or normalized.startswith("+30")
             is_mobile = number_type == "MOBILE"
             is_live = live_status == "LIVE"
+            is_indeterminate = (
+                is_mobile and live_status in _PRIMARY_INDETERMINATE_STATUSES
+            )
 
             logger.info(
                 f"[MOD-01] HLR Primary: {normalized[:6]}XXXX "
@@ -150,7 +174,9 @@ async def hlr_lookup_hlrlookupcom(phone: str) -> dict:
                 "network": network,
                 "country": "GR" if is_greek else country_iso,
                 "status": live_status or "UNKNOWN",
+                "number_type": number_type or "UNKNOWN",
                 "error": None if (is_greek and is_mobile and is_live)
+                    else _TEMPORARY_VERIFICATION_ERROR if is_indeterminate
                     else "Ο αριθμός δεν είναι ενεργός ελληνικός αριθμός κινητού"
             }
 
@@ -306,12 +332,26 @@ async def _get_primary_credits_remaining() -> int:
         return 999  # Im Fehlerfall nicht triggern
 
 
+async def _publish_failover_state(reason: str) -> None:
+    """Publish the current failover for the dashboard without storing a number."""
+    try:
+        import redis.asyncio as aioredis
+        url = os.getenv("REDIS_URL", "redis://localhost:6379")
+        r = aioredis.from_url(url, decode_responses=True)
+        await r.setex("hlr:failover:reason", 3600, reason)
+        await r.setex("hlr:failover:active", 3600, "true")
+        await r.aclose()
+    except Exception as e:
+        logger.error(f"[MOD-01] Redis failover state error: {e}")
+
+
 async def verify_greek_number(phone: str) -> dict:
     """
     Hauptfunktion — wählt Provider, Auto-Failover bei:
     Trigger A: Primary TIMEOUT oder ERROR
     Trigger B: Primary Credits < 50
     Trigger C: Primary HTTP 401/403 (AUTH_ERROR)
+    Trigger D: Primary-Status fuer eine Mobilnummer ist temporaer unklar
     """
     provider = os.getenv("HLRLOOKUPS_PROVIDER", "hlrlookupcom")
     fallback_enabled = os.getenv("HLR_FALLBACK_ENABLED", "false").lower() == "true"
@@ -322,6 +362,9 @@ async def verify_greek_number(phone: str) -> dict:
     else:
         result = await hlr_lookup_hlrlookupcom(phone)
 
+    # Internal accounting metadata; phone numbers are never included.
+    result["_providers_queried"] = ["primary"]
+
     # Dry Run braucht keinen Failover
     if result.get("status") == "DRY_RUN":
         return result
@@ -329,31 +372,40 @@ async def verify_greek_number(phone: str) -> dict:
     # Failover-Trigger prüfen
     trigger_a = result.get("status") in ("TIMEOUT", "ERROR")
     trigger_c = result.get("status") == "AUTH_ERROR"
+    trigger_d = (
+        provider != "melrose"
+        and not result.get("valid", False)
+        and result.get("number_type") == "MOBILE"
+        and result.get("status") in _PRIMARY_INDETERMINATE_STATUSES
+    )
 
     credits_remaining = await _get_primary_credits_remaining()
-    trigger_b = credits_remaining < 50
+    trigger_b = not result.get("valid", False) and credits_remaining < 50
 
-    if fallback_enabled and (trigger_a or trigger_b or trigger_c):
+    if fallback_enabled and (trigger_a or trigger_b or trigger_c or trigger_d):
         reason = "timeout/error" if trigger_a else \
                  f"low_credits ({credits_remaining})" if trigger_b else \
-                 "auth_error"
+                 "auth_error" if trigger_c else \
+                 f"indeterminate_status ({result.get('status')})"
         logger.warning(f"[MOD-01] Auto-Failover → hlr-lookups.com — Grund: {reason}")
 
-        # Redis Warning setzen (für Dashboard / Credits-Endpoint)
-        try:
-            import redis.asyncio as aioredis
-            url = os.getenv("REDIS_URL", "redis://localhost:6379")
-            r = aioredis.from_url(url, decode_responses=True)
-            await r.setex("hlr:failover:reason", 3600, reason)
-            await r.setex("hlr:failover:active", 3600, "true")
-            await r.aclose()
-        except Exception as e:
-            logger.error(f"[MOD-01] Redis failover write error: {e}")
+        await _publish_failover_state(reason)
 
         fallback = await hlr_lookup(phone)
-        if fallback.get("status") not in ("FALLBACK_NOT_CONFIGURED", "ERROR", "AUTH_ERROR"):
+        fallback_was_queried = fallback.get("status") != "FALLBACK_NOT_CONFIGURED"
+        providers_queried = ["primary", "fallback"] if fallback_was_queried else ["primary"]
+        fallback["_providers_queried"] = providers_queried
+        if fallback.get("status") not in (
+            "FALLBACK_NOT_CONFIGURED",
+            "ERROR",
+            "AUTH_ERROR",
+            "TIMEOUT",
+        ):
             return fallback
         else:
             logger.error(f"[MOD-01] Fallback also failed: {fallback.get('status')}")
+
+        result["_providers_queried"] = providers_queried
+        return result
 
     return result

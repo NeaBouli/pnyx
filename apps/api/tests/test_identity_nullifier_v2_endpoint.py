@@ -87,7 +87,7 @@ async def setup_db(monkeypatch):
     async def fake_hlr(_phone: str) -> dict[str, object]:
         return {"valid": True, "network": "TEST", "country": "GR", "status": "LIVE", "error": None}
 
-    async def fake_increment_hlr_usage() -> int:
+    async def fake_increment_hlr_usage(_providers: list[str]) -> int:
         return 1
 
     async def fake_acquire_identity_verify_lock(_nullifier_hash: str) -> tuple[str, str]:
