@@ -13,13 +13,19 @@
   Metro-compatible release contains equivalent fixes and passes the complete
   repository CI and Security Audit.
 - Owner-approved API-only production rollout completed on 2026-08-08. The
-  production checkout fast-forwarded cleanly from `c010064` to current `main`
-  `0da7dbc`; no migration ran and no web, mobile, database, DNS, secret, IAM or
-  Google Play change was made.
-- The previous API image `c801db36a657` is retained as
-  `docker-api:rollback-hlr-c010064-20260808`. The running API image is
-  `d5ae1e32c0ef`; its `/packages/crypto/hlr.py` SHA-256 matches the server
-  checkout (`898f76be312e...`).
+  production checkout fast-forwarded cleanly from
+  `c01006408d5f4b52b09d4c83037bc1771bb3071f` to current `main`
+  `0da7dbca856fe6aada950bca9dcb34ec988f1e58`; no migration ran and no web,
+  mobile, database, DNS, secret, IAM or Google Play change was made.
+- The previous immutable API image
+  `sha256:c801db36a6573aaaed2f04f72804fca7e2799289fbe831a6692e81b743efbdd3`
+  is retained under the convenience tag
+  `docker-api:rollback-hlr-c010064-20260808`. The running immutable API image is
+  `sha256:d5ae1e32c0efd8644cbc827af094108ff7b7d4c230c08a65286f71c218d64b8c`.
+  Verification used `sha256sum packages/crypto/hlr.py` in the server checkout
+  and `docker exec ekklesia-api sha256sum /packages/crypto/hlr.py`; both
+  returned
+  `898f76be312ef3ec38596f6075c820d53f55fe58cc80599e89f4ba73e24c20d6`.
 - Pre-switch tests in the built image passed: HLR provider `16/16` and identity
   usage `2/2`. Post-switch verification passed: public `/health`, HLR credits,
   app-version and payment read endpoints return HTTP 200; MOD-01 is `ok`; the
