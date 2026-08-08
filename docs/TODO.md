@@ -87,6 +87,10 @@ Hetzner-Secrets gesetzt sind.
 - [ ] Domain ekklesia.gr → Hetzner
 - [ ] CORS für Prod-Domain
 - [ ] Externes Sicherheitsaudit
+- [ ] `image-size`-Backport ablösen, sobald ein gepflegtes, Metro-kompatibles
+      Release beide dokumentierten GHSAs behebt und vollständige Repository-CI
+      sowie Security Audit bestehen; Dependabot `#78`–`#81` bis dahin offen und
+      sichtbar halten
 
 ### Features
 - [ ] VAA auf Mobile portieren
