@@ -514,8 +514,8 @@ export default function SettingsPage() {
                 </span>
               </div>
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-600">{String('Play Store')}</span>
-                <a href="https://play.google.com/store/apps/details?id=ekklesia.gr" target="_blank" rel="noopener noreferrer"
+                <span className="text-sm text-gray-600">{String('Play Store (Closed Testing)')}</span>
+                <a href="https://play.google.com/apps/testing/ekklesia.gr" target="_blank" rel="noopener noreferrer"
                   className="text-sm text-blue-600 hover:underline">{String('Άνοιγμα')}</a>
               </div>
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
@@ -524,7 +524,8 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
                 <span className="text-sm text-gray-600">{String('Direct APK')}</span>
-                <span className="text-xs text-gray-400">{String('Σύντομα')}</span>
+                <a href="https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/ekklesia-v1.0.29-vC58-DIRECT.apk" target="_blank" rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:underline">{String('Λήψη v1.0.29')}</a>
               </div>
             </div>
           </div>

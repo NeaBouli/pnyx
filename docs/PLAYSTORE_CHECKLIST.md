@@ -3,7 +3,7 @@
 ## Before first upload
 - [ ] Google Play Console → Alle Apps → App erstellen
 - [ ] App name: εκκλησία
-- [ ] Package: gr.ekklesia.app
+- [ ] Package: ekklesia.gr
 - [ ] Category: Tools or Social
 - [ ] Content rating: fill out questionnaire
 - [ ] Privacy Policy URL: https://ekklesia.gr/wiki/privacy.html
@@ -36,14 +36,14 @@ npx eas build --platform android --profile production
 ## Two channels — never mix
 | Channel | Signing | Distribution | Script |
 |---------|---------|-------------|--------|
-| Direct APK | EAS / debug key | ekklesia.gr/download | `scripts/build-direct.sh` |
+| Direct APK | `ekklesia-playstore-key.jks` | GitHub Releases (v1.0.29); legacy `/download/ekklesia-latest.apk` remains v1.0.28/vC57 until deployment | `scripts/build-direct.sh` |
 | Google Play | `ekklesia-playstore-key.jks` | Play Store | `scripts/build-play.sh` |
 
 Users switching channels must reinstall (informed on first launch via ChannelNotice).
 
 ## Current config
 - `android.package`: `ekklesia.gr` (Play Store + Direct APK) / `gr.ekklesia.app` (F-Droid, iOS bundleIdentifier)
-- `android.versionCode`: 2
-- `version`: 1.0.0
+- `android.versionCode`: 58
+- `version`: 1.0.29
 - Flavors: `direct` (APK) + `play` (AAB)
 - Keystore backup: server `/opt/hetzner-migration/memory/ekklesia-playstore-key.jks`

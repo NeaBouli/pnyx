@@ -5,8 +5,9 @@ export interface UpdateUrlPayload {
   playstore_url?: string | null;
 }
 
-export const DIRECT_APK_URL = "https://ekklesia.gr/download/ekklesia-latest.apk";
-export const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=ekklesia.gr";
+export const DIRECT_APK_URL =
+  "https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/ekklesia-v1.0.29-vC58-DIRECT.apk";
+export const PLAY_STORE_URL = "https://play.google.com/apps/testing/ekklesia.gr";
 
 export function normalizeDistributionChannel(channel: DistributionChannel): "play" | "direct" {
   return channel === "play" ? "play" : "direct";

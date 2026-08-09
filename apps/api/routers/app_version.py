@@ -17,8 +17,8 @@ RELEASE_NOTES_EL = "v1.0.29 — Διορθώθηκε η εισαγωγή ελλ�
 RELEASE_NOTES_EN = "v1.0.29 — Fixed Greek mobile-number entry during verification. +30, 0030, and full-number paste formats are now handled safely without false rejection or digit truncation. Dependency security updates are also included."
 
 FDROID_URL = ""  # Not live yet — MR !38007 pending
-PLAYSTORE_URL = "https://play.google.com/store/apps/details?id=ekklesia.gr"
-DIRECT_APK_URL = "https://ekklesia.gr/download/ekklesia-latest.apk"
+PLAYSTORE_URL = "https://play.google.com/apps/testing/ekklesia.gr"
+DIRECT_APK_URL = "https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/ekklesia-v1.0.29-vC58-DIRECT.apk"
 
 
 @router.get("/version")

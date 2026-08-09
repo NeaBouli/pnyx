@@ -24,7 +24,7 @@
 ## Stack
 - apps/api      → Python FastAPI + Alembic + PostgreSQL + Redis
 - apps/web      → Next.js 16 (App Router, i18n el/en, Tailwind, recharts)
-- apps/mobile   → Expo / React Native (Android package `ekklesia.gr`, v1.0.3 / versionCode 30)
+- apps/mobile   → Expo / React Native (Android package `ekklesia.gr`, v1.0.29 / versionCode 58)
 - packages/crypto → Python + PyNaCl (Ed25519, Nullifier, HLR)
 - packages/db   → Alembic Migrations (9 Tabellen, 3 Enums)
 - infra/docker  → Docker Compose (services: api, web, db, redis, ollama, monitor, dashboard, docker-proxy)
