@@ -30,13 +30,13 @@ httpx==0.28.1
 arweave-python-client==1.0.19
 
 # Rate Limiting (MOD-11)
-slowapi>=0.1.9
+slowapi>=0.1.10
 
 # AI Scraper (MOD-10) — Ollama self-hosted, kein API Key nötig
-beautifulsoup4>=4.14.3
+beautifulsoup4>=4.15.0
 
 # Payments / Donations (MOD-18)
-stripe==15.1.0
+stripe==15.4.0
 
 # Scheduler (MOD-03 Cron)
 apscheduler==3.11.2
@@ -49,9 +49,9 @@ rapidfuzz>=3.14.5
 unidecode>=1.4.0
 
 # Testing
-pytest==9.0.3
+pytest==9.1.1
 pytest-asyncio==1.4.0
 aiosqlite==0.22.1
-anyio==4.14.0
+anyio==4.14.2
 respx>=0.23.1
 sentry-sdk[fastapi]>=2.60.0
