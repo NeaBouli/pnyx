@@ -15,16 +15,16 @@
     "@noble/curves": "^2.2.0",
     "@tanstack/react-query": "^5.101.4",
     "arweave": "^1.15.7",
-    "axios": "^1.18.0",
+    "axios": "^1.19.0",
     "clsx": "^2.1.1",
-    "lucide-react": "^1.16.0",
+    "lucide-react": "^1.28.0",
     "next": "16.2.11",
     "next-intl": "^4.11.0",
     "qrcode.react": "^4.2.0",
     "react": "^19",
     "react-dom": "^19",
-    "recharts": "^3.8.1",
-    "tailwind-merge": "^3.5.0"
+    "recharts": "^3.10.1",
+    "tailwind-merge": "^3.6.0"
   },
   "overrides": {
     "js-yaml": "4.3.1",
