@@ -42,6 +42,11 @@ https://ekklesia.gr/representative/index.html
 Validation command for the canonical v1.0.29 asset:
 
 ```bash
-curl -fsSL https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/ekklesia-v1.0.29-vC58-DIRECT.apk | sha256sum
-# Expected: 6a9b6e4a8c9a37153efe5e27676a8b88a044695d96c6fdc174bcb1ae420a793a
+(
+  set -euo pipefail
+  expected='6a9b6e4a8c9a37153efe5e27676a8b88a044695d96c6fdc174bcb1ae420a793a'
+  actual="$(curl -fsSL https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/ekklesia-v1.0.29-vC58-DIRECT.apk | sha256sum | awk '{print $1}')"
+  test "$actual" = "$expected"
+  printf 'APK SHA256 verified: %s\n' "$actual"
+)
 ```

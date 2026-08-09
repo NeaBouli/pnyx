@@ -36,7 +36,7 @@ npx eas build --platform android --profile production
 ## Two channels — never mix
 | Channel | Signing | Distribution | Script |
 |---------|---------|-------------|--------|
-| Direct APK | `ekklesia-playstore-key.jks` | ekklesia.gr/download and GitHub Releases | `scripts/build-direct.sh` |
+| Direct APK | `ekklesia-playstore-key.jks` | GitHub Releases (v1.0.29); legacy `/download/ekklesia-latest.apk` remains v1.0.28/vC57 until deployment | `scripts/build-direct.sh` |
 | Google Play | `ekklesia-playstore-key.jks` | Play Store | `scripts/build-play.sh` |
 
 Users switching channels must reinstall (informed on first launch via ChannelNotice).
