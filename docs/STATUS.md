@@ -1,6 +1,6 @@
 # Ekklesia.gr - Project Status
 
-Last verified: 2026-08-06
+Last verified: 2026-08-09
 
 ## Current release
 
@@ -33,7 +33,8 @@ Last verified: 2026-08-06
 - GitHub CI and Security Audit passed for the release commit.
 - GitHub Release v1.0.29 is published as latest with checksum-verified APK and AAB assets.
 - Google Play confirms release 58 (1.0.29) was published to the Closed Testing Alpha track on 2026-08-06 and is available to selected testers.
-- The vC58 scope is limited to Greek mobile-number input normalization plus already-merged dependency security updates; production API, voting and ZK policy are unchanged.
+- The vC58 mobile artifact scope is limited to Greek mobile-number input normalization plus already-merged dependency security updates; voting and ZK policy are unchanged.
+- The server-side Greek HLR status-normalization fix was deployed separately on 2026-08-08 and required no new APK or AAB.
 - No Android emulator was attached during the artifact verification; runtime confirmation continues through the active Closed Testing track.
 
 ## Deliberately gated or external
