@@ -54,4 +54,4 @@ pytest-asyncio==1.4.0
 aiosqlite==0.22.1
 anyio==4.14.2
 respx>=0.23.1
-sentry-sdk[fastapi]>=2.60.0
+sentry-sdk[fastapi]>=2.66.1
