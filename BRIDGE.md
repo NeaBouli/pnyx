@@ -1,5 +1,15 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-08-12 — Software Policy Separation Confirmed
+
+- The VLABS software no-voluntary-refund policy does not classify Ekklesia
+  voluntary support. Its processor refund/dispute handling and recipient,
+  tax/document decision remain a separate private VLABS gate.
+- Community-support intake remains paused. No collection, fiscal document,
+  provider, runtime or Production activation is authorized by this entry.
+- Detailed finance records remain only in private `NeaBouli/vlabs`; no
+  operational payment or identity values belong in this public Bridge.
+
 ## 2026-08-12 — Private Finance Ownership Refreshed
 
 - Detailed recipient, payment, fiscal, provider and reconciliation decisions
