@@ -1,5 +1,15 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-08-12 — Private Finance Ownership Refreshed
+
+- Detailed recipient, payment, fiscal, provider and reconciliation decisions
+  are maintained only in private `NeaBouli/vlabs` at
+  `docs/finance-integrations/projects/ekklesia.md`.
+- Community-support intake remains paused. This public entry does not authorize
+  collection, document issuance or any commercial/runtime activation.
+- Keep this public repository limited to generic paused status and the private
+  control-center pointer; do not add operational finance or identity data.
+
 ## 2026-08-08 — HLR Fix Merged and Parser Backport Tracked (Codex)
 
 - PR #169 was squash-merged to `main` as `080c68e`; main CI and Security Audit
