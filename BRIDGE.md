@@ -1,5 +1,16 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-08-13 — Public security audit correction — OPEN
+
+- The reported credential hits were semantically verified as Python test
+  function identifiers, not credential literals. No key rotation or history
+  rewrite is required from this finding.
+- Add a narrow semantic suppression for these identifiers without weakening
+  secret detection. Review any public operations metadata separately before
+  classifying it as sensitive.
+- Do not publish scanner snippets, matched values or infrastructure identifiers
+  in this public repository. This entry does not change payment/runtime state.
+
 ## 2026-08-12 — Software Policy Separation Confirmed
 
 - The VLABS software no-voluntary-refund policy does not classify Ekklesia
