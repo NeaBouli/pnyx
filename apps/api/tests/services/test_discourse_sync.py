@@ -747,6 +747,79 @@ async def test_scheduled_forum_sync_skips_when_another_worker_owns_lock(monkeypa
 
 
 @pytest.mark.asyncio
+async def test_scheduled_forum_sync_stops_before_lease_expiry(monkeypatch):
+    import asyncio
+    import database
+    import main as app_main
+    import services.scraper_state as scraper_state
+    import sqlalchemy.ext.asyncio as sqlalchemy_asyncio
+
+    events = []
+
+    async def fake_record_run(name):
+        events.append(("run", name, None))
+
+    async def fake_record_success(name):
+        events.append(("success", name, None))
+
+    async def fake_record_failure(name, error):
+        events.append(("failure", name, error))
+
+    async def slow_new_sync(_db):
+        await asyncio.sleep(0.05)
+        return {"selected": 0, "created": 0, "failed": 0}
+
+    async def unexpected_refresh(_db):
+        raise AssertionError("refresh must not run after the lease deadline")
+
+    class SessionContext:
+        async def __aenter__(self):
+            return object()
+
+        async def __aexit__(self, *_args):
+            return None
+
+    class SessionFactory:
+        def __call__(self):
+            return SessionContext()
+
+    lock_client = object()
+
+    async def fake_acquire_lock():
+        return lock_client, "owned-token"
+
+    async def fake_release_lock(client, token):
+        events.append(("release", str(client is lock_client), token))
+
+    monkeypatch.setattr(discourse_sync, "FORUM_SYNC_ENABLED", True)
+    monkeypatch.setattr(discourse_sync, "DISCOURSE_API_KEY", "test-key")
+    monkeypatch.setattr(discourse_sync, "sync_new_bills_to_forum", slow_new_sync)
+    monkeypatch.setattr(discourse_sync, "sync_changed_bills_to_forum", unexpected_refresh)
+    monkeypatch.setattr(scraper_state, "record_run", fake_record_run)
+    monkeypatch.setattr(scraper_state, "record_success", fake_record_success)
+    monkeypatch.setattr(scraper_state, "record_failure", fake_record_failure)
+    monkeypatch.setattr(database, "engine", object())
+    monkeypatch.setattr(app_main, "_acquire_forum_sync_lock", fake_acquire_lock)
+    monkeypatch.setattr(app_main, "_release_forum_sync_lock", fake_release_lock)
+    monkeypatch.setattr(app_main, "FORUM_SYNC_JOB_TIMEOUT_SECONDS", 0.01)
+    monkeypatch.setattr(
+        sqlalchemy_asyncio,
+        "async_sessionmaker",
+        lambda *_args, **_kwargs: SessionFactory(),
+    )
+
+    await app_main.scheduled_forum_sync()
+
+    assert events[0] == ("run", "forum_sync", None)
+    assert events[1] == (
+        "failure",
+        "forum_sync",
+        "Forum sync exceeded 0.01s lease deadline",
+    )
+    assert events[2] == ("release", "True", "owned-token")
+
+
+@pytest.mark.asyncio
 async def test_forum_sync_lock_uses_ttl_and_compare_delete(monkeypatch):
     import main as app_main
     import redis.asyncio as aioredis
