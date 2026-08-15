@@ -1,6 +1,9 @@
+import asyncio
 import logging
 import os
+import secrets
 from contextlib import asynccontextmanager
+from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -93,6 +96,51 @@ from routers import zk
 from routers import consensus_results
 
 scheduler = AsyncIOScheduler()
+FORUM_SYNC_LOCK_KEY = "scheduler:forum_sync:lock"
+FORUM_SYNC_LOCK_TTL_SECONDS = int(os.getenv("FORUM_SYNC_LOCK_TTL_SECONDS", "540"))
+FORUM_SYNC_JOB_TIMEOUT_SECONDS = max(FORUM_SYNC_LOCK_TTL_SECONDS - 30, 1)
+_RELEASE_LOCK_SCRIPT = """
+if redis.call('get', KEYS[1]) == ARGV[1] then
+  return redis.call('del', KEYS[1])
+end
+return 0
+"""
+
+
+async def _acquire_forum_sync_lock() -> tuple[Any | None, str | None]:
+    """Acquire a cross-worker lease for the forum sync scheduler job."""
+    import redis.asyncio as aioredis
+
+    redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
+    client = aioredis.from_url(redis_url, decode_responses=True)
+    token = secrets.token_urlsafe(24)
+    try:
+        acquired = await client.set(
+            FORUM_SYNC_LOCK_KEY,
+            token,
+            nx=True,
+            ex=FORUM_SYNC_LOCK_TTL_SECONDS,
+        )
+    except Exception:
+        await client.aclose()
+        raise
+    if acquired:
+        return client, token
+    await client.aclose()
+    return None, None
+
+
+async def _release_forum_sync_lock(client: Any, token: str) -> None:
+    """Release only the forum-sync lease owned by this worker."""
+    try:
+        await client.eval(_RELEASE_LOCK_SCRIPT, 1, FORUM_SYNC_LOCK_KEY, token)
+    except Exception as exc:
+        logger.warning("[Forum] Could not release forum-sync lease: %s", exc)
+    finally:
+        try:
+            await client.aclose()
+        except Exception as exc:
+            logger.warning("[Forum] Could not close forum-sync Redis client: %s", exc)
 
 
 async def scheduled_scrape():
@@ -376,27 +424,42 @@ async def scheduled_forum_sync():
         await record_success(name)
         logger.debug("[Forum] Sync disabled — recording idle state")
         return
-    await record_run(name)
-    from database import engine
-    from sqlalchemy.ext.asyncio import async_sessionmaker
-    session_factory = async_sessionmaker(engine, expire_on_commit=False)
+    lock_client = None
+    lock_token = None
     try:
-        async with session_factory() as db:
-            creation_stats = await sync_new_bills_to_forum(db)
-            refresh_stats = await sync_changed_bills_to_forum(db)
-            if creation_stats["created"] or creation_stats["failed"]:
-                logger.info("[Forum] New topic sync: %s", creation_stats)
-            if refresh_stats["refreshed"] or refresh_stats["failed"]:
-                logger.info("[Forum] Existing topic refresh: %s", refresh_stats)
-            if creation_stats["failed"] or refresh_stats["failed"]:
-                raise RuntimeError(
-                    "Forum sync completed with failures: "
-                    f"new={creation_stats['failed']}, refresh={refresh_stats['failed']}"
-                )
+        lock_client, lock_token = await _acquire_forum_sync_lock()
+        if not lock_token:
+            logger.debug("[Forum] Another worker owns the forum-sync lease — skipping")
+            return
+        await record_run(name)
+        from database import engine
+        from sqlalchemy.ext.asyncio import async_sessionmaker
+        session_factory = async_sessionmaker(engine, expire_on_commit=False)
+        async with asyncio.timeout(FORUM_SYNC_JOB_TIMEOUT_SECONDS):
+            async with session_factory() as db:
+                creation_stats = await sync_new_bills_to_forum(db)
+                refresh_stats = await sync_changed_bills_to_forum(db)
+                if creation_stats["created"] or creation_stats["failed"]:
+                    logger.info("[Forum] New topic sync: %s", creation_stats)
+                if refresh_stats["refreshed"] or refresh_stats["failed"]:
+                    logger.info("[Forum] Existing topic refresh: %s", refresh_stats)
+                if creation_stats["failed"] or refresh_stats["failed"]:
+                    raise RuntimeError(
+                        "Forum sync completed with failures: "
+                        f"new={creation_stats['failed']}, refresh={refresh_stats['failed']}"
+                    )
         await record_success(name)
     except Exception as e:
-        logger.error("[Forum] Sync failed: %s", e)
-        await record_failure(name, str(e))
+        error = (
+            f"Forum sync exceeded {FORUM_SYNC_JOB_TIMEOUT_SECONDS}s lease deadline"
+            if isinstance(e, TimeoutError)
+            else str(e)
+        )
+        logger.error("[Forum] Sync failed: %s", error)
+        await record_failure(name, error)
+    finally:
+        if lock_client is not None and lock_token is not None:
+            await _release_forum_sync_lock(lock_client, lock_token)
 
 
 async def scheduled_bill_lifecycle():
