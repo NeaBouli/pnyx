@@ -37,6 +37,7 @@ FORUM_REFRESH_INTERVAL_SECONDS = int(os.getenv("FORUM_REFRESH_INTERVAL_SECONDS",
 DISCOURSE_RATE_LIMIT_RETRIES = int(os.getenv("DISCOURSE_RATE_LIMIT_RETRIES", "3"))
 
 _category_cache: dict[str, int] = {}
+_MAX_DISCOURSE_TITLE_TOKEN_LENGTH = 45
 
 
 def _headers() -> dict:
@@ -209,6 +210,14 @@ async def _build_topic_title(bill: ParliamentBill, db: AsyncSession) -> str:
         prefix = "Διαύγεια" if source == "DIAVGEIA" else "Βουλή"
 
     formatted = f"[{prefix}] {title}"
+    if any(
+        len(token) > _MAX_DISCOURSE_TITLE_TOKEN_LENGTH
+        for token in formatted.split()
+    ):
+        identifier = getattr(bill, "diavgeia_ada", None) or bill.id
+        if source == "DIAVGEIA":
+            return f"[Διαύγεια] Απόφαση — ΑΔΑ {identifier}"[:255]
+        return f"[Βουλή] Νομοσχέδιο — {identifier}"[:255]
     return formatted[:255]
 
 
