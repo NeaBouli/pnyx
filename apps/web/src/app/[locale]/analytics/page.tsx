@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useLocale } from "next-intl";
 import Link from "next/link";
 import { analytics, exportUrls } from "@/lib/api";
+import PublicDataNav from "@/components/PublicDataNav";
 
 export default function AnalyticsPage() {
   const locale = useLocale();
@@ -34,12 +35,8 @@ export default function AnalyticsPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-2xl mx-auto px-6 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <Link href="bills" className="text-blue-600 text-sm hover:text-blue-700 font-medium">
-            ← {el("Νομοσχέδια", "Bills")}
-          </Link>
-          <h1 className="text-sm font-bold text-gray-600">{el("Αναλυτικά Στοιχεία", "Analytics")}</h1>
-        </div>
+        <PublicDataNav />
+        <h1 className="mb-6 text-2xl font-bold text-gray-900">{el("Αναλυτικά Στοιχεία", "Analytics")}</h1>
         {/* Stats */}
         {overview && (
           <div className="grid grid-cols-3 gap-3 mb-8">

@@ -1,6 +1,6 @@
 # Ekklesia.gr - Project Status
 
-Last verified: 2026-08-09
+Last verified: 2026-08-20
 
 ## Current release
 
@@ -11,7 +11,7 @@ Last verified: 2026-08-09
 | Direct APK | GitHub Release published; SHA-256 and upgrade signature verified |
 | Google Play | vC58 available to selected Closed Testing users since 2026-08-06 |
 | iOS | Preparation only; no public build |
-| F-Droid | External MR !38007 pending |
+| F-Droid | v1.0.29 / versionCode 584 published in the main F-Droid repository |
 
 ## Verified product behavior
 
@@ -41,7 +41,7 @@ Last verified: 2026-08-09
 
 - Alpha 0.1 official gov.gr holder verification is design-only (GH#141), pending official integration, DPIA, migration design, independent review and sandbox canary.
 - Off-site backup currently uses the separated sandbox fallback until funded dedicated storage is available.
-- F-Droid publication depends on external review and merge.
+- F-Droid MR !38007 is merged and v1.0.29 (584) is publicly available from the main repository.
 - R8/ProGuard remains disabled; therefore no mapping file is produced for vC58. A future R8 production build requires a separate native/ZK regression gate and `mapping.txt` publication.
 
 Operational details and rollback history are maintained in the local, non-public agent bridge.

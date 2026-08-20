@@ -20,12 +20,13 @@ from sqlalchemy import select, func
 from database import get_db
 from models import ParliamentBill, CitizenVote, BillStatus, VoteChoice, Party
 from services.bill_visibility import public_bill_filter
+from routers.voting import compute_divergence
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/export", tags=["MOD-14 Data Export"])
 
 
-async def get_all_results(db: AsyncSession) -> list[dict]:
+async def get_all_results(db: AsyncSession, min_votes: int = 0) -> list[dict]:
     """Aggregierte Ergebnisse aller Bills."""
     result = await db.execute(
         select(ParliamentBill).where(public_bill_filter()).order_by(
@@ -34,24 +35,37 @@ async def get_all_results(db: AsyncSession) -> list[dict]:
     )
     bills = result.scalars().all()
 
+    vote_result = await db.execute(
+        select(CitizenVote.bill_id, CitizenVote.vote, func.count(CitizenVote.id))
+        .group_by(CitizenVote.bill_id, CitizenVote.vote)
+    )
+    vote_counts: dict[str, dict[VoteChoice, int]] = {}
+    for bill_id, vote, count in vote_result.all():
+        vote_counts.setdefault(bill_id, {})[vote] = count
+
     rows = []
     for bill in bills:
-        yes     = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill.id, CitizenVote.vote == VoteChoice.YES)) or 0
-        no      = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill.id, CitizenVote.vote == VoteChoice.NO)) or 0
-        abstain = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill.id, CitizenVote.vote == VoteChoice.ABSTAIN)) or 0
-        total = yes + no + abstain
+        counts = vote_counts.get(bill.id, {})
+        yes = counts.get(VoteChoice.YES, 0)
+        no = counts.get(VoteChoice.NO, 0)
+        abstain = counts.get(VoteChoice.ABSTAIN, 0)
+        unknown = counts.get(VoteChoice.UNKNOWN, 0)
+        total = yes + no + abstain + unknown
+        if total < min_votes:
+            continue
 
         def pct(n): return round(n / total * 100, 1) if total > 0 else 0.0
 
-        divergence = None
+        divergence = compute_divergence(
+            yes, no, abstain, bill.party_votes_parliament, unknown
+        )
         parliament_result = None
-        if bill.party_votes_parliament:
-            parl_yes = sum(1 for v in bill.party_votes_parliament.values() if v in ("ΝΑΙ", "YES"))
-            parl_no  = sum(1 for v in bill.party_votes_parliament.values() if v in ("ΟΧΙ", "NO"))
-            passed = parl_yes >= parl_no
-            parliament_result = "APPROVED" if passed else "REJECTED"
-            if total > 0:
-                divergence = round(abs((yes / total) - (1.0 if passed else 0.0)), 3)
+        if divergence is not None:
+            parliament_result = (
+                "APPROVED"
+                if divergence.parliament_result == "ΕΓΚΡΙΘΗΚΕ"
+                else "REJECTED"
+            )
 
         rows.append({
             "bill_id":              bill.id,
@@ -64,11 +78,12 @@ async def get_all_results(db: AsyncSession) -> list[dict]:
             "citizen_yes":          yes,
             "citizen_no":           no,
             "citizen_abstain":      abstain,
+            "citizen_unknown":      unknown,
             "citizen_total":        total,
             "yes_pct":              pct(yes),
             "no_pct":               pct(no),
             "abstain_pct":          pct(abstain),
-            "divergence_score":     divergence if divergence is not None else "",
+            "divergence_score":     divergence.score if divergence is not None else "",
             "arweave_tx_id":        bill.arweave_tx_id or "",
             "arweave_url":          f"https://arweave.net/{bill.arweave_tx_id}" if bill.arweave_tx_id else "",
         })
@@ -104,9 +119,12 @@ async def export_bills_csv(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/results.json")
-async def export_results_json(db: AsyncSession = Depends(get_db)):
+async def export_results_json(
+    min_votes: int = Query(0, ge=0, description="Minimum aggregated citizen votes"),
+    db: AsyncSession = Depends(get_db),
+):
     """Alle Abstimmungsergebnisse als JSON. Lizenz: CC BY 4.0"""
-    rows = await get_all_results(db)
+    rows = await get_all_results(db, min_votes=min_votes)
 
     return JSONResponse(
         content={
