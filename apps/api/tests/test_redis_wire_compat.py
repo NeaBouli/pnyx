@@ -6,6 +6,8 @@ from uuid import uuid4
 import pytest
 import redis.asyncio as aioredis
 
+from ip_utils import redis_fixed_window_limit
+
 
 @pytest.mark.asyncio
 async def test_real_redis_production_command_shapes() -> None:
@@ -18,6 +20,7 @@ async def test_real_redis_production_command_shapes() -> None:
         "lock": f"{prefix}:lock",
         "value": f"{prefix}:value",
         "counter": f"{prefix}:counter",
+        "fixed_window": f"{prefix}:fixed-window",
         "hash": f"{prefix}:hash",
         "list": f"{prefix}:list",
         "quarantine": f"{prefix}:quarantine",
@@ -45,6 +48,14 @@ async def test_real_redis_production_command_shapes() -> None:
         assert await client.incr(keys["counter"]) == 1
         assert await client.incrby(keys["counter"], 2) == 3
         assert await client.incrbyfloat(keys["counter"], "0.25") == 3.25
+
+        assert await redis_fixed_window_limit(
+            client,
+            keys["fixed_window"],
+            limit=2,
+            window_seconds=30,
+        ) == 1
+        assert await client.ttl(keys["fixed_window"]) > 0
 
         assert await client.hset(keys["hash"], "field", "value") == 1
         assert await client.hset(keys["hash"], mapping={"other": "two"}) == 1
