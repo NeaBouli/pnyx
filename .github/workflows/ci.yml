@@ -17,7 +17,7 @@ jobs:
 
     services:
       redis:
-        image: redis:7-alpine
+        image: redis:8.10-alpine
         ports:
           - 6379:6379
         options: >-
@@ -98,10 +98,10 @@ jobs:
             verify: npm run lint && npm run typecheck && npm run build
           - name: Mobile
             path: apps/mobile
-            verify: npm run typecheck && npm test
+            verify: npx --no-install expo install --check && npm run typecheck && npm test
           - name: Representative
             path: apps/representative
-            verify: npm run typecheck
+            verify: npx --no-install expo install --check && npm run typecheck
           - name: Crypto-TS
             path: packages/crypto
             verify: npm run typecheck && npm test

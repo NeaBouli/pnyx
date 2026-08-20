@@ -6,16 +6,16 @@
 
 | PR | Package | Von | Zu | Aufwand | Priorität |
 |----|---------|-----|----|---------|-----------|
-| #22 | redis (Python) | 5.0.8 | 7.4.0 | Mittel | 2 |
+| #22 | redis (Python + Server) | 5.0.8 / 7 | 8.1.0 / 8.10 | Abgeschlossen | - |
 | #28 | next | 14.2.35 | 16.2.3 | Gross | 5 |
 | #30 | eslint-config-next | 14.2.35 | 16.2.3 | Gross | 5 |
 
 ## Migrationsreihenfolge
 
-1. **#22 — Redis 7** — MITTEL
-   - Async API-Änderungen, Connection-Pool Breaking Changes
-   - `apps/api/` betroffen — alle Redis-Calls prüfen
-   - Separat testbar, kein Frontend-Impact
+1. **#22 — Redis 8.10** — ABGESCHLOSSEN
+   - API und Monitor verwenden redis-py 8.1.0.
+   - CI und Compose testen beziehungsweise verwenden Redis 8.10.
+   - RDB-Vorabsicherung und Redis-7-Rollback sind im Handover dokumentiert.
 
 2. **#28 + #30 — Next.js 16 + eslint-config-next 16** — GROSS
    - Erfordert React 19 (concurrent features, use() Hook)

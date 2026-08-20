@@ -27,7 +27,7 @@
 ekklesia-api       — FastAPI (port 8000 internal)
 ekklesia-web       — Next.js 16 (port 3000 internal)
 ekklesia-db        — PostgreSQL 15-alpine (port 5432 internal)
-ekklesia-redis     — Redis 7-alpine (port 6379 internal)
+ekklesia-redis     — Redis 8.10-alpine (port 6379 internal)
 ekklesia-ollama    — Ollama llama3.2:3b (port 11434 internal)
 traefik-central    — Traefik v3.6 (ports 80, 443 external)
 listmonk           — Newsletter (port 9000 internal)

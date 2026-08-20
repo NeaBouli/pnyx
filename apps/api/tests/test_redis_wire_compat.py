@@ -4,9 +4,44 @@ import os
 from uuid import uuid4
 
 import pytest
+import redis
 import redis.asyncio as aioredis
 
 from ip_utils import redis_fixed_window_limit
+
+
+def test_real_redis_monitor_command_shapes() -> None:
+    """Cover the synchronous command forms used by the monitor service."""
+    redis_url = os.getenv("REDIS_URL")
+    if not redis_url:
+        pytest.skip("REDIS_URL is required for the wire compatibility test")
+
+    prefix = f"test:redis-monitor-wire:{uuid4().hex}"
+    lock_key = f"{prefix}:lock"
+    state_key = f"{prefix}:state"
+    active_key = f"{prefix}:active"
+    counter_key = f"{prefix}:counter"
+    delete_key = f"{prefix}:delete"
+    client = redis.from_url(redis_url, decode_responses=True)
+
+    try:
+        assert client.ping() is True
+        assert client.set(lock_key, "1", ex=30, nx=True) is True
+        assert client.set(lock_key, "2", ex=30, nx=True) is None
+        assert client.set(state_key, '{"status":"active"}', ex=30) is True
+        assert client.get(state_key) == '{"status":"active"}'
+        assert client.sadd(active_key, "one", "two") == 2
+        assert client.smembers(active_key) == {"one", "two"}
+        assert client.srem(active_key, "one") == 1
+        assert client.incr(counter_key) == 1
+        assert client.expire(counter_key, 30) is True
+        assert client.ttl(counter_key) > 0
+        assert client.set(delete_key, "remove", ex=30) is True
+        assert client.delete(delete_key) == 1
+        assert client.get(delete_key) is None
+    finally:
+        client.delete(lock_key, state_key, active_key, counter_key, delete_key)
+        client.close()
 
 
 @pytest.mark.asyncio
