@@ -71,8 +71,8 @@ Hetzner-Secrets gesetzt sind.
 
 ### Landing Page
 - [x] App-Download-Buttons deaktiviert (2026-04-09) — alle 4 (App Store, Android, Google Play, F-Droid) auf "Σύντομα/Coming soon"
-- [ ] App-Buttons reaktivieren wenn Mobile App komplett getestet + user-ready
-- [ ] F-Droid Repo einrichten + APK publizieren
+- [x] App-Buttons für Direct APK, Google Play Closed Testing und F-Droid reaktiviert
+- [x] F-Droid-Metadaten gemergt und APK v1.0.29 / vC584 publiziert
 
 ---
 

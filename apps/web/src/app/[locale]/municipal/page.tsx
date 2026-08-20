@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useLocale } from "next-intl";
-import Link from "next/link";
 import { municipal, type ConsensusRepresentationResponse } from "@/lib/api";
+import PublicDataNav from "@/components/PublicDataNav";
 
 interface Periferia {
   id: number;
@@ -112,17 +112,8 @@ export default function MunicipalPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-3xl mx-auto px-6 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <Link href="bills" className="text-blue-600 text-sm hover:text-blue-700 font-medium">
-            ← {t("Νομοσχέδια", "Bills")}
-          </Link>
-          <div className="flex gap-3 items-center">
-            <Link href="mp" className="text-xs text-gray-400 hover:text-blue-600 transition-colors">
-              {t("Κόμματα", "Parties")}
-            </Link>
-            <h1 className="text-sm font-bold text-gray-600">{t("Τοπική Αυτοδιοίκηση", "Municipal Governance")}</h1>
-          </div>
-        </div>
+        <PublicDataNav />
+        <h1 className="mb-2 text-2xl font-bold text-gray-900">{t("Τοπική Αυτοδιοίκηση", "Municipal Governance")}</h1>
 
         <p className="text-gray-500 text-sm mb-4">
           {t(

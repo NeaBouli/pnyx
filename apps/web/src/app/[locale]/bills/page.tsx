@@ -5,11 +5,12 @@ import { useLocale } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ekklesia, municipal, Bill, BillQueryParams } from "@/lib/api";
+import PublicDataNav from "@/components/PublicDataNav";
 import StatusBadge from "@/components/StatusBadge";
 import RelevanceButtons from "@/components/RelevanceButtons";
 
-type Periferia = { id: number; name_el: string };
-type Dimos = { id: number; name_el: string };
+type Periferia = { id: number; name_el: string; name_en: string | null };
+type Dimos = { id: number; name_el: string; name_en: string | null };
 
 const STATUS_FILTERS = [
   { key: "",                label_el: "Όλα",             label_en: "All" },
@@ -42,52 +43,48 @@ export default function BillsPage() {
   const [error, setError] = useState<string | null>(null);
   const [periferiaList, setPeriferiaList] = useState<Periferia[]>([]);
   const [dimosList, setDimosList] = useState<Dimos[]>([]);
-  const [regionSearch, setRegionSearch] = useState("");
-  const [dimosSearch, setDimosSearch] = useState("");
   const [selectedPeriferia, setSelectedPeriferia] = useState<number | null>(null);
-  const [selectedPeriferiaName, setSelectedPeriferiaName] = useState("");
   const [selectedDimos, setSelectedDimos] = useState<number | null>(null);
-  const [selectedDimosName, setSelectedDimosName] = useState("");
   const requestSequence = useRef(0);
+  const dimosRequestSequence = useRef(0);
 
   // Sync URL ?status= param on mount and navigation
   useEffect(() => {
     const urlStatus = searchParams.get("status") || "";
     if (urlStatus && urlStatus !== statusFilter) {
       setStatusFilter(urlStatus);
+      setPage(1);
     }
   }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    fetch("https://api.ekklesia.gr/api/v1/periferia")
-      .then(r => r.json()).then(setPeriferiaList).catch(() => {});
+    municipal.periferias().then(setPeriferiaList).catch(() => setPeriferiaList([]));
   }, []);
 
   useEffect(() => {
+    const requestId = ++dimosRequestSequence.current;
     if (selectedPeriferia === null) {
       setDimosList([]);
       setSelectedDimos(null);
-      setSelectedDimosName("");
-      setDimosSearch("");
       return;
     }
 
     municipal.dimoi(selectedPeriferia)
-      .then(setDimosList)
-      .catch(() => setDimosList([]));
+      .then((rows) => {
+        if (requestId === dimosRequestSequence.current) setDimosList(rows);
+      })
+      .catch(() => {
+        if (requestId === dimosRequestSequence.current) setDimosList([]);
+      });
   }, [selectedPeriferia]);
 
   useEffect(() => {
     if (levelFilter !== "REGIONAL" && levelFilter !== "MUNICIPAL") {
       setSelectedPeriferia(null);
-      setSelectedPeriferiaName("");
-      setRegionSearch("");
     }
 
     if (levelFilter !== "MUNICIPAL") {
       setSelectedDimos(null);
-      setSelectedDimosName("");
-      setDimosSearch("");
     }
   }, [levelFilter]);
 
@@ -143,6 +140,7 @@ export default function BillsPage() {
       })
       .catch(() => {
         if (requestId === requestSequence.current) {
+          setBills([]);
           setError(locale === "el" ? "Σφάλμα σύνδεσης API" : "API connection error");
         }
       })
@@ -154,9 +152,6 @@ export default function BillsPage() {
   const hasNextPage = bills.length > PAGE_SIZE;
   const paginated = bills.slice(0, PAGE_SIZE);
 
-  // Reset page when filters change
-  useEffect(() => { setPage(1); }, [statusFilter, levelFilter, search, selectedPeriferia, selectedDimos]);
-
   const titleKey = locale === "el" ? "title_el" : "title_en";
   const pillKey  = locale === "el" ? "pill_el"  : "pill_en";
   const shortKey = locale === "el" ? "summary_short_el" : "summary_short_en";
@@ -165,25 +160,12 @@ export default function BillsPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-3xl mx-auto px-6 py-10">
+        <PublicDataNav />
         {/* Header */}
-        <div className="flex justify-between items-center mb-2">
+        <div className="mb-2">
           <h1 className="text-3xl font-black text-gray-900">
             {isEl ? "Νομοσχέδια" : "Parliament Bills"}
           </h1>
-          <div className="flex gap-3 text-sm items-center">
-            <Link href="results" className="text-xs text-gray-400 hover:text-blue-600 transition-colors">
-              {isEl ? "Αποτελέσματα" : "Results"}
-            </Link>
-            <Link href="mp" className="text-xs text-gray-400 hover:text-blue-600 transition-colors">
-              {isEl ? "Κόμματα" : "Parties"}
-            </Link>
-            <Link href="municipal" className="text-xs text-gray-400 hover:text-blue-600 transition-colors">
-              {isEl ? "Δήμοι" : "Municipal"}
-            </Link>
-            <Link href="analytics" className="text-xs text-gray-400 hover:text-blue-600 transition-colors">
-              Analytics
-            </Link>
-          </div>
         </div>
         <p className="text-gray-500 mb-6">
           {isEl
@@ -196,115 +178,10 @@ export default function BillsPage() {
           <input
             type="text"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setPage(1); }}
             placeholder={isEl ? "Αναζήτηση νομοσχεδίου..." : "Search bills..."}
             className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
           />
-        </div>
-
-        {/* Region Typeahead */}
-        <div className="mb-4 relative">
-          {selectedPeriferia ? (
-            <>
-              <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-300 rounded-xl text-sm">
-                <span className="text-blue-700 font-semibold">📍 {selectedPeriferiaName}</span>
-                <button
-                  onClick={() => {
-                    setSelectedPeriferia(null);
-                    setSelectedPeriferiaName("");
-                    setRegionSearch("");
-                  }}
-                  className="ml-auto text-blue-400 hover:text-blue-600 font-bold text-lg"
-                >×</button>
-              </div>
-              <div className="mb-4 relative mt-3">
-                {selectedDimos ? (
-                  <div className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-300 rounded-xl text-sm">
-                    <span className="text-blue-700 font-semibold">🏘️ {selectedDimosName}</span>
-                    <button
-                      onClick={() => {
-                        setSelectedDimos(null);
-                        setSelectedDimosName("");
-                        setDimosSearch("");
-                        setLevelFilter("REGIONAL");
-                      }}
-                      className="ml-auto text-blue-400 hover:text-blue-600 font-bold text-lg"
-                    >×</button>
-                  </div>
-                ) : (
-                  <>
-                    <input
-                      type="text"
-                      value={dimosSearch}
-                      onChange={e => setDimosSearch(e.target.value)}
-                      placeholder={isEl ? "🔍 Αναζήτηση Δήμου..." : "🔍 Search Municipality..."}
-                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
-                    />
-                    {dimosSearch.length >= 2 && (
-                      <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                        {dimosList
-                          .filter(dimos => dimos.name_el.toLowerCase().includes(dimosSearch.toLowerCase()))
-                          .map(dimos => (
-                            <button
-                              key={dimos.id}
-                              onClick={() => {
-                                setSelectedDimos(dimos.id);
-                                setSelectedDimosName(dimos.name_el);
-                                setDimosSearch("");
-                                setLevelFilter("MUNICIPAL");
-                              }}
-                              className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                            >
-                              🏘️ {dimos.name_el}
-                            </button>
-                          ))}
-                        {dimosList
-                          .filter(dimos => dimos.name_el.toLowerCase().includes(dimosSearch.toLowerCase()))
-                          .length === 0 && (
-                            <p className="px-4 py-2.5 text-sm text-gray-400">{isEl ? "Δεν βρέθηκε" : "Not found"}</p>
-                          )}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <input
-                type="text"
-                value={regionSearch}
-                onChange={e => setRegionSearch(e.target.value)}
-                placeholder={isEl ? "🔍 Αναζήτηση Περιφέρειας..." : "🔍 Search Region..."}
-                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors"
-              />
-              {regionSearch.length >= 2 && (
-                <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                  {periferiaList
-                    .filter(p => p.name_el.toLowerCase().includes(regionSearch.toLowerCase()))
-                    .map(p => (
-                      <button
-                        key={p.id}
-                        onClick={() => {
-                          setSelectedPeriferia(p.id);
-                          setSelectedPeriferiaName(p.name_el);
-                          setLevelFilter("REGIONAL");
-                          setRegionSearch("");
-                          setSelectedDimos(null);
-                          setSelectedDimosName("");
-                        }}
-                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                      >
-                        📍 {p.name_el}
-                      </button>
-                    ))}
-                  {periferiaList.filter(p => p.name_el.toLowerCase().includes(regionSearch.toLowerCase())).length === 0 && (
-                    <p className="px-4 py-2.5 text-sm text-gray-400">{isEl ? "Δεν βρέθηκε" : "Not found"}</p>
-                  )}
-                </div>
-              )}
-            </>
-          )}
         </div>
 
         {/* Governance Level Filter */}
@@ -312,7 +189,7 @@ export default function BillsPage() {
           {LEVEL_FILTERS.map(f => (
             <button
               key={f.key}
-              onClick={() => setLevelFilter(f.key)}
+              onClick={() => { setLevelFilter(f.key); setPage(1); }}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                 levelFilter === f.key
                   ? "bg-blue-100 text-blue-700 border border-blue-300"
@@ -324,12 +201,46 @@ export default function BillsPage() {
           ))}
         </div>
 
+        {(levelFilter === "REGIONAL" || levelFilter === "MUNICIPAL") && (
+          <div className="mb-4 grid gap-3 sm:grid-cols-2">
+            <label className="text-sm font-semibold text-gray-700">
+              {isEl ? "Περιφέρεια" : "Region"}
+              <select value={selectedPeriferia ?? ""}
+                onChange={(event) => {
+                  const value = event.target.value ? Number(event.target.value) : null;
+                  setSelectedPeriferia(value);
+                  setSelectedDimos(null);
+                  setPage(1);
+                }}
+                className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal text-gray-800">
+                <option value="">{isEl ? "Όλες οι περιφέρειες" : "All regions"}</option>
+                {periferiaList.map((region) => (
+                  <option key={region.id} value={region.id}>{!isEl && region.name_en ? region.name_en : region.name_el}</option>
+                ))}
+              </select>
+            </label>
+            {levelFilter === "MUNICIPAL" && (
+              <label className="text-sm font-semibold text-gray-700">
+                {isEl ? "Δήμος" : "Municipality"}
+                <select value={selectedDimos ?? ""} disabled={selectedPeriferia === null}
+                  onChange={(event) => { setSelectedDimos(event.target.value ? Number(event.target.value) : null); setPage(1); }}
+                  className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal text-gray-800 disabled:bg-gray-100 disabled:text-gray-400">
+                  <option value="">{selectedPeriferia === null ? (isEl ? "Επιλέξτε πρώτα περιφέρεια" : "Select a region first") : (isEl ? "Όλοι οι δήμοι (πανελλαδικά)" : "All municipalities (nationwide)")}</option>
+                  {dimosList.map((dimos) => (
+                    <option key={dimos.id} value={dimos.id}>{!isEl && dimos.name_en ? dimos.name_en : dimos.name_el}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+        )}
+
         {/* Status Filter Tabs */}
         <div className="flex gap-2 mb-8 flex-wrap">
           {STATUS_FILTERS.map(f => (
             <button
               key={f.key}
-              onClick={() => setStatusFilter(f.key)}
+              onClick={() => { setStatusFilter(f.key); setPage(1); }}
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
                 statusFilter === f.key
                   ? "bg-blue-600 text-white shadow-sm"

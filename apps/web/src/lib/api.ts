@@ -98,6 +98,32 @@ export interface BillResults {
   disclaimer_el: string;
 }
 
+export interface PublishedResult {
+  bill_id: string;
+  title_el: string;
+  title_en: string;
+  status: string;
+  parliament_vote_date: string;
+  parliament_result: string;
+  citizen_yes: number;
+  citizen_no: number;
+  citizen_abstain: number;
+  citizen_unknown: number;
+  citizen_total: number;
+  yes_pct: number;
+  no_pct: number;
+  abstain_pct: number;
+  divergence_score: number | "";
+}
+
+export interface PublishedResultsResponse {
+  data_license: string;
+  source: string;
+  exported_at: string;
+  count: number;
+  data: PublishedResult[];
+}
+
 export interface PeriferiaSummary {
   id: number;
   name_el: string;
@@ -188,6 +214,10 @@ export const ekklesia = {
   getTrending: () => api.get<Bill[]>("/api/v1/bills/trending"),
   getBill:     (id: string) => api.get<Bill>(`/api/v1/bills/${id}`),
   getResults:  (id: string) => api.get<BillResults>(`/api/v1/vote/${id}/results`),
+  getPublishedResults: (minVotes = 1) =>
+    api.get<PublishedResultsResponse>("/api/v1/export/results.json", {
+      params: { min_votes: minVotes },
+    }),
 
   // Identity
   verify: (phone: string, region?: string, gender?: string) =>
