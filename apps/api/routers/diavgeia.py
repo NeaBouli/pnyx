@@ -46,6 +46,19 @@ class ScrapeRequest(BaseModel):
     dry_run: bool = False
 
 
+class DiavgeiaDecisionResponse(BaseModel):
+    """Safe admin-dashboard projection of a catalogued Diavgeia decision."""
+
+    ada: str
+    subject: str
+    decisionType: Optional[str] = None
+    organizationLabel: Optional[str] = None
+    issueDate: Optional[str] = None
+    documentUrl: Optional[str] = None
+    periferiaId: Optional[int] = None
+    dimosId: Optional[int] = None
+
+
 # ─── POST /api/v1/admin/diavgeia/scrape ─────────────────────────────────────
 
 @router.post("/api/v1/admin/diavgeia/scrape")
@@ -173,7 +186,10 @@ async def admin_refresh_orgs_cache_status(
     return {"job_id": job_id, **_refresh_jobs[job_id]}
 
 
-@router.get("/api/v1/admin/diavgeia/decision/{ada}")
+@router.get(
+    "/api/v1/admin/diavgeia/decision/{ada}",
+    response_model=DiavgeiaDecisionResponse,
+)
 async def admin_get_diavgeia_decision(
     ada: str,
     _key: str = Depends(verify_admin),

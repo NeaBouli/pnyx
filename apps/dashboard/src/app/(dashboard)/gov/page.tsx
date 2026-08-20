@@ -19,12 +19,14 @@ interface GovApplication {
 }
 
 interface DiavgeiaDecision {
-  ada?: string
-  subject?: string
+  ada: string
+  subject: string
   decisionType?: string
   organizationLabel?: string
   issueDate?: string
-  [key: string]: unknown
+  documentUrl?: string
+  periferiaId?: number
+  dimosId?: number
 }
 
 interface GovGrGates {

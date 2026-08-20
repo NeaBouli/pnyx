@@ -100,33 +100,46 @@ export default function MunicipalPage() {
     if (!selectedPeriferia) return
 
     const controller = new AbortController()
+    let active = true
 
     getJson<Dimos[]>(`/api/v1/periferia/${selectedPeriferia}/dimos`, controller.signal)
       .then((rows) => {
+        if (!active) return
         setDimos(rows)
         setSelectedDimos('')
         setDecisions(null)
       })
       .catch((reason) => {
-        if (!isAbortError(reason)) setError(`Αδυναμία φόρτωσης δήμων: ${String(reason)}`)
+        if (active && !isAbortError(reason)) setError(`Αδυναμία φόρτωσης δήμων: ${String(reason)}`)
       })
 
-    return () => controller.abort()
+    return () => {
+      active = false
+      controller.abort()
+    }
   }, [selectedPeriferia])
 
   useEffect(() => {
     if (!selectedDimos) return
 
     const controller = new AbortController()
+    let active = true
 
     getJson<DecisionResponse>(`/api/v1/municipal/${selectedDimos}/decisions?limit=20`, controller.signal)
-      .then(setDecisions)
-      .catch((reason) => {
-        if (!isAbortError(reason)) setError(`Αδυναμία φόρτωσης αποφάσεων: ${String(reason)}`)
+      .then((rows) => {
+        if (active) setDecisions(rows)
       })
-      .finally(() => setDecisionLoading(false))
+      .catch((reason) => {
+        if (active && !isAbortError(reason)) setError(`Αδυναμία φόρτωσης αποφάσεων: ${String(reason)}`)
+      })
+      .finally(() => {
+        if (active) setDecisionLoading(false)
+      })
 
-    return () => controller.abort()
+    return () => {
+      active = false
+      controller.abort()
+    }
   }, [selectedDimos])
 
   const selectedMunicipality = useMemo(

@@ -158,12 +158,9 @@ export default function NodesPage() {
                 <div className="text-xs text-gray-400 mt-1">Δεν παρέχεται από το δημόσιο health API</div>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
-                <div className="text-xs text-gray-500 mb-1">Τελευταίος συγχρονισμός</div>
-                <div className="text-lg font-bold text-gray-800">
-                  {scrapers.length > 0 && scrapers[0]?.last_run
-                    ? new Date(String(scrapers[0].last_run)).toLocaleString('el-GR')
-                    : '—'}
-                </div>
+                <div className="text-xs text-gray-500 mb-1">Συγχρονισμός κόμβων</div>
+                <div className="text-lg font-bold text-gray-400">—</div>
+                <div className="text-xs text-gray-400 mt-1">Δεν είναι διαθέσιμο στην παραγωγή</div>
               </div>
             </div>
 
