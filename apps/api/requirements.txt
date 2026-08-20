@@ -39,7 +39,7 @@ beautifulsoup4>=4.15.0
 stripe==15.4.0
 
 # Scheduler (MOD-03 Cron)
-apscheduler==3.11.2
+apscheduler==3.11.3
 
 # Forms
 python-multipart==0.0.32
