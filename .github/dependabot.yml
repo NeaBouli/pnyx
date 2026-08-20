@@ -19,4 +19,4 @@ updates:
         versions: ["7.x"]
       # Keep runtime types aligned with the Node 22 runtime in .nvmrc and CI.
       - dependency-name: "@types/node"
-        versions: [">=23.0.0"]
+        versions: [">=22.14.0"]

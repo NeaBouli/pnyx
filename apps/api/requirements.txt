@@ -3,11 +3,11 @@
 
 # Web Framework
 fastapi==0.138.0
-uvicorn[standard]==0.52.1
+uvicorn[standard]==0.52.3
 
 # Database
 asyncpg==0.31.0
-sqlalchemy[asyncio]==2.0.51
+sqlalchemy[asyncio]==2.0.52
 alembic==1.18.4
 
 # Cache
@@ -36,10 +36,10 @@ slowapi>=0.1.10
 beautifulsoup4>=4.15.0
 
 # Payments / Donations (MOD-18)
-stripe==15.4.0
+stripe==15.5.0
 
 # Scheduler (MOD-03 Cron)
-apscheduler==3.11.2
+apscheduler==3.11.3
 
 # Forms
 python-multipart==0.0.32
@@ -54,4 +54,4 @@ pytest-asyncio==1.4.0
 aiosqlite==0.22.1
 anyio==4.14.2
 respx>=0.23.1
-sentry-sdk[fastapi]>=2.66.1
+sentry-sdk[fastapi]>=2.68.0
