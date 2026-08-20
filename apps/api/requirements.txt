@@ -8,7 +8,7 @@ uvicorn[standard]==0.52.3
 # Database
 asyncpg==0.31.0
 sqlalchemy[asyncio]==2.0.52
-alembic==1.18.4
+alembic==1.19.1
 
 # Cache
 redis==8.1.0
