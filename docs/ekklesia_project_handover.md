@@ -156,12 +156,22 @@ ssh root@135.181.254.229 "docker ps --format 'table {{.Names}}\t{{.Status}}'"
 | api | custom FastAPI | REST API | 8000 |
 | web | custom Next.js/static web | Web Frontend | 3000 |
 | db | postgres:15-alpine | PostgreSQL | 5432 |
-| redis | redis:7-alpine | Cache + Sessions | 6379 |
+| redis | redis:8.10-alpine | Cache + Sessions | 6379 |
 | ollama | ollama/ollama | AI (llama3.2:3b / qwen temporär) | 11434 |
 | monitor | custom | Health/Business Monitor | - |
 | dashboard | custom | Admin/Dashboard | - |
 | docker-proxy | docker-socket-proxy | Safe Docker API proxy | - |
 | app | discourse | Community Forum | - |
+
+### Redis Upgrade und Rollback
+
+Vor einem Redis-Major-Upgrade `DBSIZE` und `LASTSAVE` protokollieren und mit
+`BGSAVE` einen nicht blockierenden Snapshot anstoßen. Erst fortfahren, wenn
+`LASTSAVE` gestiegen ist und `rdb_bgsave_in_progress:0` gemeldet wird. Danach
+`/data/dump.rdb` als datierte Datei außerhalb des Docker-Volumes sichern und die
+Sicherung mit SHA-256 prüfen. Ein Rollback auf Redis 7 darf nur mit dieser
+Vorab-Sicherung erfolgen; Redis 7 darf nicht direkt auf ein von Redis 8 neu
+geschriebenes RDB gestartet werden.
 
 ### Docker Networks
 ```

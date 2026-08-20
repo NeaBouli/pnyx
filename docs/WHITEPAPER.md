@@ -86,7 +86,7 @@ comparison) and **Citizen Voting** (mirroring parliamentary decisions).
 |---|---|---|
 | Backend | Python FastAPI | Async, type-safe, OpenAPI native |
 | Database | PostgreSQL 15 | JSONB, reliable, GDPR-ready |
-| Cache | Redis 7 | PubSub, WebSocket relay |
+| Cache | Redis 8.10 | PubSub, WebSocket relay |
 | Web | Next.js 16 | SSR, i18n, SEO |
 | Mobile | Expo React Native | iOS + Android + Web |
 | Crypto | PyNaCl + @noble/curves | Ed25519, battle-tested |

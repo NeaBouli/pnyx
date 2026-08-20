@@ -30,7 +30,7 @@ pnyx/
 |---|---|---|
 | Backend API | Python FastAPI | Async, typed, fast |
 | Database | PostgreSQL 15+ | JSONB, reliable |
-| Cache/PubSub | Redis 7 | Sessions, WebSocket relay |
+| Cache/PubSub | Redis 8.10 | Sessions, WebSocket relay |
 | Migrations | Alembic | Versioned, async |
 | Web Frontend | Next.js 16 | SSR, i18n, SEO |
 | Styling | Tailwind CSS | Utility-first |

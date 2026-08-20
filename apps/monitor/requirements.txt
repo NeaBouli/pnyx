@@ -1,4 +1,4 @@
 psycopg2-binary==2.9.10
-redis==5.2.1
+redis==8.1.0
 httpx==0.28.1
 docker>=7.0.0
