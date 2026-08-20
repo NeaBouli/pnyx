@@ -11,3 +11,9 @@ updates:
     schedule:
       interval: "weekly"
     labels: ["security"]
+    ignore:
+      # The current Next.js lint stack does not yet support these major lines.
+      - dependency-name: "eslint"
+        versions: ["10.x"]
+      - dependency-name: "typescript"
+        versions: ["7.x"]
