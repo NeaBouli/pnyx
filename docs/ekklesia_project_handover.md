@@ -165,11 +165,13 @@ ssh root@135.181.254.229 "docker ps --format 'table {{.Names}}\t{{.Status}}'"
 
 ### Redis Upgrade und Rollback
 
-Vor einem Redis-Major-Upgrade immer `SAVE` ausführen, `DBSIZE` und
-`LASTSAVE` protokollieren und `/data/dump.rdb` als datierte Datei außerhalb
-des Docker-Volumes sichern. Die Sicherung mit SHA-256 prüfen. Ein Rollback auf
-Redis 7 darf nur mit dieser Vorab-Sicherung erfolgen; Redis 7 darf nicht direkt
-auf ein von Redis 8 neu geschriebenes RDB gestartet werden.
+Vor einem Redis-Major-Upgrade `DBSIZE` und `LASTSAVE` protokollieren und mit
+`BGSAVE` einen nicht blockierenden Snapshot anstoßen. Erst fortfahren, wenn
+`LASTSAVE` gestiegen ist und `rdb_bgsave_in_progress:0` gemeldet wird. Danach
+`/data/dump.rdb` als datierte Datei außerhalb des Docker-Volumes sichern und die
+Sicherung mit SHA-256 prüfen. Ein Rollback auf Redis 7 darf nur mit dieser
+Vorab-Sicherung erfolgen; Redis 7 darf nicht direkt auf ein von Redis 8 neu
+geschriebenes RDB gestartet werden.
 
 ### Docker Networks
 ```

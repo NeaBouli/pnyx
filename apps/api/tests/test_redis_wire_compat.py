@@ -40,8 +40,10 @@ def test_real_redis_monitor_command_shapes() -> None:
         assert client.delete(delete_key) == 1
         assert client.get(delete_key) is None
     finally:
-        client.delete(lock_key, state_key, active_key, counter_key, delete_key)
-        client.close()
+        try:
+            client.delete(lock_key, state_key, active_key, counter_key, delete_key)
+        finally:
+            client.close()
 
 
 @pytest.mark.asyncio
@@ -131,5 +133,7 @@ async def test_real_redis_production_command_shapes() -> None:
             keys["scan"]
         ]
     finally:
-        await client.delete(*keys.values())
-        await client.aclose()
+        try:
+            await client.delete(*keys.values())
+        finally:
+            await client.aclose()
