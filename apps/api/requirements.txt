@@ -7,7 +7,7 @@ uvicorn[standard]==0.52.1
 
 # Database
 asyncpg==0.31.0
-sqlalchemy[asyncio]==2.0.51
+sqlalchemy[asyncio]==2.0.52
 alembic==1.18.4
 
 # Cache
