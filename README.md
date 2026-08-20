@@ -186,7 +186,7 @@ New system-generated bill pills, short summaries, and forum first-post bodies ca
 | Direct APK | v1.0.29 / vC58 released | [GitHub Release](https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/ekklesia-v1.0.29-vC58-DIRECT.apk) |
 | Google Play | v1.0.29 / vC58 available in Closed Testing | [Join the test](https://play.google.com/apps/testing/ekklesia.gr) |
 | GitHub Release | v1.0.29 / vC58 latest | [v1.0.29](https://github.com/NeaBouli/pnyx/releases/tag/v1.0.29) |
-| F-Droid | v1.0.29 / vC584 published | [F-Droid](https://f-droid.org/packages/gr.ekklesia.app/) |
+| F-Droid | v1.0.29 / vC584 published | [F-Droid](https://f-droid.org/packages/ekklesia.gr/) |
 
 ---
 

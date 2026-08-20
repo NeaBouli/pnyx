@@ -51,7 +51,7 @@ export default function BillsPage() {
   // Sync URL ?status= param on mount and navigation
   useEffect(() => {
     const urlStatus = searchParams.get("status") || "";
-    if (urlStatus && urlStatus !== statusFilter) {
+    if (urlStatus !== statusFilter) {
       setStatusFilter(urlStatus);
       setPage(1);
     }
@@ -281,7 +281,7 @@ export default function BillsPage() {
               {isEl ? "Δεν βρέθηκαν νομοσχέδια" : "No bills found"}
             </p>
             {search && (
-              <button onClick={() => setSearch("")} className="mt-2 text-blue-600 text-sm hover:underline">
+              <button onClick={() => { setSearch(""); setPage(1); }} className="mt-2 text-blue-600 text-sm hover:underline">
                 {isEl ? "Καθαρισμός αναζήτησης" : "Clear search"}
               </button>
             )}
