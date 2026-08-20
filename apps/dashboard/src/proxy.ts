@@ -14,6 +14,7 @@ const PAGE_MODULES: Record<string, string> = {
   '/gov': 'gov',
   '/logs': 'logs',
   '/monitor': 'monitor',
+  '/municipal': 'municipal',
   '/newsletter-admin': 'newsletter-admin',
   '/node-settings': 'node-settings',
   '/nodes': 'node',

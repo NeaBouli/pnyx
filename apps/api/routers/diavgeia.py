@@ -46,6 +46,19 @@ class ScrapeRequest(BaseModel):
     dry_run: bool = False
 
 
+class DiavgeiaDecisionResponse(BaseModel):
+    """Safe admin-dashboard projection of a catalogued Diavgeia decision."""
+
+    ada: str
+    subject: str
+    decisionType: Optional[str] = None
+    organizationLabel: Optional[str] = None
+    issueDate: Optional[str] = None
+    documentUrl: Optional[str] = None
+    periferiaId: Optional[int] = None
+    dimosId: Optional[int] = None
+
+
 # ─── POST /api/v1/admin/diavgeia/scrape ─────────────────────────────────────
 
 @router.post("/api/v1/admin/diavgeia/scrape")
@@ -171,6 +184,39 @@ async def admin_refresh_orgs_cache_status(
     if job_id not in _refresh_jobs:
         raise HTTPException(404, f"Job {job_id} not found")
     return {"job_id": job_id, **_refresh_jobs[job_id]}
+
+
+@router.get(
+    "/api/v1/admin/diavgeia/decision/{ada}",
+    response_model=DiavgeiaDecisionResponse,
+)
+async def admin_get_diavgeia_decision(
+    ada: str,
+    _key: str = Depends(verify_admin),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Return one locally catalogued Diavgeia decision by ADA."""
+    normalized_ada = ada.strip().upper()
+    if not normalized_ada or len(normalized_ada) > 64:
+        raise HTTPException(400, "Invalid ADA")
+
+    result = await db.execute(
+        select(DiavgeiaDecision).where(DiavgeiaDecision.ada == normalized_ada)
+    )
+    decision = result.scalar_one_or_none()
+    if decision is None:
+        raise HTTPException(404, f"Decision {normalized_ada} not found")
+
+    return {
+        "ada": decision.ada,
+        "subject": decision.subject,
+        "decisionType": decision.decision_type_label or decision.decision_type_uid,
+        "organizationLabel": decision.organization_label,
+        "issueDate": decision.publish_timestamp.isoformat() if decision.publish_timestamp else None,
+        "documentUrl": decision.document_url,
+        "periferiaId": decision.periferia_id,
+        "dimosId": decision.dimos_id,
+    }
 
 
 # ─── GET /api/v1/municipal/{dimos_id}/decisions ─────────────────────────────

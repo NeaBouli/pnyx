@@ -47,7 +47,7 @@ const REGISTERED_NODES: NodeRow[] = [
     domain: 'test.ekklesia.gr',
     district: 'Test Node',
     population: '—',
-    status: 'active',
+    status: 'concept',
     lastActivity: '—',
     ed25519Key: '',
   },
@@ -106,7 +106,7 @@ export default function NodesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Node-Panel</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Υποδομή & Ομοσπονδία</h1>
         <button
           onClick={loadData}
           disabled={loading}
@@ -120,7 +120,7 @@ export default function NodesPage() {
       <div className="space-y-6">
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
           <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800">Eigener Server Status</h2>
+            <h2 className="font-semibold text-gray-800">Κατάσταση κεντρικού API</h2>
             {health ? (
               <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${isOk ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                 {isOk ? 'Λειτουργικό' : 'Σφάλμα'}
@@ -132,9 +132,9 @@ export default function NodesPage() {
           <div className="p-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
               <div className="bg-gray-50 rounded-lg p-4">
-                <div className="text-xs text-gray-500 mb-1">Module</div>
+                <div className="text-xs text-gray-500 mb-1">Υποσυστήματα</div>
                 <div className="text-lg font-bold text-gray-800">
-                  {moduleCount > 0 ? `${moduleCount} Module` : '—'}
+                  {moduleCount > 0 ? `${moduleCount} υποσυστήματα` : '—'}
                 </div>
                 {modules && (
                   <div className="mt-2 space-y-1">
@@ -147,23 +147,20 @@ export default function NodesPage() {
                       </div>
                     ))}
                     {moduleCount > 6 && (
-                      <div className="text-xs text-gray-400">+{moduleCount - 6} weitere</div>
+                      <div className="text-xs text-gray-400">+{moduleCount - 6} ακόμη</div>
                     )}
                   </div>
                 )}
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
-                <div className="text-xs text-gray-500 mb-1">��ρήση Δίσκου</div>
+                <div className="text-xs text-gray-500 mb-1">Χρήση Δίσκου</div>
                 <div className="text-lg font-bold text-gray-400">—</div>
-                <div className="text-xs text-gray-400 mt-1">Server-Monitoring — Phase 2</div>
+                <div className="text-xs text-gray-400 mt-1">Δεν παρέχεται από το δημόσιο health API</div>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
-                <div className="text-xs text-gray-500 mb-1">Letzte Sync-Zeit</div>
-                <div className="text-lg font-bold text-gray-800">
-                  {scrapers.length > 0 && scrapers[0]?.last_run
-                    ? new Date(String(scrapers[0].last_run)).toLocaleString('el-GR')
-                    : '—'}
-                </div>
+                <div className="text-xs text-gray-500 mb-1">Συγχρονισμός κόμβων</div>
+                <div className="text-lg font-bold text-gray-400">—</div>
+                <div className="text-xs text-gray-400 mt-1">Δεν είναι διαθέσιμο στην παραγωγή</div>
               </div>
             </div>
 
@@ -196,8 +193,8 @@ export default function NodesPage() {
         {/* ── Registrierte Nodes ── */}
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800">Registrierte Nodes</h2>
-            <span className="text-xs text-gray-400">{REGISTERED_NODES.length} Nodes</span>
+            <h2 className="font-semibold text-gray-800">Παραδείγματα σχεδιασμού</h2>
+            <span className="text-xs text-gray-400">Δεν αποτελεί live μητρώο</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -209,8 +206,8 @@ export default function NodesPage() {
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Πληθυσμός</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Ed25519 Key</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Letzte Aktivität</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Aktionen</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Τελευταία δραστηριότητα</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Ενέργειες</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -230,7 +227,7 @@ export default function NodesPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-400">{node.lastActivity}</td>
                     <td className="px-4 py-3">
-                      <button disabled className="text-xs text-gray-400 cursor-not-allowed">Details (Phase 2)</button>
+                      <button disabled className="text-xs text-gray-400 cursor-not-allowed">Δεν είναι ενεργό</button>
                     </td>
                   </tr>
                 ))}
@@ -242,14 +239,14 @@ export default function NodesPage() {
         {/* ── Node-Verwaltung ── */}
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
           <div className="px-5 py-4 border-b border-gray-200">
-            <h2 className="font-semibold text-gray-800">Node-Verwaltung</h2>
+            <h2 className="font-semibold text-gray-800">Διαχείριση κόμβων</h2>
           </div>
           <div className="p-5 flex flex-wrap gap-3">
             <button
-              onClick={() => setShowRegisterModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+              disabled
+              className="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed"
             >
-              + Node registrieren
+              Εγγραφή κόμβου — μη διαθέσιμη
             </button>
             <div className="relative group">
               <button
@@ -257,7 +254,7 @@ export default function NodesPage() {
                 className="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed"
                 title="POST /federation/nodes/sync — Phase 2"
               >
-                Sync auslösen
+                Εκκίνηση συγχρονισμού
               </button>
               <div className="absolute left-0 top-full mt-1 px-3 py-1.5 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                 POST /federation/nodes/sync — Phase 2
@@ -268,7 +265,7 @@ export default function NodesPage() {
                 disabled
                 className="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed"
               >
-                Node-Schlüssel rotieren
+                Αλλαγή κλειδιού κόμβου
               </button>
               <div className="absolute left-0 top-full mt-1 px-3 py-1.5 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                 Phase 2
@@ -281,11 +278,11 @@ export default function NodesPage() {
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
           <div className="font-semibold text-blue-800 mb-1">Ομοσπονδιακό Δίκτυο Κόμβων</div>
           <div className="text-sm text-blue-700 mb-2">
-            Κάθε Δήμος/Κοινότητα μπορεί να λειτουργήσει τον δικό της κόμβο ekklesia.gr
-            και να συγχρονιστεί με τον κεντρικό κόμβο.
+            Η αρχιτεκτονική για ανεξάρτητους δημοτικούς κόμβους είναι τεκμηριωμένη, αλλά το δημόσιο
+            μητρώο, η εγγραφή και ο συγχρονισμός κόμβων δεν λειτουργούν ακόμη στην παραγωγή.
           </div>
           <div className="text-xs text-blue-600 bg-blue-100 rounded-lg p-2">
-            Αρχιτεκτονική τεκμηριωμένη — Υλοποίηση μετά το Alpha Gate
+            Τρέχουσα κατάσταση: σχεδιασμός για μεταγενέστερη φάση. Τα δεδομένα Δήμων παρέχονται σήμερα από το κεντρικό API.
           </div>
         </div>
       </div>

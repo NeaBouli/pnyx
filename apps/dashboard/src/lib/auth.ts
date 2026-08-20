@@ -19,7 +19,7 @@ export const ROLE_MODULES: Record<DashboardRole, string[]> = {
   SUPER_ADMIN: [
     'overview', 'analytics', 'bills', 'votes', 'cplm',
     'system', 'ai', 'forum', 'users', 'hlr', 'arweave',
-    'node', 'gov', 'logs', 'settings', 'vaa', 'finance', 'stats', 'embed', 'nodes-readonly',
+    'node', 'municipal', 'gov', 'logs', 'settings', 'vaa', 'finance', 'stats', 'embed', 'nodes-readonly',
     'politicians', 'monitor', 'newsletter-admin',
   ],
   SYSTEM_ADMIN: [
@@ -27,11 +27,11 @@ export const ROLE_MODULES: Record<DashboardRole, string[]> = {
     'system', 'ai', 'forum', 'hlr', 'logs', 'finance', 'stats',
     'politicians', 'monitor', 'newsletter-admin',
   ],
-  CONTENT: ['overview', 'bills', 'votes', 'cplm', 'forum', 'gov', 'vaa', 'embed', 'politicians'],
+  CONTENT: ['overview', 'bills', 'votes', 'cplm', 'forum', 'municipal', 'gov', 'vaa', 'embed', 'politicians'],
   ANALYST: ['overview', 'analytics', 'votes', 'cplm', 'finance', 'stats', 'politicians'],
   SUPPORT: ['overview', 'system', 'logs', 'forum', 'node'],
-  NODE_ADMIN: ['overview', 'bills', 'votes', 'cplm', 'node', 'gov', 'embed', 'finance', 'stats'],
-  NODE_SUPER_ADMIN: ['overview', 'bills', 'votes', 'cplm', 'node-settings', 'node-staff', 'embed', 'sync', 'node-pages', 'finance', 'stats'],
+  NODE_ADMIN: ['overview', 'bills', 'votes', 'cplm', 'node', 'municipal', 'gov', 'embed', 'finance', 'stats'],
+  NODE_SUPER_ADMIN: ['overview', 'bills', 'votes', 'cplm', 'municipal', 'node-settings', 'node-staff', 'embed', 'sync', 'node-pages', 'finance', 'stats'],
   NODE_STAFF: ['overview', 'bills', 'votes', 'cplm', 'embed'],
 }
 

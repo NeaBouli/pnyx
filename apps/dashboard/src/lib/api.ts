@@ -203,6 +203,16 @@ export async function adminDiavgeiaScrape() {
 export async function adminRefreshOrgsCache() {
   return adminPost('/api/v1/admin/diavgeia/refresh-orgs-cache')
 }
+export async function adminFindDiavgeiaDecision(ada: string) {
+  const proxyPath = `admin/diavgeia/decision/${encodeURIComponent(ada)}`
+  const response = await fetch(`/api/proxy/${proxyPath}`, { cache: 'no-store' })
+  if (response.status === 404) return null
+  if (!response.ok) {
+    const data = await response.json().catch(() => null) as { detail?: string; error?: string } | null
+    throw new Error(data?.detail ?? data?.error ?? `HTTP ${response.status}`)
+  }
+  return response.json()
+}
 
 export async function fetchNewsletterLists() { return fetchAPI('/api/v1/newsletter/lists') }
 export async function adminScraperTest() {
