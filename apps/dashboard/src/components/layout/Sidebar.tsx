@@ -51,6 +51,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/settings', module: 'settings', label: 'Ρυθμίσεις', icon: '⚙️' },
       { href: '/users', module: 'users', label: 'Χρήστες', icon: '👥' },
       { href: '/nodes', module: 'node', label: 'Κόμβοι', icon: '🔗' },
+      { href: '/municipal', module: 'municipal', label: 'Δήμοι', icon: '🏘️' },
       { href: '/node-settings', module: 'node-settings', label: 'Ρυθμίσεις Κόμβου', icon: '🔧' },
       { href: '/gov', module: 'gov', label: 'Αιτήσεις Gov', icon: '🏗️' },
       { href: '/representatives', module: 'representatives', label: 'Εκπρόσωποι', icon: '🎖️' },
@@ -59,7 +60,7 @@ const NAV_GROUPS: NavGroup[] = [
 ]
 
 // NODE_ADMIN sees only these modules
-const NODE_ADMIN_MODULES = ['overview', 'bills', 'votes', 'cplm', 'node', 'gov']
+const NODE_ADMIN_MODULES = ['overview', 'bills', 'votes', 'cplm', 'node', 'municipal', 'gov']
 
 const ROLE_LABELS: Record<DashboardRole, string> = {
   SUPER_ADMIN: 'Super Admin',

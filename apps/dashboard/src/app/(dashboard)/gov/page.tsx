@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import { adminFindDiavgeiaDecision } from '@/lib/api'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
@@ -73,6 +75,8 @@ const GATE_LABELS: { key: keyof GovGrGates; label: string; description: string }
 ]
 
 export default function GovPage() {
+  const { data: session } = useSession()
+  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN'
   const [govGr, setGovGr] = useState<GovGrStatus | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -103,14 +107,9 @@ export default function GovPage() {
     setDiavgeiaError(null)
     setDiavgeiaResults([])
     try {
-      const res = await fetch(`/api/proxy/admin/diavgeia/scrape?ada=${encodeURIComponent(adaInput.trim())}`, { method: 'POST' })
-      if (res.ok) {
-        const data = await res.json() as Record<string, unknown>
-        const decisions = Array.isArray(data) ? data : (Array.isArray(data?.decisions) ? data.decisions as DiavgeiaDecision[] : [data as DiavgeiaDecision])
-        setDiavgeiaResults(decisions)
-      } else {
-        setDiavgeiaError(`HTTP ${String(res.status)}`)
-      }
+      const data = await adminFindDiavgeiaDecision(adaInput.trim()) as DiavgeiaDecision | null
+      if (data?.ada) setDiavgeiaResults([data])
+      else setDiavgeiaError('Η απόφαση δεν βρέθηκε στον τοπικό κατάλογο')
     } catch (e) {
       setDiavgeiaError(String(e))
     } finally {
@@ -125,7 +124,11 @@ export default function GovPage() {
       const url = action === 'scrape'
         ? '/api/proxy/admin/diavgeia/scrape'
         : '/api/proxy/admin/diavgeia/refresh-orgs-cache'
-      const res = await fetch(url, { method: 'POST' })
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: action === 'scrape' ? JSON.stringify({}) : undefined,
+      })
       const data = await res.json() as Record<string, unknown>
       setDiavgeiaActionResult(res.ok ? String(data?.message ?? data?.status ?? 'OK') : `Σφάλμα: ${String(data?.detail ?? res.status)}`)
     } catch (e) {
@@ -275,23 +278,23 @@ export default function GovPage() {
           {/* Diavgeia Section */}
           <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
             <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="font-semibold text-gray-800">Diavgeia</h2>
-              <div className="flex gap-2">
+              <h2 className="font-semibold text-gray-800">Διαύγεια</h2>
+              {isSuperAdmin && <div className="flex gap-2">
                 <button
                   onClick={() => handleDiavgeiaAdminAction('scrape')}
                   disabled={diavgeiaAction === 'scrape'}
                   className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-200 transition-colors disabled:opacity-50"
                 >
-                  {diavgeiaAction === 'scrape' ? String('Scrape...') : String('Scrape τώρα')}
+                  {diavgeiaAction === 'scrape' ? String('Συγχρονισμός...') : String('Συγχρονισμός τώρα')}
                 </button>
                 <button
                   onClick={() => handleDiavgeiaAdminAction('refresh-orgs-cache')}
                   disabled={diavgeiaAction === 'refresh-orgs-cache'}
                   className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
                 >
-                  {diavgeiaAction === 'refresh-orgs-cache' ? String('Ανανέωση...') : String('Org-Cache ανανέωση')}
+                  {diavgeiaAction === 'refresh-orgs-cache' ? String('Ανανέωση...') : String('Ανανέωση φορέων')}
                 </button>
-              </div>
+              </div>}
             </div>
 
             {diavgeiaActionResult && (
@@ -300,7 +303,7 @@ export default function GovPage() {
               </div>
             )}
 
-            <div className="p-5">
+            {isSuperAdmin ? <div className="p-5">
               <div className="flex gap-2 mb-4">
                 <input
                   type="text"
@@ -318,6 +321,9 @@ export default function GovPage() {
                   {diavgeiaLoading ? String('Αναζήτηση...') : String('Αναζήτηση')}
                 </button>
               </div>
+              <p className="text-xs text-gray-500 -mt-2 mb-4">
+                Η αναζήτηση ελέγχει τον τοπικό κατάλογο αποφάσεων. Ο χειροκίνητος συγχρονισμός είναι ξεχωριστή λειτουργία.
+              </p>
 
               {diavgeiaError && (
                 <div className="text-sm text-red-600 mb-3">{String('Σφάλμα:')} {String(diavgeiaError)}</div>
@@ -351,7 +357,11 @@ export default function GovPage() {
               {!diavgeiaLoading && diavgeiaResults.length === 0 && !diavgeiaError && (
                 <div className="text-sm text-gray-400 text-center py-4">{String('Εισάγετε ΑΔΑ και πατήστε Αναζήτηση')}</div>
               )}
-            </div>
+            </div> : (
+              <div className="p-5 text-sm text-gray-500">
+                Η χειροκίνητη αναζήτηση και ο συγχρονισμός Διαύγειας είναι διαθέσιμα μόνο στον κύριο διαχειριστή.
+              </div>
+            )}
           </div>
         </div>
       )}

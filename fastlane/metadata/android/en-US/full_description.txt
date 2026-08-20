@@ -1,15 +1,24 @@
-Open-source platform for anonymous civic participation in Greece.
+Ekklesia is an independent, open-source app for civic information and anonymous participation.
 
-Vote on real Hellenic Parliament bills anonymously after a Greek-number HLR network-status check. HLR does not prove SIM possession or identity. Your phone number is never stored — only a protected cryptographic nullifier is kept.
+Follow real Hellenic Parliament bills and Diavgeia decisions, express your opinion anonymously, and compare aggregate citizen results with official parliamentary data when available.
 
-Features:
-• Vote YES/NO/ABSTAIN on real parliamentary bills
-• Political Compass (48 questions, computed locally)
-• Divergence Index: citizen votes vs parliament decisions
-• 325 municipalities and 13 regions covered
-• Full anonymity via Ed25519 cryptography
-• No accounts, no email, no cookies
+Core features:
+• Vote Yes, No, or Abstain on real public matters
+• Results published only in aggregate, anonymous form
+• Citizen-versus-Parliament divergence score when an official result exists
+• Search and filter by Parliament, region, municipality, Diavgeia, or public body
+• Party comparison and links to official sources
+• Ed25519 signatures with the private key remaining on the device
 
-This is NOT a government app. Votes are informational only.
+Privacy and security:
+• No account, email address, or identity cookie required
+• A phone number is used only to check active Greek-network status and is immediately deleted
+• The number check does not prove SIM possession or personal identity
+• Only anonymous identifiers and signed votes are stored
 
-Data sources: hellenicparliament.gr, diavgeia.gov.gr
+Ekklesia is not a government service and is not affiliated with a government entity. Votes are informational and have no legally binding effect.
+
+Data sources: Hellenic Parliament, Diavgeia, and data.gov.gr.
+
+MIT License: github.com/NeaBouli/pnyx
+© 2026 V-Labs Development

@@ -523,30 +523,30 @@
 
 <!-- ═══ SEKTION: Αρχιτεκτονική Κόμβου ═══ -->
 <div style="max-width:900px;margin:0 auto;padding:2rem 1.5rem">
-  <h2 style="font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:0.5rem" data-el="Αρχιτεκτονική Κόμβου" data-en="Node Architecture">Αρχιτεκτονική Κόμβου</h2>
-  <p style="text-align:center;color:var(--gray-500);font-size:0.88rem;max-width:640px;margin:0 auto 1.5rem" data-el="Τρία επίπεδα απομόνωσης — επιλέξτε αυτό που ταιριάζει στον Δήμο σας" data-en="Three isolation levels — choose what fits your municipality">Τρία επίπεδα απομόνωσης — επιλέξτε αυτό που ταιριάζει στον Δήμο σας</p>
+  <h2 style="font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:0.5rem" data-el="Μελλοντική αρχιτεκτονική κόμβων" data-en="Future node architecture">Μελλοντική αρχιτεκτονική κόμβων</h2>
+  <p style="text-align:center;color:var(--gray-500);font-size:0.88rem;max-width:640px;margin:0 auto 1.5rem" data-el="Οι παρακάτω επιλογές είναι υπό μελέτη και δεν προσφέρονται σήμερα ως παραγωγική υπηρεσία." data-en="The following options are being evaluated and are not currently offered as a production service.">Οι παρακάτω επιλογές είναι υπό μελέτη και δεν προσφέρονται σήμερα ως παραγωγική υπηρεσία.</p>
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem;margin-bottom:2rem">
     <div style="background:white;border:2px solid #e2e8f0;border-radius:var(--radius);padding:1.25rem">
       <div style="font-size:1.5rem;margin-bottom:0.5rem">🏢</div>
-      <h4 style="font-weight:800;font-size:0.95rem;color:var(--blue);margin-bottom:0.3rem" data-el="Multi-Tenant" data-en="Multi-Tenant">Multi-Tenant</h4>
-      <p style="font-size:0.78rem;color:var(--gray-500);line-height:1.6" data-el="Κοινή υποδομή, δεδομένα απομονωμένα βάσει dimos_id. Κάθε Δήμος βλέπει μόνο τα δικά του. Row-Level Security. Κόστος: 0€ επιπλέον." data-en="Shared infrastructure, data isolated by dimos_id. Each municipality sees only its own. Row-Level Security. Cost: €0 extra.">Κοινή υποδομή, δεδομένα απομονωμένα βάσει dimos_id. Κόστος: 0€ επιπλέον.</p>
+      <h4 style="font-weight:800;font-size:0.95rem;color:var(--blue);margin-bottom:0.3rem" data-el="Κεντρική υπηρεσία (σήμερα)" data-en="Central service (current)">Κεντρική υπηρεσία (σήμερα)</h4>
+      <p style="font-size:0.78rem;color:var(--gray-500);line-height:1.6" data-el="Το κεντρικό API καταλογοποιεί Περιφέρειες, Δήμους και δημόσιες αποφάσεις με γεωγραφικά αναγνωριστικά. Δεν αποτελεί ανεξάρτητο δημοτικό tenant." data-en="The central API catalogues regions, municipalities, and public decisions using geographic identifiers. It is not an independent municipal tenant.">Το κεντρικό API καταλογοποιεί Περιφέρειες, Δήμους και δημόσιες αποφάσεις. Δεν αποτελεί ανεξάρτητο δημοτικό tenant.</p>
     </div>
     <div style="background:white;border:2px solid var(--green);border-radius:var(--radius);padding:1.25rem">
       <div style="font-size:1.5rem;margin-bottom:0.5rem">🏗️</div>
-      <h4 style="font-weight:800;font-size:0.95rem;color:#166534;margin-bottom:0.3rem" data-el="Ξεχωριστό Stack (Συνιστάται)" data-en="Dedicated Stack (Recommended)">Ξεχωριστό Stack (Συνιστάται)</h4>
-      <p style="font-size:0.78rem;color:var(--gray-500);line-height:1.6" data-el="Κάθε Δήμος: δικό API, DB, Web, Redis σε Docker Compose. Πλήρης απομόνωση. ~10€/μήνα." data-en="Each municipality: own API, DB, Web, Redis in Docker Compose. Full isolation. ~€10/month.">Κάθε Δήμος: δικό API, DB, Web, Redis. Πλήρης απομόνωση. ~10€/μήνα.</p>
+      <h4 style="font-weight:800;font-size:0.95rem;color:#166534;margin-bottom:0.3rem" data-el="Ξεχωριστό Stack (υπό μελέτη)" data-en="Dedicated stack (under evaluation)">Ξεχωριστό Stack (υπό μελέτη)</h4>
+      <p style="font-size:0.78rem;color:var(--gray-500);line-height:1.6" data-el="Υποψήφιο μελλοντικό μοντέλο με ξεχωριστό API, βάση δεδομένων, web και Redis. Δεν υπάρχει ακόμη υποστηριζόμενος installer ή παραγωγικό SLA." data-en="Candidate future model with a separate API, database, web app, and Redis. There is no supported installer or production SLA yet.">Υποψήφιο μελλοντικό μοντέλο. Δεν υπάρχει ακόμη υποστηριζόμενος installer ή παραγωγικό SLA.</p>
     </div>
     <div style="background:white;border:2px solid var(--purple,#a855f7);border-radius:var(--radius);padding:1.25rem">
       <div style="font-size:1.5rem;margin-bottom:0.5rem">🌐</div>
       <h4 style="font-weight:800;font-size:0.95rem;color:#7c3aed;margin-bottom:0.3rem" data-el="Federated Network (Μέλλον)" data-en="Federated Network (Future)">Federated Network (Μέλλον)</h4>
-      <p style="font-size:0.78rem;color:var(--gray-500);line-height:1.6" data-el="Αυτόνομοι κόμβοι με Federation API. Δεδομένα συγχρονίζονται. TrueRepublic blockchain bridge." data-en="Autonomous nodes with Federation API. Data synced. TrueRepublic blockchain bridge.">Αυτόνομοι κόμβοι με Federation API. TrueRepublic bridge.</p>
+      <p style="font-size:0.78rem;color:var(--gray-500);line-height:1.6" data-el="Σχεδιασμός για αυτόνομους, επαληθευμένους κόμβους και Federation API. Ο συγχρονισμός και η γέφυρα δεν είναι ενεργά." data-en="Design for autonomous, verified nodes and a Federation API. Synchronization and the bridge are not active.">Σχεδιασμός για αυτόνομους, επαληθευμένους κόμβους. Δεν είναι ενεργός.</p>
     </div>
   </div>
 
   <div style="background:var(--blue-l,#eff6ff);border-left:4px solid var(--blue);border-radius:0.5rem;padding:1rem 1.25rem;margin-bottom:2rem">
-    <p style="font-size:0.82rem;color:var(--gray-700);margin:0" data-el="Δείτε live demo: test.ekklesia.gr — Παράδειγμα δημοτικού κόμβου με 3 ψηφοφορίες (Multi-Tenant αρχιτεκτονική)." data-en="See live demo: test.ekklesia.gr — Example municipal node with 3 votes (Multi-Tenant architecture).">
-      Δείτε live demo: <a href="https://test.ekklesia.gr" style="color:var(--blue);font-weight:700">test.ekklesia.gr</a> — Παράδειγμα δημοτικού κόμβου με 3 ψηφοφορίες.
+    <p style="font-size:0.82rem;color:var(--gray-700);margin:0" data-el="Το test.ekklesia.gr είναι προστατευμένο εσωτερικό περιβάλλον και όχι δημόσια live demo. Τα δημόσια δημοτικά δεδομένα είναι διαθέσιμα μέσω του κεντρικού ekklesia.gr." data-en="test.ekklesia.gr is a protected internal environment, not a public live demo. Public municipal data is available through the central ekklesia.gr service.">
+      Το test.ekklesia.gr είναι προστατευμένο εσωτερικό περιβάλλον και όχι δημόσια live demo.
     </p>
   </div>
 </div>
@@ -557,56 +557,55 @@
   <!-- HERO BOX -->
   <div style="background:linear-gradient(135deg,#1e3a5f 0%,#1d4ed8 100%);border-radius:var(--radius);padding:2.5rem 2rem;text-align:center;color:white;margin-bottom:2rem">
     <div style="font-size:2.5rem;margin-bottom:0.75rem">🚀</div>
-    <h2 style="font-size:1.5rem;font-weight:900;margin-bottom:0.5rem;color:white;border:none;padding:0" data-el="Ο κόμβος σας είναι έτοιμος να λειτουργήσει" data-en="Your node is ready to operate">Ο κόμβος σας είναι έτοιμος να λειτουργήσει</h2>
-    <p style="color:rgba(255,255,255,0.85);font-size:0.95rem;max-width:560px;margin:0 auto 1.5rem;line-height:1.7" data-el="Ένας κόμβος ekklesia.gr για τον Δήμο σας — αυτόνομος, ασφαλής, και πλήρως ελεγχόμενος από εσάς. Εγκατάσταση σε λιγότερο από 10 λεπτά." data-en="An ekklesia.gr node for your municipality — autonomous, secure, and fully under your control. Setup in less than 10 minutes.">Ένας κόμβος ekklesia.gr για τον Δήμο σας — αυτόνομος, ασφαλής, και πλήρως ελεγχόμενος από εσάς. Εγκατάσταση σε λιγότερο από 10 λεπτά.</p>
+    <h2 style="font-size:1.5rem;font-weight:900;margin-bottom:0.5rem;color:white;border:none;padding:0" data-el="Κατάσταση δημοτικού κόμβου" data-en="Municipal node status">Κατάσταση δημοτικού κόμβου</h2>
+    <p style="color:rgba(255,255,255,0.85);font-size:0.95rem;max-width:560px;margin:0 auto 1.5rem;line-height:1.7" data-el="Ο αυτόνομος δημοτικός κόμβος παραμένει σχεδιασμός για μελλοντικό pilot. Δεν διατίθεται σήμερα installer παραγωγής." data-en="The autonomous municipal node remains a design for a future pilot. A production installer is not currently available.">Ο αυτόνομος δημοτικός κόμβος παραμένει σχεδιασμός για μελλοντικό pilot.</p>
 
     <!-- Code Block -->
     <div style="background:#0f172a;border-radius:0.75rem;padding:1.25rem 1.5rem;max-width:500px;margin:0 auto 1rem;text-align:left;font-family:'Courier New',monospace;font-size:0.88rem;color:#a5f3fc;border:1px solid rgba(255,255,255,0.1)">
-      <span style="color:#94a3b8">$</span> curl -fsSL https://ekklesia.gr/node-setup.sh \<br/>
-      &nbsp;&nbsp;&nbsp;&nbsp;| bash
+      <span style="color:#94a3b8">status:</span> installer-not-published
     </div>
-    <p style="color:rgba(255,255,255,0.6);font-size:0.72rem;margin:0" data-el="Αυτό είναι το μόνο που χρειάζεται ο διαχειριστής του server σας." data-en="That's all your server administrator needs.">Αυτό είναι το μόνο που χρειάζεται ο διαχειριστής του server σας.</p>
+    <p style="color:rgba(255,255,255,0.6);font-size:0.72rem;margin:0" data-el="Δεν πρέπει να εκτελεστεί άγνωστο script εγκατάστασης. Το pilot θα δημοσιευτεί μόνο μετά από τεχνικό και security review." data-en="Do not run an unknown installation script. A pilot will only be published after technical and security review.">Δεν υπάρχει σήμερα εντολή εγκατάστασης.</p>
   </div>
 
-  <!-- 7-STEP WIZARD TIMELINE -->
-  <h3 style="font-size:1.1rem;font-weight:900;text-align:center;margin-bottom:1.5rem;color:var(--gray-900)" data-el="Τι κάνει ο wizard αυτόματα" data-en="What the wizard does automatically">Τι κάνει ο wizard αυτόματα</h3>
+  <!-- Future pilot requirements -->
+  <h3 style="font-size:1.1rem;font-weight:900;text-align:center;margin-bottom:1.5rem;color:var(--gray-900)" data-el="Απαιτήσεις πριν από μελλοντικό pilot" data-en="Requirements before a future pilot">Απαιτήσεις πριν από μελλοντικό pilot</h3>
 
   <!-- Desktop: horizontal timeline / Mobile: vertical -->
   <div class="node-timeline" style="display:grid;grid-template-columns:repeat(7,1fr);gap:0.5rem;margin-bottom:2.5rem">
     <div style="text-align:center">
-      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">✓</div>
+      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">1</div>
       <p style="font-size:0.7rem;font-weight:700;color:var(--gray-900);margin:0 0 0.2rem" data-el="Έλεγχος συστήματος" data-en="System check">Έλεγχος συστήματος</p>
-      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="Αυτόματος έλεγχος RAM, disk και OS" data-en="Auto-check RAM, disk and OS">Αυτόματος έλεγχος RAM, disk και OS</p>
+      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="Τεκμηριωμένες απαιτήσεις RAM, δίσκου και OS" data-en="Documented RAM, disk and OS requirements">Τεκμηριωμένες απαιτήσεις RAM, δίσκου και OS</p>
     </div>
     <div style="text-align:center">
-      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">✓</div>
-      <p style="font-size:0.7rem;font-weight:700;color:var(--gray-900);margin:0 0 0.2rem" data-el="Εγκατάσταση Docker" data-en="Docker install">Εγκατάσταση Docker</p>
-      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="Όλες οι εξαρτήσεις αυτόματα" data-en="All dependencies automatically">Όλες οι εξαρτήσεις αυτόματα</p>
+      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">2</div>
+      <p style="font-size:0.7rem;font-weight:700;color:var(--gray-900);margin:0 0 0.2rem" data-el="Απομονωμένο runtime" data-en="Isolated runtime">Απομονωμένο runtime</p>
+      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="Ελεγμένα images και σταθερές εξαρτήσεις" data-en="Reviewed images and pinned dependencies">Ελεγμένα images και σταθερές εξαρτήσεις</p>
     </div>
     <div style="text-align:center">
-      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">✓</div>
-      <p style="font-size:0.7rem;font-weight:700;color:var(--gray-900);margin:0 0 0.2rem" data-el="Ρύθμιση (Wizard)" data-en="Setup (Wizard)">Ρύθμιση (Wizard)</p>
-      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="3 ερωτήσεις: όνομα δήμου, subdomain, email" data-en="3 questions: municipality name, subdomain, email">3 ερωτήσεις: όνομα, subdomain, email</p>
+      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">3</div>
+      <p style="font-size:0.7rem;font-weight:700;color:var(--gray-900);margin:0 0 0.2rem" data-el="Ελεγχόμενη ρύθμιση" data-en="Controlled setup">Ελεγχόμενη ρύθμιση</p>
+      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="Τεκμηριωμένη και αναστρέψιμη διαδικασία" data-en="Documented and reversible procedure">Τεκμηριωμένη και αναστρέψιμη διαδικασία</p>
     </div>
     <div style="text-align:center">
-      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">✓</div>
+      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">4</div>
       <p style="font-size:0.7rem;font-weight:700;color:var(--gray-900);margin:0 0 0.2rem" data-el="Κρυπτογραφικά κλειδιά" data-en="Cryptographic keys">Κρυπτογραφικά κλειδιά</p>
-      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="Ed25519 keypair — μοναδικό για τον κόμβο σας" data-en="Ed25519 keypair — unique to your node">Ed25519 keypair — μοναδικό για τον κόμβο</p>
+      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="Προστατευμένη δημιουργία και αποθήκευση Ed25519" data-en="Protected Ed25519 generation and storage">Προστατευμένη δημιουργία και αποθήκευση Ed25519</p>
     </div>
     <div style="text-align:center">
-      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">✓</div>
-      <p style="font-size:0.7rem;font-weight:700;color:var(--gray-900);margin:0 0 0.2rem" data-el="Καταχώρηση" data-en="Registration">Καταχώρηση</p>
-      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="Αυτόματη σύνδεση με ekklesia.gr" data-en="Automatic connection to ekklesia.gr">Αυτόματη σύνδεση με ekklesia.gr</p>
+      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">5</div>
+      <p style="font-size:0.7rem;font-weight:700;color:var(--gray-900);margin:0 0 0.2rem" data-el="Έγκριση κόμβου" data-en="Node approval">Έγκριση κόμβου</p>
+      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="Ταυτοποίηση φορέα και χειροκίνητη έγκριση" data-en="Operator verification and manual approval">Ταυτοποίηση φορέα και χειροκίνητη έγκριση</p>
     </div>
     <div style="text-align:center">
-      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">✓</div>
+      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">6</div>
       <p style="font-size:0.7rem;font-weight:700;color:var(--gray-900);margin:0 0 0.2rem" data-el="SSL Πιστοποιητικό" data-en="SSL Certificate">SSL Πιστοποιητικό</p>
-      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="Let's Encrypt — δωρεάν και αυτόματο" data-en="Let's Encrypt — free and automatic">Let's Encrypt — δωρεάν και αυτόματο</p>
+      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="TLS, rotation και έλεγχος λήξης" data-en="TLS, rotation and expiry monitoring">TLS, rotation και έλεγχος λήξης</p>
     </div>
     <div style="text-align:center">
-      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">✓</div>
-      <p style="font-size:0.7rem;font-weight:700;color:var(--gray-900);margin:0 0 0.2rem" data-el="Αυτόματες ενημερώσεις" data-en="Auto-updates">Αυτόματες ενημερώσεις</p>
-      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="Ασφαλείς ενημερώσεις κάθε 24 ώρες" data-en="Secure updates every 24 hours">Ασφαλείς ενημερώσεις κάθε 24 ώρες</p>
+      <div style="width:2rem;height:2rem;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;color:white;font-size:0.75rem;font-weight:900">7</div>
+      <p style="font-size:0.7rem;font-weight:700;color:var(--gray-900);margin:0 0 0.2rem" data-el="Ενημερώσεις & rollback" data-en="Updates & rollback">Ενημερώσεις & rollback</p>
+      <p style="font-size:0.62rem;color:var(--gray-500);margin:0" data-el="Υπογεγραμμένες εκδόσεις και δοκιμασμένη επαναφορά" data-en="Signed releases and tested rollback">Υπογεγραμμένες εκδόσεις και δοκιμασμένη επαναφορά</p>
     </div>
   </div>
 
@@ -614,13 +613,13 @@
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.25rem;margin-bottom:2.5rem">
     <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0">
       <div style="font-size:2rem;margin-bottom:0.5rem">🏛️</div>
-      <h4 style="font-weight:800;font-size:0.95rem;color:var(--blue);margin-bottom:0.4rem" data-el="Πλήρης Αυτονομία" data-en="Full Autonomy">Πλήρης Αυτονομία</h4>
-      <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Ο κόμβος σας τρέχει στον δικό σας server. Τα δεδομένα των πολιτών σας παραμένουν αποκλειστικά στον Δήμο σας. Καμία εξάρτηση από τρίτους." data-en="Your node runs on your own server. Your citizens' data stays exclusively in your municipality. No third-party dependency.">Ο κόμβος σας τρέχει στον δικό σας server. Τα δεδομένα των πολιτών σας παραμένουν αποκλειστικά στον Δήμο σας. Καμία εξάρτηση από τρίτους.</p>
+      <h4 style="font-weight:800;font-size:0.95rem;color:var(--blue);margin-bottom:0.4rem" data-el="Στόχος Αυτονομίας" data-en="Autonomy goal">Στόχος Αυτονομίας</h4>
+      <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Μελλοντικός στόχος είναι ένας ανεξάρτητος δημοτικός server με τεκμηριωμένη απομόνωση δεδομένων. Αυτό δεν είναι ακόμη διαθέσιμο." data-en="The future goal is an independent municipal server with documented data isolation. This is not available yet.">Μελλοντικός στόχος, όχι διαθέσιμη υπηρεσία.</p>
     </div>
     <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0">
       <div style="font-size:2rem;margin-bottom:0.5rem">🔐</div>
-      <h4 style="font-weight:800;font-size:0.95rem;color:var(--blue);margin-bottom:0.4rem" data-el="Στρατιωτική Ασφάλεια" data-en="Military-grade Security">Στρατιωτική Ασφάλεια</h4>
-      <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Ed25519 κρυπτογράφηση — το ίδιο πρότυπο που χρησιμοποιεί το SSH και το Signal. Κάθε ψήφος υπογράφεται ψηφιακά. Αδύνατη η παραποίηση." data-en="Ed25519 encryption — the same standard used by SSH and Signal. Every vote is digitally signed. Tampering is impossible.">Ed25519 κρυπτογράφηση — το ίδιο πρότυπο που χρησιμοποιεί το SSH και το Signal. Κάθε ψήφος υπογράφεται ψηφιακά. Αδύνατη η παραποίηση.</p>
+      <h4 style="font-weight:800;font-size:0.95rem;color:var(--blue);margin-bottom:0.4rem" data-el="Αρχές Ασφάλειας" data-en="Security principles">Αρχές Ασφάλειας</h4>
+      <p style="font-size:0.82rem;color:var(--gray-700);line-height:1.7" data-el="Οι ψήφοι υπογράφονται με Ed25519. Κάθε μελλοντικός κόμβος απαιτεί threat model, απομόνωση, ενημερώσεις και ανεξάρτητο έλεγχο πριν από παραγωγική χρήση." data-en="Votes are signed with Ed25519. Every future node requires a threat model, isolation, updates, and independent review before production use.">Ed25519 με υποχρεωτικό security review πριν από παραγωγική χρήση.</p>
     </div>
     <div style="background:var(--gray-100);border-radius:var(--radius);padding:1.5rem;border:2px solid #e2e8f0">
       <div style="font-size:2rem;margin-bottom:0.5rem">👁️</div>
@@ -678,7 +677,7 @@
   </div>
 
   <!-- SVG DATENFLUSS -->
-  <h3 style="font-size:1.1rem;font-weight:900;text-align:center;margin-bottom:1.25rem;color:var(--gray-900)" data-el="Ροή Δεδομένων" data-en="Data Flow">Ροή Δεδομένων</h3>
+  <h3 style="font-size:1.1rem;font-weight:900;text-align:center;margin-bottom:1.25rem;color:var(--gray-900)" data-el="Εννοιολογική μελλοντική ροή δεδομένων" data-en="Conceptual future data flow">Εννοιολογική μελλοντική ροή δεδομένων</h3>
   <div style="text-align:center;margin-bottom:1rem">
     <svg viewBox="0 0 700 180" style="max-width:100%;height:auto" xmlns="http://www.w3.org/2000/svg">
       <!-- Box 1: Citizen -->
