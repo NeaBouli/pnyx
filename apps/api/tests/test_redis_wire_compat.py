@@ -44,6 +44,7 @@ async def test_real_redis_production_command_shapes() -> None:
         assert await client.ttl(keys["value"]) > 0
         assert await client.incr(keys["counter"]) == 1
         assert await client.incrby(keys["counter"], 2) == 3
+        assert await client.incrbyfloat(keys["counter"], "0.25") == 3.25
 
         assert await client.hset(keys["hash"], "field", "value") == 1
         assert await client.hset(keys["hash"], mapping={"other": "two"}) == 1
@@ -76,8 +77,8 @@ async def test_real_redis_production_command_shapes() -> None:
 
         pipeline = client.pipeline()
         pipeline.set(keys["pipeline"], "one", nx=True)
-        pipeline.incr(keys["counter"])
-        assert await pipeline.execute() == [True, 4]
+        pipeline.incrbyfloat(keys["counter"], "0.75")
+        assert await pipeline.execute() == [True, 4.0]
 
         assert await client.set(keys["scan"], "x") is True
         assert [key async for key in client.scan_iter(f"{prefix}:scan*")] == [
