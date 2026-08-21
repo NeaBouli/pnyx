@@ -1,25 +1,52 @@
 # Ekklesia.gr — TODO
 # Copyright (c) 2026 V-Labs Development — MIT License
-# Stand: 2026-04-13 — Session 3 komplett, Rollback pre-session4-20260413
 
-## 2026-07-12 — Current Release Gates
+Last reconciled: 2026-08-21
+
+`docs/STATUS.md` is the authority for the current release. GitHub issues and
+Linear are the authorities for active work. Older session notes are retained
+below only as historical context; their unchecked boxes are not current tasks.
+
+## Current gates
 
 - [x] Web, Dashboard, Mobile, Representative and shared crypto verification
   added to pull-request CI.
 - [x] Citizen and Representative Android bundles exported locally.
+- [x] Android v1.0.29 published as direct APK, Google Play Closed Testing build
+  and official F-Droid package.
+- [x] Monthly Brevo newsletter implemented and scheduled for the first day of
+  each month at 09:00 scheduler time (Linear `NEA-160` is superseded by this
+  state).
 - [x] Donation intake is PII-free, donations-only and fail-closed.
 - [x] Public donation links and public wallet/account identifiers removed.
 - [x] GitHub PR checks and merge for the 2026-07-12 readiness block (#131,
   `a99a12b`).
 - [ ] Legal recipient, donation/tax/document policy and sandbox E2E approval.
-- [ ] Signed EAS builds, physical-device HLR/voting canary and controlled deploy.
+- [ ] Google Play production-access tester/time requirement (external gate).
+- [ ] Complete the DMARC observation window and sending-path inventory before
+  proposing an enforcement policy (Linear `NEA-422`; no DNS change yet).
+- [ ] Repair the production Docker/containerd image inventory in a separately
+  approved, reversible maintenance window (GitHub #211).
+- [ ] Replace the reviewed local `image-size` security backport only after an
+  upstream Metro-compatible patched release exists; keep Dependabot #78-#81
+  visible until then.
+- [ ] Public iOS build and future release hardening. Android signing and the
+  current controlled Android distribution are complete; device canaries remain
+  release-specific verification work.
 
 See `docs/SOFTWARE_READINESS_2026-07-12.md` for the current matrix. Older
 session notes below are historical and must not be used as current HEAD status.
 
 ---
 
-## 🚀 STARTFLOW FÜR NÄCHSTE SESSION
+## Historical session notes — originated 2026-04-13
+
+The remainder of this file preserves the pre-launch Session 3 notes together
+with a few later completion annotations. It is not an operational checklist and
+must be revalidated against `docs/STATUS.md`, GitHub and Linear before any item
+is scheduled.
+
+### Former session start flow
 
 > **Lies das hier zuerst, bevor du irgendetwas änderst.**
 
@@ -52,7 +79,7 @@ Hetzner-Secrets gesetzt sind.
 
 ---
 
-## 🔴 OFFEN — Kritisch (vor erstem Launch)
+### Former pre-launch critical list
 
 ### Infrastruktur
 - [ ] Docker Compose lokal starten + `alembic upgrade head`
@@ -76,7 +103,7 @@ Hetzner-Secrets gesetzt sind.
 
 ---
 
-## 🟡 OFFEN — Vor Public Beta
+### Former pre-public-beta list
 
 ### Plattform
 - [ ] Hetzner CX21 + Traefik + Let's Encrypt SSL
@@ -126,7 +153,7 @@ Prinzip: Minimaler Datenverkehr, maximale User-Kontrolle, Privacy-by-Design.
 
 ---
 
-## 🟢 GEPLANT — V2 / Alpha
+### Historical V2 / Alpha ideas
 
 - [ ] packages/crypto-rs (Rust + WASM)
 - [ ] Commit-Reveal ZK Abstimmung
@@ -138,7 +165,7 @@ Prinzip: Minimaler Datenverkehr, maximale User-Kontrolle, Privacy-by-Design.
 
 ---
 
-## ✅ ERLEDIGT
+### Historical completed work
 
 ### Session 3 (2026-04-09/10) — 15 Commits
 - [x] Rollback: `pre-session3-20260409`, `pre-session4-20260413`
@@ -161,4 +188,5 @@ Prinzip: Minimaler Datenverkehr, maximale User-Kontrolle, Privacy-by-Design.
 
 ---
 
-*Stand: 2026-04-13. HEAD `d7b09f4`. Rollback: `pre-session4-20260413`. Remote synchron.*
+*Historical notes originated 2026-04-13 at HEAD `d7b09f4`; later completion
+annotations may appear. Rollback: `pre-session4-20260413`.*

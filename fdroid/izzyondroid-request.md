@@ -1,4 +1,9 @@
-# IzzyOnDroid App Request: ekklesia (gr.ekklesia.app)
+# Archived IzzyOnDroid App Request: ekklesia (gr.ekklesia.app)
+
+> Historical request only. The legacy `gr.ekklesia.app` request is superseded
+> by the official F-Droid package `ekklesia.gr`. Ekklesia v1.0.29
+> (versionCode 584) is published in the main F-Droid repository:
+> https://f-droid.org/packages/ekklesia.gr/
 
 ## App Info
 - **Name:** ekklesia
@@ -17,6 +22,9 @@ No account required. No data stored. Ed25519 cryptography.
 ## Anti-Features
 - NonFreeNet: HLR Lookup service + Expo Push Notifications (FCM)
 
-## Why IzzyOnDroid?
-F-Droid MR pending (Draft) but React Native/Expo build chain requires custom setup.
-IzzyOnDroid pre-built APK distribution is the right first step.
+## Archive status
+
+This request was prepared as an interim distribution path while the official
+F-Droid submission was pending. The official submission has since been merged,
+built and published, so no IzzyOnDroid follow-up is required for the current
+package.
