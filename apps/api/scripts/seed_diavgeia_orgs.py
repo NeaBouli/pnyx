@@ -32,7 +32,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from sqlalchemy import select
-from rapidfuzz import fuzz
+from services.diavgeia_mapping import DimosRecord, normalize_greek, propose_primary_mappings
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -42,10 +42,10 @@ DEFAULT_SNAPSHOT = DATA_DIR / "diavgeia_orgs_snapshot.json"
 DEFAULT_SNAPSHOT_GZ = DATA_DIR / "diavgeia_orgs_snapshot.json.gz"
 
 
-def normalize_greek(text: str) -> str:
-    """Strip accents, uppercase, remove 'ΔΗΜΟΣ ' prefix for comparison."""
+def normalize_subsidiary_label(text: str) -> str:
+    """Preserve the legacy subsidiary matching behavior until it is redesigned."""
     nfkd = unicodedata.normalize("NFKD", text)
-    stripped = "".join(c for c in nfkd if not unicodedata.combining(c))
+    stripped = "".join(char for char in nfkd if not unicodedata.combining(char))
     result = stripped.upper().strip()
     for prefix in ("ΔΗΜΟΣ ", "ΔΗΜΟΥ ", "ΔΗΜΟΙ "):
         if result.startswith(prefix):
@@ -142,9 +142,9 @@ async def main() -> None:
     subsidiary_orgs = [o for o in all_orgs if not (o.get("is_primary", False) or o.get("category") == "MUNICIPALITY")]
     logger.info("Municipality orgs: %d, Subsidiary orgs: %d", len(municipality_orgs), len(subsidiary_orgs))
 
-    # Pre-normalize org labels
-    norm_municipality = [(o, normalize_greek(o.get("label", ""))) for o in municipality_orgs]
-    norm_subsidiary = [(o, normalize_greek(o.get("label", ""))) for o in subsidiary_orgs]
+    # Pre-normalize subsidiary labels. Primary matching is delegated to the
+    # deterministic matcher with guarded manual decisions.
+    norm_subsidiary = [(o, normalize_subsidiary_label(o.get("label", ""))) for o in subsidiary_orgs]
 
     # Load dimoi from DB
     from database import AsyncSessionLocal
@@ -157,44 +157,47 @@ async def main() -> None:
     logger.info("Loaded %d dimoi from database", len(dimoi))
 
     threshold = args.confidence_threshold
-    stats = {"total": len(dimoi), "auto_matched": 0, "needs_review": 0, "unmatched": 0}
+    stats = {
+        "total": len(dimoi),
+        "auto_matched": 0,
+        "needs_review": 0,
+        "manual_review": 0,
+        "unmatched": 0,
+    }
     csv_rows: list[dict] = []
     mappings_to_insert: list[dict] = []
 
+    primary_matches = {
+        match.dimos_id: match
+        for match in propose_primary_mappings(
+            [DimosRecord(id=dimos.id, name_el=dimos.name_el, periferia_id=dimos.periferia_id) for dimos in dimoi],
+            municipality_orgs,
+            threshold=threshold,
+        )
+    }
+
     for dimos in dimoi:
-        dimos_norm = normalize_greek(dimos.name_el)
-        best_score = 0.0
-        best_org = None
-        candidates: list[tuple[dict, float]] = []
+        dimos_norm = normalize_subsidiary_label(dimos.name_el)
+        primary = primary_matches[dimos.id]
 
-        for org, org_norm in norm_municipality:
-            score = fuzz.token_set_ratio(dimos_norm, org_norm) / 100.0
-            if score >= threshold:
-                candidates.append((org, score))
-            if score > best_score:
-                best_score = score
-                best_org = org
-
-        needs_review = False
-        if best_org and best_score >= threshold:
-            tied = [c for c in candidates if abs(c[1] - best_score) < 0.01]
-            needs_review = best_score < 0.95 or len(tied) > 1
+        if primary.status == "matched" and primary.org_uid:
+            needs_review = primary.needs_review
 
             mappings_to_insert.append({
                 "dimos_id": dimos.id,
-                "diavgeia_uid": str(best_org["uid"]),
-                "org_label": best_org.get("label", ""),
+                "diavgeia_uid": primary.org_uid,
+                "org_label": primary.org_label or "",
                 "org_category": "MUNICIPALITY",
                 "is_primary": True,
-                "match_confidence": round(best_score, 3),
+                "match_confidence": round(primary.token_set_score, 3),
             })
 
             csv_rows.append({
                 "dimos_id": dimos.id,
                 "dimos_name_el": dimos.name_el,
-                "matched_org_uid": best_org["uid"],
-                "matched_org_label": best_org.get("label", ""),
-                "match_confidence": f"{best_score:.3f}",
+                "matched_org_uid": primary.org_uid,
+                "matched_org_label": primary.org_label or "",
+                "match_confidence": f"{primary.token_set_score:.3f}",
                 "needs_review": "TRUE" if needs_review else "FALSE",
             })
 
@@ -215,13 +218,16 @@ async def main() -> None:
                         "match_confidence": None,
                     })
         else:
-            stats["unmatched"] += 1
+            if primary.status == "manual_review":
+                stats["manual_review"] += 1
+            else:
+                stats["unmatched"] += 1
             csv_rows.append({
                 "dimos_id": dimos.id,
                 "dimos_name_el": dimos.name_el,
                 "matched_org_uid": "",
                 "matched_org_label": "",
-                "match_confidence": f"{best_score:.3f}" if best_org else "0.000",
+                "match_confidence": f"{primary.token_set_score:.3f}",
                 "needs_review": "TRUE",
             })
 
@@ -251,6 +257,7 @@ async def main() -> None:
     logger.info("  Total dimoi:    %d", stats["total"])
     logger.info("  Auto-matched:   %d", stats["auto_matched"])
     logger.info("  Needs review:   %d", stats["needs_review"])
+    logger.info("  Manual review:  %d", stats["manual_review"])
     logger.info("  Unmatched:      %d", stats["unmatched"])
     logger.info("  Total mappings: %d (incl. subsidiaries)", len(mappings_to_insert))
     logger.info("=" * 50)
