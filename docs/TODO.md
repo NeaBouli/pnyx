@@ -1,7 +1,7 @@
 # Ekklesia.gr — TODO
 # Copyright (c) 2026 V-Labs Development — MIT License
 
-Last reconciled: 2026-08-21
+Last reconciled: 2026-08-23
 
 `docs/STATUS.md` is the authority for the current release. GitHub issues and
 Linear are the authorities for active work. Older session notes are retained
@@ -27,12 +27,24 @@ below only as historical context; their unchecked boxes are not current tasks.
   proposing an enforcement policy (Linear `NEA-422`; no DNS change yet).
 - [ ] Repair the production Docker/containerd image inventory in a separately
   approved, reversible maintenance window (GitHub #211).
+- [ ] Update Discourse from `v2026.8.0-latest` to the official patch tag
+  `v2026.8.0-latest.1` only in a backed-up, reversible maintenance window and
+  create a verified rollback tag before applying the patch; then complete every
+  health/SSO/topic/bill-sync acceptance check (GitHub #215).
 - [ ] Replace the reviewed local `image-size` security backport only after an
   upstream Metro-compatible patched release exists; keep Dependabot #78-#81
   visible until then.
 - [ ] Public iOS build and future release hardening. Android signing and the
   current controlled Android distribution are complete; device canaries remain
   release-specific verification work.
+- [ ] Execute only the synthetic Phase-1 evidence tasks for the parallel Ekklesia
+  Platform V2/Minima track (GitHub #217-#219; tracked by epic #216). GH#220-#223
+  remain blocked until their documented identity, federation, repository,
+  parity, migration and rollout gates pass. V1 remains the production baseline;
+  no V2 repository, real identity/vote integration or rollout is permitted
+  before its documented gates pass.
+
+V2 architecture: `docs/architecture/EKKLESIA_V2_MINIMA.md`.
 
 See `docs/SOFTWARE_READINESS_2026-07-12.md` for the current matrix. Older
 session notes below are historical and must not be used as current HEAD status.
