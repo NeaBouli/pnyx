@@ -14,7 +14,7 @@ Options:
     --dry-run                    No DB writes, print summary + CSV only
     --stale-days N               Warn if snapshot older than N days (default: 180)
     --confidence-threshold F     Minimum fuzzy score (default: 0.85)
-    --output-csv PATH            CSV output path (default: /tmp/diavgeia_mapping_review.csv)
+    --output-csv PATH            Required CSV review output path
 """
 import argparse
 import asyncio
@@ -115,7 +115,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dry-run", action="store_true", help="No DB writes")
     parser.add_argument("--stale-days", type=int, default=180, help="Warn if snapshot older than N days")
     parser.add_argument("--confidence-threshold", type=float, default=0.85, help="Min fuzzy match score")
-    parser.add_argument("--output-csv", type=str, default="/tmp/diavgeia_mapping_review.csv", help="CSV output")
+    parser.add_argument("--output-csv", type=str, required=True, help="CSV review output path")
     return parser.parse_args()
 
 
@@ -183,14 +183,15 @@ async def main() -> None:
         if primary.status == "matched" and primary.org_uid:
             needs_review = primary.needs_review
 
-            mappings_to_insert.append({
-                "dimos_id": dimos.id,
-                "diavgeia_uid": primary.org_uid,
-                "org_label": primary.org_label or "",
-                "org_category": "MUNICIPALITY",
-                "is_primary": True,
-                "match_confidence": round(primary.token_set_score, 3),
-            })
+            if not needs_review:
+                mappings_to_insert.append({
+                    "dimos_id": dimos.id,
+                    "diavgeia_uid": primary.org_uid,
+                    "org_label": primary.org_label or "",
+                    "org_category": "MUNICIPALITY",
+                    "is_primary": True,
+                    "match_confidence": round(primary.token_set_score, 3),
+                })
 
             csv_rows.append({
                 "dimos_id": dimos.id,
@@ -199,6 +200,9 @@ async def main() -> None:
                 "matched_org_label": primary.org_label or "",
                 "match_confidence": f"{primary.token_set_score:.3f}",
                 "needs_review": "TRUE" if needs_review else "FALSE",
+                "status": primary.status,
+                "source": primary.source,
+                "reason": primary.reason or "",
             })
 
             if needs_review:
@@ -229,6 +233,9 @@ async def main() -> None:
                 "matched_org_label": "",
                 "match_confidence": f"{primary.token_set_score:.3f}",
                 "needs_review": "TRUE",
+                "status": primary.status,
+                "source": primary.source,
+                "reason": primary.reason or "",
             })
 
     # Write to DB (unless dry-run)
@@ -246,6 +253,7 @@ async def main() -> None:
         writer = csv.DictWriter(f, fieldnames=[
             "dimos_id", "dimos_name_el", "matched_org_uid",
             "matched_org_label", "match_confidence", "needs_review",
+            "status", "source", "reason",
         ])
         writer.writeheader()
         writer.writerows(csv_rows)

@@ -154,3 +154,73 @@ def test_audit_reports_changes_without_mutating_input() -> None:
         32: "manual_review",
     }
     assert summary["mode"] == "read_only"
+    assert summary["review_gate"] == "explicit_approval_required_before_database_write"
+
+
+def test_audit_blocks_primary_uid_owned_by_another_municipality() -> None:
+    proposals = propose_primary_mappings(
+        [DimosRecord(19, "Ηρακλείου", 5)],
+        _snapshot_orgs(),
+    )
+    mappings = [
+        {
+            "dimos_id": "999",
+            "diavgeia_uid": "6325",
+            "org_label": "ΔΗΜΟΣ ΗΡΑΚΛΕΙΟΥ (ΚΡΗΤΗΣ)",
+            "is_primary": "t",
+        }
+    ]
+
+    rows, _ = build_audit_rows(proposals, mappings)
+
+    assert rows[0]["action"] == "blocked_primary_uid_owned"
+    assert rows[0]["conflicting_primary_dimos_ids"] == "999"
+
+
+def test_audit_allows_uid_when_current_owner_moves_away_in_same_plan() -> None:
+    proposals = propose_primary_mappings(
+        [
+            DimosRecord(19, "Ηρακλείου", 5),
+            DimosRecord(44, "Ηρακλείου", 1),
+        ],
+        _snapshot_orgs(),
+    )
+    mappings = [
+        {
+            "dimos_id": "19",
+            "diavgeia_uid": "6109",
+            "org_label": "ΔΗΜΟΣ ΗΡΑΚΛΕΙΟΥ",
+            "is_primary": "t",
+        }
+    ]
+
+    rows, _ = build_audit_rows(proposals, mappings)
+    by_id = {row["dimos_id"]: row for row in rows}
+
+    assert by_id[19]["action"] == "correct_primary"
+    assert by_id[44]["action"] == "add_primary"
+
+
+def test_audit_blocks_uid_when_current_owner_has_no_accepted_move() -> None:
+    proposals = propose_primary_mappings(
+        [
+            DimosRecord(19, "Ηρακλείου", 5),
+            DimosRecord(32, "Κερκυραίων", 11),
+        ],
+        _snapshot_orgs(),
+    )
+    mappings = [
+        {
+            "dimos_id": "32",
+            "diavgeia_uid": "6325",
+            "org_label": "ΔΗΜΟΣ ΗΡΑΚΛΕΙΟΥ (ΚΡΗΤΗΣ)",
+            "is_primary": "t",
+        }
+    ]
+
+    rows, _ = build_audit_rows(proposals, mappings)
+    by_id = {row["dimos_id"]: row for row in rows}
+
+    assert by_id[19]["action"] == "blocked_primary_uid_owned"
+    assert by_id[19]["conflicting_primary_dimos_ids"] == "32"
+    assert by_id[32]["action"] == "manual_review"

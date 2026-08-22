@@ -6,7 +6,8 @@ CSV exports made with PostgreSQL COPY:
     python -m scripts.audit_diavgeia_mappings \
       --dimos-csv /tmp/dimos.csv \
       --mappings-csv /tmp/mappings.csv \
-      --output-csv /tmp/diavgeia-primary-plan.csv
+      --output-csv ./diavgeia-primary-plan.csv \
+      --summary-json ./diavgeia-primary-summary.json
 """
 
 from __future__ import annotations
@@ -35,8 +36,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dimos-csv", type=Path)
     parser.add_argument("--mappings-csv", type=Path)
     parser.add_argument("--confidence-threshold", type=float, default=0.85)
-    parser.add_argument("--output-csv", type=Path, default=Path("/tmp/diavgeia-primary-plan.csv"))
-    parser.add_argument("--summary-json", type=Path)
+    parser.add_argument("--output-csv", type=Path, required=True)
+    parser.add_argument("--summary-json", type=Path, required=True)
     return parser.parse_args()
 
 
@@ -88,22 +89,45 @@ def build_audit_rows(
     mappings: list[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     current_primary: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    current_primary_owners: dict[str, set[int]] = defaultdict(set)
     subsidiary_owners: dict[str, set[int]] = defaultdict(set)
     for mapping in mappings:
         dimos_id = int(mapping["dimos_id"])
         if _as_bool(mapping.get("is_primary")):
             current_primary[dimos_id].append(mapping)
+            current_primary_owners[str(mapping["diavgeia_uid"])].add(dimos_id)
         else:
             subsidiary_owners[str(mapping["diavgeia_uid"])].add(dimos_id)
+
+    proposals_by_dimos = {proposal.dimos_id: proposal for proposal in proposals}
+    proposed_primary_owners: dict[str, set[int]] = defaultdict(set)
+    for proposal in proposals:
+        if proposal.status == "matched" and proposal.org_uid:
+            proposed_primary_owners[proposal.org_uid].add(proposal.dimos_id)
 
     rows: list[dict[str, Any]] = []
     for proposal in proposals:
         existing = current_primary.get(proposal.dimos_id, [])
         old_uids = sorted(str(mapping["diavgeia_uid"]) for mapping in existing)
+        conflicting_current_owners: set[int] = set()
+        if proposal.org_uid:
+            for owner in current_primary_owners.get(proposal.org_uid, set()) - {proposal.dimos_id}:
+                owner_proposal = proposals_by_dimos.get(owner)
+                owner_has_accepted_move = (
+                    owner_proposal is not None
+                    and owner_proposal.status == "matched"
+                    and not owner_proposal.needs_review
+                    and owner_proposal.org_uid not in {None, proposal.org_uid}
+                )
+                if not owner_has_accepted_move:
+                    conflicting_current_owners.add(owner)
+
         if len(existing) > 1:
             action = "blocked_multiple_primary"
         elif proposal.status != "matched":
             action = "manual_review"
+        elif len(proposed_primary_owners[proposal.org_uid or ""]) > 1 or conflicting_current_owners:
+            action = "blocked_primary_uid_owned"
         elif not existing:
             action = "add_primary"
         elif old_uids[0] == proposal.org_uid:
@@ -125,6 +149,9 @@ def build_audit_rows(
                 "source": proposal.source,
                 "reason": proposal.reason or "",
                 "evidence_url": proposal.evidence_url or "",
+                "conflicting_primary_dimos_ids": "|".join(
+                    str(owner) for owner in sorted(conflicting_current_owners)
+                ),
             }
         )
 
@@ -136,6 +163,7 @@ def build_audit_rows(
     }
     summary = {
         "mode": "read_only",
+        "review_gate": "explicit_approval_required_before_database_write",
         "total_dimoi": len(proposals),
         "actions": dict(sorted(action_counts.items())),
         "shared_subsidiary_uid_count": len(shared_subsidiaries),
@@ -171,12 +199,13 @@ async def main() -> None:
     )
     rows, summary = build_audit_rows(proposals, mappings)
     write_csv(args.output_csv, rows)
-    if args.summary_json:
-        args.summary_json.parent.mkdir(parents=True, exist_ok=True)
-        args.summary_json.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    args.summary_json.parent.mkdir(parents=True, exist_ok=True)
+    args.summary_json.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     print(f"Read-only correction plan: {args.output_csv}")
+    print(f"Read-only summary: {args.summary_json}")
+    print("Review gate: explicit approval is required before any database write")
 
 
 if __name__ == "__main__":
