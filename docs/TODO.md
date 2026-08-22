@@ -29,7 +29,8 @@ below only as historical context; their unchecked boxes are not current tasks.
   approved, reversible maintenance window (GitHub #211).
 - [ ] Update Discourse from `v2026.8.0-latest` to the official patch tag
   `v2026.8.0-latest.1` only in a backed-up, reversible maintenance window and
-  complete every health/SSO/topic/bill-sync acceptance check (GitHub #215).
+  create a verified rollback tag before applying the patch; then complete every
+  health/SSO/topic/bill-sync acceptance check (GitHub #215).
 - [ ] Replace the reviewed local `image-size` security backport only after an
   upstream Metro-compatible patched release exists; keep Dependabot #78-#81
   visible until then.
@@ -37,9 +38,11 @@ below only as historical context; their unchecked boxes are not current tasks.
   current controlled Android distribution are complete; device canaries remain
   release-specific verification work.
 - [ ] Execute only the synthetic Phase-1 evidence tasks for the parallel Ekklesia
-  Platform V2/Minima track (GitHub #216-#223). V1 remains the production
-  baseline; no V2 repository, real identity/vote integration or rollout is
-  permitted before its documented gates pass.
+  Platform V2/Minima track (GitHub #217-#219; tracked by epic #216). GH#220-#223
+  remain blocked until their documented identity, federation, repository,
+  parity, migration and rollout gates pass. V1 remains the production baseline;
+  no V2 repository, real identity/vote integration or rollout is permitted
+  before its documented gates pass.
 
 V2 architecture: `docs/architecture/EKKLESIA_V2_MINIMA.md`.
 

@@ -71,13 +71,23 @@ Details: [Ekklesia Platform V2 on Minima](architecture/EKKLESIA_V2_MINIMA.md)
 
 ### Verbindliche Rollout-Gates
 
-1. G0: Architektur, Bedrohungs- und Datenschutzmodell geprüft.
-2. G1: Alle synthetischen Maxima- und Minima-Realitäts-PoCs reproduzierbar.
-3. G2: Isolierte Implementierungsgrenze und Protokoll-CI geprüft.
-4. G3: Unabhängige Security-, Kryptografie- und Datenschutzprüfung bestanden.
-5. G4: Vereinbarte V1/V2-Parität sowie Migrations- und Rollback-Übungen bestanden.
-6. G5: Ausdrückliche Release-Freigabe des Inhabers. Erst danach darf die
-   Rollout-Planung beginnen.
+Die normative und allein verbindliche Definition steht in
+[Abschnitt 10 des Architekturdokuments](architecture/EKKLESIA_V2_MINIMA.md#10-phased-implementation-plan).
+Diese Kurzfassung darf sie nicht abschwächen:
+
+1. G0: Unabhängiger Architektur-, Bedrohungs- und Datenschutzreview akzeptiert
+   V1-Grenze, offene Fragen und den Nachweisplan.
+2. G1: Unabhängig geprüfte, reproduzierbare synthetische PoCs schließen alle
+   kritischen Transport-, Mobile- und Settlement-Fragen oder führen zum No-Go;
+   Schemas, Fixtures und Testvektoren sind versioniert und reproduzierbar.
+3. G2: Unabhängiger Review bestätigt Isolation, CI-Grenze und Protokoll-Testvektoren.
+4. G3: Unabhängiger Security-, Kryptografie- und Datenschutzreview ohne offene
+   hohe oder kritische Befunde; adversariale Nachweise sind reproduzierbar.
+5. G4: Vollständige Parität sowie dokumentierte Migrations- und Rollback-Nachweise
+   ohne Verlust, Doppelstimme oder Identifier-Verknüpfung.
+6. G5: Legal/DPIA- und Operational-Readiness-Abnahme, erfolgreicher Canary,
+   öffentliche Protokoll-/Verifier-/Rollback-Dokumentation und ausdrückliche
+   Release-Freigabe des Inhabers. Erst danach darf die Rollout-Planung beginnen.
 
 V1 bleibt bis zu einer separaten, reversiblen Stilllegungsentscheidung verfügbar,
 selbst wenn V2 später alle Gates besteht.

@@ -33,8 +33,10 @@ The working hypothesis is:
 - An append-only public bulletin board allows independent recomputation of every
   anchored root without publishing phone numbers, identity records, secrets,
   raw eligibility data or cross-scope identifiers.
-- Durable publication remains chain-agnostic. Minima full-node pruning means
-  Layer 1 roots alone are not a durable store for the corresponding records.
+- Durable publication continues through append-only Arweave archival. A reviewed
+  additional store may mirror those records with the same append-only semantics,
+  but it may not replace Arweave. Minima full-node pruning means Layer 1 roots
+  alone are not a durable store for the corresponding records.
 
 This is not yet a Go decision for implementation. Phase 1 must first turn the
 unverified assumptions into measured facts.
@@ -44,7 +46,10 @@ unverified assumptions into measured facts.
 V2 may not weaken or silently reinterpret these V1 properties:
 
 1. No account, email or cookie is required for the anonymous citizen path.
-2. Phone numbers are transient verification inputs and are not persisted.
+2. Phone numbers are transient verification inputs, are never persisted and are
+   deleted immediately after nullifier generation. Server-side Python paths must
+   explicitly delete all request/local copies and invoke `gc.collect()` as in the
+   V1 contract (`packages/crypto/nullifier.py` and `apps/api/routers/identity.py`).
 3. Private Ed25519 keys and Semaphore identity secrets remain client-side.
 4. Nullifiers are domain- and scope-separated and prevent duplicate voting.
 5. A missing, revoked or unverifiable identity fails closed.
@@ -227,6 +232,9 @@ features begin only after the architecture ADRs are approved.
 
 ## 10. Phased implementation plan
 
+This section is the normative G0-G5 acceptance contract. Roadmaps and tickets
+may summarize it but may not weaken, replace or reinterpret these criteria.
+
 ### Phase 0 - architecture and evidence map
 
 Deliverables:
@@ -235,7 +243,9 @@ Deliverables:
 - official-source matrix and explicit unknowns;
 - epic GH#216 and bounded work packages.
 
-Gate G0: documentation review accepts the hybrid hypothesis and V1 boundary.
+Gate G0: independent architecture, threat-model and privacy review accepts the
+hybrid hypothesis, V1 boundary, explicit unknowns and the evidence required to
+close each critical unknown in G1.
 
 ### Phase 1 - synthetic Minima reality lab
 
@@ -248,8 +258,10 @@ Work packages:
 All tests use generated keys, synthetic votes and local/test networks. No HLR,
 real identity, real bill, production endpoint or token is permitted.
 
-Gate G1: reproducible results close every critical transport/settlement unknown
-or produce a No-Go decision.
+Gate G1: independently reviewed, reproducible results close every critical
+transport, mobile-resource and settlement unknown or produce a No-Go decision.
+Synthetic fixtures, protocol schemas and conformance vectors are versioned and
+reproducible before Phase 2 begins.
 
 ### Phase 2 - protocol decisions and isolated skeleton
 
@@ -259,8 +271,9 @@ Work packages:
 - GH#221: bulletin board, federation and data availability specification;
 - GH#222: isolated repository, pinned toolchain and CI.
 
-Gate G2: independent architecture review confirms no V1 coupling and validates
-the protocol test vectors.
+Gate G2: independent architecture and protocol review confirms no V1 coupling,
+validates the protocol test vectors and accepts the isolated implementation and
+CI boundary.
 
 ### Phase 3 - privacy-preserving functional path
 
@@ -271,7 +284,8 @@ the protocol test vectors.
 - Run mobile and edge performance tests continuously.
 
 Gate G3: independent security, cryptography and privacy review passes with no
-open high/critical finding.
+open high or critical finding and with all required adversarial evidence
+reproducible.
 
 ### Phase 4 - V1 parity and migration rehearsal
 
@@ -285,8 +299,9 @@ GH#223 owns the parity matrix. At minimum it covers:
 - admin/monitoring, incident response and data export;
 - chain/Maxima outage behavior and durable availability.
 
-Gate G4: all agreed parity tests pass and repeated migration/rollback drills on
-sanitized disposable data show no loss, double vote or identifier linkage.
+Gate G4: all agreed parity tests pass and documented, repeated
+migration/rollback drills on sanitized disposable data provide evidence of no
+loss, double vote or identifier linkage.
 
 ### Phase 5 - staged release decision
 
@@ -297,8 +312,11 @@ Only after G0-G4:
 - public protocol, verifier and rollback documentation;
 - explicit owner release approval.
 
-Gate G5 is approval to plan a rollout, not permission to retire V1. V1 remains
-available until a separate, reversible retirement decision.
+Gate G5 requires legal/DPIA and operational-readiness acceptance, a successful
+limited canary, public protocol/verifier/rollback documentation and explicit
+owner release approval. It is approval to plan a rollout, not permission to
+retire V1. V1 remains available until a separate, reversible retirement
+decision.
 
 ## 11. V2.0 non-goals
 
@@ -315,12 +333,10 @@ available until a separate, reversible retirement decision.
 1. Argon2id continuity or Semaphore-first V2 eligibility.
 2. Off-chain Ed25519 continuity or a reviewed Minima-native V2 key model.
 3. Exact aggregator count, operator independence and M-of-N governance.
-4. Durable board publication: continued Arweave dual publication or another
-   reviewed store.
-5. Finality depth and epoch cadence.
-6. Receipt threshold and behavior when aggregators disagree.
-7. Mobile distribution: MiniDapp, companion app, gateway or optional local node.
-8. Public terminology for anchored versus directly verified data.
+4. Finality depth and epoch cadence.
+5. Receipt threshold and behavior when aggregators disagree.
+6. Mobile distribution: MiniDapp, companion app, gateway or optional local node.
+7. Public terminology for anchored versus directly verified data.
 
 No production code starts before decisions 1-4 have approved ADRs and the Phase
 1 evidence is available.
