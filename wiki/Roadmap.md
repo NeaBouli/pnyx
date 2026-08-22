@@ -7,7 +7,7 @@
 # Χάρτης Πορείας / Roadmap
 # Copyright (c) 2026 Vendetta Labs — MIT License
 
-## Φάση Beta (● Ενεργή τώρα / Active now)
+## Ekklesia V1 — Φάση Beta (● Ενεργή τώρα / Active now)
 
 ### Ολοκληρωμένα / Completed ✅
 - MOD-01 Beta credential (HLR Greek-number network-status check without SMS, Ed25519, Nullifier, Revocation; not proof of SIM possession or identity)
@@ -26,7 +26,10 @@
 - End-to-End test (full flow)
 - Expo Mobile App (iOS + Android)
 
-## Φάση Alpha 0.1
+Η V1 παραμένει η ενεργή και συντηρούμενη πλατφόρμα. Η έρευνα V2 δεν αλλάζει τη
+βάση δεδομένων, την ψηφοφορία, την ταυτότητα, το φόρουμ ή τις εκδόσεις της V1.
+
+## Ekklesia V1 — Φάση Alpha 0.1
 **Trigger:** 500+ χρήστες + 3+ NGO partners + official integration + holder authentication + DPIA + migration design + independent security/privacy review + sandbox canary
 
 - MOD-09 gov.gr OAuth2.0 Integration
@@ -35,7 +38,7 @@
 - Sandbox request to AADE/gov.gr
 - External security audit
 
-## Φάση V2
+## Ekklesia V1 — Guarded evolution
 **Trigger:** Proven stability + community
 
 - packages/crypto-rs (Rust + WASM, ed25519-dalek)
@@ -46,3 +49,22 @@
 - Deliberation Layer (pol.is model)
 - Semaphore ZK Voting — Android prover, hidden S10 canary, security review, and first public one-bill scoped rollout passed; guarded Parliament rollout live; ZK Arweave auto-publication active for eligible public Parliament scopes with minimum group size 5
 - Commit-Reveal ZK voting
+
+## Ekklesia Platform V2 — Minima (παράλληλη έρευνα / parallel research)
+
+Η νέα γενιά εξετάζεται παράλληλα, χωρίς να αντικαθιστά τη V1. Η τρέχουσα
+κατεύθυνση είναι Maxima ως υποψήφιο transport, ανεξάρτητη off-chain επαλήθευση
+και ελάχιστα roots/commitments στο Minima Layer 1. Η συμβατότητα Ed25519 και
+Semaphore δεν θεωρείται δεδομένη.
+
+- Phase 0 architecture: ολοκληρωμένο σχέδιο και threat/privacy model
+- Phase 1: synthetic Maxima delivery, retry, dedup και mobile-node measurements
+- Phase 1: synthetic KISS root anchoring και independent verifier
+- Phase 2: identity/proof/key ADR, public bulletin board και federation
+- Phase 2: ξεχωριστό V2 repository/CI μόνο μετά το Gate G1
+- Release: 100% συμφωνημένη V1/V2 parity, security/privacy review, migration και
+  rollback drills, και ρητή τελική έγκριση
+
+Omnia, tokens/incentives, αντικατάσταση του Discourse και υποχρεωτικό full node
+δεν ανήκουν στο V2.0. Epic: [GH#216](https://github.com/NeaBouli/pnyx/issues/216).
+Architecture: [Ekklesia Platform V2 on Minima](https://github.com/NeaBouli/pnyx/blob/main/docs/architecture/EKKLESIA_V2_MINIMA.md).
