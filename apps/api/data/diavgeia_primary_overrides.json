@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "dimos_id": 19,
+      "expected_name_el": "Ηρακλείου",
+      "expected_periferia_id": 5,
+      "target_uid": "6325",
+      "expected_target_label": "ΔΗΜΟΣ ΗΡΑΚΛΕΙΟΥ (ΚΡΗΤΗΣ)",
+      "reason": "Disambiguates Heraklion, Crete from Irakleio Attikis.",
+      "evidence_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations/6325.json"
+    },
+    {
+      "dimos_id": 28,
+      "expected_name_el": "Άρτας",
+      "expected_periferia_id": 8,
+      "target_uid": "6045",
+      "expected_target_label": "ΔΗΜΟΣ ΑΡΤΑΙΩΝ",
+      "reason": "Official Diavgeia label uses the demonym form ΑΡΤΑΙΩΝ.",
+      "evidence_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations/6045.json"
+    },
+    {
+      "dimos_id": 32,
+      "expected_name_el": "Κερκυραίων",
+      "expected_periferia_id": 11,
+      "action": "manual_review",
+      "reason": "The former unified municipality was split into three municipalities by FEK 43A/2019; there is no one-to-one successor.",
+      "evidence_url": "https://eetaa.gr/eetaa/metaboles/dkmet_details.php?id=1632"
+    },
+    {
+      "dimos_id": 41,
+      "expected_name_el": "Φιλαδελφείας-Χαλκηδόνος",
+      "expected_periferia_id": 1,
+      "target_uid": "100035023",
+      "expected_target_label": "ΔΗΜΟΣ ΝΕΑΣ ΦΙΛΑΔΕΛΦΕΙΑΣ - ΝΕΑΣ ΧΑΛΚΗΔΟΝΑΣ",
+      "reason": "Official Diavgeia label includes ΝΕΑΣ for both constituent names.",
+      "evidence_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations/100035023.json"
+    },
+    {
+      "dimos_id": 157,
+      "expected_name_el": "Καλαμπάκας",
+      "expected_periferia_id": 4,
+      "target_uid": "100062933",
+      "expected_target_label": "ΔΗΜΟΣ ΜΕΤΕΩΡΩΝ",
+      "reason": "Municipality renamed to Μετεώρων by FEK 133A/2018.",
+      "evidence_url": "https://eetaa.gr/eetaa/metaboles/dkmet_details.php?id=664"
+    },
+    {
+      "dimos_id": 251,
+      "expected_name_el": "Ορεστίδος",
+      "expected_periferia_id": 9,
+      "target_uid": "6226",
+      "expected_target_label": "ΔΗΜΟ ΑΡΓΟΥΣ ΟΡΕΣΤΙΚΟΥ",
+      "reason": "Municipality renamed to Άργους Ορεστικού by FEK 114A/2013.",
+      "evidence_url": "https://eetaa.gr/eetaa/metaboles/dkmet_details.php?id=7099"
+    },
+    {
+      "dimos_id": 261,
+      "expected_name_el": "Μώλου-Αγ.Κωνσταντίνου",
+      "expected_periferia_id": 10,
+      "target_uid": "6202",
+      "expected_target_label": "ΔΗΜΟΣ ΚΑΜΕΝΩΝ ΒΟΥΡΛΩΝ",
+      "reason": "Municipality renamed to Καμένων Βούρλων by FEK 133A/2018.",
+      "evidence_url": "https://eetaa.gr/eetaa/metaboles/dkmet_details.php?id=7134"
+    },
+    {
+      "dimos_id": 307,
+      "expected_name_el": "Ίου",
+      "expected_periferia_id": 13,
+      "target_uid": "6120",
+      "expected_target_label": "ΔΗΜΟΣ ΙΗΤΩΝ",
+      "reason": "Official Diavgeia label uses the demonym form ΙΗΤΩΝ; prevents a false match to ΧΙΟΥ.",
+      "evidence_url": "https://et.diavgeia.gov.gr/f/dimos_iiton"
+    },
+    {
+      "dimos_id": 313,
+      "expected_name_el": "Καλύμνου",
+      "expected_periferia_id": 13,
+      "target_uid": "6133",
+      "expected_target_label": "ΔΗΜΟΣ ΚΑΛΥΜΝΙΩΝ",
+      "reason": "Official Diavgeia label uses the demonym form ΚΑΛΥΜΝΙΩΝ.",
+      "evidence_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations/6133.json"
+    }
+  ]
+}
