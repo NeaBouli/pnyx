@@ -137,7 +137,7 @@ async def discourse_sso_initiate(sso: str = Query(...), sig: str = Query(...)):
     try:
         decoded = base64.b64decode(sso, validate=True).decode()
     except (ValueError, UnicodeDecodeError):
-        raise HTTPException(400, "Invalid SSO payload")
+        raise HTTPException(400, "Invalid SSO payload") from None
 
     parsed_params = urllib.parse.parse_qsl(decoded, keep_blank_values=True)
     if len(parsed_params) != len(dict(parsed_params)):

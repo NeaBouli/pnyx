@@ -280,6 +280,32 @@ async def test_forum_sso_browser_callback_consumes_nonce_once(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_forum_sso_browser_callback_rejects_noncanonical_stored_url(
+    monkeypatch,
+):
+    sso = _reload_sso(monkeypatch, environment="production", secret="secret", salt="salt")
+    fake_redis = _FakeRedis(
+        sso_url="https://attacker.example/session/sso_login"
+    )
+    monkeypatch.setattr(sso, "_redis", _redis_factory(fake_redis))
+    import keypair
+
+    monkeypatch.setattr(keypair, "verify_signature", lambda *_args: True)
+
+    with pytest.raises(sso.HTTPException) as exc:
+        await sso.discourse_sso_callback(
+            request=SimpleNamespace(),
+            nonce="nonce12345",
+            public_key_hex="p" * 64,
+            signature_hex="s" * 128,
+            db=_FakeDB(None),
+        )
+
+    assert exc.value.status_code == 410
+    assert fake_redis.consumed == []
+
+
+@pytest.mark.asyncio
 async def test_forum_sso_nonce_consume_rejects_changed_callback_target(monkeypatch):
     sso = _reload_sso(monkeypatch, environment="production", secret="secret", salt="salt")
     fake_redis = _FakeRedis(
