@@ -2,6 +2,24 @@
   "version": 1,
   "entries": [
     {
+      "dimos_id": 7,
+      "expected_name_el": "Ηλιουπόλεως",
+      "expected_periferia_id": 1,
+      "target_uid": "6107",
+      "expected_target_label": "ΔΗΜΟΣ ΗΛΙΟΥΠΟΛΗΣ",
+      "reason": "Official Diavgeia uses the nominative municipality form ΗΛΙΟΥΠΟΛΗΣ.",
+      "evidence_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations/6107.json"
+    },
+    {
+      "dimos_id": 8,
+      "expected_name_el": "Νίκαιας-Αγ.Ι.Ρέντη",
+      "expected_periferia_id": 1,
+      "target_uid": "6215",
+      "expected_target_label": "ΔΗΜΟΣ ΝΙΚΑΙΑΣ - ΑΓΙΟΥ Ι. ΡΕΝΤΗ",
+      "reason": "Official Diavgeia label expands the abbreviated constituent name Αγ.Ι.Ρέντη.",
+      "evidence_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations/6215.json"
+    },
+    {
       "dimos_id": 19,
       "expected_name_el": "Ηρακλείου",
       "expected_periferia_id": 5,
@@ -37,6 +55,42 @@
       "evidence_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations/100035023.json"
     },
     {
+      "dimos_id": 47,
+      "expected_name_el": "Μεταμορφώσεως",
+      "expected_periferia_id": 1,
+      "target_uid": "6191",
+      "expected_target_label": "ΔΗΜΟΣ ΜΕΤΑΜΟΡΦΩΣΗΣ",
+      "reason": "Official Diavgeia uses the nominative municipality form ΜΕΤΑΜΟΡΦΩΣΗΣ.",
+      "evidence_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations/6191.json"
+    },
+    {
+      "dimos_id": 52,
+      "expected_name_el": "Ψυχικού",
+      "expected_periferia_id": 1,
+      "target_uid": "6322",
+      "expected_target_label": "ΔΗΜΟΣ ΦΙΛΟΘΕΗΣ - ΨΥΧΙΚΟΥ",
+      "reason": "Official Diavgeia lists the active combined municipality ΦΙΛΟΘΕΗΣ - ΨΥΧΙΚΟΥ.",
+      "evidence_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations/6322.json"
+    },
+    {
+      "dimos_id": 72,
+      "expected_name_el": "Σαλαμίνος",
+      "expected_periferia_id": 1,
+      "target_uid": "6266",
+      "expected_target_label": "ΔΗΜΟΣ ΣΑΛΑΜΙΝΑΣ",
+      "reason": "Official Diavgeia uses the nominative municipality form ΣΑΛΑΜΙΝΑΣ.",
+      "evidence_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations/6266.json"
+    },
+    {
+      "dimos_id": 131,
+      "expected_name_el": "Μεσολογγίου",
+      "expected_periferia_id": 3,
+      "target_uid": "6119",
+      "expected_target_label": "ΔΗΜΟΣ ΙΕΡΑΣ ΠΟΛΗΣ ΜΕΣΟΛΟΓΓΙΟΥ",
+      "reason": "Official Diavgeia includes the full ΙΕΡΑΣ ΠΟΛΗΣ municipality title.",
+      "evidence_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations/6119.json"
+    },
+    {
       "dimos_id": 157,
       "expected_name_el": "Καλαμπάκας",
       "expected_periferia_id": 4,
@@ -44,6 +98,24 @@
       "expected_target_label": "ΔΗΜΟΣ ΜΕΤΕΩΡΩΝ",
       "reason": "Municipality renamed to Μετεώρων by FEK 133A/2018.",
       "evidence_url": "https://eetaa.gr/eetaa/metaboles/dkmet_details.php?id=664"
+    },
+    {
+      "dimos_id": 170,
+      "expected_name_el": "Μινώα Πεδιάδος",
+      "expected_periferia_id": 5,
+      "target_uid": "6194",
+      "expected_target_label": "ΔΗΜΟΣ ΜΙΝΩΑ ΠΕΔΙΑΔΑΣ",
+      "reason": "Official Diavgeia uses the nominative municipality form ΜΙΝΩΑ ΠΕΔΙΑΔΑΣ.",
+      "evidence_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations/6194.json"
+    },
+    {
+      "dimos_id": 175,
+      "expected_name_el": "Κανδάνου-Σελίνου",
+      "expected_periferia_id": 5,
+      "target_uid": "6134",
+      "expected_target_label": "ΔΗΜΟΣ ΚΑΝΤΑΝΟΥ - ΣΕΛΙΝΟΥ",
+      "reason": "Official Diavgeia lists the active primary municipality under the same constituent names.",
+      "evidence_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations/6134.json"
     },
     {
       "dimos_id": 251,
@@ -62,6 +134,42 @@
       "expected_target_label": "ΔΗΜΟΣ ΚΑΜΕΝΩΝ ΒΟΥΡΛΩΝ",
       "reason": "Municipality renamed to Καμένων Βούρλων by FEK 133A/2018.",
       "evidence_url": "https://eetaa.gr/eetaa/metaboles/dkmet_details.php?id=7134"
+    },
+    {
+      "dimos_id": 262,
+      "expected_name_el": "Στυλίδος",
+      "expected_periferia_id": 10,
+      "target_uid": "6289",
+      "expected_target_label": "ΔΗΜΟΣ ΣΤΥΛΙΔΑΣ",
+      "reason": "Official Diavgeia uses the nominative municipality form ΣΤΥΛΙΔΑΣ.",
+      "evidence_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations/6289.json"
+    },
+    {
+      "dimos_id": 266,
+      "expected_name_el": "Αλιάρτου-Θεσπιέων",
+      "expected_periferia_id": 10,
+      "target_uid": "6020",
+      "expected_target_label": "ΔΗΜΟΣ ΑΛΙΑΡΤΟΥ",
+      "reason": "Official Diavgeia exposes the active primary organization under its retained ΑΛΙΑΡΤΟΥ label.",
+      "evidence_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations/6020.json"
+    },
+    {
+      "dimos_id": 276,
+      "expected_name_el": "Μαντουδίου-Λίμνης-Αγ.Άννας",
+      "expected_periferia_id": 10,
+      "target_uid": "6182",
+      "expected_target_label": "ΔΗΜΟΣ ΜΑΝΤΟΥΔΙΟΥ - ΛΙΜΝΗΣ - ΑΓΙΑΣ ΑΝΝΑΣ",
+      "reason": "Official Diavgeia expands the abbreviated Αγ.Άννας constituent name.",
+      "evidence_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations/6182.json"
+    },
+    {
+      "dimos_id": 297,
+      "expected_name_el": "Νάξου και Μικρών Κυκλάδων",
+      "expected_periferia_id": 13,
+      "target_uid": "6203",
+      "expected_target_label": "ΔΗΜΟΣ ΝΑΞΟΥ & ΜΙΚΡΩΝ ΚΥΚΛΑΔΩΝ",
+      "reason": "Official Diavgeia uses an ampersand for the combined municipality name.",
+      "evidence_url": "https://diavgeia.gov.gr/luminapi/opendata/organizations/6203.json"
     },
     {
       "dimos_id": 307,
