@@ -23,8 +23,12 @@ below only as historical context; their unchecked boxes are not current tasks.
   `a99a12b`).
 - [ ] Legal recipient, donation/tax/document policy and sandbox E2E approval.
 - [ ] Google Play production-access tester/time requirement (external gate).
-- [ ] Complete the DMARC observation window and sending-path inventory before
-  proposing an enforcement policy (Linear `NEA-422`; no DNS change yet).
+- [ ] Complete the DMARC observation window and collect representative evidence
+  for every active sending path before proposing an enforcement policy. The
+  private report catalog and sender inventory exist; review may begin on
+  2026-09-01 but must wait for delayed reports covering 2026-08-31, and the
+  intended inbound-mail/MX policy must be confirmed first (Linear `NEA-422`;
+  no DNS change authorized).
 - [x] Reconcile the production Docker/containerd image inventory without prune,
   image deletion or daemon restart; retain a recurrence check after future
   daemon restarts (GitHub #211).
