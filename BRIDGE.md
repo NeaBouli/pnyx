@@ -1,5 +1,24 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-08-23 — Forum Patch and Docker Inventory Reconciled
+
+- Discourse is pinned to `v2026.8.0-latest.1` at upstream commit `b88e77d`.
+  The backed-up official rebuild completed successfully, including the launcher-
+  managed PostgreSQL 15 to 18 upgrade. Public forum endpoints, Greek locale,
+  category/tag access, topic CRUD, bill-topic access, guarded first-post
+  ownership and the post-maintenance monitor pass. The rollback image is
+  `local_discourse/app:rollback-pre-discourse-patch-20260823T083607Z`.
+- DiscourseConnect remains a separate confirmed production regression: the
+  public initiation route returns 404 because the live launcher configuration
+  does not currently contain the required DiscourseConnect settings. GitHub
+  #82 and #215 remain open. No secret value was modified or published.
+- Docker/containerd issue #211 no longer reproduces after the normal official
+  Discourse image pull/build/commit reconciled stale `moby-dangling` metadata.
+  Image inventory and size commands pass repeatedly; every active, tagged,
+  rollback and dangling image inspected successfully. No prune, image deletion,
+  daemon restart or manual metadata repair was performed. The underlying cause
+  was not established, so recheck inventory after any future daemon restart.
+
 ## 2026-08-13 — Public security audit correction — OPEN
 
 - The reported credential hits were semantically verified as Python test
