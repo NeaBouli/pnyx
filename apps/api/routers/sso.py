@@ -26,6 +26,14 @@ router = APIRouter(prefix="/api/v1/sso", tags=["SSO"])
 DISCOURSE_SSO_SECRET = os.getenv("DISCOURSE_SSO_SECRET", "")
 FORUM_SSO_SALT = os.getenv("FORUM_SSO_SALT", "")
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
+DISCOURSE_RETURN_SSO_HOST = "pnyx.ekklesia.gr"
+DISCOURSE_RETURN_SSO_PATH = "/session/sso_login"
+DISCOURSE_RETURN_SSO_URLS = frozenset(
+    {
+        f"https://{DISCOURSE_RETURN_SSO_HOST}{DISCOURSE_RETURN_SSO_PATH}",
+        f"https://{DISCOURSE_RETURN_SSO_HOST}:443{DISCOURSE_RETURN_SSO_PATH}",
+    }
+)
 
 
 async def _redis():
@@ -64,6 +72,18 @@ def _build_payload(params: dict) -> tuple[str, str]:
         DISCOURSE_SSO_SECRET.encode(), encoded.encode(), hashlib.sha256
     ).hexdigest()
     return encoded, sig
+
+
+def _is_allowed_discourse_return_url(value: str) -> bool:
+    """Accept only the canonical DiscourseConnect callback endpoint."""
+    return value in DISCOURSE_RETURN_SSO_URLS
+
+
+async def _consume_discourse_nonce(r, nonce: str, expected_return_sso_url: str) -> None:
+    """Atomically consume a one-time DiscourseConnect nonce."""
+    return_sso_url = await r.getdel(f"sso:discourse:{nonce}")
+    if not return_sso_url or return_sso_url != expected_return_sso_url:
+        raise HTTPException(410, "Nonce expired or invalid")
 
 
 async def _build_discourse_redirect(
@@ -114,13 +134,22 @@ async def discourse_sso_initiate(sso: str = Query(...), sig: str = Query(...)):
     if not _verify_sig(sso, sig):
         raise HTTPException(403, "Invalid SSO signature")
 
-    decoded = base64.b64decode(sso).decode()
-    params = dict(urllib.parse.parse_qsl(decoded))
+    try:
+        decoded = base64.b64decode(sso, validate=True).decode()
+    except (ValueError, UnicodeDecodeError):
+        raise HTTPException(400, "Invalid SSO payload")
+
+    parsed_params = urllib.parse.parse_qsl(decoded, keep_blank_values=True)
+    if len(parsed_params) != len(dict(parsed_params)):
+        raise HTTPException(400, "Duplicate SSO parameter")
+    params = dict(parsed_params)
     nonce = params.get("nonce")
     return_sso_url = params.get("return_sso_url")
 
     if not nonce or not return_sso_url:
         raise HTTPException(400, "Missing nonce or return_sso_url")
+    if not _is_allowed_discourse_return_url(return_sso_url):
+        raise HTTPException(400, "Invalid return_sso_url")
 
     r = await _redis()
     await r.setex(f"sso:discourse:{nonce}", 300, return_sso_url)
@@ -164,7 +193,7 @@ async def discourse_sso_callback(
 
     r = await _redis()
     return_sso_url = await r.get(f"sso:discourse:{nonce}")
-    if not return_sso_url:
+    if not return_sso_url or not _is_allowed_discourse_return_url(return_sso_url):
         raise HTTPException(410, "Nonce expired or invalid")
 
     # Load identity
@@ -184,8 +213,7 @@ async def discourse_sso_callback(
         identity=identity,
         db=db,
     )
-    await r.delete(f"sso:discourse:{nonce}")
-
+    await _consume_discourse_nonce(r, nonce, return_sso_url)
     logger.info("SSO login completed via browser key: pubkey=%s...", public_key_hex[:8])
     return {"redirect_url": redirect}
 
@@ -203,7 +231,7 @@ async def discourse_sso_qr_complete(
     """Complete DiscourseConnect after mobile app authenticated a forum_login QR session."""
     r = await _redis()
     return_sso_url = await r.get(f"sso:discourse:{req.nonce}")
-    if not return_sso_url:
+    if not return_sso_url or not _is_allowed_discourse_return_url(return_sso_url):
         raise HTTPException(410, "Nonce expired or invalid")
 
     qr_data = await r.hgetall(f"polis_qr:{req.session_id}")
@@ -236,7 +264,7 @@ async def discourse_sso_qr_complete(
         identity=identity,
         db=db,
     )
-    await r.delete(f"sso:discourse:{req.nonce}")
+    await _consume_discourse_nonce(r, req.nonce, return_sso_url)
     await r.delete(f"polis_qr:{req.session_id}")
 
     logger.info("SSO login completed via forum QR: session=%s", req.session_id[:8])

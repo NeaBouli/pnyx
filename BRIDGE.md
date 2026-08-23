@@ -1,5 +1,26 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-08-23 — DiscourseConnect Restored and Hardened
+
+- The owner-authorized production launcher change restored the three missing
+  DiscourseConnect settings without rotating or publishing the existing shared
+  secret. The backed-up official rebuild stayed on `v2026.8.0-latest.1` at
+  commit `b88e77d`; migrations remain complete, all forum services are running,
+  the configured API/forum secrets match, and the `verified-citizens` group is
+  present. A protected pre-change config backup and rollback image are retained.
+- The public protocol chain now redirects from Discourse to the API and then to
+  the Greek verification page. Signature rejection, five-minute nonce TTL,
+  local-login fallback, logout-route protection, forum endpoints, bill topics
+  and the full monitor pass. No database, DNS, IAM or unrelated application
+  setting changed.
+- This change additionally limits signed callbacks to the canonical
+  `pnyx.ekklesia.gr` Discourse endpoint and atomically consumes each Redis nonce.
+  Focused tests cover browser and QR completion, unsafe callback targets,
+  malformed payloads, invalid signatures and replay rejection.
+- GitHub #82 and #215 retain only the final voluntary real-identity login/logout
+  canary. Automation must not create or impersonate a citizen identity to close
+  that acceptance step.
+
 ## 2026-08-23 — DMARC Observation Gate Catalogued
 
 - The available aggregate report was parsed into a private local catalog. Its
@@ -26,10 +47,8 @@
   category/tag access, topic CRUD, bill-topic access, guarded first-post
   ownership and the post-maintenance monitor pass. The rollback image is
   `local_discourse/app:rollback-pre-discourse-patch-20260823T083607Z`.
-- DiscourseConnect remains a separate confirmed production regression: the
-  public initiation route returns 404 because the live launcher configuration
-  does not currently contain the required DiscourseConnect settings. GitHub
-  #82 and #215 remain open. No secret value was modified or published.
+- The DiscourseConnect regression recorded during this maintenance was restored
+  later the same day under the separate owner authorization documented above.
 - Docker/containerd issue #211 no longer reproduces after the normal official
   Discourse image pull/build/commit reconciled stale `moby-dangling` metadata.
   Image inventory and size commands pass repeatedly; every active, tagged,
