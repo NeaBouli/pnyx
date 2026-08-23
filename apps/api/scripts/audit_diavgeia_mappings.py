@@ -126,6 +126,8 @@ def build_audit_rows(
             action = "blocked_multiple_primary"
         elif proposal.status != "matched":
             action = "manual_review"
+        elif proposal.needs_review:
+            action = "manual_review"
         elif len(proposed_primary_owners[proposal.org_uid or ""]) > 1 or conflicting_current_owners:
             action = "blocked_primary_uid_owned"
         elif not existing:

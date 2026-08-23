@@ -91,6 +91,41 @@ def test_renames_resolve_but_corfu_split_stays_manual_review() -> None:
     assert by_id[261].org_uid == "6202"
 
 
+def test_reviewed_name_variants_use_guarded_catalog_entries() -> None:
+    dimoi = [
+        DimosRecord(7, "Ηλιουπόλεως", 1),
+        DimosRecord(8, "Νίκαιας-Αγ.Ι.Ρέντη", 1),
+        DimosRecord(47, "Μεταμορφώσεως", 1),
+        DimosRecord(52, "Ψυχικού", 1),
+        DimosRecord(72, "Σαλαμίνος", 1),
+        DimosRecord(131, "Μεσολογγίου", 3),
+        DimosRecord(170, "Μινώα Πεδιάδος", 5),
+        DimosRecord(175, "Κανδάνου-Σελίνου", 5),
+        DimosRecord(262, "Στυλίδος", 10),
+        DimosRecord(266, "Αλιάρτου-Θεσπιέων", 10),
+        DimosRecord(276, "Μαντουδίου-Λίμνης-Αγ.Άννας", 10),
+        DimosRecord(297, "Νάξου και Μικρών Κυκλάδων", 13),
+    ]
+    by_id = {item.dimos_id: item for item in propose_primary_mappings(dimoi, _snapshot_orgs())}
+
+    assert {dimos_id: item.org_uid for dimos_id, item in by_id.items()} == {
+        7: "6107",
+        8: "6215",
+        47: "6191",
+        52: "6322",
+        72: "6266",
+        131: "6119",
+        170: "6194",
+        175: "6134",
+        262: "6289",
+        266: "6020",
+        276: "6182",
+        297: "6203",
+    }
+    assert all(item.source == "catalog" for item in by_id.values())
+    assert all(item.needs_review is False for item in by_id.values())
+
+
 def test_matching_is_independent_of_snapshot_order() -> None:
     orgs = _snapshot_orgs()
     forward = propose_primary_mappings(_records(), orgs)
@@ -155,6 +190,54 @@ def test_audit_reports_changes_without_mutating_input() -> None:
     }
     assert summary["mode"] == "read_only"
     assert summary["review_gate"] == "explicit_approval_required_before_database_write"
+
+
+@pytest.mark.parametrize(
+    "mappings",
+    [
+        [],
+        [
+            {
+                "dimos_id": "999",
+                "diavgeia_uid": "9999",
+                "org_label": "ΔΗΜΟΣ ΔΟΚΙΜΗΣ - ΑΓΙΟΥ ΠΑΡΑΔΕΙΓΜΑΤΟΣ",
+                "is_primary": "t",
+            }
+        ],
+        [
+            {
+                "dimos_id": "999",
+                "diavgeia_uid": "8888",
+                "org_label": "ΔΗΜΟΣ ΠΑΛΑΙΑΣ ΔΟΚΙΜΗΣ",
+                "is_primary": "t",
+            }
+        ],
+    ],
+    ids=["would_add", "would_remain_unchanged", "would_correct"],
+)
+def test_audit_withholds_review_required_fuzzy_match_from_apply_actions(
+    mappings: list[dict[str, str]],
+) -> None:
+    proposals = propose_primary_mappings(
+        [DimosRecord(999, "Δοκιμής-Αγ.Παραδείγματος", 1)],
+        [
+            {
+                "uid": "9999",
+                "label": "ΔΗΜΟΣ ΔΟΚΙΜΗΣ - ΑΓΙΟΥ ΠΑΡΑΔΕΙΓΜΑΤΟΣ",
+                "category": "MUNICIPALITY",
+                "is_primary": True,
+                "status": "active",
+            }
+        ],
+        overrides={},
+    )
+    assert proposals[0].status == "matched"
+    assert proposals[0].needs_review is True
+
+    rows, summary = build_audit_rows(proposals, mappings)
+
+    assert rows[0]["action"] == "manual_review"
+    assert summary["actions"] == {"manual_review": 1}
 
 
 def test_audit_blocks_primary_uid_owned_by_another_municipality() -> None:
