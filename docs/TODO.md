@@ -25,12 +25,15 @@ below only as historical context; their unchecked boxes are not current tasks.
 - [ ] Google Play production-access tester/time requirement (external gate).
 - [ ] Complete the DMARC observation window and sending-path inventory before
   proposing an enforcement policy (Linear `NEA-422`; no DNS change yet).
-- [ ] Repair the production Docker/containerd image inventory in a separately
-  approved, reversible maintenance window (GitHub #211).
-- [ ] Update Discourse from `v2026.8.0-latest` to the official patch tag
-  `v2026.8.0-latest.1` only in a backed-up, reversible maintenance window and
-  create a verified rollback tag before applying the patch; then complete every
-  health/SSO/topic/bill-sync acceptance check (GitHub #215).
+- [x] Reconcile the production Docker/containerd image inventory without prune,
+  image deletion or daemon restart; retain a recurrence check after future
+  daemon restarts (GitHub #211).
+- [x] Update Discourse from `v2026.8.0-latest` to the official patch tag
+  `v2026.8.0-latest.1` with verified backups, rollback image and forum/topic/
+  bill-sync acceptance checks (GitHub #215).
+- [ ] Restore the missing live DiscourseConnect configuration and verify login/
+  logout under a separately authorized production-secret change (GitHub #82;
+  remaining acceptance blocker for #215).
 - [ ] Replace the reviewed local `image-size` security backport only after an
   upstream Metro-compatible patched release exists; keep Dependabot #78-#81
   visible until then.
