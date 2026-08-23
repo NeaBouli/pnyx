@@ -70,7 +70,8 @@ App generates a signed token and appends to forum URL. Server validates and crea
 
 | Threat | Mitigation |
 |--------|-----------|
-| SSO challenge must be fresh | Nonce TTL 300s in Redis, deleted after use |
+| SSO challenge must be fresh | Nonce TTL 300s in Redis, atomically consumed with `GETDEL` after use |
+| SSO callback target must stay on the forum | Exact HTTPS host/path allowlist for `pnyx.ekklesia.gr/session/sso_login` |
 | Private key must not leave device | Only signature transmitted, never key |
 | Discourse HMAC must be verified | `_verify_sig()` on initiate (unchanged) |
 | V2 server-initiated: MITM | Must use HTTPS for Discourse API call |
