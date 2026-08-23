@@ -1,5 +1,23 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-08-23 — DMARC Observation Gate Catalogued
+
+- The available aggregate report was parsed into a private local catalog. Its
+  single message passed DMARC through aligned Brevo DKIM; SPF
+  authentication passed but was not aligned, which is expected for that Brevo
+  return path. No spoofing evidence was found in the available report.
+- The active API, forum and newsletter sending paths use Brevo. A dormant local
+  Postfix path has no observed deliveries in the reviewed window. This is an
+  inventory result, not authorization to remove legacy DNS entries.
+- Enforcement remains blocked until a complete observation window and evidence
+  for every active sender path are available. Review may begin on 2026-09-01,
+  but no decision may be made until delayed reports covering 2026-08-31 have
+  arrived. The intended inbound-mail policy must also be confirmed because the
+  domain currently publishes no MX record.
+- No DNS record was changed. Linear `NEA-422` remains the tracking authority;
+  the public procedure is documented in
+  `docs/operations/dmarc-observation-gate.md`.
+
 ## 2026-08-23 — Forum Patch and Docker Inventory Reconciled
 
 - Discourse is pinned to `v2026.8.0-latest.1` at upstream commit `b88e77d`.
