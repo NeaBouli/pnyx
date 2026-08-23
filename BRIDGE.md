@@ -1,5 +1,19 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-08-24 — Real DiscourseConnect Canary Complete
+
+- The owner completed the voluntary production canary with an existing
+  verified Ekklesia mobile identity: the forum QR was scanned, the pseudonymous
+  `verified-citizens` session opened successfully, and logout returned the
+  browser to the anonymous forum state.
+- The canary closes the final manual acceptance gate retained by GitHub #82 and
+  #215. Automation did not create, impersonate or inspect a citizen identity.
+- Follow-up live probes found three misleading SSO-page actions: the redundant
+  `/el/verify` target returned 404, while the advertised Google and Facebook
+  routes returned 403. The QR DiscourseConnect path and email-only discussion
+  signup remained operational; the broken actions were removed from the web
+  page and static fallback without changing authentication or voting logic.
+
 ## 2026-08-23 — DiscourseConnect Restored and Hardened
 
 - The owner-authorized production launcher change restored the three missing
