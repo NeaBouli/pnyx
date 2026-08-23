@@ -39,8 +39,8 @@ below only as historical context; their unchecked boxes are not current tasks.
   owner authorization and verify the signed Discourse-to-API-to-verification
   chain, nonce TTL/consumption, forum services and protected logout route
   (GitHub #82 and #215).
-- [ ] Complete one voluntary real-citizen login/logout canary for GitHub #82 and
-  #215. Automation must not create or impersonate an identity for this step.
+- [x] Complete one voluntary real-citizen login/logout canary for GitHub #82 and
+  #215 (confirmed by the owner on 2026-08-24).
 - [ ] Replace the reviewed local `image-size` security backport only after an
   upstream Metro-compatible patched release exists; keep Dependabot #78-#81
   visible until then.
