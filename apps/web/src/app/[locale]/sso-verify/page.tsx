@@ -234,6 +234,22 @@ export default function SSOVerifyPage() {
                   ? <>Σκανάρετε τον κωδικό QR με την εφαρμογή <strong>ekklesia</strong> για να συνδεθείτε.</>
                   : <>Scan the QR code with the <strong>ekklesia</strong> app to login.</>}
               </p>
+              {qrState === "ready" && qrData && (
+                <a
+                  href={qrData.qr_data}
+                  className="mt-4 flex min-h-12 w-full flex-col items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+                  aria-label={isEl
+                    ? "Άνοιγμα στην εγκατεστημένη εφαρμογή ekklesia"
+                    : "Open in the installed ekklesia app"}
+                >
+                  <span className="text-sm font-semibold">
+                    {isEl ? "Άνοιγμα στην εφαρμογή ekklesia" : "Open in the ekklesia app"}
+                  </span>
+                  <span className="mt-0.5 text-[11px] text-blue-100">
+                    {isEl ? "Μετά την επιβεβαίωση, επιστρέψτε εδώ" : "Return here after confirmation"}
+                  </span>
+                </a>
+              )}
               {qrState === "expired" && (
                 <button
                   onClick={createForumQrSession}
