@@ -254,30 +254,49 @@ export default function SSOVerifyPage() {
                 </div>
               )}
             </div>
-            {/* Divider */}
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex-1 h-px bg-gray-200" />
-              <span className="text-xs text-gray-400 font-medium">{isEl ? "ή" : "or"}</span>
-              <div className="flex-1 h-px bg-gray-200" />
+            <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-left">
+              <p className="text-xs leading-relaxed text-blue-900">
+                {isEl
+                  ? "Για να συνδεθείτε χρειάζεστε επαληθευμένη ταυτότητα στην εφαρμογή ekklesia. Εγκαταστήστε την εφαρμογή, ολοκληρώστε την επαλήθευση και σαρώστε τον παραπάνω κωδικό QR."
+                  : "Forum login requires a verified identity in the ekklesia app. Install the app, complete verification, and scan the QR code above."}
+              </p>
             </div>
 
-            {/* Alternative registration: Email */}
-            <a
-              href="https://pnyx.ekklesia.gr/signup"
-              className="flex items-center gap-3 w-full px-5 py-3 bg-white border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:border-blue-400 hover:text-blue-700 transition-colors mb-3"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="2" y="4" width="20" height="16" rx="2"/>
-                <polyline points="22,4 12,13 2,4"/>
-              </svg>
-              {isEl ? "Εγγραφή με Email" : "Sign up with Email"}
-            </a>
-
-            <p className="text-xs text-gray-400 mt-4">
-              {isEl
-                ? "Email: μόνο συζήτηση, χωρίς δικαίωμα ψήφου"
-                : "Email: discussion only, no voting rights"}
-            </p>
+            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <a
+                href="https://play.google.com/apps/testing/ekklesia.gr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-3 text-center transition-colors hover:border-blue-400 hover:text-blue-700"
+              >
+                <span className="block text-sm font-semibold">Google Play</span>
+                <span className="mt-1 block text-[11px] text-gray-500">
+                  {isEl ? "Κλειστή δοκιμή" : "Closed testing"}
+                </span>
+              </a>
+              <a
+                href="https://f-droid.org/packages/ekklesia.gr/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-3 text-center transition-colors hover:border-blue-400 hover:text-blue-700"
+              >
+                <span className="block text-sm font-semibold">F-Droid</span>
+                <span className="mt-1 block text-[11px] text-gray-500">
+                  {isEl ? "Διαθέσιμο" : "Available"}
+                </span>
+              </a>
+              <a
+                href="https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/ekklesia-v1.0.29-vC58-DIRECT.apk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-3 text-center transition-colors hover:border-blue-400 hover:text-blue-700"
+              >
+                <span className="block text-sm font-semibold">APK</span>
+                <span className="mt-1 block text-[11px] text-gray-500">
+                  {isEl ? "Άμεση λήψη" : "Direct download"}
+                </span>
+              </a>
+            </div>
           </div>
         )}
 
