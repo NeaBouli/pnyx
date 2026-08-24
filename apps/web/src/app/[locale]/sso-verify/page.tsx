@@ -262,12 +262,12 @@ export default function SSOVerifyPage() {
               </p>
             </div>
 
-            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="mt-4 grid grid-cols-2 gap-2">
               <a
                 href="https://play.google.com/apps/testing/ekklesia.gr"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-3 text-center transition-colors hover:border-blue-400 hover:text-blue-700"
+                className="flex min-h-16 min-w-0 flex-col justify-center rounded-lg border border-gray-200 bg-white px-3 py-3 text-center text-gray-800 transition-colors hover:border-blue-400 hover:text-blue-700"
               >
                 <span className="block text-sm font-semibold">Google Play</span>
                 <span className="mt-1 block text-[11px] text-gray-500">
@@ -278,7 +278,7 @@ export default function SSOVerifyPage() {
                 href="https://f-droid.org/packages/ekklesia.gr/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-3 text-center transition-colors hover:border-blue-400 hover:text-blue-700"
+                className="flex min-h-16 min-w-0 flex-col justify-center rounded-lg border border-gray-200 bg-white px-3 py-3 text-center text-gray-800 transition-colors hover:border-blue-400 hover:text-blue-700"
               >
                 <span className="block text-sm font-semibold">F-Droid</span>
                 <span className="mt-1 block text-[11px] text-gray-500">
@@ -289,13 +289,24 @@ export default function SSOVerifyPage() {
                 href="https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/ekklesia-v1.0.29-vC58-DIRECT.apk"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="min-w-0 rounded-lg border border-gray-200 bg-white px-3 py-3 text-center transition-colors hover:border-blue-400 hover:text-blue-700"
+                className="flex min-h-16 min-w-0 flex-col justify-center rounded-lg border border-gray-200 bg-white px-3 py-3 text-center text-gray-800 transition-colors hover:border-blue-400 hover:text-blue-700"
               >
                 <span className="block text-sm font-semibold">APK</span>
                 <span className="mt-1 block text-[11px] text-gray-500">
                   {isEl ? "Άμεση λήψη" : "Direct download"}
                 </span>
               </a>
+              <button
+                type="button"
+                disabled
+                aria-label={isEl ? "iOS — Σύντομα" : "iOS — Coming soon"}
+                className="flex min-h-16 min-w-0 cursor-not-allowed flex-col justify-center rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 text-center text-gray-400"
+              >
+                <span className="block text-sm font-semibold">iOS</span>
+                <span className="mt-1 block text-[11px]">
+                  {isEl ? "Σύντομα" : "Coming soon"}
+                </span>
+              </button>
             </div>
           </div>
         )}

@@ -97,13 +97,14 @@
 
     .download-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
       margin-top: 12px;
     }
 
     .download-link {
       min-width: 0;
+      min-height: 64px;
       padding: 10px 6px;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
@@ -112,6 +113,10 @@
       text-decoration: none;
       font-size: 12px;
       font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      font-family: inherit;
     }
 
     .download-link small {
@@ -127,8 +132,15 @@
       color: #1d4ed8;
     }
 
-    @media (max-width: 480px) {
-      .download-grid { grid-template-columns: 1fr; }
+    .download-link:disabled {
+      cursor: not-allowed;
+      border-color: #e2e8f0;
+      background: #f8fafc;
+      color: #94a3b8;
+    }
+
+    .download-link:disabled small {
+      color: #94a3b8;
     }
 
     /* ─── Verifying State ─── */
@@ -253,6 +265,10 @@
         APK
         <small>Άμεση λήψη</small>
       </a>
+      <button class="download-link" type="button" disabled aria-label="iOS — Σύντομα">
+        iOS
+        <small>Σύντομα</small>
+      </button>
     </div>
   </div>
 
