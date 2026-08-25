@@ -163,7 +163,12 @@ export default function NewsletterAdminPage() {
       {preview && (
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 mb-6">
           <h2 className="text-base font-semibold text-gray-800 mb-4">Προεπισκόπηση</h2>
-          <div className="border border-gray-100 rounded-lg p-4 bg-gray-50" dangerouslySetInnerHTML={{ __html: preview }} />
+          <iframe
+            title="Προεπισκόπηση ενημερωτικού δελτίου"
+            srcDoc={preview}
+            sandbox=""
+            className="min-h-96 w-full rounded-lg border border-gray-100 bg-white"
+          />
         </div>
       )}
 

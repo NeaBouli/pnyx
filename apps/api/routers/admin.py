@@ -722,8 +722,10 @@ async def admin_fetch_bill_text(
     from services.parliament_fetcher import enrich_bill_with_text
     redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
     r = aioredis.from_url(redis_url, decode_responses=True)
-    result = await enrich_bill_with_text(bill_id, db, r)
-    return result
+    try:
+        return await enrich_bill_with_text(bill_id, db, r)
+    finally:
+        await r.aclose()
 
 
 @router.post("/bills/{bill_id}/set-text")
@@ -750,8 +752,11 @@ async def admin_set_bill_text(
     # Clear cache
     redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
     r = aioredis.from_url(redis_url, decode_responses=True)
-    await r.delete(f"bill_summary:{bill_id}:el")
-    await r.delete(f"bill_summary:{bill_id}:en")
+    try:
+        await r.delete(f"bill_summary:{bill_id}:el")
+        await r.delete(f"bill_summary:{bill_id}:en")
+    finally:
+        await r.aclose()
     return {"success": True, "bill_id": bill_id, "text_length": len(content)}
 
 

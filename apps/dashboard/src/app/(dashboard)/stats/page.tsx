@@ -5,6 +5,19 @@ import { asRecord, numberFrom } from '@/lib/response'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
+async function fetchJsonWithTimeout(url: string, timeoutMs = 10000) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const response = await fetch(url, { signal: controller.signal })
+    return response.ok ? response.json() : null
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 export default function StatsPage() {
   const [analytics, setAnalytics] = useState<Record<string, unknown> | null>(null)
   const [adminStats, setAdminStats] = useState<Record<string, unknown> | null>(null)
@@ -15,9 +28,9 @@ export default function StatsPage() {
     async function load() {
       try {
         const [analyticsResult, adminResult, sentryResult] = await Promise.allSettled([
-          fetch(`${API}/api/v1/analytics/overview`).then(r => r.ok ? r.json() : null),
-          fetch('/api/proxy/admin/stats').then(r => r.ok ? r.json() : null),
-          fetch('/api/proxy/admin/sentry/status').then(r => r.ok ? r.json() : null),
+          fetchJsonWithTimeout(`${API}/api/v1/analytics/overview`),
+          fetchJsonWithTimeout('/api/proxy/admin/stats'),
+          fetchJsonWithTimeout('/api/proxy/admin/sentry/status'),
         ])
         if (analyticsResult.status === 'fulfilled') setAnalytics(asRecord(analyticsResult.value))
         if (adminResult.status === 'fulfilled') setAdminStats(asRecord(adminResult.value))

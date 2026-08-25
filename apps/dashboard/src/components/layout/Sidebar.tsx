@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { signOut } from 'next-auth/react'
-import { canAccess, ROLE_MODULES, type DashboardRole } from '@/lib/auth'
+import { canAccess, type DashboardRole } from '@/lib/auth'
 
 interface NavGroup {
   title: string
@@ -60,7 +60,7 @@ const NAV_GROUPS: NavGroup[] = [
 ]
 
 // NODE_ADMIN sees only these modules
-const NODE_ADMIN_MODULES = ROLE_MODULES.NODE_ADMIN
+const NODE_ADMIN_MODULES = ['overview', 'bills', 'votes', 'cplm', 'node', 'municipal', 'gov']
 
 const ROLE_LABELS: Record<DashboardRole, string> = {
   SUPER_ADMIN: 'Super Admin',

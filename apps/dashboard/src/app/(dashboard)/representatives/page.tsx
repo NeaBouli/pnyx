@@ -170,7 +170,7 @@ export default function RepresentativesPage() {
             </button>
           </div>
           <div className="mt-4 flex items-center gap-4">
-            <div className="rounded-lg border border-blue-200 bg-white p-2" aria-label="QR Code πρόσκλησης">
+            <div className="rounded-lg border border-blue-200 bg-white p-2" role="img" aria-label="QR Code πρόσκλησης">
               <QRCodeSVG value={lastCode} size={120} level="M" />
             </div>
             <div className="text-xs text-blue-700 leading-relaxed">

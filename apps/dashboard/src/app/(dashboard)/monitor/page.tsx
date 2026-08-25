@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { asRecord, numberFrom } from '@/lib/response'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
@@ -29,13 +29,18 @@ export default function MonitorPage() {
   const [now, setNow] = useState<number | null>(null)
   const [actionResult, setActionResult] = useState<Record<string, { status: string; data?: string }>>({})
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({})
+  const activeRequest = useRef<AbortController | null>(null)
 
   const loadData = useCallback(async () => {
+    const controller = new AbortController()
+    activeRequest.current?.abort()
+    activeRequest.current = controller
     try {
       const [mods, jobsResp] = await Promise.allSettled([
-        fetch(`${API}/api/v1/health/modules`).then(r => r.json()),
-        fetch(`${API}/api/v1/scraper/jobs`).then(r => r.json()),
+        fetch(`${API}/api/v1/health/modules`, { signal: controller.signal }).then(r => r.json()),
+        fetch(`${API}/api/v1/scraper/jobs`, { signal: controller.signal }).then(r => r.json()),
       ])
+      if (controller.signal.aborted) return
       if (mods.status === 'fulfilled') {
         setModules(mods.value.modules || {})
         setOverall(mods.value.overall || 'unknown')
@@ -56,8 +61,13 @@ export default function MonitorPage() {
           }))
         }
       }
-    } catch { /* */ }
-    finally { setLoading(false) }
+    } catch { /* non-critical */ }
+    finally {
+      if (activeRequest.current === controller) {
+        activeRequest.current = null
+        setLoading(false)
+      }
+    }
   }, [])
 
   const refresh = useCallback(() => {
@@ -71,6 +81,7 @@ export default function MonitorPage() {
     return () => {
       clearTimeout(initial)
       clearInterval(interval)
+      activeRequest.current?.abort()
     }
   }, [refresh])
 
