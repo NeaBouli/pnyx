@@ -36,7 +36,7 @@ slowapi>=0.1.10
 beautifulsoup4>=4.15.0
 
 # Payments / Donations (MOD-18)
-stripe==15.5.0
+stripe==15.5.1
 
 # Scheduler (MOD-03 Cron)
 apscheduler==3.11.3
