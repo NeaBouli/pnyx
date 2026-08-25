@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Cell,
+  Tooltip, ResponsiveContainer,
 } from 'recharts'
+import { arrayFrom, asRecord, numberFrom } from '@/lib/response'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
@@ -151,9 +152,12 @@ export default function OverviewPage() {
   const newsletterData = data.newsletter as Record<string, unknown> | null
   const billsRaw = data.bills
   const bills = Array.isArray(billsRaw) ? billsRaw : (billsRaw as Record<string, unknown>)?.bills ?? []
-  const divergenceData = data.divergence as unknown[] | null
-  const votesTimelineData = data.votesTimeline as unknown[] | null
-  const topDivData = data.topDiv as unknown[] | null
+  const divergenceData = arrayFrom<Record<string, unknown>>(data.divergence, 'trends')
+  const votesTimelineData = arrayFrom<Record<string, unknown>>(data.votesTimeline, 'timeline').map(item => ({
+    ...item,
+    votes: numberFrom(item.votes) ?? numberFrom(item.total) ?? 0,
+  }))
+  const topDivData = arrayFrom<Record<string, unknown>>(data.topDiv, 'data', 'bills')
   const representationData = data.representation as Record<string, unknown> | null
   const paymentsData = data.payments as Record<string, unknown> | null
   const arweaveData = data.arweave as Record<string, unknown> | null
@@ -167,17 +171,21 @@ export default function OverviewPage() {
   const primaryTotal = (primary?.total as number) ?? 1000
   const primaryPct = primaryCredits != null ? Math.round((primaryCredits / primaryTotal) * 100) : null
   const primaryProvider = primary?.provider as string | null
-  const activeBills = Array.isArray(bills) ? bills.filter((b: Record<string, unknown>) => b.status === 'ACTIVE').length : 0
-  const windowBills = Array.isArray(bills) ? bills.filter((b: Record<string, unknown>) => b.status === 'WINDOW_24H').length : 0
-  const totalVotes = analyticsData?.total_votes as number | null
+  const analyticsBills = asRecord(analyticsData?.bills)
+  const activeBills = numberFrom(analyticsBills?.active)
+  const analyticsVotes = asRecord(analyticsData?.votes)
+  const totalVotes = numberFrom(analyticsVotes?.total ?? analyticsData?.total_votes)
   const cplmX = cplmData?.x != null ? (cplmData.x as number).toFixed(1) : null
   const cplmY = cplmData?.y != null ? (cplmData.y as number).toFixed(1) : null
   const discourseVersion = (discourseData?.about as Record<string, unknown>)?.version as string | null
   const claudeTokensToday = claudeData?.tokens_today as number | null
   const claudeTokensMonth = claudeData?.tokens_month as number | null
   const claudeIsActive = claudeData?.is_active as boolean | null
-  const subscriberCount = newsletterData?.subscriber_count as number | null
-  const sentMonth = newsletterData?.sent_month as number | null
+  const subscriberCount = numberFrom(newsletterData?.subscribers ?? newsletterData?.subscriber_count)
+  const sentMonth = numberFrom(newsletterData?.emails_sent_month ?? newsletterData?.sent_month)
+  const legacyRepresentationScore = numberFrom(representationData?.score)
+  const representationPercent = numberFrom(representationData?.cumulative_representation)
+    ?? (legacyRepresentationScore != null ? legacyRepresentationScore * 100 : 0)
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'overview', label: 'Επισκόπηση' },
@@ -241,8 +249,8 @@ export default function OverviewPage() {
               />
               <StatCard
                 title="Ενεργά Νομοσχέδια"
-                value={activeBills}
-                sub={windowBills > 0 ? `${windowBills} σε WINDOW_24H` : 'Κανένα σε 24ω παράθυρο'}
+                value={activeBills ?? '—'}
+                sub="Περιλαμβάνει το παράθυρο 24 ωρών"
                 color="text-blue-600"
               />
               <StatCard
@@ -362,7 +370,7 @@ export default function OverviewPage() {
                   <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(v: string) => v?.slice(5) ?? ''} />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip />
-                  <Line type="monotone" dataKey="divergence" stroke="#dc2626" dot={false} strokeWidth={2} name="Divergence" />
+                  <Line type="monotone" dataKey="divergence_score" stroke="#dc2626" dot={false} strokeWidth={2} name="Divergence" />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -425,12 +433,12 @@ export default function OverviewPage() {
             {representationData ? (
               <div>
                 <div className="text-3xl font-bold text-purple-600 mb-2">
-                  {((representationData.score as number ?? 0) * 100).toFixed(1)}%
+                  {representationPercent.toFixed(1)}%
                 </div>
                 <div className="w-full bg-gray-100 rounded-full h-3">
                   <div
                     className="bg-purple-500 h-3 rounded-full transition-all"
-                    style={{ width: `${Math.min(100, (representationData.score as number ?? 0) * 100)}%` }}
+                    style={{ width: `${Math.min(100, representationPercent)}%` }}
                   />
                 </div>
                 <div className="text-xs text-gray-400 mt-2">Πόσο αντιπροσωπεύει η Βουλή τους πολίτες</div>

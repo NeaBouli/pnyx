@@ -88,7 +88,7 @@ async function forwardProxyRequest(
     })
     const data = await parseJsonResponse(resp)
     return NextResponse.json(data, { status: resp.status })
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: 'Proxy error' }, { status: 502 })
   }
 }

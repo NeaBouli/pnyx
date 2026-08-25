@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { QRCodeSVG } from 'qrcode.react'
 
 type Role = 'Βουλευτής' | 'Περιφερειάρχης' | 'Δήμαρχος' | 'Δημοτικός Σύμβουλος'
 
@@ -169,13 +170,9 @@ export default function RepresentativesPage() {
             </button>
           </div>
           <div className="mt-4 flex items-center gap-4">
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(lastCode)}`}
-              alt="QR Code"
-              width={120}
-              height={120}
-              className="rounded-lg border border-blue-200"
-            />
+            <div className="rounded-lg border border-blue-200 bg-white p-2" aria-label="QR Code πρόσκλησης">
+              <QRCodeSVG value={lastCode} size={120} level="M" />
+            </div>
             <div className="text-xs text-blue-700 leading-relaxed">
               Ο εκπρόσωπος χρησιμοποιεί τον κωδικό μαζί με τον αριθμό ADA Διαύγειας
               για να ενεργοποιήσει τον λογαριασμό του στην εφαρμογή εκπρόσωπος.

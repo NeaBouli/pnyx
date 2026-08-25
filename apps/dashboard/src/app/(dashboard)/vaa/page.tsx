@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
+const VAA_ADMIN_AVAILABLE = false
 
 const CATEGORIES = [
   'Οικονομία', 'Κοινωνία', 'Περιβάλλον', 'Υγεία',
@@ -133,11 +134,19 @@ export default function VAAPage() {
         <h1 className="text-2xl font-bold text-gray-900">{String('VAA Θέσεις')}</h1>
         <button
           onClick={() => { resetModal(); setShowModal(true) }}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          disabled={!VAA_ADMIN_AVAILABLE}
+          title="Η διαχείριση VAA θα ενεργοποιηθεί όταν διατεθεί το backend API"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {String('+ Νέα Θέση')}
+          {String('+ Νέα Θέση (Φάση 2)')}
         </button>
       </div>
+
+      {!VAA_ADMIN_AVAILABLE && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          Η προβολή VAA είναι διαθέσιμη. Οι αλλαγές παραμένουν απενεργοποιημένες μέχρι να υλοποιηθεί το διαχειριστικό API.
+        </div>
+      )}
 
       {loading ? (
         <div className="p-8 text-center text-gray-500">{String('Φόρτωση...')}</div>
@@ -179,9 +188,11 @@ export default function VAAPage() {
                         <td className="px-4 py-3">
                           <button
                             onClick={() => toggleActive(id, isActive)}
+                            disabled={!VAA_ADMIN_AVAILABLE}
                             role="switch"
                             aria-checked={isActive}
-                            className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 cursor-pointer ${isActive ? 'bg-green-500' : 'bg-gray-300'}`}
+                            title="Μη διαθέσιμο μέχρι την υλοποίηση του διαχειριστικού API"
+                            className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${isActive ? 'bg-green-500' : 'bg-gray-300'}`}
                           >
                             <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${isActive ? 'translate-x-4' : 'translate-x-0'}`} />
                           </button>
@@ -189,13 +200,17 @@ export default function VAAPage() {
                         <td className="px-4 py-3">
                           <div className="flex gap-2">
                             <button
-                              className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                              disabled={!VAA_ADMIN_AVAILABLE}
+                              title="Μη διαθέσιμο μέχρι την υλοποίηση του διαχειριστικού API"
+                              className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:cursor-not-allowed disabled:opacity-40"
                               onClick={() => {/* edit placeholder */}}
                             >
                               {String('Επεξεργασία')}
                             </button>
                             <button
-                              className="text-xs text-red-500 hover:text-red-700 font-medium"
+                              disabled={!VAA_ADMIN_AVAILABLE}
+                              title="Μη διαθέσιμο μέχρι την υλοποίηση του διαχειριστικού API"
+                              className="text-xs text-red-500 hover:text-red-700 font-medium disabled:cursor-not-allowed disabled:opacity-40"
                               onClick={() => setStatements(prev => prev.filter((_, j) => j !== i))}
                             >
                               {String('Διαγραφή')}

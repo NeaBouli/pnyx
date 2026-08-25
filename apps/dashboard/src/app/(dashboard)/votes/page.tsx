@@ -5,28 +5,33 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, PieChart, Pie,
 } from 'recharts'
+import { arrayFrom, asRecord, numberFrom } from '@/lib/response'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
 const PARTIES = ['ΝΔ', 'ΣΥΡΙΖΑ', 'ΠΑΣΟΚ', 'ΚΚΕ', 'ΕΛ', 'ΝΙΚΗ', 'ΠΛ', 'ΣΠΑΡΤ'] as const
 
 interface Bill {
-  id: number
+  id: string
   title_el: string
   status: string
 }
 
 interface VoteResults {
-  bill_id: number
+  bill_id: string
   total_votes: number
-  citizen_votes: number
-  yes: number
-  no: number
-  abstain: number
-  dont_know: number
-  divergence_score?: number
-  representation_score?: number
-  parliament_vote?: string
+  tier1_vote_count: number
+  zk_vote_count: number
+  yes_count: number
+  no_count: number
+  abstain_count: number
+  unknown_count: number
+  divergence?: {
+    score: number
+    parliament_result?: string | null
+  } | null
+  results_hidden?: boolean
+  disclaimer_el?: string
 }
 
 interface MPParty {
@@ -62,7 +67,7 @@ type VotesMainTab = 'results' | 'party-compare'
 export default function VotesPage() {
   const [mainTab, setMainTab] = useState<VotesMainTab>('results')
   const [bills, setBills] = useState<Bill[]>([])
-  const [selectedBillId, setSelectedBillId] = useState<number | null>(null)
+  const [selectedBillId, setSelectedBillId] = useState<string | null>(null)
   const [results, setResults] = useState<VoteResults | null>(null)
   const [loadingBills, setLoadingBills] = useState(true)
   const [loadingResults, setLoadingResults] = useState(false)
@@ -96,8 +101,19 @@ export default function VotesPage() {
           fetch(`${API}/api/v1/analytics/representation`).then(r => r.json()),
         ])
         if (mpRes.status === 'fulfilled' && mpRes.value) {
-          const parties = Array.isArray(mpRes.value) ? mpRes.value : mpRes.value.parties ?? []
-          setMpRanking(parties)
+          const parties = arrayFrom<Record<string, unknown>>(mpRes.value, 'ranking', 'parties')
+          setMpRanking(parties.map(party => {
+            const agreementPct = numberFrom(party.agreement_pct)
+            return {
+              party: String(party.party_name_el ?? party.party ?? party.party_abbr ?? ''),
+              abbreviation: String(party.party_abbr ?? party.abbreviation ?? ''),
+              alignment_score: agreementPct != null
+                ? agreementPct / 100
+                : numberFrom(party.alignment_score, 0) ?? 0,
+              aligned_count: numberFrom(party.bills_agree ?? party.aligned_count, 0) ?? 0,
+              total_count: numberFrom(party.bills_analyzed ?? party.total_count, 0) ?? 0,
+            }
+          }))
         }
         if (repRes.status === 'fulfilled') setRepresentation(repRes.value)
       } catch { /* non-critical */ }
@@ -107,12 +123,13 @@ export default function VotesPage() {
 
   // Load results when bill selected
   useEffect(() => {
-    if (!selectedBillId) { setResults(null); return }
+    if (!selectedBillId) return
+    const billId = selectedBillId
     async function loadResults() {
       setLoadingResults(true)
       setError(null)
       try {
-        const r = await fetch(`${API}/api/v1/bills/${selectedBillId}/results`)
+        const r = await fetch(`${API}/api/v1/vote/${encodeURIComponent(billId)}/results`)
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         setResults(await r.json())
       } catch {
@@ -127,7 +144,7 @@ export default function VotesPage() {
 
   // Load party compare when bill selected
   useEffect(() => {
-    if (!selectedBillId) { setPartyCompare([]); return }
+    if (!selectedBillId) return
     async function loadCompare() {
       setLoadingCompare(true)
       const compareResults: PartyCompare[] = []
@@ -137,10 +154,15 @@ export default function VotesPage() {
             const r = await fetch(`${API}/api/v1/mp/compare/${encodeURIComponent(abbr)}`)
             if (!r.ok) return null
             const data = await r.json()
+            const summary = asRecord(data?.summary)
+            const party = asRecord(data?.party)
+            const agreementPct = numberFrom(summary?.agreement_pct)
             return {
-              party: abbr,
-              alignment_score: typeof data?.alignment_score === 'number' ? data.alignment_score : 0,
-              bills_compared: typeof data?.bills_compared === 'number' ? data.bills_compared : 0,
+              party: String(party?.abbreviation ?? abbr),
+              alignment_score: agreementPct != null
+                ? agreementPct / 100
+                : numberFrom(data?.alignment_score, 0) ?? 0,
+              bills_compared: numberFrom(summary?.bills_analyzed ?? data?.bills_compared, 0) ?? 0,
             } as PartyCompare
           } catch { return null }
         })
@@ -156,14 +178,17 @@ export default function VotesPage() {
 
   const chartData = results
     ? [
-        { name: 'ΝΑΙ', value: results.yes ?? 0 },
-        { name: 'ΟΧΙ', value: results.no ?? 0 },
-        { name: 'ΑΠΟΧΗ', value: results.abstain ?? 0 },
-        { name: 'ΔΕΝ ΞΕΡΩ', value: results.dont_know ?? 0 },
+        { name: 'ΝΑΙ', value: results.yes_count ?? 0 },
+        { name: 'ΟΧΙ', value: results.no_count ?? 0 },
+        { name: 'ΑΠΟΧΗ', value: results.abstain_count ?? 0 },
+        { name: 'ΔΕΝ ΞΕΡΩ', value: results.unknown_count ?? 0 },
       ]
     : []
 
-  const repScore = representation?.score as number | null
+  const legacyRepScore = numberFrom(representation?.score)
+  const repPercent = numberFrom(representation?.cumulative_representation)
+    ?? (legacyRepScore != null ? legacyRepScore * 100 : null)
+  const divergenceScore = results?.divergence?.score
 
   const partyChartData = partyCompare.map((p) => ({
     name: p.party,
@@ -246,14 +271,14 @@ export default function VotesPage() {
       )}
 
       {/* Representation Score */}
-      {repScore != null && (
+      {repPercent != null && (
         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm mb-6">
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-semibold text-gray-800">Representation Score</h2>
-            <span className="text-2xl font-bold text-purple-600">{(repScore * 100).toFixed(1)}%</span>
+            <span className="text-2xl font-bold text-purple-600">{repPercent.toFixed(1)}%</span>
           </div>
           <div className="w-full bg-gray-100 rounded-full h-3">
-            <div className="bg-purple-500 h-3 rounded-full transition-all" style={{ width: `${Math.min(100, repScore * 100)}%` }} />
+            <div className="bg-purple-500 h-3 rounded-full transition-all" style={{ width: `${Math.min(100, repPercent)}%` }} />
           </div>
           <div className="text-xs text-gray-400 mt-1">Πόσο αντιπροσωπεύει η Βουλή τους πολίτες</div>
         </div>
@@ -267,7 +292,11 @@ export default function VotesPage() {
         ) : (
           <select
             value={selectedBillId ?? ''}
-            onChange={(e) => setSelectedBillId(e.target.value ? Number(e.target.value) : null)}
+            onChange={(e) => {
+              setResults(null)
+              setPartyCompare([])
+              setSelectedBillId(e.target.value || null)
+            }}
             className="w-full max-w-md border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">-- Επιλέξτε νομοσχέδιο --</option>
@@ -280,7 +309,13 @@ export default function VotesPage() {
 
       {loadingResults && <div className="p-8 text-center text-gray-500">Φόρτωση αποτελεσμάτων...</div>}
 
-      {results && !loadingResults && (
+      {results?.results_hidden && !loadingResults && (
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-800">
+          {results.disclaimer_el ?? 'Τα αποτελέσματα δεν είναι ακόμη δημόσια.'}
+        </div>
+      )}
+
+      {results && !results.results_hidden && !loadingResults && (
         <div className="space-y-6">
           {/* Summary cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -289,19 +324,21 @@ export default function VotesPage() {
               <div className="text-2xl font-bold text-blue-600">{results.total_votes?.toLocaleString('el-GR') ?? '—'}</div>
             </div>
             <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-              <div className="text-xs text-gray-500 mb-1">Ψήφοι Πολιτών</div>
-              <div className="text-2xl font-bold text-blue-600">{results.citizen_votes?.toLocaleString('el-GR') ?? '—'}</div>
+              <div className="text-xs text-gray-500 mb-1">Tier 1 / ZK</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {results.tier1_vote_count?.toLocaleString('el-GR') ?? '0'} / {results.zk_vote_count?.toLocaleString('el-GR') ?? '0'}
+              </div>
             </div>
             <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
               <div className="text-xs text-gray-500 mb-1">Divergence Score</div>
-              <div className={`text-2xl font-bold ${results.divergence_score != null && results.divergence_score > 0.3 ? 'text-red-600' : 'text-green-600'}`}>
-                {results.divergence_score != null ? `${(results.divergence_score * 100).toFixed(1)}%` : '—'}
+              <div className={`text-2xl font-bold ${divergenceScore != null && divergenceScore > 0.3 ? 'text-red-600' : 'text-green-600'}`}>
+                {divergenceScore != null ? `${(divergenceScore * 100).toFixed(1)}%` : '—'}
               </div>
             </div>
             <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
               <div className="text-xs text-gray-500 mb-1">Βουλή</div>
               <div className="text-2xl font-bold text-gray-800">
-                {results.parliament_vote ?? '—'}
+                {results.divergence?.parliament_result ?? '—'}
               </div>
             </div>
           </div>

@@ -12,6 +12,7 @@
   "dependencies": {
     "next": "16.3.1",
     "next-auth": "5.0.0-beta.32",
+    "qrcode.react": "^4.2.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "recharts": "^2.12.0"

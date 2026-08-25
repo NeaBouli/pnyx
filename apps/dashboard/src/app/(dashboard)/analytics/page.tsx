@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import {
-  LineChart, Line, AreaChart, Area, BarChart, Bar,
+  LineChart, Line, AreaChart, Area,
   ScatterChart, Scatter,
   XAxis, YAxis, CartesianGrid, Tooltip,
   ReferenceLine, ResponsiveContainer,
 } from 'recharts'
+import { arrayFrom, asRecord, numberFrom } from '@/lib/response'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
@@ -32,19 +33,23 @@ export default function AnalyticsPage() {
         fetch(`${API}/api/v1/cplm/history`).then(r => r.json()),
       ])
       const v = (r: PromiseSettledResult<unknown>) => r.status === 'fulfilled' ? r.value : null
-      setDivergence(v(divRes) as Record<string, unknown>[] | null)
-      setVotes(v(voteRes) as Record<string, unknown>[] | null)
+      setDivergence(arrayFrom<Record<string, unknown>>(v(divRes), 'trends'))
+      setVotes(arrayFrom<Record<string, unknown>>(v(voteRes), 'timeline').map(item => ({
+        ...item,
+        votes: numberFrom(item.votes) ?? numberFrom(item.total) ?? 0,
+      })))
       const td = v(topRes)
-      setTopDiv(Array.isArray(td) ? td : (td as Record<string, unknown> | null)?.bills as Record<string, unknown>[] ?? null)
-      setRepresentation(v(repRes) as Record<string, unknown> | null)
-      const ch = v(cplmRes)
-      setCplmHistory(Array.isArray(ch) ? ch : null)
+      setTopDiv(arrayFrom<Record<string, unknown>>(td, 'data', 'bills'))
+      setRepresentation(asRecord(v(repRes)))
+      setCplmHistory(arrayFrom<Record<string, unknown>>(v(cplmRes), 'snapshots'))
       setLoading(false)
     }
     load()
   }, [range])
 
-  const repScore = representation?.score as number | null
+  const legacyRepScore = numberFrom(representation?.score)
+  const repPercent = numberFrom(representation?.cumulative_representation)
+    ?? (legacyRepScore != null ? legacyRepScore * 100 : null)
 
   return (
     <div>
@@ -65,15 +70,15 @@ export default function AnalyticsPage() {
       {!loading && (
         <div className="space-y-6">
           {/* Representation Score */}
-          {repScore != null && (
+          {repPercent != null && (
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
               <h2 className="text-base font-semibold text-gray-800 mb-3">{String('Representation Score')}</h2>
               <div className="flex items-end gap-4">
-                <div className="text-5xl font-bold text-purple-600">{String((repScore * 100).toFixed(1))}{String('%')}</div>
+                <div className="text-5xl font-bold text-purple-600">{String(repPercent.toFixed(1))}{String('%')}</div>
                 <div className="text-sm text-gray-400 pb-2">{String('Συνολική αντιπροσώπευση πολιτών από τη Βουλή')}</div>
               </div>
               <div className="w-full bg-gray-100 rounded-full h-4 mt-4">
-                <div className="bg-purple-500 h-4 rounded-full transition-all" style={{ width: `${Math.min(100, repScore * 100)}%` }} />
+                <div className="bg-purple-500 h-4 rounded-full transition-all" style={{ width: `${Math.min(100, repPercent)}%` }} />
               </div>
             </div>
           )}
@@ -121,7 +126,7 @@ export default function AnalyticsPage() {
                   <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(v: string) => v?.slice(5) ?? ''} />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip />
-                  <Area type="monotone" dataKey="divergence" stroke="#dc2626" fill="#fecaca" strokeWidth={2} name="Divergence" />
+                  <Area type="monotone" dataKey="divergence_score" stroke="#dc2626" fill="#fecaca" strokeWidth={2} name="Divergence" />
                   {divergence[0]?.avg_divergence !== undefined && (
                     <Line type="monotone" dataKey="avg_divergence" stroke="#9333ea" dot={false} strokeWidth={1.5} name="Μέσος όρος" strokeDasharray="5 5" />
                   )}
@@ -155,8 +160,8 @@ export default function AnalyticsPage() {
                         {String('#')}{String(item.bill_id ?? '')} {String('—')} {String(item.title_el ?? item.title ?? '')}
                       </td>
                       <td className="px-4 py-2.5 text-right text-gray-500">
-                        {(item.total_votes as number | undefined) != null
-                          ? String((item.total_votes as number).toLocaleString('el-GR'))
+                        {numberFrom(item.citizen_total ?? item.total_votes) != null
+                          ? String(numberFrom(item.citizen_total ?? item.total_votes)?.toLocaleString('el-GR'))
                           : String('—')}
                       </td>
                       <td className="px-4 py-2.5 text-right">

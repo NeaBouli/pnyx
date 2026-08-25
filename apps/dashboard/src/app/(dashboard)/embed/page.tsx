@@ -7,6 +7,7 @@ type BillFilter = 'all' | 'district' | 'single'
 type EmbedSize = 'compact' | 'normal' | 'large'
 type EmbedLang = 'el' | 'en' | 'both'
 type EmbedTheme = 'light' | 'dark'
+const EMBED_AVAILABLE = false
 
 const EMBED_TYPES: { value: EmbedType; label: string }[] = [
   { value: 'vote', label: 'Ψηφοφορία' },
@@ -191,12 +192,14 @@ export default function EmbedPage() {
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-gray-700">Κώδικας HTML</h3>
               <div className="flex gap-2">
-                <button onClick={handleCopy}
-                  className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors">
-                  {copied ? '✓ Αντιγράφηκε!' : 'Αντιγραφή'}
+                <button onClick={handleCopy} disabled={!EMBED_AVAILABLE}
+                  title="Τα embed endpoints θα ενεργοποιηθούν στη Φάση 2"
+                  className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors disabled:cursor-not-allowed disabled:opacity-50">
+                  {copied ? '✓ Αντιγράφηκε!' : 'Αντιγραφή (Φάση 2)'}
                 </button>
-                <button onClick={() => window.open(embedUrl, '_blank')}
-                  className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors">
+                <button onClick={() => window.open(embedUrl, '_blank')} disabled={!EMBED_AVAILABLE}
+                  title="Τα embed endpoints θα ενεργοποιηθούν στη Φάση 2"
+                  className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors disabled:cursor-not-allowed disabled:opacity-50">
                   Δοκιμή →
                 </button>
               </div>
@@ -208,12 +211,12 @@ export default function EmbedPage() {
 
           {/* Info */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <div className="text-sm font-medium text-blue-800 mb-1">Πληροφορίες Ενσωμάτωσης</div>
+            <div className="text-sm font-medium text-blue-800 mb-1">Προδιαγραφές Ενσωμάτωσης — Φάση 2</div>
             <ul className="text-xs text-blue-600 space-y-1">
-              <li>• Ο κώδικας λειτουργεί σε οποιαδήποτε ιστοσελίδα (HTML/WordPress/CMS)</li>
-              <li>• Αυτόματη προσαρμογή στο πλάτος του container</li>
-              <li>• Χωρίς cookies, χωρίς tracking, χωρίς εξωτερικές εξαρτήσεις</li>
-              <li>• Δωρεάν χρήση υπό CC BY 4.0</li>
+              <li>• Προγραμματισμένη υποστήριξη HTML, WordPress και CMS</li>
+              <li>• Προγραμματισμένη αυτόματη προσαρμογή στο πλάτος του container</li>
+              <li>• Στόχος: χωρίς cookies, tracking ή εξωτερικές εξαρτήσεις</li>
+              <li>• Προβλεπόμενη άδεια χρήσης: CC BY 4.0</li>
             </ul>
           </div>
         </div>
