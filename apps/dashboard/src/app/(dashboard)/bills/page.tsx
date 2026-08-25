@@ -6,11 +6,11 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
 
 type BillStatus = 'ANNOUNCED' | 'ACTIVE' | 'WINDOW_24H' | 'PARLIAMENT_VOTED' | 'OPEN_END'
-type GovernanceLevel = 'NATIONAL' | 'REGIONAL' | 'MUNICIPAL' | 'COMMUNITY'
+type GovernanceLevel = 'NATIONAL' | 'REGIONAL' | 'MUNICIPAL' | 'COMMUNITY' | 'INSTITUTIONAL'
 type ResultsVisibility = 'HIDDEN' | 'WINDOW' | 'ALWAYS'
 
 interface Bill {
-  id: number
+  id: string
   title_el: string
   title_en?: string
   summary_short_el?: string
@@ -19,7 +19,6 @@ interface Bill {
   governance_level: GovernanceLevel
   results_visibility?: ResultsVisibility
   created_at: string
-  source_url?: string
   source?: string
   diavgeia_ada?: string
   ai_summary_reviewed?: boolean
@@ -46,9 +45,17 @@ const GOVERNANCE_LABELS: Record<GovernanceLevel, string> = {
   REGIONAL: 'Περιφερειακό',
   MUNICIPAL: 'Δημοτικό',
   COMMUNITY: 'Κοινοτικό',
+  INSTITUTIONAL: 'Θεσμικό',
 }
 
 const ALL_STATUSES: BillStatus[] = ['ANNOUNCED', 'ACTIVE', 'WINDOW_24H', 'PARLIAMENT_VOTED', 'OPEN_END']
+
+const NEXT_STATUS: Partial<Record<BillStatus, BillStatus>> = {
+  ANNOUNCED: 'ACTIVE',
+  ACTIVE: 'WINDOW_24H',
+  WINDOW_24H: 'PARLIAMENT_VOTED',
+  PARLIAMENT_VOTED: 'OPEN_END',
+}
 
 const VISIBILITY_LABELS: Record<ResultsVisibility, string> = {
   HIDDEN: 'Κρυφά',
@@ -66,11 +73,11 @@ const PARTIES = ['ΝΔ', 'ΣΥΡΙΖΑ', 'ΠΑΣΟΚ', 'ΚΚΕ', 'ΕΛ', 'ΝΙΚ
 const PARTY_VOTE_OPTIONS = ['—', 'ΝΑΙ', 'ΟΧΙ', 'ΑΠΟΧΗ'] as const
 
 interface NewBillForm {
+  id: string
   title_el: string
   title_en: string
   summary_short_el: string
   governance_level: GovernanceLevel
-  source_url: string
 }
 
 interface EditBillForm {
@@ -78,7 +85,6 @@ interface EditBillForm {
   title_en: string
   summary_short_el: string
   governance_level: GovernanceLevel
-  source_url: string
 }
 
 
@@ -91,15 +97,15 @@ export default function BillsPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [actionLoading, setActionLoading] = useState<Record<number, string>>({})
+  const [actionLoading, setActionLoading] = useState<Record<string, string>>({})
   const [form, setForm] = useState<NewBillForm>({
-    title_el: '', title_en: '', summary_short_el: '', governance_level: 'NATIONAL', source_url: '',
+    id: '', title_el: '', title_en: '', summary_short_el: '', governance_level: 'NATIONAL',
   })
 
   // Edit modal
   const [editBill, setEditBill] = useState<Bill | null>(null)
   const [editForm, setEditForm] = useState<EditBillForm>({
-    title_el: '', title_en: '', summary_short_el: '', governance_level: 'NATIONAL', source_url: '',
+    title_el: '', title_en: '', summary_short_el: '', governance_level: 'NATIONAL',
   })
   const [editSubmitting, setEditSubmitting] = useState(false)
 
@@ -142,7 +148,7 @@ export default function BillsPage() {
       })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       setShowModal(false)
-      setForm({ title_el: '', title_en: '', summary_short_el: '', governance_level: 'NATIONAL', source_url: '' })
+      setForm({ id: '', title_el: '', title_en: '', summary_short_el: '', governance_level: 'NATIONAL' })
       setSuccess('Νομοσχέδιο δημιουργήθηκε')
       await loadBills()
     } catch {
@@ -152,38 +158,40 @@ export default function BillsPage() {
     }
   }
 
-  async function handleStatusChange(id: number, newStatus: BillStatus) {
+  async function handleStatusChange(id: string, newStatus: BillStatus) {
     try {
-      await fetch(`/api/proxy/bills/${id}/transition`, {
+      const r = await fetch(`/api/proxy/bills/${encodeURIComponent(id)}/transition`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ new_status: newStatus }),
       })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
       setBills((prev) => prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b)))
     } catch {
       setError('Αδύνατη η αλλαγή κατάστασης')
     }
   }
 
-  async function handleVisibilityChange(id: number, visibility: ResultsVisibility) {
+  async function handleVisibilityChange(id: string, visibility: ResultsVisibility) {
     try {
-      await fetch(`/api/proxy/admin/bills/${id}`, {
+      const r = await fetch(`/api/proxy/admin/bills/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ results_visibility: visibility }),
       })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
       setBills((prev) => prev.map((b) => (b.id === id ? { ...b, results_visibility: visibility } : b)))
     } catch {
       setError('Αδύνατη η αλλαγή ορατότητας αποτελεσμάτων')
     }
   }
 
-  async function handleAction(id: number, action: 'review' | 'fetch-text') {
+  async function handleAction(id: string, action: 'review' | 'fetch-text') {
     setActionLoading(prev => ({ ...prev, [id]: action }))
     try {
       const path = action === 'review'
-        ? `/api/proxy/admin/bills/${id}/review`
-        : `/api/proxy/admin/bills/${id}/fetch-text`
+        ? `/api/proxy/admin/bills/${encodeURIComponent(id)}/review`
+        : `/api/proxy/admin/bills/${encodeURIComponent(id)}/fetch-text`
       const r = await fetch(path, { method: 'POST' })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       if (action === 'review') {
@@ -204,7 +212,6 @@ export default function BillsPage() {
       title_en: bill.title_en || '',
       summary_short_el: bill.summary_short_el || '',
       governance_level: bill.governance_level,
-      source_url: bill.source_url || '',
     })
   }
 
@@ -213,7 +220,7 @@ export default function BillsPage() {
     if (!editBill) return
     setEditSubmitting(true)
     try {
-      const r = await fetch(`/api/proxy/admin/bills/${editBill.id}`, {
+      const r = await fetch(`/api/proxy/admin/bills/${encodeURIComponent(editBill.id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm),
@@ -241,10 +248,10 @@ export default function BillsPage() {
     if (!textBill) return
     setTextSubmitting(true)
     try {
-      const r = await fetch(`/api/proxy/admin/bills/${textBill.id}/set-text`, {
+      const r = await fetch(`/api/proxy/admin/bills/${encodeURIComponent(textBill.id)}/set-text`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text_el: textContent }),
+        body: JSON.stringify({ text: textContent }),
       })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       setTextBill(null)
@@ -260,7 +267,7 @@ export default function BillsPage() {
     if (!textBill) return
     setTextSubmitting(true)
     try {
-      const r = await fetch(`/api/proxy/admin/bills/${textBill.id}/fetch-text`, { method: 'POST' })
+      const r = await fetch(`/api/proxy/admin/bills/${encodeURIComponent(textBill.id)}/fetch-text`, { method: 'POST' })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       setTextBill(null)
       setSuccess('Αυτόματο scrape ξεκίνησε')
@@ -284,10 +291,10 @@ export default function BillsPage() {
     if (!partyBill) return
     setPartySubmitting(true)
     try {
-      const r = await fetch(`/api/proxy/admin/bills/${partyBill.id}/party-votes`, {
+      const r = await fetch(`/api/proxy/admin/bills/${encodeURIComponent(partyBill.id)}/party-votes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ votes: partyVotes }),
+        body: JSON.stringify(partyVotes),
       })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       setPartyBill(null)
@@ -399,7 +406,7 @@ export default function BillsPage() {
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Κατάσταση</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Επίπεδο</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Αποτελέσματα</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">AI</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Έλεγχος σύνοψης</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Ημερομηνία</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Ενέργειες</th>
                 </tr>
@@ -416,9 +423,10 @@ export default function BillsPage() {
                       <select
                         value={bill.status}
                         onChange={(e) => handleStatusChange(bill.id, e.target.value as BillStatus)}
+                        disabled={!NEXT_STATUS[bill.status]}
                         className={`px-2 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${STATUS_COLORS[bill.status]}`}
                       >
-                        {ALL_STATUSES.map((s) => (
+                        {[bill.status, NEXT_STATUS[bill.status]].filter((s): s is BillStatus => Boolean(s)).map((s) => (
                           <option key={s} value={s}>{STATUS_LABELS[s]}</option>
                         ))}
                       </select>
@@ -437,9 +445,13 @@ export default function BillsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        bill.ai_summary_reviewed ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                        !bill.summary_short_el
+                          ? 'bg-gray-100 text-gray-600'
+                          : bill.ai_summary_reviewed
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-yellow-100 text-yellow-700'
                       }`}>
-                        {bill.ai_summary_reviewed ? 'Ελέγχθηκε' : 'Εκκρεμεί'}
+                        {!bill.summary_short_el ? 'Χωρίς σύνοψη' : bill.ai_summary_reviewed ? 'Ελεγμένο' : 'Προς έλεγχο'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-gray-500 text-xs">
@@ -470,11 +482,11 @@ export default function BillsPage() {
                         </button>
                         <button
                           onClick={() => handleAction(bill.id, 'review')}
-                          disabled={!!actionLoading[bill.id]}
+                          disabled={!!actionLoading[bill.id] || !bill.summary_short_el || bill.ai_summary_reviewed}
                           className="px-2 py-0.5 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors disabled:opacity-50"
-                          title="AI Review"
+                          title="Έγκριση σύνοψης"
                         >
-                          {actionLoading[bill.id] === 'review' ? '...' : 'Review'}
+                          {actionLoading[bill.id] === 'review' ? '...' : bill.ai_summary_reviewed ? 'Εγκρίθηκε' : 'Έγκριση'}
                         </button>
                       </div>
                     </td>
@@ -495,6 +507,16 @@ export default function BillsPage() {
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">x</button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">ID *</label>
+                <input
+                  required
+                  value={form.id}
+                  onChange={(e) => setForm({ ...form, id: e.target.value })}
+                  placeholder="π.χ. GR-2026-0042"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Τίτλος (Ελληνικά) *</label>
                 <input
@@ -533,16 +555,8 @@ export default function BillsPage() {
                   <option value="REGIONAL">Περιφερειακό</option>
                   <option value="MUNICIPAL">Δημοτικό</option>
                   <option value="COMMUNITY">Κοινοτικό</option>
+                  <option value="INSTITUTIONAL">Θεσμικό</option>
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Πηγή URL</label>
-                <input
-                  type="url"
-                  value={form.source_url}
-                  onChange={(e) => setForm({ ...form, source_url: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
               </div>
               <div className="flex gap-3 pt-2">
                 <button
@@ -612,16 +626,8 @@ export default function BillsPage() {
                   <option value="REGIONAL">Περιφερειακό</option>
                   <option value="MUNICIPAL">Δημοτικό</option>
                   <option value="COMMUNITY">Κοινοτικό</option>
+                  <option value="INSTITUTIONAL">Θεσμικό</option>
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Πηγή URL</label>
-                <input
-                  type="url"
-                  value={editForm.source_url}
-                  onChange={(e) => setEditForm({ ...editForm, source_url: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
               </div>
               <div className="flex gap-3 pt-2">
                 <button

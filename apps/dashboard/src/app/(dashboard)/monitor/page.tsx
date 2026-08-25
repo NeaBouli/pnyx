@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { asRecord, numberFrom } from '@/lib/response'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
@@ -25,15 +26,21 @@ export default function MonitorPage() {
   const [overall, setOverall] = useState('')
   const [jobs, setJobs] = useState<ScraperJob[]>([])
   const [loading, setLoading] = useState(true)
+  const [now, setNow] = useState<number | null>(null)
   const [actionResult, setActionResult] = useState<Record<string, { status: string; data?: string }>>({})
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({})
+  const activeRequest = useRef<AbortController | null>(null)
 
   const loadData = useCallback(async () => {
+    const controller = new AbortController()
+    activeRequest.current?.abort()
+    activeRequest.current = controller
     try {
       const [mods, jobsResp] = await Promise.allSettled([
-        fetch(`${API}/api/v1/health/modules`).then(r => r.json()),
-        fetch(`${API}/api/v1/scraper/jobs`).then(r => r.json()),
+        fetch(`${API}/api/v1/health/modules`, { signal: controller.signal }).then(r => r.json()),
+        fetch(`${API}/api/v1/scraper/jobs`, { signal: controller.signal }).then(r => r.json()),
       ])
+      if (controller.signal.aborted) return
       if (mods.status === 'fulfilled') {
         setModules(mods.value.modules || {})
         setOverall(mods.value.overall || 'unknown')
@@ -42,18 +49,41 @@ export default function MonitorPage() {
         const raw = jobsResp.value.jobs || jobsResp.value
         if (Array.isArray(raw)) setJobs(raw)
         else if (typeof raw === 'object') {
-          setJobs(Object.entries(raw).map(([name, v]: [string, any]) => ({ name, ...v })))
+          setJobs(Object.entries(raw).map(([name, value]) => {
+            const job = asRecord(value)
+            return {
+              name,
+              last_run: typeof job?.last_run === 'string' ? job.last_run : null,
+              last_success: typeof job?.last_success === 'string' ? job.last_success : null,
+              error_count: numberFrom(job?.error_count, 0) ?? 0,
+              last_error: typeof job?.last_error === 'string' ? job.last_error : null,
+            }
+          }))
         }
       }
-    } catch { /* */ }
-    finally { setLoading(false) }
+    } catch { /* non-critical */ }
+    finally {
+      if (activeRequest.current === controller) {
+        activeRequest.current = null
+        setLoading(false)
+      }
+    }
   }, [])
 
-  useEffect(() => {
-    loadData()
-    const interval = setInterval(loadData, 30000)
-    return () => clearInterval(interval)
+  const refresh = useCallback(() => {
+    setNow(Date.now())
+    void loadData()
   }, [loadData])
+
+  useEffect(() => {
+    const initial = setTimeout(refresh, 0)
+    const interval = setInterval(refresh, 30000)
+    return () => {
+      clearTimeout(initial)
+      clearInterval(interval)
+      activeRequest.current?.abort()
+    }
+  }, [refresh])
 
   async function triggerAction(key: string, endpoint: string) {
     setActionLoading(prev => ({ ...prev, [key]: true }))
@@ -66,8 +96,9 @@ export default function MonitorPage() {
       } else {
         setActionResult(prev => ({ ...prev, [key]: { status: 'error', data: data.detail || `HTTP ${r.status}` } }))
       }
-    } catch (e: any) {
-      setActionResult(prev => ({ ...prev, [key]: { status: 'error', data: e.message } }))
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Άγνωστο σφάλμα'
+      setActionResult(prev => ({ ...prev, [key]: { status: 'error', data: message } }))
     } finally {
       setActionLoading(prev => ({ ...prev, [key]: false }))
     }
@@ -89,8 +120,8 @@ export default function MonitorPage() {
   }
 
   const formatAge = (iso: string | null) => {
-    if (!iso) return '—'
-    const age = (Date.now() - new Date(iso).getTime()) / 3600000
+    if (!iso || now == null) return '—'
+    const age = (now - new Date(iso).getTime()) / 3600000
     if (age < 1) return `${Math.round(age * 60)}m`
     if (age < 48) return `${Math.round(age)}h`
     return `${Math.round(age / 24)}d`
@@ -106,10 +137,10 @@ export default function MonitorPage() {
         <div className="flex items-center gap-3">
           {overall && statusBadge(overall)}
           <button
-            onClick={() => { setLoading(true); loadData() }}
+            onClick={() => { setLoading(true); refresh() }}
             className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            Aktualisieren
+            Ανανέωση
           </button>
         </div>
       </div>
@@ -186,7 +217,7 @@ export default function MonitorPage() {
                     disabled={!!actionLoading[btn.key]}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
                   >
-                    {actionLoading[btn.key] ? 'Wird ausgeführt...' : btn.label}
+                    {actionLoading[btn.key] ? 'Εκτέλεση...' : btn.label}
                   </button>
                   {actionResult[btn.key] && (
                     <div className={`mt-2 p-2 rounded text-xs ${actionResult[btn.key].status === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>

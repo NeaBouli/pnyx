@@ -67,10 +67,10 @@ export default function UsersPage() {
         <h1 className="text-2xl font-bold text-gray-900">{String('Χρήστες & Ταυτότητες')}</h1>
         <button
           disabled
-          title="Kein PII-Export moeglich — Datenschutz"
+          title="Δεν επιτρέπεται εξαγωγή PII — προστασία δεδομένων"
           className="px-3 py-1.5 bg-gray-100 text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed"
         >
-          {String('CSV (kein PII-Export)')}
+          {String('CSV (χωρίς εξαγωγή PII)')}
         </button>
       </div>
 
@@ -97,7 +97,7 @@ export default function UsersPage() {
               ? String(adminStats.active_identities.toLocaleString('el-GR'))
               : <span className="text-gray-300 text-lg">{String('—')}</span>}
           </div>
-          <div className="text-xs text-gray-400 mt-1">{String('Placeholder Phase 2')}</div>
+          <div className="text-xs text-gray-400 mt-1">{String('Ενεργές κρυπτογραφικές εγγραφές')}</div>
         </div>
 
         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
@@ -107,7 +107,7 @@ export default function UsersPage() {
               ? String(adminStats.revoked_identities.toLocaleString('el-GR'))
               : <span className="text-gray-300 text-lg">{String('—')}</span>}
           </div>
-          <div className="text-xs text-gray-400 mt-1">{String('Placeholder Phase 2')}</div>
+          <div className="text-xs text-gray-400 mt-1">{String('Ανακληθείσες κρυπτογραφικές εγγραφές')}</div>
         </div>
 
         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">

@@ -87,7 +87,7 @@ export default function NewsletterAdminPage() {
 
   async function handleSend() {
     if (!draftId) return
-    if (!confirm('Newsletter jetzt an alle Abonnenten senden?')) return
+    if (!confirm('Να σταλεί τώρα το ενημερωτικό δελτίο σε όλους τους συνδρομητές;')) return
     setSending(true)
     setError(null)
     try {
@@ -122,10 +122,10 @@ export default function NewsletterAdminPage() {
 
       {/* Compose */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 mb-6">
-        <h2 className="text-base font-semibold text-gray-800 mb-4">Compose</h2>
+        <h2 className="text-base font-semibold text-gray-800 mb-4">Σύνταξη ενημερωτικού δελτίου</h2>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Betreff</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Θέμα</label>
             <input
               value={subject} onChange={e => setSubject(e.target.value)}
               placeholder="ekklesia.gr — Μηνιαία Αναφορά"
@@ -133,26 +133,26 @@ export default function NewsletterAdminPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">HTML Inhalt</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Περιεχόμενο HTML</label>
             <textarea
               value={htmlContent} onChange={e => setHtmlContent(e.target.value)}
-              rows={10} placeholder="<h2>Neuigkeiten...</h2><p>...</p>"
+              rows={10} placeholder="<h2>Νέα...</h2><p>...</p>"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <p className="text-xs text-gray-400 mt-1">Header + Footer werden automatisch hinzugefügt. Keine Attachments in v1.</p>
+            <p className="text-xs text-gray-400 mt-1">Η κεφαλίδα και το υποσέλιδο προστίθενται αυτόματα. Δεν υποστηρίζονται συνημμένα στην v1.</p>
           </div>
           <div className="flex gap-3">
             <button onClick={handlePreview} className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-              Vorschau
+              Προεπισκόπηση
             </button>
             <button onClick={handleDraft} disabled={submitting || !subject || !htmlContent}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50">
-              {submitting ? 'Wird erstellt...' : 'Draft erstellen'}
+              {submitting ? 'Δημιουργία...' : 'Δημιουργία προχείρου'}
             </button>
             {draftId && (
               <button onClick={handleSend} disabled={sending}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50">
-                {sending ? 'Wird gesendet...' : `Draft #${draftId} senden`}
+                {sending ? 'Αποστολή...' : `Αποστολή προχείρου #${draftId}`}
               </button>
             )}
           </div>
@@ -162,20 +162,25 @@ export default function NewsletterAdminPage() {
       {/* Preview */}
       {preview && (
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 mb-6">
-          <h2 className="text-base font-semibold text-gray-800 mb-4">Vorschau</h2>
-          <div className="border border-gray-100 rounded-lg p-4 bg-gray-50" dangerouslySetInnerHTML={{ __html: preview }} />
+          <h2 className="text-base font-semibold text-gray-800 mb-4">Προεπισκόπηση</h2>
+          <iframe
+            title="Προεπισκόπηση ενημερωτικού δελτίου"
+            srcDoc={preview}
+            sandbox=""
+            className="min-h-96 w-full rounded-lg border border-gray-100 bg-white"
+          />
         </div>
       )}
 
       {/* Recent Campaigns */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-base font-semibold text-gray-800">Letzte Campaigns</h2>
+          <h2 className="text-base font-semibold text-gray-800">Πρόσφατες καμπάνιες</h2>
         </div>
         {loading ? (
           <div className="p-6"><div className="animate-pulse bg-gray-200 rounded h-10" /></div>
         ) : campaigns.length === 0 ? (
-          <div className="p-6 text-center text-gray-500">Keine Campaigns gefunden.</div>
+          <div className="p-6 text-center text-gray-500">Δεν βρέθηκαν καμπάνιες.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -184,7 +189,7 @@ export default function NewsletterAdminPage() {
                   <th className="text-left px-4 py-3 font-medium text-gray-600">ID</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Gesendet</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Απεσταλμένα</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">

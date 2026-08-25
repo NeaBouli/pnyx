@@ -92,7 +92,6 @@ class BillDetail(BaseModel):
 
 class TransitionRequest(BaseModel):
     new_status: str
-    admin_key:  str   # Einfacher Admin-Schutz (Beta)
 
 class BillCreateRequest(BaseModel):
     id:                   str

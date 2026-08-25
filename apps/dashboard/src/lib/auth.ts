@@ -20,7 +20,7 @@ export const ROLE_MODULES: Record<DashboardRole, string[]> = {
     'overview', 'analytics', 'bills', 'votes', 'cplm',
     'system', 'ai', 'forum', 'users', 'hlr', 'arweave',
     'node', 'municipal', 'gov', 'logs', 'settings', 'vaa', 'finance', 'stats', 'embed', 'nodes-readonly',
-    'politicians', 'monitor', 'newsletter-admin',
+    'politicians', 'monitor', 'newsletter-admin', 'node-settings', 'representatives',
   ],
   SYSTEM_ADMIN: [
     'overview', 'analytics', 'bills', 'votes', 'cplm',

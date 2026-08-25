@@ -19,7 +19,8 @@ from sqlalchemy import select, func, text
 from database import get_db
 from models import (
     ParliamentBill, CitizenVote, BillStatus,
-    BillStatusLog, VoteChoice, Party, Statement
+    BillStatusLog, VoteChoice, Party, Statement, GovernanceLevel,
+    IdentityRecord, KeyStatus,
 )
 from services.content_provenance import clear_generated_content
 
@@ -75,6 +76,7 @@ class BillUpdateRequest(BaseModel):
     party_votes_parliament: Optional[dict] = None
     ai_summary_reviewed:   Optional[bool] = None
     results_visibility:    Optional[str] = None  # HIDDEN | WINDOW | ALWAYS
+    governance_level:      Optional[GovernanceLevel] = None
 
 
 class BillCreateRequest(BaseModel):
@@ -90,6 +92,11 @@ class BillCreateRequest(BaseModel):
     categories:            Optional[list] = None
     parliament_vote_date:  Optional[str] = None
     party_votes_parliament: Optional[dict] = None
+    governance_level:       GovernanceLevel = GovernanceLevel.NATIONAL
+
+
+class BillTextRequest(BaseModel):
+    text: str
 
 
 @router.get("/dashboard")
@@ -174,6 +181,7 @@ async def admin_create_bill(req: BillCreateRequest, _key=Depends(verify_admin), 
         summary_long_el=req.summary_long_el, summary_long_en=req.summary_long_en,
         categories=req.categories or [], parliament_vote_date=vote_date,
         party_votes_parliament=req.party_votes_parliament,
+        governance_level=req.governance_level,
         status=BillStatus.ANNOUNCED, ai_summary_reviewed=False,
     )
     db.add(bill)
@@ -393,9 +401,19 @@ async def admin_stats(_key=Depends(verify_admin), db: AsyncSession = Depends(get
     no      = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.vote == VoteChoice.NO)) or 0
     abstain = await db.scalar(select(func.count(CitizenVote.id)).where(CitizenVote.vote == VoteChoice.ABSTAIN)) or 0
     total = yes + no + abstain
+    total_identities = await db.scalar(select(func.count(IdentityRecord.id))) or 0
+    active_identities = await db.scalar(
+        select(func.count(IdentityRecord.id)).where(IdentityRecord.status == KeyStatus.ACTIVE)
+    ) or 0
+    revoked_identities = await db.scalar(
+        select(func.count(IdentityRecord.id)).where(IdentityRecord.status == KeyStatus.REVOKED)
+    ) or 0
     def pct(n): return round(n / total * 100, 1) if total > 0 else 0.0
 
     return {
+        "total_identities": total_identities,
+        "active_identities": active_identities,
+        "revoked_identities": revoked_identities,
         "votes": {"total": total, "yes": yes, "no": no, "abstain": abstain,
                   "yes_pct": pct(yes), "no_pct": pct(no), "abstain_pct": pct(abstain)},
         "environment": os.environ.get("ENVIRONMENT", "development"),
@@ -704,14 +722,16 @@ async def admin_fetch_bill_text(
     from services.parliament_fetcher import enrich_bill_with_text
     redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
     r = aioredis.from_url(redis_url, decode_responses=True)
-    result = await enrich_bill_with_text(bill_id, db, r)
-    return result
+    try:
+        return await enrich_bill_with_text(bill_id, db, r)
+    finally:
+        await r.aclose()
 
 
 @router.post("/bills/{bill_id}/set-text")
 async def admin_set_bill_text(
     bill_id: str,
-    text: str = "",
+    req: BillTextRequest,
     _key=Depends(verify_admin),
     db: AsyncSession = Depends(get_db),
 ):
@@ -724,14 +744,20 @@ async def admin_set_bill_text(
     bill = bill_result.scalar_one_or_none()
     if not bill:
         raise HTTPException(404, f"Bill {bill_id} not found")
-    bill.summary_long_el = text
+    content = req.text.strip()
+    if not content:
+        raise HTTPException(422, "Bill text must not be empty")
+    bill.summary_long_el = content
     await db.commit()
     # Clear cache
     redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
     r = aioredis.from_url(redis_url, decode_responses=True)
-    await r.delete(f"bill_summary:{bill_id}:el")
-    await r.delete(f"bill_summary:{bill_id}:en")
-    return {"success": True, "bill_id": bill_id, "text_length": len(text)}
+    try:
+        await r.delete(f"bill_summary:{bill_id}:el")
+        await r.delete(f"bill_summary:{bill_id}:en")
+    finally:
+        await r.aclose()
+    return {"success": True, "bill_id": bill_id, "text_length": len(content)}
 
 
 # ── Compass Question Generator ────────────────────────────────────────────

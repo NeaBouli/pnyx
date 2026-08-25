@@ -315,7 +315,7 @@ export default function LogsPage() {
                 </table>
               </div>
             ) : (
-              <div className="p-6 text-sm text-gray-400">Container-Daten nicht verfügbar (Admin-Auth erforderlich)</div>
+              <div className="p-6 text-sm text-gray-400">Τα δεδομένα container δεν είναι διαθέσιμα (απαιτείται έλεγχος διαχειριστή)</div>
             )}
           </div>
         </div>
@@ -369,9 +369,9 @@ export default function LogsPage() {
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Letzter Run</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Τελευταία εκτέλεση</th>
                       <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-600">Fehler</th>
+                      <th className="text-left px-4 py-3 font-medium text-gray-600">Σφάλματα</th>
                       <th className="text-right px-4 py-3 font-medium text-gray-600">Error Count</th>
                     </tr>
                   </thead>
@@ -397,7 +397,7 @@ export default function LogsPage() {
                 </table>
               </div>
             ) : (
-              <div className="p-8 text-center text-sm text-gray-400">Keine Jobs gefunden</div>
+              <div className="p-8 text-center text-sm text-gray-400">Δεν βρέθηκαν εργασίες</div>
             )}
           </div>
         </div>
@@ -442,7 +442,7 @@ export default function LogsPage() {
                 )}
               </div>
             ) : (
-              <div className="text-sm text-gray-400">Ollama-Daten nicht verfügbar (Admin-Auth erforderlich)</div>
+              <div className="text-sm text-gray-400">Τα δεδομένα Ollama δεν είναι διαθέσιμα (απαιτείται έλεγχος διαχειριστή)</div>
             )}
           </div>
 
@@ -450,7 +450,7 @@ export default function LogsPage() {
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <h2 className="font-semibold text-gray-800 mb-2">Log-Analyse (Ollama)</h2>
             <div className="text-xs text-gray-400 mb-3">
-              Analysiert die letzten API-Logs mit Ollama. Secrets werden vor der Analyse automatisch redaktiert.
+              Αναλύει τα πρόσφατα API logs με το Ollama. Τα μυστικά αφαιρούνται αυτόματα πριν από την ανάλυση.
             </div>
             <div className="flex items-center gap-3 mb-4">
               <button
@@ -477,7 +477,7 @@ export default function LogsPage() {
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <h2 className="font-semibold text-gray-800 mb-2">API Container Logs</h2>
             <div className="text-xs text-gray-400 mb-3">
-              Letzte 100 Zeilen aus ekklesia-api Container. Secrets werden automatisch redaktiert.
+              Οι τελευταίες 100 γραμμές από το container ekklesia-api. Τα μυστικά αφαιρούνται αυτόματα.
             </div>
             <button
               onClick={handleLogStream}
