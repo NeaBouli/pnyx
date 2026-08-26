@@ -345,7 +345,17 @@
     .t-converge { font-size: 0.72rem; font-weight: 700; color: #16a34a; margin-top: 0.25rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .t-empty { color: var(--gray-400); display: flex; flex-direction: column; justify-content: center; gap: 0.35rem; }
     .t-empty strong { color: var(--gray-700); font-size: 0.9rem; }
-    .t-more { display: block; text-align: right; font-size: 0.78rem; font-weight: 700; color: var(--blue); text-decoration: none; margin-top: 0.5rem; }
+    .t-more {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      width: 100%; min-height: 44px; margin-top: 0.75rem; padding: 0.65rem 1rem;
+      box-sizing: border-box; border: 1px solid #bfdbfe; border-radius: 0.65rem;
+      background: var(--blue-l); color: #1d4ed8; text-align: center;
+      font-size: 0.8rem; font-weight: 800; text-decoration: none;
+      transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+    .t-more::after { content: "\2192"; font-size: 1rem; line-height: 1; }
+    .t-more:hover { background: var(--blue); border-color: var(--blue); color: white; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(37,99,235,0.18); }
+    .t-more:focus-visible { outline: 3px solid rgba(37,99,235,0.28); outline-offset: 2px; }
     .wiki-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 1rem; }
     .wiki-card {
       background: var(--gray-100); border: 2px solid #e2e8f0; border-radius: var(--radius);
@@ -1095,21 +1105,21 @@
         <div class="ticker-cards-wrap" id="t1">
           <div class="t-card al t-empty visible"><strong data-el="Σύντομα πραγματικά δεδομένα" data-en="Real data soon">Σύντομα πραγματικά δεδομένα</strong><span data-el="Θα εμφανιστούν ψηφοφορίες όταν περάσουν το όριο συμμετοχής." data-en="Votes appear after they pass the participation threshold.">Θα εμφανιστούν ψηφοφορίες όταν περάσουν το όριο συμμετοχής.</span></div>
         </div>
-        <a href="/el/bills" class="t-more" data-el="Όλες οι τρέχουσες →" data-en="All active →">Όλες οι τρέχουσες →</a>
+        <a href="/el/bills" class="t-more" data-el="Προβολή τρεχουσών" data-en="View active votes">Προβολή τρεχουσών</a>
       </div>
       <div class="fade-in">
         <h4><span class="dot"></span> <span data-el="Τελευταίες 24ω" data-en="Last 24h">Τελευταίες 24ω</span></h4>
         <div class="ticker-cards-wrap" id="t2">
           <div class="t-card rc t-empty visible"><strong data-el="Καμία ψηφοφορία πάνω από το όριο" data-en="No vote above threshold">Καμία ψηφοφορία πάνω από το όριο</strong><span data-el="Μόνο πραγματικές, συγκεντρωτικές ψήφοι εμφανίζονται εδώ." data-en="Only real aggregated votes appear here.">Μόνο πραγματικές, συγκεντρωτικές ψήφοι εμφανίζονται εδώ.</span></div>
         </div>
-        <a href="/el/bills?status=WINDOW_24H" class="t-more" data-el="Τελευταίες 24ω →" data-en="Last 24h →">Τελευταίες 24ω →</a>
+        <a href="/el/bills?status=WINDOW_24H" class="t-more" data-el="Προβολή παραθύρου 24ω" data-en="View 24h window">Προβολή παραθύρου 24ω</a>
       </div>
       <div class="fade-in">
         <h4><span class="dot"></span> <span data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</span></h4>
         <div class="ticker-cards-wrap" id="t3">
           <div class="t-card rs t-empty visible"><strong data-el="Αποτελέσματα όταν υπάρχουν αρκετές ψήφοι" data-en="Results after enough votes">Αποτελέσματα όταν υπάρχουν αρκετές ψήφοι</strong><span data-el="Δεν προβάλλονται δοκιμαστικοί αριθμοί." data-en="No demo numbers are shown.">Δεν προβάλλονται δοκιμαστικοί αριθμοί.</span></div>
         </div>
-        <a href="/el/results" class="t-more" data-el="Όλα τα αποτελέσματα →" data-en="All results →">Όλα τα αποτελέσματα →</a>
+        <a href="/el/results" class="t-more" data-el="Προβολή αποτελεσμάτων" data-en="View results">Προβολή αποτελεσμάτων</a>
       </div>
     </div>
   </div>
@@ -1729,15 +1739,20 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     var a = document.createElement("a");
     a.href = "https://ekklesia.gr/" + lang + "/bills/" + (b.bill_id || b.id);
     a.className = "t-card " + cssClass;
-    var total = Number(b.total_votes || 0).toLocaleString(lang === "en" ? "en-US" : "el-GR");
+    var hasAggregates = b.total_votes !== null && b.total_votes !== undefined && Number.isFinite(Number(b.total_votes));
+    var total = hasAggregates ? Number(b.total_votes).toLocaleString(lang === "en" ? "en-US" : "el-GR") : null;
     var yesPct = Number(b.yes_pct || 0);
-    var meta = total + " " + (lang === "en" ? "votes" : "ψήφοι");
-    var result = yesPct + "% " + (lang === "en" ? "Yes" : "Υπέρ");
+    var meta = hasAggregates
+      ? total + " " + (lang === "en" ? "votes" : "ψήφοι")
+      : (lang === "en" ? "Open for voting" : "Ανοιχτή για ψήφο");
+    var result = hasAggregates
+      ? yesPct + "% " + (lang === "en" ? "Yes" : "Υπέρ")
+      : (lang === "en" ? "View bill details" : "Προβολή νομοσχεδίου");
     a.innerHTML =
       '<span class="t-badge ' + s.cls + '">' + escapeHtml(badge) + '</span>' +
       '<span class="t-title">' + escapeHtml(title || "") + '</span>' +
       '<span class="t-meta">' + escapeHtml(meta) + '</span>' +
-      '<div class="t-bar"><div class="t-fill" style="width:' + Math.max(0, Math.min(100, yesPct)) + '%"></div></div>' +
+      (hasAggregates ? '<div class="t-bar"><div class="t-fill" style="width:' + Math.max(0, Math.min(100, yesPct)) + '%"></div></div>' : '') +
       '<div class="t-converge">' + escapeHtml(result) + '</div>';
     return a;
   }
@@ -1793,10 +1808,39 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     return arr;
   }
 
-  fetch("https://api.ekklesia.gr/api/v1/vote/results/in-progress")
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      var bills = data && Array.isArray(data.bills) ? data.bills : [];
+  function fetchJson(url, fallback) {
+    return fetch(url)
+      .then(function(r) {
+        if (!r.ok) throw new Error("request failed");
+        return r.json();
+      })
+      .catch(function() { return fallback; });
+  }
+
+  Promise.all([
+    fetchJson("https://api.ekklesia.gr/api/v1/vote/results/in-progress", { bills: [] }),
+    fetchJson("https://api.ekklesia.gr/api/v1/bills?status=WINDOW_24H&limit=10", [])
+  ])
+    .then(function(payloads) {
+      var resultData = payloads[0];
+      var publicWindowBills = Array.isArray(payloads[1]) ? payloads[1] : [];
+      var bills = resultData && Array.isArray(resultData.bills) ? resultData.bills.slice() : [];
+      var knownBillIds = {};
+      bills.forEach(function(b) { knownBillIds[b.bill_id || b.id] = true; });
+      publicWindowBills.forEach(function(b) {
+        var billId = b.bill_id || b.id;
+        var hasOfficialSource = Boolean(b.parliament_url || b.diavgeia_ada);
+        if (!billId || !hasOfficialSource || knownBillIds[billId]) return;
+        knownBillIds[billId] = true;
+        bills.push({
+          bill_id: billId,
+          title_el: b.title_el,
+          title_en: b.title_en,
+          status: "WINDOW_24H",
+          governance_level: b.governance_level,
+          total_votes: null
+        });
+      });
       if (!bills.length) throw new Error("empty");
       var active = bills.filter(function(b) { return b.status === "ACTIVE" || b.status === "WINDOW_24H"; });
       var window24 = bills.filter(function(b) { return b.status === "WINDOW_24H"; });
