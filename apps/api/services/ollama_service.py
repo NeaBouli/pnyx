@@ -330,9 +330,7 @@ async def answer_citizen_question(question: str, context: str, lang: str = "el")
         clean = [l for l in lines if not (len(l) < 40 and any(x in l.lower() for x in ["great!", "excellent!", "two years", "let me", "here's"]))]
         en_answer = "\n".join(clean).strip()
     if not en_answer:
-        if lang == "el":
-            return "Δεν μπόρεσα να απαντήσω. Δοκιμάστε ξανά αργότερα." + _DISCLAIMER_EL
-        return "I couldn't answer. Please try again later." + _DISCLAIMER_EN
+        return ""
 
     # Translate back to Greek
     if lang == "el" and DEEPL_API_KEY:
