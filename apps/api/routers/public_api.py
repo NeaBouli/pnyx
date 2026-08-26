@@ -15,11 +15,11 @@ import json
 import secrets
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, time as datetime_time, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, Header, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from typing import Optional
+from sqlalchemy import select, func, or_
+from typing import Annotated, Optional
 import httpx
 
 from database import get_db
@@ -243,6 +243,12 @@ async def public_bills(
     status: Optional[str] = None,
     governance: Optional[str] = None,
     source: Optional[str] = None,
+    q: Annotated[Optional[str], Query(min_length=1, max_length=200)] = None,
+    category: Annotated[Optional[str], Query(min_length=1, max_length=100)] = None,
+    results_visibility: Annotated[Optional[str], Query(max_length=10)] = None,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    sort: Annotated[str, Query(max_length=16)] = "DATE_DESC",
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     _key=Depends(rate_limit_check),
@@ -267,18 +273,55 @@ async def public_bills(
     if source:
         query = query.where(ParliamentBill.source == source.upper())
 
+    if q and q.strip():
+        pattern = f"%{q.strip()}%"
+        query = query.where(or_(
+            ParliamentBill.id.ilike(pattern),
+            ParliamentBill.title_el.ilike(pattern),
+            ParliamentBill.title_en.ilike(pattern),
+            ParliamentBill.summary_short_el.ilike(pattern),
+        ))
+
+    if category and category.strip():
+        query = query.where(ParliamentBill.categories.contains([category.strip()]))
+
+    if results_visibility:
+        visibility = results_visibility.upper()
+        if visibility not in {"HIDDEN", "WINDOW", "ALWAYS"}:
+            raise HTTPException(400, f"Ungültige Ergebnissichtbarkeit: {results_visibility}")
+        query = query.where(func.coalesce(ParliamentBill.results_visibility, "HIDDEN") == visibility)
+
+    effective_date = func.coalesce(
+        ParliamentBill.parliament_vote_date,
+        ParliamentBill.submitted_date,
+        ParliamentBill.created_at,
+    )
+    if date_from and date_to and date_from > date_to:
+        raise HTTPException(400, "date_from darf nicht nach date_to liegen")
+    if date_from:
+        query = query.where(effective_date >= datetime.combine(date_from, datetime_time.min))
+    if date_to:
+        query = query.where(
+            effective_date <= datetime.combine(date_to, datetime_time.max)
+        )
+
+    sort_value = sort.upper()
+    if sort_value == "DATE_DESC":
+        order_by = (effective_date.desc().nullslast(), ParliamentBill.created_at.desc())
+    elif sort_value == "DATE_ASC":
+        order_by = (effective_date.asc().nullslast(), ParliamentBill.created_at.asc())
+    elif sort_value == "TITLE_ASC":
+        order_by = (ParliamentBill.title_el.asc(), effective_date.desc().nullslast())
+    elif sort_value == "ID_ASC":
+        order_by = (ParliamentBill.id.asc(),)
+    else:
+        raise HTTPException(400, f"Ungültige Sortierung: {sort}")
+
     total = int(await db.scalar(
         select(func.count()).select_from(query.order_by(None).subquery())
     ) or 0)
     result = await db.execute(
-        query.order_by(
-            func.coalesce(
-                ParliamentBill.parliament_vote_date,
-                ParliamentBill.submitted_date,
-                ParliamentBill.created_at,
-            ).desc().nullslast(),
-            ParliamentBill.created_at.desc(),
-        ).limit(limit).offset(offset)
+        query.order_by(*order_by).limit(limit).offset(offset)
     )
     bills = result.scalars().all()
 
@@ -293,6 +336,10 @@ async def public_bills(
             "status":              b.status.value,
             "governance_level":    b.governance_level.value if b.governance_level else "NATIONAL",
             "vote_date":           b.parliament_vote_date.isoformat() if b.parliament_vote_date else None,
+            "created_at":          b.created_at.isoformat() if b.created_at else None,
+            "display_date":        (
+                b.parliament_vote_date or b.submitted_date or b.created_at
+            ).isoformat() if (b.parliament_vote_date or b.submitted_date or b.created_at) else None,
             "arweave_tx":          b.arweave_tx_id,
             "arweave_url":         f"https://arweave.net/{b.arweave_tx_id}" if b.arweave_tx_id else None,
             "source":              b.source or "PARLIAMENT",
