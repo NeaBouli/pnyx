@@ -1,7 +1,11 @@
 """Tests for MOD-22 RAG agent guardrails and source selection."""
 
+import pytest
+
+from routers import agent
 from routers.agent import (
     _canonical_response,
+    _is_answer_poor,
     _safety_response,
     _should_include_bills,
 )
@@ -64,3 +68,92 @@ def test_bill_question_includes_bills():
     assert _should_include_bills("What bills are active?") is True
     assert _should_include_bills("Tell me about bill GR-2025-0001") is True
     assert _should_include_bills("Τι νομοσχέδια είναι ενεργά;") is True
+
+
+def test_known_generation_failure_messages_are_poor_answers():
+    assert _is_answer_poor("Δεν μπόρεσα να απαντήσω. Δοκιμάστε ξανά αργότερα.") is True
+    assert _is_answer_poor("I couldn't answer. Please try again later.") is True
+
+
+def test_valid_platform_answer_is_not_poor():
+    answer = "Ekklesia is an independent platform for digital democratic participation."
+
+    assert _is_answer_poor(answer) is False
+
+
+async def _run_agent_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+    ollama_answer: str,
+    claude_answer: str | None,
+) -> dict:
+    async def build_context(
+        question: str, lang: str, db: object,
+    ) -> tuple[str, list, bool]:
+        return "Platform context", [], False
+
+    async def available() -> bool:
+        return True
+
+    async def generated_answer(question: str, context: str, lang: str) -> str:
+        return ollama_answer
+
+    async def fallback_answer(
+        question: str, context: str, lang: str,
+    ) -> str | None:
+        return claude_answer
+
+    monkeypatch.setattr(agent, "_build_context", build_context)
+    monkeypatch.setattr(agent, "ollama_available", available)
+    monkeypatch.setattr(agent, "answer_citizen_question", generated_answer)
+    monkeypatch.setattr(agent, "_claude_answer", fallback_answer)
+
+    return await agent.ask_agent.__wrapped__(
+        object(),
+        agent.AskRequest(question="How does participation work?", lang="en"),
+        db=object(),
+    )
+
+
+@pytest.mark.asyncio
+async def test_empty_ollama_answer_uses_claude_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    response = await _run_agent_fallback(
+        monkeypatch,
+        ollama_answer="",
+        claude_answer="Claude fallback answer.",
+    )
+
+    assert response["model"] == "claude-haiku"
+    assert response["answer"].startswith("Claude fallback answer.")
+    assert response["sources"] == []
+
+
+@pytest.mark.asyncio
+async def test_empty_ollama_and_claude_answers_report_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    response = await _run_agent_fallback(
+        monkeypatch,
+        ollama_answer="",
+        claude_answer=None,
+    )
+
+    assert response["model"] == "none"
+    assert response["answer"].startswith("Assistant is currently unavailable.")
+    assert response["sources"] == []
+
+
+@pytest.mark.asyncio
+async def test_poor_ollama_and_no_claude_answer_reports_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    response = await _run_agent_fallback(
+        monkeypatch,
+        ollama_answer="I couldn't answer. Please try again later.",
+        claude_answer=None,
+    )
+
+    assert response["model"] == "none"
+    assert response["answer"].startswith("Assistant is currently unavailable.")
+    assert response["sources"] == []

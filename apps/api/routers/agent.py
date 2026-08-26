@@ -374,6 +374,8 @@ def _is_answer_poor(answer: str) -> bool:
     bad_signals = [
         "δεν έχω αρκετά δεδομένα",
         "i don't have enough",
+        "δεν μπόρεσα να απαντήσω",
+        "i couldn't answer",
         "δεν μπορώ",
         "i cannot",
         "μπρίκι",  # confused Greek word
@@ -428,6 +430,7 @@ async def ask_agent(
                 "sources": _bill_sources(bills, include_bills),
                 "lang": req.lang,
             }
+        ollama_answer = ""
 
     # Step 3: Return Ollama answer (or error)
     if not ollama_answer:

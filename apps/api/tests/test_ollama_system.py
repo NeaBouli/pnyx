@@ -17,6 +17,25 @@ def test_ollama_model_matching_accepts_base_name(monkeypatch):
     assert ollama_service._ollama_model_matches(["mistral:latest"]) is False
 
 
+@pytest.mark.asyncio
+async def test_citizen_answer_returns_empty_when_generation_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def unavailable(prompt: str, max_tokens: int = 500) -> str:
+        return ""
+
+    monkeypatch.setattr(ollama_service, "DEEPL_API_KEY", "")
+    monkeypatch.setattr(ollama_service, "ollama_generate", unavailable)
+
+    answer = await ollama_service.answer_citizen_question(
+        "Τι είναι το ekklesia;",
+        "Πλαίσιο",
+        lang="el",
+    )
+
+    assert answer == ""
+
+
 def test_parse_ollama_json_tolerates_markdown_fences():
     raw = '```json\n{"pill_el": "ok", "categories": ["Νομοθεσία"]}\n```'
 
