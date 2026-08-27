@@ -20,3 +20,18 @@ updates:
       # Keep runtime types aligned with the Node 22 runtime in .nvmrc and CI.
       - dependency-name: "@types/node"
         versions: [">=22.14.0"]
+
+  - package-ecosystem: "npm"
+    directory: "/apps/dashboard"
+    schedule:
+      interval: "weekly"
+    labels: ["security"]
+    ignore:
+      # These major lines are not yet validated with the current dashboard toolchain.
+      - dependency-name: "eslint"
+        versions: ["10.x"]
+      - dependency-name: "typescript"
+        versions: ["7.x"]
+      # Keep runtime types aligned with the Node 22 runtime in .nvmrc and CI.
+      - dependency-name: "@types/node"
+        versions: [">=22.14.0"]
