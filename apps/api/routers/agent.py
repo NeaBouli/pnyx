@@ -113,6 +113,7 @@ def _safety_response(question: str, lang: str) -> dict | None:
 def _canonical_response(question: str, lang: str) -> dict | None:
     """Deterministic answers for safety/privacy concepts that must not drift."""
     q = (question or "").lower()
+    normalized_q = re.sub(r"[^\w\u0370-\u03ff]+", " ", q, flags=re.UNICODE).strip()
     greek = _is_greek(lang)
 
     def resp(answer_el: str, answer_en: str, topic: str) -> dict:
@@ -123,6 +124,20 @@ def _canonical_response(question: str, lang: str) -> dict | None:
             "sources": [{"type": "knowledge_base", "topic": topic}],
             "lang": lang,
         }
+
+    if normalized_q in {
+        "hallo", "hello", "hello there", "hey", "good morning",
+        "good evening", "γεια", "γεια σου", "γεια σας", "γειά", "γειά σου",
+        "γειά σας", "χαίρετε", "καλημέρα", "καλησπέρα", "καληνύχτα",
+    }:
+        return resp(
+            "Γεια σας! Μπορώ να βοηθήσω με νομοσχέδια, ψηφοφορίες, "
+            "επαλήθευση, το Forum και τη λειτουργία της πλατφόρμας. "
+            "Τι θα θέλατε να μάθετε;",
+            "Hello! I can help with bills, voting, verification, the Forum, "
+            "and how the platform works. What would you like to know?",
+            "assistant_help",
+        )
 
     if "private key" in q or "ιδιωτικό κλειδί" in q:
         return resp(
@@ -373,7 +388,10 @@ def _is_answer_poor(answer: str) -> bool:
     low = answer.lower()
     bad_signals = [
         "δεν έχω αρκετά δεδομένα",
+        "δεν διαθέτω αρκετά στοιχεία",
+        "δεν διαθέτω αρκετές πληροφορίες",
         "i don't have enough",
+        "not enough information",
         "δεν μπόρεσα να απαντήσω",
         "i couldn't answer",
         "δεν μπορώ",
