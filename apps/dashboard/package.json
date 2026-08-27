@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "next": "16.3.1",
+    "next": "16.3.3",
     "next-auth": "5.0.0-beta.32",
     "qrcode.react": "^4.2.0",
     "react": "^18.3.0",
@@ -18,7 +18,7 @@
     "recharts": "^2.12.0"
   },
   "devDependencies": {
-    "@next/eslint-plugin-next": "16.3.1",
+    "@next/eslint-plugin-next": "16.3.3",
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.0",
     "eslint": "^9.39.5",

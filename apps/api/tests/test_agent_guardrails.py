@@ -59,6 +59,33 @@ def test_cplm_has_canonical_answer():
     assert "does not reveal individual votes" in response["answer"].lower()
 
 
+@pytest.mark.parametrize(
+    "greeting",
+    ["hallo", "hello", "γεια σας", "γειά σου", "Χαίρετε!", "Καλημέρα!"],
+)
+def test_greetings_have_deterministic_help_response(greeting: str):
+    response = _canonical_response(greeting, "el")
+
+    assert response is not None
+    assert response["model"] == "knowledge-base"
+    assert response["sources"] == [
+        {"type": "knowledge_base", "topic": "assistant_help"},
+    ]
+    assert "Μπορώ να βοηθήσω" in response["answer"]
+    assert "ψηφοφορίες" in response["answer"]
+
+
+def test_english_greeting_uses_english_response():
+    response = _canonical_response("hello", "en")
+
+    assert response is not None
+    assert response["answer"].startswith("Hello! I can help")
+
+
+def test_greeting_with_a_real_question_is_not_intercepted():
+    assert _canonical_response("hello, what bills are active?", "en") is None
+
+
 def test_general_platform_question_does_not_include_bills():
     assert _should_include_bills("What is ekklesia.gr?") is False
     assert _should_include_bills("How is my privacy protected?") is False
@@ -72,7 +99,10 @@ def test_bill_question_includes_bills():
 
 def test_known_generation_failure_messages_are_poor_answers():
     assert _is_answer_poor("Δεν μπόρεσα να απαντήσω. Δοκιμάστε ξανά αργότερα.") is True
+    assert _is_answer_poor("Δεν διαθέτω αρκετά στοιχεία για να απαντήσω.") is True
+    assert _is_answer_poor("Δεν διαθέτω αρκετές πληροφορίες για απάντηση.") is True
     assert _is_answer_poor("I couldn't answer. Please try again later.") is True
+    assert _is_answer_poor("There is not enough information to answer.") is True
 
 
 def test_valid_platform_answer_is_not_poor():
@@ -112,6 +142,26 @@ async def _run_agent_fallback(
         agent.AskRequest(question="How does participation work?", lang="en"),
         db=object(),
     )
+
+
+@pytest.mark.asyncio
+async def test_greeting_skips_context_and_language_models(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def unexpected(*args: object, **kwargs: object) -> None:
+        raise AssertionError("greetings must not reach RAG or a language model")
+
+    monkeypatch.setattr(agent, "_build_context", unexpected)
+    monkeypatch.setattr(agent, "ollama_available", unexpected)
+
+    response = await agent.ask_agent.__wrapped__(
+        object(),
+        agent.AskRequest(question="hallo", lang="el"),
+        db=object(),
+    )
+
+    assert response["model"] == "knowledge-base"
+    assert response["sources"][0]["topic"] == "assistant_help"
 
 
 @pytest.mark.asyncio

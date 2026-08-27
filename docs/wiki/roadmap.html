@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Πώς λειτουργεί — εκκλησία Wiki — εκκλησία</title>
-  <meta name="description" content="Roadmap ανάπτυξης ekklesia.gr — ασφαλής V1 και παράλληλη, πλήρως ελεγχόμενη έρευνα V2 στο Minima."/>
+  <title>Οδικός Χάρτης & Συχνές Ερωτήσεις — εκκλησία Wiki</title>
+  <meta name="description" content="Πώς λειτουργεί το ekklesia.gr, συχνές ερωτήσεις και οδικός χάρτης — ασφαλής V1 και ελεγχόμενη έρευνα V2 στο Minima."/>
   <meta name="robots" content="index, follow"/>
   <link rel="canonical" href="https://ekklesia.gr/wiki/roadmap.html"/>
   <meta property="og:type" content="website"/>
   <meta property="og:url" content="https://ekklesia.gr/wiki/roadmap.html"/>
-  <meta property="og:title" content="Roadmap — εκκλησία Wiki"/>
-  <meta property="og:description" content="Roadmap ανάπτυξης ekklesia.gr — ασφαλής V1 και παράλληλη, πλήρως ελεγχόμενη έρευνα V2 στο Minima."/>
+  <meta property="og:title" content="Οδικός Χάρτης & Συχνές Ερωτήσεις — εκκλησία Wiki"/>
+  <meta property="og:description" content="Πώς λειτουργεί το ekklesia.gr, συχνές ερωτήσεις και οδικός χάρτης για V1 και V2."/>
   <meta property="og:image" content="https://ekklesia.gr/assets/og-image.png"/>
   <meta property="og:locale" content="el_GR"/>
   <meta property="og:locale:alternate" content="en_US"/>
   <meta property="og:site_name" content="εκκλησία"/>
   <meta name="twitter:card" content="summary_large_image"/>
-  <meta name="twitter:title" content="Roadmap — εκκλησία Wiki"/>
-  <meta name="twitter:description" content="Roadmap ανάπτυξης ekklesia.gr — ασφαλής V1 και παράλληλη, πλήρως ελεγχόμενη έρευνα V2 στο Minima."/>
+  <meta name="twitter:title" content="Οδικός Χάρτης & Συχνές Ερωτήσεις — εκκλησία Wiki"/>
+  <meta name="twitter:description" content="Πώς λειτουργεί το ekklesia.gr, συχνές ερωτήσεις και οδικός χάρτης για V1 και V2."/>
   <meta name="twitter:image" content="https://ekklesia.gr/assets/og-image.png"/>
   <link rel="alternate" hreflang="el" href="https://ekklesia.gr/wiki/roadmap.html"/>
   <link rel="alternate" hreflang="en" href="https://ekklesia.gr/wiki/roadmap.html"/>
@@ -178,6 +178,10 @@
       border-color: var(--blue);
       box-shadow: var(--shadow);
     }
+    .roadmap-section:focus-visible {
+      outline: 3px solid var(--blue);
+      outline-offset: 3px;
+    }
     .roadmap-section h3 {
       margin: 0;
       display: flex;
@@ -227,7 +231,7 @@
     <a href="security.html" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</a>
     <a href="api.html">API</a>
     <a href="modules.html">Modules</a>
-    <a href="roadmap.html" class="active">Roadmap</a>
+    <a href="roadmap.html" class="active" data-el="Οδικός Χάρτης & FAQ" data-en="Roadmap & FAQ">Οδικός Χάρτης & FAQ</a>
     <a href="privacy.html" data-el="Ιδιωτικότητα" data-en="Privacy">Ιδιωτικότητα</a>
     <a href="database.html">Database</a>
     <a href="contributing.html">Contributing</a>
@@ -238,8 +242,8 @@
   </div>
 </nav>
 <div class="hero" style="background:linear-gradient(135deg,#eff6ff,#f0fdf4)">
-  <h1 data-el="Πώς λειτουργεί η εκκλησία" data-en="How ekklesia Works">Πώς λειτουργεί η εκκλησία</h1>
-  <p data-el="Όλα όσα πρέπει να ξέρετε — με απλά λόγια." data-en="Everything you need to know — in plain language.">Όλα όσα πρέπει να ξέρετε — με απλά λόγια.</p>
+  <h1 data-el="Πώς λειτουργεί — Οδικός Χάρτης & FAQ" data-en="How it works — Roadmap & FAQ">Πώς λειτουργεί — Οδικός Χάρτης & FAQ</h1>
+  <p data-el="Πρακτικές απαντήσεις, η σημερινή λειτουργία και τα επόμενα βήματα — με απλά λόγια." data-en="Practical answers, current operation, and next steps — in plain language.">Πρακτικές απαντήσεις, η σημερινή λειτουργία και τα επόμενα βήματα — με απλά λόγια.</p>
   <a href="../" class="back-link" data-el="← Αρχική" data-en="← Home">← Αρχική</a>
 </div>
 <div class="layout">
@@ -455,7 +459,33 @@
     </div>
   </div>
 
-  <!-- ===== SECTION 10: Οδικός Χάρτης ===== -->
+  <!-- ===== SECTION 10: Πρακτικές Συχνές Ερωτήσεις ===== -->
+  <div class="roadmap-section fade-in" onclick="toggleSection(this)">
+    <h3 data-el="Πρακτικές Συχνές Ερωτήσεις" data-en="Practical Frequently Asked Questions"><span class="section-icon">❓</span> Πρακτικές Συχνές Ερωτήσεις</h3>
+    <div class="roadmap-content">
+      <h3 data-el="Είναι κρατική υπηρεσία ή δεσμευτική ψηφοφορία;" data-en="Is this a government service or a binding vote?">Είναι κρατική υπηρεσία ή δεσμευτική ψηφοφορία;</h3>
+      <p data-el="Όχι. Το ekklesia.gr είναι ανεξάρτητη, ανοικτού κώδικα πρωτοβουλία πολιτών. Οι ψηφοφορίες είναι ενημερωτικές και δεν έχουν νομική δεσμευτικότητα." data-en="No. ekklesia.gr is an independent, open-source citizen initiative. Votes are informational and have no legal binding force.">Όχι. Το ekklesia.gr είναι ανεξάρτητη, ανοικτού κώδικα πρωτοβουλία πολιτών. Οι ψηφοφορίες είναι ενημερωτικές και δεν έχουν νομική δεσμευτικότητα.</p>
+
+      <h3 data-el="Πού κατεβάζω την εφαρμογή;" data-en="Where can I download the app?">Πού κατεβάζω την εφαρμογή;</h3>
+      <p data-el="Χρησιμοποιείτε μόνο τα επίσημα κουμπιά λήψης στο ekklesia.gr: άμεσο Android APK, F-Droid ή Google Play όταν το κανάλι είναι διαθέσιμο. Η εφαρμογή iOS δεν έχει ακόμη κυκλοφορήσει." data-en="Use only the official download buttons on ekklesia.gr: direct Android APK, F-Droid, or Google Play when that channel is available. The iOS app has not been released yet.">Χρησιμοποιείτε μόνο τα επίσημα κουμπιά λήψης στο ekklesia.gr: άμεσο Android APK, F-Droid ή Google Play όταν το κανάλι είναι διαθέσιμο. Η εφαρμογή iOS δεν έχει ακόμη κυκλοφορήσει.</p>
+
+      <h3 data-el="Πώς συνδέομαι στο Forum;" data-en="How do I sign in to the Forum?">Πώς συνδέομαι στο Forum;</h3>
+      <p data-el="Από υπολογιστή, σαρώνετε το QR σύνδεσης με την επαληθευμένη εφαρμογή. Από το ίδιο κινητό, χρησιμοποιείτε το κουμπί ανοίγματος στην εγκατεστημένη εφαρμογή. Δεν απαιτείται email ή κωδικός." data-en="On a computer, scan the sign-in QR with the verified app. On the same phone, use the button that opens the installed app. No email or password is required.">Από υπολογιστή, σαρώνετε το QR σύνδεσης με την επαληθευμένη εφαρμογή. Από το ίδιο κινητό, χρησιμοποιείτε το κουμπί ανοίγματος στην εγκατεστημένη εφαρμογή. Δεν απαιτείται email ή κωδικός.</p>
+
+      <h3 data-el="Γιατί δεν βλέπω αμέσως αποτελέσματα;" data-en="Why can I not see results immediately?">Γιατί δεν βλέπω αμέσως αποτελέσματα;</h3>
+      <p data-el="Τα αποτελέσματα εμφανίζονται μόνο όταν το νομοσχέδιο και οι κανόνες δημοσίευσης το επιτρέπουν. Ελάχιστα όρια συμμετοχής και χρονικά παράθυρα προστατεύουν την ιδιωτικότητα και την ακεραιότητα της διαδικασίας." data-en="Results appear only when the bill and publication rules permit it. Participation thresholds and timing windows protect privacy and process integrity.">Τα αποτελέσματα εμφανίζονται μόνο όταν το νομοσχέδιο και οι κανόνες δημοσίευσης το επιτρέπουν. Ελάχιστα όρια συμμετοχής και χρονικά παράθυρα προστατεύουν την ιδιωτικότητα και την ακεραιότητα της διαδικασίας.</p>
+
+      <h3 data-el="Τι γνωρίζει ο βοηθός AI;" data-en="What does the AI assistant know?">Τι γνωρίζει ο βοηθός AI;</h3>
+      <p data-el="Ο βοηθός απαντά για τη λειτουργία της πλατφόρμας και τα διαθέσιμα νομοσχέδια με βάση την τεκμηρίωση και τα δημόσια δεδομένα. Δεν είναι νομικός σύμβουλος και, όταν δεν υπάρχουν επαρκή στοιχεία, πρέπει να το δηλώνει αντί να εικάζει." data-en="The assistant answers about the platform and available bills from documentation and public data. It is not a legal adviser and must state when evidence is insufficient rather than guess.">Ο βοηθός απαντά για τη λειτουργία της πλατφόρμας και τα διαθέσιμα νομοσχέδια με βάση την τεκμηρίωση και τα δημόσια δεδομένα. Δεν είναι νομικός σύμβουλος και, όταν δεν υπάρχουν επαρκή στοιχεία, πρέπει να το δηλώνει αντί να εικάζει.</p>
+
+      <h3 data-el="Θα αντικαταστήσει η V2 την ασφαλή V1;" data-en="Will V2 replace the stable V1?">Θα αντικαταστήσει η V2 την ασφαλή V1;</h3>
+      <p data-el="Όχι πριν ολοκληρωθούν όλοι οι τεχνικοί έλεγχοι, οι έλεγχοι ασφάλειας και ιδιωτικότητας, καθώς και τα σχέδια μετάβασης και επαναφοράς. Η V1 παραμένει ανεξάρτητη και λειτουργική, ενώ η V2 στο Minima αναπτύσσεται παράλληλα ως ελεγχόμενη έρευνα." data-en="Not before all technical, security, privacy, migration, and rollback gates pass. V1 remains independent and operational while V2 on Minima is developed in parallel as gated research.">Όχι πριν ολοκληρωθούν όλοι οι τεχνικοί έλεγχοι, οι έλεγχοι ασφάλειας και ιδιωτικότητας, καθώς και τα σχέδια μετάβασης και επαναφοράς. Η V1 παραμένει ανεξάρτητη και λειτουργική, ενώ η V2 στο Minima αναπτύσσεται παράλληλα ως ελεγχόμενη έρευνα.</p>
+
+      <p><a href="faq.html" class="back-link" data-el="Όλες οι συχνές ερωτήσεις →" data-en="All frequently asked questions →">Όλες οι συχνές ερωτήσεις →</a></p>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 11: Οδικός Χάρτης ===== -->
   <div class="roadmap-section fade-in" onclick="toggleSection(this)">
     <h3 data-el="Οδικός Χάρτης" data-en="Roadmap"><span class="section-icon">🗺️</span> Οδικός Χάρτης</h3>
     <div class="roadmap-content">
@@ -559,8 +589,20 @@ function toggleLang() {
   });
 }
 function toggleSection(el) {
-  el.classList.toggle("open");
+  var isOpen = el.classList.toggle("open");
+  el.setAttribute("aria-expanded", String(isOpen));
 }
+document.querySelectorAll(".roadmap-section").forEach(function(section) {
+  section.setAttribute("role", "button");
+  section.setAttribute("tabindex", "0");
+  section.setAttribute("aria-expanded", String(section.classList.contains("open")));
+  section.addEventListener("keydown", function(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      toggleSection(section);
+    }
+  });
+});
 var obs = new IntersectionObserver(function(entries) {
   entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add("visible"); });
 }, { threshold: 0.1 });
