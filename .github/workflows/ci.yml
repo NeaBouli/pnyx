@@ -101,7 +101,7 @@ jobs:
             verify: npx --no-install expo install --check && npm run typecheck && npm test
           - name: Representative
             path: apps/representative
-            verify: npx --no-install expo install --check && npm run typecheck
+            verify: npx --no-install expo install --check && npm run typecheck && npm test
           - name: Crypto-TS
             path: packages/crypto
             verify: npm run typecheck && npm test
