@@ -12,7 +12,7 @@ import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { fetchPoliticianQuestions, fetchPoliticianScores, submitEvaluation, fetchMyEvaluation } from "../lib/api";
 import type { EvalQuestion, EvalScores, MyEvaluation } from "../lib/api";
-import { loadKeypair, loadNullifier, signEvaluation } from "../lib/crypto-native";
+import { loadKeypair, loadNullifier, signEvaluationV2 } from "../lib/crypto-native";
 import { isDemoMode } from "../lib/demo";
 import { colors } from "../theme";
 
@@ -123,13 +123,20 @@ export default function EvaluatePoliticianScreen({ route, navigation }: Props) {
         return;
       }
 
-      const signatureHex = signEvaluation(keypair.privateKeyHex, adaNumber, nullifier);
       const scoreList = Object.entries(scores).map(([qid, score]) => ({
         question_id: Number(qid),
         score,
       }));
+      const timestampMs = Date.now();
+      const signatureHex = signEvaluationV2(
+        keypair.privateKeyHex,
+        adaNumber,
+        nullifier,
+        timestampMs,
+        scoreList,
+      );
 
-      await submitEvaluation(adaNumber, nullifier, scoreList, signatureHex);
+      await submitEvaluation(adaNumber, nullifier, scoreList, signatureHex, timestampMs);
       setSubmitted(true);
 
       // Reload scores
@@ -151,14 +158,21 @@ export default function EvaluatePoliticianScreen({ route, navigation }: Props) {
       <Text style={styles.orgLabel}>{orgLabel}</Text>
 
       {/* Existing scores */}
-      {existingScores && existingScores.total_evaluations > 0 && (
+      {existingScores && (existingScores.total_evaluations > 0 || existingScores.scores_hidden) && (
         <View style={styles.existingCard}>
           <Text style={styles.existingTitle}>
             Τρέχουσα αξιολόγηση: {existingScores.total_avg !== null ? (existingScores.total_avg > 0 ? "+" : "") + existingScores.total_avg : "—"}
           </Text>
           <Text style={styles.existingCount}>
-            {existingScores.total_evaluations} αξιολογήσεις από πολίτες
+            {existingScores.scores_hidden
+              ? `Λιγότεροι από ${existingScores.minimum_group_size} αξιολογητές`
+              : `${existingScores.total_evaluations} αξιολογήσεις από πολίτες`}
           </Text>
+          {existingScores.scores_hidden && (
+            <Text style={styles.existingCount}>
+              Οι βαθμολογίες εμφανίζονται από {existingScores.minimum_group_size} αξιολογητές.
+            </Text>
+          )}
         </View>
       )}
 

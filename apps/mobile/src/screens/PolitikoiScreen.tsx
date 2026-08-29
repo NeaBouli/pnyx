@@ -94,7 +94,9 @@ export default function PolitikoiScreen() {
               </View>
               <ScoreBar score={item.avg_score} />
               <Text style={styles.evalCount}>
-                {item.evaluator_count} {item.evaluator_count === 1 ? "πολίτης" : "πολίτες"}
+                {item.evaluator_count_hidden
+                  ? `Λιγότεροι από ${item.minimum_group_size} πολίτες`
+                  : `${item.evaluator_count} ${item.evaluator_count === 1 ? "πολίτης" : "πολίτες"}`}
               </Text>
             </TouchableOpacity>
           )}

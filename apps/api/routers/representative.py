@@ -19,6 +19,10 @@ from database import get_db
 from dependencies import verify_admin_key
 from models import ParliamentBill, BillStatus
 from services.bill_visibility import is_public_bill, public_bill_filter
+from services.evaluation_integrity import (
+    EVALUATION_K_ANONYMITY_MIN,
+    public_evaluation_average,
+)
 from services.zk_vote_aggregation import (
     aggregate_bill_vote_totals,
     bill_vote_events_query,
@@ -524,7 +528,7 @@ async def get_my_scores(
     result = await db.execute(text("""
         SELECT eq.id, eq.question_el, eq.category,
                ROUND(AVG(pe.score)::numeric, 2) AS avg_score,
-               COUNT(pe.id) AS vote_count
+               COUNT(DISTINCT pe.nullifier_hash) AS vote_count
         FROM evaluation_questions eq
         LEFT JOIN politician_evaluations pe
             ON pe.question_id = eq.id AND pe.ada_number = :ada
@@ -534,11 +538,17 @@ async def get_my_scores(
     """), {"ada": rep["ada_number"]})
     rows = result.fetchall()
 
-    questions = [{
-        "question_id": r[0], "question_el": r[1], "category": r[2],
-        "avg_score": float(r[3]) if r[3] is not None else None,
-        "vote_count": r[4],
-    } for r in rows]
+    questions = []
+    for row in rows:
+        vote_count = int(row[4])
+        scores_hidden = 0 < vote_count < EVALUATION_K_ANONYMITY_MIN
+        questions.append({
+            "question_id": row[0], "question_el": row[1], "category": row[2],
+            "avg_score": public_evaluation_average(row[3], vote_count),
+            "vote_count": 0 if scores_hidden else vote_count,
+            "vote_count_hidden": scores_hidden,
+            "scores_hidden": scores_hidden,
+        })
 
     total_avg = None
     total_count = sum(q["vote_count"] for q in questions)
@@ -551,4 +561,6 @@ async def get_my_scores(
         "questions": questions,
         "total_avg": total_avg,
         "total_evaluations": total_count,
+        "scores_hidden": any(q["scores_hidden"] for q in questions),
+        "minimum_group_size": EVALUATION_K_ANONYMITY_MIN,
     }

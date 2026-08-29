@@ -243,7 +243,10 @@ async function loadEvalScreen(){
       html+='</div>';
     }else{
       html+='<div class="eval-status">✓ Αξιολόγηση ενεργή</div>';
-      if(d.total_evaluations>0){
+      if(d.total_evaluations>0||d.scores_hidden){
+        if(d.scores_hidden){
+          html+='<div style="text-align:center;margin-bottom:16px;font-size:13px;color:var(--gray)">Οι βαθμολογίες εμφανίζονται από '+d.minimum_group_size+' αξιολογητές.</div>';
+        }
         html+='<div style="text-align:center;margin-bottom:16px;font-size:13px;color:var(--gray)">Συνολικός μέσος όρος: <strong style="color:var(--gold);font-size:18px">'+(d.total_avg!==null?(d.total_avg>0?'+':'')+d.total_avg:'—')+'</strong></div>';
         d.questions.forEach(function(q){
           html+='<div class="score-card">';
@@ -251,7 +254,7 @@ async function loadEvalScreen(){
           html+='<div class="score-main">';
           html+='<div class="cat">'+q.category+'</div>';
           html+='<div class="q">'+q.question_el+'</div>';
-          html+='<div class="cnt">'+q.vote_count+' Αξιολογήσεις</div>';
+          html+='<div class="cnt">'+(q.vote_count_hidden?'Λιγότερες από '+d.minimum_group_size+' αξιολογήσεις':q.vote_count+' Αξιολογήσεις')+'</div>';
           html+='</div>';
           html+='<div class="val">'+(q.avg_score!==null?(q.avg_score>0?'+':'')+q.avg_score:'—')+'</div>';
           html+='</div>';

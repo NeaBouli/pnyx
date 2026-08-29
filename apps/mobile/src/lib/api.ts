@@ -528,6 +528,9 @@ export interface Politician {
   governance_level: string;
   avg_score: number | null;
   evaluator_count: number;
+  evaluator_count_hidden: boolean;
+  scores_hidden: boolean;
+  minimum_group_size: number;
 }
 
 export interface EvalQuestion {
@@ -540,9 +543,19 @@ export interface EvalQuestion {
 export interface EvalScores {
   ada_number: string;
   org_label: string;
-  questions: { question_id: number; question_el: string; category: string; avg_score: number | null; vote_count: number }[];
+  questions: {
+    question_id: number;
+    question_el: string;
+    category: string;
+    avg_score: number | null;
+    vote_count: number;
+    vote_count_hidden: boolean;
+    scores_hidden: boolean;
+  }[];
   total_avg: number | null;
   total_evaluations: number;
+  scores_hidden: boolean;
+  minimum_group_size: number;
 }
 
 export async function fetchPoliticians(): Promise<Politician[]> {
@@ -562,10 +575,22 @@ export async function submitEvaluation(
   nullifierHash: string,
   scores: { question_id: number; score: number }[],
   signatureHex: string,
-): Promise<{ ada_number: string; scores_submitted: number }> {
+  timestampMs: number,
+): Promise<{
+  ada_number: string;
+  scores_submitted: number;
+  integrity: "bound" | "legacy";
+  payload_version_accepted: 1 | 2;
+}> {
   return request(`/api/v1/politicians/${encodeURIComponent(adaNumber)}/evaluate`, {
     method: "POST",
-    body: JSON.stringify({ nullifier_hash: nullifierHash, scores, signature_hex: signatureHex }),
+    body: JSON.stringify({
+      nullifier_hash: nullifierHash,
+      scores,
+      signature_hex: signatureHex,
+      payload_version: 2,
+      timestamp_ms: timestampMs,
+    }),
   });
 }
 

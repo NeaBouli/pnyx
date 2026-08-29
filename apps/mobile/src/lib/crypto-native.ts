@@ -380,6 +380,53 @@ export function signEvaluation(
   return bytesToHex(signature);
 }
 
+export interface EvaluationScorePayload {
+  question_id: number;
+  score: number;
+}
+
+export function buildEvaluationV2Payload(
+  adaNumber: string,
+  nullifierHash: string,
+  timestampMs: number,
+  scores: EvaluationScorePayload[],
+): string {
+  if (!Number.isSafeInteger(timestampMs)) {
+    throw new Error("Evaluation timestamp must be a safe integer.");
+  }
+  const pairs = scores.map(({ question_id, score }) => {
+    if (!Number.isInteger(question_id) || !Number.isInteger(score) || score < -5 || score > 5) {
+      throw new Error("Evaluation scores must use integer question IDs and values from -5 to 5.");
+    }
+    return [question_id, score] as [number, number];
+  });
+  if (new Set(pairs.map(([questionId]) => questionId)).size !== pairs.length) {
+    throw new Error("Evaluation question IDs must be unique.");
+  }
+  pairs.sort(([left], [right]) => left - right);
+  return `evaluate:v2:${JSON.stringify([adaNumber, nullifierHash, timestampMs, pairs])}`;
+}
+
+export function signEvaluationV2(
+  privateKeyHex: string,
+  adaNumber: string,
+  nullifierHash: string,
+  timestampMs: number,
+  scores: EvaluationScorePayload[],
+): string {
+  const payload = buildEvaluationV2Payload(
+    adaNumber,
+    nullifierHash,
+    timestampMs,
+    scores,
+  );
+  const signature = ed25519.sign(
+    new TextEncoder().encode(payload),
+    hexToBytes(privateKeyHex),
+  );
+  return bytesToHex(signature);
+}
+
 export function signProfileLocation(
   privateKeyHex: string,
   periferiaId: number | null,

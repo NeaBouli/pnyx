@@ -9,6 +9,7 @@ import {
   fetchVoteStatus,
   fetchZkRoot,
   fetchZkRootMembers,
+  submitEvaluation,
   submitVote,
   submitZkOptIn,
   submitZkVote,
@@ -71,6 +72,47 @@ describe("buildConsensusRepresentationQuery", () => {
 
   it("allows a nationwide aggregate without location IDs", () => {
     expect(buildConsensusRepresentationQuery()).toBe("limit=20");
+  });
+});
+
+describe("politician evaluation API helpers", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    resetApiTransportStateForTests();
+  });
+
+  it("submits the score-bound v2 signature metadata", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ada_number: "ADA-1",
+        scores_submitted: 2,
+        integrity: "bound",
+        payload_version_accepted: 2,
+      }),
+    } as Response);
+
+    await submitEvaluation(
+      "ADA-1",
+      "a".repeat(64),
+      [{ question_id: 2, score: -3 }, { question_id: 8, score: 5 }],
+      "b".repeat(128),
+      1787999123456,
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.ekklesia.gr/api/v1/politicians/ADA-1/evaluate",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          nullifier_hash: "a".repeat(64),
+          scores: [{ question_id: 2, score: -3 }, { question_id: 8, score: 5 }],
+          signature_hex: "b".repeat(128),
+          payload_version: 2,
+          timestamp_ms: 1787999123456,
+        }),
+      }),
+    );
   });
 });
 
