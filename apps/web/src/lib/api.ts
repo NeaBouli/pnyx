@@ -69,6 +69,8 @@ export interface Bill {
   governance_level?: string;
   periferia_id?: number | null;
   dimos_id?: number | null;
+  consensus_score?: number | null;
+  consensus_count?: number | null;
 }
 
 export interface DivergenceResult {
