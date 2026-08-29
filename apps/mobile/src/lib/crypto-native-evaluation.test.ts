@@ -1,0 +1,70 @@
+import { ed25519 } from "@noble/curves/ed25519.js";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("expo-secure-store", () => ({
+  getItemAsync: vi.fn(() => Promise.resolve(null)),
+  setItemAsync: vi.fn(() => Promise.resolve()),
+  deleteItemAsync: vi.fn(() => Promise.resolve()),
+}));
+
+import {
+  buildEvaluationV2Payload,
+  hexToBytes,
+  signEvaluationV2,
+} from "./crypto-native";
+
+describe("evaluation v2 signatures", () => {
+  const scores = [
+    { question_id: 8, score: 5 },
+    { question_id: 2, score: -3 },
+  ];
+
+  it("matches the backend golden vector regardless of score order", () => {
+    expect(buildEvaluationV2Payload(
+      "ADA-ΕΛ-1",
+      "a".repeat(64),
+      1787999123456,
+      scores,
+    )).toBe(
+      `evaluate:v2:["ADA-ΕΛ-1","${"a".repeat(64)}",1787999123456,[[2,-3],[8,5]]]`,
+    );
+  });
+
+  it("binds the complete canonical payload to the signature", () => {
+    const privateKeyHex = "01".repeat(32);
+    const publicKey = ed25519.getPublicKey(hexToBytes(privateKeyHex));
+    const payload = buildEvaluationV2Payload("ADA-1", "b".repeat(64), 123456, scores);
+    const signature = signEvaluationV2(
+      privateKeyHex,
+      "ADA-1",
+      "b".repeat(64),
+      123456,
+      scores,
+    );
+
+    expect(ed25519.verify(
+      hexToBytes(signature),
+      new TextEncoder().encode(payload),
+      publicKey,
+    )).toBe(true);
+    expect(ed25519.verify(
+      hexToBytes(signature),
+      new TextEncoder().encode(buildEvaluationV2Payload(
+        "ADA-1",
+        "b".repeat(64),
+        123456,
+        [{ question_id: 2, score: -2 }, { question_id: 8, score: 5 }],
+      )),
+      publicKey,
+    )).toBe(false);
+  });
+
+  it("rejects ambiguous duplicate question IDs", () => {
+    expect(() => buildEvaluationV2Payload(
+      "ADA-1",
+      "c".repeat(64),
+      123456,
+      [{ question_id: 2, score: -3 }, { question_id: 2, score: 5 }],
+    )).toThrow("Evaluation question IDs must be unique.");
+  });
+});

@@ -12,6 +12,8 @@ interface Politician {
   governance_level: string
   avg_score: number | null
   evaluator_count: number
+  evaluator_count_hidden: boolean
+  minimum_group_size: number
 }
 
 export default function PoliticiansPage() {
@@ -99,7 +101,9 @@ export default function PoliticiansPage() {
                       <td className="px-4 py-3 text-gray-900 font-medium">{p.org_label || p.ada_number}</td>
                       <td className="px-4 py-3 text-gray-700">{p.role}</td>
                       <td className="px-4 py-3 text-gray-700">{p.region || '—'}</td>
-                      <td className="px-4 py-3 text-right text-gray-700">{p.evaluator_count}</td>
+                      <td className="px-4 py-3 text-right text-gray-700">
+                        {p.evaluator_count_hidden ? `< ${p.minimum_group_size}` : p.evaluator_count}
+                      </td>
                       <td className={`px-4 py-3 text-right font-bold ${scoreColor}`}>
                         {p.avg_score !== null ? (p.avg_score > 0 ? '+' : '') + p.avg_score.toFixed(1) : '—'}
                       </td>

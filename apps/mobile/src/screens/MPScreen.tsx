@@ -126,8 +126,12 @@ export default function MPScreen() {
                 <View style={s.content}>
                   <Text style={s.name}>{item.org_label || item.ada_number}</Text>
                   <Text style={s.detail}>{item.role}{item.region ? ` · ${item.region}` : ""}</Text>
-                  {item.evaluator_count > 0 && (
-                    <Text style={s.detail}>{item.evaluator_count} αξιολογήσεις</Text>
+                  {(item.evaluator_count > 0 || item.evaluator_count_hidden) && (
+                    <Text style={s.detail}>
+                      {item.evaluator_count_hidden
+                        ? `Λιγότερες από ${item.minimum_group_size} αξιολογήσεις`
+                        : `${item.evaluator_count} αξιολογήσεις`}
+                    </Text>
                   )}
                 </View>
                 <View style={{ alignItems: "flex-end" }}>

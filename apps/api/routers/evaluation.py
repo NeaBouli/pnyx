@@ -5,16 +5,23 @@ Voraussetzung: Politiker hat evaluation_enabled=TRUE.
 Auth: Ed25519 Signatur (identisch mit Voting-Pattern).
 """
 import logging
-from datetime import datetime
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from keypair import verify_signature
 from models import EvaluationQuestion, PoliticianEvaluation, IdentityRecord, KeyStatus
+from services.evaluation_integrity import (
+    EVALUATION_K_ANONYMITY_MIN,
+    build_evaluation_v2_payload,
+    evaluation_timestamp_is_fresh,
+    evaluation_v2_required,
+    public_evaluation_average,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/politicians", tags=["Evaluation"])
@@ -39,6 +46,16 @@ class EvaluateRequest(BaseModel):
     nullifier_hash: str = Field(..., min_length=16, max_length=64)
     scores: list[ScoreItem] = Field(..., min_length=1, max_length=8)
     signature_hex: str = Field(..., min_length=64)
+    payload_version: Literal[1, 2] = 1
+    timestamp_ms: int | None = None
+
+    @field_validator("scores")
+    @classmethod
+    def reject_duplicate_questions(cls, scores: list[ScoreItem]) -> list[ScoreItem]:
+        question_ids = [score.question_id for score in scores]
+        if len(question_ids) != len(set(question_ids)):
+            raise ValueError("duplicate question_id")
+        return scores
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -74,15 +91,23 @@ async def list_politicians(db: AsyncSession = Depends(get_db)):
         ORDER BY rt.role, rt.org_label
     """))
     rows = result.fetchall()
-    return [{
-        "ada_number": r[0],
-        "role": r[1],
-        "region": r[2],
-        "org_label": r[3],
-        "governance_level": ROLE_GOVERNANCE.get(r[1], "VOULEVTIS"),
-        "avg_score": float(r[4]) if r[4] is not None else None,
-        "evaluator_count": r[5],
-    } for r in rows]
+    politicians = []
+    for row in rows:
+        evaluator_count = int(row[5])
+        scores_hidden = 0 < evaluator_count < EVALUATION_K_ANONYMITY_MIN
+        politicians.append({
+            "ada_number": row[0],
+            "role": row[1],
+            "region": row[2],
+            "org_label": row[3],
+            "governance_level": ROLE_GOVERNANCE.get(row[1], "VOULEVTIS"),
+            "avg_score": public_evaluation_average(row[4], evaluator_count),
+            "evaluator_count": 0 if scores_hidden else evaluator_count,
+            "evaluator_count_hidden": scores_hidden,
+            "scores_hidden": scores_hidden,
+            "minimum_group_size": EVALUATION_K_ANONYMITY_MIN,
+        })
+    return politicians
 
 
 @router.get("/my-evaluations/bulk")
@@ -179,9 +204,29 @@ async def evaluate_politician(
     else:
         raise HTTPException(403, "Δεν έχετε δικαίωμα αξιολόγησης αυτού του εκπροσώπου.")
 
-    # 3. Verify Ed25519 signature
-    # Payload: "evaluate:{ada_number}:{nullifier_hash}"
-    payload = f"evaluate:{ada_number}:{req.nullifier_hash}"
+    # 3. Verify Ed25519 signature. v2 binds every score and expires old payloads.
+    if req.payload_version == 2:
+        if req.timestamp_ms is None:
+            raise HTTPException(400, "Απαιτείται χρονική σήμανση για υπογραφή v2.")
+        if not evaluation_timestamp_is_fresh(req.timestamp_ms):
+            raise HTTPException(
+                401,
+                "Η υπογραφή έληξε. Ελέγξτε την ώρα της συσκευής και δοκιμάστε ξανά.",
+            )
+        payload = build_evaluation_v2_payload(
+            ada_number,
+            req.nullifier_hash,
+            req.timestamp_ms,
+            req.scores,
+        )
+        integrity = "bound"
+    else:
+        if evaluation_v2_required():
+            raise HTTPException(426, "Απαιτείται ενημέρωση της εφαρμογής για ασφαλή αξιολόγηση.")
+        payload = f"evaluate:{ada_number}:{req.nullifier_hash}"
+        integrity = "legacy"
+        logger.warning("[EVAL] Legacy evaluation signature accepted: ada=%s", ada_number)
+
     if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
         raise HTTPException(401, "Μη έγκυρη υπογραφή.")
 
@@ -204,7 +249,12 @@ async def evaluate_politician(
     await db.commit()
 
     logger.info("[EVAL] Citizen evaluated %s: %d scores", ada_number, len(req.scores))
-    return {"ada_number": ada_number, "scores_submitted": len(req.scores)}
+    return {
+        "ada_number": ada_number,
+        "scores_submitted": len(req.scores),
+        "integrity": integrity,
+        "payload_version_accepted": req.payload_version,
+    }
 
 
 @router.get("/{ada_number}/scores")
@@ -213,12 +263,12 @@ async def get_scores(
     db: AsyncSession = Depends(get_db),
 ):
     """Public: evaluation scores for a politician."""
-    await _get_enabled_politician(ada_number, db)
+    politician = await _get_enabled_politician(ada_number, db)
 
     result = await db.execute(text("""
         SELECT eq.id, eq.question_el, eq.question_en, eq.category,
                ROUND(AVG(pe.score)::numeric, 2) AS avg_score,
-               COUNT(pe.id) AS vote_count
+               COUNT(DISTINCT pe.nullifier_hash) AS vote_count
         FROM evaluation_questions eq
         LEFT JOIN politician_evaluations pe
             ON pe.question_id = eq.id AND pe.ada_number = :ada
@@ -228,12 +278,18 @@ async def get_scores(
     """), {"ada": ada_number})
     rows = result.fetchall()
 
-    questions = [{
-        "question_id": r[0], "question_el": r[1], "question_en": r[2],
-        "category": r[3],
-        "avg_score": float(r[4]) if r[4] is not None else None,
-        "vote_count": r[5],
-    } for r in rows]
+    questions = []
+    for row in rows:
+        vote_count = int(row[5])
+        scores_hidden = 0 < vote_count < EVALUATION_K_ANONYMITY_MIN
+        questions.append({
+            "question_id": row[0], "question_el": row[1], "question_en": row[2],
+            "category": row[3],
+            "avg_score": public_evaluation_average(row[4], vote_count),
+            "vote_count": 0 if scores_hidden else vote_count,
+            "vote_count_hidden": scores_hidden,
+            "scores_hidden": scores_hidden,
+        })
 
     total_count = sum(q["vote_count"] for q in questions)
     scored = [q["avg_score"] for q in questions if q["avg_score"] is not None]
@@ -241,8 +297,10 @@ async def get_scores(
 
     return {
         "ada_number": ada_number,
-        "org_label": (await _get_enabled_politician(ada_number, db))["org_label"],
+        "org_label": politician["org_label"],
         "questions": questions,
         "total_avg": total_avg,
         "total_evaluations": total_count,
+        "scores_hidden": any(q["scores_hidden"] for q in questions),
+        "minimum_group_size": EVALUATION_K_ANONYMITY_MIN,
     }
