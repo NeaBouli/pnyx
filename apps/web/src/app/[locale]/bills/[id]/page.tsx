@@ -224,7 +224,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
         <div className="flex justify-between items-center mb-4 mt-4">
           <div className="flex items-center gap-2">
             <StatusBadge status={bill.status} locale={locale} />
-            {(bill as any).source === "DIAVGEIA" && (
+            {bill.source === "DIAVGEIA" && (
               <span className="px-2 py-0.5 bg-sky-100 text-sky-700 text-xs font-bold rounded-md">
                 ΔΙΑΥΓΕΙΑ
               </span>
@@ -234,19 +234,19 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
         </div>
 
         {/* Region Banner */}
-        {(bill as any).governance_level === "REGIONAL" && (
+        {bill.governance_level === "REGIONAL" && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 text-sm">
             <span className="font-bold text-blue-700">📍 {locale === "el" ? "Περιφερειακή ψηφοφορία" : "Regional vote"}</span>
             <span className="text-blue-500 ml-2">{locale === "el" ? "— Αφορά μόνο τους κατοίκους της περιοχής" : "— Only for residents of this region"}</span>
           </div>
         )}
-        {(bill as any).governance_level === "MUNICIPAL" && (
+        {bill.governance_level === "MUNICIPAL" && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 text-sm">
             <span className="font-bold text-blue-700">📍 {locale === "el" ? "Δημοτική ψηφοφορία" : "Municipal vote"}</span>
             <span className="text-blue-500 ml-2">{locale === "el" ? "— Αφορά μόνο τους κατοίκους του Δήμου" : "— Only for residents of this municipality"}</span>
           </div>
         )}
-        {(bill as any).governance_level === "INSTITUTIONAL" && readableText(bill.pill_el) && (
+        {bill.governance_level === "INSTITUTIONAL" && readableText(bill.pill_el) && (
           <div className="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 mb-4 text-sm">
             <span className="font-bold text-purple-700">🏢 {bill.pill_el}</span>
           </div>
@@ -322,9 +322,9 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                   : longTabLabel}
               </button>
             ))}
-            {(bill as any).forum_topic_id && (
+            {bill.forum_topic_id && (
               <a
-                href={`https://pnyx.ekklesia.gr/t/${(bill as any).forum_topic_id}`}
+                href={`https://pnyx.ekklesia.gr/t/${bill.forum_topic_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-gray-100 text-gray-500 hover:text-gray-900 hover:bg-gray-200 inline-flex items-center gap-1"
@@ -480,7 +480,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
             </h3>
             <p className="text-purple-600 text-sm mb-4">
               {locale === "el"
-                ? (bill as any).source === "DIAVGEIA"
+                ? bill.source === "DIAVGEIA"
                   ? "Πόσο συμφωνείτε με αυτή την απόφαση;"
                   : "Πόσο συμφωνείτε με την απόφαση της Βουλής;"
                 : "How much do you agree with this decision?"}
@@ -581,13 +581,13 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
               </>
             )}
 
-            {(bill as any).consensus_count > 0 && !consensusDone && (
+            {(bill.consensus_count ?? 0) > 0 && !consensusDone && (
               <div className="mt-4 text-center border-t border-purple-200 pt-3">
                 <span className="text-xl font-black text-purple-700">
-                  {((bill as any).consensus_score || 0) > 0 ? "+" : ""}{((bill as any).consensus_score || 0).toFixed(1)}
+                  {(bill.consensus_score || 0) > 0 ? "+" : ""}{(bill.consensus_score || 0).toFixed(1)}
                 </span>
                 <span className="text-sm text-purple-500 ml-2">
-                  ({(bill as any).consensus_count} {locale === "el" ? "αξιολογήσεις" : "ratings"})
+                  ({bill.consensus_count} {locale === "el" ? "αξιολογήσεις" : "ratings"})
                 </span>
               </div>
             )}
