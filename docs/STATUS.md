@@ -1,6 +1,68 @@
 # Ekklesia.gr - Project Status
 
-Last verified: 2026-08-20
+Repository and external gates reviewed: 2026-08-30.
+Released-artifact evidence below remains the 2026-08-20 baseline; this review
+does not imply a new deployment or app publication.
+
+## Current integration and release gates
+
+- The bounded web cleanup is merged in [PR #259](https://github.com/NeaBouli/pnyx/pull/259)
+  (`54ff2fc`). It removes 19 of 20 lint warnings while preserving the
+  existing SSO initialization. The remaining warning is explicitly tracked in
+  GH#258; it requires dedicated authentication lifecycle tests, not suppression.
+  QR session cleanup additionally rejects stale/expired poll completions and
+  prevents duplicate authentication callbacks. Web tests (40), typecheck and
+  production build pass. Synthetic browser checks cover filters and QR
+  lifecycle races; the latter are not yet CI DOM tests. This is not a
+  live-rollout claim.
+  Kimi and Sol reviewed the patch; CodeRabbit was rate-limited, not a completed
+  review. Main CI and Security Audit passed after both code merges.
+
+- GH#253: signed personal evaluation reads and mobile integration are merged
+  in [PR #257](https://github.com/NeaBouli/pnyx/pull/257) (`9ec3591`).
+  The migration is not complete until API readiness, a new app
+  release, signed-read/write adoption, and the separately approved cutoff are
+  verified. Released clients remain compatible before cutoff. See
+  [the migration runbook](security/EVALUATION_READ_MIGRATION.md).
+- Four `image-size` Dependabot alerts remain visible. Both official advisories
+  still list no patched release; the checked local backport remains in place
+  and its seven installed-package security regressions pass. Do not replace it
+  with upstream 2.0.2, which is still affected:
+  [GHSA-w3rx-r6r6-pgpr](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr),
+  [GHSA-5p2g-fcmc-qvqq](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq).
+- `arweave-python-client` 1.0.19 still depends on `python-jose`; 3.5.0 still
+  requires `ecdsa`. No compatible removal or patched `ecdsa` release was found.
+  The existing narrowly documented audit exception is unchanged, not resolved.
+  Verification-only use is outside the reported signing/key-generation path;
+  this is not a blanket claim that the dependency is safe. See the
+  [official advisory](https://github.com/pypa/advisory-database/blob/main/vulns/ecdsa/PYSEC-2026-1325.yaml).
+- TypeScript 7 remains a future upgrade gate: official
+  [typescript-eslint support](https://typescript-eslint.io/users/dependency-versions/)
+  currently excludes it. Existing supported versions are retained.
+- Google Play production access is still blocked by its closed-test criteria.
+  The console requires at least 12 opted-in testers and a qualifying 14-day
+  test. Enrollment is not proof of daily activity; current private counts are
+  recorded in the local bridge, not inferred from the email allowlist.
+- DMARC: the private catalog still contains one report / one passing message,
+  not a complete monthly evidence set. Review starts no earlier than September
+  1 and waits for delayed August 31 reports, sender-path evidence and inbound
+  mail intent. [Observation gate](operations/dmarc-observation-gate.md), NEA-422.
+- No production, database, DNS, secret, IAM or Google Play publication change
+  is part of this integration review.
+
+## Backlog classification
+
+- GitHub #253 is active staged security migration work.
+- GitHub #216-#223 (parallel Minima V2) and #138/#141 (gov.gr identity) remain
+  future gated work, not regressions in the running V1 release.
+- Linear NEA-262 is a weekly-newsletter proposal, distinct from the completed
+  monthly newsletter NEA-160. No schedule change is implied.
+- Linear NEA-185 and NEA-167 retain their full independent demo-node scope;
+  existing public demo pages do not prove that scope complete.
+- Linear NEA-113 is historical federation design backlog. New V2 decisions
+  must follow epic #216 rather than silently implementing the old bridge plan.
+- Donation/recipient work was excluded from the current authorization and its
+  existing state is unchanged.
 
 ## Current release
 

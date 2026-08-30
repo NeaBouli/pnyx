@@ -1,13 +1,36 @@
 # Ekklesia.gr — TODO
 # Copyright (c) 2026 V-Labs Development — MIT License
 
-Last reconciled: 2026-08-23
+Last reconciled: 2026-08-30
 
 `docs/STATUS.md` is the authority for the current release. GitHub issues and
 Linear are the authorities for active work. Older session notes are retained
 below only as historical context; their unchecked boxes are not current tasks.
 
 ## Current gates
+
+- [x] Merge bounded web lifecycle/lint fixes in PR #259 (`54ff2fc`): 40 tests,
+  typecheck and build pass; 19 warnings removed without rule suppression.
+- [ ] Roll out PR #259 only through a separately approved, reversible Web-only
+  release and live verification. Repository integration is not deployment.
+- [ ] GH#258: remove the one retained SSO initialization lint warning only
+  with dedicated missing-parameter, hydration, key-presence and QR/auth tests.
+  The other 19 warnings are addressed by the bounded web cleanup; rules remain
+  enabled. No production auth redesign is implied.
+
+- [x] Merge and test signed personal-read preparation (PR #257, `9ec3591`).
+- [ ] Complete GH#253 in stages: verify API
+  readiness, release the compatible app, observe both read/write adoption,
+  perform an explicitly approved reversible cutoff, then retire legacy code.
+  Passing code tests alone does not close this release gate.
+- [ ] Replace the transitive `ecdsa` path only with a compatible verified
+  upstream release. Keep the existing explicit audit exception visible; no
+  new suppression, forced dependency override or Arweave migration.
+- [ ] Reconsider TypeScript 7 only after official support by the installed
+  typescript-eslint tooling and all workspace checks.
+- [ ] Separately triage retained Linear backlog NEA-262, NEA-185, NEA-167 and
+  NEA-113 against its full acceptance scope; do not mark future features Done
+  merely because related V1 functionality exists.
 
 - [x] Web, Dashboard, Mobile, Representative and shared crypto verification
   added to pull-request CI.
