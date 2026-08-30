@@ -80,8 +80,25 @@ describe("buildConsensusRepresentationQuery", () => {
 describe("politician evaluation API helpers", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+    vi.resetModules();
     resetApiTransportStateForTests();
   });
+
+  it.each(["http://api.example.test", "ftp://api.example.test", "not-a-url"])(
+    "rejects signed reads before network access for %s", async (apiUrl) => {
+      vi.stubEnv("EXPO_PUBLIC_API_URL", apiUrl);
+      vi.resetModules();
+      const api = await import("./api");
+      const fetchMock = vi.spyOn(globalThis, "fetch");
+      const auth = { timestampMs: 1788000000000, signatureHex: "b".repeat(128) };
+      await expect(api.fetchMyEvaluation("ADA-1", "a".repeat(64), auth))
+        .rejects.toThrow("require an HTTPS API URL");
+      await expect(api.fetchMyEvaluationsBulk("a".repeat(64), auth))
+        .rejects.toThrow("require an HTTPS API URL");
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
 
   it.each(["single", "bulk"])("sends %s read credentials only in headers without caching", async (scope) => {
     const data = scope === "single"

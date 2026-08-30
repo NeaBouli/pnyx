@@ -614,6 +614,15 @@ export interface EvaluationReadAuth {
 }
 
 function evaluationReadOptions(auth: EvaluationReadAuth): RequestInit {
+  let secureApi = false;
+  try {
+    secureApi = new URL(API_BASE).protocol === "https:";
+  } catch {
+    // Fail before constructing credentials for a malformed endpoint.
+  }
+  if (!secureApi) {
+    throw new Error("Personal evaluation reads require an HTTPS API URL");
+  }
   return {
     cache: "no-store",
     headers: {
