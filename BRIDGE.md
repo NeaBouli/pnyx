@@ -1,5 +1,23 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-08-30 - Bounded Completion and Gate Reconciliation
+
+- The active scope is the approved status block 1-8, excluding donation work
+  (point 7). Production, credentials and published app artifacts are unchanged.
+- Current integration, security dependency gates, store/DMARC evidence and
+  future backlog are distinguished in `docs/STATUS.md` and `docs/TODO.md`.
+- PR #257 (`9ec3591`) prepares signed personal reads; PR #259 (`54ff2fc`)
+  integrates the bounded web cleanup. Neither merge publishes a release.
+- One existing SSO initialization warning remains under GH#258; 19 other
+  warnings were fixed without suppressions or dependency churn.
+- Personal evaluation migration remains GH#253 through app release, adoption
+  and cutoff. No tracker may equate an additive API/mobile patch with completed
+  production enforcement.
+- Four image-size alerts remain visible; no compatible patched upstream
+  release was found. ecdsa and TypeScript-7 upstream gates are unchanged.
+- Private Google Play enrollment evidence and the DMARC catalog remain in the
+  local gitignored operations bridge. NEA-422 remains In Progress.
+
 ## 2026-08-24 — Real DiscourseConnect Canary Complete
 
 - The owner completed the voluntary production canary with an existing
