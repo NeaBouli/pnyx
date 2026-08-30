@@ -3,6 +3,8 @@ import {
   buildBillsQuery,
   buildConsensusRepresentationQuery,
   fetchBills,
+  fetchMyEvaluation,
+  fetchMyEvaluationsBulk,
   getApiTransportState,
   resetApiTransportStateForTests,
   subscribeApiTransport,
@@ -79,6 +81,44 @@ describe("politician evaluation API helpers", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     resetApiTransportStateForTests();
+  });
+
+  it.each(["single", "bulk"])("sends %s read credentials only in headers without caching", async (scope) => {
+    const data = scope === "single"
+      ? [{ question_id: 2, score: -3, updated_at: "2026-08-30" }]
+      : [{ ada_number: "ADA-ΕΛ-1", last_updated: "2026-08-30" }];
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true, json: async () => data,
+    } as Response);
+    const auth = { timestampMs: 1788000000000, signatureHex: "b".repeat(128) };
+    const result = scope === "single"
+      ? await fetchMyEvaluation("ADA-ΕΛ-1", "a".repeat(64), auth)
+      : await fetchMyEvaluationsBulk("a".repeat(64), auth);
+    expect(result).toEqual(data);
+    const target = scope === "single"
+      ? `${encodeURIComponent("ADA-ΕΛ-1")}/my-evaluation`
+      : "my-evaluations/bulk";
+    expect(fetchMock).toHaveBeenCalledWith(
+      `https://api.ekklesia.gr/api/v1/politicians/${target}?nullifier_hash=${"a".repeat(64)}`,
+      expect.objectContaining({
+        cache: "no-store",
+        headers: {
+          "X-Evaluation-Read-Timestamp": String(auth.timestampMs),
+          "X-Evaluation-Read-Signature": auth.signatureHex,
+        },
+      }),
+    );
+  });
+
+  it.each([401, 426, 503])("does not retry personal reads unsigned or on the mirror after HTTP %s", async (status) => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: false, status, json: async () => ({ detail: "blocked" }),
+    } as Response);
+    await expect(fetchMyEvaluationsBulk("a".repeat(64), {
+      timestampMs: 1788000000000, signatureHex: "b".repeat(128),
+    })).rejects.toThrow("blocked");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(getApiTransportState().mode).toBe("primary");
   });
 
   it("submits the score-bound v2 signature metadata", async () => {

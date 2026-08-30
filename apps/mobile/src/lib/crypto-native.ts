@@ -427,6 +427,27 @@ export function signEvaluationV2(
   return bytesToHex(signature);
 }
 
+export function buildEvaluationReadPayload(
+  adaNumber: string | null,
+  nullifierHash: string,
+  timestampMs: number,
+): string {
+  if (!Number.isSafeInteger(timestampMs) || timestampMs < 0) {
+    throw new Error("Evaluation read timestamp must be a non-negative safe integer.");
+  }
+  return `evaluation-read:v1:${JSON.stringify([adaNumber, nullifierHash, timestampMs])}`;
+}
+
+export function signEvaluationRead(
+  privateKeyHex: string,
+  adaNumber: string | null,
+  nullifierHash: string,
+  timestampMs: number,
+): string {
+  const payload = buildEvaluationReadPayload(adaNumber, nullifierHash, timestampMs);
+  return bytesToHex(ed25519.sign(utf8ToBytes(payload), hexToBytes(privateKeyHex)));
+}
+
 export function signProfileLocation(
   privateKeyHex: string,
   periferiaId: number | null,

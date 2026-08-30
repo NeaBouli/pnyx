@@ -55,6 +55,20 @@ def evaluation_v2_required() -> bool:
     }
 
 
+def build_evaluation_read_payload(
+    ada_number: str | None,
+    nullifier_hash: str,
+    timestamp_ms: int,
+) -> str:
+    """Bind a personal read to its owner, time and target (null means bulk)."""
+    body = json.dumps(
+        [ada_number, nullifier_hash, timestamp_ms],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    return f"evaluation-read:v1:{body}"
+
+
 def evaluation_v2_max_skew_ms() -> int:
     """Return a bounded freshness window; invalid config falls back safely."""
     raw = os.getenv(

@@ -608,8 +608,30 @@ export interface MyEvaluation {
   updated_at: string | null;
 }
 
-export async function fetchMyEvaluation(adaNumber: string, nullifierHash: string): Promise<MyEvaluation[]> {
-  return request<MyEvaluation[]>(`/api/v1/politicians/${encodeURIComponent(adaNumber)}/my-evaluation?nullifier_hash=${encodeURIComponent(nullifierHash)}`);
+export interface EvaluationReadAuth {
+  timestampMs: number;
+  signatureHex: string;
+}
+
+function evaluationReadOptions(auth: EvaluationReadAuth): RequestInit {
+  return {
+    cache: "no-store",
+    headers: {
+      "X-Evaluation-Read-Timestamp": String(auth.timestampMs),
+      "X-Evaluation-Read-Signature": auth.signatureHex,
+    },
+  };
+}
+
+export async function fetchMyEvaluation(
+  adaNumber: string,
+  nullifierHash: string,
+  auth: EvaluationReadAuth,
+): Promise<MyEvaluation[]> {
+  return request<MyEvaluation[]>(
+    `/api/v1/politicians/${encodeURIComponent(adaNumber)}/my-evaluation?nullifier_hash=${encodeURIComponent(nullifierHash)}`,
+    evaluationReadOptions(auth),
+  );
 }
 
 export interface MyEvalBulk {
@@ -617,8 +639,14 @@ export interface MyEvalBulk {
   last_updated: string | null;
 }
 
-export async function fetchMyEvaluationsBulk(nullifierHash: string): Promise<MyEvalBulk[]> {
-  return request<MyEvalBulk[]>(`/api/v1/politicians/my-evaluations/bulk?nullifier_hash=${encodeURIComponent(nullifierHash)}`);
+export async function fetchMyEvaluationsBulk(
+  nullifierHash: string,
+  auth: EvaluationReadAuth,
+): Promise<MyEvalBulk[]> {
+  return request<MyEvalBulk[]>(
+    `/api/v1/politicians/my-evaluations/bulk?nullifier_hash=${encodeURIComponent(nullifierHash)}`,
+    evaluationReadOptions(auth),
+  );
 }
 
 // ─── POLIS Tickets ──────────────────────────────────────────────────────────
