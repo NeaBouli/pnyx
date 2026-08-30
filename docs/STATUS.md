@@ -1,19 +1,34 @@
 # Ekklesia.gr - Project Status
 
-Repository and external gates reviewed: 2026-08-30.
-Released-artifact evidence below remains the 2026-08-20 baseline; this review
-does not imply a new deployment or app publication.
+Repository and delivery gates reviewed: 2026-08-30.
+Web and the bounded Mail API overlay were deployed on 2026-08-30; Android
+artifact evidence below remains the existing vC58 baseline. This is not a
+full-main API deployment or a new app publication.
+
+## Verified component rollout
+
+- Web: `c935018` (PR #259/#263), live since 09:49 UTC.
+- API: prior production source `25d6c14` plus only the five PR #262 mail files,
+  live since 09:51 UTC. Evaluation/representative policy, agent changes and
+  dependency bumps from later main commits were deliberately excluded.
+- 69 Web tests, eight mocked mail tests, exact-source CI/Security and 16 HTTP
+  checks before and after each switch passed. Browser checks covered SSO entry,
+  retry, bills/results and detail navigation, not a new real-identity login.
+- Other 37 containers and protected configuration were unchanged. Rollback
+  tag `rollback-pre-web-mail-20260830-c935018` and prior images are retained.
+- Details: [release receipt](operations/WEB_MAIL_RELEASE_2026-08-30.md).
+  Repository HEAD alone is not the deployed API version.
 
 ## Current integration and release gates
 
 - The bounded web cleanup is merged in [PR #259](https://github.com/NeaBouli/pnyx/pull/259)
   (`54ff2fc`). It removed 19 of 20 lint warnings while preserving the
-  existing SSO initialization for the dedicated GH#258 follow-up below.
+  then-existing SSO initialization for the dedicated GH#258 follow-up below.
   QR session cleanup additionally rejects stale/expired poll completions and
   prevents duplicate authentication callbacks. Web tests (40), typecheck and
   production build pass. Synthetic browser checks cover filters and QR
-  lifecycle races; the latter are not yet CI DOM tests. This is not a
-  live-rollout claim.
+  lifecycle races; the subsequent GH#258 work adds deterministic DOM tests.
+  The verified Web rollout above includes both changes.
   Kimi and Sol reviewed the patch; CodeRabbit was rate-limited, not a completed
   review. Main CI and Security Audit passed after both code merges.
 
@@ -27,17 +42,21 @@ does not imply a new deployment or app publication.
   original 11 failing cases and reviewed the fix; Sol added the suggested
   edge cases and verified Greek desktop/mobile layouts. This code verification
   is not a new production-login canary. See the
-  [separate Web rollout gate](operations/forum-sso-lifecycle.md).
+  [Web rollout receipt and remaining canary](operations/forum-sso-lifecycle.md).
 
 - Send-only mail intent is confirmed by the owner. The reply-routing patch in
   [PR #262](https://github.com/NeaBouli/pnyx/pull/262) retains Brevo senders,
   lists, DOI and schedules, routes new newsletter replies to the published
   external operator contact, and preserves explicit contact-form recipient
-  overrides. No mailbox, DNS or provider configuration is changed. Production
-  override/delivery verification is still required before declaring it live.
+  overrides. No mailbox, DNS or provider configuration was changed. Production
+  file hashes and the operator recipient override were verified in the bounded
+  rollout above; actual controlled delivery/header verification remains open.
   [GH#261](https://github.com/NeaBouli/pnyx/issues/261) separately tracks the
-  unverified Redis/Listmonk-to-Brevo subscriber handoff; campaign implementation
-  alone is not evidence of end-to-end subscriber delivery.
+  confirmed Redis/Listmonk-to-Brevo handoff gap: read-only inventory found four
+  confirmed Redis entries, three absent from Brevo, and one Brevo-list contact
+  without a matching Redis confirmation. The configured Listmonk endpoint was
+  unreachable from the API. No contacts were imported, removed or reactivated.
+  [Delivery investigation and gated repair plan](operations/newsletter-delivery-audit.md).
 
 - GH#253: signed personal evaluation reads and mobile integration are merged
   in [PR #257](https://github.com/NeaBouli/pnyx/pull/257) (`9ec3591`).
@@ -67,10 +86,12 @@ does not imply a new deployment or app publication.
 - DMARC: the private catalog still contains one report / one passing message,
   not a complete monthly evidence set. Review starts no earlier than September
   1 and waits for delayed August 31 reports and sender-path evidence. Inbound
-  intent is now confirmed as send-only; actual routing must still be verified.
+  intent is confirmed as send-only; reply-routing configuration/code are live,
+  but actual delivery and header evidence still need verification.
   [Observation gate](operations/dmarc-observation-gate.md), NEA-422.
-- No production, database, DNS, secret, IAM or Google Play publication change
-  is part of this integration review.
+- No database, DNS, secret, IAM or Google Play change was made. The two component
+  switches above are the only production changes in the completed rollout;
+  this subsequent delivery investigation was read-only.
 
 ## Backlog classification
 

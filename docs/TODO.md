@@ -11,21 +11,30 @@ below only as historical context; their unchecked boxes are not current tasks.
 
 - [x] Merge bounded web lifecycle/lint fixes in PR #259 (`54ff2fc`): 40 tests,
   typecheck and build pass; 19 warnings removed without rule suppression.
-- [ ] Roll out PR #259 only through a separately approved, reversible Web-only
-  release and live verification. Repository integration is not deployment.
+- [x] Roll out PR #259 with PR #263 as the approved Web component release at
+  `c935018` on 2026-08-30, with rollback images and live verification.
 - [x] GH#258: add 29 SSO lifecycle tests, fix stale/duplicate session work and
   remove the final initialization warning without suppression. Web 69 tests,
   lint, typecheck, build and audit pass; Kimi review and Sol browser validation
   complete. Server signatures, nonce consumption and eligibility are unchanged.
-- [ ] Include GH#258 in a separately authorized reversible Web rollout with
-  live verification. See `docs/operations/forum-sso-lifecycle.md`.
+- [x] Include GH#258 in the reversible Web rollout with live verification.
+  See `docs/operations/forum-sso-lifecycle.md`.
+- [ ] Complete one new voluntary smartphone login/logout canary for this Web
+  rollout. Existing technical checks do not impersonate a verified citizen.
 - [x] Confirm send-only owner intent and implement external newsletter reply
   routing (PR #262), keeping Brevo senders, lists, DOI and schedules unchanged.
-- [ ] Verify contact-recipient configuration and controlled mail delivery in a
-  separately approved API rollout; no domain inbox, Null MX or provider change
-  is implied. See `docs/operations/dmarc-observation-gate.md`.
-- [ ] GH#261: inventory the confirmed-subscriber Redis/Listmonk-to-Brevo handoff,
-  with consent/suppression safeguards and no bulk import or resubscription.
+- [x] Deploy only the five PR #262 mail files over API baseline `25d6c14` and
+  verify operator-recipient configuration, runtime hashes and health. No domain
+  inbox, Null MX or provider change. See `docs/operations/WEB_MAIL_RELEASE_2026-08-30.md`.
+- [ ] Controlled real mail delivery and header verification remain separately
+  gated; no campaign was sent as a rollout smoke test.
+- [x] GH#261 read-only inventory: confirmed consent and campaign audience are
+  disconnected; three of four Redis confirmations are absent from Brevo.
+  No provider/contact writes. See `docs/operations/newsletter-delivery-audit.md`.
+- [ ] GH#261 repair: review consent, preferences and suppression precedence,
+  approve a no-write reconciliation manifest, then separately authorize any
+  bounded provider writes and controlled test recipient. Do not bulk-import,
+  resubscribe, replace list ownership or infer consent from missing records.
 
 - [x] Merge and test signed personal-read preparation (PR #257, `9ec3591`).
 - [ ] Complete GH#253 in stages: verify API
@@ -59,7 +68,7 @@ below only as historical context; their unchecked boxes are not current tasks.
   for every active sending path before proposing an enforcement policy. The
   private report catalog and sender inventory exist; review may begin on
   2026-09-01 but must wait for delayed reports covering 2026-08-31. Owner intent
-  is send-only; actual sender/reply routing still needs verification (Linear
+  is send-only; reply routing is deployed, actual delivery evidence is pending (Linear
   `NEA-422`; no DNS change authorized).
 - [x] Reconcile the production Docker/containerd image inventory without prune,
   image deletion or daemon restart; retain a recurrence check after future

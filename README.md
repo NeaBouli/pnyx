@@ -36,6 +36,11 @@ The **ekklesia** was the popular assembly of ancient Athens &mdash; where every 
 
 > This platform is not affiliated with any government entity. All votes are informational only and carry no legal binding force.
 
+Current deployment and remaining gates: [project status](docs/STATUS.md).
+The [2026-08-30 Web/mail release](docs/operations/WEB_MAIL_RELEASE_2026-08-30.md)
+is verified; [newsletter subscriber delivery](docs/operations/newsletter-delivery-audit.md)
+has a confirmed handoff gap and is not yet end-to-end complete.
+
 ## Data Sources
 
 This project uses publicly available government data from:
@@ -57,7 +62,7 @@ This project uses publicly available government data from:
 | Bill Text + Summaries | Official full text/PDF links plus short summaries or safe metadata context; reviewed/manual text is pinned | Beta |
 | RAG Agent | Citizen Q&A: Ollama + DeepL translation | Beta |
 | Auto-Healing Scraper | Ollama repairs broken CSS selectors | Beta |
-| Newsletter + Telegram | Brevo SMTP + Telegram cross-publish | Beta |
+| Newsletter + Telegram | Brevo SMTP + Telegram cross-publish | Beta; subscriber handoff repair gated ([#261](https://github.com/NeaBouli/pnyx/issues/261)) |
 | Push Notifications | Expo Push API, APScheduler | Beta |
 | Stripe / PayPal Donations | Voluntary support; runtime intake and public links fail-closed | Paused pending legal/provider E2E |
 | Mobile App | Expo React Native, HLR Greek-number network-status check, Ed25519, Compass | Beta |
