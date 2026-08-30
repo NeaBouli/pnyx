@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale } from "next-intl";
 import Image from "next/image";
@@ -12,173 +12,215 @@ type QrState = "idle" | "loading" | "ready" | "authenticated" | "expired" | "err
 
 const LOCALSTORAGE_KEY = "ekklesia_private_key";
 const LOCALSTORAGE_PUBKEY = "ekklesia_public_key";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.ekklesia.gr";
+const QR_LIFETIME = 5 * 60 * 1000;
+const REQUEST_TIMEOUT = 15000;
+const subscribeHydration = () => () => {};
+const clientSnapshot = () => true;
+const serverSnapshot = () => false;
+
+type QrData = { session_id: string; qr_data: string };
+type LoginError = { code: "missing" | "identity" | "expired" | "connection" | "server"; detail?: string };
+type InitialResult =
+  | { kind: "qr"; data: QrData }
+  | { kind: "redirect"; url: string }
+  | { kind: "error"; error: LoginError; qr: boolean };
+
+function initialSession(ready: boolean, nonce: string | null, returnUrl: string | null): {
+  state: State; error: LoginError | null; publicKey: string | null;
+} {
+  if (!ready) return { state: "checking", error: null, publicKey: null };
+  if (!nonce || !returnUrl) return { state: "error", error: { code: "missing" }, publicKey: null };
+  try {
+    const publicKey = localStorage.getItem(LOCALSTORAGE_PUBKEY);
+    const hasPrivateKey = Boolean(localStorage.getItem(LOCALSTORAGE_KEY));
+    return { state: publicKey && hasPrivateKey ? "verifying" : "nokey", error: null, publicKey };
+  } catch {
+    // Browser storage restrictions must not prevent signing in with the mobile app.
+    return { state: "nokey", error: null, publicKey: null };
+  }
+}
+
+async function startSession(nonce: string, publicKey: string | null): Promise<InitialResult> {
+  let qr = true;
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(new Error("Request timed out")), REQUEST_TIMEOUT);
+  try {
+    let privateKey: string | null = null;
+    try {
+      if (publicKey && localStorage.getItem(LOCALSTORAGE_PUBKEY) === publicKey) {
+        privateKey = localStorage.getItem(LOCALSTORAGE_KEY);
+      }
+    } catch {}
+    if (publicKey && privateKey) {
+      qr = false;
+      const signatureHex = signPayload(privateKey, `discourse_sso:${nonce}:${publicKey}`);
+      const res = await fetch(`${API_URL}/api/v1/sso/discourse/callback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nonce, public_key_hex: publicKey, signature_hex: signatureHex }),
+        signal: controller.signal,
+      });
+      if (res.status === 404) return { kind: "error", error: { code: "identity" }, qr };
+      if (res.status === 410) return { kind: "error", error: { code: "expired" }, qr };
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch {}
+      if (res.ok && typeof data?.redirect_url === "string" && data.redirect_url) {
+        return { kind: "redirect", url: data.redirect_url };
+      }
+      return { kind: "error", error: { code: "server", detail: typeof data?.detail === "string" ? data.detail : `Error ${res.status}` }, qr };
+    }
+    const res = await fetch(`${API_URL}/api/v1/polis/qr-session?purpose=forum_login`, { signal: controller.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (typeof data?.session_id !== "string" || !data.session_id ||
+        typeof data?.qr_data !== "string" || !data.qr_data) throw new Error("Invalid QR session");
+    return { kind: "qr", data: { session_id: data.session_id, qr_data: data.qr_data } };
+  } catch (err) {
+    return { kind: "error", error: { code: "connection", detail: err instanceof Error ? err.message : "unknown" }, qr };
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+function errorMessage(error: LoginError | null, isEl: boolean): string {
+  switch (error?.code) {
+    case "missing": return isEl ? "Μη έγκυρος σύνδεσμος — λείπουν παράμετροι." : "Invalid link — missing parameters.";
+    case "identity": return isEl ? "Η ταυτότητα δεν βρέθηκε. Ολοκληρώστε πρώτα την εγγραφή." : "Identity not found. Please register first.";
+    case "expired": return isEl ? "Η σύνδεση έληξε. Επιστρέψτε στο forum και δοκιμάστε ξανά." : "Session expired. Go back to the forum and try again.";
+    case "connection": return `${isEl ? "Αδυναμία σύνδεσης" : "Connection failed"}: ${error.detail}`;
+    default: return error?.detail || "";
+  }
+}
 
 export default function SSOVerifyPage() {
   const locale = useLocale();
   const searchParams = useSearchParams();
   const nonce = searchParams.get("nonce");
   const returnUrl = searchParams.get("return_url");
+  const ready = useSyncExternalStore(subscribeHydration, clientSnapshot, serverSnapshot);
+  const [attempt, setAttempt] = useState(0);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.ekklesia.gr";
-  const isEl = locale === "el";
-  const [state, setState] = useState<State>("checking");
-  const [errorMsg, setErrorMsg] = useState("");
-  const [qrState, setQrState] = useState<QrState>("idle");
-  const [qrData, setQrData] = useState<{ session_id: string; qr_data: string } | null>(null);
+  // A changed challenge or retry owns fresh state; SSR never reads browser keys.
+  return <SSOSession key={JSON.stringify([nonce, returnUrl, ready, attempt])}
+    nonce={nonce} returnUrl={returnUrl} ready={ready} isEl={locale === "el"}
+    onRetry={() => setAttempt((value) => value + 1)} />;
+}
+
+function SSOSession({ nonce, returnUrl, ready, isEl, onRetry }: {
+  nonce: string | null; returnUrl: string | null; ready: boolean; isEl: boolean; onRetry: () => void;
+}) {
+  const [initial] = useState(() => initialSession(ready, nonce, returnUrl));
+  const [state, setState] = useState<State>(initial.state);
+  const [error, setError] = useState<LoginError | null>(initial.error);
+  const errorMsg = errorMessage(error, isEl);
+  const [qrState, setQrState] = useState<QrState>(initial.state === "nokey" ? "loading" : "idle");
+  const [qrData, setQrData] = useState<QrData | null>(null);
   const [qrError, setQrError] = useState("");
+  const request = useRef<Promise<InitialResult> | null>(null);
 
   useEffect(() => {
-    if (!nonce || !returnUrl) {
-      setErrorMsg(isEl
-        ? "Μη έγκυρος σύνδεσμος — λείπουν παράμετροι."
-        : "Invalid link — missing parameters.");
-      setState("error");
-      return;
-    }
+    if (!ready || !nonce || !returnUrl || initial.error) return;
+    let active = true;
+    let finished = false;
+    let pollBusy = false;
+    let pollInterval: number | undefined;
+    let expireTimeout: number | undefined;
+    let redirectTimeout: number | undefined;
 
-    const pubKey = localStorage.getItem(LOCALSTORAGE_PUBKEY);
-    const privKey = localStorage.getItem(LOCALSTORAGE_KEY);
-
-    if (!pubKey || !privKey) {
-      setState("nokey");
-      createForumQrSession();
-      return;
-    }
-
-    authenticate(pubKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nonce, returnUrl]);
-
-  useEffect(() => {
-    if (state !== "nokey" || qrState !== "ready" || !qrData || !nonce) return;
-
-    const pollInterval = window.setInterval(async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/v1/polis/qr-session/${qrData.session_id}`);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.status === "authenticated") {
-          window.clearInterval(pollInterval);
-          setQrState("authenticated");
-          await completeForumQrLogin(qrData.session_id);
-        } else if (data.status === "expired") {
-          window.clearInterval(pollInterval);
-          setQrState("expired");
-        }
-      } catch {}
-    }, 2500);
-
-    const expireTimeout = window.setTimeout(() => {
-      setQrState("expired");
-      window.clearInterval(pollInterval);
-    }, 5 * 60 * 1000);
-
-    return () => {
+    function stopPolling() {
       window.clearInterval(pollInterval);
       window.clearTimeout(expireTimeout);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, qrState, qrData, nonce]);
-
-  async function createForumQrSession() {
-    setQrState("loading");
-    setQrData(null);
-    setQrError("");
-    try {
-      const res = await fetch(`${API_URL}/api/v1/polis/qr-session?purpose=forum_login`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setQrData({ session_id: data.session_id, qr_data: data.qr_data });
-      setQrState("ready");
-    } catch (err) {
-      setQrError(err instanceof Error ? err.message : "connection error");
-      setQrState("error");
     }
-  }
 
-  async function completeForumQrLogin(sessionId: string) {
-    try {
-      const res = await fetch(`${API_URL}/api/v1/sso/discourse/qr-complete`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nonce, session_id: sessionId }),
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `HTTP ${res.status}`);
-      }
-      const data = await res.json();
-      if (data.redirect_url) {
-        setState("success");
-        setTimeout(() => { window.location.href = data.redirect_url; }, 800);
-        return;
-      }
-      throw new Error("Missing redirect_url");
-    } catch (err) {
-      setQrError(err instanceof Error ? err.message : "connection error");
-      setQrState("error");
+    function redirect(url: string) {
+      if (!active) return;
+      setState("success");
+      redirectTimeout = window.setTimeout(() => {
+        if (active) window.location.href = url;
+      }, 800);
     }
-  }
 
-  async function authenticate(pubKeyHex: string) {
-    setState("verifying");
-    try {
-      const privKey = localStorage.getItem(LOCALSTORAGE_KEY);
-      if (!privKey) { setState("nokey"); return; }
-
-      // Sign challenge to prove key possession
-      const challenge = `discourse_sso:${nonce}:${pubKeyHex}`;
-      const signatureHex = signPayload(privKey, challenge);
-
-      const res = await fetch(`${API_URL}/api/v1/sso/discourse/callback`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nonce, public_key_hex: pubKeyHex, signature_hex: signatureHex }),
-      });
-
-      if (res.ok) {
+    async function completeForumQrLogin(sessionId: string) {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(new Error("Request timed out")), REQUEST_TIMEOUT);
+      try {
+        const res = await fetch(`${API_URL}/api/v1/sso/discourse/qr-complete`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nonce, session_id: sessionId }),
+          signal: controller.signal,
+        });
+        if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
         const data = await res.json();
-        if (data.redirect_url) {
-          setState("success");
-          setTimeout(() => { window.location.href = data.redirect_url; }, 800);
-          return;
-        }
+        if (typeof data.redirect_url !== "string" || !data.redirect_url) throw new Error("Missing redirect_url");
+        redirect(data.redirect_url);
+      } catch (err) {
+        if (!active) return;
+        setQrError(err instanceof Error ? err.message : "connection error");
+        setQrState("error");
+      } finally {
+        window.clearTimeout(timeout);
       }
-
-      if (res.status === 404) {
-        setErrorMsg(isEl
-          ? "Η ταυτότητα δεν βρέθηκε. Ολοκληρώστε πρώτα την εγγραφή."
-          : "Identity not found. Please register first.");
-        setState("error");
-        return;
-      }
-
-      if (res.status === 410) {
-        setErrorMsg(isEl
-          ? "Η σύνδεση έληξε. Επιστρέψτε στο forum και δοκιμάστε ξανά."
-          : "Session expired. Go back to the forum and try again.");
-        setState("error");
-        return;
-      }
-
-      const text = await res.text();
-      let detail: string;
-      try { detail = JSON.parse(text).detail; } catch { detail = text; }
-      setErrorMsg(detail || `Error ${res.status}`);
-      setState("error");
-    } catch (err) {
-      setErrorMsg(isEl
-        ? `Αδυναμία σύνδεσης: ${err instanceof Error ? err.message : "unknown"}`
-        : `Connection failed: ${err instanceof Error ? err.message : "unknown"}`);
-      setState("error");
     }
-  }
 
-  function handleRetry() {
-    const pk = localStorage.getItem(LOCALSTORAGE_PUBKEY);
-    if (!pk) { setState("nokey"); return; }
-    authenticate(pk);
-  }
+    function startPolling(data: QrData) {
+      const deadline = Date.now() + QR_LIFETIME;
+      function expire() {
+        if (!active || finished) return;
+        finished = true;
+        stopPolling();
+        setQrState("expired");
+      }
+      pollInterval = window.setInterval(async () => {
+        if (!active || finished || pollBusy) return;
+        if (Date.now() >= deadline) { expire(); return; }
+        pollBusy = true;
+        try {
+          const res = await fetch(`${API_URL}/api/v1/polis/qr-session/${data.session_id}`);
+          if (!res.ok) return;
+          const status = await res.json();
+          if (!active || finished) return;
+          if (Date.now() >= deadline) { expire(); return; }
+          if (status.status === "authenticated") {
+            finished = true;
+            stopPolling();
+            setQrState("authenticated");
+            await completeForumQrLogin(data.session_id);
+          } else if (status.status === "expired") {
+            expire();
+          }
+        } catch {} finally { pollBusy = false; }
+      }, 2500);
+      expireTimeout = window.setTimeout(expire, QR_LIFETIME);
+    }
+
+    // Reuse the parsed result across StrictMode replay; never replay a nonce-consuming POST.
+    request.current ??= startSession(nonce, initial.publicKey);
+    void request.current.then((result) => {
+      if (!active) return;
+      if (result.kind === "redirect") redirect(result.url);
+      else if (result.kind === "qr") {
+        setState("nokey");
+        setQrData(result.data);
+        setQrState("ready");
+        startPolling(result.data);
+      } else if (result.qr) {
+        setState("nokey");
+        setQrError(result.error.detail || "connection error");
+        setQrState("error");
+      } else {
+        setError(result.error);
+        setState("error");
+      }
+    });
+    return () => {
+      active = false;
+      stopPolling();
+      window.clearTimeout(redirectTimeout);
+    };
+  }, [ready, nonce, returnUrl, initial]);
 
   return (
     <>
@@ -252,7 +294,7 @@ export default function SSOVerifyPage() {
               )}
               {qrState === "expired" && (
                 <button
-                  onClick={createForumQrSession}
+                  onClick={onRetry}
                   className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold"
                 >
                   {isEl ? "Νέος κωδικός QR" : "New QR code"}
@@ -262,7 +304,7 @@ export default function SSOVerifyPage() {
                 <div className="mt-4 text-xs text-red-600 break-words">
                   {qrError || (isEl ? "Σφάλμα QR σύνδεσης" : "QR login error")}
                   <button
-                    onClick={createForumQrSession}
+                    onClick={onRetry}
                     className="block mx-auto mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold"
                   >
                     {isEl ? "Δοκιμάστε ξανά" : "Try again"}
@@ -369,7 +411,7 @@ export default function SSOVerifyPage() {
               {errorMsg}
             </div>
             <button
-              onClick={handleRetry}
+              onClick={onRetry}
               className="px-6 py-2.5 bg-gray-100 text-gray-600 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
             >
               {isEl ? "Δοκιμάστε ξανά" : "Try again"}

@@ -1,5 +1,24 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-08-30 - Send-Only Mail and SSO Follow-Up
+
+- Owner confirmed no domain inboxes or forum reply-by-email. Newsletter
+  delivery remains outbound through Brevo. PR #262 routes new replies to the
+  existing published external operator contact; configured contact-form
+  recipients remain authoritative. DNS, secrets and production are unchanged.
+- Subscriber handoff from confirmed Redis/Listmonk records into the Brevo
+  campaign list is not established by the repository code: GH#261 records the
+  separate consent-safe inventory/reconciliation gate. No bulk contact write,
+  provider change or real campaign was performed.
+- GH#258 now has 29 deterministic lifecycle tests and zero web lint warnings.
+  Kimi reproduced the original 11 failing cases and independently reviewed the
+  protocol invariants; Sol added edge cases and verified the unchanged Greek
+  desktop/mobile layout. The complete web suite has 69 passing tests.
+- Web rollout, API mail-delivery verification, GH#253 adoption/cutoff, Google
+  testers and full DMARC evidence remain distinct gates. See `docs/STATUS.md`,
+  `docs/TODO.md` and `docs/operations/forum-sso-lifecycle.md` for current state;
+  the entries below retain their historical verification scope.
+
 ## 2026-08-30 - Bounded Completion and Gate Reconciliation
 
 - The active scope is the approved status block 1-8, excluding donation work
@@ -8,8 +27,9 @@
   future backlog are distinguished in `docs/STATUS.md` and `docs/TODO.md`.
 - PR #257 (`9ec3591`) prepares signed personal reads; PR #259 (`54ff2fc`)
   integrates the bounded web cleanup. Neither merge publishes a release.
-- One existing SSO initialization warning remains under GH#258; 19 other
-  warnings were fixed without suppressions or dependency churn.
+- At the PR #259 checkpoint, one SSO initialization warning remained under
+  GH#258; 19 others were fixed without suppressions or dependency churn.
+  That historical checkpoint is superseded by the GH#258 verification above.
 - Personal evaluation migration remains GH#253 through app release, adoption
   and cutoff. No tracker may equate an additive API/mobile patch with completed
   production enforcement.
