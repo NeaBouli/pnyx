@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useLocale } from "next-intl";
 
@@ -28,48 +28,81 @@ export default function QRCodeVoteStub({ billId, purpose = "ticket", onAuthentic
   const [status, setStatus] = useState<SessionStatus>("loading");
   const [session, setSession] = useState<QRSession | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sessionAttempt, setSessionAttempt] = useState(0);
 
-  const createSession = useCallback(async () => {
+  // Bei geändertem billId/purpose sofort in den Ladezustand zurücksetzen
+  const sessionKey = `${billId ?? ""}:${purpose}`;
+  const [prevSessionKey, setPrevSessionKey] = useState(sessionKey);
+  if (prevSessionKey !== sessionKey) {
+    setPrevSessionKey(sessionKey);
     setStatus("loading");
     setSession(null);
     setError(null);
-    try {
-      const params = new URLSearchParams({ purpose });
-      if (billId) params.set("bill_id", billId);
-      const res = await fetch(`${API_BASE}/api/v1/polis/qr-session?${params}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setSession(data);
-      setStatus("ready");
-    } catch (e: any) {
-      setError(e.message || "Connection error");
-      setStatus("error");
-    }
+  }
+
+  // Immer die neueste Callback-Referenz pollen, ohne den Poll-Effekt neu zu starten
+  const onAuthenticatedRef = useRef(onAuthenticated);
+  useEffect(() => {
+    onAuthenticatedRef.current = onAuthenticated;
+  }, [onAuthenticated]);
+
+  // Reines Laden der Session ohne State-Zugriff
+  const fetchSession = useCallback(async (): Promise<QRSession> => {
+    const params = new URLSearchParams({ purpose });
+    if (billId) params.set("bill_id", billId);
+    const res = await fetch(`${API_BASE}/api/v1/polis/qr-session?${params}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
   }, [billId, purpose]);
 
+  const createSession = useCallback(() => {
+    setStatus("loading");
+    setSession(null);
+    setError(null);
+    setSessionAttempt((a) => a + 1);
+  }, []);
+
   useEffect(() => {
-    createSession();
-  }, [createSession]);
+    let cancelled = false;
+    fetchSession().then(
+      (data) => {
+        if (cancelled) return;
+        setSession(data);
+        setStatus("ready");
+      },
+      (e: unknown) => {
+        if (cancelled) return;
+        setError(e instanceof Error && e.message ? e.message : "Connection error");
+        setStatus("error");
+      }
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchSession, sessionAttempt]);
 
   // Poll for authentication status
   useEffect(() => {
     if (status !== "ready" || !session) return;
 
+    let active = true;
+
     const pollInterval = setInterval(async () => {
+      if (!active) return;
       try {
         const res = await fetch(
           `${API_BASE}/api/v1/polis/qr-session/${session.session_id}`
         );
         if (!res.ok) return;
         const data = await res.json();
-
+        if (!active) return;
         if (data.status === "authenticated") {
+          active = false;
           setStatus("authenticated");
           clearInterval(pollInterval);
-          if (onAuthenticated && session) {
-            onAuthenticated(session.session_id);
-          }
+          onAuthenticatedRef.current?.(session.session_id);
         } else if (data.status === "expired") {
+          active = false;
           setStatus("expired");
           clearInterval(pollInterval);
         }
@@ -77,11 +110,14 @@ export default function QRCodeVoteStub({ billId, purpose = "ticket", onAuthentic
     }, POLL_INTERVAL_MS);
 
     const expireTimeout = setTimeout(() => {
+      if (!active) return;
+      active = false;
       setStatus("expired");
       clearInterval(pollInterval);
     }, SESSION_TTL_MS);
 
     return () => {
+      active = false;
       clearInterval(pollInterval);
       clearTimeout(expireTimeout);
     };

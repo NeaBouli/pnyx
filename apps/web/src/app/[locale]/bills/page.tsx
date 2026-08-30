@@ -34,12 +34,13 @@ const PAGE_SIZE = 10;
 export default function BillsPage() {
   const locale = useLocale();
   const searchParams = useSearchParams();
+  const urlStatus = searchParams.get("status") || "";
   const [bills, setBills] = useState<Bill[]>([]);
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState(urlStatus);
   const [levelFilter, setLevelFilter] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
+  const [resolvedParams, setResolvedParams] = useState<BillQueryParams | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [periferiaList, setPeriferiaList] = useState<Periferia[]>([]);
   const [dimosList, setDimosList] = useState<Dimos[]>([]);
@@ -48,14 +49,15 @@ export default function BillsPage() {
   const requestSequence = useRef(0);
   const dimosRequestSequence = useRef(0);
 
-  // Sync URL ?status= param on mount and navigation
-  useEffect(() => {
-    const urlStatus = searchParams.get("status") || "";
+  // Sync URL ?status= param on navigation (render-time adjustment)
+  const [prevUrlStatus, setPrevUrlStatus] = useState(urlStatus);
+  if (prevUrlStatus !== urlStatus) {
+    setPrevUrlStatus(urlStatus);
     if (urlStatus !== statusFilter) {
       setStatusFilter(urlStatus);
       setPage(1);
     }
-  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   useEffect(() => {
     municipal.periferias().then(setPeriferiaList).catch(() => setPeriferiaList([]));
@@ -64,29 +66,21 @@ export default function BillsPage() {
   useEffect(() => {
     const requestId = ++dimosRequestSequence.current;
     if (selectedPeriferia === null) {
-      setDimosList([]);
-      setSelectedDimos(null);
       return;
     }
 
+    let cancelled = false;
     municipal.dimoi(selectedPeriferia)
       .then((rows) => {
-        if (requestId === dimosRequestSequence.current) setDimosList(rows);
+        if (!cancelled && requestId === dimosRequestSequence.current) setDimosList(rows);
       })
       .catch(() => {
-        if (requestId === dimosRequestSequence.current) setDimosList([]);
+        if (!cancelled && requestId === dimosRequestSequence.current) setDimosList([]);
       });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedPeriferia]);
-
-  useEffect(() => {
-    if (levelFilter !== "REGIONAL" && levelFilter !== "MUNICIPAL") {
-      setSelectedPeriferia(null);
-    }
-
-    if (levelFilter !== "MUNICIPAL") {
-      setSelectedDimos(null);
-    }
-  }, [levelFilter]);
 
   const billQueryParams: BillQueryParams = useMemo(() => {
     const params: BillQueryParams = {
@@ -131,23 +125,27 @@ export default function BillsPage() {
 
   useEffect(() => {
     const requestId = ++requestSequence.current;
-    setLoading(true);
+    let cancelled = false;
     ekklesia.getBills(billQueryParams)
       .then(r => {
-        if (requestId !== requestSequence.current) return;
+        if (cancelled || requestId !== requestSequence.current) return;
         setBills(r.data);
         setError(null);
+        setResolvedParams(billQueryParams);
       })
       .catch(() => {
-        if (requestId === requestSequence.current) {
-          setBills([]);
-          setError(locale === "el" ? "Σφάλμα σύνδεσης API" : "API connection error");
-        }
-      })
-      .finally(() => {
-        if (requestId === requestSequence.current) setLoading(false);
+        if (cancelled || requestId !== requestSequence.current) return;
+        setBills([]);
+        setError(locale === "el" ? "Σφάλμα σύνδεσης API" : "API connection error");
+        setResolvedParams(billQueryParams);
       });
+    return () => {
+      cancelled = true;
+    };
   }, [billQueryParams, locale]);
+
+  // Loading solange die Ergebnisse nicht zur aktuellen Abfrage gehören
+  const loading = resolvedParams !== billQueryParams;
 
   const hasNextPage = bills.length > PAGE_SIZE;
   const paginated = bills.slice(0, PAGE_SIZE);
@@ -189,7 +187,17 @@ export default function BillsPage() {
           {LEVEL_FILTERS.map(f => (
             <button
               key={f.key}
-              onClick={() => { setLevelFilter(f.key); setPage(1); }}
+              onClick={() => {
+                setLevelFilter(f.key);
+                setPage(1);
+                if (f.key !== "REGIONAL" && f.key !== "MUNICIPAL") {
+                  setSelectedPeriferia(null);
+                  setDimosList([]);
+                }
+                if (f.key !== "MUNICIPAL") {
+                  setSelectedDimos(null);
+                }
+              }}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                 levelFilter === f.key
                   ? "bg-blue-100 text-blue-700 border border-blue-300"
@@ -210,6 +218,7 @@ export default function BillsPage() {
                   const value = event.target.value ? Number(event.target.value) : null;
                   setSelectedPeriferia(value);
                   setSelectedDimos(null);
+                  if (value === null) setDimosList([]);
                   setPage(1);
                 }}
                 className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-normal text-gray-800">
@@ -299,7 +308,7 @@ export default function BillsPage() {
               <div className="flex justify-between items-start gap-4 mb-3">
                 <div className="flex items-center gap-2">
                   <StatusBadge status={bill.status} locale={locale} />
-                  {(bill as any).source === "DIAVGEIA" && (
+                  {bill.source === "DIAVGEIA" && (
                     <span className="px-2 py-0.5 bg-sky-100 text-sky-700 text-xs font-bold rounded-md">
                       ΔΙΑΥΓΕΙΑ
                     </span>
@@ -329,25 +338,25 @@ export default function BillsPage() {
                 </div>
               )}
 
-              {(bill as any).arweave_tx_id && (
+              {bill.arweave_tx_id && (
                 <a
-                  href={`https://viewblock.io/arweave/tx/${(bill as any).arweave_tx_id}`}
+                  href={`https://viewblock.io/arweave/tx/${bill.arweave_tx_id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
                   className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 bg-purple-50 border border-purple-300 rounded-lg text-xs font-bold text-purple-700 hover:bg-purple-100 transition-colors"
                 >
-                  ⛓ Arweave: {(bill as any).arweave_tx_id.substring(0, 12)}…
+                  ⛓ Arweave: {bill.arweave_tx_id.substring(0, 12)}…
                 </a>
               )}
 
-              {bill.status === "OPEN_END" && (bill as any).consensus_count > 0 && (
+              {bill.status === "OPEN_END" && (bill.consensus_count ?? 0) > 0 && (
                 <div className="mt-3 flex items-center gap-2 text-sm">
                   <span className="text-purple-600 font-bold">
-                    ⚖️ {((bill as any).consensus_score || 0) > 0 ? "+" : ""}{((bill as any).consensus_score || 0).toFixed(1)}
+                    ⚖️ {((bill.consensus_score ?? 0) > 0 ? "+" : "")}{(bill.consensus_score ?? 0).toFixed(1)}
                   </span>
                   <span className="text-gray-400 text-xs">
-                    ({(bill as any).consensus_count} {isEl ? "αξιολογήσεις" : "ratings"})
+                    ({bill.consensus_count} {isEl ? "αξιολογήσεις" : "ratings"})
                   </span>
                 </div>
               )}

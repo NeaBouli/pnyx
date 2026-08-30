@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale } from "next-intl";
+import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
 import { signPayload } from "@/lib/crypto";
 
@@ -18,14 +19,13 @@ export default function SSOVerifyPage() {
   const nonce = searchParams.get("nonce");
   const returnUrl = searchParams.get("return_url");
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.ekklesia.gr";
+  const isEl = locale === "el";
   const [state, setState] = useState<State>("checking");
   const [errorMsg, setErrorMsg] = useState("");
   const [qrState, setQrState] = useState<QrState>("idle");
   const [qrData, setQrData] = useState<{ session_id: string; qr_data: string } | null>(null);
   const [qrError, setQrError] = useState("");
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.ekklesia.gr";
-  const isEl = locale === "el";
 
   useEffect(() => {
     if (!nonce || !returnUrl) {
@@ -192,7 +192,7 @@ export default function SSOVerifyPage() {
         </a>
 
         {/* Logo */}
-        <img src="/pnx.png" alt="ekklesia" className="w-16 h-16 mx-auto mb-4" />
+        <Image src="/pnx.png" alt="ekklesia" width={64} height={64} className="w-16 h-16 mx-auto mb-4" />
         <h1 className="text-xl font-black text-gray-900 mb-1">
           {isEl ? "Σύνδεση στο Forum" : "Forum Login"}
         </h1>
