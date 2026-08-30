@@ -14,6 +14,7 @@ const LOCALSTORAGE_KEY = "ekklesia_private_key";
 const LOCALSTORAGE_PUBKEY = "ekklesia_public_key";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.ekklesia.gr";
 const QR_LIFETIME = 5 * 60 * 1000;
+const REQUEST_TIMEOUT = 15000;
 const subscribeHydration = () => () => {};
 const clientSnapshot = () => true;
 const serverSnapshot = () => false;
@@ -42,6 +43,8 @@ function initialSession(ready: boolean, nonce: string | null, returnUrl: string 
 
 async function startSession(nonce: string, publicKey: string | null): Promise<InitialResult> {
   let qr = true;
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(new Error("Request timed out")), REQUEST_TIMEOUT);
   try {
     let privateKey: string | null = null;
     try {
@@ -56,6 +59,7 @@ async function startSession(nonce: string, publicKey: string | null): Promise<In
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nonce, public_key_hex: publicKey, signature_hex: signatureHex }),
+        signal: controller.signal,
       });
       if (res.status === 404) return { kind: "error", error: { code: "identity" }, qr };
       if (res.status === 410) return { kind: "error", error: { code: "expired" }, qr };
@@ -67,7 +71,7 @@ async function startSession(nonce: string, publicKey: string | null): Promise<In
       }
       return { kind: "error", error: { code: "server", detail: typeof data?.detail === "string" ? data.detail : `Error ${res.status}` }, qr };
     }
-    const res = await fetch(`${API_URL}/api/v1/polis/qr-session?purpose=forum_login`);
+    const res = await fetch(`${API_URL}/api/v1/polis/qr-session?purpose=forum_login`, { signal: controller.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (typeof data?.session_id !== "string" || !data.session_id ||
@@ -75,6 +79,8 @@ async function startSession(nonce: string, publicKey: string | null): Promise<In
     return { kind: "qr", data: { session_id: data.session_id, qr_data: data.qr_data } };
   } catch (err) {
     return { kind: "error", error: { code: "connection", detail: err instanceof Error ? err.message : "unknown" }, qr };
+  } finally {
+    window.clearTimeout(timeout);
   }
 }
 
@@ -137,11 +143,14 @@ function SSOSession({ nonce, returnUrl, ready, isEl, onRetry }: {
     }
 
     async function completeForumQrLogin(sessionId: string) {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(new Error("Request timed out")), REQUEST_TIMEOUT);
       try {
         const res = await fetch(`${API_URL}/api/v1/sso/discourse/qr-complete`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ nonce, session_id: sessionId }),
+          signal: controller.signal,
         });
         if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
         const data = await res.json();
@@ -151,6 +160,8 @@ function SSOSession({ nonce, returnUrl, ready, isEl, onRetry }: {
         if (!active) return;
         setQrError(err instanceof Error ? err.message : "connection error");
         setQrState("error");
+      } finally {
+        window.clearTimeout(timeout);
       }
     }
 

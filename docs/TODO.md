@@ -13,8 +13,8 @@ below only as historical context; their unchecked boxes are not current tasks.
   typecheck and build pass; 19 warnings removed without rule suppression.
 - [ ] Roll out PR #259 only through a separately approved, reversible Web-only
   release and live verification. Repository integration is not deployment.
-- [x] GH#258: add 26 SSO lifecycle tests, fix stale/duplicate session work and
-  remove the final initialization warning without suppression. Web 66 tests,
+- [x] GH#258: add 29 SSO lifecycle tests, fix stale/duplicate session work and
+  remove the final initialization warning without suppression. Web 69 tests,
   lint, typecheck, build and audit pass; Kimi review and Sol browser validation
   complete. Server signatures, nonce consumption and eligibility are unchanged.
 - [ ] Include GH#258 in a separately authorized reversible Web rollout with

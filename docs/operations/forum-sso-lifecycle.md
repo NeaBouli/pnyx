@@ -25,6 +25,10 @@ The API-returned redirect and app link retain their existing trust boundary.
   neither signed callbacks nor QR creation are duplicated by that replay.
 - Polls are serial and completion is latched once. Five-minute expiry checks
   include a wall-clock deadline so delayed responses cannot revive an old QR.
+- Initial and QR completion requests have a 15-second abort deadline, including
+  response-body reads, so a stalled network exposes the existing retry UI.
+  AbortController plus a cleared timer avoids requiring newer AbortSignal
+  static helpers. A timeout never bypasses server nonce-consumption checks.
 - Existing markup, CSS, app links and the four equal 2-by-2 download tiles are
   unchanged. No new login method, account policy or voter eligibility is added.
 - JSDOM 26.1.0 is pinned as a test-only dependency compatible with the existing
@@ -34,7 +38,8 @@ The API-returned redirect and app link retain their existing trust boundary.
 The first 19 deterministic DOM tests produced 11 failures against the unchanged
 page before the patch. Kimi independently reproduced that baseline and verified
 the fix. Sol added the review's additional malformed-response, StrictMode
-polling and retry-race cases: 26 lifecycle tests / 66 web tests pass, alongside
+polling and retry-race cases. The three subsequent stalled-request regressions
+failed before the request-deadline fix; 29 lifecycle tests / 69 web tests pass, alongside
 lint (zero warnings), typecheck, build and npm audit (zero findings).
 
 Existing backend SSO tests (27) verify canonical callback targets, signatures,

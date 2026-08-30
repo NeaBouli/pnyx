@@ -17,10 +17,12 @@ does not imply a new deployment or app publication.
   Kimi and Sol reviewed the patch; CodeRabbit was rate-limited, not a completed
   review. Main CI and Security Audit passed after both code merges.
 
-- GH#258 now has 26 deterministic SSO lifecycle regressions covering hydration,
+- GH#258 now has 29 deterministic SSO lifecycle regressions covering hydration,
   missing/changed parameters, browser keys, StrictMode replay, retries, expiry
-  and stale callbacks/redirects. The client fix preserves the server protocol
-  and eligibility policy. Web tests (66), lint (zero warnings), typecheck,
+  and stale callbacks/redirects. Stalled initial and QR completion requests
+  return to the existing retry UI after a 15-second request deadline.
+  The client fix preserves the server protocol
+  and eligibility policy. Web tests (69), lint (zero warnings), typecheck,
   build and npm audit (zero findings) pass. Kimi independently reproduced the
   original 11 failing cases and reviewed the fix; Sol added the suggested
   edge cases and verified Greek desktop/mobile layouts. This code verification

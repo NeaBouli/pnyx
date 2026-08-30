@@ -10,10 +10,10 @@
   campaign list is not established by the repository code: GH#261 records the
   separate consent-safe inventory/reconciliation gate. No bulk contact write,
   provider change or real campaign was performed.
-- GH#258 now has 26 deterministic lifecycle tests and zero web lint warnings.
+- GH#258 now has 29 deterministic lifecycle tests and zero web lint warnings.
   Kimi reproduced the original 11 failing cases and independently reviewed the
   protocol invariants; Sol added edge cases and verified the unchanged Greek
-  desktop/mobile layout. The complete web suite has 66 passing tests.
+  desktop/mobile layout. The complete web suite has 69 passing tests.
 - Web rollout, API mail-delivery verification, GH#253 adoption/cutoff, Google
   testers and full DMARC evidence remain distinct gates. See `docs/STATUS.md`,
   `docs/TODO.md` and `docs/operations/forum-sso-lifecycle.md` for current state;
@@ -27,8 +27,9 @@
   future backlog are distinguished in `docs/STATUS.md` and `docs/TODO.md`.
 - PR #257 (`9ec3591`) prepares signed personal reads; PR #259 (`54ff2fc`)
   integrates the bounded web cleanup. Neither merge publishes a release.
-- One existing SSO initialization warning remains under GH#258; 19 other
-  warnings were fixed without suppressions or dependency churn.
+- At the PR #259 checkpoint, one SSO initialization warning remained under
+  GH#258; 19 others were fixed without suppressions or dependency churn.
+  That historical checkpoint is superseded by the GH#258 verification above.
 - Personal evaluation migration remains GH#253 through app release, adoption
   and cutoff. No tracker may equate an additive API/mobile patch with completed
   production enforcement.

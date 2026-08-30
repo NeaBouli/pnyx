@@ -52,6 +52,12 @@ describe("forum SSO lifecycle", () => {
     localStorage.setItem("ekklesia_private_key", "synthetic-private");
   }
 
+  function stalledRequest(_url: string, options?: RequestInit): Promise<Response> {
+    return new Promise((_resolve, reject) => {
+      options?.signal?.addEventListener("abort", () => reject(options.signal!.reason), { once: true });
+    });
+  }
+
   beforeEach(() => {
     vi.useFakeTimers();
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
@@ -117,6 +123,37 @@ describe("forum SSO lifecycle", () => {
     fetchMock.mockResolvedValue(response({}, status));
     await render();
     expect(container.textContent).toContain(status === 404 ? "Identity not found" : "Session expired");
+  });
+
+  it.each([false, true])("offers retry after a stalled initial request (browser keys: %s)", async (signed) => {
+    if (signed) keys();
+    fetchMock.mockImplementationOnce(stalledRequest).mockResolvedValue(response(signed
+      ? { redirect_url: "#authenticated" }
+      : { session_id: "session-B", qr_data: "ekklesia://forum?session=B" }));
+    await render(true);
+    await tick(15000);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(container.textContent).toContain("Try again");
+    await click("Try again");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(container.textContent).not.toContain("Request timed out");
+    if (signed) expect(container.textContent).toContain("Login successful");
+    else expect(container.querySelector("[data-qr]")).not.toBeNull();
+  });
+
+  it("offers retry when QR completion stalls after authentication", async () => {
+    fetchMock.mockImplementation((url: string, options?: RequestInit) => {
+      if (url.includes("purpose=")) return Promise.resolve(response({ session_id: "session-A", qr_data: "ekklesia://forum" }));
+      if (url.includes("qr-complete")) return stalledRequest(url, options);
+      return Promise.resolve(response({ status: "authenticated" }));
+    });
+    await render();
+    await tick(17500);
+    expect(container.textContent).toContain("Try again");
+    expect(fetchMock.mock.calls.filter((call) => call[0].includes("qr-complete"))).toHaveLength(1);
+    await click("Try again");
+    expect(container.querySelector("[data-qr]")).not.toBeNull();
+    expect(window.location.hash).toBe("");
   });
 
   it("creates the existing forum QR purpose and supports failed-creation retry", async () => {
