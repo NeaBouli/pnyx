@@ -7,9 +7,8 @@ does not imply a new deployment or app publication.
 ## Current integration and release gates
 
 - The bounded web cleanup is merged in [PR #259](https://github.com/NeaBouli/pnyx/pull/259)
-  (`54ff2fc`). It removes 19 of 20 lint warnings while preserving the
-  existing SSO initialization. The remaining warning is explicitly tracked in
-  GH#258; it requires dedicated authentication lifecycle tests, not suppression.
+  (`54ff2fc`). It removed 19 of 20 lint warnings while preserving the
+  existing SSO initialization for the dedicated GH#258 follow-up below.
   QR session cleanup additionally rejects stale/expired poll completions and
   prevents duplicate authentication callbacks. Web tests (40), typecheck and
   production build pass. Synthetic browser checks cover filters and QR
@@ -17,6 +16,26 @@ does not imply a new deployment or app publication.
   live-rollout claim.
   Kimi and Sol reviewed the patch; CodeRabbit was rate-limited, not a completed
   review. Main CI and Security Audit passed after both code merges.
+
+- GH#258 now has 26 deterministic SSO lifecycle regressions covering hydration,
+  missing/changed parameters, browser keys, StrictMode replay, retries, expiry
+  and stale callbacks/redirects. The client fix preserves the server protocol
+  and eligibility policy. Web tests (66), lint (zero warnings), typecheck,
+  build and npm audit (zero findings) pass. Kimi independently reproduced the
+  original 11 failing cases and reviewed the fix; Sol added the suggested
+  edge cases and verified Greek desktop/mobile layouts. This code verification
+  is not a new production-login canary. See the
+  [separate Web rollout gate](operations/forum-sso-lifecycle.md).
+
+- Send-only mail intent is confirmed by the owner. The reply-routing patch in
+  [PR #262](https://github.com/NeaBouli/pnyx/pull/262) retains Brevo senders,
+  lists, DOI and schedules, routes new newsletter replies to the published
+  external operator contact, and preserves explicit contact-form recipient
+  overrides. No mailbox, DNS or provider configuration is changed. Production
+  override/delivery verification is still required before declaring it live.
+  [GH#261](https://github.com/NeaBouli/pnyx/issues/261) separately tracks the
+  unverified Redis/Listmonk-to-Brevo subscriber handoff; campaign implementation
+  alone is not evidence of end-to-end subscriber delivery.
 
 - GH#253: signed personal evaluation reads and mobile integration are merged
   in [PR #257](https://github.com/NeaBouli/pnyx/pull/257) (`9ec3591`).
@@ -45,8 +64,9 @@ does not imply a new deployment or app publication.
   recorded in the local bridge, not inferred from the email allowlist.
 - DMARC: the private catalog still contains one report / one passing message,
   not a complete monthly evidence set. Review starts no earlier than September
-  1 and waits for delayed August 31 reports, sender-path evidence and inbound
-  mail intent. [Observation gate](operations/dmarc-observation-gate.md), NEA-422.
+  1 and waits for delayed August 31 reports and sender-path evidence. Inbound
+  intent is now confirmed as send-only; actual routing must still be verified.
+  [Observation gate](operations/dmarc-observation-gate.md), NEA-422.
 - No production, database, DNS, secret, IAM or Google Play publication change
   is part of this integration review.
 
@@ -55,8 +75,9 @@ does not imply a new deployment or app publication.
 - GitHub #253 is active staged security migration work.
 - GitHub #216-#223 (parallel Minima V2) and #138/#141 (gov.gr identity) remain
   future gated work, not regressions in the running V1 release.
-- Linear NEA-262 is a weekly-newsletter proposal, distinct from the completed
-  monthly newsletter NEA-160. No schedule change is implied.
+- Linear NEA-262 is a weekly-newsletter proposal, distinct from the implemented
+  monthly scheduler NEA-160 and subscriber-delivery follow-up GH#261.
+  No schedule change is implied.
 - Linear NEA-185 and NEA-167 retain their full independent demo-node scope;
   existing public demo pages do not prove that scope complete.
 - Linear NEA-113 is historical federation design backlog. New V2 decisions

@@ -13,10 +13,19 @@ below only as historical context; their unchecked boxes are not current tasks.
   typecheck and build pass; 19 warnings removed without rule suppression.
 - [ ] Roll out PR #259 only through a separately approved, reversible Web-only
   release and live verification. Repository integration is not deployment.
-- [ ] GH#258: remove the one retained SSO initialization lint warning only
-  with dedicated missing-parameter, hydration, key-presence and QR/auth tests.
-  The other 19 warnings are addressed by the bounded web cleanup; rules remain
-  enabled. No production auth redesign is implied.
+- [x] GH#258: add 26 SSO lifecycle tests, fix stale/duplicate session work and
+  remove the final initialization warning without suppression. Web 66 tests,
+  lint, typecheck, build and audit pass; Kimi review and Sol browser validation
+  complete. Server signatures, nonce consumption and eligibility are unchanged.
+- [ ] Include GH#258 in a separately authorized reversible Web rollout with
+  live verification. See `docs/operations/forum-sso-lifecycle.md`.
+- [x] Confirm send-only owner intent and implement external newsletter reply
+  routing (PR #262), keeping Brevo senders, lists, DOI and schedules unchanged.
+- [ ] Verify contact-recipient configuration and controlled mail delivery in a
+  separately approved API rollout; no domain inbox, Null MX or provider change
+  is implied. See `docs/operations/dmarc-observation-gate.md`.
+- [ ] GH#261: inventory the confirmed-subscriber Redis/Listmonk-to-Brevo handoff,
+  with consent/suppression safeguards and no bulk import or resubscription.
 
 - [x] Merge and test signed personal-read preparation (PR #257, `9ec3591`).
 - [ ] Complete GH#253 in stages: verify API
@@ -39,7 +48,7 @@ below only as historical context; their unchecked boxes are not current tasks.
   and official F-Droid package.
 - [x] Monthly Brevo newsletter implemented and scheduled for the first day of
   each month at 09:00 scheduler time (Linear `NEA-160` is superseded by this
-  state).
+  implementation state; end-to-end subscriber delivery remains GH#261).
 - [x] Donation intake is PII-free, donations-only and fail-closed.
 - [x] Public donation links and public wallet/account identifiers removed.
 - [x] GitHub PR checks and merge for the 2026-07-12 readiness block (#131,
@@ -49,9 +58,9 @@ below only as historical context; their unchecked boxes are not current tasks.
 - [ ] Complete the DMARC observation window and collect representative evidence
   for every active sending path before proposing an enforcement policy. The
   private report catalog and sender inventory exist; review may begin on
-  2026-09-01 but must wait for delayed reports covering 2026-08-31, and the
-  intended inbound-mail/MX policy must be confirmed first (Linear `NEA-422`;
-  no DNS change authorized).
+  2026-09-01 but must wait for delayed reports covering 2026-08-31. Owner intent
+  is send-only; actual sender/reply routing still needs verification (Linear
+  `NEA-422`; no DNS change authorized).
 - [x] Reconcile the production Docker/containerd image inventory without prune,
   image deletion or daemon restart; retain a recurrence check after future
   daemon restarts (GitHub #211).
