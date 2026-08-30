@@ -71,6 +71,7 @@ export interface Bill {
   dimos_id?: number | null;
   consensus_score?: number | null;
   consensus_count?: number | null;
+  arweave_tx_id?: string | null;
 }
 
 export interface DivergenceResult {

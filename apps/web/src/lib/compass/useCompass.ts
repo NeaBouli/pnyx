@@ -4,7 +4,7 @@
  */
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import type { CompassProfile, CompassModel, CompassResult } from "./types";
 import { createEmptyProfile, seedFromVAA, recordBillVote, computeResult, getDataPointCount } from "./engine";
 import { loadProfile, saveProfile, clearProfile as clearStorage } from "./storage";
@@ -34,9 +34,37 @@ async function getPartyData(): Promise<PartyData | null> {
   }
 }
 
+/**
+ * Leitet das Kompass-Ergebnis aus Profil und Parteidaten ab.
+ * Rein berechnend — identisch zur bisherigen Effekt-Logik.
+ */
+export function deriveCompassResult(
+  profile: CompassProfile,
+  partyData: PartyData | null
+): CompassResult | null {
+  if (!profile.selectedModel || getDataPointCount(profile) === 0) {
+    return null;
+  }
+
+  if (profile.selectedModel === "party-match" && partyData) {
+    const partyPositions: Record<string, Record<number, number>> = {};
+    const partyMeta: Record<string, { id: number; nameEl: string; colorHex: string }> = {};
+    for (const [abbr, data] of Object.entries(partyData.parties)) {
+      const numPositions: Record<number, number> = {};
+      for (const [k, v] of Object.entries(data.positions)) {
+        numPositions[Number(k)] = v;
+      }
+      partyPositions[abbr] = numPositions;
+      partyMeta[abbr] = { id: data.id, nameEl: data.nameEl, colorHex: data.colorHex };
+    }
+    return computeResult(profile, "party-match", partyPositions, partyMeta);
+  }
+
+  return computeResult(profile, profile.selectedModel);
+}
+
 export function useCompass() {
   const [profile, setProfile] = useState<CompassProfile>(createEmptyProfile());
-  const [result, setResult] = useState<CompassResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [partyData, setPartyData] = useState<PartyData | null>(null);
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -69,29 +97,11 @@ export function useCompass() {
     }, 300);
   }, [getPrivateKey]);
 
-  // Ergebnis bei Profil/Modell-Änderung berechnen
-  useEffect(() => {
-    if (!profile.selectedModel || getDataPointCount(profile) === 0) {
-      setResult(null);
-      return;
-    }
-
-    if (profile.selectedModel === "party-match" && partyData) {
-      const partyPositions: Record<string, Record<number, number>> = {};
-      const partyMeta: Record<string, { id: number; nameEl: string; colorHex: string }> = {};
-      for (const [abbr, data] of Object.entries(partyData.parties)) {
-        const numPositions: Record<number, number> = {};
-        for (const [k, v] of Object.entries(data.positions)) {
-          numPositions[Number(k)] = v;
-        }
-        partyPositions[abbr] = numPositions;
-        partyMeta[abbr] = { id: data.id, nameEl: data.nameEl, colorHex: data.colorHex };
-      }
-      setResult(computeResult(profile, "party-match", partyPositions, partyMeta));
-    } else {
-      setResult(computeResult(profile, profile.selectedModel));
-    }
-  }, [profile, partyData]);
+  // Ergebnis bei Profil/Modell-Änderung berechnen (abgeleitet, kein Effekt)
+  const result = useMemo(
+    () => deriveCompassResult(profile, partyData),
+    [profile, partyData]
+  );
 
   // ─── Actions ──────────────────────────────────────────────────────────
 
@@ -124,7 +134,6 @@ export function useCompass() {
     clearStorage();
     const empty = createEmptyProfile();
     setProfile(empty);
-    setResult(null);
   }, []);
 
   return {

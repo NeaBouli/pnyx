@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "next-intl";
-import { municipal, type ConsensusRepresentationResponse } from "@/lib/api";
+import { municipal, type ConsensusRepresentationResponse, type ConsensusRepresentationQuery } from "@/lib/api";
 import PublicDataNav from "@/components/PublicDataNav";
 
 interface Periferia {
@@ -31,7 +31,7 @@ export default function MunicipalPage() {
 
   const [loading, setLoading] = useState(true);
   const [dimoiLoading, setDimoiLoading] = useState(false);
-  const [consensusLoading, setConsensusLoading] = useState(true);
+  const [resolvedConsensusParams, setResolvedConsensusParams] = useState<ConsensusRepresentationQuery | null>(null);
   const [dimoiError, setDimoiError] = useState<string | null>(null);
   const [consensusError, setConsensusError] = useState<string | null>(null);
   const [consensus, setConsensus] = useState<ConsensusRepresentationResponse | null>(null);
@@ -77,8 +77,8 @@ export default function MunicipalPage() {
     }
   }
 
-  useEffect(() => {
-    const params =
+  const consensusParams: ConsensusRepresentationQuery = useMemo(
+    () =>
       scope === "municipal"
         ? selectedDimos !== null && selectedPeriferia !== null
           ? { dimos_id: selectedDimos, periferia_id: selectedPeriferia }
@@ -87,18 +87,35 @@ export default function MunicipalPage() {
             : {}
         : scope === "regional" && selectedPeriferia !== null
           ? { periferia_id: selectedPeriferia }
-          : {};
+          : {},
+    [scope, selectedPeriferia, selectedDimos],
+  );
 
-    setConsensusLoading(true);
-    setConsensusError(null);
+  // Loading solange die Daten nicht zur aktuellen Abfrage gehören
+  const consensusLoading = resolvedConsensusParams !== consensusParams;
 
-    municipal.getConsensusRepresentation(params)
-      .then((data) => setConsensus(data))
-      .catch(() => setConsensusError(
-        localeEl ? "Αποτυχία λήψης δεδομένων συμφωνίας." : "Failed to load consensus representation.",
-      ))
-      .finally(() => setConsensusLoading(false));
-  }, [scope, selectedPeriferia, selectedDimos, localeEl]);
+  useEffect(() => {
+    let cancelled = false;
+
+    municipal.getConsensusRepresentation(consensusParams)
+      .then((data) => {
+        if (cancelled) return;
+        setConsensus(data);
+        setConsensusError(null);
+        setResolvedConsensusParams(consensusParams);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setConsensusError(
+          localeEl ? "Αποτυχία λήψης δεδομένων συμφωνίας." : "Failed to load consensus representation.",
+        );
+        setResolvedConsensusParams(consensusParams);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [consensusParams, localeEl]);
 
   const setScopeAndKeepSelection = (nextScope: Scope) => {
     setScope(nextScope);
