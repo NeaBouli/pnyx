@@ -14,6 +14,7 @@ from routers import newsletter, newsletter_admin
 
 @pytest.fixture
 def consent_redis(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
+    """Keep consent tests offline; fail immediately on an unexpected HTTP client."""
     store = MagicMock()
     store.get = AsyncMock(return_value=None)
     store.hget = AsyncMock(return_value=None)
@@ -32,6 +33,7 @@ def consent_redis(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
 async def test_confirmation_preserves_original_preferences(
     consent_redis: MagicMock, frequency: str, language: str,
 ) -> None:
+    """A DOI confirmation retains the original opt-in choices verbatim."""
     raw = json.dumps({"email": "consent@example.org", "frequency": frequency,
                       "language": language, "subscriber_type": "citizens",
                       "topics": {"active_votes": False, "vote_results": True}})
@@ -43,6 +45,7 @@ async def test_confirmation_preserves_original_preferences(
 
 
 async def test_expired_confirmation_does_not_activate_any_contact(consent_redis: MagicMock) -> None:
+    """Missing pending state is a rejection, never reconstructed consent."""
     result = await newsletter.confirm_subscription("expired-synthetic-token")
     assert result.status_code == 410
     consent_redis.hset.assert_not_awaited()
@@ -50,6 +53,7 @@ async def test_expired_confirmation_does_not_activate_any_contact(consent_redis:
 
 
 async def test_sequential_confirmation_replay_is_rejected(consent_redis: MagicMock) -> None:
+    """Once absent from pending state, a token cannot confirm again sequentially."""
     consent_redis.get.side_effect = [json.dumps({"email": "consent@example.org"}), None]
     assert (await newsletter.confirm_subscription("synthetic-token")).status_code == 200
     assert (await newsletter.confirm_subscription("synthetic-token")).status_code == 410
@@ -60,6 +64,7 @@ async def test_sequential_confirmation_replay_is_rejected(consent_redis: MagicMo
 async def test_confirmation_write_failure_keeps_pending_token(
     consent_redis: MagicMock,
 ) -> None:
+    """A failed consent write must not destroy the subscriber's pending proof."""
     consent_redis.get.return_value = json.dumps({"email": "consent@example.org"})
     consent_redis.hset.side_effect = RuntimeError("synthetic storage failure")
     with pytest.raises(RuntimeError, match="synthetic storage failure"):
@@ -70,6 +75,7 @@ async def test_confirmation_write_failure_keeps_pending_token(
 async def test_optional_listmonk_failure_does_not_erase_confirmed_consent(
     consent_redis: MagicMock, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """An optional provider outage cannot discard the local confirmation record."""
     raw = json.dumps({"email": "consent@example.org", "frequency": "monthly", "language": "el"})
     consent_redis.get.return_value = raw
     monkeypatch.setattr(newsletter, "LISTMONK_PW", "synthetic-test-password")
@@ -83,6 +89,7 @@ async def test_optional_listmonk_failure_does_not_erase_confirmed_consent(
 async def test_existing_confirmation_does_not_replace_preferences_or_send(
     consent_redis: MagicMock,
 ) -> None:
+    """Repeating signup is not permission to overwrite an existing opt-in."""
     consent_redis.hget.return_value = json.dumps({"frequency": "monthly", "language": "el"})
     result = await newsletter.subscribe(newsletter.SubscribeRequest(email="consent@example.org"))
     assert result["message"] == "Already subscribed."
@@ -95,6 +102,7 @@ async def test_existing_confirmation_does_not_replace_preferences_or_send(
 async def test_invalid_preferences_never_send_or_store(
     consent_redis: MagicMock, field: str, value: str,
 ) -> None:
+    """Reject unsupported preference values before any mail or consent mutation."""
     req = newsletter.SubscribeRequest(email="consent@example.org", **{field: value})
     with pytest.raises(HTTPException) as exc:
         await newsletter.subscribe(req)
@@ -104,6 +112,7 @@ async def test_invalid_preferences_never_send_or_store(
 
 
 async def test_admin_send_requires_explicit_confirmation(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An unconfirmed admin request has no Brevo or Telegram side effects."""
     provider = AsyncMock(side_effect=AssertionError("Unexpected provider call"))
     telegram = AsyncMock(side_effect=AssertionError("Unexpected Telegram call"))
     monkeypatch.setattr(newsletter_admin, "_brevo_request", provider)
