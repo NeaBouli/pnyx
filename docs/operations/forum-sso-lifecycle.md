@@ -52,14 +52,23 @@ display, the 2-by-2 equal-size download grid, missing-parameter retry and browse
 console errors. The 390px viewport had no horizontal overflow. Test fixtures
 never proxy requests to production or use an actual citizen identity.
 
-## Separate Web Rollout Gate
+## Rollout Receipt and Remaining Canary
 
-Repository integration does not deploy this patch. A later authorized Web-only
+PR #259/#263 were deployed as Web `c935018` on 2026-08-30 at 09:49 UTC.
+The anonymous forum redirect, missing-parameter/retry state, bills/results and
+detail navigation passed live checks. Existing 390px mobile-layout evidence
+was retained; no new real-device identity completion is claimed. A voluntary
+smartphone login/logout canary is still pending for this release.
+See [component release receipt](WEB_MAIL_RELEASE_2026-08-30.md).
+
+## Repeatable Web Rollout Gate
+
+Repository integration alone does not deploy a patch. Any later authorized Web-only
 rollout must:
 
 1. Record the exact merged commit, green required checks and security results.
    Inventory the currently deployed Web image and retain its digest/rollback
-   tag. Include the pending PR #259 lifecycle changes in the release manifest.
+   tag. Include all intended lifecycle changes in the release manifest.
 2. Keep API, forum, database, DNS, secrets, IAM, app artifacts and Google Play
    unchanged. No automatic auth-config or personal-evaluation cutoff changes.
 3. Verify the anonymous forum-to-verification-page redirect and missing-link

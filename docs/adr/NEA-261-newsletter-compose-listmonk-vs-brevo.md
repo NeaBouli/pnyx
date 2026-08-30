@@ -1,10 +1,23 @@
 # ADR: NEA-261 — Newsletter Compose (Listmonk vs Brevo)
 
 - **Date:** 2026-05-23
-- **Status:** Proposed / Blocked
+- **Status:** Historical proposal; implementation/evidence update below
 - **Linear:** NEA-261
 
-## Current State
+## 2026-08-30 Reconciliation
+
+The following May proposal is retained as history, not the current inventory.
+Dashboard compose and admin preview/draft/send now exist and use Brevo;
+the monthly scheduler also uses Brevo. This does not prove subscriber delivery.
+The August read-only inventory found a consent-to-audience gap and an unreachable
+configured Listmonk endpoint. Listmonk's database is not empty (two subscribers,
+one list, two memberships). No migration or provider decision was made.
+
+Current evidence, consent/suppression gates and repair proposal:
+[GH#261 delivery audit](../operations/newsletter-delivery-audit.md).
+GitHub #261 is distinct from this historical Linear NEA-261 identifier.
+
+## Historical State (2026-05-23)
 
 - **Subscriptions:** Brevo API (`apps/api/routers/newsletter.py`) — confirmation emails, double opt-in
 - **Monthly Auto-Report:** APScheduler → `send_monthly_report()` via Brevo

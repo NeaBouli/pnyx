@@ -51,8 +51,15 @@ policy for `ekklesia.gr`. It does not authorize a DNS change.
 
 ## Reply-Routing Release Gate
 
-The code change is API-only preparation, not proof of deployed behavior.
-Before a separately authorized rollout:
+The bounded API-only mail overlay was deployed on 2026-08-30 at 09:51 UTC.
+The five PR #262 file hashes and the configured external operator recipient
+were verified; original API base layers/configuration and other services were
+retained. Eight mocked payload tests and the live health/HTTP checks passed.
+No real mail was sent and delivery/header evidence is still pending.
+See [release receipt](WEB_MAIL_RELEASE_2026-08-30.md) and
+[confirmed subscriber handoff findings](newsletter-delivery-audit.md).
+
+For any later separately authorized rollout:
 
 1. Verify the exact merged commit and green API/security checks. Record the
    current API image digest and a rollback tag; do not alter other services.
