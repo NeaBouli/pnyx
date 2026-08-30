@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from dependencies import verify_admin_key
+from services.mail_policy import OPERATOR_EMAIL
 from services.telegram_community import _send as tg_send, TOPICS
 
 logger = logging.getLogger(__name__)
@@ -124,6 +125,7 @@ async def newsletter_create_draft(req: DraftRequest, _auth: bool = Depends(verif
         "name": name,
         "subject": req.subject,
         "sender": SENDER,
+        "replyTo": OPERATOR_EMAIL,
         "type": "classic",
         "recipients": {"listIds": [LIST_ID]},
         "htmlContent": wrapped,

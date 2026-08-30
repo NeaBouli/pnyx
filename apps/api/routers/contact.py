@@ -14,6 +14,7 @@ import redis.asyncio as aioredis
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr, field_validator
 from ip_utils import ip_reference, rate_limit_key_for_ip, redis_fixed_window_limit
+from services.mail_policy import OPERATOR_EMAIL
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +87,7 @@ class NgoContactRequest(BaseModel):
 # ---------------------------------------------------------------------------
 # Endpoint
 # ---------------------------------------------------------------------------
-RECIPIENT = os.getenv("CONTACT_RECIPIENT", "noreply@ekklesia.gr")
+RECIPIENT = os.getenv("CONTACT_RECIPIENT", OPERATOR_EMAIL)
 
 
 @router.post("/ngo")

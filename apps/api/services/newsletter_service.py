@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
 from services.bill_visibility import public_bill_filter
+from services.mail_policy import OPERATOR_EMAIL, operator_reply_to
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,7 @@ async def send_transactional(to_email: str, subject: str, html_body: str) -> boo
     result = await _brevo_post("smtp/email", {
         "sender": SENDER,
         "to": [{"email": to_email}],
+        "replyTo": operator_reply_to(),
         "subject": subject,
         "htmlContent": _wrap(html_body),
     })
@@ -228,6 +230,7 @@ async def send_monthly_report(db: AsyncSession) -> bool:
         "name": f"Monthly Report {month_name}",
         "subject": f"ekklesia.gr — Μηνιαία Αναφορά {month_name}",
         "sender": SENDER,
+        "replyTo": OPERATOR_EMAIL,
         "type": "classic",
         "recipients": {"listIds": [LIST_ID]},
         "htmlContent": _wrap(body),

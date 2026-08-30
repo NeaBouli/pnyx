@@ -14,6 +14,8 @@ from pydantic import BaseModel, EmailStr
 import httpx
 import redis.asyncio as aioredis
 
+from services.mail_policy import operator_reply_to
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/newsletter", tags=["MOD-19 Newsletter"])
 
@@ -152,6 +154,7 @@ async def subscribe(req: SubscribeRequest):
             }, json={
                 "sender": {"name": "ekklesia Newsletter", "email": "newsletter@ekklesia.gr"},
                 "to": [{"email": req.email}],
+                "replyTo": operator_reply_to(),
                 "subject": subject,
                 "htmlContent": body,
             })
