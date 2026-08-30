@@ -12,7 +12,7 @@ import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { fetchPoliticianQuestions, fetchPoliticianScores, submitEvaluation, fetchMyEvaluation } from "../lib/api";
 import type { EvalQuestion, EvalScores, MyEvaluation } from "../lib/api";
-import { loadKeypair, loadNullifier, signEvaluationV2 } from "../lib/crypto-native";
+import { loadKeypair, loadNullifier, signEvaluationRead, signEvaluationV2 } from "../lib/crypto-native";
 import { isDemoMode } from "../lib/demo";
 import { colors } from "../theme";
 
@@ -77,7 +77,13 @@ export default function EvaluatePoliticianScreen({ route, navigation }: Props) {
         // Pre-fill if citizen already evaluated
         if (nullifier) {
           try {
-            const myEval = await fetchMyEvaluation(adaNumber, nullifier);
+            const keypair = await loadKeypair();
+            if (!keypair) throw new Error("No verified identity key available.");
+            const timestampMs = Date.now();
+            const myEval = await fetchMyEvaluation(adaNumber, nullifier, {
+              timestampMs,
+              signatureHex: signEvaluationRead(keypair.privateKeyHex, adaNumber, nullifier, timestampMs),
+            });
             if (myEval.length > 0) {
               setHasExistingEval(true);
               myEval.forEach(e => { init[e.question_id] = e.score; });

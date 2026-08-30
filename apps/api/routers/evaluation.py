@@ -5,9 +5,9 @@ Voraussetzung: Politiker hat evaluation_enabled=TRUE.
 Auth: Ed25519 Signatur (identisch mit Voting-Pattern).
 """
 import logging
-from typing import Literal
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Response
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +17,7 @@ from keypair import verify_signature
 from models import EvaluationQuestion, PoliticianEvaluation, IdentityRecord, KeyStatus
 from services.evaluation_integrity import (
     EVALUATION_K_ANONYMITY_MIN,
+    build_evaluation_read_payload,
     build_evaluation_v2_payload,
     evaluation_timestamp_is_fresh,
     evaluation_v2_required,
@@ -59,6 +60,52 @@ class EvaluateRequest(BaseModel):
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
+
+
+READ_CACHE_HEADERS = {"Cache-Control": "private, no-store"}
+ReadTimestamp = Annotated[
+    int | None,
+    Header(alias="X-Evaluation-Read-Timestamp", ge=0, le=9_007_199_254_740_991),
+]
+ReadSignature = Annotated[
+    str | None,
+    Header(alias="X-Evaluation-Read-Signature", pattern=r"^[0-9a-fA-F]{128}$"),
+]
+
+
+async def _authorize_evaluation_read(
+    nullifier_hash: str,
+    ada_number: str | None,
+    timestamp_ms: int | None,
+    signature_hex: str | None,
+    db: AsyncSession,
+) -> str:
+    """Only completely unsigned legacy clients may use the migration window."""
+    scope = "single" if ada_number is not None else "bulk"
+    if timestamp_ms is None and signature_hex is None:
+        if evaluation_v2_required():
+            raise HTTPException(
+                426, "Απαιτείται ενημέρωση της εφαρμογής για ασφαλή αξιολόγηση.",
+                headers=READ_CACHE_HEADERS,
+            )
+        logger.warning("[EVAL] Legacy personal read accepted: scope=%s", scope)
+        return "legacy"
+    if timestamp_ms is None or signature_hex is None:
+        raise HTTPException(401, "Μη έγκυρη υπογραφή.", headers=READ_CACHE_HEADERS)
+    if not evaluation_timestamp_is_fresh(timestamp_ms):
+        raise HTTPException(
+            401, "Η υπογραφή έληξε. Ελέγξτε την ώρα της συσκευής και δοκιμάστε ξανά.",
+            headers=READ_CACHE_HEADERS,
+        )
+    public_key_hex = (await db.execute(text(
+        "SELECT public_key_hex FROM identity_records "
+        "WHERE nullifier_hash = :nullifier AND status = :status"
+    ), {"nullifier": nullifier_hash, "status": KeyStatus.ACTIVE.value})).scalar_one_or_none()
+    payload = build_evaluation_read_payload(ada_number, nullifier_hash, timestamp_ms)
+    if not public_key_hex or not verify_signature(public_key_hex, payload, signature_hex):
+        raise HTTPException(401, "Μη έγκυρη υπογραφή.", headers=READ_CACHE_HEADERS)
+    logger.info("[EVAL] Signed personal read accepted: scope=%s", scope)
+    return "signed"
 
 
 async def _get_enabled_politician(ada_number: str, db: AsyncSession) -> dict:
@@ -113,9 +160,17 @@ async def list_politicians(db: AsyncSession = Depends(get_db)):
 @router.get("/my-evaluations/bulk")
 async def get_my_evaluations_bulk(
     nullifier_hash: str,
+    response: Response,
     db: AsyncSession = Depends(get_db),
-):
+    timestamp_ms: ReadTimestamp = None,
+    signature_hex: ReadSignature = None,
+) -> list[dict[str, object]]:
     """Bulk: which politicians has this citizen evaluated? Returns ada_numbers + latest updated_at."""
+    integrity = await _authorize_evaluation_read(
+        nullifier_hash, None, timestamp_ms, signature_hex, db,
+    )
+    response.headers.update(READ_CACHE_HEADERS)
+    response.headers["X-Evaluation-Read-Integrity"] = integrity
     result = await db.execute(text("""
         SELECT ada_number, MAX(updated_at) AS last_updated
         FROM politician_evaluations
@@ -151,9 +206,17 @@ async def get_questions(
 async def get_my_evaluation(
     ada_number: str,
     nullifier_hash: str,
+    response: Response,
     db: AsyncSession = Depends(get_db),
-):
-    """Citizen checks their own evaluation for a politician (by nullifier_hash query param)."""
+    timestamp_ms: ReadTimestamp = None,
+    signature_hex: ReadSignature = None,
+) -> list[dict[str, object]]:
+    """Citizen reads their own scores; signed reads are required after migration."""
+    integrity = await _authorize_evaluation_read(
+        nullifier_hash, ada_number, timestamp_ms, signature_hex, db,
+    )
+    response.headers.update(READ_CACHE_HEADERS)
+    response.headers["X-Evaluation-Read-Integrity"] = integrity
     result = await db.execute(text("""
         SELECT question_id, score, updated_at
         FROM politician_evaluations
@@ -248,7 +311,10 @@ async def evaluate_politician(
         """), {"ada": ada_number, "null": req.nullifier_hash, "qid": s.question_id, "score": s.score})
     await db.commit()
 
-    logger.info("[EVAL] Citizen evaluated %s: %d scores", ada_number, len(req.scores))
+    logger.info(
+        "[EVAL] Citizen evaluated %s: %d scores, payload_version=%d",
+        ada_number, len(req.scores), req.payload_version,
+    )
     return {
         "ada_number": ada_number,
         "scores_submitted": len(req.scores),

@@ -263,3 +263,32 @@ async def test_legacy_endpoint_is_rejected_after_cutoff(monkeypatch):
         await evaluation.evaluate_politician("ADA-1", request, db=db)
 
     assert exc_info.value.status_code == 426
+
+
+@pytest.mark.asyncio
+async def test_legacy_write_remains_accepted_before_cutoff(monkeypatch) -> None:
+    monkeypatch.delenv("EVALUATION_REQUIRE_V2", raising=False)
+    signing_key = SigningKey(bytes([5]) * 32)
+    nullifier = "f" * 64
+    identity = SimpleNamespace(
+        public_key_hex=signing_key.verify_key.encode().hex(),
+        region_locked=True, periferia_id=6, dimos_id=None,
+    )
+
+    async def _enabled(_ada_number: str, _db: object) -> dict[str, object]:
+        return {"role": "Βουλευτής", "periferia_id": 6, "dimos_id": None}
+
+    monkeypatch.setattr(evaluation, "_get_enabled_politician", _enabled)
+    db = _Session([
+        _Result(scalar=identity),
+        _Result(scalars=[SimpleNamespace(id=2), SimpleNamespace(id=8)]),
+        _Result(), _Result(),
+    ])
+    request = EvaluateRequest(
+        nullifier_hash=nullifier, scores=_scores(),
+        signature_hex=signing_key.sign(f"evaluate:ADA-1:{nullifier}".encode()).signature.hex(),
+    )
+    result = await evaluation.evaluate_politician("ADA-1", request, db=db)
+    assert result["integrity"] == "legacy"
+    assert result["payload_version_accepted"] == 1
+    assert db.committed is True

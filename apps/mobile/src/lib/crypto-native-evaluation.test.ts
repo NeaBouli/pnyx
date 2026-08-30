@@ -9,7 +9,9 @@ vi.mock("expo-secure-store", () => ({
 
 import {
   buildEvaluationV2Payload,
+  buildEvaluationReadPayload,
   hexToBytes,
+  signEvaluationRead,
   signEvaluationV2,
 } from "./crypto-native";
 
@@ -67,4 +69,38 @@ describe("evaluation v2 signatures", () => {
       [{ question_id: 2, score: -3 }, { question_id: 2, score: 5 }],
     )).toThrow("Evaluation question IDs must be unique.");
   });
+});
+
+describe("personal evaluation read signatures", () => {
+  const nullifier = "a".repeat(64);
+  const timestamp = 1788000000000;
+
+  it.each(["ADA-ΕΛ-1", null])("matches the backend golden vector for %s", (ada) => {
+    expect(buildEvaluationReadPayload(ada, nullifier, timestamp)).toBe(
+      `evaluation-read:v1:[${ada === null ? "null" : `"${ada}"`},"${nullifier}",${timestamp}]`,
+    );
+  });
+
+  it.each(["ADA-ΕΛ-1", null])("binds target, owner, time and operation for %s", (ada) => {
+    const privateKey = "01".repeat(32);
+    const publicKey = ed25519.getPublicKey(hexToBytes(privateKey));
+    const signature = hexToBytes(signEvaluationRead(privateKey, ada, nullifier, timestamp));
+    const valid = buildEvaluationReadPayload(ada, nullifier, timestamp);
+    expect(ed25519.verify(signature, new TextEncoder().encode(valid), publicKey)).toBe(true);
+    for (const changed of [
+      buildEvaluationReadPayload(ada === null ? "ADA-ΕΛ-1" : null, nullifier, timestamp),
+      buildEvaluationReadPayload("ADA-OTHER", nullifier, timestamp),
+      buildEvaluationReadPayload(ada, "b".repeat(64), timestamp),
+      buildEvaluationReadPayload(ada, nullifier, timestamp + 1),
+      `evaluate:${ada}:${nullifier}`,
+    ]) {
+      expect(ed25519.verify(signature, new TextEncoder().encode(changed), publicKey)).toBe(false);
+    }
+  });
+
+  it.each([-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1])(
+    "rejects unsafe timestamps: %s", (timestampMs) => {
+      expect(() => buildEvaluationReadPayload(null, nullifier, timestampMs)).toThrow();
+    },
+  );
 });

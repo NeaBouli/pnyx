@@ -4,6 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import * as SecureStore from "expo-secure-store";
 import { fetchMPRanking, fetchPoliticians, fetchMyEvaluationsBulk } from "../lib/api";
+import { loadKeypair, signEvaluationRead } from "../lib/crypto-native";
 import type { Politician } from "../lib/api";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
@@ -36,7 +37,13 @@ export default function MPScreen() {
           setPoliticians(Array.isArray(data) ? data : []);
           const nullifier = await SecureStore.getItemAsync("ekklesia_nullifier");
           if (nullifier) {
-            const bulk = await fetchMyEvaluationsBulk(nullifier);
+            const keypair = await loadKeypair();
+            if (!keypair) throw new Error("No verified identity key available.");
+            const timestampMs = Date.now();
+            const bulk = await fetchMyEvaluationsBulk(nullifier, {
+              timestampMs,
+              signatureHex: signEvaluationRead(keypair.privateKeyHex, null, nullifier, timestampMs),
+            });
             setEvaluatedAda(new Set(bulk.map(b => b.ada_number)));
           }
         } catch { /* */ }
