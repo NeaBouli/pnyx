@@ -7,6 +7,11 @@ import re
 import os
 import html
 import logging
+import asyncio
+from datetime import datetime, timezone
+from urllib.parse import quote
+
+import httpx
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -14,6 +19,10 @@ from pydantic import BaseModel, Field
 from dependencies import verify_admin_key
 from services.mail_policy import OPERATOR_EMAIL
 from services.telegram_community import _send as tg_send, TOPICS
+from services.newsletter_consent import (
+    CONFIRMED_KEY, MAX_READINESS_CONTACTS, READ_CONSENT_SNAPSHOT,
+    classify_contact, parse_consent, readiness_summary,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/admin/newsletter", tags=["Admin Newsletter"])
@@ -22,6 +31,16 @@ BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
 BREVO_API = "https://api.brevo.com/v3"
 SENDER = {"name": "εκκλησία", "email": "newsletter@ekklesia.gr"}
 LIST_ID = int(os.getenv("BREVO_LIST_ID", "2"))
+READINESS_TIMEOUT_SECONDS = 25
+
+
+class _ContactRequestLogFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        # httpx INFO request logs otherwise expose email identifiers in GET URLs.
+        return "https://api.brevo.com/v3/contacts/" not in record.getMessage()
+
+
+logging.getLogger("httpx").addFilter(_ContactRequestLogFilter())
 
 
 def _sanitize_html(raw: str) -> str:
@@ -76,6 +95,50 @@ class PreviewRequest(BaseModel):
 
 
 # ─── Endpoints ───────────────────────────────────────────────────────────────
+
+@router.get("/readiness")
+async def newsletter_readiness(_auth: bool = Depends(verify_admin_key)) -> dict:
+    """Bounded local-confirmation audit: Redis reads and provider GETs only.
+
+    Not a full provider inventory or an execution manifest. Never returns email
+    addresses, tokens, raw provider errors or data belonging to list-only users.
+    """
+    from routers.newsletter import _get_redis
+
+    store = await _get_redis()
+    snapshot = await store.eval_ro(READ_CONSENT_SNAPSHOT, 1, CONFIRMED_KEY, MAX_READINESS_CONTACTS)
+    count = int(snapshot[0])
+    if count > MAX_READINESS_CONTACTS:
+        return readiness_summary([], count, False)
+    now = datetime.now(timezone.utc)
+    semaphore = asyncio.Semaphore(5)
+
+    async def inspect(client: httpx.AsyncClient, email: str, raw: str) -> tuple[str, list[str]]:
+        status, contact = None, None
+        if BREVO_API_KEY and parse_consent(email, raw) is not None:
+            async with semaphore:
+                try:
+                    response = await client.get(
+                        f"{BREVO_API}/contacts/{quote(email, safe='')}",
+                        headers={"api-key": BREVO_API_KEY},
+                    )
+                    status = response.status_code
+                    if status == 200:
+                        contact = response.json()
+                except (httpx.HTTPError, ValueError):
+                    pass  # Unknown provider state is a HOLD; never retry a write.
+        return classify_contact(email, raw, status, contact, LIST_ID, now)
+
+    try:
+        async with asyncio.timeout(READINESS_TIMEOUT_SECONDS):
+            async with httpx.AsyncClient(timeout=5.0, follow_redirects=False) as client:
+                decisions = await asyncio.gather(*[
+                    inspect(client, snapshot[i], snapshot[i + 1]) for i in range(1, len(snapshot), 2)
+                ])
+    except TimeoutError:
+        raise HTTPException(504, "Readiness check timed out; no contacts changed") from None
+    return readiness_summary(decisions, count, True)
+
 
 @router.get("/stats")
 async def newsletter_admin_stats(_auth: bool = Depends(verify_admin_key)):

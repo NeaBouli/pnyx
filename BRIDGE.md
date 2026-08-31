@@ -1,5 +1,19 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-08-31 - GH261 Consent Guard, Not a Rollout
+
+- Fresh read-only inventory: five local confirmations, two provider-list
+  contacts, three missing provider contacts, zero list-only contacts. No live
+  contacts or production data changed. The operator-only DOI and test delivery
+  succeeded; both one-message budgets are exhausted, not ongoing consent.
+- Code adds atomic single-use confirmation without overwriting preferences,
+  future-only timestamped evidence and admin-only aggregate readiness checks.
+  The readiness path has no apply mode and always proposes zero writes.
+- Automatic audience enrollment remains blocked by incomplete historical
+  consent/suppression evidence and missing campaign preference enforcement.
+  GH#261 stays open; no provider, list, scheduler, secret or deployment change.
+  See `docs/operations/newsletter-delivery-audit.md` for scope and release gates.
+
 ## 2026-08-30 - Send-Only Mail and SSO Follow-Up
 
 - Owner confirmed no domain inboxes or forum reply-by-email. Newsletter
