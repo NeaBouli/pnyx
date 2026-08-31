@@ -51,9 +51,11 @@ The `complete` flag describes local snapshot coverage, not provider success or
 proof that the full newsletter system is ready. Reason counts can overlap.
 
 Suppression wins; missing `emailBlacklisted`/`listUnsubscribed` data is unknown,
-and a provider 404 is not consent to recreate a contact. A technically matching
-monthly/Greek/citizen/all-topic profile still stays HOLD: manual campaigns share
-the monthly list but do not enforce frequency, topic or language preferences.
+and a provider 404 is not consent to recreate a contact. With valid non-empty
+preferences and complete, unsuppressed provider state, existing list membership
+yields KEEP (not consent approval). A non-member stays HOLD even with a matching
+monthly/Greek/citizen/all-topic profile: manual campaigns share the monthly list
+but do not enforce frequency, topic or language preferences.
 Kimi's prospective-create proposal was rejected for this reason. Its GETDEL-only
 proposal was also rejected because a later failed write could lose the token.
 
@@ -125,8 +127,9 @@ Provider-side suppression can still protect recipients. The audit does **not**
 claim Brevo ignores unsubscribes, nor that the unmatched list member lacks consent.
 Application templates lack an explicit unsubscribe control, but actual provider
 insertion and the received-message unsubscribe flow were not verified. A DOI
-token deletion protects a sequential replay; the current read/write sequence
-does not establish atomic consumption against concurrent confirmations.
+token deletion protected sequential replay in the pre-guard baseline; that
+read/write sequence did not establish atomic concurrent consumption. The new
+Lua guard above fixes this in code, but has not been rolled out to production.
 
 ## No-Write Reconciliation Manifest
 
