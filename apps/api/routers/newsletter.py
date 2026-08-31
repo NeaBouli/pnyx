@@ -8,6 +8,7 @@ POST /api/v1/newsletter/webhook/brevo — Brevo event webhook
 import os
 import json
 import logging
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr
@@ -15,6 +16,7 @@ import httpx
 import redis.asyncio as aioredis
 
 from services.mail_policy import operator_reply_to
+from services.newsletter_consent import CONFIRMED_KEY, CONFIRM_ONCE, CONSENT_SCHEMA, confirmation_payload
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/newsletter", tags=["MOD-19 Newsletter"])
@@ -116,6 +118,8 @@ async def subscribe(req: SubscribeRequest):
     # Generate confirmation token
     token = secrets.token_urlsafe(32)
     sub_data = json.dumps({
+        "consent_schema": CONSENT_SCHEMA,
+        "requested_at": datetime.now(timezone.utc).isoformat(),
         "email": req.email,
         "name": req.name or "",
         "subscriber_type": req.subscriber_type,
@@ -186,12 +190,17 @@ async def confirm_subscription(token: str):
     data = json.loads(raw)
     email = data["email"]
 
-    # Mark as confirmed
-    await r.hset("newsletter:confirmed", email, raw)
-    await r.delete(f"newsletter:pending:{token}")
+    result = await r.eval(
+        CONFIRM_ONCE, 2, f"newsletter:pending:{token}", CONFIRMED_KEY,
+        raw, email, confirmation_payload(data, datetime.now(timezone.utc)),
+    )
+    if result == 0:
+        return HTMLResponse("Confirmation link expired or already used.", status_code=410)
+    if result not in (1, 2):
+        raise HTTPException(503, "Confirmation could not be verified")
 
     # Also register in Listmonk (if available)
-    if LISTMONK_PW:
+    if result == 1 and LISTMONK_PW:
         try:
             await _listmonk_request("POST", "/api/subscribers", {
                 "email": email,
@@ -203,13 +212,18 @@ async def confirm_subscription(token: str):
         except Exception:
             pass  # Listmonk is optional — Redis is primary
 
-    logger.info(f"[MOD-19] Subscription confirmed: {email}")
+    logger.info("[MOD-19] Confirmation processed (new=%s)", result == 1)
+    message = (
+        "Ευχαριστούμε! Η διεύθυνση email επιβεβαιώθηκε και οι προτιμήσεις σας καταγράφηκαν."
+        if result == 1 else
+        "Η εγγραφή σας ήταν ήδη επιβεβαιωμένη. Οι προηγούμενες προτιμήσεις σας παραμένουν αμετάβλητες."
+    )
 
     return HTMLResponse(
         '<div style="text-align:center;padding:3rem;font-family:sans-serif">'
         '<img src="https://ekklesia.gr/pnx.png" width="60"/>'
         '<h2 style="color:#2563eb">Εγγραφή Επιβεβαιώθηκε!</h2>'
-        '<p>Ευχαριστούμε! Θα λαμβάνετε ενημερώσεις από το ekklesia.gr</p>'
+        f'<p>{message}</p>'
         '<a href="https://ekklesia.gr" style="color:#2563eb">← Επιστροφή στο ekklesia.gr</a>'
         '</div>'
     )

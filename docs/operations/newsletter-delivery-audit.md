@@ -11,7 +11,69 @@ The confirmation-to-campaign-list gap is confirmed, not merely suspected.
 The existing reply-routing rollout is complete and is a separate concern.
 The scheduler was not paused, changed or manually invoked by this audit.
 
-## Live Evidence (12:37 UTC)
+## 2026-08-31 Consent Guard (Code Only)
+
+Fresh read-only inventory at 06:57 UTC: **5** local confirmations, **0** pending,
+**2** Brevo list members, **2** matches, **3** provider-404 contacts, **0** list-only
+contacts. All five existing records lack `confirmed_at`; three request weekly,
+two monthly, four Greek and one English. Listmonk remains unreachable from the
+API. This supersedes the counts below, not their historical timestamp.
+
+The owner received and confirmed the separately authorized DOI and received the
+single operator-only test newsletter on August 30. Both one-message budgets are
+consumed. That proves this controlled delivery, not general audience handoff,
+complete authentication headers or unsubscribe behavior. An all-topics-off test
+record is not permission for recurring marketing, even if already in a list.
+
+The bounded repair adds, without a production rollout:
+
+- Server-generated request/confirmation times for future DOI confirmations in
+  the existing Redis record. Existing confirmations are not backfilled; old
+  pending links can still confirm but retain legacy evidence classification.
+- Atomic compare + `HSETNX` + token consumption: concurrent clicks have one
+  winner, a second token cannot replace earlier preferences, and a failed
+  confirmation write retains the pending proof. Only the winning new record
+  reaches the existing optional Listmonk call. No new Brevo enrollment call.
+- Admin-authenticated `GET /api/v1/admin/newsletter/readiness`: a bounded,
+  read-only Redis snapshot (maximum 100 confirmed records), then provider GETs
+  (at most five concurrent, 25-second total provider-read budget). No raw
+  addresses, tokens or provider responses are returned; httpx contact-URL INFO
+  logs are filtered. Over-limit snapshots and timeouts never produce an apply
+  manifest. Redis must support `EVAL_RO` (Redis 7+, tested on Redis 8.10).
+- Deterministic aggregate KEEP/HOLD/EXCLUDE reasons. KEEP means leave unchanged,
+  not validated consent. EXCLUDE means no eligibility for future handoff, not
+  removal of current membership. Pending keys and provider-only contacts are
+  outside this endpoint's explicitly local-confirmations-only scope.
+
+**Every readiness result has `delivery_ready: false` and `proposed_writes: 0`.**
+This is intentionally not a synchronizer, rollout or complete repair of GH#261.
+The `complete` flag describes local snapshot coverage, not provider success or
+proof that the full newsletter system is ready. Reason counts can overlap.
+
+Suppression wins; missing `emailBlacklisted`/`listUnsubscribed` data is unknown,
+and a provider 404 is not consent to recreate a contact. A technically matching
+monthly/Greek/citizen/all-topic profile still stays HOLD: manual campaigns share
+the monthly list but do not enforce frequency, topic or language preferences.
+Kimi's prospective-create proposal was rejected for this reason. Its GETDEL-only
+proposal was also rejected because a later failed write could lose the token.
+
+### Remaining Release and Consent Gates
+
+1. Approve and enforce audience/content preference rules for both existing
+   campaign senders before implementing any provider writer. Weekly/English
+   requests must not silently become Greek monthly subscriptions.
+2. Corroborate legacy consent and provider suppression/history. Do not tell
+   existing users to re-submit the form as a repair: the current form returns
+   "Already subscribed" and intentionally preserves the existing record.
+3. Separately authorize any exact contact/list mutation and controlled canary.
+   Existing operator test authorization does not permit another email.
+4. Separately approve an API-only rollout of these consent guards, after CI and
+   review. This task does not deploy, alter configuration, run a scheduler or
+   write to production Redis/provider state. Code rollback restores the earlier
+   image; additive evidence fields are retained, not deleted or used to restore
+   withdrawn subscriptions. The old code ignores those additional JSON fields.
+
+## Historical Live Evidence (2026-08-30, 12:37 UTC)
 
 | Check | Result | Interpretation |
 |---|---|---|
@@ -83,7 +145,7 @@ Missing records and absent local unsubscribe counters must never be interpreted
 as permission to subscribe. Identical evidence yields the same hold manifest;
 repeating the audit cannot send mail or change membership.
 
-## Bounded Repair Plan (Not Executed)
+## Original Bounded Repair Plan (Writer Not Executed)
 
 1. Establish consent provenance for the three missing contacts and origin for
    the list-only member, using private operator evidence. No public address list.

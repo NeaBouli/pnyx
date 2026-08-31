@@ -6,6 +6,8 @@ campaign, and the contact router fallback recipient. No real email, network,
 redis or database access; everything is mocked.
 """
 import importlib
+import json
+from datetime import datetime
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -70,6 +72,10 @@ async def test_subscribe_optin_mail_reply_to() -> None:
     # DOI behavior preserved: pending token stored before sending
     redis.setex.assert_awaited_once()
     assert redis.setex.await_args.args[1] == 86400
+    pending = json.loads(redis.setex.await_args.args[2])
+    assert pending["consent_schema"] == 2
+    assert datetime.fromisoformat(pending["requested_at"]).tzinfo is not None
+    assert "confirmed_at" not in pending
 
 
 async def test_send_transactional_reply_to() -> None:

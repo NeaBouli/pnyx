@@ -50,12 +50,18 @@ full-main API deployment or a new app publication.
   external operator contact, and preserves explicit contact-form recipient
   overrides. No mailbox, DNS or provider configuration was changed. Production
   file hashes and the operator recipient override were verified in the bounded
-  rollout above; actual controlled delivery/header verification remains open.
+  rollout above. The owner confirmed receipt of the separately authorized DOI
+  and single test newsletter on August 30; both mail budgets are consumed.
+  Full header/unsubscribe verification remains open.
   [GH#261](https://github.com/NeaBouli/pnyx/issues/261) separately tracks the
-  confirmed Redis/Listmonk-to-Brevo handoff gap: read-only inventory found four
-  confirmed Redis entries, three absent from Brevo, and one Brevo-list contact
-  without a matching Redis confirmation. The configured Listmonk endpoint was
+  confirmed Redis/Listmonk-to-Brevo handoff gap: August 31 read-only inventory
+  found five confirmed Redis entries, three absent from Brevo, two list matches
+  and zero provider-list-only contacts. The configured Listmonk endpoint was
   unreachable from the API. No contacts were imported, removed or reactivated.
+  A code-only consent guard adds atomic confirmation and admin-only no-write
+  readiness, without changing campaign audiences or production. Enrollment
+  remains blocked pending consent/history review and campaign preference
+  enforcement; GH#261 is not closed by these guardrails.
   [Delivery investigation and gated repair plan](operations/newsletter-delivery-audit.md).
 
 - GH#253: signed personal evaluation reads and mobile integration are merged

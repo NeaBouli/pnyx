@@ -1,7 +1,7 @@
 # Ekklesia.gr — TODO
 # Copyright (c) 2026 V-Labs Development — MIT License
 
-Last reconciled: 2026-08-30
+Last reconciled: 2026-08-31 (newsletter block only)
 
 `docs/STATUS.md` is the authority for the current release. GitHub issues and
 Linear are the authorities for active work. Older session notes are retained
@@ -26,11 +26,16 @@ below only as historical context; their unchecked boxes are not current tasks.
 - [x] Deploy only the five PR #262 mail files over API baseline `25d6c14` and
   verify operator-recipient configuration, runtime hashes and health. No domain
   inbox, Null MX or provider change. See `docs/operations/WEB_MAIL_RELEASE_2026-08-30.md`.
-- [ ] Controlled real mail delivery and header verification remain separately
-  gated; no campaign was sent as a rollout smoke test.
+- [x] Owner received the separately authorized DOI and one operator-only test
+  newsletter on August 30. Both single-message authorizations are consumed.
+- [ ] Full mail-header and unsubscribe verification remain separate; successful
+  controlled receipt is not proof of complete audience delivery or consent.
 - [x] GH#261 read-only inventory: confirmed consent and campaign audience are
-  disconnected; three of four Redis confirmations are absent from Brevo.
+  disconnected; August 31 snapshot has five confirmations, three absent from Brevo.
   No provider/contact writes. See `docs/operations/newsletter-delivery-audit.md`.
+- [x] GH#261 code-only consent guard: atomic single-use confirmation, preserved
+  existing preferences, future-only evidence, bounded admin no-write readiness.
+- [ ] Deploy the reviewed GH#261 guard only under a separate API rollout scope.
 - [ ] GH#261 repair: review consent, preferences and suppression precedence,
   approve a no-write reconciliation manifest, then separately authorize any
   bounded provider writes and controlled test recipient. Do not bulk-import,
