@@ -8,17 +8,17 @@ from fastapi import APIRouter
 router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
-LATEST_VERSION = "1.0.29"
-LATEST_VERSION_CODE = 58
+LATEST_VERSION = "1.0.30"
+LATEST_VERSION_CODE = 59
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v1.0.29 — Διορθώθηκε η εισαγωγή ελληνικών αριθμών κινητού κατά την επαλήθευση. Υποστηρίζονται με ασφάλεια οι μορφές +30, 0030 και η επικόλληση πλήρους αριθμού χωρίς εσφαλμένη απόρριψη ή περικοπή ψηφίων. Περιλαμβάνονται επίσης ενημερώσεις ασφάλειας εξαρτήσεων."
-RELEASE_NOTES_EN = "v1.0.29 — Fixed Greek mobile-number entry during verification. +30, 0030, and full-number paste formats are now handled safely without false rejection or digit truncation. Dependency security updates are also included."
+RELEASE_NOTES_EL = "v1.0.30 — Η εφαρμογή διαβάζει πλέον την εγκατεστημένη εγγενή έκδοση Android (όνομα και κωδικό) για την εμφάνιση και τη σύγκριση ενημερώσεων, αποτρέποντας επαναλαμβανόμενες ή εσφαλμένες ειδοποιήσεις ενημέρωσης. Οι σύνδεσμοι ενημέρωσης παραμένουν συμβατοί με παλαιότερες εγκαταστάσεις vC34."
+RELEASE_NOTES_EN = "v1.0.30 — The app now reads the installed native Android version name and code for display and update comparison, preventing repeated or incorrect update prompts. Update links remain compatible with legacy vC34 installs."
 
 FDROID_URL = ""  # Not live yet — MR !38007 pending
 PLAYSTORE_URL = "https://play.google.com/apps/testing/ekklesia.gr"
-DIRECT_APK_URL = "https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/ekklesia-v1.0.29-vC58-DIRECT.apk"
+DIRECT_APK_URL = "https://github.com/NeaBouli/pnyx/releases/download/v1.0.30/ekklesia-v1.0.30-vC59-DIRECT.apk"
 
 
 @router.get("/version")
@@ -33,4 +33,8 @@ async def app_version():
         "playstore_url": PLAYSTORE_URL,
         "direct_apk_url": DIRECT_APK_URL,
         "force_update": FORCE_UPDATE,
+        # Released v34 profiles call this endpoint but read camelCase fields.
+        "version": LATEST_VERSION,
+        "downloadUrl": DIRECT_APK_URL,
+        "playStoreUrl": PLAYSTORE_URL,
     }

@@ -6,6 +6,7 @@ import Constants from "expo-constants";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
+import { getCurrentVersionCode, getCurrentVersionName } from "../lib/app-version";
 import { resolveUpdateUrl } from "../lib/update-channel";
 import { loadKeypair, loadNullifier } from "../lib/crypto-native";
 import {
@@ -231,7 +232,7 @@ export default function ProfileScreen() {
 
       {/* Version + Channel + Update Check */}
       <Text style={s.versionInfo}>
-        Έκδοση: {Constants.expoConfig?.version ?? "?"} (v{Constants.expoConfig?.android?.versionCode ?? "?"}) | Κανάλι: {Constants.expoConfig?.extra?.distributionChannel === "play" ? "Google Play" : "Direct"}
+        Έκδοση: {getCurrentVersionName()} (v{getCurrentVersionCode()}) | Κανάλι: {Constants.expoConfig?.extra?.distributionChannel === "play" ? "Google Play" : "Direct"}
       </Text>
       <TouchableOpacity
         style={s.updateBtn}
@@ -242,7 +243,7 @@ export default function ProfileScreen() {
             const res = await fetch(`${API}/api/v1/app/version`);
             const data = await res.json();
             setLatestVersion(data);
-            const current = Constants.expoConfig?.android?.versionCode ?? 0;
+            const current = getCurrentVersionCode();
             setUpdateStatus(data.latest_version_code > current ? "updateAvailable" : "upToDate");
           } catch { setUpdateStatus("idle"); }
         }}

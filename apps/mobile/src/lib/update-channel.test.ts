@@ -9,7 +9,7 @@ import {
 describe("update channel resolver", () => {
   const payload = {
     direct_apk_url:
-      "https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/ekklesia-v1.0.29-vC58-DIRECT.apk",
+      "https://github.com/NeaBouli/pnyx/releases/download/v1.0.30/ekklesia-v1.0.30-vC59-DIRECT.apk",
     playstore_url: "https://play.google.com/apps/testing/ekklesia.gr",
   };
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Text, TouchableOpacity, StyleSheet, Linking, Animated } from "react-native";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
+import { getCurrentVersionCode } from "../lib/app-version";
 import { resolveUpdateUrl } from "../lib/update-channel";
 import { colors } from "../theme";
 
@@ -26,7 +27,7 @@ export function UpdateBanner(): React.JSX.Element | null {
 
     const check = async () => {
       try {
-        const currentVC = Constants.expoConfig?.android?.versionCode ?? 0;
+        const currentVC = getCurrentVersionCode();
         const res = await fetch(`${API}/api/v1/app/version`);
         const data = await res.json();
         if (data.latest_version_code > currentVC) {

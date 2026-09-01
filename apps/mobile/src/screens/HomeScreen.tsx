@@ -7,6 +7,7 @@ import { fetchAnalyticsOverview } from "../lib/api";
 import { isDemoMode } from "../lib/demo";
 import { getResult } from "../lib/compassStore";
 import { registerForPushNotifications } from "../lib/notifications";
+import { getCurrentVersionCode } from "../lib/app-version";
 import { resolveUpdateUrl } from "../lib/update-channel";
 import type { CompassResult } from "../compass/types";
 import type { RootStackParams } from "../navigation";
@@ -42,7 +43,7 @@ export default function HomeScreen() {
   // Version check
   const [updateAvailable, setUpdateAvailable] = useState<{version: string; notes: string; url: string; force: boolean} | null>(null);
   useEffect(() => {
-    const currentVC = Constants.expoConfig?.android?.versionCode ?? 5;
+    const currentVC = getCurrentVersionCode();
     const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
     fetch(`${API}/api/v1/app/version`)
       .then(r => r.json())

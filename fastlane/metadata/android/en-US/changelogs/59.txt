@@ -1,0 +1,3 @@
+- The app now reads the installed native Android version for display and update comparison.
+- Repeated or incorrect update prompts no longer appear.
+- Update links remain compatible with legacy vC34 installs.
