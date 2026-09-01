@@ -5,7 +5,7 @@ export function parseNativeVersionCode(
   nativeBuildVersion: string | null,
   fallbackVersionCode = 0,
 ): number {
-  if (nativeBuildVersion) {
+  if (nativeBuildVersion && /^\d+$/.test(nativeBuildVersion)) {
     const parsed = Number.parseInt(nativeBuildVersion, 10);
     if (Number.isSafeInteger(parsed) && parsed >= 0) return parsed;
   }

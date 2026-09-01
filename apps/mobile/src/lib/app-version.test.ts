@@ -21,6 +21,9 @@ describe("native app version", () => {
   it("falls back when no valid native build version is available", () => {
     expect(parseNativeVersionCode(null, 59)).toBe(59);
     expect(parseNativeVersionCode("invalid", 59)).toBe(59);
+    expect(parseNativeVersionCode("59x", 58)).toBe(58);
+    expect(parseNativeVersionCode("59.9", 58)).toBe(58);
+    expect(parseNativeVersionCode(" 59", 58)).toBe(58);
   });
 
   it("reads the installed package version instead of embedded Expo metadata", () => {
