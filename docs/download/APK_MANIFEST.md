@@ -28,24 +28,24 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.29 |
-| versionCode | 58 |
+| Version | 1.0.30 |
+| versionCode | 59 |
 | Package | ekklesia.gr |
-| APK SHA256 | `6a9b6e4a8c9a37153efe5e27676a8b88a044695d96c6fdc174bcb1ae420a793a` |
-| AAB SHA256 | `f5b29d3eaaa72fb2e031df6bebbaf12ff3706689819db3c8a3549f7794ab1ee1` |
-| Canonical APK URL | `https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/ekklesia-v1.0.29-vC58-DIRECT.apk` |
+| APK SHA256 | `dd0e88d56a3ed2c439fca0c6bbba16f93e4c27a327f92af2537db3a74a9a5d31` |
+| AAB SHA256 | `d2c1edc7be655468756d58787004e7c3bfb72069b53bf3448cd6bad9e5985dcd` |
+| Canonical APK URL | `https://github.com/NeaBouli/pnyx/releases/download/v1.0.30/ekklesia-v1.0.30-vC59-DIRECT.apk` |
 | Legacy server alias | `https://ekklesia.gr/download/ekklesia-latest.apk` still serves v1.0.28 / vC57 until a separately controlled production deployment |
-| Build date | 2026-08-06 |
-| Release gate | PASS for code and artifacts — 168 Mobile tests, TypeScript, APK/AAB signatures, direct-upgrade certificate continuity, native Semaphore library, GitHub CI and Security green. Google Play confirms vC58 is available to selected Closed Testing users. |
-| Includes | Correct Greek mobile normalization for local, `+30` and `0030` formats; safe full-number paste handling; dependency security updates; existing server-authoritative voting, guarded Semaphore ZK and read-only mirror behavior remain unchanged. |
+| Build date | 2026-09-01 |
+| Release gate | PASS for code and artifacts — 192 Mobile tests, TypeScript, APK/AAB signatures, direct-upgrade certificate continuity, Android 15 emulator upgrade, GitHub CI and Security green. Google Play vC59 is submitted and remains under review. |
+| Includes | Native installed-version detection and strict version parsing prevent repeated or incorrect update prompts while preserving the legacy vC34 update contract; voting, identity and ZK policy are unchanged. |
 
-Validation command for the canonical v1.0.29 asset:
+Validation command for the canonical v1.0.30 asset:
 
 ```bash
 (
   set -euo pipefail
-  expected='6a9b6e4a8c9a37153efe5e27676a8b88a044695d96c6fdc174bcb1ae420a793a'
-  actual="$(curl -fsSL https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/ekklesia-v1.0.29-vC58-DIRECT.apk | sha256sum | awk '{print $1}')"
+  expected='dd0e88d56a3ed2c439fca0c6bbba16f93e4c27a327f92af2537db3a74a9a5d31'
+  actual="$(curl -fsSL https://github.com/NeaBouli/pnyx/releases/download/v1.0.30/ekklesia-v1.0.30-vC59-DIRECT.apk | sha256sum | awk '{print $1}')"
   test "$actual" = "$expected"
   printf 'APK SHA256 verified: %s\n' "$actual"
 )

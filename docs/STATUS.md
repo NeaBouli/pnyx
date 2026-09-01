@@ -1,9 +1,10 @@
 # Ekklesia.gr - Project Status
 
-Repository and delivery gates reviewed: 2026-08-30.
-Web and the bounded Mail API overlay were deployed on 2026-08-30; Android
-artifact evidence below remains the existing vC58 baseline. This is not a
-full-main API deployment or a new app publication.
+Repository and delivery gates reviewed: 2026-09-01.
+Android v1.0.30/vC59 is published as a direct APK and submitted to Google Play
+Closed Testing review. A bounded one-file API overlay for the v59 update
+contract is live. This is not a full-main API deployment; Google Play vC59 is
+not described as available until Google completes its review.
 
 ## Verified component rollout
 
@@ -18,6 +19,10 @@ full-main API deployment or a new app publication.
   tag `rollback-pre-web-mail-20260830-c935018` and prior images are retained.
 - Details: [release receipt](operations/WEB_MAIL_RELEASE_2026-08-30.md).
   Repository HEAD alone is not the deployed API version.
+- Android/API v59: merged source `db37fe7` (PR #266), direct APK release and
+  bounded `/app/routers/app_version.py` production overlay. API health and both
+  version endpoints pass; protected configuration and all other containers
+  were unchanged. Details: [v59 release receipt](operations/ANDROID_V59_RELEASE_2026-09-01.md).
 
 ## Current integration and release gates
 
@@ -119,9 +124,9 @@ full-main API deployment or a new app publication.
 | Item | Status |
 |---|---|
 | Phase | Beta |
-| Android | v1.0.29 / versionCode 58 released |
-| Direct APK | GitHub Release published; SHA-256 and upgrade signature verified |
-| Google Play | vC58 available to selected Closed Testing users since 2026-08-06 |
+| Android | v1.0.30 / versionCode 59 released through the direct channel |
+| Direct APK | GitHub Release v1.0.30 published; SHA-256 and upgrade signature verified |
+| Google Play | vC59 submitted to Closed Testing review; vC58 remains available until approval |
 | iOS | Preparation only; no public build |
 | F-Droid | v1.0.29 / versionCode 584 published in the main F-Droid repository |
 
@@ -136,24 +141,40 @@ full-main API deployment or a new app publication.
 - The direct APK and Google Play channels are kept separate so each channel receives compatible updates.
 - During a primary outage the mobile app can use the HTTPS mirror for read-only data; voting stays disabled until the primary is healthy.
 
-## vC58 release verification
+## vC59 release verification
 
-- Mobile Vitest: 168/168 passed; TypeScript passed.
-- Direct APK: v1.0.29 (58), `direct` channel, v2 signature valid, native ARM64 Semaphore library present.
-- Direct APK signing certificate matches vC57, preserving the direct-install upgrade path.
-- Play AAB: v1.0.29 (58), `play` channel, JAR signature valid, native ARM64 Semaphore library present.
-- GitHub CI and Security Audit passed for the release commit.
-- GitHub Release v1.0.29 is published as latest with checksum-verified APK and AAB assets.
-- Google Play confirms release 58 (1.0.29) was published to the Closed Testing Alpha track on 2026-08-06 and is available to selected testers.
-- The vC58 mobile artifact scope is limited to Greek mobile-number input normalization plus already-merged dependency security updates; voting and ZK policy are unchanged.
-- The server-side Greek HLR status-normalization fix was deployed separately on 2026-08-08 and required no new APK or AAB.
-- No Android emulator was attached during the artifact verification; runtime confirmation continues through the active Closed Testing track.
+- Mobile Vitest: 192/192 passed; TypeScript and release lint passed.
+- Direct APK: v1.0.30 (59), `direct` channel, v2 signature valid. Its signing
+  certificate matches vC58, preserving the direct-install upgrade path.
+- Play AAB: v1.0.30 (59), `play` channel, signature and bundle metadata verified.
+- Android 15 emulator validation upgraded an installed vC58 APK to vC59 with
+  `adb install -r`; install identity was preserved and the app launched without
+  an Ekklesia fatal error.
+- GitHub CI and Security Audit passed for release commit `db37fe7`.
+- GitHub Release v1.0.30 is published as latest with checksum-verified APK and
+  AAB assets.
+- Google Play accepted release 59 (1.0.30) with no supported-device removals.
+  It is submitted to the Closed Testing Alpha review, not yet confirmed as
+  available to testers.
+- The vC59 scope uses the native installed Android version for display and
+  comparison and keeps legacy vC34 response aliases. Voting, identity and ZK
+  policy are unchanged.
+- The production API uses a bounded single-file overlay for the v59 version
+  contract. `/health`, `/api/v1/app/version` and `/api/v1/version` pass.
+
+### Superseded vC58 baseline
+
+v1.0.29/versionCode 58 passed 168 Mobile tests, signature and direct-upgrade
+continuity checks before its 2026-08-06 Closed Testing publication. The direct
+channel is superseded by vC59; vC58 remains the available Play build until
+Google approves vC59. The complete prior verification text remains in Git
+history.
 
 ## Deliberately gated or external
 
 - Alpha 0.1 official gov.gr holder verification is design-only (GH#141), pending official integration, DPIA, migration design, independent review and sandbox canary.
 - Off-site backup currently uses the separated sandbox fallback until funded dedicated storage is available.
 - F-Droid MR !38007 is merged and v1.0.29 (584) is publicly available from the main repository.
-- R8/ProGuard remains disabled; therefore no mapping file is produced for vC58. A future R8 production build requires a separate native/ZK regression gate and `mapping.txt` publication.
+- R8/ProGuard remains disabled; therefore no mapping file is produced for vC59. Google Play's mapping-file warning is expected and non-blocking. A future R8 production build requires a separate native/ZK regression gate and `mapping.txt` publication.
 
 Operational details and rollback history are maintained in the local, non-public agent bridge.
