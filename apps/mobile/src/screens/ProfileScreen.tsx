@@ -174,6 +174,7 @@ export default function ProfileScreen() {
       <Text style={s.sectionTitle}>Δηλωμένη Περιφέρεια {regionLocked ? "(κλειδωμένο)" : "(προαιρετικό)"}</Text>
       <View style={[s.pickerWrap, regionLocked && { opacity: 0.5 }]}>
         <Picker
+          mode="dropdown"
           selectedValue={selectedPeriferia}
           onValueChange={v => { if (!regionLocked) { setSelectedPeriferia(v); setSelectedDimos(null); } }}
           style={s.picker}
@@ -189,7 +190,7 @@ export default function ProfileScreen() {
         <>
           <Text style={s.sectionTitle}>Δήμος {regionLocked ? "(κλειδωμένο)" : "(προαιρετικό)"}</Text>
           <View style={[s.pickerWrap, regionLocked && { opacity: 0.5 }]}>
-            <Picker selectedValue={selectedDimos} onValueChange={v => { if (!regionLocked) setSelectedDimos(v); }} style={s.picker} enabled={!regionLocked}>
+            <Picker mode="dropdown" selectedValue={selectedDimos} onValueChange={v => { if (!regionLocked) setSelectedDimos(v); }} style={s.picker} enabled={!regionLocked}>
               <Picker.Item label="Δεν δηλώνω" value={null} />
               {dimoi.map(d => <Picker.Item key={d.id} label={d.name_el} value={d.id} />)}
             </Picker>
