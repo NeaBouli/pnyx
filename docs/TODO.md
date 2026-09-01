@@ -58,8 +58,9 @@ below only as historical context; their unchecked boxes are not current tasks.
 - [x] Web, Dashboard, Mobile, Representative and shared crypto verification
   added to pull-request CI.
 - [x] Citizen and Representative Android bundles exported locally.
-- [x] Android v1.0.29 published as direct APK, Google Play Closed Testing build
-  and official F-Droid package.
+- [x] Android v1.0.30 published as direct APK; Google Play vC59 submitted for
+  Closed Testing review. Official F-Droid remains independently published as
+  v1.0.29 / vC584.
 - [x] Monthly Brevo newsletter implemented and scheduled for the first day of
   each month at 09:00 scheduler time (Linear `NEA-160` is superseded by this
   implementation state; end-to-end subscriber delivery remains GH#261).
