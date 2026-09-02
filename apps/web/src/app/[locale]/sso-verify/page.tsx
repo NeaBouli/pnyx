@@ -344,7 +344,7 @@ function SSOSession({ nonce, returnUrl, ready, isEl, onRetry }: {
                 </span>
               </a>
               <a
-                href="https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/ekklesia-v1.0.29-vC58-DIRECT.apk"
+                href="https://github.com/NeaBouli/pnyx/releases/download/v1.0.31/ekklesia-v1.0.31-vC60-DIRECT.apk"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex min-h-16 min-w-0 flex-col justify-center rounded-lg border border-gray-200 bg-white px-3 py-3 text-center text-gray-800 transition-colors hover:border-blue-400 hover:text-blue-700"
