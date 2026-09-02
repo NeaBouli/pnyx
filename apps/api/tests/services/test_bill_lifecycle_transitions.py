@@ -1,16 +1,22 @@
 from datetime import datetime, timedelta, timezone
 import os
 import sys
+from types import SimpleNamespace
+
+import pytest
 
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 from models import BillStatus  # noqa: E402
 from sqlalchemy.dialects import postgresql  # noqa: E402
+from services import bill_lifecycle, telegram_community  # noqa: E402
 from services.bill_lifecycle import (  # noqa: E402
+    _hook_telegram_community,
     _lifecycle_candidate_statement,
     due_lifecycle_transitions,
 )
+from services.zk_vote_aggregation import VoteTotals  # noqa: E402
 
 
 def test_lifecycle_candidates_are_row_locked_to_prevent_duplicate_workers():
@@ -94,3 +100,85 @@ def test_old_parliament_voted_bill_moves_to_open_end_one_step():
     due = due_lifecycle_transitions(BillStatus.PARLIAMENT_VOTED, vote_date, now)
 
     assert due == [BillStatus.OPEN_END]
+
+
+@pytest.mark.asyncio
+async def test_parliament_telegram_count_includes_zk_votes(monkeypatch):
+    bill = SimpleNamespace(
+        id="GR-70a42ec9",
+        title_el="Test bill",
+        governance_level=None,
+        source="PARLIAMENT",
+    )
+    sent = {}
+
+    async def fake_aggregate(db, bill_id, *, include_zk):
+        assert bill_id == bill.id
+        assert include_zk is True
+        return VoteTotals(
+            yes=0,
+            no=1,
+            abstain=0,
+            unknown=0,
+            tier1_total=0,
+            zk_total=1,
+        )
+
+    async def fake_notify(bill_id, title, citizen_votes=0):
+        sent.update(
+            bill_id=bill_id,
+            title=title,
+            citizen_votes=citizen_votes,
+        )
+
+    monkeypatch.setattr(bill_lifecycle, "aggregate_bill_vote_totals", fake_aggregate)
+    monkeypatch.setattr(telegram_community, "notify_parliament_voted", fake_notify)
+
+    await _hook_telegram_community(
+        bill,
+        BillStatus.PARLIAMENT_VOTED,
+        db=object(),
+    )
+
+    assert sent == {
+        "bill_id": bill.id,
+        "title": bill.title_el,
+        "citizen_votes": 1,
+    }
+
+
+@pytest.mark.asyncio
+async def test_non_parliament_telegram_count_excludes_zk_votes(monkeypatch):
+    bill = SimpleNamespace(
+        id="DIAV-TEST",
+        title_el="Municipal test bill",
+        governance_level=None,
+        source="DIAVGEIA",
+    )
+    sent = {}
+
+    async def fake_aggregate(db, bill_id, *, include_zk):
+        assert bill_id == bill.id
+        assert include_zk is False
+        return VoteTotals(
+            yes=2,
+            no=0,
+            abstain=0,
+            unknown=0,
+            tier1_total=2,
+            zk_total=0,
+        )
+
+    async def fake_notify(bill_id, title, citizen_votes=0):
+        sent["citizen_votes"] = citizen_votes
+
+    monkeypatch.setattr(bill_lifecycle, "aggregate_bill_vote_totals", fake_aggregate)
+    monkeypatch.setattr(telegram_community, "notify_parliament_voted", fake_notify)
+
+    await _hook_telegram_community(
+        bill,
+        BillStatus.PARLIAMENT_VOTED,
+        db=object(),
+    )
+
+    assert sent == {"citizen_votes": 2}
