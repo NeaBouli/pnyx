@@ -45,6 +45,6 @@ Users switching channels must reinstall (informed on first launch via ChannelNot
 - `android.package`: `ekklesia.gr` (Play Store, Direct APK and official F-Droid package); iOS bundle identifier remains separate
 - `android.versionCode`: 60
 - `version`: 1.0.31
-- Closed Testing release vC60 is validated locally and is submitted only after the protected merge, GitHub release publication, and successful verification of the published APK/AAB hashes and signing metadata. Availability remains controlled by Google Play review and tester eligibility.
+- Closed Testing release vC60 was submitted after the protected merge, GitHub release publication, and successful verification of the published APK/AAB hashes and signing metadata. Availability remains controlled by Google Play review and tester eligibility; no production-track promotion was performed.
 - Flavors: `direct` (APK) + `play` (AAB)
 - Keystore backup: server `/opt/hetzner-migration/memory/ekklesia-playstore-key.jks`

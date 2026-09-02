@@ -60,10 +60,14 @@ below only as historical context; their unchecked boxes are not current tasks.
 - [x] Citizen and Representative Android bundles exported locally.
 - [x] Android v1.0.31/vC60 validated as both a direct APK and Play-generated
   device splits on a physical Samsung S10, with the Xiaomi/MIUI selector and
-  Greek-number input fixes covered by regressions. Direct and Play release
-  publication order is gated in the vC60 receipt. Official F-Droid remains an
-  independent reproducible-build channel and follows the v1.0.31 tag through
-  its normal metadata/build process.
+  Greek-number input fixes covered by regressions. The checksum-verified Direct
+  release, bounded API/Web rollout and Google Play Closed Testing submission
+  are complete. Official F-Droid remains an independent reproducible-build
+  channel and follows the v1.0.31 tag through its normal metadata/build process.
+- [ ] Confirm Google's external approval and tester availability for
+  v1.0.31/vC60; do not promote to the production track as part of this gate.
+- [ ] Confirm F-Droid's independent v1.0.31 metadata update, ABI builds and
+  public repository APKs; do not upload a manually signed binary.
 - [x] Monthly Brevo newsletter implemented and scheduled for the first day of
   each month at 09:00 scheduler time (Linear `NEA-160` is superseded by this
   implementation state; end-to-end subscriber delivery remains GH#261).
