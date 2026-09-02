@@ -1,3 +1,5 @@
+# Historical pre-inclusion submission snapshot. The authoritative package
+# metadata is maintained in fdroid/fdroiddata under metadata/ekklesia.gr.yml.
 AntiFeatures:
   NonFreeNet:
     en-US: HLR phone verification uses a commercial API.

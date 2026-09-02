@@ -11,6 +11,7 @@ cd "$MOBILE_DIR"
 
 export EKKLESIA_DISTRIBUTION_CHANNEL=play
 export EKKLESIA_BUILD_FLAVOR=play
+export NODE_ENV=production
 
 # Prebuild native project
 npx expo prebuild --platform android --clean

@@ -14,12 +14,12 @@ alembic==1.19.1
 redis==8.1.0
 
 # Config & Validation
-pydantic[email]==2.13.4
+pydantic[email]==2.13.5
 pydantic-settings==2.15.0
 
 # Crypto
 PyNaCl==1.6.2
-cryptography==50.0.0
+cryptography==50.0.1
 argon2-cffi>=25.1.0
 py-ecc==8.0.0
 
@@ -54,4 +54,4 @@ pytest-asyncio==1.4.0
 aiosqlite==0.22.1
 anyio==4.14.2
 respx>=0.23.1
-sentry-sdk[fastapi]>=2.68.0
+sentry-sdk[fastapi]>=2.68.1
