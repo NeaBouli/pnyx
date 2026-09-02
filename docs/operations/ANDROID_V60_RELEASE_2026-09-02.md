@@ -1,4 +1,4 @@
-# Android v1.0.31 / vC60 Release-Candidate Receipt
+# Android v1.0.31 / vC60 Release Receipt
 
 Date: 2026-09-02
 
@@ -17,7 +17,9 @@ identity, eligibility, ZK, database, DNS, secrets or IAM behavior.
   - SHA-256: `daa2303cd048b657888fade5d2268807cbfa635be75ff4197bedeaf091559b05`
 - Signing certificate SHA-256:
   `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`
-- Target canonical release: [v1.0.31](https://github.com/NeaBouli/pnyx/releases/tag/v1.0.31) (created only after the protected merge)
+- Canonical release: [v1.0.31](https://github.com/NeaBouli/pnyx/releases/tag/v1.0.31),
+  published after the protected merge at commit
+  `8cfccc5ac5d1094b613465832f090a65a316abeb`.
 
 ## Verification
 
@@ -51,6 +53,27 @@ identity, eligibility, ZK, database, DNS, secrets or IAM behavior.
    links, with rollback tags retained.
 5. F-Droid consumes the signed source tag through its independent metadata and
    reproducible-build process; no manual F-Droid binary upload is performed.
+
+## Publication result
+
+- PR #281 was squash-merged normally after CI, Security Audit and review gates
+  passed. Main CI, Security Audit and the subsequent Parliament scraper run are
+  green for the merge commit.
+- GitHub release `v1.0.31` is public. The published APK and AAB digests match
+  the verified artifacts above.
+- Google Play accepted version `60 (1.0.31)` for Closed Testing Alpha. The
+  previous review was restarted with vC60, so availability remains subject to
+  Google's external review. No production-track promotion was performed.
+- The public API now returns `1.0.31` / version code `60` from both version
+  contracts. The website, SSO download page, FAQ, roadmap, manifest and latest
+  APK endpoint are live and return HTTP 200 after redirects.
+- The live latest-APK endpoint returns the expected SHA-256
+  `dde71f9edfbfb8251831ecbf42cf3200f354c9e0329cefb65025f272b91a15dc`.
+- API and Web containers run the bounded v60 images with restart count zero;
+  protected configuration and all other containers were unchanged.
+- F-Droid still publishes v1.0.29 / version codes 581-584. Its independent
+  tag detection, metadata update and reproducible v1.0.31 build are pending;
+  no F-Droid binary was uploaded manually.
 
 ## Rollback
 

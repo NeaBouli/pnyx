@@ -1,10 +1,12 @@
 # Ekklesia.gr - Project Status
 
 Repository and delivery gates reviewed: 2026-09-02.
-Android v1.0.31/vC60 is fully validated as a direct APK and Play AAB. Release
-publication and Google Play Closed Testing submission follow the protected
-merge in that order. It fixes Xiaomi/MIUI Region and Municipality selection
-and normalizes Greek phone input from Unicode keyboards and pasted text.
+Android v1.0.31/vC60 is published as a checksum-verified direct APK and is
+submitted to Google Play Closed Testing Alpha. The bounded API and Web release
+is live. It fixes Xiaomi/MIUI Region and Municipality selection and normalizes
+Greek phone input from Unicode keyboards and pasted text. Google availability
+still depends on external review; F-Droid's independent v1.0.31 build remains
+pending.
 
 ## Verified component rollout
 
@@ -23,6 +25,13 @@ and normalizes Greek phone input from Unicode keyboards and pasted text.
   bounded `/app/routers/app_version.py` production overlay. API health and both
   version endpoints pass; protected configuration and all other containers
   were unchanged. Details: [v59 release receipt](operations/ANDROID_V59_RELEASE_2026-09-01.md).
+- Android/API/Web v60: merged source `8cfccc5` (PR #281), public GitHub release
+  `v1.0.31`, Google Play Closed Testing submission and bounded v60 API/Web
+  rollout. Both public version contracts report `1.0.31` / `60`; public Web,
+  SSO, FAQ, roadmap and download checks pass. The live APK digest matches the
+  release asset, both containers have restart count zero, and protected
+  configuration plus all other containers were unchanged. Details:
+  [v60 release receipt](operations/ANDROID_V60_RELEASE_2026-09-02.md).
 
 ## Current integration and release gates
 
@@ -100,9 +109,10 @@ and normalizes Greek phone input from Unicode keyboards and pasted text.
   intent is confirmed as send-only; reply-routing configuration/code are live,
   but actual delivery and header evidence still need verification.
   [Observation gate](operations/dmarc-observation-gate.md), NEA-422.
-- No database, DNS, secret, IAM or Google Play change was made. The two component
-  switches above are the only production changes in the completed rollout;
-  this subsequent delivery investigation was read-only.
+- The v60 release changed only the Closed Testing submission and bounded
+  API/Web images described above. No database, DNS, secret, IAM or Google Play
+  production-track change was made. The earlier delivery investigation was
+  read-only.
 
 ## Backlog classification
 
@@ -124,11 +134,11 @@ and normalizes Greek phone input from Unicode keyboards and pasted text.
 | Item | Status |
 |---|---|
 | Phase | Beta |
-| Android | v1.0.31 / versionCode 60 release candidate validated for Direct and Play |
-| Direct APK | Candidate SHA-256 and upgrade signature verified; GitHub publication follows the protected merge and is verified again from the published assets |
-| Google Play | vC60 AAB validated; Closed Testing remains pending until published APK/AAB hashes and signing metadata are verified |
+| Android | v1.0.31 / versionCode 60 published for Direct; submitted for Play Closed Testing |
+| Direct APK | Public on GitHub and the website; published SHA-256 and upgrade signature verified |
+| Google Play | vC60 accepted for Closed Testing Alpha review; external approval pending |
 | iOS | Preparation only; no public build |
-| F-Droid | v1.0.29 / versionCode 584 published in the main F-Droid repository |
+| F-Droid | v1.0.29 / versionCode 584 remains public; independent v1.0.31 detection/build pending |
 
 ## Verified product behavior
 
@@ -141,7 +151,7 @@ and normalizes Greek phone input from Unicode keyboards and pasted text.
 - The direct APK and Google Play channels are kept separate so each channel receives compatible updates.
 - During a primary outage the mobile app can use the HTTPS mirror for read-only data; voting stays disabled until the primary is healthy.
 
-## vC60 release-candidate verification
+## vC60 release verification
 
 - Mobile Vitest: 206/206 passed; TypeScript passed.
 - API app-version regressions: 6/6 passed.
@@ -163,6 +173,14 @@ and normalizes Greek phone input from Unicode keyboards and pasted text.
   device has a German number. Greek-number variants and Xiaomi selector events
   are covered by deterministic regressions.
 - Voting, identity, eligibility, ZK and database behavior are unchanged.
+- PR #281 merged normally after all required checks passed. GitHub release
+  `v1.0.31` is public and its APK/AAB digests match the verified artifacts.
+- Google Play accepted vC60 for Closed Testing Alpha review without removing
+  supported device categories. Approval and tester availability are external
+  and not claimed complete.
+- The public API and Web rollout passed HTTP, version-contract, artifact-hash,
+  container-image, restart-count and protected-file checks. No production
+  database, DNS, secret, IAM or Play production-track mutation occurred.
 
 ## vC59 release verification
 
@@ -174,8 +192,8 @@ and normalizes Greek phone input from Unicode keyboards and pasted text.
   `adb install -r`; install identity was preserved and the app launched without
   an Ekklesia fatal error.
 - GitHub CI and Security Audit passed for release commit `db37fe7`.
-- GitHub Release v1.0.30 is published as latest with checksum-verified APK and
-  AAB assets.
+- GitHub Release v1.0.30 was published with checksum-verified APK and AAB
+  assets; v1.0.31 is now the latest release.
 - Google Play accepted release 59 (1.0.30) with no supported-device removals.
   It is submitted to the Closed Testing Alpha review, not yet confirmed as
   available to testers.
@@ -185,13 +203,17 @@ and normalizes Greek phone input from Unicode keyboards and pasted text.
 - The production API uses a bounded single-file overlay for the v59 version
   contract. `/health`, `/api/v1/app/version` and `/api/v1/version` pass.
 
-### Superseded vC58 baseline
+### Superseded vC59 and vC58 baselines
+
+v1.0.30/versionCode 59 remains the rollback baseline. The direct and API/Web
+channels are superseded by vC60. The version currently assigned to an
+individual Closed Testing account is controlled by Google and is not inferred
+while the vC60 review is pending.
 
 v1.0.29/versionCode 58 passed 168 Mobile tests, signature and direct-upgrade
-continuity checks before its 2026-08-06 Closed Testing publication. The direct
-channel is superseded by vC59; vC58 remains the available Play build until
-Google approves vC59. The complete prior verification text remains in Git
-history.
+continuity checks before its 2026-08-06 Closed Testing publication. It is a
+historical baseline; no current tester assignment is inferred from that prior
+state. The complete prior verification text remains in Git history.
 
 ## Deliberately gated or external
 
