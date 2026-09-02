@@ -36,15 +36,15 @@ npx eas build --platform android --profile production
 ## Two channels — never mix
 | Channel | Signing | Distribution | Script |
 |---------|---------|-------------|--------|
-| Direct APK | `ekklesia-playstore-key.jks` | GitHub Releases (v1.0.30); legacy `/download/ekklesia-latest.apk` remains v1.0.28/vC57 until deployment | `scripts/build-direct.sh` |
+| Direct APK | `ekklesia-playstore-key.jks` | GitHub Releases (v1.0.31); legacy `/download/ekklesia-latest.apk` is updated only during the controlled web rollout | `scripts/build-direct.sh` |
 | Google Play | `ekklesia-playstore-key.jks` | Play Store | `scripts/build-play.sh` |
 
 Users switching channels must reinstall (informed on first launch via ChannelNotice).
 
 ## Current config
-- `android.package`: `ekklesia.gr` (Play Store + Direct APK) / `gr.ekklesia.app` (F-Droid, iOS bundleIdentifier)
-- `android.versionCode`: 59
-- `version`: 1.0.30
-- Closed Testing release vC59 is submitted and under Google review; vC58 remains the available Play build until approval.
+- `android.package`: `ekklesia.gr` (Play Store, Direct APK and official F-Droid package); iOS bundle identifier remains separate
+- `android.versionCode`: 60
+- `version`: 1.0.31
+- Closed Testing release vC60 was submitted after the protected merge, GitHub release publication, and successful verification of the published APK/AAB hashes and signing metadata. Availability remains controlled by Google Play review and tester eligibility; no production-track promotion was performed.
 - Flavors: `direct` (APK) + `play` (AAB)
 - Keystore backup: server `/opt/hetzner-migration/memory/ekklesia-playstore-key.jks`

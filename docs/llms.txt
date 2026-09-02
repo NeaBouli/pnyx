@@ -33,7 +33,7 @@ ekklesia.gr (εκκλησία του έθνους) is an independent civic initi
 
 - Backend: Python FastAPI, PostgreSQL 15, Redis 8.10
 - Frontend: Next.js 16 (SSR, i18n el/en)
-- Mobile: Expo React Native (Android, vC59 / v1.0.30; direct APK released and Play AAB submitted for Closed Testing review; channels are separately signed and routed)
+- Mobile: Expo React Native (Android vC60 / v1.0.31 published for Direct and submitted to Play Closed Testing; Google approval and F-Droid's independent build remain pending; Direct, Play and F-Droid stay separately routed)
 - Crypto: Ed25519 (PyNaCl + @noble/curves), HMAC nullifier chain
 - AI: Ollama (local) + Claude API (hybrid)
 - Forum: Discourse (pnyx.ekklesia.gr)

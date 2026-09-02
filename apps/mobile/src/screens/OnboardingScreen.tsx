@@ -154,6 +154,7 @@ export default function OnboardingScreen({ navigation }: Props) {
       </Text>
       <View style={s.pickerWrap}>
         <Picker
+          mode="dropdown"
           selectedValue={selPeriferia}
           onValueChange={v => { setSelPeriferia(v); setSelDimos(null); }}
           style={s.picker}
@@ -164,7 +165,7 @@ export default function OnboardingScreen({ navigation }: Props) {
       </View>
       {selPeriferia && dimoi.length > 0 && (
         <View style={s.pickerWrap}>
-          <Picker selectedValue={selDimos} onValueChange={setSelDimos} style={s.picker}>
+          <Picker mode="dropdown" selectedValue={selDimos} onValueChange={setSelDimos} style={s.picker}>
             <Picker.Item label="— Δήμος —" value={null} />
             {dimoi.map(d => <Picker.Item key={d.id} label={d.name_el} value={d.id} />)}
           </Picker>
