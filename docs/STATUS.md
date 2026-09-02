@@ -125,8 +125,8 @@ and normalizes Greek phone input from Unicode keyboards and pasted text.
 |---|---|
 | Phase | Beta |
 | Android | v1.0.31 / versionCode 60 release candidate validated for Direct and Play |
-| Direct APK | Candidate SHA-256 and upgrade signature verified; GitHub publication follows the protected merge |
-| Google Play | vC60 AAB validated; Closed Testing submission follows GitHub release publication |
+| Direct APK | Candidate SHA-256 and upgrade signature verified; GitHub publication follows the protected merge and is verified again from the published assets |
+| Google Play | vC60 AAB validated; Closed Testing remains pending until published APK/AAB hashes and signing metadata are verified |
 | iOS | Preparation only; no public build |
 | F-Droid | v1.0.29 / versionCode 584 published in the main F-Droid repository |
 
@@ -143,16 +143,19 @@ and normalizes Greek phone input from Unicode keyboards and pasted text.
 
 ## vC60 release-candidate verification
 
-- Mobile Vitest: 204/204 passed; TypeScript passed.
+- Mobile Vitest: 206/206 passed; TypeScript passed.
 - API app-version regressions: 6/6 passed.
 - Direct APK: v1.0.31 (60), `direct` channel, v2 signature valid. Its signing
   certificate SHA-256 remains
   `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
 - Play AAB: v1.0.31 (60), `play` channel, bundle metadata and four supported
   ABIs (`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`) verified.
-- A physical Samsung S10 on Android 12 upgraded in place first to the direct
-  APK and then to Play-style device splits without losing the anonymous
-  identity, verification state, locked Region or Municipality.
+- A physical Samsung S10 on Android 12 installed the direct APK and then locally
+  generated Play-style device splits signed with the same local release key,
+  without losing the anonymous identity, verification state, locked Region or
+  Municipality. This validates the bundle payload, not a real store-channel
+  switch; users switching between independently signed distribution channels
+  must uninstall and verify again as stated by the in-app channel notice.
 - Home, Voting, Trending, Parties, POLIS, Profile and Settings loaded on both
   distributions. The active 24-hour bill appeared and logcat contained no
   Ekklesia fatal, ANR or React Native error.

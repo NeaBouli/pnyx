@@ -12,24 +12,26 @@ identity, eligibility, ZK, database, DNS, secrets or IAM behavior.
 ## Artifacts
 
 - Direct APK: `ekklesia-v1.0.31-vC60-DIRECT.apk`
-  - SHA-256: `c3b3238bbf7567d93745a246586c8a6f03088d56d87ab1178eb7809a79481cfa`
+  - SHA-256: `dde71f9edfbfb8251831ecbf42cf3200f354c9e0329cefb65025f272b91a15dc`
 - Play AAB: `ekklesia-v1.0.31-vC60-PLAY.aab`
-  - SHA-256: `5e39d6584fccb805a021afa9d70936a1e1e377141b4237e8920f1defc50a837c`
+  - SHA-256: `daa2303cd048b657888fade5d2268807cbfa635be75ff4197bedeaf091559b05`
 - Signing certificate SHA-256:
   `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`
 - Target canonical release: [v1.0.31](https://github.com/NeaBouli/pnyx/releases/tag/v1.0.31) (created only after the protected merge)
 
 ## Verification
 
-- Mobile: 23 test files, 204 tests passed; TypeScript passed.
+- Mobile: 23 test files, 206 tests passed; TypeScript passed.
 - API app-version tests: 6 passed.
 - APK: package `ekklesia.gr`, versionName `1.0.31`, versionCode `60`, minimum
   SDK 24 and target SDK 36.
 - AAB: bundle validation passed; versionName `1.0.31`, versionCode `60`; ARM64,
   ARM32, x86 and x86_64 libraries are present.
-- A physical Samsung S10 (Android 12, ARM64) upgraded in place to the direct APK
-  and then to the AAB-generated Play splits. Existing identity, verification,
-  Region and Municipality data remained intact.
+- A physical Samsung S10 (Android 12, ARM64) installed the direct APK and then
+  locally generated Play-style splits signed with the same local release key.
+  Existing identity, verification, Region and Municipality data remained
+  intact. This verifies the bundle payload, not a real store-channel switch;
+  independently signed channels still require uninstall and re-verification.
 - Home, Voting, Trending, Parties, POLIS, Profile and Settings loaded in both
   distributions. The active 24-hour bill was visible. No Ekklesia fatal, ANR
   or React Native error appeared in the device log.

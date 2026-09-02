@@ -31,13 +31,13 @@ https://ekklesia.gr/representative/index.html
 | Version | 1.0.31 |
 | versionCode | 60 |
 | Package | ekklesia.gr |
-| APK SHA256 | `c3b3238bbf7567d93745a246586c8a6f03088d56d87ab1178eb7809a79481cfa` |
-| AAB SHA256 | `5e39d6584fccb805a021afa9d70936a1e1e377141b4237e8920f1defc50a837c` |
+| APK SHA256 | `dde71f9edfbfb8251831ecbf42cf3200f354c9e0329cefb65025f272b91a15dc` |
+| AAB SHA256 | `daa2303cd048b657888fade5d2268807cbfa635be75ff4197bedeaf091559b05` |
 | Signing certificate SHA256 | `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec` |
 | Target canonical APK URL | `https://github.com/NeaBouli/pnyx/releases/download/v1.0.31/ekklesia-v1.0.31-vC60-DIRECT.apk` (published only after the protected merge) |
 | Legacy server alias | `https://ekklesia.gr/download/ekklesia-latest.apk` is updated only by the controlled web release and must match the canonical APK hash |
 | Build date | 2026-09-02 |
-| Release gate | PASS for source and local artifacts — 204 Mobile tests, TypeScript, API version tests, APK/AAB metadata, signature continuity and physical Samsung S10 direct/APKS upgrades pass. GitHub CI/Security, release publication and live aliases are verified separately after merge. |
+| Release gate | PASS for source and local artifacts — 206 Mobile tests, TypeScript, API version tests, APK/AAB metadata, signature continuity and physical Samsung S10 direct/APKS upgrades pass. GitHub CI/Security, release publication and live aliases are verified separately after merge. |
 | Includes | Xiaomi/MIUI-compatible Region and Municipality selection plus robust normalization of Greek mobile numbers from Unicode keyboards and pasted input. Voting, identity, eligibility and ZK policy are unchanged. |
 
 Post-publication validation command for the canonical v1.0.31 asset:
@@ -45,7 +45,7 @@ Post-publication validation command for the canonical v1.0.31 asset:
 ```bash
 (
   set -euo pipefail
-  expected='c3b3238bbf7567d93745a246586c8a6f03088d56d87ab1178eb7809a79481cfa'
+  expected='dde71f9edfbfb8251831ecbf42cf3200f354c9e0329cefb65025f272b91a15dc'
   actual="$(curl -fsSL https://github.com/NeaBouli/pnyx/releases/download/v1.0.31/ekklesia-v1.0.31-vC60-DIRECT.apk | sha256sum | awk '{print $1}')"
   test "$actual" = "$expected"
   printf 'APK SHA256 verified: %s\n' "$actual"

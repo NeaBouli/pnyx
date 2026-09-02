@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   DIRECT_APK_URL,
   FDROID_URL,
+  getDistributionChannelLabel,
   PLAY_STORE_URL,
   normalizeDistributionChannel,
   resolveUpdateUrl,
+  shouldOfferUpdate,
 } from "./update-channel";
 
 describe("update channel resolver", () => {
@@ -25,7 +27,23 @@ describe("update channel resolver", () => {
 
   it("keeps F-Droid builds on the F-Droid update path", () => {
     expect(normalizeDistributionChannel("fdroid")).toBe("fdroid");
+    expect(getDistributionChannelLabel("fdroid")).toBe("F-Droid");
     expect(resolveUpdateUrl(payload, "fdroid")).toBe(payload.fdroid_url);
+  });
+
+  it("uses stable labels for every supported channel", () => {
+    expect(getDistributionChannelLabel("play")).toBe("Google Play");
+    expect(getDistributionChannelLabel("direct")).toBe("Direct");
+    expect(getDistributionChannelLabel(undefined)).toBe("Direct");
+  });
+
+  it("delegates F-Droid update availability to the F-Droid client", () => {
+    expect(shouldOfferUpdate({ latest_version_code: 604 }, 581, "fdroid")).toBe(false);
+    expect(shouldOfferUpdate({ latest_version_code: 60 }, 59, "direct")).toBe(true);
+    expect(shouldOfferUpdate({ latest_version_code: 60 }, 59, "play")).toBe(true);
+    expect(shouldOfferUpdate({ latest_version_code: 60 }, 60, "direct")).toBe(false);
+    expect(shouldOfferUpdate({}, 59, "direct")).toBe(false);
+    expect(shouldOfferUpdate({ latest_version_code: 60.5 }, 59, "play")).toBe(false);
   });
 
   it("defaults unknown channels to Direct APK updates", () => {
