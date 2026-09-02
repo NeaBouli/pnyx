@@ -9,19 +9,32 @@ cd "$SCRIPT_DIR/../apps/mobile"
 
 echo "Building F-Droid APK (no FCM, no Google Services)..."
 
-# Set F-Droid flavor — disables push notifications at runtime
+APP_JSON_PATH="$SCRIPT_DIR/../apps/mobile/app.json"
+APP_JSON_BACKUP="$(mktemp)"
+cp "$APP_JSON_PATH" "$APP_JSON_BACKUP"
+restore_app_json() {
+  cp "$APP_JSON_BACKUP" "$APP_JSON_PATH"
+  rm -f "$APP_JSON_BACKUP"
+}
+trap restore_app_json EXIT
+
+# Set the F-Droid flavor and update channel before Expo resolves app.config.js.
+export NODE_ENV=production
 export BUILD_FLAVOR=fdroid
+export EKKLESIA_BUILD_FLAVOR=fdroid
+export EKKLESIA_DISTRIBUTION_CHANNEL=fdroid
 export EXPO_NO_GOOGLE_SERVICES=1
 
-# Patch app.json to set buildFlavor=fdroid
+# Patch app.json to mirror the official fdroiddata recipe.
 python3 -c "
 import json
-with open('app.json', 'r') as f:
-    d = json.load(f)
+with open('app.json', 'r') as f: d = json.load(f)
 d['expo']['extra']['buildFlavor'] = 'fdroid'
+d['expo']['extra']['distributionChannel'] = 'fdroid'
+d['expo']['extra']['zkSemaphoreEnabled'] = False
 with open('app.json', 'w') as f:
     json.dump(d, f, indent=2)
-print('app.json patched: buildFlavor=fdroid')
+print('app.json patched: buildFlavor=fdroid, distributionChannel=fdroid, zkSemaphoreEnabled=false')
 "
 
 npm ci
@@ -37,18 +50,7 @@ echo "sdk.dir=$HOME/Library/Android/sdk" > android/local.properties
 cd android
 ./gradlew assembleFreeRelease || ./gradlew assembleRelease
 
-# Restore app.json
 cd "$SCRIPT_DIR/../apps/mobile"
-python3 -c "
-import json
-with open('app.json', 'r') as f:
-    d = json.load(f)
-d['expo']['extra']['buildFlavor'] = 'play'
-with open('app.json', 'w') as f:
-    json.dump(d, f, indent=2)
-print('app.json restored: buildFlavor=play')
-"
-
 APK="android/app/build/outputs/apk/free/release/app-free-release-unsigned.apk"
 if [ -f "$APK" ]; then
   echo "F-Droid APK ready: $APK"

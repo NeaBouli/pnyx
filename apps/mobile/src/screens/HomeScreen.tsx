@@ -8,7 +8,7 @@ import { isDemoMode } from "../lib/demo";
 import { getResult } from "../lib/compassStore";
 import { registerForPushNotifications } from "../lib/notifications";
 import { getCurrentVersionCode } from "../lib/app-version";
-import { resolveUpdateUrl } from "../lib/update-channel";
+import { resolveUpdateUrl, shouldOfferUpdate } from "../lib/update-channel";
 import type { CompassResult } from "../compass/types";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
@@ -48,8 +48,8 @@ export default function HomeScreen() {
     fetch(`${API}/api/v1/app/version`)
       .then(r => r.json())
       .then(data => {
-        if (data.latest_version_code > currentVC) {
-          const channel = Constants.expoConfig?.extra?.distributionChannel;
+        const channel = Constants.expoConfig?.extra?.distributionChannel;
+        if (shouldOfferUpdate(data, currentVC, channel)) {
           setUpdateAvailable({
             version: data.latest_version,
             notes: data.release_notes_el,
