@@ -19,7 +19,7 @@ pydantic-settings==2.15.0
 
 # Crypto
 PyNaCl==1.6.2
-cryptography==50.0.0
+cryptography==50.0.1
 argon2-cffi>=25.1.0
 py-ecc==8.0.0
 
