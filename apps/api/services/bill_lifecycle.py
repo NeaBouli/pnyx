@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import ParliamentBill, BillStatus, BillStatusLog
 from services.bill_visibility import public_bill_filter, is_public_bill
+from services.zk_vote_aggregation import aggregate_bill_vote_totals, include_zk_for_bill
 
 logger = logging.getLogger(__name__)
 
@@ -321,11 +322,12 @@ async def _hook_telegram_community(bill: ParliamentBill, new_status: BillStatus,
         elif new_status == BillStatus.PARLIAMENT_VOTED:
             citizen_votes = 0
             if db:
-                from sqlalchemy import func, select as sa_select
-                from models import CitizenVote
-                citizen_votes = await db.scalar(
-                    sa_select(func.count(CitizenVote.id)).where(CitizenVote.bill_id == bill.id)
-                ) or 0
+                totals = await aggregate_bill_vote_totals(
+                    db,
+                    bill.id,
+                    include_zk=include_zk_for_bill(bill),
+                )
+                citizen_votes = totals.total
             await notify_parliament_voted(bill.id, title, citizen_votes=citizen_votes)
     except Exception as e:
         logger.warning("[LIFECYCLE] Telegram community hook failed for %s: %s", bill.id, e)
