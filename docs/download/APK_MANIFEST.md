@@ -37,7 +37,7 @@ https://ekklesia.gr/representative/index.html
 | Canonical APK URL | `https://github.com/NeaBouli/pnyx/releases/download/v1.0.31/ekklesia-v1.0.31-vC60-DIRECT.apk` (published and checksum-verified) |
 | Server alias | `https://ekklesia.gr/download/ekklesia-latest.apk` was updated by the controlled web release and matches the canonical APK hash |
 | Build date | 2026-09-02 |
-| Release gate | PASS — 206 Mobile tests, TypeScript, API version tests, APK/AAB metadata, signature continuity, physical Samsung S10 direct/APKS upgrades, GitHub CI/Security, published asset checksums and live alias verification pass. Google Play approval and F-Droid's independent build remain external. |
+| Release gate | PASS — 206 Mobile tests, TypeScript, API version tests, APK/AAB metadata, signature continuity, direct APK and locally generated Play-style split validation on a physical Samsung S10, GitHub CI/Security, published asset checksums and live alias verification pass. Google Play approval and F-Droid's independent build remain external. |
 | Includes | Xiaomi/MIUI-compatible Region and Municipality selection plus robust normalization of Greek mobile numbers from Unicode keyboards and pasted input. Voting, identity, eligibility and ZK policy are unchanged. |
 
 Post-publication validation command for the canonical v1.0.31 asset:

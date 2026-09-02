@@ -109,7 +109,7 @@ pending.
   intent is confirmed as send-only; reply-routing configuration/code are live,
   but actual delivery and header evidence still need verification.
   [Observation gate](operations/dmarc-observation-gate.md), NEA-422.
-- The v60 release changed only the Closed Testing submission and bounded
+- The v60 production rollout changed only the Closed Testing submission and bounded
   API/Web images described above. No database, DNS, secret, IAM or Google Play
   production-track change was made. The earlier delivery investigation was
   read-only.
