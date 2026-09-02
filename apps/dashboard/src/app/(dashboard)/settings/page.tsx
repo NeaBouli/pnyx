@@ -520,12 +520,13 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
                 <span className="text-sm text-gray-600">{String('F-Droid')}</span>
-                <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs">{String('MR Εκκρεμεί')}</span>
+                <a href={String(appVersion?.fdroid_url ?? 'https://f-droid.org/packages/ekklesia.gr/')} target="_blank" rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:underline">{String('Διαθέσιμο')}</a>
               </div>
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
                 <span className="text-sm text-gray-600">{String('Direct APK')}</span>
-                <a href="https://github.com/NeaBouli/pnyx/releases/download/v1.0.29/ekklesia-v1.0.29-vC58-DIRECT.apk" target="_blank" rel="noopener noreferrer"
-                  className="text-sm text-blue-600 hover:underline">{String('Λήψη v1.0.29')}</a>
+                <a href={String(appVersion?.direct_apk_url ?? 'https://github.com/NeaBouli/pnyx/releases/download/v1.0.31/ekklesia-v1.0.31-vC60-DIRECT.apk')} target="_blank" rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:underline">{String(`Λήψη v${String(appVersion?.latest_version ?? '1.0.31')}`)}</a>
               </div>
             </div>
           </div>
