@@ -3,7 +3,7 @@ import { Text, TouchableOpacity, StyleSheet, Linking, Animated } from "react-nat
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 import { getCurrentVersionCode } from "../lib/app-version";
-import { resolveUpdateUrl } from "../lib/update-channel";
+import { resolveUpdateUrl, shouldOfferUpdate } from "../lib/update-channel";
 import { colors } from "../theme";
 
 const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
@@ -30,8 +30,8 @@ export function UpdateBanner(): React.JSX.Element | null {
         const currentVC = getCurrentVersionCode();
         const res = await fetch(`${API}/api/v1/app/version`);
         const data = await res.json();
-        if (data.latest_version_code > currentVC) {
-          const channel = Constants.expoConfig?.extra?.distributionChannel;
+        const channel = Constants.expoConfig?.extra?.distributionChannel;
+        if (shouldOfferUpdate(data, currentVC, channel)) {
           setUpdate({
             version: data.latest_version,
             url: resolveUpdateUrl(data, channel),
