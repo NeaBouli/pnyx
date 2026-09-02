@@ -233,7 +233,7 @@ export default function ProfileScreen() {
 
       {/* Version + Channel + Update Check */}
       <Text style={s.versionInfo}>
-        Έκδοση: {getCurrentVersionName()} (v{getCurrentVersionCode()}) | Κανάλι: {Constants.expoConfig?.extra?.distributionChannel === "play" ? "Google Play" : "Direct"}
+        Έκδοση: {getCurrentVersionName()} (v{getCurrentVersionCode()}) | Κανάλι: {Constants.expoConfig?.extra?.distributionChannel === "play" ? "Google Play" : Constants.expoConfig?.extra?.distributionChannel === "fdroid" ? "F-Droid" : "Direct"}
       </Text>
       <TouchableOpacity
         style={s.updateBtn}

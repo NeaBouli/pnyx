@@ -1,7 +1,7 @@
 # Ekklesia.gr — TODO
 # Copyright (c) 2026 V-Labs Development — MIT License
 
-Last reconciled: 2026-08-31 (newsletter block only)
+Last reconciled: 2026-09-02 (Android vC60 release block)
 
 `docs/STATUS.md` is the authority for the current release. GitHub issues and
 Linear are the authorities for active work. Older session notes are retained
@@ -58,9 +58,12 @@ below only as historical context; their unchecked boxes are not current tasks.
 - [x] Web, Dashboard, Mobile, Representative and shared crypto verification
   added to pull-request CI.
 - [x] Citizen and Representative Android bundles exported locally.
-- [x] Android v1.0.30 published as direct APK; Google Play vC59 submitted for
-  Closed Testing review. Official F-Droid remains independently published as
-  v1.0.29 / vC584.
+- [x] Android v1.0.31/vC60 validated as both a direct APK and Play-generated
+  device splits on a physical Samsung S10, with the Xiaomi/MIUI selector and
+  Greek-number input fixes covered by regressions. Direct and Play release
+  publication order is gated in the vC60 receipt. Official F-Droid remains an
+  independent reproducible-build channel and follows the v1.0.31 tag through
+  its normal metadata/build process.
 - [x] Monthly Brevo newsletter implemented and scheduled for the first day of
   each month at 09:00 scheduler time (Linear `NEA-160` is superseded by this
   implementation state; end-to-end subscriber delivery remains GH#261).
