@@ -1,0 +1,3 @@
+Improved Region and Municipality selection compatibility on Xiaomi/MIUI devices.
+More robust Greek mobile-number normalization across keyboards and pasted input.
+F-Droid installs remain on their own safe update path.

@@ -1,10 +1,10 @@
 # Ekklesia.gr - Project Status
 
-Repository and delivery gates reviewed: 2026-09-01.
-Android v1.0.30/vC59 is published as a direct APK and submitted to Google Play
-Closed Testing review. A bounded one-file API overlay for the v59 update
-contract is live. This is not a full-main API deployment; Google Play vC59 is
-not described as available until Google completes its review.
+Repository and delivery gates reviewed: 2026-09-02.
+Android v1.0.31/vC60 is fully validated as a direct APK and Play AAB. Release
+publication and Google Play Closed Testing submission follow the protected
+merge in that order. It fixes Xiaomi/MIUI Region and Municipality selection
+and normalizes Greek phone input from Unicode keyboards and pasted text.
 
 ## Verified component rollout
 
@@ -124,9 +124,9 @@ not described as available until Google completes its review.
 | Item | Status |
 |---|---|
 | Phase | Beta |
-| Android | v1.0.30 / versionCode 59 released through the direct channel |
-| Direct APK | GitHub Release v1.0.30 published; SHA-256 and upgrade signature verified |
-| Google Play | vC59 submitted to Closed Testing review; vC58 remains available until approval |
+| Android | v1.0.31 / versionCode 60 release candidate validated for Direct and Play |
+| Direct APK | Candidate SHA-256 and upgrade signature verified; GitHub publication follows the protected merge and is verified again from the published assets |
+| Google Play | vC60 AAB validated; Closed Testing remains pending until published APK/AAB hashes and signing metadata are verified |
 | iOS | Preparation only; no public build |
 | F-Droid | v1.0.29 / versionCode 584 published in the main F-Droid repository |
 
@@ -140,6 +140,29 @@ not described as available until Google completes its review.
 - The guarded Parliament Semaphore rollout and eligible-scope Arweave publication remain controlled by server-side policy and minimum group size.
 - The direct APK and Google Play channels are kept separate so each channel receives compatible updates.
 - During a primary outage the mobile app can use the HTTPS mirror for read-only data; voting stays disabled until the primary is healthy.
+
+## vC60 release-candidate verification
+
+- Mobile Vitest: 206/206 passed; TypeScript passed.
+- API app-version regressions: 6/6 passed.
+- Direct APK: v1.0.31 (60), `direct` channel, v2 signature valid. Its signing
+  certificate SHA-256 remains
+  `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
+- Play AAB: v1.0.31 (60), `play` channel, bundle metadata and four supported
+  ABIs (`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`) verified.
+- A physical Samsung S10 on Android 12 installed the direct APK and then locally
+  generated Play-style device splits signed with the same local release key,
+  without losing the anonymous identity, verification state, locked Region or
+  Municipality. This validates the bundle payload, not a real store-channel
+  switch; users switching between independently signed distribution channels
+  must uninstall and verify again as stated by the in-app channel notice.
+- Home, Voting, Trending, Parties, POLIS, Profile and Settings loaded on both
+  distributions. The active 24-hour bill appeared and logcat contained no
+  Ekklesia fatal, ANR or React Native error.
+- Phone verification was deliberately not submitted because the physical test
+  device has a German number. Greek-number variants and Xiaomi selector events
+  are covered by deterministic regressions.
+- Voting, identity, eligibility, ZK and database behavior are unchanged.
 
 ## vC59 release verification
 
@@ -175,6 +198,6 @@ history.
 - Alpha 0.1 official gov.gr holder verification is design-only (GH#141), pending official integration, DPIA, migration design, independent review and sandbox canary.
 - Off-site backup currently uses the separated sandbox fallback until funded dedicated storage is available.
 - F-Droid MR !38007 is merged and v1.0.29 (584) is publicly available from the main repository.
-- R8/ProGuard remains disabled; therefore no mapping file is produced for vC59. Google Play's mapping-file warning is expected and non-blocking. A future R8 production build requires a separate native/ZK regression gate and `mapping.txt` publication.
+- R8/ProGuard remains disabled; therefore no mapping file is produced for vC60. Google Play's mapping-file warning is expected and non-blocking. A future R8 production build requires a separate native/ZK regression gate and `mapping.txt` publication.
 
 Operational details and rollback history are maintained in the local, non-public agent bridge.

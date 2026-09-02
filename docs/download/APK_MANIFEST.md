@@ -28,24 +28,25 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.30 |
-| versionCode | 59 |
+| Version | 1.0.31 |
+| versionCode | 60 |
 | Package | ekklesia.gr |
-| APK SHA256 | `dd0e88d56a3ed2c439fca0c6bbba16f93e4c27a327f92af2537db3a74a9a5d31` |
-| AAB SHA256 | `d2c1edc7be655468756d58787004e7c3bfb72069b53bf3448cd6bad9e5985dcd` |
-| Canonical APK URL | `https://github.com/NeaBouli/pnyx/releases/download/v1.0.30/ekklesia-v1.0.30-vC59-DIRECT.apk` |
-| Legacy server alias | `https://ekklesia.gr/download/ekklesia-latest.apk` still serves v1.0.28 / vC57 until a separately controlled production deployment |
-| Build date | 2026-09-01 |
-| Release gate | PASS for code and artifacts — 192 Mobile tests, TypeScript, APK/AAB signatures, direct-upgrade certificate continuity, Android 15 emulator upgrade, GitHub CI and Security green. Google Play vC59 is submitted and remains under review. |
-| Includes | Native installed-version detection and strict version parsing prevent repeated or incorrect update prompts while preserving the legacy vC34 update contract; voting, identity and ZK policy are unchanged. |
+| APK SHA256 | `dde71f9edfbfb8251831ecbf42cf3200f354c9e0329cefb65025f272b91a15dc` |
+| AAB SHA256 | `daa2303cd048b657888fade5d2268807cbfa635be75ff4197bedeaf091559b05` |
+| Signing certificate SHA256 | `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec` |
+| Target canonical APK URL | `https://github.com/NeaBouli/pnyx/releases/download/v1.0.31/ekklesia-v1.0.31-vC60-DIRECT.apk` (published only after the protected merge) |
+| Legacy server alias | `https://ekklesia.gr/download/ekklesia-latest.apk` is updated only by the controlled web release and must match the canonical APK hash |
+| Build date | 2026-09-02 |
+| Release gate | PASS for source and local artifacts — 206 Mobile tests, TypeScript, API version tests, APK/AAB metadata, signature continuity and physical Samsung S10 direct/APKS upgrades pass. GitHub CI/Security, release publication and live aliases are verified separately after merge. |
+| Includes | Xiaomi/MIUI-compatible Region and Municipality selection plus robust normalization of Greek mobile numbers from Unicode keyboards and pasted input. Voting, identity, eligibility and ZK policy are unchanged. |
 
-Validation command for the canonical v1.0.30 asset:
+Post-publication validation command for the canonical v1.0.31 asset:
 
 ```bash
 (
   set -euo pipefail
-  expected='dd0e88d56a3ed2c439fca0c6bbba16f93e4c27a327f92af2537db3a74a9a5d31'
-  actual="$(curl -fsSL https://github.com/NeaBouli/pnyx/releases/download/v1.0.30/ekklesia-v1.0.30-vC59-DIRECT.apk | sha256sum | awk '{print $1}')"
+  expected='dde71f9edfbfb8251831ecbf42cf3200f354c9e0329cefb65025f272b91a15dc'
+  actual="$(curl -fsSL https://github.com/NeaBouli/pnyx/releases/download/v1.0.31/ekklesia-v1.0.31-vC60-DIRECT.apk | sha256sum | awk '{print $1}')"
   test "$actual" = "$expected"
   printf 'APK SHA256 verified: %s\n' "$actual"
 )

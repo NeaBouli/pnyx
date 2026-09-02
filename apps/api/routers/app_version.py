@@ -8,17 +8,17 @@ from fastapi import APIRouter
 router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
-LATEST_VERSION = "1.0.30"
-LATEST_VERSION_CODE = 59
+LATEST_VERSION = "1.0.31"
+LATEST_VERSION_CODE = 60
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v1.0.30 — Η εφαρμογή διαβάζει πλέον την εγκατεστημένη εγγενή έκδοση Android (όνομα και κωδικό) για την εμφάνιση και τη σύγκριση ενημερώσεων, αποτρέποντας επαναλαμβανόμενες ή εσφαλμένες ειδοποιήσεις ενημέρωσης. Οι σύνδεσμοι ενημέρωσης παραμένουν συμβατοί με παλαιότερες εγκαταστάσεις vC34."
-RELEASE_NOTES_EN = "v1.0.30 — The app now reads the installed native Android version name and code for display and update comparison, preventing repeated or incorrect update prompts. Update links remain compatible with legacy vC34 installs."
+RELEASE_NOTES_EL = "v1.0.31 — Βελτιωμένη συμβατότητα επιλογής Περιφέρειας και Δήμου σε συσκευές Xiaomi/MIUI και ανθεκτικότερη κανονικοποίηση ελληνικών αριθμών κινητού από πληκτρολόγηση ή επικόλληση."
+RELEASE_NOTES_EN = "v1.0.31 — Improved Region and Municipality selection compatibility on Xiaomi/MIUI devices and more robust normalization of Greek mobile numbers entered or pasted from different keyboards."
 
-FDROID_URL = ""  # Not live yet — MR !38007 pending
+FDROID_URL = "https://f-droid.org/packages/ekklesia.gr/"
 PLAYSTORE_URL = "https://play.google.com/apps/testing/ekklesia.gr"
-DIRECT_APK_URL = "https://github.com/NeaBouli/pnyx/releases/download/v1.0.30/ekklesia-v1.0.30-vC59-DIRECT.apk"
+DIRECT_APK_URL = "https://github.com/NeaBouli/pnyx/releases/download/v1.0.31/ekklesia-v1.0.31-vC60-DIRECT.apk"
 
 
 @router.get("/version")

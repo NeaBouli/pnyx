@@ -7,7 +7,7 @@ import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
 import { getCurrentVersionCode, getCurrentVersionName } from "../lib/app-version";
-import { resolveUpdateUrl } from "../lib/update-channel";
+import { getDistributionChannelLabel, resolveUpdateUrl, shouldOfferUpdate } from "../lib/update-channel";
 import { loadKeypair, loadNullifier } from "../lib/crypto-native";
 import {
   loadPendingProfileLocation,
@@ -32,7 +32,7 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [regionLocked, setRegionLocked] = useState(false);
-  const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "upToDate" | "updateAvailable">("idle");
+  const [updateStatus, setUpdateStatus] = useState<"idle" | "checking" | "upToDate" | "updateAvailable" | "managedExternally">("idle");
   const [latestVersion, setLatestVersion] = useState<any>(null);
   const [saveError, setSaveError] = useState("");
 
@@ -233,19 +233,24 @@ export default function ProfileScreen() {
 
       {/* Version + Channel + Update Check */}
       <Text style={s.versionInfo}>
-        Έκδοση: {getCurrentVersionName()} (v{getCurrentVersionCode()}) | Κανάλι: {Constants.expoConfig?.extra?.distributionChannel === "play" ? "Google Play" : "Direct"}
+        Έκδοση: {getCurrentVersionName()} (v{getCurrentVersionCode()}) | Κανάλι: {getDistributionChannelLabel(Constants.expoConfig?.extra?.distributionChannel)}
       </Text>
       <TouchableOpacity
         style={s.updateBtn}
         onPress={async () => {
           setUpdateStatus("checking");
           try {
+            const channel = Constants.expoConfig?.extra?.distributionChannel;
+            if (channel === "fdroid") {
+              setUpdateStatus("managedExternally");
+              return;
+            }
             const API = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
             const res = await fetch(`${API}/api/v1/app/version`);
             const data = await res.json();
             setLatestVersion(data);
             const current = getCurrentVersionCode();
-            setUpdateStatus(data.latest_version_code > current ? "updateAvailable" : "upToDate");
+            setUpdateStatus(shouldOfferUpdate(data, current, channel) ? "updateAvailable" : "upToDate");
           } catch { setUpdateStatus("idle"); }
         }}
         disabled={updateStatus === "checking"}
@@ -254,6 +259,8 @@ export default function ProfileScreen() {
           <ActivityIndicator color={colors.primary} size="small" />
         ) : updateStatus === "upToDate" ? (
           <Text style={s.updateText}>✅ Τρέχουσα έκδοση</Text>
+        ) : updateStatus === "managedExternally" ? (
+          <Text style={s.updateText}>Ενημερώσεις μέσω F-Droid</Text>
         ) : updateStatus === "updateAvailable" ? (
           <Text style={[s.updateText, { color: colors.success }]}>🆕 Νέα έκδοση διαθέσιμη!</Text>
         ) : (
