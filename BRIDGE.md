@@ -1,5 +1,16 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-09-04 - Private VLABS finance handoff refreshed
+
+- This public repository contains no finance details. Community support remains
+  disabled while the current private VLABS operator gates are processed.
+- The project developer must record exact `PRODUCT_READY` evidence for the
+  support UI. VLABS must separately return `FINANCE_READY`; both are required
+  before any support control can be enabled.
+- Obtain the current finance instructions through Gio and the private VLABS
+  operator only. Do not add recipient, account, tax, provider, donor, document
+  or runtime values here.
+
 ## 2026-08-31 - GH261 Consent Guard, Not a Rollout
 
 - Fresh read-only inventory: five local confirmations, two provider-list
