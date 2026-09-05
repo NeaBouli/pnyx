@@ -1,5 +1,30 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-09-05 - Android Xiaomi and HLR Follow-Up Prepared
+
+- A bounded follow-up fixes two remaining false-negative paths without changing
+  voting, identity, eligibility, ZK, database or release policy: Android Picker
+  item/selected text now has explicit theme-safe colors, and Greek mobile input
+  also accepts the locally written `069...` form.
+- Fallback HLR results now distinguish an assigned but temporarily unreachable
+  `ABSENT` number from `INVALID_MSISDN` and `UNDETERMINED`. Assigned Greek
+  numbers pass; invalid and unresolved results remain fail-closed. Confirmed
+  primary `DEAD` results still never use fallback.
+- Verification passed: 41 crypto/HLR tests, 206 mobile tests, 11 dependency
+  security regressions, TypeScript, native Android Direct Debug build for all
+  supported ABIs, diff check and isolated secret scan. Kimi reviewed the
+  secret-free patch and returned `APPROVE WITH COMMENTS`; Sol resolved every
+  verifiable comment against the installed sources and tests.
+- The live Direct APK remains unchanged at v1.0.31/vC60. Its live SHA-256 is
+  `dde71f9edfbfb8251831ecbf42cf3200f354c9e0329cefb65025f272b91a15dc`,
+  and the stale repository checksum record is corrected to match it. The
+  landing documentation now warns that Direct, Play and F-Droid signatures
+  cannot update across channels without uninstalling and re-verifying.
+- No API, app, website, Google Play, F-Droid, database, DNS, secret, IAM or
+  production change occurred. Two local Android AVDs failed before app install
+  because their Android package service never started; this is retained as a
+  test-host issue and is not attributed to Ekklesia.
+
 ## 2026-09-04 - Private VLABS finance handoff refreshed
 
 - This public repository contains no finance details. Community support remains

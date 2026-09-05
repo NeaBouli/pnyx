@@ -1,13 +1,23 @@
 # Ekklesia.gr — TODO
 # Copyright (c) 2026 V-Labs Development — MIT License
 
-Last reconciled: 2026-09-02 (Android vC60 release block)
+Last reconciled: 2026-09-05 (Android Xiaomi/HLR follow-up)
 
 `docs/STATUS.md` is the authority for the current release. GitHub issues and
 Linear are the authorities for active work. Older session notes are retained
 below only as historical context; their unchecked boxes are not current tasks.
 
 ## Current gates
+
+- [x] Prepare and validate the bounded Xiaomi/HLR follow-up: explicit Android
+  Picker colors, `069...` normalization, assigned `ABSENT` fallback handling,
+  release-channel guidance and corrected live Direct APK checksum. Crypto,
+  mobile, dependency regressions, TypeScript, native Android build, Kimi review,
+  diff and secret checks pass; no production or store mutation occurred.
+- [ ] Merge the Xiaomi/HLR follow-up only after normal CI and required review;
+  release and deploy it only as a separate reversible Android/API/Web release.
+  Do not replace the existing v1.0.31 artifacts or production API from this
+  preparation task.
 
 - [x] Merge bounded web lifecycle/lint fixes in PR #259 (`54ff2fc`): 40 tests,
   typecheck and build pass; 19 warnings removed without rule suppression.

@@ -49,6 +49,8 @@ def normalize_greek_number(phone: str) -> Optional[str]:
         normalized = "+" + digits
     elif digits.startswith("69") and len(digits) == 10:
         normalized = "+30" + digits
+    elif digits.startswith("069") and len(digits) == 11:
+        normalized = "+30" + digits[1:]
     else:
         return None
 
@@ -198,6 +200,8 @@ async def hlr_lookup_hlrlookupcom(phone: str) -> dict:
 
 HLR_LOOKUPS_URL = "https://www.hlr-lookups.com/api/v2/hlr-lookup"
 
+_FALLBACK_ASSIGNED_STATUSES = frozenset({"CONNECTED", "ABSENT"})
+
 
 async def hlr_lookup(phone: str) -> dict:
     """
@@ -248,7 +252,9 @@ async def hlr_lookup(phone: str) -> dict:
             country = data.get("original_country_code")
 
             is_greek = country == "GR" or normalized.startswith("+30")
-            is_active = conn_status == "CONNECTED"
+            # ABSENT still means that the provider confirmed an assigned,
+            # valid number; only the device is currently off or unreachable.
+            is_assigned = conn_status in _FALLBACK_ASSIGNED_STATUSES
 
             logger.info(
                 f"[MOD-01] HLR Fallback: {normalized[:6]}XXXX "
@@ -256,11 +262,13 @@ async def hlr_lookup(phone: str) -> dict:
             )
 
             return {
-                "valid": is_greek and is_active,
+                "valid": is_greek and is_assigned,
                 "network": network,
                 "country": country,
                 "status": conn_status or "UNKNOWN",
-                "error": None if (is_greek and is_active) else "Ο αριθμός δεν είναι ενεργός ελληνικός αριθμός"
+                "error": None if (is_greek and is_assigned)
+                    else _TEMPORARY_VERIFICATION_ERROR if conn_status == "UNDETERMINED"
+                    else "Ο αριθμός δεν είναι έγκυρος ελληνικός αριθμός κινητού"
             }
 
     except httpx.TimeoutException:

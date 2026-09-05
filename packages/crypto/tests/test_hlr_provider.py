@@ -105,16 +105,67 @@ async def test_primary_rejects_live_landline() -> None:
 
 
 @pytest.mark.asyncio
-async def test_indeterminate_primary_uses_configured_fallback(monkeypatch) -> None:
+@pytest.mark.parametrize("connectivity_status", ["CONNECTED", "ABSENT"])
+async def test_fallback_accepts_assigned_greek_mobile(
+    monkeypatch, connectivity_status: str
+) -> None:
+    monkeypatch.setenv("HLRLOOKUPS_API_KEY", "test-fallback-key")
+    monkeypatch.setenv("HLRLOOKUPS_API_SECRET", "test-fallback-secret")
+    FakeAsyncClient.response_payload = {
+        "connectivity_status": connectivity_status,
+        "original_network_name": "Test GR",
+        "original_country_code": "GR",
+    }
+
+    result = await hlr.hlr_lookup("+306912345678")
+
+    assert result["valid"] is True
+    assert result["status"] == connectivity_status
+    assert result["error"] is None
+    request = FakeAsyncClient.requests[0]
+    assert request["url"] == hlr.HLR_LOOKUPS_URL
+    assert request["json"] == {"msisdn": "+306912345678"}
+    assert request["auth"] == ("test-fallback-key", "test-fallback-secret")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("connectivity_status", ["INVALID_MSISDN", "UNDETERMINED"])
+async def test_fallback_rejects_invalid_or_unresolved_mobile(
+    monkeypatch, connectivity_status: str
+) -> None:
+    monkeypatch.setenv("HLRLOOKUPS_API_KEY", "test-fallback-key")
+    monkeypatch.setenv("HLRLOOKUPS_API_SECRET", "test-fallback-secret")
+    FakeAsyncClient.response_payload = {
+        "connectivity_status": connectivity_status,
+        "original_network_name": "Test GR",
+        "original_country_code": "GR",
+    }
+
+    result = await hlr.hlr_lookup("6912345678")
+
+    assert result["valid"] is False
+    assert result["status"] == connectivity_status
+    if connectivity_status == "UNDETERMINED":
+        assert "προσωρινά" in result["error"]
+    else:
+        assert "έγκυρος" in result["error"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("primary_status", sorted(hlr._PRIMARY_INDETERMINATE_STATUSES))
+@pytest.mark.parametrize("fallback_status", ["CONNECTED", "ABSENT"])
+async def test_indeterminate_primary_uses_configured_fallback(
+    monkeypatch, primary_status: str, fallback_status: str
+) -> None:
     primary = {
         "valid": False,
-        "status": "INCONCLUSIVE",
+        "status": primary_status,
         "number_type": "MOBILE",
         "error": "temporary",
     }
     fallback = {
         "valid": True,
-        "status": "CONNECTED",
+        "status": fallback_status,
         "network": "Fallback GR",
         "country": "GR",
         "error": None,
@@ -144,10 +195,10 @@ async def test_indeterminate_primary_uses_configured_fallback(monkeypatch) -> No
     result = await hlr.verify_greek_number("+306912345678")
 
     assert result["valid"] is True
-    assert result["status"] == "CONNECTED"
+    assert result["status"] == fallback_status
     assert result["_providers_queried"] == ["primary", "fallback"]
     assert fallback_calls == ["+306912345678"]
-    assert state_calls == ["indeterminate_status (INCONCLUSIVE)"]
+    assert state_calls == [f"indeterminate_status ({primary_status})"]
 
 
 @pytest.mark.asyncio

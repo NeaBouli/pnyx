@@ -63,7 +63,9 @@ class TestHLR:
     def test_valid_greek_mobile(self):
         assert is_valid_greek_mobile("+306912345678") is True
         assert is_valid_greek_mobile("6912345678") is True
+        assert is_valid_greek_mobile("06912345678") is True
         assert is_valid_greek_mobile("00306912345678") is True
+        assert normalize_greek_number("06912345678") == "+306912345678"
 
     def test_landline_rejected(self):
         assert is_valid_greek_mobile("+302101234567") is False
