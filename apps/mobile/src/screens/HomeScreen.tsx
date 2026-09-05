@@ -6,7 +6,10 @@ import { isVerified } from "../lib/crypto-native";
 import { fetchAnalyticsOverview } from "../lib/api";
 import { isDemoMode } from "../lib/demo";
 import { getResult } from "../lib/compassStore";
-import { registerForPushNotifications } from "../lib/notifications";
+import {
+  clearNotificationBadge,
+  registerForPushNotifications,
+} from "../lib/notifications";
 import { getCurrentVersionCode } from "../lib/app-version";
 import { resolveUpdateUrl, shouldOfferUpdate } from "../lib/update-channel";
 import type { CompassResult } from "../compass/types";
@@ -33,6 +36,7 @@ export default function HomeScreen() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    clearNotificationBadge().catch(() => {});
     isVerified().then(setVerified);
     isDemoMode().then(setDemo);
     fetchAnalyticsOverview().then(setAnalytics).catch(() => {});
