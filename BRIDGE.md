@@ -1,6 +1,6 @@
 # Pnyx / ekklesia.gr Bridge
 
-## 2026-09-05 - Android Xiaomi and HLR Follow-Up Prepared
+## 2026-09-05 - Android Xiaomi and HLR Follow-Up Prepared (PR #291)
 
 - A bounded follow-up fixes two remaining false-negative paths without changing
   voting, identity, eligibility, ZK, database or release policy: Android Picker

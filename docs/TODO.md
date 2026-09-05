@@ -14,7 +14,7 @@ below only as historical context; their unchecked boxes are not current tasks.
   release-channel guidance and corrected live Direct APK checksum. Crypto,
   mobile, dependency regressions, TypeScript, native Android build, Kimi review,
   diff and secret checks pass; no production or store mutation occurred.
-- [ ] Merge the Xiaomi/HLR follow-up only after normal CI and required review;
+- [ ] Merge Xiaomi/HLR follow-up PR #291 only after normal CI and required review;
   release and deploy it only as a separate reversible Android/API/Web release.
   Do not replace the existing v1.0.31 artifacts or production API from this
   preparation task.
