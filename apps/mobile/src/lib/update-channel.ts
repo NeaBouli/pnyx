@@ -11,7 +11,7 @@ export interface UpdateVersionPayload extends UpdateUrlPayload {
 }
 
 export const DIRECT_APK_URL =
-  "https://github.com/NeaBouli/pnyx/releases/download/v1.0.31/ekklesia-v1.0.31-vC60-DIRECT.apk";
+  "https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk";
 export const PLAY_STORE_URL = "https://play.google.com/apps/testing/ekklesia.gr";
 export const FDROID_URL = "https://f-droid.org/packages/ekklesia.gr/";
 

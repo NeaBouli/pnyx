@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, Switch, StyleSheet, ScrollView } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { colors } from "../theme";
+import { clearNotificationBadge } from "../lib/notifications";
 
 const SETTINGS = [
   { key: "push_vote_open", icon: "🗳️", label: "Νέες Ψηφοφορίες", sub: "Όταν ανοίγει νέα ψηφοφορία" },
@@ -32,11 +33,13 @@ export default function NotificationSettingsScreen() {
   const toggleMaster = async (val: boolean) => {
     setMaster(val);
     await SecureStore.setItemAsync("push_master", String(val));
+    if (!val) await clearNotificationBadge();
   };
 
   const togglePref = async (key: string, val: boolean) => {
     setPrefs(prev => ({ ...prev, [key]: val }));
     await SecureStore.setItemAsync(key, String(val));
+    if (!val) await clearNotificationBadge();
   };
 
   return (
@@ -68,7 +71,7 @@ export default function NotificationSettingsScreen() {
         </View>
       ))}
 
-      <Text style={s.footer}>Οι ειδοποιήσεις αποθηκεύονται τοπικά στη συσκευή σας.</Text>
+      <Text style={s.footer}>Οι ρυθμίσεις ειδοποιήσεων και ο μετρητής εικονιδίου αποθηκεύονται τοπικά στη συσκευή σας.</Text>
     </ScrollView>
   );
 }

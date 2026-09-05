@@ -12,7 +12,7 @@ from routers import app_version
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
-def test_mobile_release_metadata_is_consistent() -> None:
+def test_mobile_build_metadata_is_consistent() -> None:
     app_config = json.loads((REPO_ROOT / "apps/mobile/app.json").read_text())
     expo = app_config["expo"]
     gradle = (REPO_ROOT / "apps/mobile/android/app/build.gradle").read_text()
@@ -21,10 +21,15 @@ def test_mobile_release_metadata_is_consistent() -> None:
 
     assert gradle_name is not None
     assert gradle_code is not None
-    assert expo["version"] == app_version.LATEST_VERSION == gradle_name.group(1)
-    assert expo["android"]["versionCode"] == app_version.LATEST_VERSION_CODE == int(gradle_code.group(1))
-    assert app_version.RELEASE_NOTES_EL.startswith(f"v{app_version.LATEST_VERSION}")
-    assert app_version.RELEASE_NOTES_EN.startswith(f"v{app_version.LATEST_VERSION}")
+    assert expo["version"] == gradle_name.group(1) == "1.0.32"
+    assert expo["android"]["versionCode"] == int(gradle_code.group(1)) == 61
+
+
+def test_api_announces_only_the_published_release() -> None:
+    assert app_version.LATEST_VERSION == "1.0.31"
+    assert app_version.LATEST_VERSION_CODE == 60
+    assert app_version.RELEASE_NOTES_EL.startswith("v1.0.31")
+    assert app_version.RELEASE_NOTES_EN.startswith("v1.0.31")
 
 
 @pytest.mark.asyncio

@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("expo-application", () => ({
-  nativeApplicationVersion: "1.0.31",
-  nativeBuildVersion: "60",
+  nativeApplicationVersion: "1.0.32",
+  nativeBuildVersion: "61",
 }));
 vi.mock("expo-constants", () => ({ default: { expoConfig: undefined } }));
 
@@ -27,7 +27,7 @@ describe("native app version", () => {
   });
 
   it("reads the installed package version instead of embedded Expo metadata", () => {
-    expect(getCurrentVersionName()).toBe("1.0.31");
-    expect(getCurrentVersionCode()).toBe(60);
+    expect(getCurrentVersionName()).toBe("1.0.32");
+    expect(getCurrentVersionCode()).toBe(61);
   });
 });
