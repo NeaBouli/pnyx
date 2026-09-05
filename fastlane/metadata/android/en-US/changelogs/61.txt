@@ -1,0 +1,3 @@
+Added an app-icon notification counter for enabled notification categories.
+The counter resets safely when the app opens or notifications are disabled.
+Includes the Xiaomi/MIUI compatibility and Greek mobile verification fixes.

@@ -28,17 +28,17 @@ https://ekklesia.gr/representative/index.html
 
 | Field | Value |
 |---|---|
-| Version | 1.0.31 |
-| versionCode | 60 |
+| Version | 1.0.32 |
+| versionCode | 61 |
 | Package | ekklesia.gr |
-| APK SHA256 | `dde71f9edfbfb8251831ecbf42cf3200f354c9e0329cefb65025f272b91a15dc` |
-| AAB SHA256 | `daa2303cd048b657888fade5d2268807cbfa635be75ff4197bedeaf091559b05` |
+| APK SHA256 | `691049abc2a3586e75ea0da9ccee9dfff9c7129a3dbe74ffff3de0cc3174019b` |
+| AAB SHA256 | `c684ecd4b36f04174158a3e51b1008808c8e4ffc251865d33fa11a95e091d88f` |
 | Signing certificate SHA256 | `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec` |
-| Canonical APK URL | `https://github.com/NeaBouli/pnyx/releases/download/v1.0.31/ekklesia-v1.0.31-vC60-DIRECT.apk` (published and checksum-verified) |
-| Server alias | `https://ekklesia.gr/download/ekklesia-latest.apk` was updated by the controlled web release and matches the canonical APK hash |
-| Build date | 2026-09-02 |
-| Release gate | PASS — 206 Mobile tests, TypeScript, API version tests, APK/AAB metadata, signature continuity, direct APK and locally generated Play-style split validation on a physical Samsung S10, GitHub CI/Security, published asset checksums and live alias verification pass. Google Play approval and F-Droid's independent build remain external. |
-| Includes | Xiaomi/MIUI-compatible Region and Municipality selection plus robust normalization of Greek mobile numbers from Unicode keyboards and pasted input. Voting, identity, eligibility and ZK policy are unchanged. |
+| Canonical APK URL | `https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk` (planned; local artifact checksum-verified) |
+| Server alias | `https://ekklesia.gr/download/ekklesia-latest.apk` remains on v1.0.31 until the controlled post-publication rollout |
+| Build date | 2026-09-05 |
+| Release gate | PRE-PUBLICATION PASS — 211 Mobile tests, TypeScript, API version tests, APK/AAB metadata, signature continuity and the F-Droid-compatible local build pass. GitHub CI/Security, published asset checksums and live alias verification remain required before completion. |
+| Includes | App-icon notification count for enabled categories, with reset when the app opens, plus the Xiaomi/MIUI and Greek mobile-input fixes from v1.0.31. Numeric rendering depends on Android launcher support. Voting, identity, eligibility and ZK policy are unchanged. |
 
 Android treats the Direct, Google Play and F-Droid builds as separate signing
 channels. Installing one channel over another can therefore report a package
@@ -47,13 +47,13 @@ their installed channel. Changing channel requires uninstalling the installed
 copy first and then verifying again because the private voting key is stored
 only on that device installation.
 
-Post-publication validation command for the canonical v1.0.31 asset:
+Post-publication validation command for the canonical v1.0.32 asset:
 
 ```bash
 (
   set -euo pipefail
-  expected='dde71f9edfbfb8251831ecbf42cf3200f354c9e0329cefb65025f272b91a15dc'
-  actual="$(curl -fsSL https://github.com/NeaBouli/pnyx/releases/download/v1.0.31/ekklesia-v1.0.31-vC60-DIRECT.apk | sha256sum | awk '{print $1}')"
+  expected='691049abc2a3586e75ea0da9ccee9dfff9c7129a3dbe74ffff3de0cc3174019b'
+  actual="$(curl -fsSL https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk | sha256sum | awk '{print $1}')"
   test "$actual" = "$expected"
   printf 'APK SHA256 verified: %s\n' "$actual"
 )

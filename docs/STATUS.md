@@ -1,19 +1,18 @@
 # Ekklesia.gr - Project Status
 
 Repository and delivery gates reviewed: 2026-09-05.
-Android v1.0.31/vC60 is published as a checksum-verified direct APK and is
-submitted to Google Play Closed Testing Alpha. The bounded API and Web release
-is live. It fixes Xiaomi/MIUI Region and Municipality selection and normalizes
-Greek phone input from Unicode keyboards and pasted text. Google availability
-still depends on external review; F-Droid's independent v1.0.31 build remains
-pending.
+Android v1.0.32/vC61 is prepared as the next bounded mobile release. Its Direct
+APK and Play AAB are locally checksum-verified and retain the established
+signing certificate. The release adds category-aware app-icon notification
+counts and resets the count when the app opens. Android launchers that do not
+support numeric badges may show only their native notification dot. Protected
+merge and publication remain pending; F-Droid follows its independent source-
+build cycle.
 
-A further Xiaomi/HLR follow-up is prepared but not released. It makes Android
-Picker item colors explicit and accepts the locally written `069...` Greek
-mobile form. Fallback verification remains fail-closed: only `CONNECTED`
-passes, while `ABSENT` and `UNDETERMINED` return a temporary retry message and
-invalid or confirmed-dead results remain rejected. No production or store state
-changed as part of this preparation.
+The Xiaomi/HLR follow-up merged in PR #291. Android Picker colors are explicit,
+the locally written `069...` Greek mobile form is accepted, and fallback HLR
+verification remains fail-closed: only `CONNECTED` passes. Voting, identity,
+eligibility, ZK, database and production policy are unchanged.
 
 ## Verified component rollout
 
@@ -141,11 +140,11 @@ changed as part of this preparation.
 | Item | Status |
 |---|---|
 | Phase | Beta |
-| Android | v1.0.31 / versionCode 60 published for Direct; submitted for Play Closed Testing |
-| Direct APK | Public on GitHub and the website; published SHA-256 and upgrade signature verified |
-| Google Play | vC60 accepted for Closed Testing Alpha review; external approval pending |
+| Android | v1.0.32 / versionCode 61 built and verified; publication pending |
+| Direct APK | Local release artifact and upgrade signature verified; GitHub/website publication pending |
+| Google Play | vC61 AAB verified; Closed Testing submission pending |
 | iOS | Preparation only; no public build |
-| F-Droid | v1.0.29 / versionCode 584 remains public; independent v1.0.31 detection/build pending |
+| F-Droid | v1.0.29 / versionCode 584 remains public; v1.0.31 metadata is accepted and v1.0.32 follows the source-tag build cycle |
 
 ## Verified product behavior
 
@@ -157,6 +156,27 @@ changed as part of this preparation.
 - The guarded Parliament Semaphore rollout and eligible-scope Arweave publication remain controlled by server-side policy and minimum group size.
 - The direct APK and Google Play channels are kept separate so each channel receives compatible updates.
 - During a primary outage the mobile app can use the HTTPS mirror for read-only data; voting stays disabled until the primary is healthy.
+
+## vC61 release verification
+
+- Mobile Vitest: 211/211 passed; TypeScript passed.
+- API app-version regressions pass.
+- Direct APK: v1.0.32 (61), package `ekklesia.gr`, `direct` channel and APK v2
+  signature valid. Signing certificate SHA-256 remains
+  `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
+- Play AAB: v1.0.32 (61), `play` channel, signed with the same upload key.
+- Direct APK SHA-256:
+  `691049abc2a3586e75ea0da9ccee9dfff9c7129a3dbe74ffff3de0cc3174019b`.
+  Play AAB SHA-256:
+  `c684ecd4b36f04174158a3e51b1008808c8e4ffc251865d33fa11a95e091d88f`.
+- Enabled notification categories increment the local icon count up to 99;
+  opening the app or disabling the master switch clears it. F-Droid remains
+  native-push-free. Android launcher support determines whether a number or
+  only the platform notification dot is rendered.
+- F-Droid's official metadata currently names v1.0.31/604 while the public
+  package page still offers v1.0.29/584. v1.0.32 must enter through the normal
+  source tag and reproducible-build path; no manually signed APK is uploaded.
+- Voting, identity, eligibility, ZK and database behavior are unchanged.
 
 ## vC60 release verification
 

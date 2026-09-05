@@ -14,14 +14,16 @@ below only as historical context; their unchecked boxes are not current tasks.
   release-channel guidance and corrected live Direct APK checksum. Crypto,
   mobile, dependency regressions, TypeScript, native Android build, Kimi review,
   diff and secret checks pass; no production or store mutation occurred.
-- [ ] Merge Xiaomi/HLR follow-up PR #291 only after normal CI and required review;
-  release and deploy it only as a separate reversible Android/API/Web release.
-  Do not replace the existing v1.0.31 artifacts or production API from this
-  preparation task.
-- [ ] App icon badge counter for enabled notification categories. It is not yet
-  implemented; `expo-notifications` currently has `shouldSetBadge: false` and
-  F-Droid remains push-free by design. Implement and release as a separate,
-  bounded mobile task after PR #291.
+- [x] Merge Xiaomi/HLR follow-up PR #291 after normal CI and required review.
+  It merged as `17ed54448d5f5569b005a06c0cac2d13fb483790`; main CI and Security
+  Audit passed.
+- [x] Implement and validate an app-icon notification counter for enabled
+  categories. The counter is reset when the app opens or the master switch is
+  disabled, is capped at 99 and remains absent from the push-free F-Droid
+  native build. Numeric display depends on launcher support.
+- [ ] Complete the protected v1.0.32/vC61 publication sequence: merge, publish
+  checksum-verified GitHub assets, submit Play Closed Testing, then perform the
+  bounded API/Web/latest-APK rollout and live verification.
 
 - [x] Merge bounded web lifecycle/lint fixes in PR #259 (`54ff2fc`): 40 tests,
   typecheck and build pass; 19 warnings removed without rule suppression.
@@ -78,10 +80,11 @@ below only as historical context; their unchecked boxes are not current tasks.
   release, bounded API/Web rollout and Google Play Closed Testing submission
   are complete. Official F-Droid remains an independent reproducible-build
   channel and follows the v1.0.31 tag through its normal metadata/build process.
-- [ ] Confirm Google's external approval and tester availability for
-  v1.0.31/vC60; do not promote to the production track as part of this gate.
-- [ ] Confirm F-Droid's independent v1.0.31 metadata update, ABI builds and
-  public repository APKs; do not upload a manually signed binary.
+- [ ] Confirm Google's external approval and tester availability for the latest
+  v1.0.32/vC61 Closed Testing release; do not promote to production here.
+- [ ] Confirm F-Droid's independent v1.0.31 ABI builds/public repository APKs,
+  then its v1.0.32 tag detection and metadata build. Never upload a manually
+  signed binary to F-Droid.
 - [x] Monthly Brevo newsletter implemented and scheduled for the first day of
   each month at 09:00 scheduler time (Linear `NEA-160` is superseded by this
   implementation state; end-to-end subscriber delivery remains GH#261).

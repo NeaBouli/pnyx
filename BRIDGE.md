@@ -1,5 +1,23 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-09-05 - Android v1.0.32 Icon Badge Release Prepared
+
+- v1.0.32/versionCode 61 adds local, category-aware app-icon notification
+  counts for enabled notifications. Counts are capped at 99 and cleared when
+  the app opens or the notification master switch is disabled. Numeric display
+  remains dependent on Android launcher support; some launchers show a dot.
+- Direct APK and Play AAB release builds pass and retain the established signing
+  certificate. Their SHA-256 values are recorded in
+  `docs/operations/ANDROID_V61_RELEASE_2026-09-05.md`.
+- The local F-Droid helper is aligned with the official native exclusion of
+  `expo-notifications`. F-Droid remains a separate unsigned source-build path;
+  no Direct or Play binary is uploaded there.
+- Publication is ordered and fail-closed: protected merge and green checks,
+  GitHub release plus checksum verification, Play Closed Testing submission,
+  then bounded API/Web/latest-APK rollout with rollback tags and live probes.
+- No production-track promotion, database, DNS, secret, IAM, voting, identity,
+  eligibility or ZK change is part of this release.
+
 ## 2026-09-05 - Android Xiaomi and HLR Follow-Up Prepared (PR #291)
 
 - A bounded follow-up fixes two remaining false-negative paths without changing
