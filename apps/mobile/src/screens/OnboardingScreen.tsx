@@ -158,16 +158,17 @@ export default function OnboardingScreen({ navigation }: Props) {
           selectedValue={selPeriferia}
           onValueChange={v => { setSelPeriferia(v); setSelDimos(null); }}
           style={s.picker}
+          dropdownIconColor={colors.text}
         >
-          <Picker.Item label="— Περιφέρεια —" value={null} />
-          {periferias.map(p => <Picker.Item key={p.id} label={p.name_el} value={p.id} />)}
+          <Picker.Item label="— Περιφέρεια —" value={null} color={colors.text} style={s.pickerItem} />
+          {periferias.map(p => <Picker.Item key={p.id} label={p.name_el} value={p.id} color={colors.text} style={s.pickerItem} />)}
         </Picker>
       </View>
       {selPeriferia && dimoi.length > 0 && (
         <View style={s.pickerWrap}>
-          <Picker mode="dropdown" selectedValue={selDimos} onValueChange={setSelDimos} style={s.picker}>
-            <Picker.Item label="— Δήμος —" value={null} />
-            {dimoi.map(d => <Picker.Item key={d.id} label={d.name_el} value={d.id} />)}
+          <Picker mode="dropdown" selectedValue={selDimos} onValueChange={setSelDimos} style={s.picker} dropdownIconColor={colors.text}>
+            <Picker.Item label="— Δήμος —" value={null} color={colors.text} style={s.pickerItem} />
+            {dimoi.map(d => <Picker.Item key={d.id} label={d.name_el} value={d.id} color={colors.text} style={s.pickerItem} />)}
           </Picker>
         </View>
       )}
@@ -245,7 +246,8 @@ const s = StyleSheet.create({
   secondaryBtn: { paddingHorizontal: 16, paddingVertical: 12 },
   secondaryBtnText: { color: colors.primary, fontSize: 14, fontWeight: "600" },
   pickerWrap: { alignSelf: "stretch", backgroundColor: colors.surface, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginBottom: 12, overflow: "hidden" },
-  picker: { height: 50 },
+  picker: { height: 50, color: colors.text, backgroundColor: colors.surface },
+  pickerItem: { color: colors.text, backgroundColor: colors.surface },
   hint: { fontSize: 12, color: colors.textTertiary, marginBottom: 20, textAlign: "center" },
   dots: { flexDirection: "row", justifyContent: "center", position: "absolute", bottom: 20, left: 0, right: 0 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border, marginHorizontal: 4 },

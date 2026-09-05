@@ -1,12 +1,19 @@
 # Ekklesia.gr - Project Status
 
-Repository and delivery gates reviewed: 2026-09-02.
+Repository and delivery gates reviewed: 2026-09-05.
 Android v1.0.31/vC60 is published as a checksum-verified direct APK and is
 submitted to Google Play Closed Testing Alpha. The bounded API and Web release
 is live. It fixes Xiaomi/MIUI Region and Municipality selection and normalizes
 Greek phone input from Unicode keyboards and pasted text. Google availability
 still depends on external review; F-Droid's independent v1.0.31 build remains
 pending.
+
+A further Xiaomi/HLR follow-up is prepared but not released. It makes Android
+Picker item colors explicit and accepts the locally written `069...` Greek
+mobile form. Fallback verification remains fail-closed: only `CONNECTED`
+passes, while `ABSENT` and `UNDETERMINED` return a temporary retry message and
+invalid or confirmed-dead results remain rejected. No production or store state
+changed as part of this preparation.
 
 ## Verified component rollout
 
