@@ -1,12 +1,13 @@
 # Android v1.0.32 / vC61 Release Receipt
 
-Date: 2026-09-05
+Date: 2026-09-06
 
 ## Scope
 
 This is a bounded Android, app-version and download-link release. It adds a
 category-aware app-icon notification count, capped at 99 and reset when the app
-opens or the notification master switch is disabled. It also includes the
+opens, returns to the foreground or a notification switch is disabled.
+It also includes the
 already merged Xiaomi/MIUI selector and Greek mobile-input fixes from PR #291.
 It does not change voting, identity, eligibility, ZK, database, DNS, secrets,
 IAM or production-track policy.
@@ -17,16 +18,16 @@ numeric-badge support may show only their standard notification dot.
 ## Artifacts
 
 - Direct APK: `ekklesia-v1.0.32-vC61-DIRECT.apk`
-  - SHA-256: `691049abc2a3586e75ea0da9ccee9dfff9c7129a3dbe74ffff3de0cc3174019b`
+  - SHA-256: `67e051c549c9e97d1ebfa0a840f4e41216125403bfc5614a79563062154bec56`
 - Play AAB: `ekklesia-v1.0.32-vC61-PLAY.aab`
-  - SHA-256: `c684ecd4b36f04174158a3e51b1008808c8e4ffc251865d33fa11a95e091d88f`
+  - SHA-256: `1064bad1d21e80f47b36c331defaf0b501d1d5e72374c431155f782fb3208b24`
 - Signing certificate SHA-256:
   `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`
-- Canonical release: [v1.0.32](https://github.com/NeaBouli/pnyx/releases/tag/v1.0.32).
+- Canonical release will be published on the [GitHub Releases page](https://github.com/NeaBouli/pnyx/releases) after the protected merge.
 
 ## Verification
 
-- Mobile: 24 test files, 211 tests passed; TypeScript passed.
+- Mobile: 25 test files, 215 tests passed; TypeScript passed.
 - Dependency security regressions: image-size 7/7 and decode-uri-component 4/4.
 - API app-version tests passed.
 - APK: package `ekklesia.gr`, versionName `1.0.32`, versionCode `61`, APK v2

@@ -159,18 +159,19 @@ eligibility, ZK, database and production policy are unchanged.
 
 ## vC61 release verification
 
-- Mobile Vitest: 211/211 passed; TypeScript passed.
+- Mobile Vitest: 215/215 passed; TypeScript passed.
 - API app-version regressions pass.
 - Direct APK: v1.0.32 (61), package `ekklesia.gr`, `direct` channel and APK v2
   signature valid. Signing certificate SHA-256 remains
   `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`.
 - Play AAB: v1.0.32 (61), `play` channel, signed with the same upload key.
 - Direct APK SHA-256:
-  `691049abc2a3586e75ea0da9ccee9dfff9c7129a3dbe74ffff3de0cc3174019b`.
+  `67e051c549c9e97d1ebfa0a840f4e41216125403bfc5614a79563062154bec56`.
   Play AAB SHA-256:
-  `c684ecd4b36f04174158a3e51b1008808c8e4ffc251865d33fa11a95e091d88f`.
+  `1064bad1d21e80f47b36c331defaf0b501d1d5e72374c431155f782fb3208b24`.
 - Enabled notification categories increment the local icon count up to 99;
-  opening the app or disabling the master switch clears it. F-Droid remains
+  opening or foregrounding the app, or disabling the master switch or a category,
+  clears it. F-Droid remains
   native-push-free. Android launcher support determines whether a number or
   only the platform notification dot is rendered.
 - F-Droid's official metadata currently names v1.0.31/604 while the public

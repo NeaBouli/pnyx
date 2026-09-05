@@ -525,8 +525,8 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
                 <span className="text-sm text-gray-600">{String('Direct APK')}</span>
-                <a href={String(appVersion?.direct_apk_url ?? 'https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk')} target="_blank" rel="noopener noreferrer"
-                  className="text-sm text-blue-600 hover:underline">{String(`Λήψη v${String(appVersion?.latest_version ?? '1.0.32')}`)}</a>
+                <a href={String(appVersion?.direct_apk_url ?? 'https://github.com/NeaBouli/pnyx/releases/download/v1.0.31/ekklesia-v1.0.31-vC60-DIRECT.apk')} target="_blank" rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:underline">{String(`Λήψη v${String(appVersion?.latest_version ?? '1.0.31')}`)}</a>
               </div>
             </div>
           </div>

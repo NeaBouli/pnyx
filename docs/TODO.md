@@ -18,8 +18,8 @@ below only as historical context; their unchecked boxes are not current tasks.
   It merged as `17ed54448d5f5569b005a06c0cac2d13fb483790`; main CI and Security
   Audit passed.
 - [x] Implement and validate an app-icon notification counter for enabled
-  categories. The counter is reset when the app opens or the master switch is
-  disabled, is capped at 99 and remains absent from the push-free F-Droid
+  categories. The counter is reset when the app opens, returns to the
+  foreground or a notification switch is disabled, is capped at 99 and remains absent from the push-free F-Droid
   native build. Numeric display depends on launcher support.
 - [ ] Complete the protected v1.0.32/vC61 publication sequence: merge, publish
   checksum-verified GitHub assets, submit Play Closed Testing, then perform the

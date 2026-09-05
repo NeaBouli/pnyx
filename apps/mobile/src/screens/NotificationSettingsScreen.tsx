@@ -39,6 +39,7 @@ export default function NotificationSettingsScreen() {
   const togglePref = async (key: string, val: boolean) => {
     setPrefs(prev => ({ ...prev, [key]: val }));
     await SecureStore.setItemAsync(key, String(val));
+    if (!val) await clearNotificationBadge();
   };
 
   return (

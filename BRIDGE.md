@@ -1,11 +1,12 @@
 # Pnyx / ekklesia.gr Bridge
 
-## 2026-09-05 - Android v1.0.32 Icon Badge Release Prepared
+## 2026-09-06 - Android v1.0.32 Icon Badge Release Prepared
 
 - v1.0.32/versionCode 61 adds local, category-aware app-icon notification
   counts for enabled notifications. Counts are capped at 99 and cleared when
-  the app opens or the notification master switch is disabled. Numeric display
-  remains dependent on Android launcher support; some launchers show a dot.
+  the app opens, returns to the foreground or a notification switch is disabled.
+  Numeric display remains dependent on Android launcher support; some launchers
+  show a dot.
 - Direct APK and Play AAB release builds pass and retain the established signing
   certificate. Their SHA-256 values are recorded in
   `docs/operations/ANDROID_V61_RELEASE_2026-09-05.md`.

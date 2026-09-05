@@ -7,7 +7,6 @@ import { fetchAnalyticsOverview } from "../lib/api";
 import { isDemoMode } from "../lib/demo";
 import { getResult } from "../lib/compassStore";
 import {
-  clearNotificationBadge,
   registerForPushNotifications,
 } from "../lib/notifications";
 import { getCurrentVersionCode } from "../lib/app-version";
@@ -36,7 +35,6 @@ export default function HomeScreen() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    clearNotificationBadge().catch(() => {});
     isVerified().then(setVerified);
     isDemoMode().then(setDemo);
     fetchAnalyticsOverview().then(setAnalytics).catch(() => {});
