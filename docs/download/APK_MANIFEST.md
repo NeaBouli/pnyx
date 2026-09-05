@@ -40,6 +40,13 @@ https://ekklesia.gr/representative/index.html
 | Release gate | PASS — 206 Mobile tests, TypeScript, API version tests, APK/AAB metadata, signature continuity, direct APK and locally generated Play-style split validation on a physical Samsung S10, GitHub CI/Security, published asset checksums and live alias verification pass. Google Play approval and F-Droid's independent build remain external. |
 | Includes | Xiaomi/MIUI-compatible Region and Municipality selection plus robust normalization of Greek mobile numbers from Unicode keyboards and pasted input. Voting, identity, eligibility and ZK policy are unchanged. |
 
+Android treats the Direct, Google Play and F-Droid builds as separate signing
+channels. Installing one channel over another can therefore report a package
+conflict even though the device is compatible. Users must keep updates inside
+their installed channel. Changing channel requires uninstalling the installed
+copy first and then verifying again because the private voting key is stored
+only on that device installation.
+
 Post-publication validation command for the canonical v1.0.31 asset:
 
 ```bash

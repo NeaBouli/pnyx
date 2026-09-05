@@ -178,10 +178,11 @@ export default function ProfileScreen() {
           selectedValue={selectedPeriferia}
           onValueChange={v => { if (!regionLocked) { setSelectedPeriferia(v); setSelectedDimos(null); } }}
           style={s.picker}
+          dropdownIconColor={colors.text}
           enabled={!regionLocked}
         >
-          <Picker.Item label="Δεν δηλώνω" value={null} />
-          {periferias.map(p => <Picker.Item key={p.id} label={p.name_el} value={p.id} />)}
+          <Picker.Item label="Δεν δηλώνω" value={null} color={colors.text} style={s.pickerItem} />
+          {periferias.map(p => <Picker.Item key={p.id} label={p.name_el} value={p.id} color={colors.text} style={s.pickerItem} />)}
         </Picker>
       </View>
 
@@ -190,9 +191,9 @@ export default function ProfileScreen() {
         <>
           <Text style={s.sectionTitle}>Δήμος {regionLocked ? "(κλειδωμένο)" : "(προαιρετικό)"}</Text>
           <View style={[s.pickerWrap, regionLocked && { opacity: 0.5 }]}>
-            <Picker mode="dropdown" selectedValue={selectedDimos} onValueChange={v => { if (!regionLocked) setSelectedDimos(v); }} style={s.picker} enabled={!regionLocked}>
-              <Picker.Item label="Δεν δηλώνω" value={null} />
-              {dimoi.map(d => <Picker.Item key={d.id} label={d.name_el} value={d.id} />)}
+            <Picker mode="dropdown" selectedValue={selectedDimos} onValueChange={v => { if (!regionLocked) setSelectedDimos(v); }} style={s.picker} dropdownIconColor={colors.text} enabled={!regionLocked}>
+              <Picker.Item label="Δεν δηλώνω" value={null} color={colors.text} style={s.pickerItem} />
+              {dimoi.map(d => <Picker.Item key={d.id} label={d.name_el} value={d.id} color={colors.text} style={s.pickerItem} />)}
             </Picker>
           </View>
         </>
@@ -325,7 +326,8 @@ const s = StyleSheet.create({
   saveError: { color: colors.error, backgroundColor: colors.errorBg, borderRadius: 8, padding: 10, marginBottom: 12, fontSize: 12, fontWeight: "700" },
   sectionTitle: { fontSize: 14, fontWeight: "800", color: colors.text, marginTop: 16, marginBottom: 8 },
   pickerWrap: { backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1, borderColor: colors.border, overflow: "hidden", marginBottom: 8 },
-  picker: { color: colors.text },
+  picker: { color: colors.text, backgroundColor: colors.surface },
+  pickerItem: { color: colors.text, backgroundColor: colors.surface },
   langRow: { flexDirection: "row", gap: 10, marginBottom: 8 },
   langBtn: { flex: 1, padding: 12, backgroundColor: colors.surface, borderRadius: 10, alignItems: "center", borderWidth: 1, borderColor: colors.border },
   langActive: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
