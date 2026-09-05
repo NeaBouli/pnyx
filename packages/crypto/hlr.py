@@ -200,7 +200,7 @@ async def hlr_lookup_hlrlookupcom(phone: str) -> dict:
 
 HLR_LOOKUPS_URL = "https://www.hlr-lookups.com/api/v2/hlr-lookup"
 
-_FALLBACK_ASSIGNED_STATUSES = frozenset({"CONNECTED", "ABSENT"})
+_FALLBACK_RETRYABLE_STATUSES = frozenset({"ABSENT", "UNDETERMINED"})
 
 
 async def hlr_lookup(phone: str) -> dict:
@@ -252,9 +252,10 @@ async def hlr_lookup(phone: str) -> dict:
             country = data.get("original_country_code")
 
             is_greek = country == "GR" or normalized.startswith("+30")
-            # ABSENT still means that the provider confirmed an assigned,
-            # valid number; only the device is currently off or unreachable.
-            is_assigned = conn_status in _FALLBACK_ASSIGNED_STATUSES
+            # Identity issuance remains fail-closed: only a currently connected
+            # Greek mobile passes. ABSENT is assigned but does not establish
+            # current reachability, so the user must retry instead.
+            is_active = conn_status == "CONNECTED"
 
             logger.info(
                 f"[MOD-01] HLR Fallback: {normalized[:6]}XXXX "
@@ -262,13 +263,17 @@ async def hlr_lookup(phone: str) -> dict:
             )
 
             return {
-                "valid": is_greek and is_assigned,
+                "valid": is_greek and is_active,
                 "network": network,
                 "country": country,
                 "status": conn_status or "UNKNOWN",
-                "error": None if (is_greek and is_assigned)
-                    else _TEMPORARY_VERIFICATION_ERROR if conn_status == "UNDETERMINED"
+                "error": (
+                    None
+                    if is_greek and is_active
+                    else _TEMPORARY_VERIFICATION_ERROR
+                    if conn_status in _FALLBACK_RETRYABLE_STATUSES
                     else "Ο αριθμός δεν είναι έγκυρος ελληνικός αριθμός κινητού"
+                ),
             }
 
     except httpx.TimeoutException:

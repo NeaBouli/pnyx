@@ -10,7 +10,7 @@ below only as historical context; their unchecked boxes are not current tasks.
 ## Current gates
 
 - [x] Prepare and validate the bounded Xiaomi/HLR follow-up: explicit Android
-  Picker colors, `069...` normalization, assigned `ABSENT` fallback handling,
+  Picker colors, `069...` normalization, fail-closed fallback handling,
   release-channel guidance and corrected live Direct APK checksum. Crypto,
   mobile, dependency regressions, TypeScript, native Android build, Kimi review,
   diff and secret checks pass; no production or store mutation occurred.
@@ -18,6 +18,10 @@ below only as historical context; their unchecked boxes are not current tasks.
   release and deploy it only as a separate reversible Android/API/Web release.
   Do not replace the existing v1.0.31 artifacts or production API from this
   preparation task.
+- [ ] App icon badge counter for enabled notification categories. It is not yet
+  implemented; `expo-notifications` currently has `shouldSetBadge: false` and
+  F-Droid remains push-free by design. Implement and release as a separate,
+  bounded mobile task after PR #291.
 
 - [x] Merge bounded web lifecycle/lint fixes in PR #259 (`54ff2fc`): 40 tests,
   typecheck and build pass; 19 warnings removed without rule suppression.

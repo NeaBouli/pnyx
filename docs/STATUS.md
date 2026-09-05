@@ -9,11 +9,11 @@ still depends on external review; F-Droid's independent v1.0.31 build remains
 pending.
 
 A further Xiaomi/HLR follow-up is prepared but not released. It makes Android
-Picker item colors explicit, accepts the locally written `069...` Greek mobile
-form and treats the fallback provider's assigned-but-unreachable `ABSENT`
-status separately from invalid or unresolved numbers. Invalid, unresolved and
-confirmed-dead results remain fail-closed. No production or store state changed
-as part of this preparation.
+Picker item colors explicit and accepts the locally written `069...` Greek
+mobile form. Fallback verification remains fail-closed: only `CONNECTED`
+passes, while `ABSENT` and `UNDETERMINED` return a temporary retry message and
+invalid or confirmed-dead results remain rejected. No production or store state
+changed as part of this preparation.
 
 ## Verified component rollout
 
