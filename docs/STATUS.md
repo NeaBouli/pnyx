@@ -6,8 +6,8 @@ AAB are checksum-verified and retain the established signing certificate. The
 release adds category-aware app-icon notification counts and resets the count
 when the app opens. Android launchers that do not support numeric badges may
 show only their native notification dot. Google Play accepted vC61 for Closed
-Testing Alpha and is reviewing it. The bounded API/Web/latest-alias rollout
-remains pending; F-Droid follows its independent source-build cycle.
+Testing Alpha and is reviewing it. The bounded API/Web/latest-alias rollout is
+complete and live; F-Droid follows its independent source-build cycle.
 
 The Xiaomi/HLR follow-up merged in PR #291. Android Picker colors are explicit,
 the locally written `069...` Greek mobile form is accepted, and fallback HLR
@@ -16,9 +16,11 @@ eligibility, ZK, database and production policy are unchanged.
 
 ## Verified component rollout
 
-- Web: `c935018` (PR #259/#263), live since 09:49 UTC.
-- API: prior production source `25d6c14` plus only the five PR #262 mail files,
-  live since 09:51 UTC. Evaluation/representative policy, agent changes and
+- Web: `c935018` (PR #259/#263) was deployed on 2026-08-30 at 09:49 UTC and
+  was later superseded by the versioned Android/Web rollouts below.
+- API: prior production source `25d6c14` plus only the five PR #262 mail files
+  was deployed on 2026-08-30 at 09:51 UTC and was later superseded by the
+  bounded API overlays below. Evaluation/representative policy, agent changes and
   dependency bumps from later main commits were deliberately excluded.
 - 69 Web tests, eight mocked mail tests, exact-source CI/Security and 16 HTTP
   checks before and after each switch passed. Browser checks covered SSO entry,
@@ -33,11 +35,22 @@ eligibility, ZK, database and production policy are unchanged.
   were unchanged. Details: [v59 release receipt](operations/ANDROID_V59_RELEASE_2026-09-01.md).
 - Android/API/Web v60: merged source `8cfccc5` (PR #281), public GitHub release
   `v1.0.31`, Google Play Closed Testing submission and bounded v60 API/Web
-  rollout. Both public version contracts report `1.0.31` / `60`; public Web,
+  rollout. At completion both public version contracts reported `1.0.31` / `60`; public Web,
   SSO, FAQ, roadmap and download checks pass. The live APK digest matches the
   release asset, both containers have restart count zero, and protected
   configuration plus all other containers were unchanged. Details:
   [v60 release receipt](operations/ANDROID_V60_RELEASE_2026-09-02.md).
+- Android/API/Web v61: the icon-badge release merged through PR #292, the
+  checksum-verified GitHub release is public, and vC61 was submitted to Google
+  Play Closed Testing Alpha. PR #294 then merged the reviewed publication
+  status. The bounded production rollout uses
+  `ekklesia-api:app-v61-20260906T090233Z` and
+  `ekklesia-web:app-v61-20260906T090233Z`; the public API reports `1.0.32` / `61`
+  and the website alias serves the verified APK digest. Both containers have
+  restart count zero. Protected configuration and all 41 non-target containers
+  were unchanged. Rollback tag `rollback-pre-app-v61-20260906T090233Z` is
+  retained. Details:
+  [v61 release receipt](operations/ANDROID_V61_RELEASE_2026-09-05.md).
 
 ## Current integration and release gates
 
@@ -115,10 +128,10 @@ eligibility, ZK, database and production policy are unchanged.
   intent is confirmed as send-only; reply-routing configuration/code are live,
   but actual delivery and header evidence still need verification.
   [Observation gate](operations/dmarc-observation-gate.md), NEA-422.
-- The v60 production rollout changed only the Closed Testing submission and bounded
-  API/Web images described above. No database, DNS, secret, IAM or Google Play
-  production-track change was made. The earlier delivery investigation was
-  read-only.
+- The v61 production rollout changed only the bounded API/Web images and public
+  latest-APK alias described above. No database, DNS, secret, IAM, dashboard,
+  F-Droid or Google Play production-track change was made. The earlier delivery
+  investigation was read-only.
 
 ## Backlog classification
 
@@ -141,7 +154,7 @@ eligibility, ZK, database and production policy are unchanged.
 |---|---|
 | Phase | Beta |
 | Android | v1.0.32 / versionCode 61 built, verified and published on GitHub |
-| Direct APK | GitHub release asset published and checksum-verified; website/latest alias rollout pending |
+| Direct APK | GitHub release asset and website/latest alias published and checksum-verified |
 | Google Play | vC61 submitted to Closed Testing Alpha; Google review pending |
 | iOS | Preparation only; no public build |
 | F-Droid | v1.0.29 / versionCode 584 remains public; v1.0.31 metadata is accepted and v1.0.32 follows the source-tag build cycle |
@@ -181,6 +194,10 @@ eligibility, ZK, database and production policy are unchanged.
 - PR #292 merged normally after all required checks passed. GitHub release
   `v1.0.32` is public; its tag resolves to the merge commit and the uploaded
   APK/AAB digests match the verified artifacts.
+- PR #294 merged normally with all CI and Security checks green. The public API
+  reports `1.0.32` / `61`, `force_update=false` and the canonical v1.0.32 URL.
+  Web, SSO, FAQ, roadmap and `llms.txt` return HTTP 200. The live latest alias is
+  82,777,431 bytes and matches the Direct APK SHA-256 above.
 
 ## vC60 release verification
 
@@ -251,6 +268,6 @@ state. The complete prior verification text remains in Git history.
 - Alpha 0.1 official gov.gr holder verification is design-only (GH#141), pending official integration, DPIA, migration design, independent review and sandbox canary.
 - Off-site backup currently uses the separated sandbox fallback until funded dedicated storage is available.
 - F-Droid MR !38007 is merged and v1.0.29 (584) is publicly available from the main repository.
-- R8/ProGuard remains disabled; therefore no mapping file is produced for vC60. Google Play's mapping-file warning is expected and non-blocking. A future R8 production build requires a separate native/ZK regression gate and `mapping.txt` publication.
+- R8/ProGuard remains disabled; therefore no mapping file is produced for vC61. Google Play's mapping-file warning is expected and non-blocking. A future R8 production build requires a separate native/ZK regression gate and `mapping.txt` publication.
 
 Operational details and rollback history are maintained in the local, non-public agent bridge.

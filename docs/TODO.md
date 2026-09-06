@@ -1,7 +1,7 @@
 # Ekklesia.gr — TODO
 # Copyright (c) 2026 V-Labs Development — MIT License
 
-Last reconciled: 2026-09-06 (Android v1.0.32 Closed Testing submission)
+Last reconciled: 2026-09-06 (Android v1.0.32 production API/Web rollout)
 
 `docs/STATUS.md` is the authority for the current release. GitHub issues and
 Linear are the authorities for active work. Older session notes are retained
@@ -21,9 +21,10 @@ below only as historical context; their unchecked boxes are not current tasks.
   categories. The counter is reset when the app opens, returns to the
   foreground or a notification switch is disabled, is capped at 99 and remains absent from the push-free F-Droid
   native build. Numeric display depends on launcher support.
-- [ ] Complete the protected v1.0.32/vC61 publication sequence. Merge,
-  checksum-verified GitHub publication and Play Closed Testing submission are
-  complete; the bounded API/Web/latest-APK rollout and live verification remain.
+- [x] Complete the protected v1.0.32/vC61 publication sequence. Merge,
+  checksum-verified GitHub publication, Play Closed Testing submission and the
+  bounded API/Web/latest-APK rollout with rollback and live verification are
+  complete. Google's external review remains tracked separately below.
 
 - [x] Merge bounded web lifecycle/lint fixes in PR #259 (`54ff2fc`): 40 tests,
   typecheck and build pass; 19 warnings removed without rule suppression.
@@ -82,7 +83,8 @@ below only as historical context; their unchecked boxes are not current tasks.
   channel and follows the v1.0.31 tag through its normal metadata/build process.
 - [x] Android v1.0.32/vC61 icon-badge release merged through protected PR #292;
   GitHub tag, Direct APK, Play AAB and checksums published and independently
-  verified. Public API/Web/latest-alias rollout remains a separate gate.
+  verified. The bounded public API/Web/latest-alias rollout completed with
+  rollback tags, unchanged protected configuration and live probes.
 - [ ] Confirm Google's external approval and tester availability for the latest
   v1.0.32/vC61 Closed Testing release; do not promote to production here.
 - [ ] Confirm F-Droid's independent v1.0.31 ABI builds/public repository APKs,
