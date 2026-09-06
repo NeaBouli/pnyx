@@ -59,10 +59,28 @@ numeric-badge support may show only their standard notification dot.
 - Google Play accepted `61 (1.0.32)` for Closed Testing Alpha on 2026-09-06
   with Greek release notes and no supported-device removals. Google review is
   pending; no production-track promotion occurred.
-- Public API/Web version exposure and the latest-APK server alias remain a
-  separate controlled rollout gate.
+- PR #294 merged normally as
+  `ff2622f90ca0c0db94881bee13ec1ed4cb6317c8` after its full CI, Security and
+  review suite passed without bypass.
+- The bounded API/Web rollout completed at 09:10 UTC on 2026-09-06. Production
+  images are `ekklesia-api:app-v61-20260906T090233Z` and
+  `ekklesia-web:app-v61-20260906T090233Z`. The API retained the deployed
+  Telegram/ZK-count baseline and changed only the version router; Web retained
+  the deployed v60 source baseline and added only the reviewed v61 publication
+  and SSO overlays.
+- Live checks passed for API health, both version contracts, Web, SSO, FAQ,
+  roadmap and `llms.txt`. The public latest alias returned 82,777,431 bytes and
+  SHA-256
+  `67e051c549c9e97d1ebfa0a840f4e41216125403bfc5614a79563062154bec56`.
+- Protected files, HLR runtime values and all 41 non-target containers were
+  unchanged. Both target containers remained running with restart count zero
+  and no new error markers.
 
 ## Rollback
 
 The v1.0.31/vC60 release and its artifacts remain immutable. Source, Web and
-API rollback tags are created before any controlled production switch.
+API rollback tag `rollback-pre-app-v61-20260906T090233Z` was created before the
+production switch and resolves to pre-change source
+`25d6c14499905bdcb901488f3ac00b275fd9b620`. The prior API/Web image IDs and
+preflight/postflight receipts remain protected under
+`/opt/ekklesia/releases/app-v61-20260906T090233Z/`.

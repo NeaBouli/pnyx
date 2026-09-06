@@ -1,5 +1,30 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-09-06 - Android v1.0.32 API/Web Rollout Completed
+
+- PR #294 merged normally as
+  `ff2622f90ca0c0db94881bee13ec1ed4cb6317c8` after all required CI, Security
+  and review checks passed without bypass.
+- The bounded production rollout completed at 09:10 UTC. The public app-version
+  contract now reports `1.0.32` / `61` with `force_update=false`, and Web,
+  SSO, FAQ, roadmap and `llms.txt` return HTTP 200.
+- `https://ekklesia.gr/download/ekklesia-latest.apk` now serves the verified
+  v1.0.32 Direct APK: 82,777,431 bytes, SHA-256
+  `67e051c549c9e97d1ebfa0a840f4e41216125403bfc5614a79563062154bec56`.
+- Production images are `ekklesia-api:app-v61-20260906T090233Z` and
+  `ekklesia-web:app-v61-20260906T090233Z`. The API image preserves the prior
+  Telegram/ZK-count image and changes only `app_version.py`; the Web image uses
+  the previously deployed v60 source baseline plus the reviewed v61 static and
+  SSO overlays.
+- Rollback source/image tag `rollback-pre-app-v61-20260906T090233Z` is retained
+  at pre-change source `25d6c14499905bdcb901488f3ac00b275fd9b620`.
+  Protected configuration, HLR runtime values and all 41 non-target containers
+  were unchanged. Both new containers have restart count zero and no new error
+  markers.
+- Google Play vC61 remains under Closed Testing Alpha review. No production
+  track, F-Droid, database, DNS, secret, IAM, dashboard or other service was
+  changed.
+
 ## 2026-09-06 - Android v1.0.32 Submitted to Google Play Closed Testing
 
 - Google Play accepted `61 (1.0.32)` for the Closed Testing Alpha track with
