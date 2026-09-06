@@ -5,9 +5,9 @@ Android v1.0.32/vC61 is merged and published on GitHub. Its Direct APK and Play
 AAB are checksum-verified and retain the established signing certificate. The
 release adds category-aware app-icon notification counts and resets the count
 when the app opens. Android launchers that do not support numeric badges may
-show only their native notification dot. Google Play Closed Testing submission
-and the bounded API/Web/latest-alias rollout remain pending; F-Droid follows its
-independent source-build cycle.
+show only their native notification dot. Google Play accepted vC61 for Closed
+Testing Alpha and is reviewing it. The bounded API/Web/latest-alias rollout
+remains pending; F-Droid follows its independent source-build cycle.
 
 The Xiaomi/HLR follow-up merged in PR #291. Android Picker colors are explicit,
 the locally written `069...` Greek mobile form is accepted, and fallback HLR
@@ -142,7 +142,7 @@ eligibility, ZK, database and production policy are unchanged.
 | Phase | Beta |
 | Android | v1.0.32 / versionCode 61 built, verified and published on GitHub |
 | Direct APK | GitHub release asset published and checksum-verified; website/latest alias rollout pending |
-| Google Play | vC61 AAB verified; Closed Testing submission pending |
+| Google Play | vC61 submitted to Closed Testing Alpha; Google review pending |
 | iOS | Preparation only; no public build |
 | F-Droid | v1.0.29 / versionCode 584 remains public; v1.0.31 metadata is accepted and v1.0.32 follows the source-tag build cycle |
 
