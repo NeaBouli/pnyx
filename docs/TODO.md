@@ -9,6 +9,15 @@ below only as historical context; their unchecked boxes are not current tasks.
 
 ## Current gates
 
+- [x] Recheck the approved September 6 task block without duplicating the
+  v1.0.32 release. See `docs/operations/RELEASE_GATES_2026-09-06.md` for
+  verified external states, test evidence and remaining boundaries.
+- [ ] GH#290 persistent per-event ledger, deduplication and in-app fallback:
+  isolated follow-up implementation requires review and OEM/device acceptance
+  before a new app release. The shipped v61 initial badge is not this ledger.
+- [ ] Resolve the privately documented protected configuration mismatch before
+  any newsletter/evaluation API overlay rollout; no container was switched.
+
 - [x] Prepare and validate the bounded Xiaomi/HLR follow-up: explicit Android
   Picker colors, `069...` normalization, fail-closed fallback handling,
   release-channel guidance and corrected live Direct APK checksum. Crypto,

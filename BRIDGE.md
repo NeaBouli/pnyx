@@ -405,3 +405,37 @@
 3. Decide invoice/receipt, VAT/myDATA and refund treatment, then connect the
    private VLABS finance ingest.
 4. Run Stripe and PayPal sandbox/test E2E before restoring public links.
+
+## 2026-09-06 - Task Block 1-9 Follow-up (Append-only)
+
+- Continued from main `76611ea`; no restart of completed release work.
+- Sol owns integration, external verification and release gates. Kimi owns the
+  bounded mobile unread-event ledger patch; Sol reviews the implementation and
+  independently tests runtime notification wiring and storage failures.
+- Live v1.0.32 remains unchanged. Google review and tester qualification are
+  external gates. F-Droid v1.0.31 ABI builds succeed but the public package API
+  still exposes v1.0.29 at inspection.
+- Newsletter/evaluation overlay was built and tested, not deployed: protected
+  configuration drift stopped the switch. Private details remain only in the
+  ignored operator bridge. Full source API suite: 1,008 passed, 11 skipped,
+  25 expected failures, four subtests passed; no production DB used.
+- Newsletter no-write readiness has no eligible entries. No additional mail,
+  contact writes, consent inference or identity impersonation. Existing
+  GitHub #261/#253 and Linear mail/F-Droid records received evidence updates.
+- Security alerts remain visible. No forced dependency major, peer override,
+  CI weakening, payment activation or production change.
+- Current evidence and remaining gates:
+  `docs/operations/RELEASE_GATES_2026-09-06.md`.
+- Task 10 remains excluded pending the private VLABS operator's inputs.
+
+### 2026-09-07 - Final Source Verification
+
+- Mobile: 258 tests in 28 files passed, plus seven image-size and four
+  decode-uri-component installed-package regressions. Typecheck passed;
+  staged mobile diff secret scan found no leaks. No dedicated mobile lint
+  script exists. No security timeout, rule or dependency contract was changed.
+- Kimi's final review findings were addressed by Sol and retested. Android
+  device/OEM acceptance remains pending; source verification is not a release.
+- The reported website outage could not be reproduced during live checks:
+  landing and API health returned HTTP 200, and the operator confirmed
+  recovery. No service was restarted or production configuration changed.

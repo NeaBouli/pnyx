@@ -54,6 +54,12 @@ eligibility, ZK, database and production policy are unchanged.
 
 ## Current integration and release gates
 
+- September 6 follow-up: [task-block receipt](operations/RELEASE_GATES_2026-09-06.md).
+  The persistent #290 unread-event ledger is a separate, unshipped follow-up;
+  it must not be confused with v61's initial reset-on-open badge. Newsletter
+  and evaluation overlays remain undeployed after a protected configuration
+  mismatch was detected in preflight. No production container was switched.
+
 - The bounded web cleanup is merged in [PR #259](https://github.com/NeaBouli/pnyx/pull/259)
   (`54ff2fc`). It removed 19 of 20 lint warnings while preserving the
   then-existing SSO initialization for the dedicated GH#258 follow-up below.
