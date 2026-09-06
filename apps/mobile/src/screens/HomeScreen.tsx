@@ -11,6 +11,7 @@ import {
 } from "../lib/notifications";
 import { getCurrentVersionCode } from "../lib/app-version";
 import { resolveUpdateUrl, shouldOfferUpdate } from "../lib/update-channel";
+import { UnreadNotificationsCard } from "../components/UnreadNotificationsCard";
 import type { CompassResult } from "../compass/types";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
@@ -137,6 +138,8 @@ export default function HomeScreen() {
           ))}
         </View>
       )}
+
+      <UnreadNotificationsCard />
 
       {!verified && (
         <TouchableOpacity style={s.btnPrimary} onPress={() => nav.navigate("Verify")}>

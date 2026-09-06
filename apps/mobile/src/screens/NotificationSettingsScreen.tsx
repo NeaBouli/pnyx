@@ -2,7 +2,11 @@ import React, { useEffect, useState } from "react";
 import { View, Text, Switch, StyleSheet, ScrollView } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { colors } from "../theme";
-import { clearNotificationBadge } from "../lib/notifications";
+import {
+  markAllNotificationsRead,
+  markNotificationCategoryRead,
+} from "../lib/notifications";
+import type { NotificationPreferenceKey } from "../lib/notification-preferences";
 
 const SETTINGS = [
   { key: "push_vote_open", icon: "🗳️", label: "Νέες Ψηφοφορίες", sub: "Όταν ανοίγει νέα ψηφοφορία" },
@@ -16,6 +20,8 @@ const SETTINGS = [
 export default function NotificationSettingsScreen() {
   const [master, setMaster] = useState(true);
   const [prefs, setPrefs] = useState<Record<string, boolean>>({});
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -27,19 +33,30 @@ export default function NotificationSettingsScreen() {
         p[s.key] = v !== "false"; // default true
       }
       setPrefs(p);
-    })();
+    })().catch(() => setError(true));
   }, []);
 
   const toggleMaster = async (val: boolean) => {
-    setMaster(val);
-    await SecureStore.setItemAsync("push_master", String(val));
-    if (!val) await clearNotificationBadge();
+    setBusy(true);
+    try {
+      await SecureStore.setItemAsync("push_master", String(val));
+      setMaster(val);
+      if (!val) await markAllNotificationsRead();
+      setError(false);
+    } catch { setError(true); }
+    finally { setBusy(false); }
   };
 
   const togglePref = async (key: string, val: boolean) => {
-    setPrefs(prev => ({ ...prev, [key]: val }));
-    await SecureStore.setItemAsync(key, String(val));
-    if (!val) await clearNotificationBadge();
+    setBusy(true);
+    try {
+      await SecureStore.setItemAsync(key, String(val));
+      setPrefs(prev => ({ ...prev, [key]: val }));
+      // Other categories remain unread.
+      if (!val) await markNotificationCategoryRead(key as NotificationPreferenceKey);
+      setError(false);
+    } catch { setError(true); }
+    finally { setBusy(false); }
   };
 
   return (
@@ -49,7 +66,7 @@ export default function NotificationSettingsScreen() {
           <Text style={s.masterLabel}>Ειδοποιήσεις</Text>
           <Text style={s.masterSub}>Κύριος διακόπτης</Text>
         </View>
-        <Switch value={master} onValueChange={toggleMaster} trackColor={{ true: colors.primary, false: colors.border }} thumbColor="#fff" />
+        <Switch value={master} disabled={busy} onValueChange={toggleMaster} trackColor={{ true: colors.primary, false: colors.border }} thumbColor="#fff" />
       </View>
 
       <View style={[s.divider, !master && { opacity: 0.4 }]} />
@@ -64,13 +81,14 @@ export default function NotificationSettingsScreen() {
           <Switch
             value={master && (prefs[item.key] ?? true)}
             onValueChange={v => togglePref(item.key, v)}
-            disabled={!master}
+            disabled={!master || busy}
             trackColor={{ true: colors.primary, false: colors.border }}
             thumbColor="#fff"
           />
         </View>
       ))}
 
+      {error ? <Text accessibilityRole="alert" style={s.footer}>Αδυναμία αποθήκευσης ή φόρτωσης. Δοκιμάστε ξανά.</Text> : null}
       <Text style={s.footer}>Οι ρυθμίσεις ειδοποιήσεων και ο μετρητής εικονιδίου αποθηκεύονται τοπικά στη συσκευή σας.</Text>
     </ScrollView>
   );

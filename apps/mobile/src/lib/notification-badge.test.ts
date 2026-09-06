@@ -18,6 +18,21 @@ function createAdapter(initial = 0) {
 }
 
 describe("notification badge queue", () => {
+  it("reads the absolute unread count inside the serialized operation", async () => {
+    const queue = createNotificationBadgeQueue();
+    const { adapter, getCount } = createAdapter(7);
+    let unread = 2;
+    const first = queue.set(adapter, async () => unread);
+    unread = 1;
+    const second = queue.set(adapter, async () => unread);
+    await Promise.all([first, second]);
+    expect(getCount()).toBe(1);
+    expect(adapter.getBadgeCountAsync).not.toHaveBeenCalled();
+    await queue.set(adapter, 1000);
+    expect(getCount()).toBe(99);
+    await queue.set(adapter, Number.NaN);
+    expect(getCount()).toBe(0);
+  });
   it("distinguishes delivery payloads from notification taps", () => {
     expect(isNotificationResponsePayload({ template_id: "new_bill" })).toBe(
       false,

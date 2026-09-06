@@ -2,13 +2,23 @@ import { useEffect } from "react";
 import { AppState } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import Navigation from "./src/navigation";
-import { clearNotificationBadge } from "./src/lib/notifications";
+import {
+  reconcileNotificationBadge,
+  refreshUnreadFromPublicBills,
+} from "./src/lib/notifications";
 
 export default function App() {
   useEffect(() => {
-    clearNotificationBadge().catch(() => {});
+    // Per-event unread state persists across restarts; app start/foreground
+    // only reconciles the native badge with the ledger (no blanket clear)
+    // and runs the F-Droid foreground bill-feed fallback.
+    const onActive = () => {
+      reconcileNotificationBadge().catch(() => {});
+      refreshUnreadFromPublicBills().catch(() => {});
+    };
+    onActive();
     const subscription = AppState.addEventListener("change", (state) => {
-      if (state === "active") clearNotificationBadge().catch(() => {});
+      if (state === "active") onActive();
     });
     return () => subscription.remove();
   }, []);
