@@ -19,12 +19,16 @@ const SETTINGS = [
 
 type PendingAck =
   | { kind: "all" }
-  | { kind: "category"; key: NotificationPreferenceKey }
   | { kind: "categories"; keys: NotificationPreferenceKey[] };
+
+function acknowledgementFor(master: boolean, prefs: Record<string, boolean>): PendingAck | null {
+  if (!master) return { kind: "all" };
+  const keys = SETTINGS.filter(item => prefs[item.key] === false).map(item => item.key as NotificationPreferenceKey);
+  return keys.length ? { kind: "categories", keys } : null;
+}
 
 async function runAck(ack: PendingAck): Promise<void> {
   if (ack.kind === "all") return markAllNotificationsRead();
-  if (ack.kind === "category") return markNotificationCategoryRead(ack.key);
   for (const key of ack.keys) await markNotificationCategoryRead(key);
 }
 
@@ -49,6 +53,7 @@ export default function NotificationSettingsScreen() {
   const mountedRef = useRef(true);
   const loadEpoch = useRef(0);
   const operationBusy = useRef(false);
+  const policy = useRef({ master: true, prefs: {} as Record<string, boolean> });
 
   useEffect(() => {
     mountedRef.current = true;
@@ -72,11 +77,10 @@ export default function NotificationSettingsScreen() {
       for (const [k, v] of values) p[k] = v !== "false"; // default true
       // Persisted opt-outs also recover acknowledgement interrupted by leaving
       // the screen or terminating the app. Enabled categories stay untouched.
-      const keys = SETTINGS.filter(item => !p[item.key]).map(item => item.key as NotificationPreferenceKey);
-      const ack: PendingAck | null = m === "false" ? { kind: "all" }
-        : keys.length ? { kind: "categories", keys } : null;
+      const ack = acknowledgementFor(m !== "false", p);
       const acknowledged = ack ? await attemptAck(ack) : true;
       if (!current()) return;
+      policy.current = { master: m !== "false", prefs: p };
       setMaster(m !== "false");
       setPrefs(p);
       setPendingAck(acknowledged ? null : ack);
@@ -97,14 +101,17 @@ export default function NotificationSettingsScreen() {
   // The persisted opt-out is kept even when the unread acknowledgement
   // fails: the acknowledgement gets one automatic retry, then surfaces an
   // explicit retry action while the saved preference stays untouched.
-  const acknowledge = async (ack: PendingAck) => {
-    const success = await attemptAck(ack);
+  const acknowledge = async () => {
+    const ack = acknowledgementFor(policy.current.master, policy.current.prefs);
+    const success = ack ? await attemptAck(ack) : true;
     if (mountedRef.current) setPendingAck(success ? null : ack);
   };
 
   const retryAck = async () => {
-    const ack = pendingAck;
-    if (!ack || operationBusy.current) return;
+    if (operationBusy.current) return;
+    // Never replay the old scope after a preference was re-enabled.
+    const ack = acknowledgementFor(policy.current.master, policy.current.prefs);
+    if (!ack) { if (mountedRef.current) setPendingAck(null); return; }
     operationBusy.current = true;
     setAckBusy(true);
     try {
@@ -119,13 +126,14 @@ export default function NotificationSettingsScreen() {
   };
 
   const toggleMaster = async (val: boolean) => {
-    if (!loaded || operationBusy.current || pendingAck) return;
+    if (!loaded || operationBusy.current) return;
     operationBusy.current = true;
     setBusy(true);
     try {
       await SecureStore.setItemAsync("push_master", String(val));
+      policy.current = { ...policy.current, master: val };
       if (mountedRef.current) { setMaster(val); setError(false); }
-      if (!val) await acknowledge({ kind: "all" });
+      await acknowledge();
     } catch {
       if (mountedRef.current) setError(true);
     } finally {
@@ -135,17 +143,18 @@ export default function NotificationSettingsScreen() {
   };
 
   const togglePref = async (key: string, val: boolean) => {
-    if (!loaded || !master || operationBusy.current || pendingAck) return;
+    if (!loaded || !policy.current.master || operationBusy.current) return;
     operationBusy.current = true;
     setBusy(true);
     try {
       await SecureStore.setItemAsync(key, String(val));
+      policy.current = { ...policy.current, prefs: { ...policy.current.prefs, [key]: val } };
       if (mountedRef.current) {
         setPrefs(prev => ({ ...prev, [key]: val }));
         setError(false);
       }
       // Other categories remain unread.
-      if (!val) await acknowledge({ kind: "category", key: key as NotificationPreferenceKey });
+      await acknowledge();
     } catch {
       if (mountedRef.current) setError(true);
     } finally {
@@ -154,9 +163,8 @@ export default function NotificationSettingsScreen() {
     }
   };
 
-  // A pending acknowledgement keeps every switch disabled so a new toggle
-  // cannot overwrite the preference the pending retry still acts on.
-  const switchesDisabled = !loaded || busy || pendingAck !== null;
+  // Failed ledger writes must not lock the user's notification preferences.
+  const switchesDisabled = !loaded || busy || ackBusy;
 
   return (
     <ScrollView style={s.container} contentContainerStyle={s.content}>

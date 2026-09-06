@@ -267,6 +267,39 @@ describe("NotificationSettingsScreen hydration", () => {
 });
 
 describe("NotificationSettingsScreen opt-out acknowledgement", () => {
+  it("allows re-enabling after repeated acknowledgement failure and remount without replaying stale scope", async () => {
+    const storage = createStorage({ push_master: "false" });
+    const unavailable = vi.fn().mockRejectedValue(new Error("ledger unavailable"));
+    const first = loadScreen(storage, { markAll: unavailable });
+    await flush();
+    first.screen.unmount();
+    const { screen, markAll } = loadScreen(storage, { markAll: unavailable });
+    await flush();
+    const staleRetry = retryButtons(screen.tree())[0].props.onPress;
+    expect(switches(screen.tree())[0].props.disabled).toBe(false);
+    const calls = markAll.mock.calls.length;
+    await switches(screen.tree())[0].props.onValueChange(true);
+    await staleRetry();
+    expect(storage.data.get(MASTER_KEY)).toBe("true");
+    expect(markAll).toHaveBeenCalledTimes(calls);
+    expect(retryButtons(screen.tree())).toHaveLength(0);
+  });
+
+  it("recomputes pending categories after re-enable and still permits another opt-out", async () => {
+    const storage = createStorage({ push_vote_open: "false", push_vote_result: "false" });
+    const markCategory = vi.fn().mockRejectedValue(new Error("ledger unavailable"));
+    const { screen } = loadScreen(storage, { markCategory });
+    await flush();
+    expect(switches(screen.tree())[1].props.disabled).toBe(false);
+    markCategory.mockClear();
+    await switches(screen.tree())[1].props.onValueChange(true);
+    expect(markCategory.mock.calls.map(call => call[0])).toEqual(["push_vote_result", "push_vote_result"]);
+    markCategory.mockResolvedValue(undefined);
+    await switches(screen.tree())[2].props.onValueChange(false);
+    expect(storage.data.get("push_vote_open")).toBe("true");
+    expect(storage.data.get("push_vote_24h")).toBe("false");
+    expect(markCategory.mock.calls.slice(2).map(call => call[0])).toEqual(["push_vote_24h", "push_vote_result"]);
+  });
   it("recovers pending opt-outs on a fresh screen without acknowledging enabled categories", async () => {
     const storage = createStorage({ push_vote_open: "false", push_vote_result: "false" });
     const failed = loadScreen(storage, { markCategory: vi.fn().mockRejectedValue(new Error("unavailable")) });
@@ -330,8 +363,9 @@ describe("NotificationSettingsScreen opt-out acknowledgement", () => {
 
     const afterFail = switches(screen.tree());
     expect(afterFail[0].props.value).toBe(false);
-    // Every switch stays disabled while the acknowledgement is pending.
-    for (const sw of afterFail) expect(sw.props.disabled).toBe(true);
+    // Master remains usable; categories are disabled only by the saved opt-out.
+    expect(afterFail[0].props.disabled).toBe(false);
+    for (const sw of afterFail.slice(1)) expect(sw.props.disabled).toBe(true);
     const ackRetries = retryButtons(screen.tree());
     expect(ackRetries).toHaveLength(1);
     expect(textContent(ackRetries[0])).toContain("Επανάληψη");
@@ -366,7 +400,7 @@ describe("NotificationSettingsScreen opt-out acknowledgement", () => {
 
     const afterFail = switches(screen.tree());
     expect(afterFail[1].props.value).toBe(false);
-    for (const sw of afterFail) expect(sw.props.disabled).toBe(true);
+    for (const sw of afterFail) expect(sw.props.disabled).toBe(false);
     const ackRetries = retryButtons(screen.tree());
     expect(ackRetries).toHaveLength(1);
 
