@@ -15,16 +15,19 @@
 - MOD-03 Parliament (Βουλή API, Bill Lifecycle 5 States)
 - MOD-04 CitizenVote (Ed25519 signed, vote change)
 - MOD-05 Divergence Score
-- MOD-14 Relevance Up/Down
+- MOD-13 Relevance Up/Down
+- MOD-08 Arweave audit trail
+- MOD-16 Municipal Governance
 - Next.js Web Frontend (5 σελίδες, el/en)
 - Landing Page (8 Sections, light design)
-- GitHub Wiki (8 σελίδες)
+- GitHub Wiki (10 σελίδες)
+- Android 1.0.32 (`versionCode 61`) on GitHub and the Direct APK channel
 
 ### Σε εξέλιξη / In progress 🔄
-- Ed25519 signature in browser (@noble/curves)
-- Docker local + alembic upgrade head + Seed
-- End-to-End test (full flow)
-- Expo Mobile App (iOS + Android)
+- Google Play review of 1.0.32 in Closed Testing Alpha
+- F-Droid's independent source-build publication after 1.0.31 metadata acceptance
+- Google Play production-access tester/time requirement
+- iOS app planning; no public iOS build is active
 
 Η V1 παραμένει η ενεργή και συντηρούμενη πλατφόρμα. Η έρευνα V2 δεν αλλάζει τη
 βάση δεδομένων, την ψηφοφορία, την ταυτότητα, το φόρουμ ή τις εκδόσεις της V1.
@@ -42,9 +45,9 @@
 **Trigger:** Proven stability + community
 
 - packages/crypto-rs (Rust + WASM, ed25519-dalek)
-- MOD-08 TrueRepublic Bridge (PnyxCoin, Cosmos SDK)
-- MOD-10/11 AI Scraper (Crawl4AI + Claude API)
-- MOD-13 My MP (Ο Βουλευτής μου)
+- Future TrueRepublic Bridge (PnyxCoin, Cosmos SDK); this is not the current MOD-08 Arweave module
+- Future MOD-10/11 scraper and summarization evolution (Crawl4AI + Claude API)
+- My MP evolution built on MOD-12 MP Comparison; no separate runtime module ID is active
 - WebSocket Live Counter (WINDOW_24H)
 - Deliberation Layer (pol.is model)
 - Semaphore ZK Voting — Android prover, hidden S10 canary, security review, and first public one-bill scoped rollout passed; guarded Parliament rollout live; ZK Arweave auto-publication active for eligible public Parliament scopes with minimum group size 5

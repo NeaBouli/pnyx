@@ -1,6 +1,6 @@
 # Ekklesia.gr — Öffentliche Roadmap
 # Copyright (c) 2026 V-Labs Development — MIT License
-# Stand: 2026-08-23
+# Stand: 2026-09-06
 
 ## Ekklesia V1 - Phase Beta (aktive Produktionsbasis)
 Ziel: Eigenständige, leichtgewichtige Plattform ohne staatliche Abhängigkeit.
@@ -11,7 +11,7 @@ Ziel: Eigenständige, leichtgewichtige Plattform ohne staatliche Abhängigkeit.
 - [x] MOD-03 Parliament (Bill Lifecycle, 5 States)
 - [x] MOD-04 CitizenVote (signierte Abstimmung)
 - [x] MOD-05 Divergence Score
-- [x] MOD-14 Relevance (Up/Down)
+- [x] MOD-13 Relevance (Up/Down)
 - [x] Next.js Web Frontend (el/en) — 5 Seiten + NavHeader + i18n
 - [x] Ed25519 Signing Web + Mobile (@noble/curves)
 - [x] Expo Mobile App — 7 Screens, Biometrie, Secure Enclave
@@ -39,9 +39,12 @@ Dies sind additive Verbesserungen der bestehenden Architektur. Die historische
 Bezeichnung "V2" für Semaphore benennt eine Stufe des Abstimmungsprotokolls,
 nicht die neue Plattformgeneration.
 
-- [ ] MOD-08 TrueRepublic Bridge (PnyxCoin, Cosmos SDK)
-- [ ] MOD-10/11 KI-Scraper + Zusammenfassung (Crawl4AI)
-- [ ] MOD-13 Mein Abgeordneter
+- [ ] Zukünftige TrueRepublic Bridge (PnyxCoin, Cosmos SDK); nicht mit dem
+      aktuellen MOD-08 Arweave-Modul verwechseln
+- [ ] Zukünftige Weiterentwicklung von MOD-10/11 KI-Scraper und Zusammenfassung
+      (Crawl4AI)
+- [ ] Mein-Abgeordneter-Erweiterung auf Basis von MOD-12 MP Comparison; keine
+      separate aktive Runtime-Modul-ID
 - [ ] Deliberation (pol.is-Modell)
 - [ ] Commit-Reveal Abstimmung
 - [x] Semaphore ZK Voting — Android prover, hidden S10 canary, Security Review und erster öffentlicher One-Bill-Scope (`bill:GR-d4c62ed4`) bestanden. Guarded Parliament rollout ist live; ZK-Arweave-Auto-Publikation ist live für eligible öffentliche Parliament scopes ab `group_size >= 5`.
