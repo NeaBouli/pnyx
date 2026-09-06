@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 import { AppState } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import Navigation from "./src/navigation";
+import { colors } from "./src/theme";
 import {
   reconcileNotificationBadge,
   refreshUnreadFromPublicBills,
@@ -24,9 +26,14 @@ export default function App() {
   }, []);
 
   return (
-    <>
+    <SafeAreaProvider>
       <StatusBar style="light" />
-      <Navigation />
-    </>
+      <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.headerBg }}>
+        {/* Navigation insets are relative to the already-safe content frame. */}
+        <SafeAreaProvider>
+          <Navigation />
+        </SafeAreaProvider>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }

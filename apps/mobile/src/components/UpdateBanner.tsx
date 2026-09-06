@@ -80,10 +80,12 @@ const s = StyleSheet.create({
   inner: {
     flex: 1,
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: 8,
   },
   text: {
+    flexShrink: 1,
     color: "#fff",
     fontSize: 12,
     fontWeight: "600",
