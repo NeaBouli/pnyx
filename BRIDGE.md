@@ -487,3 +487,32 @@
   lint script exists. Hardware checks above concern installed code 60 only.
 - Direct and F-Droid Android exports passed (1,179 modules each). These are
   bundle checks, not newly signed APK/AAB releases or F-Droid publication.
+
+### 2026-09-07 - Settings Recovery and Signed S10 Acceptance
+
+- The follow-up CodeRabbit finding was valid: a persistent unread-ledger
+  failure locked all preference switches. Pending acknowledgements no longer
+  lock preferences; retries derive their scope from the currently persisted
+  policy, not an obsolete pre-reenable scope. Kimi independently reviewed
+  the changes and passed thirteen focused tests plus TypeScript; Sol reran
+  all311 mobile tests and all eleven installed security regressions.
+- Top system insets are consumed once before inline banners. Signed Direct
+  release builds and Android lint passed. A local-only code60 test variant
+  exposed the real code61 update banner without changing public version
+  metadata. In-place S10 installation succeeded with matching certificate;
+  existing verified state survived without uninstall or data clearing.
+- On S10/Android12, the banner no longer overlaps the status bar. At font
+  scales1.0,1.3 and1.8 it remains readable; at1.8 its action wraps and the
+  close control remains reachable. Dismissal and settings navigation work.
+  Master/category preferences persist through cold restart and were restored
+  to their original values. Bill filters, Trending, parties and POLIS render;
+  empty states are not evidence of complete upstream data.
+- The device was returned to the unchanged official v1.0.32/code61 APK with
+  original installation date and verified state retained; font scale restored
+  to1.0. No temporary test binary was published. Final F-Droid Android export
+  passed (1,179 modules); no new F-Droid build/catalog publication is implied.
+- Side finding: pre-existing custom bottom-tab labels clip at font scale1.8.
+  Track a focused accessibility follow-up; do not claim all-screen acceptance.
+  Automatic event-producer coverage, Xiaomi/emulator acceptance and protected
+  API rollout gates remain open. GH290 is not complete. No production,
+  payment, HLR request, vote, message or security-suppression change occurred.

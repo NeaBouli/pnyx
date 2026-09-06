@@ -132,3 +132,40 @@ harness tests actual transpiled source but does not model full React batching
 or native rendering. No new dependency, signing, app version, voting or
 identity change is included. No new binary publication or production rollout
 is implied by these source-level results.
+
+### Signed Device Follow-up
+
+The next review identified a persistent-ledger-failure settings lockout.
+Preferences now remain editable after bounded acknowledgement failure;
+retry scope is derived from the successfully persisted current policy.
+Re-enabled categories are never cleared by an obsolete pending retry.
+Still-disabled categories are acknowledged idempotently. When no opt-outs
+remain, an old failed acknowledgement is abandoned rather than discarding
+unread events retrospectively. Corrupt manifests still fail closed.
+
+Sol's final rerun:311 tests/31 files, eleven installed dependency security
+regressions and TypeScript passed. Kimi independently passed thirteen focused
+tests and TypeScript. Signed Direct release builds including Android lint
+passed; F-Droid Android export passed with1,179 modules. These are not a new
+public release or full native F-Droid acceptance.
+
+S10/Android12 acceptance used a private, matching-signature code60 variant
+of the current source solely to exercise the existing code61 update banner.
+No public version or signing configuration was changed. The verified state
+survived the in-place update. Banner/system-bar separation, dismissal,
+settings navigation, master/category persistence across cold restart and
+restoration of preferences passed. Font scales1.0,1.3 and1.8 were checked;
+the banner wraps at1.8 and its close control remains reachable. Bill list
+and Active filter, Trending, parties and POLIS were reachable without
+submitting votes, messages, HLR requests or altering identity.
+
+The official published v1.0.32/code61 APK was restored in-place afterward;
+verified state and original installation date remained, and font scale was
+restored to1.0. Temporary native test builds and screenshots are private.
+
+Residual acceptance gaps: custom bottom-tab labels clip at180% font size
+(pre-existing labels/default tab height, separate accessibility follow-up);
+real production push delivery and launcher badge presentation, complete
+automatic event producers, Xiaomi/iOS and emulator coverage remain open.
+The native banner fix is tested on S10, not universally certified. Existing
+API protected-configuration and external publication gates are unchanged.
