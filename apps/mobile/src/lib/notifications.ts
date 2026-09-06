@@ -76,11 +76,23 @@ export function getUnreadEventsStore(): UnreadEventsStore {
 async function ingestPushPayload(payload: unknown): Promise<void> {
   const data = extractPushData(payload);
   if (!data) return;
-  try {
-    // The ledger's stable IDs deduplicate foreground delivery, background
-    // delivery and notification taps of the same push.
-    await unreadStore.ingest(data);
-  } catch {}
+  await unreadStore.ingest(data);
+}
+
+async function persistPushAndReconcile(payload: unknown): Promise<void> {
+  // Stable event IDs make a single retry safe, including an uncertain write result.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      await ingestPushPayload(payload);
+      await reconcileNotificationBadge();
+      return;
+    } catch {
+      if (attempt === 1) {
+        // Never log payloads, identifiers, or native storage error details.
+        console.warn("Notification unread storage unavailable; event not acknowledged.");
+      }
+    }
+  }
 }
 
 function getTemplateIdFromNotification(notification: unknown): unknown {
@@ -132,10 +144,7 @@ if (!IS_FDROID) {
         BACKGROUND_NOTIFICATION_TASK,
         async ({ data, error }) => {
           if (error || isNotificationResponsePayload(data)) return;
-          try {
-            await ingestPushPayload(data);
-            await reconcileNotificationBadge();
-          } catch {}
+          await persistPushAndReconcile(data);
         },
       );
     }
@@ -145,12 +154,14 @@ if (!IS_FDROID) {
 
     // Taps replay the same payload as delivery; the ledger deduplicates.
     Notifications.addNotificationResponseReceivedListener?.((response) => {
-      void ingestPushPayload(response).then(reconcileNotificationBadge);
+      void persistPushAndReconcile(response);
     });
     // A tap that launches a terminated app can precede listener registration.
     // Replaying it is safe because the same stable ID remains tombstoned after acknowledgement.
     void Notifications.getLastNotificationResponseAsync?.()
-      .then(ingestPushPayload).then(reconcileNotificationBadge).catch(() => {});
+      .then(persistPushAndReconcile).catch(() => {
+        console.warn("Notification cold-start response unavailable.");
+      });
 
     Notifications.setNotificationHandler({
       handleNotification: async (notification: unknown) => {
@@ -169,8 +180,7 @@ if (!IS_FDROID) {
           };
         }
 
-        await ingestPushPayload(notification);
-        await reconcileNotificationBadge();
+        await persistPushAndReconcile(notification);
         return {
           shouldShowAlert: true,
           shouldShowBanner: true,

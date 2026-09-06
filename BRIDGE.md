@@ -454,3 +454,36 @@
 - F-Droid catalog still v1.0.29 / 584; five Dependabot alerts remain open.
   API protected-configuration, consent/evidence and external review gates
   are unchanged. No production rollout or task-10 work occurred.
+
+### 2026-09-07 - USB Recovery and PR297 Review Follow-up
+
+- Earlier CI evidence retained: main `76611ea` passed
+  [CI](https://github.com/NeaBouli/pnyx/actions/runs/34026554854) and
+  [Security](https://github.com/NeaBouli/pnyx/actions/runs/34026554855);
+  PR head `1474195` passed
+  [CI](https://github.com/NeaBouli/pnyx/actions/runs/34060126361) and
+  [Security](https://github.com/NeaBouli/pnyx/actions/runs/34060126388).
+  Head `9dc98f4` also passed both workflows (34061601994/34061601989).
+- CodeRabbit completed with comments, not an approval. Kimi independently
+  confirmed unread-storage error handling and settings hydration/retry gaps.
+  Corrupt unread manifests remain fail-closed; automatic replacement would
+  risk discarding prior acknowledgements and is intentionally not applied.
+- USB resumed working. Read-only S10 smoke checks reached home, profile,
+  notification settings, bill filters, parties and trending. Complete local
+  screenshots succeeded. Installed app remains v1.0.31 / 60, not the PR code.
+  No data clearing, app replacement, identity changes or real votes occurred.
+- Side finding: the installed update banner overlaps the Android status bar;
+  current source lacks a top safe-area inset. Keep this as an explicit mobile
+  release follow-up, not a claim that all layouts passed. New-build hardware
+  acceptance and full automatic event-producer coverage remain open.
+- Sol reviewed Kimi's screen/test changes and added recovery across screen
+  unmount/remount plus an in-flight toggle guard. Opt-outs remain persisted
+  when acknowledgement fails; a bounded retry and explicit retry control
+  replace silent failures. Invalid manifests are never reset automatically.
+- Final local tests: 308 mobile tests in 30 files, seven image-size and four
+  decode-uri-component regressions, TypeScript, diff check and changed-file
+  secret scans passed. The screen tests execute real transpiled component
+  logic with stubbed hooks/native modules, not an OEM UI renderer. No mobile
+  lint script exists. Hardware checks above concern installed code 60 only.
+- Direct and F-Droid Android exports passed (1,179 modules each). These are
+  bundle checks, not newly signed APK/AAB releases or F-Droid publication.

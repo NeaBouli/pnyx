@@ -105,3 +105,30 @@ attempted screenshot was incomplete. No installation, data deletion or
 successful hardware acceptance is claimed. The clean Android 15 emulator
 also failed to establish a usable session and was stopped. Device acceptance
 and event-producer coverage still block a new public release.
+
+### USB Recovery and Review Remediation
+
+Later USB checks and complete screenshots succeeded on the existing S10
+v1.0.31 / 60 installation. Home, notification settings, locked profile,
+bill list/filter, parties and trending views were reached without replacing
+the app or clearing data. This is baseline smoke evidence, not acceptance
+of PR #297. No HLR request, identity change, vote or message was submitted.
+The installed update banner visibly overlaps the Android status bar; the
+current source also lacks its top safe-area inset. Track this UI defect
+separately before claiming complete mobile layout acceptance.
+
+CodeRabbit completed with comments. Kimi confirmed three error-handling
+issues, implemented settings hydration/retry controls and seven focused
+tests. Sol reviewed every delegated diff, added recovery after remount and
+protection against simultaneous toggles, and tested all push ingress error
+boundaries. Opt-out persistence is never reverted after an acknowledgement
+failure. One automatic retry is bounded; persistent failure remains visible
+or emits a static warning without payloads/identifiers. Corrupt manifests
+stay fail-closed, deliberately rejecting the suggestion to overwrite them.
+
+Sol's full rerun passed 308 tests in 30 files, all eleven installed dependency
+security regressions, TypeScript and changed-file secret scans. The settings
+harness tests actual transpiled source but does not model full React batching
+or native rendering. No new dependency, signing, app version, voting or
+identity change is included. No new binary publication or production rollout
+is implied by these source-level results.

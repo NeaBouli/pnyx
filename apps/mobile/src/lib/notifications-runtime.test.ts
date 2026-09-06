@@ -11,6 +11,11 @@ import * as unreadStorage from "./unread-storage";
 // Execute the actual CommonJS require branches, which vi.mock cannot intercept.
 function runtime(flavor = "direct", lastResponse: unknown = null) {
   const data = new Map<string, string>();
+  const storage = {
+    getItemAsync: vi.fn(async (key: string) => data.get(key) ?? null),
+    setItemAsync: vi.fn(async (key: string, value: string) => { data.set(key, value); }),
+  };
+  const warn = vi.fn();
   const native = {
     registerTaskAsync: vi.fn(async () => null),
     getBadgeCountAsync: vi.fn(async () => 99),
@@ -29,10 +34,7 @@ function runtime(flavor = "direct", lastResponse: unknown = null) {
     if (id === "expo-device") return { isDevice: false };
     if (id === "react-native") return { Platform: { OS: "android" } };
     if (id === "expo-constants") return { expoConfig: { extra: { buildFlavor: flavor } } };
-    if (id === "expo-secure-store") return {
-      getItemAsync: async (key: string) => data.get(key) ?? null,
-      setItemAsync: async (key: string, value: string) => { data.set(key, value); },
-    };
+    if (id === "expo-secure-store") return storage;
     if (id === "./notification-preferences") return preferences;
     if (id === "./notification-badge") return badge;
     if (id === "./unread-events") return ledger;
@@ -45,11 +47,48 @@ function runtime(flavor = "direct", lastResponse: unknown = null) {
     module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true,
   } }).outputText;
   const exports: Record<string, any> = {};
-  vm.runInNewContext(compiled, { exports, require: requireMock, process: { env: {} }, console });
-  return { exports, native, task, requireMock, data };
+  vm.runInNewContext(compiled, { exports, require: requireMock, process: { env: {} }, console: { ...console, warn } });
+  return { exports, native, task, requireMock, data, storage, warn };
 }
 
 describe("notification runtime wiring", () => {
+  it("retries one transient persistence failure before setting the badge", async () => {
+    const { exports, native, storage, warn } = runtime();
+    await vi.waitFor(() => expect(native.setBadgeCountAsync).toHaveBeenCalled());
+    native.setBadgeCountAsync.mockClear();
+    storage.setItemAsync.mockRejectedValueOnce(new Error("private native details"));
+    const foreground = native.setNotificationHandler.mock.calls[0][0].handleNotification;
+    const presentation = await foreground({ request: { content: { data: { template_id: "new_bill", bill_id: "retry-1" } } } });
+    expect(presentation.shouldShowBanner).toBe(true);
+    expect(await exports.getUnreadEventsStore().unreadCount()).toBe(1);
+    expect(native.setBadgeCountAsync).toHaveBeenLastCalledWith(1);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it.each(["foreground", "background", "tap", "cold-start"])("bounds %s persistence failures and does not reconcile stale counts", async (boundary) => {
+    const payload = { template_id: "new_bill", bill_id: "private-bill-id" };
+    const notification = { request: { content: { data: payload } } };
+    const response = { notification };
+    const { exports, native, task, storage, warn } = runtime("direct", boundary === "cold-start" ? response : null);
+    if (boundary !== "cold-start") {
+      await vi.waitFor(() => expect(native.setBadgeCountAsync).toHaveBeenCalled());
+    }
+    native.setBadgeCountAsync.mockClear();
+    storage.setItemAsync.mockRejectedValue(new Error("private native details"));
+    if (boundary === "foreground") {
+      const result = await native.setNotificationHandler.mock.calls[0][0].handleNotification(notification);
+      expect(result.shouldShowBanner).toBe(true);
+    } else if (boundary === "background") {
+      await task.defineTask.mock.calls[0][1]({ data: { data: payload }, error: null });
+    } else if (boundary === "tap") {
+      native.addNotificationResponseReceivedListener.mock.calls[0][0](response);
+    }
+    await vi.waitFor(() => expect(warn).toHaveBeenCalledTimes(1));
+    expect(storage.setItemAsync).toHaveBeenCalledTimes(2);
+    expect(native.setBadgeCountAsync).not.toHaveBeenCalled();
+    expect(await exports.getUnreadEventsStore().unreadCount()).toBe(0);
+    expect(warn).toHaveBeenCalledWith("Notification unread storage unavailable; event not acknowledged.");
+  });
   it("recovers a cold-start tap and deduplicates its later listener replay", async () => {
     const response = { notification: { request: { content: { data: { template_id: "result", bill_id: "b-cold" } } } } };
     const { exports, native } = runtime("direct", response);
