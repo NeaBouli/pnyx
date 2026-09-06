@@ -37,7 +37,7 @@ https://ekklesia.gr/representative/index.html
 | Canonical APK URL | `https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk` (published and checksum-verified) |
 | Server alias | `https://ekklesia.gr/download/ekklesia-latest.apk` remains on v1.0.31 until the controlled post-publication rollout |
 | Build date | 2026-09-06 |
-| Release gate | GITHUB PUBLICATION PASS — 215 Mobile tests, TypeScript, API version tests, APK/AAB metadata, signature continuity, F-Droid-compatible local build, GitHub CI/Security and published asset checksums pass. Google Play submission and live alias verification remain required before completion. |
+| Release gate | GITHUB PUBLICATION PASS — 215 Mobile tests, TypeScript, API version tests, APK/AAB metadata, signature continuity, F-Droid-compatible local build, GitHub CI/Security and published asset checksums pass. Public API/Web version exposure, Google Play submission and live alias verification remain required before completion. |
 | Includes | App-icon notification count for enabled categories, with reset when the app opens, returns to the foreground or a notification switch is disabled, plus the Xiaomi/MIUI and Greek mobile-input fixes from v1.0.31. Numeric rendering depends on Android launcher support. Voting, identity, eligibility and ZK policy are unchanged. |
 
 Android treats the Direct, Google Play and F-Droid builds as separate signing
