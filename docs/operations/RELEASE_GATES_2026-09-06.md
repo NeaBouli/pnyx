@@ -58,7 +58,7 @@ activity` both returned `not found`. Therefore no emulator or Samsung/Xiaomi
 UI acceptance is claimed. Only the agent-owned emulator was stopped; no user
 device, other agent or Codex process was restarted.
 
-The final mobile source suite passed 258 tests and TypeScript checking. One
+The initial mobile source suite passed 258 tests and TypeScript checking. One
 installed-dependency timing test exceeded its unchanged one-second bound while
 the emulator/native builds were competing for resources. After contention
 cleared, the complete unmodified test command passed, including all seven
@@ -81,3 +81,27 @@ cutoff, payment activation or forced security upgrade was performed. The
 previous one-confirmation/one-newsletter authorization is consumed. Payment
 task 10 remains excluded; only the private VLABS operator can provide its
 missing inputs. No private recipient/provider values belong in public docs.
+
+## September 7 Continuation
+
+All CI and Security jobs passed for PR #297 head `1474195`. Kimi's subsequent
+review identified a storage-size portability risk: the installed SecureStore
+wrapper warns above 2,048 bytes; this is not evidence of an unconditional
+exception or a reproduced device failure. The unshipped ledger now uses
+1,024-byte chunks in two bounded banks, publishing its manifest only after
+all chunks persist. Only the two unread-state keys use this adapter; identity
+keys and existing preference storage are unchanged. Corrupt manifests fail
+closed instead of silently discarding acknowledgements; no automatic reset
+or identity-storage deletion is provided.
+
+Kimi supplied 34 strict storage tests, reviewed by Sol. Sol independently ran
+the full suite: 293 tests in 29 files plus all eleven installed dependency
+regressions passed, as did TypeScript checking. A cold-start notification tap
+is now ingested through the same stable-ID deduplication path as live taps.
+
+A connected Samsung S10 was briefly readable (Android 12, app v1.0.31 / 60),
+but repeated USB read failures interrupted both available ADB backends. The
+attempted screenshot was incomplete. No installation, data deletion or
+successful hardware acceptance is claimed. The clean Android 15 emulator
+also failed to establish a usable session and was stopped. Device acceptance
+and event-producer coverage still block a new public release.

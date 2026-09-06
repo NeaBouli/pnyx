@@ -439,3 +439,18 @@
 - The reported website outage could not be reproduced during live checks:
   landing and API health returned HTTP 200, and the operator confirmed
   recovery. No service was restarted or production configuration changed.
+
+### 2026-09-07 - Continued GH290 Verification
+
+- PR #297 initial head 1474195 passed all CI/Security jobs. Continuation
+  addresses Kimi's storage-size portability finding and cold-start taps.
+- Sol's two-bank bounded unread-storage adapter preserves the prior committed
+  value on interrupted writes; Kimi added 34 tests and Sol reviewed them.
+  Full mobile verification: 293 tests, eleven dependency regressions and
+  TypeScript passed. No identity, signing, dependency or version changes.
+- S10 intermittently readable, Android 12 and installed v1.0.31 / 60. USB
+  transport failures prevent reliable device acceptance. No app installation
+  or data deletion performed. Private evidence remains in the ignored bridge.
+- F-Droid catalog still v1.0.29 / 584; five Dependabot alerts remain open.
+  API protected-configuration, consent/evidence and external review gates
+  are unchanged. No production rollout or task-10 work occurred.
