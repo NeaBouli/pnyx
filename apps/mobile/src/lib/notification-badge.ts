@@ -42,5 +42,17 @@ export function createNotificationBadgeQueue() {
         });
       return operation;
     },
+
+    set(adapter: BadgeAdapter, count: number | (() => Promise<number>)): Promise<void> {
+      operation = operation
+        .catch(() => {})
+        .then(async () => {
+          const current = typeof count === "function" ? await count() : count;
+          const normalized =
+            Number.isFinite(current) && current > 0 ? Math.floor(current) : 0;
+          await adapter.setBadgeCountAsync(Math.min(normalized, 99));
+        });
+      return operation;
+    },
   };
 }

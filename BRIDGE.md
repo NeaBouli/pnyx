@@ -405,3 +405,114 @@
 3. Decide invoice/receipt, VAT/myDATA and refund treatment, then connect the
    private VLABS finance ingest.
 4. Run Stripe and PayPal sandbox/test E2E before restoring public links.
+
+## 2026-09-06 - Task Block 1-9 Follow-up (Append-only)
+
+- Continued from main `76611ea`; no restart of completed release work.
+- Sol owns integration, external verification and release gates. Kimi owns the
+  bounded mobile unread-event ledger patch; Sol reviews the implementation and
+  independently tests runtime notification wiring and storage failures.
+- Live v1.0.32 remains unchanged. Google review and tester qualification are
+  external gates. F-Droid v1.0.31 ABI builds succeed but the public package API
+  still exposes v1.0.29 at inspection.
+- Newsletter/evaluation overlay was built and tested, not deployed: protected
+  configuration drift stopped the switch. Private details remain only in the
+  ignored operator bridge. Full source API suite: 1,008 passed, 11 skipped,
+  25 expected failures, four subtests passed; no production DB used.
+- Newsletter no-write readiness has no eligible entries. No additional mail,
+  contact writes, consent inference or identity impersonation. Existing
+  GitHub #261/#253 and Linear mail/F-Droid records received evidence updates.
+- Security alerts remain visible. No forced dependency major, peer override,
+  CI weakening, payment activation or production change.
+- Current evidence and remaining gates:
+  `docs/operations/RELEASE_GATES_2026-09-06.md`.
+- Task 10 remains excluded pending the private VLABS operator's inputs.
+
+### 2026-09-07 - Final Source Verification
+
+- Mobile: 258 tests in 28 files passed, plus seven image-size and four
+  decode-uri-component installed-package regressions. Typecheck passed;
+  staged mobile diff secret scan found no leaks. No dedicated mobile lint
+  script exists. No security timeout, rule or dependency contract was changed.
+- Kimi's final review findings were addressed by Sol and retested. Android
+  device/OEM acceptance remains pending; source verification is not a release.
+- The reported website outage could not be reproduced during live checks:
+  landing and API health returned HTTP 200, and the operator confirmed
+  recovery. No service was restarted or production configuration changed.
+
+### 2026-09-07 - Continued GH290 Verification
+
+- PR #297 initial head 1474195 passed all CI/Security jobs. Continuation
+  addresses Kimi's storage-size portability finding and cold-start taps.
+- Sol's two-bank bounded unread-storage adapter preserves the prior committed
+  value on interrupted writes; Kimi added 34 tests and Sol reviewed them.
+  Full mobile verification: 293 tests, eleven dependency regressions and
+  TypeScript passed. No identity, signing, dependency or version changes.
+- S10 intermittently readable, Android 12 and installed v1.0.31 / 60. USB
+  transport failures prevent reliable device acceptance. No app installation
+  or data deletion performed. Private evidence remains in the ignored bridge.
+- F-Droid catalog still v1.0.29 / 584; five Dependabot alerts remain open.
+  API protected-configuration, consent/evidence and external review gates
+  are unchanged. No production rollout or task-10 work occurred.
+
+### 2026-09-07 - USB Recovery and PR297 Review Follow-up
+
+- Earlier CI evidence retained: main `76611ea` passed
+  [CI](https://github.com/NeaBouli/pnyx/actions/runs/34026554854) and
+  [Security](https://github.com/NeaBouli/pnyx/actions/runs/34026554855);
+  PR head `1474195` passed
+  [CI](https://github.com/NeaBouli/pnyx/actions/runs/34060126361) and
+  [Security](https://github.com/NeaBouli/pnyx/actions/runs/34060126388).
+  Head `9dc98f4` also passed both workflows (34061601994/34061601989).
+- CodeRabbit completed with comments, not an approval. Kimi independently
+  confirmed unread-storage error handling and settings hydration/retry gaps.
+  Corrupt unread manifests remain fail-closed; automatic replacement would
+  risk discarding prior acknowledgements and is intentionally not applied.
+- USB resumed working. Read-only S10 smoke checks reached home, profile,
+  notification settings, bill filters, parties and trending. Complete local
+  screenshots succeeded. Installed app remains v1.0.31 / 60, not the PR code.
+  No data clearing, app replacement, identity changes or real votes occurred.
+- Side finding: the installed update banner overlaps the Android status bar;
+  current source lacks a top safe-area inset. Keep this as an explicit mobile
+  release follow-up, not a claim that all layouts passed. New-build hardware
+  acceptance and full automatic event-producer coverage remain open.
+- Sol reviewed Kimi's screen/test changes and added recovery across screen
+  unmount/remount plus an in-flight toggle guard. Opt-outs remain persisted
+  when acknowledgement fails; a bounded retry and explicit retry control
+  replace silent failures. Invalid manifests are never reset automatically.
+- Final local tests: 308 mobile tests in 30 files, seven image-size and four
+  decode-uri-component regressions, TypeScript, diff check and changed-file
+  secret scans passed. The screen tests execute real transpiled component
+  logic with stubbed hooks/native modules, not an OEM UI renderer. No mobile
+  lint script exists. Hardware checks above concern installed code 60 only.
+- Direct and F-Droid Android exports passed (1,179 modules each). These are
+  bundle checks, not newly signed APK/AAB releases or F-Droid publication.
+
+### 2026-09-07 - Settings Recovery and Signed S10 Acceptance
+
+- The follow-up CodeRabbit finding was valid: a persistent unread-ledger
+  failure locked all preference switches. Pending acknowledgements no longer
+  lock preferences; retries derive their scope from the currently persisted
+  policy, not an obsolete pre-reenable scope. Kimi independently reviewed
+  the changes and passed thirteen focused tests plus TypeScript; Sol reran
+  all311 mobile tests and all eleven installed security regressions.
+- Top system insets are consumed once before inline banners. Signed Direct
+  release builds and Android lint passed. A local-only code60 test variant
+  exposed the real code61 update banner without changing public version
+  metadata. In-place S10 installation succeeded with matching certificate;
+  existing verified state survived without uninstall or data clearing.
+- On S10/Android12, the banner no longer overlaps the status bar. At font
+  scales1.0,1.3 and1.8 it remains readable; at1.8 its action wraps and the
+  close control remains reachable. Dismissal and settings navigation work.
+  Master/category preferences persist through cold restart and were restored
+  to their original values. Bill filters, Trending, parties and POLIS render;
+  empty states are not evidence of complete upstream data.
+- The device was returned to the unchanged official v1.0.32/code61 APK with
+  original installation date and verified state retained; font scale restored
+  to1.0. No temporary test binary was published. Final F-Droid Android export
+  passed (1,179 modules); no new F-Droid build/catalog publication is implied.
+- Side finding: pre-existing custom bottom-tab labels clip at font scale1.8.
+  Track a focused accessibility follow-up; do not claim all-screen acceptance.
+  Automatic event-producer coverage, Xiaomi/emulator acceptance and protected
+  API rollout gates remain open. GH290 is not complete. No production,
+  payment, HLR request, vote, message or security-suppression change occurred.
