@@ -1,5 +1,13 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-09-06 - Android v1.0.32 Submitted to Google Play Closed Testing
+
+- Google Play accepted `61 (1.0.32)` for the Closed Testing Alpha track with
+  Greek release notes and no supported-device removals.
+- The change is under Google review. No production-track promotion occurred.
+- The bounded API/Web/latest-APK rollout remains a separate controlled gate;
+  the running v1.0.31 images and alias are unchanged at this point.
+
 ## 2026-09-06 - Android v1.0.32 GitHub Release Published
 
 - PR #292 merged normally as `d25d4ee116055ff8395e1305d4f77bf6de414ace`

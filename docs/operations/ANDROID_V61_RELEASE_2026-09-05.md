@@ -56,8 +56,11 @@ numeric-badge support may show only their standard notification dot.
 - GitHub release `v1.0.32` was published on 2026-09-06. Its tag resolves to
   `d25d4ee116055ff8395e1305d4f77bf6de414ace` and its uploaded APK/AAB digests
   match the verified artifacts above.
-- Google Play Closed Testing submission, public API/Web version exposure and
-  the latest-APK server alias remain separate controlled gates.
+- Google Play accepted `61 (1.0.32)` for Closed Testing Alpha on 2026-09-06
+  with Greek release notes and no supported-device removals. Google review is
+  pending; no production-track promotion occurred.
+- Public API/Web version exposure and the latest-APK server alias remain a
+  separate controlled rollout gate.
 
 ## Rollback
 

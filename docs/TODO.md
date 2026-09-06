@@ -1,7 +1,7 @@
 # Ekklesia.gr — TODO
 # Copyright (c) 2026 V-Labs Development — MIT License
 
-Last reconciled: 2026-09-05 (Android Xiaomi/HLR follow-up)
+Last reconciled: 2026-09-06 (Android v1.0.32 Closed Testing submission)
 
 `docs/STATUS.md` is the authority for the current release. GitHub issues and
 Linear are the authorities for active work. Older session notes are retained
@@ -21,9 +21,9 @@ below only as historical context; their unchecked boxes are not current tasks.
   categories. The counter is reset when the app opens, returns to the
   foreground or a notification switch is disabled, is capped at 99 and remains absent from the push-free F-Droid
   native build. Numeric display depends on launcher support.
-- [ ] Complete the protected v1.0.32/vC61 publication sequence: merge, publish
-  checksum-verified GitHub assets, submit Play Closed Testing, then perform the
-  bounded API/Web/latest-APK rollout and live verification.
+- [ ] Complete the protected v1.0.32/vC61 publication sequence. Merge,
+  checksum-verified GitHub publication and Play Closed Testing submission are
+  complete; the bounded API/Web/latest-APK rollout and live verification remain.
 
 - [x] Merge bounded web lifecycle/lint fixes in PR #259 (`54ff2fc`): 40 tests,
   typecheck and build pass; 19 warnings removed without rule suppression.
