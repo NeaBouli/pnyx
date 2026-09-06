@@ -1,13 +1,13 @@
 # Ekklesia.gr - Project Status
 
-Repository and delivery gates reviewed: 2026-09-05.
-Android v1.0.32/vC61 is prepared as the next bounded mobile release. Its Direct
-APK and Play AAB are locally checksum-verified and retain the established
-signing certificate. The release adds category-aware app-icon notification
-counts and resets the count when the app opens. Android launchers that do not
-support numeric badges may show only their native notification dot. Protected
-merge and publication remain pending; F-Droid follows its independent source-
-build cycle.
+Repository and delivery gates reviewed: 2026-09-06.
+Android v1.0.32/vC61 is merged and published on GitHub. Its Direct APK and Play
+AAB are checksum-verified and retain the established signing certificate. The
+release adds category-aware app-icon notification counts and resets the count
+when the app opens. Android launchers that do not support numeric badges may
+show only their native notification dot. Google Play Closed Testing submission
+and the bounded API/Web/latest-alias rollout remain pending; F-Droid follows its
+independent source-build cycle.
 
 The Xiaomi/HLR follow-up merged in PR #291. Android Picker colors are explicit,
 the locally written `069...` Greek mobile form is accepted, and fallback HLR
@@ -140,8 +140,8 @@ eligibility, ZK, database and production policy are unchanged.
 | Item | Status |
 |---|---|
 | Phase | Beta |
-| Android | v1.0.32 / versionCode 61 built and verified; publication pending |
-| Direct APK | Local release artifact and upgrade signature verified; GitHub/website publication pending |
+| Android | v1.0.32 / versionCode 61 built, verified and published on GitHub |
+| Direct APK | GitHub release asset published and checksum-verified; website/latest alias rollout pending |
 | Google Play | vC61 AAB verified; Closed Testing submission pending |
 | iOS | Preparation only; no public build |
 | F-Droid | v1.0.29 / versionCode 584 remains public; v1.0.31 metadata is accepted and v1.0.32 follows the source-tag build cycle |
@@ -178,6 +178,9 @@ eligibility, ZK, database and production policy are unchanged.
   package page still offers v1.0.29/584. v1.0.32 must enter through the normal
   source tag and reproducible-build path; no manually signed APK is uploaded.
 - Voting, identity, eligibility, ZK and database behavior are unchanged.
+- PR #292 merged normally after all required checks passed. GitHub release
+  `v1.0.32` is public; its tag resolves to the merge commit and the uploaded
+  APK/AAB digests match the verified artifacts.
 
 ## vC60 release verification
 

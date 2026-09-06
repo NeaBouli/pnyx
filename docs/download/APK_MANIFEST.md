@@ -34,10 +34,10 @@ https://ekklesia.gr/representative/index.html
 | APK SHA256 | `67e051c549c9e97d1ebfa0a840f4e41216125403bfc5614a79563062154bec56` |
 | AAB SHA256 | `1064bad1d21e80f47b36c331defaf0b501d1d5e72374c431155f782fb3208b24` |
 | Signing certificate SHA256 | `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec` |
-| Canonical APK URL | `https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk` (planned; local artifact checksum-verified) |
+| Canonical APK URL | `https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk` (published and checksum-verified) |
 | Server alias | `https://ekklesia.gr/download/ekklesia-latest.apk` remains on v1.0.31 until the controlled post-publication rollout |
 | Build date | 2026-09-06 |
-| Release gate | PRE-PUBLICATION PASS — 215 Mobile tests, TypeScript, API version tests, APK/AAB metadata, signature continuity and the F-Droid-compatible local build pass. GitHub CI/Security, published asset checksums and live alias verification remain required before completion. |
+| Release gate | GITHUB PUBLICATION PASS — 215 Mobile tests, TypeScript, API version tests, APK/AAB metadata, signature continuity, F-Droid-compatible local build, GitHub CI/Security and published asset checksums pass. Google Play submission and live alias verification remain required before completion. |
 | Includes | App-icon notification count for enabled categories, with reset when the app opens, returns to the foreground or a notification switch is disabled, plus the Xiaomi/MIUI and Greek mobile-input fixes from v1.0.31. Numeric rendering depends on Android launcher support. Voting, identity, eligibility and ZK policy are unchanged. |
 
 Android treats the Direct, Google Play and F-Droid builds as separate signing

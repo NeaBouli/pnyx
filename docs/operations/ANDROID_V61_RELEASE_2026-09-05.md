@@ -23,7 +23,8 @@ numeric-badge support may show only their standard notification dot.
   - SHA-256: `1064bad1d21e80f47b36c331defaf0b501d1d5e72374c431155f782fb3208b24`
 - Signing certificate SHA-256:
   `d94c24d182737445a62bd9637397cfe95407b62f34d07eb57ef11b30e10e5dec`
-- Canonical release will be published on the [GitHub Releases page](https://github.com/NeaBouli/pnyx/releases) after the protected merge.
+- Canonical release: [v1.0.32](https://github.com/NeaBouli/pnyx/releases/tag/v1.0.32),
+  targeting merge commit `d25d4ee116055ff8395e1305d4f77bf6de414ace`.
 
 ## Verification
 
@@ -51,7 +52,12 @@ numeric-badge support may show only their standard notification dot.
 
 ## Publication Result
 
-Pending the protected merge and external publication sequence above.
+- PR #292 merged normally after all required checks passed without bypass.
+- GitHub release `v1.0.32` was published on 2026-09-06. Its tag resolves to
+  `d25d4ee116055ff8395e1305d4f77bf6de414ace` and its uploaded APK/AAB digests
+  match the verified artifacts above.
+- Google Play Closed Testing submission, public API/Web version exposure and
+  the latest-APK server alias remain separate controlled gates.
 
 ## Rollback
 

@@ -80,6 +80,9 @@ below only as historical context; their unchecked boxes are not current tasks.
   release, bounded API/Web rollout and Google Play Closed Testing submission
   are complete. Official F-Droid remains an independent reproducible-build
   channel and follows the v1.0.31 tag through its normal metadata/build process.
+- [x] Android v1.0.32/vC61 icon-badge release merged through protected PR #292;
+  GitHub tag, Direct APK, Play AAB and checksums published and independently
+  verified. Public API/Web/latest-alias rollout remains a separate gate.
 - [ ] Confirm Google's external approval and tester availability for the latest
   v1.0.32/vC61 Closed Testing release; do not promote to production here.
 - [ ] Confirm F-Droid's independent v1.0.31 ABI builds/public repository APKs,
