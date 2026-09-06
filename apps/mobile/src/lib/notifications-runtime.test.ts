@@ -6,9 +6,10 @@ import { describe, expect, it, vi } from "vitest";
 import * as preferences from "./notification-preferences";
 import * as badge from "./notification-badge";
 import * as ledger from "./unread-events";
+import * as unreadStorage from "./unread-storage";
 
 // Execute the actual CommonJS require branches, which vi.mock cannot intercept.
-function runtime(flavor = "direct") {
+function runtime(flavor = "direct", lastResponse: unknown = null) {
   const data = new Map<string, string>();
   const native = {
     registerTaskAsync: vi.fn(async () => null),
@@ -16,6 +17,7 @@ function runtime(flavor = "direct") {
     setBadgeCountAsync: vi.fn(async (_count: number) => true),
     setNotificationHandler: vi.fn(),
     addNotificationResponseReceivedListener: vi.fn(),
+    getLastNotificationResponseAsync: vi.fn(async () => lastResponse),
   };
   const task = { isTaskDefined: () => false, defineTask: vi.fn() };
   const requireMock = vi.fn((id: string): unknown => {
@@ -34,6 +36,7 @@ function runtime(flavor = "direct") {
     if (id === "./notification-preferences") return preferences;
     if (id === "./notification-badge") return badge;
     if (id === "./unread-events") return ledger;
+    if (id === "./unread-storage") return unreadStorage;
     if (id === "./api") return { fetchBills: async () => [] };
     throw new Error(`Unexpected module ${id}`);
   });
@@ -47,6 +50,15 @@ function runtime(flavor = "direct") {
 }
 
 describe("notification runtime wiring", () => {
+  it("recovers a cold-start tap and deduplicates its later listener replay", async () => {
+    const response = { notification: { request: { content: { data: { template_id: "result", bill_id: "b-cold" } } } } };
+    const { exports, native } = runtime("direct", response);
+    await vi.waitFor(async () => expect(await exports.getUnreadEventsStore().unreadCount()).toBe(1));
+    await exports.markNotificationEventRead("vote_result:b-cold");
+    native.addNotificationResponseReceivedListener.mock.calls[0][0](response);
+    await vi.waitFor(() => expect(native.setBadgeCountAsync).toHaveBeenLastCalledWith(0));
+    expect(await exports.getUnreadEventsStore().unreadCount()).toBe(0);
+  });
   it("uses one absolute badge for foreground/background/tap replay", async () => {
     const { exports, native, task } = runtime();
     const payload = { template_id: "new_bill", bill_id: "DIAV-Ρ9Ζ546ΜΤΛΒ-Η" };

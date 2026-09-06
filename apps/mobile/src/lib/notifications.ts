@@ -26,6 +26,7 @@ import {
   type UnreadEventsStore,
 } from "./unread-events";
 import { fetchBills } from "./api";
+import { createUnreadStorage } from "./unread-storage";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
 const TOKEN_KEY = "push_token";
@@ -47,6 +48,7 @@ type NotificationsModule = BadgeAdapter & {
   addNotificationResponseReceivedListener?: (
     listener: (response: unknown) => void,
   ) => { remove: () => void };
+  getLastNotificationResponseAsync?: () => Promise<unknown>;
 };
 
 type TaskManagerModule = {
@@ -62,10 +64,10 @@ const badgeQueue = createNotificationBadgeQueue();
 
 // Persistent per-event unread ledger (GH290). Shared by pushes and the
 // F-Droid foreground bill feed so both use the same canonical event IDs.
-const unreadStore: UnreadEventsStore = createUnreadEventsStore({
+const unreadStore: UnreadEventsStore = createUnreadEventsStore(createUnreadStorage({
   getItem: (key) => SecureStore.getItemAsync(key),
   setItem: (key, value) => SecureStore.setItemAsync(key, value),
-});
+}));
 
 export function getUnreadEventsStore(): UnreadEventsStore {
   return unreadStore;
@@ -145,6 +147,10 @@ if (!IS_FDROID) {
     Notifications.addNotificationResponseReceivedListener?.((response) => {
       void ingestPushPayload(response).then(reconcileNotificationBadge);
     });
+    // A tap that launches a terminated app can precede listener registration.
+    // Replaying it is safe because the same stable ID remains tombstoned after acknowledgement.
+    void Notifications.getLastNotificationResponseAsync?.()
+      .then(ingestPushPayload).then(reconcileNotificationBadge).catch(() => {});
 
     Notifications.setNotificationHandler({
       handleNotification: async (notification: unknown) => {
