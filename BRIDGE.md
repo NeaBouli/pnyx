@@ -1,5 +1,19 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-09-06 - Android v1.0.32 GitHub Release Published
+
+- PR #292 merged normally as `d25d4ee116055ff8395e1305d4f77bf6de414ace`
+  after all required CI, Security and review gates passed without bypass.
+- GitHub release `v1.0.32` is public and its tag resolves exactly to that merge
+  commit. The Direct APK, Play AAB and checksum file are uploaded.
+- GitHub's uploaded-asset digests match the locally verified APK SHA-256
+  `67e051c549c9e97d1ebfa0a840f4e41216125403bfc5614a79563062154bec56`
+  and AAB SHA-256
+  `1064bad1d21e80f47b36c331defaf0b501d1d5e72374c431155f782fb3208b24`.
+- Public API/Web references are prepared in a separate post-publication branch.
+  Google Play Closed Testing submission and the bounded API/Web/latest-alias
+  rollout remain later gates; no production-track promotion has occurred.
+
 ## 2026-09-06 - Android v1.0.32 Icon Badge Release Prepared
 
 - v1.0.32/versionCode 61 adds local, category-aware app-icon notification
