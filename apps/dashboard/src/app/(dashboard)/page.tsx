@@ -6,6 +6,7 @@ import {
   Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { arrayFrom, asRecord, numberFrom } from '@/lib/response'
+import { fetchOverviewJSON, hlrEstimate } from '@/lib/overview'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
@@ -14,12 +15,7 @@ type Tab = 'overview' | 'analytics' | 'finance'
 // ─── Helpers ───
 
 async function apiFetch(path: string) {
-  try {
-    const url = path.startsWith('http') ? path : `${API}${path}`
-    const r = await fetch(url)
-    if (!r.ok) return null
-    return r.json()
-  } catch { return null }
+  return fetchOverviewJSON(path.startsWith('http') ? path : `${API}${path}`)
 }
 
 // ─── StatCard ───
@@ -109,7 +105,7 @@ export default function OverviewPage() {
       apiFetch('/api/v1/cplm/aggregate'),
       apiFetch('/api/v1/analytics/overview'),
       apiFetch('/api/v1/scraper/jobs'),
-      fetch('/api/discourse').then(r => r.json()).catch(() => null),
+      fetchOverviewJSON('/api/discourse'),
       apiFetch('/api/v1/claude/budget'),
       apiFetch('/api/v1/newsletter/stats'),
       apiFetch('/api/v1/analytics/divergence-trends?days=90'),
@@ -167,9 +163,7 @@ export default function OverviewPage() {
   const apiOk = healthData?.status === 'ok'
   const moduleCount = healthData?.modules ? Object.keys(healthData.modules as object).length : 0
   const primary = hlrData?.primary as Record<string, unknown> | null
-  const primaryCredits = primary?.remaining as number | null
-  const primaryTotal = (primary?.total as number) ?? 1000
-  const primaryPct = primaryCredits != null ? Math.round((primaryCredits / primaryTotal) * 100) : null
+  const { remaining: primaryCredits, percent: primaryPct } = hlrEstimate(primary)
   const primaryProvider = primary?.provider as string | null
   const analyticsBills = asRecord(analyticsData?.bills)
   const activeBills = numberFrom(analyticsBills?.active)
@@ -241,9 +235,9 @@ export default function OverviewPage() {
                 badge={{ label: apiOk ? 'OK' : 'ERROR', color: apiOk ? 'green' : 'red' }}
               />
               <StatCard
-                title="HLR Credits (Κύρια)"
+                title="HLR Credits (Εκτίμηση)"
                 value={primaryCredits != null ? primaryCredits : '—'}
-                sub={primaryProvider ? `Provider: ${primaryProvider}` : 'Μη διαθέσιμο'}
+                sub={primaryProvider ? `${primaryProvider} · Τοπικός μετρητής, όχι ζωντανό υπόλοιπο παρόχου` : 'Μη διαθέσιμο'}
                 color={primaryCredits != null ? 'text-blue-600' : 'text-gray-400'}
                 progress={primaryPct ?? undefined}
               />
@@ -492,24 +486,23 @@ export default function OverviewPage() {
 
           {/* HLR Credits */}
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-gray-800 mb-4">HLR Credits</h2>
+            <h2 className="text-base font-semibold text-gray-800 mb-4">HLR Credits (Εκτίμηση)</h2>
+            <p className="text-xs text-gray-500 mb-3">Τοπικός μετρητής, όχι ζωντανό υπόλοιπο παρόχου</p>
             {hlrData ? (
               <div className="space-y-4">
                 {(['primary', 'fallback'] as const).map(key => {
                   const prov = hlrData[key] as Record<string, unknown> | null
                   if (!prov) return null
-                  const rem = prov.remaining as number | null
-                  const tot = (prov.total as number) ?? 1000
-                  const pct = rem != null ? Math.round((rem / tot) * 100) : 0
+                  const { remaining: rem, initial: tot, percent: pct } = hlrEstimate(prov)
                   return (
                     <div key={key}>
                       <div className="flex justify-between text-sm mb-1">
                         <span className="text-gray-600">{key === 'primary' ? 'Κύρια' : 'Εφεδρική'} ({prov.provider as string ?? '—'})</span>
-                        <span className="font-medium text-gray-800">{rem ?? '—'} / {tot}</span>
+                        <span className="font-medium text-gray-800">{rem ?? '—'} / {tot ?? '—'}</span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                      {pct !== null && <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                         <div className={`h-2 rounded-full transition-all ${pct > 20 ? 'bg-blue-500' : 'bg-red-500'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
-                      </div>
+                      </div>}
                     </div>
                   )
                 })}
