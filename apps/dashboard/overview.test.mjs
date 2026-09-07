@@ -25,6 +25,10 @@ test('HLR uses initial, not an invented total; invalid data stays unavailable', 
   assert.equal(hlrEstimate({ initial: 0, remaining: 0 }).percent, null)
   assert.equal(hlrEstimate({ initial: 2499, remaining: 0 }).percent, 0)
   assert.equal(hlrEstimate({ remaining: NaN }).remaining, null)
+  for (const initial of [0, -1, NaN, Infinity, '2499', undefined]) {
+    assert.equal(hlrEstimate({ initial, remaining: 1 }).initial, null)
+  }
+  assert.equal(hlrEstimate({ initial: 2499, remaining: 2435 }).initial, 2499)
 })
 
 test('successful response releases timeout', async () => {

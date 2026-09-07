@@ -493,8 +493,7 @@ export default function OverviewPage() {
                 {(['primary', 'fallback'] as const).map(key => {
                   const prov = hlrData[key] as Record<string, unknown> | null
                   if (!prov) return null
-                  const { remaining: rem, percent: pct } = hlrEstimate(prov)
-                  const tot = numberFrom(prov.initial)
+                  const { remaining: rem, initial: tot, percent: pct } = hlrEstimate(prov)
                   return (
                     <div key={key}>
                       <div className="flex justify-between text-sm mb-1">

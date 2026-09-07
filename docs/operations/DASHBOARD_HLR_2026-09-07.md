@@ -1,6 +1,6 @@
 # Dashboard HLR display repair
 
-Status: implemented and locally validated; not deployed.
+Status: initial fix (972764b) deployed and live-verified; review follow-up pending.
 
 The overview waits for multiple services. Every request now has a 12-second
 abort deadline including JSON body consumption. Failed requests yield unavailable
@@ -17,6 +17,8 @@ existing warnings. Kimi reviewed the initial patch without blockers; its finance
 tab observation was corrected and the production build rerun. These standalone
 tests are not yet wired into CI.
 
-Release remains pending: reconcile the deployed Dashboard baseline with the
-candidate before an isolated rollout, retaining the existing runtime settings
-and a rollback image. Do not include unrelated pending API/mobile changes.
+Before every subsequent isolated rollout, reconcile the deployed Dashboard
+baseline with the candidate, create and record a Git rollback tag, and retain
+the existing runtime settings and a rollback image. Do not include unrelated
+pending API/mobile changes. The first rollout retained a Docker rollback tag;
+it did not establish a Git rollback tag, so do not backdate that evidence.

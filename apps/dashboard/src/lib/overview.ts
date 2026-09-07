@@ -17,6 +17,6 @@ export function hlrEstimate(primary: Record<string, unknown> | null | undefined)
     ? primary.remaining : null
   const initial = typeof primary?.initial === 'number' && Number.isFinite(primary.initial) && primary.initial > 0
     ? primary.initial : null
-  return { remaining, percent: remaining !== null && initial !== null
+  return { remaining, initial, percent: remaining !== null && initial !== null
     ? Math.min(100, Math.round(remaining / initial * 100)) : null }
 }
