@@ -45,7 +45,7 @@ apscheduler==3.11.3
 python-multipart==0.0.32
 
 # Diavgeia Integration (MOD-21)
-rapidfuzz>=3.14.5
+rapidfuzz>=3.14.6
 unidecode>=1.4.0
 
 # Testing
