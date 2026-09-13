@@ -92,16 +92,16 @@ jobs:
         include:
           - name: Web
             path: apps/web
-            verify: npm run lint && npm run typecheck && npm test && npm run build
+            verify: node --test ../../scripts/client-yaml-security.check.cjs image-codec.check.mjs && npm run lint && npm run typecheck && npm test && npm run build
           - name: Dashboard
             path: apps/dashboard
-            verify: npm run lint && npm run typecheck && npm run build
+            verify: node --test ../../scripts/client-yaml-security.check.cjs image-codec.check.mjs && npm run lint && npm run typecheck && npm run build
           - name: Mobile
             path: apps/mobile
-            verify: npx --no-install expo install --check && npm run typecheck && npm test
+            verify: node --test ../../scripts/client-yaml-security.check.cjs && npx --no-install expo install --check && npm run typecheck && npm test
           - name: Representative
             path: apps/representative
-            verify: npx --no-install expo install --check && npm run typecheck && npm test
+            verify: node --test ../../scripts/client-yaml-security.check.cjs && npx --no-install expo install --check && npm run typecheck && npm test
           - name: Crypto-TS
             path: packages/crypto
             verify: npm run typecheck && npm test
