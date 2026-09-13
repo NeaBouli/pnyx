@@ -1,6 +1,7 @@
 """Shared visibility guards for non-public or operator-only bills."""
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from sqlalchemy import and_, func, not_, or_
@@ -64,11 +65,10 @@ def sensitive_diavgeia_filter() -> ColumnElement[bool]:
         func.lower(func.coalesce(ParliamentBill.summary_short_el, "")),
         func.lower(func.coalesce(ParliamentBill.summary_long_el, "")),
     )
-    term_checks = [
-        haystack.contains(term)
-        for haystack in haystacks
-        for term in DIAVGEIA_SENSITIVE_PUBLIC_TERMS
-    ]
+    # Match the same literal substrings while lowercasing each large text once,
+    # rather than once per marker. Escape punctuation (notably dotted AMKA).
+    pattern = "|".join(re.escape(term) for term in DIAVGEIA_SENSITIVE_PUBLIC_TERMS)
+    term_checks = [haystack.regexp_match(pattern) for haystack in haystacks]
     return and_(
         ParliamentBill.source == "DIAVGEIA",
         or_(*term_checks),
