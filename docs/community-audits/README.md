@@ -3,8 +3,8 @@
 Independent audit reports by **Collateral Web3 Open Audits**. Publication of the full
 series — including security findings — was explicitly authorized by the repository owner
 on 2026-09-15, overriding the private-disclosure preference in `SECURITY.md` for this
-series. Findings are tracked as a single register in the umbrella issue
-(register prefix `EKA-`).
+series. Findings are tracked as a single register in umbrella issue
+[#318](https://github.com/NeaBouli/pnyx/issues/318) (register prefix `EKA-`).
 
 ## 2026-09-15 — Full audit series (EKA-01 … EKA-64)
 
