@@ -6,6 +6,7 @@ recipient, customer, secret or production credential data
 Repository baseline: `origin/main` at
 `6a8ed73a04e029d8d6525c0ccdd31f487ec684`
 Snapshot window: 2026-09-19, approximately 09:30-10:05 UTC
+Post-snapshot integration deltas reconciled through PR #320 merge at 18:12 UTC
 Prepared in: draft documentation PR
 [#323](https://github.com/NeaBouli/pnyx/pull/323)
 Detailed finance and local-worktree evidence: private/local operator records,
@@ -53,12 +54,13 @@ finished**.
 
 - The website, API, forum, dashboard login, read-only mirrors and Android
   download endpoints are reachable.
-- GitHub CI and Security Audit are green on `main` and on all 18 current open
-  PR heads.
+- GitHub CI and Security Audit are green on `main`; 16 PRs remain open after
+  the normal merges of #319 and #320.
 - Android `v1.0.32` is current on GitHub, Google Play Closed Testing and
   F-Droid.
-- The project has no open Critical EKA finding. One High and 21 Medium findings
-  remain in the new independent audit register.
+- The project has no open Critical or High EKA finding. The sole High finding,
+  EKA-02, is closed; 21 Medium findings remain evidence-gated, including
+  EKA-32 pending a separate production rollout and live acceptance.
 - Google Play production access is externally blocked at 8 of 12 opted-in
   testers, followed by the required qualifying 14-day test period.
 - Three mobile acceptance tracks remain: the persistent action ledger and
@@ -79,7 +81,7 @@ finished**.
 | Public availability | Green | Core pages, API, forum, dashboard login and all three mirrors returned HTTP 200. |
 | CI and scheduled automation | Green | Latest 30 sampled Actions runs completed successfully; no Actions quota failure. |
 | Android V1 distribution | Green/yellow | v1.0.32 is public in all intended Android channels; Play production gate and OEM acceptance remain. |
-| Security audit | Yellow/high attention | 0 Critical, 1 High, 21 Medium, 27 Low and 15 Informational findings; register still fully evidence-gated. |
+| Security audit | Yellow/high attention | 0 Critical, 1 closed High, 21 Medium, 27 Low and 15 Informational findings; 63 register items remain evidence-gated. |
 | Vote integrity | Green with follow-up | Existing signature, uniqueness and ZK aggregation protections remain; EKA-01/10/12 still require bounded remediation. |
 | Identity/privacy | Yellow | Running design remains fail-closed; client key storage/KDF and several public claims require audit remediation. |
 | Data and forum synchronization | Green with quality backlog | Current schedulers and forum sync are healthy; manual Diavgeia mapping and analytics semantics remain. |
@@ -676,11 +678,11 @@ green alert count.
 | Severity | Count | Register state |
 |---|---:|---|
 | Critical | 0 | None open |
-| High | 1 | Open, candidate PR #319 |
+| High | 1 | Closed: EKA-02 source, merge, rollout and live acceptance verified |
 | Medium | 21 | Open/evidence-gated |
 | Low | 27 | Open/evidence-gated |
 | Informational | 15 | Open/evidence-gated |
-| Total | 64 | All issue #318 boxes currently unchecked |
+| Total | 64 | 1 closed; 63 issue #318 boxes remain evidence-gated |
 
 Publishing an audit is not fixing it. A green PR is not deployment evidence.
 
@@ -688,8 +690,8 @@ Publishing an audit is not fixing it. A green PR is not deployment evidence.
 
 | Package | Finding IDs | Completion requirement |
 |---|---|---|
-| A - Representative XSS | EKA-02 | Review PR #319, inspect every untrusted rendered field, pass representative regressions, merge normally, then update #318. Rollout remains separate. |
-| B - Global rate limiting | EKA-32 | Independently review PR #320; prove middleware order, 429 CORS, exemptions, test isolation and endpoint behavior. Merge and rollout remain separate. |
+| A - Representative XSS | EKA-02 | Complete: PR #319 merged, bounded Web rollout passed hostile-payload live acceptance, #318 closed. |
+| B - Global rate limiting | EKA-32 | Integration complete in PR #320; production rollout and live acceptance remain separate. |
 | C - Endpoint abuse/privacy | EKA-03/04/05/06/09/16/17/53 | Bound auth, dedicated limits, log redaction, HLR/push/newsletter/webhook/status policies without provider writes. |
 | D - Vote/auth correctness | EKA-01/10/11/12 | Restore Tier-1 validation, deterministic municipal conflict response, dormant gov.gr state design and narrow exception handling. |
 | E - Client keys/KDF | EKA-07/08/21/22/23/24 | Canonical formats/KATs, backward-compatible key-storage and KDF migration, explicit phone-entropy risk. |
@@ -710,7 +712,8 @@ the checkpoint.
 
 #### High
 
-- [ ] EKA-02 - representative WebView stored-XSS surface with live token.
+- [x] EKA-02 - representative WebView stored-XSS surface with live token; fixed,
+  merged, deployed through the bounded Web overlay and live-accepted.
 
 #### Medium
 
@@ -722,7 +725,8 @@ the checkpoint.
 - [ ] EKA-07 - web Ed25519 private key in plaintext localStorage.
 - [ ] EKA-08 - compass profile plaintext localStorage fallback.
 - [ ] EKA-21 - three diverging nullifier-root KDF implementations.
-- [ ] EKA-32 - global rate limiter middleware not enforced.
+- [ ] EKA-32 - global limiter is now enforced in merged source (`942e063`),
+  but closure awaits separately authorized API rollout and live acceptance.
 - [ ] EKA-33 - "0 analytics" claims conflict with Plausible.
 - [ ] EKA-34 - compass never-on-server wording conflicts with stored history.
 - [ ] EKA-35 - server vote-knowledge statement is overstated.
@@ -786,17 +790,15 @@ the checkpoint.
 
 ## 16. Current open pull requests
 
-There are 18 open PRs. All current heads are clean/mergeable and have green
-hosted CI/Security checks, but none has an approved review decision recorded.
-Green automation alone is not merge authorization.
+There are 16 open PRs after #319 and #320 merged normally. The table below is a
+point-in-time maintenance inventory; green automation alone is not merge
+authorization.
 
 | PR | Scope | Head | Current action |
 |---:|---|---|---|
-| #323 | Audit/redesign catalog and this checkpoint | `72688da8...` before this report update | Keep draft until documentation review completes. |
+| #323 | Audit/redesign catalog and this checkpoint | `docs/audit-redesign-catalog-20260919` | Keep draft until documentation review completes. |
 | #322 | sentry-sdk 2.68.1 -> 2.69.1, API | `7cf34566...` | Review and merge separately if compatible. |
 | #321 | Alembic 1.19.1 -> 1.20.0, API | `c36ab8b0...` | Review migration tooling compatibility; separate merge. |
-| #320 | EKA-32 global rate limiter | `ba969aef...` | Independent review required; CodeRabbit was rate-limited. |
-| #319 | EKA-02 representative XSS | `2a224fda...` | Highest-priority code review/package A. |
 | #313 | Next 16.3.3 -> 16.3.4, dashboard | `4a1e29c3...` | Bounded dashboard dependency wave. |
 | #312 | @types/react-dom 19.2.5 -> 19.2.7, dashboard | `bd05730c...` | Batch only with compatible dashboard checks. |
 | #311 | autoprefixer 10.5.4 -> 10.5.5, dashboard | `b1fdddb5...` | Review with PostCSS/dashboard build. |
@@ -813,13 +815,11 @@ Green automation alone is not merge authorization.
 
 Recommended PR order:
 
-1. #319 security fix;
-2. #320 independent rate-limit review;
-3. #321/#322 low-scope API maintenance;
-4. coherent Dashboard patch group;
-5. coherent Web patch group;
-6. major #306 and #309 only as separate migration tasks;
-7. #302 only after the finance adapter boundary is isolated.
+1. #321/#322 low-scope API maintenance;
+2. coherent Dashboard patch group;
+3. coherent Web patch group;
+4. major #306 and #309 only as separate migration tasks;
+5. #302 only after the finance adapter boundary is isolated.
 
 ## 17. Current open GitHub issues
 
@@ -973,22 +973,18 @@ The exact local paths and counts remain in the gitignored private supplement.
 This is the recommended execution order. Only one bounded package should be
 `in_progress` at a time.
 
-### Block 1 - Close the immediate High security candidate
+### Block 1 - Close the immediate High security candidate (complete)
 
-- Final Sol review of PR #319.
-- Representative regression and sink inventory.
-- Normal protected merge only if clean.
-- Main CI/Security recheck.
-- Separate representative rollout decision and live acceptance if required.
-- Update only EKA-02 in #318 after evidence.
+- PR #319 received final review, regressions and sink inventory.
+- Normal protected merge, post-merge CI/Security, bounded Web rollout and live
+  acceptance completed; EKA-02 is closed in #318.
 
-### Block 2 - Establish the API rate-limit baseline
+### Block 2 - Establish the API rate-limit baseline (integration complete)
 
-- Independent review of PR #320.
-- Confirm middleware ordering, proxy/IP semantics, 429 CORS/body, endpoint
-  exemptions and test isolation.
-- Normal merge decision, then separately scoped API rollout.
-- Update EKA-32 only after applicable live evidence.
+- PR #320 passed review, middleware/proxy/CORS/fallback regressions, 1,019 local
+  API tests, focused Redis tests, normal merge and post-merge CI/Security.
+- A separately scoped API rollout and live acceptance are still required before
+  checking EKA-32 in #318.
 
 ### Block 3 - Endpoint abuse/privacy package
 
@@ -1097,7 +1093,7 @@ This is the recommended execution order. Only one bounded package should be
 V1 can be described as fully stabilized only when all of the following are
 true:
 
-- [ ] EKA-02 High closed with merge and applicable runtime evidence.
+- [x] EKA-02 High closed with merge and applicable runtime evidence.
 - [ ] Release-blocking Medium EKA findings closed or formally accepted.
 - [ ] Remaining EKA register processed with evidence and follow-up audit.
 - [ ] #290 notification ledger/delivery accepted on required matrix.

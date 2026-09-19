@@ -4,8 +4,9 @@ Authoritative full checkpoint:
 [Ekklesia master project status - 2026-09-19](reports/EKKLESIA_MASTER_PROJECT_STATUS_2026-09-19.md).
 
 Repository and delivery gates reviewed: 2026-09-19 for the EKA audit/design
-intake. The deployed-release facts below remain based on the prior verified
-release receipts; this intake changed no runtime, store or production state.
+intake and subsequent EKA-02/EKA-32 integration deltas. The deployed-release
+facts below remain based on the prior verified release receipts. EKA-02 received
+a separately authorized bounded Web rollout; EKA-32 has not been deployed.
 Android v1.0.32/vC61 is merged and published on GitHub. Its Direct APK and Play
 AAB are checksum-verified and retain the established signing certificate. The
 release adds category-aware app-icon notification counts and resets the count
@@ -24,12 +25,14 @@ eligibility, ZK, database and production policy are unchanged.
 ## 2026-09-19 audit and redesign intake
 
 - PR #317 merged the independent 64-finding EKA audit series as documentation.
-  Issue #318 remains open with all findings evidence-gated.
-- PR #319 is the current EKA-02 stored-XSS fix candidate. Its CI/Security checks
-  and completed CodeRabbit review are green with no actionable comments.
-- PR #320 is the current EKA-32 global-rate-limit candidate. CI/Security checks
-  are green, but CodeRabbit hit its separate review allowance; an independent
-  review and bounded rollout analysis remain required.
+  Issue #318 remains open; EKA-02 is closed and 63 findings remain
+  evidence-gated.
+- PR #319 merged as `a375d2d`; its bounded Representative Web rollout and live
+  hostile-payload acceptance completed, so EKA-02 is closed in issue #318.
+- PR #320 merged normally as `942e063` after its two valid CodeRabbit findings
+  were fixed in `3e763ed`. Local API tests passed with 1,019 tests plus the
+  focused Redis path, and post-merge CI/Security are green. EKA-32 remains
+  evidence-gated until a separately authorized API rollout and live acceptance.
 - GitHub Actions itself is currently operational: the sampled latest 30 runs
   completed successfully with no active or failed run.
 - The supplied redesign handoff is archived under `design/handoffs/` as
@@ -41,8 +44,9 @@ eligibility, ZK, database and production policy are unchanged.
   program are frozen in
   `docs/reports/EKKLESIA_MASTER_PROJECT_STATUS_2026-09-19.md`.
 
-No audit fix, merge, deployment, public audit-page change or redesign
-implementation occurred in this intake.
+The original catalog intake changed no application or runtime state. The two
+subsequent bounded security tasks above did not implement the redesign or a
+public audit page. No EKA-32 production change occurred.
 
 ## Verified component rollout
 

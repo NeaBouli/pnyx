@@ -575,3 +575,23 @@
 - This was a documentation-only checkpoint. No application code, merge,
   deployment, database, DNS, secret, IAM, provider, payment, store or production
   mutation occurred.
+
+## 2026-09-19 - EKA-02 Closure and EKA-32 Integration Delta (Append-only)
+
+- EKA-02: PR #319 merged normally as `a375d2d`; post-merge CI/Security passed.
+  The separately authorized bounded Representative Web overlay and live
+  hostile-payload acceptance passed, and issue #318 now marks EKA-02 closed.
+- EKA-32: PR #320 merged normally as `942e063`. CodeRabbit's two valid findings
+  were fixed in `3e763ed`: forwarded client addresses are accepted only from
+  configured trusted proxy CIDRs, and documentation now distinguishes shared
+  Redis coordination from bounded per-process memory fallback.
+- EKA-32 verification: focused Redis path `27 passed`; full local API suite
+  `1019 passed, 2 skipped, 25 xfailed`; diff/compile/scoped-secret checks passed.
+  All PR checks and post-merge main CI run `35460470030` plus Security run
+  `35460470044` passed.
+- Kimi's fresh final review attempt was blocked by its external 5-hour quota and
+  changed no files. The final delta received the documented Claude/Sol fallback
+  review; CodeRabbit's resolved threads provide the original finding evidence.
+- No EKA-32 API rollout or other production, database, DNS, secret, IAM,
+  provider, payment or store mutation occurred. EKA-32 remains open in #318
+  until separately authorized live acceptance.

@@ -1,7 +1,7 @@
 # Ekklesia.gr — TODO
 # Copyright (c) 2026 V-Labs Development — MIT License
 
-Last reconciled: 2026-09-19 (EKA audit and redesign intake; no rollout)
+Last reconciled: 2026-09-19 (EKA-02 closed; EKA-32 integrated, not deployed)
 
 `docs/STATUS.md` is the authority for the current release. GitHub issues and
 Linear are the authorities for active work. Older session notes are retained
@@ -14,10 +14,13 @@ The complete cross-system checkpoint is
 - [x] Merge and checksum-pin the independent EKA audit series through PR #317.
   The immutable reports cover EKA-01..64; issue #318 is the authoritative
   checkbox register.
-- [x] Independently recheck the helper handoff: PR #319 is the green EKA-02
-  candidate; PR #320 is the green EKA-32 candidate. Neither is merged by this
-  intake. PR #320 still needs an independent review because CodeRabbit reached
-  its own included-review limit.
+- [x] Independently recheck the helper handoff and complete Package A: PR #319
+  merged as `a375d2d`, passed post-merge checks, received a bounded live Web
+  rollout and closed EKA-02 with acceptance evidence in issue #318.
+- [x] Complete Package B code integration: PR #320 merged as `942e063` after
+  both valid review findings were fixed. Local API tests, focused Redis tests,
+  all PR checks and post-merge CI/Security passed. Production rollout remains a
+  separate, explicitly authorized gate, so EKA-32 stays open.
 - [x] Confirm GitHub Actions is currently running normally. The observed limit
   warning belongs to CodeRabbit, not Actions; no CI rule is weakened or skipped.
 - [x] Preserve the supplied redesign package unchanged under
@@ -26,14 +29,12 @@ The complete cross-system checkpoint is
 - [x] Catalog every audit ID into one bounded remediation package and freeze a
   phase-gated redesign sequence. See
   `docs/planning/EKA_REMEDIATION_AND_REDESIGN_PLAN_2026-09-19.md`.
-- [ ] Start Package A (final review and integration decision for PR #319) only
-  after explicit execution approval. Do not begin the redesign as part of that
-  security task.
 - [ ] Run Kimi's independent catalog review after its announced quota reset;
-  avoid retries and duplicate analysis before then.
+  the final EKA-32 retry remained externally quota-limited, so Claude/Sol
+  performed the documented fallback review without duplicating implementation.
 
-All 64 issue #318 boxes remain evidence-gated. Audit publication is not proof
-that a finding is fixed, and a green candidate PR is not proof of deployment.
+EKA-02 is closed. The remaining 63 issue #318 boxes are evidence-gated. Audit
+publication or a green integration PR alone is not proof of deployment.
 
 ## Current gates
 

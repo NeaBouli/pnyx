@@ -14,7 +14,8 @@ and prepares bounded work packages for an explicit later start.
   `docs/community-audits/`.
 - The authoritative finding register is issue
   [#318](https://github.com/NeaBouli/pnyx/issues/318). Its EKA-01..64 boxes
-  remain unchecked until a fixing or acceptance PR is merged and reverified.
+  remain evidence-gated. EKA-02 is closed; EKA-32 is integrated but remains
+  open until separately authorized production and live acceptance evidence.
 - The consolidated 29-page PDF was checked for completeness and visually
   rendered during intake. The repository Markdown reports remain the source
   for ticket-level evidence and line references.
@@ -33,12 +34,14 @@ GitHub Actions is not currently blocked by a run quota:
 
 - on 2026-09-19 the latest 30 repository runs were completed successfully;
 - no run was queued, in progress or failed in that sample;
-- PRs #319, #320, #321 and #322 have green CI and Security Audit checks.
+- PRs #319 and #320 merged normally with green post-merge CI and Security Audit;
+  maintenance PRs #321 and #322 retain green candidate checks.
 
-The warning on PR #320 is a **CodeRabbit included-review limit**, not a GitHub
-Actions limit. PR #319 received a completed CodeRabbit review with no actionable
-comments. PR #320 did not receive the equivalent review and therefore still
-needs an independent code review before any merge decision.
+The warning seen during PR #320 was a **CodeRabbit included-review limit**, not
+a GitHub Actions limit. CodeRabbit's completed review identified two valid
+findings; both were fixed in `3e763ed` and both threads are resolved. A fresh
+Kimi final pass remained externally quota-limited, so the final delta received
+the documented Claude/Sol fallback review before normal merge.
 
 If an Actions quota becomes constrained later:
 
@@ -67,17 +70,18 @@ This workflow reduces repeated repository scans and duplicate test runs. Model
 reasoning settings do not provide a reliable per-task token cap; an explicit
 block and, when desired, an explicit token budget are the reliable controls.
 
-## Existing candidate pull requests
+## Relevant security and maintenance pull requests
 
 | PR | Scope | Verified state | Gate |
 |---|---|---|---|
 | #317 | Audit publication, EKA-01..64 | Merged as `6a8ed73`; checks green | Complete |
-| #319 | EKA-02 representative WebView stored-XSS | Open, clean, mergeable; CI/Security green; CodeRabbit found no actionable issue | Sol review, regression review, then regular merge decision |
-| #320 | EKA-32 global rate-limit middleware | Open, clean, mergeable; CI/Security green | Independent review still required; CodeRabbit was rate-limited; rollout effects must be bounded separately |
+| #319 | EKA-02 representative WebView stored-XSS | Merged as `a375d2d`; post-merge checks and bounded live acceptance green | Complete; EKA-02 closed in #318 |
+| #320 | EKA-32 global rate-limit middleware | Merged as `942e063`; review findings fixed; local/hosted verification green | Integration complete; production rollout/live acceptance remain separate |
 | #321 | Alembic 1.20.0 dependency update | Open, clean, checks green | Independent dependency maintenance; do not mix with EKA fixes |
 | #322 | sentry-sdk 2.69.1 dependency update | Open, clean, checks green | Independent dependency maintenance; do not mix with EKA fixes |
 
-No PR in this table is merged or deployed by this intake.
+The catalog intake itself merged or deployed nothing. The #319 and #320 rows
+record later bounded task blocks; #320 has not been deployed.
 
 ## Remediation packages
 
@@ -86,8 +90,8 @@ must not be duplicated across packages.
 
 | Package | Findings | Scope and exit gate | Risk / dependency |
 |---|---|---|---|
-| A - Representative XSS | EKA-02 | Review #319, rerun the representative regressions, inspect all rendered untrusted fields, merge only through normal protection, then update #318. | High; first code package. No representative rollout in the same PR. |
-| B - Global rate limiting | EKA-32 | Review #320, prove middleware order, CORS on 429, test isolation, exemptions and real endpoint behavior. Merge and production rollout remain separate decisions. | Medium/high blast radius; follows A review. |
+| A - Representative XSS | EKA-02 | Complete: #319 merged, bounded Web rollout accepted, #318 updated. | High package closed with source, integration and live evidence. |
+| B - Global rate limiting | EKA-32 | Integration complete: #320 proves middleware order, 429 CORS, test isolation, Redis/fallback behavior and trusted-proxy semantics. Production rollout remains separate. | Medium/high blast radius; live evidence still required. |
 | C - Auxiliary endpoint abuse and privacy | EKA-03, EKA-04, EKA-05, EKA-06, EKA-09, EKA-16, EKA-17, EKA-53 | Specify authentication, dedicated limits, redacted logging and public-status boundaries for nullifier, newsletter, push, HLR, webhook and usage endpoints. Split implementation by subsystem. | Depends on B's global baseline and existing client compatibility. HLR/provider writes remain forbidden. |
 | D - Vote and dormant-auth correctness | EKA-01, EKA-10, EKA-11, EKA-12 | Restore Tier-1 validation, convert municipal races to deterministic conflict handling, define dormant gov.gr state storage before activation, narrow signature exceptions. | Security-sensitive; no governance semantics change. |
 | E - Client keys and nullifier KDF | EKA-07, EKA-08, EKA-21, EKA-22, EKA-23, EKA-24 | Publish canonical formats and known-answer tests first; then plan backward-compatible key-storage and KDF migration. Record the accepted phone-entropy residual risk explicitly. | High crypto/identity risk; requires Kimi plus strengthened Sol review before code. No identity reset. |
@@ -190,12 +194,14 @@ redesign visuals.
 
 ## Current stop point
 
-- Audit and helper work catalogued.
-- CI limitation correctly classified.
+- Audit and helper work catalogued; Package A is closed and Package B is
+  integrated with its production gate still open.
+- CI limitation correctly classified; all #319/#320 integration checks passed.
 - Design source preserved outside the public web root.
 - No redesign code or public content changed.
-- Kimi independent review is deferred until its announced quota reset; no
-  repeated quota calls are permitted in the meantime.
+- Kimi's independent catalog review remains deferred by its external quota. The
+  EKA-32 final delta used the documented Claude/Sol fallback review.
 
-Next executable package after explicit approval: **Package A, final review and
-integration decision for PR #319**.
+Next executable action requires a separate exact choice: either the bounded
+**Package B API rollout/live acceptance**, or specification of the first
+Package C subsystem. Neither starts automatically from this document.
