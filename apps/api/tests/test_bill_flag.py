@@ -22,6 +22,12 @@ NOW = 1_788_000_000_000
 KEY = SigningKey(bytes([1]) * 32)
 
 
+class SyntheticPostgresError(Exception):
+    def __init__(self, message: str, sqlstate: str) -> None:
+        super().__init__(message)
+        self.sqlstate = sqlstate
+
+
 class FlagSession:
     def __init__(self) -> None:
         self.calls: list[tuple[str, Any]] = []
@@ -46,7 +52,11 @@ class FlagSession:
             if self.fail_with is not None:
                 raise self.fail_with
             if self.duplicate:
-                raise IntegrityError("INSERT INTO bill_flags", params, Exception("duplicate key"))
+                raise IntegrityError(
+                    "INSERT INTO bill_flags",
+                    params,
+                    SyntheticPostgresError("duplicate key", "23505"),
+                )
             return SimpleNamespace()
         assert "UPDATE parliament_bills" in sql
         return SimpleNamespace()
@@ -118,6 +128,20 @@ def test_database_failure_is_not_masked_as_duplicate(client: Any) -> None:
     with pytest.raises(RuntimeError, match="connection lost"):
         http.post(f"/api/v1/bills/{BILL}/flag", json=signed_body())
     assert not db.committed
+    assert db.rolled_back
+
+
+def test_unrelated_integrity_failure_is_not_masked_as_duplicate(client: Any) -> None:
+    http, db = client
+    db.fail_with = IntegrityError(
+        "INSERT INTO bill_flags",
+        None,
+        SyntheticPostgresError("foreign key violation", "23503"),
+    )
+    with pytest.raises(IntegrityError):
+        http.post(f"/api/v1/bills/{BILL}/flag", json=signed_body())
+    assert not db.committed
+    assert db.rolled_back
 
 
 @pytest.mark.parametrize("tamper", ["target", "owner", "timestamp", "key", "read_payload"])

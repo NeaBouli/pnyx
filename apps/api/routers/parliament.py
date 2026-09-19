@@ -17,7 +17,6 @@ from database import get_db
 
 DISCOURSE_BASE = os.getenv("DISCOURSE_BASE_URL", "https://pnyx.ekklesia.gr")
 from dependencies import verify_admin_key
-from keypair import verify_signature
 from services.bill_visibility import is_public_bill, public_bill_with_demo_filter
 from services.citizen_action_integrity import (
     build_flag_payload,
@@ -466,6 +465,24 @@ class FlagRequest(BaseModel):
     signature_hex:  str = Field(..., pattern=r"^[0-9a-fA-F]{128}$")
 
 
+def _integrity_error_sqlstate(exc: IntegrityError) -> str | None:
+    """Read PostgreSQL SQLSTATE through SQLAlchemy's asyncpg wrapper layers."""
+    orig = exc.orig
+    for candidate in (
+        orig,
+        getattr(orig, "__cause__", None),
+        getattr(orig, "__context__", None),
+    ):
+        if candidate is None:
+            continue
+        sqlstate = getattr(candidate, "sqlstate", None) or getattr(
+            candidate, "pgcode", None,
+        )
+        if sqlstate:
+            return str(sqlstate)
+    return None
+
+
 @router.post("/{bill_id}/flag")
 async def flag_bill(
     bill_id: str,
@@ -473,6 +490,8 @@ async def flag_bill(
     db: AsyncSession = Depends(get_db),
 ):
     """Flag a bill as irrelevant/spam. One flag per ACTIVE identity (signed)."""
+    from keypair import verify_signature
+
     if not citizen_action_timestamp_is_fresh(req.timestamp_ms):
         raise HTTPException(401, "Μη έγκυρη υπογραφή.")
 
@@ -505,9 +524,14 @@ async def flag_bill(
             "UPDATE parliament_bills SET flag_count = flag_count + 1 WHERE id = :bid"
         ), {"bid": bill_id})
         await db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         await db.rollback()
+        if _integrity_error_sqlstate(exc) != "23505":
+            raise
         raise HTTPException(409, "Έχετε ήδη αναφέρει αυτό το νομοσχέδιο.")
+    except Exception:
+        await db.rollback()
+        raise
 
     return {"success": True, "bill_id": bill_id, "message": "Η αναφορά καταγράφηκε."}
 

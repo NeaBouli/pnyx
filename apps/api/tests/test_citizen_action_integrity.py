@@ -82,12 +82,24 @@ def test_cutoff_parser_accepts_truthy_values(
     assert vote_status_require_signed()
 
 
-@pytest.mark.parametrize("value", ["", "0", "false", "no", "off", "2"])
-def test_cutoff_parser_rejects_everything_else(
+@pytest.mark.parametrize("value", ["", "0", "false", "no", "off"])
+def test_cutoff_parser_accepts_explicit_false_values(
     monkeypatch: pytest.MonkeyPatch, value: str,
 ) -> None:
     monkeypatch.setenv(VOTE_STATUS_REQUIRE_SIGNED_ENV, value)
     assert not vote_status_require_signed()
+
+
+@pytest.mark.parametrize("value", ["2", "ture", "disabled"])
+def test_cutoff_parser_fails_closed_on_invalid_nonempty_values(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    value: str,
+) -> None:
+    monkeypatch.setenv(VOTE_STATUS_REQUIRE_SIGNED_ENV, value)
+    assert vote_status_require_signed()
+    assert VOTE_STATUS_REQUIRE_SIGNED_ENV in caplog.text
+    assert "requiring signed vote-status reads" in caplog.text
 
 
 def test_cutoff_parser_defaults_to_disabled(monkeypatch: pytest.MonkeyPatch) -> None:

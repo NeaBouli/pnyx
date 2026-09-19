@@ -44,6 +44,10 @@ flag:v1:["GR-0490a766","<nullifier>",1788000000000]
 vote-status-read:v1:["GR-0490a766","<nullifier>",1788000000000]
 ```
 
+`VOTE_STATUS_REQUIRE_SIGNED` accepts explicit true and false values. Unset keeps
+the compatibility window open; an invalid non-empty value logs an operator
+error and fails closed by requiring signed reads.
+
 Personal responses use `Cache-Control: private, no-store`. The vote-status
 response header `X-Vote-Read-Integrity: signed|legacy` identifies the server
 path. Signatures are not put in URLs, no private key leaves the device, and

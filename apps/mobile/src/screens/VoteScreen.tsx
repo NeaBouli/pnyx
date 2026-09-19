@@ -146,11 +146,17 @@ export default function VoteScreen({ route, navigation }: Props) {
             nullifier,
             timestampMs,
           );
-          const voteStatus = await fetchVoteStatus(nullifier, billId, { timestampMs, signatureHex });
+          const voteStatus = await fetchVoteStatus(
+            nullifier,
+            billId,
+            { timestampMs, signatureHex },
+          ).catch(() => null);
           if (!mounted) return;
-          setHasVoted(voteStatus.has_voted);
-          setIsCorrected(voteStatus.is_correction);
-          if (voteStatus.vote) setSelected(voteStatus.vote);
+          if (voteStatus) {
+            setHasVoted(voteStatus.has_voted);
+            setIsCorrected(voteStatus.is_correction);
+            if (voteStatus.vote) setSelected(voteStatus.vote);
+          }
         }
         fetchZkStatus()
           .then((status) => {

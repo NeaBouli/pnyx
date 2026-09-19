@@ -77,6 +77,14 @@ def citizen_action_timestamp_is_fresh(
 
 def vote_status_require_signed() -> bool:
     """Allow a reversible compatibility window for already released clients."""
-    return os.getenv(VOTE_STATUS_REQUIRE_SIGNED_ENV, "").strip().lower() in {
-        "1", "true", "yes", "on",
-    }
+    raw = os.getenv(VOTE_STATUS_REQUIRE_SIGNED_ENV, "").strip().lower()
+    if raw in {"1", "true", "yes", "on"}:
+        return True
+    if raw in {"", "0", "false", "no", "off"}:
+        return False
+    logger.error(
+        "Invalid %s=%r; requiring signed vote-status reads",
+        VOTE_STATUS_REQUIRE_SIGNED_ENV,
+        raw,
+    )
+    return True
