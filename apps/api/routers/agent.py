@@ -13,7 +13,6 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from slowapi import Limiter
 import httpx
 import redis.asyncio as aioredis
 
@@ -21,7 +20,7 @@ from database import get_db
 from models import ParliamentBill, BillStatus, KnowledgeBase
 from services.bill_visibility import public_bill_filter
 from services.claude_usage import MODEL as CLAUDE_MODEL, track_usage
-from ip_utils import get_client_ip
+from rate_limit import limiter
 from services.ollama_service import answer_citizen_question, ollama_available
 
 logger = logging.getLogger(__name__)
@@ -31,7 +30,6 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "20"))
 
 
-limiter = Limiter(key_func=get_client_ip)
 router = APIRouter(prefix="/api/v1/agent", tags=["agent"])
 
 

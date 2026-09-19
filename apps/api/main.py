@@ -10,9 +10,10 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from ip_utils import get_client_ip
+from slowapi.middleware import SlowAPIMiddleware
+from rate_limit import limiter
 from security_startup import validate_identity_kdf_config, validate_server_salt_config
 
 logger = logging.getLogger(__name__)
@@ -64,7 +65,6 @@ def capture_error(error: Exception, context: dict = None):
     else:
         local_error_logger.error("[LOCAL] %s: %s | %s", type(error).__name__, error, context)
 
-limiter = Limiter(key_func=get_client_ip, default_limits=["60/minute"])
 from routers import identity, vaa, parliament, voting
 from routers import arweave
 from routers import scraper
@@ -734,6 +734,10 @@ app = FastAPI(
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# SlowAPIMiddleware must be registered or default_limits are never enforced.
+# Added before CORSMiddleware so 429 responses still carry CORS headers.
+app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
