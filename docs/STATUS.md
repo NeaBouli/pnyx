@@ -1,5 +1,8 @@
 # Ekklesia.gr - Project Status
 
+Authoritative full checkpoint:
+[Ekklesia master project status - 2026-09-19](reports/EKKLESIA_MASTER_PROJECT_STATUS_2026-09-19.md).
+
 Repository and delivery gates reviewed: 2026-09-19 for the EKA audit/design
 intake. The deployed-release facts below remain based on the prior verified
 release receipts; this intake changed no runtime, store or production state.
@@ -8,8 +11,10 @@ AAB are checksum-verified and retain the established signing certificate. The
 release adds category-aware app-icon notification counts and resets the count
 when the app opens. Android launchers that do not support numeric badges may
 show only their native notification dot. Google Play accepted vC61 for Closed
-Testing Alpha and is reviewing it. The bounded API/Web/latest-alias rollout is
-complete and live; F-Droid follows its independent source-build cycle.
+Testing Alpha; the track is active with 8 of the required 12 opted-in testers.
+The bounded API/Web/latest-alias rollout is complete and live. F-Droid now
+publishes v1.0.32 through reproducible ABI builds 611-614, with 614 as the
+suggested version code.
 
 The Xiaomi/HLR follow-up merged in PR #291. Android Picker colors are explicit,
 the locally written `069...` Greek mobile form is accepted, and fallback HLR
@@ -32,6 +37,9 @@ eligibility, ZK, database and production policy are unchanged.
   wired into the site.
 - The complete task ownership, order, content freeze and redesign gates are in
   `docs/planning/EKA_REMEDIATION_AND_REDESIGN_PLAN_2026-09-19.md`.
+- The complete current state, open-work inventory and ordered completion
+  program are frozen in
+  `docs/reports/EKKLESIA_MASTER_PROJECT_STATUS_2026-09-19.md`.
 
 No audit fix, merge, deployment, public audit-page change or redesign
 implementation occurred in this intake.
@@ -101,9 +109,9 @@ implementation occurred in this intake.
   and eligibility policy. Web tests (69), lint (zero warnings), typecheck,
   build and npm audit (zero findings) pass. Kimi independently reproduced the
   original 11 failing cases and reviewed the fix; Sol added the suggested
-  edge cases and verified Greek desktop/mobile layouts. This code verification
-  is not a new production-login canary. See the
-  [Web rollout receipt and remaining canary](operations/forum-sso-lifecycle.md).
+  edge cases and verified Greek desktop/mobile layouts. The owner subsequently
+  completed a voluntary real-citizen login/logout canary on 2026-08-24. See the
+  [Web rollout and canary receipt](operations/forum-sso-lifecycle.md).
 
 - Send-only mail intent is confirmed by the owner. The reply-routing patch in
   [PR #262](https://github.com/NeaBouli/pnyx/pull/262) retains Brevo senders,
@@ -148,8 +156,9 @@ implementation occurred in this intake.
   currently excludes it. Existing supported versions are retained.
 - Google Play production access is still blocked by its closed-test criteria.
   The console requires at least 12 opted-in testers and a qualifying 14-day
-  test. Enrollment is not proof of daily activity; current private counts are
-  recorded in the local bridge, not inferred from the email allowlist.
+  test. The verified snapshot shows 8 opted-in testers, so 4 more are required
+  before the qualifying period can complete. Enrollment is not proof of daily
+  activity; private list membership is not treated as the active-tester count.
 - DMARC: the private catalog still contains one report / one passing message,
   not a complete monthly evidence set. Review starts no earlier than September
   1 and waits for delayed August 31 reports and sender-path evidence. Inbound
@@ -183,9 +192,9 @@ implementation occurred in this intake.
 | Phase | Beta |
 | Android | v1.0.32 / versionCode 61 built, verified and published on GitHub |
 | Direct APK | GitHub release asset and website/latest alias published and checksum-verified |
-| Google Play | vC61 submitted to Closed Testing Alpha; Google review pending |
+| Google Play | vC61 active in Closed Testing Alpha; 8/12 opted-in testers, production inactive |
 | iOS | Preparation only; no public build |
-| F-Droid | v1.0.29 / versionCode 584 remains public; v1.0.31 metadata is accepted and v1.0.32 follows the source-tag build cycle |
+| F-Droid | v1.0.32 public; ABI version codes 611-614, suggested version code 614 |
 
 ## Verified product behavior
 
@@ -215,9 +224,10 @@ implementation occurred in this intake.
   clears it. F-Droid remains
   native-push-free. Android launcher support determines whether a number or
   only the platform notification dot is rendered.
-- F-Droid's official metadata currently names v1.0.31/604 while the public
-  package page still offers v1.0.29/584. v1.0.32 must enter through the normal
-  source tag and reproducible-build path; no manually signed APK is uploaded.
+- F-Droid's public repository now offers reproducible v1.0.32 ABI builds
+  611-614 and suggests 614. No manually signed Direct or Play APK is uploaded
+  to F-Droid. The public listing still needs a verified Greek localization
+  path; repository Fastlane text alone does not prove that page localized.
 - Voting, identity, eligibility, ZK and database behavior are unchanged.
 - PR #292 merged normally after all required checks passed. GitHub release
   `v1.0.32` is public; its tag resolves to the merge commit and the uploaded
@@ -295,7 +305,9 @@ state. The complete prior verification text remains in Git history.
 
 - Alpha 0.1 official gov.gr holder verification is design-only (GH#141), pending official integration, DPIA, migration design, independent review and sandbox canary.
 - Off-site backup currently uses the separated sandbox fallback until funded dedicated storage is available.
-- F-Droid MR !38007 is merged and v1.0.29 (584) is publicly available from the main repository.
+- F-Droid MR !38007 is merged and v1.0.32 (611-614; suggested 614) is publicly
+  available from the main repository. Greek public-listing localization remains
+  an upstream presentation follow-up.
 - R8/ProGuard remains disabled; therefore no mapping file is produced for vC61. Google Play's mapping-file warning is expected and non-blocking. A future R8 production build requires a separate native/ZK regression gate and `mapping.txt` publication.
 
 Operational details and rollback history are maintained in the local, non-public agent bridge.

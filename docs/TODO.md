@@ -6,6 +6,8 @@ Last reconciled: 2026-09-19 (EKA audit and redesign intake; no rollout)
 `docs/STATUS.md` is the authority for the current release. GitHub issues and
 Linear are the authorities for active work. Older session notes are retained
 below only as historical context; their unchecked boxes are not current tasks.
+The complete cross-system checkpoint is
+[`docs/reports/EKKLESIA_MASTER_PROJECT_STATUS_2026-09-19.md`](reports/EKKLESIA_MASTER_PROJECT_STATUS_2026-09-19.md).
 
 ## 2026-09-19 audit and redesign intake
 
@@ -43,6 +45,15 @@ that a finding is fixed, and a green candidate PR is not proof of deployment.
   before a new app release. The shipped v61 initial badge is not this ledger.
 - [ ] Resolve the privately documented protected configuration mismatch before
   any newsletter/evaluation API overlay rollout; no container was switched.
+- [ ] Reconcile the 22 platform votes, 17 CPLM votes and zero representation
+  analytics bills/votes as documented metric scopes; do not mutate vote data.
+- [ ] Re-run the existing no-write procedure for the 28 unmatched Diavgeia
+  municipality mappings. Any database correction remains a separate reviewed
+  and explicitly approved task.
+- [ ] Complete the authenticated dashboard acceptance matrix and record exact
+  evidence for bills, votes, HLR, AI, mirrors and administrative actions.
+- [ ] Reauthenticate the Linear connector before changing any retained ticket
+  state; GitHub and this checkpoint remain authoritative in the meantime.
 
 - [x] Prepare and validate the bounded Xiaomi/HLR follow-up: explicit Android
   Picker colors, `069...` normalization, fail-closed fallback handling,
@@ -71,8 +82,8 @@ that a finding is fixed, and a green candidate PR is not proof of deployment.
   complete. Server signatures, nonce consumption and eligibility are unchanged.
 - [x] Include GH#258 in the reversible Web rollout with live verification.
   See `docs/operations/forum-sso-lifecycle.md`.
-- [ ] Complete one new voluntary smartphone login/logout canary for this Web
-  rollout. Existing technical checks do not impersonate a verified citizen.
+- [x] Complete one voluntary smartphone login/logout canary for this Web
+  rollout. The owner confirmed successful login and logout on 2026-08-24.
 - [x] Confirm send-only owner intent and implement external newsletter reply
   routing (PR #262), keeping Brevo senders, lists, DOI and schedules unchanged.
 - [x] Deploy only the five PR #262 mail files over API baseline `25d6c14` and
@@ -120,11 +131,14 @@ that a finding is fixed, and a green candidate PR is not proof of deployment.
   GitHub tag, Direct APK, Play AAB and checksums published and independently
   verified. The bounded public API/Web/latest-alias rollout completed with
   rollback tags, unchanged protected configuration and live probes.
-- [ ] Confirm Google's external approval and tester availability for the latest
-  v1.0.32/vC61 Closed Testing release; do not promote to production here.
-- [ ] Confirm F-Droid's independent v1.0.31 ABI builds/public repository APKs,
-  then its v1.0.32 tag detection and metadata build. Never upload a manually
-  signed binary to F-Droid.
+- [x] Confirm v1.0.32/vC61 is accepted and active in Google Play Closed Testing
+  Alpha. Production remains inactive and separately gated below.
+- [x] Confirm F-Droid's independent v1.0.32 ABI builds 611-614, public package
+  page and suggested version code 614. Never upload a manually signed binary
+  to F-Droid.
+- [ ] Complete and verify the upstream Greek localization of the public F-Droid
+  listing; English public output means the repository translation alone is not
+  sufficient evidence.
 - [x] Monthly Brevo newsletter implemented and scheduled for the first day of
   each month at 09:00 scheduler time (Linear `NEA-160` is superseded by this
   implementation state; end-to-end subscriber delivery remains GH#261).
@@ -133,7 +147,9 @@ that a finding is fixed, and a green candidate PR is not proof of deployment.
 - [x] GitHub PR checks and merge for the 2026-07-12 readiness block (#131,
   `a99a12b`).
 - [ ] Legal recipient, donation/tax/document policy and sandbox E2E approval.
-- [ ] Google Play production-access tester/time requirement (external gate).
+- [ ] Google Play production-access gate: the verified snapshot is 8/12
+  opted-in testers. Recruit 4 more, then complete Google's qualifying 14-day
+  test before any production-access decision.
 - [ ] Complete the DMARC observation window and collect representative evidence
   for every active sending path before proposing an enforcement policy. The
   private report catalog and sender inventory exist; review may begin on

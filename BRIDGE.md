@@ -546,3 +546,32 @@
   duplicate analysis is permitted.
 - No application code, public page, database, DNS, secret, IAM, provider,
   production service, store listing or deployment was changed.
+
+## 2026-09-19 - Complete Project Status Checkpoint (Append-only)
+
+- Added the authoritative public checkpoint
+  `docs/reports/EKKLESIA_MASTER_PROJECT_STATUS_2026-09-19.md`. It inventories
+  the live V1 baseline, release channels, data-quality work, Mobile, Web,
+  Dashboard, Forum/SSO, mail, AI, dependency security, all 64 EKA findings,
+  all 18 open pull requests, all 17 open issues, the redesign and future gated
+  programs.
+- Fresh public probes returned HTTP 200 for the landing page, bills, results,
+  community, wiki, roadmap, legal page, API health, dashboard login, forum and
+  technical mirror. All three public mirrors were online. The API reported
+  `1.0.32` / version code `61` with no forced update.
+- Reconciled current distribution facts: GitHub Direct APK/AAB v1.0.32 remain
+  checksum-verified; Google Play Closed Testing is active but its 12-tester and
+  14-day production gate is incomplete; F-Droid publicly offers v1.0.32 ABI
+  builds 611-614 with 614 suggested. Greek F-Droid presentation remains open.
+- The EKA register remains 64 findings: 0 Critical, 1 High, 21 Medium, 27 Low
+  and 15 Informational. PR #319 and PR #320 remain candidates, not completed
+  remediation. No finding was closed by writing the checkpoint.
+- Five Dependabot alerts remain visible and externally gated where no safe
+  compatible patch exists. GitHub Actions is healthy; the earlier allowance
+  warning was CodeRabbit-specific.
+- Sensitive Play, tracker and finance/operator evidence is retained only in the
+  local gitignored supplement
+  `docs/agent-bridge/EKKLESIA_MASTER_PROJECT_STATUS_PRIVATE_2026-09-19.md`.
+- This was a documentation-only checkpoint. No application code, merge,
+  deployment, database, DNS, secret, IAM, provider, payment, store or production
+  mutation occurred.
