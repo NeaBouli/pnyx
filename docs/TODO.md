@@ -1,7 +1,7 @@
 # Ekklesia.gr — TODO
 # Copyright (c) 2026 V-Labs Development — MIT License
 
-Last reconciled: 2026-09-19 (EKA-02 closed; EKA-32 integrated, not deployed)
+Last reconciled: 2026-09-19 (EKA-02 closed; EKA-32/EKA-04 integrated, not deployed)
 
 `docs/STATUS.md` is the authority for the current release. GitHub issues and
 Linear are the authorities for active work. Older session notes are retained
@@ -21,6 +21,11 @@ The complete cross-system checkpoint is
   both valid review findings were fixed. Local API tests, focused Redis tests,
   all PR checks and post-merge CI/Security passed. Production rollout remains a
   separate, explicitly authorized gate, so EKA-32 stays open.
+- [x] Complete the first Package C subsystem integration: PR #325 merged as
+  `760845a` with dedicated newsletter DOI limits and HMAC-only rate-limit/log
+  references. Focused, real-Redis and full API tests plus PR and post-merge
+  checks passed. Production rollout remains a separate, explicitly authorized
+  gate, so EKA-04 stays open.
 - [x] Confirm GitHub Actions is currently running normally. The observed limit
   warning belongs to CodeRabbit, not Actions; no CI rule is weakened or skipped.
 - [x] Preserve the supplied redesign package unchanged under

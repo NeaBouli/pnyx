@@ -595,3 +595,23 @@
 - No EKA-32 API rollout or other production, database, DNS, secret, IAM,
   provider, payment or store mutation occurred. EKA-32 remains open in #318
   until separately authorized live acceptance.
+
+## 2026-09-19 - EKA-04 Newsletter Abuse Protection Integration (Append-only)
+
+- PR #325 merged normally as `760845a` without admin bypass. The bounded change
+  adds fixed-window limits of 10 attempted DOI emails per source IP/hour and
+  three per normalized email/day before token storage or provider calls.
+- Rate-limit keys and successful subscription logs use opaque HMAC-derived
+  references; plaintext subscriber email addresses are no longer written by
+  the successful subscribe path. Validation, confirmed-subscriber behavior,
+  double opt-in, pending-token payloads and Reply-To policy remain unchanged.
+- Verification passed: focused tests `85 passed, 5 skipped`; an isolated real
+  Redis run `17 passed`; the full API suite `1044 passed, 4 skipped, 25 xfailed,
+  4 subtests passed`; diff, compile and gitleaks checks also passed.
+- Kimi implemented the bounded change under Sol review. Claude and CodeRabbit
+  independently reported no blocking or actionable finding. Post-merge main CI
+  run `35468720523` and Security run `35468720502` passed completely.
+- Evidence is recorded in issue #318 and PR #325. No API rollout, real email,
+  database, DNS, secret, IAM, provider, payment or store mutation occurred.
+  EKA-04 remains open until a separately authorized API rollout and live
+  acceptance verify the production behavior.

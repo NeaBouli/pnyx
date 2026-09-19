@@ -6,7 +6,8 @@ recipient, customer, secret or production credential data
 Repository baseline: `origin/main` at
 `6a8ed73a04e029d8d6525c0ccdd31f487ec684`
 Snapshot window: 2026-09-19, approximately 09:30-10:05 UTC
-Post-snapshot integration deltas reconciled through PR #320 merge at 18:12 UTC
+Post-snapshot integration deltas reconciled through PR #325 merge and green
+post-merge checks at 20:56 UTC
 Prepared in: draft documentation PR
 [#323](https://github.com/NeaBouli/pnyx/pull/323)
 Detailed finance and local-worktree evidence: private/local operator records,
@@ -55,20 +56,21 @@ finished**.
 - The website, API, forum, dashboard login, read-only mirrors and Android
   download endpoints are reachable.
 - GitHub CI and Security Audit are green on `main`; 16 PRs remain open after
-  the normal merges of #319 and #320.
+  the normal merges of #319, #320 and #325.
 - Android `v1.0.32` is current on GitHub, Google Play Closed Testing and
   F-Droid.
 - The project has no open Critical or High EKA finding. The sole High finding,
-  EKA-02, is closed; 21 Medium findings remain evidence-gated, including
-  EKA-32 pending a separate production rollout and live acceptance.
+  EKA-02, is closed; 21 Medium findings remain evidence-gated, including EKA-32
+  and the source-integrated EKA-04 pending separate production rollouts and live
+  acceptance.
 - Google Play production access is externally blocked at 8 of 12 opted-in
   testers, followed by the required qualifying 14-day test period.
 - Three mobile acceptance tracks remain: the persistent action ledger and
   real notification delivery, large-font bottom-tab layout, and exact Xiaomi
   installation/HLR/picker acceptance.
-- Newsletter consent-to-campaign delivery, the evaluation-v2 cutoff, DMARC
-  evidence, five dependency alerts, the full EKA remediation program and the
-  35-page redesign remain open.
+- Newsletter consent-to-campaign delivery and live acceptance of the integrated
+  abuse guard, the evaluation-v2 cutoff, DMARC evidence, five dependency
+  alerts, the full EKA remediation program and the 35-page redesign remain open.
 - Voluntary support/payment intake remains disabled. Neither `PRODUCT_READY`
   nor `FINANCE_READY` is granted for that candidate.
 - iOS, gov.gr identity and Minima V2 are future gated tracks, not missing V1
@@ -692,7 +694,7 @@ Publishing an audit is not fixing it. A green PR is not deployment evidence.
 |---|---|---|
 | A - Representative XSS | EKA-02 | Complete: PR #319 merged, bounded Web rollout passed hostile-payload live acceptance, #318 closed. |
 | B - Global rate limiting | EKA-32 | Integration complete in PR #320; production rollout and live acceptance remain separate. |
-| C - Endpoint abuse/privacy | EKA-03/04/05/06/09/16/17/53 | Bound auth, dedicated limits, log redaction, HLR/push/newsletter/webhook/status policies without provider writes. |
+| C - Endpoint abuse/privacy | EKA-03/04/05/06/09/16/17/53 | EKA-04 source integration is complete in #325; live acceptance and the remaining nullifier/HLR/push/webhook/status subsystems remain. |
 | D - Vote/auth correctness | EKA-01/10/11/12 | Restore Tier-1 validation, deterministic municipal conflict response, dormant gov.gr state design and narrow exception handling. |
 | E - Client keys/KDF | EKA-07/08/21/22/23/24 | Canonical formats/KATs, backward-compatible key-storage and KDF migration, explicit phone-entropy risk. |
 | F - Runtime/integration | EKA-13/18/19/26/27/28/29/30/31 | Read-only inventory first; then bounded container, subdomain, admin, package-ID and CSP work. |
@@ -719,7 +721,9 @@ the checkpoint.
 
 - [ ] EKA-01 - Tier-1 advisory validation dead code/signature mismatch.
 - [ ] EKA-03 - nullifier used as bearer credential and URL query value.
-- [ ] EKA-04 - newsletter subscription lacks dedicated limiting and logs email.
+- [ ] EKA-04 - dedicated newsletter limits and HMAC-only identifiers are merged
+  in PR #325 (`760845a`); closure awaits separately authorized API rollout and
+  live acceptance.
 - [ ] EKA-05 - unauthenticated push registration/predictable device ID.
 - [ ] EKA-06 - HLR cost exposure and public credits oracle.
 - [ ] EKA-07 - web Ed25519 private key in plaintext localStorage.
@@ -790,8 +794,8 @@ the checkpoint.
 
 ## 16. Current open pull requests
 
-There are 16 open PRs after #319 and #320 merged normally. The table below is a
-point-in-time maintenance inventory; green automation alone is not merge
+There are 16 open PRs after #319, #320 and #325 merged normally. The table below
+is a point-in-time maintenance inventory; green automation alone is not merge
 authorization.
 
 | PR | Scope | Head | Current action |
@@ -988,7 +992,10 @@ This is the recommended execution order. Only one bounded package should be
 
 ### Block 3 - Endpoint abuse/privacy package
 
-- Split EKA-03/04/05/06/09/16/17/53 by subsystem.
+- EKA-04 source integration is complete in PR #325: fixed-window DOI limits,
+  HMAC-only rate-limit/log references and focused/real-Redis/full-suite evidence
+  are green. A separate API rollout and live acceptance remain required.
+- Split the remaining EKA-03/05/06/09/16/17/53 work by subsystem.
 - Preserve client compatibility and fail-closed identity behavior.
 - No real HLR, newsletter, push or provider writes during synthetic tests.
 

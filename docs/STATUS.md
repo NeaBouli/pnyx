@@ -4,9 +4,10 @@ Authoritative full checkpoint:
 [Ekklesia master project status - 2026-09-19](reports/EKKLESIA_MASTER_PROJECT_STATUS_2026-09-19.md).
 
 Repository and delivery gates reviewed: 2026-09-19 for the EKA audit/design
-intake and subsequent EKA-02/EKA-32 integration deltas. The deployed-release
-facts below remain based on the prior verified release receipts. EKA-02 received
-a separately authorized bounded Web rollout; EKA-32 has not been deployed.
+intake and subsequent EKA-02/EKA-32/EKA-04 integration deltas. The
+deployed-release facts below remain based on the prior verified release
+receipts. EKA-02 received a separately authorized bounded Web rollout; EKA-32
+and EKA-04 have not been deployed.
 Android v1.0.32/vC61 is merged and published on GitHub. Its Direct APK and Play
 AAB are checksum-verified and retain the established signing certificate. The
 release adds category-aware app-icon notification counts and resets the count
@@ -33,6 +34,10 @@ eligibility, ZK, database and production policy are unchanged.
   were fixed in `3e763ed`. Local API tests passed with 1,019 tests plus the
   focused Redis path, and post-merge CI/Security are green. EKA-32 remains
   evidence-gated until a separately authorized API rollout and live acceptance.
+- PR #325 merged normally as `760845a` with dedicated newsletter DOI limits and
+  HMAC-only rate-limit/log references. Focused, real-Redis and full API tests,
+  independent reviews and post-merge CI/Security are green. EKA-04 remains
+  evidence-gated until a separately authorized API rollout and live acceptance.
 - GitHub Actions itself is currently operational: the sampled latest 30 runs
   completed successfully with no active or failed run.
 - The supplied redesign handoff is archived under `design/handoffs/` as
@@ -44,9 +49,9 @@ eligibility, ZK, database and production policy are unchanged.
   program are frozen in
   `docs/reports/EKKLESIA_MASTER_PROJECT_STATUS_2026-09-19.md`.
 
-The original catalog intake changed no application or runtime state. The two
+The original catalog intake changed no application or runtime state. The three
 subsequent bounded security tasks above did not implement the redesign or a
-public audit page. No EKA-32 production change occurred.
+public audit page. No EKA-32 or EKA-04 production change occurred.
 
 ## Verified component rollout
 
