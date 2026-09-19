@@ -1,6 +1,8 @@
 # Ekklesia.gr - Project Status
 
-Repository and delivery gates reviewed: 2026-09-06.
+Repository and delivery gates reviewed: 2026-09-19 for the EKA audit/design
+intake. The deployed-release facts below remain based on the prior verified
+release receipts; this intake changed no runtime, store or production state.
 Android v1.0.32/vC61 is merged and published on GitHub. Its Direct APK and Play
 AAB are checksum-verified and retain the established signing certificate. The
 release adds category-aware app-icon notification counts and resets the count
@@ -13,6 +15,26 @@ The Xiaomi/HLR follow-up merged in PR #291. Android Picker colors are explicit,
 the locally written `069...` Greek mobile form is accepted, and fallback HLR
 verification remains fail-closed: only `CONNECTED` passes. Voting, identity,
 eligibility, ZK, database and production policy are unchanged.
+
+## 2026-09-19 audit and redesign intake
+
+- PR #317 merged the independent 64-finding EKA audit series as documentation.
+  Issue #318 remains open with all findings evidence-gated.
+- PR #319 is the current EKA-02 stored-XSS fix candidate. Its CI/Security checks
+  and completed CodeRabbit review are green with no actionable comments.
+- PR #320 is the current EKA-32 global-rate-limit candidate. CI/Security checks
+  are green, but CodeRabbit hit its separate review allowance; an independent
+  review and bounded rollout analysis remain required.
+- GitHub Actions itself is currently operational: the sampled latest 30 runs
+  completed successfully with no active or failed run.
+- The supplied redesign handoff is archived under `design/handoffs/` as
+  reference-only material. It is outside the public web root and has not been
+  wired into the site.
+- The complete task ownership, order, content freeze and redesign gates are in
+  `docs/planning/EKA_REMEDIATION_AND_REDESIGN_PLAN_2026-09-19.md`.
+
+No audit fix, merge, deployment, public audit-page change or redesign
+implementation occurred in this intake.
 
 ## Verified component rollout
 

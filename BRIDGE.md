@@ -516,3 +516,33 @@
   Automatic event-producer coverage, Xiaomi/emulator acceptance and protected
   API rollout gates remain open. GH290 is not complete. No production,
   payment, HLR request, vote, message or security-suppression change occurred.
+
+## 2026-09-19 - EKA Audit and Redesign Intake (Append-only)
+
+- Started from clean `origin/main` at
+  `6a8ed73a04e029d8d8d6525c0ccdd31f487ec684` in the isolated branch
+  `docs/audit-redesign-catalog-20260919`; active fix branches were not touched.
+- Reconciled the merged EKA audit reports, consolidated PDF, issue #318 and the
+  helper handoff. The audit remains 64 findings: 0 Critical, 1 High, 21 Medium,
+  27 Low and 15 Informational. No unchecked finding was marked fixed.
+- Independently verified PR #319 as the green EKA-02 candidate and PR #320 as
+  the green EKA-32 candidate. #319 has a completed CodeRabbit review with no
+  actionable comments. #320 has green CI/Security but CodeRabbit was
+  rate-limited, so independent review remains a gate. No merge occurred.
+- Verified that GitHub Actions is not currently quota-blocked: the latest
+  sampled 30 runs were successful, with no queued, in-progress or failed run.
+  The observed review warning is CodeRabbit-specific.
+- Imported the supplied redesign handoff unchanged to
+  `design/handoffs/ekklesia-redesign-2026-09-16/source/`, outside the public
+  `docs/` web root. Archive SHA-256:
+  `8e41f707ba410cfd2f982ebdb68b31dfc78fafe0c40283a3b373780ba498c742`.
+  The prototype remains reference-only and is not production code.
+- Catalogued every EKA ID exactly once, defined bounded task ownership and
+  froze the redesign behind canonical-content, CSP/privacy, release-fact,
+  accessibility and parity gates in
+  `docs/planning/EKA_REMEDIATION_AND_REDESIGN_PLAN_2026-09-19.md`.
+- Execution mode is bounded task blocks with target stop. Kimi receives only a
+  disjoint review after its announced quota reset; no repeated quota polling or
+  duplicate analysis is permitted.
+- No application code, public page, database, DNS, secret, IAM, provider,
+  production service, store listing or deployment was changed.

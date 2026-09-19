@@ -1,11 +1,37 @@
 # Ekklesia.gr — TODO
 # Copyright (c) 2026 V-Labs Development — MIT License
 
-Last reconciled: 2026-09-06 (Android v1.0.32 production API/Web rollout)
+Last reconciled: 2026-09-19 (EKA audit and redesign intake; no rollout)
 
 `docs/STATUS.md` is the authority for the current release. GitHub issues and
 Linear are the authorities for active work. Older session notes are retained
 below only as historical context; their unchecked boxes are not current tasks.
+
+## 2026-09-19 audit and redesign intake
+
+- [x] Merge and checksum-pin the independent EKA audit series through PR #317.
+  The immutable reports cover EKA-01..64; issue #318 is the authoritative
+  checkbox register.
+- [x] Independently recheck the helper handoff: PR #319 is the green EKA-02
+  candidate; PR #320 is the green EKA-32 candidate. Neither is merged by this
+  intake. PR #320 still needs an independent review because CodeRabbit reached
+  its own included-review limit.
+- [x] Confirm GitHub Actions is currently running normally. The observed limit
+  warning belongs to CodeRabbit, not Actions; no CI rule is weakened or skipped.
+- [x] Preserve the supplied redesign package unchanged under
+  `design/handoffs/ekklesia-redesign-2026-09-16/`, outside the public web root,
+  and record its SHA-256 and non-production status.
+- [x] Catalog every audit ID into one bounded remediation package and freeze a
+  phase-gated redesign sequence. See
+  `docs/planning/EKA_REMEDIATION_AND_REDESIGN_PLAN_2026-09-19.md`.
+- [ ] Start Package A (final review and integration decision for PR #319) only
+  after explicit execution approval. Do not begin the redesign as part of that
+  security task.
+- [ ] Run Kimi's independent catalog review after its announced quota reset;
+  avoid retries and duplicate analysis before then.
+
+All 64 issue #318 boxes remain evidence-gated. Audit publication is not proof
+that a finding is fixed, and a green candidate PR is not proof of deployment.
 
 ## Current gates
 
