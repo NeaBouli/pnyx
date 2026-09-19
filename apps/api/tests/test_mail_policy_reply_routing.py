@@ -54,14 +54,16 @@ async def test_subscribe_optin_mail_reply_to() -> None:
     redis = MagicMock()
     redis.hget = AsyncMock(return_value=None)
     redis.setex = AsyncMock()
+    redis.eval = AsyncMock(return_value=1)
     posted = {}
 
     req = newsletter.SubscribeRequest(email="citizen@example.org")
+    request = SimpleNamespace(client=SimpleNamespace(host="203.0.113.10"), headers={})
     with patch.object(newsletter, "BREVO_API_KEY", "test-key"), \
          patch.object(newsletter, "_get_redis", AsyncMock(return_value=redis)), \
          patch.object(newsletter.httpx, "AsyncClient",
                       lambda *a, **k: _FakeClient(posted, *a, **k)):
-        out = await newsletter.subscribe(req)
+        out = await newsletter.subscribe(req, request)
 
     assert out["success"] is True
     assert posted["url"] == "https://api.brevo.com/v3/smtp/email"

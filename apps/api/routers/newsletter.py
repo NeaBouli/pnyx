@@ -8,13 +8,14 @@ POST /api/v1/newsletter/webhook/brevo — Brevo event webhook
 import os
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr
 import httpx
 import redis.asyncio as aioredis
 
+from ip_utils import hashed_rate_subject, rate_limit_key_for_ip, redis_fixed_window_limit
 from services.mail_policy import operator_reply_to
 from services.newsletter_consent import CONFIRMED_KEY, CONFIRM_ONCE, CONSENT_SCHEMA, confirmation_payload
 
@@ -41,6 +42,13 @@ LIST_IDS = {
 VALID_FREQUENCIES = {"weekly", "monthly"}
 VALID_LANGUAGES = {"el", "en"}
 VALID_TYPES = set(LIST_IDS.keys())
+
+# EKA-04: fixed-window limits on attempted confirmation emails
+SUBSCRIBE_IP_LIMIT = 10
+SUBSCRIBE_IP_WINDOW_SECONDS = 3600
+SUBSCRIBE_EMAIL_LIMIT = 3
+SUBSCRIBE_EMAIL_WINDOW_SECONDS = 86400
+EMAIL_RATE_NAMESPACE = "newsletter:subscribe:email"
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
@@ -93,7 +101,7 @@ async def get_lists():
 
 
 @router.post("/subscribe")
-async def subscribe(req: SubscribeRequest):
+async def subscribe(req: SubscribeRequest, request: Request):
     """
     Public: subscribe to newsletter.
     Sends double opt-in email via Brevo. Stores pending token in Redis.
@@ -110,10 +118,36 @@ async def subscribe(req: SubscribeRequest):
 
     r = await _get_redis()
 
-    # Check if already confirmed
+    # Check if already confirmed — must not consume rate-limit counters or resend
     existing = await r.hget("newsletter:confirmed", req.email)
     if existing:
         return {"success": True, "message": "Already subscribed."}
+
+    # EKA-04: rate-limit attempted confirmation emails before any token write
+    # or provider request. Keys hold only truncated HMAC identifiers.
+    normalized_email = req.email.strip().lower()
+    bucket_day = date.today()
+    email_ref = hashed_rate_subject(
+        normalized_email,
+        EMAIL_RATE_NAMESPACE,
+        today=bucket_day,
+    )
+    await redis_fixed_window_limit(
+        r,
+        rate_limit_key_for_ip(
+            request,
+            "newsletter:subscribe:ip",
+            today=bucket_day,
+        ),
+        SUBSCRIBE_IP_LIMIT,
+        SUBSCRIBE_IP_WINDOW_SECONDS,
+    )
+    await redis_fixed_window_limit(
+        r,
+        f"ratelimit:{EMAIL_RATE_NAMESPACE}:{bucket_day.isoformat()}:{email_ref}",
+        SUBSCRIBE_EMAIL_LIMIT,
+        SUBSCRIBE_EMAIL_WINDOW_SECONDS,
+    )
 
     # Generate confirmation token
     token = secrets.token_urlsafe(32)
@@ -169,7 +203,7 @@ async def subscribe(req: SubscribeRequest):
         logger.error(f"[MOD-19] Brevo error: {e}")
         raise HTTPException(status_code=502, detail="Email service error")
 
-    logger.info(f"[MOD-19] Opt-in email sent to {req.email}")
+    logger.info("[MOD-19] Opt-in email sent ref=emailref:%s", email_ref[:12])
     return {"success": True, "message": "Confirmation email sent. Please check your inbox."}
 
 
