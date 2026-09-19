@@ -17,7 +17,7 @@ import {
 import * as LocalAuthentication from "expo-local-authentication";
 import type { StackScreenProps } from "@react-navigation/stack";
 import type { RootStackParams } from "../navigation";
-import { loadKeypair, loadNullifier, signVote, verifyVote } from "../lib/crypto-native";
+import { loadKeypair, loadNullifier, signVote, signVoteStatusRead, verifyVote } from "../lib/crypto-native";
 import { submitVote, correctVote, fetchVoteStatus, fetchZkStatus, fetchZkScopeStatus, type ZkScopeStatus } from "../lib/api";
 import { isDemoMode } from "../lib/demo";
 import { colors } from "../theme";
@@ -137,12 +137,26 @@ export default function VoteScreen({ route, navigation }: Props) {
           setOfficialDocs(officialDocumentLinks(d.summary_long_el));
         }
         const nullifier = await loadNullifier();
-        if (nullifier && mounted) {
-          const voteStatus = await fetchVoteStatus(nullifier, billId);
+        const keypair = await loadKeypair();
+        if (nullifier && keypair && mounted) {
+          const timestampMs = Date.now();
+          const signatureHex = signVoteStatusRead(
+            keypair.privateKeyHex,
+            billId,
+            nullifier,
+            timestampMs,
+          );
+          const voteStatus = await fetchVoteStatus(
+            nullifier,
+            billId,
+            { timestampMs, signatureHex },
+          ).catch(() => null);
           if (!mounted) return;
-          setHasVoted(voteStatus.has_voted);
-          setIsCorrected(voteStatus.is_correction);
-          if (voteStatus.vote) setSelected(voteStatus.vote);
+          if (voteStatus) {
+            setHasVoted(voteStatus.has_voted);
+            setIsCorrected(voteStatus.is_correction);
+            if (voteStatus.vote) setSelected(voteStatus.vote);
+          }
         }
         fetchZkStatus()
           .then((status) => {

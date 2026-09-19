@@ -750,8 +750,8 @@ app.add_middleware(
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "X-API-Key", "X-Nullifier"],
-    expose_headers=["X-Data-License", "X-Rep-Role"],
+    allow_headers=["Content-Type", "Authorization", "X-API-Key"],
+    expose_headers=["X-Data-License", "X-Rep-Role", "X-Vote-Read-Integrity"],
 )
 
 

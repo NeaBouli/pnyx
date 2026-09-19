@@ -8,20 +8,25 @@ GET  /api/v1/bills/trending     — Nach Relevanz-Score sortiert
 import logging
 import os
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text
+from sqlalchemy.exc import IntegrityError
 from database import get_db
 
 DISCOURSE_BASE = os.getenv("DISCOURSE_BASE_URL", "https://pnyx.ekklesia.gr")
 from dependencies import verify_admin_key
 from services.bill_visibility import is_public_bill, public_bill_with_demo_filter
+from services.citizen_action_integrity import (
+    build_flag_payload,
+    citizen_action_timestamp_is_fresh,
+)
 from services.source_links import official_source_url
 from services.geographic_scope import validate_region_filter
 from models import (
     ParliamentBill, BillStatus, BillStatusLog, BillRelevanceVote,
-    CitizenVote, VoteChoice, GovernanceLevel,
+    CitizenVote, VoteChoice, GovernanceLevel, IdentityRecord, KeyStatus,
 )
 
 logger = logging.getLogger(__name__)
@@ -452,40 +457,81 @@ async def get_bill_summary(
     return {"bill_id": bill_id, "summary": summary, "cached": False, "lang": lang, "source": "generated"}
 
 
+class FlagRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    nullifier_hash: str = Field(..., pattern=r"^[0-9a-fA-F]{64}$")
+    timestamp_ms:   int = Field(..., ge=0, le=9_007_199_254_740_991)
+    signature_hex:  str = Field(..., pattern=r"^[0-9a-fA-F]{128}$")
+
+
+def _integrity_error_sqlstate(exc: IntegrityError) -> str | None:
+    """Read PostgreSQL SQLSTATE through SQLAlchemy's asyncpg wrapper layers."""
+    orig = exc.orig
+    for candidate in (
+        orig,
+        getattr(orig, "__cause__", None),
+        getattr(orig, "__context__", None),
+    ):
+        if candidate is None:
+            continue
+        sqlstate = getattr(candidate, "sqlstate", None) or getattr(
+            candidate, "pgcode", None,
+        )
+        if sqlstate:
+            return str(sqlstate)
+    return None
+
+
 @router.post("/{bill_id}/flag")
 async def flag_bill(
     bill_id: str,
-    nullifier_hash: str = Header(..., alias="X-Nullifier"),
+    req: FlagRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Flag a bill as irrelevant/spam. One flag per user (nullifier)."""
-    from models import IdentityRecord, KeyStatus
-    # Verify identity
+    """Flag a bill as irrelevant/spam. One flag per ACTIVE identity (signed)."""
+    from keypair import verify_signature
+
+    if not citizen_action_timestamp_is_fresh(req.timestamp_ms):
+        raise HTTPException(401, "Μη έγκυρη υπογραφή.")
+
+    # Verify identity and Ed25519 proof over the canonical flag payload.
+    # Missing and revoked identities share the invalid-signature response.
     id_result = await db.execute(
         select(IdentityRecord).where(
-            IdentityRecord.nullifier_hash == nullifier_hash,
+            IdentityRecord.nullifier_hash == req.nullifier_hash,
             IdentityRecord.status == KeyStatus.ACTIVE,
         )
     )
-    if not id_result.scalar_one_or_none():
-        raise HTTPException(403, "Δεν έχετε επαληθευτεί.")
+    identity = id_result.scalar_one_or_none()
+    payload = build_flag_payload(bill_id, req.nullifier_hash, req.timestamp_ms)
+    if identity is None or not verify_signature(
+        identity.public_key_hex, payload, req.signature_hex,
+    ):
+        raise HTTPException(401, "Μη έγκυρη υπογραφή.")
 
     bill = await db.get(ParliamentBill, bill_id)
     if not bill or not is_public_bill(bill):
         raise HTTPException(404, f"Το νομοσχέδιο {bill_id} δεν βρέθηκε.")
 
-    # Insert flag (unique per user+bill)
+    # Insert flag (unique per user+bill). Only the expected unique conflict
+    # maps to 409; other database failures must not be masked as duplicates.
     try:
         await db.execute(text(
             "INSERT INTO bill_flags (nullifier_hash, bill_id) VALUES (:nh, :bid)"
-        ), {"nh": nullifier_hash, "bid": bill_id})
+        ), {"nh": req.nullifier_hash, "bid": bill_id})
         await db.execute(text(
             "UPDATE parliament_bills SET flag_count = flag_count + 1 WHERE id = :bid"
         ), {"bid": bill_id})
         await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        if _integrity_error_sqlstate(exc) != "23505":
+            raise
+        raise HTTPException(409, "Έχετε ήδη αναφέρει αυτό το νομοσχέδιο.")
     except Exception:
         await db.rollback()
-        raise HTTPException(409, "Έχετε ήδη αναφέρει αυτό το νομοσχέδιο.")
+        raise
 
     return {"success": True, "bill_id": bill_id, "message": "Η αναφορά καταγράφηκε."}
 

@@ -9,10 +9,11 @@ import hashlib
 import hmac
 import json
 import gc
+import logging
 import os
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Header, Query, status
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends, HTTPException, Header, Query, Response, status
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_, or_, select, func, union, update, text
 from sqlalchemy.exc import IntegrityError
@@ -24,6 +25,11 @@ from models import (
 )
 from services.source_links import official_source_url
 from services.bill_visibility import is_public_bill, public_bill_filter, public_bill_raw_sql
+from services.citizen_action_integrity import (
+    build_vote_status_read_payload,
+    citizen_action_timestamp_is_fresh,
+    vote_status_require_signed,
+)
 from services.zk_tier_lock import (
     VoteScopeType,
     canonical_vote_scope_id,
@@ -38,6 +44,8 @@ sys.path.insert(0, "/packages/crypto")  # Docker container path
 from keypair import verify_signature
 
 router = APIRouter(prefix="/api/v1/vote", tags=["MOD-04 CitizenVote"])
+
+logger = logging.getLogger(__name__)
 
 # ─── Repräsentativität ───────────────────────────────────────────────────────
 
@@ -514,13 +522,22 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
 
 # ─── Citizen Vote Status ─────────────────────────────────────────────────────
 
-@router.get("/{bill_id}/status", response_model=VoteStatusResponse)
-async def get_vote_status(
+VOTE_STATUS_CACHE_HEADERS = {"Cache-Control": "private, no-store"}
+
+
+class VoteStatusReadRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    nullifier_hash: str = Field(..., pattern=r"^[0-9a-fA-F]{64}$")
+    timestamp_ms:   int = Field(..., ge=0, le=9_007_199_254_740_991)
+    signature_hex:  str = Field(..., pattern=r"^[0-9a-fA-F]{128}$")
+
+
+async def _load_vote_status(
+    db: AsyncSession,
     bill_id: str,
-    nullifier_hash: str = Query(..., min_length=64, max_length=64),
-    db: AsyncSession = Depends(get_db),
-):
-    """Return whether this anonymous identity has already voted for a bill."""
+    nullifier_hash: str,
+) -> VoteStatusResponse:
     bill_result = await db.execute(
         select(ParliamentBill).where(ParliamentBill.id == bill_id)
     )
@@ -546,6 +563,63 @@ async def get_vote_status(
         is_correction=bool(vote.is_correction) if vote else False,
         can_correct=can_correct,
     )
+
+
+@router.get("/{bill_id}/status", response_model=VoteStatusResponse)
+async def get_vote_status(
+    bill_id: str,
+    response: Response,
+    nullifier_hash: str = Query(..., min_length=64, max_length=64),
+    db: AsyncSession = Depends(get_db),
+):
+    """Legacy transition path; signed clients use POST /{bill_id}/status."""
+    if vote_status_require_signed():
+        raise HTTPException(
+            426,
+            "Απαιτείται ενημέρωση της εφαρμογής για ασφαλή ανάγνωση της ψήφου.",
+            headers=VOTE_STATUS_CACHE_HEADERS,
+        )
+    logger.warning("[VOTE] Legacy unsigned vote-status read accepted (migration window)")
+    result = await _load_vote_status(db, bill_id, nullifier_hash)
+    response.headers.update(VOTE_STATUS_CACHE_HEADERS)
+    response.headers["X-Vote-Read-Integrity"] = "legacy"
+    return result
+
+
+@router.post("/{bill_id}/status", response_model=VoteStatusResponse)
+async def post_vote_status(
+    bill_id: str,
+    req: VoteStatusReadRequest,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+):
+    """Signed personal vote-status read; same response shape as the legacy GET."""
+    if not citizen_action_timestamp_is_fresh(req.timestamp_ms):
+        raise HTTPException(
+            401,
+            "Η υπογραφή έληξε. Ελέγξτε την ώρα της συσκευής και δοκιμάστε ξανά.",
+            headers=VOTE_STATUS_CACHE_HEADERS,
+        )
+
+    # Missing and revoked identities share the invalid-signature response.
+    id_result = await db.execute(
+        select(IdentityRecord).where(
+            IdentityRecord.nullifier_hash == req.nullifier_hash,
+            IdentityRecord.status == KeyStatus.ACTIVE,
+        )
+    )
+    identity = id_result.scalar_one_or_none()
+    payload = build_vote_status_read_payload(bill_id, req.nullifier_hash, req.timestamp_ms)
+    if identity is None or not verify_signature(
+        identity.public_key_hex, payload, req.signature_hex,
+    ):
+        raise HTTPException(401, "Μη έγκυρη υπογραφή.", headers=VOTE_STATUS_CACHE_HEADERS)
+
+    result = await _load_vote_status(db, bill_id, req.nullifier_hash)
+    logger.info("[VOTE] Signed vote-status read accepted")
+    response.headers.update(VOTE_STATUS_CACHE_HEADERS)
+    response.headers["X-Vote-Read-Integrity"] = "signed"
+    return result
 
 
 # ─── Vote Correction (einmalig, nur WINDOW_24H) ──────────────────────────────
