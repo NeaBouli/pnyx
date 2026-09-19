@@ -40,11 +40,17 @@ def _candidate_from_forwarded_for(parts: Iterable[str]) -> str | None:
 
     # Traefik appends the actual peer IP to X-Forwarded-For. Taking the
     # rightmost trusted entry avoids client-supplied spoofed leftmost values.
-    trusted_proxy_count = int(os.getenv("TRUSTED_PROXY_COUNT", "1"))
+    try:
+        trusted_proxy_count = int(os.getenv("TRUSTED_PROXY_COUNT", "1"))
+    except ValueError:
+        trusted_proxy_count = 1
     if trusted_proxy_count < 1:
         trusted_proxy_count = 1
-    index = max(len(valid) - trusted_proxy_count, 0)
-    return valid[index]
+    if trusted_proxy_count > len(valid):
+        # A count larger than the observed chain is a deployment mismatch.
+        # Prefer the nearest asserted hop instead of a spoofable leftmost value.
+        return valid[-1]
+    return valid[-trusted_proxy_count]
 
 
 def get_client_ip(request: Request) -> str:

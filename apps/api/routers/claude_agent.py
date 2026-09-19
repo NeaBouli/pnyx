@@ -9,10 +9,9 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
-from slowapi import Limiter
 import redis.asyncio as aioredis
 import httpx
-from ip_utils import get_client_ip
+from rate_limit import limiter
 from services.claude_usage import MODEL, read_budget, track_usage
 
 logger = logging.getLogger(__name__)
@@ -36,9 +35,6 @@ SYSTEM_PROMPT = (
     "Always respond in the same language as the question.\n"
     "Be concise, helpful, and politically neutral."
 )
-
-
-limiter = Limiter(key_func=get_client_ip)
 
 
 async def _redis():

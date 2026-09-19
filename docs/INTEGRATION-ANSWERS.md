@@ -231,7 +231,7 @@ All in `apps/api/main.py` (lines 31-100):
 | **Base URL** | `https://api.ekklesia.gr/api/v1` |
 | **Public** | Yes, via Traefik (HTTPS) |
 | **Endpoints** | 70+ across 25 modules |
-| **Rate Limiting** | slowapi — 60 req/min/IP global, 5 req/min/IP for AI agent |
+| **Rate Limiting** | slowapi — 60 req/min/IP per endpoint via shared Redis, 5 req/min/IP for AI agent |
 | **Admin Auth** | `?admin_key=...` query parameter |
 | **CORS** | ekklesia.gr, www.ekklesia.gr, api.ekklesia.gr |
 
