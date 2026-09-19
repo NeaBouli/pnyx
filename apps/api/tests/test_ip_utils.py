@@ -1,5 +1,6 @@
 from datetime import date
 
+import pytest
 from pytest import MonkeyPatch
 from starlette.requests import Request
 
@@ -22,14 +23,51 @@ def _request(headers: dict[str, str] | None = None, client_host: str = "10.0.0.4
     )
 
 
-def test_get_client_ip_uses_rightmost_forwarded_ip_by_default(monkeypatch):
+@pytest.fixture
+def trusted_proxy(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.setenv("TRUSTED_PROXY_CIDRS", "10.0.0.0/8")
+
+
+def test_get_client_ip_uses_rightmost_forwarded_ip_by_default(
+    monkeypatch: MonkeyPatch,
+    trusted_proxy: None,
+) -> None:
     monkeypatch.setenv("TRUSTED_PROXY_COUNT", "1")
     req = _request({"X-Forwarded-For": "203.0.113.10, 198.51.100.20"})
 
     assert get_client_ip(req) == "198.51.100.20"
 
 
-def test_get_client_ip_ignores_invalid_forwarded_header():
+def test_get_client_ip_ignores_forwarded_header_from_untrusted_peer(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("TRUSTED_PROXY_CIDRS", "192.0.2.0/24")
+    req = _request({"X-Forwarded-For": "203.0.113.10"})
+
+    assert get_client_ip(req) == "10.0.0.4"
+
+
+def test_get_client_ip_accepts_forwarded_header_from_exact_trusted_proxy(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("TRUSTED_PROXY_CIDRS", "10.0.0.4/32")
+    req = _request({"X-Forwarded-For": "203.0.113.10"})
+
+    assert get_client_ip(req) == "203.0.113.10"
+
+
+def test_get_client_ip_ignores_invalid_trusted_proxy_configuration(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("TRUSTED_PROXY_CIDRS", "not-a-network")
+    req = _request({"X-Forwarded-For": "203.0.113.10"})
+
+    assert get_client_ip(req) == "10.0.0.4"
+
+
+def test_get_client_ip_ignores_invalid_forwarded_header(
+    trusted_proxy: None,
+) -> None:
     req = _request({"X-Forwarded-For": "not-an-ip"}, client_host="10.0.0.9")
 
     assert get_client_ip(req) == "10.0.0.9"
@@ -37,6 +75,7 @@ def test_get_client_ip_ignores_invalid_forwarded_header():
 
 def test_get_client_ip_respects_two_trusted_proxy_hops(
     monkeypatch: MonkeyPatch,
+    trusted_proxy: None,
 ) -> None:
     monkeypatch.setenv("TRUSTED_PROXY_COUNT", "2")
     req = _request(
@@ -48,6 +87,7 @@ def test_get_client_ip_respects_two_trusted_proxy_hops(
 
 def test_get_client_ip_uses_nearest_hop_when_proxy_count_exceeds_chain(
     monkeypatch: MonkeyPatch,
+    trusted_proxy: None,
 ) -> None:
     monkeypatch.setenv("TRUSTED_PROXY_COUNT", "5")
     req = _request({"X-Forwarded-For": "203.0.113.10, 198.51.100.20"})
@@ -57,6 +97,7 @@ def test_get_client_ip_uses_nearest_hop_when_proxy_count_exceeds_chain(
 
 def test_get_client_ip_defaults_safely_for_invalid_proxy_count(
     monkeypatch: MonkeyPatch,
+    trusted_proxy: None,
 ) -> None:
     monkeypatch.setenv("TRUSTED_PROXY_COUNT", "not-a-number")
     req = _request({"X-Forwarded-For": "203.0.113.10, 198.51.100.20"})
@@ -64,7 +105,10 @@ def test_get_client_ip_defaults_safely_for_invalid_proxy_count(
     assert get_client_ip(req) == "198.51.100.20"
 
 
-def test_rate_limit_key_does_not_contain_raw_ip(monkeypatch):
+def test_rate_limit_key_does_not_contain_raw_ip(
+    monkeypatch: MonkeyPatch,
+    trusted_proxy: None,
+) -> None:
     monkeypatch.setenv("SERVER_SALT", "s" * 64)
     req = _request({"X-Forwarded-For": "198.51.100.20"})
 
@@ -74,7 +118,10 @@ def test_rate_limit_key_does_not_contain_raw_ip(monkeypatch):
     assert "198.51.100.20" not in key
 
 
-def test_ip_reference_is_stable_and_redacted(monkeypatch):
+def test_ip_reference_is_stable_and_redacted(
+    monkeypatch: MonkeyPatch,
+    trusted_proxy: None,
+) -> None:
     monkeypatch.setenv("SERVER_SALT", "s" * 64)
     req = _request({"X-Forwarded-For": "198.51.100.20"})
 

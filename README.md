@@ -97,7 +97,7 @@ pnyx/
 ### Server Infrastructure (Hetzner CX43)
 - **11 containers**: API, Web, Dashboard, Monitor, DB, Redis, Ollama, Docker-Proxy, VR, Test-Node, ekprosopos
 - **Ollama llama3.2:3b**: 2.6 GB RAM, 5 GB limit
-- **Rate limiting**: 60 req/min/IP per endpoint via shared Redis, 5 req/min/IP for AI endpoints
+- **Rate limiting**: 60 req/min/IP per endpoint, 5 req/min/IP for AI endpoints; configured Redis coordinates workers, while absent/unavailable Redis falls back to bounded per-process memory
 - **Circuit breaker**: 3 errors &rarr; 24h pause, auto-reset
 - **Discourse**: pnyx.ekklesia.gr &mdash; automated forum sync per bill
 
