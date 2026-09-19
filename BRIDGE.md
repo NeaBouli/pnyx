@@ -615,3 +615,33 @@
   database, DNS, secret, IAM, provider, payment or store mutation occurred.
   EKA-04 remains open until a separately authorized API rollout and live
   acceptance verify the production behavior.
+
+## 2026-09-19 - EKA-03 Nullifier Action Proof Integration (Append-only)
+
+- PR #326 merged normally as `5f850e2` without admin bypass. Bill flags now
+  require an ACTIVE-identity Ed25519 proof over a domain-separated,
+  timestamp-bound payload; vote-status reads have an equivalent signed POST
+  contract without URL nullifiers, mirror fallback or unsigned mobile fallback.
+- The released Android v1.0.32 legacy GET contract remains available behind the
+  reversible `VOTE_STATUS_REQUIRE_SIGNED` gate. Unset and explicit false values
+  preserve compatibility; invalid non-empty values log an operator error and
+  fail closed by requiring signed reads.
+- CodeRabbit's three actionable findings were fixed in `bc85e0a`: only
+  PostgreSQL unique-violation SQLSTATE `23505` maps to duplicate-flag HTTP 409,
+  invalid cutoff values fail closed, and a vote-status read failure no longer
+  prevents subsequent ZK initialization. All review threads are resolved.
+- Verification passed: focused review-fix API/CORS tests `88 passed`; full API
+  suite `1128 passed, 4 skipped, 25 xfailed, 4 subtests passed`; Mobile `322`
+  tests; dependency security regressions `7 + 4`; TypeScript, Expo dependency,
+  compile, diff and staged gitleaks checks passed.
+- All PR gates passed. Post-merge main CI run `35474984491` and Security run
+  `35474984508` passed completely on merge commit `5f850e2`.
+- Kimi implemented the bounded source change under Sol review. Its final
+  follow-up and Claude's follow-up were externally quota-limited after the
+  CodeRabbit fixes; the final delta received the documented Sol review. No
+  agent limitation weakened CI or review-thread requirements.
+- Evidence is recorded in issue #318 and PR #326. No API rollout, Android
+  build/release, database, DNS, secret, IAM, provider, payment, store or other
+  production mutation occurred. EKA-03 remains open until the separately
+  authorized API rollout, compatible Android release/adoption, cutoff and live
+  acceptance sequence completes.
