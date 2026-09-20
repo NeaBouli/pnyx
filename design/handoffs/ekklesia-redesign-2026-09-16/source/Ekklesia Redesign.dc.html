@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_ds/modernist-e21b3d94-7a59-4dde-b2e4-0fea49fcef53/styles.css">
+<script src="_ds/modernist-e21b3d94-7a59-4dde-b2e4-0fea49fcef53/_ds_bundle.js"></script>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+<style>
+  body { margin:0; background:#ffffff; font-family:'Archivo',system-ui,sans-serif; color:#334155; -webkit-font-smoothing:antialiased; }
+  a { color:#1d4ed8; text-decoration:none; }
+  a:hover { color:#2563eb; }
+  ::selection { background:#dbeafe; }
+  svg.lucide { stroke-width:1.75; }
+  @media (max-width:1180px) {
+    [data-wiki-grid] { grid-template-columns:minmax(220px,250px) minmax(0,1fr) !important; }
+    [data-wiki-toc] { display:none !important; }
+    [data-wiki-article] { border-right:0 !important; padding-right:0 !important; }
+  }
+  @media (max-width:860px) {
+    [data-wiki-grid] { grid-template-columns:minmax(0,1fr) !important; }
+    [data-wiki-nav] { position:static !important; top:auto !important; max-height:none !important; overflow:visible !important; border-bottom:2px solid #0f172a !important; padding:24px 0 28px !important; }
+    [data-wiki-article] { border-left:0 !important; padding-left:0 !important; }
+  }
+</style>
+</helmet>
+
+<div lang="el" style="max-width:100%;overflow-x:clip;font-family:'Archivo',system-ui,sans-serif;color:#334155;background:#fff">
+
+  <div style="position:sticky;top:0;z-index:50;background:#fff;border-bottom:2px solid #0f172a">
+    <div style="max-width:1320px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;flex-wrap:wrap;gap:16px 24px;min-height:86px">
+      <a href="#" onClick="{{ goHome }}" style="display:flex;align-items:center;gap:12px;flex-shrink:0;padding:10px 0">
+        <img src="assets/ekklesia-mark.png" alt="εκκλησία" style="height:60px;width:auto;display:block">
+        <span style="display:flex;flex-direction:column;line-height:1">
+          <span style="font-size:25px;font-weight:900;color:#0f172a;letter-spacing:-0.025em">εκκλησία</span>
+          <span style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:0.16em;text-transform:uppercase;margin-top:5px">του έθνους · Beta</span>
+        </span>
+      </a>
+      <nav style="display:flex;align-items:center;gap:4px 0;flex-wrap:wrap;justify-content:flex-end;margin-left:auto">
+        <a href="#" onClick="{{ goHome }}" style="font-size:13px;font-weight:700;color:#0f172a;padding:10px 14px;letter-spacing:0.01em">Πλατφόρμα</a>
+        <a href="#" onClick="{{ goBills }}" style="font-size:13px;font-weight:700;color:#0f172a;padding:10px 14px;letter-spacing:0.01em">Ψηφοφορίες</a>
+        <a href="#roadmap" style="font-size:13px;font-weight:700;color:#0f172a;padding:10px 14px;letter-spacing:0.01em" lang="en">Roadmap</a>
+        <a href="#" onClick="{{ goWiki }}" style="font-size:13px;font-weight:700;color:#0f172a;padding:10px 14px;letter-spacing:0.01em">Τεκμηρίωση</a>
+        <a href="https://ekklesia.gr/community.html" style="font-size:13px;font-weight:700;color:#0f172a;padding:10px 14px;letter-spacing:0.01em">Community</a>
+        <span style="width:2px;height:24px;background:#e2e8f0;margin:0 10px"></span>
+        <a href="#" lang="en" style="font-size:12px;font-weight:800;color:#64748b;padding:10px 8px;letter-spacing:0.08em">EN</a>
+        <a href="#" onClick="{{ goDownload }}" style="display:inline-flex;align-items:center;gap:8px;background:#2563eb;color:#fff;font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;padding:0 22px;margin-left:10px;min-height:48px">
+          <i data-lucide="smartphone" style="width:16px;height:16px"></i>Λήψη <span lang="en">App</span>
+        </a>
+      </nav>
+    </div>
+  </div>
+
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+  <div>
+    <section style="border-bottom:2px solid #0f172a">
+      <div style="max-width:1320px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:0;position:relative">
+        <div style="padding:64px 48px 56px 0;border-right:2px solid #e2e8f0;min-width:0">
+          <div style="display:inline-flex;align-items:center;gap:8px;border:2px solid #0f172a;padding:5px 10px;font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#0f172a;margin-bottom:28px">
+            <span style="width:7px;height:7px;background:#2563eb;display:block"></span><span lang="en">Beta</span> — Ανοιχτός Κώδικας
+          </div>
+          <h1 style="margin:0;font-size:clamp(46px,6.4vw,92px);line-height:0.92;font-weight:900;letter-spacing:-0.035em;color:#0f172a;text-wrap:balance">εκκλησία<br><span style="color:#2563eb">του έθνους</span></h1>
+          <p style="margin:24px 0 0;font-size:clamp(19px,2vw,24px);line-height:1.35;font-weight:600;color:#0f172a;max-width:30ch;text-wrap:pretty">Η φωνή σου μετράει. Ψήφισε για πραγματικά νομοσχέδια.</p>
+          <p style="margin:16px 0 0;font-size:16px;line-height:1.6;color:#64748b;max-width:46ch;text-wrap:pretty">Τέσσερα βήματα. Χωρίς λογαριασμό. Χωρίς email.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:32px">
+            <a href="#" onClick="{{ goDownload }}" style="display:inline-flex;align-items:center;gap:10px;background:#2563eb;color:#fff;font-size:14px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;padding:16px 24px">
+              <i data-lucide="download" style="width:17px;height:17px"></i>Λήψη <span lang="en">APK</span>
+            </a>
+            <a href="#how" style="display:inline-flex;align-items:center;gap:10px;border:2px solid #0f172a;color:#0f172a;font-size:14px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;padding:16px 24px">
+              <i data-lucide="arrow-down-right" style="width:17px;height:17px"></i>Πώς λειτουργεί
+            </a>
+            <a href="https://github.com/NeaBouli/pnyx" style="display:inline-flex;align-items:center;gap:10px;color:#0f172a;font-size:14px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;padding:16px 4px">
+              <i data-lucide="github" style="width:17px;height:17px"></i><span lang="en">GitHub</span>
+            </a>
+          </div>
+        </div>
+        <div style="min-width:0;display:flex;flex-direction:column">
+          <div style="padding:40px 0 32px 48px;flex:1">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;border-bottom:2px solid #0f172a;padding-bottom:10px">
+              <h2 style="margin:0;font-size:15px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;color:#0f172a">Απόκλιση Πολιτών — Βουλής</h2>
+              <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#2563eb"><span style="width:7px;height:7px;background:#2563eb;display:block"></span><span lang="en">Live</span></span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:2px solid #e2e8f0">
+              <div style="padding:22px 20px 22px 0;border-right:2px solid #e2e8f0">
+                <div style="font-size:11px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#64748b">Απόφαση Βουλής</div>
+                <div style="font-size:40px;font-weight:900;color:#0f172a;line-height:1.1;margin-top:8px">—</div>
+                <div style="font-size:12px;color:#64748b;margin-top:4px">Αναμονή πραγματικών δεδομένων</div>
+              </div>
+              <div style="padding:22px 0 22px 20px">
+                <div style="font-size:11px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#64748b">Βούληση Πολιτών</div>
+                <div style="font-size:40px;font-weight:900;color:#2563eb;line-height:1.1;margin-top:8px">—</div>
+                <div style="font-size:12px;color:#64748b;margin-top:4px">— Υπέρ · — Κατά</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:2px solid #e2e8f0">
+              <div style="padding:18px 16px 18px 0;border-right:2px solid #e2e8f0">
+                <div style="font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;line-height:1.3"><span lang="en">Tier 1</span> — Πλατφόρμα</div>
+                <div style="font-size:22px;font-weight:900;color:#0f172a;margin-top:6px">—</div>
+              </div>
+              <div style="padding:18px 16px;border-right:2px solid #e2e8f0">
+                <div style="font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;line-height:1.3"><span lang="en">Tier 2</span> — Σταθμισμένη</div>
+                <div style="font-size:22px;font-weight:900;color:#0f172a;margin-top:6px">—</div>
+              </div>
+              <div style="padding:18px 0 18px 16px">
+                <div style="font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;line-height:1.3"><span lang="en">Tier 3 — CRI</span> Σύνθετος</div>
+                <div style="font-size:22px;font-weight:900;color:#0f172a;margin-top:6px">—</div>
+              </div>
+            </div>
+            <p style="margin:14px 0 0;font-size:13px;line-height:1.5;color:#64748b;max-width:52ch">Πόσο αντιπροσωπεύει η Βουλή τη γνώμη των πολιτών; Σωρευτικός υπολογισμός από όλες τις ψηφοφορίες.</p>
+            <a href="#" onClick="{{ goBills }}" style="display:inline-flex;align-items:center;gap:8px;margin-top:18px;font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#1d4ed8">Προβολή τρεχουσών<i data-lucide="arrow-right" style="width:16px;height:16px"></i></a>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));border-top:2px solid #e2e8f0;margin-left:48px">
+            <div style="padding:18px 12px 18px 0;border-right:2px solid #e2e8f0">
+              <div style="font-size:20px;font-weight:900;color:#0f172a">100%</div>
+              <div style="font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#64748b;margin-top:4px">Ανοιχτός κώδικας</div>
+            </div>
+            <div style="padding:18px 12px;border-right:2px solid #e2e8f0">
+              <div style="font-size:20px;font-weight:900;color:#0f172a">GDPR</div>
+              <div style="font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#64748b;margin-top:4px">Πλήρης συμμόρφωση</div>
+            </div>
+            <div style="padding:18px 12px;border-right:2px solid #e2e8f0">
+              <div style="font-size:20px;font-weight:900;color:#0f172a">0</div>
+              <div style="font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#64748b;margin-top:4px" lang="en">Cookies · Trackers</div>
+            </div>
+            <div style="padding:18px 0 18px 12px">
+              <div style="font-size:20px;font-weight:900;color:#0f172a">Ed25519</div>
+              <div style="font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#64748b;margin-top:4px">Κρυπτογραφική ψήφος</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="how" style="border-bottom:2px solid #0f172a">
+      <div style="max-width:1320px;margin:0 auto;padding:56px 24px 0">
+        <h2 style="margin:0;font-size:clamp(30px,3.4vw,46px);font-weight:900;letter-spacing:-0.025em;color:#0f172a;line-height:1">Πώς λειτουργεί;</h2>
+        <p style="margin:12px 0 40px;font-size:17px;color:#64748b;max-width:52ch">Τέσσερα βήματα. Χωρίς λογαριασμό. Χωρίς email.</p>
+      </div>
+      <div style="max-width:1320px;margin:0 auto;padding:0 24px 56px;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:0;border-top:2px solid #e2e8f0">
+        <div style="padding:28px 24px 28px 0;border-right:2px solid #e2e8f0;min-width:0">
+          <div style="font-size:13px;font-weight:900;color:#2563eb;letter-spacing:0.1em">01</div>
+          <h3 style="margin:14px 0 8px;font-size:21px;font-weight:800;color:#0f172a;letter-spacing:-0.01em">Επαλήθευση</h3>
+          <p style="margin:0;font-size:15px;line-height:1.55;color:#64748b;text-wrap:pretty">Έλεγχος κατάστασης ελληνικού αριθμού μέσω HLR. Δεν αποδεικνύει κατοχή SIM ή ταυτότητα.</p>
+        </div>
+        <div style="padding:28px 24px;border-right:2px solid #e2e8f0;min-width:0">
+          <div style="font-size:13px;font-weight:900;color:#2563eb;letter-spacing:0.1em">02</div>
+          <h3 style="margin:14px 0 8px;font-size:21px;font-weight:800;color:#0f172a;letter-spacing:-0.01em">Κρυπτογραφικό Κλειδί</h3>
+          <p style="margin:0;font-size:15px;line-height:1.55;color:#64748b;text-wrap:pretty">Ed25519 κλειδί μόνο στη συσκευή σας.</p>
+        </div>
+        <div style="padding:28px 24px;border-right:2px solid #e2e8f0;min-width:0">
+          <div style="font-size:13px;font-weight:900;color:#2563eb;letter-spacing:0.1em">03</div>
+          <h3 style="margin:14px 0 8px;font-size:21px;font-weight:800;color:#0f172a;letter-spacing:-0.01em">Ψηφίστε</h3>
+          <p style="margin:0;font-size:15px;line-height:1.55;color:#64748b;text-wrap:pretty">Υπέρ, Κατά ή Αποχή σε πραγματικά νομοσχέδια.</p>
+        </div>
+        <div style="padding:28px 0 28px 24px;min-width:0">
+          <div style="font-size:13px;font-weight:900;color:#2563eb;letter-spacing:0.1em">04</div>
+          <h3 style="margin:14px 0 8px;font-size:21px;font-weight:800;color:#0f172a;letter-spacing:-0.01em">Δείτε τη Διαφορά</h3>
+          <p style="margin:0;font-size:15px;line-height:1.55;color:#64748b;text-wrap:pretty">Δείκτης Απόκλισης: Βουλή vs Πολίτες.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="live" style="border-bottom:2px solid #0f172a">
+      <div style="max-width:1320px;margin:0 auto;padding:56px 24px 0">
+        <h2 style="margin:0;font-size:clamp(30px,3.4vw,46px);font-weight:900;letter-spacing:-0.025em;color:#0f172a;line-height:1">Ο Κύκλος της Δημοκρατίας</h2>
+        <p style="margin:12px 0 8px;font-size:17px;line-height:1.6;color:#64748b;max-width:62ch">Από το νομοσχέδιο στη δημόσια ψήφο και στο τελικό αποτέλεσμα.</p>
+        <div style="font-size:12px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin-bottom:34px"><span lang="en">ANNOUNCED → OPEN END</span> · χωρίς νομική δέσμευση</div>
+      </div>
+      <div style="max-width:1320px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;border-top:2px solid #0f172a">
+        <div style="padding:22px 18px 22px 0;border-right:2px solid #e2e8f0;min-width:0">
+          <div style="font-size:12px;font-weight:900;color:#2563eb;letter-spacing:0.08em">01</div>
+          <h3 style="margin:10px 0 5px;font-size:16px;font-weight:800;color:#0f172a;line-height:1.2">Ανακοίνωση</h3>
+          <p style="margin:0;font-size:13px;line-height:1.5;color:#64748b"><span lang="en">AI</span> σύνοψη</p>
+        </div>
+        <div style="padding:22px 18px 22px 0;border-right:2px solid #e2e8f0;min-width:0">
+          <div style="font-size:12px;font-weight:900;color:#2563eb;letter-spacing:0.08em">02</div>
+          <h3 style="margin:10px 0 5px;font-size:16px;font-weight:800;color:#0f172a;line-height:1.2">Ενεργό</h3>
+          <p style="margin:0;font-size:13px;line-height:1.5;color:#64748b">Ψηφοφορία</p>
+        </div>
+        <div style="padding:22px 18px 22px 0;border-right:2px solid #e2e8f0;min-width:0">
+          <div style="font-size:12px;font-weight:900;color:#2563eb;letter-spacing:0.08em">03</div>
+          <h3 style="margin:10px 0 5px;font-size:16px;font-weight:800;color:#0f172a;line-height:1.2">Πολίτες</h3>
+          <p style="margin:0;font-size:13px;line-height:1.5;color:#64748b">Υπέρ / Κατά</p>
+        </div>
+        <div style="padding:22px 18px 22px 0;border-right:2px solid #e2e8f0;min-width:0">
+          <div style="font-size:12px;font-weight:900;color:#2563eb;letter-spacing:0.08em">04</div>
+          <h3 style="margin:10px 0 5px;font-size:16px;font-weight:800;color:#0f172a;line-height:1.2">24ω</h3>
+          <p style="margin:0;font-size:13px;line-height:1.5;color:#64748b">Παράθυρο</p>
+        </div>
+        <div style="padding:22px 18px 22px 0;border-right:2px solid #e2e8f0;min-width:0">
+          <div style="font-size:12px;font-weight:900;color:#2563eb;letter-spacing:0.08em">05</div>
+          <h3 style="margin:10px 0 5px;font-size:16px;font-weight:800;color:#0f172a;line-height:1.2">Βουλή</h3>
+          <p style="margin:0;font-size:13px;line-height:1.5;color:#64748b">Απόφαση</p>
+        </div>
+        <div style="padding:22px 0 22px 18px;min-width:0">
+          <div style="font-size:12px;font-weight:900;color:#2563eb;letter-spacing:0.08em">06</div>
+          <h3 style="margin:10px 0 5px;font-size:16px;font-weight:800;color:#0f172a;line-height:1.2">Αρχείο</h3>
+          <p style="margin:0;font-size:13px;line-height:1.5;color:#64748b"><span lang="en">Open End</span> · <span lang="en">Arweave</span></p>
+        </div>
+      </div>
+      <div style="max-width:1320px;margin:0 auto;padding:0 24px 56px;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:0;border-top:2px solid #0f172a;margin-top:0">
+        <div style="padding:40px 40px 40px 0;border-right:2px solid #e2e8f0;min-width:0">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px">
+            <h3 style="margin:0;font-size:15px;font-weight:900;letter-spacing:0.08em;text-transform:uppercase;color:#0f172a">Αντιπροσωπευτικότητα Βουλής</h3>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#2563eb"><span style="width:7px;height:7px;background:#2563eb;display:block"></span><span lang="en">Live</span></span>
+          </div>
+          <p style="margin:12px 0 24px;font-size:14px;line-height:1.55;color:#64748b;max-width:52ch">Πόσο αντιπροσωπεύει η Βουλή τη γνώμη των πολιτών; Σωρευτικός υπολογισμός από όλες τις ψηφοφορίες.</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:22px">
+            <div style="min-width:0">
+              <div style="display:flex;justify-content:space-between;gap:10px;font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#64748b">
+                <span>Απόφαση Βουλής</span><span>—</span>
+              </div>
+              <div style="height:14px;border:2px solid #0f172a;background:#f1f5f9;margin-top:8px"></div>
+            </div>
+            <div style="min-width:0">
+              <div style="display:flex;justify-content:space-between;gap:10px;font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#64748b">
+                <span>Βούληση Πολιτών</span><span>—</span>
+              </div>
+              <div style="height:14px;border:2px solid #0f172a;background:#f1f5f9;margin-top:8px"></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;border-left:4px solid #1d4ed8;background:#f8fafc;padding:12px 16px;margin-top:16px">
+            <i data-lucide="scale" style="width:18px;height:18px;color:#1d4ed8;flex:none"></i>
+            <span style="font-size:13px;line-height:1.5;color:#334155">Απόκλιση εμφανίζεται όταν η θεσμική απόφαση και η δημόσια ψήφος διαφέρουν.</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0;margin-top:28px;border-top:2px solid #e2e8f0">
+            <div style="padding:16px 14px 16px 0;border-right:2px solid #e2e8f0"><div style="font-size:26px;font-weight:900;color:#0f172a">—</div><div style="font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin-top:4px;overflow-wrap:anywhere">Αντιπροσωπευτικότητα</div></div>
+            <div style="padding:16px 14px;border-right:2px solid #e2e8f0"><div style="font-size:26px;font-weight:900;color:#0f172a">—</div><div style="font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin-top:4px;overflow-wrap:anywhere">Μέση Απόκλιση</div></div>
+            <div style="padding:16px 14px;border-right:2px solid #e2e8f0"><div style="font-size:26px;font-weight:900;color:#0f172a">—</div><div style="font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin-top:4px;overflow-wrap:anywhere">Ψηφοφορίες</div></div>
+            <div style="padding:16px 0 16px 14px"><div style="font-size:26px;font-weight:900;color:#0f172a">—</div><div style="font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin-top:4px;overflow-wrap:anywhere">Ψήφοι Πολιτών</div></div>
+          </div>
+          <div style="font-size:12px;color:#64748b;margin-top:14px">Αναμονή πραγματικών δεδομένων · Τελευταία Ψηφοφορία: —</div>
+          <div style="display:flex;gap:26px;align-items:center;flex-wrap:wrap;margin-top:32px;border-top:2px solid #e2e8f0;padding-top:28px">
+            <sc-if value="{{ moodHappy }}" hint-placeholder-val="{{ false }}">
+              <svg viewBox="0 0 120 120" aria-hidden="true" style="width:104px;height:104px;flex:none;display:block">
+                <circle cx="60" cy="60" r="55" fill="none" stroke="#0f172a" stroke-width="4"></circle>
+                <circle cx="42" cy="47" r="6" fill="#0f172a"></circle>
+                <circle cx="78" cy="47" r="6" fill="#0f172a"></circle>
+                <path d="M36 74 Q60 96 84 74" fill="none" stroke="#0f172a" stroke-width="5" stroke-linecap="round"></path>
+              </svg>
+            </sc-if>
+            <sc-if value="{{ moodNeutral }}" hint-placeholder-val="{{ true }}">
+              <svg viewBox="0 0 120 120" aria-hidden="true" style="width:104px;height:104px;flex:none;display:block">
+                <circle cx="60" cy="60" r="55" fill="none" stroke="#0f172a" stroke-width="4"></circle>
+                <circle cx="42" cy="47" r="6" fill="#0f172a"></circle>
+                <circle cx="78" cy="47" r="6" fill="#0f172a"></circle>
+                <path d="M36 80 L84 80" fill="none" stroke="#0f172a" stroke-width="5" stroke-linecap="round"></path>
+              </svg>
+            </sc-if>
+            <sc-if value="{{ moodSad }}" hint-placeholder-val="{{ false }}">
+              <svg viewBox="0 0 120 120" aria-hidden="true" style="width:104px;height:104px;flex:none;display:block">
+                <circle cx="60" cy="60" r="55" fill="none" stroke="#0f172a" stroke-width="4"></circle>
+                <circle cx="42" cy="47" r="6" fill="#0f172a"></circle>
+                <circle cx="78" cy="47" r="6" fill="#0f172a"></circle>
+                <path d="M36 88 Q60 66 84 88" fill="none" stroke="#0f172a" stroke-width="5" stroke-linecap="round"></path>
+              </svg>
+            </sc-if>
+            <div style="min-width:0;flex:1 1 200px">
+              <div style="font-size:11px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;color:#64748b">Δείκτης Διάθεσης</div>
+              <div style="font-size:15px;line-height:1.5;color:#334155;margin-top:8px;max-width:38ch">{{ moodText }}</div>
+              <div style="font-size:12px;color:#64748b;margin-top:8px">≥50% χαμόγελο · 45–50% ουδέτερο · &lt;45% λυπημένο</div>
+            </div>
+          </div>
+
+        </div>
+        <div style="padding:40px 0 40px 40px;min-width:0">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px">
+            <h3 style="margin:0;font-size:15px;font-weight:900;letter-spacing:0.08em;text-transform:uppercase;color:#0f172a">Πολιτικός Καθρέφτης (<span lang="en">CPLM</span>)</h3>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#2563eb"><span style="width:7px;height:7px;background:#2563eb;display:block"></span><span lang="en">Live</span></span>
+          </div>
+          <p style="margin:12px 0 24px;font-size:14px;line-height:1.55;color:#64748b;max-width:52ch">Πού βρίσκεται πολιτικά η κοινωνία; Σωρευτικός υπολογισμός από όλες τις ψήφους πολιτών, συμπεριλαμβανομένων των ανοιχτών ψηφοφοριών.</p>
+          <div style="display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;gap:10px;align-items:center">
+            <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;text-align:center;height:100%;display:flex;align-items:center;justify-content:space-between;padding:4px 0">
+              <span>Αυταρχικό</span><span>Ελευθεριακό</span>
+            </div>
+            <div style="position:relative;border:2px solid #0f172a;aspect-ratio:1.35;background:#fff;min-width:0">
+              <div style="position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr">
+                <div style="border-right:2px solid #e2e8f0;border-bottom:2px solid #e2e8f0"></div>
+                <div style="border-bottom:2px solid #e2e8f0;background:#f8fafc"></div>
+                <div style="border-right:2px solid #e2e8f0"></div>
+                <div></div>
+              </div>
+              <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border:3px solid #2563eb;background:#fff"></div>
+              <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,18px);font-size:11px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#64748b;white-space:nowrap">Αναμονή δεδομένων</div>
+            </div>
+            <div></div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#64748b">
+              <span>Αριστερά</span><span>Δεξιά</span>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:0;margin-top:24px;border-top:2px solid #e2e8f0">
+            <div style="padding:16px 14px 16px 0;border-right:2px solid #e2e8f0"><div style="font-size:24px;font-weight:900;color:#0f172a">—</div><div style="font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin-top:4px;overflow-wrap:anywhere">Οικονομία (<span lang="en">X</span>)</div></div>
+            <div style="padding:16px 14px;border-right:2px solid #e2e8f0"><div style="font-size:24px;font-weight:900;color:#0f172a">—</div><div style="font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin-top:4px;overflow-wrap:anywhere">Κοινωνία (<span lang="en">Y</span>)</div></div>
+            <div style="padding:16px 14px;border-right:2px solid #e2e8f0"><div style="font-size:24px;font-weight:900;color:#0f172a">—</div><div style="font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin-top:4px;overflow-wrap:anywhere">Ψηφοφόροι</div></div>
+            <div style="padding:16px 0 16px 14px"><div style="font-size:24px;font-weight:900;color:#0f172a">—</div><div style="font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin-top:4px;overflow-wrap:anywhere">Τεταρτημόριο</div></div>
+          </div>
+          <div style="font-size:12px;color:#64748b;margin-top:14px"><span lang="en">Live 6h</span> · Σωρευτική θέση κοινωνίας από ανώνυμες ψήφους πολιτών. Περιλαμβάνει όλες τις ψήφους (και <span lang="en">Open End</span>).</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="transparency" style="border-bottom:2px solid #0f172a;background:#f8fafc">
+      <div style="max-width:1320px;margin:0 auto;padding:56px 24px">
+        <h2 style="margin:0;font-size:clamp(30px,3.4vw,46px);font-weight:900;letter-spacing:-0.025em;color:#0f172a;line-height:1">Πώς επαληθεύονται τα αποτελέσματα;</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0;margin-top:36px;border-top:2px solid #0f172a">
+          <div style="padding:28px 32px 28px 0;border-right:2px solid #cbd5e1;min-width:0">
+            <h3 style="margin:0 0 18px;font-size:13px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#2563eb"><span lang="en">Beta</span> — Τώρα</h3>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;gap:12px;align-items:flex-start"><i data-lucide="check" style="width:18px;height:18px;color:#2563eb;flex:none;margin-top:2px"></i><span style="font-size:15px;line-height:1.5;color:#334155">Ed25519 — κάθε ψήφος υπογράφεται</span></div>
+              <div style="display:flex;gap:12px;align-items:flex-start"><i data-lucide="check" style="width:18px;height:18px;color:#2563eb;flex:none;margin-top:2px"></i><span style="font-size:15px;line-height:1.5;color:#334155">HMAC Nullifier-Chain — αδύνατη η διπλή ψήφος</span></div>
+              <div style="display:flex;gap:12px;align-items:flex-start"><i data-lucide="check" style="width:18px;height:18px;color:#2563eb;flex:none;margin-top:2px"></i><span style="font-size:15px;line-height:1.5;color:#334155">Arweave Blockchain — μόνιμη αρχειοθέτηση</span></div>
+              <div style="display:flex;gap:12px;align-items:flex-start"><i data-lucide="map" style="width:18px;height:18px;color:#64748b;flex:none;margin-top:2px"></i><span style="font-size:15px;line-height:1.5;color:#334155">Semaphore ZK Proofs — guarded Parliament rollout live</span></div>
+              <div style="display:flex;gap:12px;align-items:flex-start"><i data-lucide="check" style="width:18px;height:18px;color:#2563eb;flex:none;margin-top:2px"></i><span style="font-size:15px;line-height:1.5;color:#334155">ZK Arweave — auto-publication for Parliament groups of 5+</span></div>
+            </div>
+          </div>
+          <div style="padding:28px 0 28px 32px;min-width:0">
+            <h3 style="margin:0 0 18px;font-size:13px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#64748b"><span lang="en">Alpha</span> — Σύντομα</h3>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;gap:12px;align-items:flex-start"><i data-lucide="circle-dashed" style="width:18px;height:18px;color:#64748b;flex:none;margin-top:2px"></i><span style="font-size:15px;line-height:1.5;color:#64748b">Κρυπτογραφικά επαληθεύσιμο πρωτόκολλο</span></div>
+              <div style="display:flex;gap:12px;align-items:flex-start"><i data-lucide="circle-dashed" style="width:18px;height:18px;color:#64748b;flex:none;margin-top:2px"></i><span style="font-size:15px;line-height:1.5;color:#64748b">Κάθε πολίτης μπορεί να επαληθεύσει μόνος</span></div>
+              <div style="display:flex;gap:12px;align-items:flex-start"><i data-lucide="circle-dashed" style="width:18px;height:18px;color:#64748b;flex:none;margin-top:2px"></i><span style="font-size:15px;line-height:1.5;color:#64748b">Zero-Knowledge Proofs — μαθηματικά αποδείξιμο</span></div>
+              <div style="display:flex;gap:12px;align-items:flex-start"><i data-lucide="circle-dashed" style="width:18px;height:18px;color:#64748b;flex:none;margin-top:2px"></i><span style="font-size:15px;line-height:1.5;color:#64748b">gov.gr — Alpha 0.1 σχεδιασμός, όχι ενεργό στη Beta</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" style="border-bottom:2px solid #0f172a">
+      <div style="max-width:1320px;margin:0 auto;padding:56px 24px 0">
+        <h2 style="margin:0 0 36px;font-size:clamp(30px,3.4vw,46px);font-weight:900;letter-spacing:-0.025em;color:#0f172a;line-height:1">Τι προσφέρει η εκκλησία;</h2>
+      </div>
+      <div style="max-width:1320px;margin:0 auto;padding:0 24px 56px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:0;border-top:2px solid #e2e8f0">
+        <div style="padding:26px 28px 26px 0;border-right:2px solid #e2e8f0;border-bottom:2px solid #e2e8f0;min-width:0">
+          <i data-lucide="compass" style="width:24px;height:24px;color:#2563eb"></i>
+          <h3 style="margin:14px 0 8px;font-size:18px;font-weight:800;color:#0f172a">Πολιτική Πυξίδα</h3>
+          <p style="margin:0;font-size:14px;line-height:1.55;color:#64748b">38 πολιτικές θέσεις, 8 κόμματα. Δείτε πού ανήκετε σε 10 λεπτά.</p>
+        </div>
+        <div style="padding:26px 28px;border-right:2px solid #e2e8f0;border-bottom:2px solid #e2e8f0;min-width:0">
+          <i data-lucide="git-compare" style="width:24px;height:24px;color:#2563eb"></i>
+          <h3 style="margin:14px 0 8px;font-size:18px;font-weight:800;color:#0f172a">Liquid Compass</h3>
+          <p style="margin:0;font-size:14px;line-height:1.55;color:#64748b">Εξελισσόμενη πολιτική πυξίδα. 4 μοντέλα. Κρυπτογραφημένη τοπικά, ποτέ στον server.</p>
+        </div>
+        <div style="padding:26px 0 26px 28px;border-bottom:2px solid #e2e8f0;min-width:0">
+          <i data-lucide="landmark" style="width:24px;height:24px;color:#2563eb"></i>
+          <h3 style="margin:14px 0 8px;font-size:18px;font-weight:800;color:#0f172a">Ψηφοφορία Πολιτών</h3>
+          <p style="margin:0;font-size:14px;line-height:1.55;color:#64748b">Βουλή, Περιφέρεια, Δήμος. Ψηφίστε σε αποφάσεις όλων των επιπέδων.</p>
+        </div>
+        <div style="padding:26px 28px 26px 0;border-right:2px solid #e2e8f0;border-bottom:2px solid #e2e8f0;min-width:0">
+          <i data-lucide="bar-chart-3" style="width:24px;height:24px;color:#2563eb"></i>
+          <h3 style="margin:14px 0 8px;font-size:18px;font-weight:800;color:#0f172a">Δείκτης Απόκλισης</h3>
+          <p style="margin:0;font-size:14px;line-height:1.55;color:#64748b">Ποσοστό διαφοράς μεταξύ γνώμης πολιτών και απόφασης αρχής.</p>
+        </div>
+        <div style="padding:26px 28px;border-right:2px solid #e2e8f0;border-bottom:2px solid #e2e8f0;min-width:0">
+          <i data-lucide="lock" style="width:24px;height:24px;color:#2563eb"></i>
+          <h3 style="margin:14px 0 8px;font-size:18px;font-weight:800;color:#0f172a">Πλήρης Ανωνυμία</h3>
+          <p style="margin:0;font-size:14px;line-height:1.55;color:#64748b">Ed25519 κρυπτογραφία. Κανένα προσωπικό δεδομένο στον server.</p>
+        </div>
+        <div style="padding:26px 0 26px 28px;border-bottom:2px solid #e2e8f0;min-width:0">
+          <i data-lucide="map-pin" style="width:24px;height:24px;color:#2563eb"></i>
+          <h3 style="margin:14px 0 8px;font-size:18px;font-weight:800;color:#0f172a">Τοπική Αυτοδιοίκηση</h3>
+          <p style="margin:0;font-size:14px;line-height:1.55;color:#64748b">Αποφάσεις Δημοτικών Συμβουλίων και Περιφερειακής Αυτοδιοίκησης.</p>
+        </div>
+        <div style="padding:26px 28px 26px 0;border-right:2px solid #e2e8f0;min-width:0">
+          <i data-lucide="database" style="width:24px;height:24px;color:#2563eb"></i>
+          <h3 style="margin:14px 0 8px;font-size:18px;font-weight:800;color:#0f172a">Arweave Αρχείο</h3>
+          <p style="margin:0;font-size:14px;line-height:1.55;color:#64748b">Κάθε αποτέλεσμα αρχειοθετείται μόνιμα στο Arweave. Αδύνατο να διαγραφεί.</p>
+        </div>
+        <div style="padding:26px 28px;border-right:2px solid #e2e8f0;min-width:0">
+          <i data-lucide="bot" style="width:24px;height:24px;color:#2563eb"></i>
+          <h3 style="margin:14px 0 8px;font-size:18px;font-weight:800;color:#0f172a">AI Agent</h3>
+          <p style="margin:0;font-size:14px;line-height:1.55;color:#64748b">Ollama + DeepL: Περιλήψεις νόμων, Chat Q&amp;A, αυτόματη επισκευή, ανάλυση logs.</p>
+        </div>
+        <div style="padding:26px 0 26px 28px;min-width:0">
+          <i data-lucide="book-open" style="width:24px;height:24px;color:#2563eb"></i>
+          <h3 style="margin:14px 0 8px;font-size:18px;font-weight:800;color:#0f172a">Ανοιχτός Κώδικας</h3>
+          <p style="margin:0;font-size:14px;line-height:1.55;color:#64748b">MIT License. Ο κώδικας ανήκει σε όλους. Κανείς δεν ελέγχει.</p>
+        </div>
+      </div>
+    </section>
+
+    <section style="border-bottom:2px solid #0f172a">
+      <div style="max-width:1320px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:0">
+        <div style="padding:48px 40px 48px 0;border-right:2px solid #e2e8f0;min-width:0">
+          <div style="font-size:11px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#2563eb">Για αντιπροσώπους</div>
+          <h3 style="margin:14px 0 12px;font-size:clamp(24px,2.4vw,32px);font-weight:900;color:#0f172a;letter-spacing:-0.02em;line-height:1.1">εκπρόσωπος — Για τους Λαϊκούς Αντιπροσώπους</h3>
+          <p style="margin:0;font-size:15px;line-height:1.6;color:#64748b;max-width:48ch">Εξειδικευμένη εφαρμογή για βουλευτές, δημάρχους και δημοτικούς συμβούλους. Live αποτελέσματα κατά τη διάρκεια του 24ωρου παραθύρου πριν την ψηφοφορία.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:24px">
+            <a href="https://ekklesia.gr/download/ekprosopos-latest.apk" style="display:inline-flex;align-items:center;gap:8px;border:2px solid #0f172a;color:#0f172a;font-size:13px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;padding:13px 18px"><i data-lucide="download" style="width:16px;height:16px"></i><span lang="en">APK</span></a>
+            <a href="https://ekklesia.gr/representative.html" style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:#1d4ed8;padding:13px 4px">Περισσότερα<i data-lucide="arrow-right" style="width:16px;height:16px"></i></a>
+          </div>
+        </div>
+        <div style="padding:48px 0 48px 40px;min-width:0;display:grid;gap:0;align-content:start">
+          <div style="padding-bottom:28px;border-bottom:2px solid #e2e8f0">
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <i data-lucide="file-signature" style="width:22px;height:22px;color:#2563eb;flex:none;margin-top:3px"></i>
+              <div style="min-width:0">
+                <h4 style="margin:0 0 6px;font-size:18px;font-weight:800;color:#0f172a">Δήλωση Αυτοδέσμευσης</h4>
+                <p style="margin:0 0 12px;font-size:14px;line-height:1.55;color:#64748b">Δημόσιο έγγραφο δέσμευσης για υποψήφιους αντιπροσώπους.</p>
+                <div style="display:flex;gap:18px;flex-wrap:wrap">
+                  <a href="https://ekklesia.gr/download/Autodesmefsi_Ekklesia_v6.pdf" style="font-size:13px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:#1d4ed8" lang="en">PDF</a>
+                  <a href="https://ekklesia.gr/municipality/article.html" style="font-size:13px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:#1d4ed8">Άρθρο</a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="padding-top:28px">
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <i data-lucide="building-2" style="width:22px;height:22px;color:#2563eb;flex:none;margin-top:3px"></i>
+              <div style="min-width:0">
+                <h4 style="margin:0 0 6px;font-size:18px;font-weight:800;color:#0f172a">Για Δήμους &amp; Αντιπροσώπους</h4>
+                <p style="margin:0 0 12px;font-size:14px;line-height:1.55;color:#64748b">Ενεργοποίηση δήμου, εφαρμογή εκπρόσωπος, δείκτης απόκλισης.</p>
+                <div style="display:flex;gap:18px;flex-wrap:wrap">
+                  <a href="https://ekklesia.gr/municipality/" style="font-size:13px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:#1d4ed8">Περισσότερα</a>
+                  <a href="https://ekklesia.gr/govgr-dimos.html" style="font-size:13px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:#1d4ed8">Σχεδιασμός <span lang="en">Alpha 0.1</span></a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <sc-if value="{{ showQuote }}" hint-placeholder-val="{{ true }}">
+    <section style="background:#2563eb;border-bottom:2px solid #0f172a">
+      <div style="max-width:1320px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0">
+        <div style="padding:56px 40px 56px 0;border-right:2px solid rgba(255,255,255,0.28);min-width:0;position:relative;overflow:hidden">
+          <div style="position:relative">
+            <div style="font-size:11px;font-weight:900;letter-spacing:0.14em;text-transform:uppercase;color:#bfdbfe">Ιστορικό πλαίσιο</div>
+            <h2 style="margin:16px 0 0;font-size:clamp(34px,4vw,56px);font-weight:900;letter-spacing:-0.03em;color:#fff;line-height:0.98">Η Εκκλησία<br>του Δήμου</h2>
+            <p style="margin:20px 0 0;font-size:15px;line-height:1.6;color:#eff6ff;max-width:32ch">Ο λόφος της Πνύκας ήταν ο τόπος όπου οι πολίτες αποφάσιζαν δημόσια.</p>
+            <img src="assets/pnyx-acropolis-white.png" alt="" aria-hidden="true" style="display:block;width:116%;max-width:520px;height:auto;margin:28px 0 -170px -3%;opacity:0.17;pointer-events:none">
+          </div>
+        </div>
+        <div style="padding:56px 0 56px 40px;min-width:0">
+          <p style="margin:0;font-size:clamp(19px,1.7vw,23px);line-height:1.5;font-weight:600;color:#fff;max-width:56ch;text-wrap:pretty">«Η Εκκλησία του Δήμου — η κύρια δημοκρατική συνέλευση της αρχαίας Αθήνας — πραγματοποιούνταν στον λόφο της Πνύκας, στην Αρχαία Αγορά ή στο Θέατρο του Διονύσου και αποτελούσε τον πυρήνα της αθηναϊκής δημοκρατίας.</p>
+          <div style="height:2px;background:rgba(255,255,255,0.28);margin:28px 0;max-width:56ch"></div>
+          <p style="margin:0;font-size:16px;line-height:1.7;color:#eff6ff;max-width:62ch;text-wrap:pretty">Η ιστοσελίδα ekklesia.gr εμπνέεται από αυτή την ιστορική παράδοση και αποτελεί ανεξάρτητη, κοινοτική πλατφόρμα ανοιχτού κώδικα — χωρίς ιδιοκτήτη, χωρίς εταιρεία, χωρίς κεντρικό έλεγχο. Δεν ανήκει σε κανέναν και ανήκει σε όλους. Χωρίς κρατική συγκατάθεση ή επίσημο χαρακτήρα.</p>
+          <p style="margin:18px 0 0;font-size:16px;line-height:1.7;color:#eff6ff;max-width:62ch;text-wrap:pretty">Όλες οι ψηφοφορίες που διεξάγονται στην πλατφόρμα αφορούν αποκλειστικά πραγματικά νομοσχέδια, αποφάσεις και ανακοινώσεις που προέρχονται από επίσημες δημόσιες πηγές — τη Βουλή των Ελλήνων, τις Περιφέρειες και τους Δήμους — και έχουν αποκλειστικά ενημερωτικό χαρακτήρα. Δεν παράγουν κανενός είδους νομική ή πολιτική δεσμευτικότητα.»</p>
+        </div>
+      </div>
+    </section>
+    </sc-if>
+
+    <section id="forum" style="border-bottom:2px solid #0f172a">
+      <div style="max-width:1320px;margin:0 auto;padding:56px 24px 0">
+        <h2 style="margin:0;font-size:clamp(30px,3.4vw,46px);font-weight:900;letter-spacing:-0.025em;color:#0f172a;line-height:1">Πνύκα — <span lang="en">Forum</span> του Έθνους</h2>
+        <p style="margin:12px 0 36px;font-size:17px;line-height:1.6;color:#64748b;max-width:64ch">Η Πνύκα ήταν ο λόφος στην αρχαία Αθήνα όπου οι πολίτες συζητούσαν δημόσια. Το pnyx.ekklesia.gr είναι η ψηφιακή αναβίωσή της.</p>
+      </div>
+      <div style="max-width:1320px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0;border-top:2px solid #e2e8f0">
+        <div style="padding:26px 24px 26px 0;border-right:2px solid #e2e8f0;min-width:0">
+          <i data-lucide="message-square" style="width:22px;height:22px;color:#2563eb"></i>
+          <h3 style="margin:14px 0 6px;font-size:17px;font-weight:800;color:#0f172a">Συζήτηση ανά Νομοσχέδιο</h3>
+          <p style="margin:0;font-size:14px;line-height:1.55;color:#64748b">Κάθε νομοσχέδιο → <span lang="en">forum topic</span></p>
+        </div>
+        <div style="padding:26px 24px;border-right:2px solid #e2e8f0;min-width:0">
+          <i data-lucide="lock" style="width:22px;height:22px;color:#2563eb"></i>
+          <h3 style="margin:14px 0 6px;font-size:17px;font-weight:800;color:#0f172a">Ανώνυμη Συμμετοχή</h3>
+          <p style="margin:0;font-size:14px;line-height:1.55;color:#64748b"><span lang="en">SSO</span> μέσω εκκλησία</p>
+        </div>
+        <div style="padding:26px 24px;border-right:2px solid #e2e8f0;min-width:0">
+          <i data-lucide="globe" style="width:22px;height:22px;color:#2563eb"></i>
+          <h3 style="margin:14px 0 6px;font-size:17px;font-weight:800;color:#0f172a">Ανοιχτή σε Όλους</h3>
+          <p style="margin:0;font-size:14px;line-height:1.55;color:#64748b">Email, <span lang="en">Google</span> ή χωρίς εγγραφή</p>
+        </div>
+        <div style="padding:26px 0 26px 24px;min-width:0">
+          <i data-lucide="layers" style="width:22px;height:22px;color:#2563eb"></i>
+          <h3 style="margin:14px 0 6px;font-size:17px;font-weight:800;color:#0f172a">Βουλή · Περιφέρεια · Δήμος</h3>
+          <p style="margin:0;font-size:14px;line-height:1.55;color:#64748b">Κατηγορίες ανά επίπεδο</p>
+        </div>
+      </div>
+      <div style="max-width:1320px;margin:0 auto;padding:28px 24px 56px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;border-top:2px solid #e2e8f0">
+        <a href="https://pnyx.ekklesia.gr" style="display:inline-flex;align-items:center;gap:10px;background:#2563eb;color:#fff;font-size:13px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;padding:15px 22px">Επισκεφτείτε το <span lang="en">Forum</span><i data-lucide="arrow-right" style="width:16px;height:16px"></i></a>
+        <a href="https://play.google.com/store/apps/details?id=com.discourse" style="display:inline-flex;align-items:center;gap:8px;border:2px solid #0f172a;color:#0f172a;font-size:13px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;padding:13px 18px" lang="en">Android App</a>
+        <a href="https://apps.apple.com/app/discourse-hub/id1442328667" style="display:inline-flex;align-items:center;gap:8px;border:2px solid #0f172a;color:#0f172a;font-size:13px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;padding:13px 18px" lang="en">iOS App</a>
+        <span style="font-size:13px;color:#64748b">Μετά την εγκατάσταση: προσθέστε pnyx.ekklesia.gr</span>
+      </div>
+    </section>
+
+    <section id="roadmap" style="border-bottom:2px solid #0f172a;background:#f8fafc">
+      <div style="max-width:1320px;margin:0 auto;padding:56px 24px 0">
+        <h2 style="margin:0;font-size:clamp(30px,3.4vw,46px);font-weight:900;letter-spacing:-0.025em;color:#0f172a;line-height:1" lang="en">Roadmap</h2>
+        <p style="margin:12px 0 36px;font-size:17px;line-height:1.6;color:#64748b;max-width:56ch">Τέσσερις φάσεις — από τη Beta στην ελεγχόμενη εξέλιξη.</p>
+      </div>
+      <div style="max-width:1320px;margin:0 auto;padding:0 24px 56px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0;border-top:2px solid #0f172a">
+        <div style="padding:28px 32px 28px 0;border-right:2px solid #cbd5e1;border-bottom:2px solid #cbd5e1;min-width:0">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <span style="background:#2563eb;color:#fff;font-size:10px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;padding:4px 8px"><span lang="en">Beta</span> — Τώρα</span>
+          </div>
+          <h3 style="margin:10px 0 18px;font-size:22px;font-weight:900;color:#0f172a;letter-spacing:-0.015em" lang="en">Beta Phase</h3>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;background:#2563eb;display:block;flex:none;margin-top:8px"></span><span style="font-size:14px;line-height:1.55;color:#334155">HLR έλεγχος κατάστασης ελληνικού αριθμού</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;background:#2563eb;display:block;flex:none;margin-top:8px"></span><span style="font-size:14px;line-height:1.55;color:#334155">Ψηφοφορία Πολιτών (Ed25519)</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;background:#2563eb;display:block;flex:none;margin-top:8px"></span><span style="font-size:14px;line-height:1.55;color:#334155">Δείκτης Απόκλισης</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;background:#2563eb;display:block;flex:none;margin-top:8px"></span><span style="font-size:14px;line-height:1.55;color:#334155">Τοπική Αυτοδιοίκηση (Διαύγεια)</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;background:#2563eb;display:block;flex:none;margin-top:8px"></span><span style="font-size:14px;line-height:1.55;color:#334155">AI Agent (Ollama + DeepL)</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;background:#2563eb;display:block;flex:none;margin-top:8px"></span><span style="font-size:14px;line-height:1.55;color:#334155">Newsletter + Push</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;background:#2563eb;display:block;flex:none;margin-top:8px"></span><span style="font-size:14px;line-height:1.55;color:#334155">Stripe Δωρεές</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;background:#2563eb;display:block;flex:none;margin-top:8px"></span><span style="font-size:14px;line-height:1.55;color:#334155">Mobile App (Android)</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;background:#2563eb;display:block;flex:none;margin-top:8px"></span><span style="font-size:14px;line-height:1.55;color:#334155">εκπρόσωπος App + HLR Επαλήθευση</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;background:#2563eb;display:block;flex:none;margin-top:8px"></span><span style="font-size:14px;line-height:1.55;color:#334155">Πολιτικοί — Αξιολόγηση Εκπροσώπων</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;background:#2563eb;display:block;flex:none;margin-top:8px"></span><span style="font-size:14px;line-height:1.55;color:#334155">Arweave Αρχειοθέτηση</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;background:#2563eb;display:block;flex:none;margin-top:8px"></span><span style="font-size:14px;line-height:1.55;color:#334155">Κλίμακα Συναίνεσης (-5 έως +5)</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;background:#2563eb;display:block;flex:none;margin-top:8px"></span><span style="font-size:14px;line-height:1.55;color:#334155">Διαύγεια — 100+ αποφάσεις</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;background:#2563eb;display:block;flex:none;margin-top:8px"></span><span style="font-size:14px;line-height:1.55;color:#334155">Εκλογικός Κύκλος</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;background:#2563eb;display:block;flex:none;margin-top:8px"></span><span style="font-size:14px;line-height:1.55;color:#334155">Semaphore ZK Proofs (guarded Parliament rollout live; ZK Arweave auto-publish at group size 5+)</span></div>
+          </div>
+        </div>
+        <div style="padding:28px 0 28px 32px;border-bottom:2px solid #cbd5e1;min-width:0">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <span style="border:2px solid #cbd5e1;color:#64748b;font-size:10px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;padding:2px 7px"><span lang="en">Alpha 0.1</span> — Σχεδιασμός</span>
+          </div>
+          <h3 style="margin:10px 0 18px;font-size:22px;font-weight:900;color:#0f172a;letter-spacing:-0.015em" lang="en">Alpha 0.1</h3>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;border:2px solid #94a3b8;display:block;flex:none;margin-top:7px"></span><span style="font-size:14px;line-height:1.55;color:#64748b">Alpha 0.1: gov.gr σχεδιασμός, όχι runtime</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;border:2px solid #94a3b8;display:block;flex:none;margin-top:7px"></span><span style="font-size:14px;line-height:1.55;color:#64748b">Μόνο επίσημα claims — σχεδιασμός Alpha 0.1</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;border:2px solid #94a3b8;display:block;flex:none;margin-top:7px"></span><span style="font-size:14px;line-height:1.55;color:#64748b">Federation API</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;border:2px solid #94a3b8;display:block;flex:none;margin-top:7px"></span><span style="font-size:14px;line-height:1.55;color:#64748b">iOS App</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;border:2px solid #94a3b8;display:block;flex:none;margin-top:7px"></span><span style="font-size:14px;line-height:1.55;color:#64748b">500+ χρήστες + 3 NGOs + όλα τα security gates</span></div>
+          </div>
+        </div>
+        <div style="padding:28px 32px 28px 0;border-right:2px solid #cbd5e1;min-width:0">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <span style="border:2px solid #cbd5e1;color:#64748b;font-size:10px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;padding:2px 7px"><span lang="en">V1</span> — Ελεγχόμενη εξέλιξη</span>
+          </div>
+          <h3 style="margin:10px 0 18px;font-size:22px;font-weight:900;color:#0f172a;letter-spacing:-0.015em">Εξέλιξη της έκδοσης 1</h3>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;border:2px solid #94a3b8;display:block;flex:none;margin-top:7px"></span><span style="font-size:14px;line-height:1.55;color:#64748b">TrueRepublic Bridge και PnyxCoin</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;border:2px solid #94a3b8;display:block;flex:none;margin-top:7px"></span><span style="font-size:14px;line-height:1.55;color:#64748b">crypto-rs με Rust και WASM</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;border:2px solid #94a3b8;display:block;flex:none;margin-top:7px"></span><span style="font-size:14px;line-height:1.55;color:#64748b">Commit-Reveal και ελεγχόμενη εξέλιξη Semaphore ZK</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;border:2px solid #94a3b8;display:block;flex:none;margin-top:7px"></span><span style="font-size:14px;line-height:1.55;color:#64748b">Deliberation και federation μετά από αποδεδειγμένη σταθερότητα</span></div>
+          </div>
+        </div>
+        <div style="padding:28px 0 28px 32px;min-width:0">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <span style="border:2px solid #cbd5e1;color:#64748b;font-size:10px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;padding:2px 7px"><span lang="en">V2</span> — Παράλληλη έρευνα</span>
+          </div>
+          <h3 style="margin:10px 0 18px;font-size:22px;font-weight:900;color:#0f172a;letter-spacing:-0.015em">Έκδοση 2 στο <span lang="en">Minima (Gated)</span></h3>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;border:2px solid #94a3b8;display:block;flex:none;margin-top:7px"></span><span style="font-size:14px;line-height:1.55;color:#64748b">Η V1 παραμένει ενεργή και ανεξάρτητη μέχρι να περάσουν όλα τα gates</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;border:2px solid #94a3b8;display:block;flex:none;margin-top:7px"></span><span style="font-size:14px;line-height:1.55;color:#64748b">Maxima transport μόνο μετά από μετρήσεις delivery, retry και offline behavior</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;border:2px solid #94a3b8;display:block;flex:none;margin-top:7px"></span><span style="font-size:14px;line-height:1.55;color:#64748b">Ελάχιστα bill, vote, nullifier και tally roots στο Minima Layer 1</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;border:2px solid #94a3b8;display:block;flex:none;margin-top:7px"></span><span style="font-size:14px;line-height:1.55;color:#64748b">Η συμβατότητα Ed25519 και Semaphore δεν θεωρείται δεδομένη</span></div>
+            <div style="display:flex;gap:11px;align-items:flex-start"><span style="width:6px;height:6px;border:2px solid #94a3b8;display:block;flex:none;margin-top:7px"></span><span style="font-size:14px;line-height:1.55;color:#64748b">Έλεγχος ασφάλειας/απορρήτου, πλήρης ισοδυναμία, μετάβαση και επαναφορά πριν από το rollout</span></div>
+          </div>
+          <a href="https://github.com/NeaBouli/pnyx/issues/216" style="display:inline-flex;align-items:center;gap:8px;margin-top:18px;font-size:13px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:#1d4ed8"><span lang="en">Epic</span> και τεχνικά <span lang="en">gates</span><i data-lucide="arrow-right" style="width:16px;height:16px"></i></a>
+        </div>
+      </div>
+    </section>
+
+    <section id="wiki-section" style="border-bottom:2px solid #0f172a">
+      <div style="max-width:1320px;margin:0 auto;padding:56px 24px 0">
+        <h2 style="margin:0;font-size:clamp(30px,3.4vw,46px);font-weight:900;letter-spacing:-0.025em;color:#0f172a;line-height:1">Τεκμηρίωση</h2>
+        <p style="margin:12px 0 36px;font-size:17px;color:#64748b">Πλήρης τεχνική τεκμηρίωση</p>
+      </div>
+      <div style="max-width:1320px;margin:0 auto;padding:0 24px 56px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0;border-top:2px solid #e2e8f0">
+        <a href="https://ekklesia.gr/wiki/architecture.html" style="padding:22px 24px 22px 0;border-right:2px solid #e2e8f0;border-bottom:2px solid #e2e8f0;min-width:0;display:block">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="font-size:17px;font-weight:800;color:#0f172a">Αρχιτεκτονική</span><i data-lucide="arrow-up-right" style="width:17px;height:17px;color:#2563eb"></i></div>
+          <div style="font-size:13px;color:#64748b;margin-top:5px" lang="en">Stack, Monorepo, Lifecycle</div>
+        </a>
+        <a href="https://ekklesia.gr/wiki/security.html" style="padding:22px 24px;border-right:2px solid #e2e8f0;border-bottom:2px solid #e2e8f0;min-width:0;display:block">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="font-size:17px;font-weight:800;color:#0f172a">Ασφάλεια</span><i data-lucide="arrow-up-right" style="width:17px;height:17px;color:#2563eb"></i></div>
+          <div style="font-size:13px;color:#64748b;margin-top:5px" lang="en">Ed25519, Nullifier, ZK</div>
+        </a>
+        <a href="https://ekklesia.gr/wiki/api.html" style="padding:22px 0 22px 24px;border-bottom:2px solid #e2e8f0;min-width:0;display:block">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="font-size:17px;font-weight:800;color:#0f172a" lang="en">API</span><i data-lucide="arrow-up-right" style="width:17px;height:17px;color:#2563eb"></i></div>
+          <div style="font-size:13px;color:#64748b;margin-top:5px" lang="en">16 Endpoints, Schemas</div>
+        </a>
+        <a href="https://ekklesia.gr/wiki/modules.html" style="padding:22px 24px 22px 0;border-right:2px solid #e2e8f0;border-bottom:2px solid #e2e8f0;min-width:0;display:block">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="font-size:17px;font-weight:800;color:#0f172a" lang="en">Modules</span><i data-lucide="arrow-up-right" style="width:17px;height:17px;color:#2563eb"></i></div>
+          <div style="font-size:13px;color:#64748b;margin-top:5px" lang="en">MOD-01 — MOD-16</div>
+        </a>
+        <a href="https://ekklesia.gr/wiki/privacy.html" style="padding:22px 24px;border-right:2px solid #e2e8f0;border-bottom:2px solid #e2e8f0;min-width:0;display:block">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="font-size:17px;font-weight:800;color:#0f172a">Ιδιωτικότητα</span><i data-lucide="arrow-up-right" style="width:17px;height:17px;color:#2563eb"></i></div>
+          <div style="font-size:13px;color:#64748b;margin-top:5px" lang="en">GDPR, k-Anonymity</div>
+        </a>
+        <a href="https://ekklesia.gr/wiki/roadmap.html" style="padding:22px 0 22px 24px;border-bottom:2px solid #e2e8f0;min-width:0;display:block">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="font-size:17px;font-weight:800;color:#0f172a" lang="en">Roadmap</span><i data-lucide="arrow-up-right" style="width:17px;height:17px;color:#2563eb"></i></div>
+          <div style="font-size:13px;color:#64748b;margin-top:5px" lang="en">Beta → Alpha → V1 → V2</div>
+        </a>
+        <a href="https://ekklesia.gr/wiki/database.html" style="padding:22px 24px 22px 0;border-right:2px solid #e2e8f0;min-width:0;display:block">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="font-size:17px;font-weight:800;color:#0f172a" lang="en">Database</span><i data-lucide="arrow-up-right" style="width:17px;height:17px;color:#2563eb"></i></div>
+          <div style="font-size:13px;color:#64748b;margin-top:5px">13 Πίνακες, <span lang="en">Schema</span></div>
+        </a>
+        <a href="https://ekklesia.gr/wiki/whitepaper.html" style="padding:22px 24px;border-right:2px solid #e2e8f0;min-width:0;display:block">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="font-size:17px;font-weight:800;color:#0f172a" lang="en">Whitepaper</span><i data-lucide="arrow-up-right" style="width:17px;height:17px;color:#2563eb"></i></div>
+          <div style="font-size:13px;color:#64748b;margin-top:5px">Λευκό Βιβλίο v1.0</div>
+        </a>
+        <a href="https://ekklesia.gr/wiki/" style="padding:22px 0 22px 24px;min-width:0;display:block">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="font-size:17px;font-weight:800;color:#0f172a" lang="en">Wiki Home</span><i data-lucide="arrow-up-right" style="width:17px;height:17px;color:#2563eb"></i></div>
+          <div style="font-size:13px;color:#64748b;margin-top:5px">Όλες οι σελίδες</div>
+        </a>
+      </div>
+    </section>
+
+    <section style="border-bottom:2px solid #0f172a">
+      <div style="max-width:1320px;margin:0 auto;padding:56px 24px">
+        <h2 style="margin:0;font-size:clamp(30px,3.4vw,46px);font-weight:900;letter-spacing:-0.025em;color:#0f172a;line-height:1">Τι πρέπει να γνωρίζετε</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0;margin-top:32px;border-top:2px solid #e2e8f0">
+          <div style="padding:24px 24px 24px 0;border-right:2px solid #e2e8f0;min-width:0">
+            <h3 style="margin:0 0 8px;font-size:15px;font-weight:900;letter-spacing:0.02em;color:#0f172a">Πλήρης Ανωνυμία</h3>
+            <p style="margin:0;font-size:14px;line-height:1.55;color:#64748b">Κανένα όνομα, email ή λογαριασμός. Μόνο κρυπτογραφικό κλειδί στη συσκευή σας.</p>
+          </div>
+          <div style="padding:24px;border-right:2px solid #e2e8f0;min-width:0">
+            <h3 style="margin:0 0 8px;font-size:15px;font-weight:900;letter-spacing:0.02em;color:#0f172a">Κρυπτογραφία Ed25519</h3>
+            <p style="margin:0;font-size:14px;line-height:1.55;color:#64748b">Κάθε ψήφος υπογράφεται ψηφιακά. Ο server δεν γνωρίζει τι ψηφίσατε.</p>
+          </div>
+          <div style="padding:24px;border-right:2px solid #e2e8f0;min-width:0">
+            <h3 style="margin:0 0 8px;font-size:15px;font-weight:900;letter-spacing:0.02em;color:#0f172a">Μη Κρατική Πλατφόρμα</h3>
+            <p style="margin:0;font-size:14px;line-height:1.55;color:#64748b">Ανεξάρτητη πρωτοβουλία πολιτών. Χωρίς κρατική χρηματοδότηση ή εποπτεία.</p>
+          </div>
+          <div style="padding:24px 0 24px 24px;min-width:0">
+            <h3 style="margin:0 0 8px;font-size:15px;font-weight:900;letter-spacing:0.02em;color:#0f172a">Χωρίς Νομική Δέσμευση</h3>
+            <p style="margin:0;font-size:14px;line-height:1.55;color:#64748b">Οι ψηφοφορίες έχουν ενημερωτικό χαρακτήρα. Δεν αντικαθιστούν τους θεσμικούς μηχανισμούς.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isBills }}" hint-placeholder-val="{{ false }}">
+  <div>
+    <section style="border-bottom:2px solid #0f172a">
+      <div style="max-width:1320px;margin:0 auto;padding:48px 24px 0">
+        <div style="font-size:11px;font-weight:900;letter-spacing:0.14em;text-transform:uppercase;color:#2563eb">Βουλή · Περιφέρεια · Δήμος</div>
+        <h1 style="margin:14px 0 0;font-size:clamp(34px,4.6vw,64px);font-weight:900;letter-spacing:-0.03em;color:#0f172a;line-height:1">Ψηφοφορίες σε Εξέλιξη</h1>
+        <p style="margin:14px 0 32px;font-size:17px;line-height:1.55;color:#64748b;max-width:56ch">Υπέρ, Κατά ή Αποχή σε πραγματικά νομοσχέδια. Μόνο πραγματικές, συγκεντρωτικές ψήφοι εμφανίζονται εδώ.</p>
+        <div style="display:flex;gap:0;border-top:2px solid #e2e8f0;flex-wrap:wrap">
+          <a href="#" onClick="{{ tabCurrent }}" style="padding:16px 22px 16px 0;font-size:13px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;color:#0f172a;border-bottom:3px solid #2563eb">Τρέχουσες</a>
+          <a href="#" onClick="{{ tabWindow }}" style="padding:16px 22px;font-size:13px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;color:#64748b">Τελευταίες 24ω</a>
+          <a href="#" onClick="{{ tabResults }}" style="padding:16px 22px;font-size:13px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;color:#64748b">Αποτελέσματα</a>
+        </div>
+      </div>
+    </section>
+
+    <section style="border-bottom:2px solid #0f172a">
+      <div style="max-width:1320px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,320px);gap:0">
+        <div style="border-right:2px solid #e2e8f0;min-width:0">
+          <div style="padding:24px 32px 24px 0;border-bottom:2px solid #e2e8f0">
+            <div style="display:inline-flex;align-items:center;gap:8px;border:2px solid #e2e8f0;padding:4px 10px;font-size:10px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#64748b">Παράδειγμα διάταξης</div>
+            <div style="display:flex;gap:20px;align-items:flex-start;margin-top:16px;flex-wrap:wrap">
+              <div style="min-width:0;flex:1 1 320px">
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                  <span style="background:#0f172a;color:#fff;font-size:10px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;padding:4px 8px">Βουλή</span>
+                  <span style="font-size:12px;font-weight:700;color:#64748b;letter-spacing:0.04em">Ανοιχτή · λήγει σε 22ω</span>
+                </div>
+                <h3 style="margin:12px 0 8px;font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.015em;line-height:1.25">Τίτλος νομοσχέδιου από επίσημη δημόσια πηγή</h3>
+                <p style="margin:0;font-size:14px;line-height:1.55;color:#64748b;max-width:60ch">AI Σύνοψη: σύντομη περίληψη του νόμου σε απλή γλώσσα, με σύνδεσμο στο πλήρες κείμενο.</p>
+              </div>
+              <div style="flex:0 0 200px;min-width:0">
+                <div style="display:flex;height:10px;border:2px solid #0f172a">
+                  <span style="flex:0 0 33%;background:#2563eb;display:block"></span>
+                  <span style="flex:0 0 55%;background:#cbd5e1;display:block"></span>
+                  <span style="flex:1;background:#f1f5f9;display:block"></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#64748b">
+                  <span>Υπέρ</span><span>Κατά</span><span>Αποχή</span>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:16px">
+                  <a href="#" style="flex:1;background:#2563eb;color:#fff;font-size:12px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;padding:12px 14px">Ψηφίστε</a>
+                  <a href="https://pnyx.ekklesia.gr" style="border:2px solid #0f172a;color:#0f172a;font-size:12px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;padding:12px 14px" lang="en">Forum</a>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:40px 32px 48px 0">
+            <div style="border:2px solid #e2e8f0;padding:32px;background:#f8fafc">
+              <h3 style="margin:0 0 8px;font-size:19px;font-weight:900;color:#0f172a">Σύντομα πραγματικά δεδομένα</h3>
+              <p style="margin:0 0 20px;font-size:15px;line-height:1.55;color:#64748b;max-width:56ch">Θα εμφανιστούν ψηφοφορίες όταν περάσουν το όριο συμμετοχής. Δεν προβάλλονται δοκιμαστικοί αριθμοί.</p>
+              <div style="display:flex;gap:18px;flex-wrap:wrap">
+                <a href="https://ekklesia.gr/el/bills" style="font-size:13px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:#1d4ed8">Προβολή τρεχουσών</a>
+                <a href="https://ekklesia.gr/el/bills?status=WINDOW_24H" style="font-size:13px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:#1d4ed8">Παράθυρο 24ω</a>
+                <a href="https://ekklesia.gr/el/results" style="font-size:13px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:#1d4ed8">Αποτελέσματα</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <aside style="padding:24px 0 48px 32px;min-width:0">
+          <h3 style="margin:0 0 14px;font-size:12px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#0f172a">Ο Κύκλος της Δημοκρατίας</h3>
+          <p style="margin:0 0 20px;font-size:13px;line-height:1.55;color:#64748b">Κάθε απόφαση διανύει 6 φάσεις — από τη Βουλή στους πολίτες.</p>
+          <div style="display:flex;flex-direction:column;gap:0;border-top:2px solid #e2e8f0">
+            <div style="display:flex;gap:12px;padding:13px 0;border-bottom:2px solid #f1f5f9;align-items:center"><span style="font-size:11px;font-weight:900;color:#2563eb;width:18px">01</span><span style="font-size:14px;font-weight:700;color:#0f172a">Ανακοίνωση</span></div>
+            <div style="display:flex;gap:12px;padding:13px 0;border-bottom:2px solid #f1f5f9;align-items:center"><span style="font-size:11px;font-weight:900;color:#2563eb;width:18px">02</span><span style="font-size:14px;font-weight:700;color:#0f172a">Ανάλυση Νόμου</span></div>
+            <div style="display:flex;gap:12px;padding:13px 0;border-bottom:2px solid #f1f5f9;align-items:center"><span style="font-size:11px;font-weight:900;color:#2563eb;width:18px">03</span><span style="font-size:14px;font-weight:700;color:#0f172a">Ενεργοποίηση</span></div>
+            <div style="display:flex;gap:12px;padding:13px 0;border-bottom:2px solid #f1f5f9;align-items:center"><span style="font-size:11px;font-weight:900;color:#2563eb;width:18px">04</span><span style="font-size:14px;font-weight:700;color:#0f172a">Ψηφοφορία Πολιτών</span></div>
+            <div style="display:flex;gap:12px;padding:13px 0;border-bottom:2px solid #f1f5f9;align-items:center"><span style="font-size:11px;font-weight:900;color:#2563eb;width:18px">05</span><span style="font-size:14px;font-weight:700;color:#0f172a">24ω Παράθυρο</span></div>
+            <div style="display:flex;gap:12px;padding:13px 0;border-bottom:2px solid #e2e8f0;align-items:center"><span style="font-size:11px;font-weight:900;color:#2563eb;width:18px">06</span><span style="font-size:14px;font-weight:700;color:#0f172a">Αποτέλεσμα Ψηφοφορίας</span></div>
+          </div>
+          <div style="margin-top:28px;border-top:2px solid #0f172a;padding-top:16px">
+            <h3 style="margin:0 0 10px;font-size:12px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#0f172a">Πολιτικός Καθρέφτης (<span lang="en">CPLM</span>)</h3>
+            <p style="margin:0;font-size:13px;line-height:1.55;color:#64748b">Πού βρίσκεται πολιτικά η κοινωνία; Ανανεώνεται αυτόματα κάθε 6 ώρες.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;margin-top:16px;border-top:2px solid #e2e8f0">
+              <div style="padding:14px 12px 14px 0;border-right:2px solid #e2e8f0"><div style="font-size:24px;font-weight:900;color:#0f172a">—</div><div style="font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin-top:4px;overflow-wrap:anywhere">Οικονομία (X)</div></div>
+              <div style="padding:14px 0 14px 12px"><div style="font-size:24px;font-weight:900;color:#0f172a">—</div><div style="font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin-top:4px;overflow-wrap:anywhere">Κοινωνία (Y)</div></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isDownload }}" hint-placeholder-val="{{ false }}">
+  <div>
+    <section style="border-bottom:2px solid #0f172a">
+      <div style="max-width:1320px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:0">
+        <div style="padding:56px 48px 56px 0;border-right:2px solid #e2e8f0;min-width:0">
+          <div style="font-size:11px;font-weight:900;letter-spacing:0.14em;text-transform:uppercase;color:#2563eb" lang="en">Android APK · F-Droid · PWA</div>
+          <h1 style="margin:14px 0 0;font-size:clamp(34px,4.4vw,60px);font-weight:900;letter-spacing:-0.03em;color:#0f172a;line-height:1">Κατεβάστε την Εφαρμογή</h1>
+          <p style="margin:16px 0 0;font-size:17px;line-height:1.6;color:#64748b;max-width:52ch">Ψηφίστε απευθείας από το κινητό σας. Ανώνυμα, ασφαλή, κρυπτογραφημένα. Android APK διαθέσιμο — iOS μέσω PWA.</p>
+          <div style="display:flex;flex-direction:column;gap:0;margin-top:32px;border-top:2px solid #0f172a">
+            <a href="https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk" style="display:flex;align-items:center;gap:16px;padding:20px 0;border-bottom:2px solid #e2e8f0">
+              <i data-lucide="download" style="width:22px;height:22px;color:#2563eb;flex:none"></i>
+              <span style="min-width:0;flex:1">
+                <span style="display:block;font-size:17px;font-weight:900;color:#0f172a">Λήψη APK — Android</span>
+                <span style="display:block;font-size:13px;color:#64748b;margin-top:3px">v1.0.32 · vC61 δημοσιευμένο</span>
+              </span>
+              <span style="background:#2563eb;color:#fff;font-size:10px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;padding:5px 9px">Διαθέσιμο</span>
+            </a>
+            <a href="https://play.google.com/apps/testing/ekklesia.gr" style="display:flex;align-items:center;gap:16px;padding:20px 0;border-bottom:2px solid #e2e8f0">
+              <i data-lucide="play" style="width:22px;height:22px;color:#64748b;flex:none"></i>
+              <span style="min-width:0;flex:1">
+                <span style="display:block;font-size:17px;font-weight:900;color:#0f172a">Google Play</span>
+                <span style="display:block;font-size:13px;color:#64748b;margin-top:3px">vC61 υποβλήθηκε · αναμονή έγκρισης</span>
+              </span>
+              <span style="border:2px solid #cbd5e1;color:#64748b;font-size:10px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;padding:3px 7px">Υπό έλεγχο</span>
+            </a>
+            <a href="https://f-droid.org/packages/ekklesia.gr/" style="display:flex;align-items:center;gap:16px;padding:20px 0;border-bottom:2px solid #e2e8f0">
+              <i data-lucide="package" style="width:22px;height:22px;color:#2563eb;flex:none"></i>
+              <span style="min-width:0;flex:1">
+                <span style="display:block;font-size:17px;font-weight:900;color:#0f172a">F-Droid</span>
+                <span style="display:block;font-size:13px;color:#64748b;margin-top:3px">v1.0.29 · vC584</span>
+              </span>
+              <span style="background:#2563eb;color:#fff;font-size:10px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;padding:5px 9px">Διαθέσιμο</span>
+            </a>
+          </div>
+          <div style="display:flex;gap:14px;margin-top:28px;border-left:4px solid #2563eb;padding:16px 0 16px 18px;background:#f8fafc">
+            <i data-lucide="alert-triangle" style="width:20px;height:20px;color:#2563eb;flex:none;margin-top:2px"></i>
+            <p style="margin:0;font-size:14px;line-height:1.6;color:#334155;max-width:60ch"><strong style="color:#0f172a">Σημαντικό:</strong> κάντε ενημερώσεις πάντα από το ίδιο κανάλι εγκατάστασης (Google Play, F-Droid ή άμεσο APK). Οι εκδόσεις έχουν διαφορετικές υπογραφές. Η αλλαγή καναλιού απαιτεί πρώτα απεγκατάσταση και μετά νέα επαλήθευση στην εφαρμογή.</p>
+          </div>
+          <div style="margin-top:24px;font-size:12px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#64748b"><span lang="en">Secure Enclave · Ed25519</span> · Βιομετρική Επαλήθευση</div>
+        </div>
+        <div style="padding:56px 0 56px 48px;min-width:0">
+          <h2 style="margin:0 0 20px;font-size:13px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#0f172a">Εγκατάσταση στο iPhone</h2>
+          <div style="display:flex;flex-direction:column;gap:0;border-top:2px solid #e2e8f0">
+            <div style="display:flex;gap:16px;padding:18px 0;border-bottom:2px solid #f1f5f9">
+              <span style="font-size:13px;font-weight:900;color:#2563eb;flex:none;width:20px">01</span>
+              <span><span style="display:block;font-size:15px;font-weight:800;color:#0f172a">Ανοίξτε στο Safari</span><span style="display:block;font-size:13px;color:#64748b;margin-top:3px">Μόνο Safari — Chrome/Firefox δεν υποστηρίζεται</span></span>
+            </div>
+            <div style="display:flex;gap:16px;padding:18px 0;border-bottom:2px solid #f1f5f9">
+              <span style="font-size:13px;font-weight:900;color:#2563eb;flex:none;width:20px">02</span>
+              <span><span style="display:block;font-size:15px;font-weight:800;color:#0f172a">Πατήστε Κοινοποίηση</span><span style="display:block;font-size:13px;color:#64748b;margin-top:3px">Το τετράγωνο με το βέλος (κάτω μέρος)</span></span>
+            </div>
+            <div style="display:flex;gap:16px;padding:18px 0;border-bottom:2px solid #e2e8f0">
+              <span style="font-size:13px;font-weight:900;color:#2563eb;flex:none;width:20px">03</span>
+              <span><span style="display:block;font-size:15px;font-weight:800;color:#0f172a">Προσθήκη στην Αρχική</span><span style="display:block;font-size:13px;color:#64748b;margin-top:3px">Η εκκλησία εμφανίζεται ως εφαρμογή</span></span>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:2px;margin-top:32px;background:#0f172a;padding:2px">
+            <img src="https://ekklesia.gr/assets/screenshots/screenshot-home.jpg" alt="Αρχική" style="width:100%;height:auto;display:block;filter:grayscale(1)">
+            <img src="https://ekklesia.gr/assets/screenshots/screenshot-votes.jpg" alt="Ψηφοφορίες" style="width:100%;height:auto;display:block;filter:grayscale(1)">
+            <img src="https://ekklesia.gr/assets/screenshots/screenshot-politicians.jpg" alt="Αξιολόγηση" style="width:100%;height:auto;display:block;filter:grayscale(1)">
+            <img src="https://ekklesia.gr/assets/screenshots/screenshot-polis.jpg" alt="POLIS" style="width:100%;height:auto;display:block;filter:grayscale(1)">
+          </div>
+          <div style="font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin-top:10px">Αρχική · Ψηφοφορίες · Αξιολόγηση · POLIS</div>
+        </div>
+      </div>
+    </section>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isWiki }}" hint-placeholder-val="{{ false }}">
+  <div>
+    <section style="border-bottom:2px solid #0f172a;background:#f8fafc">
+      <div style="max-width:1320px;margin:0 auto;padding:36px 24px">
+        <div style="display:flex;gap:10px;align-items:center;font-size:12px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#64748b;flex-wrap:wrap">
+          <a href="#" onClick="{{ goHome }}" style="color:#1d4ed8">εκκλησία</a><span>·</span><a href="#" onClick="{{ goWiki }}" style="color:#1d4ed8">Τεκμηρίωση</a><span>·</span><span style="color:#0f172a">Αρχιτεκτονική</span>
+        </div>
+        <h1 style="margin:16px 0 0;font-size:clamp(32px,4.2vw,58px);font-weight:900;letter-spacing:-0.03em;color:#0f172a;line-height:1">Αρχιτεκτονική</h1>
+        <p style="margin:14px 0 0;font-size:17px;line-height:1.55;color:#475569;max-width:58ch">Τεχνική επισκόπηση του <span lang="en">monorepo</span>, των υπηρεσιών και του κύκλου ζωής ενός νομοσχεδίου.</p>
+        <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:22px;font-size:12px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#64748b">
+          <span>Τελευταία ενημέρωση: —</span><span>·</span><a href="https://github.com/NeaBouli/pnyx" style="color:#1d4ed8">Επεξεργασία στο <span lang="en">GitHub</span></a>
+        </div>
+      </div>
+    </section>
+
+    <section style="border-bottom:2px solid #0f172a">
+      <div data-wiki-grid style="max-width:1320px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:minmax(220px,260px) minmax(0,1fr) minmax(180px,220px);gap:0;align-items:start">
+        <nav data-wiki-nav style="padding:28px 24px 28px 0;min-width:0;position:sticky;top:104px;max-height:calc(100vh - 104px);overflow-y:auto">
+          <div style="font-size:11px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#0f172a;padding-bottom:12px;border-bottom:2px solid #0f172a">14 Σελίδες</div>
+          <div style="display:flex;flex-direction:column;gap:0;margin-top:14px">
+            <a href="https://ekklesia.gr/wiki/index.html" style="display:block;padding:11px 14px 11px 14px;border-left:2px solid #e2e8f0;background:transparent;min-width:0">
+            <span style="display:block;font-size:14px;font-weight:700;color:#0f172a;line-height:1.3">Αρχική</span>
+            <span style="display:block;font-size:11px;color:#64748b;margin-top:3px" lang="en">Επισκόπηση</span>
+          </a>
+            <a href="https://ekklesia.gr/wiki/architecture.html" style="display:block;padding:11px 14px 11px 12px;border-left:4px solid #2563eb;background:#f8fafc;min-width:0">
+            <span style="display:block;font-size:14px;font-weight:900;color:#0f172a;line-height:1.3">Αρχιτεκτονική</span>
+            <span style="display:block;font-size:11px;color:#64748b;margin-top:3px" lang="en">Stack · Monorepo · Lifecycle</span>
+          </a>
+            <a href="https://ekklesia.gr/wiki/security.html" style="display:block;padding:11px 14px 11px 14px;border-left:2px solid #e2e8f0;background:transparent;min-width:0">
+            <span style="display:block;font-size:14px;font-weight:700;color:#0f172a;line-height:1.3">Ασφάλεια</span>
+            <span style="display:block;font-size:11px;color:#64748b;margin-top:3px" lang="en">Ed25519 · Nullifier · ZK</span>
+          </a>
+            <a href="https://ekklesia.gr/wiki/zk-voting.html" style="display:block;padding:11px 14px 11px 14px;border-left:2px solid #e2e8f0;background:transparent;min-width:0">
+            <span style="display:block;font-size:14px;font-weight:700;color:#0f172a;line-height:1.3">ZK Voting</span>
+            <span style="display:block;font-size:11px;color:#64748b;margin-top:3px" lang="en">Semaphore · Proofs</span>
+          </a>
+            <a href="https://ekklesia.gr/wiki/api.html" style="display:block;padding:11px 14px 11px 14px;border-left:2px solid #e2e8f0;background:transparent;min-width:0">
+            <span style="display:block;font-size:14px;font-weight:700;color:#0f172a;line-height:1.3">API</span>
+            <span style="display:block;font-size:11px;color:#64748b;margin-top:3px" lang="en">16 Endpoints · Schemas</span>
+          </a>
+            <a href="https://ekklesia.gr/wiki/database.html" style="display:block;padding:11px 14px 11px 14px;border-left:2px solid #e2e8f0;background:transparent;min-width:0">
+            <span style="display:block;font-size:14px;font-weight:700;color:#0f172a;line-height:1.3">Database</span>
+            <span style="display:block;font-size:11px;color:#64748b;margin-top:3px" lang="en">13 Πίνακες · Schema</span>
+          </a>
+            <a href="https://ekklesia.gr/wiki/modules.html" style="display:block;padding:11px 14px 11px 14px;border-left:2px solid #e2e8f0;background:transparent;min-width:0">
+            <span style="display:block;font-size:14px;font-weight:700;color:#0f172a;line-height:1.3">Modules</span>
+            <span style="display:block;font-size:11px;color:#64748b;margin-top:3px" lang="en">MOD-01 — MOD-19</span>
+          </a>
+            <a href="https://ekklesia.gr/wiki/privacy.html" style="display:block;padding:11px 14px 11px 14px;border-left:2px solid #e2e8f0;background:transparent;min-width:0">
+            <span style="display:block;font-size:14px;font-weight:700;color:#0f172a;line-height:1.3">Ιδιωτικότητα</span>
+            <span style="display:block;font-size:11px;color:#64748b;margin-top:3px" lang="en">GDPR · k-Anonymity</span>
+          </a>
+            <a href="https://ekklesia.gr/wiki/broadcasting.html" style="display:block;padding:11px 14px 11px 14px;border-left:2px solid #e2e8f0;background:transparent;min-width:0">
+            <span style="display:block;font-size:14px;font-weight:700;color:#0f172a;line-height:1.3">Broadcasting</span>
+            <span style="display:block;font-size:11px;color:#64748b;margin-top:3px" lang="en">Push · Newsletter</span>
+          </a>
+            <a href="https://ekklesia.gr/wiki/delete-account.html" style="display:block;padding:11px 14px 11px 14px;border-left:2px solid #e2e8f0;background:transparent;min-width:0">
+            <span style="display:block;font-size:14px;font-weight:700;color:#0f172a;line-height:1.3">Διαγραφή Λογαριασμού</span>
+            <span style="display:block;font-size:11px;color:#64748b;margin-top:3px" lang="en">GDPR Art. 17</span>
+          </a>
+            <a href="https://ekklesia.gr/wiki/roadmap.html" style="display:block;padding:11px 14px 11px 14px;border-left:2px solid #e2e8f0;background:transparent;min-width:0">
+            <span style="display:block;font-size:14px;font-weight:700;color:#0f172a;line-height:1.3">Roadmap</span>
+            <span style="display:block;font-size:11px;color:#64748b;margin-top:3px" lang="en">Beta → Alpha → V1 → V2</span>
+          </a>
+            <a href="https://ekklesia.gr/wiki/whitepaper.html" style="display:block;padding:11px 14px 11px 14px;border-left:2px solid #e2e8f0;background:transparent;min-width:0">
+            <span style="display:block;font-size:14px;font-weight:700;color:#0f172a;line-height:1.3">Whitepaper</span>
+            <span style="display:block;font-size:11px;color:#64748b;margin-top:3px" lang="en">Λευκό Βιβλίο v1.0</span>
+          </a>
+            <a href="https://ekklesia.gr/wiki/contributing.html" style="display:block;padding:11px 14px 11px 14px;border-left:2px solid #e2e8f0;background:transparent;min-width:0">
+            <span style="display:block;font-size:14px;font-weight:700;color:#0f172a;line-height:1.3">Contributing</span>
+            <span style="display:block;font-size:11px;color:#64748b;margin-top:3px" lang="en">Pull Requests · Setup</span>
+          </a>
+            <a href="https://ekklesia.gr/wiki/faq.html" style="display:block;padding:11px 14px 11px 14px;border-left:2px solid #e2e8f0;background:transparent;min-width:0">
+            <span style="display:block;font-size:14px;font-weight:700;color:#0f172a;line-height:1.3">FAQ</span>
+            <span style="display:block;font-size:11px;color:#64748b;margin-top:3px" lang="en">Συχνές ερωτήσεις</span>
+          </a>
+          </div>
+        </nav>
+
+        <article data-wiki-article style="padding:28px 40px 56px;min-width:0;border-left:2px solid #e2e8f0;border-right:2px solid #e2e8f0">
+          <h2 style="margin:0;font-size:clamp(20px,2.2vw,28px);font-weight:900;letter-spacing:-0.02em;color:#0f172a;line-height:1.15;padding-bottom:12px;border-bottom:2px solid #0f172a"><span lang="en">Monorepo</span> Δομή</h2>
+          <pre style="margin:18px 0 0;padding:20px;background:#0f172a;color:#e2e8f0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.7;overflow-x:auto"><code>pnyx/
+├── apps/
+│   ├── api/          <span style="color:#64748b"># Python FastAPI</span>
+│   ├── web/          <span style="color:#64748b"># Next.js 16</span>
+│   └── mobile/       <span style="color:#64748b"># Expo React Native</span>
+├── packages/
+│   └── crypto/       <span style="color:#64748b"># Ed25519, Nullifier, HLR</span>
+├── infra/
+│   └── docker/       <span style="color:#64748b"># Docker Compose</span>
+└── docs/             <span style="color:#64748b"># GitHub Pages</span></code></pre>
+
+          <h3 style="margin:44px 0 0;font-size:clamp(20px,2.2vw,28px);font-weight:900;letter-spacing:-0.02em;color:#0f172a;line-height:1.15;padding-bottom:12px;border-bottom:2px solid #0f172a"><span lang="en">Stack</span></h3>
+          <div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;min-width:420px">
+            <thead><tr><th style="text-align:left;padding:14px 12px 14px 0;font-size:11px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;border-bottom:2px solid #0f172a">Επίπεδο</th><th style="text-align:left;padding:14px 12px 14px 12px;font-size:11px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;border-bottom:2px solid #0f172a">Τεχνολογία</th><th style="text-align:left;padding:14px 0 14px 12px;font-size:11px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;border-bottom:2px solid #0f172a"><span lang="en">Why</span></th></tr></thead>
+            <tbody><tr><td style="padding:14px 12px 14px 0;font-size:14px;line-height:1.6;color:#0f172a;font-weight:800;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">Backend API</span></td><td style="padding:14px 12px 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">Python FastAPI</span></td><td style="padding:14px 0 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">Async, typed, OpenAPI native</span></td></tr><tr><td style="padding:14px 12px 14px 0;font-size:14px;line-height:1.6;color:#0f172a;font-weight:800;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">Database</span></td><td style="padding:14px 12px 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">PostgreSQL 15</span></td><td style="padding:14px 0 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">JSONB, GDPR-ready</span></td></tr><tr><td style="padding:14px 12px 14px 0;font-size:14px;line-height:1.6;color:#0f172a;font-weight:800;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">Cache</span></td><td style="padding:14px 12px 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">Redis 8.10</span></td><td style="padding:14px 0 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">Sessions, WebSocket</span></td></tr><tr><td style="padding:14px 12px 14px 0;font-size:14px;line-height:1.6;color:#0f172a;font-weight:800;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">Web</span></td><td style="padding:14px 12px 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">Next.js 16</span></td><td style="padding:14px 0 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">SSR, i18n, SEO</span></td></tr><tr><td style="padding:14px 12px 14px 0;font-size:14px;line-height:1.6;color:#0f172a;font-weight:800;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">Mobile</span></td><td style="padding:14px 12px 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">Expo React Native</span></td><td style="padding:14px 0 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">iOS + Android</span></td></tr><tr><td style="padding:14px 12px 14px 0;font-size:14px;line-height:1.6;color:#0f172a;font-weight:800;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">Crypto (Beta)</span></td><td style="padding:14px 12px 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">PyNaCl + @noble/curves</span></td><td style="padding:14px 0 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">Ed25519</span></td></tr><tr><td style="padding:14px 12px 14px 0;font-size:14px;line-height:1.6;color:#0f172a;font-weight:800;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">Crypto (V2)</span></td><td style="padding:14px 12px 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">Rust + WASM</span></td><td style="padding:14px 0 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">Browser-native</span></td></tr></tbody>
+          </table></div>
+
+          <h3 style="margin:44px 0 0;font-size:clamp(20px,2.2vw,28px);font-weight:900;letter-spacing:-0.02em;color:#0f172a;line-height:1.15;padding-bottom:12px;border-bottom:2px solid #0f172a"><span lang="en">Verified Autonomous Recovery</span></h3>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:20px;border:2px solid #e2e8f0;background:#f8fafc;padding:16px"><span style="display:inline-flex;align-items:center;border:2px solid #cbd5e1;color:#334155;background:#fff;font-size:12px;font-weight:800;letter-spacing:0.04em;padding:8px 12px" lang="en">Alert</span><i data-lucide="arrow-right" style="width:16px;height:16px;color:#2563eb;flex:none"></i><span style="display:inline-flex;align-items:center;border:2px solid #cbd5e1;color:#334155;background:#fff;font-size:12px;font-weight:800;letter-spacing:0.04em;padding:8px 12px" lang="en">Allowlist</span><i data-lucide="arrow-right" style="width:16px;height:16px;color:#2563eb;flex:none"></i><span style="display:inline-flex;align-items:center;border:2px solid #2563eb;color:#1d4ed8;background:#fff;font-size:12px;font-weight:800;letter-spacing:0.04em;padding:8px 12px" lang="en">Repair</span><i data-lucide="arrow-right" style="width:16px;height:16px;color:#2563eb;flex:none"></i><span style="display:inline-flex;align-items:center;border:2px solid #cbd5e1;color:#334155;background:#fff;font-size:12px;font-weight:800;letter-spacing:0.04em;padding:8px 12px" lang="en">Read-only Proof</span><i data-lucide="arrow-right" style="width:16px;height:16px;color:#2563eb;flex:none"></i><span style="display:inline-flex;align-items:center;border:2px solid #2563eb;color:#1d4ed8;background:#fff;font-size:12px;font-weight:800;letter-spacing:0.04em;padding:8px 12px" lang="en">T1V</span></div>
+          <div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;min-width:420px">
+            <thead><tr><th style="text-align:left;padding:14px 12px 14px 0;font-size:11px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;border-bottom:2px solid #0f172a">Στάδιο</th><th style="text-align:left;padding:14px 0 14px 12px;font-size:11px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;border-bottom:2px solid #0f172a">Συμπεριφορά</th></tr></thead>
+            <tbody><tr><td style="padding:14px 12px 14px 0;font-size:14px;line-height:1.6;color:#0f172a;font-weight:800;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">parliament_source_lag</span></td><td style="padding:14px 0 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top">Μόνο αυτό το <span lang="en">runbook</span> επιτρέπεται στη Φάση 1. Εκτελεί <span lang="en">forced Parliament catch-up</span>.</td></tr><tr><td style="padding:14px 12px 14px 0;font-size:14px;line-height:1.6;color:#0f172a;font-weight:800;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">Proof</span></td><td style="padding:14px 0 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top">Μετά το <span lang="en">repair</span>, ο <span lang="en">monitor</span> περιμένει και συγκρίνει νεότερη ημερομηνία πηγής με νεότερη ημερομηνία <span lang="en">DB</span>.</td></tr><tr><td style="padding:14px 12px 14px 0;font-size:14px;line-height:1.6;color:#0f172a;font-weight:800;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">Telegram</span></td><td style="padding:14px 0 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top">Μόνο <span lang="en">verified repair</span> στέλνει ξεχωριστό <span lang="en">Auto-Recovery verified</span>. <span lang="en">Failed proof</span> μένει ως <span lang="en">alert</span>.</td></tr><tr><td style="padding:14px 12px 14px 0;font-size:14px;line-height:1.6;color:#0f172a;font-weight:800;border-bottom:2px solid #f1f5f9;vertical-align:top">Κόστος</td><td style="padding:14px 0 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top">0 <span lang="en">AI tokens/run</span> στη Φάση 1. Αν μελλοντικό <span lang="en">runbook</span> χρησιμοποιήσει <span lang="en">paid AI tokens</span>, πρέπει να εμφανίζεται στη <span lang="en">Community live calculation</span> πριν ενεργοποιηθεί.</td></tr></tbody>
+          </table></div>
+
+          <h3 style="margin:44px 0 0;font-size:clamp(20px,2.2vw,28px);font-weight:900;letter-spacing:-0.02em;color:#0f172a;line-height:1.15;padding-bottom:12px;border-bottom:2px solid #0f172a"><span lang="en">Bill Lifecycle</span></h3>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:20px;border:2px solid #e2e8f0;background:#f8fafc;padding:16px"><span style="display:inline-flex;align-items:center;border:2px solid #cbd5e1;color:#334155;background:#fff;font-size:12px;font-weight:800;letter-spacing:0.04em;padding:8px 12px" lang="en">ANNOUNCED</span><i data-lucide="arrow-right" style="width:16px;height:16px;color:#2563eb;flex:none"></i><span style="display:inline-flex;align-items:center;border:2px solid #2563eb;color:#1d4ed8;background:#fff;font-size:12px;font-weight:800;letter-spacing:0.04em;padding:8px 12px" lang="en">ACTIVE</span><i data-lucide="arrow-right" style="width:16px;height:16px;color:#2563eb;flex:none"></i><span style="display:inline-flex;align-items:center;border:2px solid #cbd5e1;color:#334155;background:#fff;font-size:12px;font-weight:800;letter-spacing:0.04em;padding:8px 12px" lang="en">WINDOW_24H</span><i data-lucide="arrow-right" style="width:16px;height:16px;color:#2563eb;flex:none"></i><span style="display:inline-flex;align-items:center;border:2px solid #2563eb;color:#1d4ed8;background:#fff;font-size:12px;font-weight:800;letter-spacing:0.04em;padding:8px 12px" lang="en">PARLIAMENT_VOTED</span><i data-lucide="arrow-right" style="width:16px;height:16px;color:#2563eb;flex:none"></i><span style="display:inline-flex;align-items:center;border:2px solid #cbd5e1;color:#334155;background:#fff;font-size:12px;font-weight:800;letter-spacing:0.04em;padding:8px 12px" lang="en">OPEN_END</span></div>
+          <h4 style="margin:32px 0 0;font-size:13px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#2563eb">Προστασία παραγόμενου περιεχομένου</h4>
+          <div style="display:flex;gap:14px;border-left:4px solid #2563eb;background:#f8fafc;padding:16px 18px;margin:24px 0 0">
+            <i data-lucide="shield-check" style="width:20px;height:20px;color:#2563eb;flex:none;margin-top:2px"></i>
+            <p style="margin:0;font-size:14px;line-height:1.65;color:#334155;max-width:64ch">Οι νέες αυτόματες περιλήψεις και τα πρώτα <span lang="en">posts</span> του <span lang="en">forum</span> ανανεώνονται μόνο όσο παραμένουν αμετάβλητα. Χειροκίνητες αλλαγές διατηρούνται, ενώ επίσημο κείμενο και <span lang="en">PDF links</span> δεν επηρεάζονται.</p>
+          </div>
+
+          <h3 style="margin:44px 0 0;font-size:clamp(20px,2.2vw,28px);font-weight:900;letter-spacing:-0.02em;color:#0f172a;line-height:1.15;padding-bottom:12px;border-bottom:2px solid #0f172a">Αρχιτεκτονική Επαλήθευσης</h3>
+          <h4 style="margin:32px 0 0;font-size:13px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#2563eb"><span lang="en">Beta Flow</span> (<span lang="en">HLR</span> χωρίς <span lang="en">SMS</span>)</h4>
+          <pre style="margin:18px 0 0;padding:20px;background:#0f172a;color:#e2e8f0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.7;overflow-x:auto"><code>Phone (+30)  ──►  HLR Lookup  ──►  server-salted hash  ──►  nullifier
+                                           │
+                                     (αριθμός διαγράφεται)
+                                           │
+                                      Ed25519 Keypair
+                                           │
+                                      Vote (1.0x)</code></pre>
+          <h4 style="margin:32px 0 0;font-size:13px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#2563eb"><span lang="en">Alpha Flow</span> (σχεδιασμός, όχι ενεργό)</h4>
+          <pre style="margin:18px 0 0;padding:20px;background:#0f172a;color:#e2e8f0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.7;overflow-x:auto"><code>Νέο challenge μιας χρήσης ──► επίσημο gov.gr OAuth ή νέο έγγραφο QR/PDF
+                            │
+              επίσημο API ή τοπικός έλεγχος eSeal
+                            │
+     μυστικό credential nullifier ──► διαγραφή εγγράφου/PII
+                            │
+     Ed25519 / Semaphore ──► Vote (1 άτομο = 1 ψήφος)</code></pre>
+          <div style="display:flex;gap:14px;border-left:4px solid #2563eb;background:#f8fafc;padding:16px 18px;margin:24px 0 0">
+            <i data-lucide="info" style="width:20px;height:20px;color:#2563eb;flex:none;margin-top:2px"></i>
+            <p style="margin:0;font-size:14px;line-height:1.65;color:#334155;max-width:64ch">Το <span lang="en">Alpha flow</span> είναι ακόμη <span lang="en">threat model</span>, όχι <span lang="en">runtime</span>. Πριν ενεργοποιηθεί πρέπει να αποδειχθεί η επίσημη επαλήθευση, η κατοχή του εγγράφου/τηλεφώνου και η ασφαλής παραγωγή <span lang="en">unlinkable credential</span> χωρίς διατήρηση εγγράφου ή προσωπικών στοιχείων.</p>
+          </div>
+
+          <h4 style="margin:32px 0 0;font-size:13px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#2563eb">gov.gr <span lang="en">OAuth</span> — Κατάσταση &amp; Ενεργοποίηση</h4>
+          <div style="display:flex;gap:14px;border-left:4px solid #1d4ed8;background:#f8fafc;padding:16px 18px;margin:24px 0 0">
+            <i data-lucide="alert-triangle" style="width:20px;height:20px;color:#1d4ed8;flex:none;margin-top:2px"></i>
+            <p style="margin:0;font-size:14px;line-height:1.65;color:#334155;max-width:64ch"><strong style="color:#0f172a">ΣΧΕΔΙΑΣΜΟΣ ALPHA — ΟΧΙ ΕΝΕΡΓΟ:</strong> το <span lang="en">MOD-09</span> είναι αρχιτεκτονική προετοιμασία, όχι ενεργή κρατική ταυτοποίηση. <a href="https://github.com/NeaBouli/pnyx/blob/main/docs/GOVGR_DOCUMENT_VERIFICATION_ALPHA.md" style="font-weight:800;color:#1d4ed8">Κανονικό σχέδιο GH#141 →</a></p>
+          </div>
+          <p style="margin:16px 0 0;font-size:16px;line-height:1.7;color:#334155;max-width:68ch;text-wrap:pretty"><strong style="color:#0f172a">Δύο υποψήφιες διαδρομές προς αξιολόγηση:</strong></p>
+          <ol style="margin:14px 0 0;padding-left:22px;max-width:66ch">
+            <li style="font-size:15px;line-height:1.7;color:#334155;margin-bottom:8px"><strong style="color:#0f172a">Επίσημο <span lang="en">OAuth</span>:</strong> μόνο μετά από έγκριση και <span lang="en">review</span></li>
+            <li style="font-size:15px;line-height:1.7;color:#334155"><strong style="color:#0f172a">Δημοτική αξιολόγηση:</strong> αίτημα για μελλοντικό <span lang="en">pilot</span>, χωρίς αυτόματη ενεργοποίηση → <a href="https://ekklesia.gr/govgr-dimos.html" style="font-weight:800;color:#1d4ed8">Σχεδιασμός Alpha</a></li>
+          </ol>
+          <p style="margin:16px 0 0;font-size:16px;line-height:1.7;color:#334155;max-width:68ch;text-wrap:pretty"><strong style="color:#0f172a">Στη <span lang="en">Beta</span>:</strong> ο <span lang="en">HLR</span> δεν αποτελεί κρατική ταυτοποίηση ή απόδειξη εκλογικού δικαιώματος.</p>
+
+          <h4 style="margin:32px 0 0;font-size:13px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#2563eb"><span lang="en">Vote Scope</span> — Τοπική Ψηφοφορία</h4>
+          <p style="margin:16px 0 0;font-size:16px;line-height:1.7;color:#334155;max-width:68ch;text-wrap:pretty">Χρήστες με δηλωμένο Δήμο/Περιφέρεια μπορούν να ψηφίσουν τοπικά:</p>
+          <div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;min-width:420px">
+            <thead><tr><th style="text-align:left;padding:14px 12px 14px 0;font-size:11px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;border-bottom:2px solid #0f172a">Επίπεδο</th><th style="text-align:left;padding:14px 12px 14px 12px;font-size:11px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;border-bottom:2px solid #0f172a">Ψηφίζει</th><th style="text-align:left;padding:14px 0 14px 12px;font-size:11px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;border-bottom:2px solid #0f172a">Βάρος</th></tr></thead>
+            <tbody><tr><td style="padding:14px 12px 14px 0;font-size:14px;line-height:1.6;color:#0f172a;font-weight:800;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">PARLIAMENT</span></td><td style="padding:14px 12px 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top">Όλοι οι <span lang="en">HLR</span>-επαληθ.</td><td style="padding:14px 0 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">x1.0</span></td></tr><tr><td style="padding:14px 12px 14px 0;font-size:14px;line-height:1.6;color:#0f172a;font-weight:800;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">PERIFERIA</span></td><td style="padding:14px 12px 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top">Χρήστες στη Περιφέρεια</td><td style="padding:14px 0 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">x1.0</span></td></tr><tr><td style="padding:14px 12px 14px 0;font-size:14px;line-height:1.6;color:#0f172a;font-weight:800;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">DIMOS</span></td><td style="padding:14px 12px 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top">Χρήστες στο Δήμο</td><td style="padding:14px 0 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">x1.0</span></td></tr><tr><td style="padding:14px 12px 14px 0;font-size:14px;line-height:1.6;color:#0f172a;font-weight:800;border-bottom:2px solid #f1f5f9;vertical-align:top">gov.gr</td><td style="padding:14px 12px 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top">Μόνο επίσημα <span lang="en">claims</span></td><td style="padding:14px 0 14px 12px;font-size:14px;line-height:1.6;color:#475569;font-weight:400;border-bottom:2px solid #f1f5f9;vertical-align:top"><span lang="en">x1.0</span></td></tr></tbody>
+          </table></div>
+
+          <h3 style="margin:44px 0 0;font-size:clamp(20px,2.2vw,28px);font-weight:900;letter-spacing:-0.02em;color:#0f172a;line-height:1.15;padding-bottom:12px;border-bottom:2px solid #0f172a">Σχετικές σελίδες</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:2px;margin-top:18px;background:#e2e8f0;padding:2px">
+            <a href="https://ekklesia.gr/wiki/security.html" style="padding:18px;background:#fff;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <span style="font-size:15px;font-weight:800;color:#0f172a">Ασφάλεια</span><i data-lucide="arrow-right" style="width:16px;height:16px;color:#2563eb;flex:none"></i>
+            </a>
+            <a href="https://ekklesia.gr/wiki/api.html" style="padding:18px;background:#fff;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <span style="font-size:15px;font-weight:800;color:#0f172a" lang="en">API</span><i data-lucide="arrow-right" style="width:16px;height:16px;color:#2563eb;flex:none"></i>
+            </a>
+            <a href="https://ekklesia.gr/wiki/database.html" style="padding:18px;background:#fff;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:10px">
+              <span style="font-size:15px;font-weight:800;color:#0f172a" lang="en">Database</span><i data-lucide="arrow-right" style="width:16px;height:16px;color:#2563eb;flex:none"></i>
+            </a>
+          </div>
+        </article>
+
+        <aside data-wiki-toc style="padding:28px 0 48px 24px;min-width:0;position:sticky;top:104px">
+          <div style="font-size:11px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#0f172a;padding-bottom:12px;border-bottom:2px solid #0f172a">Σε αυτή τη σελίδα</div>
+          <div style="display:flex;flex-direction:column;gap:0;margin-top:12px">
+            <a href="#" onClick="{{ noop }}" style="padding:9px 0;font-size:13px;font-weight:800;color:#1d4ed8;line-height:1.4;border-bottom:2px solid #f1f5f9"><span lang="en">Monorepo</span> Δομή</a>
+            <a href="#" onClick="{{ noop }}" style="padding:9px 0;font-size:13px;font-weight:400;color:#475569;line-height:1.4;border-bottom:2px solid #f1f5f9"><span lang="en">Stack</span></a>
+            <a href="#" onClick="{{ noop }}" style="padding:9px 0;font-size:13px;font-weight:400;color:#475569;line-height:1.4;border-bottom:2px solid #f1f5f9"><span lang="en">Verified Autonomous Recovery</span></a>
+            <a href="#" onClick="{{ noop }}" style="padding:9px 0;font-size:13px;font-weight:400;color:#475569;line-height:1.4;border-bottom:2px solid #f1f5f9"><span lang="en">Bill Lifecycle</span></a>
+            <a href="#" onClick="{{ noop }}" style="padding:9px 0;font-size:13px;font-weight:400;color:#475569;line-height:1.4;border-bottom:2px solid #f1f5f9">Αρχιτεκτονική Επαλήθευσης</a>
+            <a href="#" onClick="{{ noop }}" style="padding:9px 0;font-size:13px;font-weight:400;color:#475569;line-height:1.4;border-bottom:2px solid #f1f5f9"><span lang="en">Vote Scope</span></a>
+            <a href="#" onClick="{{ noop }}" style="padding:9px 0;font-size:13px;font-weight:400;color:#475569;line-height:1.4">Σχετικές σελίδες</a>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </div>
+  </sc-if>
+
+  <section style="border-bottom:2px solid #0f172a;background:#f8fafc">
+    <div style="max-width:1320px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0">
+      <div style="padding:44px 40px 44px 0;border-right:2px solid #e2e8f0;min-width:0">
+        <h2 style="margin:0;font-size:clamp(24px,2.4vw,32px);font-weight:900;letter-spacing:-0.02em;color:#0f172a;line-height:1.05">Ενημέρωση</h2>
+        <p style="margin:12px 0 0;font-size:15px;line-height:1.6;color:#64748b;max-width:44ch">Λάβετε ενημερώσεις για νέες ψηφοφορίες και αποτελέσματα.</p>
+        <div style="margin-top:26px;border-top:2px solid #e2e8f0;padding-top:20px">
+          <div style="font-size:11px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#64748b">Συχνότητα</div>
+          <div style="display:flex;gap:26px;flex-wrap:wrap;margin-top:6px">
+            <label style="display:flex;align-items:center;gap:9px;min-height:44px;cursor:pointer">
+            <input type="radio" name="freq" value="weekly" defaultChecked="{{ true }}" style="width:18px;height:18px;accent-color:#2563eb;flex:none;margin:0">
+            <span style="font-size:15px;font-weight:700;color:#0f172a">Εβδομαδιαίο</span>
+          </label>
+            <label style="display:flex;align-items:center;gap:9px;min-height:44px;cursor:pointer">
+            <input type="radio" name="freq" value="monthly" style="width:18px;height:18px;accent-color:#2563eb;flex:none;margin:0">
+            <span style="font-size:15px;font-weight:700;color:#0f172a">Μηνιαίο</span>
+          </label>
+          </div>
+        </div>
+        <div style="margin-top:18px;border-top:2px solid #e2e8f0;padding-top:20px">
+          <div style="font-size:11px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#64748b">Θέματα</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 22px;margin-top:6px">
+            <label style="display:flex;align-items:center;gap:9px;min-height:44px;cursor:pointer">
+            <input type="checkbox" defaultChecked="{{ true }}" style="width:18px;height:18px;accent-color:#2563eb;flex:none;margin:0">
+            <span style="font-size:15px;color:#334155">Ψηφοφορίες</span>
+          </label>
+            <label style="display:flex;align-items:center;gap:9px;min-height:44px;cursor:pointer">
+            <input type="checkbox" defaultChecked="{{ true }}" style="width:18px;height:18px;accent-color:#2563eb;flex:none;margin:0">
+            <span style="font-size:15px;color:#334155">Αποτελέσματα</span>
+          </label>
+            <label style="display:flex;align-items:center;gap:9px;min-height:44px;cursor:pointer">
+            <input type="checkbox" style="width:18px;height:18px;accent-color:#2563eb;flex:none;margin:0">
+            <span style="font-size:15px;color:#334155">Νέες Προτάσεις</span>
+          </label>
+            <label style="display:flex;align-items:center;gap:9px;min-height:44px;cursor:pointer">
+            <input type="checkbox" style="width:18px;height:18px;accent-color:#2563eb;flex:none;margin:0">
+            <span style="font-size:15px;color:#334155">Σύστημα</span>
+          </label>
+            <label style="display:flex;align-items:center;gap:9px;min-height:44px;cursor:pointer">
+            <input type="checkbox" style="width:18px;height:18px;accent-color:#2563eb;flex:none;margin:0">
+            <span style="font-size:15px;color:#334155">Ειδήσεις</span>
+          </label>
+          </div>
+        </div>
+        <div style="display:flex;gap:0;margin-top:22px;flex-wrap:wrap">
+          <input type="email" placeholder="email@example.com" style="flex:1 1 220px;min-width:0;border:2px solid #0f172a;border-right:0;padding:14px 16px;font-family:'Archivo',sans-serif;font-size:15px;color:#0f172a;background:#fff;border-radius:0">
+          <button type="button" style="border:2px solid #0f172a;background:#2563eb;color:#fff;font-family:'Archivo',sans-serif;font-size:13px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;padding:14px 22px;min-height:48px;cursor:pointer;border-radius:0">Εγγραφή</button>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;margin-top:12px">
+          <i data-lucide="lock" style="width:15px;height:15px;color:#64748b;flex:none;margin-top:2px"></i>
+          <span style="font-size:12px;line-height:1.5;color:#64748b"><span lang="en">Double opt-in · GDPR</span> · Θα λάβετε email επιβεβαίωσης</span>
+        </div>
+      </div>
+      <div style="padding:44px 0 44px 40px;min-width:0">
+        <h2 style="margin:0;font-size:clamp(24px,2.4vw,32px);font-weight:900;letter-spacing:-0.02em;color:#0f172a;line-height:1.05">Επικοινωνία &amp; Tickets</h2>
+        <p style="margin:12px 0 20px;font-size:15px;line-height:1.6;color:#64748b;max-width:46ch">Κανένα email · Κανένα προσωπικό δεδομένο · Η κοινότητα αποφασίζει</p>
+        <div style="display:flex;gap:14px;border-left:4px solid #2563eb;padding:14px 0 14px 16px;background:#fff">
+          <i data-lucide="shield-alert" style="width:20px;height:20px;color:#2563eb;flex:none;margin-top:1px"></i>
+          <p style="margin:0;font-size:14px;line-height:1.55;color:#334155;max-width:52ch"><strong style="color:#0f172a">ΠΟΤΕ</strong> πραγματικό όνομα — το ticket συνδέεται με τον δημόσιο κλειδί σας.</p>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:22px">
+          <a href="https://ekklesia.gr/tickets/index.html" style="display:inline-flex;align-items:center;gap:8px;border:2px solid #0f172a;color:#0f172a;font-size:13px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;padding:13px 18px" lang="en">POLIS Ticket Board</a>
+          <a href="https://github.com/NeaBouli/pnyx-community/issues/new" style="display:inline-flex;align-items:center;gap:8px;border:2px solid #0f172a;color:#0f172a;font-size:13px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;padding:13px 18px" lang="en">GitHub Issues</a>
+        </div>
+        <div style="margin-top:20px;border-top:2px solid #e2e8f0;padding-top:16px;font-size:13px;line-height:1.55;color:#64748b;max-width:56ch">Σχεδιασμός <span lang="en">Alpha 0.1</span> για μελλοντική επαλήθευση gov.gr — δεν είναι ενεργό στη <span lang="en">Beta</span>. <a href="https://ekklesia.gr/govgr-dimos.html" style="font-weight:800;color:#1d4ed8">Περισσότερα</a></div>
+        <div style="margin-top:10px;font-size:12px;color:#64748b"><span lang="en">Backend: GitHub Issues · Auth: Cloudflare Worker · Open Source</span></div>
+      </div>
+    </div>
+  </section>
+
+  <a href="#" onClick="{{ noop }}" style="position:fixed;right:24px;bottom:24px;z-index:60;display:inline-flex;align-items:center;gap:10px;background:#0f172a;color:#fff;border:2px solid #0f172a;min-height:52px;padding:0 20px;font-size:13px;font-weight:800;letter-spacing:0.04em">
+    <i data-lucide="message-circle" style="width:18px;height:18px"></i>Ρωτήστε την εκκλησία
+  </a>
+
+  <footer style="background:#0f172a;color:#cbd5e1">
+    <div style="max-width:1320px;margin:0 auto;padding:48px 24px 28px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:32px">
+      <div style="min-width:0">
+        <div style="display:flex;align-items:center;gap:12px">
+          <img src="assets/ekklesia-mark-white.png" alt="εκκλησία" style="height:46px;width:auto;display:block">
+          <span style="font-size:20px;font-weight:900;color:#fff;letter-spacing:-0.02em">εκκλησία</span>
+        </div>
+        <p style="margin:16px 0 0;font-size:13px;line-height:1.6;color:#cbd5e1;max-width:34ch">Μη κρατική πλατφόρμα · Ψηφοφορίες χωρίς νομική δέσμευση · Πρωτοβουλία πολιτών</p>
+      </div>
+      <div style="min-width:0">
+        <div style="font-size:11px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:14px">Πλατφόρμα</div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <a href="https://ekklesia.gr/el/bills" style="font-size:14px;color:#e2e8f0">Τρέχουσες</a>
+          <a href="https://ekklesia.gr/el/bills?status=WINDOW_24H" style="font-size:14px;color:#e2e8f0">24 Ώρες</a>
+          <a href="https://ekklesia.gr/el/results" style="font-size:14px;color:#e2e8f0">Αποτελέσματα</a>
+          <a href="https://pnyx.ekklesia.gr" style="font-size:14px;color:#e2e8f0">Forum — Πνύκα</a>
+        </div>
+      </div>
+      <div style="min-width:0">
+        <div style="font-size:11px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:14px">Τεκμηρίωση</div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <a href="https://ekklesia.gr/wiki/architecture.html" style="font-size:14px;color:#e2e8f0">Αρχιτεκτονική</a>
+          <a href="https://ekklesia.gr/wiki/security.html" style="font-size:14px;color:#e2e8f0">Ασφάλεια</a>
+          <a href="https://ekklesia.gr/wiki/api.html" style="font-size:14px;color:#e2e8f0">API</a>
+          <a href="https://ekklesia.gr/wiki/privacy.html" style="font-size:14px;color:#e2e8f0">Ιδιωτικότητα</a>
+          <a href="https://ekklesia.gr/wiki/roadmap.html" style="font-size:14px;color:#e2e8f0">Roadmap</a>
+          <a href="https://ekklesia.gr/wiki/faq.html" style="font-size:14px;color:#e2e8f0">FAQ</a>
+        </div>
+      </div>
+      <div style="min-width:0">
+        <div style="font-size:11px;font-weight:900;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:14px">Κοινότητα</div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <a href="https://ekklesia.gr/community.html" style="font-size:14px;color:#e2e8f0">Community</a>
+          <a href="https://ekklesia.gr/municipality/" style="font-size:14px;color:#e2e8f0">Δήμος</a>
+          <a href="https://ekklesia.gr/representative.html" style="font-size:14px;color:#e2e8f0">εκπρόσωπος</a>
+          <a href="https://github.com/NeaBouli/pnyx" style="font-size:14px;color:#e2e8f0">GitHub</a>
+          <a href="https://ekklesia.gr/legal.html" style="font-size:14px;color:#e2e8f0">Στοιχεία Φορέα</a>
+        </div>
+      </div>
+    </div>
+    <div style="border-top:2px solid #334155">
+      <div style="max-width:1320px;margin:0 auto;padding:18px 24px;font-size:12px;color:#94a3b8;display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between">
+        <span>εκκλησία · © 2026 V-Labs IT Solutions &amp; Development · MIT License</span>
+        <span>Ανεξάρτητη πρωτοβουλία πολιτών</span>
+      </div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;bills&quot;,&quot;download&quot;,&quot;wiki&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Seiten&quot;},&quot;representativeness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:0,&quot;max&quot;:100,&quot;step&quot;:1,&quot;default&quot;:0,&quot;unit&quot;:&quot;%&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Live-Daten&quot;},&quot;showQuote&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Inhalt&quot;}}">
+class Component extends DCLogic {
+  state = { screen: null };
+  get screen() { return this.state.screen || this.props.screen || "home"; }
+  icons() { if (window.lucide) window.lucide.createIcons(); }
+  componentDidMount() { this.icons(); setTimeout(() => this.icons(), 400); setTimeout(() => this.icons(), 1200); }
+  componentDidUpdate() { this.icons(); }
+  nav(screen) {
+    return (e) => { if (e) e.preventDefault(); this.setState({ screen }); window.scrollTo(0, 0); };
+  }
+  renderVals() {
+    const s = this.screen;
+    const r = this.props.representativeness;
+    const has = typeof r === "number" && r > 0;
+    const mood = !has ? "neutral" : r >= 50 ? "happy" : r >= 45 ? "neutral" : "sad";
+    const moodText = !has
+      ? "Αναμονή πραγματικών δεδομένων. Ο δείκτης ενεργοποιείται με την πρώτη ολοκληρωμένη ψηφοφορία."
+      : mood === "happy"
+        ? "Η Βουλή αντιπροσωπεύει τη γνώμη των πολιτών στο " + r + "%."
+        : mood === "neutral"
+          ? "Οριακή αντιπροσωπευτικότητα: " + r + "%."
+          : "Η Βουλή αποκλίνει από τη γνώμη των πολιτών: " + r + "%.";
+    return {
+      moodHappy: mood === "happy",
+      moodNeutral: mood === "neutral",
+      moodSad: mood === "sad",
+      moodText,
+      isHome: s === "home",
+      isBills: s === "bills",
+      isDownload: s === "download",
+      isWiki: s === "wiki",
+      goWiki: this.nav("wiki"),
+      showQuote: this.props.showQuote ?? true,
+      goHome: this.nav("home"),
+      goBills: this.nav("bills"),
+      goDownload: this.nav("download"),
+      noop: (e) => e && e.preventDefault(),
+      tabCurrent: (e) => e && e.preventDefault(),
+      tabWindow: (e) => e && e.preventDefault(),
+      tabResults: (e) => e && e.preventDefault()
+    };
+  }
+}
+</script>
+</body>
+</html>

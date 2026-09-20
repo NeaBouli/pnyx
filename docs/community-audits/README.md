@@ -39,3 +39,6 @@ Headline results:
 
 Reports are immutable once pinned; follow-up audits get new dates and continue the
 register (next: `EKA-65`).
+
+The catalog-only remediation sequence and redesign dependency gates are tracked
+in [`docs/planning/EKA_REMEDIATION_AND_REDESIGN_PLAN_2026-09-19.md`](../planning/EKA_REMEDIATION_AND_REDESIGN_PLAN_2026-09-19.md).

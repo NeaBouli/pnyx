@@ -1,5 +1,65 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-09-20 - Independent Catalog and R0/R1 Review
+
+- Claude Code completed a read-only review of the full PR #323 and stacked PR
+  #332 diffs. It found no blocking correctness, security, privacy,
+  accessibility or regression issue and changed no file.
+- The review confirmed the 13-file design handoff remains reference-only and
+  outside runtime/build paths, the 64-entry EKA register is coherent, the R0
+  inventory is fail-closed and deterministic, and the R1 foundation preserves
+  its isolation and CSP/accessibility constraints.
+- One non-blocking but real typo was verified in the authoritative checkpoint:
+  its baseline commit omitted one hexadecimal character and did not resolve.
+  The report now uses the already-referenced valid 40-character commit ID.
+- An older append-only bridge entry still reports the then-current 34-test
+  count; the newer resolver entry correctly records the current 37-test suite.
+  Historical bridge text was not rewritten.
+
+## 2026-09-20 - Audit/Redesign Catalog Integration Readiness Review
+
+- Sol completed the deferred read-only review of PR #323 after Kimi returned a
+  weekly-quota `403` before reading or changing the repository. The branch is
+  exactly 12 commits ahead of and zero commits behind `main`; all existing CI
+  and Security jobs pass and the PR is mergeable.
+- The imported 13-file design archive matches the owner's ZIP SHA-256 and file
+  count. It remains outside `docs/`, has no application/build/workflow
+  reference and is explicitly classified as reference-only; its prototype
+  CDN/dynamic-code behavior cannot enter the current runtime implicitly.
+- Gitleaks found no secret in the branch. The 64-item EKA register, status,
+  TODO, plan, issue #318 and rollout receipts are coherent except for one stale
+  EKA-17 checkbox/text in the master report. That entry and the TODO summary
+  were corrected to the already verified closed state; no other status or
+  application content changed.
+- PR #323 may move to external review after this documentation correction and
+  fresh checks. PR #332 remains stacked and must absorb this parent commit
+  before its own integration gate.
+
+## 2026-09-20 - EKA-17 HLR Environment Migration Completed
+
+- PR #331 remains the reviewed source authority at
+  `c18b75ffb616655a4b308bf7f314dc2f48472628`. Production received only its
+  `packages/crypto/hlr.py` runtime file as an overlay on the exact previously
+  running API image; the deployed file SHA-256 is
+  `74f982b192356bdae65d55be389a6708c7be183adab673e04492b7054fccf5b5`.
+- The complete legacy primary credential pair was copied atomically to the
+  canonical `HLRLOOKUP_*` names without printing values. Legacy aliases remain
+  temporarily for rollback compatibility; the separate `HLRLOOKUPS_*` fallback
+  pair is unchanged. Host-file and container values were equal before and after
+  the migration.
+- Only `ekklesia-api` was recreated. The candidate image is
+  `ekklesia-api:eka17-c18b75f-20260920T133207Z`; the exact prior image remains
+  tagged `ekklesia-api:rollback-pre-eka17-20260920T133207Z`, and the original
+  environment file is retained in the protected release directory.
+- Five repeated health probes, live credential-resolution checks, public HLR
+  status, container state and logs passed. The API has zero restarts, was not
+  OOM-killed, no non-target container changed and HLR usage counters were
+  identical before and after. No real number lookup or provider request ran.
+- No database, DNS, IAM, Web, Dashboard, forum, store, payment or other service
+  changed. EKA-17 is closed on source, rollout and live acceptance evidence.
+
+Details: [EKA-17 release receipt](docs/operations/EKA17_HLR_ENV_ROLLOUT_2026-09-20.md).
+
 ## 2026-09-06 - Android v1.0.32 API/Web Rollout Completed
 
 - PR #294 merged normally as
@@ -516,3 +576,250 @@
   Automatic event-producer coverage, Xiaomi/emulator acceptance and protected
   API rollout gates remain open. GH290 is not complete. No production,
   payment, HLR request, vote, message or security-suppression change occurred.
+
+## 2026-09-19 - EKA Audit and Redesign Intake (Append-only)
+
+- Started from clean `origin/main` at
+  `6a8ed73a04e029d8d8d6525c0ccdd31f487ec684` in the isolated branch
+  `docs/audit-redesign-catalog-20260919`; active fix branches were not touched.
+- Reconciled the merged EKA audit reports, consolidated PDF, issue #318 and the
+  helper handoff. The audit remains 64 findings: 0 Critical, 1 High, 21 Medium,
+  27 Low and 15 Informational. No unchecked finding was marked fixed.
+- Independently verified PR #319 as the green EKA-02 candidate and PR #320 as
+  the green EKA-32 candidate. #319 has a completed CodeRabbit review with no
+  actionable comments. #320 has green CI/Security but CodeRabbit was
+  rate-limited, so independent review remains a gate. No merge occurred.
+- Verified that GitHub Actions is not currently quota-blocked: the latest
+  sampled 30 runs were successful, with no queued, in-progress or failed run.
+  The observed review warning is CodeRabbit-specific.
+- Imported the supplied redesign handoff unchanged to
+  `design/handoffs/ekklesia-redesign-2026-09-16/source/`, outside the public
+  `docs/` web root. Archive SHA-256:
+  `8e41f707ba410cfd2f982ebdb68b31dfc78fafe0c40283a3b373780ba498c742`.
+  The prototype remains reference-only and is not production code.
+- Catalogued every EKA ID exactly once, defined bounded task ownership and
+  froze the redesign behind canonical-content, CSP/privacy, release-fact,
+  accessibility and parity gates in
+  `docs/planning/EKA_REMEDIATION_AND_REDESIGN_PLAN_2026-09-19.md`.
+- Execution mode is bounded task blocks with target stop. Kimi receives only a
+  disjoint review after its announced quota reset; no repeated quota polling or
+  duplicate analysis is permitted.
+- No application code, public page, database, DNS, secret, IAM, provider,
+  production service, store listing or deployment was changed.
+
+## 2026-09-19 - Complete Project Status Checkpoint (Append-only)
+
+- Added the authoritative public checkpoint
+  `docs/reports/EKKLESIA_MASTER_PROJECT_STATUS_2026-09-19.md`. It inventories
+  the live V1 baseline, release channels, data-quality work, Mobile, Web,
+  Dashboard, Forum/SSO, mail, AI, dependency security, all 64 EKA findings,
+  all 18 open pull requests, all 17 open issues, the redesign and future gated
+  programs.
+- Fresh public probes returned HTTP 200 for the landing page, bills, results,
+  community, wiki, roadmap, legal page, API health, dashboard login, forum and
+  technical mirror. All three public mirrors were online. The API reported
+  `1.0.32` / version code `61` with no forced update.
+- Reconciled current distribution facts: GitHub Direct APK/AAB v1.0.32 remain
+  checksum-verified; Google Play Closed Testing is active but its 12-tester and
+  14-day production gate is incomplete; F-Droid publicly offers v1.0.32 ABI
+  builds 611-614 with 614 suggested. Greek F-Droid presentation remains open.
+- The EKA register remains 64 findings: 0 Critical, 1 High, 21 Medium, 27 Low
+  and 15 Informational. PR #319 and PR #320 remain candidates, not completed
+  remediation. No finding was closed by writing the checkpoint.
+- Five Dependabot alerts remain visible and externally gated where no safe
+  compatible patch exists. GitHub Actions is healthy; the earlier allowance
+  warning was CodeRabbit-specific.
+- Sensitive Play, tracker and finance/operator evidence is retained only in the
+  local gitignored supplement
+  `docs/agent-bridge/EKKLESIA_MASTER_PROJECT_STATUS_PRIVATE_2026-09-19.md`.
+- This was a documentation-only checkpoint. No application code, merge,
+  deployment, database, DNS, secret, IAM, provider, payment, store or production
+  mutation occurred.
+
+## 2026-09-19 - EKA-02 Closure and EKA-32 Integration Delta (Append-only)
+
+- EKA-02: PR #319 merged normally as `a375d2d`; post-merge CI/Security passed.
+  The separately authorized bounded Representative Web overlay and live
+  hostile-payload acceptance passed, and issue #318 now marks EKA-02 closed.
+- EKA-32: PR #320 merged normally as `942e063`. CodeRabbit's two valid findings
+  were fixed in `3e763ed`: forwarded client addresses are accepted only from
+  configured trusted proxy CIDRs, and documentation now distinguishes shared
+  Redis coordination from bounded per-process memory fallback.
+- EKA-32 verification: focused Redis path `27 passed`; full local API suite
+  `1019 passed, 2 skipped, 25 xfailed`; diff/compile/scoped-secret checks passed.
+  All PR checks and post-merge main CI run `35460470030` plus Security run
+  `35460470044` passed.
+- Kimi's fresh final review attempt was blocked by its external 5-hour quota and
+  changed no files. The final delta received the documented Claude/Sol fallback
+  review; CodeRabbit's resolved threads provide the original finding evidence.
+- No EKA-32 API rollout or other production, database, DNS, secret, IAM,
+  provider, payment or store mutation occurred. EKA-32 remains open in #318
+  until separately authorized live acceptance.
+
+## 2026-09-19 - EKA-04 Newsletter Abuse Protection Integration (Append-only)
+
+- PR #325 merged normally as `760845a` without admin bypass. The bounded change
+  adds fixed-window limits of 10 attempted DOI emails per source IP/hour and
+  three per normalized email/day before token storage or provider calls.
+- Rate-limit keys and successful subscription logs use opaque HMAC-derived
+  references; plaintext subscriber email addresses are no longer written by
+  the successful subscribe path. Validation, confirmed-subscriber behavior,
+  double opt-in, pending-token payloads and Reply-To policy remain unchanged.
+- Verification passed: focused tests `85 passed, 5 skipped`; an isolated real
+  Redis run `17 passed`; the full API suite `1044 passed, 4 skipped, 25 xfailed,
+  4 subtests passed`; diff, compile and gitleaks checks also passed.
+- Kimi implemented the bounded change under Sol review. Claude and CodeRabbit
+  independently reported no blocking or actionable finding. Post-merge main CI
+  run `35468720523` and Security run `35468720502` passed completely.
+- Evidence is recorded in issue #318 and PR #325. No API rollout, real email,
+  database, DNS, secret, IAM, provider, payment or store mutation occurred.
+  EKA-04 remains open until a separately authorized API rollout and live
+  acceptance verify the production behavior.
+
+## 2026-09-19 - EKA-03 Nullifier Action Proof Integration (Append-only)
+
+- PR #326 merged normally as `5f850e2` without admin bypass. Bill flags now
+  require an ACTIVE-identity Ed25519 proof over a domain-separated,
+  timestamp-bound payload; vote-status reads have an equivalent signed POST
+  contract without URL nullifiers, mirror fallback or unsigned mobile fallback.
+- The released Android v1.0.32 legacy GET contract remains available behind the
+  reversible `VOTE_STATUS_REQUIRE_SIGNED` gate. Unset and explicit false values
+  preserve compatibility; invalid non-empty values log an operator error and
+  fail closed by requiring signed reads.
+- CodeRabbit's three actionable findings were fixed in `bc85e0a`: only
+  PostgreSQL unique-violation SQLSTATE `23505` maps to duplicate-flag HTTP 409,
+  invalid cutoff values fail closed, and a vote-status read failure no longer
+  prevents subsequent ZK initialization. All review threads are resolved.
+- Verification passed: focused review-fix API/CORS tests `88 passed`; full API
+  suite `1128 passed, 4 skipped, 25 xfailed, 4 subtests passed`; Mobile `322`
+  tests; dependency security regressions `7 + 4`; TypeScript, Expo dependency,
+  compile, diff and staged gitleaks checks passed.
+- All PR gates passed. Post-merge main CI run `35474984491` and Security run
+  `35474984508` passed completely on merge commit `5f850e2`.
+- Kimi implemented the bounded source change under Sol review. Its final
+  follow-up and Claude's follow-up were externally quota-limited after the
+  CodeRabbit fixes; the final delta received the documented Sol review. No
+  agent limitation weakened CI or review-thread requirements.
+- Evidence is recorded in issue #318 and PR #326. No API rollout, Android
+  build/release, database, DNS, secret, IAM, provider, payment, store or other
+  production mutation occurred. EKA-03 remains open until the separately
+  authorized API rollout, compatible Android release/adoption, cutoff and live
+  acceptance sequence completes.
+
+## 2026-09-20 - EKA-05 Push Registration Authentication Integration (Append-only)
+
+- PR #327 merged normally as `9f52c95` without admin bypass. Push registration
+  now requires a fresh domain-separated Ed25519 proof from an ACTIVE identity;
+  the unauthenticated server fallback was removed.
+- Mobile uses a cryptographically random per-install UUIDv4 and signs the exact
+  canonical registration payload. The local refresh marker is bound to the
+  identity material and cleared with the keys. F-Droid remains free of native
+  push registration requirements.
+- Server storage uses stable HMAC-derived Redis keys, a 90-day TTL and bounded
+  IP/identity limits. Same-value refreshes do not consume identity quota, and
+  sends deduplicate legacy plus signed token entries during the transition.
+- CodeRabbit's two valid findings were fixed in `d7f15d4`: `timestamp_ms` now
+  rejects coerced JSON strings, and token validation rejects trailing data via
+  full matching. Both threads are resolved. Claude reported no blocker; Kimi
+  implemented the bounded subsystem under Sol review.
+- Verification passed: focused API registration tests `48 passed`; full API
+  suite `1174 passed, 4 skipped, 25 xfailed, 4 subtests passed`; Mobile `336`
+  tests; dependency security regressions `7 + 4`; TypeScript, Expo dependency,
+  YAML security, npm audit, compile, diff and gitleaks checks passed.
+- All PR gates passed. Post-merge main CI run `35499471240` and Security run
+  `35499471252` passed completely on merge commit `9f52c95`.
+- Evidence is recorded in issue #318 and PR #327. No API rollout, Mobile
+  build/release, database, DNS, secret, IAM, provider, payment, store or other
+  production mutation occurred. EKA-05 remains open until the separately
+  authorized API rollout, compatible Mobile release/adoption and live
+  acceptance sequence completes.
+
+## 2026-09-20 - EKA-06 HLR Cost Protection Integration (Append-only)
+
+- PR #328 merged normally as `0ce4b31` without admin bypass. Invalid Greek
+  mobile formats are rejected locally before Redis or a paid provider call.
+  Valid attempts are bounded by per-IP minute/day and HMAC-number cooldown/day
+  limits, with all four checks and mutations performed atomically in one Redis
+  Lua transaction. Redis failure blocks the paid lookup.
+- The public HLR status now exposes only coarse availability states. Exact
+  balances, usage, provider labels, costs and failover reason remain available
+  only through the existing authenticated admin route and dashboard proxy.
+- CodeRabbit identified two valid findings: IP-rejected attempts could consume
+  number quota, and Finance used two stale response fields. Commit `8c8f8e2`
+  made the Redis operation atomic, added the no-partial-mutation regression and
+  aligned Finance with `initial` and `cost_per_query_eur`. Kimi reviewed the
+  bounded change under Sol integration control.
+- Verification passed: focused API tests `67 passed`; dashboard typecheck and
+  production build; Python compile and diff checks. All PR checks passed.
+  Post-merge main CI run `35503903428` and Security run `35503903422` passed
+  completely on merge commit `0ce4b31`.
+- Evidence is recorded in issue #318 and PR #328. No API/dashboard rollout,
+  paid HLR lookup, database, DNS, secret, IAM, provider, payment, store or other
+  production mutation occurred. EKA-06 remains open until a separately
+  authorized bounded rollout and live acceptance complete.
+
+## 2026-09-20 - EKA-09 Brevo Webhook Authentication Integration (Append-only)
+
+- PR #329 merged normally as `1a49d47` without admin bypass. The Brevo event
+  webhook now requires a dedicated bearer credential before request-body
+  parsing or Redis access. Missing runtime configuration fails closed with
+  503; missing, malformed or wrong credentials return 401 with zero Redis
+  mutations.
+- Accepted single and batched event semantics remain unchanged. Post-auth
+  processing failures return a fixed public error instead of internal
+  exception details. Token material is never logged or returned.
+- Verification passed: focused tests `19 passed`; newsletter/webhook sweep
+  `126 passed, 5 skipped`; Python compile, diff and staged Gitleaks checks.
+  CodeRabbit produced no actionable finding. All PR checks passed. Post-merge
+  main CI run `35506581566` and Security run `35506581521` passed completely.
+- Evidence is recorded in issue #318 and PR #329. No API rollout, Brevo
+  configuration, secret, provider, database, DNS, IAM, payment, store or other
+  production mutation occurred. EKA-09 remains open until matching out-of-band
+  API/Brevo token configuration, a separately authorized bounded API rollout
+  and live acceptance complete.
+
+## 2026-09-20 - EKA-16 Application-Log Privacy Integration (Append-only)
+
+- PR #330 merged normally as `641721d` without admin bypass. Contact success
+  logs no longer contain name or organisation, and Brevo/Listmonk failure logs
+  no longer include response bodies that can echo submitted personal data.
+- Existing privacy-safe `ipref` and `emailref` correlation and provider status
+  codes remain. Outbound delivery payloads, consent, rate limits and public
+  error contracts are unchanged.
+- Seven sentinel-PII regressions and the focused privacy/newsletter sweep passed
+  (`115 passed, 5 skipped`). The complete local API suite passed 1,208 tests;
+  only the three known localhost-Redis cases failed locally. GitHub's
+  Redis-backed API job and all other PR checks passed.
+- Kimi implemented the bounded patch under Sol review. A fresh Kimi fallback
+  security review approved it; both low test-quality notes were fixed before
+  commit. Claude was externally token-limited. CodeRabbit was rate-limited and
+  produced no finding; no required gate was bypassed.
+- Post-merge main CI run `35509282967` and Security run `35509283003` passed
+  completely. Evidence is recorded in PR #330 and issue #318.
+- No API rollout, real contact/newsletter send, provider, secret, database, DNS,
+  IAM, payment, store or other production mutation occurred. EKA-16 remains
+  open until a separately authorized bounded API rollout and live log
+  acceptance complete.
+
+## 2026-09-20 - EKA-17 HLR Credential-Name Integration (Append-only)
+
+- PR #331 merged normally as `c18b75f` without admin bypass. The primary
+  hlrlookup.com provider now prefers a complete canonical `HLRLOOKUP_*` pair;
+  the historical complete `HLR_FALLBACK_*` pair remains a deprecated alias for
+  that same primary provider only. The actual hlr-lookups.com fallback remains
+  isolated on `HLRLOOKUPS_*`.
+- Partial canonical or legacy pairs fail closed, credentials are never mixed
+  across naming schemes, and secret values are not logged. Provider routing,
+  payload, billing, rate-limit and failover behavior did not change.
+- Kimi performed the bounded implementation and an independent review under Sol
+  control. Sol resolved every concrete review comment. CodeRabbit's valid
+  configuration-inventory finding was fixed before merge; its second pass was
+  externally rate-limited without weakening any required gate.
+- Local verification: HLR `36 passed`, complete Crypto `48 passed`, affected
+  API `88 passed, 1 xfailed`, full redacted Gitleaks scan clean. Post-merge main
+  CI `35512008384` and Security `35512008302` passed completely.
+- Public evidence: PR #331 and issue #318 comment
+  `https://github.com/NeaBouli/pnyx/issues/318#issuecomment-5749951203`.
+- No production environment, secret, provider, deployment, database, DNS, IAM,
+  payment or store mutation occurred. EKA-17 remains open until a separately
+  authorized environment migration and live acceptance.
