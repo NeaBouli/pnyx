@@ -95,10 +95,28 @@ class RealTreeTest(unittest.TestCase):
             self.assertEqual(first_report, checked_report, "checked-in report is stale")
             return
 
-        # R0 is the frozen pre-redesign baseline. The gated R2 landing and R3
-        # wiki pilot may diverge; their full semantic parity is enforced by the
-        # phase validators. Normalize those pages back to R0 and require every
-        # other page plus both artifacts to remain exact.
+        # R0 is the frozen pre-redesign baseline.  The gated R2 landing and all
+        # 14 R3 wiki pages may diverge; their full semantic parity is enforced
+        # by the phase validators.  Normalize those pages back to R0 and require
+        # every other page plus both artifacts to remain exact.
+        _WIKI_PAGES = {
+            "docs/wiki/index.html",
+            "docs/wiki/api.html",
+            "docs/wiki/architecture.html",
+            "docs/wiki/broadcasting.html",
+            "docs/wiki/contributing.html",
+            "docs/wiki/database.html",
+            "docs/wiki/delete-account.html",
+            "docs/wiki/faq.html",
+            "docs/wiki/modules.html",
+            "docs/wiki/privacy.html",
+            "docs/wiki/roadmap.html",
+            "docs/wiki/security.html",
+            "docs/wiki/whitepaper.html",
+            "docs/wiki/zk-voting.html",
+        }
+        _GATED_PAGES = {"docs/index.html"} | _WIKI_PAGES
+
         current = json.loads(first_inv)
         checked = json.loads(checked_inv)
         current_by_path = {page["path"]: page for page in current["pages"]}
@@ -107,10 +125,12 @@ class RealTreeTest(unittest.TestCase):
             path for path in checked_by_path
             if current_by_path.get(path) != checked_by_path[path]
         )
+        non_gated_differing = [p for p in differing if p not in _GATED_PAGES]
         self.assertEqual(
-            ["docs/index.html", "docs/wiki/index.html"],
-            differing,
-            "only the gated R2 landing and R3 wiki pilot may differ from R0",
+            [],
+            non_gated_differing,
+            "only the gated R2 landing and R3 wiki pages may differ from R0; "
+            f"unexpected diffs: {non_gated_differing}",
         )
 
         landing = (REPO_ROOT / "docs/index.html").read_text(encoding="utf-8")
@@ -121,17 +141,21 @@ class RealTreeTest(unittest.TestCase):
         ):
             self.assertIn(f'href="{href}"', landing, "unexpected landing drift outside the R2 gate")
 
-        wiki_pilot = (REPO_ROOT / "docs/wiki/index.html").read_text(encoding="utf-8")
-        for href in (
-            "../assets/redesign-v2/tokens.css",
-            "../assets/redesign-v2/foundation.css",
-            "../assets/redesign-v2/r3-wiki.css",
-        ):
-            self.assertIn(f'href="{href}"', wiki_pilot, "unexpected wiki drift outside the R3 gate")
+        for wiki_rel in _WIKI_PAGES:
+            wiki_page = (REPO_ROOT / wiki_rel).read_text(encoding="utf-8")
+            for href in (
+                "../assets/redesign-v2/tokens.css",
+                "../assets/redesign-v2/foundation.css",
+                "../assets/redesign-v2/r3-wiki.css",
+            ):
+                self.assertIn(
+                    f'href="{href}"', wiki_page,
+                    f"{wiki_rel}: R3 stylesheet missing — unexpected drift outside the R3 gate"
+                )
 
         normalized_pages = [
             checked_by_path[page["path"]]
-            if page["path"] in {"docs/index.html", "docs/wiki/index.html"}
+            if page["path"] in _GATED_PAGES
             else page
             for page in current["pages"]
         ]

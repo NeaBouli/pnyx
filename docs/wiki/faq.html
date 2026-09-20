@@ -160,10 +160,15 @@
     }
     @media (max-width: 640px) { .nav-links a { font-size: 0.75rem; padding: 0.22rem 0.45rem; } }
   </style>
+
+  <link rel="stylesheet" href="../assets/redesign-v2/tokens.css"/>
+  <link rel="stylesheet" href="../assets/redesign-v2/foundation.css"/>
+  <link rel="stylesheet" href="../assets/redesign-v2/r3-wiki.css"/>
 <script defer data-domain="ekklesia.gr" src="https://analytics.ekklesia.gr/js/script.js"></script>
 </head>
 <body>
-<nav>
+<a href="#main" class="pnx2-skip" data-el="Μετάβαση στο κύριο περιεχόμενο" data-en="Skip to main content">Μετάβαση στο κύριο περιεχόμενο</a>
+<nav class="pnx2-header">
   <a href="../" class="nav-logo"><img src="../pnx.png" alt="logo" style="width:40px;height:40px;object-fit:contain"/>εκκλησία<span style="font-size:0.55em;color:#9ca3af;font-weight:400;margin-left:0.35em;letter-spacing:0.05em">του έθνους</span></a>
   <div class="nav-links">
     <a href="../" data-el="Αρχική" data-en="Home">Αρχική</a>
@@ -185,6 +190,7 @@
     <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
   </div>
 </nav>
+<main id="main">
 <div class="hero" style="background:linear-gradient(135deg,#eff6ff,#fefce8)">
   <h1 data-el="Συχνές Ερωτήσεις" data-en="Frequently Asked Questions">Συχνές Ερωτήσεις</h1>
   <p data-el="Όλα όσα πρέπει να γνωρίζετε για την ekklesia.gr" data-en="Everything you need to know about ekklesia.gr">Όλα όσα πρέπει να γνωρίζετε για την ekklesia.gr</p>
@@ -502,7 +508,8 @@
 
 </div>
 
-<footer>
+</main>
+<footer class="pnx2-footer">
   <div class="footer-links">
     <a href="..//">Αρχική</a>
     <a href="../wiki/">Wiki</a>
