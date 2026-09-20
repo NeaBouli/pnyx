@@ -1,0 +1,64 @@
+/*
+ * redesign-v2 design tokens — docs/assets/redesign-v2/tokens.css
+ *
+ * Copied verbatim from design/redesign-v2/foundation/tokens.css (R1 source).
+ * R2 scope: docs/index.html only. Do not modify this file outside of an
+ * explicit redesign-phase gate.
+ *
+ * Font note: the handoff specifies Archivo (Google Fonts). No locally
+ * licensed Archivo build exists in this repository, so the foundation uses
+ * the documented system-font fallback below. The Archivo/CSP decision is an
+ * unresolved owner gate recorded in the handoff README — nothing is
+ * downloaded here.
+ */
+
+:root {
+  /* colors */
+  --pnx2-ink: #0f172a;
+  --pnx2-body: #334155;
+  --pnx2-body-soft: #475569;
+  --pnx2-muted: #64748b;
+  --pnx2-accent: #2563eb;
+  --pnx2-accent-dark: #1d4ed8;
+  --pnx2-border-strong: #0f172a;
+  --pnx2-border-mid: #e2e8f0;
+  --pnx2-border-weak: #f1f5f9;
+  --pnx2-border-gray: #cbd5e1;
+  --pnx2-bg: #ffffff;
+  --pnx2-bg-tinted: #f8fafc;
+  --pnx2-on-accent: #eff6ff;
+  --pnx2-on-accent-label: #bfdbfe;
+  --pnx2-on-ink: #cbd5e1;
+  --pnx2-on-ink-soft: #94a3b8;
+  --pnx2-on-ink-link: #e2e8f0;
+  --pnx2-selection: #dbeafe;
+
+  /* typography — system-font fallback (see header comment) */
+  --pnx2-font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --pnx2-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --pnx2-text-hero: 64px;
+  --pnx2-text-h2: 40px;
+  --pnx2-text-lead: 22px;
+  --pnx2-text-body: 16px;
+  --pnx2-text-small: 14px;
+  --pnx2-text-label: 12px;
+
+  /* spacing and layout */
+  --pnx2-content-max: 1320px;
+  --pnx2-content-pad: 24px;
+  --pnx2-section-pad: 56px;
+  --pnx2-band-pad: 44px;
+
+  /* borders — structure comes from borders only: radius 0, no shadows */
+  --pnx2-border-section: 2px solid var(--pnx2-border-strong);
+  --pnx2-border-column: 2px solid var(--pnx2-border-mid);
+  --pnx2-border-list: 2px solid var(--pnx2-border-weak);
+  --pnx2-accent-bar: 4px solid var(--pnx2-accent);
+  --pnx2-radius: 0;
+
+  /* interaction */
+  --pnx2-focus-outline: 2px solid var(--pnx2-accent);
+  --pnx2-focus-offset: 2px;
+  --pnx2-target-min: 44px;
+  --pnx2-button-height: 48px;
+}

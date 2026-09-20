@@ -1,0 +1,488 @@
+/*
+ * r2-landing.css — R2 redesign visual overrides for docs/index.html
+ *
+ * Loaded after tokens.css and foundation.css (all three are linked at the
+ * end of <head>). Additive CSS-first approach: no existing behaviour,
+ * content, IDs, event handlers, or JS-controlled inline styles are
+ * modified. !important is used only for purely visual properties (never on
+ * display, opacity, width, transform, left, borderColor that JS writes at
+ * runtime).
+ *
+ * Design system rules (from handoff README):
+ *   - Visible grid; 2px solid #0f172a section dividers
+ *   - Palette: ink / accent / white / bg-tinted
+ *   - border-radius: 0 everywhere; no shadows; no gradients
+ *   - Left-aligned typography; 44px minimum touch targets; 48px buttons
+ *   - System-font only (no Google Fonts or external CDN assets)
+ *
+ * Scope: docs/index.html ONLY (R2 phase). Remove before touching any other
+ * public HTML page — that requires a separate R3/R4/R5 gate.
+ */
+
+/* ====================================================================
+   1. LEGACY TOKEN BRIDGE
+   Kill old --radius / --shadow custom properties so all var() references
+   in the existing <style> blocks render with the new values without
+   needing every rule to carry !important.
+   ==================================================================== */
+:root {
+  --radius: 0;
+  --shadow: none;
+}
+
+/* ====================================================================
+   2. GLOBAL VISUAL RESETS
+   Universally enforce square corners and no shadows. !important is safe
+   here because border-radius and box-shadow are purely decorative and
+   never read back by JavaScript in this page.
+   ==================================================================== */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  letter-spacing: 0 !important;
+}
+
+/* drop-shadow filters on images: handoff mandates no shadows anywhere */
+img,
+svg {
+  filter: none !important;
+}
+
+/* Gradient backgrounds defined in the existing <style> blocks */
+.landing-hero,
+.hero,
+.demo-section {
+  background-image: none !important;
+}
+
+/* Safety net: inline style attributes that might carry linear-gradient */
+[style*="linear-gradient"] {
+  background-image: none !important;
+}
+
+/* ====================================================================
+   3. NAV → R2 HEADER
+   The nav already has position:sticky and z-index:100 from the inline
+   <style> block. We raise the floor to 86px, add the 2px ink divider,
+   strip the frosted-glass backdrop and switch to an opaque background.
+   z-index stays at 100 (existing value wins; we do not lower it).
+   ==================================================================== */
+nav.pnx2-header {
+  background: var(--pnx2-bg, #ffffff) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-bottom: 2px solid var(--pnx2-ink, #0f172a) !important;
+  min-height: 86px !important;
+  padding: 0 var(--pnx2-content-pad, 24px) !important;
+  align-items: center !important;
+}
+
+/* Nav link hover: no background pill, accent color only */
+.nav-links a:hover,
+.nav-links a.active {
+  background: transparent !important;
+  color: var(--pnx2-accent, #2563eb) !important;
+}
+
+/* Download link: keep accent fill but square corners (already handled above) */
+.nav-links a[href="#download"] {
+  background: var(--pnx2-accent, #2563eb) !important;
+  color: var(--pnx2-bg, #ffffff) !important;
+}
+
+/* Language toggle button: minimum 44px tap target */
+.lang-btn {
+  min-height: var(--pnx2-target-min, 44px) !important;
+  padding: 0 12px !important;
+  border: 2px solid var(--pnx2-border-mid, #e2e8f0) !important;
+}
+
+.lang-btn:hover {
+  border-color: var(--pnx2-accent, #2563eb) !important;
+  color: var(--pnx2-accent, #2563eb) !important;
+}
+
+/* ====================================================================
+   4. LANDING HERO
+   Replace the three-stop gradient with the tinted surface. The 2px ink
+   border-bottom makes the section edge explicit (handoff: section dividers).
+   ==================================================================== */
+.landing-hero {
+  background: var(--pnx2-bg, #ffffff) !important;
+  border-bottom: 2px solid var(--pnx2-ink, #0f172a);
+}
+
+.hero-inner {
+  max-width: var(--pnx2-content-max, 1320px) !important;
+  gap: 0 !important;
+  align-items: stretch !important;
+}
+
+.hero-left {
+  padding-right: 48px;
+  border-right: 2px solid var(--pnx2-border-mid, #e2e8f0);
+}
+
+.hero-right {
+  padding-left: 48px;
+  align-content: center;
+}
+
+.hero-left h1 {
+  font-size: 64px !important;
+  line-height: 1 !important;
+}
+
+.hero-subtitle {
+  color: var(--pnx2-accent, #2563eb) !important;
+  font-size: 48px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+/* Hero quote box: left accent bar, square, no background */
+.hero-quote {
+  background: var(--pnx2-bg, #ffffff) !important;
+  border-left: 4px solid var(--pnx2-accent, #2563eb) !important;
+}
+
+.hero-bottom {
+  max-width: var(--pnx2-content-max, 1320px) !important;
+  align-items: flex-start !important;
+}
+
+.cta-row,
+.hero-badges {
+  justify-content: flex-start !important;
+}
+
+/* Stat cards: explicit ink border instead of faint gray */
+.stat-card {
+  border: 2px solid var(--pnx2-border-mid, #e2e8f0) !important;
+}
+
+.stat-card:hover {
+  border-color: var(--pnx2-ink, #0f172a) !important;
+  transform: none !important;
+}
+
+/* Hero badge pills */
+.hero-badge,
+.beta-pill {
+  background: var(--pnx2-on-accent, #eff6ff) !important;
+  border: 1px solid var(--pnx2-border-mid, #e2e8f0) !important;
+}
+
+/* ====================================================================
+   5. CTA BUTTONS
+   Keep all existing href / onclick / data-* attributes. Override only
+   visual appearance. min-height 48px per the handoff.
+   ==================================================================== */
+.btn-primary {
+  background: var(--pnx2-accent, #2563eb) !important;
+  color: var(--pnx2-bg, #ffffff) !important;
+  border: 2px solid var(--pnx2-accent, #2563eb) !important;
+  min-height: 48px !important;
+}
+
+.btn-primary:hover {
+  background: var(--pnx2-accent-dark, #1d4ed8) !important;
+  border-color: var(--pnx2-accent-dark, #1d4ed8) !important;
+  transform: none !important;
+}
+
+.btn-secondary {
+  background: var(--pnx2-bg, #ffffff) !important;
+  color: var(--pnx2-accent, #2563eb) !important;
+  border: 2px solid var(--pnx2-accent, #2563eb) !important;
+  min-height: 48px !important;
+}
+
+.btn-secondary:hover {
+  background: var(--pnx2-on-accent, #eff6ff) !important;
+  transform: none !important;
+}
+
+/* Submit / form buttons */
+.btn-submit {
+  background: var(--pnx2-accent, #2563eb) !important;
+  min-height: 48px !important;
+}
+
+.btn-submit:hover {
+  background: var(--pnx2-accent-dark, #1d4ed8) !important;
+}
+
+/* ====================================================================
+   6. SECTIONS — 2px ink border-bottom on every major block
+   ==================================================================== */
+.section {
+  border-bottom: 2px solid var(--pnx2-ink, #0f172a);
+}
+
+.section-gray {
+  background: var(--pnx2-bg-tinted, #f8fafc) !important;
+}
+
+.section-inner,
+.layout-wide,
+.layout {
+  max-width: var(--pnx2-content-max, 1320px) !important;
+}
+
+.section-title,
+.section-sub,
+.demo-title,
+.demo-sub {
+  text-align: left !important;
+}
+
+.section-title,
+.demo-title {
+  font-size: 40px !important;
+  line-height: 1.1 !important;
+}
+
+.demo-section {
+  background: var(--pnx2-bg-tinted, #f8fafc) !important;
+  border-top: 2px solid var(--pnx2-ink, #0f172a) !important;
+  border-bottom: 2px solid var(--pnx2-ink, #0f172a) !important;
+}
+
+.ticker-section {
+  border-bottom: 2px solid var(--pnx2-ink, #0f172a);
+}
+
+/* Named sections without the .section class */
+#repSection,
+#cplmSection,
+#forum,
+#votes,
+#wiki-section,
+#roadmap,
+#contact,
+#download,
+#newsletter {
+  border-bottom: 2px solid var(--pnx2-ink, #0f172a);
+}
+
+/* Section h2 titles: ink border replaces the gray one */
+h2 {
+  border-bottom-color: var(--pnx2-ink, #0f172a) !important;
+  border-bottom-width: 2px !important;
+}
+
+/* ====================================================================
+   7. CARD AND COMPONENT BORDERS
+   Cards gain an ink border on hover instead of a colored shadow.
+   ==================================================================== */
+.card:hover,
+.feature-card:hover,
+.wiki-card:hover,
+.roadmap-card:hover {
+  border-color: var(--pnx2-ink, #0f172a) !important;
+  transform: none !important;
+}
+
+/* Gray-surface cards switch to bg-tinted */
+.card,
+.wiki-card,
+.t-card {
+  background: var(--pnx2-bg-tinted, #f8fafc) !important;
+}
+
+/* Feature cards stay white by default */
+.feature-card {
+  background: var(--pnx2-bg, #ffffff) !important;
+}
+
+/* Step cards: flat white, no shadow */
+.step {
+  background: var(--pnx2-bg, #ffffff) !important;
+  border: 2px solid var(--pnx2-border-mid, #e2e8f0);
+  text-align: left !important;
+}
+
+/* Step number: compact grid index, matching the visible-grid handoff. */
+.step-num {
+  background: transparent !important;
+  color: var(--pnx2-accent, #2563eb) !important;
+  width: auto !important;
+  height: auto !important;
+  justify-content: flex-start !important;
+  margin: 0 0 12px !important;
+  font-size: 13px !important;
+}
+
+/* Demo boxes: square corners already enforced globally */
+.demo-box.active {
+  background: var(--pnx2-on-accent, #eff6ff) !important;
+  border-color: var(--pnx2-accent, #2563eb) !important;
+  transform: none !important;
+}
+
+/* Flow nodes */
+.flow,
+.fnode {
+  background: var(--pnx2-bg-tinted, #f8fafc) !important;
+}
+
+/* Info/warn/success boxes: square, keep left bar accent */
+.info-box,
+.warn-box,
+.success-box {
+  border-radius: 0 !important;
+}
+
+/* t-more "see more" link button */
+.t-more {
+  background: var(--pnx2-on-accent, #eff6ff) !important;
+  border: 2px solid var(--pnx2-border-mid, #e2e8f0) !important;
+  color: var(--pnx2-accent-dark, #1d4ed8) !important;
+}
+
+.t-more:hover {
+  background: var(--pnx2-accent, #2563eb) !important;
+  border-color: var(--pnx2-accent, #2563eb) !important;
+  color: var(--pnx2-bg, #ffffff) !important;
+  transform: none !important;
+}
+
+/* ====================================================================
+   8. FOOTER → DARK INK
+   The footer element carries class="pnx2-footer" (added in HTML).
+   Explicit footer selector also included as fallback.
+   ==================================================================== */
+footer,
+footer.pnx2-footer {
+  background: var(--pnx2-ink, #0f172a) !important;
+  color: var(--pnx2-on-ink, #cbd5e1) !important;
+  margin-top: 0 !important;
+}
+
+footer a,
+footer a:visited {
+  color: var(--pnx2-on-ink-link, #e2e8f0) !important;
+}
+
+footer a:hover {
+  color: var(--pnx2-bg, #ffffff) !important;
+}
+
+footer p {
+  color: var(--pnx2-on-ink-soft, #94a3b8) !important;
+}
+
+/* ====================================================================
+   9. TYPOGRAPHY BASELINE
+   Body uses the pnx2 font stack; letter-spacing is never negative.
+   ==================================================================== */
+body {
+  font-family: var(--pnx2-font-sans) !important;
+}
+
+#newsletter > div,
+#newsletter h2,
+#newsletter > div > p,
+#newsletter #nlMsg,
+#newsletter #nlForm > p {
+  text-align: left !important;
+}
+
+#nlEmail,
+#nlType,
+#nlBtn {
+  min-height: 48px !important;
+}
+
+#nlForm label {
+  min-height: var(--pnx2-target-min, 44px);
+  cursor: pointer;
+}
+
+/* ====================================================================
+   10. FOCUS — KEYBOARD NAVIGATION
+   foundation.css already defines focus-visible; this block ensures the
+   rule wins over existing <style> overrides that set outline:none.
+   ==================================================================== */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--pnx2-accent, #2563eb) !important;
+  outline-offset: 2px !important;
+}
+
+/* ====================================================================
+   11. LEGAL MODAL
+   The modal is JS-driven (display toggled by openLegalModal / closeLegal).
+   Only visual properties overridden here.
+   ==================================================================== */
+#legalModal > div {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: 2px solid var(--pnx2-ink, #0f172a);
+}
+
+/* ====================================================================
+   12. RESPONSIVE — 360px SAFE
+   Override any fixed pixel widths or non-wrapping layouts that would
+   cause horizontal scroll at 360px.
+   ==================================================================== */
+@media (max-width: 640px) {
+  nav.pnx2-header {
+    min-height: auto !important;
+    padding: 8px var(--pnx2-content-pad, 24px) !important;
+  }
+
+  .hero-inner {
+    grid-template-columns: 1fr !important;
+    text-align: left !important;
+  }
+
+  .hero-left {
+    text-align: left !important;
+    padding-right: 0;
+    padding-bottom: 32px;
+    border-right: 0;
+    border-bottom: 2px solid var(--pnx2-border-mid, #e2e8f0);
+  }
+
+  .hero-right {
+    padding-left: 0;
+    padding-top: 32px;
+  }
+
+  .hero-left h1 {
+    font-size: 42px !important;
+  }
+
+  .hero-subtitle {
+    font-size: 36px !important;
+  }
+
+  .download-channel-card {
+    flex-basis: min(100%, 320px) !important;
+    width: min(100%, 320px) !important;
+    max-width: 100% !important;
+  }
+}
+
+/* ensure no horizontal overflow from fixed-width inline containers */
+@media (max-width: 400px) {
+  .hero-inner,
+  .hero-bottom,
+  .section-inner,
+  .demo-grid {
+    max-width: 100% !important;
+    overflow-x: hidden;
+  }
+
+  #chatPanel {
+    width: calc(100vw - 32px) !important;
+  }
+}

@@ -865,3 +865,34 @@ Details: [EKA-17 release receipt](docs/operations/EKA17_HLR_ENV_ROLLOUT_2026-09-
 - No production environment, secret, provider, deployment, database, DNS, IAM,
   payment or store mutation occurred. EKA-17 remains open until a separately
   authorized environment migration and live acceptance.
+
+## 2026-09-20 - R2 Landing Redesign Source Validation (Append-only)
+
+- R2 is implemented on branch `feat/redesign-r2-landing-20260920` from base
+  `8f3148cd95ea8381dee336c620166e0adb8e67a6`. The scope is limited to
+  `docs/index.html`, local `docs/assets/redesign-v2/` CSS and the R2 validation
+  harness; the other 34 allowlisted public HTML pages remain byte-identical to
+  the frozen R0 baseline.
+- Existing landing copy, link destinations, bilingual pairs, forms, API
+  contracts, storage calls, metadata, JSON-LD, event handlers and scripts are
+  preserved. The only semantic addition is a bilingual skip link plus `main`
+  target; no new external host or CDN dependency was introduced.
+- The R2 visual layer applies the approved visible-grid direction with square
+  corners, no shadows or gradients, local tokens, explicit section dividers,
+  left-aligned hierarchy, responsive controls and the dark footer. It does not
+  implement an editorial rewrite or later-page redesign phase.
+- Validation passed: parser-backed R2 gate; 66 redesign tests; R1 foundation
+  check; diff check; full redacted Gitleaks scan. Headless Chrome passed at
+  1440 x 1000 and 360 x 800 with no document horizontal overflow, working
+  EL/EN toggle, 44 px visible form/control targets and viewport-contained chat
+  and legal panels.
+- Local preview API calls were CORS-blocked from the `127.0.0.1` origin as
+  expected; no API contract changed and this is not production acceptance.
+- Claude Code produced the initial bounded implementation and then became
+  `token_limited`. Sol reviewed and completed the validator, responsive fix,
+  visual verification and integration preparation. No duplicate implementation
+  was performed.
+- Evidence: `docs/planning/r2/R2_REPORT.md`. No production deploy, server,
+  database, DNS, IAM, secret, provider, payment, mobile-store or other runtime
+  mutation occurred. R2 remains source-only until protected-branch integration
+  and a separately authorized production rollout.
