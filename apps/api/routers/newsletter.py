@@ -8,6 +8,7 @@ POST /api/v1/newsletter/webhook/brevo — Brevo event webhook
 import os
 import json
 import logging
+import secrets
 from datetime import date, datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Request
@@ -28,6 +29,8 @@ LISTMONK_URL = os.getenv("LISTMONK_URL", "http://172.18.0.7:9000")
 LISTMONK_USER = os.getenv("LISTMONK_ADMIN_USER", "admin")
 LISTMONK_PW = os.getenv("LISTMONK_ADMIN_PASSWORD", "")
 BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
+# EKA-09: shared bearer token required on the Brevo event webhook.
+BREVO_WEBHOOK_TOKEN = os.getenv("BREVO_WEBHOOK_TOKEN", "")
 
 # List ID mapping (from Listmonk)
 LIST_IDS = {
@@ -107,8 +110,6 @@ async def subscribe(req: SubscribeRequest, request: Request):
     Sends double opt-in email via Brevo. Stores pending token in Redis.
     Subscriber only activated after clicking confirmation link.
     """
-    import secrets
-
     if req.subscriber_type not in VALID_TYPES:
         raise HTTPException(status_code=400, detail=f"Invalid type. Must be one of: {VALID_TYPES}")
     if req.frequency not in VALID_FREQUENCIES:
@@ -365,9 +366,41 @@ async def newsletter_stats():
 
 # ── Brevo Webhook ─────────────────────────────────────────────────────────────
 
+def _require_brevo_webhook_auth(request: Request) -> None:
+    """EKA-09: authenticate the Brevo webhook before any body parsing or Redis I/O.
+
+    Requires ``Authorization: Bearer <BREVO_WEBHOOK_TOKEN>``. Fails closed with
+    503 when the server token is not configured, and 401 with a Bearer
+    challenge for missing, malformed or wrong credentials. Token material is
+    never logged or returned.
+    """
+    if not BREVO_WEBHOOK_TOKEN:
+        raise HTTPException(status_code=503, detail="Webhook not configured")
+    authorization = request.headers.get("authorization", "")
+    parts = authorization.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "bearer" or not parts[1].strip():
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    try:
+        matched = secrets.compare_digest(parts[1], BREVO_WEBHOOK_TOKEN)
+    except TypeError:
+        # Non-ASCII presented token cannot match; reject without a 500.
+        matched = False
+    if not matched:
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
 @router.post("/webhook/brevo")
 async def brevo_webhook(request: Request):
     """Receive Brevo event webhooks — track sent/opened/bounced."""
+    _require_brevo_webhook_auth(request)
     try:
         events = await request.json()
         if not isinstance(events, list):
@@ -385,4 +418,4 @@ async def brevo_webhook(request: Request):
         return {"received": True, "events": len(events)}
     except Exception as e:
         logger.error(f"[MOD-19] Brevo webhook error: {e}")
-        return {"received": False, "error": str(e)}
+        return {"received": False, "error": "Webhook processing failed"}
