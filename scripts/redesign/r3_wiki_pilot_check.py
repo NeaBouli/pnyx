@@ -174,11 +174,13 @@ def check_nonpilot_parity(inv: dict, repo_root: Path) -> list[str]:
 
 
 def check_nonwiki_parity(inv: dict, repo_root: Path) -> list[str]:
-    """Require byte identity for every R0 page outside the R2 landing and all
-    14 wiki pages.  Used by the full-wiki gate.
+    """Require byte identity outside the gated R2-R4 public pages.
+
+    The later R4 gate owns ``docs/community.html`` preservation, while this
+    historical R3 gate continues to validate the landing and all 14 wiki pages.
     """
     violations: list[str] = []
-    allowed = frozenset({"docs/index.html"} | set(WIKI_RELS))
+    allowed = frozenset({"docs/index.html", "docs/community.html"} | set(WIKI_RELS))
     for page in inv["pages"]:
         if page["path"] in allowed:
             continue
@@ -190,7 +192,7 @@ def check_nonwiki_parity(inv: dict, repo_root: Path) -> list[str]:
         if actual != page["sha256"]:
             violations.append(
                 f"parity: {page['path']}: sha256 changed; "
-                "R3 full-wiki permits only docs/index.html and wiki pages"
+                "R2-R4 gates permit only docs/index.html, docs/community.html and wiki pages"
             )
     return violations
 

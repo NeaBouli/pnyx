@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { useLocale } from "next-intl";
 import Link from "next/link";
 import { analytics, exportUrls } from "@/lib/api";
-import PublicDataNav from "@/components/PublicDataNav";
 
 export default function AnalyticsPage() {
   const locale = useLocale();
@@ -35,7 +34,6 @@ export default function AnalyticsPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-2xl mx-auto px-6 py-8">
-        <PublicDataNav />
         <h1 className="mb-6 text-2xl font-bold text-gray-900">{el("Αναλυτικά Στοιχεία", "Analytics")}</h1>
         {/* Stats */}
         {overview && (

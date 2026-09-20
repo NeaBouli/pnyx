@@ -1,0 +1,263 @@
+/*
+ * r4-community.css — R4 redesign visual overrides for docs/community.html
+ *
+ * Loaded after tokens.css and foundation.css (all three linked at end of
+ * <head>). Additive CSS-first approach: no existing behaviour, content,
+ * IDs, event handlers or JS-controlled inline styles are modified.
+ * !important is used only for purely visual properties (never on display,
+ * opacity, transform, left, borderColor that JS writes at runtime).
+ *
+ * Design system rules (R2/R3 handoff):
+ *   - Visible grid; 2px solid #0f172a section dividers
+ *   - Palette: ink / accent / white / bg-tinted
+ *   - border-radius: 0 everywhere; no shadows; no gradients
+ *   - Left-aligned typography; 44px minimum touch targets; 48px buttons
+ *   - System-font only (no external CDN assets)
+ *
+ * Scope: docs/community.html ONLY (R4 phase).
+ */
+
+/* ====================================================================
+   1. GLOBAL VISUAL RESETS
+   Same as r2-landing.css — enforces square corners and no shadows for
+   all elements in community.html. Safe: purely decorative, not read by JS.
+   ==================================================================== */
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  letter-spacing: 0 !important;
+}
+
+img,
+svg {
+  filter: none !important;
+}
+
+/* Kill all gradient backgrounds defined in inline <style> blocks */
+.community-hero,
+.hero,
+[style*="linear-gradient"] {
+  background-image: none !important;
+}
+
+/* ====================================================================
+   2. NAV → pnx2-header
+   The <nav class="pnx2-header"> is position:sticky + z-index:100 from
+   the inline style block. We raise the baseline height, add the 2px ink
+   divider and strip the frosted-glass backdrop.
+   ==================================================================== */
+nav.pnx2-header {
+  background: var(--pnx2-bg, #ffffff) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-bottom: 2px solid var(--pnx2-ink, #0f172a) !important;
+  min-height: 60px !important;
+  padding: 0 var(--pnx2-content-pad, 24px) !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  overflow: hidden;
+}
+
+nav.pnx2-header .nav-links {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+nav.pnx2-header .nav-links::-webkit-scrollbar {
+  display: none;
+}
+
+nav.pnx2-header .nav-links a,
+nav.pnx2-header .lang-btn {
+  flex: 0 0 auto;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  background: transparent !important;
+  color: var(--pnx2-accent, #2563eb) !important;
+}
+
+.lang-btn {
+  min-height: var(--pnx2-target-min, 44px) !important;
+  padding: 0 12px !important;
+  border: 2px solid var(--pnx2-border-mid, #e2e8f0) !important;
+}
+
+.lang-btn:hover {
+  border-color: var(--pnx2-accent, #2563eb) !important;
+  color: var(--pnx2-accent, #2563eb) !important;
+}
+
+/* ====================================================================
+   3. COMMUNITY HERO — replace gradient with flat tinted surface
+   ==================================================================== */
+.community-hero {
+  background: var(--pnx2-bg-tinted, #f8fafc) !important;
+  border-bottom: 2px solid var(--pnx2-ink, #0f172a);
+  text-align: left !important;
+}
+
+/* ====================================================================
+   4. SECTION DIVIDERS — 2px ink border-bottom on every major section
+   ==================================================================== */
+h2 {
+  border-bottom-color: var(--pnx2-ink, #0f172a) !important;
+  border-bottom-width: 2px !important;
+}
+
+/* ====================================================================
+   5. PRINCIPLE CARDS (.pc), FINANCE CARDS (.fc), PARTICIPATE CARDS (.pgc)
+   ==================================================================== */
+.pc,
+.fc,
+.pgc {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.pc:hover,
+.pgc:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  border-color: var(--pnx2-ink, #0f172a) !important;
+}
+
+.fc:hover {
+  border-color: var(--pnx2-ink, #0f172a) !important;
+}
+
+/* Finance card: green border stays unless hovered */
+.fc-badge {
+  border-radius: 0 !important;
+}
+
+/* Participation card CTA links */
+.pgc a {
+  border-radius: 0 !important;
+}
+
+.pgc.hl {
+  background: var(--pnx2-on-accent, #eff6ff) !important;
+  border-color: var(--pnx2-accent, #2563eb) !important;
+}
+
+/* ====================================================================
+   6. CARD GRID AND GENERIC CARDS
+   ==================================================================== */
+.card:hover {
+  border-color: var(--pnx2-ink, #0f172a) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ====================================================================
+   7. INFO / WARN / SUCCESS BOXES
+   ==================================================================== */
+.info-box,
+.warn-box,
+.success-box {
+  border-radius: 0 !important;
+}
+
+/* ====================================================================
+   8. FLOW NODES
+   ==================================================================== */
+.flow,
+.fnode {
+  border-radius: 0 !important;
+  background: var(--pnx2-bg-tinted, #f8fafc) !important;
+}
+
+/* ====================================================================
+   9. BUTTONS
+   ==================================================================== */
+.btn-primary,
+.btn-secondary,
+.btn-submit {
+  border-radius: 0 !important;
+  min-height: 48px !important;
+}
+
+/* ====================================================================
+   10. FOOTER (.pnx2-footer)
+   ==================================================================== */
+footer,
+footer.pnx2-footer {
+  background: var(--pnx2-ink, #0f172a) !important;
+  color: var(--pnx2-on-ink, #cbd5e1) !important;
+  margin-top: 0 !important;
+}
+
+footer a,
+footer a:visited {
+  color: var(--pnx2-on-ink-link, #e2e8f0) !important;
+}
+
+footer a:hover {
+  color: var(--pnx2-bg, #ffffff) !important;
+}
+
+footer p {
+  color: var(--pnx2-on-ink-soft, #94a3b8) !important;
+}
+
+/* ====================================================================
+   11. BODY FONT
+   ==================================================================== */
+body {
+  font-family: var(--pnx2-font-sans, "Segoe UI", system-ui, -apple-system, sans-serif) !important;
+}
+
+/* ====================================================================
+   12. FOCUS — KEYBOARD NAVIGATION
+   ==================================================================== */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--pnx2-accent, #2563eb) !important;
+  outline-offset: 2px !important;
+}
+
+/* ====================================================================
+   13. RESPONSIVE — 360px SAFE
+   ==================================================================== */
+@media (max-width: 640px) {
+  nav.pnx2-header {
+    min-height: auto !important;
+    padding: 8px var(--pnx2-content-pad, 16px) !important;
+  }
+
+  .community-hero {
+    padding: 2rem 1rem !important;
+  }
+
+  .principle-grid,
+  .participate-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .finance-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .nav-logo > span {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .principle-grid,
+  .participate-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

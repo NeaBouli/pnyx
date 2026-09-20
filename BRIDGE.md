@@ -969,3 +969,28 @@ Details: [EKA-17 release receipt](docs/operations/EKA17_HLR_ENV_ROLLOUT_2026-09-
   runtime mutation occurred. Full R3 remains open until the pilot passes
   protected integration and the remaining 13 wiki pages complete their own
   bounded parity gates.
+
+## 2026-09-20 - R4 Community And Responsive Header Candidate (Append-only)
+
+- The exact PR #333 Landing-only rollout was attempted with a dedicated
+  rollback tag. Isolated and server-side checks passed, but real 360 px browser
+  acceptance found the chat panel extending to `left=-7`. The Web container
+  was immediately rolled back; the previous Landing, all 14 R3 Wiki pages,
+  API health and non-Web services were verified healthy afterward.
+- The R4 candidate keeps the approved Landing content intact and adds only the
+  bounded chat correction, a visual-only Community shell and a single
+  responsive public-data header. Community copy, links, forms, payment tiles,
+  API/storage contracts, scripts and inline behavior remain parser-verified
+  against the frozen R0 inventory.
+- Desktop and 360 px browser acceptance passed with no document overflow or
+  broken loaded images. The static and dynamic headers remain one line with
+  horizontally reachable navigation; the mobile chat panel is contained at
+  `left=16`, `right=329`.
+- Verification passed: R4 parser gate; 124 redesign tests; R1 foundation gate;
+  Web lint, TypeScript, 70 Vitest tests and Next production build; npm audit
+  with zero findings; diff check; full redacted Gitleaks scan. Claude's
+  read-only review reported no blocker.
+- Evidence: `docs/planning/r4/R4_COMMUNITY_HEADER_REPORT.md`. No R4 production
+  rollout, Wiki/API/database/DNS/secret/IAM/provider/payment/store or other
+  runtime mutation occurred. A newly merged R4 commit needs a separate exact
+  production authorization before rollout.

@@ -77,6 +77,25 @@ nav.pnx2-header {
   min-height: 86px !important;
   padding: 0 var(--pnx2-content-pad, 24px) !important;
   align-items: center !important;
+  flex-wrap: nowrap !important;
+  overflow: hidden;
+}
+
+nav.pnx2-header .nav-links {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+nav.pnx2-header .nav-links::-webkit-scrollbar {
+  display: none;
+}
+
+nav.pnx2-header .nav-links > * {
+  flex: 0 0 auto;
 }
 
 /* Nav link hover: no background pill, accent color only */
@@ -436,7 +455,21 @@ textarea:focus-visible,
 @media (max-width: 640px) {
   nav.pnx2-header {
     min-height: auto !important;
-    padding: 8px var(--pnx2-content-pad, 24px) !important;
+    padding: 8px 16px !important;
+  }
+
+  nav.pnx2-header .nav-logo {
+    gap: 0 !important;
+    font-size: 0 !important;
+  }
+
+  nav.pnx2-header .nav-logo img {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  nav.pnx2-header .nav-logo span {
+    display: none;
   }
 
   .hero-inner {
@@ -483,6 +516,14 @@ textarea:focus-visible,
   }
 
   #chatPanel {
-    width: calc(100vw - 32px) !important;
+    /* Keep the existing floating panel inside the visible viewport.
+       display remains under JavaScript control. */
+    position: fixed !important;
+    left: 16px !important;
+    right: 16px !important;
+    bottom: 94px !important;
+    width: auto !important;
+    max-height: calc(100vh - 110px) !important;
+    overflow-y: auto;
   }
 }
