@@ -1,5 +1,21 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-09-20 - Independent Catalog and R0/R1 Review
+
+- Claude Code completed a read-only review of the full PR #323 and stacked PR
+  #332 diffs. It found no blocking correctness, security, privacy,
+  accessibility or regression issue and changed no file.
+- The review confirmed the 13-file design handoff remains reference-only and
+  outside runtime/build paths, the 64-entry EKA register is coherent, the R0
+  inventory is fail-closed and deterministic, and the R1 foundation preserves
+  its isolation and CSP/accessibility constraints.
+- One non-blocking but real typo was verified in the authoritative checkpoint:
+  its baseline commit omitted one hexadecimal character and did not resolve.
+  The report now uses the already-referenced valid 40-character commit ID.
+- An older append-only bridge entry still reports the then-current 34-test
+  count; the newer resolver entry correctly records the current 37-test suite.
+  Historical bridge text was not rewritten.
+
 ## 2026-09-20 - Audit/Redesign Catalog Integration Readiness Review
 
 - Sol completed the deferred read-only review of PR #323 after Kimi returned a

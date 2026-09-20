@@ -4,7 +4,7 @@ Status: `AUTHORITATIVE_CHECKPOINT`
 Scope: public, security-safe project status; no private provider, tax, account,
 recipient, customer, secret or production credential data
 Repository baseline: `origin/main` at
-`6a8ed73a04e029d8d6525c0ccdd31f487ec684`
+`6a8ed73a04e029d8d8d6525c0ccdd31f487ec684`
 Snapshot window: 2026-09-19, approximately 09:30-10:05 UTC
 Post-snapshot integration deltas reconciled through PR #331 merge, the bounded
 EKA-17 production acceptance and green post-merge checks on 2026-09-20
