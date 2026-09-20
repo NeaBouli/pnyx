@@ -1,5 +1,24 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-09-20 - Audit/Redesign Catalog Integration Readiness Review
+
+- Sol completed the deferred read-only review of PR #323 after Kimi returned a
+  weekly-quota `403` before reading or changing the repository. The branch is
+  exactly 12 commits ahead of and zero commits behind `main`; all existing CI
+  and Security jobs pass and the PR is mergeable.
+- The imported 13-file design archive matches the owner's ZIP SHA-256 and file
+  count. It remains outside `docs/`, has no application/build/workflow
+  reference and is explicitly classified as reference-only; its prototype
+  CDN/dynamic-code behavior cannot enter the current runtime implicitly.
+- Gitleaks found no secret in the branch. The 64-item EKA register, status,
+  TODO, plan, issue #318 and rollout receipts are coherent except for one stale
+  EKA-17 checkbox/text in the master report. That entry and the TODO summary
+  were corrected to the already verified closed state; no other status or
+  application content changed.
+- PR #323 may move to external review after this documentation correction and
+  fresh checks. PR #332 remains stacked and must absorb this parent commit
+  before its own integration gate.
+
 ## 2026-09-20 - EKA-17 HLR Environment Migration Completed
 
 - PR #331 remains the reviewed source authority at

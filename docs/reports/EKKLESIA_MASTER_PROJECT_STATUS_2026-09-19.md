@@ -793,10 +793,10 @@ the checkpoint.
 
 #### Informational
 
-- [ ] EKA-17 - PR #331 (`c18b75f`) introduces canonical primary HLR names,
-  complete legacy-pair compatibility and strict provider/pair isolation;
-  closure awaits the separately authorized production environment migration
-  and live acceptance.
+- [x] EKA-17 - PR #331 (`c18b75f`) introduces canonical primary HLR names,
+  complete legacy-pair compatibility and strict provider/pair isolation. The
+  separately authorized production environment migration and live acceptance
+  completed on 2026-09-20, closing the finding in issue #318.
 - [ ] EKA-18 - dev compose publishes datastores with default credentials.
 - [ ] EKA-19 - Android/iOS package-ID drift.
 - [ ] EKA-20 - re-baseline the May master audit.
