@@ -284,13 +284,14 @@ class ParityTest(unittest.TestCase):
         self.assertTrue(any("docs/other.html" in v for v in r3.check_nonpilot_parity(self.inv, self.tmp)))
 
     def test_nonwiki_parity_allows_all_wiki_pages(self) -> None:
-        """All 14 wiki pages may differ; other pages must remain byte-identical."""
+        """All wiki pages and later gated Community may differ."""
         # Build a fake inventory with several wiki pages
         wiki_paths = list(r3.WIKI_RELS[:3])
         (self.tmp / "docs/wiki").mkdir(parents=True, exist_ok=True)
         inv = {
             "pages": [
                 {"path": "docs/index.html", "sha256": "r2"},
+                {"path": "docs/community.html", "sha256": "r0-community"},
                 *[{"path": wp, "sha256": "r0-" + wp} for wp in wiki_paths],
                 {"path": "docs/other.html", "sha256": hashlib.sha256(b"stable").hexdigest()},
             ]
@@ -299,6 +300,7 @@ class ParityTest(unittest.TestCase):
             p = self.tmp / wp
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text("migrated", encoding="utf-8")
+        (self.tmp / "docs/community.html").write_text("r4-migrated", encoding="utf-8")
         self.assertEqual([], r3.check_nonwiki_parity(inv, self.tmp))
 
     def test_nonwiki_parity_rejects_changed_non_wiki_page(self) -> None:

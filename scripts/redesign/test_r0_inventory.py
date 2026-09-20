@@ -115,7 +115,7 @@ class RealTreeTest(unittest.TestCase):
             "docs/wiki/whitepaper.html",
             "docs/wiki/zk-voting.html",
         }
-        _GATED_PAGES = {"docs/index.html"} | _WIKI_PAGES
+        _GATED_PAGES = {"docs/index.html", "docs/community.html"} | _WIKI_PAGES
 
         current = json.loads(first_inv)
         checked = json.loads(checked_inv)
@@ -129,7 +129,7 @@ class RealTreeTest(unittest.TestCase):
         self.assertEqual(
             [],
             non_gated_differing,
-            "only the gated R2 landing and R3 wiki pages may differ from R0; "
+            "only the gated R2 landing, R3 wiki pages and R4 community may differ from R0; "
             f"unexpected diffs: {non_gated_differing}",
         )
 
@@ -152,6 +152,17 @@ class RealTreeTest(unittest.TestCase):
                     f'href="{href}"', wiki_page,
                     f"{wiki_rel}: R3 stylesheet missing — unexpected drift outside the R3 gate"
                 )
+
+        community = (REPO_ROOT / "docs/community.html").read_text(encoding="utf-8")
+        for href in (
+            "assets/redesign-v2/tokens.css",
+            "assets/redesign-v2/foundation.css",
+            "assets/redesign-v2/r4-community.css",
+        ):
+            self.assertIn(
+                f'href="{href}"', community,
+                "docs/community.html: R4 stylesheet missing — unexpected drift outside the R4 gate",
+            )
 
         normalized_pages = [
             checked_by_path[page["path"]]

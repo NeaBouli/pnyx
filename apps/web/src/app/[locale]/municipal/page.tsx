@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "next-intl";
 import { municipal, type ConsensusRepresentationResponse, type ConsensusRepresentationQuery } from "@/lib/api";
-import PublicDataNav from "@/components/PublicDataNav";
 
 interface Periferia {
   id: number;
@@ -129,7 +128,6 @@ export default function MunicipalPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-3xl mx-auto px-6 py-8">
-        <PublicDataNav />
         <h1 className="mb-2 text-2xl font-bold text-gray-900">{t("Τοπική Αυτοδιοίκηση", "Municipal Governance")}</h1>
 
         <p className="text-gray-500 text-sm mb-4">

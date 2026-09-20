@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { useLocale } from "next-intl";
 import Link from "next/link";
 import { mp } from "@/lib/api";
-import PublicDataNav from "@/components/PublicDataNav";
 
 export default function MPPage() {
   const locale = useLocale();
@@ -36,7 +35,6 @@ export default function MPPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-2xl mx-auto px-6 py-8">
-        <PublicDataNav />
         <h2 className="text-xl font-bold text-gray-900 mb-2">{el("Ποιο κόμμα ψηφίζει όπως οι πολίτες;", "Which party votes like the citizens?")}</h2>
         <p className="text-gray-500 text-sm mb-6">{el("Σύγκριση πλειοψηφίας πολιτών με κοινοβουλευτική ψήφο.", "Comparing citizen majority with parliamentary vote.")}</p>
 

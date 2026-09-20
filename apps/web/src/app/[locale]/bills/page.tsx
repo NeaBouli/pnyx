@@ -5,7 +5,6 @@ import { useLocale } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ekklesia, municipal, Bill, BillQueryParams } from "@/lib/api";
-import PublicDataNav from "@/components/PublicDataNav";
 import StatusBadge from "@/components/StatusBadge";
 import RelevanceButtons from "@/components/RelevanceButtons";
 
@@ -158,7 +157,6 @@ export default function BillsPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-3xl mx-auto px-6 py-10">
-        <PublicDataNav />
         {/* Header */}
         <div className="mb-2">
           <h1 className="text-3xl font-black text-gray-900">
