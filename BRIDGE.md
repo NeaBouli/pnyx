@@ -12,11 +12,15 @@
   very tall mobile tables visible when the legacy 10% intersection threshold
   cannot be reached.
 - Verification passed: the default and explicit full R3 gates, R1 foundation,
-  115 redesign tests, Python compilation, static local-link resolution,
+  117 redesign tests, Python compilation, static local-link resolution,
   `git diff --check` and Gitleaks. Real Chromium covered all 14 wiki pages at
   1440x1000 and 360x800 with no document overflow, missing landmark, broken
   local image, table-containment failure, language-toggle failure or
   migration-attributable JavaScript exception.
+- CodeRabbit's two valid findings were resolved before integration: malformed
+  footer nesting is now rejected by the structural gate, and all 57 existing
+  FAQ questions expose browser-verified keyboard and synchronized ARIA state
+  through a bounded local progressive-enhancement asset.
 - This is source validation only. No production, server, database, DNS, IAM,
   secret, provider, payment, application, API or store change occurred. Normal
   protected-branch integration and a separately authorized web-only rollout

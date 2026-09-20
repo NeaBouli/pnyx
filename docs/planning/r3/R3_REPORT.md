@@ -32,13 +32,17 @@ payment, mobile-store or other runtime mutation occurred.
 - `docs/wiki/whitepaper.html`
 - `docs/wiki/zk-voting.html`
 
-### CSS (1)
+### Shared assets (2)
 
 - `docs/assets/redesign-v2/r3-wiki.css` — extended with table, badge, inline
   code, info/warn/success box, FAQ accordion, roadmap accordion,
   zk-voting `.content` container, `.card-icon`, and animation-frame mobile
   safety rules.  All new rules use local tokens only; no external URLs,
   fonts, icons or CDN assets were introduced.
+- `docs/assets/redesign-v2/r3-faq-accessibility.js` — local progressive
+  enhancement that gives the 57 existing FAQ questions focusable button
+  semantics, linked answers, synchronized expanded state and Enter/Space
+  activation while preserving the existing click handler.
 
 ### Validator and tests (3)
 
@@ -112,7 +116,7 @@ python3 scripts/redesign/r3_wiki_pilot_check.py --all
 →  OK  r3_wiki_all_check: all checks passed
 
 python3 -m unittest discover -s scripts/redesign -p 'test_*.py'
-→  Ran 115 tests  OK
+→  Ran 117 tests  OK
 
 python3 scripts/redesign/r1_foundation_check.py
 →  R1 foundation check passed (design/redesign-v2/foundation)
@@ -141,6 +145,10 @@ git diff --check
   test-origin condition and no request URL or API contract changed.
 - Static local links, resources and form actions resolve across all 14 pages.
 - Gitleaks found no secret in the complete worktree.
+- CodeRabbit identified two valid bounded findings. The structural parser now
+  rejects a footer nested inside `main#main`, with a regression test. The FAQ
+  controls now have browser-verified keyboard semantics and synchronized ARIA
+  state through the local adapter described above.
 
 ## Open gates
 

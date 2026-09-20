@@ -81,6 +81,9 @@ class RealTreeTest(unittest.TestCase):
             css,
         )
 
+    def test_real_faq_accessibility_asset_passes(self) -> None:
+        self.assertEqual([], r3.check_faq_accessibility_asset(r3.DOCS_DIR))
+
 
 class PreservationTest(unittest.TestCase):
     @classmethod
@@ -201,6 +204,10 @@ class StructureTest(unittest.TestCase):
             '<div class="hero">Wiki</div><main id="main"></main>',
         )
         self.assertTrue(any("hero" in v for v in r3.check_structure(html)))
+
+    def test_footer_inside_main_fails(self) -> None:
+        html = MINIMAL_HTML.replace("</main>\n<footer", "\n<footer")
+        self.assertTrue(any("outside main#main" in v for v in r3.check_structure(html)))
 
     def test_wrong_skip_contract_fails(self) -> None:
         html = MINIMAL_HTML.replace('href="#main"', 'href="#content"')

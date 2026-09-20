@@ -32,6 +32,7 @@ REPO_ROOT = r0_inventory.REPO_ROOT
 DOCS_DIR = r0_inventory.DOCS_DIR
 R0_INVENTORY_FILE = REPO_ROOT / "docs/planning/r0/R0_DOCS_SURFACE_INVENTORY.json"
 PILOT_REL = "docs/wiki/index.html"
+FAQ_REL = "docs/wiki/faq.html"
 
 # All 14 wiki pages (pilot + 13 migrated)
 WIKI_RELS: tuple[str, ...] = (
@@ -84,6 +85,17 @@ ADDED_RESOURCES = tuple(
     {"kind": "relative-file", "source": "link.href", "url": href}
     for href in R3_CSS_HREFS
 ) + ({"kind": "fragment", "source": "a.href", "url": "#main"},)
+FAQ_A11Y_SCRIPT_HREF = "../assets/redesign-v2/r3-faq-accessibility.js"
+FAQ_A11Y_SCRIPT_REL = "assets/redesign-v2/r3-faq-accessibility.js"
+FAQ_A11Y_RESOURCE = {
+    "kind": "relative-file",
+    "source": "script.src",
+    "url": FAQ_A11Y_SCRIPT_HREF,
+}
+FAQ_A11Y_SCRIPT = {
+    "src": FAQ_A11Y_SCRIPT_HREF,
+    "attrs": {"defer": "", "src": FAQ_A11Y_SCRIPT_HREF},
+}
 
 CSS_PROHIBITED = (
     (r"(?:linear|radial|conic)-gradient\s*\(", "gradient"),
@@ -241,6 +253,7 @@ class StructureParser(HTMLParser):
         self.hero_in_main_count = 0
         self.header_count = 0
         self.footer_count = 0
+        self.footer_in_main_count = 0
         self.stylesheets: list[str] = []
 
     @staticmethod
@@ -263,6 +276,11 @@ class StructureParser(HTMLParser):
             self.header_count += 1
         if tag == "footer" and "pnx2-footer" in classes:
             self.footer_count += 1
+            if any(
+                parent_tag == "main" and parent_attrs.get("id") == "main"
+                for parent_tag, parent_attrs in self.stack
+            ):
+                self.footer_in_main_count += 1
         if tag == "link" and "stylesheet" in attrs.get("rel", "").lower().split():
             self.stylesheets.append(attrs.get("href", ""))
         if tag not in VOID_ELEMENTS:
@@ -312,6 +330,8 @@ def check_structure(html: str, requires_hero: bool = True) -> list[str]:
         violations.append("structural: expected one live nav.pnx2-header")
     if parser.footer_count != 1:
         violations.append("structural: expected one live footer.pnx2-footer")
+    if parser.footer_in_main_count:
+        violations.append("structural: footer.pnx2-footer must be outside main#main")
     for href in R3_CSS_HREFS:
         if parser.stylesheets.count(href) != 1:
             violations.append(f"structural: expected one live stylesheet link: {href}")
@@ -336,8 +356,21 @@ def check_wiki_page_preservation(
     """
     violations: list[str] = []
     for key in PRESERVED_EXACT_KEYS:
+        if page_rel == FAQ_REL and key == "scripts":
+            continue
         if current.get(key) != baseline.get(key):
             violations.append(f"preservation({page_rel}): exact contract changed: {key}")
+
+    if page_rel == FAQ_REL:
+        for key in ("inline", "inline_count"):
+            if current["scripts"][key] != baseline["scripts"][key]:
+                violations.append(f"preservation({page_rel}): scripts.{key} changed")
+        violations.extend(_exact_delta(
+            f"external scripts ({page_rel})",
+            baseline["scripts"]["external"],
+            current["scripts"]["external"],
+            [FAQ_A11Y_SCRIPT],
+        ))
 
     violations.extend(_exact_delta(
         f"bilingual pairs ({page_rel})",
@@ -377,11 +410,14 @@ def check_wiki_page_preservation(
         if current["navigation"][key] != baseline["navigation"][key]:
             violations.append(f"preservation({page_rel}): navigation.{key} changed")
 
+    resource_additions = ADDED_RESOURCES + (
+        (FAQ_A11Y_RESOURCE,) if page_rel == FAQ_REL else ()
+    )
     violations.extend(_exact_delta(
         f"resources ({page_rel})",
         baseline["resources"],
         current["resources"],
-        ADDED_RESOURCES,
+        resource_additions,
     ))
     if current["styles"]["inline"] != baseline["styles"]["inline"]:
         violations.append(f"preservation({page_rel}): inline style blocks changed")
@@ -439,6 +475,29 @@ def check_css_files(docs_dir: Path) -> list[str]:
         if "box-shadow: none !important" not in content:
             violations.append("css: R3 shell must disable legacy shadows")
     return violations
+
+
+def check_faq_accessibility_asset(docs_dir: Path) -> list[str]:
+    """Require the local FAQ keyboard adapter and its bounded behavior."""
+    path = docs_dir / FAQ_A11Y_SCRIPT_REL
+    if not path.is_file():
+        return [f"faq accessibility: missing local asset: {FAQ_A11Y_SCRIPT_REL}"]
+    source = path.read_text(encoding="utf-8")
+    required = (
+        'question.setAttribute("role", "button")',
+        'question.setAttribute("tabindex", "0")',
+        '"aria-expanded"',
+        'question.setAttribute("aria-controls", answerId)',
+        'event.key === "Enter"',
+        'event.key === " "',
+        "event.preventDefault()",
+        "question.click()",
+    )
+    return [
+        f"faq accessibility: missing behavior marker: {marker}"
+        for marker in required
+        if marker not in source
+    ]
 
 
 def check_r3_wiki_page(
@@ -511,6 +570,7 @@ def check_r3_all(
             continue
         violations.extend(check_r3_wiki_page(page_rel, baseline, target_docs))
     violations.extend(check_css_files(target_docs))
+    violations.extend(check_faq_accessibility_asset(target_docs))
     return violations
 
 
