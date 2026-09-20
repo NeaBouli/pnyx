@@ -55,7 +55,7 @@ def fixture_tree(extra_pages: dict[str, str] | None = None, allowlist_extra: lis
     saved = {name: getattr(r0_inventory, name) for name in (
         "REPO_ROOT", "DOCS_DIR", "R0_DIR", "ALLOWLIST_FILE", "KNOWN_DEFECTS_FILE", "INVENTORY_FILE", "REPORT_FILE")}
     with tempfile.TemporaryDirectory() as tmp:
-        root = Path(tmp)
+        root = Path(tmp).resolve()  # resolve macOS /var symlink so resolved candidates stay relative to it
         docs = root / "docs"
         for rel, content in pages.items():
             target = root / rel
@@ -174,6 +174,46 @@ class FailClosedTest(unittest.TestCase):
             first = r0_inventory.generate()
             second = r0_inventory.generate()
             self.assertEqual(first, second)
+
+
+class RelativeFileResolutionTest(unittest.TestCase):
+    def test_nested_page_relative_stylesheet_resolves_within_docs(self) -> None:
+        # page_rel already carries the docs/ prefix, so relative-file
+        # resolution must anchor at the repo root: docs/tickets/index.html +
+        # style.css resolves to docs/tickets/style.css, not docs/docs/...
+        page = MINIMAL_PAGE.replace("</head>", '<link rel="stylesheet" href="style.css">\n</head>')
+        css = "@media (max-width: 360px) { .x { width: 320px; } }\n"
+        with fixture_tree(extra_pages={"docs/tickets/index.html": page}) as root:
+            (root / "docs/tickets/style.css").write_text(css, encoding="utf-8")
+            inventory_bytes, _ = r0_inventory.generate()
+            inventory = json.loads(inventory_bytes)
+            tickets = next(p for p in inventory["pages"] if p["path"] == "docs/tickets/index.html")
+            entry = tickets["styles"]["external"][0]
+            self.assertTrue(entry["resolved"])
+            self.assertEqual("docs/tickets/style.css", entry["repo_path"])
+            self.assertIn("@media (max-width: 360px)", tickets["responsive"]["media_queries"])
+
+    def test_relative_stylesheet_traversal_outside_docs_is_rejected(self) -> None:
+        page = MINIMAL_PAGE.replace("</head>", '<link rel="stylesheet" href="../../outside.css">\n</head>')
+        with fixture_tree(extra_pages={"docs/tickets/index.html": page}) as root:
+            (root / "outside.css").write_text("body { color: red; }\n", encoding="utf-8")
+            inventory_bytes, _ = r0_inventory.generate()
+            inventory = json.loads(inventory_bytes)
+            tickets = next(p for p in inventory["pages"] if p["path"] == "docs/tickets/index.html")
+            entry = tickets["styles"]["external"][0]
+            self.assertFalse(entry["resolved"])
+            self.assertEqual("escapes-docs", entry["reason"])
+
+    def test_root_relative_stylesheet_behavior_unchanged(self) -> None:
+        page = MINIMAL_PAGE.replace("</head>", '<link rel="stylesheet" href="/shared.css">\n</head>')
+        with fixture_tree(extra_pages={"docs/tickets/index.html": page}) as root:
+            (root / "docs/shared.css").write_text("body { margin: 0; }\n", encoding="utf-8")
+            inventory_bytes, _ = r0_inventory.generate()
+            inventory = json.loads(inventory_bytes)
+            tickets = next(p for p in inventory["pages"] if p["path"] == "docs/tickets/index.html")
+            entry = tickets["styles"]["external"][0]
+            self.assertTrue(entry["resolved"])
+            self.assertEqual("docs/shared.css", entry["repo_path"])
 
 
 if __name__ == "__main__":

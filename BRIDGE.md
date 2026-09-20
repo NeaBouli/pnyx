@@ -1,5 +1,22 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-09-20 - Redesign R0 Resolver Review Correction
+
+- CodeRabbit identified one valid R0 inventory defect in stacked PR #332:
+  relative resource paths were anchored below `docs/` even though the page
+  path already included that prefix. This made four existing local
+  stylesheets appear unresolved without changing the public pages themselves.
+- Kimi implemented the bounded correction under Sol review. Relative resources
+  now resolve from the repository root, root-relative behavior remains
+  unchanged and path traversal outside `docs/` still fails closed.
+- Three regressions cover nested relative resolution, root-relative behavior
+  and traversal rejection. The complete redesign suite now passes 37 tests;
+  regenerated R0 artifacts are byte-for-byte reproducible and all four local
+  stylesheets resolve with content hashes.
+- All 35 allowlisted public HTML pages remain byte-identical to the parent
+  branch. No live page, application, dependency, workflow or production
+  service changed.
+
 ## 2026-09-20 - Redesign R0/R1 Prepared in an Isolated Stacked Branch
 
 - The complete current public surface is frozen by an exact 35-path allowlist

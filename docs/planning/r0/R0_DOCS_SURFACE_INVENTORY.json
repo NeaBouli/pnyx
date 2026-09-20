@@ -1,7 +1,7 @@
 {
   "allowlist_sha256": "7be5c8370fa5e75a0fe8a25504ca05b6f013e3ddff36a10ceaaf692b03bacc84",
   "generator": "scripts/redesign/r0_inventory.py",
-  "inventory_hash": "064cc1795fa67a4cc882b3e4b4c46d9ea153aa25d61093556fb819041a05efca",
+  "inventory_hash": "614528b2cc2ab79973c3fce7e84040c8a57398df950b51cb4beafe02ec70e290",
   "page_count": 35,
   "pages": [
     {
@@ -12105,12 +12105,12 @@
         "meta": "e3194a2b0c4df51b43ce27f3f58ed806d3f0424c175bc65c85e9f495ccbbbf8f",
         "navigation": "adf0acbb6b50bb479e4bac83a024ba8fcafde6e7b88f5ba44213359ecb1cd640",
         "resources": "2c4e420056e416d13e90ea8f0be693dbf7b79db712a9cf56da64b295dc10d2e9",
-        "responsive": "15fa867904a9a49dcfafe61e880981e66e1adac5b304b0911b16a71b21926eaf",
+        "responsive": "0653cd76392b3c0fc34e3a50cfdff35c4dc80a7154eda306331178c2906933aa",
         "scripts": "f5e74cf153b420a4dd018d9abf366d5a33e15f1e85e09456220c21fc75bf65f5",
         "seo": "19d6421679196627623c4c3b274f8d22a41a211baa1806466a3dede1b044da16",
         "states": "8bed1e2a3b920c4bf958c610f99a6d1d3ee702d413546f9b36dafcd7c5dcbfb3",
         "storage": "235b4d1b8141a1ba0c2ffbadac983c4ffd0eddfc6e1d02ec7e7765dbb2dba864",
-        "styles": "80cfc7d9a0dce172e78ee7867c065d82805fc443b33eb6b39c791f17f3426b31",
+        "styles": "20c118e11aa5deb2dc71a5ff1a2cab14a79ee0ed912899378f585457d6ab4536",
         "text": "1de91272688801900d9024e81569095cafbca7d7d9fb9399b30a410eb4ba569e"
       },
       "interactions": {
@@ -13776,6 +13776,7 @@
           "@media (max-width: 520px)",
           "@media (max-width: 640px)",
           "@media (max-width: 768px)",
+          "@media (prefers-reduced-motion: reduce)",
           "@media(max-width:700px)"
         ],
         "viewport_meta": "width=device-width,initial-scale=1.0"
@@ -13901,9 +13902,11 @@
       "styles": {
         "external": [
           {
+            "bytes": 4220,
             "href": "animations/css/ekklesia-motion.css",
-            "reason": "not-a-file",
-            "resolved": false
+            "repo_path": "docs/animations/css/ekklesia-motion.css",
+            "resolved": true,
+            "sha256": "f4adf973c696e9b7f90dcb107def8c75eb197588fde10baf28185600dbc12b27"
           }
         ],
         "inline": [
@@ -20221,12 +20224,12 @@
         "meta": "a66003772b6c5151bdcbf2efacd2cbc8ae0d636dfe37f9d0396667b729ee0752",
         "navigation": "1fa9d68c69815154122eab1b47b2bd476dfb5712eeefd4dd110d8f0ece89f986",
         "resources": "77450a42747fe72cee3c946ec29b6355807f41c606c4b4549e36f363b3876084",
-        "responsive": "521ecd827e789ba56bbd0fa803815f78ecd9dad2646b773f9cad00e0f0d11e51",
+        "responsive": "89b480a73f7c2d86cb4be20df0007361a27a036a523b768b72b375dd76ea6aad",
         "scripts": "9379e58fa48f4326df8fa085f6a0119131831bbc288371afbfa6e393ca9babcb",
         "seo": "923e5c7534a8ae4fed4c2c0d6ba712b2c329ebc93fceb0fc8f863e36b94c3be6",
         "states": "af97c9ebd37855cefbc31be4dcca5572b18b4fd0912ca6c9545413b7535b5adb",
         "storage": "621de8b607588c324b697a059e99bfc5e849985dfd47cf4b69d046a1fd316933",
-        "styles": "c97a997cf47a1bfb1fc2b407d9adfc2288ed97cb9c84e06b06fefb4faa245053",
+        "styles": "e65859c4a448951a4224c6c96cde7bd19eb5519f14a82a31709cfac71a3d3d8a",
         "text": "f92c3b4bfdaf256290ab110f513f840297154b55f5e5f91f9b939ef53f365676"
       },
       "interactions": {
@@ -20604,9 +20607,18 @@
         }
       ],
       "responsive": {
-        "fixed_px_widths": [],
+        "fixed_px_widths": [
+          8,
+          18,
+          28,
+          32,
+          36,
+          40
+        ],
         "fixed_px_widths_over_360": [],
-        "media_queries": [],
+        "media_queries": [
+          "@media(max-width:1024px)"
+        ],
         "viewport_meta": "width=device-width,initial-scale=1.0"
       },
       "scripts": {
@@ -20697,9 +20709,11 @@
       "styles": {
         "external": [
           {
+            "bytes": 12681,
             "href": "style.css",
-            "reason": "not-a-file",
-            "resolved": false
+            "repo_path": "docs/tickets/style.css",
+            "resolved": true,
+            "sha256": "5851bbe90c0eb37e1ce1ef9d3ffef29f3305e64f310ffa93976264a7a99f07b9"
           }
         ],
         "inline": [],
@@ -22935,12 +22949,12 @@
         "meta": "bcdaa51a3fc715fd987fa7b4d5120fe93b554c9fc98590d37bda9e75efaa65be",
         "navigation": "5d35926d6b95d02a26fa59fdd4a4d559b367bea4e693c4094b10bc4a6425c927",
         "resources": "8843e216b829494ada270d14388d828b60cf9747d1e1a40bd67f11962c69141c",
-        "responsive": "32bc6d762d16f7134cc747c727e129b02c824b8aa2f7ea47a1f932fdd878d5db",
+        "responsive": "08847643040195920b8362f2a6d1e6feaf65db628a16b74764df42d81554c166",
         "scripts": "7912f73d87aa6d0fdbf8c76fb4d5a341e5110b1f137c1f835c24a2780a273b40",
         "seo": "ca0e6a52b1fae75b45ac51d6af0bbd2dfabc854972f2d1a9afcd8250c169f3cb",
         "states": "61f657a6fdb3e03969a248742357aa98e50753803c0a06ed7e08f9a210bf69ef",
         "storage": "229f39dd472e01defa0472206c29c05702166ebeae527c4e8048b1445cf6ede2",
-        "styles": "97892b4f11ded3ea9e70f7a98c4fb62a07a4a315eb7a67bfd109308b2e120bca",
+        "styles": "21f7272d166e5c976507b265bf2eddf8fa8167c0438d80ce0d17b58f5bbe2ab1",
         "text": "c4febe77f3d551f2a934012e754a8ede06d74c632e4691523b124b7f69635631"
       },
       "interactions": {
@@ -23451,7 +23465,8 @@
         ],
         "fixed_px_widths_over_360": [],
         "media_queries": [
-          "@media (max-width: 640px)"
+          "@media (max-width: 640px)",
+          "@media (prefers-reduced-motion: reduce)"
         ],
         "viewport_meta": "width=device-width,initial-scale=1.0"
       },
@@ -23521,9 +23536,11 @@
       "styles": {
         "external": [
           {
+            "bytes": 4220,
             "href": "../animations/css/ekklesia-motion.css",
-            "reason": "not-a-file",
-            "resolved": false
+            "repo_path": "docs/animations/css/ekklesia-motion.css",
+            "resolved": true,
+            "sha256": "f4adf973c696e9b7f90dcb107def8c75eb197588fde10baf28185600dbc12b27"
           }
         ],
         "inline": [
@@ -36229,12 +36246,12 @@
         "meta": "fad9b7e80fb896f23f4d6eae5680b74f5b014baf1fc612ac3a7ec8dbe46bf9c8",
         "navigation": "9c1cdc6b90ddc2c60ce19d519f482ad943c42471b3b7eacc4748f1edc7179561",
         "resources": "3a0d5b5fee334801c4ae22f0199183d92314af4cf55077ed15713cd79ea6571c",
-        "responsive": "32bc6d762d16f7134cc747c727e129b02c824b8aa2f7ea47a1f932fdd878d5db",
+        "responsive": "08847643040195920b8362f2a6d1e6feaf65db628a16b74764df42d81554c166",
         "scripts": "7912f73d87aa6d0fdbf8c76fb4d5a341e5110b1f137c1f835c24a2780a273b40",
         "seo": "fd6be93e7bd52ee7903cb98ab2c560d0caaa825d9671ebda122c9db9c05d4fc3",
         "states": "61f657a6fdb3e03969a248742357aa98e50753803c0a06ed7e08f9a210bf69ef",
         "storage": "229f39dd472e01defa0472206c29c05702166ebeae527c4e8048b1445cf6ede2",
-        "styles": "e49d244b72c3393e13bae0d577477cc4a2f122f118638ae2cc4d61fe1b861876",
+        "styles": "bc2f7d40331775a4e5ca2b2fe32cf48c64bb60ac70e5bae582f60cd9dd771e1e",
         "text": "e890109bef654e9dfeae82de2099b5a662be9c40a1e5ee5909c7a80284f976fa"
       },
       "interactions": {
@@ -36791,7 +36808,8 @@
         ],
         "fixed_px_widths_over_360": [],
         "media_queries": [
-          "@media (max-width: 640px)"
+          "@media (max-width: 640px)",
+          "@media (prefers-reduced-motion: reduce)"
         ],
         "viewport_meta": "width=device-width,initial-scale=1.0"
       },
@@ -36866,9 +36884,11 @@
       "styles": {
         "external": [
           {
+            "bytes": 4220,
             "href": "../animations/css/ekklesia-motion.css",
-            "reason": "not-a-file",
-            "resolved": false
+            "repo_path": "docs/animations/css/ekklesia-motion.css",
+            "resolved": true,
+            "sha256": "f4adf973c696e9b7f90dcb107def8c75eb197588fde10baf28185600dbc12b27"
           }
         ],
         "inline": [
@@ -39026,12 +39046,12 @@
     "meta": "4c725f19c14232e88713d7e9de52f7a11356d11b8668782d854b80590ffc1049",
     "navigation": "92aac8c771a59f341b4acd130f4049b2bfb798e98a1ea9671a7e6dee8a67fbec",
     "resources": "ffbf24c8cad83c21647f28951ab906f30803bf60ef185a9d6f3137103c8fbcf6",
-    "responsive": "1488c0b5c84278cc2266ac79c857b692b1061146b4c7f1cf5e82fbaeb1a0d834",
+    "responsive": "2757c0bfe606341419cc99bccb8af211aa93d64218d93350f706fed9221516a4",
     "scripts": "a8f79af7817aaec3db45ed9a5797e7fdac7aff68c71bfe9da0818fdb0d1094c4",
     "seo": "9eb175dbd16cf670c64e453f1b4f33b1934e51031b57901488ebf221aa871ec9",
     "states": "f8254b3b38be90ec5838e228e32977d4267b683c66e624effd527bae7c2c9659",
     "storage": "8085006d2a8f31f2810c0c215638957471388b3197645b2214771907274f02ac",
-    "styles": "9449414b20929c5c4f4704a4d3736653cd898da659a2a0993b9b882c11638328",
+    "styles": "28bf8af0e82e57bbf627e9327ba3b723a2fd50b7cf065e826013f2cd8305cb53",
     "text": "7e509a816239e2652ccb82a3527656f11e9bf77631fd20f7e2031e6af05cce6c"
   }
 }

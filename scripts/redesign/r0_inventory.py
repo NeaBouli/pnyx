@@ -400,7 +400,7 @@ def resolve_local_resource(page_rel: str, href: str) -> dict[str, Any] | None:
     """Resolve a relative-file or root-relative resource to a repo file."""
     kind = classify_url(href)
     if kind == "relative-file":
-        candidate = (DOCS_DIR / Path(page_rel).parent / href.split("#")[0].split("?")[0]).resolve()
+        candidate = (REPO_ROOT / Path(page_rel).parent / href.split("#")[0].split("?")[0]).resolve()
     elif kind == "root-relative":
         candidate = (DOCS_DIR / href.split("#")[0].split("?")[0].lstrip("/")).resolve()
     else:
