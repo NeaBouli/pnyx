@@ -524,6 +524,6 @@ textarea:focus-visible,
     bottom: 94px !important;
     width: auto !important;
     max-height: calc(100vh - 110px) !important;
-    overflow-y: auto;
+    overflow-y: auto !important;
   }
 }

@@ -62,6 +62,53 @@ CSS_PROHIBITED = r3.CSS_PROHIBITED
 VOID_ELEMENTS = r3.VOID_ELEMENTS
 
 
+def _without_css_comments(source: str) -> str:
+    """Replace CSS comments with whitespace while preserving source offsets."""
+    return re.sub(r"/\*.*?\*/", lambda match: " " * len(match.group(0)), source, flags=re.DOTALL)
+
+
+def _matching_brace(source: str, opening: int) -> int | None:
+    """Return the closing brace for a CSS block, accounting for nesting."""
+    depth = 0
+    for index in range(opening, len(source)):
+        if source[index] == "{":
+            depth += 1
+        elif source[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return index
+    return None
+
+
+def _css_blocks(source: str, prelude_pattern: str) -> list[str]:
+    """Extract balanced CSS blocks whose prelude matches the supplied regex."""
+    clean = _without_css_comments(source)
+    blocks: list[str] = []
+    for match in re.finditer(prelude_pattern + r"\s*\{", clean, re.IGNORECASE):
+        opening = clean.find("{", match.start())
+        closing = _matching_brace(clean, opening)
+        if closing is not None:
+            blocks.append(clean[opening + 1:closing])
+    return blocks
+
+
+def _has_declaration(block: str, name: str, value_pattern: str) -> bool:
+    """Check for a declaration inside one already-isolated CSS rule body."""
+    return bool(re.search(
+        rf"(?:^|;)\s*{re.escape(name)}\s*:\s*(?:{value_pattern})\s*(?:;|$)",
+        block,
+        re.IGNORECASE,
+    ))
+
+
+def _selector_has(source: str, selector_pattern: str, declarations: tuple[tuple[str, str], ...]) -> bool:
+    """Require all declarations in the same matching selector block."""
+    return any(
+        all(_has_declaration(block, name, value) for name, value in declarations)
+        for block in _css_blocks(source, selector_pattern)
+    )
+
+
 def _counter(values: list[object] | tuple[object, ...]) -> Counter[str]:
     return Counter(r0_inventory.canonical_json(value) for value in values)
 
@@ -216,6 +263,7 @@ def check_structure(html: str) -> list[str]:
 
 
 def check_css(docs_dir: Path) -> list[str]:
+    """Validate R4 CSS files and selector-scoped visual contracts."""
     violations: list[str] = []
     for rel in CSS_RELS:
         path = docs_dir / rel
@@ -234,63 +282,124 @@ def check_css(docs_dir: Path) -> list[str]:
     shell = docs_dir / CSS_RELS[-1]
     if shell.is_file():
         source = shell.read_text(encoding="utf-8")
-        for marker in (
-            "flex-wrap: nowrap !important",
-            "overflow-x: auto",
-            "border-radius: 0 !important",
-            "box-shadow: none !important",
-            "@media (max-width: 480px)",
+        contracts = (
+            (
+                r"nav\.pnx2-header",
+                (("flex-wrap", r"nowrap\s*!important"),),
+                "nav.pnx2-header nowrap",
+            ),
+            (
+                r"nav\.pnx2-header\s+\.nav-links",
+                (("overflow-x", r"auto"),),
+                "nav links horizontal scroll",
+            ),
+            (
+                r"\*\s*,\s*\*::before\s*,\s*\*::after",
+                (("border-radius", r"0\s*!important"), ("box-shadow", r"none\s*!important")),
+                "square shadowless reset",
+            ),
+        )
+        for selector, declarations, label in contracts:
+            if not _selector_has(source, selector, declarations):
+                violations.append(f"css: R4 shell missing selector contract: {label}")
+
+        mobile_blocks = _css_blocks(source, r"@media\s*\(\s*max-width\s*:\s*480px\s*\)")
+        if not mobile_blocks or not any(
+            _selector_has(
+                block,
+                r"\.principle-grid\s*,\s*\.participate-grid",
+                (("grid-template-columns", r"1fr\s*!important"),),
+            )
+            for block in mobile_blocks
         ):
-            if marker not in source:
-                violations.append(f"css: R4 shell missing marker: {marker}")
+            violations.append("css: R4 shell missing <=480px single-column card contract")
     return violations
 
 
 def check_dynamic_header(repo_root: Path) -> list[str]:
+    """Validate routes and responsive classes in the rendered nav structure."""
     violations: list[str] = []
     nav_path = repo_root / "apps/web/src/components/NavHeader.tsx"
     source = nav_path.read_text(encoding="utf-8") if nav_path.is_file() else ""
+    nav_links = re.search(r"const\s+navLinks\s*=\s*\[(?P<body>.*?)\]\s*;", source, re.DOTALL)
+    nav_element = re.search(
+        r"<nav\b(?P<attrs>[^>]*)>(?P<body>.*?)</nav>", source, re.DOTALL,
+    )
+    links_body = nav_links.group("body") if nav_links else ""
+    nav_attrs = nav_element.group("attrs") if nav_element else ""
+    nav_body = nav_element.group("body") if nav_element else ""
+    if not nav_links:
+        violations.append("header: navLinks definition missing")
+    if not nav_element or "navLinks.map" not in nav_body:
+        violations.append("header: rendered nav does not consume navLinks")
     for route in ("/bills", "/results", "/mp", "/municipal", "/analytics"):
-        if route not in source:
+        if not re.search(rf"href\s*:\s*`?/\$\{{locale\}}{re.escape(route)}`?", links_body):
             violations.append(f"header: missing route: {route}")
     for marker in ("flex-nowrap", "overflow-x-auto", "min-w-0", "whitespace-nowrap"):
-        if marker not in source:
+        target = nav_attrs if marker != "whitespace-nowrap" else nav_body
+        if marker not in target:
             violations.append(f"header: missing responsive marker: {marker}")
     if not (repo_root / "apps/web/src/components/PublicDataNav.tsx").is_file():
         violations.append("header: PublicDataNav source was deleted instead of retained")
     for rel in PUBLIC_DATA_PAGES:
         page = repo_root / rel
-        page_source = page.read_text(encoding="utf-8") if page.is_file() else ""
+        if not page.is_file():
+            violations.append(f"header: missing public-data page: {rel}")
+            continue
+        page_source = page.read_text(encoding="utf-8")
         if "PublicDataNav" in page_source:
             violations.append(f"header: duplicate PublicDataNav remains in {rel}")
     return violations
 
 
 def check_mobile_chat(docs_dir: Path) -> list[str]:
+    """Validate chat and static-header rules inside their intended media blocks."""
     path = docs_dir / "assets/redesign-v2/r2-landing.css"
     source = path.read_text(encoding="utf-8") if path.is_file() else ""
-    block_match = re.search(r"@media\s*\(max-width:\s*400px\).*?#chatPanel\s*\{(?P<body>.*?)\}", source, re.DOTALL)
-    if not block_match:
+    narrow_blocks = _css_blocks(source, r"@media\s*\(\s*max-width\s*:\s*400px\s*\)")
+    chat_blocks = [
+        chat
+        for media in narrow_blocks
+        for chat in _css_blocks(media, r"#chatPanel")
+    ]
+    if not chat_blocks:
         return ["chat: missing <=400px #chatPanel rule"]
-    body = block_match.group("body")
     required = (
-        "position: fixed !important",
-        "left: 16px !important",
-        "right: 16px !important",
-        "width: auto !important",
+        ("position", r"fixed\s*!important"),
+        ("left", r"16px\s*!important"),
+        ("right", r"16px\s*!important"),
+        ("width", r"auto\s*!important"),
+        ("overflow-y", r"auto\s*!important"),
     )
-    violations = [f"chat: missing viewport marker: {marker}" for marker in required if marker not in body]
-    if re.search(r"\bdisplay\s*:", body):
+    body = chat_blocks[0]
+    violations = [
+        f"chat: missing viewport declaration: {name}"
+        for name, value in required
+        if not _has_declaration(body, name, value)
+    ]
+    if _has_declaration(body, "display", r"[^;}]+"):
         violations.append("chat: CSS must not override JavaScript-controlled display")
-    header_markers = (
-        "flex-wrap: nowrap !important",
-        "overflow-x: auto",
-        "scrollbar-width: none",
-        "font-size: 0 !important",
+    header_contracts = (
+        (r"nav\.pnx2-header", (("flex-wrap", r"nowrap\s*!important"),), "nowrap"),
+        (
+            r"nav\.pnx2-header\s+\.nav-links",
+            (("overflow-x", r"auto"), ("scrollbar-width", r"none")),
+            "horizontal scroll",
+        ),
     )
-    for marker in header_markers:
-        if marker not in source:
-            violations.append(f"landing header: missing one-line marker: {marker}")
+    for selector, declarations, label in header_contracts:
+        if not _selector_has(source, selector, declarations):
+            violations.append(f"landing header: missing selector contract: {label}")
+    mobile_header_blocks = _css_blocks(source, r"@media\s*\(\s*max-width\s*:\s*640px\s*\)")
+    if not any(
+        _selector_has(
+            block,
+            r"nav\.pnx2-header\s+\.nav-logo",
+            (("font-size", r"0\s*!important"),),
+        )
+        for block in mobile_header_blocks
+    ):
+        violations.append("landing header: missing <=640px compact-logo contract")
     return violations
 
 

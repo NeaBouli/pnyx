@@ -994,3 +994,20 @@ Details: [EKA-17 release receipt](docs/operations/EKA17_HLR_ENV_ROLLOUT_2026-09-
   rollout, Wiki/API/database/DNS/secret/IAM/provider/payment/store or other
   runtime mutation occurred. A newly merged R4 commit needs a separate exact
   production authorization before rollout.
+
+## 2026-09-21 - R4 Review Findings Resolved (Append-only)
+
+- CodeRabbit's three actionable R4 findings were verified and fixed without
+  changing Landing content, Community content or application behavior outside
+  the bounded mobile chat rule and validation harness.
+- The <=400 px chat panel now enforces vertical scrolling over the legacy
+  inline overflow rule. The R4 gate now fails closed for missing public-data
+  pages and validates CSS selectors, media-query boundaries and rendered TSX
+  navigation instead of accepting free source-text markers.
+- Regression tests cover comment and unrelated-rule decoys, later media
+  blocks, missing pages and unused nav data. Validation passed: 130 redesign
+  tests, R1 and R4 gates, Web lint/typecheck, 70 Vitest tests, Next production
+  build, npm audit with zero findings and diff check.
+- No production rollout or Wiki/API/database/DNS/secret/IAM/provider/payment/
+  store mutation occurred. PR #337 remains subject to normal protected-branch
+  checks and requires a new exact production authorization after integration.

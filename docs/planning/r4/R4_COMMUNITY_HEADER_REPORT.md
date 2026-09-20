@@ -50,7 +50,7 @@ availability; no API contract or production runtime was changed.
 ## Verification
 
 - R4 parser-backed gate: passed.
-- Redesign unit suite: 124 passed.
+- Redesign unit suite: 130 passed.
 - R1 foundation gate: passed.
 - Web ESLint: passed.
 - Web TypeScript: passed.
@@ -63,6 +63,11 @@ availability; no API contract or production runtime was changed.
 - Gitleaks full redacted scan: no leaks found.
 - Claude Code read-only review: no blocker; one intentional visual typography
   note and informational cleanup notes only.
+- CodeRabbit follow-up: all three actionable findings were resolved. The
+  mobile chat scroll declaration now overrides the legacy inline overflow,
+  missing public-data files fail closed, and selector/media/TSX validation is
+  scoped so comments, unrelated rules, unused navigation and later media
+  blocks cannot produce false passes. Focused regression coverage was added.
 
 ## Production Rollout Note
 
