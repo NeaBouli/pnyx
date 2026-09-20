@@ -766,7 +766,9 @@ the checkpoint.
 - [ ] EKA-13 - root containers and mutable image tags.
 - [ ] EKA-14 - residual unescaped sinks in static documentation.
 - [ ] EKA-15 - dead admin-key query helpers shipped in Web client.
-- [ ] EKA-16 - personal data in application logs.
+- [ ] EKA-16 - PR #330 (`641721d`) removes personal data and provider-response
+  bodies from the audited contact/newsletter logs; closure awaits bounded API
+  rollout and live log acceptance.
 - [ ] EKA-22 - missing cross-implementation crypto KATs.
 - [ ] EKA-26 - unrelated third-party app on an Ekklesia subdomain.
 - [ ] EKA-27 - dangling/dead subdomains and exposed test host.
@@ -1025,7 +1027,10 @@ This is the recommended execution order. Only one bounded package should be
   credential is required before body parsing or Redis access. Matching
   out-of-band API/Brevo configuration, a separate API rollout and live
   acceptance remain required.
-- Split the remaining EKA-16/17/53 work by subsystem.
+- EKA-16 source integration is complete in PR #330: audited contact/newsletter
+  logs retain only established HMAC-derived references and status codes. A
+  separate API rollout and live log acceptance remain required.
+- Split the remaining EKA-17/53 work by subsystem.
 - Preserve client compatibility and fail-closed identity behavior.
 - No real HLR, newsletter, push or provider writes during synthetic tests.
 
@@ -1239,3 +1244,33 @@ Recorded at 2026-09-20 after the normal protected merge:
   closure. No API rollout, Brevo configuration, secret, provider, database,
   DNS, IAM, payment, store or other production mutation occurred in this
   source-integration task.
+
+## Post-checkpoint delta - EKA-16 source integration
+
+Recorded at 2026-09-20 after the normal protected merge:
+
+- PR #330 merged as
+  `641721dfa294082edabb8591ed3b6c21aea14180` without admin bypass.
+- Contact success logs no longer contain name or organisation. Brevo and
+  Listmonk error logs no longer include provider response bodies that can echo
+  submitted contact or subscriber data. Existing daily HMAC-derived `ipref`
+  and `emailref` correlation plus provider status codes remain available.
+- Outbound delivery payloads, consent, rate limits and public error contracts
+  are unchanged. Seven sentinel-PII tests cover successful delivery, provider
+  rejection and transport-error paths.
+- Focused verification passed `115 tests` with `5 skipped`. The complete local
+  API suite passed `1208 tests`, with `12 skipped`, `25 expected xfails` and
+  `4 subtests`; only the three known localhost-Redis cases failed locally.
+  GitHub's Redis-backed API job and every other PR check passed.
+- Kimi implemented the bounded patch under Sol review. A fresh Kimi fallback
+  security review approved it with two low test-quality notes; both were fixed
+  before commit. Claude was externally token-limited. CodeRabbit was
+  rate-limited and produced no finding; no required gate was bypassed.
+- Post-merge main CI run `35509282967` and Security run `35509283003` passed
+  completely.
+- Public evidence: `https://github.com/NeaBouli/pnyx/pull/330`. Issue #318
+  receives the source evidence while keeping EKA-16 unchecked.
+- EKA-16 still requires a separately authorized bounded API rollout and live
+  log acceptance before closure. No API rollout, real contact/newsletter send,
+  provider, secret, database, DNS, IAM, payment, store or other production
+  mutation occurred in this source-integration task.

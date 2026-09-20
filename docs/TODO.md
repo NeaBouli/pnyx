@@ -1,7 +1,7 @@
 # Ekklesia.gr — TODO
 # Copyright (c) 2026 V-Labs Development — MIT License
 
-Last reconciled: 2026-09-20 (EKA-02 closed; EKA-32/EKA-04/EKA-03/EKA-05/EKA-06/EKA-09 integrated, not deployed)
+Last reconciled: 2026-09-20 (EKA-02 closed; EKA-32/EKA-04/EKA-03/EKA-05/EKA-06/EKA-09/EKA-16 integrated, not deployed)
 
 `docs/STATUS.md` is the authority for the current release. GitHub issues and
 Linear are the authorities for active work. Older session notes are retained
@@ -55,6 +55,12 @@ The complete cross-system checkpoint is
   CI/Security passed. Matching out-of-band API/Brevo token configuration,
   bounded API rollout and live acceptance remain separate gates, so EKA-09
   stays open.
+- [x] Complete the EKA-16 source integration: PR #330 merged as `641721d` and
+  removes personal data and provider-response bodies from the audited contact
+  and newsletter log paths. Seven sentinel-PII regressions, the focused
+  privacy/newsletter suite and all PR plus post-merge main CI/Security checks
+  passed. A separately authorized API rollout and live log acceptance remain
+  separate gates, so EKA-16 stays open.
 - [x] Confirm GitHub Actions is currently running normally. The observed limit
   warning belongs to CodeRabbit, not Actions; no CI rule is weakened or skipped.
 - [x] Preserve the supplied redesign package unchanged under

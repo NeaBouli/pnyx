@@ -97,12 +97,13 @@ block and, when desired, an explicit token budget are the reliable controls.
 | #327 | EKA-05 authenticated push registration | Merged as `9f52c95`; full API/mobile/security verification, resolved review threads and post-merge checks green | Integration complete; API rollout, compatible Mobile release/adoption and live acceptance remain separate |
 | #328 | EKA-06 HLR cost and public-status protection | Merged as `0ce4b31`; atomic-limit regression, dashboard build and all PR/main checks green | Integration complete; bounded API/dashboard rollout and live acceptance remain separate |
 | #329 | EKA-09 Brevo webhook authentication | Merged as `1a49d47`; focused and newsletter/webhook tests, review and all PR/main checks green | Integration complete; matching out-of-band API/Brevo configuration, bounded API rollout and live acceptance remain separate |
+| #330 | EKA-16 application-log privacy | Merged as `641721d`; sentinel-PII regressions, focused suite, review and all PR/main checks green | Integration complete; bounded API rollout and live log acceptance remain separate |
 | #321 | Alembic 1.20.0 dependency update | Open, clean, checks green | Independent dependency maintenance; do not mix with EKA fixes |
 | #322 | sentry-sdk 2.69.1 dependency update | Open, clean, checks green | Independent dependency maintenance; do not mix with EKA fixes |
 
 The catalog intake itself merged or deployed nothing. The #319, #320, #325,
-#326, #327, #328 and #329 rows record later bounded task blocks; #320, #325,
-#326, #327, #328 and #329 have not been deployed.
+#326, #327, #328, #329 and #330 rows record later bounded task blocks; #320,
+#325, #326, #327, #328, #329 and #330 have not been deployed.
 
 ## Remediation packages
 
@@ -113,7 +114,7 @@ must not be duplicated across packages.
 |---|---|---|---|
 | A - Representative XSS | EKA-02 | Complete: #319 merged, bounded Web rollout accepted, #318 updated. | High package closed with source, integration and live evidence. |
 | B - Global rate limiting | EKA-32 | Integration complete: #320 proves middleware order, 429 CORS, test isolation, Redis/fallback behavior and trusted-proxy semantics. Production rollout remains separate. | Medium/high blast radius; live evidence still required. |
-| C - Auxiliary endpoint abuse and privacy | EKA-03, EKA-04, EKA-05, EKA-06, EKA-09, EKA-16, EKA-17, EKA-53 | EKA-04 source integration is complete in #325. EKA-03 is integrated in #326 with a compatibility-gated unsigned-read retirement path. EKA-05 is integrated in #327 with signed identity-bound registration and random per-install device IDs. EKA-06 is integrated in #328 with atomic HLR limits and a coarse public status contract. EKA-09 is integrated in #329 with fail-closed Brevo webhook authentication. Their rollout/live gates and the remaining logging/admin-status findings stay separate. | Depends on B's global baseline and existing client compatibility. HLR/provider writes remain forbidden. |
+| C - Auxiliary endpoint abuse and privacy | EKA-03, EKA-04, EKA-05, EKA-06, EKA-09, EKA-16, EKA-17, EKA-53 | EKA-04 source integration is complete in #325. EKA-03 is integrated in #326 with a compatibility-gated unsigned-read retirement path. EKA-05 is integrated in #327 with signed identity-bound registration and random per-install device IDs. EKA-06 is integrated in #328 with atomic HLR limits and a coarse public status contract. EKA-09 is integrated in #329 with fail-closed Brevo webhook authentication. EKA-16 is integrated in #330 with PII/provider-body log redaction and sentinel regressions. Their rollout/live gates and the remaining HLR/admin-status findings stay separate. | Depends on B's global baseline and existing client compatibility. HLR/provider writes remain forbidden. |
 | D - Vote and dormant-auth correctness | EKA-01, EKA-10, EKA-11, EKA-12 | Restore Tier-1 validation, convert municipal races to deterministic conflict handling, define dormant gov.gr state storage before activation, narrow signature exceptions. | Security-sensitive; no governance semantics change. |
 | E - Client keys and nullifier KDF | EKA-07, EKA-08, EKA-21, EKA-22, EKA-23, EKA-24 | Publish canonical formats and known-answer tests first; then plan backward-compatible key-storage and KDF migration. Record the accepted phone-entropy residual risk explicitly. | High crypto/identity risk; requires Kimi plus strengthened Sol review before code. No identity reset. |
 | F - Runtime and integration surface | EKA-13, EKA-18, EKA-19, EKA-26, EKA-27, EKA-28, EKA-29, EKA-30, EKA-31 | Reverify inventory, dependency backlog, container/user/tag posture, subdomain ownership, admin exposure, package IDs and CSP. Record the verified-wiring evidence separately. | Read-only inventory first. DNS, containers, IAM and production need separate authorization. |

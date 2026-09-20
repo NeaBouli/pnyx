@@ -717,3 +717,26 @@
   production mutation occurred. EKA-09 remains open until matching out-of-band
   API/Brevo token configuration, a separately authorized bounded API rollout
   and live acceptance complete.
+
+## 2026-09-20 - EKA-16 Application-Log Privacy Integration (Append-only)
+
+- PR #330 merged normally as `641721d` without admin bypass. Contact success
+  logs no longer contain name or organisation, and Brevo/Listmonk failure logs
+  no longer include response bodies that can echo submitted personal data.
+- Existing privacy-safe `ipref` and `emailref` correlation and provider status
+  codes remain. Outbound delivery payloads, consent, rate limits and public
+  error contracts are unchanged.
+- Seven sentinel-PII regressions and the focused privacy/newsletter sweep passed
+  (`115 passed, 5 skipped`). The complete local API suite passed 1,208 tests;
+  only the three known localhost-Redis cases failed locally. GitHub's
+  Redis-backed API job and all other PR checks passed.
+- Kimi implemented the bounded patch under Sol review. A fresh Kimi fallback
+  security review approved it; both low test-quality notes were fixed before
+  commit. Claude was externally token-limited. CodeRabbit was rate-limited and
+  produced no finding; no required gate was bypassed.
+- Post-merge main CI run `35509282967` and Security run `35509283003` passed
+  completely. Evidence is recorded in PR #330 and issue #318.
+- No API rollout, real contact/newsletter send, provider, secret, database, DNS,
+  IAM, payment, store or other production mutation occurred. EKA-16 remains
+  open until a separately authorized bounded API rollout and live log
+  acceptance complete.
