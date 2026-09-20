@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>redesign-v2 foundation — shell demo (isolated, not public)</title>
+<!--
+  Isolated R1 foundation demo. Not part of the public docs surface, not
+  linked from any public page, not deployed. All text on this page is
+  placeholder demo copy written for this shell; it copies no claims from
+  audit-sensitive content and is not canonical wording (H/I gate open).
+  No JavaScript, no external requests, no support.js, no tracking.
+-->
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="foundation.css">
+</head>
+<body>
+
+<a class="pnx2-skip" href="#main">Μετάβαση στο περιεχόμενο</a>
+
+<header class="pnx2-header">
+  <div class="pnx2-container pnx2-header-inner">
+    <a class="pnx2-brand" href="#">εκκλησία <span lang="en">redesign-v2</span></a>
+    <nav class="pnx2-nav" aria-label="Demo">
+      <a href="#shell">Κέλυφος</a>
+      <a href="#states">Καταστάσεις</a>
+      <a href="#focus">Εστίαση</a>
+      <a class="pnx2-btn pnx2-btn-primary" href="#states">Δοκιμή</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="pnx2-section" id="shell">
+    <div class="pnx2-container">
+      <p class="pnx2-kicker">Θεμέλιο <span lang="en">v2</span> — Απομονωμένο</p>
+      <h1 class="pnx2-h1">Κέλυφος σελίδας / θεμέλιο</h1>
+      <p class="pnx2-lead">Επίδειξη κεφαλίδας, υποσέλιδου και βασικών
+      καταστάσεων με τα τοπικά <span lang="en">tokens</span> του νέου
+      σχεδίου. Κείμενο επίδειξης — όχι τελικό περιεχόμενο.</p>
+      <p class="pnx2-body-text pnx2-space-top-md">Κανένας εξωτερικός
+      πόρος δεν φορτώνεται. Η γραμματοσειρά είναι η εναλλακτική του
+      συστήματος έως ότου κλείσει η απόφαση για <span lang="en">Archivo</span>
+      και <span lang="en">CSP</span>. Κανένα εικονίδιο δεν χρησιμοποιείται
+      έως την απόφαση για <span lang="en">Lucide</span>.</p>
+      <p class="pnx2-inline-actions pnx2-space-top-lg">
+        <a class="pnx2-btn pnx2-btn-primary" href="#states">Πρωτεύουσα ενέργεια</a>
+        <a class="pnx2-btn pnx2-btn-secondary" href="#focus">Δευτερεύουσα ενέργεια</a>
+      </p>
+    </div>
+  </section>
+
+  <section class="pnx2-section pnx2-section-tinted" id="states">
+    <div class="pnx2-container">
+      <h2 class="pnx2-h2">Βασικές καταστάσεις</h2>
+      <div class="pnx2-grid">
+        <div>
+          <h3 class="pnx2-kicker">Φόρτωση</h3>
+          <p class="pnx2-state pnx2-loading" role="status" aria-live="polite" aria-busy="true">
+            <span class="pnx2-spinner" aria-hidden="true"></span>
+            Φόρτωση δεδομένων…
+          </p>
+          <p class="pnx2-small pnx2-space-top-sm">Οι τιμές χωρίς δεδομένα
+          εμφανίζονται ως παύλα — ποτέ ως πλασματικοί αριθμοί.</p>
+        </div>
+        <div>
+          <h3 class="pnx2-kicker">Σφάλμα</h3>
+          <p class="pnx2-state pnx2-error" role="alert">
+            Αποτυχία φόρτωσης. Δοκιμάστε ξανά.
+          </p>
+          <p class="pnx2-small pnx2-space-top-sm">Μήνυμα σφάλματος με
+          <span lang="en">role=alert</span> για αναγνώστες οθόνης.</p>
+        </div>
+        <div>
+          <h3 class="pnx2-kicker">Κενό</h3>
+          <p class="pnx2-state pnx2-empty" role="status">
+            Δεν υπάρχουν δεδομένα ακόμη —
+          </p>
+          <p class="pnx2-small pnx2-space-top-sm">Κενή κατάσταση με
+          ειλικρινή ένδειξη απουσίας δεδομένων.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pnx2-section" id="focus">
+    <div class="pnx2-container">
+      <h2 class="pnx2-h2">Εστίαση πληκτρολογίου</h2>
+      <p class="pnx2-body-text">Κάθε διαδραστικό στοιχείο εμφανίζει ορατό
+      περίγραμμα εστίασης <span lang="en">2px</span> με απόσταση
+      <span lang="en">2px</span> — ποτέ η προεπιλογή του προγράμματος
+      περιήγησης. Οι κλικ-επιφάνειες είναι τουλάχιστον
+      <span lang="en">44px</span>, τα κουμπιά <span lang="en">48px</span>.</p>
+      <p class="pnx2-inline-actions pnx2-space-top-lg">
+        <a class="pnx2-btn pnx2-btn-secondary" href="#shell">Πρώτος στόχος</a>
+        <a class="pnx2-btn pnx2-btn-secondary" href="#states">Δεύτερος στόχος</a>
+        <a class="pnx2-text-target" href="#main">Σύνδεσμος κειμένου</a>
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="pnx2-footer">
+  <div class="pnx2-container">
+    <div class="pnx2-grid pnx2-footer-grid">
+      <div class="pnx2-footer-cell">
+        <h2>Ενότητα</h2>
+        <a href="#shell">Κέλυφος</a><br>
+        <a href="#states">Καταστάσεις</a>
+      </div>
+      <div class="pnx2-footer-cell">
+        <h2>Έγγραφα</h2>
+        <a href="README.md">README</a>
+      </div>
+    </div>
+    <p class="pnx2-footer-bar">redesign-v2 foundation — απομονωμένη επίδειξη,
+    εκτός δημόσιας επιφάνειας. Χωρίς <span lang="en">JavaScript</span>, χωρίς
+    εξωτερικά αιτήματα.</p>
+  </div>
+</footer>
+
+</body>
+</html>

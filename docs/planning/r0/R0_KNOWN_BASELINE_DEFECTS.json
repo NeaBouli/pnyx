@@ -1,0 +1,12 @@
+{
+  "schema": "r0-known-baseline-defects/1",
+  "note": "Pre-existing defects in the frozen 35-page baseline. The generator tolerates exactly these entries and fails closed on any other or any new occurrence. The baseline files themselves must not be modified in R0/R1; entries here are removed only after the owning file is legitimately fixed in a later approved phase.",
+  "duplicate_ids": [
+    {
+      "path": "docs/wiki/modules.html",
+      "id": "dot-mod02",
+      "occurrences": 2,
+      "detail": "The MOD-02 and MOD-02b table rows share one id; the status script at line 303 targets a single element. Recorded as a baseline defect, not fixed here."
+    }
+  ]
+}

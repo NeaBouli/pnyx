@@ -35,6 +35,48 @@
   fresh checks. PR #332 remains stacked and must absorb this parent commit
   before its own integration gate.
 
+## 2026-09-20 - Redesign R0 Resolver Review Correction
+
+- CodeRabbit identified one valid R0 inventory defect in stacked PR #332:
+  relative resource paths were anchored below `docs/` even though the page
+  path already included that prefix. This made four existing local
+  stylesheets appear unresolved without changing the public pages themselves.
+- Kimi implemented the bounded correction under Sol review. Relative resources
+  now resolve from the repository root, root-relative behavior remains
+  unchanged and path traversal outside `docs/` still fails closed.
+- Three regressions cover nested relative resolution, root-relative behavior
+  and traversal rejection. The complete redesign suite now passes 37 tests;
+  regenerated R0 artifacts are byte-for-byte reproducible and all four local
+  stylesheets resolve with content hashes.
+- All 35 allowlisted public HTML pages remain byte-identical to the parent
+  branch. No live page, application, dependency, workflow or production
+  service changed.
+
+## 2026-09-20 - Redesign R0/R1 Prepared in an Isolated Stacked Branch
+
+- The complete current public surface is frozen by an exact 35-path allowlist
+  and deterministic baseline inventory. It records content, bilingual values,
+  metadata, links, forms, resources, API contracts, structured data,
+  interactions, responsive markers and stable category hashes. Regeneration
+  fails closed on page-set drift, malformed JSON-LD and unrecorded duplicate
+  IDs.
+- The inventory surfaced one pre-existing duplicate ID, `dot-mod02`, in
+  `docs/wiki/modules.html`. It is recorded as a bounded baseline defect because
+  R0/R1 may not modify public pages; any new occurrence still fails closed.
+- The R1 foundation remains outside `docs/` and is not public or deployed. It
+  contains local tokens, a semantic shell and loading/error/empty/focus states,
+  with no external request, runtime script, inline style/handler, prototype
+  runtime, negative letter spacing or viewport-scaled typography.
+- Sol reviewed the Kimi implementation and tightened markup-API/inline-style
+  inventory coverage, path containment and strict-CSP/mobile behavior. The
+  final 34 focused tests, byte-for-byte regeneration, secret-pattern scan and
+  boundary checks pass. Real Chromium renders at 1440px and an emulated 360px
+  viewport have no overflowing elements (`scrollWidth == innerWidth`).
+- This work is intentionally stacked on the reference-only catalog branch at
+  `2f474e6`. None of the 35 existing HTML files, app code, imported handoff,
+  dependencies, workflows or production services changed. R2 and all content,
+  font/icon, CSP and owner-dependent visual decisions remain separate gates.
+
 ## 2026-09-20 - EKA-17 HLR Environment Migration Completed
 
 - PR #331 remains the reviewed source authority at
