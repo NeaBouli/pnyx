@@ -1,5 +1,23 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-09-20 - R3 Full Wiki Web-only Rollout Completed
+
+- Merged PR #335 (`b5000e76`) was released through a bounded image-only Web
+  overlay. Only the 14 wiki HTML files and their four local R3 assets changed.
+- The exact prior Web image is retained as
+  `ekklesia-web:rollback-pre-r3-wiki-20260920T195518Z`; the candidate is
+  `ekklesia-web:r3-wiki-b5000e7-20260920T195518Z`.
+- All 14 production pages and four assets returned HTTP 200 and matched the
+  target commit byte-for-byte. Real Chrome passed all 14 pages at 1440x1000 and
+  360x800, and the 57 FAQ controls passed live Enter/Space and ARIA checks.
+- The Web container has zero restarts and was not OOM-killed. API health and all
+  non-Web container identities, images and states remained unchanged. Protected
+  environment and Compose hashes also remained unchanged.
+- No API, database, DNS, secret, IAM, Dashboard, forum, store, payment, provider
+  or other service changed. No rollback was required.
+
+Details: [R3 wiki rollout receipt](docs/operations/R3_WIKI_ROLLOUT_2026-09-20.md).
+
 ## 2026-09-20 - R3 Full Wiki Source Migration Validated
 
 - The 13 remaining wiki pages now use the same local R3 shell as the merged
