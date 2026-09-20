@@ -82,7 +82,8 @@ async def _listmonk_request(method: str, path: str, json_data: dict = None) -> d
             auth=(LISTMONK_USER, LISTMONK_PW),
         )
         if r.status_code >= 400:
-            logger.error(f"[MOD-19] Listmonk {method} {path}: {r.status_code} {r.text[:200]}")
+            # EKA-16: status code only — the provider body may echo the subscriber email.
+            logger.error(f"[MOD-19] Listmonk {method} {path}: {r.status_code}")
         return r.json()
 
 
@@ -198,7 +199,8 @@ async def subscribe(req: SubscribeRequest, request: Request):
                 "htmlContent": body,
             })
             if resp.status_code >= 400:
-                logger.error(f"[MOD-19] Brevo send failed: {resp.status_code} {resp.text[:200]}")
+                # EKA-16: status code only — the provider body may echo the subscriber email.
+                logger.error(f"[MOD-19] Brevo send failed: {resp.status_code}")
                 raise HTTPException(status_code=502, detail="Email send failed")
     except httpx.HTTPError as e:
         logger.error(f"[MOD-19] Brevo error: {e}")

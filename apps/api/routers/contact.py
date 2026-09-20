@@ -144,14 +144,16 @@ async def contact_ngo(body: NgoContactRequest, request: Request) -> dict:
                 },
             )
         if resp.status_code >= 400:
-            logger.error("[CONTACT] Brevo error %s: %s", resp.status_code, resp.text)
+            # EKA-16: status code only — the provider body may echo submitted PII.
+            logger.error("[CONTACT] Brevo error %s ref=%s", resp.status_code, request_ref)
             raise HTTPException(status_code=502, detail="Email delivery failed")
     except httpx.HTTPError as e:
-        logger.error("[CONTACT] HTTP error: %s", e)
+        logger.error("[CONTACT] HTTP error ref=%s: %s", request_ref, e)
         raise HTTPException(status_code=502, detail="Email service unreachable")
 
     # NO confirmation email to sender (by design)
-    logger.info("[CONTACT] Contact ref=%s — %s (%s)", request_ref, full_name, body.org)
+    # EKA-16: log the privacy-safe request reference only, never name/org/email.
+    logger.info("[CONTACT] Contact ref=%s", request_ref)
     return {"status": "ok", "message": "Message sent successfully"}
 
 
