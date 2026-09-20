@@ -525,6 +525,8 @@ export async function clearKeys(): Promise<void> {
   await SecureStore.deleteItemAsync(KEYS.PRIVATE_KEY);
   await SecureStore.deleteItemAsync(KEYS.PUBLIC_KEY);
   await SecureStore.deleteItemAsync(KEYS.NULLIFIER);
+  // A new identity must never inherit a still-fresh push registration marker.
+  await SecureStore.deleteItemAsync("push_registration_marker");
 }
 
 // ─── Vote Signing (Tier 1) ───────────────────────────────────────────────────
