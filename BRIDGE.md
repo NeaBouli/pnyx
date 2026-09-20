@@ -740,3 +740,26 @@
   IAM, payment, store or other production mutation occurred. EKA-16 remains
   open until a separately authorized bounded API rollout and live log
   acceptance complete.
+
+## 2026-09-20 - EKA-17 HLR Credential-Name Integration (Append-only)
+
+- PR #331 merged normally as `c18b75f` without admin bypass. The primary
+  hlrlookup.com provider now prefers a complete canonical `HLRLOOKUP_*` pair;
+  the historical complete `HLR_FALLBACK_*` pair remains a deprecated alias for
+  that same primary provider only. The actual hlr-lookups.com fallback remains
+  isolated on `HLRLOOKUPS_*`.
+- Partial canonical or legacy pairs fail closed, credentials are never mixed
+  across naming schemes, and secret values are not logged. Provider routing,
+  payload, billing, rate-limit and failover behavior did not change.
+- Kimi performed the bounded implementation and an independent review under Sol
+  control. Sol resolved every concrete review comment. CodeRabbit's valid
+  configuration-inventory finding was fixed before merge; its second pass was
+  externally rate-limited without weakening any required gate.
+- Local verification: HLR `36 passed`, complete Crypto `48 passed`, affected
+  API `88 passed, 1 xfailed`, full redacted Gitleaks scan clean. Post-merge main
+  CI `35512008384` and Security `35512008302` passed completely.
+- Public evidence: PR #331 and issue #318 comment
+  `https://github.com/NeaBouli/pnyx/issues/318#issuecomment-5749951203`.
+- No production environment, secret, provider, deployment, database, DNS, IAM,
+  payment or store mutation occurred. EKA-17 remains open until a separately
+  authorized environment migration and live acceptance.

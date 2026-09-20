@@ -695,7 +695,7 @@ Publishing an audit is not fixing it. A green PR is not deployment evidence.
 |---|---|---|
 | A - Representative XSS | EKA-02 | Complete: PR #319 merged, bounded Web rollout passed hostile-payload live acceptance, #318 closed. |
 | B - Global rate limiting | EKA-32 | Integration complete in PR #320; production rollout and live acceptance remain separate. |
-| C - Endpoint abuse/privacy | EKA-03/04/05/06/09/16/17/53 | EKA-04 source integration is complete in #325, EKA-03 in #326, EKA-05 in #327, EKA-06 in #328 and EKA-09 in #329; their rollout/live gates and the remaining logging/admin-status findings remain. |
+| C - Endpoint abuse/privacy | EKA-03/04/05/06/09/16/17/53 | EKA-04 source integration is complete in #325, EKA-03 in #326, EKA-05 in #327, EKA-06 in #328, EKA-09 in #329, EKA-16 in #330 and EKA-17 in #331; their rollout/live gates and EKA-53 remain. |
 | D - Vote/auth correctness | EKA-01/10/11/12 | Restore Tier-1 validation, deterministic municipal conflict response, dormant gov.gr state design and narrow exception handling. |
 | E - Client keys/KDF | EKA-07/08/21/22/23/24 | Canonical formats/KATs, backward-compatible key-storage and KDF migration, explicit phone-entropy risk. |
 | F - Runtime/integration | EKA-13/18/19/26/27/28/29/30/31 | Read-only inventory first; then bounded container, subdomain, admin, package-ID and CSP work. |
@@ -792,7 +792,10 @@ the checkpoint.
 
 #### Informational
 
-- [ ] EKA-17 - inverted HLR credential environment names.
+- [ ] EKA-17 - PR #331 (`c18b75f`) introduces canonical primary HLR names,
+  complete legacy-pair compatibility and strict provider/pair isolation;
+  closure awaits the separately authorized production environment migration
+  and live acceptance.
 - [ ] EKA-18 - dev compose publishes datastores with default credentials.
 - [ ] EKA-19 - Android/iOS package-ID drift.
 - [ ] EKA-20 - re-baseline the May master audit.
@@ -1030,7 +1033,11 @@ This is the recommended execution order. Only one bounded package should be
 - EKA-16 source integration is complete in PR #330: audited contact/newsletter
   logs retain only established HMAC-derived references and status codes. A
   separate API rollout and live log acceptance remain required.
-- Split the remaining EKA-17/53 work by subsystem.
+- EKA-17 source integration is complete in PR #331: canonical and legacy
+  primary credentials are accepted only as complete pairs, provider namespaces
+  remain isolated and partial configuration fails closed. Production migration
+  and live acceptance remain separate.
+- Specify the remaining EKA-53 work as its own subsystem.
 - Preserve client compatibility and fail-closed identity behavior.
 - No real HLR, newsletter, push or provider writes during synthetic tests.
 
@@ -1274,3 +1281,36 @@ Recorded at 2026-09-20 after the normal protected merge:
   log acceptance before closure. No API rollout, real contact/newsletter send,
   provider, secret, database, DNS, IAM, payment, store or other production
   mutation occurred in this source-integration task.
+
+## Post-checkpoint delta - EKA-17 source integration
+
+Recorded at 2026-09-20 after the normal protected merge:
+
+- PR #331 merged as
+  `c18b75ffb616655a4b308bf7f314dc2f48472628` without admin bypass.
+- The primary hlrlookup.com provider now prefers the complete canonical
+  `HLRLOOKUP_API_KEY` / `HLRLOOKUP_API_SECRET` pair. The complete historical
+  `HLR_FALLBACK_API_KEY` / `HLR_FALLBACK_API_SECRET` pair remains a deprecated
+  primary-only compatibility alias. The actual hlr-lookups.com fallback keeps
+  `HLRLOOKUPS_API_KEY` / `HLRLOOKUPS_API_SECRET`.
+- Canonical credentials take precedence only as a complete pair. Partial
+  canonical or legacy pairs fail closed, never combine across naming schemes
+  and never expose values in logs. Provider routing, URLs, payloads, validation,
+  billing and failover semantics are unchanged.
+- Focused HLR verification passed `36 tests`, the complete Crypto suite passed
+  `48 tests`, and the affected API identity/HLR selection passed `88 tests`
+  with `1 expected xfail`. A full redacted Gitleaks working-tree scan found no
+  leak.
+- Kimi implemented the bounded patch under Sol control and independently
+  approved the reviewed diff. Sol resolved all concrete test and operational
+  comments. CodeRabbit's valid credential-inventory finding was fixed before
+  merge; its second pass was externally rate-limited, while all required checks
+  remained green.
+- Post-merge main CI run `35512008384` and Security run `35512008302` passed
+  completely.
+- Public evidence: `https://github.com/NeaBouli/pnyx/pull/331` and
+  `https://github.com/NeaBouli/pnyx/issues/318#issuecomment-5749951203`.
+- EKA-17 remains open until a separately authorized production environment
+  migration and live acceptance. No runtime credentials were read or changed,
+  no provider was called, and no deployment, database, DNS, IAM, payment, store
+  or other production mutation occurred.

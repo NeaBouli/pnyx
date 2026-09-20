@@ -76,6 +76,15 @@ eligibility, ZK, database and production policy are unchanged.
   (`115 passed, 5 skipped`) and all PR plus post-merge main CI/Security checks
   passed. EKA-16 remains evidence-gated until a separately authorized API
   rollout and live log acceptance complete.
+- PR #331 merged normally as `c18b75f` and defines complete, isolated HLR
+  credential pairs: canonical `HLRLOOKUP_*` for the primary provider,
+  deprecated complete `HLR_FALLBACK_*` compatibility aliases for that same
+  provider, and unchanged `HLRLOOKUPS_*` names for the actual fallback.
+  Incomplete pairs fail closed and credential values never enter logs. HLR
+  (`36 passed`), Crypto (`48 passed`), affected API (`88 passed, 1 xfailed`),
+  PR and post-merge CI/Security checks are green. EKA-17 remains evidence-gated
+  until a separately authorized production environment migration and live
+  acceptance complete.
 - GitHub Actions itself is currently operational: the sampled latest 30 runs
   completed successfully with no active or failed run.
 - The supplied redesign handoff is archived under `design/handoffs/` as
@@ -87,10 +96,10 @@ eligibility, ZK, database and production policy are unchanged.
   program are frozen in
   `docs/reports/EKKLESIA_MASTER_PROJECT_STATUS_2026-09-19.md`.
 
-The original catalog intake changed no application or runtime state. The eight
+The original catalog intake changed no application or runtime state. The nine
 subsequent bounded security tasks above did not implement the redesign or a
 public audit page. No EKA-32, EKA-04, EKA-03 or EKA-05 production change
-occurred, and EKA-06/EKA-09/EKA-16 were likewise not deployed.
+occurred, and EKA-06/EKA-09/EKA-16/EKA-17 were likewise not deployed.
 
 ## Verified component rollout
 

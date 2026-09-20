@@ -61,6 +61,13 @@ The complete cross-system checkpoint is
   privacy/newsletter suite and all PR plus post-merge main CI/Security checks
   passed. A separately authorized API rollout and live log acceptance remain
   separate gates, so EKA-16 stays open.
+- [x] Complete the EKA-17 source integration: PR #331 merged as `c18b75f` with
+  an unambiguous canonical primary HLR credential pair, complete legacy-pair
+  compatibility, strict pair isolation and fail-closed partial configuration.
+  The actual fallback provider remains on its existing credential names. HLR,
+  Crypto, API, secret and protected CI checks passed. A separately authorized
+  production environment migration and live acceptance remain, so EKA-17 stays
+  open.
 - [x] Confirm GitHub Actions is currently running normally. The observed limit
   warning belongs to CodeRabbit, not Actions; no CI rule is weakened or skipped.
 - [x] Preserve the supplied redesign package unchanged under
