@@ -39,7 +39,7 @@ MINIMAL_HTML = """<!DOCTYPE html>
 <body>
 <a href="#main" class="pnx2-skip">Skip</a>
 <nav class="pnx2-header"><a href="#">Home</a></nav>
-<section id="main" class="landing-hero">main</section>
+<main id="main"><section class="landing-hero">main</section></main>
 <footer class="pnx2-footer"><p>&copy; 2026</p></footer>
 </body>
 </html>
@@ -146,12 +146,25 @@ class StructuralTest(unittest.TestCase):
     def test_missing_skip_href(self) -> None:
         html = MINIMAL_HTML.replace('href="#main"', 'href="#content"')
         v = r2_landing_check.check_structural(html)
-        self.assertTrue(any("href=#main" in s for s in v))
+        self.assertTrue(any("targeting #main" in s for s in v))
 
     def test_missing_id_main(self) -> None:
-        html = MINIMAL_HTML.replace('id="main"', 'id="top"')
+        html = MINIMAL_HTML.replace('<main id="main"', '<main id="top"')
         v = r2_landing_check.check_structural(html)
-        self.assertTrue(any("id=main" in s for s in v))
+        self.assertTrue(any("main#main" in s for s in v))
+
+    def test_main_id_on_unrelated_element_fails(self) -> None:
+        html = MINIMAL_HTML.replace('<main id="main">', '<main><div id="main"></div>')
+        v = r2_landing_check.check_structural(html)
+        self.assertTrue(any("main#main" in s for s in v))
+
+    def test_hero_outside_main_fails(self) -> None:
+        html = MINIMAL_HTML.replace(
+            '<main id="main"><section class="landing-hero">main</section></main>',
+            '<section class="landing-hero">main</section><main id="main"></main>',
+        )
+        v = r2_landing_check.check_structural(html)
+        self.assertTrue(any("landing hero" in s for s in v))
 
     def test_missing_pnx2_header_on_nav(self) -> None:
         html = MINIMAL_HTML.replace('<nav class="pnx2-header"', '<nav')
@@ -183,6 +196,14 @@ class StructuralTest(unittest.TestCase):
         )
         v = r2_landing_check.check_structural(html)
         self.assertTrue(any("r2-landing.css" in s for s in v))
+
+    def test_commented_structural_markup_does_not_pass(self) -> None:
+        html = MINIMAL_HTML.replace(
+            '<nav class="pnx2-header"><a href="#">Home</a></nav>',
+            '<!-- <nav class="pnx2-header"></nav> --><nav><a href="#">Home</a></nav>',
+        )
+        v = r2_landing_check.check_structural(html)
+        self.assertTrue(any("nav.pnx2-header" in s for s in v))
 
 
 # ---------------------------------------------------------------------------
@@ -257,11 +278,35 @@ class CssFilesTest(unittest.TestCase):
         })
         self.assertTrue(any("viewport-scaled" in s for s in v))
 
+    def test_viewport_scaled_font_size_in_calc_fails(self) -> None:
+        v = self._write_and_check({
+            "r2-landing.css": MINIMAL_R2_CSS + "\nh1 { font-size: calc(1rem + 2vw); }\n"
+        })
+        self.assertTrue(any("viewport-scaled" in s for s in v))
+
+    def test_viewport_scaled_font_size_in_clamp_fails(self) -> None:
+        v = self._write_and_check({
+            "r2-landing.css": MINIMAL_R2_CSS + "\nh1 { font-size: clamp(2rem, 5vw, 4rem); }\n"
+        })
+        self.assertTrue(any("viewport-scaled" in s for s in v))
+
     def test_external_import_fails(self) -> None:
         v = self._write_and_check({
             "r2-landing.css": MINIMAL_R2_CSS + '\n@import url("https://fonts.example.com/x.css");\n'
         })
-        self.assertTrue(any("http" in s for s in v))
+        self.assertTrue(any("external @import" in s for s in v))
+
+    def test_quoted_external_import_fails(self) -> None:
+        v = self._write_and_check({
+            "r2-landing.css": MINIMAL_R2_CSS + '\n@import "https://fonts.example.com/x.css";\n'
+        })
+        self.assertTrue(any("external @import" in s for s in v))
+
+    def test_protocol_relative_import_fails(self) -> None:
+        v = self._write_and_check({
+            "r2-landing.css": MINIMAL_R2_CSS + '\n@import url("//fonts.example.com/x.css");\n'
+        })
+        self.assertTrue(any("external @import" in s for s in v))
 
     def test_gradient_in_tokens_css_fails(self) -> None:
         v = self._write_and_check({

@@ -41,7 +41,7 @@ must remain byte-identical to R0.
 
 - `python3 scripts/redesign/r2_landing_check.py`: passed.
 - `python3 -m unittest discover -s scripts/redesign -p 'test_*.py'`:
-  66 tests passed.
+  73 tests passed.
 - `python3 scripts/redesign/r1_foundation_check.py`: passed.
 - `git diff --check`: passed.
 - `gitleaks dir --no-banner --redact --exit-code 1 .`: no leaks found.
@@ -53,6 +53,10 @@ must remain byte-identical to R0.
 - Chat panel at 360 px: verified fully inside the viewport (`left=8`,
   `right=336`, `width=328`).
 - Legal modal at 360 px: verified fully inside the viewport.
+- CodeRabbit's three valid review findings were fixed: the page now exposes a
+  semantic `main` landmark around the primary content, structural checks parse
+  live HTML relationships, and CSS checks cover quoted/protocol-relative
+  imports plus `vw` inside `calc()` and `clamp()` declarations.
 
 Local preview requests to `api.ekklesia.gr` were blocked by the production CORS
 policy because the preview origin was `127.0.0.1`. This is expected for the

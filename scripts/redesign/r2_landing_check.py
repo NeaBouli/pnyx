@@ -31,6 +31,7 @@ import hashlib
 import json
 import re
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
 
 # same-directory import
@@ -93,18 +94,14 @@ CSS_PROHIBITED: list[tuple[str, str]] = [
     (r"(?:linear|radial|conic)-gradient\s*\(", "gradient"),
     (r"box-shadow\s*:[^;]*?(?:px|em|rem|%|vw|vh|rgba?\(|#[0-9a-fA-F])", "non-none box-shadow"),
     (r"letter-spacing\s*:\s*-", "negative letter-spacing"),
-    (r"font-size\s*:\s*[\d.]+vw", "viewport-scaled font size"),
-    (r"@import\s+url\s*\(\s*['\"]?\s*https?://", "external http(s) @import"),
+    (r"font-size\s*:[^;{}]*\b[\d.]+\s*vw\b", "viewport-scaled font size"),
+    (r"@import\s+(?:url\(\s*)?['\"]?\s*(?:https?:)?//", "external @import"),
 ]
 
-# Structural strings that must appear in docs/index.html after R2
-STRUCTURAL_REQUIRED: list[tuple[str, str]] = [
-    ('class="pnx2-skip"', "pnx2-skip class on skip link"),
-    ('href="#main"',      "skip link href=#main"),
-    ('id="main"',         "id=main on landing section"),
-    ('<nav class="pnx2-header"', "pnx2-header class on nav element"),
-    ('class="pnx2-footer"', "pnx2-footer class on footer element"),
-]
+VOID_ELEMENTS = frozenset({
+    "area", "base", "br", "col", "embed", "hr", "img", "input", "link",
+    "meta", "param", "source", "track", "wbr",
+})
 
 
 # ---------------------------------------------------------------------------
@@ -246,15 +243,74 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
 # Check 3 — structural additions
 # ---------------------------------------------------------------------------
 
+class _StructureParser(HTMLParser):
+    """Collect only the live relationships required by the R2 shell."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.stack: list[tuple[str, dict[str, str]]] = []
+        self.skip_links: list[dict[str, str]] = []
+        self.main_count = 0
+        self.hero_in_main_count = 0
+        self.header_count = 0
+        self.footer_count = 0
+        self.stylesheets: list[str] = []
+
+    @staticmethod
+    def _classes(attrs: dict[str, str]) -> set[str]:
+        return set(attrs.get("class", "").split())
+
+    def handle_starttag(self, tag: str, attrs_list: list[tuple[str, str | None]]) -> None:
+        attrs = {key: value or "" for key, value in attrs_list}
+        classes = self._classes(attrs)
+        if tag == "a" and "pnx2-skip" in classes:
+            self.skip_links.append(attrs)
+        if tag == "main" and attrs.get("id") == "main":
+            self.main_count += 1
+        if tag == "section" and "landing-hero" in classes:
+            if any(parent_tag == "main" and parent_attrs.get("id") == "main" for parent_tag, parent_attrs in self.stack):
+                self.hero_in_main_count += 1
+        if tag == "nav" and "pnx2-header" in classes:
+            self.header_count += 1
+        if tag == "footer" and "pnx2-footer" in classes:
+            self.footer_count += 1
+        if tag == "link" and "stylesheet" in attrs.get("rel", "").lower().split():
+            self.stylesheets.append(attrs.get("href", ""))
+        if tag not in VOID_ELEMENTS:
+            self.stack.append((tag, attrs))
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+        if tag not in VOID_ELEMENTS:
+            self.handle_endtag(tag)
+
+    def handle_endtag(self, tag: str) -> None:
+        for index in range(len(self.stack) - 1, -1, -1):
+            if self.stack[index][0] == tag:
+                del self.stack[index:]
+                return
+
+
 def check_structural(html: str) -> list[str]:
-    """Return violations for R2 structural elements missing from html text."""
+    """Validate live R2 nodes and relationships with an HTML parser."""
     violations: list[str] = []
-    for needle, label in STRUCTURAL_REQUIRED:
-        if needle not in html:
-            violations.append(f"structural: missing: {label}")
+    parser = _StructureParser()
+    parser.feed(html)
+    parser.close()
+
+    if len(parser.skip_links) != 1 or parser.skip_links[0].get("href") != "#main":
+        violations.append("structural: expected one live pnx2-skip link targeting #main")
+    if parser.main_count != 1:
+        violations.append("structural: expected one live main#main landmark")
+    if parser.hero_in_main_count != 1:
+        violations.append("structural: landing hero must be nested inside main#main")
+    if parser.header_count != 1:
+        violations.append("structural: expected one live nav.pnx2-header")
+    if parser.footer_count != 1:
+        violations.append("structural: expected one live footer.pnx2-footer")
     for href in R2_CSS_RELS:
-        if f'href="{href}"' not in html:
-            violations.append(f"structural: missing CSS link href: {href}")
+        if parser.stylesheets.count(href) != 1:
+            violations.append(f"structural: expected one live stylesheet link: {href}")
     return violations
 
 

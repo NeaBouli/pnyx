@@ -881,7 +881,7 @@ Details: [EKA-17 release receipt](docs/operations/EKA17_HLR_ENV_ROLLOUT_2026-09-
   corners, no shadows or gradients, local tokens, explicit section dividers,
   left-aligned hierarchy, responsive controls and the dark footer. It does not
   implement an editorial rewrite or later-page redesign phase.
-- Validation passed: parser-backed R2 gate; 66 redesign tests; R1 foundation
+- Validation passed: parser-backed R2 gate; 73 redesign tests; R1 foundation
   check; diff check; full redacted Gitleaks scan. Headless Chrome passed at
   1440 x 1000 and 360 x 800 with no document horizontal overflow, working
   EL/EN toggle, 44 px visible form/control targets and viewport-contained chat
@@ -892,6 +892,9 @@ Details: [EKA-17 release receipt](docs/operations/EKA17_HLR_ENV_ROLLOUT_2026-09-
   `token_limited`. Sol reviewed and completed the validator, responsive fix,
   visual verification and integration preparation. No duplicate implementation
   was performed.
+- CodeRabbit's three valid findings were fixed before merge: semantic `main`,
+  live parser-backed structure checks, and complete external-import/viewport-
+  font negative coverage. The follow-up test total is included above.
 - Evidence: `docs/planning/r2/R2_REPORT.md`. No production deploy, server,
   database, DNS, IAM, secret, provider, payment, mobile-store or other runtime
   mutation occurred. R2 remains source-only until protected-branch integration
