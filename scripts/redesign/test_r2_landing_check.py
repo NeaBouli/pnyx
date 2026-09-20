@@ -87,13 +87,20 @@ def _write_css_files(docs_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 
 class RealTreeTest(unittest.TestCase):
-    def test_real_tree_passes(self) -> None:
-        """The current branch (feat/redesign-r2-landing-20260920) must be clean."""
-        violations = r2_landing_check.check_r2()
+    def test_real_tree_r2_contract_still_passes(self) -> None:
+        """Later redesign phases must preserve the accepted R2 contracts."""
+        inv = json.loads(r2_landing_check.R0_INVENTORY_FILE.read_text(encoding="utf-8"))
+        baseline = next(page for page in inv["pages"] if page["path"] == "docs/index.html")
+        current = r2_landing_check.r0_inventory.inventory_page("docs/index.html")
+        html = (r2_landing_check.DOCS_DIR / "index.html").read_text(encoding="utf-8")
+        violations = []
+        violations.extend(r2_landing_check.check_index_preservation(baseline, current))
+        violations.extend(r2_landing_check.check_structural(html))
+        violations.extend(r2_landing_check.check_css_files(r2_landing_check.DOCS_DIR))
         self.assertEqual(
             [],
             violations,
-            f"R2 check failed on real tree:\n" + "\n".join(violations),
+            f"R2 contract check failed on real tree:\n" + "\n".join(violations),
         )
 
 

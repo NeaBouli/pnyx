@@ -1,0 +1,304 @@
+/*
+ * R3 wiki-shell pilot: docs/wiki/index.html only.
+ *
+ * This layer deliberately overrides the preserved legacy inline presentation
+ * without changing the page's content or behavior. The other wiki pages stay
+ * byte-identical until the pilot acceptance gate is complete.
+ */
+
+:root {
+  --radius: 0;
+  --shadow: none;
+}
+
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+body {
+  min-width: 0;
+  background: var(--pnx2-bg);
+  color: var(--pnx2-ink);
+  overflow-wrap: anywhere;
+}
+
+nav.pnx2-header {
+  min-height: 86px;
+  padding: 12px var(--pnx2-content-pad);
+  justify-content: space-between;
+  gap: 8px 24px;
+  background: var(--pnx2-bg) !important;
+  border-bottom: var(--pnx2-border-section);
+  backdrop-filter: none !important;
+}
+
+.pnx2-header .nav-logo {
+  min-height: var(--pnx2-target-min);
+  color: var(--pnx2-accent);
+}
+
+.pnx2-header .nav-links {
+  min-width: 0;
+  justify-content: flex-end;
+  gap: 0 4px;
+}
+
+.pnx2-header .nav-links a,
+.pnx2-header .lang-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--pnx2-target-min);
+  padding: 0 12px;
+  border: 0;
+  background: var(--pnx2-bg);
+  color: var(--pnx2-body);
+  font-size: var(--pnx2-text-small);
+  font-weight: 700;
+}
+
+.pnx2-header .nav-links a:hover,
+.pnx2-header .nav-links a.active,
+.pnx2-header .lang-btn:hover {
+  background: var(--pnx2-bg-tinted);
+  color: var(--pnx2-accent-dark);
+}
+
+main#main {
+  display: block;
+  min-width: 0;
+}
+
+.hero {
+  padding: 56px max(var(--pnx2-content-pad), calc((100% - var(--pnx2-content-max)) / 2 + var(--pnx2-content-pad)));
+  text-align: left;
+  background: var(--pnx2-bg-tinted) !important;
+  border-bottom: var(--pnx2-border-section);
+}
+
+.hero h1 {
+  max-width: 18ch;
+  margin: 0 0 20px;
+  color: var(--pnx2-ink);
+  font-size: var(--pnx2-text-hero);
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.back-link {
+  min-height: var(--pnx2-target-min);
+  padding: 0 12px;
+  border: 2px solid var(--pnx2-ink);
+  color: var(--pnx2-ink);
+}
+
+.back-link:hover {
+  border-color: var(--pnx2-accent);
+  color: var(--pnx2-accent-dark);
+}
+
+.layout {
+  max-width: var(--pnx2-content-max);
+  padding: 0 var(--pnx2-content-pad) var(--pnx2-section-pad);
+}
+
+.layout > h2 {
+  margin: 0 calc(-1 * var(--pnx2-content-pad));
+  padding: var(--pnx2-band-pad) var(--pnx2-content-pad) 16px;
+  border-bottom: var(--pnx2-border-section);
+  color: var(--pnx2-ink);
+  font-size: var(--pnx2-text-h2);
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.05;
+  text-align: left;
+}
+
+.layout > h2:first-child {
+  margin-top: 0;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)) !important;
+  gap: 2px;
+  margin: 0 calc(-1 * var(--pnx2-content-pad));
+  border-bottom: var(--pnx2-border-section);
+  background: var(--pnx2-border-mid);
+}
+
+.card {
+  min-width: 0;
+  min-height: 148px;
+  padding: 24px;
+  border: 0;
+  background: var(--pnx2-bg);
+  color: var(--pnx2-ink);
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.card:hover {
+  border-color: transparent;
+  background: var(--pnx2-bg-tinted);
+  color: var(--pnx2-accent-dark);
+  transform: none;
+}
+
+.card h4 {
+  color: inherit;
+  font-size: 18px;
+}
+
+.card p {
+  color: var(--pnx2-muted);
+  font-size: var(--pnx2-text-small);
+}
+
+.code-block {
+  margin: 0 calc(-1 * var(--pnx2-content-pad));
+  padding: 28px var(--pnx2-content-pad);
+  border-bottom: var(--pnx2-border-section);
+  background: var(--pnx2-ink);
+  color: var(--pnx2-on-ink);
+  font-family: var(--pnx2-font-mono);
+  font-size: var(--pnx2-text-small);
+  overflow-x: auto;
+}
+
+.flow {
+  margin: 0 calc(-1 * var(--pnx2-content-pad));
+  padding: 24px var(--pnx2-content-pad);
+  gap: 2px;
+  border-bottom: var(--pnx2-border-section);
+  background: var(--pnx2-border-mid);
+}
+
+.fnode,
+.fnode-g,
+.fnode-b,
+.fnode-y,
+.fnode-p {
+  min-height: var(--pnx2-target-min);
+  padding: 10px 14px;
+  border: 0;
+  background: var(--pnx2-bg);
+  color: var(--pnx2-ink);
+}
+
+.farr {
+  padding: 0 8px;
+  color: var(--pnx2-accent);
+}
+
+.fade-in {
+  transform: none;
+}
+
+footer.pnx2-footer {
+  margin-top: 0;
+  padding: 40px var(--pnx2-content-pad);
+  border-top: 0;
+  background: var(--pnx2-ink);
+  color: var(--pnx2-on-ink-soft);
+}
+
+.pnx2-footer .footer-links {
+  gap: 0 4px;
+  margin-bottom: 12px;
+}
+
+.pnx2-footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--pnx2-target-min);
+  padding: 0 12px;
+  color: var(--pnx2-on-ink-link);
+}
+
+.pnx2-footer a:hover {
+  color: var(--pnx2-bg);
+}
+
+#legalModal > div {
+  max-width: min(700px, calc(100% - 32px)) !important;
+  max-height: calc(100dvh - 32px) !important;
+  padding: 32px !important;
+}
+
+#legalModal button {
+  min-width: var(--pnx2-target-min);
+  min-height: var(--pnx2-target-min);
+}
+
+@media (max-width: 920px) {
+  nav.pnx2-header {
+    display: block;
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .pnx2-header .nav-logo {
+    margin: 0 var(--pnx2-content-pad) 8px;
+  }
+
+  .pnx2-header .nav-links {
+    width: 100%;
+    padding: 0 var(--pnx2-content-pad) 4px;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+  }
+
+  .pnx2-header .nav-links > * {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --pnx2-content-pad: 16px;
+    --pnx2-section-pad: 40px;
+    --pnx2-band-pad: 32px;
+  }
+
+  .hero {
+    padding-top: 40px;
+    padding-bottom: 40px;
+  }
+
+  .hero h1 {
+    font-size: 42px;
+  }
+
+  .layout > h2 {
+    font-size: 30px;
+  }
+
+  .card {
+    min-height: 132px;
+    padding: 20px;
+  }
+
+  .flow {
+    align-items: stretch;
+  }
+
+  .fnode,
+  .fnode-g,
+  .fnode-b,
+  .fnode-y,
+  .fnode-p {
+    display: flex;
+    align-items: center;
+  }
+
+  #legalModal > div {
+    padding: 24px 20px !important;
+  }
+}
