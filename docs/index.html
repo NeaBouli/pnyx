@@ -471,9 +471,14 @@
 }
 </script>
 <script defer data-domain="ekklesia.gr" src="https://analytics.ekklesia.gr/js/script.js"></script>
+  <!-- R2 redesign visual system — tokens, foundation shell, landing overrides -->
+  <link rel="stylesheet" href="assets/redesign-v2/tokens.css"/>
+  <link rel="stylesheet" href="assets/redesign-v2/foundation.css"/>
+  <link rel="stylesheet" href="assets/redesign-v2/r2-landing.css"/>
 </head>
 <body>
-<nav>
+<a href="#main" class="pnx2-skip" data-el="Μετάβαση στο κύριο περιεχόμενο" data-en="Skip to main content">Μετάβαση στο κύριο περιεχόμενο</a>
+<nav class="pnx2-header">
   <a href="#" class="nav-logo">
     <img src="pnx.png" alt="logo"/>εκκλησία<span style="font-size:0.55em;color:#9ca3af;font-weight:400;margin-left:0.35em;letter-spacing:0.05em">του έθνους</span>
     <span style="background:#fef3c7;color:#92400e;font-size:0.55rem;font-weight:600;padding:0.15em 0.5em;border-radius:9999px;letter-spacing:0.03em;white-space:nowrap;animation:pulse-badge 2.5s ease-in-out infinite;margin-left:0.4rem" data-el="Beta" data-en="Beta">Beta</span>
@@ -498,6 +503,7 @@
   </div>
 </nav>
 
+<main id="main">
 <section class="landing-hero ekk-motion-layer">
   <div class="ekk-motion-bg" aria-hidden="true">
     <img src="animations/svg/hero-pnyx-network.svg" alt="" decoding="async">
@@ -1516,7 +1522,9 @@ async function submitNewsletter(e) {
   </div>
 </section>
 
-<footer>
+</main>
+
+<footer class="pnx2-footer">
   <div class="footer-links">
     <a href="/">Αρχική</a>
     <a href="wiki/">Wiki</a>
