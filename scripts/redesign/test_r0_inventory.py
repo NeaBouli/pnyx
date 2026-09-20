@@ -95,10 +95,10 @@ class RealTreeTest(unittest.TestCase):
             self.assertEqual(first_report, checked_report, "checked-in report is stale")
             return
 
-        # R0 is the frozen pre-redesign baseline. During the explicitly gated
-        # R2 phase only docs/index.html may diverge; its full semantic parity is
-        # enforced by r2_landing_check.py. Normalize that one page back to R0
-        # and require every other page plus both artifacts to remain exact.
+        # R0 is the frozen pre-redesign baseline. The gated R2 landing and R3
+        # wiki pilot may diverge; their full semantic parity is enforced by the
+        # phase validators. Normalize those pages back to R0 and require every
+        # other page plus both artifacts to remain exact.
         current = json.loads(first_inv)
         checked = json.loads(checked_inv)
         current_by_path = {page["path"]: page for page in current["pages"]}
@@ -107,7 +107,11 @@ class RealTreeTest(unittest.TestCase):
             path for path in checked_by_path
             if current_by_path.get(path) != checked_by_path[path]
         )
-        self.assertEqual(["docs/index.html"], differing, "only the gated R2 landing may differ from R0")
+        self.assertEqual(
+            ["docs/index.html", "docs/wiki/index.html"],
+            differing,
+            "only the gated R2 landing and R3 wiki pilot may differ from R0",
+        )
 
         landing = (REPO_ROOT / "docs/index.html").read_text(encoding="utf-8")
         for href in (
@@ -117,8 +121,18 @@ class RealTreeTest(unittest.TestCase):
         ):
             self.assertIn(f'href="{href}"', landing, "unexpected landing drift outside the R2 gate")
 
+        wiki_pilot = (REPO_ROOT / "docs/wiki/index.html").read_text(encoding="utf-8")
+        for href in (
+            "../assets/redesign-v2/tokens.css",
+            "../assets/redesign-v2/foundation.css",
+            "../assets/redesign-v2/r3-wiki.css",
+        ):
+            self.assertIn(f'href="{href}"', wiki_pilot, "unexpected wiki drift outside the R3 gate")
+
         normalized_pages = [
-            checked_by_path[page["path"]] if page["path"] == "docs/index.html" else page
+            checked_by_path[page["path"]]
+            if page["path"] in {"docs/index.html", "docs/wiki/index.html"}
+            else page
             for page in current["pages"]
         ]
         normalized = r0_inventory.build_inventory(normalized_pages)

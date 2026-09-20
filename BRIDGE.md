@@ -899,3 +899,29 @@ Details: [EKA-17 release receipt](docs/operations/EKA17_HLR_ENV_ROLLOUT_2026-09-
   database, DNS, IAM, secret, provider, payment, mobile-store or other runtime
   mutation occurred. R2 remains source-only until protected-branch integration
   and a separately authorized production rollout.
+
+## 2026-09-20 - R3 Wiki-Shell Pilot Source Validation (Append-only)
+
+- R3 pilot scope is limited to `docs/wiki/index.html`, the local
+  `docs/assets/redesign-v2/r3-wiki.css` layer and the parser-backed validation
+  harness. The other 13 wiki pages and every non-wiki public page remain
+  outside this task.
+- Existing text, bilingual pairs, links, metadata, analytics, scripts, event
+  handlers and inline styles are preserved. The only accepted semantic change
+  is a bilingual skip link plus its `main` target; no external asset or host
+  was added.
+- Validation passed before integration: parser-backed R3 gate; 94 redesign
+  tests; R1 foundation check; local resolution of all 17 static pilot links;
+  Python compile; diff check; full redacted Gitleaks scan; desktop 1440 x 1000
+  and mobile 360 x 800 browser verification.
+  Both viewports had no document overflow, no visible control below 44 px,
+  working EL/EN switching and a contained legal modal. Normal wheel scrolling
+  activated all eight deferred sections without clipping.
+- Claude Code was externally token-limited before changing files. Kimi fallback
+  was also externally token-limited. Sol performed the bounded implementation,
+  review and verification; no duplicate delegated implementation occurred.
+- Evidence: `docs/planning/r3/R3_PILOT_REPORT.md`. No production deploy,
+  server, database, DNS, IAM, secret, provider, payment, mobile-store or other
+  runtime mutation occurred. Full R3 remains open until the pilot passes
+  protected integration and the remaining 13 wiki pages complete their own
+  bounded parity gates.
