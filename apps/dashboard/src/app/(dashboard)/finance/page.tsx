@@ -33,7 +33,7 @@ export default function FinancePage() {
   const loadData = useCallback(async () => {
     setLoading(true)
     const [hlrRes, arRes, payRes, claudeRes, logsRes, ovRes] = await Promise.allSettled([
-      fetch(`${API}/api/v1/identity/hlr/credits`).then(r => r.json()),
+      fetch('/api/proxy/admin/hlr/credits', { cache: 'no-store' }).then(r => r.json()),
       fetch(`${API}/api/v1/arweave/status`).then(r => r.json()),
       fetch(`${API}/api/v1/payments/status`).then(r => r.json()),
       fetch(`${API}/api/v1/claude/budget`).then(r => r.json()),

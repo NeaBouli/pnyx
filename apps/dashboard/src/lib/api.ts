@@ -55,7 +55,7 @@ export async function fetchHealth() { return fetchAPI('/health') }
 export async function fetchHealthModules() { return fetchAPI('/api/v1/health/modules') }
 
 // --- HLR ---
-export async function fetchHlrCredits() { return fetchAPI('/api/v1/identity/hlr/credits') }
+export async function fetchHlrCredits() { return adminFetch('/api/v1/admin/hlr/credits') }
 
 // --- Bills ---
 export async function fetchBills(limit = 5) { return fetchAPI(`/api/v1/bills?limit=${limit}`) }

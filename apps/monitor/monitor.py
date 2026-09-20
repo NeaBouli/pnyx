@@ -896,10 +896,16 @@ def check_arweave_pending(conn) -> list[Alert]:
 
 def check_hlr_credits() -> list[Alert]:
     alerts = []
+    if not ADMIN_KEY:
+        return alerts
     try:
-        r = httpx.get(f"{API_URL}/api/v1/admin/hlr/credits", timeout=5)
+        r = httpx.get(
+            f"{API_URL}/api/v1/admin/hlr/credits",
+            headers={"Authorization": f"Bearer {ADMIN_KEY}"},
+            timeout=5,
+        )
         if r.status_code == 200:
-            credits = r.json().get("primary", {}).get("credits", 9999)
+            credits = r.json().get("primary", {}).get("remaining", 9999)
             if credits < 100:
                 alerts.append(Alert("hlr_low", "", "critical",
                                     f"HLR Credits niedrig: {credits}", False))

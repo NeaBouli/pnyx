@@ -7,9 +7,9 @@ GET  /api/v1/identity/status  — Key Status prüfen
 import gc
 import logging
 import json
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from uuid import uuid4
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,7 +25,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../packages/cr
 sys.path.insert(0, "/packages/crypto")  # Docker container path
 from keypair import generate_keypair, verify_signature
 from nullifier import generate_nullifier_hash, generate_nullifier_hash_v2
-from hlr import verify_greek_number
+from hlr import normalize_greek_number, verify_greek_number
+
+from ip_utils import (
+    hashed_rate_subject,
+    rate_limit_key_for_ip,
+    redis_fixed_window_limit,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/identity", tags=["MOD-01 Identity"])
@@ -70,6 +76,77 @@ async def _get_hlr_usage(key: str) -> int:
     r = await _get_hlr_redis()
     val = await r.get(key)
     return int(val) if val else 0
+
+
+# ─── HLR Kosten-/Missbrauchsschutz (EKA-06) ──────────────────────────────────
+# Dedizierte Redis-Limits VOR jedem kostenpflichtigen Provideraufruf.
+# Keys enthalten ausschließlich gehashte Bucket-IDs (ip_utils), niemals rohe
+# IP-Adressen oder Telefonnummern. Fail-closed: ohne Redis kein HLR-Aufruf.
+
+HLR_VERIFY_IP_MINUTE_LIMIT = 5
+HLR_VERIFY_IP_MINUTE_WINDOW_SECONDS = 60
+HLR_VERIFY_IP_DAY_LIMIT = 20
+HLR_VERIFY_NUMBER_COOLDOWN_SECONDS = 300
+HLR_VERIFY_NUMBER_DAY_LIMIT = 3
+HLR_VERIFY_DAY_WINDOW_SECONDS = 86400
+
+_HLR_VERIFY_UNAVAILABLE_DETAIL = (
+    "Η επαλήθευση είναι προσωρινά μη διαθέσιμη. Δοκιμάστε ξανά αργότερα."
+)
+
+
+async def _enforce_hlr_verify_limits(request: Request, normalized_number: str) -> None:
+    """Fail-closed cost/abuse guard before any paid HLR provider call.
+
+    Reihenfolge: Nummer-Cooldown → Nummer/Tag → IP/Minute → IP/Tag.
+    Nummern-Limits zuerst, damit reine Wiederholungsversuche derselben Nummer
+    die IP-Budgets nicht aufblähen; IP-Limits deckeln danach verteilte Angriffe.
+    """
+    today = date.today()
+    number_hash = hashed_rate_subject(normalized_number, "hlr_verify:number", today=today)
+    day = today.isoformat()
+    try:
+        r = await _get_hlr_redis()
+        cooldown_set = await r.set(
+            f"ratelimit:hlr_verify:number_cooldown:{day}:{number_hash}",
+            "1",
+            ex=HLR_VERIFY_NUMBER_COOLDOWN_SECONDS,
+            nx=True,
+        )
+        if not cooldown_set:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Πολλές προσπάθειες για αυτόν τον αριθμό. Δοκιμάστε ξανά σε λίγα λεπτά.",
+            )
+        await redis_fixed_window_limit(
+            r,
+            f"ratelimit:hlr_verify:number_day:{day}:{number_hash}",
+            HLR_VERIFY_NUMBER_DAY_LIMIT,
+            HLR_VERIFY_DAY_WINDOW_SECONDS,
+        )
+        await redis_fixed_window_limit(
+            r,
+            rate_limit_key_for_ip(request, "hlr_verify:ip_min", today=today),
+            HLR_VERIFY_IP_MINUTE_LIMIT,
+            HLR_VERIFY_IP_MINUTE_WINDOW_SECONDS,
+        )
+        await redis_fixed_window_limit(
+            r,
+            rate_limit_key_for_ip(request, "hlr_verify:ip_day", today=today),
+            HLR_VERIFY_IP_DAY_LIMIT,
+            HLR_VERIFY_DAY_WINDOW_SECONDS,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(
+            "[MOD-01] HLR cost guard Redis unavailable — paid lookup blocked (fail-closed)",
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=_HLR_VERIFY_UNAVAILABLE_DETAIL,
+        ) from exc
 
 
 def _identity_kdf_version() -> str:
@@ -165,7 +242,7 @@ class StatusResponse(BaseModel):
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
 @router.post("/verify", response_model=VerifyResponse)
-async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)):
+async def verify_identity(req: VerifyRequest, request: Request, db: AsyncSession = Depends(get_db)):
     """
     Beta-Flow:
     1. HLR Lookup → nur echte griechische Mobilnummern
@@ -175,6 +252,17 @@ async def verify_identity(req: VerifyRequest, db: AsyncSession = Depends(get_db)
     5. Public Key + Nullifier speichern (KEIN Private Key, KEINE Telefonnummer)
     6. Private Key einmalig zurückgeben → Client speichert im Secure Enclave
     """
+
+    # 0. Lokale Formatprüfung + Kosten-/Missbrauchsschutz (EKA-06) — vor jedem
+    # kostenpflichtigen Provideraufruf. Ungültige Nummern werden lokal
+    # abgelehnt, ohne Redis oder Provider zu berühren.
+    normalized_number = normalize_greek_number(req.phone_number)
+    if not normalized_number:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Μη έγκυρος αριθμός. Μόνο ελληνικοί αριθμοί κινητού.",
+        )
+    await _enforce_hlr_verify_limits(request, normalized_number)
 
     # 1. HLR Prüfung
     hlr_result = await verify_greek_number(req.phone_number)
@@ -339,16 +427,28 @@ async def check_status(req: StatusRequest, db: AsyncSession = Depends(get_db)):
 
 # ─── HLR Credits Public Endpoint ─────────────────────────────────────────────
 
-@router.get("/hlr/credits")
-async def hlr_credits():
-    """
-    Öffentlicher Endpoint — zeigt verbleibende HLR Credits.
-    Kein Auth nötig (Transparenz-Prinzip).
-    Für community.html Live-Kachel.
+def _hlr_coarse_status(remaining: int) -> str:
+    return "critical" if remaining < 50 else ("low" if remaining < 200 else "ok")
 
-    Rückwärtskompatibel: Flat-Felder (initial, used, remaining, etc.)
-    zeigen den AKTIVEN Provider (Primary oder Failover).
-    Zusätzlich: primary/fallback Objekte mit Details beider Provider.
+
+def _hlr_coarse_level(remaining: int, initial: int) -> str:
+    """Grobe Kapazitätsstufe — keine exakten Guthaben oder Nutzungszahlen."""
+    if remaining <= 0 or initial <= 0:
+        return "empty"
+    ratio = remaining / initial
+    if ratio > 0.5:
+        return "high"
+    if ratio > 0.2:
+        return "medium"
+    return "low"
+
+
+async def build_hlr_credits_snapshot() -> dict:
+    """Interner exakter HLR-Snapshot — NICHT geroutet.
+
+    Vollständiges bisheriges Schema (Flat-/primary-/fallback-Felder inklusive
+    exakter Werte). Ausschließlich für geschützte Admin-Konsumenten;
+    öffentliche Endpunkte geben nur grobe Projektionen zurück.
     """
     primary_used = await _get_hlr_usage(HLR_PRIMARY_REDIS_KEY)
     fallback_used = await _get_hlr_usage(HLR_FALLBACK_REDIS_KEY)
@@ -359,8 +459,8 @@ async def hlr_credits():
     primary_balance_eur = round(primary_remaining * HLR_PRIMARY_COST_PER_QUERY, 2)
     fallback_balance_eur = round(fallback_remaining * HLR_FALLBACK_COST_PER_QUERY, 2)
 
-    primary_status = "critical" if primary_remaining < 50 else ("low" if primary_remaining < 200 else "ok")
-    fallback_status = "critical" if fallback_remaining < 50 else ("low" if fallback_remaining < 200 else "ok")
+    primary_status = _hlr_coarse_status(primary_remaining)
+    fallback_status = _hlr_coarse_status(fallback_remaining)
 
     # Failover status from Redis
     r = await _get_hlr_redis()
@@ -402,6 +502,41 @@ async def hlr_credits():
         },
         "failover_active": failover_active,
         "failover_reason": failover_reason,
+    }
+
+
+@router.get("/hlr/credits")
+async def hlr_credits():
+    """
+    Öffentlicher Endpoint — grober HLR-Betriebszustand für die Community-Kachel.
+
+    Datensparsam (EKA-06): keine exakten Guthaben, Nutzungszahlen,
+    Euro-Beträge, Kosten pro Anfrage, Providernamen, Konfigurationsdetails
+    oder Failover-Gründe. Nur grobe Zustände:
+    status (ok|low|critical), level (high|medium|low|empty).
+    """
+    snapshot = await build_hlr_credits_snapshot()
+    primary = snapshot["primary"]
+    fallback = snapshot["fallback"]
+
+    fallback_usable = fallback["enabled"] and fallback["configured"] and fallback["remaining"] > 0
+
+    # Flat fields describe the currently active verification path.
+    active = fallback if snapshot["failover_active"] else primary
+
+    return {
+        "status": active["status"],
+        "level": _hlr_coarse_level(active["remaining"], active["initial"]),
+        "primary": {
+            "status": primary["status"],
+            "level": _hlr_coarse_level(primary["remaining"], primary["initial"]),
+        },
+        "fallback": {
+            "status": fallback["status"],
+            "level": _hlr_coarse_level(fallback["remaining"], fallback["initial"]),
+        },
+        "failover_active": snapshot["failover_active"],
+        "verification_available": primary["remaining"] > 0 or fallback_usable,
     }
 
 

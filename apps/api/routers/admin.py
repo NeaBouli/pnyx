@@ -30,6 +30,7 @@ router = APIRouter(prefix="/api/v1/admin", tags=["MOD-15 Admin"])
 ADMIN_KEY = os.environ.get("ADMIN_KEY", "dev-admin-key")
 
 from dependencies import verify_admin_key
+from routers.identity import build_hlr_credits_snapshot
 
 def verify_admin(key: bool = Depends(verify_admin_key)):
     """Rueckwaertskompatibel — delegiert an zentrale Dependency."""
@@ -419,6 +420,16 @@ async def admin_stats(_key=Depends(verify_admin), db: AsyncSession = Depends(get
         "environment": os.environ.get("ENVIRONMENT", "development"),
         "admin_key_set": ADMIN_KEY != "dev-admin-key",
     }
+
+
+@router.get("/hlr/credits")
+async def admin_hlr_credits(_key=Depends(verify_admin)):
+    """Exakter HLR-Snapshot für das Dashboard (EKA-06).
+
+    Geschütztes Gegenstück zum datensparsamen öffentlichen Endpoint —
+    liefert das bisherige Flat-/primary-/fallback-Schema mit exakten Werten.
+    """
+    return await build_hlr_credits_snapshot()
 
 
 @router.post("/scraper/heal-status")
