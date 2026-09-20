@@ -645,3 +645,31 @@
   production mutation occurred. EKA-03 remains open until the separately
   authorized API rollout, compatible Android release/adoption, cutoff and live
   acceptance sequence completes.
+
+## 2026-09-20 - EKA-05 Push Registration Authentication Integration (Append-only)
+
+- PR #327 merged normally as `9f52c95` without admin bypass. Push registration
+  now requires a fresh domain-separated Ed25519 proof from an ACTIVE identity;
+  the unauthenticated server fallback was removed.
+- Mobile uses a cryptographically random per-install UUIDv4 and signs the exact
+  canonical registration payload. The local refresh marker is bound to the
+  identity material and cleared with the keys. F-Droid remains free of native
+  push registration requirements.
+- Server storage uses stable HMAC-derived Redis keys, a 90-day TTL and bounded
+  IP/identity limits. Same-value refreshes do not consume identity quota, and
+  sends deduplicate legacy plus signed token entries during the transition.
+- CodeRabbit's two valid findings were fixed in `d7f15d4`: `timestamp_ms` now
+  rejects coerced JSON strings, and token validation rejects trailing data via
+  full matching. Both threads are resolved. Claude reported no blocker; Kimi
+  implemented the bounded subsystem under Sol review.
+- Verification passed: focused API registration tests `48 passed`; full API
+  suite `1174 passed, 4 skipped, 25 xfailed, 4 subtests passed`; Mobile `336`
+  tests; dependency security regressions `7 + 4`; TypeScript, Expo dependency,
+  YAML security, npm audit, compile, diff and gitleaks checks passed.
+- All PR gates passed. Post-merge main CI run `35499471240` and Security run
+  `35499471252` passed completely on merge commit `9f52c95`.
+- Evidence is recorded in issue #318 and PR #327. No API rollout, Mobile
+  build/release, database, DNS, secret, IAM, provider, payment, store or other
+  production mutation occurred. EKA-05 remains open until the separately
+  authorized API rollout, compatible Mobile release/adoption and live
+  acceptance sequence completes.

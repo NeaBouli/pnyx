@@ -3,11 +3,11 @@
 Authoritative full checkpoint:
 [Ekklesia master project status - 2026-09-19](reports/EKKLESIA_MASTER_PROJECT_STATUS_2026-09-19.md).
 
-Repository and delivery gates reviewed: 2026-09-19 for the EKA audit/design
-intake and subsequent EKA-02/EKA-32/EKA-04/EKA-03 integration deltas. The
+Repository and delivery gates reviewed: 2026-09-20 for the EKA audit/design
+intake and subsequent EKA-02/EKA-32/EKA-04/EKA-03/EKA-05 integration deltas. The
 deployed-release facts below remain based on the prior verified release
 receipts. EKA-02 received a separately authorized bounded Web rollout; EKA-32,
-EKA-04 and EKA-03 have not been deployed.
+EKA-04, EKA-03 and EKA-05 have not been deployed.
 Android v1.0.32/vC61 is merged and published on GitHub. Its Direct APK and Play
 AAB are checksum-verified and retain the established signing certificate. The
 release adds category-aware app-icon notification counts and resets the count
@@ -45,6 +45,15 @@ eligibility, ZK, database and production policy are unchanged.
   `4 skipped`, `25 xfailed`, `4 subtests passed`), all PR gates and post-merge
   CI/Security are green. EKA-03 remains evidence-gated until the separate API,
   Android adoption, cutoff and live-acceptance sequence completes.
+- PR #327 merged normally as `9f52c95` with strict signed push registration,
+  random per-install UUIDv4 device identifiers, stable HMAC Redis keys,
+  identity/IP rate limits, 90-day refresh and legacy-token send deduplication.
+  Focused tests (`48 passed`), the full API suite (`1174 passed`, `4 skipped`,
+  `25 xfailed`, `4 subtests passed`), Mobile (`336 passed`), security
+  regressions, TypeScript, dependency and secret checks all passed. PR and
+  post-merge CI/Security are green. EKA-05 remains evidence-gated until a
+  separately authorized API rollout, compatible Mobile release/adoption and
+  live acceptance complete.
 - GitHub Actions itself is currently operational: the sampled latest 30 runs
   completed successfully with no active or failed run.
 - The supplied redesign handoff is archived under `design/handoffs/` as
@@ -56,9 +65,10 @@ eligibility, ZK, database and production policy are unchanged.
   program are frozen in
   `docs/reports/EKKLESIA_MASTER_PROJECT_STATUS_2026-09-19.md`.
 
-The original catalog intake changed no application or runtime state. The four
+The original catalog intake changed no application or runtime state. The five
 subsequent bounded security tasks above did not implement the redesign or a
-public audit page. No EKA-32, EKA-04 or EKA-03 production change occurred.
+public audit page. No EKA-32, EKA-04, EKA-03 or EKA-05 production change
+occurred.
 
 ## Verified component rollout
 

@@ -14,9 +14,9 @@ and prepares bounded work packages for an explicit later start.
   `docs/community-audits/`.
 - The authoritative finding register is issue
   [#318](https://github.com/NeaBouli/pnyx/issues/318). Its EKA-01..64 boxes
-  remain evidence-gated. EKA-02 is closed; EKA-32, EKA-04 and EKA-03 are
-  integrated but remain open until their separately authorized rollout and
-  live-acceptance evidence is complete.
+  remain evidence-gated. EKA-02 is closed; EKA-32, EKA-04, EKA-03 and EKA-05
+  are integrated but remain open until their separately authorized rollout,
+  client-adoption where applicable and live-acceptance evidence is complete.
 - The consolidated 29-page PDF was checked for completeness and visually
   rendered during intake. The repository Markdown reports remain the source
   for ticket-level evidence and line references.
@@ -35,8 +35,9 @@ GitHub Actions is not currently blocked by a run quota:
 
 - on 2026-09-19 the latest 30 repository runs were completed successfully;
 - no run was queued, in progress or failed in that sample;
-- PRs #319, #320, #325 and #326 merged normally with green post-merge CI and
-  Security Audit; maintenance PRs #321 and #322 retain green candidate checks.
+- PRs #319, #320, #325, #326 and #327 merged normally with green post-merge CI
+  and Security Audit; maintenance PRs #321 and #322 retain green candidate
+  checks.
 
 The warning seen during PR #320 was a **CodeRabbit included-review limit**, not
 a GitHub Actions limit. CodeRabbit's completed review identified two valid
@@ -49,6 +50,12 @@ PR #326 later received three actionable CodeRabbit findings. All were fixed in
 checks passed. Kimi and Claude follow-up invocations were externally
 quota-limited, so Sol performed the documented final-delta review without
 duplicating implementation.
+
+PR #327 received two actionable CodeRabbit findings. Strict integer validation
+and full-token matching were fixed in `d7f15d4`; both review threads were
+resolved. Kimi implemented the bounded subsystem under Sol review, Claude found
+no blocker, and focused, full API, Mobile, security plus post-merge checks all
+passed.
 
 If an Actions quota becomes constrained later:
 
@@ -86,12 +93,13 @@ block and, when desired, an explicit token budget are the reliable controls.
 | #320 | EKA-32 global rate-limit middleware | Merged as `942e063`; review findings fixed; local/hosted verification green | Integration complete; production rollout/live acceptance remain separate |
 | #325 | EKA-04 newsletter abuse protection | Merged as `760845a`; focused, real-Redis, full API, review and post-merge checks green | Integration complete; production rollout/live acceptance remain separate |
 | #326 | EKA-03 nullifier-bound action proofs | Merged as `5f850e2`; full API/mobile/security verification, resolved review threads and post-merge checks green | Integration complete; API rollout, Android adoption, cutoff and live acceptance remain separate |
+| #327 | EKA-05 authenticated push registration | Merged as `9f52c95`; full API/mobile/security verification, resolved review threads and post-merge checks green | Integration complete; API rollout, compatible Mobile release/adoption and live acceptance remain separate |
 | #321 | Alembic 1.20.0 dependency update | Open, clean, checks green | Independent dependency maintenance; do not mix with EKA fixes |
 | #322 | sentry-sdk 2.69.1 dependency update | Open, clean, checks green | Independent dependency maintenance; do not mix with EKA fixes |
 
-The catalog intake itself merged or deployed nothing. The #319, #320, #325 and
-#326 rows record later bounded task blocks; #320, #325 and #326 have not been
-deployed.
+The catalog intake itself merged or deployed nothing. The #319, #320, #325,
+#326 and #327 rows record later bounded task blocks; #320, #325, #326 and #327
+have not been deployed.
 
 ## Remediation packages
 
@@ -102,7 +110,7 @@ must not be duplicated across packages.
 |---|---|---|---|
 | A - Representative XSS | EKA-02 | Complete: #319 merged, bounded Web rollout accepted, #318 updated. | High package closed with source, integration and live evidence. |
 | B - Global rate limiting | EKA-32 | Integration complete: #320 proves middleware order, 429 CORS, test isolation, Redis/fallback behavior and trusted-proxy semantics. Production rollout remains separate. | Medium/high blast radius; live evidence still required. |
-| C - Auxiliary endpoint abuse and privacy | EKA-03, EKA-04, EKA-05, EKA-06, EKA-09, EKA-16, EKA-17, EKA-53 | EKA-04 source integration is complete in #325. EKA-03 source integration is complete in #326 with a compatibility-gated unsigned-read retirement path. Their rollout/live gates and the remaining push, HLR, webhook and usage subsystems stay separate. | Depends on B's global baseline and existing client compatibility. HLR/provider writes remain forbidden. |
+| C - Auxiliary endpoint abuse and privacy | EKA-03, EKA-04, EKA-05, EKA-06, EKA-09, EKA-16, EKA-17, EKA-53 | EKA-04 source integration is complete in #325. EKA-03 source integration is complete in #326 with a compatibility-gated unsigned-read retirement path. EKA-05 source integration is complete in #327 with signed identity-bound registration and random per-install device IDs. Their rollout/live gates and the remaining HLR, webhook and usage subsystems stay separate. | Depends on B's global baseline and existing client compatibility. HLR/provider writes remain forbidden. |
 | D - Vote and dormant-auth correctness | EKA-01, EKA-10, EKA-11, EKA-12 | Restore Tier-1 validation, convert municipal races to deterministic conflict handling, define dormant gov.gr state storage before activation, narrow signature exceptions. | Security-sensitive; no governance semantics change. |
 | E - Client keys and nullifier KDF | EKA-07, EKA-08, EKA-21, EKA-22, EKA-23, EKA-24 | Publish canonical formats and known-answer tests first; then plan backward-compatible key-storage and KDF migration. Record the accepted phone-entropy residual risk explicitly. | High crypto/identity risk; requires Kimi plus strengthened Sol review before code. No identity reset. |
 | F - Runtime and integration surface | EKA-13, EKA-18, EKA-19, EKA-26, EKA-27, EKA-28, EKA-29, EKA-30, EKA-31 | Reverify inventory, dependency backlog, container/user/tag posture, subdomain ownership, admin exposure, package IDs and CSP. Record the verified-wiring evidence separately. | Read-only inventory first. DNS, containers, IAM and production need separate authorization. |
@@ -205,9 +213,10 @@ redesign visuals.
 ## Current stop point
 
 - Audit and helper work catalogued; Package A is closed, Package B is integrated
-  with its production gate still open, and Package C's EKA-04 and EKA-03 source
-  subsystems are integrated with their rollout/live gates still open.
-- CI limitation correctly classified; all #319/#320/#325/#326 integration
+  with its production gate still open, and Package C's EKA-04, EKA-03 and
+  EKA-05 source subsystems are integrated with their rollout/live gates still
+  open.
+- CI limitation correctly classified; all #319/#320/#325/#326/#327 integration
   checks passed.
 - Design source preserved outside the public web root.
 - No redesign code or public content changed.
@@ -216,10 +225,12 @@ redesign visuals.
   implemented by Kimi and independently reviewed by Claude, CodeRabbit and Sol.
   EKA-03 was implemented by Kimi; its initial Claude review approved, its three
   CodeRabbit findings were fixed, and quota-limited follow-up agents were
-  replaced by the documented final Sol review.
+  replaced by the documented final Sol review. EKA-05 was implemented by Kimi
+  under Sol review; Claude found no blocker and CodeRabbit's two valid findings
+  were fixed before the normal merge.
 
 Next executable action requires a separate exact choice: either the bounded
 **Package B API rollout/live acceptance**, the bounded **EKA-04 API rollout/live
-acceptance**, the staged **EKA-03 API/Android/adoption/cutoff sequence**, or
-specification of the next Package C subsystem. None starts automatically from
-this document.
+acceptance**, the staged **EKA-03 API/Android/adoption/cutoff sequence**, the
+staged **EKA-05 API/Mobile/adoption/live-acceptance sequence**, or specification
+of the next Package C subsystem. None starts automatically from this document.

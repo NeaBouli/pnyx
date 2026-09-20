@@ -6,8 +6,8 @@ recipient, customer, secret or production credential data
 Repository baseline: `origin/main` at
 `6a8ed73a04e029d8d6525c0ccdd31f487ec684`
 Snapshot window: 2026-09-19, approximately 09:30-10:05 UTC
-Post-snapshot integration deltas reconciled through PR #326 merge and green
-post-merge checks at approximately 23:06 UTC
+Post-snapshot integration deltas reconciled through PR #327 merge and green
+post-merge checks on 2026-09-20 at approximately 08:29 UTC
 Prepared in: draft documentation PR
 [#323](https://github.com/NeaBouli/pnyx/pull/323)
 Detailed finance and local-worktree evidence: private/local operator records,
@@ -56,13 +56,14 @@ finished**.
 - The website, API, forum, dashboard login, read-only mirrors and Android
   download endpoints are reachable.
 - GitHub CI and Security Audit are green on `main`; 16 PRs remain open after
-  the normal merges of #319, #320, #325 and #326.
+  the normal merges of #319, #320, #325, #326 and #327.
 - Android `v1.0.32` is current on GitHub, Google Play Closed Testing and
   F-Droid.
 - The project has no open Critical or High EKA finding. The sole High finding,
   EKA-02, is closed; 21 Medium findings remain evidence-gated, including EKA-32,
-  EKA-04 and EKA-03. Their source integrations are complete, but their separate
-  rollout, compatibility/adoption and live-acceptance gates remain open.
+  EKA-04, EKA-03 and EKA-05. Their source integrations are complete, but their
+  separate rollout, compatibility/adoption and live-acceptance gates remain
+  open.
 - Google Play production access is externally blocked at 8 of 12 opted-in
   testers, followed by the required qualifying 14-day test period.
 - Three mobile acceptance tracks remain: the persistent action ledger and
@@ -694,7 +695,7 @@ Publishing an audit is not fixing it. A green PR is not deployment evidence.
 |---|---|---|
 | A - Representative XSS | EKA-02 | Complete: PR #319 merged, bounded Web rollout passed hostile-payload live acceptance, #318 closed. |
 | B - Global rate limiting | EKA-32 | Integration complete in PR #320; production rollout and live acceptance remain separate. |
-| C - Endpoint abuse/privacy | EKA-03/04/05/06/09/16/17/53 | EKA-04 source integration is complete in #325 and EKA-03 source integration is complete in #326; their rollout/live gates and the remaining HLR/push/webhook/status subsystems remain. |
+| C - Endpoint abuse/privacy | EKA-03/04/05/06/09/16/17/53 | EKA-04 source integration is complete in #325, EKA-03 in #326 and EKA-05 in #327; their rollout/live gates and the remaining HLR/webhook/status subsystems remain. |
 | D - Vote/auth correctness | EKA-01/10/11/12 | Restore Tier-1 validation, deterministic municipal conflict response, dormant gov.gr state design and narrow exception handling. |
 | E - Client keys/KDF | EKA-07/08/21/22/23/24 | Canonical formats/KATs, backward-compatible key-storage and KDF migration, explicit phone-entropy risk. |
 | F - Runtime/integration | EKA-13/18/19/26/27/28/29/30/31 | Read-only inventory first; then bounded container, subdomain, admin, package-ID and CSP work. |
@@ -727,7 +728,10 @@ the checkpoint.
 - [ ] EKA-04 - dedicated newsletter limits and HMAC-only identifiers are merged
   in PR #325 (`760845a`); closure awaits separately authorized API rollout and
   live acceptance.
-- [ ] EKA-05 - unauthenticated push registration/predictable device ID.
+- [ ] EKA-05 - PR #327 (`9f52c95`) requires fresh ACTIVE-identity Ed25519
+  proofs for push registration and uses random per-install UUIDv4 identifiers,
+  stable HMAC Redis keys, bounded limits and token expiry. Closure awaits API
+  rollout, compatible Mobile release/adoption and live acceptance.
 - [ ] EKA-06 - HLR cost exposure and public credits oracle.
 - [ ] EKA-07 - web Ed25519 private key in plaintext localStorage.
 - [ ] EKA-08 - compass profile plaintext localStorage fallback.
@@ -1003,7 +1007,11 @@ This is the recommended execution order. Only one bounded package should be
   the released GET contract remains behind a reversible cutoff. A separate API
   rollout, compatible Android release/adoption, cutoff and live acceptance are
   still required.
-- Split the remaining EKA-05/06/09/16/17/53 work by subsystem.
+- EKA-05 source integration is complete in PR #327: push registration requires
+  a fresh ACTIVE-identity Ed25519 proof, random per-install UUIDv4 identifiers,
+  stable HMAC Redis keys and bounded limits/expiry. A separate API rollout,
+  compatible Mobile release/adoption and live acceptance are still required.
+- Split the remaining EKA-06/09/16/17/53 work by subsystem.
 - Preserve client compatibility and fail-closed identity behavior.
 - No real HLR, newsletter, push or provider writes during synthetic tests.
 

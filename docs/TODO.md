@@ -1,7 +1,7 @@
 # Ekklesia.gr — TODO
 # Copyright (c) 2026 V-Labs Development — MIT License
 
-Last reconciled: 2026-09-19 (EKA-02 closed; EKA-32/EKA-04/EKA-03 integrated, not deployed)
+Last reconciled: 2026-09-20 (EKA-02 closed; EKA-32/EKA-04/EKA-03/EKA-05 integrated, not deployed)
 
 `docs/STATUS.md` is the authority for the current release. GitHub issues and
 Linear are the authorities for active work. Older session notes are retained
@@ -32,6 +32,13 @@ The complete cross-system checkpoint is
   Full local API/mobile/security verification, all PR checks and post-merge
   CI/Security passed. API rollout, compatible Android release/adoption, cutoff
   and live acceptance remain separate gates, so EKA-03 stays open.
+- [x] Complete the EKA-05 source integration: PR #327 merged as `9f52c95` with
+  signed ACTIVE-identity push registration, random per-install UUIDv4 device
+  IDs, stable HMAC Redis keys, bounded rate limits, token expiry/refresh and
+  legacy-token send deduplication. Full API, Mobile, dependency/security,
+  review and post-merge checks passed. API rollout, compatible Mobile
+  release/adoption and live acceptance remain separate gates, so EKA-05 stays
+  open.
 - [x] Confirm GitHub Actions is currently running normally. The observed limit
   warning belongs to CodeRabbit, not Actions; no CI rule is weakened or skipped.
 - [x] Preserve the supplied redesign package unchanged under
