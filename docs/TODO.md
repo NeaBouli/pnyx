@@ -1,7 +1,7 @@
 # Ekklesia.gr — TODO
 # Copyright (c) 2026 V-Labs Development — MIT License
 
-Last reconciled: 2026-09-20 (EKA-02 closed; EKA-32/EKA-04/EKA-03/EKA-05/EKA-06 integrated, not deployed)
+Last reconciled: 2026-09-20 (EKA-02 closed; EKA-32/EKA-04/EKA-03/EKA-05/EKA-06/EKA-09 integrated, not deployed)
 
 `docs/STATUS.md` is the authority for the current release. GitHub issues and
 Linear are the authorities for active work. Older session notes are retained
@@ -46,6 +46,14 @@ The complete cross-system checkpoint is
   valid review findings were fixed in `8c8f8e2`; focused tests, dashboard
   build/typecheck, all PR checks and post-merge CI/Security passed. Bounded
   API/dashboard rollout and live acceptance remain separate gates, so EKA-06
+  stays open.
+- [x] Complete the EKA-09 source integration: PR #329 merged as `1a49d47`
+  with fail-closed Brevo webhook bearer authentication before body parsing or
+  Redis access. Rejected requests have zero Redis mutations, accepted event
+  semantics remain unchanged, and internal processing details are redacted.
+  Focused tests, the newsletter/webhook sweep, all PR checks and post-merge
+  CI/Security passed. Matching out-of-band API/Brevo token configuration,
+  bounded API rollout and live acceptance remain separate gates, so EKA-09
   stays open.
 - [x] Confirm GitHub Actions is currently running normally. The observed limit
   warning belongs to CodeRabbit, not Actions; no CI rule is weakened or skipped.

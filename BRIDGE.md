@@ -697,3 +697,23 @@
   paid HLR lookup, database, DNS, secret, IAM, provider, payment, store or other
   production mutation occurred. EKA-06 remains open until a separately
   authorized bounded rollout and live acceptance complete.
+
+## 2026-09-20 - EKA-09 Brevo Webhook Authentication Integration (Append-only)
+
+- PR #329 merged normally as `1a49d47` without admin bypass. The Brevo event
+  webhook now requires a dedicated bearer credential before request-body
+  parsing or Redis access. Missing runtime configuration fails closed with
+  503; missing, malformed or wrong credentials return 401 with zero Redis
+  mutations.
+- Accepted single and batched event semantics remain unchanged. Post-auth
+  processing failures return a fixed public error instead of internal
+  exception details. Token material is never logged or returned.
+- Verification passed: focused tests `19 passed`; newsletter/webhook sweep
+  `126 passed, 5 skipped`; Python compile, diff and staged Gitleaks checks.
+  CodeRabbit produced no actionable finding. All PR checks passed. Post-merge
+  main CI run `35506581566` and Security run `35506581521` passed completely.
+- Evidence is recorded in issue #318 and PR #329. No API rollout, Brevo
+  configuration, secret, provider, database, DNS, IAM, payment, store or other
+  production mutation occurred. EKA-09 remains open until matching out-of-band
+  API/Brevo token configuration, a separately authorized bounded API rollout
+  and live acceptance complete.

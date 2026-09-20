@@ -6,8 +6,8 @@ recipient, customer, secret or production credential data
 Repository baseline: `origin/main` at
 `6a8ed73a04e029d8d6525c0ccdd31f487ec684`
 Snapshot window: 2026-09-19, approximately 09:30-10:05 UTC
-Post-snapshot integration deltas reconciled through PR #327 merge and green
-post-merge checks on 2026-09-20 at approximately 08:29 UTC
+Post-snapshot integration deltas reconciled through PR #329 merge and green
+post-merge checks on 2026-09-20
 Prepared in: draft documentation PR
 [#323](https://github.com/NeaBouli/pnyx/pull/323)
 Detailed finance and local-worktree evidence: private/local operator records,
@@ -56,7 +56,7 @@ finished**.
 - The website, API, forum, dashboard login, read-only mirrors and Android
   download endpoints are reachable.
 - GitHub CI and Security Audit are green on `main`; 16 PRs remain open after
-  the normal merges of #319, #320, #325, #326 and #327.
+  the normal merges of #319, #320, #325, #326, #327, #328 and #329.
 - Android `v1.0.32` is current on GitHub, Google Play Closed Testing and
   F-Droid.
 - The project has no open Critical or High EKA finding. The sole High finding,
@@ -695,7 +695,7 @@ Publishing an audit is not fixing it. A green PR is not deployment evidence.
 |---|---|---|
 | A - Representative XSS | EKA-02 | Complete: PR #319 merged, bounded Web rollout passed hostile-payload live acceptance, #318 closed. |
 | B - Global rate limiting | EKA-32 | Integration complete in PR #320; production rollout and live acceptance remain separate. |
-| C - Endpoint abuse/privacy | EKA-03/04/05/06/09/16/17/53 | EKA-04 source integration is complete in #325, EKA-03 in #326, EKA-05 in #327 and EKA-06 in #328; their rollout/live gates and the remaining webhook/logging/admin-status findings remain. |
+| C - Endpoint abuse/privacy | EKA-03/04/05/06/09/16/17/53 | EKA-04 source integration is complete in #325, EKA-03 in #326, EKA-05 in #327, EKA-06 in #328 and EKA-09 in #329; their rollout/live gates and the remaining logging/admin-status findings remain. |
 | D - Vote/auth correctness | EKA-01/10/11/12 | Restore Tier-1 validation, deterministic municipal conflict response, dormant gov.gr state design and narrow exception handling. |
 | E - Client keys/KDF | EKA-07/08/21/22/23/24 | Canonical formats/KATs, backward-compatible key-storage and KDF migration, explicit phone-entropy risk. |
 | F - Runtime/integration | EKA-13/18/19/26/27/28/29/30/31 | Read-only inventory first; then bounded container, subdomain, admin, package-ID and CSP work. |
@@ -756,7 +756,10 @@ the checkpoint.
 
 #### Low
 
-- [ ] EKA-09 - unauthenticated Brevo webhook.
+- [ ] EKA-09 - PR #329 (`1a49d47`) authenticates the Brevo webhook before
+  body parsing or Redis access and redacts internal processing errors; closure
+  awaits matching out-of-band API/Brevo token configuration, bounded API
+  rollout and live acceptance.
 - [ ] EKA-10 - municipal vote race returns 500 rather than 409.
 - [ ] EKA-11 - dormant gov.gr OAuth state stored in process memory.
 - [ ] EKA-12 - broad signature-verification exception handling.
@@ -1014,7 +1017,15 @@ This is the recommended execution order. Only one bounded package should be
   a fresh ACTIVE-identity Ed25519 proof, random per-install UUIDv4 identifiers,
   stable HMAC Redis keys and bounded limits/expiry. A separate API rollout,
   compatible Mobile release/adoption and live acceptance are still required.
-- Split the remaining EKA-06/09/16/17/53 work by subsystem.
+- EKA-06 source integration is complete in PR #328: invalid Greek mobile
+  formats are rejected locally, HLR limits are atomic and provider protection
+  fails closed. A separate API/dashboard rollout and live acceptance remain
+  required.
+- EKA-09 source integration is complete in PR #329: a dedicated bearer
+  credential is required before body parsing or Redis access. Matching
+  out-of-band API/Brevo configuration, a separate API rollout and live
+  acceptance remain required.
+- Split the remaining EKA-16/17/53 work by subsystem.
 - Preserve client compatibility and fail-closed identity behavior.
 - No real HLR, newsletter, push or provider writes during synthetic tests.
 
@@ -1200,3 +1211,31 @@ Recorded at 2026-09-20 after the normal protected merge:
   and live acceptance before closure. No API/dashboard rollout, paid HLR
   lookup, database, DNS, secret, IAM, provider, payment, store or other
   production mutation occurred in this source-integration task.
+
+## Post-checkpoint delta - EKA-09 source integration
+
+Recorded at 2026-09-20 after the normal protected merge:
+
+- PR #329 merged as
+  `1a49d47426934b971a27ecb4564f5b232cdad390` without admin bypass.
+- The Brevo event webhook requires `Authorization: Bearer` credentials matched
+  against the dedicated `BREVO_WEBHOOK_TOKEN` before parsing the body or
+  opening Redis. Missing runtime configuration fails closed with 503; missing,
+  malformed or wrong credentials return 401 with zero Redis mutations.
+- Accepted single and batched events retain their existing counter and cache
+  behavior. Authenticated processing failures return a fixed public error
+  rather than internal exception details.
+- Focused authentication tests passed 19 tests; the newsletter/webhook sweep
+  passed 126 tests with 5 skips. Python compile, diff and staged Gitleaks
+  checks passed. CodeRabbit generated no actionable finding.
+- PR CI and Security checks passed. Post-merge main CI run `35506581566` and
+  Security run `35506581521` passed completely.
+- Public evidence:
+  `https://github.com/NeaBouli/pnyx/pull/329` and
+  `https://github.com/NeaBouli/pnyx/issues/318#issuecomment-5749394107`.
+  Issue #318 keeps EKA-09 unchecked until live evidence exists.
+- EKA-09 still requires matching out-of-band API/Brevo token configuration, a
+  separately authorized bounded API rollout and live acceptance before
+  closure. No API rollout, Brevo configuration, secret, provider, database,
+  DNS, IAM, payment, store or other production mutation occurred in this
+  source-integration task.
