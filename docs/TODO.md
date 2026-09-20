@@ -1,7 +1,7 @@
 # Ekklesia.gr — TODO
 # Copyright (c) 2026 V-Labs Development — MIT License
 
-Last reconciled: 2026-09-20 (EKA-02 closed; EKA-32/EKA-04/EKA-03/EKA-05/EKA-06/EKA-09/EKA-16 integrated, not deployed)
+Last reconciled: 2026-09-20 (EKA-02/EKA-17 closed; EKA-32/EKA-04/EKA-03/EKA-05/EKA-06/EKA-09/EKA-16 integrated, not deployed)
 
 `docs/STATUS.md` is the authority for the current release. GitHub issues and
 Linear are the authorities for active work. Older session notes are retained
