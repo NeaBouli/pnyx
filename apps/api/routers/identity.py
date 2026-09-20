@@ -30,7 +30,6 @@ from hlr import normalize_greek_number, verify_greek_number
 from ip_utils import (
     hashed_rate_subject,
     rate_limit_key_for_ip,
-    redis_fixed_window_limit,
 )
 
 logger = logging.getLogger(__name__)
@@ -94,48 +93,74 @@ _HLR_VERIFY_UNAVAILABLE_DETAIL = (
     "Η επαλήθευση είναι προσωρινά μη διαθέσιμη. Δοκιμάστε ξανά αργότερα."
 )
 
+_HLR_VERIFY_LIMITS_LUA = """
+local cooldown_exists = redis.call("EXISTS", KEYS[1])
+local number_day = tonumber(redis.call("GET", KEYS[2]) or "0")
+local ip_minute = tonumber(redis.call("GET", KEYS[3]) or "0")
+local ip_day = tonumber(redis.call("GET", KEYS[4]) or "0")
+
+if cooldown_exists == 1 then return -1 end
+if number_day >= tonumber(ARGV[2]) then return -2 end
+if ip_minute >= tonumber(ARGV[4]) then return -3 end
+if ip_day >= tonumber(ARGV[6]) then return -4 end
+
+redis.call("SET", KEYS[1], "1", "EX", ARGV[1])
+
+local number_day_new = redis.call("INCR", KEYS[2])
+if number_day_new == 1 then redis.call("EXPIRE", KEYS[2], ARGV[3]) end
+
+local ip_minute_new = redis.call("INCR", KEYS[3])
+if ip_minute_new == 1 then redis.call("EXPIRE", KEYS[3], ARGV[5]) end
+
+local ip_day_new = redis.call("INCR", KEYS[4])
+if ip_day_new == 1 then redis.call("EXPIRE", KEYS[4], ARGV[7]) end
+
+return 1
+"""
+
 
 async def _enforce_hlr_verify_limits(request: Request, normalized_number: str) -> None:
     """Fail-closed cost/abuse guard before any paid HLR provider call.
 
-    Reihenfolge: Nummer-Cooldown → Nummer/Tag → IP/Minute → IP/Tag.
-    Nummern-Limits zuerst, damit reine Wiederholungsversuche derselben Nummer
-    die IP-Budgets nicht aufblähen; IP-Limits deckeln danach verteilte Angriffe.
+    Alle vier Limits werden atomar geprüft. Redis verändert Cooldown und
+    Zähler nur, wenn der gesamte Versuch zulässig ist.
     """
     today = date.today()
     number_hash = hashed_rate_subject(normalized_number, "hlr_verify:number", today=today)
     day = today.isoformat()
+    cooldown_key = f"ratelimit:hlr_verify:number_cooldown:{day}:{number_hash}"
+    number_day_key = f"ratelimit:hlr_verify:number_day:{day}:{number_hash}"
+    ip_minute_key = rate_limit_key_for_ip(request, "hlr_verify:ip_min", today=today)
+    ip_day_key = rate_limit_key_for_ip(request, "hlr_verify:ip_day", today=today)
     try:
         r = await _get_hlr_redis()
-        cooldown_set = await r.set(
-            f"ratelimit:hlr_verify:number_cooldown:{day}:{number_hash}",
-            "1",
-            ex=HLR_VERIFY_NUMBER_COOLDOWN_SECONDS,
-            nx=True,
+        result = int(
+            await r.eval(
+                _HLR_VERIFY_LIMITS_LUA,
+                4,
+                cooldown_key,
+                number_day_key,
+                ip_minute_key,
+                ip_day_key,
+                HLR_VERIFY_NUMBER_COOLDOWN_SECONDS,
+                HLR_VERIFY_NUMBER_DAY_LIMIT,
+                HLR_VERIFY_DAY_WINDOW_SECONDS,
+                HLR_VERIFY_IP_MINUTE_LIMIT,
+                HLR_VERIFY_IP_MINUTE_WINDOW_SECONDS,
+                HLR_VERIFY_IP_DAY_LIMIT,
+                HLR_VERIFY_DAY_WINDOW_SECONDS,
+            )
         )
-        if not cooldown_set:
+        if result == -1:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Πολλές προσπάθειες για αυτόν τον αριθμό. Δοκιμάστε ξανά σε λίγα λεπτά.",
             )
-        await redis_fixed_window_limit(
-            r,
-            f"ratelimit:hlr_verify:number_day:{day}:{number_hash}",
-            HLR_VERIFY_NUMBER_DAY_LIMIT,
-            HLR_VERIFY_DAY_WINDOW_SECONDS,
-        )
-        await redis_fixed_window_limit(
-            r,
-            rate_limit_key_for_ip(request, "hlr_verify:ip_min", today=today),
-            HLR_VERIFY_IP_MINUTE_LIMIT,
-            HLR_VERIFY_IP_MINUTE_WINDOW_SECONDS,
-        )
-        await redis_fixed_window_limit(
-            r,
-            rate_limit_key_for_ip(request, "hlr_verify:ip_day", today=today),
-            HLR_VERIFY_IP_DAY_LIMIT,
-            HLR_VERIFY_DAY_WINDOW_SECONDS,
-        )
+        if result < 0:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Πάρα πολλές προσπάθειες επαλήθευσης. Δοκιμάστε ξανά αργότερα.",
+            )
     except HTTPException:
         raise
     except Exception as exc:

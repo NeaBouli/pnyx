@@ -50,11 +50,46 @@ class FakeRedis:
             self.expirations[key] = ex
         return True
 
-    async def eval(self, _script: str, _numkeys: int, key: str, seconds: int) -> int:
-        count = await self.incr(key)
-        if count == 1:
-            self.expirations[key] = seconds
-        return count
+    async def eval(self, _script: str, numkeys: int, *args) -> int:
+        if numkeys == 1:
+            key, seconds = args
+            count = await self.incr(key)
+            if count == 1:
+                self.expirations[key] = int(seconds)
+            return count
+
+        assert numkeys == 4
+        cooldown_key, number_day_key, ip_minute_key, ip_day_key = args[:4]
+        (
+            cooldown_seconds,
+            number_day_limit,
+            number_day_seconds,
+            ip_minute_limit,
+            ip_minute_seconds,
+            ip_day_limit,
+            ip_day_seconds,
+        ) = map(int, args[4:])
+
+        if self.respect_cooldown and cooldown_key in self.values:
+            return -1
+        if self.counts.get(number_day_key, 0) >= number_day_limit:
+            return -2
+        if self.counts.get(ip_minute_key, 0) >= ip_minute_limit:
+            return -3
+        if self.counts.get(ip_day_key, 0) >= ip_day_limit:
+            return -4
+
+        self.values[cooldown_key] = "1"
+        self.expirations[cooldown_key] = cooldown_seconds
+        for key, seconds in (
+            (number_day_key, number_day_seconds),
+            (ip_minute_key, ip_minute_seconds),
+            (ip_day_key, ip_day_seconds),
+        ):
+            count = await self.incr(key)
+            if count == 1:
+                self.expirations[key] = seconds
+        return 1
 
 
 class FailingRedis:
@@ -158,6 +193,27 @@ async def test_no_raw_pii_in_redis_keys(monkeypatch):
         assert "306912345678" not in key
         assert not re.search(r"\d{9,}", key), f"rohe Nummern-Fragmente im Key: {key}"
         assert key.startswith("ratelimit:hlr_verify:")
+
+
+@pytest.mark.asyncio
+async def test_rejected_ip_does_not_consume_number_limits(monkeypatch):
+    redis = FakeRedis()
+    monkeypatch.setenv("SERVER_SALT", "s" * 64)
+    monkeypatch.setattr(identity, "_get_hlr_redis", _redis_factory(redis))
+
+    request = _request("198.51.100.23")
+    today = identity.date.today()
+    ip_minute_key = identity.rate_limit_key_for_ip(
+        request, "hlr_verify:ip_min", today=today
+    )
+    redis.counts[ip_minute_key] = identity.HLR_VERIFY_IP_MINUTE_LIMIT
+
+    with pytest.raises(HTTPException) as excinfo:
+        await identity._enforce_hlr_verify_limits(request, "+306912345678")
+
+    assert excinfo.value.status_code == 429
+    number_keys = [key for key in _all_keys(redis) if ":number_" in key]
+    assert number_keys == [], "IP-blockierte Versuche dürfen keine Nummern-Buckets verändern"
 
 
 # ─── Endpunkt: Limits vor Provideraufruf, fail-closed ────────────────────────

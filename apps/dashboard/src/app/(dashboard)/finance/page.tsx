@@ -60,10 +60,10 @@ export default function FinancePage() {
   const hlrPrimary = hlr?.primary as Record<string, unknown> | null
   const hlrFallback = hlr?.fallback as Record<string, unknown> | null
   const primaryCredits = hlrPrimary?.remaining as number | null
-  const primaryTotal = (hlrPrimary?.total as number) ?? 1000
+  const primaryTotal = (hlrPrimary?.initial as number) ?? 1000
   const primaryPct = primaryCredits != null ? Math.round((primaryCredits / primaryTotal) * 100) : null
   const primaryProvider = hlrPrimary?.provider as string | null
-  const primaryCost = hlrPrimary?.cost_per_query as number | null
+  const primaryCost = hlrPrimary?.cost_per_query_eur as number | null
   const fallbackCredits = hlrFallback?.remaining as number | null
   const fallbackProvider = hlrFallback?.provider as string | null
   const failoverActive = hlr?.failover_active === true
