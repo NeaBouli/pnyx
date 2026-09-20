@@ -9,6 +9,9 @@ vi.mock("expo-device", () => ({ isDevice: true, modelName: "test" }));
 vi.mock("expo-constants", () => ({
   default: { expoConfig: { extra: { buildFlavor: "fdroid" } } },
 }));
+vi.mock("expo-crypto", () => ({
+  randomUUID: () => "3f6b1c2e-9a4d-4e5f-8b6c-0d1e2f3a4b5c",
+}));
 
 const mockSecureStoreData = new Map<string, string>();
 vi.mock("expo-secure-store", () => ({
@@ -42,9 +45,14 @@ describe("F-Droid flavor", () => {
     mockSecureStoreData.clear();
     mockFetchBills.mockReset();
   });
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   it("never requires expo-notifications for registration or badges", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
     const notifications = await loadNotifications();
     await expect(
       notifications.registerForPushNotifications(),
@@ -58,6 +66,8 @@ describe("F-Droid flavor", () => {
     await expect(
       notifications.markAllNotificationsRead(),
     ).resolves.toBeUndefined();
+    // F-Droid never makes a push registration request.
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it("ingests unread events from the public bill feed on foreground", async () => {

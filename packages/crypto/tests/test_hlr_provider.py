@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 
 import hlr
@@ -35,7 +37,11 @@ class FakeAsyncClient:
 
 
 @pytest.fixture(autouse=True)
-def primary_provider(monkeypatch):
+def primary_provider(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("HLRLOOKUP_API_KEY", raising=False)
+    monkeypatch.delenv("HLRLOOKUP_API_SECRET", raising=False)
+    monkeypatch.delenv("HLRLOOKUPS_API_KEY", raising=False)
+    monkeypatch.delenv("HLRLOOKUPS_API_SECRET", raising=False)
     monkeypatch.setenv("HLR_FALLBACK_API_KEY", "test-key")
     monkeypatch.setenv("HLR_FALLBACK_API_SECRET", "test-secret")
     monkeypatch.setattr(hlr.httpx, "AsyncClient", FakeAsyncClient)
@@ -394,3 +400,205 @@ async def test_valid_primary_is_not_overridden_when_credits_are_low(monkeypatch)
     assert result["valid"] is True
     assert result["_providers_queried"] == ["primary"]
     assert fallback_calls == []
+
+
+# ── EKA-17: canonical primary credential names with legacy aliases ───────────
+
+@pytest.fixture
+def reset_credential_warnings(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(hlr, "_legacy_primary_env_warned", False)
+    monkeypatch.setattr(hlr, "_incomplete_canonical_env_warned", False)
+    monkeypatch.setattr(hlr, "_incomplete_legacy_env_warned", False)
+
+
+@pytest.mark.asyncio
+async def test_primary_uses_canonical_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("HLRLOOKUP_API_KEY", "canonical-key")
+    monkeypatch.setenv("HLRLOOKUP_API_SECRET", "canonical-secret")
+
+    result = await hlr.hlr_lookup_hlrlookupcom("+306912345678")
+
+    assert result["valid"] is True
+    request = FakeAsyncClient.requests[0]
+    assert request["json"]["api_key"] == "canonical-key"
+    assert request["json"]["api_secret"] == "canonical-secret"
+
+
+@pytest.mark.asyncio
+async def test_primary_legacy_alias_credentials_still_work() -> None:
+    # Autouse fixture sets only HLR_FALLBACK_API_KEY/HLR_FALLBACK_API_SECRET.
+    result = await hlr.hlr_lookup_hlrlookupcom("+306912345678")
+
+    assert result["valid"] is True
+    request = FakeAsyncClient.requests[0]
+    assert request["json"]["api_key"] == "test-key"
+    assert request["json"]["api_secret"] == "test-secret"
+
+
+@pytest.mark.asyncio
+async def test_canonical_credentials_take_precedence_over_legacy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("HLRLOOKUP_API_KEY", "canonical-key")
+    monkeypatch.setenv("HLRLOOKUP_API_SECRET", "canonical-secret")
+
+    await hlr.hlr_lookup_hlrlookupcom("+306912345678")
+
+    request = FakeAsyncClient.requests[0]
+    assert request["json"]["api_key"] == "canonical-key"
+    assert request["json"]["api_secret"] == "canonical-secret"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "configured_name",
+    ("HLRLOOKUP_API_KEY", "HLRLOOKUP_API_SECRET"),
+)
+async def test_incomplete_canonical_pair_fails_closed_instead_of_mixing(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    reset_credential_warnings: None,
+    configured_name: str,
+) -> None:
+    monkeypatch.delenv("HLRLOOKUP_API_KEY", raising=False)
+    monkeypatch.delenv("HLRLOOKUP_API_SECRET", raising=False)
+    monkeypatch.setenv(configured_name, "canonical-part-sentinel")
+    caplog.set_level(logging.INFO, logger="hlr")
+
+    result = await hlr.hlr_lookup_hlrlookupcom("+306912345678")
+
+    assert result["valid"] is False
+    assert result["status"] == "NOT_CONFIGURED"
+    assert FakeAsyncClient.requests == []
+    assert "canonical-part-sentinel" not in caplog.text
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "configured_name",
+    ("HLR_FALLBACK_API_KEY", "HLR_FALLBACK_API_SECRET"),
+)
+async def test_incomplete_legacy_pair_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    reset_credential_warnings: None,
+    configured_name: str,
+) -> None:
+    monkeypatch.delenv("HLR_FALLBACK_API_KEY", raising=False)
+    monkeypatch.delenv("HLR_FALLBACK_API_SECRET", raising=False)
+    monkeypatch.setenv(configured_name, "legacy-part-sentinel")
+    caplog.set_level(logging.INFO, logger="hlr")
+
+    result = await hlr.hlr_lookup_hlrlookupcom("+306912345678")
+
+    assert result["valid"] is False
+    assert result["status"] == "NOT_CONFIGURED"
+    assert FakeAsyncClient.requests == []
+    assert "legacy-part-sentinel" not in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_fallback_env_names_never_configure_primary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("HLR_FALLBACK_API_KEY", raising=False)
+    monkeypatch.delenv("HLR_FALLBACK_API_SECRET", raising=False)
+    monkeypatch.delenv("HLRLOOKUP_API_KEY", raising=False)
+    monkeypatch.delenv("HLRLOOKUP_API_SECRET", raising=False)
+    monkeypatch.setenv("HLRLOOKUPS_API_KEY", "fallback-key")
+    monkeypatch.setenv("HLRLOOKUPS_API_SECRET", "fallback-secret")
+
+    result = await hlr.hlr_lookup_hlrlookupcom("+306912345678")
+
+    assert result["valid"] is False
+    assert result["status"] == "NOT_CONFIGURED"
+    assert FakeAsyncClient.requests == []
+
+
+@pytest.mark.asyncio
+async def test_missing_primary_credentials_fail_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for name in (
+        "HLRLOOKUP_API_KEY",
+        "HLRLOOKUP_API_SECRET",
+        "HLR_FALLBACK_API_KEY",
+        "HLR_FALLBACK_API_SECRET",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    result = await hlr.hlr_lookup_hlrlookupcom("+306912345678")
+
+    assert result["valid"] is False
+    assert result["status"] == "NOT_CONFIGURED"
+    assert FakeAsyncClient.requests == []
+
+
+@pytest.mark.asyncio
+async def test_canonical_primary_does_not_configure_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("HLRLOOKUP_API_KEY", "canonical-key")
+    monkeypatch.setenv("HLRLOOKUP_API_SECRET", "canonical-secret")
+    monkeypatch.delenv("HLRLOOKUPS_API_KEY", raising=False)
+    monkeypatch.delenv("HLRLOOKUPS_API_SECRET", raising=False)
+
+    result = await hlr.hlr_lookup("+306912345678")
+
+    assert result["valid"] is False
+    assert result["status"] == "FALLBACK_NOT_CONFIGURED"
+    assert FakeAsyncClient.requests == []
+
+
+@pytest.mark.asyncio
+async def test_legacy_alias_logs_single_deprecation_warning_without_values(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    reset_credential_warnings: None,
+) -> None:
+    monkeypatch.setenv("HLR_FALLBACK_API_KEY", "legacy-key-sentinel")
+    monkeypatch.setenv("HLR_FALLBACK_API_SECRET", "legacy-secret-sentinel")
+    caplog.set_level(logging.INFO, logger="hlr")
+
+    await hlr.hlr_lookup_hlrlookupcom("+306912345678")
+    await hlr.hlr_lookup_hlrlookupcom("+306912345678")
+
+    warnings = [
+        r.getMessage()
+        for r in caplog.records
+        if r.levelno == logging.WARNING and "deprecated env names" in r.getMessage()
+    ]
+    assert len(warnings) == 1
+    assert "HLRLOOKUP_API_KEY" in warnings[0]
+    assert "HLR_FALLBACK_API_KEY" in warnings[0]
+    assert "legacy-key-sentinel" not in caplog.text
+    assert "legacy-secret-sentinel" not in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_no_secret_values_logged_in_any_primary_config(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    reset_credential_warnings: None,
+) -> None:
+    caplog.set_level(logging.INFO, logger="hlr")
+    sentinels = ("canon-key-sentinel", "canon-secret-sentinel",
+                 "leg-key-sentinel", "leg-secret-sentinel")
+    monkeypatch.setenv("HLRLOOKUP_API_KEY", sentinels[0])
+    monkeypatch.setenv("HLRLOOKUP_API_SECRET", sentinels[1])
+    monkeypatch.setenv("HLR_FALLBACK_API_KEY", sentinels[2])
+    monkeypatch.setenv("HLR_FALLBACK_API_SECRET", sentinels[3])
+
+    # Configured path (canonical precedence, no legacy warning).
+    await hlr.hlr_lookup_hlrlookupcom("+306912345678")
+    # Missing-credentials path.
+    for name in ("HLRLOOKUP_API_KEY", "HLRLOOKUP_API_SECRET",
+                 "HLR_FALLBACK_API_KEY", "HLR_FALLBACK_API_SECRET"):
+        monkeypatch.delenv(name, raising=False)
+    result = await hlr.hlr_lookup_hlrlookupcom("+306912345678")
+
+    assert result["status"] == "NOT_CONFIGURED"
+    for sentinel in sentinels:
+        assert sentinel not in caplog.text

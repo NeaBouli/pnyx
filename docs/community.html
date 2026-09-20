@@ -527,12 +527,10 @@
           <div class="fc-row"><span style="color:var(--gray-700)" data-el="Πληρωμή:" data-en="Payment:">Πληρωμή:</span><strong>PayPal (15€ = 2500 credits)</strong></div>
         </div>
         <div class="fc-acct" id="hlrAcctPrimary">
-          <div style="font-size:0.65rem;font-weight:700;color:var(--gray-500);margin-bottom:0.3rem" data-el="Credits Κατάσταση" data-en="Credits Status">Credits Κατάσταση</div>
-          <div class="fc-acct-row"><span data-el="Αρχικά:" data-en="Initial:">Αρχικά:</span><strong id="hlrInitial" style="color:#166534">2499</strong></div>
-          <div class="fc-acct-row"><span data-el="Χρησιμοποιήθηκαν:" data-en="Used:">Χρησιμοποιήθηκαν:</span><strong id="hlrUsed" style="color:#dc2626">0</strong></div>
+          <div style="font-size:0.65rem;font-weight:700;color:var(--gray-500);margin-bottom:0.3rem" data-el="Κατάσταση Παροχής" data-en="Service Status">Κατάσταση Παροχής</div>
           <div class="fc-acct-total positive" id="hlrBalance">
-            <span data-el="Υπόλοιπο:" data-en="Remaining:">Υπόλοιπο:</span>
-            <span id="hlrRemaining">2499</span>
+            <span data-el="Κατάσταση:" data-en="Status:">Κατάσταση:</span>
+            <span id="hlrRemaining">—</span>
           </div>
         </div>
         <div style="background:#e2e8f0;border-radius:0.3rem;height:8px;margin:0.3rem 0;overflow:hidden">
@@ -556,12 +554,10 @@
           <div class="fc-row"><span style="color:var(--gray-700)" data-el="Πληρωμή:" data-en="Payment:">Πληρωμή:</span><strong>BTC / LTC</strong></div>
         </div>
         <div class="fc-acct" id="hlrAcctFallback">
-          <div style="font-size:0.65rem;font-weight:700;color:var(--gray-500);margin-bottom:0.3rem" data-el="Credits Κατάσταση" data-en="Credits Status">Credits Κατάσταση</div>
-          <div class="fc-acct-row"><span data-el="Αρχικά:" data-en="Initial:">Αρχικά:</span><strong id="hlrFbInitial" style="color:#166534">1000</strong></div>
-          <div class="fc-acct-row"><span data-el="Χρησιμοποιήθηκαν:" data-en="Used:">Χρησιμοποιήθηκαν:</span><strong id="hlrFbUsed" style="color:#dc2626">0</strong></div>
+          <div style="font-size:0.65rem;font-weight:700;color:var(--gray-500);margin-bottom:0.3rem" data-el="Κατάσταση Παροχής" data-en="Service Status">Κατάσταση Παροχής</div>
           <div class="fc-acct-total positive" id="hlrFbBalance">
-            <span data-el="Υπόλοιπο:" data-en="Remaining:">Υπόλοιπο:</span>
-            <span id="hlrFbRemaining">1000</span>
+            <span data-el="Κατάσταση:" data-en="Status:">Κατάσταση:</span>
+            <span id="hlrFbRemaining">—</span>
           </div>
         </div>
         <div style="background:#e2e8f0;border-radius:0.3rem;height:8px;margin:0.3rem 0;overflow:hidden">
@@ -1338,10 +1334,9 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
   }
 
   // ═══════════════════════════════════════════════════════════
-  // HLR LIVE CREDITS (TABBED PRIMARY/FALLBACK)
+  // HLR LIVE STATUS (TABBED PRIMARY/FALLBACK) — grobes, datensparsames Schema
   // ═══════════════════════════════════════════════════════════
-  var HLR_WARN = 200;
-  var HLR_CRIT = 50;
+  var HLR_LEVEL_PCT = { high: 100, medium: 60, low: 25, empty: 0 };
   var hlrActiveTab = "primary";
 
   function switchHlrTab(tab) {
@@ -1373,14 +1368,18 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
       });
   }
 
-  function updateHlrProvider(prefix, pData, costPerQuery) {
-    var initial = pData.initial || 0;
-    var used = pData.used || 0;
-    var remaining = pData.remaining || 0;
-    var pct = initial > 0 ? Math.round((remaining / initial) * 100) : 0;
+  function hlrLevelLabel(level) {
+    if (level === "high") return t("Πλήρως διαθέσιμο","Fully available");
+    if (level === "medium") return t("Επαρκές απόθεμα","Sufficient reserve");
+    if (level === "low") return t("Χαμηλό απόθεμα","Low reserve");
+    return t("Εξαντλήθηκε","Depleted");
+  }
 
-    var initEl = document.getElementById(prefix + "Initial");
-    var usedEl = document.getElementById(prefix + "Used");
+  function updateHlrProvider(prefix, pData) {
+    var level = pData.level || "empty";
+    var status = pData.status || "critical";
+    var pct = HLR_LEVEL_PCT[level] !== undefined ? HLR_LEVEL_PCT[level] : 0;
+
     var remEl = document.getElementById(prefix + "Remaining");
     var balRow = document.getElementById(prefix + "Balance");
     var bar = document.getElementById(prefix + "Bar");
@@ -1388,48 +1387,46 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     var statusBox = document.getElementById(prefix + "StatusBox");
     var statusText = document.getElementById(prefix + "StatusText");
 
-    if (initEl) initEl.textContent = initial;
-    if (usedEl) usedEl.textContent = used;
-    if (remEl) remEl.textContent = remaining + " (" + eur(remaining * costPerQuery) + ")";
-    if (balRow) balRow.className = "fc-acct-total " + (remaining > HLR_WARN ? "positive" : remaining > HLR_CRIT ? "zero" : "negative");
+    if (remEl) remEl.textContent = hlrLevelLabel(level);
+    if (balRow) balRow.className = "fc-acct-total " + (status === "ok" ? "positive" : status === "low" ? "zero" : "negative");
     if (bar) bar.style.width = pct + "%";
-    if (barLabel) barLabel.textContent = pct + t("% διαθέσιμο","% available");
+    if (barLabel) barLabel.textContent = hlrLevelLabel(level);
 
-    if (remaining <= HLR_CRIT) {
+    if (status === "critical") {
       if (bar) bar.style.background = "#ef4444";
       if (statusBox) { statusBox.style.background = "#fef2f2"; statusBox.style.color = "#dc2626"; }
-      if (statusText) statusText.textContent = t("Κρίσιμο — μόνο ","Critical — only ") + remaining + t(" credits απομένουν"," credits remaining");
-    } else if (remaining <= HLR_WARN) {
+      if (statusText) statusText.textContent = t("Κρίσιμο — σχεδόν εξαντλημένο","Critical — almost depleted");
+    } else if (status === "low") {
       if (bar) bar.style.background = "#f59e0b";
       if (statusBox) { statusBox.style.background = "#fefce8"; statusBox.style.color = "#92400e"; }
-      if (statusText) statusText.textContent = t("Χαμηλά credits — ","Low credits — ") + remaining + t(" απομένουν"," remaining");
+      if (statusText) statusText.textContent = t("Χαμηλό απόθεμα — παρακολουθείται","Low reserve — monitored");
     } else {
       if (bar) bar.style.background = "#22c55e";
       if (statusBox) { statusBox.style.background = "#f0fdf4"; statusBox.style.color = "#166534"; }
-      if (statusText) statusText.textContent = remaining + " credits — " + eur(remaining * costPerQuery) + t(" υπόλοιπο"," balance");
+      if (statusText) statusText.textContent = t("Διαθέσιμο για επαληθεύσεις","Available for verifications");
     }
   }
 
   function updateHlrTile(data) {
-    // Primary tab (hlrlookup.com)
-    var primary = data.primary || { initial: data.initial || 2499, used: data.used || 0, remaining: data.remaining || 0 };
-    updateHlrProvider("hlr", primary, 0.006);
+    // Primary tab
+    var primary = data.primary || {};
+    updateHlrProvider("hlr", primary);
 
-    // Fallback tab (hlr-lookups.com)
+    // Fallback tab
     var fb = data.fallback || {};
-    if (fb.initial !== undefined) {
-      updateHlrProvider("hlrFb", fb, 0.01);
+    if (fb.status !== undefined) {
+      updateHlrProvider("hlrFb", fb);
     }
 
-    // Card-level badge: use primary status
+    // Card-level badge: use active-path status
     var card = document.getElementById("hlrCard");
     var badge = document.getElementById("hlrBadge");
-    var pRemaining = primary.remaining || 0;
+    var activeStatus = data.status || primary.status || "critical";
 
-    if (pRemaining <= HLR_CRIT) {
+    if (activeStatus === "critical") {
       if (card) { card.className = "fc pulse-red"; card.style.borderColor = "#ef4444"; }
       if (badge) { badge.style.background = "#ef4444"; badge.textContent = t("ΚΡΙΣΙΜΟ","CRITICAL"); }
-    } else if (pRemaining <= HLR_WARN) {
+    } else if (activeStatus === "low") {
       if (card) { card.className = "fc"; card.style.borderColor = "#fde047"; }
       if (badge) { badge.style.background = "#f59e0b"; badge.textContent = t("ΧΑΜΗΛΟ","LOW"); }
     } else {
@@ -1437,15 +1434,14 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
       if (badge) { badge.style.background = "#22c55e"; badge.textContent = t("ΕΝΕΡΓΟ","ACTIVE"); }
     }
 
-    // Failover notice
+    // Failover notice (generisch — kein Grund, keine Provider-Details)
     var notice = document.getElementById("hlrFailoverNotice");
     var noticeText = document.getElementById("hlrFailoverText");
     if (data.failover_active) {
       if (notice) notice.style.display = "";
-      var reason = data.failover_reason || "unknown";
       if (noticeText) noticeText.textContent = t(
-        "Auto-Failover ενεργό → hlr-lookups.com (Λόγος: " + reason + ")",
-        "Auto-Failover active → hlr-lookups.com (Reason: " + reason + ")"
+        "Auto-Failover ενεργό — εφεδρική παροχή σε χρήση",
+        "Auto-Failover active — backup service in use"
       );
     } else {
       if (notice) notice.style.display = "none";

@@ -10,7 +10,7 @@ import hashlib
 import hmac
 import os
 from datetime import date
-from ipaddress import ip_address
+from ipaddress import IPv4Network, IPv6Network, ip_address, ip_network
 from typing import Iterable
 
 import redis.asyncio as aioredis
@@ -32,6 +32,35 @@ def _split_forwarded_for(header: str) -> list[str]:
     return [part.strip() for part in header.split(",") if part.strip()]
 
 
+def _trusted_proxy_networks() -> tuple[IPv4Network | IPv6Network, ...]:
+    """Return the immediate proxy networks allowed to assert forwarding headers."""
+    configured = os.getenv(
+        "TRUSTED_PROXY_CIDRS",
+        "127.0.0.1/32,::1/128",
+    )
+    networks: list[IPv4Network | IPv6Network] = []
+    for value in configured.split(","):
+        value = value.strip()
+        if not value:
+            continue
+        try:
+            networks.append(ip_network(value, strict=False))
+        except ValueError:
+            continue
+    return tuple(networks)
+
+
+def _is_trusted_proxy(value: str | None) -> bool:
+    peer = _valid_ip(value or "")
+    if not peer:
+        return False
+    address = ip_address(peer)
+    return any(
+        address.version == network.version and address in network
+        for network in _trusted_proxy_networks()
+    )
+
+
 def _candidate_from_forwarded_for(parts: Iterable[str]) -> str | None:
     valid = [_valid_ip(part) for part in parts]
     valid = [part for part in valid if part]
@@ -40,24 +69,29 @@ def _candidate_from_forwarded_for(parts: Iterable[str]) -> str | None:
 
     # Traefik appends the actual peer IP to X-Forwarded-For. Taking the
     # rightmost trusted entry avoids client-supplied spoofed leftmost values.
-    trusted_proxy_count = int(os.getenv("TRUSTED_PROXY_COUNT", "1"))
+    try:
+        trusted_proxy_count = int(os.getenv("TRUSTED_PROXY_COUNT", "1"))
+    except ValueError:
+        trusted_proxy_count = 1
     if trusted_proxy_count < 1:
         trusted_proxy_count = 1
-    index = max(len(valid) - trusted_proxy_count, 0)
-    return valid[index]
+    if trusted_proxy_count > len(valid):
+        # A count larger than the observed chain is a deployment mismatch.
+        # Prefer the nearest asserted hop instead of a spoofable leftmost value.
+        return valid[-1]
+    return valid[-trusted_proxy_count]
 
 
 def get_client_ip(request: Request) -> str:
-    """Return a proxy-aware client IP for local rate limiting only."""
+    """Return the peer IP, honoring forwarding data only from trusted proxies."""
+    peer = request.client.host if request.client and request.client.host else None
     forwarded = request.headers.get("x-forwarded-for", "")
-    if forwarded:
+    if forwarded and _is_trusted_proxy(peer):
         candidate = _candidate_from_forwarded_for(_split_forwarded_for(forwarded))
         if candidate:
             return candidate
 
-    if request.client and request.client.host:
-        return request.client.host
-    return "unknown"
+    return peer or "unknown"
 
 
 def _rate_limit_salt() -> str:

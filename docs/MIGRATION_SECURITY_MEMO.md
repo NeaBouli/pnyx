@@ -22,8 +22,17 @@
 - SERVER_SALT (kryptographisch stark, min 32 Zeichen)
 - REDIS_URL
 - ARWEAVE_WALLET_PATH (leer fuer Dry Run, Pfad fuer Production)
-- HLRLOOKUPS_USERNAME (HLR SIM-Verifikation)
-- HLRLOOKUPS_PASSWORD
+- HLRLOOKUP_API_KEY (primaerer HLR-Anbieter hlrlookup.com)
+- HLRLOOKUP_API_SECRET
+- HLRLOOKUPS_API_KEY (optionaler Fallback hlr-lookups.com)
+- HLRLOOKUPS_API_SECRET
+- HLR_FALLBACK_ENABLED (standardmaessig `false`)
+
+Die historischen Namen `HLR_FALLBACK_API_KEY` und
+`HLR_FALLBACK_API_SECRET` bleiben waehrend der Migration als veraltetes,
+vollstaendiges Credential-Paar fuer den primaeren Anbieter kompatibel. Neue
+Konfigurationen verwenden ausschliesslich `HLRLOOKUP_API_KEY` und
+`HLRLOOKUP_API_SECRET`; Teilpaare werden fail-closed abgelehnt.
 - GOVGR_CLIENT_ID (gov.gr OAuth — Phase 2)
 - GOVGR_CLIENT_SECRET
 - ACME_EMAIL (Let's Encrypt)

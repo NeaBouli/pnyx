@@ -138,7 +138,7 @@ export default function SettingsPage() {
   useEffect(() => {
     async function load() {
       const [hlr, claude, deepl, notif, arweave, jobs, version, compass, nlStats, nlLists] = await Promise.allSettled([
-        fetch(`${API}/api/v1/identity/hlr/credits`).then(r => r.json()),
+        fetch(adminProxyPath('/api/v1/admin/hlr/credits')).then(r => r.json()),
         fetch(`${API}/api/v1/claude/budget`).then(r => r.json()),
         fetch(`${API}/api/v1/admin/deepl/usage`).then(r => r.json()),
         fetch(`${API}/api/v1/notifications/status`).then(r => r.json()),

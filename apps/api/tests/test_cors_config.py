@@ -12,7 +12,7 @@ async def test_cors_preflight_allows_known_origin_method_and_headers():
             headers={
                 "Origin": "https://ekklesia.gr",
                 "Access-Control-Request-Method": "POST",
-                "Access-Control-Request-Headers": "Content-Type, X-Nullifier",
+                "Access-Control-Request-Headers": "Content-Type, Authorization, X-API-Key",
             },
         )
 
@@ -21,7 +21,36 @@ async def test_cors_preflight_allows_known_origin_method_and_headers():
     assert "POST" in response.headers["access-control-allow-methods"]
     allowed_headers = response.headers["access-control-allow-headers"].lower()
     assert "content-type" in allowed_headers
-    assert "x-nullifier" in allowed_headers
+    assert "authorization" in allowed_headers
+    assert "x-api-key" in allowed_headers
+    assert "x-nullifier" not in allowed_headers
+
+
+@pytest.mark.asyncio
+async def test_cors_preflight_rejects_retired_nullifier_header():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.options(
+            "/api/v1/bills/example/flag",
+            headers={
+                "Origin": "https://ekklesia.gr",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "X-Nullifier",
+            },
+        )
+
+    assert response.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_cors_exposes_vote_read_integrity_header():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get(
+            "/api/v1/does-not-exist",
+            headers={"Origin": "https://ekklesia.gr"},
+        )
+
+    exposed_headers = response.headers["access-control-expose-headers"].lower()
+    assert "x-vote-read-integrity" in exposed_headers
 
 
 @pytest.mark.asyncio

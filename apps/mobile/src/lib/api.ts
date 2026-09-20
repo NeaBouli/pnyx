@@ -388,12 +388,27 @@ export interface VoteStatus {
   can_correct: boolean;
 }
 
+export interface VoteStatusReadAuth {
+  timestampMs: number;
+  signatureHex: string;
+}
+
 export async function fetchVoteStatus(
   nullifierHash: string,
-  billId: string
+  billId: string,
+  auth: VoteStatusReadAuth
 ): Promise<VoteStatus> {
   return request<VoteStatus>(
-    `/api/v1/vote/${encodeURIComponent(billId)}/status?nullifier_hash=${encodeURIComponent(nullifierHash)}`
+    `/api/v1/vote/${encodeURIComponent(billId)}/status`,
+    {
+      method: "POST",
+      cache: "no-store",
+      body: JSON.stringify({
+        nullifier_hash: nullifierHash,
+        timestamp_ms: auth.timestampMs,
+        signature_hex: auth.signatureHex,
+      }),
+    }
   );
 }
 
