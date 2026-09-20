@@ -6,8 +6,8 @@ recipient, customer, secret or production credential data
 Repository baseline: `origin/main` at
 `6a8ed73a04e029d8d6525c0ccdd31f487ec684`
 Snapshot window: 2026-09-19, approximately 09:30-10:05 UTC
-Post-snapshot integration deltas reconciled through PR #329 merge and green
-post-merge checks on 2026-09-20
+Post-snapshot integration deltas reconciled through PR #331 merge, the bounded
+EKA-17 production acceptance and green post-merge checks on 2026-09-20
 Prepared in: draft documentation PR
 [#323](https://github.com/NeaBouli/pnyx/pull/323)
 Detailed finance and local-worktree evidence: private/local operator records,
@@ -60,7 +60,8 @@ finished**.
 - Android `v1.0.32` is current on GitHub, Google Play Closed Testing and
   F-Droid.
 - The project has no open Critical or High EKA finding. The sole High finding,
-  EKA-02, is closed; 21 Medium findings remain evidence-gated, including EKA-32,
+  EKA-02, is closed; EKA-17 is also closed on source and live evidence. The 21
+  Medium findings remain evidence-gated, including EKA-32,
   EKA-04, EKA-03 and EKA-05. Their source integrations are complete, but their
   separate rollout, compatibility/adoption and live-acceptance gates remain
   open.
@@ -84,7 +85,7 @@ finished**.
 | Public availability | Green | Core pages, API, forum, dashboard login and all three mirrors returned HTTP 200. |
 | CI and scheduled automation | Green | Latest 30 sampled Actions runs completed successfully; no Actions quota failure. |
 | Android V1 distribution | Green/yellow | v1.0.32 is public in all intended Android channels; Play production gate and OEM acceptance remain. |
-| Security audit | Yellow/high attention | 0 Critical, 1 closed High, 21 Medium, 27 Low and 15 Informational findings; 63 register items remain evidence-gated. |
+| Security audit | Yellow/high attention | 0 Critical, 1 closed High, 21 Medium, 27 Low and 15 Informational findings; 62 register items remain evidence-gated. |
 | Vote integrity | Green with follow-up | Existing signature, uniqueness and ZK aggregation protections remain; EKA-01/10/12 still require bounded remediation. |
 | Identity/privacy | Yellow | Running design remains fail-closed; client key storage/KDF and several public claims require audit remediation. |
 | Data and forum synchronization | Green with quality backlog | Current schedulers and forum sync are healthy; manual Diavgeia mapping and analytics semantics remain. |
@@ -684,8 +685,8 @@ green alert count.
 | High | 1 | Closed: EKA-02 source, merge, rollout and live acceptance verified |
 | Medium | 21 | Open/evidence-gated |
 | Low | 27 | Open/evidence-gated |
-| Informational | 15 | Open/evidence-gated |
-| Total | 64 | 1 closed; 63 issue #318 boxes remain evidence-gated |
+| Informational | 15 | 1 closed (EKA-17); 14 open/evidence-gated |
+| Total | 64 | 2 closed; 62 issue #318 boxes remain evidence-gated |
 
 Publishing an audit is not fixing it. A green PR is not deployment evidence.
 
@@ -695,7 +696,7 @@ Publishing an audit is not fixing it. A green PR is not deployment evidence.
 |---|---|---|
 | A - Representative XSS | EKA-02 | Complete: PR #319 merged, bounded Web rollout passed hostile-payload live acceptance, #318 closed. |
 | B - Global rate limiting | EKA-32 | Integration complete in PR #320; production rollout and live acceptance remain separate. |
-| C - Endpoint abuse/privacy | EKA-03/04/05/06/09/16/17/53 | EKA-04 source integration is complete in #325, EKA-03 in #326, EKA-05 in #327, EKA-06 in #328, EKA-09 in #329, EKA-16 in #330 and EKA-17 in #331; their rollout/live gates and EKA-53 remain. |
+| C - Endpoint abuse/privacy | EKA-03/04/05/06/09/16/17/53 | EKA-17 is closed after #331 plus bounded production acceptance. EKA-04 source integration is complete in #325, EKA-03 in #326, EKA-05 in #327, EKA-06 in #328, EKA-09 in #329 and EKA-16 in #330; their rollout/live gates and EKA-53 remain. |
 | D - Vote/auth correctness | EKA-01/10/11/12 | Restore Tier-1 validation, deterministic municipal conflict response, dormant gov.gr state design and narrow exception handling. |
 | E - Client keys/KDF | EKA-07/08/21/22/23/24 | Canonical formats/KATs, backward-compatible key-storage and KDF migration, explicit phone-entropy risk. |
 | F - Runtime/integration | EKA-13/18/19/26/27/28/29/30/31 | Read-only inventory first; then bounded container, subdomain, admin, package-ID and CSP work. |
@@ -1310,7 +1311,10 @@ Recorded at 2026-09-20 after the normal protected merge:
   completely.
 - Public evidence: `https://github.com/NeaBouli/pnyx/pull/331` and
   `https://github.com/NeaBouli/pnyx/issues/318#issuecomment-5749951203`.
-- EKA-17 remains open until a separately authorized production environment
-  migration and live acceptance. No runtime credentials were read or changed,
-  no provider was called, and no deployment, database, DNS, IAM, payment, store
-  or other production mutation occurred.
+- The separately authorized production gate completed on 2026-09-20. The exact
+  reviewed `hlr.py` was overlaid on the running API baseline, the environment
+  migration was atomic and only the API was recreated. Canonical and legacy
+  primary pairs resolve identically; the actual fallback pair and HLR usage did
+  not change. Health, live credential selection, logs and non-target container
+  invariants passed. No provider lookup, database, DNS, IAM, payment, store or
+  other service mutation occurred. EKA-17 is closed.

@@ -26,7 +26,7 @@ eligibility, ZK, database and production policy are unchanged.
 ## 2026-09-19 audit and redesign intake
 
 - PR #317 merged the independent 64-finding EKA audit series as documentation.
-  Issue #318 remains open; EKA-02 is closed and 63 findings remain
+  Issue #318 remains open; EKA-02 and EKA-17 are closed and 62 findings remain
   evidence-gated.
 - PR #319 merged as `a375d2d`; its bounded Representative Web rollout and live
   hostile-payload acceptance completed, so EKA-02 is closed in issue #318.
@@ -82,9 +82,11 @@ eligibility, ZK, database and production policy are unchanged.
   provider, and unchanged `HLRLOOKUPS_*` names for the actual fallback.
   Incomplete pairs fail closed and credential values never enter logs. HLR
   (`36 passed`), Crypto (`48 passed`), affected API (`88 passed, 1 xfailed`),
-  PR and post-merge CI/Security checks are green. EKA-17 remains evidence-gated
-  until a separately authorized production environment migration and live
-  acceptance complete.
+  PR and post-merge CI/Security checks are green. Its bounded API-only overlay,
+  atomic production environment migration and live acceptance completed on
+  2026-09-20. Canonical and legacy primary pairs resolve identically, the real
+  fallback pair and HLR usage are unchanged, the API has zero restarts and no
+  non-target container changed. EKA-17 is closed.
 - GitHub Actions itself is currently operational: the sampled latest 30 runs
   completed successfully with no active or failed run.
 - The supplied redesign handoff is archived under `design/handoffs/` as
@@ -99,7 +101,8 @@ eligibility, ZK, database and production policy are unchanged.
 The original catalog intake changed no application or runtime state. The nine
 subsequent bounded security tasks above did not implement the redesign or a
 public audit page. No EKA-32, EKA-04, EKA-03 or EKA-05 production change
-occurred, and EKA-06/EKA-09/EKA-16/EKA-17 were likewise not deployed.
+occurred, and EKA-06/EKA-09/EKA-16 were likewise not deployed. EKA-17 alone
+completed its separately authorized bounded production gate on 2026-09-20.
 
 ## Verified component rollout
 

@@ -1,5 +1,30 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-09-20 - EKA-17 HLR Environment Migration Completed
+
+- PR #331 remains the reviewed source authority at
+  `c18b75ffb616655a4b308bf7f314dc2f48472628`. Production received only its
+  `packages/crypto/hlr.py` runtime file as an overlay on the exact previously
+  running API image; the deployed file SHA-256 is
+  `74f982b192356bdae65d55be389a6708c7be183adab673e04492b7054fccf5b5`.
+- The complete legacy primary credential pair was copied atomically to the
+  canonical `HLRLOOKUP_*` names without printing values. Legacy aliases remain
+  temporarily for rollback compatibility; the separate `HLRLOOKUPS_*` fallback
+  pair is unchanged. Host-file and container values were equal before and after
+  the migration.
+- Only `ekklesia-api` was recreated. The candidate image is
+  `ekklesia-api:eka17-c18b75f-20260920T133207Z`; the exact prior image remains
+  tagged `ekklesia-api:rollback-pre-eka17-20260920T133207Z`, and the original
+  environment file is retained in the protected release directory.
+- Five repeated health probes, live credential-resolution checks, public HLR
+  status, container state and logs passed. The API has zero restarts, was not
+  OOM-killed, no non-target container changed and HLR usage counters were
+  identical before and after. No real number lookup or provider request ran.
+- No database, DNS, IAM, Web, Dashboard, forum, store, payment or other service
+  changed. EKA-17 is closed on source, rollout and live acceptance evidence.
+
+Details: [EKA-17 release receipt](docs/operations/EKA17_HLR_ENV_ROLLOUT_2026-09-20.md).
+
 ## 2026-09-06 - Android v1.0.32 API/Web Rollout Completed
 
 - PR #294 merged normally as
