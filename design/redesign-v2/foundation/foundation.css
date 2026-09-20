@@ -1,0 +1,404 @@
+/*
+ * redesign-v2 foundation — base shell styles
+ *
+ * Depends on tokens.css. No external assets, no JavaScript, no gradients,
+ * no shadows, border-radius 0 everywhere. Structure is built from 2px
+ * borders per the handoff layout system.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--pnx2-font-sans);
+  background: var(--pnx2-bg);
+  color: var(--pnx2-ink);
+  line-height: 1.6;
+}
+
+::selection {
+  background: var(--pnx2-selection);
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* base link colors are pinned so late-inserted links never render in
+   browser default blue (handoff: states) */
+a {
+  color: var(--pnx2-accent-dark);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--pnx2-accent);
+}
+
+/* keyboard focus — visible, never the browser default */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: var(--pnx2-focus-outline);
+  outline-offset: var(--pnx2-focus-offset);
+}
+
+.pnx2-container {
+  max-width: var(--pnx2-content-max);
+  margin: 0 auto;
+  padding: 0 var(--pnx2-content-pad);
+}
+
+/* skip link */
+.pnx2-skip {
+  position: absolute;
+  left: var(--pnx2-content-pad);
+  top: -48px;
+  background: var(--pnx2-ink);
+  color: var(--pnx2-bg);
+  padding: 8px 16px;
+  z-index: 70;
+  transition: top 0.15s;
+}
+
+.pnx2-skip:focus-visible {
+  top: 8px;
+  color: var(--pnx2-bg);
+}
+
+/* header — sticky, 2px ink border; no ancestor may use overflow-x: hidden
+   or sticky breaks (handoff: Kopfleiste) */
+.pnx2-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--pnx2-bg);
+  border-bottom: var(--pnx2-border-section);
+  min-height: 86px;
+  display: flex;
+  align-items: center;
+}
+
+.pnx2-header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  width: 100%;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.pnx2-brand {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--pnx2-accent);
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: var(--pnx2-target-min);
+}
+
+.pnx2-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0 4px;
+}
+
+.pnx2-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--pnx2-target-min);
+  padding: 0 12px;
+  font-size: var(--pnx2-text-small);
+  font-weight: 600;
+  color: var(--pnx2-body);
+}
+
+.pnx2-nav a:hover {
+  color: var(--pnx2-accent);
+}
+
+/* buttons — fixed min-height 48px, radius 0, borders only */
+.pnx2-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--pnx2-button-height);
+  padding: 0 20px;
+  border: 2px solid var(--pnx2-ink);
+  border-radius: var(--pnx2-radius);
+  background: var(--pnx2-bg);
+  color: var(--pnx2-ink);
+  font-size: var(--pnx2-text-body);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pnx2-btn-primary {
+  background: var(--pnx2-accent);
+  border-color: var(--pnx2-accent);
+  color: var(--pnx2-bg);
+}
+
+.pnx2-btn-primary:hover {
+  background: var(--pnx2-accent-dark);
+  border-color: var(--pnx2-accent-dark);
+  color: var(--pnx2-bg);
+}
+
+.pnx2-btn-secondary:hover {
+  border-color: var(--pnx2-accent);
+  color: var(--pnx2-accent-dark);
+}
+
+/* sections separated by 2px ink borders, never by whitespace alone */
+.pnx2-section {
+  border-bottom: var(--pnx2-border-section);
+  padding: var(--pnx2-section-pad) 0;
+}
+
+.pnx2-section-tinted {
+  background: var(--pnx2-bg-tinted);
+}
+
+.pnx2-kicker {
+  font-size: var(--pnx2-text-label);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pnx2-accent);
+  margin-bottom: 16px;
+}
+
+.pnx2-h1 {
+  font-size: var(--pnx2-text-hero);
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1;
+  text-wrap: balance;
+  max-width: 18ch;
+}
+
+.pnx2-h2 {
+  font-size: var(--pnx2-text-h2);
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1;
+  padding-bottom: 12px;
+  border-bottom: var(--pnx2-border-section);
+  margin-bottom: 24px;
+}
+
+.pnx2-lead {
+  font-size: var(--pnx2-text-lead);
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--pnx2-body);
+  max-width: 56ch;
+  margin-top: 20px;
+}
+
+.pnx2-body-text {
+  font-size: var(--pnx2-text-body);
+  line-height: 1.7;
+  color: var(--pnx2-body);
+  max-width: 68ch;
+  text-wrap: pretty;
+}
+
+.pnx2-small {
+  font-size: var(--pnx2-text-small);
+  color: var(--pnx2-muted);
+  max-width: 52ch;
+}
+
+.pnx2-space-top-sm {
+  margin-top: 12px;
+}
+
+.pnx2-space-top-md {
+  margin-top: 16px;
+}
+
+.pnx2-space-top-lg {
+  margin-top: 24px;
+}
+
+.pnx2-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pnx2-text-target {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--pnx2-target-min);
+  padding: 0 12px;
+}
+
+/* wrapping grid — 360px safe: cells never force a fixed width */
+.pnx2-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: 2px;
+  background: var(--pnx2-border-mid);
+  border: var(--pnx2-border-column);
+}
+
+.pnx2-grid > * {
+  background: var(--pnx2-bg);
+  padding: 24px;
+  min-width: 0;
+}
+
+/* base states — every live region ships loading, error and empty variants.
+   Numbers without data render as an em dash, never as placeholder figures. */
+.pnx2-state {
+  border-left: var(--pnx2-accent-bar);
+  background: var(--pnx2-bg-tinted);
+  padding: 16px 18px;
+  min-height: var(--pnx2-target-min);
+}
+
+.pnx2-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--pnx2-body-soft);
+}
+
+.pnx2-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--pnx2-border-mid);
+  border-top-color: var(--pnx2-accent);
+  /* square spinner: the handoff mandates border-radius 0 everywhere */
+  animation: pnx2-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pnx2-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pnx2-error {
+  border-left-color: var(--pnx2-accent-dark);
+  color: var(--pnx2-accent-dark);
+  font-weight: 600;
+}
+
+.pnx2-empty {
+  color: var(--pnx2-muted);
+}
+
+/* footer */
+.pnx2-footer {
+  background: var(--pnx2-ink);
+  color: var(--pnx2-on-ink);
+  padding: var(--pnx2-band-pad) 0 24px;
+}
+
+.pnx2-footer h2 {
+  font-size: var(--pnx2-text-label);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pnx2-on-ink-soft);
+  margin-bottom: 12px;
+}
+
+.pnx2-footer a {
+  color: var(--pnx2-on-ink-link);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--pnx2-target-min);
+  padding: 0 12px 0 0;
+}
+
+.pnx2-footer a:hover {
+  color: var(--pnx2-bg);
+}
+
+.pnx2-footer-bar {
+  border-top: 1px solid var(--pnx2-body-soft);
+  margin-top: 32px;
+  padding-top: 16px;
+  font-size: var(--pnx2-text-label);
+  color: var(--pnx2-on-ink-soft);
+}
+
+.pnx2-footer-grid {
+  background: var(--pnx2-ink);
+  border-color: var(--pnx2-body-soft);
+}
+
+.pnx2-footer-cell {
+  background: var(--pnx2-ink);
+}
+
+/* responsive — the grid already wraps; stack header nav under the brand on
+   narrow widths instead of clipping */
+@media (max-width: 640px) {
+  :root {
+    --pnx2-text-hero: 40px;
+    --pnx2-text-h2: 30px;
+    --pnx2-text-lead: 19px;
+  }
+
+  .pnx2-header-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .pnx2-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .pnx2-nav a {
+    justify-content: flex-start;
+    min-width: 0;
+  }
+
+  .pnx2-section {
+    padding: 40px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .pnx2-spinner {
+    animation: none;
+  }
+
+  .pnx2-skip {
+    transition: none;
+  }
+}

@@ -1,5 +1,30 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-09-20 - Redesign R0/R1 Prepared in an Isolated Stacked Branch
+
+- The complete current public surface is frozen by an exact 35-path allowlist
+  and deterministic baseline inventory. It records content, bilingual values,
+  metadata, links, forms, resources, API contracts, structured data,
+  interactions, responsive markers and stable category hashes. Regeneration
+  fails closed on page-set drift, malformed JSON-LD and unrecorded duplicate
+  IDs.
+- The inventory surfaced one pre-existing duplicate ID, `dot-mod02`, in
+  `docs/wiki/modules.html`. It is recorded as a bounded baseline defect because
+  R0/R1 may not modify public pages; any new occurrence still fails closed.
+- The R1 foundation remains outside `docs/` and is not public or deployed. It
+  contains local tokens, a semantic shell and loading/error/empty/focus states,
+  with no external request, runtime script, inline style/handler, prototype
+  runtime, negative letter spacing or viewport-scaled typography.
+- Sol reviewed the Kimi implementation and tightened markup-API/inline-style
+  inventory coverage, path containment and strict-CSP/mobile behavior. The
+  final 34 focused tests, byte-for-byte regeneration, secret-pattern scan and
+  boundary checks pass. Real Chromium renders at 1440px and an emulated 360px
+  viewport have no overflowing elements (`scrollWidth == innerWidth`).
+- This work is intentionally stacked on the reference-only catalog branch at
+  `2f474e6`. None of the 35 existing HTML files, app code, imported handoff,
+  dependencies, workflows or production services changed. R2 and all content,
+  font/icon, CSP and owner-dependent visual decisions remain separate gates.
+
 ## 2026-09-20 - EKA-17 HLR Environment Migration Completed
 
 - PR #331 remains the reviewed source authority at
