@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
-"""Fail-closed validator for the R3 wiki-shell pilot.
+"""Fail-closed validator for the R3 wiki-shell (pilot + full wiki migration).
 
-The R3 pilot may change only ``docs/wiki/index.html`` within the public HTML
-surface. The R2 landing remains semantically exact, and the other 33 pages
-remain byte-identical to the frozen R0 inventory.
+The R3 phase changes all 14 wiki pages (docs/wiki/*.html).  The R2 landing
+remains semantically exact, and the other 21 non-wiki pages remain
+byte-identical to the frozen R0 inventory.
+
+Public interface
+----------------
+``check_r3()``        — historical pilot-only gate
+``check_r3_all()``    — full-wiki gate (all 14 wiki pages)
+``check_r3_wiki_page(page_rel, baseline, docs_dir)``
+                      — per-page preservation + structure check
 """
 
 from __future__ import annotations
@@ -25,6 +32,28 @@ REPO_ROOT = r0_inventory.REPO_ROOT
 DOCS_DIR = r0_inventory.DOCS_DIR
 R0_INVENTORY_FILE = REPO_ROOT / "docs/planning/r0/R0_DOCS_SURFACE_INVENTORY.json"
 PILOT_REL = "docs/wiki/index.html"
+FAQ_REL = "docs/wiki/faq.html"
+
+# All 14 wiki pages (pilot + 13 migrated)
+WIKI_RELS: tuple[str, ...] = (
+    "docs/wiki/index.html",
+    "docs/wiki/api.html",
+    "docs/wiki/architecture.html",
+    "docs/wiki/broadcasting.html",
+    "docs/wiki/contributing.html",
+    "docs/wiki/database.html",
+    "docs/wiki/delete-account.html",
+    "docs/wiki/faq.html",
+    "docs/wiki/modules.html",
+    "docs/wiki/privacy.html",
+    "docs/wiki/roadmap.html",
+    "docs/wiki/security.html",
+    "docs/wiki/whitepaper.html",
+    "docs/wiki/zk-voting.html",
+)
+
+# Pages whose R0 baseline contained a .hero element inside the page content
+WIKI_PAGES_WITH_HERO: frozenset[str] = frozenset(WIKI_RELS) - frozenset({"docs/wiki/zk-voting.html"})
 
 R3_CSS_HREFS = (
     "../assets/redesign-v2/tokens.css",
@@ -56,6 +85,17 @@ ADDED_RESOURCES = tuple(
     {"kind": "relative-file", "source": "link.href", "url": href}
     for href in R3_CSS_HREFS
 ) + ({"kind": "fragment", "source": "a.href", "url": "#main"},)
+FAQ_A11Y_SCRIPT_HREF = "../assets/redesign-v2/r3-faq-accessibility.js"
+FAQ_A11Y_SCRIPT_REL = "assets/redesign-v2/r3-faq-accessibility.js"
+FAQ_A11Y_RESOURCE = {
+    "kind": "relative-file",
+    "source": "script.src",
+    "url": FAQ_A11Y_SCRIPT_HREF,
+}
+FAQ_A11Y_SCRIPT = {
+    "src": FAQ_A11Y_SCRIPT_HREF,
+    "attrs": {"defer": "", "src": FAQ_A11Y_SCRIPT_HREF},
+}
 
 CSS_PROHIBITED = (
     (r"(?:linear|radial|conic)-gradient\s*\(", "gradient"),
@@ -110,7 +150,12 @@ def _exact_delta(
 
 
 def check_nonpilot_parity(inv: dict, repo_root: Path) -> list[str]:
-    """Require byte identity for every R0 page outside the R2/R3 pages."""
+    """Require byte identity for every R0 page outside the R2/R3 pages.
+
+    For the pilot-only gate the only allowed changes are docs/index.html and
+    the pilot docs/wiki/index.html.  For the full-wiki gate use
+    ``check_nonwiki_parity`` instead.
+    """
     violations: list[str] = []
     allowed = {"docs/index.html", PILOT_REL}
     for page in inv["pages"]:
@@ -124,6 +169,28 @@ def check_nonpilot_parity(inv: dict, repo_root: Path) -> list[str]:
         if actual != page["sha256"]:
             violations.append(
                 f"parity: {page['path']}: sha256 changed; R3 pilot permits only {PILOT_REL}"
+            )
+    return violations
+
+
+def check_nonwiki_parity(inv: dict, repo_root: Path) -> list[str]:
+    """Require byte identity for every R0 page outside the R2 landing and all
+    14 wiki pages.  Used by the full-wiki gate.
+    """
+    violations: list[str] = []
+    allowed = frozenset({"docs/index.html"} | set(WIKI_RELS))
+    for page in inv["pages"]:
+        if page["path"] in allowed:
+            continue
+        target = repo_root / page["path"]
+        if not target.is_file():
+            violations.append(f"parity: {page['path']}: missing file")
+            continue
+        actual = _sha256_file(target)
+        if actual != page["sha256"]:
+            violations.append(
+                f"parity: {page['path']}: sha256 changed; "
+                "R3 full-wiki permits only docs/index.html and wiki pages"
             )
     return violations
 
@@ -155,58 +222,18 @@ def _inventory_page_at(docs_dir: Path, page_rel: str) -> dict:
 
 
 def check_pilot_preservation(baseline: dict, current: dict) -> list[str]:
-    violations: list[str] = []
-    for key in PRESERVED_EXACT_KEYS:
-        if current.get(key) != baseline.get(key):
-            violations.append(f"preservation: exact contract changed: {key}")
+    """Backward-compatible pilot-only preservation gate.
 
-    violations.extend(_exact_delta(
-        "bilingual pairs", baseline["bilingual"]["pairs"],
-        current["bilingual"]["pairs"], [SKIP_PAIR],
-    ))
-    if current["bilingual"]["only_data_el"] != baseline["bilingual"]["only_data_el"]:
-        violations.append("preservation: bilingual.only_data_el changed")
-    if current["bilingual"]["only_data_en"] != baseline["bilingual"]["only_data_en"]:
-        violations.append("preservation: bilingual.only_data_en changed")
-    if current["bilingual"]["counts"]["pairs"] != baseline["bilingual"]["counts"]["pairs"] + 1:
-        violations.append("preservation: bilingual pair count differs")
+    Delegates to the generic ``check_wiki_page_preservation`` for the shared
+    contract, then adds the pilot-specific media-query check.
+    """
+    violations = check_wiki_page_preservation(PILOT_REL, baseline, current)
+    # Strip the page_rel prefix added by the generic function so existing tests
+    # that compare plain violation strings remain compatible.
+    violations = [v.replace(f"({PILOT_REL})", "").replace(f"preservation({PILOT_REL}): ", "preservation: ").replace(f"responsive({PILOT_REL}): ", "responsive: ") for v in violations]
 
-    violations.extend(_exact_delta("links", baseline["links"], current["links"], [SKIP_LINK]))
-    violations.extend(_exact_delta(
-        "text chunks", baseline["text"]["chunks"], current["text"]["chunks"],
-        [SKIP_PAIR["data_el"]],
-    ))
-    violations.extend(_exact_delta(
-        "navigation ids", baseline["navigation"]["ids"],
-        current["navigation"]["ids"], ["main"],
-    ))
-    violations.extend(_exact_delta(
-        "navigation fragments", baseline["navigation"]["fragment_links"],
-        current["navigation"]["fragment_links"], [SKIP_FRAGMENT],
-    ))
-    for key in ("headings", "nav_elements", "duplicate_ids", "unresolved_fragment_targets"):
-        if current["navigation"][key] != baseline["navigation"][key]:
-            violations.append(f"preservation: navigation.{key} changed")
-
-    violations.extend(_exact_delta(
-        "resources", baseline["resources"], current["resources"], ADDED_RESOURCES,
-    ))
-    if current["styles"]["inline"] != baseline["styles"]["inline"]:
-        violations.append("preservation: inline style blocks changed")
-    if current["styles"]["inline_attributes"] != baseline["styles"]["inline_attributes"]:
-        violations.append("preservation: inline style attributes changed")
-    external = current["styles"]["external"]
-    if [entry.get("href") for entry in external] != list(R3_CSS_HREFS):
-        violations.append("preservation: external stylesheet order differs")
-    for entry in external:
-        if not entry.get("resolved") or not entry.get("repo_path", "").startswith("docs/assets/redesign-v2/"):
-            violations.append(f"preservation: stylesheet did not resolve locally: {entry.get('href')}")
-
+    # Pilot-specific check: exact media-query set from the R3 shell
     responsive = current["responsive"]
-    if responsive["viewport_meta"] != baseline["responsive"]["viewport_meta"]:
-        violations.append("preservation: viewport metadata changed")
-    if responsive["fixed_px_widths_over_360"]:
-        violations.append("responsive: fixed width over 360px introduced")
     expected_media = {
         "@media (max-width: 640px)",
         "@media (max-width: 920px)",
@@ -226,6 +253,7 @@ class StructureParser(HTMLParser):
         self.hero_in_main_count = 0
         self.header_count = 0
         self.footer_count = 0
+        self.footer_in_main_count = 0
         self.stylesheets: list[str] = []
 
     @staticmethod
@@ -248,6 +276,11 @@ class StructureParser(HTMLParser):
             self.header_count += 1
         if tag == "footer" and "pnx2-footer" in classes:
             self.footer_count += 1
+            if any(
+                parent_tag == "main" and parent_attrs.get("id") == "main"
+                for parent_tag, parent_attrs in self.stack
+            ):
+                self.footer_in_main_count += 1
         if tag == "link" and "stylesheet" in attrs.get("rel", "").lower().split():
             self.stylesheets.append(attrs.get("href", ""))
         if tag not in VOID_ELEMENTS:
@@ -265,7 +298,18 @@ class StructureParser(HTMLParser):
                 return
 
 
-def check_structure(html: str) -> list[str]:
+def check_structure(html: str, requires_hero: bool = True) -> list[str]:
+    """Parser-backed structural gate.
+
+    Parameters
+    ----------
+    html:
+        Full HTML source of the page.
+    requires_hero:
+        ``True`` (default) when the R0 baseline contained a ``.hero`` element
+        inside the page content — all wiki pages except ``zk-voting.html``.
+        Pass ``False`` for pages that had no hero in the baseline.
+    """
     parser = StructureParser()
     parser.feed(html)
     parser.close()
@@ -278,15 +322,132 @@ def check_structure(html: str) -> list[str]:
             violations.append("structural: live skip link contract differs")
     if parser.main_count != 1:
         violations.append("structural: expected one live main#main landmark")
-    if parser.hero_in_main_count != 1:
+    if requires_hero and parser.hero_in_main_count != 1:
         violations.append("structural: wiki hero must be nested inside main#main")
+    if not requires_hero and parser.hero_in_main_count != 0:
+        violations.append("structural: hero must not appear on this page (no R0 baseline)")
     if parser.header_count != 1:
         violations.append("structural: expected one live nav.pnx2-header")
     if parser.footer_count != 1:
         violations.append("structural: expected one live footer.pnx2-footer")
+    if parser.footer_in_main_count:
+        violations.append("structural: footer.pnx2-footer must be outside main#main")
     for href in R3_CSS_HREFS:
         if parser.stylesheets.count(href) != 1:
             violations.append(f"structural: expected one live stylesheet link: {href}")
+    return violations
+
+
+def check_wiki_page_preservation(
+    page_rel: str, baseline: dict, current: dict
+) -> list[str]:
+    """Preservation gate for a single wiki page (pilot or one of the 13 migrated).
+
+    Allows only:
+    - the bilingual skip-link pair
+    - the skip-link in the links list
+    - the skip text chunk
+    - the ``id="main"`` navigation id
+    - the ``#main`` fragment link
+    - the three R3 CSS resource entries
+    - the three R3 external stylesheets appended after any R0 stylesheets
+
+    Everything else must be identical to the R0 baseline.
+    """
+    violations: list[str] = []
+    for key in PRESERVED_EXACT_KEYS:
+        if page_rel == FAQ_REL and key == "scripts":
+            continue
+        if current.get(key) != baseline.get(key):
+            violations.append(f"preservation({page_rel}): exact contract changed: {key}")
+
+    if page_rel == FAQ_REL:
+        for key in ("inline", "inline_count"):
+            if current["scripts"][key] != baseline["scripts"][key]:
+                violations.append(f"preservation({page_rel}): scripts.{key} changed")
+        violations.extend(_exact_delta(
+            f"external scripts ({page_rel})",
+            baseline["scripts"]["external"],
+            current["scripts"]["external"],
+            [FAQ_A11Y_SCRIPT],
+        ))
+
+    violations.extend(_exact_delta(
+        f"bilingual pairs ({page_rel})",
+        baseline["bilingual"]["pairs"],
+        current["bilingual"]["pairs"],
+        [SKIP_PAIR],
+    ))
+    if current["bilingual"]["only_data_el"] != baseline["bilingual"]["only_data_el"]:
+        violations.append(f"preservation({page_rel}): bilingual.only_data_el changed")
+    if current["bilingual"]["only_data_en"] != baseline["bilingual"]["only_data_en"]:
+        violations.append(f"preservation({page_rel}): bilingual.only_data_en changed")
+    if current["bilingual"]["counts"]["pairs"] != baseline["bilingual"]["counts"]["pairs"] + 1:
+        violations.append(f"preservation({page_rel}): bilingual pair count differs")
+
+    violations.extend(_exact_delta(
+        f"links ({page_rel})", baseline["links"], current["links"], [SKIP_LINK]
+    ))
+    violations.extend(_exact_delta(
+        f"text chunks ({page_rel})",
+        baseline["text"]["chunks"],
+        current["text"]["chunks"],
+        [SKIP_PAIR["data_el"]],
+    ))
+    violations.extend(_exact_delta(
+        f"navigation ids ({page_rel})",
+        baseline["navigation"]["ids"],
+        current["navigation"]["ids"],
+        ["main"],
+    ))
+    violations.extend(_exact_delta(
+        f"navigation fragments ({page_rel})",
+        baseline["navigation"]["fragment_links"],
+        current["navigation"]["fragment_links"],
+        [SKIP_FRAGMENT],
+    ))
+    for key in ("headings", "nav_elements", "duplicate_ids", "unresolved_fragment_targets"):
+        if current["navigation"][key] != baseline["navigation"][key]:
+            violations.append(f"preservation({page_rel}): navigation.{key} changed")
+
+    resource_additions = ADDED_RESOURCES + (
+        (FAQ_A11Y_RESOURCE,) if page_rel == FAQ_REL else ()
+    )
+    violations.extend(_exact_delta(
+        f"resources ({page_rel})",
+        baseline["resources"],
+        current["resources"],
+        resource_additions,
+    ))
+    if current["styles"]["inline"] != baseline["styles"]["inline"]:
+        violations.append(f"preservation({page_rel}): inline style blocks changed")
+    if current["styles"]["inline_attributes"] != baseline["styles"]["inline_attributes"]:
+        violations.append(f"preservation({page_rel}): inline style attributes changed")
+
+    # Stylesheets: R0 stylesheets preserved in order, then exactly R3_CSS_HREFS appended
+    r0_external_hrefs = [e.get("href") for e in baseline["styles"]["external"]]
+    current_external_hrefs = [e.get("href") for e in current["styles"]["external"]]
+    expected_hrefs = r0_external_hrefs + list(R3_CSS_HREFS)
+    if current_external_hrefs != expected_hrefs:
+        violations.append(
+            f"preservation({page_rel}): external stylesheet order differs; "
+            f"expected {expected_hrefs!r}, got {current_external_hrefs!r}"
+        )
+    for entry in current["styles"]["external"]:
+        if entry.get("href") in R3_CSS_HREFS:
+            if not entry.get("resolved") or not entry.get("repo_path", "").startswith(
+                "docs/assets/redesign-v2/"
+            ):
+                violations.append(
+                    f"preservation({page_rel}): R3 stylesheet did not resolve locally: "
+                    f"{entry.get('href')}"
+                )
+
+    responsive = current["responsive"]
+    if responsive["viewport_meta"] != baseline["responsive"]["viewport_meta"]:
+        violations.append(f"preservation({page_rel}): viewport metadata changed")
+    if responsive["fixed_px_widths_over_360"]:
+        violations.append(f"responsive({page_rel}): fixed width over 360px introduced")
     return violations
 
 
@@ -316,10 +477,64 @@ def check_css_files(docs_dir: Path) -> list[str]:
     return violations
 
 
+def check_faq_accessibility_asset(docs_dir: Path) -> list[str]:
+    """Require the local FAQ keyboard adapter and its bounded behavior."""
+    path = docs_dir / FAQ_A11Y_SCRIPT_REL
+    if not path.is_file():
+        return [f"faq accessibility: missing local asset: {FAQ_A11Y_SCRIPT_REL}"]
+    source = path.read_text(encoding="utf-8")
+    required = (
+        'question.setAttribute("role", "button")',
+        'question.setAttribute("tabindex", "0")',
+        '"aria-expanded"',
+        'question.setAttribute("aria-controls", answerId)',
+        'event.key === "Enter"',
+        'event.key === " "',
+        "event.preventDefault()",
+        "question.click()",
+    )
+    return [
+        f"faq accessibility: missing behavior marker: {marker}"
+        for marker in required
+        if marker not in source
+    ]
+
+
+def check_r3_wiki_page(
+    page_rel: str,
+    baseline: dict,
+    docs_dir: Path,
+) -> list[str]:
+    """Run preservation + structural checks for a single wiki page.
+
+    Parameters
+    ----------
+    page_rel:
+        Repository-relative path, e.g. ``"docs/wiki/api.html"``.
+    baseline:
+        R0 inventory page entry for *page_rel*.
+    docs_dir:
+        Absolute path to the ``docs/`` directory.
+    """
+    page_path = docs_dir.parent / page_rel
+    if not page_path.is_file():
+        return [f"preservation({page_rel}): live file missing"]
+    current = _inventory_page_at(docs_dir, page_rel)
+    violations = check_wiki_page_preservation(page_rel, baseline, current)
+    requires_hero = page_rel in WIKI_PAGES_WITH_HERO
+    violations.extend(check_structure(page_path.read_text(encoding="utf-8"), requires_hero=requires_hero))
+    return violations
+
+
 def check_r3(
     docs_dir: Path | None = None,
     inv_file: Path | None = None,
 ) -> list[str]:
+    """Pilot-only gate (backward-compatible).  Checks the R3 pilot page
+    (``docs/wiki/index.html``) and requires byte-identity for all other pages
+    except the R2 landing.  The 13 newly migrated wiki pages are NOT checked
+    by this function; use ``check_r3_all()`` instead.
+    """
     target_docs = docs_dir or DOCS_DIR
     inv = _load_inventory(inv_file)
     violations = check_nonpilot_parity(inv, target_docs.parent)
@@ -336,18 +551,55 @@ def check_r3(
     return violations
 
 
+def check_r3_all(
+    docs_dir: Path | None = None,
+    inv_file: Path | None = None,
+) -> list[str]:
+    """Full-wiki gate.  Checks all 14 wiki pages and requires byte-identity
+    for every other page except the R2 landing (``docs/index.html``).
+    """
+    target_docs = docs_dir or DOCS_DIR
+    inv = _load_inventory(inv_file)
+    violations = check_nonwiki_parity(inv, target_docs.parent)
+    violations.extend(check_landing_r2(inv, target_docs))
+    baselines = {p["path"]: p for p in inv["pages"]}
+    for page_rel in WIKI_RELS:
+        baseline = baselines.get(page_rel)
+        if baseline is None:
+            violations.append(f"preservation({page_rel}): R0 baseline entry missing")
+            continue
+        violations.extend(check_r3_wiki_page(page_rel, baseline, target_docs))
+    violations.extend(check_css_files(target_docs))
+    violations.extend(check_faq_accessibility_asset(target_docs))
+    return violations
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", action="store_true")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
+        "--all",
+        action="store_true",
+        dest="all_wiki",
+        help="Run the full-wiki gate (default; retained for explicit CI commands).",
+    )
+    mode.add_argument(
+        "--pilot",
+        action="store_true",
+        help="Run the historical pilot-only gate.",
+    )
     args = parser.parse_args()
-    violations = check_r3()
+    full_wiki = not args.pilot
+    violations = check_r3_all() if full_wiki else check_r3()
+    label = "r3_wiki_all_check" if full_wiki else "r3_wiki_pilot_check"
     if args.json:
         print(json.dumps(violations, ensure_ascii=False, indent=2))
     elif violations:
         for violation in violations:
             print(f"FAIL  {violation}")
     else:
-        print("OK  r3_wiki_pilot_check: all checks passed")
+        print(f"OK  {label}: all checks passed")
     return 2 if violations else 0
 
 

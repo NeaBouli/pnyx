@@ -260,6 +260,175 @@ footer.pnx2-footer {
   }
 }
 
+/* ── Tables ──────────────────────────────────────────────────────────── */
+
+.table-wrap {
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  margin: 0 calc(-1 * var(--pnx2-content-pad));
+  padding: 0 var(--pnx2-content-pad);
+  border-bottom: var(--pnx2-border-section);
+}
+
+.table-wrap table,
+.content table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 480px;
+  font-size: var(--pnx2-text-small);
+}
+
+.table-wrap th,
+.table-wrap td,
+.content th,
+.content td {
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid var(--pnx2-border-mid);
+}
+
+.table-wrap th,
+.content th {
+  background: var(--pnx2-bg-tinted);
+  font-weight: 700;
+  color: var(--pnx2-ink);
+}
+
+/* ── Info / warn / success boxes ────────────────────────────────────── */
+
+.info-box,
+.warn-box,
+.success-box,
+.warn {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  border-left-width: 4px;
+}
+
+/* ── Inline code ────────────────────────────────────────────────────── */
+
+.code-c {
+  display: inline;
+  padding: 1px 5px;
+  background: var(--pnx2-bg-tinted);
+  color: var(--pnx2-ink);
+  font-family: var(--pnx2-font-mono);
+  font-size: 0.85em;
+  border: 1px solid var(--pnx2-border-mid);
+}
+
+/* ── Badges ─────────────────────────────────────────────────────────── */
+
+.badge,
+.badge-blue,
+.badge-gray,
+.badge-green,
+.badge-yellow,
+.badge-red,
+.badge-purple {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--pnx2-ink);
+  background: var(--pnx2-bg-tinted);
+  border: 1px solid var(--pnx2-border-mid);
+}
+
+/* ── FAQ accordion ──────────────────────────────────────────────────── */
+
+.faq-item {
+  border-bottom: var(--pnx2-border-section);
+}
+
+.faq-q {
+  display: flex;
+  align-items: center;
+  min-height: var(--pnx2-target-min);
+  padding: 12px 0;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--pnx2-ink);
+}
+
+.faq-a {
+  padding: 0 0 16px;
+  color: var(--pnx2-body);
+  font-size: var(--pnx2-text-small);
+  overflow-wrap: anywhere;
+}
+
+/* ── Roadmap accordion ──────────────────────────────────────────────── */
+
+.roadmap-section {
+  border: 1px solid var(--pnx2-border-mid);
+  margin-bottom: 2px;
+}
+
+.roadmap-section h3 {
+  display: flex;
+  align-items: center;
+  min-height: var(--pnx2-target-min);
+  padding: 12px 16px;
+  cursor: pointer;
+  color: var(--pnx2-ink);
+  font-weight: 700;
+}
+
+.roadmap-content {
+  padding: 0 16px 16px;
+  overflow-wrap: anywhere;
+}
+
+.section-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── ZK-voting content container ────────────────────────────────────── */
+
+.content {
+  max-width: var(--pnx2-content-max);
+  margin: 0 auto;
+  padding: 32px var(--pnx2-content-pad) var(--pnx2-section-pad);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+/* ── Card icon ──────────────────────────────────────────────────────── */
+
+.card-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pnx2-bg-tinted);
+  color: var(--pnx2-accent);
+}
+
+main button {
+  min-height: var(--pnx2-target-min);
+}
+
+/* ── Motion animation frames (architecture, security) ───────────────── */
+
+.ekk-visual-frame {
+  overflow-x: auto;
+  min-width: 0;
+}
+
+.ekk-visual-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 640px) {
   :root {
     --pnx2-content-pad: 16px;
@@ -300,5 +469,26 @@ footer.pnx2-footer {
 
   #legalModal > div {
     padding: 24px 20px !important;
+  }
+
+  .table-wrap {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .table-wrap.fade-in {
+    opacity: 1;
+    transform: none;
+  }
+
+  .content {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .roadmap-section h3 {
+    padding: 10px 12px;
   }
 }

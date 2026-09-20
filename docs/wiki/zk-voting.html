@@ -49,9 +49,14 @@
     footer{text-align:center;padding:2rem 1rem;color:var(--gray-500);font-size:0.8rem;border-top:1px solid #e2e8f0;margin-top:3rem}
     footer a{color:var(--blue);text-decoration:none}
   </style>
+
+  <link rel="stylesheet" href="../assets/redesign-v2/tokens.css"/>
+  <link rel="stylesheet" href="../assets/redesign-v2/foundation.css"/>
+  <link rel="stylesheet" href="../assets/redesign-v2/r3-wiki.css"/>
 </head>
 <body>
-<nav>
+<a href="#main" class="pnx2-skip" data-el="Μετάβαση στο κύριο περιεχόμενο" data-en="Skip to main content">Μετάβαση στο κύριο περιεχόμενο</a>
+<nav class="pnx2-header">
   <a href="../" class="nav-logo"><img src="../pnx.png" alt="logo" style="width:40px;height:40px;object-fit:contain"/>εκκλησία</a>
   <div class="nav-links">
     <a href="../" data-el="Αρχική" data-en="Home">Αρχική</a>
@@ -61,6 +66,7 @@
     <a href="roadmap.html">Roadmap</a>
   </div>
 </nav>
+<main id="main">
 
 <div class="content">
   <h1 data-el="ZK Voting — Semaphore" data-en="ZK Voting — Semaphore">ZK Voting — Semaphore</h1>
@@ -126,7 +132,8 @@
   </p>
 </div>
 
-<footer>
+</main>
+<footer class="pnx2-footer">
   <a href="../">εκκλησία</a> · <a href="index.html">Wiki</a> · <a href="security.html">Ασφάλεια</a> · <a href="roadmap.html">Roadmap</a>
   <p>εκκλησία &middot; &copy; 2026 V-Labs Development &middot; MIT License</p>
 </footer>

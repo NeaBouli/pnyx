@@ -1,5 +1,31 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-09-20 - R3 Full Wiki Source Migration Validated
+
+- The 13 remaining wiki pages now use the same local R3 shell as the merged
+  pilot. All pre-existing text, bilingual pairs, links, metadata, forms,
+  scripts, event handlers, inline styles, API contracts and external hosts are
+  preserved by the fail-closed R0 comparison.
+- The shared stylesheet covers the existing table, FAQ, roadmap, code, badge,
+  content and motion variants without adding external assets. A real-browser
+  finding raised two Broadcasting copy controls to the 44px target and keeps
+  very tall mobile tables visible when the legacy 10% intersection threshold
+  cannot be reached.
+- Verification passed: the default and explicit full R3 gates, R1 foundation,
+  117 redesign tests, Python compilation, static local-link resolution,
+  `git diff --check` and Gitleaks. Real Chromium covered all 14 wiki pages at
+  1440x1000 and 360x800 with no document overflow, missing landmark, broken
+  local image, table-containment failure, language-toggle failure or
+  migration-attributable JavaScript exception.
+- CodeRabbit's two valid findings were resolved before integration: malformed
+  footer nesting is now rejected by the structural gate, and all 57 existing
+  FAQ questions expose browser-verified keyboard and synchronized ARIA state
+  through a bounded local progressive-enhancement asset.
+- This is source validation only. No production, server, database, DNS, IAM,
+  secret, provider, payment, application, API or store change occurred. Normal
+  protected-branch integration and a separately authorized web-only rollout
+  remain later gates.
+
 ## 2026-09-20 - Independent Catalog and R0/R1 Review
 
 - Claude Code completed a read-only review of the full PR #323 and stacked PR
