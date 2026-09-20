@@ -359,13 +359,15 @@ pnyx/
 
 ### Environment Variables
 
-Server `.env.production` at `/opt/ekklesia/.env.production` contains:
+The source contract expects these variable families in the server environment.
+This inventory does not assert that the separate production migration has
+already happened:
 
 ```
 POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
 SERVER_SALT, SECRET_KEY
 ADMIN_KEY
-HLRLOOKUPS_USERNAME, HLRLOOKUPS_PASSWORD, HLRLOOKUPS_API_KEY, HLRLOOKUPS_API_SECRET
+HLRLOOKUP_API_KEY, HLRLOOKUP_API_SECRET, HLRLOOKUPS_API_KEY, HLRLOOKUPS_API_SECRET
 OLLAMA_URL, OLLAMA_MODEL
 DEEPL_API_KEY
 HF_API_KEY (HuggingFace fallback)
@@ -374,6 +376,12 @@ STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
 BREVO_API_KEY, BREVO_SMTP_USER, BREVO_SMTP_PASS
 LISTMONK_ADMIN_USER, LISTMONK_ADMIN_PASSWORD
 ```
+
+HLR credential names: the primary provider (hlrlookup.com) reads
+`HLRLOOKUP_API_KEY` / `HLRLOOKUP_API_SECRET`; the inverted legacy names
+`HLR_FALLBACK_API_KEY` / `HLR_FALLBACK_API_SECRET` remain accepted as
+deprecated aliases for the primary provider only. The fallback provider
+(hlr-lookups.com) uses `HLRLOOKUPS_API_KEY` / `HLRLOOKUPS_API_SECRET`.
 
 ---
 
