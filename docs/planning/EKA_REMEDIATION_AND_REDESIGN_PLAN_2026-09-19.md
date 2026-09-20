@@ -94,12 +94,13 @@ block and, when desired, an explicit token budget are the reliable controls.
 | #325 | EKA-04 newsletter abuse protection | Merged as `760845a`; focused, real-Redis, full API, review and post-merge checks green | Integration complete; production rollout/live acceptance remain separate |
 | #326 | EKA-03 nullifier-bound action proofs | Merged as `5f850e2`; full API/mobile/security verification, resolved review threads and post-merge checks green | Integration complete; API rollout, Android adoption, cutoff and live acceptance remain separate |
 | #327 | EKA-05 authenticated push registration | Merged as `9f52c95`; full API/mobile/security verification, resolved review threads and post-merge checks green | Integration complete; API rollout, compatible Mobile release/adoption and live acceptance remain separate |
+| #328 | EKA-06 HLR cost and public-status protection | Merged as `0ce4b31`; atomic-limit regression, dashboard build and all PR/main checks green | Integration complete; bounded API/dashboard rollout and live acceptance remain separate |
 | #321 | Alembic 1.20.0 dependency update | Open, clean, checks green | Independent dependency maintenance; do not mix with EKA fixes |
 | #322 | sentry-sdk 2.69.1 dependency update | Open, clean, checks green | Independent dependency maintenance; do not mix with EKA fixes |
 
 The catalog intake itself merged or deployed nothing. The #319, #320, #325,
-#326 and #327 rows record later bounded task blocks; #320, #325, #326 and #327
-have not been deployed.
+#326, #327 and #328 rows record later bounded task blocks; #320, #325, #326,
+#327 and #328 have not been deployed.
 
 ## Remediation packages
 
@@ -110,7 +111,7 @@ must not be duplicated across packages.
 |---|---|---|---|
 | A - Representative XSS | EKA-02 | Complete: #319 merged, bounded Web rollout accepted, #318 updated. | High package closed with source, integration and live evidence. |
 | B - Global rate limiting | EKA-32 | Integration complete: #320 proves middleware order, 429 CORS, test isolation, Redis/fallback behavior and trusted-proxy semantics. Production rollout remains separate. | Medium/high blast radius; live evidence still required. |
-| C - Auxiliary endpoint abuse and privacy | EKA-03, EKA-04, EKA-05, EKA-06, EKA-09, EKA-16, EKA-17, EKA-53 | EKA-04 source integration is complete in #325. EKA-03 source integration is complete in #326 with a compatibility-gated unsigned-read retirement path. EKA-05 source integration is complete in #327 with signed identity-bound registration and random per-install device IDs. Their rollout/live gates and the remaining HLR, webhook and usage subsystems stay separate. | Depends on B's global baseline and existing client compatibility. HLR/provider writes remain forbidden. |
+| C - Auxiliary endpoint abuse and privacy | EKA-03, EKA-04, EKA-05, EKA-06, EKA-09, EKA-16, EKA-17, EKA-53 | EKA-04 source integration is complete in #325. EKA-03 is integrated in #326 with a compatibility-gated unsigned-read retirement path. EKA-05 is integrated in #327 with signed identity-bound registration and random per-install device IDs. EKA-06 is integrated in #328 with atomic HLR limits and a coarse public status contract. Their rollout/live gates and the remaining webhook, logging and admin-status findings stay separate. | Depends on B's global baseline and existing client compatibility. HLR/provider writes remain forbidden. |
 | D - Vote and dormant-auth correctness | EKA-01, EKA-10, EKA-11, EKA-12 | Restore Tier-1 validation, convert municipal races to deterministic conflict handling, define dormant gov.gr state storage before activation, narrow signature exceptions. | Security-sensitive; no governance semantics change. |
 | E - Client keys and nullifier KDF | EKA-07, EKA-08, EKA-21, EKA-22, EKA-23, EKA-24 | Publish canonical formats and known-answer tests first; then plan backward-compatible key-storage and KDF migration. Record the accepted phone-entropy residual risk explicitly. | High crypto/identity risk; requires Kimi plus strengthened Sol review before code. No identity reset. |
 | F - Runtime and integration surface | EKA-13, EKA-18, EKA-19, EKA-26, EKA-27, EKA-28, EKA-29, EKA-30, EKA-31 | Reverify inventory, dependency backlog, container/user/tag posture, subdomain ownership, admin exposure, package IDs and CSP. Record the verified-wiring evidence separately. | Read-only inventory first. DNS, containers, IAM and production need separate authorization. |
@@ -213,10 +214,10 @@ redesign visuals.
 ## Current stop point
 
 - Audit and helper work catalogued; Package A is closed, Package B is integrated
-  with its production gate still open, and Package C's EKA-04, EKA-03 and
-  EKA-05 source subsystems are integrated with their rollout/live gates still
-  open.
-- CI limitation correctly classified; all #319/#320/#325/#326/#327 integration
+  with its production gate still open, and Package C's EKA-04, EKA-03, EKA-05
+  and EKA-06 source subsystems are integrated with their rollout/live gates
+  still open.
+- CI limitation correctly classified; all #319/#320/#325/#326/#327/#328 integration
   checks passed.
 - Design source preserved outside the public web root.
 - No redesign code or public content changed.
@@ -227,10 +228,13 @@ redesign visuals.
   CodeRabbit findings were fixed, and quota-limited follow-up agents were
   replaced by the documented final Sol review. EKA-05 was implemented by Kimi
   under Sol review; Claude found no blocker and CodeRabbit's two valid findings
-  were fixed before the normal merge.
+  were fixed before the normal merge. EKA-06 was implemented and reviewed with
+  Kimi under Sol control; CodeRabbit's two valid findings were fixed before the
+  normal merge and main verification.
 
 Next executable action requires a separate exact choice: either the bounded
 **Package B API rollout/live acceptance**, the bounded **EKA-04 API rollout/live
 acceptance**, the staged **EKA-03 API/Android/adoption/cutoff sequence**, the
-staged **EKA-05 API/Mobile/adoption/live-acceptance sequence**, or specification
-of the next Package C subsystem. None starts automatically from this document.
+staged **EKA-05 API/Mobile/adoption/live-acceptance sequence**, the bounded
+**EKA-06 API/dashboard rollout/live acceptance**, or specification of the next
+Package C subsystem. None starts automatically from this document.

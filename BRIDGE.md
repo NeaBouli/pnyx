@@ -673,3 +673,27 @@
   production mutation occurred. EKA-05 remains open until the separately
   authorized API rollout, compatible Mobile release/adoption and live
   acceptance sequence completes.
+
+## 2026-09-20 - EKA-06 HLR Cost Protection Integration (Append-only)
+
+- PR #328 merged normally as `0ce4b31` without admin bypass. Invalid Greek
+  mobile formats are rejected locally before Redis or a paid provider call.
+  Valid attempts are bounded by per-IP minute/day and HMAC-number cooldown/day
+  limits, with all four checks and mutations performed atomically in one Redis
+  Lua transaction. Redis failure blocks the paid lookup.
+- The public HLR status now exposes only coarse availability states. Exact
+  balances, usage, provider labels, costs and failover reason remain available
+  only through the existing authenticated admin route and dashboard proxy.
+- CodeRabbit identified two valid findings: IP-rejected attempts could consume
+  number quota, and Finance used two stale response fields. Commit `8c8f8e2`
+  made the Redis operation atomic, added the no-partial-mutation regression and
+  aligned Finance with `initial` and `cost_per_query_eur`. Kimi reviewed the
+  bounded change under Sol integration control.
+- Verification passed: focused API tests `67 passed`; dashboard typecheck and
+  production build; Python compile and diff checks. All PR checks passed.
+  Post-merge main CI run `35503903428` and Security run `35503903422` passed
+  completely on merge commit `0ce4b31`.
+- Evidence is recorded in issue #318 and PR #328. No API/dashboard rollout,
+  paid HLR lookup, database, DNS, secret, IAM, provider, payment, store or other
+  production mutation occurred. EKA-06 remains open until a separately
+  authorized bounded rollout and live acceptance complete.

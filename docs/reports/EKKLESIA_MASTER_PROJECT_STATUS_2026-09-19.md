@@ -695,7 +695,7 @@ Publishing an audit is not fixing it. A green PR is not deployment evidence.
 |---|---|---|
 | A - Representative XSS | EKA-02 | Complete: PR #319 merged, bounded Web rollout passed hostile-payload live acceptance, #318 closed. |
 | B - Global rate limiting | EKA-32 | Integration complete in PR #320; production rollout and live acceptance remain separate. |
-| C - Endpoint abuse/privacy | EKA-03/04/05/06/09/16/17/53 | EKA-04 source integration is complete in #325, EKA-03 in #326 and EKA-05 in #327; their rollout/live gates and the remaining HLR/webhook/status subsystems remain. |
+| C - Endpoint abuse/privacy | EKA-03/04/05/06/09/16/17/53 | EKA-04 source integration is complete in #325, EKA-03 in #326, EKA-05 in #327 and EKA-06 in #328; their rollout/live gates and the remaining webhook/logging/admin-status findings remain. |
 | D - Vote/auth correctness | EKA-01/10/11/12 | Restore Tier-1 validation, deterministic municipal conflict response, dormant gov.gr state design and narrow exception handling. |
 | E - Client keys/KDF | EKA-07/08/21/22/23/24 | Canonical formats/KATs, backward-compatible key-storage and KDF migration, explicit phone-entropy risk. |
 | F - Runtime/integration | EKA-13/18/19/26/27/28/29/30/31 | Read-only inventory first; then bounded container, subdomain, admin, package-ID and CSP work. |
@@ -732,7 +732,10 @@ the checkpoint.
   proofs for push registration and uses random per-install UUIDv4 identifiers,
   stable HMAC Redis keys, bounded limits and token expiry. Closure awaits API
   rollout, compatible Mobile release/adoption and live acceptance.
-- [ ] EKA-06 - HLR cost exposure and public credits oracle.
+- [ ] EKA-06 - PR #328 (`0ce4b31`) adds local format rejection, atomic
+  Redis-backed HLR limits, fail-closed paid-provider protection and a coarse
+  public status contract; closure awaits bounded API/dashboard rollout and live
+  acceptance.
 - [ ] EKA-07 - web Ed25519 private key in plaintext localStorage.
 - [ ] EKA-08 - compass profile plaintext localStorage fallback.
 - [ ] EKA-21 - three diverging nullifier-root KDF implementations.
@@ -1170,3 +1173,30 @@ This file is the project midpoint checkpoint as of 2026-09-19. Later work
 must not silently rewrite historical evidence. Update it through reviewed,
 dated deltas or replace it with a newer dated master checkpoint that links
 back here.
+
+## Post-checkpoint delta - EKA-06 source integration
+
+Recorded at 2026-09-20 after the normal protected merge:
+
+- PR #328 merged as
+  `0ce4b31bf11f6e6c223e198f9168a54b14112e57` without admin bypass.
+- Invalid Greek mobile formats are rejected locally before Redis or provider
+  access. Valid attempts use HMAC-derived number buckets plus IP buckets, with
+  all cooldown/day/minute checks and updates in one atomic Redis Lua operation.
+  Redis failure blocks the paid HLR lookup.
+- The public credits route exposes only coarse service state. Exact usage,
+  balances, provider labels, costs and failover details are confined to the
+  existing authenticated admin route and dashboard proxy.
+- CodeRabbit's two valid findings were fixed in `8c8f8e2`: rejected IP attempts
+  no longer consume number quota, and Finance reads the current exact-schema
+  fields. Kimi reviewed the bounded change under Sol integration control.
+- Focused API tests passed 67 tests; dashboard typecheck and production build,
+  Python compile and diff checks passed. PR CI run `35503704091` and Security
+  run `35503704107` passed. Post-merge main CI run `35503903428` and Security
+  run `35503903422` passed completely.
+- Public evidence: `https://github.com/NeaBouli/pnyx/pull/328`. Issue #318
+  receives the source evidence while keeping EKA-06 unchecked.
+- EKA-06 still requires a separately authorized bounded API/dashboard rollout
+  and live acceptance before closure. No API/dashboard rollout, paid HLR
+  lookup, database, DNS, secret, IAM, provider, payment, store or other
+  production mutation occurred in this source-integration task.
