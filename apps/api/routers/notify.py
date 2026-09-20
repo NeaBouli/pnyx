@@ -81,13 +81,15 @@ class RegisterRequest(BaseModel):
     device_id: str = Field(..., pattern=DEVICE_ID_RE.pattern)
     platform: Literal["android", "ios"]
     nullifier_hash: str = Field(..., pattern=r"^[0-9a-f]{64}$")
-    timestamp_ms: int = Field(..., ge=0, le=9_007_199_254_740_991)
+    timestamp_ms: int = Field(
+        ..., ge=0, le=9_007_199_254_740_991, strict=True,
+    )
     signature_hex: str = Field(..., pattern=r"^[0-9a-fA-F]{128}$")
 
     @field_validator("token")
     @classmethod
     def _real_expo_token(cls, value: str) -> str:
-        match = EXPO_TOKEN_RE.match(value)
+        match = EXPO_TOKEN_RE.fullmatch(value)
         if match is None or "[" in match.group(1) or "]" in match.group(1):
             raise ValueError("invalid Expo push token")
         return value

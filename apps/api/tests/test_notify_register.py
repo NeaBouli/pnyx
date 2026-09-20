@@ -213,6 +213,7 @@ def test_missing_fields_are_rejected(client: Any, field: str) -> None:
     ("token", "expopushtoken[abc]"),                      # wrong casing
     ("token", "ExponentPushToken[]"),                     # empty inner
     ("token", "ExponentPushToken[abc]def]"),              # inner bracket
+    ("token", "ExponentPushToken[abc]\n"),               # trailing newline
     ("token", "ExponentPushToken[" + "x" * 257 + "]"),    # too long
     ("token", "ExponentPushToken[tökën]"),                # non-ASCII inner
     ("token", "FcmPushToken[abc]"),                       # unknown form
@@ -228,6 +229,7 @@ def test_missing_fields_are_rejected(client: Any, field: str) -> None:
     ("timestamp_ms", -1),
     ("timestamp_ms", 9_007_199_254_740_992),
     ("timestamp_ms", "not-a-number"),
+    ("timestamp_ms", str(NOW)),                           # wrong JSON type
     ("signature_hex", ""),
     ("signature_hex", "z" * 128),
     ("signature_hex", "a" * 127),
