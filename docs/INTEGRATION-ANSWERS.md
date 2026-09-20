@@ -359,13 +359,15 @@ pnyx/
 
 ### Environment Variables
 
-Server `.env.production` at `/opt/ekklesia/.env.production` contains:
+The source contract expects these variable families in the server environment.
+This inventory does not assert that the separate production migration has
+already happened:
 
 ```
 POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
 SERVER_SALT, SECRET_KEY
 ADMIN_KEY
-HLRLOOKUPS_USERNAME, HLRLOOKUPS_PASSWORD, HLRLOOKUPS_API_KEY, HLRLOOKUPS_API_SECRET
+HLRLOOKUP_API_KEY, HLRLOOKUP_API_SECRET, HLRLOOKUPS_API_KEY, HLRLOOKUPS_API_SECRET
 OLLAMA_URL, OLLAMA_MODEL
 DEEPL_API_KEY
 HF_API_KEY (HuggingFace fallback)
