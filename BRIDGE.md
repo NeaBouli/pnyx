@@ -1032,3 +1032,55 @@ Details: [EKA-17 release receipt](docs/operations/EKA17_HLR_ENV_ROLLOUT_2026-09-
 - No production rollout or Wiki/API/database/DNS/secret/IAM/provider/payment/
   store mutation occurred. PR #337 remains subject to normal protected-branch
   checks and requires a new exact production authorization after integration.
+
+## 2026-09-21 - R5 Landing Handoff Fidelity Live (Append-only)
+
+- PR #339 was merged normally at
+  `9d9e0c2d992844eba6c0acd8531b598a810ae0d5`; all PR and post-merge CI/Security
+  jobs passed. CodeRabbit's six verified findings were fixed before merge and
+  Claude's final read-only review returned `APPROVE` without a blocker.
+- The Web-only production candidate was built from the exact merge archive and
+  deployed as `ekklesia-web:r5-landing-9d9e0c2-20260921T073213Z`. The prior Web
+  image remains available as
+  `ekklesia-web:rollback-pre-r5-landing-20260921T073213Z`.
+- A fail-closed readiness-command false negative triggered one automatic
+  rollback before the final rollout. The check was corrected without changing
+  the image, and the same isolated, verified candidate was deployed.
+- Final acceptance passed: 21 live routes HTTP 200; Landing and R5 CSS
+  byte-identical to source; desktop 1440 x 1000 and mobile 360 x 800 without
+  overflow or broken images; one-line desktop navigation; contained mobile
+  chat; clean browser/container logs; API healthy; Web restarts 0 and OOM
+  false.
+- Non-Web container identities/images and protected environment/base Compose
+  hashes remained unchanged. No API, database, DNS, secret, IAM, Wiki,
+  Community, Dashboard, forum, mobile, store, payment, provider or other
+  service was changed.
+- Evidence: `docs/operations/R5_LANDING_ROLLOUT_2026-09-21.md` and protected
+  release directory
+  `/opt/ekklesia/releases/r5-landing-9d9e0c2-20260921T073213Z`.
+
+## 2026-09-21 - R5 Landing Handoff Fidelity Live (Append-only)
+
+- PR #339 was merged normally at
+  `9d9e0c2d992844eba6c0acd8531b598a810ae0d5`; all PR and post-merge CI/Security
+  jobs passed. CodeRabbit's six verified findings were fixed before merge and
+  Claude's final read-only review returned `APPROVE` without a blocker.
+- The Web-only production candidate was built from the exact merge archive and
+  deployed as `ekklesia-web:r5-landing-9d9e0c2-20260921T073213Z`. The prior Web
+  image remains available as
+  `ekklesia-web:rollback-pre-r5-landing-20260921T073213Z`.
+- A fail-closed readiness-command false negative triggered one automatic
+  rollback before the final rollout. The check was corrected without changing
+  the image, and the same isolated, verified candidate was deployed.
+- Final acceptance passed: 21 live routes HTTP 200; Landing and R5 CSS
+  byte-identical to source; desktop 1440 x 1000 and mobile 360 x 800 without
+  overflow or broken images; one-line desktop navigation; contained mobile
+  chat; clean browser/container logs; API healthy; Web restarts 0 and OOM
+  false.
+- Non-Web container identities/images and protected environment/base Compose
+  hashes remained unchanged. No API, database, DNS, secret, IAM, Wiki,
+  Community, Dashboard, forum, mobile, store, payment, provider or other
+  service was changed.
+- Evidence: `docs/operations/R5_LANDING_ROLLOUT_2026-09-21.md` and protected
+  release directory
+  `/opt/ekklesia/releases/r5-landing-9d9e0c2-20260921T073213Z`.
