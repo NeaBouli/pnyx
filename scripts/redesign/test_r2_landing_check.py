@@ -14,6 +14,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import re
 import shutil
 import tempfile
 import unittest
@@ -513,11 +514,18 @@ class FailClosedResultsTest(unittest.TestCase):
         end = self.html.index(f"function {next_name}", start)
         return self.html[start:end]
 
+    def css_rule_bodies(self, selector: str) -> list[str]:
+        """Return declaration blocks for a selector, including nested at-rules."""
+        source = re.sub(r"/\*.*?\*/", "", self.css, flags=re.DOTALL)
+        pattern = rf"(?:^|}})[^{{}}]*{re.escape(selector)}[^{{}}]*\{{([^{{}}]*)\}}"
+        return re.findall(pattern, source, flags=re.DOTALL | re.MULTILINE)
+
     def test_fail_closed_guard_present(self) -> None:
         """The guard that returns early when total_votes < 1 must be in the script."""
+        body = self.function_body("fillResultData", "runCycle")
         self.assertIn(
             "Number(live.total_votes)<1",
-            self.html,
+            body,
             "Fail-closed guard 'Number(live.total_votes)<1' missing from inline script",
         )
 
@@ -576,10 +584,13 @@ class FailClosedResultsTest(unittest.TestCase):
         self.assertIn("height: 70px;", self.css)
 
     def test_touched_controls_are_flat(self) -> None:
+        """Each touched control selector must own both flat-style declarations."""
         for selector in ("#chatPanel", "#newsletter input", "#forum .forum-feature"):
-            self.assertIn(selector, self.css)
-        self.assertIn("border-radius: 0 !important;", self.css)
-        self.assertIn("box-shadow: none !important;", self.css)
+            bodies = self.css_rule_bodies(selector)
+            self.assertTrue(bodies, f"No CSS rule found for {selector}")
+            declarations = "\n".join(bodies)
+            self.assertIn("border-radius: 0 !important;", declarations)
+            self.assertIn("box-shadow: none !important;", declarations)
 
 
 if __name__ == "__main__":
