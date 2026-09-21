@@ -40,7 +40,7 @@ analyzed bill and a non-null score.
 ## Verification
 
 - `python3 -m unittest discover -s scripts/redesign -p 'test_*.py'`:
-  150 tests passed.
+  151 tests passed.
 - `python3 scripts/redesign/r2_landing_check.py --json`: no violations.
 - `python3 -m compileall -q scripts/redesign`: passed.
 - `git diff --check`: passed.

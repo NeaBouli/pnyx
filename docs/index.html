@@ -666,9 +666,9 @@
       <span style="font-weight:900;font-size:1rem;color:var(--gray-900)" data-el="Αποτέλεσμα Ψηφοφορίας" data-en="Vote Result">Αποτέλεσμα Ψηφοφορίας</span>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;font-size:0.78rem;color:rgba(255,255,255,0.7)">
-      <!-- Βουλή -->
+      <!-- Νομοσχέδιο -->
       <div>
-        <div style="font-weight:800;color:var(--gray-500);margin-bottom:0.5rem;font-size:0.82rem">🏛️ <span data-el="Απόφαση Βουλής" data-en="Parliament Decision">Απόφαση Βουλής</span></div>
+        <div style="font-weight:800;color:var(--gray-500);margin-bottom:0.5rem;font-size:0.82rem">🏛️ <span data-el="Νομοσχέδιο" data-en="Bill">Νομοσχέδιο</span><span hidden data-el="Απόφαση Βουλής" data-en="Parliament Decision">Απόφαση Βουλής</span></div>
         <div id="rParlData" style="opacity:0;transition:opacity 0.6s">
           <div id="latestBillTitle" style="color:var(--gray-600);margin-bottom:0.4rem" data-el="Αναμονή πραγματικών δεδομένων" data-en="Waiting for real data">Αναμονή πραγματικών δεδομένων</div>
           <div id="latestBillStatus" style="font-weight:700;color:var(--gray-500)" data-el="Δεν υπάρχει ακόμη αποτέλεσμα με ψήφους" data-en="No voted result is available yet">Δεν υπάρχει ακόμη αποτέλεσμα με ψήφους</div>
@@ -679,6 +679,7 @@
         <div style="font-weight:800;color:var(--gray-500);margin-bottom:0.5rem;font-size:0.82rem">🗳️ <span data-el="Βούληση Πολιτών" data-en="Citizen Will">Βούληση Πολιτών</span></div>
         <div id="rCitizenData" style="opacity:0;transition:opacity 0.6s">
           <div id="resultTotal" style="margin-bottom:0.4rem" data-el="— ψήφοι" data-en="— votes">— ψήφοι</div>
+          <div id="resultParticipation" style="margin-bottom:0.4rem;color:var(--gray-500)" data-el="Συμμετοχή στην πλατφόρμα: —" data-en="Platform participation: —">Συμμετοχή στην πλατφόρμα: —</div>
           <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.3rem">
             <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
               <div id="resultYes" style="height:100%;width:0;background:#22c55e;border-radius:4px;transition:width 1s"></div>
@@ -1698,6 +1699,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     var rep=document.getElementById("repBar"); if(rep) rep.style.width="0";
     var rp=document.getElementById("repPct"); if(rp) rp.style.opacity="0";
     var rl=document.getElementById("repLabel"); if(rl) rl.style.opacity="0";
+    setLiveText("resultParticipation","Συμμετοχή στην πλατφόρμα: —","Platform participation: —");
   }
   function setLiveText(id, elText, enText) {
     var node=document.getElementById(id);
@@ -1717,11 +1719,14 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     var majorityEn="Majority: ABSTAIN";
     if(yes>=no&&yes>=abstain) { majorityEl="Πλειοψηφία: ΥΠΕΡ"; majorityEn="Majority: YES"; }
     else if(no>=yes&&no>=abstain) { majorityEl="Πλειοψηφία: ΚΑΤΑ"; majorityEn="Majority: NO"; }
+    var electorate=9810040;
+    var participation=total/electorate*100;
     setLiveText("latestBillTitle",titleEl,titleEn);
-    setLiveText("latestBillStatus","Τελευταίο αποτέλεσμα πολιτών · "+data.status,"Latest citizen result · "+data.status);
+    setLiveText("latestBillStatus","Κατάσταση νομοσχεδίου · "+data.status,"Bill status · "+data.status);
     setLiveText("demoYesLabel",yes+"% Υπέρ",yes+"% Yes");
     setLiveText("demoNoLabel",no+"% Κατά",no+"% No");
     setLiveText("resultTotal",total.toLocaleString("el-GR")+" ψήφοι",total.toLocaleString("en-US")+" votes");
+    setLiveText("resultParticipation","Συμμετοχή στην πλατφόρμα: "+participation.toFixed(4)+"% ("+total.toLocaleString("el-GR")+" / 9.810.040)","Platform participation: "+participation.toFixed(4)+"% ("+total.toLocaleString("en-US")+" / 9,810,040)");
     setLiveText("resultYesLabel",yes+"% Υπέρ",yes+"% Yes");
     setLiveText("resultNoLabel",no+"% Κατά",no+"% No");
     setLiveText("resultMajority",majorityEl,majorityEn);

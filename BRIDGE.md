@@ -1071,27 +1071,7 @@ Details: [EKA-17 release receipt](docs/operations/EKA17_HLR_ENV_ROLLOUT_2026-09-
   divergence example. Citizen-only results no longer populate the
   Parliament-versus-citizens hero; representation stays fail-closed until the
   API reports at least one analyzed bill and a non-null score.
-- Verification passed: 150 redesign tests, parser gate, Python compile, diff
-  check, redacted Gitleaks diff scan and responsive browser checks at 1440,
-  820 and 390 px without document overflow or console errors.
-- Claude Code was retried but remained quota-limited until 14:10 Athens time;
-  Kimi K3 was also quota-limited. Sol performed the complete review and
-  verification. The repair is not deployed and the rollback remains live.
-- Evidence: `docs/operations/R5_LANDING_ROLLBACK_REPAIR_2026-09-21.md`.
-
-## 2026-09-21 - R5 Landing Rolled Back and Repair Validated (Append-only)
-
-- The owner rejected the live R5 landing because its data semantics, supplied
-  historical artwork and responsive formatting did not match the approved
-  handoff. Only `ekklesia-web` was rolled back to
-  `ekklesia-web:rollback-pre-r5-landing-20260921T073213Z`; the stable rollback
-  is healthy with zero restarts. No other service was changed.
-- The repair candidate restores the exact supplied Pnyx/Acropolis asset,
-  enforces the 86/72 px sticky single-row header and removes the hard-coded
-  divergence example. Citizen-only results no longer populate the
-  Parliament-versus-citizens hero; representation stays fail-closed until the
-  API reports at least one analyzed bill and a non-null score.
-- Verification passed: 150 redesign tests, parser gate, Python compile, diff
+- Verification passed: 151 redesign tests, parser gate, Python compile, diff
   check, redacted Gitleaks diff scan and responsive browser checks at 1440,
   820 and 390 px without document overflow or console errors.
 - Claude Code was retried but remained quota-limited until 14:10 Athens time;

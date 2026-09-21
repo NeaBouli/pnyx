@@ -117,8 +117,8 @@ ALLOWED_R5_INLINE_SCRIPTS = {
     },
     5: {
         "index": 5,
-        "sha256": "30e923d66d004398c9c10599142edcf45fc5efeb336b4fa4cc7419d6858454d0",
-        "bytes": 20518,
+        "sha256": "0ac3cf840e5789daf5632b779d72127f0c3b026c30d50480b8fa06f253f9ccd7",
+        "bytes": 20963,
     },
 }
 

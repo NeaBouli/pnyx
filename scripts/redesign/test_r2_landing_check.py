@@ -547,7 +547,13 @@ class FailClosedResultsTest(unittest.TestCase):
         self.assertNotIn("heroLiveStatus", body)
         self.assertNotIn("heroCitizenDecision", body)
         self.assertNotIn("heroCitizenMeta", body)
-        self.assertIn("Τελευταίο αποτέλεσμα πολιτών", body)
+        self.assertIn("resultParticipation", body)
+        self.assertIn("total/electorate*100", body)
+        self.assertIn("Κατάσταση νομοσχεδίου", body)
+
+    def test_citizen_participation_has_dedicated_target(self) -> None:
+        self.assertIn('id="resultParticipation"', self.html)
+        self.assertIn("Συμμετοχή στην πλατφόρμα", self.html)
 
     def test_representation_uses_actual_fail_closed_fields(self) -> None:
         self.assertIn(
