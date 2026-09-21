@@ -1,7 +1,7 @@
 # R4 Community And Responsive Header Report
 
-Date: 2026-09-20
-Status: validated source candidate, not deployed
+Date: 2026-09-21
+Status: integrated and deployed through bounded Web-only rollout
 
 ## Scope
 
@@ -78,5 +78,11 @@ pre-rollout image. The rollback restored the previous landing while retaining
 the already deployed Wiki release; API and all non-Web services remained
 unchanged and healthy.
 
-This R4 candidate contains the bounded chat correction. It requires normal PR
-integration and a new, exact production authorization before any rollout.
+PR #337 integrated the bounded correction as merge commit
+`5a8d25cdb9674f9d580d212c649a9bb44d6e27c8`; post-merge CI and Security Audit
+passed. The separately authorized Web-only rollout completed on 2026-09-21.
+Landing, Community, all 14 Wiki pages and the five dynamic public-data routes
+passed live HTTP and real-browser acceptance at 360x800 and 1280x720. API,
+protected configuration and every non-Web service remained unchanged. The
+exact production evidence and rollback reference are recorded in
+`docs/operations/R4_WEB_ROLLOUT_2026-09-21.md`.
