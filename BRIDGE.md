@@ -1,5 +1,26 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-09-21 - R4 Full Web-only Rollout Completed
+
+- Merged PR #337 (`5a8d25c`) was released through a bounded image-only Web
+  overlay after post-merge CI and Security Audit passed.
+- The candidate is `ekklesia-web:r4-web-5a8d25c-20260920T235900Z`; the exact
+  prior Web image is retained as
+  `ekklesia-web:rollback-pre-r4-web-5a8d25c-20260920T235900Z`.
+- Landing, Community, all 14 Wiki pages, five dynamic public-data routes and
+  the R2/R3/R4 assets returned HTTP 200. Static responses matched the merge
+  commit byte-for-byte.
+- Real Chrome passed all 21 pages at 360x800 and 1280x720 without page overflow,
+  broken loaded images or failed resources. The open chat panel remained fully
+  inside both viewports and the consolidated header remained one-line.
+- The Web container has zero restarts and was not OOM-killed. API health,
+  protected configuration and every non-Web container identity, image and
+  state remained unchanged. No rollback was required.
+- No API, database, DNS, secret, IAM, Dashboard, forum, store, payment,
+  provider, mobile application or other service changed.
+
+Details: [R4 web rollout receipt](docs/operations/R4_WEB_ROLLOUT_2026-09-21.md).
+
 ## 2026-09-20 - R3 Full Wiki Web-only Rollout Completed
 
 - Merged PR #335 (`b5000e76`) was released through a bounded image-only Web
