@@ -1,0 +1,1091 @@
+/*
+ * Owner handoff fidelity layer for docs/index.html.
+ *
+ * The earlier R2 pass intentionally kept the legacy DOM and could therefore
+ * only approximate the supplied design. This layer implements the handoff's
+ * actual visible grid while retaining the existing production data and event
+ * contracts. It loads after r2-landing.css.
+ */
+
+body {
+  color: #334155;
+  background: #fff;
+}
+
+nav.pnx2-header {
+  min-height: 102px !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+.pnx2-header-frame {
+  width: 100%;
+  max-width: 1320px;
+  min-height: 100px;
+  margin: 0 auto;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.pnx2-header .nav-logo {
+  min-width: 0;
+  flex: 0 0 auto;
+  gap: 12px;
+  padding: 8px 0;
+  color: #0f172a;
+}
+
+.pnx2-header .nav-logo img {
+  width: 54px;
+  height: 60px;
+  object-fit: contain;
+}
+
+.pnx2-brand-copy {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.pnx2-brand-copy strong {
+  font-size: 25px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.pnx2-brand-copy small {
+  margin-top: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em !important;
+  color: #64748b;
+}
+
+nav.pnx2-header .nav-links {
+  margin-left: auto;
+  justify-content: flex-end;
+  overflow: visible;
+}
+
+nav.pnx2-header .nav-links a {
+  min-height: 44px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pnx2-nav-divider {
+  width: 2px;
+  height: 24px;
+  margin: 0 10px;
+  background: #e2e8f0;
+  flex: 0 0 auto;
+}
+
+nav.pnx2-header .lang-btn {
+  min-width: 44px;
+  margin: 0;
+  border: 0 !important;
+  color: #64748b;
+  background: #fff;
+}
+
+nav.pnx2-header .nav-links .pnx2-nav-cta {
+  min-height: 48px;
+  margin-left: 10px;
+  padding: 0 22px;
+  background: #2563eb !important;
+  color: #fff !important;
+  font-weight: 900;
+  letter-spacing: 0.06em !important;
+}
+
+/* Exact handoff hero: claim/actions left, live divergence/trust right. */
+.landing-hero {
+  padding: 0 !important;
+  background: #fff !important;
+}
+
+.landing-hero .ekk-motion-bg,
+.landing-hero .hero-owl,
+.landing-hero .hero-bottom,
+.landing-hero .hero-quote {
+  display: none !important;
+}
+
+.landing-hero .hero-inner {
+  max-width: 1320px !important;
+  min-height: 568px;
+  margin: 0 auto;
+  padding: 0 24px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 0 !important;
+}
+
+.landing-hero .hero-left {
+  min-width: 0;
+  padding: 64px 48px 56px 0 !important;
+  border-right: 2px solid #e2e8f0;
+  text-align: left !important;
+}
+
+.landing-hero .beta-pill {
+  margin: 0 0 28px !important;
+  padding: 5px 10px !important;
+  border: 2px solid #0f172a !important;
+  background: #fff !important;
+  color: #0f172a !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase;
+}
+
+.landing-hero .beta-pill .pulse {
+  background: #2563eb !important;
+  animation: none !important;
+}
+
+.landing-hero .hero-left h1 {
+  margin: 0 !important;
+  max-width: none;
+  font-size: 80px !important;
+  line-height: 0.92 !important;
+  font-weight: 900 !important;
+  color: #0f172a;
+}
+
+.landing-hero .hero-subtitle {
+  margin: 0 !important;
+  font-size: 80px !important;
+  line-height: 0.92 !important;
+  font-weight: 900 !important;
+  color: #2563eb !important;
+}
+
+.landing-hero .tagline {
+  max-width: 30ch;
+  margin: 28px 0 0 !important;
+  font-size: 22px !important;
+  line-height: 1.35 !important;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pnx2-hero-note {
+  max-width: 46ch;
+  margin: 16px 0 0 !important;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #64748b;
+}
+
+.pnx2-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.pnx2-hero-actions .btn-primary,
+.pnx2-hero-actions .btn-secondary {
+  min-height: 58px !important;
+  padding: 0 24px !important;
+  font-size: 14px !important;
+  font-weight: 900;
+  letter-spacing: 0.05em !important;
+}
+
+.pnx2-text-action {
+  min-height: 44px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase;
+}
+
+.landing-hero .hero-right {
+  min-width: 0;
+  padding: 40px 0 0 48px !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 0 !important;
+  align-content: stretch !important;
+}
+
+.pnx2-live-panel {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.pnx2-live-heading {
+  padding-bottom: 10px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 2px solid #0f172a;
+}
+
+.pnx2-live-heading h2 {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  font-size: 15px !important;
+  line-height: 1.3 !important;
+  font-weight: 900;
+  letter-spacing: 0.1em !important;
+  color: #0f172a;
+}
+
+.pnx2-live-heading span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.1em !important;
+}
+
+.pnx2-live-heading .pnx2-live-dot {
+  display: block;
+  width: 7px;
+  height: 7px;
+  background: #2563eb;
+}
+
+.pnx2-live-primary,
+.pnx2-live-tiers {
+  display: grid;
+  gap: 0;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.pnx2-live-primary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pnx2-live-tiers {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pnx2-live-primary > div {
+  min-width: 0;
+  padding: 22px 20px;
+  border-right: 2px solid #e2e8f0;
+}
+
+.pnx2-live-primary > div:first-child,
+.pnx2-live-tiers > div:first-child {
+  padding-left: 0;
+}
+
+.pnx2-live-primary > div:last-child,
+.pnx2-live-tiers > div:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.pnx2-live-tiers > div {
+  min-width: 0;
+  padding: 18px 16px;
+  border-right: 2px solid #e2e8f0;
+}
+
+.pnx2-live-primary strong,
+.pnx2-live-tiers strong {
+  display: block;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.35;
+  font-weight: 900;
+  letter-spacing: 0.08em !important;
+}
+
+.pnx2-live-primary b {
+  display: block;
+  margin-top: 8px;
+  color: #0f172a;
+  font-size: 40px;
+  line-height: 1.1;
+}
+
+.pnx2-live-primary > div:last-child b {
+  color: #2563eb;
+}
+
+.pnx2-live-primary small {
+  display: block;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.pnx2-live-tiers b {
+  display: block;
+  margin-top: 6px;
+  color: #0f172a;
+  font-size: 22px;
+}
+
+.pnx2-live-panel > p {
+  max-width: 52ch;
+  margin: 14px 0 0 !important;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pnx2-live-panel > .pnx2-text-action {
+  margin-top: 10px;
+}
+
+.landing-hero .hero-right > .stat-card {
+  min-width: 0;
+  min-height: 106px;
+  margin-top: auto;
+  padding: 18px 12px !important;
+  align-self: end;
+  border: 0 !important;
+  border-top: 2px solid #e2e8f0 !important;
+  border-right: 2px solid #e2e8f0 !important;
+  text-align: left !important;
+  background: #fff !important;
+}
+
+.landing-hero .hero-right > .stat-card:nth-last-child(1) {
+  padding-right: 0 !important;
+  border-right: 0 !important;
+}
+
+.landing-hero .stat-val {
+  color: #0f172a !important;
+  font-size: 20px !important;
+}
+
+.landing-hero .stat-label {
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 10px !important;
+  line-height: 1.35;
+  font-weight: 800;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase;
+}
+
+/* Handoff section geometry. */
+.section,
+.demo-section,
+.ticker-section {
+  padding: 56px 24px !important;
+  background: #fff !important;
+}
+
+.section-inner,
+.demo-section > :not(script),
+.ticker-section > .section-inner {
+  max-width: 1320px !important;
+}
+
+.section-title,
+.demo-title {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  font-size: 42px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  color: #0f172a;
+}
+
+.section-sub,
+.demo-sub {
+  margin: 12px 0 40px !important;
+  color: #64748b;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.steps-grid {
+  gap: 0 !important;
+  border-top: 2px solid #e2e8f0;
+}
+
+.step {
+  min-width: 0;
+  padding: 28px 24px !important;
+  border: 0 !important;
+  border-right: 2px solid #e2e8f0 !important;
+}
+
+.step:first-child { padding-left: 0 !important; }
+.step:last-child { padding-right: 0 !important; border-right: 0 !important; }
+
+.step-num {
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.1em !important;
+}
+
+.step h3 {
+  margin: 14px 0 8px !important;
+  font-size: 21px;
+  color: #0f172a;
+}
+
+.step p {
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.features-grid,
+.wiki-grid,
+.roadmap-grid {
+  gap: 2px !important;
+  padding: 2px;
+  background: #e2e8f0;
+}
+
+.feature-card,
+.wiki-card,
+.roadmap-card {
+  border: 0 !important;
+  background: #fff !important;
+}
+
+.features-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.feature-card {
+  padding: 26px !important;
+}
+
+.feature-icon,
+.wiki-card-icon {
+  filter: grayscale(1);
+}
+
+#transparency,
+#forum,
+#newsletter {
+  background: #f8fafc !important;
+}
+
+#transparency,
+#features > .section-inner > div[style*="background:linear-gradient"] {
+  border-color: #e2e8f0 !important;
+}
+
+#forum .section-inner,
+#download .section-inner {
+  text-align: left !important;
+}
+
+.pnx2-history-band {
+  padding: 0 24px;
+  background: #2563eb;
+  border-bottom: 2px solid #0f172a;
+}
+
+.pnx2-history-grid {
+  max-width: 1320px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+}
+
+.pnx2-history-grid > div {
+  min-width: 0;
+  padding: 48px 48px 48px 0;
+}
+
+.pnx2-history-grid > div + div {
+  padding: 48px 0 48px 48px;
+  border-left: 2px solid rgba(255, 255, 255, 0.32);
+}
+
+.pnx2-history-grid span {
+  color: #bfdbfe;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em !important;
+}
+
+.pnx2-history-grid h2 {
+  margin: 16px 0 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  color: #fff !important;
+  font-size: 52px !important;
+  line-height: 0.98 !important;
+}
+
+.pnx2-history-grid img {
+  width: 180px;
+  height: 145px;
+  margin-top: 26px;
+  object-fit: contain;
+  object-position: left center;
+  filter: invert(1) !important;
+}
+
+.pnx2-history-grid p {
+  margin: 0 !important;
+  color: #fff;
+  font-size: 21px;
+  line-height: 1.55;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.pnx2-history-grid p + p {
+  margin-top: 18px !important;
+  color: #eff6ff;
+  font-size: 16px;
+  line-height: 1.7;
+  font-weight: 400;
+}
+
+#forum .section-sub,
+#download p {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Preserve every production section while presenting the supplied sequence. */
+main#main {
+  display: flex;
+  flex-direction: column;
+}
+
+.landing-hero { order: 1; }
+#how { order: 2; }
+#demo { order: 3; }
+.pnx2-democracy-data { order: 4; }
+#features { order: 5; }
+.pnx2-history-band { order: 6; }
+#forum { order: 7; }
+#votes { order: 8; }
+#roadmap { order: 9; }
+#wiki-section { order: 10; }
+#download { order: 11; }
+#notice { order: 12; }
+#newsletter { order: 13; }
+#contact { order: 14; }
+
+/* Democracy cycle: six equal cells and real-result detail below. */
+#demo {
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+  border-top: 0 !important;
+  background: #fff !important;
+}
+
+#demo > .demo-title,
+#demo > .demo-sub,
+#demo > .demo-grid,
+#demo > #dBox6 {
+  width: 100%;
+  max-width: 1320px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+#demo .demo-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 0 !important;
+  border-top: 2px solid #0f172a;
+}
+
+#demo .demo-grid::after {
+  content: "06  ΑΡΧΕΙΟ\A Open End · Arweave";
+  white-space: pre-line;
+  min-width: 0;
+  padding: 22px 0 22px 18px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 700;
+}
+
+#demo .demo-box {
+  min-width: 0;
+  padding: 22px 18px 22px 0 !important;
+  border: 0 !important;
+  border-right: 2px solid #e2e8f0 !important;
+  text-align: left !important;
+  background: #fff !important;
+}
+
+#demo .demo-icon,
+#features .feature-icon {
+  display: none !important;
+}
+
+#demo .demo-label {
+  margin: 0 !important;
+  color: #0f172a !important;
+  font-size: 16px !important;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+#demo .demo-box::before {
+  display: block;
+  margin-bottom: 10px;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+#dBox1::before { content: "01"; }
+#dBox2::before { content: "02"; }
+#dBox3::before { content: "03"; }
+#dBox4::before { content: "04"; }
+#dBox5::before { content: "05"; }
+
+#demo > #dBox6 {
+  margin-top: 0 !important;
+  padding: 34px 0 !important;
+  border: 0 !important;
+  border-top: 2px solid #0f172a !important;
+  color: #334155;
+  background: #fff !important;
+}
+
+/* Real representativity and CPLM data share the handoff's two-column row. */
+.pnx2-democracy-data {
+  width: 100%;
+  padding: 0 24px 56px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-bottom: 2px solid #0f172a;
+  background: #fff;
+}
+
+.pnx2-democracy-data > #repSection,
+.pnx2-democracy-data > #cplmSection {
+  width: 100%;
+  max-width: 660px !important;
+  margin: 0 !important;
+  padding: 40px !important;
+  border: 0 !important;
+}
+
+.pnx2-democracy-data > #repSection {
+  margin-left: auto !important;
+  padding-left: 0 !important;
+  border-right: 2px solid #e2e8f0 !important;
+}
+
+.pnx2-democracy-data > #cplmSection {
+  margin-right: auto !important;
+  padding-right: 0 !important;
+}
+
+.pnx2-democracy-data > div > div {
+  padding: 0 !important;
+  background: #fff !important;
+}
+
+/* Verification precedes features inside their shared production section. */
+#features > .section-inner {
+  display: flex;
+  flex-direction: column;
+}
+
+#features > .section-inner > #transparency { order: 1; }
+#features > .section-inner > .section-title { order: 2; }
+#features > .section-inner > .features-grid { order: 3; }
+#features > .section-inner > #transparency + div { order: 4; }
+
+#transparency {
+  margin: -56px -24px 56px !important;
+  padding: 56px 24px !important;
+  border: 0 !important;
+  border-bottom: 2px solid #0f172a !important;
+  background: #f8fafc !important;
+}
+
+#transparency > h2,
+#transparency > div {
+  width: 100%;
+  max-width: 1320px;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+#transparency > h2 {
+  margin-bottom: 28px !important;
+  color: #0f172a !important;
+  font-size: 42px !important;
+  line-height: 1 !important;
+}
+
+#transparency > div {
+  gap: 0 !important;
+  border-top: 2px solid #e2e8f0;
+}
+
+#transparency > div > div {
+  min-width: 0;
+  padding: 26px 28px 0 0;
+}
+
+#transparency > div > div + div {
+  padding: 26px 0 0 28px;
+  border-left: 2px solid #e2e8f0;
+}
+
+#features > .section-inner > .section-title {
+  margin-bottom: 32px !important;
+}
+
+#features > .section-inner > #transparency + div {
+  margin: 56px 0 0 !important;
+  padding: 36px 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 28px !important;
+  border: 0 !important;
+  border-top: 2px solid #0f172a !important;
+  color: #334155 !important;
+  background: #fff !important;
+}
+
+#features > .section-inner > #transparency + div h3,
+#features > .section-inner > #transparency + div h4 {
+  color: #0f172a !important;
+}
+
+#features > .section-inner > #transparency + div p,
+#features > .section-inner > #transparency + div a {
+  color: #475569 !important;
+}
+
+#features > .section-inner > #transparency + div > div:first-of-type {
+  padding-left: 0;
+}
+
+#features > .section-inner > #transparency + div > div:last-of-type {
+  padding-right: 0;
+}
+
+/* Flat four-column Forum grid and handoff-sized action row. */
+#forum .forum-features {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0 !important;
+  border-top: 2px solid #e2e8f0;
+}
+
+#forum .forum-feature {
+  min-width: 0;
+  padding: 24px !important;
+  border-right: 2px solid #e2e8f0;
+  text-align: left !important;
+}
+
+#forum .forum-feature:first-child { padding-left: 0 !important; }
+#forum .forum-feature:last-child { padding-right: 0 !important; border-right: 0; }
+
+/* Every old centered card becomes the supplied visible grid. */
+#roadmap .roadmap-grid,
+#wiki-section .wiki-grid {
+  margin-top: 32px;
+}
+
+#download .download-channel-card {
+  min-height: 86px;
+  justify-content: flex-start;
+}
+
+#notice > div {
+  max-width: 1320px !important;
+}
+
+#notice > div > div {
+  gap: 0 !important;
+  border-top: 2px solid #e2e8f0;
+}
+
+#notice > div > div > div {
+  min-width: 0;
+  padding: 24px !important;
+  border-right: 2px solid #e2e8f0;
+}
+
+#notice > div > div > div:first-child { padding-left: 0 !important; }
+#notice > div > div > div:last-child { padding-right: 0 !important; border-right: 0; }
+
+/* Chat remains functional but matches the rectangular handoff affordance. */
+#chatToggle {
+  width: auto !important;
+  min-width: 56px;
+  height: 48px !important;
+  padding: 0 18px;
+  border: 2px solid #0f172a !important;
+  background: #2563eb !important;
+  font-size: 0 !important;
+}
+
+#chatToggle::after {
+  content: "ΡΩΤΗΣΤΕ";
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.pnx2-footer {
+  border-top: 0 !important;
+}
+
+@media (max-width: 1040px) {
+  .pnx2-header-frame {
+    min-height: 86px;
+  }
+
+  .pnx2-brand-copy small,
+  .pnx2-nav-divider {
+    display: none;
+  }
+
+  nav.pnx2-header .nav-links a {
+    padding: 0 9px;
+  }
+
+  nav.pnx2-header .nav-links .pnx2-nav-cta {
+    padding: 0 14px;
+  }
+
+  .landing-hero .hero-inner {
+    min-height: 0;
+  }
+
+  .landing-hero .hero-left {
+    padding-right: 32px !important;
+  }
+
+  .landing-hero .hero-left h1,
+  .landing-hero .hero-subtitle {
+    font-size: 64px !important;
+  }
+
+  .landing-hero .hero-right {
+    padding-left: 32px !important;
+  }
+}
+
+@media (max-width: 820px) {
+  nav.pnx2-header {
+    position: relative;
+    min-height: 0 !important;
+  }
+
+  .pnx2-header-frame {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .pnx2-header .nav-logo img {
+    width: 40px;
+    height: 44px;
+  }
+
+  .pnx2-brand-copy strong { font-size: 21px; }
+
+  .pnx2-brand-copy { display: flex !important; }
+
+  nav.pnx2-header .nav-links {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+
+  .landing-hero .hero-inner {
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding: 0 20px !important;
+  }
+
+  .landing-hero .hero-left {
+    padding: 44px 0 40px !important;
+    border-right: 0;
+    text-align: left !important;
+  }
+
+  .landing-hero .hero-right {
+    padding: 36px 0 0 !important;
+    border-top: 2px solid #0f172a;
+  }
+
+  .features-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  #demo .demo-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .pnx2-democracy-data {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pnx2-democracy-data > #repSection,
+  .pnx2-democracy-data > #cplmSection {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 36px 0 !important;
+    border-right: 0 !important;
+  }
+
+  .pnx2-democracy-data > #repSection {
+    border-bottom: 2px solid #e2e8f0 !important;
+  }
+
+  #forum .forum-features {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pnx2-history-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pnx2-history-grid > div,
+  .pnx2-history-grid > div + div {
+    padding: 36px 0;
+    border-left: 0;
+  }
+
+  .pnx2-history-grid > div + div {
+    border-top: 2px solid rgba(255, 255, 255, 0.32);
+  }
+}
+
+@media (max-width: 560px) {
+  .pnx2-header-frame {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  nav.pnx2-header .nav-links a {
+    font-size: 12px;
+  }
+
+  .pnx2-header .nav-links .pnx2-nav-cta {
+    margin-left: 4px;
+  }
+
+  .landing-hero .hero-left h1,
+  .landing-hero .hero-subtitle {
+    font-size: 46px !important;
+  }
+
+  .pnx2-hero-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pnx2-hero-actions .btn-primary,
+  .pnx2-hero-actions .btn-secondary,
+  .pnx2-hero-actions .pnx2-text-action {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .pnx2-live-primary,
+  .pnx2-live-tiers {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pnx2-live-primary > div,
+  .pnx2-live-tiers > div,
+  .pnx2-live-primary > div:first-child,
+  .pnx2-live-tiers > div:first-child,
+  .pnx2-live-primary > div:last-child,
+  .pnx2-live-tiers > div:last-child {
+    padding: 16px 0;
+    border-right: 0;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  .pnx2-live-primary > div:last-child,
+  .pnx2-live-tiers > div:last-child {
+    border-bottom: 0;
+  }
+
+  .landing-hero .hero-right {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .landing-hero .hero-right > .stat-card:nth-last-child(2) {
+    border-right: 0 !important;
+  }
+
+  .section,
+  .demo-section,
+  .ticker-section {
+    padding: 44px 20px !important;
+  }
+
+  .steps-grid,
+  .features-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #demo .demo-grid,
+  #forum .forum-features {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #demo .demo-box,
+  #demo .demo-grid::after,
+  #forum .forum-feature,
+  #forum .forum-feature:first-child,
+  #forum .forum-feature:last-child {
+    padding: 20px 0 !important;
+    border-right: 0 !important;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  #transparency > div {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #transparency > div > div,
+  #transparency > div > div + div {
+    padding: 24px 0 !important;
+    border-left: 0;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  #features > .section-inner > #transparency + div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .step,
+  .step:first-child,
+  .step:last-child {
+    padding: 22px 0 !important;
+    border-right: 0 !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+  }
+
+  .step:last-child { border-bottom: 0 !important; }
+}

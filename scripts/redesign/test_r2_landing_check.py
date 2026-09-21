@@ -35,11 +35,12 @@ MINIMAL_HTML = """<!DOCTYPE html>
 <link rel="stylesheet" href="assets/redesign-v2/tokens.css"/>
 <link rel="stylesheet" href="assets/redesign-v2/foundation.css"/>
 <link rel="stylesheet" href="assets/redesign-v2/r2-landing.css"/>
+<link rel="stylesheet" href="assets/redesign-v2/r5-landing-fidelity.css"/>
 </head>
 <body>
 <a href="#main" class="pnx2-skip">Skip</a>
-<nav class="pnx2-header"><a href="#">Home</a></nav>
-<main id="main"><section class="landing-hero">main</section></main>
+<nav class="pnx2-header"><div class="pnx2-header-frame"><a href="#main">Brand</a><a href="#main">Platform</a><a href="#votes">Votes</a><a href="#roadmap">Roadmap</a><a href="wiki/">Docs</a><a href="community.html">Community</a><a href="#download">Download</a></div></nav>
+<main id="main"><section class="landing-hero"><div class="pnx2-live-panel"><b id="heroParliamentDecision"></b><b id="heroLiveStatus"></b><b id="heroCitizenDecision"></b><b id="heroCitizenMeta"></b><b id="heroTier1"></b><b id="heroTier2"></b><b id="heroTier3"></b></div></section><section class="pnx2-democracy-data"></section><section class="pnx2-history-band"><h2 id="historyTitle">History</h2></section><section id="votes"></section><section id="roadmap"></section><section id="download"></section></main>
 <footer class="pnx2-footer"><p>&copy; 2026</p></footer>
 </body>
 </html>
@@ -73,6 +74,12 @@ nav.pnx2-header { background: #fff !important; backdrop-filter: none !important;
 footer { background: #0f172a !important; }
 """
 
+MINIMAL_R5_CSS = """/* owner handoff fidelity */
+.pnx2-header-frame { display: flex; }
+.pnx2-live-panel { border-bottom: 2px solid #0f172a; }
+.pnx2-history-band { background: #2563eb; }
+"""
+
 
 def _write_css_files(docs_dir: Path) -> None:
     css_dir = docs_dir / "assets/redesign-v2"
@@ -80,6 +87,7 @@ def _write_css_files(docs_dir: Path) -> None:
     (css_dir / "tokens.css").write_text(MINIMAL_TOKENS_CSS, encoding="utf-8")
     (css_dir / "foundation.css").write_text(MINIMAL_FOUNDATION_CSS, encoding="utf-8")
     (css_dir / "r2-landing.css").write_text(MINIMAL_R2_CSS, encoding="utf-8")
+    (css_dir / "r5-landing-fidelity.css").write_text(MINIMAL_R5_CSS, encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -131,9 +139,18 @@ class PreservationTest(unittest.TestCase):
 
     def test_lost_bilingual_pair_fails_closed(self) -> None:
         changed = copy.deepcopy(self.current)
-        changed["bilingual"]["pairs"].pop(0)
+        target = next(
+            (item.get("data_el", ""), item.get("data_en", ""))
+            for item in self.baseline["bilingual"]["pairs"]
+            if (item.get("data_el", ""), item.get("data_en", ""))
+            not in r2_landing_check.REMOVABLE_HEADER_PAIRS
+        )
+        changed["bilingual"]["pairs"] = [
+            item for item in changed["bilingual"]["pairs"]
+            if (item.get("data_el", ""), item.get("data_en", "")) != target
+        ]
         violations = r2_landing_check.check_index_preservation(self.baseline, changed)
-        self.assertTrue(any("bilingual pairs" in item for item in violations))
+        self.assertTrue(any("bilingual content" in item for item in violations))
 
 
 # ---------------------------------------------------------------------------
@@ -167,8 +184,8 @@ class StructuralTest(unittest.TestCase):
 
     def test_hero_outside_main_fails(self) -> None:
         html = MINIMAL_HTML.replace(
-            '<main id="main"><section class="landing-hero">main</section></main>',
-            '<section class="landing-hero">main</section><main id="main"></main>',
+            '<main id="main"><section class="landing-hero">',
+            '<section class="landing-hero"></section><main id="main"><section>',
         )
         v = r2_landing_check.check_structural(html)
         self.assertTrue(any("landing hero" in s for s in v))
@@ -204,10 +221,17 @@ class StructuralTest(unittest.TestCase):
         v = r2_landing_check.check_structural(html)
         self.assertTrue(any("r2-landing.css" in s for s in v))
 
+    def test_missing_r5_fidelity_css_link(self) -> None:
+        html = MINIMAL_HTML.replace(
+            '<link rel="stylesheet" href="assets/redesign-v2/r5-landing-fidelity.css"/>\n', ""
+        )
+        v = r2_landing_check.check_structural(html)
+        self.assertTrue(any("r5-landing-fidelity.css" in s for s in v))
+
     def test_commented_structural_markup_does_not_pass(self) -> None:
         html = MINIMAL_HTML.replace(
-            '<nav class="pnx2-header"><a href="#">Home</a></nav>',
-            '<!-- <nav class="pnx2-header"></nav> --><nav><a href="#">Home</a></nav>',
+            '<nav class="pnx2-header">',
+            '<!-- <nav class="pnx2-header"></nav> --><nav>',
         )
         v = r2_landing_check.check_structural(html)
         self.assertTrue(any("nav.pnx2-header" in s for s in v))
@@ -253,6 +277,12 @@ class CssFilesTest(unittest.TestCase):
         (self.tmp / "assets/redesign-v2/r2-landing.css").unlink()
         v = r2_landing_check.check_css_files(self.tmp)
         self.assertTrue(any("r2-landing.css" in s for s in v))
+
+    def test_missing_r5_fidelity_css_fails(self) -> None:
+        _write_css_files(self.tmp)
+        (self.tmp / "assets/redesign-v2/r5-landing-fidelity.css").unlink()
+        v = r2_landing_check.check_css_files(self.tmp)
+        self.assertTrue(any("r5-landing-fidelity.css" in s for s in v))
 
     def test_gradient_in_r2_css_fails(self) -> None:
         v = self._write_and_check({

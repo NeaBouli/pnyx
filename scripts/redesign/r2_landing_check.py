@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
-"""Fail-closed validator for the R2 landing-page redesign.
+"""Fail-closed validator for the production landing-page redesign.
 
 Checks:
- 1. 34-page byte-parity — every allowlisted page except docs/index.html must
-    be byte-identical to the R0 baseline (SHA-256 from the checked-in
-    inventory).
- 2. docs/index.html preservation — all R0 API contract URLs present; required
-    form IDs present; external host set not grown; inline-handler count ≤ R0
-    baseline; sessionStorage references not reduced; JSON-LD blocks ≥ 3.
- 3. Structural additions — pnx2-skip link, id="main" on landing section,
-    pnx2-header class on nav, pnx2-footer class on footer, and the three CSS
-    link hrefs must all be present.
- 4. CSS file checks — all three redesign CSS files must exist inside
+ 1. R0 byte-parity for every public page outside the separately gated Landing,
+    Community and Wiki surfaces.
+ 2. docs/index.html preservation — metadata, JSON-LD, API/storage/external-host
+    contracts, form semantics, script count and all non-navigation bilingual
+    content remain present while the owner-approved design structure may change.
+ 3. Structural additions — semantic shell, exact handoff hero/live/history
+    structures, local stylesheet links and prototype-runtime exclusion.
+ 4. CSS file checks — all redesign CSS files must exist inside
     docs/assets/redesign-v2/, be contained within docs/, and the CSS files
     must not introduce gradients, non-none box-shadows, negative
     letter-spacing, viewport-scaled font sizes, or external @import rules.
@@ -47,6 +45,7 @@ R2_CSS_RELS: list[str] = [
     "assets/redesign-v2/tokens.css",
     "assets/redesign-v2/foundation.css",
     "assets/redesign-v2/r2-landing.css",
+    "assets/redesign-v2/r5-landing-fidelity.css",
 ]
 
 # These parser-backed categories are functional/content contracts. R2 may not
@@ -67,6 +66,48 @@ PRESERVED_EXACT_KEYS: tuple[str, ...] = (
     "states",
     "errors",
 )
+
+# Landing R5 intentionally adds presentation markup and an aria-live region.
+# Forms, media and scripts use stricter purpose-built checks below while the
+# shared exact-key constant remains intact for the wiki preservation gate.
+LANDING_PRESERVED_EXACT_KEYS: tuple[str, ...] = tuple(
+    key for key in PRESERVED_EXACT_KEYS
+    if key not in {"forms", "media", "scripts", "states"}
+)
+
+GATED_PUBLIC_PAGES = {
+    "docs/index.html",
+    "docs/community.html",
+    "docs/wiki/index.html",
+    "docs/wiki/api.html",
+    "docs/wiki/architecture.html",
+    "docs/wiki/broadcasting.html",
+    "docs/wiki/contributing.html",
+    "docs/wiki/database.html",
+    "docs/wiki/delete-account.html",
+    "docs/wiki/faq.html",
+    "docs/wiki/modules.html",
+    "docs/wiki/privacy.html",
+    "docs/wiki/roadmap.html",
+    "docs/wiki/security.html",
+    "docs/wiki/whitepaper.html",
+    "docs/wiki/zk-voting.html",
+}
+
+REMOVABLE_HEADER_PAIRS = {
+    ("Beta", "Beta"),
+    ("Πώς λειτουργεί", "How it works"),
+    ("Διαφάνεια", "Transparency"),
+    ("Χαρακτηριστικά", "Features"),
+    ("Charts", "Charts"),
+    ("Forum", "Forum"),
+    ("Roadmap", "Roadmap"),
+    ("Wiki", "Wiki"),
+    ("Community", "Community"),
+    ("Δήμος", "Municipality"),
+    ("Λήψη App", "Download App"),
+    ("Επικοινωνία", "Contact"),
+}
 
 ALLOWED_R2_BILINGUAL_PAIR = {
     "data_el": "Μετάβαση στο κύριο περιεχόμενο",
@@ -124,10 +165,10 @@ def _load_r0_inventory(inv_file: Path | None = None) -> dict:
 # ---------------------------------------------------------------------------
 
 def check_parity(inv: dict, repo_root: Path) -> list[str]:
-    """Return violations for non-index pages whose SHA-256 changed vs R0."""
+    """Return violations for public pages outside their approved phase gates."""
     violations: list[str] = []
     for page in inv["pages"]:
-        if page["path"] == "docs/index.html":
+        if page["path"] in GATED_PUBLIC_PAGES:
             continue
         file_path = repo_root / page["path"]
         if not file_path.is_file():
@@ -137,7 +178,7 @@ def check_parity(inv: dict, repo_root: Path) -> list[str]:
         if actual != page["sha256"]:
             violations.append(
                 f"parity: {page['path']}: sha256 changed — "
-                f"R2 must change only docs/index.html "
+                f"page is outside the Landing/Community/Wiki phase gates "
                 f"(got {actual[:12]}…, expected {page['sha256'][:12]}…)"
             )
     return violations
@@ -172,53 +213,65 @@ def _check_exact_delta(
 
 
 def check_index_preservation(baseline: dict, current: dict) -> list[str]:
-    """Compare parsed R0 and R2 landing contracts with exact allowed deltas."""
+    """Preserve functional/content contracts while permitting the new layout."""
     violations: list[str] = []
 
-    for key in PRESERVED_EXACT_KEYS:
+    for key in LANDING_PRESERVED_EXACT_KEYS:
         if current.get(key) != baseline.get(key):
             violations.append(f"preservation: exact contract changed: {key}")
 
-    violations.extend(_check_exact_delta(
-        "bilingual pairs",
-        baseline["bilingual"]["pairs"],
-        current["bilingual"]["pairs"],
-        [ALLOWED_R2_BILINGUAL_PAIR],
-    ))
-    for key in ("only_data_el", "only_data_en"):
-        if current["bilingual"][key] != baseline["bilingual"][key]:
-            violations.append(f"preservation: bilingual.{key} changed")
+    # Header navigation is intentionally consolidated. Every other bilingual
+    # pair from R0 must still occur at least as often as before.
+    baseline_pairs = Counter(
+        (item.get("data_el", ""), item.get("data_en", ""))
+        for item in baseline["bilingual"]["pairs"]
+        if (item.get("data_el", ""), item.get("data_en", "")) not in REMOVABLE_HEADER_PAIRS
+    )
+    current_pairs = Counter(
+        (item.get("data_el", ""), item.get("data_en", ""))
+        for item in current["bilingual"]["pairs"]
+    )
+    if baseline_pairs - current_pairs:
+        violations.append(
+            "preservation: non-navigation bilingual content removed: "
+            f"{list((baseline_pairs - current_pairs).elements())}"
+        )
 
-    violations.extend(_check_exact_delta(
-        "links", baseline["links"], current["links"], [ALLOWED_R2_LINK]
-    ))
-    violations.extend(_check_exact_delta(
-        "text chunks",
-        baseline["text"]["chunks"],
-        current["text"]["chunks"],
-        [ALLOWED_R2_BILINGUAL_PAIR["data_el"]],
-    ))
-    violations.extend(_check_exact_delta(
-        "navigation ids", baseline["navigation"]["ids"], current["navigation"]["ids"], ["main"]
-    ))
-    violations.extend(_check_exact_delta(
-        "navigation fragments",
-        baseline["navigation"]["fragment_links"],
-        current["navigation"]["fragment_links"],
-        [ALLOWED_R2_FRAGMENT],
-    ))
-    for key in ("headings", "nav_elements", "duplicate_ids", "unresolved_fragment_targets"):
-        if current["navigation"][key] != baseline["navigation"][key]:
-            violations.append(f"preservation: navigation.{key} changed")
+    # Form behavior is compared without visual/accessibility-only attributes.
+    functional_form_keys = ("tag", "type", "id", "name", "value", "form", "required", "checked")
+    normalize_controls = lambda controls: Counter(
+        tuple((key, item.get(key)) for key in functional_form_keys if key in item)
+        for item in controls
+    )
+    if normalize_controls(current["forms"]["controls"]) != normalize_controls(baseline["forms"]["controls"]):
+        violations.append("preservation: functional form controls changed")
+    if current["forms"]["forms"] != baseline["forms"]["forms"]:
+        violations.append("preservation: form definitions changed")
 
-    violations.extend(_check_exact_delta(
-        "resources", baseline["resources"], current["resources"], ALLOWED_R2_RESOURCES
-    ))
+    # Runtime scripts may populate the new live presentation IDs, but the
+    # loaded scripts and total inline-script boundary stay fixed.
+    if current["scripts"]["external"] != baseline["scripts"]["external"]:
+        violations.append("preservation: external scripts changed")
+    if current["scripts"]["inline_count"] != baseline["scripts"]["inline_count"]:
+        violations.append("preservation: inline script count changed")
 
-    if current["styles"]["inline"] != baseline["styles"]["inline"]:
-        violations.append("preservation: inline style blocks changed")
-    if current["styles"]["inline_attributes"] != baseline["styles"]["inline_attributes"]:
-        violations.append("preservation: inline style attributes changed")
+    # Existing media sources are content contracts. New decorative reuse is
+    # allowed and alt text may improve, but no previous source may disappear.
+    baseline_media = Counter(
+        item.get("src") for item in baseline["media"]["elements"] if item.get("src")
+    )
+    current_media = Counter(
+        item.get("src") for item in current["media"]["elements"] if item.get("src")
+    )
+    if baseline_media - current_media:
+        violations.append(
+            f"preservation: media sources removed: {list((baseline_media - current_media).elements())}"
+        )
+
+    for key in ("duplicate_ids", "unresolved_fragment_targets"):
+        if current["navigation"][key]:
+            violations.append(f"preservation: navigation.{key} is not empty")
+
     expected_hrefs = [entry["href"] for entry in baseline["styles"]["external"]] + list(R2_CSS_RELS)
     current_hrefs = [entry["href"] for entry in current["styles"]["external"]]
     if current_hrefs != expected_hrefs:
@@ -229,12 +282,6 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
 
     if current["responsive"]["viewport_meta"] != baseline["responsive"]["viewport_meta"]:
         violations.append("preservation: viewport metadata changed")
-    violations.extend(_check_exact_delta(
-        "responsive media queries",
-        baseline["responsive"]["media_queries"],
-        current["responsive"]["media_queries"],
-        ["@media (max-width: 400px)"],
-    ))
 
     return violations
 
@@ -255,6 +302,9 @@ class _StructureParser(HTMLParser):
         self.header_count = 0
         self.footer_count = 0
         self.stylesheets: list[str] = []
+        self.ids: Counter[str] = Counter()
+        self.classes: Counter[str] = Counter()
+        self.header_hrefs: list[str] = []
 
     @staticmethod
     def _classes(attrs: dict[str, str]) -> set[str]:
@@ -263,6 +313,11 @@ class _StructureParser(HTMLParser):
     def handle_starttag(self, tag: str, attrs_list: list[tuple[str, str | None]]) -> None:
         attrs = {key: value or "" for key, value in attrs_list}
         classes = self._classes(attrs)
+        if attrs.get("id"):
+            self.ids[attrs["id"]] += 1
+        self.classes.update(classes)
+        if tag == "a" and any(parent_tag == "nav" and "pnx2-header" in self._classes(parent_attrs) for parent_tag, parent_attrs in self.stack):
+            self.header_hrefs.append(attrs.get("href", ""))
         if tag == "a" and "pnx2-skip" in classes:
             self.skip_links.append(attrs)
         if tag == "main" and attrs.get("id") == "main":
@@ -311,6 +366,38 @@ def check_structural(html: str) -> list[str]:
     for href in R2_CSS_RELS:
         if parser.stylesheets.count(href) != 1:
             violations.append(f"structural: expected one live stylesheet link: {href}")
+
+    for class_name in (
+        "pnx2-header-frame",
+        "pnx2-live-panel",
+        "pnx2-democracy-data",
+        "pnx2-history-band",
+    ):
+        if parser.classes[class_name] != 1:
+            violations.append(f"structural: expected one live .{class_name}")
+    for id_name in (
+        "heroParliamentDecision",
+        "heroLiveStatus",
+        "heroCitizenDecision",
+        "heroCitizenMeta",
+        "heroTier1",
+        "heroTier2",
+        "heroTier3",
+        "historyTitle",
+    ):
+        if parser.ids[id_name] != 1:
+            violations.append(f"structural: expected one live #{id_name}")
+
+    expected_header_hrefs = ["#main", "#main", "#votes", "#roadmap", "wiki/", "community.html", "#download"]
+    if parser.header_hrefs != expected_header_hrefs:
+        violations.append(
+            f"structural: consolidated header targets differ "
+            f"(got {parser.header_hrefs}, expected {expected_header_hrefs})"
+        )
+
+    for marker in ("support.js", "text/x-dc", "<sc-if", "{{"):
+        if marker in html:
+            violations.append(f"structural: prototype runtime marker present: {marker}")
     return violations
 
 
