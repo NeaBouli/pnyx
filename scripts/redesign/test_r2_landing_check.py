@@ -552,6 +552,7 @@ class FailClosedResultsTest(unittest.TestCase):
 
     def test_latest_citizen_result_does_not_write_hero_comparison(self) -> None:
         body = self.function_body("renderLiveResult", "fillResultData")
+        self.assertNotIn("heroParliamentDecision", body)
         self.assertNotIn("heroLiveStatus", body)
         self.assertNotIn("heroCitizenDecision", body)
         self.assertNotIn("heroCitizenMeta", body)
