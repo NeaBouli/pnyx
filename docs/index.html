@@ -475,31 +475,31 @@
   <link rel="stylesheet" href="assets/redesign-v2/tokens.css"/>
   <link rel="stylesheet" href="assets/redesign-v2/foundation.css"/>
   <link rel="stylesheet" href="assets/redesign-v2/r2-landing.css"/>
+  <link rel="stylesheet" href="assets/redesign-v2/r5-landing-fidelity.css"/>
 </head>
 <body>
 <a href="#main" class="pnx2-skip" data-el="Μετάβαση στο κύριο περιεχόμενο" data-en="Skip to main content">Μετάβαση στο κύριο περιεχόμενο</a>
-<nav class="pnx2-header">
-  <a href="#" class="nav-logo">
-    <img src="pnx.png" alt="logo"/>εκκλησία<span style="font-size:0.55em;color:#9ca3af;font-weight:400;margin-left:0.35em;letter-spacing:0.05em">του έθνους</span>
-    <span style="background:#fef3c7;color:#92400e;font-size:0.55rem;font-weight:600;padding:0.15em 0.5em;border-radius:9999px;letter-spacing:0.03em;white-space:nowrap;animation:pulse-badge 2.5s ease-in-out infinite;margin-left:0.4rem" data-el="Beta" data-en="Beta">Beta</span>
-  </a>
-  <div class="nav-links">
-    <a href="#how" data-el="Πώς λειτουργεί" data-en="How it works">Πώς λειτουργεί</a>
-    <a href="#transparency" data-el="Διαφάνεια" data-en="Transparency">Διαφάνεια</a>
-    <a href="#features" data-el="Χαρακτηριστικά" data-en="Features">Χαρακτηριστικά</a>
-    <a href="#votes" data-el="Ψηφοφορίες" data-en="Votes">Ψηφοφορίες</a>
-    <a href="#repSection" data-el="Charts" data-en="Charts">Charts</a>
-    <a href="#forum" data-el="Forum" data-en="Forum">Forum</a>
-    <a href="#roadmap" data-el="Roadmap" data-en="Roadmap">Roadmap</a>
-    <a href="wiki/" data-el="Wiki" data-en="Wiki">Wiki</a>
-    <a href="community.html" data-el="Community" data-en="Community">Community</a>
-    <a href="govgr-dimos.html" data-el="Δήμος" data-en="Municipality">Δήμος</a>
-    <a href="wiki/faq.html">FAQ</a>
-    <a href="#download" style="background:#2563eb;color:#fff;border-radius:0.4rem;padding:0.3rem 0.7rem" data-el="Λήψη App" data-en="Download App">Λήψη App</a>
-    <a href="#contact" data-el="Επικοινωνία" data-en="Contact">Επικοινωνία</a>
-    <button class="lang-btn" onclick="toggleLang()">
-      <span id="langFlag">EN</span>
-    </button>
+<nav class="pnx2-header" aria-label="Κύρια πλοήγηση">
+  <div class="pnx2-header-frame">
+    <a href="#main" class="nav-logo" aria-label="εκκλησία — αρχική">
+      <img src="pnx.png" alt=""/>
+      <span class="pnx2-brand-copy">
+        <strong>εκκλησία</strong>
+        <small data-el="ΤΟΥ ΕΘΝΟΥΣ · BETA" data-en="OF THE NATION · BETA">ΤΟΥ ΕΘΝΟΥΣ · BETA</small>
+      </span>
+    </a>
+    <div class="nav-links">
+      <a href="#main" data-el="Πλατφόρμα" data-en="Platform">Πλατφόρμα</a>
+      <a href="#votes" data-el="Ψηφοφορίες" data-en="Votes">Ψηφοφορίες</a>
+      <a href="#roadmap">Roadmap</a>
+      <a href="wiki/" data-el="Τεκμηρίωση" data-en="Documentation">Τεκμηρίωση</a>
+      <a href="community.html">Community</a>
+      <span class="pnx2-nav-divider" aria-hidden="true"></span>
+      <button class="lang-btn" onclick="toggleLang()" aria-label="Change language">
+        <span id="langFlag">EN</span>
+      </button>
+      <a class="pnx2-nav-cta" href="#download" data-el="ΛΗΨΗ APP" data-en="DOWNLOAD APP">ΛΗΨΗ APP</a>
+    </div>
   </div>
 </nav>
 
@@ -517,6 +517,12 @@
       <p class="tagline" data-el="Η φωνή σου μετράει. Ψήφισε για πραγματικά νομοσχέδια." data-en="Your voice counts. Vote on real bills.">
         Η φωνή σου μετράει. Ψήφισε για πραγματικά νομοσχέδια.
       </p>
+      <p class="pnx2-hero-note" data-el="Τέσσερα βήματα. Χωρίς λογαριασμό. Χωρίς email." data-en="Four steps. No account. No email.">Τέσσερα βήματα. Χωρίς λογαριασμό. Χωρίς email.</p>
+      <div class="pnx2-hero-actions">
+        <a href="#download" class="btn-primary" data-el="ΛΗΨΗ APK" data-en="DOWNLOAD APK">ΛΗΨΗ APK</a>
+        <a href="#how" class="btn-secondary" data-el="ΠΩΣ ΛΕΙΤΟΥΡΓΕΙ" data-en="HOW IT WORKS">ΠΩΣ ΛΕΙΤΟΥΡΓΕΙ</a>
+        <a href="https://github.com/NeaBouli/pnyx" target="_blank" rel="noopener" class="pnx2-text-action">GITHUB</a>
+      </div>
       <div class="hero-quote">
         <p data-el="«Η Εκκλησία του Δήμου — η κύρια δημοκρατική συνέλευση της αρχαίας Αθήνας — πραγματοποιούνταν στον λόφο της Πνύκας, στην Αρχαία Αγορά ή στο Θέατρο του Διονύσου και αποτελούσε τον πυρήνα της αθηναϊκής δημοκρατίας. Η ιστοσελίδα ekklesia.gr εμπνέεται από αυτή την ιστορική παράδοση και αποτελεί ανεξάρτητη, κοινοτική πλατφόρμα ανοιχτού κώδικα — χωρίς ιδιοκτήτη, χωρίς εταιρεία, χωρίς κεντρικό έλεγχο. Δεν ανήκει σε κανέναν και ανήκει σε όλους. Χωρίς κρατική συγκατάθεση ή επίσημο χαρακτήρα. Όλες οι ψηφοφορίες που διεξάγονται στην πλατφόρμα αφορούν αποκλειστικά πραγματικά νομοσχέδια, αποφάσεις και ανακοινώσεις που προέρχονται από επίσημες δημόσιες πηγές — τη Βουλή των Ελλήνων, τις Περιφέρειες και τους Δήμους — και έχουν αποκλειστικά ενημερωτικό χαρακτήρα. Δεν παράγουν κανενός είδους νομική ή πολιτική δεσμευτικότητα.»"
            data-en="&quot;The Ekklesia — the principal democratic assembly of ancient Athens — convened on Pnyx hill, the Ancient Agora, or the Theatre of Dionysus and formed the core of Athenian democracy. ekklesia.gr is inspired by this historical tradition and is an independent, community-driven open-source platform — no owner, no company, no central control. It belongs to no one and belongs to everyone. Without state endorsement or official status. All votes conducted on this platform concern exclusively real bills, decisions and announcements from official public sources — the Hellenic Parliament, Regions and Municipalities — and are purely informational. They carry no legal or political binding force.&quot;">
@@ -524,8 +530,33 @@
         </p>
       </div>
     </div>
-    <!-- RIGHT: Owl + Stat Cards -->
+    <!-- RIGHT: Live divergence panel + trust indicators -->
     <div class="hero-right">
+      <div class="pnx2-live-panel" aria-live="polite">
+        <div class="pnx2-live-heading">
+          <h2 data-el="ΑΠΟΚΛΙΣΗ ΠΟΛΙΤΩΝ — ΒΟΥΛΗΣ" data-en="CITIZENS — PARLIAMENT DIVERGENCE">ΑΠΟΚΛΙΣΗ ΠΟΛΙΤΩΝ — ΒΟΥΛΗΣ</h2>
+          <span><span class="pnx2-live-dot" aria-hidden="true"></span> LIVE</span>
+        </div>
+        <div class="pnx2-live-primary">
+          <div>
+            <strong data-el="ΑΠΟΦΑΣΗ ΒΟΥΛΗΣ" data-en="PARLIAMENT DECISION">ΑΠΟΦΑΣΗ ΒΟΥΛΗΣ</strong>
+            <b id="heroParliamentDecision">—</b>
+            <small id="heroLiveStatus" data-el="Αναμονή πραγματικών δεδομένων" data-en="Waiting for real data">Αναμονή πραγματικών δεδομένων</small>
+          </div>
+          <div>
+            <strong data-el="ΒΟΥΛΗΣΗ ΠΟΛΙΤΩΝ" data-en="CITIZEN WILL">ΒΟΥΛΗΣΗ ΠΟΛΙΤΩΝ</strong>
+            <b id="heroCitizenDecision">—</b>
+            <small id="heroCitizenMeta" data-el="— Υπέρ · — Κατά" data-en="— Yes · — No">— Υπέρ · — Κατά</small>
+          </div>
+        </div>
+        <div class="pnx2-live-tiers">
+          <div><strong><span lang="en">TIER 1</span> — <span data-el="ΠΛΑΤΦΟΡΜΑ" data-en="PLATFORM">ΠΛΑΤΦΟΡΜΑ</span></strong><b id="heroTier1">—</b></div>
+          <div><strong><span lang="en">TIER 2</span> — <span data-el="ΣΤΑΘΜΙΣΜΕΝΗ" data-en="WEIGHTED">ΣΤΑΘΜΙΣΜΕΝΗ</span></strong><b id="heroTier2">—</b></div>
+          <div><strong><span lang="en">TIER 3 — CRI</span> <span data-el="ΣΥΝΘΕΤΟΣ" data-en="COMPOSITE">ΣΥΝΘΕΤΟΣ</span></strong><b id="heroTier3">—</b></div>
+        </div>
+        <p data-el="Πόσο αντιπροσωπεύει η Βουλή τη γνώμη των πολιτών; Σωρευτικός υπολογισμός από όλες τις ψηφοφορίες." data-en="How well does Parliament represent citizen opinion? Cumulative calculation across all votes.">Πόσο αντιπροσωπεύει η Βουλή τη γνώμη των πολιτών; Σωρευτικός υπολογισμός από όλες τις ψηφοφορίες.</p>
+        <a href="#votes" class="pnx2-text-action" data-el="ΠΡΟΒΟΛΗ ΤΡΕΧΟΥΣΩΝ →" data-en="VIEW ACTIVE VOTES →">ΠΡΟΒΟΛΗ ΤΡΕΧΟΥΣΩΝ →</a>
+      </div>
       <div class="hero-owl">
         <img src="pnx.png" alt="εκκλησία"/>
       </div>
@@ -623,6 +654,10 @@
       <div class="demo-icon">⚖️</div>
       <div class="demo-label" data-el="24ω Παράθυρο" data-en="24h Window">24ω Παράθυρο</div>
     </div>
+    <div class="demo-box pnx2-demo-archive">
+      <div class="demo-label" data-el="Αρχείο" data-en="Archive">Αρχείο</div>
+      <div class="demo-pct" data-el="Open End · Arweave" data-en="Open End · Arweave">Open End · Arweave</div>
+    </div>
   </div>
   <!-- Result Kachel — immer sichtbar, Daten füllen sich bei Step 6 -->
   <div id="dBox6" style="max-width:900px;margin:1rem auto 0;background:white;border:2px solid #e2e8f0;border-radius:var(--radius);padding:1.25rem 1.5rem">
@@ -681,6 +716,7 @@
 </section>
 
 <!-- LIVE Repräsentations-Skala — Kumulative Divergenz Βουλή vs Πολίτες -->
+<section class="pnx2-democracy-data" aria-label="Ζωντανά δεδομένα δημοκρατίας">
 <div style="max-width:800px;margin:0 auto;padding:1.5rem 2rem" class="fade-in" id="repSection">
   <div style="background:var(--gray-100);border-radius:1rem;padding:1.25rem 1.5rem">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
@@ -784,6 +820,9 @@
         var t1 = document.getElementById("tier1Score");
         var t2 = document.getElementById("tier2Score");
         var t3 = document.getElementById("tier3Score");
+        var heroT1 = document.getElementById("heroTier1");
+        var heroT2 = document.getElementById("heroTier2");
+        var heroT3 = document.getElementById("heroTier3");
 
         var totalVotes = d.total_citizen_votes || 0;
         var avgDiv = d.cumulative_divergence || 0;
@@ -791,28 +830,35 @@
 
         // Tier 1: Raw platform
         var rawPct = (totalVotes / ELECTORATE) * 100;
-        if (t1) t1.textContent = rawPct < 0.001 ? "0%" : rawPct.toFixed(rawPct < 1 ? 3 : 1) + "%";
+        var rawLabel = rawPct < 0.001 ? "0%" : rawPct.toFixed(rawPct < 1 ? 3 : 1) + "%";
+        if (t1) t1.textContent = rawLabel;
+        if (heroT1) heroT1.textContent = rawLabel;
 
         // Tier 2: Weighted (Jackman MRP correction)
         var corrected = rawPct / 0.65; // voluntary participation bias
         var avgBillsPerVoter = bills > 0 ? Math.min(totalVotes / Math.max(1, bills), 5) / 5 : 0;
         var weighted = corrected * (1 + avgBillsPerVoter * 0.3);
         weighted = Math.min(100, weighted);
-        if (t2) t2.textContent = weighted < 0.001 ? "0%" : weighted.toFixed(weighted < 1 ? 3 : 1) + "%";
-
-        // Tier 3: CRI composite
-        var quantityScore = Math.min(1, rawPct / 1); // normalize: 1% = max
-        var qualityScore = score !== null ? score / 100 : 0.5; // representation = 1-divergence
-        var diversityScore = 0.5; // neutral until demographic data available
-        var cri = Math.round((0.4 * quantityScore + 0.3 * qualityScore + 0.3 * diversityScore) * 100);
-        if (t3) { t3.textContent = cri + "/100"; t3.style.color = repColor(cri); }
+        var weightedLabel = weighted < 0.001 ? "0%" : weighted.toFixed(weighted < 1 ? 3 : 1) + "%";
+        if (t2) t2.textContent = weightedLabel;
+        if (heroT2) heroT2.textContent = weightedLabel;
 
         if (score === null || score === undefined) {
           if (scoreEl) scoreEl.textContent = "—";
           if (fill) fill.style.width = "0%";
+          if (t3) { t3.textContent = "—"; t3.style.color = ""; }
+          if (heroT3) heroT3.textContent = "—";
           if (noData) noData.style.display = "inline";
           return;
         }
+
+        // Tier 3: CRI composite is meaningful only with real representation data.
+        var quantityScore = Math.min(1, rawPct / 1); // normalize: 1% = max
+        var qualityScore = score / 100; // representation = 1-divergence
+        var diversityScore = 0.5; // neutral until demographic data available
+        var cri = Math.round((0.4 * quantityScore + 0.3 * qualityScore + 0.3 * diversityScore) * 100);
+        if (t3) { t3.textContent = cri + "/100"; t3.style.color = repColor(cri); }
+        if (heroT3) heroT3.textContent = cri + "/100";
 
         if (noData) noData.style.display = "none";
         var pct = Math.min(100, Math.max(0, score));
@@ -945,6 +991,8 @@
 })();
 </script>
 
+</section>
+
 <section class="section section-gray" id="features">
   <div class="section-inner">
     <h2 class="section-title fade-in" data-el="Τι προσφέρει η εκκλησία;" data-en="What does ekklesia offer?">Τι προσφέρει η εκκλησία;</h2>
@@ -1066,27 +1114,41 @@
 </section>
 
 <!-- ─── PNYX FORUM SECTION ─── -->
+<section class="pnx2-history-band" aria-labelledby="historyTitle">
+  <div class="pnx2-history-grid">
+    <div>
+      <span data-el="ΙΣΤΟΡΙΚΟ ΠΛΑΙΣΙΟ" data-en="HISTORICAL CONTEXT">ΙΣΤΟΡΙΚΟ ΠΛΑΙΣΙΟ</span>
+      <h2 id="historyTitle" data-el="Η Εκκλησία του Δήμου" data-en="The Assembly of the Demos">Η Εκκλησία<br/>του Δήμου</h2>
+      <img src="pnx.png" alt="" loading="lazy"/>
+    </div>
+    <div>
+      <p data-el="«Η Εκκλησία του Δήμου — η κύρια δημοκρατική συνέλευση της αρχαίας Αθήνας — πραγματοποιούνταν στον λόφο της Πνύκας, στην Αρχαία Αγορά ή στο Θέατρο του Διονύσου και αποτελούσε τον πυρήνα της αθηναϊκής δημοκρατίας. Η ιστοσελίδα ekklesia.gr εμπνέεται από αυτή την ιστορική παράδοση και αποτελεί ανεξάρτητη, κοινοτική πλατφόρμα ανοιχτού κώδικα — χωρίς ιδιοκτήτη, χωρίς εταιρεία, χωρίς κεντρικό έλεγχο. Δεν ανήκει σε κανέναν και ανήκει σε όλους. Χωρίς κρατική συγκατάθεση ή επίσημο χαρακτήρα." data-en="The Ekklesia of the Demos — the principal democratic assembly of ancient Athens — convened on Pnyx hill, the Ancient Agora, or the Theatre of Dionysus and formed the core of Athenian democracy. ekklesia.gr is inspired by this historical tradition and is an independent, community-driven open-source platform — no owner, no company, no central control. It belongs to no one and belongs to everyone, without state endorsement or official status.">«Η Εκκλησία του Δήμου — η κύρια δημοκρατική συνέλευση της αρχαίας Αθήνας — πραγματοποιούνταν στον λόφο της Πνύκας, στην Αρχαία Αγορά ή στο Θέατρο του Διονύσου και αποτελούσε τον πυρήνα της αθηναϊκής δημοκρατίας. Η ιστοσελίδα ekklesia.gr εμπνέεται από αυτή την ιστορική παράδοση και αποτελεί ανεξάρτητη, κοινοτική πλατφόρμα ανοιχτού κώδικα — χωρίς ιδιοκτήτη, χωρίς εταιρεία, χωρίς κεντρικό έλεγχο. Δεν ανήκει σε κανέναν και ανήκει σε όλους. Χωρίς κρατική συγκατάθεση ή επίσημο χαρακτήρα.</p>
+      <p data-el="Όλες οι ψηφοφορίες που διεξάγονται στην πλατφόρμα αφορούν αποκλειστικά πραγματικά νομοσχέδια, αποφάσεις και ανακοινώσεις που προέρχονται από επίσημες δημόσιες πηγές — τη Βουλή των Ελλήνων, τις Περιφέρειες και τους Δήμους — και έχουν αποκλειστικά ενημερωτικό χαρακτήρα. Δεν παράγουν κανενός είδους νομική ή πολιτική δεσμευτικότητα.»" data-en="All votes conducted on this platform concern exclusively real bills, decisions and announcements from official public sources — the Hellenic Parliament, Regions and Municipalities — and are purely informational. They carry no legal or political binding force.">Όλες οι ψηφοφορίες που διεξάγονται στην πλατφόρμα αφορούν αποκλειστικά πραγματικά νομοσχέδια, αποφάσεις και ανακοινώσεις που προέρχονται από επίσημες δημόσιες πηγές — τη Βουλή των Ελλήνων, τις Περιφέρειες και τους Δήμους — και έχουν αποκλειστικά ενημερωτικό χαρακτήρα. Δεν παράγουν κανενός είδους νομική ή πολιτική δεσμευτικότητα.»</p>
+    </div>
+  </div>
+</section>
+
 <section class="section" id="forum" style="background:linear-gradient(135deg,#eff6ff 0%,#f0fdf4 100%)">
   <div class="section-inner" style="text-align:center">
     <h2 class="section-title fade-in" data-el="Πνύκα — Forum του Έθνους" data-en="Pnyx — Forum of the Nation">Πνύκα — Forum του Έθνους</h2>
     <p class="section-sub fade-in" style="max-width:640px;margin:0 auto 1.5rem" data-el="Η Πνύκα ήταν ο λόφος στην αρχαία Αθήνα όπου οι πολίτες συζητούσαν δημόσια. Το pnyx.ekklesia.gr είναι η ψηφιακή αναβίωση αυτής της παράδοσης — ένας χώρος ελεύθερης συζήτησης για κάθε νομοσχέδιο." data-en="The Pnyx was the hill in ancient Athens where citizens debated publicly. pnyx.ekklesia.gr is the digital revival of this tradition — a space for open discussion on every bill.">Η Πνύκα ήταν ο λόφος στην αρχαία Αθήνα όπου οι πολίτες συζητούσαν δημόσια. Το pnyx.ekklesia.gr είναι η ψηφιακή αναβίωσή της.</p>
-    <div class="fade-in" style="display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;margin-bottom:1.5rem">
-      <div style="background:white;border:2px solid #e2e8f0;border-radius:1rem;padding:1.25rem;min-width:200px;flex:1;max-width:260px;text-align:center">
+    <div class="fade-in forum-features" style="display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;margin-bottom:1.5rem">
+      <div class="forum-feature" style="background:white;border:2px solid #e2e8f0;border-radius:1rem;padding:1.25rem;min-width:200px;flex:1;max-width:260px;text-align:center">
         <div style="font-size:1.8rem;margin-bottom:0.5rem">💬</div>
         <h4 style="font-weight:800;font-size:0.9rem;margin-bottom:0.25rem" data-el="Συζήτηση ανά Νομοσχέδιο" data-en="Discussion per Bill">Συζήτηση ανά Νομοσχέδιο</h4>
         <p style="font-size:0.78rem;color:var(--gray-400);margin:0" data-el="Κάθε νομοσχέδιο έχει αυτόματα ένα θέμα στο forum" data-en="Every bill automatically gets a forum topic">Κάθε νομοσχέδιο → forum topic</p>
       </div>
-      <div style="background:white;border:2px solid #e2e8f0;border-radius:1rem;padding:1.25rem;min-width:200px;flex:1;max-width:260px;text-align:center">
+      <div class="forum-feature" style="background:white;border:2px solid #e2e8f0;border-radius:1rem;padding:1.25rem;min-width:200px;flex:1;max-width:260px;text-align:center">
         <div style="font-size:1.8rem;margin-bottom:0.5rem">🔐</div>
         <h4 style="font-weight:800;font-size:0.9rem;margin-bottom:0.25rem" data-el="Ανώνυμη Συμμετοχή" data-en="Anonymous Participation">Ανώνυμη Συμμετοχή</h4>
         <p style="font-size:0.78rem;color:var(--gray-400);margin:0" data-el="SSO μέσω ekklesia — χωρίς email, χωρίς κωδικό" data-en="SSO via ekklesia — no email, no password">SSO μέσω ekklesia</p>
       </div>
-      <div style="background:white;border:2px solid #e2e8f0;border-radius:1rem;padding:1.25rem;min-width:200px;flex:1;max-width:260px;text-align:center">
+      <div class="forum-feature" style="background:white;border:2px solid #e2e8f0;border-radius:1rem;padding:1.25rem;min-width:200px;flex:1;max-width:260px;text-align:center">
         <div style="font-size:1.8rem;margin-bottom:0.5rem">🌐</div>
         <h4 style="font-weight:800;font-size:0.9rem;margin-bottom:0.25rem" data-el="Ανοιχτή σε Όλους" data-en="Open to Everyone">Ανοιχτή σε Όλους</h4>
         <p style="font-size:0.78rem;color:var(--gray-400);margin:0" data-el="Email, Google, Facebook ή χωρίς εγγραφή" data-en="Email, Google, Facebook or without registration">Email, Google ή χωρίς εγγραφή</p>
       </div>
-      <div style="background:white;border:2px solid #e2e8f0;border-radius:1rem;padding:1.25rem;min-width:200px;flex:1;max-width:260px;text-align:center">
+      <div class="forum-feature" style="background:white;border:2px solid #e2e8f0;border-radius:1rem;padding:1.25rem;min-width:200px;flex:1;max-width:260px;text-align:center">
         <div style="font-size:1.8rem;margin-bottom:0.5rem">🏛️</div>
         <h4 style="font-weight:800;font-size:0.9rem;margin-bottom:0.25rem" data-el="Βουλή · Περιφέρεια · Δήμος" data-en="Parliament · Region · Municipality">Βουλή · Περιφέρεια · Δήμος</h4>
         <p style="font-size:0.78rem;color:var(--gray-400);margin:0" data-el="Κατηγορίες ανά επίπεδο διακυβέρνησης" data-en="Categories per governance level">Κατηγορίες ανά επίπεδο</p>
@@ -1472,7 +1534,7 @@ async function submitNewsletter(e) {
 </script>
 
 <!-- DISCLAIMER SECTION -->
-<section style="background:#f8fafc;padding:2.5rem 1.5rem;border-top:1px solid #e2e8f0">
+<section id="notice" style="background:#f8fafc;padding:2.5rem 1.5rem;border-top:1px solid #e2e8f0">
   <div style="max-width:800px;margin:0 auto">
     <h3 style="text-align:center;font-size:0.9rem;font-weight:800;color:#0f172a;margin-bottom:1.25rem;letter-spacing:0.03em" data-el="Τι πρέπει να γνωρίζετε" data-en="What you should know">Τι πρέπει να γνωρίζετε</h3>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem">
@@ -1652,6 +1714,9 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     setLiveText("resultYesLabel",yes+"% Υπέρ",yes+"% Yes");
     setLiveText("resultNoLabel",no+"% Κατά",no+"% No");
     setLiveText("resultMajority",majorityEl,majorityEn);
+    setLiveText("heroLiveStatus",titleEl,titleEn);
+    setLiveText("heroCitizenDecision",majorityEl.replace("Πλειοψηφία: ", ""),majorityEn.replace("Majority: ", ""));
+    setLiveText("heroCitizenMeta",yes+"% Υπέρ · "+no+"% Κατά",yes+"% Yes · "+no+"% No");
     var rp=document.getElementById("repPct"); if(rp) rp.textContent=participation.toFixed(4)+"%";
     setLiveText("repLabel",total.toLocaleString("el-GR")+" / 9.810.040",total.toLocaleString("en-US")+" / 9,810,040");
   }
@@ -2010,7 +2075,7 @@ if (window.location.hash === "#contact" && sessionStorage.getItem("polis_token")
 
 <!-- Chat Widget — RAG Agent -->
 <div id="chatWidget" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999">
-  <button id="chatToggle" onclick="toggleChat()" style="width:56px;height:56px;border-radius:50%;background:#2563eb;color:white;border:none;cursor:pointer;font-size:1.5rem;box-shadow:0 4px 16px rgba(37,99,235,0.3);transition:all 0.2s" onmouseenter="this.style.transform='scale(1.1)'" onmouseleave="this.style.transform='scale(1)'">💬</button>
+  <button id="chatToggle" onclick="toggleChat()" style="width:56px;height:56px;border-radius:50%;background:#2563eb;color:white;border:none;cursor:pointer;font-size:1.5rem;box-shadow:0 4px 16px rgba(37,99,235,0.3);transition:all 0.2s" onmouseenter="this.style.transform='scale(1.1)'" onmouseleave="this.style.transform='scale(1)'"><span data-el="ΡΩΤΗΣΤΕ" data-en="ASK">ΡΩΤΗΣΤΕ</span></button>
   <div id="chatPanel" style="display:none;position:absolute;bottom:70px;right:0;width:360px;max-height:480px;background:white;border-radius:1rem;box-shadow:0 8px 32px rgba(0,0,0,0.15);border:1px solid #e2e8f0;overflow:hidden;flex-direction:column">
     <div style="background:#2563eb;color:white;padding:0.75rem 1rem;display:flex;justify-content:space-between;align-items:center">
       <span style="font-weight:700;font-size:0.9rem" data-el="Ρωτήστε την εκκλησία" data-en="Ask ekklesia">Ρωτήστε την εκκλησία</span>

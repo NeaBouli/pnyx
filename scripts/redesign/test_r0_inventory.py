@@ -138,6 +138,7 @@ class RealTreeTest(unittest.TestCase):
             "assets/redesign-v2/tokens.css",
             "assets/redesign-v2/foundation.css",
             "assets/redesign-v2/r2-landing.css",
+            "assets/redesign-v2/r5-landing-fidelity.css",
         ):
             self.assertIn(f'href="{href}"', landing, "unexpected landing drift outside the R2 gate")
 
