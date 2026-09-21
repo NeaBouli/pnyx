@@ -666,9 +666,9 @@
       <span style="font-weight:900;font-size:1rem;color:var(--gray-900)" data-el="Αποτέλεσμα Ψηφοφορίας" data-en="Vote Result">Αποτέλεσμα Ψηφοφορίας</span>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;font-size:0.78rem;color:rgba(255,255,255,0.7)">
-      <!-- Βουλή -->
+      <!-- Νομοσχέδιο -->
       <div>
-        <div style="font-weight:800;color:var(--gray-500);margin-bottom:0.5rem;font-size:0.82rem">🏛️ <span data-el="Απόφαση Βουλής" data-en="Parliament Decision">Απόφαση Βουλής</span></div>
+        <div style="font-weight:800;color:var(--gray-500);margin-bottom:0.5rem;font-size:0.82rem">🏛️ <span data-el="Νομοσχέδιο" data-en="Bill">Νομοσχέδιο</span><span hidden data-el="Απόφαση Βουλής" data-en="Parliament Decision">Απόφαση Βουλής</span></div>
         <div id="rParlData" style="opacity:0;transition:opacity 0.6s">
           <div id="latestBillTitle" style="color:var(--gray-600);margin-bottom:0.4rem" data-el="Αναμονή πραγματικών δεδομένων" data-en="Waiting for real data">Αναμονή πραγματικών δεδομένων</div>
           <div id="latestBillStatus" style="font-weight:700;color:var(--gray-500)" data-el="Δεν υπάρχει ακόμη αποτέλεσμα με ψήφους" data-en="No voted result is available yet">Δεν υπάρχει ακόμη αποτέλεσμα με ψήφους</div>
@@ -679,6 +679,7 @@
         <div style="font-weight:800;color:var(--gray-500);margin-bottom:0.5rem;font-size:0.82rem">🗳️ <span data-el="Βούληση Πολιτών" data-en="Citizen Will">Βούληση Πολιτών</span></div>
         <div id="rCitizenData" style="opacity:0;transition:opacity 0.6s">
           <div id="resultTotal" style="margin-bottom:0.4rem" data-el="— ψήφοι" data-en="— votes">— ψήφοι</div>
+          <div id="resultParticipation" style="margin-bottom:0.4rem;color:var(--gray-500)" data-el="Συμμετοχή στην πλατφόρμα: —" data-en="Platform participation: —">Συμμετοχή στην πλατφόρμα: —</div>
           <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.3rem">
             <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
               <div id="resultYes" style="height:100%;width:0;background:#22c55e;border-radius:4px;transition:width 1s"></div>
@@ -699,7 +700,7 @@
     <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid rgba(255,255,255,0.1);display:flex;gap:1rem;flex-wrap:wrap">
       <div style="flex:1;min-width:200px">
         <div style="font-size:0.7rem;color:var(--gray-500);margin-bottom:0.3rem" data-el="Απόκλιση Πολιτών — Βουλής" data-en="Citizen — Parliament Divergence">Απόκλιση Πολιτών — Βουλής</div>
-        <div id="divBadge" style="display:none;padding:0.3rem 0.6rem;background:#fef3c7;border-radius:0.4rem;font-size:0.72rem;font-weight:700;color:#92400e;text-align:center">⚠️ 67% ΚΑΤΑ — Βουλή ΕΓΚΡΙΝΕ</div>
+        <div id="divBadge" hidden></div>
       </div>
       <div style="flex:1;min-width:200px">
         <div style="font-size:0.7rem;color:var(--gray-500);margin-bottom:0.3rem" data-el="Αντιπροσωπευτικότητα" data-en="Representativity">Αντιπροσωπευτικότητα</div>
@@ -828,6 +829,26 @@
         var avgDiv = d.cumulative_divergence || 0;
         var bills = d.bills_analyzed || 0;
 
+        // These fields compare Parliament with citizens. Fail closed until
+        // the API has at least one analyzed bill and a cumulative score.
+        if (bills < 1 || score === null || score === undefined) {
+          if (scoreEl) scoreEl.textContent = "—";
+          if (fill) fill.style.width = "0%";
+          if (marker) marker.style.left = "0%";
+          if (divEl) divEl.textContent = "—";
+          if (billsEl) billsEl.textContent = "—";
+          if (votesEl) votesEl.textContent = "—";
+          if (t1) t1.textContent = "—";
+          if (t2) t2.textContent = "—";
+          if (t3) { t3.textContent = "—"; t3.style.color = ""; }
+          if (heroT1) heroT1.textContent = "—";
+          if (heroT2) heroT2.textContent = "—";
+          if (heroT3) heroT3.textContent = "—";
+          if (lastBill) lastBill.style.display = "none";
+          if (noData) noData.style.display = "inline";
+          return;
+        }
+
         // Tier 1: Raw platform
         var rawPct = (totalVotes / ELECTORATE) * 100;
         var rawLabel = rawPct < 0.001 ? "0%" : rawPct.toFixed(rawPct < 1 ? 3 : 1) + "%";
@@ -842,15 +863,6 @@
         var weightedLabel = weighted < 0.001 ? "0%" : weighted.toFixed(weighted < 1 ? 3 : 1) + "%";
         if (t2) t2.textContent = weightedLabel;
         if (heroT2) heroT2.textContent = weightedLabel;
-
-        if (score === null || score === undefined) {
-          if (scoreEl) scoreEl.textContent = "—";
-          if (fill) fill.style.width = "0%";
-          if (t3) { t3.textContent = "—"; t3.style.color = ""; }
-          if (heroT3) heroT3.textContent = "—";
-          if (noData) noData.style.display = "inline";
-          return;
-        }
 
         // Tier 3: CRI composite is meaningful only with real representation data.
         var quantityScore = Math.min(1, rawPct / 1); // normalize: 1% = max
@@ -1119,10 +1131,13 @@
     <div>
       <span data-el="ΙΣΤΟΡΙΚΟ ΠΛΑΙΣΙΟ" data-en="HISTORICAL CONTEXT">ΙΣΤΟΡΙΚΟ ΠΛΑΙΣΙΟ</span>
       <h2 id="historyTitle" data-el="Η Εκκλησία του Δήμου" data-en="The Assembly of the Demos">Η Εκκλησία<br/>του Δήμου</h2>
-      <img src="pnx.png" alt="" loading="lazy"/>
+      <p class="pnx2-history-lead" data-el="Ο λόφος της Πνύκας ήταν ο τόπος όπου οι πολίτες αποφάσιζαν δημόσια." data-en="The Pnyx hill was where citizens made public decisions.">Ο λόφος της Πνύκας ήταν ο τόπος όπου οι πολίτες αποφάσιζαν δημόσια.</p>
+      <img src="assets/redesign-v2/pnyx-acropolis-white.png" alt="" aria-hidden="true"/>
     </div>
     <div>
-      <p data-el="«Η Εκκλησία του Δήμου — η κύρια δημοκρατική συνέλευση της αρχαίας Αθήνας — πραγματοποιούνταν στον λόφο της Πνύκας, στην Αρχαία Αγορά ή στο Θέατρο του Διονύσου και αποτελούσε τον πυρήνα της αθηναϊκής δημοκρατίας. Η ιστοσελίδα ekklesia.gr εμπνέεται από αυτή την ιστορική παράδοση και αποτελεί ανεξάρτητη, κοινοτική πλατφόρμα ανοιχτού κώδικα — χωρίς ιδιοκτήτη, χωρίς εταιρεία, χωρίς κεντρικό έλεγχο. Δεν ανήκει σε κανέναν και ανήκει σε όλους. Χωρίς κρατική συγκατάθεση ή επίσημο χαρακτήρα." data-en="The Ekklesia of the Demos — the principal democratic assembly of ancient Athens — convened on Pnyx hill, the Ancient Agora, or the Theatre of Dionysus and formed the core of Athenian democracy. ekklesia.gr is inspired by this historical tradition and is an independent, community-driven open-source platform — no owner, no company, no central control. It belongs to no one and belongs to everyone, without state endorsement or official status.">«Η Εκκλησία του Δήμου — η κύρια δημοκρατική συνέλευση της αρχαίας Αθήνας — πραγματοποιούνταν στον λόφο της Πνύκας, στην Αρχαία Αγορά ή στο Θέατρο του Διονύσου και αποτελούσε τον πυρήνα της αθηναϊκής δημοκρατίας. Η ιστοσελίδα ekklesia.gr εμπνέεται από αυτή την ιστορική παράδοση και αποτελεί ανεξάρτητη, κοινοτική πλατφόρμα ανοιχτού κώδικα — χωρίς ιδιοκτήτη, χωρίς εταιρεία, χωρίς κεντρικό έλεγχο. Δεν ανήκει σε κανέναν και ανήκει σε όλους. Χωρίς κρατική συγκατάθεση ή επίσημο χαρακτήρα.</p>
+      <p data-el="«Η Εκκλησία του Δήμου — η κύρια δημοκρατική συνέλευση της αρχαίας Αθήνας — πραγματοποιούνταν στον λόφο της Πνύκας, στην Αρχαία Αγορά ή στο Θέατρο του Διονύσου και αποτελούσε τον πυρήνα της αθηναϊκής δημοκρατίας." data-en="The Ekklesia of the Demos — the principal democratic assembly of ancient Athens — convened on Pnyx hill, the Ancient Agora, or the Theatre of Dionysus and formed the core of Athenian democracy.">«Η Εκκλησία του Δήμου — η κύρια δημοκρατική συνέλευση της αρχαίας Αθήνας — πραγματοποιούνταν στον λόφο της Πνύκας, στην Αρχαία Αγορά ή στο Θέατρο του Διονύσου και αποτελούσε τον πυρήνα της αθηναϊκής δημοκρατίας.</p>
+      <div class="pnx2-history-separator" aria-hidden="true"></div>
+      <p data-el="Η ιστοσελίδα ekklesia.gr εμπνέεται από αυτή την ιστορική παράδοση και αποτελεί ανεξάρτητη, κοινοτική πλατφόρμα ανοιχτού κώδικα — χωρίς ιδιοκτήτη, χωρίς εταιρεία, χωρίς κεντρικό έλεγχο. Δεν ανήκει σε κανέναν και ανήκει σε όλους. Χωρίς κρατική συγκατάθεση ή επίσημο χαρακτήρα." data-en="ekklesia.gr is inspired by this historical tradition and is an independent, community-driven open-source platform — no owner, no company, no central control. It belongs to no one and belongs to everyone, without state endorsement or official status.">Η ιστοσελίδα ekklesia.gr εμπνέεται από αυτή την ιστορική παράδοση και αποτελεί ανεξάρτητη, κοινοτική πλατφόρμα ανοιχτού κώδικα — χωρίς ιδιοκτήτη, χωρίς εταιρεία, χωρίς κεντρικό έλεγχο. Δεν ανήκει σε κανέναν και ανήκει σε όλους. Χωρίς κρατική συγκατάθεση ή επίσημο χαρακτήρα.</p>
       <p data-el="Όλες οι ψηφοφορίες που διεξάγονται στην πλατφόρμα αφορούν αποκλειστικά πραγματικά νομοσχέδια, αποφάσεις και ανακοινώσεις που προέρχονται από επίσημες δημόσιες πηγές — τη Βουλή των Ελλήνων, τις Περιφέρειες και τους Δήμους — και έχουν αποκλειστικά ενημερωτικό χαρακτήρα. Δεν παράγουν κανενός είδους νομική ή πολιτική δεσμευτικότητα.»" data-en="All votes conducted on this platform concern exclusively real bills, decisions and announcements from official public sources — the Hellenic Parliament, Regions and Municipalities — and are purely informational. They carry no legal or political binding force.">Όλες οι ψηφοφορίες που διεξάγονται στην πλατφόρμα αφορούν αποκλειστικά πραγματικά νομοσχέδια, αποφάσεις και ανακοινώσεις που προέρχονται από επίσημες δημόσιες πηγές — τη Βουλή των Ελλήνων, τις Περιφέρειες και τους Δήμους — και έχουν αποκλειστικά ενημερωτικό χαρακτήρα. Δεν παράγουν κανενός είδους νομική ή πολιτική δεσμευτικότητα.»</p>
     </div>
   </div>
@@ -1684,6 +1699,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     var rep=document.getElementById("repBar"); if(rep) rep.style.width="0";
     var rp=document.getElementById("repPct"); if(rp) rp.style.opacity="0";
     var rl=document.getElementById("repLabel"); if(rl) rl.style.opacity="0";
+    setLiveText("resultParticipation","Συμμετοχή στην πλατφόρμα: —","Platform participation: —");
   }
   function setLiveText(id, elText, enText) {
     var node=document.getElementById(id);
@@ -1705,20 +1721,15 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     else if(no>=yes&&no>=abstain) { majorityEl="Πλειοψηφία: ΚΑΤΑ"; majorityEn="Majority: NO"; }
     var electorate=9810040;
     var participation=total/electorate*100;
-
     setLiveText("latestBillTitle",titleEl,titleEn);
-    setLiveText("latestBillStatus","Πραγματικό αποτέλεσμα · "+data.status,"Real result · "+data.status);
+    setLiveText("latestBillStatus","Κατάσταση νομοσχεδίου · "+data.status,"Bill status · "+data.status);
     setLiveText("demoYesLabel",yes+"% Υπέρ",yes+"% Yes");
     setLiveText("demoNoLabel",no+"% Κατά",no+"% No");
     setLiveText("resultTotal",total.toLocaleString("el-GR")+" ψήφοι",total.toLocaleString("en-US")+" votes");
+    setLiveText("resultParticipation","Συμμετοχή στην πλατφόρμα: "+participation.toFixed(4)+"% ("+total.toLocaleString("el-GR")+" / 9.810.040)","Platform participation: "+participation.toFixed(4)+"% ("+total.toLocaleString("en-US")+" / 9,810,040)");
     setLiveText("resultYesLabel",yes+"% Υπέρ",yes+"% Yes");
     setLiveText("resultNoLabel",no+"% Κατά",no+"% No");
     setLiveText("resultMajority",majorityEl,majorityEn);
-    setLiveText("heroLiveStatus",titleEl,titleEn);
-    setLiveText("heroCitizenDecision",majorityEl.replace("Πλειοψηφία: ", ""),majorityEn.replace("Majority: ", ""));
-    setLiveText("heroCitizenMeta",yes+"% Υπέρ · "+no+"% Κατά",yes+"% Yes · "+no+"% No");
-    var rp=document.getElementById("repPct"); if(rp) rp.textContent=participation.toFixed(4)+"%";
-    setLiveText("repLabel",total.toLocaleString("el-GR")+" / 9.810.040",total.toLocaleString("en-US")+" / 9,810,040");
   }
   function fillResultData() {
     var live=window._liveResult;
@@ -1739,9 +1750,10 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     }, 600);
     setTimeout(function() {
       var b=document.getElementById("divBadge"); if(b) b.style.display="none";
-      var rep=document.getElementById("repBar"); if(rep) rep.style.width=Math.min(100,Number(live.total_votes||0)/9810040*100)+"%";
-      var rp=document.getElementById("repPct"); if(rp) rp.style.opacity="1";
-      var rl=document.getElementById("repLabel"); if(rl) rl.style.opacity="1";
+      // Citizen-only results do not establish Parliament representativity.
+      var rep=document.getElementById("repBar"); if(rep) rep.style.width="0";
+      var rp=document.getElementById("repPct"); if(rp) rp.style.opacity="0";
+      var rl=document.getElementById("repLabel"); if(rl) rl.style.opacity="0";
     }, 900);
   }
   function runCycle() {
