@@ -109,6 +109,19 @@ REMOVABLE_HEADER_PAIRS = {
     ("Επικοινωνία", "Contact"),
 }
 
+ALLOWED_R5_INLINE_SCRIPTS = {
+    0: {
+        "index": 0,
+        "sha256": "a9b709f37341241b93f18ee3106fd63ad886a08c2a262f5b8682a8425b2c738d",
+        "bytes": 4334,
+    },
+    5: {
+        "index": 5,
+        "sha256": "28be6f027ae55fdbf41ced9f97d99653a9a53e2f3f599d3134192117ef268dd3",
+        "bytes": 21039,
+    },
+}
+
 ALLOWED_R2_BILINGUAL_PAIR = {
     "data_el": "Μετάβαση στο κύριο περιεχόμενο",
     "data_en": "Skip to main content",
@@ -220,13 +233,18 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
         if current.get(key) != baseline.get(key):
             violations.append(f"preservation: exact contract changed: {key}")
 
-    # Header navigation is intentionally consolidated. Every other bilingual
-    # pair from R0 must still occur at least as often as before.
+    # Header navigation is intentionally consolidated. Subtract exactly the
+    # one known R0 header occurrence of each replaced pair; same-valued body
+    # content remains protected.
     baseline_pairs = Counter(
         (item.get("data_el", ""), item.get("data_en", ""))
         for item in baseline["bilingual"]["pairs"]
-        if (item.get("data_el", ""), item.get("data_en", "")) not in REMOVABLE_HEADER_PAIRS
     )
+    for pair in REMOVABLE_HEADER_PAIRS:
+        if baseline_pairs[pair]:
+            baseline_pairs[pair] -= 1
+            if not baseline_pairs[pair]:
+                del baseline_pairs[pair]
     current_pairs = Counter(
         (item.get("data_el", ""), item.get("data_en", ""))
         for item in current["bilingual"]["pairs"]
@@ -248,12 +266,16 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
     if current["forms"]["forms"] != baseline["forms"]["forms"]:
         violations.append("preservation: form definitions changed")
 
-    # Runtime scripts may populate the new live presentation IDs, but the
-    # loaded scripts and total inline-script boundary stay fixed.
+    # Runtime scripts may populate the new live presentation IDs, but only the
+    # two reviewed R5 fingerprints may differ from the R0 baseline.
     if current["scripts"]["external"] != baseline["scripts"]["external"]:
         violations.append("preservation: external scripts changed")
-    if current["scripts"]["inline_count"] != baseline["scripts"]["inline_count"]:
-        violations.append("preservation: inline script count changed")
+    expected_inline = [
+        ALLOWED_R5_INLINE_SCRIPTS.get(item["index"], item)
+        for item in baseline["scripts"]["inline"]
+    ]
+    if current["scripts"]["inline"] != expected_inline:
+        violations.append("preservation: inline script fingerprints changed")
 
     # Existing media sources are content contracts. New decorative reuse is
     # allowed and alt text may improve, but no previous source may disappear.

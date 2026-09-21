@@ -546,7 +546,7 @@
           <div>
             <strong data-el="ΒΟΥΛΗΣΗ ΠΟΛΙΤΩΝ" data-en="CITIZEN WILL">ΒΟΥΛΗΣΗ ΠΟΛΙΤΩΝ</strong>
             <b id="heroCitizenDecision">—</b>
-            <small id="heroCitizenMeta">— Υπέρ · — Κατά</small>
+            <small id="heroCitizenMeta" data-el="— Υπέρ · — Κατά" data-en="— Yes · — No">— Υπέρ · — Κατά</small>
           </div>
         </div>
         <div class="pnx2-live-tiers">
@@ -653,6 +653,10 @@
     <div class="demo-box" id="dBox5">
       <div class="demo-icon">⚖️</div>
       <div class="demo-label" data-el="24ω Παράθυρο" data-en="24h Window">24ω Παράθυρο</div>
+    </div>
+    <div class="demo-box pnx2-demo-archive">
+      <div class="demo-label" data-el="Αρχείο" data-en="Archive">Αρχείο</div>
+      <div class="demo-pct" data-el="Open End · Arweave" data-en="Open End · Arweave">Open End · Arweave</div>
     </div>
   </div>
   <!-- Result Kachel — immer sichtbar, Daten füllen sich bei Step 6 -->
@@ -839,20 +843,22 @@
         if (t2) t2.textContent = weightedLabel;
         if (heroT2) heroT2.textContent = weightedLabel;
 
-        // Tier 3: CRI composite
+        if (score === null || score === undefined) {
+          if (scoreEl) scoreEl.textContent = "—";
+          if (fill) fill.style.width = "0%";
+          if (t3) { t3.textContent = "—"; t3.style.color = ""; }
+          if (heroT3) heroT3.textContent = "—";
+          if (noData) noData.style.display = "inline";
+          return;
+        }
+
+        // Tier 3: CRI composite is meaningful only with real representation data.
         var quantityScore = Math.min(1, rawPct / 1); // normalize: 1% = max
-        var qualityScore = score !== null ? score / 100 : 0.5; // representation = 1-divergence
+        var qualityScore = score / 100; // representation = 1-divergence
         var diversityScore = 0.5; // neutral until demographic data available
         var cri = Math.round((0.4 * quantityScore + 0.3 * qualityScore + 0.3 * diversityScore) * 100);
         if (t3) { t3.textContent = cri + "/100"; t3.style.color = repColor(cri); }
         if (heroT3) heroT3.textContent = cri + "/100";
-
-        if (score === null || score === undefined) {
-          if (scoreEl) scoreEl.textContent = "—";
-          if (fill) fill.style.width = "0%";
-          if (noData) noData.style.display = "inline";
-          return;
-        }
 
         if (noData) noData.style.display = "none";
         var pct = Math.min(100, Math.max(0, score));
@@ -1126,23 +1132,23 @@
   <div class="section-inner" style="text-align:center">
     <h2 class="section-title fade-in" data-el="Πνύκα — Forum του Έθνους" data-en="Pnyx — Forum of the Nation">Πνύκα — Forum του Έθνους</h2>
     <p class="section-sub fade-in" style="max-width:640px;margin:0 auto 1.5rem" data-el="Η Πνύκα ήταν ο λόφος στην αρχαία Αθήνα όπου οι πολίτες συζητούσαν δημόσια. Το pnyx.ekklesia.gr είναι η ψηφιακή αναβίωση αυτής της παράδοσης — ένας χώρος ελεύθερης συζήτησης για κάθε νομοσχέδιο." data-en="The Pnyx was the hill in ancient Athens where citizens debated publicly. pnyx.ekklesia.gr is the digital revival of this tradition — a space for open discussion on every bill.">Η Πνύκα ήταν ο λόφος στην αρχαία Αθήνα όπου οι πολίτες συζητούσαν δημόσια. Το pnyx.ekklesia.gr είναι η ψηφιακή αναβίωσή της.</p>
-    <div class="fade-in" style="display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;margin-bottom:1.5rem">
-      <div style="background:white;border:2px solid #e2e8f0;border-radius:1rem;padding:1.25rem;min-width:200px;flex:1;max-width:260px;text-align:center">
+    <div class="fade-in forum-features" style="display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;margin-bottom:1.5rem">
+      <div class="forum-feature" style="background:white;border:2px solid #e2e8f0;border-radius:1rem;padding:1.25rem;min-width:200px;flex:1;max-width:260px;text-align:center">
         <div style="font-size:1.8rem;margin-bottom:0.5rem">💬</div>
         <h4 style="font-weight:800;font-size:0.9rem;margin-bottom:0.25rem" data-el="Συζήτηση ανά Νομοσχέδιο" data-en="Discussion per Bill">Συζήτηση ανά Νομοσχέδιο</h4>
         <p style="font-size:0.78rem;color:var(--gray-400);margin:0" data-el="Κάθε νομοσχέδιο έχει αυτόματα ένα θέμα στο forum" data-en="Every bill automatically gets a forum topic">Κάθε νομοσχέδιο → forum topic</p>
       </div>
-      <div style="background:white;border:2px solid #e2e8f0;border-radius:1rem;padding:1.25rem;min-width:200px;flex:1;max-width:260px;text-align:center">
+      <div class="forum-feature" style="background:white;border:2px solid #e2e8f0;border-radius:1rem;padding:1.25rem;min-width:200px;flex:1;max-width:260px;text-align:center">
         <div style="font-size:1.8rem;margin-bottom:0.5rem">🔐</div>
         <h4 style="font-weight:800;font-size:0.9rem;margin-bottom:0.25rem" data-el="Ανώνυμη Συμμετοχή" data-en="Anonymous Participation">Ανώνυμη Συμμετοχή</h4>
         <p style="font-size:0.78rem;color:var(--gray-400);margin:0" data-el="SSO μέσω ekklesia — χωρίς email, χωρίς κωδικό" data-en="SSO via ekklesia — no email, no password">SSO μέσω ekklesia</p>
       </div>
-      <div style="background:white;border:2px solid #e2e8f0;border-radius:1rem;padding:1.25rem;min-width:200px;flex:1;max-width:260px;text-align:center">
+      <div class="forum-feature" style="background:white;border:2px solid #e2e8f0;border-radius:1rem;padding:1.25rem;min-width:200px;flex:1;max-width:260px;text-align:center">
         <div style="font-size:1.8rem;margin-bottom:0.5rem">🌐</div>
         <h4 style="font-weight:800;font-size:0.9rem;margin-bottom:0.25rem" data-el="Ανοιχτή σε Όλους" data-en="Open to Everyone">Ανοιχτή σε Όλους</h4>
         <p style="font-size:0.78rem;color:var(--gray-400);margin:0" data-el="Email, Google, Facebook ή χωρίς εγγραφή" data-en="Email, Google, Facebook or without registration">Email, Google ή χωρίς εγγραφή</p>
       </div>
-      <div style="background:white;border:2px solid #e2e8f0;border-radius:1rem;padding:1.25rem;min-width:200px;flex:1;max-width:260px;text-align:center">
+      <div class="forum-feature" style="background:white;border:2px solid #e2e8f0;border-radius:1rem;padding:1.25rem;min-width:200px;flex:1;max-width:260px;text-align:center">
         <div style="font-size:1.8rem;margin-bottom:0.5rem">🏛️</div>
         <h4 style="font-weight:800;font-size:0.9rem;margin-bottom:0.25rem" data-el="Βουλή · Περιφέρεια · Δήμος" data-en="Parliament · Region · Municipality">Βουλή · Περιφέρεια · Δήμος</h4>
         <p style="font-size:0.78rem;color:var(--gray-400);margin:0" data-el="Κατηγορίες ανά επίπεδο διακυβέρνησης" data-en="Categories per governance level">Κατηγορίες ανά επίπεδο</p>
@@ -2069,7 +2075,7 @@ if (window.location.hash === "#contact" && sessionStorage.getItem("polis_token")
 
 <!-- Chat Widget — RAG Agent -->
 <div id="chatWidget" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999">
-  <button id="chatToggle" onclick="toggleChat()" style="width:56px;height:56px;border-radius:50%;background:#2563eb;color:white;border:none;cursor:pointer;font-size:1.5rem;box-shadow:0 4px 16px rgba(37,99,235,0.3);transition:all 0.2s" onmouseenter="this.style.transform='scale(1.1)'" onmouseleave="this.style.transform='scale(1)'">💬</button>
+  <button id="chatToggle" onclick="toggleChat()" style="width:56px;height:56px;border-radius:50%;background:#2563eb;color:white;border:none;cursor:pointer;font-size:1.5rem;box-shadow:0 4px 16px rgba(37,99,235,0.3);transition:all 0.2s" onmouseenter="this.style.transform='scale(1.1)'" onmouseleave="this.style.transform='scale(1)'"><span data-el="ΡΩΤΗΣΤΕ" data-en="ASK">ΡΩΤΗΣΤΕ</span></button>
   <div id="chatPanel" style="display:none;position:absolute;bottom:70px;right:0;width:360px;max-height:480px;background:white;border-radius:1rem;box-shadow:0 8px 32px rgba(0,0,0,0.15);border:1px solid #e2e8f0;overflow:hidden;flex-direction:column">
     <div style="background:#2563eb;color:white;padding:0.75rem 1rem;display:flex;justify-content:space-between;align-items:center">
       <span style="font-weight:700;font-size:0.9rem" data-el="Ρωτήστε την εκκλησία" data-en="Ask ekklesia">Ρωτήστε την εκκλησία</span>

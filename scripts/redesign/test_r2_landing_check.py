@@ -152,6 +152,22 @@ class PreservationTest(unittest.TestCase):
         violations = r2_landing_check.check_index_preservation(self.baseline, changed)
         self.assertTrue(any("bilingual content" in item for item in violations))
 
+    def test_header_pair_body_occurrence_remains_protected(self) -> None:
+        changed = copy.deepcopy(self.current)
+        target = ("Πώς λειτουργεί", "How it works")
+        changed["bilingual"]["pairs"] = [
+            item for item in changed["bilingual"]["pairs"]
+            if (item.get("data_el", ""), item.get("data_en", "")) != target
+        ]
+        violations = r2_landing_check.check_index_preservation(self.baseline, changed)
+        self.assertTrue(any("bilingual content" in item for item in violations))
+
+    def test_inline_script_change_fails_closed(self) -> None:
+        changed = copy.deepcopy(self.current)
+        changed["scripts"]["inline"][0]["sha256"] = "0" * 64
+        violations = r2_landing_check.check_index_preservation(self.baseline, changed)
+        self.assertTrue(any("inline script fingerprints" in item for item in violations))
+
 
 # ---------------------------------------------------------------------------
 # check_structural — isolated HTML snippet tests

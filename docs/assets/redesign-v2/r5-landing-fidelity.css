@@ -518,7 +518,7 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
 }
 
 .pnx2-history-grid span {
-  color: #bfdbfe;
+  color: #fff;
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.14em !important;
@@ -610,17 +610,6 @@ main#main {
   border-top: 2px solid #0f172a;
 }
 
-#demo .demo-grid::after {
-  content: "06  ΑΡΧΕΙΟ\A Open End · Arweave";
-  white-space: pre-line;
-  min-width: 0;
-  padding: 22px 0 22px 18px;
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.5;
-  font-weight: 700;
-}
-
 #demo .demo-box {
   min-width: 0;
   padding: 22px 18px 22px 0 !important;
@@ -656,6 +645,15 @@ main#main {
 #dBox3::before { content: "03"; }
 #dBox4::before { content: "04"; }
 #dBox5::before { content: "05"; }
+.pnx2-demo-archive::before { content: "06"; }
+
+.pnx2-demo-archive .demo-pct {
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 700;
+}
 
 #demo > #dBox6 {
   margin-top: 0 !important;
@@ -794,6 +792,7 @@ main#main {
 
 #forum .forum-feature {
   min-width: 0;
+  max-width: none !important;
   padding: 24px !important;
   border-right: 2px solid #e2e8f0;
   text-align: left !important;
@@ -839,11 +838,10 @@ main#main {
   padding: 0 18px;
   border: 2px solid #0f172a !important;
   background: #2563eb !important;
-  font-size: 0 !important;
+  font-size: 12px !important;
 }
 
-#chatToggle::after {
-  content: "ΡΩΤΗΣΤΕ";
+#chatToggle > span {
   color: #fff;
   font-size: 12px;
   font-weight: 900;
