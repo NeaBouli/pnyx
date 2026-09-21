@@ -13,7 +13,7 @@ body {
 }
 
 nav.pnx2-header {
-  min-height: 102px !important;
+  min-height: 86px !important;
   padding: 0 !important;
   overflow: visible !important;
 }
@@ -21,7 +21,9 @@ nav.pnx2-header {
 .pnx2-header-frame {
   width: 100%;
   max-width: 1320px;
-  min-height: 100px;
+  height: 84px;
+  min-height: 84px;
+  box-sizing: border-box;
   margin: 0 auto;
   padding: 10px 24px;
   display: flex;
@@ -33,7 +35,7 @@ nav.pnx2-header {
   min-width: 0;
   flex: 0 0 auto;
   gap: 12px;
-  padding: 8px 0;
+  padding: 0;
   color: #0f172a;
 }
 
@@ -64,9 +66,15 @@ nav.pnx2-header {
 }
 
 nav.pnx2-header .nav-links {
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-wrap: nowrap !important;
   margin-left: auto;
   justify-content: flex-end;
-  overflow: visible;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: thin;
 }
 
 nav.pnx2-header .nav-links a {
@@ -479,7 +487,6 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
 }
 
 #transparency,
-#forum,
 #newsletter {
   background: #f8fafc !important;
 }
@@ -517,6 +524,18 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
   border-left: 2px solid rgba(255, 255, 255, 0.32);
 }
 
+.pnx2-history-grid > div:first-child {
+  position: relative;
+  overflow: hidden;
+}
+
+.pnx2-history-lead {
+  color: #eff6ff !important;
+  font-size: 15px !important;
+  font-weight: 400 !important;
+  max-width: 32ch;
+}
+
 .pnx2-history-grid span {
   color: #fff;
   font-size: 11px;
@@ -534,12 +553,13 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
 }
 
 .pnx2-history-grid img {
-  width: 180px;
-  height: 145px;
-  margin-top: 26px;
-  object-fit: contain;
-  object-position: left center;
-  filter: invert(1) !important;
+  display: block;
+  width: 116%;
+  max-width: 520px;
+  height: auto;
+  margin: 28px 0 -170px -3%;
+  opacity: 0.17;
+  pointer-events: none;
 }
 
 .pnx2-history-grid p {
@@ -551,7 +571,14 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
   overflow-wrap: anywhere;
 }
 
-.pnx2-history-grid p + p {
+.pnx2-history-separator {
+  width: min(100%, 56ch);
+  height: 2px;
+  margin: 28px 0;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.pnx2-history-grid p ~ p {
   margin-top: 18px !important;
   color: #eff6ff;
   font-size: 16px;
@@ -796,10 +823,36 @@ main#main {
   padding: 24px !important;
   border-right: 2px solid #e2e8f0;
   text-align: left !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 
 #forum .forum-feature:first-child { padding-left: 0 !important; }
 #forum .forum-feature:last-child { padding-right: 0 !important; border-right: 0; }
+
+#forum {
+  border-bottom: 2px solid #0f172a !important;
+}
+
+#forum a,
+#forum button,
+#newsletter input,
+#newsletter select,
+#newsletter button,
+#newsletter #nlMsg {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+#newsletter {
+  border-top: 0 !important;
+  border-bottom: 2px solid #0f172a !important;
+}
+
+.landing-hero .stat-card:hover {
+  box-shadow: none !important;
+  transform: none !important;
+}
 
 /* Every old centered card becomes the supplied visible grid. */
 #roadmap .roadmap-grid,
@@ -839,6 +892,17 @@ main#main {
   border: 2px solid #0f172a !important;
   background: #2563eb !important;
   font-size: 12px !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+#chatPanel,
+#chatPanel input,
+#chatPanel button,
+#chatPanel #chatMessages > div {
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 
 #chatToggle > span {
@@ -889,14 +953,16 @@ main#main {
 
 @media (max-width: 820px) {
   nav.pnx2-header {
-    position: relative;
-    min-height: 0 !important;
+    position: sticky;
+    min-height: 72px !important;
   }
 
   .pnx2-header-frame {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 4px;
+    height: 70px;
+    min-height: 70px;
+    align-items: center;
+    flex-direction: row;
+    gap: 12px;
     padding-top: 8px;
     padding-bottom: 8px;
   }
@@ -911,8 +977,9 @@ main#main {
   .pnx2-brand-copy { display: flex !important; }
 
   nav.pnx2-header .nav-links {
-    width: 100%;
-    margin-left: 0;
+    width: auto;
+    flex: 1 1 auto;
+    margin-left: auto;
     justify-content: flex-start;
     overflow-x: auto;
   }

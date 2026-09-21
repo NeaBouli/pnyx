@@ -112,13 +112,13 @@ REMOVABLE_HEADER_PAIRS = {
 ALLOWED_R5_INLINE_SCRIPTS = {
     0: {
         "index": 0,
-        "sha256": "a9b709f37341241b93f18ee3106fd63ad886a08c2a262f5b8682a8425b2c738d",
-        "bytes": 4334,
+        "sha256": "843121274e8ed147eb9f4e6d5bfd3e8bbc65f4c9e88e4b37f6863f5d0320518d",
+        "bytes": 4938,
     },
     5: {
         "index": 5,
-        "sha256": "28be6f027ae55fdbf41ced9f97d99653a9a53e2f3f599d3134192117ef268dd3",
-        "bytes": 21039,
+        "sha256": "30e923d66d004398c9c10599142edcf45fc5efeb336b4fa4cc7419d6858454d0",
+        "bytes": 20518,
     },
 }
 

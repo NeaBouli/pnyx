@@ -12,6 +12,7 @@ Run with:
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import shutil
 import tempfile
@@ -415,6 +416,164 @@ class ParityTest(unittest.TestCase):
         inv = {"pages": [{"path": "docs/index.html", "sha256": "WRONG"}]}
         v = r2_landing_check.check_parity(inv, self.tmp)
         self.assertEqual([], v)
+
+
+# ---------------------------------------------------------------------------
+# HistorySectionTest — Acropolis/Pnyx silhouette regression
+# ---------------------------------------------------------------------------
+
+class HistorySectionTest(unittest.TestCase):
+    """Verify the blue historical band uses the correct local Acropolis asset."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.html = (r2_landing_check.DOCS_DIR / "index.html").read_text(encoding="utf-8")
+        from html.parser import HTMLParser
+
+        class _ImgCollector(HTMLParser):
+            def __init__(self) -> None:
+                super().__init__()
+                self.in_history = False
+                self.history_imgs: list[dict] = []
+
+            def handle_starttag(self, tag: str, attrs: list) -> None:
+                ad = dict(attrs)
+                if tag == "section" and "pnx2-history-band" in ad.get("class", ""):
+                    self.in_history = True
+                if self.in_history and tag == "img":
+                    self.history_imgs.append(ad)
+
+            def handle_endtag(self, tag: str) -> None:
+                if tag == "section" and self.in_history:
+                    self.in_history = False
+
+        p = _ImgCollector()
+        p.feed(cls.html)
+        cls.history_imgs = p.history_imgs
+
+    def test_history_band_has_exactly_one_image(self) -> None:
+        self.assertEqual(1, len(self.history_imgs),
+                         f"Expected 1 img in .pnx2-history-band, found {len(self.history_imgs)}")
+
+    def test_history_image_src_is_acropolis_asset(self) -> None:
+        img = self.history_imgs[0]
+        self.assertEqual(
+            "assets/redesign-v2/pnyx-acropolis-white.png",
+            img.get("src"),
+            "History band img src must point to pnyx-acropolis-white.png",
+        )
+
+    def test_history_image_not_app_logo(self) -> None:
+        img = self.history_imgs[0]
+        self.assertNotEqual("pnx.png", img.get("src"),
+                            "History band must not use the app logo pnx.png")
+
+    def test_history_image_is_aria_hidden(self) -> None:
+        img = self.history_imgs[0]
+        self.assertEqual("true", img.get("aria-hidden"),
+                         "Decorative Acropolis image must carry aria-hidden='true'")
+
+    def test_history_image_has_no_loading_lazy(self) -> None:
+        img = self.history_imgs[0]
+        self.assertNotEqual("lazy", img.get("loading"),
+                            "Decorative Acropolis image must not use loading='lazy'")
+
+    def test_acropolis_asset_file_exists_on_disk(self) -> None:
+        asset = r2_landing_check.DOCS_DIR / "assets/redesign-v2/pnyx-acropolis-white.png"
+        self.assertTrue(asset.is_file(),
+                        f"Asset not found on disk: {asset}")
+
+    def test_acropolis_asset_matches_owner_handoff(self) -> None:
+        asset = r2_landing_check.DOCS_DIR / "assets/redesign-v2/pnyx-acropolis-white.png"
+        self.assertEqual(
+            "5e2459bf00b0322640aa3a0814187a1008406bd31e5981b9d691409a41b2623b",
+            hashlib.sha256(asset.read_bytes()).hexdigest(),
+        )
+
+    def test_history_band_has_handoff_separator(self) -> None:
+        self.assertIn('class="pnx2-history-separator"', self.html)
+
+
+# ---------------------------------------------------------------------------
+# FailClosedResultsTest — live-result guard regression
+# ---------------------------------------------------------------------------
+
+class FailClosedResultsTest(unittest.TestCase):
+    """Verify the inline JS enforces the fail-closed total_votes >= 1 guard."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.html = (r2_landing_check.DOCS_DIR / "index.html").read_text(encoding="utf-8")
+        cls.css = (
+            r2_landing_check.DOCS_DIR / "assets/redesign-v2/r5-landing-fidelity.css"
+        ).read_text(encoding="utf-8")
+
+    def function_body(self, name: str, next_name: str) -> str:
+        start = self.html.index(f"function {name}")
+        end = self.html.index(f"function {next_name}", start)
+        return self.html[start:end]
+
+    def test_fail_closed_guard_present(self) -> None:
+        """The guard that returns early when total_votes < 1 must be in the script."""
+        self.assertIn(
+            "Number(live.total_votes)<1",
+            self.html,
+            "Fail-closed guard 'Number(live.total_votes)<1' missing from inline script",
+        )
+
+    def test_hero_result_elements_have_dash_initial_state(self) -> None:
+        """heroParliamentDecision must start with the empty-state dash, not live data."""
+        import re
+        # Match <b id="heroParliamentDecision">...</b> and check content is a dash
+        m = re.search(
+            r'<b\s+id="heroParliamentDecision">([^<]*)</b>',
+            self.html,
+        )
+        self.assertIsNotNone(m, "Element heroParliamentDecision not found in HTML")
+        content = m.group(1).strip()
+        self.assertIn(content, ("—", "–", "-", ""),
+                      f"heroParliamentDecision should start empty/dash, got: {content!r}")
+
+    def test_clear_result_data_function_present(self) -> None:
+        """clearResultData() must exist to reset state when no valid result."""
+        self.assertIn(
+            "clearResultData",
+            self.html,
+            "clearResultData function missing from inline script",
+        )
+
+    def test_latest_citizen_result_does_not_write_hero_comparison(self) -> None:
+        body = self.function_body("renderLiveResult", "fillResultData")
+        self.assertNotIn("heroLiveStatus", body)
+        self.assertNotIn("heroCitizenDecision", body)
+        self.assertNotIn("heroCitizenMeta", body)
+        self.assertIn("Τελευταίο αποτέλεσμα πολιτών", body)
+
+    def test_representation_uses_actual_fail_closed_fields(self) -> None:
+        self.assertIn(
+            "bills < 1 || score === null || score === undefined",
+            self.html,
+        )
+        self.assertIn("var bills = d.bills_analyzed || 0", self.html)
+        self.assertNotIn("d.completed_bills", self.html)
+
+    def test_hardcoded_divergence_example_removed(self) -> None:
+        self.assertNotIn("67% ΚΑΤΑ", self.html)
+        self.assertIn('<div id="divBadge" hidden></div>', self.html)
+
+    def test_tablet_header_remains_sticky_and_single_row(self) -> None:
+        self.assertIn("position: sticky;", self.css)
+        self.assertNotIn("nav.pnx2-header {\n    position: relative;", self.css)
+        self.assertIn("flex-wrap: nowrap !important;", self.css)
+        self.assertIn("white-space: nowrap;", self.css)
+        self.assertIn("height: 84px;", self.css)
+        self.assertIn("height: 70px;", self.css)
+
+    def test_touched_controls_are_flat(self) -> None:
+        for selector in ("#chatPanel", "#newsletter input", "#forum .forum-feature"):
+            self.assertIn(selector, self.css)
+        self.assertIn("border-radius: 0 !important;", self.css)
+        self.assertIn("box-shadow: none !important;", self.css)
 
 
 if __name__ == "__main__":
