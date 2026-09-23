@@ -115,7 +115,8 @@ class RealTreeTest(unittest.TestCase):
             "docs/wiki/whitepaper.html",
             "docs/wiki/zk-voting.html",
         }
-        _GATED_PAGES = {"docs/index.html", "docs/community.html"} | _WIKI_PAGES
+        # T-346: representative.html download section repaired (broken APK + dead web route).
+        _GATED_PAGES = {"docs/index.html", "docs/community.html", "docs/representative.html"} | _WIKI_PAGES
 
         current = json.loads(first_inv)
         checked = json.loads(checked_inv)

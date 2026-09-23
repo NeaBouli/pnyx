@@ -92,6 +92,8 @@ GATED_PUBLIC_PAGES = {
     "docs/wiki/security.html",
     "docs/wiki/whitepaper.html",
     "docs/wiki/zk-voting.html",
+    # T-346: representative download section repaired (broken APK link + nonexistent web route removed).
+    "docs/representative.html",
 }
 
 REMOVABLE_HEADER_PAIRS = {
@@ -127,6 +129,10 @@ ALLOWED_R5_INLINE_SCRIPTS = {
 ALLOWED_R5_BILINGUAL_REMOVALS = {
     ("📲 APK", "📲 APK"),
 }
+
+# T-346: nav logo changed from pnx.png to the supplied owl handoff asset.
+# Exactly one baseline pnx.png occurrence is replaced; the others remain.
+ALLOWED_NAV_MEDIA_REPLACEMENT = {"old": "pnx.png", "new": "assets/redesign-v2/ekklesia-mark.png", "count": 1}
 
 # The fold/panel JS is a presentation-only deferred script added in R5.
 ALLOWED_R5_EXTERNAL_SCRIPT = {
@@ -294,9 +300,13 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
 
     # Existing media sources are content contracts. New decorative reuse is
     # allowed and alt text may improve, but no previous source may disappear.
+    # T-346: one nav pnx.png replaced by the supplied owl asset.
     baseline_media = Counter(
         item.get("src") for item in baseline["media"]["elements"] if item.get("src")
     )
+    baseline_media[ALLOWED_NAV_MEDIA_REPLACEMENT["old"]] -= ALLOWED_NAV_MEDIA_REPLACEMENT["count"]
+    if not baseline_media[ALLOWED_NAV_MEDIA_REPLACEMENT["old"]]:
+        del baseline_media[ALLOWED_NAV_MEDIA_REPLACEMENT["old"]]
     current_media = Counter(
         item.get("src") for item in current["media"]["elements"] if item.get("src")
     )
@@ -425,7 +435,8 @@ def check_structural(html: str) -> list[str]:
         if parser.ids[id_name] != 1:
             violations.append(f"structural: expected one live #{id_name}")
 
-    expected_header_hrefs = ["#main", "#main", "#votes", "#roadmap", "wiki/", "community.html", "#download"]
+    # T-346: Documentation targets the wiki-section fold, separate Wiki link targets wiki/.
+    expected_header_hrefs = ["#main", "#main", "#votes", "#roadmap", "#wiki-section", "wiki/", "community.html", "#download"]
     if parser.header_hrefs != expected_header_hrefs:
         violations.append(
             f"structural: consolidated header targets differ "

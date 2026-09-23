@@ -41,7 +41,7 @@ MINIMAL_HTML = """<!DOCTYPE html>
 </head>
 <body>
 <a href="#main" class="pnx2-skip">Skip</a>
-<nav class="pnx2-header"><div class="pnx2-header-frame"><a href="#main">Brand</a><a href="#main">Platform</a><a href="#votes">Votes</a><a href="#roadmap">Roadmap</a><a href="wiki/">Docs</a><a href="community.html">Community</a><a href="#download">Download</a></div></nav>
+<nav class="pnx2-header"><div class="pnx2-header-frame"><a href="#main">Brand</a><a href="#main">Platform</a><a href="#votes">Votes</a><a href="#roadmap">Roadmap</a><a href="#wiki-section">Docs</a><a href="wiki/">Wiki</a><a href="community.html">Community</a><a href="#download">Download</a></div></nav>
 <main id="main"><section class="landing-hero"><div class="pnx2-live-panel"><b id="heroParliamentDecision"></b><b id="heroLiveStatus"></b><b id="heroCitizenDecision"></b><b id="heroCitizenMeta"></b><b id="heroTier1"></b><b id="heroTier2"></b><b id="heroTier3"></b></div></section><section class="pnx2-democracy-data"></section><section class="pnx2-history-band"><h2 id="historyTitle">History</h2></section><section id="votes"></section><section id="roadmap"></section><section id="download"></section></main>
 <footer class="pnx2-footer"><p>&copy; 2026</p></footer>
 </body>
