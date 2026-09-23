@@ -1160,3 +1160,23 @@ Details: [EKA-17 release receipt](docs/operations/EKA17_HLR_ENV_ROLLOUT_2026-09-
   the Web image and no verified public representative release target was
   identified. Its publication needs a separately scoped artifact-delivery
   decision and validation; no binary or volume was changed here.
+
+## 2026-09-24 - R6d Landing iOS Forum Link Corrected (Append-only)
+
+- Claude Code corrected the landing's Discourse Hub iOS App Store link in
+  PR #347, merged normally at `4a9fdb04a381c505811660b1ea4fef33c190bf8a`.
+  The obsolete Apple app ID returned 404; the official listing now returns
+  200. The visible button text, layout and other page content were unchanged.
+- Two focused link regressions and 71 redesign tests passed. PR and post-merge
+  CI/Security checks, exact-commit Web build and 21-route canary passed.
+- Web-only image `ekklesia-web:r6d-ioslink-4a9fdb0-20260923T235208Z` is
+  live; the preceding R6c image is retained as
+  `ekklesia-web:rollback-pre-r6d-ioslink-20260923T235208Z`.
+- Live HTML hash matches the merged source. The Apple link and all five
+  Ekklesia APK redirect chains returned 200; another 21 Web routes and API
+  health returned 200. Browser checks at 360/768/1280 px found 52/60/80 px
+  owl widths, ten closed sections, no overflow or page errors. Web had zero
+  restarts/OOM and no matching error logs.
+- Other Ekklesia containers retained their identities; protected environment
+  and base Compose files stayed unchanged. The separate representative APK
+  alias noted above remains unresolved and was not published or remounted.
