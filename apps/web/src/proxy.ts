@@ -14,10 +14,14 @@ export default function proxy(request: NextRequest) {
   const p = request.nextUrl.pathname;
 
   // Old Direct-channel Android clients and Samsung Internet may still open the
-  // historical download page route. Keep it functional by sending it straight
-  // to the canonical APK file instead of the locale page, which does not exist.
+  // historical download page route. Redirect to the canonical GitHub release
+  // asset. The legacy /download/ekklesia-latest.apk path is handled by
+  // next.config.mjs redirects (middleware matcher excludes dotted paths).
   if (p === "/download" || p === "/download/" || p === "/el/download" || p === "/en/download") {
-    return NextResponse.redirect(new URL("/download/ekklesia-latest.apk", request.url), 302);
+    return NextResponse.redirect(
+      "https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk",
+      302,
+    );
   }
 
   // Serve docs/index.html (static landing page) at /
