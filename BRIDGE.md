@@ -1135,3 +1135,28 @@ Details: [EKA-17 release receipt](docs/operations/EKA17_HLR_ENV_ROLLOUT_2026-09-
   `/download/ekklesia-latest.apk`, which returns 404. The visible landing APK
   link points directly to the existing GitHub release asset; repair of the
   legacy `/download` route needs a separate scoped patch and validation.
+
+## 2026-09-24 - R6c Legacy Ekklesia Download Route Restored (Append-only)
+
+- The R6 download blocker above is resolved by Claude Code's focused PR #345,
+  merged normally at `9aff888469ffeb78f29642914e553da2afd6d0e5` after
+  all PR and post-merge CI/Security checks passed. Seven new redirect tests
+  passed; Web lint, typecheck and production build passed.
+- Exact-commit Web image `ekklesia-web:r6c-download-9aff888-20260923T233140Z`
+  is live; the preceding R6b Web image is retained as
+  `ekklesia-web:rollback-pre-r6c-download-20260923T233140Z`. Only Web was
+  recreated. No other Ekklesia container identity or protected environment/
+  base Compose file changed.
+- Public verification: `/download`, `/el/download`, `/en/download` and the
+  historical `.apk` alias redirect to the existing v1.0.32 GitHub release;
+  `/download/` first normalizes to `/download`. All five chains end in HTTP
+  200. The GitHub asset SHA-256 matches `docs/download/APK_MANIFEST.md`.
+  Another 21 Web routes returned 200; the landing still has 10 closed
+  sections, no viewport overflow or page errors, and owl widths 52/60/80 px
+  at 360/768/1280 px. API health returned 200; Web restarts/OOM and matching
+  error logs remained zero.
+- Separate open issue: `/download/ekprosopos-latest.apk` still returns 404.
+  A server-local artifact matches the documented SHA-256, but it is not in
+  the Web image and no verified public representative release target was
+  identified. Its publication needs a separately scoped artifact-delivery
+  decision and validation; no binary or volume was changed here.
