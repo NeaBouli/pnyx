@@ -1104,3 +1104,34 @@ Details: [EKA-17 release receipt](docs/operations/EKA17_HLR_ENV_ROLLOUT_2026-09-
 - Evidence: `docs/operations/R5_LANDING_ROLLOUT_2026-09-21.md` and protected
   release directory
   `/opt/ekklesia/releases/r5-landing-9d9e0c2-20260921T073213Z`.
+
+## 2026-09-24 - R6 Landing and Mobile Owl Live (Append-only)
+
+- PR #342 (`086c8a6e364991ee277578ea29cc3cbe21b31409`) and the focused
+  mobile-specificity fix PR #343 (`e764b2881df51da698bd335305e7883eed3fbf32`)
+  were merged normally after required PR checks. Post-merge CI and Security
+  Audit passed for the final commit.
+- The landing now has a visible Wiki link, larger responsive owl, a data-driven
+  mood indicator, a bilingual six-step app-to-vote/Forum login guide and ten
+  native disclosure sections that start closed. The representative section and
+  download availability copy were corrected without changing payment controls.
+- Exact-commit Web image `ekklesia-web:r6b-owl-e764b28-20260923T230209Z` is
+  live. The preceding Web image remains tagged
+  `ekklesia-web:rollback-pre-r6b-owl-20260923T230209Z`. An initial readiness
+  check used the wrong container loopback address and triggered an automatic
+  Web rollback; the check was corrected to use the container hostname, then
+  the same candidate passed and was deployed.
+- Verification: 163 focused redesign tests locally; full PR and post-merge
+  CI/Security suites green; candidate build and 21-route canary green; all 21
+  live routes HTTP 200; delivered CSS hash matches the source. Playwright at
+  360/768/1280 px found owl widths 52/60/80 px, ten closed sections, no
+  document overflow or page errors. API health returned 200; Web had zero
+  restarts, no OOM and no matching error logs.
+- The other Ekklesia containers retained their identities. Protected
+  environment and base Compose files remained unchanged. No API, Wiki source,
+  database, DNS, IAM, secret, mobile, store, payment or provider change was
+  performed by this rollout.
+- Residual, pre-existing route defect: `/download` redirects to
+  `/download/ekklesia-latest.apk`, which returns 404. The visible landing APK
+  link points directly to the existing GitHub release asset; repair of the
+  legacy `/download` route needs a separate scoped patch and validation.
