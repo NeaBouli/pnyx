@@ -1073,6 +1073,13 @@ main#main {
   }
 }
 
+@media (max-width: 640px) {
+  .pnx2-header .nav-logo img {
+    width: 52px !important;
+    height: 57px !important;
+  }
+}
+
 @media (max-width: 560px) {
   .pnx2-header-frame {
     padding-left: 16px;
@@ -1185,6 +1192,12 @@ main#main {
   .step:last-child { border-bottom: 0 !important; }
 }
 
+/* Scroll-margin: clear the 84px sticky header on hash/in-page navigation. */
+#how, #demo, #features, #wiki-section, #forum, #roadmap, #notice, #contact,
+#representative, #transparency {
+  scroll-margin-top: 92px;
+}
+
 /* Accessible, initially closed information bands. */
 .pnx2-fold { display: block; width: 100%; }
 .pnx2-fold-summary {
@@ -1231,6 +1244,7 @@ main#main {
   background: #fff !important;
 }
 #representative > .pnx2-representative-fold > .pnx2-fold-summary { width: 100%; }
+#representative .pnx2-fold-summary h3 { font-size: 28px !important; word-wrap: break-word; overflow-wrap: anywhere; }
 #representative .pnx2-representative-body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
