@@ -112,14 +112,26 @@ REMOVABLE_HEADER_PAIRS = {
 ALLOWED_R5_INLINE_SCRIPTS = {
     0: {
         "index": 0,
-        "sha256": "843121274e8ed147eb9f4e6d5bfd3e8bbc65f4c9e88e4b37f6863f5d0320518d",
-        "bytes": 4938,
+        "sha256": "3ca932a76e8ceb930b06ba69a04526b8f721c73c175f4c47411e5576bef7923b",
+        "bytes": 6523,
     },
     5: {
         "index": 5,
         "sha256": "0ac3cf840e5789daf5632b779d72127f0c3b026c30d50480b8fa06f253f9ccd7",
         "bytes": 20963,
     },
+}
+
+# The representative APK link was broken (dead download path) and replaced with
+# a truthful availability link, removing the old identical-pair label.
+ALLOWED_R5_BILINGUAL_REMOVALS = {
+    ("📲 APK", "📲 APK"),
+}
+
+# The fold/panel JS is a presentation-only deferred script added in R5.
+ALLOWED_R5_EXTERNAL_SCRIPT = {
+    "src": "assets/redesign-v2/landing-folds.js",
+    "attrs": {"src": "assets/redesign-v2/landing-folds.js", "defer": ""},
 }
 
 ALLOWED_R2_BILINGUAL_PAIR = {
@@ -240,7 +252,7 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
         (item.get("data_el", ""), item.get("data_en", ""))
         for item in baseline["bilingual"]["pairs"]
     )
-    for pair in REMOVABLE_HEADER_PAIRS:
+    for pair in REMOVABLE_HEADER_PAIRS | ALLOWED_R5_BILINGUAL_REMOVALS:
         if baseline_pairs[pair]:
             baseline_pairs[pair] -= 1
             if not baseline_pairs[pair]:
@@ -268,7 +280,10 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
 
     # Runtime scripts may populate the new live presentation IDs, but only the
     # two reviewed R5 fingerprints may differ from the R0 baseline.
-    if current["scripts"]["external"] != baseline["scripts"]["external"]:
+    # The R5 fold/panel JS is an allowed presentation-only addition.
+    expected_external = list(baseline["scripts"]["external"])
+    expected_external.insert(1, ALLOWED_R5_EXTERNAL_SCRIPT)
+    if current["scripts"]["external"] != expected_external:
         violations.append("preservation: external scripts changed")
     expected_inline = [
         ALLOWED_R5_INLINE_SCRIPTS.get(item["index"], item)

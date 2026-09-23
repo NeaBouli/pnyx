@@ -476,6 +476,7 @@
   <link rel="stylesheet" href="assets/redesign-v2/foundation.css"/>
   <link rel="stylesheet" href="assets/redesign-v2/r2-landing.css"/>
   <link rel="stylesheet" href="assets/redesign-v2/r5-landing-fidelity.css"/>
+  <script src="assets/redesign-v2/landing-folds.js" defer></script>
 </head>
 <body>
 <a href="#main" class="pnx2-skip" data-el="Μετάβαση στο κύριο περιεχόμενο" data-en="Skip to main content">Μετάβαση στο κύριο περιεχόμενο</a>
@@ -619,6 +620,17 @@
            alt="Ροή ψήφου: HLR έλεγχος χωρίς SMS, nullifier hash, Ed25519 κλειδί στη συσκευή, υπογεγραμμένη ψήφος και δημόσιο αποτέλεσμα"
            loading="lazy" decoding="async">
     </figure>
+    <div class="pnx2-guide">
+      <h3 data-el="Από την εγκατάσταση έως την ψήφο" data-en="From installation to voting">Από την εγκατάσταση έως την ψήφο</h3>
+      <ol>
+        <li><strong data-el="Εγκαταστήστε την εφαρμογή Android." data-en="Install the Android app.">Εγκαταστήστε την εφαρμογή Android.</strong> <span data-el="Επιλέξτε ένα από τα διαθέσιμα κανάλια λήψης παρακάτω. Οι εκδόσεις Direct, Google Play και F-Droid μπορεί να έχουν διαφορετικές υπογραφές και να μη δέχονται εγκατάσταση η μία πάνω στην άλλη. Η εφαρμογή iOS δεν είναι ακόμη διαθέσιμη." data-en="Choose one of the available download channels below. Direct, Google Play and F-Droid builds may use different signatures and may not install over one another. The iOS app is not available yet.">Επιλέξτε ένα από τα διαθέσιμα κανάλια λήψης παρακάτω. Οι εκδόσεις Direct, Google Play και F-Droid μπορεί να έχουν διαφορετικές υπογραφές και να μη δέχονται εγκατάσταση η μία πάνω στην άλλη. Η εφαρμογή iOS δεν είναι ακόμη διαθέσιμη.</span> <a href="#download" data-el="Λήψεις →" data-en="Downloads →">Λήψεις →</a></li>
+        <li><strong data-el="Ρυθμίστε την εφαρμογή." data-en="Set up the app.">Ρυθμίστε την εφαρμογή.</strong> <span data-el="Επιλέξτε γλώσσα και, όπου προσφέρεται, την εκλογική σας περιφέρεια. Οι τοπικές ψηφοφορίες εξαρτώνται από την αντίστοιχη επιλογή." data-en="Choose a language and, where offered, your electoral district. Local votes depend on the corresponding selection.">Επιλέξτε γλώσσα και, όπου προσφέρεται, την εκλογική σας περιφέρεια. Οι τοπικές ψηφοφορίες εξαρτώνται από την αντίστοιχη επιλογή.</span></li>
+        <li><strong data-el="Ολοκληρώστε τον έλεγχο αριθμού." data-en="Complete the number check.">Ολοκληρώστε τον έλεγχο αριθμού.</strong> <span data-el="Η Beta ελέγχει την κατάσταση ελληνικού κινητού αριθμού (+30) μέσω HLR, χωρίς SMS. Αυτό δεν αποδεικνύει κατοχή SIM, ταυτότητα ή εκλογικό δικαίωμα. Το ιδιωτικό κλειδί Ed25519 δημιουργείται στη συσκευή σας." data-en="The Beta checks the status of a Greek mobile number (+30) via HLR, without SMS. This does not prove SIM possession, identity or voting eligibility. Your Ed25519 private key is generated on your device.">Η Beta ελέγχει την κατάσταση ελληνικού κινητού αριθμού (+30) μέσω HLR, χωρίς SMS. Αυτό δεν αποδεικνύει κατοχή SIM, ταυτότητα ή εκλογικό δικαίωμα. Το ιδιωτικό κλειδί Ed25519 δημιουργείται στη συσκευή σας.</span></li>
+        <li><strong data-el="Ψηφίστε στην εφαρμογή." data-en="Vote in the app.">Ψηφίστε στην εφαρμογή.</strong> <span data-el="Ανοίξτε μια διαθέσιμη ψηφοφορία, διαβάστε το νομοσχέδιο και επιλέξτε Υπέρ, Κατά ή Αποχή. Η ψήφος υπογράφεται στη συσκευή. Οι ψηφοφορίες εδώ είναι ενημερωτικές και όχι νομικά δεσμευτικές." data-en="Open an available vote, read the bill and choose Yes, No or Abstain. The vote is signed on your device. Votes here are informational and not legally binding.">Ανοίξτε μια διαθέσιμη ψηφοφορία, διαβάστε το νομοσχέδιο και επιλέξτε Υπέρ, Κατά ή Αποχή. Η ψήφος υπογράφεται στη συσκευή. Οι ψηφοφορίες εδώ είναι ενημερωτικές και όχι νομικά δεσμευτικές.</span></li>
+        <li><strong data-el="Συνδεθείτε στο Forum μέσω browser." data-en="Sign in to the forum in a browser.">Συνδεθείτε στο Forum μέσω browser.</strong> <span data-el="Ανοίξτε την Πνύκα και επιλέξτε «Σύνδεση». Στον υπολογιστή σαρώστε τον κωδικό QR με την επαληθευμένη εφαρμογή ekklesia. Στο ίδιο κινητό πατήστε «Άνοιγμα στην εφαρμογή ekklesia», όταν εμφανίζεται· δεν χρειάζεται να σαρώσετε την οθόνη σας." data-en="Open Pnyx and select Sign in. On a computer, scan the displayed QR code with your verified ekklesia app. On the same smartphone, use Open in the ekklesia app when offered; you do not need to scan your own screen.">Ανοίξτε την Πνύκα και επιλέξτε «Σύνδεση». Στον υπολογιστή σαρώστε τον κωδικό QR με την επαληθευμένη εφαρμογή ekklesia. Στο ίδιο κινητό πατήστε «Άνοιγμα στην εφαρμογή ekklesia», όταν εμφανίζεται· δεν χρειάζεται να σαρώσετε την οθόνη σας.</span> <a href="https://pnyx.ekklesia.gr/" data-el="Πνύκα →" data-en="Pnyx →">Πνύκα →</a></li>
+        <li><strong data-el="Δείτε τα αποτελέσματα." data-en="View results.">Δείτε τα αποτελέσματα.</strong> <span data-el="Οι δημόσιες συγκρίσεις Βουλής και πολιτών εμφανίζονται μόνο όταν υπάρχουν πραγματικά, επαρκή δεδομένα. Μπορείτε να δείτε τρέχουσες ψηφοφορίες και δημοσιευμένα αποτελέσματα στον ιστότοπο." data-en="Public comparisons of Parliament and citizen votes appear only when sufficient real data exists. You can view active votes and published results on the website.">Οι δημόσιες συγκρίσεις Βουλής και πολιτών εμφανίζονται μόνο όταν υπάρχουν πραγματικά, επαρκή δεδομένα. Μπορείτε να δείτε τρέχουσες ψηφοφορίες και δημοσιευμένα αποτελέσματα στον ιστότοπο.</span> <a href="/el/results" data-el="Αποτελέσματα →" data-en="Results →">Αποτελέσματα →</a></li>
+      </ol>
+    </div>
   </div>
 </section>
 
@@ -752,6 +764,20 @@
         <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Ψήφοι Πολιτών" data-en="Citizen Votes">Ψήφοι Πολιτών</div>
       </div>
     </div>
+    <div class="pnx2-mood" aria-live="polite">
+      <svg viewBox="0 0 120 120" width="104" height="104" role="img" aria-labelledby="moodTitle">
+        <desc id="moodTitle" data-el="Δείκτης Διάθεσης" data-en="Mood indicator">Δείκτης Διάθεσης</desc>
+        <circle cx="60" cy="60" r="55" fill="none" stroke="currentColor" stroke-width="4"/>
+        <circle cx="42" cy="47" r="6" fill="currentColor"/>
+        <circle cx="78" cy="47" r="6" fill="currentColor"/>
+        <path id="moodMouth" d="M36 80 L84 80" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <strong data-el="ΔΕΙΚΤΗΣ ΔΙΑΘΕΣΗΣ" data-en="MOOD INDICATOR">ΔΕΙΚΤΗΣ ΔΙΑΘΕΣΗΣ</strong>
+        <p id="moodStatus" data-el="Αναμονή πραγματικών δεδομένων. Ο δείκτης ενεργοποιείται με την πρώτη ολοκληρωμένη ψηφοφορία." data-en="Waiting for real data. The indicator activates after the first completed vote.">Αναμονή πραγματικών δεδομένων. Ο δείκτης ενεργοποιείται με την πρώτη ολοκληρωμένη ψηφοφορία.</p>
+        <small data-el="≥50% χαμόγελο · 45–50% ουδέτερο · &lt;45% λυπημένο" data-en="≥50% happy · 45–50% neutral · &lt;45% sad">≥50% χαμόγελο · 45–50% ουδέτερο · &lt;45% λυπημένο</small>
+      </div>
+    </div>
     <!-- Last bill -->
     <div id="repLastBill" style="display:none;margin-top:0.75rem;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;font-size:0.72rem">
       <div style="font-weight:700;color:var(--gray-500);margin-bottom:0.2rem" data-el="Τελευταία Ψηφοφορία:" data-en="Latest Vote:">Τελευταία Ψηφοφορία:</div>
@@ -803,6 +829,34 @@
     return "#3b82f6";
   }
 
+  function setMood(score) {
+    var mouth = document.getElementById("moodMouth");
+    var status = document.getElementById("moodStatus");
+    if (!mouth || !status) return;
+    var el = "Αναμονή πραγματικών δεδομένων. Ο δείκτης ενεργοποιείται με την πρώτη ολοκληρωμένη ψηφοφορία.";
+    var en = "Waiting for real data. The indicator activates after the first completed vote.";
+    var path = "M36 80 L84 80";
+    if (Number.isFinite(score)) {
+      if (score >= 50) {
+        path = "M36 74 Q60 96 84 74";
+        el = "Η Βουλή αντιπροσωπεύει τη γνώμη των πολιτών στο " + score + "%.";
+        en = "Parliament represents citizen opinion at " + score + "%.";
+      } else if (score < 45) {
+        path = "M36 88 Q60 66 84 88";
+        el = "Αντιπροσωπευτικότητα " + score + "%: απόκλιση από τη γνώμη των πολιτών.";
+        en = "Representativeness " + score + "%: divergence from citizen opinion.";
+      } else {
+        el = "Οριακή αντιπροσωπευτικότητα: " + score + "%.";
+        en = "Marginal representativeness: " + score + "%.";
+      }
+    }
+    mouth.setAttribute("d", path);
+    status.setAttribute("data-el", el);
+    status.setAttribute("data-en", en);
+    var lang = typeof currentLang !== "undefined" ? currentLang : "el";
+    status.textContent = lang === "en" ? en : el;
+  }
+
   function fetchRepresentation() {
     fetch("https://api.ekklesia.gr/api/v1/analytics/representation")
       .then(function(r){return r.json()})
@@ -831,7 +885,8 @@
 
         // These fields compare Parliament with citizens. Fail closed until
         // the API has at least one analyzed bill and a cumulative score.
-        if (bills < 1 || score === null || score === undefined) {
+        if (bills < 1 || score === null || score === undefined || !Number.isFinite(Number(score))) {
+          setMood(null);
           if (scoreEl) scoreEl.textContent = "—";
           if (fill) fill.style.width = "0%";
           if (marker) marker.style.left = "0%";
@@ -874,6 +929,7 @@
 
         if (noData) noData.style.display = "none";
         var pct = Math.min(100, Math.max(0, score));
+        setMood(pct);
         var col = repColor(pct);
         if (fill) { fill.style.width = pct + "%"; fill.style.background = col; }
         if (marker) marker.style.left = pct + "%";
@@ -888,7 +944,7 @@
           if (lastStats) lastStats.textContent = d.last_bill.citizen_votes + " ψήφοι · Απόκλιση " + d.last_bill.divergence + "% · Αντιπρ. " + d.last_bill.representation + "%";
         }
       })
-      .catch(function(){});
+      .catch(function(){ setMood(null); });
   }
   fetchRepresentation();
   setInterval(fetchRepresentation, 60000);
@@ -1083,14 +1139,14 @@
     </div>
 
     <!-- εκπρόσωπος Full-Width Banner -->
-    <div class="fade-in" style="margin-top:2rem;background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:var(--radius);padding:2rem;display:flex;align-items:center;gap:2rem;flex-wrap:wrap;border:2px solid #f59e0b">
+    <div class="fade-in" id="representative" style="margin-top:2rem;background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:var(--radius);padding:2rem;display:flex;align-items:center;gap:2rem;flex-wrap:wrap;border:2px solid #f59e0b">
       <div style="font-size:3rem;flex-shrink:0">⚖️</div>
       <div style="flex:1;min-width:200px">
         <h3 style="color:#f59e0b;font-size:1.15rem;font-weight:900;margin-bottom:0.4rem" data-el="εκπρόσωπος — Για τους Λαϊκούς Αντιπροσώπους" data-en="εκπρόσωπος — For People's Representatives">εκπρόσωπος — Για τους Λαϊκούς Αντιπροσώπους</h3>
         <p style="color:rgba(255,255,255,0.8);font-size:0.88rem;margin:0;line-height:1.6" data-el="Εξειδικευμένη εφαρμογή για βουλευτές, δημάρχους και δημοτικούς συμβούλους. Live αποτελέσματα κατά τη διάρκεια του 24ωρου παραθύρου πριν την ψηφοφορία." data-en="Specialized app for MPs, mayors and municipal councillors. Live results during the 24-hour window before the vote.">Εξειδικευμένη εφαρμογή για βουλευτές, δημάρχους και δημοτικούς συμβούλους. Live αποτελέσματα κατά τη διάρκεια του 24ωρου παραθύρου πριν την ψηφοφορία.</p>
       </div>
       <div style="display:flex;gap:0.75rem;flex-shrink:0;flex-wrap:wrap">
-        <a href="download/ekprosopos-latest.apk" style="display:inline-block;padding:0.6rem 1.25rem;background:#f59e0b;color:#0f172a;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.85rem" data-el="📲 APK" data-en="📲 APK">📲 APK</a>
+        <a href="representative.html#download" style="display:inline-block;padding:0.6rem 1.25rem;background:#f59e0b;color:#0f172a;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.85rem" data-el="Διαθεσιμότητα APK" data-en="APK availability">Διαθεσιμότητα APK</a>
         <a href="representative.html" style="display:inline-block;padding:0.6rem 1.25rem;background:transparent;border:2px solid rgba(255,255,255,0.3);color:rgba(255,255,255,0.8);border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.85rem" data-el="Περισσότερα →" data-en="Learn more →">Περισσότερα →</a>
       </div>
       <!-- ekprosopos App Screenshots -->
@@ -1115,7 +1171,7 @@
           <h4 style="color:#f59e0b;font-size:0.9rem;font-weight:800;margin-bottom:0.3rem" data-el="Για Δήμους & Αντιπροσώπους" data-en="For Municipalities & Representatives">Για Δήμους & Αντιπροσώπους</h4>
           <p style="color:rgba(255,255,255,0.7);font-size:0.78rem;margin-bottom:0.75rem;line-height:1.5" data-el="Ενεργοποίηση δήμου, εφαρμογή εκπρόσωπος, δείκτης απόκλισης." data-en="Municipality activation, representative app, divergence index.">Ενεργοποίηση δήμου, εφαρμογή εκπρόσωπος, δείκτης απόκλισης.</p>
           <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
-            <a href="municipality/" style="padding:0.4rem 0.8rem;background:#f59e0b;color:#0f172a;border-radius:0.4rem;text-decoration:none;font-weight:700;font-size:0.75rem" data-el="Περισσότερα →" data-en="Learn more →">Περισσότερα →</a>
+            <a href="municipality/index.html" style="padding:0.4rem 0.8rem;background:#f59e0b;color:#0f172a;border-radius:0.4rem;text-decoration:none;font-weight:700;font-size:0.75rem" data-el="Περισσότερα →" data-en="Learn more →">Περισσότερα →</a>
             <a href="govgr-dimos.html" style="padding:0.4rem 0.8rem;background:transparent;border:1px solid rgba(255,255,255,0.3);color:rgba(255,255,255,0.8);border-radius:0.4rem;text-decoration:none;font-weight:700;font-size:0.75rem" data-el="Σχεδιασμός Alpha 0.1" data-en="Alpha 0.1 design">Σχεδιασμός Alpha 0.1</a>
           </div>
         </div>
