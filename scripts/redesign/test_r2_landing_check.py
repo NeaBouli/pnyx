@@ -688,5 +688,55 @@ class PR342RegressionTest(unittest.TestCase):
         )
 
 
+# ---------------------------------------------------------------------------
+# T349OwlSpecificityTest — mobile owl logo specificity regression
+# ---------------------------------------------------------------------------
+
+class T349OwlSpecificityTest(unittest.TestCase):
+    """Regression: R5 mobile owl selector must beat R2's specificity."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        css_dir = r2_landing_check.DOCS_DIR / "assets/redesign-v2"
+        cls.r2_css = (css_dir / "r2-landing.css").read_text(encoding="utf-8")
+        cls.r5_css = (css_dir / "r5-landing-fidelity.css").read_text(encoding="utf-8")
+
+    def test_r5_mobile_owl_uses_nav_element_qualifier(self) -> None:
+        """R5 ≤640px owl rule must include 'nav.pnx2-header' to match or
+        exceed R2's specificity so the 52px size wins."""
+        # Extract the ≤640px media block(s) from R5
+        blocks = re.findall(
+            r"@media\s*\(\s*max-width:\s*640px\s*\)\s*\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}",
+            self.r5_css,
+        )
+        self.assertTrue(blocks, "No @media (max-width: 640px) block found in R5 CSS")
+        combined = "\n".join(blocks)
+        self.assertIn(
+            "nav.pnx2-header .nav-logo img",
+            combined,
+            "R5 mobile owl rule must use 'nav.pnx2-header' element qualifier "
+            "to beat R2's specificity (T-349)",
+        )
+
+    def test_r5_mobile_owl_targets_52px(self) -> None:
+        """The mobile owl must render at 52×57px, not R2's 32×32px."""
+        blocks = re.findall(
+            r"@media\s*\(\s*max-width:\s*640px\s*\)\s*\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}",
+            self.r5_css,
+        )
+        combined = "\n".join(blocks)
+        self.assertIn("width: 52px", combined)
+        self.assertIn("height: 57px", combined)
+
+    def test_r2_mobile_owl_rule_unchanged(self) -> None:
+        """R2 must not be edited — its 32px rule should still be present."""
+        blocks = re.findall(
+            r"@media\s*\(\s*max-width:\s*640px\s*\)\s*\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}",
+            self.r2_css,
+        )
+        combined = "\n".join(blocks)
+        self.assertIn("width: 32px", combined)
+
+
 if __name__ == "__main__":
     unittest.main()
