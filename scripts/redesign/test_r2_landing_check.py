@@ -738,5 +738,33 @@ class T349OwlSpecificityTest(unittest.TestCase):
         self.assertIn("width: 32px", combined)
 
 
+class T351IOSAppStoreLinkTest(unittest.TestCase):
+    """Regression: iOS App Store link must point to the real Discourse Hub listing."""
+
+    CORRECT_ID = "id1173672076"
+    BROKEN_ID = "id1442328667"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.html = (r2_landing_check.DOCS_DIR / "index.html").read_text(encoding="utf-8")
+
+    def test_ios_link_uses_correct_app_id(self) -> None:
+        """The iOS App button must link to Discourse Hub id1173672076 (T-351)."""
+        self.assertIn(
+            f"apps.apple.com/app/discourse-hub/{self.CORRECT_ID}",
+            self.html,
+            "iOS App Store link must use the correct Discourse Hub ID "
+            f"({self.CORRECT_ID}), not the broken {self.BROKEN_ID}",
+        )
+
+    def test_broken_ios_id_absent(self) -> None:
+        """The old broken app ID must not appear anywhere in the landing."""
+        self.assertNotIn(
+            self.BROKEN_ID,
+            self.html,
+            f"Broken iOS app ID {self.BROKEN_ID} must not appear in docs/index.html",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
