@@ -1074,7 +1074,7 @@ main#main {
 }
 
 @media (max-width: 640px) {
-  .pnx2-header .nav-logo img {
+  nav.pnx2-header .nav-logo img {
     width: 52px !important;
     height: 57px !important;
   }
