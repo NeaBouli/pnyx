@@ -180,7 +180,8 @@ def check_nonwiki_parity(inv: dict, repo_root: Path) -> list[str]:
     historical R3 gate continues to validate the landing and all 14 wiki pages.
     """
     violations: list[str] = []
-    allowed = frozenset({"docs/index.html", "docs/community.html"} | set(WIKI_RELS))
+    # T-346: representative.html download section repaired (broken APK + dead web route).
+    allowed = frozenset({"docs/index.html", "docs/community.html", "docs/representative.html"} | set(WIKI_RELS))
     for page in inv["pages"]:
         if page["path"] in allowed:
             continue

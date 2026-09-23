@@ -41,7 +41,7 @@ MINIMAL_HTML = """<!DOCTYPE html>
 </head>
 <body>
 <a href="#main" class="pnx2-skip">Skip</a>
-<nav class="pnx2-header"><div class="pnx2-header-frame"><a href="#main">Brand</a><a href="#main">Platform</a><a href="#votes">Votes</a><a href="#roadmap">Roadmap</a><a href="wiki/">Docs</a><a href="community.html">Community</a><a href="#download">Download</a></div></nav>
+<nav class="pnx2-header"><div class="pnx2-header-frame"><a href="#main">Brand</a><a href="#main">Platform</a><a href="#votes">Votes</a><a href="#roadmap">Roadmap</a><a href="#wiki-section">Docs</a><a href="wiki/">Wiki</a><a href="community.html">Community</a><a href="#download">Download</a></div></nav>
 <main id="main"><section class="landing-hero"><div class="pnx2-live-panel"><b id="heroParliamentDecision"></b><b id="heroLiveStatus"></b><b id="heroCitizenDecision"></b><b id="heroCitizenMeta"></b><b id="heroTier1"></b><b id="heroTier2"></b><b id="heroTier3"></b></div></section><section class="pnx2-democracy-data"></section><section class="pnx2-history-band"><h2 id="historyTitle">History</h2></section><section id="votes"></section><section id="roadmap"></section><section id="download"></section></main>
 <footer class="pnx2-footer"><p>&copy; 2026</p></footer>
 </body>
@@ -592,6 +592,100 @@ class FailClosedResultsTest(unittest.TestCase):
             declarations = "\n".join(bodies)
             self.assertIn("border-radius: 0 !important;", declarations)
             self.assertIn("box-shadow: none !important;", declarations)
+
+
+# ---------------------------------------------------------------------------
+# PR342RegressionTest — T-348 review findings
+# ---------------------------------------------------------------------------
+
+class PR342RegressionTest(unittest.TestCase):
+    """Regression tests for the three PR #342 review findings."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.index_html = (r2_landing_check.DOCS_DIR / "index.html").read_text(encoding="utf-8")
+        cls.folds_js = (r2_landing_check.DOCS_DIR / "assets/redesign-v2/landing-folds.js").read_text(encoding="utf-8")
+        cls.rep_html = (r2_landing_check.DOCS_DIR / "representative.html").read_text(encoding="utf-8")
+
+    # -- Finding 1: #main must not open a fold --
+
+    def test_fold_opener_does_not_use_unscoped_queryselector(self) -> None:
+        """openHashTarget must not blindly querySelector('.pnx2-fold') —
+        the found fold must belong to the target, not a descendant section."""
+        self.assertIn(
+            'fold.closest("[id]") === target',
+            self.folds_js,
+            "landing-folds.js must scope querySelector result to target's own fold",
+        )
+
+    def test_fold_opener_checks_closest_before_queryselector(self) -> None:
+        """The fold opener should try closest('details') first, then
+        fall back to querySelector only with the scoping guard."""
+        idx_closest = self.folds_js.index("target.closest(\"details\")")
+        idx_query = self.folds_js.index('target.querySelector(".pnx2-fold")')
+        self.assertLess(idx_closest, idx_query,
+                        "closest('details') must precede querySelector('.pnx2-fold')")
+
+    # -- Finding 2: aria-live must not re-announce unchanged text --
+
+    def test_mood_status_guards_textcontent_change(self) -> None:
+        """setMood() must only mutate textContent when the value changes,
+        to avoid repeated aria-live announcements."""
+        self.assertIn(
+            "if (status.textContent !== newText)",
+            self.index_html,
+            "setMood must guard textContent assignment against unchanged values",
+        )
+
+    # -- Finding 3: neutral mood copy must be truthful --
+
+    def test_neutral_mood_copy_el_says_comparable_data(self) -> None:
+        self.assertIn(
+            "αρκετά συγκρίσιμα δεδομένα",
+            self.index_html,
+            "Greek neutral mood copy must mention 'sufficient comparable data'",
+        )
+
+    def test_neutral_mood_copy_en_says_comparable_data(self) -> None:
+        self.assertIn(
+            "sufficient comparable data",
+            self.index_html,
+            "English neutral mood copy must mention 'sufficient comparable data'",
+        )
+
+    def test_neutral_mood_copy_no_first_completed_vote(self) -> None:
+        self.assertNotIn(
+            "first completed vote",
+            self.index_html,
+            "Neutral mood copy must not say 'first completed vote'",
+        )
+
+    def test_neutral_mood_copy_el_no_first_vote(self) -> None:
+        self.assertNotIn(
+            "πρώτη ολοκληρωμένη ψηφοφορία",
+            self.index_html,
+            "Greek neutral mood copy must not say 'first completed vote'",
+        )
+
+    # -- Finding 4: representative source link survives language toggle --
+
+    def test_representative_source_link_not_inside_data_el(self) -> None:
+        """The <a> to GitHub must not be inside an element whose data-el
+        attribute would cause toggleLang to replace its innerHTML."""
+        # The <p> that used to carry data-el must no longer carry it;
+        # instead a child <span> carries the translatable label.
+        self.assertRegex(
+            self.rep_html,
+            r'<span[^>]*data-el="Πηγαίος κώδικας:"[^>]*>.*?</span>\s*<a[^>]*github',
+            "Source label must be in a <span> so the <a> link survives toggleLang",
+        )
+
+    def test_representative_source_link_present(self) -> None:
+        self.assertIn(
+            'href="https://github.com/NeaBouli/pnyx"',
+            self.rep_html,
+            "GitHub source link must remain in representative.html",
+        )
 
 
 if __name__ == "__main__":

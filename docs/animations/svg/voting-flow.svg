@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" role="img" aria-labelledby="title desc">
   <title id="title">Verification and vote flow</title>
-  <desc id="desc">Animated flow from SMS verification to hashing, local key, signed vote, and divergence result.</desc>
+  <desc id="desc">Animated flow from HLR status check to hashing, local key, signed vote, and divergence result.</desc>
   <style>
     :root { --ekk-bg:#0b1020; --ekk-surface:#111827; --ekk-card:#172033; --ekk-text:#f8fafc; --ekk-muted:#94a3b8; --ekk-accent:#c9a227; --ekk-accent-2:#38bdf8; --ekk-good:#22c55e; --ekk-danger:#ef4444; }
     .panel{ fill:color-mix(in srgb,var(--ekk-surface) 92%,transparent); stroke:color-mix(in srgb,var(--ekk-muted) 26%,transparent); stroke-width:1.2; }
@@ -16,7 +16,7 @@
     .line{ fill:none; stroke:color-mix(in srgb,var(--ekk-accent) 70%,transparent); stroke-width:3; stroke-linecap:round; stroke-dasharray:12 12; animation: move 8s linear infinite; }
     .flowdot{ fill:var(--ekk-accent); filter:url(#glow); offset-path:path('M250 280 C320 280 342 280 400 280 S508 280 560 280 S676 280 730 280 S848 280 900 280'); animation: dot 7s ease-in-out infinite; }
     .codeblock{ fill:rgba(0,0,0,.22); stroke:color-mix(in srgb,var(--ekk-accent-2) 22%,transparent); }
-    .phone-msg{ animation: sms 5s ease-in-out infinite; transform-origin:center; }
+    .phone-msg{ animation: hlr 5s ease-in-out infinite; transform-origin:center; }
     .hash-text{ animation: hash 5s steps(1,end) infinite; }
     .key-lock{ animation: lock 4.4s ease-in-out infinite; transform-origin:690px 244px; }
     .signature{ stroke:var(--ekk-accent); stroke-width:3; stroke-linecap:round; fill:none; stroke-dasharray:130; stroke-dashoffset:130; animation: sign 5.6s ease-in-out infinite; }
@@ -24,7 +24,7 @@
     .bar-no{ animation: nobar 5.8s ease-in-out infinite; transform-origin:912px 423px; }
     @keyframes move{ to{ stroke-dashoffset:-96; } }
     @keyframes dot{ 0%,6%{ offset-distance:0%;opacity:0 } 12%{opacity:1} 86%{opacity:1} 96%,100%{ offset-distance:100%;opacity:0 } }
-    @keyframes sms{ 0%,20%,100%{ opacity:.28; transform:translateY(10px) } 30%,62%{ opacity:1; transform:translateY(0) } }
+    @keyframes hlr{ 0%,20%,100%{ opacity:.28; transform:translateY(10px) } 30%,62%{ opacity:1; transform:translateY(0) } }
     @keyframes hash{ 0%,34%{ opacity:0 } 40%,100%{ opacity:1 } }
     @keyframes lock{ 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.08) } }
     @keyframes sign{ 0%,38%{ stroke-dashoffset:130;opacity:.2 } 56%,86%{ stroke-dashoffset:0;opacity:1 } 100%{ stroke-dashoffset:0;opacity:.38 } }
@@ -38,20 +38,20 @@
   </defs>
   <rect class="panel" x="28" y="32" width="1144" height="496" rx="28"/>
   <text class="title" x="70" y="86">Πώς λειτουργεί η ψήφος</text>
-  <text class="small" x="70" y="112">SMS → hash/delete → local Ed25519 key → signed vote → public result</text>
+  <text class="small" x="70" y="112">HLR check → hash/delete → local Ed25519 key → signed vote → public result</text>
 
   <path class="line" d="M250 280 C320 280 342 280 400 280 S508 280 560 280 S676 280 730 280 S848 280 900 280" marker-end="url(#arrow)"/>
   <circle class="flowdot" cx="0" cy="0" r="8"/>
 
   <g transform="translate(70 170)">
     <rect class="card" width="180" height="220" rx="24"/>
-    <text class="label" x="24" y="42">1. SMS</text>
-    <text class="small" x="24" y="68">Επαλήθευση</text>
+    <text class="label" x="24" y="42">1. HLR</text>
+    <text class="small" x="24" y="68">Έλεγχος κατάστασης</text>
     <rect x="60" y="88" width="62" height="108" rx="12" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.18)"/>
     <circle cx="91" cy="180" r="4" fill="var(--ekk-muted)"/>
     <g class="phone-msg">
-      <rect x="28" y="108" width="124" height="46" rx="12" fill="color-mix(in srgb,var(--ekk-accent-2) 20%,transparent)" stroke="color-mix(in srgb,var(--ekk-accent-2) 48%,transparent)"/>
-      <text class="mono" x="48" y="137">042917</text>
+      <rect x="28" y="108" width="124" height="46" rx="12" fill="color-mix(in srgb,var(--ekk-good) 20%,transparent)" stroke="color-mix(in srgb,var(--ekk-good) 48%,transparent)"/>
+      <text class="mono" x="40" y="137">✓ ACTIVE</text>
     </g>
   </g>
 

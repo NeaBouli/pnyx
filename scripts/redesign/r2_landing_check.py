@@ -92,6 +92,8 @@ GATED_PUBLIC_PAGES = {
     "docs/wiki/security.html",
     "docs/wiki/whitepaper.html",
     "docs/wiki/zk-voting.html",
+    # T-346: representative download section repaired (broken APK link + nonexistent web route removed).
+    "docs/representative.html",
 }
 
 REMOVABLE_HEADER_PAIRS = {
@@ -112,14 +114,32 @@ REMOVABLE_HEADER_PAIRS = {
 ALLOWED_R5_INLINE_SCRIPTS = {
     0: {
         "index": 0,
-        "sha256": "843121274e8ed147eb9f4e6d5bfd3e8bbc65f4c9e88e4b37f6863f5d0320518d",
-        "bytes": 4938,
+        # T-348: setMood now guards textContent assignment to avoid repeated
+        # aria-live announcements and uses truthful neutral-mood copy.
+        "sha256": "034faa7e5bc03114b8da2954adf4083a5c6d90198350380a57e3fbbb0284c67c",
+        "bytes": 6612,
     },
     5: {
         "index": 5,
         "sha256": "0ac3cf840e5789daf5632b779d72127f0c3b026c30d50480b8fa06f253f9ccd7",
         "bytes": 20963,
     },
+}
+
+# The representative APK link was broken (dead download path) and replaced with
+# a truthful availability link, removing the old identical-pair label.
+ALLOWED_R5_BILINGUAL_REMOVALS = {
+    ("📲 APK", "📲 APK"),
+}
+
+# T-346: nav logo changed from pnx.png to the supplied owl handoff asset.
+# Exactly one baseline pnx.png occurrence is replaced; the others remain.
+ALLOWED_NAV_MEDIA_REPLACEMENT = {"old": "pnx.png", "new": "assets/redesign-v2/ekklesia-mark.png", "count": 1}
+
+# The fold/panel JS is a presentation-only deferred script added in R5.
+ALLOWED_R5_EXTERNAL_SCRIPT = {
+    "src": "assets/redesign-v2/landing-folds.js",
+    "attrs": {"src": "assets/redesign-v2/landing-folds.js", "defer": ""},
 }
 
 ALLOWED_R2_BILINGUAL_PAIR = {
@@ -240,7 +260,7 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
         (item.get("data_el", ""), item.get("data_en", ""))
         for item in baseline["bilingual"]["pairs"]
     )
-    for pair in REMOVABLE_HEADER_PAIRS:
+    for pair in REMOVABLE_HEADER_PAIRS | ALLOWED_R5_BILINGUAL_REMOVALS:
         if baseline_pairs[pair]:
             baseline_pairs[pair] -= 1
             if not baseline_pairs[pair]:
@@ -268,7 +288,10 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
 
     # Runtime scripts may populate the new live presentation IDs, but only the
     # two reviewed R5 fingerprints may differ from the R0 baseline.
-    if current["scripts"]["external"] != baseline["scripts"]["external"]:
+    # The R5 fold/panel JS is an allowed presentation-only addition.
+    expected_external = list(baseline["scripts"]["external"])
+    expected_external.insert(1, ALLOWED_R5_EXTERNAL_SCRIPT)
+    if current["scripts"]["external"] != expected_external:
         violations.append("preservation: external scripts changed")
     expected_inline = [
         ALLOWED_R5_INLINE_SCRIPTS.get(item["index"], item)
@@ -279,9 +302,13 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
 
     # Existing media sources are content contracts. New decorative reuse is
     # allowed and alt text may improve, but no previous source may disappear.
+    # T-346: one nav pnx.png replaced by the supplied owl asset.
     baseline_media = Counter(
         item.get("src") for item in baseline["media"]["elements"] if item.get("src")
     )
+    baseline_media[ALLOWED_NAV_MEDIA_REPLACEMENT["old"]] -= ALLOWED_NAV_MEDIA_REPLACEMENT["count"]
+    if not baseline_media[ALLOWED_NAV_MEDIA_REPLACEMENT["old"]]:
+        del baseline_media[ALLOWED_NAV_MEDIA_REPLACEMENT["old"]]
     current_media = Counter(
         item.get("src") for item in current["media"]["elements"] if item.get("src")
     )
@@ -410,7 +437,8 @@ def check_structural(html: str) -> list[str]:
         if parser.ids[id_name] != 1:
             violations.append(f"structural: expected one live #{id_name}")
 
-    expected_header_hrefs = ["#main", "#main", "#votes", "#roadmap", "wiki/", "community.html", "#download"]
+    # T-346: Documentation targets the wiki-section fold, separate Wiki link targets wiki/.
+    expected_header_hrefs = ["#main", "#main", "#votes", "#roadmap", "#wiki-section", "wiki/", "community.html", "#download"]
     if parser.header_hrefs != expected_header_hrefs:
         violations.append(
             f"structural: consolidated header targets differ "
