@@ -775,7 +775,7 @@
       </svg>
       <div>
         <strong data-el="ΔΕΙΚΤΗΣ ΔΙΑΘΕΣΗΣ" data-en="MOOD INDICATOR">ΔΕΙΚΤΗΣ ΔΙΑΘΕΣΗΣ</strong>
-        <p id="moodStatus" data-el="Αναμονή πραγματικών δεδομένων. Ο δείκτης ενεργοποιείται με την πρώτη ολοκληρωμένη ψηφοφορία." data-en="Waiting for real data. The indicator activates after the first completed vote.">Αναμονή πραγματικών δεδομένων. Ο δείκτης ενεργοποιείται με την πρώτη ολοκληρωμένη ψηφοφορία.</p>
+        <p id="moodStatus" data-el="Αναμονή πραγματικών δεδομένων. Ο δείκτης ενεργοποιείται μόλις υπάρξουν αρκετά συγκρίσιμα δεδομένα." data-en="Waiting for real data. The indicator activates once sufficient comparable data is available.">Αναμονή πραγματικών δεδομένων. Ο δείκτης ενεργοποιείται μόλις υπάρξουν αρκετά συγκρίσιμα δεδομένα.</p>
         <small data-el="≥50% χαμόγελο · 45–50% ουδέτερο · &lt;45% λυπημένο" data-en="≥50% happy · 45–50% neutral · &lt;45% sad">≥50% χαμόγελο · 45–50% ουδέτερο · &lt;45% λυπημένο</small>
       </div>
     </div>
@@ -834,8 +834,8 @@
     var mouth = document.getElementById("moodMouth");
     var status = document.getElementById("moodStatus");
     if (!mouth || !status) return;
-    var el = "Αναμονή πραγματικών δεδομένων. Ο δείκτης ενεργοποιείται με την πρώτη ολοκληρωμένη ψηφοφορία.";
-    var en = "Waiting for real data. The indicator activates after the first completed vote.";
+    var el = "Αναμονή πραγματικών δεδομένων. Ο δείκτης ενεργοποιείται μόλις υπάρξουν αρκετά συγκρίσιμα δεδομένα.";
+    var en = "Waiting for real data. The indicator activates once sufficient comparable data is available.";
     var path = "M36 80 L84 80";
     if (Number.isFinite(score)) {
       if (score >= 50) {
@@ -855,7 +855,8 @@
     status.setAttribute("data-el", el);
     status.setAttribute("data-en", en);
     var lang = typeof currentLang !== "undefined" ? currentLang : "el";
-    status.textContent = lang === "en" ? en : el;
+    var newText = lang === "en" ? en : el;
+    if (status.textContent !== newText) status.textContent = newText;
   }
 
   function fetchRepresentation() {

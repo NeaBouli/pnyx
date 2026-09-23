@@ -114,8 +114,10 @@ REMOVABLE_HEADER_PAIRS = {
 ALLOWED_R5_INLINE_SCRIPTS = {
     0: {
         "index": 0,
-        "sha256": "3ca932a76e8ceb930b06ba69a04526b8f721c73c175f4c47411e5576bef7923b",
-        "bytes": 6523,
+        # T-348: setMood now guards textContent assignment to avoid repeated
+        # aria-live announcements and uses truthful neutral-mood copy.
+        "sha256": "034faa7e5bc03114b8da2954adf4083a5c6d90198350380a57e3fbbb0284c67c",
+        "bytes": 6612,
     },
     5: {
         "index": 5,

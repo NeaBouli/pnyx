@@ -67,7 +67,11 @@
       if (!target) return;
       var details = id === "features"
         ? target.querySelector(".pnx2-features-fold")
-        : target.closest("details") || target.querySelector(".pnx2-fold");
+        : target.closest("details");
+      if (!details) {
+        var fold = target.querySelector(".pnx2-fold");
+        if (fold && fold.closest("[id]") === target) details = fold;
+      }
       if (details) {
         details.open = true;
         target.scrollIntoView({ block: "start" });
