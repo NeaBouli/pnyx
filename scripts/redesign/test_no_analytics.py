@@ -35,6 +35,7 @@ class TestNoAnalyticsInPublicHTML(unittest.TestCase):
             for line in ALLOWLIST.read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
+        paths.append("docs/wiki/audit.html")
         self.assertGreater(len(paths), 0, "allowlist is empty")
 
         violations: list[str] = []

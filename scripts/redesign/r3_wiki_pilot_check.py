@@ -27,6 +27,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import r0_inventory  # noqa: E402
 import r2_landing_check  # noqa: E402
+import approved_audit_delta  # noqa: E402
 
 REPO_ROOT = r0_inventory.REPO_ROOT
 DOCS_DIR = r0_inventory.DOCS_DIR
@@ -357,6 +358,8 @@ def check_wiki_page_preservation(
 
     Everything else must be identical to the R0 baseline.
     """
+    if approved_audit_delta.matches_approved_content(page_rel, current):
+        return []
     baseline = r2_landing_check.approved_analytics_delta.baseline_without_analytics(baseline)
     violations: list[str] = []
     for key in PRESERVED_EXACT_KEYS:
@@ -573,6 +576,11 @@ def check_r3_all(
             violations.append(f"preservation({page_rel}): R0 baseline entry missing")
             continue
         violations.extend(check_r3_wiki_page(page_rel, baseline, target_docs))
+    audit_page = target_docs / "wiki/audit.html"
+    if not audit_page.is_file():
+        violations.append("audit disclosure: missing page")
+    else:
+        violations.extend(check_structure(audit_page.read_text(encoding="utf-8"), requires_hero=True))
     violations.extend(check_css_files(target_docs))
     violations.extend(check_faq_accessibility_asset(target_docs))
     return violations

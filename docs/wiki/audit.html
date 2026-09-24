@@ -171,8 +171,7 @@
     .fnode-y { border-color: var(--yellow); background: #fefce8; color: #92400e; }
     .fnode-p { border-color: var(--purple); background: #faf5ff; color: #6b21a8; }
     .farr { color: var(--blue); font-weight: 900; }
-    .fade-in { opacity: 0; transform: translateY(14px); transition: all 0.5s ease; }
-    .fade-in.visible { opacity: 1; transform: translateY(0); }
+    .fade-in { opacity: 1; transform: none; }
     @media (max-width: 640px) { .nav-links a { font-size: 0.75rem; padding: 0.22rem 0.45rem; } }
   </style>
 
@@ -190,7 +189,7 @@
   "publisher": {"@type": "Organization", "name": "ekklesia.gr", "url": "https://ekklesia.gr"},
   "inLanguage": "el",
   "isPartOf": {"@type": "WebSite", "name": "ekklesia.gr", "url": "https://ekklesia.gr"},
-  "license": "https://creativecommons.org/licenses/by/4.0/"
+  "license": "https://github.com/NeaBouli/pnyx/blob/main/LICENSE"
 }
 </script>
 </head>
@@ -472,10 +471,6 @@ function toggleLang() {
     if (t) el.innerHTML = t;
   });
 }
-var obs = new IntersectionObserver(function(entries) {
-  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add("visible"); });
-}, { threshold: 0.1 });
-document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); });
 </script>
 
 </body>
