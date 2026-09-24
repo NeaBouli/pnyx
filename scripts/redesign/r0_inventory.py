@@ -253,7 +253,12 @@ class PageParser(HTMLParser):
 
         for name, value in attr.items():
             if name.lower().startswith("on"):
-                self.element_handlers.append({"tag": tag, "attr": name, "value": value})
+                handler_record: dict[str, str] = {"tag": tag, "attr": name, "value": value}
+                if element_id:
+                    handler_record["id"] = element_id
+                if tag == "a" and attr.get("href"):
+                    handler_record["href"] = attr["href"]
+                self.element_handlers.append(handler_record)
 
         for marker_source in (attr.get("class", ""), attr.get("id", "")):
             match = STATE_RE.search(marker_source)

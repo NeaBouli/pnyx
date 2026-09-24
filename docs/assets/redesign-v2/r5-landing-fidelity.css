@@ -40,8 +40,8 @@ nav.pnx2-header {
 }
 
 .pnx2-header .nav-logo img {
-  width: 80px;
-  height: 88px;
+  width: 60px;
+  height: 66px;
   object-fit: contain;
 }
 
@@ -622,27 +622,6 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
   margin-right: 0 !important;
 }
 
-/* Preserve every production section while presenting the supplied sequence. */
-main#main {
-  display: flex;
-  flex-direction: column;
-}
-
-.landing-hero { order: 1; }
-#how { order: 2; }
-#demo { order: 3; }
-.pnx2-democracy-data { order: 4; }
-#features { order: 5; }
-.pnx2-history-band { order: 6; }
-#forum { order: 7; }
-#votes { order: 8; }
-#roadmap { order: 9; }
-#wiki-section { order: 10; }
-#download { order: 11; }
-#notice { order: 12; }
-#newsletter { order: 13; }
-#contact { order: 14; }
-
 /* Democracy cycle: six equal cells and real-result detail below. */
 #demo {
   padding-left: 24px !important;
@@ -998,8 +977,8 @@ main#main {
   }
 
   .pnx2-header .nav-logo img {
-    width: 60px;
-    height: 66px;
+    width: 45px;
+    height: 50px;
   }
 
   .pnx2-brand-copy strong { font-size: 21px; }
@@ -1075,8 +1054,8 @@ main#main {
 
 @media (max-width: 640px) {
   nav.pnx2-header .nav-logo img {
-    width: 52px !important;
-    height: 57px !important;
+    width: 39px !important;
+    height: 43px !important;
   }
 }
 
@@ -1194,7 +1173,7 @@ main#main {
 
 /* Scroll-margin: clear the 84px sticky header on hash/in-page navigation. */
 #how, #demo, #features, #wiki-section, #forum, #roadmap, #notice, #contact,
-#representative, #transparency {
+#representative, #transparency, #votes, #download {
   scroll-margin-top: 92px;
 }
 
@@ -1218,7 +1197,7 @@ main#main {
 .pnx2-fold-summary:focus-visible { outline: 3px solid #2563eb; outline-offset: 4px; }
 .pnx2-fold-summary h2,
 .pnx2-fold-summary h3,
-.pnx2-fold-summary .demo-title { margin: 0 !important; color: #0f172a !important; font-size: clamp(28px, 3rem, 42px) !important; line-height: 1.15 !important; }
+.pnx2-fold-summary .demo-title { margin: 0 !important; padding-bottom: 0 !important; border-bottom: 0 !important; color: #0f172a !important; font-size: clamp(28px, 3rem, 42px) !important; line-height: 1.15 !important; }
 .pnx2-fold > .section-inner { padding-top: 28px; }
 #demo > .pnx2-fold { max-width: 1320px; margin: 0 auto; }
 #demo > .pnx2-fold > .demo-sub,
