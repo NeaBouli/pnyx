@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="el" data-lang="el">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Ελεγκτική Διαφάνεια | εκκλησία Wiki</title>
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Δημόσια αναφορά ελέγχου ασφαλείας ekklesia.gr — EKA audit series, ευρήματα, κατάσταση αποκατάστασης."/>
+  <meta name="keywords" content="ekklesia audit, EKA, security audit, transparency, ελεγκτική διαφάνεια, ασφάλεια"/>
+  <meta name="author" content="V-Labs Development — Community"/>
+  <meta name="robots" content="index, follow"/>
+  <link rel="canonical" href="https://ekklesia.gr/wiki/audit.html"/>
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://ekklesia.gr/wiki/audit.html"/>
+  <meta property="og:title" content="Ελεγκτική Διαφάνεια | εκκλησία Wiki"/>
+  <meta property="og:description" content="Δημόσια αναφορά ελέγχου ασφαλείας ekklesia.gr — EKA audit series, ευρήματα, κατάσταση αποκατάστασης."/>
+  <meta property="og:image" content="https://ekklesia.gr/assets/og-image.png"/>
+  <meta property="og:locale" content="el_GR"/>
+  <meta property="og:locale:alternate" content="en_US"/>
+  <meta property="og:site_name" content="εκκλησία"/>
+
+  <!-- Twitter/X Card -->
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="Ελεγκτική Διαφάνεια | εκκλησία Wiki"/>
+  <meta name="twitter:description" content="Δημόσια αναφορά ελέγχου ασφαλείας ekklesia.gr — EKA audit series, ευρήματα, κατάσταση αποκατάστασης."/>
+  <meta name="twitter:image" content="https://ekklesia.gr/assets/og-image.png"/>
+
+  <!-- Hreflang -->
+  <link rel="alternate" hreflang="el" href="https://ekklesia.gr/wiki/audit.html"/>
+  <link rel="alternate" hreflang="en" href="https://ekklesia.gr/wiki/audit.html"/>
+  <link rel="alternate" hreflang="x-default" href="https://ekklesia.gr/wiki/audit.html"/>
+
+  <!-- Sitemap -->
+  <link rel="sitemap" type="application/xml" href="https://ekklesia.gr/sitemap.xml"/>
+  <link rel="icon" type="image/png" href="/favicon.ico"/>
+
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-d: #1d4ed8;
+      --blue-l: #eff6ff;
+      --gray-900: #0f172a;
+      --gray-700: #334155;
+      --gray-500: #64748b;
+      --gray-400: #94a3b8;
+      --gray-100: #f1f5f9;
+      --white: #ffffff;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --purple: #a855f7;
+      --radius: 1rem;
+      --shadow: 0 4px 24px rgba(37,99,235,0.10);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--white);
+      color: var(--gray-900);
+      line-height: 1.6;
+    }
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid #e2e8f0;
+      padding: 0.75rem 1.5rem;
+      display: flex; justify-content: space-between;
+      align-items: center; flex-wrap: wrap; gap: 0.5rem;
+    }
+    .nav-logo {
+      font-size: 1.25rem; font-weight: 900; color: var(--blue);
+      text-decoration: none; display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;
+    }
+    .nav-logo img { width: 40px; height: 40px; object-fit: contain; }
+    .nav-links { display: flex; gap: 0.15rem; align-items: center; flex-wrap: wrap; }
+    .nav-links a {
+      padding: 0.3rem 0.7rem; border-radius: 0.4rem;
+      color: var(--gray-700); text-decoration: none;
+      font-size: 0.82rem; font-weight: 500;
+      transition: all 0.2s; white-space: nowrap;
+    }
+    .nav-links a:hover, .nav-links a.active {
+      background: var(--blue-l); color: var(--blue);
+    }
+    .lang-btn {
+      cursor: pointer; border: 2px solid #e2e8f0;
+      background: var(--white); border-radius: 0.4rem;
+      padding: 0.22rem 0.55rem; font-size: 0.75rem;
+      font-weight: 700; color: var(--gray-700);
+      transition: all 0.2s; margin-left: 0.3rem;
+    }
+    .lang-btn:hover { border-color: var(--blue); color: var(--blue); }
+    /* FOOTER */
+    footer {
+      background: var(--gray-900); color: var(--gray-400);
+      padding: 2rem 1.5rem; text-align: center;
+      font-size: 0.82rem; margin-top: 4rem;
+    }
+    .footer-links {
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 0.3rem 1rem; margin-bottom: 0.75rem;
+    }
+    footer a { color: var(--gray-500); text-decoration: none; }
+    footer a:hover { color: var(--white); }
+    /* COMMON */
+    .layout { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+    .layout-wide { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+    h2 { font-size: 1.4rem; font-weight: 900; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0; }
+    h2:first-child { margin-top: 0; }
+    h3 { font-size: 1rem; font-weight: 800; margin: 1.25rem 0 0.5rem; color: var(--blue); }
+    p { color: var(--gray-700); margin-bottom: 1rem; line-height: 1.8; }
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+    li { color: var(--gray-700); margin-bottom: 0.4rem; line-height: 1.7; }
+    .hero {
+      padding: 4rem 2rem; text-align: center;
+      background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 50%, #fefce8 100%);
+    }
+    .hero h1 { font-size: clamp(1.8rem,5vw,3rem); font-weight: 900; margin-bottom: 0.75rem; }
+    .hero p { color: var(--gray-700); max-width: 640px; margin: 0 auto 1.5rem; font-size: 1.05rem; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      color: var(--blue); text-decoration: none; font-weight: 600; font-size: 0.88rem;
+    }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .card {
+      background: var(--gray-100); border-radius: var(--radius);
+      padding: 1.25rem; border: 2px solid #e2e8f0;
+      transition: all 0.2s; text-decoration: none; color: inherit; display: block;
+    }
+    .card:hover { border-color: var(--blue); transform: translateY(-2px); box-shadow: var(--shadow); }
+    .card-icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+    .card h4 { font-weight: 800; margin-bottom: 0.25rem; font-size: 0.9rem; }
+    .card p { font-size: 0.78rem; color: var(--gray-400); margin: 0; }
+    .badge {
+      display: inline-block; padding: 0.15rem 0.55rem; border-radius: 1rem;
+      font-size: 0.7rem; font-weight: 700;
+    }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-yellow { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-purple { background: #ede9fe; color: #5b21b6; }
+    .badge-gray { background: var(--gray-100); color: var(--gray-500); }
+    .info-box { background: var(--blue-l); border-left: 4px solid var(--blue); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .info-box p { margin: 0; }
+    .warn-box { background: #fefce8; border-left: 4px solid var(--yellow); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .warn-box p { margin: 0; }
+    .success-box { background: #f0fdf4; border-left: 4px solid var(--green); border-radius: 0.5rem; padding: 1rem 1.25rem; margin: 1.25rem 0; }
+    .success-box p { margin: 0; }
+    .code-block {
+      background: var(--gray-900); color: #e2e8f0;
+      border-radius: var(--radius); padding: 1.25rem;
+      font-family: "Courier New", monospace; font-size: 0.8rem;
+      overflow-x: auto; margin: 1rem 0; line-height: 1.7; white-space: pre;
+    }
+    .code-c { color: #64748b; }
+    .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    th { background: var(--gray-900); color: white; padding: 0.65rem 1rem; text-align: left; font-weight: 700; }
+    td { padding: 0.65rem 1rem; border-bottom: 1px solid #e2e8f0; color: var(--gray-700); }
+    tr:hover td { background: var(--gray-100); }
+    .flow { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; padding: 1rem; background: var(--gray-100); border-radius: var(--radius); margin: 1rem 0; }
+    .fnode { background: white; border-radius: 0.5rem; padding: 0.4rem 0.9rem; font-size: 0.78rem; font-weight: 700; border: 2px solid #e2e8f0; }
+    .fnode-g { border-color: var(--green); background: #f0fdf4; color: #166534; }
+    .fnode-b { border-color: var(--blue); background: var(--blue-l); color: var(--blue-d); }
+    .fnode-y { border-color: var(--yellow); background: #fefce8; color: #92400e; }
+    .fnode-p { border-color: var(--purple); background: #faf5ff; color: #6b21a8; }
+    .farr { color: var(--blue); font-weight: 900; }
+    .fade-in { opacity: 0; transform: translateY(14px); transition: all 0.5s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+    @media (max-width: 640px) { .nav-links a { font-size: 0.75rem; padding: 0.22rem 0.45rem; } }
+  </style>
+
+  <link rel="stylesheet" href="../assets/redesign-v2/tokens.css"/>
+  <link rel="stylesheet" href="../assets/redesign-v2/foundation.css"/>
+  <link rel="stylesheet" href="../assets/redesign-v2/r3-wiki.css"/>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Audit Transparency",
+  "description": "Public audit transparency report for ekklesia.gr — EKA audit series, findings, remediation status.",
+  "author": {"@type": "Organization", "name": "V-Labs Development"},
+  "publisher": {"@type": "Organization", "name": "ekklesia.gr", "url": "https://ekklesia.gr"},
+  "inLanguage": "el",
+  "isPartOf": {"@type": "WebSite", "name": "ekklesia.gr", "url": "https://ekklesia.gr"},
+  "license": "https://creativecommons.org/licenses/by/4.0/"
+}
+</script>
+</head>
+<body>
+<a href="#main" class="pnx2-skip" data-el="Μετάβαση στο κύριο περιεχόμενο" data-en="Skip to main content">Μετάβαση στο κύριο περιεχόμενο</a>
+<nav class="pnx2-header">
+  <a href="../" class="nav-logo"><img src="../pnx.png" alt="logo" style="width:40px;height:40px;object-fit:contain"/>εκκλησία<span style="font-size:0.55em;color:#9ca3af;font-weight:400;margin-left:0.35em;letter-spacing:0.05em">του έθνους</span></a>
+  <div class="nav-links">
+    <a href="../" data-el="Αρχική" data-en="Home">Αρχική</a>
+    <a href="/el/bills" data-el="Ψηφοφορίες" data-en="Votes">Ψηφοφορίες</a>
+    <a href="index.html" data-el="Wiki" data-en="Wiki">Wiki</a>
+    <a href="../community.html" data-el="Community" data-en="Community">Community</a>
+    <span style="width:1px;height:20px;background:#e2e8f0;margin:0 0.3rem"></span>
+    <a href="architecture.html" data-el="Αρχιτεκτονική" data-en="Architecture">Αρχιτεκτονική</a>
+    <a href="security.html" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</a>
+    <a href="api.html">API</a>
+    <a href="modules.html">Modules</a>
+    <a href="roadmap.html">Roadmap</a>
+    <a href="privacy.html" data-el="Ιδιωτικότητα" data-en="Privacy">Ιδιωτικότητα</a>
+    <a href="database.html">Database</a>
+    <a href="contributing.html">Contributing</a>
+    <a href="whitepaper.html">Whitepaper</a>
+    <a href="faq.html">FAQ</a>
+    <a href="broadcasting.html">Broadcasting</a>
+    <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
+  </div>
+</nav>
+<main id="main">
+<div class="hero" style="background:linear-gradient(135deg,#eff6ff,#fef3c7)">
+  <h1 data-el="Ελεγκτική Διαφάνεια" data-en="Audit Transparency">Ελεγκτική Διαφάνεια</h1>
+  <p data-el="Δημόσια αναφορά ανεξάρτητου ελέγχου ασφαλείας" data-en="Public independent security audit report">Δημόσια αναφορά ανεξάρτητου ελέγχου ασφαλείας</p>
+  <a href="index.html" class="back-link" data-el="← Wiki" data-en="← Wiki">← Wiki</a>
+</div>
+<div class="layout">
+
+  <h2 class="fade-in" data-el="Σύνοψη Ελέγχου" data-en="Audit Summary">Σύνοψη Ελέγχου</h2>
+
+  <div class="info-box fade-in">
+    <p data-el="Αυτή η σελίδα αναφέρει τα δημοσιευμένα αποτελέσματα ενός ανεξάρτητου ελέγχου ασφαλείας. Δεν αποτελεί δήλωση πλήρους ασφάλειας. Η αποκατάσταση ευρημάτων είναι σε εξέλιξη." data-en="This page reports the published results of an independent security audit. It is not a claim of total security. Finding remediation is ongoing.">
+      Αυτή η σελίδα αναφέρει τα δημοσιευμένα αποτελέσματα ενός ανεξάρτητου ελέγχου ασφαλείας. <strong data-el="Δεν αποτελεί δήλωση πλήρους ασφάλειας." data-en="It is not a claim of total security.">Δεν αποτελεί δήλωση πλήρους ασφάλειας.</strong> Η αποκατάσταση ευρημάτων είναι σε εξέλιξη.
+    </p>
+  </div>
+
+  <div class="table-wrap fade-in">
+    <table>
+      <tr>
+        <th data-el="Στοιχείο" data-en="Detail">Στοιχείο</th>
+        <th data-el="Τιμή" data-en="Value">Τιμή</th>
+      </tr>
+      <tr>
+        <td data-el="Ελεγκτής" data-en="Auditor">Ελεγκτής</td>
+        <td>Collateral Web3 Open Audits</td>
+      </tr>
+      <tr>
+        <td data-el="Ημερομηνία ελέγχου" data-en="Audit date">Ημερομηνία ελέγχου</td>
+        <td>2026-09-15</td>
+      </tr>
+      <tr>
+        <td data-el="Ελεγχόμενο baseline" data-en="Audited baseline">Ελεγχόμενο baseline</td>
+        <td><code>c0efac7b</code> <span style="font-size:0.78rem;color:var(--gray-500)" data-el="(main HEAD κατά την έναρξη ελέγχου, 2026-09-13)" data-en="(main HEAD at audit start, 2026-09-13)">(main HEAD κατά την έναρξη ελέγχου, 2026-09-13)</span></td>
+      </tr>
+      <tr>
+        <td data-el="Μέθοδος" data-en="Method">Μέθοδος</td>
+        <td data-el="Ανάλυση κώδικα σε τρεις παράλληλες πορείες, ανώνυμη ζωντανή αναγνώριση (μόνο GET/HEAD), χωρίς αλλαγές κατάστασης" data-en="Three parallel deep-recon code analysis passes, anonymous live probing (GET/HEAD only), no state-changing requests">Ανάλυση κώδικα σε τρεις παράλληλες πορείες, ανώνυμη ζωντανή αναγνώριση (μόνο GET/HEAD), χωρίς αλλαγές κατάστασης</td>
+      </tr>
+      <tr>
+        <td data-el="Εξουσιοδότηση δημοσίευσης" data-en="Publication authorization">Εξουσιοδότηση δημοσίευσης</td>
+        <td data-el="Ρητά εξουσιοδοτημένη από τον ιδιοκτήτη, 2026-09-15" data-en="Explicitly authorized by the repository owner, 2026-09-15">Ρητά εξουσιοδοτημένη από τον ιδιοκτήτη, 2026-09-15</td>
+      </tr>
+    </table>
+  </div>
+
+  <h2 class="fade-in" data-el="Ευρήματα" data-en="Findings">Ευρήματα</h2>
+
+  <p data-el="Ο έλεγχος εντόπισε <strong>64 ευρήματα</strong> σε πέντε αναφορές:" data-en="The audit identified <strong>64 findings</strong> across five reports:">Ο έλεγχος εντόπισε <strong>64 ευρήματα</strong> σε πέντε αναφορές:</p>
+
+  <div class="table-wrap fade-in">
+    <table>
+      <tr>
+        <th data-el="Αναφορά" data-en="Report">Αναφορά</th>
+        <th data-el="Εύρος" data-en="Register">Εύρος</th>
+        <th data-el="Ευρήματα" data-en="Findings">Ευρήματα</th>
+      </tr>
+      <tr>
+        <td data-el="Πλήρης Έλεγχος Ασφαλείας" data-en="Full-Scope Security Audit">Πλήρης Έλεγχος Ασφαλείας</td>
+        <td>EKA-01 &ndash; EKA-20</td>
+        <td>0C &middot; 1H &middot; 7M &middot; 7L &middot; 5I</td>
+      </tr>
+      <tr>
+        <td data-el="Κρυπτογραφικός Βαθύς Έλεγχος" data-en="Cryptography Deep Audit">Κρυπτογραφικός Βαθύς Έλεγχος</td>
+        <td>EKA-21 &ndash; EKA-25</td>
+        <td>0C &middot; 0H &middot; 1M &middot; 1L &middot; 3I</td>
+      </tr>
+      <tr>
+        <td data-el="Έλεγχος Ενοποίησης & Επιφανειών" data-en="Integration &amp; Surfaces Audit">Έλεγχος Ενοποίησης &amp; Επιφανειών</td>
+        <td>EKA-26 &ndash; EKA-31</td>
+        <td>0C &middot; 0H &middot; 0M &middot; 4L &middot; 2I</td>
+      </tr>
+      <tr>
+        <td data-el="Έλεγχος Συνοχής Περιεχομένου" data-en="Content Coherence Audit">Έλεγχος Συνοχής Περιεχομένου</td>
+        <td>EKA-32 &ndash; EKA-56</td>
+        <td>0C &middot; 0H &middot; 10M &middot; 11L &middot; 4I</td>
+      </tr>
+      <tr>
+        <td data-el="Έλεγχος Ετοιμότητας AI" data-en="AI Readiness Audit">Έλεγχος Ετοιμότητας AI</td>
+        <td>EKA-57 &ndash; EKA-64</td>
+        <td>0C &middot; 0H &middot; 3M &middot; 4L &middot; 1I</td>
+      </tr>
+    </table>
+  </div>
+
+  <h3 data-el="Σύνολα ανά σοβαρότητα" data-en="Totals by severity">Σύνολα ανά σοβαρότητα</h3>
+  <div class="card-grid fade-in" style="grid-template-columns:repeat(auto-fit,minmax(100px,1fr))">
+    <div class="card" style="text-align:center"><div style="font-size:2rem;font-weight:900;color:var(--green)">0</div><div style="font-size:0.78rem;color:var(--gray-400)">Critical</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:2rem;font-weight:900;color:var(--red)">1</div><div style="font-size:0.78rem;color:var(--gray-400)">High</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:2rem;font-weight:900;color:var(--yellow)">21</div><div style="font-size:0.78rem;color:var(--gray-400)">Medium</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:2rem;font-weight:900;color:var(--blue)">27</div><div style="font-size:0.78rem;color:var(--gray-400)">Low</div></div>
+    <div class="card" style="text-align:center"><div style="font-size:2rem;font-weight:900;color:var(--gray-500)">15</div><div style="font-size:0.78rem;color:var(--gray-400)">Informational</div></div>
+  </div>
+
+  <h2 class="fade-in" data-el="Επιβεβαιωμένα Κλεισμένα Ευρήματα" data-en="Verified Closed Findings">Επιβεβαιωμένα Κλεισμένα Ευρήματα</h2>
+
+  <p data-el="Δύο ευρήματα έχουν επαληθευμένα κλείσει με source integration, merge και live-acceptance evidence:" data-en="Two findings have been verified closed with source integration, merge and live-acceptance evidence:">Δύο ευρήματα έχουν επαληθευμένα κλείσει με source integration, merge και live-acceptance evidence:</p>
+
+  <div class="table-wrap fade-in">
+    <table>
+      <tr>
+        <th>ID</th>
+        <th data-el="Σοβαρότητα" data-en="Severity">Σοβαρότητα</th>
+        <th data-el="Τίτλος" data-en="Title">Τίτλος</th>
+        <th data-el="Διόρθωση" data-en="Fix">Διόρθωση</th>
+      </tr>
+      <tr>
+        <td><strong>EKA-02</strong></td>
+        <td><span class="badge badge-red">High</span></td>
+        <td data-el="Representative WebView stored-XSS μέσω unescaped API data σε innerHTML" data-en="Representative WebView stored-XSS via unescaped API data in innerHTML">Representative WebView stored-XSS μέσω unescaped API data σε innerHTML</td>
+        <td><a href="https://github.com/NeaBouli/pnyx/pull/319" target="_blank" rel="noopener">PR #319</a></td>
+      </tr>
+      <tr>
+        <td><strong>EKA-17</strong></td>
+        <td><span class="badge badge-gray">Informational</span></td>
+        <td data-el="HLR credential env names αντεστραμμένα (primary χρησιμοποιεί HLR_FALLBACK_*)" data-en="HLR credential env names inverted (primary uses HLR_FALLBACK_*)">HLR credential env names αντεστραμμένα (primary χρησιμοποιεί HLR_FALLBACK_*)</td>
+        <td><a href="https://github.com/NeaBouli/pnyx/pull/331" target="_blank" rel="noopener">PR #331</a></td>
+      </tr>
+    </table>
+  </div>
+
+  <h2 class="fade-in" data-el="Ανοιχτά Ευρήματα" data-en="Open Findings">Ανοιχτά Ευρήματα</h2>
+
+  <div class="warn-box fade-in">
+    <p data-el="Τα υπόλοιπα <strong>62 ευρήματα</strong> παραμένουν ανοιχτά ή evidence-gated στο δημόσιο μητρώο. Ορισμένα ευρήματα έχουν source integration ολοκληρωμένη αλλά δεν έχουν ακόμη deployed ή live-accepted — αυτά δεν θεωρούνται κλεισμένα." data-en="The remaining <strong>62 findings</strong> remain open or evidence-gated in the public register. Some findings have completed source integration but have not yet been deployed or live-accepted — these are not considered closed.">
+      Τα υπόλοιπα <strong>62 ευρήματα</strong> παραμένουν ανοιχτά ή evidence-gated στο δημόσιο μητρώο. Ορισμένα ευρήματα έχουν source integration ολοκληρωμένη αλλά δεν έχουν ακόμη deployed ή live-accepted — αυτά δεν θεωρούνται κλεισμένα.
+    </p>
+  </div>
+
+  <p data-el="Η κατάσταση κάθε ευρήματος παρακολουθείται στο δημόσιο μητρώο:" data-en="The status of each finding is tracked in the public register:">Η κατάσταση κάθε ευρήματος παρακολουθείται στο δημόσιο μητρώο:</p>
+
+  <p><a href="https://github.com/NeaBouli/pnyx/issues/318" target="_blank" rel="noopener" style="display:inline-block;padding:0.6rem 1.5rem;background:var(--blue);color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem" data-el="Δημόσιο Μητρώο Ευρημάτων — Issue #318 →" data-en="Public Finding Register — Issue #318 →">Δημόσιο Μητρώο Ευρημάτων — Issue #318 →</a></p>
+
+  <h2 class="fade-in" data-el="Αμετάβλητες Αναφορές" data-en="Immutable Reports">Αμετάβλητες Αναφορές</h2>
+
+  <p data-el="Οι πλήρεις αναφορές ελέγχου είναι δημοσιευμένες στο repository. Οι αναφορές είναι αμετάβλητες αφού καρφιτσώνονται — τυχόν μελλοντικοί έλεγχοι λαμβάνουν νέες ημερομηνίες και συνεχίζουν τον αριθμό μητρώου." data-en="The full audit reports are published in the repository. Reports are immutable once pinned — any follow-up audits receive new dates and continue the register number.">Οι πλήρεις αναφορές ελέγχου είναι δημοσιευμένες στο repository. Οι αναφορές είναι αμετάβλητες αφού καρφιτσώνονται — τυχόν μελλοντικοί έλεγχοι λαμβάνουν νέες ημερομηνίες και συνεχίζουν τον αριθμό μητρώου.</p>
+
+  <div class="table-wrap fade-in">
+    <table>
+      <tr>
+        <th data-el="Αναφορά" data-en="Report">Αναφορά</th>
+        <th>SHA-256</th>
+      </tr>
+      <tr>
+        <td><a href="https://github.com/NeaBouli/pnyx/blob/main/docs/community-audits/EKA_PNYX_Full_Scope_Audit_2026-09-15.md" target="_blank" rel="noopener" data-el="Πλήρης Έλεγχος Ασφαλείας" data-en="Full-Scope Security Audit">Πλήρης Έλεγχος Ασφαλείας</a></td>
+        <td style="font-family:monospace;font-size:0.75rem;word-break:break-all">fcc9003a&hellip;c71c7559</td>
+      </tr>
+      <tr>
+        <td><a href="https://github.com/NeaBouli/pnyx/blob/main/docs/community-audits/EKA_PNYX_Crypto_Deep_Audit_2026-09-15.md" target="_blank" rel="noopener" data-el="Κρυπτογραφικός Βαθύς Έλεγχος" data-en="Cryptography Deep Audit">Κρυπτογραφικός Βαθύς Έλεγχος</a></td>
+        <td style="font-family:monospace;font-size:0.75rem;word-break:break-all">28349eca&hellip;b5b21eaa</td>
+      </tr>
+      <tr>
+        <td><a href="https://github.com/NeaBouli/pnyx/blob/main/docs/community-audits/EKA_PNYX_Integration_Surfaces_Audit_2026-09-15.md" target="_blank" rel="noopener" data-el="Έλεγχος Ενοποίησης & Επιφανειών" data-en="Integration &amp; Surfaces Audit">Έλεγχος Ενοποίησης &amp; Επιφανειών</a></td>
+        <td style="font-family:monospace;font-size:0.75rem;word-break:break-all">28943099&hellip;47972c78</td>
+      </tr>
+      <tr>
+        <td><a href="https://github.com/NeaBouli/pnyx/blob/main/docs/community-audits/EKA_PNYX_Content_Coherence_Audit_2026-09-15.md" target="_blank" rel="noopener" data-el="Έλεγχος Συνοχής Περιεχομένου" data-en="Content Coherence Audit">Έλεγχος Συνοχής Περιεχομένου</a></td>
+        <td style="font-family:monospace;font-size:0.75rem;word-break:break-all">818292ed&hellip;4350c6087d</td>
+      </tr>
+      <tr>
+        <td><a href="https://github.com/NeaBouli/pnyx/blob/main/docs/community-audits/EKA_PNYX_AI_Readiness_Audit_2026-09-15.md" target="_blank" rel="noopener" data-el="Έλεγχος Ετοιμότητας AI" data-en="AI Readiness Audit">Έλεγχος Ετοιμότητας AI</a></td>
+        <td style="font-family:monospace;font-size:0.75rem;word-break:break-all">2d40f6d8&hellip;3054bdd94b3d6328</td>
+      </tr>
+    </table>
+  </div>
+
+  <h2 class="fade-in" data-el="Τι Κάλυψε ο Έλεγχος" data-en="What the Audit Covered">Τι Κάλυψε ο Έλεγχος</h2>
+
+  <ul class="fade-in">
+    <li data-el="FastAPI backend (32 routers, ~188 endpoints)" data-en="FastAPI backend (32 routers, ~188 endpoints)">FastAPI backend (32 routers, ~188 endpoints)</li>
+    <li data-el="Next.js 16 web & dashboard" data-en="Next.js 16 web &amp; dashboard">Next.js 16 web &amp; dashboard</li>
+    <li data-el="Expo / React Native mobile & representative εφαρμογές" data-en="Expo / React Native mobile &amp; representative apps">Expo / React Native mobile &amp; representative εφαρμογές</li>
+    <li data-el="Κρυπτογραφία: nullifier constructions, Ed25519, Semaphore/Groth16, Arweave" data-en="Cryptography: nullifier constructions, Ed25519, Semaphore/Groth16, Arweave">Κρυπτογραφία: nullifier constructions, Ed25519, Semaphore/Groth16, Arweave</li>
+    <li data-el="Docker / Traefik υποδομή & CI/CD" data-en="Docker / Traefik infrastructure &amp; CI/CD">Docker / Traefik υποδομή &amp; CI/CD</li>
+    <li data-el="Δημόσιες HTML σελίδες & τεκμηρίωση" data-en="Public HTML pages &amp; documentation">Δημόσιες HTML σελίδες &amp; τεκμηρίωση</li>
+  </ul>
+
+  <h2 class="fade-in" data-el="Βασικά Ισχυρά Σημεία" data-en="Core Strengths Verified">Βασικά Ισχυρά Σημεία</h2>
+
+  <div class="success-box fade-in">
+    <p data-el="Η ακεραιότητα ψήφου παραμένει: Ed25519 gates σε κάθε citizen write, DB-unique double-vote anchors σε κάθε μονοπάτι, fail-closed ZK/Stripe/destructive-admin σχεδιασμός. Κανένα εύρημα δεν αφορά τον πυρήνα της ακεραιότητας ψήφου." data-en="Core vote integrity holds: Ed25519 gates on every citizen write, DB-unique double-vote anchors on every path, fail-closed ZK/Stripe/destructive-admin design. No finding touches core vote integrity.">
+      Η ακεραιότητα ψήφου παραμένει: Ed25519 gates σε κάθε citizen write, DB-unique double-vote anchors σε κάθε μονοπάτι, fail-closed ZK/Stripe/destructive-admin σχεδιασμός. Κανένα εύρημα δεν αφορά τον πυρήνα της ακεραιότητας ψήφου.
+    </p>
+  </div>
+
+  <ul class="fade-in">
+    <li data-el="Δύο CRITICAL ευρήματα του εσωτερικού ελέγχου Μαΐου 2026 (admin keys σε URLs) είναι επαληθευμένα διορθωμένα" data-en="Two CRITICAL findings from the May 2026 internal audit (admin keys in URLs) are verifiably fixed">Δύο CRITICAL ευρήματα του εσωτερικού ελέγχου Μαΐου 2026 (admin keys σε URLs) είναι επαληθευμένα διορθωμένα</li>
+    <li data-el="CORS: ρητό allowlist 5 origins, χωρίς wildcard" data-en="CORS: explicit 5-origin allowlist, no wildcard">CORS: ρητό allowlist 5 origins, χωρίς wildcard</li>
+    <li data-el="Stripe webhook: υπογραφή, idempotency, fail-closed" data-en="Stripe webhook: signature verification, idempotency, fail-closed">Stripe webhook: υπογραφή, idempotency, fail-closed</li>
+    <li data-el="Κανένα committed secret στο ιστορικό git" data-en="No committed secrets in git history">Κανένα committed secret στο ιστορικό git</li>
+  </ul>
+
+  <h2 class="fade-in" data-el="Σχετικοί Σύνδεσμοι" data-en="Related Links">Σχετικοί Σύνδεσμοι</h2>
+
+  <div class="card-grid fade-in">
+    <a href="https://github.com/NeaBouli/pnyx/issues/318" target="_blank" rel="noopener" class="card">
+      <div class="card-icon">📋</div>
+      <h4 data-el="Μητρώο Ευρημάτων" data-en="Finding Register">Μητρώο Ευρημάτων</h4>
+      <p data-el="Issue #318 — 64 ευρήματα" data-en="Issue #318 — 64 findings">Issue #318 — 64 ευρήματα</p>
+    </a>
+    <a href="https://github.com/NeaBouli/pnyx/tree/main/docs/community-audits" target="_blank" rel="noopener" class="card">
+      <div class="card-icon">📄</div>
+      <h4 data-el="Αναφορές Ελέγχου" data-en="Audit Reports">Αναφορές Ελέγχου</h4>
+      <p data-el="5 αμετάβλητες αναφορές" data-en="5 immutable reports">5 αμετάβλητες αναφορές</p>
+    </a>
+    <a href="security.html" class="card">
+      <div class="card-icon">🔐</div>
+      <h4 data-el="Μοντέλο Ασφαλείας" data-en="Security Model">Μοντέλο Ασφαλείας</h4>
+      <p>Ed25519, Nullifier, HLR</p>
+    </a>
+  </div>
+
+</div>
+</main>
+<footer class="pnx2-footer">
+  <div class="footer-links">
+    <a href="..//">Αρχική</a>
+    <a href="../wiki/">Wiki</a>
+    <a href="/el/bills" data-el="Τρέχουσες" data-en="Active">Τρέχουσες</a>
+    <a href="/el/bills" data-el="24 Ώρες" data-en="24 Hours">24 Ώρες</a>
+    <a href="/el/results" data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</a>
+    <a href="../community.html">Community</a>
+    <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>
+  </div>
+  <div class="footer-links" style="margin-top:0.5rem;font-size:0.75rem">
+    <a href="#" onclick="openLegalModal('privacy');return false" data-el="Πολιτική Απορρήτου" data-en="Privacy Policy">Πολιτική Απορρήτου</a>
+    <a href="#" onclick="openLegalModal('delete');return false" data-el="Διαγραφή Λογαριασμού" data-en="Delete Account">Διαγραφή Λογαριασμού</a>
+  </div>
+  <p>εκκλησία &middot; &copy; 2026 V-Labs Development &middot; MIT License</p>
+</footer>
+
+<div id="legalModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center" onclick="if(event.target===this)closeLegalModal()">
+  <div style="background:#fff;border-radius:1rem;max-width:700px;width:92%;max-height:85vh;overflow-y:auto;padding:2rem;position:relative;box-shadow:0 8px 40px rgba(0,0,0,0.2)">
+    <button onclick="closeLegalModal()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#64748b;line-height:1">&times;</button>
+    <div id="legalContent"></div>
+  </div>
+</div>
+<script>
+var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP συνδεδεμένη με ψήφο ή ταυτότητα.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ανώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
+var _deleteHtml='<h2 style="margin-top:0">Διαγραφή Λογαριασμού</h2><p>Απεγκαταστήστε την εφαρμογή — Private Key και Nullifier διαγράφονται αμέσως.</p><p><a href="delete-account.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#ef4444;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Αναλυτικές Οδηγίες Διαγραφής →</a></p>';
+function openLegalModal(t){document.getElementById("legalContent").innerHTML=t==="privacy"?_privacyHtml:_deleteHtml;document.getElementById("legalModal").style.display="flex"}
+function closeLegalModal(){document.getElementById("legalModal").style.display="none"}
+document.addEventListener("keydown",function(e){if(e.key==="Escape")closeLegalModal()});
+</script>
+
+<script>
+var currentLang = "el";
+function toggleLang() {
+  currentLang = currentLang === "el" ? "en" : "el";
+  document.getElementById("langBtn").textContent = currentLang === "el" ? "EN" : "ΕΛ";
+  document.querySelectorAll("[data-el]").forEach(function(el) {
+    var t = el.getAttribute("data-" + currentLang);
+    if (t) el.innerHTML = t;
+  });
+}
+var obs = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add("visible"); });
+}, { threshold: 0.1 });
+document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); });
+</script>
+
+</body>
+</html>
