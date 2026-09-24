@@ -7,7 +7,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "test": "vitest run && IMAGE_SIZE_PACKAGE_ROOT=./node_modules/image-size node --test ../../vendor/image-size/security-regression.test.mjs && DECODE_URI_COMPONENT_PACKAGE_ROOT=./node_modules/decode-uri-component node --test ../../vendor/decode-uri-component/security-regression.test.mjs",
+    "test": "vitest run && IMAGE_SIZE_PACKAGE_ROOT=./node_modules/image-size node --test ../../vendor/image-size/security-regression.test.mjs && node --test ../../vendor/decode-uri-component/security-regression.test.mjs ../../vendor/decode-uri-component/ghsa-vcc3-absence.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -15,10 +15,9 @@
     "@noble/hashes": "^2.0.1",
     "@react-native-picker/picker": "2.11.1",
     "@react-navigation/bottom-tabs": "^7.15.9",
-    "@react-navigation/native": "^7.2.2",
+    "@react-navigation/native": "^7.4.1",
     "@react-navigation/native-stack": "^7.14.10",
     "@react-navigation/stack": "^7.8.9",
-    "decode-uri-component": "file:../../vendor/decode-uri-component/decode-uri-component-0.2.2-pnyx.0.tgz",
     "expo": "~54.0.37",
     "expo-application": "~7.0.8",
     "expo-crypto": "~15.0.9",
@@ -55,9 +54,6 @@
     "@babel/core": "7.29.7",
     "@expo/plist": {
       "@xmldom/xmldom": "0.8.15"
-    },
-    "query-string": {
-      "decode-uri-component": "$decode-uri-component"
     },
     "undici": "6.28.0",
     "tar": "7.5.21",
