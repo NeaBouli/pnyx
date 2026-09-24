@@ -1,7 +1,7 @@
 {
   "allowlist_sha256": "7be5c8370fa5e75a0fe8a25504ca05b6f013e3ddff36a10ceaaf692b03bacc84",
   "generator": "scripts/redesign/r0_inventory.py",
-  "inventory_hash": "614528b2cc2ab79973c3fce7e84040c8a57398df950b51cb4beafe02ec70e290",
+  "inventory_hash": "936998485da948d7df4eff9d612bdb7001edcfe61790e5aa340b9cdfc72b2ca5",
   "page_count": 35,
   "pages": [
     {
@@ -1541,7 +1541,7 @@
         "bilingual": "e9336b61e8cf82e1776ce22fb1f9208b4fdc70a67851b4035c25c574d8c34528",
         "document": "a09694d716ee010cb24538d4de6893e9fd66d5ad1290baeee0701f1117053be7",
         "forms": "2dd23921fb34d1085a4d1f5e5d10f120ffa21a232b1fc0f8dda70c769a334456",
-        "interactions": "fa8fbb4ed76fb24b91e82fa4f1a35155468b1993c798699d4f3ee31d13956f14",
+        "interactions": "f41a92ed0ecc4db553923664f87eab591a5cc7401360428acf99a489bcbc939c",
         "json_ld": "44533cb2ade6615eb6390f66b0783a5891187f2793b7c6882867796dd57f6ffb",
         "links": "d0bef36a46bc4a5649122b5d50831b8398ccbc0e441dc23a9e7e64860615c6b6",
         "media": "6d5178ed78874c123e4c795fe2d55b6b1cace64e69c86d86a823012cd54281a3",
@@ -1561,46 +1561,55 @@
         "element_handlers": [
           {
             "attr": "onclick",
+            "id": "langBtn",
             "tag": "button",
             "value": "toggleLang()"
           },
           {
             "attr": "onclick",
+            "id": "hlrTabPrimary",
             "tag": "button",
             "value": "switchHlrTab('primary')"
           },
           {
             "attr": "onclick",
+            "id": "hlrTabFallback",
             "tag": "button",
             "value": "switchHlrTab('fallback')"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openSharePopup();return false;"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openNgoModal();return false;"
           },
           {
             "attr": "onclick",
+            "href": "#finance",
             "tag": "a",
             "value": "document.getElementById('finance').scrollIntoView({behavior:'smooth'});return false;"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('privacy');return false"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('delete');return false"
           },
           {
             "attr": "onclick",
+            "id": "legalModal",
             "tag": "div",
             "value": "if(event.target===this)closeLegalModal()"
           },
@@ -1616,6 +1625,7 @@
           },
           {
             "attr": "onsubmit",
+            "id": "ngoForm",
             "tag": "form",
             "value": "submitNgoForm(event)"
           },
@@ -1626,6 +1636,7 @@
           },
           {
             "attr": "onclick",
+            "id": "copyLinkBtn",
             "tag": "button",
             "value": "copyShareLink()"
           }
@@ -6182,7 +6193,7 @@
         "bilingual": "88c6f6f3903ddf453b711561e5e0ec0573b61ddd7da4f0e89e04868d89857ac7",
         "document": "1ebc851f00294b4ba21b28fe9ed6d49220712c536d7c6482eb22cd46565e9796",
         "forms": "af5e0ea71ae4d97927ff8b5f35147fdc06bb87534738e2f1b8e44b0e7fa4121d",
-        "interactions": "7ba24f35d638d00398db8404129733a1a46225bcd8fa851f491f1d6a0abe57ae",
+        "interactions": "7adc72620831defc1ad6769ccc8c1e112665c14fe23e36e5f6590bd67cc98a7e",
         "json_ld": "0027623d933e1d640105f614450e70f6f0cc9c76439439dcb8b39a4d162330b5",
         "links": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "media": "cf5f46f169c9cc43df5ec9717e4bd5171ca70cc392911b2821ccc058df10071b",
@@ -6202,6 +6213,7 @@
         "element_handlers": [
           {
             "attr": "onclick",
+            "id": "btn-refresh",
             "tag": "button",
             "value": "startSession()"
           }
@@ -7886,7 +7898,7 @@
         "bilingual": "08501383fbfe6b20adf8ea708ce726a09bc12505471216d23704bfadb2e40479",
         "document": "8c52a5d43b90e916afd16db9a025f62ce9b99a2bb1cc603cc6e247ea64e18a15",
         "forms": "09141037c934bd389f9ba67ef0b0739d6420e06774610d739e4086a7a11bf33f",
-        "interactions": "8e228981e15c522d1d6b17c9fddf3a622a272a9ff2287578f4478f0b78f39b33",
+        "interactions": "2862d22f1ed50126b551477656df22fe5da6c70db1b770a5ac824eaf81c05003",
         "json_ld": "5f87bc980791f8794b99eb8146d320c35f530a60b87fd1dc9d79ba91bd199450",
         "links": "ed8db79f5e5db803646e9c8381fe2cf9dd8616848e035d9dc7bfcaf8fff94a0a",
         "media": "c2e07f367d8927770985b616e4f431730b14ba1d0d8f1fbabe425a6238ddb694",
@@ -7906,6 +7918,7 @@
         "element_handlers": [
           {
             "attr": "onclick",
+            "id": "langBtn",
             "tag": "button",
             "value": "toggleLang()"
           },
@@ -7921,26 +7934,31 @@
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openNgoModal();return false;"
           },
           {
             "attr": "onmouseenter",
+            "href": "#",
             "tag": "a",
             "value": "this.style.background='#1d4ed8'"
           },
           {
             "attr": "onmouseleave",
+            "href": "#",
             "tag": "a",
             "value": "this.style.background='#2563eb'"
           },
           {
             "attr": "onmouseenter",
+            "href": "wiki/api.html",
             "tag": "a",
             "value": "this.style.background='#eff6ff'"
           },
           {
             "attr": "onmouseleave",
+            "href": "wiki/api.html",
             "tag": "a",
             "value": "this.style.background='transparent'"
           },
@@ -7951,6 +7969,7 @@
           },
           {
             "attr": "onsubmit",
+            "id": "ngoForm",
             "tag": "form",
             "value": "submitNgoForm(event)"
           }
@@ -12098,7 +12117,7 @@
         "bilingual": "006978c364f484a820a7e26bb0a7ab9be6458011f958aa0ad9770d91ad424772",
         "document": "980969843efa90342d1dccbd71c044a1d509e1aa3030fa30a51036ca19dce9ef",
         "forms": "5780e24e3eff72829410374596fb1d4be29382da8772f81e8d71e87702d7db35",
-        "interactions": "f10bbf85d03a5e2b2634ef392c00d09e9072dfee640cd051ce6d625b4d01d929",
+        "interactions": "060d2676efc7f7c0aafffe3a390e9b10efdec942cf9fa93b2075b8d80532e35f",
         "json_ld": "1782677f87fdca4a12669a4d9d1104221e02e82edc91b0ae47cae2750c0c6aa4",
         "links": "43128f5c8ee6acb494f8d564b369d41decb0e48bda2a467d3c7ccb1c0aabee66",
         "media": "bef5c00a717711f415c7f464671ef9166be0b768e6ee7b7e4532576a330346f2",
@@ -12122,82 +12141,98 @@
             "value": "toggleLang()"
           },
           {
-            "attr": "onmouseenter",
-            "tag": "a",
-            "value": "this.style.background='#1d4ed8'"
-          },
-          {
-            "attr": "onmouseleave",
-            "tag": "a",
-            "value": "this.style.background='#2563eb'"
-          },
-          {
             "attr": "onmouseover",
-            "tag": "a",
-            "value": "this.style.transform='translateY(-2px)'"
-          },
-          {
-            "attr": "onmouseout",
-            "tag": "a",
-            "value": "this.style.transform='none'"
-          },
-          {
-            "attr": "onmouseover",
-            "tag": "a",
-            "value": "this.style.transform='translateY(-2px)'"
-          },
-          {
-            "attr": "onmouseout",
-            "tag": "a",
-            "value": "this.style.transform='none'"
-          },
-          {
-            "attr": "onmouseover",
+            "href": "https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk",
             "tag": "a",
             "value": "this.style.borderColor='#2563eb';this.style.transform='translateY(-2px)'"
           },
           {
             "attr": "onmouseout",
+            "href": "https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk",
             "tag": "a",
             "value": "this.style.borderColor='#22c55e';this.style.transform='none'"
           },
           {
             "attr": "onmouseenter",
+            "href": "https://play.google.com/apps/testing/ekklesia.gr",
             "tag": "a",
             "value": "this.style.borderColor='#3b82f6';this.style.opacity='1'"
           },
           {
             "attr": "onmouseleave",
+            "href": "https://play.google.com/apps/testing/ekklesia.gr",
             "tag": "a",
             "value": "this.style.borderColor='#334155';this.style.opacity='0.8'"
           },
           {
             "attr": "onmouseenter",
+            "href": "https://f-droid.org/packages/ekklesia.gr/",
             "tag": "a",
             "value": "this.style.borderColor='#3b82f6'"
           },
           {
             "attr": "onmouseleave",
+            "href": "https://f-droid.org/packages/ekklesia.gr/",
             "tag": "a",
             "value": "this.style.borderColor='#22c55e'"
           },
           {
+            "attr": "onmouseenter",
+            "href": "https://pnyx.ekklesia.gr",
+            "tag": "a",
+            "value": "this.style.background='#1d4ed8'"
+          },
+          {
+            "attr": "onmouseleave",
+            "href": "https://pnyx.ekklesia.gr",
+            "tag": "a",
+            "value": "this.style.background='#2563eb'"
+          },
+          {
+            "attr": "onmouseover",
+            "href": "tickets/index.html",
+            "tag": "a",
+            "value": "this.style.transform='translateY(-2px)'"
+          },
+          {
+            "attr": "onmouseout",
+            "href": "tickets/index.html",
+            "tag": "a",
+            "value": "this.style.transform='none'"
+          },
+          {
+            "attr": "onmouseover",
+            "href": "https://github.com/NeaBouli/pnyx-community/issues/new",
+            "tag": "a",
+            "value": "this.style.transform='translateY(-2px)'"
+          },
+          {
+            "attr": "onmouseout",
+            "href": "https://github.com/NeaBouli/pnyx-community/issues/new",
+            "tag": "a",
+            "value": "this.style.transform='none'"
+          },
+          {
             "attr": "onsubmit",
+            "id": "nlForm",
             "tag": "form",
             "value": "submitNewsletter(event)"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('privacy');return false"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('delete');return false"
           },
           {
             "attr": "onclick",
+            "id": "legalModal",
             "tag": "div",
             "value": "if(event.target===this)closeLegalModal()"
           },
@@ -12208,6 +12243,7 @@
           },
           {
             "attr": "onclick",
+            "id": "pwaModal",
             "tag": "div",
             "value": "if(event.target===this)this.style.display='none'"
           },
@@ -12218,16 +12254,19 @@
           },
           {
             "attr": "onclick",
+            "id": "chatToggle",
             "tag": "button",
             "value": "toggleChat()"
           },
           {
             "attr": "onmouseenter",
+            "id": "chatToggle",
             "tag": "button",
             "value": "this.style.transform='scale(1.1)'"
           },
           {
             "attr": "onmouseleave",
+            "id": "chatToggle",
             "tag": "button",
             "value": "this.style.transform='scale(1)'"
           },
@@ -12238,6 +12277,7 @@
           },
           {
             "attr": "onkeydown",
+            "id": "chatInput",
             "tag": "input",
             "value": "if(event.key==='Enter')sendChat()"
           },
@@ -18722,7 +18762,7 @@
         "bilingual": "4ccbd323472620fb44b439e116b66ba6a5544c86302bfddb5fa3eeeb7b37cceb",
         "document": "a45aa18b0e339262a8a953c314a235aa3d72c63fe0f4f54c44fca67049b37999",
         "forms": "c44f6dcf505f64547fe6b022500ad03a4d094d778cd644985f29b2458a81fc72",
-        "interactions": "5f901d6a605da1140578ff9f0fc0cce7562df6b9561e5103fe6af6440d6e17a1",
+        "interactions": "e35ca1db86fcda18853d54dc009d778c0955aaca59a57c1c927a1651bd36efd4",
         "json_ld": "7a03371153f4184e491a0285a11ecbfcb69645ea835ebdce74b681a5bbc34be3",
         "links": "3c8fcdeb4f999859352da342331ff371b0791dc517bc8f8cb48a9e32b5b06c2c",
         "media": "cf5f46f169c9cc43df5ec9717e4bd5171ca70cc392911b2821ccc058df10071b",
@@ -18742,6 +18782,7 @@
         "element_handlers": [
           {
             "attr": "onclick",
+            "id": "langBtn",
             "tag": "button",
             "value": "toggleLang()"
           }
@@ -20217,7 +20258,7 @@
         "bilingual": "88c6f6f3903ddf453b711561e5e0ec0573b61ddd7da4f0e89e04868d89857ac7",
         "document": "1a82b776594024a8f9071e2b40ebdaf957d326f0097de987d2cb847f2f0b7d08",
         "forms": "9b99f025fc8bb8348bfaba658b97ef6e290ad974cb4d274169ea334db331a6ef",
-        "interactions": "061e9dbd6f9cd236feb5f0d802d9d3359fd256a7a481d29438d18b1f02a73305",
+        "interactions": "3617e60bbc933e63f8d4a0c77af25501421a9dca720459cea7b5425300b17f5a",
         "json_ld": "f7f49180fdd83ada58cf7d4bef5017f1a259cc0739bc33e41035e6f59282958b",
         "links": "82414b3442fc44b4ba445064d272684ba50c78796b7f86a63f0bd96ca8a48a71",
         "media": "a11d918bf6da35089986504d3754d97a47b410b405a7584010238c41e84290e5",
@@ -20242,6 +20283,7 @@
           },
           {
             "attr": "onclick",
+            "id": "langBtn",
             "tag": "button",
             "value": "setPolisLang(polisLang==='el'?'en':'el');document.getElementById('langBtn').textContent=polisLang==='el'?'EN':'ΕΛ'"
           },
@@ -20252,6 +20294,7 @@
           },
           {
             "attr": "onclick",
+            "id": "qrLoginBtn",
             "tag": "button",
             "value": "openQRLogin()"
           },
@@ -20312,11 +20355,13 @@
           },
           {
             "attr": "onsubmit",
+            "id": "ticketForm",
             "tag": "form",
             "value": "submitTicketForm(event)"
           },
           {
             "attr": "onclick",
+            "id": "polisMobileModal",
             "tag": "div",
             "value": "if(event.target===this)closeMobileDetail()"
           },
@@ -21677,7 +21722,7 @@
         "bilingual": "6960d73b47905a252db9dcbebf307c112a8add779f93cb9b94a5126d6799b4bc",
         "document": "c4c3138e2946c841a157ec8c7845eee73ce805f6ec7d3aef421c4230ac96c07b",
         "forms": "54dc4e65cf157eadbfcec4af3ff1459d697eaf7b9fbf4b6ebaacb14e87d7ba8c",
-        "interactions": "0c51f64dbf175d0391c1c8057bae16887dcb773677ce75226d10b4dc7aa559de",
+        "interactions": "3f9a1718802892a9f7c57b7d03a3d4d76939c74cb2893977f2a355dbb3cb56b7",
         "json_ld": "6ae7fdd444b14c3e31b7824b72ff71372a22d01ca39e766e95b7ddf24f8c8d2a",
         "links": "aa3e5f6ca34f92e34e6f52984cf8950f7d850f9f502e8a82936b07d7f74c68a4",
         "media": "a11d918bf6da35089986504d3754d97a47b410b405a7584010238c41e84290e5",
@@ -21697,21 +21742,25 @@
         "element_handlers": [
           {
             "attr": "onclick",
+            "id": "langBtn",
             "tag": "button",
             "value": "toggleLang()"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('privacy');return false"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('delete');return false"
           },
           {
             "attr": "onclick",
+            "id": "legalModal",
             "tag": "div",
             "value": "if(event.target===this)closeLegalModal()"
           },
@@ -22942,7 +22991,7 @@
         "bilingual": "15404e2f1a2648571905c5876c3b16741e42f86d99b3f01a4513393732d35692",
         "document": "d6f613f45a7087237ff1adfa8f6e29f7f589d50fcc1cb631bae495d9bb9a2dc7",
         "forms": "54dc4e65cf157eadbfcec4af3ff1459d697eaf7b9fbf4b6ebaacb14e87d7ba8c",
-        "interactions": "0c51f64dbf175d0391c1c8057bae16887dcb773677ce75226d10b4dc7aa559de",
+        "interactions": "3f9a1718802892a9f7c57b7d03a3d4d76939c74cb2893977f2a355dbb3cb56b7",
         "json_ld": "810cdf9f48cb9ecd99fc9ea9f5533bed48e4c844616e38851983293fc8ed8f3d",
         "links": "d0bd4eca36fcd4ff0fa9c0e2bb571eae452695e99ce6589a0442ff08c7682344",
         "media": "0ecac3ce6f6a1fb5c682468efb903b80381af485bcd38405726c67a071198309",
@@ -22962,21 +23011,25 @@
         "element_handlers": [
           {
             "attr": "onclick",
+            "id": "langBtn",
             "tag": "button",
             "value": "toggleLang()"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('privacy');return false"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('delete');return false"
           },
           {
             "attr": "onclick",
+            "id": "legalModal",
             "tag": "div",
             "value": "if(event.target===this)closeLegalModal()"
           },
@@ -24121,7 +24174,7 @@
         "bilingual": "999ff431e77f841a5f23400ab85bf33507bb12f19876b6c980388b3fe4573d4c",
         "document": "a2fdc6de93564f15298fe08d83d1644535c8df218b4a29b6f7894d9a63d194b0",
         "forms": "5b4528ee27b590e814eb22dea29a12e016c2d4433ac77ed5b40b4b619af03441",
-        "interactions": "65911496de79a1f596a2417b39d652fb210a4db9283c1957867a05975ea8d5c1",
+        "interactions": "d6fcb688e6de632b879e233ae51ce6266a93fa6880826c69bb34350e35e81fc4",
         "json_ld": "aa4382732088334e5b1a1b7be108c71a0282e253610a91b4f07458844815603f",
         "links": "b599b18671fb348f57b1a8cd69ebcf0859fa96795ac660fd14d185da2c0193fe",
         "media": "38f79ed8afb3d923a5efdb7620c1c5071b85c209ed9c35670e4aa69fe89f81c9",
@@ -24141,86 +24194,103 @@
         "element_handlers": [
           {
             "attr": "onclick",
+            "id": "langBtn",
             "tag": "button",
             "value": "toggleLang()"
           },
           {
             "attr": "onmouseover",
+            "href": "https://t.me/ekklesia_gr",
             "tag": "a",
             "value": "this.style.opacity='0.85'"
           },
           {
             "attr": "onmouseout",
+            "href": "https://t.me/ekklesia_gr",
             "tag": "a",
             "value": "this.style.opacity='1'"
           },
           {
             "attr": "onmouseover",
+            "href": "https://t.me/ekklesia_el",
             "tag": "a",
             "value": "this.style.opacity='0.85'"
           },
           {
             "attr": "onmouseout",
+            "href": "https://t.me/ekklesia_el",
             "tag": "a",
             "value": "this.style.opacity='1'"
           },
           {
             "attr": "onmouseover",
+            "href": "https://github.com/NeaBouli/pnyx",
             "tag": "a",
             "value": "this.style.opacity='0.85'"
           },
           {
             "attr": "onmouseout",
+            "href": "https://github.com/NeaBouli/pnyx",
             "tag": "a",
             "value": "this.style.opacity='1'"
           },
           {
             "attr": "onmouseover",
+            "href": "https://pnyx.ekklesia.gr",
             "tag": "a",
             "value": "this.style.opacity='0.85'"
           },
           {
             "attr": "onmouseout",
+            "href": "https://pnyx.ekklesia.gr",
             "tag": "a",
             "value": "this.style.opacity='1'"
           },
           {
             "attr": "onmouseover",
+            "href": "https://www.facebook.com/share/1MbLJG6eth/",
             "tag": "a",
             "value": "this.style.opacity='0.85'"
           },
           {
             "attr": "onmouseout",
+            "href": "https://www.facebook.com/share/1MbLJG6eth/",
             "tag": "a",
             "value": "this.style.opacity='1'"
           },
           {
             "attr": "onmouseover",
+            "href": "https://twitter.com/intent/tweet?text=%CE%A8%CE%B7%CF%86%CE%AF%CF%83%CF%84%CE%B5%20%CF%83%CF%84%CE%BF%20ekklesia.gr%20%E2%80%94%20%CE%B7%20%CF%88%CE%B7%CF%86%CE%B9%CE%B1%CE%BA%CE%AE%20%CE%AC%CE%BC%CE%B5%CF%83%CE%B7%20%CE%B4%CE%B7%CE%BC%CE%BF%CE%BA%CF%81%CE%B1%CF%84%CE%AF%CE%B1%20%F0%9F%87%AC%F0%9F%87%B7%20%23%CE%B5%CE%BA%CE%BA%CE%BB%CE%B7%CF%83%CE%AF%CE%B1%20%F0%9F%91%89%20https://ekklesia.gr",
             "tag": "a",
             "value": "this.style.opacity='0.85'"
           },
           {
             "attr": "onmouseout",
+            "href": "https://twitter.com/intent/tweet?text=%CE%A8%CE%B7%CF%86%CE%AF%CF%83%CF%84%CE%B5%20%CF%83%CF%84%CE%BF%20ekklesia.gr%20%E2%80%94%20%CE%B7%20%CF%88%CE%B7%CF%86%CE%B9%CE%B1%CE%BA%CE%AE%20%CE%AC%CE%BC%CE%B5%CF%83%CE%B7%20%CE%B4%CE%B7%CE%BC%CE%BF%CE%BA%CF%81%CE%B1%CF%84%CE%AF%CE%B1%20%F0%9F%87%AC%F0%9F%87%B7%20%23%CE%B5%CE%BA%CE%BA%CE%BB%CE%B7%CF%83%CE%AF%CE%B1%20%F0%9F%91%89%20https://ekklesia.gr",
             "tag": "a",
             "value": "this.style.opacity='1'"
           },
           {
             "attr": "onmouseover",
+            "href": "https://www.facebook.com/sharer/sharer.php?u=https://ekklesia.gr",
             "tag": "a",
             "value": "this.style.opacity='0.85'"
           },
           {
             "attr": "onmouseout",
+            "href": "https://www.facebook.com/sharer/sharer.php?u=https://ekklesia.gr",
             "tag": "a",
             "value": "this.style.opacity='1'"
           },
           {
             "attr": "onmouseover",
+            "href": "https://www.linkedin.com/sharing/share-offsite/?url=https://ekklesia.gr",
             "tag": "a",
             "value": "this.style.opacity='0.85'"
           },
           {
             "attr": "onmouseout",
+            "href": "https://www.linkedin.com/sharing/share-offsite/?url=https://ekklesia.gr",
             "tag": "a",
             "value": "this.style.opacity='1'"
           },
@@ -24236,16 +24306,19 @@
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('privacy');return false"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('delete');return false"
           },
           {
             "attr": "onclick",
+            "id": "legalModal",
             "tag": "div",
             "value": "if(event.target===this)closeLegalModal()"
           },
@@ -25402,7 +25475,7 @@
         "bilingual": "eeb610e98480a40042ddd0b6749920503e99771cc4d3633c511beea91f617058",
         "document": "92a7b1e4a177fbc466c81ece1855157e1dc3dddf572d069c8e9c159919415453",
         "forms": "54dc4e65cf157eadbfcec4af3ff1459d697eaf7b9fbf4b6ebaacb14e87d7ba8c",
-        "interactions": "0c51f64dbf175d0391c1c8057bae16887dcb773677ce75226d10b4dc7aa559de",
+        "interactions": "3f9a1718802892a9f7c57b7d03a3d4d76939c74cb2893977f2a355dbb3cb56b7",
         "json_ld": "42f9e85eb395073274b7831baf27110b26756bf318f4336e7d3f4ce850cd3142",
         "links": "69a753869c2cc8ec9db8b05f818ef368e98be1e91b199f361d156f5e6e6a06cd",
         "media": "a11d918bf6da35089986504d3754d97a47b410b405a7584010238c41e84290e5",
@@ -25422,21 +25495,25 @@
         "element_handlers": [
           {
             "attr": "onclick",
+            "id": "langBtn",
             "tag": "button",
             "value": "toggleLang()"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('privacy');return false"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('delete');return false"
           },
           {
             "attr": "onclick",
+            "id": "legalModal",
             "tag": "div",
             "value": "if(event.target===this)closeLegalModal()"
           },
@@ -26271,7 +26348,7 @@
         "bilingual": "e61e9edb918478736e8552b85939fc9f57b8dc6c5e439651668320483375a93c",
         "document": "408324d5b679bc58c331d98cfe0effd2ce3fe27d99e3671c6ec179645e662302",
         "forms": "54dc4e65cf157eadbfcec4af3ff1459d697eaf7b9fbf4b6ebaacb14e87d7ba8c",
-        "interactions": "0c51f64dbf175d0391c1c8057bae16887dcb773677ce75226d10b4dc7aa559de",
+        "interactions": "3f9a1718802892a9f7c57b7d03a3d4d76939c74cb2893977f2a355dbb3cb56b7",
         "json_ld": "bb58be18e895b3fb9c2f27bbdced823c71719be6f85b2a209d1addde9932d23f",
         "links": "b19f98d8bd11e03459c7ad4aa3a88c5dbb381deb43ff8e5eaa36ebfcff463d37",
         "media": "a11d918bf6da35089986504d3754d97a47b410b405a7584010238c41e84290e5",
@@ -26291,21 +26368,25 @@
         "element_handlers": [
           {
             "attr": "onclick",
+            "id": "langBtn",
             "tag": "button",
             "value": "toggleLang()"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('privacy');return false"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('delete');return false"
           },
           {
             "attr": "onclick",
+            "id": "legalModal",
             "tag": "div",
             "value": "if(event.target===this)closeLegalModal()"
           },
@@ -27302,7 +27383,7 @@
         "bilingual": "8104654345950caf8f9687cfc12851fe3b3dc36d1f99a87a02cc26593d6dcf94",
         "document": "f31ebd76c1ebd3374333e721fd9761e1aa02f7496aeec8b05c90958f46569b7e",
         "forms": "54dc4e65cf157eadbfcec4af3ff1459d697eaf7b9fbf4b6ebaacb14e87d7ba8c",
-        "interactions": "0c51f64dbf175d0391c1c8057bae16887dcb773677ce75226d10b4dc7aa559de",
+        "interactions": "3f9a1718802892a9f7c57b7d03a3d4d76939c74cb2893977f2a355dbb3cb56b7",
         "json_ld": "821ebc0aacea86ba7bd29231392fee0931fca920d7085eb91eeaca182e49454e",
         "links": "8422cc776d474c404e383e82aded9d31ed1221e8ef24f722796253d08d0c9403",
         "media": "a11d918bf6da35089986504d3754d97a47b410b405a7584010238c41e84290e5",
@@ -27322,21 +27403,25 @@
         "element_handlers": [
           {
             "attr": "onclick",
+            "id": "langBtn",
             "tag": "button",
             "value": "toggleLang()"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('privacy');return false"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('delete');return false"
           },
           {
             "attr": "onclick",
+            "id": "legalModal",
             "tag": "div",
             "value": "if(event.target===this)closeLegalModal()"
           },
@@ -28815,7 +28900,7 @@
         "bilingual": "24fa68ad2f2732e4ebaae537f278a98ab60655e7f1c83ed2f7d9a83b646c4492",
         "document": "a3fa25aea0d1ee63ec51e423cb0bde023e0c336e42a3d484f9d16f900d493aa6",
         "forms": "54dc4e65cf157eadbfcec4af3ff1459d697eaf7b9fbf4b6ebaacb14e87d7ba8c",
-        "interactions": "807732a31f7dfc0cb8d7541e641553e01d0cb8e4869bf4b43f585567c84ed9b9",
+        "interactions": "7d9442f657e5ef7455be31969d9498270ce8d0485c53ca06ed78cfaedcdbb60d",
         "json_ld": "a0cd7bd9ba412435e6772336ccb8a54de360695c749c4f8b061393b087deb454",
         "links": "8fd99c868e31b7ea0dcb8719d274ce872dd249c4e6c9a4cfa2695333b46bcd0e",
         "media": "a11d918bf6da35089986504d3754d97a47b410b405a7584010238c41e84290e5",
@@ -28835,6 +28920,7 @@
         "element_handlers": [
           {
             "attr": "onclick",
+            "id": "langBtn",
             "tag": "button",
             "value": "toggleLang()"
           },
@@ -29125,16 +29211,19 @@
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('privacy');return false"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('delete');return false"
           },
           {
             "attr": "onclick",
+            "id": "legalModal",
             "tag": "div",
             "value": "if(event.target===this)closeLegalModal()"
           },
@@ -30535,7 +30624,7 @@
         "bilingual": "0b487001332dc895d34bc6fca39f24d4bb92c6f7624a01a4e97486423780725f",
         "document": "cf1edad3c43b6c07d0457cdb5673cb56646f8663de02d4b4a76798d98f80c177",
         "forms": "54dc4e65cf157eadbfcec4af3ff1459d697eaf7b9fbf4b6ebaacb14e87d7ba8c",
-        "interactions": "0c51f64dbf175d0391c1c8057bae16887dcb773677ce75226d10b4dc7aa559de",
+        "interactions": "3f9a1718802892a9f7c57b7d03a3d4d76939c74cb2893977f2a355dbb3cb56b7",
         "json_ld": "0027623d933e1d640105f614450e70f6f0cc9c76439439dcb8b39a4d162330b5",
         "links": "35b9b8de908bcadcb5e8912d758b993370d3fe75af124c58fd98c5cce89a2bcf",
         "media": "a11d918bf6da35089986504d3754d97a47b410b405a7584010238c41e84290e5",
@@ -30555,21 +30644,25 @@
         "element_handlers": [
           {
             "attr": "onclick",
+            "id": "langBtn",
             "tag": "button",
             "value": "toggleLang()"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('privacy');return false"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('delete');return false"
           },
           {
             "attr": "onclick",
+            "id": "legalModal",
             "tag": "div",
             "value": "if(event.target===this)closeLegalModal()"
           },
@@ -31741,7 +31834,7 @@
         "bilingual": "fc80b2575bd8dbb07332a9a9a00d891e091290dbba9a593c21d04764eab6bb7b",
         "document": "83961277bf7ed224c153e52031c0fcf1e929b91a97266b2aba3dadb590386be2",
         "forms": "54dc4e65cf157eadbfcec4af3ff1459d697eaf7b9fbf4b6ebaacb14e87d7ba8c",
-        "interactions": "fc9f2ee8ee2b0ca62f099bece502d598694f79b344ba7ef8b341d73295514e05",
+        "interactions": "13885c4a0c44d79149248f899ac582e09eaef47779c8435abbc8268b1d587eee",
         "json_ld": "04af97edba44d6ee845999b0f47cce6fe1338d42ba7b2a15764eef7bf39038b4",
         "links": "55fd00576b00820435d0252d921f08e976ac8d957ff904035c3409a17edc592a",
         "media": "a11d918bf6da35089986504d3754d97a47b410b405a7584010238c41e84290e5",
@@ -31761,21 +31854,25 @@
         "element_handlers": [
           {
             "attr": "onclick",
+            "id": "langBtn",
             "tag": "button",
             "value": "toggleLang()"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('privacy');return false"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('delete');return false"
           },
           {
             "attr": "onclick",
+            "id": "legalModal",
             "tag": "div",
             "value": "if(event.target===this)closeLegalModal()"
           },
@@ -32885,7 +32982,7 @@
         "bilingual": "94665b0cc79bf4a5e913627e6736e4e282da7f5fd2ff71b7df4b4c73ab1f8960",
         "document": "e2ac29b2f25f4d5fdad3c63f2899b8279f14aa9063d92864c29d25eb5f479816",
         "forms": "54dc4e65cf157eadbfcec4af3ff1459d697eaf7b9fbf4b6ebaacb14e87d7ba8c",
-        "interactions": "0c51f64dbf175d0391c1c8057bae16887dcb773677ce75226d10b4dc7aa559de",
+        "interactions": "3f9a1718802892a9f7c57b7d03a3d4d76939c74cb2893977f2a355dbb3cb56b7",
         "json_ld": "54d0445e8221b7a86e4d6f1e2e5dcd17465322b0127138c1da4cdf89c83382b1",
         "links": "67127181187ffeee4c2aa61b69c8323451e0ef27e165ea7a895abdece5a03ede",
         "media": "a11d918bf6da35089986504d3754d97a47b410b405a7584010238c41e84290e5",
@@ -32905,21 +33002,25 @@
         "element_handlers": [
           {
             "attr": "onclick",
+            "id": "langBtn",
             "tag": "button",
             "value": "toggleLang()"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('privacy');return false"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('delete');return false"
           },
           {
             "attr": "onclick",
+            "id": "legalModal",
             "tag": "div",
             "value": "if(event.target===this)closeLegalModal()"
           },
@@ -34537,7 +34638,7 @@
         "bilingual": "8264a23d4f3ec4d78a352a2d0c0ec749bc476b801dfdebdf4e7a5e9fd66371bb",
         "document": "b096808ef60e39926619cc22b58adcfb85736cb7dd3c36de892d5c172388d2f4",
         "forms": "54dc4e65cf157eadbfcec4af3ff1459d697eaf7b9fbf4b6ebaacb14e87d7ba8c",
-        "interactions": "cee48721874d54ab18d5847a28170c5d5e7ac8da1d51678fb636fd4a6ea8b9fa",
+        "interactions": "16012c68241bbbe4339589157e40fef585c13ed3dd6f7bc4d06269a7ebce4633",
         "json_ld": "0027623d933e1d640105f614450e70f6f0cc9c76439439dcb8b39a4d162330b5",
         "links": "e1cde4b8fea2041b99b7c9bf20ef0126946ea49dc092fd99f366d5fbca58d9a9",
         "media": "a11d918bf6da35089986504d3754d97a47b410b405a7584010238c41e84290e5",
@@ -34557,6 +34658,7 @@
         "element_handlers": [
           {
             "attr": "onclick",
+            "id": "langBtn",
             "tag": "button",
             "value": "toggleLang()"
           },
@@ -34617,16 +34719,19 @@
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('privacy');return false"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('delete');return false"
           },
           {
             "attr": "onclick",
+            "id": "legalModal",
             "tag": "div",
             "value": "if(event.target===this)closeLegalModal()"
           },
@@ -36239,7 +36344,7 @@
         "bilingual": "6c17a201f37ae83a38cf31292aba8c694f06ab16bd24561a6673a40d12c95ef3",
         "document": "18a1e2c13c4a3afd4a46f18b09ab1f26808630314514bcb8ff6c5f58d80a09c6",
         "forms": "54dc4e65cf157eadbfcec4af3ff1459d697eaf7b9fbf4b6ebaacb14e87d7ba8c",
-        "interactions": "0c51f64dbf175d0391c1c8057bae16887dcb773677ce75226d10b4dc7aa559de",
+        "interactions": "3f9a1718802892a9f7c57b7d03a3d4d76939c74cb2893977f2a355dbb3cb56b7",
         "json_ld": "37d6946be4c899ae77d256878327b6c26eec58f32949252960a33fc950aa4ac3",
         "links": "db6116f10659951c7511938f4584b0e946257b9cbec0c07431463ccedfe9f68a",
         "media": "1cdc8ea61245c18556d5ecc0b3a7be34cb95ea14c103fb7a94b2b2a0b9a8bbc0",
@@ -36259,21 +36364,25 @@
         "element_handlers": [
           {
             "attr": "onclick",
+            "id": "langBtn",
             "tag": "button",
             "value": "toggleLang()"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('privacy');return false"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('delete');return false"
           },
           {
             "attr": "onclick",
+            "id": "legalModal",
             "tag": "div",
             "value": "if(event.target===this)closeLegalModal()"
           },
@@ -37612,7 +37721,7 @@
         "bilingual": "915ed3f6d3c4d7ff282f486818ee39e6600a1e21014edfa765cccb6cc0e50a6c",
         "document": "b8c3b76b3a9dd4138d905c270342cb099cfa6bb46f8833cd1b2c64a3a5ecc3a0",
         "forms": "54dc4e65cf157eadbfcec4af3ff1459d697eaf7b9fbf4b6ebaacb14e87d7ba8c",
-        "interactions": "0c51f64dbf175d0391c1c8057bae16887dcb773677ce75226d10b4dc7aa559de",
+        "interactions": "3f9a1718802892a9f7c57b7d03a3d4d76939c74cb2893977f2a355dbb3cb56b7",
         "json_ld": "b99ab843f7880107f09e7d333a9451803460cf3ca7f22dbfa7767001bf94ea6f",
         "links": "57cc13b5764eb4a12c3c63156710b3f17c2c3b3383e3fad21293f155a8ba0b05",
         "media": "a11d918bf6da35089986504d3754d97a47b410b405a7584010238c41e84290e5",
@@ -37632,21 +37741,25 @@
         "element_handlers": [
           {
             "attr": "onclick",
+            "id": "langBtn",
             "tag": "button",
             "value": "toggleLang()"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('privacy');return false"
           },
           {
             "attr": "onclick",
+            "href": "#",
             "tag": "a",
             "value": "openLegalModal('delete');return false"
           },
           {
             "attr": "onclick",
+            "id": "legalModal",
             "tag": "div",
             "value": "if(event.target===this)closeLegalModal()"
           },
@@ -39039,7 +39152,7 @@
     "bilingual": "45f4cb5540cca05e4d1b2c878cbb1b9b59e6cbdea9816dfe41a9dfe5488d78bf",
     "document": "203f336b89712be0934cf95980e6f57c4dea334c9de37df23fa5bfc0de06ccf1",
     "forms": "bb12ec7297fb7297f1705345833c3bec3f3b707ac7a1a35f4a30e89e7b8535b8",
-    "interactions": "ee27e11f9756df08a6425a4b7be72cf397b13c1e67e5ead4864a490b2f17b467",
+    "interactions": "27031a10536d4dd46b037c64825601a79ff45b570bf24565d05520d889d70755",
     "json_ld": "99d426c01a1451c18eea1e8e17b3b5052865d21e5355dbb74ebb0f8f6f93ac8f",
     "links": "93c29831811eb50a2315d1739e7a4428e117b23a4170f682ce1354a282747215",
     "media": "4bbfc41968923f68750d510694f29b201d6316b82db7be4f2844a57db12da2cc",

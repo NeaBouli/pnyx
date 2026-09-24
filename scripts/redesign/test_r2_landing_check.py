@@ -164,6 +164,39 @@ class PreservationTest(unittest.TestCase):
         violations = r2_landing_check.check_index_preservation(self.baseline, changed)
         self.assertTrue(any("bilingual content" in item for item in violations))
 
+    def test_handler_swap_between_distinct_links_fails_closed(self) -> None:
+        """Swapping inline event handlers between links with different hrefs
+        must be detected even though DOM reordering is tolerated (T-358)."""
+        changed = copy.deepcopy(self.current)
+        handlers = changed["interactions"]["element_handlers"]
+        # Find two link handlers with distinct hrefs
+        link_indices = [
+            i for i, h in enumerate(handlers)
+            if h["tag"] == "a" and "href" in h
+        ]
+        self.assertGreaterEqual(len(link_indices), 2, "Need at least two link handlers")
+        i, j = link_indices[0], link_indices[1]
+        # Swap the handler values while keeping the element identity
+        handlers[i]["value"], handlers[j]["value"] = handlers[j]["value"], handlers[i]["value"]
+        violations = r2_landing_check.check_index_preservation(self.baseline, changed)
+        self.assertTrue(
+            any("element_handlers" in item for item in violations),
+            "Handler swap between distinct links must trigger a violation",
+        )
+
+    def test_dom_reorder_without_handler_swap_passes(self) -> None:
+        """Reordering DOM sections (and thus handler sequence) must not
+        trigger a violation when no handler is reassigned (T-358)."""
+        changed = copy.deepcopy(self.current)
+        handlers = changed["interactions"]["element_handlers"]
+        # Reverse the handler list — simulates complete DOM reorder
+        changed["interactions"]["element_handlers"] = list(reversed(handlers))
+        violations = r2_landing_check.check_index_preservation(self.baseline, changed)
+        self.assertFalse(
+            any("element_handlers" in item for item in violations),
+            "Pure DOM reorder must not trigger handler violation",
+        )
+
     def test_inline_script_change_fails_closed(self) -> None:
         changed = copy.deepcopy(self.current)
         changed["scripts"]["inline"][0]["sha256"] = "0" * 64
