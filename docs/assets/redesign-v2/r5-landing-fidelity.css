@@ -736,7 +736,7 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
 }
 
 /* Verification precedes features inside their shared production section. */
-#features { overflow-x: clip; }
+#features { overflow-x: clip; padding-bottom: 0 !important; }
 #features > .section-inner {
   display: flex;
   flex-direction: column;
@@ -752,7 +752,7 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
 #features > .section-inner > #transparency + div { order: 4; }
 
 #transparency {
-  margin: -56px calc(-50vw + 50%) 56px !important;
+  margin: -56px calc(-50vw + 50%) 0 !important;
   padding: 56px calc(50vw - 50%) !important;
   border: 0 !important;
   border-bottom: 2px solid #0f172a !important;
@@ -1265,6 +1265,20 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
 #representative h4, #representative p { color: #334155 !important; }
 #representative a { color: #1d4ed8 !important; border-color: #e2e8f0 !important; background: #fff !important; }
 #representative .pnx2-representative-body > div:nth-child(4) img { max-width: 160px !important; min-width: 0 !important; border: 0 !important; border-radius: 0 !important; }
+
+/* T-377: vertically center closed disclosure titles in their bands.
+   Remove asymmetric external spacing (#transparency bottom-margin,
+   #features bottom-padding) and replace with symmetric fold-summary
+   padding.  No extra margin on #representative — the next section's
+   own padding handles the gap. */
+.pnx2-features-fold > .pnx2-fold-summary {
+  padding-top: 30px;
+  padding-bottom: 30px;
+}
+.pnx2-representative-fold > .pnx2-fold-summary {
+  padding-top: 30px;
+  padding-bottom: 32px;
+}
 
 #notice > div > .pnx2-fold > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; }
 #notice > div > .pnx2-fold > div > div { min-width: 0; padding: 24px; border-right: 2px solid #e2e8f0; border-bottom: 2px solid #e2e8f0; }
