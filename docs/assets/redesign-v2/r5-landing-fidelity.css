@@ -741,7 +741,11 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
   flex-direction: column;
 }
 
-#features > .section-inner > #transparency { order: 1; }
+#features > .section-inner > #transparency {
+  order: 1;
+  background: #fff !important;
+  border-bottom: 2px solid #0f172a !important;
+}
 #features > .section-inner > .section-title { order: 2; }
 #features > .section-inner > .features-grid { order: 3; }
 #features > .section-inner > #transparency + div { order: 4; }

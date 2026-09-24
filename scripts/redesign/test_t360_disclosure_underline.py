@@ -26,6 +26,19 @@ class DisclosureUnderlineTest(unittest.TestCase):
         self.assertIsNotNone(section)
         self.assertRegex(section.group(1), r"border-bottom\s*:\s*[1-9]\d*px\s+solid\b")
 
+    def test_verification_band_matches_white_landing_with_dark_divider(self) -> None:
+        css = (DOCS_DIR / "assets/redesign-v2/r5-landing-fidelity.css").read_text()
+        verification = re.search(
+            r"#features\s*>\s*\.section-inner\s*>\s*#transparency\s*\{([^}]*)\}",
+            css,
+        )
+        self.assertIsNotNone(verification)
+        self.assertRegex(verification.group(1), r"background\s*:\s*#fff\s*!important")
+        self.assertRegex(
+            verification.group(1),
+            r"border-bottom\s*:\s*2px\s+solid\s+#0f172a\s*!important",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
