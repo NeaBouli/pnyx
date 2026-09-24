@@ -308,5 +308,53 @@ class ParityTest(unittest.TestCase):
         self.assertTrue(any("docs/other.html" in v for v in r3.check_nonwiki_parity(self.inv, self.tmp)))
 
 
+class FaqAccordionCssTest(unittest.TestCase):
+    """Regression: closed .faq-a must have zero rendered height (T-380)."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.css = (r3.DOCS_DIR / r3.R3_CSS_RELS[-1]).read_text(encoding="utf-8")
+        cls.faq_html = (r3.DOCS_DIR.parent / r3.FAQ_REL).read_text(encoding="utf-8")
+
+    def test_closed_faq_a_has_zero_padding(self) -> None:
+        """r3-wiki.css base .faq-a must not set bottom padding (would leak through divider)."""
+        import re
+        # Split CSS into rule blocks: (selector, body)
+        for m in re.finditer(r'([^{}]+)\{([^}]*)\}', self.css):
+            selector = m.group(1).strip()
+            body = m.group(2)
+            # Match only the standalone .faq-a selector, skip .faq-item.open .faq-a
+            if selector == ".faq-a":
+                for pad in re.findall(r'padding\s*:\s*([^;]+)', body):
+                    parts = pad.strip().split()
+                    if len(parts) >= 3:
+                        self.assertEqual(parts[2], "0", f"closed .faq-a bottom-padding must be 0, got: {pad}")
+                for pb in re.findall(r'padding-bottom\s*:\s*([^;]+)', body):
+                    self.assertEqual(pb.strip(), "0", f"closed .faq-a padding-bottom must be 0, got: {pb}")
+
+    def test_open_faq_a_has_bottom_padding(self) -> None:
+        """Open .faq-a must have non-zero bottom padding for answer spacing."""
+        import re
+        open_blocks = re.findall(r'\.faq-item\.open\s+\.faq-a\s*\{([^}]*)\}', self.css)
+        self.assertTrue(len(open_blocks) > 0, "missing .faq-item.open .faq-a rule in r3-wiki.css")
+        has_padding = False
+        for block in open_blocks:
+            if re.search(r'padding-bottom\s*:\s*(?!0[;\s])', block):
+                has_padding = True
+            if re.search(r'padding\s*:\s*\S+\s+\S+\s+(?!0[;\s])\S+', block):
+                has_padding = True
+        self.assertTrue(has_padding, "open .faq-a must set non-zero bottom padding")
+
+    def test_faq_html_inline_closed_state_preserved(self) -> None:
+        """faq.html inline .faq-a must still use max-height:0 + overflow:hidden."""
+        self.assertIn("max-height: 0", self.faq_html.replace("max-height:0", "max-height: 0"))
+        self.assertIn("overflow: hidden", self.faq_html.replace("overflow:hidden", "overflow: hidden"))
+
+    def test_faq_html_open_state_preserved(self) -> None:
+        """faq.html inline .faq-item.open .faq-a must still set max-height for opening."""
+        self.assertIn(".faq-item.open .faq-a", self.faq_html)
+        self.assertIn("max-height: 500px", self.faq_html.replace("max-height:500px", "max-height: 500px"))
+
+
 if __name__ == "__main__":
     unittest.main()

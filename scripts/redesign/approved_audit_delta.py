@@ -5,8 +5,8 @@ import hashlib
 import r0_inventory
 
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/wiki/index.html": "afbe64244c7f6f89cf31dcfdca0c208bd62ba68b4352ba0407a73de9e80dc86e",
-    "docs/wiki/security.html": "580747c692fb3f264ff11dcf9922b341d1c8ab543cd20302130a5aaa6999b6c5",
+    "docs/wiki/index.html": "d1d4082591ab76371b7f248a31a382db4744962be1041229475cedbe83d9b566",
+    "docs/wiki/security.html": "905a5387128312df960cacce87f2d88582294520a19fe3db53e96cfeed1c6359",
 }
 APPROVED_AUDIT_PAGE_SHA256 = "c8d358a50fc4cdd29ee0af25430b6d4b0b4109f4e1a32bbfe4a84bebd3f334f2"
 
