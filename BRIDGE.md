@@ -1244,3 +1244,19 @@ Details: [EKA-17 release receipt](docs/operations/EKA17_HLR_ENV_ROLLOUT_2026-09-
 - Open, pre-existing: EKA-33's analytics/CSP and privacy-claim decision, plus
   the representative APK alias. Neither was silently altered.
 - Detailed evidence: `docs/operations/R7_LANDING_ROLLOUT_2026-09-24.md`.
+
+## 2026-09-24 - R9 Landing Verification Divider Live (Append-only)
+
+- Finding #357 is resolved by PR #358, merged normally as
+  `144ab14daccbb656a737f7f639700833f498dca5`. PR and post-merge CI,
+  Security Audit and 180 local redesign tests passed.
+- Owner-approved Web-only image `ekklesia-web:r9-divider-144ab14-20260924T203955Z`
+  is live. The previous R8b image remains tagged
+  `ekklesia-web:rollback-pre-r9-divider-20260924T203955Z`.
+- Live CSS matches the merge source. Desktop/tablet/mobile Chromium checks
+  show the white verification band and dark section divider; the disclosure
+  remains functional. Public route checks and API health passed. Other
+  containers and protected configuration stayed unchanged.
+- Full bounded rollout and rollback evidence:
+  `docs/operations/R9_LANDING_DIVIDER_ROLLOUT_2026-09-24.md`. The separate
+  Democracy Cycle finding remains open.
