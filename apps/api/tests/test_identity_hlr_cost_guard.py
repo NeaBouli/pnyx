@@ -128,6 +128,34 @@ def _all_keys(redis: FakeRedis) -> list[str]:
     return list(redis.counts) + list(redis.values)
 
 
+def _assert_key_pii_safe(
+    key: str, *, raw_ip: str, raw_number_fragments: list[str]
+) -> None:
+    """Structurally validate that a Redis key contains no raw PII.
+
+    Splits the key at the last colon to isolate the 32-char HMAC hex
+    suffix from the namespace prefix.  Only the prefix is scanned for
+    consecutive-digit runs — valid HMAC hex may legitimately contain
+    9+ decimal digits (the false-positive that triggered this helper).
+    The suffix IS checked for specific raw phone fragments: a ten-digit
+    Greek phone like ``6912345678`` is also valid hex and could appear
+    verbatim inside a 32-char hex string without triggering the generic
+    digit-run guard.
+    """
+    assert key.startswith("ratelimit:hlr_verify:"), f"unbekannter Key-Prefix: {key}"
+    prefix, _, suffix = key.rpartition(":")
+    assert re.fullmatch(r"[0-9a-f]{32}", suffix), (
+        f"Suffix ist kein gültiger 32-Zeichen HMAC-Hex: {suffix!r}"
+    )
+    assert raw_ip not in prefix, f"rohe IP im Key-Prefix: {key}"
+    for frag in raw_number_fragments:
+        assert frag not in prefix, f"rohes Nummern-Fragment im Key-Prefix: {key}"
+        assert frag not in suffix, f"rohes Nummern-Fragment im HMAC-Suffix: {key}"
+    assert not re.search(r"\d{9,}", prefix), (
+        f"rohe Nummern-Fragmente im Key-Prefix: {key}"
+    )
+
+
 # ─── Guard: Buckets, PII, Reihenfolge ────────────────────────────────────────
 
 
@@ -188,11 +216,159 @@ async def test_no_raw_pii_in_redis_keys(monkeypatch):
     keys = _all_keys(redis)
     assert keys, "Guard muss Redis-Buckets schreiben"
     for key in keys:
-        assert "198.51.100.23" not in key
-        assert "6912345678" not in key
-        assert "306912345678" not in key
-        assert not re.search(r"\d{9,}", key), f"rohe Nummern-Fragmente im Key: {key}"
-        assert key.startswith("ratelimit:hlr_verify:")
+        _assert_key_pii_safe(
+            key,
+            raw_ip="198.51.100.23",
+            raw_number_fragments=["6912345678", "306912345678"],
+        )
+
+
+@pytest.mark.asyncio
+async def test_numeric_heavy_hmac_suffix_no_false_positive(monkeypatch):
+    """A valid 32-char hex digest with ≥9 consecutive decimal digits must not
+    trigger a false PII alert — regression for GitHub Actions run 35936320815."""
+    import ip_utils
+
+    NUMERIC_DIGEST = "aaa" + "0" * 9 + "f" * 20  # 32-char valid hex, 9 digits
+    assert len(NUMERIC_DIGEST) == 32
+    assert re.search(r"\d{9,}", NUMERIC_DIGEST), "Digest muss ≥9 Ziffern enthalten"
+
+    redis = FakeRedis()
+    monkeypatch.setenv("SERVER_SALT", "s" * 64)
+    monkeypatch.setattr(identity, "_get_hlr_redis", _redis_factory(redis))
+
+    def _forced_numeric_hash(subject, namespace, today=None):
+        return NUMERIC_DIGEST
+
+    monkeypatch.setattr(identity, "hashed_rate_subject", _forced_numeric_hash)
+    monkeypatch.setattr(ip_utils, "hashed_rate_subject", _forced_numeric_hash)
+
+    await identity._enforce_hlr_verify_limits(_request("198.51.100.23"), "+306912345678")
+
+    keys = _all_keys(redis)
+    assert keys, "Guard muss Redis-Buckets schreiben"
+    for key in keys:
+        _assert_key_pii_safe(
+            key,
+            raw_ip="198.51.100.23",
+            raw_number_fragments=["6912345678", "306912345678"],
+        )
+
+
+@pytest.mark.asyncio
+async def test_keys_match_independently_computed_hmacs(monkeypatch):
+    """Verify actual Redis keys equal independently computed expected keys.
+
+    Structural hex validation alone cannot distinguish a genuine HMAC
+    suffix from a syntactically valid hex string that embeds the raw
+    phone number (e.g. ``6912345678aabbccddeeff0011223344``).  This test
+    independently recomputes the expected HMAC for each known test
+    subject and asserts the exact key set.
+    """
+    import ip_utils
+
+    TEST_IP = "198.51.100.23"
+    TEST_PHONE = "+306912345678"
+    NORMALIZED = "306912345678"
+    SALT = "s" * 64
+
+    redis = FakeRedis()
+    monkeypatch.setenv("SERVER_SALT", SALT)
+    monkeypatch.setattr(identity, "_get_hlr_redis", _redis_factory(redis))
+
+    await identity._enforce_hlr_verify_limits(_request(TEST_IP), TEST_PHONE)
+
+    today = identity.date.today()
+    day = today.isoformat()
+
+    number_hash = ip_utils.hashed_rate_subject(TEST_PHONE, "hlr_verify:number", today=today)
+    ip_min_hash = ip_utils.hashed_rate_subject(TEST_IP, "hlr_verify:ip_min", today=today)
+    ip_day_hash = ip_utils.hashed_rate_subject(TEST_IP, "hlr_verify:ip_day", today=today)
+
+    expected_keys = {
+        f"ratelimit:hlr_verify:number_cooldown:{day}:{number_hash}",
+        f"ratelimit:hlr_verify:number_day:{day}:{number_hash}",
+        f"ratelimit:hlr_verify:ip_min:{day}:{ip_min_hash}",
+        f"ratelimit:hlr_verify:ip_day:{day}:{ip_day_hash}",
+    }
+
+    actual_keys = set(_all_keys(redis))
+    assert actual_keys == expected_keys, (
+        f"Key mismatch.\n  Expected: {sorted(expected_keys)}\n  Actual:   {sorted(actual_keys)}"
+    )
+
+    # Double-check: no HMAC suffix contains the raw phone
+    for key in actual_keys:
+        _, _, suffix = key.rpartition(":")
+        for frag in [NORMALIZED, "6912345678"]:
+            assert frag not in suffix, (
+                f"HMAC suffix contains raw phone fragment: {suffix}"
+            )
+
+
+def test_phone_embedded_in_hex_suffix_is_rejected():
+    """A syntactically valid 32-char hex suffix that embeds the raw phone
+    number must be rejected — the structural check alone is insufficient."""
+    phone10 = "6912345678"           # 10-digit, also valid hex
+    phone12 = "306912345678"         # 12-digit with country prefix, valid hex
+    poisoned_10 = phone10 + "a" * 22 # 32-char valid hex containing phone
+    poisoned_12 = phone12 + "a" * 20
+
+    assert len(poisoned_10) == 32
+    assert re.fullmatch(r"[0-9a-f]{32}", poisoned_10)
+    assert len(poisoned_12) == 32
+    assert re.fullmatch(r"[0-9a-f]{32}", poisoned_12)
+
+    with pytest.raises(AssertionError, match="HMAC-Suffix"):
+        _assert_key_pii_safe(
+            f"ratelimit:hlr_verify:number_day:2026-09-24:{poisoned_10}",
+            raw_ip="10.0.0.1",
+            raw_number_fragments=[phone10],
+        )
+
+    with pytest.raises(AssertionError, match="HMAC-Suffix"):
+        _assert_key_pii_safe(
+            f"ratelimit:hlr_verify:number_day:2026-09-24:{poisoned_12}",
+            raw_ip="10.0.0.1",
+            raw_number_fragments=[phone12],
+        )
+
+
+def test_raw_pii_in_key_prefix_still_caught():
+    """Deliberate raw phone or IP leakage in the key prefix must fail."""
+    safe_suffix = "a" * 32  # valid 32-char hex
+
+    # Raw IP in prefix → caught
+    with pytest.raises(AssertionError, match="rohe IP"):
+        _assert_key_pii_safe(
+            f"ratelimit:hlr_verify:ip_day:198.51.100.23:{safe_suffix}",
+            raw_ip="198.51.100.23",
+            raw_number_fragments=["6912345678"],
+        )
+
+    # Raw phone fragment in prefix → caught
+    with pytest.raises(AssertionError, match="rohes Nummern-Fragment"):
+        _assert_key_pii_safe(
+            f"ratelimit:hlr_verify:number_day:6912345678:{safe_suffix}",
+            raw_ip="10.0.0.1",
+            raw_number_fragments=["6912345678"],
+        )
+
+    # 10-digit run in prefix (not covered by fragment list) → caught
+    with pytest.raises(AssertionError, match="rohe Nummern-Fragmente"):
+        _assert_key_pii_safe(
+            f"ratelimit:hlr_verify:number_day:0000000000:{safe_suffix}",
+            raw_ip="10.0.0.1",
+            raw_number_fragments=[],
+        )
+
+    # Non-hex suffix (fail-closed) → caught
+    with pytest.raises(AssertionError, match="HMAC-Hex"):
+        _assert_key_pii_safe(
+            f"ratelimit:hlr_verify:number_day:2026-09-24:ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ",
+            raw_ip="10.0.0.1",
+            raw_number_fragments=[],
+        )
 
 
 @pytest.mark.asyncio
