@@ -952,7 +952,7 @@ class T378ForumCardInsetTest(unittest.TestCase):
 
     def _css_rule_bodies(self, selector: str) -> list[str]:
         source = re.sub(r"/\*.*?\*/", "", self.css, flags=re.DOTALL)
-        pattern = rf"(?:^|}})[^{{}}]*{re.escape(selector)}[^{{}}]*\{{([^{{}}]*)\}}"
+        pattern = rf"(?:^|}})[^{{}}]*{re.escape(selector)}(?![\w:.#\[-])[^{{}}]*\{{([^{{}}]*)\}}"
         return re.findall(pattern, source, flags=re.DOTALL | re.MULTILINE)
 
     def test_first_child_has_no_padding_left_zero(self) -> None:

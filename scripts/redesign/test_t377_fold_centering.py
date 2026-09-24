@@ -282,7 +282,7 @@ class TypographyPreservationTest(unittest.TestCase):
         mobile = "\n".join(blocks)
         self.assertRegex(
             mobile,
-            r"font-size\s*:\s*28px",
+            r"\.pnx2-fold-summary\b[^{}]*\{[^}]*font-size\s*:\s*28px",
             "mobile fold heading must be 28px",
         )
 
