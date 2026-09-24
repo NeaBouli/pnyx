@@ -937,5 +937,52 @@ class T357DomOrderTest(unittest.TestCase):
         )
 
 
+# ---------------------------------------------------------------------------
+# T378ForumCardInsetTest — forum first-card left inset regression
+# ---------------------------------------------------------------------------
+
+class T378ForumCardInsetTest(unittest.TestCase):
+    """T-378: All four Forum feature cards must have equal padding."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.css = (
+            r2_landing_check.DOCS_DIR / "assets/redesign-v2/r5-landing-fidelity.css"
+        ).read_text(encoding="utf-8")
+
+    def _css_rule_bodies(self, selector: str) -> list[str]:
+        source = re.sub(r"/\*.*?\*/", "", self.css, flags=re.DOTALL)
+        pattern = rf"(?:^|}})[^{{}}]*{re.escape(selector)}[^{{}}]*\{{([^{{}}]*)\}}"
+        return re.findall(pattern, source, flags=re.DOTALL | re.MULTILINE)
+
+    def test_first_child_has_no_padding_left_zero(self) -> None:
+        """The first forum card must not zero out its left padding."""
+        bodies = self._css_rule_bodies("#forum .forum-feature:first-child")
+        combined = "\n".join(bodies)
+        self.assertNotIn("padding-left: 0", combined,
+                         "T-378 regression: first forum card strips left padding")
+
+    def test_last_child_has_no_padding_right_zero(self) -> None:
+        """The last forum card must not zero out its right padding."""
+        bodies = self._css_rule_bodies("#forum .forum-feature:last-child")
+        combined = "\n".join(bodies)
+        self.assertNotIn("padding-right: 0", combined,
+                         "T-378 regression: last forum card strips right padding")
+
+    def test_base_forum_card_has_uniform_padding(self) -> None:
+        """The shared forum-feature rule must set equal padding on all sides."""
+        bodies = self._css_rule_bodies("#forum .forum-feature")
+        combined = "\n".join(bodies)
+        self.assertIn("padding: 24px !important", combined,
+                       "Forum cards must have uniform 24px padding")
+
+    def test_last_child_still_removes_border_right(self) -> None:
+        """The last card should still drop its right border."""
+        bodies = self._css_rule_bodies("#forum .forum-feature:last-child")
+        combined = "\n".join(bodies)
+        self.assertIn("border-right: 0", combined,
+                       "Last forum card should have no right border")
+
+
 if __name__ == "__main__":
     unittest.main()

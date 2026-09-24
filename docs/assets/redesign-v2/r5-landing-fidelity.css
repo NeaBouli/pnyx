@@ -841,8 +841,7 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
   box-shadow: none !important;
 }
 
-#forum .forum-feature:first-child { padding-left: 0 !important; }
-#forum .forum-feature:last-child { padding-right: 0 !important; border-right: 0; }
+#forum .forum-feature:last-child { border-right: 0; }
 
 #forum {
   border-bottom: 2px solid #0f172a !important;
