@@ -24,7 +24,7 @@ class DisclosureUnderlineTest(unittest.TestCase):
         css = (DOCS_DIR / "assets/redesign-v2/r2-landing.css").read_text()
         section = re.search(r"\.section\s*\{([^}]*)\}", css)
         self.assertIsNotNone(section)
-        self.assertIn("border-bottom", section.group(1))
+        self.assertRegex(section.group(1), r"border-bottom\s*:\s*[1-9]\d*px\s+solid\b")
 
 
 if __name__ == "__main__":

@@ -580,7 +580,10 @@ def check_r3_all(
     if not audit_page.is_file():
         violations.append("audit disclosure: missing page")
     else:
-        violations.extend(check_structure(audit_page.read_text(encoding="utf-8"), requires_hero=True))
+        audit_content = audit_page.read_text(encoding="utf-8")
+        if not approved_audit_delta.matches_audit_page(audit_content):
+            violations.append("audit disclosure: unapproved content change")
+        violations.extend(check_structure(audit_content, requires_hero=True))
     violations.extend(check_css_files(target_docs))
     violations.extend(check_faq_accessibility_asset(target_docs))
     return violations
