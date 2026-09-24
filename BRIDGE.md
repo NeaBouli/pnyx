@@ -1,5 +1,25 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-09-24 - R8b Audit Status Sync Accepted Live
+
+- PR #354 merged normally as `fe675823c03d5083f8c37e83b844cf536ae852ce`.
+  All PR and post-merge CI/Security jobs passed; CodeRabbit found no actionable
+  comment. The exact reviewed page now shows EKA-33 among 3 closed findings
+  and 61 remaining in Greek and English.
+- A two-file Web-only overlay replaced `wiki/audit.html` and
+  `wiki/security.html`; all other Web runtime files retained the R8 base image.
+  Candidate: `ekklesia-web:r8b-audit-fe67582-20260924T145858Z`; rollback:
+  `ekklesia-web:rollback-pre-r8b-audit-20260924T145858Z`.
+- Live: both page hashes matched the merged source, all 21 acceptance routes
+  returned 200, and Chromium at 360/840/1280px found the 61-remaining text,
+  EKA-33 row, working English toggle, no title lines, no analytics script,
+  overflow or JS errors. API health and non-Web container identities were
+  unchanged; Web restart count was zero and no rollback was needed.
+- GitHub issue #318 EKA-33 was checked only after live acceptance, with an
+  evidence comment. EKA-28 remains among the 61 open or gated findings.
+
+Details: [R8 Web rollout receipt](docs/operations/R8_WEB_ROLLOUT_2026-09-24.md).
+
 ## 2026-09-24 - R8 Web-only Audit and Privacy Fix Live
 
 - PR #353 merged normally as `c801c51d27dcb018f7ef8faa0417801cb73aff58`.
