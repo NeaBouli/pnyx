@@ -1180,3 +1180,23 @@ Details: [EKA-17 release receipt](docs/operations/EKA17_HLR_ENV_ROLLOUT_2026-09-
 - Other Ekklesia containers retained their identities; protected environment
   and base Compose files stayed unchanged. The separate representative APK
   alias noted above remains unresolved and was not published or remounted.
+
+## 2026-09-24 - R7 Landing Order and Responsive Refinement Live (Append-only)
+
+- Claude Code implemented the bounded landing refinement; PR #351 was merged
+  normally at `3adb220b523e1f08f0d0b5476d25698c385d420f` after its
+  review finding was corrected. The 172 redesign tests, PR checks and
+  post-merge CI/Security Audit passed. The preservation validator confirmed
+  existing copy, forms, links and data bindings.
+- Exact-merge Web image `ekklesia-web:r7-landing-3adb220-20260924T085827Z`
+  is live. The prior Web image is retained as
+  `ekklesia-web:rollback-pre-r7-landing-20260924T085827Z`.
+- An isolated 21-route canary, exact HTML/CSS source hashes, 21 live routes,
+  21 same-origin landing links and responsive Chromium checks at 360/768/1280
+  px passed. Ten folds start closed; the newsletter is the last content
+  section. Public data endpoints and API health returned 200. Web is healthy
+  without restarts or OOM; non-Web containers and protected config are
+  unchanged. No newsletter or payment was submitted.
+- Open, pre-existing: EKA-33's analytics/CSP and privacy-claim decision, plus
+  the representative APK alias. Neither was silently altered.
+- Detailed evidence: `docs/operations/R7_LANDING_ROLLOUT_2026-09-24.md`.
