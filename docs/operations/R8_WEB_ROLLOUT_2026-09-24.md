@@ -61,3 +61,37 @@ Date: 2026-09-24
 - EKA-28 concerns a separate analytics/admin service and is not changed.
   No API, database, DNS, secret, IAM, Dashboard, forum, mobile, store,
   payment, provider or other service was changed.
+
+## R8b audit-status addendum
+
+- PR #354 merged normally as `fe675823c03d5083f8c37e83b844cf536ae852ce`.
+  PR CI, CodeRabbit and post-merge CI `36015863610` / Security Audit
+  `36015863747` passed. The 179 redesign tests, R3 full-Wiki gate, browser
+  checks at 360/840/1280px and redacted Gitleaks scan passed before merge.
+- The exact merge files `wiki/audit.html` and `wiki/security.html` were layered
+  onto the already accepted R8 Web image. Candidate image
+  `ekklesia-web:r8b-audit-fe67582-20260924T145858Z` has ID
+  `sha256:96abd2651127bb9f76f60c7902d7b79a61c65140cd798229158dde336406f7a0`.
+  Prior R8 image is retained as
+  `ekklesia-web:rollback-pre-r8b-audit-20260924T145858Z` with ID
+  `sha256:6aa8c74acdf3bb91e81c37e3beeec31eda71edcc711ff0242d2650ad8772cf8c`.
+  Protected release directory:
+  `/opt/ekklesia/releases/r8b-audit-fe67582-20260924T145858Z`.
+- The isolated canary served Landing, audit, Security, Community and results
+  with HTTP 200. Its two replaced files matched the merge source hashes.
+  Only `ekklesia-web` was recreated using the preserved 18-file Compose chain
+  and `--no-deps --no-build`.
+- Live audit SHA-256
+  `c8d358a50fc4cdd29ee0af25430b6d4b0b4109f4e1a32bbfe4a84bebd3f334f2`
+  and Security SHA-256
+  `f3aa111b27864f7b61cab9e4e7cd39e2b72b1a62a01dcda0c76ef8d5b57ee5fb`
+  matched the exact merge source; Landing stayed at its R8 hash. All 21
+  acceptance routes returned HTTP 200. Live Chromium at 360, 840 and 1280px
+  showed EKA-33 and 61 remaining, Greek/English toggling, zero disclosure
+  title lines, no analytics script, no overflow and no JS errors.
+- Web image ID matched the candidate, with zero restarts, no OOM or error log
+  marker. API health returned 200; the non-Web container listing digest and
+  protected environment/base Compose hashes were unchanged. No rollback was
+  needed. The EKA-33 checkbox and evidence comment in
+  [issue #318](https://github.com/NeaBouli/pnyx/issues/318) were updated only
+  after this live acceptance. EKA-28 remains open.
