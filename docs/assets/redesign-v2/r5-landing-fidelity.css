@@ -736,6 +736,7 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
 }
 
 /* Verification precedes features inside their shared production section. */
+#features { overflow-x: clip; }
 #features > .section-inner {
   display: flex;
   flex-direction: column;
@@ -751,8 +752,8 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
 #features > .section-inner > #transparency + div { order: 4; }
 
 #transparency {
-  margin: -56px -24px 56px !important;
-  padding: 56px 24px !important;
+  margin: -56px calc(-50vw + 50%) 56px !important;
+  padding: 56px calc(50vw - 50%) !important;
   border: 0 !important;
   border-bottom: 2px solid #0f172a !important;
   background: #f8fafc !important;
@@ -1129,6 +1130,18 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
     padding: 44px 20px !important;
   }
 
+  /* T-376: move horizontal padding off #features so overflow-x:clip
+     boundary reaches viewport edges — breakout children (#transparency,
+     #representative::before) are no longer clipped at the content box. */
+  #features {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  #features > .section-inner {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
   .steps-grid,
   .features-grid {
     grid-template-columns: minmax(0, 1fr) !important;
@@ -1226,8 +1239,16 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
   border-radius: 0 !important;
   background: #fff !important;
 }
+#features > .section-inner > #representative::before {
+  content: '';
+  display: block;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  height: 2px;
+  background: #0f172a;
+}
 #representative > .pnx2-representative-fold > .pnx2-fold-summary { width: 100%; }
-#representative .pnx2-fold-summary h3 { font-size: 28px !important; word-wrap: break-word; overflow-wrap: anywhere; }
+#representative .pnx2-fold-summary h3 { word-wrap: break-word; overflow-wrap: anywhere; }
 #representative .pnx2-representative-body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
