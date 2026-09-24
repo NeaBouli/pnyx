@@ -6,9 +6,9 @@ import r0_inventory
 
 APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/index.html": "afbe64244c7f6f89cf31dcfdca0c208bd62ba68b4352ba0407a73de9e80dc86e",
-    "docs/wiki/security.html": "defc9bfdaede11ee6659e93302906e6d6c3c8746cd904297c1e84c101ea95398",
+    "docs/wiki/security.html": "580747c692fb3f264ff11dcf9922b341d1c8ab543cd20302130a5aaa6999b6c5",
 }
-APPROVED_AUDIT_PAGE_SHA256 = "8e83bd71dd438c7caa27b5d59ca9f190634445834846a29170db9b8ccfe83b0f"
+APPROVED_AUDIT_PAGE_SHA256 = "c8d358a50fc4cdd29ee0af25430b6d4b0b4109f4e1a32bbfe4a84bebd3f334f2"
 
 
 def matches_approved_content(path: str, current: dict) -> bool:

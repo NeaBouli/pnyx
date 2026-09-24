@@ -1,5 +1,29 @@
 # Pnyx / ekklesia.gr Bridge
 
+## 2026-09-24 - R8 Web-only Audit and Privacy Fix Live
+
+- PR #353 merged normally as `c801c51d27dcb018f7ef8faa0417801cb73aff58`.
+  All PR and post-merge CI/Security jobs passed; 179 focused redesign tests and
+  an independent read-only Claude review passed. No check was bypassed.
+- The public Plausible loader was removed from the 27 public HTML pages. The
+  landing's folded title border is 0px in both states; section separators
+  remain. The bilingual public EKA audit page is available at
+  `https://ekklesia.gr/wiki/audit.html` with links from Wiki and Security.
+- Only `ekklesia-web` was recreated from the exact merge archive. Candidate
+  image: `ekklesia-web:r8-web-c801c51-20260924T133656Z`; prior image retained
+  as `ekklesia-web:rollback-pre-r8-web-20260924T133656Z`.
+- Live acceptance: 21 routes returned HTTP 200; source/served Landing, audit
+  page and CSS hashes matched. Chromium at 360, 840 and 1280px found ten
+  default-closed folds, 0px title borders, no overflow, no analytics script,
+  visible audit content and no JS errors. API health returned 200. Web had no
+  restart/OOM/error markers; non-Web container identities and protected config
+  hashes did not change.
+- EKA-33's technical fix is live. This documentation follow-up synchronizes
+  the public 3-closed/61-open count; update issue #318 only after that page is
+  merged and accepted live. EKA-28 and the other findings remain separate.
+
+Details: [R8 Web rollout receipt](docs/operations/R8_WEB_ROLLOUT_2026-09-24.md).
+
 ## 2026-09-21 - R4 Full Web-only Rollout Completed
 
 - Merged PR #337 (`5a8d25c`) was released through a bounded image-only Web
