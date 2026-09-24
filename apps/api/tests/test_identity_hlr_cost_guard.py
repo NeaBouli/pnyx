@@ -281,7 +281,7 @@ async def test_keys_match_independently_computed_hmacs(monkeypatch):
     today = identity.date.today()
     day = today.isoformat()
 
-    number_hash = ip_utils.hashed_rate_subject(NORMALIZED, "hlr_verify:number", today=today)
+    number_hash = ip_utils.hashed_rate_subject(TEST_PHONE, "hlr_verify:number", today=today)
     ip_min_hash = ip_utils.hashed_rate_subject(TEST_IP, "hlr_verify:ip_min", today=today)
     ip_day_hash = ip_utils.hashed_rate_subject(TEST_IP, "hlr_verify:ip_day", today=today)
 
