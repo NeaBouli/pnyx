@@ -1186,7 +1186,7 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
   gap: 20px;
   min-height: 72px;
   padding: 14px 0;
-  border-bottom: 2px solid #0f172a;
+  border-bottom: 0;
   color: #0f172a;
   cursor: pointer;
   list-style: none;
