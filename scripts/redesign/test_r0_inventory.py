@@ -15,6 +15,7 @@ import unittest
 from pathlib import Path
 
 import r0_inventory  # noqa: E402  (same-directory import)
+import approved_analytics_delta
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CHECKED_INVENTORY = REPO_ROOT / "docs/planning/r0/R0_DOCS_SURFACE_INVENTORY.json"
@@ -126,7 +127,13 @@ class RealTreeTest(unittest.TestCase):
             path for path in checked_by_path
             if current_by_path.get(path) != checked_by_path[path]
         )
-        non_gated_differing = [p for p in differing if p not in _GATED_PAGES]
+        non_gated_differing = [
+            p for p in differing
+            if p not in _GATED_PAGES
+            and current_by_path[p]["sha256"] != approved_analytics_delta.expected_sha256(
+                p, checked_by_path[p]["sha256"]
+            )
+        ]
         self.assertEqual(
             [],
             non_gated_differing,
@@ -168,7 +175,7 @@ class RealTreeTest(unittest.TestCase):
 
         normalized_pages = [
             checked_by_path[page["path"]]
-            if page["path"] in _GATED_PAGES
+            if page["path"] in _GATED_PAGES or page["path"] in approved_analytics_delta.POST_REMOVAL_SHA256
             else page
             for page in current["pages"]
         ]

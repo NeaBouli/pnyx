@@ -751,9 +751,16 @@ def verify_surface(allowlist: list[str]) -> list[str]:
     errors: list[str] = []
     discovered = discover_docs_html()
     allowed = set(allowlist)
-    for missing in sorted(allowed - discovered):
+    # The public audit disclosure was added after the immutable 35-page R0
+    # inventory. Keep that historical inventory intact and admit this one page.
+    approved_addition = (
+        {"docs/wiki/audit.html"}
+        if DOCS_DIR.resolve() == (Path(__file__).resolve().parents[2] / "docs").resolve()
+        else set()
+    )
+    for missing in sorted((allowed | approved_addition) - discovered):
         errors.append(f"allowlisted file missing: {missing}")
-    for extra in sorted(discovered - allowed):
+    for extra in sorted(discovered - (allowed | approved_addition)):
         errors.append(f"extra public HTML file not in allowlist: {extra}")
     return errors
 

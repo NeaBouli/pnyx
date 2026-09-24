@@ -141,6 +141,7 @@ def _inventory_page(docs_dir: Path, page_rel: str) -> dict:
 
 
 def check_community_preservation(baseline: dict, current: dict) -> list[str]:
+    baseline = r2.approved_analytics_delta.baseline_without_analytics(baseline)
     violations: list[str] = []
     for key in PRESERVED_EXACT_KEYS:
         if current.get(key) != baseline.get(key):

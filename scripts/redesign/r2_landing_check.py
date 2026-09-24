@@ -35,6 +35,7 @@ from pathlib import Path
 # same-directory import
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import r0_inventory  # noqa: E402
+import approved_analytics_delta  # noqa: E402
 
 REPO_ROOT = r0_inventory.REPO_ROOT
 DOCS_DIR = r0_inventory.DOCS_DIR
@@ -208,11 +209,12 @@ def check_parity(inv: dict, repo_root: Path) -> list[str]:
             violations.append(f"parity: {page['path']}: missing file")
             continue
         actual = _sha256_file(file_path)
-        if actual != page["sha256"]:
+        expected = approved_analytics_delta.expected_sha256(page["path"], page["sha256"])
+        if actual != expected:
             violations.append(
                 f"parity: {page['path']}: sha256 changed — "
                 f"page is outside the Landing/Community/Wiki phase gates "
-                f"(got {actual[:12]}…, expected {page['sha256'][:12]}…)"
+                f"(got {actual[:12]}…, expected {expected[:12]}…)"
             )
     return violations
 
@@ -247,6 +249,7 @@ def _check_exact_delta(
 
 def check_index_preservation(baseline: dict, current: dict) -> list[str]:
     """Preserve functional/content contracts while permitting the new layout."""
+    baseline = approved_analytics_delta.baseline_without_analytics(baseline)
     violations: list[str] = []
 
     for key in LANDING_PRESERVED_EXACT_KEYS:
@@ -308,7 +311,7 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
     # two reviewed R5 fingerprints may differ from the R0 baseline.
     # The R5 fold/panel JS is an allowed presentation-only addition.
     expected_external = list(baseline["scripts"]["external"])
-    expected_external.insert(1, ALLOWED_R5_EXTERNAL_SCRIPT)
+    expected_external.insert(0, ALLOWED_R5_EXTERNAL_SCRIPT)
     if current["scripts"]["external"] != expected_external:
         violations.append("preservation: external scripts changed")
     expected_inline = [

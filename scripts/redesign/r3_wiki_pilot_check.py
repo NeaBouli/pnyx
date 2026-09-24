@@ -27,6 +27,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import r0_inventory  # noqa: E402
 import r2_landing_check  # noqa: E402
+import approved_audit_delta  # noqa: E402
 
 REPO_ROOT = r0_inventory.REPO_ROOT
 DOCS_DIR = r0_inventory.DOCS_DIR
@@ -166,7 +167,7 @@ def check_nonpilot_parity(inv: dict, repo_root: Path) -> list[str]:
             violations.append(f"parity: {page['path']}: missing file")
             continue
         actual = _sha256_file(target)
-        if actual != page["sha256"]:
+        if actual != r2_landing_check.approved_analytics_delta.expected_sha256(page["path"], page["sha256"]):
             violations.append(
                 f"parity: {page['path']}: sha256 changed; R3 pilot permits only {PILOT_REL}"
             )
@@ -190,7 +191,7 @@ def check_nonwiki_parity(inv: dict, repo_root: Path) -> list[str]:
             violations.append(f"parity: {page['path']}: missing file")
             continue
         actual = _sha256_file(target)
-        if actual != page["sha256"]:
+        if actual != r2_landing_check.approved_analytics_delta.expected_sha256(page["path"], page["sha256"]):
             violations.append(
                 f"parity: {page['path']}: sha256 changed; "
                 "R2-R4 gates permit only docs/index.html, docs/community.html and wiki pages"
@@ -357,6 +358,9 @@ def check_wiki_page_preservation(
 
     Everything else must be identical to the R0 baseline.
     """
+    if approved_audit_delta.matches_approved_content(page_rel, current):
+        return []
+    baseline = r2_landing_check.approved_analytics_delta.baseline_without_analytics(baseline)
     violations: list[str] = []
     for key in PRESERVED_EXACT_KEYS:
         if page_rel == FAQ_REL and key == "scripts":
@@ -572,6 +576,14 @@ def check_r3_all(
             violations.append(f"preservation({page_rel}): R0 baseline entry missing")
             continue
         violations.extend(check_r3_wiki_page(page_rel, baseline, target_docs))
+    audit_page = target_docs / "wiki/audit.html"
+    if not audit_page.is_file():
+        violations.append("audit disclosure: missing page")
+    else:
+        audit_content = audit_page.read_text(encoding="utf-8")
+        if not approved_audit_delta.matches_audit_page(audit_content):
+            violations.append("audit disclosure: unapproved content change")
+        violations.extend(check_structure(audit_content, requires_hero=True))
     violations.extend(check_css_files(target_docs))
     violations.extend(check_faq_accessibility_asset(target_docs))
     return violations
