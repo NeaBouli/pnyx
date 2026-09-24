@@ -166,7 +166,7 @@ def check_nonpilot_parity(inv: dict, repo_root: Path) -> list[str]:
             violations.append(f"parity: {page['path']}: missing file")
             continue
         actual = _sha256_file(target)
-        if actual != page["sha256"]:
+        if actual != r2_landing_check.approved_analytics_delta.expected_sha256(page["path"], page["sha256"]):
             violations.append(
                 f"parity: {page['path']}: sha256 changed; R3 pilot permits only {PILOT_REL}"
             )
@@ -190,7 +190,7 @@ def check_nonwiki_parity(inv: dict, repo_root: Path) -> list[str]:
             violations.append(f"parity: {page['path']}: missing file")
             continue
         actual = _sha256_file(target)
-        if actual != page["sha256"]:
+        if actual != r2_landing_check.approved_analytics_delta.expected_sha256(page["path"], page["sha256"]):
             violations.append(
                 f"parity: {page['path']}: sha256 changed; "
                 "R2-R4 gates permit only docs/index.html, docs/community.html and wiki pages"
@@ -357,6 +357,7 @@ def check_wiki_page_preservation(
 
     Everything else must be identical to the R0 baseline.
     """
+    baseline = r2_landing_check.approved_analytics_delta.baseline_without_analytics(baseline)
     violations: list[str] = []
     for key in PRESERVED_EXACT_KEYS:
         if page_rel == FAQ_REL and key == "scripts":
