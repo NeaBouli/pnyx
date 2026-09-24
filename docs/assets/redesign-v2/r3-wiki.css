@@ -353,10 +353,14 @@ footer.pnx2-footer {
 }
 
 .faq-a {
-  padding: 0 0 16px;
+  padding: 0;
   color: var(--pnx2-body);
   font-size: var(--pnx2-text-small);
   overflow-wrap: anywhere;
+}
+
+.faq-item.open .faq-a {
+  padding-bottom: 16px;
 }
 
 /* ── Roadmap accordion ──────────────────────────────────────────────── */
