@@ -718,15 +718,15 @@ class T349OwlSpecificityTest(unittest.TestCase):
             "to beat R2's specificity (T-349)",
         )
 
-    def test_r5_mobile_owl_targets_52px(self) -> None:
-        """The mobile owl must render at 52×57px, not R2's 32×32px."""
+    def test_r5_mobile_owl_targets_39px(self) -> None:
+        """The mobile owl must render at 39×43px (~25% reduction from 52×57)."""
         blocks = re.findall(
             r"@media\s*\(\s*max-width:\s*640px\s*\)\s*\{([^{}]*(?:\{[^{}]*\}[^{}]*)*)\}",
             self.r5_css,
         )
         combined = "\n".join(blocks)
-        self.assertIn("width: 52px", combined)
-        self.assertIn("height: 57px", combined)
+        self.assertIn("width: 39px", combined)
+        self.assertIn("height: 43px", combined)
 
     def test_r2_mobile_owl_rule_unchanged(self) -> None:
         """R2 must not be edited — its 32px rule should still be present."""
@@ -763,6 +763,144 @@ class T351IOSAppStoreLinkTest(unittest.TestCase):
             self.BROKEN_ID,
             self.html,
             f"Broken iOS app ID {self.BROKEN_ID} must not appear in docs/index.html",
+        )
+
+
+# ---------------------------------------------------------------------------
+# T357DomOrderTest — DOM order matches visual/semantic order
+# ---------------------------------------------------------------------------
+
+class T357DomOrderTest(unittest.TestCase):
+    """Verify that the HTML DOM order of top-level sections within <main>
+    matches the intended visual/semantic reading order (T-357)."""
+
+    EXPECTED_ORDER = [
+        "landing-hero",        # hero (identified by class)
+        "pnx2-history-band",   # history band (identified by class)
+        "pnx2-democracy-data", # democracy data (identified by class)
+        "votes",               # votes section (identified by id)
+        "download",            # download section (identified by id)
+        "how",                 # how it works (identified by id)
+        "demo",                # demo (identified by id)
+        "features",            # features (identified by id)
+        "forum",               # forum (identified by id)
+        "wiki-section",        # wiki/docs (identified by id)
+        "roadmap",             # roadmap (identified by id)
+        "contact",             # contact (identified by id)
+        "notice",              # disclaimer (identified by id)
+        "newsletter",          # newsletter (identified by id, last before footer)
+    ]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        from html.parser import HTMLParser
+
+        class _SectionCollector(HTMLParser):
+            def __init__(self) -> None:
+                super().__init__()
+                self.in_main = False
+                self.depth = 0
+                self.sections: list[str] = []
+
+            def handle_starttag(self, tag: str, attrs: list) -> None:
+                ad = dict(attrs)
+                if tag == "main" and ad.get("id") == "main":
+                    self.in_main = True
+                    return
+                if self.in_main and tag == "section":
+                    if self.depth == 0:
+                        # Top-level section: identify by id or class
+                        sid = ad.get("id", "")
+                        cls_attr = ad.get("class", "")
+                        if sid:
+                            self.sections.append(sid)
+                        elif "landing-hero" in cls_attr:
+                            self.sections.append("landing-hero")
+                        elif "pnx2-history-band" in cls_attr:
+                            self.sections.append("pnx2-history-band")
+                        elif "pnx2-democracy-data" in cls_attr:
+                            self.sections.append("pnx2-democracy-data")
+                        else:
+                            self.sections.append(f"unknown-class:{cls_attr}")
+                    self.depth += 1
+
+            def handle_endtag(self, tag: str) -> None:
+                if tag == "main" and self.in_main:
+                    self.in_main = False
+                if self.in_main and tag == "section" and self.depth > 0:
+                    self.depth -= 1
+
+        p = _SectionCollector()
+        html = (r2_landing_check.DOCS_DIR / "index.html").read_text(encoding="utf-8")
+        p.feed(html)
+        cls.actual_order = p.sections
+
+    def test_section_count_matches(self) -> None:
+        self.assertEqual(
+            len(self.EXPECTED_ORDER),
+            len(self.actual_order),
+            f"Expected {len(self.EXPECTED_ORDER)} top-level sections, "
+            f"found {len(self.actual_order)}: {self.actual_order}",
+        )
+
+    def test_dom_order_matches_semantic_order(self) -> None:
+        self.assertEqual(
+            self.EXPECTED_ORDER,
+            self.actual_order,
+            "DOM section order does not match the intended semantic/visual order (T-357)",
+        )
+
+    def test_no_css_order_on_top_level_sections(self) -> None:
+        """CSS order properties for top-level sections should be removed
+        now that DOM order matches visual order."""
+        css = (
+            r2_landing_check.DOCS_DIR / "assets/redesign-v2/r5-landing-fidelity.css"
+        ).read_text(encoding="utf-8")
+        # Check that main#main flex container for ordering is gone
+        self.assertNotIn(
+            "main#main",
+            css,
+            "main#main flex container should be removed (DOM order is canonical now)",
+        )
+        # Check no top-level section order properties remain
+        for section_id in ["#how", "#demo", "#votes", "#download", "#forum",
+                           "#wiki-section", "#roadmap", "#contact", "#notice",
+                           "#newsletter"]:
+            pattern = rf"^{re.escape(section_id)}\s*\{{\s*order\s*:"
+            self.assertIsNone(
+                re.search(pattern, css, re.MULTILINE),
+                f"CSS order property for {section_id} should be removed",
+            )
+
+    def test_key_ids_preserved(self) -> None:
+        """All functional IDs must survive the reorder."""
+        html = (r2_landing_check.DOCS_DIR / "index.html").read_text(encoding="utf-8")
+        for key_id in [
+            "main", "how", "demo", "features", "forum", "votes",
+            "wiki-section", "roadmap", "contact", "download",
+            "newsletter", "notice", "nlForm", "nlEmail", "nlBtn",
+            "heroParliamentDecision", "heroLiveStatus",
+            "heroCitizenDecision", "heroCitizenMeta",
+            "historyTitle", "repSection", "chatPanel",
+        ]:
+            self.assertIn(
+                f'id="{key_id}"',
+                html,
+                f"Functional ID '{key_id}' missing after DOM reorder (T-357)",
+            )
+
+    def test_newsletter_is_last_section_before_footer(self) -> None:
+        """Newsletter must be the last section before footer."""
+        html = (r2_landing_check.DOCS_DIR / "index.html").read_text(encoding="utf-8")
+        # Find the closing </section> of the newsletter
+        newsletter_start = html.index('id="newsletter"')
+        newsletter_close = html.index("</section>", newsletter_start)
+        main_end = html.index("</main>")
+        between = html[newsletter_close + len("</section>"):main_end]
+        self.assertNotIn(
+            "<section",
+            between,
+            "No <section> should appear between newsletter and </main>",
         )
 
 

@@ -250,6 +250,24 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
     violations: list[str] = []
 
     for key in LANDING_PRESERVED_EXACT_KEYS:
+        if key == "interactions":
+            # DOM reorder changes element_handler sequence but not the set.
+            # Compare handler sets and scalar counts independently.
+            b_int = baseline.get(key, {})
+            c_int = current.get(key, {})
+            b_sorted = sorted(
+                tuple(sorted(h.items())) for h in b_int.get("element_handlers", [])
+            )
+            c_sorted = sorted(
+                tuple(sorted(h.items())) for h in c_int.get("element_handlers", [])
+            )
+            if b_sorted != c_sorted:
+                violations.append(f"preservation: exact contract changed: {key} (element_handlers)")
+            scalar_keys = {k for k in b_int if k != "element_handlers"}
+            for sk in scalar_keys:
+                if b_int.get(sk) != c_int.get(sk):
+                    violations.append(f"preservation: exact contract changed: {key} ({sk})")
+            continue
         if current.get(key) != baseline.get(key):
             violations.append(f"preservation: exact contract changed: {key}")
 

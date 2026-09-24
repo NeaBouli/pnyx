@@ -590,141 +590,19 @@
   </div>
 </section>
 
-<section class="section" id="how">
-  <div class="section-inner">
-    <h2 class="section-title fade-in" data-el="Πώς λειτουργεί;" data-en="How does it work?">Πώς λειτουργεί;</h2>
-    <p class="section-sub fade-in" data-el="Τέσσερα βήματα. Χωρίς λογαριασμό. Χωρίς email." data-en="Four steps. No account. No email.">Τέσσερα βήματα. Χωρίς λογαριασμό. Χωρίς email.</p>
-    <div class="steps-grid">
-      <div class="step fade-in">
-        <div class="step-num">1</div>
-        <h3 data-el="Επαλήθευση" data-en="Verification">Επαλήθευση</h3>
-        <p data-el="Έλεγχος κατάστασης ελληνικού αριθμού κινητού μέσω HLR. Δεν αποδεικνύει κατοχή SIM ή ταυτότητα· δεν στέλνεται SMS και ο αριθμός διαγράφεται αμέσως." data-en="Greek mobile-number status check via HLR. It does not prove SIM possession or identity; no SMS is sent and the number is deleted immediately.">Έλεγχος κατάστασης ελληνικού αριθμού μέσω HLR. Δεν αποδεικνύει κατοχή SIM ή ταυτότητα.</p>
-      </div>
-      <div class="step fade-in">
-        <div class="step-num">2</div>
-        <h3 data-el="Κρυπτογραφικό Κλειδί" data-en="Cryptographic Key">Κρυπτογραφικό Κλειδί</h3>
-        <p data-el="Ed25519 κλειδί μόνο στη συσκευή σας." data-en="Ed25519 key only on your device.">Ed25519 κλειδί μόνο στη συσκευή σας.</p>
-      </div>
-      <div class="step fade-in">
-        <div class="step-num">3</div>
-        <h3 data-el="Ψηφίστε" data-en="Vote">Ψηφίστε</h3>
-        <p data-el="Υπέρ, Κατά ή Αποχή σε πραγματικά νομοσχέδια." data-en="Yes, No or Abstain on real bills.">Υπέρ, Κατά ή Αποχή σε πραγματικά νομοσχέδια.</p>
-      </div>
-      <div class="step fade-in">
-        <div class="step-num">4</div>
-        <h3 data-el="Δείτε τη Διαφορά" data-en="See the Difference">Δείτε τη Διαφορά</h3>
-        <p data-el="Δείκτης Απόκλισης: Βουλή vs Πολίτες." data-en="Divergence Score: Parliament vs Citizens.">Δείκτης Απόκλισης: Βουλή vs Πολίτες.</p>
-      </div>
+<section class="pnx2-history-band" aria-labelledby="historyTitle">
+  <div class="pnx2-history-grid">
+    <div>
+      <span data-el="ΙΣΤΟΡΙΚΟ ΠΛΑΙΣΙΟ" data-en="HISTORICAL CONTEXT">ΙΣΤΟΡΙΚΟ ΠΛΑΙΣΙΟ</span>
+      <h2 id="historyTitle" data-el="Η Εκκλησία του Δήμου" data-en="The Assembly of the Demos">Η Εκκλησία<br/>του Δήμου</h2>
+      <p class="pnx2-history-lead" data-el="Ο λόφος της Πνύκας ήταν ο τόπος όπου οι πολίτες αποφάσιζαν δημόσια." data-en="The Pnyx hill was where citizens made public decisions.">Ο λόφος της Πνύκας ήταν ο τόπος όπου οι πολίτες αποφάσιζαν δημόσια.</p>
+      <img src="assets/redesign-v2/pnyx-acropolis-white.png" alt="" aria-hidden="true"/>
     </div>
-    <figure class="ekk-visual-card ekk-visual-frame ekk-fade-up" style="margin-top:2rem">
-      <img src="animations/svg/voting-flow.svg"
-           alt="Ροή ψήφου: HLR έλεγχος χωρίς SMS, nullifier hash, Ed25519 κλειδί στη συσκευή, υπογεγραμμένη ψήφος και δημόσιο αποτέλεσμα"
-           loading="lazy" decoding="async">
-    </figure>
-    <div class="pnx2-guide">
-      <h3 data-el="Από την εγκατάσταση έως την ψήφο" data-en="From installation to voting">Από την εγκατάσταση έως την ψήφο</h3>
-      <ol>
-        <li><strong data-el="Εγκαταστήστε την εφαρμογή Android." data-en="Install the Android app.">Εγκαταστήστε την εφαρμογή Android.</strong> <span data-el="Επιλέξτε ένα από τα διαθέσιμα κανάλια λήψης παρακάτω. Οι εκδόσεις Direct, Google Play και F-Droid μπορεί να έχουν διαφορετικές υπογραφές και να μη δέχονται εγκατάσταση η μία πάνω στην άλλη. Η εφαρμογή iOS δεν είναι ακόμη διαθέσιμη." data-en="Choose one of the available download channels below. Direct, Google Play and F-Droid builds may use different signatures and may not install over one another. The iOS app is not available yet.">Επιλέξτε ένα από τα διαθέσιμα κανάλια λήψης παρακάτω. Οι εκδόσεις Direct, Google Play και F-Droid μπορεί να έχουν διαφορετικές υπογραφές και να μη δέχονται εγκατάσταση η μία πάνω στην άλλη. Η εφαρμογή iOS δεν είναι ακόμη διαθέσιμη.</span> <a href="#download" data-el="Λήψεις →" data-en="Downloads →">Λήψεις →</a></li>
-        <li><strong data-el="Ρυθμίστε την εφαρμογή." data-en="Set up the app.">Ρυθμίστε την εφαρμογή.</strong> <span data-el="Επιλέξτε γλώσσα και, όπου προσφέρεται, την εκλογική σας περιφέρεια. Οι τοπικές ψηφοφορίες εξαρτώνται από την αντίστοιχη επιλογή." data-en="Choose a language and, where offered, your electoral district. Local votes depend on the corresponding selection.">Επιλέξτε γλώσσα και, όπου προσφέρεται, την εκλογική σας περιφέρεια. Οι τοπικές ψηφοφορίες εξαρτώνται από την αντίστοιχη επιλογή.</span></li>
-        <li><strong data-el="Ολοκληρώστε τον έλεγχο αριθμού." data-en="Complete the number check.">Ολοκληρώστε τον έλεγχο αριθμού.</strong> <span data-el="Η Beta ελέγχει την κατάσταση ελληνικού κινητού αριθμού (+30) μέσω HLR, χωρίς SMS. Αυτό δεν αποδεικνύει κατοχή SIM, ταυτότητα ή εκλογικό δικαίωμα. Το ιδιωτικό κλειδί Ed25519 δημιουργείται στη συσκευή σας." data-en="The Beta checks the status of a Greek mobile number (+30) via HLR, without SMS. This does not prove SIM possession, identity or voting eligibility. Your Ed25519 private key is generated on your device.">Η Beta ελέγχει την κατάσταση ελληνικού κινητού αριθμού (+30) μέσω HLR, χωρίς SMS. Αυτό δεν αποδεικνύει κατοχή SIM, ταυτότητα ή εκλογικό δικαίωμα. Το ιδιωτικό κλειδί Ed25519 δημιουργείται στη συσκευή σας.</span></li>
-        <li><strong data-el="Ψηφίστε στην εφαρμογή." data-en="Vote in the app.">Ψηφίστε στην εφαρμογή.</strong> <span data-el="Ανοίξτε μια διαθέσιμη ψηφοφορία, διαβάστε το νομοσχέδιο και επιλέξτε Υπέρ, Κατά ή Αποχή. Η ψήφος υπογράφεται στη συσκευή. Οι ψηφοφορίες εδώ είναι ενημερωτικές και όχι νομικά δεσμευτικές." data-en="Open an available vote, read the bill and choose Yes, No or Abstain. The vote is signed on your device. Votes here are informational and not legally binding.">Ανοίξτε μια διαθέσιμη ψηφοφορία, διαβάστε το νομοσχέδιο και επιλέξτε Υπέρ, Κατά ή Αποχή. Η ψήφος υπογράφεται στη συσκευή. Οι ψηφοφορίες εδώ είναι ενημερωτικές και όχι νομικά δεσμευτικές.</span></li>
-        <li><strong data-el="Συνδεθείτε στο Forum μέσω browser." data-en="Sign in to the forum in a browser.">Συνδεθείτε στο Forum μέσω browser.</strong> <span data-el="Ανοίξτε την Πνύκα και επιλέξτε «Σύνδεση». Στον υπολογιστή σαρώστε τον κωδικό QR με την επαληθευμένη εφαρμογή ekklesia. Στο ίδιο κινητό πατήστε «Άνοιγμα στην εφαρμογή ekklesia», όταν εμφανίζεται· δεν χρειάζεται να σαρώσετε την οθόνη σας." data-en="Open Pnyx and select Sign in. On a computer, scan the displayed QR code with your verified ekklesia app. On the same smartphone, use Open in the ekklesia app when offered; you do not need to scan your own screen.">Ανοίξτε την Πνύκα και επιλέξτε «Σύνδεση». Στον υπολογιστή σαρώστε τον κωδικό QR με την επαληθευμένη εφαρμογή ekklesia. Στο ίδιο κινητό πατήστε «Άνοιγμα στην εφαρμογή ekklesia», όταν εμφανίζεται· δεν χρειάζεται να σαρώσετε την οθόνη σας.</span> <a href="https://pnyx.ekklesia.gr/" data-el="Πνύκα →" data-en="Pnyx →">Πνύκα →</a></li>
-        <li><strong data-el="Δείτε τα αποτελέσματα." data-en="View results.">Δείτε τα αποτελέσματα.</strong> <span data-el="Οι δημόσιες συγκρίσεις Βουλής και πολιτών εμφανίζονται μόνο όταν υπάρχουν πραγματικά, επαρκή δεδομένα. Μπορείτε να δείτε τρέχουσες ψηφοφορίες και δημοσιευμένα αποτελέσματα στον ιστότοπο." data-en="Public comparisons of Parliament and citizen votes appear only when sufficient real data exists. You can view active votes and published results on the website.">Οι δημόσιες συγκρίσεις Βουλής και πολιτών εμφανίζονται μόνο όταν υπάρχουν πραγματικά, επαρκή δεδομένα. Μπορείτε να δείτε τρέχουσες ψηφοφορίες και δημοσιευμένα αποτελέσματα στον ιστότοπο.</span> <a href="/el/results" data-el="Αποτελέσματα →" data-en="Results →">Αποτελέσματα →</a></li>
-      </ol>
-    </div>
-  </div>
-</section>
-
-<section class="demo-section" id="demo">
-  <div class="demo-title" data-el="Ο Κύκλος της Δημοκρατίας" data-en="The Democracy Cycle">Ο Κύκλος της Δημοκρατίας</div>
-  <p class="demo-sub" data-el="Κάθε απόφαση διανύει 6 φάσεις — από τη Βουλή στους πολίτες." data-en="Every decision goes through 6 phases — from Parliament to citizens.">Κάθε απόφαση διανύει 6 φάσεις — από τη Βουλή στους πολίτες.</p>
-  <div class="demo-grid">
-    <div class="demo-box" id="dBox1">
-      <div class="demo-icon">🏛️</div>
-      <div class="demo-label" data-el="Ανακοίνωση" data-en="Announced">Ανακοίνωση</div>
-    </div>
-    <div class="demo-box" id="dBox2">
-      <div class="demo-icon" id="scrapeIcon" style="display:inline-block">🔍</div>
-      <div class="demo-label" data-el="Ανάλυση Νόμου" data-en="Law Analysis">Ανάλυση Νόμου</div>
-      <div class="demo-pct" id="scrapeStatus" style="opacity:0;transition:opacity 0.5s;font-size:0.65rem;margin-top:0.3rem" data-el="AI Σύνοψη..." data-en="AI Summary...">AI Σύνοψη...</div>
-    </div>
-    <div class="demo-box" id="dBox3">
-      <div class="demo-icon">✅</div>
-      <div class="demo-label" data-el="Ενεργοποίηση" data-en="Activation">Ενεργοποίηση</div>
-      <div class="demo-pct" id="activateStatus" style="opacity:0;transition:opacity 0.5s;font-size:0.65rem;margin-top:0.3rem" data-el="Ψηφοφορία ανοιχτή" data-en="Voting open">Ψηφοφορία ανοιχτή</div>
-    </div>
-    <div class="demo-box" id="dBox4">
-      <div class="demo-icon">🗳️</div>
-      <div class="demo-label" data-el="Ψηφοφορία Πολιτών" data-en="Citizen Vote">Ψηφοφορία Πολιτών</div>
-      <div class="demo-bar-row" id="barRow" style="display:block">
-        <div class="demo-bar-wrap"><div class="demo-bar demo-bar-yes" id="yesBar"></div></div>
-        <div class="demo-pct" id="demoYesLabel" data-el="— Υπέρ" data-en="— Yes">— Υπέρ</div>
-        <div class="demo-bar-wrap" style="margin-top:3px"><div class="demo-bar demo-bar-no" id="noBar"></div></div>
-        <div class="demo-pct" id="demoNoLabel" data-el="— Κατά" data-en="— No">— Κατά</div>
-      </div>
-    </div>
-    <div class="demo-box" id="dBox5">
-      <div class="demo-icon">⚖️</div>
-      <div class="demo-label" data-el="24ω Παράθυρο" data-en="24h Window">24ω Παράθυρο</div>
-    </div>
-    <div class="demo-box pnx2-demo-archive">
-      <div class="demo-label" data-el="Αρχείο" data-en="Archive">Αρχείο</div>
-      <div class="demo-pct" data-el="Open End · Arweave" data-en="Open End · Arweave">Open End · Arweave</div>
-    </div>
-  </div>
-  <!-- Result Kachel — immer sichtbar, Daten füllen sich bei Step 6 -->
-  <div id="dBox6" style="max-width:900px;margin:1rem auto 0;background:white;border:2px solid #e2e8f0;border-radius:var(--radius);padding:1.25rem 1.5rem">
-    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem">
-      <span style="font-size:1.4rem">📊</span>
-      <span style="font-weight:900;font-size:1rem;color:var(--gray-900)" data-el="Αποτέλεσμα Ψηφοφορίας" data-en="Vote Result">Αποτέλεσμα Ψηφοφορίας</span>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;font-size:0.78rem;color:rgba(255,255,255,0.7)">
-      <!-- Νομοσχέδιο -->
-      <div>
-        <div style="font-weight:800;color:var(--gray-500);margin-bottom:0.5rem;font-size:0.82rem">🏛️ <span data-el="Νομοσχέδιο" data-en="Bill">Νομοσχέδιο</span><span hidden data-el="Απόφαση Βουλής" data-en="Parliament Decision">Απόφαση Βουλής</span></div>
-        <div id="rParlData" style="opacity:0;transition:opacity 0.6s">
-          <div id="latestBillTitle" style="color:var(--gray-600);margin-bottom:0.4rem" data-el="Αναμονή πραγματικών δεδομένων" data-en="Waiting for real data">Αναμονή πραγματικών δεδομένων</div>
-          <div id="latestBillStatus" style="font-weight:700;color:var(--gray-500)" data-el="Δεν υπάρχει ακόμη αποτέλεσμα με ψήφους" data-en="No voted result is available yet">Δεν υπάρχει ακόμη αποτέλεσμα με ψήφους</div>
-        </div>
-      </div>
-      <!-- Πολίτες -->
-      <div>
-        <div style="font-weight:800;color:var(--gray-500);margin-bottom:0.5rem;font-size:0.82rem">🗳️ <span data-el="Βούληση Πολιτών" data-en="Citizen Will">Βούληση Πολιτών</span></div>
-        <div id="rCitizenData" style="opacity:0;transition:opacity 0.6s">
-          <div id="resultTotal" style="margin-bottom:0.4rem" data-el="— ψήφοι" data-en="— votes">— ψήφοι</div>
-          <div id="resultParticipation" style="margin-bottom:0.4rem;color:var(--gray-500)" data-el="Συμμετοχή στην πλατφόρμα: —" data-en="Platform participation: —">Συμμετοχή στην πλατφόρμα: —</div>
-          <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.3rem">
-            <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
-              <div id="resultYes" style="height:100%;width:0;background:#22c55e;border-radius:4px;transition:width 1s"></div>
-            </div>
-            <span id="resultYesLabel" style="font-weight:700;color:#22c55e;width:50px;text-align:right" data-el="— Υπέρ" data-en="— Yes">— Υπέρ</span>
-          </div>
-          <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem">
-            <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
-              <div id="resultNo" style="height:100%;width:0;background:#ef4444;border-radius:4px;transition:width 1s"></div>
-            </div>
-            <span id="resultNoLabel" style="font-weight:700;color:#ef4444;width:50px;text-align:right" data-el="— Κατά" data-en="— No">— Κατά</span>
-          </div>
-          <div id="resultMajority" style="font-weight:700;color:var(--gray-500)" data-el="Αναμονή πραγματικών δεδομένων" data-en="Waiting for real data">Αναμονή πραγματικών δεδομένων</div>
-        </div>
-      </div>
-    </div>
-    <!-- Divergence + Representativität -->
-    <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid rgba(255,255,255,0.1);display:flex;gap:1rem;flex-wrap:wrap">
-      <div style="flex:1;min-width:200px">
-        <div style="font-size:0.7rem;color:var(--gray-500);margin-bottom:0.3rem" data-el="Απόκλιση Πολιτών — Βουλής" data-en="Citizen — Parliament Divergence">Απόκλιση Πολιτών — Βουλής</div>
-        <div id="divBadge" hidden></div>
-      </div>
-      <div style="flex:1;min-width:200px">
-        <div style="font-size:0.7rem;color:var(--gray-500);margin-bottom:0.3rem" data-el="Αντιπροσωπευτικότητα" data-en="Representativity">Αντιπροσωπευτικότητα</div>
-        <div style="display:flex;align-items:center;gap:0.5rem">
-          <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
-            <div id="repBar" style="height:100%;width:0;border-radius:4px;transition:width 1s;background:#ef4444"></div>
-          </div>
-          <span id="repPct" style="font-size:0.72rem;font-weight:700;color:#f59e0b;white-space:nowrap;opacity:0;transition:opacity 0.5s">—</span>
-        </div>
-        <div id="repLabel" style="font-size:0.62rem;color:var(--gray-500);margin-top:0.2rem;opacity:0;transition:opacity 0.5s" data-el="Αναμονή πραγματικών δεδομένων" data-en="Waiting for real data">Αναμονή πραγματικών δεδομένων</div>
-      </div>
+    <div>
+      <p data-el="«Η Εκκλησία του Δήμου — η κύρια δημοκρατική συνέλευση της αρχαίας Αθήνας — πραγματοποιούνταν στον λόφο της Πνύκας, στην Αρχαία Αγορά ή στο Θέατρο του Διονύσου και αποτελούσε τον πυρήνα της αθηναϊκής δημοκρατίας." data-en="The Ekklesia of the Demos — the principal democratic assembly of ancient Athens — convened on Pnyx hill, the Ancient Agora, or the Theatre of Dionysus and formed the core of Athenian democracy.">«Η Εκκλησία του Δήμου — η κύρια δημοκρατική συνέλευση της αρχαίας Αθήνας — πραγματοποιούνταν στον λόφο της Πνύκας, στην Αρχαία Αγορά ή στο Θέατρο του Διονύσου και αποτελούσε τον πυρήνα της αθηναϊκής δημοκρατίας.</p>
+      <div class="pnx2-history-separator" aria-hidden="true"></div>
+      <p data-el="Η ιστοσελίδα ekklesia.gr εμπνέεται από αυτή την ιστορική παράδοση και αποτελεί ανεξάρτητη, κοινοτική πλατφόρμα ανοιχτού κώδικα — χωρίς ιδιοκτήτη, χωρίς εταιρεία, χωρίς κεντρικό έλεγχο. Δεν ανήκει σε κανέναν και ανήκει σε όλους. Χωρίς κρατική συγκατάθεση ή επίσημο χαρακτήρα." data-en="ekklesia.gr is inspired by this historical tradition and is an independent, community-driven open-source platform — no owner, no company, no central control. It belongs to no one and belongs to everyone, without state endorsement or official status.">Η ιστοσελίδα ekklesia.gr εμπνέεται από αυτή την ιστορική παράδοση και αποτελεί ανεξάρτητη, κοινοτική πλατφόρμα ανοιχτού κώδικα — χωρίς ιδιοκτήτη, χωρίς εταιρεία, χωρίς κεντρικό έλεγχο. Δεν ανήκει σε κανέναν και ανήκει σε όλους. Χωρίς κρατική συγκατάθεση ή επίσημο χαρακτήρα.</p>
+      <p data-el="Όλες οι ψηφοφορίες που διεξάγονται στην πλατφόρμα αφορούν αποκλειστικά πραγματικά νομοσχέδια, αποφάσεις και ανακοινώσεις που προέρχονται από επίσημες δημόσιες πηγές — τη Βουλή των Ελλήνων, τις Περιφέρειες και τους Δήμους — και έχουν αποκλειστικά ενημερωτικό χαρακτήρα. Δεν παράγουν κανενός είδους νομική ή πολιτική δεσμευτικότητα.»" data-en="All votes conducted on this platform concern exclusively real bills, decisions and announcements from official public sources — the Hellenic Parliament, Regions and Municipalities — and are purely informational. They carry no legal or political binding force.">Όλες οι ψηφοφορίες που διεξάγονται στην πλατφόρμα αφορούν αποκλειστικά πραγματικά νομοσχέδια, αποφάσεις και ανακοινώσεις που προέρχονται από επίσημες δημόσιες πηγές — τη Βουλή των Ελλήνων, τις Περιφέρειες και τους Δήμους — και έχουν αποκλειστικά ενημερωτικό χαρακτήρα. Δεν παράγουν κανενός είδους νομική ή πολιτική δεσμευτικότητα.»</p>
     </div>
   </div>
 </section>
@@ -1063,6 +941,260 @@
 
 </section>
 
+<section class="ticker-section" id="votes">
+  <div class="section-inner">
+    <h2 class="section-title fade-in" data-el="Ψηφοφορίες σε Εξέλιξη" data-en="Votes in Progress">Ψηφοφορίες σε Εξέλιξη</h2>
+    <div class="ticker-grid">
+      <div class="fade-in">
+        <h4><span class="dot"></span> <span data-el="Τρέχουσες" data-en="Active">Τρέχουσες</span></h4>
+        <div class="ticker-cards-wrap" id="t1">
+          <div class="t-card al t-empty visible"><strong data-el="Σύντομα πραγματικά δεδομένα" data-en="Real data soon">Σύντομα πραγματικά δεδομένα</strong><span data-el="Θα εμφανιστούν ψηφοφορίες όταν περάσουν το όριο συμμετοχής." data-en="Votes appear after they pass the participation threshold.">Θα εμφανιστούν ψηφοφορίες όταν περάσουν το όριο συμμετοχής.</span></div>
+        </div>
+        <a href="/el/bills" class="t-more" data-el="Προβολή τρεχουσών" data-en="View active votes">Προβολή τρεχουσών</a>
+      </div>
+      <div class="fade-in">
+        <h4><span class="dot"></span> <span data-el="Τελευταίες 24ω" data-en="Last 24h">Τελευταίες 24ω</span></h4>
+        <div class="ticker-cards-wrap" id="t2">
+          <div class="t-card rc t-empty visible"><strong data-el="Καμία ψηφοφορία πάνω από το όριο" data-en="No vote above threshold">Καμία ψηφοφορία πάνω από το όριο</strong><span data-el="Μόνο πραγματικές, συγκεντρωτικές ψήφοι εμφανίζονται εδώ." data-en="Only real aggregated votes appear here.">Μόνο πραγματικές, συγκεντρωτικές ψήφοι εμφανίζονται εδώ.</span></div>
+        </div>
+        <a href="/el/bills?status=WINDOW_24H" class="t-more" data-el="Προβολή παραθύρου 24ω" data-en="View 24h window">Προβολή παραθύρου 24ω</a>
+      </div>
+      <div class="fade-in">
+        <h4><span class="dot"></span> <span data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</span></h4>
+        <div class="ticker-cards-wrap" id="t3">
+          <div class="t-card rs t-empty visible"><strong data-el="Αποτελέσματα όταν υπάρχουν αρκετές ψήφοι" data-en="Results after enough votes">Αποτελέσματα όταν υπάρχουν αρκετές ψήφοι</strong><span data-el="Δεν προβάλλονται δοκιμαστικοί αριθμοί." data-en="No demo numbers are shown.">Δεν προβάλλονται δοκιμαστικοί αριθμοί.</span></div>
+        </div>
+        <a href="/el/results" class="t-more" data-el="Προβολή αποτελεσμάτων" data-en="View results">Προβολή αποτελεσμάτων</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Mobile App Download — DEAKTIVIERT bis User-Release (2026-04-09) -->
+<section id="download" class="section" style="background:linear-gradient(135deg,#eff6ff 0%,#f0fdf4 100%);color:var(--gray-900);text-align:center;padding:4rem 2rem">
+  <div class="section-inner">
+    <h2 class="section-title fade-in" style="color:var(--gray-900)" data-el="Κατεβάστε την Εφαρμογή" data-en="Download the App">Κατεβάστε την Εφαρμογή</h2>
+    <p style="color:#94a3b8;max-width:500px;margin:0 auto 2rem" class="fade-in"
+       data-el="Ψηφίστε απευθείας από το κινητό σας. Ανώνυμα, ασφαλή, κρυπτογραφημένα. Android APK διαθέσιμο — iOS μέσω PWA."
+       data-en="Vote directly from your phone. Anonymous, secure, encrypted. Android APK available — iOS via PWA.">
+      Ψηφίστε απευθείας από το κινητό σας. Ανώνυμα, ασφαλή, κρυπτογραφημένα. Android APK διαθέσιμο — iOS μέσω PWA.
+    </p>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap" class="fade-in">
+      <!-- iOS App Store (deaktiviert) -->
+      <div class="download-channel-card" style="display:inline-flex;align-items:center;gap:0.6rem;padding:0.75rem 1.75rem;background:white;border:2px solid #e2e8f0;border-radius:0.75rem;opacity:0.5;cursor:not-allowed;color:#64748b">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+        <div style="text-align:left">
+          <div style="font-size:0.6rem;color:#94a3b8" data-el="Σύντομα" data-en="Coming soon">Σύντομα</div>
+          <div style="font-size:1rem;font-weight:800">App Store</div>
+        </div>
+      </div>
+      <!-- Android APK — ACTIVE -->
+      <a class="download-channel-card" href="https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:0.6rem;padding:0.75rem 1.75rem;background:white;border:2px solid #22c55e;border-radius:0.75rem;cursor:pointer;text-decoration:none;color:#0f172a;transition:all 0.2s" onmouseover="this.style.borderColor='#2563eb';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#22c55e';this.style.transform='none'">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="#22c55e"><path d="M17.523 2.149a.7.7 0 0 0-.904.378L15.108 6.21c-1.02-.442-2.15-.688-3.358-.688-1.209 0-2.338.246-3.358.688L6.881 2.527a.7.7 0 1 0-1.282.556l1.47 3.586A8.263 8.263 0 0 0 3.5 12.998h17c0-2.486-1.09-4.715-2.819-6.237l1.52-3.734a.7.7 0 0 0-.378-.878zM8.5 10.75a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm7 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM3.5 13.998v5.25a1.75 1.75 0 0 0 1.75 1.75h1v2.25a1.25 1.25 0 1 0 2.5 0v-2.25h6.5v2.25a1.25 1.25 0 1 0 2.5 0v-2.25h1a1.75 1.75 0 0 0 1.75-1.75v-5.25h-17z"/></svg>
+        <div style="text-align:left">
+          <div style="font-size:0.6rem;color:#22c55e" data-el="Λήψη APK" data-en="Download APK">Λήψη APK</div>
+          <div style="font-size:1rem;font-weight:800">Android</div>
+          <div style="font-size:0.65rem;color:#64748b;margin-top:0.1rem" data-el="v1.0.32 · vC61 δημοσιευμένο" data-en="v1.0.32 · vC61 published">v1.0.32 · vC61 δημοσιευμένο</div>
+        </div>
+      </a>
+      <!-- Google Play (Closed Testing) -->
+      <a class="download-channel-card" href="https://play.google.com/apps/testing/ekklesia.gr" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.6rem;padding:0.75rem 1.75rem;background:white;border:2px solid #e2e8f0;border-radius:0.75rem;text-decoration:none;color:#334155;transition:all 0.2s;opacity:0.8" onmouseenter="this.style.borderColor='#3b82f6';this.style.opacity='1'" onmouseleave="this.style.borderColor='#334155';this.style.opacity='0.8'">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M3.18 23.08L14.44 12 3.18.92a2.01 2.01 0 0 0-.18.83v20.5c0 .29.06.56.18.83zm1.06 1.06l12.5-7.25L5.5 12l11.24-4.89L4.24 1.86 15.5 12 4.24 22.14zM20.5 12L16.83 9.8l-1.56 1.56L16.83 12l-1.56 1.64 1.56 1.56L20.5 12z"/></svg>
+        <div style="text-align:left">
+          <div style="font-size:0.6rem;color:#fbbf24" data-el="Υπό έλεγχο" data-en="Under review">Υπό έλεγχο</div>
+          <div style="font-size:1rem;font-weight:800">Google Play</div>
+          <div style="font-size:0.65rem;color:#64748b;margin-top:0.1rem"
+               data-el="vC61 υποβλήθηκε · αναμονή έγκρισης"
+               data-en="vC61 submitted · approval pending">vC61 υποβλήθηκε · αναμονή έγκρισης</div>
+        </div>
+      </a>
+      <!-- F-Droid -->
+      <a class="download-channel-card" href="https://f-droid.org/packages/ekklesia.gr/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.6rem;padding:0.75rem 1.75rem;background:white;border:2px solid #22c55e;border-radius:0.75rem;text-decoration:none;color:#334155;transition:all 0.2s" onmouseenter="this.style.borderColor='#3b82f6'" onmouseleave="this.style.borderColor='#22c55e'">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="#16a34a"><path d="M12 1C5.925 1 1 5.925 1 12s4.925 11 11 11 11-4.925 11-11S18.075 1 12 1zm0 2.2c4.856 0 8.8 3.944 8.8 8.8s-3.944 8.8-8.8 8.8S3.2 16.856 3.2 12 7.144 3.2 12 3.2zm-.55 3.3v2.75H8.7v5.5h2.75V17.5h1.1v-2.75h2.75v-5.5h-2.75V6.5h-1.1z"/></svg>
+        <div style="text-align:left">
+          <div style="font-size:0.6rem;color:#16a34a" data-el="Διαθέσιμο" data-en="Available">Διαθέσιμο</div>
+          <div style="font-size:1rem;font-weight:800">F-Droid</div>
+          <div style="font-size:0.65rem;color:#64748b;margin-top:0.1rem">v1.0.29 · vC584</div>
+        </div>
+      </a>
+    </div>
+    <p style="color:#92400e;background:#fffbeb;border:1px solid #fcd34d;border-radius:0.65rem;padding:0.75rem 1rem;font-size:0.75rem;line-height:1.45;max-width:760px;margin:1rem auto 0" class="fade-in"
+       data-el="Σημαντικό: κάντε ενημερώσεις πάντα από το ίδιο κανάλι εγκατάστασης (Google Play, F-Droid ή άμεσο APK). Οι εκδόσεις έχουν διαφορετικές υπογραφές. Η αλλαγή καναλιού απαιτεί πρώτα απεγκατάσταση και μετά νέα επαλήθευση στην εφαρμογή."
+       data-en="Important: always update through the same installation channel (Google Play, F-Droid or direct APK). The builds use different signatures. Changing channel requires uninstalling first and then verifying again in the app.">
+      Σημαντικό: κάντε ενημερώσεις πάντα από το ίδιο κανάλι εγκατάστασης (Google Play, F-Droid ή άμεσο APK). Οι εκδόσεις έχουν διαφορετικές υπογραφές. Η αλλαγή καναλιού απαιτεί πρώτα απεγκατάσταση και μετά νέα επαλήθευση στην εφαρμογή.
+    </p>
+    <p style="color:#475569;font-size:0.75rem;margin-top:1.5rem" class="fade-in"
+       data-el="Secure Enclave · Ed25519 · Βιομετρική Επαλήθευση"
+       data-en="Secure Enclave · Ed25519 · Biometric Verification">
+      Secure Enclave · Ed25519 · Βιομετρική Επαλήθευση
+    </p>
+    <!-- App Screenshots -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1.5rem;margin-top:2.5rem;max-width:900px;margin-left:auto;margin-right:auto" class="fade-in app-screenshots">
+      <figure style="margin:0;text-align:center">
+        <img src="assets/screenshots/screenshot-home.jpg" alt="Αρχική" loading="lazy" style="max-height:380px;width:100%;object-fit:contain;border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,0.15)">
+        <figcaption style="color:#2563eb;font-size:0.85rem;font-weight:700;margin-top:0.75rem">Αρχική</figcaption>
+      </figure>
+      <figure style="margin:0;text-align:center">
+        <img src="assets/screenshots/screenshot-votes.jpg" alt="Ψηφοφορίες" loading="lazy" style="max-height:380px;width:100%;object-fit:contain;border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,0.15)">
+        <figcaption style="color:#2563eb;font-size:0.85rem;font-weight:700;margin-top:0.75rem">Ψηφοφορίες</figcaption>
+      </figure>
+      <figure style="margin:0;text-align:center">
+        <img src="assets/screenshots/screenshot-politicians.jpg" alt="Αξιολόγηση" loading="lazy" style="max-height:380px;width:100%;object-fit:contain;border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,0.15)">
+        <figcaption style="color:#2563eb;font-size:0.85rem;font-weight:700;margin-top:0.75rem">Αξιολόγηση</figcaption>
+      </figure>
+      <figure style="margin:0;text-align:center">
+        <img src="assets/screenshots/screenshot-polis.jpg" alt="POLIS" loading="lazy" style="max-height:380px;width:100%;object-fit:contain;border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,0.15)">
+        <figcaption style="color:#2563eb;font-size:0.85rem;font-weight:700;margin-top:0.75rem">POLIS</figcaption>
+      </figure>
+    </div>
+    <style>
+      @media (max-width: 640px) {
+        .app-screenshots { grid-template-columns: repeat(2, 1fr) !important; gap: 1rem !important; }
+        .app-screenshots img { max-height: 280px !important; }
+      }
+    </style>
+  </div>
+</section>
+
+<section class="section" id="how">
+  <div class="section-inner">
+    <h2 class="section-title fade-in" data-el="Πώς λειτουργεί;" data-en="How does it work?">Πώς λειτουργεί;</h2>
+    <p class="section-sub fade-in" data-el="Τέσσερα βήματα. Χωρίς λογαριασμό. Χωρίς email." data-en="Four steps. No account. No email.">Τέσσερα βήματα. Χωρίς λογαριασμό. Χωρίς email.</p>
+    <div class="steps-grid">
+      <div class="step fade-in">
+        <div class="step-num">1</div>
+        <h3 data-el="Επαλήθευση" data-en="Verification">Επαλήθευση</h3>
+        <p data-el="Έλεγχος κατάστασης ελληνικού αριθμού κινητού μέσω HLR. Δεν αποδεικνύει κατοχή SIM ή ταυτότητα· δεν στέλνεται SMS και ο αριθμός διαγράφεται αμέσως." data-en="Greek mobile-number status check via HLR. It does not prove SIM possession or identity; no SMS is sent and the number is deleted immediately.">Έλεγχος κατάστασης ελληνικού αριθμού μέσω HLR. Δεν αποδεικνύει κατοχή SIM ή ταυτότητα.</p>
+      </div>
+      <div class="step fade-in">
+        <div class="step-num">2</div>
+        <h3 data-el="Κρυπτογραφικό Κλειδί" data-en="Cryptographic Key">Κρυπτογραφικό Κλειδί</h3>
+        <p data-el="Ed25519 κλειδί μόνο στη συσκευή σας." data-en="Ed25519 key only on your device.">Ed25519 κλειδί μόνο στη συσκευή σας.</p>
+      </div>
+      <div class="step fade-in">
+        <div class="step-num">3</div>
+        <h3 data-el="Ψηφίστε" data-en="Vote">Ψηφίστε</h3>
+        <p data-el="Υπέρ, Κατά ή Αποχή σε πραγματικά νομοσχέδια." data-en="Yes, No or Abstain on real bills.">Υπέρ, Κατά ή Αποχή σε πραγματικά νομοσχέδια.</p>
+      </div>
+      <div class="step fade-in">
+        <div class="step-num">4</div>
+        <h3 data-el="Δείτε τη Διαφορά" data-en="See the Difference">Δείτε τη Διαφορά</h3>
+        <p data-el="Δείκτης Απόκλισης: Βουλή vs Πολίτες." data-en="Divergence Score: Parliament vs Citizens.">Δείκτης Απόκλισης: Βουλή vs Πολίτες.</p>
+      </div>
+    </div>
+    <figure class="ekk-visual-card ekk-visual-frame ekk-fade-up" style="margin-top:2rem">
+      <img src="animations/svg/voting-flow.svg"
+           alt="Ροή ψήφου: HLR έλεγχος χωρίς SMS, nullifier hash, Ed25519 κλειδί στη συσκευή, υπογεγραμμένη ψήφος και δημόσιο αποτέλεσμα"
+           loading="lazy" decoding="async">
+    </figure>
+    <div class="pnx2-guide">
+      <h3 data-el="Από την εγκατάσταση έως την ψήφο" data-en="From installation to voting">Από την εγκατάσταση έως την ψήφο</h3>
+      <ol>
+        <li><strong data-el="Εγκαταστήστε την εφαρμογή Android." data-en="Install the Android app.">Εγκαταστήστε την εφαρμογή Android.</strong> <span data-el="Επιλέξτε ένα από τα διαθέσιμα κανάλια λήψης παρακάτω. Οι εκδόσεις Direct, Google Play και F-Droid μπορεί να έχουν διαφορετικές υπογραφές και να μη δέχονται εγκατάσταση η μία πάνω στην άλλη. Η εφαρμογή iOS δεν είναι ακόμη διαθέσιμη." data-en="Choose one of the available download channels below. Direct, Google Play and F-Droid builds may use different signatures and may not install over one another. The iOS app is not available yet.">Επιλέξτε ένα από τα διαθέσιμα κανάλια λήψης παρακάτω. Οι εκδόσεις Direct, Google Play και F-Droid μπορεί να έχουν διαφορετικές υπογραφές και να μη δέχονται εγκατάσταση η μία πάνω στην άλλη. Η εφαρμογή iOS δεν είναι ακόμη διαθέσιμη.</span> <a href="#download" data-el="Λήψεις →" data-en="Downloads →">Λήψεις →</a></li>
+        <li><strong data-el="Ρυθμίστε την εφαρμογή." data-en="Set up the app.">Ρυθμίστε την εφαρμογή.</strong> <span data-el="Επιλέξτε γλώσσα και, όπου προσφέρεται, την εκλογική σας περιφέρεια. Οι τοπικές ψηφοφορίες εξαρτώνται από την αντίστοιχη επιλογή." data-en="Choose a language and, where offered, your electoral district. Local votes depend on the corresponding selection.">Επιλέξτε γλώσσα και, όπου προσφέρεται, την εκλογική σας περιφέρεια. Οι τοπικές ψηφοφορίες εξαρτώνται από την αντίστοιχη επιλογή.</span></li>
+        <li><strong data-el="Ολοκληρώστε τον έλεγχο αριθμού." data-en="Complete the number check.">Ολοκληρώστε τον έλεγχο αριθμού.</strong> <span data-el="Η Beta ελέγχει την κατάσταση ελληνικού κινητού αριθμού (+30) μέσω HLR, χωρίς SMS. Αυτό δεν αποδεικνύει κατοχή SIM, ταυτότητα ή εκλογικό δικαίωμα. Το ιδιωτικό κλειδί Ed25519 δημιουργείται στη συσκευή σας." data-en="The Beta checks the status of a Greek mobile number (+30) via HLR, without SMS. This does not prove SIM possession, identity or voting eligibility. Your Ed25519 private key is generated on your device.">Η Beta ελέγχει την κατάσταση ελληνικού κινητού αριθμού (+30) μέσω HLR, χωρίς SMS. Αυτό δεν αποδεικνύει κατοχή SIM, ταυτότητα ή εκλογικό δικαίωμα. Το ιδιωτικό κλειδί Ed25519 δημιουργείται στη συσκευή σας.</span></li>
+        <li><strong data-el="Ψηφίστε στην εφαρμογή." data-en="Vote in the app.">Ψηφίστε στην εφαρμογή.</strong> <span data-el="Ανοίξτε μια διαθέσιμη ψηφοφορία, διαβάστε το νομοσχέδιο και επιλέξτε Υπέρ, Κατά ή Αποχή. Η ψήφος υπογράφεται στη συσκευή. Οι ψηφοφορίες εδώ είναι ενημερωτικές και όχι νομικά δεσμευτικές." data-en="Open an available vote, read the bill and choose Yes, No or Abstain. The vote is signed on your device. Votes here are informational and not legally binding.">Ανοίξτε μια διαθέσιμη ψηφοφορία, διαβάστε το νομοσχέδιο και επιλέξτε Υπέρ, Κατά ή Αποχή. Η ψήφος υπογράφεται στη συσκευή. Οι ψηφοφορίες εδώ είναι ενημερωτικές και όχι νομικά δεσμευτικές.</span></li>
+        <li><strong data-el="Συνδεθείτε στο Forum μέσω browser." data-en="Sign in to the forum in a browser.">Συνδεθείτε στο Forum μέσω browser.</strong> <span data-el="Ανοίξτε την Πνύκα και επιλέξτε «Σύνδεση». Στον υπολογιστή σαρώστε τον κωδικό QR με την επαληθευμένη εφαρμογή ekklesia. Στο ίδιο κινητό πατήστε «Άνοιγμα στην εφαρμογή ekklesia», όταν εμφανίζεται· δεν χρειάζεται να σαρώσετε την οθόνη σας." data-en="Open Pnyx and select Sign in. On a computer, scan the displayed QR code with your verified ekklesia app. On the same smartphone, use Open in the ekklesia app when offered; you do not need to scan your own screen.">Ανοίξτε την Πνύκα και επιλέξτε «Σύνδεση». Στον υπολογιστή σαρώστε τον κωδικό QR με την επαληθευμένη εφαρμογή ekklesia. Στο ίδιο κινητό πατήστε «Άνοιγμα στην εφαρμογή ekklesia», όταν εμφανίζεται· δεν χρειάζεται να σαρώσετε την οθόνη σας.</span> <a href="https://pnyx.ekklesia.gr/" data-el="Πνύκα →" data-en="Pnyx →">Πνύκα →</a></li>
+        <li><strong data-el="Δείτε τα αποτελέσματα." data-en="View results.">Δείτε τα αποτελέσματα.</strong> <span data-el="Οι δημόσιες συγκρίσεις Βουλής και πολιτών εμφανίζονται μόνο όταν υπάρχουν πραγματικά, επαρκή δεδομένα. Μπορείτε να δείτε τρέχουσες ψηφοφορίες και δημοσιευμένα αποτελέσματα στον ιστότοπο." data-en="Public comparisons of Parliament and citizen votes appear only when sufficient real data exists. You can view active votes and published results on the website.">Οι δημόσιες συγκρίσεις Βουλής και πολιτών εμφανίζονται μόνο όταν υπάρχουν πραγματικά, επαρκή δεδομένα. Μπορείτε να δείτε τρέχουσες ψηφοφορίες και δημοσιευμένα αποτελέσματα στον ιστότοπο.</span> <a href="/el/results" data-el="Αποτελέσματα →" data-en="Results →">Αποτελέσματα →</a></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section class="demo-section" id="demo">
+  <div class="demo-title" data-el="Ο Κύκλος της Δημοκρατίας" data-en="The Democracy Cycle">Ο Κύκλος της Δημοκρατίας</div>
+  <p class="demo-sub" data-el="Κάθε απόφαση διανύει 6 φάσεις — από τη Βουλή στους πολίτες." data-en="Every decision goes through 6 phases — from Parliament to citizens.">Κάθε απόφαση διανύει 6 φάσεις — από τη Βουλή στους πολίτες.</p>
+  <div class="demo-grid">
+    <div class="demo-box" id="dBox1">
+      <div class="demo-icon">🏛️</div>
+      <div class="demo-label" data-el="Ανακοίνωση" data-en="Announced">Ανακοίνωση</div>
+    </div>
+    <div class="demo-box" id="dBox2">
+      <div class="demo-icon" id="scrapeIcon" style="display:inline-block">🔍</div>
+      <div class="demo-label" data-el="Ανάλυση Νόμου" data-en="Law Analysis">Ανάλυση Νόμου</div>
+      <div class="demo-pct" id="scrapeStatus" style="opacity:0;transition:opacity 0.5s;font-size:0.65rem;margin-top:0.3rem" data-el="AI Σύνοψη..." data-en="AI Summary...">AI Σύνοψη...</div>
+    </div>
+    <div class="demo-box" id="dBox3">
+      <div class="demo-icon">✅</div>
+      <div class="demo-label" data-el="Ενεργοποίηση" data-en="Activation">Ενεργοποίηση</div>
+      <div class="demo-pct" id="activateStatus" style="opacity:0;transition:opacity 0.5s;font-size:0.65rem;margin-top:0.3rem" data-el="Ψηφοφορία ανοιχτή" data-en="Voting open">Ψηφοφορία ανοιχτή</div>
+    </div>
+    <div class="demo-box" id="dBox4">
+      <div class="demo-icon">🗳️</div>
+      <div class="demo-label" data-el="Ψηφοφορία Πολιτών" data-en="Citizen Vote">Ψηφοφορία Πολιτών</div>
+      <div class="demo-bar-row" id="barRow" style="display:block">
+        <div class="demo-bar-wrap"><div class="demo-bar demo-bar-yes" id="yesBar"></div></div>
+        <div class="demo-pct" id="demoYesLabel" data-el="— Υπέρ" data-en="— Yes">— Υπέρ</div>
+        <div class="demo-bar-wrap" style="margin-top:3px"><div class="demo-bar demo-bar-no" id="noBar"></div></div>
+        <div class="demo-pct" id="demoNoLabel" data-el="— Κατά" data-en="— No">— Κατά</div>
+      </div>
+    </div>
+    <div class="demo-box" id="dBox5">
+      <div class="demo-icon">⚖️</div>
+      <div class="demo-label" data-el="24ω Παράθυρο" data-en="24h Window">24ω Παράθυρο</div>
+    </div>
+    <div class="demo-box pnx2-demo-archive">
+      <div class="demo-label" data-el="Αρχείο" data-en="Archive">Αρχείο</div>
+      <div class="demo-pct" data-el="Open End · Arweave" data-en="Open End · Arweave">Open End · Arweave</div>
+    </div>
+  </div>
+  <!-- Result Kachel — immer sichtbar, Daten füllen sich bei Step 6 -->
+  <div id="dBox6" style="max-width:900px;margin:1rem auto 0;background:white;border:2px solid #e2e8f0;border-radius:var(--radius);padding:1.25rem 1.5rem">
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem">
+      <span style="font-size:1.4rem">📊</span>
+      <span style="font-weight:900;font-size:1rem;color:var(--gray-900)" data-el="Αποτέλεσμα Ψηφοφορίας" data-en="Vote Result">Αποτέλεσμα Ψηφοφορίας</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;font-size:0.78rem;color:rgba(255,255,255,0.7)">
+      <!-- Νομοσχέδιο -->
+      <div>
+        <div style="font-weight:800;color:var(--gray-500);margin-bottom:0.5rem;font-size:0.82rem">🏛️ <span data-el="Νομοσχέδιο" data-en="Bill">Νομοσχέδιο</span><span hidden data-el="Απόφαση Βουλής" data-en="Parliament Decision">Απόφαση Βουλής</span></div>
+        <div id="rParlData" style="opacity:0;transition:opacity 0.6s">
+          <div id="latestBillTitle" style="color:var(--gray-600);margin-bottom:0.4rem" data-el="Αναμονή πραγματικών δεδομένων" data-en="Waiting for real data">Αναμονή πραγματικών δεδομένων</div>
+          <div id="latestBillStatus" style="font-weight:700;color:var(--gray-500)" data-el="Δεν υπάρχει ακόμη αποτέλεσμα με ψήφους" data-en="No voted result is available yet">Δεν υπάρχει ακόμη αποτέλεσμα με ψήφους</div>
+        </div>
+      </div>
+      <!-- Πολίτες -->
+      <div>
+        <div style="font-weight:800;color:var(--gray-500);margin-bottom:0.5rem;font-size:0.82rem">🗳️ <span data-el="Βούληση Πολιτών" data-en="Citizen Will">Βούληση Πολιτών</span></div>
+        <div id="rCitizenData" style="opacity:0;transition:opacity 0.6s">
+          <div id="resultTotal" style="margin-bottom:0.4rem" data-el="— ψήφοι" data-en="— votes">— ψήφοι</div>
+          <div id="resultParticipation" style="margin-bottom:0.4rem;color:var(--gray-500)" data-el="Συμμετοχή στην πλατφόρμα: —" data-en="Platform participation: —">Συμμετοχή στην πλατφόρμα: —</div>
+          <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.3rem">
+            <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
+              <div id="resultYes" style="height:100%;width:0;background:#22c55e;border-radius:4px;transition:width 1s"></div>
+            </div>
+            <span id="resultYesLabel" style="font-weight:700;color:#22c55e;width:50px;text-align:right" data-el="— Υπέρ" data-en="— Yes">— Υπέρ</span>
+          </div>
+          <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem">
+            <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
+              <div id="resultNo" style="height:100%;width:0;background:#ef4444;border-radius:4px;transition:width 1s"></div>
+            </div>
+            <span id="resultNoLabel" style="font-weight:700;color:#ef4444;width:50px;text-align:right" data-el="— Κατά" data-en="— No">— Κατά</span>
+          </div>
+          <div id="resultMajority" style="font-weight:700;color:var(--gray-500)" data-el="Αναμονή πραγματικών δεδομένων" data-en="Waiting for real data">Αναμονή πραγματικών δεδομένων</div>
+        </div>
+      </div>
+    </div>
+    <!-- Divergence + Representativität -->
+    <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid rgba(255,255,255,0.1);display:flex;gap:1rem;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:0.7rem;color:var(--gray-500);margin-bottom:0.3rem" data-el="Απόκλιση Πολιτών — Βουλής" data-en="Citizen — Parliament Divergence">Απόκλιση Πολιτών — Βουλής</div>
+        <div id="divBadge" hidden></div>
+      </div>
+      <div style="flex:1;min-width:200px">
+        <div style="font-size:0.7rem;color:var(--gray-500);margin-bottom:0.3rem" data-el="Αντιπροσωπευτικότητα" data-en="Representativity">Αντιπροσωπευτικότητα</div>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
+            <div id="repBar" style="height:100%;width:0;border-radius:4px;transition:width 1s;background:#ef4444"></div>
+          </div>
+          <span id="repPct" style="font-size:0.72rem;font-weight:700;color:#f59e0b;white-space:nowrap;opacity:0;transition:opacity 0.5s">—</span>
+        </div>
+        <div id="repLabel" style="font-size:0.62rem;color:var(--gray-500);margin-top:0.2rem;opacity:0;transition:opacity 0.5s" data-el="Αναμονή πραγματικών δεδομένων" data-en="Waiting for real data">Αναμονή πραγματικών δεδομένων</div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="section section-gray" id="features">
   <div class="section-inner">
     <h2 class="section-title fade-in" data-el="Τι προσφέρει η εκκλησία;" data-en="What does ekklesia offer?">Τι προσφέρει η εκκλησία;</h2>
@@ -1183,24 +1315,6 @@
   </div>
 </section>
 
-<!-- ─── PNYX FORUM SECTION ─── -->
-<section class="pnx2-history-band" aria-labelledby="historyTitle">
-  <div class="pnx2-history-grid">
-    <div>
-      <span data-el="ΙΣΤΟΡΙΚΟ ΠΛΑΙΣΙΟ" data-en="HISTORICAL CONTEXT">ΙΣΤΟΡΙΚΟ ΠΛΑΙΣΙΟ</span>
-      <h2 id="historyTitle" data-el="Η Εκκλησία του Δήμου" data-en="The Assembly of the Demos">Η Εκκλησία<br/>του Δήμου</h2>
-      <p class="pnx2-history-lead" data-el="Ο λόφος της Πνύκας ήταν ο τόπος όπου οι πολίτες αποφάσιζαν δημόσια." data-en="The Pnyx hill was where citizens made public decisions.">Ο λόφος της Πνύκας ήταν ο τόπος όπου οι πολίτες αποφάσιζαν δημόσια.</p>
-      <img src="assets/redesign-v2/pnyx-acropolis-white.png" alt="" aria-hidden="true"/>
-    </div>
-    <div>
-      <p data-el="«Η Εκκλησία του Δήμου — η κύρια δημοκρατική συνέλευση της αρχαίας Αθήνας — πραγματοποιούνταν στον λόφο της Πνύκας, στην Αρχαία Αγορά ή στο Θέατρο του Διονύσου και αποτελούσε τον πυρήνα της αθηναϊκής δημοκρατίας." data-en="The Ekklesia of the Demos — the principal democratic assembly of ancient Athens — convened on Pnyx hill, the Ancient Agora, or the Theatre of Dionysus and formed the core of Athenian democracy.">«Η Εκκλησία του Δήμου — η κύρια δημοκρατική συνέλευση της αρχαίας Αθήνας — πραγματοποιούνταν στον λόφο της Πνύκας, στην Αρχαία Αγορά ή στο Θέατρο του Διονύσου και αποτελούσε τον πυρήνα της αθηναϊκής δημοκρατίας.</p>
-      <div class="pnx2-history-separator" aria-hidden="true"></div>
-      <p data-el="Η ιστοσελίδα ekklesia.gr εμπνέεται από αυτή την ιστορική παράδοση και αποτελεί ανεξάρτητη, κοινοτική πλατφόρμα ανοιχτού κώδικα — χωρίς ιδιοκτήτη, χωρίς εταιρεία, χωρίς κεντρικό έλεγχο. Δεν ανήκει σε κανέναν και ανήκει σε όλους. Χωρίς κρατική συγκατάθεση ή επίσημο χαρακτήρα." data-en="ekklesia.gr is inspired by this historical tradition and is an independent, community-driven open-source platform — no owner, no company, no central control. It belongs to no one and belongs to everyone, without state endorsement or official status.">Η ιστοσελίδα ekklesia.gr εμπνέεται από αυτή την ιστορική παράδοση και αποτελεί ανεξάρτητη, κοινοτική πλατφόρμα ανοιχτού κώδικα — χωρίς ιδιοκτήτη, χωρίς εταιρεία, χωρίς κεντρικό έλεγχο. Δεν ανήκει σε κανέναν και ανήκει σε όλους. Χωρίς κρατική συγκατάθεση ή επίσημο χαρακτήρα.</p>
-      <p data-el="Όλες οι ψηφοφορίες που διεξάγονται στην πλατφόρμα αφορούν αποκλειστικά πραγματικά νομοσχέδια, αποφάσεις και ανακοινώσεις που προέρχονται από επίσημες δημόσιες πηγές — τη Βουλή των Ελλήνων, τις Περιφέρειες και τους Δήμους — και έχουν αποκλειστικά ενημερωτικό χαρακτήρα. Δεν παράγουν κανενός είδους νομική ή πολιτική δεσμευτικότητα.»" data-en="All votes conducted on this platform concern exclusively real bills, decisions and announcements from official public sources — the Hellenic Parliament, Regions and Municipalities — and are purely informational. They carry no legal or political binding force.">Όλες οι ψηφοφορίες που διεξάγονται στην πλατφόρμα αφορούν αποκλειστικά πραγματικά νομοσχέδια, αποφάσεις και ανακοινώσεις που προέρχονται από επίσημες δημόσιες πηγές — τη Βουλή των Ελλήνων, τις Περιφέρειες και τους Δήμους — και έχουν αποκλειστικά ενημερωτικό χαρακτήρα. Δεν παράγουν κανενός είδους νομική ή πολιτική δεσμευτικότητα.»</p>
-    </div>
-  </div>
-</section>
-
 <section class="section" id="forum" style="background:linear-gradient(135deg,#eff6ff 0%,#f0fdf4 100%)">
   <div class="section-inner" style="text-align:center">
     <h2 class="section-title fade-in" data-el="Πνύκα — Forum του Έθνους" data-en="Pnyx — Forum of the Nation">Πνύκα — Forum του Έθνους</h2>
@@ -1234,35 +1348,6 @@
     </div>
     <p style="font-size:0.65rem;color:var(--gray-400);margin-top:0.5rem" data-el="Μετά την εγκατάσταση: προσθέστε pnyx.ekklesia.gr" data-en="After install: add pnyx.ekklesia.gr">Μετά την εγκατάσταση: προσθέστε pnyx.ekklesia.gr</p>
     <p style="font-size:0.7rem;color:var(--gray-400);margin-top:0.75rem" data-el="⚠️ Μη κρατική πλατφόρμα · Ανεξάρτητη πρωτοβουλία πολιτών" data-en="⚠️ Non-governmental · Independent citizen initiative">⚠️ Μη κρατική πλατφόρμα · Ανεξάρτητη πρωτοβουλία πολιτών</p>
-  </div>
-</section>
-
-<section class="ticker-section" id="votes">
-  <div class="section-inner">
-    <h2 class="section-title fade-in" data-el="Ψηφοφορίες σε Εξέλιξη" data-en="Votes in Progress">Ψηφοφορίες σε Εξέλιξη</h2>
-    <div class="ticker-grid">
-      <div class="fade-in">
-        <h4><span class="dot"></span> <span data-el="Τρέχουσες" data-en="Active">Τρέχουσες</span></h4>
-        <div class="ticker-cards-wrap" id="t1">
-          <div class="t-card al t-empty visible"><strong data-el="Σύντομα πραγματικά δεδομένα" data-en="Real data soon">Σύντομα πραγματικά δεδομένα</strong><span data-el="Θα εμφανιστούν ψηφοφορίες όταν περάσουν το όριο συμμετοχής." data-en="Votes appear after they pass the participation threshold.">Θα εμφανιστούν ψηφοφορίες όταν περάσουν το όριο συμμετοχής.</span></div>
-        </div>
-        <a href="/el/bills" class="t-more" data-el="Προβολή τρεχουσών" data-en="View active votes">Προβολή τρεχουσών</a>
-      </div>
-      <div class="fade-in">
-        <h4><span class="dot"></span> <span data-el="Τελευταίες 24ω" data-en="Last 24h">Τελευταίες 24ω</span></h4>
-        <div class="ticker-cards-wrap" id="t2">
-          <div class="t-card rc t-empty visible"><strong data-el="Καμία ψηφοφορία πάνω από το όριο" data-en="No vote above threshold">Καμία ψηφοφορία πάνω από το όριο</strong><span data-el="Μόνο πραγματικές, συγκεντρωτικές ψήφοι εμφανίζονται εδώ." data-en="Only real aggregated votes appear here.">Μόνο πραγματικές, συγκεντρωτικές ψήφοι εμφανίζονται εδώ.</span></div>
-        </div>
-        <a href="/el/bills?status=WINDOW_24H" class="t-more" data-el="Προβολή παραθύρου 24ω" data-en="View 24h window">Προβολή παραθύρου 24ω</a>
-      </div>
-      <div class="fade-in">
-        <h4><span class="dot"></span> <span data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</span></h4>
-        <div class="ticker-cards-wrap" id="t3">
-          <div class="t-card rs t-empty visible"><strong data-el="Αποτελέσματα όταν υπάρχουν αρκετές ψήφοι" data-en="Results after enough votes">Αποτελέσματα όταν υπάρχουν αρκετές ψήφοι</strong><span data-el="Δεν προβάλλονται δοκιμαστικοί αριθμοί." data-en="No demo numbers are shown.">Δεν προβάλλονται δοκιμαστικοί αριθμοί.</span></div>
-        </div>
-        <a href="/el/results" class="t-more" data-el="Προβολή αποτελεσμάτων" data-en="View results">Προβολή αποτελεσμάτων</a>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -1445,89 +1530,54 @@
   </div>
 </section>
 
-<!-- Mobile App Download — DEAKTIVIERT bis User-Release (2026-04-09) -->
-<section id="download" class="section" style="background:linear-gradient(135deg,#eff6ff 0%,#f0fdf4 100%);color:var(--gray-900);text-align:center;padding:4rem 2rem">
-  <div class="section-inner">
-    <h2 class="section-title fade-in" style="color:var(--gray-900)" data-el="Κατεβάστε την Εφαρμογή" data-en="Download the App">Κατεβάστε την Εφαρμογή</h2>
-    <p style="color:#94a3b8;max-width:500px;margin:0 auto 2rem" class="fade-in"
-       data-el="Ψηφίστε απευθείας από το κινητό σας. Ανώνυμα, ασφαλή, κρυπτογραφημένα. Android APK διαθέσιμο — iOS μέσω PWA."
-       data-en="Vote directly from your phone. Anonymous, secure, encrypted. Android APK available — iOS via PWA.">
-      Ψηφίστε απευθείας από το κινητό σας. Ανώνυμα, ασφαλή, κρυπτογραφημένα. Android APK διαθέσιμο — iOS μέσω PWA.
-    </p>
-    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap" class="fade-in">
-      <!-- iOS App Store (deaktiviert) -->
-      <div class="download-channel-card" style="display:inline-flex;align-items:center;gap:0.6rem;padding:0.75rem 1.75rem;background:white;border:2px solid #e2e8f0;border-radius:0.75rem;opacity:0.5;cursor:not-allowed;color:#64748b">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-        <div style="text-align:left">
-          <div style="font-size:0.6rem;color:#94a3b8" data-el="Σύντομα" data-en="Coming soon">Σύντομα</div>
-          <div style="font-size:1rem;font-weight:800">App Store</div>
+<!-- DISCLAIMER SECTION -->
+<section id="notice" style="background:#f8fafc;padding:2.5rem 1.5rem;border-top:1px solid #e2e8f0">
+  <div style="max-width:800px;margin:0 auto">
+    <h3 style="text-align:center;font-size:0.9rem;font-weight:800;color:#0f172a;margin-bottom:1.25rem;letter-spacing:0.03em" data-el="Τι πρέπει να γνωρίζετε" data-en="What you should know">Τι πρέπει να γνωρίζετε</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem">
+      <div style="display:flex;gap:0.6rem;align-items:flex-start">
+        <span style="font-size:1.2rem;flex-shrink:0">🔒</span>
+        <div>
+          <div style="font-size:0.78rem;font-weight:700;color:#0f172a;margin-bottom:0.15rem" data-el="Πλήρης Ανωνυμία" data-en="Full Anonymity">Πλήρης Ανωνυμία</div>
+          <div style="font-size:0.72rem;color:#64748b;line-height:1.5" data-el="Κανένα όνομα, email ή λογαριασμός. Μόνο κρυπτογραφικό κλειδί στη συσκευή σας." data-en="No name, email, or account. Only a cryptographic key on your device.">Κανένα όνομα, email ή λογαριασμός. Μόνο κρυπτογραφικό κλειδί στη συσκευή σας.</div>
         </div>
       </div>
-      <!-- Android APK — ACTIVE -->
-      <a class="download-channel-card" href="https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:0.6rem;padding:0.75rem 1.75rem;background:white;border:2px solid #22c55e;border-radius:0.75rem;cursor:pointer;text-decoration:none;color:#0f172a;transition:all 0.2s" onmouseover="this.style.borderColor='#2563eb';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#22c55e';this.style.transform='none'">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="#22c55e"><path d="M17.523 2.149a.7.7 0 0 0-.904.378L15.108 6.21c-1.02-.442-2.15-.688-3.358-.688-1.209 0-2.338.246-3.358.688L6.881 2.527a.7.7 0 1 0-1.282.556l1.47 3.586A8.263 8.263 0 0 0 3.5 12.998h17c0-2.486-1.09-4.715-2.819-6.237l1.52-3.734a.7.7 0 0 0-.378-.878zM8.5 10.75a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm7 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM3.5 13.998v5.25a1.75 1.75 0 0 0 1.75 1.75h1v2.25a1.25 1.25 0 1 0 2.5 0v-2.25h6.5v2.25a1.25 1.25 0 1 0 2.5 0v-2.25h1a1.75 1.75 0 0 0 1.75-1.75v-5.25h-17z"/></svg>
-        <div style="text-align:left">
-          <div style="font-size:0.6rem;color:#22c55e" data-el="Λήψη APK" data-en="Download APK">Λήψη APK</div>
-          <div style="font-size:1rem;font-weight:800">Android</div>
-          <div style="font-size:0.65rem;color:#64748b;margin-top:0.1rem" data-el="v1.0.32 · vC61 δημοσιευμένο" data-en="v1.0.32 · vC61 published">v1.0.32 · vC61 δημοσιευμένο</div>
+      <div style="display:flex;gap:0.6rem;align-items:flex-start">
+        <span style="font-size:1.2rem;flex-shrink:0">🛡️</span>
+        <div>
+          <div style="font-size:0.78rem;font-weight:700;color:#0f172a;margin-bottom:0.15rem" data-el="Κρυπτογραφία Ed25519" data-en="Ed25519 Cryptography">Κρυπτογραφία Ed25519</div>
+          <div style="font-size:0.72rem;color:#64748b;line-height:1.5" data-el="Κάθε ψήφος υπογράφεται ψηφιακά. Ο server δεν γνωρίζει τι ψηφίσατε." data-en="Every vote is digitally signed. The server never knows what you voted.">Κάθε ψήφος υπογράφεται ψηφιακά. Ο server δεν γνωρίζει τι ψηφίσατε.</div>
         </div>
-      </a>
-      <!-- Google Play (Closed Testing) -->
-      <a class="download-channel-card" href="https://play.google.com/apps/testing/ekklesia.gr" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.6rem;padding:0.75rem 1.75rem;background:white;border:2px solid #e2e8f0;border-radius:0.75rem;text-decoration:none;color:#334155;transition:all 0.2s;opacity:0.8" onmouseenter="this.style.borderColor='#3b82f6';this.style.opacity='1'" onmouseleave="this.style.borderColor='#334155';this.style.opacity='0.8'">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M3.18 23.08L14.44 12 3.18.92a2.01 2.01 0 0 0-.18.83v20.5c0 .29.06.56.18.83zm1.06 1.06l12.5-7.25L5.5 12l11.24-4.89L4.24 1.86 15.5 12 4.24 22.14zM20.5 12L16.83 9.8l-1.56 1.56L16.83 12l-1.56 1.64 1.56 1.56L20.5 12z"/></svg>
-        <div style="text-align:left">
-          <div style="font-size:0.6rem;color:#fbbf24" data-el="Υπό έλεγχο" data-en="Under review">Υπό έλεγχο</div>
-          <div style="font-size:1rem;font-weight:800">Google Play</div>
-          <div style="font-size:0.65rem;color:#64748b;margin-top:0.1rem"
-               data-el="vC61 υποβλήθηκε · αναμονή έγκρισης"
-               data-en="vC61 submitted · approval pending">vC61 υποβλήθηκε · αναμονή έγκρισης</div>
+      </div>
+      <div style="display:flex;gap:0.6rem;align-items:flex-start">
+        <span style="font-size:1.2rem;flex-shrink:0">🏛️</span>
+        <div>
+          <div style="font-size:0.78rem;font-weight:700;color:#0f172a;margin-bottom:0.15rem" data-el="Μη Κρατική Πλατφόρμα" data-en="Non-Governmental Platform">Μη Κρατική Πλατφόρμα</div>
+          <div style="font-size:0.72rem;color:#64748b;line-height:1.5" data-el="Ανεξάρτητη πρωτοβουλία πολιτών. Χωρίς κρατική χρηματοδότηση ή εποπτεία." data-en="Independent citizen initiative. No state funding or oversight.">Ανεξάρτητη πρωτοβουλία πολιτών. Χωρίς κρατική χρηματοδότηση ή εποπτεία.</div>
         </div>
-      </a>
-      <!-- F-Droid -->
-      <a class="download-channel-card" href="https://f-droid.org/packages/ekklesia.gr/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.6rem;padding:0.75rem 1.75rem;background:white;border:2px solid #22c55e;border-radius:0.75rem;text-decoration:none;color:#334155;transition:all 0.2s" onmouseenter="this.style.borderColor='#3b82f6'" onmouseleave="this.style.borderColor='#22c55e'">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="#16a34a"><path d="M12 1C5.925 1 1 5.925 1 12s4.925 11 11 11 11-4.925 11-11S18.075 1 12 1zm0 2.2c4.856 0 8.8 3.944 8.8 8.8s-3.944 8.8-8.8 8.8S3.2 16.856 3.2 12 7.144 3.2 12 3.2zm-.55 3.3v2.75H8.7v5.5h2.75V17.5h1.1v-2.75h2.75v-5.5h-2.75V6.5h-1.1z"/></svg>
-        <div style="text-align:left">
-          <div style="font-size:0.6rem;color:#16a34a" data-el="Διαθέσιμο" data-en="Available">Διαθέσιμο</div>
-          <div style="font-size:1rem;font-weight:800">F-Droid</div>
-          <div style="font-size:0.65rem;color:#64748b;margin-top:0.1rem">v1.0.29 · vC584</div>
+      </div>
+      <div style="display:flex;gap:0.6rem;align-items:flex-start">
+        <span style="font-size:1.2rem;flex-shrink:0">👥</span>
+        <div>
+          <div style="font-size:0.78rem;font-weight:700;color:#0f172a;margin-bottom:0.15rem" data-el="Community Driven" data-en="Community Driven">Community Driven</div>
+          <div style="font-size:0.72rem;color:#64748b;line-height:1.5" data-el="Open source (MIT). Χρηματοδοτείται 100% από πολίτες. Χωρίς διαφημίσεις." data-en="Open source (MIT). 100% citizen-funded. No advertising.">Open source (MIT). Χρηματοδοτείται 100% από πολίτες. Χωρίς διαφημίσεις.</div>
         </div>
-      </a>
+      </div>
+      <div style="display:flex;gap:0.6rem;align-items:flex-start">
+        <span style="font-size:1.2rem;flex-shrink:0">📊</span>
+        <div>
+          <div style="font-size:0.78rem;font-weight:700;color:#0f172a;margin-bottom:0.15rem" data-el="Δεδομένα Πολιτών" data-en="Citizen Data">Δεδομένα Πολιτών</div>
+          <div style="font-size:0.72rem;color:#64748b;line-height:1.5" data-el="Τα αποτελέσματα βασίζονται αποκλειστικά σε ψήφους πολιτών. Αρχειοθέτηση στο Arweave blockchain." data-en="Results based exclusively on citizen votes. Archived on Arweave blockchain.">Τα αποτελέσματα βασίζονται αποκλειστικά σε ψήφους πολιτών. Αρχειοθέτηση στο Arweave blockchain.</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.6rem;align-items:flex-start">
+        <span style="font-size:1.2rem;flex-shrink:0">⚖️</span>
+        <div>
+          <div style="font-size:0.78rem;font-weight:700;color:#0f172a;margin-bottom:0.15rem" data-el="Χωρίς Νομική Δέσμευση" data-en="Not Legally Binding">Χωρίς Νομική Δέσμευση</div>
+          <div style="font-size:0.72rem;color:#64748b;line-height:1.5" data-el="Οι ψηφοφορίες έχουν ενημερωτικό χαρακτήρα. Δεν αντικαθιστούν τους θεσμικούς μηχανισμούς." data-en="Votes are informational only. They do not replace institutional mechanisms.">Οι ψηφοφορίες έχουν ενημερωτικό χαρακτήρα. Δεν αντικαθιστούν τους θεσμικούς μηχανισμούς.</div>
+        </div>
+      </div>
     </div>
-    <p style="color:#92400e;background:#fffbeb;border:1px solid #fcd34d;border-radius:0.65rem;padding:0.75rem 1rem;font-size:0.75rem;line-height:1.45;max-width:760px;margin:1rem auto 0" class="fade-in"
-       data-el="Σημαντικό: κάντε ενημερώσεις πάντα από το ίδιο κανάλι εγκατάστασης (Google Play, F-Droid ή άμεσο APK). Οι εκδόσεις έχουν διαφορετικές υπογραφές. Η αλλαγή καναλιού απαιτεί πρώτα απεγκατάσταση και μετά νέα επαλήθευση στην εφαρμογή."
-       data-en="Important: always update through the same installation channel (Google Play, F-Droid or direct APK). The builds use different signatures. Changing channel requires uninstalling first and then verifying again in the app.">
-      Σημαντικό: κάντε ενημερώσεις πάντα από το ίδιο κανάλι εγκατάστασης (Google Play, F-Droid ή άμεσο APK). Οι εκδόσεις έχουν διαφορετικές υπογραφές. Η αλλαγή καναλιού απαιτεί πρώτα απεγκατάσταση και μετά νέα επαλήθευση στην εφαρμογή.
-    </p>
-    <p style="color:#475569;font-size:0.75rem;margin-top:1.5rem" class="fade-in"
-       data-el="Secure Enclave · Ed25519 · Βιομετρική Επαλήθευση"
-       data-en="Secure Enclave · Ed25519 · Biometric Verification">
-      Secure Enclave · Ed25519 · Βιομετρική Επαλήθευση
-    </p>
-    <!-- App Screenshots -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1.5rem;margin-top:2.5rem;max-width:900px;margin-left:auto;margin-right:auto" class="fade-in app-screenshots">
-      <figure style="margin:0;text-align:center">
-        <img src="assets/screenshots/screenshot-home.jpg" alt="Αρχική" loading="lazy" style="max-height:380px;width:100%;object-fit:contain;border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,0.15)">
-        <figcaption style="color:#2563eb;font-size:0.85rem;font-weight:700;margin-top:0.75rem">Αρχική</figcaption>
-      </figure>
-      <figure style="margin:0;text-align:center">
-        <img src="assets/screenshots/screenshot-votes.jpg" alt="Ψηφοφορίες" loading="lazy" style="max-height:380px;width:100%;object-fit:contain;border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,0.15)">
-        <figcaption style="color:#2563eb;font-size:0.85rem;font-weight:700;margin-top:0.75rem">Ψηφοφορίες</figcaption>
-      </figure>
-      <figure style="margin:0;text-align:center">
-        <img src="assets/screenshots/screenshot-politicians.jpg" alt="Αξιολόγηση" loading="lazy" style="max-height:380px;width:100%;object-fit:contain;border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,0.15)">
-        <figcaption style="color:#2563eb;font-size:0.85rem;font-weight:700;margin-top:0.75rem">Αξιολόγηση</figcaption>
-      </figure>
-      <figure style="margin:0;text-align:center">
-        <img src="assets/screenshots/screenshot-polis.jpg" alt="POLIS" loading="lazy" style="max-height:380px;width:100%;object-fit:contain;border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,0.15)">
-        <figcaption style="color:#2563eb;font-size:0.85rem;font-weight:700;margin-top:0.75rem">POLIS</figcaption>
-      </figure>
-    </div>
-    <style>
-      @media (max-width: 640px) {
-        .app-screenshots { grid-template-columns: repeat(2, 1fr) !important; gap: 1rem !important; }
-        .app-screenshots img { max-height: 280px !important; }
-      }
-    </style>
   </div>
 </section>
 
@@ -1605,57 +1655,6 @@ async function submitNewsletter(e) {
   btn.disabled = false; btn.textContent = "📬 Εγγραφή";
 }
 </script>
-
-<!-- DISCLAIMER SECTION -->
-<section id="notice" style="background:#f8fafc;padding:2.5rem 1.5rem;border-top:1px solid #e2e8f0">
-  <div style="max-width:800px;margin:0 auto">
-    <h3 style="text-align:center;font-size:0.9rem;font-weight:800;color:#0f172a;margin-bottom:1.25rem;letter-spacing:0.03em" data-el="Τι πρέπει να γνωρίζετε" data-en="What you should know">Τι πρέπει να γνωρίζετε</h3>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem">
-      <div style="display:flex;gap:0.6rem;align-items:flex-start">
-        <span style="font-size:1.2rem;flex-shrink:0">🔒</span>
-        <div>
-          <div style="font-size:0.78rem;font-weight:700;color:#0f172a;margin-bottom:0.15rem" data-el="Πλήρης Ανωνυμία" data-en="Full Anonymity">Πλήρης Ανωνυμία</div>
-          <div style="font-size:0.72rem;color:#64748b;line-height:1.5" data-el="Κανένα όνομα, email ή λογαριασμός. Μόνο κρυπτογραφικό κλειδί στη συσκευή σας." data-en="No name, email, or account. Only a cryptographic key on your device.">Κανένα όνομα, email ή λογαριασμός. Μόνο κρυπτογραφικό κλειδί στη συσκευή σας.</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:0.6rem;align-items:flex-start">
-        <span style="font-size:1.2rem;flex-shrink:0">🛡️</span>
-        <div>
-          <div style="font-size:0.78rem;font-weight:700;color:#0f172a;margin-bottom:0.15rem" data-el="Κρυπτογραφία Ed25519" data-en="Ed25519 Cryptography">Κρυπτογραφία Ed25519</div>
-          <div style="font-size:0.72rem;color:#64748b;line-height:1.5" data-el="Κάθε ψήφος υπογράφεται ψηφιακά. Ο server δεν γνωρίζει τι ψηφίσατε." data-en="Every vote is digitally signed. The server never knows what you voted.">Κάθε ψήφος υπογράφεται ψηφιακά. Ο server δεν γνωρίζει τι ψηφίσατε.</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:0.6rem;align-items:flex-start">
-        <span style="font-size:1.2rem;flex-shrink:0">🏛️</span>
-        <div>
-          <div style="font-size:0.78rem;font-weight:700;color:#0f172a;margin-bottom:0.15rem" data-el="Μη Κρατική Πλατφόρμα" data-en="Non-Governmental Platform">Μη Κρατική Πλατφόρμα</div>
-          <div style="font-size:0.72rem;color:#64748b;line-height:1.5" data-el="Ανεξάρτητη πρωτοβουλία πολιτών. Χωρίς κρατική χρηματοδότηση ή εποπτεία." data-en="Independent citizen initiative. No state funding or oversight.">Ανεξάρτητη πρωτοβουλία πολιτών. Χωρίς κρατική χρηματοδότηση ή εποπτεία.</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:0.6rem;align-items:flex-start">
-        <span style="font-size:1.2rem;flex-shrink:0">👥</span>
-        <div>
-          <div style="font-size:0.78rem;font-weight:700;color:#0f172a;margin-bottom:0.15rem" data-el="Community Driven" data-en="Community Driven">Community Driven</div>
-          <div style="font-size:0.72rem;color:#64748b;line-height:1.5" data-el="Open source (MIT). Χρηματοδοτείται 100% από πολίτες. Χωρίς διαφημίσεις." data-en="Open source (MIT). 100% citizen-funded. No advertising.">Open source (MIT). Χρηματοδοτείται 100% από πολίτες. Χωρίς διαφημίσεις.</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:0.6rem;align-items:flex-start">
-        <span style="font-size:1.2rem;flex-shrink:0">📊</span>
-        <div>
-          <div style="font-size:0.78rem;font-weight:700;color:#0f172a;margin-bottom:0.15rem" data-el="Δεδομένα Πολιτών" data-en="Citizen Data">Δεδομένα Πολιτών</div>
-          <div style="font-size:0.72rem;color:#64748b;line-height:1.5" data-el="Τα αποτελέσματα βασίζονται αποκλειστικά σε ψήφους πολιτών. Αρχειοθέτηση στο Arweave blockchain." data-en="Results based exclusively on citizen votes. Archived on Arweave blockchain.">Τα αποτελέσματα βασίζονται αποκλειστικά σε ψήφους πολιτών. Αρχειοθέτηση στο Arweave blockchain.</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:0.6rem;align-items:flex-start">
-        <span style="font-size:1.2rem;flex-shrink:0">⚖️</span>
-        <div>
-          <div style="font-size:0.78rem;font-weight:700;color:#0f172a;margin-bottom:0.15rem" data-el="Χωρίς Νομική Δέσμευση" data-en="Not Legally Binding">Χωρίς Νομική Δέσμευση</div>
-          <div style="font-size:0.72rem;color:#64748b;line-height:1.5" data-el="Οι ψηφοφορίες έχουν ενημερωτικό χαρακτήρα. Δεν αντικαθιστούν τους θεσμικούς μηχανισμούς." data-en="Votes are informational only. They do not replace institutional mechanisms.">Οι ψηφοφορίες έχουν ενημερωτικό χαρακτήρα. Δεν αντικαθιστούν τους θεσμικούς μηχανισμούς.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
 </main>
 
