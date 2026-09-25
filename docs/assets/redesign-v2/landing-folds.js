@@ -74,7 +74,11 @@
       }
       if (details) {
         details.open = true;
-        target.scrollIntoView({ block: "start" });
+        // T-383: defer scroll until the browser has laid out the newly-opened fold,
+        // otherwise scrollIntoView may land under the sticky header.
+        requestAnimationFrame(function () {
+          target.scrollIntoView({ block: "start" });
+        });
       }
     }
 

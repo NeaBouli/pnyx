@@ -964,6 +964,13 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
   }
 }
 
+/* T-383: hide brand text at tablet widths so all nav links fit on one line. */
+@media (max-width: 960px) {
+  .pnx2-brand-copy {
+    display: none !important;
+  }
+}
+
 @media (max-width: 820px) {
   nav.pnx2-header {
     position: sticky;
@@ -985,16 +992,34 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
     height: 50px;
   }
 
-  .pnx2-brand-copy strong { font-size: 21px; }
-
-  .pnx2-brand-copy { display: flex !important; }
-
   nav.pnx2-header .nav-links {
     width: auto;
     flex: 1 1 auto;
     margin-left: auto;
     justify-content: flex-start;
     overflow-x: auto;
+  }
+
+  nav.pnx2-header .nav-links a {
+    padding: 0 6px;
+    font-size: 12px;
+  }
+
+  nav.pnx2-header .nav-links .pnx2-nav-cta {
+    padding: 0 10px;
+    margin-left: 6px;
+  }
+
+  /* T-383: move chat trigger to bottom-left so it cannot overlap fold "+" toggles. */
+  #chatWidget {
+    right: auto !important;
+    left: 1.5rem !important;
+  }
+
+  #chatPanel {
+    right: auto !important;
+    left: 0 !important;
+    max-width: calc(100vw - 3rem) !important;
   }
 
   .landing-hero .hero-inner {
