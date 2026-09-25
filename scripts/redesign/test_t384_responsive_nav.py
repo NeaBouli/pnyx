@@ -246,6 +246,10 @@ class MenuToggleJSTest(unittest.TestCase):
     def test_escape_key_closes_menu(self) -> None:
         self.assertIn("Escape", self.js, "JS must handle Escape key to close menu")
 
+    def test_escape_restores_focus_to_menu_button(self) -> None:
+        self.assertIn("focusWasInside", self.js)
+        self.assertIn("btn.focus()", self.js)
+
     def test_aria_expanded_toggled(self) -> None:
         self.assertIn(
             "aria-expanded",

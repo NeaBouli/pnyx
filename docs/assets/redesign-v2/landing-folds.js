@@ -106,7 +106,11 @@
     btn.addEventListener("click", function () { toggle(); });
 
     document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" && nav.classList.contains("nav-open")) toggle(false);
+      if (e.key === "Escape" && nav.classList.contains("nav-open")) {
+        var focusWasInside = nav.contains(document.activeElement);
+        toggle(false);
+        if (focusWasInside) btn.focus();
+      }
     });
 
     document.addEventListener("click", function (e) {
