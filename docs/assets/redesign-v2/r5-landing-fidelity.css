@@ -1421,14 +1421,8 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
 #notice { padding-top: 0 !important; padding-bottom: 0 !important; }
 #transparency { padding-top: 0 !important; padding-bottom: 0 !important; }
 
-/* 3. Full-width separators between adjacent fold bands */
-#how { border-top: 2px solid #0f172a !important; }
-#demo { border-top: 2px solid #0f172a !important; }
-#features { border-top: 2px solid #0f172a !important; }
-#forum { border-top: 2px solid #0f172a !important; }
-#roadmap { border-top: 2px solid #0f172a !important; }
-#contact { border-top: 2px solid #0f172a !important; }
-#notice { border-top: 2px solid #0f172a !important; }
+/* Adjacent sections already provide a bottom border; avoid doubled lines. */
+#notice { border-top: 0 !important; border-bottom: 2px solid #0f172a !important; }
 
 /* 4. Restore content breathing room when a fold is open */
 .section > .section-inner > .pnx2-fold[open] { padding-bottom: 56px; }

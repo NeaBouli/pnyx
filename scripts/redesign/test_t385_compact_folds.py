@@ -10,8 +10,8 @@ Checks (CSS-only, no browser):
  2. Fold-hosting sections (#how, #demo, #forum, #wiki-section, #roadmap,
     #contact, #notice) have padding-top: 0 and padding-bottom: 0.
  3. #transparency has padding-top: 0 and padding-bottom: 0.
- 4. Separator borders: #how, #demo, #features, #forum, #roadmap, #contact,
-    #notice each have border-top: 2px solid #0f172a.
+ 4. Adjacent sections keep a single separator; #notice has no top border
+    and has a bottom border before the newsletter.
  5. Open-state padding: fold[open] rules restore 56 px bottom padding.
  6. Features/representative fold overrides are still intact.
  7. Fold summary border-bottom remains 0 (no title underline).
@@ -104,22 +104,22 @@ class TransparencyPaddingZeroTest(unittest.TestCase):
 
 
 class SeparatorBorderTest(unittest.TestCase):
-    """Full-width separator borders must exist between adjacent fold bands."""
+    """Do not stack top borders onto the existing section bottom borders."""
 
-    BORDERED_SECTIONS = ["how", "demo", "features", "forum", "roadmap", "contact", "notice"]
+    SECTIONS = ["how", "demo", "features", "forum", "roadmap", "contact"]
 
     def setUp(self) -> None:
         self.css = _strip_comments(CSS_PATH.read_text())
 
-    def test_border_top_present(self) -> None:
-        for section_id in self.BORDERED_SECTIONS:
+    def test_no_extra_top_borders(self) -> None:
+        for section_id in self.SECTIONS:
             val = _last_value(self.css, rf"(?:^|\n|,\s*)#{re.escape(section_id)}\b", "border-top")
-            self.assertIsNotNone(val, f"#{section_id} border-top not found")
-            self.assertRegex(
-                val,
-                r"2px\s+solid\s+#0f172a",
-                f"#{section_id} must have border-top: 2px solid #0f172a, got '{val}'",
-            )
+            self.assertNotEqual(val, "2px solid #0f172a", f"#{section_id} has a doubled separator")
+
+    def test_notice_boundary(self) -> None:
+        selector = r"(?:^|\n|,\s*)#notice\b"
+        self.assertEqual(_last_value(self.css, selector, "border-top"), "0")
+        self.assertEqual(_last_value(self.css, selector, "border-bottom"), "2px solid #0f172a")
 
 
 class OpenStatePaddingTest(unittest.TestCase):
