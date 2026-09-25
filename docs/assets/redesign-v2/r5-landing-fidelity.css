@@ -1400,3 +1400,32 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
   .pnx2-fold-summary h3,
   .pnx2-fold-summary .demo-title { font-size: 28px !important; }
 }
+
+/* T-385: Normalize closed disclosure bands to compact vertical rhythm.
+   Remove outer section padding from fold-hosting sections and unify
+   fold-summary padding to match the reference features/representative
+   bands (~108 px single-line, ~159 px two-line). */
+
+/* 1. Compact fold-summary padding (matches features-fold reference) */
+.pnx2-fold-summary {
+  padding: 30px 0;
+}
+
+/* 2. Remove vertical section padding from fold-hosting sections */
+#how { padding-top: 0 !important; padding-bottom: 0 !important; }
+#demo { padding-top: 0 !important; padding-bottom: 0 !important; }
+#forum { padding-top: 0 !important; padding-bottom: 0 !important; }
+#wiki-section { padding-top: 0 !important; padding-bottom: 0 !important; }
+#roadmap { padding-top: 0 !important; padding-bottom: 0 !important; }
+#contact { padding-top: 0 !important; padding-bottom: 0 !important; }
+#notice { padding-top: 0 !important; padding-bottom: 0 !important; }
+#transparency { padding-top: 0 !important; padding-bottom: 0 !important; }
+
+/* Adjacent sections already provide a bottom border; avoid doubled lines. */
+#notice { border-top: 0 !important; border-bottom: 2px solid #0f172a !important; }
+
+/* 4. Restore content breathing room when a fold is open */
+.section > .section-inner > .pnx2-fold[open] { padding-bottom: 56px; }
+.demo-section > .pnx2-fold[open] { padding-bottom: 56px; }
+#notice > div > .pnx2-fold[open] { padding-bottom: 56px; }
+#transparency > .pnx2-fold[open] { padding-bottom: 56px; }
