@@ -49,7 +49,7 @@ def _last_value(css: str, selector_pattern: str, prop: str) -> str | None:
     for block in rules:
         m = re.search(rf"{prop}\s*:\s*([^;]+)", block)
         if m:
-            val = m.group(1).strip().rstrip("!important").strip()
+            val = m.group(1).strip().removesuffix("!important").strip()
     return val
 
 
@@ -110,6 +110,9 @@ class SeparatorBorderTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.css = _strip_comments(CSS_PATH.read_text())
+
+    def test_plain_value_normalization_is_not_truncated(self) -> None:
+        self.assertEqual(_last_value("#sample { color: transparent; }", r"#sample", "color"), "transparent")
 
     def test_no_extra_top_borders(self) -> None:
         for section_id in self.SECTIONS:
