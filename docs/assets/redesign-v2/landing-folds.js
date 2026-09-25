@@ -90,6 +90,47 @@
     openHashTarget();
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
-  else init();
+  /* T-384: hamburger menu toggle — keyboard + touch accessible. */
+  function initMenu() {
+    var btn = document.querySelector(".pnx2-menu-btn");
+    var nav = document.querySelector("nav.pnx2-header");
+    if (!btn || !nav) return;
+
+    function toggle(force) {
+      var open = typeof force === "boolean" ? force : !nav.classList.contains("nav-open");
+      nav.classList.toggle("nav-open", open);
+      document.body.classList.toggle("pnx2-nav-open", open);
+      btn.setAttribute("aria-expanded", String(open));
+    }
+
+    btn.addEventListener("click", function () { toggle(); });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && nav.classList.contains("nav-open")) toggle(false);
+    });
+
+    document.addEventListener("click", function (e) {
+      if (nav.classList.contains("nav-open") && !nav.contains(e.target)) toggle(false);
+    });
+
+    /* Close menu when a nav link is activated. */
+    var links = nav.querySelector(".nav-links");
+    if (links) {
+      links.addEventListener("click", function (e) {
+        if (e.target.closest(".lang-btn")) {
+          btn.setAttribute("aria-label", window.currentLang === "en" ? "Navigation menu" : "Μενού πλοήγησης");
+          toggle(false);
+        } else if (e.target.closest("a")) {
+          toggle(false);
+        }
+      });
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () { init(); initMenu(); });
+  } else {
+    init();
+    initMenu();
+  }
 })();

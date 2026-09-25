@@ -11941,6 +11941,10 @@
       "forms": {
         "controls": [
           {
+            "aria-label": "Μενού πλοήγησης",
+            "tag": "button"
+          },
+          {
             "tag": "button"
           },
           {

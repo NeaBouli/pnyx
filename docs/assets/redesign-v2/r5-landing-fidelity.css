@@ -71,10 +71,7 @@ nav.pnx2-header .nav-links {
   flex-wrap: nowrap !important;
   margin-left: auto;
   justify-content: flex-end;
-  overflow-x: auto;
-  overflow-y: hidden;
   white-space: nowrap;
-  scrollbar-width: thin;
 }
 
 nav.pnx2-header .nav-links a {
@@ -928,6 +925,42 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
   border-top: 0 !important;
 }
 
+/* Hamburger menu button — hidden on desktop, shown at <=960px. */
+.pnx2-menu-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  border: 2px solid #0f172a;
+  background: #fff;
+  cursor: pointer;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.pnx2-menu-btn span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: #0f172a;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.pnx2-menu-btn[aria-expanded="true"] span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.pnx2-menu-btn[aria-expanded="true"] span:nth-child(2) {
+  opacity: 0;
+}
+
+.pnx2-menu-btn[aria-expanded="true"] span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
 @media (max-width: 1040px) {
   .pnx2-header-frame {
     min-height: 86px;
@@ -964,14 +997,77 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
   }
 }
 
-/* T-383: hide brand text at tablet widths so all nav links fit on one line. */
+/* T-384: responsive hamburger menu at tablet/phone widths. */
 @media (max-width: 960px) {
-  .pnx2-brand-copy {
-    display: none !important;
+  .pnx2-menu-btn {
+    display: flex;
+  }
+
+  nav.pnx2-header .nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: calc(100dvh - 88px);
+    overflow-y: auto;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 24px 20px;
+    background: #fff;
+    border-bottom: 2px solid #0f172a;
+    white-space: normal;
+    z-index: 99;
+  }
+
+  nav.pnx2-header.nav-open .nav-links {
+    display: flex;
+  }
+
+  nav.pnx2-header .nav-links a {
+    padding: 12px 0 !important;
+    font-size: 15px !important;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  nav.pnx2-header .nav-links .pnx2-nav-cta {
+    margin: 12px 0 0 !important;
+    padding: 0 22px !important;
+    justify-content: center;
+    border-bottom: 0;
+  }
+
+  .pnx2-nav-divider {
+    display: none;
+  }
+
+  nav.pnx2-header .lang-btn {
+    align-self: flex-start;
+    margin: 8px 0 0;
+  }
+
+  /* Chat widget to bottom-left so it cannot overlap fold "+" toggles. */
+  #chatWidget {
+    right: auto !important;
+    left: 1.5rem !important;
+  }
+
+  .pnx2-nav-open #chatWidget {
+    visibility: hidden;
+  }
+
+  #chatPanel {
+    right: auto !important;
+    left: 0 !important;
+    max-width: calc(100vw - 3rem) !important;
   }
 }
 
 @media (max-width: 820px) {
+  nav.pnx2-header .nav-links {
+    max-height: calc(100dvh - 72px);
+  }
+
   nav.pnx2-header {
     position: sticky;
     min-height: 72px !important;
@@ -992,34 +1088,8 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
     height: 50px;
   }
 
-  nav.pnx2-header .nav-links {
-    width: auto;
-    flex: 1 1 auto;
-    margin-left: auto;
-    justify-content: flex-start;
-    overflow-x: auto;
-  }
-
-  nav.pnx2-header .nav-links a {
-    padding: 0 6px;
-    font-size: 12px;
-  }
-
-  nav.pnx2-header .nav-links .pnx2-nav-cta {
-    padding: 0 10px;
-    margin-left: 6px;
-  }
-
-  /* T-383: move chat trigger to bottom-left so it cannot overlap fold "+" toggles. */
-  #chatWidget {
-    right: auto !important;
-    left: 1.5rem !important;
-  }
-
-  #chatPanel {
-    right: auto !important;
-    left: 0 !important;
-    max-width: calc(100vw - 3rem) !important;
+  .pnx2-brand-copy small {
+    display: none;
   }
 
   .landing-hero .hero-inner {
@@ -1079,9 +1149,18 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
   .pnx2-history-grid > div + div {
     border-top: 2px solid rgba(255, 255, 255, 0.32);
   }
+
+  #how, #demo, #features, #wiki-section, #forum, #roadmap, #notice, #contact,
+  #representative, #transparency, #votes, #download {
+    scroll-margin-top: 80px;
+  }
 }
 
 @media (max-width: 640px) {
+  nav.pnx2-header .nav-logo .pnx2-brand-copy {
+    display: flex;
+  }
+
   nav.pnx2-header .nav-logo img {
     width: 39px !important;
     height: 43px !important;
@@ -1092,14 +1171,6 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
   .pnx2-header-frame {
     padding-left: 16px;
     padding-right: 16px;
-  }
-
-  nav.pnx2-header .nav-links a {
-    font-size: 12px;
-  }
-
-  .pnx2-header .nav-links .pnx2-nav-cta {
-    margin-left: 4px;
   }
 
   .landing-hero .hero-left h1,
