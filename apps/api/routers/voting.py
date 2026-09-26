@@ -42,6 +42,12 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../packages/crypto"))
 sys.path.insert(0, "/packages/crypto")  # Docker container path
 from keypair import verify_signature
+from crypto.nullifier import (
+    PROTO_VERSION as TIER1_PROTO_VERSION,
+    Tier1CryptoBackendError,
+    VotePayload as Tier1VotePayload,
+    validate_vote as validate_tier1_vote,
+)
 
 router = APIRouter(prefix="/api/v1/vote", tags=["MOD-04 CitizenVote"])
 
@@ -256,6 +262,19 @@ class VoteRequest(BaseModel):
     vote_nullifier: str | None = Field(None, description="Bill-specific nullifier (64 hex)")
     linkage_tag:    str | None = Field(None, description="Anti-double-vote proof (64 hex)")
     timestamp_ms:   int | None = Field(None, description="Millisecond timestamp")
+    tier1_signature_hex: str | None = Field(
+        None,
+        description="Tier-1 Ed25519 signature by pk_eph over the canonical ADR-022 payload (128 hex)",
+    )
+
+    def tier1_fields(self) -> tuple[str | int | None, ...]:
+        return (
+            self.pk_eph,
+            self.vote_nullifier,
+            self.linkage_tag,
+            self.timestamp_ms,
+            self.tier1_signature_hex,
+        )
 
 class VoteResponse(BaseModel):
     success:    bool
@@ -369,6 +388,70 @@ def compute_divergence(
     )
 
 
+# ─── Tier-1 (ADR-022) ─────────────────────────────────────────────────────────
+
+TIER1_REJECT_STATUS = {
+    "DUPLICATE_VOTE": status.HTTP_409_CONFLICT,
+    "INVALID_SIGNATURE": status.HTTP_401_UNAUTHORIZED,
+}
+
+
+async def _tier1_vote_nullifier_used(db: AsyncSession, req: VoteRequest) -> bool:
+    """True if another vote row (not this citizen's row for this bill) holds the nullifier."""
+    result = await db.execute(
+        select(CitizenVote.id)
+        .where(
+            CitizenVote.vote_nullifier == req.vote_nullifier,
+            or_(
+                CitizenVote.nullifier_hash != req.nullifier_hash,
+                CitizenVote.bill_id != req.bill_id,
+            ),
+        )
+        .limit(1)
+    )
+    return result.scalar_one_or_none() is not None
+
+
+async def _enforce_tier1_vote(db: AsyncSession, req: VoteRequest, vote_choice: VoteChoice) -> None:
+    """Fail closed on any incomplete, invalid or unverifiable Tier-1 payload."""
+    if any(field is None for field in req.tier1_fields()):
+        raise HTTPException(
+            status_code=400,
+            detail="Ελλιπή στοιχεία Tier-1. Η ψήφος απορρίφθηκε.",
+        )
+
+    used_nullifiers: set[str] = set()
+    if await _tier1_vote_nullifier_used(db, req):
+        used_nullifiers.add(req.vote_nullifier)
+
+    payload = Tier1VotePayload(
+        bill_id=req.bill_id,
+        choice=vote_choice.value,
+        pk_eph=req.pk_eph,
+        vote_nullifier=req.vote_nullifier,
+        linkage_tag=req.linkage_tag,
+        signature=req.tier1_signature_hex,
+        timestamp_ms=req.timestamp_ms,
+        version=TIER1_PROTO_VERSION,
+    )
+    try:
+        error = validate_tier1_vote(payload, used_nullifiers)
+    except Tier1CryptoBackendError as exc:
+        # Operational fault, not an invalid vote: log type only (no key material/PII).
+        logger.error("Tier-1 verifier backend failure: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Η επαλήθευση Tier-1 δεν είναι διαθέσιμη. Η ψήφος δεν καταχωρήθηκε.",
+        ) from exc
+
+    if error is not None:
+        logger.warning("Tier-1 vote rejected: %s", error.code)
+        raise HTTPException(
+            status_code=TIER1_REJECT_STATUS.get(error.code, status.HTTP_400_BAD_REQUEST),
+            detail=f"Μη έγκυρη ψήφος Tier-1 ({error.code}). Η ψήφος απορρίφθηκε.",
+        )
+
+
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
 @router.post("", response_model=VoteResponse)
@@ -444,24 +527,11 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
         nullifier_hash=req.nullifier_hash,
     )
 
-    # 4b. Tier-1 validation (ADR-022) — if Tier-1 fields present
-    if req.pk_eph and req.vote_nullifier and req.linkage_tag:
-        try:
-            from crypto.nullifier import validate_vote
-            tier1_result = validate_vote(
-                pk_eph=req.pk_eph,
-                vote_nullifier=req.vote_nullifier,
-                linkage_tag=req.linkage_tag,
-                bill_id=req.bill_id,
-                choice=vote_choice.value,
-                signature=req.signature_hex,
-                timestamp_ms=req.timestamp_ms or 0,
-            )
-            if tier1_result and hasattr(tier1_result, 'code') and tier1_result.code != "OK":
-                logger.warning("Tier-1 validation failed: %s", tier1_result.message)
-                # Don't reject — log warning only (Tier-1 validation is advisory during rollout)
-        except Exception as e:
-            logger.warning("Tier-1 validation error (non-blocking): %s", e)
+    # 4b. Tier-1 validation (ADR-022) — enforced whenever any Tier-1 field is sent.
+    # The identity signature above stays mandatory; Tier-1 adds a second, ephemeral
+    # signature so pk_eph/vote_nullifier/linkage_tag are never stored unauthenticated.
+    if any(field is not None for field in req.tier1_fields()):
+        await _enforce_tier1_vote(db, req, vote_choice)
 
     # 5. Bestehende Stimme prüfen (Stimmänderung)
     existing_result = await db.execute(
