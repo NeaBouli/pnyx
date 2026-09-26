@@ -156,7 +156,9 @@ test('polis.js: comment author login is escaped', () => {
   assert.ok(!/\+\s*c\.user\.login\s*\+/.test(src), 'raw comment login interpolation remains');
   assert.ok(src.includes('escapeHtml(c.user && c.user.login)'), 'escaped comment login missing');
   assert.ok(!/\+\s*e\.message\s*\+/.test(src), 'raw error message interpolation remains');
-  assert.ok(!/\+\s*polisUser\.(login|avatar_url)\s*\+/.test(src), 'raw polisUser interpolation remains');
+  // The claim comment is a JSON body POSTed to the GitHub API (markdown), not an HTML sink.
+  const htmlLines = src.split('\n').filter((line) => !line.includes('JSON.stringify('));
+  assert.ok(!htmlLines.some((line) => /\+\s*polisUser\.(login|avatar_url)\s*\+/.test(line)), 'raw polisUser interpolation remains');
 });
 
 // ─── docs/index.html (ticket landing) ───────────────────────────────────────
