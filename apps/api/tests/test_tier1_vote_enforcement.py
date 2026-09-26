@@ -269,6 +269,18 @@ async def test_duplicate_vote_nullifier_rejected():
 
 
 @pytest.mark.asyncio
+async def test_duplicate_vote_nullifier_lookup_is_case_insensitive():
+    db = _FakeDb([None])
+    await voting._tier1_vote_nullifier_used(
+        db,
+        _request(vote_nullifier="AB" * 32),
+    )
+    statement = db.executed[0]
+    assert "lower(" in str(statement).lower()
+    assert ("ab" * 32) in statement.compile().params.values()
+
+
+@pytest.mark.asyncio
 async def test_verifier_backend_failure_is_503_not_invalid_signature(monkeypatch, caplog):
     class _BrokenVerifyKey:
         def __init__(self, *_args):

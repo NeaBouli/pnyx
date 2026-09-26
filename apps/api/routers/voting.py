@@ -401,7 +401,7 @@ async def _tier1_vote_nullifier_used(db: AsyncSession, req: VoteRequest) -> bool
     result = await db.execute(
         select(CitizenVote.id)
         .where(
-            CitizenVote.vote_nullifier == req.vote_nullifier,
+            func.lower(CitizenVote.vote_nullifier) == req.vote_nullifier.lower(),
             or_(
                 CitizenVote.nullifier_hash != req.nullifier_hash,
                 CitizenVote.bill_id != req.bill_id,
