@@ -175,7 +175,9 @@ class RealTreeTest(unittest.TestCase):
 
         normalized_pages = [
             checked_by_path[page["path"]]
-            if page["path"] in _GATED_PAGES or page["path"] in approved_analytics_delta.POST_REMOVAL_SHA256
+            if page["path"] in _GATED_PAGES
+            or page["path"] in approved_analytics_delta.POST_REMOVAL_SHA256
+            or page["path"] in approved_analytics_delta.SECURITY_REMEDIATION_SHA256
             else page
             for page in current["pages"]
         ]

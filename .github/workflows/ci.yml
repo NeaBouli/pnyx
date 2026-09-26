@@ -92,7 +92,7 @@ jobs:
         include:
           - name: Web
             path: apps/web
-            verify: node --test ../../scripts/client-yaml-security.check.cjs image-codec.check.mjs && npm run lint && npm run typecheck && npm test && npm run build
+            verify: node --test ../../scripts/client-yaml-security.check.cjs image-codec.check.mjs ../../scripts/static-docs-remote-sinks.check.mjs && npm run lint && npm run typecheck && npm test && npm run build
           - name: Dashboard
             path: apps/dashboard
             verify: node --test ../../scripts/client-yaml-security.check.cjs image-codec.check.mjs && npm run lint && npm run typecheck && npm run build

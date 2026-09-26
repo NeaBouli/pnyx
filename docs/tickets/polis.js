@@ -332,11 +332,27 @@ function renderAuthStatus() {
   var container = document.getElementById("authStatus");
   if (!container) return;
   if (polisUser) {
-    container.innerHTML = '<div class="auth-status">'
-      + '<img src="' + polisUser.avatar_url + '&s=56" class="auth-avatar" alt=""/>'
-      + '<span style="font-size:0.8rem;font-weight:600;color:white">' + polisUser.login + '</span>'
-      + '<button class="btn-logout" onclick="logout()">↪</button>'
-      + '</div>';
+    // Remote GitHub fields go through DOM properties, never through HTML parsing.
+    var wrap = document.createElement("div");
+    wrap.className = "auth-status";
+    var avatarUrl = safeGithubAvatarUrl(polisUser.avatar_url, 56);
+    if (avatarUrl) {
+      var img = document.createElement("img");
+      img.className = "auth-avatar";
+      img.alt = "";
+      img.src = avatarUrl;
+      wrap.appendChild(img);
+    }
+    var name = document.createElement("span");
+    name.style.cssText = "font-size:0.8rem;font-weight:600;color:white";
+    name.textContent = polisUser.login || "";
+    wrap.appendChild(name);
+    var logoutBtn = document.createElement("button");
+    logoutBtn.className = "btn-logout";
+    logoutBtn.textContent = "↪";
+    logoutBtn.addEventListener("click", function() { logout(); });
+    wrap.appendChild(logoutBtn);
+    container.replaceChildren(wrap);
   } else {
     container.innerHTML = '<button class="btn-login" onclick="login()">' + t("loginGitHub") + '</button>';
   }
@@ -427,7 +443,7 @@ async function renderDetail(issue) {
     if (comments.length) {
       var actHtml = '<div class="activity-feed"><div style="font-size:0.8rem;font-weight:800;margin-bottom:0.5rem">' + t("recentActivity") + '</div>';
       comments.slice(0, 5).forEach(function(c) {
-        actHtml += '<div class="activity-item"><span class="activity-user">' + c.user.login + '</span> '
+        actHtml += '<div class="activity-item"><span class="activity-user">' + escapeHtml(c.user && c.user.login) + '</span> '
           + '<span class="activity-time">' + formatTimeAgo(c.created_at) + '</span>'
           + '<div style="font-size:0.78rem;color:#64748b;margin-top:0.2rem">' + escapeHtml(c.body.substring(0, 150)) + '</div></div>';
       });
@@ -525,7 +541,7 @@ async function loadAndRender(filters) {
   } catch (e) {
     var container = document.getElementById("ticketList");
     if (container) {
-      container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>' + e.message + '</p>'
+      container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>' + escapeHtml(e && e.message) + '</p>'
         + '<button class="btn-load-more" onclick="loadAndRender()" style="margin-top:1rem">' + t("loadMore") + '</button></div>';
     }
   }
@@ -589,6 +605,18 @@ function escapeHtml(str) {
   var div = document.createElement("div");
   div.textContent = str || "";
   return div.innerHTML;
+}
+
+// Only accept https GitHub avatar URLs; returns "" for anything else.
+function safeGithubAvatarUrl(raw, size) {
+  try {
+    var url = new URL(String(raw || ""));
+    if (url.protocol !== "https:" || url.hostname !== "avatars.githubusercontent.com") return "";
+    url.searchParams.set("s", String(size));
+    return url.toString();
+  } catch (e) {
+    return "";
+  }
 }
 
 // ─── Init ────────────────────────────────────────────────────────────────────

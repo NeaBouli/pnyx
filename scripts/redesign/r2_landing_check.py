@@ -122,8 +122,10 @@ ALLOWED_R5_INLINE_SCRIPTS = {
     },
     5: {
         "index": 5,
-        "sha256": "0ac3cf840e5789daf5632b779d72127f0c3b026c30d50480b8fa06f253f9ccd7",
-        "bytes": 20963,
+        # T-394 (EKA-14): ticket login/avatar rendered via DOM properties with
+        # an https GitHub-avatar allowlist instead of innerHTML concatenation.
+        "sha256": "25de949158c597f5b9015b4f1f4ec85ae802f33cc16668e7c59721aaaaeb9c1b",
+        "bytes": 21969,
     },
 }
 

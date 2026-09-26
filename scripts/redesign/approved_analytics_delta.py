@@ -39,9 +39,17 @@ POST_REMOVAL_SHA256 = {
     "docs/votes/results.html": "7e7686b50d4d9ed60d9ac4fd1790093ec4145bb7862aa162e837ce12d0b5230a",
 }
 
+# T-394 (EKA-14): reviewed security remediation on a non-gated page (API error
+# detail rendered via textContent), pinned to its exact post-fix bytes.
+SECURITY_REMEDIATION_SHA256 = {
+    "docs/embed/qr-login.html": "342b71087a9b370ec4c27d8771d693efbe532c57231c521717108e7ecb1c2882",
+}
+
 
 def expected_sha256(path: str, frozen_sha256: str) -> str:
     """Return the exact approved byte hash, or the frozen hash otherwise."""
+    if path in SECURITY_REMEDIATION_SHA256:
+        return SECURITY_REMEDIATION_SHA256[path]
     return POST_REMOVAL_SHA256.get(path, frozen_sha256)
 
 
