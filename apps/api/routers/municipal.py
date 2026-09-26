@@ -10,6 +10,7 @@ from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 from sqlalchemy import select, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
@@ -178,6 +179,37 @@ async def get_voteable_decisions(
     return {"dimos_id": dimos_id, "decisions": items, "count": len(items)}
 
 
+_DIAVGEIA_VOTE_UNIQUE = "uq_diavgeia_vote"
+_SQLITE_CONSTRAINT_UNIQUE = 2067
+_SQLITE_DIAVGEIA_VOTE_UNIQUE_MSG = (
+    "UNIQUE constraint failed: diavgeia_votes.ada, diavgeia_votes.nullifier_hash"
+)
+
+
+def _is_duplicate_diavgeia_vote(exc: IntegrityError) -> bool:
+    """True only for a uq_diavgeia_vote violation (same ada + nullifier).
+
+    PostgreSQL: SQLSTATE 23505 on constraint uq_diavgeia_vote. SQLite (router
+    DB tests): SQLITE_CONSTRAINT_UNIQUE on exactly (ada, nullifier_hash).
+    Every other integrity failure must stay an internal error.
+    """
+    orig = exc.orig
+    for candidate in (orig, getattr(orig, "__cause__", None)):
+        if candidate is None:
+            continue
+        sqlstate = getattr(candidate, "sqlstate", None) or getattr(candidate, "pgcode", None)
+        # asyncpg exposes constraint_name directly, psycopg via .diag
+        constraint = getattr(candidate, "constraint_name", None) or getattr(
+            getattr(candidate, "diag", None), "constraint_name", None
+        )
+        if sqlstate == "23505" and constraint == _DIAVGEIA_VOTE_UNIQUE:
+            return True
+    return (
+        getattr(orig, "sqlite_errorcode", None) == _SQLITE_CONSTRAINT_UNIQUE
+        and str(orig) == _SQLITE_DIAVGEIA_VOTE_UNIQUE_MSG
+    )
+
+
 class DecisionVoteRequest(BaseModel):
     ada: str
     nullifier_hash: str
@@ -225,7 +257,7 @@ async def vote_on_decision(req: DecisionVoteRequest, db: AsyncSession = Depends(
     if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
         raise HTTPException(401, "Μη έγκυρη υπογραφή.")
 
-    # 5. Check duplicate
+    # 5. Check duplicate (fast path; uq_diavgeia_vote is the real guard)
     existing = await db.execute(
         select(DiavgeiaVote).where(
             DiavgeiaVote.ada == req.ada,
@@ -236,8 +268,19 @@ async def vote_on_decision(req: DecisionVoteRequest, db: AsyncSession = Depends(
         raise HTTPException(409, "Έχετε ήδη ψηφίσει για αυτή την απόφαση.")
 
     # 6. Cast vote
-    vote = DiavgeiaVote(ada=req.ada, nullifier_hash=req.nullifier_hash, vote=vote_choice)
-    db.add(vote)
-    await db.commit()
+    # A concurrent identical vote can pass the pre-check; only the expected
+    # unique conflict maps to 409, other database failures are not masked.
+    try:
+        vote = DiavgeiaVote(ada=req.ada, nullifier_hash=req.nullifier_hash, vote=vote_choice)
+        db.add(vote)
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        if not _is_duplicate_diavgeia_vote(exc):
+            raise
+        raise HTTPException(409, "Έχετε ήδη ψηφίσει για αυτή την απόφαση.")
+    except Exception:
+        await db.rollback()
+        raise
 
     return {"success": True, "ada": req.ada, "vote": vote_choice.value}
