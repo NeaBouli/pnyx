@@ -155,7 +155,6 @@ async function contrastChecks(page, name) {
     for (let t = walker.nextNode(); t; t = walker.nextNode()) {
       if (!t.textContent.trim()) continue;
       const el = t.parentElement;
-      if (el.closest("summary")) continue;
       const cs = getComputedStyle(el);
       const rect = el.getBoundingClientRect();
       if (!rect.width || !rect.height || cs.visibility === "hidden" || el.closest("[hidden]")) continue;
