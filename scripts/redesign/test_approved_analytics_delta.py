@@ -27,6 +27,12 @@ class ApprovedAnalyticsDeltaTest(unittest.TestCase):
     def test_unapproved_page_uses_frozen_hash(self) -> None:
         self.assertEqual("frozen", delta.expected_sha256("docs/other.html", "frozen"))
 
+    def test_security_remediation_pins_only_qr_login(self) -> None:
+        self.assertEqual(["docs/embed/qr-login.html"], list(delta.SECURITY_REMEDIATION_SHA256))
+        pinned = delta.SECURITY_REMEDIATION_SHA256["docs/embed/qr-login.html"]
+        self.assertEqual(pinned, delta.expected_sha256("docs/embed/qr-login.html", "frozen"))
+        self.assertRegex(pinned, r"^[0-9a-f]{64}$")
+
 
 if __name__ == "__main__":
     unittest.main()

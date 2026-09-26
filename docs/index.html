@@ -2058,6 +2058,18 @@ function polisLogin() {
   window.location.href = "https://github.com/login/oauth/authorize?" + params.toString();
 }
 
+// Only accept https GitHub avatar URLs; returns "" for anything else.
+function ticketAvatarUrl(raw, size) {
+  try {
+    var url = new URL(String(raw || ""));
+    if (url.protocol !== "https:" || url.hostname !== "avatars.githubusercontent.com") return "";
+    url.searchParams.set("s", String(size));
+    return url.toString();
+  } catch (e) {
+    return "";
+  }
+}
+
 function checkTicketAuth() {
   var token = sessionStorage.getItem("polis_token");
   if (token) {
@@ -2067,10 +2079,27 @@ function checkTicketAuth() {
     fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + token } })
       .then(function(r) { return r.json(); })
       .then(function(u) {
-        document.getElementById("ticketUserInfo").innerHTML =
-          '<img src="' + u.avatar_url + '&s=40" style="width:28px;height:28px;border-radius:50%"/>' +
-          '<span style="font-weight:700;font-size:0.85rem">' + u.login + '</span>' +
-          '<button onclick="sessionStorage.removeItem(\'polis_token\');checkTicketAuth()" style="margin-left:auto;background:none;border:1px solid #e2e8f0;border-radius:0.3rem;padding:0.15rem 0.5rem;font-size:0.7rem;cursor:pointer">Logout</button>';
+        // Remote GitHub fields go through DOM properties, never through HTML parsing.
+        var info = document.getElementById("ticketUserInfo");
+        var nodes = [];
+        var avatarUrl = ticketAvatarUrl(u && u.avatar_url, 40);
+        if (avatarUrl) {
+          var img = document.createElement("img");
+          img.src = avatarUrl;
+          img.style.cssText = "width:28px;height:28px;border-radius:50%";
+          nodes.push(img);
+        }
+        var name = document.createElement("span");
+        name.style.cssText = "font-weight:700;font-size:0.85rem";
+        name.textContent = (u && u.login) || "";
+        nodes.push(name);
+        var logoutBtn = document.createElement("button");
+        logoutBtn.type = "button";
+        logoutBtn.textContent = "Logout";
+        logoutBtn.style.cssText = "margin-left:auto;background:none;border:1px solid #e2e8f0;border-radius:0.3rem;padding:0.15rem 0.5rem;font-size:0.7rem;cursor:pointer";
+        logoutBtn.onclick = function() { sessionStorage.removeItem("polis_token"); checkTicketAuth(); };
+        nodes.push(logoutBtn);
+        info.replaceChildren.apply(info, nodes);
       });
   } else {
     document.getElementById("ticketLoginPrompt").style.display = "block";
