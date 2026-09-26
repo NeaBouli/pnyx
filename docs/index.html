@@ -609,340 +609,6 @@
   </div>
 </section>
 
-<!-- LIVE Repräsentations-Skala — Kumulative Divergenz Βουλή vs Πολίτες -->
-<section class="pnx2-democracy-data" aria-label="Ζωντανά δεδομένα δημοκρατίας">
-<div style="max-width:800px;margin:0 auto;padding:1.5rem 2rem" class="fade-in" id="repSection">
-  <div style="background:var(--gray-100);border-radius:1rem;padding:1.25rem 1.5rem">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
-      <h4 style="font-weight:800;font-size:0.88rem;margin:0" data-el="Αντιπροσωπευτικότητα Βουλής" data-en="Parliament Representativeness">Αντιπροσωπευτικότητα Βουλής</h4>
-      <span style="font-size:0.65rem;color:#94a3b8;display:flex;align-items:center;gap:0.3rem"><span style="width:5px;height:5px;border-radius:50%;background:#22c55e;display:inline-block;animation:blink 2s infinite"></span> Live</span>
-    </div>
-    <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:0.75rem" data-el="Πόσο αντιπροσωπεύει η Βουλή τη γνώμη των πολιτών; Σωρευτικός υπολογισμός από όλες τις ψηφοφορίες." data-en="How well does Parliament represent citizen opinion? Calculated cumulatively from all votes.">Πόσο αντιπροσωπεύει η Βουλή τη γνώμη των πολιτών; Σωρευτικός υπολογισμός από όλες τις ψηφοφορίες.</p>
-    <!-- Live bar: background is grey track, colored fill grows left-to-right -->
-    <div style="position:relative;height:28px;border-radius:6px;background:#e2e8f0;margin-bottom:0.3rem;overflow:hidden">
-      <div id="repFill" style="height:100%;width:0%;border-radius:6px;transition:width 0.8s ease-out;background:#ef4444"></div>
-      <div id="repMarker" style="position:absolute;top:-4px;left:0%;width:4px;height:36px;background:#0f172a;border-radius:2px;transition:left 1.5s ease"></div>
-    </div>
-    <div style="display:flex;justify-content:space-between;font-size:0.62rem;color:#94a3b8">
-      <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
-    </div>
-    <!-- Stats row -->
-    <div style="display:flex;gap:1rem;margin-top:0.75rem;flex-wrap:wrap">
-      <div style="flex:1;min-width:120px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
-        <div style="font-size:1.1rem;font-weight:900" id="repScore">—</div>
-        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Αντιπροσωπευτικότητα" data-en="Representation">Αντιπροσωπευτικότητα</div>
-      </div>
-      <div style="flex:1;min-width:120px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
-        <div style="font-size:1.1rem;font-weight:900" id="repDivergence">—</div>
-        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Μέση Απόκλιση" data-en="Avg Divergence">Μέση Απόκλιση</div>
-      </div>
-      <div style="flex:1;min-width:120px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
-        <div style="font-size:1.1rem;font-weight:900" id="repBills">—</div>
-        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Ψηφοφορίες" data-en="Bills Analyzed">Ψηφοφορίες</div>
-      </div>
-      <div style="flex:1;min-width:120px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
-        <div style="font-size:1.1rem;font-weight:900" id="repVotes">—</div>
-        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Ψήφοι Πολιτών" data-en="Citizen Votes">Ψήφοι Πολιτών</div>
-      </div>
-    </div>
-    <div class="pnx2-mood" aria-live="polite">
-      <svg viewBox="0 0 120 120" width="104" height="104" role="img" aria-labelledby="moodTitle">
-        <desc id="moodTitle" data-el="Δείκτης Διάθεσης" data-en="Mood indicator">Δείκτης Διάθεσης</desc>
-        <circle cx="60" cy="60" r="55" fill="none" stroke="currentColor" stroke-width="4"/>
-        <circle cx="42" cy="47" r="6" fill="currentColor"/>
-        <circle cx="78" cy="47" r="6" fill="currentColor"/>
-        <path id="moodMouth" d="M36 80 L84 80" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-      </svg>
-      <div>
-        <strong data-el="ΔΕΙΚΤΗΣ ΔΙΑΘΕΣΗΣ" data-en="MOOD INDICATOR">ΔΕΙΚΤΗΣ ΔΙΑΘΕΣΗΣ</strong>
-        <p id="moodStatus" data-el="Αναμονή πραγματικών δεδομένων. Ο δείκτης ενεργοποιείται μόλις υπάρξουν αρκετά συγκρίσιμα δεδομένα." data-en="Waiting for real data. The indicator activates once sufficient comparable data is available.">Αναμονή πραγματικών δεδομένων. Ο δείκτης ενεργοποιείται μόλις υπάρξουν αρκετά συγκρίσιμα δεδομένα.</p>
-        <small data-el="≥50% χαμόγελο · 45–50% ουδέτερο · &lt;45% λυπημένο" data-en="≥50% happy · 45–50% neutral · &lt;45% sad">≥50% χαμόγελο · 45–50% ουδέτερο · &lt;45% λυπημένο</small>
-      </div>
-    </div>
-    <!-- Last bill -->
-    <div id="repLastBill" style="display:none;margin-top:0.75rem;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;font-size:0.72rem">
-      <div style="font-weight:700;color:var(--gray-500);margin-bottom:0.2rem" data-el="Τελευταία Ψηφοφορία:" data-en="Latest Vote:">Τελευταία Ψηφοφορία:</div>
-      <div id="repLastTitle" style="font-weight:800;color:var(--gray-900)"></div>
-      <div id="repLastStats" style="color:var(--gray-500);margin-top:0.2rem"></div>
-    </div>
-    <!-- Three-tier calculation -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.75rem;margin-top:0.75rem">
-      <!-- Tier 1: Raw -->
-      <div style="background:#f1f5f9;border-radius:0.5rem;padding:0.6rem 0.75rem">
-        <div style="font-size:0.62rem;font-weight:700;color:#2563eb;margin-bottom:0.3rem" data-el="Tier 1 — Πλατφόρμα" data-en="Tier 1 — Platform">Tier 1 — Πλατφόρμα</div>
-        <div style="font-size:0.95rem;font-weight:900" id="tier1Score">—</div>
-        <div style="font-size:0.58rem;color:var(--gray-500)" id="tier1Detail" data-el="Ψήφοι ÷ Εκλογικό Σώμα (9.810.040)" data-en="Votes ÷ Electorate (9,810,040)">Ψήφοι ÷ Εκλογικό Σώμα (9.810.040)</div>
-      </div>
-      <!-- Tier 2: Weighted -->
-      <div style="background:#f1f5f9;border-radius:0.5rem;padding:0.6rem 0.75rem">
-        <div style="font-size:0.62rem;font-weight:700;color:#2563eb;margin-bottom:0.3rem" data-el="Tier 2 — Σταθμισμένη" data-en="Tier 2 — Weighted">Tier 2 — Σταθμισμένη</div>
-        <div style="font-size:0.95rem;font-weight:900" id="tier2Score">—</div>
-        <div style="font-size:0.58rem;color:var(--gray-500)" data-el="Jackman MRP — διόρθωση εθελοντικής συμμετοχής" data-en="Jackman MRP — voluntary participation correction">Jackman MRP — διόρθωση εθελοντικής συμμετοχής</div>
-      </div>
-      <!-- Tier 3: CRI -->
-      <div style="background:#f1f5f9;border-radius:0.5rem;padding:0.6rem 0.75rem">
-        <div style="font-size:0.62rem;font-weight:700;color:#2563eb;margin-bottom:0.3rem" data-el="Tier 3 — CRI Σύνθετος" data-en="Tier 3 — CRI Composite">Tier 3 — CRI Σύνθετος</div>
-        <div style="font-size:0.95rem;font-weight:900" id="tier3Score">—</div>
-        <div style="font-size:0.58rem;color:var(--gray-500)" data-el="Ποσοτική 40% + Ποιοτική 30% + Ποικιλομορφία 30%" data-en="Quantity 40% + Quality 30% + Diversity 30%">Ποσοτική 40% + Ποιοτική 30% + Ποικιλομορφία 30%</div>
-      </div>
-    </div>
-    <!-- Legend + no-data note -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem;flex-wrap:wrap;gap:0.5rem">
-      <div style="display:flex;gap:0.75rem;font-size:0.65rem;color:var(--gray-500)">
-        <span><span style="color:#ef4444;font-weight:700">●</span> <span data-el="Χαμηλή" data-en="Low">Χαμηλή</span></span>
-        <span><span style="color:#f59e0b;font-weight:700">●</span> <span data-el="Μέτρια" data-en="Moderate">Μέτρια</span></span>
-        <span><span style="color:#22c55e;font-weight:700">●</span> <span data-el="Υψηλή" data-en="High">Υψηλή</span></span>
-        <span><span style="color:#2563eb;font-weight:700">●</span> <span data-el="Εξαιρετική" data-en="Excellent">Εξαιρετική</span></span>
-      </div>
-      <span id="repNoData" style="font-size:0.6rem;color:#94a3b8;font-style:italic" data-el="Αναμονή δεδομένων..." data-en="Awaiting data...">Αναμονή δεδομένων...</span>
-    </div>
-  </div>
-</div>
-<script>
-(function(){
-  var ELECTORATE = 9810040; // Εκλογικό Σώμα Ελλάδας 2023 (ΥΠΕΣ)
-
-  function repColor(pct) {
-    if (pct < 25) return "#ef4444";
-    if (pct < 50) return "#f97316";
-    if (pct < 75) return "#eab308";
-    if (pct < 90) return "#22c55e";
-    return "#3b82f6";
-  }
-
-  function setMood(score) {
-    var mouth = document.getElementById("moodMouth");
-    var status = document.getElementById("moodStatus");
-    if (!mouth || !status) return;
-    var el = "Αναμονή πραγματικών δεδομένων. Ο δείκτης ενεργοποιείται μόλις υπάρξουν αρκετά συγκρίσιμα δεδομένα.";
-    var en = "Waiting for real data. The indicator activates once sufficient comparable data is available.";
-    var path = "M36 80 L84 80";
-    if (Number.isFinite(score)) {
-      if (score >= 50) {
-        path = "M36 74 Q60 96 84 74";
-        el = "Η Βουλή αντιπροσωπεύει τη γνώμη των πολιτών στο " + score + "%.";
-        en = "Parliament represents citizen opinion at " + score + "%.";
-      } else if (score < 45) {
-        path = "M36 88 Q60 66 84 88";
-        el = "Αντιπροσωπευτικότητα " + score + "%: απόκλιση από τη γνώμη των πολιτών.";
-        en = "Representativeness " + score + "%: divergence from citizen opinion.";
-      } else {
-        el = "Οριακή αντιπροσωπευτικότητα: " + score + "%.";
-        en = "Marginal representativeness: " + score + "%.";
-      }
-    }
-    mouth.setAttribute("d", path);
-    status.setAttribute("data-el", el);
-    status.setAttribute("data-en", en);
-    var lang = typeof currentLang !== "undefined" ? currentLang : "el";
-    var newText = lang === "en" ? en : el;
-    if (status.textContent !== newText) status.textContent = newText;
-  }
-
-  function fetchRepresentation() {
-    fetch("https://api.ekklesia.gr/api/v1/analytics/representation")
-      .then(function(r){return r.json()})
-      .then(function(d){
-        var score = d.cumulative_representation;
-        var fill = document.getElementById("repFill");
-        var marker = document.getElementById("repMarker");
-        var scoreEl = document.getElementById("repScore");
-        var divEl = document.getElementById("repDivergence");
-        var billsEl = document.getElementById("repBills");
-        var votesEl = document.getElementById("repVotes");
-        var lastBill = document.getElementById("repLastBill");
-        var lastTitle = document.getElementById("repLastTitle");
-        var lastStats = document.getElementById("repLastStats");
-        var noData = document.getElementById("repNoData");
-        var t1 = document.getElementById("tier1Score");
-        var t2 = document.getElementById("tier2Score");
-        var t3 = document.getElementById("tier3Score");
-        var heroT1 = document.getElementById("heroTier1");
-        var heroT2 = document.getElementById("heroTier2");
-        var heroT3 = document.getElementById("heroTier3");
-
-        var totalVotes = d.total_citizen_votes || 0;
-        var avgDiv = d.cumulative_divergence || 0;
-        var bills = d.bills_analyzed || 0;
-
-        // These fields compare Parliament with citizens. Fail closed until
-        // the API has at least one analyzed bill and a cumulative score.
-        if (bills < 1 || score === null || score === undefined || !Number.isFinite(Number(score))) {
-          setMood(null);
-          if (scoreEl) scoreEl.textContent = "—";
-          if (fill) fill.style.width = "0%";
-          if (marker) marker.style.left = "0%";
-          if (divEl) divEl.textContent = "—";
-          if (billsEl) billsEl.textContent = "—";
-          if (votesEl) votesEl.textContent = "—";
-          if (t1) t1.textContent = "—";
-          if (t2) t2.textContent = "—";
-          if (t3) { t3.textContent = "—"; t3.style.color = ""; }
-          if (heroT1) heroT1.textContent = "—";
-          if (heroT2) heroT2.textContent = "—";
-          if (heroT3) heroT3.textContent = "—";
-          if (lastBill) lastBill.style.display = "none";
-          if (noData) noData.style.display = "inline";
-          return;
-        }
-
-        // Tier 1: Raw platform
-        var rawPct = (totalVotes / ELECTORATE) * 100;
-        var rawLabel = rawPct < 0.001 ? "0%" : rawPct.toFixed(rawPct < 1 ? 3 : 1) + "%";
-        if (t1) t1.textContent = rawLabel;
-        if (heroT1) heroT1.textContent = rawLabel;
-
-        // Tier 2: Weighted (Jackman MRP correction)
-        var corrected = rawPct / 0.65; // voluntary participation bias
-        var avgBillsPerVoter = bills > 0 ? Math.min(totalVotes / Math.max(1, bills), 5) / 5 : 0;
-        var weighted = corrected * (1 + avgBillsPerVoter * 0.3);
-        weighted = Math.min(100, weighted);
-        var weightedLabel = weighted < 0.001 ? "0%" : weighted.toFixed(weighted < 1 ? 3 : 1) + "%";
-        if (t2) t2.textContent = weightedLabel;
-        if (heroT2) heroT2.textContent = weightedLabel;
-
-        // Tier 3: CRI composite is meaningful only with real representation data.
-        var quantityScore = Math.min(1, rawPct / 1); // normalize: 1% = max
-        var qualityScore = score / 100; // representation = 1-divergence
-        var diversityScore = 0.5; // neutral until demographic data available
-        var cri = Math.round((0.4 * quantityScore + 0.3 * qualityScore + 0.3 * diversityScore) * 100);
-        if (t3) { t3.textContent = cri + "/100"; t3.style.color = repColor(cri); }
-        if (heroT3) heroT3.textContent = cri + "/100";
-
-        if (noData) noData.style.display = "none";
-        var pct = Math.min(100, Math.max(0, score));
-        setMood(pct);
-        var col = repColor(pct);
-        if (fill) { fill.style.width = pct + "%"; fill.style.background = col; }
-        if (marker) marker.style.left = pct + "%";
-        if (scoreEl) { scoreEl.textContent = pct + "%"; scoreEl.style.color = col; }
-        if (divEl) divEl.textContent = avgDiv + "%";
-        if (billsEl) billsEl.textContent = bills;
-        if (votesEl) votesEl.textContent = totalVotes.toLocaleString();
-
-        if (d.last_bill && lastBill) {
-          lastBill.style.display = "block";
-          if (lastTitle) lastTitle.textContent = d.last_bill.title_el;
-          if (lastStats) lastStats.textContent = d.last_bill.citizen_votes + " ψήφοι · Απόκλιση " + d.last_bill.divergence + "% · Αντιπρ. " + d.last_bill.representation + "%";
-        }
-      })
-      .catch(function(){ setMood(null); });
-  }
-  fetchRepresentation();
-  setInterval(fetchRepresentation, 60000);
-})();
-</script>
-
-<!-- CPLM — Citizens Political Liquid Mirror -->
-<div style="max-width:800px;margin:0 auto;padding:0 2rem 1.5rem" class="fade-in" id="cplmSection">
-  <div style="background:var(--gray-100);border-radius:1rem;padding:1.25rem 1.5rem">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
-      <h4 style="font-weight:800;font-size:0.88rem;margin:0" data-el="Πολιτικός Καθρέφτης (CPLM)" data-en="Political Mirror (CPLM)">Πολιτικός Καθρέφτης (CPLM)</h4>
-      <span style="font-size:0.65rem;color:#94a3b8;display:flex;align-items:center;gap:0.3rem"><span style="width:5px;height:5px;border-radius:50%;background:#22c55e;display:inline-block;animation:blink 2s infinite"></span> Live</span>
-    </div>
-    <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:0.75rem" data-el="Πού βρίσκεται πολιτικά η κοινωνία; Σωρευτικός υπολογισμός από όλες τις ψήφους πολιτών, συμπεριλαμβανομένων των ανοιχτών ψηφοφοριών." data-en="Where does society stand politically? Cumulative calculation from all citizen votes, including open-end votes.">Πού βρίσκεται πολιτικά η κοινωνία; Σωρευτικός υπολογισμός από όλες τις ψήφους πολιτών, συμπεριλαμβανομένων των ανοιχτών ψηφοφοριών.</p>
-    <!-- SVG Political Compass: cplm-compass.svg shown as fallback until live data loads -->
-    <div style="display:flex;justify-content:center;margin-bottom:0.75rem;position:relative">
-      <!-- Fallback: animated SVG, hidden once live data arrives -->
-      <img id="cplmFallback" src="animations/svg/cplm-compass.svg"
-           alt="Πολιτικός Καθρέφτης CPLM — animation"
-           loading="lazy" decoding="async"
-           style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:280px;height:280px;border-radius:0.75rem;opacity:0.55;pointer-events:none;transition:opacity 0.5s">
-      <svg id="cplmChart" width="280" height="280" viewBox="0 0 280 280" style="background:white;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.06);position:relative;z-index:1">
-        <!-- Quadrant backgrounds -->
-        <rect x="0" y="0" width="140" height="140" fill="#fef3c7" opacity="0.4"/>
-        <rect x="140" y="0" width="140" height="140" fill="#fce7f3" opacity="0.4"/>
-        <rect x="0" y="140" width="140" height="140" fill="#d1fae5" opacity="0.4"/>
-        <rect x="140" y="140" width="140" height="140" fill="#dbeafe" opacity="0.4"/>
-        <!-- Axes -->
-        <line x1="140" y1="0" x2="140" y2="280" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4"/>
-        <line x1="0" y1="140" x2="280" y2="140" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4"/>
-        <!-- Labels -->
-        <text x="6" y="148" font-size="8" fill="#94a3b8" data-el="Αριστερά" data-en="Left">Αριστερά</text>
-        <text x="242" y="148" font-size="8" fill="#94a3b8" data-el="Δεξιά" data-en="Right">Δεξιά</text>
-        <text x="130" y="12" font-size="8" fill="#94a3b8" text-anchor="middle" data-el="Αυταρχικό" data-en="Auth.">Αυταρχικό</text>
-        <text x="130" y="276" font-size="8" fill="#94a3b8" text-anchor="middle" data-el="Ελευθεριακό" data-en="Libert.">Ελευθεριακό</text>
-        <!-- Citizen dot (positioned by JS) -->
-        <circle id="cplmDot" cx="140" cy="140" r="8" fill="#2563eb" stroke="white" stroke-width="2" opacity="0.9"/>
-        <!-- Trend arrow -->
-        <line id="cplmArrow" x1="140" y1="140" x2="140" y2="140" stroke="#2563eb" stroke-width="2" marker-end="url(#arrowHead)" opacity="0"/>
-        <defs><marker id="arrowHead" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto"><path d="M0,0 L6,2 L0,4" fill="#2563eb"/></marker></defs>
-      </svg>
-    </div>
-    <!-- Stats row -->
-    <div style="display:flex;gap:1rem;flex-wrap:wrap">
-      <div style="flex:1;min-width:80px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
-        <div style="font-size:1.1rem;font-weight:900" id="cplmX">—</div>
-        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Οικονομία (X)" data-en="Economy (X)">Οικονομία (X)</div>
-      </div>
-      <div style="flex:1;min-width:80px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
-        <div style="font-size:1.1rem;font-weight:900" id="cplmY">—</div>
-        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Κοινωνία (Y)" data-en="Society (Y)">Κοινωνία (Y)</div>
-      </div>
-      <div style="flex:1;min-width:80px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
-        <div style="font-size:1.1rem;font-weight:900" id="cplmVoters">—</div>
-        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Ψηφοφόροι" data-en="Voters">Ψηφοφόροι</div>
-      </div>
-      <div style="flex:1;min-width:80px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
-        <div style="font-size:1.1rem;font-weight:900" id="cplmQuadrant">—</div>
-        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Τεταρτημόριο" data-en="Quadrant">Τεταρτημόριο</div>
-      </div>
-    </div>
-    <p style="font-size:0.65rem;color:#94a3b8;margin-top:0.5rem;text-align:center" data-el="Ανανεώνεται αυτόματα κάθε 6 ώρες. Περιλαμβάνει όλες τις ψήφους (και Open End)." data-en="Updated automatically every 6 hours. Includes all votes (including Open End).">Ανανεώνεται αυτόματα κάθε 6 ώρες. Περιλαμβάνει όλες τις ψήφους (και Open End).</p>
-  </div>
-</div>
-<script>
-(function(){
-  var QUAD_EL = {
-    center: "Κέντρο", libertarian_left: "Ελευθ. Αριστερά",
-    libertarian_right: "Ελευθ. Δεξιά", authoritarian_left: "Αυτ. Αριστερά",
-    authoritarian_right: "Αυτ. Δεξιά"
-  };
-  var QUAD_EN = {
-    center: "Center", libertarian_left: "Lib. Left",
-    libertarian_right: "Lib. Right", authoritarian_left: "Auth. Left",
-    authoritarian_right: "Auth. Right"
-  };
-  function fetchCPLM() {
-    fetch("https://api.ekklesia.gr/api/v1/cplm/aggregate")
-      .then(function(r){return r.json()})
-      .then(function(d){
-        var dot = document.getElementById("cplmDot");
-        var arrow = document.getElementById("cplmArrow");
-        var xEl = document.getElementById("cplmX");
-        var yEl = document.getElementById("cplmY");
-        var vEl = document.getElementById("cplmVoters");
-        var qEl = document.getElementById("cplmQuadrant");
-        // Map X/Y from [-10,+10] to [0,280]
-        var px = 140 + (d.x / 10) * 140;
-        var py = 140 - (d.y / 10) * 140;
-        if (dot) { dot.setAttribute("cx", px); dot.setAttribute("cy", py); }
-        if (xEl) xEl.textContent = d.x.toFixed(2);
-        if (yEl) yEl.textContent = d.y.toFixed(2);
-        if (vEl) vEl.textContent = d.total_voters.toLocaleString();
-        var lang = document.documentElement.lang === "en" ? "en" : "el";
-        if (qEl) qEl.textContent = (lang === "en" ? QUAD_EN : QUAD_EL)[d.quadrant] || d.quadrant;
-        // Trend arrow
-        if (arrow && d.trend && (Math.abs(d.trend.x_delta) > 0.001 || Math.abs(d.trend.y_delta) > 0.001)) {
-          var ax = px + (d.trend.x_delta / 10) * 280;
-          var ay = py - (d.trend.y_delta / 10) * 280;
-          arrow.setAttribute("x1", px); arrow.setAttribute("y1", py);
-          arrow.setAttribute("x2", ax); arrow.setAttribute("y2", ay);
-          arrow.setAttribute("opacity", "0.6");
-        }
-        // Hide fallback SVG once live data is available
-        var fallback = document.getElementById("cplmFallback");
-        if (fallback) fallback.style.opacity = "0";
-      })
-      .catch(function(){});
-  }
-  fetchCPLM();
-  setInterval(fetchCPLM, 60000);
-})();
-</script>
-
-</section>
-
 <section class="ticker-section" id="votes">
   <div class="section-inner">
     <h2 class="section-title fade-in" data-el="Ψηφοφορίες σε Εξέλιξη" data-en="Votes in Progress">Ψηφοφορίες σε Εξέλιξη</h2>
@@ -1105,96 +771,417 @@
 
 <section class="demo-section" id="demo">
   <div class="demo-title" data-el="Ο Κύκλος της Δημοκρατίας" data-en="The Democracy Cycle">Ο Κύκλος της Δημοκρατίας</div>
-  <p class="demo-sub" data-el="Κάθε απόφαση διανύει 6 φάσεις — από τη Βουλή στους πολίτες." data-en="Every decision goes through 6 phases — from Parliament to citizens.">Κάθε απόφαση διανύει 6 φάσεις — από τη Βουλή στους πολίτες.</p>
-  <div class="demo-grid">
-    <div class="demo-box" id="dBox1">
-      <div class="demo-icon">🏛️</div>
+  <p class="demo-sub" data-el="Από το νομοσχέδιο στη δημόσια ψήφο και στο τελικό αποτέλεσμα." data-en="From the bill to the public vote and the final result.">Από το νομοσχέδιο στη δημόσια ψήφο και στο τελικό αποτέλεσμα.</p>
+  <div class="pnx2-cycle-meta">
+    <p class="pnx2-cycle-note"><span lang="en">ANNOUNCED → OPEN END</span> · <span data-el="χωρίς νομική δέσμευση" data-en="not legally binding">χωρίς νομική δέσμευση</span></p>
+    <button type="button" class="pnx2-cycle-toggle" id="cycleToggle" aria-controls="cyclePhases" data-state="playing"><span class="pnx2-cycle-toggle-icon" aria-hidden="true"></span><span id="cycleToggleText" data-el="Παύση" data-en="Pause">Παύση</span></button>
+  </div>
+  <ol class="demo-grid" id="cyclePhases">
+    <li class="demo-box" id="dBox1">
       <div class="demo-label" data-el="Ανακοίνωση" data-en="Announced">Ανακοίνωση</div>
-    </div>
-    <div class="demo-box" id="dBox2">
-      <div class="demo-icon" id="scrapeIcon" style="display:inline-block">🔍</div>
-      <div class="demo-label" data-el="Ανάλυση Νόμου" data-en="Law Analysis">Ανάλυση Νόμου</div>
-      <div class="demo-pct" id="scrapeStatus" style="opacity:0;transition:opacity 0.5s;font-size:0.65rem;margin-top:0.3rem" data-el="AI Σύνοψη..." data-en="AI Summary...">AI Σύνοψη...</div>
-    </div>
-    <div class="demo-box" id="dBox3">
-      <div class="demo-icon">✅</div>
-      <div class="demo-label" data-el="Ενεργοποίηση" data-en="Activation">Ενεργοποίηση</div>
-      <div class="demo-pct" id="activateStatus" style="opacity:0;transition:opacity 0.5s;font-size:0.65rem;margin-top:0.3rem" data-el="Ψηφοφορία ανοιχτή" data-en="Voting open">Ψηφοφορία ανοιχτή</div>
-    </div>
-    <div class="demo-box" id="dBox4">
-      <div class="demo-icon">🗳️</div>
-      <div class="demo-label" data-el="Ψηφοφορία Πολιτών" data-en="Citizen Vote">Ψηφοφορία Πολιτών</div>
-      <div class="demo-bar-row" id="barRow" style="display:block">
+      <div class="demo-pct"><span lang="en">AI</span> <span data-el="σύνοψη" data-en="summary">σύνοψη</span></div>
+    </li>
+    <li class="demo-box" id="dBox2">
+      <div class="demo-label" data-el="Ενεργό" data-en="Active">Ενεργό</div>
+      <div class="demo-pct" data-el="Ψηφοφορία" data-en="Voting">Ψηφοφορία</div>
+    </li>
+    <li class="demo-box" id="dBox3">
+      <div class="demo-label" data-el="Πολίτες" data-en="Citizens">Πολίτες</div>
+      <div class="demo-pct" data-el="Υπέρ / Κατά" data-en="Yes / No">Υπέρ / Κατά</div>
+      <div class="demo-bar-row" id="barRow">
         <div class="demo-bar-wrap"><div class="demo-bar demo-bar-yes" id="yesBar"></div></div>
         <div class="demo-pct" id="demoYesLabel" data-el="— Υπέρ" data-en="— Yes">— Υπέρ</div>
-        <div class="demo-bar-wrap" style="margin-top:3px"><div class="demo-bar demo-bar-no" id="noBar"></div></div>
+        <div class="demo-bar-wrap"><div class="demo-bar demo-bar-no" id="noBar"></div></div>
         <div class="demo-pct" id="demoNoLabel" data-el="— Κατά" data-en="— No">— Κατά</div>
       </div>
-    </div>
-    <div class="demo-box" id="dBox5">
-      <div class="demo-icon">⚖️</div>
-      <div class="demo-label" data-el="24ω Παράθυρο" data-en="24h Window">24ω Παράθυρο</div>
-    </div>
-    <div class="demo-box pnx2-demo-archive">
+    </li>
+    <li class="demo-box" id="dBox4">
+      <div class="demo-label" data-el="24ω" data-en="24h">24ω</div>
+      <div class="demo-pct" data-el="Παράθυρο" data-en="Window">Παράθυρο</div>
+    </li>
+    <li class="demo-box" id="dBox5">
+      <div class="demo-label" data-el="Βουλή" data-en="Parliament">Βουλή</div>
+      <div class="demo-pct" data-el="Απόφαση" data-en="Decision">Απόφαση</div>
+    </li>
+    <li class="demo-box pnx2-demo-archive" id="dBoxArchive">
       <div class="demo-label" data-el="Αρχείο" data-en="Archive">Αρχείο</div>
-      <div class="demo-pct" data-el="Open End · Arweave" data-en="Open End · Arweave">Open End · Arweave</div>
+      <div class="demo-pct"><span lang="en">Open End</span> · <span lang="en">Arweave</span></div>
+      <div class="pnx2-cycle-hint" data-el="Μόνιμη, δημόσια αρχειοθέτηση του αποτελέσματος." data-en="Permanent, public archiving of the result.">Μόνιμη, δημόσια αρχειοθέτηση του αποτελέσματος.</div>
+    </li>
+  </ol>
+  <!-- Result tile: real latest result only; empty and error states stay honest. -->
+  <div id="dBox6">
+    <div class="pnx2-result-head">
+      <span data-el="Αποτέλεσμα Ψηφοφορίας" data-en="Vote Result">Αποτέλεσμα Ψηφοφορίας</span>
     </div>
-  </div>
-  <!-- Result Kachel — immer sichtbar, Daten füllen sich bei Step 6 -->
-  <div id="dBox6" style="max-width:900px;margin:1rem auto 0;background:white;border:2px solid #e2e8f0;border-radius:var(--radius);padding:1.25rem 1.5rem">
-    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem">
-      <span style="font-size:1.4rem">📊</span>
-      <span style="font-weight:900;font-size:1rem;color:var(--gray-900)" data-el="Αποτέλεσμα Ψηφοφορίας" data-en="Vote Result">Αποτέλεσμα Ψηφοφορίας</span>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;font-size:0.78rem;color:rgba(255,255,255,0.7)">
+    <div class="pnx2-result-grid">
       <!-- Νομοσχέδιο -->
       <div>
-        <div style="font-weight:800;color:var(--gray-500);margin-bottom:0.5rem;font-size:0.82rem">🏛️ <span data-el="Νομοσχέδιο" data-en="Bill">Νομοσχέδιο</span><span hidden data-el="Απόφαση Βουλής" data-en="Parliament Decision">Απόφαση Βουλής</span></div>
-        <div id="rParlData" style="opacity:0;transition:opacity 0.6s">
-          <div id="latestBillTitle" style="color:var(--gray-600);margin-bottom:0.4rem" data-el="Αναμονή πραγματικών δεδομένων" data-en="Waiting for real data">Αναμονή πραγματικών δεδομένων</div>
-          <div id="latestBillStatus" style="font-weight:700;color:var(--gray-500)" data-el="Δεν υπάρχει ακόμη αποτέλεσμα με ψήφους" data-en="No voted result is available yet">Δεν υπάρχει ακόμη αποτέλεσμα με ψήφους</div>
+        <div class="pnx2-result-kicker"><span data-el="Νομοσχέδιο" data-en="Bill">Νομοσχέδιο</span><span hidden data-el="Απόφαση Βουλής" data-en="Parliament Decision">Απόφαση Βουλής</span></div>
+        <div id="rParlData">
+          <div id="latestBillTitle" data-el="Αναμονή πραγματικών δεδομένων" data-en="Waiting for real data">Αναμονή πραγματικών δεδομένων</div>
+          <div id="latestBillStatus" data-el="Δεν υπάρχει ακόμη αποτέλεσμα με ψήφους" data-en="No voted result is available yet">Δεν υπάρχει ακόμη αποτέλεσμα με ψήφους</div>
         </div>
       </div>
       <!-- Πολίτες -->
       <div>
-        <div style="font-weight:800;color:var(--gray-500);margin-bottom:0.5rem;font-size:0.82rem">🗳️ <span data-el="Βούληση Πολιτών" data-en="Citizen Will">Βούληση Πολιτών</span></div>
-        <div id="rCitizenData" style="opacity:0;transition:opacity 0.6s">
-          <div id="resultTotal" style="margin-bottom:0.4rem" data-el="— ψήφοι" data-en="— votes">— ψήφοι</div>
-          <div id="resultParticipation" style="margin-bottom:0.4rem;color:var(--gray-500)" data-el="Συμμετοχή στην πλατφόρμα: —" data-en="Platform participation: —">Συμμετοχή στην πλατφόρμα: —</div>
-          <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.3rem">
-            <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
-              <div id="resultYes" style="height:100%;width:0;background:#22c55e;border-radius:4px;transition:width 1s"></div>
-            </div>
-            <span id="resultYesLabel" style="font-weight:700;color:#22c55e;width:50px;text-align:right" data-el="— Υπέρ" data-en="— Yes">— Υπέρ</span>
+        <div class="pnx2-result-kicker"><span data-el="Βούληση Πολιτών" data-en="Citizen Will">Βούληση Πολιτών</span></div>
+        <div id="rCitizenData">
+          <div id="resultTotal" data-el="— ψήφοι" data-en="— votes">— ψήφοι</div>
+          <div id="resultParticipation" data-el="Συμμετοχή στην πλατφόρμα: —" data-en="Platform participation: —">Συμμετοχή στην πλατφόρμα: —</div>
+          <div class="pnx2-result-bar">
+            <div class="pnx2-result-track"><div id="resultYes" class="pnx2-result-fill-yes"></div></div>
+            <span id="resultYesLabel" class="pnx2-result-yes" data-el="— Υπέρ" data-en="— Yes">— Υπέρ</span>
           </div>
-          <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem">
-            <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
-              <div id="resultNo" style="height:100%;width:0;background:#ef4444;border-radius:4px;transition:width 1s"></div>
-            </div>
-            <span id="resultNoLabel" style="font-weight:700;color:#ef4444;width:50px;text-align:right" data-el="— Κατά" data-en="— No">— Κατά</span>
+          <div class="pnx2-result-bar">
+            <div class="pnx2-result-track"><div id="resultNo" class="pnx2-result-fill-no"></div></div>
+            <span id="resultNoLabel" class="pnx2-result-no" data-el="— Κατά" data-en="— No">— Κατά</span>
           </div>
-          <div id="resultMajority" style="font-weight:700;color:var(--gray-500)" data-el="Αναμονή πραγματικών δεδομένων" data-en="Waiting for real data">Αναμονή πραγματικών δεδομένων</div>
+          <div id="resultMajority" data-el="Αναμονή πραγματικών δεδομένων" data-en="Waiting for real data">Αναμονή πραγματικών δεδομένων</div>
         </div>
       </div>
     </div>
-    <!-- Divergence + Representativität -->
-    <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid rgba(255,255,255,0.1);display:flex;gap:1rem;flex-wrap:wrap">
-      <div style="flex:1;min-width:200px">
-        <div style="font-size:0.7rem;color:var(--gray-500);margin-bottom:0.3rem" data-el="Απόκλιση Πολιτών — Βουλής" data-en="Citizen — Parliament Divergence">Απόκλιση Πολιτών — Βουλής</div>
-        <div id="divBadge" hidden></div>
-      </div>
-      <div style="flex:1;min-width:200px">
-        <div style="font-size:0.7rem;color:var(--gray-500);margin-bottom:0.3rem" data-el="Αντιπροσωπευτικότητα" data-en="Representativity">Αντιπροσωπευτικότητα</div>
-        <div style="display:flex;align-items:center;gap:0.5rem">
-          <div style="flex:1;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">
-            <div id="repBar" style="height:100%;width:0;border-radius:4px;transition:width 1s;background:#ef4444"></div>
-          </div>
-          <span id="repPct" style="font-size:0.72rem;font-weight:700;color:#f59e0b;white-space:nowrap;opacity:0;transition:opacity 0.5s">—</span>
-        </div>
-        <div id="repLabel" style="font-size:0.62rem;color:var(--gray-500);margin-top:0.2rem;opacity:0;transition:opacity 0.5s" data-el="Αναμονή πραγματικών δεδομένων" data-en="Waiting for real data">Αναμονή πραγματικών δεδομένων</div>
-      </div>
+    <!-- Divergence needs an official Parliament vote; until then it states so. -->
+    <div class="pnx2-result-divergence">
+      <div class="pnx2-result-kicker" data-el="Απόκλιση Πολιτών — Βουλής" data-en="Citizen — Parliament Divergence">Απόκλιση Πολιτών — Βουλής</div>
+      <div id="divBadge" hidden></div>
+      <div id="divEmpty" data-el="Αναμονή πραγματικών δεδομένων. Εμφανίζεται μόνο όταν υπάρχει επίσημη ψήφος της Βουλής." data-en="Waiting for real data. Shown only when an official Parliament vote exists.">Αναμονή πραγματικών δεδομένων. Εμφανίζεται μόνο όταν υπάρχει επίσημη ψήφος της Βουλής.</div>
     </div>
   </div>
+<!-- LIVE Repräsentations-Skala — Kumulative Divergenz Βουλή vs Πολίτες -->
+<div class="pnx2-democracy-data" role="group" aria-label="Ζωντανά δεδομένα δημοκρατίας">
+<div style="max-width:800px;margin:0 auto;padding:1.5rem 2rem" class="fade-in" id="repSection">
+  <div style="background:var(--gray-100);border-radius:1rem;padding:1.25rem 1.5rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
+      <h4 style="font-weight:800;font-size:0.88rem;margin:0" data-el="Αντιπροσωπευτικότητα Βουλής" data-en="Parliament Representativeness">Αντιπροσωπευτικότητα Βουλής</h4>
+      <span style="font-size:0.65rem;color:#64748b;display:flex;align-items:center;gap:0.3rem"><span style="width:5px;height:5px;border-radius:50%;background:#22c55e;display:inline-block;animation:blink 2s infinite"></span> Live</span>
+    </div>
+    <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:0.75rem" data-el="Πόσο αντιπροσωπεύει η Βουλή τη γνώμη των πολιτών; Σωρευτικός υπολογισμός από όλες τις ψηφοφορίες." data-en="How well does Parliament represent citizen opinion? Calculated cumulatively from all votes.">Πόσο αντιπροσωπεύει η Βουλή τη γνώμη των πολιτών; Σωρευτικός υπολογισμός από όλες τις ψηφοφορίες.</p>
+    <!-- Live bar: background is grey track, colored fill grows left-to-right -->
+    <div style="position:relative;height:28px;border-radius:6px;background:#e2e8f0;margin-bottom:0.3rem;overflow:hidden">
+      <div id="repFill" style="height:100%;width:0%;border-radius:6px;transition:width 0.8s ease-out;background:#ef4444"></div>
+      <div id="repMarker" style="position:absolute;top:-4px;left:0%;width:4px;height:36px;background:#0f172a;border-radius:2px;transition:left 1.5s ease"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:0.62rem;color:#64748b">
+      <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+    </div>
+    <!-- Stats row -->
+    <div style="display:flex;gap:1rem;margin-top:0.75rem;flex-wrap:wrap">
+      <div style="flex:1;min-width:120px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
+        <div style="font-size:1.1rem;font-weight:900" id="repScore">—</div>
+        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Αντιπροσωπευτικότητα" data-en="Representation">Αντιπροσωπευτικότητα</div>
+      </div>
+      <div style="flex:1;min-width:120px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
+        <div style="font-size:1.1rem;font-weight:900" id="repDivergence">—</div>
+        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Μέση Απόκλιση" data-en="Avg Divergence">Μέση Απόκλιση</div>
+      </div>
+      <div style="flex:1;min-width:120px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
+        <div style="font-size:1.1rem;font-weight:900" id="repBills">—</div>
+        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Ψηφοφορίες" data-en="Bills Analyzed">Ψηφοφορίες</div>
+      </div>
+      <div style="flex:1;min-width:120px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
+        <div style="font-size:1.1rem;font-weight:900" id="repVotes">—</div>
+        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Ψήφοι Πολιτών" data-en="Citizen Votes">Ψήφοι Πολιτών</div>
+      </div>
+    </div>
+    <div class="pnx2-mood" aria-live="polite">
+      <svg viewBox="0 0 120 120" width="104" height="104" role="img" aria-labelledby="moodTitle">
+        <desc id="moodTitle" data-el="Δείκτης Διάθεσης" data-en="Mood indicator">Δείκτης Διάθεσης</desc>
+        <circle cx="60" cy="60" r="55" fill="none" stroke="currentColor" stroke-width="4"/>
+        <circle cx="42" cy="47" r="6" fill="currentColor"/>
+        <circle cx="78" cy="47" r="6" fill="currentColor"/>
+        <path id="moodMouth" d="M36 80 L84 80" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <strong data-el="ΔΕΙΚΤΗΣ ΔΙΑΘΕΣΗΣ" data-en="MOOD INDICATOR">ΔΕΙΚΤΗΣ ΔΙΑΘΕΣΗΣ</strong>
+        <p id="moodStatus" data-el="Αναμονή πραγματικών δεδομένων. Ο δείκτης ενεργοποιείται μόλις υπάρξουν αρκετά συγκρίσιμα δεδομένα." data-en="Waiting for real data. The indicator activates once sufficient comparable data is available.">Αναμονή πραγματικών δεδομένων. Ο δείκτης ενεργοποιείται μόλις υπάρξουν αρκετά συγκρίσιμα δεδομένα.</p>
+        <small data-el="≥50% χαμόγελο · 45–50% ουδέτερο · &lt;45% λυπημένο" data-en="≥50% happy · 45–50% neutral · &lt;45% sad">≥50% χαμόγελο · 45–50% ουδέτερο · &lt;45% λυπημένο</small>
+      </div>
+    </div>
+    <!-- Last bill -->
+    <div id="repLastBill" style="display:none;margin-top:0.75rem;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;font-size:0.72rem">
+      <div style="font-weight:700;color:var(--gray-500);margin-bottom:0.2rem" data-el="Τελευταία Ψηφοφορία:" data-en="Latest Vote:">Τελευταία Ψηφοφορία:</div>
+      <div id="repLastTitle" style="font-weight:800;color:var(--gray-900)"></div>
+      <div id="repLastStats" style="color:var(--gray-500);margin-top:0.2rem"></div>
+    </div>
+    <!-- Three-tier calculation -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.75rem;margin-top:0.75rem">
+      <!-- Tier 1: Raw -->
+      <div style="background:#f1f5f9;border-radius:0.5rem;padding:0.6rem 0.75rem">
+        <div style="font-size:0.62rem;font-weight:700;color:#2563eb;margin-bottom:0.3rem" data-el="Tier 1 — Πλατφόρμα" data-en="Tier 1 — Platform">Tier 1 — Πλατφόρμα</div>
+        <div style="font-size:0.95rem;font-weight:900" id="tier1Score">—</div>
+        <div style="font-size:0.58rem;color:var(--gray-700)" id="tier1Detail" data-el="Ψήφοι ÷ Εκλογικό Σώμα (9.810.040)" data-en="Votes ÷ Electorate (9,810,040)">Ψήφοι ÷ Εκλογικό Σώμα (9.810.040)</div>
+      </div>
+      <!-- Tier 2: Weighted -->
+      <div style="background:#f1f5f9;border-radius:0.5rem;padding:0.6rem 0.75rem">
+        <div style="font-size:0.62rem;font-weight:700;color:#2563eb;margin-bottom:0.3rem" data-el="Tier 2 — Σταθμισμένη" data-en="Tier 2 — Weighted">Tier 2 — Σταθμισμένη</div>
+        <div style="font-size:0.95rem;font-weight:900" id="tier2Score">—</div>
+        <div style="font-size:0.58rem;color:var(--gray-700)" data-el="Jackman MRP — διόρθωση εθελοντικής συμμετοχής" data-en="Jackman MRP — voluntary participation correction">Jackman MRP — διόρθωση εθελοντικής συμμετοχής</div>
+      </div>
+      <!-- Tier 3: CRI -->
+      <div style="background:#f1f5f9;border-radius:0.5rem;padding:0.6rem 0.75rem">
+        <div style="font-size:0.62rem;font-weight:700;color:#2563eb;margin-bottom:0.3rem" data-el="Tier 3 — CRI Σύνθετος" data-en="Tier 3 — CRI Composite">Tier 3 — CRI Σύνθετος</div>
+        <div style="font-size:0.95rem;font-weight:900" id="tier3Score">—</div>
+        <div style="font-size:0.58rem;color:var(--gray-700)" data-el="Ποσοτική 40% + Ποιοτική 30% + Ποικιλομορφία 30%" data-en="Quantity 40% + Quality 30% + Diversity 30%">Ποσοτική 40% + Ποιοτική 30% + Ποικιλομορφία 30%</div>
+      </div>
+    </div>
+    <!-- Legend + no-data note -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem;flex-wrap:wrap;gap:0.5rem">
+      <div style="display:flex;gap:0.75rem;font-size:0.65rem;color:var(--gray-500)">
+        <span><span style="color:#dc2626;font-weight:700">●</span> <span data-el="Χαμηλή" data-en="Low">Χαμηλή</span></span>
+        <span><span style="color:#a16207;font-weight:700">●</span> <span data-el="Μέτρια" data-en="Moderate">Μέτρια</span></span>
+        <span><span style="color:#15803d;font-weight:700">●</span> <span data-el="Υψηλή" data-en="High">Υψηλή</span></span>
+        <span><span style="color:#1d4ed8;font-weight:700">●</span> <span data-el="Εξαιρετική" data-en="Excellent">Εξαιρετική</span></span>
+      </div>
+      <span id="repNoData" style="font-size:0.6rem;color:#64748b;font-style:italic" data-el="Αναμονή δεδομένων..." data-en="Awaiting data...">Αναμονή δεδομένων...</span>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var ELECTORATE = 9810040; // Εκλογικό Σώμα Ελλάδας 2023 (ΥΠΕΣ)
+
+  function repColor(pct) {
+    // Text-safe shades: the score is also rendered as coloured text.
+    if (pct < 25) return "#dc2626";
+    if (pct < 50) return "#c2410c";
+    if (pct < 75) return "#a16207";
+    if (pct < 90) return "#15803d";
+    return "#1d4ed8";
+  }
+
+  function setMood(score) {
+    var mouth = document.getElementById("moodMouth");
+    var status = document.getElementById("moodStatus");
+    if (!mouth || !status) return;
+    var el = "Αναμονή πραγματικών δεδομένων. Ο δείκτης ενεργοποιείται μόλις υπάρξουν αρκετά συγκρίσιμα δεδομένα.";
+    var en = "Waiting for real data. The indicator activates once sufficient comparable data is available.";
+    var path = "M36 80 L84 80";
+    if (Number.isFinite(score)) {
+      if (score >= 50) {
+        path = "M36 74 Q60 96 84 74";
+        el = "Η Βουλή αντιπροσωπεύει τη γνώμη των πολιτών στο " + score + "%.";
+        en = "Parliament represents citizen opinion at " + score + "%.";
+      } else if (score < 45) {
+        path = "M36 88 Q60 66 84 88";
+        el = "Αντιπροσωπευτικότητα " + score + "%: απόκλιση από τη γνώμη των πολιτών.";
+        en = "Representativeness " + score + "%: divergence from citizen opinion.";
+      } else {
+        el = "Οριακή αντιπροσωπευτικότητα: " + score + "%.";
+        en = "Marginal representativeness: " + score + "%.";
+      }
+    }
+    mouth.setAttribute("d", path);
+    status.setAttribute("data-el", el);
+    status.setAttribute("data-en", en);
+    var lang = typeof currentLang !== "undefined" ? currentLang : "el";
+    var newText = lang === "en" ? en : el;
+    if (status.textContent !== newText) status.textContent = newText;
+  }
+
+  function fetchRepresentation() {
+    fetch("https://api.ekklesia.gr/api/v1/analytics/representation")
+      .then(function(r){return r.json()})
+      .then(function(d){
+        var score = d.cumulative_representation;
+        var fill = document.getElementById("repFill");
+        var marker = document.getElementById("repMarker");
+        var scoreEl = document.getElementById("repScore");
+        var divEl = document.getElementById("repDivergence");
+        var billsEl = document.getElementById("repBills");
+        var votesEl = document.getElementById("repVotes");
+        var lastBill = document.getElementById("repLastBill");
+        var lastTitle = document.getElementById("repLastTitle");
+        var lastStats = document.getElementById("repLastStats");
+        var noData = document.getElementById("repNoData");
+        var t1 = document.getElementById("tier1Score");
+        var t2 = document.getElementById("tier2Score");
+        var t3 = document.getElementById("tier3Score");
+        var heroT1 = document.getElementById("heroTier1");
+        var heroT2 = document.getElementById("heroTier2");
+        var heroT3 = document.getElementById("heroTier3");
+
+        var totalVotes = d.total_citizen_votes || 0;
+        var avgDiv = d.cumulative_divergence || 0;
+        var bills = d.bills_analyzed || 0;
+
+        // These fields compare Parliament with citizens. Fail closed until
+        // the API has at least one analyzed bill and a cumulative score.
+        if (bills < 1 || score === null || score === undefined || !Number.isFinite(Number(score))) {
+          setMood(null);
+          if (scoreEl) scoreEl.textContent = "—";
+          if (fill) fill.style.width = "0%";
+          if (marker) marker.style.left = "0%";
+          if (divEl) divEl.textContent = "—";
+          if (billsEl) billsEl.textContent = "—";
+          if (votesEl) votesEl.textContent = "—";
+          if (t1) t1.textContent = "—";
+          if (t2) t2.textContent = "—";
+          if (t3) { t3.textContent = "—"; t3.style.color = ""; }
+          if (heroT1) heroT1.textContent = "—";
+          if (heroT2) heroT2.textContent = "—";
+          if (heroT3) heroT3.textContent = "—";
+          if (lastBill) lastBill.style.display = "none";
+          if (noData) noData.style.display = "inline";
+          return;
+        }
+
+        // Tier 1: Raw platform
+        var rawPct = (totalVotes / ELECTORATE) * 100;
+        var rawLabel = rawPct < 0.001 ? "0%" : rawPct.toFixed(rawPct < 1 ? 3 : 1) + "%";
+        if (t1) t1.textContent = rawLabel;
+        if (heroT1) heroT1.textContent = rawLabel;
+
+        // Tier 2: Weighted (Jackman MRP correction)
+        var corrected = rawPct / 0.65; // voluntary participation bias
+        var avgBillsPerVoter = bills > 0 ? Math.min(totalVotes / Math.max(1, bills), 5) / 5 : 0;
+        var weighted = corrected * (1 + avgBillsPerVoter * 0.3);
+        weighted = Math.min(100, weighted);
+        var weightedLabel = weighted < 0.001 ? "0%" : weighted.toFixed(weighted < 1 ? 3 : 1) + "%";
+        if (t2) t2.textContent = weightedLabel;
+        if (heroT2) heroT2.textContent = weightedLabel;
+
+        // Tier 3: CRI composite is meaningful only with real representation data.
+        var quantityScore = Math.min(1, rawPct / 1); // normalize: 1% = max
+        var qualityScore = score / 100; // representation = 1-divergence
+        var diversityScore = 0.5; // neutral until demographic data available
+        var cri = Math.round((0.4 * quantityScore + 0.3 * qualityScore + 0.3 * diversityScore) * 100);
+        if (t3) { t3.textContent = cri + "/100"; t3.style.color = repColor(cri); }
+        if (heroT3) heroT3.textContent = cri + "/100";
+
+        if (noData) noData.style.display = "none";
+        var pct = Math.min(100, Math.max(0, score));
+        setMood(pct);
+        var col = repColor(pct);
+        if (fill) { fill.style.width = pct + "%"; fill.style.background = col; }
+        if (marker) marker.style.left = pct + "%";
+        if (scoreEl) { scoreEl.textContent = pct + "%"; scoreEl.style.color = col; }
+        if (divEl) divEl.textContent = avgDiv + "%";
+        if (billsEl) billsEl.textContent = bills;
+        if (votesEl) votesEl.textContent = totalVotes.toLocaleString();
+
+        if (d.last_bill && lastBill) {
+          lastBill.style.display = "block";
+          if (lastTitle) lastTitle.textContent = d.last_bill.title_el;
+          if (lastStats) lastStats.textContent = d.last_bill.citizen_votes + " ψήφοι · Απόκλιση " + d.last_bill.divergence + "% · Αντιπρ. " + d.last_bill.representation + "%";
+        }
+      })
+      .catch(function(){ setMood(null); });
+  }
+  fetchRepresentation();
+  setInterval(fetchRepresentation, 60000);
+})();
+</script>
+
+<!-- CPLM — Citizens Political Liquid Mirror -->
+<div style="max-width:800px;margin:0 auto;padding:0 2rem 1.5rem" class="fade-in" id="cplmSection">
+  <div style="background:var(--gray-100);border-radius:1rem;padding:1.25rem 1.5rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">
+      <h4 style="font-weight:800;font-size:0.88rem;margin:0" data-el="Πολιτικός Καθρέφτης (CPLM)" data-en="Political Mirror (CPLM)">Πολιτικός Καθρέφτης (CPLM)</h4>
+      <span style="font-size:0.65rem;color:#64748b;display:flex;align-items:center;gap:0.3rem"><span style="width:5px;height:5px;border-radius:50%;background:#22c55e;display:inline-block;animation:blink 2s infinite"></span> Live</span>
+    </div>
+    <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:0.75rem" data-el="Πού βρίσκεται πολιτικά η κοινωνία; Σωρευτικός υπολογισμός από όλες τις ψήφους πολιτών, συμπεριλαμβανομένων των ανοιχτών ψηφοφοριών." data-en="Where does society stand politically? Cumulative calculation from all citizen votes, including open-end votes.">Πού βρίσκεται πολιτικά η κοινωνία; Σωρευτικός υπολογισμός από όλες τις ψήφους πολιτών, συμπεριλαμβανομένων των ανοιχτών ψηφοφοριών.</p>
+    <!-- SVG Political Compass: cplm-compass.svg shown as fallback until live data loads -->
+    <div style="display:flex;justify-content:center;margin-bottom:0.75rem;position:relative">
+      <!-- Fallback: animated SVG, hidden once live data arrives -->
+      <img id="cplmFallback" src="animations/svg/cplm-compass.svg"
+           alt="Πολιτικός Καθρέφτης CPLM — animation"
+           loading="lazy" decoding="async"
+           style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:280px;height:280px;border-radius:0.75rem;opacity:0.55;pointer-events:none;transition:opacity 0.5s">
+      <svg id="cplmChart" width="280" height="280" viewBox="0 0 280 280" style="background:white;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.06);position:relative;z-index:1">
+        <!-- Quadrant backgrounds -->
+        <rect x="0" y="0" width="140" height="140" fill="#fef3c7" opacity="0.4"/>
+        <rect x="140" y="0" width="140" height="140" fill="#fce7f3" opacity="0.4"/>
+        <rect x="0" y="140" width="140" height="140" fill="#d1fae5" opacity="0.4"/>
+        <rect x="140" y="140" width="140" height="140" fill="#dbeafe" opacity="0.4"/>
+        <!-- Axes -->
+        <line x1="140" y1="0" x2="140" y2="280" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4"/>
+        <line x1="0" y1="140" x2="280" y2="140" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4"/>
+        <!-- Labels -->
+        <text x="6" y="148" font-size="8" fill="#64748b" data-el="Αριστερά" data-en="Left">Αριστερά</text>
+        <text x="242" y="148" font-size="8" fill="#64748b" data-el="Δεξιά" data-en="Right">Δεξιά</text>
+        <text x="130" y="12" font-size="8" fill="#64748b" text-anchor="middle" data-el="Αυταρχικό" data-en="Auth.">Αυταρχικό</text>
+        <text x="130" y="276" font-size="8" fill="#64748b" text-anchor="middle" data-el="Ελευθεριακό" data-en="Libert.">Ελευθεριακό</text>
+        <!-- Citizen dot (positioned by JS) -->
+        <circle id="cplmDot" cx="140" cy="140" r="8" fill="#2563eb" stroke="white" stroke-width="2" opacity="0.9"/>
+        <!-- Trend arrow -->
+        <line id="cplmArrow" x1="140" y1="140" x2="140" y2="140" stroke="#2563eb" stroke-width="2" marker-end="url(#arrowHead)" opacity="0"/>
+        <defs><marker id="arrowHead" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto"><path d="M0,0 L6,2 L0,4" fill="#2563eb"/></marker></defs>
+      </svg>
+    </div>
+    <!-- Stats row -->
+    <div style="display:flex;gap:1rem;flex-wrap:wrap">
+      <div style="flex:1;min-width:80px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
+        <div style="font-size:1.1rem;font-weight:900" id="cplmX">—</div>
+        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Οικονομία (X)" data-en="Economy (X)">Οικονομία (X)</div>
+      </div>
+      <div style="flex:1;min-width:80px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
+        <div style="font-size:1.1rem;font-weight:900" id="cplmY">—</div>
+        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Κοινωνία (Y)" data-en="Society (Y)">Κοινωνία (Y)</div>
+      </div>
+      <div style="flex:1;min-width:80px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
+        <div style="font-size:1.1rem;font-weight:900" id="cplmVoters">—</div>
+        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Ψηφοφόροι" data-en="Voters">Ψηφοφόροι</div>
+      </div>
+      <div style="flex:1;min-width:80px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
+        <div style="font-size:1.1rem;font-weight:900" id="cplmQuadrant">—</div>
+        <div style="font-size:0.62rem;color:var(--gray-500)" data-el="Τεταρτημόριο" data-en="Quadrant">Τεταρτημόριο</div>
+      </div>
+    </div>
+    <p style="font-size:0.65rem;color:#64748b;margin-top:0.5rem;text-align:center" data-el="Ανανεώνεται αυτόματα κάθε 6 ώρες. Περιλαμβάνει όλες τις ψήφους (και Open End)." data-en="Updated automatically every 6 hours. Includes all votes (including Open End).">Ανανεώνεται αυτόματα κάθε 6 ώρες. Περιλαμβάνει όλες τις ψήφους (και Open End).</p>
+  </div>
+</div>
+<script>
+(function(){
+  var QUAD_EL = {
+    center: "Κέντρο", libertarian_left: "Ελευθ. Αριστερά",
+    libertarian_right: "Ελευθ. Δεξιά", authoritarian_left: "Αυτ. Αριστερά",
+    authoritarian_right: "Αυτ. Δεξιά"
+  };
+  var QUAD_EN = {
+    center: "Center", libertarian_left: "Lib. Left",
+    libertarian_right: "Lib. Right", authoritarian_left: "Auth. Left",
+    authoritarian_right: "Auth. Right"
+  };
+  function fetchCPLM() {
+    fetch("https://api.ekklesia.gr/api/v1/cplm/aggregate")
+      .then(function(r){return r.json()})
+      .then(function(d){
+        var dot = document.getElementById("cplmDot");
+        var arrow = document.getElementById("cplmArrow");
+        var xEl = document.getElementById("cplmX");
+        var yEl = document.getElementById("cplmY");
+        var vEl = document.getElementById("cplmVoters");
+        var qEl = document.getElementById("cplmQuadrant");
+        // Map X/Y from [-10,+10] to [0,280]
+        var px = 140 + (d.x / 10) * 140;
+        var py = 140 - (d.y / 10) * 140;
+        if (dot) { dot.setAttribute("cx", px); dot.setAttribute("cy", py); }
+        if (xEl) xEl.textContent = d.x.toFixed(2);
+        if (yEl) yEl.textContent = d.y.toFixed(2);
+        if (vEl) vEl.textContent = d.total_voters.toLocaleString();
+        var lang = document.documentElement.lang === "en" ? "en" : "el";
+        if (qEl) qEl.textContent = (lang === "en" ? QUAD_EN : QUAD_EL)[d.quadrant] || d.quadrant;
+        // Trend arrow
+        if (arrow && d.trend && (Math.abs(d.trend.x_delta) > 0.001 || Math.abs(d.trend.y_delta) > 0.001)) {
+          var ax = px + (d.trend.x_delta / 10) * 280;
+          var ay = py - (d.trend.y_delta / 10) * 280;
+          arrow.setAttribute("x1", px); arrow.setAttribute("y1", py);
+          arrow.setAttribute("x2", ax); arrow.setAttribute("y2", ay);
+          arrow.setAttribute("opacity", "0.6");
+        }
+        // Hide fallback SVG once live data is available
+        var fallback = document.getElementById("cplmFallback");
+        if (fallback) fallback.style.opacity = "0";
+      })
+      .catch(function(){});
+  }
+  fetchCPLM();
+  setInterval(fetchCPLM, 60000);
+})();
+</script>
+
+</div>
 </section>
 
 <section class="section section-gray" id="features">
@@ -1728,38 +1715,16 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
 </script>
 
 <script>
-// Democracy Cycle Animation — 6 Phasen
+// Democracy Cycle Animation — 6 Phasen (#356)
+// Runs only while the #demo fold is open: closing stops it, reopening restarts at
+// phase 01. Pause/play is user-controlled; reduced motion starts paused (static).
 (function() {
-  var boxes = ["dBox1","dBox2","dBox3","dBox4","dBox5","dBox6"];
-  function resetAll() {
-    boxes.forEach(function(id) { var el=document.getElementById(id); if(el) el.classList.remove("active"); });
-    var yb=document.getElementById("yesBar"); var nb=document.getElementById("noBar");
-    if(yb) yb.style.width="0%"; if(nb) nb.style.width="0%";
-    var badge=document.getElementById("divBadge"); if(badge) badge.style.display="none";
-    var ss=document.getElementById("scrapeStatus"); if(ss) ss.style.opacity="0";
-    var as=document.getElementById("activateStatus"); if(as) as.style.opacity="0";
-    var si=document.getElementById("scrapeIcon"); if(si) si.style.animation="";
-    var box6r=document.getElementById("dBox6"); if(box6r) box6r.style.borderColor="rgba(255,255,255,0.1)";
-    var pd=document.getElementById("rParlData"); if(pd) pd.style.opacity="0";
-    var cd=document.getElementById("rCitizenData"); if(cd) cd.style.opacity="0";
-    var ry=document.getElementById("resultYes"); if(ry) ry.style.width="0";
-    var rn=document.getElementById("resultNo"); if(rn) rn.style.width="0";
-    var rep=document.getElementById("repBar"); if(rep) rep.style.width="0";
-    var rp=document.getElementById("repPct"); if(rp) rp.style.opacity="0";
-    var rl=document.getElementById("repLabel"); if(rl) rl.style.opacity="0";
-  }
-  function clearResultData() {
-    var box6=document.getElementById("dBox6"); if(box6) box6.style.borderColor="rgba(255,255,255,0.1)";
-    var pd=document.getElementById("rParlData"); if(pd) pd.style.opacity="0";
-    var cd=document.getElementById("rCitizenData"); if(cd) cd.style.opacity="0";
-    var ry=document.getElementById("resultYes"); if(ry) ry.style.width="0";
-    var rn=document.getElementById("resultNo"); if(rn) rn.style.width="0";
-    var badge=document.getElementById("divBadge"); if(badge) badge.style.display="none";
-    var rep=document.getElementById("repBar"); if(rep) rep.style.width="0";
-    var rp=document.getElementById("repPct"); if(rp) rp.style.opacity="0";
-    var rl=document.getElementById("repLabel"); if(rl) rl.style.opacity="0";
-    setLiveText("resultParticipation","Συμμετοχή στην πλατφόρμα: —","Platform participation: —");
-  }
+  var PHASE_MS = 2000, HOLD_MS = 3000;
+  var section = document.getElementById("demo");
+  var reduceQuery = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+  var timer = null, step = -1, paused = reducedMotion();
+
+  function reducedMotion() { return !!(reduceQuery && reduceQuery.matches); }
   function setLiveText(id, elText, enText) {
     var node=document.getElementById(id);
     if(!node) return;
@@ -1767,8 +1732,27 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     node.setAttribute("data-en", enText);
     node.textContent=currentLang==="en"?enText:elText;
   }
+  function clearResultData() {
+    var ry=document.getElementById("resultYes"); if(ry) ry.style.width="0";
+    var rn=document.getElementById("resultNo"); if(rn) rn.style.width="0";
+    var yb=document.getElementById("yesBar"); if(yb) yb.style.width="0";
+    var nb=document.getElementById("noBar"); if(nb) nb.style.width="0";
+    setLiveText("resultParticipation","Συμμετοχή στην πλατφόρμα: —","Platform participation: —");
+  }
   function renderLiveResult(data) {
     var total=Number(data.total_votes||0);
+    var STATUS={
+      ANNOUNCED:["Ανακοίνωση","Announced"],
+      ACTIVE:["Ενεργό · ψηφοφορία ανοιχτή","Active · voting open"],
+      WINDOW_24H:["Παράθυρο 24 ωρών","24-hour window"],
+      PARLIAMENT_VOTED:["Ψηφίστηκε στη Βουλή","Voted in Parliament"],
+      OPEN_END:["Αρχείο · Open End","Archive · Open End"]
+    };
+    var status=STATUS[data.status]||["Άγνωστη","Unknown"];
+    var statusEl="Κατάσταση νομοσχεδίου · "+status[0];
+    var statusEn="Bill status · "+status[1];
+    var totalEl=total.toLocaleString("el-GR")+(total===1?" ψήφος":" ψήφοι");
+    var totalEn=total.toLocaleString("en-US")+(total===1?" vote":" votes");
     var yes=Math.max(0,Math.min(100,Number(data.yes_pct||0)));
     var no=Math.max(0,Math.min(100,Number(data.no_pct||0)));
     var abstain=Math.max(0,Math.min(100,Number(data.abstain_pct||0)));
@@ -1781,10 +1765,10 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     var electorate=9810040;
     var participation=total/electorate*100;
     setLiveText("latestBillTitle",titleEl,titleEn);
-    setLiveText("latestBillStatus","Κατάσταση νομοσχεδίου · "+data.status,"Bill status · "+data.status);
+    setLiveText("latestBillStatus",statusEl,statusEn);
     setLiveText("demoYesLabel",yes+"% Υπέρ",yes+"% Yes");
     setLiveText("demoNoLabel",no+"% Κατά",no+"% No");
-    setLiveText("resultTotal",total.toLocaleString("el-GR")+" ψήφοι",total.toLocaleString("en-US")+" votes");
+    setLiveText("resultTotal",totalEl,totalEn);
     setLiveText("resultParticipation","Συμμετοχή στην πλατφόρμα: "+participation.toFixed(4)+"% ("+total.toLocaleString("el-GR")+" / 9.810.040)","Platform participation: "+participation.toFixed(4)+"% ("+total.toLocaleString("en-US")+" / 9,810,040)");
     setLiveText("resultYesLabel",yes+"% Υπέρ",yes+"% Yes");
     setLiveText("resultNoLabel",no+"% Κατά",no+"% No");
@@ -1794,82 +1778,78 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     var live=window._liveResult;
     if(!live||!live.bill_id||Number(live.total_votes)<1) {
       clearResultData();
-      var waitingParl=document.getElementById("rParlData"); if(waitingParl) waitingParl.style.opacity="1";
-      var waitingCitizen=document.getElementById("rCitizenData"); if(waitingCitizen) waitingCitizen.style.opacity="1";
       return;
     }
-    var box6=document.getElementById("dBox6"); if(box6) box6.style.borderColor="rgba(37,99,235,0.5)";
-    var pd=document.getElementById("rParlData"); if(pd) pd.style.opacity="1";
-    setTimeout(function() {
-      var cd=document.getElementById("rCitizenData"); if(cd) cd.style.opacity="1";
-    }, 300);
-    setTimeout(function() {
-      var ry=document.getElementById("resultYes"); if(ry) ry.style.width=live.yes_pct+"%";
-      var rn=document.getElementById("resultNo"); if(rn) rn.style.width=live.no_pct+"%";
-    }, 600);
-    setTimeout(function() {
-      var b=document.getElementById("divBadge"); if(b) b.style.display="none";
-      // Citizen-only results do not establish Parliament representativity.
-      var rep=document.getElementById("repBar"); if(rep) rep.style.width="0";
-      var rp=document.getElementById("repPct"); if(rp) rp.style.opacity="0";
-      var rl=document.getElementById("repLabel"); if(rl) rl.style.opacity="0";
-    }, 900);
+    var ry=document.getElementById("resultYes"); if(ry) ry.style.width=live.yes_pct+"%";
+    var rn=document.getElementById("resultNo"); if(rn) rn.style.width=live.no_pct+"%";
+    var yb=document.getElementById("yesBar"); if(yb) yb.style.width=live.yes_pct+"%";
+    var nb=document.getElementById("noBar"); if(nb) nb.style.width=live.no_pct+"%";
   }
+
+  function phases() {
+    return section ? Array.prototype.slice.call(section.querySelectorAll("#cyclePhases > .demo-box")) : [];
+  }
+  function foldOpen() {
+    var fold = section && section.querySelector("details.pnx2-fold");
+    return fold ? fold.open : true;
+  }
+  function showPhase(index) {
+    phases().forEach(function(el, i) {
+      el.classList.toggle("active", i === index);
+      if (i === index) el.setAttribute("aria-current", "step"); else el.removeAttribute("aria-current");
+    });
+    step = index;
+  }
+  function stopCycle() { if (timer) { clearTimeout(timer); timer = null; } }
   function runCycle() {
-    // Nur die oberen Kacheln resetten, Result-Daten bleiben sichtbar
-    boxes.forEach(function(id) { var el=document.getElementById(id); if(el) el.classList.remove("active"); });
-    var yb=document.getElementById("yesBar"); var nb=document.getElementById("noBar");
-    if(yb) yb.style.width="0%"; if(nb) nb.style.width="0%";
-    var ss=document.getElementById("scrapeStatus"); if(ss) ss.style.opacity="0";
-    var as=document.getElementById("activateStatus"); if(as) as.style.opacity="0";
-    var si=document.getElementById("scrapeIcon"); if(si) si.style.animation="";
-
-    var step=0;
-    function next() {
-      boxes.forEach(function(id) { var el=document.getElementById(id); if(el) el.classList.remove("active"); });
-      if(step<boxes.length) { var el=document.getElementById(boxes[step]); if(el) el.classList.add("active"); }
-
-      // Step 1: Scraping
-      if(step===1) {
-        var si2=document.getElementById("scrapeIcon"); if(si2) si2.style.animation="spin 1s linear infinite";
-        setTimeout(function() { var s=document.getElementById("scrapeStatus"); if(s) s.style.opacity="1"; }, 400);
-      }
-      // Step 2: Aktivierung
-      if(step===2) {
-        setTimeout(function() { var a=document.getElementById("activateStatus"); if(a) a.style.opacity="1"; }, 300);
-      }
-      // Step 3: Citizen Vote — Result-Daten ausblenden, Vote-Bars füllen
-      if(step===3) {
-        clearResultData();
-        setTimeout(function() {
-          var y=document.getElementById("yesBar"); var n=document.getElementById("noBar");
-          var live=window._liveResult;
-          if(y) y.style.width=(live?live.yes_pct:0)+"%";
-          if(n) n.style.width=(live?live.no_pct:0)+"%";
-        }, 300);
-      }
-      // Step 5: Ergebnis — Daten füllen sich wieder
-      if(step===5) {
-        fillResultData();
-      }
-
-      step++;
-      if(step<boxes.length) { setTimeout(next, 2000); }
-      else { setTimeout(runCycle, 3000); }
-    }
-    next();
+    stopCycle();
+    if (step < 0) showPhase(0);
+    var last = phases().length - 1;
+    timer = setTimeout(function() {
+      timer = null;
+      showPhase(step >= last ? 0 : step + 1);
+      runCycle();
+    }, step >= last ? HOLD_MS : PHASE_MS);
   }
-  var d=document.getElementById("dBox1");
-  if(d) { var io=new IntersectionObserver(function(e){ if(e[0].isIntersecting){ io.disconnect(); clearResultData(); runCycle(); }},{threshold:0.3}); io.observe(d); }
+  function sync() {
+    var open = foldOpen();
+    if (!open) showPhase(-1);
+    if (open && !paused) runCycle(); else stopCycle();
+    var btn = document.getElementById("cycleToggle");
+    if (btn) btn.setAttribute("data-state", paused ? "paused" : "playing");
+    setLiveText("cycleToggleText", paused ? "Αναπαραγωγή" : "Παύση", paused ? "Play" : "Pause");
+  }
+  function initCycle() {
+    var fold = section && section.querySelector("details.pnx2-fold");
+    if (fold) fold.addEventListener("toggle", function() {
+      // Reopening restarts at phase 01 unless the visitor prefers reduced motion.
+      if (fold.open) { paused = reducedMotion(); showPhase(-1); }
+      sync();
+    });
+    var btn = document.getElementById("cycleToggle");
+    if (btn) btn.addEventListener("click", function() { paused = !paused; sync(); });
+    if (reduceQuery) {
+      var onReduce = function() { if (reducedMotion()) paused = true; sync(); };
+      if (reduceQuery.addEventListener) reduceQuery.addEventListener("change", onReduce);
+      else if (reduceQuery.addListener) reduceQuery.addListener(onReduce);
+    }
+    sync();
+  }
+  // landing-folds.js (deferred) builds the <details> before DOMContentLoaded.
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initCycle);
+  else initCycle();
 
-  // Load live result data if available (replaces hardcoded 67%)
+  // Load the real latest result; empty and unavailable states never show numbers.
   fetch("https://api.ekklesia.gr/api/v1/vote/results/latest")
-    .then(function(r){return r.json()})
+    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
     .then(function(data){
       if(!data||!data.bill_id||data.total_votes<1) return;
       window._liveResult=data;
       renderLiveResult(data);
-    }).catch(function(){});
+      fillResultData();
+    }).catch(function(){
+      setLiveText("latestBillStatus","Τα ζωντανά δεδομένα δεν είναι διαθέσιμα αυτή τη στιγμή.","Live data is currently unavailable.");
+    });
 })();
 
 // Ticker — live bills from API, fallback to static HTML

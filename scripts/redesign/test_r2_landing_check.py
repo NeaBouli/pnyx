@@ -810,7 +810,8 @@ class T357DomOrderTest(unittest.TestCase):
     EXPECTED_ORDER = [
         "landing-hero",        # hero (identified by class)
         "pnx2-history-band",   # history band (identified by class)
-        "pnx2-democracy-data", # democracy data (identified by class)
+        # #356: Rep/CPLM (.pnx2-democracy-data) now sits inside #demo,
+        # directly under the democracy cycle, as in the handoff's #live band.
         "votes",               # votes section (identified by id)
         "download",            # download section (identified by id)
         "how",                 # how it works (identified by id)
