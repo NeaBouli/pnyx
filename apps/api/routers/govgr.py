@@ -32,14 +32,18 @@ AKTIVIERUNG Phase A NUR WENN:
 @activation-gate explicit_enable + official_approval + holder_auth + DPIA + security_review + canary
 """
 import os
+import re
+import json
+import time
 import secrets
 import hashlib
 import hmac
 import logging
-from datetime import datetime, timezone
+from typing import Any
 from fastapi import APIRouter, Query, HTTPException, Request
 from fastapi.responses import RedirectResponse
 import httpx
+import redis.asyncio as aioredis
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/auth/govgr", tags=["MOD-09 gov.gr OAuth"])
@@ -74,8 +78,98 @@ def is_active() -> bool:
         and len(REGISTRATION_SALT) >= 32
     )
 
-# In-memory state store (production: Redis)
-_oauth_states: dict[str, dict] = {}
+# ── OAuth state (EKA-11) ─────────────────────────────────────────────────────
+# State lives only in the shared Redis (REDIS_URL) so every worker and every
+# restarted process sees the same single-use record. There is deliberately no
+# in-process fallback: if Redis is unavailable, login and callback fail closed.
+GOVGR_STATE_TTL_SECONDS = 600
+GOVGR_STATE_PURPOSE = "govgr_oauth_login:v1"
+_STATE_KEY_PREFIX = "govgr:oauth_state:v1:"
+_STATE_PATTERN = re.compile(r"^[A-Za-z0-9_-]{43,128}$")
+
+_state_redis: aioredis.Redis | None = None
+
+
+class OAuthStateStoreUnavailable(Exception):
+    """Shared OAuth state store could not be reached; callers must fail closed."""
+
+
+class OAuthStateInvalid(Exception):
+    """State is unknown, expired, already consumed or bound to another context."""
+
+
+def _now() -> float:
+    return time.time()
+
+
+async def _get_state_redis() -> aioredis.Redis:
+    global _state_redis
+    if _state_redis is None:
+        _state_redis = aioredis.from_url(
+            os.getenv("REDIS_URL", "redis://redis:6379"), decode_responses=True
+        )
+    return _state_redis
+
+
+def _state_key(state: str) -> str:
+    # Only a digest of the state is used as key, so the raw value never rests in Redis.
+    return _STATE_KEY_PREFIX + hashlib.sha256(state.encode()).hexdigest()
+
+
+def _state_context() -> dict[str, str]:
+    return {
+        "purpose": GOVGR_STATE_PURPOSE,
+        "client_id": GOVGR_CLIENT_ID,
+        "redirect_uri": GOVGR_REDIRECT_URI,
+    }
+
+
+async def _issue_oauth_state(redirect_after: str) -> str:
+    """Create a fresh, TTL-bounded, single-use state bound to this OAuth context."""
+    state = secrets.token_urlsafe(32)
+    issued_at = int(_now())
+    record = {
+        **_state_context(),
+        "redirect_after": redirect_after,
+        "iat": issued_at,
+        "exp": issued_at + GOVGR_STATE_TTL_SECONDS,
+    }
+    try:
+        r = await _get_state_redis()
+        stored = await r.set(
+            _state_key(state), json.dumps(record), nx=True, ex=GOVGR_STATE_TTL_SECONDS
+        )
+    except Exception as exc:
+        raise OAuthStateStoreUnavailable() from exc
+    if not stored:
+        # 256-bit collision is not expected; refuse instead of overwriting.
+        raise OAuthStateStoreUnavailable()
+    return state
+
+
+async def _consume_oauth_state(state: str | None) -> dict[str, Any]:
+    """Atomically consume a state exactly once and verify its bound context."""
+    if not state or not _STATE_PATTERN.fullmatch(state):
+        raise OAuthStateInvalid()
+    try:
+        r = await _get_state_redis()
+        raw = await r.getdel(_state_key(state))
+    except Exception as exc:
+        raise OAuthStateStoreUnavailable() from exc
+    if raw is None:
+        raise OAuthStateInvalid()
+    try:
+        record = json.loads(raw)
+        exp = int(record["exp"]) if isinstance(record, dict) else None
+    except (ValueError, TypeError, KeyError):
+        raise OAuthStateInvalid() from None
+    if exp is None or _now() >= exp:
+        raise OAuthStateInvalid()
+    for field, expected in _state_context().items():
+        value = record.get(field)
+        if not isinstance(value, str) or not hmac.compare_digest(value, expected):
+            raise OAuthStateInvalid()
+    return record
 
 
 @router.get("/status")
@@ -126,17 +220,17 @@ async def govgr_login(redirect_after: str = Query("/")):
             },
         })
 
-    state = secrets.token_urlsafe(32)
-    _oauth_states[state] = {
-        "created": datetime.now(timezone.utc).isoformat(),
-        "redirect_after": redirect_after,
-    }
+    try:
+        state = await _issue_oauth_state(redirect_after)
+    except OAuthStateStoreUnavailable:
+        logger.error("[MOD-09] OAuth state store unavailable — login refused")
+        raise HTTPException(503, "gov.gr OAuth vorübergehend nicht verfügbar")
     auth_url = (
         f"{GOVGR_AUTH_URL}?client_id={GOVGR_CLIENT_ID}"
         f"&redirect_uri={GOVGR_REDIRECT_URI}"
         f"&response_type=code&scope=openid+profile&state={state}"
     )
-    logger.info(f"[MOD-09] OAuth login initiated, state={state[:8]}...")
+    logger.info("[MOD-09] OAuth login initiated")
     return RedirectResponse(url=auth_url)
 
 
@@ -156,10 +250,14 @@ async def govgr_callback(
     if not code:
         raise HTTPException(400, "Kein Authorization Code")
 
-    # Validate state
-    if state not in _oauth_states:
+    # Validate state: atomic single-use consume from the shared store
+    try:
+        state_data = await _consume_oauth_state(state)
+    except OAuthStateStoreUnavailable:
+        logger.error("[MOD-09] OAuth state store unavailable — callback refused")
+        raise HTTPException(503, "gov.gr OAuth vorübergehend nicht verfügbar")
+    except OAuthStateInvalid:
         raise HTTPException(400, "Ungültiger OAuth State — mögliche CSRF-Attacke")
-    state_data = _oauth_states.pop(state)
 
     # Exchange code for token
     try:
