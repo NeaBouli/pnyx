@@ -115,17 +115,17 @@ REMOVABLE_HEADER_PAIRS = {
 ALLOWED_R5_INLINE_SCRIPTS = {
     0: {
         "index": 0,
-        # T-348: setMood now guards textContent assignment to avoid repeated
-        # aria-live announcements and uses truthful neutral-mood copy.
-        "sha256": "034faa7e5bc03114b8da2954adf4083a5c6d90198350380a57e3fbbb0284c67c",
-        "bytes": 6612,
+        # #356: approved six-phase, fold-aware and pauseable cycle controller.
+        "sha256": "6ea42184af02e42cbc9783308234fb0b598be2930b0aedc346d86a90879467da",
+        "bytes": 6682,
     },
     5: {
         "index": 5,
         # T-394 (EKA-14): ticket login/avatar rendered via DOM properties with
         # an https GitHub-avatar allowlist instead of innerHTML concatenation.
-        "sha256": "25de949158c597f5b9015b4f1f4ec85ae802f33cc16668e7c59721aaaaeb9c1b",
-        "bytes": 21969,
+        # #356: six-phase cycle status labels and live result bars.
+        "sha256": "0af548dfe1002913413ca85b22dc4bc8c3ac9652dc8f4534d02bc454f060da1a",
+        "bytes": 20761,
     },
 }
 
@@ -134,6 +134,24 @@ ALLOWED_R5_INLINE_SCRIPTS = {
 ALLOWED_R5_BILINGUAL_REMOVALS = {
     ("📲 APK", "📲 APK"),
 }
+
+# #356: approved democracy-cycle rework. The legacy phase copy is
+# replaced by the six handoff phases, the result tile's permanently hidden
+# representativity widget is removed (the Rep/CPLM row now sits directly
+# below), and the cycle gains a pause/play button with fold-aware timers.
+ALLOWED_DEMO_CYCLE_BILINGUAL_REMOVALS = {
+    ("Κάθε απόφαση διανύει 6 φάσεις — από τη Βουλή στους πολίτες.",
+     "Every decision goes through 6 phases — from Parliament to citizens."),
+    ("Ανάλυση Νόμου", "Law Analysis"),
+    ("AI Σύνοψη...", "AI Summary..."),
+    ("Ενεργοποίηση", "Activation"),
+    ("Ψηφοφορία ανοιχτή", "Voting open"),
+    ("Ψηφοφορία Πολιτών", "Citizen Vote"),
+    ("24ω Παράθυρο", "24h Window"),
+    ("Αντιπροσωπευτικότητα", "Representativity"),
+}
+ALLOWED_DEMO_CYCLE_INTERACTION_COUNTS = {"add_event_listener_count": 8, "set_timeout_count": 2}
+ALLOWED_DEMO_CYCLE_FORM_CONTROLS = ({"tag": "button", "type": "button", "id": "cycleToggle"},)
 
 # T-346: nav logo changed from pnx.png to the supplied owl handoff asset.
 # Exactly one baseline pnx.png occurrence is replaced; the others remain.
@@ -270,7 +288,7 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
                 violations.append(f"preservation: exact contract changed: {key} (element_handlers)")
             scalar_keys = {k for k in b_int if k != "element_handlers"}
             for sk in scalar_keys:
-                if b_int.get(sk) != c_int.get(sk):
+                if ALLOWED_DEMO_CYCLE_INTERACTION_COUNTS.get(sk, b_int.get(sk)) != c_int.get(sk):
                     violations.append(f"preservation: exact contract changed: {key} ({sk})")
             continue
         if current.get(key) != baseline.get(key):
@@ -283,7 +301,7 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
         (item.get("data_el", ""), item.get("data_en", ""))
         for item in baseline["bilingual"]["pairs"]
     )
-    for pair in REMOVABLE_HEADER_PAIRS | ALLOWED_R5_BILINGUAL_REMOVALS:
+    for pair in REMOVABLE_HEADER_PAIRS | ALLOWED_R5_BILINGUAL_REMOVALS | ALLOWED_DEMO_CYCLE_BILINGUAL_REMOVALS:
         if baseline_pairs[pair]:
             baseline_pairs[pair] -= 1
             if not baseline_pairs[pair]:
@@ -304,7 +322,8 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
         tuple((key, item.get(key)) for key in functional_form_keys if key in item)
         for item in controls
     )
-    if normalize_controls(current["forms"]["controls"]) != normalize_controls(baseline["forms"]["controls"]):
+    expected_controls = [*baseline["forms"]["controls"], *ALLOWED_DEMO_CYCLE_FORM_CONTROLS]
+    if normalize_controls(current["forms"]["controls"]) != normalize_controls(expected_controls):
         violations.append("preservation: functional form controls changed")
     if current["forms"]["forms"] != baseline["forms"]["forms"]:
         violations.append("preservation: form definitions changed")
