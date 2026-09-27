@@ -442,3 +442,136 @@ def test_http_sixth_question_per_minute_is_429_with_cors(
     # Once the window resets, the same client can ask again (widget "retry").
     limiter.reset()
     assert _post(client, {"question": "hello", "lang": "en"}).status_code == 200
+
+
+# ── Sources follow the records build_data_block actually retained ──────────
+
+BIG_KB = [
+    SimpleNamespace(
+        id=100 + i, category="process", keywords=["kbq"], priority=1,
+        title_el=f"Θέμα {i}", title_en=f"Topic {i}",
+        content_el="KB-CONTENT-EL " + "Κ" * 1500, content_en="KB-CONTENT-EN " + "K" * 1500,
+    )
+    for i in range(5)
+]
+BIG_BILLS = [
+    SimpleNamespace(
+        id=f"GR-2026-02{i:02d}", title_el=f"Νομοσχέδιο {i} " + "Τ" * 300,
+        title_en=None, status=agent.BillStatus.ACTIVE, pill_el="Περίληψη " + "Π" * 200,
+    )
+    for i in range(10)
+]
+
+
+def _prompt_records(prompt: str) -> list[dict]:
+    block = prompt[prompt.index(DATA_OPEN) + len(DATA_OPEN):prompt.index(DATA_CLOSE)]
+    return [json.loads(line) for line in block.strip().split("\n") if line]
+
+
+def _record_identity(record: dict) -> tuple:
+    if record["source"] == "parliament_bill":
+        return ("parliament_bill", record["id"])
+    return ("knowledge_base", record["title"])
+
+
+def _source_identity(source: dict) -> tuple:
+    if source["type"] == "parliament_bill":
+        return ("parliament_bill", source["bill_id"])
+    return ("knowledge_base", source["title"])
+
+
+def test_sources_slice_is_kb_first_then_bills() -> None:
+    kb, bills = [KB_VOTE, KB_PRIVACY], [BILL, TEN_BILLS[0]]
+    full = agent._kb_sources(kb, "en") + agent._bill_sources(bills, True)
+    assert agent._sources(kb, bills, True, "en", 4) == full
+    assert agent._sources(kb, bills, True, "en", 99) == full
+    assert agent._sources(kb, bills, True, "en", 3) == full[:3]
+    assert [s["type"] for s in agent._sources(kb, bills, True, "en", 3)] == [
+        "knowledge_base", "knowledge_base", "parliament_bill",
+    ]
+    assert agent._sources(kb, bills, True, "en", 2) == agent._kb_sources(kb, "en")
+    assert agent._sources(kb, bills, True, "en", 1) == agent._kb_sources(kb[:1], "en")
+    assert agent._sources(kb, bills, True, "en", 0) == []
+    assert agent._sources(kb, bills, False, "en", 4) == agent._kb_sources(kb, "en")
+
+
+@pytest.mark.asyncio
+async def test_under_cap_every_record_is_sent_and_cited(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen = _patch_models(monkeypatch, "Bill GR-2026-0100 is currently open for citizen votes.")
+    response = await _ask("Which bills are open? kbq", "en", _FakeDb(BIG_KB[:1], TEN_BILLS))
+
+    records = _prompt_records(seen["prompt"])
+    assert len(records) == 1 + len(TEN_BILLS)
+    assert [_source_identity(s) for s in response["sources"]] == [
+        _record_identity(r) for r in records
+    ]
+    _assert_public_safe(response["sources"], seen)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("model_answer,model", [
+    ("Bill GR-2026-0200 is currently open for citizen votes.", "ollama"),
+    ("", "claude-haiku"),
+])
+async def test_over_cap_cites_exactly_the_serialised_prefix(
+    monkeypatch: pytest.MonkeyPatch, model_answer: str, model: str,
+) -> None:
+    seen = _patch_models(monkeypatch, model_answer)
+    contexts = _capture_context(monkeypatch)
+    if model == "claude-haiku":
+        async def claude(question: str, context: list, lang: str) -> str:
+            seen["prompt"] = agent.build_agent_prompt(question, context, agent.datetime.now()).user
+            return "Several bills are currently open for citizen votes."
+
+        monkeypatch.setattr(agent, "_claude_answer", claude)
+
+    response = await _ask("Which bills are open? kbq", "en", _FakeDb(BIG_KB, BIG_BILLS))
+
+    assert response["model"] == model
+    records = _prompt_records(seen["prompt"])
+    all_records = contexts[0]
+    assert len(all_records) == len(BIG_KB) + len(BIG_BILLS)
+    kept = len(records)
+    assert len(BIG_KB) < kept < len(all_records)  # the cap cuts inside the bills
+    assert [_record_identity(r) for r in records] == [
+        _record_identity(r) for r in all_records[:kept]
+    ]
+    cited = [_source_identity(s) for s in response["sources"]]
+    assert cited == [_record_identity(r) for r in records]
+    first_dropped = BIG_BILLS[kept - len(BIG_KB)].id
+    dropped = {b.id for b in BIG_BILLS[kept - len(BIG_KB):]}
+    assert first_dropped in dropped
+    assert not dropped & {s.get("bill_id") for s in response["sources"]}
+    _assert_public_safe(response["sources"], seen)
+
+
+@pytest.mark.asyncio
+async def test_greek_ollama_sends_structured_records_and_cites_them(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen = _patch_models(monkeypatch, "Bill GR-2026-0002 is currently open for citizen votes.")
+    translated: list[tuple[str, str]] = []
+
+    async def fake_translate(text: str, target_lang: str, source_lang: str = "") -> str:
+        translated.append((text, target_lang))
+        return "Which bills are open?" if target_lang == "EN" else "Το GR-2026-0002 είναι ανοιχτό."
+
+    monkeypatch.setattr(ollama_service, "DEEPL_API_KEY", "test-placeholder")
+    monkeypatch.setattr(ollama_service, "deepl_translate", fake_translate)
+    question = "Ποια νομοσχέδια είναι ανοιχτά; ψηφ"
+    response = await _ask(question, "el-GR", _FakeDb([KB_VOTE], [BILL, TEN_BILLS[0]]))
+
+    assert response["model"] == "ollama" and response["lang"] == "el"
+    assert response["answer"].startswith("Το GR-2026-0002 είναι ανοιχτό.")
+    assert DISCLAIMER_EL_MARK in response["answer"]
+    assert [t for _, t in translated] == ["EN", "EL"] and translated[0][0] == question
+    assert "translated_context" not in seen["prompt"]
+    records = _prompt_records(seen["prompt"])
+    assert [r["source"] for r in records] == [
+        "knowledge_base", "parliament_bill", "parliament_bill",
+    ]
+    assert [r.get("id") for r in records[1:]] == [BILL.id, TEN_BILLS[0].id]
+    assert [_source_identity(s) for s in response["sources"]] == [
+        _record_identity(r) for r in records
+    ]
+    _assert_public_safe(response["sources"], seen)

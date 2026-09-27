@@ -16,8 +16,6 @@ from services.agent_prompt import (
     UnsafeModelOutputError,
     build_agent_prompt,
     is_unsafe_model_output,
-    render_records_plaintext,
-    translated_record,
 )
 
 logger = logging.getLogger(__name__)
@@ -356,17 +354,10 @@ async def answer_citizen_question(
         if translated:
             en_question = translated
 
-    # Translate context to English too. The translation is itself untrusted
-    # and goes back into the data block as a single escaped record.
-    en_context = context
-    if lang == "el" and DEEPL_API_KEY and context:
-        plain = context if isinstance(context, str) else render_records_plaintext(context)
-        translated_ctx = await deepl_translate(plain[:2000], "EN", "EL")
-        if translated_ctx:
-            en_context = [translated_record(translated_ctx)]
-
+    # Context records stay structured and untranslated: the router cites
+    # exactly these records (source/id), so they must reach the model as-is.
     from datetime import datetime as _dt
-    agent_prompt = build_agent_prompt(en_question, en_context, _dt.now())
+    agent_prompt = build_agent_prompt(en_question, context, _dt.now())
     en_answer = await ollama_generate(
         agent_prompt.user, max_tokens=300, system=agent_prompt.system,
         timeout=OLLAMA_TIMEOUT,

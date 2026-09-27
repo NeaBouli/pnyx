@@ -119,13 +119,6 @@ def bill_record(bill_id: Any, title: Any, status: Any, summary: Any) -> dict[str
     return record
 
 
-def translated_record(text: Any) -> dict[str, str]:
-    return {
-        "source": "translated_context",
-        "content": sanitize_untrusted_text(text, MAX_TRANSLATED_CHARS, multiline=True),
-    }
-
-
 def _coerce_records(context: str | Sequence[Mapping[str, Any]] | None) -> list[dict[str, str]]:
     """Accept structured records (preferred) or a legacy plain string."""
     if not context:
@@ -146,25 +139,13 @@ def _coerce_records(context: str | Sequence[Mapping[str, Any]] | None) -> list[d
     return records
 
 
-def render_records_plaintext(records: Sequence[Mapping[str, Any]]) -> str:
-    """Human-readable rendering used only as DeepL input (never as a prompt)."""
-    parts = []
-    for r in records:
-        if r.get("source") == "parliament_bill":
-            line = f"- {r.get('id', '')}: {r.get('title', '')} (Status: {r.get('status', '')})"
-            if r.get("summary"):
-                line += f" — {r['summary']}"
-            parts.append(line)
-        else:
-            title = r.get("title")
-            content = r.get("content", "")
-            parts.append(f"### {title}\n{content}" if title else str(content))
-    return "\n\n".join(parts)
+def _retained_lines(context: str | Sequence[Mapping[str, Any]] | None) -> list[str]:
+    """Serialised records that fit MAX_DATA_BLOCK_CHARS, in input order.
 
-
-def build_data_block(context: str | Sequence[Mapping[str, Any]] | None) -> str:
-    """Serialise untrusted records as JSON lines inside a single data block."""
-    lines = [DATA_OPEN]
+    The first record that would overflow and every record after it are
+    dropped, so the retained records are always a prefix of the input.
+    """
+    lines: list[str] = []
     size = len(DATA_OPEN) + len(DATA_CLOSE) + 2
     for record in _coerce_records(context):
         line = _escape_json(record)
@@ -172,8 +153,21 @@ def build_data_block(context: str | Sequence[Mapping[str, Any]] | None) -> str:
             break
         lines.append(line)
         size += len(line) + 1
-    lines.append(DATA_CLOSE)
-    return "\n".join(lines)
+    return lines
+
+
+def retained_record_count(context: str | Sequence[Mapping[str, Any]] | None) -> int:
+    """Number of leading context records that build_data_block actually sends.
+
+    Callers citing sources slice their record-aligned source list to this
+    count, so no response cites a record the model never saw.
+    """
+    return len(_retained_lines(context))
+
+
+def build_data_block(context: str | Sequence[Mapping[str, Any]] | None) -> str:
+    """Serialise untrusted records as JSON lines inside a single data block."""
+    return "\n".join([DATA_OPEN, *_retained_lines(context), DATA_CLOSE])
 
 
 _SYSTEM_RULES = (

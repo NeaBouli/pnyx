@@ -10,7 +10,7 @@ Tests: `apps/api/tests/test_agent_prompt_trust_boundary.py`.
 | Level | Content | Handling |
 |---|---|---|
 | Trusted | System rules in `agent_prompt._SYSTEM_RULES`, date line | Sent only in the provider's separate `system` field |
-| Untrusted data | Parliament bill titles, Diavgeia-derived titles, AI-generated `pill_el`, knowledge-base rows, DeepL translations of those | Normalised, serialised, escaped, placed only inside the data block in the user turn |
+| Untrusted data | Parliament bill titles, Diavgeia-derived titles, AI-generated `pill_el`, knowledge-base rows | Normalised, serialised, escaped, placed only inside the data block in the user turn |
 | Untrusted input | Citizen question | Normalised and JSON-encoded after the data block |
 | Untrusted output | Ollama / Claude answers | Output guard before returning to the client |
 
@@ -23,22 +23,26 @@ ingested. Forum posts and GitHub issues are not ingested by the assistant.
 1. **Deterministic character/length control** (`sanitize_untrusted_text`):
    control, format (zero-width, bidi override), surrogate, private-use and
    unassigned code points are removed; whitespace is collapsed; hard per-field
-   caps (title 300, summary 200, KB content 1 500, translated context 2 000,
+   caps (title 300, summary 200, KB content 1 500, legacy string context 2 000,
    question 500 characters). Words and punctuation are never rewritten, so
    legitimate titles remain quotable verbatim.
 2. **Unambiguous serialisation**: one JSON object per line inside a single
    `<untrusted_data>` … `</untrusted_data>` block. `<`, `>` and `&` are
    emitted as JSON `\u` escapes, so no field value can open or close the
    block; `json.loads` restores the original text. The whole block is capped
-   at 12 000 characters; overflowing records are dropped whole.
+   at 12 000 characters; the first overflowing record and every later one
+   are dropped whole, so the block always holds a prefix of the records.
+   `retained_record_count()` exposes that prefix length from the same code
+   path, and the router cites only those records as `sources`.
 3. **Explicit system rule**: everything inside the block is data, never
    instructions; requests or role changes inside it are not followed.
 4. **One builder for both providers**: `build_agent_prompt()` returns
    `(system, user)`. Claude receives them as `system` / `messages[0]`,
    Ollama as `system` / `prompt` of `/api/generate`. Tests assert both
-   payloads are identical apart from the date line. When DeepL translates the
-   context for Ollama, the translation is treated as untrusted and re-enters
-   the block as one escaped record.
+   payloads are identical apart from the date line. On the Greek Ollama path
+   DeepL translates only the question and the answer; context records stay
+   structured and untranslated, so every cited source is a record the model
+   received.
 
 ## Output side
 

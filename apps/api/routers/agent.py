@@ -31,6 +31,7 @@ from services.agent_prompt import (
     fail_closed_answer,
     is_unsafe_model_output,
     knowledge_record,
+    retained_record_count,
 )
 from services.ollama_service import answer_citizen_question, ollama_available
 
@@ -293,8 +294,13 @@ def _kb_sources(entries: list, lang: str) -> list[dict]:
     return sources
 
 
-def _sources(kb_entries: list, bills: list, include_bills: bool, lang: str) -> list[dict]:
-    return _kb_sources(kb_entries, lang) + _bill_sources(bills, include_bills)
+def _sources(
+    kb_entries: list, bills: list, include_bills: bool, lang: str, retained: int,
+) -> list[dict]:
+    """Cite only the records the model received. Sources align 1:1 with the
+    context records (KB rows first, then bills); `retained` is the prefix
+    length build_data_block kept under MAX_DATA_BLOCK_CHARS."""
+    return (_kb_sources(kb_entries, lang) + _bill_sources(bills, include_bills))[:retained]
 
 
 async def _build_context(
@@ -473,7 +479,9 @@ async def ask_agent(
         return canonical
 
     context, bills, include_bills, kb_entries = await _build_context(req.question, req.lang, db)
-    sources = _sources(kb_entries, bills, include_bills, req.lang)
+    sources = _sources(
+        kb_entries, bills, include_bills, req.lang, retained_record_count(context),
+    )
     model_used = "ollama"
 
     # Step 1: Try Ollama (bounded by OLLAMA_TIMEOUT inside ollama_service)
