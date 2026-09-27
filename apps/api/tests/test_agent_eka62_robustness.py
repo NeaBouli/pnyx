@@ -276,6 +276,21 @@ async def test_sources_cite_kb_rows_given_to_the_model(
     _assert_public_safe(response["sources"], seen)
 
 
+def test_kb_source_title_is_the_exact_sanitized_prompt_title() -> None:
+    whitespace = SimpleNamespace(**{
+        **vars(KB_PRIVACY), "title_en": " \u202e ", "content_en": "\t",
+    })
+    assert agent._kb_record(whitespace, "en") == {
+        "source": "knowledge_base",
+        "title": KB_PRIVACY.title_el,
+        "content": KB_PRIVACY.content_el,
+    }
+    long_title = SimpleNamespace(**{**vars(KB_PRIVACY), "title_en": "A" * 350})
+    record = agent._kb_record(long_title, "en")
+    assert agent._kb_sources([long_title], "en")[0]["title"] == record["title"]
+    assert len(record["title"]) == 300 and record["title"].endswith("…")
+
+
 @pytest.mark.asyncio
 async def test_sources_cite_priority_fallback_kb_and_public_bills(
     monkeypatch: pytest.MonkeyPatch,

@@ -282,11 +282,20 @@ def _bill_sources(bills: list, include_bills: bool) -> list[dict]:
     ]
 
 
-def _kb_localized_fields(entry: KnowledgeBase, lang: str) -> tuple[str | None, str | None]:
-    """Use the requested language first, then the other available language."""
+def _kb_record(entry: KnowledgeBase, lang: str) -> dict[str, str]:
+    """Build the exact localized, sanitized KB record used by prompt and source."""
     if lang == "en":
-        return entry.title_en or entry.title_el, entry.content_en or entry.content_el
-    return entry.title_el or entry.title_en, entry.content_el or entry.content_en
+        primary_title, fallback_title = entry.title_en, entry.title_el
+        primary_content, fallback_content = entry.content_en, entry.content_el
+    else:
+        primary_title, fallback_title = entry.title_el, entry.title_en
+        primary_content, fallback_content = entry.content_el, entry.content_en
+    record = knowledge_record(primary_title, primary_content)
+    if not record["title"]:
+        record["title"] = knowledge_record(fallback_title, "")["title"]
+    if not record["content"]:
+        record["content"] = knowledge_record("", fallback_content)["content"]
+    return record
 
 
 def _kb_sources(entries: list, lang: str) -> list[dict]:
@@ -294,7 +303,7 @@ def _kb_sources(entries: list, lang: str) -> list[dict]:
     title only. Content, keywords and prompt text are never exposed."""
     sources = []
     for e in entries:
-        title, _ = _kb_localized_fields(e, lang)
+        title = _kb_record(e, lang)["title"]
         sources.append({
             "type": "knowledge_base", "id": e.id, "category": e.category, "title": title,
         })
@@ -350,8 +359,7 @@ async def _build_context(
 
     records = []
     for e in relevant:
-        title, content = _kb_localized_fields(e, lang)
-        records.append(knowledge_record(title, content))
+        records.append(_kb_record(e, lang))
 
     # Bills context: only attach live bills when the question actually asks
     # about bills/laws. Generic platform/privacy questions should cite KB only.
