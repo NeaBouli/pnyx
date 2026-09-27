@@ -48,8 +48,22 @@ SECURITY_REMEDIATION_SHA256 = {
 
 # T-420 (EKA-51): "24 Ώρες" footer now targets /el/bills?status=WINDOW_24H;
 # single-line change on top of the post-removal bytes above.
+# T-421 (EKA-48/49): head metadata only on top of the bytes above — no
+# same-URL hreflang="en", complete og/twitter/hreflang/JSON-LD on legal.html,
+# twitter cards on tickets and municipality, municipality canonical/og:url on
+# the final /municipality/index.html document.
 CONTENT_REMEDIATION_SHA256 = {
-    "docs/govgr-dimos.html": "28acb25315d0d25baf70159226bd933c9c0ce619d9ea65c5cfc77850e5e1384d",
+    "docs/govgr-dimos.html": "4a3e4f3e1eb0fa0971d25eb621c6b34aa0c869bcb08a18a917105c1d33a241ae",
+    "docs/legal.html": "42edc8e9c7db5d3fa4bb141adc915d47acc232ff93d405a38871b83ee1b5b4b7",
+    "docs/municipality/article.html": "cfed54a81ba6d97cd2be4ab54f34b0ed0b0467191c0a82c4449fc8d360b12e9e",
+    "docs/municipality/index.html": "d089aef8d2ec4ebc595344c9410c91681cc0fc947339f784222d30d0000d809e",
+    "docs/tickets/index.html": "e7ac386295ade2c52c6d3826c89ade8ffc140f290dbc78ac8487d32394f2b225",
+}
+
+# T-421 (EKA-48): landing head drops only the same-URL hreflang="en" alternate.
+# Pinned hash of the r0 "seo" category; any other SEO change fails the R2 gate.
+APPROVED_SEO_HASH = {
+    "docs/index.html": "dde736d4392f47b4f7a7ad2e5101bb4abe2a6b6a03a4ad2609670e298883e69a",
 }
 
 

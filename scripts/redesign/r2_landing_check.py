@@ -300,6 +300,10 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
                 if ALLOWED_DEMO_CYCLE_INTERACTION_COUNTS.get(sk, b_int.get(sk)) != c_int.get(sk):
                     violations.append(f"preservation: exact contract changed: {key} ({sk})")
             continue
+        if key == "seo" and r0_inventory.hash_category(current.get(key)) == (
+            approved_analytics_delta.APPROVED_SEO_HASH.get("docs/index.html")
+        ):
+            continue
         if current.get(key) != baseline.get(key):
             violations.append(f"preservation: exact contract changed: {key}")
 

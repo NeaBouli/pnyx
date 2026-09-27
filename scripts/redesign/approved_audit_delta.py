@@ -12,24 +12,29 @@ import r0_inventory
 # unregistered MOD-13/MOD-17 rows and the duplicate dot-mod02 id; database.html
 # replaces phantom MOD-25 tables with the runtime ORM and raw-SQL tables
 # (incl. cplm_history, MOD-24); community.html drops the duplicate FAQ nav link.
+# T-421 (EKA-48): head metadata only — the same-URL hreflang="en" alternate is
+# removed, x-default added where missing, and zk-voting gains og:site_name and
+# a twitter card; wiki/index and wiki/roadmap gain a WebPage JSON-LD block.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "27279cbac3f839856179b4c3c860a96a13c242ef048454d02b3592597dbabfa6",
-    "docs/wiki/api.html": "230ee1433143181c8b5415e412c7fa76783f324f9b919bbd9053b700f529057c",
-    "docs/wiki/architecture.html": "3d02bab990a434ce76edcafc0cd68341835d10c7014cce26095b01e10ebee0a7",
-    "docs/wiki/broadcasting.html": "a8fddee2bd52978dcb390a442c541ee56aec2ffdf4a0db49e2ec59a772ac2c85",
-    "docs/wiki/contributing.html": "9e506159cf02f75cfc0ae1df2c6a774d76bc3a7f6b158fe48350189475a22cc9",
-    "docs/wiki/database.html": "bcb8ccacb2e45c2cd63313235a4089e6b705c6138f70f0cd0ec9deb4c4a789e4",
-    "docs/wiki/delete-account.html": "ef1841838c9748cda7a3ef1e07c4f7e0219ecbdfe3faad924141e0d806e7bbd9",
-    "docs/wiki/faq.html": "3fafa69517258b1fc58d47c1f22f0ebb29c3772a53514a53d421f7b86a668854",
-    "docs/wiki/index.html": "9d8788021cdd68f3c8c139959b9630c9aacf87e5b38cbafb28d820a2d7f31eb1",
-    "docs/wiki/modules.html": "905b836ef3faad871fbd3ee0ded274a53a455991c28c612ccc449b048915c674",
-    "docs/wiki/privacy.html": "5d5873d6aa5495337338da0e5efee6d11dc5c430a5e618966e7b8b9434f59b3a",
-    "docs/wiki/roadmap.html": "8d10185a202cbd0bc01425a98802ba10b804b2317c52ab456a83b1655a1fe809",
-    "docs/wiki/security.html": "71ee2739bc17db75a4ea7e1752f6e3f1d41052394cb1c17f244f6df68f894094",
-    "docs/wiki/whitepaper.html": "0d1d466177a4cd86f3a9aa17e4e16d671bc7108bb03dd417f5f951b947c5ade3",
+    "docs/community.html": "1c6af6ce632db8cc239b24d6446896694f2afda0c37b8a94d107bc295be5aaef",
+    "docs/wiki/api.html": "373f48127cfc5b39885a2265bc919f14f358a5aa6d1a8ba1e1301a0fd603834a",
+    "docs/wiki/architecture.html": "190c8db92dce0d7b70f4c06e82922e6c3085cff62328eeaaf0c4fdc8b96fd21b",
+    "docs/wiki/broadcasting.html": "faa500a62568a696b39470103fc024905ac68b447f6c37421bf4bfd9ef39c517",
+    "docs/wiki/contributing.html": "d71786cb758b2296e49830cfcc5e25ef2c7a205c7126050a6e2f9f6e0fedc429",
+    "docs/wiki/database.html": "4d15f4b7e9a0e46ea6ca6e1500c1a7174a1a7e5f49f405c108c01f787a053662",
+    "docs/wiki/delete-account.html": "621f7cbb772dee4c0c427ecf93282a8547c25d3b7e354b8121ab1403ec26fdf9",
+    "docs/wiki/faq.html": "20cb656b5ea9883d652ac71c7463438507e90341272bff4a4cd4e6e03fa5961f",
+    "docs/wiki/index.html": "b06a9584b220efbd0d974d78e0035199a72f6e25230ea97ecdb1e257bf15e001",
+    "docs/wiki/modules.html": "eff962d4be3dff4a17e8be1bb13f734ce5e66e117229e428c50dadb8bc33e8a8",
+    "docs/wiki/privacy.html": "c0fc1c241da278b4e8cd10289f7bce8e7f9ccc8c6b96bbfcade005b78f8a2a1b",
+    "docs/wiki/roadmap.html": "4388843469990e77dc8c00528f4a228ed2944c4b5cefdc5a4e81412444246883",
+    "docs/wiki/security.html": "984ac68364a1eafe4276e027074bac1ae0a539f15d6acddcfa655b67749fed2a",
+    "docs/wiki/whitepaper.html": "446087437e0d24bfbd948ef9f8cc5e72e3559415d8d4910dc3562b6e2dcdaf1a",
+    "docs/wiki/zk-voting.html": "9972052c4edfc131d9a19199c8e148ba4190682f4fde3c144c3aab98091af475",
 }
-# T-420 changed only the "24 Ώρες" footer target; findings text is unchanged.
-APPROVED_AUDIT_PAGE_SHA256 = "7cc7410945f48e8fdfe614d49b4b36a6b75d00f96f206e32ccaea4f3066ba973"
+# T-420 changed only the "24 Ώρες" footer target; T-421 only drops the same-URL
+# hreflang="en" head link. Findings text is unchanged.
+APPROVED_AUDIT_PAGE_SHA256 = "da5941f263ad117d68f41cd93d919b45ac6b8d894410255b89b5d43a1ff077e7"
 
 
 def matches_approved_content(path: str, current: dict) -> bool:
