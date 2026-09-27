@@ -131,9 +131,10 @@ ALLOWED_R5_INLINE_SCRIPTS = {
         "index": 6,
         # T-415 (EKA-62): chat widget renders question, answer and sources
         # via textContent on created nodes, shows a distinct bilingual 429
-        # state with retry, and closes on Escape.
-        "sha256": "d7ab6d2fe6e2d50041f3c98a77d21cede2fca590077349ddd45a14f76a6cca90",
-        "bytes": 5565,
+        # state with retry, closes on Escape, and renders every public-safe
+        # source returned by the API.
+        "sha256": "213091827168f7076f0d0bfa29a1f009d18ff2ae3ea88ad8742198d45fa7ffee",
+        "bytes": 5554,
     },
 }
 
