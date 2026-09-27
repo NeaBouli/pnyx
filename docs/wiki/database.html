@@ -233,10 +233,31 @@
       <tr><td>survey_responses</td><td>MOD-02</td><td data-el="VAA Απαντήσεις" data-en="VAA Responses">VAA Απαντήσεις</td></tr>
       <tr><td>diavgeia_decisions</td><td>MOD-21</td><td data-el="Αποφάσεις Διαύγειας" data-en="Diavgeia Decisions">Αποφάσεις Διαύγειας</td></tr>
       <tr><td>dimos_diavgeia_orgs</td><td>MOD-21</td><td data-el="1775 Org Mappings (Δήμοι → Διαύγεια)" data-en="1775 Org Mappings (Dimos → Diavgeia)">1775 Org Mappings</td></tr>
-      <!-- MOD-25 Politikoi (Planned) -->
-      <tr style="opacity:0.7"><td>representative_consent</td><td>MOD-25</td><td data-el="Συγκατάθεση εκπροσώπου (ada_number, consented_at, governance_level)" data-en="Representative consent (ada_number, consented_at, governance_level)">Συγκατάθεση εκπροσώπου <span class="badge badge-gray">Planned</span></td></tr>
-      <tr style="opacity:0.7"><td>representative_profile</td><td>MOD-25</td><td data-el="Προφίλ εκπροσώπου (ada_number, name, party, region, governance_level, term_start, term_end)" data-en="Representative profile (ada_number, name, party, region, governance_level, term_start, term_end)">Προφίλ εκπροσώπου <span class="badge badge-gray">Planned</span></td></tr>
-      <tr style="opacity:0.7"><td>citizen_evaluation</td><td>MOD-25</td><td data-el="Αξιολόγηση πολιτών (nullifier_hash, representative_id, question_key, score -5..+5)" data-en="Citizen evaluation (nullifier_hash, representative_id, question_key, score -5..+5)">Αξιολόγηση πολιτών (score -5..+5) <span class="badge badge-gray">Planned</span></td></tr>
+      <tr><td>zk_identity_commitments</td><td>MOD-04</td><td data-el="Semaphore group commitments (χωρίς ιδιωτικό υλικό ταυτότητας)" data-en="Semaphore group commitments (no private identity material)">Semaphore group commitments (χωρίς ιδιωτικό υλικό ταυτότητας)</td></tr>
+      <tr><td>zk_merkle_roots</td><td>MOD-04</td><td data-el="Merkle root snapshots ανά πεδίο ψηφοφορίας" data-en="Merkle root snapshots per vote scope">Merkle root snapshots ανά πεδίο ψηφοφορίας</td></tr>
+      <tr><td>zk_vote_tier_locks</td><td>MOD-04</td><td data-el="Ιδιωτικό cross-tier lock (μη δημοσιεύσιμο)" data-en="Private cross-tier lock (never published)">Ιδιωτικό cross-tier lock (μη δημοσιεύσιμο)</td></tr>
+      <tr><td>zk_vote_receipts</td><td>MOD-04</td><td data-el="Δημόσια δεδομένα επαλήθευσης για ZK ψήφους" data-en="Public verifier payloads for accepted ZK votes">Δημόσια δεδομένα επαλήθευσης για ZK ψήφους</td></tr>
+      <tr><td>diavgeia_votes</td><td>MOD-21</td><td data-el="Ψήφοι πολιτών σε αποφάσεις Διαύγειας" data-en="Citizen votes on Diavgeia decisions">Ψήφοι πολιτών σε αποφάσεις Διαύγειας</td></tr>
+      <tr><td>knowledge_base</td><td>MOD-22</td><td data-el="Γνωσιακή βάση RAG Agent (FAQ, έννοιες)" data-en="RAG Agent knowledge base (FAQ, concepts)">Γνωσιακή βάση RAG Agent (FAQ, έννοιες)</td></tr>
+      <tr><td>evaluation_questions</td><td>MOD-25</td><td data-el="Ερωτήσεις αξιολόγησης εκπροσώπων" data-en="Representative evaluation questions">Ερωτήσεις αξιολόγησης εκπροσώπων</td></tr>
+      <tr><td>politician_evaluations</td><td>MOD-25</td><td data-el="Αξιολόγηση πολιτών (nullifier_hash, ada_number, question_id, score -5..+5)" data-en="Citizen evaluation (nullifier_hash, ada_number, question_id, score -5..+5)">Αξιολόγηση πολιτών (nullifier_hash, ada_number, question_id, score -5..+5)</td></tr>
+      <tr><td>audit_log</td><td>—</td><td data-el="Ίχνος ελέγχου ενεργειών διαχείρισης (χωρίς κλειδιά/nullifiers)" data-en="Admin action audit trail (no keys/nullifiers)">Ίχνος ελέγχου ενεργειών διαχείρισης (χωρίς κλειδιά/nullifiers)</td></tr>
+    </table>
+  </div>
+
+  <h2 class="fade-in" data-el="Πίνακες μόνο μέσω raw SQL" data-en="Raw-SQL tables">Πίνακες μόνο μέσω raw SQL</h2>
+  <p class="fade-in" data-el="Χωρίς μοντέλο SQLAlchemy· προσπελαύνονται με παραμετροποιημένο SQL. Η απόκλιση σχήματος τεκμηριώνεται εν μέρει στο <code>apps/api/alembic/SCHEMA_DRIFT_NOTES.md</code>." data-en="No SQLAlchemy model; accessed via parameterized SQL. Schema drift is partly documented in <code>apps/api/alembic/SCHEMA_DRIFT_NOTES.md</code>.">Χωρίς μοντέλο SQLAlchemy· προσπελαύνονται με παραμετροποιημένο SQL. Η απόκλιση σχήματος τεκμηριώνεται εν μέρει στο <code>apps/api/alembic/SCHEMA_DRIFT_NOTES.md</code>.</p>
+  <div class="table-wrap fade-in">
+    <table>
+      <tr><th data-el="Πίνακας" data-en="Table">Πίνακας</th><th>Module</th><th data-el="Πηγή σχήματος" data-en="Schema source">Πηγή σχήματος</th></tr>
+      <tr><td>polis_identity_keys</td><td>—</td><td data-el="Alembic migration" data-en="Alembic migration">Alembic migration</td></tr>
+      <tr><td>polis_tickets</td><td>—</td><td data-el="Alembic migration" data-en="Alembic migration">Alembic migration</td></tr>
+      <tr><td>polis_votes</td><td>—</td><td data-el="Alembic migration" data-en="Alembic migration">Alembic migration</td></tr>
+      <tr><td>representative_tokens</td><td>MOD-25</td><td data-el="Χωρίς create migration (ADR NEA-256)" data-en="No create migration (ADR NEA-256)">Χωρίς create migration (ADR NEA-256)</td></tr>
+      <tr><td>rep_invitations</td><td>—</td><td data-el="Χωρίς create migration (ADR NEA-256)" data-en="No create migration (ADR NEA-256)">Χωρίς create migration (ADR NEA-256)</td></tr>
+      <tr><td>bill_flags</td><td>—</td><td data-el="Χωρίς migration/μοντέλο στο repo" data-en="No migration/model in repo">Χωρίς migration/μοντέλο στο repo</td></tr>
+      <tr><td>consensus_votes</td><td>—</td><td data-el="Χωρίς migration/μοντέλο στο repo" data-en="No migration/model in repo">Χωρίς migration/μοντέλο στο repo</td></tr>
+      <tr><td>cplm_history</td><td>MOD-24</td><td data-el="Χωρίς migration/μοντέλο στο repo" data-en="No migration/model in repo">Χωρίς migration/μοντέλο στο repo</td></tr>
     </table>
   </div>
 
@@ -261,7 +282,7 @@ ALTER TABLE citizen_votes
     <a href="..//">Αρχική</a>
     <a href="../wiki/">Wiki</a>
     <a href="/el/bills" data-el="Τρέχουσες" data-en="Active">Τρέχουσες</a>
-    <a href="/el/bills" data-el="24 Ώρες" data-en="24 Hours">24 Ώρες</a>
+    <a href="/el/bills?status=WINDOW_24H" data-el="24 Ώρες" data-en="24 Hours">24 Ώρες</a>
     <a href="/el/results" data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</a>
     <a href="../community.html">Community</a>
     <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>

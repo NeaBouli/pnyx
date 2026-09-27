@@ -15,7 +15,7 @@
 - MOD-03 Parliament (Βουλή API, Bill Lifecycle 5 States)
 - MOD-04 CitizenVote (Ed25519 signed, vote change)
 - MOD-05 Divergence Score
-- MOD-13 Relevance Up/Down
+- MOD-14 Relevance Up/Down
 - MOD-08 Arweave audit trail
 - MOD-16 Municipal Governance
 - Next.js Web Frontend (5 σελίδες, el/en)

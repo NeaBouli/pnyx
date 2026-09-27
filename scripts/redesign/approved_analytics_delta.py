@@ -46,10 +46,19 @@ SECURITY_REMEDIATION_SHA256 = {
 }
 
 
+# T-420 (EKA-51): "24 Ώρες" footer now targets /el/bills?status=WINDOW_24H;
+# single-line change on top of the post-removal bytes above.
+CONTENT_REMEDIATION_SHA256 = {
+    "docs/govgr-dimos.html": "28acb25315d0d25baf70159226bd933c9c0ce619d9ea65c5cfc77850e5e1384d",
+}
+
+
 def expected_sha256(path: str, frozen_sha256: str) -> str:
     """Return the exact approved byte hash, or the frozen hash otherwise."""
     if path in SECURITY_REMEDIATION_SHA256:
         return SECURITY_REMEDIATION_SHA256[path]
+    if path in CONTENT_REMEDIATION_SHA256:
+        return CONTENT_REMEDIATION_SHA256[path]
     return POST_REMOVAL_SHA256.get(path, frozen_sha256)
 
 

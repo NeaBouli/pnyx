@@ -38,7 +38,7 @@ test: tests
 
 ## Important Notes
 
-- `/Users/gio/TrueRepublic` → **READ ONLY** — never modify
+- External TrueRepublic repository (separate checkout, not part of pnyx) → **READ ONLY** — never modify
 - `SERVER_SALT` → never commit in code
 - Phone numbers → deleted IMMEDIATELY, never log
 - Private keys → never leave the server in plaintext
