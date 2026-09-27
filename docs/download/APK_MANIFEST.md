@@ -20,7 +20,7 @@ Last local build candidate (not served):
 | Intended public URL | `https://ekklesia.gr/download/ekprosopos-latest.apk` (HTTP 404, 2026-09-27) |
 | Intended server path | `/opt/ekklesia/app/docs/download/ekprosopos-latest.apk` |
 | Local archive | ignored `builds/artifacts/ekprosopos-v1.1.0-vC2.apk` |
-| SHA-256 | `4b9d49d888465cac2f1de94f50e46efc8dbfea49cb805fd715459bbbb28a761e` (`ekprosopos-latest.apk.sha256` describes this candidate only) |
+| SHA-256 | `4b9d49d888465cac2f1de94f50e46efc8dbfea49cb805fd715459bbbb28a761e` (candidate record only; no public checksum file until the APK is published) |
 | Metadata | package `ekklesia.representative`, versionCode `2`, versionName `1.1.0` |
 
 Validation command after deployment:

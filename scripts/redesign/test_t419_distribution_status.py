@@ -36,6 +36,7 @@ FDROID_URL = "https://f-droid.org/packages/ekklesia.gr/"
 PLAY_TESTING_URL = "https://play.google.com/apps/testing/ekklesia.gr"
 DISCOURSE_HUB_IOS_URL = "https://apps.apple.com/app/discourse-hub/id1173672076"
 EKPROSOPOS_APK = "ekprosopos-latest.apk"
+EKPROSOPOS_CHECKSUM = DOCS_DIR / "download" / f"{EKPROSOPOS_APK}.sha256"
 
 # Wording that marks F-Droid as not yet live or lagging by default.
 FDROID_STALE_PATTERNS = (
@@ -177,6 +178,15 @@ class EkprosoposArtifactTest(unittest.TestCase):
             self.skipTest("manifest marks ekprosopos as published")
         for rel in SURFACES:
             self.assertNotIn(EKPROSOPOS_APK, "\n".join(_collect(rel).hrefs) if rel.endswith(".html") else _read(rel), rel)
+
+    def test_unpublished_ekprosopos_has_no_public_checksum_artifact(self) -> None:
+        manifest = MANIFEST.read_text(encoding="utf-8")
+        if "Status: **not published.**" not in manifest.split("## ekklesia mobile")[0]:
+            self.skipTest("manifest marks ekprosopos as published")
+        self.assertFalse(
+            EKPROSOPOS_CHECKSUM.exists(),
+            "a public checksum without its APK is a misleading release signal",
+        )
 
     def test_representative_download_says_in_development(self) -> None:
         self.assertIn('data-en="Android APK — In development"', _read("representative.html"))
