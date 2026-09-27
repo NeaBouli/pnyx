@@ -18,7 +18,7 @@ APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/architecture.html": "3d02bab990a434ce76edcafc0cd68341835d10c7014cce26095b01e10ebee0a7",
     "docs/wiki/broadcasting.html": "a8fddee2bd52978dcb390a442c541ee56aec2ffdf4a0db49e2ec59a772ac2c85",
     "docs/wiki/contributing.html": "9e506159cf02f75cfc0ae1df2c6a774d76bc3a7f6b158fe48350189475a22cc9",
-    "docs/wiki/database.html": "60df053250ddb2dfe2d836dd3ae9d0f6b7c89d7ffa61ceb1a3ac0be2dba32f81",
+    "docs/wiki/database.html": "bcb8ccacb2e45c2cd63313235a4089e6b705c6138f70f0cd0ec9deb4c4a789e4",
     "docs/wiki/delete-account.html": "ef1841838c9748cda7a3ef1e07c4f7e0219ecbdfe3faad924141e0d806e7bbd9",
     "docs/wiki/faq.html": "3fafa69517258b1fc58d47c1f22f0ebb29c3772a53514a53d421f7b86a668854",
     "docs/wiki/index.html": "9d8788021cdd68f3c8c139959b9630c9aacf87e5b38cbafb28d820a2d7f31eb1",

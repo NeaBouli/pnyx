@@ -182,6 +182,14 @@ class DatabaseTablesTest(unittest.TestCase):
         self.assertIn("<tr><td>cplm_history</td><td>MOD-24</td><td data-el=\"Χωρίς migration/μοντέλο στο repo\"", html)
         self.assertIn("| cplm_history | MOD-24 | No migration/model in repo |", md)
 
+    def test_schema_drift_note_is_described_as_partial(self) -> None:
+        html = read("docs/wiki/database.html")
+        md = read("wiki/Database.md")
+        self.assertIn("Schema drift is partly documented in", html)
+        self.assertIn("Schema drift is partly documented in", md)
+        self.assertNotIn("Schema drift is tracked in", html)
+        self.assertNotIn("Schema drift is tracked in", md)
+
 
 class PageDefectTest(unittest.TestCase):
     PAGES = sorted(str(p.relative_to(REPO)) for p in DOCS.glob("wiki/*.html")) + [

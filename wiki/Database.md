@@ -43,7 +43,7 @@ migrations in `apps/api/alembic/versions/`.
 
 ### Raw-SQL tables (no SQLAlchemy model)
 
-Accessed via parameterized SQL. Schema drift is tracked in
+Accessed via parameterized SQL. Schema drift is partly documented in
 `apps/api/alembic/SCHEMA_DRIFT_NOTES.md`.
 
 | Table | Module | Schema source |
