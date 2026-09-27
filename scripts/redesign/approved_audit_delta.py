@@ -5,6 +5,8 @@ import hashlib
 import r0_inventory
 
 APPROVED_WIKI_INVENTORY_HASH = {
+    # EKA-37: API reference rows and vote example corrected against OpenAPI.
+    "docs/wiki/api.html": "4fe6ed101c0e2d0e43c4b717b4ec66863a86e53f73f19b5584b05b56ff2109e9",
     "docs/wiki/index.html": "d1d4082591ab76371b7f248a31a382db4744962be1041229475cedbe83d9b566",
     "docs/wiki/security.html": "905a5387128312df960cacce87f2d88582294520a19fe3db53e96cfeed1c6359",
 }
