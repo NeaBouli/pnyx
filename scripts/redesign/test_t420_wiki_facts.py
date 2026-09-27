@@ -187,8 +187,10 @@ class DatabaseTablesTest(unittest.TestCase):
         md = read("wiki/Database.md")
         self.assertIn("Schema drift is partly documented in", html)
         self.assertIn("Schema drift is partly documented in", md)
+        self.assertIn("Η απόκλιση σχήματος τεκμηριώνεται εν μέρει στο", html)
         self.assertNotIn("Schema drift is tracked in", html)
         self.assertNotIn("Schema drift is tracked in", md)
+        self.assertNotIn("Η απόκλιση σχήματος καταγράφεται στο", html)
 
 
 class PageDefectTest(unittest.TestCase):
