@@ -178,6 +178,7 @@ class RealTreeTest(unittest.TestCase):
             if page["path"] in _GATED_PAGES
             or page["path"] in approved_analytics_delta.POST_REMOVAL_SHA256
             or page["path"] in approved_analytics_delta.SECURITY_REMEDIATION_SHA256
+            or page["path"] in approved_analytics_delta.CONTENT_REMEDIATION_SHA256
             else page
             for page in current["pages"]
         ]
