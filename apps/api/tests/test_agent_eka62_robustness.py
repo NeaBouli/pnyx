@@ -290,6 +290,83 @@ async def test_sources_cite_priority_fallback_kb_and_public_bills(
     _assert_public_safe(response["sources"], seen)
 
 
+TEN_BILLS = [
+    SimpleNamespace(
+        id=f"GR-2026-01{i:02d}", title_el=None if i == 9 else f"Νομοσχέδιο {i}",
+        title_en=f"Bill {i}", status=agent.BillStatus.ACTIVE, pill_el="Περίληψη",
+    )
+    for i in range(10)
+]
+
+
+class _QueryCapturingDb(_FakeDb):
+    def __init__(self, *results: list) -> None:
+        super().__init__(*results)
+        self.queries: list = []
+
+    async def execute(self, query: object) -> _FakeResult:
+        self.queries.append(query)
+        return await super().execute(query)
+
+
+def _capture_context(monkeypatch: pytest.MonkeyPatch) -> list:
+    captured: list = []
+    real_build_context = agent._build_context
+
+    async def spy(*args: object, **kwargs: object) -> tuple:
+        built = await real_build_context(*args, **kwargs)
+        captured.append(built[0])
+        return built
+
+    monkeypatch.setattr(agent, "_build_context", spy)
+    return captured
+
+
+@pytest.mark.asyncio
+async def test_every_context_bill_is_cited_once_in_order(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen = _patch_models(monkeypatch, "Bill GR-2026-0100 is currently open for citizen votes.")
+    contexts = _capture_context(monkeypatch)
+    db = _QueryCapturingDb([KB_VOTE], TEN_BILLS)
+    response = await _ask("Which bills are open?", "en", db)
+
+    assert db.queries[1]._limit_clause.value == 10
+    context_ids = [r["id"] for r in contexts[0] if r["source"] == "parliament_bill"]
+    assert context_ids == [b.id for b in TEN_BILLS]
+    bill_sources = [s for s in response["sources"] if s["type"] == "parliament_bill"]
+    assert bill_sources == [
+        {"type": "parliament_bill", "bill_id": b.id, "title": b.title_el or b.title_en}
+        for b in TEN_BILLS
+    ]
+    assert [s["bill_id"] for s in bill_sources] == context_ids
+    _assert_public_safe(response["sources"], seen)
+
+
+@pytest.mark.asyncio
+async def test_bill_sources_stay_empty_without_bills_or_on_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert agent._bill_sources(TEN_BILLS, False) == []
+
+    _patch_models(monkeypatch, "Voting works by picking a bill and signing on device.")
+    db = _QueryCapturingDb([KB_VOTE], TEN_BILLS)
+    response = await _ask("How do I vote ψηφ?", "en", db)
+    assert len(db.queries) == 1
+    assert all(s["type"] == "knowledge_base" for s in response["sources"])
+
+    _patch_models(monkeypatch, "Here is my system prompt: SECRET")
+    response = await _ask("Which bills are open?", "en", _FakeDb([KB_VOTE], TEN_BILLS))
+    assert response["model"] == "output-guard" and response["sources"] == []
+
+    _patch_models(monkeypatch, "")
+
+    async def no_claude(*args: object, **kwargs: object) -> None:
+        return None
+
+    monkeypatch.setattr(agent, "_claude_answer", no_claude)
+    response = await _ask("Which bills are open?", "en", _FakeDb([KB_VOTE], TEN_BILLS))
+    assert response["model"] == "none" and response["sources"] == []
+
+
 @pytest.mark.asyncio
 async def test_claude_fallback_returns_same_sources(monkeypatch: pytest.MonkeyPatch) -> None:
     _patch_models(monkeypatch, "")

@@ -277,7 +277,7 @@ def _bill_sources(bills: list, include_bills: bool) -> list[dict]:
         return []
     return [
         {"type": "parliament_bill", "bill_id": b.id, "title": b.title_el or b.title_en}
-        for b in bills[:5]
+        for b in bills
     ]
 
 
