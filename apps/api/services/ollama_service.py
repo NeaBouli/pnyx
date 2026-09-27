@@ -7,6 +7,7 @@ AI Services — Ollama + DeepL Integration
 import httpx
 import json
 import logging
+import math
 import os
 import re
 from typing import Any, Mapping, Sequence
@@ -25,6 +26,35 @@ OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
 DEEPL_API_KEY = os.getenv("DEEPL_API_KEY", "")
 DEEPL_API_URL = "https://api-free.deepl.com/v2/translate"
+
+# Batch jobs (summaries, scraper healing) keep the long generation timeout;
+# the interactive citizen chat uses the bounded OLLAMA_TIMEOUT below.
+OLLAMA_BATCH_TIMEOUT = 60.0
+OLLAMA_TIMEOUT_DEFAULT = 20.0
+OLLAMA_TIMEOUT_MIN = 1.0
+OLLAMA_TIMEOUT_MAX = 120.0
+
+
+def resolve_ollama_timeout(raw: str | None) -> float:
+    """Parse OLLAMA_TIMEOUT seconds; unset, non-numeric, non-finite or
+    out-of-range values fall back to the documented default (20s)."""
+    if raw is None or not str(raw).strip():
+        return OLLAMA_TIMEOUT_DEFAULT
+    try:
+        value = float(str(raw).strip())
+    except ValueError:
+        logger.warning("OLLAMA_TIMEOUT is not a number; using %.0fs", OLLAMA_TIMEOUT_DEFAULT)
+        return OLLAMA_TIMEOUT_DEFAULT
+    if not math.isfinite(value) or not OLLAMA_TIMEOUT_MIN <= value <= OLLAMA_TIMEOUT_MAX:
+        logger.warning(
+            "OLLAMA_TIMEOUT outside %.0f-%.0fs; using %.0fs",
+            OLLAMA_TIMEOUT_MIN, OLLAMA_TIMEOUT_MAX, OLLAMA_TIMEOUT_DEFAULT,
+        )
+        return OLLAMA_TIMEOUT_DEFAULT
+    return value
+
+
+OLLAMA_TIMEOUT = resolve_ollama_timeout(os.getenv("OLLAMA_TIMEOUT"))
 
 
 # ── DeepL Translation ────────────────────────────────────────────────────────
@@ -72,11 +102,14 @@ async def deepl_available() -> bool:
 
 # ── Ollama LLM ───────────────────────────────────────────────────────────────
 
-async def ollama_generate(prompt: str, max_tokens: int = 500, system: str = "") -> str:
+async def ollama_generate(
+    prompt: str, max_tokens: int = 500, system: str = "", timeout: float | None = None,
+) -> str:
     """Send prompt to Ollama and return response.
 
     `system` travels in Ollama's separate system field so trusted rules never
-    share a string with untrusted retrieval data.
+    share a string with untrusted retrieval data. `timeout` is the httpx
+    timeout in seconds (default: OLLAMA_BATCH_TIMEOUT).
     """
     payload: dict = {
         "model": OLLAMA_MODEL,
@@ -87,7 +120,7 @@ async def ollama_generate(prompt: str, max_tokens: int = 500, system: str = "") 
     if system:
         payload["system"] = system
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
+        async with httpx.AsyncClient(timeout=timeout or OLLAMA_BATCH_TIMEOUT) as client:
             resp = await client.post(f"{OLLAMA_URL}/api/generate", json=payload)
             resp.raise_for_status()
             return resp.json().get("response", "").strip()
@@ -144,7 +177,7 @@ def _parse_ollama_json(raw: str) -> Any | None:
 async def ollama_json_generate(prompt: str, max_tokens: int = 500) -> Any | None:
     """Send a JSON-only prompt to Ollama and return parsed JSON data."""
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
+        async with httpx.AsyncClient(timeout=OLLAMA_BATCH_TIMEOUT) as client:
             resp = await client.post(
                 f"{OLLAMA_URL}/api/generate",
                 json={
@@ -336,6 +369,7 @@ async def answer_citizen_question(
     agent_prompt = build_agent_prompt(en_question, en_context, _dt.now())
     en_answer = await ollama_generate(
         agent_prompt.user, max_tokens=300, system=agent_prompt.system,
+        timeout=OLLAMA_TIMEOUT,
     )
     if is_unsafe_model_output(en_answer):
         logger.warning("[Agent] Ollama answer rejected by output guard")

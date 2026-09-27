@@ -13,7 +13,7 @@ import re
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import httpx
@@ -38,15 +38,40 @@ logger = logging.getLogger(__name__)
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
-OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "20"))
 
 
 router = APIRouter(prefix="/api/v1/agent", tags=["agent"])
 
+# `el`/`en` plus optional region/script subtags (el-GR, en_US, en-Latn-GB).
+_LANG_TAG = re.compile(r"(el|en)(?:[-_][a-z0-9]{1,8})*")
+_MAX_LANG_TAG = 35
+
+
+def canonical_lang(value: object) -> str:
+    """Canonicalise a request language to exactly `el` or `en`.
+
+    The primary subtag decides (el-GR -> el, en-US -> en) so KB language and
+    disclaimer always agree. Any other value is rejected (HTTP 422); there is
+    no silent default for unsupported languages.
+    """
+    if not isinstance(value, str):
+        raise ValueError("lang must be a string")
+    tag = value.strip().lower()
+    match = _LANG_TAG.fullmatch(tag) if len(tag) <= _MAX_LANG_TAG else None
+    if not match:
+        raise ValueError("lang must be 'el' or 'en' (optionally with a region, e.g. el-GR)")
+    return match.group(1)
+
 
 class AskRequest(BaseModel):
     question: str = Field(..., min_length=3, max_length=500)
+    # Omitted -> "el"; always canonical ("el" | "en") after validation.
     lang: str = "el"
+
+    @field_validator("lang", mode="before")
+    @classmethod
+    def _canonical_lang(cls, value: object) -> str:
+        return canonical_lang(value)
 
 
 _DISCLAIMER_EL = (
@@ -250,12 +275,31 @@ def _should_include_bills(question: str) -> bool:
 def _bill_sources(bills: list, include_bills: bool) -> list[dict]:
     if not include_bills:
         return []
-    return [{"bill_id": b.id, "title": b.title_el or b.title_en} for b in bills[:5]]
+    return [
+        {"type": "parliament_bill", "bill_id": b.id, "title": b.title_el or b.title_en}
+        for b in bills[:5]
+    ]
+
+
+def _kb_sources(entries: list, lang: str) -> list[dict]:
+    """Public references to the KB rows given to the model: id, category and
+    title only. Content, keywords and prompt text are never exposed."""
+    sources = []
+    for e in entries:
+        title = (e.title_en if lang == "en" else None) or e.title_el
+        sources.append({
+            "type": "knowledge_base", "id": e.id, "category": e.category, "title": title,
+        })
+    return sources
+
+
+def _sources(kb_entries: list, bills: list, include_bills: bool, lang: str) -> list[dict]:
+    return _kb_sources(kb_entries, lang) + _bill_sources(bills, include_bills)
 
 
 async def _build_context(
     question: str, lang: str, db: AsyncSession,
-) -> tuple[list[dict[str, str]], list, bool]:
+) -> tuple[list[dict[str, str]], list, bool, list]:
     """Build RAG context records (untrusted data) from Knowledge Base + Bills."""
     # Knowledge Base — full-text search (all entries, ranked by relevance)
     q_lower = question.lower()
@@ -317,7 +361,7 @@ async def _build_context(
             title = b.title_el or b.title_en or b.id
             records.append(bill_record(b.id, title, b.status.value, b.pill_el))
 
-    return records, bills, include_bills
+    return records, bills, include_bills, relevant
 
 
 async def _claude_answer(question: str, context: list[dict[str, str]], lang: str) -> str | None:
@@ -428,11 +472,11 @@ async def ask_agent(
     if canonical:
         return canonical
 
-    context, bills, include_bills = await _build_context(req.question, req.lang, db)
-    disclaimer = _DISCLAIMER_EL if req.lang == "el" else _DISCLAIMER_EN
+    context, bills, include_bills, kb_entries = await _build_context(req.question, req.lang, db)
+    sources = _sources(kb_entries, bills, include_bills, req.lang)
     model_used = "ollama"
 
-    # Step 1: Try Ollama (with reduced timeout)
+    # Step 1: Try Ollama (bounded by OLLAMA_TIMEOUT inside ollama_service)
     ollama_answer = ""
     if await ollama_available():
         try:
@@ -453,9 +497,9 @@ async def ask_agent(
             model_used = "claude-haiku"
             return {
                 "question": req.question,
-                "answer": claude_answer + disclaimer,
+                "answer": _with_disclaimer(claude_answer, req.lang),
                 "model": model_used,
-                "sources": _bill_sources(bills, include_bills),
+                "sources": sources,
                 "lang": req.lang,
             }
         ollama_answer = ""
@@ -469,7 +513,7 @@ async def ask_agent(
         )
         return {
             "question": req.question,
-            "answer": fallback + disclaimer,
+            "answer": _with_disclaimer(fallback, req.lang),
             "model": "none",
             "sources": [],
             "lang": req.lang,
@@ -479,6 +523,6 @@ async def ask_agent(
         "question": req.question,
         "answer": ollama_answer,
         "model": model_used,
-        "sources": _bill_sources(bills, include_bills),
+        "sources": sources,
         "lang": req.lang,
     }

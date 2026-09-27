@@ -201,6 +201,90 @@ test('index.html: no raw GitHub user interpolation remains', () => {
   assert.ok(!/\+\s*u\.(login|avatar_url)\s*\+/.test(html), 'raw GitHub user interpolation remains');
 });
 
+// ─── docs/index.html (chat widget, EKA-62) ──────────────────────────────────
+
+class ChatElement extends FakeElement {
+  appendChild(c) { c.parent = this; return super.appendChild(c); }
+  getAttribute(k) { return this[k] === undefined ? null : this[k]; }
+  removeAttribute(k) { delete this[k]; }
+  remove() { if (this.parent) this.parent.children = this.parent.children.filter((c) => c !== this); }
+  focus() {}
+}
+
+function chatScript() {
+  const html = read('docs/index.html');
+  const start = html.indexOf('// EKA-62: every chat string');
+  assert.ok(start > 0, 'chat widget script not found');
+  return html.slice(start, html.indexOf('</script>', start));
+}
+
+async function runChat({ question, response, lang = 'el' }) {
+  const document = fakeDocument();
+  document.createElement = (tag) => new ChatElement(tag);
+  for (const id of ['chatMessages', 'chatInput', 'chatPanel', 'chatToggle']) document.byId.set(id, new ChatElement('div'));
+  document.byId.get('chatInput').value = question;
+  const requests = [];
+  const ctx = vm.createContext({
+    document,
+    currentLang: lang,
+    JSON,
+    fetch: async (url, init) => { requests.push({ url, body: JSON.parse(init.body) }); return response(); },
+  });
+  vm.runInContext(chatScript(), ctx);
+  ctx.sendChat();
+  for (let i = 0; i < 5; i++) await flush();
+  return { msgs: document.byId.get('chatMessages'), requests };
+}
+
+const okJson = (body) => () => ({ status: 200, ok: true, json: async () => body });
+const kindOf = (el) => el.getAttribute('data-chat-kind');
+const HOSTILE_ANSWER = '<script>alert(1)</script><img src=x onerror=alert(2)> 5 < 6 && "q"';
+
+test('index.html chat: question, answer and sources render as text only', async () => {
+  const { msgs, requests } = await runChat({
+    question: HOSTILE_LOGIN,
+    response: okJson({
+      answer: HOSTILE_ANSWER,
+      sources: [
+        { type: 'knowledge_base', id: 1, category: 'faq', title: HOSTILE_ERROR },
+        { type: 'parliament_bill', bill_id: 'GR-1', title: HOSTILE_LOGIN },
+        { type: 'knowledge_base', topic: 'private_key' },
+        '<b>not-an-object</b>',
+      ],
+    }),
+  });
+  assertInertTree(msgs, ['DIV', 'UL', 'LI', 'BUTTON']);
+  assert.deepEqual(requests.map((r) => r.body), [{ question: HOSTILE_LOGIN, lang: 'el' }]);
+  const [user, bot] = msgs.children;
+  assert.deepEqual([kindOf(user), kindOf(bot)], ['user', 'bot']);
+  assert.equal(user.textContent, HOSTILE_LOGIN);
+  assert.equal(bot._text, HOSTILE_ANSWER);
+  const items = walk(bot).filter((el) => el.tagName === 'LI').map((li) => li.textContent);
+  assert.deepEqual(items, [HOSTILE_ERROR, `GR-1 — ${HOSTILE_LOGIN}`]);
+});
+
+test('index.html chat: 429 is a distinct bilingual state with retry', async () => {
+  const limited = () => ({ status: 429, ok: false, json: async () => ({ error: 'Rate limit exceeded' }) });
+  const el = (await runChat({ question: 'Ερώτηση', response: limited })).msgs.children.pop();
+  const en = (await runChat({ question: 'Question', response: limited, lang: 'en' })).msgs.children.pop();
+  const generic = (await runChat({ question: 'Ερώτηση', response: () => ({ status: 500, ok: false }) })).msgs.children.pop();
+  assert.equal(kindOf(el), 'rate-limited');
+  assert.match(el._text, /Πάρα πολλές ερωτήσεις/);
+  assert.equal(kindOf(en), 'rate-limited');
+  assert.match(en._text, /Too many questions/);
+  assert.equal(kindOf(generic), 'error');
+  assert.doesNotMatch(generic._text, /Πάρα πολλές ερωτήσεις/);
+  for (const node of [el, en, generic]) {
+    const retry = node.children.find((c) => c.tagName === 'BUTTON');
+    assert.equal(typeof retry.onclick, 'function');
+  }
+});
+
+test('index.html chat: widget script has no HTML string sinks', () => {
+  const src = chatScript();
+  assert.doesNotMatch(src, /innerHTML|outerHTML|insertAdjacentHTML|document\.write/);
+});
+
 // ─── docs/embed/qr-login.html ───────────────────────────────────────────────
 
 async function runStartSessionError(status, body) {

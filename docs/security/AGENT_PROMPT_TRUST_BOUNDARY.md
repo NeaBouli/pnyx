@@ -60,6 +60,19 @@ primary control. Patterns are tuned to avoid civic false positives (e.g.
   wording in an official title); delimiters reduce but do not eliminate this.
 - The output guard is heuristic: paraphrased leaks or novel role markers may
   pass. Canonical answers (`_canonical_response`) never reach a model.
-- `sources[].title` returned to the client carries the original bill title;
-  rendering safety relies on the frontend escaping (see EKA-62).
+- `sources[].title` returned to the client carries the original KB/bill title;
+  the landing chat widget renders it via `textContent` only (EKA-62).
 - `/api/v1/claude/ask` is a separate endpoint and not covered here (EKA-61).
+
+## Response provenance and language (EKA-62)
+
+- `sources` lists exactly the records sent to the model: KB rows as
+  `{type: "knowledge_base", id, category, title}` and public bills as
+  `{type: "parliament_bill", bill_id, title}`. KB content, keywords and prompt
+  text are never returned. Guarded, unavailable and safety-filter replies
+  return `sources: []`.
+- `lang` is canonicalised to `el` or `en` by its primary subtag (`el-GR` -> `el`,
+  `en-US` -> `en`); any other value is rejected with HTTP 422. KB language and
+  disclaimer therefore always match. Omitted `lang` means `el`.
+- The chat Ollama call uses `OLLAMA_TIMEOUT` (seconds, 1-120, default 20;
+  invalid values fall back to 20) as the real httpx timeout. Batch jobs keep 60s.
