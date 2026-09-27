@@ -1,0 +1,208 @@
+{
+  "_comment": "Source of docs/sitemap.xml. Regenerate with `node scripts/public-seo.mjs --update` after committing page changes; lastmod = UTC date of the last git commit touching `source`. Dynamic Next.js routes carry no lastmod.",
+  "base": "https://ekklesia.gr",
+  "entries": [
+    {
+      "loc": "/",
+      "source": "docs/index.html",
+      "changefreq": "weekly",
+      "priority": "1.0",
+      "lastmod": "2026-09-27",
+      "sha256": "e2c977d3f7d93e65d03a7d1bebdf84710af368b3f94b1874a02ac52d6d91ac64"
+    },
+    {
+      "loc": "/el/bills",
+      "alternates": {
+        "el": "/el/bills",
+        "en": "/en/bills"
+      },
+      "changefreq": "daily",
+      "priority": "0.9"
+    },
+    {
+      "loc": "/el/results",
+      "alternates": {
+        "el": "/el/results",
+        "en": "/en/results"
+      },
+      "changefreq": "daily",
+      "priority": "0.8"
+    },
+    {
+      "loc": "/community.html",
+      "source": "docs/community.html",
+      "changefreq": "monthly",
+      "priority": "0.8",
+      "lastmod": "2026-09-27",
+      "sha256": "72a9ccc5eb821dc0eae8f077890e1683328a23adae83dd538948bc5005ea9117"
+    },
+    {
+      "loc": "/legal.html",
+      "source": "docs/legal.html",
+      "changefreq": "yearly",
+      "priority": "0.7",
+      "lastmod": "2026-09-27",
+      "sha256": "42edc8e9c7db5d3fa4bb141adc915d47acc232ff93d405a38871b83ee1b5b4b7"
+    },
+    {
+      "loc": "/govgr-dimos.html",
+      "source": "docs/govgr-dimos.html",
+      "changefreq": "monthly",
+      "priority": "0.8",
+      "lastmod": "2026-09-27",
+      "sha256": "4a3e4f3e1eb0fa0971d25eb621c6b34aa0c869bcb08a18a917105c1d33a241ae"
+    },
+    {
+      "loc": "/representative.html",
+      "source": "docs/representative.html",
+      "changefreq": "monthly",
+      "priority": "0.7",
+      "lastmod": "2026-09-27",
+      "sha256": "c9ae8dd89084f07c968d6d625842a8bc766d65b47a3d2b28e6ecf1c7826ba03f"
+    },
+    {
+      "loc": "/wiki/index.html",
+      "source": "docs/wiki/index.html",
+      "changefreq": "weekly",
+      "priority": "0.9",
+      "lastmod": "2026-09-27",
+      "sha256": "22c16f6e3bd38381faefea0252350588e3666eedecc2de39f3b094b8226fe372"
+    },
+    {
+      "loc": "/wiki/faq.html",
+      "source": "docs/wiki/faq.html",
+      "changefreq": "monthly",
+      "priority": "0.9",
+      "lastmod": "2026-09-27",
+      "sha256": "af060861020ef6d51e03c6277f349d8804c29899bad3279f54da6b515d4f973a"
+    },
+    {
+      "loc": "/wiki/whitepaper.html",
+      "source": "docs/wiki/whitepaper.html",
+      "changefreq": "monthly",
+      "priority": "0.8",
+      "lastmod": "2026-09-27",
+      "sha256": "a0594349ab9ddc8d2baaeab6f4056ec6d99725ce47ff74dfb363184190cb43cc"
+    },
+    {
+      "loc": "/wiki/privacy.html",
+      "source": "docs/wiki/privacy.html",
+      "changefreq": "monthly",
+      "priority": "0.8",
+      "lastmod": "2026-09-27",
+      "sha256": "d347804e8deaa556967adbae6438a0da84c76ff5b659e63b65d647e1758cb8e5"
+    },
+    {
+      "loc": "/wiki/security.html",
+      "source": "docs/wiki/security.html",
+      "changefreq": "monthly",
+      "priority": "0.7",
+      "lastmod": "2026-09-27",
+      "sha256": "20d125140708c9d5833b6906e2a07955637246e5ed616a4068ba62b372518981"
+    },
+    {
+      "loc": "/wiki/api.html",
+      "source": "docs/wiki/api.html",
+      "changefreq": "monthly",
+      "priority": "0.7",
+      "lastmod": "2026-09-27",
+      "sha256": "b1f0cb2446bb38d24384bb89e1888c2858ca216b3eb3bc7ca7429c323d523c7c"
+    },
+    {
+      "loc": "/wiki/architecture.html",
+      "source": "docs/wiki/architecture.html",
+      "changefreq": "monthly",
+      "priority": "0.7",
+      "lastmod": "2026-09-27",
+      "sha256": "81c07bd51777a79afd3dab82e2862f58f9daafdcd8a37518f65e0f7cb71f2965"
+    },
+    {
+      "loc": "/wiki/modules.html",
+      "source": "docs/wiki/modules.html",
+      "changefreq": "monthly",
+      "priority": "0.7",
+      "lastmod": "2026-09-27",
+      "sha256": "f19595884f2820a2ce8da19851e5b055ccadcc42d933c21033ff4a9ed9694409"
+    },
+    {
+      "loc": "/wiki/roadmap.html",
+      "source": "docs/wiki/roadmap.html",
+      "changefreq": "monthly",
+      "priority": "0.7",
+      "lastmod": "2026-09-27",
+      "sha256": "775406a980fcb7492218616bcc6cba647c414abf4945413f50082e02da305c59"
+    },
+    {
+      "loc": "/wiki/database.html",
+      "source": "docs/wiki/database.html",
+      "changefreq": "monthly",
+      "priority": "0.6",
+      "lastmod": "2026-09-27",
+      "sha256": "f9a2f8fd41c58d38485ead368c4b31a40b2303657e4bc9b88b4279c7b863d5c6"
+    },
+    {
+      "loc": "/wiki/broadcasting.html",
+      "source": "docs/wiki/broadcasting.html",
+      "changefreq": "monthly",
+      "priority": "0.6",
+      "lastmod": "2026-09-27",
+      "sha256": "02176181cb7105e2eaacc487bb0ac5c1cce336f2aa2c2ef395f05bb298a9f8a1"
+    },
+    {
+      "loc": "/wiki/contributing.html",
+      "source": "docs/wiki/contributing.html",
+      "changefreq": "monthly",
+      "priority": "0.6",
+      "lastmod": "2026-09-27",
+      "sha256": "6d9eb5a7b9c1f2367164bce8adb21db0eb0b45df9e02b47573eb6851156b9bb8"
+    },
+    {
+      "loc": "/wiki/delete-account.html",
+      "source": "docs/wiki/delete-account.html",
+      "changefreq": "monthly",
+      "priority": "0.5",
+      "lastmod": "2026-09-27",
+      "sha256": "7c4b7999d6a092d9bf3f4a3a1b9174b8f8f728c66e1d4d60b13d9f4d9f016313"
+    },
+    {
+      "loc": "/wiki/zk-voting.html",
+      "source": "docs/wiki/zk-voting.html",
+      "changefreq": "monthly",
+      "priority": "0.7",
+      "lastmod": "2026-09-27",
+      "sha256": "194548f81d4abc180db2dfeba5867b5d775fc64c2806a8aaddc7ef1ccf9ea189"
+    },
+    {
+      "loc": "/wiki/audit.html",
+      "source": "docs/wiki/audit.html",
+      "changefreq": "monthly",
+      "priority": "0.6",
+      "lastmod": "2026-09-27",
+      "sha256": "da5941f263ad117d68f41cd93d919b45ac6b8d894410255b89b5d43a1ff077e7"
+    },
+    {
+      "loc": "/tickets/index.html",
+      "source": "docs/tickets/index.html",
+      "changefreq": "daily",
+      "priority": "0.7",
+      "lastmod": "2026-09-27",
+      "sha256": "e7ac386295ade2c52c6d3826c89ade8ffc140f290dbc78ac8487d32394f2b225"
+    },
+    {
+      "loc": "/municipality/index.html",
+      "source": "docs/municipality/index.html",
+      "changefreq": "monthly",
+      "priority": "0.8",
+      "lastmod": "2026-09-27",
+      "sha256": "d089aef8d2ec4ebc595344c9410c91681cc0fc947339f784222d30d0000d809e"
+    },
+    {
+      "loc": "/municipality/article.html",
+      "source": "docs/municipality/article.html",
+      "changefreq": "monthly",
+      "priority": "0.7",
+      "lastmod": "2026-09-27",
+      "sha256": "cfed54a81ba6d97cd2be4ab54f34b0ed0b0467191c0a82c4449fc8d360b12e9e"
+    }
+  ]
+}
