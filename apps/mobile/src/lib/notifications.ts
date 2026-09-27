@@ -27,6 +27,10 @@ import {
 } from "./unread-events";
 import { fetchBills } from "./api";
 import { createUnreadStorage } from "./unread-storage";
+import {
+  registerPushTokenIfNeeded,
+  type PushPlatform,
+} from "./push-registration";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL || "https://api.ekklesia.gr";
 const TOKEN_KEY = "push_token";
@@ -282,16 +286,13 @@ export async function registerForPushNotifications(): Promise<string | null> {
   // Store locally
   await SecureStore.setItemAsync(TOKEN_KEY, token);
 
-  // Register with server (anonymous)
+  // Signed server registration (EKA-05). Best-effort and silent: skips
+  // without a verified identity or while a fresh registration marker holds.
   try {
-    await fetch(`${API_BASE}/api/v1/notify/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        token,
-        device_id: `${Platform.OS}-${Device.modelName || "unknown"}`,
-        platform: Platform.OS,
-      }),
+    await registerPushTokenIfNeeded({
+      apiBase: API_BASE,
+      token,
+      platform: Platform.OS as PushPlatform,
     });
   } catch {}
 

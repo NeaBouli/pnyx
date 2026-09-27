@@ -61,6 +61,15 @@ class ValidationError:
     message: str
 
 
+class Tier1CryptoBackendError(RuntimeError):
+    """
+    Unexpected failure inside the Ed25519 verifier (library/programming fault).
+
+    Never an ordinary invalid signature: callers must fail closed and surface it
+    operationally instead of mapping it to a ValidationError.
+    """
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _is_hex(s: str, expected_len: int) -> bool:
@@ -179,10 +188,11 @@ def validate_vote(
             timestamp_ms=payload.timestamp_ms,
         )
         vk.verify(signed_bytes, bytes.fromhex(payload.signature))
-    except BadSignatureError:
+    except (BadSignatureError, ValueError):
+        # Forged/corrupt signature or malformed key/signature material.
         return ValidationError("INVALID_SIGNATURE", "Ed25519 signature verification failed")
     except Exception as e:
-        return ValidationError("CRYPTO_ERROR", f"Crypto error: {type(e).__name__}")
+        raise Tier1CryptoBackendError(type(e).__name__) from e
 
     return None
 

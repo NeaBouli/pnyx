@@ -25,6 +25,9 @@ function runtime(flavor = "direct", lastResponse: unknown = null) {
     getLastNotificationResponseAsync: vi.fn(async () => lastResponse),
   };
   const task = { isTaskDefined: () => false, defineTask: vi.fn() };
+  const pushRegistration = {
+    registerPushTokenIfNeeded: vi.fn(async () => "no-identity"),
+  };
   const requireMock = vi.fn((id: string): unknown => {
     if (id === "expo-notifications") {
       if (flavor === "fdroid") throw new Error("Forbidden native module");
@@ -40,6 +43,7 @@ function runtime(flavor = "direct", lastResponse: unknown = null) {
     if (id === "./unread-events") return ledger;
     if (id === "./unread-storage") return unreadStorage;
     if (id === "./api") return { fetchBills: async () => [] };
+    if (id === "./push-registration") return pushRegistration;
     throw new Error(`Unexpected module ${id}`);
   });
   const source = readFileSync(new URL("./notifications.ts", import.meta.url), "utf8");
@@ -48,7 +52,7 @@ function runtime(flavor = "direct", lastResponse: unknown = null) {
   } }).outputText;
   const exports: Record<string, any> = {};
   vm.runInNewContext(compiled, { exports, require: requireMock, process: { env: {} }, console: { ...console, warn } });
-  return { exports, native, task, requireMock, data, storage, warn };
+  return { exports, native, task, requireMock, data, storage, warn, pushRegistration };
 }
 
 describe("notification runtime wiring", () => {
@@ -129,11 +133,12 @@ describe("notification runtime wiring", () => {
   });
 
   it("never requires FCM/native notifications in F-Droid", async () => {
-    const { exports, requireMock } = runtime("fdroid");
+    const { exports, requireMock, pushRegistration } = runtime("fdroid");
     await exports.reconcileNotificationBadge();
     await exports.registerForPushNotifications();
     await exports.refreshUnreadFromPublicBills();
     expect(requireMock).not.toHaveBeenCalledWith("expo-notifications");
     expect(requireMock).not.toHaveBeenCalledWith("expo-task-manager");
+    expect(pushRegistration.registerPushTokenIfNeeded).not.toHaveBeenCalled();
   });
 });

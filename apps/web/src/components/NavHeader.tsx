@@ -11,28 +11,31 @@ export default function NavHeader() {
   const path = usePathname();
 
   const navLinks = [
-    { href: "https://ekklesia.gr", label_el: "Αρχική",      label_en: "Home",    external: true },
-    { href: `/${locale}/bills`,    label_el: "Νομοσχέδια",  label_en: "Bills",   external: false },
-    { href: `/${locale}/results`,  label_el: "Αποτελέσματα", label_en: "Results", external: false },
+    { href: "https://ekklesia.gr",  label_el: "Αρχική",       label_en: "Home",       external: true },
+    { href: `/${locale}/bills`,     label_el: "Νομοσχέδια",   label_en: "Bills",      external: false },
+    { href: `/${locale}/results`,   label_el: "Αποτελέσματα", label_en: "Results",    external: false },
+    { href: `/${locale}/mp`,        label_el: "Κόμματα",      label_en: "Parties",    external: false },
+    { href: `/${locale}/municipal`, label_el: "Δήμοι",        label_en: "Municipal",  external: false },
+    { href: `/${locale}/analytics`, label_el: "Στατιστικά",   label_en: "Analytics",  external: false },
   ];
 
   const otherLocale = locale === "el" ? "en" : "el";
   const otherPath = path.replace(`/${locale}`, `/${otherLocale}`);
 
   return (
-    <header className="border-b border-gray-200 bg-white/95 backdrop-blur-sm px-6 py-3 flex justify-between items-center sticky top-0 z-50">
-      <a href="https://ekklesia.gr" className="flex items-center gap-2 group">
-        <Image src="/pnx.png" alt="εκκλησία του έθνους" width={40} height={40} className="rounded-lg" />
-        <span className="text-blue-600 font-black text-xl tracking-tight group-hover:text-blue-700 transition-colors">
+    <header className="border-b border-gray-200 bg-white/95 backdrop-blur-sm px-2 sm:px-4 py-2 sm:py-3 flex flex-nowrap items-center gap-2 sm:gap-3 overflow-hidden sticky top-0 z-50">
+      <a href="https://ekklesia.gr" className="flex flex-shrink-0 items-center gap-2 group">
+        <Image src="/pnx.png" alt="εκκλησία του έθνους" width={40} height={40} className="h-8 w-8 rounded-lg sm:h-10 sm:w-10" />
+        <span className="hidden text-blue-600 font-black text-xl tracking-tight group-hover:text-blue-700 transition-colors sm:inline">
           εκκλησία<span className="text-gray-400 font-normal ml-1" style={{ fontSize: "0.55em", letterSpacing: "0.05em" }}>του έθνους</span>
         </span>
       </a>
 
-      <nav className="hidden sm:flex gap-1">
+      <nav aria-label={locale === "el" ? "Κύρια πλοήγηση" : "Main navigation"} className="flex min-w-0 flex-1 flex-nowrap gap-1 overflow-x-auto">
         {navLinks.map(link => {
           const isActive = !link.external && (path === link.href || path.startsWith(link.href + "/"));
           const cls = clsx(
-            "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+            "flex-none whitespace-nowrap px-2 py-2 rounded-lg text-sm font-medium transition-colors sm:px-3 lg:px-4",
             isActive ? "bg-blue-50 text-blue-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
           );
           return link.external ? (
@@ -47,7 +50,7 @@ export default function NavHeader() {
         })}
       </nav>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-shrink-0 items-center gap-2 sm:gap-3">
         <Link
           href={otherPath}
           className="border-2 border-gray-200 bg-white rounded-md px-2 py-0.5 text-xs font-bold text-gray-600 hover:border-blue-600 hover:text-blue-600 transition-all"
@@ -58,7 +61,7 @@ export default function NavHeader() {
           href="https://github.com/NeaBouli/pnyx"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-gray-400 hover:text-gray-600 transition-colors"
+          className="hidden text-gray-400 hover:text-gray-600 transition-colors lg:inline-flex"
           title="GitHub"
         >
           <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">

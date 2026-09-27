@@ -96,10 +96,14 @@ async def setup_db(monkeypatch):
     async def fake_release_identity_verify_lock(_lock_key: str, _token: str) -> None:
         return None
 
+    async def fake_enforce_hlr_verify_limits(_request, _normalized_number: str) -> None:
+        return None
+
     monkeypatch.setattr(identity, "verify_greek_number", fake_hlr)
     monkeypatch.setattr(identity, "_increment_hlr_usage", fake_increment_hlr_usage)
     monkeypatch.setattr(identity, "_acquire_identity_verify_lock", fake_acquire_identity_verify_lock)
     monkeypatch.setattr(identity, "_release_identity_verify_lock", fake_release_identity_verify_lock)
+    monkeypatch.setattr(identity, "_enforce_hlr_verify_limits", fake_enforce_hlr_verify_limits)
     monkeypatch.setattr(identity, "generate_nullifier_hash", lambda _phone: V1)
     monkeypatch.setattr(identity, "generate_nullifier_hash_v2", lambda _phone: V2)
     monkeypatch.setattr(

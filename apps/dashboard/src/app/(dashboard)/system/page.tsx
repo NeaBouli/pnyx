@@ -59,7 +59,7 @@ export default function SystemPage() {
     const [hRes, mRes, hlrRes, govRes, arRes, notifRes, jobsRes, deeplRes] = await Promise.allSettled([
       fetch(`${API}/health`).then(r => r.json()),
       fetch(`${API}/api/v1/health/modules`).then(r => r.json()),
-      fetch(`${API}/api/v1/identity/hlr/credits`).then(r => r.json()),
+      fetch(`/api/proxy/admin/hlr/credits`, { cache: 'no-store' }).then(r => r.json()),
       fetch(`${API}/api/v1/auth/govgr/status`).then(r => r.json()),
       fetch(`${API}/api/v1/arweave/status`).then(r => r.json()),
       fetch(`${API}/api/v1/notifications/status`).then(r => r.json()),

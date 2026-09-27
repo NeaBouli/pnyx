@@ -1,0 +1,1656 @@
+/*
+ * Owner handoff fidelity layer for docs/index.html.
+ *
+ * The earlier R2 pass intentionally kept the legacy DOM and could therefore
+ * only approximate the supplied design. This layer implements the handoff's
+ * actual visible grid while retaining the existing production data and event
+ * contracts. It loads after r2-landing.css.
+ */
+
+body {
+  color: #334155;
+  background: #fff;
+}
+
+nav.pnx2-header {
+  min-height: 86px !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+.pnx2-header-frame {
+  width: 100%;
+  max-width: 1320px;
+  height: 84px;
+  min-height: 84px;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.pnx2-header .nav-logo {
+  min-width: 0;
+  flex: 0 0 auto;
+  gap: 12px;
+  padding: 0;
+  color: #0f172a;
+}
+
+.pnx2-header .nav-logo img {
+  width: 60px;
+  height: 66px;
+  object-fit: contain;
+}
+
+.pnx2-brand-copy {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.pnx2-brand-copy strong {
+  font-size: 25px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.pnx2-brand-copy small {
+  margin-top: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em !important;
+  color: #64748b;
+}
+
+nav.pnx2-header .nav-links {
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-wrap: nowrap !important;
+  margin-left: auto;
+  justify-content: flex-end;
+  white-space: nowrap;
+}
+
+nav.pnx2-header .nav-links a {
+  min-height: 44px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pnx2-nav-divider {
+  width: 2px;
+  height: 24px;
+  margin: 0 10px;
+  background: #e2e8f0;
+  flex: 0 0 auto;
+}
+
+nav.pnx2-header .lang-btn {
+  min-width: 44px;
+  margin: 0;
+  border: 0 !important;
+  color: #64748b;
+  background: #fff;
+}
+
+nav.pnx2-header .nav-links .pnx2-nav-cta {
+  min-height: 48px;
+  margin-left: 10px;
+  padding: 0 22px;
+  background: #2563eb !important;
+  color: #fff !important;
+  font-weight: 900;
+  letter-spacing: 0.06em !important;
+}
+
+.pnx2-mood {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-top: 28px;
+  padding-top: 28px;
+  border-top: 2px solid #e2e8f0;
+  color: #0f172a;
+}
+
+.pnx2-mood svg { flex: 0 0 104px; }
+.pnx2-mood strong { font-size: 11px; font-weight: 900; letter-spacing: 0.1em; }
+.pnx2-mood p { margin: 8px 0; font-size: 15px; line-height: 1.5; }
+.pnx2-mood small { color: #64748b; font-size: 12px; }
+
+.pnx2-guide { margin-top: 36px; border-top: 2px solid #0f172a; padding-top: 28px; }
+.pnx2-guide h3 { margin: 0 0 20px; color: #0f172a; font-size: 21px; }
+.pnx2-guide ol { margin: 0; padding-left: 1.5rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; }
+.pnx2-guide li { min-width: 0; padding: 20px 24px 20px 8px; border-top: 2px solid #e2e8f0; line-height: 1.55; font-size: 15px; }
+.pnx2-guide li:nth-child(even) { padding-left: 24px; }
+.pnx2-guide li strong { display: block; color: #0f172a; margin-bottom: 6px; }
+.pnx2-guide li a { display: inline-block; margin-left: 4px; color: #1d4ed8; font-weight: 800; }
+
+@media (max-width: 640px) {
+  .pnx2-guide ol { grid-template-columns: minmax(0, 1fr); }
+  .pnx2-guide li, .pnx2-guide li:nth-child(even) { padding: 18px 0 18px 8px; }
+  .pnx2-mood { align-items: flex-start; gap: 14px; }
+  .pnx2-mood svg { width: 80px; height: 80px; flex-basis: 80px; }
+}
+
+/* Exact handoff hero: claim/actions left, live divergence/trust right. */
+.landing-hero {
+  padding: 0 !important;
+  background: #fff !important;
+}
+
+.landing-hero .ekk-motion-bg,
+.landing-hero .hero-owl,
+.landing-hero .hero-bottom,
+.landing-hero .hero-quote {
+  display: none !important;
+}
+
+.landing-hero .hero-inner {
+  max-width: 1320px !important;
+  min-height: 568px;
+  margin: 0 auto;
+  padding: 0 24px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 0 !important;
+}
+
+.landing-hero .hero-left {
+  min-width: 0;
+  padding: 64px 48px 56px 0 !important;
+  border-right: 2px solid #e2e8f0;
+  text-align: left !important;
+}
+
+.landing-hero .beta-pill {
+  margin: 0 0 28px !important;
+  padding: 5px 10px !important;
+  border: 2px solid #0f172a !important;
+  background: #fff !important;
+  color: #0f172a !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase;
+}
+
+.landing-hero .beta-pill .pulse {
+  background: #2563eb !important;
+  animation: none !important;
+}
+
+.landing-hero .hero-left h1 {
+  margin: 0 !important;
+  max-width: none;
+  font-size: 80px !important;
+  line-height: 0.92 !important;
+  font-weight: 900 !important;
+  color: #0f172a;
+}
+
+.landing-hero .hero-subtitle {
+  margin: 0 !important;
+  font-size: 80px !important;
+  line-height: 0.92 !important;
+  font-weight: 900 !important;
+  color: #2563eb !important;
+}
+
+.landing-hero .tagline {
+  max-width: 30ch;
+  margin: 28px 0 0 !important;
+  font-size: 22px !important;
+  line-height: 1.35 !important;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pnx2-hero-note {
+  max-width: 46ch;
+  margin: 16px 0 0 !important;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #64748b;
+}
+
+.pnx2-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.pnx2-hero-actions .btn-primary,
+.pnx2-hero-actions .btn-secondary {
+  min-height: 58px !important;
+  padding: 0 24px !important;
+  font-size: 14px !important;
+  font-weight: 900;
+  letter-spacing: 0.05em !important;
+}
+
+.pnx2-text-action {
+  min-height: 44px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase;
+}
+
+.landing-hero .hero-right {
+  min-width: 0;
+  padding: 40px 0 0 48px !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 0 !important;
+  align-content: stretch !important;
+}
+
+.pnx2-live-panel {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.pnx2-live-heading {
+  padding-bottom: 10px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 2px solid #0f172a;
+}
+
+.pnx2-live-heading h2 {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  font-size: 15px !important;
+  line-height: 1.3 !important;
+  font-weight: 900;
+  letter-spacing: 0.1em !important;
+  color: #0f172a;
+}
+
+.pnx2-live-heading span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.1em !important;
+}
+
+.pnx2-live-heading .pnx2-live-dot {
+  display: block;
+  width: 7px;
+  height: 7px;
+  background: #2563eb;
+}
+
+.pnx2-live-primary,
+.pnx2-live-tiers {
+  display: grid;
+  gap: 0;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.pnx2-live-primary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pnx2-live-tiers {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pnx2-live-primary > div {
+  min-width: 0;
+  padding: 22px 20px;
+  border-right: 2px solid #e2e8f0;
+}
+
+.pnx2-live-primary > div:first-child,
+.pnx2-live-tiers > div:first-child {
+  padding-left: 0;
+}
+
+.pnx2-live-primary > div:last-child,
+.pnx2-live-tiers > div:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.pnx2-live-tiers > div {
+  min-width: 0;
+  padding: 18px 16px;
+  border-right: 2px solid #e2e8f0;
+}
+
+.pnx2-live-primary strong,
+.pnx2-live-tiers strong {
+  display: block;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.35;
+  font-weight: 900;
+  letter-spacing: 0.08em !important;
+}
+
+.pnx2-live-primary b {
+  display: block;
+  margin-top: 8px;
+  color: #0f172a;
+  font-size: 40px;
+  line-height: 1.1;
+}
+
+.pnx2-live-primary > div:last-child b {
+  color: #2563eb;
+}
+
+.pnx2-live-primary small {
+  display: block;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.pnx2-live-tiers b {
+  display: block;
+  margin-top: 6px;
+  color: #0f172a;
+  font-size: 22px;
+}
+
+.pnx2-live-panel > p {
+  max-width: 52ch;
+  margin: 14px 0 0 !important;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pnx2-live-panel > .pnx2-text-action {
+  margin-top: 10px;
+}
+
+.landing-hero .hero-right > .stat-card {
+  min-width: 0;
+  min-height: 106px;
+  margin-top: auto;
+  padding: 18px 12px !important;
+  align-self: end;
+  border: 0 !important;
+  border-top: 2px solid #e2e8f0 !important;
+  border-right: 2px solid #e2e8f0 !important;
+  text-align: left !important;
+  background: #fff !important;
+}
+
+.landing-hero .hero-right > .stat-card:nth-last-child(1) {
+  padding-right: 0 !important;
+  border-right: 0 !important;
+}
+
+.landing-hero .stat-val {
+  color: #0f172a !important;
+  font-size: 20px !important;
+}
+
+.landing-hero .stat-label {
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 10px !important;
+  line-height: 1.35;
+  font-weight: 800;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase;
+}
+
+/* Handoff section geometry. */
+.section,
+.demo-section,
+.ticker-section {
+  padding: 56px 24px !important;
+  background: #fff !important;
+}
+
+.section-inner,
+.demo-section > :not(script),
+.ticker-section > .section-inner {
+  max-width: 1320px !important;
+}
+
+.section-title,
+.demo-title {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  font-size: 42px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  color: #0f172a;
+}
+
+.section-sub,
+.demo-sub {
+  margin: 12px 0 40px !important;
+  color: #64748b;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.steps-grid {
+  gap: 0 !important;
+  border-top: 2px solid #e2e8f0;
+}
+
+.step {
+  min-width: 0;
+  padding: 28px 24px !important;
+  border: 0 !important;
+  border-right: 2px solid #e2e8f0 !important;
+}
+
+.step:first-child { padding-left: 0 !important; }
+.step:last-child { padding-right: 0 !important; border-right: 0 !important; }
+
+.step-num {
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.1em !important;
+}
+
+.step h3 {
+  margin: 14px 0 8px !important;
+  font-size: 21px;
+  color: #0f172a;
+}
+
+.step p {
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.features-grid,
+.wiki-grid,
+.roadmap-grid {
+  gap: 2px !important;
+  padding: 2px;
+  background: #e2e8f0;
+}
+
+.feature-card,
+.wiki-card,
+.roadmap-card {
+  border: 0 !important;
+  background: #fff !important;
+}
+
+.features-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.feature-card {
+  padding: 26px !important;
+}
+
+.feature-icon,
+.wiki-card-icon {
+  filter: grayscale(1);
+}
+
+#transparency,
+#newsletter {
+  background: #f8fafc !important;
+}
+
+#transparency,
+#features > .section-inner > div[style*="background:linear-gradient"] {
+  border-color: #e2e8f0 !important;
+}
+
+#forum .section-inner,
+#download .section-inner {
+  text-align: left !important;
+}
+
+.pnx2-history-band {
+  padding: 0 24px;
+  background: #2563eb;
+  border-bottom: 2px solid #0f172a;
+}
+
+.pnx2-history-grid {
+  max-width: 1320px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+}
+
+.pnx2-history-grid > div {
+  min-width: 0;
+  padding: 48px 48px 48px 0;
+}
+
+.pnx2-history-grid > div + div {
+  padding: 48px 0 48px 48px;
+  border-left: 2px solid rgba(255, 255, 255, 0.32);
+}
+
+.pnx2-history-grid > div:first-child {
+  position: relative;
+  overflow: hidden;
+}
+
+.pnx2-history-lead {
+  color: #eff6ff !important;
+  font-size: 15px !important;
+  font-weight: 400 !important;
+  max-width: 32ch;
+}
+
+.pnx2-history-grid span {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em !important;
+}
+
+.pnx2-history-grid h2 {
+  margin: 16px 0 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  color: #fff !important;
+  font-size: 52px !important;
+  line-height: 0.98 !important;
+}
+
+.pnx2-history-grid img {
+  display: block;
+  width: 116%;
+  max-width: 520px;
+  height: auto;
+  margin: 28px 0 -170px -3%;
+  opacity: 0.17;
+  pointer-events: none;
+}
+
+.pnx2-history-grid p {
+  margin: 0 !important;
+  color: #fff;
+  font-size: 21px;
+  line-height: 1.55;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.pnx2-history-separator {
+  width: min(100%, 56ch);
+  height: 2px;
+  margin: 28px 0;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.pnx2-history-grid p ~ p {
+  margin-top: 18px !important;
+  color: #eff6ff;
+  font-size: 16px;
+  line-height: 1.7;
+  font-weight: 400;
+}
+
+#forum .section-sub,
+#download p {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Democracy cycle: six equal cells and real-result detail below. */
+#demo {
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+  border-top: 0 !important;
+  background: #fff !important;
+}
+
+#demo > .demo-title,
+#demo > .demo-sub,
+#demo > .demo-grid,
+#demo > #dBox6 {
+  width: 100%;
+  max-width: 1320px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+#demo .demo-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 0 !important;
+  border-top: 2px solid #0f172a;
+}
+
+#demo .demo-box {
+  min-width: 0;
+  padding: 22px 18px 22px 0 !important;
+  border: 0 !important;
+  border-right: 2px solid #e2e8f0 !important;
+  text-align: left !important;
+  background: #fff !important;
+}
+
+#demo .demo-icon,
+#features .feature-icon {
+  display: none !important;
+}
+
+#demo .demo-label {
+  margin: 0 !important;
+  color: #0f172a !important;
+  font-size: 16px !important;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+#demo .demo-box::before {
+  display: block;
+  margin-bottom: 10px;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+#dBox1::before { content: "01"; }
+#dBox2::before { content: "02"; }
+#dBox3::before { content: "03"; }
+#dBox4::before { content: "04"; }
+#dBox5::before { content: "05"; }
+.pnx2-demo-archive::before { content: "06"; }
+
+.pnx2-demo-archive .demo-pct {
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 700;
+}
+
+#demo > #dBox6 {
+  margin-top: 0 !important;
+  padding: 34px 0 !important;
+  border: 0 !important;
+  border-top: 2px solid #0f172a !important;
+  color: #334155;
+  background: #fff !important;
+}
+
+/* Real representativity and CPLM data share the handoff's two-column row. */
+.pnx2-democracy-data {
+  width: 100%;
+  padding: 0 24px 56px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-bottom: 2px solid #0f172a;
+  background: #fff;
+}
+
+.pnx2-democracy-data > #repSection,
+.pnx2-democracy-data > #cplmSection {
+  width: 100%;
+  max-width: 660px !important;
+  margin: 0 !important;
+  padding: 40px !important;
+  border: 0 !important;
+}
+
+.pnx2-democracy-data > #repSection {
+  margin-left: auto !important;
+  padding-left: 0 !important;
+  border-right: 2px solid #e2e8f0 !important;
+}
+
+.pnx2-democracy-data > #cplmSection {
+  margin-right: auto !important;
+  padding-right: 0 !important;
+}
+
+.pnx2-democracy-data > div > div {
+  padding: 0 !important;
+  background: #fff !important;
+}
+
+/* Verification precedes features inside their shared production section. */
+#features { overflow-x: clip; padding-bottom: 0 !important; }
+#features > .section-inner {
+  display: flex;
+  flex-direction: column;
+}
+
+#features > .section-inner > #transparency {
+  order: 1;
+  background: #fff !important;
+  border-bottom: 2px solid #0f172a !important;
+}
+#features > .section-inner > .section-title { order: 2; }
+#features > .section-inner > .features-grid { order: 3; }
+#features > .section-inner > #transparency + div { order: 4; }
+
+#transparency {
+  margin: -56px calc(-50vw + 50%) 0 !important;
+  padding: 56px calc(50vw - 50%) !important;
+  border: 0 !important;
+  border-bottom: 2px solid #0f172a !important;
+  background: #f8fafc !important;
+}
+
+#transparency > h2,
+#transparency > div {
+  width: 100%;
+  max-width: 1320px;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+#transparency > h2 {
+  margin-bottom: 28px !important;
+  color: #0f172a !important;
+  font-size: 42px !important;
+  line-height: 1 !important;
+}
+
+#transparency > div {
+  gap: 0 !important;
+  border-top: 2px solid #e2e8f0;
+}
+
+#transparency > div > div {
+  min-width: 0;
+  padding: 26px 28px 0 0;
+}
+
+#transparency > div > div + div {
+  padding: 26px 0 0 28px;
+  border-left: 2px solid #e2e8f0;
+}
+
+#features > .section-inner > .section-title {
+  margin-bottom: 32px !important;
+}
+
+#features > .section-inner > #transparency + div {
+  margin: 56px 0 0 !important;
+  padding: 36px 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 28px !important;
+  border: 0 !important;
+  border-top: 2px solid #0f172a !important;
+  color: #334155 !important;
+  background: #fff !important;
+}
+
+#features > .section-inner > #transparency + div h3,
+#features > .section-inner > #transparency + div h4 {
+  color: #0f172a !important;
+}
+
+#features > .section-inner > #transparency + div p,
+#features > .section-inner > #transparency + div a {
+  color: #475569 !important;
+}
+
+#features > .section-inner > #transparency + div > div:first-of-type {
+  padding-left: 0;
+}
+
+#features > .section-inner > #transparency + div > div:last-of-type {
+  padding-right: 0;
+}
+
+/* Flat four-column Forum grid and handoff-sized action row. */
+#forum .forum-features {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0 !important;
+  border-top: 2px solid #e2e8f0;
+}
+
+#forum .forum-feature {
+  min-width: 0;
+  max-width: none !important;
+  padding: 24px !important;
+  border-right: 2px solid #e2e8f0;
+  text-align: left !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+#forum .forum-feature:last-child { border-right: 0; }
+
+#forum {
+  border-bottom: 2px solid #0f172a !important;
+}
+
+#forum a,
+#forum button,
+#newsletter input,
+#newsletter select,
+#newsletter button,
+#newsletter #nlMsg {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+#newsletter {
+  border-top: 0 !important;
+  border-bottom: 2px solid #0f172a !important;
+}
+
+.landing-hero .stat-card:hover {
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Every old centered card becomes the supplied visible grid. */
+#roadmap .roadmap-grid,
+#wiki-section .wiki-grid {
+  margin-top: 32px;
+}
+
+#download .download-channel-card {
+  min-height: 86px;
+  justify-content: flex-start;
+}
+
+#notice > div {
+  max-width: 1320px !important;
+}
+
+#notice > div > div {
+  gap: 0 !important;
+  border-top: 2px solid #e2e8f0;
+}
+
+#notice > div > div > div {
+  min-width: 0;
+  padding: 24px !important;
+  border-right: 2px solid #e2e8f0;
+}
+
+#notice > div > div > div:first-child { padding-left: 0 !important; }
+#notice > div > div > div:last-child { padding-right: 0 !important; border-right: 0; }
+
+/* Chat remains functional but matches the rectangular handoff affordance. */
+#chatToggle {
+  width: auto !important;
+  min-width: 56px;
+  height: 48px !important;
+  padding: 0 18px;
+  border: 2px solid #0f172a !important;
+  background: #2563eb !important;
+  font-size: 12px !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+#chatPanel,
+#chatPanel input,
+#chatPanel button,
+#chatPanel #chatMessages > div {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+#chatToggle > span {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.pnx2-footer {
+  border-top: 0 !important;
+}
+
+/* Hamburger menu button — hidden on desktop, shown at <=960px. */
+.pnx2-menu-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  border: 2px solid #0f172a;
+  background: #fff;
+  cursor: pointer;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.pnx2-menu-btn span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: #0f172a;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.pnx2-menu-btn[aria-expanded="true"] span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.pnx2-menu-btn[aria-expanded="true"] span:nth-child(2) {
+  opacity: 0;
+}
+
+.pnx2-menu-btn[aria-expanded="true"] span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+@media (max-width: 1040px) {
+  .pnx2-header-frame {
+    min-height: 86px;
+  }
+
+  .pnx2-brand-copy small,
+  .pnx2-nav-divider {
+    display: none;
+  }
+
+  nav.pnx2-header .nav-links a {
+    padding: 0 9px;
+  }
+
+  nav.pnx2-header .nav-links .pnx2-nav-cta {
+    padding: 0 14px;
+  }
+
+  .landing-hero .hero-inner {
+    min-height: 0;
+  }
+
+  .landing-hero .hero-left {
+    padding-right: 32px !important;
+  }
+
+  .landing-hero .hero-left h1,
+  .landing-hero .hero-subtitle {
+    font-size: 64px !important;
+  }
+
+  .landing-hero .hero-right {
+    padding-left: 32px !important;
+  }
+}
+
+/* T-384: responsive hamburger menu at tablet/phone widths. */
+@media (max-width: 960px) {
+  .pnx2-menu-btn {
+    display: flex;
+  }
+
+  nav.pnx2-header .nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: calc(100dvh - 88px);
+    overflow-y: auto;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 24px 20px;
+    background: #fff;
+    border-bottom: 2px solid #0f172a;
+    white-space: normal;
+    z-index: 99;
+  }
+
+  nav.pnx2-header.nav-open .nav-links {
+    display: flex;
+  }
+
+  nav.pnx2-header .nav-links a {
+    padding: 12px 0 !important;
+    font-size: 15px !important;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  nav.pnx2-header .nav-links .pnx2-nav-cta {
+    margin: 12px 0 0 !important;
+    padding: 0 22px !important;
+    justify-content: center;
+    border-bottom: 0;
+  }
+
+  .pnx2-nav-divider {
+    display: none;
+  }
+
+  nav.pnx2-header .lang-btn {
+    align-self: flex-start;
+    margin: 8px 0 0;
+  }
+
+  /* Chat widget to bottom-left so it cannot overlap fold "+" toggles. */
+  #chatWidget {
+    right: auto !important;
+    left: 1.5rem !important;
+  }
+
+  .pnx2-nav-open #chatWidget {
+    visibility: hidden;
+  }
+
+  #chatPanel {
+    right: auto !important;
+    left: 0 !important;
+    max-width: calc(100vw - 3rem) !important;
+  }
+}
+
+@media (max-width: 820px) {
+  nav.pnx2-header .nav-links {
+    max-height: calc(100dvh - 72px);
+  }
+
+  nav.pnx2-header {
+    position: sticky;
+    min-height: 72px !important;
+  }
+
+  .pnx2-header-frame {
+    height: 70px;
+    min-height: 70px;
+    align-items: center;
+    flex-direction: row;
+    gap: 12px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .pnx2-header .nav-logo img {
+    width: 45px;
+    height: 50px;
+  }
+
+  .pnx2-brand-copy small {
+    display: none;
+  }
+
+  .landing-hero .hero-inner {
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding: 0 20px !important;
+  }
+
+  .landing-hero .hero-left {
+    padding: 44px 0 40px !important;
+    border-right: 0;
+    text-align: left !important;
+  }
+
+  .landing-hero .hero-right {
+    padding: 36px 0 0 !important;
+    border-top: 2px solid #0f172a;
+  }
+
+  .features-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  #demo .demo-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .pnx2-democracy-data {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pnx2-democracy-data > #repSection,
+  .pnx2-democracy-data > #cplmSection {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 36px 0 !important;
+    border-right: 0 !important;
+  }
+
+  .pnx2-democracy-data > #repSection {
+    border-bottom: 2px solid #e2e8f0 !important;
+  }
+
+  #forum .forum-features {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pnx2-history-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pnx2-history-grid > div,
+  .pnx2-history-grid > div + div {
+    padding: 36px 0;
+    border-left: 0;
+  }
+
+  .pnx2-history-grid > div + div {
+    border-top: 2px solid rgba(255, 255, 255, 0.32);
+  }
+
+  #how, #demo, #features, #wiki-section, #forum, #roadmap, #notice, #contact,
+  #representative, #transparency, #votes, #download {
+    scroll-margin-top: 80px;
+  }
+}
+
+@media (max-width: 640px) {
+  nav.pnx2-header .nav-logo .pnx2-brand-copy {
+    display: flex;
+  }
+
+  nav.pnx2-header .nav-logo img {
+    width: 39px !important;
+    height: 43px !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .pnx2-header-frame {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .landing-hero .hero-left h1,
+  .landing-hero .hero-subtitle {
+    font-size: 46px !important;
+  }
+
+  .pnx2-hero-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pnx2-hero-actions .btn-primary,
+  .pnx2-hero-actions .btn-secondary,
+  .pnx2-hero-actions .pnx2-text-action {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .pnx2-live-primary,
+  .pnx2-live-tiers {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pnx2-live-primary > div,
+  .pnx2-live-tiers > div,
+  .pnx2-live-primary > div:first-child,
+  .pnx2-live-tiers > div:first-child,
+  .pnx2-live-primary > div:last-child,
+  .pnx2-live-tiers > div:last-child {
+    padding: 16px 0;
+    border-right: 0;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  .pnx2-live-primary > div:last-child,
+  .pnx2-live-tiers > div:last-child {
+    border-bottom: 0;
+  }
+
+  .landing-hero .hero-right {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .landing-hero .hero-right > .stat-card:nth-last-child(2) {
+    border-right: 0 !important;
+  }
+
+  .section,
+  .demo-section,
+  .ticker-section {
+    padding: 44px 20px !important;
+  }
+
+  /* T-376: move horizontal padding off #features so overflow-x:clip
+     boundary reaches viewport edges — breakout children (#transparency,
+     #representative::before) are no longer clipped at the content box. */
+  #features {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  #features > .section-inner {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .steps-grid,
+  .features-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #demo .demo-grid,
+  #forum .forum-features {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #demo .demo-box,
+  #demo .demo-grid::after,
+  #forum .forum-feature,
+  #forum .forum-feature:first-child,
+  #forum .forum-feature:last-child {
+    padding: 20px 0 !important;
+    border-right: 0 !important;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  #transparency > div {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #transparency > div > div,
+  #transparency > div > div + div {
+    padding: 24px 0 !important;
+    border-left: 0;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  #features > .section-inner > #transparency + div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .step,
+  .step:first-child,
+  .step:last-child {
+    padding: 22px 0 !important;
+    border-right: 0 !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+  }
+
+  .step:last-child { border-bottom: 0 !important; }
+}
+
+/* Scroll-margin: clear the 84px sticky header on hash/in-page navigation. */
+#how, #demo, #features, #wiki-section, #forum, #roadmap, #notice, #contact,
+#representative, #transparency, #votes, #download {
+  scroll-margin-top: 92px;
+}
+
+/* Accessible, initially closed information bands. */
+.pnx2-fold { display: block; width: 100%; }
+.pnx2-fold-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 72px;
+  padding: 14px 0;
+  border-bottom: 0;
+  color: #0f172a;
+  cursor: pointer;
+  list-style: none;
+}
+.pnx2-fold-summary::-webkit-details-marker { display: none; }
+.pnx2-fold-summary::after { content: "+"; flex: 0 0 auto; font-size: 28px; font-weight: 500; }
+.pnx2-fold[open] > .pnx2-fold-summary::after { content: "−"; }
+.pnx2-fold-summary:focus-visible { outline: 3px solid #2563eb; outline-offset: 4px; }
+.pnx2-fold-summary h2,
+.pnx2-fold-summary h3,
+.pnx2-fold-summary .demo-title { margin: 0 !important; padding-bottom: 0 !important; border-bottom: 0 !important; color: #0f172a !important; font-size: clamp(28px, 3rem, 42px) !important; line-height: 1.15 !important; }
+.pnx2-fold > .section-inner { padding-top: 28px; }
+#demo > .pnx2-fold { max-width: 1320px; margin: 0 auto; }
+#demo > .pnx2-fold > .demo-sub,
+#demo > .pnx2-fold > .demo-grid,
+#demo > .pnx2-fold > #dBox6 { max-width: 1320px !important; width: 100%; margin-left: auto !important; margin-right: auto !important; }
+#demo > .pnx2-fold > #dBox6 { margin-top: 0 !important; padding: 34px 0 !important; border: 0 !important; border-top: 2px solid #0f172a !important; background: #fff !important; }
+
+#features > .section-inner > #transparency { order: 1; }
+#features > .section-inner > .pnx2-features-fold { order: 2; }
+#features > .section-inner > #representative { order: 3; }
+#features .pnx2-features-fold > .features-grid { margin-top: 28px; }
+#transparency > .pnx2-fold { max-width: 1320px; margin: 0 auto; }
+#transparency > .pnx2-fold > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border-top: 2px solid #e2e8f0; }
+#transparency > .pnx2-fold > div > div { min-width: 0; padding: 26px 28px 0 0; }
+#transparency > .pnx2-fold > div > div + div { padding: 26px 0 0 28px; border-left: 2px solid #e2e8f0; }
+
+#representative {
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #fff !important;
+}
+#features > .section-inner > #representative::before {
+  content: '';
+  display: block;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  height: 2px;
+  background: #0f172a;
+}
+#representative > .pnx2-representative-fold > .pnx2-fold-summary { width: 100%; }
+#representative .pnx2-fold-summary h3 { word-wrap: break-word; overflow-wrap: anywhere; }
+#representative .pnx2-representative-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 32px;
+  padding: 28px 0 36px;
+}
+#representative .pnx2-representative-body > div:first-child { display: none; }
+#representative .pnx2-representative-body > div:nth-child(2) { grid-column: 1; grid-row: 1; min-width: 0; }
+#representative .pnx2-representative-body > div:nth-child(3) { grid-column: 1; grid-row: 2; }
+#representative .pnx2-representative-body > div:nth-child(4) { grid-column: 1; grid-row: 3; min-width: 0; }
+#representative .pnx2-representative-body > div:nth-child(5) { grid-column: 2; grid-row: 1 / 4; min-width: 0; margin: 0 !important; flex-direction: column; }
+#representative .pnx2-representative-body > div:nth-child(5) > div { background: #fff !important; border: 0 !important; border-bottom: 2px solid #e2e8f0 !important; border-radius: 0 !important; padding: 0 0 24px !important; }
+#representative .pnx2-representative-body > div:nth-child(5) > div + div { padding-top: 24px !important; }
+#representative h4, #representative p { color: #334155 !important; }
+#representative a { color: #1d4ed8 !important; border-color: #e2e8f0 !important; background: #fff !important; }
+#representative .pnx2-representative-body > div:nth-child(4) img { max-width: 160px !important; min-width: 0 !important; border: 0 !important; border-radius: 0 !important; }
+
+/* T-377: vertically center closed disclosure titles in their bands.
+   Remove asymmetric external spacing (#transparency bottom-margin,
+   #features bottom-padding) and replace with symmetric fold-summary
+   padding.  No extra margin on #representative — the next section's
+   own padding handles the gap. */
+.pnx2-features-fold > .pnx2-fold-summary {
+  padding-top: 30px;
+  padding-bottom: 30px;
+}
+.pnx2-representative-fold > .pnx2-fold-summary {
+  padding-top: 30px;
+  padding-bottom: 32px;
+}
+
+#notice > div > .pnx2-fold > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; }
+#notice > div > .pnx2-fold > div > div { min-width: 0; padding: 24px; border-right: 2px solid #e2e8f0; border-bottom: 2px solid #e2e8f0; }
+#notice > div > .pnx2-fold > div > div:nth-child(3n) { border-right: 0; }
+
+@media (max-width: 820px) {
+  #representative .pnx2-representative-body { grid-template-columns: minmax(0, 1fr); }
+  #representative .pnx2-representative-body > div:nth-child(2),
+  #representative .pnx2-representative-body > div:nth-child(3),
+  #representative .pnx2-representative-body > div:nth-child(4),
+  #representative .pnx2-representative-body > div:nth-child(5) { grid-column: 1; grid-row: auto; }
+  #transparency > .pnx2-fold > div { grid-template-columns: minmax(0, 1fr); }
+  #transparency > .pnx2-fold > div > div,
+  #transparency > .pnx2-fold > div > div + div { padding: 24px 0; border-left: 0; border-bottom: 2px solid #e2e8f0; }
+  #notice > div > .pnx2-fold > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #notice > div > .pnx2-fold > div > div:nth-child(3n) { border-right: 2px solid #e2e8f0; }
+  #notice > div > .pnx2-fold > div > div:nth-child(even) { border-right: 0; }
+}
+
+@media (max-width: 560px) {
+  #notice > div > .pnx2-fold > div { grid-template-columns: minmax(0, 1fr); }
+  #notice > div > .pnx2-fold > div > div { border-right: 0 !important; }
+  .pnx2-fold-summary h2,
+  .pnx2-fold-summary h3,
+  .pnx2-fold-summary .demo-title { font-size: 28px !important; }
+}
+
+/* T-385: Normalize closed disclosure bands to compact vertical rhythm.
+   Remove outer section padding from fold-hosting sections and unify
+   fold-summary padding to match the reference features/representative
+   bands (~108 px single-line, ~159 px two-line). */
+
+/* 1. Compact fold-summary padding (matches features-fold reference) */
+.pnx2-fold-summary {
+  padding: 30px 0;
+}
+
+/* 2. Remove vertical section padding from fold-hosting sections */
+#how { padding-top: 0 !important; padding-bottom: 0 !important; }
+#demo { padding-top: 0 !important; padding-bottom: 0 !important; }
+#forum { padding-top: 0 !important; padding-bottom: 0 !important; }
+#wiki-section { padding-top: 0 !important; padding-bottom: 0 !important; }
+#roadmap { padding-top: 0 !important; padding-bottom: 0 !important; }
+#contact { padding-top: 0 !important; padding-bottom: 0 !important; }
+#notice { padding-top: 0 !important; padding-bottom: 0 !important; }
+#transparency { padding-top: 0 !important; padding-bottom: 0 !important; }
+
+/* Adjacent sections already provide a bottom border; avoid doubled lines. */
+#notice { border-top: 0 !important; border-bottom: 2px solid #0f172a !important; }
+
+/* 4. Restore content breathing room when a fold is open */
+.section > .section-inner > .pnx2-fold[open] { padding-bottom: 56px; }
+.demo-section > .pnx2-fold[open] { padding-bottom: 56px; }
+#notice > div > .pnx2-fold[open] { padding-bottom: 56px; }
+#transparency > .pnx2-fold[open] { padding-bottom: 56px; }
+
+/* #356: democracy cycle — six handoff phases as a real grid
+   (6 / 3 / 1 columns), visible active phase, legible result tile and the
+   Rep/CPLM row directly below the cycle. Overrides the legacy flex boxes. */
+#demo .pnx2-cycle-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin: -24px 0 28px;
+}
+#demo .pnx2-cycle-note {
+  margin: 0;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+#demo .pnx2-cycle-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 2px solid #0f172a;
+  border-radius: 0;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+#demo .pnx2-cycle-toggle:hover { background: #eff6ff; }
+#demo .pnx2-cycle-toggle:focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }
+#demo .pnx2-cycle-toggle-icon {
+  display: inline-block;
+  width: 10px;
+  height: 12px;
+  border-left: 3px solid #0f172a;
+  border-right: 3px solid #0f172a;
+}
+#demo .pnx2-cycle-toggle[data-state="paused"] .pnx2-cycle-toggle-icon {
+  width: 0;
+  border-right: 0;
+  border-left: 10px solid #0f172a;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+}
+
+#demo .demo-grid {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 0 !important;
+  max-width: 1320px !important;
+  width: 100%;
+  margin: 0 auto !important;
+  padding: 0;
+  list-style: none;
+  border-top: 2px solid #0f172a;
+}
+#demo .demo-grid > .demo-box {
+  flex: initial;
+  display: block;
+  min-width: 0;
+  max-width: none;
+  height: auto;
+  overflow: visible;
+  padding: 22px 16px 22px 16px !important;
+  border: 0 !important;
+  border-right: 2px solid #e2e8f0 !important;
+  border-top: 4px solid transparent !important;
+  text-align: left !important;
+  background: #fff !important;
+  transform: none !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+#demo .demo-grid > .demo-box:last-child { border-right: 0 !important; }
+#demo .demo-grid > .demo-box.active {
+  background: #eff6ff !important;
+  border-top-color: #2563eb !important;
+}
+#demo .demo-grid > .demo-box::before {
+  display: block;
+  margin-bottom: 10px;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+#demo .demo-grid > .pnx2-demo-archive::before { content: "06"; }
+#demo .demo-label {
+  margin: 0 0 5px !important;
+  color: #0f172a !important;
+  font-size: 16px !important;
+  line-height: 1.2;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+#demo .demo-grid .demo-pct {
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 600;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+#demo .pnx2-cycle-hint {
+  margin-top: 8px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.45;
+}
+#demo .demo-bar-row { display: block; width: 100%; margin-top: 10px; }
+#demo .demo-bar-wrap {
+  height: 6px;
+  margin: 6px 0 2px;
+  background: #e2e8f0;
+  border-radius: 0;
+  overflow: hidden;
+}
+#demo .demo-bar { height: 100%; width: 0; border-radius: 0; transition: width 1s ease; }
+#demo .demo-bar-yes { background: #15803d; }
+#demo .demo-bar-no { background: #b91c1c; }
+#demo .demo-bar-row .demo-pct { font-size: 12px; }
+
+/* Result tile: always visible, flat, slate text on white. */
+#demo #dBox6 {
+  max-width: 1320px !important;
+  width: 100%;
+  margin: 0 auto !important;
+  padding: 34px 0 !important;
+  border: 0 !important;
+  border-top: 2px solid #0f172a !important;
+  border-radius: 0;
+  background: #fff !important;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.5;
+}
+#demo .pnx2-result-head {
+  margin-bottom: 18px;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+#demo .pnx2-result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px 40px;
+}
+#demo .pnx2-result-grid > div { min-width: 0; }
+#demo .pnx2-result-kicker {
+  margin-bottom: 8px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+#demo #latestBillTitle { margin-bottom: 6px; color: #0f172a; font-weight: 700; overflow-wrap: anywhere; }
+#demo #latestBillStatus,
+#demo #resultParticipation,
+#demo #resultMajority,
+#demo #divEmpty { color: #475569; overflow-wrap: anywhere; }
+#demo #resultTotal { margin-bottom: 4px; color: #0f172a; font-weight: 700; }
+#demo #resultParticipation { margin-bottom: 10px; }
+#demo .pnx2-result-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+#demo .pnx2-result-track { flex: 1 1 auto; min-width: 0; height: 8px; background: #e2e8f0; overflow: hidden; }
+#demo .pnx2-result-track > div { height: 100%; width: 0; transition: width 1s ease; }
+#demo .pnx2-result-fill-yes { background: #15803d; }
+#demo .pnx2-result-fill-no { background: #b91c1c; }
+#demo .pnx2-result-yes,
+#demo .pnx2-result-no { flex: 0 0 auto; min-width: 72px; text-align: right; font-weight: 800; }
+#demo .pnx2-result-yes { color: #15803d; }
+#demo .pnx2-result-no { color: #b91c1c; }
+#demo #resultMajority { margin-top: 6px; font-weight: 700; }
+#demo .pnx2-result-divergence { margin-top: 24px; padding-top: 18px; border-top: 2px solid #e2e8f0; }
+
+/* Rep/CPLM: two columns under the cycle on desktop, stacked on phones. */
+#demo .pnx2-democracy-data {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0;
+  border-top: 2px solid #0f172a;
+  border-bottom: 0;
+}
+#demo .pnx2-democracy-data > #repSection,
+#demo .pnx2-democracy-data > #cplmSection {
+  max-width: none !important;
+  min-width: 0;
+}
+#demo .pnx2-democracy-data > #repSection { padding: 40px 40px 0 0 !important; }
+#demo .pnx2-democracy-data > #cplmSection { padding: 40px 0 0 40px !important; }
+#demo .pnx2-democracy-data svg#cplmChart { max-width: 100%; height: auto; }
+
+@media (max-width: 1100px) {
+  #demo .demo-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  #demo .demo-grid > .demo-box { border-bottom: 2px solid #e2e8f0 !important; }
+  #demo .demo-grid > .demo-box:nth-child(3n) { border-right: 0 !important; }
+}
+
+@media (max-width: 820px) {
+  #demo .pnx2-democracy-data > #repSection,
+  #demo .pnx2-democracy-data > #cplmSection { padding: 32px 0 !important; }
+}
+
+@media (max-width: 640px) {
+  #demo .pnx2-cycle-meta { margin-top: -16px; }
+  #demo .demo-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  #demo .demo-grid > .demo-box { padding: 18px 12px !important; border-right: 0 !important; }
+  #demo .pnx2-result-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #demo *,
+  #demo *::before { animation: none !important; transition: none !important; }
+}

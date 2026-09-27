@@ -448,6 +448,27 @@ export function signEvaluationRead(
   return bytesToHex(ed25519.sign(utf8ToBytes(payload), hexToBytes(privateKeyHex)));
 }
 
+export function buildVoteStatusReadPayload(
+  billId: string,
+  nullifierHash: string,
+  timestampMs: number,
+): string {
+  if (!Number.isSafeInteger(timestampMs) || timestampMs < 0) {
+    throw new Error("Vote status read timestamp must be a non-negative safe integer.");
+  }
+  return `vote-status-read:v1:${JSON.stringify([billId, nullifierHash, timestampMs])}`;
+}
+
+export function signVoteStatusRead(
+  privateKeyHex: string,
+  billId: string,
+  nullifierHash: string,
+  timestampMs: number,
+): string {
+  const payload = buildVoteStatusReadPayload(billId, nullifierHash, timestampMs);
+  return bytesToHex(ed25519.sign(utf8ToBytes(payload), hexToBytes(privateKeyHex)));
+}
+
 export function signProfileLocation(
   privateKeyHex: string,
   periferiaId: number | null,
@@ -504,6 +525,8 @@ export async function clearKeys(): Promise<void> {
   await SecureStore.deleteItemAsync(KEYS.PRIVATE_KEY);
   await SecureStore.deleteItemAsync(KEYS.PUBLIC_KEY);
   await SecureStore.deleteItemAsync(KEYS.NULLIFIER);
+  // A new identity must never inherit a still-fresh push registration marker.
+  await SecureStore.deleteItemAsync("push_registration_marker");
 }
 
 // ─── Vote Signing (Tier 1) ───────────────────────────────────────────────────

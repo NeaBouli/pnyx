@@ -85,7 +85,11 @@ async function startSession(){
     var d=await r.json();
     if(!r.ok){
       hide('status-pending');
-      document.getElementById('qr-container').innerHTML='<p style="color:#dc2626;font-size:0.85rem">'+(d.detail||'API Error '+r.status)+'</p>';
+      // API detail is remote data: render as text, never as HTML.
+      var errP=document.createElement('p');
+      errP.style.cssText='color:#dc2626;font-size:0.85rem';
+      errP.textContent=(typeof d.detail==='string'&&d.detail)?d.detail:('API Error '+r.status);
+      document.getElementById('qr-container').replaceChildren(errP);
       show('btn-refresh');
       return;
     }

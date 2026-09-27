@@ -82,6 +82,56 @@ _TEMPORARY_VERIFICATION_ERROR = (
     "Δοκιμάστε ξανά αργότερα."
 )
 
+# EKA-17: canonical primary-provider credential names. HLR_FALLBACK_API_KEY /
+# HLR_FALLBACK_API_SECRET are deprecated compatibility aliases for THIS primary
+# provider only (historical misnomer); the actual fallback provider keeps its
+# own HLRLOOKUPS_API_KEY / HLRLOOKUPS_API_SECRET names.
+_legacy_primary_env_warned = False
+_incomplete_canonical_env_warned = False
+_incomplete_legacy_env_warned = False
+
+
+def _primary_credentials() -> tuple[Optional[str], Optional[str]]:
+    """Return one complete primary credential pair without mixing sources."""
+    global _incomplete_canonical_env_warned
+    global _incomplete_legacy_env_warned
+    global _legacy_primary_env_warned
+    api_key = os.getenv("HLRLOOKUP_API_KEY")
+    api_secret = os.getenv("HLRLOOKUP_API_SECRET")
+    legacy_key = os.getenv("HLR_FALLBACK_API_KEY")
+    legacy_secret = os.getenv("HLR_FALLBACK_API_SECRET")
+
+    if api_key or api_secret:
+        if api_key and api_secret:
+            return api_key, api_secret
+        if not _incomplete_canonical_env_warned:
+            logger.error(
+                "[MOD-01] HLR Primary canonical credential pair is incomplete; "
+                "verification remains fail-closed"
+            )
+            _incomplete_canonical_env_warned = True
+        return None, None
+
+    if legacy_key and legacy_secret:
+        if not _legacy_primary_env_warned:
+            # Variable names only - never log credential values.
+            logger.warning(
+                "[MOD-01] HLR Primary uses deprecated env names "
+                "HLR_FALLBACK_API_KEY/HLR_FALLBACK_API_SECRET; migrate to "
+                "HLRLOOKUP_API_KEY/HLRLOOKUP_API_SECRET"
+            )
+            _legacy_primary_env_warned = True
+        return legacy_key, legacy_secret
+
+    if (legacy_key or legacy_secret) and not _incomplete_legacy_env_warned:
+        # Variable names only - never log credential values.
+        logger.error(
+            "[MOD-01] HLR Primary legacy credential pair is incomplete; "
+            "verification remains fail-closed"
+        )
+        _incomplete_legacy_env_warned = True
+    return None, None
+
 
 async def hlr_lookup_hlrlookupcom(phone: str) -> dict:
     """
@@ -97,8 +147,7 @@ async def hlr_lookup_hlrlookupcom(phone: str) -> dict:
             "error": "Μη έγκυρος ελληνικός αριθμός κινητού"
         }
 
-    api_key = os.getenv("HLR_FALLBACK_API_KEY")
-    api_secret = os.getenv("HLR_FALLBACK_API_SECRET")
+    api_key, api_secret = _primary_credentials()
 
     if not api_key or not api_secret:
         logger.warning(f"[MOD-01] HLR Primary — Credentials fehlen, fail-closed für {normalized[:6]}XXXX")

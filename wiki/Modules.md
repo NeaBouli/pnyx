@@ -6,8 +6,9 @@
 
 # Modules — MOD-01 to MOD-25
 
-This registry mirrors the current public module catalogue. Planned
-functionality is not presented as active.
+This registry mirrors the runtime module registry (`/health`). Planned
+functionality is not presented as active. MOD-13 and MOD-17 are not
+registered; relevance voting belongs to MOD-14.
 
 | ID | Όνομα / Name | Κατάσταση / Status | Περιγραφή / Description |
 |---|---|---|---|
@@ -24,11 +25,9 @@ functionality is not presented as active.
 | MOD-10 | AI Scraper | 🟡 Alpha | Ollama, Hugging Face and rule-based fallback |
 | MOD-11 | Public API | 🟡 Alpha | OpenAPI, REST, rate limits and API keys |
 | MOD-12 | MP Comparison | 🟡 Alpha | Party and representative comparison |
-| MOD-13 | Relevance Voting | 🟡 Alpha | Up/down relevance signal and trending feed |
-| MOD-14 | Data Export | 🟡 Alpha | CSV and JSON exports |
+| MOD-14 | Relevance + Data Export | 🟡 Alpha | Up/down relevance signal, trending feed, CSV and JSON exports |
 | MOD-15 | Admin | 🟡 Alpha | Role-aware operations, bill management and AI review |
 | MOD-16 | Municipal Governance | ✅ Beta | Regions, municipalities, municipal decisions and scraper health |
-| MOD-17 | Smart Notifications | 📋 Planned | Category filter, ping-only push, three content modes and local templates |
 | MOD-18 | Community Donations | ⏸ Paused | Voluntary support only; payment intake remains fail-closed pending legal/provider E2E clearance |
 | MOD-19 | Newsletter | ✅ Beta | Listmonk, Brevo SMTP, six lists and double opt-in |
 | MOD-20 | Push Notifications | ✅ Beta | Expo push, scheduler and Redis deduplication; native icon badges ship in v1.0.32 outside the F-Droid flavor |

@@ -1,0 +1,10 @@
+id: T-408
+verdict: ok
+- Scope OK: only apps/api/routers/govgr.py, a new test file and the fleet report. No migration, no new dependency (redis.asyncio already used in routers/sso.py), no config or flag change. GOVGR_FLOW_ENABLED, ACTIVATION_GATES and is_active() are unchanged (default OFF).
+- Correctness: the process-local `_oauth_states` is removed with no remaining references. State is 256-bit (token_urlsafe(32)) and written with SET NX EX 600. The key is sha256(state), so the raw state is never stored. Consume checks the format before touching Redis, then does an atomic GETDEL. After that it checks the embedded exp and compares purpose, client_id and redirect_uri with hmac.compare_digest. A state with the wrong context is still burned. Any store error returns 503 fail-closed, and there is no in-memory fallback.
+- The callback does the state consume before any token exchange. The tests show the provider is called 0 times for a wrong or broken state and exactly once for a replay. With the flow OFF, both endpoints return 503 and nothing is written.
+- Tests: re-run locally (/tmp/t407venv, no Redis): test_govgr_oauth_state + test_alpha_modules gave 49 passed, 1 skipped (real-Redis wire test), 12 xfailed. The 3 failures in test_alpha_modules::public_key_* need a live Redis and are unrelated to this diff; they match the worker report. GETDEL needs Redis ≥6.2; compose uses 8.x, and sso.py already relies on GETDEL.
+- Type hints present; no PII, secrets or live gov.gr access; the log line no longer contains the state prefix.
+- Non-blocking (must be settled before Alpha activation, already listed in the report as risks): (a) no browser binding (cookie/PKCE) → login-CSRF with a stolen unused state is still possible within 10 min; (b) redirect_after is not validated (it is only echoed as JSON, but needs a same-origin allowlist); (c) the auth URL query is not URL-encoded (pre-existing).
+- Nits: the `_state_redis` singleton is never closed (same as sso.py). The real-Redis test only checks the raw GETDEL call, not _consume_oauth_state; acceptable.
+- Status: not activated / not pushed / not merged / not deployed.

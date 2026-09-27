@@ -100,7 +100,7 @@ export default function OverviewPage() {
       payments, arweave, deepl,
     ] = await Promise.allSettled([
       apiFetch('/health'),
-      apiFetch('/api/v1/identity/hlr/credits'),
+      fetchOverviewJSON('/api/proxy/admin/hlr/credits'),
       apiFetch('/api/v1/bills?limit=5'),
       apiFetch('/api/v1/cplm/aggregate'),
       apiFetch('/api/v1/analytics/overview'),

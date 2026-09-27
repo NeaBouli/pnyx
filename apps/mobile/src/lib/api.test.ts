@@ -418,12 +418,63 @@ describe("read-only mirror fallback", () => {
     expect(fetchMock.mock.calls[0][0]).toBe("https://api.ekklesia.gr/api/v1/vote");
   });
 
-  it("does not mirror nullifier-bearing vote status reads", async () => {
+  it("does not mirror signed vote status reads", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Network request failed"));
+    const auth = { timestampMs: 1788000000000, signatureHex: "b".repeat(128) };
 
-    await expect(fetchVoteStatus("nullifier", "GR-1")).rejects.toThrow("Network request failed");
+    await expect(fetchVoteStatus("nullifier", "GR-1", auth)).rejects.toThrow("Network request failed");
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0][0]).toContain("https://api.ekklesia.gr/api/v1/vote/GR-1/status");
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api.ekklesia.gr/api/v1/vote/GR-1/status");
+  });
+});
+
+describe("signed vote status reads", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    resetApiTransportStateForTests();
+  });
+
+  it("sends the signed read as a POST body without caching or URL nullifiers", async () => {
+    const data = {
+      bill_id: "GR-1",
+      status: "ACTIVE",
+      has_voted: true,
+      vote: "YES",
+      is_correction: false,
+      can_correct: false,
+    };
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true, json: async () => data,
+    } as Response);
+    const auth = { timestampMs: 1788000000000, signatureHex: "b".repeat(128) };
+
+    const result = await fetchVoteStatus("a".repeat(64), "GR-1", auth);
+
+    expect(result).toEqual(data);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.ekklesia.gr/api/v1/vote/GR-1/status",
+      expect.objectContaining({
+        method: "POST",
+        cache: "no-store",
+        body: JSON.stringify({
+          nullifier_hash: "a".repeat(64),
+          timestamp_ms: auth.timestampMs,
+          signature_hex: auth.signatureHex,
+        }),
+      }),
+    );
+    expect(fetchMock.mock.calls[0][0]).not.toContain("nullifier");
+  });
+
+  it.each([401, 426, 503])("does not retry vote status reads unsigned or on the mirror after HTTP %s", async (status) => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: false, status, json: async () => ({ detail: "blocked" }),
+    } as Response);
+    await expect(fetchVoteStatus("a".repeat(64), "GR-1", {
+      timestampMs: 1788000000000, signatureHex: "b".repeat(128),
+    })).rejects.toThrow("blocked");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(getApiTransportState().mode).toBe("primary");
   });
 });

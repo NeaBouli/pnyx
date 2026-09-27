@@ -7,9 +7,16 @@ AI Services — Ollama + DeepL Integration
 import httpx
 import json
 import logging
+import math
 import os
 import re
-from typing import Any
+from typing import Any, Mapping, Sequence
+
+from services.agent_prompt import (
+    UnsafeModelOutputError,
+    build_agent_prompt,
+    is_unsafe_model_output,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +24,35 @@ OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
 DEEPL_API_KEY = os.getenv("DEEPL_API_KEY", "")
 DEEPL_API_URL = "https://api-free.deepl.com/v2/translate"
+
+# Batch jobs (summaries, scraper healing) keep the long generation timeout;
+# the interactive citizen chat uses the bounded OLLAMA_TIMEOUT below.
+OLLAMA_BATCH_TIMEOUT = 60.0
+OLLAMA_TIMEOUT_DEFAULT = 20.0
+OLLAMA_TIMEOUT_MIN = 1.0
+OLLAMA_TIMEOUT_MAX = 120.0
+
+
+def resolve_ollama_timeout(raw: str | None) -> float:
+    """Parse OLLAMA_TIMEOUT seconds; unset, non-numeric, non-finite or
+    out-of-range values fall back to the documented default (20s)."""
+    if raw is None or not str(raw).strip():
+        return OLLAMA_TIMEOUT_DEFAULT
+    try:
+        value = float(str(raw).strip())
+    except ValueError:
+        logger.warning("OLLAMA_TIMEOUT is not a number; using %.0fs", OLLAMA_TIMEOUT_DEFAULT)
+        return OLLAMA_TIMEOUT_DEFAULT
+    if not math.isfinite(value) or not OLLAMA_TIMEOUT_MIN <= value <= OLLAMA_TIMEOUT_MAX:
+        logger.warning(
+            "OLLAMA_TIMEOUT outside %.0f-%.0fs; using %.0fs",
+            OLLAMA_TIMEOUT_MIN, OLLAMA_TIMEOUT_MAX, OLLAMA_TIMEOUT_DEFAULT,
+        )
+        return OLLAMA_TIMEOUT_DEFAULT
+    return value
+
+
+OLLAMA_TIMEOUT = resolve_ollama_timeout(os.getenv("OLLAMA_TIMEOUT"))
 
 
 # ── DeepL Translation ────────────────────────────────────────────────────────
@@ -64,19 +100,26 @@ async def deepl_available() -> bool:
 
 # ── Ollama LLM ───────────────────────────────────────────────────────────────
 
-async def ollama_generate(prompt: str, max_tokens: int = 500) -> str:
-    """Send prompt to Ollama and return response."""
+async def ollama_generate(
+    prompt: str, max_tokens: int = 500, system: str = "", timeout: float | None = None,
+) -> str:
+    """Send prompt to Ollama and return response.
+
+    `system` travels in Ollama's separate system field so trusted rules never
+    share a string with untrusted retrieval data. `timeout` is the httpx
+    timeout in seconds (default: OLLAMA_BATCH_TIMEOUT).
+    """
+    payload: dict = {
+        "model": OLLAMA_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "options": {"num_predict": max_tokens, "temperature": 0.2},
+    }
+    if system:
+        payload["system"] = system
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
-            resp = await client.post(
-                f"{OLLAMA_URL}/api/generate",
-                json={
-                    "model": OLLAMA_MODEL,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {"num_predict": max_tokens, "temperature": 0.2},
-                },
-            )
+        async with httpx.AsyncClient(timeout=timeout or OLLAMA_BATCH_TIMEOUT) as client:
+            resp = await client.post(f"{OLLAMA_URL}/api/generate", json=payload)
             resp.raise_for_status()
             return resp.json().get("response", "").strip()
     except Exception as e:
@@ -132,7 +175,7 @@ def _parse_ollama_json(raw: str) -> Any | None:
 async def ollama_json_generate(prompt: str, max_tokens: int = 500) -> Any | None:
     """Send a JSON-only prompt to Ollama and return parsed JSON data."""
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
+        async with httpx.AsyncClient(timeout=OLLAMA_BATCH_TIMEOUT) as client:
             resp = await client.post(
                 f"{OLLAMA_URL}/api/generate",
                 json={
@@ -290,10 +333,19 @@ _DISCLAIMER_EN = (
 )
 
 
-async def answer_citizen_question(question: str, context: str, lang: str = "el") -> str:
+async def answer_citizen_question(
+    question: str,
+    context: str | Sequence[Mapping[str, Any]] | None,
+    lang: str = "el",
+) -> str:
     """
     Answer a citizen question using DB context.
     Strategy: if question is Greek → translate to EN → Ollama → translate back.
+
+    `context` is untrusted retrieval data (records from agent._build_context).
+    It is serialised by services.agent_prompt, the same builder the Claude
+    fallback uses. Raises UnsafeModelOutputError if the raw model answer trips
+    the output guard, before any translation can blur it.
     """
     # Translate Greek question to English for better Ollama performance
     en_question = question
@@ -302,27 +354,17 @@ async def answer_citizen_question(question: str, context: str, lang: str = "el")
         if translated:
             en_question = translated
 
-    # Translate context to English too
-    en_context = context
-    if lang == "el" and DEEPL_API_KEY:
-        translated_ctx = await deepl_translate(context[:2000], "EN", "EL")
-        if translated_ctx:
-            en_context = translated_ctx
-
+    # Context records stay structured and untranslated: the router cites
+    # exactly these records (source/id), so they must reach the model as-is.
     from datetime import datetime as _dt
-    current_date = _dt.now().strftime("%d %B %Y")
-
-    prompt = (
-        "You are an assistant for the ekklesia.gr platform (Greek digital democracy).\n"
-        f"Today's date: {current_date}. The current year is 2026.\n"
-        "Answer the question based on the data. Be concise and helpful.\n"
-        "Do NOT add greetings, exclamations, or filler text. Answer directly.\n"
-        "If you don't know, say you don't have enough data.\n\n"
-        f"Data:\n{en_context}\n\n"
-        f"Question: {en_question}\n\n"
-        "Answer:"
+    agent_prompt = build_agent_prompt(en_question, context, _dt.now())
+    en_answer = await ollama_generate(
+        agent_prompt.user, max_tokens=300, system=agent_prompt.system,
+        timeout=OLLAMA_TIMEOUT,
     )
-    en_answer = await ollama_generate(prompt, max_tokens=300)
+    if is_unsafe_model_output(en_answer):
+        logger.warning("[Agent] Ollama answer rejected by output guard")
+        raise UnsafeModelOutputError("ollama")
 
     # Clean Ollama warmup artifacts
     if en_answer:

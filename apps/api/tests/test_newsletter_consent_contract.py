@@ -5,12 +5,17 @@ propagation that the current implementation does not provide.
 """
 import json
 from datetime import datetime
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import HTTPException
 
 from routers import newsletter, newsletter_admin
+
+
+def _request() -> SimpleNamespace:
+    return SimpleNamespace(client=SimpleNamespace(host="203.0.113.10"), headers={})
 
 
 @pytest.fixture
@@ -118,7 +123,7 @@ async def test_existing_confirmation_does_not_replace_preferences_or_send(
 ) -> None:
     """Repeating signup is not permission to overwrite an existing opt-in."""
     consent_redis.hget.return_value = json.dumps({"frequency": "monthly", "language": "el"})
-    result = await newsletter.subscribe(newsletter.SubscribeRequest(email="consent@example.org"))
+    result = await newsletter.subscribe(newsletter.SubscribeRequest(email="consent@example.org"), _request())
     assert result["message"] == "Already subscribed."
     consent_redis.setex.assert_not_awaited()
     consent_redis.hset.assert_not_awaited()
@@ -132,7 +137,7 @@ async def test_invalid_preferences_never_send_or_store(
     """Reject unsupported preference values before any mail or consent mutation."""
     req = newsletter.SubscribeRequest(email="consent@example.org", **{field: value})
     with pytest.raises(HTTPException) as exc:
-        await newsletter.subscribe(req)
+        await newsletter.subscribe(req, _request())
     assert exc.value.status_code == 400
     consent_redis.setex.assert_not_awaited()
     consent_redis.hset.assert_not_awaited()

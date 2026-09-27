@@ -358,10 +358,13 @@ GET  /api/v1/admin/deepl/usage            → DeepL Verbrauch
 ```
 
 ### Rate Limiting
-- Global: 60 req/min/IP (slowapi)
+- Default: 60 req/min/IP per endpoint (slowapi)
 - Agent: 5 req/min/IP
 - Claude: 3 req/min/IP
-- X-Forwarded-For aware (hinter Traefik)
+- Configured Redis coordinates limits across workers; absent/unavailable Redis
+  uses bounded per-process memory and is not cross-worker coordinated
+- X-Forwarded-For is accepted only from `TRUSTED_PROXY_CIDRS`; proxy depth is
+  controlled separately by `TRUSTED_PROXY_COUNT`
 
 ---
 

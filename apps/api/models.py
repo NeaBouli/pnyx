@@ -199,6 +199,9 @@ class BillStatusLog(Base):
 
 # ─── MOD-04: CitizenVote ──────────────────────────────────────────────────────
 
+CITIZEN_VOTE_NULLIFIER_UNIQUE_INDEX = "uq_citizen_votes_vote_nullifier_ci_not_null"
+
+
 class CitizenVote(Base):
     """
     Bürger-Abstimmung zu Parlamentsbeschlüssen.
@@ -228,6 +231,15 @@ class CitizenVote(Base):
         UniqueConstraint("nullifier_hash", "bill_id", name="uq_one_vote_per_citizen"),
         Index("idx_votes_bill", "bill_id"),
         Index("idx_votes_nullifier", "nullifier_hash"),
+        # Tier-1 (ADR-022): a vote_nullifier may be held by at most one vote row,
+        # case-insensitively. Legacy/Tier-0 rows keep NULL and stay unconstrained.
+        Index(
+            CITIZEN_VOTE_NULLIFIER_UNIQUE_INDEX,
+            text("lower(vote_nullifier)"),
+            unique=True,
+            postgresql_where=text("vote_nullifier IS NOT NULL"),
+            sqlite_where=text("vote_nullifier IS NOT NULL"),
+        ),
     )
 
 

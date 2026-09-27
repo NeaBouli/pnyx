@@ -19,10 +19,8 @@ interface HealthData {
 }
 
 interface HlrCredits {
-  primary_credits?: number
-  fallback_credits?: number
-  primary_status?: string
-  fallback_status?: string
+  primary?: { remaining?: number; status?: string }
+  fallback?: { remaining?: number; status?: string }
   failover_active?: boolean
 }
 
@@ -96,7 +94,7 @@ export default function LogsPage() {
       const settled = await Promise.allSettled([
         fetch(`${API}/health`).then(r => r.json()),
         fetch(`${API}/api/v1/health/modules`).then(r => r.json()),
-        fetch(`${API}/api/v1/identity/hlr/credits`).then(r => r.json()),
+        fetch('/api/proxy/admin/hlr/credits', { cache: 'no-store' }).then(r => r.json()),
         fetch(`${API}/api/v1/scraper/jobs`).then(r => r.json()),
         fetch(`${API}/api/v1/scraper/status`).then(r => r.json()),
       ])
@@ -331,13 +329,13 @@ export default function LogsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="text-xs text-gray-500 mb-1">Primary Credits</div>
-                    <div className="text-2xl font-bold text-blue-600">{hlr.primary_credits != null ? String(hlr.primary_credits) : '—'}</div>
-                    <div className="mt-1"><StatusBadge status={hlr.primary_status} /></div>
+                    <div className="text-2xl font-bold text-blue-600">{hlr.primary?.remaining != null ? String(hlr.primary.remaining) : '—'}</div>
+                    <div className="mt-1"><StatusBadge status={hlr.primary?.status} /></div>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="text-xs text-gray-500 mb-1">Fallback Credits</div>
-                    <div className="text-2xl font-bold text-blue-600">{hlr.fallback_credits != null ? String(hlr.fallback_credits) : '—'}</div>
-                    <div className="mt-1"><StatusBadge status={hlr.fallback_status} /></div>
+                    <div className="text-2xl font-bold text-blue-600">{hlr.fallback?.remaining != null ? String(hlr.fallback.remaining) : '—'}</div>
+                    <div className="mt-1"><StatusBadge status={hlr.fallback?.status} /></div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

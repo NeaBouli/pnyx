@@ -20,7 +20,6 @@
   <meta name="twitter:description" content="REST API τεκμηρίωση για ekklesia.gr — 70+ endpoints, 25 modules."/>
   <meta name="twitter:image" content="https://ekklesia.gr/assets/og-image.png"/>
   <link rel="alternate" hreflang="el" href="https://ekklesia.gr/wiki/api.html"/>
-  <link rel="alternate" hreflang="en" href="https://ekklesia.gr/wiki/api.html"/>
   <link rel="alternate" hreflang="x-default" href="https://ekklesia.gr/wiki/api.html"/>
   <link rel="icon" type="image/png" href="/favicon.ico"/>
 
@@ -167,8 +166,11 @@
     @media (max-width: 640px) { .nav-links a { font-size: 0.75rem; padding: 0.22rem 0.45rem; } }
   </style>
 
+  <link rel="stylesheet" href="../assets/redesign-v2/tokens.css"/>
+  <link rel="stylesheet" href="../assets/redesign-v2/foundation.css"/>
+  <link rel="stylesheet" href="../assets/redesign-v2/r3-wiki.css"/>
 
-<script defer data-domain="ekklesia.gr" src="https://analytics.ekklesia.gr/js/script.js"></script>
+
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -184,7 +186,8 @@
 </script>
 </head>
 <body>
-<nav>
+<a href="#main" class="pnx2-skip" data-el="Μετάβαση στο κύριο περιεχόμενο" data-en="Skip to main content">Μετάβαση στο κύριο περιεχόμενο</a>
+<nav class="pnx2-header">
   <a href="../" class="nav-logo"><img src="../pnx.png" alt="logo" style="width:40px;height:40px;object-fit:contain"/>εκκλησία<span style="font-size:0.55em;color:#9ca3af;font-weight:400;margin-left:0.35em;letter-spacing:0.05em">του έθνους</span></a>
   <div class="nav-links">
     <a href="../" data-el="Αρχική" data-en="Home">Αρχική</a>
@@ -206,6 +209,7 @@
     <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
   </div>
 </nav>
+<main id="main">
 <div class="hero" style="background:linear-gradient(135deg,#eff6ff,#e0e7ff)">
   <h1 data-el="API" data-en="API">API</h1>
   <a href="../" class="back-link" data-el="← Αρχική" data-en="← Home">← Αρχική</a>
@@ -213,14 +217,14 @@
 <div class="layout">
 
   <h2 class="fade-in">API Endpoints</h2>
-  <div class="info-box fade-in"><p>Base URL: <strong>https://api.ekklesia.gr/api/v1</strong> &nbsp;|&nbsp; Rate Limit: 60 req/min/IP &nbsp;|&nbsp; 25 Modules</p></div>
+  <div class="info-box fade-in"><p>Base URL: <strong>https://api.ekklesia.gr/api/v1</strong> &nbsp;|&nbsp; Rate Limit: 60 req/min/IP/endpoint &nbsp;|&nbsp; 25 Modules</p></div>
   <div class="table-wrap fade-in">
     <table>
       <tr><th>Module</th><th>Method</th><th>Endpoint</th><th>Description</th></tr>
       <!-- MOD-01 Identity (3) -->
       <tr><td><span class="dot-on"></span>MOD-01</td><td><span class="badge badge-green">POST</span></td><td>/identity/verify</td><td>HLR έλεγχος κατάστασης ελληνικού αριθμού — δεν αποδεικνύει κατοχή SIM ή ταυτότητα</td></tr>
       <tr><td><span class="dot-on"></span>MOD-01</td><td><span class="badge badge-green">POST</span></td><td>/identity/revoke</td><td>Ανάκληση ταυτότητας</td></tr>
-      <tr><td><span class="dot-on"></span>MOD-01</td><td><span class="badge badge-blue">GET</span></td><td>/identity/status/{hash}</td><td>Κατάσταση επαλήθευσης</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-01</td><td><span class="badge badge-green">POST</span></td><td>/identity/status</td><td data-el="Κατάσταση επαλήθευσης (JSON body: nullifier_hash)" data-en="Verification status (JSON body: nullifier_hash)">Κατάσταση επαλήθευσης (JSON body: nullifier_hash)</td></tr>
       <!-- MOD-02 VAA (3) -->
       <tr><td><span class="dot-on"></span>MOD-02</td><td><span class="badge badge-blue">GET</span></td><td>/vaa/statements</td><td>38 Πολιτικές Θέσεις</td></tr>
       <tr><td><span class="dot-on"></span>MOD-02</td><td><span class="badge badge-blue">GET</span></td><td>/vaa/parties</td><td>8 Κόμματα</td></tr>
@@ -313,35 +317,40 @@
       <tr><td><span class="dot-on"></span>MOD-19</td><td><span class="badge badge-blue">GET</span></td><td>/newsletter/stats</td><td data-el="Newsletter Στατιστικά" data-en="Newsletter Stats">Newsletter Στατιστικά</td></tr>
       <!-- MOD-20 Push Notifications -->
       <tr><td><span class="dot-on"></span>MOD-20</td><td><span class="badge badge-green">POST</span></td><td>/notify/register</td><td data-el="Push Token Εγγραφή" data-en="Push Token Registration">Push Token Εγγραφή</td></tr>
-      <!-- MOD-25 Politikoi (Planned) -->
-      <tr><td><span class="dot-off"></span>MOD-25</td><td><span class="badge badge-green">POST</span></td><td>/rep/consent</td><td data-el="Συγκατάθεση εκπροσώπου για αξιολόγηση" data-en="Representative consent for evaluation">Συγκατάθεση εκπροσώπου για αξιολόγηση <span class="badge badge-gray">Planned (Beta)</span></td></tr>
-      <tr><td><span class="dot-off"></span>MOD-25</td><td><span class="badge badge-blue">GET</span></td><td>/politikoi</td><td data-el="Λίστα αξιολογούμενων εκπροσώπων" data-en="List of evaluated representatives">Λίστα αξιολογούμενων εκπροσώπων <span class="badge badge-gray">Planned (Beta)</span></td></tr>
-      <tr><td><span class="dot-off"></span>MOD-25</td><td><span class="badge badge-blue">GET</span></td><td>/politikoi/{id}</td><td data-el="Προφίλ εκπροσώπου + αξιολόγηση" data-en="Representative profile + evaluation">Προφίλ εκπροσώπου + αξιολόγηση <span class="badge badge-gray">Planned (Beta)</span></td></tr>
-      <tr><td><span class="dot-off"></span>MOD-25</td><td><span class="badge badge-green">POST</span></td><td>/politikoi/{id}/evaluate</td><td data-el="Υποβολή αξιολόγησης (-5 έως +5, 8 κατηγορίες)" data-en="Submit evaluation (-5 to +5, 8 categories)">Υποβολή αξιολόγησης (-5 έως +5) <span class="badge badge-gray">Planned (Beta)</span></td></tr>
-      <tr><td><span class="dot-off"></span>MOD-25</td><td><span class="badge badge-blue">GET</span></td><td>/politikoi/{id}/my-evaluation</td><td data-el="Η αξιολόγησή μου" data-en="My evaluation">Η αξιολόγησή μου <span class="badge badge-gray">Planned (Beta)</span></td></tr>
-      <tr><td><span class="dot-off"></span>MOD-25</td><td><span class="badge badge-blue">GET</span></td><td>/rep/evaluation</td><td data-el="Αξιολόγηση εκπροσώπου (εκπρόσωπος app)" data-en="Representative evaluation (representative app)">Αξιολόγηση εκπροσώπου (εκπρόσωπος app) <span class="badge badge-gray">Planned (Beta)</span></td></tr>
+      <!-- MOD-25 Politikoi -->
+      <tr><td><span class="dot-on"></span>MOD-25</td><td><span class="badge badge-blue">GET</span></td><td>/politicians/</td><td data-el="Λίστα εκπροσώπων που ενεργοποίησαν την αξιολόγηση" data-en="Representatives who enabled evaluation">Λίστα εκπροσώπων που ενεργοποίησαν την αξιολόγηση</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-25</td><td><span class="badge badge-blue">GET</span></td><td>/politicians/{ada_number}/questions</td><td data-el="Ερωτήσεις αξιολόγησης" data-en="Evaluation questions">Ερωτήσεις αξιολόγησης</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-25</td><td><span class="badge badge-green">POST</span></td><td>/politicians/{ada_number}/evaluate</td><td data-el="Υποβολή αξιολόγησης (-5 έως +5 ανά ερώτηση, Ed25519 signed)" data-en="Submit evaluation (-5 to +5 per question, Ed25519 signed)">Υποβολή αξιολόγησης (-5 έως +5 ανά ερώτηση, Ed25519 signed)</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-25</td><td><span class="badge badge-blue">GET</span></td><td>/politicians/{ada_number}/my-evaluation</td><td data-el="Η αξιολόγησή μου" data-en="My evaluation">Η αξιολόγησή μου</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-25</td><td><span class="badge badge-blue">GET</span></td><td>/politicians/{ada_number}/scores</td><td data-el="Δημόσια αποτελέσματα αξιολόγησης" data-en="Public evaluation scores">Δημόσια αποτελέσματα αξιολόγησης</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-25</td><td><span class="badge badge-green">POST</span></td><td>/rep/enable-evaluation</td><td data-el="Συγκατάθεση εκπροσώπου για αξιολόγηση (εκπρόσωπος app)" data-en="Representative consent to evaluation (representative app)">Συγκατάθεση εκπροσώπου για αξιολόγηση (εκπρόσωπος app)</td></tr>
+      <tr><td><span class="dot-on"></span>MOD-25</td><td><span class="badge badge-blue">GET</span></td><td>/rep/my-scores</td><td data-el="Αποτελέσματα αξιολόγησης εκπροσώπου (εκπρόσωπος app)" data-en="Representative's own evaluation scores (representative app)">Αποτελέσματα αξιολόγησης εκπροσώπου (εκπρόσωπος app)</td></tr>
     </table>
   </div>
 
   <h2 class="fade-in" data-el="Παράδειγμα" data-en="Example">Παράδειγμα</h2>
-  <div class="code-block fade-in"><span class="code-c"># Cast a vote</span>
+  <div class="code-block fade-in"><span class="code-c"># Cast a vote. The server looks up the public key by nullifier_hash;
+# the private key never leaves the device.
+#   BILL_ID         id of a bill from GET /bills
+#   NULLIFIER_HASH  64-hex value returned by POST /identity/verify
+#   SIGNATURE_HEX   Ed25519 signature over "$BILL_ID:YES:$NULLIFIER_HASH"</span>
 curl -X POST https://api.ekklesia.gr/api/v1/vote \
   -H "Content-Type: application/json" \
   -d '{
-    "bill_id": "GR-2025-001",
-    "choice": "YES",
-    "nullifier_hash": "abc123...",
-    "public_key": "ed25519key...",
-    "signature": "sig..."
+    "bill_id": "'"$BILL_ID"'",
+    "vote": "YES",
+    "nullifier_hash": "'"$NULLIFIER_HASH"'",
+    "signature_hex": "'"$SIGNATURE_HEX"'"
   }'</div>
 
 </div>
-<footer>
+</main>
+<footer class="pnx2-footer">
   <div class="footer-links">
     <a href="..//">Αρχική</a>
     <a href="../wiki/">Wiki</a>
     <a href="/el/bills" data-el="Τρέχουσες" data-en="Active">Τρέχουσες</a>
-    <a href="/el/bills" data-el="24 Ώρες" data-en="24 Hours">24 Ώρες</a>
+    <a href="/el/bills?status=WINDOW_24H" data-el="24 Ώρες" data-en="24 Hours">24 Ώρες</a>
     <a href="/el/results" data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</a>
     <a href="../community.html">Community</a>
     <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>

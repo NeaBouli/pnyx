@@ -1,0 +1,2 @@
+# Immutable third-party design handoff; preserve the source bytes verbatim.
+design/handoffs/ekklesia-redesign-2026-09-16/source/** -whitespace

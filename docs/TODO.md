@@ -1,11 +1,89 @@
 # Ekklesia.gr — TODO
 # Copyright (c) 2026 V-Labs Development — MIT License
 
-Last reconciled: 2026-09-06 (Android v1.0.32 production API/Web rollout)
+Last reconciled: 2026-09-20 (EKA-02/EKA-17 closed; EKA-32/EKA-04/EKA-03/EKA-05/EKA-06/EKA-09/EKA-16 integrated, not deployed)
 
 `docs/STATUS.md` is the authority for the current release. GitHub issues and
 Linear are the authorities for active work. Older session notes are retained
 below only as historical context; their unchecked boxes are not current tasks.
+The complete cross-system checkpoint is
+[`docs/reports/EKKLESIA_MASTER_PROJECT_STATUS_2026-09-19.md`](reports/EKKLESIA_MASTER_PROJECT_STATUS_2026-09-19.md).
+
+## 2026-09-19 audit and redesign intake
+
+- [x] Merge and checksum-pin the independent EKA audit series through PR #317.
+  The immutable reports cover EKA-01..64; issue #318 is the authoritative
+  checkbox register.
+- [x] Independently recheck the helper handoff and complete Package A: PR #319
+  merged as `a375d2d`, passed post-merge checks, received a bounded live Web
+  rollout and closed EKA-02 with acceptance evidence in issue #318.
+- [x] Complete Package B code integration: PR #320 merged as `942e063` after
+  both valid review findings were fixed. Local API tests, focused Redis tests,
+  all PR checks and post-merge CI/Security passed. Production rollout remains a
+  separate, explicitly authorized gate, so EKA-32 stays open.
+- [x] Complete the first Package C subsystem integration: PR #325 merged as
+  `760845a` with dedicated newsletter DOI limits and HMAC-only rate-limit/log
+  references. Focused, real-Redis and full API tests plus PR and post-merge
+  checks passed. Production rollout remains a separate, explicitly authorized
+  gate, so EKA-04 stays open.
+- [x] Complete the EKA-03 source integration: PR #326 merged as `5f850e2` with
+  signed bill-flag writes and signed POST vote-status reads. The current
+  Android client's legacy GET remains available behind a reversible cutoff.
+  Full local API/mobile/security verification, all PR checks and post-merge
+  CI/Security passed. API rollout, compatible Android release/adoption, cutoff
+  and live acceptance remain separate gates, so EKA-03 stays open.
+- [x] Complete the EKA-05 source integration: PR #327 merged as `9f52c95` with
+  signed ACTIVE-identity push registration, random per-install UUIDv4 device
+  IDs, stable HMAC Redis keys, bounded rate limits, token expiry/refresh and
+  legacy-token send deduplication. Full API, Mobile, dependency/security,
+  review and post-merge checks passed. API rollout, compatible Mobile
+  release/adoption and live acceptance remain separate gates, so EKA-05 stays
+  open.
+- [x] Complete the EKA-06 source integration: PR #328 merged as `0ce4b31` with
+  local invalid-format rejection, one atomic Redis transaction for all four
+  HLR limits, fail-closed provider protection and a coarse public status
+  contract. Exact operational values use the authenticated admin path. The two
+  valid review findings were fixed in `8c8f8e2`; focused tests, dashboard
+  build/typecheck, all PR checks and post-merge CI/Security passed. Bounded
+  API/dashboard rollout and live acceptance remain separate gates, so EKA-06
+  stays open.
+- [x] Complete the EKA-09 source integration: PR #329 merged as `1a49d47`
+  with fail-closed Brevo webhook bearer authentication before body parsing or
+  Redis access. Rejected requests have zero Redis mutations, accepted event
+  semantics remain unchanged, and internal processing details are redacted.
+  Focused tests, the newsletter/webhook sweep, all PR checks and post-merge
+  CI/Security passed. Matching out-of-band API/Brevo token configuration,
+  bounded API rollout and live acceptance remain separate gates, so EKA-09
+  stays open.
+- [x] Complete the EKA-16 source integration: PR #330 merged as `641721d` and
+  removes personal data and provider-response bodies from the audited contact
+  and newsletter log paths. Seven sentinel-PII regressions, the focused
+  privacy/newsletter suite and all PR plus post-merge main CI/Security checks
+  passed. A separately authorized API rollout and live log acceptance remain
+  separate gates, so EKA-16 stays open.
+- [x] Complete EKA-17: PR #331 merged as `c18b75f` with
+  an unambiguous canonical primary HLR credential pair, complete legacy-pair
+  compatibility, strict pair isolation and fail-closed partial configuration.
+  The actual fallback provider remains on its existing credential names. HLR,
+  Crypto, API, secret and protected CI checks passed. The separately authorized
+  API-only production overlay, atomic environment migration and live acceptance
+  completed on 2026-09-20 with an unchanged fallback pair, unchanged HLR usage,
+  zero restarts and no non-target container change. EKA-17 is closed.
+- [x] Confirm GitHub Actions is currently running normally. The observed limit
+  warning belongs to CodeRabbit, not Actions; no CI rule is weakened or skipped.
+- [x] Preserve the supplied redesign package unchanged under
+  `design/handoffs/ekklesia-redesign-2026-09-16/`, outside the public web root,
+  and record its SHA-256 and non-production status.
+- [x] Catalog every audit ID into one bounded remediation package and freeze a
+  phase-gated redesign sequence. See
+  `docs/planning/EKA_REMEDIATION_AND_REDESIGN_PLAN_2026-09-19.md`.
+- [ ] Run Kimi's independent catalog review after its announced quota reset;
+  the final EKA-32 retry remained externally quota-limited, so Claude/Sol
+  performed the documented fallback review without duplicating implementation.
+
+EKA-02 and EKA-17 are closed. The remaining 62 issue #318 boxes are
+evidence-gated. Audit
+publication or a green integration PR alone is not proof of deployment.
 
 ## Current gates
 
@@ -17,6 +95,15 @@ below only as historical context; their unchecked boxes are not current tasks.
   before a new app release. The shipped v61 initial badge is not this ledger.
 - [ ] Resolve the privately documented protected configuration mismatch before
   any newsletter/evaluation API overlay rollout; no container was switched.
+- [ ] Reconcile the 22 platform votes, 17 CPLM votes and zero representation
+  analytics bills/votes as documented metric scopes; do not mutate vote data.
+- [ ] Re-run the existing no-write procedure for the 28 unmatched Diavgeia
+  municipality mappings. Any database correction remains a separate reviewed
+  and explicitly approved task.
+- [ ] Complete the authenticated dashboard acceptance matrix and record exact
+  evidence for bills, votes, HLR, AI, mirrors and administrative actions.
+- [ ] Reauthenticate the Linear connector before changing any retained ticket
+  state; GitHub and this checkpoint remain authoritative in the meantime.
 
 - [x] Prepare and validate the bounded Xiaomi/HLR follow-up: explicit Android
   Picker colors, `069...` normalization, fail-closed fallback handling,
@@ -45,8 +132,8 @@ below only as historical context; their unchecked boxes are not current tasks.
   complete. Server signatures, nonce consumption and eligibility are unchanged.
 - [x] Include GH#258 in the reversible Web rollout with live verification.
   See `docs/operations/forum-sso-lifecycle.md`.
-- [ ] Complete one new voluntary smartphone login/logout canary for this Web
-  rollout. Existing technical checks do not impersonate a verified citizen.
+- [x] Complete one voluntary smartphone login/logout canary for this Web
+  rollout. The owner confirmed successful login and logout on 2026-08-24.
 - [x] Confirm send-only owner intent and implement external newsletter reply
   routing (PR #262), keeping Brevo senders, lists, DOI and schedules unchanged.
 - [x] Deploy only the five PR #262 mail files over API baseline `25d6c14` and
@@ -94,11 +181,14 @@ below only as historical context; their unchecked boxes are not current tasks.
   GitHub tag, Direct APK, Play AAB and checksums published and independently
   verified. The bounded public API/Web/latest-alias rollout completed with
   rollback tags, unchanged protected configuration and live probes.
-- [ ] Confirm Google's external approval and tester availability for the latest
-  v1.0.32/vC61 Closed Testing release; do not promote to production here.
-- [ ] Confirm F-Droid's independent v1.0.31 ABI builds/public repository APKs,
-  then its v1.0.32 tag detection and metadata build. Never upload a manually
-  signed binary to F-Droid.
+- [x] Confirm v1.0.32/vC61 is accepted and active in Google Play Closed Testing
+  Alpha. Production remains inactive and separately gated below.
+- [x] Confirm F-Droid's independent v1.0.32 ABI builds 611-614, public package
+  page and suggested version code 614. Never upload a manually signed binary
+  to F-Droid.
+- [ ] Complete and verify the upstream Greek localization of the public F-Droid
+  listing; English public output means the repository translation alone is not
+  sufficient evidence.
 - [x] Monthly Brevo newsletter implemented and scheduled for the first day of
   each month at 09:00 scheduler time (Linear `NEA-160` is superseded by this
   implementation state; end-to-end subscriber delivery remains GH#261).
@@ -107,7 +197,9 @@ below only as historical context; their unchecked boxes are not current tasks.
 - [x] GitHub PR checks and merge for the 2026-07-12 readiness block (#131,
   `a99a12b`).
 - [ ] Legal recipient, donation/tax/document policy and sandbox E2E approval.
-- [ ] Google Play production-access tester/time requirement (external gate).
+- [ ] Google Play production-access gate: the verified snapshot is 8/12
+  opted-in testers. Recruit 4 more, then complete Google's qualifying 14-day
+  test before any production-access decision.
 - [ ] Complete the DMARC observation window and collect representative evidence
   for every active sending path before proposing an enforcement policy. The
   private report catalog and sender inventory exist; review may begin on

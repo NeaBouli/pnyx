@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "next-intl";
 import Link from "next/link";
-import PublicDataNav from "@/components/PublicDataNav";
 import { ekklesia, type PublishedResult } from "@/lib/api";
 
 type ResultFilter = "all" | "diverge" | "moderate" | "converge";
@@ -65,7 +64,6 @@ export default function ResultsPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-3xl px-6 py-8">
-        <PublicDataNav />
         <div className="mb-6">
           <h1 className="text-3xl font-black text-gray-900">{isEl ? "Αποτελέσματα" : "Results"}</h1>
           <p className="mt-1 text-sm text-gray-500">

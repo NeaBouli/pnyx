@@ -118,8 +118,8 @@ async def _run_agent_fallback(
 ) -> dict:
     async def build_context(
         question: str, lang: str, db: object,
-    ) -> tuple[str, list, bool]:
-        return "Platform context", [], False
+    ) -> tuple[str, list, bool, list]:
+        return "Platform context", [], False, []
 
     async def available() -> bool:
         return True

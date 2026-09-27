@@ -29,7 +29,6 @@
 
   <!-- Hreflang -->
   <link rel="alternate" hreflang="el" href="https://ekklesia.gr/wiki/security.html"/>
-  <link rel="alternate" hreflang="en" href="https://ekklesia.gr/wiki/security.html"/>
   <link rel="alternate" hreflang="x-default" href="https://ekklesia.gr/wiki/security.html"/>
 
   <!-- Sitemap -->
@@ -177,8 +176,11 @@
     @media (max-width: 640px) { .nav-links a { font-size: 0.75rem; padding: 0.22rem 0.45rem; } }
   </style>
 
+  <link rel="stylesheet" href="../assets/redesign-v2/tokens.css"/>
+  <link rel="stylesheet" href="../assets/redesign-v2/foundation.css"/>
+  <link rel="stylesheet" href="../assets/redesign-v2/r3-wiki.css"/>
 
-<script defer data-domain="ekklesia.gr" src="https://analytics.ekklesia.gr/js/script.js"></script>
+
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -194,7 +196,8 @@
 </script>
 </head>
 <body>
-<nav>
+<a href="#main" class="pnx2-skip" data-el="Μετάβαση στο κύριο περιεχόμενο" data-en="Skip to main content">Μετάβαση στο κύριο περιεχόμενο</a>
+<nav class="pnx2-header">
   <a href="../" class="nav-logo"><img src="../pnx.png" alt="logo" style="width:40px;height:40px;object-fit:contain"/>εκκλησία<span style="font-size:0.55em;color:#9ca3af;font-weight:400;margin-left:0.35em;letter-spacing:0.05em">του έθνους</span></a>
   <div class="nav-links">
     <a href="../" data-el="Αρχική" data-en="Home">Αρχική</a>
@@ -216,6 +219,7 @@
     <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
   </div>
 </nav>
+<main id="main">
 <div class="hero" style="background:linear-gradient(135deg,#fef3c7,#fff7ed)">
   <h1 data-el="Ασφάλεια" data-en="Security">Ασφάλεια</h1>
   <a href="../" class="back-link" data-el="← Αρχική" data-en="← Home">← Αρχική</a>
@@ -450,13 +454,22 @@
   <h3 data-el="Εμφάνιση στα Αποτελέσματα" data-en="Results Display">Εμφάνιση στα Αποτελέσματα</h3>
   <p data-el="Οι ψήφοι πολιτών μετρώνται ισότιμα: <strong>ένα έγκυρο άτομο = μία ψήφος ανά scope</strong>. Η ποιότητα ή μέθοδος επαλήθευσης μπορεί να εμφανίζεται ως διαφανές metadata, αλλά δεν πολλαπλασιάζει την ψήφο." data-en="Citizen votes are counted equally: <strong>one valid person = one vote per scope</strong>. Verification method or assurance may be shown as transparent metadata, but it does not multiply a vote.">Οι ψήφοι πολιτών μετρώνται ισότιμα: <strong>ένα έγκυρο άτομο = μία ψήφος ανά scope</strong>. Η μέθοδος επαλήθευσης δεν πολλαπλασιάζει την ψήφο.</p>
 
+  <h2 class="fade-in" data-el="Ανεξάρτητος Έλεγχος Ασφαλείας" data-en="Independent Security Audit">Ανεξάρτητος Έλεγχος Ασφαλείας</h2>
+  <div class="info-box fade-in">
+    <p data-el="Τον Σεπτέμβριο 2026 η πλατφόρμα υποβλήθηκε σε ανεξάρτητο έλεγχο ασφαλείας από τους Collateral Web3 Open Audits. Ο έλεγχος εντόπισε 64 ευρήματα· 3 έχουν επαληθευμένα κλείσει και η αποκατάσταση των υπολοίπων είναι σε εξέλιξη. Αυτό δεν αποτελεί δήλωση πλήρους ασφάλειας." data-en="In September 2026 the platform underwent an independent security audit by Collateral Web3 Open Audits. The audit identified 64 findings; 3 have been verified closed and remediation of the rest is ongoing. This is not a claim of total security.">
+      Τον Σεπτέμβριο 2026 η πλατφόρμα υποβλήθηκε σε ανεξάρτητο έλεγχο ασφαλείας από τους Collateral Web3 Open Audits. Ο έλεγχος εντόπισε 64 ευρήματα· 3 έχουν επαληθευμένα κλείσει και η αποκατάσταση των υπολοίπων είναι σε εξέλιξη. Αυτό δεν αποτελεί δήλωση πλήρους ασφάλειας.
+    </p>
+  </div>
+  <p><a href="audit.html" class="back-link" data-el="Πλήρης Αναφορά Ελέγχου →" data-en="Full Audit Report →">Πλήρης Αναφορά Ελέγχου →</a></p>
+
 </div>
-<footer>
+</main>
+<footer class="pnx2-footer">
   <div class="footer-links">
     <a href="..//">Αρχική</a>
     <a href="../wiki/">Wiki</a>
     <a href="/el/bills" data-el="Τρέχουσες" data-en="Active">Τρέχουσες</a>
-    <a href="/el/bills" data-el="24 Ώρες" data-en="24 Hours">24 Ώρες</a>
+    <a href="/el/bills?status=WINDOW_24H" data-el="24 Ώρες" data-en="24 Hours">24 Ώρες</a>
     <a href="/el/results" data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</a>
     <a href="../community.html">Community</a>
     <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub</a>

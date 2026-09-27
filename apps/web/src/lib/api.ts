@@ -238,15 +238,6 @@ async function _get<T = unknown>(path: string): Promise<T> {
   return res.json();
 }
 
-async function _post(path: string, body: unknown) {
-  const res = await fetch(`${API_URL}/api/v1${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  return res.json();
-}
-
 // MOD-06: Analytics
 export const analytics = {
   overview:       ()              => _get("/analytics/overview"),
@@ -286,17 +277,6 @@ export const exportUrls = {
   billsCsv:      `${API_URL}/api/v1/export/bills.csv`,
   resultsJson:   `${API_URL}/api/v1/export/results.json`,
   divergenceCsv: `${API_URL}/api/v1/export/divergence.csv`,
-};
-
-// MOD-15: Admin
-export const adminApi = {
-  dashboard:   (key: string) => _get(`/admin/dashboard?admin_key=${key}`),
-  bills:       (key: string) => _get(`/admin/bills?admin_key=${key}`),
-  stats:       (key: string) => _get(`/admin/stats?admin_key=${key}`),
-  reviewBill:  (key: string, id: string, approved = true) =>
-    _post(`/admin/bills/${id}/review?admin_key=${key}&approved=${approved}`, {}),
-  transition:  (key: string, id: string, newStatus: string) =>
-    _post(`/bills/${id}/transition`, { new_status: newStatus, admin_key: key }),
 };
 
 // MOD-13: Relevance Voting

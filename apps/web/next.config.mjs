@@ -36,6 +36,17 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "https://api.ekklesia.gr",
   },
+  async redirects() {
+    return [
+      {
+        // Legacy APK URL that bypasses middleware (dotted path).
+        source: "/download/ekklesia-latest.apk",
+        destination:
+          "https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk",
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {

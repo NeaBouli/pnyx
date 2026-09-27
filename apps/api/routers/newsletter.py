@@ -8,13 +8,15 @@ POST /api/v1/newsletter/webhook/brevo — Brevo event webhook
 import os
 import json
 import logging
-from datetime import datetime, timezone
+import secrets
+from datetime import date, datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr
 import httpx
 import redis.asyncio as aioredis
 
+from ip_utils import hashed_rate_subject, rate_limit_key_for_ip, redis_fixed_window_limit
 from services.mail_policy import operator_reply_to
 from services.newsletter_consent import CONFIRMED_KEY, CONFIRM_ONCE, CONSENT_SCHEMA, confirmation_payload
 
@@ -27,6 +29,8 @@ LISTMONK_URL = os.getenv("LISTMONK_URL", "http://172.18.0.7:9000")
 LISTMONK_USER = os.getenv("LISTMONK_ADMIN_USER", "admin")
 LISTMONK_PW = os.getenv("LISTMONK_ADMIN_PASSWORD", "")
 BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
+# EKA-09: shared bearer token required on the Brevo event webhook.
+BREVO_WEBHOOK_TOKEN = os.getenv("BREVO_WEBHOOK_TOKEN", "")
 
 # List ID mapping (from Listmonk)
 LIST_IDS = {
@@ -41,6 +45,13 @@ LIST_IDS = {
 VALID_FREQUENCIES = {"weekly", "monthly"}
 VALID_LANGUAGES = {"el", "en"}
 VALID_TYPES = set(LIST_IDS.keys())
+
+# EKA-04: fixed-window limits on attempted confirmation emails
+SUBSCRIBE_IP_LIMIT = 10
+SUBSCRIBE_IP_WINDOW_SECONDS = 3600
+SUBSCRIBE_EMAIL_LIMIT = 3
+SUBSCRIBE_EMAIL_WINDOW_SECONDS = 86400
+EMAIL_RATE_NAMESPACE = "newsletter:subscribe:email"
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
@@ -71,7 +82,8 @@ async def _listmonk_request(method: str, path: str, json_data: dict = None) -> d
             auth=(LISTMONK_USER, LISTMONK_PW),
         )
         if r.status_code >= 400:
-            logger.error(f"[MOD-19] Listmonk {method} {path}: {r.status_code} {r.text[:200]}")
+            # EKA-16: status code only — the provider body may echo the subscriber email.
+            logger.error(f"[MOD-19] Listmonk {method} {path}: {r.status_code}")
         return r.json()
 
 
@@ -93,14 +105,12 @@ async def get_lists():
 
 
 @router.post("/subscribe")
-async def subscribe(req: SubscribeRequest):
+async def subscribe(req: SubscribeRequest, request: Request):
     """
     Public: subscribe to newsletter.
     Sends double opt-in email via Brevo. Stores pending token in Redis.
     Subscriber only activated after clicking confirmation link.
     """
-    import secrets
-
     if req.subscriber_type not in VALID_TYPES:
         raise HTTPException(status_code=400, detail=f"Invalid type. Must be one of: {VALID_TYPES}")
     if req.frequency not in VALID_FREQUENCIES:
@@ -110,10 +120,36 @@ async def subscribe(req: SubscribeRequest):
 
     r = await _get_redis()
 
-    # Check if already confirmed
+    # Check if already confirmed — must not consume rate-limit counters or resend
     existing = await r.hget("newsletter:confirmed", req.email)
     if existing:
         return {"success": True, "message": "Already subscribed."}
+
+    # EKA-04: rate-limit attempted confirmation emails before any token write
+    # or provider request. Keys hold only truncated HMAC identifiers.
+    normalized_email = req.email.strip().lower()
+    bucket_day = date.today()
+    email_ref = hashed_rate_subject(
+        normalized_email,
+        EMAIL_RATE_NAMESPACE,
+        today=bucket_day,
+    )
+    await redis_fixed_window_limit(
+        r,
+        rate_limit_key_for_ip(
+            request,
+            "newsletter:subscribe:ip",
+            today=bucket_day,
+        ),
+        SUBSCRIBE_IP_LIMIT,
+        SUBSCRIBE_IP_WINDOW_SECONDS,
+    )
+    await redis_fixed_window_limit(
+        r,
+        f"ratelimit:{EMAIL_RATE_NAMESPACE}:{bucket_day.isoformat()}:{email_ref}",
+        SUBSCRIBE_EMAIL_LIMIT,
+        SUBSCRIBE_EMAIL_WINDOW_SECONDS,
+    )
 
     # Generate confirmation token
     token = secrets.token_urlsafe(32)
@@ -163,13 +199,14 @@ async def subscribe(req: SubscribeRequest):
                 "htmlContent": body,
             })
             if resp.status_code >= 400:
-                logger.error(f"[MOD-19] Brevo send failed: {resp.status_code} {resp.text[:200]}")
+                # EKA-16: status code only — the provider body may echo the subscriber email.
+                logger.error(f"[MOD-19] Brevo send failed: {resp.status_code}")
                 raise HTTPException(status_code=502, detail="Email send failed")
     except httpx.HTTPError as e:
         logger.error(f"[MOD-19] Brevo error: {e}")
         raise HTTPException(status_code=502, detail="Email service error")
 
-    logger.info(f"[MOD-19] Opt-in email sent to {req.email}")
+    logger.info("[MOD-19] Opt-in email sent ref=emailref:%s", email_ref[:12])
     return {"success": True, "message": "Confirmation email sent. Please check your inbox."}
 
 
@@ -331,9 +368,41 @@ async def newsletter_stats():
 
 # ── Brevo Webhook ─────────────────────────────────────────────────────────────
 
+def _require_brevo_webhook_auth(request: Request) -> None:
+    """EKA-09: authenticate the Brevo webhook before any body parsing or Redis I/O.
+
+    Requires ``Authorization: Bearer <BREVO_WEBHOOK_TOKEN>``. Fails closed with
+    503 when the server token is not configured, and 401 with a Bearer
+    challenge for missing, malformed or wrong credentials. Token material is
+    never logged or returned.
+    """
+    if not BREVO_WEBHOOK_TOKEN:
+        raise HTTPException(status_code=503, detail="Webhook not configured")
+    authorization = request.headers.get("authorization", "")
+    parts = authorization.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "bearer" or not parts[1].strip():
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    try:
+        matched = secrets.compare_digest(parts[1], BREVO_WEBHOOK_TOKEN)
+    except TypeError:
+        # Non-ASCII presented token cannot match; reject without a 500.
+        matched = False
+    if not matched:
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
 @router.post("/webhook/brevo")
 async def brevo_webhook(request: Request):
     """Receive Brevo event webhooks — track sent/opened/bounced."""
+    _require_brevo_webhook_auth(request)
     try:
         events = await request.json()
         if not isinstance(events, list):
@@ -351,4 +420,4 @@ async def brevo_webhook(request: Request):
         return {"received": True, "events": len(events)}
     except Exception as e:
         logger.error(f"[MOD-19] Brevo webhook error: {e}")
-        return {"received": False, "error": str(e)}
+        return {"received": False, "error": "Webhook processing failed"}

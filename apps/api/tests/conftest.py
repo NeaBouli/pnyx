@@ -1,4 +1,10 @@
 """Fixtures for API tests — cleanup shared resources between tests."""
+import os
+
+# The global slowapi limiter (60/min/IP) would break request-heavy test
+# modules; tests run with the limiter disabled unless explicitly enabled.
+os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
+
 import pytest
 from routers import public_api
 
