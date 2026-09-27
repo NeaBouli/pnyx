@@ -1,12 +1,11 @@
 id: T-410
 verdict: ok
-worker: kimi (cross-review of branch agent/claude/T-410 @ 8a3a9cd)
-review:
-- Scope sauber: T-410-Aenderungen nur in 8660fb0 (Migration/Modell/PG-Fixtures) und c373177 (Router/Tests); keypair/nullifier-Diffs stammen ausschliesslich aus den uebernommenen, bereits reviewten PR-#371-Produktcommits.
-- Migration x701a2b3c4d5: read-only Preflight zaehlt nur Gruppen, keine Werte und kein Rewrite; CREATE/DROP INDEX CONCURRENTLY in autocommit; INVALID-Index nach Fehlbau best-effort entfernt, Originalfehler erneut geworfen; Downgrade entfernt nur den neuen Index; down_revision v501a2b3c4d5 korrekt.
-- Router: striktes 64-Hex-fullmatch vor Lookup, canonical lowercase-Storage, with_for_update in submit+correct, kein Tier-Wechsel, Replay-Schutz ueber strikt steigenden Timestamp, alle Vote-/Tier-1-Felder in einer Transaktion.
-- 409-Mapping eng: nur PostgreSQL 23505 fuer den neuen Index bzw. uq_one_vote_per_citizen; fremde Unique/FK/Check- und Nicht-Integrity-Fehler werden nach Rollback unmaskiert erneut geworfen.
-- Tests decken alle Acceptance-Punkte: echte PostgreSQL-Race 200+409, Case-Varianten, Legacy-NULL, Upgrade/Downgrade/Upgrade, YES->NO mit frischem Payload, Voll-Rollback und fremde Fehler.
-- Type Hints vorhanden, keine Secrets oder Scope-Verstoesse; EKA-65/KDF unangetastet.
-minor: SQLite mappt unbekannte IntegrityErrors nun nicht pauschal auf 409; akzeptabel, da PostgreSQL die vorgeschriebene Invariante ist. Der STALE-Check greift bei einer hypothetischen Tier-1-Zeile mit timestamp_ms NULL nicht; ein solcher gueltiger Zustand wird vom derzeit inaktiven Pfad nicht erzeugt.
+
+Review von `agent/claude/T-406 @ a8dd8bd` (Basis `6104c6b`), Fokus CodeRabbit-Fix `a8dd8bd`:
+- `a8dd8bd` schliesst die Luecke korrekt: `_ensure_same_tier` lehnt Tier-1-Korrektur gegen historische Zeilen mit `timestamp_ms IS NULL` jetzt fail-closed ab. Regressionstest prueft 400/STALE_PAYLOAD, 0 Commits und unveraenderte Zeile.
+- Migration `x701a2b3c4d5`: read-only Preflight zaehlt nur Gruppen, keine Werte geloggt; fail-closed; `CREATE UNIQUE INDEX CONCURRENTLY` mit Invalid-Index-Cleanup; Downgrade entfernt nur den neuen Index. Case-insensitiv, partiell auf NOT NULL, Legacy-NULL frei.
+- Router: Precheck bleibt Fast Path, Index ist Invariante; nur 23505 der zwei erwarteten Constraints wird 409, fremde IntegrityErrors nach Rollback erneut geworfen; Vote und Tier-1-Felder atomar in einer Transaktion; kein stiller Tier-Wechsel; Lowercase-Hex.
+- Kimi verifizierte lokal mit danach entferntem PostgreSQL-16.14-Container: 27 PG-Migrations-/Race-Tests passed, `test_tier1_vote_enforcement.py` 39 passed, breite Gruppe `-k "vote or voting or tier1 or nullifier or municipal"` 320 passed und 5 xfailed.
+- Type Hints vorhanden; EKA-65/KDF unberuehrt; keine Secrets; Commit-Trennung Migration/Router korrekt.
+- Hinweis ohne Blocker: `.fleet/T-410_DESIGN.md` ist lokales Lead-Artefakt und nicht Teil des Produktbranches; Review erfolgte gegen die verbindlichen Constraints des Briefs.
 security: none
