@@ -528,10 +528,9 @@ def _ensure_same_tier(existing: CitizenVote, tier1: Tier1Fields | None) -> None:
             detail="Η αλλαγή ψήφου πρέπει να γίνει με την ίδια διαδρομή ψήφου (Tier). "
                    "Η ψήφος δεν άλλαξε.",
         )
-    if (
-        tier1 is not None
-        and existing.timestamp_ms is not None
-        and tier1.timestamp_ms <= existing.timestamp_ms
+    if tier1 is not None and (
+        existing.timestamp_ms is None
+        or tier1.timestamp_ms <= existing.timestamp_ms
     ):
         logger.warning("Vote change rejected: STALE_PAYLOAD")
         raise HTTPException(

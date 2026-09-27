@@ -478,3 +478,21 @@ async def test_correction_requires_fresh_tier1_payload_and_locks_row():
     assert db.commits == 0
     assert vars(stored) == snapshot
     assert "FOR UPDATE" in str(db.executed[2])
+
+
+@pytest.mark.asyncio
+async def test_correction_rejects_tier1_row_without_stored_timestamp():
+    stored = _stored_vote(tier1=True, timestamp_ms=None)
+    snapshot = dict(vars(stored))
+    fields = _tier1_fields(sign_bill_id=BILL_ID, sign_choice="NO")
+    req = voting.CorrectionRequest(
+        nullifier_hash=NULLIFIER_HASH, bill_id=BILL_ID, vote="NO",
+        signature_hex="b" * 128, **fields,
+    )
+    db = _FakeDb([_window_bill(), _identity(), stored, None])
+    with pytest.raises(HTTPException) as exc:
+        await voting.correct_vote(BILL_ID, req, db)
+    assert exc.value.status_code == 400
+    assert "STALE_PAYLOAD" in exc.value.detail
+    assert db.commits == 0
+    assert vars(stored) == snapshot
