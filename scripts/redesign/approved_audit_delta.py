@@ -22,7 +22,7 @@ APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/delete-account.html": "ef1841838c9748cda7a3ef1e07c4f7e0219ecbdfe3faad924141e0d806e7bbd9",
     "docs/wiki/faq.html": "3fafa69517258b1fc58d47c1f22f0ebb29c3772a53514a53d421f7b86a668854",
     "docs/wiki/index.html": "9d8788021cdd68f3c8c139959b9630c9aacf87e5b38cbafb28d820a2d7f31eb1",
-    "docs/wiki/modules.html": "ef38a2a2d1ade010f1aef89ac3872d623b62eb0993ea0b94a80dd2c352e28df9",
+    "docs/wiki/modules.html": "905b836ef3faad871fbd3ee0ded274a53a455991c28c612ccc449b048915c674",
     "docs/wiki/privacy.html": "5d5873d6aa5495337338da0e5efee6d11dc5c430a5e618966e7b8b9434f59b3a",
     "docs/wiki/roadmap.html": "8d10185a202cbd0bc01425a98802ba10b804b2317c52ab456a83b1655a1fe809",
     "docs/wiki/security.html": "71ee2739bc17db75a4ea7e1752f6e3f1d41052394cb1c17f244f6df68f894094",

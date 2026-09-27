@@ -197,6 +197,7 @@ class PageDefectTest(unittest.TestCase):
     PAGES = sorted(str(p.relative_to(REPO)) for p in DOCS.glob("wiki/*.html")) + [
         "docs/community.html", "docs/govgr-dimos.html", "docs/index.html",
     ]
+    FOOTER_NAV_PAGES = [p for p in PAGES if p != "docs/wiki/zk-voting.html"]
 
     def test_no_duplicate_ids_or_nav_links(self) -> None:
         for rel in self.PAGES:
@@ -205,8 +206,10 @@ class PageDefectTest(unittest.TestCase):
             self.assertEqual([], [k for k, n in Counter(p.nav_links).items() if n > 1], rel)
 
     def test_24h_footer_targets_window_24h(self) -> None:
-        for rel in self.PAGES:
-            for href in re.findall(r'<a href="([^"]*)" data-el="24 Ώρες"', read(rel)):
+        for rel in self.FOOTER_NAV_PAGES:
+            matches = re.findall(r'<a href="([^"]*)" data-el="24 Ώρες"', read(rel))
+            self.assertTrue(matches, rel)
+            for href in matches:
                 self.assertEqual("/el/bills?status=WINDOW_24H", href, rel)
 
     def test_no_absolute_developer_paths(self) -> None:
