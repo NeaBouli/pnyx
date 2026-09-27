@@ -7,11 +7,23 @@ artifacts under `/opt/ekklesia/app/docs/download/` and verified by SHA-256.
 
 ## ekprosopos
 
-| Channel | Public URL | Server path | Canonical local copy | SHA-256 | Metadata |
-|---|---|---|---|---|---|
-| latest | `https://ekklesia.gr/download/ekprosopos-latest.apk` | `/opt/ekklesia/app/docs/download/ekprosopos-latest.apk` | `/Users/gio/Desktop/ekprosopos-v1.1.0-vC2.apk` and ignored archive `builds/artifacts/ekprosopos-v1.1.0-vC2.apk` | `4b9d49d888465cac2f1de94f50e46efc8dbfea49cb805fd715459bbbb28a761e` | package `ekklesia.representative`, versionCode `2`, versionName `1.1.0` |
+Status: **not published.** `https://ekklesia.gr/download/ekprosopos-latest.apk`
+returned HTTP 404 on 2026-09-27, so no public page links it. The representative
+page (`docs/representative.html#download`) shows the Android APK as "In
+development". Do not add a public download link until the artifact is deployed
+and verified with the commands below.
 
-Validation command:
+Last local build candidate (not served):
+
+| Field | Value |
+|---|---|
+| Intended public URL | `https://ekklesia.gr/download/ekprosopos-latest.apk` (HTTP 404, 2026-09-27) |
+| Intended server path | `/opt/ekklesia/app/docs/download/ekprosopos-latest.apk` |
+| Local archive | ignored `builds/artifacts/ekprosopos-v1.1.0-vC2.apk` |
+| SHA-256 | `4b9d49d888465cac2f1de94f50e46efc8dbfea49cb805fd715459bbbb28a761e` (`ekprosopos-latest.apk.sha256` describes this candidate only) |
+| Metadata | package `ekklesia.representative`, versionCode `2`, versionName `1.1.0` |
+
+Validation command after deployment:
 
 ```bash
 sha256sum /opt/ekklesia/app/docs/download/ekprosopos-latest.apk
@@ -37,7 +49,7 @@ https://ekklesia.gr/representative/index.html
 | Canonical APK URL | `https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk` (published and checksum-verified) |
 | Server alias | `https://ekklesia.gr/download/ekklesia-latest.apk` serves v1.0.32 and is checksum-verified |
 | Build date | 2026-09-06 |
-| Release gate | COMPLETE — 215 Mobile tests, TypeScript, API version tests, APK/AAB metadata, signature continuity, F-Droid-compatible local build, GitHub CI/Security, published asset checksums, Google Play Closed Testing submission, bounded API/Web rollout and live alias verification pass. Google's review and F-Droid's independent build remain external channel gates. |
+| Release gate | COMPLETE — 215 Mobile tests, TypeScript, API version tests, APK/AAB metadata, signature continuity, F-Droid-compatible local build, GitHub CI/Security, published asset checksums, Google Play Closed Testing submission, bounded API/Web rollout and live alias verification pass. Google's review remains an external channel gate. F-Droid builds independently; on 2026-09-27 its API listed versionName 1.0.32 (versionCodes 611-614, suggested 614). |
 | Includes | App-icon notification count for enabled categories, with reset when the app opens, returns to the foreground or a notification switch is disabled, plus the Xiaomi/MIUI and Greek mobile-input fixes from v1.0.31. Numeric rendering depends on Android launcher support. Voting, identity, eligibility and ZK policy are unchanged. |
 
 Android treats the Direct, Google Play and F-Droid builds as separate signing
