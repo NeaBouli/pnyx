@@ -25,6 +25,7 @@ from fastapi import HTTPException
 from nacl.signing import SigningKey
 from sqlalchemy import func, insert, select, text
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.engine import make_url
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.ext.compiler import compiles
@@ -63,6 +64,20 @@ ADA = "ADA-EKA10-RACE-1"
 OTHER_ADA = "ADA-EKA10-RACE-2"
 PERIFERIA_ID = 6
 DIMOS_ID = 22
+_LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
+
+
+def _disposable_postgres_url() -> str:
+    raw_url = os.environ["PNYX_TEST_POSTGRES_URL"]
+    url = make_url(raw_url)
+    database = (url.database or "").lower()
+    if (
+        url.get_backend_name() != "postgresql"
+        or url.host not in _LOOPBACK_HOSTS
+        or not (database == "t407" or database.startswith("pnyx_test_"))
+    ):
+        raise RuntimeError("PNYX_TEST_POSTGRES_URL must target a loopback disposable test database")
+    return raw_url
 
 
 def _backends() -> list[Any]:
@@ -80,7 +95,7 @@ def _backends() -> list[Any]:
 @pytest.fixture(params=_backends())
 async def engine(request: pytest.FixtureRequest, tmp_path: Any) -> AsyncIterator[AsyncEngine]:
     if request.param == "postgres":
-        url = os.environ["PNYX_TEST_POSTGRES_URL"]
+        url = _disposable_postgres_url()
     else:
         url = f"sqlite+aiosqlite:///{tmp_path / 'eka10.db'}"
     eng = create_async_engine(url, poolclass=NullPool)
@@ -93,6 +108,23 @@ async def engine(request: pytest.FixtureRequest, tmp_path: Any) -> AsyncIterator
         async with eng.begin() as conn:
             await conn.run_sync(lambda c: DiavgeiaVote.metadata.drop_all(c, tables=_TABLES))
         await eng.dispose()
+
+
+def test_postgres_fixture_rejects_non_disposable_target(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(
+        "PNYX_TEST_POSTGRES_URL",
+        "postgresql+asyncpg://user:secret@db.example.org/production",
+    )
+    with pytest.raises(RuntimeError, match="loopback disposable test database"):
+        _disposable_postgres_url()
+
+
+def test_postgres_fixture_accepts_explicit_loopback_test_database(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    raw_url = "postgresql+asyncpg://test:test@127.0.0.1:55432/t407"
+    monkeypatch.setenv("PNYX_TEST_POSTGRES_URL", raw_url)
+    assert _disposable_postgres_url() == raw_url
 
 
 @pytest.fixture
