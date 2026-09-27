@@ -26,7 +26,7 @@ function loadPlaywright() {
 const { chromium, webkit } = loadPlaywright();
 
 const ROOT = path.resolve(__dirname, "../..");
-const OUT = path.resolve(process.argv[2] || path.join(ROOT, ".fleet/reports/T-421"));
+const OUT = path.resolve(process.argv[2] || fs.mkdtempSync(path.join(os.tmpdir(), "t421-browser-")));
 const BASE_REF = process.argv[3] || "origin/main";
 fs.mkdirSync(OUT, { recursive: true });
 
