@@ -13,7 +13,7 @@ from slowapi.middleware import SlowAPIMiddleware
 import main
 from ip_utils import rate_limit_key_for_ip
 from rate_limit import get_rate_limit_storage_uri, limiter
-from routers import agent, claude_agent
+from routers import agent
 
 
 @pytest.fixture
@@ -69,7 +69,6 @@ def test_limiter_wired_into_app_state() -> None:
 def test_all_slowapi_routes_share_one_limiter() -> None:
     assert main.limiter is limiter
     assert agent.limiter is limiter
-    assert claude_agent.limiter is limiter
 
 
 def test_runtime_storage_uses_configured_shared_backend() -> None:

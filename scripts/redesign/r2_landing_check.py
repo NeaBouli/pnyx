@@ -127,6 +127,15 @@ ALLOWED_R5_INLINE_SCRIPTS = {
         "sha256": "0af548dfe1002913413ca85b22dc4bc8c3ac9652dc8f4534d02bc454f060da1a",
         "bytes": 20761,
     },
+    6: {
+        "index": 6,
+        # T-415 (EKA-62): chat widget renders question, answer and sources
+        # via textContent on created nodes, shows a distinct bilingual 429
+        # state with retry, closes on Escape, and renders every public-safe
+        # source returned by the API.
+        "sha256": "213091827168f7076f0d0bfa29a1f009d18ff2ae3ea88ad8742198d45fa7ffee",
+        "bytes": 5554,
+    },
 }
 
 # The representative APK link was broken (dead download path) and replaced with

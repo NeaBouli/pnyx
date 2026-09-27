@@ -21,7 +21,9 @@ def test_ollama_model_matching_accepts_base_name(monkeypatch):
 async def test_citizen_answer_returns_empty_when_generation_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    async def unavailable(prompt: str, max_tokens: int = 500) -> str:
+    async def unavailable(
+        prompt: str, max_tokens: int = 500, system: str = "", timeout: float | None = None,
+    ) -> str:
         return ""
 
     monkeypatch.setattr(ollama_service, "DEEPL_API_KEY", "")
