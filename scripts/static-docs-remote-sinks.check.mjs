@@ -263,6 +263,15 @@ test('index.html chat: question, answer and sources render as text only', async 
   assert.deepEqual(items, [HOSTILE_ERROR, `GR-1 — ${HOSTILE_LOGIN}`]);
 });
 
+test('index.html chat: every public-safe API source remains visible', async () => {
+  const sources = Array.from({ length: 10 }, (_, i) => ({
+    type: 'parliament_bill', bill_id: `GR-${i + 1}`, title: `Bill ${i + 1}`,
+  }));
+  const { msgs } = await runChat({ question: 'Bills?', response: okJson({ answer: 'Ten bills.', sources }) });
+  const items = walk(msgs.children.pop()).filter((el) => el.tagName === 'LI').map((li) => li.textContent);
+  assert.deepEqual(items, sources.map((s) => `${s.bill_id} — ${s.title}`));
+});
+
 test('index.html chat: 429 is a distinct bilingual state with retry', async () => {
   const limited = () => ({ status: 429, ok: false, json: async () => ({ error: 'Rate limit exceeded' }) });
   const el = (await runChat({ question: 'Ερώτηση', response: limited })).msgs.children.pop();

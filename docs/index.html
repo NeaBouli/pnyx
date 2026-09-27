@@ -2213,7 +2213,7 @@ function chatSources(list,lang){
   box.appendChild(head);
   var ul=document.createElement("ul");
   ul.style.cssText="margin:0;padding-left:1rem";
-  list.slice(0,8).forEach(function(s){
+  list.forEach(function(s){
     if(!s||typeof s!=="object")return;
     var title=typeof s.title==="string"?s.title:"";
     var label=s.type==="parliament_bill"&&typeof s.bill_id==="string"?s.bill_id+(title?" — "+title:""):title;
