@@ -271,6 +271,8 @@ async def test_sources_cite_kb_rows_given_to_the_model(
         {"type": "knowledge_base", "id": 11, "category": "process", "title": vote_title},
         {"type": "knowledge_base", "id": 12, "category": "privacy", "title": privacy_title},
     ]
+    assert privacy_title in seen["prompt"]
+    assert KB_PRIVACY.content_el in seen["prompt"]
     _assert_public_safe(response["sources"], seen)
 
 

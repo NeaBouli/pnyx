@@ -282,12 +282,19 @@ def _bill_sources(bills: list, include_bills: bool) -> list[dict]:
     ]
 
 
+def _kb_localized_fields(entry: KnowledgeBase, lang: str) -> tuple[str | None, str | None]:
+    """Use the requested language first, then the other available language."""
+    if lang == "en":
+        return entry.title_en or entry.title_el, entry.content_en or entry.content_el
+    return entry.title_el or entry.title_en, entry.content_el or entry.content_en
+
+
 def _kb_sources(entries: list, lang: str) -> list[dict]:
     """Public references to the KB rows given to the model: id, category and
     title only. Content, keywords and prompt text are never exposed."""
     sources = []
     for e in entries:
-        title = (e.title_en if lang == "en" else None) or e.title_el
+        title, _ = _kb_localized_fields(e, lang)
         sources.append({
             "type": "knowledge_base", "id": e.id, "category": e.category, "title": title,
         })
@@ -343,8 +350,7 @@ async def _build_context(
 
     records = []
     for e in relevant:
-        title = e.title_en if lang == "en" else e.title_el
-        content = e.content_en if lang == "en" else e.content_el
+        title, content = _kb_localized_fields(e, lang)
         records.append(knowledge_record(title, content))
 
     # Bills context: only attach live bills when the question actually asks
