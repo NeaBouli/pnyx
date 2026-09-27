@@ -7,7 +7,57 @@
 # Σχήμα Βάσης Δεδομένων / Database Schema
 # Copyright (c) 2026 Vendetta Labs — MIT License
 
-## Πίνακες / Tables (9 total)
+## Πίνακες / Tables
+
+Source of truth: SQLAlchemy models in `apps/api/models.py` and Alembic
+migrations in `apps/api/alembic/versions/`.
+
+### ORM tables (24)
+
+| Table | Module | Description |
+|---|---|---|
+| identity_records | MOD-01 | Nullifier + public key |
+| parties | MOD-02 | 8 parties (scalable) |
+| statements | MOD-02 | 38 political statements |
+| party_positions | MOD-02 | Party positions |
+| parliament_bills | MOD-03 | Bills, bill lifecycle |
+| citizen_votes | MOD-04 | Citizen votes |
+| bill_relevance_votes | MOD-14 | Relevance signals |
+| periferia | MOD-16 | 13 regions |
+| dimos | MOD-16 | Municipalities |
+| communities | MOD-16 | Communities |
+| decisions | MOD-16 | Decisions (all levels) |
+| bill_status_logs | MOD-03 | Change history |
+| survey_responses | MOD-02 | VAA responses |
+| diavgeia_decisions | MOD-21 | Diavgeia decisions |
+| dimos_diavgeia_orgs | MOD-21 | 1775 org mappings (Dimos → Diavgeia) |
+| zk_identity_commitments | MOD-04 | Semaphore group commitments (no private identity material) |
+| zk_merkle_roots | MOD-04 | Merkle root snapshots per vote scope |
+| zk_vote_tier_locks | MOD-04 | Private cross-tier lock (never published) |
+| zk_vote_receipts | MOD-04 | Public verifier payloads for accepted ZK votes |
+| diavgeia_votes | MOD-21 | Citizen votes on Diavgeia decisions |
+| knowledge_base | MOD-22 | RAG Agent knowledge base (FAQ, concepts) |
+| evaluation_questions | MOD-25 | Representative evaluation questions |
+| politician_evaluations | MOD-25 | Citizen evaluation (nullifier_hash, ada_number, question_id, score -5..+5) |
+| audit_log | — | Admin action audit trail (no keys/nullifiers) |
+
+### Raw-SQL tables (no SQLAlchemy model)
+
+Accessed via parameterized SQL. Schema drift is tracked in
+`apps/api/alembic/SCHEMA_DRIFT_NOTES.md`.
+
+| Table | Module | Schema source |
+|---|---|---|
+| polis_identity_keys | — | Alembic migration |
+| polis_tickets | — | Alembic migration |
+| polis_votes | — | Alembic migration |
+| representative_tokens | MOD-25 | No create migration (ADR NEA-256) |
+| rep_invitations | — | No create migration (ADR NEA-256) |
+| bill_flags | — | No migration/model in repo |
+| consensus_votes | — | No migration/model in repo |
+| cplm_history | MOD-24 | No migration/model in repo |
+
+## Ausgewählte Spalten / Selected column details
 
 ### identity_records (MOD-01)
 ```sql
