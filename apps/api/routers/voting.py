@@ -11,6 +11,8 @@ import json
 import gc
 import logging
 import os
+import re
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Header, Query, Response, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -20,6 +22,7 @@ from sqlalchemy.exc import IntegrityError
 
 from database import get_db
 from models import (
+    CITIZEN_VOTE_NULLIFIER_UNIQUE_INDEX,
     CitizenVote, VoteChoice, IdentityRecord, KeyStatus,
     ParliamentBill, BillStatus, BillRelevanceVote, GovernanceLevel, ZkVoteReceipt
 )
@@ -268,13 +271,7 @@ class VoteRequest(BaseModel):
     )
 
     def tier1_fields(self) -> tuple[str | int | None, ...]:
-        return (
-            self.pk_eph,
-            self.vote_nullifier,
-            self.linkage_tag,
-            self.timestamp_ms,
-            self.tier1_signature_hex,
-        )
+        return _tier1_request_fields(self)
 
 class VoteResponse(BaseModel):
     success:    bool
@@ -394,17 +391,55 @@ TIER1_REJECT_STATUS = {
     "DUPLICATE_VOTE": status.HTTP_409_CONFLICT,
     "INVALID_SIGNATURE": status.HTTP_401_UNAUTHORIZED,
 }
+TIER1_DUPLICATE_DETAIL = "Μη έγκυρη ψήφος Tier-1 (DUPLICATE_VOTE). Η ψήφος απορρίφθηκε."
+_HEX64 = re.compile(r"[0-9a-fA-F]{64}")
+# Expected PostgreSQL unique conflicts of a vote write; every other error is re-raised.
+_PG_UNIQUE_VIOLATION = "23505"
+_CITIZEN_VOTE_UNIQUE = "uq_one_vote_per_citizen"
 
 
-async def _tier1_vote_nullifier_used(db: AsyncSession, req: VoteRequest) -> bool:
-    """True if another vote row (not this citizen's row for this bill) holds the nullifier."""
+@dataclass(frozen=True)
+class Tier1Fields:
+    """Verified Tier-1 metadata in canonical (lowercase hex) storage form."""
+
+    pk_eph: str
+    vote_nullifier: str
+    linkage_tag: str
+    timestamp_ms: int
+
+
+def _tier1_request_fields(req: "VoteRequest | CorrectionRequest") -> tuple[str | int | None, ...]:
+    return (
+        req.pk_eph,
+        req.vote_nullifier,
+        req.linkage_tag,
+        req.timestamp_ms,
+        req.tier1_signature_hex,
+    )
+
+
+def _tier1_requested(req: "VoteRequest | CorrectionRequest") -> bool:
+    return any(field is not None for field in _tier1_request_fields(req))
+
+
+async def _tier1_vote_nullifier_used(
+    db: AsyncSession,
+    *,
+    vote_nullifier: str,
+    nullifier_hash: str,
+    bill_id: str,
+) -> bool:
+    """True if another vote row (not this citizen's row for this bill) holds the nullifier.
+
+    Fast path only; the case-insensitive unique index is the atomic invariant.
+    """
     result = await db.execute(
         select(CitizenVote.id)
         .where(
-            func.lower(CitizenVote.vote_nullifier) == req.vote_nullifier.lower(),
+            func.lower(CitizenVote.vote_nullifier) == vote_nullifier.lower(),
             or_(
-                CitizenVote.nullifier_hash != req.nullifier_hash,
-                CitizenVote.bill_id != req.bill_id,
+                CitizenVote.nullifier_hash != nullifier_hash,
+                CitizenVote.bill_id != bill_id,
             ),
         )
         .limit(1)
@@ -412,20 +447,40 @@ async def _tier1_vote_nullifier_used(db: AsyncSession, req: VoteRequest) -> bool
     return result.scalar_one_or_none() is not None
 
 
-async def _enforce_tier1_vote(db: AsyncSession, req: VoteRequest, vote_choice: VoteChoice) -> None:
+async def _enforce_tier1_vote(
+    db: AsyncSession,
+    req: "VoteRequest | CorrectionRequest",
+    *,
+    bill_id: str,
+    vote_choice: VoteChoice,
+) -> Tier1Fields:
     """Fail closed on any incomplete, invalid or unverifiable Tier-1 payload."""
-    if any(field is None for field in req.tier1_fields()):
+    if any(field is None for field in _tier1_request_fields(req)):
         raise HTTPException(
             status_code=400,
             detail="Ελλιπή στοιχεία Tier-1. Η ψήφος απορρίφθηκε.",
         )
+    # Strict hex before canonicalisation: bytes.fromhex() tolerates whitespace,
+    # which would let two spellings of one nullifier reach storage.
+    for value in (req.pk_eph, req.vote_nullifier, req.linkage_tag):
+        if not _HEX64.fullmatch(value):
+            logger.warning("Tier-1 vote rejected: INVALID_HEX")
+            raise HTTPException(
+                status_code=400,
+                detail="Μη έγκυρη ψήφος Tier-1 (INVALID_HEX). Η ψήφος απορρίφθηκε.",
+            )
 
     used_nullifiers: set[str] = set()
-    if await _tier1_vote_nullifier_used(db, req):
+    if await _tier1_vote_nullifier_used(
+        db,
+        vote_nullifier=req.vote_nullifier,
+        nullifier_hash=req.nullifier_hash,
+        bill_id=bill_id,
+    ):
         used_nullifiers.add(req.vote_nullifier)
 
     payload = Tier1VotePayload(
-        bill_id=req.bill_id,
+        bill_id=bill_id,
         choice=vote_choice.value,
         pk_eph=req.pk_eph,
         vote_nullifier=req.vote_nullifier,
@@ -450,6 +505,95 @@ async def _enforce_tier1_vote(db: AsyncSession, req: VoteRequest, vote_choice: V
             status_code=TIER1_REJECT_STATUS.get(error.code, status.HTTP_400_BAD_REQUEST),
             detail=f"Μη έγκυρη ψήφος Tier-1 ({error.code}). Η ψήφος απορρίφθηκε.",
         )
+
+    return Tier1Fields(
+        pk_eph=req.pk_eph.lower(),
+        vote_nullifier=req.vote_nullifier.lower(),
+        linkage_tag=req.linkage_tag.lower(),
+        timestamp_ms=req.timestamp_ms,
+    )
+
+
+def _ensure_same_tier(existing: CitizenVote, tier1: Tier1Fields | None) -> None:
+    """A vote change keeps its tier: no silent Tier-0 <-> Tier-1 conversion.
+
+    A Tier-1 change needs a freshly signed payload for the new choice; replaying
+    the stored (or an older) payload is refused.
+    """
+    existing_is_tier1 = existing.vote_nullifier is not None
+    if existing_is_tier1 != (tier1 is not None):
+        logger.warning("Vote change rejected: TIER_MISMATCH")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Η αλλαγή ψήφου πρέπει να γίνει με την ίδια διαδρομή ψήφου (Tier). "
+                   "Η ψήφος δεν άλλαξε.",
+        )
+    if (
+        tier1 is not None
+        and existing.timestamp_ms is not None
+        and tier1.timestamp_ms <= existing.timestamp_ms
+    ):
+        logger.warning("Vote change rejected: STALE_PAYLOAD")
+        raise HTTPException(
+            status_code=400,
+            detail="Μη έγκυρη ψήφος Tier-1 (STALE_PAYLOAD). Η ψήφος δεν άλλαξε.",
+        )
+
+
+def _apply_tier1_fields(vote: CitizenVote, tier1: Tier1Fields | None) -> None:
+    if tier1 is None:
+        return
+    vote.pk_eph = tier1.pk_eph
+    vote.vote_nullifier = tier1.vote_nullifier
+    vote.linkage_tag = tier1.linkage_tag
+    vote.timestamp_ms = tier1.timestamp_ms
+
+
+def _unique_violation_name(exc: IntegrityError) -> str | None:
+    """Constraint/index name of a PostgreSQL 23505, else None.
+
+    asyncpg exposes sqlstate/constraint_name on the driver error (the __cause__
+    of SQLAlchemy's adapted error); psycopg exposes pgcode and diag.
+    """
+    orig = exc.orig
+    for candidate in (orig, getattr(orig, "__cause__", None)):
+        if candidate is None:
+            continue
+        sqlstate = getattr(candidate, "sqlstate", None) or getattr(candidate, "pgcode", None)
+        constraint = getattr(candidate, "constraint_name", None) or getattr(
+            getattr(candidate, "diag", None), "constraint_name", None
+        )
+        if sqlstate == _PG_UNIQUE_VIOLATION and constraint:
+            return constraint
+    return None
+
+
+async def _commit_vote_write(db: AsyncSession) -> None:
+    """Commit one vote mutation atomically; map only the expected conflicts to 409.
+
+    Every failure rolls the whole transaction back, so vote and Tier-1 fields are
+    written together or not at all. Foreign integrity errors stay unmasked.
+    """
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        name = _unique_violation_name(exc)
+        if name == CITIZEN_VOTE_NULLIFIER_UNIQUE_INDEX:
+            logger.warning("Tier-1 vote rejected: DUPLICATE_VOTE (unique index)")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=TIER1_DUPLICATE_DETAIL,
+            ) from None
+        if name == _CITIZEN_VOTE_UNIQUE:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Η ψήφος έχει ήδη καταχωρηθεί.",
+            ) from None
+        raise
+    except BaseException:
+        await db.rollback()
+        raise
 
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
@@ -530,15 +674,16 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
     # 4b. Tier-1 validation (ADR-022) — enforced whenever any Tier-1 field is sent.
     # The identity signature above stays mandatory; Tier-1 adds a second, ephemeral
     # signature so pk_eph/vote_nullifier/linkage_tag are never stored unauthenticated.
-    if any(field is not None for field in req.tier1_fields()):
-        await _enforce_tier1_vote(db, req, vote_choice)
+    tier1: Tier1Fields | None = None
+    if _tier1_requested(req):
+        tier1 = await _enforce_tier1_vote(db, req, bill_id=req.bill_id, vote_choice=vote_choice)
 
-    # 5. Bestehende Stimme prüfen (Stimmänderung)
+    # 5. Bestehende Stimme prüfen (Stimmänderung) — Zeile gegen parallele Änderung sperren
     existing_result = await db.execute(
         select(CitizenVote).where(
             CitizenVote.nullifier_hash == req.nullifier_hash,
             CitizenVote.bill_id == req.bill_id
-        )
+        ).with_for_update()
     )
     existing_vote = existing_result.scalar_one_or_none()
 
@@ -549,10 +694,12 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
                 status_code=409,
                 detail="Η ψήφος έχει ήδη καταχωρηθεί. Αλλαγή μόνο στο 24ωρο παράθυρο."
             )
+        _ensure_same_tier(existing_vote, tier1)
         existing_vote.vote = vote_choice
         existing_vote.signature_hex = req.signature_hex
+        _apply_tier1_fields(existing_vote, tier1)
         existing_vote.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
-        await db.commit()
+        await _commit_vote_write(db)
         return VoteResponse(
             success=True,
             message="Η ψήφος άλλαξε επιτυχώς.",
@@ -560,27 +707,16 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
             vote=vote_choice.value
         )
 
-    # 6. Neue Stimme speichern
-    try:
-        new_vote = CitizenVote(
-            nullifier_hash=req.nullifier_hash,
-            bill_id=req.bill_id,
-            vote=vote_choice,
-            signature_hex=req.signature_hex,
-            # Tier-1 fields (ADR-022) — stored if provided
-            pk_eph=req.pk_eph,
-            vote_nullifier=req.vote_nullifier,
-            linkage_tag=req.linkage_tag,
-            timestamp_ms=req.timestamp_ms,
-        )
-        db.add(new_vote)
-        await db.commit()
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(
-            status_code=409,
-            detail="Η ψήφος έχει ήδη καταχωρηθεί."
-        )
+    # 6. Neue Stimme speichern (Tier-1 fields only after verification, canonical hex)
+    new_vote = CitizenVote(
+        nullifier_hash=req.nullifier_hash,
+        bill_id=req.bill_id,
+        vote=vote_choice,
+        signature_hex=req.signature_hex,
+    )
+    _apply_tier1_fields(new_vote, tier1)
+    db.add(new_vote)
+    await _commit_vote_write(db)
 
     return VoteResponse(
         success=True,
@@ -699,6 +835,15 @@ class CorrectionRequest(BaseModel):
     bill_id: str
     vote: str = Field(..., description="YES | NO | ABSTAIN | UNKNOWN")
     signature_hex: str = Field(..., description="Ed25519 Signatur des Payloads")
+    # Tier-1 (ADR-022): required iff the stored vote is Tier-1; freshly signed for the new choice
+    pk_eph:         str | None = Field(None, description="Ephemeral public key (64 hex)")
+    vote_nullifier: str | None = Field(None, description="Bill-specific nullifier (64 hex)")
+    linkage_tag:    str | None = Field(None, description="Anti-double-vote proof (64 hex)")
+    timestamp_ms:   int | None = Field(None, description="Millisecond timestamp")
+    tier1_signature_hex: str | None = Field(
+        None,
+        description="Tier-1 Ed25519 signature by pk_eph over the canonical ADR-022 payload (128 hex)",
+    )
 
 
 @router.put("/{bill_id}/correct")
@@ -739,12 +884,12 @@ async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = 
     # A correction must never bypass the geographic authorization of the vote.
     ensure_bill_scope_allowed(identity, bill)
 
-    # 3. Existing Vote laden
+    # 3. Existing Vote laden und gegen parallele Korrektur sperren
     vote_result = await db.execute(
         select(CitizenVote).where(
             CitizenVote.nullifier_hash == req.nullifier_hash,
             CitizenVote.bill_id == bill_id,
-        )
+        ).with_for_update()
     )
     existing = vote_result.scalar_one_or_none()
     if not existing:
@@ -776,15 +921,22 @@ async def correct_vote(bill_id: str, req: CorrectionRequest, db: AsyncSession = 
         nullifier_hash=req.nullifier_hash,
     )
 
-    # 7. Korrektur durchführen
+    # 6b. Tier-1: the stored tier is kept; a Tier-1 vote needs a fresh signed payload.
+    tier1: Tier1Fields | None = None
+    if _tier1_requested(req):
+        tier1 = await _enforce_tier1_vote(db, req, bill_id=bill_id, vote_choice=new_choice)
+    _ensure_same_tier(existing, tier1)
+
+    # 7. Korrektur durchführen — alle Felder in genau einer Transaktion
     existing.original_vote = existing.vote.value
     existing.vote = new_choice
     existing.signature_hex = req.signature_hex
+    _apply_tier1_fields(existing, tier1)
     existing.is_correction = True
     existing.corrected_at = datetime.now(timezone.utc).replace(tzinfo=None)
     existing.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
-    await db.commit()
+    await _commit_vote_write(db)
 
     return {
         "status": "corrected",

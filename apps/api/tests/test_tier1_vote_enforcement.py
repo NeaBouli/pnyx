@@ -15,6 +15,7 @@ from types import SimpleNamespace
 import pytest
 from fastapi import HTTPException
 from nacl.signing import SigningKey
+from sqlalchemy.exc import IntegrityError
 
 from crypto import nullifier
 from crypto.nullifier import (
@@ -23,7 +24,7 @@ from crypto.nullifier import (
     build_signed_payload,
     validate_vote,
 )
-from models import BillStatus, GovernanceLevel
+from models import CITIZEN_VOTE_NULLIFIER_UNIQUE_INDEX, BillStatus, GovernanceLevel, VoteChoice
 from routers import voting
 
 BILL_ID = "GR-TIER1-001"
@@ -273,7 +274,9 @@ async def test_duplicate_vote_nullifier_lookup_is_case_insensitive():
     db = _FakeDb([None])
     await voting._tier1_vote_nullifier_used(
         db,
-        _request(vote_nullifier="AB" * 32),
+        vote_nullifier="AB" * 32,
+        nullifier_hash=NULLIFIER_HASH,
+        bill_id=BILL_ID,
     )
     statement = db.executed[0]
     assert "lower(" in str(statement).lower()
@@ -324,3 +327,154 @@ def test_validator_bad_signature_is_validation_error():
     fields = _tier1_fields(claimed_pk=bytes(SigningKey.generate().verify_key))
     err = validate_vote(_payload(**fields), set())
     assert err is not None and err.code == "INVALID_SIGNATURE"
+
+
+# ── T-410: canonical storage and exact conflict mapping ──────────────────────
+
+@pytest.mark.asyncio
+async def test_tier1_hex_stored_lowercase():
+    signer = SigningKey.generate()
+    fields = _tier1_fields(signer=signer)
+    upper = {
+        key: (value.upper() if key in {"pk_eph", "vote_nullifier", "linkage_tag"} else value)
+        for key, value in fields.items()
+    }
+    _resp, db = await _submit(_request(**upper))
+    (row,) = db.added
+    assert row.pk_eph == fields["pk_eph"].lower()
+    assert row.vote_nullifier == fields["vote_nullifier"].lower()
+    assert row.linkage_tag == fields["linkage_tag"].lower()
+
+
+@pytest.mark.asyncio
+async def test_whitespace_hex_rejected_before_lookup():
+    fields = _tier1_fields()
+    fields["vote_nullifier"] = "11 " * 21 + "1"  # 64 chars, bytes.fromhex() would accept
+    assert len(fields["vote_nullifier"]) == 64
+    db = await _expect_reject(_request(**fields), 400)
+    assert len(db.executed) == 2  # identity + bill, no nullifier lookup
+
+
+class _PgError(Exception):
+    def __init__(self, sqlstate: str, constraint_name: str | None):
+        super().__init__("pg")
+        self.sqlstate = sqlstate
+        self.constraint_name = constraint_name
+
+
+def _integrity_error(sqlstate: str, constraint_name: str | None) -> IntegrityError:
+    adapted = Exception("adapted")
+    adapted.__cause__ = _PgError(sqlstate, constraint_name)
+    return IntegrityError("INSERT", {}, adapted)
+
+
+class _FailingCommitDb:
+    def __init__(self, exc: BaseException):
+        self.exc = exc
+        self.rollbacks = 0
+
+    async def commit(self):
+        raise self.exc
+
+    async def rollback(self):
+        self.rollbacks += 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "constraint, detail",
+    [
+        (CITIZEN_VOTE_NULLIFIER_UNIQUE_INDEX, voting.TIER1_DUPLICATE_DETAIL),
+        ("uq_one_vote_per_citizen", "Η ψήφος έχει ήδη καταχωρηθεί."),
+    ],
+)
+async def test_expected_unique_conflicts_map_to_409(constraint, detail):
+    db = _FailingCommitDb(_integrity_error("23505", constraint))
+    with pytest.raises(HTTPException) as exc:
+        await voting._commit_vote_write(db)
+    assert exc.value.status_code == 409
+    assert exc.value.detail == detail
+    assert db.rollbacks == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "sqlstate, constraint",
+    [
+        ("23505", "uq_some_other_index"),
+        ("23505", None),
+        ("23503", CITIZEN_VOTE_NULLIFIER_UNIQUE_INDEX),  # FK, same name must not match
+        ("23514", "ck_votes"),
+    ],
+)
+async def test_foreign_integrity_errors_are_reraised(sqlstate, constraint):
+    error = _integrity_error(sqlstate, constraint)
+    db = _FailingCommitDb(error)
+    with pytest.raises(IntegrityError) as exc:
+        await voting._commit_vote_write(db)
+    assert exc.value is error
+    assert db.rollbacks == 1
+
+
+@pytest.mark.asyncio
+async def test_non_integrity_commit_failure_rolls_back_and_reraises():
+    db = _FailingCommitDb(RuntimeError("connection lost"))
+    with pytest.raises(RuntimeError):
+        await voting._commit_vote_write(db)
+    assert db.rollbacks == 1
+
+
+def _window_bill():
+    bill = _bill()
+    bill.status = BillStatus.WINDOW_24H
+    return bill
+
+
+def _stored_vote(*, tier1: bool, timestamp_ms: int | None = None):
+    return SimpleNamespace(
+        vote=VoteChoice.YES,
+        signature_hex="0" * 128,
+        pk_eph="01" * 32 if tier1 else None,
+        vote_nullifier="11" * 32 if tier1 else None,
+        linkage_tag="02" * 32 if tier1 else None,
+        timestamp_ms=timestamp_ms if tier1 else None,
+        is_correction=False,
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("stored_tier1", [True, False])
+async def test_resubmit_refuses_tier_switch(stored_tier1):
+    stored = _stored_vote(tier1=stored_tier1, timestamp_ms=1)
+    snapshot = dict(vars(stored))
+    if stored_tier1:
+        req, values = _request(vote="NO"), [_identity(), _window_bill(), stored]
+    else:
+        req = _request(vote="NO", **_tier1_fields(sign_choice="NO"))
+        values = [_identity(), _window_bill(), None, stored]
+    db = _FakeDb(values)
+    with pytest.raises(HTTPException) as exc:
+        await voting.submit_vote(req, db)
+    assert exc.value.status_code == 409
+    assert db.commits == 0
+    assert vars(stored) == snapshot
+    assert "FOR UPDATE" in str(db.executed[-1])
+
+
+@pytest.mark.asyncio
+async def test_correction_requires_fresh_tier1_payload_and_locks_row():
+    stored = _stored_vote(tier1=True, timestamp_ms=int(time.time() * 1000) + 60_000)
+    snapshot = dict(vars(stored))
+    fields = _tier1_fields(sign_bill_id=BILL_ID, sign_choice="NO")
+    req = voting.CorrectionRequest(
+        nullifier_hash=NULLIFIER_HASH, bill_id=BILL_ID, vote="NO",
+        signature_hex="b" * 128, **fields,
+    )
+    db = _FakeDb([_window_bill(), _identity(), stored, None])
+    with pytest.raises(HTTPException) as exc:
+        await voting.correct_vote(BILL_ID, req, db)
+    assert exc.value.status_code == 400
+    assert "STALE_PAYLOAD" in exc.value.detail
+    assert db.commits == 0
+    assert vars(stored) == snapshot
+    assert "FOR UPDATE" in str(db.executed[2])
