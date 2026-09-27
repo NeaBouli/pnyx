@@ -3,6 +3,9 @@ MOD-22: Hybrid RAG Agent — Citizen Q&A
 POST /api/v1/agent/ask — Ollama first, Claude fallback for complex questions
 Rate limited: 5 requests/minute per IP
 Strategy: Ollama (local, fast, free) → Claude Haiku (API, smart, costs tokens)
+Trust boundary (EKA-58): retrieved KB/bill text is untrusted data serialised by
+services.agent_prompt; model output passes an output guard that fails closed.
+See docs/security/AGENT_PROMPT_TRUST_BOUNDARY.md.
 """
 import os
 import logging
@@ -21,6 +24,14 @@ from models import ParliamentBill, BillStatus, KnowledgeBase
 from services.bill_visibility import public_bill_filter
 from services.claude_usage import MODEL as CLAUDE_MODEL, track_usage
 from rate_limit import limiter
+from services.agent_prompt import (
+    UnsafeModelOutputError,
+    bill_record,
+    build_agent_prompt,
+    fail_closed_answer,
+    is_unsafe_model_output,
+    knowledge_record,
+)
 from services.ollama_service import answer_citizen_question, ollama_available
 
 logger = logging.getLogger(__name__)
@@ -242,8 +253,10 @@ def _bill_sources(bills: list, include_bills: bool) -> list[dict]:
     return [{"bill_id": b.id, "title": b.title_el or b.title_en} for b in bills[:5]]
 
 
-async def _build_context(question: str, lang: str, db: AsyncSession) -> tuple[str, list, bool]:
-    """Build RAG context from Knowledge Base + Bills."""
+async def _build_context(
+    question: str, lang: str, db: AsyncSession,
+) -> tuple[list[dict[str, str]], list, bool]:
+    """Build RAG context records (untrusted data) from Knowledge Base + Bills."""
     # Knowledge Base — full-text search (all entries, ranked by relevance)
     q_lower = question.lower()
     q_words = [w for w in q_lower.split() if len(w) > 2]
@@ -278,18 +291,16 @@ async def _build_context(question: str, lang: str, db: AsyncSession) -> tuple[st
     if not relevant:
         relevant = [e for e in kb_entries if e.priority == 1][:3]
 
-    kb_parts = []
+    records = []
     for e in relevant:
         title = e.title_en if lang == "en" else e.title_el
         content = e.content_en if lang == "en" else e.content_el
-        kb_parts.append(f"### {title}\n{content}")
-    kb_context = "\n\n".join(kb_parts)
+        records.append(knowledge_record(title, content))
 
     # Bills context: only attach live bills when the question actually asks
     # about bills/laws. Generic platform/privacy questions should cite KB only.
     include_bills = _should_include_bills(question)
     bills = []
-    bill_parts = []
     if include_bills:
         result = await db.execute(
             select(ParliamentBill)
@@ -304,22 +315,12 @@ async def _build_context(question: str, lang: str, db: AsyncSession) -> tuple[st
         bills = result.scalars().all()
         for b in bills:
             title = b.title_el or b.title_en or b.id
-            line = f"- {b.id}: {title} (Status: {b.status.value})"
-            if b.pill_el:
-                line += f" — {b.pill_el[:200]}"
-            bill_parts.append(line)
+            records.append(bill_record(b.id, title, b.status.value, b.pill_el))
 
-    parts = []
-    if kb_context:
-        parts.append("=== KNOWLEDGE BASE ===\n" + kb_context)
-    if bill_parts:
-        parts.append("=== ACTIVE BILLS ===\n" + "\n".join(bill_parts))
-
-    context = "\n\n".join(parts) if parts else "No data available."
-    return context, bills, include_bills
+    return records, bills, include_bills
 
 
-async def _claude_answer(question: str, context: str, lang: str) -> str | None:
+async def _claude_answer(question: str, context: list[dict[str, str]], lang: str) -> str | None:
     """Fallback to Claude Haiku for complex questions."""
     if not ANTHROPIC_API_KEY:
         return None
@@ -330,19 +331,9 @@ async def _claude_answer(question: str, context: str, lang: str) -> str | None:
     if last_error == "credit_balance":
         return None
 
-    now = datetime.now(timezone.utc)
-    system = (
-        "You are the ekklesia.gr AI assistant — a Greek digital democracy platform.\n\n"
-        "CONTEXT (use this as primary source of truth):\n"
-        f"{context}\n\n"
-        "RULES:\n"
-        "- Answer in the same language as the question\n"
-        "- Be concise, factual, politically neutral\n"
-        "- If the answer is in the context, use it directly\n"
-        "- If not in context, say you don't have enough data\n"
-        "- NEVER invent facts about the platform\n"
-        f"- Today: {now.strftime('%d %B %Y')}. Year: 2026.\n"
-    )
+    # Same builder as the Ollama path: rules in `system`, untrusted data only
+    # inside the escaped block in the user turn.
+    prompt = build_agent_prompt(question, context, datetime.now(timezone.utc))
 
     try:
         async with httpx.AsyncClient(timeout=15) as client:
@@ -356,8 +347,8 @@ async def _claude_answer(question: str, context: str, lang: str) -> str | None:
                 json={
                     "model": CLAUDE_MODEL,
                     "max_tokens": 400,
-                    "system": system,
-                    "messages": [{"role": "user", "content": question}],
+                    "system": prompt.system,
+                    "messages": [{"role": "user", "content": prompt.user}],
                 },
             )
             resp.raise_for_status()
@@ -402,6 +393,17 @@ def _is_answer_poor(answer: str) -> bool:
     return any(sig in low for sig in bad_signals)
 
 
+def _output_guard_response(question: str, lang: str) -> dict:
+    """Neutral fail-closed reply; never echoes the rejected model text."""
+    return {
+        "question": question,
+        "answer": _with_disclaimer(fail_closed_answer(lang), lang),
+        "model": "output-guard",
+        "sources": [],
+        "lang": lang,
+    }
+
+
 @router.post("/ask")
 @limiter.limit("5/minute")
 async def ask_agent(
@@ -415,7 +417,8 @@ async def ask_agent(
     1. Build context from Knowledge Base + Bills
     2. Try Ollama (local, free, fast)
     3. If Ollama fails or gives poor answer → Claude Haiku (API, smart)
-    4. Always append disclaimer
+    4. Output guard: instruction echo / rule leak / role override → fail closed
+    5. Always append disclaimer
     """
     safety = _safety_response(req.question, req.lang)
     if safety:
@@ -432,11 +435,20 @@ async def ask_agent(
     # Step 1: Try Ollama (with reduced timeout)
     ollama_answer = ""
     if await ollama_available():
-        ollama_answer = await answer_citizen_question(req.question, context, req.lang)
+        try:
+            ollama_answer = await answer_citizen_question(req.question, context, req.lang)
+        except UnsafeModelOutputError:
+            return _output_guard_response(req.question, req.lang)
+        if is_unsafe_model_output(ollama_answer):
+            logger.warning("[Hybrid] Ollama answer rejected by output guard")
+            return _output_guard_response(req.question, req.lang)
 
     # Step 2: If Ollama failed or gave poor answer → Claude fallback
     if _is_answer_poor(ollama_answer):
         claude_answer = await _claude_answer(req.question, context, req.lang)
+        if claude_answer and is_unsafe_model_output(claude_answer):
+            logger.warning("[Hybrid] Claude answer rejected by output guard")
+            return _output_guard_response(req.question, req.lang)
         if claude_answer:
             model_used = "claude-haiku"
             return {

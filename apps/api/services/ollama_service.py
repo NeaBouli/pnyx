@@ -9,7 +9,15 @@ import json
 import logging
 import os
 import re
-from typing import Any
+from typing import Any, Mapping, Sequence
+
+from services.agent_prompt import (
+    UnsafeModelOutputError,
+    build_agent_prompt,
+    is_unsafe_model_output,
+    render_records_plaintext,
+    translated_record,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -64,19 +72,23 @@ async def deepl_available() -> bool:
 
 # ── Ollama LLM ───────────────────────────────────────────────────────────────
 
-async def ollama_generate(prompt: str, max_tokens: int = 500) -> str:
-    """Send prompt to Ollama and return response."""
+async def ollama_generate(prompt: str, max_tokens: int = 500, system: str = "") -> str:
+    """Send prompt to Ollama and return response.
+
+    `system` travels in Ollama's separate system field so trusted rules never
+    share a string with untrusted retrieval data.
+    """
+    payload: dict = {
+        "model": OLLAMA_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "options": {"num_predict": max_tokens, "temperature": 0.2},
+    }
+    if system:
+        payload["system"] = system
     try:
         async with httpx.AsyncClient(timeout=60) as client:
-            resp = await client.post(
-                f"{OLLAMA_URL}/api/generate",
-                json={
-                    "model": OLLAMA_MODEL,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {"num_predict": max_tokens, "temperature": 0.2},
-                },
-            )
+            resp = await client.post(f"{OLLAMA_URL}/api/generate", json=payload)
             resp.raise_for_status()
             return resp.json().get("response", "").strip()
     except Exception as e:
@@ -290,10 +302,19 @@ _DISCLAIMER_EN = (
 )
 
 
-async def answer_citizen_question(question: str, context: str, lang: str = "el") -> str:
+async def answer_citizen_question(
+    question: str,
+    context: str | Sequence[Mapping[str, Any]] | None,
+    lang: str = "el",
+) -> str:
     """
     Answer a citizen question using DB context.
     Strategy: if question is Greek → translate to EN → Ollama → translate back.
+
+    `context` is untrusted retrieval data (records from agent._build_context).
+    It is serialised by services.agent_prompt, the same builder the Claude
+    fallback uses. Raises UnsafeModelOutputError if the raw model answer trips
+    the output guard, before any translation can blur it.
     """
     # Translate Greek question to English for better Ollama performance
     en_question = question
@@ -302,27 +323,23 @@ async def answer_citizen_question(question: str, context: str, lang: str = "el")
         if translated:
             en_question = translated
 
-    # Translate context to English too
+    # Translate context to English too. The translation is itself untrusted
+    # and goes back into the data block as a single escaped record.
     en_context = context
-    if lang == "el" and DEEPL_API_KEY:
-        translated_ctx = await deepl_translate(context[:2000], "EN", "EL")
+    if lang == "el" and DEEPL_API_KEY and context:
+        plain = context if isinstance(context, str) else render_records_plaintext(context)
+        translated_ctx = await deepl_translate(plain[:2000], "EN", "EL")
         if translated_ctx:
-            en_context = translated_ctx
+            en_context = [translated_record(translated_ctx)]
 
     from datetime import datetime as _dt
-    current_date = _dt.now().strftime("%d %B %Y")
-
-    prompt = (
-        "You are an assistant for the ekklesia.gr platform (Greek digital democracy).\n"
-        f"Today's date: {current_date}. The current year is 2026.\n"
-        "Answer the question based on the data. Be concise and helpful.\n"
-        "Do NOT add greetings, exclamations, or filler text. Answer directly.\n"
-        "If you don't know, say you don't have enough data.\n\n"
-        f"Data:\n{en_context}\n\n"
-        f"Question: {en_question}\n\n"
-        "Answer:"
+    agent_prompt = build_agent_prompt(en_question, en_context, _dt.now())
+    en_answer = await ollama_generate(
+        agent_prompt.user, max_tokens=300, system=agent_prompt.system,
     )
-    en_answer = await ollama_generate(prompt, max_tokens=300)
+    if is_unsafe_model_output(en_answer):
+        logger.warning("[Agent] Ollama answer rejected by output guard")
+        raise UnsafeModelOutputError("ollama")
 
     # Clean Ollama warmup artifacts
     if en_answer:
