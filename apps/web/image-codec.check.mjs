@@ -63,12 +63,24 @@ for (const format of ["png", "jpeg", "webp"]) {
   });
 }
 
-test("Next retains its existing AVIF input restriction", async () => {
+test("Next decodes AVIF input within the configured pixel limit", async () => {
   const buffer = await sharp({ create: { width: 16, height: 16, channels: 3, background: "blue" } }).avif().toBuffer();
+  const result = await optimizeImage({
+    buffer, contentType: "image/webp", quality: 90, width: 8,
+    limitInputPixels: 4096, timeoutInSeconds: 5,
+  });
+  const metadata = await sharp(result).metadata();
+  assert.equal(metadata.format, "webp");
+  assert.equal(metadata.width, 8);
+  assert.equal(metadata.height, 8);
+});
+
+test("Next enforces the pixel limit for AVIF input", async () => {
+  const buffer = await sharp({ create: { width: 65, height: 65, channels: 3, background: "blue" } }).avif().toBuffer();
   await assert.rejects(optimizeImage({
     buffer, contentType: "image/webp", quality: 90, width: 8,
     limitInputPixels: 4096, timeoutInSeconds: 5,
-  }), /unsupported image format/i);
+  }), /pixel limit/i);
 });
 
 test("Next rejects malformed input instead of returning a successful image", async () => {
