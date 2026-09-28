@@ -35,3 +35,31 @@ SETTINGS -> REDIS : redis_url localhost:6379 (H8)
 ADJ -> DB : <dev-host>:5432 with repo-public dev credential
 ADJ -> REDIS : <dev-host>:6379 without auth
 @enduml
+
+@startuml
+' EKA-24 main path — only the built unit-test trace; no production path exists
+title EKA-24 test-only v1 nullifier helper path
+
+actor Developer
+participant "Web test command\npackage.json::test" as TESTCMD
+participant "Vitest" as VITEST
+participant "crypto.test.ts" as TESTS
+participant "crypto.ts\ncomputeNullifier" as HELPER
+participant "Web Crypto\nsubtle.digest" as WEBCRYPTO
+participant "crypto.ts\nbytesToHex" as HEX
+
+Developer -> TESTCMD : npm test (N1)
+TESTCMD -> VITEST : vitest run (N1)
+VITEST -> TESTS : load crypto unit suite (N1)
+TESTS -> HELPER : synthetic phoneNumber + serverSalt (N2/N3)
+HELPER -> WEBCRYPTO : SHA-256 UTF-8 phone:salt (N4)
+WEBCRYPTO --> HELPER : 32-byte digest
+HELPER -> HEX : bytesToHex(digest) (N5)
+HEX --> TESTS : lowercase 64-char hex
+TESTS -> TESTS : assert shape / determinism / input sensitivity
+
+note over TESTS,HELPER
+  No production import or caller exists at base 4cc11930.
+  The absent runtime edge is not simulated.
+end note
+@enduml

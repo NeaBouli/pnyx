@@ -141,3 +141,103 @@ cd infra/docker && env -u DB_PASSWORD docker compose -f docker-compose.yml confi
 ```
 
 **Unberührt bleiben:** `infra/docker/docker-compose.prod.yml`, `infra/docker/app.yml`, `infra/hetzner/*`, mirror compose, `apps/api/config.py`, `apps/api/main.py`, routers, `security_startup.py`, `.env*`, workflows, packages/lockfiles. Neighbour files enter scope only if a hop above proves they define H3/H4 — none do.
+
+# Architecture Map — EKA-24 Test-only Legacy Nullifier Helper Boundary
+
+Basis: `origin/main 4cc11930f4be82ba2d012def487fb34abca9da26` · Task: T-509 · Mapping only, no product fix.
+Node: Web Crypto / legacy v1 nullifier helper boundary.
+
+The accepted EKA-18 map above stays unchanged. EKA-24 is appended as separate diagrams in the same files.
+
+## 1. Grundidee
+
+- Ekklesia.gr is an independent direct-democracy platform where Greek citizens inspect and cast informational votes on parliamentary and municipal matters (`README.md::What is Ekklesia?`).
+- The Web client signs vote and relevance payloads locally with Ed25519 helpers from `apps/web/src/lib/crypto.ts`; production callers import signing and locally stored identity material, not phone-number nullifier derivation (`apps/web/src/app/[locale]/bills/[id]/page.tsx`, `components/RelevanceButtons.tsx`, `app/[locale]/sso-verify/page.tsx`, `lib/compass/useCompass.ts`).
+- `crypto.ts::computeNullifier(phoneNumber, serverSalt)` nevertheless exposes the legacy v1 formula `SHA-256(phone + ":" + serverSalt)` from the product module (`apps/web/src/lib/crypto.ts`).
+- Repository-wide symbol search at this base finds only `apps/web/src/lib/crypto.test.ts` importing and calling that export; no production caller supplies or receives a server salt.
+- EKA-24 records this as an informational future-misuse risk: client code must not acquire `SERVER_SALT` or derive the server-owned v1 nullifier (`docs/community-audits/EKA_PNYX_Crypto_Deep_Audit_2026-09-15.md::EKA-24`).
+- System boundary of this node: the single exported helper and its existing unit-test-only callers. Key storage (EKA-07), KDF harmonisation (EKA-21), EKA-22 KATs, API identity behavior and all production call sites are neighbours and remain unchanged.
+
+## 2. Spur (one built trace, hops opened)
+
+There is no user/runtime path to this symbol at the proven base. The only built path is the unit-test path below; the absent production edge is recorded as a gap and is not simulated.
+
+| # | From → To | Datum over the edge |
+| --- | --- | --- |
+| N1 | `apps/web/package.json::test` → Vitest → `apps/web/src/lib/crypto.test.ts` | `vitest run` discovers the crypto unit suite |
+| N2 | `crypto.test.ts` import list → `apps/web/src/lib/crypto.ts::computeNullifier` | named TypeScript export imported only by the test file |
+| N3 | nullifier tests → `computeNullifier(phoneNumber, serverSalt)` | synthetic phone and salt strings; never environment or production values |
+| N4 | `computeNullifier` → `TextEncoder` → `crypto.subtle.digest("SHA-256", ...)` | UTF-8 bytes of `${phoneNumber}:${serverSalt}` become a 32-byte digest |
+| N5 | digest → `crypto.ts::bytesToHex` → assertions | lowercase 64-character hex checked for shape and input sensitivity |
+
+Opened direct production neighbours: `bills/[id]/page.tsx`, `RelevanceButtons.tsx`, `sso-verify/page.tsx` and `useCompass.ts` import other `crypto.ts` symbols only. None imports or calls `computeNullifier`.
+
+## 3. Module
+
+| Modul | Eine Aufgabe | Einstieg | Stand |
+| --- | --- | --- | --- |
+| Web Crypto product module | Ed25519 conversion, signing and Beta local identity storage | `apps/web/src/lib/crypto.ts` | gebaut; `computeNullifier` is quarantäne because it has no production caller and accepts server-owned material |
+| Web Crypto unit tests | exercise product crypto helpers | `apps/web/src/lib/crypto.test.ts` | gebaut; sole caller of `computeNullifier` |
+| Web production callers | sign votes/relevance/SSO and read local identity material | paths listed above | gebaut; no nullifier-derivation edge |
+| Web test runner | discovers and runs Vitest suites | `apps/web/package.json::test` | gebaut |
+| EKA-22 cross-runtime KAT suite | pins current implementation-specific crypto formats | PR #397 / separate test files | aufgeschoben; separate draft, no file overlap with this node |
+| Server nullifier derivation | owns the v1 salt-backed identity formula | API identity/crypto modules | aufgeschoben; direct neighbour, not opened for modification |
+
+## 4. Verdrahtung
+
+- `npm test` → Vitest → `crypto.test.ts`: the Web test command loads the unit suite.
+- `crypto.test.ts` → `crypto.ts::computeNullifier`: the test imports a production export only to exercise the legacy v1 formula.
+- `computeNullifier` → Web Crypto SHA-256 → `bytesToHex`: the helper hashes synthetic `phone:salt` bytes and returns lowercase hex.
+- Production callers → other `crypto.ts` exports: voting, relevance, SSO and compass flows use signing/storage helpers but have no edge to `computeNullifier`.
+- There is no repository edge from configuration or an API response to `serverSalt` in the Web client.
+
+## 5. Widerspruch und Lücken
+
+**Symptom:** server-owned v1 nullifier derivation is presented as a public export of the browser product module even though only unit tests call it.
+
+**Ursache:** N2 crosses the test/product boundary: the test keeps its legacy formula helper in `crypto.ts` instead of test-only code.
+
+**Security invariant:** no browser production path accepts, retrieves, embeds or derives with `SERVER_SALT`; server-owned nullifier/KDF behavior stays outside the client product API.
+
+**Widerspruch:** the audit says the helper is “exported in the web bundle.” Static evidence proves an exported source symbol and zero production imports; it does not prove that the optimized Next build retains the unused named export. Tree-shaking may remove it. EKA-24 remains valid as API-surface/future-misuse hardening, not as evidence that the live bundle currently leaks the server salt or offers a callable UI path.
+
+**Lücken / Grenzen:**
+
+- The existing tests verify output shape, determinism and input sensitivity, but their “matches Python format” case does not pin a known digest. EKA-22 owns cross-runtime known-answer vectors and must not be duplicated here.
+- `generateKeypair` is also not imported by current production files, but it does not accept server-owned material and is outside EKA-24.
+- EKA-07 plaintext key storage and EKA-21 KDF design are explicitly Gio-gated and remain untouched.
+
+## 6. Diagrammdateien
+
+- `docs/architecture/map.puml` (EKA-24 mindmap + component diagram appended)
+- `docs/architecture/main-path.puml` (unit-test-only built trace appended)
+- Rendered SVGs: `map.svg`, `map_001.svg`, `map_002.svg`, `map_003.svg`, `main-path.svg`, `main-path_001.svg` (the `_002`/`_003` map pair and `_001` main path are EKA-24).
+- Render command: `/Users/gio/.local/bin/plantuml -Playout=smetana -tsvg ...`; `smetana` is required on this host because Graphviz `dot` is absent.
+
+```mermaid
+mindmap
+  root((Web Crypto: product exports vs test-only v1 nullifier helper))
+    Web Crypto product module
+      gebaut: signing and storage helpers
+      quarantäne: crypto.ts::computeNullifier
+    Web Crypto unit tests
+      gebaut: crypto.test.ts nullifier cases
+    Production callers
+      gebaut: vote relevance SSO compass imports
+      offen: no edge to computeNullifier
+    Server nullifier domain
+      aufgeschoben: server-owned salt and KDF
+    EKA-22 KAT suite
+      aufgeschoben: separate draft PR 397
+```
+
+## 7. Nächster Schritt (engste Reparaturgrenze)
+
+**Modul:** Web Crypto product module + its unit test. **Hop:** N2 (`crypto.test.ts` import → `crypto.ts::computeNullifier`).
+
+**Fix contract (for a later implementation run):**
+1. `apps/web/src/lib/crypto.ts`: remove only the exported `computeNullifier` function and its comment; retain `bytesToHex` and every signing/storage symbol unchanged.
+2. `apps/web/src/lib/crypto.test.ts`: remove the product import and keep any desired legacy-format check as a private test-only helper, or remove the weak shape-only block if the accepted EKA-22 KAT coverage supersedes it. Do not import PR #397 or modify its files in this task.
+3. Verify the focused crypto suite, Web typecheck, production build, repository symbol search and built-output search for the legacy helper/test markers.
+
+**Unberührt bleiben:** every other Web source file, API nullifier/identity code, Mobile, `packages/crypto`, EKA-22 vector/tests, KDF parameters, key storage, configs, dependencies, lockfiles, workflows, data, secrets, production and deployment.
