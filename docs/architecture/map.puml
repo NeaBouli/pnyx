@@ -12,7 +12,7 @@
 *** gebaut: faq.html::toggleLang
 *** gebaut: faq.html::currentLang
 *** gebaut: querySelectorAll data-el -> innerHTML
-*** offen: document.documentElement.lang (#365)
+*** gebaut: document.documentElement.lang (#365, T-473)
 *** offen: documentElement data-lang
 ** FAQ A11y-Adapter
 *** gebaut: r3-faq-accessibility.js::IIFE .faq-q ARIA
@@ -31,13 +31,13 @@ component "R3 Wiki-Gate\n(r3_wiki_pilot_check.py)" as Gate
 
 Markup --> Toggle : langBtn onclick -> toggleLang
 Toggle --> Markup : querySelectorAll("[data-el]") -> innerHTML
-Toggle ..> Markup : documentElement.lang (offen, #365)
+Toggle --> Markup : documentElement.lang (gebaut, T-473)
 Markup --> A11y : script defer
 Gate ..> Markup : check_r3_wiki_page (Build-Zeit)
 
 note right of Toggle
-  Luecke L1/L2: toggleLang setzt weder
-  document.documentElement.lang noch data-lang.
+  L1 ist durch T-473 gebaut.
+  data-lang bleibt ohne belegte Laufzeitwirkung statisch.
 end note
 @enduml
 

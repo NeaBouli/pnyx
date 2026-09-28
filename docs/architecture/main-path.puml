@@ -1,6 +1,6 @@
 ' T-472 / GH#365 — Sequenz der gebauten Spur "FAQ auf Englisch lesen"
 ' Basis origin/main fd3b4dc5ebbc1cd80ee3db3f9945cbf27963a932
-' Nur gebaute Hops sind Pfeile; die offene Kante ist als Notiz markiert, nicht simuliert.
+' Aktueller Stand auf T-474-Basis: L1 wurde durch T-473 gebaut; data-lang bleibt statisch.
 
 @startuml faq-lang-main-path
 title faq.html: langBtn onclick -> toggleLang -> querySelectorAll("[data-el]")
@@ -19,14 +19,15 @@ A11y -> Markup : .faq-q role/tabindex/aria-expanded/aria-controls
 Nutzer -> Markup : click #langBtn
 Markup -> Toggle : toggleLang()
 Toggle -> Toggle : currentLang = "en"
+Toggle -> Markup : document.documentElement.lang = "en"
 Toggle -> Markup : #langBtn.textContent = "ΕΛ"
 Toggle -> Markup : querySelectorAll("[data-el]")
 loop je [data-el] Element
   Toggle -> Markup : el.innerHTML = data-en
 end
 note over Toggle, Markup
-  offen (#365): document.documentElement.lang bleibt "el",
-  data-lang bleibt "el". Kein Code, daher keine Kante.
+  #365 ist durch T-473 geschlossen.
+  data-lang bleibt statisch und hat keine belegte Laufzeitwirkung.
 end note
 @enduml
 
