@@ -1,37 +1,21 @@
 @startuml
-' EKA-18 main path — built behaviour at base 2bfda8e (no fix simulated)
-title Local dev stack: README Quick Start -> host listeners
+title Expo 54 asset build dependency path
 
-actor Developer
-participant "Quick Start doc\nREADME.md" as README
-participant "Compose interpolation" as INTERP
-participant "Dev Compose db" as DB
-participant "Dev Compose redis" as REDIS
-participant "Dev Compose api" as API
-participant "Salt guard\nsecurity_startup.py" as GUARD
-participant "API settings\nconfig.py::Settings" as SETTINGS
-participant "DB access\nalembic/env.py" as DBACCESS
-actor "Network-adjacent host" as ADJ
+participant "App manifest" as APP
+participant "Expo 54" as EXPO
+participant "@expo/metro 54.2.0" as EM
+participant "Metro family" as METRO
+participant "Asset parser" as PARSER
+participant "Regression/build gates" as GATES
 
-Developer -> README : follow step 2
-README -> INTERP : cd infra/docker && docker compose up -d (H1)
-INTERP -> DB : POSTGRES_PASSWORD = DB_PASSWORD or dev fallback (H2)
-INTERP -> API : DATABASE_URL, REDIS_URL, SERVER_SALT, ENV=development (H5)
-DB -> DB : publish 5432 without host_ip -> all interfaces (H3)
-REDIS -> REDIS : publish 6379 without host_ip, no auth -> all interfaces (H4)
-API -> API : publish 8000 -> all interfaces (H7)
-API -> GUARD : validate_server_salt_config, non-production -> warn only (H10)
-API -> DB : connect via service DNS db (H6)
-API -> REDIS : connect via service DNS redis (H6)
+APP -> EXPO : resolve ~54.0.37 (H1)
+EXPO -> EM : install adapter 54.2.0 (H1)
+EM -> METRO : exact 0.83.3 (H2)
+METRO -> PARSER : image-size ^1.0.2\nredirected to 1.2.2-pnyx.0 (H3)
+APP -> GATES : test malformed images (H4)
 
-== legitimate host control path ==
-Developer -> README : follow steps 3-4
-README -> SETTINGS : alembic / seeds / uvicorn on host (H8)
-SETTINGS -> DBACCESS : settings.database_url (localhost) (H9)
-DBACCESS -> DB : localhost:5432 via published port (H9)
-SETTINGS -> REDIS : redis_url localhost:6379 (H8)
-
-== exposure (symptom) ==
-ADJ -> DB : <dev-host>:5432 with repo-public dev credential
-ADJ -> REDIS : <dev-host>:6379 without auth
+== proposed bounded replacement ==
+EM -> METRO : coherent 0.83.8 family override (H5)
+METRO -> PARSER : internal bounded parser, no image-size (H5)
+METRO -> GATES : tests + Expo bundle/native build (H6)
 @enduml
