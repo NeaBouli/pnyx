@@ -281,7 +281,7 @@ Compass:       Recent bills → Ollama generates EN questions → DeepL → pend
 ### DeepL Free API
 
 - 500,000 chars/month, currently ~7,000 used (1.4%)
-- Endpoint: `GET /api/v1/admin/deepl/usage` (public, no auth)
+- Endpoint: `GET /api/v1/public/deepl/usage` (public, no auth)
 
 ---
 

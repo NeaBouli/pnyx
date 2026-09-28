@@ -354,7 +354,7 @@ POST /api/v1/admin/bills/{id}/fetch-text  → Parliament Text holen
 POST /api/v1/admin/compass/generate-questions → Neue Compass-Fragen
 POST /api/v1/admin/compass/approve/{id}   → Frage freigeben
 GET  /api/v1/admin/compass/pending-review → Pending Fragen
-GET  /api/v1/admin/deepl/usage            → DeepL Verbrauch
+GET  /api/v1/public/deepl/usage           → DeepL Verbrauch
 ```
 
 ### Rate Limiting
