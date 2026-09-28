@@ -103,7 +103,9 @@ def test_payment_prompts_get_deterministic_paused_answer(lang: str, question: st
 
 @pytest.mark.parametrize("lang,question", [
     ("el", "Είναι δωρεάν η εφαρμογή;"),
+    ("el", "Πρέπει να πληρώσω για να ψηφίσω;"),
     ("en", "Does the app support iOS?"),
+    ("en", "Do I have to pay to vote?"),
     ("el", "Ποιες πληροφορίες αποθηκεύετε;"),
     ("en", "What is ekklesia.gr and who operates it?"),
 ])

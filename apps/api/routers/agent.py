@@ -98,12 +98,12 @@ _SAFETY_PATTERNS = [
 # EKA-60: payment/donation/support intake is paused (docs/community.html,
 # payments.py::_payment_intake_enabled); answer before any KB or model call.
 _PAYMENT_PATTERNS = [
-    r"\bdonat", r"\bpay(s|ing|ment|ments)?\b", r"\bpaid\b", r"\bstripe\b",
+    r"\bdonat", r"\bpayments?\b", r"\bpay(?:ing)?\s+(?:with|via|by)\b", r"\bstripe\b",
     r"\bpay ?pal\b", r"\bsponsor", r"\bfund(s|ing|raising)?\b",
     r"\bfinancial(ly)?\s+(support|contribut)",
     r"\bcontribut\w*\s+(money|financially|funds)",
     r"\bsupport\s+(ekklesia|the\s+(project|platform|initiative)|this\s+project|you|us)\b",
-    r"δωρε(?![άα]ν\b)", r"δωρ[ίι][σζ]", r"πληρ[ωώ]", r"πλ[ήη]ρωσ", r"χορηγ", r"εισφορ",
+    r"δωρε(?![άα]ν\b)", r"δωρ[ίι][σζ]", r"πληρωμ", r"χορηγ", r"εισφορ",
     r"οικονομικ\w*\s+(στ[ήη]ριξ|υποστ[ήη]ριξ|εν[ίι]σχυσ)",
     r"\b(υπο)?στηρ[ίι]ξ(ω|ουμε)\b",
 ]
