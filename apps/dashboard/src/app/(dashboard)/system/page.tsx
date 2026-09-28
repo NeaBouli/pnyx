@@ -64,7 +64,7 @@ export default function SystemPage() {
       fetch(`${API}/api/v1/arweave/status`).then(r => r.json()),
       fetch(`${API}/api/v1/notifications/status`).then(r => r.json()),
       fetch(`${API}/api/v1/scraper/jobs`).then(r => r.json()),
-      fetch(`/api/proxy/admin/deepl/usage`, { cache: 'no-store' }).then(r => r.json()),
+      fetch(`/api/proxy/public/deepl/usage`, { cache: 'no-store' }).then(r => r.json()),
     ])
     const v = (r: PromiseSettledResult<unknown>) => r.status === 'fulfilled' ? r.value : null
     setHealth(v(hRes) as Record<string, unknown> | null)
