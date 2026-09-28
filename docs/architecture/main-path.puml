@@ -37,7 +37,7 @@ ADJ -> REDIS : <dev-host>:6379 without auth
 @enduml
 
 @startuml
-' EKA-08 main path — built behaviour at base 4cc1193 (no fix simulated); EKA-18 sequence above unchanged
+' EKA-08 main path — current behaviour after T-488; EKA-18 sequence above unchanged
 title Web Compass: CompassCard -> localStorage
 
 participant "Compass UI card\nCompassCard.tsx" as CARD
@@ -51,24 +51,31 @@ CARD -> HOOK : useCompass() (C1)
 HOOK -> KEYS : loadKeypair() (C2)
 KEYS --> HOOK : privateKeyHex or null
 HOOK -> STORE : loadProfile(key) (C3)
-alt key present and encrypted entry decrypts
-  STORE -> LS : getItem(ekklesia_compass_encrypted) (C4)
+STORE -> LS : getItem + removeItem(ekklesia_compass_profile) if present (C5)
+STORE -> LS : getItem(ekklesia_compass_encrypted) (C4)
+alt ciphertext present and key/auth valid
   STORE -> STORE : HKDF + AES-GCM decrypt
   STORE --> HOOK : CompassProfile
-else no usable encrypted profile
-  STORE -> LS : getItem(ekklesia_compass_profile) plaintext fallback (C5)
-  STORE --> HOOK : CompassProfile or empty profile
+else ciphertext present but missing key or invalid
+  STORE --> HOOK : empty profile; legacy ignored
+else no ciphertext and valid legacy
+  alt key present
+    STORE -> LS : setItem(encrypted) (C8a migration)
+  end
+  STORE --> HOOK : legacy profile in-memory
+else no valid legacy
+  STORE --> HOOK : empty profile
 end
 
 == mutation ==
 HOOK -> HOOK : setModel / seedFromVAA / recordBillVote -> persistProfile (C6)
 HOOK -> KEYS : loadKeypair() (C2)
 HOOK -> STORE : saveProfile(p, key) after 300 ms, not awaited (C7)
+STORE -> LS : removeItem(ekklesia_compass_profile)
 alt key present and crypto ok
   STORE -> LS : setItem(ekklesia_compass_encrypted) (C8a)
-  STORE -> LS : removeItem(ekklesia_compass_profile) (C8a, legacy migration)
-else no key or crypto error
-  STORE -> LS : setItem(ekklesia_compass_profile, JSON) silent (C8b, EKA-08)
+else no key or crypto/storage error
+  STORE --> HOOK : rejected promise, no plaintext write (C8b closed)
 end
 
 == reset ==

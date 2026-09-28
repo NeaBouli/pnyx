@@ -51,7 +51,7 @@ API --> GUARD : H10 ENV=development
 @enduml
 
 @startmindmap
-' EKA-08 — Web Compass Privacy Storage (base 4cc1193), appended; EKA-18 diagrams above unchanged
+' EKA-08 — Web Compass Privacy Storage after T-488; EKA-18 diagrams above unchanged
 * Web Compass: profile to browser storage
 ** Compass UI card
 *** quarantäne: components/CompassCard.tsx::CompassCard (not mounted, compass is app-only)
@@ -59,16 +59,16 @@ API --> GUARD : H10 ENV=development
 *** gebaut: lib/compass/useCompass.ts::useCompass
 *** gebaut: lib/compass/useCompass.ts::persistProfile (300 ms debounce, not awaited)
 ** Compass storage
-*** gebaut: lib/compass/storage.ts::loadProfile (encrypted, then plaintext fallback)
-*** gebaut: lib/compass/storage.ts::saveProfile (silent plaintext fallback, EKA-08)
+*** gebaut: lib/compass/storage.ts::loadProfile (legacy purge; ciphertext first; keyed migration)
+*** gebaut: lib/compass/storage.ts::saveProfile (encrypted-only; fail-closed reject)
 *** gebaut: lib/compass/storage.ts::clearProfile
 ** Identity key access
 *** gebaut: lib/crypto.ts::loadKeypair (EKA-07, separate)
 ** Browser persistence
 *** gebaut: localStorage ekklesia_compass_encrypted
-*** gebaut: localStorage ekklesia_compass_profile (plaintext)
+*** quarantäne: localStorage ekklesia_compass_profile (legacy input, purged on access)
 ** Storage regression test
-*** offen: lib/compass/storage.test.ts
+*** gebaut: lib/compass/storage.test.ts (11 cases)
 @endmindmap
 
 @startuml
@@ -84,10 +84,10 @@ CARD --> HOOK : C1 useCompass
 HOOK --> KEYS : C2 loadKeypair
 HOOK --> STORE : C3 loadProfile
 STORE --> LS : C4 getItem(encrypted)
-STORE --> LS : C5 getItem(plaintext)
+STORE --> LS : C5 take+remove legacy plaintext; optional keyed migration
 HOOK --> HOOK : C6 persistProfile
 HOOK --> STORE : C7 saveProfile
 STORE --> LS : C8a setItem(encrypted) + removeItem(plaintext)
-STORE --> LS : C8b setItem(plaintext) [no key / crypto error]
+STORE --> HOOK : C8b reject [no key / crypto / storage error]; no plaintext write
 HOOK --> STORE : C9 clearProfile
 @enduml
