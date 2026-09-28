@@ -164,7 +164,10 @@ services:
     logging: *default-logging
     environment:
       CONTAINERS: 0
+      EVENTS: 0
+      PING: 0
       POST: 0
+      VERSION: 0
       LOG_LEVEL: warning
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro

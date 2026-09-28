@@ -34,6 +34,6 @@ Proxy -> Docker : no enabled API namespace
 note over Proxy
 Dedicated internal network closes lateral peer access.
 POST=0 removes restart writes.
-Container GET and all Docker writes are denied while Tier 2 is disabled.
+Container/event/ping/version GETs and all Docker writes are denied while T2 is disabled.
 end note
 @enduml

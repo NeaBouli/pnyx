@@ -22,7 +22,14 @@ PROXY_IMAGE = (
 )
 # Complete proxy environment: any other key would enable another API namespace
 # (e.g. EXEC, IMAGES, ALLOW_RESTARTS) or change defaults.
-PROXY_ENV = {"CONTAINERS": "0", "POST": "0", "LOG_LEVEL": "warning"}
+PROXY_ENV = {
+    "CONTAINERS": "0",
+    "EVENTS": "0",
+    "PING": "0",
+    "POST": "0",
+    "VERSION": "0",
+    "LOG_LEVEL": "warning",
+}
 SOCKET_MOUNT = "/var/run/docker.sock:/var/run/docker.sock:ro"
 
 

@@ -13,7 +13,7 @@
 **** selected: production AUTO_RECOVERY_T2=false
 *** docker-proxy
 **** selected: v0.4.2 + manifest digest
-**** selected: CONTAINERS=0 + POST=0
+**** selected: CONTAINERS/EVENTS/PING/VERSION=0 + POST=0
 **** selected: dedicated internal network, monitor only
 **** risk: host Docker socket
 **** result: no Docker API namespace enabled while T2 is off
@@ -39,7 +39,7 @@ package "EKA-18 dev (built)" {
 
 package "EKA-13 production (selected fix)" {
   component "Monitor\nDocker SDK" as MON
-  component "docker-proxy\nv0.4.2@digest\nCONTAINERS=0, POST=0" as PROXY
+  component "docker-proxy\nv0.4.2@digest\nGET namespaces=0, POST=0" as PROXY
   component "Official GHCR\nv0.4.2 + digest" as GHCR
   database "Host Docker daemon" as DOCKER
   cloud "net_ekklesia peers" as PEERS
