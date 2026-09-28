@@ -141,3 +141,81 @@ cd infra/docker && env -u DB_PASSWORD docker compose -f docker-compose.yml confi
 ```
 
 **Unberührt bleiben:** `infra/docker/docker-compose.prod.yml`, `infra/docker/app.yml`, `infra/hetzner/*`, mirror compose, `apps/api/config.py`, `apps/api/main.py`, routers, `security_startup.py`, `.env*`, workflows, packages/lockfiles. Neighbour files enter scope only if a hop above proves they define H3/H4 — none do.
+
+---
+
+# Architecture Map — T-506 Mobile/Representative Build Toolchain (Metro asset parser)
+
+Basis: `agent/codex/T-506-base 4cc11930` · Task: T-506 · Node: Mobile/Representative Build Toolchain, hops T506-H1…H6.
+
+## 1. Grundidee
+
+- Mobile (`apps/mobile`) and Representative (`apps/representative`) are Expo SDK 54 apps (`package.json::dependencies.expo ~54.0.37`) bundled by Metro for Android releases.
+- Metro reads the width/height of every bundled image asset at build time; that parser consumes untrusted-by-construction bytes from `node_modules` and app `assets/`.
+- Until 0.83.3 Metro delegated this to `image-size@^1.0.2`; the repo pinned a reviewed local backport (`vendor/image-size/PATCHES.md`) against GHSA-5p2g-fcmc-qvqq / GHSA-w3rx-r6r6-pgpr.
+- Metro 0.83.8 (react/metro `809c36d897ef`, "vendor image dimension parsing") replaces `image-size` with `metro/src/lib/imageSize.js` and drops the dependency.
+- Boundary: npm dependency graph of the two workspaces and the Metro asset-size hop. No app source, native config, CI or API.
+
+## 2. Spur
+
+| # | From → To | Datum over the edge |
+| --- | --- | --- |
+| T506-H1 | `npx expo export --platform android` → `@expo/metro-config/build/transform-worker/getAssets.js` | asset module path |
+| T506-H2 | `@expo/metro-config` → `@expo/metro@54.2.0` (shim package: `module.exports = require("metro/private/…")`) | `@expo/metro` pins **exactly** `metro*@0.83.3`; no 54.x release pins 0.83.8 |
+| T506-H3 | workspace `package.json::overrides` → installed Metro family | `metro` (`"."`) + 13 `metro-*` packages forced to `0.83.8`; `ob1` follows transitively |
+| T506-H4 | `metro/private/Assets::getAssetData` → `getAssetSize(type, content, filePath)` → `metro/private/lib/imageSize::getImageDimensions` | raw asset bytes; only `png jpg jpeg bmp gif webp psd svg tiff ktx` are decoded, others (`heic jxl icns`) return `null` |
+| T506-H5 | `npm test` → `vendor/image-size/metro-image-parser-regression.test.mjs` | advisory payloads + offset-abuse payloads against the installed parser, 1 s worker timeout |
+| T506-H6 | build gates → `expo install --check`, `tsc --noEmit`, `expo export --platform android`, `npm audit` | release-equivalent bundle |
+
+## 3. Module
+
+| Modul | Eine Aufgabe | Einstieg | Stand |
+| --- | --- | --- | --- |
+| Expo asset collector | collect asset metadata during bundling | `@expo/metro-config/build/transform-worker/getAssets.js` | gebaut |
+| `@expo/metro` shim | re-export Metro private modules at a stable path | `@expo/metro/metro/Assets.js` | gebaut; 3 shims (`metro/node-haste/Package`, `metro-resolver/utils/toPosixPath`, `metro-file-map/lib/dependencyExtractor`) point to files absent in 0.83.8 — no installed consumer (see §5) |
+| Workspace overrides | force a coherent Metro family | `apps/{mobile,representative}/package.json::overrides` | gebaut |
+| Metro asset parser | image dimensions, fail closed | `metro/private/lib/imageSize::getImageDimensions` | gebaut (0.83.8) |
+| image-size backport | former parser | `vendor/image-size/image-size-1.2.2-pnyx.0.tgz` | quarantäne — no longer installed in either workspace; files kept, retirement docs follow-up |
+| Parser regression test | pin malformed-input behaviour | `vendor/image-size/metro-image-parser-regression.test.mjs` | gebaut |
+
+## 4. Verdrahtung
+
+- `expo export` → `getAssets.js` calls `@expo/metro/metro/Assets::getAssetData` per asset.
+- `@expo/metro` shim → `metro/private/Assets`; resolves to whatever `metro` npm installed at root.
+- Overrides → every `metro*` lock entry is `0.83.8`; `@react-native/community-cli-plugin` (`^0.83.1`) and `react-native` (`metro-runtime`, `metro-source-map` `^0.83.1`) dedupe onto the same copies.
+- `Assets::getAssetSize` → `lib/imageSize::getImageDimensions`: typed parser, then all fallback parsers, each wrapped in `try/catch`; no result or non-positive/non-finite size ⇒ `Invalid <type> image asset: <path>`.
+- Regression test → runs from each workspace against its installed Metro.
+
+## 5. Widerspruch und Lücken
+
+- `@expo/metro@54.2.0` declares exact `0.83.3`; the override contradicts that declaration. Compatibility evidence: all 37 `@expo/metro/*` subpaths referenced by installed code resolve and load on 0.83.8; the 3 dangling shims have no importer.
+- HEIF/JXL/ICNS are no longer parsed at all by Metro (not in `isAssetTypeAnImage`); advisory payloads under any image type fail closed.
+- `SECURITY.md`, `vendor/image-size/PATCHES.md`, `docs/TODO.md` still describe the backport as active — docs follow-up, not in this diff.
+- A future `expo` 54 patch may bump `@expo/metro`; the overrides must then be re-checked, not blindly kept.
+
+## 6. Diagrammdateien
+
+- This section only (Mermaid below); `map.puml` / `main-path.puml` stay on the EKA-18 node.
+
+```mermaid
+mindmap
+  root((Expo 54 Android bundle: asset sizes))
+    Expo asset collector
+      gebaut: @expo/metro-config getAssets.js
+    @expo/metro shim
+      gebaut: metro/Assets -> metro/private/Assets
+      exact pin 0.83.3 overridden
+    Workspace overrides
+      gebaut: metro family 0.83.8
+    Metro asset parser
+      gebaut: metro/private/lib/imageSize getImageDimensions
+    image-size backport
+      quarantäne: not installed
+    Regression test
+      gebaut: metro-image-parser-regression.test.mjs
+```
+
+## 7. Nächster Schritt
+
+- Modul: image-size backport docs. Hop: none on the build path. Files: `SECURITY.md`, `vendor/image-size/PATCHES.md`, `docs/TODO.md` (separate task, after merge closes Dependabot #78–#81).
+- Unberührt: app source, `android/`, `app.config.js`, `eas.json`, CI workflows, `vendor/image-size/dist`, `vendor/image-size/security-regression.test.mjs`.
