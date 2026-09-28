@@ -44,7 +44,7 @@ class _BrokenDay:
         return True
 
     def strftime(self, _fmt):
-        raise ValueError(SECRET)
+        raise UnicodeEncodeError("ascii", SECRET, 0, len(SECRET), "invalid")
 
 
 @pytest.mark.asyncio
