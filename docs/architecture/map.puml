@@ -9,13 +9,14 @@
 *** gebaut: focused regression
 ** EKA-13 production stack
 *** monitor
-**** gebaut: Docker SDK restart path
-**** gebaut: AUTO_RECOVERY_T2 + client allowlist
+**** gebaut: Docker SDK restart source path
+**** selected: production AUTO_RECOVERY_T2=false
 *** docker-proxy
-**** offen: latest -> released tag + manifest digest
-**** risk: CONTAINERS=1 + POST=1
-**** risk: shared net_ekklesia, no proxy auth
+**** selected: v0.4.2 + manifest digest
+**** selected: CONTAINERS=1 + POST=0
+**** selected: dedicated internal network, monitor only
 **** risk: host Docker socket
+**** residual: broad container GET prefix for monitor
 *** neighbours
 **** offen separate: Ollama latest
 **** offen separate: dashboard/monitor non-root
@@ -36,15 +37,17 @@ package "EKA-18 dev (built)" {
   DEV --> DEVREDIS : internal DNS redis
 }
 
-package "EKA-13 production (open)" {
+package "EKA-13 production (selected fix)" {
   component "Monitor\nDocker SDK" as MON
-  component "docker-proxy\nlatest, CONTAINERS=1, POST=1" as PROXY
-  component "Official GHCR\nrelease tag + digest" as GHCR
+  component "docker-proxy\nv0.4.2@digest\nCONTAINERS=1, POST=0" as PROXY
+  component "Official GHCR\nv0.4.2 + digest" as GHCR
   database "Host Docker daemon" as DOCKER
   cloud "net_ekklesia peers" as PEERS
-  MON --> PROXY : tcp://docker-proxy:2375
-  PEERS --> PROXY : no proxy auth
+  rectangle "internal monitor-proxy network" as PRIVATE
+  MON --> PRIVATE : only consumer
+  PRIVATE --> PROXY : tcp://docker-proxy:2375
+  PEERS ..> PROXY : no route after fix
   PROXY --> DOCKER : mounted docker.sock
-  GHCR ..> PROXY : next provenance fix
+  GHCR ..> PROXY : selected provenance fix
 }
 @enduml
