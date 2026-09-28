@@ -1,0 +1,37 @@
+@startuml
+' EKA-18 main path — built behaviour at base 2bfda8e (no fix simulated)
+title Local dev stack: README Quick Start -> host listeners
+
+actor Developer
+participant "Quick Start doc\nREADME.md" as README
+participant "Compose interpolation" as INTERP
+participant "Dev Compose db" as DB
+participant "Dev Compose redis" as REDIS
+participant "Dev Compose api" as API
+participant "Salt guard\nsecurity_startup.py" as GUARD
+participant "API settings\nconfig.py::Settings" as SETTINGS
+participant "DB access\nalembic/env.py" as DBACCESS
+actor "Network-adjacent host" as ADJ
+
+Developer -> README : follow step 2
+README -> INTERP : cd infra/docker && docker compose up -d (H1)
+INTERP -> DB : POSTGRES_PASSWORD = DB_PASSWORD or dev fallback (H2)
+INTERP -> API : DATABASE_URL, REDIS_URL, SERVER_SALT, ENV=development (H5)
+DB -> DB : publish 5432 without host_ip -> all interfaces (H3)
+REDIS -> REDIS : publish 6379 without host_ip, no auth -> all interfaces (H4)
+API -> API : publish 8000 -> all interfaces (H7)
+API -> GUARD : validate_server_salt_config, non-production -> warn only (H10)
+API -> DB : connect via service DNS db (H6)
+API -> REDIS : connect via service DNS redis (H6)
+
+== legitimate host control path ==
+Developer -> README : follow steps 3-4
+README -> SETTINGS : alembic / seeds / uvicorn on host (H8)
+SETTINGS -> DBACCESS : settings.database_url (localhost) (H9)
+DBACCESS -> DB : localhost:5432 via published port (H9)
+SETTINGS -> REDIS : redis_url localhost:6379 (H8)
+
+== exposure (symptom) ==
+ADJ -> DB : <dev-host>:5432 with repo-public dev credential
+ADJ -> REDIS : <dev-host>:6379 without auth
+@enduml
