@@ -71,7 +71,7 @@ API --> GUARD : H10 ENV=development
 ** Mobile
 *** gebaut: crypto-native.ts::signVote / verifyVote
 *** gebaut: crypto-native.ts::buildSignedPayload
-*** gebaut: crypto-native.ts::derive* HMAC chain
+*** gebaut: crypto-native.ts identity/vote/linkage/ephemeral HMAC chain
 *** gebaut: crypto-native.ts JSON payload builders
 ** Tier-1 TS library
 *** teilweise: packages/crypto/src/nullifier.ts (unwired, payload layout differs)
