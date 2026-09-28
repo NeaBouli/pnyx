@@ -66,19 +66,23 @@ This map preserves the accepted EKA-18 local-development boundary and adds the i
 
 **EKA-13 current source-to-sink:** mutable GHCR `:latest` → unaudited future proxy bytes → unauthenticated port 2375 on shared network → host Docker socket → container lifecycle/filesystem/log access permitted by the exposed namespace. Compromise of any network peer can cross this boundary.
 
+**Validated upstream scope drift (security stop):** official Tecnativa `haproxy.cfg` at both `v0.4.2` and `v0.5.0` allows the full `^/containers` prefix whenever `CONTAINERS=1`. That includes Docker GET routes such as container archive/export/log/top; `POST=0` would not close those reads, while Pnyx additionally sets `POST=1`. Tecnativa's own `v0.4.2` README says the proxy network should contain only the proxy and its consumer. Pnyx instead attaches the proxy to shared `net_ekklesia`. A tag+digest pin fixes supply-chain mutability but does not fix this host-boundary exposure.
+
 **First-fix invariant:** production Compose names one official released docker-proxy tag and its exact registry manifest digest; no mutable tag remains in that field; all environment, mounts, networks, dependency wiring and monitor behavior stay byte-for-byte unchanged.
 
-**Not solved by the first fix:** broad `CONTAINERS` namespace, `POST=1`, shared network reachability, lack of proxy auth, monitor/container root users, Ollama `:latest`, deployed image identity and actual Tier-2 runtime behavior.
+**Not solved by the first fix:** broad `CONTAINERS` namespace, `POST=1`, shared network reachability, lack of proxy auth, monitor/container root users, Ollama `:latest`, deployed image identity and actual Tier-2 runtime behavior. Upstream also has an open `v0.5.0` `/version` compatibility report; `v0.4.2` is the safer provenance candidate but still has the broad-prefix rule.
 
 ## 6. Next source boundary
 
-Allowed later product diff:
+The earlier provenance-only contract is now **blocked for Gio scope selection** because it would leave a validated high-impact lateral path while appearing to harden the boundary. Allowed later product diff, if Gio explicitly chooses pin-only:
 
 1. `infra/docker/docker-compose.prod.yml`: one `services.docker-proxy.image` line only, from `:latest` to an official released tag plus manifest digest.
 2. One focused static/Compose regression test that rejects `latest`, missing digest, wrong repository or changes to the existing proxy capability/mount/network contract.
 3. Architecture/report updates only.
 
-Selection requirements before implementation: official Tecnativa release/tag, official GHCR manifest-list digest, registry metadata inspection without production access, and local compatibility proof for the Docker SDK `/version`, list/get and restart path. Image pull/run is permitted only in the later JEV-gated test task; no production host or deploy.
+Selection requirements before implementation: official Tecnativa release/tag, official GHCR manifest-list digest, registry metadata inspection without production access, and local compatibility proof for the Docker SDK `/version`, list/get and restart path. Image pull/run is permitted only in a later JEV-gated test task; no production host or deploy.
+
+Alternative security scope requiring Gio's exact authorization: add a dedicated internal Docker network shared only by `monitor` and `docker-proxy`, remove `docker-proxy` from general `net_ekklesia`, then pin the image. A stronger capability fix needs a custom path policy or different proxy because upstream `CONTAINERS=1` cannot distinguish metadata GETs from archive/export/log/top. No implementation is started until Gio selects the boundary.
 
 ## 7. Diagram files
 
