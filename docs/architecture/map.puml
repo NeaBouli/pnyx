@@ -67,7 +67,7 @@ API --> GUARD : H10 ENV=development
 ** Server nullifier domain
 *** aufgeschoben: server-owned salt and KDF
 ** EKA-22 KAT suite
-*** aufgeschoben: separate draft PR 397
+*** teilweise: PR 397 crypto-kat.test.ts imports helper
 @endmindmap
 
 @startuml
@@ -80,6 +80,7 @@ component "Web Crypto product module\ncrypto.ts::computeNullifier" as HELPER
 component "Web Crypto API\nTextEncoder / subtle.digest" as WEBCRYPTO
 component "Hex helper\ncrypto.ts::bytesToHex" as HEX
 component "Production callers\nvote / relevance / SSO / compass" as PROD
+component "Queued EKA-22 Web KAT\nPR 397 crypto-kat.test.ts" as KAT
 
 TESTCMD --> VITEST : N1 vitest run
 VITEST --> TESTS : N1 discover suite
@@ -87,4 +88,5 @@ TESTS --> HELPER : N2 named import / N3 synthetic phone + salt
 HELPER --> WEBCRYPTO : N4 SHA-256(phone:salt)
 WEBCRYPTO --> HEX : N5 digest bytes
 PROD .. HELPER : no import or call
+KAT ..> HELPER : queued Q1 test-only import
 @enduml

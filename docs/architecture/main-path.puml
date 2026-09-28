@@ -61,5 +61,7 @@ TESTS -> TESTS : assert shape / determinism / input sensitivity
 note over TESTS,HELPER
   No production import or caller exists at base 4cc11930.
   The absent runtime edge is not simulated.
+  Queue dependency: exact PR 397 head adds a second
+  test-only caller in crypto-kat.test.ts; not simulated here.
 end note
 @enduml
