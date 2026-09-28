@@ -872,7 +872,7 @@ class BillImportItem(BaseModel):
 
 
 class BillImportRequest(BaseModel):
-    admin_key: str
+    # Auth nur via Bearer-Header; ein veraltetes Body-Feld `admin_key` wird ignoriert.
     bills: List[BillImportItem]
 
 
