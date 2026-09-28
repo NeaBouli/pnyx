@@ -11,7 +11,6 @@ import { describe, expect, it } from "vitest";
 import {
   buildVoteMessage,
   bytesToHex,
-  computeNullifier,
   signPayload,
   signVote,
   verifyVote,
@@ -55,6 +54,13 @@ function utf8FromHex(hex: string): string {
   return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
 }
 
+/** Test-only legacy v1 formula; server-owned derivation is not product API. */
+async function legacyV1NullifierTestOnly(phone: string, serverSalt: string): Promise<string> {
+  const encoded = new TextEncoder().encode(`${phone}:${serverSalt}`);
+  const digest = await crypto.subtle.digest("SHA-256", encoded);
+  return bytesToHex(new Uint8Array(digest));
+}
+
 const HANDLED = [
   "ed25519_rfc8032",
   "legacy_vote",
@@ -89,7 +95,7 @@ describe("identical", () => {
 
   it.each(byKind("v1_nullifier"))("$id: SHA-256 v1 nullifier with synthetic salt", async (c) => {
     const input = c.input as { phone: string; salt: string };
-    expect(await computeNullifier(input.phone, input.salt)).toBe(c.expect.nullifier_hex);
+    expect(await legacyV1NullifierTestOnly(input.phone, input.salt)).toBe(c.expect.nullifier_hex);
   });
 });
 
