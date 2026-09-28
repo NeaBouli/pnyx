@@ -29,11 +29,11 @@ Private -> Proxy : permitted read path
 Peer -[#red,dashed]> Proxy : no shared network route
 Proxy -> Docker : Docker API via mounted socket
 Proxy -[#red,dashed]> Docker : POST denied
-Proxy -> Docker : CONTAINERS GET remains
+Proxy -> Docker : no enabled API namespace
 
 note over Proxy
 Dedicated internal network closes lateral peer access.
 POST=0 removes restart writes.
-Broad container GET remains a bounded monitor-only residual.
+Container GET and all Docker writes are denied while Tier 2 is disabled.
 end note
 @enduml

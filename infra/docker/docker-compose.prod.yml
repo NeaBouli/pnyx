@@ -156,14 +156,14 @@ services:
       - traefik.http.services.dashboard.loadbalancer.server.port=3000
 
   docker-proxy:
-    # EKA-13: host-root-equivalent boundary. Pinned release, read-only API,
-    # reachable only by monitor over the internal docker-api network.
+    # EKA-13: host-root-equivalent boundary. Pinned release, no enabled API
+    # namespace, reachable only by monitor over the internal docker-api network.
     image: ghcr.io/tecnativa/docker-socket-proxy:v0.4.2@sha256:1f3a6f303320723d199d2316a3e82b2e2685d86c275d5e3deeaf182573b47476
     container_name: ekklesia-docker-proxy
     restart: unless-stopped
     logging: *default-logging
     environment:
-      CONTAINERS: 1
+      CONTAINERS: 0
       POST: 0
       LOG_LEVEL: warning
     volumes:

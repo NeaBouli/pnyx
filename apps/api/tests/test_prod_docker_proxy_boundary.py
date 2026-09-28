@@ -2,8 +2,9 @@
 
 docker-proxy mounts the host Docker socket (host-root equivalent). It must run a
 released image pinned by manifest digest, deny Docker API writes (POST=0), enable
-no API namespace beyond CONTAINERS reads, and be reachable only by monitor over a
-dedicated internal network. Tier-2 Docker restart is therefore fixed off in prod.
+no Docker API namespace while Tier-2 is disabled, and be reachable only by
+monitor over a dedicated internal network. Tier-2 Docker restart is therefore
+fixed off in prod.
 Static parse of the real compose file — no containers, no sockets.
 """
 from pathlib import Path
@@ -21,7 +22,7 @@ PROXY_IMAGE = (
 )
 # Complete proxy environment: any other key would enable another API namespace
 # (e.g. EXEC, IMAGES, ALLOW_RESTARTS) or change defaults.
-PROXY_ENV = {"CONTAINERS": "1", "POST": "0", "LOG_LEVEL": "warning"}
+PROXY_ENV = {"CONTAINERS": "0", "POST": "0", "LOG_LEVEL": "warning"}
 SOCKET_MOUNT = "/var/run/docker.sock:/var/run/docker.sock:ro"
 
 
@@ -67,10 +68,19 @@ def test_monitor_is_the_only_peer_and_keeps_app_network() -> None:
     members = {name for name, svc in compose["services"].items() if net in _networks(svc)}
     assert members == {PROXY, MONITOR}
     assert _networks(compose["services"][MONITOR]) == {APP_NETWORK, net}
+    for name, service in compose["services"].items():
+        assert service.get("network_mode") not in {
+            f"service:{MONITOR}",
+            "container:ekklesia-monitor",
+        }, f"{name} must not inherit the monitor network namespace"
 
 
-def test_proxy_policy_is_containers_read_only() -> None:
-    assert _env(_load()["services"][PROXY]) == PROXY_ENV
+def test_proxy_policy_enables_no_docker_api_namespace() -> None:
+    proxy = _load()["services"][PROXY]
+    assert _env(proxy) == PROXY_ENV
+    assert "env_file" not in proxy, (
+        "capabilities must not be injectable through an env file"
+    )
 
 
 def test_socket_mount_stays_read_only() -> None:
@@ -91,4 +101,3 @@ def test_monitor_reaches_proxy_via_service_dns() -> None:
 def test_production_tier2_restart_is_fixed_off() -> None:
     raw = _load()["services"][MONITOR]["environment"]["AUTO_RECOVERY_T2"]
     assert raw == "false", "must be the literal string, not an env-overridable default"
-

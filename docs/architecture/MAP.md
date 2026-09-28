@@ -52,7 +52,7 @@ This map preserves the accepted EKA-18 local-development boundary and adds the i
 | Production docker-proxy | filtered Docker API bridge | built, high-privilege boundary |
 | docker-proxy provenance | v0.4.2 plus immutable manifest digest | selected fix |
 | docker-proxy reachability | dedicated internal network shared only with monitor | selected fix |
-| docker-proxy capability policy | `CONTAINERS=1`, `POST=0`; unavoidable broad container reads limited to monitor principal | selected bounded residual |
+| docker-proxy capability policy | `CONTAINERS=0`, `POST=0`; no Docker API namespace enabled while Tier 2 is disabled | selected least-privilege boundary |
 | Ollama provenance | immutable optional AI image | open, separate task |
 | Dashboard/monitor non-root | explicit runtime users | open, separate task |
 
@@ -68,20 +68,20 @@ This map preserves the accepted EKA-18 local-development boundary and adds the i
 
 **EKA-18 current state:** source-closed. DB/Redis listen only on IPv4 loopback in the dev Compose file; host and container control paths are pinned by tests. Deployment/live listener state is not inferred.
 
-**EKA-13 current source-to-sink:** mutable GHCR `:latest` → unaudited future proxy bytes → unauthenticated port 2375 on shared network → host Docker socket → container lifecycle/filesystem/log access permitted by the exposed namespace. Compromise of any network peer can cross this boundary.
+**EKA-13 pre-fix source-to-sink:** mutable GHCR `:latest` → unaudited future proxy bytes → unauthenticated port 2375 on shared network → host Docker socket → container lifecycle/filesystem/log access permitted by the exposed namespace. Compromise of any network peer can cross this boundary.
 
 **Validated upstream scope drift (security stop):** official Tecnativa `haproxy.cfg` at both `v0.4.2` and `v0.5.0` allows the full `^/containers` prefix whenever `CONTAINERS=1`. That includes Docker GET routes such as container archive/export/log/top; `POST=0` would not close those reads, while Pnyx additionally sets `POST=1`. Tecnativa's own `v0.4.2` README says the proxy network should contain only the proxy and its consumer. Pnyx instead attaches the proxy to shared `net_ekklesia`. A tag+digest pin fixes supply-chain mutability but does not fix this host-boundary exposure.
 
-**Selected-fix invariant:** production Compose names official v0.4.2 plus exact manifest digest; `docker-proxy` belongs only to a new `internal: true` network; `monitor` is the only other member and retains `net_ekklesia` for normal dependencies; `POST=0`; production Tier-2 restart is fixed disabled. No other service gains Docker API reachability.
+**Selected-fix invariant:** production Compose names official v0.4.2 plus exact manifest digest; `docker-proxy` belongs only to a new `internal: true` network; `monitor` is the only other member and retains `net_ekklesia` for normal dependencies; `CONTAINERS=0`; `POST=0`; production Tier-2 restart is fixed disabled. No other service gains Docker API reachability.
 
-**Bounded residual:** `CONTAINERS=1` still exposes broad container reads to a compromised monitor because upstream cannot distinguish inspect from archive/export/log/top. Proxy auth, monitor/container root users, Ollama `:latest`, deployed image identity and actual runtime topology remain separate. v0.5.0 is excluded because of its open `/version` compatibility regression.
+**Selected capability result:** because production Tier 2 is fixed disabled, the monitor currently needs no Docker API namespace. `CONTAINERS=0` and `POST=0` therefore deny container inspect/archive/export/log/top and all Docker writes. Proxy auth, monitor/container root users, Ollama `:latest`, deployed image identity and actual runtime topology remain separate. v0.5.0 is excluded because of its open `/version` compatibility regression.
 
 ## 6. Next source boundary
 
 Gio authorized Option 1 for T-503. The implementation boundary is:
 
-1. `infra/docker/docker-compose.prod.yml`: pin `docker-proxy` to official v0.4.2 plus manifest digest, set `POST=0`, fix `AUTO_RECOVERY_T2=false`, attach the proxy only to a new dedicated `internal: true` network and attach only `monitor` as its peer.
-2. One focused static/normalized-Compose regression test that proves image provenance, network membership, the absence of the proxy from `net_ekklesia`, read-only Docker API policy and disabled production restart.
+1. `infra/docker/docker-compose.prod.yml`: pin `docker-proxy` to official v0.4.2 plus manifest digest, set `CONTAINERS=0` and `POST=0`, fix `AUTO_RECOVERY_T2=false`, attach the proxy only to a new dedicated `internal: true` network and attach only `monitor` as its peer.
+2. One focused static/normalized-Compose regression test that proves image provenance, network membership, the absence of the proxy from `net_ekklesia`, disabled Docker API namespaces and disabled production restart.
 3. Architecture/report updates only; no Dockerfile, application recovery logic, package, workflow, deployment or live-system change.
 
 Local validation may render `docker compose config` with synthetic non-secret values and may run a disposable proxy/monitor-network smoke. Production topology evidence remains read-only and belongs in the rollout decision record, not in this source PR.
