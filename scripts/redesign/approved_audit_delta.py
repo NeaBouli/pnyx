@@ -16,22 +16,23 @@ import r0_inventory
 # removed, x-default added where missing, and zk-voting gains og:site_name and
 # a twitter card; wiki/index and wiki/roadmap gain a WebPage JSON-LD block.
 # T-473 (#365): faq.html toggleLang also sets document.documentElement.lang.
+# T-475/T-479: r3-wiki.css pins the <=920px nav language switch (inset focus ring).
 APPROVED_WIKI_INVENTORY_HASH = {
     "docs/community.html": "1c6af6ce632db8cc239b24d6446896694f2afda0c37b8a94d107bc295be5aaef",
-    "docs/wiki/api.html": "373f48127cfc5b39885a2265bc919f14f358a5aa6d1a8ba1e1301a0fd603834a",
-    "docs/wiki/architecture.html": "190c8db92dce0d7b70f4c06e82922e6c3085cff62328eeaaf0c4fdc8b96fd21b",
-    "docs/wiki/broadcasting.html": "faa500a62568a696b39470103fc024905ac68b447f6c37421bf4bfd9ef39c517",
-    "docs/wiki/contributing.html": "d71786cb758b2296e49830cfcc5e25ef2c7a205c7126050a6e2f9f6e0fedc429",
-    "docs/wiki/database.html": "4d15f4b7e9a0e46ea6ca6e1500c1a7174a1a7e5f49f405c108c01f787a053662",
-    "docs/wiki/delete-account.html": "621f7cbb772dee4c0c427ecf93282a8547c25d3b7e354b8121ab1403ec26fdf9",
-    "docs/wiki/faq.html": "b68cb7ffb7afdf818dc509034a8610d9ffd22e942dcd0f36488e71502656ed0a",
-    "docs/wiki/index.html": "b06a9584b220efbd0d974d78e0035199a72f6e25230ea97ecdb1e257bf15e001",
-    "docs/wiki/modules.html": "eff962d4be3dff4a17e8be1bb13f734ce5e66e117229e428c50dadb8bc33e8a8",
-    "docs/wiki/privacy.html": "c0fc1c241da278b4e8cd10289f7bce8e7f9ccc8c6b96bbfcade005b78f8a2a1b",
-    "docs/wiki/roadmap.html": "4388843469990e77dc8c00528f4a228ed2944c4b5cefdc5a4e81412444246883",
-    "docs/wiki/security.html": "984ac68364a1eafe4276e027074bac1ae0a539f15d6acddcfa655b67749fed2a",
-    "docs/wiki/whitepaper.html": "446087437e0d24bfbd948ef9f8cc5e72e3559415d8d4910dc3562b6e2dcdaf1a",
-    "docs/wiki/zk-voting.html": "9972052c4edfc131d9a19199c8e148ba4190682f4fde3c144c3aab98091af475",
+    "docs/wiki/api.html": "0f2b6771a112f089c7fba6b1ef3185e061b073cd338f3db10a38a3c3c3c2515f",
+    "docs/wiki/architecture.html": "8198bc8764e1d848f512a14195d2a219e6ce36398227f6744ce2793f401273d3",
+    "docs/wiki/broadcasting.html": "9e14ffa72fa9e524c109748881d2ed941aeeb257d44570b191aaa24d5fb47b62",
+    "docs/wiki/contributing.html": "08d936e733910ef72639759b7ec5ff92993db2d7a2ad9ef21d86fa3a1cf3838c",
+    "docs/wiki/database.html": "9a86616c03c17a3cf3b8f95458d10286056bb99c760e0daf944ed1e54e4d35b2",
+    "docs/wiki/delete-account.html": "426b3c7c2a252a4b1520ad1bdd0bfee812904c43f057e8c805114803f09778e9",
+    "docs/wiki/faq.html": "c76da4e63f6f0d9b7aca838de18cd6fbe5c6ab1bd78efefe7e5d75805bd2d379",
+    "docs/wiki/index.html": "933348ee7f46e0244edd90d76c03daeb46781255325c0f6ae5bd8c3bb02854d5",
+    "docs/wiki/modules.html": "f0f54584009d7727b5f13ab16fa48046339e7ea3f7542f045f7e2242e1849fcd",
+    "docs/wiki/privacy.html": "8887a4b19c0fdca6f52cec50289d5c4e17eb21e8839c5dc9405cd9395ee97ba1",
+    "docs/wiki/roadmap.html": "9f46e4571cc3470553c56238fb137ea80026fb90979720e5a48cd6256fda605f",
+    "docs/wiki/security.html": "5dac9dce20e8552fa031fdd03c0501a752e6e4ae05f16c384c697882258da44f",
+    "docs/wiki/whitepaper.html": "ebf88a4bbbbaf7c4350cdfe9076c5010eaa2f207ef4a275e0d65d5aa9828b6c0",
+    "docs/wiki/zk-voting.html": "f1614f9f63d27db993fc338f876ebf349029b4701e156008ee5fc86900e0bf2c",
 }
 # T-420 changed only the "24 Ώρες" footer target; T-421 only drops the same-URL
 # hreflang="en" head link. Findings text is unchanged.
