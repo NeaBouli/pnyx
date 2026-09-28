@@ -51,9 +51,8 @@ jobs:
 
           echo "Importing ${COUNT} bills..."
           jq -n \
-            --arg admin_key "${{ secrets.EKKLESIA_ADMIN_KEY }}" \
             --slurpfile bills /tmp/bills.json \
-            '{admin_key: $admin_key, bills: $bills[0][:20]}' \
+            '{bills: $bills[0][:20]}' \
             > /tmp/payload.json
 
           RESP=$(curl -fsS --max-time 30 \
