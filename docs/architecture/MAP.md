@@ -141,3 +141,111 @@ cd infra/docker && env -u DB_PASSWORD docker compose -f docker-compose.yml confi
 ```
 
 **Unberührt bleiben:** `infra/docker/docker-compose.prod.yml`, `infra/docker/app.yml`, `infra/hetzner/*`, mirror compose, `apps/api/config.py`, `apps/api/main.py`, routers, `security_startup.py`, `.env*`, workflows, packages/lockfiles. Neighbour files enter scope only if a hop above proves they define H3/H4 — none do.
+
+# Architecture Map — EKA-63 MOD-22 Canonical Citizen Answers
+
+Basis: `origin/main 4cc11930f4be82ba2d012def487fb34abca9da26` · Task: T-507 · Mapping only, no product fix.
+Node: MOD-22 Hybrid Agent / deterministic canonical-answer boundary.
+
+The accepted EKA-18 map above stays unchanged. EKA-63 is appended as separate diagrams in the same files.
+
+## 1. Grundidee
+
+- Ekklesia.gr lets Greek citizens inspect and vote on real parliamentary and municipal matters and includes an Ollama-powered citizen assistant (`README.md::What is Ekklesia?`, `README.md::Features`).
+- `POST /api/v1/agent/ask` answers citizen questions through a safety filter, deterministic canonical answers, then lower-trust RAG/model generation (`apps/api/routers/agent.py::ask_agent`).
+- Canonical answers exist for facts that must not drift: the helper returns a bilingual answer, a `knowledge_base` topic and the standard disclaimer without querying the database or either model (`agent.py::_canonical_response`).
+- EKA-63 records four missing canonical topics: data deletion, ZK/Semaphore, representative verification and result visibility (`docs/community-audits/EKA_PNYX_AI_Readiness_Audit_2026-09-15.md::EKA-63`).
+- System boundary of this node: request classification and deterministic response construction inside `routers/agent.py`, plus focused tests. It does not change the underlying identity, ZK, representative or result-visibility behavior.
+
+## 2. Spur (one trace, hops opened)
+
+| # | From → To | Datum over the edge |
+| --- | --- | --- |
+| A1 | `apps/api/main.py::app.include_router(agent.router)` → `apps/api/routers/agent.py::ask_agent` | `POST /api/v1/agent/ask` with validated `AskRequest(question, lang)` |
+| A2 | `ask_agent` → `_safety_response` | raw citizen question plus canonical `el`/`en`; unsafe requests short-circuit |
+| A3 | `ask_agent` → `_canonical_response` | safe question plus language |
+| A4 | `_canonical_response` → topic match branches | lower-cased/normalized question; existing exact/substring matchers cover eight topics but none of the four EKA-63 topics |
+| A5 | matched branch → nested `resp` → `_with_disclaimer` | bilingual fixed answer, stable topic id, `model=knowledge-base`, empty external-model dependency |
+| A6 | no match → `_build_context` → `answer_citizen_question` / `_claude_answer` | the same four questions currently fall through to database-backed RAG and probabilistic model output |
+| A7 | deterministic response → HTTP caller | JSON `{question, answer, model, sources, lang}` |
+
+Opened fact neighbours that constrain A5 content but are not changed by this node:
+
+| Topic | Repository truth opened for the answer contract |
+| --- | --- |
+| Data deletion/revocation | `apps/api/routers/identity.py::revoke_identity` marks the matching identity `REVOKED`; no mobile/web caller for `/identity/revoke` exists at this base. `docs/wiki/delete-account.html` describes uninstall/reverification and contains broader wording that is not a runtime guarantee. |
+| ZK/Semaphore | `apps/api/routers/zk.py` gates Semaphore by explicit flags/scope allowlists and public Parliament scope/status; `README.md::Features` and `docs/wiki/zk-voting.html` describe the guarded rollout and group-size-five Arweave publication. |
+| Representative verification | `apps/api/routers/representative.py::verify_representative` requires an unused, unexpired admin invite plus ADA verification via Diavgeia, then issues a 24-hour token; demo handling is a separate test path. |
+| Results lifecycle | `apps/api/routers/voting.py::get_results` is the Web/Mobile results contract: default-hidden `ACTIVE` returns zeroed counts with `results_hidden=True`; `WINDOW_24H`, `PARLIAMENT_VOTED` and `OPEN_END` are visible before aggregation. `apps/api/services/bill_visibility.py::is_public_bill` separately excludes non-public bills. |
+
+## 3. Module
+
+| Modul | Eine Aufgabe | Einstieg | Stand |
+| --- | --- | --- | --- |
+| API composition | registers the agent route | `apps/api/main.py::app.include_router(agent.router)` | gebaut |
+| MOD-22 Hybrid Agent | validates and routes citizen questions | `apps/api/routers/agent.py::ask_agent` | gebaut |
+| Safety short-circuit | rejects manipulation requests | `agent.py::_safety_response` | gebaut |
+| Canonical answer classifier | returns deterministic bilingual facts | `agent.py::_canonical_response` | teilweise: eight topics built; four EKA-63 topics open |
+| RAG/model fallback | handles questions without a canonical branch | `agent.py::_build_context`, `answer_citizen_question`, `_claude_answer` | gebaut; wrong boundary for EKA-63 facts |
+| Canonical regression tests | pin classification, facts, source topic and model bypass | `apps/api/tests/test_agent_guardrails.py` | teilweise: existing topics covered; EKA-63 matrix open |
+| Identity/ZK/Representative/Visibility domains | authoritative behavior referenced by answer text | symbols listed above | gebaut; direct fact neighbours, unchanged |
+
+## 4. Verdrahtung
+
+- FastAPI composition → agent router: `main.py` exposes the router at `/api/v1/agent`.
+- `/ask` → safety filter: harmful instructions stop before any knowledge or model path.
+- `/ask` → canonical classifier: known safety/privacy/platform questions return a deterministic `knowledge-base` response.
+- Canonical miss → RAG/models: a `None` return triggers DB context retrieval and Ollama/Claude, so missing EKA-63 matchers are the causal hop.
+- Canonical hit → caller: the fixed bilingual answer and stable source topic return before DB/model calls.
+- Domain source → answer contract: response wording must stay no stronger than the opened runtime symbol; documentation alone cannot upgrade a runtime fact.
+
+## 5. Widerspruch und Lücken
+
+**Symptom:** all four EKA-63 questions can be improvised by a model even though they concern security, identity or publication boundaries that must not drift.
+
+**Ursache:** A4 has no matcher/response branches for those topics. A6 is therefore reached even when a deterministic repository fact exists.
+
+**Source → sink:** citizen question → `ask_agent` → `_canonical_response` returns `None` → lower-trust KB/bill context and model generation → citizen-visible answer.
+
+**Security invariant:** canonical security/platform facts bypass database retrieval and both model providers; answers cite a stable topic, keep the standard disclaimer and make no stronger claim than current source proves.
+
+**Widersprüche / offene Grenzen:**
+
+- Data deletion is not equivalent to identity revocation: `revoke_identity` changes key status but does not implement a general deletion transaction. No client caller exists. The canonical answer must state current mechanics and must not make GDPR/legal-compliance claims.
+- ZK is guarded, not universally enabled: answer text must preserve explicit scope/status gates and must not expose operational allowlist/config values.
+- Representative verification is ADA plus an admin-issued invite; ADA alone is insufficient. Demo identifiers must not be taught as a citizen path.
+- Results visibility wording must follow `bill_visibility.py`; it must not invent result counts, live state or EKA-65/minimum-k behavior.
+- Existing keyword matching uses broad substring tests. New matchers need positive EL/EN cases and nearby negative controls so generic words such as `results`, `delete` or `representative` do not swallow ordinary bill questions.
+
+## 6. Diagrammdateien
+
+- `docs/architecture/map.puml` — appended EKA-63 mindmap and component diagram
+- `docs/architecture/main-path.puml` — appended EKA-63 sequence diagram
+
+```mermaid
+mindmap
+  root((MOD-22 canonical citizen answers))
+    API composition
+      gebaut: main.py::include_router(agent.router)
+    Hybrid agent
+      gebaut: agent.py::ask_agent
+      gebaut: _safety_response
+    Canonical classifier
+      gebaut: _canonical_response existing topics
+      offen: data deletion/revocation
+      offen: guarded ZK/Semaphore
+      offen: representative ADA plus invite verification
+      offen: results visibility lifecycle
+    RAG and models
+      gebaut: _build_context to Ollama/Claude
+    Regression tests
+      offen: EKA-63 bilingual matrix and model-bypass controls
+```
+
+## 7. Nächster Schritt (engste Reparaturgrenze)
+
+**Modul:** MOD-22 Hybrid Agent. **Hop:** A4→A5 (`_canonical_response` topic classification and deterministic response).
+
+**Späterer Implementierungsvertrag:** change only `apps/api/routers/agent.py` and one focused test file (prefer `apps/api/tests/test_agent_guardrails.py`, or one new `test_agent_eka63_canonicals.py` if isolation is clearer). Add four narrowly matched bilingual canonical topics, grounded in the opened source symbols. Tests must prove EL/EN response facts, stable topic/model/lang/disclaimer shape, nearby negative questions still fall through, and `ask_agent` returns each canonical without DB, Ollama or Claude calls. Run focused agent/security tests, then the affected API suite and `git diff --check`.
+
+**Unberührt bleiben:** identity/revoke behavior, ZK flags/allowlists/verifier, representative invites/tokens/Diavgeia integration, result visibility/aggregation, public docs, KB seed data, prompt builder, model providers, dependencies, configuration, workflows, production and all other EKA findings (especially EKA-21/KDF and EKA-65).
