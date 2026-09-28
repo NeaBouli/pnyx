@@ -208,8 +208,8 @@
       "impls": [
         "mobile"
       ],
-      "divergence": "polis-key-map-correction",
-      "note": "T-489 map §5 A.5 lists polis pk as mobile == tier1 lib, but packages/crypto/src/polis.ts::derivePolisKeypair (not on the map) adds a second HMAC with POLIS_TICKET_KEY. Pinned for mobile only; no cross-impl claim.",
+      "divergence": "polis-key-implementation-specific",
+      "note": "packages/crypto/src/polis.ts::derivePolisKeypair adds a second HMAC with POLIS_TICKET_KEY, so the mobile Polis key is pinned only within mobile; no cross-implementation equality is claimed.",
       "expect": {
         "polis_pk_hex": "383bf6a4cddcd9ba257506a4fedf88544f321171fb7a5e9614af54a1974913f7"
       }
