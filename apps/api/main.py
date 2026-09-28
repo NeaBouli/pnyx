@@ -4,6 +4,7 @@ import os
 import secrets
 from contextlib import asynccontextmanager
 from typing import Any
+from urllib.parse import parse_qsl, urlencode
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -23,21 +24,87 @@ local_error_logger = logging.getLogger("ekklesia.errors")
 SENTRY_ENABLED = False
 _SENTRY_DSN = os.getenv("SENTRY_DSN_API", "")
 
+_SENTRY_REDACTED = "[Filtered]"
+# Normalisiert (lowercase, ohne "-"/"_"); Teilstring-Treffer werden redigiert.
+_SENTRY_SENSITIVE_KEY_PARTS = (
+    "adminkey", "apikey", "authorization", "cookie", "password",
+    "privatekey", "secret", "token",
+)
+_SENTRY_DROPPED_HEADERS = {"xforwardedfor", "cookie"}
+
+
+def _sentry_norm_key(key: Any) -> str:
+    return str(key).lower().replace("-", "").replace("_", "")
+
+
+def _sentry_is_sensitive_key(key: Any) -> bool:
+    norm = _sentry_norm_key(key)
+    return any(part in norm for part in _SENTRY_SENSITIVE_KEY_PARTS)
+
+
+def _sentry_redact(value: Any) -> Any:
+    """Rekursiv sensible Keys in dict/list-Strukturen ersetzen."""
+    if isinstance(value, dict):
+        return {
+            k: _SENTRY_REDACTED if _sentry_is_sensitive_key(k) else _sentry_redact(v)
+            for k, v in value.items()
+        }
+    if isinstance(value, list):
+        return [_sentry_redact(v) for v in value]
+    return value
+
+
+def _sentry_redact_query(query: Any) -> Any:
+    if isinstance(query, str):
+        if not query:
+            return query
+        pairs = parse_qsl(query, keep_blank_values=True)
+        return urlencode([
+            (k, _SENTRY_REDACTED if _sentry_is_sensitive_key(k) else v) for k, v in pairs
+        ])
+    if isinstance(query, list):
+        return [
+            [item[0], _SENTRY_REDACTED]
+            if isinstance(item, (list, tuple)) and len(item) == 2 and _sentry_is_sensitive_key(item[0])
+            else item
+            for item in query
+        ]
+    return _sentry_redact(query)
+
+
+def _before_send_filter(event, hint):
+    """GDPR: keine PII/Secrets senden (Request-Body, Query, Header, Frame-Locals, Extras)."""
+    request = event.get("request")
+    if isinstance(request, dict):
+        request.pop("env", None)
+        headers = request.get("headers")
+        if isinstance(headers, dict):
+            request["headers"] = _sentry_redact({
+                k: v for k, v in headers.items()
+                if _sentry_norm_key(k) not in _SENTRY_DROPPED_HEADERS
+            })
+        for field in ("data", "cookies"):
+            if field in request:
+                request[field] = _sentry_redact(request[field])
+        if "query_string" in request:
+            request["query_string"] = _sentry_redact_query(request["query_string"])
+    if "extra" in event:
+        event["extra"] = _sentry_redact(event["extra"])
+    for container in ("exception", "threads"):
+        values = (event.get(container) or {}).get("values") or []
+        for value in values:
+            frames = ((value or {}).get("stacktrace") or {}).get("frames") or []
+            for frame in frames:
+                if isinstance(frame, dict) and "vars" in frame:
+                    frame["vars"] = _sentry_redact(frame["vars"])
+    return event
+
+
 if _SENTRY_DSN:
     try:
         import sentry_sdk
         from sentry_sdk.integrations.fastapi import FastApiIntegration
         from sentry_sdk.integrations.starlette import StarletteIntegration
-
-        def _before_send_filter(event, hint):
-            """GDPR: keine PII senden."""
-            if "request" in event:
-                event["request"].pop("env", None)
-                headers = event.get("request", {}).get("headers", {})
-                if isinstance(headers, dict):
-                    headers.pop("X-Forwarded-For", None)
-                    headers.pop("Cookie", None)
-            return event
 
         sentry_sdk.init(
             dsn=_SENTRY_DSN,
