@@ -1,0 +1,1229 @@
+{
+  "schema": "ekklesia-kat",
+  "name": "EKA-22 cross-implementation known-answer vectors",
+  "version": 1,
+  "generated_from": "agent/claude/T-489@383aea2 (map) — values computed by an independent oracle (hashlib/hmac, PyNaCl, argon2-cffi), not by the code under test",
+  "rules": [
+    "class identical: byte/hex output must be equal in every impl listed in impls",
+    "class validatable: every impl must reject; the rejection form (false|throw|API code) is per impl in impl_error",
+    "class implementation_specific: pinned only within its own impl; never assert cross-impl equality (KDFs gated by EKA-21)",
+    "synthetic data only: RFC 8032 public test keys, synthetic bill ids, synthetic hex, placeholder phone '+300000000000', test-only salt",
+    "never auto-regenerate in CI; any change needs a reviewed diff"
+  ],
+  "keys": [
+    {
+      "id": "rfc8032-test1",
+      "seed_hex": "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
+      "pk_hex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
+    },
+    {
+      "id": "rfc8032-test2",
+      "seed_hex": "4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb",
+      "pk_hex": "3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c"
+    },
+    {
+      "id": "rfc8032-test3",
+      "seed_hex": "c5aa8df43f9f837bedb7442f31dcb7b166d38535076f094b85ce3a2e0b4458f7",
+      "pk_hex": "fc51cd8e6218a1a38da47ed00230f0580816ed13ba3303ac5deb911548908025"
+    }
+  ],
+  "roots": [
+    {
+      "id": "test-root-ab",
+      "root_hex": "abababababababababababababababababababababababababababababababab"
+    }
+  ],
+  "cases": [
+    {
+      "id": "ed25519-rfc8032-test1",
+      "class": "identical",
+      "kind": "ed25519_rfc8032",
+      "key": "rfc8032-test1",
+      "impls": [
+        "api",
+        "web",
+        "mobile"
+      ],
+      "expect": {
+        "message_hex": "",
+        "sig_hex": "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e065224901555fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b",
+        "pk_hex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
+      }
+    },
+    {
+      "id": "ed25519-rfc8032-test2",
+      "class": "identical",
+      "kind": "ed25519_rfc8032",
+      "key": "rfc8032-test2",
+      "impls": [
+        "api",
+        "web",
+        "mobile"
+      ],
+      "expect": {
+        "message_hex": "72",
+        "sig_hex": "92a009a9f0d4cab8720e820b5f642540a2b27b5416503f8fb3762223ebdb69da085ac1e43e15996e458f3613d0f11d8c387b2eaeb4302aeeb00d291612bb0c00",
+        "pk_hex": "3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c"
+      }
+    },
+    {
+      "id": "ed25519-rfc8032-test3",
+      "class": "identical",
+      "kind": "ed25519_rfc8032",
+      "key": "rfc8032-test3",
+      "impls": [
+        "api",
+        "mobile"
+      ],
+      "note": "test3 message 0xaf82 is not valid UTF-8; web signPayload only takes UTF-8 strings",
+      "expect": {
+        "message_hex": "af82",
+        "sig_hex": "6291d657deec24024827e69c3abe01a30ce548a284743a445e3680d7db5ac3ac18ff9b538d16f290ae67f760984dc6594a7c15e9716ed28dc027beceea1ec40a",
+        "pk_hex": "fc51cd8e6218a1a38da47ed00230f0580816ed13ba3303ac5deb911548908025"
+      }
+    },
+    {
+      "id": "legacy-vote-yes-uppercase",
+      "class": "identical",
+      "kind": "legacy_vote",
+      "key": "rfc8032-test1",
+      "impls": [
+        "api",
+        "web",
+        "mobile"
+      ],
+      "input": {
+        "bill_id": "TEST-BILL-0001",
+        "vote": "YES",
+        "nullifier_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      },
+      "expect": {
+        "message_utf8": "TEST-BILL-0001:YES:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "message_hex": "544553542d42494c4c2d303030313a5945533a30313233343536373839616263646566303132333435363738396162636465663031323334353637383961626364656630313233343536373839616263646566",
+        "sig_hex": "a094514fec220fda8ce53c56c2a3a497c34f1aae85e48e42fe823d0a81a2e4b28287e148c9b254634e1b7495b329a99944150907e40d719580737b80d33eb801"
+      }
+    },
+    {
+      "id": "legacy-vote-no-uppercase",
+      "class": "identical",
+      "kind": "legacy_vote",
+      "key": "rfc8032-test1",
+      "impls": [
+        "api",
+        "web",
+        "mobile"
+      ],
+      "input": {
+        "bill_id": "TEST-BILL-0001",
+        "vote": "NO",
+        "nullifier_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      },
+      "expect": {
+        "message_utf8": "TEST-BILL-0001:NO:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "message_hex": "544553542d42494c4c2d303030313a4e4f3a30313233343536373839616263646566303132333435363738396162636465663031323334353637383961626364656630313233343536373839616263646566",
+        "sig_hex": "e2dda7118ba7b44d4e7f3c17092f1a4394d0c541a015695fb9941bce1b0b7251716f6c238da79fcfd0a2d3570fb90a4244c3b56afa7f263258fe8969f19b9d00"
+      }
+    },
+    {
+      "id": "legacy-vote-abstain-uppercase",
+      "class": "identical",
+      "kind": "legacy_vote",
+      "key": "rfc8032-test1",
+      "impls": [
+        "api",
+        "web",
+        "mobile"
+      ],
+      "input": {
+        "bill_id": "TEST-BILL-0001",
+        "vote": "ABSTAIN",
+        "nullifier_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      },
+      "expect": {
+        "message_utf8": "TEST-BILL-0001:ABSTAIN:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "message_hex": "544553542d42494c4c2d303030313a4142535441494e3a30313233343536373839616263646566303132333435363738396162636465663031323334353637383961626364656630313233343536373839616263646566",
+        "sig_hex": "57dd8ff0e8f426bcc0cbf3dae753781f37aa1cc306920fcf30ef524aacfed078216a6b32cffce4e96aac29daede4a4ddb018d5273cc067fffad33f706e632c0c"
+      }
+    },
+    {
+      "id": "legacy-vote-yes-greek-bill",
+      "class": "identical",
+      "kind": "legacy_vote",
+      "key": "rfc8032-test1",
+      "impls": [
+        "api",
+        "web",
+        "mobile"
+      ],
+      "input": {
+        "bill_id": "ΤΕΣΤ-ΝΟΜΟΣ-0001",
+        "vote": "YES",
+        "nullifier_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      },
+      "expect": {
+        "message_utf8": "ΤΕΣΤ-ΝΟΜΟΣ-0001:YES:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "message_hex": "cea4ce95cea3cea42dce9dce9fce9cce9fcea32d303030313a5945533a30313233343536373839616263646566303132333435363738396162636465663031323334353637383961626364656630313233343536373839616263646566",
+        "sig_hex": "16b33d2edf8c707749b02c37a656e99b812e127bc96bf6f5b7bc8d0e77b5050b1b051643077b5d95ffa526f7979fbca3baee7781af85b23676e7e15e4c42a909"
+      }
+    },
+    {
+      "id": "hmac-chain-test-root-ab",
+      "class": "identical",
+      "kind": "hmac_chain",
+      "root": "test-root-ab",
+      "impls": [
+        "mobile",
+        "tier1_lib"
+      ],
+      "note": "Python has no production HMAC-chain symbol (apps/api/crypto/nullifier.py: 'Does NOT contain key derivation'); the API adapter only re-derives these values as a stdlib fixture oracle.",
+      "expect": {
+        "identity_commitment_hex": "7a1d4ff2fde090601f287e428134daa99a2e3fe1378c6a337926c23f2809bd07",
+        "bills": [
+          {
+            "bill_id": "TEST-BILL-0001",
+            "vote_nullifier_hex": "d50d21c4d8a3f361145f0699147d54bbec9b7491477d5bb8ec46daf69d779870",
+            "ephemeral_pk_hex": "0fdd6dd1b4969a7d2b0bf579c456cb29efba951a2373fc88d499a55789494238",
+            "linkage_tag_hex": "417ab32f350e119df609ffe32d66c6f3fe150b4e48032cc5bbf6ef33da8e07c6"
+          },
+          {
+            "bill_id": "TEST-BILL-0002",
+            "vote_nullifier_hex": "5b6ed76f73fa369e5ee8190a27b2f8a1462cc4dd93c44633320e1fe981b445b7",
+            "ephemeral_pk_hex": "51abda24523a9282eb1dc3678c3c0ef4162e43e78c9ac27e82bfc0024c3b108a",
+            "linkage_tag_hex": "d627a2f9351c420f612777d7515210afe2d7b629bbd91c42c2928f1aa6f41a2b"
+          },
+          {
+            "bill_id": "ΤΕΣΤ-ΝΟΜΟΣ-0001",
+            "vote_nullifier_hex": "99f5f297f66643c579b8248e1cdeca78456f6aae081a32c882a735ae55d9581a",
+            "ephemeral_pk_hex": "3b45147250a7c289461aee0428e5d7a515353ee4141bb021ca7760a93994db4b",
+            "linkage_tag_hex": "c46c7ac03207f8fa7432c5b6281822109c48e37758320724a1ce2d4b59937fd8"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mobile-polis-key-pin",
+      "class": "implementation_specific",
+      "kind": "mobile_polis_key",
+      "root": "test-root-ab",
+      "impls": [
+        "mobile"
+      ],
+      "divergence": "polis-key-map-correction",
+      "note": "T-489 map §5 A.5 lists polis pk as mobile == tier1 lib, but packages/crypto/src/polis.ts::derivePolisKeypair (not on the map) adds a second HMAC with POLIS_TICKET_KEY. Pinned for mobile only; no cross-impl claim.",
+      "expect": {
+        "polis_pk_hex": "383bf6a4cddcd9ba257506a4fedf88544f321171fb7a5e9614af54a1974913f7"
+      }
+    },
+    {
+      "id": "tier1-payload-ascii-bill",
+      "class": "identical",
+      "kind": "tier1_signed_payload",
+      "root": "test-root-ab",
+      "impls": [
+        "api",
+        "mobile"
+      ],
+      "input": {
+        "bill_id": "TEST-BILL-0001",
+        "choice": "YES",
+        "pk_eph_hex": "0fdd6dd1b4969a7d2b0bf579c456cb29efba951a2373fc88d499a55789494238",
+        "vote_nullifier_hex": "d50d21c4d8a3f361145f0699147d54bbec9b7491477d5bb8ec46daf69d779870",
+        "linkage_tag_hex": "417ab32f350e119df609ffe32d66c6f3fe150b4e48032cc5bbf6ef33da8e07c6",
+        "timestamp_ms": 1790000000000,
+        "version": "ekklesia:v1"
+      },
+      "expect": {
+        "payload_hex": "544553542d42494c4c2d303030315945530fdd6dd1b4969a7d2b0bf579c456cb29efba951a2373fc88d499a55789494238d50d21c4d8a3f361145f0699147d54bbec9b7491477d5bb8ec46daf69d779870417ab32f350e119df609ffe32d66c6f3fe150b4e48032cc5bbf6ef33da8e07c6000001a0c4506c00",
+        "sig_hex": "e3002f9929e435bfc41931810976fe2f110512588778361ff5524379db67b1a8eeccc7f919b2c5e64e5ea1b5618485934eb14036962ad07474ad2513a92bbe0f"
+      }
+    },
+    {
+      "id": "tier1-payload-greek-bill",
+      "class": "identical",
+      "kind": "tier1_signed_payload",
+      "root": "test-root-ab",
+      "impls": [
+        "api",
+        "mobile"
+      ],
+      "input": {
+        "bill_id": "ΤΕΣΤ-ΝΟΜΟΣ-0001",
+        "choice": "YES",
+        "pk_eph_hex": "3b45147250a7c289461aee0428e5d7a515353ee4141bb021ca7760a93994db4b",
+        "vote_nullifier_hex": "99f5f297f66643c579b8248e1cdeca78456f6aae081a32c882a735ae55d9581a",
+        "linkage_tag_hex": "c46c7ac03207f8fa7432c5b6281822109c48e37758320724a1ce2d4b59937fd8",
+        "timestamp_ms": 1790000000000,
+        "version": "ekklesia:v1"
+      },
+      "expect": {
+        "payload_hex": "cea4ce95cea3cea42dce9dce9fce9cce9fcea32d303030315945533b45147250a7c289461aee0428e5d7a515353ee4141bb021ca7760a93994db4b99f5f297f66643c579b8248e1cdeca78456f6aae081a32c882a735ae55d9581ac46c7ac03207f8fa7432c5b6281822109c48e37758320724a1ce2d4b59937fd8000001a0c4506c00",
+        "sig_hex": "53c745a630663843785d5514e82edaf4169eba2c4c4da177e7bad4c01c699ff51229e1fc08865bd0403cbe5d69986e043eb327c4c0dab83a0b210a91fdc5e302"
+      }
+    },
+    {
+      "id": "json-evaluation-v2-greek-ada",
+      "class": "identical",
+      "kind": "evaluation_v2",
+      "key": "rfc8032-test1",
+      "impls": [
+        "api",
+        "mobile"
+      ],
+      "input": {
+        "ada_number": "ΑΔΑ-ΤΕΣΤ-0001",
+        "nullifier_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "timestamp_ms": 1790000000000,
+        "scores": [
+          {
+            "question_id": 8,
+            "score": 5
+          },
+          {
+            "question_id": 2,
+            "score": -3
+          },
+          {
+            "question_id": 5,
+            "score": 0
+          }
+        ]
+      },
+      "expect": {
+        "payload_utf8": "evaluate:v2:[\"ΑΔΑ-ΤΕΣΤ-0001\",\"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",1790000000000,[[2,-3],[5,0],[8,5]]]",
+        "payload_hex": "6576616c756174653a76323a5b22ce91ce94ce912dcea4ce95cea3cea42d30303031222c2230313233343536373839616263646566303132333435363738396162636465663031323334353637383961626364656630313233343536373839616263646566222c313739303030303030303030302c5b5b322c2d335d2c5b352c305d2c5b382c355d5d5d",
+        "sig_hex": "58f4926af7e76959752b98d0be1a1e2c07938c87217a4d16e34af05a1b33e392d18a4951463b56671de8e14bc9a28c6860de4afdecd5f03d02f9188d989e180c"
+      }
+    },
+    {
+      "id": "json-evaluation-read-greek-ada",
+      "class": "identical",
+      "kind": "evaluation_read",
+      "key": "rfc8032-test1",
+      "impls": [
+        "api",
+        "mobile"
+      ],
+      "input": {
+        "ada_number": "ΑΔΑ-ΤΕΣΤ-0001",
+        "nullifier_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "timestamp_ms": 1790000000000
+      },
+      "expect": {
+        "payload_utf8": "evaluation-read:v1:[\"ΑΔΑ-ΤΕΣΤ-0001\",\"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",1790000000000]",
+        "payload_hex": "6576616c756174696f6e2d726561643a76313a5b22ce91ce94ce912dcea4ce95cea3cea42d30303031222c2230313233343536373839616263646566303132333435363738396162636465663031323334353637383961626364656630313233343536373839616263646566222c313739303030303030303030305d",
+        "sig_hex": "975945ba2a62928502dd0fa67733bafd0a3b187f5ed3f6fc5b2562f82144504461a1e7813a4228323e0dcb50b3740a3b9856499820e9290430d691c6b9bbdc08"
+      }
+    },
+    {
+      "id": "json-evaluation-read-bulk-null",
+      "class": "identical",
+      "kind": "evaluation_read",
+      "key": "rfc8032-test1",
+      "impls": [
+        "api",
+        "mobile"
+      ],
+      "input": {
+        "ada_number": null,
+        "nullifier_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "timestamp_ms": 1790000000000
+      },
+      "expect": {
+        "payload_utf8": "evaluation-read:v1:[null,\"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",1790000000000]",
+        "payload_hex": "6576616c756174696f6e2d726561643a76313a5b6e756c6c2c2230313233343536373839616263646566303132333435363738396162636465663031323334353637383961626364656630313233343536373839616263646566222c313739303030303030303030305d",
+        "sig_hex": "d7e2cb74826d659c211fc6848d903a69e910ce5126f8395dd368692935da56bfaf73b5ee77f25f9ca5160a8989a257511e35dbb2c0d28415470d8fef9b97310d"
+      }
+    },
+    {
+      "id": "json-vote-status-read-greek-bill",
+      "class": "identical",
+      "kind": "vote_status_read",
+      "key": "rfc8032-test1",
+      "impls": [
+        "api",
+        "mobile"
+      ],
+      "input": {
+        "bill_id": "ΤΕΣΤ-ΝΟΜΟΣ-0001",
+        "nullifier_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "timestamp_ms": 1790000000000
+      },
+      "expect": {
+        "payload_utf8": "vote-status-read:v1:[\"ΤΕΣΤ-ΝΟΜΟΣ-0001\",\"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",1790000000000]",
+        "payload_hex": "766f74652d7374617475732d726561643a76313a5b22cea4ce95cea3cea42dce9dce9fce9cce9fcea32d30303031222c2230313233343536373839616263646566303132333435363738396162636465663031323334353637383961626364656630313233343536373839616263646566222c313739303030303030303030305d",
+        "sig_hex": "92419097c622019680c808de9fec62c3797383a2743c1f71ed9bb751b7700f6622b03617a5554afb9a22374a2e05176a6eaca32312363c211c8c3278f510d000"
+      }
+    },
+    {
+      "id": "scope-string-zk-opt-in",
+      "class": "identical",
+      "kind": "zk_opt_in",
+      "key": "rfc8032-test1",
+      "impls": [
+        "api",
+        "mobile"
+      ],
+      "input": {
+        "bill_id": "TEST-BILL-0001",
+        "commitment": "7a1d4ff2fde090601f287e428134daa99a2e3fe1378c6a337926c23f2809bd07",
+        "nullifier_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      },
+      "expect": {
+        "message_utf8": "zk_opt_in:TEST-BILL-0001:7a1d4ff2fde090601f287e428134daa99a2e3fe1378c6a337926c23f2809bd07:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "sig_hex": "56206d2f9ca0219a2a118639e54b0c54eacf15688311ee36cc64f08dc25b9af985240f126dffb3c083d452d276ae9f99632290828ab2da0c8c0be2093f98d10d"
+      }
+    },
+    {
+      "id": "v1-nullifier-sha256-synthetic",
+      "class": "identical",
+      "kind": "v1_nullifier",
+      "impls": [
+        "api",
+        "web"
+      ],
+      "input": {
+        "phone": "+300000000000",
+        "salt": "eka22-kat-synthetic-test-salt-not-a-secret"
+      },
+      "expect": {
+        "nullifier_hex": "9c1cf29f7b0ddc8674f1d4f3c93467563c720a537ed1e53a558d3c3deb520f38"
+      }
+    },
+    {
+      "id": "domain-separation-bill-and-scope",
+      "class": "identical",
+      "kind": "domain_separation",
+      "root": "test-root-ab",
+      "impls": [
+        "api",
+        "mobile",
+        "tier1_lib"
+      ],
+      "input": {
+        "domains": {
+          "IDENTITY_COMMITMENT": "ekklesia:identity_commitment:v1",
+          "VOTE_NULLIFIER": "ekklesia:vote_nullifier:v1",
+          "EPHEMERAL_SEED": "ekklesia:ephemeral_seed:v1",
+          "LINKAGE_TAG": "ekklesia:linkage_tag:v1",
+          "POLIS_KEY": "ekklesia:polis_key:v1"
+        },
+        "bills": [
+          "TEST-BILL-0001",
+          "TEST-BILL-0002"
+        ],
+        "scope_ids": [
+          "bill:TEST-BILL-0001",
+          "municipal:TEST-BILL-0001",
+          "regional:TEST-BILL-0001"
+        ]
+      },
+      "expect": {
+        "distinct": true
+      }
+    },
+    {
+      "id": "reject-tampered-message",
+      "class": "validatable",
+      "kind": "legacy_vote_verify",
+      "key": "rfc8032-test1",
+      "impls": [
+        "api",
+        "web",
+        "mobile"
+      ],
+      "input": {
+        "bill_id": "TEST-BILL-0002",
+        "vote": "YES",
+        "nullifier_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "sig_hex": "a094514fec220fda8ce53c56c2a3a497c34f1aae85e48e42fe823d0a81a2e4b28287e148c9b254634e1b7495b329a99944150907e40d719580737b80d33eb801",
+        "pk_hex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
+      },
+      "expect": {
+        "accepted": false
+      },
+      "impl_error": {
+        "api": "False",
+        "web": "false",
+        "mobile": "false"
+      }
+    },
+    {
+      "id": "reject-tampered-signature",
+      "class": "validatable",
+      "kind": "legacy_vote_verify",
+      "key": "rfc8032-test1",
+      "impls": [
+        "api",
+        "web",
+        "mobile"
+      ],
+      "input": {
+        "bill_id": "TEST-BILL-0001",
+        "vote": "YES",
+        "nullifier_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "sig_hex": "a094514fec220fda8ce53c56c2a3a497c34f1aae85e48e42fe823d0a81a2e4b28287e148c9b254634e1b7495b329a99944150907e40d719580737b80d33eb800",
+        "pk_hex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
+      },
+      "expect": {
+        "accepted": false
+      },
+      "impl_error": {
+        "api": "False",
+        "web": "false",
+        "mobile": "false"
+      }
+    },
+    {
+      "id": "reject-wrong-key",
+      "class": "validatable",
+      "kind": "legacy_vote_verify",
+      "key": "rfc8032-test1",
+      "impls": [
+        "api",
+        "web",
+        "mobile"
+      ],
+      "input": {
+        "bill_id": "TEST-BILL-0001",
+        "vote": "YES",
+        "nullifier_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "sig_hex": "a094514fec220fda8ce53c56c2a3a497c34f1aae85e48e42fe823d0a81a2e4b28287e148c9b254634e1b7495b329a99944150907e40d719580737b80d33eb801",
+        "pk_hex": "3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c"
+      },
+      "expect": {
+        "accepted": false
+      },
+      "impl_error": {
+        "api": "False",
+        "web": "false",
+        "mobile": "false"
+      }
+    },
+    {
+      "id": "reject-non-hex-signature",
+      "class": "validatable",
+      "kind": "legacy_vote_verify",
+      "key": "rfc8032-test1",
+      "impls": [
+        "api",
+        "web",
+        "mobile"
+      ],
+      "input": {
+        "bill_id": "TEST-BILL-0001",
+        "vote": "YES",
+        "nullifier_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "sig_hex": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "pk_hex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
+      },
+      "expect": {
+        "accepted": false
+      },
+      "impl_error": {
+        "api": "False",
+        "web": "false",
+        "mobile": "false|throw"
+      },
+      "note": "TS hexToBytes maps non-hex to 0 bytes silently; only the verdict is shared"
+    },
+    {
+      "id": "reject-short-signature",
+      "class": "validatable",
+      "kind": "legacy_vote_verify",
+      "key": "rfc8032-test1",
+      "impls": [
+        "api",
+        "web",
+        "mobile"
+      ],
+      "input": {
+        "bill_id": "TEST-BILL-0001",
+        "vote": "YES",
+        "nullifier_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "sig_hex": "a094514fec220fda8ce53c56c2a3a497c34f1aae85e48e42fe823d0a81a2e4b28287e148c9b254634e1b7495b329a99944150907e40d719580737b80d33eb8",
+        "pk_hex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
+      },
+      "expect": {
+        "accepted": false
+      },
+      "impl_error": {
+        "api": "False",
+        "web": "false",
+        "mobile": "false|throw"
+      },
+      "note": "mobile verifyVote has no try/catch; noble throws on wrong length"
+    },
+    {
+      "id": "reject-short-public-key",
+      "class": "validatable",
+      "kind": "legacy_vote_verify",
+      "key": "rfc8032-test1",
+      "impls": [
+        "api",
+        "web",
+        "mobile"
+      ],
+      "input": {
+        "bill_id": "TEST-BILL-0001",
+        "vote": "YES",
+        "nullifier_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "sig_hex": "a094514fec220fda8ce53c56c2a3a497c34f1aae85e48e42fe823d0a81a2e4b28287e148c9b254634e1b7495b329a99944150907e40d719580737b80d33eb801",
+        "pk_hex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f70751"
+      },
+      "expect": {
+        "accepted": false
+      },
+      "impl_error": {
+        "api": "False",
+        "web": "false",
+        "mobile": "false|throw"
+      }
+    },
+    {
+      "id": "tier1-accept-canonical",
+      "class": "validatable",
+      "kind": "tier1_validate",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "payload": {
+          "bill_id": "TEST-BILL-0001",
+          "choice": "YES",
+          "pk_eph_hex": "0fdd6dd1b4969a7d2b0bf579c456cb29efba951a2373fc88d499a55789494238",
+          "vote_nullifier_hex": "d50d21c4d8a3f361145f0699147d54bbec9b7491477d5bb8ec46daf69d779870",
+          "linkage_tag_hex": "417ab32f350e119df609ffe32d66c6f3fe150b4e48032cc5bbf6ef33da8e07c6",
+          "timestamp_ms": 1790000000000,
+          "version": "ekklesia:v1",
+          "signature_hex": "e3002f9929e435bfc41931810976fe2f110512588778361ff5524379db67b1a8eeccc7f919b2c5e64e5ea1b5618485934eb14036962ad07474ad2513a92bbe0f"
+        },
+        "now_ms": 1790000000000
+      },
+      "expect": {
+        "accepted": true,
+        "api_code": null
+      }
+    },
+    {
+      "id": "tier1-version-mismatch",
+      "class": "validatable",
+      "kind": "tier1_validate",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "payload": {
+          "bill_id": "TEST-BILL-0001",
+          "choice": "YES",
+          "pk_eph_hex": "0fdd6dd1b4969a7d2b0bf579c456cb29efba951a2373fc88d499a55789494238",
+          "vote_nullifier_hex": "d50d21c4d8a3f361145f0699147d54bbec9b7491477d5bb8ec46daf69d779870",
+          "linkage_tag_hex": "417ab32f350e119df609ffe32d66c6f3fe150b4e48032cc5bbf6ef33da8e07c6",
+          "timestamp_ms": 1790000000000,
+          "version": "ekklesia:v0",
+          "signature_hex": "e3002f9929e435bfc41931810976fe2f110512588778361ff5524379db67b1a8eeccc7f919b2c5e64e5ea1b5618485934eb14036962ad07474ad2513a92bbe0f"
+        },
+        "now_ms": 1790000000000
+      },
+      "expect": {
+        "accepted": false,
+        "api_code": "VERSION_MISMATCH"
+      }
+    },
+    {
+      "id": "tier1-empty-bill-id",
+      "class": "validatable",
+      "kind": "tier1_validate",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "payload": {
+          "bill_id": "",
+          "choice": "YES",
+          "pk_eph_hex": "0fdd6dd1b4969a7d2b0bf579c456cb29efba951a2373fc88d499a55789494238",
+          "vote_nullifier_hex": "d50d21c4d8a3f361145f0699147d54bbec9b7491477d5bb8ec46daf69d779870",
+          "linkage_tag_hex": "417ab32f350e119df609ffe32d66c6f3fe150b4e48032cc5bbf6ef33da8e07c6",
+          "timestamp_ms": 1790000000000,
+          "version": "ekklesia:v1",
+          "signature_hex": "e3002f9929e435bfc41931810976fe2f110512588778361ff5524379db67b1a8eeccc7f919b2c5e64e5ea1b5618485934eb14036962ad07474ad2513a92bbe0f"
+        },
+        "now_ms": 1790000000000
+      },
+      "expect": {
+        "accepted": false,
+        "api_code": "INVALID_BILL_ID"
+      }
+    },
+    {
+      "id": "tier1-lowercase-choice",
+      "class": "validatable",
+      "kind": "tier1_validate",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "payload": {
+          "bill_id": "TEST-BILL-0001",
+          "choice": "yes",
+          "pk_eph_hex": "0fdd6dd1b4969a7d2b0bf579c456cb29efba951a2373fc88d499a55789494238",
+          "vote_nullifier_hex": "d50d21c4d8a3f361145f0699147d54bbec9b7491477d5bb8ec46daf69d779870",
+          "linkage_tag_hex": "417ab32f350e119df609ffe32d66c6f3fe150b4e48032cc5bbf6ef33da8e07c6",
+          "timestamp_ms": 1790000000000,
+          "version": "ekklesia:v1",
+          "signature_hex": "e3002f9929e435bfc41931810976fe2f110512588778361ff5524379db67b1a8eeccc7f919b2c5e64e5ea1b5618485934eb14036962ad07474ad2513a92bbe0f"
+        },
+        "now_ms": 1790000000000
+      },
+      "expect": {
+        "accepted": false,
+        "api_code": "INVALID_CHOICE"
+      }
+    },
+    {
+      "id": "tier1-unknown-choice",
+      "class": "validatable",
+      "kind": "tier1_validate",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "payload": {
+          "bill_id": "TEST-BILL-0001",
+          "choice": "MAYBE",
+          "pk_eph_hex": "0fdd6dd1b4969a7d2b0bf579c456cb29efba951a2373fc88d499a55789494238",
+          "vote_nullifier_hex": "d50d21c4d8a3f361145f0699147d54bbec9b7491477d5bb8ec46daf69d779870",
+          "linkage_tag_hex": "417ab32f350e119df609ffe32d66c6f3fe150b4e48032cc5bbf6ef33da8e07c6",
+          "timestamp_ms": 1790000000000,
+          "version": "ekklesia:v1",
+          "signature_hex": "e3002f9929e435bfc41931810976fe2f110512588778361ff5524379db67b1a8eeccc7f919b2c5e64e5ea1b5618485934eb14036962ad07474ad2513a92bbe0f"
+        },
+        "now_ms": 1790000000000
+      },
+      "expect": {
+        "accepted": false,
+        "api_code": "INVALID_CHOICE"
+      }
+    },
+    {
+      "id": "tier1-short-pk-eph",
+      "class": "validatable",
+      "kind": "tier1_validate",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "payload": {
+          "bill_id": "TEST-BILL-0001",
+          "choice": "YES",
+          "pk_eph_hex": "0fdd6dd1b4969a7d2b0bf579c456cb29efba951a2373fc88d499a557894942",
+          "vote_nullifier_hex": "d50d21c4d8a3f361145f0699147d54bbec9b7491477d5bb8ec46daf69d779870",
+          "linkage_tag_hex": "417ab32f350e119df609ffe32d66c6f3fe150b4e48032cc5bbf6ef33da8e07c6",
+          "timestamp_ms": 1790000000000,
+          "version": "ekklesia:v1",
+          "signature_hex": "e3002f9929e435bfc41931810976fe2f110512588778361ff5524379db67b1a8eeccc7f919b2c5e64e5ea1b5618485934eb14036962ad07474ad2513a92bbe0f"
+        },
+        "now_ms": 1790000000000
+      },
+      "expect": {
+        "accepted": false,
+        "api_code": "INVALID_HEX"
+      }
+    },
+    {
+      "id": "tier1-non-hex-nullifier",
+      "class": "validatable",
+      "kind": "tier1_validate",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "payload": {
+          "bill_id": "TEST-BILL-0001",
+          "choice": "YES",
+          "pk_eph_hex": "0fdd6dd1b4969a7d2b0bf579c456cb29efba951a2373fc88d499a55789494238",
+          "vote_nullifier_hex": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+          "linkage_tag_hex": "417ab32f350e119df609ffe32d66c6f3fe150b4e48032cc5bbf6ef33da8e07c6",
+          "timestamp_ms": 1790000000000,
+          "version": "ekklesia:v1",
+          "signature_hex": "e3002f9929e435bfc41931810976fe2f110512588778361ff5524379db67b1a8eeccc7f919b2c5e64e5ea1b5618485934eb14036962ad07474ad2513a92bbe0f"
+        },
+        "now_ms": 1790000000000
+      },
+      "expect": {
+        "accepted": false,
+        "api_code": "INVALID_HEX"
+      }
+    },
+    {
+      "id": "tier1-short-signature",
+      "class": "validatable",
+      "kind": "tier1_validate",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "payload": {
+          "bill_id": "TEST-BILL-0001",
+          "choice": "YES",
+          "pk_eph_hex": "0fdd6dd1b4969a7d2b0bf579c456cb29efba951a2373fc88d499a55789494238",
+          "vote_nullifier_hex": "d50d21c4d8a3f361145f0699147d54bbec9b7491477d5bb8ec46daf69d779870",
+          "linkage_tag_hex": "417ab32f350e119df609ffe32d66c6f3fe150b4e48032cc5bbf6ef33da8e07c6",
+          "timestamp_ms": 1790000000000,
+          "version": "ekklesia:v1",
+          "signature_hex": "e3002f9929e435bfc41931810976fe2f110512588778361ff5524379db67b1a8eeccc7f919b2c5e64e5ea1b5618485934eb14036962ad07474ad2513a92bbe"
+        },
+        "now_ms": 1790000000000
+      },
+      "expect": {
+        "accepted": false,
+        "api_code": "INVALID_SIGNATURE_FORMAT"
+      }
+    },
+    {
+      "id": "tier1-timestamp-expired",
+      "class": "validatable",
+      "kind": "tier1_validate",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "payload": {
+          "bill_id": "TEST-BILL-0001",
+          "choice": "YES",
+          "pk_eph_hex": "0fdd6dd1b4969a7d2b0bf579c456cb29efba951a2373fc88d499a55789494238",
+          "vote_nullifier_hex": "d50d21c4d8a3f361145f0699147d54bbec9b7491477d5bb8ec46daf69d779870",
+          "linkage_tag_hex": "417ab32f350e119df609ffe32d66c6f3fe150b4e48032cc5bbf6ef33da8e07c6",
+          "timestamp_ms": 1790000000000,
+          "version": "ekklesia:v1",
+          "signature_hex": "e3002f9929e435bfc41931810976fe2f110512588778361ff5524379db67b1a8eeccc7f919b2c5e64e5ea1b5618485934eb14036962ad07474ad2513a92bbe0f"
+        },
+        "now_ms": 1790000300001
+      },
+      "expect": {
+        "accepted": false,
+        "api_code": "TIMESTAMP_EXPIRED"
+      }
+    },
+    {
+      "id": "tier1-timestamp-window-edge",
+      "class": "validatable",
+      "kind": "tier1_validate",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "payload": {
+          "bill_id": "TEST-BILL-0001",
+          "choice": "YES",
+          "pk_eph_hex": "0fdd6dd1b4969a7d2b0bf579c456cb29efba951a2373fc88d499a55789494238",
+          "vote_nullifier_hex": "d50d21c4d8a3f361145f0699147d54bbec9b7491477d5bb8ec46daf69d779870",
+          "linkage_tag_hex": "417ab32f350e119df609ffe32d66c6f3fe150b4e48032cc5bbf6ef33da8e07c6",
+          "timestamp_ms": 1790000000000,
+          "version": "ekklesia:v1",
+          "signature_hex": "e3002f9929e435bfc41931810976fe2f110512588778361ff5524379db67b1a8eeccc7f919b2c5e64e5ea1b5618485934eb14036962ad07474ad2513a92bbe0f"
+        },
+        "now_ms": 1790000300000
+      },
+      "expect": {
+        "accepted": true,
+        "api_code": null
+      }
+    },
+    {
+      "id": "tier1-duplicate-nullifier",
+      "class": "validatable",
+      "kind": "tier1_validate",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "payload": {
+          "bill_id": "TEST-BILL-0001",
+          "choice": "YES",
+          "pk_eph_hex": "0fdd6dd1b4969a7d2b0bf579c456cb29efba951a2373fc88d499a55789494238",
+          "vote_nullifier_hex": "d50d21c4d8a3f361145f0699147d54bbec9b7491477d5bb8ec46daf69d779870",
+          "linkage_tag_hex": "417ab32f350e119df609ffe32d66c6f3fe150b4e48032cc5bbf6ef33da8e07c6",
+          "timestamp_ms": 1790000000000,
+          "version": "ekklesia:v1",
+          "signature_hex": "e3002f9929e435bfc41931810976fe2f110512588778361ff5524379db67b1a8eeccc7f919b2c5e64e5ea1b5618485934eb14036962ad07474ad2513a92bbe0f"
+        },
+        "now_ms": 1790000000000,
+        "used_nullifiers": [
+          "d50d21c4d8a3f361145f0699147d54bbec9b7491477d5bb8ec46daf69d779870"
+        ]
+      },
+      "expect": {
+        "accepted": false,
+        "api_code": "DUPLICATE_VOTE"
+      }
+    },
+    {
+      "id": "tier1-tampered-signature",
+      "class": "validatable",
+      "kind": "tier1_validate",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "payload": {
+          "bill_id": "TEST-BILL-0001",
+          "choice": "YES",
+          "pk_eph_hex": "0fdd6dd1b4969a7d2b0bf579c456cb29efba951a2373fc88d499a55789494238",
+          "vote_nullifier_hex": "d50d21c4d8a3f361145f0699147d54bbec9b7491477d5bb8ec46daf69d779870",
+          "linkage_tag_hex": "417ab32f350e119df609ffe32d66c6f3fe150b4e48032cc5bbf6ef33da8e07c6",
+          "timestamp_ms": 1790000000000,
+          "version": "ekklesia:v1",
+          "signature_hex": "e3002f9929e435bfc41931810976fe2f110512588778361ff5524379db67b1a8eeccc7f919b2c5e64e5ea1b5618485934eb14036962ad07474ad2513a92bbe0e"
+        },
+        "now_ms": 1790000000000
+      },
+      "expect": {
+        "accepted": false,
+        "api_code": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "id": "tier1-tampered-timestamp",
+      "class": "validatable",
+      "kind": "tier1_validate",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "payload": {
+          "bill_id": "TEST-BILL-0001",
+          "choice": "YES",
+          "pk_eph_hex": "0fdd6dd1b4969a7d2b0bf579c456cb29efba951a2373fc88d499a55789494238",
+          "vote_nullifier_hex": "d50d21c4d8a3f361145f0699147d54bbec9b7491477d5bb8ec46daf69d779870",
+          "linkage_tag_hex": "417ab32f350e119df609ffe32d66c6f3fe150b4e48032cc5bbf6ef33da8e07c6",
+          "timestamp_ms": 1790000000001,
+          "version": "ekklesia:v1",
+          "signature_hex": "e3002f9929e435bfc41931810976fe2f110512588778361ff5524379db67b1a8eeccc7f919b2c5e64e5ea1b5618485934eb14036962ad07474ad2513a92bbe0f"
+        },
+        "now_ms": 1790000000000
+      },
+      "expect": {
+        "accepted": false,
+        "api_code": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "id": "evaluation-v2-duplicate-question",
+      "class": "validatable",
+      "kind": "evaluation_v2_error",
+      "impls": [
+        "api",
+        "mobile"
+      ],
+      "input": {
+        "ada_number": "ΑΔΑ-ΤΕΣΤ-0001",
+        "nullifier_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "timestamp_ms": 1790000000000,
+        "scores": [
+          {
+            "question_id": 2,
+            "score": 1
+          },
+          {
+            "question_id": 2,
+            "score": 3
+          }
+        ]
+      },
+      "expect": {
+        "accepted": false
+      },
+      "impl_error": {
+        "api": "ValueError",
+        "mobile": "throw"
+      }
+    },
+    {
+      "id": "scope-bill-ok",
+      "class": "validatable",
+      "kind": "scope_id",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "vote_scope_id": "bill:TEST-BILL-0001"
+      },
+      "expect": {
+        "accepted": true,
+        "normalized": "bill:TEST-BILL-0001"
+      }
+    },
+    {
+      "id": "scope-municipal-ok",
+      "class": "validatable",
+      "kind": "scope_id",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "vote_scope_id": "municipal:ADA-TEST.0001"
+      },
+      "expect": {
+        "accepted": true,
+        "normalized": "municipal:ADA-TEST.0001"
+      }
+    },
+    {
+      "id": "scope-whitespace-stripped",
+      "class": "validatable",
+      "kind": "scope_id",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "vote_scope_id": "  regional:TEST_1  "
+      },
+      "expect": {
+        "accepted": true,
+        "normalized": "regional:TEST_1"
+      }
+    },
+    {
+      "id": "scope-bad-prefix",
+      "class": "validatable",
+      "kind": "scope_id",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "vote_scope_id": "state:TEST-1"
+      },
+      "expect": {
+        "accepted": false,
+        "normalized": null
+      },
+      "impl_error": {
+        "api": "ValueError"
+      }
+    },
+    {
+      "id": "scope-empty-id",
+      "class": "validatable",
+      "kind": "scope_id",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "vote_scope_id": "bill:"
+      },
+      "expect": {
+        "accepted": false,
+        "normalized": null
+      },
+      "impl_error": {
+        "api": "ValueError"
+      }
+    },
+    {
+      "id": "scope-too-long",
+      "class": "validatable",
+      "kind": "scope_id",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "vote_scope_id": "bill:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "expect": {
+        "accepted": false,
+        "normalized": null
+      },
+      "impl_error": {
+        "api": "ValueError"
+      }
+    },
+    {
+      "id": "scope-max-length",
+      "class": "validatable",
+      "kind": "scope_id",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "vote_scope_id": "bill:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "expect": {
+        "accepted": true,
+        "normalized": "bill:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "scope-non-ascii-id",
+      "class": "validatable",
+      "kind": "scope_id",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "vote_scope_id": "bill:ΤΕΣΤ"
+      },
+      "expect": {
+        "accepted": false,
+        "normalized": null
+      },
+      "impl_error": {
+        "api": "ValueError"
+      }
+    },
+    {
+      "id": "scope-inner-colon",
+      "class": "validatable",
+      "kind": "scope_id",
+      "impls": [
+        "api"
+      ],
+      "input": {
+        "vote_scope_id": "bill:TEST:1"
+      },
+      "expect": {
+        "accepted": false,
+        "normalized": null
+      },
+      "impl_error": {
+        "api": "ValueError"
+      }
+    },
+    {
+      "id": "divergence-k7-tier1-lib-payload",
+      "class": "implementation_specific",
+      "kind": "k7_payload_divergence",
+      "impls": [
+        "tier1_lib"
+      ],
+      "divergence": "K7",
+      "reference_case": "tier1-payload-ascii-bill",
+      "note": "packages/crypto/src buildSignedPayload is length-prefixed with a choice byte; API/mobile concatenate raw UTF-8. Expected to differ; not fixed here.",
+      "input": {
+        "bill_id": "TEST-BILL-0001",
+        "choice": "YES",
+        "pk_eph_hex": "0fdd6dd1b4969a7d2b0bf579c456cb29efba951a2373fc88d499a55789494238",
+        "vote_nullifier_hex": "d50d21c4d8a3f361145f0699147d54bbec9b7491477d5bb8ec46daf69d779870",
+        "linkage_tag_hex": "417ab32f350e119df609ffe32d66c6f3fe150b4e48032cc5bbf6ef33da8e07c6",
+        "timestamp_ms": 1790000000000,
+        "version": "ekklesia:v1"
+      },
+      "expect": {
+        "payload_hex": "01000e544553542d42494c4c2d30303031010fdd6dd1b4969a7d2b0bf579c456cb29efba951a2373fc88d499a55789494238d50d21c4d8a3f361145f0699147d54bbec9b7491477d5bb8ec46daf69d779870417ab32f350e119df609ffe32d66c6f3fe150b4e48032cc5bbf6ef33da8e07c6000001a0c4506c00",
+        "differs_from": "tier1-payload-ascii-bill"
+      }
+    },
+    {
+      "id": "divergence-lowercase-mobile-vote",
+      "class": "implementation_specific",
+      "kind": "lowercase_vote_divergence",
+      "key": "rfc8032-test1",
+      "impls": [
+        "api",
+        "web",
+        "mobile"
+      ],
+      "divergence": "lowercase-vote",
+      "reference_case": "legacy-vote-yes-uppercase",
+      "note": "web and API uppercase the vote; mobile signs it raw, so the API rejects a mobile 'yes' signature. Expected; not fixed here.",
+      "input": {
+        "bill_id": "TEST-BILL-0001",
+        "vote": "yes",
+        "nullifier_hash": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      },
+      "expect": {
+        "mobile_message_utf8": "TEST-BILL-0001:yes:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "mobile_sig_hex": "ae1559a0181e3de664c1ebdc9aa3a80b1d46198ab05215673235e9fcc95894be8d4da37e3ae43a6d9c9219e8544fd8b348e71af941b26da1b6972658b9fd3503",
+        "canonical_case": "legacy-vote-yes-uppercase",
+        "api_accepts_mobile_sig": false
+      }
+    }
+  ],
+  "kdf_inventory": {
+    "class": "implementation_specific",
+    "gate": "EKA-21",
+    "compare": "within_impl_only",
+    "entries": [
+      {
+        "id": "kdf-server-v1-sha256",
+        "impl": "api",
+        "version": "server-v1",
+        "symbol": "packages/crypto/nullifier.py::generate_nullifier_hash",
+        "params": {
+          "alg": "SHA-256",
+          "input": "phone:SERVER_SALT"
+        },
+        "input": {
+          "phone": "+300000000000",
+          "server_salt": "eka22-kat-synthetic-test-salt-not-a-secret"
+        },
+        "expect": {
+          "output": "9c1cf29f7b0ddc8674f1d4f3c93467563c720a537ed1e53a558d3c3deb520f38"
+        }
+      },
+      {
+        "id": "kdf-server-v2-argon2id-t2",
+        "impl": "api",
+        "version": "server-v2",
+        "slow": true,
+        "symbol": "packages/crypto/nullifier.py::generate_nullifier_hash_v2",
+        "params": {
+          "alg": "Argon2id",
+          "t": 2,
+          "m_kib": 65536,
+          "p": 1,
+          "len": 32,
+          "salt": "SHA-256('ekklesia:identity-nullifier:v2' || SERVER_SALT)"
+        },
+        "input": {
+          "phone": "+300000000000",
+          "server_salt": "eka22-kat-synthetic-test-salt-not-a-secret"
+        },
+        "expect": {
+          "normalized": "+300000000000",
+          "output": "v2:fa2677505e92f711ae635923247f67bd22e49cf8e33c024d59d7175d6b67a268"
+        }
+      },
+      {
+        "id": "kdf-tier1-lib-argon2id-t3",
+        "impl": "tier1_lib",
+        "version": "tier1-lib-v1",
+        "slow": true,
+        "symbol": "packages/crypto/src/nullifier.ts::deriveNullifierRoot",
+        "params": {
+          "alg": "Argon2id",
+          "t": 3,
+          "m_kib": 65536,
+          "p": 1,
+          "len": 32,
+          "salt": "REGISTRATION_SALT (public)"
+        },
+        "input": {
+          "phone": "+300000000000"
+        },
+        "expect": {
+          "normalized": "+300000000000",
+          "root_hex": "e68119b3c606050eaa3647498d3356c6283add354df67d8969f294fa364dc910"
+        }
+      },
+      {
+        "id": "kdf-mobile-pbkdf2-sha256-c100000",
+        "impl": "mobile",
+        "version": "mobile-pbkdf2-v1",
+        "symbol": "apps/mobile/src/lib/crypto-native.ts::deriveNullifierRoot",
+        "params": {
+          "alg": "PBKDF2-HMAC-SHA256",
+          "c": 100000,
+          "len": 32,
+          "salt": "REGISTRATION_SALT (public)"
+        },
+        "input": {
+          "phone": "+300000000000"
+        },
+        "expect": {
+          "normalized": "+300000000000",
+          "root_hex": "c78d7475cc433245e6ba51f4c551ac0ff55bc59a202d0027cd21ca2a30ba1c7d"
+        }
+      }
+    ]
+  }
+}
