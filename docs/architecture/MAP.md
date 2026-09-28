@@ -165,7 +165,7 @@ Node: Web Compass Privacy Storage. The EKA-18 node above stays unchanged.
 | C2 | `useCompass.ts::getPrivateKey` → `apps/web/src/lib/crypto.ts::loadKeypair` | `privateKeyHex \| null` from `localStorage["ekklesia_private_key"]` (EKA-07, out of scope) |
 | C3 | `useCompass.ts::useCompass` (init effect) → `storage.ts::loadProfile(privateKeyHex)` | key or `null` |
 | C4 | `storage.ts::loadProfile` → `localStorage["ekklesia_compass_encrypted"]` | only if key present; decrypt error swallowed (`catch {}`) → falls through to C5 |
-| C5 | `storage.ts::loadProfile` → `localStorage["ekklesia_compass_profile"]` | legacy/fallback **plaintext JSON**, read for every caller (key or not) |
+| C5 | `storage.ts::loadProfile` → `localStorage["ekklesia_compass_profile"]` | legacy/fallback **plaintext JSON**, read when C4 cannot return a usable encrypted profile (no key, missing ciphertext or decrypt failure) |
 | C6 | `useCompass.ts::{setModel,seedFromVAA,recordBillVote}` → `useCompass.ts::persistProfile` | updated `CompassProfile` (VAA answers, bill votes, model) |
 | C7 | `persistProfile` (300 ms debounce) → `storage.ts::saveProfile(p, getPrivateKey())` | promise not awaited, no error handler |
 | C8a | `saveProfile` key present, crypto ok → `setItem(encrypted)` + `removeItem(plaintext)` | base64(iv‖ct) |
@@ -193,7 +193,7 @@ Caller census at 4cc1193 (`grep useCompass|CompassCard|@/lib/compass` in `apps/w
 - useCompass → crypto.loadKeypair: key read synchronously from `localStorage` at every load/save.
 - useCompass → storage.loadProfile: key or `null`; result becomes React state.
 - loadProfile → encrypted key: decrypt only with key; any failure is swallowed.
-- loadProfile → plaintext key: always consulted as fallback; accepts legacy and newly written plaintext.
+- loadProfile → plaintext key: consulted only after the encrypted path is unavailable or fails; accepts legacy and newly written plaintext.
 - mutators → persistProfile → saveProfile: fire-and-forget after 300 ms.
 - saveProfile → encrypted key: happy path, also deletes the plaintext key (only migration path).
 - saveProfile → plaintext key: taken when key missing or crypto throws; silent.

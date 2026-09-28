@@ -51,12 +51,14 @@ CARD -> HOOK : useCompass() (C1)
 HOOK -> KEYS : loadKeypair() (C2)
 KEYS --> HOOK : privateKeyHex or null
 HOOK -> STORE : loadProfile(key) (C3)
-alt key present
+alt key present and encrypted entry decrypts
   STORE -> LS : getItem(ekklesia_compass_encrypted) (C4)
-  STORE -> STORE : HKDF + AES-GCM decrypt, error swallowed
+  STORE -> STORE : HKDF + AES-GCM decrypt
+  STORE --> HOOK : CompassProfile
+else no usable encrypted profile
+  STORE -> LS : getItem(ekklesia_compass_profile) plaintext fallback (C5)
+  STORE --> HOOK : CompassProfile or empty profile
 end
-STORE -> LS : getItem(ekklesia_compass_profile) plaintext fallback (C5)
-STORE --> HOOK : CompassProfile
 
 == mutation ==
 HOOK -> HOOK : setModel / seedFromVAA / recordBillVote -> persistProfile (C6)
