@@ -1,38 +1,37 @@
 @startuml
-title EKA-57: repository catalog to assistant context
+title EKA-59/EKA-60: citizen question to technical-state answer
 
-participant "Legacy SQL seed" as SQL
-participant "Python seed catalog" as PY
-participant "Manual deploy" as DEPLOY
-database "knowledge_base" as DB
-participant "CI tests" as CI
-participant "Agent retrieval" as RAG
-participant "Prompt" as PROMPT
+actor Citizen
+participant "POST /api/v1/agent/ask" as API
+participant "_canonical_response" as CANON
+participant "Web crypto.ts" as WEB
+participant "Mobile crypto-native.ts" as MOBILE
+participant "Payment state" as PAY
+participant "RAG / model" as MODEL
 
-SQL -> DB : manual DELETE + 17-row INSERT (H1)
-PY -> DB : manual 14-row upsert, no deletion (H2)
-note over SQL,PY
-Two divergent authorities can coexist.
-Duplicates and stale rows survive.
-end note
+Citizen -> API : private-key or payment/support question + el/en (H1)
+API -> CANON : question after safety filter (H2)
 
-DEPLOY -> DEPLOY : rebuild changed containers (H4)
-note right of DEPLOY
-No KB sync or drift check.
-end note
+alt current private-key path
+  CANON --> Citizen : generic device-only answer (H3)
+  note over WEB,MOBILE
+  Actual sources diverge:
+  Web Beta -> localStorage (H4)
+  Mobile -> SecureStore (H5)
+  end note
+else current payment/support path
+  CANON -> API : no match (H6)
+  API -> MODEL : KB context + question
+  MODEL --> Citizen : generated answer may mention processors
+  note over PAY
+  Actual technical state:
+  public links paused; intake gated (H7)
+  end note
+end
 
-CI -> CI : training module seeks ignored private file (H6)
-CI -> CI : missing file -> skip
-
-DB -> RAG : priority order, LIMIT 20 (H7)
-RAG -> PROMPT : scored top 5 or priority fallback
-
-note over PY,DB
-Required technical path:
-one catalog -> transactional exact sync -> check
-end note
-note over DEPLOY,CI
-Deploy invokes sync + check;
-CI proves behavior and uses a tracked question-only fixture.
+note over CANON,PAY
+Required narrow path:
+platform-specific key facts and paused-payment state
+return deterministically before database/model access.
 end note
 @enduml

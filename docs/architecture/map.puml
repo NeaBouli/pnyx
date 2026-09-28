@@ -1,43 +1,39 @@
 @startmindmap
-* EKA-57 knowledge-base lifecycle
-** Authorities
-*** legacy SQL seed: 17 rows, DELETE + INSERT
-*** Python ENTRIES: 14 rows, upsert only
-** Persistence
-*** built: knowledge_base schema
-*** open: exact transactional sync
-*** open: read-only drift check
-** Delivery
-*** built: manual deploy workflow
-*** open: sync then check
-** CI
-*** built: API pytest job
-*** skipped: ignored historical training capture
-*** open: tracked question-only fixture
-** Runtime
-*** first 20 rows loaded
-*** top 5 matches enter prompt
+* Assistant deterministic truth boundary
+** Router
+*** built: ask_agent
+*** built: canonical response before RAG
+** Key storage
+*** Web Beta: crypto.ts storeKeypair -> localStorage
+*** Mobile: crypto-native.ts storeKeypair -> SecureStore
+*** partial: generic bot answer hides platform split
+** Payments
+*** built: public processor links paused
+*** built: backend intake fails closed behind gate
+*** open: payment questions bypass deterministic state answer
+** Tests
+*** partial: generic private-key prompt
+*** open: bilingual platform and paused-payment prompts
 ** Content boundary
-*** unchanged: Python ENTRIES wording
-*** Gio decision: operator/legal/privacy claims
+*** technical availability only
+*** Gio decision: recipient, legal and tax wording
+*** forbidden: live sync, deploy, provider or secret changes
 @endmindmap
 
 @startuml
 skinparam componentStyle rectangle
-component "Legacy SQL seed\n17 rows" as SQL
-component "Python catalog + synchronizer\n14 ENTRIES" as PY
-database "knowledge_base" as DB
-component "Manual deploy workflow" as DEPLOY
-component "CI API tests" as CI
-component "Private ignored\nhistorical capture" as PRIVATE
-component "Tracked question-only\nfixture" as FIXTURE
-component "Agent retrieval\nfirst 20 -> top 5" as RAG
+component "Citizen assistant\nPOST /agent/ask" as ASK
+component "Canonical truth boundary\n_canonical_response" as CANON
+component "RAG + model fallback" as RAG
+component "Web Beta key storage\nlocalStorage" as WEB
+component "Mobile key storage\nExpo SecureStore" as MOBILE
+component "Payment availability\nlinks paused + gated intake" as PAY
+component "Focused regressions" as TEST
 
-SQL --> DB : H1 manual replace
-PY --> DB : H2 manual upsert
-DEPLOY ..> PY : H4 missing sync/check
-CI ..> PY : H5 missing drift invariant
-PRIVATE --> CI : H6 absent in clean checkout -> skip
-FIXTURE ..> CI : intended mandatory regression input
-DB --> RAG : H7 capped rows
+ASK --> CANON : H1/H2 question + language
+CANON --> WEB : H3/H4 missing platform detail
+CANON --> MOBILE : H3/H5 missing platform detail
+CANON ..> RAG : H6 unmatched payment question
+PAY ..> CANON : H7 missing deterministic state answer
+TEST ..> CANON : platform/payment invariants
 @enduml

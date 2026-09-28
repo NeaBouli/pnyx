@@ -1,82 +1,95 @@
-# Architecture Map — EKA-57 Knowledge-Base Refresh Lifecycle
+# Architecture Map — EKA-59/EKA-60 Assistant Truth Boundaries
 
-Basis: `origin/main 4cc11930f4be82ba2d012def487fb34abca9da26` · Task: T-495 · Mapping only, no fix.
-Node: API RAG knowledge lifecycle / canonical seed to deployed retrieval.
+Basis: `agent/claude/T-496 3727266436d2706cf30272a3ab3414635bc633e1` · Task: T-497 · Mapping only, no fix.
+Node: API assistant deterministic truth boundary / citizen question to platform-state answer.
 
 ## 1. Grundidee
 
-- The landing assistant answers from hardcoded canonical responses, the `knowledge_base` table and public bill data. This node covers only the lifecycle of the database-backed knowledge rows.
-- Repository truth is currently split between a destructive SQL seed and a Python upsert seed. Neither is wired into CI or the manual deployment workflow.
-- Runtime retrieval reads at most 20 rows, scores them, and gives at most five matching rows to the prompt. Duplicate or stale rows therefore change which facts are reachable.
-- Legal, privacy and operator wording inside seed rows is content governance, not part of this technical lifecycle repair.
+- Ekklesia lets citizens ask the landing assistant about the platform and receive bilingual answers from deterministic rules or a RAG/model fallback (`apps/api/routers/agent.py::ask_agent`).
+- Security- and privacy-sensitive facts already use `_canonical_response` before any database lookup or model call, so these answers can be kept independent of mutable KB state (`apps/api/routers/agent.py::_canonical_response`).
+- Mobile private keys are stored through Expo SecureStore, which maps to Android Keystore and iOS Keychain (`apps/mobile/src/lib/crypto-native.ts::secureSet/storeKeypair`).
+- Web Beta private keys are instead stored as hexadecimal text in browser `localStorage` (`apps/web/src/lib/crypto.ts::storeKeypair`).
+- Public Stripe/PayPal intake and links are paused, while the backend acceptance boundary remains separately gated (`docs/community.html`, `apps/api/routers/payments.py::_payment_intake_enabled`).
+- Legal recipient, donation classification and public wording remain Gio/accountant decisions; this node may state only the observable technical availability and storage behavior.
 
-## 2. Spur (one trace, hops opened)
+## 2. Spur (one user path, opened hops)
 
 | # | From → To | Datum over the edge |
 | --- | --- | --- |
-| H1 | `scripts/seed_knowledge_base.sql` → `knowledge_base` | 17 manually maintained rows; unconditional DELETE + INSERT |
-| H2 | `apps/api/scripts/seed_knowledge_base.py::ENTRIES/seed` → `knowledge_base` | 14 different rows; per-row natural-key upsert, no stale/duplicate deletion |
-| H3 | Alembic `j301a2b3c4d5` → `knowledge_base` | schema only; no seed data or uniqueness constraint |
-| H4 | `.github/workflows/deploy.yml` → API container | manual deployment rebuilds containers and health-checks; never runs a KB sync/check |
-| H5 | `.github/workflows/ci.yml` → API tests | runs pytest, but no DB/seed drift invariant is present |
-| H6 | private ignored training capture → `test_agent_training_regression.py` | test points into ignored `docs/agent-bridge`; missing file marks the whole module skipped |
-| H7 | `knowledge_base` → `routers/agent.py::_build_context` | priority-ordered first 20 rows, then scored top five (or three priority fallbacks) enter prompt context |
+| H1 | `POST /api/v1/agent/ask` → `routers/agent.py::ask_agent` | question plus canonical `el`/`en` language |
+| H2 | `ask_agent` → `_canonical_response` | question text; deterministic response wins before RAG/model calls |
+| H3 | `_canonical_response(private-key question)` → response | current generic “stored only on your device” claim |
+| H4 | `apps/web/src/lib/crypto.ts::storeKeypair` → browser `localStorage` | private/public key hex and nullifier hash in Web Beta |
+| H5 | `apps/mobile/src/lib/crypto-native.ts::storeKeypair` → Expo SecureStore | mobile private key through Android Keystore/iOS Keychain adapter |
+| H6 | `_canonical_response(payment/support question)` → no match → `_build_context`/model | no deterministic paused-state response; model can infer processor guidance |
+| H7 | `docs/community.html` + `payments.py::_payment_intake_enabled` → technical availability state | public processor links absent; intake fails closed unless the explicit gate is enabled |
 
 ## 3. Module
 
 | Modul | Eine Aufgabe | Einstieg | Stand |
 | --- | --- | --- | --- |
-| SQL seed | legacy manual full replacement | `scripts/seed_knowledge_base.sql` | gebaut; divergent second authority |
-| Python seed catalog | repository knowledge catalog | `apps/api/scripts/seed_knowledge_base.py::ENTRIES` | gebaut; selected authority by EKA-57 recommendation |
-| Python synchronizer | writes catalog rows | `apps/api/scripts/seed_knowledge_base.py::seed` | partial; upserts only, permits stale/duplicate rows |
-| Schema | persists RAG knowledge | Alembic `j301a2b3c4d5`, `models.KnowledgeBase` | gebaut |
-| Deployment | manual production rollout | `.github/workflows/deploy.yml` | gebaut; no KB lifecycle step |
-| CI | validates API changes | `.github/workflows/ci.yml` | gebaut; no exact-sync/drift contract |
-| Training questions | stable assistant regression inputs | `test_agent_training_regression.py` | partial; private historical capture required, therefore skipped in CI |
-| Runtime retrieval | selects KB rows for the prompt | `routers/agent.py::_build_context` | gebaut; row cap makes drift observable |
+| Assistant router | orders safety, canonical truth and generative fallback | `apps/api/routers/agent.py::ask_agent` | gebaut |
+| Canonical truth boundary | returns facts that must not drift through a model | `apps/api/routers/agent.py::_canonical_response` | teilweise; private-key answer lacks platform split and payment pause has no branch |
+| Web key storage | persists Web Beta voting credentials | `apps/web/src/lib/crypto.ts::storeKeypair` | gebaut; browser `localStorage`, not Keychain/Keystore |
+| Mobile key storage | persists mobile voting credentials | `apps/mobile/src/lib/crypto-native.ts::storeKeypair` | gebaut; Expo SecureStore adapter |
+| Payment availability | keeps public links/intake disabled pending gates | `docs/community.html`; `apps/api/routers/payments.py::_payment_intake_enabled` | gebaut; paused/fail-closed |
+| Canonical regression tests | proves sensitive answers bypass models and stay bilingual | `apps/api/tests/test_agent_training_regression.py` | teilweise; key test is generic, payment pause prompts absent |
+| KB catalog | supplies mutable RAG facts after canonical handling | `apps/api/scripts/seed_knowledge_base.py::ENTRIES` | gebaut on T-496; private-key wording is generic, no payment-pause row |
 
 ## 4. Verdrahtung
 
-- The SQL and Python seeds are independent entry points into the same table; neither records provenance or a catalog version.
-- The Python seed matches on `(category, title_en)` with `LIMIT 1`, updates one match and inserts missing rows. It cannot remove a legacy SQL-only row or a second duplicate.
-- The deploy workflow is manually dispatched, pulls `main`, rebuilds changed services and checks health. It performs no KB sync or post-sync drift check.
-- CI runs the API suite. The training test resolves a file under ignored `docs/agent-bridge`, so a clean checkout skips all four checks.
-- Runtime loads only the first 20 priority-ordered rows before scoring. Drift above that boundary is silently invisible; duplicate topics compete for five context positions.
+- `ask_agent` runs the safety filter and `_canonical_response` before `_build_context`, Ollama or Claude, so a matched technical-state answer cannot be replaced by generated processor or storage claims.
+- The current private-key branch and KB row collapse two implementations into “only on your device”: true at the server boundary, incomplete for Web versus Mobile storage security.
+- Web code writes key material to origin-scoped `localStorage`; Mobile code calls Expo SecureStore. Neither path sends the private key to the API in this trace.
+- Payment/support questions currently miss the canonical boundary and can reach model generation with fallback KB rows that do not encode the paused state.
+- The public community page exposes no Stripe donation URL and marks intake paused; backend capture is separately fail-closed behind `PAYMENTS_INTAKE_GATE` and readiness values.
 
 ## 5. Widerspruch und Lücken
 
-**Symptom:** repository state cannot determine deployed KB state. Running both seeds can leave about 27 rows; historical live evidence recorded eight; the Python catalog contains 14.
+**EKA-59 symptom:** the bot answers one generic device-storage story although Web Beta uses browser `localStorage` and Mobile uses SecureStore. References to Keychain/Keystore in generic keywords can overstate the Web path.
 
-**Root causes:** two authorities (H1/H2), non-exact upsert semantics (H2), no lifecycle wiring (H4), and a skipped clean-checkout regression dataset (H6).
+**EKA-59 cause:** H3 does not select or disclose the H4/H5 platform split. The same generic wording is duplicated in `ENTRIES`, so the RAG fallback can repeat it.
 
-**Source → sink:** manual seed choice → mutable `knowledge_base` rows → capped retrieval H7 → assistant context and answer.
+**EKA-60 symptom:** support/payment questions can reach a model that may direct citizens to Stripe or PayPal even though public links and intake are paused.
 
-**Technical invariant:** one version-controlled catalog defines the complete managed table; sync is transactional, exact and idempotent; a check mode exits non-zero on missing, stale, duplicate or changed rows; the manual deploy runs sync then check; CI proves catalog uniqueness, sync/check behavior and always loads the question fixture.
+**EKA-60 cause:** H6 has no deterministic operational-state branch sourced from H7.
 
-**Legitimate control path:** a manually authorized deploy remains the only production trigger. The PR must not execute a deployment or touch a live database. A failed sync rolls back and makes the workflow fail; a successful sync is followed by an exact drift check.
+**Content/legal boundary:** the technical answer may say that public processor links/intake are currently unavailable and no payment should be attempted through the assistant. It must not choose the recipient, legal form, tax treatment, donation-versus-consideration classification, refund promise or activation date. Those remain a separate Gio decision template.
 
-**Content boundary:**
-
-- Keep current Python `ENTRIES` text byte-for-byte unless a purely technical serialization change is required.
-- Do not choose between “Vendetta Labs” and “V-Labs Development” or rewrite legal/privacy/security/donation claims.
-- Do not publish historical captured answers, timestamps, endpoints or source responses from the private agent-bridge dataset. A tracked regression fixture may contain only test IDs, language, category and questions.
-- Record wording conflicts as a Gio decision template outside the product diff.
+**Deployment dependency:** T-496 is the required base if `ENTRIES` is changed. Its first production sync remains data/deploy-gated because exact sync deletes live rows outside the 14-row catalog. This task must not sync or inspect a live database.
 
 ## 6. Diagrammdateien
 
-- `docs/architecture/map.puml` (mindmap + component trace)
-- `docs/architecture/main-path.puml` (seed-to-answer sequence)
-- PlantUML is not installed on the mapping host; source files are authoritative.
+- `docs/architecture/map.puml` — mindmap plus component trace.
+- `docs/architecture/main-path.puml` — question-to-answer sequence.
+- PlantUML rendering is optional; source files are authoritative.
 
-## 7. Nächster Schritt (engste Reparaturgrenze)
+```mermaid
+mindmap
+  root((Assistant truth boundary))
+    Router
+      built ask_agent
+      built canonical before RAG
+    Key storage
+      Web Beta localStorage
+      Mobile SecureStore
+      open platform-specific answer
+    Payments
+      built public links paused
+      built backend fail-closed gate
+      open deterministic paused response
+    Tests
+      partial key prompts
+      open bilingual payment prompts
+    Decisions
+      Gio legal wording
+      no live sync or deploy
+```
 
-**Module:** Python seed catalog/synchronizer, manual deploy wiring, CI regression inputs. **Hops:** H1/H2/H4/H5/H6; runtime H7 is observed but unchanged.
+## 7. Nächster Schritt
 
-1. Retire the executable SQL seed so `apps/api/scripts/seed_knowledge_base.py::ENTRIES` is the sole catalog without editing its wording.
-2. Give the Python command explicit transactional `sync` and read-only `check` modes. Preserve IDs for matching natural keys where practical; remove stale and duplicate rows so DB equals the catalog; make reruns idempotent and fail closed.
-3. Wire the manual deployment workflow to run sync and then check in the API container. Do not trigger the workflow in this task.
-4. Add focused tests for unique catalog keys, exact reconciliation, duplicate/stale cleanup, rollback/error exit, idempotence, check-mode drift detection and deploy wiring.
-5. Replace the ignored historical-response dependency with a tracked, sanitized question-only fixture; make the training regression tests mandatory in clean CI checkouts.
-6. Produce a non-product Gio template listing content conflicts; do not resolve them in code.
+**One module:** Assistant canonical truth boundary. **One hop:** H2/H3/H6 from `_canonical_response` to a deterministic bilingual answer, grounded by H4/H5/H7.
 
-Out of scope: editing seed wording, runtime retrieval/scoring/prompt behavior, schema/content migrations, live DB inspection or mutation, deployment, scheduler jobs, LLM calls and EKA-58…64.
+The implementation may touch only `apps/api/routers/agent.py`, the canonical KB rows in `apps/api/scripts/seed_knowledge_base.py`, and focused assistant/KB tests or the sanitized question fixture. It must prove Web `localStorage` versus Mobile SecureStore, and force payment/support prompts to an unavailable/paused answer before any database or model call.
+
+Unchanged: Web/mobile storage implementation, payment router and gates, public community page, deployment workflow, database schema/live rows, secrets, Stripe/PayPal configuration, legal/content pages, and all activation/deploy behavior.
