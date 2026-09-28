@@ -52,8 +52,12 @@ def _sentry_redact(value: Any) -> Any:
             else _sentry_redact(v)
             for k, v in value.items()
         }
-    if isinstance(value, list):
-        return [_sentry_redact(v) for v in value]
+    if isinstance(value, (list, tuple)):
+        redacted = [_sentry_redact(v) for v in value]
+        # ASGI-Header in Frame-Locals werden als 2er-Listen serialisiert.
+        if len(value) == 2 and isinstance(value[0], (str, bytes)) and _sentry_is_sensitive_key(value[0]):
+            redacted[1] = _SENTRY_REDACTED
+        return tuple(redacted) if isinstance(value, tuple) else redacted
     return value
 
 

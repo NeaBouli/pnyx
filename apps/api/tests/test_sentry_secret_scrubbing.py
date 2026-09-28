@@ -108,6 +108,18 @@ def test_before_send_tolerates_events_without_request():
     assert main._before_send_filter(event, {}) == {"event_id": "x", "message": "plain"}
 
 
+def test_redact_header_pair_list_without_corrupting_outer_list():
+    headers = [
+        ["b'authorization'", f"b'Bearer {SECRET}'"],
+        ["b'content-type'", "b'application/json'"],
+    ]
+
+    assert main._sentry_redact(headers) == [
+        ["b'authorization'", "[Filtered]"],
+        ["b'content-type'", "b'application/json'"],
+    ]
+
+
 def test_bill_import_request_has_no_body_credential():
     assert "admin_key" not in BillImportRequest.model_fields
     assert BillImportRequest(bills=[]).model_dump() == {"bills": []}
@@ -162,7 +174,7 @@ def _post_import(client: TestClient, path: str) -> None:
     client.post(
         f"{path}?dry=1&Admin_Key={SECRET}",
         json={"Admin_Key": SECRET, "bills": []},
-        headers={"Authorization": "Bearer wrong-synthetic-bearer"},
+        headers={"Authorization": f"Bearer {SECRET}"},
     )
 
 
