@@ -1,0 +1,20 @@
+@startuml
+participant "manifest+lock\n(web, dashboard)" as L
+participant "CI client gate" as CI
+participant "Dockerfile.prod" as D
+participant "server.js\n(next start standalone)" as S
+participant "proxy.ts" as P
+participant "pages / route handlers" as R
+
+L -> CI : next 16.3.4 + @next/swc-* 16.3.4 (npm ci)
+CI -> CI : image-codec.check.mjs, lint, typecheck, build
+L -> D : same lock (npm ci)
+D -> S : .next/standalone, node server.js
+S -> P : request (Node.js runtime)
+P -> R : web: redirect/rewrite/intl\ndashboard: auth + canAccess
+R --> S : HTML / JSON
+note over R
+  next/og ImageResponse side-hop: offen,
+  not simulated (no call site)
+end note
+@enduml

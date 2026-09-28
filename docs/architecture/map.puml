@@ -1,0 +1,48 @@
+@startmindmap
+* Next runtime boundary (T-485)
+** web manifest+lock
+*** gebaut: apps/web/package.json::dependencies.next (16.3.4)
+*** gebaut: apps/web/package-lock.json::node_modules/next + @next/swc-*
+** dashboard manifest+lock
+*** gebaut: apps/dashboard/package.json::dependencies.next (16.3.4)
+*** gebaut: apps/dashboard/package-lock.json::node_modules/next + @next/swc-*
+** CI client gate
+*** gebaut: .github/workflows/ci.yml::test-clients
+*** gebaut: image-codec.check.mjs
+** Docker runtimes
+*** gebaut: apps/web/Dockerfile.prod::CMD node server.js
+*** gebaut: apps/dashboard/Dockerfile.prod::CMD node server.js
+** Request edge
+*** gebaut: apps/web/src/proxy.ts::proxy
+*** gebaut: apps/dashboard/src/proxy.ts::proxy
+** Dashboard route handlers
+*** gebaut: api/auth/[...nextauth]/route.ts::GET,POST
+*** gebaut: api/discourse/route.ts::GET
+*** gebaut: api/proxy/[...path]/route.ts
+** OG image generation
+*** offen: no next/og ImageResponse importer
+@endmindmap
+
+@startuml
+component "web manifest+lock" as WL
+component "dashboard manifest+lock" as DL
+component "CI client gate" as CI
+component "web Docker runtime" as WD
+component "dashboard Docker runtime" as DD
+component "web request edge" as WP
+component "dashboard request edge" as DP
+component "web pages" as WPG
+component "dashboard pages + route handlers" as DRH
+
+WL --> CI : npm ci / npm run build
+DL --> CI : npm ci / npm run build
+WL --> WD : npm ci / npm run build
+DL --> DD : npm ci --ignore-scripts / npm run build
+WD --> WP : node server.js -> proxy
+DD --> DP : node server.js -> proxy
+WP --> WPG : intlMiddleware
+DP --> DRH : auth + canAccess
+note bottom of DRH
+  next/og ImageResponse: offen (0 importers)
+end note
+@enduml
