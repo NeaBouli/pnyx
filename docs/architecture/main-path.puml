@@ -37,7 +37,7 @@ ADJ -> REDIS : <dev-host>:6379 without auth
 @enduml
 
 @startuml
-' EKA-64 main path — built behaviour at base 4cc1193 (T-504, no fix simulated)
+' EKA-64 main path — T-504 trace, A6 updated to built T-505 guard
 ' Evidence: local standalone build (Dockerfile.prod layout) on 127.0.0.1, 2026-09-28
 title MOD-WEB: /llms.txt vs /ai.txt | /llms-full.txt -> HTTP status
 
@@ -60,8 +60,12 @@ NCFG -> PROXY : redirects(): no match (A2)
 PROXY -> PROXY : dotted path excluded; proxy() not run (A3)
 PROXY -> PUBLIC : static-file lookup public/ai.txt
 PUBLIC -> LOCALE : miss -> app route /[locale] with locale="ai.txt" (A5)
-LOCALE -> LOCALE : no locale validation in layout/page
-LOCALE --> CRAWLER : 307 Temporary Redirect, location: https://ekklesia.gr, text/html (A6)
+LOCALE -> LOCALE : HomePage hasLocale(routing.locales, "ai.txt") = false (T-505)
+LOCALE --> CRAWLER : notFound() -> 404 Not Found, text/html (A6)
+
+== valid locale: /el, /en ==
+CRAWLER -> LOCALE : GET /el (proxy + [locale] route)
+LOCALE --> CRAWLER : redirect -> 307, location: https://ekklesia.gr (unchanged)
 
 == contrast: two-segment dotted miss ==
 CRAWLER -> PUBLIC : GET /x/ai.txt

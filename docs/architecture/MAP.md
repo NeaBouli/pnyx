@@ -166,7 +166,7 @@ The EKA-18 map above stays unchanged; EKA-64 is appended as separate diagrams in
 | A3 | `apps/web/src/proxy.ts::config.matcher` `/((?!api\|_next\|_vercel\|.*\\..*).*)` | dotted path ⇒ `proxy()` and `intlMiddleware` are **not** invoked |
 | A4 | Next static-file lookup in `/app/public` (runner `COPY --from=builder /app/public ./public`) | `/llms.txt` hit ⇒ `200`, `text/plain; charset=UTF-8` |
 | A5 | static miss → App Router `src/app/[locale]/page.tsx` | single dotted segment matches dynamic `[locale]` with `locale="ai.txt"`; build lists `ƒ /[locale]` (dynamic, no `generateStaticParams`, no `dynamicParams=false`); `[locale]/layout.tsx::LocaleLayout` does not validate the locale |
-| A6 | `[locale]/page.tsx::HomePage` → response | `redirect("https://ekklesia.gr")` ⇒ `307 Temporary Redirect`, `location: https://ekklesia.gr`, `text/html` |
+| A6 | `[locale]/page.tsx::HomePage` → response | T-504 base: `redirect("https://ekklesia.gr")` ⇒ `307`. **T-505:** `hasLocale(routing.locales, locale)` fails ⇒ `notFound()` ⇒ `404`; `el`/`en` keep `redirect("https://ekklesia.gr")` ⇒ `307` |
 
 Local build evidence (2026-09-28, no production request): Dockerfile.prod-equivalent staging in `/tmp` (apps/web + the same `docs/` COPY list into `public/`), `npm ci --ignore-scripts`, `next build` (Next 16.3.4, Turbopack, exit 0), standalone packaging as in the runner stage, `node server.js` on `127.0.0.1:3504`, `curl --max-redirs 0`:
 
@@ -190,9 +190,9 @@ The absolute `location: https://ekklesia.gr` without a locale prefix identifies 
 | Next config | build-time redirects/headers | `apps/web/next.config.mjs::nextConfig` | gebaut (not on the failure path) |
 | Proxy | locale/static redirects for non-dotted paths | `apps/web/src/proxy.ts::proxy`, `config.matcher` | gebaut (skipped for dotted paths — audit attribution wrong) |
 | Public bundle | ship `docs/` static files incl. `llms.txt` | `apps/web/Dockerfile.prod` COPY list | gebaut; `ai.txt`/`llms-full.txt` offen (do not exist in `docs/`) |
-| Locale page | `/el`, `/en` → landing | `apps/web/src/app/[locale]/page.tsx::HomePage` | gebaut; catches any dotted single segment ⇒ soft-404 = Befund |
+| Locale page | `/el`, `/en` → landing | `apps/web/src/app/[locale]/page.tsx::HomePage` | gebaut; T-505 invalid-locale `notFound()` guard (EKA-64 fixed at A5→A6) |
 | Locale layout | i18n shell | `apps/web/src/app/[locale]/layout.tsx::LocaleLayout` | gebaut; no `hasLocale`/`notFound()` guard |
-| Regression test | pin routing behaviour | `apps/web/src/proxy.test.ts` | gebaut for T-350 redirects; dotted-miss → 404 offen |
+| Regression test | pin routing behaviour | `apps/web/src/proxy.test.ts`, `apps/web/src/app/[locale]/page.test.ts` | gebaut (T-350 redirects; T-505 invalid locale ⇒ `notFound`, `el`/`en` ⇒ redirect) |
 | Traefik edge | Host routing, HTTP→HTTPS | `infra/docker/docker-compose.prod.yml` labels, `infra/hetzner/traefik/traefik.yml` | gebaut (no path logic; neighbour) |
 
 ## 4. Verdrahtung
@@ -201,12 +201,12 @@ The absolute `location: https://ekklesia.gr` without a locale prefix identifies 
 - A2→A3: proxy matcher excludes the dotted path, so `proxy()` never runs.
 - A3→A4: static lookup serves `public/llms.txt` with 200 text/plain.
 - A3→A5: static miss for `ai.txt`/`llms-full.txt` falls through to the dynamic `[locale]` route.
-- A5→A6: `HomePage` calls `redirect("https://ekklesia.gr")`, producing the 307 soft-404.
+- A5→A6: `HomePage` rejects locales outside `routing.locales` with `notFound()` (404, T-505); only `el`/`en` reach `redirect("https://ekklesia.gr")` (307).
 
 ## 5. Widerspruch und Lücken
 
 - **Widerspruch:** audit says "the Next proxy rewrites unknown paths". Source + local build show the proxy is skipped (A3); the 307 comes from `[locale]/page.tsx::HomePage` (A6).
-- Symptom reproduced at current source: EKA-64 soft-404 is **source-open**.
+- Symptom reproduced at base `4cc1193`; **T-505 closes it in source** at A5→A6 (local standalone build: `/ai.txt`, `/llms-full.txt`, `/xyz.txt` ⇒ 404; `/llms.txt`, `/robots.txt` ⇒ 200 text/plain; `/el`, `/en` ⇒ 307 `https://ekklesia.gr`; `/` ⇒ 200). Not deployed; live unverified.
 - Scope is wider than the two anchors: every single-segment dotted miss (`/xyz.txt`, `/foo.json`, …) gets the same 307.
 - No `not-found.tsx` at app root or `[locale]`; a 404 would use Next's default page (status is the signal).
 - Brief mentions EKA-13 map nodes; none exist in `docs/architecture/` at base `4cc1193`. Nothing to preserve beyond EKA-18.
@@ -230,15 +230,15 @@ mindmap
       offen: ai.txt llms-full.txt
     Locale page
       gebaut: [locale]/page.tsx::HomePage redirect ekklesia.gr
-      offen: invalid-locale notFound guard
+      gebaut: [locale]/page.tsx::HomePage hasLocale notFound guard (T-505)
     Regression test
       gebaut: proxy.test.ts
-      offen: dotted single-segment miss 404 test
+      gebaut: [locale]/page.test.ts invalid locale 404 (T-505)
 ```
 
 ## 7. Nächster Schritt (engste Reparaturgrenze)
 
-**Modul:** Locale page. **Hop:** A5→A6 (`apps/web/src/app/[locale]/page.tsx::HomePage`).
+**Modul:** Locale page. **Hop:** A5→A6 (`apps/web/src/app/[locale]/page.tsx::HomePage`). **Status: implemented in T-505** (page guard + colocated `page.test.ts`; layout-wide guard not chosen).
 
 **Fix contract (for a later, separately approved run):**
 1. In `HomePage`, read `params.locale`; if it is not in `routing.locales` (`hasLocale` from `next-intl`), call `notFound()`; otherwise keep `redirect("https://ekklesia.gr")` unchanged.

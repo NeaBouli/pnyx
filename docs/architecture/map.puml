@@ -64,12 +64,12 @@ API --> GUARD : H10 ENV=development
 *** gebaut: runner COPY /app/public + .next/standalone
 *** offen: ai.txt / llms-full.txt (no source file, not copied)
 ** App router locale segment
-*** gebaut: src/app/[locale]/page.tsx::HomePage redirect("https://ekklesia.gr")
+*** gebaut: src/app/[locale]/page.tsx::HomePage redirect("https://ekklesia.gr") for el/en
 *** gebaut: src/app/[locale]/layout.tsx::LocaleLayout (no locale validation)
-*** offen: invalid-locale notFound() guard (EKA-64 soft-404 cause)
+*** gebaut: HomePage hasLocale -> notFound() guard (T-505, EKA-64 fixed)
 ** Regression test
 *** gebaut: src/proxy.test.ts (download redirects, root rewrite)
-*** offen: dotted single-segment miss -> 404 test
+*** gebaut: src/app/[locale]/page.test.ts invalid locale -> notFound (T-505)
 @endmindmap
 
 @startuml
@@ -87,5 +87,5 @@ NCFG --> PROXY : A2 no redirect source matches
 PROXY --> PUBLIC : A3 matcher excludes dotted path, proxy() skipped
 PUBLIC --> RESP : A4 hit /llms.txt -> 200 text/plain
 PUBLIC --> LOCALE : A5 miss /ai.txt -> dynamic [locale]="ai.txt"
-LOCALE --> RESP : A6 redirect("https://ekklesia.gr") -> 307 text/html
+LOCALE --> RESP : A6 hasLocale fails -> notFound() -> 404 (T-505); el/en -> redirect 307
 @enduml
