@@ -306,14 +306,16 @@ def _canonical_response(question: str, lang: str) -> dict | None:
             "Η ορατότητα των αποτελεσμάτων ακολουθεί την κατάσταση του "
             "νομοσχεδίου. Σε νομοσχέδιο ACTIVE με την προεπιλεγμένη ρύθμιση "
             "κρυφών αποτελεσμάτων, οι μετρήσεις εμφανίζονται μηδενικές και "
-            "σημειώνονται ως κρυφές μέχρι τη λήξη της ψηφοφορίας. Στις "
+            "σημειώνονται ως κρυφές μέχρι το νομοσχέδιο να περάσει σε κατάσταση "
+            "με ορατά αποτελέσματα. Στις "
             "καταστάσεις WINDOW_24H, PARLIAMENT_VOTED και OPEN_END τα "
             "συγκεντρωτικά αποτελέσματα είναι ορατά. Νομοσχέδια που δεν είναι "
             "δημόσια δεν εμφανίζουν αποτελέσματα. Για τους τρέχοντες αριθμούς "
             "δείτε τη σελίδα του νομοσχεδίου.",
             "Result visibility follows the bill status. For an ACTIVE bill with "
             "the default hidden-results setting, the counts are shown as zero and "
-            "marked as hidden until voting ends. In WINDOW_24H, PARLIAMENT_VOTED "
+            "marked as hidden until the bill enters a results-visible lifecycle "
+            "state. In WINDOW_24H, PARLIAMENT_VOTED "
             "and OPEN_END status, the aggregate results are visible. Bills that "
             "are not public do not show results. For current numbers, see the "
             "bill page.",

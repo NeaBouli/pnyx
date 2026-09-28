@@ -65,9 +65,11 @@ REQUIRED_FACTS: dict[str, dict[str, tuple[str, ...]]] = {
                "Diavgeia", "alone is not enough", "24-hour"),
     },
     "results_visibility": {
-        "el": ("ACTIVE", "μηδενικές", "κρυφές", "WINDOW_24H", "PARLIAMENT_VOTED",
+        "el": ("ACTIVE", "μηδενικές", "κατάσταση με ορατά αποτελέσματα",
+               "WINDOW_24H", "PARLIAMENT_VOTED",
                "OPEN_END", "δεν είναι δημόσια"),
-        "en": ("ACTIVE", "zero", "hidden", "WINDOW_24H", "PARLIAMENT_VOTED",
+        "en": ("ACTIVE", "zero", "results-visible lifecycle state",
+               "WINDOW_24H", "PARLIAMENT_VOTED",
                "OPEN_END", "not public"),
     },
 }
