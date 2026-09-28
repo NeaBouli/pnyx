@@ -13,8 +13,10 @@
 *** gebaut: apps/web/Dockerfile.prod::CMD node server.js
 *** gebaut: apps/dashboard/Dockerfile.prod::CMD node server.js
 ** Request edge
-*** gebaut: apps/web/src/proxy.ts::proxy
-*** gebaut: apps/dashboard/src/proxy.ts::proxy
+*** gebaut: web matched paths -> proxy.ts
+**** bypass: /api, _next, _vercel, dotted paths
+*** gebaut: dashboard matched protected paths -> auth + canAccess
+**** bypass checks: /api/auth early return
 ** Dashboard route handlers
 *** gebaut: api/auth/[...nextauth]/route.ts::GET,POST
 *** gebaut: api/discourse/route.ts::GET
@@ -38,10 +40,18 @@ WL --> CI : npm ci / npm run build
 DL --> CI : npm ci / npm run build
 WL --> WD : npm ci / npm run build
 DL --> DD : npm ci --ignore-scripts / npm run build
-WD --> WP : node server.js -> proxy
-DD --> DP : node server.js -> proxy
-WP --> WPG : intlMiddleware
-DP --> DRH : auth + canAccess
+WD --> WP : matcher-selected requests only
+DD --> DP : matcher-selected requests
+WP --> WPG : redirects / rewrites / intlMiddleware
+DP --> DRH : protected pages + non-auth APIs\nauth + canAccess
+note bottom of WP
+  matcher bypasses /api, _next, _vercel
+  and dotted paths
+end note
+note bottom of DP
+  /api/auth/* returns before protected
+  user and canAccess checks
+end note
 note bottom of DRH
   next/og ImageResponse: offen (0 importers)
 end note

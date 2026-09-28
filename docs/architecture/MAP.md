@@ -23,8 +23,8 @@ package, lock, source or config change. Existing maps (`EKKLESIA_V2_MINIMA.md`,
 4. Lock → `.github/workflows/ci.yml::test-clients` (`npm ci` → `image-codec.check.mjs` → lint → typecheck → [web: vitest] → `npm run build`).
 5. Lock → `apps/web/Dockerfile.prod` (`npm ci` with repo `.npmrc`, docs/ copied into `public/`, `npm run build`) → runner `node server.js` (context `../../`, `infra/docker/docker-compose.prod.yml::web`).
 6. Lock → `apps/dashboard/Dockerfile.prod` (`npm ci --ignore-scripts`, `npm run build`) → runner `node server.js` (context `../../apps/dashboard`, `docker-compose.prod.yml::dashboard`).
-7. `server.js` → `apps/web/src/proxy.ts::proxy` (redirects/rewrites + next-intl) → `apps/web/src/app/[locale]/*/page.tsx` (9 pages, no route handlers).
-8. `server.js` → `apps/dashboard/src/proxy.ts::proxy` (next-auth gate, role check) → `(dashboard)/*/page.tsx` (23), `login/page.tsx`, `api/auth/[...nextauth]/route.ts::{GET,POST}`, `api/discourse/route.ts::GET` (JSON), `api/proxy/[...path]/route.ts` (JSON, SUPER_ADMIN).
+7. `server.js` → the web proxy matcher excludes `/api`, `_next`, `_vercel`, and dotted paths; matched page requests enter `apps/web/src/proxy.ts::proxy` (redirects/rewrites + next-intl) → `apps/web/src/app/[locale]/*/page.tsx` (9 pages, no route handlers).
+8. `server.js` → the dashboard matcher excludes `_next/static`, `_next/image`, and `favicon.ico`; matched protected pages and non-auth APIs enter `apps/dashboard/src/proxy.ts::proxy` (session gate, then role check) → `(dashboard)/*/page.tsx` (23), `api/discourse/route.ts::GET` (JSON), and `api/proxy/[...path]/route.ts` (JSON, SUPER_ADMIN). `/api/auth/*` is matched but returns before the user and `canAccess` checks to reach `api/auth/[...nextauth]/route.ts::{GET,POST}`.
 9. Side-hop `request-controlled value → next/og ImageResponse SVG` — **offen / nicht verdrahtet** (evidence below).
 
 ### Sink evidence (all `git grep` on 49e449a, excluding lockfiles)
@@ -64,8 +64,9 @@ Image neighbours: `openGraph` in web layout is static text, no `images`; `next/i
 - lock → CI `npm ci` / `npm run build`: CI builds both runtimes from their own lock.
 - lock → `Dockerfile.prod` `npm ci`: prod image installs the same lock; web keeps install scripts per `.npmrc`, dashboard passes `--ignore-scripts`.
 - `Dockerfile.prod` → `node server.js`: standalone server, Node 22.13.0-alpine.
-- `server.js` → `proxy.ts`: every non-static request passes the proxy (Node runtime).
-- `proxy.ts` → pages/route handlers: no handler or page imports `next/og`.
+- `server.js` → web `proxy.ts`: only matcher-selected requests enter it; `/api`, `_next`, `_vercel`, and dotted paths bypass the proxy.
+- `server.js` → dashboard `proxy.ts`: matcher-selected requests enter it, but `/api/auth/*` returns before the protected user and `canAccess` checks; protected pages and the other API paths continue through those checks.
+- proxy or matcher bypass → pages/route handlers: no handler or page imports `next/og`.
 
 ## 5. Widerspruch und Lücken
 
@@ -98,8 +99,9 @@ mindmap
       gebaut: web Dockerfile.prod node server.js
       gebaut: dashboard Dockerfile.prod node server.js
     Request edge
-      gebaut: web proxy.ts proxy
-      gebaut: dashboard proxy.ts proxy
+      gebaut: web matched paths to proxy; api, _next, _vercel, dotted bypass
+      gebaut: dashboard protected paths to auth + canAccess
+      gebaut: dashboard api/auth returns before access checks
     Dashboard route handlers
       gebaut: api/auth nextauth
       gebaut: api/discourse GET

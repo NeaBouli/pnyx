@@ -10,8 +10,10 @@ L -> CI : next 16.3.4 + @next/swc-* 16.3.4 (npm ci)
 CI -> CI : image-codec.check.mjs, lint, typecheck, build
 L -> D : same lock (npm ci)
 D -> S : .next/standalone, node server.js
-S -> P : request (Node.js runtime)
-P -> R : web: redirect/rewrite/intl\ndashboard: auth + canAccess
+S -> P : matcher-selected request (Node.js runtime)
+P -> R : web matched: redirect/rewrite/intl\ndashboard protected: auth + canAccess
+S -> R : web /api, _next, _vercel, dotted paths\nbypass proxy matcher
+P -> R : dashboard /api/auth/* early return\nbefore protected user + canAccess checks
 R --> S : HTML / JSON
 note over R
   next/og ImageResponse side-hop: offen,
