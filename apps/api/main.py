@@ -46,7 +46,10 @@ def _sentry_redact(value: Any) -> Any:
     """Rekursiv sensible Keys in dict/list-Strukturen ersetzen."""
     if isinstance(value, dict):
         return {
-            k: _SENTRY_REDACTED if _sentry_is_sensitive_key(k) else _sentry_redact(v)
+            k: _SENTRY_REDACTED if _sentry_is_sensitive_key(k)
+            # ASGI-scope in Frame-Locals traegt die rohe Query unter "query_string"
+            else _sentry_redact_query(v) if _sentry_norm_key(k) == "querystring"
+            else _sentry_redact(v)
             for k, v in value.items()
         }
     if isinstance(value, list):
@@ -58,6 +61,9 @@ def _sentry_redact_query(query: Any) -> Any:
     if isinstance(query, str):
         if not query:
             return query
+        # Frame-Locals serialisieren Bytes als repr: b'a=1&admin_key=...'
+        if len(query) >= 3 and query[0] == "b" and query[1] in "'\"" and query[-1] == query[1]:
+            return f"b{query[1]}{_sentry_redact_query(query[2:-1])}{query[1]}"
         pairs = parse_qsl(query, keep_blank_values=True)
         return urlencode([
             (k, _SENTRY_REDACTED if _sentry_is_sensitive_key(k) else v) for k, v in pairs
@@ -100,20 +106,27 @@ def _before_send_filter(event, hint):
     return event
 
 
+def _sentry_init_options(dsn: str) -> dict[str, Any]:
+    """sentry_sdk.init-Optionen; Filter gilt fuer Error- UND Transaction-Events."""
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.starlette import StarletteIntegration
+
+    return {
+        "dsn": dsn,
+        "integrations": [FastApiIntegration(), StarletteIntegration()],
+        "traces_sample_rate": float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
+        "environment": os.getenv("SENTRY_ENVIRONMENT", "production"),
+        "send_default_pii": False,
+        "before_send": _before_send_filter,
+        "before_send_transaction": _before_send_filter,
+    }
+
+
 if _SENTRY_DSN:
     try:
         import sentry_sdk
-        from sentry_sdk.integrations.fastapi import FastApiIntegration
-        from sentry_sdk.integrations.starlette import StarletteIntegration
 
-        sentry_sdk.init(
-            dsn=_SENTRY_DSN,
-            integrations=[FastApiIntegration(), StarletteIntegration()],
-            traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
-            environment=os.getenv("SENTRY_ENVIRONMENT", "production"),
-            send_default_pii=False,
-            before_send=_before_send_filter,
-        )
+        sentry_sdk.init(**_sentry_init_options(_SENTRY_DSN))
         SENTRY_ENABLED = True
         logger.info("[SENTRY] Cloud aktiv — %s", os.getenv("SENTRY_ENVIRONMENT", "production"))
     except Exception as e:

@@ -4,6 +4,12 @@ import copy
 from pathlib import Path
 from urllib.parse import parse_qsl
 
+import pytest
+import sentry_sdk
+from fastapi import FastAPI, Request
+from fastapi.testclient import TestClient
+from sentry_sdk.transport import Transport
+
 import main
 from routers.scraper import BillImportRequest
 
@@ -122,3 +128,83 @@ def test_scraper_workflow_sends_bearer_without_json_credential():
     assert "admin_key" not in workflow
     payload_block = workflow[workflow.index("jq -n"):workflow.index("> /tmp/payload.json")]
     assert "secrets." not in payload_block
+
+
+# ── SDK-Pipeline: echte sentry_sdk-Verarbeitung bis zum Transport ─────────────
+
+class _CaptureTransport(Transport):
+    def __init__(self, options=None):
+        super().__init__(options)
+        self.payloads: list[tuple[str, str]] = []
+
+    def capture_envelope(self, envelope):
+        for item in envelope.items:
+            self.payloads.append((item.headers.get("type"), item.get_bytes().decode("utf-8")))
+
+
+def _init_sdk(**overrides) -> _CaptureTransport:
+    transport = _CaptureTransport()
+    options = main._sentry_init_options("https://public@o0.ingest.sentry.io/1")
+    options["traces_sample_rate"] = 1.0
+    options.update(overrides)
+    sentry_sdk.init(**{k: v for k, v in options.items() if v is not None}, transport=transport)
+    return transport
+
+
+@pytest.fixture
+def sdk_reset():
+    yield
+    sentry_sdk.flush()
+    sentry_sdk.init()
+
+
+def _post_import(client: TestClient, path: str) -> None:
+    client.post(
+        f"{path}?dry=1&Admin_Key={SECRET}",
+        json={"Admin_Key": SECRET, "bills": []},
+        headers={"Authorization": "Bearer wrong-synthetic-bearer"},
+    )
+
+
+def test_sentry_init_wires_filter_for_errors_and_transactions():
+    options = main._sentry_init_options("https://public@o0.ingest.sentry.io/1")
+    assert options["before_send"] is main._before_send_filter
+    assert options["before_send_transaction"] is main._before_send_filter
+    assert options["send_default_pii"] is False
+
+
+def test_sampled_import_transaction_does_not_ship_admin_key(sdk_reset):
+    transport = _init_sdk()
+    _post_import(TestClient(main.app, raise_server_exceptions=False), "/api/v1/scraper/import")
+    sentry_sdk.flush()
+
+    transactions = [body for kind, body in transport.payloads if kind == "transaction"]
+    assert transactions, "sampled transaction must reach transport"
+    assert '"query_string"' in transactions[0] and "Admin_Key" in transactions[0]
+    assert all(SECRET not in body for _, body in transport.payloads)
+
+
+def test_sampled_transaction_leaks_without_transaction_hook(sdk_reset):
+    """Kontrolle: ohne before_send_transaction erreicht das Secret den Transport."""
+    transport = _init_sdk(before_send_transaction=None)
+    _post_import(TestClient(main.app, raise_server_exceptions=False), "/api/v1/scraper/import")
+    sentry_sdk.flush()
+
+    assert any(kind == "transaction" and SECRET in body for kind, body in transport.payloads)
+
+
+def test_error_event_does_not_ship_admin_key(sdk_reset):
+    transport = _init_sdk()
+    app = FastAPI()
+
+    @app.post("/boom")
+    async def boom(request: Request):
+        await request.json()
+        raise RuntimeError("synthetic import failure")
+
+    _post_import(TestClient(app, raise_server_exceptions=False), "/boom")
+    sentry_sdk.flush()
+
+    kinds = {kind for kind, _ in transport.payloads}
+    assert {"event", "transaction"} <= kinds
+    assert all(SECRET not in body for _, body in transport.payloads)
