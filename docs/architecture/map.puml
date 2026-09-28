@@ -1,0 +1,67 @@
+@startmindmap gh298-tab-label-mindmap
+* Tab-Labels lesbar und tippbar\nbei Android fontScale 1.8 (GH#298)
+** App-Shell Safe Area
+*** gebaut: App.tsx::App\nSafeAreaView edges top + innerer SafeAreaProvider
+** Tab-Navigation (App)
+*** gebaut: navigation/index.tsx::TabNavigator
+*** gebaut: screenOptions.tabBarStyle (ohne height)
+** Tab-Label-Renderer (App)
+*** teilweise: screenOptions.tabBarLabel\nText fontSize 10, kein numberOfLines
+** Tab-Icon-Renderer (App)
+*** teilweise: screenOptions.tabBarIcon\nEmoji fontSize 18, ignoriert size/color
+** Theme
+*** gebaut: theme.ts::colors.tabBarActive / tabBarInactive
+left side
+** BottomTabBar (Vendor)
+*** gebaut: getTabBarHeight = 49 + insets.bottom
+*** gebaut: styles.bottomItem flex 1
+*** gebaut: shouldUseHorizontalLabels (width > height)
+** BottomTabItem / TabBarIcon (Vendor)
+*** gebaut: styles.tabVerticalUiKit padding 5
+*** gebaut: TabBarIcon wrapperUikit 31x28
+*** gebaut: renderLabel Funktionszweig
+** Native Font-Scaling
+*** gebaut: Text allowFontScaling (Default true)
+** Tab-Layout-Tests
+*** offen: kein Test fuer navigation/index.tsx
+** Landscape
+*** aufgeschoben: app.json orientation portrait
+@endmindmap
+
+@startuml gh298-tab-label-components
+skinparam componentStyle rectangle
+
+package "apps/mobile (App)" {
+  [App-Shell Safe Area\nApp.tsx] as Shell
+  [Tab-Navigation\nnavigation/index.tsx::TabNavigator] as TabNav
+  [Tab-Label-Renderer\nscreenOptions.tabBarLabel] as LabelR
+  [Tab-Icon-Renderer\nscreenOptions.tabBarIcon] as IconR
+  [Theme\ntheme.ts] as Theme
+}
+
+package "@react-navigation (Vendor)" {
+  [BottomTabView] as View
+  [BottomTabBar] as Bar
+  [BottomTabItem] as Item
+  [TabBarIcon] as Icon
+}
+
+package "Plattform" {
+  [react-native Text / Yoga] as RNText
+  [Android fontScale / Window] as Android
+}
+
+Shell --> TabNav : Navigation -> Stack.Screen Tabs
+TabNav --> Theme : colors.tabBarActive
+TabNav --> View : screenOptions
+Shell --> View : SafeAreaInsetsContext
+View --> Bar : renderTabBar(insets)
+Bar --> Bar : getTabBarHeight
+Bar --> Item : bottomItem flex 1
+Item --> Icon : renderIcon
+Icon --> IconR : renderIcon({size, color, focused})
+Item --> LabelR : renderLabel({color, position})
+LabelR --> RNText : Text fontSize 10
+IconR --> RNText : Text fontSize 18
+Android --> RNText : fontScale
+@enduml
