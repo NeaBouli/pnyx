@@ -49,3 +49,45 @@ SETTINGS --> DBACCESS : H9 settings.database_url
 DBACCESS --> HOST : H9 localhost:5432
 API --> GUARD : H10 ENV=development
 @enduml
+
+@startmindmap
+' EKA-08 — Web Compass Privacy Storage (base 4cc1193), appended; EKA-18 diagrams above unchanged
+* Web Compass: profile to browser storage
+** Compass UI card
+*** quarantäne: components/CompassCard.tsx::CompassCard (not mounted, compass is app-only)
+** Compass hook
+*** gebaut: lib/compass/useCompass.ts::useCompass
+*** gebaut: lib/compass/useCompass.ts::persistProfile (300 ms debounce, not awaited)
+** Compass storage
+*** gebaut: lib/compass/storage.ts::loadProfile (encrypted, then plaintext fallback)
+*** gebaut: lib/compass/storage.ts::saveProfile (silent plaintext fallback, EKA-08)
+*** gebaut: lib/compass/storage.ts::clearProfile
+** Identity key access
+*** gebaut: lib/crypto.ts::loadKeypair (EKA-07, separate)
+** Browser persistence
+*** gebaut: localStorage ekklesia_compass_encrypted
+*** gebaut: localStorage ekklesia_compass_profile (plaintext)
+** Storage regression test
+*** offen: lib/compass/storage.test.ts
+@endmindmap
+
+@startuml
+' EKA-08 component diagram — arrows only for hops C1-C9
+skinparam componentStyle rectangle
+component "Compass UI card\nCompassCard.tsx (not mounted)" as CARD
+component "Compass hook\nuseCompass.ts" as HOOK
+component "Identity key access\ncrypto.ts::loadKeypair" as KEYS
+component "Compass storage\nstorage.ts" as STORE
+component "Browser persistence\nlocalStorage" as LS
+
+CARD --> HOOK : C1 useCompass
+HOOK --> KEYS : C2 loadKeypair
+HOOK --> STORE : C3 loadProfile
+STORE --> LS : C4 getItem(encrypted)
+STORE --> LS : C5 getItem(plaintext)
+HOOK --> HOOK : C6 persistProfile
+HOOK --> STORE : C7 saveProfile
+STORE --> LS : C8a setItem(encrypted) + removeItem(plaintext)
+STORE --> LS : C8b setItem(plaintext) [no key / crypto error]
+HOOK --> STORE : C9 clearProfile
+@enduml
