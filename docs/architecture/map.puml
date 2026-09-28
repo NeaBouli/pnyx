@@ -46,3 +46,39 @@ note bottom of DRH
   next/og ImageResponse: offen (0 importers)
 end note
 @enduml
+
+@startmindmap
+' Preserved EKA-18 node integrated from origin/main during T-486 refresh
+* Local developer stack / Compose exposure boundary
+** Quick Start
+*** gebaut: README starts development Compose
+*** gebaut: shared-host warning
+** Development datastores
+*** gebaut: PostgreSQL published on 127.0.0.1:5432
+*** gebaut: Redis published on 127.0.0.1:6379
+** Legitimate control paths
+*** gebaut: host tools use localhost defaults
+*** gebaut: API container uses db / redis service DNS
+** Regression contract
+*** gebaut: test_dev_compose_exposure.py
+** Out of scope
+*** production Compose
+*** API port 8000
+*** datastore auth and salt policy
+@endmindmap
+
+@startuml
+skinparam componentStyle rectangle
+component "README Quick Start" as ER
+component "Development Compose" as EC
+component "Loopback listeners\n127.0.0.1:5432 / :6379" as EL
+component "Host tools\nconfig.py localhost defaults" as EH
+component "API container\nservice DNS db / redis" as EA
+component "Exposure regression test" as ET
+
+ER --> EC : docker compose up -d
+EC --> EL : publish db + redis on loopback
+EH --> EL : alembic / seeds / host uvicorn
+EA --> EC : internal service network
+ET --> EC : pin bindings + service-DNS contract
+@enduml

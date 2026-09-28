@@ -119,3 +119,36 @@ Must stay green: CI `test-clients` Web + Dashboard (`image-codec.check.mjs`, lin
 typecheck, web vitest, `npm run build`), both `Dockerfile.prod` builds, and the
 routes in hops 7–8 (web locale pages + proxy redirects; dashboard pages, `/login`,
 `/api/auth/*`, `/api/discourse`, `/api/proxy/*`).
+
+---
+
+# Preserved Map Node — EKA-18 Local Developer Stack / Compose Exposure Boundary
+
+Integrated from `origin/main` at T-486 refresh. The full evidence and acceptance
+record remains in `.fleet/reports/T-481.md` and `.fleet/reports/T-482.md`.
+
+## Module and hop
+
+- Node: local developer stack / Compose exposure boundary.
+- Hop H1: README Quick Start starts `infra/docker/docker-compose.yml`.
+- Hop H2: host-side alembic, seeds, and uvicorn use the loopback defaults in
+  `apps/api/config.py::Settings`.
+- Hop H3: the API container uses the internal `db` and `redis` service names.
+- Hop H4: only PostgreSQL and Redis host publications are narrowed to
+  `127.0.0.1`; the API's port 8000 publication remains unchanged.
+
+## Security invariant
+
+Development datastores with repository-public or absent credentials are not
+reachable through a non-loopback host interface, while host development tools
+retain `localhost:5432` and `localhost:6379` access and containers retain their
+service-DNS access. Production Compose, API auth, salt policy, and datastore
+authentication are outside this node.
+
+## Built state
+
+- `infra/docker/docker-compose.yml` binds db and redis to IPv4 loopback.
+- `apps/api/tests/test_dev_compose_exposure.py` pins loopback publication,
+  published ports, internal service-DNS targets, and dependencies.
+- README warns that the development credentials are public and the stack is not
+  for shared or production hosts.

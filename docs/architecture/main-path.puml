@@ -18,3 +18,22 @@ note over R
   not simulated (no call site)
 end note
 @enduml
+
+@startuml
+' Preserved EKA-18 path integrated from origin/main during T-486 refresh
+title Local developer stack: Quick Start to bounded datastore listeners
+
+actor Developer
+participant "README Quick Start" as ER
+participant "Development Compose" as EC
+participant "PostgreSQL / Redis\nloopback listeners" as ED
+participant "API container\nservice DNS" as EA
+participant "Host tools\nlocalhost defaults" as EH
+
+Developer -> ER : start local stack
+ER -> EC : docker compose up -d
+EC -> ED : publish 127.0.0.1:5432 / 127.0.0.1:6379
+EC -> EA : attach db and redis on internal network
+Developer -> EH : alembic / seeds / host uvicorn
+EH -> ED : connect through localhost
+@enduml
