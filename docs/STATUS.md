@@ -1,5 +1,20 @@
 # Ekklesia.gr - Project Status
 
+## Current source and review checkpoint — 2026-09-28
+
+- The proven `main` and rollback point remains
+  `4cc11930f4be82ba2d012def487fb34abca9da26`; no merge, deployment or live
+  change is implied by the Draft work below.
+- EKA-63 is preserved as Draft PR #405 at exact head
+  `3c6483fa701c70cb8c07a4159eeb345c6e24869a`. Its CI/Security gates are green;
+  the Greek wording still requires Gio/native-content review.
+- EKA-24 is accepted locally on branch
+  `agent/codex/T-510-397-integration`, stacked on Draft PR #397 exact head
+  `399b42502854833d2975950f6b9f6b991cd0ff23`. The mandatory merge order is
+  **#397 first, then EKA-24 only after a fresh post-base diff and gate proof**.
+- CodeRabbit allowance has not reset. Completed Drafts stay parked: no retry,
+  bypass, parallel review request or consumption of the serial review slot.
+
 Authoritative full checkpoint:
 [Ekklesia master project status - 2026-09-19](reports/EKKLESIA_MASTER_PROJECT_STATUS_2026-09-19.md).
 
