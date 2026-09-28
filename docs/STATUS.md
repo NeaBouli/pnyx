@@ -8,10 +8,10 @@
 - EKA-63 is preserved as Draft PR #405 at exact head
   `3c6483fa701c70cb8c07a4159eeb345c6e24869a`. Its CI/Security gates are green;
   the Greek wording still requires Gio/native-content review.
-- EKA-24 is accepted locally on branch
-  `agent/codex/T-510-397-integration`, stacked on Draft PR #397 exact head
+- EKA-24 is preserved as stacked Draft PR #406 on branch
+  `agent/codex/T-510-397-integration`, based on Draft PR #397 exact head
   `399b42502854833d2975950f6b9f6b991cd0ff23`. The mandatory merge order is
-  **#397 first, then EKA-24 only after a fresh post-base diff and gate proof**.
+  **#397 first, then #406 only after a fresh post-base diff and gate proof**.
 - CodeRabbit allowance has not reset. Completed Drafts stay parked: no retry,
   bypass, parallel review request or consumption of the serial review slot.
 
