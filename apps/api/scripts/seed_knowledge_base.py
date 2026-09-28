@@ -35,8 +35,8 @@ ENTRIES = [
      '["ekklesia","democracy","parliament","civic","initiative","vote"]', 1),
 
     ("privacy", "Πώς προστατεύεται η ανωνυμία μου;", "How is my anonymity protected?",
-     "Η εκκλησία χρησιμοποιεί κρυπτογραφία Ed25519 για υπογραφές ψήφων. Ο αριθμός τηλεφώνου ΠΟΤΕ δεν αποθηκεύεται. Μόνο κρυπτογραφικό hash (nullifier) αποθηκεύεται — δεν μπορεί να αντιστραφεί. Το ιδιωτικό κλειδί αποθηκεύεται ΜΟΝΟ στη συσκευή σου.",
-     "ekklesia uses Ed25519 cryptography for vote signatures. Phone number is NEVER stored. Only a cryptographic nullifier hash is stored — it cannot be reversed. The private key is stored ONLY on your device.",
+     "Η εκκλησία χρησιμοποιεί κρυπτογραφία Ed25519 για υπογραφές ψήφων. Ο αριθμός τηλεφώνου ΠΟΤΕ δεν αποθηκεύεται. Μόνο κρυπτογραφικό hash (nullifier) αποθηκεύεται — δεν μπορεί να αντιστραφεί. Το ιδιωτικό κλειδί μένει στη συσκευή σου (Web Beta: localStorage του browser· εφαρμογή κινητού: Expo SecureStore) και ο server δεν το γνωρίζει.",
+     "ekklesia uses Ed25519 cryptography for vote signatures. Phone number is NEVER stored. Only a cryptographic nullifier hash is stored — it cannot be reversed. The private key stays on your device (Web Beta: browser localStorage; mobile app: Expo SecureStore) and the server does not know it.",
      '["privacy","anonymity","cryptography","Ed25519","nullifier","phone"]', 1),
 
     ("process", "Πώς ψηφίζω;", "How do I vote?",
@@ -80,9 +80,9 @@ ENTRIES = [
      '["nullifier","hash","privacy","phone","unique","Ed25519"]', 1),
 
     ("privacy", "Τι γίνεται αν χάσω το ιδιωτικό κλειδί;", "What if I lose my private key?",
-     "Το ιδιωτικό κλειδί αποθηκεύεται μόνο στη συσκευή σας. Ο server δεν το γνωρίζει και δεν μπορεί να το ανακτήσει. Αν χαθεί, ακολουθείτε μόνο την επίσημη ροή επαλήθευσης/επανέκδοσης που παρέχει η εφαρμογή· δεν υπάρχει μυστική ανάκτηση από τον server.",
-     "Your private key is stored only on your device. The server does not know it and cannot recover it. If it is lost, use only the official app re-verification/key-rotation flow; there is no hidden server-side recovery process.",
-     '["private key","lost key","recovery","device","keychain","keystore"]', 1),
+     "Το σημείο αποθήκευσης του ιδιωτικού κλειδιού εξαρτάται από την πλατφόρμα. Web Beta: φυλάσσεται στο localStorage του browser — απλή αποθήκευση browser, όχι iOS Keychain ή Android Keystore. Εφαρμογή κινητού: αποθηκεύεται μέσω Expo SecureStore, που χρησιμοποιεί Android Keystore και, στην υλοποιημένη διαδρομή κώδικα iOS, iOS Keychain. Και στις δύο περιπτώσεις ο server δεν το γνωρίζει και δεν μπορεί να το ανακτήσει. Αν χαθεί, ακολουθείτε μόνο την επίσημη ροή επαλήθευσης/επανέκδοσης που παρέχει η εφαρμογή· δεν υπάρχει μυστική ανάκτηση από τον server.",
+     "Where your private key is stored depends on the platform. Web Beta: it is kept in the browser's localStorage — plain browser storage, not iOS Keychain or Android Keystore. Mobile app: it is stored via Expo SecureStore, which uses Android Keystore and, in the implemented iOS code path, iOS Keychain. In both cases the server does not know it and cannot recover it. If it is lost, use only the official app re-verification/key-rotation flow; there is no hidden server-side recovery process.",
+     '["private key","lost key","recovery","device","localStorage","SecureStore","keychain","keystore"]', 1),
 
     ("process", "Πώς κατεβάζω την εφαρμογή Android;", "How do I download the Android app?",
      "Η εφαρμογή Android διανέμεται μέσω των επίσημων καναλιών που ανακοινώνει το ekklesia.gr, όπως η άμεση λήψη APK, F-Droid/IzzyOnDroid ή Google Play όταν είναι διαθέσιμο. Χρησιμοποιείτε μόνο συνδέσμους από το ekklesia.gr ή το επίσημο repository.",

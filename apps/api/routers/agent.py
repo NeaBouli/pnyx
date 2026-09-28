@@ -95,6 +95,19 @@ _SAFETY_PATTERNS = [
     "κλειδί admin", "admin κλειδί", "χειραγώγηση ψήφ",
 ]
 
+# EKA-60: payment/donation/support intake is paused (docs/community.html,
+# payments.py::_payment_intake_enabled); answer before any KB or model call.
+_PAYMENT_PATTERNS = [
+    r"\bdonat", r"\bpay(s|ing|ment|ments)?\b", r"\bpaid\b", r"\bstripe\b",
+    r"\bpay ?pal\b", r"\bsponsor", r"\bfund(s|ing|raising)?\b",
+    r"\bfinancial(ly)?\s+(support|contribut)",
+    r"\bcontribut\w*\s+(money|financially|funds)",
+    r"\bsupport\s+(ekklesia|the\s+(project|platform|initiative)|this\s+project|you|us)\b",
+    r"δωρε(?![άα]ν\b)", r"δωρ[ίι][σζ]", r"πληρ[ωώ]", r"πλ[ήη]ρωσ", r"χορηγ", r"εισφορ",
+    r"οικονομικ\w*\s+(στ[ήη]ριξ|υποστ[ήη]ριξ|εν[ίι]σχυσ)",
+    r"\b(υπο)?στηρ[ίι]ξ(ω|ουμε)\b",
+]
+
 _BILL_QUERY_PATTERNS = [
     r"\bGR-\d{4}",
     r"\bbill(s)?\b",
@@ -174,15 +187,37 @@ def _canonical_response(question: str, lang: str) -> dict | None:
             "assistant_help",
         )
 
-    if "private key" in q or "ιδιωτικό κλειδί" in q:
+    if any(re.search(pattern, q) for pattern in _PAYMENT_PATTERNS):
         return resp(
-            "Το ιδιωτικό κλειδί αποθηκεύεται μόνο στη συσκευή σας. Ο server δεν "
-            "το γνωρίζει και δεν μπορεί να το ανακτήσει. Αν χαθεί, ακολουθείτε "
-            "μόνο την επίσημη ροή επαλήθευσης/επανέκδοσης που παρέχει η εφαρμογή· "
-            "δεν υπάρχει μυστική ανάκτηση από τον server.",
-            "Your private key is stored only on your device. The server does not "
-            "know it and cannot recover it. If it is lost, use only the official "
-            "app re-verification/key-rotation flow; there is no hidden server-side "
+            "Οι δημόσιοι σύνδεσμοι και η αποδοχή δωρεών/πληρωμών είναι αυτή τη "
+            "στιγμή σε παύση και μη διαθέσιμοι. Ο βοηθός δεν δέχεται πληρωμές "
+            "και δεν παραπέμπει σε Stripe, PayPal ή άλλον πάροχο πληρωμών. Μην "
+            "στέλνετε χρήματα μέσω συνδέσμων που λαμβάνετε σε συνομιλίες.",
+            "Public donation/payment links and payment intake are currently "
+            "paused and unavailable. The assistant does not accept payments and "
+            "does not refer you to Stripe, PayPal or any other payment processor. "
+            "Do not send money through links received in a chat.",
+            "payments_paused",
+        )
+
+    if "private key" in q or "signing key" in q or ("ιδιωτικ" in q and "κλειδ" in q):
+        return resp(
+            "Το σημείο αποθήκευσης του ιδιωτικού κλειδιού εξαρτάται από την "
+            "πλατφόρμα. Web Beta: φυλάσσεται στο localStorage του browser — απλή "
+            "αποθήκευση browser, όχι iOS Keychain ή Android Keystore. Εφαρμογή "
+            "κινητού: αποθηκεύεται μέσω Expo SecureStore, που χρησιμοποιεί Android "
+            "Keystore και, στην υλοποιημένη διαδρομή κώδικα iOS, iOS Keychain. "
+            "Και στις δύο περιπτώσεις ο server δεν το γνωρίζει και δεν μπορεί να "
+            "το ανακτήσει. Αν χαθεί, ακολουθείτε μόνο την επίσημη ροή "
+            "επαλήθευσης/επανέκδοσης που παρέχει η εφαρμογή· δεν υπάρχει μυστική "
+            "ανάκτηση από τον server.",
+            "Where your private key is stored depends on the platform. Web Beta: "
+            "it is kept in the browser's localStorage — plain browser storage, "
+            "not iOS Keychain or Android Keystore. Mobile app: it is stored via "
+            "Expo SecureStore, which uses Android Keystore and, in the implemented "
+            "iOS code path, iOS Keychain. In both cases the server does not know "
+            "it and cannot recover it. If it is lost, use only the official app "
+            "re-verification/key-rotation flow; there is no hidden server-side "
             "recovery process.",
             "private_key",
         )
