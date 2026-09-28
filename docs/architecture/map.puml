@@ -40,3 +40,55 @@ note right of Toggle
   document.documentElement.lang noch data-lang.
 end note
 @enduml
+
+' T-474 — Pnyx Static Wiki / Responsive FAQ Navigation
+' Basis agent/claude/T-473 c4329f694c2b5752299daf85108f2d90e4f9dea3
+' Konsistent mit der T-474-Mermaid-Mindmap in docs/architecture/MAP.md
+
+@startmindmap faq-nav-mindmap
+* Static Wiki: Sprachknopf auf jedem Viewport erreichbar
+** FAQ Kopf-Markup
+*** gebaut: faq.html::nav.pnx2-header
+*** gebaut: faq.html::.nav-links 17 Kinder
+*** gebaut: faq.html::#langBtn letztes Kind
+** FAQ Legacy-Kopf-CSS
+*** gebaut: faq.html::.nav-links flex-wrap wrap
+** R3 Foundation
+*** gebaut: foundation.css::.pnx2-header display flex
+** R3 Wiki-Shell CSS
+*** gebaut: r3-wiki.css::920px nav.pnx2-header display block
+*** gebaut: r3-wiki.css::920px .nav-links nowrap overflow-x auto
+*** gebaut: r3-wiki.css::920px .nav-links > * flex 0 0 auto
+** FAQ Sprachwechsel
+*** gebaut: faq.html::toggleLang
+** R3 Wiki-Gate
+*** gebaut: r3_wiki_pilot_check.py::check_pilot_preservation
+*** gebaut: t420_wiki_facts.browser.cjs
+** Sichtbarkeitspruefung
+*** offen: langBtn im initialen 390px-Viewport
+@endmindmap
+
+@startuml faq-nav-components
+title FAQ-Kopf bei <=920px (docs/wiki/faq.html + shared r3-wiki.css) — Komponenten
+
+component "FAQ Kopf-Markup\n(faq.html nav.pnx2-header)" as NavMarkup
+component "FAQ Legacy-Kopf-CSS\n(faq.html inline style)" as InlineCss
+component "R3 Foundation\n(foundation.css)" as Foundation
+component "R3 Wiki-Shell CSS\n(r3-wiki.css, shared 14 Seiten)" as WikiShell
+component "FAQ Sprachwechsel\n(faq.html toggleLang)" as Toggle
+component "R3 Wiki-Gate\n(r3_wiki_pilot_check.py, t420 browser)" as Gate
+component "Sichtbarkeitspruefung\n(offen)" as Visibility
+
+InlineCss --> NavMarkup : .nav-links flex-wrap: wrap
+Foundation --> NavMarkup : .pnx2-header display: flex
+WikiShell --> NavMarkup : @media 920 .pnx2-header .nav-links nowrap/overflow-x: auto
+NavMarkup --> Toggle : #langBtn onclick -> toggleLang
+Gate ..> WikiShell : check_pilot_preservation (@media 920 in Set)
+Visibility ..> NavMarkup : offen
+
+note right of WikiShell
+  Ursache shared: gewinnt ueber Inline-CSS
+  (spaeter geladen, Spezifitaet 0,2,0).
+  390px: scrollWidth 1520, #langBtn x=1460.
+end note
+@enduml

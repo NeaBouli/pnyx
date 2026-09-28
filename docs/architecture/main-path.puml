@@ -29,3 +29,45 @@ note over Toggle, Markup
   data-lang bleibt "el". Kein Code, daher keine Kante.
 end note
 @enduml
+
+' T-474 — Sequenz der gebauten Spur "FAQ-Sprachknopf auf schmalem Viewport finden und bedienen"
+' Basis agent/claude/T-473 c4329f694c2b5752299daf85108f2d90e4f9dea3
+' Nur gebaute Hops sind Pfeile; die offene Sichtbarkeitspruefung ist Notiz, nicht simuliert.
+
+@startuml faq-nav-main-path
+title faq.html @ 390px: nav.pnx2-header -> r3-wiki.css @media 920 -> .nav-links Scroller -> #langBtn
+
+actor Nutzer
+participant "FAQ Kopf-Markup\n(faq.html)" as NavMarkup
+participant "FAQ Legacy-Kopf-CSS\n(inline style)" as InlineCss
+participant "R3 Foundation\n(foundation.css)" as Foundation
+participant "R3 Wiki-Shell CSS\n(r3-wiki.css)" as WikiShell
+participant "FAQ Sprachwechsel\n(toggleLang)" as Toggle
+
+== Laden, Kaskade in Ladereihenfolge ==
+InlineCss -> NavMarkup : nav flex-wrap; .nav-links flex-wrap: wrap
+Foundation -> NavMarkup : .pnx2-header display: flex
+WikiShell -> NavMarkup : @media 920: nav.pnx2-header display: block
+WikiShell -> NavMarkup : @media 920: .pnx2-header .nav-links nowrap, overflow-x: auto
+WikiShell -> NavMarkup : @media 920: .nav-links > * flex: 0 0 auto
+NavMarkup -> NavMarkup : .nav-links clientWidth 390, scrollWidth 1520, scrollLeft 0
+note over NavMarkup
+  17 Kinder, #langBtn = Index 16 (letztes).
+  Sichtbar 5/17; #langBtn x=1460..1504.
+  Doc-Overflow 0 (Ueberhang bleibt im Scroller).
+end note
+
+== Finden ==
+Nutzer -> NavMarkup : horizontaler Wisch in .nav-links (oder Tab-Fokus)
+NavMarkup -> NavMarkup : scrollLeft > 0, #langBtn im Scroller sichtbar
+
+== Bedienen ==
+Nutzer -> NavMarkup : tap #langBtn
+NavMarkup -> Toggle : toggleLang()
+Toggle -> NavMarkup : documentElement.lang, #langBtn.textContent, [data-el] innerHTML
+
+note over Nutzer, WikiShell
+  offen: keine Pruefung, dass #langBtn bei scrollLeft 0 sichtbar ist.
+  Kein Code, daher keine Kante.
+end note
+@enduml
