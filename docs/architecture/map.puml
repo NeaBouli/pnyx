@@ -2,18 +2,18 @@
 * Expo 54 asset build
 ** Mobile manifest and lock
 *** built: Expo 54.0.37
-*** built: local image-size backport
+*** built: coherent Metro 0.83.8 overrides
 ** Representative manifest and lock
 *** built: Expo 54.0.37
-*** built: local image-size backport
+*** built: coherent Metro 0.83.8 overrides
 ** Expo Metro adapter
 *** built: @expo/metro 54.2.0
-*** gap: exact Metro 0.83.3 pin
+*** gap: exact Metro 0.83.3 declaration overridden
 ** Metro asset parser
-*** built: 0.83.3 delegates to image-size
-*** built upstream: 0.83.8 internal bounded parser
+*** built: 0.83.8 internal bounded parser
+*** quarantäne: local image-size backport not installed
 ** Security regression
-*** built: malformed-image corpus
+*** built: 26-case installed-Metro corpus
 @endmindmap
 
 @startuml
@@ -21,16 +21,14 @@ skinparam componentStyle rectangle
 component "Mobile / Representative\npackage.json" as APP
 component "Expo 54.0.37" as EXPO
 component "@expo/metro 54.2.0" as EM
-component "Metro family 0.83.3" as METRO_OLD
 component "local image-size\n1.2.2-pnyx.0" as BACKPORT
 component "Metro family 0.83.8\ninternal bounded parser" as METRO_NEW
 component "Tests / bundle / build" as GATES
 
 APP --> EXPO : H1 dependency range
 EXPO --> EM : H1 installed adapter
-EM --> METRO_OLD : H2 exact pin
-METRO_OLD --> BACKPORT : H3 parser dependency
+EM --> METRO_NEW : H2/H3 coherent override
+BACKPORT ..> METRO_NEW : H5 retired from installed graph
 APP --> GATES : H4 scripts
-EM ..> METRO_NEW : H5 coherent override candidate
 METRO_NEW --> GATES : H6 compatibility proof
 @enduml

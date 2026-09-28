@@ -1,6 +1,6 @@
 # Architecture Map — EKA-29 Metro 0.83.8 / image-size Exit
 
-Basis: `origin/main 4cc11930f4be82ba2d012def487fb34abca9da26` · Task: T-506 · mapping only.
+Basis: `origin/main 4cc11930f4be82ba2d012def487fb34abca9da26` · Task: T-506 · mapped before implementation, updated after proof.
 Node: Mobile/Representative Build Toolchain / Expo-to-Metro asset-dimension hop.
 
 ## 1. Grundidee
@@ -28,12 +28,12 @@ Node: Mobile/Representative Build Toolchain / Expo-to-Metro asset-dimension hop.
 
 | Modul | Eine Aufgabe | Einstieg | Stand |
 | --- | --- | --- | --- |
-| Mobile manifest/lock | pin the citizen app build graph | `apps/mobile/package.json` | gebaut; local backport active |
-| Representative manifest/lock | pin the representative app build graph | `apps/representative/package.json` | gebaut; local backport active |
-| Expo Metro adapter | select Metro for Expo SDK 54 | `node_modules/@expo/metro` lock entry | gebaut; exact 0.83.3 pin |
-| Metro asset parser | derive bundled image dimensions | `metro/src/Assets.js` | gebaut; vulnerable package dependency on 0.83.3, vendored parser on 0.83.8 |
-| Local image-size backport | bound malformed-image parsing | `vendor/image-size` | quarantäne after H5 is proven; retain until no consumer remains |
-| Security regression | reject malformed image loops | `vendor/image-size/security-regression.test.mjs` | gebaut; must be replaced or retargeted only with equivalent Metro coverage |
+| Mobile manifest/lock | pin the citizen app build graph | `apps/mobile/package.json` | gebaut; coherent Metro 0.83.8 family |
+| Representative manifest/lock | pin the representative app build graph | `apps/representative/package.json` | gebaut; coherent Metro 0.83.8 family |
+| Expo Metro adapter | select Metro for Expo SDK 54 | `node_modules/@expo/metro` lock entry | gebaut; exact 0.83.3 declaration overridden with tested 0.83.8 family |
+| Metro asset parser | derive bundled image dimensions | `metro/src/Assets.js` | gebaut; internal bounded parser on 0.83.8 |
+| Local image-size backport | former bounded parser | `vendor/image-size` | quarantäne; retained in repo but absent from both installed graphs |
+| Security regression | reject malformed image loops | `vendor/image-size/metro-image-parser-regression.test.mjs` | gebaut; 26 parser/absence/validity checks |
 
 ## 4. Verdrahtung
 
@@ -81,4 +81,8 @@ mindmap
 
 **Modul:** Mobile/Representative Build Toolchain. **Hop:** H2–H6.
 
-The worker may change only both app manifests/locks, a focused regression test if required, this map and bounded T-506 report/status entries. It must install serially with `npm ci`, keep all Metro-family packages coherent at 0.83.8, prove `npm ls image-size` has no remaining node, run both suites/typechecks/Expo dependency validation and production-equivalent bundle or native build checks, and stop on incompatibility. Application source, native configuration, vendor implementation, API, CI, deploy and production remain untouched.
+**Ergebnis:** Both manifests and locks now force one coherent Metro 0.83.8 family; `image-size` is absent from both installed graphs. The 26-case Metro parser regression, both workspace suites/typechecks, Expo dependency checks, Android production exports, npm audits/signatures and the independent Security Diff Scan all passed.
+
+**Offen:** Expo 54 still declares exact Metro 0.83.3, three unused `@expo/metro` shims point at files removed in 0.83.8, and a signed Gradle/AAB, iOS bundle, HMR and device runtime were not exercised. These are explicit compatibility limits, not hidden gates.
+
+**Nächster Knoten:** retire stale backport documentation only after merge closes alerts 95–98. Application source, native configuration, vendor implementation, API, CI, deploy and production remain untouched.
