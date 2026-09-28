@@ -92,3 +92,41 @@ EH --> EL : alembic / seeds / host uvicorn
 EA --> EC : internal service network
 ET --> EC : pin bindings + service-DNS contract
 @enduml
+
+@startmindmap
+' EKA-53 — Public DeepL Usage Route Boundary (base 4cc11930)
+* Public DeepL usage transparency
+** Community client
+*** gebaut: docs/community.html::fetchDeeplUsage
+** Dashboard consumers
+*** gebaut: six direct or proxied call sites
+** Admin API router
+*** quarantäne: admin.py::deepl_usage (anonymous below admin prefix)
+** Public API router
+*** offen: GET /api/v1/public/deepl/usage
+** DeepL provider
+*** gebaut: GET /v2/usage with server-side credential
+** Route contract tests
+*** offen: new public path and old-path absence
+@endmindmap
+
+@startuml
+' EKA-53 component diagram — arrows only for opened hops D1-D5
+skinparam componentStyle rectangle
+component "Community transparency\ncommunity.html" as COMMUNITY
+component "Dashboard consumers\napps/dashboard/src" as DASHBOARD
+component "FastAPI composition\nmain.py" as MAIN
+component "Admin API router\nadmin.py" as ADMIN
+component "Public API router\npublic_api.py" as PUBLIC
+component "DeepL usage provider\nGET /v2/usage" as DEEPL
+
+COMMUNITY --> ADMIN : D1 GET /api/v1/admin/deepl/usage
+DASHBOARD --> ADMIN : neighbour calls, same contract
+MAIN --> ADMIN : D2 include_router(admin.router)
+ADMIN --> ADMIN : D3 deepl_usage without verify_admin
+ADMIN --> DEEPL : D4 configured credential, read-only
+DEEPL --> ADMIN : D5 aggregate count / limit
+ADMIN --> COMMUNITY : D5 projected public response
+ADMIN --> DASHBOARD : same projected response
+PUBLIC -[dashed]-> DEEPL : offen: corrected route owner
+@enduml
