@@ -1,143 +1,95 @@
-# Architecture Map — EKA-18 Local Developer Stack / Compose Exposure Boundary
+# Architecture Map — Container Trust Boundaries (EKA-18 + EKA-13)
 
-Basis: `origin/main 2bfda8e40dbd66c1486936f3594d7b232eb7606d` · Task: T-481 · Mapping only, no fix.
-Node: Local Developer Stack / Compose Exposure Boundary.
+Basis: `origin/main 4cc11930f4be82ba2d012def487fb34abca9da26` · Task: T-502 · Mapping only.
+
+This map preserves the accepted EKA-18 local-development boundary and adds the independently reviewed EKA-13 production-container boundary from T-483. The two nodes are adjacent but have separate change contracts.
 
 ## 1. Grundidee
 
-- Ekklesia.gr is a digital direct-democracy platform where Greek citizens vote on real parliamentary bills and municipal decisions (`README.md` "What is Ekklesia?").
-- A developer brings the platform up locally by starting the datastores via Compose, then running migrations/seeds and the API/web on the host (`README.md::Quick Start` steps 2–5).
-- The Compose stack `infra/docker/docker-compose.yml` defines `db` (PostgreSQL), `redis` and `api` on one default Docker network.
-- Host-side tools (alembic, seeds, host uvicorn) reach the datastores through the published host ports using `apps/api/config.py::Settings` defaults (`localhost` DB/Redis).
-- System boundary of this node: the host network listeners created by Compose `ports:` plus the credentials interpolated into `environment:`. Production compose (`infra/docker/docker-compose.prod.yml`) is a separate neighbour and not on this trace.
-- Audit record: `docs/community-audits/EKA_PNYX_Full_Scope_Audit_2026-09-15.md::EKA-18` (Info, "accepted risk if developers do not run it on shared networks; note in README").
+- The local Compose stack publishes PostgreSQL and Redis for host-side migrations/tools. EKA-18 is source-fixed on current main: those two datastore ports bind to IPv4 loopback; the API's intentional port 8000 stays externally bindable for device testing.
+- The production Compose stack gives `monitor` controlled Docker access through `docker-proxy`. That proxy mounts the host Docker socket, exposes the Docker API on the shared application network and therefore sits on a host-root-equivalent trust boundary.
+- EKA-13 is still source-open: `docker-proxy` uses mutable `:latest`; `CONTAINERS=1` and `POST=1` expose a broader Docker API namespace than the monitor's intended restart call. This task maps only the first narrow repair: immutable image provenance.
 
-## 2. Spur (one trace, hops opened)
+## 2. Hop-Liste
 
-| # | From → To | Datum over the edge |
+### Node A — EKA-18 Local Developer Stack (built)
+
+| Hop | From → To | Current invariant |
 | --- | --- | --- |
-| H1 | `README.md::Quick Start` step 2 → `infra/docker/docker-compose.yml` | `cd infra/docker && docker compose up -d` (project dir = `infra/docker`, no `.env` present there) |
-| H2 | `docker-compose.yml::services.db.environment` → Compose interpolation | `POSTGRES_PASSWORD: ${DB_PASSWORD:-<dev literal>}`; unset shell var ⇒ public dev literal |
-| H3 | `docker-compose.yml::services.db.ports` → host listener | short syntax `"5432:5432"`, no `host_ip` ⇒ bind on all host interfaces |
-| H4 | `docker-compose.yml::services.redis.ports` → host listener | `"6379:6379"`, no `host_ip`; no `command`/`requirepass` ⇒ unauthenticated Redis on all interfaces |
-| H5 | `docker-compose.yml::services.api.environment` → API container | `DATABASE_URL=…${DB_PASSWORD:-<dev literal>}@db/ekklesia`, `REDIS_URL=redis://redis:6379`, `SERVER_SALT=${SERVER_SALT:-<dev literal>}`, `ENV=development` |
-| H6 | API container → `db`/`redis` via service DNS | internal Docker network `default`; does **not** use host ports |
-| H7 | `docker-compose.yml::services.api.ports` → host listener | `"8000:8000"`, all interfaces; uvicorn `--host 0.0.0.0 --reload` |
-| H8 | `README.md::Quick Start` steps 3–4 → `apps/api/config.py::Settings` | host `alembic upgrade head`, seeds, `uvicorn main:app` read `database_url` (`…@localhost/ekklesia`, same dev literal) and `redis_url` (`redis://localhost:6379`) |
-| H9 | `apps/api/alembic/env.py` (l.25–27) / `apps/api/database.py::engine` → host port 5432 | `settings.database_url` ⇒ requires DB published at least on host loopback |
-| H10 | `apps/api/security_startup.py::validate_server_salt_config` | `ENV=development` ⇒ weak `SERVER_SALT` only warns (non-production), fail-closed only in production |
+| A1 | `README.md::Quick Start` → `infra/docker/docker-compose.yml` | developer starts `db`, `redis`, `api` |
+| A2 | Compose interpolation → db/api | public local credential fallbacks remain development-only |
+| A3 | `services.db.ports` → host | `127.0.0.1:5432:5432`; no non-loopback listener |
+| A4 | `services.redis.ports` → host | `127.0.0.1:6379:6379`; no non-loopback listener |
+| A5 | API → db/redis | service DNS on the internal Compose network; unaffected by host binding |
+| A6 | host settings/alembic → db/redis | localhost access remains valid |
+| A7 | `services.api.ports` → host | port 8000 remains intentionally all-interface and is outside EKA-18 |
+| A8 | `test_dev_compose_exposure.py` | pins A3/A4 and positive internal/host control paths |
 
-Static reproducer result (run 2026-09-28, `DB_PASSWORD`/`SERVER_SALT` unset, no containers started):
-`docker compose -f infra/docker/docker-compose.yml config --format json` ⇒
-`db  ports=[host_ip=<absent>, 5432→5432]`, `redis ports=[host_ip=<absent>, 6379→6379]`, `api ports=[host_ip=<absent>, 8000→8000]`, all on network `default`; `POSTGRES_PASSWORD`, `DATABASE_URL`, `SERVER_SALT` resolve to dev-fallback literals; `REDIS_URL` carries no credentials.
+### Node B — EKA-13 Production Container Trust Boundary (open)
+
+| Hop | From → To | Current invariant / gap |
+| --- | --- | --- |
+| B1 | `docker-compose.prod.yml::monitor.build` → `apps/monitor/Dockerfile` | `python:3.11-slim`, no digest and no explicit `USER`; monitor receives secrets but no host mount |
+| B2 | monitor → `DOCKER_HOST=tcp://docker-proxy:2375` | `attempt_tier2` uses Docker SDK `containers.get/restart`; gated by `AUTO_RECOVERY_T2` and a client-side allowlist |
+| B3 | `services.docker-proxy.image` → GHCR | `ghcr.io/tecnativa/docker-socket-proxy:latest`; mutable provenance, no release tag/digest |
+| B4 | docker-proxy environment → Docker API policy | `CONTAINERS=1`, `POST=1`, no auth in Compose; policy is broader than restart-only |
+| B5 | docker-proxy → host Docker daemon | `/var/run/docker.sock:/var/run/docker.sock:ro`; read-only mount does not make Docker API calls read-only |
+| B6 | application network → docker-proxy | every compromised container on `net_ekklesia` can address port 2375 |
+| B7 | `services.ollama.image` → Docker registry | separate mutable `ollama/ollama:latest`, profile-gated; not part of the first fix |
+| B8 | dashboard/monitor Dockerfiles → runtime user | tag-pinned base images without digest; no explicit `USER`; separate hardening scope |
 
 ## 3. Module
 
-| Modul | Eine Aufgabe | Einstieg | Stand |
-| --- | --- | --- | --- |
-| Quick Start doc | tells developers how to start the local stack | `README.md::Quick Start` | gebaut (no shared-network warning — EKA-18 audit asked for one) |
-| Dev Compose: db | local PostgreSQL with dev credential | `infra/docker/docker-compose.yml::services.db` | gebaut; exposure = Befund |
-| Dev Compose: redis | local Redis cache/limits | `infra/docker/docker-compose.yml::services.redis` | gebaut; exposure = Befund |
-| Dev Compose: api | containerised API with reload | `infra/docker/docker-compose.yml::services.api` | gebaut |
-| Compose interpolation | resolves `${VAR:-default}` from shell/`.env` | Compose engine (`docker compose config`) | gebaut (external tool) |
-| API settings | host-side default connection strings | `apps/api/config.py::Settings` | gebaut |
-| DB access (host path) | migrations and ORM engine | `apps/api/alembic/env.py`, `apps/api/database.py::engine` | gebaut |
-| Salt startup guard | fail closed on weak salt in production | `apps/api/security_startup.py::validate_server_salt_config` | gebaut (dev = warn only, by design) |
-| Compose exposure regression test | pin loopback-only datastore binding | — | offen |
-| Production compose | prod stack | `infra/docker/docker-compose.prod.yml` | aufgeschoben (neighbour, out of scope; not on trace) |
+| Module | One responsibility | Status |
+| --- | --- | --- |
+| Quick Start + dev Compose | reproducible local stack | built |
+| Dev db/redis bindings | host tool access without LAN exposure | built by #393 |
+| Dev compose regression | preserve loopback and service-DNS paths | built |
+| Production monitor | health checks and optional Tier-2 restart | built |
+| Production docker-proxy | filtered Docker API bridge | built, high-privilege boundary |
+| docker-proxy provenance | immutable released tag + manifest digest | open, next narrow fix |
+| docker-proxy capability policy | restrict exposed endpoints/network principals | open, separate security design |
+| Ollama provenance | immutable optional AI image | open, separate task |
+| Dashboard/monitor non-root | explicit runtime users | open, separate task |
 
 ## 4. Verdrahtung
 
-- README Quick Start → dev compose: `docker compose up -d` from `infra/docker` starts `db`, `redis`, `api`.
-- Compose interpolation → db/api: unset `DB_PASSWORD` yields the public dev literal for both `POSTGRES_PASSWORD` and `DATABASE_URL`, so they stay consistent.
-- db.ports → host: `5432` published on every host interface (no `host_ip`).
-- redis.ports → host: `6379` published on every host interface, no auth.
-- api → db/redis: service DNS `db` / `redis` on network `default`; independent of `ports:`.
-- api.ports → host: `8000` on every interface (API surface, has its own auth/rate limits).
-- Host tools → db/redis: `config.py::Settings` defaults hit `localhost:5432` / `localhost:6379`; this is the legitimate reason the datastore ports are published at all.
-- Compose `ENV=development` → salt guard: weak salt only logs a warning.
+- `monitor.py::attempt_tier2` is the intended writer. It selects a service from `T2_ALLOWED_SERVICES` and invokes `restart()` through the Docker SDK.
+- The allowlist exists only in the client. The proxy itself is reachable without authentication from the shared production application network.
+- Mounting the socket `:ro` controls the filesystem entry, not Docker API method semantics. With `POST=1`, allowed namespaces can mutate the host daemon.
+- A released tag plus manifest-list digest makes the proxy bytes reproducible across supported platforms. It does not reduce API capabilities; that remains explicitly open.
+- Node A never reaches Node B: dev host-port bindings and production Docker-socket authority are different Compose files and trust boundaries.
 
-## 5. Widerspruch und Lücken
+## 5. Findings and limits
 
-**Symptom:** any host on the same LAN/Wi-Fi/VPN (or the internet, on a cloud VM without a filtering firewall) can reach `<dev-host>:5432` and `<dev-host>:6379`.
+**EKA-18 current state:** source-closed. DB/Redis listen only on IPv4 loopback in the dev Compose file; host and container control paths are pinned by tests. Deployment/live listener state is not inferred.
 
-**Ursache (separated):**
-1. **Host publishing on all interfaces** — H3/H4: `ports` short syntax without `host_ip`. This is the root cause of reachability; the other two only determine impact.
-2. **Weak DB fallback** — H2: `${DB_PASSWORD:-<dev literal>}`; the literal is public in the repo, so reachability ⇒ full DB login.
-3. **Unauthenticated Redis** — H4: no `requirepass`; reachability ⇒ read/write of rate-limit and application state used by `rate_limit.py`, `routers/{identity,newsletter,notify,payments,public_api,contact}.py` and `main.py`.
+**EKA-13 current source-to-sink:** mutable GHCR `:latest` → unaudited future proxy bytes → unauthenticated port 2375 on shared network → host Docker socket → container lifecycle/filesystem/log access permitted by the exposed namespace. Compromise of any network peer can cross this boundary.
 
-**Source → Sink:** `README.md::Quick Start` → `docker-compose.yml::services.{db,redis}.ports` (no `host_ip`) → Docker port publisher on `0.0.0.0`/`::` → network client authenticates with the repo-public literal (DB) or no auth (Redis) → read/write of local dev data.
+**First-fix invariant:** production Compose names one official released docker-proxy tag and its exact registry manifest digest; no mutable tag remains in that field; all environment, mounts, networks, dependency wiring and monitor behavior stay byte-for-byte unchanged.
 
-**Angreifervoraussetzung:** network-adjacent to the developer host (same L2/L3 segment, shared Wi-Fi, VPN, or public IP on a cloud dev VM), developer followed Quick Start without exporting `DB_PASSWORD`. No local code execution needed. Impact limited to dev data (seeded bills, local test identities); real production data is only at risk if a developer imports prod dumps locally. On Linux, Docker-published ports bypass UFW-style host rules — firewall itself is out of scope.
+**Not solved by the first fix:** broad `CONTAINERS` namespace, `POST=1`, shared network reachability, lack of proxy auth, monitor/container root users, Ollama `:latest`, deployed image identity and actual Tier-2 runtime behavior.
 
-**Sicherheitsinvariante:** dev datastores whose credentials are repo-public or absent are never reachable from a non-loopback host interface; the API container keeps reaching them over the internal Compose network, and host tools keep reaching them over loopback.
+## 6. Next source boundary
 
-**Legitimer lokaler Kontrollpfad (must keep working):**
-- H8/H9: host alembic, seeds and host uvicorn via `localhost:5432` / `localhost:6379` (`config.py::Settings` defaults).
-- H6: `api` container → `db`/`redis` by service DNS — unaffected by `ports:` changes.
-- Host GUI/CLI clients (psql, redis-cli) on the developer machine via loopback.
+Allowed later product diff:
 
-**Nicht automatisch betroffen:**
-- API port 8000 (H7): public-by-purpose HTTP surface with its own auth; LAN access may be used for device testing. Not part of EKA-18; leave as is (could be a separate hardening note).
-- Internal service-DNS flows (H6): no host listener involved.
-- `SERVER_SALT` dev fallback (H5/H10): only affects nullifier derivation of local dev identities; guarded fail-closed in production by `security_startup.py`. Not part of the exposure fix.
+1. `infra/docker/docker-compose.prod.yml`: one `services.docker-proxy.image` line only, from `:latest` to an official released tag plus manifest digest.
+2. One focused static/Compose regression test that rejects `latest`, missing digest, wrong repository or changes to the existing proxy capability/mount/network contract.
+3. Architecture/report updates only.
 
-**Lücken / Widerspruch:**
-- Audit EKA-18 says "note in README"; `README.md::Quick Start` contains no such note.
-- No regression test pins the dev compose port binding (module `offen`).
-- `apps/api/config.py::Settings.database_url` duplicates the same dev literal as the compose fallback. Changing the compose fallback to a required var (`${DB_PASSWORD:?}`) would break H8/H9 unless `config.py`/`.env` also change ⇒ that opens a second hop and is **not** the narrowest fix.
-- Redis `requirepass` would break every host-side `redis://localhost:6379` default (`config.py`, `main.py`, several routers) ⇒ multi-file change, not narrowest; Redis-auth for production is out of scope anyway.
-- IPv6: `127.0.0.1:` binds IPv4 loopback only; host tools resolving `localhost` to `::1` first fall back to IPv4 (asyncpg/redis-py try all addresses). Verify on the fix PR.
+Selection requirements before implementation: official Tecnativa release/tag, official GHCR manifest-list digest, registry metadata inspection without production access, and local compatibility proof for the Docker SDK `/version`, list/get and restart path. Image pull/run is permitted only in the later JEV-gated test task; no production host or deploy.
 
-## 6. Diagrammdateien
+## 7. Diagram files
 
-- `docs/architecture/map.puml` (mindmap + component diagram)
-- `docs/architecture/main-path.puml` (sequence of the trace)
-- PlantUML not installed on the mapping host ⇒ sources written, not rendered.
+- `docs/architecture/map.puml` → `map.svg`, `map_001.svg`
+- `docs/architecture/main-path.puml` → `main-path.svg`, `main-path_001.svg`
 
 ```mermaid
-mindmap
-  root((Local dev stack: compose up to host listeners))
-    Quick Start doc
-      gebaut: README.md::Quick Start
-      offen: shared-network note
-    Dev Compose db
-      gebaut: services.db ports 5432 all-interfaces
-      gebaut: POSTGRES_PASSWORD dev fallback
-    Dev Compose redis
-      gebaut: services.redis ports 6379 all-interfaces no auth
-    Dev Compose api
-      gebaut: services.api env DATABASE_URL REDIS_URL SERVER_SALT
-      gebaut: service DNS db redis
-      gebaut: ports 8000
-    API settings host path
-      gebaut: config.py::Settings localhost defaults
-      gebaut: alembic/env.py, database.py::engine
-    Salt guard
-      gebaut: security_startup.py::validate_server_salt_config
-    Regression test
-      offen: dev compose exposure test
+flowchart LR
+  D[Dev Quick Start] --> DC[Dev Compose]
+  DC --> L[Loopback db/redis]
+  M[Production monitor] --> P[docker-proxy :2375]
+  P --> S[Host Docker socket]
+  R[Official released tag + digest] -. next provenance fix .-> P
 ```
-
-## 7. Nächster Schritt (engste Reparaturgrenze)
-
-**Modul:** Dev Compose (db, redis). **Hop:** H3 + H4 (`services.{db,redis}.ports`).
-
-**Fix contract (for a later, separately approved run):**
-1. `infra/docker/docker-compose.yml`: `db.ports` → `"127.0.0.1:5432:5432"`, `redis.ports` → `"127.0.0.1:6379:6379"`. Nothing else in the file (keep fallbacks, keep `api` 8000, keep `version`).
-2. New focused test `apps/api/tests/test_dev_compose_exposure.py` (static YAML parse; PyYAML comes transitively via `uvicorn[standard]` — use `pytest.importorskip("yaml")`):
-   - negative: every `ports` entry of `db` and `redis` has host IP `127.0.0.1` (short or long syntax `host_ip`); fail on missing host IP, `0.0.0.0`, `::`.
-   - positive control (host tools): `db` publishes target 5432 and `redis` target 6379 on loopback (published port still present ⇒ `config.py` localhost defaults still work).
-   - positive control (internal network): `api.environment.DATABASE_URL` host is `db`, `REDIS_URL` host is `redis`, and `api.depends_on` contains both.
-   - out-of-scope guard: `api` ports are not asserted.
-3. `README.md::Quick Start`: one note — datastores bind to loopback only; dev credentials are public, never run this compose on shared/prod hosts; set `DB_PASSWORD` for anything non-local.
-
-**Vorher-Reproducer (static, no containers):**
-```bash
-cd infra/docker && env -u DB_PASSWORD docker compose -f docker-compose.yml config --format json \
- | python3 -c 'import json,sys; s=json.load(sys.stdin)["services"]; [print(n,[(p.get("host_ip","<all>"),p["published"],p["target"]) for p in s[n].get("ports",[])]) for n in ("db","redis","api")]'
-# before fix: db/redis/api show host_ip <all>
-# after fix:  db/redis show 127.0.0.1; api unchanged; api env still targets db / redis
-```
-
-**Unberührt bleiben:** `infra/docker/docker-compose.prod.yml`, `infra/docker/app.yml`, `infra/hetzner/*`, mirror compose, `apps/api/config.py`, `apps/api/main.py`, routers, `security_startup.py`, `.env*`, workflows, packages/lockfiles. Neighbour files enter scope only if a hop above proves they define H3/H4 — none do.

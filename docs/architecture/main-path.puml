@@ -1,37 +1,37 @@
 @startuml
-' EKA-18 main path — built behaviour at base 2bfda8e (no fix simulated)
-title Local dev stack: README Quick Start -> host listeners
-
+title EKA-18 built path — local tools retain access without LAN exposure
 actor Developer
-participant "Quick Start doc\nREADME.md" as README
-participant "Compose interpolation" as INTERP
-participant "Dev Compose db" as DB
-participant "Dev Compose redis" as REDIS
-participant "Dev Compose api" as API
-participant "Salt guard\nsecurity_startup.py" as GUARD
-participant "API settings\nconfig.py::Settings" as SETTINGS
-participant "DB access\nalembic/env.py" as DBACCESS
-actor "Network-adjacent host" as ADJ
+participant "Dev Compose" as Compose
+database "PostgreSQL\n127.0.0.1:5432" as DB
+participant "Redis\n127.0.0.1:6379" as Redis
+participant "API container" as API
 
-Developer -> README : follow step 2
-README -> INTERP : cd infra/docker && docker compose up -d (H1)
-INTERP -> DB : POSTGRES_PASSWORD = DB_PASSWORD or dev fallback (H2)
-INTERP -> API : DATABASE_URL, REDIS_URL, SERVER_SALT, ENV=development (H5)
-DB -> DB : publish 5432 without host_ip -> all interfaces (H3)
-REDIS -> REDIS : publish 6379 without host_ip, no auth -> all interfaces (H4)
-API -> API : publish 8000 -> all interfaces (H7)
-API -> GUARD : validate_server_salt_config, non-production -> warn only (H10)
-API -> DB : connect via service DNS db (H6)
-API -> REDIS : connect via service DNS redis (H6)
+Developer -> Compose : docker compose up -d
+Compose -> DB : publish IPv4 loopback only
+Compose -> Redis : publish IPv4 loopback only
+Developer -> DB : migrations/seeds via localhost
+Developer -> Redis : local tooling via localhost
+API -> DB : service DNS db:5432
+API -> Redis : service DNS redis:6379
+@enduml
 
-== legitimate host control path ==
-Developer -> README : follow steps 3-4
-README -> SETTINGS : alembic / seeds / uvicorn on host (H8)
-SETTINGS -> DBACCESS : settings.database_url (localhost) (H9)
-DBACCESS -> DB : localhost:5432 via published port (H9)
-SETTINGS -> REDIS : redis_url localhost:6379 (H8)
+@startuml
+title EKA-13 path — monitor restart authority crosses host Docker boundary
+participant "Monitor" as Monitor
+participant "docker-proxy\nmutable latest" as Proxy
+database "Host Docker daemon" as Docker
+participant "Allowed service container" as Service
+participant "Other net_ekklesia peer" as Peer
 
-== exposure (symptom) ==
-ADJ -> DB : <dev-host>:5432 with repo-public dev credential
-ADJ -> REDIS : <dev-host>:6379 without auth
+Monitor -> Monitor : AUTO_RECOVERY_T2 + client allowlist
+Monitor -> Proxy : Docker SDK /version, containers.get, restart
+Peer -> Proxy : same unauthenticated network path
+Proxy -> Docker : Docker API via mounted socket
+Docker -> Service : restart / inspect / allowed namespace action
+
+note over Proxy
+Next narrow fix changes provenance only:
+official release tag + manifest digest.
+Capabilities and reachability remain separate open work.
+end note
 @enduml

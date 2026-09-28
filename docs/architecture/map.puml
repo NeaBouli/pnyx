@@ -1,51 +1,50 @@
 @startmindmap
-' EKA-18 — Local Developer Stack / Compose Exposure Boundary (base 2bfda8e)
-* Local dev stack: compose up to host listeners
-** Quick Start doc
-*** gebaut: README.md::Quick Start
-*** offen: shared-network note (EKA-18 audit)
-** Dev Compose db
-*** gebaut: docker-compose.yml::services.db.ports 5432 (all interfaces)
-*** gebaut: docker-compose.yml::services.db.environment POSTGRES_PASSWORD (dev fallback)
-** Dev Compose redis
-*** gebaut: docker-compose.yml::services.redis.ports 6379 (all interfaces, no auth)
-** Dev Compose api
-*** gebaut: docker-compose.yml::services.api.environment DATABASE_URL / REDIS_URL / SERVER_SALT
-*** gebaut: service DNS db / redis (network default)
-*** gebaut: docker-compose.yml::services.api.ports 8000
-** API settings (host path)
-*** gebaut: apps/api/config.py::Settings (localhost defaults)
-*** gebaut: apps/api/alembic/env.py
-*** gebaut: apps/api/database.py::engine
-** Salt guard
-*** gebaut: apps/api/security_startup.py::validate_server_salt_config
-** Regression test
-*** offen: dev compose exposure test
+* Container trust boundaries
+** EKA-18 local dev stack
+*** gebaut: Quick Start -> dev Compose
+*** gebaut: db 127.0.0.1:5432
+*** gebaut: redis 127.0.0.1:6379
+*** gebaut: api service DNS db/redis
+*** gebaut: host localhost tools
+*** gebaut: focused regression
+** EKA-13 production stack
+*** monitor
+**** gebaut: Docker SDK restart path
+**** gebaut: AUTO_RECOVERY_T2 + client allowlist
+*** docker-proxy
+**** offen: latest -> released tag + manifest digest
+**** risk: CONTAINERS=1 + POST=1
+**** risk: shared net_ekklesia, no proxy auth
+**** risk: host Docker socket
+*** neighbours
+**** offen separate: Ollama latest
+**** offen separate: dashboard/monitor non-root
 @endmindmap
 
 @startuml
-' Component diagram — arrows only for hops on the trace
 skinparam componentStyle rectangle
-component "Quick Start doc\nREADME.md" as README
-component "Compose interpolation\ndocker compose" as INTERP
-component "Dev Compose db\nservices.db" as DB
-component "Dev Compose redis\nservices.redis" as REDIS
-component "Dev Compose api\nservices.api" as API
-component "API settings (host path)\nconfig.py::Settings" as SETTINGS
-component "DB access\nalembic/env.py, database.py::engine" as DBACCESS
-component "Salt guard\nsecurity_startup.py" as GUARD
-component "Host listeners\n0.0.0.0:5432 / 0.0.0.0:6379 / 0.0.0.0:8000" as HOST
+package "EKA-18 dev (built)" {
+  component "Quick Start" as QUICK
+  component "Dev Compose" as DEV
+  component "Host tools" as HOSTTOOLS
+  database "PostgreSQL\n127.0.0.1:5432" as DEVDB
+  component "Redis\n127.0.0.1:6379" as DEVREDIS
+  QUICK --> DEV
+  HOSTTOOLS --> DEVDB
+  HOSTTOOLS --> DEVREDIS
+  DEV --> DEVDB : internal DNS db
+  DEV --> DEVREDIS : internal DNS redis
+}
 
-README --> INTERP : H1 docker compose up -d
-INTERP --> DB : H2 POSTGRES_PASSWORD fallback
-INTERP --> API : H5 DATABASE_URL / REDIS_URL / SERVER_SALT / ENV
-DB --> HOST : H3 ports 5432:5432
-REDIS --> HOST : H4 ports 6379:6379
-API --> HOST : H7 ports 8000:8000
-API --> DB : H6 service DNS db
-API --> REDIS : H6 service DNS redis
-README --> SETTINGS : H8 alembic / seeds / uvicorn on host
-SETTINGS --> DBACCESS : H9 settings.database_url
-DBACCESS --> HOST : H9 localhost:5432
-API --> GUARD : H10 ENV=development
+package "EKA-13 production (open)" {
+  component "Monitor\nDocker SDK" as MON
+  component "docker-proxy\nlatest, CONTAINERS=1, POST=1" as PROXY
+  component "Official GHCR\nrelease tag + digest" as GHCR
+  database "Host Docker daemon" as DOCKER
+  cloud "net_ekklesia peers" as PEERS
+  MON --> PROXY : tcp://docker-proxy:2375
+  PEERS --> PROXY : no proxy auth
+  PROXY --> DOCKER : mounted docker.sock
+  GHCR ..> PROXY : next provenance fix
+}
 @enduml
