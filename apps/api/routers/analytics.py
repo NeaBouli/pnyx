@@ -8,6 +8,7 @@ k-Anonymity: Demografische Daten nur wenn Gruppe >= 10 Stimmen.
 @ai-anchor MOD06_ANALYTICS
 """
 import logging
+import sys
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, Query, HTTPException
@@ -244,9 +245,16 @@ async def votes_timeline(
                 timeline[day][vote_key] = row.count
             timeline[day]["total"] += row.count
     except (AttributeError, TypeError, ValueError):
+        exc_type, _, exc_traceback = sys.exc_info()
+        safe_error = (
+            exc_type("timeline_processing_failed")
+            if exc_type
+            else RuntimeError("timeline_processing_failed")
+        )
         logger.exception(
             "[votes-timeline] Row processing failed (bill_id=%r, days=%s)",
             bill_id, days,
+            exc_info=(exc_type, safe_error, exc_traceback),
         )
         return {
             "period_days": days, "bill_id": bill_id,

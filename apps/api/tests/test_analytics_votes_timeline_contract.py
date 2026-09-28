@@ -93,6 +93,9 @@ async def test_row_processing_error_is_degraded_without_leaking(caplog):
     assert len(records) == 1
     assert records[0].exc_info is not None
     assert SECRET not in records[0].getMessage()
+    formatted_log = logging.Formatter().format(records[0])
+    assert SECRET not in formatted_log
+    assert "timeline_processing_failed" in formatted_log
 
 
 @pytest.mark.asyncio
