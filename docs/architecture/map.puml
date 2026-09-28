@@ -114,3 +114,43 @@ MOB --> APIT1 : K6-K5 Tier-1 bytes
 T1LIB ..> APIT1 : K7 layout mismatch
 APIT1 --> T1LIB : K9 issue_receipt / verifyReceipt
 @enduml
+
+@startmindmap
+' EKA-24 — Test-only Legacy Nullifier Helper Boundary on exact PR 397 head
+* Web Crypto: product export vs two test-only v1 nullifier callers
+** Web Crypto product module
+*** quarantäne: crypto.ts::computeNullifier accepts serverSalt
+** Legacy Web Crypto tests
+*** gebaut: crypto.test.ts five synthetic cases
+** EKA-22 Web KAT
+*** gebaut: crypto-kat.test.ts exact shared vector
+** Web production callers
+*** gebaut: vote / relevance / SSO / compass imports
+*** offen: no edge to computeNullifier
+** Server nullifier domain
+*** aufgeschoben: server-owned salt and KDF
+@endmindmap
+
+@startuml
+' EKA-24 component diagram — arrows only for opened test hops
+skinparam componentStyle rectangle
+component "Web test command\npackage.json::test" as TESTCMD
+component "Vitest" as VITEST
+component "Legacy Web Crypto tests\ncrypto.test.ts" as LEGACY
+component "EKA-22 Web KAT\ncrypto-kat.test.ts" as KAT
+component "Shared EKA-22 fixture\neka22_kat_v1.json" as FIXTURE
+component "Web Crypto product module\ncrypto.ts::computeNullifier" as HELPER
+component "Web Crypto API\nTextEncoder / subtle.digest" as WEBCRYPTO
+component "Hex helper\ncrypto.ts::bytesToHex" as HEX
+component "Production callers\nvote / relevance / SSO / compass" as PROD
+
+TESTCMD --> VITEST : N1 vitest run
+VITEST --> LEGACY : N1 discover suite
+VITEST --> KAT : N1 discover suite
+LEGACY --> HELPER : N2 synthetic phone + salt
+FIXTURE --> KAT : N3 v1_nullifier vector
+KAT --> HELPER : N3 synthetic phone + salt
+HELPER --> WEBCRYPTO : N4 SHA-256(phone:salt)
+WEBCRYPTO --> HEX : N5 digest bytes
+PROD .. HELPER : no import or call
+@enduml
