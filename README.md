@@ -136,6 +136,8 @@ uvicorn main:app --reload
 cd ../web && npm ci && npm run dev
 ```
 
+> **Local only:** `infra/docker/docker-compose.yml` is a developer stack. PostgreSQL and Redis are published on `127.0.0.1` only (`localhost:5432` / `localhost:6379`); the API container reaches them via the Compose service names `db` / `redis`. The dev credentials in this file are public and Redis has no password — never run this compose stack on shared or production hosts, and set `DB_PASSWORD` for anything that is not your own machine.
+
 ### Tests
 ```bash
 # API Tests
