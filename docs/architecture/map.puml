@@ -49,3 +49,43 @@ SETTINGS --> DBACCESS : H9 settings.database_url
 DBACCESS --> HOST : H9 localhost:5432
 API --> GUARD : H10 ENV=development
 @enduml
+
+@startmindmap
+' EKA-64 — MOD-WEB static crawler anchor delivery (base 4cc1193, T-504, mapping only)
+* MOD-WEB: crawler anchor request to HTTP status
+** Next config (apps/web/next.config.mjs)
+*** gebaut: nextConfig.redirects (only /download/ekklesia-latest.apk)
+*** gebaut: nextConfig.headers (Referrer-/Permissions-Policy, no status effect)
+** Proxy (apps/web/src/proxy.ts)
+*** gebaut: config.matcher excludes dotted paths (.*\\..*)
+*** gebaut: proxy() — not invoked for /ai.txt, /llms-full.txt, /llms.txt
+** Public bundle (apps/web/Dockerfile.prod)
+*** gebaut: COPY docs/robots.txt docs/sitemap.xml docs/llms.txt ./public/
+*** gebaut: runner COPY /app/public + .next/standalone
+*** offen: ai.txt / llms-full.txt (no source file, not copied)
+** App router locale segment
+*** gebaut: src/app/[locale]/page.tsx::HomePage redirect("https://ekklesia.gr")
+*** gebaut: src/app/[locale]/layout.tsx::LocaleLayout (no locale validation)
+*** offen: invalid-locale notFound() guard (EKA-64 soft-404 cause)
+** Regression test
+*** gebaut: src/proxy.test.ts (download redirects, root rewrite)
+*** offen: dotted single-segment miss -> 404 test
+@endmindmap
+
+@startuml
+' EKA-64 component diagram — arrows only for hops on the traced request
+skinparam componentStyle rectangle
+actor "AI crawler" as CRAWLER
+component "Next config\nnext.config.mjs::redirects" as NCFG
+component "Proxy\nproxy.ts::config.matcher" as PROXY
+component "Public bundle\nDockerfile.prod COPY -> public/" as PUBLIC
+component "Locale page\n[locale]/page.tsx::HomePage" as LOCALE
+component "HTTP response" as RESP
+
+CRAWLER --> NCFG : A1 GET /ai.txt | /llms-full.txt | /llms.txt
+NCFG --> PROXY : A2 no redirect source matches
+PROXY --> PUBLIC : A3 matcher excludes dotted path, proxy() skipped
+PUBLIC --> RESP : A4 hit /llms.txt -> 200 text/plain
+PUBLIC --> LOCALE : A5 miss /ai.txt -> dynamic [locale]="ai.txt"
+LOCALE --> RESP : A6 redirect("https://ekklesia.gr") -> 307 text/html
+@enduml

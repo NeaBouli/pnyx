@@ -141,3 +141,109 @@ cd infra/docker && env -u DB_PASSWORD docker compose -f docker-compose.yml confi
 ```
 
 **Unberührt bleiben:** `infra/docker/docker-compose.prod.yml`, `infra/docker/app.yml`, `infra/hetzner/*`, mirror compose, `apps/api/config.py`, `apps/api/main.py`, routers, `security_startup.py`, `.env*`, workflows, packages/lockfiles. Neighbour files enter scope only if a hop above proves they define H3/H4 — none do.
+
+---
+
+# Architecture Map — EKA-64 MOD-WEB Static Crawler Anchor Delivery
+
+Basis: `main 4cc11930f4be82ba2d012def487fb34abca9da26` · Task: T-504 · Mapping only, no fix.
+Node: MOD-WEB static crawler anchor delivery; hop `/ai.txt|/llms-full.txt` → proxy matcher exclusion for dotted paths → Next static-file lookup / standalone public bundle → HTTP status and content type.
+The EKA-18 map above stays unchanged; EKA-64 is appended as separate diagrams in the same files.
+
+## 1. Grundidee
+
+- `ekklesia.gr` is served by the Next.js standalone container `ekklesia-web` behind Traefik (`infra/docker/docker-compose.prod.yml::services.web`, Host rule only, no path rewriting).
+- The static GitHub-Pages content under `docs/` is copied into `public/` at image build, including the AI anchor `llms.txt` (`apps/web/Dockerfile.prod`, `COPY docs/robots.txt docs/sitemap.xml docs/llms.txt ./public/`).
+- The proxy (`apps/web/src/proxy.ts`) only handles non-dotted paths; `config.matcher` excludes every path containing a dot.
+- The audit (`docs/community-audits/EKA_PNYX_AI_Readiness_Audit_2026-09-15.md` l.140–153, EKA-64) observed `/ai.txt` and `/llms-full.txt` answering `307 → landing` and attributed it to the proxy. Historical live evidence only.
+
+## 2. Spur (one trace, hops opened)
+
+| # | From → To | Datum over the edge |
+| --- | --- | --- |
+| A1 | crawler → Next server | `GET /ai.txt`, `/llms-full.txt` (missing) and `/llms.txt` (existing) |
+| A2 | `apps/web/next.config.mjs::nextConfig.redirects` | only source `/download/ekklesia-latest.apk` ⇒ no match; `headers()` adds policy headers only |
+| A3 | `apps/web/src/proxy.ts::config.matcher` `/((?!api\|_next\|_vercel\|.*\\..*).*)` | dotted path ⇒ `proxy()` and `intlMiddleware` are **not** invoked |
+| A4 | Next static-file lookup in `/app/public` (runner `COPY --from=builder /app/public ./public`) | `/llms.txt` hit ⇒ `200`, `text/plain; charset=UTF-8` |
+| A5 | static miss → App Router `src/app/[locale]/page.tsx` | single dotted segment matches dynamic `[locale]` with `locale="ai.txt"`; build lists `ƒ /[locale]` (dynamic, no `generateStaticParams`, no `dynamicParams=false`); `[locale]/layout.tsx::LocaleLayout` does not validate the locale |
+| A6 | `[locale]/page.tsx::HomePage` → response | `redirect("https://ekklesia.gr")` ⇒ `307 Temporary Redirect`, `location: https://ekklesia.gr`, `text/html` |
+
+Local build evidence (2026-09-28, no production request): Dockerfile.prod-equivalent staging in `/tmp` (apps/web + the same `docs/` COPY list into `public/`), `npm ci --ignore-scripts`, `next build` (Next 16.3.4, Turbopack, exit 0), standalone packaging as in the runner stage, `node server.js` on `127.0.0.1:3504`, `curl --max-redirs 0`:
+
+| Path | Status | Location | Content-Type |
+| --- | --- | --- | --- |
+| `/llms.txt` | 200 | — | `text/plain; charset=UTF-8` (5470 B) |
+| `/robots.txt` | 200 | — | `text/plain; charset=UTF-8` |
+| `/ai.txt` | 307 | `https://ekklesia.gr` | `text/html; charset=utf-8` |
+| `/llms-full.txt` | 307 | `https://ekklesia.gr` | `text/html; charset=utf-8` |
+| `/xyz.txt` | 307 | `https://ekklesia.gr` | `text/html; charset=utf-8` |
+| `/el` | 307 | `https://ekklesia.gr` | `text/html; charset=utf-8` (intended) |
+| `/definitely-missing` | 307 | `/el/definitely-missing` | (proxy/next-intl locale prefix, different hop) |
+| `/x/ai.txt`, `/el/ai.txt`, `/.well-known/llms.txt` | 404 | — | `text/html; charset=utf-8` |
+
+The absolute `location: https://ekklesia.gr` without a locale prefix identifies A6 as the source; a proxy/next-intl redirect would have produced `/el/…` (see `/definitely-missing`).
+
+## 3. Module
+
+| Modul | Eine Aufgabe | Einstieg | Stand |
+| --- | --- | --- | --- |
+| Next config | build-time redirects/headers | `apps/web/next.config.mjs::nextConfig` | gebaut (not on the failure path) |
+| Proxy | locale/static redirects for non-dotted paths | `apps/web/src/proxy.ts::proxy`, `config.matcher` | gebaut (skipped for dotted paths — audit attribution wrong) |
+| Public bundle | ship `docs/` static files incl. `llms.txt` | `apps/web/Dockerfile.prod` COPY list | gebaut; `ai.txt`/`llms-full.txt` offen (do not exist in `docs/`) |
+| Locale page | `/el`, `/en` → landing | `apps/web/src/app/[locale]/page.tsx::HomePage` | gebaut; catches any dotted single segment ⇒ soft-404 = Befund |
+| Locale layout | i18n shell | `apps/web/src/app/[locale]/layout.tsx::LocaleLayout` | gebaut; no `hasLocale`/`notFound()` guard |
+| Regression test | pin routing behaviour | `apps/web/src/proxy.test.ts` | gebaut for T-350 redirects; dotted-miss → 404 offen |
+| Traefik edge | Host routing, HTTP→HTTPS | `infra/docker/docker-compose.prod.yml` labels, `infra/hetzner/traefik/traefik.yml` | gebaut (no path logic; neighbour) |
+
+## 4. Verdrahtung
+
+- A1→A2: request passes `next.config.mjs` redirects without a match.
+- A2→A3: proxy matcher excludes the dotted path, so `proxy()` never runs.
+- A3→A4: static lookup serves `public/llms.txt` with 200 text/plain.
+- A3→A5: static miss for `ai.txt`/`llms-full.txt` falls through to the dynamic `[locale]` route.
+- A5→A6: `HomePage` calls `redirect("https://ekklesia.gr")`, producing the 307 soft-404.
+
+## 5. Widerspruch und Lücken
+
+- **Widerspruch:** audit says "the Next proxy rewrites unknown paths". Source + local build show the proxy is skipped (A3); the 307 comes from `[locale]/page.tsx::HomePage` (A6).
+- Symptom reproduced at current source: EKA-64 soft-404 is **source-open**.
+- Scope is wider than the two anchors: every single-segment dotted miss (`/xyz.txt`, `/foo.json`, …) gets the same 307.
+- No `not-found.tsx` at app root or `[locale]`; a 404 would use Next's default page (status is the signal).
+- Brief mentions EKA-13 map nodes; none exist in `docs/architecture/` at base `4cc1193`. Nothing to preserve beyond EKA-18.
+- Not verified: production Traefik/CDN layers and live behaviour (no production requests by brief).
+
+## 6. Diagrammdateien
+
+- `docs/architecture/map.puml` — diagrams 3 (EKA-64 mindmap) and 4 (EKA-64 components)
+- `docs/architecture/main-path.puml` — diagram 2 (EKA-64 sequence: `/llms.txt` hit vs `/ai.txt` miss vs two-segment 404)
+- Rendered 2026-09-28 with `java -jar ~/.local/share/plantuml/plantuml.jar -tsvg -o /tmp/t504-render …` (exit 0, 6 SVGs, no syntax errors; SVGs not committed).
+
+```mermaid
+mindmap
+  root((MOD-WEB: crawler anchor request to HTTP status))
+    Next config
+      gebaut: next.config.mjs::redirects only legacy APK
+    Proxy
+      gebaut: proxy.ts::config.matcher excludes dotted paths
+    Public bundle
+      gebaut: Dockerfile.prod COPY llms.txt robots.txt sitemap.xml
+      offen: ai.txt llms-full.txt
+    Locale page
+      gebaut: [locale]/page.tsx::HomePage redirect ekklesia.gr
+      offen: invalid-locale notFound guard
+    Regression test
+      gebaut: proxy.test.ts
+      offen: dotted single-segment miss 404 test
+```
+
+## 7. Nächster Schritt (engste Reparaturgrenze)
+
+**Modul:** Locale page. **Hop:** A5→A6 (`apps/web/src/app/[locale]/page.tsx::HomePage`).
+
+**Fix contract (for a later, separately approved run):**
+1. In `HomePage`, read `params.locale`; if it is not in `routing.locales` (`hasLocale` from `next-intl`), call `notFound()`; otherwise keep `redirect("https://ekklesia.gr")` unchanged.
+   Alternative (broader, needs Sol decision): the same guard in `[locale]/layout.tsx::LocaleLayout`, which also covers `/<dotted>/bills` etc.
+2. Focused vitest next to the page: `locale="ai.txt"`/`"llms-full.txt"` ⇒ `notFound` called, `redirect` not called; `el`/`en` ⇒ redirect to `https://ekklesia.gr` unchanged.
+3. Standalone probe as in §2: `/ai.txt`, `/llms-full.txt` ⇒ 404; `/llms.txt`, `/robots.txt` ⇒ 200 text/plain; `/el`, `/en` ⇒ 307 unchanged; `/` ⇒ 200.
+
+**Unberührt bleiben:** `apps/web/src/proxy.ts`, `apps/web/next.config.mjs`, `apps/web/Dockerfile.prod`, `docs/llms.txt`, `docs/robots.txt`, `docs/sitemap.xml`, public assets, Traefik, packages/lockfiles, workflows. Creating real `ai.txt`/`llms-full.txt` is a separate content decision (out of scope).

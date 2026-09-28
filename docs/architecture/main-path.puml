@@ -35,3 +35,35 @@ SETTINGS -> REDIS : redis_url localhost:6379 (H8)
 ADJ -> DB : <dev-host>:5432 with repo-public dev credential
 ADJ -> REDIS : <dev-host>:6379 without auth
 @enduml
+
+@startuml
+' EKA-64 main path — built behaviour at base 4cc1193 (T-504, no fix simulated)
+' Evidence: local standalone build (Dockerfile.prod layout) on 127.0.0.1, 2026-09-28
+title MOD-WEB: /llms.txt vs /ai.txt | /llms-full.txt -> HTTP status
+
+actor "AI crawler" as CRAWLER
+participant "Next config\nnext.config.mjs" as NCFG
+participant "Proxy\nproxy.ts::config.matcher" as PROXY
+participant "Public bundle\n/app/public (Dockerfile.prod)" as PUBLIC
+participant "Locale page\n[locale]/page.tsx::HomePage" as LOCALE
+
+== existing anchor: /llms.txt ==
+CRAWLER -> NCFG : GET /llms.txt (A1)
+NCFG -> PROXY : redirects(): no match (A2)
+PROXY -> PROXY : matcher /((?!api|_next|_vercel|.*\\..*).*) excludes dotted path; proxy() not run (A3)
+PROXY -> PUBLIC : static-file lookup public/llms.txt
+PUBLIC --> CRAWLER : 200 OK, text/plain; charset=UTF-8, 5470 bytes (A4)
+
+== missing conventional anchor: /ai.txt, /llms-full.txt ==
+CRAWLER -> NCFG : GET /ai.txt (A1)
+NCFG -> PROXY : redirects(): no match (A2)
+PROXY -> PROXY : dotted path excluded; proxy() not run (A3)
+PROXY -> PUBLIC : static-file lookup public/ai.txt
+PUBLIC -> LOCALE : miss -> app route /[locale] with locale="ai.txt" (A5)
+LOCALE -> LOCALE : no locale validation in layout/page
+LOCALE --> CRAWLER : 307 Temporary Redirect, location: https://ekklesia.gr, text/html (A6)
+
+== contrast: two-segment dotted miss ==
+CRAWLER -> PUBLIC : GET /x/ai.txt
+PUBLIC --> CRAWLER : 404 Not Found, text/html (no matching app route)
+@enduml
