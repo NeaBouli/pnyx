@@ -33,16 +33,16 @@
     "postcss": "8.5.26",
     "@babel/core": "7.29.7",
     "form-data": "4.0.6",
-    "fast-uri": "3.1.7",
+    "fast-uri": "3.1.8",
     "sharp": "0.35.4",
     "minimatch@3.1.5": {
-      "brace-expansion": "1.1.18"
+      "brace-expansion": "1.1.21"
     },
     "minimatch@5.1.9": {
-      "brace-expansion": "2.1.4"
+      "brace-expansion": "2.1.7"
     },
     "minimatch@10.2.5": {
-      "brace-expansion": "5.0.9"
+      "brace-expansion": "5.0.12"
     }
   },
   "devDependencies": {
