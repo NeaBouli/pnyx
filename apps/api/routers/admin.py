@@ -698,30 +698,6 @@ async def admin_resolve_org_labels(
     }
 
 
-@router.get("/deepl/usage")
-async def deepl_usage():
-    """Public: DeepL API usage stats (no auth needed — no sensitive data)."""
-    import httpx
-    api_key = os.getenv("DEEPL_API_KEY", "")
-    if not api_key:
-        return {"available": False, "character_count": 0, "character_limit": 0}
-    try:
-        async with httpx.AsyncClient(timeout=5) as client:
-            resp = await client.get(
-                "https://api-free.deepl.com/v2/usage",
-                headers={"Authorization": f"DeepL-Auth-Key {api_key}"},
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            return {
-                "available": True,
-                "character_count": data.get("character_count", 0),
-                "character_limit": data.get("character_limit", 0),
-            }
-    except Exception:
-        return {"available": False, "character_count": 0, "character_limit": 0}
-
-
 @router.post("/bills/{bill_id}/fetch-text")
 async def admin_fetch_bill_text(
     bill_id: str,

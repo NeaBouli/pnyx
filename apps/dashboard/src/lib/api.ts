@@ -89,7 +89,7 @@ export async function fetchScraperStatus() { return fetchAPI('/api/v1/scraper/st
 
 // --- AI Budget ---
 export async function fetchClaudeBudget() { return fetchAPI('/api/v1/claude/budget') }
-export async function fetchDeepLUsage() { return adminFetch('/api/v1/admin/deepl/usage') }
+export async function fetchDeepLUsage() { return adminFetch('/api/v1/public/deepl/usage') }
 
 // --- Payments ---
 export async function fetchPaymentStatus() { return fetchAPI('/api/v1/payments/status') }
