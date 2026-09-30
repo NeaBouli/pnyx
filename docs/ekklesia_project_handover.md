@@ -339,6 +339,7 @@ GET  /api/v1/analytics/overview       → Plattform-Statistiken
 GET  /api/v1/municipal/{dimos_id}/voteable → Kommunal-Beschlüsse
 POST /api/v1/agent/ask                → Ollama RAG Chatbot
 GET  /api/v1/claude/budget            → Claude API Budget-Status
+GET  /api/v1/public/deepl/usage       → DeepL Verbrauch (öffentlich, aggregiert)
 POST /api/v1/claude/ask               → Claude Hybrid Chatbot
 GET  /api/v1/sso/discourse/initiate   → Forum SSO Start
 POST /api/v1/sso/discourse/callback   → Forum SSO Callback
@@ -354,7 +355,6 @@ POST /api/v1/admin/bills/{id}/fetch-text  → Parliament Text holen
 POST /api/v1/admin/compass/generate-questions → Neue Compass-Fragen
 POST /api/v1/admin/compass/approve/{id}   → Frage freigeben
 GET  /api/v1/admin/compass/pending-review → Pending Fragen
-GET  /api/v1/admin/deepl/usage            → DeepL Verbrauch
 ```
 
 ### Rate Limiting

@@ -17,7 +17,7 @@ export default function AIPage() {
     async function load() {
       const [claudeRes, deeplRes, scraperRes] = await Promise.allSettled([
         fetch(`${API}/api/v1/claude/budget`).then(r => r.json()),
-        fetch('/api/proxy/admin/deepl/usage').then(r => r.json()),
+        fetch('/api/proxy/public/deepl/usage').then(r => r.json()),
         fetch(`${API}/api/v1/scraper/status`).then(r => r.json()),
       ])
       const v = (r: PromiseSettledResult<unknown>) => r.status === 'fulfilled' ? r.value : null
@@ -34,7 +34,7 @@ export default function AIPage() {
       try {
         const [c, d, s] = await Promise.allSettled([
           fetch(`${API}/api/v1/claude/budget`).then(r => r.json()),
-          fetch('/api/proxy/admin/deepl/usage').then(r => r.json()),
+          fetch('/api/proxy/public/deepl/usage').then(r => r.json()),
           fetch(`${API}/api/v1/scraper/status`).then(r => r.json()),
         ])
         const v = (r: PromiseSettledResult<unknown>) => r.status === 'fulfilled' ? r.value : null
