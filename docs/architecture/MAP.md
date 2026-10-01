@@ -1,146 +1,159 @@
-# Architecture Map — EKA-18 Local Developer Stack / Compose Exposure Boundary
+# Architecture Map — Next Runtime Dependency Boundary (T-485)
 
-Basis: `origin/main 2bfda8e40dbd66c1486936f3594d7b232eb7606d` · Task: T-481 · Mapping only, no fix.
-Node: Local Developer Stack / Compose Exposure Boundary.
+Scope: `apps/web` + `apps/dashboard` Next.js runtimes against
+GHSA-vcvr-r3jv-pc5j (`next` >=16.2.0 <16.3.6, patched 16.3.6; RCE needs Node.js
+`next/og` `ImageResponse` rendering attacker-controlled SVG content/attributes/styles).
+Base: `origin/main` 49e449a3bc9af1000e9d111fba9b9da2e27d673c. Read-only run: no
+package, lock, source or config change. Existing maps (`EKKLESIA_V2_MINIMA.md`,
+`FEDERATION.md`) stay untouched.
 
 ## 1. Grundidee
 
-- Ekklesia.gr is a digital direct-democracy platform where Greek citizens vote on real parliamentary bills and municipal decisions (`README.md` "What is Ekklesia?").
-- A developer brings the platform up locally by starting the datastores via Compose, then running migrations/seeds and the API/web on the host (`README.md::Quick Start` steps 2–5).
-- The Compose stack `infra/docker/docker-compose.yml` defines `db` (PostgreSQL), `redis` and `api` on one default Docker network.
-- Host-side tools (alembic, seeds, host uvicorn) reach the datastores through the published host ports using `apps/api/config.py::Settings` defaults (`localhost` DB/Redis).
-- System boundary of this node: the host network listeners created by Compose `ports:` plus the credentials interpolated into `environment:`. Production compose (`infra/docker/docker-compose.prod.yml`) is a separate neighbour and not on this trace.
-- Audit record: `docs/community-audits/EKA_PNYX_Full_Scope_Audit_2026-09-15.md::EKA-18` (Info, "accepted risk if developers do not run it on shared networks; note in README").
+- Ekklesia.gr is a digital direct-democracy platform for Greek citizens (`apps/web/src/app/[locale]/layout.tsx::metadata.openGraph.description`).
+- Citizens use the public web runtime (`apps/web`, port 3000) for bills, VAA, results (`apps/web/src/app/[locale]/**/page.tsx`).
+- Operators use the auth-gated admin dashboard (`apps/dashboard`, port 3001) (`apps/dashboard/src/proxy.ts::proxy`, `apps/dashboard/package.json::scripts.start`).
+- Both are standalone Next builds served by `node server.js` in Docker (`apps/{web,dashboard}/next.config.*::output`, `apps/{web,dashboard}/Dockerfile.prod::CMD`).
+- Boundary of this map: the `next` package version as it flows from manifest to running route handlers, plus the advisory's `next/og` sink.
 
-## 2. Spur (one trace, hops opened)
+## 2. Spur (opened hops)
 
-| # | From → To | Datum over the edge |
+1. `apps/web/package.json::dependencies.next` = `16.3.4` (exact) → `apps/web/package-lock.json::packages["node_modules/next"]` = 16.3.4, `engines.node >=20.9.0`.
+2. `apps/dashboard/package.json::dependencies.next` = `16.3.4` (exact) → `apps/dashboard/package-lock.json::packages["node_modules/next"]` = 16.3.4.
+3. Lock `node_modules/next` → 8 platform `node_modules/@next/swc-*` entries, each 16.3.4 (both locks); `sharp` 0.35.4 via `overrides`.
+4. Lock → `.github/workflows/ci.yml::test-clients` (`npm ci` → `image-codec.check.mjs` → lint → typecheck → [web: vitest] → `npm run build`).
+5. Lock → `apps/web/Dockerfile.prod` (`npm ci` with repo `.npmrc`, docs/ copied into `public/`, `npm run build`) → runner `node server.js` (context `../../`, `infra/docker/docker-compose.prod.yml::web`).
+6. Lock → `apps/dashboard/Dockerfile.prod` (`npm ci --ignore-scripts`, `npm run build`) → runner `node server.js` (context `../../apps/dashboard`, `docker-compose.prod.yml::dashboard`).
+7. `server.js` → the web proxy matcher excludes `/api`, `_next`, `_vercel`, and dotted paths; matched page requests enter `apps/web/src/proxy.ts::proxy` (redirects/rewrites + next-intl) → `apps/web/src/app/[locale]/*/page.tsx` (9 pages, no route handlers).
+8. `server.js` → the dashboard matcher excludes `_next/static`, `_next/image`, and `favicon.ico`; matched protected pages and non-auth APIs enter `apps/dashboard/src/proxy.ts::proxy` (session gate, then role check) → `(dashboard)/*/page.tsx` (23), `api/discourse/route.ts::GET` (JSON), and `api/proxy/[...path]/route.ts` (JSON, SUPER_ADMIN). `/api/auth/*` is matched but returns before the user and `canAccess` checks to reach `api/auth/[...nextauth]/route.ts::{GET,POST}`.
+9. Side-hop `request-controlled value → next/og ImageResponse SVG` — **offen / nicht verdrahtet** (evidence below).
+
+### Sink evidence (all `git grep` on 49e449a, excluding lockfiles)
+
+| Pattern | Scope | Hits |
 | --- | --- | --- |
-| H1 | `README.md::Quick Start` step 2 → `infra/docker/docker-compose.yml` | `cd infra/docker && docker compose up -d` (project dir = `infra/docker`, no `.env` present there) |
-| H2 | `docker-compose.yml::services.db.environment` → Compose interpolation | `POSTGRES_PASSWORD: ${DB_PASSWORD:-<dev literal>}`; unset shell var ⇒ public dev literal |
-| H3 | `docker-compose.yml::services.db.ports` → host listener | short syntax `"5432:5432"`, no `host_ip` ⇒ bind on all host interfaces |
-| H4 | `docker-compose.yml::services.redis.ports` → host listener | `"6379:6379"`, no `host_ip`; no `command`/`requirepass` ⇒ unauthenticated Redis on all interfaces |
-| H5 | `docker-compose.yml::services.api.environment` → API container | `DATABASE_URL=…${DB_PASSWORD:-<dev literal>}@db/ekklesia`, `REDIS_URL=redis://redis:6379`, `SERVER_SALT=${SERVER_SALT:-<dev literal>}`, `ENV=development` |
-| H6 | API container → `db`/`redis` via service DNS | internal Docker network `default`; does **not** use host ports |
-| H7 | `docker-compose.yml::services.api.ports` → host listener | `"8000:8000"`, all interfaces; uvicorn `--host 0.0.0.0 --reload` |
-| H8 | `README.md::Quick Start` steps 3–4 → `apps/api/config.py::Settings` | host `alembic upgrade head`, seeds, `uvicorn main:app` read `database_url` (`…@localhost/ekklesia`, same dev literal) and `redis_url` (`redis://localhost:6379`) |
-| H9 | `apps/api/alembic/env.py` (l.25–27) / `apps/api/database.py::engine` → host port 5432 | `settings.database_url` ⇒ requires DB published at least on host loopback |
-| H10 | `apps/api/security_startup.py::validate_server_salt_config` | `ENV=development` ⇒ weak `SERVER_SALT` only warns (non-production), fail-closed only in production |
+| `next/og`, `ImageResponse`, `new ImageResponse`, `@vercel/og` | whole repo | 0 |
+| `satori`, `resvg`, `generateImageMetadata` | apps/web, apps/dashboard | 0 |
+| `export const runtime` (Node vs Edge) | apps/web, apps/dashboard | 0 → all routes default Node.js runtime |
+| `opengraph-image.*`, `twitter-image.*`, `icon.*`, `apple-icon.*` files | apps/web, apps/dashboard | 0 (only `public/manifest.json`) |
+| `route.ts` handlers | both | 3, all dashboard, none returns images |
+| `node_modules/@vercel/og`, `satori`, `@resvg/*` in locks | both locks | 0 (next's og bundle only inside `next/dist/compiled`) |
 
-Static reproducer result (run 2026-09-28, `DB_PASSWORD`/`SERVER_SALT` unset, no containers started):
-`docker compose -f infra/docker/docker-compose.yml config --format json` ⇒
-`db  ports=[host_ip=<absent>, 5432→5432]`, `redis ports=[host_ip=<absent>, 6379→6379]`, `api ports=[host_ip=<absent>, 8000→8000]`, all on network `default`; `POSTGRES_PASSWORD`, `DATABASE_URL`, `SERVER_SALT` resolve to dev-fallback literals; `REDIS_URL` carries no credentials.
+Image neighbours: `openGraph` in web layout is static text, no `images`; `next/image` in
+`NavHeader.tsx`/`sso-verify/page.tsx` uses the image optimizer, not `next/og`; inline
+`<svg>` literals in NavHeader/sso-verify/login are static JSX.
 
 ## 3. Module
 
 | Modul | Eine Aufgabe | Einstieg | Stand |
 | --- | --- | --- | --- |
-| Quick Start doc | tells developers how to start the local stack | `README.md::Quick Start` | gebaut (no shared-network warning — EKA-18 audit asked for one) |
-| Dev Compose: db | local PostgreSQL with dev credential | `infra/docker/docker-compose.yml::services.db` | gebaut; exposure = Befund |
-| Dev Compose: redis | local Redis cache/limits | `infra/docker/docker-compose.yml::services.redis` | gebaut; exposure = Befund |
-| Dev Compose: api | containerised API with reload | `infra/docker/docker-compose.yml::services.api` | gebaut |
-| Compose interpolation | resolves `${VAR:-default}` from shell/`.env` | Compose engine (`docker compose config`) | gebaut (external tool) |
-| API settings | host-side default connection strings | `apps/api/config.py::Settings` | gebaut |
-| DB access (host path) | migrations and ORM engine | `apps/api/alembic/env.py`, `apps/api/database.py::engine` | gebaut |
-| Salt startup guard | fail closed on weak salt in production | `apps/api/security_startup.py::validate_server_salt_config` | gebaut (dev = warn only, by design) |
-| Compose exposure regression test | pin loopback-only datastore binding | — | offen |
-| Production compose | prod stack | `infra/docker/docker-compose.prod.yml` | aufgeschoben (neighbour, out of scope; not on trace) |
+| web manifest+lock | pin `next` for public web | `apps/web/package.json::dependencies.next` | gebaut (16.3.4, affected) |
+| dashboard manifest+lock | pin `next` for admin dashboard | `apps/dashboard/package.json::dependencies.next` | gebaut (16.3.4, affected) |
+| CI client gate | install + verify + build both runtimes | `.github/workflows/ci.yml::test-clients` | gebaut |
+| image-codec check | assert optimizer + sharp ⊂ next's sharp range | `apps/{web,dashboard}/image-codec.check.mjs` | gebaut |
+| web Docker runtime | build standalone, serve on 3000 | `apps/web/Dockerfile.prod::CMD` | gebaut |
+| dashboard Docker runtime | build standalone, serve on 3001 | `apps/dashboard/Dockerfile.prod::CMD` | gebaut |
+| web request edge | locale/static redirects | `apps/web/src/proxy.ts::proxy` | gebaut |
+| dashboard request edge | auth + RBAC gate | `apps/dashboard/src/proxy.ts::proxy` | gebaut |
+| dashboard route handlers | auth, discourse JSON, API proxy JSON | `apps/dashboard/src/app/api/**/route.ts` | gebaut |
+| OG image generation | `next/og` `ImageResponse` | — | offen (no symbol) |
 
 ## 4. Verdrahtung
 
-- README Quick Start → dev compose: `docker compose up -d` from `infra/docker` starts `db`, `redis`, `api`.
-- Compose interpolation → db/api: unset `DB_PASSWORD` yields the public dev literal for both `POSTGRES_PASSWORD` and `DATABASE_URL`, so they stay consistent.
-- db.ports → host: `5432` published on every host interface (no `host_ip`).
-- redis.ports → host: `6379` published on every host interface, no auth.
-- api → db/redis: service DNS `db` / `redis` on network `default`; independent of `ports:`.
-- api.ports → host: `8000` on every interface (API surface, has its own auth/rate limits).
-- Host tools → db/redis: `config.py::Settings` defaults hit `localhost:5432` / `localhost:6379`; this is the legitimate reason the datastore ports are published at all.
-- Compose `ENV=development` → salt guard: weak salt only logs a warning.
+- `package.json::next` → lock `node_modules/next`: exact pin, lock matches 16.3.4 in both apps.
+- lock `next` → `@next/swc-*`: 8 platform binaries pinned to the same 16.3.4; must move together.
+- lock → CI `npm ci` / `npm run build`: CI builds both runtimes from their own lock.
+- lock → `Dockerfile.prod` `npm ci`: prod image installs the same lock; web keeps install scripts per `.npmrc`, dashboard passes `--ignore-scripts`.
+- `Dockerfile.prod` → `node server.js`: standalone server, Node 22.13.0-alpine.
+- `server.js` → web `proxy.ts`: only matcher-selected requests enter it; `/api`, `_next`, `_vercel`, and dotted paths bypass the proxy.
+- `server.js` → dashboard `proxy.ts`: matcher-selected requests enter it, but `/api/auth/*` returns before the protected user and `canAccess` checks; protected pages and the other API paths continue through those checks.
+- proxy or matcher bypass → pages/route handlers: no handler or page imports `next/og`.
 
 ## 5. Widerspruch und Lücken
 
-**Symptom:** any host on the same LAN/Wi-Fi/VPN (or the internet, on a cloud VM without a filtering firewall) can reach `<dev-host>:5432` and `<dev-host>:6379`.
+- (a) Versionally affected: both runtimes resolve `next` 16.3.4 ∈ [16.2.0, 16.3.6).
+- (b) Exploit path not evidenced: 0 `next/og`/`ImageResponse` call sites, no metadata image files, no SVG-rendering handler. The vulnerable code ships in `next/dist/compiled` but is unreachable without an importer.
+- (c) Hygiene upgrade still justified: all routes run Node.js runtime by default, so any future `ImageResponse` with request data would hit the vulnerable sink directly.
+- Attacker preconditions (all missing today): a Node-runtime route/metadata file importing `next/og`; request-controlled input reaching SVG content, attributes or styles in the JSX tree; reachability without auth (web) or with an operator session (dashboard).
+- Gap: install-script parity differs (web `npm ci` + `.npmrc`, dashboard `npm ci --ignore-scripts`); not changed here.
+- Gap: `image-codec.check.mjs` asserts `sharp` 0.35.4 satisfies `next.optionalDependencies.sharp`; 16.3.6 range not verified in this run (no install).
+- Not checked: npm registry metadata for 16.3.6, live/runtime state, builds.
 
-**Ursache (separated):**
-1. **Host publishing on all interfaces** — H3/H4: `ports` short syntax without `host_ip`. This is the root cause of reachability; the other two only determine impact.
-2. **Weak DB fallback** — H2: `${DB_PASSWORD:-<dev literal>}`; the literal is public in the repo, so reachability ⇒ full DB login.
-3. **Unauthenticated Redis** — H4: no `requirepass`; reachability ⇒ read/write of rate-limit and application state used by `rate_limit.py`, `routers/{identity,newsletter,notify,payments,public_api,contact}.py` and `main.py`.
+## 6. Diagramme
 
-**Source → Sink:** `README.md::Quick Start` → `docker-compose.yml::services.{db,redis}.ports` (no `host_ip`) → Docker port publisher on `0.0.0.0`/`::` → network client authenticates with the repo-public literal (DB) or no auth (Redis) → read/write of local dev data.
-
-**Angreifervoraussetzung:** network-adjacent to the developer host (same L2/L3 segment, shared Wi-Fi, VPN, or public IP on a cloud dev VM), developer followed Quick Start without exporting `DB_PASSWORD`. No local code execution needed. Impact limited to dev data (seeded bills, local test identities); real production data is only at risk if a developer imports prod dumps locally. On Linux, Docker-published ports bypass UFW-style host rules — firewall itself is out of scope.
-
-**Sicherheitsinvariante:** dev datastores whose credentials are repo-public or absent are never reachable from a non-loopback host interface; the API container keeps reaching them over the internal Compose network, and host tools keep reaching them over loopback.
-
-**Legitimer lokaler Kontrollpfad (must keep working):**
-- H8/H9: host alembic, seeds and host uvicorn via `localhost:5432` / `localhost:6379` (`config.py::Settings` defaults).
-- H6: `api` container → `db`/`redis` by service DNS — unaffected by `ports:` changes.
-- Host GUI/CLI clients (psql, redis-cli) on the developer machine via loopback.
-
-**Nicht automatisch betroffen:**
-- API port 8000 (H7): public-by-purpose HTTP surface with its own auth; LAN access may be used for device testing. Not part of EKA-18; leave as is (could be a separate hardening note).
-- Internal service-DNS flows (H6): no host listener involved.
-- `SERVER_SALT` dev fallback (H5/H10): only affects nullifier derivation of local dev identities; guarded fail-closed in production by `security_startup.py`. Not part of the exposure fix.
-
-**Lücken / Widerspruch:**
-- Audit EKA-18 says "note in README"; `README.md::Quick Start` contains no such note.
-- No regression test pins the dev compose port binding (module `offen`).
-- `apps/api/config.py::Settings.database_url` duplicates the same dev literal as the compose fallback. Changing the compose fallback to a required var (`${DB_PASSWORD:?}`) would break H8/H9 unless `config.py`/`.env` also change ⇒ that opens a second hop and is **not** the narrowest fix.
-- Redis `requirepass` would break every host-side `redis://localhost:6379` default (`config.py`, `main.py`, several routers) ⇒ multi-file change, not narrowest; Redis-auth for production is out of scope anyway.
-- IPv6: `127.0.0.1:` binds IPv4 loopback only; host tools resolving `localhost` to `::1` first fall back to IPv4 (asyncpg/redis-py try all addresses). Verify on the fix PR.
-
-## 6. Diagrammdateien
-
-- `docs/architecture/map.puml` (mindmap + component diagram)
-- `docs/architecture/main-path.puml` (sequence of the trace)
-- PlantUML not installed on the mapping host ⇒ sources written, not rendered.
+- `docs/architecture/map.puml` (mindmap + component)
+- `docs/architecture/main-path.puml` (sequence of the built path)
 
 ```mermaid
 mindmap
-  root((Local dev stack: compose up to host listeners))
-    Quick Start doc
-      gebaut: README.md::Quick Start
-      offen: shared-network note
-    Dev Compose db
-      gebaut: services.db ports 5432 all-interfaces
-      gebaut: POSTGRES_PASSWORD dev fallback
-    Dev Compose redis
-      gebaut: services.redis ports 6379 all-interfaces no auth
-    Dev Compose api
-      gebaut: services.api env DATABASE_URL REDIS_URL SERVER_SALT
-      gebaut: service DNS db redis
-      gebaut: ports 8000
-    API settings host path
-      gebaut: config.py::Settings localhost defaults
-      gebaut: alembic/env.py, database.py::engine
-    Salt guard
-      gebaut: security_startup.py::validate_server_salt_config
-    Regression test
-      offen: dev compose exposure test
+  root((Next runtime boundary))
+    web manifest+lock
+      gebaut: package.json next 16.3.4
+      gebaut: lock next + 8 swc 16.3.4
+    dashboard manifest+lock
+      gebaut: package.json next 16.3.4
+      gebaut: lock next + 8 swc 16.3.4
+    CI client gate
+      gebaut: ci.yml test-clients
+      gebaut: image-codec.check.mjs
+    Docker runtimes
+      gebaut: web Dockerfile.prod node server.js
+      gebaut: dashboard Dockerfile.prod node server.js
+    Request edge
+      gebaut: web matched paths to proxy; api, _next, _vercel, dotted bypass
+      gebaut: dashboard protected paths to auth + canAccess
+      gebaut: dashboard api/auth returns before access checks
+    Dashboard route handlers
+      gebaut: api/auth nextauth
+      gebaut: api/discourse GET
+      gebaut: api/proxy path
+    OG image generation
+      offen: no next/og ImageResponse
 ```
 
-## 7. Nächster Schritt (engste Reparaturgrenze)
+## 7. Nächster Schritt (single follow-fix node, T-486)
 
-**Modul:** Dev Compose (db, redis). **Hop:** H3 + H4 (`services.{db,redis}.ports`).
+Modul: web + dashboard manifest+lock. Hop: `package.json::dependencies.next`
+16.3.4 → 16.3.6 → lock `node_modules/next` + all 8 `@next/swc-*` to 16.3.6, in both apps.
+Files: `apps/{web,dashboard}/package.json`, `apps/{web,dashboard}/package-lock.json` only.
+Untouched: Dockerfiles, `next.config.*`, `proxy.ts`, all `src/**`, `.github/**`,
+`@next/eslint-plugin-next` (#394), React, `overrides`.
+Must stay green: CI `test-clients` Web + Dashboard (`image-codec.check.mjs`, lint,
+typecheck, web vitest, `npm run build`), both `Dockerfile.prod` builds, and the
+routes in hops 7–8 (web locale pages + proxy redirects; dashboard pages, `/login`,
+`/api/auth/*`, `/api/discourse`, `/api/proxy/*`).
 
-**Fix contract (for a later, separately approved run):**
-1. `infra/docker/docker-compose.yml`: `db.ports` → `"127.0.0.1:5432:5432"`, `redis.ports` → `"127.0.0.1:6379:6379"`. Nothing else in the file (keep fallbacks, keep `api` 8000, keep `version`).
-2. New focused test `apps/api/tests/test_dev_compose_exposure.py` (static YAML parse; PyYAML comes transitively via `uvicorn[standard]` — use `pytest.importorskip("yaml")`):
-   - negative: every `ports` entry of `db` and `redis` has host IP `127.0.0.1` (short or long syntax `host_ip`); fail on missing host IP, `0.0.0.0`, `::`.
-   - positive control (host tools): `db` publishes target 5432 and `redis` target 6379 on loopback (published port still present ⇒ `config.py` localhost defaults still work).
-   - positive control (internal network): `api.environment.DATABASE_URL` host is `db`, `REDIS_URL` host is `redis`, and `api.depends_on` contains both.
-   - out-of-scope guard: `api` ports are not asserted.
-3. `README.md::Quick Start`: one note — datastores bind to loopback only; dev credentials are public, never run this compose on shared/prod hosts; set `DB_PASSWORD` for anything non-local.
+---
 
-**Vorher-Reproducer (static, no containers):**
-```bash
-cd infra/docker && env -u DB_PASSWORD docker compose -f docker-compose.yml config --format json \
- | python3 -c 'import json,sys; s=json.load(sys.stdin)["services"]; [print(n,[(p.get("host_ip","<all>"),p["published"],p["target"]) for p in s[n].get("ports",[])]) for n in ("db","redis","api")]'
-# before fix: db/redis/api show host_ip <all>
-# after fix:  db/redis show 127.0.0.1; api unchanged; api env still targets db / redis
-```
+# Preserved Map Node — EKA-18 Local Developer Stack / Compose Exposure Boundary
 
-**Unberührt bleiben:** `infra/docker/docker-compose.prod.yml`, `infra/docker/app.yml`, `infra/hetzner/*`, mirror compose, `apps/api/config.py`, `apps/api/main.py`, routers, `security_startup.py`, `.env*`, workflows, packages/lockfiles. Neighbour files enter scope only if a hop above proves they define H3/H4 — none do.
+Integrated from `origin/main` at T-486 refresh. The full evidence and acceptance
+record remains in `.fleet/reports/T-481.md` and `.fleet/reports/T-482.md`.
+
+## Module and hop
+
+- Node: local developer stack / Compose exposure boundary.
+- Hop H1: README Quick Start starts `infra/docker/docker-compose.yml`.
+- Hop H2: host-side alembic, seeds, and uvicorn use the loopback defaults in
+  `apps/api/config.py::Settings`.
+- Hop H3: the API container uses the internal `db` and `redis` service names.
+- Hop H4: only PostgreSQL and Redis host publications are narrowed to
+  `127.0.0.1`; the API's port 8000 publication remains unchanged.
+
+## Security invariant
+
+Development datastores with repository-public or absent credentials are not
+reachable through a non-loopback host interface, while host development tools
+retain `localhost:5432` and `localhost:6379` access and containers retain their
+service-DNS access. Production Compose, API auth, salt policy, and datastore
+authentication are outside this node.
+
+## Built state
+
+- `infra/docker/docker-compose.yml` binds db and redis to IPv4 loopback.
+- `apps/api/tests/test_dev_compose_exposure.py` pins loopback publication,
+  published ports, internal service-DNS targets, and dependencies.
+- README warns that the development credentials are public and the stack is not
+  for shared or production hosts.
 
 # Architecture Map — EKA-63 MOD-22 Canonical Citizen Answers
 
