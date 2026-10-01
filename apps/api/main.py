@@ -121,6 +121,9 @@ def _sentry_init_options(dsn: str) -> dict[str, Any]:
         "traces_sample_rate": float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
         "environment": os.getenv("SENTRY_ENVIRONMENT", "production"),
         "send_default_pii": False,
+        # Capture-Grenze: keine Frame-Locals, keine Request-Bodies (Filter unten = zweite Schicht)
+        "include_local_variables": False,
+        "max_request_body_size": "never",
         "before_send": _before_send_filter,
         "before_send_transaction": _before_send_filter,
     }
