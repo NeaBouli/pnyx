@@ -83,6 +83,25 @@ jobs:
         run: |
           python -m pytest tests/ -v --tb=short
 
+  test-docs-redesign:
+    name: Docs Redesign Gates
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      # Standard-library-only unittest gates for the static docs (R0 inventory,
+      # approved audit delta, R2 landing / R3 wiki checks, FAQ/wiki regressions).
+      - name: Run redesign gates
+        working-directory: scripts/redesign
+        run: |
+          python -m unittest discover -p 'test_*.py' -v
+
   test-clients:
     name: Client ${{ matrix.name }}
     runs-on: ubuntu-latest
