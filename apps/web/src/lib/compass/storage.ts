@@ -1,7 +1,7 @@
 /**
  * Compass Storage — Verschlüsselte Speicherung des Kompass-Profils.
  * Verwendet AES-256-GCM abgeleitet vom Ed25519 Private Key via HKDF.
- * Fallback auf unverschlüsselt wenn kein Key vorhanden.
+ * Kein Klartext-Fallback: ohne Key oder bei Fehler wird nichts persistiert.
  */
 import type { CompassProfile } from "./types";
 import { createEmptyProfile } from "./engine";
@@ -65,56 +65,106 @@ async function decrypt(base64: string, key: CryptoKey): Promise<string> {
 
 // ─── Öffentliche API ────────────────────────────────────────────────────────
 
-/** Lädt das Kompass-Profil. Versucht verschlüsselt, dann unverschlüsselt. */
+export type CompassStorageErrorCode = "NO_KEY" | "CRYPTO" | "STORAGE";
+
+/** Speichern fehlgeschlagen — es wurde nichts als Klartext persistiert. */
+export class CompassStorageError extends Error {
+  readonly code: CompassStorageErrorCode;
+
+  constructor(code: CompassStorageErrorCode, message: string, cause?: unknown) {
+    super(message, { cause });
+    this.name = "CompassStorageError";
+    this.code = code;
+  }
+}
+
+function withStorage(action: () => void): void {
+  try {
+    action();
+  } catch (cause) {
+    throw new CompassStorageError("STORAGE", "Compass profile storage unavailable", cause);
+  }
+}
+
+/** Liest Legacy-Klartext und entfernt ihn sofort aus dem persistenten Storage. */
+function takeLegacyProfile(): CompassProfile | null {
+  let raw: string | null;
+  try {
+    raw = localStorage.getItem(STORAGE_KEY);
+    if (raw === null) return null;
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    return null; // Storage nicht verfügbar: kein Profil, kein Klartext-Rückfall
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+      ? (parsed as CompassProfile)
+      : null;
+  } catch {
+    return null; // Korrupt — verworfen
+  }
+}
+
+/**
+ * Lädt das Kompass-Profil. Ciphertext hat Vorrang; Legacy-Klartext wird nur
+ * ohne Ciphertext übernommen, sofort gelöscht und mit Key verschlüsselt migriert.
+ */
 export async function loadProfile(privateKeyHex: string | null): Promise<CompassProfile> {
   if (typeof window === "undefined") return createEmptyProfile();
 
-  // Verschlüsselt laden
-  if (privateKeyHex) {
-    const encrypted = localStorage.getItem(STORAGE_KEY_ENCRYPTED);
-    if (encrypted) {
+  const legacy = takeLegacyProfile();
+  let encrypted: string | null;
+  try {
+    encrypted = localStorage.getItem(STORAGE_KEY_ENCRYPTED);
+  } catch {
+    return createEmptyProfile(); // Storage nicht verfügbar — kein Klartext-Rückfall
+  }
+
+  if (encrypted) {
+    if (privateKeyHex) {
       try {
         const key = await deriveAesKey(privateKeyHex);
         const json = await decrypt(encrypted, key);
         return JSON.parse(json) as CompassProfile;
       } catch {
-        // Entschlüsselung fehlgeschlagen — neues Profil
+        // Entschlüsselung fehlgeschlagen — kein Rückfall auf Klartext
       }
     }
+    return createEmptyProfile();
   }
 
-  // Unverschlüsselt (Fallback/Migration)
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (raw) {
-    try {
-      return JSON.parse(raw) as CompassProfile;
-    } catch {
-      // Korrupt — neues Profil
-    }
-  }
-
-  return createEmptyProfile();
-}
-
-/** Speichert das Kompass-Profil. Verschlüsselt wenn Key vorhanden. */
-export async function saveProfile(profile: CompassProfile, privateKeyHex: string | null): Promise<void> {
-  if (typeof window === "undefined") return;
-
-  const json = JSON.stringify(profile);
+  if (!legacy) return createEmptyProfile();
 
   if (privateKeyHex) {
     try {
-      const key = await deriveAesKey(privateKeyHex);
-      const encrypted = await encrypt(json, key);
-      localStorage.setItem(STORAGE_KEY_ENCRYPTED, encrypted);
-      localStorage.removeItem(STORAGE_KEY); // Unverschlüsselt entfernen
-      return;
+      await saveProfile(legacy, privateKeyHex);
     } catch {
-      // Fallback auf unverschlüsselt
+      // Migration fehlgeschlagen — Profil bleibt nur in-memory
     }
   }
+  return legacy;
+}
 
-  localStorage.setItem(STORAGE_KEY, json);
+/** Speichert das Kompass-Profil ausschließlich verschlüsselt. Ohne Key oder bei Fehler: reject. */
+export async function saveProfile(profile: CompassProfile, privateKeyHex: string | null): Promise<void> {
+  if (typeof window === "undefined") return;
+
+  withStorage(() => localStorage.removeItem(STORAGE_KEY));
+
+  if (!privateKeyHex) {
+    throw new CompassStorageError("NO_KEY", "Compass profile requires a key to be stored");
+  }
+
+  let encrypted: string;
+  try {
+    const key = await deriveAesKey(privateKeyHex);
+    encrypted = await encrypt(JSON.stringify(profile), key);
+  } catch (cause) {
+    throw new CompassStorageError("CRYPTO", "Compass profile encryption failed", cause);
+  }
+
+  withStorage(() => localStorage.setItem(STORAGE_KEY_ENCRYPTED, encrypted));
 }
 
 /** Löscht das Kompass-Profil vollständig */
