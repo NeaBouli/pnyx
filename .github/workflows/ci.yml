@@ -124,6 +124,9 @@ jobs:
     # Fallback runner (CI_RUNNER) only for push/dispatch or same-repo PRs; see docs/CI.md.
     if: ${{ !vars.CI_RUNNER || github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     timeout-minutes: 30
+    env:
+      # The root .npmrc (ignore-scripts=true) is not read inside apps/*; enforce it here.
+      NPM_CONFIG_IGNORE_SCRIPTS: "true"
     strategy:
       fail-fast: false
       matrix:
@@ -163,3 +166,16 @@ jobs:
       - name: Verify ${{ matrix.name }}
         working-directory: ${{ matrix.path }}
         run: ${{ matrix.verify }}
+
+  fallback-fork-guard:
+    name: Fallback Fork Guard
+    # GitHub-hosted only. While CI_RUNNER (fallback) is set, the fallback-capable jobs skip
+    # fork PRs; a skipped job must not read as green, so this job fails those PRs explicitly.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: ${{ vars.CI_RUNNER && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+    steps:
+      - name: Fork PRs are not mergeable while the CI fallback is active
+        run: |
+          echo "::error::CI fallback (CI_RUNNER) is active: crypto/docs/client gates did not run for this fork PR. Not mergeable until CI_RUNNER is unset and CI is re-run."
+          exit 1

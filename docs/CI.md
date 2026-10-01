@@ -22,11 +22,21 @@ Which jobs follow `CI_RUNNER`:
 
 Rules on the fallback runner: jobs that follow `CI_RUNNER` run there only for `push`,
 `workflow_dispatch` or same-repo pull requests
-(`github.event.pull_request.head.repo.full_name == github.repository`); fork PRs are skipped
-while the fallback is active. Every switch is recorded in `docs/agent-bridge/ACTION_LOG.md`.
+(`github.event.pull_request.head.repo.full_name == github.repository`).
 
-## Hardening
+**Fork PRs while the fallback is active are not mergeable.** The fallback-capable jobs are
+skipped for them, and a skipped job would otherwise look green. The GitHub-hosted job
+`Fallback Fork Guard` therefore fails every fork PR while `CI_RUNNER` is set; re-run CI after
+switching back (`ci-switch.sh github pnyx`). Every switch is recorded in
+`docs/agent-bridge/ACTION_LOG.md`.
+
+## Hardening (ci.yml and security-audit.yml)
 - Third-party actions are pinned to full commit SHAs (version in a trailing comment).
 - `actions/checkout` runs with `persist-credentials: false`.
 - Every job has a `timeout-minutes` limit.
+- Client jobs set `NPM_CONFIG_IGNORE_SCRIPTS=true`, because the root `.npmrc`
+  (`ignore-scripts=true`) is not read inside `apps/*`.
 - Workflow token permissions stay `contents: read`.
+
+Not covered: `deploy.yml` (manual `workflow_dispatch` deploy; changes there are deploy scope)
+and `scraper.yml` (scheduled data job) still reference actions by tag.
