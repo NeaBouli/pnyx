@@ -3,11 +3,11 @@
 
 # Web Framework
 fastapi==0.141.1
-uvicorn[standard]==0.52.4
+uvicorn[standard]==0.54.0
 
 # Database
 asyncpg==0.31.0
-sqlalchemy[asyncio]==2.0.52
+sqlalchemy[asyncio]==2.1.1
 alembic==1.20.0
 
 # Cache
@@ -54,4 +54,4 @@ pytest-asyncio==1.4.0
 aiosqlite==0.22.1
 anyio==4.15.1
 respx>=0.23.1
-sentry-sdk[fastapi]>=2.68.1
+sentry-sdk[fastapi]>=2.69.1

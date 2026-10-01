@@ -1,3 +1,98 @@
+@startmindmap
+* Next runtime boundary (T-485)
+** web manifest+lock
+*** gebaut: apps/web/package.json::dependencies.next (16.3.4)
+*** gebaut: apps/web/package-lock.json::node_modules/next + @next/swc-*
+** dashboard manifest+lock
+*** gebaut: apps/dashboard/package.json::dependencies.next (16.3.4)
+*** gebaut: apps/dashboard/package-lock.json::node_modules/next + @next/swc-*
+** CI client gate
+*** gebaut: .github/workflows/ci.yml::test-clients
+*** gebaut: image-codec.check.mjs
+** Docker runtimes
+*** gebaut: apps/web/Dockerfile.prod::CMD node server.js
+*** gebaut: apps/dashboard/Dockerfile.prod::CMD node server.js
+** Request edge
+*** gebaut: web matched paths -> proxy.ts
+**** bypass: /api, _next, _vercel, dotted paths
+*** gebaut: dashboard matched protected paths -> auth + canAccess
+**** bypass checks: /api/auth early return
+** Dashboard route handlers
+*** gebaut: api/auth/[...nextauth]/route.ts::GET,POST
+*** gebaut: api/discourse/route.ts::GET
+*** gebaut: api/proxy/[...path]/route.ts
+** OG image generation
+*** offen: no next/og ImageResponse importer
+@endmindmap
+
+@startuml
+component "web manifest+lock" as WL
+component "dashboard manifest+lock" as DL
+component "CI client gate" as CI
+component "web Docker runtime" as WD
+component "dashboard Docker runtime" as DD
+component "web request edge" as WP
+component "dashboard request edge" as DP
+component "web pages" as WPG
+component "dashboard pages + route handlers" as DRH
+
+WL --> CI : npm ci / npm run build
+DL --> CI : npm ci / npm run build
+WL --> WD : npm ci / npm run build
+DL --> DD : npm ci --ignore-scripts / npm run build
+WD --> WP : matcher-selected requests only
+DD --> DP : matcher-selected requests
+WP --> WPG : redirects / rewrites / intlMiddleware
+DP --> DRH : protected pages + non-auth APIs\nauth + canAccess
+note bottom of WP
+  matcher bypasses /api, _next, _vercel
+  and dotted paths
+end note
+note bottom of DP
+  /api/auth/* returns before protected
+  user and canAccess checks
+end note
+note bottom of DRH
+  next/og ImageResponse: offen (0 importers)
+end note
+@enduml
+
+@startmindmap
+' Preserved EKA-18 node integrated from origin/main during T-486 refresh
+* Local developer stack / Compose exposure boundary
+** Quick Start
+*** gebaut: README starts development Compose
+*** gebaut: shared-host warning
+** Development datastores
+*** gebaut: PostgreSQL published on 127.0.0.1:5432
+*** gebaut: Redis published on 127.0.0.1:6379
+** Legitimate control paths
+*** gebaut: host tools use localhost defaults
+*** gebaut: API container uses db / redis service DNS
+** Regression contract
+*** gebaut: test_dev_compose_exposure.py
+** Out of scope
+*** production Compose
+*** API port 8000
+*** datastore auth and salt policy
+@endmindmap
+
+@startuml
+skinparam componentStyle rectangle
+component "README Quick Start" as ER
+component "Development Compose" as EC
+component "Loopback listeners\n127.0.0.1:5432 / :6379" as EL
+component "Host tools\nconfig.py localhost defaults" as EH
+component "API container\nservice DNS db / redis" as EA
+component "Exposure regression test" as ET
+
+ER --> EC : docker compose up -d
+EC --> EL : publish db + redis on loopback
+EH --> EL : alembic / seeds / host uvicorn
+EA --> EC : internal service network
+ET --> EC : pin bindings + service-DNS contract
+@enduml
+
 @startmindmap gh298-tab-label-mindmap
 * Tab-Labels lesbar und tippbar\nbei Android fontScale 1.8 (GH#298)
 ** App-Shell Safe Area
