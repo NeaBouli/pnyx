@@ -88,9 +88,14 @@ function withStorage(action: () => void): void {
 
 /** Liest Legacy-Klartext und entfernt ihn sofort aus dem persistenten Storage. */
 function takeLegacyProfile(): CompassProfile | null {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (raw === null) return null;
-  localStorage.removeItem(STORAGE_KEY);
+  let raw: string | null;
+  try {
+    raw = localStorage.getItem(STORAGE_KEY);
+    if (raw === null) return null;
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    return null; // Storage nicht verfügbar: kein Profil, kein Klartext-Rückfall
+  }
   try {
     const parsed: unknown = JSON.parse(raw);
     return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
@@ -109,7 +114,12 @@ export async function loadProfile(privateKeyHex: string | null): Promise<Compass
   if (typeof window === "undefined") return createEmptyProfile();
 
   const legacy = takeLegacyProfile();
-  const encrypted = localStorage.getItem(STORAGE_KEY_ENCRYPTED);
+  let encrypted: string | null;
+  try {
+    encrypted = localStorage.getItem(STORAGE_KEY_ENCRYPTED);
+  } catch {
+    return createEmptyProfile(); // Storage nicht verfügbar — kein Klartext-Rückfall
+  }
 
   if (encrypted) {
     if (privateKeyHex) {

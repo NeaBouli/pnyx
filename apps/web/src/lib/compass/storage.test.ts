@@ -145,3 +145,21 @@ describe("compass storage — clearProfile", () => {
     expect(localStorage.getItem(ENCRYPTED)).toBeNull();
   });
 });
+
+describe("compass storage — unavailable WebStorage on load (CodeRabbit #396)", () => {
+  it("returns an empty profile when reading the legacy key throws", async () => {
+    localStorage.setItem("ekklesia_compass_profile", JSON.stringify(seedFromVAA(createEmptyProfile(), { 1: 1 }, { 1: "Υγεία" })));
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new DOMException("blocked", "SecurityError"); });
+    const loaded = await loadProfile(null);
+    expect(loaded.vaaAnswers).toBeNull();
+    expect(loaded.signals).toEqual({});
+  });
+
+  it("does not use legacy plaintext when it cannot be removed", async () => {
+    localStorage.setItem("ekklesia_compass_profile", JSON.stringify(seedFromVAA(createEmptyProfile(), { 1: 1 }, { 1: "Υγεία" })));
+    vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => { throw new DOMException("blocked", "SecurityError"); });
+    const loaded = await loadProfile(null);
+    expect(loaded.vaaAnswers).toBeNull();
+    expect(loaded.signals).toEqual({});
+  });
+});
