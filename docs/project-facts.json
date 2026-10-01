@@ -1,0 +1,36 @@
+{
+  "counts": {
+    "api_endpoints": 189,
+    "api_routers": 32,
+    "db_tables_orm": 24,
+    "modules_inactive": 2,
+    "modules_listed": 23,
+    "modules_spec": 25,
+    "prod_containers": 8
+  },
+  "definitions": {
+    "api_endpoints": "FastAPI route decorators (@router/@app .get/.post/.put/.patch/.delete) in apps/api/main.py and apps/api/routers/*.py.",
+    "api_routers": "Python modules in apps/api/routers that declare at least one route.",
+    "db_tables_orm": "__tablename__ declarations in apps/api/models.py (migration-only tables not counted).",
+    "modules_inactive": "Listed entries marked (deferred) or (disabled).",
+    "modules_listed": "Entries in the /health module list of apps/api/main.py.",
+    "modules_spec": "Highest module number in the /health module list (MOD-01 … MOD-NN).",
+    "prod_containers": "Services in infra/docker/docker-compose.prod.yml."
+  },
+  "details": {
+    "modules_missing_numbers": [
+      "MOD-13",
+      "MOD-17"
+    ],
+    "prod_services": [
+      "db",
+      "redis",
+      "api",
+      "web",
+      "ollama",
+      "dashboard",
+      "docker-proxy",
+      "monitor"
+    ]
+  }
+}
