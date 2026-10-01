@@ -117,3 +117,43 @@ HOOK -> STORE : clearProfile() (C9)
 STORE -> LS : removeItem(both)
 note right of HOOK : pending saveTimeout not cancelled
 @enduml
+
+@startuml
+title EKA-18 built path — local tools retain access without LAN exposure
+actor Developer
+participant "Dev Compose" as Compose
+database "PostgreSQL\n127.0.0.1:5432" as DB
+participant "Redis\n127.0.0.1:6379" as Redis
+participant "API container" as API
+
+Developer -> Compose : docker compose up -d
+Compose -> DB : publish IPv4 loopback only
+Compose -> Redis : publish IPv4 loopback only
+Developer -> DB : migrations/seeds via localhost
+Developer -> Redis : local tooling via localhost
+API -> DB : service DNS db:5432
+API -> Redis : service DNS redis:6379
+@enduml
+
+@startuml
+title EKA-13 selected fix — isolate and make Docker access read-only
+participant "Monitor" as Monitor
+participant "private internal\nnetwork" as Private
+participant "docker-proxy\nv0.4.2@digest\nPOST=0" as Proxy
+database "Host Docker daemon" as Docker
+participant "Other net_ekklesia peer" as Peer
+
+Monitor -> Monitor : AUTO_RECOVERY_T2=false; escalate to T3
+Monitor -> Private : sole consumer
+Private -> Proxy : permitted read path
+Peer -[#red,dashed]> Proxy : no shared network route
+Proxy -> Docker : Docker API via mounted socket
+Proxy -[#red,dashed]> Docker : POST denied
+Proxy -> Docker : no enabled API namespace
+
+note over Proxy
+Dedicated internal network closes lateral peer access.
+POST=0 removes restart writes.
+Container/event/ping/version GETs and all Docker writes are denied while T2 is disabled.
+end note
+@enduml
