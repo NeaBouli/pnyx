@@ -1,6 +1,44 @@
-' T-472 / GH#365 — Sequenz der gebauten Spur "FAQ auf Englisch lesen"
-' Basis origin/main fd3b4dc5ebbc1cd80ee3db3f9945cbf27963a932
-' Aktueller Stand auf T-474-Basis: L1 wurde durch T-473 gebaut; data-lang bleibt statisch.
+@startuml
+participant "manifest+lock\n(web, dashboard)" as L
+participant "CI client gate" as CI
+participant "Dockerfile.prod" as D
+participant "server.js\n(next start standalone)" as S
+participant "proxy.ts" as P
+participant "pages / route handlers" as R
+
+L -> CI : next 16.3.4 + @next/swc-* 16.3.4 (npm ci)
+CI -> CI : image-codec.check.mjs, lint, typecheck, build
+L -> D : same lock (npm ci)
+D -> S : .next/standalone, node server.js
+S -> P : matcher-selected request (Node.js runtime)
+P -> R : web matched: redirect/rewrite/intl\ndashboard protected: auth + canAccess
+S -> R : web /api, _next, _vercel, dotted paths\nbypass proxy matcher
+P -> R : dashboard /api/auth/* early return\nbefore protected user + canAccess checks
+R --> S : HTML / JSON
+note over R
+  next/og ImageResponse side-hop: offen,
+  not simulated (no call site)
+end note
+@enduml
+
+@startuml
+' Preserved EKA-18 path integrated from origin/main during T-486 refresh
+title Local developer stack: Quick Start to bounded datastore listeners
+
+actor Developer
+participant "README Quick Start" as ER
+participant "Development Compose" as EC
+participant "PostgreSQL / Redis\nloopback listeners" as ED
+participant "API container\nservice DNS" as EA
+participant "Host tools\nlocalhost defaults" as EH
+
+Developer -> ER : start local stack
+ER -> EC : docker compose up -d
+EC -> ED : publish 127.0.0.1:5432 / 127.0.0.1:6379
+EC -> EA : attach db and redis on internal network
+Developer -> EH : alembic / seeds / host uvicorn
+EH -> ED : connect through localhost
+@enduml
 
 @startuml faq-lang-main-path
 title faq.html: langBtn onclick -> toggleLang -> querySelectorAll("[data-el]")
@@ -30,10 +68,6 @@ note over Toggle, Markup
   data-lang bleibt statisch und hat keine belegte Laufzeitwirkung.
 end note
 @enduml
-
-' T-474 — Sequenz der gebauten Spur "FAQ-Sprachknopf auf schmalem Viewport finden und bedienen"
-' Basis agent/claude/T-473 c4329f694c2b5752299daf85108f2d90e4f9dea3
-' Nur gebaute Hops sind Pfeile; die offene Sichtbarkeitspruefung ist Notiz, nicht simuliert.
 
 @startuml faq-nav-main-path
 title faq.html @ 390px: nav.pnx2-header -> r3-wiki.css @media 920 -> .nav-links Scroller -> #langBtn
