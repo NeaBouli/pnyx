@@ -41,6 +41,36 @@ EH -> ED : connect through localhost
 @enduml
 
 @startuml
+title Sentry event capture: exception/request to transport
+
+participant "FastAPI / Starlette" as WEB
+participant "_sentry_init_options" as POLICY
+participant "Sentry SDK\nevent construction" as SDK
+participant "_before_send_filter" as FILTER
+participant "Sentry transport" as TRANSPORT
+
+POLICY -> SDK : init integrations, sampling, hooks (H2)
+WEB -> SDK : exception / transaction + request context (H1)
+SDK -> SDK : build stack frames; implicit local capture (H3)
+SDK -> SDK : derive request metadata; implicit body capture (H4)
+SDK -> FILTER : constructed event (H5)
+FILTER -> FILTER : remove env/cookies/query; redact known keys
+FILTER -> TRANSPORT : filtered envelope (H6)
+
+note over POLICY,SDK
+Required capture boundary:
+include_local_variables = false
+max_request_body_size = never
+end note
+
+note over FILTER
+Retained as defense in depth for
+headers, query strings, extras and
+integration-supplied event data.
+end note
+@enduml
+
+@startuml
 ' EKA-63 main path — current built behaviour at base 4cc1193 (T-507, no fix simulated)
 title EKA-63: citizen question -> canonical miss -> model fallback
 
