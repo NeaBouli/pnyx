@@ -13,7 +13,7 @@ participation and direct democracy in Greece.
 | Direct APK | 1.0.32 (`versionCode 61`) | [Download APK](https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk) and website alias are published and checksum-verified |
 | Google Play | 1.0.32 (`versionCode 61`) | Submitted to Closed Testing Alpha; Google review pending. [Join the test](https://play.google.com/apps/testing/ekklesia.gr) |
 | GitHub Release | 1.0.32 (`versionCode 61`) | [Release notes, APK, AAB and checksums](https://github.com/NeaBouli/pnyx/releases/tag/v1.0.32) |
-| F-Droid | 1.0.29 (`versionCode 581-584`) public | [Install from F-Droid](https://f-droid.org/packages/ekklesia.gr/); v1.0.31 metadata is accepted and v1.0.32 follows the independent source-build cycle |
+| F-Droid | 1.0.32 (`versionCode 611-614`, suggested 614) public | [Install from F-Droid](https://f-droid.org/packages/ekklesia.gr/); built independently by F-Droid from source; 1.0.31 and 1.0.29 remain listed |
 
 Direct APK SHA-256:
 
