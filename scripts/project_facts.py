@@ -5,7 +5,7 @@ Counts are derived from source, so every published number can cite one dated art
 
     python3 scripts/project_facts.py --write    regenerate docs/project-facts.json
     python3 scripts/project_facts.py --check    fail if the committed artifact is stale (CI)
-    python3 scripts/project_facts.py --claims   report published count claims that disagree
+    python3 scripts/project_facts.py --claims   report published count claims that disagree (heuristic, see claims())
 
 Standard library only. Definitions are fixed in ``DEFINITIONS`` so pages can quote them.
 """
@@ -91,21 +91,40 @@ def render(facts: dict[str, object]) -> str:
     return json.dumps(facts, indent=2, ensure_ascii=False, sort_keys=True) + "\n"
 
 
-# Published count claims: "<n> modules|endpoints|tables|containers" in EL and EN.
-CLAIM_RE = re.compile(
-    r"(\d+)\+?\s*(modules?|endpoints?|tables?|containers?|modules?|"
-    r"ενότητες|ενοτήτων|endpoints|πίνακες|πινάκων|containers|κοντέινερ|module)",
-    re.IGNORECASE,
-)
+# Published count claims in EL/EN, either "<n> <noun>" or "<noun>: <n>". HTML tags are
+# stripped first so "<strong>22</strong> Modules" is seen as "22 Modules".
+NOUN = (r"(modules?|module|ενότητες|ενοτήτων|endpoints?|tables?|πίνακες|πινάκων|"
+        r"containers?|κοντέινερ)")
+CLAIM_RES = [
+    re.compile(r"(\d+)(\+?)\s*" + NOUN, re.IGNORECASE),
+    re.compile(NOUN + r"\s*[:=]\s*(\d+)(\+?)", re.IGNORECASE),
+]
 CLAIM_KIND = {
     "module": "modules", "modules": "modules", "ενότητες": "modules", "ενοτήτων": "modules",
     "endpoint": "api_endpoints", "endpoints": "api_endpoints",
     "table": "db_tables_orm", "tables": "db_tables_orm", "πίνακες": "db_tables_orm", "πινάκων": "db_tables_orm",
     "container": "prod_containers", "containers": "prod_containers", "κοντέινερ": "prod_containers",
 }
+TAG_RE = re.compile(r"<[^>]+>")
+# Pages that quote dated audit figures; reported, but not counted as current claims.
+HISTORICAL = {"docs/wiki/audit.html"}
 
 
-def claims(facts: dict[str, object]) -> list[tuple[str, int, str, str]]:
+def claim_paths() -> list[Path]:
+    paths = sorted(ROOT.glob("docs/**/*.html")) + [ROOT / "docs" / "llms.txt"]
+    paths += sorted((ROOT / "docs" / "wiki").glob("*.md")) + sorted((ROOT / "wiki").glob("*.md")) + [ROOT / "README.md"]
+    skip = ("planning", "community-audits", "reports", "operations", "agent-bridge")
+    return [p for p in paths if p.exists() and not any(part in p.parts for part in skip)]
+
+
+def claims(facts: dict[str, object]) -> list[tuple[str, int, str, str, str]]:
+    """Return (path, line, kind, text, class) for published counts that differ from the facts.
+
+    class: "mismatch" (exact number that differs), "lower-bound" (e.g. "70+", true but
+    imprecise when the fact is larger) or "historical" (dated audit quotes). One entry per
+    distinct claim per line. Heuristic: claims phrased without one of the listed nouns
+    (e.g. "32 routers", prose such as "two dozen tables") are not detected.
+    """
     counts = facts["counts"]
     accepted = {
         "modules": {counts["modules_spec"], counts["modules_listed"]},
@@ -113,16 +132,25 @@ def claims(facts: dict[str, object]) -> list[tuple[str, int, str, str]]:
         "db_tables_orm": {counts["db_tables_orm"]},
         "prod_containers": {counts["prod_containers"]},
     }
-    paths = sorted(ROOT.glob("docs/**/*.html")) + [ROOT / "docs" / "llms.txt"] + sorted((ROOT / "docs" / "wiki").glob("*.md"))
-    out: list[tuple[str, int, str, str]] = []
-    for path in paths:
-        if not path.exists() or "planning" in path.parts or "community-audits" in path.parts:
-            continue
+    out: list[tuple[str, int, str, str, str]] = []
+    for path in claim_paths():
         for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-            for m in CLAIM_RE.finditer(line):
-                kind = CLAIM_KIND.get(m.group(2).lower())
-                if kind and int(m.group(1)) not in accepted[kind]:
-                    out.append((str(path.relative_to(ROOT)), lineno, kind, m.group(0)))
+            seen: set[tuple[str, int, str]] = set()
+            # Raw line catches attribute text (meta content, data-el/data-en); the
+            # tag-stripped line catches numbers split from their noun by markup.
+            for pattern, text in ((p, t) for t in (line, TAG_RE.sub(" ", line)) for p in CLAIM_RES):
+                for m in pattern.finditer(text):
+                    groups = m.groups()
+                    num, plus, noun = (groups[0], groups[1], groups[2]) if groups[0].isdigit() else (groups[1], groups[2], groups[0])
+                    kind = CLAIM_KIND.get(noun.lower())
+                    value = int(num)
+                    if not kind or value in accepted[kind] or (kind, value, plus) in seen:
+                        continue
+                    seen.add((kind, value, plus))
+                    lower_ok = plus == "+" and value <= max(accepted[kind])
+                    rel = str(path.relative_to(ROOT))
+                    cls = "historical" if rel in HISTORICAL else ("lower-bound" if lower_ok else "mismatch")
+                    out.append((rel, lineno, kind, " ".join(m.group(0).split()), cls))
     return out
 
 
@@ -146,9 +174,11 @@ def main(argv: list[str]) -> int:
         print(f"project facts ok: {facts['counts']}")
         return 0
     found = claims(facts)
-    for path, lineno, kind, text in found:
-        print(f"{path}:{lineno}: {kind}: {text!r}")
-    print(f"{len(found)} published count claim(s) disagree with docs/project-facts.json")
+    for path, lineno, kind, text, cls in found:
+        print(f"{path}:{lineno}: {kind}: {cls}: {text!r}")
+    lines = {(p, n) for p, n, *_ in found}
+    by = {c: sum(1 for *_, x in found if x == c) for c in ("mismatch", "lower-bound", "historical")}
+    print(f"{len(found)} distinct claim(s) on {len(lines)} line(s): " + ", ".join(f"{v} {k}" for k, v in by.items()))
     return 0
 
 

@@ -28,3 +28,26 @@ class ProjectFactsTest(unittest.TestCase):
     def test_every_count_has_a_definition(self) -> None:
         facts = project_facts.compute()
         self.assertEqual(set(facts["counts"]), set(facts["definitions"]))
+
+
+class ClaimMatcherTest(unittest.TestCase):
+    """The --claims heuristic must see markup-split, attribute and "noun: n" forms."""
+
+    def _hits(self, line: str) -> list[tuple[str, str]]:
+        found = []
+        for text in (line, project_facts.TAG_RE.sub(" ", line)):
+            for pattern in project_facts.CLAIM_RES:
+                for m in pattern.finditer(text):
+                    g = m.groups()
+                    num, noun = (g[0], g[2]) if g[0].isdigit() else (g[1], g[0])
+                    found.append((num, project_facts.CLAIM_KIND[noun.lower()]))
+        return sorted(set(found))
+
+    def test_markup_split_number(self) -> None:
+        self.assertIn(("22", "modules"), self._hits('<strong>22</strong> Modules'))
+
+    def test_attribute_text(self) -> None:
+        self.assertIn(("18", "db_tables_orm"), self._hits('<meta content="Σχήμα: 18 πίνακες"/>'))
+
+    def test_noun_colon_number(self) -> None:
+        self.assertIn(("9", "prod_containers"), self._hits("Containers: 9"))
