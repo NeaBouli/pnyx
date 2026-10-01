@@ -69,3 +69,21 @@ headers, query strings, extras and
 integration-supplied event data.
 end note
 @enduml
+
+@startuml
+title Expo 54 asset build dependency path
+
+participant "App manifest" as APP
+participant "Expo 54" as EXPO
+participant "@expo/metro 54.2.0" as EM
+participant "Metro family" as METRO
+participant "Asset parser" as PARSER
+participant "Regression/build gates" as GATES
+
+APP -> EXPO : resolve ~54.0.37 (H1)
+EXPO -> EM : install adapter 54.2.0 (H1)
+EM -> METRO : exact 0.83.3 declaration\noverridden as coherent 0.83.8 family (H2/H3)
+METRO -> PARSER : internal bounded parser, no image-size (H5)
+APP -> GATES : 26-case installed-parser regression (H4)
+METRO -> GATES : tests + Expo bundle/native build (H6)
+@enduml
