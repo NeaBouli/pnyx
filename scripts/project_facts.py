@@ -91,13 +91,14 @@ def render(facts: dict[str, object]) -> str:
     return json.dumps(facts, indent=2, ensure_ascii=False, sort_keys=True) + "\n"
 
 
-# Published count claims in EL/EN, either "<n> <noun>" or "<noun>: <n>". HTML tags are
+# Published count claims in EL/EN: "<n> <noun>", "<noun>: <n>" or a "| <noun> | <n> |" table row. HTML tags are
 # stripped first so "<strong>22</strong> Modules" is seen as "22 Modules".
 NOUN = (r"(modules?|module|ενότητες|ενοτήτων|endpoints?|tables?|πίνακες|πινάκων|"
         r"containers?|κοντέινερ)")
 CLAIM_RES = [
     re.compile(r"(\d+)(\+?)\s*" + NOUN, re.IGNORECASE),
-    re.compile(NOUN + r"\s*[:=]\s*(\d+)(\+?)", re.IGNORECASE),
+    # "Containers: 9", "Containers = 9" and Markdown table cells "| Containers | 11 |"
+    re.compile(NOUN + r"\s*(?:[:=]|\|)\s*(\d+)(\+?)", re.IGNORECASE),
 ]
 CLAIM_KIND = {
     "module": "modules", "modules": "modules", "ενότητες": "modules", "ενοτήτων": "modules",
@@ -117,13 +118,14 @@ def claim_paths() -> list[Path]:
     return [p for p in paths if p.exists() and not any(part in p.parts for part in skip)]
 
 
-def claims(facts: dict[str, object]) -> list[tuple[str, int, str, str, str]]:
+def claims(facts: dict[str, object], paths: list[Path] | None = None) -> list[tuple[str, int, str, str, str]]:
     """Return (path, line, kind, text, class) for published counts that differ from the facts.
 
     class: "mismatch" (exact number that differs), "lower-bound" (e.g. "70+", true but
     imprecise when the fact is larger) or "historical" (dated audit quotes). One entry per
-    distinct claim per line. Heuristic: claims phrased without one of the listed nouns
-    (e.g. "32 routers", prose such as "two dozen tables") are not detected.
+    distinct claim per line. Heuristic: a count is only detected next to one of the listed
+    nouns ("<n> <noun>", "<noun>: <n>", "| <noun> | <n> |"); other phrasings (e.g. "32 routers",
+    "two dozen tables", a number in a different table column) are not detected.
     """
     counts = facts["counts"]
     accepted = {
@@ -133,7 +135,7 @@ def claims(facts: dict[str, object]) -> list[tuple[str, int, str, str, str]]:
         "prod_containers": {counts["prod_containers"]},
     }
     out: list[tuple[str, int, str, str, str]] = []
-    for path in claim_paths():
+    for path in (claim_paths() if paths is None else paths):
         for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             seen: set[tuple[str, int, str]] = set()
             # Raw line catches attribute text (meta content, data-el/data-en); the
@@ -148,7 +150,7 @@ def claims(facts: dict[str, object]) -> list[tuple[str, int, str, str, str]]:
                         continue
                     seen.add((kind, value, plus))
                     lower_ok = plus == "+" and value <= max(accepted[kind])
-                    rel = str(path.relative_to(ROOT))
+                    rel = str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path)
                     cls = "historical" if rel in HISTORICAL else ("lower-bound" if lower_ok else "mismatch")
                     out.append((rel, lineno, kind, " ".join(m.group(0).split()), cls))
     return out

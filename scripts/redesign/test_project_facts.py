@@ -31,23 +31,33 @@ class ProjectFactsTest(unittest.TestCase):
 
 
 class ClaimMatcherTest(unittest.TestCase):
-    """The --claims heuristic must see markup-split, attribute and "noun: n" forms."""
+    """Exercise the production claims() on synthetic pages (markup, attributes, tables)."""
 
-    def _hits(self, line: str) -> list[tuple[str, str]]:
-        found = []
-        for text in (line, project_facts.TAG_RE.sub(" ", line)):
-            for pattern in project_facts.CLAIM_RES:
-                for m in pattern.finditer(text):
-                    g = m.groups()
-                    num, noun = (g[0], g[2]) if g[0].isdigit() else (g[1], g[0])
-                    found.append((num, project_facts.CLAIM_KIND[noun.lower()]))
-        return sorted(set(found))
+    FACTS = {"counts": {"modules_spec": 25, "modules_listed": 23, "api_endpoints": 189,
+                        "db_tables_orm": 24, "prod_containers": 8}}
+
+    def _run(self, text: str) -> list[tuple[str, str, str]]:
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            page = Path(d) / "page.html"
+            page.write_text(text, encoding="utf-8")
+            return [(kind, claim, cls) for _, _, kind, claim, cls in project_facts.claims(self.FACTS, [page])]
 
     def test_markup_split_number(self) -> None:
-        self.assertIn(("22", "modules"), self._hits('<strong>22</strong> Modules'))
+        self.assertIn(("modules", "22 Modules", "mismatch"), self._run("<strong>22</strong> Modules"))
 
     def test_attribute_text(self) -> None:
-        self.assertIn(("18", "db_tables_orm"), self._hits('<meta content="Σχήμα: 18 πίνακες"/>'))
+        self.assertIn(("db_tables_orm", "18 πίνακες", "mismatch"), self._run('<meta content="Σχήμα: 18 πίνακες"/>'))
+
+    def test_markdown_table_row(self) -> None:
+        self.assertIn(("prod_containers", "Containers | 11", "mismatch"), self._run("| Containers | 11 |"))
 
     def test_noun_colon_number(self) -> None:
-        self.assertIn(("9", "prod_containers"), self._hits("Containers: 9"))
+        self.assertIn(("prod_containers", "Containers: 9", "mismatch"), self._run("Containers: 9"))
+
+    def test_lower_bound_and_accepted_values(self) -> None:
+        hits = self._run("70+ endpoints, 25 modules, 23 modules, 24 tables, 8 containers")
+        self.assertEqual(hits, [("api_endpoints", "70+ endpoints", "lower-bound")])
+
+    def test_one_entry_per_claim_per_line(self) -> None:
+        self.assertEqual(len(self._run('<p data-el="16 Endpoints">16 Endpoints</p>')), 1)
