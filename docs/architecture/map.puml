@@ -134,3 +134,45 @@ FILTER --> TRANSPORT : H6 filtered envelope
 TESTS ..> POLICY : pin options
 TESTS ..> TRANSPORT : inspect offline envelope
 @enduml
+
+@startmindmap
+' EKA-63 — MOD-22 deterministic canonical citizen answers (base 4cc1193, T-507, mapping only)
+* MOD-22 canonical citizen answers
+** API composition
+*** gebaut: main.py::include_router(agent.router)
+** Hybrid agent
+*** gebaut: agent.py::ask_agent
+*** gebaut: agent.py::_safety_response
+** Canonical classifier
+*** gebaut: agent.py::_canonical_response existing topics
+*** offen: data deletion / identity revocation
+*** offen: guarded ZK / Semaphore
+*** offen: representative ADA + invite verification
+*** offen: results visibility lifecycle
+** RAG and models
+*** gebaut: _build_context -> Ollama / Claude
+** Regression tests
+*** offen: EKA-63 bilingual matrix + model bypass
+@endmindmap
+
+@startuml
+' EKA-63 component diagram — arrows only for opened request hops
+skinparam componentStyle rectangle
+component "API composition\nmain.py" as E63MAIN
+component "MOD-22 /ask\nagent.py::ask_agent" as E63ASK
+component "Safety filter\n_safety_response" as E63SAFE
+component "Canonical classifier\n_canonical_response" as E63CANON
+component "Fixed response\nresp + disclaimer" as E63RESP
+component "RAG context\n_build_context" as E63RAG
+component "Ollama / Claude\nmodel fallback" as E63MODEL
+actor "Citizen caller" as E63USER
+
+E63MAIN --> E63ASK : A1 AskRequest(question, lang)
+E63ASK --> E63SAFE : A2 safe question check
+E63ASK --> E63CANON : A3 safe question + canonical lang
+E63CANON --> E63RESP : A4-A5 matched topic + bilingual fact
+E63CANON --> E63RAG : A6 current EKA-63 miss
+E63RAG --> E63MODEL : A6 retained context records
+E63RESP --> E63USER : A7 deterministic JSON
+E63MODEL --> E63USER : A7 generated JSON
+@enduml
