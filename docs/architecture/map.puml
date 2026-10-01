@@ -94,6 +94,48 @@ ET --> EC : pin bindings + service-DNS contract
 @enduml
 
 @startmindmap
+* Sentry capture policy boundary
+** API exception / transaction
+*** gebaut: FastAPIIntegration
+*** gebaut: StarletteIntegration
+** Init policy
+*** gebaut: main.py::_sentry_init_options
+*** offen: include_local_variables explicit false
+*** offen: max_request_body_size explicit never
+** Event construction
+*** gebaut: stack and exception metadata
+*** implicit default: frame locals
+*** implicit default: request body
+** Defense filter
+*** gebaut: main.py::_before_send_filter
+*** redacts known sensitive keys and request fields
+** Transport
+*** gebaut: Sentry SDK envelope transport
+** Regression tests
+*** partial: hook wiring and known-secret redaction
+*** offen: arbitrary local/body exclusion
+@endmindmap
+
+@startuml
+skinparam componentStyle rectangle
+component "FastAPI / Starlette\nexception or transaction" as WEB
+component "Sentry init policy\nmain.py::_sentry_init_options" as POLICY
+component "SDK event construction\nstack + request context" as SDK
+component "Defense filter\nmain.py::_before_send_filter" as FILTER
+component "Sentry transport" as TRANSPORT
+component "Policy tests\ntest_sentry_secret_scrubbing.py" as TESTS
+
+WEB --> SDK : H1 exception / transaction
+POLICY --> SDK : H2 integrations + capture policy
+SDK --> SDK : H3 frame locals (implicit default)
+SDK --> SDK : H4 request body (implicit default)
+SDK --> FILTER : H5 constructed event
+FILTER --> TRANSPORT : H6 filtered envelope
+TESTS ..> POLICY : pin options
+TESTS ..> TRANSPORT : inspect offline envelope
+@enduml
+
+@startmindmap
 ' EKA-08 — Web Compass Privacy Storage after T-488; EKA-18 diagrams above unchanged
 * Web Compass: profile to browser storage
 ** Compass UI card
