@@ -179,50 +179,54 @@ async def votes_timeline(
     days: int = Query(30, le=365),
     db: AsyncSession = Depends(get_db)
 ):
-    """Abstimmungs-Zeitverlauf aggregiert nach Tag."""
-    try:
-        since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
-        if bill_id:
-            bill = await db.get(ParliamentBill, bill_id)
-            if not bill or not is_public_bill(bill):
-                raise HTTPException(404, f"Bill {bill_id} nicht gefunden")
-            events = bill_vote_events_query(
-                bill_id,
-                include_zk=include_zk_for_bill(bill),
-            )
-        else:
-            tier1_events = (
-                select(
-                    cast(CitizenVote.created_at, DateTime(timezone=False)).label("created_at"),
-                    cast(CitizenVote.vote, String).label("vote"),
-                )
-                .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
-                .where(public_bill_filter(), ~CitizenVote.bill_id.like("DEMO-%"))
-            )
-            zk_events = (
-                select(
-                    cast(ZkVoteReceipt.created_at, DateTime(timezone=False)).label("created_at"),
-                    ZkVoteReceipt.vote_commitment.label("vote"),
-                )
-                .join(ParliamentBill, ZkVoteReceipt.vote_scope_id == func.concat("bill:", ParliamentBill.id))
-                .where(
-                    public_bill_filter(),
-                    ParliamentBill.source == "PARLIAMENT",
-                    ~ParliamentBill.id.like("DEMO-%"),
-                    ZkVoteReceipt.vote_commitment.in_([choice.value for choice in VoteChoice]),
-                )
-            )
-            events = union_all(tier1_events, zk_events).subquery("public_vote_events")
+    """Abstimmungs-Zeitverlauf aggregiert nach Tag.
 
-        day_col = func.date_trunc("day", events.c.created_at).label("day")
-        query = (
-            select(day_col, events.c.vote, func.count().label("count"))
-            .where(events.c.created_at >= since)
-            .group_by(day_col, events.c.vote)
-            .order_by(day_col)
+    Query- und DB-Fehler propagieren (kein Maskieren als leere Daten).
+    Nur Fehler bei der Zeilen-Aggregation liefern status=degraded.
+    """
+    since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
+    if bill_id:
+        bill = await db.get(ParliamentBill, bill_id)
+        if not bill or not is_public_bill(bill):
+            raise HTTPException(404, f"Bill {bill_id} nicht gefunden")
+        events = bill_vote_events_query(
+            bill_id,
+            include_zk=include_zk_for_bill(bill),
         )
-        result = await db.execute(query)
-        rows = result.all()
+    else:
+        tier1_events = (
+            select(
+                cast(CitizenVote.created_at, DateTime(timezone=False)).label("created_at"),
+                cast(CitizenVote.vote, String).label("vote"),
+            )
+            .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
+            .where(public_bill_filter(), ~CitizenVote.bill_id.like("DEMO-%"))
+        )
+        zk_events = (
+            select(
+                cast(ZkVoteReceipt.created_at, DateTime(timezone=False)).label("created_at"),
+                ZkVoteReceipt.vote_commitment.label("vote"),
+            )
+            .join(ParliamentBill, ZkVoteReceipt.vote_scope_id == func.concat("bill:", ParliamentBill.id))
+            .where(
+                public_bill_filter(),
+                ParliamentBill.source == "PARLIAMENT",
+                ~ParliamentBill.id.like("DEMO-%"),
+                ZkVoteReceipt.vote_commitment.in_([choice.value for choice in VoteChoice]),
+            )
+        )
+        events = union_all(tier1_events, zk_events).subquery("public_vote_events")
+
+    day_col = func.date_trunc("day", events.c.created_at).label("day")
+    query = (
+        select(day_col, events.c.vote, func.count().label("count"))
+        .where(events.c.created_at >= since)
+        .group_by(day_col, events.c.vote)
+        .order_by(day_col)
+    )
+    result = await db.execute(query)
+    rows = result.all()
+    try:
         timeline: dict = {}
         for row in rows:
             day = row.day.strftime("%Y-%m-%d") if row.day else "unknown"
@@ -239,14 +243,25 @@ async def votes_timeline(
             if vote_key in timeline[day]:
                 timeline[day][vote_key] = row.count
             timeline[day]["total"] += row.count
+    except (AttributeError, TypeError, ValueError):
+        logger.error(
+            "[votes-timeline] Row processing failed: timeline_processing_failed "
+            "(bill_id=%r, days=%s)",
+            bill_id, days,
+        )
         return {
             "period_days": days, "bill_id": bill_id,
-            "timeline": sorted(timeline.values(), key=lambda x: x["date"]),
-            "note": "Aggregiert nach Tag",
+            "timeline": [],
+            "note": "Verarbeitungsfehler — Zeitverlauf nicht verfügbar",
+            "status": "degraded",
+            "error": "timeline_processing_failed",
         }
-    except (AttributeError, TypeError, ValueError) as e:
-        logger.warning("[votes-timeline] Data processing error: %s", e)
-        return {"period_days": days, "bill_id": bill_id, "timeline": [], "note": "Keine Daten"}
+    return {
+        "period_days": days, "bill_id": bill_id,
+        "timeline": sorted(timeline.values(), key=lambda x: x["date"]),
+        "note": "Aggregiert nach Tag",
+        "status": "ok",
+    }
 
 
 @router.get("/top-divergence")
