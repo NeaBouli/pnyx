@@ -37,6 +37,10 @@ Headline results:
   client-KDF drift across three implementations (EKA-21), and a substantial
   documentation-drift cluster (EKA-33…52) on the platform's most sensitive public promises.
 
+### Follow-up addenda
+
+- 2026-10-01 — [EKA-20 re-check of the 2026-05-03 master-audit findings](EKA-20_Rebaseline_2026-10-01.md): 7 closed, 2 open, 1 live-only.
+
 Reports are immutable once pinned; follow-up audits get new dates and continue the
 register (next: `EKA-65`).
 
