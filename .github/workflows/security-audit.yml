@@ -48,13 +48,19 @@ jobs:
             echo "has_npm=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: npm audit gate self-test
+        run: node --test scripts/npm-audit-gate.check.mjs
+
       - name: npm audit (all workspaces)
         run: |
           failed=0
           while IFS= read -r lockfile; do
             dir="$(dirname "$lockfile")"
             echo "=== npm audit: $dir ==="
-            (cd "$dir" && npm audit --audit-level=high) || failed=1
+            # Gate: high/critical fail unless covered by an unexpired entry in
+            # .github/npm-audit-allowlist.json for this workspace; entries expire on review_by.
+            ws="${dir#./}"
+            (cd "$dir" && { npm audit --json || true; } | node "$GITHUB_WORKSPACE/scripts/npm-audit-gate.mjs" "$ws") || failed=1
           done < <(find . -maxdepth 3 -name package-lock.json -not -path "*/node_modules/*" | sort)
           exit $failed
 
