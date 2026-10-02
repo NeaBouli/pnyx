@@ -335,3 +335,47 @@ HELPER --> WEBCRYPTO : N4 SHA-256(phone:salt)
 WEBCRYPTO --> HEX : N5 digest bytes
 PROD .. HELPER : no import or call (crypto.ts has no nullifier export)
 @enduml
+
+@startmindmap
+* EKA-57 knowledge-base lifecycle
+** Authorities
+*** legacy SQL seed: 17 rows, DELETE + INSERT
+*** Python ENTRIES: 14 rows, upsert only
+** Persistence
+*** built: knowledge_base schema
+*** open: exact transactional sync
+*** open: read-only drift check
+** Delivery
+*** built: manual deploy workflow
+*** open: sync then check
+** CI
+*** built: API pytest job
+*** skipped: ignored historical training capture
+*** open: tracked question-only fixture
+** Runtime
+*** first 20 rows loaded
+*** top 5 matches enter prompt
+** Content boundary
+*** unchanged: Python ENTRIES wording
+*** Gio decision: operator/legal/privacy claims
+@endmindmap
+
+@startuml
+skinparam componentStyle rectangle
+component "Legacy SQL seed\n17 rows" as SQL
+component "Python catalog + synchronizer\n14 ENTRIES" as PY
+database "knowledge_base" as DB
+component "Manual deploy workflow" as DEPLOY
+component "CI API tests" as CI
+component "Private ignored\nhistorical capture" as PRIVATE
+component "Tracked question-only\nfixture" as FIXTURE
+component "Agent retrieval\nfirst 20 -> top 5" as RAG
+
+SQL --> DB : H1 manual replace
+PY --> DB : H2 manual upsert
+DEPLOY ..> PY : H4 no sync by design (Gio 2026-10-02: manual only)
+CI ..> PY : H5 missing drift invariant
+PRIVATE --> CI : H6 absent in clean checkout -> skip
+FIXTURE ..> CI : intended mandatory regression input
+DB --> RAG : H7 capped rows
+@enduml

@@ -227,3 +227,42 @@ note over LEGACY,KAT
   The absent runtime edge is not simulated.
 end note
 @enduml
+
+@startuml
+title EKA-57: repository catalog to assistant context
+
+participant "Legacy SQL seed" as SQL
+participant "Python seed catalog" as PY
+participant "Manual deploy" as DEPLOY
+database "knowledge_base" as DB
+participant "CI tests" as CI
+participant "Agent retrieval" as RAG
+participant "Prompt" as PROMPT
+
+SQL -> DB : manual DELETE + 17-row INSERT (H1)
+PY -> DB : manual 14-row upsert, no deletion (H2)
+note over SQL,PY
+Two divergent authorities can coexist.
+Duplicates and stale rows survive.
+end note
+
+DEPLOY -> DEPLOY : rebuild changed containers (H4)
+note right of DEPLOY
+No KB sync or drift check.
+end note
+
+CI -> CI : training module seeks ignored private file (H6)
+CI -> CI : missing file -> skip
+
+DB -> RAG : priority order, LIMIT 20 (H7)
+RAG -> PROMPT : scored top 5 or priority fallback
+
+note over PY,DB
+Required technical path:
+one catalog -> transactional exact sync -> check
+end note
+note over DEPLOY,CI
+Deploy never runs sync (Gio 2026-10-02); sync + check are manual operator commands;
+CI proves behavior and uses a tracked question-only fixture.
+end note
+@enduml
