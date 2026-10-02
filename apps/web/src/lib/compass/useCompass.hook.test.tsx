@@ -85,4 +85,21 @@ describe("useCompass debounced persistence (Codex follow-up to #441)", () => {
     expect(warn).toHaveBeenCalledTimes(1);
     expect(warn.mock.calls[0][1]).toBeInstanceOf(TypeError);
   });
+
+  it("still finishes loading with an empty profile when the key read throws (CodeRabbit #441)", async () => {
+    act(() => root.unmount());
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new DOMException("blocked", "SecurityError"); });
+    container = document.createElement("div");
+    root = createRoot(container);
+    await act(async () => { root.render(createElement(Harness, { onApi: (a: Api) => { api = a; } })); });
+    await act(async () => { await Promise.resolve(); });
+    expect(api.loading).toBe(false);
+    expect(api.profile.vaaAnswers).toBeNull();
+    expect(api.profile.signals).toEqual({});
+    // The debounced save reads the key inside the timer callback: it must not throw there.
+    vi.useFakeTimers();
+    await act(async () => { api.setModel("left-right"); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(300); });
+    expect(saveSpy.calls).toBe(1);
+  });
 });
