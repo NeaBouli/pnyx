@@ -1,6 +1,7 @@
 """T-471: Admin credential must not survive Sentry event filtering or the import contract."""
 
 import copy
+import json
 from pathlib import Path
 from urllib.parse import parse_qsl
 
@@ -220,3 +221,95 @@ def test_error_event_does_not_ship_admin_key(sdk_reset):
     kinds = {kind for kind, _ in transport.payloads}
     assert {"event", "transaction"} <= kinds
     assert all(SECRET not in body for _, body in transport.payloads)
+
+
+# ── T-494: Capture-Grenze — keine Frame-Locals, keine Request-Bodies ──────────
+
+LOCAL_SENTINEL = "synthetic-local-sentinel-t494"
+BODY_SENTINEL = "synthetic-body-sentinel-t494"
+
+
+def _events(transport: _CaptureTransport) -> list[dict]:
+    return [json.loads(body) for kind, body in transport.payloads if kind == "event"]
+
+
+def test_sentry_init_disables_local_variables_and_request_bodies():
+    options = main._sentry_init_options("https://public@o0.ingest.sentry.io/1")
+    assert options["include_local_variables"] is False
+    assert options["max_request_body_size"] == "never"
+
+
+def _raise_with_plain_local() -> None:
+    plain_note = LOCAL_SENTINEL  # harmloser Name: vom Key-Filter nicht erkannt
+    raise ValueError(f"synthetic failure ({len(plain_note)})")
+
+
+def _capture_plain_local_failure(transport: _CaptureTransport) -> dict:
+    try:
+        _raise_with_plain_local()
+    except ValueError as exc:
+        sentry_sdk.capture_exception(exc)
+    sentry_sdk.flush()
+    events = _events(transport)
+    assert len(events) == 1
+    return events[0]
+
+
+def test_error_event_omits_plain_frame_locals(sdk_reset):
+    transport = _init_sdk()
+    event = _capture_plain_local_failure(transport)
+
+    assert all(LOCAL_SENTINEL not in body for _, body in transport.payloads)
+    exc = event["exception"]["values"][-1]
+    assert exc["type"] == "ValueError"
+    frames = exc["stacktrace"]["frames"]
+    assert any(f.get("function") == "_raise_with_plain_local" for f in frames)
+    assert all("vars" not in f for f in frames)
+
+
+def test_error_event_leaks_plain_frame_locals_without_option(sdk_reset):
+    """Kontrolle: mit include_local_variables=True erreicht der Wert den Transport."""
+    transport = _init_sdk(include_local_variables=True)
+    _capture_plain_local_failure(transport)
+
+    assert any(kind == "event" and LOCAL_SENTINEL in body for kind, body in transport.payloads)
+
+
+def _post_plain_body(**overrides) -> _CaptureTransport:
+    transport = _init_sdk(**overrides)
+    app = FastAPI()
+
+    @app.post("/boom")
+    async def boom(request: Request):
+        await request.json()
+        raise RuntimeError("synthetic body failure")
+
+    TestClient(app, raise_server_exceptions=False).post(
+        "/boom?dry=1", json={"plain_note": BODY_SENTINEL},
+    )
+    sentry_sdk.flush()
+    return transport
+
+
+def test_fastapi_events_omit_plain_request_body(sdk_reset):
+    transport = _post_plain_body()
+
+    kinds = {kind for kind, _ in transport.payloads}
+    assert {"event", "transaction"} <= kinds
+    assert all(BODY_SENTINEL not in body for _, body in transport.payloads)
+
+    event = _events(transport)[0]
+    assert event["exception"]["values"][-1]["type"] == "RuntimeError"
+    assert event["exception"]["values"][-1]["stacktrace"]["frames"]
+    request = event["request"]
+    assert request["url"].endswith("/boom")
+    assert request["method"] == "POST"
+    assert not request.get("data")
+    assert event["_meta"]["request"]["data"][""]["rem"][0][0] == "!config"
+
+
+def test_fastapi_events_leak_plain_request_body_without_option(sdk_reset):
+    """Kontrolle: mit max_request_body_size="always" erreicht der Body den Transport."""
+    transport = _post_plain_body(max_request_body_size="always")
+
+    assert any(kind == "event" and BODY_SENTINEL in body for kind, body in transport.payloads)
