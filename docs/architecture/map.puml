@@ -134,3 +134,99 @@ FILTER --> TRANSPORT : H6 filtered envelope
 TESTS ..> POLICY : pin options
 TESTS ..> TRANSPORT : inspect offline envelope
 @enduml
+
+@startmindmap
+' EKA-08 — Web Compass Privacy Storage after T-488; EKA-18 diagrams above unchanged
+* Web Compass: profile to browser storage
+** Compass UI card
+*** quarantäne: components/CompassCard.tsx::CompassCard (not mounted, compass is app-only)
+** Compass hook
+*** gebaut: lib/compass/useCompass.ts::useCompass
+*** gebaut: lib/compass/useCompass.ts::persistProfile (300 ms debounce, not awaited)
+** Compass storage
+*** gebaut: lib/compass/storage.ts::loadProfile (legacy purge; ciphertext first; keyed migration)
+*** gebaut: lib/compass/storage.ts::saveProfile (encrypted-only; fail-closed reject)
+*** gebaut: lib/compass/storage.ts::clearProfile
+** Identity key access
+*** gebaut: lib/crypto.ts::loadKeypair (EKA-07, separate)
+** Browser persistence
+*** gebaut: localStorage ekklesia_compass_encrypted
+*** quarantäne: localStorage ekklesia_compass_profile (legacy input, purged on access)
+** Storage regression test
+*** gebaut: lib/compass/storage.test.ts (11 cases)
+@endmindmap
+
+@startuml
+' EKA-08 component diagram — arrows only for hops C1-C9
+skinparam componentStyle rectangle
+component "Compass UI card\nCompassCard.tsx (not mounted)" as CARD
+component "Compass hook\nuseCompass.ts" as HOOK
+component "Identity key access\ncrypto.ts::loadKeypair" as KEYS
+component "Compass storage\nstorage.ts" as STORE
+component "Browser persistence\nlocalStorage" as LS
+
+CARD --> HOOK : C1 useCompass
+HOOK --> KEYS : C2 loadKeypair
+HOOK --> STORE : C3 loadProfile
+STORE --> LS : C4 getItem(encrypted)
+STORE --> LS : C5 take+remove legacy plaintext; optional keyed migration
+HOOK --> HOOK : C6 persistProfile
+HOOK --> STORE : C7 saveProfile
+STORE --> LS : C8a setItem(encrypted) + removeItem(plaintext)
+STORE --> HOOK : C8b reject [no key / crypto / storage error]; no plaintext write
+HOOK --> STORE : C9 clearProfile
+@enduml
+
+@startmindmap
+* Container trust boundaries
+** EKA-18 local dev stack
+*** gebaut: Quick Start -> dev Compose
+*** gebaut: db 127.0.0.1:5432
+*** gebaut: redis 127.0.0.1:6379
+*** gebaut: api service DNS db/redis
+*** gebaut: host localhost tools
+*** gebaut: focused regression
+** EKA-13 production stack
+*** monitor
+**** gebaut: Docker SDK restart source path
+**** selected: production AUTO_RECOVERY_T2=false
+*** docker-proxy
+**** selected: v0.4.2 + manifest digest
+**** selected: CONTAINERS/EVENTS/PING/VERSION=0 + POST=0
+**** selected: dedicated internal network, monitor only
+**** risk: host Docker socket
+**** result: no Docker API namespace enabled while T2 is off
+*** neighbours
+**** offen separate: Ollama latest
+**** offen separate: dashboard/monitor non-root
+@endmindmap
+
+@startuml
+skinparam componentStyle rectangle
+package "EKA-18 dev (built)" {
+  component "Quick Start" as QUICK
+  component "Dev Compose" as DEV
+  component "Host tools" as HOSTTOOLS
+  database "PostgreSQL\n127.0.0.1:5432" as DEVDB
+  component "Redis\n127.0.0.1:6379" as DEVREDIS
+  QUICK --> DEV
+  HOSTTOOLS --> DEVDB
+  HOSTTOOLS --> DEVREDIS
+  DEV --> DEVDB : internal DNS db
+  DEV --> DEVREDIS : internal DNS redis
+}
+
+package "EKA-13 production (selected fix)" {
+  component "Monitor\nDocker SDK" as MON
+  component "docker-proxy\nv0.4.2@digest\nGET namespaces=0, POST=0" as PROXY
+  component "Official GHCR\nv0.4.2 + digest" as GHCR
+  database "Host Docker daemon" as DOCKER
+  cloud "net_ekklesia peers" as PEERS
+  rectangle "internal monitor-proxy network" as PRIVATE
+  MON --> PRIVATE : only consumer
+  PRIVATE --> PROXY : tcp://docker-proxy:2375
+  PEERS ..> PROXY : no route after fix
+  PROXY --> DOCKER : mounted docker.sock
+  GHCR ..> PROXY : selected provenance fix
+}
+@enduml

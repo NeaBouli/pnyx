@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { computeResult, createEmptyProfile, seedFromVAA } from "./engine";
-import { deriveCompassResult } from "./useCompass";
+import { deriveCompassResult, saveProfileSafely } from "./useCompass";
 
 describe("derived compass result", () => {
   it("keeps an empty or unselected profile without a result", () => {
@@ -35,5 +35,14 @@ describe("derived compass result", () => {
     expect(deriveCompassResult(profile, data)).toEqual(computeResult(profile, "party-match",
       { TEST: { 1: 1 } }, { TEST: { id: 1, nameEl: "Test", colorHex: "#000000" } }));
     expect(data).toEqual(before);
+  });
+});
+
+describe("saveProfileSafely (CodeRabbit #396)", () => {
+  it("resolves instead of rejecting when no key is available", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await expect(saveProfileSafely(createEmptyProfile(), null)).resolves.toBeUndefined();
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });
