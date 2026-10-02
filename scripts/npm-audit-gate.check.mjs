@@ -47,7 +47,7 @@ test('moderate advisories are ignored like npm audit --audit-level=high', () => 
 });
 
 test('an errored or empty audit report fails closed', () => {
-  for (const r of [null, { error: { code: 'ENOTFOUND' } }, {}]) assert.equal(run(r).blocking.length, 1);
+  for (const r of [null, { error: { code: 'ENOTFOUND' } }, {}, { vulnerabilities: [] }]) assert.equal(run(r).blocking.length, 1);
 });
 
 test('1: missing, empty or PENDING approval fails closed', () => {

@@ -54,7 +54,8 @@ export function ghsaOf(via) {
 
 export function evaluate(report, workspace, allowlist, today) {
   // Fail closed: an audit that errored (registry down, bad lockfile) or produced no report is not a pass.
-  if (!report || report.error || typeof report.vulnerabilities !== 'object' || report.vulnerabilities === null) {
+  if (!report || report.error || typeof report.vulnerabilities !== 'object' || report.vulnerabilities === null
+    || Array.isArray(report.vulnerabilities)) {
     return { blocking: [`npm audit produced no usable report${report?.error ? `: ${report.error.code || report.error.summary || 'error'}` : ''}`], waived: [], invalid: [] };
   }
   const entries = Array.isArray(allowlist?.entries) ? allowlist.entries : null;
