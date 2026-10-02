@@ -69,3 +69,91 @@ headers, query strings, extras and
 integration-supplied event data.
 end note
 @enduml
+
+@startuml
+' EKA-08 main path — current behaviour after T-488; EKA-18 sequence above unchanged
+title Web Compass: CompassCard -> localStorage
+
+participant "Compass UI card\nCompassCard.tsx" as CARD
+participant "Compass hook\nuseCompass.ts" as HOOK
+participant "Identity key access\ncrypto.ts" as KEYS
+participant "Compass storage\nstorage.ts" as STORE
+database "Browser persistence\nlocalStorage" as LS
+
+note over CARD : not mounted by any route at 4cc1193
+CARD -> HOOK : useCompass() (C1)
+HOOK -> KEYS : loadKeypair() (C2)
+KEYS --> HOOK : privateKeyHex or null
+HOOK -> STORE : loadProfile(key) (C3)
+STORE -> LS : getItem + removeItem(ekklesia_compass_profile) if present (C5)
+STORE -> LS : getItem(ekklesia_compass_encrypted) (C4)
+alt ciphertext present and key/auth valid
+  STORE -> STORE : HKDF + AES-GCM decrypt
+  STORE --> HOOK : CompassProfile
+else ciphertext present but missing key or invalid
+  STORE --> HOOK : empty profile; legacy ignored
+else no ciphertext and valid legacy
+  alt key present
+    STORE -> LS : setItem(encrypted) (C8a migration)
+  end
+  STORE --> HOOK : legacy profile in-memory
+else no valid legacy
+  STORE --> HOOK : empty profile
+end
+
+== mutation ==
+HOOK -> HOOK : setModel / seedFromVAA / recordBillVote -> persistProfile (C6)
+HOOK -> KEYS : loadKeypair() (C2)
+HOOK -> STORE : saveProfile(p, key) after 300 ms, not awaited (C7)
+STORE -> LS : removeItem(ekklesia_compass_profile)
+alt key present and crypto ok
+  STORE -> LS : setItem(ekklesia_compass_encrypted) (C8a)
+else no key or crypto/storage error
+  STORE --> HOOK : rejected promise, no plaintext write (C8b closed)
+end
+
+== reset ==
+HOOK -> STORE : clearProfile() (C9)
+STORE -> LS : removeItem(both)
+note right of HOOK : pending saveTimeout not cancelled
+@enduml
+
+@startuml
+title EKA-18 built path — local tools retain access without LAN exposure
+actor Developer
+participant "Dev Compose" as Compose
+database "PostgreSQL\n127.0.0.1:5432" as DB
+participant "Redis\n127.0.0.1:6379" as Redis
+participant "API container" as API
+
+Developer -> Compose : docker compose up -d
+Compose -> DB : publish IPv4 loopback only
+Compose -> Redis : publish IPv4 loopback only
+Developer -> DB : migrations/seeds via localhost
+Developer -> Redis : local tooling via localhost
+API -> DB : service DNS db:5432
+API -> Redis : service DNS redis:6379
+@enduml
+
+@startuml
+title EKA-13 selected fix — isolate and make Docker access read-only
+participant "Monitor" as Monitor
+participant "private internal\nnetwork" as Private
+participant "docker-proxy\nv0.4.2@digest\nPOST=0" as Proxy
+database "Host Docker daemon" as Docker
+participant "Other net_ekklesia peer" as Peer
+
+Monitor -> Monitor : AUTO_RECOVERY_T2=false; escalate to T3
+Monitor -> Private : sole consumer
+Private -> Proxy : permitted read path
+Peer -[#red,dashed]> Proxy : no shared network route
+Proxy -> Docker : Docker API via mounted socket
+Proxy -[#red,dashed]> Docker : POST denied
+Proxy -> Docker : no enabled API namespace
+
+note over Proxy
+Dedicated internal network closes lateral peer access.
+POST=0 removes restart writes.
+Container/event/ping/version GETs and all Docker writes are denied while T2 is disabled.
+end note
+@enduml
