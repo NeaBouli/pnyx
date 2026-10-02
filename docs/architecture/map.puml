@@ -333,7 +333,7 @@ component "Agent retrieval\nfirst 20 -> top 5" as RAG
 
 SQL --> DB : H1 manual replace
 PY --> DB : H2 manual upsert
-DEPLOY ..> PY : H4 missing sync/check
+DEPLOY ..> PY : H4 no sync by design (Gio 2026-10-02: manual only)
 CI ..> PY : H5 missing drift invariant
 PRIVATE --> CI : H6 absent in clean checkout -> skip
 FIXTURE ..> CI : intended mandatory regression input

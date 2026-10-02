@@ -340,24 +340,17 @@ def test_legacy_sql_seed_is_retired() -> None:
     assert not (REPO_ROOT / "scripts" / "seed_knowledge_base.sql").exists()
 
 
-def test_manual_deploy_runs_sync_then_check_after_api_or_infra_rebuild() -> None:
+def test_manual_deploy_never_runs_kb_sync() -> None:
+    """Gio decision 2026-10-02: no automatic KB sync in the deploy workflow.
+
+    The first exact sync deletes every live row outside ENTRIES, so `sync` and
+    `check` stay operator commands that run only on an explicit instruction.
+    """
     workflow = DEPLOY_WORKFLOW.read_text(encoding="utf-8")
 
     on_block = workflow.split("\non:", 1)[1].split("\njobs:", 1)[0]
     assert re.findall(r"^  (\w+):", on_block, flags=re.MULTILINE) == ["workflow_dispatch"]
-
-    sync_cmd = "$CD exec -T api python scripts/seed_knowledge_base.py sync"
-    check_cmd = "$CD exec -T api python scripts/seed_knowledge_base.py check"
-    assert workflow.count(sync_cmd) == 1 and workflow.count(check_cmd) == 1
-    script = workflow.split("script: |", 1)[1]
-    assert script.lstrip().startswith("set -e")
-    sync_at, check_at = script.index(sync_cmd), script.index(check_cmd)
-    assert script.index("$CD build api && $CD up -d api") < sync_at < check_at
-
-    guard = script[: sync_at].rsplit("if [", 1)[1]
-    assert 'steps.changes.outputs.infra }}" = "true"' in guard
-    assert 'steps.changes.outputs.api }}" = "true"' in guard
-    assert "fi" not in script[script.rindex("then", 0, sync_at): check_at]
+    assert "seed_knowledge_base" not in workflow
 
 
 # ─── Optional real PostgreSQL (disposable loopback DB only) ───────────────────

@@ -229,7 +229,7 @@ Required technical path:
 one catalog -> transactional exact sync -> check
 end note
 note over DEPLOY,CI
-Deploy invokes sync + check;
+Deploy never runs sync (Gio 2026-10-02); sync + check are manual operator commands;
 CI proves behavior and uses a tracked question-only fixture.
 end note
 @enduml

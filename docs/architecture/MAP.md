@@ -676,7 +676,9 @@ Node: API RAG knowledge lifecycle / canonical seed to deployed retrieval.
 
 **Source → sink:** manual seed choice → mutable `knowledge_base` rows → capped retrieval H7 → assistant context and answer.
 
-**Technical invariant:** one version-controlled catalog defines the complete managed table; sync is transactional, exact and idempotent; a check mode exits non-zero on missing, stale, duplicate or changed rows; the manual deploy runs sync then check; CI proves catalog uniqueness, sync/check behavior and always loads the question fixture.
+**Technical invariant:** one version-controlled catalog defines the complete managed table; sync is transactional, exact and idempotent; a check mode exits non-zero on missing, stale, duplicate or changed rows; sync and check are operator commands, not deploy steps (Gio decision 2026-10-02, see below); CI proves catalog uniqueness, sync/check behavior and always loads the question fixture.
+
+**Gio decision 2026-10-02:** merge without automatic sync. The first exact sync deletes every live row outside the 14 `ENTRIES`, so the deploy workflow does not run `sync` or `check`; both run only on Gio's explicit instruction with a rollback point. A test guards that `deploy.yml` never calls the synchronizer.
 
 **Legitimate control path:** a manually authorized deploy remains the only production trigger. The PR must not execute a deployment or touch a live database. A failed sync rolls back and makes the workflow fail; a successful sync is followed by an exact drift check.
 
@@ -699,8 +701,8 @@ Node: API RAG knowledge lifecycle / canonical seed to deployed retrieval.
 
 1. Retire the executable SQL seed so `apps/api/scripts/seed_knowledge_base.py::ENTRIES` is the sole catalog without editing its wording.
 2. Give the Python command explicit transactional `sync` and read-only `check` modes. Preserve IDs for matching natural keys where practical; remove stale and duplicate rows so DB equals the catalog; make reruns idempotent and fail closed.
-3. Wire the manual deployment workflow to run sync and then check in the API container. Do not trigger the workflow in this task.
-4. Add focused tests for unique catalog keys, exact reconciliation, duplicate/stale cleanup, rollback/error exit, idempotence, check-mode drift detection and deploy wiring.
+3. ~~Wire the manual deployment workflow to run sync and then check.~~ Superseded by the Gio decision of 2026-10-02: no deploy wiring; `sync`/`check` stay manual operator commands.
+4. Add focused tests for unique catalog keys, exact reconciliation, duplicate/stale cleanup, rollback/error exit, idempotence, check-mode drift detection and a guard that the deploy never runs the synchronizer.
 5. Replace the ignored historical-response dependency with a tracked, sanitized question-only fixture; make the training regression tests mandatory in clean CI checkouts.
 6. Produce a non-product Gio template listing content conflicts; do not resolve them in code.
 
