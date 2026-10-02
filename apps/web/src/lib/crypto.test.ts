@@ -15,8 +15,22 @@ import {
   buildVoteMessage,
   signVote,
   verifyVote,
-  computeNullifier,
 } from "./crypto";
+
+/**
+ * TEST-ONLY legacy v1 nullifier formula: SHA-256(phone + ":" + serverSalt).
+ * Server-owned derivation (EKA-24) — must never be exported from product code.
+ * Mirrors Python: hashlib.sha256(f"{phone}:{salt}".encode()).hexdigest()
+ */
+async function legacyV1NullifierTestOnly(
+  phoneNumber: string,
+  serverSalt: string
+): Promise<string> {
+  const raw = `${phoneNumber}:${serverSalt}`;
+  const encoded = new TextEncoder().encode(raw);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
+  return bytesToHex(new Uint8Array(hashBuffer));
+}
 
 describe("Key Generation", () => {
   it("generates 32-byte private key and 32-byte public key", () => {
@@ -170,32 +184,32 @@ describe("Sign + Verify Round-Trip", () => {
 
 describe("Nullifier Hash", () => {
   it("produces 64-char hex string", async () => {
-    const hash = await computeNullifier("+306912345678", "test-salt");
+    const hash = await legacyV1NullifierTestOnly("+306912345678", "test-salt");
     expect(hash.length).toBe(64);
     expect(/^[0-9a-f]{64}$/.test(hash)).toBe(true);
   });
 
   it("is deterministic (same input = same output)", async () => {
-    const h1 = await computeNullifier("+306912345678", "salt-abc");
-    const h2 = await computeNullifier("+306912345678", "salt-abc");
+    const h1 = await legacyV1NullifierTestOnly("+306912345678", "salt-abc");
+    const h2 = await legacyV1NullifierTestOnly("+306912345678", "salt-abc");
     expect(h1).toBe(h2);
   });
 
   it("differs for different phone numbers", async () => {
-    const h1 = await computeNullifier("+306912345678", "same-salt");
-    const h2 = await computeNullifier("+306987654321", "same-salt");
+    const h1 = await legacyV1NullifierTestOnly("+306912345678", "same-salt");
+    const h2 = await legacyV1NullifierTestOnly("+306987654321", "same-salt");
     expect(h1).not.toBe(h2);
   });
 
   it("differs for different salts", async () => {
-    const h1 = await computeNullifier("+306912345678", "salt-1");
-    const h2 = await computeNullifier("+306912345678", "salt-2");
+    const h1 = await legacyV1NullifierTestOnly("+306912345678", "salt-1");
+    const h2 = await legacyV1NullifierTestOnly("+306912345678", "salt-2");
     expect(h1).not.toBe(h2);
   });
 
   it("matches Python format: SHA256(phone:salt)", async () => {
     // This should match: hashlib.sha256("+306912345678:dev-salt".encode()).hexdigest()
-    const hash = await computeNullifier("+306912345678", "dev-salt");
+    const hash = await legacyV1NullifierTestOnly("+306912345678", "dev-salt");
     // We can't hardcode the expected value here without running Python,
     // but we verify the format is correct (64 hex chars, lowercase)
     expect(hash.length).toBe(64);

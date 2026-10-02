@@ -480,7 +480,7 @@ The EKA-18 map above stays unchanged; this section adds a second node.
 | K10 | `apps/api/routers/municipal.py:255–257`, `apps/api/routers/zk.py:760–761`, `crypto-native.ts::signZkOptInPayload` (l.496) | scope strings `"municipal:{ada}:{VOTE}:{nullifier}"`, `"zk_opt_in:{bill_id}:{commitment}:{nullifier}"` |
 | K11 | `apps/api/services/zk_group_registry.py::validate_vote_scope_id` (l.19–28) | `^(bill\|municipal\|regional):[A-Za-z0-9._-]{1,110}$` after `strip()`, else `ValueError` |
 | K12 | `apps/api/services/evaluation_integrity.py::build_evaluation_v2_payload` (l.35–48), `build_evaluation_read_payload` (l.58–69), `citizen_action_integrity.py::build_vote_status_read_payload` (l.29–39) ↔ `crypto-native.ts::buildEvaluationV2Payload` (l.388–408), `buildEvaluationReadPayload` (l.430–439), `buildVoteStatusReadPayload` (l.451–460) | `"<prefix>:" + JSON([..])`; Python `json.dumps(ensure_ascii=False, separators=(",",":"))` vs JS `JSON.stringify`; both sort score pairs and reject duplicate `question_id` |
-| K13 | Root KDFs: `packages/crypto/nullifier.py::generate_nullifier_hash` (l.37–51), `generate_nullifier_hash_v2` (l.54–82) + `normalize_phone_number` (l.22–34); `packages/crypto/src/nullifier.ts::deriveNullifierRoot` (l.130–139) + `normalizePhone` (l.58–64); `crypto-native.ts::deriveNullifierRoot` (l.104–112) + `normalizePhone` (l.90–96); `apps/web/src/lib/crypto.ts::computeNullifier` (l.62–70) | inventory only, see §5 |
+| K13 | Root KDFs: `packages/crypto/nullifier.py::generate_nullifier_hash` (l.37–51), `generate_nullifier_hash_v2` (l.54–82) + `normalize_phone_number` (l.22–34); `packages/crypto/src/nullifier.ts::deriveNullifierRoot` (l.130–139) + `normalizePhone` (l.58–64); `crypto-native.ts::deriveNullifierRoot` (l.104–112) + `normalizePhone` (l.90–96); Web: private test-only `legacyV1NullifierTestOnly` in `crypto.test.ts` / `crypto-kat.test.ts` (product export `crypto.ts::computeNullifier` removed by EKA-24) | inventory only, see §5 |
 | K14 | Existing tests: `apps/api/tests/test_nullifier.py` (K5 validators), `packages/crypto/tests/test_crypto.py` (K4, v1 hash), `packages/crypto/src/crypto.test.ts` (`TEST_ROOT = 0xab×32`, l.51), `apps/web/src/lib/crypto-compat.test.ts` (RFC 8032 vector 1, web-only), `apps/mobile/src/lib/crypto-native-{evaluation,vote-status,zk}.test.ts` (`vi.mock("expo-secure-store")`) | each asserts one side; none reads a shared file |
 
 Not opened (not on map): `packages/crypto/hlr.py`, `apps/api/crypto/polis.py`, `packages/crypto/src/polis.ts`, mobile POLIS screens, ZK/Semaphore proof code, compass AES/HKDF.
@@ -497,7 +497,7 @@ Not opened (not on map): `packages/crypto/hlr.py`, `apps/api/crypto/polis.py`, `
 | API JSON integrity payloads | evaluation v2/read, vote-status read | `services/evaluation_integrity.py`, `services/citizen_action_integrity.py` | gebaut |
 | Python root KDF (server) | v1 SHA-256 / v2 Argon2id identity nullifier | `packages/crypto/nullifier.py` | gebaut; EKA-21 divergence |
 | Web legacy signer | build/sign/verify legacy vote message | `apps/web/src/lib/crypto.ts::buildVoteMessage/signVote/verifyVote/signPayload` | gebaut |
-| Web v1 nullifier helper | `SHA-256(phone:salt)` | `apps/web/src/lib/crypto.ts::computeNullifier` | gebaut; no caller opened |
+| Web v1 nullifier helper | `SHA-256(phone:salt)` | `apps/web/src/lib/crypto-kat.test.ts::legacyV1NullifierTestOnly` (test-only; product export removed by EKA-24) | gebaut (test-only) |
 | Tier-1 TS library | Argon2id root, HMAC chain, length-prefixed payload, receipt verify | `packages/crypto/src/nullifier.ts` | teilweise — no import from `apps/web` or `apps/mobile` found (grep); payload layout incompatible with K5 |
 | Mobile crypto | PBKDF2 root, HMAC chain, legacy + Tier-1 + JSON payload signers | `apps/mobile/src/lib/crypto-native.ts` | gebaut |
 | Shared KAT fixture | one secret-free vector file read by all suites | — | offen |
@@ -506,7 +506,7 @@ Not opened (not on map): `packages/crypto/hlr.py`, `apps/api/crypto/polis.py`, `
 ## 4. Verdrahtung
 
 - Fixture → API adapter: pytest loads JSON, calls K4/K5/K11/K12 symbols; `validate_vote(now_ms=fixture.now_ms)` makes the timestamp path deterministic.
-- Fixture → Web adapter: vitest loads the same JSON, calls `buildVoteMessage`, `signVote`, `verifyVote`, `signPayload`, `computeNullifier`.
+- Fixture → Web adapter: vitest loads the same JSON, calls `buildVoteMessage`, `signVote`, `verifyVote`, `signPayload`, and for the v1 nullifier the private test helper `legacyV1NullifierTestOnly` (EKA-24).
 - Fixture → Mobile adapter: vitest with `vi.mock("expo-secure-store")` (pattern of existing mobile tests) calls K2/K6/K8/K10/K12 builders and derivations from a fixed root.
 - Fixture → Tier-1 lib adapter (optional): vitest in `packages/crypto` calls K7/K8/K9; K7 is expected to diverge.
 - Web signVote → API verifier: legacy string equality after uppercase (K1 ↔ K3).
@@ -525,7 +525,7 @@ Not opened (not on map): `packages/crypto/hlr.py`, `apps/api/crypto/polis.py`, `
 4. Tier-1 canonical bytes API `build_signed_payload` ↔ mobile `buildSignedPayload` (K5/K6), including u64 big-endian timestamp.
 5. HMAC chain from a fixed test root: mobile K8 ≡ Tier-1 lib K8 for `identity_commitment`, `vote_nullifier(bill)`, `ephemeral pk(bill)` and `linkage_tag(bill)`. Polis keys are not cross-implementation-identical on this hop and remain implementation-specific. Python has **no production symbol** for this chain (`apps/api/crypto/nullifier.py:9` "Does NOT contain key derivation"); a Python stdlib `hmac` oracle in the test is a re-implementation, not an API binding.
 6. JSON integrity payloads K12 (evaluation v2 with unsorted input, evaluation read incl. `null` ada, vote-status read), including a non-ASCII (Greek) `bill_id`/`ada` case to pin `ensure_ascii=False` ≡ `JSON.stringify`.
-7. v1 nullifier `SHA-256("{phone}:{salt}")`: Python `generate_nullifier_hash` ≡ web `computeNullifier` **with a synthetic phone and a test-only salt** (Python reads `SERVER_SALT` at import, l.13 ⇒ adapter must monkeypatch the module attribute; never a real salt).
+7. v1 nullifier `SHA-256("{phone}:{salt}")`: Python `generate_nullifier_hash` ≡ web test-only `legacyV1NullifierTestOnly` (EKA-24) **with a synthetic phone and a test-only salt** (Python reads `SERVER_SALT` at import, l.13 ⇒ adapter must monkeypatch the module attribute; never a real salt).
 8. Receipt bytes layout K9 (API ↔ Tier-1 lib); API side only by signing a fixture-fixed ts in the test, because `issue_receipt` uses `time.time()`.
 9. Bill/scope domain separation: `vote_nullifier(bill A) ≠ vote_nullifier(bill B)`, `linkage_tag` and `ephemeral pk` likewise, and `DOMAIN.*` strings pairwise distinct (types.ts l.31–39 vs crypto-native l.38–44 — mobile lacks `POLIS_NULLIFIER`/`POLIS_TICKET_KEY`, not used by it).
 
@@ -546,7 +546,7 @@ Not opened (not on map): `packages/crypto/hlr.py`, `apps/api/crypto/polis.py`, `
 | Server v2 | `…::generate_nullifier_hash_v2` | Argon2id t=2, m=65536 KiB, p=1, 32 B, output `"v2:"+hex` | `SHA-256("ekklesia:identity-nullifier:v2" ‖ SERVER_SALT)` | strip `[\s().-]`; `00…`→`+…`; `30`+12→`+`; `69`+10→`+30`; otherwise passthrough (never throws) |
 | Web Tier-1 lib | `packages/crypto/src/nullifier.ts::deriveNullifierRoot` | Argon2id (hash-wasm) t=3, m=65536, p=1, 32 B | `REGISTRATION_SALT` (public, types.ts l.26) | strip all non-digits; `30`+12 / `0030…` / 10 digits `6…` → `+30…`; else **throw** |
 | Mobile | `crypto-native.ts::deriveNullifierRoot` | PBKDF2-SHA256 c=100000, 32 B | `REGISTRATION_SALT` | same as Tier-1 lib (message text differs) |
-| Web legacy | `apps/web/src/lib/crypto.ts::computeNullifier` | SHA-256 | `":" + serverSalt` argument | none |
+| Web legacy (test-only since EKA-24) | `apps/web/src/lib/crypto-kat.test.ts::legacyV1NullifierTestOnly` | SHA-256 | `":" + serverSalt` argument | none |
 
 Contradictions: `ARGON2_PARAMS` is declared in `crypto-native.ts:31–36` but unused; `nullifier.ts:56` docstring accepts `06912…`-style 11-digit input but the code throws on it; `packages/crypto/src` is not wired into any app although `CLAUDE.md` describes web Tier-1; Tier-1 payload layouts K5/K6 vs K7 disagree while both files claim to "match exactly" (`nullifier.py:99`, `crypto-native.ts:536`).
 Gaps: no importable Python builder for the legacy vote string (inline in routers); Python lacks the HMAC chain; `issue_receipt` and `signVoteEphemeral` read wall-clock time (adapter must use their pure sub-builders or fake timers).
@@ -569,7 +569,7 @@ mindmap
       gebaut: evaluation_integrity / citizen_action_integrity builders
     Web
       gebaut: lib/crypto.ts::buildVoteMessage, signVote, verifyVote, signPayload
-      gebaut: lib/crypto.ts::computeNullifier
+      gebaut test-only: crypto-kat.test.ts::legacyV1NullifierTestOnly
     Mobile
       gebaut: crypto-native.ts::signVote, verifyVote, buildSignedPayload
       gebaut: crypto-native.ts identity/vote/linkage/ephemeral HMAC chain
@@ -623,6 +623,119 @@ Rules: `class ∈ {identical, validatable, implementation_specific}`; `kdf_inven
 - optional `packages/crypto/src/crypto-kat.test.ts` (Tier-1 lib; K7 as documented divergence)
 
 **Unberührt bleiben:** every production file listed in §2/§3 (`keypair.py` ×2, `packages/crypto/nullifier.py`, `apps/api/crypto/nullifier.py`, routers, services, `apps/web/src/lib/crypto.ts`, `apps/mobile/src/lib/crypto-native.ts`, `packages/crypto/src/*.ts` non-test), `package.json`/lockfiles, vitest/pytest configs, CI workflows, DB, env/secrets. If a vitest config blocks reading outside its root, that is a stop-and-report, not a config change.
+
+---
+
+# Architecture Map — EKA-24 Test-only Legacy Nullifier Helper Boundary
+
+Basis: queued EKA-22 Draft `#397@399b42502854833d2975950f6b9f6b991cd0ff23`, itself based on proven `main 4cc11930f4be82ba2d012def487fb34abca9da26` · Task: T-509 · Mapping only, no product fix.
+**Nachher-Zustand:** #397 is merged as `2f69954a`; this PR (T-510) removes `crypto.ts::computeNullifier` and both Web suites use a private test-only helper. §1–§5 and §7 record the mapped state before the fix; §3, §4, §6 and the diagrams show the state after it; see §8.
+Node: Web Crypto / legacy v1 nullifier helper boundary.
+
+The EKA-18 and EKA-22 maps above stay unchanged. EKA-24 is appended as a third node.
+
+## 1. Grundidee
+
+- Ekklesia.gr is an independent direct-democracy platform where Greek citizens inspect and cast informational votes on parliamentary and municipal matters (`README.md::What is Ekklesia?`).
+- The Web client signs vote and relevance payloads locally with Ed25519 helpers from `apps/web/src/lib/crypto.ts`; production callers import signing and locally stored identity material, not phone-number nullifier derivation (`apps/web/src/app/[locale]/bills/[id]/page.tsx`, `components/RelevanceButtons.tsx`, `app/[locale]/sso-verify/page.tsx`, `lib/compass/useCompass.ts`).
+- Before the fix, `crypto.ts::computeNullifier(phoneNumber, serverSalt)` exposed the legacy v1 formula `SHA-256(phone + ":" + serverSalt)` from the product module.
+- Proven main has one test-only caller in `crypto.test.ts`; exact queued #397 adds a second in `crypto-kat.test.ts` for EKA-22's v1-nullifier known-answer vector. No production caller supplies or receives a server salt.
+- EKA-24 records this as an informational future-misuse risk: client code must not acquire `SERVER_SALT` or derive the server-owned v1 nullifier (`docs/community-audits/EKA_PNYX_Crypto_Deep_Audit_2026-09-15.md::EKA-24`).
+- Boundary: the single exported helper and both test-only callers. Key storage (EKA-07), KDF harmonisation (EKA-21), the EKA-22 fixture and non-Web adapters, API identity behavior and all production call sites remain unchanged.
+
+## 2. Spur before the fix (built test traces opened on #397@399b4250)
+
+There is no user/runtime path to this symbol. Both built paths on the selected queue base are test-only:
+
+| # | From → To | Datum over the edge |
+| --- | --- | --- |
+| N1 | `apps/web/package.json::test` → Vitest → `apps/web/src/lib/crypto.test.ts` | `vitest run` discovers the legacy Web crypto unit suite |
+| N2 | `crypto.test.ts` import list → `crypto.ts::computeNullifier` | synthetic phone/salt cases checking shape, determinism and input sensitivity |
+| N3 | `packages/crypto/tests/vectors/eka22_kat_v1.json` → `crypto-kat.test.ts` → `crypto.ts::computeNullifier` | exact EKA-22 `v1_nullifier` fixture case with synthetic input and expected digest |
+| N4 | `computeNullifier` → `TextEncoder` → `crypto.subtle.digest("SHA-256", ...)` | UTF-8 bytes of `${phoneNumber}:${serverSalt}` become a 32-byte digest |
+| N5 | digest → `crypto.ts::bytesToHex` → assertions | lowercase 64-character hex compared by both suites |
+
+Opened production neighbours: `bills/[id]/page.tsx`, `RelevanceButtons.tsx`, `sso-verify/page.tsx` and `useCompass.ts` import other `crypto.ts` symbols only. None imports or calls `computeNullifier`.
+
+## 3. Module
+
+| Modul | Eine Aufgabe | Einstieg | Stand |
+| --- | --- | --- | --- |
+| Web Crypto product module | Ed25519 conversion, signing and Beta local identity storage | `apps/web/src/lib/crypto.ts` | gebaut; `computeNullifier` removed by EKA-24 (was quarantäne: only tests called it and it accepted server-owned material) |
+| Legacy Web Crypto tests | exercise product crypto helpers | `apps/web/src/lib/crypto.test.ts` | gebaut; private `legacyV1NullifierTestOnly` helper |
+| EKA-22 Web KAT | validates shared known-answer fixture against Web symbols | `apps/web/src/lib/crypto-kat.test.ts` | gebaut; private `legacyV1NullifierTestOnly` helper for the exact shared vector |
+| Web production callers | sign votes/relevance/SSO and read local identity material | paths listed above | gebaut; no nullifier-derivation edge |
+| Server nullifier derivation | owns the v1 salt-backed identity formula | API identity/crypto modules | aufgeschoben; direct neighbour, not opened for modification |
+
+## 4. Verdrahtung
+
+- `npm test` → Vitest → both crypto suites.
+- `crypto.test.ts` → private `legacyV1NullifierTestOnly`: synthetic legacy regression cases (before the fix: `computeNullifier`).
+- EKA-22 fixture → `crypto-kat.test.ts` → private `legacyV1NullifierTestOnly`: exact shared v1-nullifier vector.
+- test-only helpers → Web Crypto SHA-256 → `bytesToHex`: synthetic `phone:salt` bytes become lowercase hex.
+- Production callers → other `crypto.ts` exports: voting, relevance, SSO and compass flows have no nullifier edge; `crypto.ts` no longer exports the symbol.
+- There is no repository edge from configuration or an API response to `serverSalt` in the Web client.
+
+## 5. Widerspruch und Lücken
+
+**Symptom:** server-owned v1 nullifier derivation is presented as a public export of the browser product module even though only tests call it.
+
+**Ursache:** N2 and N3 cross the test/product boundary: both suites keep their legacy formula helper in `crypto.ts` instead of test-only code.
+
+**Security invariant:** no browser production path accepts, retrieves, embeds or derives with `SERVER_SALT`; server-owned nullifier/KDF behavior stays outside the client product API.
+
+**Widerspruch:** the audit says the helper is “exported in the web bundle.” The selected source proves an exported symbol and zero production imports; it does not prove the optimized Next build retains the unused export. EKA-24 is API-surface/future-misuse hardening, not evidence of a live salt leak or callable UI path.
+
+**Lücken / Grenzen:**
+
+- The legacy suite's “matches Python format” case pins no digest; #397's EKA-22 Web KAT supplies the exact known-answer assertion and must remain green.
+- `generateKeypair` is also not imported by current production files, but it does not accept server-owned material and is outside EKA-24.
+- EKA-07 plaintext key storage and EKA-21 KDF design are explicitly Gio-gated and remain untouched.
+
+## 6. Diagrammdateien
+
+- `docs/architecture/map.puml` (EKA-24 mindmap + component diagram appended after EKA-22)
+- `docs/architecture/main-path.puml` (two test-only built traces appended)
+- Rendered with `/Users/gio/.local/bin/plantuml -Playout=smetana -tsvg`; `smetana` is required because Graphviz `dot` is absent.
+
+```mermaid
+mindmap
+  root((Web Crypto: v1 nullifier formula test-only after EKA-24))
+    Web Crypto product module
+      gebaut: crypto.ts signing and storage only, no nullifier export
+    Legacy unit tests
+      gebaut: crypto.test.ts
+    EKA-22 Web KAT
+      gebaut: crypto-kat.test.ts private helper
+    Production callers
+      gebaut: no nullifier edge, symbol removed
+    Server nullifier domain
+      aufgeschoben: server-owned salt and KDF
+```
+
+## 7. Nächster Schritt (engste Reparaturgrenze)
+
+**Modul:** Web Crypto product module + both Web crypto tests. **Hops:** N2 and N3.
+
+**Fix contract:**
+1. Stay based on exact Draft #397 head `399b42502854833d2975950f6b9f6b991cd0ff23`; do not publish or mutate #397 itself.
+2. `apps/web/src/lib/crypto.ts`: remove only exported `computeNullifier` and its comment; retain every signing/storage symbol unchanged.
+3. `apps/web/src/lib/crypto.test.ts`: remove the product import and retain its five cases through private test-only derivation.
+4. `apps/web/src/lib/crypto-kat.test.ts`: remove the product import and retain the exact shared v1-nullifier KAT through private test-only derivation. Do not change the fixture or other EKA-22 adapters.
+5. Verify both Web crypto suites together, typecheck, production build, production-source search and built-output absence.
+
+**Unberührt bleiben:** every other Web file, EKA-22 fixture/API/Mobile/packages adapters, API nullifier/identity code, KDF parameters, key storage, configs, dependencies, lockfiles, workflows, data, secrets, production and deployment.
+
+## 8. Nachher-Zustand (EKA-24 implemented, T-510)
+
+| Hop | After the fix |
+| --- | --- |
+| N2 | `crypto.test.ts` → private `legacyV1NullifierTestOnly` (no product import) |
+| N3 | `eka22_kat_v1.json` → `crypto-kat.test.ts` → private `legacyV1NullifierTestOnly`; fixture case `v1-nullifier-sha256-synthetic` notes Web as test reference |
+| N4/N5 | unchanged formula: UTF-8 `${phone}:${salt}` → `crypto.subtle.digest("SHA-256")` → `bytesToHex` |
+| Product | `apps/web/src/lib/crypto.ts` has no nullifier export; vote, relevance, SSO and compass callers are unchanged |
+
+Security invariant holds: no browser production path accepts, retrieves, embeds or derives with `SERVER_SALT`. The server-side v1 formula and KDF harmonisation stay with EKA-21 (Gio-gated).
 # Architecture Map — EKA-57 Knowledge-Base Refresh Lifecycle
 
 Basis: `origin/main 4cc11930f4be82ba2d012def487fb34abca9da26` · Task: T-495 · Mapping only, no fix.
