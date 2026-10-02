@@ -74,10 +74,4 @@ jobs:
 
             sleep 10
             curl -sf https://api.ekklesia.gr/health || exit 1
-
-            if [ "${{ steps.changes.outputs.infra }}" = "true" ] || [ "${{ steps.changes.outputs.api }}" = "true" ]; then
-              echo "Syncing knowledge base from ENTRIES..."
-              $CD exec -T api python scripts/seed_knowledge_base.py sync
-              $CD exec -T api python scripts/seed_knowledge_base.py check
-            fi
             echo "Deploy OK: $(date)"

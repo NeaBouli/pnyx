@@ -1,4 +1,273 @@
 @startuml
+participant "manifest+lock\n(web, dashboard)" as L
+participant "CI client gate" as CI
+participant "Dockerfile.prod" as D
+participant "server.js\n(next start standalone)" as S
+participant "proxy.ts" as P
+participant "pages / route handlers" as R
+
+L -> CI : next 16.3.4 + @next/swc-* 16.3.4 (npm ci)
+CI -> CI : image-codec.check.mjs, lint, typecheck, build
+L -> D : same lock (npm ci)
+D -> S : .next/standalone, node server.js
+S -> P : matcher-selected request (Node.js runtime)
+P -> R : web matched: redirect/rewrite/intl\ndashboard protected: auth + canAccess
+S -> R : web /api, _next, _vercel, dotted paths\nbypass proxy matcher
+P -> R : dashboard /api/auth/* early return\nbefore protected user + canAccess checks
+R --> S : HTML / JSON
+note over R
+  next/og ImageResponse side-hop: offen,
+  not simulated (no call site)
+end note
+@enduml
+
+@startuml
+' Preserved EKA-18 path integrated from origin/main during T-486 refresh
+title Local developer stack: Quick Start to bounded datastore listeners
+
+actor Developer
+participant "README Quick Start" as ER
+participant "Development Compose" as EC
+participant "PostgreSQL / Redis\nloopback listeners" as ED
+participant "API container\nservice DNS" as EA
+participant "Host tools\nlocalhost defaults" as EH
+
+Developer -> ER : start local stack
+ER -> EC : docker compose up -d
+EC -> ED : publish 127.0.0.1:5432 / 127.0.0.1:6379
+EC -> EA : attach db and redis on internal network
+Developer -> EH : alembic / seeds / host uvicorn
+EH -> ED : connect through localhost
+@enduml
+
+@startuml
+title Sentry event capture: exception/request to transport
+
+participant "FastAPI / Starlette" as WEB
+participant "_sentry_init_options" as POLICY
+participant "Sentry SDK\nevent construction" as SDK
+participant "_before_send_filter" as FILTER
+participant "Sentry transport" as TRANSPORT
+
+POLICY -> SDK : init integrations, sampling, hooks (H2)
+WEB -> SDK : exception / transaction + request context (H1)
+SDK -> SDK : build stack frames; implicit local capture (H3)
+SDK -> SDK : derive request metadata; implicit body capture (H4)
+SDK -> FILTER : constructed event (H5)
+FILTER -> FILTER : remove env/cookies/query; redact known keys
+FILTER -> TRANSPORT : filtered envelope (H6)
+
+note over POLICY,SDK
+Required capture boundary:
+include_local_variables = false
+max_request_body_size = never
+end note
+
+note over FILTER
+Retained as defense in depth for
+headers, query strings, extras and
+integration-supplied event data.
+end note
+@enduml
+
+@startuml
+' EKA-08 main path — current behaviour after T-488; EKA-18 sequence above unchanged
+title Web Compass: CompassCard -> localStorage
+
+participant "Compass UI card\nCompassCard.tsx" as CARD
+participant "Compass hook\nuseCompass.ts" as HOOK
+participant "Identity key access\ncrypto.ts" as KEYS
+participant "Compass storage\nstorage.ts" as STORE
+database "Browser persistence\nlocalStorage" as LS
+
+note over CARD : not mounted by any route at 4cc1193
+CARD -> HOOK : useCompass() (C1)
+HOOK -> KEYS : loadKeypair() (C2)
+KEYS --> HOOK : privateKeyHex or null
+HOOK -> STORE : loadProfile(key) (C3)
+STORE -> LS : getItem + removeItem(ekklesia_compass_profile) if present (C5)
+STORE -> LS : getItem(ekklesia_compass_encrypted) (C4)
+alt ciphertext present and key/auth valid
+  STORE -> STORE : HKDF + AES-GCM decrypt
+  STORE --> HOOK : CompassProfile
+else ciphertext present but missing key or invalid
+  STORE --> HOOK : empty profile; legacy ignored
+else no ciphertext and valid legacy
+  alt key present
+    STORE -> LS : setItem(encrypted) (C8a migration)
+  end
+  STORE --> HOOK : legacy profile in-memory
+else no valid legacy
+  STORE --> HOOK : empty profile
+end
+
+== mutation ==
+HOOK -> HOOK : setModel / seedFromVAA / recordBillVote -> persistProfile (C6)
+HOOK -> KEYS : loadKeypair() (C2)
+HOOK -> STORE : saveProfile(p, key) after 300 ms, not awaited (C7)
+STORE -> LS : removeItem(ekklesia_compass_profile)
+alt key present and crypto ok
+  STORE -> LS : setItem(ekklesia_compass_encrypted) (C8a)
+else no key or crypto/storage error
+  STORE --> HOOK : rejected promise, no plaintext write (C8b closed)
+end
+
+== reset ==
+HOOK -> STORE : clearProfile() (C9)
+STORE -> LS : removeItem(both)
+note right of HOOK : pending saveTimeout not cancelled
+@enduml
+
+@startuml
+title EKA-18 built path — local tools retain access without LAN exposure
+actor Developer
+participant "Dev Compose" as Compose
+database "PostgreSQL\n127.0.0.1:5432" as DB
+participant "Redis\n127.0.0.1:6379" as Redis
+participant "API container" as API
+
+Developer -> Compose : docker compose up -d
+Compose -> DB : publish IPv4 loopback only
+Compose -> Redis : publish IPv4 loopback only
+Developer -> DB : migrations/seeds via localhost
+Developer -> Redis : local tooling via localhost
+API -> DB : service DNS db:5432
+API -> Redis : service DNS redis:6379
+@enduml
+
+@startuml
+title EKA-13 selected fix — isolate and make Docker access read-only
+participant "Monitor" as Monitor
+participant "private internal\nnetwork" as Private
+participant "docker-proxy\nv0.4.2@digest\nPOST=0" as Proxy
+database "Host Docker daemon" as Docker
+participant "Other net_ekklesia peer" as Peer
+
+Monitor -> Monitor : AUTO_RECOVERY_T2=false; escalate to T3
+Monitor -> Private : sole consumer
+Private -> Proxy : permitted read path
+Peer -[#red,dashed]> Proxy : no shared network route
+Proxy -> Docker : Docker API via mounted socket
+Proxy -[#red,dashed]> Docker : POST denied
+Proxy -> Docker : no enabled API namespace
+
+note over Proxy
+Dedicated internal network closes lateral peer access.
+POST=0 removes restart writes.
+Container/event/ping/version GETs and all Docker writes are denied while T2 is disabled.
+end note
+@enduml
+
+@startuml
+' EKA-22 KAT path — built symbols at base 4cc1193; fixture and adapters are offen (not simulated as built)
+title EKA-22: shared fixture -> adapter -> existing crypto symbols -> expected bytes/hex/errors
+
+participant "Shared KAT fixture\n(offen)" as FIX
+participant "KAT adapters\n(offen)" as ADP
+participant "API\nkeypair.py / crypto/nullifier.py / services" as API
+participant "Web\nlib/crypto.ts" as WEB
+participant "Mobile\ncrypto-native.ts" as MOB
+participant "Tier-1 TS library\npackages/crypto/src" as T1
+
+note over FIX, ADP : offen — no file or test exists yet
+
+== class identical ==
+ADP -> WEB : buildVoteMessage / signVote (K1)
+ADP -> MOB : signVote message (K2)
+ADP -> API : verify_signature(legacy string) (K3/K4)
+ADP -> MOB : buildSignedPayload (K6)
+ADP -> API : build_signed_payload (K5)
+ADP -> MOB : identity/vote/linkage/ephemeral HMAC chain (K8)
+ADP -> T1 : identity/vote/linkage/ephemeral HMAC chain (K8)
+ADP -> MOB : JSON payload builders (K12)
+ADP -> API : evaluation / vote-status builders (K12)
+
+== class validatable ==
+ADP -> API : validate_vote -> INVALID_HEX / INVALID_SIGNATURE_FORMAT / INVALID_SIGNATURE (K5)
+ADP -> API : validate_vote_scope_id -> ValueError (K11)
+ADP -> WEB : verifyVote(malformed) -> false
+ADP -> MOB : verifyVote(malformed) -> false or throw
+
+== documented divergence ==
+ADP -> T1 : buildSignedPayload (K7) != K5
+ADP -> API : v1 / v2 root KDF pin (own impl only, EKA-21)
+ADP -> T1 : Argon2id t=3 root pin (own impl only, EKA-21)
+ADP -> MOB : PBKDF2 root pin (own impl only, EKA-21)
+@enduml
+
+@startuml
+' EKA-24 main path — only built test traces; no production path exists
+title EKA-24 test-only v1 nullifier helper paths after the fix
+
+actor Developer
+participant "Web test command\npackage.json::test" as TESTCMD
+participant "Vitest" as VITEST
+participant "crypto.test.ts" as LEGACY
+participant "EKA-22 fixture" as FIXTURE
+participant "crypto-kat.test.ts" as KAT
+participant "test-only helper\nlegacyV1NullifierTestOnly" as HELPER
+participant "Web Crypto\nsubtle.digest" as WEBCRYPTO
+participant "crypto.ts\nbytesToHex" as HEX
+
+Developer -> TESTCMD : npm test (N1)
+TESTCMD -> VITEST : vitest run (N1)
+VITEST -> LEGACY : load legacy crypto suite
+VITEST -> KAT : load EKA-22 Web KAT
+LEGACY -> HELPER : synthetic phone + salt (N2)
+FIXTURE -> KAT : exact v1_nullifier vector (N3)
+KAT -> HELPER : synthetic phone + salt (N3)
+HELPER -> WEBCRYPTO : SHA-256 UTF-8 phone:salt (N4)
+WEBCRYPTO --> HELPER : 32-byte digest
+HELPER -> HEX : bytesToHex(digest) (N5)
+HEX --> LEGACY : lowercase 64-char hex
+HEX --> KAT : exact fixture digest
+
+note over LEGACY,KAT
+  crypto.ts no longer exports a nullifier helper; no production path exists.
+  The absent runtime edge is not simulated.
+end note
+@enduml
+
+@startuml
+title EKA-57: repository catalog to assistant context
+
+participant "Legacy SQL seed" as SQL
+participant "Python seed catalog" as PY
+participant "Manual deploy" as DEPLOY
+database "knowledge_base" as DB
+participant "CI tests" as CI
+participant "Agent retrieval" as RAG
+participant "Prompt" as PROMPT
+
+SQL -> DB : manual DELETE + 17-row INSERT (H1)
+PY -> DB : manual 14-row upsert, no deletion (H2)
+note over SQL,PY
+Two divergent authorities can coexist.
+Duplicates and stale rows survive.
+end note
+
+DEPLOY -> DEPLOY : rebuild changed containers (H4)
+note right of DEPLOY
+No KB sync or drift check.
+end note
+
+CI -> CI : training module seeks ignored private file (H6)
+CI -> CI : missing file -> skip
+
+DB -> RAG : priority order, LIMIT 20 (H7)
+RAG -> PROMPT : scored top 5 or priority fallback
+
+note over PY,DB
+Required technical path:
+one catalog -> transactional exact sync -> check
+end note
+note over DEPLOY,CI
+Deploy never runs sync (Gio 2026-10-02); sync + check are manual operator commands;
+CI proves behavior and uses a tracked question-only fixture.
+end note
+@enduml
+
+@startuml
 title EKA-59/EKA-60: citizen question to technical-state answer
 
 actor Citizen
