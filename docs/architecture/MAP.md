@@ -793,7 +793,7 @@ Node: API RAG knowledge lifecycle / canonical seed to deployed retrieval.
 
 **Gio decision 2026-10-02:** merge without automatic sync. The first exact sync deletes every live row outside the 14 `ENTRIES`, so the deploy workflow does not run `sync` or `check`; both run only on Gio's explicit instruction with a rollback point. A test guards that `deploy.yml` never calls the synchronizer.
 
-**Legitimate control path:** a manually authorized deploy remains the only production trigger. The PR must not execute a deployment or touch a live database. A failed sync rolls back and makes the workflow fail; a successful sync is followed by an exact drift check.
+**Legitimate control path:** a manually authorized deploy remains the only production trigger. The PR must not execute a deployment or touch a live database. With explicit instruction and a rollback point, an operator runs `sync`; a failed sync rolls back and exits non-zero. After a successful sync, the operator runs the exact drift `check`.
 
 **Content boundary:**
 
@@ -810,7 +810,7 @@ Node: API RAG knowledge lifecycle / canonical seed to deployed retrieval.
 
 ## 7. Nächster Schritt (engste Reparaturgrenze)
 
-**Module:** Python seed catalog/synchronizer, manual deploy wiring, CI regression inputs. **Hops:** H1/H2/H4/H5/H6; runtime H7 is observed but unchanged.
+**Module:** Python seed catalog/synchronizer, deploy guard (no KB wiring, Gio decision 2026-10-02), CI regression inputs. **Hops:** H1/H2/H4/H5/H6; runtime H7 is observed but unchanged.
 
 1. Retire the executable SQL seed so `apps/api/scripts/seed_knowledge_base.py::ENTRIES` is the sole catalog without editing its wording.
 2. Give the Python command explicit transactional `sync` and read-only `check` modes. Preserve IDs for matching natural keys where practical; remove stale and duplicate rows so DB equals the catalog; make reruns idempotent and fail closed.
