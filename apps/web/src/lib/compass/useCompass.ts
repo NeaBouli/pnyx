@@ -64,6 +64,18 @@ export function deriveCompassResult(
 }
 
 /**
+ * Liest den privaten Schlüssel; ist WebStorage blockiert, wird ohne Schlüssel
+ * weitergearbeitet (kein synchroner Throw vor den Safe-Wrappern).
+ */
+export function readPrivateKeySafely(): string | null {
+  try {
+    return loadKeypair()?.privateKeyHex ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Speichert und behandelt erwartbare Speicherfehler (kein Key, Storage/Krypto nicht
  * verfügbar), damit kein unbehandeltes Promise entsteht. Kein Klartext-Fallback.
  */
@@ -80,10 +92,7 @@ export function useCompass() {
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Private Key für Verschlüsselung
-  const getPrivateKey = useCallback((): string | null => {
-    const kp = loadKeypair();
-    return kp?.privateKeyHex ?? null;
-  }, []);
+  const getPrivateKey = useCallback((): string | null => readPrivateKeySafely(), []);
 
   // Profil laden
   useEffect(() => {
