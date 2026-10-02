@@ -381,6 +381,7 @@
         "api",
         "web"
       ],
+      "note": "web is a test reference only: since EKA-24 the Web product module has no nullifier export; crypto-kat.test.ts checks this vector with a private test helper. The server-side v1 formula stays EKA-21 (Gio-gated).",
       "input": {
         "phone": "+300000000000",
         "salt": "eka22-kat-synthetic-test-salt-not-a-secret"

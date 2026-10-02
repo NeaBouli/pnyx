@@ -197,7 +197,7 @@ ADP -> MOB : PBKDF2 root pin (own impl only, EKA-21)
 
 @startuml
 ' EKA-24 main path — only built test traces; no production path exists
-title EKA-24 test-only v1 nullifier helper paths on PR 397
+title EKA-24 test-only v1 nullifier helper paths after the fix
 
 actor Developer
 participant "Web test command\npackage.json::test" as TESTCMD
@@ -205,7 +205,7 @@ participant "Vitest" as VITEST
 participant "crypto.test.ts" as LEGACY
 participant "EKA-22 fixture" as FIXTURE
 participant "crypto-kat.test.ts" as KAT
-participant "crypto.ts\ncomputeNullifier" as HELPER
+participant "test-only helper\nlegacyV1NullifierTestOnly" as HELPER
 participant "Web Crypto\nsubtle.digest" as WEBCRYPTO
 participant "crypto.ts\nbytesToHex" as HEX
 
@@ -223,7 +223,7 @@ HEX --> LEGACY : lowercase 64-char hex
 HEX --> KAT : exact fixture digest
 
 note over LEGACY,KAT
-  No production import or caller exists on exact PR 397 head.
+  crypto.ts no longer exports a nullifier helper; no production path exists.
   The absent runtime edge is not simulated.
 end note
 @enduml

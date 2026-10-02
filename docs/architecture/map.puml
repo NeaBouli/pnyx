@@ -248,7 +248,7 @@ package "EKA-13 production (selected fix)" {
 ** Web
 *** gebaut: apps/web/src/lib/crypto.ts::buildVoteMessage
 *** gebaut: apps/web/src/lib/crypto.ts::signVote / verifyVote / signPayload
-*** gebaut: apps/web/src/lib/crypto.ts::computeNullifier
+*** gebaut test-only: crypto-kat.test.ts::legacyV1NullifierTestOnly (EKA-24)
 ** Mobile
 *** gebaut: crypto-native.ts::signVote / verifyVote
 *** gebaut: crypto-native.ts::buildSignedPayload
@@ -297,17 +297,17 @@ APIT1 --> T1LIB : K9 issue_receipt / verifyReceipt
 @enduml
 
 @startmindmap
-' EKA-24 — Test-only Legacy Nullifier Helper Boundary on exact PR 397 head
-* Web Crypto: product export vs two test-only v1 nullifier callers
+' EKA-24 — Test-only Legacy Nullifier Helper Boundary after the fix (T-510)
+* Web Crypto: v1 nullifier formula test-only after EKA-24
 ** Web Crypto product module
-*** quarantäne: crypto.ts::computeNullifier accepts serverSalt
+*** gebaut: crypto.ts signing/storage only, no nullifier export (EKA-24)
 ** Legacy Web Crypto tests
-*** gebaut: crypto.test.ts five synthetic cases
+*** gebaut: crypto.test.ts private legacyV1NullifierTestOnly
 ** EKA-22 Web KAT
-*** gebaut: crypto-kat.test.ts exact shared vector
+*** gebaut: crypto-kat.test.ts private legacyV1NullifierTestOnly, exact shared vector
 ** Web production callers
 *** gebaut: vote / relevance / SSO / compass imports
-*** offen: no edge to computeNullifier
+*** gebaut: no nullifier edge (symbol removed)
 ** Server nullifier domain
 *** aufgeschoben: server-owned salt and KDF
 @endmindmap
@@ -320,7 +320,7 @@ component "Vitest" as VITEST
 component "Legacy Web Crypto tests\ncrypto.test.ts" as LEGACY
 component "EKA-22 Web KAT\ncrypto-kat.test.ts" as KAT
 component "Shared EKA-22 fixture\neka22_kat_v1.json" as FIXTURE
-component "Web Crypto product module\ncrypto.ts::computeNullifier" as HELPER
+component "Test-only helper (private per suite)\nlegacyV1NullifierTestOnly" as HELPER
 component "Web Crypto API\nTextEncoder / subtle.digest" as WEBCRYPTO
 component "Hex helper\ncrypto.ts::bytesToHex" as HEX
 component "Production callers\nvote / relevance / SSO / compass" as PROD
@@ -333,5 +333,5 @@ FIXTURE --> KAT : N3 v1_nullifier vector
 KAT --> HELPER : N3 synthetic phone + salt
 HELPER --> WEBCRYPTO : N4 SHA-256(phone:salt)
 WEBCRYPTO --> HEX : N5 digest bytes
-PROD .. HELPER : no import or call
+PROD .. HELPER : no import or call (crypto.ts has no nullifier export)
 @enduml

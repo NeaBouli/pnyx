@@ -2,16 +2,16 @@
 
 ## Current source and review checkpoint — 2026-09-28
 
-- The proven `main` and rollback point remains
-  `4cc11930f4be82ba2d012def487fb34abca9da26`; no merge, deployment or live
-  change is implied by the Draft work below.
+- Update 2026-10-02: #397 (EKA-22) is merged into `main` as `2f69954a`; no
+  deployment or live change is implied. (The 2026-09-28 checkpoint below
+  referred to the then-proven `main` `4cc11930`.)
 - EKA-63 is preserved as Draft PR #405 at exact head
   `3c6483fa701c70cb8c07a4159eeb345c6e24869a`. Its CI/Security gates are green;
   the Greek wording still requires Gio/native-content review.
 - EKA-24 is preserved as stacked Draft PR #406 on branch
-  `agent/codex/T-510-397-integration`, based on Draft PR #397 exact head
-  `399b42502854833d2975950f6b9f6b991cd0ff23`. The mandatory merge order is
-  **#397 first, then #406 only after a fresh post-base diff and gate proof**.
+  `agent/codex/T-510-397-integration`. #397 merged first as required; #406 is
+  now based on `main` (merge `962224a1`), with the fresh post-base diff proof
+  done and a Codex crypto/anonymity review ok.
 - CodeRabbit allowance has not reset. Completed Drafts stay parked: no retry,
   bypass, parallel review request or consumption of the serial review slot.
 
