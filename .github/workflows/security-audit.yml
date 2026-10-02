@@ -14,23 +14,30 @@ permissions:
 jobs:
   secret-scan:
     name: Secret Detection
+    # GitHub-hosted only: security jobs rely on the hosted image toolchain.
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v3
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   dependency-audit:
     name: Dependency Audit
+    # GitHub-hosted only: uses the preinstalled npm/pip/cargo of the hosted image.
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
 
       - name: Check for package.json
         id: check-npm
@@ -82,7 +89,9 @@ jobs:
 
   security-summary:
     name: Security Summary
+    # GitHub-hosted only (summary of the security jobs).
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [secret-scan, dependency-audit]
     if: always()
     steps:
