@@ -1,53 +1,234 @@
 @startmindmap
-' EKA-18 — Local Developer Stack / Compose Exposure Boundary (base 2bfda8e)
-* Local dev stack: compose up to host listeners
-** Quick Start doc
-*** gebaut: README.md::Quick Start
-*** offen: shared-network note (EKA-18 audit)
-** Dev Compose db
-*** gebaut: docker-compose.yml::services.db.ports 5432 (all interfaces)
-*** gebaut: docker-compose.yml::services.db.environment POSTGRES_PASSWORD (dev fallback)
-** Dev Compose redis
-*** gebaut: docker-compose.yml::services.redis.ports 6379 (all interfaces, no auth)
-** Dev Compose api
-*** gebaut: docker-compose.yml::services.api.environment DATABASE_URL / REDIS_URL / SERVER_SALT
-*** gebaut: service DNS db / redis (network default)
-*** gebaut: docker-compose.yml::services.api.ports 8000
-** API settings (host path)
-*** gebaut: apps/api/config.py::Settings (localhost defaults)
-*** gebaut: apps/api/alembic/env.py
-*** gebaut: apps/api/database.py::engine
-** Salt guard
-*** gebaut: apps/api/security_startup.py::validate_server_salt_config
-** Regression test
-*** offen: dev compose exposure test
+* Next runtime boundary (T-485)
+** web manifest+lock
+*** gebaut: apps/web/package.json::dependencies.next (16.3.4)
+*** gebaut: apps/web/package-lock.json::node_modules/next + @next/swc-*
+** dashboard manifest+lock
+*** gebaut: apps/dashboard/package.json::dependencies.next (16.3.4)
+*** gebaut: apps/dashboard/package-lock.json::node_modules/next + @next/swc-*
+** CI client gate
+*** gebaut: .github/workflows/ci.yml::test-clients
+*** gebaut: image-codec.check.mjs
+** Docker runtimes
+*** gebaut: apps/web/Dockerfile.prod::CMD node server.js
+*** gebaut: apps/dashboard/Dockerfile.prod::CMD node server.js
+** Request edge
+*** gebaut: web matched paths -> proxy.ts
+**** bypass: /api, _next, _vercel, dotted paths
+*** gebaut: dashboard matched protected paths -> auth + canAccess
+**** bypass checks: /api/auth early return
+** Dashboard route handlers
+*** gebaut: api/auth/[...nextauth]/route.ts::GET,POST
+*** gebaut: api/discourse/route.ts::GET
+*** gebaut: api/proxy/[...path]/route.ts
+** OG image generation
+*** offen: no next/og ImageResponse importer
 @endmindmap
 
 @startuml
-' Component diagram — arrows only for hops on the trace
-skinparam componentStyle rectangle
-component "Quick Start doc\nREADME.md" as README
-component "Compose interpolation\ndocker compose" as INTERP
-component "Dev Compose db\nservices.db" as DB
-component "Dev Compose redis\nservices.redis" as REDIS
-component "Dev Compose api\nservices.api" as API
-component "API settings (host path)\nconfig.py::Settings" as SETTINGS
-component "DB access\nalembic/env.py, database.py::engine" as DBACCESS
-component "Salt guard\nsecurity_startup.py" as GUARD
-component "Host listeners\n0.0.0.0:5432 / 0.0.0.0:6379 / 0.0.0.0:8000" as HOST
+component "web manifest+lock" as WL
+component "dashboard manifest+lock" as DL
+component "CI client gate" as CI
+component "web Docker runtime" as WD
+component "dashboard Docker runtime" as DD
+component "web request edge" as WP
+component "dashboard request edge" as DP
+component "web pages" as WPG
+component "dashboard pages + route handlers" as DRH
 
-README --> INTERP : H1 docker compose up -d
-INTERP --> DB : H2 POSTGRES_PASSWORD fallback
-INTERP --> API : H5 DATABASE_URL / REDIS_URL / SERVER_SALT / ENV
-DB --> HOST : H3 ports 5432:5432
-REDIS --> HOST : H4 ports 6379:6379
-API --> HOST : H7 ports 8000:8000
-API --> DB : H6 service DNS db
-API --> REDIS : H6 service DNS redis
-README --> SETTINGS : H8 alembic / seeds / uvicorn on host
-SETTINGS --> DBACCESS : H9 settings.database_url
-DBACCESS --> HOST : H9 localhost:5432
-API --> GUARD : H10 ENV=development
+WL --> CI : npm ci / npm run build
+DL --> CI : npm ci / npm run build
+WL --> WD : npm ci / npm run build
+DL --> DD : npm ci --ignore-scripts / npm run build
+WD --> WP : matcher-selected requests only
+DD --> DP : matcher-selected requests
+WP --> WPG : redirects / rewrites / intlMiddleware
+DP --> DRH : protected pages + non-auth APIs\nauth + canAccess
+note bottom of WP
+  matcher bypasses /api, _next, _vercel
+  and dotted paths
+end note
+note bottom of DP
+  /api/auth/* returns before protected
+  user and canAccess checks
+end note
+note bottom of DRH
+  next/og ImageResponse: offen (0 importers)
+end note
+@enduml
+
+@startmindmap
+' Preserved EKA-18 node integrated from origin/main during T-486 refresh
+* Local developer stack / Compose exposure boundary
+** Quick Start
+*** gebaut: README starts development Compose
+*** gebaut: shared-host warning
+** Development datastores
+*** gebaut: PostgreSQL published on 127.0.0.1:5432
+*** gebaut: Redis published on 127.0.0.1:6379
+** Legitimate control paths
+*** gebaut: host tools use localhost defaults
+*** gebaut: API container uses db / redis service DNS
+** Regression contract
+*** gebaut: test_dev_compose_exposure.py
+** Out of scope
+*** production Compose
+*** API port 8000
+*** datastore auth and salt policy
+@endmindmap
+
+@startuml
+skinparam componentStyle rectangle
+component "README Quick Start" as ER
+component "Development Compose" as EC
+component "Loopback listeners\n127.0.0.1:5432 / :6379" as EL
+component "Host tools\nconfig.py localhost defaults" as EH
+component "API container\nservice DNS db / redis" as EA
+component "Exposure regression test" as ET
+
+ER --> EC : docker compose up -d
+EC --> EL : publish db + redis on loopback
+EH --> EL : alembic / seeds / host uvicorn
+EA --> EC : internal service network
+ET --> EC : pin bindings + service-DNS contract
+@enduml
+
+@startmindmap
+* Sentry capture policy boundary
+** API exception / transaction
+*** gebaut: FastAPIIntegration
+*** gebaut: StarletteIntegration
+** Init policy
+*** gebaut: main.py::_sentry_init_options
+*** offen: include_local_variables explicit false
+*** offen: max_request_body_size explicit never
+** Event construction
+*** gebaut: stack and exception metadata
+*** implicit default: frame locals
+*** implicit default: request body
+** Defense filter
+*** gebaut: main.py::_before_send_filter
+*** redacts known sensitive keys and request fields
+** Transport
+*** gebaut: Sentry SDK envelope transport
+** Regression tests
+*** partial: hook wiring and known-secret redaction
+*** offen: arbitrary local/body exclusion
+@endmindmap
+
+@startuml
+skinparam componentStyle rectangle
+component "FastAPI / Starlette\nexception or transaction" as WEB
+component "Sentry init policy\nmain.py::_sentry_init_options" as POLICY
+component "SDK event construction\nstack + request context" as SDK
+component "Defense filter\nmain.py::_before_send_filter" as FILTER
+component "Sentry transport" as TRANSPORT
+component "Policy tests\ntest_sentry_secret_scrubbing.py" as TESTS
+
+WEB --> SDK : H1 exception / transaction
+POLICY --> SDK : H2 integrations + capture policy
+SDK --> SDK : H3 frame locals (implicit default)
+SDK --> SDK : H4 request body (implicit default)
+SDK --> FILTER : H5 constructed event
+FILTER --> TRANSPORT : H6 filtered envelope
+TESTS ..> POLICY : pin options
+TESTS ..> TRANSPORT : inspect offline envelope
+@enduml
+
+@startmindmap
+' EKA-08 — Web Compass Privacy Storage after T-488; EKA-18 diagrams above unchanged
+* Web Compass: profile to browser storage
+** Compass UI card
+*** quarantäne: components/CompassCard.tsx::CompassCard (not mounted, compass is app-only)
+** Compass hook
+*** gebaut: lib/compass/useCompass.ts::useCompass
+*** gebaut: lib/compass/useCompass.ts::persistProfile (300 ms debounce, not awaited)
+** Compass storage
+*** gebaut: lib/compass/storage.ts::loadProfile (legacy purge; ciphertext first; keyed migration)
+*** gebaut: lib/compass/storage.ts::saveProfile (encrypted-only; fail-closed reject)
+*** gebaut: lib/compass/storage.ts::clearProfile
+** Identity key access
+*** gebaut: lib/crypto.ts::loadKeypair (EKA-07, separate)
+** Browser persistence
+*** gebaut: localStorage ekklesia_compass_encrypted
+*** quarantäne: localStorage ekklesia_compass_profile (legacy input, purged on access)
+** Storage regression test
+*** gebaut: lib/compass/storage.test.ts (11 cases)
+@endmindmap
+
+@startuml
+' EKA-08 component diagram — arrows only for hops C1-C9
+skinparam componentStyle rectangle
+component "Compass UI card\nCompassCard.tsx (not mounted)" as CARD
+component "Compass hook\nuseCompass.ts" as HOOK
+component "Identity key access\ncrypto.ts::loadKeypair" as KEYS
+component "Compass storage\nstorage.ts" as STORE
+component "Browser persistence\nlocalStorage" as LS
+
+CARD --> HOOK : C1 useCompass
+HOOK --> KEYS : C2 loadKeypair
+HOOK --> STORE : C3 loadProfile
+STORE --> LS : C4 getItem(encrypted)
+STORE --> LS : C5 take+remove legacy plaintext; optional keyed migration
+HOOK --> HOOK : C6 persistProfile
+HOOK --> STORE : C7 saveProfile
+STORE --> LS : C8a setItem(encrypted) + removeItem(plaintext)
+STORE --> HOOK : C8b reject [no key / crypto / storage error]; no plaintext write
+HOOK --> STORE : C9 clearProfile
+@enduml
+
+@startmindmap
+* Container trust boundaries
+** EKA-18 local dev stack
+*** gebaut: Quick Start -> dev Compose
+*** gebaut: db 127.0.0.1:5432
+*** gebaut: redis 127.0.0.1:6379
+*** gebaut: api service DNS db/redis
+*** gebaut: host localhost tools
+*** gebaut: focused regression
+** EKA-13 production stack
+*** monitor
+**** gebaut: Docker SDK restart source path
+**** selected: production AUTO_RECOVERY_T2=false
+*** docker-proxy
+**** selected: v0.4.2 + manifest digest
+**** selected: CONTAINERS/EVENTS/PING/VERSION=0 + POST=0
+**** selected: dedicated internal network, monitor only
+**** risk: host Docker socket
+**** result: no Docker API namespace enabled while T2 is off
+*** neighbours
+**** offen separate: Ollama latest
+**** offen separate: dashboard/monitor non-root
+@endmindmap
+
+@startuml
+skinparam componentStyle rectangle
+package "EKA-18 dev (built)" {
+  component "Quick Start" as QUICK
+  component "Dev Compose" as DEV
+  component "Host tools" as HOSTTOOLS
+  database "PostgreSQL\n127.0.0.1:5432" as DEVDB
+  component "Redis\n127.0.0.1:6379" as DEVREDIS
+  QUICK --> DEV
+  HOSTTOOLS --> DEVDB
+  HOSTTOOLS --> DEVREDIS
+  DEV --> DEVDB : internal DNS db
+  DEV --> DEVREDIS : internal DNS redis
+}
+
+package "EKA-13 production (selected fix)" {
+  component "Monitor\nDocker SDK" as MON
+  component "docker-proxy\nv0.4.2@digest\nGET namespaces=0, POST=0" as PROXY
+  component "Official GHCR\nv0.4.2 + digest" as GHCR
+  database "Host Docker daemon" as DOCKER
+  cloud "net_ekklesia peers" as PEERS
+  rectangle "internal monitor-proxy network" as PRIVATE
+  MON --> PRIVATE : only consumer
+  PRIVATE --> PROXY : tcp://docker-proxy:2375
+  PEERS ..> PROXY : no route after fix
+  PROXY --> DOCKER : mounted docker.sock
+  GHCR ..> PROXY : selected provenance fix
+}
 @enduml
 
 @startmindmap
