@@ -1,0 +1,13 @@
+{
+  "comment": "Scoped npm audit exceptions. Every entry needs an owner decision, a reason and a review date; expired entries fail the gate.",
+  "entries": [
+    {
+      "id": "GHSA-86w9-cpqp-85rv",
+      "package": "node-forge",
+      "workspaces": ["apps/mobile", "apps/representative"],
+      "reason": "No fixed node-forge release (affected <= 1.4.0, latest 1.4.0). Pulled in only by Expo CLI tooling (@expo/cli -> @expo/code-signing-certificates) for expo-updates code signing; expo-updates is not installed, so the RSA PKCS#1 v1.5 verification path is not in the app bundle.",
+      "approved_by": "PENDING (Gio)",
+      "review_by": "2026-11-01"
+    }
+  ]
+}
