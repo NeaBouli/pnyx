@@ -230,3 +230,68 @@ package "EKA-13 production (selected fix)" {
   GHCR ..> PROXY : selected provenance fix
 }
 @enduml
+
+@startmindmap
+' EKA-22 — Cross-Implementation Crypto Contract (base 4cc1193); EKA-18 diagrams above unchanged
+* EKA-22 Cross-Implementation Crypto Contract
+** Shared KAT fixture
+*** offen: packages/crypto/tests/vectors/eka22_kat_v1.json
+** API
+*** gebaut: packages/crypto/keypair.py::verify_signature (runtime)
+*** gebaut: apps/api/keypair.py::verify_signature (mirror)
+*** gebaut: apps/api/crypto/nullifier.py::build_signed_payload
+*** gebaut: apps/api/crypto/nullifier.py::validate_vote
+*** gebaut: apps/api/crypto/nullifier.py::issue_receipt (wall-clock ts)
+*** gebaut: services/zk_group_registry.py::validate_vote_scope_id
+*** gebaut: services/evaluation_integrity.py / citizen_action_integrity.py builders
+*** gebaut: routers/voting.py:658 legacy vote string (inline)
+** Web
+*** gebaut: apps/web/src/lib/crypto.ts::buildVoteMessage
+*** gebaut: apps/web/src/lib/crypto.ts::signVote / verifyVote / signPayload
+*** gebaut: apps/web/src/lib/crypto.ts::computeNullifier
+** Mobile
+*** gebaut: crypto-native.ts::signVote / verifyVote
+*** gebaut: crypto-native.ts::buildSignedPayload
+*** gebaut: crypto-native.ts identity/vote/linkage/ephemeral HMAC chain
+*** gebaut: crypto-native.ts JSON payload builders
+** Tier-1 TS library
+*** teilweise: packages/crypto/src/nullifier.ts (unwired, payload layout differs)
+** Root KDFs (EKA-21)
+*** aufgeschoben: packages/crypto/nullifier.py v1 SHA-256 / v2 Argon2id t=2 (Gio gate)
+*** aufgeschoben: packages/crypto/src/nullifier.ts::deriveNullifierRoot Argon2id t=3 (Gio gate)
+*** aufgeschoben: crypto-native.ts::deriveNullifierRoot PBKDF2 c=100000 (Gio gate)
+** KAT adapters
+*** offen: apps/api/tests/test_eka22_kat_vectors.py
+*** offen: apps/web/src/lib/crypto-kat.test.ts
+*** offen: apps/mobile/src/lib/crypto-native-kat.test.ts
+@endmindmap
+
+@startuml
+' EKA-22 component diagram — arrows only for opened hops
+skinparam componentStyle rectangle
+component "Shared KAT fixture\n(offen)" as FIX
+component "KAT adapters\n(offen)" as ADP
+component "API signature verifier\nkeypair.py::verify_signature" as APISIG
+component "API Tier-1 validator\ncrypto/nullifier.py" as APIT1
+component "API scope validator\nzk_group_registry.py" as APISCOPE
+component "API JSON payloads\nevaluation_integrity / citizen_action_integrity" as APIJSON
+component "Web legacy signer\nlib/crypto.ts" as WEB
+component "Mobile crypto\ncrypto-native.ts" as MOB
+component "Tier-1 TS library\npackages/crypto/src" as T1LIB
+component "Root KDFs (EKA-21)\naufgeschoben" as KDF
+
+FIX --> ADP : json load
+ADP --> APISIG : verify_signature
+ADP --> APIT1 : build_signed_payload / validate_vote
+ADP --> APISCOPE : validate_vote_scope_id
+ADP --> APIJSON : build_*_payload
+ADP --> WEB : buildVoteMessage / signVote / verifyVote
+ADP --> MOB : signVote / buildSignedPayload / derive*
+ADP ..> T1LIB : buildSignedPayload (expected divergent)
+ADP ..> KDF : per-impl pins only
+WEB --> APISIG : K1-K3 legacy vote string
+MOB --> APISIG : K2-K3 legacy vote string
+MOB --> APIT1 : K6-K5 Tier-1 bytes
+T1LIB ..> APIT1 : K7 layout mismatch
+APIT1 --> T1LIB : K9 issue_receipt / verifyReceipt
+@enduml

@@ -157,3 +157,40 @@ POST=0 removes restart writes.
 Container/event/ping/version GETs and all Docker writes are denied while T2 is disabled.
 end note
 @enduml
+
+@startuml
+' EKA-22 KAT path — built symbols at base 4cc1193; fixture and adapters are offen (not simulated as built)
+title EKA-22: shared fixture -> adapter -> existing crypto symbols -> expected bytes/hex/errors
+
+participant "Shared KAT fixture\n(offen)" as FIX
+participant "KAT adapters\n(offen)" as ADP
+participant "API\nkeypair.py / crypto/nullifier.py / services" as API
+participant "Web\nlib/crypto.ts" as WEB
+participant "Mobile\ncrypto-native.ts" as MOB
+participant "Tier-1 TS library\npackages/crypto/src" as T1
+
+note over FIX, ADP : offen — no file or test exists yet
+
+== class identical ==
+ADP -> WEB : buildVoteMessage / signVote (K1)
+ADP -> MOB : signVote message (K2)
+ADP -> API : verify_signature(legacy string) (K3/K4)
+ADP -> MOB : buildSignedPayload (K6)
+ADP -> API : build_signed_payload (K5)
+ADP -> MOB : identity/vote/linkage/ephemeral HMAC chain (K8)
+ADP -> T1 : identity/vote/linkage/ephemeral HMAC chain (K8)
+ADP -> MOB : JSON payload builders (K12)
+ADP -> API : evaluation / vote-status builders (K12)
+
+== class validatable ==
+ADP -> API : validate_vote -> INVALID_HEX / INVALID_SIGNATURE_FORMAT / INVALID_SIGNATURE (K5)
+ADP -> API : validate_vote_scope_id -> ValueError (K11)
+ADP -> WEB : verifyVote(malformed) -> false
+ADP -> MOB : verifyVote(malformed) -> false or throw
+
+== documented divergence ==
+ADP -> T1 : buildSignedPayload (K7) != K5
+ADP -> API : v1 / v2 root KDF pin (own impl only, EKA-21)
+ADP -> T1 : Argon2id t=3 root pin (own impl only, EKA-21)
+ADP -> MOB : PBKDF2 root pin (own impl only, EKA-21)
+@enduml
