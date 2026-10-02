@@ -13,7 +13,9 @@ permissions:
 jobs:
   test-api:
     name: Python API Tests
+    # GitHub-hosted only: needs the redis service container (no Docker for pnyx on the fallback host).
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     services:
       redis:
@@ -27,10 +29,12 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.12"
 
@@ -57,17 +61,24 @@ jobs:
 
   test-crypto:
     name: Crypto Package Tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') }}
+    # Fallback runner (CI_RUNNER) only for push/dispatch or same-repo PRs; see docs/CI.md.
+    if: ${{ !vars.CI_RUNNER || github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.12"
 
       - name: Install system dependencies (for PyNaCl)
+        # No sudo on the fallback runner; the PyNaCl wheel bundles libsodium.
+        if: ${{ !vars.CI_RUNNER }}
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq gcc libsodium-dev
@@ -85,13 +96,18 @@ jobs:
 
   test-docs-redesign:
     name: Docs Redesign Gates
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') }}
+    # Fallback runner (CI_RUNNER) only for push/dispatch or same-repo PRs; see docs/CI.md.
+    if: ${{ !vars.CI_RUNNER || github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.12"
 
@@ -104,7 +120,13 @@ jobs:
 
   test-clients:
     name: Client ${{ matrix.name }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') }}
+    # Fallback runner (CI_RUNNER) only for push/dispatch or same-repo PRs; see docs/CI.md.
+    if: ${{ !vars.CI_RUNNER || github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    timeout-minutes: 30
+    env:
+      # The root .npmrc (ignore-scripts=true) is not read inside apps/*; enforce it here.
+      NPM_CONFIG_IGNORE_SCRIPTS: "true"
     strategy:
       fail-fast: false
       matrix:
@@ -126,10 +148,12 @@ jobs:
             verify: npm run typecheck && npm test
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -142,3 +166,16 @@ jobs:
       - name: Verify ${{ matrix.name }}
         working-directory: ${{ matrix.path }}
         run: ${{ matrix.verify }}
+
+  fallback-fork-guard:
+    name: Fallback Fork Guard
+    # GitHub-hosted only. While CI_RUNNER (fallback) is set, the fallback-capable jobs skip
+    # fork PRs; a skipped job must not read as green, so this job fails those PRs explicitly.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: ${{ vars.CI_RUNNER && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+    steps:
+      - name: Fork PRs are not mergeable while the CI fallback is active
+        run: |
+          echo "::error::CI fallback (CI_RUNNER) is active: crypto/docs/client gates did not run for this fork PR. Not mergeable until CI_RUNNER is unset and CI is re-run."
+          exit 1
