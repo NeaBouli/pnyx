@@ -1257,6 +1257,12 @@ nav.pnx2-header .nav-links .pnx2-nav-cta {
     border-bottom: 2px solid #e2e8f0;
   }
 
+  /* T-557 / UI-06: phone list rows keep no side lines; without this the inline
+     2px left border stays and the card content sits flush against it. */
+  #forum .forum-feature {
+    border-left: 0 !important;
+  }
+
   #transparency > div {
     grid-template-columns: minmax(0, 1fr) !important;
   }

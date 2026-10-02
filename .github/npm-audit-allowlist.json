@@ -1,0 +1,18 @@
+{
+  "comment": "Scoped npm audit exceptions, matched on the exact (id, package, workspace) tuple. Every entry needs approved_by (not PENDING), approved_on, approval_source, a reason and review_by (YYYY-MM-DD, at most 60 days after approval). Invalid, unapproved or expired entries fail the gate.",
+  "entries": [
+    {
+      "id": "GHSA-86w9-cpqp-85rv",
+      "package": "node-forge",
+      "workspaces": [
+        "apps/mobile",
+        "apps/representative"
+      ],
+      "reason": "No fixed node-forge release (affected <= 1.4.0, latest 1.4.0). Reached only via expo -> @expo/cli -> @expo/code-signing-certificates (2 edges below @expo/cli, not marked dev in the lockfile). Only CLI/build paths: no app imports of node-forge, expo-updates not installed. Not excluded: reachability inside Expo CLI code paths (e.g. code-signing commands) on developer/CI machines.",
+      "approved_by": "Gio",
+      "approved_on": "2026-10-02",
+      "approval_source": "Gio direkt im Ekklesia-Terminal 2026-10-02",
+      "review_by": "2026-11-01"
+    }
+  ]
+}
