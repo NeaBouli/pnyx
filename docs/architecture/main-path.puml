@@ -406,3 +406,39 @@ end
 Item --> Bar : Inhalt ragt ueber 49 dp hinaus
 Bar --> Android : unterer Rand ausserhalb Fenster -> vertikal abgeschnitten (H14)
 @enduml
+
+@startuml
+' EKA-64 main path — T-504 trace, A6 updated to built T-505 guard
+' Evidence: local standalone build (Dockerfile.prod layout) on 127.0.0.1, 2026-09-28
+title MOD-WEB: /llms.txt vs /ai.txt | /llms-full.txt -> HTTP status
+
+actor "AI crawler" as CRAWLER
+participant "Next config\nnext.config.mjs" as NCFG
+participant "Proxy\nproxy.ts::config.matcher" as PROXY
+participant "Public bundle\n/app/public (Dockerfile.prod)" as PUBLIC
+participant "Locale page\n[locale]/page.tsx::HomePage" as LOCALE
+
+== existing anchor: /llms.txt ==
+CRAWLER -> NCFG : GET /llms.txt (A1)
+NCFG -> PROXY : redirects(): no match (A2)
+PROXY -> PROXY : matcher /((?!api|_next|_vercel|.*\\..*).*) excludes dotted path; proxy() not run (A3)
+PROXY -> PUBLIC : static-file lookup public/llms.txt
+PUBLIC --> CRAWLER : 200 OK, text/plain; charset=UTF-8, 5470 bytes (A4)
+
+== missing conventional anchor: /ai.txt, /llms-full.txt ==
+CRAWLER -> NCFG : GET /ai.txt (A1)
+NCFG -> PROXY : redirects(): no match (A2)
+PROXY -> PROXY : dotted path excluded; proxy() not run (A3)
+PROXY -> PUBLIC : static-file lookup public/ai.txt
+PUBLIC -> LOCALE : miss -> app route /[locale] with locale="ai.txt" (A5)
+LOCALE -> LOCALE : HomePage hasLocale(routing.locales, "ai.txt") = false (T-505)
+LOCALE --> CRAWLER : notFound() -> 404 Not Found, text/html (A6)
+
+== valid locale: /el, /en ==
+CRAWLER -> LOCALE : GET /el (proxy + [locale] route)
+LOCALE --> CRAWLER : redirect -> 307, location: https://ekklesia.gr (unchanged)
+
+== contrast: two-segment dotted miss ==
+CRAWLER -> PUBLIC : GET /x/ai.txt
+PUBLIC --> CRAWLER : 404 Not Found, text/html (no matching app route)
+@enduml
