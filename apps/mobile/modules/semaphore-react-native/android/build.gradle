@@ -36,6 +36,7 @@ android {
   defaultConfig {
     versionCode 1
     versionName "0.1.0"
+    testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
   }
   lintOptions {
     abortOnError false
@@ -43,6 +44,10 @@ android {
 }
 
 dependencies {
-  implementation("net.java.dev.jna:jna:5.13.0@aar")
+  implementation("net.java.dev.jna:jna:5.19.1@aar")
   implementation("com.facebook.react:react-android")
+
+  androidTestImplementation("androidx.test:runner:1.6.2")
+  androidTestImplementation("androidx.test.ext:junit:1.2.1")
+  androidTestImplementation("junit:junit:4.13.2")
 }
