@@ -371,3 +371,38 @@ platform-specific key facts and paused-payment state
 return deterministically before database/model access.
 end note
 @enduml
+
+@startuml gh298-tab-label-main-path
+title GH#298 — Tab-Label-Pfad bei Android fontScale 1.8 (Basis 2bfda8e)
+
+participant "App-Shell Safe Area\nApp.tsx" as Shell
+participant "Tab-Navigation\nnavigation/index.tsx" as TabNav
+participant "BottomTabView\n(Vendor)" as View
+participant "BottomTabBar\n(Vendor)" as Bar
+participant "BottomTabItem\n(Vendor)" as Item
+participant "TabBarIcon\n(Vendor)" as Icon
+participant "react-native Text\n/ Yoga" as RNText
+participant "Android\nfontScale / Window" as Android
+
+Shell -> Shell : SafeAreaView edges=["top"]\n+ innerer SafeAreaProvider (H1)
+Shell -> TabNav : Navigation -> Stack.Screen "Tabs" (H2)
+TabNav -> View : screenOptions({route})\ntabBarStyle ohne height, tabBarLabel(), tabBarIcon() (H3)
+View -> Bar : renderTabBar({insets}) (H4)
+Bar -> Bar : getTabBarHeight = 49 + insets.bottom\n(fontScale-blind) (H5)
+Bar -> Bar : shouldUseHorizontalLabels\nAndroid: width > height (H6)
+loop 5 Routen, flex 1 je Spalte (H7)
+  Bar -> Item : BottomTabItem(horizontal=false, compact=false)
+  Item -> Item : PlatformPressable\npadding 5, column, role tab (H8)
+  Item -> Icon : renderIcon -> Wrapper 31x28 (H9)
+  Icon -> TabNav : tabBarIcon({size: 25, color, focused})
+  TabNav -> RNText : Text fontSize 18 (Emoji), size ignoriert (H10)
+  Android -> RNText : fontScale 1.8 -> 32.4 sp (H13)
+  RNText --> Icon : Glyphe > 28 dp, ueberlagert Label-Zone
+  Item -> TabNav : renderLabel -> tabBarLabel({color, position}) (H11)
+  TabNav -> RNText : Text fontSize 10, bold, kein numberOfLines (H12)
+  Android -> RNText : fontScale 1.8 -> 18 sp (H13)
+  RNText --> Item : Zeilenhoehe > ~11 dp Restbudget,\nBreite > 62 dp Spalte -> Umbruch
+end
+Item --> Bar : Inhalt ragt ueber 49 dp hinaus
+Bar --> Android : unterer Rand ausserhalb Fenster -> vertikal abgeschnitten (H14)
+@enduml
