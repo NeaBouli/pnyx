@@ -380,6 +380,45 @@ FIXTURE ..> CI : intended mandatory regression input
 DB --> RAG : H7 capped rows
 @enduml
 
+@startmindmap faq-lang-mindmap
+* Static Wiki FAQ: zweisprachige FAQ el/en
+** FAQ Markup
+*** gebaut: faq.html::html lang=el data-lang=el
+*** gebaut: faq.html::#langBtn onclick=toggleLang
+*** gebaut: faq.html::data-el / data-en Paare
+** FAQ Sprachwechsel
+*** gebaut: faq.html::toggleLang
+*** gebaut: faq.html::currentLang
+*** gebaut: querySelectorAll data-el -> innerHTML
+*** offen: document.documentElement.lang (#365)
+*** offen: documentElement data-lang
+** FAQ A11y-Adapter
+*** gebaut: r3-faq-accessibility.js::IIFE .faq-q ARIA
+** R3 Wiki-Gate
+*** gebaut: r3_wiki_pilot_check.py::check_r3_wiki_page
+*** gebaut: approved_audit_delta.py::APPROVED_WIKI_INVENTORY_HASH
+@endmindmap
+
+@startuml faq-lang-components
+title FAQ-Sprachwechsel (docs/wiki/faq.html) — Komponenten
+
+component "FAQ Markup\n(docs/wiki/faq.html)" as Markup
+component "FAQ Sprachwechsel\n(faq.html inline script)" as Toggle
+component "FAQ A11y-Adapter\n(r3-faq-accessibility.js)" as A11y
+component "R3 Wiki-Gate\n(r3_wiki_pilot_check.py)" as Gate
+
+Markup --> Toggle : langBtn onclick -> toggleLang
+Toggle --> Markup : querySelectorAll("[data-el]") -> innerHTML
+Toggle ..> Markup : documentElement.lang (offen, #365)
+Markup --> A11y : script defer
+Gate ..> Markup : check_r3_wiki_page (Build-Zeit)
+
+note right of Toggle
+  Luecke L1/L2: toggleLang setzt weder
+  document.documentElement.lang noch data-lang.
+end note
+@enduml
+
 @startmindmap
 * Assistant deterministic truth boundary
 ** Router
