@@ -41,6 +41,13 @@ android {
   lintOptions {
     abortOnError false
   }
+  // Only the module's instrumentation-test APK packages native libs here; React Native also
+  // ships libc++_shared.so. App packaging is unaffected (the app bundle uses React Native's copy).
+  packagingOptions {
+    jniLibs {
+      pickFirsts += ["lib/*/libc++_shared.so"]
+    }
+  }
 }
 
 dependencies {
