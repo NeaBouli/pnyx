@@ -10,6 +10,7 @@ See docs/security/AGENT_PROMPT_TRUST_BOUNDARY.md.
 import os
 import logging
 import re
+import unicodedata
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -97,16 +98,57 @@ _SAFETY_PATTERNS = [
 
 # EKA-60: payment/donation/support intake is paused (docs/community.html,
 # payments.py::_payment_intake_enabled); answer before any KB or model call.
+# Only intent aimed at the platform counts: bill topics such as sponsors,
+# social-security contributions, pensions or public funding must reach the
+# normal answer path. Patterns run on _match_text() (NFC, casefolded, Greek
+# accents removed, final sigma folded to σ).
+_PAY_TARGET_EN = (
+    r"(?:ekklesia(?:\.gr)?|the (?:platform|project|initiative|team|site|app)"
+    r"|this (?:platform|project|initiative|site|app)|you)"
+)
+_PAY_TARGET_EL = r"(?:(?:την|το|στην|στο|σε)\s+)?(?:εκκλησια|πλατφορμα|εργο|πρωτοβουλια|ομαδα|εσασ)"
 _PAYMENT_PATTERNS = [
-    r"\bdonat", r"\bpayments?\b", r"\bpay(?:ing)?\s+(?:with|via|by)\b", r"\bstripe\b",
-    r"\bpay ?pal\b", r"\bsponsor", r"\bfund(s|ing|raising)?\b",
-    r"\bfinancial(ly)?\s+(support|contribut)",
-    r"\bcontribut\w*\s+(money|financially|funds)",
-    r"\bsupport\s+(ekklesia|the\s+(project|platform|initiative)|this\s+project|you|us)\b",
-    r"δωρε(?![άα]ν\b)", r"δωρ[ίι][σζ]", r"πληρωμ", r"χορηγ", r"εισφορ",
-    r"οικονομικ\w*\s+(στ[ήη]ριξ|υποστ[ήη]ριξ|εν[ίι]σχυσ)",
-    r"\b(υπο)?στηρ[ίι]ξ(ω|ουμε)\b",
+    # named payment processors / instruments
+    r"\b(?:pay ?pal|stripe|iban|patreon|ko-?fi|buy ?me ?a ?coffee)\b",
+    # donation/payment links or buttons
+    r"\b(?:donat\w*|payment)\s+(?:link|button|page)\b",
+    r"\b(?:συνδεσμοσ|link)\s+(?:\S+\s+){0,2}?(?:δωρεα|δωρεων|δωρεεσ|πληρωμη|πληρωμων)\b",
+    # "do you accept donations/payments/sponsorship?"
+    r"\b(?:accept|take)s?\s+(?:any\s+)?(?:donations?|payments?|sponsorships?)\b",
+    r"\bδεχεστε\s+(?:\S+\s+)?(?:δωρεεσ|πληρωμεσ|χορηγιεσ|εισφορεσ)\b",
+    # donate/pay/contribute to the platform
+    rf"\b(?:donat\w*|pay|send money|contribut\w*|give money)\s+(?:\w+\s+){{0,3}}?(?:to|for)\s+{_PAY_TARGET_EN}\b",
+    rf"\b(?:support|fund|sponsor)\s+{_PAY_TARGET_EN}\b",
+    r"\b(?:i|we)\s+(?:\w+\s+){0,3}?(?:support|contribute|help)\s+(?:\w+\s+){0,3}?financially\b",
+    r"\bhow (?:can|do|could) i (?:donate|make a donation)\s*[?.!]*$",
+    # Greek: first-person intent aimed at the platform
+    rf"\b(?:δωρισω|δωρισουμε|στηριξω|στηριξουμε|υποστηριξω|ενισχυσω|πληρωσω|συνεισφερω)\s+(?:\S+\s+){{0,2}}?{_PAY_TARGET_EL}\b",
+    r"\b(?:στηριξω|υποστηριξω|ενισχυσω|συνεισφερω)\s+(?:\S+\s+){0,2}?οικονομικα\b",
+    rf"\bοικονομικ\w*\s+(?:στηριξη|υποστηριξη|ενισχυση|συνεισφορα)\s+(?:\S+\s+){{0,2}}?(?:στην|στο|της|του|σε)\s+(?:εκκλησια|πλατφορμα|εργο|πρωτοβουλια)",
+    rf"\bκανω\s+(?:μια\s+)?δωρεα(?:\s*[;?.!]*\s*$|\s+{_PAY_TARGET_EL}\b)",
 ]
+_PAYMENT_RES = [re.compile(pattern) for pattern in _PAYMENT_PATTERNS]
+
+# Model output guard: no payment links or instruments may reach the citizen.
+_PAYMENT_LINK_RE = re.compile(
+    r"(?:https?://|www\.)\S*(?:paypal|stripe|buymeacoffee|patreon|ko-fi|revolut)\S*"
+    r"|\bpaypal\.me\b|\bdonate\.stripe\.com\b|\biban\s*:?\s*[a-z]{2}\d{2}",
+    re.IGNORECASE,
+)
+
+
+def _match_text(text: str) -> str:
+    """NFC + casefold + Greek accents removed, for intent matching only."""
+    folded = unicodedata.normalize("NFD", unicodedata.normalize("NFC", text or "").casefold())
+    return unicodedata.normalize(
+        "NFC", "".join(ch for ch in folded if unicodedata.category(ch) != "Mn"),
+    )
+
+
+def _is_payment_intent(question: str) -> bool:
+    text = _match_text(question)
+    return any(pattern.search(text) for pattern in _PAYMENT_RES)
+
 
 _BILL_QUERY_PATTERNS = [
     r"\bGR-\d{4}",
@@ -130,7 +172,7 @@ def _with_disclaimer(answer: str, lang: str) -> str:
 
 def _safety_response(question: str, lang: str) -> dict | None:
     """Block unsafe voting/admin/security-bypass requests before any LLM call."""
-    q = (question or "").lower()
+    q = unicodedata.normalize("NFC", question or "").lower()
     if not any(pattern in q for pattern in _SAFETY_PATTERNS):
         return None
 
@@ -158,9 +200,36 @@ def _safety_response(question: str, lang: str) -> dict | None:
     }
 
 
+_PAYMENTS_PAUSED_EL = (
+    "Η αποδοχή δωρεών και πληρωμών, καθώς και οι σχετικοί δημόσιοι σύνδεσμοι, "
+    "έχουν προσωρινά ανασταλεί. Ο βοηθός δεν δέχεται πληρωμές και δεν παραπέμπει "
+    "σε Stripe, PayPal ή άλλον πάροχο πληρωμών. Μη στέλνετε χρήματα μέσω "
+    "συνδέσμων που λαμβάνετε σε συνομιλίες."
+)
+_PAYMENTS_PAUSED_EN = (
+    "Public donation/payment links and payment intake are currently "
+    "paused and unavailable. The assistant does not accept payments and "
+    "does not refer you to Stripe, PayPal or any other payment processor. "
+    "Do not send money through links received in a chat."
+)
+
+
+def _payments_paused_response(question: str, lang: str) -> dict:
+    """Deterministic EKA-60 answer; also replaces model output that carries payment links."""
+    return {
+        "question": question,
+        "answer": _with_disclaimer(
+            _PAYMENTS_PAUSED_EL if _is_greek(lang) else _PAYMENTS_PAUSED_EN, lang,
+        ),
+        "model": "knowledge-base",
+        "sources": [{"type": "knowledge_base", "topic": "payments_paused"}],
+        "lang": lang,
+    }
+
+
 def _canonical_response(question: str, lang: str) -> dict | None:
     """Deterministic answers for safety/privacy concepts that must not drift."""
-    q = (question or "").lower()
+    q = unicodedata.normalize("NFC", question or "").lower()
     normalized_q = re.sub(r"[^\w\u0370-\u03ff]+", " ", q, flags=re.UNICODE).strip()
     greek = _is_greek(lang)
 
@@ -187,18 +256,8 @@ def _canonical_response(question: str, lang: str) -> dict | None:
             "assistant_help",
         )
 
-    if any(re.search(pattern, q) for pattern in _PAYMENT_PATTERNS):
-        return resp(
-            "Οι δημόσιοι σύνδεσμοι και η αποδοχή δωρεών/πληρωμών είναι αυτή τη "
-            "στιγμή σε παύση και μη διαθέσιμοι. Ο βοηθός δεν δέχεται πληρωμές "
-            "και δεν παραπέμπει σε Stripe, PayPal ή άλλον πάροχο πληρωμών. Μην "
-            "στέλνετε χρήματα μέσω συνδέσμων που λαμβάνετε σε συνομιλίες.",
-            "Public donation/payment links and payment intake are currently "
-            "paused and unavailable. The assistant does not accept payments and "
-            "does not refer you to Stripe, PayPal or any other payment processor. "
-            "Do not send money through links received in a chat.",
-            "payments_paused",
-        )
+    if _is_payment_intent(question):
+        return _payments_paused_response(question, lang)
 
     if "private key" in q or "signing key" in q or ("ιδιωτικ" in q and "κλειδ" in q):
         return resp(
@@ -207,16 +266,18 @@ def _canonical_response(question: str, lang: str) -> dict | None:
             "αποθήκευση browser, όχι iOS Keychain ή Android Keystore. Εφαρμογή "
             "κινητού: αποθηκεύεται μέσω Expo SecureStore, που χρησιμοποιεί Android "
             "Keystore και, στην υλοποιημένη διαδρομή κώδικα iOS, iOS Keychain. "
-            "Και στις δύο περιπτώσεις ο server δεν το γνωρίζει και δεν μπορεί να "
-            "το ανακτήσει. Αν χαθεί, ακολουθείτε μόνο την επίσημη ροή "
+            "Ο server δημιουργεί το ζεύγος κλειδιών μία φορά κατά την επαλήθευση "
+            "και σας παραδίδει το ιδιωτικό κλειδί μόνο μία φορά· δεν το αποθηκεύει "
+            "και δεν μπορεί να το ανακτήσει αργότερα. Αν χαθεί, ακολουθείτε μόνο την επίσημη ροή "
             "επαλήθευσης/επανέκδοσης που παρέχει η εφαρμογή· δεν υπάρχει μυστική "
             "ανάκτηση από τον server.",
             "Where your private key is stored depends on the platform. Web Beta: "
             "it is kept in the browser's localStorage — plain browser storage, "
             "not iOS Keychain or Android Keystore. Mobile app: it is stored via "
             "Expo SecureStore, which uses Android Keystore and, in the implemented "
-            "iOS code path, iOS Keychain. In both cases the server does not know "
-            "it and cannot recover it. If it is lost, use only the official app "
+            "iOS code path, iOS Keychain. The server creates the key pair once during "
+            "verification and hands you the private key a single time; it does "
+            "not store it and cannot recover it later. If it is lost, use only the official app "
             "re-verification/key-rotation flow; there is no hidden server-side "
             "recovery process.",
             "private_key",
@@ -543,6 +604,9 @@ async def ask_agent(
         if is_unsafe_model_output(ollama_answer):
             logger.warning("[Hybrid] Ollama answer rejected by output guard")
             return _output_guard_response(req.question, req.lang)
+        if _PAYMENT_LINK_RE.search(ollama_answer or ""):
+            logger.warning("[Hybrid] Ollama answer carried a payment link; replaced")
+            return _payments_paused_response(req.question, req.lang)
 
     # Step 2: If Ollama failed or gave poor answer → Claude fallback
     if _is_answer_poor(ollama_answer):
@@ -550,6 +614,9 @@ async def ask_agent(
         if claude_answer and is_unsafe_model_output(claude_answer):
             logger.warning("[Hybrid] Claude answer rejected by output guard")
             return _output_guard_response(req.question, req.lang)
+        if claude_answer and _PAYMENT_LINK_RE.search(claude_answer):
+            logger.warning("[Hybrid] Claude answer carried a payment link; replaced")
+            return _payments_paused_response(req.question, req.lang)
         if claude_answer:
             model_used = "claude-haiku"
             return {

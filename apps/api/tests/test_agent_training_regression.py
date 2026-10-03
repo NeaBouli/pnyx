@@ -5,6 +5,7 @@ endpoints and timestamps stay in the private agent-bridge dataset.
 """
 
 import json
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -79,6 +80,14 @@ PAYMENT_PROMPTS = [
     ("el", "Πώς μπορώ να στηρίξω την εκκλησία;"),
     ("el", "Θέλω να δώσω οικονομική στήριξη στην πλατφόρμα"),
     ("el", "Δέχεστε χορηγίες ή εισφορές;"),
+    ("en", "Do you accept donations?"),
+    ("en", "Is there an IBAN for donations?"),
+    ("el", "Θέλω να στηρίξω οικονομικά την πλατφόρμα"),
+    ("el", "Υπάρχει σύνδεσμος για δωρεές;"),
+    # accent-less, upper-case and decomposed (NFD) spellings
+    ("el", "ΠΩΣ ΜΠΟΡΩ ΝΑ ΚΑΝΩ ΔΩΡΕΑ;"),
+    ("el", "πως μπορω να στηριξω την εκκλησια"),
+    ("el", unicodedata.normalize("NFD", "Πώς μπορώ να κάνω δωρεά;")),
 ]
 
 
@@ -91,7 +100,7 @@ def test_payment_prompts_get_deterministic_paused_answer(lang: str, question: st
     assert response["sources"] == [{"type": "knowledge_base", "topic": "payments_paused"}]
     answer = response["answer"]
     if lang == "el":
-        assert "σε παύση και μη διαθέσιμοι" in answer
+        assert "έχουν προσωρινά ανασταλεί" in answer
         assert "δεν παραπέμπει σε Stripe, PayPal" in answer
     else:
         assert "paused and unavailable" in answer
@@ -108,6 +117,24 @@ def test_payment_prompts_get_deterministic_paused_answer(lang: str, question: st
     ("en", "Do I have to pay to vote?"),
     ("el", "Ποιες πληροφορίες αποθηκεύετε;"),
     ("en", "What is ekklesia.gr and who operates it?"),
+    # EKA-60 review: bill topics that share vocabulary with payments
+    ("en", "Who is the sponsor of this bill?"),
+    ("en", "Does the bill change social security contributions?"),
+    ("en", "How are pensions paid under the new law?"),
+    ("en", "Does the law fund public hospitals?"),
+    ("en", "Will the state support us farmers financially?"),
+    ("en", "How are donations to charities taxed?"),
+    ("en", "Is organ donation covered by the bill?"),
+    ("en", "Can I pay my taxes on the platform?"),
+    ("el", "Ποιος είναι ο χορηγός του νομοσχεδίου;"),
+    ("el", "Αλλάζουν οι ασφαλιστικές εισφορές;"),
+    ("el", "Τι προβλέπει το νομοσχέδιο για τις συντάξεις και τις εισφορές;"),
+    ("el", "Πότε γίνεται η πληρωμή των συντάξεων;"),
+    ("el", "Πώς θα στηρίξει ο νόμος τους αγρότες;"),
+    ("el", "Υπάρχει χρηματοδότηση για τα σχολεία;"),
+    ("el", "Φορολογούνται οι δωρεές στην Εκκλησία;"),
+    ("el", "Μπορώ να κάνω δωρεά οργάνων;"),
+    ("el", "Πώς ενισχύεται οικονομικά η τοπική αυτοδιοίκηση;"),
 ])
 def test_non_payment_prompts_do_not_hit_paused_answer(lang: str, question: str) -> None:
     response = _canonical_response(question, lang)
@@ -135,7 +162,8 @@ def test_private_key_answer_separates_web_local_storage_from_mobile_secure_store
     assert ("not iOS Keychain or Android Keystore" if lang == "en" else "όχι iOS Keychain ή Android Keystore") in web
     assert "Expo SecureStore" in mobile and "Android Keystore" in mobile and "iOS Keychain" in mobile
     assert ("implemented iOS code path" if lang == "en" else "υλοποιημένη διαδρομή κώδικα iOS") in mobile
-    assert ("server does not know it" if lang == "en" else "ο server δεν το γνωρίζει") in mobile
+    assert ("does not store it and cannot recover it later" if lang == "en" else "δεν το αποθηκεύει") in mobile
+    assert ("server creates the key pair once" if lang == "en" else "δημιουργεί το ζεύγος κλειδιών μία φορά") in mobile
 
 
 class _NoDb:
@@ -165,3 +193,35 @@ async def test_canonical_answers_end_before_db_and_models(
     assert response["model"] == "knowledge-base"
     assert response["sources"] == [{"type": "knowledge_base", "topic": topic}]
     assert response["lang"] == lang
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("model_answer", [
+    "You can support us at https://www.paypal.com/donate?hosted_button_id=X.",
+    "Donate here: https://donate.stripe.com/abc",
+    "Send money to IBAN: GR16 0110 1250 0000 0001 2300 695",
+])
+async def test_model_answers_with_payment_links_are_replaced(
+    monkeypatch: pytest.MonkeyPatch, model_answer: str,
+) -> None:
+    async def fake_context(*args: object, **kwargs: object):
+        return "", [], False, []
+
+    async def yes(*args: object, **kwargs: object) -> bool:
+        return True
+
+    async def fake_answer(*args: object, **kwargs: object) -> str:
+        return model_answer
+
+    monkeypatch.setattr(agent, "_build_context", fake_context)
+    monkeypatch.setattr(agent, "ollama_available", yes)
+    monkeypatch.setattr(agent, "answer_citizen_question", fake_answer)
+
+    response = await agent.ask_agent.__wrapped__(
+        object(), agent.AskRequest(question="What does the new bill change?", lang="en"), db=_NoDb(),
+    )
+
+    assert response["sources"] == [{"type": "knowledge_base", "topic": "payments_paused"}]
+    assert "http" not in response["answer"].lower()
+    assert "iban" not in response["answer"].lower()
+
