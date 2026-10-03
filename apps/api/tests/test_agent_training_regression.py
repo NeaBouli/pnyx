@@ -96,6 +96,10 @@ PAYMENT_PROMPTS = [
     ("el", "Πώς μπορώ να σας στηρίξω;"),
     ("el", "Θέλω να κάνω δωρεά στο ekklesia.gr"),
     ("el", "Πώς μπορώ να στηρίξω το ekklesia;"),
+    # CodeRabbit #400: possessive target, processor names only in a paying context
+    ("en", "Can I donate to your project?"),
+    ("en", "What is your IBAN?"),
+    ("en", "Is there a PayPal account for donations?"),
 ]
 
 
@@ -147,6 +151,10 @@ def test_payment_prompts_get_deterministic_paused_answer(lang: str, question: st
     ("en", "Where can I donate blood?"),
     ("en", "I want to donate to my local hospital"),
     ("el", "Πώς θα σας στηρίξει το κράτος;"),
+    ("en", "What does the bill say about Stripe?"),
+    ("en", "Does the new law regulate PayPal fees?"),
+    ("en", "Will banks have to print the IBAN on invoices?"),
+    ("el", "Τι λέει το νομοσχέδιο για το IBAN;"),
 ])
 def test_non_payment_prompts_do_not_hit_paused_answer(lang: str, question: str) -> None:
     response = _canonical_response(question, lang)
@@ -215,6 +223,7 @@ PAYMENT_MODEL_ANSWERS = [
     "Checkout: buy.stripe.com/test_123",
     "Transfer to GR16 0110 1250 0000 0001 2300 695 please.",
     "ΙΒΑΝ: GR16 0110 1250 0000 0001 2300 695",
+    "transfer to gr16 0110 1250 0000 0001 2300 695",
 ]
 
 
@@ -222,6 +231,7 @@ PAYMENT_MODEL_ANSWERS = [
     "Ο νόμος 4624/2019 (ΦΕΚ Α 137) ρυθμίζει την προστασία δεδομένων.",
     "Bill GR-2026-0001 is open for votes until 2026-10-10.",
     "The Ed25519 public key is stored; the vote id is DIAV-Ψ26Μ46Ψ84Ι-Τ.",
+    "Bills id12 have been made into laws this year.",
 ])
 def test_payment_output_guard_leaves_normal_answers(answer: str) -> None:
     assert agent._has_payment_link(answer) is False

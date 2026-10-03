@@ -108,15 +108,21 @@ _SAFETY_PATTERNS = [
 # payment instruction.
 _PAY_TARGET_EN = (
     r"(?:ekklesia(?:\.gr)?|the (?:platform|project|initiative|team|site|app)"
-    r"|this (?:platform|project|initiative|site|app)|you)"
+    r"|(?:this|your) (?:platform|project|initiative|site|app|team|work)|you)"
 )
+_PROCESSORS = r"pay ?pal|stripe|iban|patreon|ko-?fi|buy ?me ?a ?coffee|revolut"
 _PAY_TARGET_EL = (
     r"(?:(?:την|το|στην|στο|σε)\s+)?"
     r"(?:εκκλησια|πλατφορμα|εργο|πρωτοβουλια|ομαδα|εσασ|ekklesia(?:\.gr)?)"
 )
 _PAYMENT_PATTERNS = [
-    # named payment processors / instruments
-    r"\b(?:pay ?pal|stripe|iban|patreon|ko-?fi|buy ?me ?a ?coffee)\b",
+    # named payment processors / instruments, only in a paying context
+    # ("pay with Stripe", "PayPal donate link", "IBAN for donations"); a bill
+    # question that merely mentions Stripe or PayPal reaches the normal path
+    rf"\b(?:pay|donate|send money|contribute|support (?:you|us)|πληρωσω|δωρισω|στειλω)\s+(?:\S+\s+){{0,2}}?(?:with|via|through|by|on|με|μεσω)\s+(?:{_PROCESSORS})\b",
+    rf"\b(?:{_PROCESSORS})\s+(?:\S+\s+){{0,1}}?(?:link|button|page|account|address|donat\w*|συνδεσμοσ|λογαριασμοσ|δωρε\w*)\b",
+    r"\b(?:iban|account number|bank details)\b\s+(?:\S+\s+){0,2}?(?:for|to|για|στην|στο)\s+(?:\S+\s+){0,1}?(?:donat\w*|support|δωρε\w*|ενισχυσ\w*|ekklesia|εκκλησια|πλατφορμα|you|σασ)\b",
+    r"\b(?:your|σασ)\s+(?:iban|paypal|stripe|bank (?:account|details)|τραπεζικ\w* λογαριασμ\w*)\b",
     # donation/payment links or buttons
     r"\b(?:donat\w*|payment)\s+(?:link|button|page)\b",
     r"\b(?:συνδεσμοσ|link)\s+(?:\S+\s+){0,2}?(?:δωρεα|δωρεων|δωρεεσ|πληρωμη|πληρωμων)\b",
@@ -150,12 +156,16 @@ _PAYMENT_LINK_RE = re.compile(
     r"|\b(?:iban|ιβαν)\s*:?\s*[a-z]{2}\d{2}",
     re.IGNORECASE,
 )
-# Unlabelled IBAN: two upper-case letters, two check digits, 4-char groups.
-_IBAN_RE = re.compile(r"\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){3,7}(?: ?[A-Z0-9]{1,4})?\b")
+# Unlabelled IBAN in any letter case: country letters, check digits and
+# 4-character groups with at least 10 digits overall, so ordinary prose such as
+# "id12 have been made into laws" is not mistaken for an account number.
+_IBAN_RE = re.compile(r"\b[a-z]{2}\d{2}(?: ?[a-z0-9]{4}){3,7}(?: ?[a-z0-9]{1,4})?\b", re.IGNORECASE)
 
 
 def _has_payment_link(text: str) -> bool:
-    return bool(_PAYMENT_LINK_RE.search(text or "") or _IBAN_RE.search(text or ""))
+    if _PAYMENT_LINK_RE.search(text or ""):
+        return True
+    return any(sum(ch.isdigit() for ch in m.group(0)) >= 10 for m in _IBAN_RE.finditer(text or ""))
 
 
 def _match_text(text: str) -> str:
