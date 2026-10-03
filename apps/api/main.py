@@ -144,7 +144,7 @@ def capture_error(error: Exception, context: dict = None):
     """Hybrid: Sentry wenn aktiv, sonst lokal loggen."""
     if SENTRY_ENABLED:
         import sentry_sdk
-        with sentry_sdk.push_scope() as scope:
+        with sentry_sdk.new_scope() as scope:
             if context:
                 for k, v in context.items():
                     scope.set_extra(k, v)

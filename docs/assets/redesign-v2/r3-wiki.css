@@ -253,10 +253,30 @@ footer.pnx2-footer {
     overflow-x: auto;
     overscroll-behavior-inline: contain;
     scrollbar-width: thin;
+    scroll-padding-inline-end: calc(var(--pnx2-target-min) + var(--pnx2-content-pad));
   }
 
   .pnx2-header .nav-links > * {
     flex: 0 0 auto;
+  }
+
+  /* Keep the language switch in the initial scroller view; DOM order unchanged. */
+  .pnx2-header .nav-links > .lang-btn {
+    position: sticky;
+    inset-inline-end: calc(-1 * var(--pnx2-content-pad));
+    z-index: 1;
+    border-inline-start: 1px solid var(--pnx2-border-mid);
+  }
+
+  /* The pinned switch sits on the scroller clip edge: draw its focus ring inside. */
+  .pnx2-header .nav-links > .lang-btn:focus-visible {
+    outline-offset: calc(-2 * var(--pnx2-focus-offset));
+  }
+
+  /* A keyboard-focused link is never hidden under the sticky switch. */
+  .pnx2-header .nav-links > a:focus-visible {
+    position: relative;
+    z-index: 2;
   }
 }
 
