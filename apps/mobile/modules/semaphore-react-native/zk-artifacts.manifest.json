@@ -1,0 +1,33 @@
+{
+  "schema": "ekklesia-zk-artifacts",
+  "version": 1,
+  "artifacts": [
+    {
+      "id": "semaphore-v4-depth16-zkey",
+      "path": "android/src/main/assets/semaphore/semaphore-4.13.0-16.zkey",
+      "runtime_name": "semaphore-4.13.0-16.zkey",
+      "sha256": "948763c7315a337b7722c0344a28af4be66fbbc618474d6dbe9036e799d1a3b5",
+      "bytes": 3408199,
+      "circuit": "semaphore v4",
+      "merkle_tree_depth": 16,
+      "proving_system": "groth16 (bn254)",
+      "source_url": "https://snark-artifacts.pse.dev/semaphore/4.13.0/semaphore-16.zkey",
+      "source_etag_md5": "ffd1af3a3370c2d21cadb1af251058f6",
+      "source_last_modified": "2025-08-26T20:59:10Z",
+      "artifacts_version": "4.13.0",
+      "verification_key": {
+        "path": "apps/api/data/semaphore-v4-depth16-vkey.json",
+        "sha256": "6ef3f6ae5ad8c50982b8c2ed5ec9626d7f92881fce3488ac2b8089c6edca2319",
+        "derived_from_zkey": "snarkjs 0.7.5 `zkey export verificationkey`: all 9 fields identical to the server key (2026-10-03)"
+      },
+      "consumer": {
+        "library": "semaphore-rs utils.rs::download_zkey (semaphore-protocol/semaphore-rs)",
+        "lookup": "$TMPDIR/semaphore-4.13.0-16.zkey; downloads only if the file is absent",
+        "bundled_binary": "modules/semaphore-react-native/android/src/main/jniLibs/arm64-v8a/libsemaphore_bindings.so (contains artifacts version 4.13.0 and the same URL/filename pattern)",
+        "mopro_semaphore_rs_commit": "unverified: not recorded for the prebuilt .so (open item)"
+      },
+      "ceremony": "Semaphore v4 trusted setup per upstream PSE documentation (not independently verified here)",
+      "retrieved": "2026-10-03"
+    }
+  ]
+}
