@@ -284,13 +284,90 @@ A11y -> Markup : .faq-q role/tabindex/aria-expanded/aria-controls
 Nutzer -> Markup : click #langBtn
 Markup -> Toggle : toggleLang()
 Toggle -> Toggle : currentLang = "en"
+Toggle -> Markup : document.documentElement.lang = "en"
 Toggle -> Markup : #langBtn.textContent = "ΕΛ"
 Toggle -> Markup : querySelectorAll("[data-el]")
 loop je [data-el] Element
   Toggle -> Markup : el.innerHTML = data-en
 end
 note over Toggle, Markup
-  offen (#365): document.documentElement.lang bleibt "el",
-  data-lang bleibt "el". Kein Code, daher keine Kante.
+  #365 ist durch T-473 geschlossen.
+  data-lang bleibt statisch und hat keine belegte Laufzeitwirkung.
+end note
+@enduml
+
+@startuml faq-nav-main-path
+title faq.html @ 390px: nav.pnx2-header -> r3-wiki.css @media 920 -> .nav-links Scroller -> #langBtn
+
+actor Nutzer
+participant "FAQ Kopf-Markup\n(faq.html)" as NavMarkup
+participant "FAQ Legacy-Kopf-CSS\n(inline style)" as InlineCss
+participant "R3 Foundation\n(foundation.css)" as Foundation
+participant "R3 Wiki-Shell CSS\n(r3-wiki.css)" as WikiShell
+participant "FAQ Sprachwechsel\n(toggleLang)" as Toggle
+
+== Laden, Kaskade in Ladereihenfolge ==
+InlineCss -> NavMarkup : nav flex-wrap; .nav-links flex-wrap: wrap
+Foundation -> NavMarkup : .pnx2-header display: flex
+WikiShell -> NavMarkup : @media 920: nav.pnx2-header display: block
+WikiShell -> NavMarkup : @media 920: .pnx2-header .nav-links nowrap, overflow-x: auto
+WikiShell -> NavMarkup : @media 920: .nav-links > * flex: 0 0 auto
+NavMarkup -> NavMarkup : .nav-links clientWidth 390, scrollWidth 1520, scrollLeft 0
+note over NavMarkup
+  17 Kinder, #langBtn = Index 16 (letztes).
+  Sichtbar 5/17; #langBtn x=1460..1504.
+  Doc-Overflow 0 (Ueberhang bleibt im Scroller).
+end note
+
+== Finden ==
+Nutzer -> NavMarkup : horizontaler Wisch in .nav-links (oder Tab-Fokus)
+NavMarkup -> NavMarkup : scrollLeft > 0, #langBtn im Scroller sichtbar
+
+== Bedienen ==
+Nutzer -> NavMarkup : tap #langBtn
+NavMarkup -> Toggle : toggleLang()
+Toggle -> NavMarkup : documentElement.lang, #langBtn.textContent, [data-el] innerHTML
+
+note over Nutzer, WikiShell
+  offen: keine Pruefung, dass #langBtn bei scrollLeft 0 sichtbar ist.
+  Kein Code, daher keine Kante.
+end note
+@enduml
+
+@startuml
+title EKA-59/EKA-60: citizen question to technical-state answer
+
+actor Citizen
+participant "POST /api/v1/agent/ask" as API
+participant "_canonical_response" as CANON
+participant "Web crypto.ts" as WEB
+participant "Mobile crypto-native.ts" as MOBILE
+participant "Payment state" as PAY
+participant "RAG / model" as MODEL
+
+Citizen -> API : private-key or payment/support question + el/en (H1)
+API -> CANON : question after safety filter (H2)
+
+alt current private-key path
+  CANON --> Citizen : generic device-only answer (H3)
+  note over WEB,MOBILE
+  Actual sources diverge:
+  Web Beta -> localStorage (H4)
+  Mobile -> SecureStore (H5)
+  end note
+else current payment/support path
+  CANON -> API : no match (H6)
+  API -> MODEL : KB context + question
+  MODEL --> Citizen : generated answer may mention processors
+  note over PAY
+  Actual technical state:
+  public links paused; intake gated (H7)
+  end note
+end
+
+note over CANON,PAY
+Required narrow path:
+platform-specific key facts and paused-payment state
+return deterministically before database/model access.
 end note
 @enduml

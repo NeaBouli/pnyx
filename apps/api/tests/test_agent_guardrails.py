@@ -35,7 +35,7 @@ def test_private_key_answer_does_not_invent_recovery():
     assert response is not None
     assert response["model"] == "knowledge-base"
     answer = response["answer"].lower()
-    assert "server does not know it" in answer
+    assert "does not store it" in answer
     assert "cannot recover it" in answer
     assert "hidden server-side recovery" in answer
 

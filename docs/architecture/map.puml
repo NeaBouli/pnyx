@@ -390,7 +390,7 @@ DB --> RAG : H7 capped rows
 *** gebaut: faq.html::toggleLang
 *** gebaut: faq.html::currentLang
 *** gebaut: querySelectorAll data-el -> innerHTML
-*** offen: document.documentElement.lang (#365)
+*** gebaut: document.documentElement.lang (#365, T-473)
 *** offen: documentElement data-lang
 ** FAQ A11y-Adapter
 *** gebaut: r3-faq-accessibility.js::IIFE .faq-q ARIA
@@ -409,12 +409,100 @@ component "R3 Wiki-Gate\n(r3_wiki_pilot_check.py)" as Gate
 
 Markup --> Toggle : langBtn onclick -> toggleLang
 Toggle --> Markup : querySelectorAll("[data-el]") -> innerHTML
-Toggle ..> Markup : documentElement.lang (offen, #365)
+Toggle --> Markup : documentElement.lang (gebaut, T-473)
 Markup --> A11y : script defer
 Gate ..> Markup : check_r3_wiki_page (Build-Zeit)
 
 note right of Toggle
-  Luecke L1/L2: toggleLang setzt weder
-  document.documentElement.lang noch data-lang.
+  L1 ist durch T-473 gebaut.
+  data-lang bleibt ohne belegte Laufzeitwirkung statisch.
 end note
+@enduml
+
+@startmindmap faq-nav-mindmap
+* Static Wiki: Sprachknopf auf jedem Viewport erreichbar
+** FAQ Kopf-Markup
+*** gebaut: faq.html::nav.pnx2-header
+*** gebaut: faq.html::.nav-links 17 Kinder
+*** gebaut: faq.html::#langBtn letztes Kind
+** FAQ Legacy-Kopf-CSS
+*** gebaut: faq.html::.nav-links flex-wrap wrap
+** R3 Foundation
+*** gebaut: foundation.css::.pnx2-header display flex
+** R3 Wiki-Shell CSS
+*** gebaut: r3-wiki.css::920px nav.pnx2-header display block
+*** gebaut: r3-wiki.css::920px .nav-links nowrap overflow-x auto
+*** gebaut: r3-wiki.css::920px .nav-links > * flex 0 0 auto
+** FAQ Sprachwechsel
+*** gebaut: faq.html::toggleLang
+** R3 Wiki-Gate
+*** gebaut: r3_wiki_pilot_check.py::check_pilot_preservation
+*** gebaut: t420_wiki_facts.browser.cjs
+** Sichtbarkeitspruefung
+*** offen: langBtn im initialen 390px-Viewport
+@endmindmap
+
+@startuml faq-nav-components
+title FAQ-Kopf bei <=920px (docs/wiki/faq.html + shared r3-wiki.css) — Komponenten
+
+component "FAQ Kopf-Markup\n(faq.html nav.pnx2-header)" as NavMarkup
+component "FAQ Legacy-Kopf-CSS\n(faq.html inline style)" as InlineCss
+component "R3 Foundation\n(foundation.css)" as Foundation
+component "R3 Wiki-Shell CSS\n(r3-wiki.css, shared 14 Seiten)" as WikiShell
+component "FAQ Sprachwechsel\n(faq.html toggleLang)" as Toggle
+component "R3 Wiki-Gate\n(r3_wiki_pilot_check.py, t420 browser)" as Gate
+component "Sichtbarkeitspruefung\n(offen)" as Visibility
+
+InlineCss --> NavMarkup : .nav-links flex-wrap: wrap
+Foundation --> NavMarkup : .pnx2-header display: flex
+WikiShell --> NavMarkup : @media 920 .pnx2-header .nav-links nowrap/overflow-x: auto
+NavMarkup --> Toggle : #langBtn onclick -> toggleLang
+Gate ..> WikiShell : check_pilot_preservation (@media 920 in Set)
+Visibility ..> NavMarkup : offen
+
+note right of WikiShell
+  Ursache shared: gewinnt ueber Inline-CSS
+  (spaeter geladen, Spezifitaet 0,2,0).
+  390px: scrollWidth 1520, #langBtn x=1460.
+end note
+@enduml
+
+@startmindmap
+* Assistant deterministic truth boundary
+** Router
+*** built: ask_agent
+*** built: canonical response before RAG
+** Key storage
+*** Web Beta: crypto.ts storeKeypair -> localStorage
+*** Mobile: crypto-native.ts storeKeypair -> SecureStore
+*** partial: generic bot answer hides platform split
+** Payments
+*** built: public processor links paused
+*** built: backend intake fails closed behind gate
+*** open: payment questions bypass deterministic state answer
+** Tests
+*** partial: generic private-key prompt
+*** open: bilingual platform and paused-payment prompts
+** Content boundary
+*** technical availability only
+*** Gio decision: recipient, legal and tax wording
+*** forbidden: live sync, deploy, provider or secret changes
+@endmindmap
+
+@startuml
+skinparam componentStyle rectangle
+component "Citizen assistant\nPOST /agent/ask" as ASK
+component "Canonical truth boundary\n_canonical_response" as CANON
+component "RAG + model fallback" as RAG
+component "Web Beta key storage\nlocalStorage" as WEB
+component "Mobile key storage\nExpo SecureStore" as MOBILE
+component "Payment availability\nlinks paused + gated intake" as PAY
+component "Focused regressions" as TEST
+
+ASK --> CANON : H1/H2 question + language
+CANON --> WEB : H3/H4 missing platform detail
+CANON --> MOBILE : H3/H5 missing platform detail
+CANON ..> RAG : H6 unmatched payment question
+PAY ..> CANON : H7 missing deterministic state answer
+TEST ..> CANON : platform/payment invariants
 @enduml
