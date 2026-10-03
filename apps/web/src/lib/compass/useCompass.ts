@@ -7,7 +7,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import type { CompassProfile, CompassModel, CompassResult } from "./types";
 import { createEmptyProfile, seedFromVAA, recordBillVote, computeResult, getDataPointCount } from "./engine";
-import { loadProfile, saveProfile, clearProfile as clearStorage } from "./storage";
+import { loadProfile, saveProfile, clearProfile as clearStorage, CompassStorageError } from "./storage";
 import { loadKeypair } from "../crypto";
 
 interface PartyData {
@@ -63,6 +63,28 @@ export function deriveCompassResult(
   return computeResult(profile, profile.selectedModel);
 }
 
+/**
+ * Liest den privaten Schlüssel; ist WebStorage blockiert, wird ohne Schlüssel
+ * weitergearbeitet (kein synchroner Throw vor den Safe-Wrappern).
+ */
+export function readPrivateKeySafely(): string | null {
+  try {
+    return loadKeypair()?.privateKeyHex ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Speichert und behandelt erwartbare Speicherfehler (kein Key, Storage/Krypto nicht
+ * verfügbar), damit kein unbehandeltes Promise entsteht. Kein Klartext-Fallback.
+ */
+export function saveProfileSafely(p: CompassProfile, privateKeyHex: string | null): Promise<void> {
+  return saveProfile(p, privateKeyHex).catch((error: unknown) => {
+    if (!(error instanceof CompassStorageError)) console.warn("[compass] profile save failed", error);
+  });
+}
+
 export function useCompass() {
   const [profile, setProfile] = useState<CompassProfile>(createEmptyProfile());
   const [loading, setLoading] = useState(true);
@@ -70,21 +92,23 @@ export function useCompass() {
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Private Key für Verschlüsselung
-  const getPrivateKey = useCallback((): string | null => {
-    const kp = loadKeypair();
-    return kp?.privateKeyHex ?? null;
-  }, []);
+  const getPrivateKey = useCallback((): string | null => readPrivateKeySafely(), []);
 
   // Profil laden
   useEffect(() => {
     async function init() {
-      const [loaded, pd] = await Promise.all([
-        loadProfile(getPrivateKey()),
-        getPartyData(),
-      ]);
-      setProfile(loaded);
-      setPartyData(pd);
-      setLoading(false);
+      try {
+        const [loaded, pd] = await Promise.all([
+          loadProfile(getPrivateKey()),
+          getPartyData(),
+        ]);
+        setProfile(loaded);
+        setPartyData(pd);
+      } catch {
+        setProfile(createEmptyProfile()); // Laden fehlgeschlagen — leeres Profil, kein Klartext
+      } finally {
+        setLoading(false);
+      }
     }
     init();
   }, [getPrivateKey]);
@@ -93,7 +117,7 @@ export function useCompass() {
   const persistProfile = useCallback((p: CompassProfile) => {
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => {
-      saveProfile(p, getPrivateKey());
+      void saveProfileSafely(p, getPrivateKey());
     }, 300);
   }, [getPrivateKey]);
 
