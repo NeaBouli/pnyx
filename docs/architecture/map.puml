@@ -136,6 +136,486 @@ TESTS ..> TRANSPORT : inspect offline envelope
 @enduml
 
 @startmindmap
+' EKA-08 — Web Compass Privacy Storage after T-488; EKA-18 diagrams above unchanged
+* Web Compass: profile to browser storage
+** Compass UI card
+*** quarantäne: components/CompassCard.tsx::CompassCard (not mounted, compass is app-only)
+** Compass hook
+*** gebaut: lib/compass/useCompass.ts::useCompass
+*** gebaut: lib/compass/useCompass.ts::persistProfile (300 ms debounce, not awaited)
+** Compass storage
+*** gebaut: lib/compass/storage.ts::loadProfile (legacy purge; ciphertext first; keyed migration)
+*** gebaut: lib/compass/storage.ts::saveProfile (encrypted-only; fail-closed reject)
+*** gebaut: lib/compass/storage.ts::clearProfile
+** Identity key access
+*** gebaut: lib/crypto.ts::loadKeypair (EKA-07, separate)
+** Browser persistence
+*** gebaut: localStorage ekklesia_compass_encrypted
+*** quarantäne: localStorage ekklesia_compass_profile (legacy input, purged on access)
+** Storage regression test
+*** gebaut: lib/compass/storage.test.ts (11 cases)
+@endmindmap
+
+@startuml
+' EKA-08 component diagram — arrows only for hops C1-C9
+skinparam componentStyle rectangle
+component "Compass UI card\nCompassCard.tsx (not mounted)" as CARD
+component "Compass hook\nuseCompass.ts" as HOOK
+component "Identity key access\ncrypto.ts::loadKeypair" as KEYS
+component "Compass storage\nstorage.ts" as STORE
+component "Browser persistence\nlocalStorage" as LS
+
+CARD --> HOOK : C1 useCompass
+HOOK --> KEYS : C2 loadKeypair
+HOOK --> STORE : C3 loadProfile
+STORE --> LS : C4 getItem(encrypted)
+STORE --> LS : C5 take+remove legacy plaintext; optional keyed migration
+HOOK --> HOOK : C6 persistProfile
+HOOK --> STORE : C7 saveProfile
+STORE --> LS : C8a setItem(encrypted) + removeItem(plaintext)
+STORE --> HOOK : C8b reject [no key / crypto / storage error]; no plaintext write
+HOOK --> STORE : C9 clearProfile
+@enduml
+
+@startmindmap
+* Container trust boundaries
+** EKA-18 local dev stack
+*** gebaut: Quick Start -> dev Compose
+*** gebaut: db 127.0.0.1:5432
+*** gebaut: redis 127.0.0.1:6379
+*** gebaut: api service DNS db/redis
+*** gebaut: host localhost tools
+*** gebaut: focused regression
+** EKA-13 production stack
+*** monitor
+**** gebaut: Docker SDK restart source path
+**** selected: production AUTO_RECOVERY_T2=false
+*** docker-proxy
+**** selected: v0.4.2 + manifest digest
+**** selected: CONTAINERS/EVENTS/PING/VERSION=0 + POST=0
+**** selected: dedicated internal network, monitor only
+**** risk: host Docker socket
+**** result: no Docker API namespace enabled while T2 is off
+*** neighbours
+**** offen separate: Ollama latest
+**** offen separate: dashboard/monitor non-root
+@endmindmap
+
+@startuml
+skinparam componentStyle rectangle
+package "EKA-18 dev (built)" {
+  component "Quick Start" as QUICK
+  component "Dev Compose" as DEV
+  component "Host tools" as HOSTTOOLS
+  database "PostgreSQL\n127.0.0.1:5432" as DEVDB
+  component "Redis\n127.0.0.1:6379" as DEVREDIS
+  QUICK --> DEV
+  HOSTTOOLS --> DEVDB
+  HOSTTOOLS --> DEVREDIS
+  DEV --> DEVDB : internal DNS db
+  DEV --> DEVREDIS : internal DNS redis
+}
+
+package "EKA-13 production (selected fix)" {
+  component "Monitor\nDocker SDK" as MON
+  component "docker-proxy\nv0.4.2@digest\nGET namespaces=0, POST=0" as PROXY
+  component "Official GHCR\nv0.4.2 + digest" as GHCR
+  database "Host Docker daemon" as DOCKER
+  cloud "net_ekklesia peers" as PEERS
+  rectangle "internal monitor-proxy network" as PRIVATE
+  MON --> PRIVATE : only consumer
+  PRIVATE --> PROXY : tcp://docker-proxy:2375
+  PEERS ..> PROXY : no route after fix
+  PROXY --> DOCKER : mounted docker.sock
+  GHCR ..> PROXY : selected provenance fix
+}
+@enduml
+
+@startmindmap
+' EKA-22 — Cross-Implementation Crypto Contract (base 4cc1193); EKA-18 diagrams above unchanged
+* EKA-22 Cross-Implementation Crypto Contract
+** Shared KAT fixture
+*** offen: packages/crypto/tests/vectors/eka22_kat_v1.json
+** API
+*** gebaut: packages/crypto/keypair.py::verify_signature (runtime)
+*** gebaut: apps/api/keypair.py::verify_signature (mirror)
+*** gebaut: apps/api/crypto/nullifier.py::build_signed_payload
+*** gebaut: apps/api/crypto/nullifier.py::validate_vote
+*** gebaut: apps/api/crypto/nullifier.py::issue_receipt (wall-clock ts)
+*** gebaut: services/zk_group_registry.py::validate_vote_scope_id
+*** gebaut: services/evaluation_integrity.py / citizen_action_integrity.py builders
+*** gebaut: routers/voting.py:658 legacy vote string (inline)
+** Web
+*** gebaut: apps/web/src/lib/crypto.ts::buildVoteMessage
+*** gebaut: apps/web/src/lib/crypto.ts::signVote / verifyVote / signPayload
+*** gebaut test-only: crypto-kat.test.ts::legacyV1NullifierTestOnly (EKA-24)
+** Mobile
+*** gebaut: crypto-native.ts::signVote / verifyVote
+*** gebaut: crypto-native.ts::buildSignedPayload
+*** gebaut: crypto-native.ts identity/vote/linkage/ephemeral HMAC chain
+*** gebaut: crypto-native.ts JSON payload builders
+** Tier-1 TS library
+*** teilweise: packages/crypto/src/nullifier.ts (unwired, payload layout differs)
+** Root KDFs (EKA-21)
+*** aufgeschoben: packages/crypto/nullifier.py v1 SHA-256 / v2 Argon2id t=2 (Gio gate)
+*** aufgeschoben: packages/crypto/src/nullifier.ts::deriveNullifierRoot Argon2id t=3 (Gio gate)
+*** aufgeschoben: crypto-native.ts::deriveNullifierRoot PBKDF2 c=100000 (Gio gate)
+** KAT adapters
+*** offen: apps/api/tests/test_eka22_kat_vectors.py
+*** offen: apps/web/src/lib/crypto-kat.test.ts
+*** offen: apps/mobile/src/lib/crypto-native-kat.test.ts
+@endmindmap
+
+@startuml
+' EKA-22 component diagram — arrows only for opened hops
+skinparam componentStyle rectangle
+component "Shared KAT fixture\n(offen)" as FIX
+component "KAT adapters\n(offen)" as ADP
+component "API signature verifier\nkeypair.py::verify_signature" as APISIG
+component "API Tier-1 validator\ncrypto/nullifier.py" as APIT1
+component "API scope validator\nzk_group_registry.py" as APISCOPE
+component "API JSON payloads\nevaluation_integrity / citizen_action_integrity" as APIJSON
+component "Web legacy signer\nlib/crypto.ts" as WEB
+component "Mobile crypto\ncrypto-native.ts" as MOB
+component "Tier-1 TS library\npackages/crypto/src" as T1LIB
+component "Root KDFs (EKA-21)\naufgeschoben" as KDF
+
+FIX --> ADP : json load
+ADP --> APISIG : verify_signature
+ADP --> APIT1 : build_signed_payload / validate_vote
+ADP --> APISCOPE : validate_vote_scope_id
+ADP --> APIJSON : build_*_payload
+ADP --> WEB : buildVoteMessage / signVote / verifyVote
+ADP --> MOB : signVote / buildSignedPayload / derive*
+ADP ..> T1LIB : buildSignedPayload (expected divergent)
+ADP ..> KDF : per-impl pins only
+WEB --> APISIG : K1-K3 legacy vote string
+MOB --> APISIG : K2-K3 legacy vote string
+MOB --> APIT1 : K6-K5 Tier-1 bytes
+T1LIB ..> APIT1 : K7 layout mismatch
+APIT1 --> T1LIB : K9 issue_receipt / verifyReceipt
+@enduml
+
+@startmindmap
+' EKA-24 — Test-only Legacy Nullifier Helper Boundary after the fix (T-510)
+* Web Crypto: v1 nullifier formula test-only after EKA-24
+** Web Crypto product module
+*** gebaut: crypto.ts signing/storage only, no nullifier export (EKA-24)
+** Legacy Web Crypto tests
+*** gebaut: crypto.test.ts private legacyV1NullifierTestOnly
+** EKA-22 Web KAT
+*** gebaut: crypto-kat.test.ts private legacyV1NullifierTestOnly, exact shared vector
+** Web production callers
+*** gebaut: vote / relevance / SSO / compass imports
+*** gebaut: no nullifier edge (symbol removed)
+** Server nullifier domain
+*** aufgeschoben: server-owned salt and KDF
+@endmindmap
+
+@startuml
+' EKA-24 component diagram — arrows only for opened test hops
+skinparam componentStyle rectangle
+component "Web test command\npackage.json::test" as TESTCMD
+component "Vitest" as VITEST
+component "Legacy Web Crypto tests\ncrypto.test.ts" as LEGACY
+component "EKA-22 Web KAT\ncrypto-kat.test.ts" as KAT
+component "Shared EKA-22 fixture\neka22_kat_v1.json" as FIXTURE
+component "Test-only helper (private per suite)\nlegacyV1NullifierTestOnly" as HELPER
+component "Web Crypto API\nTextEncoder / subtle.digest" as WEBCRYPTO
+component "Hex helper\ncrypto.ts::bytesToHex" as HEX
+component "Production callers\nvote / relevance / SSO / compass" as PROD
+
+TESTCMD --> VITEST : N1 vitest run
+VITEST --> LEGACY : N1 discover suite
+VITEST --> KAT : N1 discover suite
+LEGACY --> HELPER : N2 synthetic phone + salt
+FIXTURE --> KAT : N3 v1_nullifier vector
+KAT --> HELPER : N3 synthetic phone + salt
+HELPER --> WEBCRYPTO : N4 SHA-256(phone:salt)
+WEBCRYPTO --> HEX : N5 digest bytes
+PROD .. HELPER : no import or call (crypto.ts has no nullifier export)
+@enduml
+
+@startmindmap
+* EKA-57 knowledge-base lifecycle
+** Authorities
+*** legacy SQL seed: 17 rows, DELETE + INSERT
+*** Python ENTRIES: 14 rows, upsert only
+** Persistence
+*** built: knowledge_base schema
+*** open: exact transactional sync
+*** open: read-only drift check
+** Delivery
+*** built: manual deploy workflow
+*** open: sync then check
+** CI
+*** built: API pytest job
+*** skipped: ignored historical training capture
+*** open: tracked question-only fixture
+** Runtime
+*** first 20 rows loaded
+*** top 5 matches enter prompt
+** Content boundary
+*** unchanged: Python ENTRIES wording
+*** Gio decision: operator/legal/privacy claims
+@endmindmap
+
+@startuml
+skinparam componentStyle rectangle
+component "Legacy SQL seed\n17 rows" as SQL
+component "Python catalog + synchronizer\n14 ENTRIES" as PY
+database "knowledge_base" as DB
+component "Manual deploy workflow" as DEPLOY
+component "CI API tests" as CI
+component "Private ignored\nhistorical capture" as PRIVATE
+component "Tracked question-only\nfixture" as FIXTURE
+component "Agent retrieval\nfirst 20 -> top 5" as RAG
+
+SQL --> DB : H1 manual replace
+PY --> DB : H2 manual upsert
+DEPLOY ..> PY : H4 no sync by design (Gio 2026-10-02: manual only)
+CI ..> PY : H5 missing drift invariant
+PRIVATE --> CI : H6 absent in clean checkout -> skip
+FIXTURE ..> CI : intended mandatory regression input
+DB --> RAG : H7 capped rows
+@enduml
+
+@startmindmap faq-lang-mindmap
+* Static Wiki FAQ: zweisprachige FAQ el/en
+** FAQ Markup
+*** gebaut: faq.html::html lang=el data-lang=el
+*** gebaut: faq.html::#langBtn onclick=toggleLang
+*** gebaut: faq.html::data-el / data-en Paare
+** FAQ Sprachwechsel
+*** gebaut: faq.html::toggleLang
+*** gebaut: faq.html::currentLang
+*** gebaut: querySelectorAll data-el -> innerHTML
+*** gebaut: document.documentElement.lang (#365, T-473)
+*** offen: documentElement data-lang
+** FAQ A11y-Adapter
+*** gebaut: r3-faq-accessibility.js::IIFE .faq-q ARIA
+** R3 Wiki-Gate
+*** gebaut: r3_wiki_pilot_check.py::check_r3_wiki_page
+*** gebaut: approved_audit_delta.py::APPROVED_WIKI_INVENTORY_HASH
+@endmindmap
+
+@startuml faq-lang-components
+title FAQ-Sprachwechsel (docs/wiki/faq.html) — Komponenten
+
+component "FAQ Markup\n(docs/wiki/faq.html)" as Markup
+component "FAQ Sprachwechsel\n(faq.html inline script)" as Toggle
+component "FAQ A11y-Adapter\n(r3-faq-accessibility.js)" as A11y
+component "R3 Wiki-Gate\n(r3_wiki_pilot_check.py)" as Gate
+
+Markup --> Toggle : langBtn onclick -> toggleLang
+Toggle --> Markup : querySelectorAll("[data-el]") -> innerHTML
+Toggle --> Markup : documentElement.lang (gebaut, T-473)
+Markup --> A11y : script defer
+Gate ..> Markup : check_r3_wiki_page (Build-Zeit)
+
+note right of Toggle
+  L1 ist durch T-473 gebaut.
+  data-lang bleibt ohne belegte Laufzeitwirkung statisch.
+end note
+@enduml
+
+@startmindmap faq-nav-mindmap
+* Static Wiki: Sprachknopf auf jedem Viewport erreichbar
+** FAQ Kopf-Markup
+*** gebaut: faq.html::nav.pnx2-header
+*** gebaut: faq.html::.nav-links 17 Kinder
+*** gebaut: faq.html::#langBtn letztes Kind
+** FAQ Legacy-Kopf-CSS
+*** gebaut: faq.html::.nav-links flex-wrap wrap
+** R3 Foundation
+*** gebaut: foundation.css::.pnx2-header display flex
+** R3 Wiki-Shell CSS
+*** gebaut: r3-wiki.css::920px nav.pnx2-header display block
+*** gebaut: r3-wiki.css::920px .nav-links nowrap overflow-x auto
+*** gebaut: r3-wiki.css::920px .nav-links > * flex 0 0 auto
+** FAQ Sprachwechsel
+*** gebaut: faq.html::toggleLang
+** R3 Wiki-Gate
+*** gebaut: r3_wiki_pilot_check.py::check_pilot_preservation
+*** gebaut: t420_wiki_facts.browser.cjs
+** Sichtbarkeitspruefung
+*** offen: langBtn im initialen 390px-Viewport
+@endmindmap
+
+@startuml faq-nav-components
+title FAQ-Kopf bei <=920px (docs/wiki/faq.html + shared r3-wiki.css) — Komponenten
+
+component "FAQ Kopf-Markup\n(faq.html nav.pnx2-header)" as NavMarkup
+component "FAQ Legacy-Kopf-CSS\n(faq.html inline style)" as InlineCss
+component "R3 Foundation\n(foundation.css)" as Foundation
+component "R3 Wiki-Shell CSS\n(r3-wiki.css, shared 14 Seiten)" as WikiShell
+component "FAQ Sprachwechsel\n(faq.html toggleLang)" as Toggle
+component "R3 Wiki-Gate\n(r3_wiki_pilot_check.py, t420 browser)" as Gate
+component "Sichtbarkeitspruefung\n(offen)" as Visibility
+
+InlineCss --> NavMarkup : .nav-links flex-wrap: wrap
+Foundation --> NavMarkup : .pnx2-header display: flex
+WikiShell --> NavMarkup : @media 920 .pnx2-header .nav-links nowrap/overflow-x: auto
+NavMarkup --> Toggle : #langBtn onclick -> toggleLang
+Gate ..> WikiShell : check_pilot_preservation (@media 920 in Set)
+Visibility ..> NavMarkup : offen
+
+note right of WikiShell
+  Ursache shared: gewinnt ueber Inline-CSS
+  (spaeter geladen, Spezifitaet 0,2,0).
+  390px: scrollWidth 1520, #langBtn x=1460.
+end note
+@enduml
+
+@startmindmap
+* Assistant deterministic truth boundary
+** Router
+*** built: ask_agent
+*** built: canonical response before RAG
+** Key storage
+*** Web Beta: crypto.ts storeKeypair -> localStorage
+*** Mobile: crypto-native.ts storeKeypair -> SecureStore
+*** partial: generic bot answer hides platform split
+** Payments
+*** built: public processor links paused
+*** built: backend intake fails closed behind gate
+*** open: payment questions bypass deterministic state answer
+** Tests
+*** partial: generic private-key prompt
+*** open: bilingual platform and paused-payment prompts
+** Content boundary
+*** technical availability only
+*** Gio decision: recipient, legal and tax wording
+*** forbidden: live sync, deploy, provider or secret changes
+@endmindmap
+
+@startuml
+skinparam componentStyle rectangle
+component "Citizen assistant\nPOST /agent/ask" as ASK
+component "Canonical truth boundary\n_canonical_response" as CANON
+component "RAG + model fallback" as RAG
+component "Web Beta key storage\nlocalStorage" as WEB
+component "Mobile key storage\nExpo SecureStore" as MOBILE
+component "Payment availability\nlinks paused + gated intake" as PAY
+component "Focused regressions" as TEST
+
+ASK --> CANON : H1/H2 question + language
+CANON --> WEB : H3/H4 missing platform detail
+CANON --> MOBILE : H3/H5 missing platform detail
+CANON ..> RAG : H6 unmatched payment question
+PAY ..> CANON : H7 missing deterministic state answer
+TEST ..> CANON : platform/payment invariants
+@enduml
+
+@startmindmap gh298-tab-label-mindmap
+* Tab-Labels lesbar und tippbar\nbei Android fontScale 1.8 (GH#298)
+** App-Shell Safe Area
+*** gebaut: App.tsx::App\nSafeAreaView edges top + innerer SafeAreaProvider
+** Tab-Navigation (App)
+*** gebaut: navigation/index.tsx::TabNavigator
+*** gebaut: screenOptions.tabBarStyle (ohne height)
+** Tab-Label-Renderer (App)
+*** teilweise: screenOptions.tabBarLabel\nText fontSize 10, kein numberOfLines
+** Tab-Icon-Renderer (App)
+*** teilweise: screenOptions.tabBarIcon\nEmoji fontSize 18, ignoriert size/color
+** Theme
+*** gebaut: theme.ts::colors.tabBarActive / tabBarInactive
+left side
+** BottomTabBar (Vendor)
+*** gebaut: getTabBarHeight = 49 + insets.bottom
+*** gebaut: styles.bottomItem flex 1
+*** gebaut: shouldUseHorizontalLabels (width > height)
+** BottomTabItem / TabBarIcon (Vendor)
+*** gebaut: styles.tabVerticalUiKit padding 5
+*** gebaut: TabBarIcon wrapperUikit 31x28
+*** gebaut: renderLabel Funktionszweig
+** Native Font-Scaling
+*** gebaut: Text allowFontScaling (Default true)
+** Tab-Layout-Tests
+*** offen: kein Test fuer navigation/index.tsx
+** Landscape
+*** aufgeschoben: app.json orientation portrait
+@endmindmap
+
+@startuml gh298-tab-label-components
+skinparam componentStyle rectangle
+
+package "apps/mobile (App)" {
+  [App-Shell Safe Area\nApp.tsx] as Shell
+  [Tab-Navigation\nnavigation/index.tsx::TabNavigator] as TabNav
+  [Tab-Label-Renderer\nscreenOptions.tabBarLabel] as LabelR
+  [Tab-Icon-Renderer\nscreenOptions.tabBarIcon] as IconR
+  [Theme\ntheme.ts] as Theme
+}
+
+package "@react-navigation (Vendor)" {
+  [BottomTabView] as View
+  [BottomTabBar] as Bar
+  [BottomTabItem] as Item
+  [TabBarIcon] as Icon
+}
+
+package "Plattform" {
+  [react-native Text / Yoga] as RNText
+  [Android fontScale / Window] as Android
+}
+
+Shell --> TabNav : Navigation -> Stack.Screen Tabs
+TabNav --> Theme : colors.tabBarActive
+TabNav --> View : screenOptions
+Shell --> View : SafeAreaInsetsContext
+View --> Bar : renderTabBar(insets)
+Bar --> Bar : getTabBarHeight
+Bar --> Item : bottomItem flex 1
+Item --> Icon : renderIcon
+Icon --> IconR : renderIcon({size, color, focused})
+Item --> LabelR : renderLabel({color, position})
+LabelR --> RNText : Text fontSize 10
+IconR --> RNText : Text fontSize 18
+Android --> RNText : fontScale
+@enduml
+
+@startmindmap
+' EKA-64 — MOD-WEB static crawler anchor delivery (base 4cc1193, T-504, mapping only)
+* MOD-WEB: crawler anchor request to HTTP status
+** Next config (apps/web/next.config.mjs)
+*** gebaut: nextConfig.redirects (only /download/ekklesia-latest.apk)
+*** gebaut: nextConfig.headers (Referrer-/Permissions-Policy, no status effect)
+** Proxy (apps/web/src/proxy.ts)
+*** gebaut: config.matcher excludes dotted paths (.*\\..*)
+*** gebaut: proxy() — not invoked for /ai.txt, /llms-full.txt, /llms.txt
+** Public bundle (apps/web/Dockerfile.prod)
+*** gebaut: COPY docs/robots.txt docs/sitemap.xml docs/llms.txt ./public/
+*** gebaut: runner COPY /app/public + .next/standalone
+*** offen: ai.txt / llms-full.txt (no source file, not copied)
+** App router locale segment
+*** gebaut: src/app/[locale]/page.tsx::HomePage redirect("https://ekklesia.gr") for el/en
+*** gebaut: src/app/[locale]/layout.tsx::LocaleLayout (no locale validation)
+*** gebaut: HomePage hasLocale -> notFound() guard (T-505, EKA-64 fixed)
+** Regression test
+*** gebaut: src/proxy.test.ts (download redirects, root rewrite)
+*** gebaut: src/app/[locale]/page.test.ts invalid locale -> notFound (T-505)
+@endmindmap
+
+@startuml
+' EKA-64 component diagram — arrows only for hops on the traced request
+skinparam componentStyle rectangle
+actor "AI crawler" as CRAWLER
+component "Next config\nnext.config.mjs::redirects" as NCFG
+component "Proxy\nproxy.ts::config.matcher" as PROXY
+component "Public bundle\nDockerfile.prod COPY -> public/" as PUBLIC
+component "Locale page\n[locale]/page.tsx::HomePage" as LOCALE
+component "HTTP response" as RESP
+
+CRAWLER --> NCFG : A1 GET /ai.txt | /llms-full.txt | /llms.txt
+NCFG --> PROXY : A2 no redirect source matches
+PROXY --> PUBLIC : A3 matcher excludes dotted path, proxy() skipped
+PUBLIC --> RESP : A4 hit /llms.txt -> 200 text/plain
+PUBLIC --> LOCALE : A5 miss /ai.txt -> dynamic [locale]="ai.txt"
+LOCALE --> RESP : A6 hasLocale fails -> notFound() -> 404 (T-505); el/en -> redirect 307
+@enduml
+
+@startmindmap
 * Expo 54 asset build
 ** Mobile manifest and lock
 *** built: Expo 54.0.37
