@@ -224,6 +224,8 @@ PAYMENT_MODEL_ANSWERS = [
     "Transfer to GR16 0110 1250 0000 0001 2300 695 please.",
     "ΙΒΑΝ: GR16 0110 1250 0000 0001 2300 695",
     "transfer to gr16 0110 1250 0000 0001 2300 695",
+    "Please give at https://donate.example.org/ekklesia",
+    "Support us: https://example.org/contribute?amount=10",
 ]
 
 
@@ -232,6 +234,8 @@ PAYMENT_MODEL_ANSWERS = [
     "Bill GR-2026-0001 is open for votes until 2026-10-10.",
     "The Ed25519 public key is stored; the vote id is DIAV-Ψ26Μ46Ψ84Ι-Τ.",
     "Bills id12 have been made into laws this year.",
+    "Tax payments are explained at https://www.gov.gr/en/payments/enfia.",
+    "See https://www.hellenicparliament.gr/en/Nomothetiko-Ergo for the full text.",
 ])
 def test_payment_output_guard_leaves_normal_answers(answer: str) -> None:
     assert agent._has_payment_link(answer) is False

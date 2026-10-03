@@ -151,6 +151,11 @@ _PAYMENT_RES = [re.compile(pattern) for pattern in _PAYMENT_PATTERNS]
 # Model output guard: no payment links or instruments may reach the citizen.
 _PAYMENT_LINK_RE = re.compile(
     r"(?:https?://|www\.)\S*(?:paypal|stripe|buymeacoffee|patreon|ko-fi|revolut)\S*"
+    # any domain with a donation term in host or path (donate.example.org,
+    # example.org/donate); generic "pay" stays allowed so official pages such as
+    # tax-payment guidance on gov.gr are not replaced
+    r"|(?:https?://|www\.)[^\s/]*\b(?:donat\w*|contribut\w*|checkout|sponsor\w*|fundrais\w*)\b\S*"
+    r"|(?:https?://|www\.)\S*/(?:donat\w*|contribut\w*|checkout|sponsor\w*|fundrais\w*)\b\S*"
     r"|\b(?:paypal\.(?:com|me)|(?:buy|donate|checkout)\.stripe\.com|buymeacoffee\.com"
     r"|patreon\.com|ko-fi\.com|revolut\.me)\b"
     r"|\b(?:iban|ιβαν)\s*:?\s*[a-z]{2}\d{2}",
