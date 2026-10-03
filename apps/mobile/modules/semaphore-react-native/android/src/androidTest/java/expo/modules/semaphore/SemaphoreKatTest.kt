@@ -48,9 +48,19 @@ class SemaphoreKatTest {
     )
     values.forEach { (k, v) -> Log.i("SEMKAT", "$k=$v") }
 
+    // Known answers measured on arm64 (JNA 5.13.0 and 5.19.1 identical, .fleet/reports/T-589.md);
+    // instrumentation arguments `expect_<name>` may override them, but the check never skips.
+    val known = mapOf(
+      "commitment" to "13039324901019702972773206202158736942226254652756759723070356519412895005527",
+      "secretScalar" to "1278416703087048097084365882753100309299194802003057370991629714194279413164",
+      "toElement" to "573b5b5b84db2b1f5c65a58b38f2ec934ca4f1c19936242919f39a3c11ffd31c",
+      "memberCommitment" to "20929549050896981976624734380217218592806713941269667443382802033625436197449",
+      "groupRoot" to "15212f85cde8d24615e0c4733e81f01424617ebc128664f046b0b88e50c14f01",
+      "groupDepth" to "1",
+    )
     val expected = InstrumentationRegistry.getArguments()
     for ((k, v) in values) {
-      expected.getString("expect_$k")?.let { assertEquals("KAT mismatch for $k", it, v) }
+      assertEquals("KAT mismatch for $k", expected.getString("expect_$k") ?: known.getValue(k), v)
     }
 
     val proof = generateSemaphoreProof(identity, group, "t589-kat-message", "t589-kat-scope", 16u)
