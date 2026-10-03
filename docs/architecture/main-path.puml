@@ -266,3 +266,31 @@ Deploy never runs sync (Gio 2026-10-02); sync + check are manual operator comman
 CI proves behavior and uses a tracked question-only fixture.
 end note
 @enduml
+
+@startuml faq-lang-main-path
+title faq.html: langBtn onclick -> toggleLang -> querySelectorAll("[data-el]")
+
+actor Nutzer
+participant "FAQ Markup\n(faq.html)" as Markup
+participant "FAQ Sprachwechsel\n(toggleLang)" as Toggle
+participant "FAQ A11y-Adapter\n(r3-faq-accessibility.js)" as A11y
+
+== Laden ==
+Markup -> Markup : <html lang="el" data-lang="el">
+Markup -> A11y : script defer
+A11y -> Markup : .faq-q role/tabindex/aria-expanded/aria-controls
+
+== Klick EN ==
+Nutzer -> Markup : click #langBtn
+Markup -> Toggle : toggleLang()
+Toggle -> Toggle : currentLang = "en"
+Toggle -> Markup : #langBtn.textContent = "ΕΛ"
+Toggle -> Markup : querySelectorAll("[data-el]")
+loop je [data-el] Element
+  Toggle -> Markup : el.innerHTML = data-en
+end
+note over Toggle, Markup
+  offen (#365): document.documentElement.lang bleibt "el",
+  data-lang bleibt "el". Kein Code, daher keine Kante.
+end note
+@enduml
