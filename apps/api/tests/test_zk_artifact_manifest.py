@@ -55,3 +55,22 @@ def test_manifest_records_open_provenance_items_explicitly() -> None:
 
     assert entry["source_url"].startswith("https://")
     assert entry["consumer"]["mopro_semaphore_rs_commit"].startswith("unverified")
+
+
+def _device_proof() -> dict:
+    fixture = Path(__file__).parent / "fixtures" / "semaphore_t590_device_proof.json"
+    return json.loads(fixture.read_text(encoding="utf-8"))["proof"]
+
+
+def test_device_proof_from_bundled_zkey_is_accepted_by_the_pinned_server_key() -> None:
+    from services.zk_groth16_verifier import load_verification_key, normalize_native_proof, verify_semaphore_proof
+
+    vkey = load_verification_key(
+        REPO_ROOT / _zkey_entry()["verification_key"]["path"], SEMAPHORE_V4_DEPTH16_VKEY_SHA256,
+    )
+    proof = _device_proof()
+    assert proof["merkle_tree_depth"] == SERVER_DEPTH
+    assert verify_semaphore_proof(normalize_native_proof(proof), vkey) is True
+
+    tampered = dict(proof, message=proof["message"] + "-tampered")
+    assert verify_semaphore_proof(normalize_native_proof(tampered), vkey) is False
