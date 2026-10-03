@@ -102,11 +102,18 @@ _SAFETY_PATTERNS = [
 # social-security contributions, pensions or public funding must reach the
 # normal answer path. Patterns run on _match_text() (NFC, casefolded, Greek
 # accents removed, final sigma folded to σ).
+# Known limit (accepted, fail-safe): "εκκλησία" is also "church", so a
+# first-person question about supporting or donating to the Church can get
+# the payments-paused notice instead of a model answer; it never yields a
+# payment instruction.
 _PAY_TARGET_EN = (
     r"(?:ekklesia(?:\.gr)?|the (?:platform|project|initiative|team|site|app)"
     r"|this (?:platform|project|initiative|site|app)|you)"
 )
-_PAY_TARGET_EL = r"(?:(?:την|το|στην|στο|σε)\s+)?(?:εκκλησια|πλατφορμα|εργο|πρωτοβουλια|ομαδα|εσασ)"
+_PAY_TARGET_EL = (
+    r"(?:(?:την|το|στην|στο|σε)\s+)?"
+    r"(?:εκκλησια|πλατφορμα|εργο|πρωτοβουλια|ομαδα|εσασ|ekklesia(?:\.gr)?)"
+)
 _PAYMENT_PATTERNS = [
     # named payment processors / instruments
     r"\b(?:pay ?pal|stripe|iban|patreon|ko-?fi|buy ?me ?a ?coffee)\b",
@@ -117,24 +124,38 @@ _PAYMENT_PATTERNS = [
     r"\b(?:accept|take)s?\s+(?:any\s+)?(?:donations?|payments?|sponsorships?)\b",
     r"\bδεχεστε\s+(?:\S+\s+)?(?:δωρεεσ|πληρωμεσ|χορηγιεσ|εισφορεσ)\b",
     # donate/pay/contribute to the platform
-    rf"\b(?:donat\w*|pay|send money|contribut\w*|give money)\s+(?:\w+\s+){{0,3}}?(?:to|for)\s+{_PAY_TARGET_EN}\b",
+    rf"\b(?:donat\w*|pay|payments?|send money|contribut\w*|give money)\s+(?:\w+\s+){{0,3}}?(?:to|for)\s+{_PAY_TARGET_EN}\b",
     rf"\b(?:support|fund|sponsor)\s+{_PAY_TARGET_EN}\b",
     r"\b(?:i|we)\s+(?:\w+\s+){0,3}?(?:support|contribute|help)\s+(?:\w+\s+){0,3}?financially\b",
-    r"\bhow (?:can|do|could) i (?:donate|make a donation)\s*[?.!]*$",
+    # bare first-person intent with nothing (or only the platform) after it:
+    # "Can I donate?", "Where can I donate?", "I want to donate"
+    rf"\b(?:(?:how|where) (?:can|do|could) i|(?:can|could|may) i|i(?:'d| would)? (?:want|like|wish) to)"
+    rf" (?:donate|make a donation|make a payment|contribute money)"
+    rf"(?:\s+(?:to|for)\s+{_PAY_TARGET_EN})?\s*[?.!]*$",
     # Greek: first-person intent aimed at the platform
     rf"\b(?:δωρισω|δωρισουμε|στηριξω|στηριξουμε|υποστηριξω|ενισχυσω|πληρωσω|συνεισφερω)\s+(?:\S+\s+){{0,2}}?{_PAY_TARGET_EL}\b",
     r"\b(?:στηριξω|υποστηριξω|ενισχυσω|συνεισφερω)\s+(?:\S+\s+){0,2}?οικονομικα\b",
     rf"\bοικονομικ\w*\s+(?:στηριξη|υποστηριξη|ενισχυση|συνεισφορα)\s+(?:\S+\s+){{0,2}}?(?:στην|στο|της|του|σε)\s+(?:εκκλησια|πλατφορμα|εργο|πρωτοβουλια)",
     rf"\bκανω\s+(?:μια\s+)?δωρεα(?:\s*[;?.!]*\s*$|\s+{_PAY_TARGET_EL}\b)",
+    # clitic before the verb: "Πώς μπορώ να σας στηρίξω;"
+    r"\bνα\s+σασ\s+(?:στηριξω|υποστηριξω|ενισχυσω|πληρωσω|δωρισω)\b",
 ]
 _PAYMENT_RES = [re.compile(pattern) for pattern in _PAYMENT_PATTERNS]
 
 # Model output guard: no payment links or instruments may reach the citizen.
 _PAYMENT_LINK_RE = re.compile(
     r"(?:https?://|www\.)\S*(?:paypal|stripe|buymeacoffee|patreon|ko-fi|revolut)\S*"
-    r"|\bpaypal\.me\b|\bdonate\.stripe\.com\b|\biban\s*:?\s*[a-z]{2}\d{2}",
+    r"|\b(?:paypal\.(?:com|me)|(?:buy|donate|checkout)\.stripe\.com|buymeacoffee\.com"
+    r"|patreon\.com|ko-fi\.com|revolut\.me)\b"
+    r"|\b(?:iban|ιβαν)\s*:?\s*[a-z]{2}\d{2}",
     re.IGNORECASE,
 )
+# Unlabelled IBAN: two upper-case letters, two check digits, 4-char groups.
+_IBAN_RE = re.compile(r"\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){3,7}(?: ?[A-Z0-9]{1,4})?\b")
+
+
+def _has_payment_link(text: str) -> bool:
+    return bool(_PAYMENT_LINK_RE.search(text or "") or _IBAN_RE.search(text or ""))
 
 
 def _match_text(text: str) -> str:
@@ -604,7 +625,7 @@ async def ask_agent(
         if is_unsafe_model_output(ollama_answer):
             logger.warning("[Hybrid] Ollama answer rejected by output guard")
             return _output_guard_response(req.question, req.lang)
-        if _PAYMENT_LINK_RE.search(ollama_answer or ""):
+        if _has_payment_link(ollama_answer):
             logger.warning("[Hybrid] Ollama answer carried a payment link; replaced")
             return _payments_paused_response(req.question, req.lang)
 
@@ -614,7 +635,7 @@ async def ask_agent(
         if claude_answer and is_unsafe_model_output(claude_answer):
             logger.warning("[Hybrid] Claude answer rejected by output guard")
             return _output_guard_response(req.question, req.lang)
-        if claude_answer and _PAYMENT_LINK_RE.search(claude_answer):
+        if claude_answer and _has_payment_link(claude_answer):
             logger.warning("[Hybrid] Claude answer carried a payment link; replaced")
             return _payments_paused_response(req.question, req.lang)
         if claude_answer:

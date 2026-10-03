@@ -916,3 +916,11 @@ mindmap
 The implementation may touch only `apps/api/routers/agent.py`, the canonical KB rows in `apps/api/scripts/seed_knowledge_base.py`, and focused assistant/KB tests or the sanitized question fixture. It must prove Web `localStorage` versus Mobile SecureStore, and force payment/support prompts to an unavailable/paused answer before any database or model call.
 
 Unchanged: Web/mobile storage implementation, payment router and gates, public community page, deployment workflow, database schema/live rows, secrets, Stripe/PayPal configuration, legal/content pages, and all activation/deploy behavior.
+
+## 8. Nachher-Zustand (T-498, Codex review #400)
+
+- H6 is built: `_canonical_response` → `_is_payment_intent` → `_payments_paused_response` answers before any KB or model call. Intent counts only when aimed at the platform (donate/pay/contribute to ekklesia, the platform or project; payment links; named processors or IBAN; natural first-person questions such as "Can I donate?"; Greek first-person forms, including clitic order "να σας στηρίξω" and the Latin name `ekklesia(.gr)`). Matching runs on NFC, casefolded, accent-stripped text.
+- Bill topics that share vocabulary (sponsors, social-security contributions, pensions, public funding, organ or blood donation, donations to the Church) reach the normal path; they are pinned as no-match regressions.
+- Model output guard: Ollama and Claude answers that contain a payment URL or processor domain, a labelled IBAN (`IBAN`/`ΙΒΑΝ`) or an unlabelled IBAN are replaced by the deterministic paused answer.
+- Private key: the server creates the key pair once during verification and hands the private key over a single time; it does not store it and cannot recover it later (canonical answer and KB rows).
+- **Known limit (accepted, fail-safe):** "εκκλησία" also means "church". A first-person question about supporting or donating to the Church can receive the paused notice instead of a model answer; it never yields a payment instruction.

@@ -88,6 +88,14 @@ PAYMENT_PROMPTS = [
     ("el", "ΠΩΣ ΜΠΟΡΩ ΝΑ ΚΑΝΩ ΔΩΡΕΑ;"),
     ("el", "πως μπορω να στηριξω την εκκλησια"),
     ("el", unicodedata.normalize("NFD", "Πώς μπορώ να κάνω δωρεά;")),
+    # natural first-person intents (Codex review #400, second round)
+    ("en", "Can I donate?"),
+    ("en", "Where can I donate?"),
+    ("en", "I want to donate"),
+    ("en", "Can I make a payment to ekklesia?"),
+    ("el", "Πώς μπορώ να σας στηρίξω;"),
+    ("el", "Θέλω να κάνω δωρεά στο ekklesia.gr"),
+    ("el", "Πώς μπορώ να στηρίξω το ekklesia;"),
 ]
 
 
@@ -135,6 +143,10 @@ def test_payment_prompts_get_deterministic_paused_answer(lang: str, question: st
     ("el", "Φορολογούνται οι δωρεές στην Εκκλησία;"),
     ("el", "Μπορώ να κάνω δωρεά οργάνων;"),
     ("el", "Πώς ενισχύεται οικονομικά η τοπική αυτοδιοίκηση;"),
+    ("en", "Can I donate organs under the new law?"),
+    ("en", "Where can I donate blood?"),
+    ("en", "I want to donate to my local hospital"),
+    ("el", "Πώς θα σας στηρίξει το κράτος;"),
 ])
 def test_non_payment_prompts_do_not_hit_paused_answer(lang: str, question: str) -> None:
     response = _canonical_response(question, lang)
@@ -195,12 +207,54 @@ async def test_canonical_answers_end_before_db_and_models(
     assert response["lang"] == lang
 
 
-@pytest.mark.asyncio
-@pytest.mark.parametrize("model_answer", [
+PAYMENT_MODEL_ANSWERS = [
     "You can support us at https://www.paypal.com/donate?hosted_button_id=X.",
     "Donate here: https://donate.stripe.com/abc",
     "Send money to IBAN: GR16 0110 1250 0000 0001 2300 695",
+    "Use paypal.com/donate/ekklesia to help.",
+    "Checkout: buy.stripe.com/test_123",
+    "Transfer to GR16 0110 1250 0000 0001 2300 695 please.",
+    "ΙΒΑΝ: GR16 0110 1250 0000 0001 2300 695",
+]
+
+
+@pytest.mark.parametrize("answer", [
+    "Ο νόμος 4624/2019 (ΦΕΚ Α 137) ρυθμίζει την προστασία δεδομένων.",
+    "Bill GR-2026-0001 is open for votes until 2026-10-10.",
+    "The Ed25519 public key is stored; the vote id is DIAV-Ψ26Μ46Ψ84Ι-Τ.",
 ])
+def test_payment_output_guard_leaves_normal_answers(answer: str) -> None:
+    assert agent._has_payment_link(answer) is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("model_answer", PAYMENT_MODEL_ANSWERS)
+async def test_claude_answers_with_payment_links_are_replaced(
+    monkeypatch: pytest.MonkeyPatch, model_answer: str,
+) -> None:
+    async def fake_context(*args: object, **kwargs: object):
+        return "", [], False, []
+
+    async def no(*args: object, **kwargs: object) -> bool:
+        return False
+
+    async def fake_claude(*args: object, **kwargs: object) -> str:
+        return model_answer
+
+    monkeypatch.setattr(agent, "_build_context", fake_context)
+    monkeypatch.setattr(agent, "ollama_available", no)
+    monkeypatch.setattr(agent, "_claude_answer", fake_claude)
+
+    response = await agent.ask_agent.__wrapped__(
+        object(), agent.AskRequest(question="What does the new bill change?", lang="en"), db=_NoDb(),
+    )
+
+    assert response["sources"] == [{"type": "knowledge_base", "topic": "payments_paused"}]
+    assert "http" not in response["answer"].lower()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("model_answer", PAYMENT_MODEL_ANSWERS)
 async def test_model_answers_with_payment_links_are_replaced(
     monkeypatch: pytest.MonkeyPatch, model_answer: str,
 ) -> None:
