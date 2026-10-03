@@ -80,7 +80,12 @@ for its scope. Each release gets its own directory
      seven dumps.
    - `docker tag <running image id> <repo>:rollback-pre-<release>-<TS>` for
      every service that will change.
-3. **Build.** Fast-forward the checkout (`git merge --ff-only origin/main`,
+3. **Disk check, then build.** Docker data lives on its own volume, not on
+   `/`: check `df -h "$(docker info --format '{{.DockerRootDir}}')"` (a
+   `/mnt/HC_Volume_*` mount) before building and stop if less than 8 GB are
+   free. After the build run `docker builder prune -f`, and keep rollback
+   images only for the latest and the previous release point.
+   Fast-forward the checkout (`git merge --ff-only origin/main`,
    never force), then build with the base file plus the new override so the
    images get release tags and existing tags stay untouched:
    `docker compose -p docker --env-file /opt/ekklesia/.env.production -f infra/docker/docker-compose.prod.yml -f <release>/compose.release.yml build <service>`.
