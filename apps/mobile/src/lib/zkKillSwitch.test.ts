@@ -15,7 +15,8 @@ describe("ZK kill switch (mobile)", () => {
     expect(appJson.expo.extra?.zkSemaphoreEnabled).toBe(false);
   });
 
-  it("keeps the feature disabled when no build env override is set", () => {
+  it("keeps the feature disabled with or without a build env override", () => {
     expect(isZkSemaphoreFeatureEnabled(appJson.expo.extra, undefined)).toBe(false);
+    expect(isZkSemaphoreFeatureEnabled(appJson.expo.extra, "true")).toBe(false);
   });
 });

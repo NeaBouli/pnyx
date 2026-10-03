@@ -31,6 +31,8 @@ export function isZkSemaphoreFeatureEnabled(
   extra?: Record<string, unknown> | null,
   envValue = process.env.EXPO_PUBLIC_ZK_SEMAPHORE_ENABLED,
 ): boolean {
+  // An explicit false in app.json is a kill switch: no build env value may re-enable it.
+  if (extra?.zkSemaphoreEnabled === false) return false;
   if (extra?.zkSemaphoreEnabled === true) return true;
   return envValue === "true";
 }
