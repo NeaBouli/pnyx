@@ -74,8 +74,12 @@ for its scope. Each release gets its own directory
    sync.
 2. **Rollback point.**
    - `git tag rollback-pre-<release>-<TS> <live commit>` in `/opt/ekklesia/app`.
-   - Database dump: `docker exec ekklesia-db pg_dump -U ekklesia ekklesia_prod | gzip > /opt/backups/ekklesia_prod_pre-<release>-<TS>.sql.gz`,
-     then `gzip -t`, and record size and SHA-256. Do **not** use
+   - Database dump, failing on any error in the pipeline: in a shell with
+     `set -euo pipefail`, run
+     `docker exec ekklesia-db pg_dump -U ekklesia ekklesia_prod | gzip > /opt/backups/ekklesia_prod_pre-<release>-<TS>.sql.gz.tmp`,
+     then `gzip -t` the temporary file, check that it contains the expected
+     `CREATE TABLE`/`COPY` blocks, rename it to the final `.sql.gz` path only
+     after both succeed, and record size and SHA-256. Do **not** use
      `/opt/ekklesia/scripts/backup.sh` for this: it deletes all but the newest
      seven dumps.
    - `docker tag <running image id> <repo>:rollback-pre-<release>-<TS>` for
@@ -85,22 +89,33 @@ for its scope. Each release gets its own directory
    `/mnt/HC_Volume_*` mount) before building and stop if less than 8 GB are
    free. After the build run `docker builder prune -f`, and keep rollback
    images only for the latest and the previous release point.
-   Fast-forward the checkout (`git merge --ff-only origin/main`,
-   never force), then build with the base file plus the new override so the
+   Fast-forward the checkout to the approved target commit recorded in the
+   inventory (`git fetch origin && git merge --ff-only <target SHA>`, never
+   force; not the moving `origin/main`), verify `git rev-parse HEAD` equals
+   the target SHA, then build with the base file plus the new override so the
    images get release tags and existing tags stay untouched:
    `docker compose -p docker --env-file /opt/ekklesia/.env.production -f infra/docker/docker-compose.prod.yml -f <release>/compose.release.yml build <service>`.
-4. **Roll out one service at a time** with
+4. **Migrations before the API switch.** Keep public traffic on an API that
+   matches the live schema. Additive, backward-compatible migrations (new
+   tables, columns with defaults, indexes) run first from the new image in a
+   one-off container
+   (`docker compose … -f <release>/compose.release.yml run --rm --no-deps api alembic upgrade head`)
+   while the old `api` keeps serving; then switch `api`. A migration the old
+   code cannot run against (renames, drops, new NOT NULL without default)
+   needs a short maintenance window: stop `api`, migrate, start the new `api`,
+   check `/health`, and record the window in the release README.
+5. **Roll out one service at a time** with
    `up -d --no-deps --no-build <service>` and the same `-f` chain:
    `api` → check `https://api.ekklesia.gr/health` (the API health route is
-   `/health`; there is no `/api/v1/health`) → `alembic upgrade head` inside
-   `api` → `web` → `dashboard` → `docker-proxy` and `monitor`.
+   `/health`; there is no `/api/v1/health`) and `alembic current` →
+   `web` → `dashboard` → `docker-proxy` and `monitor`.
    Never run `seed_knowledge_base.py sync` as part of a release; it is a
    separate, owner-approved operator step with its own rollback point.
-5. **Live checks.** All `ekklesia-*` containers running without restarts;
+6. **Live checks.** All `ekklesia-*` containers running without restarts;
    `https://ekklesia.gr/`, `/health`, bills list and detail, vote results for
    a real bill, `/el/sso-verify`, `https://pnyx.ekklesia.gr/` (forum bridge);
    desktop and phone viewport for UI changes. Write `postflight.txt`.
-6. **Rollback** if a live check fails:
+7. **Rollback** if a live check fails:
    `git checkout rollback-pre-<release>-<TS>` in `/opt/ekklesia/app`, then
    `up -d --no-deps --no-build <service>` with
    `-f <release>/compose.rollback.yml`; for the database, downgrade Alembic to
