@@ -466,3 +466,43 @@ note right of WikiShell
   390px: scrollWidth 1520, #langBtn x=1460.
 end note
 @enduml
+
+@startmindmap
+* Assistant deterministic truth boundary
+** Router
+*** built: ask_agent
+*** built: canonical response before RAG
+** Key storage
+*** Web Beta: crypto.ts storeKeypair -> localStorage
+*** Mobile: crypto-native.ts storeKeypair -> SecureStore
+*** partial: generic bot answer hides platform split
+** Payments
+*** built: public processor links paused
+*** built: backend intake fails closed behind gate
+*** open: payment questions bypass deterministic state answer
+** Tests
+*** partial: generic private-key prompt
+*** open: bilingual platform and paused-payment prompts
+** Content boundary
+*** technical availability only
+*** Gio decision: recipient, legal and tax wording
+*** forbidden: live sync, deploy, provider or secret changes
+@endmindmap
+
+@startuml
+skinparam componentStyle rectangle
+component "Citizen assistant\nPOST /agent/ask" as ASK
+component "Canonical truth boundary\n_canonical_response" as CANON
+component "RAG + model fallback" as RAG
+component "Web Beta key storage\nlocalStorage" as WEB
+component "Mobile key storage\nExpo SecureStore" as MOBILE
+component "Payment availability\nlinks paused + gated intake" as PAY
+component "Focused regressions" as TEST
+
+ASK --> CANON : H1/H2 question + language
+CANON --> WEB : H3/H4 missing platform detail
+CANON --> MOBILE : H3/H5 missing platform detail
+CANON ..> RAG : H6 unmatched payment question
+PAY ..> CANON : H7 missing deterministic state answer
+TEST ..> CANON : platform/payment invariants
+@enduml

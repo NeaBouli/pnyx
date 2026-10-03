@@ -333,3 +333,41 @@ note over Nutzer, WikiShell
   Kein Code, daher keine Kante.
 end note
 @enduml
+
+@startuml
+title EKA-59/EKA-60: citizen question to technical-state answer
+
+actor Citizen
+participant "POST /api/v1/agent/ask" as API
+participant "_canonical_response" as CANON
+participant "Web crypto.ts" as WEB
+participant "Mobile crypto-native.ts" as MOBILE
+participant "Payment state" as PAY
+participant "RAG / model" as MODEL
+
+Citizen -> API : private-key or payment/support question + el/en (H1)
+API -> CANON : question after safety filter (H2)
+
+alt current private-key path
+  CANON --> Citizen : generic device-only answer (H3)
+  note over WEB,MOBILE
+  Actual sources diverge:
+  Web Beta -> localStorage (H4)
+  Mobile -> SecureStore (H5)
+  end note
+else current payment/support path
+  CANON -> API : no match (H6)
+  API -> MODEL : KB context + question
+  MODEL --> Citizen : generated answer may mention processors
+  note over PAY
+  Actual technical state:
+  public links paused; intake gated (H7)
+  end note
+end
+
+note over CANON,PAY
+Required narrow path:
+platform-specific key facts and paused-payment state
+return deterministically before database/model access.
+end note
+@enduml
