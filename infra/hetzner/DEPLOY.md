@@ -40,7 +40,7 @@ var SERVER_RF       = "RF__ ____ ____ ____";
 ```
 
 ## Fertig
-Jeder `git push` auf main → automatisches Deployment.
+Kein automatisches Deployment: `.github/workflows/deploy.yml` ist nur `workflow_dispatch`. Produktions-Releases laufen nach dem Verfahren unten ("Production release procedure").
 
 ## Mobile App
 
@@ -54,7 +54,54 @@ Jeder `git push` auf main → automatisches Deployment.
 - "Zum Homescreen hinzufügen"
 - Funktioniert als native App
 
-## Rollback
+## Production release procedure (current, since 2026-10)
+
+Production runs on the host behind Traefik with the repository checkout at
+`/opt/ekklesia/app` and the environment in `/opt/ekklesia/.env.production`
+(never printed or copied). Every rollout needs the owner's explicit approval
+for its scope. Each release gets its own directory
+`/opt/ekklesia/releases/<name>-<commit8>-<UTC timestamp>/` that holds
+`compose.release.yml`, `compose.rollback.yml`, a README, build logs and a
+`postflight.txt`.
+
+1. **Inventory (read-only).** Record the checkout commit, the running image
+   tag and image id of each `ekklesia-*` container, and the Compose override
+   chain (`com.docker.compose.project.config_files` label). Compare with the
+   target commit: pending Alembic revisions (`alembic current` in `api`),
+   compose changes, and environment variable *names* the code or compose file
+   needs. Stop and escalate on a destructive migration, a missing required
+   secret, an unclear diff, or anything that would run the knowledge-base
+   sync.
+2. **Rollback point.**
+   - `git tag rollback-pre-<release>-<TS> <live commit>` in `/opt/ekklesia/app`.
+   - Database dump: `docker exec ekklesia-db pg_dump -U ekklesia ekklesia_prod | gzip > /opt/backups/ekklesia_prod_pre-<release>-<TS>.sql.gz`,
+     then `gzip -t`, and record size and SHA-256. Do **not** use
+     `/opt/ekklesia/scripts/backup.sh` for this: it deletes all but the newest
+     seven dumps.
+   - `docker tag <running image id> <repo>:rollback-pre-<release>-<TS>` for
+     every service that will change.
+3. **Build.** Fast-forward the checkout (`git merge --ff-only origin/main`,
+   never force), then build with the base file plus the new override so the
+   images get release tags and existing tags stay untouched:
+   `docker compose -p docker --env-file /opt/ekklesia/.env.production -f infra/docker/docker-compose.prod.yml -f <release>/compose.release.yml build <service>`.
+4. **Roll out one service at a time** with
+   `up -d --no-deps --no-build <service>` and the same `-f` chain:
+   `api` → check `https://api.ekklesia.gr/health` (the API health route is
+   `/health`; there is no `/api/v1/health`) → `alembic upgrade head` inside
+   `api` → `web` → `dashboard` → `docker-proxy` and `monitor`.
+   Never run `seed_knowledge_base.py sync` as part of a release; it is a
+   separate, owner-approved operator step with its own rollback point.
+5. **Live checks.** All `ekklesia-*` containers running without restarts;
+   `https://ekklesia.gr/`, `/health`, bills list and detail, vote results for
+   a real bill, `/el/sso-verify`, `https://pnyx.ekklesia.gr/` (forum bridge);
+   desktop and phone viewport for UI changes. Write `postflight.txt`.
+6. **Rollback** if a live check fails:
+   `git checkout rollback-pre-<release>-<TS>` in `/opt/ekklesia/app`, then
+   `up -d --no-deps --no-build <service>` with
+   `-f <release>/compose.rollback.yml`; for the database, downgrade Alembic to
+   the recorded revision or restore the dump.
+
+## Rollback (legacy single-checkout setup)
 ```bash
 cd /opt/ekklesia
 git log --oneline -5
