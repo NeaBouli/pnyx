@@ -37,8 +37,13 @@ object BundledZkey {
     val target = File(dir, FILE_NAME)
     if (matches(target)) return target
 
-    val tmp = File(dir, "$FILE_NAME.tmp")
-    tmp.delete()
+    // Unique per call, so concurrent generate/verify calls never share a partially written file.
+    val tmp: File
+    try {
+      tmp = File.createTempFile("$FILE_NAME.", ".tmp", dir)
+    } catch (e: IOException) {
+      throw ZkeyException("Unable to stage the Semaphore proving key: ${e.message}")
+    }
     val digest = MessageDigest.getInstance("SHA-256")
     var size = 0L
     try {

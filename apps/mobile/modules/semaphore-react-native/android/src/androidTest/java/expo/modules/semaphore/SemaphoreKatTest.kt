@@ -66,7 +66,19 @@ class SemaphoreKatTest {
     val placed = BundledZkey.ensure(ctx, dir)
 
     assertTrue(BundledZkey.matches(placed))
-    assertFalse(File(dir, BundledZkey.FILE_NAME + ".tmp").exists())
+    assertTrue(dir.listFiles { f -> f.name.endsWith(".tmp") }.isNullOrEmpty())
+  }
+
+  @Test
+  fun concurrentPlacementIsSafe() {
+    File(dir, BundledZkey.FILE_NAME).writeText("not a zkey")
+    val pool = java.util.concurrent.Executors.newFixedThreadPool(8)
+    val results = (1..8).map { pool.submit<Boolean> { BundledZkey.matches(BundledZkey.ensure(ctx, dir)) } }
+    pool.shutdown()
+
+    assertTrue(results.all { it.get() })
+    assertTrue(BundledZkey.matches(File(dir, BundledZkey.FILE_NAME)))
+    assertTrue(dir.listFiles { f -> f.name.endsWith(".tmp") }.isNullOrEmpty())
   }
 
   @Test

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 
 from services.zk_groth16_verifier import SEMAPHORE_V4_DEPTH16_VKEY_SHA256
@@ -50,11 +51,15 @@ def test_manifest_verification_key_is_the_key_the_server_enforces() -> None:
     assert _sha256(vkey) == SEMAPHORE_V4_DEPTH16_VKEY_SHA256
 
 
-def test_manifest_records_open_provenance_items_explicitly() -> None:
+def test_manifest_pins_immutable_provenance() -> None:
     entry = _zkey_entry()
+    sha40 = re.compile(r"^[0-9a-f]{40}$")
 
     assert entry["source_url"].startswith("https://")
-    assert entry["consumer"]["mopro_semaphore_rs_commit"].startswith("unverified")
+    assert entry["immutable_source"]["npm_integrity"].startswith("sha512-")
+    assert entry["ceremony"]["beacon_anchor"].startswith("Ethereum mainnet block ")
+    assert sha40.match(entry["consumer"]["bundled_binary_source"]["commit"])
+    assert sha40.match(entry["consumer"]["bindings_rust_source"]["commit"])
 
 
 def _device_proof() -> dict:
