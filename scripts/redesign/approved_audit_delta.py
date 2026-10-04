@@ -22,6 +22,8 @@ import r0_inventory
 # badge, Tier-2 heading and the status sentence; the Arweave paragraph says no new ZK votes are
 # accepted during the pause and ZK auto-publication applies only if the rollout is re-enabled;
 # the intro and status data-el/data-en attributes say the same.
+# T-595: zk-voting gets the same nav language switch (langBtn + inline toggleLang) as the other
+# wiki pages; it was the only wiki page without one.
 APPROVED_WIKI_INVENTORY_HASH = {
     "docs/community.html": "1c6af6ce632db8cc239b24d6446896694f2afda0c37b8a94d107bc295be5aaef",
     "docs/wiki/api.html": "0f2b6771a112f089c7fba6b1ef3185e061b073cd338f3db10a38a3c3c3c2515f",
@@ -37,7 +39,7 @@ APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/roadmap.html": "9f46e4571cc3470553c56238fb137ea80026fb90979720e5a48cd6256fda605f",
     "docs/wiki/security.html": "5dac9dce20e8552fa031fdd03c0501a752e6e4ae05f16c384c697882258da44f",
     "docs/wiki/whitepaper.html": "ebf88a4bbbbaf7c4350cdfe9076c5010eaa2f207ef4a275e0d65d5aa9828b6c0",
-    "docs/wiki/zk-voting.html": "4966369a17e39101317dd6f75a1f42666d03a8a05a43b1eafdffdbe1b9a91143",
+    "docs/wiki/zk-voting.html": "9e6ff2301c6a7dae6c44e5e4f8dad3067c866daf47793781876d09565d24e3e9",
 }
 # T-420 changed only the "24 Ώρες" footer target; T-421 only drops the same-URL
 # hreflang="en" head link. Findings text is unchanged.

@@ -68,6 +68,7 @@
     <a href="security.html" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</a>
     <a href="zk-voting.html" class="active">ZK Voting</a>
     <a href="roadmap.html">Roadmap</a>
+    <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
   </div>
 </nav>
 <main id="main">
@@ -141,5 +142,17 @@
   <a href="../">εκκλησία</a> · <a href="index.html">Wiki</a> · <a href="security.html">Ασφάλεια</a> · <a href="roadmap.html">Roadmap</a>
   <p>εκκλησία &middot; &copy; 2026 V-Labs Development &middot; MIT License</p>
 </footer>
+<script>
+var currentLang = "el";
+function toggleLang() {
+  currentLang = currentLang === "el" ? "en" : "el";
+  document.documentElement.lang = currentLang;
+  document.getElementById("langBtn").textContent = currentLang === "el" ? "EN" : "ΕΛ";
+  document.querySelectorAll("[data-el]").forEach(function(el) {
+    var t = el.getAttribute("data-" + currentLang);
+    if (t) el.innerHTML = t;
+  });
+}
+</script>
 </body>
 </html>
