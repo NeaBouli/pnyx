@@ -7,8 +7,8 @@
       "source": "docs/index.html",
       "changefreq": "weekly",
       "priority": "1.0",
-      "lastmod": "2026-09-27",
-      "sha256": "e2c977d3f7d93e65d03a7d1bebdf84710af368b3f94b1874a02ac52d6d91ac64"
+      "lastmod": "2026-10-04",
+      "sha256": "8380024d8cdb3e7e07e41b236493eda736007b7da7ffa8cc7ef56e0ebb6415e4"
     },
     {
       "loc": "/el/bills",
@@ -169,8 +169,8 @@
       "source": "docs/wiki/zk-voting.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-09-27",
-      "sha256": "194548f81d4abc180db2dfeba5867b5d775fc64c2806a8aaddc7ef1ccf9ea189"
+      "lastmod": "2026-10-04",
+      "sha256": "d42f90675af59daaf179acb098e428f290d33fd8ddb3f308a253d8e6e5246493"
     },
     {
       "loc": "/wiki/audit.html",
