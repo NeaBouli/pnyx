@@ -17,6 +17,9 @@ import r0_inventory
 # a twitter card; wiki/index and wiki/roadmap gain a WebPage JSON-LD block.
 # T-473 (#365): faq.html toggleLang also sets document.documentElement.lang.
 # T-475/T-479: r3-wiki.css pins the <=920px nav language switch (inset focus ring).
+# T-592 (owner-approved 2026-10-04): zk-voting status text says the guarded Parliament ZK
+# rollout is paused since 2026-10-03 (security review; Tier-1 unaffected) in meta, JSON-LD,
+# badge, Tier-2 heading and the status sentence.
 APPROVED_WIKI_INVENTORY_HASH = {
     "docs/community.html": "1c6af6ce632db8cc239b24d6446896694f2afda0c37b8a94d107bc295be5aaef",
     "docs/wiki/api.html": "0f2b6771a112f089c7fba6b1ef3185e061b073cd338f3db10a38a3c3c3c2515f",
@@ -32,7 +35,7 @@ APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/roadmap.html": "9f46e4571cc3470553c56238fb137ea80026fb90979720e5a48cd6256fda605f",
     "docs/wiki/security.html": "5dac9dce20e8552fa031fdd03c0501a752e6e4ae05f16c384c697882258da44f",
     "docs/wiki/whitepaper.html": "ebf88a4bbbbaf7c4350cdfe9076c5010eaa2f207ef4a275e0d65d5aa9828b6c0",
-    "docs/wiki/zk-voting.html": "f1614f9f63d27db993fc338f876ebf349029b4701e156008ee5fc86900e0bf2c",
+    "docs/wiki/zk-voting.html": "378fa44ad36301a1cd4dbce6b9afc54c8d4d4a59b6dac1d40294a2042e6d90dd",
 }
 # T-420 changed only the "24 Ώρες" footer target; T-421 only drops the same-URL
 # hreflang="en" head link. Findings text is unchanged.
