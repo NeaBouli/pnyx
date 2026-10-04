@@ -164,6 +164,8 @@ ALLOWED_DEMO_CYCLE_BILINGUAL_REMOVALS = {
 ALLOWED_ZK_PAUSE_BILINGUAL_REMOVALS = {
     ("Semaphore ZK Proofs — guarded Parliament rollout ενεργό",
      "Semaphore ZK Proofs — guarded Parliament rollout live"),
+    ("ZK Arweave — αυτόματη δημοσίευση για Βουλή από ομάδα 5+",
+     "ZK Arweave — auto-publication for Parliament groups of 5+"),
 }
 ALLOWED_DEMO_CYCLE_INTERACTION_COUNTS = {"add_event_listener_count": 8, "set_timeout_count": 2}
 ALLOWED_DEMO_CYCLE_FORM_CONTROLS = ({"tag": "button", "type": "button", "id": "cycleToggle"},)

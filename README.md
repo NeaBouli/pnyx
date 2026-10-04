@@ -203,7 +203,7 @@ New system-generated bill pills, short summaries, and forum first-post bodies ca
 |---|---|---|
 | **Beta** | Now | Active |
 | **Alpha 0.1** | 500 users + 3 NGOs + all official verification gates | Upcoming: holder-authenticated OAuth or fresh challenge-bound QR/eSeal verification is designed in [GH#141](https://github.com/NeaBouli/pnyx/issues/141). It requires an official integration, DPIA, credential-migration design, independent security/privacy review and a sandbox canary; it is not live in Beta |
-| **V1 evolution** | ZK Voting (Semaphore) + Federation | Guarded Parliament rollout live; ZK Arweave auto-publication live for eligible public Parliament scopes (min group size 5) |
+| **V1 evolution** | ZK Voting (Semaphore) + Federation | Guarded Parliament rollout paused since 2026-10-03 (security review); ZK Arweave auto-publication (eligible public Parliament scopes, min group size 5) paused with it |
 | **Platform V2 / Minima** | Gated parallel research; V1 stays production | Phase 0 architecture complete; Maxima delivery, Minima root anchoring, mobile budgets and cryptographic compatibility must pass synthetic PoCs before implementation ([GH#216](https://github.com/NeaBouli/pnyx/issues/216)) |
 
 &rarr; Details: [Roadmap](https://ekklesia.gr/wiki/roadmap.html)
