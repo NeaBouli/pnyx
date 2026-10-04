@@ -987,3 +987,25 @@ class T378ForumCardInsetTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ---------------------------------------------------------------------------
+# T557ForumPhoneEdgeTest — UI-06: no left edge line on phone forum rows
+# ---------------------------------------------------------------------------
+
+class T557ForumPhoneEdgeTest(unittest.TestCase):
+    """T-557: in the <=560px block, forum rows drop the left border like the right one."""
+
+    def test_phone_block_removes_forum_left_border(self) -> None:
+        css = (r2_landing_check.DOCS_DIR / "assets/redesign-v2/r5-landing-fidelity.css").read_text(encoding="utf-8")
+        css = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
+        start = css.index("@media (max-width: 560px)")
+        depth, i = 0, css.index("{", start)
+        for j in range(i, len(css)):
+            depth += {"{": 1, "}": -1}.get(css[j], 0)
+            if depth == 0:
+                block = css[i:j]
+                break
+        rule = re.search(r"#forum \.forum-feature\s*\{([^}]*)\}", block)
+        self.assertIsNotNone(rule, "T-557: phone block lacks a #forum .forum-feature rule")
+        self.assertIn("border-left: 0 !important", rule.group(1))

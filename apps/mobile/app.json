@@ -2,7 +2,7 @@
   "expo": {
     "name": "εκκλησία",
     "slug": "ekklesia-gr",
-    "version": "1.0.32",
+    "version": "1.0.33",
     "orientation": "portrait",
     "icon": "./assets/pnx.png",
     "scheme": "ekklesia",
@@ -27,7 +27,7 @@
       "edgeToEdgeEnabled": false,
       "jsEngine": "hermes",
       "package": "ekklesia.gr",
-      "versionCode": 61,
+      "versionCode": 62,
       "permissions": [
         "INTERNET",
         "RECEIVE_BOOT_COMPLETED",
@@ -75,7 +75,7 @@
     "extra": {
       "distributionChannel": "direct",
       "buildFlavor": "direct",
-      "zkSemaphoreEnabled": true,
+      "zkSemaphoreEnabled": false,
       "eas": {
         "projectId": "f6cfa7b1-ff85-4020-ac35-94d3774615fd"
       }
