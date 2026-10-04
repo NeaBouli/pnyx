@@ -71,7 +71,7 @@ This project uses publicly available government data from:
 | Arweave Archive | Immutable vote audit trail | Beta |
 | POLIS Tickets | Citizen issue tracker with Ed25519 auth | Beta |
 | Dashboard | Admin panel with GitHub OAuth, 15+ pages | Beta |
-| ZK Voting V2 | Optional Semaphore-based anonymous proofs | Guarded Parliament rollout live; ZK Arweave auto-publication live for eligible public Parliament scopes (min group size 5) |
+| ZK Voting V2 | Optional Semaphore-based anonymous proofs | Paused since 2026-10-03 for a security review of the mobile prover (no new ZK votes); Tier-1 voting is unaffected. Already accepted ZK receipts stay archived on Arweave. Re-enabling is an owner decision |
 
 ---
 
