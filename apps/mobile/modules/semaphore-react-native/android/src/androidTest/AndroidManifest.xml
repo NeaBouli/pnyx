@@ -1,4 +1,0 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-  <!-- Test APK only: the KAT lets semaphore-rs fetch the pinned zkey (SHA-256 checked in the test). -->
-  <uses-permission android:name="android.permission.INTERNET" />
-</manifest>
