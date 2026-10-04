@@ -1130,7 +1130,7 @@ async def test_create_topic_masks_censored_title_words_and_keeps_official_title_
     assert await discourse_sync.create_discourse_topic(bill, db=None) == 321
     assert [p["title"] for p in posts] == [
         "[Φορέας] Απόφαση για ζώο σε άσχημη κατάσταση υγείας",
-        "[Φορέας] Απόφαση για ■■■ σε άσχημη κατάσταση υγείας",
+        "[Φορέας] Απόφαση για ■■■ σε άσχημη κατάσταση υγείας — GR-PROVENANCE",
     ]
     assert posts[0]["raw"] == posts[1]["raw"]
     assert "Απόφαση για ζώο σε άσχημη κατάσταση υγείας" in posts[1]["raw"]
@@ -1192,4 +1192,18 @@ async def test_update_topic_masks_censored_title_words(monkeypatch):
     monkeypatch.setattr(discourse_sync, "DISCOURSE_API_KEY", "test-key")
 
     assert await discourse_sync.update_discourse_topic(bill, db=None) is True
-    assert titles == ["[Φορέας] Απόφαση για ζώο", "[Φορέας] Απόφαση για ■■■"]
+    assert titles == ["[Φορέας] Απόφαση για ζώο", "[Φορέας] Απόφαση για ■■■ — GR-PROVENANCE"]
+
+
+def test_censored_fallback_titles_stay_unique_per_bill():
+    first = SimpleNamespace(id="DIAV-A", diavgeia_ada="ΑΔΑ-1")
+    second = SimpleNamespace(id="DIAV-B", diavgeia_ada="ΑΔΑ-2")
+    # Same-length censored words would otherwise collapse to the same masked title.
+    a = discourse_sync._censored_fallback_title("[Φορέας] Απόφαση για ζώο", ["ζώο"], first)
+    b = discourse_sync._censored_fallback_title("[Φορέας] Απόφαση για βόδι", ["βόδι"], second)
+    assert a == "[Φορέας] Απόφαση για ■■■ — ΑΔΑ-1"
+    assert discourse_sync._mask_censored_words("[Φορέας] Απόφαση για ζώα", ["ζώα"]) == (
+        discourse_sync._mask_censored_words("[Φορέας] Απόφαση για ζώο", ["ζώο"])
+    )
+    assert a != discourse_sync._censored_fallback_title("[Φορέας] Απόφαση για ζώα", ["ζώα"], second)
+    assert b.endswith("— ΑΔΑ-2")

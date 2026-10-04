@@ -484,6 +484,11 @@ def _mask_censored_words(title: str, words: list[str]) -> str:
     return title
 
 
+def _censored_fallback_title(title: str, words: list[str], bill: ParliamentBill) -> str:
+    """Masked title plus the bill's stable suffix, so two bills never share a masked title."""
+    return _with_unique_title_suffix(_mask_censored_words(title, words), bill)
+
+
 async def _search_existing_topic(title: str) -> int | None:
     """Search Discourse for an existing topic by title. Returns topic_id or None."""
     try:
@@ -575,7 +580,7 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
         # Title hits the forum's censored words — the body keeps the full official title.
         censored = _censored_title_words(r)
         if censored:
-            topic_title = _mask_censored_words(topic_title, censored)
+            topic_title = _censored_fallback_title(topic_title, censored, bill)
             logger.info("Topic title for %s masks censored words", bill.id)
             r = await _request_discourse(client, "post",
                 f"{DISCOURSE_API_URL}/posts.json",
@@ -658,7 +663,7 @@ async def update_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> bool
                     json={
                         "category_id": category_id,
                         "tags": tags,
-                        "title": _mask_censored_words(topic_title, censored),
+                        "title": _censored_fallback_title(topic_title, censored, bill),
                     },
                     headers=_headers(),
                 )
