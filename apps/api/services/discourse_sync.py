@@ -421,6 +421,9 @@ def _with_unique_title_suffix(title: str, bill: ParliamentBill) -> str:
 
 
 _DUPLICATE_TITLE_MARKERS = ("already been used", "χρησιμοποιηθεί")
+# Discourse blocks titles that contain a word from its watched-words "censor" list
+# (bodies are only masked on display), e.g. "ζώο" in an official Diavgeia title.
+_CENSORED_TITLE_MARKERS = ("censored words", "λογοκριμένες λέξεις")
 _DISCOURSE_TOPIC_LINK_RE = re.compile(
     r"/t/(?:(?P<topic_id>\d+)(?:/\d+)?|"
     r"[^/\s'\"<>]+/(?P<slug_topic_id>\d+))(?=[/?#.\s'\"<>]|$)"
@@ -458,6 +461,32 @@ def _duplicate_title_details(response: httpx.Response) -> tuple[bool, int | None
             return True, int(topic_id)
 
     return duplicate, None
+
+
+def _censored_title_words(response: httpx.Response) -> list[str]:
+    """Words Discourse's watched-words "censor" list rejected in a topic title."""
+    if response.status_code != 422:
+        return []
+
+    words: list[str] = []
+    for message in _discourse_error_messages(response):
+        if not any(marker.casefold() in message.casefold() for marker in _CENSORED_TITLE_MARKERS):
+            continue
+        _, _, listed = message.rpartition(":")
+        words.extend(word.strip() for word in listed.split(",") if word.strip())
+    return words
+
+
+def _mask_censored_words(title: str, words: list[str]) -> str:
+    """Mask censored words the way Discourse renders them, so the title passes its check."""
+    for word in words:
+        title = re.sub(re.escape(word), "■" * len(word), title, flags=re.IGNORECASE)
+    return title
+
+
+def _censored_fallback_title(title: str, words: list[str], bill: ParliamentBill) -> str:
+    """Masked title plus the bill's stable suffix, so two bills never share a masked title."""
+    return _with_unique_title_suffix(_mask_censored_words(title, words), bill)
 
 
 async def _search_existing_topic(title: str) -> int | None:
@@ -548,6 +577,25 @@ async def create_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> int:
             record_generated_content(bill, FORUM_BODY_FIELD, body)
             return r.json()["topic_id"]
 
+        # Title hits the forum's censored words — the body keeps the full official title.
+        censored = _censored_title_words(r)
+        if censored:
+            topic_title = _censored_fallback_title(topic_title, censored, bill)
+            logger.info("Topic title for %s masks censored words", bill.id)
+            r = await _request_discourse(client, "post",
+                f"{DISCOURSE_API_URL}/posts.json",
+                json={
+                    "title": topic_title,
+                    "raw": body,
+                    "category": category_id,
+                    "tags": tags,
+                },
+                headers=_headers(),
+            )
+            if r.status_code in (200, 201):
+                record_generated_content(bill, FORUM_BODY_FIELD, body)
+                return r.json()["topic_id"]
+
         # Title already exists — reuse the referenced topic or search for it.
         is_duplicate, existing_id = _duplicate_title_details(r)
         if is_duplicate:
@@ -608,6 +656,17 @@ async def update_discourse_topic(bill: ParliamentBill, db: AsyncSession) -> bool
                 json={"category_id": category_id, "tags": tags, "title": topic_title},
                 headers=_headers(),
             )
+            censored = _censored_title_words(r)
+            if censored:
+                r = await _request_discourse(client, "put",
+                    f"{DISCOURSE_API_URL}/t/-/{bill.forum_topic_id}.json",
+                    json={
+                        "category_id": category_id,
+                        "tags": tags,
+                        "title": _censored_fallback_title(topic_title, censored, bill),
+                    },
+                    headers=_headers(),
+                )
             if r.status_code != 200:
                 logger.warning("Topic update failed for %s: HTTP %d", bill.id, r.status_code)
                 return False
