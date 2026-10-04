@@ -208,3 +208,13 @@ async def test_eka63_route_skips_context_and_language_models(
     assert response["model"] == "knowledge-base"
     assert response["sources"] == [{"type": "knowledge_base", "topic": topic}]
     assert response["lang"] == lang
+
+
+@pytest.mark.parametrize(("question", "lang", "marker"), [
+    ("What is ZK voting?", "en", "Since 2026-10-03 ZK voting has been paused for a security review"),
+    ("Τι είναι η ψηφοφορία ZK;", "el", "Από 03/10/2026 η ZK ψηφοφορία βρίσκεται σε παύση"),
+])
+def test_zk_answer_states_the_current_pause(question: str, lang: str, marker: str) -> None:
+    response = _canonical_response(question, lang)
+    assert response is not None
+    assert marker in response["answer"]

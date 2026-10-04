@@ -70,13 +70,24 @@ function TabNavigator() {
         tabBarStyle: { backgroundColor: colors.tabBarBg, borderTopColor: colors.border },
         tabBarActiveTintColor: colors.tabBarActive,
         tabBarInactiveTintColor: colors.tabBarInactive,
+        // GH-298: label keeps system font scaling but stays on one line and
+        // shrinks to fit its fixed-width column instead of wrapping/clipping.
         tabBarLabel: ({ color }: { color: string }) => (
-          <Text style={{ color, fontSize: 10, fontWeight: "700" }}>
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.75}
+            style={{ color, fontSize: 10, fontWeight: "700" }}
+          >
             {route.name === "Home" ? "εκκλησία" : route.name === "Bills" ? "Ψ/φορία" : route.name === "Trending" ? "Trending" : route.name === "Tickets" ? "POLIS" : "Κόμματα"}
           </Text>
         ),
-        tabBarIcon: () => (
-          <Text style={{ fontSize: 18 }}>{TAB_ICONS[route.name] || "●"}</Text>
+        // Emoji is a graphic: size it from the navigator's icon size and keep
+        // it inside the fixed 28dp icon slot regardless of font scale.
+        tabBarIcon: ({ size }: { size: number }) => (
+          <Text allowFontScaling={false} style={{ fontSize: Math.round(Math.min(size, 28) * 0.8), lineHeight: Math.min(size, 28), textAlign: "center" }}>
+            {TAB_ICONS[route.name] || "●"}
+          </Text>
         ),
       })}
     >

@@ -96,6 +96,96 @@ _SAFETY_PATTERNS = [
     "κλειδί admin", "admin κλειδί", "χειραγώγηση ψήφ",
 ]
 
+# EKA-60: payment/donation/support intake is paused (docs/community.html,
+# payments.py::_payment_intake_enabled); answer before any KB or model call.
+# Only intent aimed at the platform counts: bill topics such as sponsors,
+# social-security contributions, pensions or public funding must reach the
+# normal answer path. Patterns run on _match_text() (NFC, casefolded, Greek
+# accents removed, final sigma folded to σ).
+# Known limit (accepted, fail-safe): "εκκλησία" is also "church", so a
+# first-person question about supporting or donating to the Church can get
+# the payments-paused notice instead of a model answer; it never yields a
+# payment instruction.
+_PAY_TARGET_EN = (
+    r"(?:ekklesia(?:\.gr)?|the (?:platform|project|initiative|team|site|app)"
+    r"|(?:this|your) (?:platform|project|initiative|site|app|team|work)|you)"
+)
+_PROCESSORS = r"pay ?pal|stripe|iban|patreon|ko-?fi|buy ?me ?a ?coffee|revolut"
+_PAY_TARGET_EL = (
+    r"(?:(?:την|το|στην|στο|σε)\s+)?"
+    r"(?:εκκλησια|πλατφορμα|εργο|πρωτοβουλια|ομαδα|εσασ|ekklesia(?:\.gr)?)"
+)
+_PAYMENT_PATTERNS = [
+    # named payment processors / instruments, only in a paying context
+    # ("pay with Stripe", "PayPal donate link", "IBAN for donations"); a bill
+    # question that merely mentions Stripe or PayPal reaches the normal path
+    rf"\b(?:pay|donate|send money|contribute|support (?:you|us)|πληρωσω|δωρισω|στειλω)\s+(?:\S+\s+){{0,2}}?(?:with|via|through|by|on|με|μεσω)\s+(?:{_PROCESSORS})\b",
+    rf"\b(?:{_PROCESSORS})\s+(?:\S+\s+){{0,1}}?(?:link|button|page|account|address|donat\w*|συνδεσμοσ|λογαριασμοσ|δωρε\w*)\b",
+    r"\b(?:iban|account number|bank details)\b\s+(?:\S+\s+){0,2}?(?:for|to|για|στην|στο)\s+(?:\S+\s+){0,1}?(?:donat\w*|support|δωρε\w*|ενισχυσ\w*|ekklesia|εκκλησια|πλατφορμα|you|σασ)\b",
+    r"\b(?:your|σασ)\s+(?:iban|paypal|stripe|bank (?:account|details)|τραπεζικ\w* λογαριασμ\w*)\b",
+    # donation/payment links or buttons
+    r"\b(?:donat\w*|payment)\s+(?:link|button|page)\b",
+    r"\b(?:συνδεσμοσ|link)\s+(?:\S+\s+){0,2}?(?:δωρεα|δωρεων|δωρεεσ|πληρωμη|πληρωμων)\b",
+    # "do you accept donations/payments/sponsorship?"
+    r"\b(?:accept|take)s?\s+(?:any\s+)?(?:donations?|payments?|sponsorships?)\b",
+    r"\bδεχεστε\s+(?:\S+\s+)?(?:δωρεεσ|πληρωμεσ|χορηγιεσ|εισφορεσ)\b",
+    # donate/pay/contribute to the platform
+    rf"\b(?:donat\w*|pay|payments?|send money|contribut\w*|give money)\s+(?:\w+\s+){{0,3}}?(?:to|for)\s+{_PAY_TARGET_EN}\b",
+    rf"\b(?:support|fund|sponsor)\s+{_PAY_TARGET_EN}\b",
+    r"\b(?:i|we)\s+(?:\w+\s+){0,3}?(?:support|contribute|help)\s+(?:\w+\s+){0,3}?financially\b",
+    # bare first-person intent with nothing (or only the platform) after it:
+    # "Can I donate?", "Where can I donate?", "I want to donate"
+    rf"\b(?:(?:how|where) (?:can|do|could) i|(?:can|could|may) i|i(?:'d| would)? (?:want|like|wish) to)"
+    rf" (?:donate|make a donation|make a payment|contribute money)"
+    rf"(?:\s+(?:to|for)\s+{_PAY_TARGET_EN})?\s*[?.!]*$",
+    # Greek: first-person intent aimed at the platform
+    rf"\b(?:δωρισω|δωρισουμε|στηριξω|στηριξουμε|υποστηριξω|ενισχυσω|πληρωσω|συνεισφερω)\s+(?:\S+\s+){{0,2}}?{_PAY_TARGET_EL}\b",
+    r"\b(?:στηριξω|υποστηριξω|ενισχυσω|συνεισφερω)\s+(?:\S+\s+){0,2}?οικονομικα\b",
+    rf"\bοικονομικ\w*\s+(?:στηριξη|υποστηριξη|ενισχυση|συνεισφορα)\s+(?:\S+\s+){{0,2}}?(?:στην|στο|της|του|σε)\s+(?:εκκλησια|πλατφορμα|εργο|πρωτοβουλια)",
+    rf"\bκανω\s+(?:μια\s+)?δωρεα(?:\s*[;?.!]*\s*$|\s+{_PAY_TARGET_EL}\b)",
+    # clitic before the verb: "Πώς μπορώ να σας στηρίξω;"
+    r"\bνα\s+σασ\s+(?:στηριξω|υποστηριξω|ενισχυσω|πληρωσω|δωρισω)\b",
+]
+_PAYMENT_RES = [re.compile(pattern) for pattern in _PAYMENT_PATTERNS]
+
+# Model output guard: no payment links or instruments may reach the citizen.
+_PAYMENT_LINK_RE = re.compile(
+    r"(?:https?://|www\.)\S*(?:paypal|stripe|buymeacoffee|patreon|ko-fi|revolut)\S*"
+    # any domain with a donation term in host or path (donate.example.org,
+    # example.org/donate); generic "pay" stays allowed so official pages such as
+    # tax-payment guidance on gov.gr are not replaced
+    r"|(?:https?://|www\.)[^\s/]*\b(?:donat\w*|contribut\w*|checkout|sponsor\w*|fundrais\w*)\b\S*"
+    r"|(?:https?://|www\.)\S*/(?:donat\w*|contribut\w*|checkout|sponsor\w*|fundrais\w*)\b\S*"
+    r"|\b(?:paypal\.(?:com|me)|(?:buy|donate|checkout)\.stripe\.com|buymeacoffee\.com"
+    r"|patreon\.com|ko-fi\.com|revolut\.me)\b"
+    r"|\b(?:iban|ιβαν)\s*:?\s*[a-z]{2}\d{2}",
+    re.IGNORECASE,
+)
+# Unlabelled IBAN in any letter case: country letters, check digits and
+# 4-character groups with at least 10 digits overall, so ordinary prose such as
+# "id12 have been made into laws" is not mistaken for an account number.
+_IBAN_RE = re.compile(r"\b[a-z]{2}\d{2}(?: ?[a-z0-9]{4}){3,7}(?: ?[a-z0-9]{1,4})?\b", re.IGNORECASE)
+
+
+def _has_payment_link(text: str) -> bool:
+    if _PAYMENT_LINK_RE.search(text or ""):
+        return True
+    return any(sum(ch.isdigit() for ch in m.group(0)) >= 10 for m in _IBAN_RE.finditer(text or ""))
+
+
+def _match_text(text: str) -> str:
+    """NFC + casefold + Greek accents removed, for intent matching only."""
+    folded = unicodedata.normalize("NFD", unicodedata.normalize("NFC", text or "").casefold())
+    return unicodedata.normalize(
+        "NFC", "".join(ch for ch in folded if unicodedata.category(ch) != "Mn"),
+    )
+
+
+def _is_payment_intent(question: str) -> bool:
+    text = _match_text(question)
+    return any(pattern.search(text) for pattern in _PAYMENT_RES)
+
+
 _BILL_QUERY_PATTERNS = [
     r"\bGR-\d{4}",
     r"\bbill(s)?\b",
@@ -186,7 +276,7 @@ def _with_disclaimer(answer: str, lang: str) -> str:
 
 def _safety_response(question: str, lang: str) -> dict | None:
     """Block unsafe voting/admin/security-bypass requests before any LLM call."""
-    q = (question or "").lower()
+    q = unicodedata.normalize("NFC", question or "").lower()
     if not any(pattern in q for pattern in _SAFETY_PATTERNS):
         return None
 
@@ -214,9 +304,36 @@ def _safety_response(question: str, lang: str) -> dict | None:
     }
 
 
+_PAYMENTS_PAUSED_EL = (
+    "Η αποδοχή δωρεών και πληρωμών, καθώς και οι σχετικοί δημόσιοι σύνδεσμοι, "
+    "έχουν προσωρινά ανασταλεί. Ο βοηθός δεν δέχεται πληρωμές και δεν παραπέμπει "
+    "σε Stripe, PayPal ή άλλον πάροχο πληρωμών. Μη στέλνετε χρήματα μέσω "
+    "συνδέσμων που λαμβάνετε σε συνομιλίες."
+)
+_PAYMENTS_PAUSED_EN = (
+    "Public donation/payment links and payment intake are currently "
+    "paused and unavailable. The assistant does not accept payments and "
+    "does not refer you to Stripe, PayPal or any other payment processor. "
+    "Do not send money through links received in a chat."
+)
+
+
+def _payments_paused_response(question: str, lang: str) -> dict:
+    """Deterministic EKA-60 answer; also replaces model output that carries payment links."""
+    return {
+        "question": question,
+        "answer": _with_disclaimer(
+            _PAYMENTS_PAUSED_EL if _is_greek(lang) else _PAYMENTS_PAUSED_EN, lang,
+        ),
+        "model": "knowledge-base",
+        "sources": [{"type": "knowledge_base", "topic": "payments_paused"}],
+        "lang": lang,
+    }
+
+
 def _canonical_response(question: str, lang: str) -> dict | None:
     """Deterministic answers for safety/privacy concepts that must not drift."""
-    q = (question or "").lower()
+    q = unicodedata.normalize("NFC", question or "").lower()
     normalized_q = re.sub(r"[^\w\u0370-\u03ff]+", " ", q, flags=re.UNICODE).strip()
     greek = _is_greek(lang)
 
@@ -242,6 +359,9 @@ def _canonical_response(question: str, lang: str) -> dict | None:
             "and how the platform works. What would you like to know?",
             "assistant_help",
         )
+
+    if _is_payment_intent(question):
+        return _payments_paused_response(question, lang)
 
     # EKA-63: checked before the broad substring topics below so that e.g.
     # "διαύγ"/"δήμ" (municipal) or "nullifier" cannot pre-empt these facts.
@@ -274,14 +394,18 @@ def _canonical_response(question: str, lang: str) -> dict | None:
             "Εκτός ελεγχόμενων δοκιμών, αφορά μόνο δημόσια νομοσχέδια της Βουλής "
             "σε κατάσταση ACTIVE, WINDOW_24H ή OPEN_END· σε κάθε άλλη περίπτωση το "
             "αίτημα απορρίπτεται. Η δημοσίευση στο Arweave γίνεται μόνο όταν είναι "
-            "ενεργοποιημένη και η ομάδα έχει φτάσει ένα ελάχιστο μέγεθος.",
+            "ενεργοποιημένη και η ομάδα έχει φτάσει ένα ελάχιστο μέγεθος. "
+            "Από 03/10/2026 η ZK ψηφοφορία βρίσκεται σε παύση για έλεγχο ασφαλείας· "
+            "η κανονική ψηφοφορία (Tier 1) λειτουργεί κανονικά.",
             "Zero-knowledge (ZK, Semaphore) voting is a guarded feature and is not "
             "generally available. The server verifies only public Semaphore proofs "
             "and only when the feature has been explicitly enabled for approved "
             "voting scopes. Outside controlled tests, it applies only to public "
             "Parliament bills in ACTIVE, WINDOW_24H or OPEN_END status; any other "
             "request is rejected. Publication to Arweave happens only when it is "
-            "enabled and the group has reached a minimum size.",
+            "enabled and the group has reached a minimum size. Since 2026-10-03 "
+            "ZK voting has been paused for a security review; regular (Tier 1) "
+            "voting is unaffected.",
             "zk_semaphore",
         )
 
@@ -322,15 +446,26 @@ def _canonical_response(question: str, lang: str) -> dict | None:
             "results_visibility",
         )
 
-    if "private key" in q or "ιδιωτικό κλειδί" in q:
+    if "private key" in q or "signing key" in q or ("ιδιωτικ" in q and "κλειδ" in q):
         return resp(
-            "Το ιδιωτικό κλειδί αποθηκεύεται μόνο στη συσκευή σας. Ο server δεν "
-            "το γνωρίζει και δεν μπορεί να το ανακτήσει. Αν χαθεί, ακολουθείτε "
-            "μόνο την επίσημη ροή επαλήθευσης/επανέκδοσης που παρέχει η εφαρμογή· "
-            "δεν υπάρχει μυστική ανάκτηση από τον server.",
-            "Your private key is stored only on your device. The server does not "
-            "know it and cannot recover it. If it is lost, use only the official "
-            "app re-verification/key-rotation flow; there is no hidden server-side "
+            "Το σημείο αποθήκευσης του ιδιωτικού κλειδιού εξαρτάται από την "
+            "πλατφόρμα. Web Beta: φυλάσσεται στο localStorage του browser — απλή "
+            "αποθήκευση browser, όχι iOS Keychain ή Android Keystore. Εφαρμογή "
+            "κινητού: αποθηκεύεται μέσω Expo SecureStore, που χρησιμοποιεί Android "
+            "Keystore και, στην υλοποιημένη διαδρομή κώδικα iOS, iOS Keychain. "
+            "Ο server δημιουργεί το ζεύγος κλειδιών μία φορά κατά την επαλήθευση "
+            "και σας παραδίδει το ιδιωτικό κλειδί μόνο μία φορά· δεν το αποθηκεύει "
+            "και δεν μπορεί να το ανακτήσει αργότερα. Αν χαθεί, ακολουθείτε μόνο την επίσημη ροή "
+            "επαλήθευσης/επανέκδοσης που παρέχει η εφαρμογή· δεν υπάρχει μυστική "
+            "ανάκτηση από τον server.",
+            "Where your private key is stored depends on the platform. Web Beta: "
+            "it is kept in the browser's localStorage — plain browser storage, "
+            "not iOS Keychain or Android Keystore. Mobile app: it is stored via "
+            "Expo SecureStore, which uses Android Keystore and, in the implemented "
+            "iOS code path, iOS Keychain. The server creates the key pair once during "
+            "verification and hands you the private key a single time; it does "
+            "not store it and cannot recover it later. If it is lost, use only the official app "
+            "re-verification/key-rotation flow; there is no hidden server-side "
             "recovery process.",
             "private_key",
         )
@@ -656,6 +791,9 @@ async def ask_agent(
         if is_unsafe_model_output(ollama_answer):
             logger.warning("[Hybrid] Ollama answer rejected by output guard")
             return _output_guard_response(req.question, req.lang)
+        if _has_payment_link(ollama_answer):
+            logger.warning("[Hybrid] Ollama answer carried a payment link; replaced")
+            return _payments_paused_response(req.question, req.lang)
 
     # Step 2: If Ollama failed or gave poor answer → Claude fallback
     if _is_answer_poor(ollama_answer):
@@ -663,6 +801,9 @@ async def ask_agent(
         if claude_answer and is_unsafe_model_output(claude_answer):
             logger.warning("[Hybrid] Claude answer rejected by output guard")
             return _output_guard_response(req.question, req.lang)
+        if claude_answer and _has_payment_link(claude_answer):
+            logger.warning("[Hybrid] Claude answer carried a payment link; replaced")
+            return _payments_paused_response(req.question, req.lang)
         if claude_answer:
             model_used = "claude-haiku"
             return {
