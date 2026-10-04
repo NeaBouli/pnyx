@@ -1074,3 +1074,122 @@ async def test_institutional_title_filters_bad_org_labels(bad_label):
     title = await discourse_sync._build_topic_title(bill, db=None)
 
     assert title == "[Φορέας] ΑΠΟΦΑΣΗ"
+
+
+_LIVE_CENSORED_422 = FakeResponse(
+    422,
+    {"action": "create_post", "errors": ["Τίτλος περιέχει τις ακόλουθες λογοκριμένες λέξεις: ζώο"]},
+)
+
+
+@pytest.mark.parametrize("response,expected", [
+    (_LIVE_CENSORED_422, ["ζώο"]),
+    (FakeResponse(422, {"errors": ["Title contains the following censored words: foo, bar"]}), ["foo", "bar"]),
+    (FakeResponse(422, text="Τίτλος έχει ήδη χρησιμοποιηθεί"), []),
+    (FakeResponse(200, {"topic_id": 1}), []),
+])
+def test_censored_title_words_reads_discourse_watched_word_rejections(response, expected):
+    assert discourse_sync._censored_title_words(response) == expected
+
+
+def test_mask_censored_words_matches_discourse_rendering_case_insensitively():
+    title = "[Φορέας] Απόφαση για ζώο σε άσχημη κατάσταση υγείας"
+    assert discourse_sync._mask_censored_words(title, ["ζώο"]) == (
+        "[Φορέας] Απόφαση για ■■■ σε άσχημη κατάσταση υγείας"
+    )
+    assert discourse_sync._mask_censored_words("Foo and FOO", ["foo"]) == "■■■ and ■■■"
+
+
+@pytest.mark.asyncio
+async def test_create_topic_masks_censored_title_words_and_keeps_official_title_in_body(monkeypatch):
+    bill = _forum_bill("Σύνοψη.")
+    bill.title_el = "Απόφαση για ζώο σε άσχημη κατάσταση υγείας"
+    posts = []
+
+    async def fake_resolve_category(_bill, _db):
+        return 42
+
+    async def fake_region(_bill, _db):
+        return ""
+
+    async def fake_title(_bill, _db):
+        return "[Φορέας] Απόφαση για ζώο σε άσχημη κατάσταση υγείας"
+
+    async def fake_request(_client, method, url, **kwargs):
+        assert (method, url.rsplit("/", 1)[-1]) == ("post", "posts.json")
+        posts.append(kwargs["json"])
+        if "ζώο" in kwargs["json"]["title"]:
+            return _LIVE_CENSORED_422
+        return FakeResponse(200, {"topic_id": 321})
+
+    monkeypatch.setattr(discourse_sync, "_resolve_category", fake_resolve_category)
+    monkeypatch.setattr(discourse_sync, "_region_name_for_body", fake_region)
+    monkeypatch.setattr(discourse_sync, "_build_topic_title", fake_title)
+    monkeypatch.setattr(discourse_sync, "_request_discourse", fake_request)
+
+    assert await discourse_sync.create_discourse_topic(bill, db=None) == 321
+    assert [p["title"] for p in posts] == [
+        "[Φορέας] Απόφαση για ζώο σε άσχημη κατάσταση υγείας",
+        "[Φορέας] Απόφαση για ■■■ σε άσχημη κατάσταση υγείας",
+    ]
+    assert posts[0]["raw"] == posts[1]["raw"]
+    assert "Απόφαση για ζώο σε άσχημη κατάσταση υγείας" in posts[1]["raw"]
+    assert bill.generated_content_provenance.get("forum_body")
+
+
+@pytest.mark.asyncio
+async def test_create_topic_still_fails_when_masked_title_is_rejected(monkeypatch):
+    bill = _forum_bill("Σύνοψη.")
+    calls = []
+
+    async def fake_resolve_category(_bill, _db):
+        return 42
+
+    async def fake_region(_bill, _db):
+        return ""
+
+    async def fake_title(_bill, _db):
+        return "[Φορέας] ζώο"
+
+    async def fake_request(_client, method, url, **kwargs):
+        calls.append(kwargs["json"]["title"])
+        return _LIVE_CENSORED_422
+
+    monkeypatch.setattr(discourse_sync, "_resolve_category", fake_resolve_category)
+    monkeypatch.setattr(discourse_sync, "_region_name_for_body", fake_region)
+    monkeypatch.setattr(discourse_sync, "_build_topic_title", fake_title)
+    monkeypatch.setattr(discourse_sync, "_request_discourse", fake_request)
+
+    with pytest.raises(RuntimeError, match="Discourse API error 422"):
+        await discourse_sync.create_discourse_topic(bill, db=None)
+    assert len(calls) == 2
+
+
+@pytest.mark.asyncio
+async def test_update_topic_masks_censored_title_words(monkeypatch):
+    bill = _forum_bill("Σύνοψη.")
+    titles = []
+
+    async def fake_resolve_category(_bill, _db):
+        return 42
+
+    async def fake_region(_bill, _db):
+        return ""
+
+    async def fake_title(_bill, _db):
+        return "[Φορέας] Απόφαση για ζώο"
+
+    async def fake_request(_client, method, url, **kwargs):
+        if method == "put" and "/t/-/" in url:
+            titles.append(kwargs["json"]["title"])
+            return _LIVE_CENSORED_422 if "ζώο" in kwargs["json"]["title"] else FakeResponse(200)
+        raise AssertionError((method, url))
+
+    monkeypatch.setattr(discourse_sync, "_resolve_category", fake_resolve_category)
+    monkeypatch.setattr(discourse_sync, "_region_name_for_body", fake_region)
+    monkeypatch.setattr(discourse_sync, "_build_topic_title", fake_title)
+    monkeypatch.setattr(discourse_sync, "_request_discourse", fake_request)
+    monkeypatch.setattr(discourse_sync, "DISCOURSE_API_KEY", "test-key")
+
+    assert await discourse_sync.update_discourse_topic(bill, db=None) is True
+    assert titles == ["[Φορέας] Απόφαση για ζώο", "[Φορέας] Απόφαση για ■■■"]
