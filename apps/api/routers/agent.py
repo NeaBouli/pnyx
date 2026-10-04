@@ -244,9 +244,8 @@ _EKA63_TOPIC_PATTERNS: dict[str, tuple[re.Pattern[str], ...]] = {
 # Topics where a bill/law reference means the citizen is asking about content,
 # not about the platform mechanism (e.g. a bill on deleting bank accounts).
 _EKA63_BILL_EXCLUDED_TOPICS = {"data_deletion", "representative_verification"}
-_EKA63_BILL_CONTEXT = re.compile(
-    r"\bgr\s+\d{4}|\b(bills?|legislation|laws?)\b|νομοσχ|\bνομ(ος|ου|ο|οι|ων|ους)\b"
-)
+# Only references to a bill, not generic "law" (e.g. "delete my data under privacy law").
+_EKA63_BILL_CONTEXT = re.compile(r"\bgr\s+\d{4}|\bbills?\b|νομοσχ")
 
 
 def _fold_accents(text: str) -> str:
@@ -416,19 +415,21 @@ def _canonical_response(question: str, lang: str) -> dict | None:
             "και δεν έχει λήξει, καθώς και αριθμό ΑΔΑ που επαληθεύεται στη "
             "Διαύγεια. Ο ΑΔΑ μόνος του δεν αρκεί. Μετά την επιτυχή επαλήθευση "
             "εκδίδεται token πρόσβασης με ισχύ 24 ωρών και ο κωδικός πρόσκλησης "
-            "θεωρείται χρησιμοποιημένος.",
+            "θεωρείται χρησιμοποιημένος. Εξαίρεση αποτελεί μόνο μια περιορισμένη "
+            "ροή επίδειξης, που δεν ελέγχει τη Διαύγεια.",
             "Representative verification is not open registration. It requires a "
             "valid admin-issued invite code that is unused and not expired, plus an "
             "ADA number that is verified on Diavgeia. An ADA number alone is not "
             "enough. After successful verification, a 24-hour access token is "
-            "issued and the invite code is marked as used.",
+            "issued and the invite code is marked as used. The only exception is a "
+            "restricted demonstration flow, which does not check Diavgeia.",
             "representative_verification",
         )
 
     if eka63_topic == "results_visibility":
         return resp(
-            "Η ορατότητα των αποτελεσμάτων ακολουθεί την κατάσταση του "
-            "νομοσχεδίου. Σε νομοσχέδιο ACTIVE με την προεπιλεγμένη ρύθμιση "
+            "Στη σελίδα του νομοσχεδίου, η ορατότητα των αποτελεσμάτων ακολουθεί "
+            "την κατάσταση του νομοσχεδίου. Σε νομοσχέδιο ACTIVE με την προεπιλεγμένη ρύθμιση "
             "κρυφών αποτελεσμάτων, οι μετρήσεις εμφανίζονται μηδενικές και "
             "σημειώνονται ως κρυφές μέχρι το νομοσχέδιο να περάσει σε κατάσταση "
             "με ορατά αποτελέσματα. Στις "
@@ -436,7 +437,7 @@ def _canonical_response(question: str, lang: str) -> dict | None:
             "συγκεντρωτικά αποτελέσματα είναι ορατά. Νομοσχέδια που δεν είναι "
             "δημόσια δεν εμφανίζουν αποτελέσματα. Για τους τρέχοντες αριθμούς "
             "δείτε τη σελίδα του νομοσχεδίου.",
-            "Result visibility follows the bill status. For an ACTIVE bill with "
+            "On the bill page, result visibility follows the bill status. For an ACTIVE bill with "
             "the default hidden-results setting, the counts are shown as zero and "
             "marked as hidden until the bill enters a results-visible lifecycle "
             "state. In WINDOW_24H, PARLIAMENT_VOTED "

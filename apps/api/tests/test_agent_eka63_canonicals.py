@@ -218,3 +218,27 @@ def test_zk_answer_states_the_current_pause(question: str, lang: str, marker: st
     response = _canonical_response(question, lang)
     assert response is not None
     assert marker in response["answer"]
+
+
+
+@pytest.mark.parametrize(("question", "lang"), [
+    ("How do I delete my data under privacy law?", "en"),
+    ("Πώς διαγράφω τα δεδομένα μου σύμφωνα με τον νόμο για την προστασία δεδομένων;", "el"),
+])
+def test_generic_law_mention_keeps_the_data_deletion_answer(question: str, lang: str) -> None:
+    response = _canonical_response(question, lang)
+    assert response is not None
+    assert response["sources"] == [{"type": "knowledge_base", "topic": "data_deletion"}]
+
+
+def test_representative_answer_qualifies_the_demo_flow_without_its_identifier() -> None:
+    for lang, marker in (("en", "restricted demonstration flow"), ("el", "περιορισμένη ροή επίδειξης")):
+        question = "How do representatives get verified?" if lang == "en" else "Πώς επαληθεύονται οι εκπρόσωποι;"
+        answer = _canonical_response(question, lang)["answer"]
+        assert marker in answer
+        assert "demo-123" not in answer.casefold()
+
+
+def test_results_answer_is_scoped_to_the_bill_page() -> None:
+    assert _canonical_response("Why are results hidden?", "en")["answer"].startswith("On the bill page,")
+    assert _canonical_response("Γιατί τα αποτελέσματα είναι κρυφά;", "el")["answer"].startswith("Στη σελίδα του νομοσχεδίου,")
