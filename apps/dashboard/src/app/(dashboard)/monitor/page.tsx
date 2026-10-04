@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { asRecord, numberFrom } from '@/lib/response'
+import { scraperJobsFrom, type ScraperJob } from '@/lib/health-shapes'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
@@ -11,14 +11,6 @@ interface ModuleHealth {
   error?: string
   last_success?: string
   error_count?: number
-}
-
-interface ScraperJob {
-  name: string
-  last_run: string | null
-  last_success: string | null
-  error_count: number
-  last_error: string | null
 }
 
 export default function MonitorPage() {
@@ -45,22 +37,7 @@ export default function MonitorPage() {
         setModules(mods.value.modules || {})
         setOverall(mods.value.overall || 'unknown')
       }
-      if (jobsResp.status === 'fulfilled') {
-        const raw = jobsResp.value.jobs || jobsResp.value
-        if (Array.isArray(raw)) setJobs(raw)
-        else if (typeof raw === 'object') {
-          setJobs(Object.entries(raw).map(([name, value]) => {
-            const job = asRecord(value)
-            return {
-              name,
-              last_run: typeof job?.last_run === 'string' ? job.last_run : null,
-              last_success: typeof job?.last_success === 'string' ? job.last_success : null,
-              error_count: numberFrom(job?.error_count, 0) ?? 0,
-              last_error: typeof job?.last_error === 'string' ? job.last_error : null,
-            }
-          }))
-        }
-      }
+      if (jobsResp.status === 'fulfilled') setJobs(scraperJobsFrom(jobsResp.value))
     } catch { /* non-critical */ }
     finally {
       if (activeRequest.current === controller) {
