@@ -77,5 +77,8 @@ def test_device_proof_from_bundled_zkey_is_accepted_by_the_pinned_server_key() -
     assert proof["merkle_tree_depth"] == SERVER_DEPTH
     assert verify_semaphore_proof(normalize_native_proof(proof), vkey) is True
 
-    tampered = dict(proof, message=proof["message"] + "-tampered")
-    assert verify_semaphore_proof(normalize_native_proof(tampered), vkey) is False
+    # Valid decimal values that differ by one: the verifier must reject them through the pairing
+    # check (public-input binding), not through a parse error.
+    for field in ("message", "nullifier"):
+        altered = dict(proof, **{field: str(int(proof[field]) + 1)})
+        assert verify_semaphore_proof(normalize_native_proof(altered), vkey) is False, field
