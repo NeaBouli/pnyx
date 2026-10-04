@@ -1510,7 +1510,7 @@ Node: Mobile/Representative Build Toolchain / Expo-to-Metro asset-dimension hop.
 - Ekklesia provides citizen and representative mobile clients built with Expo SDK 54 (`apps/mobile/package.json`, `apps/representative/package.json`).
 - Expo's build toolchain reaches Metro through `@expo/metro`; the installed Expo 54 line pins `@expo/metro@54.2.0` and `metro@0.83.3` (`package-lock.json`).
 - Metro reads image dimensions while bundling assets; 0.83.3 delegates that parsing to `image-size@^1.0.2` (`package-lock.json`).
-- Both apps redirect that dependency to the audited local `image-size@1.2.2-pnyx.0` backport and run its focused regression test (`package.json`, `vendor/image-size/security-regression.test.mjs`).
+- Before this change (pre-migration), both apps redirected that dependency to the audited local `image-size@1.2.2-pnyx.0` backport and ran its focused regression test. After T-506 both apps install the Metro 0.83.8 family through overrides, `image-size` is no longer in either graph, and the backport redirect is removed (`package.json`, `vendor/image-size/metro-image-parser-regression.test.mjs`).
 - Four open Dependabot alerts remain because the package identity/version is still within the affected ranges (alerts 95–98).
 - Metro 0.83.8 is an official 0.83.x security backport that vendors bounded image parsing and removes the `image-size` dependency (`react/metro` commit `809c36d897ef`).
 - Boundary: dependency manifests/locks and existing build/security checks only; no application, native configuration, API, release, deployment or production change.
@@ -1543,7 +1543,7 @@ Node: Mobile/Representative Build Toolchain / Expo-to-Metro asset-dimension hop.
 - `@expo/metro` → Metro 0.83.3: the adapter uses an exact dependency, so a lock refresh alone cannot advance it.
 - Metro 0.83.3 → local image-size backport: npm override preserves Metro's API while replacing the vulnerable registry artifact.
 - Metro 0.83.8 → internal image parser: official patch removes `image-size`; all Metro family packages must stay on the same patch version.
-- App scripts → security/build checks: existing test, typecheck, Expo dependency and native build paths prove the replacement graph.
+- App scripts → security/build checks: tests, typecheck, the Expo dependency check and an Android production export (`expo export --platform android`, Hermes bundle) validate the replacement graph. No Gradle release build or signed AAB was run (`.fleet/reports/T-506.md`).
 
 ## 5. Widerspruch und Lücken
 
@@ -1565,16 +1565,18 @@ mindmap
   root((Expo 54 asset build))
     Mobile manifest and lock
       built: Expo 54.0.37
-      built: local image-size backport
+      built: Metro 0.83.8 overrides
+      historical: local image-size backport, pre-migration
     Representative manifest and lock
       built: Expo 54.0.37
-      built: local image-size backport
+      built: Metro 0.83.8 overrides
+      historical: local image-size backport, pre-migration
     Expo Metro adapter
       built: at-expo/metro 54.2.0
-      gap: exact Metro 0.83.3 pin
+      historical: exact Metro 0.83.3 pin, overridden
     Metro asset parser
-      built: 0.83.3 delegates to image-size
-      built upstream: 0.83.8 internal bounded parser
+      built: 0.83.8 internal bounded parser, current
+      historical: 0.83.3 delegated to image-size
     Security regression
       built: malformed-image corpus
 ```
