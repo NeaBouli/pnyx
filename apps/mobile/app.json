@@ -64,6 +64,7 @@
     },
     "plugins": [
       "./plugins/with-react-native-engine",
+      "./plugins/with-legacy-abi-excludes",
       "expo-secure-store",
       [
         "expo-notifications",
