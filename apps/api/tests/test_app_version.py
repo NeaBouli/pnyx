@@ -21,8 +21,8 @@ def test_mobile_build_metadata_is_consistent() -> None:
 
     assert gradle_name is not None
     assert gradle_code is not None
-    assert expo["version"] == gradle_name.group(1) == "1.0.32"
-    assert expo["android"]["versionCode"] == int(gradle_code.group(1)) == 61
+    assert expo["version"] == gradle_name.group(1)
+    assert expo["android"]["versionCode"] == int(gradle_code.group(1))
 
 
 def test_api_announces_only_the_published_release() -> None:

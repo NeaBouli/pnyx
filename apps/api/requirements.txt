@@ -3,12 +3,12 @@
 
 # Web Framework
 fastapi==0.141.1
-uvicorn[standard]==0.52.4
+uvicorn[standard]==0.54.0
 
 # Database
 asyncpg==0.31.0
-sqlalchemy[asyncio]==2.0.52
-alembic==1.19.1
+sqlalchemy[asyncio]==2.1.1
+alembic==1.20.0
 
 # Cache
 redis==8.1.0
@@ -45,13 +45,13 @@ apscheduler==3.11.3
 python-multipart==0.0.32
 
 # Diavgeia Integration (MOD-21)
-rapidfuzz>=3.14.5
+rapidfuzz>=3.14.6
 unidecode>=1.4.0
 
 # Testing
 pytest==9.1.1
 pytest-asyncio==1.4.0
 aiosqlite==0.22.1
-anyio==4.14.2
+anyio==4.15.1
 respx>=0.23.1
-sentry-sdk[fastapi]>=2.68.1
+sentry-sdk[fastapi]>=2.70.0

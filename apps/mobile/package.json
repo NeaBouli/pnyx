@@ -7,7 +7,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "test": "vitest run && IMAGE_SIZE_PACKAGE_ROOT=./node_modules/image-size node --test ../../vendor/image-size/security-regression.test.mjs && node --test ../../vendor/decode-uri-component/security-regression.test.mjs ../../vendor/decode-uri-component/ghsa-vcc3-absence.test.mjs",
+    "test": "vitest run && node --test ../../vendor/image-size/metro-image-parser-regression.test.mjs && node --test ../../vendor/decode-uri-component/security-regression.test.mjs ../../vendor/decode-uri-component/ghsa-vcc3-absence.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -27,7 +27,6 @@
     "expo-secure-store": "~15.0.8",
     "expo-status-bar": "~3.0.9",
     "expo-task-manager": "~14.0.9",
-    "image-size": "file:../../vendor/image-size/image-size-1.2.2-pnyx.0.tgz",
     "react": "19.1.0",
     "react-native": "0.81.5",
     "react-native-gesture-handler": "~2.28.0",
@@ -55,10 +54,10 @@
     "@expo/plist": {
       "@xmldom/xmldom": "0.8.15"
     },
-    "undici": "6.28.0",
+    "undici": "6.28.1",
     "tar": "7.5.21",
     "minimatch@10.2.5": {
-      "brace-expansion": "5.0.9"
+      "brace-expansion": "5.0.12"
     },
     "@react-native/dev-middleware": {
       "ws": "6.2.4"
@@ -70,17 +69,30 @@
       "ws": "7.5.11"
     },
     "metro": {
-      "image-size": "$image-size",
+      ".": "0.83.8",
       "ws": "7.5.11"
     },
+    "metro-babel-transformer": "0.83.8",
+    "metro-cache": "0.83.8",
+    "metro-cache-key": "0.83.8",
+    "metro-config": "0.83.8",
+    "metro-core": "0.83.8",
+    "metro-file-map": "0.83.8",
+    "metro-minify-terser": "0.83.8",
+    "metro-resolver": "0.83.8",
+    "metro-runtime": "0.83.8",
+    "metro-source-map": "0.83.8",
+    "metro-symbolicate": "0.83.8",
+    "metro-transform-plugins": "0.83.8",
+    "metro-transform-worker": "0.83.8",
     "@expo/cli": {
       "ws": "8.21.0"
     },
     "minimatch@3.1.5": {
-      "brace-expansion": "1.1.18"
+      "brace-expansion": "1.1.21"
     },
     "minimatch@9.0.9": {
-      "brace-expansion": "2.1.4"
+      "brace-expansion": "2.1.7"
     }
   },
   "private": true

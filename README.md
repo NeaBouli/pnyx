@@ -71,7 +71,7 @@ This project uses publicly available government data from:
 | Arweave Archive | Immutable vote audit trail | Beta |
 | POLIS Tickets | Citizen issue tracker with Ed25519 auth | Beta |
 | Dashboard | Admin panel with GitHub OAuth, 15+ pages | Beta |
-| ZK Voting V2 | Optional Semaphore-based anonymous proofs | Guarded Parliament rollout live; ZK Arweave auto-publication live for eligible public Parliament scopes (min group size 5) |
+| ZK Voting V2 | Optional Semaphore-based anonymous proofs | Paused since 2026-10-03 for a security review of the mobile prover (no new ZK votes); Tier-1 voting is unaffected. Re-enabling is an owner decision |
 
 ---
 
@@ -136,6 +136,8 @@ uvicorn main:app --reload
 cd ../web && npm ci && npm run dev
 ```
 
+> **Local only:** `infra/docker/docker-compose.yml` is a developer stack. PostgreSQL and Redis are published on `127.0.0.1` only (`localhost:5432` / `localhost:6379`); the API container reaches them via the Compose service names `db` / `redis`. The dev credentials in this file are public and Redis has no password — never run this compose stack on shared or production hosts, and set `DB_PASSWORD` for anything that is not your own machine.
+
 ### Tests
 ```bash
 # API Tests
@@ -191,7 +193,7 @@ New system-generated bill pills, short summaries, and forum first-post bodies ca
 | Direct APK | v1.0.32 / vC61 published and checksum-verified | [Download](https://github.com/NeaBouli/pnyx/releases/tag/v1.0.32) |
 | Google Play | v1.0.32 / vC61 submitted to Closed Testing; Google review pending | [Join the test](https://play.google.com/apps/testing/ekklesia.gr) |
 | GitHub Release | v1.0.32 / vC61 tag, APK, AAB and checksums published | [Release](https://github.com/NeaBouli/pnyx/releases/tag/v1.0.32) |
-| F-Droid | v1.0.29 / vC584 remains public; v1.0.31 metadata is accepted and v1.0.32 follows the source-tag build cycle | [F-Droid](https://f-droid.org/packages/ekklesia.gr/) |
+| F-Droid | v1.0.32 public (suggested versionCode 614; ABI builds 611-614), built independently by F-Droid from source; v1.0.31 and v1.0.29 remain listed | [F-Droid](https://f-droid.org/packages/ekklesia.gr/) |
 
 ---
 
@@ -201,7 +203,7 @@ New system-generated bill pills, short summaries, and forum first-post bodies ca
 |---|---|---|
 | **Beta** | Now | Active |
 | **Alpha 0.1** | 500 users + 3 NGOs + all official verification gates | Upcoming: holder-authenticated OAuth or fresh challenge-bound QR/eSeal verification is designed in [GH#141](https://github.com/NeaBouli/pnyx/issues/141). It requires an official integration, DPIA, credential-migration design, independent security/privacy review and a sandbox canary; it is not live in Beta |
-| **V1 evolution** | ZK Voting (Semaphore) + Federation | Guarded Parliament rollout live; ZK Arweave auto-publication live for eligible public Parliament scopes (min group size 5) |
+| **V1 evolution** | ZK Voting (Semaphore) + Federation | Guarded Parliament rollout paused since 2026-10-03 (security review); ZK Arweave auto-publication (eligible public Parliament scopes, min group size 5) paused with it |
 | **Platform V2 / Minima** | Gated parallel research; V1 stays production | Phase 0 architecture complete; Maxima delivery, Minima root anchoring, mobile budgets and cryptographic compatibility must pass synthetic PoCs before implementation ([GH#216](https://github.com/NeaBouli/pnyx/issues/216)) |
 
 &rarr; Details: [Roadmap](https://ekklesia.gr/wiki/roadmap.html)

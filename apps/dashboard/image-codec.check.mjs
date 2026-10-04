@@ -14,7 +14,7 @@ test("Next encodes AVIF output with expected dimensions", async () => {
     buffer, contentType: "image/avif", quality: 90, width: 16,
     limitInputPixels: 4096, timeoutInSeconds: 5,
   });
-  // Next 16.3.3 blocks AVIF decoding globally; inspect in an isolated process.
+  // Inspect the AVIF output in an isolated process so input and output checks use separate decoder state.
   const decoded = spawnSync(process.execPath, ["-e", "require('sharp')(require('fs').readFileSync(0)).metadata().then(m => process.stdout.write(JSON.stringify(m)))"], { input: result, timeout: 10000 });
   assert.equal(decoded.status, 0, decoded.stderr?.toString());
   const metadata = JSON.parse(decoded.stdout.toString());
@@ -63,12 +63,33 @@ for (const format of ["png", "jpeg", "webp"]) {
   });
 }
 
-test("Next retains its existing AVIF input restriction", async () => {
+test("Next decodes AVIF input within the configured pixel limit", async () => {
   const buffer = await sharp({ create: { width: 16, height: 16, channels: 3, background: "blue" } }).avif().toBuffer();
+  const result = await optimizeImage({
+    buffer, contentType: "image/webp", quality: 90, width: 8,
+    limitInputPixels: 4096, timeoutInSeconds: 5,
+  });
+  const metadata = await sharp(result).metadata();
+  assert.equal(metadata.format, "webp");
+  assert.equal(metadata.width, 8);
+  assert.equal(metadata.height, 8);
+});
+
+test("Next enforces the pixel limit for AVIF input", async () => {
+  const buffer = await sharp({ create: { width: 65, height: 65, channels: 3, background: "blue" } }).avif().toBuffer();
   await assert.rejects(optimizeImage({
     buffer, contentType: "image/webp", quality: 90, width: 8,
     limitInputPixels: 4096, timeoutInSeconds: 5,
-  }), /unsupported image format/i);
+  }), /pixel limit/i);
+});
+
+test("Next rejects truncated AVIF input", async () => {
+  const buffer = await sharp({ create: { width: 16, height: 16, channels: 3, background: "blue" } }).avif().toBuffer();
+  await assert.rejects(optimizeImage({
+    buffer: buffer.subarray(0, Math.floor(buffer.length / 2)),
+    contentType: "image/webp", quality: 90, width: 8,
+    limitInputPixels: 4096, timeoutInSeconds: 5,
+  }));
 });
 
 test("Next rejects malformed input instead of returning a successful image", async () => {
