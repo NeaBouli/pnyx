@@ -1,11 +1,32 @@
-"""Seed knowledge base with ekklesia platform knowledge for RAG Agent."""
+"""Canonical RAG knowledge-base catalog and its exact database synchronizer.
+
+``ENTRIES`` is the only repository authority for the ``knowledge_base`` table.
+
+    python scripts/seed_knowledge_base.py sync   # one transaction: table := ENTRIES
+    python scripts/seed_knowledge_base.py check  # read-only drift check
+
+Rows are matched on the natural key ``(category, title_en)``. Sync keeps the
+lowest id per key, updates changed fields, inserts missing rows and deletes
+stale rows and duplicate keys, then re-verifies before commit.
+Exit codes: 0 = table matches ENTRIES, 1 = drift (check), 2 = error/rolled back.
+"""
+from __future__ import annotations
+
+import argparse
 import asyncio
+import json
 import os
 import sys
+from dataclasses import dataclass, field
+from typing import Any, Iterable, Sequence
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from datetime import datetime, timezone
-from sqlalchemy import text
+from sqlalchemy import delete, insert, select, text, update
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
+
+from database import engine
+from models import KnowledgeBase
 
 ENTRIES = [
     ("mission", "Τι είναι η εκκλησία;", "What is ekklesia?",
@@ -14,8 +35,8 @@ ENTRIES = [
      '["ekklesia","democracy","parliament","civic","initiative","vote"]', 1),
 
     ("privacy", "Πώς προστατεύεται η ανωνυμία μου;", "How is my anonymity protected?",
-     "Η εκκλησία χρησιμοποιεί κρυπτογραφία Ed25519 για υπογραφές ψήφων. Ο αριθμός τηλεφώνου ΠΟΤΕ δεν αποθηκεύεται. Μόνο κρυπτογραφικό hash (nullifier) αποθηκεύεται — δεν μπορεί να αντιστραφεί. Το ιδιωτικό κλειδί αποθηκεύεται ΜΟΝΟ στη συσκευή σου.",
-     "ekklesia uses Ed25519 cryptography for vote signatures. Phone number is NEVER stored. Only a cryptographic nullifier hash is stored — it cannot be reversed. The private key is stored ONLY on your device.",
+     "Η εκκλησία χρησιμοποιεί κρυπτογραφία Ed25519 για υπογραφές ψήφων. Ο αριθμός τηλεφώνου ΠΟΤΕ δεν αποθηκεύεται. Μόνο κρυπτογραφικό hash (nullifier) αποθηκεύεται — δεν μπορεί να αντιστραφεί. Το ιδιωτικό κλειδί μένει στη συσκευή σου (Web Beta: localStorage του browser· εφαρμογή κινητού: Expo SecureStore). Ο server το δημιουργεί μία φορά κατά την επαλήθευση και σου το παραδίδει μόνο μία φορά· δεν το αποθηκεύει.",
+     "ekklesia uses Ed25519 cryptography for vote signatures. Phone number is NEVER stored. Only a cryptographic nullifier hash is stored — it cannot be reversed. The private key stays on your device (Web Beta: browser localStorage; mobile app: Expo SecureStore). The server creates it once during verification and hands it to you a single time; it does not store it.",
      '["privacy","anonymity","cryptography","Ed25519","nullifier","phone"]', 1),
 
     ("process", "Πώς ψηφίζω;", "How do I vote?",
@@ -59,9 +80,9 @@ ENTRIES = [
      '["nullifier","hash","privacy","phone","unique","Ed25519"]', 1),
 
     ("privacy", "Τι γίνεται αν χάσω το ιδιωτικό κλειδί;", "What if I lose my private key?",
-     "Το ιδιωτικό κλειδί αποθηκεύεται μόνο στη συσκευή σας. Ο server δεν το γνωρίζει και δεν μπορεί να το ανακτήσει. Αν χαθεί, ακολουθείτε μόνο την επίσημη ροή επαλήθευσης/επανέκδοσης που παρέχει η εφαρμογή· δεν υπάρχει μυστική ανάκτηση από τον server.",
-     "Your private key is stored only on your device. The server does not know it and cannot recover it. If it is lost, use only the official app re-verification/key-rotation flow; there is no hidden server-side recovery process.",
-     '["private key","lost key","recovery","device","keychain","keystore"]', 1),
+     "Το σημείο αποθήκευσης του ιδιωτικού κλειδιού εξαρτάται από την πλατφόρμα. Web Beta: φυλάσσεται στο localStorage του browser — απλή αποθήκευση browser, όχι iOS Keychain ή Android Keystore. Εφαρμογή κινητού: αποθηκεύεται μέσω Expo SecureStore, που χρησιμοποιεί Android Keystore και, στην υλοποιημένη διαδρομή κώδικα iOS, iOS Keychain. Ο server δημιουργεί το ζεύγος κλειδιών μία φορά κατά την επαλήθευση και σας παραδίδει το ιδιωτικό κλειδί μόνο μία φορά· δεν το αποθηκεύει και δεν μπορεί να το ανακτήσει αργότερα. Αν χαθεί, ακολουθείτε μόνο την επίσημη ροή επαλήθευσης/επανέκδοσης που παρέχει η εφαρμογή· δεν υπάρχει μυστική ανάκτηση από τον server.",
+     "Where your private key is stored depends on the platform. Web Beta: it is kept in the browser's localStorage — plain browser storage, not iOS Keychain or Android Keystore. Mobile app: it is stored via Expo SecureStore, which uses Android Keystore and, in the implemented iOS code path, iOS Keychain. The server creates the key pair once during verification and hands you the private key a single time; it does not store it and cannot recover it later. If it is lost, use only the official app re-verification/key-rotation flow; there is no hidden server-side recovery process.",
+     '["private key","lost key","recovery","device","localStorage","SecureStore","keychain","keystore"]', 1),
 
     ("process", "Πώς κατεβάζω την εφαρμογή Android;", "How do I download the Android app?",
      "Η εφαρμογή Android διανέμεται μέσω των επίσημων καναλιών που ανακοινώνει το ekklesia.gr, όπως η άμεση λήψη APK, F-Droid/IzzyOnDroid ή Google Play όταν είναι διαθέσιμο. Χρησιμοποιείτε μόνο συνδέσμους από το ekklesia.gr ή το επίσημο repository.",
@@ -80,36 +101,170 @@ ENTRIES = [
 ]
 
 
-async def seed():
-    from database import async_engine
-    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-    Session = async_sessionmaker(async_engine, class_=AsyncSession)
+FIELDS = ("category", "title_el", "title_en", "content_el", "content_en", "keywords", "priority")
+_TEXT_FIELDS = ("category", "title_el", "title_en", "content_el", "content_en")
+_CATEGORY_MAX = 50  # models.KnowledgeBase.category String(50)
+TABLE = KnowledgeBase.__table__
 
-    async with Session() as db:
-        inserted = 0
-        updated = 0
-        for cat, title_el, title_en, content_el, content_en, keywords, priority in ENTRIES:
-            existing = await db.execute(text(
-                "SELECT id FROM knowledge_base WHERE category = :cat AND title_en = :ten LIMIT 1"
-            ), {"cat": cat, "ten": title_en})
-            row = existing.first()
-            params = {"cat": cat, "tel": title_el, "ten": title_en, "cel": content_el, "cen": content_en, "kw": keywords, "pri": priority}
-            if row:
-                await db.execute(text(
-                    "UPDATE knowledge_base SET title_el = :tel, content_el = :cel, content_en = :cen, "
-                    "keywords = :kw::jsonb, priority = :pri, updated_at = NOW() WHERE id = :id"
-                ), {**params, "id": row.id})
-                updated += 1
-            else:
-                await db.execute(text(
-                    "INSERT INTO knowledge_base (category, title_el, title_en, content_el, content_en, keywords, priority) "
-                    "VALUES (:cat, :tel, :ten, :cel, :cen, :kw::jsonb, :pri)"
-                ), params)
-                inserted += 1
+EXIT_OK = 0
+EXIT_DRIFT = 1
+EXIT_ERROR = 2
 
-        await db.commit()
-        print(f"Knowledge base synced: {inserted} inserted, {updated} updated")
+NaturalKey = tuple[Any, Any]
+Catalog = dict[NaturalKey, dict[str, Any]]
+
+
+class CatalogError(ValueError):
+    """ENTRIES is malformed; nothing may be written."""
+
+
+class SyncVerificationError(RuntimeError):
+    """The table still differs from ENTRIES after applying the plan."""
+
+
+def canonical_rows(entries: Sequence[tuple] = ENTRIES) -> Catalog:
+    """Validate ENTRIES and return it keyed by the unique natural key."""
+    rows: Catalog = {}
+    for index, entry in enumerate(entries):
+        if len(entry) != len(FIELDS):
+            raise CatalogError(f"entry {index}: expected {len(FIELDS)} fields, got {len(entry)}")
+        values = dict(zip(FIELDS, entry))
+        for name in _TEXT_FIELDS:
+            if not isinstance(values[name], str) or not values[name].strip():
+                raise CatalogError(f"entry {index}: {name} must be a non-empty string")
+        if len(values["category"]) > _CATEGORY_MAX:
+            raise CatalogError(f"entry {index}: category longer than {_CATEGORY_MAX}")
+        try:
+            keywords = json.loads(values["keywords"])
+        except (TypeError, ValueError) as exc:
+            raise CatalogError(f"entry {index}: keywords must be a JSON array string") from exc
+        if not isinstance(keywords, list) or not all(isinstance(k, str) and k.strip() for k in keywords):
+            raise CatalogError(f"entry {index}: keywords must be a JSON array of non-empty strings")
+        values["keywords"] = keywords
+        if type(values["priority"]) is not int:
+            raise CatalogError(f"entry {index}: priority must be an int")
+        key = (values["category"], values["title_en"])
+        if key in rows:
+            raise CatalogError(f"entry {index}: duplicate natural key {key!r}")
+        rows[key] = values
+    return rows
+
+
+@dataclass
+class SyncPlan:
+    inserts: list[NaturalKey] = field(default_factory=list)
+    updates: list[tuple[int, NaturalKey]] = field(default_factory=list)
+    stale: list[int] = field(default_factory=list)
+    duplicates: list[int] = field(default_factory=list)
+
+    @property
+    def deletes(self) -> list[int]:
+        return sorted(self.stale + self.duplicates)
+
+    @property
+    def is_empty(self) -> bool:
+        return not (self.inserts or self.updates or self.stale or self.duplicates)
+
+    def summary(self) -> str:
+        """Counts, keys and ids only — never row content."""
+        parts = [
+            f"missing={len(self.inserts)}",
+            f"changed={len(self.updates)}",
+            f"stale={len(self.stale)}",
+            f"duplicate={len(self.duplicates)}",
+        ]
+        details = [f"  missing {key!r}" for key in self.inserts]
+        details += [f"  changed id={row_id} {key!r}" for row_id, key in self.updates]
+        details += [f"  stale id={row_id}" for row_id in self.stale]
+        details += [f"  duplicate id={row_id}" for row_id in self.duplicates]
+        return " ".join(parts) + ("\n" + "\n".join(details) if details else "")
+
+
+def plan_sync(catalog: Catalog, db_rows: Iterable[dict[str, Any]]) -> SyncPlan:
+    """Diff DB rows against the catalog. The lowest id per natural key is kept."""
+    by_key: dict[NaturalKey, list[dict[str, Any]]] = {}
+    for row in sorted(db_rows, key=lambda r: r["id"]):
+        by_key.setdefault((row["category"], row["title_en"]), []).append(row)
+
+    plan = SyncPlan()
+    for key, rows in by_key.items():
+        if key not in catalog:
+            plan.stale.extend(row["id"] for row in rows)
+            continue
+        keeper, *extra = rows
+        plan.duplicates.extend(row["id"] for row in extra)
+        if any(keeper[name] != catalog[key][name] for name in FIELDS):
+            plan.updates.append((keeper["id"], key))
+    plan.inserts = [key for key in catalog if key not in by_key]
+    return plan
+
+
+async def load_rows(conn: AsyncConnection) -> list[dict[str, Any]]:
+    result = await conn.execute(
+        select(TABLE.c.id, *(TABLE.c[name] for name in FIELDS)).order_by(TABLE.c.id)
+    )
+    return [dict(row._mapping) for row in result]
+
+
+async def apply_plan(conn: AsyncConnection, catalog: Catalog, plan: SyncPlan) -> None:
+    if plan.deletes:
+        await conn.execute(delete(TABLE).where(TABLE.c.id.in_(plan.deletes)))
+    for row_id, key in plan.updates:
+        await conn.execute(update(TABLE).where(TABLE.c.id == row_id).values(**catalog[key]))
+    for key in plan.inserts:
+        await conn.execute(insert(TABLE).values(**catalog[key]))
+
+
+async def sync(conn: AsyncConnection, catalog: Catalog) -> SyncPlan:
+    """Make the table equal the catalog inside the caller's transaction."""
+    # Blocks concurrent writers (incl. a second sync); runtime reads stay unblocked.
+    await conn.execute(text("LOCK TABLE knowledge_base IN SHARE ROW EXCLUSIVE MODE"))
+    plan = plan_sync(catalog, await load_rows(conn))
+    await apply_plan(conn, catalog, plan)
+    remaining = plan_sync(catalog, await load_rows(conn))
+    if not remaining.is_empty:
+        raise SyncVerificationError(remaining.summary())
+    return plan
+
+
+async def check(conn: AsyncConnection, catalog: Catalog) -> SyncPlan:
+    """Read-only diff; the transaction is marked READ ONLY before any read."""
+    await conn.execute(text("SET TRANSACTION READ ONLY"))
+    return plan_sync(catalog, await load_rows(conn))
+
+
+async def run(mode: str, db_engine: AsyncEngine) -> int:
+    catalog = canonical_rows(ENTRIES)  # validated before any connection is opened
+    try:
+        if mode == "sync":
+            async with db_engine.begin() as conn:  # commit on success, rollback on any error
+                plan = await sync(conn, catalog)
+            print(f"knowledge_base sync ok ({len(catalog)} rows): {plan.summary()}")
+            return EXIT_OK
+        async with db_engine.connect() as conn:
+            plan = await check(conn, catalog)
+            await conn.rollback()
+        if plan.is_empty:
+            print(f"knowledge_base check ok: {len(catalog)} rows match ENTRIES")
+            return EXIT_OK
+        print(f"knowledge_base drift: {plan.summary()}", file=sys.stderr)
+        return EXIT_DRIFT
+    finally:
+        await db_engine.dispose()
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Sync or check knowledge_base against ENTRIES.")
+    parser.add_argument("mode", choices=("sync", "check"))
+    args = parser.parse_args(argv)
+    try:
+        return asyncio.run(run(args.mode, engine))
+    except (CatalogError, SyncVerificationError) as exc:
+        print(f"knowledge_base {args.mode} failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+    except Exception as exc:  # DB errors may echo statements/params; report the type only
+        print(f"knowledge_base {args.mode} failed: {type(exc).__name__}", file=sys.stderr)
+    return EXIT_ERROR
 
 
 if __name__ == "__main__":
-    asyncio.run(seed())
+    sys.exit(main())

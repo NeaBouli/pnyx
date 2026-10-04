@@ -4,91 +4,70 @@ import android.system.Os
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import expo.modules.kotlin.exception.CodedException
-import java.io.File
 import uniffi.mopro.*
 
 class ProofModule : Module() {
 
-  private fun prepareWritableProverDirectory() {
+  /**
+   * Points semaphore-rs at the app-private prover directory and installs the bundled, hash-pinned
+   * zkey there before every native call, so the library never reaches its download branch.
+   */
+  private fun prepareProver() {
     val reactContext = appContext.reactContext
       ?: throw CodedException("ProofStorageError", "React context is not available for Semaphore prover storage.", null)
-    val proofDir = File(reactContext.filesDir, "semaphore-prover")
-    if (!proofDir.exists() && !proofDir.mkdirs()) {
-      throw CodedException("ProofStorageError", "Unable to create Semaphore prover storage directory.", null)
+    try {
+      val proofDir = BundledZkey.proverDir(reactContext)
+      Os.setenv("TMPDIR", proofDir.absolutePath, true)
+      BundledZkey.ensure(reactContext, proofDir)
+    } catch (e: BundledZkey.ZkeyException) {
+      throw CodedException("ProofStorageError", e.message ?: "Semaphore proving key unavailable.", e)
     }
-    Os.setenv("TMPDIR", proofDir.absolutePath, true)
+  }
+
+  private fun requireDepth(depth: Int) {
+    try {
+      BundledZkey.requireSupportedDepth(depth)
+    } catch (e: BundledZkey.ZkeyException) {
+      throw CodedException("UnsupportedDepth", e.message ?: "Unsupported Merkle tree depth.", e)
+    }
   }
 
   override fun definition() = ModuleDefinition {
     Name("Proof")
 
-    AsyncFunction("generateSemaphoreProof") { 
-      privateKey: ByteArray, 
-      members: List<List<Int>>, 
-      message: String, 
-      scope: String, 
-      treeDepth: Int 
+    AsyncFunction("generateSemaphoreProof") {
+      privateKey: ByteArray,
+      members: List<List<Int>>,
+      message: String,
+      scope: String,
+      treeDepth: Int
     ->
+      requireDepth(treeDepth)
+      prepareProver()
       try {
-        prepareWritableProverDirectory()
-
-        // Create Identity from private key
         val identity = Identity(privateKey)
-        
-        // Create Group from members
         val membersData = members.map { member -> member.map { it.toByte() }.toByteArray() }
         val group = Group(members = membersData)
-        
-        // Generate semaphore proof with retry logic
-        var proof: String? = null
-        var lastException: Exception? = null
-        
-        // Try up to 3 times with exponential backoff
-        for (attempt in 1..3) {
-          try {
-            proof = generateSemaphoreProof(
-              identity = identity,
-              group = group,
-              message = message,
-              scope = scope,
-              merkleTreeDepth = treeDepth.toUShort()
-            )
-            break // Success, exit retry loop
-          } catch (e: ProofException) {
-            lastException = e
-            if (e.message?.contains("dns error") == true || e.message?.contains("network") == true) {
-              // Network error, wait before retry
-              if (attempt < 3) {
-                Thread.sleep(1000L * attempt) // Exponential backoff: 1s, 2s
-                continue
-              }
-            }
-            // Non-network error or max attempts reached, throw immediately
-            throw e
-          }
-        }
-        
-        if (proof == null) {
-          throw lastException ?: Exception("Failed to generate proof after 3 attempts")
-        }
-        
-        return@AsyncFunction proof
+        return@AsyncFunction generateSemaphoreProof(
+          identity = identity,
+          group = group,
+          message = message,
+          scope = scope,
+          merkleTreeDepth = treeDepth.toUShort()
+        )
       } catch (e: ProofException) {
-        val errorMessage = when {
-          e.message?.contains("dns error") == true -> "Network error: Unable to download required files. Please check your internet connection."
-          e.message?.contains("zkey") == true -> "Proof generation error: Unable to access required cryptographic files."
-          else -> "Proof generation failed: ${e.message}"
-        }
-        throw CodedException("ProofGenerationError", errorMessage, e)
+        throw CodedException("ProofGenerationError", "Proof generation failed: ${e.message}", e)
       } catch (e: Exception) {
         throw CodedException("ProofGenerationError", "Unexpected error generating proof: ${e.message}", e)
       }
     }
 
     AsyncFunction("verifySemaphoreProof") { proof: String ->
+      // semaphore-rs verify_proof loads the zkey for the depth declared inside the proof.
+      requireDepth(BundledZkey.depthOf(proof))
+      prepareProver()
       try {
-        val isValid = verifySemaphoreProof(proof)
-        return@AsyncFunction isValid
+        return@AsyncFunction verifySemaphoreProof(proof)
       } catch (e: ProofException) {
         throw CodedException("ProofVerificationError", "Failed to verify proof: ${e.message}", e)
       } catch (e: Exception) {

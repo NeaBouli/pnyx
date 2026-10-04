@@ -14,23 +14,30 @@ permissions:
 jobs:
   secret-scan:
     name: Secret Detection
+    # GitHub-hosted only: security jobs rely on the hosted image toolchain.
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v3
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   dependency-audit:
     name: Dependency Audit
+    # GitHub-hosted only: uses the preinstalled npm/pip/cargo of the hosted image.
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
 
       - name: Check for package.json
         id: check-npm
@@ -41,13 +48,19 @@ jobs:
             echo "has_npm=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: npm audit gate self-test
+        run: node --test scripts/npm-audit-gate.check.mjs
+
       - name: npm audit (all workspaces)
         run: |
           failed=0
           while IFS= read -r lockfile; do
             dir="$(dirname "$lockfile")"
             echo "=== npm audit: $dir ==="
-            (cd "$dir" && npm audit --audit-level=high) || failed=1
+            # Gate: high/critical fail unless covered by an unexpired entry in
+            # .github/npm-audit-allowlist.json for this workspace; entries expire on review_by.
+            ws="${dir#./}"
+            (cd "$dir" && { npm audit --json || true; } | node "$GITHUB_WORKSPACE/scripts/npm-audit-gate.mjs" "$ws") || failed=1
           done < <(find . -maxdepth 3 -name package-lock.json -not -path "*/node_modules/*" | sort)
           exit $failed
 
@@ -76,7 +89,9 @@ jobs:
 
   security-summary:
     name: Security Summary
+    # GitHub-hosted only (summary of the security jobs).
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [secret-scan, dependency-audit]
     if: always()
     steps:
