@@ -159,6 +159,14 @@ ALLOWED_DEMO_CYCLE_BILINGUAL_REMOVALS = {
     ("24ω Παράθυρο", "24h Window"),
     ("Αντιπροσωπευτικότητα", "Representativity"),
 }
+# T-592 (owner-approved 2026-10-04): the roadmap line no longer says the guarded Parliament
+# ZK rollout is live; it is paused since 2026-10-03 for a security review.
+ALLOWED_ZK_PAUSE_BILINGUAL_REMOVALS = {
+    ("Semaphore ZK Proofs — guarded Parliament rollout ενεργό",
+     "Semaphore ZK Proofs — guarded Parliament rollout live"),
+    ("ZK Arweave — αυτόματη δημοσίευση για Βουλή από ομάδα 5+",
+     "ZK Arweave — auto-publication for Parliament groups of 5+"),
+}
 ALLOWED_DEMO_CYCLE_INTERACTION_COUNTS = {"add_event_listener_count": 8, "set_timeout_count": 2}
 ALLOWED_DEMO_CYCLE_FORM_CONTROLS = ({"tag": "button", "type": "button", "id": "cycleToggle"},)
 
@@ -314,7 +322,8 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
         (item.get("data_el", ""), item.get("data_en", ""))
         for item in baseline["bilingual"]["pairs"]
     )
-    for pair in REMOVABLE_HEADER_PAIRS | ALLOWED_R5_BILINGUAL_REMOVALS | ALLOWED_DEMO_CYCLE_BILINGUAL_REMOVALS:
+    for pair in (REMOVABLE_HEADER_PAIRS | ALLOWED_R5_BILINGUAL_REMOVALS
+                 | ALLOWED_DEMO_CYCLE_BILINGUAL_REMOVALS | ALLOWED_ZK_PAUSE_BILINGUAL_REMOVALS):
         if baseline_pairs[pair]:
             baseline_pairs[pair] -= 1
             if not baseline_pairs[pair]:

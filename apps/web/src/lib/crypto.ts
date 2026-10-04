@@ -53,22 +53,6 @@ export function hexToPublicKey(hex: string): Uint8Array {
   return hexToBytes(hex);
 }
 
-// ─── Nullifier Hash ──────────────────────────────────────────────────────────
-
-/**
- * Compute nullifier hash: SHA-256(phone + ":" + serverSalt)
- * Must match Python: hashlib.sha256(f"{phone}:{salt}".encode()).hexdigest()
- */
-export async function computeNullifier(
-  phoneNumber: string,
-  serverSalt: string
-): Promise<string> {
-  const raw = `${phoneNumber}:${serverSalt}`;
-  const encoded = new TextEncoder().encode(raw);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
-  return bytesToHex(new Uint8Array(hashBuffer));
-}
-
 // ─── Vote Signing ────────────────────────────────────────────────────────────
 
 /**
