@@ -136,7 +136,7 @@ jobs:
             verify: node --test ../../scripts/client-yaml-security.check.cjs image-codec.check.mjs ../../scripts/static-docs-remote-sinks.check.mjs ../../scripts/public-seo.check.mjs && npm run lint && npm run typecheck && npm test && npm run build
           - name: Dashboard
             path: apps/dashboard
-            verify: node --test ../../scripts/client-yaml-security.check.cjs image-codec.check.mjs && npm run lint && npm run typecheck && npm run build
+            verify: node --test ../../scripts/client-yaml-security.check.cjs image-codec.check.mjs health-shapes.test.mjs && npm run lint && npm run typecheck && npm run build
           - name: Mobile
             path: apps/mobile
             verify: node --test ../../scripts/client-yaml-security.check.cjs && npx --no-install expo install --check && npm run typecheck && npm test
