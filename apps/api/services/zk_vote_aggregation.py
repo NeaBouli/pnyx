@@ -9,7 +9,7 @@ from sqlalchemy import DateTime, String, cast, func, select, union_all
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import CitizenVote, ParliamentBill, VoteChoice, ZkVoteReceipt
-from services.bill_visibility import public_bill_filter
+from services.bill_visibility import public_bill_filter, results_visible_filter
 from services.zk_tier_lock import VoteScopeType, canonical_vote_scope_id
 
 
@@ -79,11 +79,15 @@ async def count_public_votes(
     *,
     since: datetime | None = None,
 ) -> int:
-    """Count public Tier-1 and ZK votes with identical bill visibility rules."""
+    """Count public Tier-1 and ZK votes with identical bill visibility rules.
+
+    Votes of a running vote with hidden results are not counted, so global turnout counters
+    cannot reveal its progress (T-599).
+    """
     tier1_query = (
         select(func.count(CitizenVote.id))
         .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
-        .where(public_bill_filter(), ~CitizenVote.bill_id.like("DEMO-%"))
+        .where(public_bill_filter(), results_visible_filter(), ~CitizenVote.bill_id.like("DEMO-%"))
     )
     if since is not None:
         tier1_query = tier1_query.where(CitizenVote.created_at >= since)
@@ -97,6 +101,7 @@ async def count_public_votes(
         )
         .where(
             public_bill_filter(),
+            results_visible_filter(),
             ParliamentBill.source == "PARLIAMENT",
             ~ParliamentBill.id.like("DEMO-%"),
             ZkVoteReceipt.vote_commitment.in_([choice.value for choice in VoteChoice]),
