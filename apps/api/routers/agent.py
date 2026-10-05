@@ -198,6 +198,73 @@ _BILL_QUERY_PATTERNS = [
 ]
 
 
+# EKA-63 canonical topics. Matched against the accent-folded, punctuation-free
+# question so Greek with or without tonos behaves the same. Patterns require a
+# topic phrase, never a bare generic word such as "delete" or "results".
+_EKA63_TOPIC_PATTERNS: dict[str, tuple[re.Pattern[str], ...]] = {
+    "data_deletion": tuple(re.compile(p) for p in (
+        r"\b(delete|erase|remove|wipe)\s+(all\s+)?(of\s+)?(my|our)\s+(personal\s+)?"
+        r"(data|account|identity|profile|information|info)\b",
+        r"\b(account|data|identity)\s+deletion\b",
+        r"\bdeletion\s+of\s+(all\s+)?(my|our)\s+(personal\s+)?(data|account|identity)\b",
+        r"\brevok\w*\s+(my\s+)?(identity|key|verification)\b",
+        r"\b(identity|key|verification)\s+revocation\b",
+        r"(διαγραφ|διαγραψ|σβησ)\w*\s+(ολα\s+)?(τα\s+|τον\s+|την\s+|το\s+)?(προσωπικα\s+)?"
+        r"(δεδομενα|λογαριασμο|ταυτοτητα|στοιχεια|προφιλ)\s+μου\b",
+        r"διαγραφη\s+(του\s+|των\s+|της\s+)?(λογαριασμου|δεδομενων|ταυτοτητας|στοιχειων)\b",
+        r"ανακ(αλ|λη)\w*\s+(την\s+|του\s+|της\s+|το\s+)?(ταυτοτητ|κλειδι|επαληθευσ)",
+    )),
+    "zk_semaphore": tuple(re.compile(p) for p in (
+        r"\b(zk|zkp|zk\s+proofs?|zk\s+snarks?|semaphore|groth16)\b",
+        r"\bzero\s+knowledge\b",
+        r"μηδενικ\w*\s+γνωσ",
+        r"σεμαφορ",
+    )),
+    "representative_verification": tuple(re.compile(p) for p in (
+        r"\b(verify|verification|register|registration|sign\s+up|log\s+in|login)\b"
+        r"[\w\s]{0,30}\b(representative|elected\s+official|mayor|councillor|councilor)s?\b",
+        r"\b(representative|elected\s+official|mayor|councillor|councilor)s?\b[\w\s]{0,30}"
+        r"\b(verify|verified|verification|register|registration|invite|invitation|sign\s+up|log\s+in|login)\b",
+        r"\binvite\s+code\b",
+        r"(επαληθευ|πιστοποι|εγγραφ|εγγραψ|συνδε)\w*[\w\s]{0,30}"
+        r"(εκπροσωπ|αιρετ|δημαρχ|δημοτικ\w*\s+συμβουλ|περιφερειαρχ)",
+        r"(εκπροσωπ|αιρετ|δημαρχ|δημοτικ\w*\s+συμβουλ|περιφερειαρχ)\w*[\w\s]{0,30}"
+        r"(επαληθευ|πιστοποι|εγγραφ|εγγραψ|συνδε|προσκλησ)",
+        r"κωδικ\w*\s+προσκλησ",
+    )),
+    "results_visibility": tuple(re.compile(p) for p in (
+        r"\bresults?\b[\w\s]{0,40}\b(visible|invisible|hidden|shown|revealed|zero|zeroed|zeros)\b",
+        r"\b(see|view)\b[\w\s]{0,20}\bresults?\b[\w\s]{0,20}\b(before|during|while|until|yet)\b",
+        r"\bresults?\s+visibility\b",
+        r"\bhidden\s+results?\b",
+        r"αποτελεσμ\w*[\w\s]{0,40}(ορατ|κρυφ|κρυμμεν|εμφανιζ|εμφανιστ|φαινοντ|μηδεν)",
+        r"(ορατ|κρυφ|κρυμμεν|εμφανιζ|εμφανιστ|φαινοντ)\w*[\w\s]{0,20}αποτελεσμ",
+    )),
+}
+# Topics where a bill/law reference means the citizen is asking about content,
+# not about the platform mechanism (e.g. a bill on deleting bank accounts).
+_EKA63_BILL_EXCLUDED_TOPICS = {"data_deletion", "representative_verification"}
+# Only references to a bill, not generic "law" (e.g. "delete my data under privacy law").
+_EKA63_BILL_CONTEXT = re.compile(r"\bgr\s+\d{4}|\bbills?\b|νομοσχ")
+
+
+def _fold_accents(text: str) -> str:
+    decomposed = unicodedata.normalize("NFD", text)
+    return "".join(ch for ch in decomposed if unicodedata.category(ch) != "Mn")
+
+
+def _eka63_topic(normalized_q: str) -> str | None:
+    """Return the EKA-63 topic id for a question, or None."""
+    folded = " ".join(_fold_accents(normalized_q).split())
+    is_bill_query = bool(_EKA63_BILL_CONTEXT.search(folded))
+    for topic, patterns in _EKA63_TOPIC_PATTERNS.items():
+        if topic in _EKA63_BILL_EXCLUDED_TOPICS and is_bill_query:
+            continue
+        if any(p.search(folded) for p in patterns):
+            return topic
+    return None
+
+
 def _is_greek(lang: str) -> bool:
     return (lang or "el").lower().startswith("el")
 
@@ -294,6 +361,91 @@ def _canonical_response(question: str, lang: str) -> dict | None:
 
     if _is_payment_intent(question):
         return _payments_paused_response(question, lang)
+
+    # EKA-63: checked before the broad substring topics below so that e.g.
+    # "διαύγ"/"δήμ" (municipal) or "nullifier" cannot pre-empt these facts.
+    eka63_topic = _eka63_topic(normalized_q)
+
+    if eka63_topic == "data_deletion":
+        return resp(
+            "Στον server υπάρχει μηχανισμός ανάκλησης ταυτότητας: με τον αριθμό "
+            "τηλεφώνου και το αντίστοιχο nullifier hash, η εγγραφή ταυτότητας "
+            "σημειώνεται ως ανακληθείσα (REVOKED) και μπορείτε στη συνέχεια να "
+            "επαληθευτείτε ξανά. Η ανάκληση αλλάζει μόνο την κατάσταση του "
+            "κλειδιού· δεν είναι γενική διαγραφή όλων των δεδομένων. Αυτή τη "
+            "στιγμή η εφαρμογή και ο ιστότοπος δεν προσφέρουν κουμπί ανάκλησης ή "
+            "διαγραφής. Το ιδιωτικό κλειδί υπάρχει μόνο στη συσκευή σας.",
+            "The server has an identity revocation mechanism: with your phone "
+            "number and the matching nullifier hash, the identity record is marked "
+            "as revoked (REVOKED) and you can then verify again. Revocation only "
+            "changes the key status; it is not a general deletion of all data. "
+            "At the moment the app and the website do not offer a revocation or "
+            "deletion button. Your private key exists only on your device.",
+            "data_deletion",
+        )
+
+    if eka63_topic == "zk_semaphore":
+        return resp(
+            "Η ψηφοφορία με αποδείξεις μηδενικής γνώσης (ZK, Semaphore) είναι "
+            "προστατευμένη λειτουργία και δεν είναι γενικά διαθέσιμη. Ο server "
+            "επαληθεύει μόνο δημόσιες αποδείξεις Semaphore και μόνο όταν η "
+            "λειτουργία έχει ενεργοποιηθεί ρητά για εγκεκριμένα πεδία ψηφοφορίας. "
+            "Εκτός ελεγχόμενων δοκιμών, αφορά μόνο δημόσια νομοσχέδια της Βουλής "
+            "σε κατάσταση ACTIVE, WINDOW_24H ή OPEN_END· σε κάθε άλλη περίπτωση το "
+            "αίτημα απορρίπτεται. Η δημοσίευση στο Arweave γίνεται μόνο όταν είναι "
+            "ενεργοποιημένη και η ομάδα έχει φτάσει ένα ελάχιστο μέγεθος. "
+            "Από 03/10/2026 η ZK ψηφοφορία βρίσκεται σε παύση για έλεγχο ασφαλείας· "
+            "η κανονική ψηφοφορία (Tier 1) λειτουργεί κανονικά.",
+            "Zero-knowledge (ZK, Semaphore) voting is a guarded feature and is not "
+            "generally available. The server verifies only public Semaphore proofs "
+            "and only when the feature has been explicitly enabled for approved "
+            "voting scopes. Outside controlled tests, it applies only to public "
+            "Parliament bills in ACTIVE, WINDOW_24H or OPEN_END status; any other "
+            "request is rejected. Publication to Arweave happens only when it is "
+            "enabled and the group has reached a minimum size. Since 2026-10-03 "
+            "ZK voting has been paused for a security review; regular (Tier 1) "
+            "voting is unaffected.",
+            "zk_semaphore",
+        )
+
+    if eka63_topic == "representative_verification":
+        return resp(
+            "Η επαλήθευση εκπροσώπων δεν είναι ανοιχτή εγγραφή. Απαιτεί έγκυρο "
+            "κωδικό πρόσκλησης από τον διαχειριστή, που δεν έχει χρησιμοποιηθεί "
+            "και δεν έχει λήξει, καθώς και αριθμό ΑΔΑ που επαληθεύεται στη "
+            "Διαύγεια. Ο ΑΔΑ μόνος του δεν αρκεί. Μετά την επιτυχή επαλήθευση "
+            "εκδίδεται token πρόσβασης με ισχύ 24 ωρών και ο κωδικός πρόσκλησης "
+            "θεωρείται χρησιμοποιημένος. Εξαίρεση αποτελεί μόνο μια περιορισμένη "
+            "ροή επίδειξης, που δεν ελέγχει τη Διαύγεια.",
+            "Representative verification is not open registration. It requires a "
+            "valid admin-issued invite code that is unused and not expired, plus an "
+            "ADA number that is verified on Diavgeia. An ADA number alone is not "
+            "enough. After successful verification, a 24-hour access token is "
+            "issued and the invite code is marked as used. The only exception is a "
+            "restricted demonstration flow, which does not check Diavgeia.",
+            "representative_verification",
+        )
+
+    if eka63_topic == "results_visibility":
+        return resp(
+            "Στη σελίδα του νομοσχεδίου, η ορατότητα των αποτελεσμάτων ακολουθεί "
+            "την κατάσταση του νομοσχεδίου. Σε νομοσχέδιο ACTIVE με την προεπιλεγμένη ρύθμιση "
+            "κρυφών αποτελεσμάτων, οι μετρήσεις εμφανίζονται μηδενικές και "
+            "σημειώνονται ως κρυφές μέχρι το νομοσχέδιο να περάσει σε κατάσταση "
+            "με ορατά αποτελέσματα. Στις "
+            "καταστάσεις WINDOW_24H, PARLIAMENT_VOTED και OPEN_END τα "
+            "συγκεντρωτικά αποτελέσματα είναι ορατά. Νομοσχέδια που δεν είναι "
+            "δημόσια δεν εμφανίζουν αποτελέσματα. Για τους τρέχοντες αριθμούς "
+            "δείτε τη σελίδα του νομοσχεδίου.",
+            "On the bill page, result visibility follows the bill status. For an ACTIVE bill with "
+            "the default hidden-results setting, the counts are shown as zero and "
+            "marked as hidden until the bill enters a results-visible lifecycle "
+            "state. In WINDOW_24H, PARLIAMENT_VOTED "
+            "and OPEN_END status, the aggregate results are visible. Bills that "
+            "are not public do not show results. For current numbers, see the "
+            "bill page.",
+            "results_visibility",
+        )
 
     if "private key" in q or "signing key" in q or ("ιδιωτικ" in q and "κλειδ" in q):
         return resp(

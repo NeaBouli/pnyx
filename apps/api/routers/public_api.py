@@ -24,8 +24,13 @@ import httpx
 
 from database import get_db
 from ip_utils import rate_limit_key_for_ip, redis_fixed_window_limit
-from services.bill_visibility import is_public_bill, public_bill_filter, public_bill_with_demo_filter
-from services.zk_vote_aggregation import aggregate_bill_vote_totals, count_public_votes
+from services.bill_visibility import (
+    is_public_bill,
+    public_bill_filter,
+    public_bill_with_demo_filter,
+    results_hidden,
+)
+from services.zk_vote_aggregation import VoteTotals, aggregate_bill_vote_totals, count_public_votes
 from models import (
     ParliamentBill, CitizenVote, Party,
     BillStatus, VoteChoice
@@ -365,7 +370,8 @@ async def public_bill_results(
     if not bill or not is_public_bill(bill):
         raise HTTPException(404, f"Bill {bill_id} nicht gefunden")
 
-    totals = await aggregate_bill_vote_totals(
+    hidden = results_hidden(bill)
+    totals = VoteTotals(0, 0, 0, 0, 0, 0) if hidden else await aggregate_bill_vote_totals(
         db,
         bill_id,
         include_zk=(bill.source or "PARLIAMENT") == "PARLIAMENT",
@@ -400,6 +406,7 @@ async def public_bill_results(
             "abstain_pct": pct(abstain),
             "unknown_pct": pct(unknown),
         },
+        "results_hidden": hidden,
         "parliament_votes": bill.party_votes_parliament,
         "divergence_score": divergence,
         "arweave_tx": bill.arweave_tx_id,

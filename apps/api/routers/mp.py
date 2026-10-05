@@ -15,7 +15,7 @@ from sqlalchemy import select, func
 
 from database import get_db
 from models import ParliamentBill, CitizenVote, Party, BillStatus, VoteChoice
-from services.bill_visibility import is_public_bill, public_bill_filter
+from services.bill_visibility import is_public_bill, public_bill_filter, results_hidden
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/mp", tags=["MOD-12 MP Comparison"])
@@ -193,7 +193,11 @@ async def bill_party_breakdown(bill_id: str, db: AsyncSession = Depends(get_db))
     if not bill or not is_public_bill(bill):
         raise HTTPException(404, f"Bill {bill_id} nicht gefunden")
 
-    majority, yes, no_cnt, total = await citizen_majority_for(db, bill_id)
+    hidden = results_hidden(bill)
+    if hidden:
+        majority, yes, no_cnt, total = None, 0, 0, 0
+    else:
+        majority, yes, no_cnt, total = await citizen_majority_for(db, bill_id)
     party_map = await get_party_map(db)
 
     breakdown = []
@@ -216,6 +220,7 @@ async def bill_party_breakdown(bill_id: str, db: AsyncSession = Depends(get_db))
         "citizen_votes": {"yes": yes, "no": no_cnt, "total": total, "majority": majority,
                           "yes_pct": round(yes / total * 100, 1) if total > 0 else 0},
         "party_votes": breakdown,
+        "results_hidden": hidden,
         "k_anonymity_met": total >= K_MIN, "data_license": "CC BY 4.0",
     }
 

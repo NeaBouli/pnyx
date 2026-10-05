@@ -118,6 +118,13 @@ def _public_parliament_bill() -> SimpleNamespace:
     )
 
 
+def _closed_public_parliament_bill() -> SimpleNamespace:
+    """Publication tests use a closed vote: receipts of a running hidden vote are not published (T-599)."""
+    bill = _public_parliament_bill()
+    bill.status = BillStatus.OPEN_END
+    return bill
+
+
 def _public_diavgeia_bill() -> SimpleNamespace:
     return SimpleNamespace(
         id="DIAV-001",
@@ -1657,7 +1664,7 @@ async def test_zk_pending_receipt_publish_updates_only_public_receipt_fields(mon
         publication_bucket=None,
     )
     root = SimpleNamespace(group_size=5)
-    fake_db = _FakeSequenceDb([_public_parliament_bill(), [receipt], root])
+    fake_db = _FakeSequenceDb([_closed_public_parliament_bill(), [receipt], root])
 
     async def override_get_db():
         async for value in _override_with(fake_db):
@@ -1716,7 +1723,7 @@ async def test_zk_pending_receipt_publish_rejects_too_small_group(monkeypatch) -
         publication_bucket=None,
     )
     root = SimpleNamespace(group_size=1)
-    fake_db = _FakeSequenceDb([_public_parliament_bill(), [receipt], root])
+    fake_db = _FakeSequenceDb([_closed_public_parliament_bill(), [receipt], root])
 
     async def override_get_db():
         async for value in _override_with(fake_db):

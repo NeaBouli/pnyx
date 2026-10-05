@@ -14,14 +14,17 @@ import redis.asyncio as aioredis
 import os
 
 from models import CitizenVote, VoteChoice, ParliamentBill, BillStatus
-from services.bill_visibility import public_bill_filter
+from services.bill_visibility import public_bill_filter, results_visible_filter
 
 logger = logging.getLogger(__name__)
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
-CACHE_KEY = "cplm:aggregate:v1"
+# v2 (T-599): aggregates computed before the visible-results filter must not be served after
+# the rollout; the old v1 key simply expires with its TTL.
+CACHE_KEY = "cplm:aggregate:v2"
 CACHE_TTL = 3600  # 1 hour
-HISTORY_KEY = "cplm:history"
+# v2 (T-599): snapshots taken before the visible-results filter stay out of the public history.
+HISTORY_KEY = "cplm:history:v2"
 
 # Liquid Update strength — identical to compass/engine.ts
 STRENGTH = 0.05
@@ -55,7 +58,9 @@ def _vote_direction(vote: VoteChoice) -> float:
 
 async def compute_cplm(db: AsyncSession) -> dict:
     """
-    Compute the aggregate CPLM position from all citizen votes.
+    Compute the aggregate CPLM position from citizen votes on bills whose results are visible.
+    Votes of a running vote (ACTIVE with hidden results) are left out: with few active bills,
+    changes of the aggregate could reveal how that vote is going (T-599).
     Each voter's position starts at (0, 0) and shifts ±0.05 per vote.
     The societal position is the average of all voter positions.
     """
@@ -66,6 +71,7 @@ async def compute_cplm(db: AsyncSession) -> dict:
         select(CitizenVote, ParliamentBill)
         .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
         .where(public_bill_filter())
+        .where(results_visible_filter())
     )
     rows = result.all()
 

@@ -462,6 +462,37 @@ METRO -> GATES : tests + typecheck + Android production export (H6)
 @enduml
 
 @startuml
+' EKA-63 main path — current built behaviour at base 4cc1193 (T-507, no fix simulated)
+title EKA-63: citizen question -> canonical miss -> model fallback
+
+actor Citizen
+participant "FastAPI composition\nmain.py" as E63MAIN
+participant "Agent route\nask_agent" as E63ASK
+participant "Safety filter\n_safety_response" as E63SAFE
+participant "Canonical classifier\n_canonical_response" as E63CANON
+participant "RAG context\n_build_context" as E63RAG
+participant "Ollama / Claude" as E63MODEL
+
+Citizen -> E63MAIN : POST /api/v1/agent/ask {question, lang} (A1)
+E63MAIN -> E63ASK : validated AskRequest (A1)
+E63ASK -> E63SAFE : question + canonical el/en (A2)
+E63SAFE --> E63ASK : no safety match
+E63ASK -> E63CANON : question + lang (A3)
+
+alt existing canonical topic
+  E63CANON --> E63ASK : fixed bilingual answer + topic (A4-A5)
+  E63ASK --> Citizen : knowledge-base JSON + disclaimer (A7)
+else EKA-63 topic today
+  E63CANON --> E63ASK : None — no branch (A4-A6)
+  E63ASK -> E63RAG : retrieve KB/bill records (A6)
+  E63RAG --> E63ASK : retained untrusted context
+  E63ASK -> E63MODEL : generated answer request (A6)
+  E63MODEL --> E63ASK : probabilistic answer
+  E63ASK --> Citizen : generated JSON + disclaimer (A7)
+end
+@enduml
+
+@startuml
 ' EKA-53 main path — built behaviour at proven main 4cc11930 (no fix simulated)
 title Public DeepL usage: community page -> admin-prefixed public handler
 

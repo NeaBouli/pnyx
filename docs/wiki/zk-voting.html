@@ -68,6 +68,7 @@
     <a href="security.html" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</a>
     <a href="zk-voting.html" class="active">ZK Voting</a>
     <a href="roadmap.html">Roadmap</a>
+    <button class="lang-btn" onclick="toggleLang()" id="langBtn">EN</button>
   </div>
 </nav>
 <main id="main">
@@ -78,14 +79,14 @@
 
   <h2 data-el="Τι είναι το ZK Voting;" data-en="What is ZK Voting?">Τι είναι το ZK Voting;</h2>
   <p data-el="Φανταστείτε έναν κρυπτογραφικό κασσετίνα: αποδεικνύει ότι ψηφίσατε, χωρίς να αποκαλύπτει τι ψηφίσατε ή ποιος είστε. Αυτό κάνει ένα Zero-Knowledge Proof." data-en="Imagine a cryptographic receipt: it proves you voted, without revealing what you voted or who you are. That's what a Zero-Knowledge Proof does.">
-    Φανταστείτε έναν κρυπτογραφικό κασσετίνα: αποδεικνύει ότι ψηφίσατε, χωρίς να αποκαλύπτει τι ψηφίσατε ή ποιος είστε.
+    Φανταστείτε έναν κρυπτογραφικό κασσετίνα: αποδεικνύει ότι ψηφίσατε, χωρίς να αποκαλύπτει τι ψηφίσατε ή ποιος είστε. Αυτό κάνει ένα Zero-Knowledge Proof.
   </p>
 
   <h2 data-el="Tier 1 — Σήμερα" data-en="Tier 1 — Today">Tier 1 — Σήμερα</h2>
   <div class="card">
     <h3>HMAC-Nullifier-Chain + Ed25519 + Arweave</h3>
     <p data-el="Η ψηφοφορία σήμερα χρησιμοποιεί κρυπτογραφικές υπογραφές Ed25519 και HMAC Nullifiers. Το κλειδί σας μένει στη συσκευή σας. Τα συγκεντρωτικά αποτελέσματα αρχειοθετούνται στο Arweave (blockchain)." data-en="Voting today uses Ed25519 cryptographic signatures and HMAC Nullifiers. Your key stays on your device. Aggregate results are archived on Arweave (blockchain).">
-      Η ψηφοφορία σήμερα χρησιμοποιεί κρυπτογραφικές υπογραφές Ed25519 και HMAC Nullifiers. Το κλειδί σας μένει στη συσκευή σας. Τα συγκεντρωτικά αποτελέσματα αρχειοθετούνται στο Arweave.
+      Η ψηφοφορία σήμερα χρησιμοποιεί κρυπτογραφικές υπογραφές Ed25519 και HMAC Nullifiers. Το κλειδί σας μένει στη συσκευή σας. Τα συγκεντρωτικά αποτελέσματα αρχειοθετούνται στο Arweave (blockchain).
     </p>
   </div>
 
@@ -93,12 +94,12 @@
   <div class="card">
     <h3>Semaphore ZK Proofs + Arweave Bulletin Board</h3>
     <p data-el="Κάθε ZK ψήφος λαμβάνει μια κρυπτογραφική απόδειξη (Semaphore) που αποδεικνύει ότι ανήκετε στην ομάδα επαληθευμένων ψηφοφόρων — χωρίς να αποκαλύπτει ποιος είστε. Το πρώτο δημόσιο scoped rollout ολοκληρώθηκε για ένα συγκεκριμένο νομοσχέδιο. Η δημοσίευση verifier payloads στο Arweave είναι σε παύση μαζί με τις ZK ψηφοφορίες· αν επανενεργοποιηθεί το rollout, ισχύει μόνο για επιλέξιμα δημόσια Parliament scopes με ομάδα τουλάχιστον 5 ατόμων." data-en="Each ZK vote receives a cryptographic proof (Semaphore) proving you belong to the group of verified voters — without revealing who you are. The first public scoped rollout has completed for one specific bill. Publication of verifier payloads to Arweave is paused together with ZK voting; if the rollout is re-enabled, it applies only to eligible public Parliament scopes with group size at least 5.">
-      Κάθε ZK ψήφος λαμβάνει μια κρυπτογραφική απόδειξη (Semaphore). Το πρώτο δημόσιο scoped rollout ολοκληρώθηκε για ένα συγκεκριμένο νομοσχέδιο.
+      Κάθε ZK ψήφος λαμβάνει μια κρυπτογραφική απόδειξη (Semaphore) που αποδεικνύει ότι ανήκετε στην ομάδα επαληθευμένων ψηφοφόρων — χωρίς να αποκαλύπτει ποιος είστε. Το πρώτο δημόσιο scoped rollout ολοκληρώθηκε για ένα συγκεκριμένο νομοσχέδιο. Η δημοσίευση verifier payloads στο Arweave είναι σε παύση μαζί με τις ZK ψηφοφορίες· αν επανενεργοποιηθεί το rollout, ισχύει μόνο για επιλέξιμα δημόσια Parliament scopes με ομάδα τουλάχιστον 5 ατόμων.
     </p>
     <div class="warn">
       <strong data-el="Κατάσταση:" data-en="Status:">Κατάσταση:</strong>
       <span data-el="Ο native Android prover, το κρυφό S10 canary, το security review και το πρώτο δημόσιο scoped rollout έχουν περάσει. Η ZK ψηφοφορία ενεργοποιείται μόνο ανά συγκεκριμένη ψηφοφορία με explicit allowlist, backup και monitoring. Το guarded Parliament rollout είναι σε παύση από 03/10/2026 για έλεγχο ασφαλείας· test, canary, hidden και μη-Parliament scopes παραμένουν αποκλεισμένα." data-en="The native Android prover, hidden S10 canary, security review, and first public scoped rollout have passed. ZK voting is enabled only per explicit vote scope with allowlist, backup, and monitoring. The guarded Parliament rollout is paused since 2026-10-03 for a security review; test, canary, hidden, and non-Parliament scopes remain blocked.">
-        Ο native Android prover, το κρυφό S10 canary, το security review και το πρώτο δημόσιο scoped rollout έχουν περάσει. Το guarded Parliament ZK rollout είναι σε παύση από 03/10/2026 (έλεγχος ασφαλείας).
+        Ο native Android prover, το κρυφό S10 canary, το security review και το πρώτο δημόσιο scoped rollout έχουν περάσει. Η ZK ψηφοφορία ενεργοποιείται μόνο ανά συγκεκριμένη ψηφοφορία με explicit allowlist, backup και monitoring. Το guarded Parliament rollout είναι σε παύση από 03/10/2026 για έλεγχο ασφαλείας· test, canary, hidden και μη-Parliament scopes παραμένουν αποκλεισμένα.
       </span>
     </div>
   </div>
@@ -106,33 +107,33 @@
   <h2 data-el="Τι ανεβαίνει στο Arweave;" data-en="What is uploaded to Arweave?">Τι ανεβαίνει στο Arweave;</h2>
   <div class="card">
     <p data-el="Η κανονική Arweave αρχειοθέτηση αποτελεσμάτων συνεχίζει να λειτουργεί. Κατά την παύση δεν γίνονται δεκτές νέες ZK ψήφοι. Αν επανενεργοποιηθεί το rollout, τα ZK verifier payloads μπορούν να δημοσιεύονται αυτόματα στο Arweave μόνο για επιλέξιμα δημόσια Parliament scopes με group size τουλάχιστον 5. Μικρότερες ομάδες μένουν pending για προστασία ιδιωτικότητας. Όταν ενεργοποιηθεί, μόνο δημόσια verifier payloads θα είναι υποψήφια για Arweave: proof/public signals, Merkle root, Semaphore nullifier, circuit/verifier version και group size/publication bucket. Ποτέ δεν δημοσιεύονται phone, IP, HLR, identity_record_id, tier_guard_hash, Tier-1 nullifier ή Semaphore secret." data-en="The normal Arweave archival of results continues to work. No new ZK votes are accepted during the pause. If the rollout is re-enabled, ZK verifier payloads may be automatically published to Arweave only for eligible public Parliament scopes with group size at least 5. Smaller groups remain pending for privacy. Once enabled, only public verifier payloads may be archived: proof/public signals, Merkle root, Semaphore nullifier, circuit/verifier version, and group size/publication bucket. Phone, IP, HLR, identity_record_id, tier_guard_hash, Tier-1 nullifier, and Semaphore secret are never published.">
-      Η κανονική Arweave αρχειοθέτηση αποτελεσμάτων συνεχίζει να λειτουργεί. Κατά την παύση δεν γίνονται δεκτές νέες ZK ψήφοι. Αν επανενεργοποιηθεί το rollout, τα ZK verifier payloads μπορούν να δημοσιεύονται αυτόματα μόνο για επιλέξιμα δημόσια Parliament scopes με group size τουλάχιστον 5.
+      Η κανονική Arweave αρχειοθέτηση αποτελεσμάτων συνεχίζει να λειτουργεί. Κατά την παύση δεν γίνονται δεκτές νέες ZK ψήφοι. Αν επανενεργοποιηθεί το rollout, τα ZK verifier payloads μπορούν να δημοσιεύονται αυτόματα στο Arweave μόνο για επιλέξιμα δημόσια Parliament scopes με group size τουλάχιστον 5. Μικρότερες ομάδες μένουν pending για προστασία ιδιωτικότητας. Όταν ενεργοποιηθεί, μόνο δημόσια verifier payloads θα είναι υποψήφια για Arweave: proof/public signals, Merkle root, Semaphore nullifier, circuit/verifier version και group size/publication bucket. Ποτέ δεν δημοσιεύονται phone, IP, HLR, identity_record_id, tier_guard_hash, Tier-1 nullifier ή Semaphore secret.
     </p>
   </div>
 
   <h2 data-el="Γιατί όχι Helios;" data-en="Why not Helios?">Γιατί όχι Helios;</h2>
   <p data-el="Το Helios απαιτεί Treuhänder (εμπιστευτές) για την αποκρυπτογράφηση αποτελεσμάτων. Ως μοναδικός εμπιστευτής, θα έπρεπε να εμπιστεύεστε πλήρως το ekklesia — κάτι που αντιβαίνει στην αρχή Privacy-by-Design. Το Semaphore δεν χρειάζεται εμπιστευτές: η απόδειξη γίνεται τοπικά στη συσκευή σας." data-en="Helios requires trustees for result decryption. As the sole trustee, you would have to fully trust ekklesia — which contradicts the Privacy-by-Design principle. Semaphore needs no trustees: proof generation happens locally on your device.">
-    Το Helios απαιτεί εμπιστευτές (Treuhänder). Ως μοναδικός εμπιστευτής, θα έπρεπε να εμπιστεύεστε πλήρως το ekklesia — κάτι που αντιβαίνει στην αρχή Privacy-by-Design. Το Semaphore δεν χρειάζεται εμπιστευτές.
+    Το Helios απαιτεί Treuhänder (εμπιστευτές) για την αποκρυπτογράφηση αποτελεσμάτων. Ως μοναδικός εμπιστευτής, θα έπρεπε να εμπιστεύεστε πλήρως το ekklesia — κάτι που αντιβαίνει στην αρχή Privacy-by-Design. Το Semaphore δεν χρειάζεται εμπιστευτές: η απόδειξη γίνεται τοπικά στη συσκευή σας.
   </p>
 
-  <h2 data-el="Τι αποδεικνύει ένα ZK Proof (και τι όχι)" data-en="What a ZK Proof proves (and what it doesn't)">Τι αποδεικνύει (και τι όχι)</h2>
+  <h2 data-el="Τι αποδεικνύει ένα ZK Proof (και τι όχι)" data-en="What a ZK Proof proves (and what it doesn't)">Τι αποδεικνύει ένα ZK Proof (και τι όχι)</h2>
   <div class="card">
     <p><strong data-el="Αποδεικνύει:" data-en="Proves:">Αποδεικνύει:</strong></p>
     <ul>
-      <li data-el="Ότι η ψήφος προέρχεται από μέλος της ομάδας επαληθευμένων ψηφοφόρων" data-en="The vote comes from a member of the verified voter group">Μέλος ομάδας επαληθευμένων ψηφοφόρων</li>
-      <li data-el="Ότι δεν ψήφισε δύο φορές για το ίδιο νομοσχέδιο" data-en="Did not vote twice for the same bill">Δεν ψήφισε δύο φορές</li>
-      <li data-el="Ότι τα αποτελέσματα μπορούν να επανυπολογιστούν δημόσια" data-en="Results can be publicly recomputed">Δημόσια επαναϋπολογισμός αποτελεσμάτων</li>
+      <li data-el="Ότι η ψήφος προέρχεται από μέλος της ομάδας επαληθευμένων ψηφοφόρων" data-en="The vote comes from a member of the verified voter group">Ότι η ψήφος προέρχεται από μέλος της ομάδας επαληθευμένων ψηφοφόρων</li>
+      <li data-el="Ότι δεν ψήφισε δύο φορές για το ίδιο νομοσχέδιο" data-en="Did not vote twice for the same bill">Ότι δεν ψήφισε δύο φορές για το ίδιο νομοσχέδιο</li>
+      <li data-el="Ότι τα αποτελέσματα μπορούν να επανυπολογιστούν δημόσια" data-en="Results can be publicly recomputed">Ότι τα αποτελέσματα μπορούν να επανυπολογιστούν δημόσια</li>
     </ul>
     <p style="margin-top:0.75rem"><strong data-el="ΔΕΝ αποδεικνύει:" data-en="Does NOT prove:">ΔΕΝ αποδεικνύει:</strong></p>
     <ul>
-      <li data-el="Ότι η συσκευή του ψηφοφόρου δεν έχει παραβιαστεί" data-en="The voter's device was not compromised">Ασφάλεια συσκευής</li>
-      <li data-el="Ότι η διαδικασία εγγραφής ήταν τέλεια" data-en="The enrollment process was perfect">Τέλεια εγγραφή</li>
+      <li data-el="Ότι η συσκευή του ψηφοφόρου δεν έχει παραβιαστεί" data-en="The voter's device was not compromised">Ότι η συσκευή του ψηφοφόρου δεν έχει παραβιαστεί</li>
+      <li data-el="Ότι η διαδικασία εγγραφής ήταν τέλεια" data-en="The enrollment process was perfect">Ότι η διαδικασία εγγραφής ήταν τέλεια</li>
     </ul>
   </div>
 
-  <h2 data-el="Εμπιστοσύνη στο Trusted Setup" data-en="Trusted Setup">Trusted Setup</h2>
+  <h2 data-el="Εμπιστοσύνη στο Trusted Setup" data-en="Trusted Setup">Εμπιστοσύνη στο Trusted Setup</h2>
   <p data-el="Το Semaphore χρησιμοποιεί αρχεία Groth16 από την τελετή PSE (Privacy and Scaling Explorations). Το ekklesia δεν διεξάγει δική του τελετή. Η ασφάλεια εξαρτάται από τη δημόσια τελετή του PSE." data-en="Semaphore uses Groth16 artifacts from the PSE (Privacy and Scaling Explorations) ceremony. ekklesia does not conduct its own ceremony. Security depends on the public PSE ceremony.">
-    Η ασφάλεια εξαρτάται από τη δημόσια τελετή PSE. Το ekklesia δεν διεξάγει δική του τελετή.
+    Το Semaphore χρησιμοποιεί αρχεία Groth16 από την τελετή PSE (Privacy and Scaling Explorations). Το ekklesia δεν διεξάγει δική του τελετή. Η ασφάλεια εξαρτάται από τη δημόσια τελετή του PSE.
   </p>
 </div>
 
@@ -141,5 +142,17 @@
   <a href="../">εκκλησία</a> · <a href="index.html">Wiki</a> · <a href="security.html">Ασφάλεια</a> · <a href="roadmap.html">Roadmap</a>
   <p>εκκλησία &middot; &copy; 2026 V-Labs Development &middot; MIT License</p>
 </footer>
+<script>
+var currentLang = "el";
+function toggleLang() {
+  currentLang = currentLang === "el" ? "en" : "el";
+  document.documentElement.lang = currentLang;
+  document.getElementById("langBtn").textContent = currentLang === "el" ? "EN" : "ΕΛ";
+  document.querySelectorAll("[data-el]").forEach(function(el) {
+    var t = el.getAttribute("data-" + currentLang);
+    if (t) el.innerHTML = t;
+  });
+}
+</script>
 </body>
 </html>
