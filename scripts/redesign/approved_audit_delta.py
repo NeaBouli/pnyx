@@ -25,8 +25,10 @@ import r0_inventory
 # T-595: zk-voting gets the same nav language switch (langBtn + inline toggleLang) as the other
 # wiki pages; it was the only wiki page without one. The initial Greek text of each data-el
 # element now equals its data-el value, so toggling EN → ΕΛ restores the same copy.
+# T-512/T-540 (EKA-53, #431): community.html's DeepL usage fetch moves from
+# /api/v1/admin/deepl/usage to /api/v1/public/deepl/usage; nothing else changes.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "1c6af6ce632db8cc239b24d6446896694f2afda0c37b8a94d107bc295be5aaef",
+    "docs/community.html": "db27c710ace27910a98fcf61c04f80928733f117d8bf0ad723f9c51d39625ba2",
     "docs/wiki/api.html": "0f2b6771a112f089c7fba6b1ef3185e061b073cd338f3db10a38a3c3c3c2515f",
     "docs/wiki/architecture.html": "8198bc8764e1d848f512a14195d2a219e6ce36398227f6744ce2793f401273d3",
     "docs/wiki/broadcasting.html": "9e14ffa72fa9e524c109748881d2ed941aeeb257d44570b191aaa24d5fb47b62",
