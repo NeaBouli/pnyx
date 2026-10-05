@@ -16,7 +16,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import BillStatus, ParliamentBill, ZkMerkleRoot, ZkVoteReceipt
-from services.bill_visibility import is_public_bill
+from services.bill_visibility import is_public_bill, results_hidden, results_visible_filter
 from services.zk_arweave_payload import build_zk_vote_arweave_record
 from services.zk_group_registry import validate_vote_scope_id
 
@@ -208,6 +208,8 @@ async def list_pending_public_parliament_scopes(db: AsyncSession) -> set[str]:
             ParliamentBill.source == "PARLIAMENT",
             ParliamentBill.admin_hidden.is_(False),
             ParliamentBill.status.in_(ZK_PUBLIC_ROLLOUT_STATUSES),
+            # Receipts carry the vote choice; publish only once results are visible (T-599).
+            results_visible_filter(),
         )
         .distinct()
     )
@@ -241,7 +243,10 @@ def _is_public_parliament_bill_scope(bill: ParliamentBill | None) -> bool:
             bill_status = BillStatus(bill_status)
         except ValueError:
             return False
-    return bill_status in ZK_PUBLIC_ROLLOUT_STATUSES
+    if bill_status not in ZK_PUBLIC_ROLLOUT_STATUSES:
+        return False
+    # Receipts carry the vote choice; a running vote with hidden results is not published (T-599).
+    return not results_hidden(bill)
 
 
 def _scope_allowlist(env_name: str) -> set[str]:
