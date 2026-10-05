@@ -23,7 +23,8 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379")
 # the rollout; the old v1 key simply expires with its TTL.
 CACHE_KEY = "cplm:aggregate:v2"
 CACHE_TTL = 3600  # 1 hour
-HISTORY_KEY = "cplm:history"
+# v2 (T-599): snapshots taken before the visible-results filter stay out of the public history.
+HISTORY_KEY = "cplm:history:v2"
 
 # Liquid Update strength — identical to compass/engine.ts
 STRENGTH = 0.05

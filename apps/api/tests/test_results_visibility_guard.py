@@ -278,8 +278,9 @@ def test_newsletter_monthly_total_applies_the_guard():
     assert ".where(public_bill_filter(), results_visible_filter())" in inspect.getsource(newsletter_service)
 
 
-def test_cplm_cache_key_is_versioned_for_the_filtered_aggregate():
+def test_cplm_cache_and_history_keys_are_versioned_for_the_filtered_aggregate():
     assert cplm.CACHE_KEY == "cplm:aggregate:v2"
+    assert cplm.HISTORY_KEY == "cplm:history:v2"
 
 
 from services import zk_arweave_publisher  # noqa: E402
