@@ -14,7 +14,7 @@ import redis.asyncio as aioredis
 import os
 
 from models import CitizenVote, VoteChoice, ParliamentBill, BillStatus
-from services.bill_visibility import public_bill_filter
+from services.bill_visibility import public_bill_filter, results_visible_filter
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,9 @@ def _vote_direction(vote: VoteChoice) -> float:
 
 async def compute_cplm(db: AsyncSession) -> dict:
     """
-    Compute the aggregate CPLM position from all citizen votes.
+    Compute the aggregate CPLM position from citizen votes on bills whose results are visible.
+    Votes of a running vote (ACTIVE with hidden results) are left out: with few active bills,
+    changes of the aggregate could reveal how that vote is going (T-599).
     Each voter's position starts at (0, 0) and shifts ±0.05 per vote.
     The societal position is the average of all voter positions.
     """
@@ -66,6 +68,7 @@ async def compute_cplm(db: AsyncSession) -> dict:
         select(CitizenVote, ParliamentBill)
         .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
         .where(public_bill_filter())
+        .where(results_visible_filter())
     )
     rows = result.all()
 

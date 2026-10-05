@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 from models import BillStatus
 from routers import analytics, mp, public_api, voting
-from services import newsletter_service
+from services import cplm, newsletter_service
 from services.bill_visibility import results_hidden, results_visible_filter, results_visible_raw_sql
 from services.zk_vote_aggregation import VoteTotals
 
@@ -167,3 +167,21 @@ def test_newsletter_top_votes_apply_the_guard():
     import inspect
     source = inspect.getsource(newsletter_service)
     assert "AND {results_visible_raw_sql('b')}" in source
+
+
+class _CplmDb:
+    def __init__(self):
+        self.statement = None
+
+    async def execute(self, statement, *_args, **_kwargs):
+        self.statement = self.statement or statement
+        return SimpleNamespace(all=lambda: [])
+
+
+@pytest.mark.asyncio
+async def test_cplm_counts_only_votes_with_visible_results():
+    db = _CplmDb()
+    result = await cplm.compute_cplm(db)
+    assert result["total_votes"] == 0
+    compiled = str(db.statement.compile(dialect=postgresql.dialect()))
+    assert "coalesce(parliament_bills.results_visibility" in compiled
