@@ -280,3 +280,26 @@ def test_newsletter_monthly_total_applies_the_guard():
 
 def test_cplm_cache_key_is_versioned_for_the_filtered_aggregate():
     assert cplm.CACHE_KEY == "cplm:aggregate:v2"
+
+
+from services import zk_arweave_publisher  # noqa: E402
+
+
+@pytest.mark.parametrize(("bill_id", "status", "visibility", "hidden"), _VISIBILITY_MATRIX)
+def test_zk_arweave_publication_waits_for_visible_results(bill_id, status, visibility, hidden):
+    bill = _bill(status, visibility, id=bill_id)
+    assert zk_arweave_publisher._is_public_parliament_bill_scope(bill) is (not hidden)
+
+
+@pytest.mark.asyncio
+async def test_zk_arweave_pending_scopes_query_excludes_running_votes():
+    db = _CaptureDb()
+
+    async def execute(statement, params=None):
+        db.statements.append(statement)
+        return SimpleNamespace(scalars=lambda: SimpleNamespace(all=lambda: []))
+
+    db.execute = execute
+    assert await zk_arweave_publisher.list_pending_public_parliament_scopes(db) == set()
+    compiled = str(db.statements[0].compile(dialect=postgresql.dialect()))
+    assert "coalesce(parliament_bills.results_visibility" in compiled
