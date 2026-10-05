@@ -556,6 +556,29 @@ async def public_mirror_status():
     return await _build_mirror_status()
 
 
+@router.get("/deepl/usage")
+async def public_deepl_usage():
+    """Public: aggregate DeepL usage (available/count/limit only; key stays server-side)."""
+    api_key = os.getenv("DEEPL_API_KEY", "")
+    if not api_key:
+        return {"available": False, "character_count": 0, "character_limit": 0}
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.get(
+                "https://api-free.deepl.com/v2/usage",
+                headers={"Authorization": f"DeepL-Auth-Key {api_key}"},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return {
+                "available": True,
+                "character_count": data.get("character_count", 0),
+                "character_limit": data.get("character_limit", 0),
+            }
+    except Exception:
+        return {"available": False, "character_count": 0, "character_limit": 0}
+
+
 @router.post("/share")
 async def record_share():
     """Anonymous share counter — no tracking, just a number."""

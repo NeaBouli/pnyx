@@ -1567,7 +1567,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     if (per) per.textContent = cycle.start + " — " + cycle.end;
     var days = document.getElementById("deeplDays");
     if (days) days.textContent = cycle.daysLeft + " " + (currentLang === "en" ? "days" : "ημέρες");
-    fetch("https://api.ekklesia.gr/api/v1/admin/deepl/usage")
+    fetch("https://api.ekklesia.gr/api/v1/public/deepl/usage")
       .then(function(r) { return r.json(); })
       .then(function(d) {
         if (!d.available) return;

@@ -114,7 +114,7 @@ export default function OverviewPage() {
       apiFetch('/api/v1/analytics/representation'),
       apiFetch('/api/v1/payments/status'),
       apiFetch('/api/v1/arweave/status'),
-      apiFetch('/api/v1/admin/deepl/usage'),
+      apiFetch('/api/v1/public/deepl/usage'),
     ])
 
     const v = (r: PromiseSettledResult<unknown>) => r.status === 'fulfilled' ? r.value : null

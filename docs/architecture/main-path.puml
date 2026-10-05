@@ -491,3 +491,29 @@ else EKA-63 topic today
   E63ASK --> Citizen : generated JSON + disclaimer (A7)
 end
 @enduml
+
+@startuml
+' EKA-53 main path — built behaviour at proven main 4cc11930 (no fix simulated)
+title Public DeepL usage: community page -> admin-prefixed public handler
+
+actor Citizen
+participant "Community page\nfetchDeeplUsage" as COMMUNITY
+participant "FastAPI\nmain.py" as MAIN
+participant "Admin router\nadmin.py" as ADMIN
+participant "deepl_usage" as HANDLER
+participant "DeepL\nGET /v2/usage" as DEEPL
+
+Citizen -> COMMUNITY : open transparency page
+COMMUNITY -> MAIN : GET /api/v1/admin/deepl/usage (D1)
+MAIN -> ADMIN : route via included admin router (D2)
+ADMIN -> HANDLER : match /deepl/usage, no verify_admin (D3)
+HANDLER -> DEEPL : GET usage with server-side credential (D4)
+DEEPL --> HANDLER : character_count, character_limit (D5)
+HANDLER --> COMMUNITY : available + projected aggregate fields (D5)
+COMMUNITY --> Citizen : render usage tile
+
+note over ADMIN,HANDLER
+EKA-53: public-by-design contract inherits an admin namespace.
+The corrected public-router path is open and is not simulated here.
+end note
+@enduml

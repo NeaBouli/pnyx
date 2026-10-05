@@ -140,7 +140,7 @@ export default function SettingsPage() {
       const [hlr, claude, deepl, notif, arweave, jobs, version, compass, nlStats, nlLists] = await Promise.allSettled([
         fetch(adminProxyPath('/api/v1/admin/hlr/credits')).then(r => r.json()),
         fetch(`${API}/api/v1/claude/budget`).then(r => r.json()),
-        fetch(`${API}/api/v1/admin/deepl/usage`).then(r => r.json()),
+        fetch(`${API}/api/v1/public/deepl/usage`).then(r => r.json()),
         fetch(`${API}/api/v1/notifications/status`).then(r => r.json()),
         fetch(`${API}/api/v1/arweave/status`).then(r => r.json()),
         fetch(`${API}/api/v1/scraper/jobs`).then(r => r.json()),
