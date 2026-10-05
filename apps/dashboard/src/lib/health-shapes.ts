@@ -52,3 +52,31 @@ export function forumSyncStatusFrom(payload: unknown): string | null {
   const forum = asRecord(modules?.[FORUM_SYNC_MODULE])
   return typeof forum?.status === 'string' ? forum.status : null
 }
+
+
+export interface HealthModuleRow {
+  name: string
+  status: string
+}
+
+/**
+ * Module rows from GET /api/v1/health/modules ({overall, modules: {"MOD-01": {name, status}, ...}}).
+ * An array or {modules: [...]} is still accepted; top-level keys like overall/total are never rows.
+ */
+export function healthModulesFrom(payload: unknown): HealthModuleRow[] {
+  const record = asRecord(payload)
+  const modules = Array.isArray(payload) ? payload : record?.modules
+  if (Array.isArray(modules)) {
+    return modules
+      .map(item => asRecord(item))
+      .filter((item): item is Record<string, unknown> => item !== null && typeof item.name === 'string')
+      .map(item => ({ name: item.name as string, status: String(item.status ?? 'unknown') }))
+  }
+  const map = asRecord(modules)
+  if (!map) return []
+  return Object.entries(map).map(([key, value]) => {
+    const item = asRecord(value)
+    const name = typeof item?.name === 'string' && item.name ? `${key} ${item.name}` : key
+    return { name, status: String(item?.status ?? value ?? 'unknown') }
+  })
+}

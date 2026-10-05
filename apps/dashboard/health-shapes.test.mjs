@@ -17,6 +17,7 @@ vm.runInNewContext(transpile('./src/lib/health-shapes.ts'), context)
 const plain = value => JSON.parse(JSON.stringify(value))
 const scraperJobsFrom = payload => plain(context.exports.scraperJobsFrom(payload))
 const { forumSyncStatusFrom } = context.exports
+const healthModulesFrom = payload => plain(context.exports.healthModulesFrom(payload))
 
 const parliament = {
   name: 'parliament', last_run: '2026-10-04T07:38:29Z', last_success: '2026-10-04T07:38:31Z',
@@ -42,4 +43,11 @@ test('forum sync status comes from MOD-24 in /api/v1/health/modules', () => {
   assert.equal(forumSyncStatusFrom({ modules: { 'MOD-24': { status: 'ok' } } }), 'ok')
   assert.equal(forumSyncStatusFrom({ modules: ['MOD-24 Discourse Forum Sync'] }), null)
   assert.equal(forumSyncStatusFrom({}), null)
+})
+
+test('health modules: rows come from the modules map, never from overall/total', () => {
+  const rows = healthModulesFrom({ overall: 'ok', total: 23, modules: { 'MOD-01': { name: 'HLR Identity', status: 'ok' }, 'MOD-09': { name: 'gov.gr OAuth', status: 'deferred' } } })
+  assert.deepEqual(rows, [{ name: 'MOD-01 HLR Identity', status: 'ok' }, { name: 'MOD-09 gov.gr OAuth', status: 'deferred' }])
+  assert.deepEqual(healthModulesFrom({ modules: [{ name: 'api', status: 'ok' }] }), [{ name: 'api', status: 'ok' }])
+  assert.deepEqual(healthModulesFrom(null), [])
 })
