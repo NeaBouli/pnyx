@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { scraperJobsFrom } from '@/lib/health-shapes'
+import { healthModulesFrom, scraperJobsFrom } from '@/lib/health-shapes'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
@@ -101,29 +101,7 @@ export default function LogsPage() {
       ])
 
       if (settled[0].status === 'fulfilled') setHealth(settled[0].value as HealthData)
-      if (settled[1].status === 'fulfilled') {
-        const raw = settled[1].value
-        if (Array.isArray(raw)) {
-          setModules(raw as HealthModule[])
-        } else if (raw && typeof raw === 'object') {
-          // Could be {modules: [...]} or {name: status, ...}
-          const obj = raw as Record<string, unknown>
-          if (Array.isArray(obj.modules)) {
-            setModules(obj.modules as HealthModule[])
-          } else {
-            // Convert object entries to HealthModule[]
-            const arr: HealthModule[] = []
-            for (const [key, val] of Object.entries(obj)) {
-              if (typeof val === 'object' && val !== null && 'name' in val) {
-                arr.push(val as HealthModule)
-              } else {
-                arr.push({ name: key, status: String(val) })
-              }
-            }
-            setModules(arr)
-          }
-        }
-      }
+      if (settled[1].status === 'fulfilled') setModules(healthModulesFrom(settled[1].value))
       if (settled[2].status === 'fulfilled') setHlr(settled[2].value as HlrCredits)
       if (settled[3].status === 'fulfilled') {
         setJobs(scraperJobsFrom(settled[3].value).map(job => ({
