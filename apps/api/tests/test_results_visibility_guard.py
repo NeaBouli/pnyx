@@ -185,3 +185,98 @@ async def test_cplm_counts_only_votes_with_visible_results():
     assert result["total_votes"] == 0
     compiled = str(db.statement.compile(dialect=postgresql.dialect()))
     assert "coalesce(parliament_bills.results_visibility" in compiled
+
+
+# ── Re-review (Codex #456): export, timeline, turnout counters, newsletter total, CPLM cache ──
+
+from models import VoteChoice  # noqa: E402
+from routers import export  # noqa: E402
+from services import zk_vote_aggregation  # noqa: E402
+
+_VISIBILITY_MATRIX = [
+    ("GR-HIDDEN", BillStatus.ACTIVE, "HIDDEN", True),
+    ("GR-NULL", BillStatus.ACTIVE, None, True),
+    ("GR-WINDOW", BillStatus.ACTIVE, "WINDOW", False),
+    ("GR-ALWAYS", BillStatus.ACTIVE, "ALWAYS", False),
+    ("GR-CLOSED", BillStatus.OPEN_END, "HIDDEN", False),
+]
+
+
+class _ExportDb:
+    def __init__(self, bills):
+        self.bills = bills
+        self.calls = 0
+
+    async def execute(self, _statement):
+        self.calls += 1
+        if self.calls == 1:
+            return SimpleNamespace(scalars=lambda: SimpleNamespace(all=lambda: self.bills))
+        rows = [(bill.id, VoteChoice.YES, 3) for bill in self.bills]
+        return SimpleNamespace(all=lambda: rows)
+
+
+@pytest.mark.asyncio
+async def test_export_omits_counts_of_running_votes():
+    bills = [
+        _bill(status, visibility, id=bill_id, title_en=None, categories=[], parliament_vote_date=None,
+              party_votes_parliament=None)
+        for bill_id, status, visibility, _hidden in _VISIBILITY_MATRIX
+    ]
+    rows = {row["bill_id"]: row for row in await export.get_all_results(_ExportDb(bills))}
+    for bill_id, _status, _visibility, hidden in _VISIBILITY_MATRIX:
+        assert rows[bill_id]["citizen_total"] == (0 if hidden else 3), bill_id
+        assert rows[bill_id]["citizen_yes"] == (0 if hidden else 3), bill_id
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("bill_id", "status", "visibility", "hidden"), _VISIBILITY_MATRIX)
+async def test_bill_timeline_is_empty_while_results_are_hidden(bill_id, status, visibility, hidden):
+    class _TimelineDb(_GetDb):
+        executed = False
+
+        async def execute(self, *_args, **_kwargs):
+            _TimelineDb.executed = True
+            return SimpleNamespace(all=lambda: [])
+
+    db = _TimelineDb(_bill(status, visibility, id=bill_id))
+    result = await analytics.votes_timeline(bill_id=bill_id, days=30, db=db)
+    assert result["timeline"] == []
+    assert result.get("results_hidden", False) is hidden
+    assert _TimelineDb.executed is (not hidden)
+
+
+@pytest.mark.asyncio
+async def test_global_timeline_excludes_running_votes():
+    db = _CaptureDb()
+
+    async def execute(statement, params=None):
+        db.statements.append(statement)
+        return SimpleNamespace(all=lambda: [])
+
+    db.execute = execute
+    await analytics.votes_timeline(bill_id=None, days=30, db=db)
+    compiled = str(db.statements[0].compile(dialect=postgresql.dialect()))
+    assert compiled.count("coalesce(parliament_bills.results_visibility") == 2  # Tier-1 and ZK
+
+
+@pytest.mark.asyncio
+async def test_global_turnout_counters_exclude_running_votes():
+    statements = []
+
+    class _ScalarDb:
+        async def scalar(self, statement):
+            statements.append(str(statement.compile(dialect=postgresql.dialect())))
+            return 0
+
+    assert await zk_vote_aggregation.count_public_votes(_ScalarDb()) == 0
+    assert len(statements) == 2
+    assert all("coalesce(parliament_bills.results_visibility" in s for s in statements)
+
+
+def test_newsletter_monthly_total_applies_the_guard():
+    import inspect
+    assert ".where(public_bill_filter(), results_visible_filter())" in inspect.getsource(newsletter_service)
+
+
+def test_cplm_cache_key_is_versioned_for_the_filtered_aggregate():
+    assert cplm.CACHE_KEY == "cplm:aggregate:v2"

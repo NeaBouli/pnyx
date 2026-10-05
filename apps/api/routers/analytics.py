@@ -21,6 +21,7 @@ from services.bill_visibility import (
     public_bill_filter,
     public_bill_with_demo_filter,
     results_hidden,
+    results_visible_filter,
 )
 from services.zk_vote_aggregation import (
     VoteTotals,
@@ -191,6 +192,9 @@ async def votes_timeline(
             bill = await db.get(ParliamentBill, bill_id)
             if not bill or not is_public_bill(bill):
                 raise HTTPException(404, f"Bill {bill_id} nicht gefunden")
+            if results_hidden(bill):
+                return {"period_days": days, "bill_id": bill_id, "timeline": [],
+                        "results_hidden": True, "note": "Aggregiert nach Tag"}
             events = bill_vote_events_query(
                 bill_id,
                 include_zk=include_zk_for_bill(bill),
@@ -202,7 +206,7 @@ async def votes_timeline(
                     cast(CitizenVote.vote, String).label("vote"),
                 )
                 .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
-                .where(public_bill_filter(), ~CitizenVote.bill_id.like("DEMO-%"))
+                .where(public_bill_filter(), results_visible_filter(), ~CitizenVote.bill_id.like("DEMO-%"))
             )
             zk_events = (
                 select(
@@ -212,6 +216,7 @@ async def votes_timeline(
                 .join(ParliamentBill, ZkVoteReceipt.vote_scope_id == func.concat("bill:", ParliamentBill.id))
                 .where(
                     public_bill_filter(),
+                    results_visible_filter(),
                     ParliamentBill.source == "PARLIAMENT",
                     ~ParliamentBill.id.like("DEMO-%"),
                     ZkVoteReceipt.vote_commitment.in_([choice.value for choice in VoteChoice]),

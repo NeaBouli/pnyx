@@ -118,10 +118,11 @@ async def send_monthly_report(db: AsyncSession) -> bool:
         )
     ) or 0
 
+    from services.bill_visibility import results_visible_filter
     total_votes = await db.scalar(
         select(func.count(CitizenVote.id))
         .join(ParliamentBill, CitizenVote.bill_id == ParliamentBill.id)
-        .where(public_bill_filter())
+        .where(public_bill_filter(), results_visible_filter())
     ) or 0
 
     archived_count = await db.scalar(

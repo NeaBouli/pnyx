@@ -19,7 +19,7 @@ from sqlalchemy import select, func
 
 from database import get_db
 from models import ParliamentBill, CitizenVote, BillStatus, VoteChoice, Party
-from services.bill_visibility import public_bill_filter
+from services.bill_visibility import public_bill_filter, results_hidden
 from routers.voting import compute_divergence
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,8 @@ async def get_all_results(db: AsyncSession, min_votes: int = 0) -> list[dict]:
 
     rows = []
     for bill in bills:
-        counts = vote_counts.get(bill.id, {})
+        # A running vote with hidden results exports no counts (T-599).
+        counts = {} if results_hidden(bill) else vote_counts.get(bill.id, {})
         yes = counts.get(VoteChoice.YES, 0)
         no = counts.get(VoteChoice.NO, 0)
         abstain = counts.get(VoteChoice.ABSTAIN, 0)
