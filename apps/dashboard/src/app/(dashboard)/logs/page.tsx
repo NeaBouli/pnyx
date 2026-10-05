@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { scraperJobsFrom } from '@/lib/health-shapes'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
@@ -125,9 +126,13 @@ export default function LogsPage() {
       }
       if (settled[2].status === 'fulfilled') setHlr(settled[2].value as HlrCredits)
       if (settled[3].status === 'fulfilled') {
-        const raw = settled[3].value
-        const jobArr = Array.isArray(raw) ? raw : (raw as Record<string, unknown>)?.jobs
-        setJobs(Array.isArray(jobArr) ? jobArr as ScraperJob[] : [])
+        setJobs(scraperJobsFrom(settled[3].value).map(job => ({
+          name: job.name,
+          last_run: job.last_run ?? undefined,
+          status: job.status,
+          error: job.last_error ?? undefined,
+          error_count: job.error_count,
+        })))
       }
       if (settled[4].status === 'fulfilled') setScraperStatus(settled[4].value as ScraperStatus)
 

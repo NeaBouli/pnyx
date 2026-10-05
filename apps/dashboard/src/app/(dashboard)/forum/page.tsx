@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { forumSyncStatusFrom } from '@/lib/health-shapes'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
 export default function ForumPage() {
   const [discourse, setDiscourse] = useState<Record<string, unknown> | null>(null)
-  const [forumSyncEnabled, setForumSyncEnabled] = useState<boolean | null>(null)
+  const [forumSyncStatus, setForumSyncStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -14,15 +15,10 @@ export default function ForumPage() {
       try {
         const [aboutRes, healthRes] = await Promise.allSettled([
           fetch('/api/discourse').then(r => r.json()),
-          fetch(`${API}/health`).then(r => r.json()),
+          fetch(`${API}/api/v1/health/modules`).then(r => r.json()),
         ])
         if (aboutRes.status === 'fulfilled') setDiscourse(aboutRes.value as Record<string, unknown>)
-        if (healthRes.status === 'fulfilled') {
-          const modules = (healthRes.value as Record<string, unknown>)?.modules as Record<string, unknown> | undefined
-          if (modules?.forum_sync !== undefined) {
-            setForumSyncEnabled(modules.forum_sync === 'ok' || modules.forum_sync === true)
-          }
-        }
+        if (healthRes.status === 'fulfilled') setForumSyncStatus(forumSyncStatusFrom(healthRes.value))
       } catch { /* non-critical */ }
       finally { setLoading(false) }
     }
@@ -93,12 +89,14 @@ export default function ForumPage() {
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
                 <span className="text-gray-600">{String('Bill-Sync Κατάσταση')}</span>
                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                  forumSyncEnabled === true ? 'bg-green-100 text-green-700' :
-                  forumSyncEnabled === false ? 'bg-red-100 text-red-700' :
+                  forumSyncStatus === 'ok' ? 'bg-green-100 text-green-700' :
+                  forumSyncStatus === 'error' ? 'bg-red-100 text-red-700' :
+                  forumSyncStatus ? 'bg-yellow-100 text-yellow-700' :
                   'bg-gray-100 text-gray-500'
                 }`}>
-                  {forumSyncEnabled === true ? String('Ενεργοποιημένο') :
-                   forumSyncEnabled === false ? String('Απενεργοποιημένο') :
+                  {forumSyncStatus === 'ok' ? String('Λειτουργεί') :
+                   forumSyncStatus === 'error' ? String('Σφάλμα') :
+                   forumSyncStatus ? String(forumSyncStatus) :
                    String('Άγνωστο')}
                 </span>
               </div>
