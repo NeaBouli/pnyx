@@ -156,7 +156,8 @@ async def send_monthly_report(db: AsyncSession) -> bool:
 
     # ── Top-Abstimmungen mit Ergebnis (diesen Monat) ─────────────
     from sqlalchemy import text
-    top_votes_result = await db.execute(text("""
+    from services.bill_visibility import results_visible_raw_sql
+    top_votes_result = await db.execute(text(f"""
         SELECT b.id, b.title_el,
             COUNT(*) FILTER (WHERE cv.vote='YES') as yes,
             COUNT(*) FILTER (WHERE cv.vote='NO') as no,
@@ -165,6 +166,7 @@ async def send_monthly_report(db: AsyncSession) -> bool:
         JOIN parliament_bills b ON b.id = cv.bill_id
         WHERE cv.created_at >= :month_start
           AND b.admin_hidden IS NOT TRUE
+          AND {results_visible_raw_sql('b')}
         GROUP BY b.id, b.title_el
         ORDER BY total DESC LIMIT 5
     """), {"month_start": month_start})

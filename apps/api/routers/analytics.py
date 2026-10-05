@@ -16,7 +16,12 @@ from sqlalchemy import DateTime, String, cast, select, func, and_, extract, Inte
 
 from database import get_db
 from models import ParliamentBill, CitizenVote, BillStatus, VoteChoice, ZkVoteReceipt
-from services.bill_visibility import is_public_bill, public_bill_filter, public_bill_with_demo_filter
+from services.bill_visibility import (
+    is_public_bill,
+    public_bill_filter,
+    public_bill_with_demo_filter,
+    results_hidden,
+)
 from services.zk_vote_aggregation import (
     VoteTotals,
     aggregate_bill_vote_totals,
@@ -305,7 +310,8 @@ async def bill_analytics(bill_id: str, db: AsyncSession = Depends(get_db)):
     if not bill or not is_public_bill(bill):
         raise HTTPException(404, f"Bill {bill_id} nicht gefunden")
 
-    totals = await aggregate_bill_vote_totals(
+    hidden = results_hidden(bill)
+    totals = VoteTotals(0, 0, 0, 0, 0, 0) if hidden else await aggregate_bill_vote_totals(
         db,
         bill_id,
         include_zk=include_zk_for_bill(bill),
@@ -317,22 +323,24 @@ async def bill_analytics(bill_id: str, db: AsyncSession = Depends(get_db)):
 
     divergence = await compute_divergence(db, bill_id, bill, totals)
 
-    events = bill_vote_events_query(
-        bill_id,
-        include_zk=include_zk_for_bill(bill),
-    )
-    weekday_result = await db.execute(
-        select(
-            extract("dow", events.c.created_at).cast(Integer).label("weekday"),
-            func.count().label("count")
-        ).group_by(extract("dow", events.c.created_at).cast(Integer))
-    )
     DAYS = ["Κυρ", "Δευ", "Τρι", "Τετ", "Πεμ", "Παρ", "Σαβ"]
-    by_weekday = [
-        {"day": DAYS[r.weekday], "count": r.count}
-        for r in weekday_result.all()
-        if r.count >= K_ANONYMITY_MIN
-    ]
+    by_weekday = []
+    if not hidden:
+        events = bill_vote_events_query(
+            bill_id,
+            include_zk=include_zk_for_bill(bill),
+        )
+        weekday_result = await db.execute(
+            select(
+                extract("dow", events.c.created_at).cast(Integer).label("weekday"),
+                func.count().label("count")
+            ).group_by(extract("dow", events.c.created_at).cast(Integer))
+        )
+        by_weekday = [
+            {"day": DAYS[r.weekday], "count": r.count}
+            for r in weekday_result.all()
+            if r.count >= K_ANONYMITY_MIN
+        ]
 
     return {
         "bill_id": bill_id, "title_el": bill.title_el, "status": bill.status.value,
@@ -347,6 +355,7 @@ async def bill_analytics(bill_id: str, db: AsyncSession = Depends(get_db)):
             "available": divergence is not None,
         },
         "by_weekday": by_weekday,
+        "results_hidden": hidden,
         "k_anonymity_min": K_ANONYMITY_MIN, "data_license": "CC BY 4.0",
     }
 

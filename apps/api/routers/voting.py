@@ -27,7 +27,14 @@ from models import (
     ParliamentBill, BillStatus, BillRelevanceVote, GovernanceLevel, ZkVoteReceipt
 )
 from services.source_links import official_source_url
-from services.bill_visibility import is_public_bill, public_bill_filter, public_bill_raw_sql
+from services.bill_visibility import (
+    is_public_bill,
+    public_bill_filter,
+    public_bill_raw_sql,
+    results_hidden,
+    results_visible_filter,
+    results_visible_raw_sql,
+)
 from services.citizen_action_integrity import (
     build_vote_status_read_payload,
     citizen_action_timestamp_is_fresh,
@@ -979,6 +986,7 @@ async def get_latest_result(db: AsyncSession = Depends(get_db)):
             BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END, BillStatus.ACTIVE,
         ]))
         .where(public_bill_filter())
+        .where(results_visible_filter())
         .where(or_(tier1_vote_exists, parliament_zk_vote_exists))
         .order_by(desc(ParliamentBill.created_at))
         .limit(1)
@@ -1059,6 +1067,7 @@ async def get_votes_in_progress(db: AsyncSession = Depends(get_db)):
           AND b.id NOT LIKE 'DEMO-%'
           AND (b.parliament_url IS NOT NULL OR b.diavgeia_ada IS NOT NULL)
           AND b.status::text IN ('ACTIVE', 'WINDOW_24H', 'PARLIAMENT_VOTED', 'OPEN_END')
+          AND {results_visible_raw_sql('b')}
           AND (COALESCE(tier.total_votes, 0) + COALESCE(zk.total_votes, 0)) >= :threshold
         ORDER BY (COALESCE(tier.total_votes, 0) + COALESCE(zk.total_votes, 0)) DESC, b.created_at DESC
         LIMIT 6
@@ -1105,10 +1114,8 @@ async def get_results(bill_id: str, db: AsyncSession = Depends(get_db)):
     if not bill or not is_public_bill(bill):
         raise HTTPException(status_code=404, detail=f"Το νομοσχέδιο {bill_id} δεν βρέθηκε.")
 
-    # Visibility check
-    visibility = getattr(bill, 'results_visibility', 'HIDDEN') or 'HIDDEN'
-    always_visible = bill.status in (BillStatus.PARLIAMENT_VOTED, BillStatus.OPEN_END, BillStatus.WINDOW_24H)
-    if visibility == 'HIDDEN' and not always_visible and bill.status == BillStatus.ACTIVE:
+    # Visibility check (shared with every public results surface)
+    if results_hidden(bill):
         vote_date = bill.parliament_vote_date.strftime("%d/%m/%Y") if bill.parliament_vote_date else None
         return BillResults(
             bill_id=bill_id, title_el=bill.title_el, status=bill.status.value,

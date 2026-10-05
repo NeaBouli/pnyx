@@ -7,7 +7,7 @@ from typing import Any
 from sqlalchemy import and_, func, not_, or_
 from sqlalchemy.sql.elements import ColumnElement
 
-from models import DiavgeiaDecision, ParliamentBill
+from models import BillStatus, DiavgeiaDecision, ParliamentBill
 
 DIAVGEIA_SENSITIVE_PUBLIC_TERMS = (
     "αμκα",
@@ -118,3 +118,33 @@ def is_public_bill(bill: Any) -> bool:
             for field in ("title_el", "summary_short_el", "summary_long_el")
         )
     return True
+
+
+# ── Result visibility ─────────────────────────────────────────────────────────
+# A running vote must not publish interim counts: an ACTIVE bill keeps its results hidden
+# unless the bill opts into WINDOW/ALWAYS. Every public surface that reports per-bill vote counts
+# uses these guards, the same rule as routers.voting.get_results.
+
+def results_hidden(bill: Any) -> bool:
+    """True while a bill's vote counts must not be published."""
+    status = getattr(getattr(bill, "status", None), "value", getattr(bill, "status", None))
+    visibility = getattr(bill, "results_visibility", None) or "HIDDEN"
+    return status == "ACTIVE" and visibility == "HIDDEN"
+
+
+def results_visible_filter() -> ColumnElement[bool]:
+    """SQLAlchemy predicate matching bills whose vote counts may be published."""
+    return not_(and_(
+        ParliamentBill.status == BillStatus.ACTIVE,
+        func.coalesce(ParliamentBill.results_visibility, "HIDDEN") == "HIDDEN",
+    ))
+
+
+def results_visible_raw_sql(alias: str) -> str:
+    """Raw SQL form of results_visible_filter() for a parliament_bills alias."""
+    if not alias.replace("_", "").isalnum():
+        raise ValueError("SQL alias must be an identifier")
+    return (
+        f"NOT ({alias}.status::text = 'ACTIVE' "
+        f"AND COALESCE({alias}.results_visibility, 'HIDDEN') = 'HIDDEN')"
+    )
