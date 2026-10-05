@@ -163,10 +163,32 @@ async def test_in_progress_feed_excludes_running_votes():
     assert results_visible_raw_sql("b") in str(db.statements[0])
 
 
-def test_newsletter_top_votes_apply_the_guard():
-    import inspect
-    source = inspect.getsource(newsletter_service)
-    assert "AND {results_visible_raw_sql('b')}" in source
+@pytest.mark.asyncio
+async def test_monthly_newsletter_queries_apply_the_guard(monkeypatch):
+    """Runs send_monthly_report and inspects the statements it actually executes."""
+    scalars, executes = [], []
+
+    class _ReportDb:
+        async def scalar(self, statement, *_args, **_kwargs):
+            scalars.append(str(statement.compile(dialect=postgresql.dialect())))
+            return 1
+
+        async def execute(self, statement, *_args, **_kwargs):
+            executes.append(str(statement))
+            return SimpleNamespace(all=lambda: [])
+
+    async def fake_post(endpoint, _data):
+        return {"id": 1} if endpoint == "emailCampaigns" else {}
+
+    monkeypatch.setattr(newsletter_service, "_brevo_post", fake_post)
+    await newsletter_service.send_monthly_report(_ReportDb())
+
+    total_votes = [s for s in scalars if "count(citizen_votes.id)" in s]
+    assert len(total_votes) == 1
+    assert "coalesce(parliament_bills.results_visibility" in total_votes[0]
+    top_votes = [s for s in executes if "FROM citizen_votes cv" in s]
+    assert len(top_votes) == 1
+    assert results_visible_raw_sql("b") in top_votes[0]
 
 
 class _CplmDb:
@@ -273,9 +295,6 @@ async def test_global_turnout_counters_exclude_running_votes():
     assert all("coalesce(parliament_bills.results_visibility" in s for s in statements)
 
 
-def test_newsletter_monthly_total_applies_the_guard():
-    import inspect
-    assert ".where(public_bill_filter(), results_visible_filter())" in inspect.getsource(newsletter_service)
 
 
 def test_cplm_cache_and_history_keys_are_versioned_for_the_filtered_aggregate():
