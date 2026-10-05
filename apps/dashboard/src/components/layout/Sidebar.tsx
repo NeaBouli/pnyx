@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { signOut } from 'next-auth/react'
 import { canAccess, type DashboardRole } from '@/lib/auth'
 
@@ -77,11 +77,21 @@ interface SidebarProps {
   username: string
   role: DashboardRole
   avatarUrl?: string | null
+  /** Drawer state below md (768px); from md up the sidebar is always shown. */
+  open: boolean
+  onClose: () => void
 }
 
-export default function Sidebar({ username, role, avatarUrl }: SidebarProps) {
+export default function Sidebar({ username, role, avatarUrl, open, onClose }: SidebarProps) {
   const pathname = usePathname()
   const [nodeView, setNodeView] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, onClose])
 
   const isSuperAdmin = role === 'SUPER_ADMIN'
   const effectiveNodeView = role === 'NODE_ADMIN' || (isSuperAdmin && nodeView)
@@ -94,7 +104,21 @@ export default function Sidebar({ username, role, avatarUrl }: SidebarProps) {
   }
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-60 bg-gray-900 text-white flex flex-col z-50">
+    <>
+    {open && (
+      <button
+        type="button"
+        aria-label="Κλείσιμο μενού"
+        onClick={onClose}
+        className="md:hidden fixed inset-0 z-40 bg-black/40"
+      />
+    )}
+    <aside
+      id="dashboard-sidebar"
+      className={`fixed left-0 top-0 h-full w-60 bg-gray-900 text-white flex flex-col z-50 transition-transform md:translate-x-0 ${
+        open ? 'translate-x-0' : '-translate-x-full'
+      }`}
+    >
       {/* Logo */}
       <div className="px-6 py-5 border-b border-gray-800">
         <div className="text-xl font-bold text-white tracking-tight">ekklesia.gr</div>
@@ -138,6 +162,7 @@ export default function Sidebar({ username, role, avatarUrl }: SidebarProps) {
                     <Link
                       key={item.href}
                       href={item.href}
+                      onClick={onClose}
                       className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                         isActive
                           ? 'bg-blue-600 text-white'
@@ -187,5 +212,6 @@ export default function Sidebar({ username, role, avatarUrl }: SidebarProps) {
         </button>
       </div>
     </aside>
+    </>
   )
 }
