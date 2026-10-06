@@ -8,17 +8,17 @@ from fastapi import APIRouter
 router = APIRouter(prefix="/api/v1/app", tags=["App Version"])
 
 # Hardcoded — bei neuem Release hier anpassen
-LATEST_VERSION = "1.0.32"
-LATEST_VERSION_CODE = 61
+LATEST_VERSION = "1.0.33"
+LATEST_VERSION_CODE = 62
 MIN_REQUIRED_VERSION_CODE = 1
 FORCE_UPDATE = False
 
-RELEASE_NOTES_EL = "v1.0.32 — Προστέθηκε μετρητής ειδοποιήσεων στο εικονίδιο της εφαρμογής για νέες ψηφοφορίες, αποτελέσματα και ενημερώσεις. Διατηρούνται οι διορθώσεις συμβατότητας για επιλογή Περιφέρειας/Δήμου και ελληνικούς αριθμούς κινητού."
-RELEASE_NOTES_EN = "v1.0.32 — Added an app-icon notification counter for new votes, results and updates. The Region/Municipality selection and Greek mobile-number compatibility fixes remain included."
+RELEASE_NOTES_EL = "v1.0.33 — Βελτιώσεις ασφάλειας και συμβατότητα με νεότερες συσκευές Android."
+RELEASE_NOTES_EN = "v1.0.33 — Security improvements and compatibility with newer Android devices."
 
 FDROID_URL = "https://f-droid.org/packages/ekklesia.gr/"
 PLAYSTORE_URL = "https://play.google.com/apps/testing/ekklesia.gr"
-DIRECT_APK_URL = "https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk"
+DIRECT_APK_URL = "https://github.com/NeaBouli/pnyx/releases/download/v1.0.33/ekklesia-v1.0.33-vC62-DIRECT.apk"
 
 
 @router.get("/version")
