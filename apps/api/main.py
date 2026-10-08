@@ -817,6 +817,16 @@ app = FastAPI(
     redoc_url="/redoc" if _is_dev else None,
     openapi_url="/openapi.json" if _is_dev else None,
     lifespan=lifespan,
+    # FastAPI >=0.142 ships native OpenTelemetry that auto-exports when OTEL_*
+    # endpoints are set. Request spans would carry paths, timings and client
+    # metadata, so keep it off explicitly (anonymity is non-negotiable).
+    telemetry={
+        "tracing": False,
+        "metrics": False,
+        "logs": False,
+        "operation_spans": False,
+        "auto_configure": False,
+    },
 )
 
 app.state.limiter = limiter
