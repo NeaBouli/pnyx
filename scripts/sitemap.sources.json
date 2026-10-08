@@ -7,8 +7,8 @@
       "source": "docs/index.html",
       "changefreq": "weekly",
       "priority": "1.0",
-      "lastmod": "2026-10-04",
-      "sha256": "2006977f2a8b855c07f39549494bd8211aa3bf857c1ed6e072912bf467398caa"
+      "lastmod": "2026-10-08",
+      "sha256": "14faefab9b2f5b0db51b892fabf95e62f159d2ac18514d0fc8eba5547cbe94f4"
     },
     {
       "loc": "/el/bills",
@@ -73,8 +73,8 @@
       "source": "docs/wiki/faq.html",
       "changefreq": "monthly",
       "priority": "0.9",
-      "lastmod": "2026-09-28",
-      "sha256": "33db2e251e5955aacddec7d1b487ba7c0dc06e579e0912ad505a6ecb3fc1523c"
+      "lastmod": "2026-10-08",
+      "sha256": "c93b862673522b47b3ad5d026f486ffba787aac3f1e3760ec33c7eeef3b016b8"
     },
     {
       "loc": "/wiki/whitepaper.html",
@@ -129,8 +129,8 @@
       "source": "docs/wiki/roadmap.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-09-27",
-      "sha256": "775406a980fcb7492218616bcc6cba647c414abf4945413f50082e02da305c59"
+      "lastmod": "2026-10-08",
+      "sha256": "f39c3b9d6b21fad1eb8a5c30933cbdbe8374d2929c4cace4e189104c4fa9cf01"
     },
     {
       "loc": "/wiki/database.html",
