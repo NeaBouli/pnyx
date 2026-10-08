@@ -38,8 +38,8 @@ test("Sharp override matches the installed Next requirement", () => {
   const next = JSON.parse(readFileSync(new URL("./node_modules/next/package.json", import.meta.url)));
   const manifest = JSON.parse(readFileSync(new URL("./package.json", import.meta.url)));
   assert.ok(semver.satisfies(sharp.versions.sharp, next.optionalDependencies.sharp));
-  assert.equal(manifest.overrides.sharp, "0.35.4");
-  assert.equal(sharp.versions.sharp, "0.35.4");
+  assert.equal(manifest.overrides.sharp, "0.35.5");
+  assert.equal(sharp.versions.sharp, "0.35.5");
 });
 
 for (const format of ["png", "jpeg", "webp"]) {
