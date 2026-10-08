@@ -34,6 +34,12 @@
   `arweave-python-client==1.0.19`. Ekklesia uses only the library's RSA Arweave
   wallet/signing path, but the package cannot currently be installed without
   `python-jose` and `ecdsa`.
-- The security workflow ignores only this advisory. Remove the exception when
+- `CVE-2026-85394` (GHSA-3qf3-8w2g-rqmx) affects `python-jose` through 3.5.0
+  (latest, no fix): asymmetric keys are accepted for HMAC initialization.
+  The Arweave client uses `jose` only for base64url helpers and
+  `jwk.construct(..., RS256)` on our own wallet; `apps/api` never imports
+  `jose` and no HMAC/JWT path uses it. Added 2026-10-08 (T-604);
+  review_by 2026-11-01.
+- The security workflow ignores only these two advisories. Remove them when
   an upstream Arweave client release drops the dependency or when MOD-08 moves
   to a maintained client.

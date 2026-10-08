@@ -82,8 +82,12 @@ jobs:
             echo "=== pip-audit: $req ==="
             # arweave-python-client 1.0.19 hard-depends on python-jose/ecdsa,
             # while this project uses only its RSA Arweave wallet path. Upstream
-            # has no fixed release yet; keep this single scoped exception visible.
-            pip-audit --ignore-vuln PYSEC-2026-1325 -r "$req" || failed=1
+            # has no fixed release yet; keep these scoped exceptions visible.
+            # CVE-2026-85394 (GHSA-3qf3-8w2g-rqmx, python-jose <=3.5.0, no fix):
+            # HMAC key validation; jose is used only for base64url helpers and
+            # RS256 JWK construction of our own wallet, never HMAC. Added
+            # 2026-10-08 (T-604, Q11 decision); review_by 2026-11-01.
+            pip-audit --ignore-vuln PYSEC-2026-1325 --ignore-vuln CVE-2026-85394 -r "$req" || failed=1
           done < <(find . -maxdepth 3 -name "requirements.txt" -print | sort)
           exit $failed
 
