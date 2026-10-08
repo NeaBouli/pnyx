@@ -207,3 +207,29 @@ async def test_poor_ollama_and_no_claude_answer_reports_unavailable(
     assert response["model"] == "none"
     assert response["answer"].startswith("Assistant is currently unavailable.")
     assert response["sources"] == []
+
+
+def test_short_ollama_answer_is_poor_even_with_appended_disclaimer():
+    # answer_citizen_question() appends the disclaimer; the length check must
+    # judge only the model text (T-615: "η ekklisia.gr." slipped through).
+    from services.ollama_service import _DISCLAIMER_EL, _DISCLAIMER_EN
+
+    assert _is_answer_poor("η ekklisia.gr." + _DISCLAIMER_EL) is True
+    assert _is_answer_poor("Ekklesia." + _DISCLAIMER_EN) is True
+    assert _is_answer_poor(_DISCLAIMER_EL) is True
+
+
+def test_full_ollama_answer_with_disclaimer_is_not_poor():
+    from services.ollama_service import _DISCLAIMER_EL
+
+    answer = "Το ekklesia.gr είναι ανεξάρτητη πλατφόρμα ψηφιακής δημοκρατικής συμμετοχής." + _DISCLAIMER_EL
+    assert _is_answer_poor(answer) is False
+
+
+def test_bad_signal_in_disclaimer_does_not_mark_answer_poor():
+    # Signals are matched against the model text only, not the disclaimer.
+    from services.ollama_service import _DISCLAIMER_EL
+
+    assert agent._DISCLAIMER_SEPARATOR in _DISCLAIMER_EL
+    answer = "Ψηφίζετε μέσα από την εφαρμογή αφού επαληθεύσετε την SIM σας μέσω HLR." + _DISCLAIMER_EL
+    assert _is_answer_poor(answer) is False

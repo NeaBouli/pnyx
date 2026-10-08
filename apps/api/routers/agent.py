@@ -76,6 +76,7 @@ class AskRequest(BaseModel):
         return canonical_lang(value)
 
 
+_DISCLAIMER_SEPARATOR = "\n\n---\n"
 _DISCLAIMER_EL = (
     "\n\n---\n"
     "⚠️ Αυτή η πλατφόρμα δεν είναι κρατική υπηρεσία. "
@@ -719,10 +720,15 @@ async def _claude_answer(question: str, context: list[dict[str, str]], lang: str
 
 
 def _is_answer_poor(answer: str) -> bool:
-    """Detect if Ollama gave a poor/confused answer."""
-    if not answer or len(answer) < 30:
+    """Detect if Ollama gave a poor/confused answer.
+
+    answer_citizen_question() already appends the legal disclaimer, so judge only
+    the model text before it; otherwise the disclaimer alone passes the length check.
+    """
+    body = (answer or "").split(_DISCLAIMER_SEPARATOR, 1)[0].strip()
+    if len(body) < 30:
         return True
-    low = answer.lower()
+    low = body.lower()
     bad_signals = [
         "δεν έχω αρκετά δεδομένα",
         "δεν διαθέτω αρκετά στοιχεία",
