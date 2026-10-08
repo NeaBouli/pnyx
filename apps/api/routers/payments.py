@@ -968,6 +968,11 @@ async def stripe_webhook(request: Request):
         logger.error("[MOD-18] Stripe webhook payload rejected: %s", type(e).__name__)
         raise HTTPException(status_code=400, detail="Invalid Stripe webhook payload")
 
+    # stripe>=15 returns a StripeObject that is not a dict; every access below
+    # (and in _process_stripe_adjustment) is dict-style, so convert recursively.
+    if not isinstance(event, dict):
+        event = event.to_dict()
+
     event_type = event.get("type", "")
     if event_type in {"charge.refunded", "charge.dispute.created", "charge.dispute.closed"}:
         return await _process_stripe_adjustment(event, event_type)
