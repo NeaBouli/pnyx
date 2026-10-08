@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "next": "16.3.6",
+    "next": "16.3.8",
     "next-auth": "5.0.0-beta.32",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.8",
@@ -34,7 +34,7 @@
     "js-yaml": "4.3.2",
     "nanoid": "3.3.18",
     "postcss": "8.5.28",
-    "sharp": "0.35.4",
+    "sharp": "0.35.5",
     "minimatch@3.1.5": {
       "brace-expansion": "1.1.21"
     },
