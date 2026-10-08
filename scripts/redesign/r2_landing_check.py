@@ -167,6 +167,17 @@ ALLOWED_ZK_PAUSE_BILINGUAL_REMOVALS = {
     ("ZK Arweave — αυτόματη δημοσίευση για Βουλή από ομάδα 5+",
      "ZK Arweave — auto-publication for Parliament groups of 5+"),
 }
+# T-614 (coordinator-approved 2026-10-09, Gio delegation): the Android download card moves from
+# the v1.0.32/vC61 Direct APK to the published v1.0.33/vC62 asset, and the Google Play card
+# subtitle reflects vC62 in closed testing with production pending (title stays "Υπό έλεγχο").
+ALLOWED_V62_BILINGUAL_REMOVALS = {
+    ("v1.0.32 · vC61 δημοσιευμένο", "v1.0.32 · vC61 published"),
+    ("vC61 υποβλήθηκε · αναμονή έγκρισης", "vC61 submitted · approval pending"),
+}
+ALLOWED_APK_HREF_REPLACEMENT = {
+    "https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk":
+        "https://github.com/NeaBouli/pnyx/releases/download/v1.0.33/ekklesia-v1.0.33-vC62-DIRECT.apk",
+}
 ALLOWED_DEMO_CYCLE_INTERACTION_COUNTS = {"add_event_listener_count": 8, "set_timeout_count": 2}
 ALLOWED_DEMO_CYCLE_FORM_CONTROLS = ({"tag": "button", "type": "button", "id": "cycleToggle"},)
 
@@ -296,7 +307,11 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
             b_int = baseline.get(key, {})
             c_int = current.get(key, {})
             b_sorted = sorted(
-                tuple(sorted(h.items())) for h in b_int.get("element_handlers", [])
+                tuple(sorted(
+                    {**h, "href": ALLOWED_APK_HREF_REPLACEMENT.get(h["href"], h["href"])}.items()
+                    if "href" in h else h.items()
+                ))
+                for h in b_int.get("element_handlers", [])
             )
             c_sorted = sorted(
                 tuple(sorted(h.items())) for h in c_int.get("element_handlers", [])
@@ -323,7 +338,8 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
         for item in baseline["bilingual"]["pairs"]
     )
     for pair in (REMOVABLE_HEADER_PAIRS | ALLOWED_R5_BILINGUAL_REMOVALS
-                 | ALLOWED_DEMO_CYCLE_BILINGUAL_REMOVALS | ALLOWED_ZK_PAUSE_BILINGUAL_REMOVALS):
+                 | ALLOWED_DEMO_CYCLE_BILINGUAL_REMOVALS | ALLOWED_ZK_PAUSE_BILINGUAL_REMOVALS
+                 | ALLOWED_V62_BILINGUAL_REMOVALS):
         if baseline_pairs[pair]:
             baseline_pairs[pair] -= 1
             if not baseline_pairs[pair]:

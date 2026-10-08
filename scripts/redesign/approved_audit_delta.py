@@ -27,6 +27,9 @@ import r0_inventory
 # element now equals its data-el value, so toggling EN → ΕΛ restores the same copy.
 # T-512/T-540 (EKA-53, #431): community.html's DeepL usage fetch moves from
 # /api/v1/admin/deepl/usage to /api/v1/public/deepl/usage; nothing else changes.
+# T-614 (coordinator-approved 2026-10-09, Gio delegation): faq.html and roadmap.html say the
+# direct Android APK v1.0.33/vC62 is published and vC62 is live in Google Play Closed Testing
+# for testers with production access pending (EL and EN, incl. the FAQ JSON-LD answer).
 APPROVED_WIKI_INVENTORY_HASH = {
     "docs/community.html": "db27c710ace27910a98fcf61c04f80928733f117d8bf0ad723f9c51d39625ba2",
     "docs/wiki/api.html": "0f2b6771a112f089c7fba6b1ef3185e061b073cd338f3db10a38a3c3c3c2515f",
@@ -35,11 +38,11 @@ APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/contributing.html": "08d936e733910ef72639759b7ec5ff92993db2d7a2ad9ef21d86fa3a1cf3838c",
     "docs/wiki/database.html": "9a86616c03c17a3cf3b8f95458d10286056bb99c760e0daf944ed1e54e4d35b2",
     "docs/wiki/delete-account.html": "426b3c7c2a252a4b1520ad1bdd0bfee812904c43f057e8c805114803f09778e9",
-    "docs/wiki/faq.html": "c76da4e63f6f0d9b7aca838de18cd6fbe5c6ab1bd78efefe7e5d75805bd2d379",
+    "docs/wiki/faq.html": "4bda2ccff854016b88249d18952e3c62de297b909d70a8e5e15886cc170a09db",
     "docs/wiki/index.html": "933348ee7f46e0244edd90d76c03daeb46781255325c0f6ae5bd8c3bb02854d5",
     "docs/wiki/modules.html": "f0f54584009d7727b5f13ab16fa48046339e7ea3f7542f045f7e2242e1849fcd",
     "docs/wiki/privacy.html": "8887a4b19c0fdca6f52cec50289d5c4e17eb21e8839c5dc9405cd9395ee97ba1",
-    "docs/wiki/roadmap.html": "9f46e4571cc3470553c56238fb137ea80026fb90979720e5a48cd6256fda605f",
+    "docs/wiki/roadmap.html": "0bc54ef66ee79ec0db67ed8f1e334dc22174039f1e6d64d23ed2723763e34b77",
     "docs/wiki/security.html": "5dac9dce20e8552fa031fdd03c0501a752e6e4ae05f16c384c697882258da44f",
     "docs/wiki/whitepaper.html": "ebf88a4bbbbaf7c4350cdfe9076c5010eaa2f207ef4a275e0d65d5aa9828b6c0",
     "docs/wiki/zk-voting.html": "a9d955a74ad6b0f50a6d504effb3f38c0a07210e9b6a948241e89dead0401e24",
