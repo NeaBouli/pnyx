@@ -114,7 +114,9 @@ describe("notification runtime wiring", () => {
     await exports.reconcileNotificationBadge();
     expect(await exports.getUnreadEventsStore().unreadCount()).toBe(1);
     expect(native.setBadgeCountAsync).toHaveBeenLastCalledWith(1);
-    expect(native.getBadgeCountAsync).not.toHaveBeenCalled();
+    // Positive counts are absolute (never current + 1); the current badge is
+    // only read to skip a 0 -> 0 native clear (MOBILE-UX-20261007-01).
+    expect(native.setBadgeCountAsync.mock.calls.every(([n]: [number]) => n === 0 || n === 1)).toBe(true);
     expect(presentation.shouldSetBadge).toBe(false);
     await exports.markNotificationEventRead(`vote_open:${payload.bill_id}`);
     await background({ data: { data: payload }, error: null });

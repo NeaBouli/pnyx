@@ -50,6 +50,19 @@ export function createNotificationBadgeQueue() {
           const current = typeof count === "function" ? await count() : count;
           const normalized =
             Number.isFinite(current) && current > 0 ? Math.floor(current) : 0;
+          if (normalized === 0) {
+            // On Android expo-notifications implements setBadgeCountAsync(0) as
+            // NotificationManager.cancelAll(), and One UI derives the icon number
+            // from tray notifications. Reconciling 0 -> 0 (app start, duplicate or
+            // disabled push) must therefore not wipe the tray (MOBILE-UX-20261007-01).
+            let shown: number | null = null;
+            try {
+              shown = await adapter.getBadgeCountAsync();
+            } catch {
+              shown = null;
+            }
+            if (shown === 0) return;
+          }
           await adapter.setBadgeCountAsync(Math.min(normalized, 99));
         });
       return operation;
