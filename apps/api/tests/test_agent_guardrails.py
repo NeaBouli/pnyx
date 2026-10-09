@@ -207,3 +207,42 @@ async def test_poor_ollama_and_no_claude_answer_reports_unavailable(
     assert response["model"] == "none"
     assert response["answer"].startswith("Assistant is currently unavailable.")
     assert response["sources"] == []
+
+
+def test_short_ollama_answer_is_poor_even_with_appended_disclaimer():
+    # answer_citizen_question() appends the disclaimer; the length check must
+    # judge only the model text (T-615: "η ekklisia.gr." slipped through).
+    from services.ollama_service import _DISCLAIMER_EL, _DISCLAIMER_EN
+
+    assert _is_answer_poor("η ekklisia.gr." + _DISCLAIMER_EL) is True
+    assert _is_answer_poor("Ekklesia." + _DISCLAIMER_EN) is True
+    assert _is_answer_poor(_DISCLAIMER_EL) is True
+
+
+def test_full_ollama_answer_with_disclaimer_is_not_poor():
+    from services.ollama_service import _DISCLAIMER_EL
+
+    answer = "Το ekklesia.gr είναι ανεξάρτητη πλατφόρμα ψηφιακής δημοκρατικής συμμετοχής." + _DISCLAIMER_EL
+    assert _is_answer_poor(answer) is False
+
+
+def test_inner_markdown_rule_is_kept_when_judging_answer_quality():
+    # Only the appended service disclaimer is stripped; a Markdown rule inside
+    # the model text must not truncate the answer (T-615 review F2).
+    from services.ollama_service import _DISCLAIMER_EL
+
+    answer = (
+        "**Ψηφοφορία**\n\n---\n\nΓια να ψηφίσετε, επαληθεύστε πρώτα την SIM σας "
+        "μέσω HLR στην εφαρμογή και μετά επιλέξτε νομοσχέδιο." + _DISCLAIMER_EL
+    )
+    assert _is_answer_poor(answer) is False
+
+
+def test_bad_signal_after_inner_markdown_rule_is_detected():
+    from services.ollama_service import _DISCLAIMER_EN
+
+    answer = (
+        "**Voting**\n\n---\n\nI don't have enough information to answer this "
+        "question about the bill." + _DISCLAIMER_EN
+    )
+    assert _is_answer_poor(answer) is True
