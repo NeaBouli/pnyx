@@ -26,6 +26,7 @@ import { hasZkSemaphoreIdentity } from "../lib/zkSemaphoreIdentity";
 import { canShowPublicZkVoting, canSubmitPublicZkVote, publicZkVoteScopeForBill } from "../lib/zkPublicVoting";
 import type { ZkServerStatus } from "../lib/zkSemaphoreCore";
 import { formatZkPilotErrorMessage } from "../lib/zkPilotError";
+import { recordVoteMark, syncVoteMark } from "../lib/vote-marks";
 
 type Props = StackScreenProps<RootStackParams, "Vote">;
 
@@ -153,6 +154,7 @@ export default function VoteScreen({ route, navigation }: Props) {
           ).catch(() => null);
           if (!mounted) return;
           if (voteStatus) {
+            void syncVoteMark(billId, voteStatus);
             setHasVoted(voteStatus.has_voted);
             setIsCorrected(voteStatus.is_correction);
             if (voteStatus.vote) setSelected(voteStatus.vote);
@@ -371,6 +373,7 @@ export default function VoteScreen({ route, navigation }: Props) {
       }
 
       const res = await submitVote(nullifier, billId, choice, signatureHex);
+      void recordVoteMark(billId, false);
       setHasVoted(true);
       setSelected(choice);
 
@@ -383,6 +386,7 @@ export default function VoteScreen({ route, navigation }: Props) {
     } catch (err: any) {
       const message = err.message || "Η ψηφοφορία απέτυχε.";
       if (message.includes("ήδη") || message.includes("already") || message.includes("409")) {
+        void recordVoteMark(billId, false);
         setHasVoted(true);
       }
       Alert.alert("Σφάλμα", message);
@@ -413,6 +417,7 @@ export default function VoteScreen({ route, navigation }: Props) {
       const voteParams = { bill_id: billId, vote: choice, nullifier_hash: nullifier };
       const signatureHex = signVote(keypair.privateKeyHex, voteParams);
       const res = await correctVote(nullifier, billId, choice, signatureHex);
+      void recordVoteMark(billId, true);
       setIsCorrected(true);
       setHasVoted(true);
       setSelected(choice);
