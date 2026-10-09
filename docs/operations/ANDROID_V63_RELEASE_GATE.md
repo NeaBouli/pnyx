@@ -65,15 +65,24 @@ Channels:
 
 ## Opt-out test (data-only categories)
 
-Prerequisite: v1.0.34 installed on the test device and `PUSH_DATA_ONLY_CATEGORIES=1` set on the API (see below).
+Runs **before** any production activation, against a non-production API or
+controlled test payloads (Expo push tool / test server with the flag on) — never
+by switching on the production senders while F1/F2 below are open.
+`PUSH_DATA_ONLY_CATEGORIES` stays OFF in production throughout.
 - [ ] Category **off**, app closed/background: a data-only push for that category produces **no tray notification** and no badge.
 - [ ] Category **on**, app closed/background: exactly one local notification and badge +1; replay/tap shows nothing twice.
+- [ ] Foreground, background, OS-killed vs. force-stopped; headless runtime; older clients (v1.0.33) and F-Droid (no push) recorded.
 - [ ] Known remaining defect (not in scope): `new_bill`/`result` are still visible pushes and appear even when their category is off; switch them to data-only only after v1.0.34 is widespread or enforced via `min_required_version`.
 
 ## After the rollout (separate PRs/gates)
 
 1. **App version announcement:** PR bumping `apps/api/routers/app_version.py` to 1.0.34/63 (EL/EN notes from changelog 63, Direct URL to the v1.0.34 asset), tests, Codex review, API deploy (known procedure, rollback first).
-2. **Flag:** set `PUSH_DATA_ONLY_CATEGORIES=1` in the production API env (gio-1c/Gio gate), restart api only, then verify: weekly digest at most once per ISO week, `bill_announced` only for bills < 48 h, `system_update` first run only records the version, hourly cap respected, opt-out test above.
+2. **Flag — BLOCKED.** `PUSH_DATA_ONLY_CATEGORIES` stays OFF (default) even after the v1.0.34 rollout until all of:
+   - #492 activation blockers fixed in a new PR: **F1** atomic server-side send-once claim (parallel schedulers cannot send the same broadcast twice, claim released on failure, concurrent regression test) and **F2** reliable accepted/failed contract (sender errors and provider responses checked; no dedup finalization after a failed send; retry/partial-batch tests);
+   - that PR reviewed by Codex with green CI on its exact head; OFF integration tests for both jobs and the lifecycle hook, Redis-down fail-closed, cap/WINDOW_24H catch-up and a missed weekly run documented;
+   - device/provider evidence from the opt-out test above with the actual v1.0.34 build;
+   - a **separate Gio GO** for the activation (v1.0.34 availability and the build approval do not cover it).
+   Then: set the flag in the production API env, restart api only, verify weekly digest at most once per ISO week, `bill_announced` only for bills < 48 h, `system_update` first run only records the version, hourly cap respected.
 3. Web download links/alias to v1.0.34 (web rebuild; docs are baked into the web image).
 
 ## Rollback
