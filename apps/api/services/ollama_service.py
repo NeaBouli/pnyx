@@ -402,8 +402,13 @@ async def answer_citizen_question(
         logger.warning("[Agent] Ollama answer rejected by output guard")
         raise UnsafeModelOutputError("ollama")
 
-    # Some answers come back as {"content": "..."}; keep only the prose.
-    en_answer = _unwrap_json_answer(en_answer)
+    # Some answers come back as {"content": "..."}; keep only the prose and run
+    # the output guard again on the decoded text before anything is translated.
+    unwrapped = _unwrap_json_answer(en_answer)
+    if unwrapped != en_answer and is_unsafe_model_output(unwrapped):
+        logger.warning("[Agent] Ollama answer rejected by output guard after JSON unwrap")
+        raise UnsafeModelOutputError("ollama")
+    en_answer = unwrapped
 
     # Clean Ollama warmup artifacts
     if en_answer:
