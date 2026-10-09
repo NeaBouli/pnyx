@@ -133,3 +133,67 @@ def test_strip_table_of_contents_prefers_second_article_body():
     assert "ΠΙΝΑΚΑΣ ΠΕΡΙΕΧΟΜΕΝΩΝ" not in stripped
     assert stripped.startswith("ΚΕΦΑΛΑΙΟ Α")
     assert "Σκοπός του παρόντος" in stripped
+
+
+def _day_month():
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc)
+    return now.strftime("%Y-%m-%d"), now.strftime("%Y-%m")
+
+
+async def test_gated_call_refuses_without_calling_claude_when_budget_exhausted(monkeypatch):
+    import pytest
+
+    from services.claude_usage import DAILY_TOKEN_LIMIT
+    from tests.budget_fakes import BudgetFakeRedis
+
+    calls = []
+    monkeypatch.setattr(backfill, "call_claude", lambda *a: calls.append(a))
+    day, _ = _day_month()
+    redis = BudgetFakeRedis({f"claude:tokens:{day}": str(DAILY_TOKEN_LIMIT)})
+    with pytest.raises(backfill.BudgetGateClosed):
+        await backfill.gated_call_claude("Τίτλος", "Κείμενο", redis_client=redis)
+    assert calls == []
+
+
+async def test_gated_call_refuses_when_redis_is_down(monkeypatch):
+    import pytest
+
+    from tests.budget_fakes import BudgetFakeRedis
+
+    calls = []
+    monkeypatch.setattr(backfill, "call_claude", lambda *a: calls.append(a))
+    with pytest.raises(backfill.BudgetGateClosed):
+        await backfill.gated_call_claude("t", "x", redis_client=BudgetFakeRedis(broken=True))
+    assert calls == []
+
+
+async def test_gated_call_tracks_real_usage_and_releases(monkeypatch):
+    from tests.budget_fakes import BudgetFakeRedis
+
+    usage = {"input_tokens": 1200, "output_tokens": 300}
+    monkeypatch.setattr(backfill, "call_claude", lambda *a: ({"summary_short_el": "ok"}, usage))
+    redis = BudgetFakeRedis()
+    result, got = await backfill.gated_call_claude("t", "x", redis_client=redis)
+    day, _ = _day_month()
+    assert result == {"summary_short_el": "ok"} and got is usage
+    assert redis.store[f"claude:tokens:analysis:{day}"] == "1500"
+    assert int(redis.store[f"claude:reserved_tokens:{day}"]) == 0
+
+
+async def test_gated_call_books_full_reservation_when_call_fails(monkeypatch):
+    import pytest
+
+    from tests.budget_fakes import BudgetFakeRedis
+
+    def boom(*args):
+        raise TimeoutError("timeout after send")
+
+    monkeypatch.setattr(backfill, "call_claude", boom)
+    redis = BudgetFakeRedis()
+    with pytest.raises(TimeoutError):
+        await backfill.gated_call_claude("t", "x" * 100, redis_client=redis)
+    day, _ = _day_month()
+    assert int(redis.store[f"claude:tokens:{day}"]) > backfill.ANALYSIS_MAX_OUTPUT_TOKENS
+    assert int(redis.store[f"claude:reserved_tokens:{day}"]) == 0
