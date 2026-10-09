@@ -23,7 +23,7 @@ import redis.asyncio as aioredis
 from database import get_db
 from models import ParliamentBill, BillStatus, KnowledgeBase
 from services.bill_visibility import public_bill_filter
-from services.claude_usage import MODEL as CLAUDE_MODEL, track_usage
+from services.claude_usage import MODEL as CLAUDE_MODEL, release_budget, reserve_budget, track_usage
 from rate_limit import limiter
 from services.agent_prompt import (
     UnsafeModelOutputError,
@@ -34,7 +34,12 @@ from services.agent_prompt import (
     knowledge_record,
     retained_record_count,
 )
-from services.ollama_service import answer_citizen_question, ollama_available
+from services.ollama_service import (
+    _DISCLAIMER_EL as _SERVICE_DISCLAIMER_EL,
+    _DISCLAIMER_EN as _SERVICE_DISCLAIMER_EN,
+    answer_citizen_question,
+    ollama_available,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +81,6 @@ class AskRequest(BaseModel):
         return canonical_lang(value)
 
 
-_DISCLAIMER_SEPARATOR = "\n\n---\n"
 _DISCLAIMER_EL = (
     "\n\n---\n"
     "⚠️ Αυτή η πλατφόρμα δεν είναι κρατική υπηρεσία. "
@@ -675,11 +679,28 @@ async def _claude_answer(question: str, context: list[dict[str, str]], lang: str
         return None
 
     r = aioredis.from_url(REDIS_URL, decode_responses=True)
-    # Check credit status
-    last_error = await r.get("claude:last_error") or ""
+    try:
+        # Check credit status
+        last_error = await r.get("claude:last_error") or ""
+    except Exception as e:
+        logger.warning("[Hybrid] Claude skipped, Redis unavailable: %s", e)
+        return None
     if last_error == "credit_balance":
         return None
 
+    # Enforce the daily token limit and monthly budget before paying for a call.
+    reservation = await reserve_budget(r)
+    if reservation is None:
+        logger.info("[Hybrid] Claude skipped: budget gate closed")
+        return None
+    try:
+        return await _claude_request(r, question, context)
+    finally:
+        await release_budget(r, reservation)
+
+
+async def _claude_request(r: aioredis.Redis, question: str, context: list[dict[str, str]]) -> str | None:
+    """Perform the paid Claude Haiku call and track its real usage."""
     # Same builder as the Ollama path: rules in `system`, untrusted data only
     # inside the escaped block in the user turn.
     prompt = build_agent_prompt(question, context, datetime.now(timezone.utc))
@@ -723,9 +744,15 @@ def _is_answer_poor(answer: str) -> bool:
     """Detect if Ollama gave a poor/confused answer.
 
     answer_citizen_question() already appends the legal disclaimer, so judge only
-    the model text before it; otherwise the disclaimer alone passes the length check.
+    the model text: strip exactly that appended suffix (inner Markdown rules in the
+    model text stay), otherwise the disclaimer alone passes the length check.
     """
-    body = (answer or "").split(_DISCLAIMER_SEPARATOR, 1)[0].strip()
+    body = answer or ""
+    for suffix in (_SERVICE_DISCLAIMER_EL, _SERVICE_DISCLAIMER_EN):
+        if body.endswith(suffix):
+            body = body[: -len(suffix)]
+            break
+    body = body.strip()
     if len(body) < 30:
         return True
     low = body.lower()

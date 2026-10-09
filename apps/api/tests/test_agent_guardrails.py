@@ -226,10 +226,23 @@ def test_full_ollama_answer_with_disclaimer_is_not_poor():
     assert _is_answer_poor(answer) is False
 
 
-def test_bad_signal_in_disclaimer_does_not_mark_answer_poor():
-    # Signals are matched against the model text only, not the disclaimer.
+def test_inner_markdown_rule_is_kept_when_judging_answer_quality():
+    # Only the appended service disclaimer is stripped; a Markdown rule inside
+    # the model text must not truncate the answer (T-615 review F2).
     from services.ollama_service import _DISCLAIMER_EL
 
-    assert agent._DISCLAIMER_SEPARATOR in _DISCLAIMER_EL
-    answer = "Ψηφίζετε μέσα από την εφαρμογή αφού επαληθεύσετε την SIM σας μέσω HLR." + _DISCLAIMER_EL
+    answer = (
+        "**Ψηφοφορία**\n\n---\n\nΓια να ψηφίσετε, επαληθεύστε πρώτα την SIM σας "
+        "μέσω HLR στην εφαρμογή και μετά επιλέξτε νομοσχέδιο." + _DISCLAIMER_EL
+    )
     assert _is_answer_poor(answer) is False
+
+
+def test_bad_signal_after_inner_markdown_rule_is_detected():
+    from services.ollama_service import _DISCLAIMER_EN
+
+    answer = (
+        "**Voting**\n\n---\n\nI don't have enough information to answer this "
+        "question about the bill." + _DISCLAIMER_EN
+    )
+    assert _is_answer_poor(answer) is True

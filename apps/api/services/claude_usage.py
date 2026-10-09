@@ -8,6 +8,10 @@ MODEL = os.getenv("CLAUDE_MODEL", "claude-haiku-4-5-20251001")
 DAILY_TOKEN_LIMIT = int(os.getenv("CLAUDE_DAILY_TOKEN_LIMIT", "50000"))
 MONTHLY_BUDGET_EUR = float(os.getenv("CLAUDE_MONTHLY_BUDGET_EUR", "10.0"))
 
+# Tokens reserved per call before the request (bounded prompt + max_tokens=400 output);
+# the real usage is counted afterwards by track_usage().
+RESERVATION_TOKENS = int(os.getenv("CLAUDE_RESERVATION_TOKENS", "4000"))
+
 # Anthropic Claude Haiku 4.5 native API list price, configurable for future changes.
 INPUT_USD_PER_MTOK = float(os.getenv("CLAUDE_HAIKU_INPUT_USD_PER_MTOK", "1.0"))
 OUTPUT_USD_PER_MTOK = float(os.getenv("CLAUDE_HAIKU_OUTPUT_USD_PER_MTOK", "5.0"))
@@ -108,3 +112,38 @@ async def read_budget(redis_client: Any, *, api_key_configured: bool) -> dict[st
         "is_active": api_key_configured and last_error != "credit_balance",
         "error": last_error if last_error else None,
     }
+
+
+async def reserve_budget(redis_client: Any) -> str | None:
+    """Fail-closed gate before any paid Claude request.
+
+    Returns a reservation key, or None when the daily token limit or the monthly
+    budget is reached or Redis cannot be read. Cost is tracked in USD and compared
+    1:1 with the EUR budget, which is conservative (1 USD < 1 EUR). The daily
+    reservation counter is incremented atomically, so concurrent requests cannot
+    together pass the limit.
+    """
+    try:
+        now = datetime.now(timezone.utc)
+        day = now.strftime("%Y-%m-%d")
+        month = now.strftime("%Y-%m")
+        if float(await redis_client.get(f"claude:cost_usd:{month}") or 0) >= MONTHLY_BUDGET_EUR:
+            return None
+        used_today = int(await redis_client.get(f"claude:tokens:{day}") or 0)
+        key = f"claude:reserved:{day}"
+        reserved = int(await redis_client.incrby(key, RESERVATION_TOKENS))
+        await redis_client.expire(key, 86400 * 2)
+        if used_today + reserved > DAILY_TOKEN_LIMIT:
+            await redis_client.decrby(key, RESERVATION_TOKENS)
+            return None
+        return key
+    except Exception:
+        return None
+
+
+async def release_budget(redis_client: Any, key: str) -> None:
+    """Drop a reservation once the request finished (usage is tracked separately)."""
+    try:
+        await redis_client.decrby(key, RESERVATION_TOKENS)
+    except Exception:
+        pass

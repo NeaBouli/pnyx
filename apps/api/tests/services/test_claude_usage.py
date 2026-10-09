@@ -50,3 +50,76 @@ async def test_read_budget_splits_analysis_from_chat_tokens():
     assert budget["is_active"] is True
     assert budget["balance_available"] is False
     assert budget["estimated_cost_usd_today"] > 0
+
+
+class GateRedis(FakeRedis):
+    """FakeRedis with Redis INCRBY/DECRBY return values for the budget gate."""
+
+    async def incrby(self, key, amount):
+        await super().incrby(key, amount)
+        return int(self.store[key])
+
+    async def decrby(self, key, amount):
+        self.store[key] = str(int(self.store.get(key, "0")) - int(amount))
+        return int(self.store[key])
+
+
+class BrokenRedis:
+    async def get(self, key):
+        raise ConnectionError("redis down")
+
+
+def _today_month():
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc)
+    return now.strftime("%Y-%m-%d"), now.strftime("%Y-%m")
+
+
+async def test_budget_gate_allows_under_limit_and_releases():
+    from services.claude_usage import RESERVATION_TOKENS, release_budget, reserve_budget
+
+    redis = GateRedis()
+    day, _ = _today_month()
+    key = await reserve_budget(redis)
+    assert key == f"claude:reserved:{day}"
+    assert redis.store[key] == str(RESERVATION_TOKENS)
+    await release_budget(redis, key)
+    assert redis.store[key] == "0"
+
+
+async def test_budget_gate_closes_at_daily_token_limit():
+    from services.claude_usage import DAILY_TOKEN_LIMIT, reserve_budget
+
+    redis = GateRedis()
+    day, _ = _today_month()
+    redis.store[f"claude:tokens:{day}"] = str(DAILY_TOKEN_LIMIT)
+    assert await reserve_budget(redis) is None
+    assert redis.store[f"claude:reserved:{day}"] == "0"
+
+
+async def test_budget_gate_closes_at_monthly_budget():
+    from services.claude_usage import MONTHLY_BUDGET_EUR, reserve_budget
+
+    redis = GateRedis()
+    _, month = _today_month()
+    redis.store[f"claude:cost_usd:{month}"] = str(MONTHLY_BUDGET_EUR)
+    assert await reserve_budget(redis) is None
+
+
+async def test_budget_gate_fails_closed_on_redis_error():
+    from services.claude_usage import reserve_budget
+
+    assert await reserve_budget(BrokenRedis()) is None
+
+
+async def test_concurrent_reservations_cannot_exceed_daily_limit():
+    import asyncio
+
+    from services.claude_usage import DAILY_TOKEN_LIMIT, RESERVATION_TOKENS, reserve_budget
+
+    redis = GateRedis()
+    day, _ = _today_month()
+    redis.store[f"claude:tokens:{day}"] = str(DAILY_TOKEN_LIMIT - 2 * RESERVATION_TOKENS)
+    keys = await asyncio.gather(*(reserve_budget(redis) for _ in range(10)))
+    assert sum(k is not None for k in keys) == 2
