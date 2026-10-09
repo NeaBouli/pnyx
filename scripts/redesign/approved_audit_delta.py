@@ -30,8 +30,12 @@ import r0_inventory
 # T-614 (coordinator-approved 2026-10-09, Gio delegation): faq.html and roadmap.html say the
 # direct Android APK v1.0.33/vC62 is published and vC62 is live in Google Play Closed Testing
 # for testers with production access pending (EL and EN, incl. the FAQ JSON-LD answer).
+# T-617 (coordinator-approved 2026-10-09): community.html names the production server Hetzner
+# CX43 (8 vCPU / 16 GB, verified on host) instead of CX33, in the server tile subtitle and the
+# development-support cost row; the row's monthly figure follows the API config (server
+# cost_monthly 10.0 €), shown as ~€10/μ.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "db27c710ace27910a98fcf61c04f80928733f117d8bf0ad723f9c51d39625ba2",
+    "docs/community.html": "8eb8f6893a3d796b023801860df727023513815d33769fc65dd0ca1a4fea0694",
     "docs/wiki/api.html": "0f2b6771a112f089c7fba6b1ef3185e061b073cd338f3db10a38a3c3c3c2515f",
     "docs/wiki/architecture.html": "8198bc8764e1d848f512a14195d2a219e6ce36398227f6744ce2793f401273d3",
     "docs/wiki/broadcasting.html": "9e14ffa72fa9e524c109748881d2ed941aeeb257d44570b191aaa24d5fb47b62",
