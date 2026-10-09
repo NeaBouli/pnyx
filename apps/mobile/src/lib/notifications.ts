@@ -53,6 +53,13 @@ type NotificationsModule = BadgeAdapter & {
     listener: (response: unknown) => void,
   ) => { remove: () => void };
   getLastNotificationResponseAsync?: () => Promise<unknown>;
+  addNotificationReceivedListener?: (
+    listener: (notification: unknown) => void,
+  ) => { remove: () => void };
+  scheduleNotificationAsync?: (request: {
+    content: { title: string; body: string; data: Record<string, unknown> };
+    trigger: null;
+  }) => Promise<string>;
 };
 
 type TaskManagerModule = {
@@ -77,10 +84,38 @@ export function getUnreadEventsStore(): UnreadEventsStore {
   return unreadStore;
 }
 
+// Data-only pushes (no title/body for the OS to show) carry local_display="1".
+// They are shown as a local notification only when the ledger accepts them as a
+// new event, i.e. the category is enabled and the event was not seen before.
+// This keeps per-category opt-in on the device even when the app is in the
+// background or was killed, without the server knowing the preferences.
+const LOCAL_DISPLAY_FLAG = "local_display";
+let presentLocalNotification:
+  | ((data: Record<string, unknown>) => Promise<void>)
+  | null = null;
+
+export function localNotificationContent(
+  data: Record<string, unknown>,
+): { title: string; body: string; data: Record<string, unknown> } | null {
+  if (data[LOCAL_DISPLAY_FLAG] !== "1") return null;
+  const title = typeof data.title === "string" ? data.title.trim() : "";
+  const body = typeof data.body === "string" ? data.body.trim() : "";
+  if (!title && !body) return null;
+  const { [LOCAL_DISPLAY_FLAG]: _flag, ...rest } = data;
+  return { title: title || "ekklesia", body, data: rest };
+}
+
 async function ingestPushPayload(payload: unknown): Promise<void> {
   const data = extractPushData(payload);
   if (!data) return;
-  await unreadStore.ingest(data);
+  const result = await unreadStore.ingest(data);
+  if (result === "added" && presentLocalNotification && localNotificationContent(data)) {
+    try {
+      await presentLocalNotification(data);
+    } catch {
+      // Best effort: the event stays in the unread list and badge.
+    }
+  }
 }
 
 async function persistPushAndReconcile(payload: unknown): Promise<void> {
@@ -143,6 +178,14 @@ if (!IS_FDROID) {
     const Notifications = require("expo-notifications") as NotificationsModule;
     const TaskManager = require("expo-task-manager") as TaskManagerModule;
 
+    if (Notifications.scheduleNotificationAsync) {
+      const schedule = Notifications.scheduleNotificationAsync;
+      presentLocalNotification = async (data) => {
+        const content = localNotificationContent(data);
+        if (content) await schedule({ content, trigger: null });
+      };
+    }
+
     if (!TaskManager.isTaskDefined(BACKGROUND_NOTIFICATION_TASK)) {
       TaskManager.defineTask(
         BACKGROUND_NOTIFICATION_TASK,
@@ -155,6 +198,11 @@ if (!IS_FDROID) {
     void Notifications.registerTaskAsync(BACKGROUND_NOTIFICATION_TASK).catch(
       () => {},
     );
+
+    // Data-only pushes can arrive while the app is in the foreground too.
+    Notifications.addNotificationReceivedListener?.((notification) => {
+      void persistPushAndReconcile(notification);
+    });
 
     // Taps replay the same payload as delivery; the ledger deduplicates.
     Notifications.addNotificationResponseReceivedListener?.((response) => {

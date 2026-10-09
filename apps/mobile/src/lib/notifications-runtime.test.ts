@@ -23,6 +23,8 @@ function runtime(flavor = "direct", lastResponse: unknown = null) {
     setNotificationHandler: vi.fn(),
     addNotificationResponseReceivedListener: vi.fn(),
     getLastNotificationResponseAsync: vi.fn(async () => lastResponse),
+    addNotificationReceivedListener: vi.fn(),
+    scheduleNotificationAsync: vi.fn(async (_request: unknown) => "local-id"),
   };
   const task = { isTaskDefined: () => false, defineTask: vi.fn() };
   const pushRegistration = {
@@ -140,5 +142,60 @@ describe("notification runtime wiring", () => {
     expect(requireMock).not.toHaveBeenCalledWith("expo-notifications");
     expect(requireMock).not.toHaveBeenCalledWith("expo-task-manager");
     expect(pushRegistration.registerPushTokenIfNeeded).not.toHaveBeenCalled();
+  });
+
+  describe("data-only pushes (strict per-category opt-in)", () => {
+    const dataOnly = (template_id: string, extra: Record<string, unknown> = {}) => ({
+      template_id, title: "Νέο", body: "Κείμενο", local_display: "1", ...extra,
+    });
+
+    it("shows one local notification for an enabled category in the background", async () => {
+      const { native, task } = runtime();
+      const background = task.defineTask.mock.calls[0][1];
+      await background({ data: { data: dataOnly("vote_24h", { bill_id: "GR-1" }) }, error: null });
+      expect(native.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
+      const request = native.scheduleNotificationAsync.mock.calls[0][0] as any;
+      expect(request.trigger).toBeNull();
+      expect(request.content.title).toBe("Νέο");
+      expect(request.content.data.local_display).toBeUndefined();
+      expect(native.setBadgeCountAsync).toHaveBeenLastCalledWith(1);
+    });
+
+    it("never shows the same event twice (replay, foreground listener, own local notification)", async () => {
+      const { native, task } = runtime();
+      const background = task.defineTask.mock.calls[0][1];
+      const payload = dataOnly("weekly_digest", { date: "2026-10-05" });
+      await background({ data: { data: payload }, error: null });
+      await background({ data: { data: payload }, error: null });
+      native.addNotificationReceivedListener.mock.calls[0][0]({ request: { content: { data: payload } } });
+      const local = (native.scheduleNotificationAsync.mock.calls[0][0] as any).content;
+      const foreground = native.setNotificationHandler.mock.calls[0][0].handleNotification;
+      await foreground({ request: { content: local } });
+      await vi.waitFor(() => expect(native.scheduleNotificationAsync).toHaveBeenCalledTimes(1));
+    });
+
+    it("shows nothing when the category is disabled", async () => {
+      const { native, task, data, exports } = runtime();
+      data.set("push_system_update", "false");
+      const background = task.defineTask.mock.calls[0][1];
+      await background({ data: { data: dataOnly("system_update", { version: "1.0.34" }) }, error: null });
+      expect(native.scheduleNotificationAsync).not.toHaveBeenCalled();
+      expect(await exports.getUnreadEventsStore().unreadCount()).toBe(0);
+    });
+
+    it("does not add a local notification for visible pushes the OS already shows", async () => {
+      const { native, task } = runtime();
+      const background = task.defineTask.mock.calls[0][1];
+      await background({ data: { data: { template_id: "new_bill", bill_id: "GR-2", title: "t", body: "b" } }, error: null });
+      expect(native.scheduleNotificationAsync).not.toHaveBeenCalled();
+    });
+
+    it("builds local content only for flagged payloads with text", () => {
+      const { exports } = runtime();
+      expect(exports.localNotificationContent({ template_id: "vote_24h", title: "t" })).toBeNull();
+      expect(exports.localNotificationContent({ template_id: "vote_24h", local_display: "1" })).toBeNull();
+      expect(exports.localNotificationContent({ template_id: "vote_24h", local_display: "1", body: "b" }))
+        .toEqual({ title: "ekklesia", body: "b", data: { template_id: "vote_24h", body: "b" } });
+    });
   });
 });
