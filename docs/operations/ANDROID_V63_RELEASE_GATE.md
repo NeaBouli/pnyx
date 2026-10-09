@@ -38,7 +38,9 @@ Unchanged: Ed25519 voting, identity, eligibility, ZK (still disabled), F-Droid
 
 ## Build and artifact checks (after approval; same as v1.0.33)
 
-- [ ] Play AAB: `bundlePlayRelease` from the release commit.
+- [ ] Play AAB: `bundlePlayRelease --no-daemon --max-workers=2` from the release commit.
+      When using `scripts/build-play.sh`, apply these limits to its Gradle invocation;
+      the current helper does not add them automatically. Do not run an unrestricted helper.
 - [ ] Direct APK: `assembleDirectRelease --no-daemon --max-workers=2` (`scripts/build-direct.sh`).
 - [ ] Each artifact: package `ekklesia.gr`, versionName 1.0.34, versionCode 63, channel (`play` / `direct`),
       ZK disabled (`zkSemaphoreEnabled=false`), pinned zkey SHA-256 unchanged, all 64-bit `.so` 16 KB aligned,
@@ -51,6 +53,11 @@ Samsung Galaxy S10 / One UI (Gio's device):
 - [ ] Launcher setting "App icon badges → show with number" recorded; badge number appears for unread events of enabled categories.
 - [ ] Push received (`adb logcat`, tag `expo-notifications`), also after the app was killed (background task runs).
 - [ ] Opening the app does **not** clear tray notifications; explicitly marking the last event read clears tray and badge.
+- [ ] Tap a notification for a known bill from foreground, background and cold start:
+      it opens that exact bill (not the last viewed bill), marks only that event read,
+      and reconciles its category and total badge. Other unread events remain.
+      Replaying/tapping again creates no second local notification; reading the final
+      event clears tray/badge only through the explicit-read path.
 - [ ] Upgrade from v1.0.33: no tile shows a vote label without evidence; after opening a voted bill the tile shows "Ψηφίσατε ✓".
 
 Second launcher (e.g. Pixel / stock):
@@ -76,7 +83,23 @@ by switching on the production senders while F1/F2 below are open.
 
 ## After the rollout (separate PRs/gates)
 
-1. **App version announcement:** PR bumping `apps/api/routers/app_version.py` to 1.0.34/63 (EL/EN notes from changelog 63, Direct URL to the v1.0.34 asset), tests, Codex review, API deploy (known procedure, rollback first).
+1. **App version announcement — artifact/availability gate first:**
+   - [ ] Publish the **v1.0.34 GitHub release** with the signed Direct-flavor APK
+         `ekklesia-v1.0.34-vC63-DIRECT.apk` and SHA256SUMS from the same approved
+         source commit as the Play AAB. Record source commit, certificate and hashes;
+         do not substitute an AAB or an APK of another flavor.
+   - [ ] Re-download that public Direct asset and verify its SHA-256 against the
+         published SHA256SUMS. A local artifact, draft release or planned URL is not enough.
+   - [ ] Confirm **v1.0.34/vC63 is available to the selected Alpha testers** after
+         Google's review (not merely uploaded or submitted); retain Console status/time.
+   - [ ] Only after both availability checks: PR bumping
+         `apps/api/routers/app_version.py` to 1.0.34/63 (EL/EN notes from changelog 63,
+         Direct URL to the published asset), pinned tests, Codex review and green CI.
+         The API remains at 1.0.33/62 until that separately authorized announcement deploy
+         (known procedure, rollback first).
+   - [ ] Keep `PLAYSTORE_URL` on `https://play.google.com/apps/testing/ekklesia.gr`
+         while production is not live. Neither Alpha availability nor this checklist
+         authorizes a production application, form submission, track switch or F-Droid release.
 2. **Flag — BLOCKED.** `PUSH_DATA_ONLY_CATEGORIES` stays OFF (default) even after the v1.0.34 rollout until all of:
    - #492 activation blockers fixed in a new PR: **F1** atomic server-side send-once claim (parallel schedulers cannot send the same broadcast twice, claim released on failure, concurrent regression test) and **F2** reliable accepted/failed contract (sender errors and provider responses checked; no dedup finalization after a failed send; retry/partial-batch tests);
    - that PR reviewed by Codex with green CI on its exact head; OFF integration tests for both jobs and the lifecycle hook, Redis-down fail-closed, cap/WINDOW_24H catch-up and a missed weekly run documented;
