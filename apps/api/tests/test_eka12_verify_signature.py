@@ -31,7 +31,7 @@ def _load(path: Path, name: str) -> ModuleType:
 
 KEYPAIR_MODULES = [
     # Runtime module: routers put packages/crypto first on sys.path.
-    _load(require_repo_path("packages/crypto/keypair.py", module_level=True), "eka12_pkg_keypair"),
+    _load(require_repo_path("packages/crypto/keypair.py"), "eka12_pkg_keypair"),
     # Shadowed mirror kept in sync.
     _load(API_DIR / "keypair.py", "eka12_api_keypair"),
 ]

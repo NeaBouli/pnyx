@@ -36,7 +36,7 @@ from services.zk_group_registry import validate_vote_scope_id  # noqa: E402
 from tests.repo_paths import require_repo_path  # noqa: E402
 
 API_ROOT = Path(__file__).resolve().parents[1]
-CRYPTO_PKG = require_repo_path("packages/crypto", module_level=True)
+CRYPTO_PKG = require_repo_path("packages/crypto")
 FIXTURE_PATH = CRYPTO_PKG / "tests/vectors/eka22_kat_v1.json"
 FIXTURE = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
 KEYS = {k["id"]: k for k in FIXTURE["keys"]}
