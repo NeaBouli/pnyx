@@ -33,9 +33,11 @@ from services.evaluation_integrity import (  # noqa: E402
 )
 from services.zk_group_registry import validate_vote_scope_id  # noqa: E402
 
+from tests.repo_paths import require_repo_path  # noqa: E402
+
 API_ROOT = Path(__file__).resolve().parents[1]
-REPO_ROOT = API_ROOT.parents[1]
-FIXTURE_PATH = REPO_ROOT / "packages/crypto/tests/vectors/eka22_kat_v1.json"
+CRYPTO_PKG = require_repo_path("packages/crypto", module_level=True)
+FIXTURE_PATH = CRYPTO_PKG / "tests/vectors/eka22_kat_v1.json"
 FIXTURE = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
 KEYS = {k["id"]: k for k in FIXTURE["keys"]}
 ROOTS = {r["id"]: bytes.fromhex(r["root_hex"]) for r in FIXTURE["roots"]}
@@ -51,11 +53,11 @@ def _load(name: str, path: Path) -> ModuleType:
 
 
 # Runtime verifier (voting.py puts packages/crypto first on sys.path) and its API mirror.
-PKG_KEYPAIR = _load("eka22_pkg_keypair", REPO_ROOT / "packages/crypto/keypair.py")
+PKG_KEYPAIR = _load("eka22_pkg_keypair", CRYPTO_PKG / "keypair.py")
 API_KEYPAIR = _load("eka22_api_keypair", API_ROOT / "keypair.py")
 VERIFIERS = {"packages/crypto/keypair.py": PKG_KEYPAIR.verify_signature,
              "apps/api/keypair.py": API_KEYPAIR.verify_signature}
-PKG_NULLIFIER = _load("eka22_pkg_nullifier", REPO_ROOT / "packages/crypto/nullifier.py")
+PKG_NULLIFIER = _load("eka22_pkg_nullifier", CRYPTO_PKG / "nullifier.py")
 
 
 def _cases(kind: str) -> list[dict]:
