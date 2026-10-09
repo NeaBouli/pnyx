@@ -198,20 +198,25 @@ if (!IS_FDROID) {
   } catch {}
 }
 
-/** Reconcile the native launcher badge with the unread ledger. */
-export async function reconcileNotificationBadge(): Promise<void> {
+/**
+ * Reconcile the native launcher badge with the unread ledger. Only explicit
+ * mark-read actions pass clearTray, so a count of 0 clears the tray only then.
+ */
+export async function reconcileNotificationBadge(
+  options: { clearTray?: boolean } = {},
+): Promise<void> {
   if (IS_FDROID) return;
 
   try {
     const Notifications = require("expo-notifications") as NotificationsModule;
-    await badgeQueue.set(Notifications, () => unreadStore.unreadCount());
+    await badgeQueue.set(Notifications, () => unreadStore.unreadCount(), options);
   } catch {}
 }
 
 /** Explicit per-event acknowledgement; reconciles the badge afterwards. */
 export async function markNotificationEventRead(id: string): Promise<boolean> {
   const marked = await unreadStore.markRead(id);
-  await reconcileNotificationBadge();
+  await reconcileNotificationBadge({ clearTray: true });
   return marked;
 }
 
@@ -223,12 +228,12 @@ export async function markNotificationCategoryRead(
   category: NotificationPreferenceKey,
 ): Promise<void> {
   await unreadStore.markCategoryRead(category);
-  await reconcileNotificationBadge();
+  await reconcileNotificationBadge({ clearTray: true });
 }
 
 export async function markAllNotificationsRead(): Promise<void> {
   await unreadStore.markAllRead();
-  await reconcileNotificationBadge();
+  await reconcileNotificationBadge({ clearTray: true });
 }
 
 /**

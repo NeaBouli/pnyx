@@ -58,7 +58,7 @@ function runtime(flavor = "direct", lastResponse: unknown = null) {
 describe("notification runtime wiring", () => {
   it("retries one transient persistence failure before setting the badge", async () => {
     const { exports, native, storage, warn } = runtime();
-    await vi.waitFor(() => expect(native.setBadgeCountAsync).toHaveBeenCalled());
+    await vi.waitFor(() => expect(native.getLastNotificationResponseAsync).toHaveBeenCalled()); await new Promise((r) => setTimeout(r, 10));
     native.setBadgeCountAsync.mockClear();
     storage.setItemAsync.mockRejectedValueOnce(new Error("private native details"));
     const foreground = native.setNotificationHandler.mock.calls[0][0].handleNotification;
@@ -75,7 +75,7 @@ describe("notification runtime wiring", () => {
     const response = { notification };
     const { exports, native, task, storage, warn } = runtime("direct", boundary === "cold-start" ? response : null);
     if (boundary !== "cold-start") {
-      await vi.waitFor(() => expect(native.setBadgeCountAsync).toHaveBeenCalled());
+      await vi.waitFor(() => expect(native.getLastNotificationResponseAsync).toHaveBeenCalled()); await new Promise((r) => setTimeout(r, 10));
     }
     native.setBadgeCountAsync.mockClear();
     storage.setItemAsync.mockRejectedValue(new Error("private native details"));
@@ -114,9 +114,7 @@ describe("notification runtime wiring", () => {
     await exports.reconcileNotificationBadge();
     expect(await exports.getUnreadEventsStore().unreadCount()).toBe(1);
     expect(native.setBadgeCountAsync).toHaveBeenLastCalledWith(1);
-    // Positive counts are absolute (never current + 1); the current badge is
-    // only read to skip a 0 -> 0 native clear (MOBILE-UX-20261007-01).
-    expect(native.setBadgeCountAsync.mock.calls.every(([n]: [number]) => n === 0 || n === 1)).toBe(true);
+    expect(native.getBadgeCountAsync).not.toHaveBeenCalled();
     expect(presentation.shouldSetBadge).toBe(false);
     await exports.markNotificationEventRead(`vote_open:${payload.bill_id}`);
     await background({ data: { data: payload }, error: null });

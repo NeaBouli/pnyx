@@ -43,26 +43,28 @@ export function createNotificationBadgeQueue() {
       return operation;
     },
 
-    set(adapter: BadgeAdapter, count: number | (() => Promise<number>)): Promise<void> {
+    /**
+     * Set the absolute unread count. A count of 0 only reaches the native API
+     * when `clearTray` is true (the user explicitly read the last event):
+     * on Android expo-notifications implements setBadgeCountAsync(0) as
+     * NotificationManager.cancelAll(), and One UI derives the icon number from
+     * tray notifications. Automatic reconciles (app start, foreground, pushes,
+     * duplicates, disabled categories) therefore never wipe the tray
+     * (MOBILE-UX-20261007-01). getBadgeCountAsync() is not consulted: on
+     * Android it is only an in-process value, not the tray or launcher state.
+     */
+    set(
+      adapter: BadgeAdapter,
+      count: number | (() => Promise<number>),
+      options: { clearTray?: boolean } = {},
+    ): Promise<void> {
       operation = operation
         .catch(() => {})
         .then(async () => {
           const current = typeof count === "function" ? await count() : count;
           const normalized =
             Number.isFinite(current) && current > 0 ? Math.floor(current) : 0;
-          if (normalized === 0) {
-            // On Android expo-notifications implements setBadgeCountAsync(0) as
-            // NotificationManager.cancelAll(), and One UI derives the icon number
-            // from tray notifications. Reconciling 0 -> 0 (app start, duplicate or
-            // disabled push) must therefore not wipe the tray (MOBILE-UX-20261007-01).
-            let shown: number | null = null;
-            try {
-              shown = await adapter.getBadgeCountAsync();
-            } catch {
-              shown = null;
-            }
-            if (shown === 0) return;
-          }
+          if (normalized === 0 && !options.clearTray) return;
           await adapter.setBadgeCountAsync(Math.min(normalized, 99));
         });
       return operation;

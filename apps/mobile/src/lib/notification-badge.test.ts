@@ -30,7 +30,7 @@ describe("notification badge queue", () => {
     expect(adapter.getBadgeCountAsync).not.toHaveBeenCalled();
     await queue.set(adapter, 1000);
     expect(getCount()).toBe(99);
-    await queue.set(adapter, Number.NaN);
+    await queue.set(adapter, Number.NaN, { clearTray: true });
     expect(getCount()).toBe(0);
   });
   it("distinguishes delivery payloads from notification taps", () => {
@@ -95,37 +95,29 @@ describe("notification badge queue", () => {
 });
 
 describe("badge reconcile to zero (MOBILE-UX-20261007-01)", () => {
-  it("does not call the native clear when the badge is already 0", async () => {
+  it("automatic reconciles never call the native clear for 0", async () => {
     const queue = createNotificationBadgeQueue();
-    const { adapter } = createAdapter(0);
+    const { adapter } = createAdapter(5);
     await queue.set(adapter, async () => 0);
     await queue.set(adapter, 0);
     expect(adapter.setBadgeCountAsync).not.toHaveBeenCalled();
+    expect(adapter.getBadgeCountAsync).not.toHaveBeenCalled();
   });
 
-  it("still clears when the last unread event was read", async () => {
+  it("an explicit last read clears even if the in-process badge reads 0 (process restart)", async () => {
     const queue = createNotificationBadgeQueue();
-    const { adapter, getCount } = createAdapter(3);
-    await queue.set(adapter, 0);
+    const { adapter, getCount } = createAdapter(0);
+    await queue.set(adapter, 0, { clearTray: true });
     expect(adapter.setBadgeCountAsync).toHaveBeenCalledWith(0);
     expect(getCount()).toBe(0);
   });
 
-  it("keeps the previous behaviour when the current badge cannot be read", async () => {
-    const queue = createNotificationBadgeQueue();
-    const { adapter } = createAdapter(0);
-    adapter.getBadgeCountAsync = vi.fn(async () => {
-      throw new Error("unsupported");
-    });
-    await queue.set(adapter, 0);
-    expect(adapter.setBadgeCountAsync).toHaveBeenCalledWith(0);
-  });
-
-  it("sets positive counts without reading the current badge", async () => {
+  it("sets positive counts absolutely without reading the current badge", async () => {
     const queue = createNotificationBadgeQueue();
     const { adapter, getCount } = createAdapter(0);
     await queue.set(adapter, 4);
-    expect(getCount()).toBe(4);
+    await queue.set(adapter, 2, { clearTray: true });
+    expect(getCount()).toBe(2);
     expect(adapter.getBadgeCountAsync).not.toHaveBeenCalled();
   });
 });
