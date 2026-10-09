@@ -418,6 +418,12 @@ async def answer_citizen_question(
     if not en_answer:
         return ""
 
+    # Cleanup can join previously separated rule fragments. Guard the final
+    # prose too, before translation or returning it in any language.
+    if is_unsafe_model_output(en_answer):
+        logger.warning("[Agent] Ollama answer rejected by output guard after cleanup")
+        raise UnsafeModelOutputError("ollama")
+
     # Translate back to Greek
     if lang == "el" and DEEPL_API_KEY:
         el_answer = await deepl_translate(en_answer, "EL", "EN")
