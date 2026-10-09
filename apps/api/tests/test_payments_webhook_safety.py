@@ -344,7 +344,9 @@ async def test_public_status_uses_only_verified_support_records(monkeypatch):
 
 
 def test_public_community_page_keeps_payment_links_paused():
-    community = (Path(__file__).parents[3] / "docs" / "community.html").read_text(encoding="utf-8")
+    from tests.repo_paths import repo_path_or_skip_in_image
+
+    community = repo_path_or_skip_in_image("docs/community.html").read_text(encoding="utf-8")
     assert "donate.stripe.com" not in community
     assert "paypal.com/paypalme" not in community.lower()
     assert 'id="payment-intake-paused"' in community

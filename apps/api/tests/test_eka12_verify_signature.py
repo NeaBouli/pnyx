@@ -16,6 +16,7 @@ from nacl.signing import SigningKey
 
 from models import BillStatus, GovernanceLevel
 from routers import voting
+from tests.repo_paths import require_repo_path
 
 API_DIR = Path(__file__).resolve().parents[1]
 PAYLOAD = b"GR-1:YES:" + b"a" * 64
@@ -30,7 +31,7 @@ def _load(path: Path, name: str) -> ModuleType:
 
 KEYPAIR_MODULES = [
     # Runtime module: routers put packages/crypto first on sys.path.
-    _load(API_DIR.parents[1] / "packages" / "crypto" / "keypair.py", "eka12_pkg_keypair"),
+    _load(require_repo_path("packages/crypto/keypair.py"), "eka12_pkg_keypair"),
     # Shadowed mirror kept in sync.
     _load(API_DIR / "keypair.py", "eka12_api_keypair"),
 ]
