@@ -75,11 +75,17 @@ describe("tile vote label", () => {
     expect(tileVoteLabel("ACTIVE", mark(), false)).toBeNull();
   });
 
-  it("shows not voted only while voting is open", () => {
-    expect(tileVoteLabel("ACTIVE", undefined, true)?.text).toBe("Δεν ψηφίσατε");
-    expect(tileVoteLabel("WINDOW_24H", undefined, true)?.tone).toBe("open");
-    expect(tileVoteLabel("ANNOUNCED", undefined, true)).toBeNull();
-    expect(tileVoteLabel("PARLIAMENT_VOTED", undefined, true)).toBeNull();
+  it("shows no label without positive evidence (upgrade, other device, web, ZK, expiry)", () => {
+    for (const status of ["ACTIVE", "WINDOW_24H", "ANNOUNCED", "PARLIAMENT_VOTED", "OPEN_END"]) {
+      expect(tileVoteLabel(status, undefined, true)).toBeNull();
+    }
+  });
+
+  it("treats an expired or pruned earlier vote as unknown, not as not voted", async () => {
+    await recordVoteMark("GR-OLD", false, NOW - MAX_AGE_MS - 1);
+    const marks = await loadVoteMarks(NOW);
+    expect(marks["GR-OLD"]).toBeUndefined();
+    expect(tileVoteLabel("ACTIVE", marks["GR-OLD"], true)).toBeNull();
   });
 
   it("shows voted, correctable in the 24h window, and corrected", () => {

@@ -272,7 +272,7 @@ export default function BillsScreen() {
                     const mine = tileVoteLabel(item.status, voteMarks[item.id], verified);
                     return mine ? (
                       <Text
-                        style={[s.cardVote, mine.tone === "done" ? s.cardVoteDone : mine.tone === "correctable" ? s.cardVoteCorrectable : s.cardVoteOpen]}
+                        style={[s.cardVote, mine.tone === "correctable" ? s.cardVoteCorrectable : s.cardVoteDone]}
                         accessibilityLabel={mine.text}
                       >
                         {mine.text}
@@ -333,7 +333,6 @@ const s = StyleSheet.create({
   cardVote: { fontSize: 10, fontWeight: "700", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4, overflow: "hidden" },
   cardVoteDone: { color: "#166534", backgroundColor: "#dcfce7" },
   cardVoteCorrectable: { color: "#92400e", backgroundColor: "#fef3c7" },
-  cardVoteOpen: { color: colors.textSecondary, backgroundColor: "#f1f5f9" },
   cardActions: { flexDirection: "row", gap: 10, alignItems: "center", flexShrink: 0 },
   actionIcon: { fontSize: 16, color: colors.primary, fontWeight: "800" },
   empty: { color: colors.textSecondary, textAlign: "center", marginTop: 40 },

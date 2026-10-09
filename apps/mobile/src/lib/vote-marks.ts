@@ -90,9 +90,12 @@ export async function syncVoteMark(
   }
 }
 
-export type TileVoteTone = "done" | "open" | "correctable";
+export type TileVoteTone = "done" | "correctable";
 
-/** Label next to the bill status; never reveals the vote choice. */
+/**
+ * Label next to the bill status; never reveals the vote choice. Shown only for
+ * positive device-local evidence of a vote; unknown stays without a label.
+ */
 export function tileVoteLabel(
   billStatus: string,
   mark: VoteMark | undefined,
@@ -104,6 +107,7 @@ export function tileVoteLabel(
     if (mark.corrected) return { text: "Ψηφίσατε (διορθώθηκε)", tone: "done" };
     return { text: "Ψηφίσατε ✓", tone: "done" };
   }
-  if (billStatus === "ACTIVE" || billStatus === "WINDOW_24H") return { text: "Δεν ψηφίσατε", tone: "open" };
+  // No mark is no proof of "not voted": the cache is lossy by design (upgrade,
+  // other device, web, ZK, expiry, storage errors). Only positive evidence is shown.
   return null;
 }
