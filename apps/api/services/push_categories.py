@@ -12,7 +12,8 @@ v1.0.34 rollout). Every event is sent at most once: an atomic Redis claim
 (SET NX) is taken before sending, so parallel schedulers cannot send the same
 event twice; it becomes the final dedup marker only when the provider accepted
 at least one message, and is released (for a later retry) when nothing was
-accepted. The broadcast is bounded to SEND_BUDGET_S, inside the claim lease.
+accepted. Everything after the claim (cap, token lookup, HTTP) runs under one
+absolute deadline (SEND_BUDGET_S from the claim), well inside the lease.
 If finalizing fails or a timed-out request was in fact accepted, a later
 retry can resend; v1.0.34 devices drop it via their event ledger.
 Provider acceptance is not a delivery receipt. The weekly digest is
@@ -21,9 +22,11 @@ No new personal data is collected.
 """
 from __future__ import annotations
 
+import asyncio
 import functools
 import logging
 import os
+import time
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -42,9 +45,13 @@ DEDUP_TTL = {
 ANNOUNCED_MAX_AGE = timedelta(hours=48)
 SYSTEM_UPDATE_SEEN_KEY = "push:system_update:last_version"
 # Longer than a full send (15 s timeout per batch of 100), short enough for a retry.
-CLAIM_TTL = int(os.getenv("PUSH_DATA_ONLY_CLAIM_TTL", "900"))
-# The whole broadcast must end well before the claim lease expires.
-SEND_BUDGET_S = max(60, CLAIM_TTL - 120)
+CLAIM_TTL = max(60, int(os.getenv("PUSH_DATA_ONLY_CLAIM_TTL", "900")))
+# Hard deadline for the whole send, measured from just before the claim is
+# taken; the remaining lease (>= 30 s) is left for settling the claim.
+CLAIM_SAFETY_S = max(30, CLAIM_TTL // 5)
+SEND_BUDGET_S = CLAIM_TTL - CLAIM_SAFETY_S
+assert 0 < SEND_BUDGET_S < CLAIM_TTL
+_clock = time.monotonic
 WEEKLY_DIGEST_CATCHUP_LAST_WEEKDAY = 2  # Monday 07:00 UTC .. Wednesday
 
 # Finalize (ARGV[2] == "final") or release the claim, only while we still own it.
@@ -81,6 +88,7 @@ async def send_category_push(
         return False
     dedup_key = f"notified:{template_id}:{event_key}"
     claim = f"claim:{uuid.uuid4().hex}"
+    deadline = _clock() + SEND_BUDGET_S  # taken before SET, so never later than the lease
     if not await redis_client.set(dedup_key, claim, nx=True, ex=CLAIM_TTL):
         return False  # already sent, or another worker is sending it
     hour = (now or datetime.now(timezone.utc)).strftime("%Y%m%d%H")
@@ -95,10 +103,15 @@ async def send_category_push(
         if sender is None:
             from routers.notify import notify_all_data_only
 
-            sender = functools.partial(notify_all_data_only, budget_s=SEND_BUDGET_S)
-        result = await sender(template_id, payload)
+            sender = functools.partial(notify_all_data_only, deadline=deadline)
+        remaining = deadline - _clock()
+        if remaining <= 0:
+            raise TimeoutError("send deadline passed before sending")
+        # Backstop: the sender itself honours the deadline; this bounds any sender.
+        result = await asyncio.wait_for(sender(template_id, payload), timeout=remaining)
     except Exception as exc:
-        logger.error("[MOD-20] data-only push %s failed: %s", template_id, exc)
+        # Includes the deadline: acceptance is then unknown and counted as failed.
+        logger.error("[MOD-20] data-only push %s failed: %r", template_id, exc)
         await _settle(redis_client, dedup_key, claim, final=False)
         return False
     attempted = int(result.get("attempted", 0))

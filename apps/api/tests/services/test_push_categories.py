@@ -353,30 +353,125 @@ async def test_flag_off_jobs_and_hook_return_before_redis(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_sender_stops_when_send_budget_is_exhausted(monkeypatch):
-    clock = iter([0.0, 0.0, 590.0])  # deadline set, batch 1 starts, batch 2 would end after 600 s
+async def test_sender_stops_when_deadline_leaves_no_time_for_a_batch(monkeypatch):
+    clock = iter([0.0, 0.0, 0.0, 599.5])  # lookup x2, batch 1, batch 2 with 0.5 s left
     notify, posted = _expo(monkeypatch, [_Resp(200, {"data": [{"status": "ok"}] * 100})])
     monkeypatch.setattr(notify, "_clock", lambda: next(clock))
-    result = await notify.notify_all_data_only("vote_24h", {"bill_id": "GR-1"}, budget_s=600)
+    result = await notify.notify_all_data_only("vote_24h", {"bill_id": "GR-1"}, deadline=600.0)
     assert result == {"attempted": 150, "accepted": 100, "failed": 50}
     assert [len(b) for b in posted] == [100]
 
 
-def test_send_budget_ends_inside_the_claim_lease():
-    assert pc.SEND_BUDGET_S + 15 < pc.CLAIM_TTL
+@pytest.mark.asyncio
+async def test_sender_hard_bounds_a_blocking_request(monkeypatch):
+    from routers import notify
+
+    started = []
+
+    class Hanging:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        async def post(self, url, json):
+            started.append(len(json))
+            await asyncio.sleep(30)  # e.g. a slow chunked response; httpx timeouts are per phase
+
+    async def fake_redis():
+        return object()
+
+    async def tokens(_r):
+        return [f"ExponentPushToken[{i}]" for i in range(150)]
+
+    monkeypatch.setattr(notify, "_get_redis", fake_redis)
+    monkeypatch.setattr(notify, "_registered_push_tokens", tokens)
+    monkeypatch.setattr(notify.httpx, "AsyncClient", Hanging)
+    loop = asyncio.get_running_loop()
+    t0 = loop.time()
+    result = await notify.notify_all_data_only("vote_24h", {}, deadline=notify._clock() + 1.2)
+    assert loop.time() - t0 < 2.0
+    assert result == {"attempted": 150, "accepted": 0, "failed": 150}
+    assert started == [100]  # no second batch after the deadline
 
 
 @pytest.mark.asyncio
-async def test_default_sender_receives_the_send_budget(monkeypatch):
+async def test_sender_slow_token_lookup_hits_deadline_before_sending(monkeypatch):
+    from routers import notify
+
+    async def fake_redis():
+        return object()
+
+    async def slow_tokens(_r):
+        await asyncio.sleep(30)
+        return ["ExponentPushToken[a]"]
+
+    monkeypatch.setattr(notify, "_get_redis", fake_redis)
+    monkeypatch.setattr(notify, "_registered_push_tokens", slow_tokens)
+    with pytest.raises(TimeoutError):
+        await notify.notify_all_data_only("vote_24h", {}, deadline=notify._clock() + 0.2)
+
+
+@pytest.mark.asyncio
+async def test_service_deadline_releases_claim_when_sender_overruns(monkeypatch):
+    monkeypatch.setenv(pc.FLAG, "1")
+    monkeypatch.setattr(pc, "SEND_BUDGET_S", 0.2)
+    redis = FakeRedis()
+
+    async def slow(template_id, payload):
+        await asyncio.sleep(30)
+
+    assert await pc.push_vote_24h(redis, bill, sender=slow, now=NOW) is False
+    assert "notified:vote_24h:GR-1" not in redis.store
+
+
+@pytest.mark.asyncio
+async def test_service_deadline_counts_slow_pre_work(monkeypatch):
+    monkeypatch.setenv(pc.FLAG, "1")
+    monkeypatch.setattr(pc, "SEND_BUDGET_S", 0.1)
+    redis = FakeRedis()
+    plain_incr = redis.incr
+
+    async def slow_incr(key):
+        await asyncio.sleep(0.2)
+        return await plain_incr(key)
+
+    redis.incr = slow_incr
+    send, sent = _sender()
+    assert await pc.push_vote_24h(redis, bill, sender=send, now=NOW) is False
+    assert sent == [] and "notified:vote_24h:GR-1" not in redis.store
+
+
+@pytest.mark.asyncio
+async def test_default_sender_receives_the_claim_deadline(monkeypatch):
     from routers import notify
 
     monkeypatch.setenv(pc.FLAG, "1")
+    monkeypatch.setattr(pc, "_clock", lambda: 1000.0)
     seen = {}
 
-    async def fake(template_id, payload, *, budget_s):
-        seen["budget_s"] = budget_s
+    async def fake(template_id, payload, *, deadline):
+        seen["deadline"] = deadline
         return {"attempted": 1, "accepted": 1, "failed": 0}
 
     monkeypatch.setattr(notify, "notify_all_data_only", fake)
     assert await pc.push_vote_24h(FakeRedis(), bill, now=NOW) is True
-    assert seen == {"budget_s": pc.SEND_BUDGET_S}
+    assert seen == {"deadline": 1000.0 + pc.SEND_BUDGET_S}
+
+
+@pytest.mark.parametrize("ttl", ["10", "60", "90", "150", "900", "3600"])
+def test_send_budget_always_ends_inside_the_claim_lease(monkeypatch, ttl):
+    import importlib
+
+    monkeypatch.setenv("PUSH_DATA_ONLY_CLAIM_TTL", ttl)
+    try:
+        mod = importlib.reload(pc)
+        assert mod.CLAIM_TTL >= 60
+        assert 0 < mod.SEND_BUDGET_S <= mod.CLAIM_TTL - 30
+    finally:
+        monkeypatch.delenv("PUSH_DATA_ONLY_CLAIM_TTL")
+        importlib.reload(pc)

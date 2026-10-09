@@ -6,6 +6,7 @@ POST /api/v1/notify/send     — admin: send push to all (ADMIN_KEY required)
 import os
 import json
 import logging
+import asyncio
 import sys
 import time
 from fastapi import APIRouter, HTTPException, Header, Depends, Request
@@ -239,10 +240,19 @@ async def notify_all(template_id: str, data: dict) -> None:
 
 
 EXPO_REQUEST_TIMEOUT_S = 15.0
+DATA_ONLY_DEFAULT_BUDGET_S = 600.0
+DATA_ONLY_MIN_BATCH_S = 1.0
 _clock = time.monotonic
 
 
-async def notify_all_data_only(template_id: str, data: dict, *, budget_s: float = 600.0) -> dict:
+def _left(deadline: float) -> float:
+    left = deadline - _clock()
+    if left <= 0:
+        raise TimeoutError("data-only send deadline passed")
+    return left
+
+
+async def notify_all_data_only(template_id: str, data: dict, *, deadline: float | None = None) -> dict:
     """Data-only push to all registered devices (no OS-visible title/body).
 
     The app decides on the device whether to show it (category opt-in),
@@ -250,17 +260,20 @@ async def notify_all_data_only(template_id: str, data: dict, *, budget_s: float 
 
     Returns `attempted`, `accepted` (Expo ticket status "ok") and `failed`
     message counts; a failed batch or ticket is counted, never swallowed.
-    Token lookup errors propagate so the caller can retry later. Accepted
-    means accepted by Expo, not delivered to the device.
+    Accepted means accepted by Expo, not delivered to the device.
 
-    The whole broadcast stays within `budget_s` (the caller's claim lease):
-    a batch is only started when it can finish within the budget, the rest
-    is counted as failed. A timed-out request is counted as failed although
-    Expo may have accepted it; a later retry is then deduplicated on the
-    device by its event ledger (apps/mobile notifications.ts).
+    `deadline` is an absolute `time.monotonic()` value (the caller's claim
+    lease). Token lookup and every request are hard-bounded by the time left
+    (asyncio.wait_for, not only httpx's per-phase timeout). Lookup errors or a
+    deadline before any send propagate, so the caller can retry later. Once
+    sending started, a timed-out request and all unsent messages count as
+    failed, although Expo may have accepted the timed-out batch; a later retry
+    is then deduplicated on the device by its event ledger (notifications.ts).
     """
-    r = await _get_redis()
-    tokens = await _registered_push_tokens(r)
+    if deadline is None:
+        deadline = _clock() + DATA_ONLY_DEFAULT_BUDGET_S
+    r = await asyncio.wait_for(_get_redis(), timeout=_left(deadline))
+    tokens = await asyncio.wait_for(_registered_push_tokens(r), timeout=_left(deadline))
     result = {"attempted": len(tokens), "accepted": 0, "failed": 0}
     if not tokens:
         return result
@@ -269,17 +282,20 @@ async def notify_all_data_only(template_id: str, data: dict, *, budget_s: float 
         {"to": t, "data": payload, "priority": "high", "_contentAvailable": True}
         for t in tokens
     ]
-    deadline = _clock() + budget_s
     async with httpx.AsyncClient(timeout=EXPO_REQUEST_TIMEOUT_S) as client:
         for i in range(0, len(messages), 100):
             batch = messages[i : i + 100]
-            if _clock() + EXPO_REQUEST_TIMEOUT_S > deadline:
+            left = deadline - _clock()
+            if left < DATA_ONLY_MIN_BATCH_S:
                 result["failed"] += len(messages) - i
-                logger.warning("[MOD-20] data-only send budget exhausted; %d not sent", len(messages) - i)
+                logger.warning("[MOD-20] data-only send deadline reached; %d not sent", len(messages) - i)
                 break
             accepted = 0
             try:
-                resp = await client.post(EXPO_PUSH_URL, json=batch)
+                resp = await asyncio.wait_for(
+                    client.post(EXPO_PUSH_URL, json=batch),
+                    timeout=min(left, EXPO_REQUEST_TIMEOUT_S),
+                )
                 if resp.status_code == 200:
                     tickets = resp.json().get("data")
                     if isinstance(tickets, list):
@@ -290,7 +306,7 @@ async def notify_all_data_only(template_id: str, data: dict, *, budget_s: float 
                 else:
                     logger.warning("[MOD-20] Expo data-only batch failed: %s", resp.status_code)
             except Exception as exc:
-                logger.error("[MOD-20] Expo data-only push error: %s", exc)
+                logger.error("[MOD-20] Expo data-only push error: %r", exc)
             result["accepted"] += accepted
             result["failed"] += len(batch) - accepted
     return result
