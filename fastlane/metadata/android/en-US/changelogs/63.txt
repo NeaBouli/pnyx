@@ -1,0 +1,4 @@
+After voting you can now close the dialog and return to the overview.
+Bill tiles show when you have already voted (stored only on your device, never your choice).
+Fixed notifications being removed on some launchers, so the app-icon counter can show again.
+Prepares notifications that respect each category setting even when the app is closed.

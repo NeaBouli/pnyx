@@ -1,0 +1,1 @@
+Security improvements and compatibility with newer Android devices (16 KB memory pages).
