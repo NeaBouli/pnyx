@@ -7,6 +7,7 @@ import os
 import json
 import logging
 import sys
+import time
 from fastapi import APIRouter, HTTPException, Header, Depends, Request
 from dependencies import verify_admin_key
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -237,7 +238,11 @@ async def notify_all(template_id: str, data: dict) -> None:
         pass  # Push is best-effort
 
 
-async def notify_all_data_only(template_id: str, data: dict) -> dict:
+EXPO_REQUEST_TIMEOUT_S = 15.0
+_clock = time.monotonic
+
+
+async def notify_all_data_only(template_id: str, data: dict, *, budget_s: float = 600.0) -> dict:
     """Data-only push to all registered devices (no OS-visible title/body).
 
     The app decides on the device whether to show it (category opt-in),
@@ -247,6 +252,12 @@ async def notify_all_data_only(template_id: str, data: dict) -> dict:
     message counts; a failed batch or ticket is counted, never swallowed.
     Token lookup errors propagate so the caller can retry later. Accepted
     means accepted by Expo, not delivered to the device.
+
+    The whole broadcast stays within `budget_s` (the caller's claim lease):
+    a batch is only started when it can finish within the budget, the rest
+    is counted as failed. A timed-out request is counted as failed although
+    Expo may have accepted it; a later retry is then deduplicated on the
+    device by its event ledger (apps/mobile notifications.ts).
     """
     r = await _get_redis()
     tokens = await _registered_push_tokens(r)
@@ -258,9 +269,14 @@ async def notify_all_data_only(template_id: str, data: dict) -> dict:
         {"to": t, "data": payload, "priority": "high", "_contentAvailable": True}
         for t in tokens
     ]
-    async with httpx.AsyncClient(timeout=15.0) as client:
+    deadline = _clock() + budget_s
+    async with httpx.AsyncClient(timeout=EXPO_REQUEST_TIMEOUT_S) as client:
         for i in range(0, len(messages), 100):
             batch = messages[i : i + 100]
+            if _clock() + EXPO_REQUEST_TIMEOUT_S > deadline:
+                result["failed"] += len(messages) - i
+                logger.warning("[MOD-20] data-only send budget exhausted; %d not sent", len(messages) - i)
+                break
             accepted = 0
             try:
                 resp = await client.post(EXPO_PUSH_URL, json=batch)

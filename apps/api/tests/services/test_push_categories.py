@@ -350,3 +350,33 @@ async def test_flag_off_jobs_and_hook_return_before_redis(monkeypatch):
     await main.scheduled_push_categories()
     await main.scheduled_weekly_digest()
     await bill_lifecycle._hook_push_vote_24h(bill)
+
+
+@pytest.mark.asyncio
+async def test_sender_stops_when_send_budget_is_exhausted(monkeypatch):
+    clock = iter([0.0, 0.0, 590.0])  # deadline set, batch 1 starts, batch 2 would end after 600 s
+    notify, posted = _expo(monkeypatch, [_Resp(200, {"data": [{"status": "ok"}] * 100})])
+    monkeypatch.setattr(notify, "_clock", lambda: next(clock))
+    result = await notify.notify_all_data_only("vote_24h", {"bill_id": "GR-1"}, budget_s=600)
+    assert result == {"attempted": 150, "accepted": 100, "failed": 50}
+    assert [len(b) for b in posted] == [100]
+
+
+def test_send_budget_ends_inside_the_claim_lease():
+    assert pc.SEND_BUDGET_S + 15 < pc.CLAIM_TTL
+
+
+@pytest.mark.asyncio
+async def test_default_sender_receives_the_send_budget(monkeypatch):
+    from routers import notify
+
+    monkeypatch.setenv(pc.FLAG, "1")
+    seen = {}
+
+    async def fake(template_id, payload, *, budget_s):
+        seen["budget_s"] = budget_s
+        return {"attempted": 1, "accepted": 1, "failed": 0}
+
+    monkeypatch.setattr(notify, "notify_all_data_only", fake)
+    assert await pc.push_vote_24h(FakeRedis(), bill, now=NOW) is True
+    assert seen == {"budget_s": pc.SEND_BUDGET_S}

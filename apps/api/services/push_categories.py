@@ -12,12 +12,16 @@ v1.0.34 rollout). Every event is sent at most once: an atomic Redis claim
 (SET NX) is taken before sending, so parallel schedulers cannot send the same
 event twice; it becomes the final dedup marker only when the provider accepted
 at least one message, and is released (for a later retry) when nothing was
-accepted. Provider acceptance is not a delivery receipt. The weekly digest is
+accepted. The broadcast is bounded to SEND_BUDGET_S, inside the claim lease.
+If finalizing fails or a timed-out request was in fact accepted, a later
+retry can resend; v1.0.34 devices drop it via their event ledger.
+Provider acceptance is not a delivery receipt. The weekly digest is
 sent at most once per ISO week, and a global hourly cap bounds the volume.
 No new personal data is collected.
 """
 from __future__ import annotations
 
+import functools
 import logging
 import os
 import uuid
@@ -39,6 +43,8 @@ ANNOUNCED_MAX_AGE = timedelta(hours=48)
 SYSTEM_UPDATE_SEEN_KEY = "push:system_update:last_version"
 # Longer than a full send (15 s timeout per batch of 100), short enough for a retry.
 CLAIM_TTL = int(os.getenv("PUSH_DATA_ONLY_CLAIM_TTL", "900"))
+# The whole broadcast must end well before the claim lease expires.
+SEND_BUDGET_S = max(60, CLAIM_TTL - 120)
 WEEKLY_DIGEST_CATCHUP_LAST_WEEKDAY = 2  # Monday 07:00 UTC .. Wednesday
 
 # Finalize (ARGV[2] == "final") or release the claim, only while we still own it.
@@ -87,7 +93,9 @@ async def send_category_push(
             await _settle(redis_client, dedup_key, claim, final=False)
             return False
         if sender is None:
-            from routers.notify import notify_all_data_only as sender
+            from routers.notify import notify_all_data_only
+
+            sender = functools.partial(notify_all_data_only, budget_s=SEND_BUDGET_S)
         result = await sender(template_id, payload)
     except Exception as exc:
         logger.error("[MOD-20] data-only push %s failed: %s", template_id, exc)
