@@ -385,7 +385,7 @@ export default function VoteScreen({ route, navigation }: Props) {
     } catch (err: any) {
       const message = err.message || "Η ψηφοφορία απέτυχε.";
       if (message.includes("ήδη") || message.includes("already") || message.includes("409")) {
-        void recordVoteMark(billId, false);
+        // No vote mark from this text heuristic; the next status read syncs it.
         setHasVoted(true);
       }
       Alert.alert("Σφάλμα", message);

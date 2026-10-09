@@ -13,6 +13,8 @@ import * as SecureStore from "expo-secure-store";
 export interface VoteMark {
   corrected: boolean;
   at: number;
+  /** Server's can_correct from the last vote-status read; absent = unknown. */
+  correctable?: boolean;
 }
 
 export type VoteMarks = Record<string, VoteMark>;
@@ -62,32 +64,55 @@ export async function loadVoteMarks(now: number = Date.now()): Promise<VoteMarks
   }
 }
 
-export async function recordVoteMark(billId: string, corrected: boolean, now: number = Date.now()): Promise<void> {
-  try {
-    const { owner, marks } = await read();
-    if (!owner) return;
-    marks[billId] = { corrected: corrected || marks[billId]?.corrected === true, at: now };
-    await write(owner, marks, now);
-  } catch {
-    // Display-only state: never block or fail a vote because of it.
-  }
+// All read-modify-write updates run one after another, so concurrent calls
+// (vote + status read, double taps) cannot overwrite each other's marks.
+let queue: Promise<void> = Promise.resolve();
+function serialized(update: () => Promise<void>): Promise<void> {
+  const next = queue.then(update, update);
+  queue = next.catch(() => {});
+  return queue;
 }
 
-/** Mirror the server's vote-status read for this bill (has_voted / is_correction). */
-export async function syncVoteMark(
+export function recordVoteMark(billId: string, corrected: boolean, now: number = Date.now()): Promise<void> {
+  return serialized(async () => {
+    try {
+      const { owner, marks } = await read();
+      if (!owner) return;
+      const previous = marks[billId];
+      // A fresh local vote/correction: whether it can still be corrected is
+      // unknown until the next server status read.
+      marks[billId] = { corrected: corrected || previous?.corrected === true, at: now };
+      await write(owner, marks, now);
+    } catch {
+      // Display-only state: never block or fail a vote because of it.
+    }
+  });
+}
+
+/** Mirror the server's vote-status read for this bill (has_voted / is_correction / can_correct). */
+export function syncVoteMark(
   billId: string,
-  status: { has_voted: boolean; is_correction: boolean },
+  status: { has_voted: boolean; is_correction: boolean; can_correct?: boolean },
   now: number = Date.now(),
 ): Promise<void> {
-  try {
-    const { owner, marks } = await read();
-    if (!owner) return;
-    if (status.has_voted) marks[billId] = { corrected: status.is_correction, at: marks[billId]?.at ?? now };
-    else delete marks[billId];
-    await write(owner, marks, now);
-  } catch {
-    // Display-only state.
-  }
+  return serialized(async () => {
+    try {
+      const { owner, marks } = await read();
+      if (!owner) return;
+      if (status.has_voted) {
+        marks[billId] = {
+          corrected: status.is_correction,
+          at: now,
+          ...(typeof status.can_correct === "boolean" ? { correctable: status.can_correct } : {}),
+        };
+      } else {
+        delete marks[billId];
+      }
+      await write(owner, marks, now);
+    } catch {
+      // Display-only state.
+    }
+  });
 }
 
 export type TileVoteTone = "done" | "correctable";
@@ -103,7 +128,11 @@ export function tileVoteLabel(
 ): { text: string; tone: TileVoteTone } | null {
   if (!verified) return null;
   if (mark) {
-    if (billStatus === "WINDOW_24H" && !mark.corrected) return { text: "Ψηφίσατε · διόρθωση δυνατή", tone: "correctable" };
+    // Only the server knows correction rules (24h window, single correction,
+    // ZK tier lock); claim "correctable" only from its can_correct.
+    if (billStatus === "WINDOW_24H" && !mark.corrected && mark.correctable === true) {
+      return { text: "Ψηφίσατε · διόρθωση δυνατή", tone: "correctable" };
+    }
     if (mark.corrected) return { text: "Ψηφίσατε (διορθώθηκε)", tone: "done" };
     return { text: "Ψηφίσατε ✓", tone: "done" };
   }

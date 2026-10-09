@@ -67,6 +67,36 @@ describe("vote marks storage", () => {
   });
 });
 
+describe("vote marks follow-ups (#487 review)", () => {
+  beforeEach(() => {
+    store.data.clear();
+    store.data.set("ekklesia_nullifier", OWNER);
+  });
+
+  it("stores the server's can_correct and refreshes the timestamp on sync", async () => {
+    await recordVoteMark("GR-5", false, NOW - 1000);
+    await syncVoteMark("GR-5", { has_voted: true, is_correction: false, can_correct: true }, NOW);
+    expect((await loadVoteMarks(NOW))["GR-5"]).toEqual({ corrected: false, at: NOW, correctable: true });
+  });
+
+  it("a later local vote makes correctability unknown again", async () => {
+    await syncVoteMark("GR-6", { has_voted: true, is_correction: false, can_correct: true }, NOW);
+    await recordVoteMark("GR-6", true, NOW + 1);
+    expect((await loadVoteMarks(NOW + 1))["GR-6"].correctable).toBeUndefined();
+  });
+
+  it("concurrent updates do not overwrite each other", async () => {
+    await Promise.all([
+      recordVoteMark("A", false, NOW),
+      syncVoteMark("B", { has_voted: true, is_correction: false, can_correct: false }, NOW),
+      recordVoteMark("C", true, NOW),
+      recordVoteMark("D", false, NOW),
+      syncVoteMark("E", { has_voted: true, is_correction: true }, NOW),
+    ]);
+    expect(Object.keys(await loadVoteMarks(NOW)).sort()).toEqual(["A", "B", "C", "D", "E"]);
+  });
+});
+
 describe("tile vote label", () => {
   const mark = (corrected = false) => ({ corrected, at: NOW });
 
@@ -90,7 +120,9 @@ describe("tile vote label", () => {
 
   it("shows voted, correctable in the 24h window, and corrected", () => {
     expect(tileVoteLabel("ACTIVE", mark(), true)).toEqual({ text: "Ψηφίσατε ✓", tone: "done" });
-    expect(tileVoteLabel("WINDOW_24H", mark(), true)?.tone).toBe("correctable");
+    expect(tileVoteLabel("WINDOW_24H", mark(), true)?.tone).toBe("done");
+    expect(tileVoteLabel("WINDOW_24H", { ...mark(), correctable: true }, true)?.tone).toBe("correctable");
+    expect(tileVoteLabel("WINDOW_24H", { ...mark(), correctable: false }, true)?.text).toBe("Ψηφίσατε ✓");
     expect(tileVoteLabel("WINDOW_24H", mark(true), true)?.text).toBe("Ψηφίσατε (διορθώθηκε)");
     expect(tileVoteLabel("OPEN_END", mark(), true)?.text).toBe("Ψηφίσατε ✓");
   });
