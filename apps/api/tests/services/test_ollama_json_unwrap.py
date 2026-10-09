@@ -95,3 +95,33 @@ async def test_valid_json_answer_translates_only_the_prose(monkeypatch):
     assert answer == "Μετάφραση." + _DISCLAIMER_EL
     assert ("The divergence score compares citizens and Parliament.", "EL") in translations
     assert not any('{"content"' in text for text, _ in translations)
+
+
+@pytest.mark.parametrize("lang", ["el", "en"])
+@pytest.mark.asyncio
+async def test_cleanup_cannot_reassemble_unsafe_prose_after_the_guard(monkeypatch, lang):
+    from services.agent_prompt import UnsafeModelOutputError, is_unsafe_model_output
+
+    raw = (
+        "Be concise, factual and\nGreat!\n"
+        "politically neutral. Answer directly without greetings or filler."
+    )
+    clean = raw.replace("\nGreat!\n", "\n")
+    assert not is_unsafe_model_output(raw)
+    assert is_unsafe_model_output(clean)
+    translations = []
+
+    async def fake_translate(text, target_lang, source_lang=""):
+        translations.append(text)
+        return text
+
+    async def fake_generate(prompt, max_tokens=500, system="", timeout=None):
+        return raw
+
+    monkeypatch.setattr(ollama_service, "DEEPL_API_KEY", "test-placeholder")
+    monkeypatch.setattr(ollama_service, "deepl_translate", fake_translate)
+    monkeypatch.setattr(ollama_service, "ollama_generate", fake_generate)
+    question = "What is the divergence score?"
+    with pytest.raises(UnsafeModelOutputError):
+        await ollama_service.answer_citizen_question(question, [], lang)
+    assert translations == ([question] if lang == "el" else [])
