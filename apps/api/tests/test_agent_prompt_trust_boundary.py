@@ -231,6 +231,16 @@ async def _capture_claude(monkeypatch, records, text="Claude answer about GR-202
         async def set(self, key: str, value: str) -> None:
             return None
 
+        # Budget gate (T-615): an empty day admits one reservation.
+        async def incrby(self, key: str, amount: int) -> int:
+            return int(amount)
+
+        async def decrby(self, key: str, amount: int) -> int:
+            return 0
+
+        async def expire(self, key: str, ttl: int) -> bool:
+            return True
+
     class FakeResponse:
         def raise_for_status(self) -> None:
             return None
