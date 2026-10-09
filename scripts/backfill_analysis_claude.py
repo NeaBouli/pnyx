@@ -304,12 +304,15 @@ def fetch_first_readable_pdf(candidates: list[dict[str, str]]) -> tuple[dict[str
     return None, ""
 
 
-def call_claude(title: str, excerpt: str) -> tuple[dict, dict]:
-    api_key = os.getenv("ANTHROPIC_API_KEY", "")
-    if not api_key:
-        raise RuntimeError("ANTHROPIC_API_KEY not set")
+ANALYSIS_MAX_OUTPUT_TOKENS = 1400
 
-    prompt = f"""
+
+class BudgetGateClosed(RuntimeError):
+    """The shared Claude budget gate refused this call (limit reached or Redis error)."""
+
+
+def analysis_prompt(title: str, excerpt: str) -> str:
+    return f"""
 Παρήγαγε αυστηρά πηγαία, ουδέτερη ελληνική σύνοψη και ανάλυση για το νομοθετικό κείμενο.
 
 Κανόνες:
@@ -333,9 +336,16 @@ JSON schema:
 }}
 """.strip()
 
+
+def call_claude(title: str, excerpt: str) -> tuple[dict, dict]:
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise RuntimeError("ANTHROPIC_API_KEY not set")
+
+    prompt = analysis_prompt(title, excerpt)
     payload = {
         "model": MODEL,
-        "max_tokens": 1400,
+        "max_tokens": ANALYSIS_MAX_OUTPUT_TOKENS,
         "temperature": 0.1,
         "messages": [{"role": "user", "content": prompt}],
     }
@@ -362,19 +372,44 @@ JSON schema:
     return parsed, usage
 
 
-async def track_analysis_usage(usage: dict) -> None:
-    if not usage:
-        return
+async def gated_call_claude(title: str, excerpt: str, redis_client=None) -> tuple[dict, dict]:
+    """call_claude() behind the shared fail-closed budget gate (same as the chat fallback).
+
+    Reserves a proven upper bound (prompt UTF-8 bytes + max output tokens) for
+    tokens and cost atomically; books the real usage, or the full reservation
+    when the outcome is uncertain, and keeps the reservation if even that fails.
+    Dry runs call Claude too, so they are gated as well.
+    """
     _add_api_path()
     import redis.asyncio as aioredis
-    from services.claude_usage import track_usage
+    from services.claude_usage import (
+        charge_reservation,
+        release_budget,
+        reservation_size,
+        reserve_budget,
+        track_usage,
+    )
 
-    redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
-    r = aioredis.from_url(redis_url, decode_responses=True)
+    r = redis_client or aioredis.from_url(os.getenv("REDIS_URL", "redis://redis:6379"), decode_responses=True)
     try:
-        await track_usage(r, usage, purpose="analysis")
+        tokens, cost = reservation_size("", analysis_prompt(title, excerpt), ANALYSIS_MAX_OUTPUT_TOKENS)
+        reservation = await reserve_budget(r, tokens, cost)
+        if reservation is None:
+            raise BudgetGateClosed("Claude budget gate closed (daily/monthly limit or Redis unavailable)")
+        booked = False
+        try:
+            result, usage = call_claude(title, excerpt)
+            try:
+                booked = await track_usage(r, usage, purpose="analysis") > 0
+            except Exception:
+                booked = False
+            return result, usage
+        finally:
+            if booked or await charge_reservation(r, reservation, purpose="analysis"):
+                await release_budget(r, reservation)
     finally:
-        await r.aclose()
+        if redis_client is None:
+            await r.aclose()
 
 
 def validate_result(result: dict, excerpt: str) -> list[str]:
@@ -477,8 +512,11 @@ async def main() -> None:
             if not excerpt:
                 print(f"{bill_id}: no readable text for Claude analysis; use --official-only for PDF links")
                 continue
-            result, usage = call_claude(row["title_el"] or bill_id, excerpt)
-            await track_analysis_usage(usage)
+            try:
+                result, usage = await gated_call_claude(row["title_el"] or bill_id, excerpt)
+            except BudgetGateClosed as exc:
+                print(f"{bill_id}: {exc}; stopping")
+                break
             errors = validate_result(result, excerpt)
 
         preview = {
