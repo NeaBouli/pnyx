@@ -73,16 +73,23 @@ function serialized(update: () => Promise<void>): Promise<void> {
   return queue;
 }
 
-export function recordVoteMark(billId: string, corrected: boolean, now: number = Date.now()): Promise<void> {
+// The owner is captured when the server request starts, not when it finishes.
+// Check it inside the queue: identity can also change while an update waits.
+export function recordVoteMark(
+  billId: string,
+  corrected: boolean,
+  expectedOwner: string | null,
+  now: number = Date.now(),
+): Promise<void> {
   return serialized(async () => {
     try {
       const { owner, marks } = await read();
-      if (!owner) return;
+      if (!expectedOwner || owner !== expectedOwner) return;
       const previous = marks[billId];
       // A fresh local vote/correction: whether it can still be corrected is
       // unknown until the next server status read.
       marks[billId] = { corrected: corrected || previous?.corrected === true, at: now };
-      await write(owner, marks, now);
+      await write(expectedOwner, marks, now);
     } catch {
       // Display-only state: never block or fail a vote because of it.
     }
@@ -93,12 +100,13 @@ export function recordVoteMark(billId: string, corrected: boolean, now: number =
 export function syncVoteMark(
   billId: string,
   status: { has_voted: boolean; is_correction: boolean; can_correct?: boolean },
+  expectedOwner: string | null,
   now: number = Date.now(),
 ): Promise<void> {
   return serialized(async () => {
     try {
       const { owner, marks } = await read();
-      if (!owner) return;
+      if (!expectedOwner || owner !== expectedOwner) return;
       if (status.has_voted) {
         marks[billId] = {
           corrected: status.is_correction,
@@ -108,7 +116,7 @@ export function syncVoteMark(
       } else {
         delete marks[billId];
       }
-      await write(owner, marks, now);
+      await write(expectedOwner, marks, now);
     } catch {
       // Display-only state.
     }
