@@ -58,6 +58,69 @@ function runtime(flavor = "direct", lastResponse: unknown = null) {
 }
 
 describe("notification runtime wiring", () => {
+  it("category read preserves unrelated events and reconciles a positive badge", async () => {
+    const { exports, native } = runtime();
+    const unread = exports.getUnreadEventsStore() as ledger.UnreadEventsStore;
+    await unread.ingest({ template_id: "vote_open", bill_id: "ack-open" });
+    await unread.ingest({ template_id: "vote_result", bill_id: "ack-result" });
+    await exports.reconcileNotificationBadge();
+    native.setBadgeCountAsync.mockClear();
+
+    await exports.markNotificationCategoryRead("push_vote_open");
+
+    expect((await unread.list()).map((event) => event.id)).toEqual(["vote_result:ack-result"]);
+    expect(await unread.unreadCount()).toBe(1);
+    expect(native.setBadgeCountAsync).toHaveBeenCalledExactlyOnceWith(1);
+    expect(native.getBadgeCountAsync).not.toHaveBeenCalled();
+  });
+
+  it("all read durably empties the ledger and explicitly clears the native badge", async () => {
+    const { exports, native, storage } = runtime();
+    const unread = exports.getUnreadEventsStore() as ledger.UnreadEventsStore;
+    await unread.ingest({ template_id: "vote_open", bill_id: "ack-open" });
+    await unread.ingest({ template_id: "vote_result", bill_id: "ack-result" });
+    await exports.reconcileNotificationBadge();
+    native.setBadgeCountAsync.mockClear();
+
+    await exports.markAllNotificationsRead();
+
+    expect(await unread.list()).toEqual([]);
+    expect(await unread.unreadCount()).toBe(0);
+    expect(native.setBadgeCountAsync).toHaveBeenCalledExactlyOnceWith(0);
+    expect(native.getBadgeCountAsync).not.toHaveBeenCalled();
+    const restarted = ledger.createUnreadEventsStore(unreadStorage.createUnreadStorage({
+      getItem: storage.getItemAsync,
+      setItem: storage.setItemAsync,
+    }));
+    expect(await restarted.unreadCount()).toBe(0);
+    expect(await restarted.ingest({ template_id: "vote_open", bill_id: "ack-open" })).toBe("duplicate");
+    expect(await restarted.ingest({ template_id: "vote_result", bill_id: "ack-result" })).toBe("duplicate");
+  });
+
+  it.each(["event", "category", "all"])("a failed %s acknowledgement keeps events and never clears the native badge", async (scope) => {
+    const { exports, native, storage, data } = runtime();
+    const unread = exports.getUnreadEventsStore() as ledger.UnreadEventsStore;
+    await unread.ingest({ template_id: "vote_open", bill_id: "ack-open" });
+    await unread.ingest({ template_id: "vote_result", bill_id: "ack-result" });
+    await exports.reconcileNotificationBadge();
+    const before = Array.from(data.entries());
+    native.setBadgeCountAsync.mockClear();
+    storage.setItemAsync.mockRejectedValueOnce(new Error("ack storage failure"));
+    const acknowledge = scope === "event"
+      ? () => exports.markNotificationEventRead("vote_open:ack-open")
+      : scope === "category"
+        ? () => exports.markNotificationCategoryRead("push_vote_open")
+        : () => exports.markAllNotificationsRead();
+
+    await expect(acknowledge()).rejects.toThrow("ack storage failure");
+
+    expect((await unread.list()).map((event) => event.id)).toEqual(["vote_open:ack-open", "vote_result:ack-result"]);
+    expect(await unread.unreadCount()).toBe(2);
+    expect(Array.from(data.entries())).toEqual(before);
+    expect(native.setBadgeCountAsync).not.toHaveBeenCalled();
+    expect(native.getBadgeCountAsync).not.toHaveBeenCalled();
+  });
+
   it("retries one transient persistence failure before setting the badge", async () => {
     const { exports, native, storage, warn } = runtime();
     await vi.waitFor(() => expect(native.getLastNotificationResponseAsync).toHaveBeenCalled()); await new Promise((r) => setTimeout(r, 10));
