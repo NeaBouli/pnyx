@@ -1678,9 +1678,9 @@ async def public_finance_overview():
     projection = await _load_public_support_projection(r)
     server_received = projection["server"]
     months = _months_elapsed(SERVER_START)
-    server_cost = months * HETZNER_MONTHLY
+    server_cost = months * SERVER_COST_MONTHLY
     server_balance = round(server_received - server_cost, 2)
-    runway = int(server_balance / HETZNER_MONTHLY) if server_balance > 0 else 0
+    runway = int(server_balance / SERVER_COST_MONTHLY) if server_balance > 0 else 0
 
     hlr_remaining = max(0, 2499 - int(await r.get("hlr:hlrlookupcom:used") or "0"))
     payment_count = projection["count"]
