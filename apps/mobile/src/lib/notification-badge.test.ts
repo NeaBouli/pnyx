@@ -30,7 +30,7 @@ describe("notification badge queue", () => {
     expect(adapter.getBadgeCountAsync).not.toHaveBeenCalled();
     await queue.set(adapter, 1000);
     expect(getCount()).toBe(99);
-    await queue.set(adapter, Number.NaN);
+    await queue.set(adapter, Number.NaN, { clearTray: true });
     expect(getCount()).toBe(0);
   });
   it("distinguishes delivery payloads from notification taps", () => {
@@ -91,5 +91,33 @@ describe("notification badge queue", () => {
     ).resolves.toBeUndefined();
     expect(adapter.setBadgeCountAsync).toHaveBeenCalledTimes(2);
     expect(adapter.setBadgeCountAsync).toHaveBeenLastCalledWith(1);
+  });
+});
+
+describe("badge reconcile to zero (MOBILE-UX-20261007-01)", () => {
+  it("automatic reconciles never call the native clear for 0", async () => {
+    const queue = createNotificationBadgeQueue();
+    const { adapter } = createAdapter(5);
+    await queue.set(adapter, async () => 0);
+    await queue.set(adapter, 0);
+    expect(adapter.setBadgeCountAsync).not.toHaveBeenCalled();
+    expect(adapter.getBadgeCountAsync).not.toHaveBeenCalled();
+  });
+
+  it("an explicit last read clears even if the in-process badge reads 0 (process restart)", async () => {
+    const queue = createNotificationBadgeQueue();
+    const { adapter, getCount } = createAdapter(0);
+    await queue.set(adapter, 0, { clearTray: true });
+    expect(adapter.setBadgeCountAsync).toHaveBeenCalledWith(0);
+    expect(getCount()).toBe(0);
+  });
+
+  it("sets positive counts absolutely without reading the current badge", async () => {
+    const queue = createNotificationBadgeQueue();
+    const { adapter, getCount } = createAdapter(0);
+    await queue.set(adapter, 4);
+    await queue.set(adapter, 2, { clearTray: true });
+    expect(getCount()).toBe(2);
+    expect(adapter.getBadgeCountAsync).not.toHaveBeenCalled();
   });
 });

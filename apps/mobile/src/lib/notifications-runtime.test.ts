@@ -60,7 +60,7 @@ function runtime(flavor = "direct", lastResponse: unknown = null) {
 describe("notification runtime wiring", () => {
   it("retries one transient persistence failure before setting the badge", async () => {
     const { exports, native, storage, warn } = runtime();
-    await vi.waitFor(() => expect(native.setBadgeCountAsync).toHaveBeenCalled());
+    await vi.waitFor(() => expect(native.getLastNotificationResponseAsync).toHaveBeenCalled()); await new Promise((r) => setTimeout(r, 10));
     native.setBadgeCountAsync.mockClear();
     storage.setItemAsync.mockRejectedValueOnce(new Error("private native details"));
     const foreground = native.setNotificationHandler.mock.calls[0][0].handleNotification;
@@ -77,7 +77,7 @@ describe("notification runtime wiring", () => {
     const response = { notification };
     const { exports, native, task, storage, warn } = runtime("direct", boundary === "cold-start" ? response : null);
     if (boundary !== "cold-start") {
-      await vi.waitFor(() => expect(native.setBadgeCountAsync).toHaveBeenCalled());
+      await vi.waitFor(() => expect(native.getLastNotificationResponseAsync).toHaveBeenCalled()); await new Promise((r) => setTimeout(r, 10));
     }
     native.setBadgeCountAsync.mockClear();
     storage.setItemAsync.mockRejectedValue(new Error("private native details"));
