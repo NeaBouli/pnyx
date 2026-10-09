@@ -160,7 +160,7 @@ export default function VoteScreen({ route, navigation }: Props) {
           ).catch(() => null);
           if (!mounted) return;
           if (voteStatus) {
-            void syncVoteMark(billId, voteStatus);
+            void syncVoteMark(billId, voteStatus, nullifier);
             setHasVoted(voteStatus.has_voted);
             setIsCorrected(voteStatus.is_correction);
             if (voteStatus.vote) setSelected(voteStatus.vote);
@@ -377,7 +377,7 @@ export default function VoteScreen({ route, navigation }: Props) {
       }
 
       const res = await submitVote(nullifier, billId, choice, signatureHex);
-      void recordVoteMark(billId, false);
+      void recordVoteMark(billId, false, nullifier);
       setHasVoted(true);
       setSelected(choice);
 
@@ -416,7 +416,7 @@ export default function VoteScreen({ route, navigation }: Props) {
       const voteParams = { bill_id: billId, vote: choice, nullifier_hash: nullifier };
       const signatureHex = signVote(keypair.privateKeyHex, voteParams);
       const res = await correctVote(nullifier, billId, choice, signatureHex);
-      void recordVoteMark(billId, true);
+      void recordVoteMark(billId, true, nullifier);
       setIsCorrected(true);
       setHasVoted(true);
       setSelected(choice);
