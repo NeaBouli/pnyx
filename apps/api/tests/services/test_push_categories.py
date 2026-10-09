@@ -460,7 +460,9 @@ async def test_default_sender_receives_the_claim_deadline(monkeypatch):
 
     monkeypatch.setattr(notify, "notify_all_data_only", fake)
     assert await pc.push_vote_24h(FakeRedis(), bill, now=NOW) is True
-    assert seen == {"deadline": 1000.0 + pc.SEND_BUDGET_S}
+    reserve = min(pc.SENDER_RESERVE_MAX_S, pc.SEND_BUDGET_S * pc.SENDER_RESERVE_FRACTION)
+    assert seen == {"deadline": 1000.0 + pc.SEND_BUDGET_S - reserve}
+    assert reserve > 0
 
 
 @pytest.mark.parametrize("ttl", ["10", "60", "90", "150", "900", "3600"])
@@ -475,3 +477,52 @@ def test_send_budget_always_ends_inside_the_claim_lease(monkeypatch, ttl):
     finally:
         monkeypatch.delenv("PUSH_DATA_ONLY_CLAIM_TTL")
         importlib.reload(pc)
+
+
+@pytest.mark.asyncio
+async def test_partial_acceptance_before_hanging_batch_is_finalized(monkeypatch):
+    """Default sender: batch 1 accepted, batch 2 hangs until the deadline.
+
+    The sender must return its counts before the outer backstop, so the event
+    is finalized (no retry to devices that already got it), not released.
+    """
+    from routers import notify
+
+    monkeypatch.setenv(pc.FLAG, "1")
+    monkeypatch.setattr(pc, "SEND_BUDGET_S", 1.5)
+    posted = []
+
+    class Client:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        async def post(self, url, json):
+            posted.append(len(json))
+            if len(posted) == 1:
+                return _Resp(200, {"data": [{"status": "ok"}] * len(json)})
+            await asyncio.sleep(30)
+
+    async def fake_redis():
+        return object()
+
+    async def tokens(_r):
+        return [f"ExponentPushToken[{i}]" for i in range(150)]
+
+    monkeypatch.setattr(notify, "_get_redis", fake_redis)
+    monkeypatch.setattr(notify, "_registered_push_tokens", tokens)
+    monkeypatch.setattr(notify.httpx, "AsyncClient", Client)
+    redis = FakeRedis()
+
+    assert await pc.push_vote_24h(redis, bill, now=NOW) is True
+    assert posted == [100, 50]
+    assert redis.store["notified:vote_24h:GR-1"] == "1"
+
+    # Replay (next scheduler run): nothing is sent again.
+    assert await pc.push_vote_24h(redis, bill, now=NOW) is False
+    assert posted == [100, 50]

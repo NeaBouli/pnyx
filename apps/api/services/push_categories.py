@@ -51,6 +51,10 @@ CLAIM_TTL = max(60, int(os.getenv("PUSH_DATA_ONLY_CLAIM_TTL", "900")))
 CLAIM_SAFETY_S = max(30, CLAIM_TTL // 5)
 SEND_BUDGET_S = CLAIM_TTL - CLAIM_SAFETY_S
 assert 0 < SEND_BUDGET_S < CLAIM_TTL
+# The default sender must finish (and return its counts) this long before the
+# outer backstop fires, so a partial acceptance is finalized, never released.
+SENDER_RESERVE_FRACTION = 0.1
+SENDER_RESERVE_MAX_S = 5.0
 _clock = time.monotonic
 WEEKLY_DIGEST_CATCHUP_LAST_WEEKDAY = 2  # Monday 07:00 UTC .. Wednesday
 
@@ -103,11 +107,13 @@ async def send_category_push(
         if sender is None:
             from routers.notify import notify_all_data_only
 
-            sender = functools.partial(notify_all_data_only, deadline=deadline)
+            reserve = min(SENDER_RESERVE_MAX_S, SEND_BUDGET_S * SENDER_RESERVE_FRACTION)
+            sender = functools.partial(notify_all_data_only, deadline=deadline - reserve)
         remaining = deadline - _clock()
         if remaining <= 0:
             raise TimeoutError("send deadline passed before sending")
-        # Backstop: the sender itself honours the deadline; this bounds any sender.
+        # Backstop for any sender; the default sender stops `reserve` earlier and
+        # returns its counts, so this only fires for a sender that overruns.
         result = await asyncio.wait_for(sender(template_id, payload), timeout=remaining)
     except Exception as exc:
         # Includes the deadline: acceptance is then unknown and counted as failed.
