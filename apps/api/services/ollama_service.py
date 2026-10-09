@@ -333,6 +333,42 @@ _DISCLAIMER_EN = (
 )
 
 
+_JSON_TEXT_KEYS = ("content", "answer", "text", "response", "message")
+_JSON_TEXT_PREFIX = re.compile(r'^\{\s*"(?:%s)"\s*:\s*"' % "|".join(_JSON_TEXT_KEYS))
+
+
+def _unwrap_json_answer(answer: str) -> str:
+    """Return the prose when a model wraps its answer as {"content": "..."}.
+
+    The prompt shows reference data as JSON lines, and small models sometimes
+    mirror that shape. Plain-text answers are returned unchanged.
+    """
+    text = (answer or "").strip()
+    stripped = re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.IGNORECASE).strip()
+    if not stripped.startswith("{"):
+        return answer
+    try:
+        parsed = json.loads(stripped)
+    except json.JSONDecodeError:
+        parsed = None
+    if isinstance(parsed, dict):
+        for key in _JSON_TEXT_KEYS:
+            value = parsed.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+        return answer
+    # Truncated object (num_predict cut-off): keep the text of the first field.
+    match = _JSON_TEXT_PREFIX.match(stripped)
+    if not match:
+        return answer
+    body = stripped[match.end():]
+    body = re.sub(r'"\s*,?\s*(?:"[^"]*"\s*:.*)?\}?\s*$', "", body, flags=re.S)
+    try:
+        return json.loads(f'"{body}"').strip()
+    except json.JSONDecodeError:
+        return body.replace('\\"', '"').replace("\\n", "\n").strip()
+
+
 async def answer_citizen_question(
     question: str,
     context: str | Sequence[Mapping[str, Any]] | None,
@@ -365,6 +401,14 @@ async def answer_citizen_question(
     if is_unsafe_model_output(en_answer):
         logger.warning("[Agent] Ollama answer rejected by output guard")
         raise UnsafeModelOutputError("ollama")
+
+    # Some answers come back as {"content": "..."}; keep only the prose and run
+    # the output guard again on the decoded text before anything is translated.
+    unwrapped = _unwrap_json_answer(en_answer)
+    if unwrapped != en_answer and is_unsafe_model_output(unwrapped):
+        logger.warning("[Agent] Ollama answer rejected by output guard after JSON unwrap")
+        raise UnsafeModelOutputError("ollama")
+    en_answer = unwrapped
 
     # Clean Ollama warmup artifacts
     if en_answer:
