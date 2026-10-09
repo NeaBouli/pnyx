@@ -27,6 +27,7 @@ import { canShowPublicZkVoting, canSubmitPublicZkVote, publicZkVoteScopeForBill 
 import type { ZkServerStatus } from "../lib/zkSemaphoreCore";
 import { formatZkPilotErrorMessage } from "../lib/zkPilotError";
 import { recordVoteMark, syncVoteMark } from "../lib/vote-marks";
+import { voteSuccessDialog } from "../lib/vote-success";
 
 type Props = StackScreenProps<RootStackParams, "Vote">;
 
@@ -72,6 +73,11 @@ import { cleanOfficialText, correctionBanner, officialDocumentLinks, officialDoc
 export default function VoteScreen({ route, navigation }: Props) {
   const { billId, billTitle } = route.params;
   const [displayTitle, setDisplayTitle] = useState(billTitle);
+  // Success dialog: "Κλείσιμο" back to the overview plus "Αποτελέσματα" (MOBILE-UX-20261007-03).
+  const voteSuccessArgs = () => {
+    const dialog = voteSuccessDialog(navigation, { billId, billTitle: displayTitle });
+    return [dialog.buttons, dialog.options] as const;
+  };
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [summary, setSummary] = useState("");
@@ -298,9 +304,7 @@ export default function VoteScreen({ route, navigation }: Props) {
                 title: result.accepted ? "ZK ψήφος έγινε αποδεκτή" : "ZK ψήφος δεν έγινε αποδεκτή",
                 detail: `receipt ${result.receipt_id} · arweave_pending=${String(result.arweave_pending)} · verifier ${result.verifier_version}`,
               });
-              Alert.alert("Επιτυχία ✓", "Η ανώνυμη ZK ψήφος καταγράφηκε.", [
-                { text: "Αποτελέσματα", onPress: () => navigation.replace("Result", { billId, billTitle: displayTitle, fromVote: true }) },
-              ]);
+              Alert.alert("Επιτυχία ✓", "Η ανώνυμη ZK ψήφος καταγράφηκε.", ...voteSuccessArgs());
             } catch (error) {
               setZkResult({
                 ok: false,
@@ -347,7 +351,7 @@ export default function VoteScreen({ route, navigation }: Props) {
         Alert.alert(
           "Demo ✓",
           "Demo — ψήφος δεν καταγράφεται",
-          [{ text: "Αποτελέσματα", onPress: () => navigation.replace("Result", { billId, billTitle: displayTitle, fromVote: true }) }]
+          ...voteSuccessArgs()
         );
         return;
       }
@@ -377,12 +381,7 @@ export default function VoteScreen({ route, navigation }: Props) {
       setHasVoted(true);
       setSelected(choice);
 
-      Alert.alert("Επιτυχία ✓", res.message, [
-        {
-          text: "Αποτελέσματα",
-          onPress: () => navigation.replace("Result", { billId, billTitle: displayTitle, fromVote: true }),
-        },
-      ]);
+      Alert.alert("Επιτυχία ✓", res.message, ...voteSuccessArgs());
     } catch (err: any) {
       const message = err.message || "Η ψηφοφορία απέτυχε.";
       if (message.includes("ήδη") || message.includes("already") || message.includes("409")) {
@@ -421,9 +420,7 @@ export default function VoteScreen({ route, navigation }: Props) {
       setIsCorrected(true);
       setHasVoted(true);
       setSelected(choice);
-      Alert.alert("Διόρθωση ✓", "Η ψήφος σας διορθώθηκε επιτυχώς.", [
-        { text: "Αποτελέσματα", onPress: () => navigation.replace("Result", { billId, billTitle: displayTitle, fromVote: true }) },
-      ]);
+      Alert.alert("Διόρθωση ✓", "Η ψήφος σας διορθώθηκε επιτυχώς.", ...voteSuccessArgs());
     } catch (err: any) {
       Alert.alert("Σφάλμα", err.message || "Η διόρθωση απέτυχε.");
     } finally {
