@@ -6,6 +6,8 @@ import { fetchBills } from "../lib/api";
 import { mergeBillsUnique, prioritizeBillsPage } from "../lib/bill-feed";
 import { availableGeographicFilters, scopedBillQuery } from "../lib/bill-scope";
 import { loadUserBillScope } from "../lib/bill-scope-storage";
+import { isVerified } from "../lib/crypto-native";
+import { loadVoteMarks, tileVoteLabel, type VoteMarks } from "../lib/vote-marks";
 import type { RootStackParams } from "../navigation";
 import { colors } from "../theme";
 
@@ -51,6 +53,22 @@ export default function BillsScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [voteMarks, setVoteMarks] = useState<VoteMarks>({});
+  const [verified, setVerified] = useState(false);
+
+  // Personal vote status per tile from device-local marks only (MOBILE-UX-20261007-02);
+  // refreshed on every focus so it is current after voting and returning.
+  useFocusEffect(useCallback(() => {
+    let cancelled = false;
+    (async () => {
+      const [marks, ok] = await Promise.all([loadVoteMarks(), isVerified().catch(() => false)]);
+      if (!cancelled) {
+        setVoteMarks(marks);
+        setVerified(ok);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []));
   const [nextOffset, setNextOffset] = useState(0);
   const [filter, setFilter] = useState("ALL");
   const [userPeriferia, setUserPeriferia] = useState<number | null>(null);
@@ -250,6 +268,17 @@ export default function BillsScreen() {
               <View style={s.cardFooter}>
                 <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
                   <Text style={[s.cardStatus, { color: STATUS_COLORS[item.status] ?? colors.textTertiary }]}>{STATUS_LABELS[item.status] ?? item.status}</Text>
+                  {(() => {
+                    const mine = tileVoteLabel(item.status, voteMarks[item.id], verified);
+                    return mine ? (
+                      <Text
+                        style={[s.cardVote, mine.tone === "correctable" ? s.cardVoteCorrectable : s.cardVoteDone]}
+                        accessibilityLabel={mine.text}
+                      >
+                        {mine.text}
+                      </Text>
+                    ) : null;
+                  })()}
                   {item.source === "DIAVGEIA" && (
                     <Text style={{ fontSize: 9, fontWeight: "800", color: "#0369a1", backgroundColor: "#e0f2fe", paddingHorizontal: 4, paddingVertical: 1, borderRadius: 4, overflow: "hidden" }}>ΔΙΑΥΓΕΙΑ</Text>
                   )}
@@ -301,6 +330,9 @@ const s = StyleSheet.create({
   cardPill: { fontSize: 12, color: colors.textSecondary, marginBottom: 6 },
   cardFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 },
   cardStatus: { fontSize: 11, fontWeight: "600" },
+  cardVote: { fontSize: 10, fontWeight: "700", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4, overflow: "hidden" },
+  cardVoteDone: { color: "#166534", backgroundColor: "#dcfce7" },
+  cardVoteCorrectable: { color: "#92400e", backgroundColor: "#fef3c7" },
   cardActions: { flexDirection: "row", gap: 10, alignItems: "center", flexShrink: 0 },
   actionIcon: { fontSize: 16, color: colors.primary, fontWeight: "800" },
   empty: { color: colors.textSecondary, textAlign: "center", marginTop: 40 },
