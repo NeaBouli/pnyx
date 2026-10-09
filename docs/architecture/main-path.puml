@@ -1,4 +1,524 @@
 @startuml
+participant "manifest+lock\n(web, dashboard)" as L
+participant "CI client gate" as CI
+participant "Dockerfile.prod" as D
+participant "server.js\n(next start standalone)" as S
+participant "proxy.ts" as P
+participant "pages / route handlers" as R
+
+L -> CI : next 16.3.4 + @next/swc-* 16.3.4 (npm ci)
+CI -> CI : image-codec.check.mjs, lint, typecheck, build
+L -> D : same lock (npm ci)
+D -> S : .next/standalone, node server.js
+S -> P : matcher-selected request (Node.js runtime)
+P -> R : web matched: redirect/rewrite/intl\ndashboard protected: auth + canAccess
+S -> R : web /api, _next, _vercel, dotted paths\nbypass proxy matcher
+P -> R : dashboard /api/auth/* early return\nbefore protected user + canAccess checks
+R --> S : HTML / JSON
+note over R
+  next/og ImageResponse side-hop: offen,
+  not simulated (no call site)
+end note
+@enduml
+
+@startuml
+' Preserved EKA-18 path integrated from origin/main during T-486 refresh
+title Local developer stack: Quick Start to bounded datastore listeners
+
+actor Developer
+participant "README Quick Start" as ER
+participant "Development Compose" as EC
+participant "PostgreSQL / Redis\nloopback listeners" as ED
+participant "API container\nservice DNS" as EA
+participant "Host tools\nlocalhost defaults" as EH
+
+Developer -> ER : start local stack
+ER -> EC : docker compose up -d
+EC -> ED : publish 127.0.0.1:5432 / 127.0.0.1:6379
+EC -> EA : attach db and redis on internal network
+Developer -> EH : alembic / seeds / host uvicorn
+EH -> ED : connect through localhost
+@enduml
+
+@startuml
+title Sentry event capture: exception/request to transport
+
+participant "FastAPI / Starlette" as WEB
+participant "_sentry_init_options" as POLICY
+participant "Sentry SDK\nevent construction" as SDK
+participant "_before_send_filter" as FILTER
+participant "Sentry transport" as TRANSPORT
+
+POLICY -> SDK : init integrations, sampling, hooks (H2)
+WEB -> SDK : exception / transaction + request context (H1)
+SDK -> SDK : build stack frames; implicit local capture (H3)
+SDK -> SDK : derive request metadata; implicit body capture (H4)
+SDK -> FILTER : constructed event (H5)
+FILTER -> FILTER : remove env/cookies/query; redact known keys
+FILTER -> TRANSPORT : filtered envelope (H6)
+
+note over POLICY,SDK
+Required capture boundary:
+include_local_variables = false
+max_request_body_size = never
+end note
+
+note over FILTER
+Retained as defense in depth for
+headers, query strings, extras and
+integration-supplied event data.
+end note
+@enduml
+
+@startuml
+' EKA-08 main path — current behaviour after T-488; EKA-18 sequence above unchanged
+title Web Compass: CompassCard -> localStorage
+
+participant "Compass UI card\nCompassCard.tsx" as CARD
+participant "Compass hook\nuseCompass.ts" as HOOK
+participant "Identity key access\ncrypto.ts" as KEYS
+participant "Compass storage\nstorage.ts" as STORE
+database "Browser persistence\nlocalStorage" as LS
+
+note over CARD : not mounted by any route at 4cc1193
+CARD -> HOOK : useCompass() (C1)
+HOOK -> KEYS : loadKeypair() (C2)
+KEYS --> HOOK : privateKeyHex or null
+HOOK -> STORE : loadProfile(key) (C3)
+STORE -> LS : getItem + removeItem(ekklesia_compass_profile) if present (C5)
+STORE -> LS : getItem(ekklesia_compass_encrypted) (C4)
+alt ciphertext present and key/auth valid
+  STORE -> STORE : HKDF + AES-GCM decrypt
+  STORE --> HOOK : CompassProfile
+else ciphertext present but missing key or invalid
+  STORE --> HOOK : empty profile; legacy ignored
+else no ciphertext and valid legacy
+  alt key present
+    STORE -> LS : setItem(encrypted) (C8a migration)
+  end
+  STORE --> HOOK : legacy profile in-memory
+else no valid legacy
+  STORE --> HOOK : empty profile
+end
+
+== mutation ==
+HOOK -> HOOK : setModel / seedFromVAA / recordBillVote -> persistProfile (C6)
+HOOK -> KEYS : loadKeypair() (C2)
+HOOK -> STORE : saveProfile(p, key) after 300 ms, not awaited (C7)
+STORE -> LS : removeItem(ekklesia_compass_profile)
+alt key present and crypto ok
+  STORE -> LS : setItem(ekklesia_compass_encrypted) (C8a)
+else no key or crypto/storage error
+  STORE --> HOOK : rejected promise, no plaintext write (C8b closed)
+end
+
+== reset ==
+HOOK -> STORE : clearProfile() (C9)
+STORE -> LS : removeItem(both)
+note right of HOOK : pending saveTimeout not cancelled
+@enduml
+
+@startuml
+title EKA-18 built path — local tools retain access without LAN exposure
+actor Developer
+participant "Dev Compose" as Compose
+database "PostgreSQL\n127.0.0.1:5432" as DB
+participant "Redis\n127.0.0.1:6379" as Redis
+participant "API container" as API
+
+Developer -> Compose : docker compose up -d
+Compose -> DB : publish IPv4 loopback only
+Compose -> Redis : publish IPv4 loopback only
+Developer -> DB : migrations/seeds via localhost
+Developer -> Redis : local tooling via localhost
+API -> DB : service DNS db:5432
+API -> Redis : service DNS redis:6379
+@enduml
+
+@startuml
+title EKA-13 selected fix — isolate and make Docker access read-only
+participant "Monitor" as Monitor
+participant "private internal\nnetwork" as Private
+participant "docker-proxy\nv0.4.2@digest\nPOST=0" as Proxy
+database "Host Docker daemon" as Docker
+participant "Other net_ekklesia peer" as Peer
+
+Monitor -> Monitor : AUTO_RECOVERY_T2=false; escalate to T3
+Monitor -> Private : sole consumer
+Private -> Proxy : permitted read path
+Peer -[#red,dashed]> Proxy : no shared network route
+Proxy -> Docker : Docker API via mounted socket
+Proxy -[#red,dashed]> Docker : POST denied
+Proxy -> Docker : no enabled API namespace
+
+note over Proxy
+Dedicated internal network closes lateral peer access.
+POST=0 removes restart writes.
+Container/event/ping/version GETs and all Docker writes are denied while T2 is disabled.
+end note
+@enduml
+
+@startuml
+' EKA-22 KAT path — built symbols at base 4cc1193; fixture and adapters are offen (not simulated as built)
+title EKA-22: shared fixture -> adapter -> existing crypto symbols -> expected bytes/hex/errors
+
+participant "Shared KAT fixture\n(offen)" as FIX
+participant "KAT adapters\n(offen)" as ADP
+participant "API\nkeypair.py / crypto/nullifier.py / services" as API
+participant "Web\nlib/crypto.ts" as WEB
+participant "Mobile\ncrypto-native.ts" as MOB
+participant "Tier-1 TS library\npackages/crypto/src" as T1
+
+note over FIX, ADP : offen — no file or test exists yet
+
+== class identical ==
+ADP -> WEB : buildVoteMessage / signVote (K1)
+ADP -> MOB : signVote message (K2)
+ADP -> API : verify_signature(legacy string) (K3/K4)
+ADP -> MOB : buildSignedPayload (K6)
+ADP -> API : build_signed_payload (K5)
+ADP -> MOB : identity/vote/linkage/ephemeral HMAC chain (K8)
+ADP -> T1 : identity/vote/linkage/ephemeral HMAC chain (K8)
+ADP -> MOB : JSON payload builders (K12)
+ADP -> API : evaluation / vote-status builders (K12)
+
+== class validatable ==
+ADP -> API : validate_vote -> INVALID_HEX / INVALID_SIGNATURE_FORMAT / INVALID_SIGNATURE (K5)
+ADP -> API : validate_vote_scope_id -> ValueError (K11)
+ADP -> WEB : verifyVote(malformed) -> false
+ADP -> MOB : verifyVote(malformed) -> false or throw
+
+== documented divergence ==
+ADP -> T1 : buildSignedPayload (K7) != K5
+ADP -> API : v1 / v2 root KDF pin (own impl only, EKA-21)
+ADP -> T1 : Argon2id t=3 root pin (own impl only, EKA-21)
+ADP -> MOB : PBKDF2 root pin (own impl only, EKA-21)
+@enduml
+
+@startuml
+' EKA-24 main path — only built test traces; no production path exists
+title EKA-24 test-only v1 nullifier helper paths after the fix
+
+actor Developer
+participant "Web test command\npackage.json::test" as TESTCMD
+participant "Vitest" as VITEST
+participant "crypto.test.ts" as LEGACY
+participant "EKA-22 fixture" as FIXTURE
+participant "crypto-kat.test.ts" as KAT
+participant "test-only helper\nlegacyV1NullifierTestOnly" as HELPER
+participant "Web Crypto\nsubtle.digest" as WEBCRYPTO
+participant "crypto.ts\nbytesToHex" as HEX
+
+Developer -> TESTCMD : npm test (N1)
+TESTCMD -> VITEST : vitest run (N1)
+VITEST -> LEGACY : load legacy crypto suite
+VITEST -> KAT : load EKA-22 Web KAT
+LEGACY -> HELPER : synthetic phone + salt (N2)
+FIXTURE -> KAT : exact v1_nullifier vector (N3)
+KAT -> HELPER : synthetic phone + salt (N3)
+HELPER -> WEBCRYPTO : SHA-256 UTF-8 phone:salt (N4)
+WEBCRYPTO --> HELPER : 32-byte digest
+HELPER -> HEX : bytesToHex(digest) (N5)
+HEX --> LEGACY : lowercase 64-char hex
+HEX --> KAT : exact fixture digest
+
+note over LEGACY,KAT
+  crypto.ts no longer exports a nullifier helper; no production path exists.
+  The absent runtime edge is not simulated.
+end note
+@enduml
+
+@startuml
+title EKA-57: repository catalog to assistant context
+
+participant "Legacy SQL seed" as SQL
+participant "Python seed catalog" as PY
+participant "Manual deploy" as DEPLOY
+database "knowledge_base" as DB
+participant "CI tests" as CI
+participant "Agent retrieval" as RAG
+participant "Prompt" as PROMPT
+
+SQL -> DB : manual DELETE + 17-row INSERT (H1)
+PY -> DB : manual 14-row upsert, no deletion (H2)
+note over SQL,PY
+Two divergent authorities can coexist.
+Duplicates and stale rows survive.
+end note
+
+DEPLOY -> DEPLOY : rebuild changed containers (H4)
+note right of DEPLOY
+No KB sync or drift check.
+end note
+
+CI -> CI : training module seeks ignored private file (H6)
+CI -> CI : missing file -> skip
+
+DB -> RAG : priority order, LIMIT 20 (H7)
+RAG -> PROMPT : scored top 5 or priority fallback
+
+note over PY,DB
+Required technical path:
+one catalog -> transactional exact sync -> check
+end note
+note over DEPLOY,CI
+Deploy never runs sync (Gio 2026-10-02); sync + check are manual operator commands;
+CI proves behavior and uses a tracked question-only fixture.
+end note
+@enduml
+
+@startuml faq-lang-main-path
+title faq.html: langBtn onclick -> toggleLang -> querySelectorAll("[data-el]")
+
+actor Nutzer
+participant "FAQ Markup\n(faq.html)" as Markup
+participant "FAQ Sprachwechsel\n(toggleLang)" as Toggle
+participant "FAQ A11y-Adapter\n(r3-faq-accessibility.js)" as A11y
+
+== Laden ==
+Markup -> Markup : <html lang="el" data-lang="el">
+Markup -> A11y : script defer
+A11y -> Markup : .faq-q role/tabindex/aria-expanded/aria-controls
+
+== Klick EN ==
+Nutzer -> Markup : click #langBtn
+Markup -> Toggle : toggleLang()
+Toggle -> Toggle : currentLang = "en"
+Toggle -> Markup : document.documentElement.lang = "en"
+Toggle -> Markup : #langBtn.textContent = "ΕΛ"
+Toggle -> Markup : querySelectorAll("[data-el]")
+loop je [data-el] Element
+  Toggle -> Markup : el.innerHTML = data-en
+end
+note over Toggle, Markup
+  #365 ist durch T-473 geschlossen.
+  data-lang bleibt statisch und hat keine belegte Laufzeitwirkung.
+end note
+@enduml
+
+@startuml faq-nav-main-path
+title faq.html @ 390px: nav.pnx2-header -> r3-wiki.css @media 920 -> .nav-links Scroller -> #langBtn
+
+actor Nutzer
+participant "FAQ Kopf-Markup\n(faq.html)" as NavMarkup
+participant "FAQ Legacy-Kopf-CSS\n(inline style)" as InlineCss
+participant "R3 Foundation\n(foundation.css)" as Foundation
+participant "R3 Wiki-Shell CSS\n(r3-wiki.css)" as WikiShell
+participant "FAQ Sprachwechsel\n(toggleLang)" as Toggle
+
+== Laden, Kaskade in Ladereihenfolge ==
+InlineCss -> NavMarkup : nav flex-wrap; .nav-links flex-wrap: wrap
+Foundation -> NavMarkup : .pnx2-header display: flex
+WikiShell -> NavMarkup : @media 920: nav.pnx2-header display: block
+WikiShell -> NavMarkup : @media 920: .pnx2-header .nav-links nowrap, overflow-x: auto
+WikiShell -> NavMarkup : @media 920: .nav-links > * flex: 0 0 auto
+NavMarkup -> NavMarkup : .nav-links clientWidth 390, scrollWidth 1520, scrollLeft 0
+note over NavMarkup
+  17 Kinder, #langBtn = Index 16 (letztes).
+  Sichtbar 5/17; #langBtn x=1460..1504.
+  Doc-Overflow 0 (Ueberhang bleibt im Scroller).
+end note
+
+== Finden ==
+Nutzer -> NavMarkup : horizontaler Wisch in .nav-links (oder Tab-Fokus)
+NavMarkup -> NavMarkup : scrollLeft > 0, #langBtn im Scroller sichtbar
+
+== Bedienen ==
+Nutzer -> NavMarkup : tap #langBtn
+NavMarkup -> Toggle : toggleLang()
+Toggle -> NavMarkup : documentElement.lang, #langBtn.textContent, [data-el] innerHTML
+
+note over Nutzer, WikiShell
+  offen: keine Pruefung, dass #langBtn bei scrollLeft 0 sichtbar ist.
+  Kein Code, daher keine Kante.
+end note
+@enduml
+
+@startuml
+title EKA-59/EKA-60: citizen question to technical-state answer
+
+actor Citizen
+participant "POST /api/v1/agent/ask" as API
+participant "_canonical_response" as CANON
+participant "Web crypto.ts" as WEB
+participant "Mobile crypto-native.ts" as MOBILE
+participant "Payment state" as PAY
+participant "RAG / model" as MODEL
+
+Citizen -> API : private-key or payment/support question + el/en (H1)
+API -> CANON : question after safety filter (H2)
+
+alt current private-key path
+  CANON --> Citizen : generic device-only answer (H3)
+  note over WEB,MOBILE
+  Actual sources diverge:
+  Web Beta -> localStorage (H4)
+  Mobile -> SecureStore (H5)
+  end note
+else current payment/support path
+  CANON -> API : no match (H6)
+  API -> MODEL : KB context + question
+  MODEL --> Citizen : generated answer may mention processors
+  note over PAY
+  Actual technical state:
+  public links paused; intake gated (H7)
+  end note
+end
+
+note over CANON,PAY
+Required narrow path:
+platform-specific key facts and paused-payment state
+return deterministically before database/model access.
+end note
+@enduml
+
+@startuml gh298-tab-label-main-path
+title GH#298 — Tab-Label-Pfad bei Android fontScale 1.8 (Basis 2bfda8e)
+
+participant "App-Shell Safe Area\nApp.tsx" as Shell
+participant "Tab-Navigation\nnavigation/index.tsx" as TabNav
+participant "BottomTabView\n(Vendor)" as View
+participant "BottomTabBar\n(Vendor)" as Bar
+participant "BottomTabItem\n(Vendor)" as Item
+participant "TabBarIcon\n(Vendor)" as Icon
+participant "react-native Text\n/ Yoga" as RNText
+participant "Android\nfontScale / Window" as Android
+
+Shell -> Shell : SafeAreaView edges=["top"]\n+ innerer SafeAreaProvider (H1)
+Shell -> TabNav : Navigation -> Stack.Screen "Tabs" (H2)
+TabNav -> View : screenOptions({route})\ntabBarStyle ohne height, tabBarLabel(), tabBarIcon() (H3)
+View -> Bar : renderTabBar({insets}) (H4)
+Bar -> Bar : getTabBarHeight = 49 + insets.bottom\n(fontScale-blind) (H5)
+Bar -> Bar : shouldUseHorizontalLabels\nAndroid: width > height (H6)
+loop 5 Routen, flex 1 je Spalte (H7)
+  Bar -> Item : BottomTabItem(horizontal=false, compact=false)
+  Item -> Item : PlatformPressable\npadding 5, column, role tab (H8)
+  Item -> Icon : renderIcon -> Wrapper 31x28 (H9)
+  Icon -> TabNav : tabBarIcon({size: 25, color, focused})
+  TabNav -> RNText : Text fontSize 18 (Emoji), size ignoriert (H10)
+  Android -> RNText : fontScale 1.8 -> 32.4 sp (H13)
+  RNText --> Icon : Glyphe > 28 dp, ueberlagert Label-Zone
+  Item -> TabNav : renderLabel -> tabBarLabel({color, position}) (H11)
+  TabNav -> RNText : Text fontSize 10, bold, kein numberOfLines (H12)
+  Android -> RNText : fontScale 1.8 -> 18 sp (H13)
+  RNText --> Item : Zeilenhoehe > ~11 dp Restbudget,\nBreite > 62 dp Spalte -> Umbruch
+end
+Item --> Bar : Inhalt ragt ueber 49 dp hinaus
+Bar --> Android : unterer Rand ausserhalb Fenster -> vertikal abgeschnitten (H14)
+@enduml
+
+@startuml
+' EKA-64 main path — T-504 trace, A6 updated to built T-505 guard
+' Evidence: local standalone build (Dockerfile.prod layout) on 127.0.0.1, 2026-09-28
+title MOD-WEB: /llms.txt vs /ai.txt | /llms-full.txt -> HTTP status
+
+actor "AI crawler" as CRAWLER
+participant "Next config\nnext.config.mjs" as NCFG
+participant "Proxy\nproxy.ts::config.matcher" as PROXY
+participant "Public bundle\n/app/public (Dockerfile.prod)" as PUBLIC
+participant "Locale page\n[locale]/page.tsx::HomePage" as LOCALE
+
+== existing anchor: /llms.txt ==
+CRAWLER -> NCFG : GET /llms.txt (A1)
+NCFG -> PROXY : redirects(): no match (A2)
+PROXY -> PROXY : matcher /((?!api|_next|_vercel|.*\\..*).*) excludes dotted path; proxy() not run (A3)
+PROXY -> PUBLIC : static-file lookup public/llms.txt
+PUBLIC --> CRAWLER : 200 OK, text/plain; charset=UTF-8, 5470 bytes (A4)
+
+== missing conventional anchor: /ai.txt, /llms-full.txt ==
+CRAWLER -> NCFG : GET /ai.txt (A1)
+NCFG -> PROXY : redirects(): no match (A2)
+PROXY -> PROXY : dotted path excluded; proxy() not run (A3)
+PROXY -> PUBLIC : static-file lookup public/ai.txt
+PUBLIC -> LOCALE : miss -> app route /[locale] with locale="ai.txt" (A5)
+LOCALE -> LOCALE : HomePage hasLocale(routing.locales, "ai.txt") = false (T-505)
+LOCALE --> CRAWLER : notFound() -> 404 Not Found, text/html (A6)
+
+== valid locale: /el, /en ==
+CRAWLER -> LOCALE : GET /el (proxy + [locale] route)
+LOCALE --> CRAWLER : redirect -> 307, location: https://ekklesia.gr (unchanged)
+
+== contrast: two-segment dotted miss ==
+CRAWLER -> PUBLIC : GET /x/ai.txt
+PUBLIC --> CRAWLER : 404 Not Found, text/html (no matching app route)
+@enduml
+
+@startuml
+title Expo 54 asset build dependency path
+
+participant "App manifest" as APP
+participant "Expo 54" as EXPO
+participant "@expo/metro 54.2.0" as EM
+participant "Metro family" as METRO
+participant "Asset parser" as PARSER
+participant "Regression/build gates" as GATES
+
+APP -> EXPO : resolve ~54.0.37 (H1)
+EXPO -> EM : install adapter 54.2.0 (H1)
+EM -> METRO : exact 0.83.3 declaration\noverridden as coherent 0.83.8 family (H2/H3)
+METRO -> PARSER : internal bounded parser, no image-size (H5)
+APP -> GATES : 26-case installed-parser regression (H4)
+METRO -> GATES : tests + typecheck + Android production export (H6)
+@enduml
+
+@startuml
+' EKA-63 main path — current built behaviour at base 4cc1193 (T-507, no fix simulated)
+title EKA-63: citizen question -> canonical miss -> model fallback
+
+actor Citizen
+participant "FastAPI composition\nmain.py" as E63MAIN
+participant "Agent route\nask_agent" as E63ASK
+participant "Safety filter\n_safety_response" as E63SAFE
+participant "Canonical classifier\n_canonical_response" as E63CANON
+participant "RAG context\n_build_context" as E63RAG
+participant "Ollama / Claude" as E63MODEL
+
+Citizen -> E63MAIN : POST /api/v1/agent/ask {question, lang} (A1)
+E63MAIN -> E63ASK : validated AskRequest (A1)
+E63ASK -> E63SAFE : question + canonical el/en (A2)
+E63SAFE --> E63ASK : no safety match
+E63ASK -> E63CANON : question + lang (A3)
+
+alt existing canonical topic
+  E63CANON --> E63ASK : fixed bilingual answer + topic (A4-A5)
+  E63ASK --> Citizen : knowledge-base JSON + disclaimer (A7)
+else EKA-63 topic today
+  E63CANON --> E63ASK : None — no branch (A4-A6)
+  E63ASK -> E63RAG : retrieve KB/bill records (A6)
+  E63RAG --> E63ASK : retained untrusted context
+  E63ASK -> E63MODEL : generated answer request (A6)
+  E63MODEL --> E63ASK : probabilistic answer
+  E63ASK --> Citizen : generated JSON + disclaimer (A7)
+end
+@enduml
+
+@startuml
+' EKA-53 main path — built behaviour at proven main 4cc11930 (no fix simulated)
+title Public DeepL usage: community page -> admin-prefixed public handler
+
+actor Citizen
+participant "Community page\nfetchDeeplUsage" as COMMUNITY
+participant "FastAPI\nmain.py" as MAIN
+participant "Admin router\nadmin.py" as ADMIN
+participant "deepl_usage" as HANDLER
+participant "DeepL\nGET /v2/usage" as DEEPL
+
+Citizen -> COMMUNITY : open transparency page
+COMMUNITY -> MAIN : GET /api/v1/admin/deepl/usage (D1)
+MAIN -> ADMIN : route via included admin router (D2)
+ADMIN -> HANDLER : match /deepl/usage, no verify_admin (D3)
+HANDLER -> DEEPL : GET usage with server-side credential (D4)
+DEEPL --> HANDLER : character_count, character_limit (D5)
+HANDLER --> COMMUNITY : available + projected aggregate fields (D5)
+COMMUNITY --> Citizen : render usage tile
+
+note over ADMIN,HANDLER
+EKA-53: public-by-design contract inherits an admin namespace.
+The corrected public-router path is open and is not simulated here.
+end note
+@enduml
+
+@startuml
 participant Webhook
 participant Allocation
 participant Projection
