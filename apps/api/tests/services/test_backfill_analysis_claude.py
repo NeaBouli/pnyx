@@ -197,3 +197,31 @@ async def test_gated_call_books_full_reservation_when_call_fails(monkeypatch):
     day, _ = _day_month()
     assert int(redis.store[f"claude:tokens:{day}"]) > backfill.ANALYSIS_MAX_OUTPUT_TOKENS
     assert int(redis.store[f"claude:reserved_tokens:{day}"]) == 0
+
+
+def test_default_is_offline_dry_run():
+    args = backfill.build_parser().parse_args(["--bill-id", "GR-1"])
+    assert args.live_calls is False and args.apply is False
+    assert backfill.mode_error(args) is None
+
+
+def test_apply_analysis_requires_live_calls():
+    args = backfill.build_parser().parse_args(["--bill-id", "GR-1", "--apply"])
+    assert "--live-calls" in backfill.mode_error(args)
+    ok = backfill.build_parser().parse_args(["--bill-id", "GR-1", "--apply", "--live-calls"])
+    assert backfill.mode_error(ok) is None
+
+
+def test_official_only_apply_needs_no_paid_calls():
+    args = backfill.build_parser().parse_args(["--bill-id", "GR-1", "--apply", "--official-only"])
+    assert backfill.mode_error(args) is None
+
+
+def test_plan_is_offline_and_matches_reservation_bound(monkeypatch):
+    from services.claude_usage import reservation_size
+
+    monkeypatch.setattr(backfill, "call_claude", lambda *a: (_ for _ in ()).throw(AssertionError("no call")))
+    plan = backfill.plan_claude_call("Τίτλος", "Κείμενο νόμου")
+    prompt = backfill.analysis_prompt("Τίτλος", "Κείμενο νόμου")
+    tokens, cost = reservation_size("", prompt, backfill.ANALYSIS_MAX_OUTPUT_TOKENS)
+    assert plan == {"prompt_chars": len(prompt), "reserved_tokens_max": tokens, "reserved_cost_usd_max": cost}
