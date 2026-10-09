@@ -2,8 +2,12 @@
 """
 Backfill summary_short_el + analysis_el from official Parliament PDFs via Claude.
 
-Default is dry-run. Use --apply to write DB. This script is intentionally scoped
-to explicit bill IDs; it does not batch all bills by default.
+Default is an offline dry run: it fetches documents and prints what a Claude
+call would send and reserve, but makes no paid call and writes nothing.
+--live-calls makes paid Claude calls (behind the shared budget gate) and writes
+previews; --apply additionally writes the DB (--live-calls is required unless
+--official-only). This script is intentionally scoped to explicit bill IDs; it
+does not batch all bills by default.
 """
 import argparse
 import asyncio
@@ -433,13 +437,44 @@ def validate_result(result: dict, excerpt: str) -> list[str]:
     return errors
 
 
-async def main() -> None:
-    parser = argparse.ArgumentParser(description="Claude analysis_el backfill for explicit Parliament bills")
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Claude analysis_el backfill for explicit Parliament bills. "
+        "Default is an offline dry run: no Claude call, no DB write."
+    )
     parser.add_argument("--bill-id", action="append", required=True, help="Bill ID to process. Can be repeated.")
-    parser.add_argument("--apply", action="store_true", help="Write summary_short_el + analysis_el to DB")
+    parser.add_argument("--live-calls", action="store_true",
+                        help="Make paid Claude calls (behind the shared budget gate). Without it nothing is billed.")
+    parser.add_argument("--apply", action="store_true",
+                        help="Write summary_short_el + analysis_el to DB (needs --live-calls unless --official-only)")
     parser.add_argument("--official-only", action="store_true", help="Only refresh summary_long_el official text/PDF block")
     parser.add_argument("--out-dir", default="/tmp", help="Preview output directory")
-    args = parser.parse_args()
+    return parser
+
+
+def mode_error(args: argparse.Namespace) -> str | None:
+    """Writing Claude analysis requires an explicit paid run."""
+    if args.apply and not args.official_only and not args.live_calls:
+        return "--apply without --official-only needs --live-calls (paid Claude calls)"
+    return None
+
+
+def plan_claude_call(title: str, excerpt: str) -> dict:
+    """What a live call would send and reserve; computed offline, nothing is billed."""
+    _add_api_path()
+    from services.claude_usage import reservation_size
+
+    prompt = analysis_prompt(title, excerpt)
+    tokens, cost = reservation_size("", prompt, ANALYSIS_MAX_OUTPUT_TOKENS)
+    return {"prompt_chars": len(prompt), "reserved_tokens_max": tokens, "reserved_cost_usd_max": cost}
+
+
+async def main() -> None:
+    args = build_parser().parse_args()
+    error = mode_error(args)
+    if error:
+        print(f"ERROR: {error}", file=sys.stderr)
+        sys.exit(2)
 
     _read_env_file("/opt/ekklesia/.env.production")
     _read_env_file(os.path.join(os.path.dirname(__file__), "..", ".env.production"))
@@ -511,6 +546,10 @@ async def main() -> None:
         else:
             if not excerpt:
                 print(f"{bill_id}: no readable text for Claude analysis; use --official-only for PDF links")
+                continue
+            if not args.live_calls:
+                plan = plan_claude_call(row["title_el"] or bill_id, excerpt)
+                print(f"{bill_id}: offline dry run, no Claude call: {json.dumps(plan)}")
                 continue
             try:
                 result, usage = await gated_call_claude(row["title_el"] or bill_id, excerpt)
