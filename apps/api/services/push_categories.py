@@ -8,7 +8,11 @@ opt-in stays strictly on the device. Older app versions only add the event to
 their unread list (if enabled) without a tray notification.
 
 Sending is OFF unless PUSH_DATA_ONLY_CATEGORIES=1 (enable only after the
-v1.0.34 rollout). Every event is deduplicated in Redis, the weekly digest is
+v1.0.34 rollout). Every event is sent at most once: an atomic Redis claim
+(SET NX) is taken before sending, so parallel schedulers cannot send the same
+event twice; it becomes the final dedup marker only when the provider accepted
+at least one message, and is released (for a later retry) when nothing was
+accepted. Provider acceptance is not a delivery receipt. The weekly digest is
 sent at most once per ISO week, and a global hourly cap bounds the volume.
 No new personal data is collected.
 """
@@ -16,6 +20,7 @@ from __future__ import annotations
 
 import logging
 import os
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -32,6 +37,20 @@ DEDUP_TTL = {
 }
 ANNOUNCED_MAX_AGE = timedelta(hours=48)
 SYSTEM_UPDATE_SEEN_KEY = "push:system_update:last_version"
+# Longer than a full send (15 s timeout per batch of 100), short enough for a retry.
+CLAIM_TTL = int(os.getenv("PUSH_DATA_ONLY_CLAIM_TTL", "900"))
+WEEKLY_DIGEST_CATCHUP_LAST_WEEKDAY = 2  # Monday 07:00 UTC .. Wednesday
+
+# Finalize (ARGV[2] == "final") or release the claim, only while we still own it.
+_SETTLE_CLAIM = """
+if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
+if ARGV[2] == 'final' then
+  redis.call('SET', KEYS[1], '1', 'EX', tonumber(ARGV[3]))
+else
+  redis.call('DEL', KEYS[1])
+end
+return 1
+"""
 
 
 def data_only_enabled() -> bool:
@@ -47,24 +66,54 @@ async def send_category_push(
     sender: Any = None,
     now: datetime | None = None,
 ) -> bool:
-    """Send one data-only push once per event. Returns True only when sent."""
+    """Send one data-only push once per event. Returns True only when sent.
+
+    `sender(template_id, payload)` returns a dict with `attempted`, `accepted`
+    and `failed` message counts and raises when the send could not be made.
+    """
     if template_id not in CATEGORIES or not data_only_enabled():
         return False
     dedup_key = f"notified:{template_id}:{event_key}"
-    if await redis_client.exists(dedup_key):
-        return False
+    claim = f"claim:{uuid.uuid4().hex}"
+    if not await redis_client.set(dedup_key, claim, nx=True, ex=CLAIM_TTL):
+        return False  # already sent, or another worker is sending it
     hour = (now or datetime.now(timezone.utc)).strftime("%Y%m%d%H")
     cap_key = f"push:data_only:count:{hour}"
-    count = await redis_client.incr(cap_key)
-    await redis_client.expire(cap_key, 7200)
-    if int(count) > HOURLY_CAP:
-        logger.warning("[MOD-20] data-only push cap reached; %s deferred", template_id)
+    try:
+        count = await redis_client.incr(cap_key)
+        await redis_client.expire(cap_key, 7200)
+        if int(count) > HOURLY_CAP:
+            logger.warning("[MOD-20] data-only push cap reached; %s deferred", template_id)
+            await _settle(redis_client, dedup_key, claim, final=False)
+            return False
+        if sender is None:
+            from routers.notify import notify_all_data_only as sender
+        result = await sender(template_id, payload)
+    except Exception as exc:
+        logger.error("[MOD-20] data-only push %s failed: %s", template_id, exc)
+        await _settle(redis_client, dedup_key, claim, final=False)
         return False
-    if sender is None:
-        from routers.notify import notify_all_data_only as sender
-    await sender(template_id, payload)
-    await redis_client.setex(dedup_key, DEDUP_TTL[template_id], "1")
-    return True
+    attempted = int(result.get("attempted", 0))
+    accepted = int(result.get("accepted", 0))
+    failed = int(result.get("failed", 0))
+    if attempted > 0 and accepted == 0:
+        # Nothing reached the provider: release the claim so a later run retries.
+        logger.warning("[MOD-20] data-only push %s not accepted (%d failed)", template_id, failed)
+        await _settle(redis_client, dedup_key, claim, final=False)
+        return False
+    if failed:
+        # Partial batch: no resend, it would duplicate for the accepted devices.
+        logger.warning("[MOD-20] data-only push %s: %d accepted, %d failed", template_id, accepted, failed)
+    await _settle(redis_client, dedup_key, claim, final=True, ttl=DEDUP_TTL[template_id])
+    return accepted > 0
+
+
+async def _settle(redis_client: Any, key: str, claim: str, *, final: bool, ttl: int = 0) -> None:
+    try:
+        await redis_client.eval(_SETTLE_CLAIM, 1, key, claim, "final" if final else "release", ttl)
+    except Exception as exc:
+        # The claim then expires after CLAIM_TTL; no second send happens before that.
+        logger.error("[MOD-20] data-only push claim %s not settled: %s", key, exc)
 
 
 def iso_week_key(now: datetime) -> str:
@@ -118,6 +167,14 @@ async def push_system_update(redis_client: Any, version: str, **kw: Any) -> bool
     if sent:
         await redis_client.set(SYSTEM_UPDATE_SEEN_KEY, version)
     return sent
+
+
+def weekly_digest_due(now: datetime) -> bool:
+    """Catch-up window for a missed Monday 07:00 UTC digest run."""
+    weekday = now.weekday()
+    if weekday == 0:
+        return now.hour >= 7
+    return weekday <= WEEKLY_DIGEST_CATCHUP_LAST_WEEKDAY
 
 
 def announced_recently(bill: Any, now: datetime) -> bool:

@@ -237,24 +237,44 @@ async def notify_all(template_id: str, data: dict) -> None:
         pass  # Push is best-effort
 
 
-async def notify_all_data_only(template_id: str, data: dict) -> None:
+async def notify_all_data_only(template_id: str, data: dict) -> dict:
     """Data-only push to all registered devices (no OS-visible title/body).
 
     The app decides on the device whether to show it (category opt-in),
     see services/push_categories.py. Text travels only inside `data`.
+
+    Returns `attempted`, `accepted` (Expo ticket status "ok") and `failed`
+    message counts; a failed batch or ticket is counted, never swallowed.
+    Token lookup errors propagate so the caller can retry later. Accepted
+    means accepted by Expo, not delivered to the device.
     """
-    try:
-        r = await _get_redis()
-        tokens = await _registered_push_tokens(r)
-        if not tokens:
-            return
-        payload = {"template_id": template_id, "local_display": "1", **data}
-        messages = [
-            {"to": t, "data": payload, "priority": "high", "_contentAvailable": True}
-            for t in tokens
-        ]
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            for i in range(0, len(messages), 100):
-                await client.post(EXPO_PUSH_URL, json=messages[i : i + 100])
-    except Exception:
-        pass  # Push is best-effort
+    r = await _get_redis()
+    tokens = await _registered_push_tokens(r)
+    result = {"attempted": len(tokens), "accepted": 0, "failed": 0}
+    if not tokens:
+        return result
+    payload = {"template_id": template_id, "local_display": "1", **data}
+    messages = [
+        {"to": t, "data": payload, "priority": "high", "_contentAvailable": True}
+        for t in tokens
+    ]
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        for i in range(0, len(messages), 100):
+            batch = messages[i : i + 100]
+            accepted = 0
+            try:
+                resp = await client.post(EXPO_PUSH_URL, json=batch)
+                if resp.status_code == 200:
+                    tickets = resp.json().get("data")
+                    if isinstance(tickets, list):
+                        accepted = sum(
+                            1 for t in tickets[: len(batch)]
+                            if isinstance(t, dict) and t.get("status") == "ok"
+                        )
+                else:
+                    logger.warning("[MOD-20] Expo data-only batch failed: %s", resp.status_code)
+            except Exception as exc:
+                logger.error("[MOD-20] Expo data-only push error: %s", exc)
+            result["accepted"] += accepted
+            result["failed"] += len(batch) - accepted
+    return result

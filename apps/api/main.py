@@ -420,13 +420,17 @@ async def scheduled_push_categories():
     """Data-only pushes for bill_announced and system_update (T-652).
 
     Off unless PUSH_DATA_ONLY_CATEGORIES=1; then only bills announced in the
-    last 48 h are considered, each event is sent once (Redis dedup).
+    last 48 h are considered, each event is sent once (Redis claim/dedup).
+    Also catches up vote_24h for public WINDOW_24H bills whose transition push
+    was deferred (cap) or not accepted, and a missed Monday weekly digest.
     """
     from services.push_categories import (
         announced_recently,
         data_only_enabled,
         push_bill_announced,
         push_system_update,
+        push_vote_24h,
+        weekly_digest_due,
     )
 
     if not data_only_enabled():
@@ -451,11 +455,20 @@ async def scheduled_push_categories():
             for bill in result.scalars().all():
                 if announced_recently(bill, now):
                     await push_bill_announced(r, bill)
+            window = await db.execute(
+                select(ParliamentBill).where(
+                    ParliamentBill.status == BillStatus.WINDOW_24H, public_bill_filter(),
+                )
+            )
+            for bill in window.scalars().all():
+                await push_vote_24h(r, bill)
         await push_system_update(r, LATEST_VERSION)
     except Exception as e:
         logger.error(f"[MOD-20] Data-only category push failed: {e}")
     finally:
         await r.aclose()
+    if weekly_digest_due(datetime.now(timezone.utc)):
+        await scheduled_weekly_digest()
 
 
 async def scheduled_weekly_digest():
