@@ -23,9 +23,17 @@ import redis.asyncio as aioredis
 from database import get_db
 from models import ParliamentBill, BillStatus, KnowledgeBase
 from services.bill_visibility import public_bill_filter
-from services.claude_usage import MODEL as CLAUDE_MODEL, release_budget, reserve_budget, track_usage
+from services.claude_usage import (
+    MODEL as CLAUDE_MODEL,
+    charge_reservation,
+    release_budget,
+    reservation_size,
+    reserve_budget,
+    track_usage,
+)
 from rate_limit import limiter
 from services.agent_prompt import (
+    AgentPrompt,
     UnsafeModelOutputError,
     bill_record,
     build_agent_prompt,
@@ -673,8 +681,11 @@ async def _build_context(
     return records, bills, include_bills, relevant
 
 
+CLAUDE_MAX_OUTPUT_TOKENS = 400
+
+
 async def _claude_answer(question: str, context: list[dict[str, str]], lang: str) -> str | None:
-    """Fallback to Claude Haiku for complex questions."""
+    """Fallback to Claude Haiku, only inside the enforced token/cost budget."""
     if not ANTHROPIC_API_KEY:
         return None
 
@@ -688,23 +699,34 @@ async def _claude_answer(question: str, context: list[dict[str, str]], lang: str
     if last_error == "credit_balance":
         return None
 
-    # Enforce the daily token limit and monthly budget before paying for a call.
-    reservation = await reserve_budget(r)
-    if reservation is None:
-        logger.info("[Hybrid] Claude skipped: budget gate closed")
-        return None
-    try:
-        return await _claude_request(r, question, context)
-    finally:
-        await release_budget(r, reservation)
-
-
-async def _claude_request(r: aioredis.Redis, question: str, context: list[dict[str, str]]) -> str | None:
-    """Perform the paid Claude Haiku call and track its real usage."""
     # Same builder as the Ollama path: rules in `system`, untrusted data only
     # inside the escaped block in the user turn.
     prompt = build_agent_prompt(question, context, datetime.now(timezone.utc))
 
+    # Reserve a proven upper bound of this call's tokens and cost atomically
+    # before paying for it; fail closed when the budget or Redis says no.
+    tokens, cost = reservation_size(prompt.system, prompt.user, CLAUDE_MAX_OUTPUT_TOKENS)
+    reservation = await reserve_budget(r, tokens, cost)
+    if reservation is None:
+        logger.info("[Hybrid] Claude skipped: budget gate closed")
+        return None
+
+    answer, cost_booked = await _claude_request(r, prompt)
+    if not cost_booked and not await charge_reservation(r, reservation, purpose="chat"):
+        # Cost of a possibly billed call is unknown and could not be booked:
+        # keep the reservation so it keeps blocking until it expires.
+        logger.warning("[Hybrid] Claude cost unknown; reservation kept")
+        return answer
+    await release_budget(r, reservation)
+    return answer
+
+
+async def _claude_request(r: aioredis.Redis, prompt: AgentPrompt) -> tuple[str | None, bool]:
+    """Perform the paid Claude Haiku call.
+
+    Returns (answer, cost_booked). cost_booked is True only when the real usage
+    was tracked or the request was rejected by the API before generation (4xx).
+    """
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(
@@ -716,28 +738,37 @@ async def _claude_request(r: aioredis.Redis, question: str, context: list[dict[s
                 },
                 json={
                     "model": CLAUDE_MODEL,
-                    "max_tokens": 400,
+                    "max_tokens": CLAUDE_MAX_OUTPUT_TOKENS,
                     "system": prompt.system,
                     "messages": [{"role": "user", "content": prompt.user}],
                 },
             )
             resp.raise_for_status()
             data = resp.json()
-
-            usage = data.get("usage", {})
-            total_tokens = await track_usage(r, usage, purpose="chat")
-
-            logger.info("[Hybrid] Claude answered (%d tokens)", total_tokens)
-            return data["content"][0]["text"]
-
     except httpx.HTTPStatusError as e:
-        if e.response.status_code == 400 and "credit" in e.response.text.lower():
-            await r.set("claude:last_error", "credit_balance")
-        logger.warning("[Hybrid] Claude error: %s", e.response.status_code)
-        return None
+        status = e.response.status_code
+        if status == 400 and "credit" in e.response.text.lower():
+            try:
+                await r.set("claude:last_error", "credit_balance")
+            except Exception:
+                pass
+        logger.warning("[Hybrid] Claude error: %s", status)
+        return None, status < 500
     except Exception as e:
         logger.warning("[Hybrid] Claude failed: %s", e)
-        return None
+        return None, False
+
+    try:
+        total_tokens = await track_usage(r, data.get("usage", {}), purpose="chat")
+    except Exception as e:
+        logger.warning("[Hybrid] Claude usage not tracked: %s", e)
+        total_tokens = 0
+    try:
+        answer = data["content"][0]["text"]
+    except (KeyError, IndexError, TypeError):
+        answer = None
+    logger.info("[Hybrid] Claude answered (%d tokens)", total_tokens)
+    return answer, total_tokens > 0
 
 
 def _is_answer_poor(answer: str) -> bool:
