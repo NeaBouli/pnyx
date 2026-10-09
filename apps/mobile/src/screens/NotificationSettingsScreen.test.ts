@@ -201,6 +201,54 @@ const alerts = (tree: El) =>
   findAll(tree, "Text").filter(t => t.props.accessibilityRole === "alert");
 
 describe("NotificationSettingsScreen hydration", () => {
+  it.each(["defaults", "persisted all-on"])("does not acknowledge events on mount with %s preferences", async (mode) => {
+    const initial: Record<string, string> = mode === "defaults" ? {} : {
+      push_master: "true",
+      push_vote_open: "true",
+      push_vote_24h: "true",
+      push_vote_result: "true",
+      push_bill_announced: "true",
+      push_weekly_digest: "true",
+      push_system_update: "true",
+    };
+    const storage = createStorage(initial);
+    const { screen, markAll, markCategory } = loadScreen(storage);
+    await flush();
+
+    for (const sw of switches(screen.tree())) {
+      expect(sw.props.disabled).toBe(false);
+      expect(sw.props.value).toBe(true);
+    }
+    expect(markAll).not.toHaveBeenCalled();
+    expect(markCategory).not.toHaveBeenCalled();
+    expect(storage.setItemAsync).not.toHaveBeenCalled();
+    expect(retryButtons(screen.tree())).toHaveLength(0);
+  });
+
+  it.each(["master", "category"])("does not acknowledge a persisted %s opt-out after partial hydration fails", async (scope) => {
+    const storage = createStorage({
+      push_master: scope === "master" ? "false" : "true",
+      push_vote_open: "false",
+    });
+    storage.getItemAsync.mockImplementation(async (key) => {
+      if (key === "push_vote_24h") throw new Error("partial native read failure");
+      return storage.data.get(key) ?? null;
+    });
+    const { screen, markAll, markCategory } = loadScreen(storage);
+    await flush();
+
+    // The opt-out was read before the later category read failed. It must
+    // not be acknowledged from an incomplete preference snapshot.
+    expect(storage.getItemAsync).toHaveBeenCalledWith("push_master");
+    expect(storage.getItemAsync).toHaveBeenCalledWith("push_vote_open");
+    expect(storage.getItemAsync).toHaveBeenCalledWith("push_vote_24h");
+    expect(markAll).not.toHaveBeenCalled();
+    expect(markCategory).not.toHaveBeenCalled();
+    expect(storage.setItemAsync).not.toHaveBeenCalled();
+    for (const sw of switches(screen.tree())) expect(sw.props.disabled).toBe(true);
+    expect(retryButtons(screen.tree())).toHaveLength(1);
+  });
+
   it("keeps every switch disabled until hydration completes, then applies persisted values", async () => {
     const storage = createStorage({ push_vote_open: "false" });
     const { screen } = loadScreen(storage);
