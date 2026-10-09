@@ -729,3 +729,33 @@ ADMIN --> COMMUNITY : D5 projected public response
 ADMIN --> DASHBOARD : same projected response
 PUBLIC -[dashed]-> DEEPL : offen: corrected route owner
 @enduml
+
+@startmindmap
+* Bounded Ekklesia maintenance
+** Payments
+*** gebaut: stripe_webhook / allocate_donation
+*** gebaut: _append_payment_record / payment_status
+** Community
+*** gebaut: fetchPaymentStatus / updateServerTile / updateDomainTile
+*** offen: monetary reserve consumer / unavailable state
+** Mobile
+*** gebaut: captured-owner vote marks
+*** gebaut: unread ledger / badge intent / BillsScreen loadPage
+** Model services
+*** gebaut: final output guard / backfill budget finalization
+** Maintenance
+*** gebaut: CI official Redis pin / repo_paths
+*** gebaut: artifact release checklist
+*** offen: durable native dependency verification
+@endmindmap
+@startuml
+component Webhook
+component Allocation
+component Publicprojection
+component Publicstatus
+component Community
+Webhook --> Allocation : allocate_donation
+Allocation --> Publicprojection : _append_payment_record
+Publicprojection --> Publicstatus : _load_public_support_projection
+Publicstatus --> Community : fetchPaymentStatus
+@enduml

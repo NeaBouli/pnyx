@@ -517,3 +517,19 @@ EKA-53: public-by-design contract inherits an admin namespace.
 The corrected public-router path is open and is not simulated here.
 end note
 @enduml
+
+@startuml
+participant Webhook
+participant Allocation
+participant Projection
+participant Status
+participant Community
+Webhook -> Webhook : signature / to_dict / intake guard
+Webhook -> Allocation : allocate_donation(amount)
+Allocation -> Projection : _append_payment_record(record)
+Status -> Projection : _load_public_support_projection
+Projection --> Status : PII-free aggregates
+Community -> Status : fetchPaymentStatus
+Status --> Community : server / domain / reserve
+Community -> Community : updateServerTile / updateDomainTile
+@enduml
