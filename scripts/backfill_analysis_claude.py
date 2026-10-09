@@ -2,8 +2,9 @@
 """
 Backfill summary_short_el + analysis_el from official Parliament PDFs via Claude.
 
-Default is an offline dry run: it fetches documents and prints what a Claude
-call would send and reserve, but makes no paid call and writes nothing.
+Default plans Claude offline: it reads bill metadata from the DB and fetches
+official documents to print what a Claude call would send and reserve. It makes
+no Claude call, reserves no budget, and writes no files or DB rows.
 --live-calls makes paid Claude calls (behind the shared budget gate) and writes
 previews; --apply additionally writes the DB (--live-calls is required unless
 --official-only). This script is intentionally scoped to explicit bill IDs; it
@@ -380,10 +381,13 @@ async def gated_call_claude(title: str, excerpt: str, redis_client=None) -> tupl
     """call_claude() behind the shared fail-closed budget gate (same as the chat fallback).
 
     Reserves a proven upper bound (prompt UTF-8 bytes + max output tokens) for
-    tokens and cost atomically; books the real usage, or the full reservation
-    when the outcome is uncertain, and keeps the reservation if even that fails.
-    Dry runs call Claude too, so they are gated as well.
+    tokens and cost atomically; books complete valid usage, or the full reservation
+    when usage is uncertain, and keeps the reservation if even that fails.
+    Only explicit live analysis calls use this gate; offline plans do not.
     """
+    if not os.getenv("ANTHROPIC_API_KEY", ""):
+        raise RuntimeError("ANTHROPIC_API_KEY not set")
+
     _add_api_path()
     import redis.asyncio as aioredis
     from services.claude_usage import (
@@ -403,10 +407,19 @@ async def gated_call_claude(title: str, excerpt: str, redis_client=None) -> tupl
         booked = False
         try:
             result, usage = call_claude(title, excerpt)
-            try:
-                booked = await track_usage(r, usage, purpose="analysis") > 0
-            except Exception:
-                booked = False
+            complete_usage = (
+                isinstance(usage, dict)
+                and all(
+                    type(usage.get(field)) is int and usage[field] >= 0
+                    for field in ("input_tokens", "output_tokens")
+                )
+                and usage["input_tokens"] + usage["output_tokens"] > 0
+            )
+            if complete_usage:
+                try:
+                    booked = await track_usage(r, usage, purpose="analysis") > 0
+                except Exception:
+                    booked = False
             return result, usage
         finally:
             if booked or await charge_reservation(r, reservation, purpose="analysis"):
@@ -440,7 +453,7 @@ def validate_result(result: dict, excerpt: str) -> list[str]:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Claude analysis_el backfill for explicit Parliament bills. "
-        "Default is an offline dry run: no Claude call, no DB write."
+        "Default plans Claude offline: DB/source reads, no Claude call or writes."
     )
     parser.add_argument("--bill-id", action="append", required=True, help="Bill ID to process. Can be repeated.")
     parser.add_argument("--live-calls", action="store_true",
@@ -479,6 +492,10 @@ async def main() -> None:
     _read_env_file("/opt/ekklesia/.env.production")
     _read_env_file(os.path.join(os.path.dirname(__file__), "..", ".env.production"))
 
+    if args.live_calls and not args.official_only and not os.getenv("ANTHROPIC_API_KEY", ""):
+        print("ERROR: ANTHROPIC_API_KEY not set", file=sys.stderr)
+        sys.exit(1)
+
     db_url = os.getenv("DATABASE_URL", "").replace("postgresql+asyncpg://", "postgresql://")
     if not db_url:
         print("ERROR: DATABASE_URL not set", file=sys.stderr)
@@ -487,144 +504,146 @@ async def main() -> None:
     import asyncpg
     conn = await asyncpg.connect(db_url)
 
-    os.makedirs(args.out_dir, exist_ok=True)
-    for bill_id in args.bill_id:
-        row = await conn.fetchrow(
-            """
-            SELECT id, title_el, parliament_url, summary_short_el, analysis_el
-            FROM parliament_bills
-            WHERE id=$1 AND source='PARLIAMENT'
-            """,
-            bill_id,
-        )
-        if not row:
-            print(f"{bill_id}: not found or not PARLIAMENT")
-            continue
-        if not row["parliament_url"]:
-            print(f"{bill_id}: no parliament_url, skip")
-            continue
-
-        try:
-            page_md = _http_text(f"{JINA_BASE}{row['parliament_url']}", timeout=90)
-        except (HTTPError, URLError, TimeoutError) as exc:
-            print(f"{bill_id}: skip Parliament page: {exc}", file=sys.stderr)
-            time.sleep(2)
-            continue
-        links = extract_pdf_links(page_md)
-        analysis_candidates = pdf_candidates(links, "analysis")
-        official_candidates = pdf_candidates(links, "official_text")
-        fallback_candidates = fallback_pdf_candidates(links)
-        if not analysis_candidates and not official_candidates and not fallback_candidates:
-            print(f"{bill_id}: no readable Parliament document PDF found")
-            continue
-
-        official_pdf, official_pdf_text = fetch_first_readable_pdf(official_candidates)
-        if not official_pdf:
-            official_pdf, official_pdf_text = fetch_first_readable_pdf(fallback_candidates)
-
-        analysis_pdf, analysis_pdf_text = fetch_first_readable_pdf(analysis_candidates)
-        if not analysis_pdf:
-            analysis_pdf, analysis_pdf_text = fetch_first_readable_pdf(fallback_candidates)
-        if not official_pdf and analysis_pdf:
-            official_pdf = analysis_pdf
-            official_pdf_text = analysis_pdf_text
-
-        excerpt = extract_useful_excerpt(analysis_pdf_text or official_pdf_text)
-        official_text = (
-            build_official_text_block(official_pdf_text, links, official_pdf)
-            if official_pdf and official_pdf_text
-            else build_documents_block(links)
-        )
-        if args.official_only:
-            result = {
-                "summary_short_el": row["summary_short_el"] or "",
-                "analysis_el": row["analysis_el"] or "",
-                "quality_notes": ["official-only refresh"],
-            }
-            usage = {}
-            errors = []
-        else:
-            if not excerpt:
-                print(f"{bill_id}: no readable text for Claude analysis; use --official-only for PDF links")
+    try:
+        for bill_id in args.bill_id:
+            row = await conn.fetchrow(
+                """
+                SELECT id, title_el, parliament_url, summary_short_el, analysis_el
+                FROM parliament_bills
+                WHERE id=$1 AND source='PARLIAMENT'
+                """,
+                bill_id,
+            )
+            if not row:
+                print(f"{bill_id}: not found or not PARLIAMENT")
                 continue
-            if not args.live_calls:
-                plan = plan_claude_call(row["title_el"] or bill_id, excerpt)
-                print(f"{bill_id}: offline dry run, no Claude call: {json.dumps(plan)}")
+            if not row["parliament_url"]:
+                print(f"{bill_id}: no parliament_url, skip")
                 continue
+
             try:
-                result, usage = await gated_call_claude(row["title_el"] or bill_id, excerpt)
-            except BudgetGateClosed as exc:
-                print(f"{bill_id}: {exc}; stopping")
-                break
-            errors = validate_result(result, excerpt)
+                page_md = _http_text(f"{JINA_BASE}{row['parliament_url']}", timeout=90)
+            except (HTTPError, URLError, TimeoutError) as exc:
+                print(f"{bill_id}: skip Parliament page: {exc}", file=sys.stderr)
+                time.sleep(2)
+                continue
+            links = extract_pdf_links(page_md)
+            analysis_candidates = pdf_candidates(links, "analysis")
+            official_candidates = pdf_candidates(links, "official_text")
+            fallback_candidates = fallback_pdf_candidates(links)
+            if not analysis_candidates and not official_candidates and not fallback_candidates:
+                print(f"{bill_id}: no readable Parliament document PDF found")
+                continue
 
-        preview = {
-            "bill_id": bill_id,
-            "title_el": row["title_el"],
-            "analysis_pdf": analysis_pdf,
-            "official_pdf": official_pdf,
-            "pdf_links": links,
-            "input_chars": len(excerpt),
-            "official_pdf_chars": len(clean_pdf_text(official_pdf_text)),
-            "official_text_chars": len(official_text),
-            "apply": bool(args.apply),
-            "result": result,
-            "official_text_el": official_text,
-            "usage": usage,
-            "validation_errors": errors,
-        }
-        json_path = os.path.join(args.out_dir, f"claude_analysis_{bill_id}.json")
-        md_path = os.path.join(args.out_dir, f"claude_analysis_{bill_id}.md")
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(preview, f, ensure_ascii=False, indent=2)
-        with open(md_path, "w", encoding="utf-8") as f:
-            f.write(f"# {bill_id}\n\n")
-            if analysis_pdf:
-                f.write(f"Analysis PDF: [{analysis_pdf['label']}]({analysis_pdf['url']})\n\n")
-            if official_pdf:
-                f.write(f"Official PDF: [{official_pdf['label']}]({official_pdf['url']})\n\n")
-            f.write(f"Input chars: {len(excerpt)}\n\n")
-            f.write("## Σύνοψη\n")
-            f.write((result.get("summary_short_el") or "").strip() + "\n\n")
-            f.write("## Ανάλυση\n")
-            f.write((result.get("analysis_el") or "").strip() + "\n\n")
-            f.write("## Επίσημο κείμενο και έγγραφα\n")
-            f.write(official_text + "\n\n")
-            f.write(f"Validation errors: {errors or 'none'}\n")
-            f.write(f"Usage: {usage}\n")
+            official_pdf, official_pdf_text = fetch_first_readable_pdf(official_candidates)
+            if not official_pdf:
+                official_pdf, official_pdf_text = fetch_first_readable_pdf(fallback_candidates)
 
-        print(f"{bill_id}: preview {json_path}")
-        if errors:
-            print(f"{bill_id}: validation errors, not applying: {errors}")
-            continue
-        if args.apply:
+            analysis_pdf, analysis_pdf_text = fetch_first_readable_pdf(analysis_candidates)
+            if not analysis_pdf:
+                analysis_pdf, analysis_pdf_text = fetch_first_readable_pdf(fallback_candidates)
+            if not official_pdf and analysis_pdf:
+                official_pdf = analysis_pdf
+                official_pdf_text = analysis_pdf_text
+
+            excerpt = extract_useful_excerpt(analysis_pdf_text or official_pdf_text)
+            official_text = (
+                build_official_text_block(official_pdf_text, links, official_pdf)
+                if official_pdf and official_pdf_text
+                else build_documents_block(links)
+            )
             if args.official_only:
-                await conn.execute(
-                    """
-                    UPDATE parliament_bills
-                    SET summary_long_el=$1, updated_at=NOW()
-                    WHERE id=$2
-                    """,
-                    official_text,
-                    bill_id,
-                )
+                result = {
+                    "summary_short_el": row["summary_short_el"] or "",
+                    "analysis_el": row["analysis_el"] or "",
+                    "quality_notes": ["official-only refresh"],
+                }
+                usage = {}
+                errors = []
             else:
-                await conn.execute(
-                    """
-                    UPDATE parliament_bills
-                    SET summary_short_el=$1, analysis_el=$2, summary_long_el=$3, updated_at=NOW()
-                    WHERE id=$4
-                    """,
-                    (result.get("summary_short_el") or "").strip(),
-                    (result.get("analysis_el") or "").strip(),
-                    official_text,
-                    bill_id,
-                )
-            print(f"{bill_id}: DB updated")
-        else:
-            print(f"{bill_id}: dry-run only")
+                if not excerpt:
+                    print(f"{bill_id}: no readable text for Claude analysis; use --official-only for PDF links")
+                    continue
+                if not args.live_calls:
+                    plan = plan_claude_call(row["title_el"] or bill_id, excerpt)
+                    print(f"{bill_id}: offline dry run, no Claude call: {json.dumps(plan)}")
+                    continue
+                try:
+                    result, usage = await gated_call_claude(row["title_el"] or bill_id, excerpt)
+                except BudgetGateClosed as exc:
+                    print(f"{bill_id}: {exc}; stopping", file=sys.stderr)
+                    sys.exit(1)
+                errors = validate_result(result, excerpt)
 
-    await conn.close()
+            preview = {
+                "bill_id": bill_id,
+                "title_el": row["title_el"],
+                "analysis_pdf": analysis_pdf,
+                "official_pdf": official_pdf,
+                "pdf_links": links,
+                "input_chars": len(excerpt),
+                "official_pdf_chars": len(clean_pdf_text(official_pdf_text)),
+                "official_text_chars": len(official_text),
+                "apply": bool(args.apply),
+                "result": result,
+                "official_text_el": official_text,
+                "usage": usage,
+                "validation_errors": errors,
+            }
+            os.makedirs(args.out_dir, exist_ok=True)
+            json_path = os.path.join(args.out_dir, f"claude_analysis_{bill_id}.json")
+            md_path = os.path.join(args.out_dir, f"claude_analysis_{bill_id}.md")
+            with open(json_path, "w", encoding="utf-8") as f:
+                json.dump(preview, f, ensure_ascii=False, indent=2)
+            with open(md_path, "w", encoding="utf-8") as f:
+                f.write(f"# {bill_id}\n\n")
+                if analysis_pdf:
+                    f.write(f"Analysis PDF: [{analysis_pdf['label']}]({analysis_pdf['url']})\n\n")
+                if official_pdf:
+                    f.write(f"Official PDF: [{official_pdf['label']}]({official_pdf['url']})\n\n")
+                f.write(f"Input chars: {len(excerpt)}\n\n")
+                f.write("## Σύνοψη\n")
+                f.write((result.get("summary_short_el") or "").strip() + "\n\n")
+                f.write("## Ανάλυση\n")
+                f.write((result.get("analysis_el") or "").strip() + "\n\n")
+                f.write("## Επίσημο κείμενο και έγγραφα\n")
+                f.write(official_text + "\n\n")
+                f.write(f"Validation errors: {errors or 'none'}\n")
+                f.write(f"Usage: {usage}\n")
+
+            print(f"{bill_id}: preview {json_path}")
+            if errors:
+                print(f"{bill_id}: validation errors, not applying: {errors}")
+                continue
+            if args.apply:
+                if args.official_only:
+                    await conn.execute(
+                        """
+                        UPDATE parliament_bills
+                        SET summary_long_el=$1, updated_at=NOW()
+                        WHERE id=$2
+                        """,
+                        official_text,
+                        bill_id,
+                    )
+                else:
+                    await conn.execute(
+                        """
+                        UPDATE parliament_bills
+                        SET summary_short_el=$1, analysis_el=$2, summary_long_el=$3, updated_at=NOW()
+                        WHERE id=$4
+                        """,
+                        (result.get("summary_short_el") or "").strip(),
+                        (result.get("analysis_el") or "").strip(),
+                        official_text,
+                        bill_id,
+                    )
+                print(f"{bill_id}: DB updated")
+            else:
+                print(f"{bill_id}: dry-run only")
+
+    finally:
+        await conn.close()
 
 
 if __name__ == "__main__":
