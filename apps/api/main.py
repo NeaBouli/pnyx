@@ -416,6 +416,80 @@ async def scheduled_notify_new_bills():
         await record_failure(name, str(e))
 
 
+async def scheduled_push_categories():
+    """Data-only pushes for bill_announced and system_update (T-652).
+
+    Off unless PUSH_DATA_ONLY_CATEGORIES=1; then only bills announced in the
+    last 48 h are considered, each event is sent once (Redis dedup).
+    """
+    from services.push_categories import (
+        announced_recently,
+        data_only_enabled,
+        push_bill_announced,
+        push_system_update,
+    )
+
+    if not data_only_enabled():
+        return
+    from datetime import datetime, timezone
+    import redis.asyncio as aioredis
+    from sqlalchemy import select
+    from database import AsyncSessionLocal
+    from models import ParliamentBill, BillStatus
+    from routers.app_version import LATEST_VERSION
+    from services.bill_visibility import public_bill_filter
+
+    r = aioredis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"), decode_responses=True)
+    try:
+        now = datetime.now(timezone.utc)
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(ParliamentBill).where(
+                    ParliamentBill.status == BillStatus.ANNOUNCED, public_bill_filter(),
+                )
+            )
+            for bill in result.scalars().all():
+                if announced_recently(bill, now):
+                    await push_bill_announced(r, bill)
+        await push_system_update(r, LATEST_VERSION)
+    except Exception as e:
+        logger.error(f"[MOD-20] Data-only category push failed: {e}")
+    finally:
+        await r.aclose()
+
+
+async def scheduled_weekly_digest():
+    """Weekly data-only digest push, at most once per ISO week (T-652)."""
+    from services.push_categories import data_only_enabled, push_weekly_digest
+
+    if not data_only_enabled():
+        return
+    from datetime import datetime, timedelta, timezone
+    import redis.asyncio as aioredis
+    from sqlalchemy import func, select
+    from database import AsyncSessionLocal
+    from models import ParliamentBill, BillStatus
+    from services.bill_visibility import public_bill_filter
+
+    r = aioredis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"), decode_responses=True)
+    try:
+        now = datetime.now(timezone.utc)
+        async with AsyncSessionLocal() as db:
+            active = await db.scalar(select(func.count()).select_from(ParliamentBill).where(
+                ParliamentBill.status.in_([BillStatus.ACTIVE, BillStatus.WINDOW_24H]), public_bill_filter(),
+            ))
+            results = await db.scalar(select(func.count()).select_from(ParliamentBill).where(
+                ParliamentBill.status == BillStatus.PARLIAMENT_VOTED,
+                ParliamentBill.status_changed_at >= (now - timedelta(days=7)).replace(tzinfo=None),
+                public_bill_filter(),
+            ))
+        await push_weekly_digest(r, int(active or 0), int(results or 0), now=now)
+    except Exception as e:
+        logger.error(f"[MOD-20] Weekly digest push failed: {e}")
+    finally:
+        await r.aclose()
+
+
 async def scheduled_notify_results():
     """Check for new PARLIAMENT_VOTED bills and push-notify results."""
     import redis.asyncio as aioredis
@@ -763,6 +837,8 @@ async def lifespan(app):
     scheduler.add_job(scheduled_scrape, IntervalTrigger(hours=12), id="parliament_scrape", replace_existing=True)
     scheduler.add_job(scheduled_notify_new_bills, IntervalTrigger(minutes=30), id="notify_new_bills", replace_existing=True)
     scheduler.add_job(scheduled_notify_results, IntervalTrigger(hours=1), id="notify_results", replace_existing=True)
+    scheduler.add_job(scheduled_push_categories, IntervalTrigger(minutes=30), id="push_categories", replace_existing=True)
+    scheduler.add_job(scheduled_weekly_digest, CronTrigger(day_of_week="mon", hour=7, minute=0), id="weekly_digest", replace_existing=True)
     scheduler.add_job(scheduled_diavgeia_scrape, IntervalTrigger(hours=48), id="diavgeia_municipal", replace_existing=True)
     scheduler.add_job(scheduled_forum_sync, IntervalTrigger(minutes=10), id="forum_sync", replace_existing=True)
     scheduler.add_job(scheduled_bill_lifecycle, IntervalTrigger(hours=1), id="bill_lifecycle", replace_existing=True)

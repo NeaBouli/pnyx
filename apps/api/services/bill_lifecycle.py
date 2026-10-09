@@ -167,6 +167,7 @@ async def run_bill_lifecycle(db: AsyncSession) -> dict:
                 await _hook_telegram_community(bill, final_status)
             elif final_status == BillStatus.WINDOW_24H:
                 await _hook_telegram_community(bill, final_status)
+                await _hook_push_vote_24h(bill)
             elif final_status == BillStatus.PARLIAMENT_VOTED:
                 await _hook_arweave_snapshot(db, bill)
                 await _hook_telegram_community(bill, final_status, db=db)
@@ -222,6 +223,26 @@ async def _catchup_arweave(db: AsyncSession) -> int:
         await db.commit()
 
     return archived
+
+
+async def _hook_push_vote_24h(bill: ParliamentBill) -> None:
+    """Data-only vote_24h push (off unless PUSH_DATA_ONLY_CATEGORIES=1)."""
+    from services.push_categories import data_only_enabled, push_vote_24h
+
+    if not data_only_enabled():
+        return
+    try:
+        import redis.asyncio as aioredis
+        import os
+
+        r = aioredis.from_url(os.getenv("REDIS_URL", "redis://redis:6379"), decode_responses=True)
+        try:
+            if await push_vote_24h(r, bill):
+                logger.info("[LIFECYCLE] Data-only push: vote_24h %s", bill.id)
+        finally:
+            await r.aclose()
+    except Exception as e:
+        logger.warning("[LIFECYCLE] vote_24h push failed for %s: %s", bill.id, e)
 
 
 async def _hook_notify_new_bill(bill: ParliamentBill) -> None:
