@@ -38,5 +38,23 @@ switching back (`ci-switch.sh github pnyx`). Every switch is recorded in
   (`ignore-scripts=true`) is not read inside `apps/*`.
 - Workflow token permissions stay `contents: read`.
 
+## Redis test-service image
+
+The API job pulls the Docker Official Redis image anonymously from ECR Public,
+avoiding Docker Hub's anonymous pull quota without adding registry credentials.
+Docker documents this [official distribution mirror](https://www.docker.com/press-release/docker-official-images-available-amazon-elastic-container-registry/).
+
+The service is pinned to the Redis `8.10.2-alpine` OCI index
+`sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0`.
+ECR manifest inspection and the [Docker Hub metadata](https://hub.docker.com/layers/library/redis/8.10.2-alpine/images/sha256-2d3814be5e9b06a30a0be54770b7e12052e7e79ec85271aefd34875c1f393b23)
+matched on 2026-10-09, including the Linux/amd64 manifest
+`sha256:2d3814be5e9b06a30a0be54770b7e12052e7e79ec85271aefd34875c1f393b23`.
+This is an artifact-identity check, not a comparison with older local caches.
+
+Future Redis updates must explicitly refresh the digest, verify the official-image
+provenance, and pass the service healthcheck and API/real-Redis tests. ECR availability
+and anonymous quotas remain external dependencies. Runner selection, ports,
+healthcheck, workflow permissions and production Redis configuration are unchanged.
+
 Not covered: `deploy.yml` (manual `workflow_dispatch` deploy; changes there are deploy scope)
 and `scraper.yml` (scheduled data job) still reference actions by tag.
