@@ -921,10 +921,10 @@ async def allocate_donation(amount: float, r: aioredis.Redis) -> dict:
         allocation["domain"] = domain_alloc
         remaining -= domain_alloc
 
-    # Rest → Reserve (oder extra Server)
+    # Rest → Reserve: Überschuss über Server-Ziel und Domain-Bedarf geht in die
+    # Reserve, wie öffentlich zugesagt (Koordinator-Entscheidung (a), 10.10.2026).
     if remaining > 0:
-        # Overflow geht primär an Server
-        allocation["server"] += remaining
+        allocation["reserve"] = remaining
         remaining = 0
 
     return allocation

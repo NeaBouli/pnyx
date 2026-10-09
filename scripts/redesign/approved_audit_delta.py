@@ -35,7 +35,10 @@ import r0_inventory
 # development-support cost row; the row's monthly figure follows the API config (server
 # cost_monthly 10.0 €), shown as ~€10/μ.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "8eb8f6893a3d796b023801860df727023513815d33769fc65dd0ca1a4fea0694",
+# T-658 (coordinator decision (a), 2026-10-10): community.html gains a reserve tile that shows the
+# public monetary reserve from payments/status (surplus beyond server target and domain need);
+# unknown/unavailable data shows "—" with a notice, never a zero balance.
+    "docs/community.html": "e27388c1e2df631cad717eb691069cab7d8a31cb588876fb675fabfd8390e6ef",
     "docs/wiki/api.html": "0f2b6771a112f089c7fba6b1ef3185e061b073cd338f3db10a38a3c3c3c2515f",
     "docs/wiki/architecture.html": "8198bc8764e1d848f512a14195d2a219e6ce36398227f6744ce2793f401273d3",
     "docs/wiki/broadcasting.html": "9e14ffa72fa9e524c109748881d2ed941aeeb257d44570b191aaa24d5fb47b62",
