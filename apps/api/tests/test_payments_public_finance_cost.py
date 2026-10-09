@@ -3,7 +3,7 @@
 import pytest
 
 from routers import payments
-from test_payments_webhook_safety import _PublicProjectionRedis
+from tests.test_payments_webhook_safety import _PublicProjectionRedis
 
 
 @pytest.mark.asyncio
