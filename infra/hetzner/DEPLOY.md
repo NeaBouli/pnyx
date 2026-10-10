@@ -121,6 +121,10 @@ for its scope. Each release gets its own directory
    `-f <release>/compose.rollback.yml`; for the database, downgrade Alembic to
    the recorded revision or restore the dump.
 
+For the next approved API/Web follow-up release with Alembic `y801a2b3c4d5`, use
+[the follow-up runbook](../../docs/operations/FOLLOWUP_API_WEB_DEPLOY_RUNBOOK_2026-10-10.md)
+(documentation only, not executed).
+
 ## Rollback (legacy single-checkout setup)
 ```bash
 cd /opt/ekklesia
