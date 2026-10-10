@@ -478,7 +478,9 @@ async function comparisonChecks(page, name, lang, neutral = false, parliament = 
   });
   const label = (value) => value.toFixed(2).replace(".", lang === "el" ? "," : ".") + (lang === "el" ? "% Υπέρ" : "% YES");
   check(name, `${lang}: same-bill comparison values or both neutral`, neutral ? state.p === "—" && state.c === "—" && state.parliament.width === 0 && state.citizen.width === 0 : state.p === label(parliament) && state.c === label(citizen) && Math.abs(state.parliament.width - parliament) < 0.02 && Math.abs(state.citizen.width - citizen) < 0.02, state);
-  check(name, "original two 14px tracks / 2px frame and corners; old cumulative scale removed", [state.parliament, state.citizen].every((track) => track.height === 14 && track.radius === 2 && track.borderLeft === 2 && track.borderTop === 2) && !state.oldScale, state);
+  // The R2 redesign squares every corner globally (r2-landing.css `*{border-radius:0 !important}`),
+  // so the handoff's rounded corners are intentionally not rendered.
+  check(name, "original two 14px tracks / 2px frame, R2 square corners; old cumulative scale removed", [state.parliament, state.citizen].every((track) => track.height === 14 && track.radius === 0 && track.borderLeft === 2 && track.borderTop === 2) && !state.oldScale, state);
   check(name, `${lang}: explicit comparison provenance notice`, /bill|νομοσχέδιο/i.test(state.note) && /part|κομμ/i.test(state.note), state.note);
 }
 
