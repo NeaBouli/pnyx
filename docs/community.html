@@ -248,6 +248,8 @@
     .fc-acct-total.positive { color: #166534; }
     .fc-acct-total.negative { color: #dc2626; }
     .fc-acct-total.zero { color: #92400e; }
+    .fc-acct-total.need { color: #92400e; flex-wrap: wrap; gap: 0.2rem 0.5rem; }
+    #sBalance.need #sBalanceVal { white-space: nowrap; }
     /* Info popup */
     .info-trigger { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: var(--gray-100); border: 1px solid #e2e8f0; font-size: 0.65rem; font-weight: 900; color: var(--gray-500); cursor: pointer; position: relative; margin-left: 0.3rem; vertical-align: middle; }
     .info-popup { display: none; position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); background: var(--gray-900); color: #e2e8f0; padding: 0.75rem 1rem; border-radius: 0.5rem; font-size: 0.72rem; font-weight: 400; width: 260px; z-index: 50; line-height: 1.5; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
@@ -366,7 +368,7 @@
         <div class="fc-acct-row"><span data-el="Εισπράξεις:" data-en="Received:">Εισπράξεις:</span><strong id="sReceived" style="color:#475569">—</strong></div>
         <div class="fc-acct-row"><span data-el="Κόστος server:" data-en="Server cost:">Κόστος server:</span><strong id="sCost" style="color:#475569">—</strong></div>
         <div class="fc-acct-total" id="sBalance">
-          <span data-el="Υπόλοιπο:" data-en="Balance:">Υπόλοιπο:</span>
+          <span id="sBalanceLabel" data-el="Υπόλοιπο:" data-en="Balance:">Υπόλοιπο:</span>
           <span id="sBalanceVal">—</span>
         </div>
       </div>
@@ -1171,6 +1173,8 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
   // ═══════════════════════════════════════════════════════════
   function updateServerTile() {
     var acct = liveServerData;
+    var balanceLabel = document.getElementById("sBalanceLabel");
+    if (balanceLabel) balanceLabel.textContent = t("Υπόλοιπο:", "Balance:");
     var hint = document.getElementById("sDataHint");
     if (hint) { hint.style.display = serverDataState === "ready" ? "none" : ""; hint.textContent = serverDataState === "loading" ? t("Φόρτωση οικονομικών στοιχείων…", "Loading funding data…") : acct ? t("Τελευταία έγκυρα στοιχεία — η ενημέρωση δεν είναι διαθέσιμη", "Last valid data — update unavailable") : t("Τα στοιχεία δεν είναι διαθέσιμα αυτή τη στιγμή", "Data currently unavailable"); }
     if (!acct) {
@@ -1196,9 +1200,15 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     var balRow = document.getElementById("sBalance");
     if (recEl) { recEl.textContent = eur(acct.received); recEl.style.color = "#166534"; }
     if (costEl) { costEl.textContent = "-" + eur(acct.cost_total); costEl.style.color = "#dc2626"; }
-    if (balEl) balEl.textContent = (acct.balance < 0 ? "-" : "") + eur(Math.abs(acct.balance || 0));
+    // Draft T9028 wording requires Gio approval.
+    if (acct.balance < 0) {
+      var since = pad(SERVER_START_DATE.getMonth() + 1) + "/" + SERVER_START_DATE.getFullYear();
+      var needAmount = Math.abs(acct.balance).toFixed(2);
+      if (balanceLabel) balanceLabel.textContent = t("Ακάλυπτες ανάγκες από ", "Open need since ") + since + ":";
+      if (balEl) balEl.textContent = t(needAmount.replace(".", ",") + " €", "€" + needAmount);
+    } else if (balEl) balEl.textContent = eur(Math.abs(acct.balance || 0));
     if (balRow) {
-      balRow.className = "fc-acct-total " + (acct.balance > 0 ? "positive" : acct.balance < 0 ? "negative" : "zero");
+      balRow.className = "fc-acct-total " + (acct.balance > 0 ? "positive" : acct.balance < 0 ? "need" : "zero");
     }
 
     // Timer

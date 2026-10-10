@@ -777,3 +777,12 @@ Status --> Fetch : response or HTTP failure
 Fetch --> Snapshot : valid finite account / retain on failure
 Snapshot --> Tiles : loading / ready / unavailable / stale
 @enduml
+@startuml T9028_server_wording
+component "Existing server snapshot" as Snapshot
+component updateServerTile as Render
+component "sBalanceLabel / sBalanceVal" as Need
+component "sReceived / sCost" as Account
+Snapshot --> Render : unchanged balance / received / cost
+Render --> Need : draft negative-to-open-need wording
+Render --> Account : original signed values
+@enduml

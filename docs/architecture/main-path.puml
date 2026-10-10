@@ -556,3 +556,13 @@ else HTTP / malformed / unavailable
 end
 Snapshot -> Tiles : render values or neutral dash + bilingual hint
 @enduml
+@startuml T9028_server_wording_path
+participant Snapshot
+participant updateServerTile as Render
+participant "Server total row" as Total
+participant "Account rows" as Account
+Snapshot -> Render : existing finite server snapshot
+Render -> Total : negative: absolute amount / since SERVER_START_DATE
+Render -> Account : original received / signed cost
+note over Total : Draft only: Gio wording decision pending
+@enduml

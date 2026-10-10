@@ -1976,3 +1976,26 @@ flowchart LR
    `main-path.puml::T9026_community_funding_path`.
 7. **Nächster Schritt:** candidate tests/browser evidence and gio-dd cross-review
    before head-bound green-CI merge. Production release needs a separate Gio gate.
+
+## T-9028 — Draft Server funding wording (stacked on #515)
+
+1. **Grundidee:** make the public funding need understandable without altering
+   accounting or reopening payment intake (`README.md`, `docs/community.html`).
+2. **Spur:** existing `fetchPaymentStatus -> updateServerTile ->
+   sBalanceLabel/sBalanceVal`; the same finite server snapshot supplies the
+   negative amount, while `SERVER_START_DATE` supplies the start month.
+3. **Module:** Community funding presentation, `updateServerTile`, draft candidate.
+   No API/accounting module, extra flow, retry, flag or new balance is introduced.
+4. **Verdrahtung:** a negative balance becomes its absolute amount labeled as
+   open need since April2026; `sReceived` and `sCost` retain original signed values.
+   Nonnegative values retain the balance label; unknown stays unknown, stale
+   snapshots keep their existing notice, language changes re-render the same data.
+5. **Widerspruch/Lücken:** a bare red minus can be mistaken for a debt/account
+   transaction. This is only a wording proposal, not a corrected balance or
+   owner-approved statement. Gio must decide before merge; no live claim.
+6. **Diagramme:** `map.puml::T9028_server_wording` and
+   `main-path.puml::T9028_server_wording_path` (source only if renderer unavailable).
+7. **Nächster Schritt:** local behavioral/browser evidence and Draft PR body
+   before/after; Gio text choice, gio-dd review and green head CI precede any
+   integration. Keep API, allocation, dates, costs, domain/reserve, intake and
+   production untouched. Web rebuild/deploy would be a separate release gate.

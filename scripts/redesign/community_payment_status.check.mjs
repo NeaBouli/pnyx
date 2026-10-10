@@ -216,3 +216,104 @@ test('legitimate zero balances are received data, not unavailable placeholders',
   page.language('el');
   assert.equal(page.text('rReserveVal'), '0,00€');
 });
+
+// T-9028 is a text/presentation proposal, not a change to the financial data.
+function openNeedSnapshot(amount = 150) {
+  const body = snapshot();
+  body.server = {
+    ...body.server,
+    received: 0,
+    cost_total: amount,
+    balance: -amount,
+    months_elapsed: 6,
+  };
+  return body;
+}
+
+function assertOpenNeed(page, lang, amount = '150') {
+  assert.equal(page.text('sBalanceLabel'), lang === 'en'
+    ? 'Open need since 04/2026:'
+    : 'Ακάλυπτες ανάγκες από 04/2026:');
+  const value = page.text('sBalanceVal').replace(/\s+/g, ' ');
+  assert.equal(value, lang === 'en' ? `€${amount}.00` : `${amount},00 €`);
+  assert.equal(page.element('sBalance').className, 'fc-acct-total need');
+  // Raw received and cost accounting retain their original values and signs.
+  assert.equal(page.text('sReceived'), '0,00€');
+  assert.equal(page.text('sCost'), '-150,00€');
+}
+
+for (const lang of ['el', 'en']) {
+  test(`negative server balance displays dated open need without mutating accounting (${lang})`, async () => {
+    const page = harness(lang);
+    await page.respond(200, openNeedSnapshot());
+    assertOpenNeed(page, lang);
+    assert.equal(page.text('dReceived'), '9,30€');
+    assert.equal(page.text('dCost'), '-9,30€');
+    assert.equal(page.text('dBalanceVal'), '0,00€');
+    page.tick();
+    assertOpenNeed(page, lang);
+  });
+}
+
+test('dated open need keeps the exact cached amount across language switches and 503', async () => {
+  const page = harness('el');
+  await page.respond(200, openNeedSnapshot());
+  assertOpenNeed(page, 'el');
+  page.language('en');
+  assertOpenNeed(page, 'en');
+  await page.refresh(503, { detail: 'Temporarily unavailable' });
+  assertOpenNeed(page, 'en');
+  assert.notEqual(page.element('sDataHint').style.display, 'none');
+  assert.match(page.text('sDataHint'), /last|stale|unavailable/i);
+  page.language('el');
+  assertOpenNeed(page, 'el');
+  assert.match(page.text('sDataHint'), /Τελευτα|διαθέσι/i);
+});
+
+test('need to zero to positive restores the original balance label, value, and class', async () => {
+  const page = harness('en');
+  await page.respond(200, openNeedSnapshot());
+  assertOpenNeed(page, 'en');
+  const zero = openNeedSnapshot();
+  zero.server.received = 150;
+  zero.server.balance = 0;
+  await page.refresh(200, zero);
+  assert.equal(page.text('sBalanceLabel'), 'Balance:');
+  assert.equal(page.text('sBalanceVal'), '0,00€');
+  assert.equal(page.element('sBalance').className, 'fc-acct-total zero');
+  assert.equal(page.text('sReceived'), '150,00€');
+  assert.equal(page.text('sCost'), '-150,00€');
+  const positive = openNeedSnapshot();
+  positive.server.received = 175;
+  positive.server.balance = 25;
+  await page.refresh(200, positive);
+  assert.equal(page.text('sBalanceLabel'), 'Balance:');
+  assert.equal(page.text('sBalanceVal'), '25,00€');
+  assert.equal(page.element('sBalance').className, 'fc-acct-total positive');
+  page.language('el');
+  assert.equal(page.text('sBalanceLabel'), 'Υπόλοιπο:');
+  assert.equal(page.text('sBalanceVal'), '25,00€');
+});
+
+test('unknown funding data never invents an open-need label or amount', async () => {
+  const page = harness('el');
+  assert.equal(page.text('sBalanceLabel'), 'Υπόλοιπο:');
+  assert.equal(page.text('sBalanceVal'), '—');
+  assert.doesNotMatch(page.element('sBalance').className, /\bneed\b/);
+  await page.respond(503, { detail: 'Temporarily unavailable' });
+  page.language('en');
+  assert.equal(page.text('sBalanceLabel'), 'Balance:');
+  assert.equal(page.text('sBalanceVal'), '—');
+  assert.doesNotMatch(page.element('sBalance').className, /\bneed\b/);
+});
+
+test('open-need currency formatting preserves cents rather than rounding to whole euros', async () => {
+  const page = harness('el');
+  await page.respond(200, openNeedSnapshot(150.37));
+  assert.equal(page.text('sBalanceVal').replace(/\s+/g, ' '), '150,37 €');
+  assert.equal(page.text('sReceived'), '0,00€');
+  assert.equal(page.text('sCost'), '-150,37€');
+  page.language('en');
+  assert.equal(page.text('sBalanceVal'), '€150.37');
+  assert.equal(page.text('sCost'), '-150,37€');
+});
