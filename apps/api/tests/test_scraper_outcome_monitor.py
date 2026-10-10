@@ -240,3 +240,47 @@ def test_scheduler_outer_exception_failed(monkeypatch):
     assert store["scraper:diavgeia_municipal:last_outcome"] == "failed"
     assert store["scraper:diavgeia_municipal:error_count"] == "1"
     assert all("secret" not in m.message for m in _outcome_alerts(store))
+
+
+# --- T-9076: completeness_check outer outcome consumed by monitor ---
+
+def _cc_alerts(store):
+    return [a for a in monitor.check_scraper_jobs(SyncView(store)) if "completeness_check" in a.message]
+
+
+def test_completeness_first_failure_warns_then_clean_clears(monkeypatch):
+    store = {}
+    _patch(monkeypatch, store)
+    asyncio.run(scraper_state.record_failure("completeness_check", "boom dsn=pw"))
+    alerts = _cc_alerts(store)
+    assert len(alerts) == 1
+    a = alerts[0]
+    assert a.type == "scraper_job_errors" and a.severity == "warning" and a.recovery_allowed is False
+    assert "failed (exception)" in a.message and "pw" not in a.message
+    asyncio.run(scraper_state.record_success("completeness_check"))
+    assert _cc_alerts(store) == []
+
+
+def test_completeness_absent_or_malformed_no_alarm():
+    assert _cc_alerts({}) == []
+    bad = {"scraper:completeness_check:last_outcome": "junk",
+           "scraper:completeness_check:error_count": "nan"}
+    assert _cc_alerts(bad) == []
+    assert _cc_alerts({"scraper:completeness_check:last_outcome": b"\xff"}) == []
+
+
+def test_completeness_legacy_threshold_not_duplicated():
+    store = {"scraper:completeness_check:error_count": "21",
+             "scraper:completeness_check:last_outcome": "failed",
+             "scraper:completeness_check:last_outcome_reason": "exception"}
+    alerts = _cc_alerts(store)
+    assert len(alerts) == 1 and alerts[0].recovery_allowed is False
+
+
+def test_completeness_distinct_identity_from_parliament(monkeypatch):
+    store = {}
+    _patch(monkeypatch, store)
+    asyncio.run(scraper_state.record_failure("parliament", "e"))
+    asyncio.run(scraper_state.record_failure("completeness_check", "e"))
+    ids = {monitor.alert_identity(a) for a in _outcome_alerts(store)}
+    assert len(ids) == 2

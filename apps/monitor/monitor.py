@@ -1124,7 +1124,8 @@ def check_forum_completeness(conn) -> list[Alert]:
 def check_scraper_jobs(r) -> list[Alert]:
     alerts = []
     job_names = ["parliament", "diavgeia_municipal", "bill_lifecycle",
-                 "cplm_refresh", "greek_topics", "notify_new_bills", "notify_results"]
+                 "cplm_refresh", "greek_topics", "notify_new_bills", "notify_results",
+                 "completeness_check"]
     for name in job_names:
         try:
             count = int(r.get(f"scraper:{name}:error_count") or 0)
