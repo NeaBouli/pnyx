@@ -526,3 +526,21 @@ async def test_partial_acceptance_before_hanging_batch_is_finalized(monkeypatch)
     # Replay (next scheduler run): nothing is sent again.
     assert await pc.push_vote_24h(redis, bill, now=NOW) is False
     assert posted == [100, 50]
+
+
+@pytest.mark.asyncio
+async def test_final_settle_redis_error_keeps_owned_claim_and_blocks_resend(monkeypatch):
+    monkeypatch.setenv(pc.FLAG, "1")
+    redis, (send, sent) = FakeRedis(), _sender(accepted=5)
+    settle_calls = []
+
+    async def failing_eval(script, numkeys, key, claim, mode, ttl):
+        settle_calls.append((key, claim, mode))
+        raise ConnectionError("redis down")
+
+    redis.eval = failing_eval
+    assert await pc.push_vote_24h(redis, bill, sender=send, now=NOW) is True
+    claim = redis.store["notified:vote_24h:GR-1"]
+    assert settle_calls == [("notified:vote_24h:GR-1", claim, "final")] and claim.startswith("claim:")
+    assert await pc.push_vote_24h(redis, bill, sender=send, now=NOW) is False
+    assert len(sent) == 1 and redis.store["notified:vote_24h:GR-1"] == claim
