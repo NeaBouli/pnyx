@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { scraperJobsFrom, type ScraperJob } from '@/lib/health-shapes'
+import { jobHealth, jobOutcomeLabel, scraperJobsFrom, type ScraperJob } from '@/lib/health-shapes'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
@@ -156,7 +156,7 @@ export default function MonitorPage() {
                   <tr>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Job</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Last Run</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-600">Last OK</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">Last completed</th>
                     <th className="text-right px-4 py-3 font-medium text-gray-600">Errors</th>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
                   </tr>
@@ -164,14 +164,17 @@ export default function MonitorPage() {
                 <tbody className="divide-y divide-gray-100">
                   {jobs.map(j => {
                     const errCount = j.error_count || 0
-                    const status = errCount >= 3 ? 'error' : errCount > 0 ? 'degraded' : 'ok'
+                    const status = jobHealth(j)
                     return (
                       <tr key={j.name} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3 font-medium text-gray-900">{j.name}</td>
                         <td className="px-4 py-3 text-gray-500">{formatAge(j.last_run)}</td>
                         <td className="px-4 py-3 text-gray-500">{formatAge(j.last_success)}</td>
                         <td className="px-4 py-3 text-right">{errCount > 0 ? <span className="text-red-600 font-bold">{errCount}</span> : <span className="text-gray-400">0</span>}</td>
-                        <td className="px-4 py-3">{statusBadge(status)}</td>
+                        <td className="px-4 py-3">
+                          {statusBadge(status)}
+                          <div className="mt-1 text-xs text-gray-500 whitespace-nowrap">{jobOutcomeLabel(j)} · {j.last_outcome_time ? formatAge(j.last_outcome_time) : '—'}</div>
+                        </td>
                       </tr>
                     )
                   })}
