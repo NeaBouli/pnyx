@@ -856,14 +856,22 @@
       <span style="font-size:0.65rem;color:#64748b;display:flex;align-items:center;gap:0.3rem"><span style="width:5px;height:5px;border-radius:50%;background:#22c55e;display:inline-block;animation:blink 2s infinite"></span> Live</span>
     </div>
     <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:0.75rem" data-el="Πόσο αντιπροσωπεύει η Βουλή τη γνώμη των πολιτών; Σωρευτικός υπολογισμός από όλες τις ψηφοφορίες." data-en="How well does Parliament represent citizen opinion? Calculated cumulatively from all votes.">Πόσο αντιπροσωπεύει η Βουλή τη γνώμη των πολιτών; Σωρευτικός υπολογισμός από όλες τις ψηφοφορίες.</p>
-    <!-- Live bar: background is grey track, colored fill grows left-to-right -->
-    <div style="position:relative;height:28px;border-radius:6px;background:#e2e8f0;margin-bottom:0.3rem;overflow:hidden">
-      <div id="repFill" style="height:100%;width:0%;border-radius:6px;transition:width 0.8s ease-out;background:#ef4444"></div>
-      <div id="repMarker" style="position:absolute;top:-4px;left:0%;width:4px;height:36px;background:#0f172a;border-radius:2px;transition:left 1.5s ease"></div>
+    <!-- Same-bill YES shares: reported party positions are not MP vote totals. -->
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem">
+      <div>
+        <div style="display:flex;justify-content:space-between;gap:0.25rem;flex-wrap:wrap;font-size:0.65rem;margin-bottom:0.3rem">
+          <span data-el="Απόφαση Βουλής" data-en="Parliament Decision">Απόφαση Βουλής</span><span id="repParliamentValue" style="font-weight:700;white-space:nowrap" data-el="—" data-en="—">—</span>
+        </div>
+        <div style="height:14px;border:2px solid #0f172a;background:#e2e8f0;overflow:hidden"><div id="repParliamentFill" style="height:100%;width:0%;background:#a16207;transition:width 0.8s ease-out"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;gap:0.25rem;flex-wrap:wrap;font-size:0.65rem;margin-bottom:0.3rem">
+          <span data-el="Βούληση Πολιτών" data-en="Citizen Will">Βούληση Πολιτών</span><span id="repCitizenValue" style="font-weight:700;white-space:nowrap" data-el="—" data-en="—">—</span>
+        </div>
+        <div style="height:14px;border:2px solid #0f172a;background:#e2e8f0;overflow:hidden"><div id="repCitizenFill" style="height:100%;width:0%;background:#2563eb;transition:width 0.8s ease-out"></div></div>
+      </div>
     </div>
-    <div style="display:flex;justify-content:space-between;font-size:0.62rem;color:#64748b">
-      <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
-    </div>
+    <p id="repComparisonNote" style="font-size:0.65rem;color:var(--gray-700);margin-top:0.5rem" data-el="Δεν υπάρχουν διαθέσιμα έγκυρα συγκρίσιμα δεδομένα για το ίδιο νομοσχέδιο. Ποσοστό Υπέρ των καταγεγραμμένων κομματικών θέσεων έναντι όλων των ψήφων της πλατφόρμας. Όχι ποσοστό βουλευτών ή επίσημα επιβεβαιωμένη απόφαση." data-en="Valid comparable data for the same bill is unavailable. YES share of reported party positions versus all platform votes. Not MP percentages or an officially confirmed decision.">Δεν υπάρχουν διαθέσιμα έγκυρα συγκρίσιμα δεδομένα για το ίδιο νομοσχέδιο. Ποσοστό Υπέρ των καταγεγραμμένων κομματικών θέσεων έναντι όλων των ψήφων της πλατφόρμας. Όχι ποσοστό βουλευτών ή επίσημα επιβεβαιωμένη απόφαση.</p>
     <!-- Stats row -->
     <div style="display:flex;gap:1rem;margin-top:0.75rem;flex-wrap:wrap">
       <div style="flex:1;min-width:120px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
@@ -939,6 +947,51 @@
 <script>
 (function(){
   var ELECTORATE = 9810040; // Εκλογικό Σώμα Ελλάδας 2023 (ΥΠΕΣ)
+  var representationRequestId = 0;
+
+  function renderBillComparison(parliamentPct, citizenPct, billId) {
+    var available = Number.isFinite(parliamentPct) && Number.isFinite(citizenPct) && parliamentPct >= 0 && parliamentPct <= 100 && citizenPct >= 0 && citizenPct <= 100;
+    var lang = typeof currentLang !== "undefined" ? currentLang : "el";
+    function text(id, el, en) {
+      var node = document.getElementById(id);
+      if (!node) return;
+      node.setAttribute("data-el", el);
+      node.setAttribute("data-en", en);
+      node.textContent = lang === "en" ? en : el;
+    }
+    [["repParliament", parliamentPct], ["repCitizen", citizenPct]].forEach(function(item) {
+      var fill = document.getElementById(item[0] + "Fill");
+      if (fill) fill.style.width = (available ? item[1] : 0) + "%";
+      text(item[0] + "Value", available ? item[1].toFixed(2).replace(".", ",") + "% Υπέρ" : "—", available ? item[1].toFixed(2) + "% YES" : "—");
+    });
+    text("repComparisonNote",
+      (available ? "Ίδιο νομοσχέδιο: " + billId + ". " : "Δεν υπάρχουν διαθέσιμα έγκυρα συγκρίσιμα δεδομένα για το ίδιο νομοσχέδιο. ") + "Ποσοστό Υπέρ των καταγεγραμμένων κομματικών θέσεων έναντι όλων των ψήφων της πλατφόρμας. Όχι ποσοστό βουλευτών ή επίσημα επιβεβαιωμένη απόφαση.",
+      (available ? "Same bill: " + billId + ". " : "Valid comparable data for the same bill is unavailable. ") + "YES share of reported party positions versus all platform votes. Not MP percentages or an officially confirmed decision.");
+  }
+
+  function fetchBillComparison(billId, requestId) {
+    if (typeof billId !== "string" || !billId.trim() || billId.length > 50) return;
+    fetch("https://api.ekklesia.gr/api/v1/public/bills/" + encodeURIComponent(billId) + "/results")
+      .then(function(r){ if (!r.ok) throw new Error("Bill results unavailable"); return r.json(); })
+      .then(function(d){
+        if (requestId !== representationRequestId) return;
+        if (!d || d.bill_id !== billId || (d.status !== "PARLIAMENT_VOTED" && d.status !== "OPEN_END") || d.results_hidden !== false) throw new Error("Bill results are not public and closed");
+        var counts = d.citizen_votes;
+        var parties = d.parliament_votes;
+        if (!counts || typeof counts !== "object" || Array.isArray(counts) || !parties || typeof parties !== "object" || Array.isArray(parties)) throw new Error("Comparison data missing");
+        var fields = ["yes", "no", "abstain", "unknown", "total"];
+        if (!fields.every(function(key){ return Number.isSafeInteger(counts[key]) && counts[key] >= 0; }) || counts.total === 0) throw new Error("Invalid vote counts");
+        var sum = counts.yes + counts.no + counts.abstain + counts.unknown;
+        if (!Number.isSafeInteger(sum) || sum !== counts.total) throw new Error("Vote totals disagree");
+        var keys = Object.keys(parties);
+        var positions = Object.values(parties);
+        var known = ["YES", "ΝΑΙ", "NO", "ΟΧΙ", "ABSTAIN", "ΠΑΡΩΝ", "ΑΠΟΧΗ"];
+        if (!keys.length || !keys.every(function(key){ return !!key.trim(); }) || !positions.every(function(position){ return typeof position === "string" && known.indexOf(position) !== -1; })) throw new Error("Party positions unavailable");
+        var yes = positions.filter(function(position){ return position === "YES" || position === "ΝΑΙ"; }).length;
+        renderBillComparison(yes / positions.length * 100, counts.yes / counts.total * 100, billId);
+      })
+      .catch(function(){ if (requestId === representationRequestId) renderBillComparison(null, null); });
+  }
 
   function repColor(pct) {
     // Text-safe shades: the score is also rendered as coloured text.
@@ -979,12 +1032,14 @@
   }
 
   function fetchRepresentation() {
+    var requestId = ++representationRequestId;
+    renderBillComparison(null, null);
     fetch("https://api.ekklesia.gr/api/v1/analytics/representation")
-      .then(function(r){return r.json()})
+      .then(function(r){ if (!r.ok) throw new Error("Representation unavailable"); return r.json(); })
       .then(function(d){
+        if (requestId !== representationRequestId) return;
+        fetchBillComparison(d && d.last_bill && d.last_bill.bill_id, requestId);
         var score = d.cumulative_representation;
-        var fill = document.getElementById("repFill");
-        var marker = document.getElementById("repMarker");
         var scoreEl = document.getElementById("repScore");
         var divEl = document.getElementById("repDivergence");
         var billsEl = document.getElementById("repBills");
@@ -1009,8 +1064,6 @@
         if (bills < 1 || score === null || score === undefined || !Number.isFinite(Number(score))) {
           setMood(null);
           if (scoreEl) scoreEl.textContent = "—";
-          if (fill) fill.style.width = "0%";
-          if (marker) marker.style.left = "0%";
           if (divEl) divEl.textContent = "—";
           if (billsEl) billsEl.textContent = "—";
           if (votesEl) votesEl.textContent = "—";
@@ -1052,8 +1105,6 @@
         var pct = Math.min(100, Math.max(0, score));
         setMood(pct);
         var col = repColor(pct);
-        if (fill) { fill.style.width = pct + "%"; fill.style.background = col; }
-        if (marker) marker.style.left = pct + "%";
         if (scoreEl) { scoreEl.textContent = pct + "%"; scoreEl.style.color = col; }
         if (divEl) divEl.textContent = avgDiv + "%";
         if (billsEl) billsEl.textContent = bills;
@@ -1065,7 +1116,7 @@
           if (lastStats) lastStats.textContent = d.last_bill.citizen_votes + " ψήφοι · Απόκλιση " + d.last_bill.divergence + "% · Αντιπρ. " + d.last_bill.representation + "%";
         }
       })
-      .catch(function(){ setMood(null); });
+      .catch(function(){ if (requestId === representationRequestId) { setMood(null); renderBillComparison(null, null); } });
   }
   fetchRepresentation();
   setInterval(fetchRepresentation, 60000);

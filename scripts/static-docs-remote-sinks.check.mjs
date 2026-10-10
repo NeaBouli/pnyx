@@ -448,3 +448,4 @@ test('index.html CPLM: unknown quadrant keeps text fallback across language chan
   assert.equal(quadrant.textContent, unknown);
   assert.deepEqual(quadrant.htmlWrites, []);
 });
+import './redesign/t356_comparison.check.mjs';

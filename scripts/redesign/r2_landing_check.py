@@ -115,9 +115,10 @@ REMOVABLE_HEADER_PAIRS = {
 ALLOWED_R5_INLINE_SCRIPTS = {
     0: {
         "index": 0,
-        # #356: approved six-phase, fold-aware and pauseable cycle controller.
-        "sha256": "6ea42184af02e42cbc9783308234fb0b598be2930b0aedc346d86a90879467da",
-        "bytes": 6682,
+        # T-9043 / Q-GH356: owner-approved same-bill comparison display;
+        # reported party positions are explicitly not MP vote percentages.
+        "sha256": "2d2fbe06400ef46b59e5044c0c1faeac986710cf04f7f27fbcda06d41826247f",
+        "bytes": 10497,
     },
     1: {
         "index": 1,
@@ -302,12 +303,33 @@ def _check_exact_delta(
     return [f"preservation: {label} differs ({'; '.join(details)})"]
 
 
+# Q-GH356 approved 10.10.2026: same-bill comparison, existing public endpoint.
+# The parser records the literal prefix; the reviewed inline-script pin also
+# protects encodeURIComponent(billId) + '/results' and its visibility guards.
+ALLOWED_COMPARISON_API_ADDITIONS = {
+    "absolute_urls": ["https://api.ekklesia.gr/api/v1/public/bills/"],
+    "relative_paths": ["/api/v1/public/bills/"],
+    "fetch_arguments": ["https://api.ekklesia.gr/api/v1/public/bills/"],
+}
+
+
 def check_index_preservation(baseline: dict, current: dict) -> list[str]:
     """Preserve functional/content contracts while permitting the new layout."""
     baseline = approved_analytics_delta.baseline_without_analytics(baseline)
     violations: list[str] = []
 
     for key in LANDING_PRESERVED_EXACT_KEYS:
+        if key == "api_contracts":
+            b_api = baseline.get(key, {})
+            c_api = current.get(key, {})
+            if set(c_api) != set(b_api):
+                violations.append("preservation: exact contract changed: api_contracts (keys)")
+            for api_key, additions in ALLOWED_COMPARISON_API_ADDITIONS.items():
+                violations.extend(_check_exact_delta(
+                    f"api_contracts ({api_key})", b_api.get(api_key, []),
+                    c_api.get(api_key, []), additions,
+                ))
+            continue
         if key == "interactions":
             # DOM reorder changes element_handler sequence but not the set.
             # Compare handler sets and scalar counts independently.
