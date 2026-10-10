@@ -542,3 +542,17 @@ Queue -> Queue : await prior record/sync
 Queue -> SecureStore : deleteItemAsync(marks key)
 Queue --> Identity : deletion complete
 @enduml
+@startuml T9026_community_funding_path
+participant "Community fetchPaymentStatus" as Fetch
+participant "payments/status" as Status
+participant "Server/domain snapshots" as Snapshot
+participant "Server/domain DOM" as Tiles
+Fetch -> Status : existing read-only request
+alt valid finite account
+  Status --> Fetch : received / cost_total / balance
+  Fetch -> Snapshot : replace corresponding snapshot
+else HTTP / malformed / unavailable
+  Fetch -> Snapshot : retain valid snapshot or remain unknown
+end
+Snapshot -> Tiles : render values or neutral dash + bilingual hint
+@enduml

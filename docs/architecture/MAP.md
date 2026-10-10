@@ -1954,3 +1954,25 @@ flowchart LR
   Record[recordVoteMark / syncVoteMark] --> Queue
   Queue --> Store[SecureStore marks entry]
 ```
+
+## T-9026 — Community funding snapshot availability (2026-10-10)
+
+1. **Grundidee:** the public funding tiles must distinguish unknown accounting
+   from a real deficit (`docs/community.html`). No payment intake is enabled.
+2. **Spur:** `fetchPaymentStatus -> validFundingAccount ->
+   updateServerTile/updateDomainTile`; finite received/cost/balance fields become
+   independent server/domain snapshots. HTTP/JSON/unavailable failures mark
+   absent snapshots unavailable or existing snapshots stale.
+3. **Module:** Community funding display, entry `fetchPaymentStatus`, built in
+   this source candidate; no API or reserve-accounting changes.
+4. **Verdrahtung:** a valid response replaces only the corresponding tile's
+   snapshot. Renderers show neutral loading/unknown values until there is proof.
+   Refresh errors preserve prior values with a bilingual stale notice; `tick`
+   and `community-language-change` re-render the same snapshots.
+5. **Widerspruch/Lücken:** seeded0/-25 and0/-9.30 formerly looked like verified
+   deficits. That client gap is closed here; API fallback semantics and live
+   deployment remain separate, unverified gates. Reserve behavior is unchanged.
+6. **Diagramme:** `map.puml::T9026_community_funding` and
+   `main-path.puml::T9026_community_funding_path`.
+7. **Nächster Schritt:** candidate tests/browser evidence and gio-dd cross-review
+   before head-bound green-CI merge. Production release needs a separate Gio gate.

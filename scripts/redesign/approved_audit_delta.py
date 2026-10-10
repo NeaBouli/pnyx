@@ -41,8 +41,12 @@ import r0_inventory
 # T-658 (coordinator decision (a), 2026-10-10): community.html gains a reserve tile that shows the
 # public monetary reserve from payments/status (surplus beyond server target and domain need);
 # unknown/unavailable data shows "—" with a notice, never a zero balance.
+# T-9026 (#508-P3, owner-approved 2026-10-10): server/domain likewise start with
+# unknown loading balances and bilingual unavailable notices, not seeded debt.
+# Refresh failures retain each last valid snapshot with a stale-data notice;
+# the existing reserve behavior, costs and paused payment links are unchanged.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "49a4ce5ff46115ebe96bb1cc875a6a45577e9de0e4968219371a89d27e51728e",
+    "docs/community.html": "4d92815e5247bf7ce007ca9117320410e1ed3e1e27b4533abf46e4fea6a5bda4",
     "docs/wiki/api.html": "0f2b6771a112f089c7fba6b1ef3185e061b073cd338f3db10a38a3c3c3c2515f",
     "docs/wiki/architecture.html": "8198bc8764e1d848f512a14195d2a219e6ce36398227f6744ce2793f401273d3",
     "docs/wiki/broadcasting.html": "9e14ffa72fa9e524c109748881d2ed941aeeb257d44570b191aaa24d5fb47b62",

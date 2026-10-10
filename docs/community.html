@@ -351,31 +351,32 @@
   <div id="finance" class="finance-grid fade-in">
 
     <!-- SERVER -->
-    <div class="fc" id="sCard" style="border-color:#86efac">
-      <div class="fc-badge" id="sBadge" style="background:#22c55e" data-el="ΕΝΕΡΓΟ" data-en="ACTIVE">ΕΝΕΡΓΟ</div>
+    <div class="fc" id="sCard" style="border-color:#cbd5e1">
+      <div class="fc-badge" id="sBadge" style="background:#64748b" data-el="ΦΟΡΤΩΣΗ" data-en="LOADING">ΦΟΡΤΩΣΗ</div>
       <div class="fc-icon">🖥️</div>
       <div class="fc-title">Server Hosting</div>
       <div class="fc-sub">Hetzner CX43 &middot; EU &middot; GDPR</div>
       <div class="fc-info">
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong data-el="~25 €/μήνα (στοιχεία 10.2026)" data-en="~€25/month (as of 10.2026)">~25 €/μήνα (στοιχεία 10.2026)</strong></div>
-        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κατάσταση:" data-en="Status:">Κατάσταση:</span><strong style="color:#166534" id="sDue" data-el="Ενεργός" data-en="Active">Ενεργός</strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κατάσταση:" data-en="Status:">Κατάσταση:</span><strong style="color:#475569" id="sDue">—</strong></div>
       </div>
       <!-- Soll/Ist Accounting -->
       <div class="fc-acct" id="sAcct">
         <div style="font-size:0.65rem;font-weight:700;color:var(--gray-500);margin-bottom:0.3rem" data-el="Σολλ / Ιστ Λογαριασμός" data-en="Debit / Credit Account">Σολλ / Ιστ Λογαριασμός</div>
-        <div class="fc-acct-row"><span data-el="Εισπράξεις:" data-en="Received:">Εισπράξεις:</span><strong id="sReceived" style="color:#166534">20,00€</strong></div>
-        <div class="fc-acct-row"><span data-el="Κόστος server:" data-en="Server cost:">Κόστος server:</span><strong id="sCost" style="color:#dc2626">-10,00€</strong></div>
-        <div class="fc-acct-total positive" id="sBalance">
+        <div class="fc-acct-row"><span data-el="Εισπράξεις:" data-en="Received:">Εισπράξεις:</span><strong id="sReceived" style="color:#475569">—</strong></div>
+        <div class="fc-acct-row"><span data-el="Κόστος server:" data-en="Server cost:">Κόστος server:</span><strong id="sCost" style="color:#475569">—</strong></div>
+        <div class="fc-acct-total" id="sBalance">
           <span data-el="Υπόλοιπο:" data-en="Balance:">Υπόλοιπο:</span>
-          <span id="sBalanceVal">10,00€</span>
+          <span id="sBalanceVal">—</span>
         </div>
       </div>
-      <div class="fc-tbox" id="sTbox" style="background:#f0fdf4">
-        <div style="font-size:0.65rem;font-weight:700;color:#166534;margin-bottom:0.2rem" id="sTboxLabel" data-el="Χρόνος μέχρι χρέωση" data-en="Time until charge">Χρόνος μέχρι χρέωση</div>
-        <div class="fc-timer" id="sTimer" style="color:#166534">—</div>
-        <div class="fc-tsub" id="sTsub" style="color:#166534" data-el="ημ · ώ · λ · δ" data-en="d · h · m · s">ημ · ώ · λ · δ</div>
+      <div class="fc-tbox" id="sTbox" style="background:#f8fafc">
+        <div style="font-size:0.65rem;font-weight:700;color:#475569;margin-bottom:0.2rem" id="sTboxLabel" data-el="Αναμονή στοιχείων" data-en="Waiting for data">Αναμονή στοιχείων</div>
+        <div class="fc-timer" id="sTimer" style="color:#475569">—</div>
+        <div class="fc-tsub" id="sTsub" style="color:#475569">—</div>
       </div>
-      <div class="fc-status" id="sGreen" style="background:#f0fdf4;color:#166534">✅ <span data-el="Server εξοφλημένος" data-en="Server paid">Server εξοφλημένος</span></div>
+      <div class="fc-status" id="sDataHint" style="background:#f8fafc;color:#475569" data-el="Φόρτωση οικονομικών στοιχείων…" data-en="Loading funding data…">Φόρτωση οικονομικών στοιχείων…</div>
+      <div class="fc-status" id="sGreen" style="display:none;background:#f0fdf4;color:#166534">✅ <span data-el="Server εξοφλημένος" data-en="Server paid">Server εξοφλημένος</span></div>
       <div class="fc-status" id="sYellow" style="display:none;background:#fefce8;color:#92400e">⚠️ <span data-el="Παρακαλούμε υποστηρίξτε" data-en="Please support">Παρακαλούμε υποστηρίξτε</span></div>
       <div id="sRed" style="display:none">
         <div class="fc-status" style="background:#fef2f2;color:#dc2626;margin-bottom:0.4rem">🔴 <span data-el="Ο server χρειάζεται χρηματοδότηση!" data-en="Server needs funding!">Ο server χρειάζεται χρηματοδότηση!</span></div>
@@ -386,8 +387,8 @@
     </div>
 
     <!-- DOMAIN (Soll/Ist like Server) -->
-    <div class="fc" id="dCard" style="border-color:#86efac">
-      <div class="fc-badge" id="dBadge" style="background:#22c55e" data-el="ΕΞΟΦΛΗΜΕΝΟ" data-en="PAID">ΕΞΟΦΛΗΜΕΝΟ</div>
+    <div class="fc" id="dCard" style="border-color:#cbd5e1">
+      <div class="fc-badge" id="dBadge" style="background:#64748b" data-el="ΦΟΡΤΩΣΗ" data-en="LOADING">ΦΟΡΤΩΣΗ</div>
       <div class="fc-icon">🌐</div>
       <div class="fc-title">Domain</div>
       <div class="fc-sub">ekklesia.gr &middot; Papaki.gr</div>
@@ -398,19 +399,20 @@
       <!-- Soll/Ist Accounting -->
       <div class="fc-acct" id="dAcct">
         <div style="font-size:0.65rem;font-weight:700;color:var(--gray-500);margin-bottom:0.3rem" data-el="Σολλ / Ιστ Λογαριασμός" data-en="Debit / Credit Account">Σολλ / Ιστ Λογαριασμός</div>
-        <div class="fc-acct-row"><span data-el="Εισπράξεις:" data-en="Received:">Εισπράξεις:</span><strong id="dReceived" style="color:#166534">9,30€</strong></div>
-        <div class="fc-acct-row"><span data-el="Κόστος domain:" data-en="Domain cost:">Κόστος domain:</span><strong id="dCost" style="color:#dc2626">-9,30€</strong></div>
-        <div class="fc-acct-total zero" id="dBalance">
+        <div class="fc-acct-row"><span data-el="Εισπράξεις:" data-en="Received:">Εισπράξεις:</span><strong id="dReceived" style="color:#475569">—</strong></div>
+        <div class="fc-acct-row"><span data-el="Κόστος domain:" data-en="Domain cost:">Κόστος domain:</span><strong id="dCost" style="color:#475569">—</strong></div>
+        <div class="fc-acct-total" id="dBalance">
           <span data-el="Υπόλοιπο:" data-en="Balance:">Υπόλοιπο:</span>
-          <span id="dBalanceVal">0,00€</span>
+          <span id="dBalanceVal">—</span>
         </div>
       </div>
-      <div class="fc-tbox" id="dTbox" style="background:#f0fdf4">
-        <div style="font-size:0.65rem;font-weight:700;color:#166534;margin-bottom:0.2rem" id="dTboxLabel" data-el="Χρόνος μέχρι ανανέωση" data-en="Time until renewal">Χρόνος μέχρι ανανέωση</div>
-        <div class="fc-timer" id="dTimer" style="color:#166534">—</div>
-        <div class="fc-tsub" id="dTsub" style="color:#166534" data-el="ημ · ώ · λ · δ" data-en="d · h · m · s">ημ · ώ · λ · δ</div>
+      <div class="fc-tbox" id="dTbox" style="background:#f8fafc">
+        <div style="font-size:0.65rem;font-weight:700;color:#475569;margin-bottom:0.2rem" id="dTboxLabel" data-el="Αναμονή στοιχείων" data-en="Waiting for data">Αναμονή στοιχείων</div>
+        <div class="fc-timer" id="dTimer" style="color:#475569">—</div>
+        <div class="fc-tsub" id="dTsub" style="color:#475569">—</div>
       </div>
-      <div class="fc-status" id="dGreen" style="background:#f0fdf4;color:#166534">✅ <span data-el="Domain ενεργό" data-en="Domain active">Domain ενεργό</span></div>
+      <div class="fc-status" id="dDataHint" style="background:#f8fafc;color:#475569" data-el="Φόρτωση οικονομικών στοιχείων…" data-en="Loading funding data…">Φόρτωση οικονομικών στοιχείων…</div>
+      <div class="fc-status" id="dGreen" style="display:none;background:#f0fdf4;color:#166534">✅ <span data-el="Domain ενεργό" data-en="Domain active">Domain ενεργό</span></div>
       <div class="fc-status" id="dYellow" style="display:none;background:#fefce8;color:#92400e">⚠️ <span data-el="Ανανέωση εντός 1 έτους — παρακαλούμε υποστηρίξτε" data-en="Renewal within 1 year — please support">Ανανέωση εντός 1 έτους</span></div>
       <div id="dRed" style="display:none">
         <div class="fc-status" style="background:#fef2f2;color:#dc2626;margin-bottom:0.4rem">🔴 <span data-el="Domain λήγει σύντομα — χρειάζεται ανανέωση!" data-en="Domain expiring soon — renewal needed!">Domain λήγει σύντομα!</span></div>
@@ -1001,6 +1003,7 @@ function toggleLang() {
     var t = el.getAttribute("data-" + currentLang);
     if (t) el.innerHTML = t;
   });
+  document.dispatchEvent(new Event("community-language-change"));
 }
 var obs = new IntersectionObserver(function(entries) {
   entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add("visible"); });
@@ -1029,8 +1032,14 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
   var AUTO_RECOVERY_PROOF_WAIT_SECONDS = 30;
 
   // Live data from API (updated by fetchPaymentStatus)
-  var liveServerData = { received: 0, cost_total: 25, balance: -25 };
-  var liveDomainData = { received: 0, cost_total: 9.30, balance: -9.30 };
+  var liveServerData = null, liveDomainData = null;
+  var serverDataState = "loading", domainDataState = "loading";
+
+  function validFundingAccount(acct) {
+    return acct && acct.available !== false && ["received", "cost_total", "balance"].every(function(key) {
+      return typeof acct[key] === "number" && isFinite(acct[key]);
+    });
+  }
 
   function updateReserveTile(reserve) {
     var val = document.getElementById("rReserveVal");
@@ -1049,14 +1058,26 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     fetch("https://api.ekklesia.gr/api/v1/payments/status")
       .then(function(r) { if (!r.ok) throw new Error("status " + r.status); return r.json(); })
       .then(function(data) {
-        if (data.server) liveServerData = data.server;
-        if (data.domain) liveDomainData = data.domain;
-        if (data.domain && data.domain.expires) DOMAIN_EXPIRY = new Date(data.domain.expires + "T00:00:00");
+        var serverOK = data && data.available !== false && validFundingAccount(data.server);
+        var domainOK = data && data.available !== false && validFundingAccount(data.domain);
+        var expiry = domainOK && data.domain.expires;
+        if (expiry !== undefined && expiry !== false) {
+          var parsedExpiry = typeof expiry === "string" && /^\d{4}-\d{2}-\d{2}$/.test(expiry) ? new Date(expiry + "T00:00:00Z") : null;
+          if (!parsedExpiry || !isFinite(parsedExpiry.getTime()) || parsedExpiry.toISOString().slice(0, 10) !== expiry) domainOK = false;
+        }
+        serverDataState = serverOK ? "ready" : liveServerData ? "stale" : "unavailable";
+        domainDataState = domainOK ? "ready" : liveDomainData ? "stale" : "unavailable";
+        if (serverOK) liveServerData = data.server;
+        if (domainOK) { liveDomainData = data.domain; if (expiry) DOMAIN_EXPIRY = new Date(expiry + "T00:00:00"); }
         updateServerTile();
         updateDomainTile();
-        updateReserveTile(data.reserve);
+        updateReserveTile(data && data.reserve);
       })
-      .catch(function() { /* server/domain keep fallback values; reserve shows unavailable */ updateReserveTile(null); });
+      .catch(function() {
+        serverDataState = liveServerData ? "stale" : "unavailable";
+        domainDataState = liveDomainData ? "stale" : "unavailable";
+        updateServerTile(); updateDomainTile(); updateReserveTile(null);
+      });
   }
   var AR_WARN_THRESHOLD = 1.0;  // AR — yellow below this
   var AR_CRIT_THRESHOLD = 0.1;  // AR — red below this
@@ -1150,8 +1171,18 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
   // ═══════════════════════════════════════════════════════════
   function updateServerTile() {
     var acct = liveServerData;
+    var hint = document.getElementById("sDataHint");
+    if (hint) { hint.style.display = serverDataState === "ready" ? "none" : ""; hint.textContent = serverDataState === "loading" ? t("Φόρτωση οικονομικών στοιχείων…", "Loading funding data…") : acct ? t("Τελευταία έγκυρα στοιχεία — η ενημέρωση δεν είναι διαθέσιμη", "Last valid data — update unavailable") : t("Τα στοιχεία δεν είναι διαθέσιμα αυτή τη στιγμή", "Data currently unavailable"); }
+    if (!acct) {
+      ["sReceived", "sCost", "sBalanceVal", "sTimer", "sDue", "sTsub"].forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = "—"; });
+      document.getElementById("sBalance").className = "fc-acct-total";
+      document.getElementById("sBadge").textContent = serverDataState === "loading" ? t("ΦΟΡΤΩΣΗ", "LOADING") : t("ΜΗ ΔΙΑΘΕΣΙΜΟ", "UNAVAILABLE");
+      document.getElementById("sTboxLabel").textContent = t("Αναμονή στοιχείων", "Waiting for data");
+      ["sGreen", "sYellow", "sRed"].forEach(function(id) { document.getElementById(id).style.display = "none"; });
+      return;
+    }
     // Next due: start + months_elapsed months
-    var monthsElapsed = acct.months_elapsed || Math.max(1, Math.ceil((new Date() - SERVER_START_DATE) / (30.44*86400000)));
+    var monthsElapsed = typeof acct.months_elapsed === "number" && isFinite(acct.months_elapsed) && acct.months_elapsed > 0 && acct.months_elapsed <= 1200 ? acct.months_elapsed : Math.max(1, Math.ceil((new Date() - SERVER_START_DATE) / (30.44*86400000)));
     var nextDue = new Date(SERVER_START_DATE);
     nextDue.setMonth(nextDue.getMonth() + monthsElapsed);
     var now = new Date();
@@ -1163,8 +1194,8 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     var costEl = document.getElementById("sCost");
     var balEl = document.getElementById("sBalanceVal");
     var balRow = document.getElementById("sBalance");
-    if (recEl) recEl.textContent = eur(acct.received || 0);
-    if (costEl) costEl.textContent = "-" + eur(acct.cost_total || 0);
+    if (recEl) { recEl.textContent = eur(acct.received); recEl.style.color = "#166534"; }
+    if (costEl) { costEl.textContent = "-" + eur(acct.cost_total); costEl.style.color = "#dc2626"; }
     if (balEl) balEl.textContent = (acct.balance < 0 ? "-" : "") + eur(Math.abs(acct.balance || 0));
     if (balRow) {
       balRow.className = "fc-acct-total " + (acct.balance > 0 ? "positive" : acct.balance < 0 ? "negative" : "zero");
@@ -1182,6 +1213,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     var red = document.getElementById("sRed");
     var tbox = document.getElementById("sTbox");
     var tsub = document.getElementById("sTsub");
+    if (tsub) tsub.textContent = t("ημ · ώ · λ · δ", "d · h · m · s");
     var tboxLabel = document.getElementById("sTboxLabel");
     var sDue = document.getElementById("sDue");
 
@@ -1236,14 +1268,24 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
   function updateDomainTile() {
     var now = new Date(), ms = DOMAIN_EXPIRY - now, days = Math.ceil(ms / 86400000);
     var acct = liveDomainData;
+    var hint = document.getElementById("dDataHint");
+    if (hint) { hint.style.display = domainDataState === "ready" ? "none" : ""; hint.textContent = domainDataState === "loading" ? t("Φόρτωση οικονομικών στοιχείων…", "Loading funding data…") : acct ? t("Τελευταία έγκυρα στοιχεία — η ενημέρωση δεν είναι διαθέσιμη", "Last valid data — update unavailable") : t("Τα στοιχεία δεν είναι διαθέσιμα αυτή τη στιγμή", "Data currently unavailable"); }
+    if (!acct) {
+      ["dReceived", "dCost", "dBalanceVal", "dTimer", "dTsub"].forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = "—"; });
+      document.getElementById("dBalance").className = "fc-acct-total";
+      document.getElementById("dBadge").textContent = domainDataState === "loading" ? t("ΦΟΡΤΩΣΗ", "LOADING") : t("ΜΗ ΔΙΑΘΕΣΙΜΟ", "UNAVAILABLE");
+      document.getElementById("dTboxLabel").textContent = t("Αναμονή στοιχείων", "Waiting for data");
+      ["dGreen", "dYellow", "dRed"].forEach(function(id) { document.getElementById(id).style.display = "none"; });
+      return;
+    }
 
     // Accounting display
     var recEl = document.getElementById("dReceived");
     var costEl = document.getElementById("dCost");
     var balEl = document.getElementById("dBalanceVal");
     var balRow = document.getElementById("dBalance");
-    if (recEl) recEl.textContent = eur(acct.received || 0);
-    if (costEl) costEl.textContent = "-" + eur(acct.cost_total || 0);
+    if (recEl) { recEl.textContent = eur(acct.received); recEl.style.color = "#166534"; }
+    if (costEl) { costEl.textContent = "-" + eur(acct.cost_total); costEl.style.color = "#dc2626"; }
     if (balEl) balEl.textContent = (acct.balance < 0 ? "-" : "") + eur(Math.abs(acct.balance || 0));
     if (balRow) balRow.className = "fc-acct-total " + (acct.balance > 0 ? "positive" : acct.balance < 0 ? "negative" : "zero");
 
@@ -1258,6 +1300,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     var red = document.getElementById("dRed");
     var tbox = document.getElementById("dTbox");
     var tsub = document.getElementById("dTsub");
+    if (tsub) tsub.textContent = t("ημ · ώ · λ · δ", "d · h · m · s");
     var tboxLabel = document.getElementById("dTboxLabel");
     if (!card) return;
 
@@ -1538,6 +1581,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
   }
 
   // Init
+  document.addEventListener("community-language-change", tick);
   tick();
   setInterval(tick, 1000);
 
