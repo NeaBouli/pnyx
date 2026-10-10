@@ -107,7 +107,7 @@ was installed, executed or bundled. Tarball integrity vs. this source (source pa
 ### Follow-up callers (T-9061 continuation, static read only)
 
 Local cached modules were read as text only (never required/executed) from the main checkout
-`/Users/gio/Desktop/repo/pnyx/apps/web/node_modules` where the version matched the lockfile;
+`apps/web/node_modules` where the version matched the lockfile;
 other files are published-version-addressed plain-file GETs from `unpkg.com`. Tarball
 integrity/source parity is **not verified** for either source.
 
