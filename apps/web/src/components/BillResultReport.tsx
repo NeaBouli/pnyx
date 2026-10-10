@@ -58,7 +58,7 @@ export default function BillResultReport({
         {/* Parliament */}
         {partyVotes && (
           <div>
-            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">
+            <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-3">
               {el("Απόφαση Βουλής", "Parliamentary Decision")}
             </h3>
             <div className="bg-gray-800 rounded-xl p-4">
@@ -124,7 +124,7 @@ export default function BillResultReport({
         {/* Divergence */}
         {divergence && divScore !== null && (
           <div>
-            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">
+            <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-3">
               {el("Απόκλιση Βουλής — Πολιτών", "Parliament vs Citizens")}
             </h3>
             <div className={`rounded-xl p-4 border ${divScore > 40 ? "bg-red-950 border-red-800" : divScore > 20 ? "bg-yellow-950 border-yellow-800" : "bg-green-950 border-green-800"}`}>
@@ -143,7 +143,7 @@ export default function BillResultReport({
         {/* Representativity */}
         {representativity && (
           <div>
-            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">
+            <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-3">
               {el("Αντιπροσωπευτικότητα", "Representativeness")}
             </h3>
             <div className="bg-gray-800 rounded-xl p-4">
