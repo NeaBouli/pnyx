@@ -777,6 +777,17 @@ Status --> Fetch : response or HTTP failure
 Fetch --> Snapshot : valid finite account / retain on failure
 Snapshot --> Tiles : loading / ready / unavailable / stale
 @enduml
+
+@startuml T9027_diavgeia_ada_length
+component "DiavgeiaClient.iter_decisions" as Client
+component scrape_decisions as Scraper
+component DiavgeiaDecision as Model
+database "diavgeia_decisions_ada_chk" as ADAcheck
+Client --> Scraper : unchanged ada
+Scraper --> Model : pg_insert / on_conflict_do_update
+Model --> ADAcheck : length(ada) BETWEEN 9 AND 32
+@enduml
+
 @startuml T9029_docs_ci
 component "Docs Redesign Gates" as DocsCI
 component "Full Git history" as History
