@@ -357,7 +357,7 @@
       <div class="fc-title">Server Hosting</div>
       <div class="fc-sub">Hetzner CX43 &middot; EU &middot; GDPR</div>
       <div class="fc-info">
-        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong>10€/<span data-el="μήνα" data-en="month">μήνα</span></strong></div>
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κόστος:" data-en="Cost:">Κόστος:</span><strong data-el="~25 €/μήνα (στοιχεία 10.2026)" data-en="~€25/month (as of 10.2026)">~25 €/μήνα (στοιχεία 10.2026)</strong></div>
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Κατάσταση:" data-en="Status:">Κατάσταση:</span><strong style="color:#166534" id="sDue" data-el="Ενεργός" data-en="Active">Ενεργός</strong></div>
       </div>
       <!-- Soll/Ist Accounting -->
@@ -692,7 +692,7 @@
         <div class="fc-row"><span>📱 EAS Build</span><strong>Free</strong></div>
         <div class="fc-row"><span>📧 Brevo SMTP</span><strong>Free</strong></div>
         <div class="fc-row"><span>📞 HLR Lookups</span><strong>~$0.002</strong></div>
-        <div class="fc-row"><span>☁️ Hetzner CX43</span><strong>~€10/μ</strong></div>
+        <div class="fc-row"><span>☁️ Hetzner CX43</span><strong data-el="~25 €/μήνα (στοιχεία 10.2026)" data-en="~€25/month (as of 10.2026)">~25 €/μήνα (στοιχεία 10.2026)</strong></div>
         <div class="fc-acct-total zero" style="font-size:0.7rem"><span data-el="Σύνολο/έτος:" data-en="Total/year:">Σύνολο:</span><span>~€130-200</span></div>
       </div>
       <a href="#payment-intake-paused" aria-disabled="true" style="display:block;text-align:center;padding:0.5rem;background:#64748b;color:white;border-radius:0.4rem;font-weight:700;font-size:0.82rem;text-decoration:none;margin-top:0.5rem" data-el="Προσωρινά σε παύση" data-en="Temporarily paused">Προσωρινά σε παύση</a>
@@ -1029,7 +1029,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
   var AUTO_RECOVERY_PROOF_WAIT_SECONDS = 30;
 
   // Live data from API (updated by fetchPaymentStatus)
-  var liveServerData = { received: 0, cost_total: 10, balance: -10 };
+  var liveServerData = { received: 0, cost_total: 25, balance: -25 };
   var liveDomainData = { received: 0, cost_total: 9.30, balance: -9.30 };
 
   function updateReserveTile(reserve) {
