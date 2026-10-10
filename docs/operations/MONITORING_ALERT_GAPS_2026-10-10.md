@@ -174,3 +174,8 @@ rollback = revert PR / unset new env. Deploy only via Gio's gate (`deploy.yml` i
 Deployed monitor parity with this source; actual env thresholds/interval; Telegram
 config, delivery and readback; host disk and docker-data usage; container restart history;
 whether #516/`y801a2b3c4d5` is applied in production; Stripe webhook traffic.
+
+## Repository follow-up: notification delivery state (T-9070)
+
+P2-4's candidate commits incident cooldowns only after a sender acknowledgement and retains failed resolved notices for the next ordinary monitor cycle. HTTP 200 alone is insufficient: Telegram's JSON `ok` must be `true`. Legacy markers without acknowledged severity trigger a conservative resend; expired incident payloads are not sent as identity-only resolutions.
+Focused offline Redis/HTTP fakes exercise this contract; no provider delivery, real Redis runtime, production configuration or deployment is verified. Cross-review, exact-head CI and a separate Gio deployment gate remain required.
