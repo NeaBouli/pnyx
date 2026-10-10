@@ -17,7 +17,11 @@
 | `/health` | `apps/api/main.py::health` (L987) | Static liveness: returns `status: ok` without touching DB/Redis | Cannot report dependency failure; only proves the process answers |
 | `/api/v1/health/modules` | `apps/api/main.py::health_modules` (L1021) | Passive per-module panel for wiki indicators; scraper modules derived from `scraper:<name>:*` Redis keys (`error` = circuit open, `degraded` = errors, else `ok`) | Redis exception inside `scraper_status` is swallowed and reported as `status: ok` (L1042); many modules are hard-coded `ok` (MOD-01/02/04/05). Not an alert source — no outbound dispatch |
 
-Neither endpoint is a readiness probe; the monitor does not poll either of them.
+Neither endpoint is a readiness probe. The monitor polls API liveness through
+`check_api_health` (monitor.py L928-938: `GET {API_URL}/api/v1/bills?limit=1`, a DB-backed
+read), not `/health` itself; `/health` is curled only by the manual script
+`infra/hetzner/health_check.sh` (no schedule proven in source). `/health/modules` is a
+passive panel. No fresh runtime proof of DB/Redis health exists in this review.
 
 ## 2. Monitor checks actually wired (`apps/monitor/monitor.py::run_checks`, L1205)
 
@@ -28,23 +32,24 @@ Repeat suppression: `ALERT_NOTIFY_COOLDOWN_SECONDS` default 21600 s (L94).
 
 | Check | Signal | Threshold | Notes / blind spot |
 |---|---|---|---|
-| `check_api_health` (L930) | GET `/api/v1/bills?limit=1` | non-200 / exception → critical | Real readiness proxy (DB-backed read) |
+| `check_api_health` (L928-938) | GET `/api/v1/bills?limit=1` | non-200 / exception → critical | Polled liveness + DB-backed read proxy |
 | `check_vote_results_health` (L943) | GET `/api/v1/vote/results/latest` | non-200 → warning | — |
 | `check_web_urls` (L1026) | Landing, `/el/bills`, `/el/results`, API bills | per-URL failure | Fetches public domain from inside the host: not an external vantage point |
 | `check_scraper_stale` (L612) | `scraper:parliament:last_success` | > 48 h | Only fires if key exists; missing key = silent |
 | `check_diavgeia_scraper` (L1012) | `scraper:diavgeia_municipal:last_run` | > 96 h (2× 48 h interval) | Uses **last_run**, not last_success; missing key = silent |
-| `check_scraper_jobs` (L1083) | `scraper:<job>:error_count` for parliament, diavgeia_municipal, bill_lifecycle, cplm_refresh, greek_topics, notify_new_bills, notify_results | > 20 | See P1-2 (unreachable for circuit-guarded jobs) |
+| `check_scraper_jobs` (L1083) | `scraper:<job>:error_count` for parliament, diavgeia_municipal, bill_lifecycle, cplm_refresh, greek_topics, notify_new_bills, notify_results | > 20 | See P2-2 (circuit interplay) |
 | `check_forum_sync_errors` (L917) | `scraper:forum_sync:error_count` | > 10 | — |
 | `check_parliament_source_freshness`, `check_no_new_bills`, `check_lifecycle_stuck`, `check_lifecycle_fast_forward`, `check_forum_missing`, `check_forum_completeness`, `check_arweave_pending`, `check_arweave_wallet`, `check_hlr_credits`, `check_db_consistency`, `check_zk_canary_health` | DB / outcome-level business checks | various (see source) | Outcome checks partially cover job failures (e.g. lifecycle stuck covers `bill_lifecycle` effects) |
 | `check_disk_usage` (L981) | `shutil.disk_usage("/")` in monitor container | > 90 % → critical | Scope = container root FS, not proven to be host / docker-data volume; exceptions swallowed (`except: pass`) |
-| DB / Redis | implicit: `get_db()` / `get_redis()` in `run_checks` | connection failure → loop exception, logged | No dedicated Redis/DB alert; a connection failure aborts the cycle and is **log-only** |
+| DB / Redis | connections opened in `run_checks` L1212-1215 **before** its `try` | failure → daemon loop `except` (L1318-1323): log + sleep | No dedicated Redis/DB alert; whole cycle aborted, **log-only** |
+| Redis `restart_count` (L536-539) | Tier-2 recovery attempt counter | — | Counts recovery attempts, **not** container/daemon restarts |
 
 ## 3. Scheduler jobs (`apps/api/main.py` lifespan, L849-862) vs. monitor coverage
 
 | Job id | Trigger | Redis heartbeat (`record_run`/`success`/`failure`) | Monitor coverage |
 |---|---|---|---|
 | parliament_scrape (`parliament`) | 12 h | yes, circuit-guarded | stale 48 h + error_count |
-| diavgeia_municipal | 48 h | yes, circuit-guarded; see P1-1 | last_run 96 h + error_count |
+| diavgeia_municipal | 48 h | yes, circuit-guarded; see P2-1/P2-2 | last_run 96 h + error_count |
 | bill_lifecycle | 1 h | yes | error_count + lifecycle outcome checks; no staleness |
 | notify_new_bills | 30 min | yes | error_count only |
 | notify_results | 1 h | yes | error_count only |
@@ -55,71 +60,90 @@ Repeat suppression: `ALERT_NOTIFY_COOLDOWN_SECONDS` default 21600 s (L94).
 | push_categories | 30 min | no `scraper_state` calls; exceptions log-only | none |
 | weekly_digest | cron Mon 07:00 | no `scraper_state` calls; log-only | none |
 | finance_export | 5 min | no `scraper_state`; `FinanceExportError`/`Exception` → `logger.warning` (L837-840), quarantine → `logger.error` | none |
-| zk_arweave_publication | 30 min | not inspected in depth | `check_zk_canary_health` / arweave checks (outcome) |
-| monthly_newsletter | cron day 1 09:00 | not inspected in depth | none found |
+| zk_arweave_publication | 30 min | internals not inspected in depth | `check_zk_canary_health` / arweave checks (outcome) |
+| monthly_newsletter | cron day 1 09:00 | no `scraper_state`; False → `logger.warning`, exception → `logger.error` (main.py L704-717) | none |
 
-No job records duration; no check detects a hung run (`last_run` newer than
-`last_success` for longer than the job's interval) or APScheduler misfires.
+Scope: for inspected job bodies (all rows except zk_arweave_publication internals) no job
+records duration and no monitor check compares `last_run` vs `last_success` (hung run); no
+APScheduler misfire listener found in the lifespan. Gate-off paths (forum_sync disabled,
+greek_topics gate, PUSH flags, finance_export's **own** gate — distinct from
+`PAYMENTS_INTAKE_GATE`) are intentional no-ops, not failures.
 
 ## 4. Findings
 
-**P1-1 Diavgeia partial failures masked.** `scheduled_diavgeia_scrape` (main.py L541-581)
+Priority note: no P1 is assigned. Nothing here is a proven active incident or security
+issue; structural notification/job gaps are **P2** (impact + missing receipts), refinements
+**P3**. Proposals go to Gio (owner); nothing is assigned to a service.
+
+**P2-1 Diavgeia partial failures masked.** `scheduled_diavgeia_scrape` (main.py L541-581)
 logs `len(result.errors)` and the first three errors, then calls `record_success` even when
-`result.errors` is non-empty; the NEA-199 conversion/backfill block catches all exceptions as
-"non-blocking" warnings and also ends in `record_success`. `record_success` resets
-`error_count` to 0 (scraper_state.py L33-34). Result: per-item failures (such as the
-owner-reported CheckViolation class addressed by migration `y801a2b3c4d5`, #516 — Prod
-deployment **not** inferred here) and total conversion failure are invisible to
-`check_scraper_jobs`, `check_diavgeia_scraper` and `/health/modules`. Masked whenever the
-scrape call itself does not raise. *Proposal:* record `items_failed`/`conversion_failed`
-counters + `last_partial_error_time` in Redis; monitor alerts on ratio/absolute count.
+`result.errors` is non-empty; the NEA-199 conversion/backfill block catches exceptions as
+"non-blocking" warnings and also ends in `record_success`, which resets `error_count` to 0
+(scraper_state.py L33-34). Masking condition: the scrape call itself does not raise. Then
+per-item failures (e.g. the owner-reported CheckViolation class addressed by migration
+`y801a2b3c4d5`, #516 — Prod deployment **not** inferred) are invisible to
+`check_scraper_jobs`, `check_diavgeia_scraper` and `/health/modules`. No new leak and no
+runtime occurrence is claimed. *Proposal:* `items_failed` / `conversion_failed` counters +
+last partial-error time; alert on count/ratio.
 
-**P1-2 `error_count > 20` unreachable for circuit-guarded jobs.** `is_circuit_open` returns
-true at `CIRCUIT_BREAKER_THRESHOLD = 3` (scraper_state.py L12, L55-70) and the job then
-returns **without** `record_failure`; after the 24 h cooldown the count is reset to 0. For
-parliament, diavgeia_municipal and greek_topics the counter therefore stays around 3, so
-`check_scraper_jobs` (> 20) never fires; only staleness checks remain (parliament 48 h,
-diavgeia 96 h last_run — and a skipped run does not update last_run, so this one does fire
-eventually; greek_topics has none). *Proposal:* alert on "circuit open" state directly.
+**P2-2 Circuit breaker vs. counters/staleness.** `is_circuit_open` trips at
+`CIRCUIT_BREAKER_THRESHOLD = 3` and resets after a 24 h cooldown (scraper_state.py L12,
+L55-70); guarded jobs return without `record_failure` while open. Under steady sequential
+default scheduling the count therefore tends to stay ≤ 3, so `error_count > 20` is
+unlikely (not impossible: check and increment are non-atomic across processes, manual or
+catch-up runs). For **diavgeia (48 h interval > 24 h cooldown)** the circuit can reset
+before each run, so repeated total failures still execute, update `last_run` and may keep
+`error_count` near 1 — the 96 h `last_run` stale check does **not** catch regularly
+failing runs. Parliament (12 h) and greek_topics (6 h) differ: open-circuit skips do not
+update `last_run`; parliament is caught by 48 h `last_success`, greek_topics has no
+staleness check. *Proposal:* alert on `last_success` age per job, circuit-open state and
+consecutive error outcomes, gate-off/catch-up aware.
 
-**P1-3 Unmonitored jobs.** push_categories, weekly_digest, finance_export,
-monthly_newsletter, completeness_check have no heartbeat consumed by the monitor; failures
-are log-only. *Proposal:* uniform `record_run/success/failure` + duration, and a
-gate-aware deadline per job = actual interval × 2 (+ grace), with an explicit
-"gate-off / intentional idle" state distinct from success (PAYMENTS_INTAKE / PUSH flags
-remain untouched).
+**P2-3 Jobs without monitored heartbeat.** push_categories, weekly_digest, finance_export,
+monthly_newsletter (log-only per §3) and completeness_check (writes heartbeat, not
+consumed). *Proposal:* uniform outcome + duration + `last_success`, gate-aware deadline =
+actual interval × 2 + grace, explicit `idle (gate off)` state. PAYMENTS_INTAKE / PUSH /
+finance-export flags untouched.
 
-**P1-4 No independent dead-man.** Alert path is monitor → Telegram only. If the monitor
-container, its loop (exceptions only logged), Redis/DB connectivity, or Telegram delivery
-fails, nothing is sent; `send_telegram` failure is log-only and no delivery receipt or
-"monitor alive" heartbeat exists. Cooldown (6 h) also delays re-notification.
-*Proposal:* external dead-man (monitor pushes a heartbeat each cycle to an independent
-receiver that alerts on absence), plus a daily "all-clear" digest.
+**P2-4 Telegram delivery and cooldown.** `prepare_alert_notifications` (monitor.py
+L284-291) writes `:last_sent` **before** delivery; default cooldown 21600 s (L94).
+`send_telegram` (L401-417) returns False on absent config, non-200 or exception, but
+`escalate` (L575-576) and the summary send (L1276) ignore the bool. If the Redis write
+succeeded and cooldown > 0, a failed delivery can suppress that alert for 6 h unless
+severity changes. `send_resolved_notifications` (L346-349) clears incident, membership and
+cooldown even after a False send → no resolved-notice retry. HTTP 200 alone counts as
+success; no Telegram body `ok` check or readback. *Proposal:* commit cooldown only after a
+True send, offline False-send counter + retry; retain resolved state until delivered.
 
-**P2-1 Host disk scope unproven.** Owner-reported 78 % disk (not re-measured). `check_disk_usage`
-measures the monitor container root FS at 90 %; host and docker-data volume are not proven
-covered. *Proposal:* host-level disk/inode check outside the container (host cron/daemon
-owned by Gio), lower warning at 80 %.
+**P2-5 No independent dead-man in module/Compose.** No watchdog for the monitor exists in
+`apps/monitor` or `infra/docker/docker-compose.prod.yml`; external watchers are unverified
+and unchanged (not "none anywhere"). `infra/hetzner/health_check.sh` is a manual curl
+script, not evidence of active scheduling. DB/Redis connection errors (L1212-1215) and
+cycle exceptions (L1318-1323) are log + sleep; the monitor's own restart policy is not a
+dead-man. *Proposal:* per-cycle heartbeat to an independent receiver that alerts on
+absence (owner decision).
 
-**P2-2 Container restart loops invisible.** Services use `restart: unless-stopped`
-(compose L11/L30/L47…); production docker-proxy denies `CONTAINERS`, `EVENTS`, `POST`
-(compose L166-169) and Tier-2 restart is off (`AUTO_RECOVERY_T2=false`, monitor L76/L522).
-A crash-looping container is only seen indirectly (API/web check failing at the sampled
-moment). Do **not** widen the proxy or enable auto-recovery; *proposal:* host-side
-restart-count observer (outside the monitor) reporting aggregate counts.
+**P2-6 Container restart loops.** `restart: unless-stopped` restarts but does not alert;
+production docker-proxy denies `CONTAINERS`, `EVENTS`, `POST` (compose L166-169) and
+`AUTO_RECOVERY_T2=false` (monitor L76/L522); Redis `restart_count` (L536-539) counts T2
+attempts, not daemon restarts. Do **not** widen the proxy or enable auto-recovery;
+*proposal:* host-side aggregate restart-count observer, owner-run.
 
-**P2-3 Stripe webhook errors not aggregated.** `payments.py` webhook (L948 ff.): 503 (L960) when
-secret missing (`logger.error`), 400 missing/invalid signature (`logger.warning`), 400 bad
-payload, 503 "awaiting legal recipient approval" (L989) when `PAYMENTS_INTAKE_GATE` is closed
-(expected/legal), 503 for claim/projection retry states. No counter, no monitor check;
-unexpected 5xx is log-only. *Proposal:* low-cardinality Redis counters by
-`{status_class, reason_label}` only (no payload, headers, customer, email, event id, amount),
-exclude the legal gate-closed 503 from alerting, alert on 5xx-unexpected > 0 and on
-signature-failure bursts.
+**P2-7 Stripe webhook outcomes not aggregated.** `payments.py` webhook (L948 ff.): 503
+secret missing (`logger.error`, L960); 400 missing/invalid signature or bad payload
+(noise, `logger.warning`); 503 "awaiting legal recipient approval" when the intake gate is
+closed (L989, expected/legal); 503 claim/projection retry states; unexpected 5xx log-only.
+*Proposal:* low-cardinality counters `{status_class, reason_label}` only (no payload,
+headers, customer, email, event id, amount); exclude legal gate-closed 503; alert on
+unexpected 5xx > 0 and signature-failure bursts.
 
-**P3-1** `/health` is liveness-only and `/health/modules` reports `ok` on Redis error;
-document as non-alerting panels or return `unknown`. **P3-2** Missing Redis keys
-(fresh Redis / flush) silence staleness checks; treat missing as `unknown` after grace.
+**P3-1 Host disk scope.** Owner-reported 78 % (not re-measured). `check_disk_usage` reads
+`shutil.disk_usage("/")` in the monitor container, > 90 % critical, exceptions swallowed;
+the container backing FS may match the host but named volumes/docker-data are not proven.
+Keep the strict 90 % threshold; *proposal:* separate host disk/inode check (owner).
+**P3-2** `/health` is liveness-only; `/health/modules` reports `ok` on Redis error — mark as
+passive panels or return `unknown`. **P3-3** Missing Redis keys silence staleness checks;
+treat missing as `unknown` after grace.
 
 ## 5. Offline test / acceptance plan (no live fault injection, no paid calls)
 
@@ -131,8 +155,11 @@ document as non-alerting panels or return `unknown`. **P3-2** Missing Redis keys
 4. Webhook counter tests with synthetic short test secrets: invalid sig → 4xx bucket;
    gate closed → excluded bucket; forced handler exception → 5xx bucket; assert no
    payload fields in Redis keys or logs.
-5. Dead-man: simulate missed heartbeat in a local fixture; `send_telegram` stub returning
-   False increments a delivery-failure counter.
+5. Dead-man: simulate missed heartbeat in a local fixture.
+6. Delivery: `send_telegram` stub returning False → failure counter incremented, cooldown
+   **not** committed, resolved state retained for retry; stub 200 with body `ok:false` → failure.
+7. Diavgeia 48 h fixture: repeated total failures across circuit resets → `last_success`
+   age alert fires although `last_run` is fresh.
 
 ## 6. Rollout / rollback
 
