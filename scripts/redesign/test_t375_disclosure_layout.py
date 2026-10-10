@@ -34,6 +34,32 @@ def _find_all_rules(css: str, selector_pattern: str) -> list[str]:
     return [m.group(1) for m in re.finditer(selector_pattern + r"\s*\{([^}]*)\}", css)]
 
 
+def _split_mobile_560(css: str) -> tuple[str, str]:
+    """Separate the existing 560px blocks, not a CSS cascade/media-query parser."""
+    outside: list[str] = []
+    mobile: list[str] = []
+    cursor = 0
+    for match in re.finditer(r"@media\s*\(\s*max-width\s*:\s*560px\s*\)\s*\{", css):
+        start = match.end()
+        depth, pos = 1, start
+        while pos < len(css) and depth:
+            depth += (css[pos] == "{") - (css[pos] == "}")
+            pos += 1
+        assert depth == 0, "Unclosed 560px media block"
+        outside.append(css[cursor:match.start()])
+        mobile.append(css[start:pos - 1])
+        cursor = pos
+    outside.append(css[cursor:])
+    return "".join(outside), "\n".join(mobile)
+
+
+SHARED_HEADING_SELECTOR = (
+    r"\.pnx2-fold-summary\s+h2\s*,\s*"
+    r"\.pnx2-fold-summary\s+h3\s*,\s*"
+    r"\.pnx2-fold-summary\s+\.demo-title"
+)
+
+
 class TransparencyDividerTest(unittest.TestCase):
     """The verification (#transparency) divider must span full viewport."""
 
@@ -91,12 +117,16 @@ class FeatureRepresentativeDividerTest(unittest.TestCase):
         self.css = _strip_comments(CSS_PATH.read_text())
 
     def test_representative_before_pseudo_exists(self) -> None:
-        rule = _find_rule(
+        rules = _find_all_rules(
             self.css,
             r"#features\s*>\s*\.section-inner\s*>\s*#representative\s*::before",
         )
-        self.assertIsNotNone(rule, "::before pseudo-element rule for representative divider not found")
-        self.assertRegex(rule, r"width\s*:\s*100vw")
+        self.assertTrue(rules, "::before pseudo-element rule for representative divider not found")
+        widths = [value.strip() for rule in rules for value in re.findall(r"(?:^|;)\s*width\s*:\s*([^;]+)", rule)]
+        self.assertTrue(widths, "divider width declaration not found")
+        for width in widths:
+            self.assertRegex(width, r"^100vw(?:\s*!important)?$", "every explicit divider width must remain 100vw")
+        rule = rules[0]
         self.assertRegex(rule, r"height\s*:\s*2px")
         self.assertRegex(rule, r"background\s*:\s*#0f172a")
 
@@ -131,32 +161,37 @@ class HeadingTypographyTest(unittest.TestCase):
 
     def test_shared_fold_heading_uses_clamp(self) -> None:
         """The shared .pnx2-fold-summary h2/h3 rule must use clamp for font-size."""
-        # The rule is a multi-selector block; search for combined selector line
-        m = re.search(
-            r"\.pnx2-fold-summary\s+h2[\s\S]*?\.pnx2-fold-summary\s+h3[\s\S]*?\{([^}]*)\}",
-            self.css,
-        )
-        self.assertIsNotNone(m, "shared fold heading multi-selector rule not found")
-        self.assertRegex(
-            m.group(1),
-            r"font-size\s*:\s*clamp\(28px",
-            "shared fold heading must use clamp(28px, ..., 42px)",
-        )
+        outside_mobile, _ = _split_mobile_560(self.css)
+        rules = _find_all_rules(outside_mobile, SHARED_HEADING_SELECTOR)
+        self.assertTrue(rules, "shared fold heading multi-selector rule not found")
+        sizes = [value.strip() for rule in rules for value in re.findall(r"(?:^|;)\s*font-size\s*:\s*([^;]+)", rule)]
+        self.assertTrue(sizes, "shared heading font-size declaration not found")
+        for size in sizes:
+            self.assertRegex(size, r"^clamp\(28px\s*,\s*3rem\s*,\s*42px\)(?:\s*!important)?$")
+
+    def test_shared_mobile_heading_keeps_legitimate_28px_override(self) -> None:
+        _, mobile = _split_mobile_560(self.css)
+        rules = _find_all_rules(mobile, SHARED_HEADING_SELECTOR)
+        self.assertTrue(rules, "shared mobile heading rule not found")
+        sizes = [value.strip() for rule in rules for value in re.findall(r"(?:^|;)\s*font-size\s*:\s*([^;]+)", rule)]
+        self.assertTrue(sizes)
+        for size in sizes:
+            self.assertRegex(size, r"^28px(?:\s*!important)?$")
 
     def test_representative_heading_no_fixed_font_size(self) -> None:
-        rule = _find_rule(self.css, r"#representative\s+\.pnx2-fold-summary\s+h3")
-        self.assertIsNotNone(rule, "#representative fold heading rule not found")
-        self.assertNotRegex(
-            rule,
-            r"font-size\s*:",
-            "representative heading must NOT override font-size (inherits shared clamp)",
-        )
+        rules = _find_all_rules(self.css, r"#representative\s+\.pnx2-fold-summary\s+h3")
+        self.assertTrue(rules, "#representative fold heading rule not found")
+        for rule in rules:
+            self.assertNotRegex(rule, r"font-size\s*:", "individual representative heading must inherit shared desktop/mobile typography")
 
     def test_summary_no_underline(self) -> None:
         """Fold summaries must not have visible border-bottom (no underline)."""
-        m = re.search(r"\.pnx2-fold-summary\s*\{([^}]*)\}", self.css)
-        self.assertIsNotNone(m, ".pnx2-fold-summary rule not found")
-        self.assertRegex(m.group(1), r"border-bottom\s*:\s*(0|none)\s*;")
+        rules = _find_all_rules(self.css, r"\.pnx2-fold-summary")
+        self.assertTrue(rules, ".pnx2-fold-summary rule not found")
+        borders = [value.strip() for rule in rules for value in re.findall(r"(?:^|;)\s*border-bottom\s*:\s*([^;]+)", rule)]
+        self.assertTrue(borders, "summary border-bottom declaration not found")
+        for border in borders:
+            self.assertRegex(border, r"^(?:0|none)(?:\s*!important)?$", "every explicit summary border-bottom must suppress the underline")
 
     def test_no_open_state_underline(self) -> None:
         self.assertNotRegex(
@@ -174,21 +209,9 @@ class MobileClippingRegressionTest(unittest.TestCase):
 
     def _mobile_block(self) -> str:
         """Extract the @media (max-width: 560px) block content."""
-        # Find the block; may appear multiple times — collect all
-        blocks: list[str] = []
-        for m in re.finditer(r"@media\s*\(\s*max-width\s*:\s*560px\s*\)\s*\{", self.css):
-            start = m.end()
-            depth = 1
-            pos = start
-            while pos < len(self.css) and depth > 0:
-                if self.css[pos] == "{":
-                    depth += 1
-                elif self.css[pos] == "}":
-                    depth -= 1
-                pos += 1
-            blocks.append(self.css[start : pos - 1])
-        self.assertTrue(blocks, "@media (max-width: 560px) block not found")
-        return "\n".join(blocks)
+        _, mobile = _split_mobile_560(self.css)
+        self.assertTrue(mobile, "@media (max-width: 560px) block not found")
+        return mobile
 
     def test_features_no_horizontal_padding(self) -> None:
         mobile = self._mobile_block()
@@ -203,6 +226,36 @@ class MobileClippingRegressionTest(unittest.TestCase):
         self.assertIsNotNone(rule, "#features > .section-inner rule not found in ≤560px media query")
         self.assertRegex(rule, r"padding-left\s*:\s*20px", ".section-inner must have padding-left: 20px")
         self.assertRegex(rule, r"padding-right\s*:\s*20px", ".section-inner must have padding-right: 20px")
+
+
+class LateOverrideMutationTest(unittest.TestCase):
+    """Negative source fixtures; no specificity engine or rendered-layout proof."""
+
+    def setUp(self) -> None:
+        self.css = _strip_comments(CSS_PATH.read_text())
+
+    def test_late_individual_heading_override_is_rejected(self) -> None:
+        for declaration in (
+            "#representative .pnx2-fold-summary h3 { font-size: 20px !important; }",
+            "@media (max-width: 560px) { #representative .pnx2-fold-summary h3 { font-size: 20px !important; } }",
+        ):
+            with self.subTest(declaration=declaration):
+                contract = HeadingTypographyTest()
+                contract.css = self.css + "\n" + declaration
+                with self.assertRaises(AssertionError):
+                    contract.test_representative_heading_no_fixed_font_size()
+
+    def test_late_summary_underline_is_rejected(self) -> None:
+        contract = HeadingTypographyTest()
+        contract.css = self.css + "\n.pnx2-fold-summary { border-bottom: 2px solid #0f172a; }"
+        with self.assertRaises(AssertionError):
+            contract.test_summary_no_underline()
+
+    def test_late_divider_width_override_is_rejected(self) -> None:
+        contract = FeatureRepresentativeDividerTest()
+        contract.css = self.css + "\n#features > .section-inner > #representative::before { width: 80%; }"
+        with self.assertRaises(AssertionError):
+            contract.test_representative_before_pseudo_exists()
 
 
 if __name__ == "__main__":
