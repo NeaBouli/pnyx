@@ -1932,3 +1932,25 @@ mindmap
 Community, projection-to-display hop: obtain a successful isolated 390/1280
 fixture check before any HTML correction, then separately review wording/policy.
 Keep allocation, provider configuration, intake, flags and production unchanged.
+
+## T-9023 — Mobile identity cleanup (Hop 11, bounded extension)
+
+Module: device-local vote marks. Existing hop: VoteScreen -> record/sync ->
+serialized queue -> SecureStore. Symptom: removing/replacing an identity hides
+old owner-bound marks but does not delete their stored entry. Cause: identity
+mutation callers do not enqueue mark deletion. Implemented change: those callers ->
+clearVoteMarks -> the same queue -> deleteItemAsync(ekklesia_vote_marks_v1).
+No choice data, new API calls or identity protocol changes are in scope.
+Built callers: crypto-native.ts::clearKeys/storeNullifier/storeNullifierRoot and successful
+import-account.ts::importAccountCredentials (after rollback-capable writes).
+Same-owner writes preserve marks; import rollback preserves the previous marks.
+Deletion errors propagate while the shared queue remains usable. Local validation
+is recorded separately in T-9023's report; implementation is not a release.
+
+```mermaid
+flowchart LR
+  Identity[Identity removal/replacement] --> Clear[clearVoteMarks]
+  Clear --> Queue[Existing serialized queue]
+  Record[recordVoteMark / syncVoteMark] --> Queue
+  Queue --> Store[SecureStore marks entry]
+```

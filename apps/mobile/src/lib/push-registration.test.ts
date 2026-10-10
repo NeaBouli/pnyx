@@ -40,7 +40,8 @@ import {
   PUSH_REGISTRATION_REFRESH_MS,
   registerPushTokenIfNeeded,
 } from "./push-registration";
-import { bytesToHex, clearKeys } from "./crypto-native";
+import { bytesToHex, clearKeys, storeNullifier, storeNullifierRoot } from "./crypto-native";
+import { loadVoteMarks, recordVoteMark } from "./vote-marks";
 
 const API_BASE = "https://api.ekklesia.gr";
 const DEVICE_ID = "3f6b1c2e-9a4d-4e5f-8b6c-0d1e2f3a4b5c";
@@ -321,6 +322,7 @@ describe("30-day registration marker", () => {
 
   it("removes the registration marker when identity keys are cleared", async () => {
     seedIdentity();
+    await recordVoteMark("old-bill", false, NULLIFIER, NOW);
     secureStore.set("push_device_id", DEVICE_ID);
     secureStore.set("push_registration_marker", signedMarker());
 
@@ -328,5 +330,30 @@ describe("30-day registration marker", () => {
 
     expect(secureStore.get("push_registration_marker")).toBeUndefined();
     expect(secureStore.get("push_device_id")).toBe(DEVICE_ID);
+    expect(secureStore.has("ekklesia_vote_marks_v1")).toBe(false);
+    expect(await loadVoteMarks(NOW)).toEqual({});
+  });
+
+  it("clears marks on identity replacement but not when storing the same identity", async () => {
+    seedIdentity();
+    await recordVoteMark("old-bill", false, NULLIFIER, NOW);
+    await storeNullifier(NULLIFIER);
+    expect((await loadVoteMarks(NOW))["old-bill"]).toBeDefined();
+
+    await storeNullifier("b".repeat(64));
+
+    expect(secureStore.has("ekklesia_vote_marks_v1")).toBe(false);
+    await storeNullifier(NULLIFIER);
+    expect(await loadVoteMarks(NOW)).toEqual({});
+  });
+
+  it("clears legacy marks when a Tier-1 root replaces the identity", async () => {
+    seedIdentity();
+    await recordVoteMark("old-bill", false, NULLIFIER, NOW);
+
+    await storeNullifierRoot(new Uint8Array(32).fill(7));
+
+    expect(secureStore.has("ekklesia_vote_marks_v1")).toBe(false);
+    expect(await loadVoteMarks(NOW)).toEqual({});
   });
 });

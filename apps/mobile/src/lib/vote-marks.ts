@@ -64,13 +64,18 @@ export async function loadVoteMarks(now: number = Date.now()): Promise<VoteMarks
   }
 }
 
-// All read-modify-write updates run one after another, so concurrent calls
+// All mutations, including clear, run one after another, so concurrent calls
 // (vote + status read, double taps) cannot overwrite each other's marks.
 let queue: Promise<void> = Promise.resolve();
 function serialized(update: () => Promise<void>): Promise<void> {
   const next = queue.then(update, update);
   queue = next.catch(() => {});
-  return queue;
+  return next;
+}
+
+/** Remove marks after prior writes finish; report deletion failure to the caller. */
+export function clearVoteMarks(): Promise<void> {
+  return serialized(() => SecureStore.deleteItemAsync(MARKS_KEY));
 }
 
 // The owner is captured when the server request starts, not when it finishes.
