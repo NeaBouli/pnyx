@@ -104,6 +104,12 @@ monthly_newsletter (log-only per §3) and completeness_check (writes heartbeat, 
 consumed). *Proposal:* uniform outcome + duration + `last_success`, gate-aware deadline =
 actual interval × 2 + grace, explicit `idle (gate off)` state. PAYMENTS_INTAKE / PUSH /
 finance-export flags untouched.
+*Follow-up T-9076 (partial, offline-tested only):* `check_scraper_jobs` in
+`apps/monitor/monitor.py` now also reads the existing `completeness_check` outer outcome
+(failed/degraded → one `scraper_job_errors` warning, `recovery_allowed=False`; clean clears).
+**Still open:** swallowed inner per-item errors of completeness_check, missing-telemetry /
+staleness / deadline detection, and untracked finance_export, push_categories,
+weekly_digest, monthly_newsletter. No live alert delivery verified.
 
 **P2-4 Telegram delivery and cooldown.** `prepare_alert_notifications` (monitor.py
 L284-291) writes `:last_sent` **before** delivery; default cooldown 21600 s (L94).
