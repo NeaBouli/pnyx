@@ -97,7 +97,7 @@ pnyx/
 ### Server Infrastructure (Hetzner CX43)
 - **11 containers**: API, Web, Dashboard, Monitor, DB, Redis, Ollama, Docker-Proxy, VR, Test-Node, ekprosopos
 - **Ollama llama3.2:3b**: 2.6 GB RAM, 5 GB limit
-- **Rate limiting**: 60 req/min/IP per endpoint, 5 req/min/IP for AI endpoints; configured Redis coordinates workers, while absent/unavailable Redis falls back to bounded per-process memory
+- **Rate limiting**: SlowAPI defaults to 60 req/min/IP per endpoint on default-covered routes (for example `/health`), not on the public reads using `Depends(rate_limit_check)`. Those reads share 100 anonymous / 1000 valid-key requests per 60 seconds across participating endpoints ([client guide](docs/operations/PUBLIC_API_CLIENT_GUIDE.md)); AI endpoints have 5 req/min/IP. Configured Redis coordinates SlowAPI workers, while absent/unavailable Redis falls back to bounded per-process memory
 - **Circuit breaker**: 3 errors &rarr; 24h pause, auto-reset
 - **Discourse**: pnyx.ekklesia.gr &mdash; automated forum sync per bill
 
@@ -227,6 +227,7 @@ production rollout.
 |---|---|
 | [Wiki](https://ekklesia.gr/wiki/) | Full technical documentation (14 pages) |
 | [API Docs](https://ekklesia.gr/wiki/api.html) | 70+ endpoints, all modules |
+| [Public API client guide](docs/operations/PUBLIC_API_CLIENT_GUIDE.md) | Shared public-read quota, separate default-covered routes; API-key and HTTP 429 handling |
 | [Modules](https://ekklesia.gr/wiki/modules.html) | MOD-01 through MOD-25 |
 | [Security](https://ekklesia.gr/wiki/security.html) | Ed25519, Nullifier, threat model |
 | [Architecture](https://ekklesia.gr/wiki/architecture.html) | Stack, monorepo, lifecycle |
