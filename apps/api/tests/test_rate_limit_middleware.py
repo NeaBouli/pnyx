@@ -1,7 +1,10 @@
 """Regression guards for EKA-32's default 60/min/IP endpoint limit."""
 
-from collections.abc import Callable, Generator
+from collections.abc import AsyncIterator, Callable, Generator
+from dataclasses import dataclass
 import os
+from typing import Any
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
@@ -11,9 +14,11 @@ from slowapi import Limiter
 from slowapi.middleware import SlowAPIMiddleware
 
 import main
+from database import get_db
 from ip_utils import rate_limit_key_for_ip
 from rate_limit import get_rate_limit_storage_uri, limiter
-from routers import agent
+from routers import agent, public_api
+from services import cplm
 
 
 @pytest.fixture
@@ -191,3 +196,200 @@ def test_unavailable_backend_falls_back_to_bounded_memory_limit(
 
     assert client.get("/health", headers=headers).status_code == 200
     assert client.get("/health", headers=headers).status_code == 429
+
+
+# T-9050 characterizes current quotas; it does not approve or change policy.
+PARTIES_ROUTE = "/api/v1/public/vaa/parties"
+CPLM_ROUTE = "/api/v1/public/cplm"
+VALID_QUOTA_KEY = "qkey"
+
+
+class PublicQuotaRedis:
+    """Only the actual key verifier and fixed-window Lua helper use this fake."""
+
+    def __init__(self) -> None:
+        self.counts: dict[str, int] = {}
+        self.expirations: dict[str, int] = {}
+        self.acquisitions = 0
+        self.key_checks = 0
+        self.evaluations = 0
+
+    async def hexists(self, name: str, key: str) -> bool:
+        assert name == public_api.REDIS_KEY_HASH
+        self.key_checks += 1
+        return key == public_api.hash_key(VALID_QUOTA_KEY)
+
+    async def eval(self, script: str, numkeys: int, key: str, seconds: int) -> int:
+        assert numkeys == 1 and seconds == 60
+        assert "redis.call('INCR', KEYS[1])" in script
+        assert "redis.call('EXPIRE', KEYS[1], ARGV[1])" in script
+        self.evaluations += 1
+        self.counts[key] = self.counts.get(key, 0) + 1
+        if self.counts[key] == 1:
+            self.expirations[key] = seconds
+        return self.counts[key]
+
+
+class EmptyPartyResult:
+    def scalars(self) -> "EmptyPartyResult":
+        return self
+
+    def all(self) -> list[Any]:
+        return []
+
+
+class PublicQuotaDB:
+    def __init__(self) -> None:
+        self.executions = 0
+        self.aggregates = 0
+
+    async def execute(self, statement: Any) -> EmptyPartyResult:
+        self.executions += 1
+        return EmptyPartyResult()
+
+
+@dataclass
+class PublicQuotaBackend:
+    redis: PublicQuotaRedis
+    db: PublicQuotaDB
+    helper: AsyncMock
+
+    def effects(self) -> tuple[int, int, int, int, int, int]:
+        return (
+            self.redis.acquisitions, self.redis.key_checks,
+            self.redis.evaluations, self.db.executions, self.db.aggregates,
+            self.helper.await_count,
+        )
+
+    def assert_helper_quota(self, quota: int) -> None:
+        assert self.helper.await_count > 0
+        for call in self.helper.await_args_list:
+            assert call.args[0] is self.redis
+            assert call.args[2:] == (quota, 60)
+
+
+@pytest.fixture
+def public_quota_backend(
+    monkeypatch: pytest.MonkeyPatch,
+    install_test_limiter: Callable[..., Limiter],
+) -> Generator[PublicQuotaBackend, None, None]:
+    installed = install_test_limiter(enabled=True, storage_uri="memory://")
+    assert installed.enabled is True
+    redis = PublicQuotaRedis()
+    db = PublicQuotaDB()
+    helper = AsyncMock(wraps=public_api.redis_fixed_window_limit)
+
+    async def fake_redis() -> PublicQuotaRedis:
+        redis.acquisitions += 1
+        return redis
+
+    async def fake_db() -> AsyncIterator[PublicQuotaDB]:
+        yield db
+
+    async def fake_cplm(session: PublicQuotaDB) -> dict[str, int]:
+        assert session is db
+        db.aggregates += 1
+        return {"x": 0, "y": 0, "total_voters": 0}
+
+    monkeypatch.setattr(public_api, "get_redis", fake_redis)
+    monkeypatch.setattr(public_api, "redis_fixed_window_limit", helper)
+    monkeypatch.setattr(cplm, "get_cplm_cached", fake_cplm)
+    previous_overrides = dict(main.app.dependency_overrides)
+    main.app.dependency_overrides[get_db] = fake_db
+    try:
+        yield PublicQuotaBackend(redis, db, helper)
+    finally:
+        if get_db in previous_overrides:
+            main.app.dependency_overrides[get_db] = previous_overrides[get_db]
+        else:
+            main.app.dependency_overrides.pop(get_db, None)
+
+
+def test_public_valid_key_hits_default_sixty_before_thousand_quota(
+    client: TestClient, public_quota_backend: PublicQuotaBackend,
+) -> None:
+    headers = {"X-API-Key": VALID_QUOTA_KEY, "Origin": "https://ekklesia.gr"}
+    for _ in range(60):
+        response = client.get(PARTIES_ROUTE, headers=headers)
+        assert response.status_code == 200
+        assert response.json() == {"data": [], "data_license": "CC BY 4.0"}
+    before = public_quota_backend.effects()
+    response = client.get(PARTIES_ROUTE, headers=headers)
+    assert response.status_code == 429 and "error" in response.json()
+    assert response.headers["access-control-allow-origin"] == "https://ekklesia.gr"
+    assert response.headers["x-robots-tag"] == "noindex, nofollow"
+    assert public_quota_backend.effects() == before
+    assert list(public_quota_backend.redis.counts.values()) == [60]
+    public_quota_backend.assert_helper_quota(1000)
+
+
+def test_public_valid_key_default_ceiling_is_per_endpoint(
+    client: TestClient, public_quota_backend: PublicQuotaBackend,
+) -> None:
+    headers = {"X-API-Key": VALID_QUOTA_KEY}
+    for route in (PARTIES_ROUTE, CPLM_ROUTE):
+        for _ in range(60):
+            assert client.get(route, headers=headers).status_code == 200
+    assert list(public_quota_backend.redis.counts.values()) == [120]
+    assert public_quota_backend.db.executions == 60
+    assert public_quota_backend.db.aggregates == 60
+    before = public_quota_backend.effects()
+    for route in (PARTIES_ROUTE, CPLM_ROUTE):
+        response = client.get(route, headers=headers)
+        assert response.status_code == 429 and "error" in response.json()
+    assert public_quota_backend.effects() == before
+    public_quota_backend.assert_helper_quota(1000)
+
+
+def test_public_valid_key_shared_backend_thousand_boundary(
+    client: TestClient, public_quota_backend: PublicQuotaBackend,
+) -> None:
+    headers = {"X-API-Key": VALID_QUOTA_KEY}
+    key = f"ratelimit:public_api:key:{public_api.hash_key(VALID_QUOTA_KEY)}"
+    public_quota_backend.redis.counts[key] = 999
+    public_quota_backend.redis.expirations[key] = 60
+    assert client.get(PARTIES_ROUTE, headers=headers).status_code == 200
+    assert public_quota_backend.redis.counts[key] == 1000
+    before_db = (public_quota_backend.db.executions, public_quota_backend.db.aggregates)
+    response = client.get(CPLM_ROUTE, headers=headers)
+    assert response.status_code == 429
+    assert response.json()["detail"]["limit"] == 1000
+    assert response.json()["detail"]["window"] == "60s"
+    assert (public_quota_backend.db.executions, public_quota_backend.db.aggregates) == before_db
+    assert public_quota_backend.redis.counts == {key: 1001}
+    public_quota_backend.assert_helper_quota(1000)
+
+
+def test_public_anonymous_quota_is_shared_across_endpoints(
+    client: TestClient, public_quota_backend: PublicQuotaBackend,
+) -> None:
+    for route, attempts in ((PARTIES_ROUTE, 60), (CPLM_ROUTE, 40)):
+        for _ in range(attempts):
+            assert client.get(route).status_code == 200
+    before_db = (public_quota_backend.db.executions, public_quota_backend.db.aggregates)
+    response = client.get(CPLM_ROUTE)
+    assert response.status_code == 429
+    assert response.json()["detail"]["limit"] == 100
+    assert response.json()["detail"]["window"] == "60s"
+    assert (public_quota_backend.db.executions, public_quota_backend.db.aggregates) == before_db
+    assert list(public_quota_backend.redis.counts.values()) == [101]
+    assert next(iter(public_quota_backend.redis.counts)).startswith("ratelimit:public_api:anon:")
+    public_quota_backend.assert_helper_quota(100)
+
+
+def test_public_invalid_keys_cannot_create_fresh_quota_buckets(
+    client: TestClient, public_quota_backend: PublicQuotaBackend,
+) -> None:
+    for route, attempts in ((PARTIES_ROUTE, 60), (CPLM_ROUTE, 40)):
+        for index in range(attempts):
+            assert client.get(route, headers={"X-API-Key": f"junk{index}"}).status_code == 200
+    before_db = (public_quota_backend.db.executions, public_quota_backend.db.aggregates)
+    response = client.get(CPLM_ROUTE, headers={"X-API-Key": "fresh"})
+    assert response.status_code == 429 and response.json()["detail"]["limit"] == 100
+    assert (public_quota_backend.db.executions, public_quota_backend.db.aggregates) == before_db
+    assert len(public_quota_backend.redis.counts) == 1
+    key = next(iter(public_quota_backend.redis.counts))
+    assert key.startswith("ratelimit:public_api:anon:")
+    assert "junk" not in key and "fresh" not in key
+    assert public_quota_backend.redis.key_checks == 101
+    public_quota_backend.assert_helper_quota(100)
