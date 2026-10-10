@@ -61,6 +61,16 @@ Any dependency preflight failure, readiness timeout, wrong major, non-loopback b
 TOC/restore non-zero exit, count mismatch or Alembic head mismatch exits 1.
 Investigate locally; do not extrapolate to production.
 
+A preflight/Docker-check failure prints a fixed message and creates nothing (no
+receipt). Any failure after the private temp dir is allocated prints `FAIL: <type>`
+plus a private partial receipt on stderr: fixed `code`/`stage`
+(`create_source|create_target|restore`), the private `workdir` and only
+acknowledged full-hex `acknowledged_container_ids`. No password, DSN, SQL,
+command, stdout/stderr or raw exception text is printed. A failed or malformed
+create sets `creation_uncertain`: an unacknowledged container may exist, so check
+label `ekklesia.drill=t9065-synthetic` before owner-approved cleanup. The workdir
+path is local and private; never paste it into public docs or tickets.
+
 ## Related
 
 Production backup, `y801` migration and rollback stay Gio-gated in the separate

@@ -170,6 +170,32 @@ def psql(cid: str, sql: str, run: Runner) -> str:
                 "-d", DB_NAME, "-tAc", sql])
 
 
+CONTAINER_ID = re.compile(r"[0-9a-f]{64}")
+FAILURE_STAGES = ("create_source", "create_target", "restore")
+
+
+def _ack(receipt: dict, raw: str) -> None:
+    """Record only a validated full-hex container ID; malformed output is never echoed."""
+    cid = raw.strip() if isinstance(raw, str) else ""
+    if CONTAINER_ID.fullmatch(cid):
+        receipt["created"].append(cid)
+    else:
+        receipt["creation_uncertain"] = True
+
+
+def _failure_receipt(receipt: dict, work: Path, stage: str) -> dict:
+    """Closed whitelist: fixed stage/code, acknowledged IDs and the private workdir only."""
+    out = {"status": "failed", "code": "DRILL_FAILED_AFTER_ALLOCATION",
+           "stage": stage if stage in FAILURE_STAGES else "restore", "label": LABEL,
+           "workdir_private": True, "workdir": str(work),
+           "acknowledged_container_ids": [c for c in receipt["created"] if CONTAINER_ID.fullmatch(c)]}
+    if stage.startswith("create_") or receipt.get("creation_uncertain"):
+        out["creation_uncertain"] = True
+        out["owner_warning"] = ("a failed or malformed create may have left an unacknowledged "
+                                f"container; inspect label {LABEL} before owner-approved cleanup")
+    return out
+
+
 def drill(run: Runner = default_runner, run_env: Callable = default_runner) -> dict:
     os.umask(0o077)
     preflight_imports(run_env)
@@ -182,10 +208,22 @@ def drill(run: Runner = default_runner, run_env: Callable = default_runner) -> d
     password = secrets.token_hex(8)
     work = Path(tempfile.mkdtemp(prefix=f"drill-{tag}-"))
     receipt: dict = {"label": LABEL, "workdir_private": True, "heads": heads, "created": []}
-    src = run(docker_run(f"drill-src-{tag}", password, True))
-    receipt["created"].append(src)
-    tgt = run(docker_run(f"drill-tgt-{tag}", password, False))
-    receipt["created"].append(tgt)
+    stage = "create_source"
+    try:
+        src = run(docker_run(f"drill-src-{tag}", password, True))
+        _ack(receipt, src)
+        stage = "create_target"
+        tgt = run(docker_run(f"drill-tgt-{tag}", password, False))
+        _ack(receipt, tgt)
+        stage = "restore"
+        return _drill_body(run, run_env, receipt, work, heads, password, src, tgt)
+    except Exception as exc:
+        exc.failure_receipt = _failure_receipt(receipt, work, stage)
+        raise
+
+
+def _drill_body(run: Runner, run_env: Callable, receipt: dict, work: Path, heads: list[str],
+                password: str, src: str, tgt: str) -> dict:
     for cid in (src, tgt):
         wait_ready(cid, run)
         check_major(psql(cid, "SHOW server_version;", run))
@@ -224,9 +262,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         print(json.dumps(drill(), indent=1))
     except (DrillError, subprocess.SubprocessError, OSError) as exc:
-        tail = (getattr(exc, "stderr", "") or "").strip().splitlines()[-1:]
-        detail = str(exc) if isinstance(exc, DrillError) else tail
-        print(f"FAIL: {type(exc).__name__}: {detail}", file=sys.stderr)
+        receipt = getattr(exc, "failure_receipt", None)
+        if isinstance(exc, DrillError) and receipt is None:
+            print(f"FAIL: DrillError: {exc}", file=sys.stderr)
+        else:
+            print(f"FAIL: {type(exc).__name__}", file=sys.stderr)
+        if receipt is not None:
+            print(json.dumps(receipt, indent=1), file=sys.stderr)
         return 1
     return 0
 

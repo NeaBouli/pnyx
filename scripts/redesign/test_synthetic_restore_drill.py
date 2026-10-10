@@ -2,6 +2,7 @@
 import contextlib
 import importlib.util
 import io
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -205,6 +206,138 @@ class DrillTests(unittest.TestCase):
         self.assertEqual(calls[-2][0], "run_env")
         self.assertIn("command.current", calls[-2][1])
         self.assertEqual(sum(c[0] == "run_env" for c in calls), 2)
+
+
+class FailureReceiptTests(unittest.TestCase):
+    SECRET = "pw-zz9"
+
+    def _run(self, fail_on, run_out="c" * 64):
+        made = []
+
+        def run(cmd):
+            if cmd[:2] == ["docker", "--host"]:
+                cmd = ["docker", *cmd[3:]]
+            if fail_on(cmd, made):
+                raise d.subprocess.CalledProcessError(
+                    1, cmd, stderr=f"postgresql://u:{self.SECRET}@h/db SELECT 1")
+            if cmd[:2] == ["docker", "context"]:
+                return "unix:///var/run/docker.sock"
+            if cmd[:2] == ["docker", "run"]:
+                made.append(1)
+                return run_out if len(made) == 1 else "d" * 64
+            if cmd[:2] == ["docker", "port"]:
+                return "127.0.0.1:55001"
+            if "SHOW server_version;" in cmd:
+                return "15.8"
+            if cmd[:2] == ["docker", "cp"] and cmd[-1].endswith(".dump") and ":" in cmd[2]:
+                Path(cmd[-1]).write_bytes(b"PGDMP\x01")
+            return "50,2550,7,y801a2b3c4d5"
+        return run
+
+    def _cli(self, run, run_env=lambda *a, **k: "y801a2b3c4d5"):
+        real_mkdtemp = tempfile.mkdtemp
+        err, out = io.StringIO(), io.StringIO()
+        with tempfile.TemporaryDirectory() as root, \
+             mock.patch.object(d.tempfile, "mkdtemp",
+                               side_effect=lambda prefix="", dir=None: real_mkdtemp(prefix=prefix, dir=dir or root)), \
+             mock.patch.object(d, "expected_heads", return_value=HEADS), \
+             mock.patch.object(d.secrets, "token_hex", return_value=self.SECRET), \
+             mock.patch.dict(d.os.environ, {}, clear=True), mock.patch.object(d.os, "umask"):
+            caught = []
+            real_drill = d.drill
+
+            def wrapped():
+                try:
+                    return real_drill(run=run, run_env=run_env)
+                except BaseException as exc:
+                    caught.append(exc)
+                    raise
+            with mock.patch.object(d, "drill", wrapped), contextlib.redirect_stderr(err), \
+                 contextlib.redirect_stdout(out):
+                code = d.main(["--run"])
+        return code, err.getvalue(), out.getvalue(), caught
+
+    def _assert_clean(self, text):
+        for bad in (self.SECRET, "postgresql://", "SELECT", "POSTGRES_PASSWORD", "docker run"):
+            self.assertNotIn(bad, text)
+
+    def test_first_create_failure_uncertain_no_ids(self):
+        code, err, out, (exc,) = self._cli(self._run(lambda c, m: c[:2] == ["docker", "run"]))
+        self.assertEqual(code, 1)
+        self.assertIsInstance(exc, d.subprocess.CalledProcessError)
+        r = exc.failure_receipt
+        self.assertEqual((r["stage"], r["acknowledged_container_ids"], r["creation_uncertain"]),
+                         ("create_source", [], True))
+        self.assertIn('"workdir"', err)
+        self._assert_clean(err + out)
+
+    def test_second_create_failure_keeps_first_id(self):
+        code, err, _, (exc,) = self._cli(self._run(lambda c, m: c[:2] == ["docker", "run"] and m))
+        self.assertEqual(code, 1)
+        r = exc.failure_receipt
+        self.assertEqual((r["stage"], r["acknowledged_container_ids"]), ("create_target", ["c" * 64]))
+        self.assertTrue(r["creation_uncertain"])
+        self._assert_clean(err)
+
+    def test_restore_and_current_failures_list_both_ids(self):
+        restore = lambda c, m: "pg_restore" in c and "--exit-on-error" in c
+        for kwargs in ({}, {"run_env": lambda *a, **k: "zzz"}):
+            fail = restore if not kwargs else (lambda c, m: False)
+            code, err, out, (exc,) = self._cli(self._run(fail), **kwargs)
+            self.assertEqual(code, 1)
+            r = exc.failure_receipt
+            self.assertEqual((r["stage"], r["acknowledged_container_ids"]), ("restore", ["c" * 64, "d" * 64]))
+            self.assertNotIn("creation_uncertain", r)
+            self.assertNotIn("status\": \"ok", err + out)
+            self._assert_clean(err + out)
+        self.assertIsInstance(exc, d.DrillError)
+
+    def test_count_mismatch_same_exception_identity(self):
+        n = []
+
+        def run_env(*a, **k):
+            return "y801a2b3c4d5"
+        run = self._run(lambda c, m: False)
+
+        def counting(cmd):
+            res = run(cmd)
+            if res.startswith("50,2550"):
+                n.append(1)
+                return res if len(n) == 1 else "49,2550,7,y801a2b3c4d5"
+            return res
+        sentinel = d.DrillError("x")
+        with mock.patch.object(d, "compare", side_effect=sentinel):
+            code, _, _, (exc,) = self._cli(counting, run_env)
+        self.assertEqual(code, 1)
+        self.assertIs(exc, sentinel)
+        self.assertEqual(exc.failure_receipt["stage"], "restore")
+
+    def test_malformed_create_output_sanitised(self):
+        bad = f"Warning {self.SECRET}\n" + "e" * 64
+        _, err, _, (exc,) = self._cli(self._run(
+            lambda c, m: "pg_restore" in c and "--exit-on-error" in c, run_out=bad))
+        r = exc.failure_receipt
+        self.assertEqual(r["acknowledged_container_ids"], ["d" * 64])
+        self.assertTrue(r["creation_uncertain"])
+        self._assert_clean(err)
+
+    def test_preflight_failure_has_no_receipt(self):
+        def run_env(*a, **k):
+            raise d.subprocess.CalledProcessError(1, a[0], stderr=self.SECRET)
+        code, err, _, (exc,) = self._cli(self._run(lambda c, m: False), run_env)
+        self.assertEqual(code, 1)
+        self.assertFalse(hasattr(exc, "failure_receipt"))
+        self.assertIn(d.DEPENDENCY_FAIL, err)
+        self._assert_clean(err)
+
+    def test_success_shape_unchanged(self):
+        code, err, out, caught = self._cli(self._run(lambda c, m: False))
+        self.assertEqual((code, err, caught), (0, "", []))
+        r = json.loads(out)
+        self.assertEqual(set(r), {"label", "workdir_private", "heads", "created", "status",
+                                  "sample", "dump_bytes", "server_version"})
+        self.assertEqual(r["created"], ["c" * 64, "d" * 64])
+
 
 
 if __name__ == "__main__":
