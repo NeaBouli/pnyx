@@ -860,7 +860,7 @@ end note
 @enduml
 ' End T-9033 nightly consolidation.
 
-' T-9055 bundled source map for #528..#540; historical prefixes retained.
+' T-9055 bundled source map for #528..#541; historical prefixes retained.
 @startmindmap T9055_source_mindmap
 * Ekklesia: inspected source boundaries, not release evidence
 ** Public comparison / language
@@ -880,7 +880,8 @@ end note
 *** built: admin.py::verify_admin -> dependencies.py::verify_admin_key
 *** built: Bearer-only, UTF-8 hmac.compare_digest, production fail closed
 *** built: voting.py::submit_vote explicit 120/minute IP limiter
-*** boundary: included-router default 60/minute is not API-wide protection
+*** built: default 60/minute on direct App routes (e.g. /health)
+*** boundary: default 60/minute does NOT cover include_router endpoints
 *** unchanged: shared public 100/1000 quota; existing mail guards
 ** Mobile unread / lifecycle
 *** built: notifications.ts::persistPushAndReconcile / ingestPushPayload
@@ -888,6 +889,8 @@ end note
 *** built: serialized persisted ledger -> notification-badge.ts::set
 *** built: local display only on added; automatic zero never clears tray
 *** built: explicit read clearTray; F-Droid skips native FCM / badge calls
+*** offline evidence #541: Play/Direct persisted master=false suppresses across restart
+*** offline evidence #541: explicit enable admits that event once; replay deduplicates
 *** open: NV1/NV2 native identity lifecycle, OEM/provider and release gates
 *** boundary: BillsScreen focus-cancellation tests are not native navigation proof
 @endmindmap
@@ -918,6 +921,10 @@ component "voting.py::submit_vote" as Vote
 component "Explicit limiter\n120/minute per IP" as VoteLimit
 Admin --> Bearer : central Bearer dependency
 VoteLimit --> Vote : decorator; signatures / nullifiers still required
+note bottom of VoteLimit
+Default 60/minute covers direct App routes (e.g. /health),
+not include_router endpoints; explicit vote 120/minute unchanged.
+end note
 component "notifications.ts::persistPushAndReconcile\ningestPushPayload / explicit read" as Notifications
 component "unread-events.ts::createUnreadEventsStore\ningest / markRead" as Ledger
 database "Serialized local unread storage" as Storage
@@ -927,6 +934,9 @@ Ledger --> Storage : queued durable read / write
 Notifications --> Badge : absolute ledger count; explicit clearTray only
 note bottom of Badge
 F-Droid returns before native badge/FCM.
+#541 offline Play/Direct: persisted master=false survives restart;
+explicit enable admits the same event once; replay deduplicates.
+Source/offline evidence only, not product/OEM/provider proof.
 Native OEM/provider/release gates remain open.
 end note
 @enduml

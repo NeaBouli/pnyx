@@ -664,7 +664,7 @@ end note
 @enduml
 ' End T-9033 nightly consolidation.
 
-' T-9055 built source traces; no production/OEM proof implied.
+' T-9055 built source traces for #528..#541; no production/OEM proof implied.
 @startuml T9055_public_comparison
 participant "index.html::fetchRepresentation\nfetchBillComparison" as Landing
 participant "analytics.py::cumulative_representation\ncompute_cumulative_representation" as Analytics
@@ -759,6 +759,8 @@ Notifications -> Badge : supported flavor: reconcile(clearTray=true)
 Badge -> Native : explicit final zero may clear tray
 note over Notifications,Native
 Source and offline restart/replay tests are not OEM/provider proof.
+#541 offline Play/Direct: persisted master=false suppresses the same
+event before/after restart; explicit enable admits it once; replay dedups.
 NV1/NV2 and release/device gates remain open.
 BillsScreen focus cancellation is not retained-native-navigation proof.
 end note
