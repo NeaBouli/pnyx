@@ -228,6 +228,7 @@ production rollout.
 | [Wiki](https://ekklesia.gr/wiki/) | Full technical documentation (14 pages) |
 | [API Docs](https://ekklesia.gr/wiki/api.html) | 70+ endpoints, all modules |
 | [Follow-up API/Web deploy runbook](docs/operations/FOLLOWUP_API_WEB_DEPLOY_RUNBOOK_2026-10-10.md) | Documentation only, not executed, not a deploy approval: backup, y801 migration, smoke, rollback gates |
+| [Synthetic backup/restore drill](docs/operations/SYNTHETIC_BACKUP_RESTORE_DRILL.md) | Local synthetic PG15 dump/restore harness only; not a production backup, RPO/RTO or schema proof |
 | [Public API client guide](docs/operations/PUBLIC_API_CLIENT_GUIDE.md) | Shared public-read quota, separate default-covered routes; API-key and HTTP 429 handling |
 | [Mobile performance snapshot 2026-10-10](docs/operations/MOBILE_PERFORMANCE_SNAPSHOT_2026-10-10.md) | Observational 390 px throttled lab run of 5 public pages; no score, no production change; quick-win proposals |
 | [Modules](https://ekklesia.gr/wiki/modules.html) | MOD-01 through MOD-25 |
