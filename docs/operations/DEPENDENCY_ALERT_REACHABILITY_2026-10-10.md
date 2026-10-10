@@ -48,7 +48,7 @@ Surfaces distinguished:
 
 | # | Alert | Package (affected → locked) | Lockfile parents (`apps/<x>/package-lock.json`) | Surface class | Source → control → sink | Proven / not proven | Verdict | Queue rank |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | [#110](https://github.com/NeaBouli/pnyx/security/dependabot/110) representative, GHSA-hp3w-g68c-fv3c / CVE-2026-97058, medium | sprintf-js `<=1.1.3` → `1.0.3` | `argparse` ← `js-yaml` (`@expo/xcpretty/node_modules/js-yaml`, `@istanbuljs/load-nyc-config/node_modules/js-yaml`) ← `@expo/xcpretty`, `@istanbuljs/load-nyc-config` | S3 (iOS build log formatter, coverage config loader) | Source: CLI args/format strings inside argparse. Control: developer/CI. Sink: `sprintf`. | Proven: lockfile edge only. Not proven: whether argparse ever formats attacker-controlled precision; whether anything is bundled into S1. No direct `sprintf-js`/`argparse` import in inspected `apps/representative/App.tsx` or `apps/representative/web` (rg, absence ≠ proof). | needs_review | 6 |
+| 1 | [#110](https://github.com/NeaBouli/pnyx/security/dependabot/110) representative, GHSA-hp3w-g68c-fv3c / CVE-2026-97058, medium | sprintf-js `<=1.1.3` → `1.0.3` | `sprintf-js@1.0.3` ← root `argparse@1.0.10` ← `@istanbuljs/load-nyc-config/node_modules/js-yaml@3.15.2` ← `@istanbuljs/load-nyc-config` (Jest coverage). Correction (T-9061): `@expo/xcpretty/node_modules/js-yaml@4.3.2` → `argparse@2.0.1` has **no** `sprintf-js` edge and is not in this chain | S3 (Jest coverage config loader) | Source: CLI args/format strings inside argparse. Control: developer/CI. Sink: `sprintf`. | Proven: lockfile edge only. Not proven: whether argparse ever formats attacker-controlled precision; whether anything is bundled into S1. No direct `sprintf-js`/`argparse` import in inspected `apps/representative/App.tsx` or `apps/representative/web` (rg, absence ≠ proof). | needs_review | 6 |
 | 2 | [#109](https://github.com/NeaBouli/pnyx/security/dependabot/109) mobile, GHSA-hp3w-g68c-fv3c / CVE-2026-97058, medium | sprintf-js `<=1.1.3` → `1.0.3` | same chain as #110 in `apps/mobile` | S3 | as #110 | as #110 (`apps/mobile/src`) | needs_review | 7 |
 | 3 | [#107](https://github.com/NeaBouli/pnyx/security/dependabot/107) web, GHSA-vfj7-8cjw-p6xm / CVE-2026-93687, high | braces `<=3.0.3` → `3.0.3` | `micromatch` ← `fast-glob` (+ `@next/eslint-plugin-next/node_modules/fast-glob`) ← `@ducanh2912/next-pwa`, `@next/eslint-plugin-next` | S3 (`next.config.mjs` l.1/6/69 `withPWA`, `next build` in `Dockerfile.prod` l.23); S2 not excluded | Source: glob patterns from repo config. Control: repo owner. Sink: `braces` expansion during build. | Proven: build-plugin edge (`next.config.mjs::withPWA`), Dockerfile build stage installs the full tree (l.5). Not proven: whether Next output-file tracing copies `braces`/`micromatch` into `.next/standalone` (S2), and whether any S2 request path passes request data into a glob. | needs_review | 1 |
 | 4 | [#106](https://github.com/NeaBouli/pnyx/security/dependabot/106) representative, GHSA-vfj7-8cjw-p6xm / CVE-2026-93687, high | braces `<=3.0.3` → `3.0.3` | `micromatch` ← `metro-file-map`, `jest-haste-map`, `@jest/transform`, `jest-message-util`; `metro-file-map` ← `metro`, `@expo/metro`, `expo/node_modules/@expo/cli` | S3/S4 (Metro, Jest) | Source: project/Metro/Jest config globs. Control: repo owner. Sink: braces. | Proven: lockfile edges to Metro/Jest. Not proven: absence from S1 bundle; any S4 dev-server path taking network-supplied patterns. | needs_review | 4 |
@@ -70,15 +70,50 @@ observation, not a reachability proof.
 - `scripts/npm-audit-gate.mjs` (l.12) only blocks `high`/`critical`. The medium sprintf-js alerts
   are therefore not blocked and have **no waiver**. That is not risk acceptance and not a fix.
 
+## Upstream source evidence (T-9061, static read only)
+
+Plain-file GETs of public upstream source at the tag/commit matching the locked version. Nothing
+was installed, executed or bundled. Tarball integrity vs. this source (source parity) is
+**not verified**.
+
+- **micromatch 4.0.8** (`https://raw.githubusercontent.com/micromatch/micromatch/4.0.8/index.js`):
+  l.4 `const braces = require('braces')`. The `braces` package is called only from
+  `micromatch.parse` (l.424–428: `braces(String(pattern), options)` then `picomatch.parse`),
+  `micromatch.braces` (l.451–456) and `micromatch.braces(..., {expand: true})` (l.465). The
+  matching entry points `micromatch()` (l.32/49), `isMatch` (l.128), `matcher` (l.109) and
+  `makeRe` (l.392) call `picomatch` directly, whose own brace handling is not the `braces`
+  package. Not read: which of these functions `fast-glob@3.3.x` and `metro-file-map@0.83.8` call,
+  and with which pattern origin. #105/#106/#107 therefore stay `needs_review`.
+- **argparse 1.0.10** (`https://raw.githubusercontent.com/nodeca/argparse/1.0.10/lib/help/formatter.js`):
+  l.16 `require('sprintf-js').sprintf`; calls at l.325 (`usage`, `{prog}`), l.559 (description
+  text, `{prog}`) and l.744 (`sprintf(this._getHelpString(action), params)`). The format string is
+  the parser's own usage/help text (programmer-defined options), not parsed YAML values.
+  **sprintf-js 1.0.3** (`https://raw.githubusercontent.com/alexei/sprintf.js/1.0.3/src/sprintf.js`):
+  precision `match[7]` comes from the format string and feeds `toExponential` (l.75), `toFixed`
+  (l.79), `toPrecision` (l.82). Not read: whether `js-yaml@3.15.2` or `load-nyc-config` invoke
+  the argparse help formatter at all (js-yaml uses argparse for its CLI binary). #109/#110 stay
+  `needs_review`.
+- **@expo/code-signing-certificates 0.0.6**: npm registry `gitHead`
+  `83f39c0e8f9c2833571951f3fc21464c9df4bcaf`, dependency `node-forge ^1.3.3`; source
+  `https://raw.githubusercontent.com/expo/code-signing-certificates/83f39c0e8f9c2833571951f3fc21464c9df4bcaf/src/main.ts`.
+  node-forge verify calls: l.232 `certificate.verify(certificate)` in
+  `validateSelfSignedCertificate` (self-signature check of a caller-supplied cert), l.265
+  `publicKey.verify(...)` in `signBufferRSASHA256AndVerify` (verifies its own fresh signature),
+  l.319 `csr.verify(csr)` in `generateDevelopmentCertificateFromCSR` (self-signed CSR). None is
+  a verification of a third-party signature against a trusted key; all are signing/creation/
+  self-verify paths. Not read: `@expo/cli@54.0.27` callers of these functions and its **direct**
+  `node-forge@1.4.0` use, or whether any dev-server flow verifies network-supplied signatures.
+  #102/#103 stay `needs_review`.
+
 ## Missing facts and safe next steps
 
 | Gap | Missing fact | Safe next step (not done here) |
 | --- | --- | --- |
-| G1 | Dependency source not read (no local `node_modules`) | Read the pinned tarball sources in an isolated sandbox, without executing them |
+| G1 | Partly closed (T-9061 upstream source above). Open: tarball/source parity; callers in `fast-glob`, `metro-file-map`, `@expo/cli`, `js-yaml` | Read those pinned sources in an isolated sandbox, without executing them |
 | G2 (#107) | Is `braces` in `.next/standalone`? | List `.next/standalone/node_modules` and `.next/*.nft.json` from a sandboxed `next build` of this commit |
 | G3 (#105/#106) | Is braces/micromatch in the Metro bundle? | Inspect the sandboxed release bundle's module map |
-| G4 (#102/#103) | Which Expo CLI flows verify untrusted signatures? | Read `@expo/cli` / `@expo/code-signing-certificates` source; confirm `expo-updates` absence in both manifests |
-| G5 (#109/#110) | Does argparse ever format with attacker-controlled precision? | Read `argparse` 1.x call sites to `sprintf` |
+| G4 (#102/#103) | Which Expo CLI flows verify untrusted signatures? | Read `@expo/cli@54.0.27` callers and its direct `node-forge` use; confirm `expo-updates` absence in both manifests |
+| G5 (#109/#110) | Does argparse ever format with attacker-controlled precision? | `argparse@1.0.10` sprintf sites read (help/usage only); confirm no help-format call from `js-yaml@3.15.2`/`load-nyc-config` |
 | G6 | Upstream fix availability | Re-check advisories before `review_by` 2026-11-01. Any override or upgrade needs a full app build/tests and owner review. |
 
 Ranks order the queue for that follow-up: shipped Web server exposure first (#107), then Expo
