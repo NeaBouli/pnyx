@@ -29,7 +29,8 @@ async def record_run(name: str) -> None:
         await r.aclose()
 
 
-async def record_success(name: str) -> None:
+async def record_success(name: str, outcome: str = "clean", reason: str = "none", count: int = 0) -> None:
+    """Record success; latest outcome (clean|degraded) is queued in the same pipeline."""
     r = await _redis()
     try:
         pipe = r.pipeline()
@@ -37,7 +38,7 @@ async def record_success(name: str) -> None:
         pipe.set(f"scraper:{name}:last_success", now)
         pipe.set(f"scraper:{name}:error_count", 0)
         pipe.delete(f"scraper:{name}:last_error")
-        _queue_outcome(pipe, name, "clean", "none", 0)
+        _queue_outcome(pipe, name, outcome, reason, count)
         await pipe.execute()
     finally:
         await r.aclose()
@@ -64,7 +65,10 @@ def _queue_outcome(pipe, name: str, outcome: str, reason: str, count: int) -> No
         outcome = "failed"
     if reason not in OUTCOME_REASONS:
         reason = "exception"
-    count = max(0, min(int(count), 10_000))
+    try:
+        count = max(0, min(int(count), 10_000))
+    except (TypeError, ValueError):
+        count = 0
     now = datetime.now(timezone.utc).isoformat()
     pipe.set(f"scraper:{name}:last_outcome", outcome, ex=OUTCOME_TTL_S)
     pipe.set(f"scraper:{name}:last_outcome_reason", reason, ex=OUTCOME_TTL_S)
@@ -72,26 +76,6 @@ def _queue_outcome(pipe, name: str, outcome: str, reason: str, count: int) -> No
     pipe.set(f"scraper:{name}:last_outcome_time", now, ex=OUTCOME_TTL_S)
     if outcome != "clean":
         pipe.set(f"scraper:{name}:last_nonclean_time", now, ex=OUTCOME_TTL_S)
-
-
-async def record_outcome(name: str, outcome: str, reason: str = "none", count: int = 0) -> None:
-    """Record latest run outcome (clean|degraded|failed). Never raises."""
-    try:
-        r = await _redis()
-    except Exception:
-        logger.warning("[scraper_state] outcome record unavailable for %s", name)
-        return
-    try:
-        pipe = r.pipeline()
-        _queue_outcome(pipe, name, outcome, reason, count)
-        await pipe.execute()
-    except Exception:
-        logger.warning("[scraper_state] outcome record failed for %s", name)
-    finally:
-        try:
-            await r.aclose()
-        except Exception:
-            pass
 
 
 async def is_circuit_open(name: str) -> bool:

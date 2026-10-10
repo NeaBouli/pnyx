@@ -1,5 +1,7 @@
 """T-9069: latest scraper outcome visible in Redis job state and monitor."""
+import ast
 import asyncio
+import logging
 import os
 import sys
 import types
@@ -77,15 +79,15 @@ def _patch(monkeypatch, store):
 
 
 def _outcome_alerts(store):
-    return [a for a in monitor.check_scraper_jobs(SyncView(store)) if a.type == "scraper_job_outcome"]
+    return [a for a in monitor.check_scraper_jobs(SyncView(store))
+            if a.type == "scraper_job_errors" and "last run" in a.message]
 
 
 def test_degraded_check_violation_visible_then_clean_clears(monkeypatch):
     store = {}
     _patch(monkeypatch, store)
     raw = "CheckViolation ADA-XYZ token=abc user@example.test"
-    asyncio.run(scraper_state.record_success("diavgeia_municipal"))
-    asyncio.run(scraper_state.record_outcome("diavgeia_municipal", "degraded", "scrape_errors", 2))
+    asyncio.run(scraper_state.record_success("diavgeia_municipal", "degraded", "scrape_errors", 2))
     assert store["scraper:diavgeia_municipal:last_outcome"] == "degraded"
     assert store["scraper:diavgeia_municipal:error_count"] == "0"
     alerts = _outcome_alerts(store)
@@ -93,7 +95,7 @@ def test_degraded_check_violation_visible_then_clean_clears(monkeypatch):
     assert "scrape_errors" in alerts[0].message
     for v in list(store.values()) + [alerts[0].message]:
         assert "ADA-XYZ" not in v and "CheckViolation" not in v and raw not in v
-    asyncio.run(scraper_state.record_outcome("diavgeia_municipal", "clean"))
+    asyncio.run(scraper_state.record_success("diavgeia_municipal"))
     assert _outcome_alerts(store) == []
     assert "scraper:diavgeia_municipal:last_nonclean_time" in store
 
@@ -114,7 +116,7 @@ def test_first_full_failure_warns_without_leaking(monkeypatch):
 def test_unknown_codes_sanitized(monkeypatch):
     store = {}
     _patch(monkeypatch, store)
-    asyncio.run(scraper_state.record_outcome("x", "weird secret", "raw text secret", -5))
+    asyncio.run(scraper_state.record_success("x", "weird secret", "raw text secret", -5))
     assert store["scraper:x:last_outcome"] == "failed"
     assert store["scraper:x:last_outcome_reason"] == "exception"
     assert store["scraper:x:last_outcome_count"] == "0"
@@ -136,18 +138,105 @@ def test_no_duplicate_with_legacy_threshold():
     assert [a.type for a in alerts] == ["scraper_job_errors"]
 
 
-def test_redis_outage_record_outcome_never_raises(monkeypatch):
-    async def _boom():
-        raise ConnectionError("down")
-    monkeypatch.setattr(scraper_state, "_redis", _boom)
-    asyncio.run(scraper_state.record_outcome("diavgeia_municipal", "degraded", "scrape_errors", 1))
-
-
 def test_circuit_semantics_unchanged(monkeypatch):
     store = {}
     _patch(monkeypatch, store)
     for _ in range(3):
         asyncio.run(scraper_state.record_failure("diavgeia_municipal", "e"))
     assert asyncio.run(scraper_state.is_circuit_open("diavgeia_municipal")) is True
-    asyncio.run(scraper_state.record_outcome("diavgeia_municipal", "clean"))
-    assert asyncio.run(scraper_state.is_circuit_open("diavgeia_municipal")) is True
+    asyncio.run(scraper_state.record_success("diavgeia_municipal", "degraded", "scrape_errors", 1))
+    assert store["scraper:diavgeia_municipal:error_count"] == "0"
+
+
+def test_two_jobs_have_distinct_dedupe_identity():
+    store = {"scraper:parliament:last_outcome": "failed", "scraper:parliament:last_outcome_reason": "exception",
+             "scraper:diavgeia_municipal:last_outcome": "degraded",
+             "scraper:diavgeia_municipal:last_outcome_reason": "scrape_errors"}
+    ids = {monitor.alert_identity(a) for a in _outcome_alerts(store)}
+    assert len(ids) == 2
+
+
+def test_malformed_bytes_safe():
+    store = {"scraper:parliament:last_outcome": b"fail\xffed", "scraper:x:last_outcome": b"\xff"}
+    assert _outcome_alerts(store) == []
+    store = {"scraper:parliament:last_outcome": b"failed", "scraper:parliament:last_outcome_reason": b"\xfe"}
+    assert "unknown" in _outcome_alerts(store)[0].message
+
+
+# --- Real scheduled_diavgeia_scrape body (loaded from main.py AST, not copied) ---
+
+def _load_scheduler(monkeypatch, result=None, convert_exc=None, scrape_exc=None):
+    src = open(os.path.join(os.path.dirname(__file__), "..", "main.py"), encoding="utf-8").read()
+    fn = next(n for n in ast.parse(src).body
+              if isinstance(n, ast.AsyncFunctionDef) and n.name == "scheduled_diavgeia_scrape")
+    mod = ast.Module(body=[fn], type_ignores=[])
+
+    class _CM:
+        async def __aenter__(self):
+            return object()
+
+        async def __aexit__(self, *a):
+            return False
+
+    async def scrape_decisions(*a, **k):
+        if scrape_exc:
+            raise scrape_exc
+        return result
+
+    async def convert(*a, **k):
+        if convert_exc:
+            raise convert_exc
+        return {"created": 0, "skipped": 0}
+
+    async def backfill(*a, **k):
+        return 0
+
+    fakes = {
+        "services.diavgeia_scraper": types.SimpleNamespace(
+            scrape_decisions=scrape_decisions, convert_decisions_to_bills=convert,
+            backfill_diavgeia_bill_dates=backfill),
+        "database": types.SimpleNamespace(AsyncSessionLocal=_CM),
+    }
+    for k, v in fakes.items():
+        monkeypatch.setitem(sys.modules, k, v)
+    g = {"logger": logging.getLogger("t9069"), "__name__": "t9069"}
+    exec(compile(mod, "main.py", "exec"), g)
+    return g["scheduled_diavgeia_scrape"]
+
+
+def _result(errors):
+    return types.SimpleNamespace(fetched=3, inserted=1, errors=errors)
+
+
+def test_scheduler_check_violation_degraded_then_clean(monkeypatch):
+    store = {}
+    _patch(monkeypatch, store)
+    err = 'asyncpg.exceptions.CheckViolationError: ADA-T1 violates check constraint "ck_x"'
+    asyncio.run(_load_scheduler(monkeypatch, _result([err]))())
+    assert store["scraper:diavgeia_municipal:last_outcome"] == "degraded"
+    assert store["scraper:diavgeia_municipal:last_outcome_reason"] == "scrape_errors"
+    assert store["scraper:diavgeia_municipal:error_count"] == "0"
+    alerts = _outcome_alerts(store)
+    assert len(alerts) == 1 and alerts[0].recovery_allowed is False
+    for v in list(store.values()) + [alerts[0].message]:
+        assert "ADA-T1" not in v and "CheckViolation" not in v
+    asyncio.run(_load_scheduler(monkeypatch, _result([]))())
+    assert store["scraper:diavgeia_municipal:last_outcome"] == "clean"
+    assert _outcome_alerts(store) == []
+
+
+def test_scheduler_conversion_failure_degraded(monkeypatch):
+    store = {}
+    _patch(monkeypatch, store)
+    asyncio.run(_load_scheduler(monkeypatch, _result([]), convert_exc=RuntimeError("x"))())
+    assert store["scraper:diavgeia_municipal:last_outcome"] == "degraded"
+    assert store["scraper:diavgeia_municipal:last_outcome_reason"] == "conversion_failed"
+
+
+def test_scheduler_outer_exception_failed(monkeypatch):
+    store = {}
+    _patch(monkeypatch, store)
+    asyncio.run(_load_scheduler(monkeypatch, scrape_exc=RuntimeError("dsn=secret"))())
+    assert store["scraper:diavgeia_municipal:last_outcome"] == "failed"
+    assert store["scraper:diavgeia_municipal:error_count"] == "1"
+    assert all("secret" not in m.message for m in _outcome_alerts(store))

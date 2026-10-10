@@ -1098,12 +1098,12 @@ def check_scraper_jobs(r) -> list[Alert]:
             reason = r.get(f"scraper:{name}:last_outcome_reason")
         except Exception:
             continue
-        outcome = outcome.decode() if isinstance(outcome, bytes) else outcome
-        reason = reason.decode() if isinstance(reason, bytes) else reason
+        outcome = outcome.decode("utf-8", "replace") if isinstance(outcome, bytes) else outcome
+        reason = reason.decode("utf-8", "replace") if isinstance(reason, bytes) else reason
         if outcome in _NONCLEAN_OUTCOMES:
             if reason not in _OUTCOME_REASONS:
                 reason = "unknown"
-            alerts.append(Alert("scraper_job_outcome", "ekklesia-api", "warning",
+            alerts.append(Alert("scraper_job_errors", "ekklesia-api", "warning",
                                 f"Job {name}: last run {outcome} ({reason})", False))
     return alerts
 

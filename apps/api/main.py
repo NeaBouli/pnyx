@@ -540,7 +540,7 @@ async def scheduled_notify_results():
 
 async def scheduled_diavgeia_scrape():
     """Scrape Diavgeia municipal decisions every 48h (MOD-21)."""
-    from services.scraper_state import record_run, record_success, record_failure, record_outcome, is_circuit_open
+    from services.scraper_state import record_run, record_success, record_failure, is_circuit_open
     from services.diavgeia_scraper import scrape_decisions
     from database import AsyncSessionLocal
 
@@ -579,13 +579,12 @@ async def scheduled_diavgeia_scrape():
             conversion_failed = True
             logger.warning("[NEA-199] Conversion failed (non-blocking): %s", e)
 
-        await record_success(name)
         if scrape_error_count:
-            await record_outcome(name, "degraded", "scrape_errors", scrape_error_count)
+            await record_success(name, "degraded", "scrape_errors", scrape_error_count)
         elif conversion_failed:
-            await record_outcome(name, "degraded", "conversion_failed", 1)
+            await record_success(name, "degraded", "conversion_failed", 1)
         else:
-            await record_outcome(name, "clean", "none", 0)
+            await record_success(name)
     except Exception as e:
         logger.error("[MOD-21] Scheduled Diavgeia scrape failed: %s", e)
         await record_failure(name, str(e))
