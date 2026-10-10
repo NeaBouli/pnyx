@@ -1,6 +1,8 @@
 # Ausstehende Major Upgrades
 
 > Erstellt: 2026-04-14 | Alle PRs geschlossen mit Verweis auf diese Datei.
+>
+> Offene Dependabot-Alerts ohne bekannte Patch-Version im GitHub-Snapshot (Stand 2026-10-10): [Reachability-Assessment](operations/DEPENDENCY_ALERT_REACHABILITY_2026-10-10.md).
 
 ## Pnyx
 

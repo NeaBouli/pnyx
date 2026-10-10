@@ -51,3 +51,54 @@ test('health modules: rows come from the modules map, never from overall/total',
   assert.deepEqual(healthModulesFrom({ modules: [{ name: 'api', status: 'ok' }] }), [{ name: 'api', status: 'ok' }])
   assert.deepEqual(healthModulesFrom(null), [])
 })
+
+const { jobHealth, jobOutcomeLabel } = context.exports
+const job = extra => scraperJobsFrom({ scrapers: [{ ...parliament, ...extra }] })[0]
+
+test('job outcome: safe enums/count/time are kept, malformed values become unknown', () => {
+  const ok = job({ last_outcome: 'degraded', last_outcome_reason: 'scrape_errors', last_outcome_count: 0, last_outcome_time: '2026-10-10T08:00:00+00:00' })
+  assert.deepEqual([ok.last_outcome, ok.last_outcome_reason, ok.last_outcome_count, ok.last_outcome_time], ['degraded', 'scrape_errors', 0, '2026-10-10T08:00:00+00:00'])
+  const bad = job({ last_outcome: '<b>x</b>', last_outcome_reason: 'Traceback', last_outcome_count: 10001, last_outcome_time: '2026-10-10 08:00' })
+  assert.deepEqual([bad.last_outcome, bad.last_outcome_reason, bad.last_outcome_count, bad.last_outcome_time], [null, null, null, null])
+  assert.equal(job({ last_outcome_count: -1 }).last_outcome_count, null)
+  assert.equal(job({ last_outcome_count: 1.5 }).last_outcome_count, null)
+  assert.equal(job({ last_outcome_time: '2026-13-40T99:00:00Z' }).last_outcome_time, null)
+  assert.equal(job({}).last_outcome, null)
+})
+
+test('job health: degraded/failed outcome with error_count 0 is never green', () => {
+  assert.equal(jobHealth(job({ status: undefined, last_outcome: 'degraded', last_outcome_count: 0 })), 'degraded')
+  assert.equal(jobHealth(job({ status: 'ok', last_outcome: 'degraded' })), 'degraded')
+  assert.equal(jobHealth(job({ status: 'ok', last_outcome: 'failed' })), 'error')
+  assert.equal(jobHealth(job({ status: undefined, last_outcome: 'clean', last_outcome_count: 0 })), 'ok')
+})
+
+test('job health: circuit/error/counter precedence and unknown without positive evidence', () => {
+  assert.equal(jobHealth(job({ status: 'circuit_open', last_outcome: 'clean' })), 'error')
+  assert.equal(jobHealth(job({ status: 'error', last_outcome: 'clean' })), 'error')
+  assert.equal(jobHealth(job({ status: 'warning' })), 'degraded')
+  assert.equal(jobHealth(job({ status: undefined, error_count: 5, last_outcome: 'clean' })), 'error')
+  assert.equal(jobHealth(job({ status: undefined, error_count: 1 })), 'degraded')
+  assert.equal(jobHealth(job({ status: undefined })), 'unknown')
+  assert.equal(jobHealth(job({ status: 'expired', last_outcome: 'bogus' })), 'unknown')
+  assert.equal(jobHealth(scraperJobsFrom({ diavgeia: { error_count: 0 } })[0]), 'unknown')
+})
+
+test('job outcome label uses fixed text and placeholders only', () => {
+  assert.equal(jobOutcomeLabel(job({ last_outcome: 'failed', last_outcome_reason: 'exception', last_outcome_count: 3 })), 'latest: failed · exception · 3 items')
+  assert.equal(jobOutcomeLabel(job({ last_outcome: 'clean', last_outcome_reason: 'none', last_outcome_count: 0 })), 'latest: clean · no errors · 0 items')
+  assert.equal(jobOutcomeLabel(job({ last_outcome: 'degraded', last_outcome_reason: '<img src=x>' })), 'latest: degraded · reason ? · ? items')
+  assert.equal(jobOutcomeLabel(job({})), 'latest: unknown')
+})
+
+test('views wire the shared helpers instead of a local error_count rule', () => {
+  const monitor = fs.readFileSync(new URL('./src/app/(dashboard)/monitor/page.tsx', import.meta.url), 'utf8')
+  const logs = fs.readFileSync(new URL('./src/app/(dashboard)/logs/page.tsx', import.meta.url), 'utf8')
+  for (const src of [monitor, logs]) {
+    assert.match(src, /jobHealth\(/)
+    assert.match(src, /jobOutcomeLabel\(/)
+    assert.doesNotMatch(src, /dangerouslySetInnerHTML/)
+  }
+  assert.doesNotMatch(monitor, /errCount > 0 \? 'degraded' : 'ok'/)
+  assert.doesNotMatch(monitor, />Last OK</)
+})

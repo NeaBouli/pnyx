@@ -489,7 +489,7 @@ class DiavgeiaDecision(Base):
     governance_level      = Column(String(20), nullable=True)  # MUNICIPAL, REGION, CENTRAL, OTHER
 
     __table_args__ = (
-        CheckConstraint("length(ada) BETWEEN 10 AND 32", name="diavgeia_decisions_ada_chk"),
+        CheckConstraint("length(ada) BETWEEN 9 AND 32", name="diavgeia_decisions_ada_chk"),
         Index("ix_diavgeia_decisions_org_published", "organization_uid", publish_timestamp.desc()),
         Index("ix_diavgeia_decisions_dimos_published", "dimos_id", publish_timestamp.desc()),
         Index("ix_diavgeia_decisions_type_published", "decision_type_uid", publish_timestamp.desc()),

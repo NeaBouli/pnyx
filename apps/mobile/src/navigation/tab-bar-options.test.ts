@@ -102,21 +102,26 @@ describe("TabNavigator bottom tab options (GH-298)", () => {
     }
   });
 
-  it("keeps active/inactive colors and never hides the label", () => {
+  it.each(["below-icon", "beside-icon"])("configures active/inactive colors and visible labels (%s)", position => {
     for (const e of EXPECTED) {
       const opts = optionsFor(e.name);
       expect(opts.tabBarActiveTintColor).toBe(colors.tabBarActive);
       expect(opts.tabBarInactiveTintColor).toBe(colors.tabBarInactive);
       expect(opts.tabBarShowLabel).not.toBe(false);
       expect(opts.tabBarStyle).toEqual({ backgroundColor: colors.tabBarBg, borderTopColor: colors.border });
-      const label = opts.tabBarLabel({ color: colors.tabBarActive, focused: true, position: "below-icon", children: e.title });
-      expect(label.props.style.color).toBe(colors.tabBarActive);
+      for (const state of [
+        { color: colors.tabBarActive, focused: true },
+        { color: colors.tabBarInactive, focused: false },
+      ]) {
+        const label = opts.tabBarLabel({ ...state, position, children: e.title });
+        expect(label.props.style.color).toBe(state.color);
+      }
     }
   });
 
-  it("renders a single-line label that keeps font scaling up to at least 1.8 and fits its column", () => {
+  it.each(["below-icon", "beside-icon"])("configures scalable single-line labels and fit-to-size props (%s)", position => {
     for (const e of EXPECTED) {
-      const label = optionsFor(e.name).tabBarLabel({ color: "#000", focused: false, position: "below-icon", children: e.title });
+      const label = optionsFor(e.name).tabBarLabel({ color: "#000", focused: false, position, children: e.title });
       expect(label.type).toBe("Text");
       expect(label.props.allowFontScaling).not.toBe(false);
       if (label.props.maxFontSizeMultiplier !== undefined) {
@@ -126,6 +131,20 @@ describe("TabNavigator bottom tab options (GH-298)", () => {
       expect(label.props.adjustsFontSizeToFit).toBe(true);
       expect(label.props.minimumFontScale).toBeGreaterThanOrEqual(0.75);
       expect(label.props.minimumFontScale).toBeLessThan(1);
+    }
+  });
+
+  it("leaves tab bar, buttons, item geometry and safe-area handling to the navigator", () => {
+    // Configuration delegation only: this does not measure native touch targets
+    // or prove taps/layout at system font scale 1.8 or width greater than height.
+    expect(tabNavigator.type).toBe("Tab.Navigator");
+    expect(tabNavigator.props.tabBar).toBeUndefined();
+    expect(tabNavigator.props.safeAreaInsets).toBeUndefined();
+    for (const e of EXPECTED) {
+      const opts = optionsFor(e.name);
+      expect(opts.tabBarButton).toBeUndefined();
+      expect(opts.tabBarItemStyle).toBeUndefined();
+      expect(opts.safeAreaInsets).toBeUndefined();
     }
   });
 

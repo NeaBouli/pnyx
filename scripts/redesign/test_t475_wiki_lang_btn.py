@@ -30,7 +30,7 @@ WIKI = REPO / "docs/wiki"
 PAGES = [
     "api", "architecture", "audit", "broadcasting", "contributing", "database",
     "delete-account", "faq", "index", "modules", "privacy", "roadmap",
-    "security", "whitepaper",
+    "security", "whitepaper", "zk-voting",
 ]
 PIN = ".pnx2-header .nav-links > .lang-btn"
 RAISE = ".pnx2-header .nav-links > a:focus-visible"

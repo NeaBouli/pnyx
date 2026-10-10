@@ -4,6 +4,7 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
+from urllib.parse import quote
 
 import httpx
 import pytest
@@ -11,6 +12,7 @@ from fastapi import FastAPI, HTTPException
 
 from routers import newsletter, newsletter_admin
 from services.newsletter_consent import (
+    CONFIRMED_KEY, MAX_READINESS_CONTACTS, READ_CONSENT_SNAPSHOT,
     TOPICS, classify_contact, confirmation_payload, readiness_summary,
 )
 
@@ -138,6 +140,112 @@ async def test_endpoint_get_only_encoded_identity_private_errors_and_aggregate_o
     assert {call[0] for call in store.method_calls} == {"eval_ro"}
     assert "example.org" not in caplog.text
     assert "synthetic-test-key" not in caplog.text
+
+
+@pytest.mark.parametrize("status", [302, 307])
+async def test_provider_redirect_is_not_followed_or_disclosed(
+    monkeypatch: pytest.MonkeyPatch, status: int, caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.INFO, logger="httpx")
+    api_key = "synthetic-test-key"
+    private_body = "redirect-body+private@example.org"
+    location = f"https://outside.invalid/contacts/{private_body}?api-key={api_key}"
+    store = MagicMock()
+    store.eval_ro = AsyncMock(return_value=[1, EMAIL, consent()])
+    monkeypatch.setattr(newsletter, "_get_redis", AsyncMock(return_value=store))
+    monkeypatch.setattr(newsletter_admin, "BREVO_API_KEY", api_key)
+    monkeypatch.setattr(newsletter_admin, "LIST_ID", 2)
+    requests: list[httpx.Request] = []
+
+    def transport(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        assert request.method == "GET"
+        assert request.url.host == "api.brevo.com", "redirect target must never receive a request"
+        assert request.url.raw_path == f"/v3/contacts/{quote(EMAIL, safe='')}".encode()
+        assert request.headers["api-key"] == api_key
+        return httpx.Response(status, headers={"Location": location}, text=private_body)
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(newsletter_admin.httpx, "AsyncClient", lambda **kw: real_client(
+        transport=httpx.MockTransport(transport), **kw,
+    ))
+    result = await newsletter_admin.newsletter_readiness(_auth=True)
+
+    assert result == {
+        "mode": "read_only", "scope": "locally_confirmed_only",
+        "confirmed_count": 1, "evaluated_count": 1, "complete": True,
+        "proposed_writes": 0, "actions": {"KEEP": 0, "HOLD": 1, "EXCLUDE": 0},
+        "reasons": {"provider_lookup_failed": 1}, "delivery_ready": False,
+        "blockers": ["campaign_preferences_not_enforced", "provider_history_requires_review"],
+    }
+    assert len(requests) == 1
+    store.eval_ro.assert_awaited_once_with(
+        READ_CONSENT_SNAPSHOT, 1, CONFIRMED_KEY, MAX_READINESS_CONTACTS,
+    )
+    assert {call[0] for call in store.method_calls} == {"eval_ro"}
+    for private in (EMAIL, "example.org", api_key, private_body, location, "outside.invalid"):
+        assert private not in json.dumps(result)
+        assert private not in caplog.text
+
+
+async def test_mixed_snapshot_isolates_failures_and_returns_only_read_only_aggregates(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.INFO, logger="httpx")
+    invalid, member, suppressed, timed_out = (
+        f"{name}+fixture@example.org" for name in ("invalid", "member", "suppressed", "timeout")
+    )
+    api_key = "synthetic-mixed-key"
+    private_error = "timeout-body+private@example.org"
+    store = MagicMock()
+    store.eval_ro = AsyncMock(return_value=[
+        4, invalid, "not-json", member, consent(email=member),
+        suppressed, consent(email=suppressed), timed_out, consent(email=timed_out),
+    ])
+    monkeypatch.setattr(newsletter, "_get_redis", AsyncMock(return_value=store))
+    monkeypatch.setattr(newsletter_admin, "BREVO_API_KEY", api_key)
+    monkeypatch.setattr(newsletter_admin, "LIST_ID", 2)
+    requests: list[httpx.Request] = []
+    identities = {quote(email, safe="").encode(): email for email in (member, suppressed, timed_out)}
+
+    def transport(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        assert request.method == "GET"
+        assert request.url.host == "api.brevo.com"
+        assert request.headers["api-key"] == api_key
+        email = identities[request.url.raw_path.rsplit(b"/", 1)[-1]]
+        if email == member:
+            return httpx.Response(200, json=provider(email=email, listIds=[2, 9]))
+        if email == suppressed:
+            return httpx.Response(200, json=provider(email=email, emailBlacklisted=True, listIds=[2]))
+        raise httpx.ReadTimeout(private_error, request=request)
+
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(newsletter_admin.httpx, "AsyncClient", lambda **kw: real_client(
+        transport=httpx.MockTransport(transport), **kw,
+    ))
+    result = await newsletter_admin.newsletter_readiness(_auth=True)
+
+    assert result == {
+        "mode": "read_only", "scope": "locally_confirmed_only",
+        "confirmed_count": 4, "evaluated_count": 4, "complete": True,
+        "proposed_writes": 0, "actions": {"KEEP": 1, "HOLD": 1, "EXCLUDE": 2},
+        "reasons": {"existing_list_member": 1, "invalid_consent_record": 1,
+                    "provider_lookup_failed": 1, "provider_suppressed": 1},
+        "delivery_ready": False,
+        "blockers": ["campaign_preferences_not_enforced", "provider_history_requires_review"],
+    }
+    assert len(requests) == 3
+    assert {request.url.raw_path for request in requests} == {
+        f"/v3/contacts/{quote(email, safe='')}".encode() for email in (member, suppressed, timed_out)
+    }
+    store.eval_ro.assert_awaited_once_with(
+        READ_CONSENT_SNAPSHOT, 1, CONFIRMED_KEY, MAX_READINESS_CONTACTS,
+    )
+    assert {call[0] for call in store.method_calls} == {"eval_ro"}
+    for private in (invalid, member, suppressed, timed_out, "example.org", api_key, private_error):
+        assert private not in json.dumps(result)
+        assert private not in caplog.text
 
 
 async def test_total_timeout_cancels_reads_without_partial_manifest(monkeypatch: pytest.MonkeyPatch) -> None:

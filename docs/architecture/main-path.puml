@@ -556,13 +556,213 @@ else HTTP / malformed / unavailable
 end
 Snapshot -> Tiles : render values or neutral dash + bilingual hint
 @enduml
-@startuml T9028_server_wording_path
-participant Snapshot
-participant updateServerTile as Render
-participant "Server total row" as Total
-participant "Account rows" as Account
-Snapshot -> Render : existing finite server snapshot
-Render -> Total : negative: absolute amount / since SERVER_START_DATE
-Render -> Account : original received / signed cost
-note over Total : Draft only: Gio wording decision pending
+
+@startuml T9027_diavgeia_ada_path
+participant DiavgeiaClient as Client
+participant scrape_decisions as Scraper
+participant DiavgeiaDecision as Model
+database PostgreSQL
+Client --> Scraper : raw decision / exact ada
+Scraper -> Model : pg_insert(ada=upstream ada)
+Model -> PostgreSQL : upsert / named check (9..32)
+PostgreSQL --> Scraper : unchanged nine-character ADA accepted
 @enduml
+
+@startuml T9029_docs_ci_path
+participant "Docs Redesign Gates" as DocsCI
+participant "Full-history checkout" as Checkout
+participant "Node (.nvmrc)" as Node
+participant "Documentation checks" as Checks
+DocsCI -> Checkout : fetch-depth 0, credentials not persisted
+DocsCI -> Node : SHA-pinned setup-node
+DocsCI -> Checks : existing Python redesign tests (unchanged)
+Node -> Checks : node --test SEO / remote-sinks / community
+Checks --> DocsCI : pass or fail CI gate
+@enduml
+
+' T-9033 nightly consolidation: built source paths only; no live action simulated.
+@startuml T9033_payment_projection
+participant "payments.py::stripe_webhook" as Webhook
+participant "allocate_donation" as Allocation
+participant "_append_payment_record\n_projection_state" as Append
+participant "_process_stripe_adjustment\n_apply_public_payment_adjustment" as Adjust
+database "Redis private/public buckets\nand integer-cent payment state" as Redis
+alt verified Checkout and intake enabled
+  Webhook -> Allocation : paid EUR amount
+  Allocation --> Webhook : server need, domain need, remainder reserve
+  Webhook -> Append : allocation record
+  Append -> Append : validate allocation cents == amount cents
+  Append -> Redis : atomic record / buckets / public projection / state
+else verified refund or dispute
+  Webhook -> Adjust : event before new-payment intake gate
+  Adjust -> Redis : read original/remaining cent allocation under lock
+  Adjust -> Adjust : target remaining cents + deterministic residual
+  Adjust -> Redis : Lua commit all bucket deltas / state / dedup
+else Checkout with intake closed
+  Webhook --> Webhook : 503; no new payment allocation
+end
+@enduml
+
+@startuml T9033_funding_snapshot
+participant "community.html::fetchPaymentStatus" as Fetch
+participant "payments.py::payment_status" as Status
+database "Public support projection" as Projection
+participant "Community server/domain/reserve\nsnapshot state" as Snapshot
+participant "updateServerTile / updateDomainTile\nupdateReserveTile" as Tiles
+Fetch -> Status : GET /api/v1/payments/status
+Status -> Projection : _load_public_support_projection
+Projection --> Status : PII-free bucket totals
+Status --> Fetch : server / domain / numeric reserve
+alt corresponding tile has valid finite data (zero included)
+  Fetch -> Snapshot : replace snapshot; ready
+else HTTP / malformed / unavailable data
+  Fetch -> Snapshot : stale if cached; otherwise unavailable
+end
+Fetch -> Tiles : render independent snapshots
+Snapshot --> Tiles : last valid values or neutral unknown dash
+Tiles -> Tiles : tick / language-change re-render bilingual hints
+note over Snapshot,Tiles
+Initial state: loading, no invented balance.
+Recovery hides the unavailable/stale hint.
+end note
+@enduml
+
+@startuml T9033_ada_constraint
+participant "diavgeia_scraper.py::scrape_decisions" as Scraper
+participant "diavgeia_client.py::DiavgeiaClient" as Client
+database "PostgreSQL diavgeia_decisions" as DB
+participant "Alembic y801a2b3c4d5" as Migration
+group Forward schema source (no production execution claim)
+  Migration -> DB : replace named check with length(ada) BETWEEN 9 AND 32
+end
+Scraper -> Client : iter_decisions
+Client --> Scraper : exact upstream ada
+Scraper -> DB : pg_insert / on_conflict_do_update(ada)
+DB --> Scraper : unchanged nine-character Greek ADA accepted
+note over Migration,DB
+Downgrade: 10..32 NOT VALID preserves existing short rows,
+but subsequent inserts/updates must obey the old rule.
+No DML; no Latin-only regex or transliteration.
+end note
+@enduml
+
+@startuml T9033_docs_ci
+participant "ci.yml::test-docs-redesign" as DocsCI
+participant "SHA-pinned workflow actions" as Actions
+participant "Full Git history / .nvmrc Node" as Inputs
+participant "Three dependency-free Node gates" as Checks
+DocsCI -> Actions : checkout / setup-node via immutable refs
+Actions --> Inputs : full checkout and configured Node
+DocsCI -> Checks : node --test public-seo / static-docs-remote-sinks / community
+Inputs --> Checks : source, history, runtime
+Checks --> DocsCI : pass/fail
+note over Actions
+All 15 remote action uses across four workflows are pinned.
+Same documented versions; no runner/behavior policy change.
+Security Audit full history predates #518.
+end note
+@enduml
+' End T-9033 nightly consolidation.
+
+' T-9055 built source traces for #528..#541; no production/OEM proof implied.
+@startuml T9055_public_comparison
+participant "index.html::fetchRepresentation\nfetchBillComparison" as Landing
+participant "analytics.py::cumulative_representation\ncompute_cumulative_representation" as Analytics
+participant "public_api.py::public_bill_results" as Results
+participant "renderBillComparison / toggleLang" as View
+participant "index.html::fetchCPLM" as CPLMView
+participant "cplm.py::cplm_aggregate" as CPLMRouter
+participant "services/cplm.py::get_cplm_cached\ncompute_cplm" as CPLMService
+Landing -> View : reset comparison to neutral
+Landing -> Analytics : GET /analytics/representation
+Analytics --> Landing : public closed bills; last_bill.bill_id
+Landing -> Results : GET /public/bills/{bill_id}/results
+Results --> Landing : citizen counts / party positions / hidden flag
+alt current request, same bill, closed and results_hidden=false
+  Landing -> Landing : safe nonnegative integer counts; sum=total>0\nknown reported party positions
+  Landing -> View : party-position YES share / citizen YES share
+else missing / invalid / current failure
+  Landing -> View : neutral bars and explanatory bilingual note
+else stale request response
+  Landing -> Landing : ignore response
+end
+note over Landing,View
+Closed statuses: PARLIAMENT_VOTED / OPEN_END.
+Parliament bar is reported PARTY POSITIONS, not MPs.
+Rendered data-el/data-en uses currentLang at resolution.
+end note
+group Separate CPLM request (not invoked by comparison)
+  CPLMView -> CPLMRouter : GET /cplm/aggregate
+  CPLMRouter -> CPLMService : get_cplm_cached
+  CPLMService -> CPLMService : on cache miss compute_cplm\npublic_bill_filter + results_visible_filter
+  CPLMService --> CPLMView : aggregate / quadrant
+  CPLMView -> CPLMView : store data-el/data-en; render currentLang
+end
+View -> View : toggleLang updates currentLang, documentElement.lang\nand data-* text (including delayed-result labels)
+@enduml
+
+@startuml T9055_manual_browser_gate
+actor "Authorized workflow dispatcher" as Dispatcher
+participant "t356-browser.yml" as Workflow
+participant "SHA-pinned actions / locked\nPlaywright 1.63.0" as Tooling
+participant "t356_democracy_cycle.browser.cjs" as Harness
+participant "Chromium / WebKit\nlocal docs + mocked API" as Browsers
+collections "results.json / PNG / logs" as Evidence
+Dispatcher -> Workflow : workflow_dispatch: data-only or full
+Workflow -> Workflow : trusted same-repo branch / CI_RUNNER policy
+Workflow -> Tooling : .nvmrc; npm ci; install browsers
+Workflow -> Harness : bounded local harness invocation
+Harness -> Browsers : responsive fixtures / language / data checks
+Browsers --> Harness : assertions and screenshots
+Harness -> Evidence : results.json / PNG
+Harness --> Workflow : exit 0 pass / 1 assertions / 2 infrastructure
+Workflow -> Workflow : validate complete evidence / fail incomplete output
+Workflow -> Evidence : upload evidence even on failure; retention 3 days
+note over Workflow,Browsers
+Manual-only gate, no production requests or deployment.
+Fallback runner installs browsers without sudo;
+system libraries must already be provisioned.
+end note
+@enduml
+
+@startuml T9055_mobile_unread
+participant "notifications.ts" as Notifications
+participant "unread-events.ts::createUnreadEventsStore" as Ledger
+database "Serialized local storage" as Storage
+participant "Local notification adapter" as Local
+participant "notification-badge.ts::set" as Badge
+participant "Native badge adapter" as Native
+Notifications -> Ledger : ingestPushPayload / ingest(stable event)
+Ledger -> Storage : queued load / preference check / durable write
+Storage --> Ledger : persisted ledger
+Ledger --> Notifications : added / duplicate / disabled / invalid
+alt added + local_display content + supported adapter
+  Notifications -> Local : schedule local display (flag removed)
+else replay / disabled / invalid
+  Notifications -> Notifications : no duplicate local display
+end
+Notifications -> Ledger : unreadCount
+Ledger --> Notifications : persisted unread count
+alt F-Droid
+  Notifications -> Notifications : return before native badge / FCM
+else Play / Direct
+  Notifications -> Badge : set(absolute count; clearTray=false)
+  alt count > 0
+    Badge -> Native : setBadgeCountAsync(min(count,99))
+  else automatic zero
+    Badge -> Badge : skip native zero; preserve tray
+  end
+end
+Notifications -> Ledger : explicit markRead / category / all
+Ledger -> Storage : serialized acknowledgement / read tombstone
+Notifications -> Badge : supported flavor: reconcile(clearTray=true)
+Badge -> Native : explicit final zero may clear tray
+note over Notifications,Native
+Source and offline restart/replay tests are not OEM/provider proof.
+#541 offline Play/Direct: persisted master=false suppresses the same
+event before/after restart; explicit enable admits it once; replay dedups.
+NV1/NV2 and release/device gates remain open.
+BillsScreen focus cancellation is not retained-native-navigation proof.
+end note
+@enduml
+' End T-9055 built source traces.

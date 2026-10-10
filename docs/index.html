@@ -475,6 +475,10 @@
   <link rel="stylesheet" href="assets/redesign-v2/r2-landing.css"/>
   <link rel="stylesheet" href="assets/redesign-v2/r5-landing-fidelity.css"/>
   <script src="assets/redesign-v2/landing-folds.js" defer></script>
+  <style>
+    /* T-9048: measured newsletter-label contrast; no layout/token changes. */
+    #newsletter label > span[data-el] { color: #475569; }
+  </style>
 </head>
 <body>
 <a href="#main" class="pnx2-skip" data-el="Μετάβαση στο κύριο περιεχόμενο" data-en="Skip to main content">Μετάβαση στο κύριο περιεχόμενο</a>
@@ -561,7 +565,7 @@
         <a href="#votes" class="pnx2-text-action" data-el="ΠΡΟΒΟΛΗ ΤΡΕΧΟΥΣΩΝ →" data-en="VIEW ACTIVE VOTES →">ΠΡΟΒΟΛΗ ΤΡΕΧΟΥΣΩΝ →</a>
       </div>
       <div class="hero-owl">
-        <img src="pnx.png" alt="εκκλησία"/>
+        <img src="pnx.png" alt="εκκλησία" loading="lazy"/>
       </div>
       <div class="stat-card">
         <div class="stat-val" data-el="100%" data-en="100%">100%</div>
@@ -613,21 +617,21 @@
     <h2 class="section-title fade-in" data-el="Ψηφοφορίες σε Εξέλιξη" data-en="Votes in Progress">Ψηφοφορίες σε Εξέλιξη</h2>
     <div class="ticker-grid">
       <div class="fade-in">
-        <h4><span class="dot"></span> <span data-el="Τρέχουσες" data-en="Active">Τρέχουσες</span></h4>
+        <h4 role="heading" aria-level="3"><span class="dot"></span> <span data-el="Τρέχουσες" data-en="Active">Τρέχουσες</span></h4>
         <div class="ticker-cards-wrap" id="t1">
           <div class="t-card al t-empty visible"><strong data-el="Σύντομα πραγματικά δεδομένα" data-en="Real data soon">Σύντομα πραγματικά δεδομένα</strong><span data-el="Θα εμφανιστούν ψηφοφορίες όταν περάσουν το όριο συμμετοχής." data-en="Votes appear after they pass the participation threshold.">Θα εμφανιστούν ψηφοφορίες όταν περάσουν το όριο συμμετοχής.</span></div>
         </div>
         <a href="/el/bills" class="t-more" data-el="Προβολή τρεχουσών" data-en="View active votes">Προβολή τρεχουσών</a>
       </div>
       <div class="fade-in">
-        <h4><span class="dot"></span> <span data-el="Τελευταίες 24ω" data-en="Last 24h">Τελευταίες 24ω</span></h4>
+        <h4 role="heading" aria-level="3"><span class="dot"></span> <span data-el="Τελευταίες 24ω" data-en="Last 24h">Τελευταίες 24ω</span></h4>
         <div class="ticker-cards-wrap" id="t2">
           <div class="t-card rc t-empty visible"><strong data-el="Καμία ψηφοφορία πάνω από το όριο" data-en="No vote above threshold">Καμία ψηφοφορία πάνω από το όριο</strong><span data-el="Μόνο πραγματικές, συγκεντρωτικές ψήφοι εμφανίζονται εδώ." data-en="Only real aggregated votes appear here.">Μόνο πραγματικές, συγκεντρωτικές ψήφοι εμφανίζονται εδώ.</span></div>
         </div>
         <a href="/el/bills?status=WINDOW_24H" class="t-more" data-el="Προβολή παραθύρου 24ω" data-en="View 24h window">Προβολή παραθύρου 24ω</a>
       </div>
       <div class="fade-in">
-        <h4><span class="dot"></span> <span data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</span></h4>
+        <h4 role="heading" aria-level="3"><span class="dot"></span> <span data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</span></h4>
         <div class="ticker-cards-wrap" id="t3">
           <div class="t-card rs t-empty visible"><strong data-el="Αποτελέσματα όταν υπάρχουν αρκετές ψήφοι" data-en="Results after enough votes">Αποτελέσματα όταν υπάρχουν αρκετές ψήφοι</strong><span data-el="Δεν προβάλλονται δοκιμαστικοί αριθμοί." data-en="No demo numbers are shown.">Δεν προβάλλονται δοκιμαστικοί αριθμοί.</span></div>
         </div>
@@ -856,14 +860,22 @@
       <span style="font-size:0.65rem;color:#64748b;display:flex;align-items:center;gap:0.3rem"><span style="width:5px;height:5px;border-radius:50%;background:#22c55e;display:inline-block;animation:blink 2s infinite"></span> Live</span>
     </div>
     <p style="font-size:0.75rem;color:var(--gray-500);margin-bottom:0.75rem" data-el="Πόσο αντιπροσωπεύει η Βουλή τη γνώμη των πολιτών; Σωρευτικός υπολογισμός από όλες τις ψηφοφορίες." data-en="How well does Parliament represent citizen opinion? Calculated cumulatively from all votes.">Πόσο αντιπροσωπεύει η Βουλή τη γνώμη των πολιτών; Σωρευτικός υπολογισμός από όλες τις ψηφοφορίες.</p>
-    <!-- Live bar: background is grey track, colored fill grows left-to-right -->
-    <div style="position:relative;height:28px;border-radius:6px;background:#e2e8f0;margin-bottom:0.3rem;overflow:hidden">
-      <div id="repFill" style="height:100%;width:0%;border-radius:6px;transition:width 0.8s ease-out;background:#ef4444"></div>
-      <div id="repMarker" style="position:absolute;top:-4px;left:0%;width:4px;height:36px;background:#0f172a;border-radius:2px;transition:left 1.5s ease"></div>
+    <!-- Same-bill YES shares: reported party positions are not MP vote totals. -->
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem">
+      <div>
+        <div style="display:flex;justify-content:space-between;gap:0.25rem;flex-wrap:wrap;font-size:0.65rem;margin-bottom:0.3rem">
+          <span data-el="Απόφαση Βουλής" data-en="Parliament Decision">Απόφαση Βουλής</span><span id="repParliamentValue" style="font-weight:700;white-space:nowrap" data-el="—" data-en="—">—</span>
+        </div>
+        <div style="height:14px;border:2px solid #0f172a;background:#e2e8f0;overflow:hidden"><div id="repParliamentFill" style="height:100%;width:0%;background:#a16207;transition:width 0.8s ease-out"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;gap:0.25rem;flex-wrap:wrap;font-size:0.65rem;margin-bottom:0.3rem">
+          <span data-el="Βούληση Πολιτών" data-en="Citizen Will">Βούληση Πολιτών</span><span id="repCitizenValue" style="font-weight:700;white-space:nowrap" data-el="—" data-en="—">—</span>
+        </div>
+        <div style="height:14px;border:2px solid #0f172a;background:#e2e8f0;overflow:hidden"><div id="repCitizenFill" style="height:100%;width:0%;background:#2563eb;transition:width 0.8s ease-out"></div></div>
+      </div>
     </div>
-    <div style="display:flex;justify-content:space-between;font-size:0.62rem;color:#64748b">
-      <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
-    </div>
+    <p id="repComparisonNote" style="font-size:0.65rem;color:var(--gray-700);margin-top:0.5rem" data-el="Δεν υπάρχουν διαθέσιμα έγκυρα συγκρίσιμα δεδομένα για το ίδιο νομοσχέδιο. Ποσοστό Υπέρ των καταγεγραμμένων κομματικών θέσεων έναντι όλων των ψήφων της πλατφόρμας. Όχι ποσοστό βουλευτών ή επίσημα επιβεβαιωμένη απόφαση." data-en="Valid comparable data for the same bill is unavailable. YES share of reported party positions versus all platform votes. Not MP percentages or an officially confirmed decision.">Δεν υπάρχουν διαθέσιμα έγκυρα συγκρίσιμα δεδομένα για το ίδιο νομοσχέδιο. Ποσοστό Υπέρ των καταγεγραμμένων κομματικών θέσεων έναντι όλων των ψήφων της πλατφόρμας. Όχι ποσοστό βουλευτών ή επίσημα επιβεβαιωμένη απόφαση.</p>
     <!-- Stats row -->
     <div style="display:flex;gap:1rem;margin-top:0.75rem;flex-wrap:wrap">
       <div style="flex:1;min-width:120px;background:white;border-radius:0.5rem;padding:0.5rem 0.75rem;text-align:center">
@@ -939,6 +951,51 @@
 <script>
 (function(){
   var ELECTORATE = 9810040; // Εκλογικό Σώμα Ελλάδας 2023 (ΥΠΕΣ)
+  var representationRequestId = 0;
+
+  function renderBillComparison(parliamentPct, citizenPct, billId) {
+    var available = Number.isFinite(parliamentPct) && Number.isFinite(citizenPct) && parliamentPct >= 0 && parliamentPct <= 100 && citizenPct >= 0 && citizenPct <= 100;
+    var lang = typeof currentLang !== "undefined" ? currentLang : "el";
+    function text(id, el, en) {
+      var node = document.getElementById(id);
+      if (!node) return;
+      node.setAttribute("data-el", el);
+      node.setAttribute("data-en", en);
+      node.textContent = lang === "en" ? en : el;
+    }
+    [["repParliament", parliamentPct], ["repCitizen", citizenPct]].forEach(function(item) {
+      var fill = document.getElementById(item[0] + "Fill");
+      if (fill) fill.style.width = (available ? item[1] : 0) + "%";
+      text(item[0] + "Value", available ? item[1].toFixed(2).replace(".", ",") + "% Υπέρ" : "—", available ? item[1].toFixed(2) + "% YES" : "—");
+    });
+    text("repComparisonNote",
+      (available ? "Ίδιο νομοσχέδιο: " + billId + ". " : "Δεν υπάρχουν διαθέσιμα έγκυρα συγκρίσιμα δεδομένα για το ίδιο νομοσχέδιο. ") + "Ποσοστό Υπέρ των καταγεγραμμένων κομματικών θέσεων έναντι όλων των ψήφων της πλατφόρμας. Όχι ποσοστό βουλευτών ή επίσημα επιβεβαιωμένη απόφαση.",
+      (available ? "Same bill: " + billId + ". " : "Valid comparable data for the same bill is unavailable. ") + "YES share of reported party positions versus all platform votes. Not MP percentages or an officially confirmed decision.");
+  }
+
+  function fetchBillComparison(billId, requestId) {
+    if (typeof billId !== "string" || !billId.trim() || billId.length > 50) return;
+    fetch("https://api.ekklesia.gr/api/v1/public/bills/" + encodeURIComponent(billId) + "/results")
+      .then(function(r){ if (!r.ok) throw new Error("Bill results unavailable"); return r.json(); })
+      .then(function(d){
+        if (requestId !== representationRequestId) return;
+        if (!d || d.bill_id !== billId || (d.status !== "PARLIAMENT_VOTED" && d.status !== "OPEN_END") || d.results_hidden !== false) throw new Error("Bill results are not public and closed");
+        var counts = d.citizen_votes;
+        var parties = d.parliament_votes;
+        if (!counts || typeof counts !== "object" || Array.isArray(counts) || !parties || typeof parties !== "object" || Array.isArray(parties)) throw new Error("Comparison data missing");
+        var fields = ["yes", "no", "abstain", "unknown", "total"];
+        if (!fields.every(function(key){ return Number.isSafeInteger(counts[key]) && counts[key] >= 0; }) || counts.total === 0) throw new Error("Invalid vote counts");
+        var sum = counts.yes + counts.no + counts.abstain + counts.unknown;
+        if (!Number.isSafeInteger(sum) || sum !== counts.total) throw new Error("Vote totals disagree");
+        var keys = Object.keys(parties);
+        var positions = Object.values(parties);
+        var known = ["YES", "ΝΑΙ", "NO", "ΟΧΙ", "ABSTAIN", "ΠΑΡΩΝ", "ΑΠΟΧΗ"];
+        if (!keys.length || !keys.every(function(key){ return !!key.trim(); }) || !positions.every(function(position){ return typeof position === "string" && known.indexOf(position) !== -1; })) throw new Error("Party positions unavailable");
+        var yes = positions.filter(function(position){ return position === "YES" || position === "ΝΑΙ"; }).length;
+        renderBillComparison(yes / positions.length * 100, counts.yes / counts.total * 100, billId);
+      })
+      .catch(function(){ if (requestId === representationRequestId) renderBillComparison(null, null); });
+  }
 
   function repColor(pct) {
     // Text-safe shades: the score is also rendered as coloured text.
@@ -979,12 +1036,14 @@
   }
 
   function fetchRepresentation() {
+    var requestId = ++representationRequestId;
+    renderBillComparison(null, null);
     fetch("https://api.ekklesia.gr/api/v1/analytics/representation")
-      .then(function(r){return r.json()})
+      .then(function(r){ if (!r.ok) throw new Error("Representation unavailable"); return r.json(); })
       .then(function(d){
+        if (requestId !== representationRequestId) return;
+        fetchBillComparison(d && d.last_bill && d.last_bill.bill_id, requestId);
         var score = d.cumulative_representation;
-        var fill = document.getElementById("repFill");
-        var marker = document.getElementById("repMarker");
         var scoreEl = document.getElementById("repScore");
         var divEl = document.getElementById("repDivergence");
         var billsEl = document.getElementById("repBills");
@@ -1009,8 +1068,6 @@
         if (bills < 1 || score === null || score === undefined || !Number.isFinite(Number(score))) {
           setMood(null);
           if (scoreEl) scoreEl.textContent = "—";
-          if (fill) fill.style.width = "0%";
-          if (marker) marker.style.left = "0%";
           if (divEl) divEl.textContent = "—";
           if (billsEl) billsEl.textContent = "—";
           if (votesEl) votesEl.textContent = "—";
@@ -1052,8 +1109,6 @@
         var pct = Math.min(100, Math.max(0, score));
         setMood(pct);
         var col = repColor(pct);
-        if (fill) { fill.style.width = pct + "%"; fill.style.background = col; }
-        if (marker) marker.style.left = pct + "%";
         if (scoreEl) { scoreEl.textContent = pct + "%"; scoreEl.style.color = col; }
         if (divEl) divEl.textContent = avgDiv + "%";
         if (billsEl) billsEl.textContent = bills;
@@ -1065,7 +1120,7 @@
           if (lastStats) lastStats.textContent = d.last_bill.citizen_votes + " ψήφοι · Απόκλιση " + d.last_bill.divergence + "% · Αντιπρ. " + d.last_bill.representation + "%";
         }
       })
-      .catch(function(){ setMood(null); });
+      .catch(function(){ if (requestId === representationRequestId) { setMood(null); renderBillComparison(null, null); } });
   }
   fetchRepresentation();
   setInterval(fetchRepresentation, 60000);
@@ -1159,8 +1214,14 @@
         if (xEl) xEl.textContent = d.x.toFixed(2);
         if (yEl) yEl.textContent = d.y.toFixed(2);
         if (vEl) vEl.textContent = d.total_voters.toLocaleString();
-        var lang = document.documentElement.lang === "en" ? "en" : "el";
-        if (qEl) qEl.textContent = (lang === "en" ? QUAD_EN : QUAD_EL)[d.quadrant] || d.quadrant;
+        var lang = typeof currentLang !== "undefined" ? currentLang : "el";
+        if (qEl) {
+          var quadEl = QUAD_EL[d.quadrant] || d.quadrant || "";
+          var quadEn = QUAD_EN[d.quadrant] || d.quadrant || "";
+          qEl.setAttribute("data-el", quadEl);
+          qEl.setAttribute("data-en", quadEn);
+          qEl.textContent = lang === "en" ? quadEn : quadEl;
+        }
         // Trend arrow
         if (arrow && d.trend && (Math.abs(d.trend.x_delta) > 0.001 || Math.abs(d.trend.y_delta) > 0.001)) {
           var ax = px + (d.trend.x_delta / 10) * 280;
@@ -1401,12 +1462,12 @@
         <div class="roadmap-phase" style="color:var(--green)">Beta — <span data-el="Τώρα" data-en="Now">Τώρα</span></div>
         <h3>Beta Phase</h3>
         <ul>
-          <li data-el="HLR έλεγχος κατάστασης ελληνικού αριθμού (χωρίς SMS· όχι απόδειξη κατοχής SIM ή ταυτότητας)" data-en="Greek-number HLR status check (no SMS; not proof of SIM possession or identity)">HLR έλεγχος κατάστασης ελληνικού αριθμού</li>
+          <li data-el="HLR έλεγχος κατάστασης ελληνικού αριθμού (χωρίς SMS· όχι απόδειξη κατοχής SIM ή ταυτότητας)" data-en="Greek-number HLR status check (no SMS; not proof of SIM possession or identity)">HLR έλεγχος κατάστασης ελληνικού αριθμού (χωρίς SMS· όχι απόδειξη κατοχής SIM ή ταυτότητας)</li>
           <li data-el="Ψηφοφορία Πολιτών (Ed25519)" data-en="Citizen Voting (Ed25519)">Ψηφοφορία Πολιτών (Ed25519)</li>
           <li data-el="Δείκτης Απόκλισης" data-en="Divergence Score">Δείκτης Απόκλισης</li>
           <li data-el="Τοπική Αυτοδιοίκηση (Διαύγεια)" data-en="Local Governance (Diavgeia)">Τοπική Αυτοδιοίκηση (Διαύγεια)</li>
           <li data-el="AI Agent (Ollama + DeepL)" data-en="AI Agent (Ollama + DeepL)">AI Agent (Ollama + DeepL)</li>
-          <li data-el="Newsletter + Push Notifications" data-en="Newsletter + Push Notifications">Newsletter + Push</li>
+          <li data-el="Newsletter + Push Notifications" data-en="Newsletter + Push Notifications">Newsletter + Push Notifications</li>
           <li data-el="Stripe Δωρεές" data-en="Stripe Donations">Stripe Δωρεές</li>
           <li data-el="Mobile App (Android)" data-en="Mobile App (Android)">Mobile App (Android)</li>
           <li data-el="εκπρόσωπος App + HLR Επαλήθευση" data-en="Representative App + HLR Verification">εκπρόσωπος App + HLR Επαλήθευση</li>
@@ -1422,11 +1483,11 @@
         <div class="roadmap-phase" style="color:#f59e0b" data-el="Alpha 0.1 — Σχεδιασμός" data-en="Alpha 0.1 — Design">Alpha 0.1 — Σχεδιασμός</div>
         <h3>Alpha 0.1</h3>
         <ul>
-          <li data-el="Alpha 0.1: gov.gr OAuth2.0 ή νέο challenge-bound QR/eSeal — απαιτεί επίσημη διασύνδεση, έλεγχο κατόχου, DPIA, σχέδιο migration, ανεξάρτητο security/privacy review και sandbox canary· δεν είναι ενεργό στη Beta" data-en="Alpha 0.1: gov.gr OAuth2.0 or fresh challenge-bound QR/eSeal — requires an official integration, holder authentication, DPIA, migration design, independent security/privacy review and sandbox canary; not active in Beta">Alpha 0.1: gov.gr σχεδιασμός, όχι runtime</li>
-          <li data-el="Μόνο επίσημα τεκμηριωμένα claims — περιορισμένος σχεδιασμός Alpha 0.1" data-en="Only officially documented claims — limited Alpha 0.1 design">Μόνο επίσημα claims — σχεδιασμός Alpha 0.1</li>
+          <li data-el="Alpha 0.1: gov.gr OAuth2.0 ή νέο challenge-bound QR/eSeal — απαιτεί επίσημη διασύνδεση, έλεγχο κατόχου, DPIA, σχέδιο migration, ανεξάρτητο security/privacy review και sandbox canary· δεν είναι ενεργό στη Beta" data-en="Alpha 0.1: gov.gr OAuth2.0 or fresh challenge-bound QR/eSeal — requires an official integration, holder authentication, DPIA, migration design, independent security/privacy review and sandbox canary; not active in Beta">Alpha 0.1: gov.gr OAuth2.0 ή νέο challenge-bound QR/eSeal — απαιτεί επίσημη διασύνδεση, έλεγχο κατόχου, DPIA, σχέδιο migration, ανεξάρτητο security/privacy review και sandbox canary· δεν είναι ενεργό στη Beta</li>
+          <li data-el="Μόνο επίσημα τεκμηριωμένα claims — περιορισμένος σχεδιασμός Alpha 0.1" data-en="Only officially documented claims — limited Alpha 0.1 design">Μόνο επίσημα τεκμηριωμένα claims — περιορισμένος σχεδιασμός Alpha 0.1</li>
           <li data-el="Federation API" data-en="Federation API">Federation API</li>
           <li data-el="iOS App" data-en="iOS App">iOS App</li>
-          <li data-el="500+ χρήστες και 3 NGOs είναι μόνο δύο από τα απαιτούμενα gates" data-en="500+ users and 3 NGOs are only two of the required gates">500+ χρήστες + 3 NGOs + όλα τα security gates</li>
+          <li data-el="500+ χρήστες και 3 NGOs είναι μόνο δύο από τα απαιτούμενα gates" data-en="500+ users and 3 NGOs are only two of the required gates">500+ χρήστες και 3 NGOs είναι μόνο δύο από τα απαιτούμενα gates</li>
         </ul>
       </div>
       <div class="roadmap-card fade-in" style="border-color:var(--blue)">
@@ -1580,7 +1641,8 @@
         <label style="color:#64748b;font-size:0.8rem;display:flex;align-items:center;gap:0.3rem"><input type="radio" name="freq" value="weekly" checked style="accent-color:#2563eb"> <span data-el="Εβδομαδιαίο" data-en="Weekly">Εβδομαδιαίο</span></label>
         <label style="color:#64748b;font-size:0.8rem;display:flex;align-items:center;gap:0.3rem"><input type="radio" name="freq" value="monthly" style="accent-color:#2563eb"> <span data-el="Μηνιαίο" data-en="Monthly">Μηνιαίο</span></label>
       </div>
-      <select id="nlType" style="width:100%;padding:0.5rem;background:white;border:2px solid #e2e8f0;border-radius:0.5rem;color:#64748b;font-size:0.8rem;margin-bottom:0.75rem">
+      <span id="nlTypeLabel" hidden data-el="Τύπος συνδρομητή" data-en="Subscriber type">Τύπος συνδρομητή</span>
+      <select id="nlType" aria-labelledby="nlTypeLabel" style="width:100%;padding:0.5rem;background:white;border:2px solid #e2e8f0;border-radius:0.5rem;color:#64748b;font-size:0.8rem;margin-bottom:0.75rem">
         <option value="citizens" data-el="Πολίτης" data-en="Citizen">Πολίτης</option>
         <option value="press" data-el="Τύπος" data-en="Press">Τύπος</option>
         <option value="parties" data-el="Κόμμα" data-en="Party">Κόμμα</option>
@@ -1701,6 +1763,7 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape")closeLegalMo
 var currentLang = "el";
 function toggleLang() {
   currentLang = currentLang === "el" ? "en" : "el";
+  document.documentElement.lang = currentLang;
   document.getElementById("langFlag").textContent = currentLang === "el" ? "EN" : "ΕΛ";
   document.querySelectorAll("[data-el]").forEach(function(el) {
     var t = el.getAttribute("data-" + currentLang);
@@ -2122,7 +2185,7 @@ if (window.location.hash === "#contact" && sessionStorage.getItem("polis_token")
   <div style="background:white;border-radius:1.25rem;max-width:400px;width:100%;padding:2rem;color:#0f172a;border:1px solid #e2e8f0;box-shadow:0 20px 60px rgba(0,0,0,0.15);position:relative">
     <button onclick="document.getElementById('pwaModal').style.display='none'" style="position:absolute;top:1rem;right:1rem;background:none;border:none;color:#94a3b8;font-size:1.5rem;cursor:pointer">&times;</button>
     <div style="text-align:center;margin-bottom:1.5rem">
-      <img src="pnx.png" alt="ekklesia" style="width:64px;height:64px;margin:0 auto 0.75rem"/>
+      <img src="pnx.png" alt="ekklesia" loading="lazy" style="width:64px;height:64px;margin:0 auto 0.75rem"/>
       <h3 style="font-size:1.2rem;font-weight:800" data-el="Εγκατάσταση στο iPhone" data-en="Install on iPhone">Εγκατάσταση στο iPhone</h3>
     </div>
     <ol style="list-style:none;padding:0;margin:0">

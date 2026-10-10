@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { useLocale } from "next-intl";
 
 interface NotificationEvent {
   type: string;
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export default function LiveNotifications({ billId, maxItems = 5 }: Props) {
+  const locale = useLocale();
   const [events, setEvents]       = useState<NotificationEvent[]>([]);
   const [connected, setConnected] = useState(false);
   const esRef = useRef<EventSource | null>(null);
@@ -41,7 +43,7 @@ export default function LiveNotifications({ billId, maxItems = 5 }: Props) {
   if (!connected && events.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-xs">
+    <div role="region" aria-label={locale === "el" ? "Ζωντανές ενημερώσεις" : "Live updates"} className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-xs">
       <div className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full self-end ${
         connected ? "bg-green-900 text-green-300" : "bg-gray-800 text-gray-400"
       }`}>
@@ -50,10 +52,10 @@ export default function LiveNotifications({ billId, maxItems = 5 }: Props) {
       </div>
       {events.map((ev, i) => (
         <div key={i} className="bg-white border border-gray-200 rounded-xl p-3 shadow-lg text-sm">
-          <div className="font-bold text-xs text-blue-400 mb-1">{ev.type}</div>
-          {ev.label_el && <p className="text-gray-300 text-xs">{ev.label_el}</p>}
-          {ev.message_el && <p className="text-gray-300 text-xs">{ev.message_el}</p>}
-          {ev.milestone && <p className="text-yellow-400 font-bold text-xs">{ev.milestone} votes!</p>}
+          <div className="font-bold text-xs text-blue-700 mb-1">{ev.type}</div>
+          {ev.label_el && <p className="text-gray-700 text-xs">{ev.label_el}</p>}
+          {ev.message_el && <p className="text-gray-700 text-xs">{ev.message_el}</p>}
+          {ev.milestone && <p className="text-yellow-700 font-bold text-xs">{ev.milestone} votes!</p>}
         </div>
       ))}
     </div>

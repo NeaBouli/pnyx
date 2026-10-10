@@ -1977,25 +1977,322 @@ flowchart LR
 7. **Nächster Schritt:** candidate tests/browser evidence and gio-dd cross-review
    before head-bound green-CI merge. Production release needs a separate Gio gate.
 
-## T-9028 — Draft Server funding wording (stacked on #515)
+## T-9027 — MOD-21 Diavgeia ADA length (bounded extension)
 
-1. **Grundidee:** make the public funding need understandable without altering
-   accounting or reopening payment intake (`README.md`, `docs/community.html`).
-2. **Spur:** existing `fetchPaymentStatus -> updateServerTile ->
-   sBalanceLabel/sBalanceVal`; the same finite server snapshot supplies the
-   negative amount, while `SERVER_START_DATE` supplies the start month.
-3. **Module:** Community funding presentation, `updateServerTile`, draft candidate.
-   No API/accounting module, extra flow, retry, flag or new balance is introduced.
-4. **Verdrahtung:** a negative balance becomes its absolute amount labeled as
-   open need since April2026; `sReceived` and `sCost` retain original signed values.
-   Nonnegative values retain the balance label; unknown stays unknown, stale
-   snapshots keep their existing notice, language changes re-render the same data.
-5. **Widerspruch/Lücken:** a bare red minus can be mistaken for a debt/account
-   transaction. This is only a wording proposal, not a corrected balance or
-   owner-approved statement. Gio must decide before merge; no live claim.
-6. **Diagramme:** `map.puml::T9028_server_wording` and
-   `main-path.puml::T9028_server_wording_path` (source only if renderer unavailable).
-7. **Nächster Schritt:** local behavioral/browser evidence and Draft PR body
-   before/after; Gio text choice, gio-dd review and green head CI precede any
-   integration. Keep API, allocation, dates, costs, domain/reserve, intake and
-   production untouched. Web rebuild/deploy would be a separate release gate.
+1. Grundidee: preserve public Diavgeia decision identities for municipal voting
+   (`README.md`, `services/diavgeia_scraper.py`).
+2. Spur: `diavgeia_client.py::DiavgeiaClient.iter_decisions` supplies `ada`;
+   `diavgeia_scraper.py::scrape_decisions` passes it unchanged into
+   `pg_insert(DiavgeiaDecision)`; `models.py::DiavgeiaDecision` maps the table;
+   Alembic revision `y801a2b3c4d5` replaces its named length check.
+3. Module: MOD-21 intake — built; database ADA check — built, lower bound corrected
+   from 10 to 9 characters, upper bound still 32.
+4. Verdrahtung: the exact upstream identifier remains the upsert conflict key,
+   document reference and downstream `diavgeia_ada`; no transliteration occurs.
+5. Widerspruch und Lücken: the constraint is not a Latin-only regex; valid ADAs
+   `ΕΘΘ9Η-58Ψ`, `Ψ7ΙΤΗ-ΗΩΞ`, `6ΣΣΡΗ-ΘΑΤ` are nine characters. Migration and
+   model shared the excessive lower bound. Forward migration has no DML.
+   Downgrade restores the old check as NOT VALID to retain existing short rows;
+   it still enforces the old rule on subsequent inserts/updates.
+6. Diagramme: `docs/architecture/map.puml`, `docs/architecture/main-path.puml`.
+7. Nächster Schritt: local predicate/migration regression checks, then gio-dd
+   cross-review and head-bound green CI. Production migration/deploy and any
+   backfill remain separate owner gates; scraper, routes and historic migrations
+   are unchanged. Production release 550549c7 is owner-reported, not verified here.
+
+```mermaid
+flowchart LR
+  Client[DiavgeiaClient.iter_decisions] -->|unchanged ADA| Scraper[scrape_decisions]
+  Scraper -->|pg_insert / conflict key| Model[DiavgeiaDecision]
+  Model --> Check[diavgeia_decisions_ada_chk: 9..32 characters]
+```
+
+## T-9029 — CI documentation checks (2026-10-10)
+
+1. **Grundidee:** static public documentation must be guarded on every CI run.
+2. **Spur:** `ci.yml::test-docs-redesign -> setup-node (.nvmrc) -> node --test`.
+3. **Module:** Docs Redesign Gates; existing Python redesign gates stay unchanged.
+4. **Verdrahtung:** a full-history checkout feeds public SEO source/hash/history
+   assertions, remote-sink regressions and Community payment-status behavior.
+   The three Node checks are dependency-free; no npm installation is needed.
+5. **Widerspruch/Lücken:** Web already executes SEO and remote-sinks, but its
+   shallow checkout skips SEO history assertions; Community behavior had no CI
+   entry. Only the Docs job receives full history. Runner/fork guards are unchanged.
+6. **Diagramme:** `map.puml::T9029_docs_ci` and
+   `main-path.puml::T9029_docs_ci_path`.
+7. **Nächster Schritt:** local checks, gio-dd cross-review and green head-bound CI
+   before merge. This source change does not deploy or change runner variables.
+
+## T-9033 — Nightly source consolidation (2026-10-10)
+
+### 1. Grundidee
+
+Ekklesia supports parliamentary and municipal citizen voting (`README.md`).
+This bounded delta maps public support accounting, its Community display,
+municipal decision identifiers and the existing CI guards around those sources.
+Payment intake remains a separate legal gate, not enabled by this documentation.
+All states below describe inspected source, not a deployment or live verification.
+
+### 2. Spur — grounded callsite hops
+
+- `apps/api/routers/payments.py::stripe_webhook -> allocate_donation`: verified,
+  paid EUR Checkout amount, only after the existing intake gate.
+- `payments.py::stripe_webhook -> _append_payment_record -> _projection_state`:
+  allocation record becomes validated integer-cent state and public aggregates.
+- `payments.py::stripe_webhook -> _process_stripe_adjustment ->
+  _apply_public_payment_adjustment -> _target_remaining_allocation`: refunds and
+  disputes adjust the same server/domain/reserve projection using cent totals.
+- `payments.py::payment_status -> _load_public_support_projection`: reads public
+  aggregates, returns server/domain accounting and numeric `reserve`.
+- `docs/community.html::fetchPaymentStatus -> payments.py::payment_status ->
+  docs/community.html::updateServerTile/updateDomainTile/updateReserveTile`:
+  independent validated snapshots, including real finite zero values.
+- `apps/api/services/diavgeia_scraper.py::scrape_decisions ->
+  services/diavgeia_client.py::DiavgeiaClient.iter_decisions ->
+  models.py::DiavgeiaDecision`: upstream ADA remains the exact upsert key.
+- `.github/workflows/ci.yml::test-docs-redesign -> node --test`: full-history
+  checkout feeds the SEO, remote-sink and Community payment-status checks.
+
+### 3. Module
+
+| Module | One responsibility | Entry | Source state |
+| --- | --- | --- | --- |
+| MOD-18 allocation | Server target, domain need, then reserve | `payments.py::allocate_donation` | built, #512 |
+| MOD-18 projection | Public verified totals and cent-based adjustments | `payments.py::_append_payment_record/_apply_public_payment_adjustment` | built |
+| Community funding | Render validated snapshots, never invent unknown balances | `docs/community.html::fetchPaymentStatus` | built, #515/#519 |
+| MOD-21 ADA constraint | Accept unchanged identifiers of 9..32 characters | `models.py::DiavgeiaDecision`, revision `y801a2b3c4d5` | built, #516 |
+| Documentation CI | Dependency-free source/history/behavior checks | `ci.yml::test-docs-redesign` | built, #518 |
+| Workflow action refs | Immutable same-version remote action references | `ci.yml/deploy.yml/scraper.yml/security-audit.yml::uses` | built, #520 |
+
+### 4. Verdrahtung
+
+#512 sends only the remaining allocation after server/domain needs to reserve;
+`_append_payment_record` updates private and public reserve totals atomically with
+the record. `_projection_state` requires allocation cents to sum to amount cents;
+`_target_remaining_allocation` distributes refund residual cents deterministically.
+The adjustment Lua commit updates all three buckets together; dispute outcomes
+can restore or retain adjustments without inventing a second accounting path.
+`payment_status` exposes reserve; Community now consumes it via `liveReserveData`.
+#515/#519 track loading/ready/unavailable/stale separately per funding tile:
+invalid or failed refreshes retain the last valid snapshot, including zero;
+unknown stays a neutral dash. `tick` and `community-language-change` re-render
+cached values and bilingual notices without a second payment request.
+#516 model and forward migration share `length(ada) BETWEEN 9 AND 32`, not a
+Latin-only regex: `ΕΘΘ9Η-58Ψ`, `Ψ7ΙΤΗ-ΗΩΞ` and `6ΣΣΡΗ-ΘΑΤ` remain unchanged.
+Downgrade restores 10..32 as NOT VALID: old nine-character rows survive, but new
+inserts/updates must satisfy the restored rule. Neither direction contains DML.
+#518 adds full history only to Docs CI; Security Audit already used full history.
+#520 leaves all 15 remote `uses` SHA-pinned at the same documented versions,
+including Checkout v5.1.0 and ssh-action v1.2.5; no runner or behavior change.
+
+### 5. Widerspruch und Lücken
+
+The historic `monetary reserve consumer / unavailable state` open leaf is closed
+by the current source paths above; old snapshots remain intentionally untouched.
+API projection fallback semantics are still distinct from client HTTP/data
+availability. No production migration, deploy, intake opening or deletion is
+claimed; those owner gates and actual release evidence remain separate.
+
+### 6. Diagramme
+
+`map.puml::T9033_nightly_mindmap/T9033_nightly_components` and
+`main-path.puml::T9033_payment_projection/T9033_funding_snapshot/
+T9033_ada_constraint/T9033_docs_ci` append this delta; no generated SVG is added.
+
+```mermaid
+mindmap
+  root((T-9033 source consolidation))
+    MOD-18 support
+      allocate_donation to reserve
+      cent-based projection adjustments
+    Community
+      three retained funding snapshots
+      bilingual availability rendering
+    MOD-21
+      unchanged ADA and 9..32 check
+    CI
+      Docs full-history Node guards
+      15 same-version action SHA pins
+```
+
+### 7. Nächster Schritt
+
+One module/hop: architecture documentation -> gio-dd cross-review and existing
+CI gates. Codex owns local validation; gio-dd owns head-bound merge. API, Community HTML,
+workflow sources, migration files and all production/store controls stay untouched.
+
+## T-9055 — Bundled source consolidation #528–#541 (2026-10-10 UTC)
+
+Source baseline: main `4a7f6577118432a2e0b208d2093e5063e0358214`, plus
+merged #541 `e1d1c7672bfc544a0d4c8f8b7376fb1e8114eda8` test/documentation receipts. Historical
+sections and diagram decks above remain unchanged. This append maps inspected
+source, not a new feature, security scan, deployment or native-device receipt.
+The private operational `.fleet/STATUS.md` is maintained locally, not published
+by this PR; private Bridge history is not copied.
+
+### 1. Grundidee
+
+- Citizens see real, informative non-binding bill votes (`README.md`, `docs/index.html`).
+- Landing comparison panels use public same-bill results, not invented values
+  (`docs/index.html::fetchBillComparison`).
+- Parliament YES share refers to reported party positions, not MP headcounts or
+  an independently confirmed official decision (`renderBillComparison`).
+- CPLM aggregates include only visible-result votes; the browser consumes that
+  server contract (`services/cplm.py::compute_cplm`, `index.html::fetchCPLM`).
+- Auth/rate controls have explicit scopes, not an assumed global ceiling
+  (`dependencies.py::verify_admin_key`, `rate_limit.py`, `public_api.py`).
+- Device-local unread state and vote marks are separate from OEM delivery and
+  retained-navigation proof (`notifications.ts`, `BillsScreen.tsx`, #540/#541 tests).
+- Manual browser evidence uses local source and mocked APIs, not production
+  (`t356-browser.yml`, `t356_democracy_cycle.browser.cjs`).
+
+### 2. Spur
+
+Primary user path, inspected on 2026-10-10:
+
+1. `docs/index.html::fetchRepresentation -> routers/analytics.py::
+   cumulative_representation -> compute_cumulative_representation`: public
+   closed-bill representation summary and `last_bill.bill_id`.
+2. `fetchRepresentation -> fetchBillComparison -> routers/public_api.py::
+   public_bill_results`: the selected bill's citizen counts, reported party
+   positions, lifecycle status and `results_hidden`.
+3. `fetchBillComparison -> renderBillComparison`: only matching bill ID,
+   `PARLIAMENT_VOTED`/`OPEN_END`, explicitly visible results, positive exact
+   integer total/sum and known party-position values yield percentages.
+   An obsolete request cannot replace the current response; invalid or missing
+   data remains neutral instead of an invented zero-percent comparison.
+4. Direct aggregate neighbor: `index.html::fetchCPLM -> routers/cplm.py::
+   cplm_aggregate -> services/cplm.py::get_cplm_cached/compute_cplm`: visible-vote
+   X/Y, voter count and quadrant; bilingual attributes and current language are
+   applied when the response arrives. `toggleLang` updates document language.
+
+Support/validation paths are separate, not fictitious calls by that page:
+
+- `t356-browser.yml::browser -> t356_democracy_cycle.browser.cjs`: manually
+  selected data-only/full mode, locked Playwright 1.63.0, Chromium/WebKit,
+  loopback docs and mocked API responses. Unknown external page requests abort.
+  Harness -> `results.json`/PNG/logs -> workflow validate/upload (3-day retention).
+- `routers/admin.py::verify_admin -> dependencies.py::verify_admin_key`:
+  Bearer credential -> UTF-8 byte `hmac.compare_digest`; fail closed for missing
+  or default production key, with no query-key authentication.
+- `rate_limit.py::limiter/get_rate_limit_key -> voting.py::submit_vote`:
+  explicit 120/min HMAC-IP bucket wraps the HTTP vote route. The 60/min default
+  applies to direct App routes such as `/health`, not `include_router` endpoints;
+  existing shared public
+  100/1000 quotas and handler mail guards remain separate and unchanged.
+- `notifications.ts::persistPushAndReconcile/ingestPushPayload ->
+  unread-events.ts::createUnreadEventsStore/ingest/markRead ->
+  notification-badge.ts::set`: canonical event ID, persisted preferences,
+  durable serialized ledger/read tombstones and absolute count. Local display
+  is only for `added`; automatic zero skips native clear, explicit read permits
+  it. F-Droid does not load native push/badge wiring. Direct offline neighbor:
+  `unread-events.ts::ingest/ingestOne -> notification-preferences.ts::isNotificationEnabled`:
+  persisted master=false suppresses acceptance even if the category is enabled.
+  #541 Play/Direct fixtures recreate runtime/queues/adapters with only storage
+  shared, assert suppression after restart, then explicit enable accepts the
+  previously suppressed event once. Replay may repeat the same absolute native
+  count but does not create a second ledger entry or local notification.
+- `BillsScreen.tsx::useFocusEffect -> loadVoteMarks/isVerified -> tileVoteLabel`:
+  local display evidence; blur cancels late callbacks. #540 mocks validate this
+  cancellation, not real retained navigation or an already-rendered A snapshot.
+
+### 3. Module
+
+| Module | One responsibility | Entry | Source state |
+| --- | --- | --- | --- |
+| Landing comparison | Qualify same-bill party/citizen percentages | `fetchBillComparison/renderBillComparison` | gebaut, #528 |
+| Public representation | Return closed-bill representation/results | `cumulative_representation/public_bill_results` | gebaut, existing API contract |
+| CPLM/localization | Render aggregate quadrant in current language | `fetchCPLM/toggleLang` | gebaut; no broad input-hardening claim |
+| Browser evidence | Exercise static source without production data | `t356-browser.yml::browser` | gebaut, #529; manual only |
+| Accessibility | Name controls/regions, expose language and keyboard access | newsletter audience, wiki code region, QR SVG/live region | gebaut, #533–535; not full screen-reader acceptance |
+| Admin auth | Verify the existing Bearer contract | `verify_admin_key` | gebaut, #536; no new credentials |
+| API rate limits | Enforce explicitly scoped counters | `submit_vote/rate_limit_check` | gebaut, #537–539; default router gap explicit |
+| Mobile local evidence | Retain unread and honor persisted master preferences | ledger/badge/preferences, `BillsScreen::useFocusEffect` | gebaut; #540/#541 offline regression evidence |
+| Newsletter fixtures | Verify consent/readiness without provider writes | `test_newsletter_consent_contract/test_newsletter_readiness` | gebaut, #531 test-only |
+
+### 4. Verdrahtung and exact merge receipts
+
+Representation identifies one bill; the result endpoint supplies counts and
+positions; client qualification gates the two rendered bars. CPLM is an
+independent aggregate, not the denominator for those bars. Language assignment
+and control names improve presentation without changing vote eligibility.
+The manual harness supplies fixtures and reports assertions independently of
+deployed backend state. Auth and explicit quota wrappers protect their named
+entry points; unread mocks cross storage/runtime boundaries without certifying
+an OEM or provider. No new architecture or runtime edge is introduced here.
+
+GitHub metadata receipts (UTC, 2026-10-10); a merge is **not** a deployment:
+
+| PR | Merge SHA | UTC | Scope |
+| --- | --- | --- | --- |
+| #528 | `7080a1e76abd3dc90220fbc51129b477c773adfe` | 05:23:38 | qualified same-bill comparison bars |
+| #529 | `c60c4aaea029ed6a04e0e84bf365de12984a704c` | 05:24:43 | manual locked browser workflow |
+| #530 | — CLOSED, unmerged; superseded by #531 | — | not counted as a merge |
+| #531 | `d24ef97c3f3f2517a386ba9f273acdf69a911b09` | 05:36:00 | offline newsletter consent/readiness tests |
+| #532 | `bfe8bf3ac8c765883cccc6596ec4a6f7ff5c1c4c` | 05:45:58 | prior offline diagram-rendering receipt only |
+| #533 | `69002d010bc968ca6f89a551d802834b74be1c34` | 06:00:34 | newsletter audience accessible name |
+| #534 | `5a266335c97e6c006c740842afc15ac7a3e62959` | 06:15:29 | wiki keyboard-scroll accessibility |
+| #535 | `759685682c823626855864e0f412a89dad5fd352` | 06:48:23 | safe Web/static accessibility follow-ups |
+| #536 | `c727a3c8ee11dfddbe5d5f730ab5c96422d379a3` | 06:46:44 | constant-time admin Bearer comparison |
+| #537 | `d81f852447e15bef07c25328087f89ec7c478d71` | 07:29:27 | real-router public quota contract tests |
+| #538 | `47a1d5aff54bd23e8adf9389e18439d8c57247c5` | 07:29:35 | client shared-quota/routing documentation |
+| #539 | `9b4842212a2ad9c59d02b3653b000c084a75b948` | 07:51:21 | explicit vote write limit, default-gap evidence |
+| #540 | `4a7f6577118432a2e0b208d2093e5063e0358214` | 08:12:36 | unread restart and focus-cancellation tests |
+| #541 | `e1d1c7672bfc544a0d4c8f8b7376fb1e8114eda8` | 08:58:22 | Play/Direct persisted master opt-out restart tests and GH290 status |
+
+### 5. Widerspruch und Lücken
+
+Historic API-wide default-60 interpretations are superseded: the current
+60/min default applies to direct App routes such as `/health`, not
+`include_router` endpoints, while explicit wrappers/handler Redis guards
+have their own contract. Public shared quotas are not throughput guarantees.
+The docs' CPLM refresh wording and frontend timer are distinct from cached
+server recomputation; this bundle does not equate them or change either.
+Auth source inspection is not a new security scan. Static audit/mocked browser
+coverage is not complete accessibility or production verification. NV1/NV2,
+real OEM/provider delivery and publication remain separate open gates. F-Droid
+is foreground-feed/in-app, not FCM or promised numeric launcher/background push.
+
+Owner-reported prod remains API/Web `550549c7`; no release/deploy is performed
+or independently rechecked here. Source version 1.0.34/vC63 is not a published
+artifact. Data-only producers remain OFF and payment intake closed. Follow-up
+deploy/migration backup, server cleanup and #517 wording require Gio approval.
+#541 is merged and included as offline evidence (owner: 445 Mobile tests and
+clean TypeScript), not a second review or a device/provider/release acceptance.
+
+### 6. Diagramme
+
+`map.puml::T9055_source_mindmap/T9055_source_components` and
+`main-path.puml::T9055_public_comparison/T9055_manual_browser_gate/
+T9055_mobile_unread` append this delta. Rendering/structural evidence is a
+separate validation receipt; no generated SVG gallery is overwritten.
+
+```mermaid
+mindmap
+  root((T-9055 inspected source))
+    Public comparison
+      one qualified closed bill
+      reported party positions not MPs
+      neutral missing or invalid data
+    CPLM and accessibility
+      visible-vote aggregate
+      current language and named controls
+    Manual browser evidence
+      locked engines and local mocks
+      complete results PNG logs
+    Explicit boundaries
+      Bearer constant-time comparison
+      per-route counters not global default
+      direct App health default60 versus explicit vote120
+      durable unread and focus cleanup
+      persisted master opt-out restart and explicit enable
+      open OEM provider release gates
+```
+
+### 7. Nächster Schritt
+
+One module/hop: this architecture/status documentation -> local checks ->
+gio-dd cross-review and exact-head CI -> head-bound merge. API, Landing/Web/
+Mobile runtime files, workflows, migration/flags and all production controls
+stay untouched. Subsequent work chooses the oldest useful non-Gio backlog
+item; completed #541, device/v2 decisions and owner gates are not duplicated.

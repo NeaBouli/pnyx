@@ -4,6 +4,7 @@ Akzeptiert NUR: Authorization: Bearer <key>
 Query-Parameter admin_key ist ENTFERNT (CRIT-01).
 Fail-closed wenn ADMIN_KEY nicht konfiguriert in Production.
 """
+import hmac
 import os
 from fastapi import HTTPException, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -26,7 +27,9 @@ def verify_admin_key(
         configured_key = configured_key or "dev-admin-key"
 
     # NUR Bearer Token
-    if credentials and credentials.credentials == configured_key:
+    if credentials and hmac.compare_digest(
+        credentials.credentials.encode("utf-8"), configured_key.encode("utf-8")
+    ):
         return True
 
     raise HTTPException(status_code=403, detail="Ungueltiger Admin-Key")

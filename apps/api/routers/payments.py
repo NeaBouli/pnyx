@@ -465,27 +465,31 @@ async def _load_public_support_projection(r: aioredis.Redis) -> dict:
         R_PUBLIC_LAST_PAYMENT,
     )
     raw_totals = snapshot[:3]
+    raw_count = snapshot[3]
+    try:
+        count = int(raw_count) if raw_count is not None else None
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=503, detail="Public funding data is currently unavailable")
+    if count is not None and count < 0:
+        raise HTTPException(status_code=503, detail="Public funding data is currently unavailable")
     if all(value is None for value in raw_totals):
+        # An untouched projection is genuinely empty; evidence of a prior
+        # payment with missing totals is unavailable, not a verified zero.
+        if count not in (None, 0) or snapshot[4] is not None:
+            raise HTTPException(status_code=503, detail="Public funding data is currently unavailable")
         return _empty_public_projection()
     if any(value is None for value in raw_totals):
         logger.error("[MOD-18] Public support projection is incomplete")
-        return _empty_public_projection()
+        raise HTTPException(status_code=503, detail="Public funding data is currently unavailable")
 
     totals = [_public_allocation_amount(value) for value in raw_totals]
     if any(value is None for value in totals):
         logger.error("[MOD-18] Public support projection contains invalid totals")
-        return _empty_public_projection()
+        raise HTTPException(status_code=503, detail="Public funding data is currently unavailable")
 
-    raw_count = snapshot[3]
-    if raw_count is None:
+    if count is None:
         logger.error("[MOD-18] Public support projection count is missing")
-        return _empty_public_projection()
-    try:
-        count = int(raw_count)
-    except (TypeError, ValueError):
-        return _empty_public_projection()
-    if count < 0:
-        return _empty_public_projection()
+        raise HTTPException(status_code=503, detail="Public funding data is currently unavailable")
 
     last_payment = None
     raw_last = snapshot[4]
@@ -1129,6 +1133,7 @@ async def payment_status():
     total_received = projection["received"]
 
     return {
+        "available": True,
         "server": {
             "received": round(server_received, 2),
             "cost_total": round(server_cost_total, 2),
@@ -1686,6 +1691,7 @@ async def public_finance_overview():
     payment_count = projection["count"]
 
     return {
+        "available": True,
         "server_gedeckt_monate": runway,
         "hlr_verifikationen_moeglich": hlr_remaining,
         "spenden_gesamt": payment_count,

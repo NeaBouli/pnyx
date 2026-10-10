@@ -24,6 +24,10 @@ def get_rate_limit_key(request: Request) -> str:
     return rate_limit_key_for_ip(request, "slowapi")
 
 
+# FastAPI 0.142.2 includes routers via _IncludedRouter (no top-level endpoint).
+# SlowAPI 0.1.10 skips default_limits for those routes. The 60/min default is
+# NOT an API-wide guarantee: router writes need an explicit decorator or a
+# handler-level Redis guard. Keep the existing default policy unchanged.
 limiter = Limiter(
     key_func=get_rate_limit_key,
     default_limits=["60/minute"],
