@@ -7,7 +7,7 @@
   and `infra/docker/docker-compose.prod.yml`. No production, SSH, live HTTP, Stripe or
   Telegram calls. Architecture node: monitor boundary (EKA13 — monitor, private
   docker-proxy, Tier-2 recovery off). The initial audit itself was docs-only and implemented nothing;
-  sections 1-7 remain the **historical baseline snapshot at `fbbf5968`**. Later repository
+  the original audit text in sections 1-7 remains the **historical baseline snapshot at `fbbf5968`**. Later repository
   follow-ups are listed in "Current-source status" below; they do not rewrite the baseline.
 - **Decision: NO-GO to claiming complete unattended alert coverage. This is not a deploy
   decision** and not an operational launch certification.
@@ -19,7 +19,7 @@ real Redis, production job, browser, deploy or complete unattended coverage is c
 
 | Baseline finding | Current source (PR) | Still open |
 |---|---|---|
-| Diavgeia per-item errors recorded as clean success | `main.scheduled_diavgeia_scrape` records degraded latest outcome via `scraper_state._queue_outcome`/`safe_outcome` (#554) | runtime proof |
+| Diavgeia per-item errors recorded as clean success | `main.scheduled_diavgeia_scrape` records degraded latest outcome via `scraper_state.record_success`/`_queue_outcome` (#554) | runtime proof |
 | Cooldown set before Telegram delivery | `monitor.prepare_alert_notifications` → `send_telegram` (HTTP 200 + JSON `ok: true`) → `commit_alert_cooldown` only after ack; failed resolved notices stay pending while state exists (#555) | state expiry, Redis or channel outage not guaranteed |
 | Status readers optimistic on unknown/Redis error | `scraper_state.get_all_states` + `main.health_modules` whitelist outcome fields, unknown → `unknown` (#556) | modules still hard-coded `ok` where no telemetry |
 | Dashboard discarded outcome fields | existing dashboard health-shapes adapter + monitor/logs view pass outcome (#558) | browser release gate open; no `/system` fix |
