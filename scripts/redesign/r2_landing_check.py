@@ -119,6 +119,13 @@ ALLOWED_R5_INLINE_SCRIPTS = {
         "sha256": "6ea42184af02e42cbc9783308234fb0b598be2930b0aedc346d86a90879467da",
         "bytes": 6682,
     },
+    1: {
+        "index": 1,
+        # T-9039: owner-confirmed CPLM quadrant language follows currentLang
+        # and the existing data-el/data-en toggle, including delayed responses.
+        "sha256": "6fe520730691e4008650826b6b0b9211d77dddf848548cd0535c523bc8188016",
+        "bytes": 2394,
+    },
     5: {
         "index": 5,
         # T-394 (EKA-14): ticket login/avatar rendered via DOM properties with
