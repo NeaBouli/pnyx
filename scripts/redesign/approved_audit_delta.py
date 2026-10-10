@@ -62,7 +62,7 @@ APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/delete-account.html": "426b3c7c2a252a4b1520ad1bdd0bfee812904c43f057e8c805114803f09778e9",
     "docs/wiki/faq.html": "4bda2ccff854016b88249d18952e3c62de297b909d70a8e5e15886cc170a09db",
     "docs/wiki/index.html": "2f6de1a1e879478c686a220d0cc68ea495c28b1c18d40ad77420d3adcde323ea",  # T-9047/T-9048: named code region, contrast, headings and document language
-    "docs/wiki/modules.html": "f0f54584009d7727b5f13ab16fa48046339e7ea3f7542f045f7e2242e1849fcd",
+    "docs/wiki/modules.html": "c5708c74924dac9c813a184e33b20e3381f3e47345fe4c933f8709852c47552d",  # T-9072: neutral unknown health dots, MOD-23/25 mapping, localized status labels
     "docs/wiki/privacy.html": "8887a4b19c0fdca6f52cec50289d5c4e17eb21e8839c5dc9405cd9395ee97ba1",
     "docs/wiki/roadmap.html": "0bc54ef66ee79ec0db67ed8f1e334dc22174039f1e6d64d23ed2723763e34b77",
     "docs/wiki/security.html": "5dac9dce20e8552fa031fdd03c0501a752e6e4ae05f16c384c697882258da44f",
