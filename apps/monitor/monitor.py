@@ -280,30 +280,44 @@ def prepare_alert_notifications(
 
     for alert in alerts:
         identity = alert_identity(alert)
-        state = _load_alert_state(r, identity)
-        last_sent_key = f"{_alert_state_key(identity)}:last_sent"
-        cooldown_active = bool(_safe_redis_get(r, last_sent_key))
-        severity_changed = bool(state and state.get("severity") != alert.severity)
-        due = not cooldown_active or severity_changed
+        acked = _safe_redis_get(r, f"{_alert_state_key(identity)}:last_sent")
+        # Legacy marker "1" carries no acknowledged severity: treat it as due
+        # until a real ack stores the severity (one conservative resend).
+        due = not acked or acked == "1" or acked != alert.severity
 
         notification_due[identity] = due
-        if due and ALERT_NOTIFY_COOLDOWN_SECONDS > 0:
-            _safe_redis_set(r, last_sent_key, "1", ex=ALERT_NOTIFY_COOLDOWN_SECONDS)
 
     return notification_due
+
+
+def commit_alert_cooldown(alert: Alert, r) -> None:
+    """Start the cooldown only after Telegram acknowledged this incident."""
+    if r is None or ALERT_NOTIFY_COOLDOWN_SECONDS <= 0:
+        return
+    _safe_redis_set(
+        r,
+        f"{_alert_state_key(alert_identity(alert))}:last_sent",
+        alert.severity,
+        ex=ALERT_NOTIFY_COOLDOWN_SECONDS,
+    )
 
 
 def record_active_alerts(
     current_alerts: list[Alert],
     r,
     now: datetime | None = None,
+    pending_resolved: set[str] | None = None,
 ) -> None:
-    """Persist only alerts that remain unresolved after recovery attempts."""
+    """Persist only alerts that remain unresolved after recovery attempts.
+
+    Incidents whose Entwarnung was not delivered stay tracked so the next
+    ordinary run retries it.
+    """
     now = now or datetime.now(timezone.utc)
     current_keys = {alert_identity(alert) for alert in current_alerts}
     previous_keys = _safe_redis_smembers(r, ALERT_STATE_SET_KEY)
 
-    for stale_key in previous_keys - current_keys:
+    for stale_key in previous_keys - current_keys - (pending_resolved or set()):
         _safe_redis_srem(r, ALERT_STATE_SET_KEY, stale_key)
 
     for alert in current_alerts:
@@ -322,10 +336,15 @@ def send_resolved_notifications(
     r,
     now: datetime | None = None,
     previous_keys: set[str] | None = None,
-) -> None:
-    """Send one-time Entwarnung messages for alerts that disappeared."""
+) -> set[str]:
+    """Send one-time Entwarnung messages for alerts that disappeared.
+
+    Returns identities whose Entwarnung was not delivered; they keep their
+    state and membership for a retry on the next run.
+    """
+    pending: set[str] = set()
     if not ALERT_RESOLVED_NOTIFICATIONS_ENABLED:
-        return
+        return pending
 
     now = now or datetime.now(timezone.utc)
     current_keys = {alert_identity(alert) for alert in current_alerts}
@@ -335,7 +354,14 @@ def send_resolved_notifications(
 
     for identity in sorted(resolved_keys):
         state_key = _alert_state_key(identity)
-        state = _load_alert_state(r, identity) or {}
+        state = _load_alert_state(r, identity)
+        if state is None:
+            # Payload expired (TTL) or unreadable: drop stale membership and
+            # cooldown without an identity-only Entwarnung.
+            logger.info("[RESOLVED] Alert state expired, dropped silently: %s", identity)
+            _safe_redis_srem(r, ALERT_STATE_SET_KEY, identity)
+            _safe_redis_delete(r, state_key, f"{state_key}:last_sent")
+            continue
         msg = (
             "🟢 <b>Monitor Entwarnung</b>\n\n"
             f"<b>Type:</b> {state.get('type', identity)}\n"
@@ -343,10 +369,15 @@ def send_resolved_notifications(
             f"<b>Vorher:</b> {state.get('message', identity)}\n"
             f"\n<i>{now.strftime('%Y-%m-%d %H:%M UTC')}</i>"
         )
-        send_telegram(msg)
+        if not send_telegram(msg):
+            logger.warning("[RESOLVED] Entwarnung not delivered, retry next run: %s", identity)
+            pending.add(identity)
+            continue
         logger.info("[RESOLVED] Alert cleared: %s", identity)
         _safe_redis_srem(r, ALERT_STATE_SET_KEY, identity)
         _safe_redis_delete(r, state_key, f"{state_key}:last_sent")
+
+    return pending
 
 
 # ─── T1 Mapping: alert.type → API endpoint ───────────────────────────────────
@@ -409,9 +440,14 @@ def send_telegram(message: str) -> bool:
             timeout=10,
         )
         if r.status_code == 200:
-            logger.info("[TG] Alert sent")
-            return True
-        logger.warning("[TG] Send failed: %s", r.text[:200])
+            try:
+                ok = r.json().get("ok") is True
+            except Exception:
+                ok = False
+            if ok:
+                logger.info("[TG] Alert sent")
+                return True
+        logger.warning("[TG] Send failed: HTTP %s", r.status_code)
     except Exception as e:
         logger.error("[TG] Error: %s", e)
     return False
@@ -555,11 +591,13 @@ def attempt_tier2(alert: Alert, r) -> bool:
     return False
 
 
-def escalate_tier3(alert: Alert, recovery_result: str = "", *, notify: bool = True):
+def escalate_tier3(
+    alert: Alert, recovery_result: str = "", *, notify: bool = True, r=None
+) -> bool:
     """Tier 3: Telegram escalation, cooldown-gated per active incident."""
     if not notify:
         logger.warning("[T3] Suppressed by cooldown: %s — %s", alert.type, alert.message)
-        return
+        return False
 
     severity_icon = "🔴" if alert.severity == "critical" else "🟡"
     msg = (
@@ -572,14 +610,17 @@ def escalate_tier3(alert: Alert, recovery_result: str = "", *, notify: bool = Tr
     if recovery_result:
         msg += f"<b>Recovery:</b> {recovery_result}\n"
     msg += f"\n<i>{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}</i>"
-    send_telegram(msg)
+    delivered = send_telegram(msg)
+    if delivered:
+        commit_alert_cooldown(alert, r)
     logger.warning("[T3] Escalated: %s — %s", alert.type, alert.message)
+    return delivered
 
 
 def attempt_recovery(alert: Alert, r, conn=None, *, notify: bool = True):
     """Dispatcher: T1 → T2 → T3."""
     if not alert.recovery_allowed:
-        escalate_tier3(alert, "Direct T3 — no auto-recovery for this type", notify=notify)
+        escalate_tier3(alert, "Direct T3 — no auto-recovery for this type", notify=notify, r=r)
         return "T3"
 
     # Tier 1
@@ -603,7 +644,7 @@ def attempt_recovery(alert: Alert, r, conn=None, *, notify: bool = True):
             return "T2"
 
     # Tier 3
-    escalate_tier3(alert, "T1+T2 failed or not applicable", notify=notify)
+    escalate_tier3(alert, "T1+T2 failed or not applicable", notify=notify, r=r)
     return "T3"
 
 
@@ -1083,7 +1124,8 @@ def check_forum_completeness(conn) -> list[Alert]:
 def check_scraper_jobs(r) -> list[Alert]:
     alerts = []
     job_names = ["parliament", "diavgeia_municipal", "bill_lifecycle",
-                 "cplm_refresh", "greek_topics", "notify_new_bills", "notify_results"]
+                 "cplm_refresh", "greek_topics", "notify_new_bills", "notify_results",
+                 "completeness_check"]
     for name in job_names:
         try:
             count = int(r.get(f"scraper:{name}:error_count") or 0)
@@ -1092,7 +1134,24 @@ def check_scraper_jobs(r) -> list[Alert]:
         if count > 20:
             alerts.append(Alert("scraper_job_errors", "ekklesia-api", "warning",
                                 f"Job {name}: {count} Fehler", False))
+            continue
+        try:
+            outcome = r.get(f"scraper:{name}:last_outcome")
+            reason = r.get(f"scraper:{name}:last_outcome_reason")
+        except Exception:
+            continue
+        outcome = outcome.decode("utf-8", "replace") if isinstance(outcome, bytes) else outcome
+        reason = reason.decode("utf-8", "replace") if isinstance(reason, bytes) else reason
+        if outcome in _NONCLEAN_OUTCOMES:
+            if reason not in _OUTCOME_REASONS:
+                reason = "unknown"
+            alerts.append(Alert("scraper_job_errors", "ekklesia-api", "warning",
+                                f"Job {name}: last run {outcome} ({reason})", False))
     return alerts
+
+
+_NONCLEAN_OUTCOMES = {"degraded", "failed"}
+_OUTCOME_REASONS = {"scrape_errors", "conversion_failed", "exception"}
 
 
 def _rollback_if_possible(conn) -> None:
@@ -1252,12 +1311,12 @@ def run_checks():
             if recovery_results.get(alert.type) != "T1V"
         ]
 
-        send_resolved_notifications(
+        pending_resolved = send_resolved_notifications(
             unresolved_alerts,
             r,
             previous_keys=previous_active_alerts,
         )
-        record_active_alerts(unresolved_alerts, r)
+        record_active_alerts(unresolved_alerts, r, pending_resolved=pending_resolved)
 
         alerts_for_summary = [
             alert for alert in unresolved_alerts
@@ -1266,14 +1325,22 @@ def run_checks():
 
         if unresolved_alerts and alerts_for_summary:
             msg = f"<b>ekklesia.gr Monitor — {len(unresolved_alerts)} Alerts</b>\n\n"
+            line_ends: list[tuple[Alert, int]] = []
             for i, alert in enumerate(unresolved_alerts, 1):
                 tier = recovery_results.get(alert.type, "—")
                 icon = "✓" if tier in ("T1", "T2") else "✗"
                 msg += f"{i}. [{icon}{tier}] {alert.message}\n"
+                line_ends.append((alert, len(msg)))
             msg += f"\n<i>{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}</i>"
+            listed_until = len(msg)
             if len(msg) > 4000:
+                listed_until = 3950
                 msg = msg[:3950] + f"\n\n... (+{len(unresolved_alerts)} total)"
-            send_telegram(msg)
+            if send_telegram(msg):
+                due_ids = {alert_identity(alert) for alert in alerts_for_summary}
+                for alert, end in line_ends:
+                    if end <= listed_until and alert_identity(alert) in due_ids:
+                        commit_alert_cooldown(alert, r)
             logger.warning("ALERTS: %d issues found", len(unresolved_alerts))
         elif unresolved_alerts:
             logger.warning(

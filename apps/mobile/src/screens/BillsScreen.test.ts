@@ -5,11 +5,18 @@ import ts from "typescript";
 import { describe, expect, it, vi } from "vitest";
 import { mergeBillsUnique, prioritizeBillsPage } from "../lib/bill-feed";
 import { availableGeographicFilters, scopedBillQuery } from "../lib/bill-scope";
+import { tileVoteLabel, type VoteMarks } from "../lib/vote-marks";
 import { colors } from "../theme";
+
+vi.mock("expo-secure-store", () => {
+  const unexpected = () => { throw new Error("Unexpected native storage call"); };
+  return { getItemAsync: unexpected, setItemAsync: unexpected, deleteItemAsync: unexpected };
+});
 
 type El = { type: unknown; props: Record<string, any> };
 type Bill = { id: string; title_el: string; status: string; source: string };
 type Effect = { deps?: unknown[]; cleanup?: unknown };
+type FocusEffect = { fn: () => unknown; cleanup?: unknown };
 const LOAD_ERROR = "Δεν ήταν δυνατή η φόρτωση των ψηφοφοριών. Δοκιμάστε ξανά.";
 
 /** Same native-free render pattern as NotificationSettingsScreen.test.ts. */
@@ -18,6 +25,8 @@ function createHarness() {
   const refs: { current: unknown }[] = [];
   const callbacks: { deps?: unknown[]; fn: unknown }[] = [];
   const effects: (Effect | undefined)[] = [];
+  const focusEffects = new Set<FocusEffect>();
+  let focused = true;
   let stateIndex = 0;
   let refIndex = 0;
   let callbackIndex = 0;
@@ -77,6 +86,17 @@ function createHarness() {
       if (typeof previous?.cleanup === "function") previous.cleanup();
       pending?.push({ index, fn, deps });
     },
+    useFocusEffect(fn: () => unknown) {
+      api.useEffect(() => {
+        const effect: FocusEffect = { fn };
+        focusEffects.add(effect);
+        if (focused) effect.cleanup = fn();
+        return () => {
+          if (typeof effect.cleanup === "function") effect.cleanup();
+          focusEffects.delete(effect);
+        };
+      }, [fn]);
+    },
     createElement(type: unknown, props?: Record<string, unknown> | null, ...children: unknown[]): El {
       return { type, props: { ...props, children } };
     },
@@ -84,6 +104,19 @@ function createHarness() {
 
   return {
     api,
+    focus: vi.fn(() => {
+      if (focused) return;
+      focused = true;
+      for (const effect of focusEffects) effect.cleanup = effect.fn();
+    }),
+    blur: vi.fn(() => {
+      if (!focused) return;
+      focused = false;
+      for (const effect of focusEffects) {
+        if (typeof effect.cleanup === "function") effect.cleanup();
+        effect.cleanup = undefined;
+      }
+    }),
     mount(screen: () => El) {
       component = screen;
       render();
@@ -99,8 +132,14 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
-function loadScreen() {
+function loadScreen(voteState: {
+  loadVoteMarks?: () => Promise<VoteMarks>;
+  isVerified?: () => Promise<boolean>;
+} = {}) {
   const harness = createHarness();
+  const loadVoteMarks = vi.fn(voteState.loadVoteMarks ?? (async (): Promise<VoteMarks> => ({})));
+  const isVerified = vi.fn(voteState.isVerified ?? (async () => false));
+  const label = vi.fn(tileVoteLabel);
   const requests: {
     params: Record<string, unknown>;
     response: ReturnType<typeof deferred<Bill[]>>;
@@ -124,7 +163,7 @@ function loadScreen() {
     },
     "@react-navigation/native": {
       useNavigation: () => ({ navigate: unexpected }),
-      useFocusEffect: (fn: () => unknown) => harness.api.useEffect(fn, [fn]),
+      useFocusEffect: harness.api.useFocusEffect,
     },
     "../lib/api": { fetchBills },
     "../lib/bill-feed": { mergeBillsUnique, prioritizeBillsPage },
@@ -132,8 +171,8 @@ function loadScreen() {
     "../lib/bill-scope-storage": {
       loadUserBillScope: vi.fn(async () => ({ periferiaId: null, dimosId: null })),
     },
-    "../lib/crypto-native": { isVerified: vi.fn(async () => false) },
-    "../lib/vote-marks": { loadVoteMarks: vi.fn(async () => ({})), tileVoteLabel: () => null },
+    "../lib/crypto-native": { isVerified },
+    "../lib/vote-marks": { loadVoteMarks, tileVoteLabel: label },
     "../theme": { colors },
     "expo-secure-store": { getItemAsync: unexpected, setItemAsync: unexpected, deleteItemAsync: unexpected },
   };
@@ -155,7 +194,10 @@ function loadScreen() {
     },
     console,
   });
-  return { screen: harness.mount(exports.default as () => El), fetchBills, requests };
+  return {
+    screen: harness.mount(exports.default as () => El), fetchBills, requests,
+    focus: harness.focus, blur: harness.blur, loadVoteMarks, isVerified, tileVoteLabel: label,
+  };
 }
 
 type Screen = ReturnType<typeof loadScreen>;
@@ -310,5 +352,112 @@ describe("BillsScreen fetch failure state", () => {
     expect(cardTexts(screen)).toEqual(before);
     expect(errorButtons(screen)).toHaveLength(1);
     expect(list(screen).props.ListFooterComponent.props.disabled).toBe(false);
+  });
+});
+
+// Exercises the production focus callback and its cleanup, not native navigation.
+describe("BillsScreen vote snapshot focus lifecycle", () => {
+  it("keeps the refocused owner's empty snapshot after the blurred owner's reads finish", async () => {
+    const ownerA = { marks: deferred<VoteMarks>(), verified: deferred<boolean>() };
+    const ownerB = { marks: deferred<VoteMarks>(), verified: deferred<boolean>() };
+    const screen = loadScreen({
+      loadVoteMarks: vi.fn()
+        .mockReturnValueOnce(ownerA.marks.promise)
+        .mockReturnValueOnce(ownerB.marks.promise),
+      isVerified: vi.fn()
+        .mockReturnValueOnce(ownerA.verified.promise)
+        .mockReturnValueOnce(ownerB.verified.promise),
+    });
+    await flush();
+    finishMixed(screen, 0, [bill("A")]);
+    await flush();
+    expect(screen.loadVoteMarks).toHaveBeenCalledTimes(1);
+    expect(screen.isVerified).toHaveBeenCalledTimes(1);
+
+    screen.blur();
+    const refocusStart = screen.requests.length;
+    screen.focus();
+    await flush();
+    expect(screen.loadVoteMarks).toHaveBeenCalledTimes(2);
+    expect(screen.isVerified).toHaveBeenCalledTimes(2);
+    ownerB.marks.resolve({});
+    ownerB.verified.resolve(false);
+    finishMixed(screen, refocusStart, [bill("A")]);
+    await flush();
+
+    expect(cardTexts(screen).join("")).not.toContain("Ψηφίσατε");
+    expect(screen.tileVoteLabel).toHaveBeenLastCalledWith("ACTIVE", undefined, false);
+
+    ownerA.marks.resolve({ A: { corrected: false, at: 1 } });
+    ownerA.verified.resolve(true);
+    await flush();
+
+    expect(ids(screen)).toEqual(["A"]);
+    expect(cardTexts(screen).join("")).not.toContain("Ψηφίσατε");
+    expect(screen.tileVoteLabel).toHaveBeenLastCalledWith("ACTIVE", undefined, false);
+  });
+
+  it("clears an already rendered owner snapshot on refocus before the next owner's reads resolve", async () => {
+    const ownerA = { marks: deferred<VoteMarks>(), verified: deferred<boolean>() };
+    const ownerB = { marks: deferred<VoteMarks>(), verified: deferred<boolean>() };
+    const screen = loadScreen({
+      loadVoteMarks: vi.fn()
+        .mockReturnValueOnce(ownerA.marks.promise)
+        .mockReturnValueOnce(ownerB.marks.promise),
+      isVerified: vi.fn()
+        .mockReturnValueOnce(ownerA.verified.promise)
+        .mockReturnValueOnce(ownerB.verified.promise),
+    });
+    await flush();
+    finishMixed(screen, 0, [bill("A")]);
+    ownerA.marks.resolve({ A: { corrected: false, at: 1 } });
+    ownerA.verified.resolve(true);
+    await flush();
+    expect(cardTexts(screen).join("")).toContain("Ψηφίσατε");
+    expect(screen.tileVoteLabel).toHaveBeenLastCalledWith("ACTIVE", { corrected: false, at: 1 }, true);
+
+    screen.blur();
+    const refocusStart = screen.requests.length;
+    screen.focus();
+    expect(screen.loadVoteMarks).toHaveBeenCalledTimes(2);
+    expect(screen.isVerified).toHaveBeenCalledTimes(2);
+    await flush();
+    finishMixed(screen, refocusStart, [bill("A")]);
+    await flush();
+
+    // B reads still pending: no A label or A verified eligibility may remain.
+    expect(ids(screen)).toEqual(["A"]);
+    expect(cardTexts(screen).join("")).not.toContain("Ψηφίσατε");
+    expect(screen.tileVoteLabel).toHaveBeenLastCalledWith("ACTIVE", undefined, false);
+
+    ownerB.marks.resolve({});
+    ownerB.verified.resolve(false);
+    await flush();
+    expect(cardTexts(screen).join("")).not.toContain("Ψηφίσατε");
+    expect(screen.tileVoteLabel).toHaveBeenLastCalledWith("ACTIVE", undefined, false);
+  });
+
+  it("ignores late vote marks and verification after blur without refocus", async () => {
+    const ownerA = { marks: deferred<VoteMarks>(), verified: deferred<boolean>() };
+    const screen = loadScreen({
+      loadVoteMarks: () => ownerA.marks.promise,
+      isVerified: () => ownerA.verified.promise,
+    });
+    await flush();
+    finishMixed(screen, 0, [bill("A")]);
+    await flush();
+    const before = cardTexts(screen);
+    expect(before.join("")).not.toContain("Ψηφίσατε");
+
+    screen.blur();
+    ownerA.marks.resolve({ A: { corrected: false, at: 1 } });
+    ownerA.verified.resolve(true);
+    await flush();
+
+    expect(screen.focus).not.toHaveBeenCalled();
+    expect(screen.loadVoteMarks).toHaveBeenCalledTimes(1);
+    expect(screen.isVerified).toHaveBeenCalledTimes(1);
+    expect(cardTexts(screen)).toEqual(before);
+    expect(screen.tileVoteLabel).toHaveBeenLastCalledWith("ACTIVE", undefined, false);
   });
 });

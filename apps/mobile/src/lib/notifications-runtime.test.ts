@@ -9,8 +9,8 @@ import * as ledger from "./unread-events";
 import * as unreadStorage from "./unread-storage";
 
 // Execute the actual CommonJS require branches, which vi.mock cannot intercept.
-function runtime(flavor = "direct", lastResponse: unknown = null) {
-  const data = new Map<string, string>();
+function runtime(flavor = "direct", lastResponse: unknown = null, data = new Map<string, string>()) {
+  let startup = Promise.resolve();
   const storage = {
     getItemAsync: vi.fn(async (key: string) => data.get(key) ?? null),
     setItemAsync: vi.fn(async (key: string, value: string) => { data.set(key, value); }),
@@ -22,7 +22,14 @@ function runtime(flavor = "direct", lastResponse: unknown = null) {
     setBadgeCountAsync: vi.fn(async (_count: number) => true),
     setNotificationHandler: vi.fn(),
     addNotificationResponseReceivedListener: vi.fn(),
-    getLastNotificationResponseAsync: vi.fn(async () => lastResponse),
+    // Observe the complete response consumer, including its durable write and
+    // badge queue; receiving the response alone does not finish startup.
+    getLastNotificationResponseAsync: vi.fn(() => ({
+      then: (consume: (response: unknown) => Promise<void>) => {
+        startup = Promise.resolve().then(() => consume(lastResponse));
+        return startup;
+      },
+    })),
     addNotificationReceivedListener: vi.fn(),
     scheduleNotificationAsync: vi.fn(async (_request: unknown) => "local-id"),
   };
@@ -54,10 +61,113 @@ function runtime(flavor = "direct", lastResponse: unknown = null) {
   } }).outputText;
   const exports: Record<string, any> = {};
   vm.runInNewContext(compiled, { exports, require: requireMock, process: { env: {} }, console: { ...console, warn } });
-  return { exports, native, task, requireMock, data, storage, warn, pushRegistration };
+  return { exports, native, task, requireMock, data, storage, warn, pushRegistration, startup };
 }
 
 describe("notification runtime wiring", () => {
+  it.each(["play", "direct"])("%s restores positive unread state and deduplicates delivery after a runtime restart", async (flavor) => {
+    const payload = { template_id: "new_bill", bill_id: "restart-positive", local_display: "1", title: "New vote" };
+    const response = { notification: { request: { content: { data: payload } } } };
+    const first = runtime(flavor);
+    await first.startup;
+    await first.task.defineTask.mock.calls[0][1]({ data: { data: payload }, error: null });
+    expect(first.native.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
+    // The ledger persists in chunks: a manifest plus data parts under the base key.
+    expect(first.data.has(`${ledger.UNREAD_EVENTS_STORAGE_KEY}.manifest`)).toBe(true);
+
+    const restarted = runtime(flavor, response, first.data);
+    await restarted.startup;
+    const unread = restarted.exports.getUnreadEventsStore() as ledger.UnreadEventsStore;
+    expect(unread).not.toBe(first.exports.getUnreadEventsStore());
+    expect(restarted.storage).not.toBe(first.storage);
+    expect((await unread.list()).map((event) => event.id)).toEqual(["vote_open:restart-positive"]);
+    expect(restarted.native.setBadgeCountAsync).toHaveBeenLastCalledWith(1);
+    const reconciles = restarted.native.setBadgeCountAsync.mock.calls.length;
+    restarted.native.addNotificationResponseReceivedListener.mock.calls[0][0](response);
+    await vi.waitFor(() => expect(restarted.native.setBadgeCountAsync).toHaveBeenCalledTimes(reconciles + 1));
+    await restarted.task.defineTask.mock.calls[0][1]({ data: { data: payload }, error: null });
+    expect(await unread.unreadCount()).toBe(1);
+    expect(restarted.native.scheduleNotificationAsync).not.toHaveBeenCalled();
+    expect(restarted.native.getBadgeCountAsync).not.toHaveBeenCalled();
+    expect(restarted.native.setBadgeCountAsync.mock.calls.every(([count]) => count === 1)).toBe(true);
+  });
+
+  it.each(["play", "direct"])("%s clears the last read event once and preserves its tombstone through cold-start and tap replay", async (flavor) => {
+    const payload = { template_id: "vote_open", bill_id: "restart-read", local_display: "1", title: "New vote" };
+    const response = { notification: { request: { content: { data: payload } } } };
+    const first = runtime(flavor);
+    await first.startup;
+    await first.task.defineTask.mock.calls[0][1]({ data: { data: payload }, error: null });
+    first.native.setBadgeCountAsync.mockClear();
+    await expect(first.exports.markNotificationEventRead("vote_open:restart-read")).resolves.toBe(true);
+    expect(first.native.setBadgeCountAsync).toHaveBeenCalledExactlyOnceWith(0);
+
+    const restarted = runtime(flavor, response, first.data);
+    await restarted.startup;
+    const unread = restarted.exports.getUnreadEventsStore() as ledger.UnreadEventsStore;
+    expect(await unread.list()).toEqual([]);
+    // Use the awaited foreground handler as a queue barrier after the void tap
+    // listener, so a zero-count assertion cannot precede replay processing.
+    restarted.native.addNotificationResponseReceivedListener.mock.calls[0][0](response);
+    await restarted.native.setNotificationHandler.mock.calls[0][0].handleNotification(response.notification);
+    await restarted.exports.reconcileNotificationBadge();
+    expect(await unread.unreadCount()).toBe(0);
+    expect(await unread.ingest(payload)).toBe("duplicate");
+    expect(restarted.native.scheduleNotificationAsync).not.toHaveBeenCalled();
+    expect(restarted.native.setBadgeCountAsync).not.toHaveBeenCalled();
+    expect(restarted.native.getBadgeCountAsync).not.toHaveBeenCalled();
+    expect(first.native.setBadgeCountAsync).toHaveBeenCalledExactlyOnceWith(0);
+  });
+
+  it.each(["false", "reject"])("a launcher returning %s preserves the durable in-app ledger and later acknowledgement", async (failure) => {
+    const payload = { template_id: "vote_result", bill_id: "restart-launcher" };
+    const first = runtime();
+    await first.startup;
+    if (failure === "false") first.native.setBadgeCountAsync.mockResolvedValue(false);
+    else first.native.setBadgeCountAsync.mockRejectedValue(new Error("launcher unsupported"));
+    await first.native.setNotificationHandler.mock.calls[0][0].handleNotification({ request: { content: { data: payload } } });
+    expect(first.native.setBadgeCountAsync).toHaveBeenCalledExactlyOnceWith(1);
+    expect(await first.exports.getUnreadEventsStore().unreadCount()).toBe(1);
+
+    const restarted = runtime("direct", null, first.data);
+    await restarted.startup;
+    const unread = restarted.exports.getUnreadEventsStore() as ledger.UnreadEventsStore;
+    expect((await unread.list()).map((event) => event.id)).toEqual(["vote_result:restart-launcher"]);
+    expect(restarted.native.setBadgeCountAsync).toHaveBeenCalledExactlyOnceWith(1);
+    await expect(restarted.exports.markNotificationEventRead("vote_result:restart-launcher")).resolves.toBe(true);
+    expect(await unread.unreadCount()).toBe(0);
+    expect(restarted.native.setBadgeCountAsync).toHaveBeenLastCalledWith(0);
+    const acknowledged = runtime("direct", null, restarted.data);
+    await acknowledged.startup;
+    expect(await acknowledged.exports.getUnreadEventsStore().ingest(payload)).toBe("duplicate");
+    expect(await acknowledged.exports.getUnreadEventsStore().unreadCount()).toBe(0);
+    expect(acknowledged.native.setBadgeCountAsync).not.toHaveBeenCalled();
+  });
+
+  it("F-Droid preserves local unread state and read tombstones across runtime restarts without native or push wiring", async () => {
+    const payload = { template_id: "new_bill", bill_id: "fdroid-restart" };
+    const first = runtime("fdroid");
+    await first.exports.getUnreadEventsStore().ingest(payload);
+    const restarted = runtime("fdroid", null, first.data);
+    const unread = restarted.exports.getUnreadEventsStore() as ledger.UnreadEventsStore;
+    expect((await unread.list()).map((event) => event.id)).toEqual(["vote_open:fdroid-restart"]);
+    expect(await unread.ingest(payload)).toBe("duplicate");
+    await expect(restarted.exports.markNotificationEventRead("vote_open:fdroid-restart")).resolves.toBe(true);
+    const acknowledged = runtime("fdroid", null, first.data);
+    expect(await acknowledged.exports.getUnreadEventsStore().ingest(payload)).toBe("duplicate");
+    expect(await acknowledged.exports.getUnreadEventsStore().unreadCount()).toBe(0);
+    for (const instance of [first, restarted, acknowledged]) {
+      await instance.exports.reconcileNotificationBadge();
+      await instance.exports.registerForPushNotifications();
+      expect(instance.requireMock).not.toHaveBeenCalledWith("expo-notifications");
+      expect(instance.requireMock).not.toHaveBeenCalledWith("expo-task-manager");
+      expect(instance.native.setBadgeCountAsync).not.toHaveBeenCalled();
+      expect(instance.native.scheduleNotificationAsync).not.toHaveBeenCalled();
+      expect(instance.task.defineTask).not.toHaveBeenCalled();
+      expect(instance.pushRegistration.registerPushTokenIfNeeded).not.toHaveBeenCalled();
+    }
+  });
+
   it("category read preserves unrelated events and reconciles a positive badge", async () => {
     const { exports, native } = runtime();
     const unread = exports.getUnreadEventsStore() as ledger.UnreadEventsStore;
@@ -122,8 +232,8 @@ describe("notification runtime wiring", () => {
   });
 
   it("retries one transient persistence failure before setting the badge", async () => {
-    const { exports, native, storage, warn } = runtime();
-    await vi.waitFor(() => expect(native.getLastNotificationResponseAsync).toHaveBeenCalled()); await new Promise((r) => setTimeout(r, 10));
+    const { exports, native, storage, warn, startup } = runtime();
+    await startup;
     native.setBadgeCountAsync.mockClear();
     storage.setItemAsync.mockRejectedValueOnce(new Error("private native details"));
     const foreground = native.setNotificationHandler.mock.calls[0][0].handleNotification;
@@ -138,9 +248,9 @@ describe("notification runtime wiring", () => {
     const payload = { template_id: "new_bill", bill_id: "private-bill-id" };
     const notification = { request: { content: { data: payload } } };
     const response = { notification };
-    const { exports, native, task, storage, warn } = runtime("direct", boundary === "cold-start" ? response : null);
+    const { exports, native, task, storage, warn, startup } = runtime("direct", boundary === "cold-start" ? response : null);
     if (boundary !== "cold-start") {
-      await vi.waitFor(() => expect(native.getLastNotificationResponseAsync).toHaveBeenCalled()); await new Promise((r) => setTimeout(r, 10));
+      await startup;
     }
     native.setBadgeCountAsync.mockClear();
     storage.setItemAsync.mockRejectedValue(new Error("private native details"));
@@ -210,6 +320,54 @@ describe("notification runtime wiring", () => {
   describe("data-only pushes (strict per-category opt-in)", () => {
     const dataOnly = (template_id: string, extra: Record<string, unknown> = {}) => ({
       template_id, title: "Νέο", body: "Κείμενο", local_display: "1", ...extra,
+    });
+
+    it.each(["play", "direct"])("%s preserves master opt-out across restarts and accepts a previously suppressed event only after re-enabling", async (flavor) => {
+      const persisted = new Map<string, string>([
+        ["push_master", "false"],
+        ["push_vote_24h", "true"],
+      ]);
+      const payload = dataOnly("vote_24h", { bill_id: "master-restart" });
+      const first = runtime(flavor, null, persisted);
+      await first.startup;
+      await first.task.defineTask.mock.calls[0][1]({ data: { data: payload }, error: null });
+      const firstUnread = first.exports.getUnreadEventsStore() as ledger.UnreadEventsStore;
+      expect(await firstUnread.list()).toEqual([]);
+      expect(await firstUnread.unreadCount()).toBe(0);
+      expect(first.native.scheduleNotificationAsync).not.toHaveBeenCalled();
+      expect(first.native.setBadgeCountAsync).not.toHaveBeenCalled();
+      expect(first.native.getBadgeCountAsync).not.toHaveBeenCalled();
+
+      // Only durable preference/storage data crosses the runtime boundary.
+      const restarted = runtime(flavor, null, persisted);
+      await restarted.startup;
+      const unread = restarted.exports.getUnreadEventsStore() as ledger.UnreadEventsStore;
+      expect(unread).not.toBe(firstUnread);
+      expect(restarted.storage).not.toBe(first.storage);
+      expect(await restarted.storage.getItemAsync("push_master")).toBe("false");
+      expect(await restarted.storage.getItemAsync("push_vote_24h")).toBe("true");
+      const background = restarted.task.defineTask.mock.calls[0][1];
+      await background({ data: { data: payload }, error: null });
+      expect(await unread.list()).toEqual([]);
+      expect(await unread.unreadCount()).toBe(0);
+      expect(restarted.native.scheduleNotificationAsync).not.toHaveBeenCalled();
+      expect(restarted.native.setBadgeCountAsync).not.toHaveBeenCalled();
+      expect(restarted.native.getBadgeCountAsync).not.toHaveBeenCalled();
+
+      await restarted.storage.setItemAsync("push_master", "true");
+      await background({ data: { data: payload }, error: null });
+      expect((await unread.list()).map((event) => event.id)).toEqual(["vote_24h:master-restart"]);
+      expect(await unread.unreadCount()).toBe(1);
+      expect(restarted.native.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
+      expect(restarted.native.setBadgeCountAsync).toHaveBeenCalledExactlyOnceWith(1);
+
+      await background({ data: { data: payload }, error: null });
+      expect((await unread.list()).map((event) => event.id)).toEqual(["vote_24h:master-restart"]);
+      expect(await unread.unreadCount()).toBe(1);
+      expect(restarted.native.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
+      expect(restarted.native.setBadgeCountAsync).toHaveBeenCalledTimes(2);
+      expect(restarted.native.setBadgeCountAsync.mock.calls.every(([count]) => count === 1)).toBe(true);
+      expect(restarted.native.getBadgeCountAsync).not.toHaveBeenCalled();
     });
 
     it("shows one local notification for an enabled category in the background", async () => {

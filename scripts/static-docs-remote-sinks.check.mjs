@@ -347,3 +347,107 @@ test('apps/web/src ships no adminApi or admin_key query constructors', () => {
     assert.ok(!/\badminApi\b/.test(src), `${f} still references adminApi`);
   }
 });
+
+// ─── T-9039: live CPLM language follows the actual landing toggle ───────────
+// Configuration/runtime regression only; no browser geometry or live API claim.
+const CPLM_LIVE = {
+  x: 2.5, y: -1.5, total_voters: 1234, quadrant: 'libertarian_right',
+  trend: { x_delta: 0.5, y_delta: -0.25 },
+};
+
+function loadCplmLanguage() {
+  const html = read('docs/index.html');
+  const script = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)]
+    .map((match) => match[1]).find((source) => source.includes('var QUAD_EL ='));
+  assert.ok(script, 'real CPLM inline script not found');
+  const document = fakeDocument();
+  document.documentElement = { lang: 'el' };
+  document.querySelectorAll = (selector) => {
+    assert.equal(selector, '[data-el]');
+    return [...document.byId.values()].filter((node) => node['data-el'] !== undefined);
+  };
+  const originalGet = document.getElementById;
+  document.getElementById = (id) => {
+    const node = originalGet(id);
+    node.getAttribute = (key) => node[key] === undefined ? null : node[key];
+    return node;
+  };
+  const pending = [];
+  const intervals = [];
+  const ctx = vm.createContext({
+    document, currentLang: 'el',
+    fetch: (url) => {
+      assert.equal(url, 'https://api.ekklesia.gr/api/v1/cplm/aggregate');
+      return new Promise((resolve) => pending.push(resolve));
+    },
+    setInterval: (callback, delay) => {
+      assert.equal(delay, 60000);
+      intervals.push(callback);
+      return intervals.length;
+    },
+  });
+  vm.runInContext(extractFunction(html, 'toggleLang'), ctx, { filename: 'real-toggleLang.js' });
+  vm.runInContext(script, ctx, { filename: 'real-CPLM.js' });
+  const respond = async (payload = CPLM_LIVE) => {
+    assert.equal(pending.length, 1, 'exactly one mocked CPLM request must be pending');
+    pending.shift()({ json: async () => payload });
+    await flush();
+  };
+  return { ctx, document, intervals, respond };
+}
+
+test('index.html CPLM: successful data follows actual EL→EN→EL toggle', async () => {
+  const { ctx, document, respond } = loadCplmLanguage();
+  await respond();
+  const quadrant = document.getElementById('cplmQuadrant');
+  assert.equal(quadrant.textContent, 'Ελευθ. Δεξιά');
+  assert.equal(quadrant.getAttribute('data-el'), 'Ελευθ. Δεξιά');
+  assert.equal(quadrant.getAttribute('data-en'), 'Lib. Right');
+  ctx.toggleLang();
+  assert.equal(ctx.currentLang, 'en');
+  assert.equal(document.documentElement.lang, 'en', 'actual toggle updates document.lang');
+  assert.equal(quadrant.textContent, 'Lib. Right');
+  ctx.toggleLang();
+  assert.equal(document.documentElement.lang, 'el');
+  assert.equal(quadrant.textContent, 'Ελευθ. Δεξιά');
+  assert.equal(document.getElementById('cplmX').textContent, '2.50');
+  assert.equal(document.getElementById('cplmY').textContent, '-1.50');
+  const dot = document.getElementById('cplmDot');
+  assert.equal(dot.cx, '175');
+  assert.equal(dot.cy, '161');
+  const arrow = document.getElementById('cplmArrow');
+  assert.equal(arrow.x2, '189');
+  assert.equal(arrow.y2, '168');
+  assert.deepEqual(quadrant.htmlWrites, []);
+});
+
+test('index.html CPLM: pending and refresh responses render current EN language', async () => {
+  const { ctx, document, intervals, respond } = loadCplmLanguage();
+  ctx.toggleLang(); // Resolve the initial request only after the real toggle.
+  assert.equal(document.documentElement.lang, 'en');
+  await respond();
+  const quadrant = document.getElementById('cplmQuadrant');
+  assert.equal(quadrant.textContent, 'Lib. Right');
+  assert.equal(intervals.length, 1);
+  intervals[0]();
+  await respond({ ...CPLM_LIVE, quadrant: 'center' });
+  assert.equal(ctx.currentLang, 'en');
+  assert.equal(quadrant.textContent, 'Center');
+  assert.equal(quadrant.getAttribute('data-el'), 'Κέντρο');
+  assert.equal(quadrant.getAttribute('data-en'), 'Center');
+  ctx.toggleLang();
+  assert.equal(document.documentElement.lang, 'el');
+  assert.equal(quadrant.textContent, 'Κέντρο');
+});
+
+test('index.html CPLM: unknown quadrant keeps text fallback across language changes', async () => {
+  const { ctx, document, respond } = loadCplmLanguage();
+  const unknown = '<svg onload=alert(1)>future_quadrant';
+  await respond({ ...CPLM_LIVE, quadrant: unknown });
+  const quadrant = document.getElementById('cplmQuadrant');
+  assert.equal(quadrant.textContent, unknown);
+  ctx.toggleLang();
+  assert.equal(quadrant.textContent, unknown);
+  assert.deepEqual(quadrant.htmlWrites, []);
+});
+import './redesign/t356_comparison.check.mjs';

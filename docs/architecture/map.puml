@@ -777,3 +777,167 @@ Status --> Fetch : response or HTTP failure
 Fetch --> Snapshot : valid finite account / retain on failure
 Snapshot --> Tiles : loading / ready / unavailable / stale
 @enduml
+
+@startuml T9027_diavgeia_ada_length
+component "DiavgeiaClient.iter_decisions" as Client
+component scrape_decisions as Scraper
+component DiavgeiaDecision as Model
+database "diavgeia_decisions_ada_chk" as ADAcheck
+Client --> Scraper : unchanged ada
+Scraper --> Model : pg_insert / on_conflict_do_update
+Model --> ADAcheck : length(ada) BETWEEN 9 AND 32
+@enduml
+
+@startuml T9029_docs_ci
+component "Docs Redesign Gates" as DocsCI
+component "Full Git history" as History
+component "Node from .nvmrc" as Node
+component "SEO / remote-sinks / community checks" as Checks
+History --> DocsCI : checkout fetch-depth 0
+DocsCI --> Node : existing pinned setup-node action
+Node --> Checks : node --test
+@enduml
+
+' T-9033 nightly consolidation: current source delta; historical diagrams retained.
+@startmindmap T9033_nightly_mindmap
+* Ekklesia: bounded nightly source consolidation
+** MOD-18 support accounting
+*** built: payments.py::allocate_donation (remainder -> reserve)
+*** built: _append_payment_record / _projection_state
+*** built: _apply_public_payment_adjustment / _target_remaining_allocation
+*** built: payment_status / _load_public_support_projection
+** Community funding
+*** built: fetchPaymentStatus / validFundingAccount
+*** built: updateServerTile / updateDomainTile / updateReserveTile
+*** built: loading / ready / unavailable / stale; finite zero retained
+*** built: tick / community-language-change
+** MOD-21 Diavgeia
+*** built: DiavgeiaClient.iter_decisions / scrape_decisions
+*** built: DiavgeiaDecision named length check (9..32)
+*** built: y801a2b3c4d5 upgrade / NOT VALID downgrade
+** CI source guards
+*** built: ci.yml::test-docs-redesign full-history Node checks
+*** built: 15 same-version remote action SHA pins
+*** deferred: production migration/deploy and payment intake owner gates
+@endmindmap
+
+@startuml T9033_nightly_components
+title T-9033 inspected source hops (not a production release)
+component "payments.py::stripe_webhook" as Webhook
+component "payments.py::allocate_donation" as Allocation
+component "payments.py::_append_payment_record\n_projection_state" as Append
+component "payments.py::_process_stripe_adjustment\n_apply_public_payment_adjustment" as Adjustment
+database "Redis support projection\nserver / domain / reserve" as Projection
+component "payments.py::payment_status\n_load_public_support_projection" as Status
+component "community.html::fetchPaymentStatus\nthree snapshot renderers" as Community
+Webhook --> Allocation : allocate_donation(amount)
+Webhook --> Append : _append_payment_record(record)
+Webhook --> Adjustment : verified refund/dispute event
+Append --> Projection : transaction: record + totals + cent state
+Adjustment --> Projection : cent allocation deltas via Lua commit
+Status --> Projection : _load_public_support_projection / mget
+Community --> Status : GET /api/v1/payments/status
+
+component "diavgeia_scraper.py::scrape_decisions" as Scraper
+component "diavgeia_client.py::DiavgeiaClient" as Client
+database "diavgeia_decisions\nnamed ADA check 9..32" as Decisions
+component "models.py::DiavgeiaDecision\ny801a2b3c4d5 migration" as Schema
+Scraper --> Client : iter_decisions
+Scraper --> Decisions : pg_insert / upsert exact ada
+Schema --> Decisions : named check definition / replacement
+
+component "ci.yml::test-docs-redesign" as DocsCI
+artifact "Full checkout / .nvmrc Node" as Inputs
+component "SEO / remote-sinks /\nCommunity behavior checks" as Checks
+DocsCI --> Inputs : checkout fetch-depth 0 / setup-node
+DocsCI --> Checks : node --test (dependency-free)
+note bottom of DocsCI
+#518: only Docs job gains full history;
+Security Audit already has it.
+#520: 15 remote action references are SHA-pinned
+at the same versions; runner policy unchanged.
+end note
+@enduml
+' End T-9033 nightly consolidation.
+
+' T-9055 bundled source map for #528..#541; historical prefixes retained.
+@startmindmap T9055_source_mindmap
+* Ekklesia: inspected source boundaries, not release evidence
+** Public comparison / language
+*** built: index.html::fetchRepresentation / fetchBillComparison / renderBillComparison
+*** built: analytics.py::cumulative_representation / compute_cumulative_representation
+*** built: public_api.py::public_bill_results; same closed bill, visible results
+*** built: index.html::fetchCPLM / toggleLang; currentLang at response time
+*** built: cplm.py::cplm_aggregate / get_cplm_cached / compute_cplm
+*** boundary: party-position YES share, not MP counts; invalid data neutral
+** Manual browser evidence
+*** built: t356-browser.yml workflow_dispatch only; CI_RUNNER policy retained
+*** built: locked Playwright 1.63.0 / Chromium / WebKit
+*** built: t356_democracy_cycle.browser.cjs; local docs and mocked API
+*** built: results.json / PNG / logs; validate then retain artifacts 3 days
+*** boundary: harness exit 0 / 1 / 2; no production verification
+** API hardening
+*** built: admin.py::verify_admin -> dependencies.py::verify_admin_key
+*** built: Bearer-only, UTF-8 hmac.compare_digest, production fail closed
+*** built: voting.py::submit_vote explicit 120/minute IP limiter
+*** built: default 60/minute on direct App routes (e.g. /health)
+*** boundary: default 60/minute does NOT cover include_router endpoints
+*** unchanged: shared public 100/1000 quota; existing mail guards
+** Mobile unread / lifecycle
+*** built: notifications.ts::persistPushAndReconcile / ingestPushPayload
+*** built: unread-events.ts::createUnreadEventsStore / ingest / markRead
+*** built: serialized persisted ledger -> notification-badge.ts::set
+*** built: local display only on added; automatic zero never clears tray
+*** built: explicit read clearTray; F-Droid skips native FCM / badge calls
+*** offline evidence #541: Play/Direct persisted master=false suppresses across restart
+*** offline evidence #541: explicit enable admits that event once; replay deduplicates
+*** open: NV1/NV2 native identity lifecycle, OEM/provider and release gates
+*** boundary: BillsScreen focus-cancellation tests are not native navigation proof
+@endmindmap
+
+@startuml T9055_source_components
+title T-9055 inspected source hops (no deploy or device-proof claim)
+component "index.html::fetchRepresentation\nfetchBillComparison / renderBillComparison" as Comparison
+component "analytics.py::cumulative_representation\ncompute_cumulative_representation" as Representation
+component "public_api.py::public_bill_results" as Results
+component "index.html::fetchCPLM / toggleLang" as CPLMView
+component "cplm.py::cplm_aggregate" as CPLMRouter
+component "services/cplm.py::get_cplm_cached\ncompute_cplm" as CPLMService
+Comparison --> Representation : GET /analytics/representation
+Comparison --> Results : GET /public/bills/{last_bill.bill_id}/results
+CPLMView --> CPLMRouter : GET /cplm/aggregate
+CPLMRouter --> CPLMService : get_cplm_cached (visible-results filter on compute)
+component "t356-browser.yml\nmanual dispatch only" as BrowserWorkflow
+component "Locked Playwright 1.63.0\nChromium / WebKit" as Browsers
+component "t356_democracy_cycle.browser.cjs\nlocal docs + mocked API" as Harness
+artifact "results.json / PNG / logs\n3-day retention" as Evidence
+BrowserWorkflow --> Browsers : install locked tooling / browsers
+BrowserWorkflow --> Harness : data-only or full; exit 0 / 1 / 2
+Harness --> Evidence : bounded evidence output
+BrowserWorkflow --> Evidence : validate / upload
+component "admin.py::verify_admin" as Admin
+component "dependencies.py::verify_admin_key" as Bearer
+component "voting.py::submit_vote" as Vote
+component "Explicit limiter\n120/minute per IP" as VoteLimit
+Admin --> Bearer : central Bearer dependency
+VoteLimit --> Vote : decorator; signatures / nullifiers still required
+note bottom of VoteLimit
+Default 60/minute covers direct App routes (e.g. /health),
+not include_router endpoints; explicit vote 120/minute unchanged.
+end note
+component "notifications.ts::persistPushAndReconcile\ningestPushPayload / explicit read" as Notifications
+component "unread-events.ts::createUnreadEventsStore\ningest / markRead" as Ledger
+database "Serialized local unread storage" as Storage
+component "notification-badge.ts::set" as Badge
+Notifications --> Ledger : ingest / acknowledge / unreadCount
+Ledger --> Storage : queued durable read / write
+Notifications --> Badge : absolute ledger count; explicit clearTray only
+note bottom of Badge
+F-Droid returns before native badge/FCM.
+#541 offline Play/Direct: persisted master=false survives restart;
+explicit enable admits the same event once; replay deduplicates.
+Source/offline evidence only, not product/OEM/provider proof.
+Native OEM/provider/release gates remain open.
+end note
+@enduml
+' End T-9055 bundled source map.

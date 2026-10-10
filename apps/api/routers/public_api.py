@@ -2,10 +2,14 @@
 MOD-11: Public API + Rate Limiting + API Keys
 Öffentliche REST API für NGOs, Journalisten, Forscher.
 
-Rate Limits:
-  - Anonym:       100 req/min
-  - Mit API Key: 1000 req/min
+Public reads declaring Depends(rate_limit_check):
+  - Shared public-data quota: anonymous IP 100 / valid API key 1000 per 60s
+  - These reads are excluded from SlowAPI's default 60/min in current wiring.
+  - The 60/min default covers other routes (for example /health), not these reads.
+  - The shared quota is not a production throughput guarantee.
   - API Keys:    community-generiert, kein Konto nötig
+
+Client guide: docs/operations/PUBLIC_API_CLIENT_GUIDE.md
 
 @ai-anchor MOD11_PUBLIC_API
 """
@@ -172,7 +176,13 @@ async def rate_limit_check(
     request: Request,
     x_api_key: Optional[str] = Header(None, alias="X-API-Key")
 ):
-    """Dependency für Rate Limiting."""
+    """Shared public-data quota across routes declaring this dependency.
+
+    A valid X-API-Key selects a 1000/60s key bucket across dependent routes;
+    missing or invalid keys use the anonymous IP bucket (100/60s). Current
+    dependent public reads are excluded from SlowAPI's 60/min default; that
+    default is not an additional per-endpoint ceiling on these reads.
+    """
     r = await get_redis()
     valid_key = bool(x_api_key and await verify_api_key(x_api_key))
     limit = 1000 if valid_key else 100
@@ -200,7 +210,11 @@ async def rate_limit_check(
 
 @router.post("/keys/generate")
 async def generate_api_key(request: Request, label: str = "ekklesia-client"):
-    """Generiert einen API Key — kein Konto nötig. Rate-limited: 5/hour per IP."""
+    """Generate a key without an account; at most 5/hour per IP.
+
+    The returned rate_limit describes the shared public-data read quota.
+    Key generation has its own 5/hour counter, not the public read dependency.
+    """
     # Rate limit: max 5 key generations per hour per IP
     r = await get_redis()
     rate_key = rate_limit_key_for_ip(request, "public_api:keygen")
@@ -227,7 +241,11 @@ async def generate_api_key(request: Request, label: str = "ekklesia-client"):
 
 @router.get("/keys/status")
 async def api_key_status(x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
-    """Prüft Status des API Keys."""
+    """Check key status; rate_limit describes only the shared public-data quota.
+
+    Unlike dependent public-data reads, an invalid key here returns HTTP 401.
+    This route does not install the shared public read dependency.
+    """
     if not x_api_key:
         return {"authenticated": False, "rate_limit": "100 req/min"}
 
@@ -619,7 +637,11 @@ async def public_representation(
 
 @router.get("/info")
 async def api_info():
-    """API Dokumentation + Endpoints Übersicht."""
+    """API overview; rate_limits describes the shared public-data quota only.
+
+    Only routes declaring rate_limit_check consume that shared budget.
+    The advertised budget is not a production throughput guarantee.
+    """
     return {
         "name": "Ekklesia.gr Public API", "version": "1.0.0-beta",
         "description": "Ψηφιακή Άμεση Δημοκρατία — Public Data API",

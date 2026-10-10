@@ -45,8 +45,15 @@ import r0_inventory
 # unknown loading balances and bilingual unavailable notices, not seeded debt.
 # Refresh failures retain each last valid snapshot with a stale-data notice;
 # the existing reserve behavior, costs and paused payment links are unchanged.
+# T-9030 (owner-requested 2026-10-10): reserve now retains its last valid snapshot
+# on refresh failure with the same EL/EN stale notice as server/domain; zero is
+# valid, unknown stays "—" and valid recovery hides the notice. Display only.
+# T-9035 (owner-requested 2026-10-10): explicit public-projection availability
+# preserves the existing stale/unknown UI contract. Both annual-cost displays
+# show server + domain (~309.30 EUR/year, 10.2026); recurring USD, one-time and
+# variable costs remain separately disclosed, without currency conversion.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "4d92815e5247bf7ce007ca9117320410e1ed3e1e27b4533abf46e4fea6a5bda4",
+    "docs/community.html": "9dbb76c676f6caf8cf4a50b1f477273d19ac6b6b5c1ca7bf42f3e41ecfe3d1f0",  # T-9028 DRAFT: dated open-need wording (Gio approval pending), on top of T-9048
     "docs/wiki/api.html": "0f2b6771a112f089c7fba6b1ef3185e061b073cd338f3db10a38a3c3c3c2515f",
     "docs/wiki/architecture.html": "8198bc8764e1d848f512a14195d2a219e6ce36398227f6744ce2793f401273d3",
     "docs/wiki/broadcasting.html": "9e14ffa72fa9e524c109748881d2ed941aeeb257d44570b191aaa24d5fb47b62",
@@ -54,8 +61,8 @@ APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/database.html": "9a86616c03c17a3cf3b8f95458d10286056bb99c760e0daf944ed1e54e4d35b2",
     "docs/wiki/delete-account.html": "426b3c7c2a252a4b1520ad1bdd0bfee812904c43f057e8c805114803f09778e9",
     "docs/wiki/faq.html": "4bda2ccff854016b88249d18952e3c62de297b909d70a8e5e15886cc170a09db",
-    "docs/wiki/index.html": "933348ee7f46e0244edd90d76c03daeb46781255325c0f6ae5bd8c3bb02854d5",
-    "docs/wiki/modules.html": "f0f54584009d7727b5f13ab16fa48046339e7ea3f7542f045f7e2242e1849fcd",
+    "docs/wiki/index.html": "2f6de1a1e879478c686a220d0cc68ea495c28b1c18d40ad77420d3adcde323ea",  # T-9047/T-9048: named code region, contrast, headings and document language
+    "docs/wiki/modules.html": "c5708c74924dac9c813a184e33b20e3381f3e47345fe4c933f8709852c47552d",  # T-9072: neutral unknown health dots, MOD-23/25 mapping, localized status labels
     "docs/wiki/privacy.html": "8887a4b19c0fdca6f52cec50289d5c4e17eb21e8839c5dc9405cd9395ee97ba1",
     "docs/wiki/roadmap.html": "0bc54ef66ee79ec0db67ed8f1e334dc22174039f1e6d64d23ed2723763e34b77",
     "docs/wiki/security.html": "5dac9dce20e8552fa031fdd03c0501a752e6e4ae05f16c384c697882258da44f",

@@ -106,6 +106,12 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
 
       - name: Set up Python 3.12
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
@@ -118,6 +124,9 @@ jobs:
         working-directory: scripts/redesign
         run: |
           python -m unittest discover -p 'test_*.py' -v
+
+      - name: Run Node documentation gates
+        run: node --test scripts/public-seo.check.mjs scripts/static-docs-remote-sinks.check.mjs scripts/redesign/community_payment_status.check.mjs
 
   test-clients:
     name: Client ${{ matrix.name }}
@@ -137,7 +146,7 @@ jobs:
             verify: node --test ../../scripts/client-yaml-security.check.cjs image-codec.check.mjs ../../scripts/static-docs-remote-sinks.check.mjs ../../scripts/public-seo.check.mjs && npm run lint && npm run typecheck && npm test && npm run build
           - name: Dashboard
             path: apps/dashboard
-            verify: node --test ../../scripts/client-yaml-security.check.cjs image-codec.check.mjs health-shapes.test.mjs && npm run lint && npm run typecheck && npm run build
+            verify: node --test ../../scripts/client-yaml-security.check.cjs image-codec.check.mjs health-shapes.test.mjs overview.test.mjs && npm run lint && npm run typecheck && npm run build
           - name: Mobile
             path: apps/mobile
             verify: node --test ../../scripts/client-yaml-security.check.cjs && npx --no-install expo install --check && npm run typecheck && npm test
