@@ -9,7 +9,7 @@ import logging
 import uuid
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
@@ -18,6 +18,7 @@ from nacl.signing import VerifyKey
 from nacl.exceptions import BadSignatureError
 
 from database import get_db
+from rate_limit import limiter
 from crypto.polis import (
     PolisTicketPayload,
     PolisVotePayload,
@@ -91,9 +92,12 @@ def _now_ms() -> int:
 # ─── POST /polis/register-key ────────────────────────────────────────────────
 
 @router.post("/register-key", status_code=201)
+@limiter.limit("120/minute")
 async def register_polis_key(
     req: RegisterKeyRequest,
     db: AsyncSession = Depends(get_db),
+    *,
+    request: Request = None,
 ):
     """Register pk_polis against a verified identity. Signed by identity key."""
     # 1. Look up identity
@@ -217,9 +221,12 @@ async def list_tickets(
 # ─── POST /polis/tickets ────────────────────────────────────────────────────
 
 @router.post("/tickets", status_code=201)
+@limiter.limit("120/minute")
 async def create_ticket(
     req: TicketCreateRequest,
     db: AsyncSession = Depends(get_db),
+    *,
+    request: Request = None,
 ):
     """Create a POLIS ticket with Ed25519 signed payload. Requires registered pk_polis."""
     # Verify registered key binding
@@ -277,10 +284,15 @@ async def create_ticket(
 # ─── POST /polis/tickets/{ticket_id}/votes ───────────────────────────────────
 
 @router.post("/tickets/{ticket_id}/votes", status_code=201)
+# Fixed scope: SlowAPI keys by URL, so a per-path limit would let rotating
+# ticket IDs mint fresh buckets. Same shared HMAC-IP key, 120/min.
+@limiter.shared_limit("120/minute", scope="polis-ticket-vote")
 async def vote_ticket(
     ticket_id: str,
     req: VoteRequest,
     db: AsyncSession = Depends(get_db),
+    *,
+    request: Request = None,
 ):
     """Vote on a POLIS ticket with Ed25519 signed payload. Requires registered pk_polis."""
     # Verify registered key binding
