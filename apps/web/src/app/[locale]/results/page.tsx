@@ -99,7 +99,7 @@ export default function ResultsPage() {
           </select>
         </div>
 
-        {loading && <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-400">{isEl ? "Φόρτωση..." : "Loading..."}</div>}
+        {loading && <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-600">{isEl ? "Φόρτωση..." : "Loading..."}</div>}
         {!loading && error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
         {!loading && !error && filtered.length === 0 && (
           <div className="rounded-lg border border-gray-200 bg-white p-10 text-center text-gray-500">
@@ -137,7 +137,7 @@ export default function ResultsPage() {
           </div>
         )}
       </div>
-      <footer className="border-t border-gray-200 px-6 py-6 text-center text-xs text-gray-400">
+      <footer className="border-t border-gray-200 px-6 py-6 text-center text-xs text-gray-600">
         <p>{isEl ? "Μη κρατική εφαρμογή — ενημερωτικός χαρακτήρας" : "Non-governmental application — informational purposes only"}</p>
         <p className="mt-1">
           © 2026 V-Labs Development — MIT License —{" "}

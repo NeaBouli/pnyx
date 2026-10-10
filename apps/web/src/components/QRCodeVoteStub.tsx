@@ -166,13 +166,16 @@ export default function QRCodeVoteStub({ billId, purpose = "ticket", onAuthentic
           }}>
             <QRCodeSVG
               value={session.qr_data}
+              title={isEl ? "Σκανάρετε με την εφαρμογή ekklesia" : "Scan with the ekklesia app"}
+              role="img"
+              aria-label={isEl ? "Σκανάρετε με την εφαρμογή ekklesia" : "Scan with the ekklesia app"}
               size={200}
               level="M"
               includeMargin={false}
               style={{ display: "block", width: "100%", height: "auto" }}
             />
           </div>
-          <p style={{ color: "#9ca3af", fontSize: 12, marginBottom: 16 }}>
+          <p style={{ color: "#4b5563", fontSize: 12, marginBottom: 16 }}>
             {isEl ? "Ο κωδικός λήγει σε 5 λεπτά" : "Code expires in 5 minutes"}
           </p>
           <a

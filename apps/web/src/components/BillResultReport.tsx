@@ -89,7 +89,7 @@ export default function BillResultReport({
 
         {/* Citizen Votes */}
         <div>
-          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">
+          <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-3">
             {el("Βούληση Πολιτών — εκκλησία του έθνους", "Citizen Will")}
           </h3>
           <div className="bg-gray-800 rounded-xl p-4">
@@ -111,7 +111,7 @@ export default function BillResultReport({
               <div key={b.label} className="mb-3">
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-300">{b.label}</span>
-                  <span className={`font-black ${b.tc}`}>{b.pct}% <span className="text-gray-500 font-normal">({b.count.toLocaleString()})</span></span>
+                  <span className={`font-black ${b.tc}`}>{b.pct}% <span className="text-gray-300 font-normal">({b.count.toLocaleString()})</span></span>
                 </div>
                 <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
                   <div className={`h-full ${b.color} rounded-full transition-all duration-700`} style={{ width: `${b.pct}%` }} />

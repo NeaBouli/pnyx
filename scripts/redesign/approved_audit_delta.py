@@ -53,7 +53,7 @@ import r0_inventory
 # show server + domain (~309.30 EUR/year, 10.2026); recurring USD, one-time and
 # variable costs remain separately disclosed, without currency conversion.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "4a70e95a427b416d274491247ad12684dea2bee0cdfbbf7974b5a9cbdbe3bee8",
+    "docs/community.html": "e697e7e0c31de6e019259bf9fc75cf9ae17ac11dff36a0ca3ac973e3d88e4667",  # T-9048: scoped contrast, heading semantics and document-language toggle
     "docs/wiki/api.html": "0f2b6771a112f089c7fba6b1ef3185e061b073cd338f3db10a38a3c3c3c2515f",
     "docs/wiki/architecture.html": "8198bc8764e1d848f512a14195d2a219e6ce36398227f6744ce2793f401273d3",
     "docs/wiki/broadcasting.html": "9e14ffa72fa9e524c109748881d2ed941aeeb257d44570b191aaa24d5fb47b62",
@@ -61,7 +61,7 @@ APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/database.html": "9a86616c03c17a3cf3b8f95458d10286056bb99c760e0daf944ed1e54e4d35b2",
     "docs/wiki/delete-account.html": "426b3c7c2a252a4b1520ad1bdd0bfee812904c43f057e8c805114803f09778e9",
     "docs/wiki/faq.html": "4bda2ccff854016b88249d18952e3c62de297b909d70a8e5e15886cc170a09db",
-    "docs/wiki/index.html": "964ec095b2e38d4ce986a38666d66d00030646501150558db32abbd321152007",  # T-9047: named code region, inset focus and scoped arrow scrolling
+    "docs/wiki/index.html": "2f6de1a1e879478c686a220d0cc68ea495c28b1c18d40ad77420d3adcde323ea",  # T-9047/T-9048: named code region, contrast, headings and document language
     "docs/wiki/modules.html": "f0f54584009d7727b5f13ab16fa48046339e7ea3f7542f045f7e2242e1849fcd",
     "docs/wiki/privacy.html": "8887a4b19c0fdca6f52cec50289d5c4e17eb21e8839c5dc9405cd9395ee97ba1",
     "docs/wiki/roadmap.html": "0bc54ef66ee79ec0db67ed8f1e334dc22174039f1e6d64d23ed2723763e34b77",

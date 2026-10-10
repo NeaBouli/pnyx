@@ -398,7 +398,7 @@ async function aggregateChecks(page, name, score, lang) {
   check(name, `${lang}: cumulative score and exact mood threshold remain independent`, actual.score === (empty ? "—" : `${score}%`) && actual.mouth === mouth && actual.noData === (empty ? "inline" : "none"), actual);
   check(name, `${lang}: bilingual mood follows actual toggle`, actual.mood === (lang === "en" ? en : el) && actual.moodEl === el && actual.moodEn === en && actual.lang === lang, actual);
   check(name, `${lang}: CPLM axes/voters/dot/arrow and hidden fallback`, actual.x === "2.50" && actual.y === "-1.50" && actual.voters.replace(/[.,\s]/g, "") === "1234" && JSON.stringify(actual.dot) === '["175","161"]' && JSON.stringify(actual.arrow) === '["175","161","189","168","0.6"]' && actual.fallback === "0", actual);
-  check(name, `${lang}: live quadrant translation independent of document.lang`, actual.quadrant === (lang === "en" ? "Lib. Right" : "Ελευθ. Δεξιά") && actual.quadEl === "Ελευθ. Δεξιά" && actual.quadEn === "Lib. Right" && actual.documentLang === "el", actual);
+  check(name, `${lang}: live quadrant translation and document language follow actual toggle`, actual.quadrant === (lang === "en" ? "Lib. Right" : "Ελευθ. Δεξιά") && actual.quadEl === "Ελευθ. Δεξιά" && actual.quadEn === "Lib. Right" && actual.documentLang === lang, actual);
 }
 
 async function toggleAggregateLanguage(page) {

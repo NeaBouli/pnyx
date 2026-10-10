@@ -27,7 +27,7 @@ export default function NavHeader() {
       <a href="https://ekklesia.gr" className="flex flex-shrink-0 items-center gap-2 group">
         <Image src="/pnx.png" alt="εκκλησία του έθνους" width={40} height={40} className="h-8 w-8 rounded-lg sm:h-10 sm:w-10" />
         <span className="hidden text-blue-600 font-black text-xl tracking-tight group-hover:text-blue-700 transition-colors sm:inline">
-          εκκλησία<span className="text-gray-400 font-normal ml-1" style={{ fontSize: "0.55em", letterSpacing: "0.05em" }}>του έθνους</span>
+          εκκλησία<span className="text-gray-600 font-normal ml-1" style={{ fontSize: "0.55em", letterSpacing: "0.05em" }}>του έθνους</span>
         </span>
       </a>
 

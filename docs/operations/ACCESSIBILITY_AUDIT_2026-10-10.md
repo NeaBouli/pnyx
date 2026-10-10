@@ -82,3 +82,32 @@ screen-reader behavior, devices and WebKit remain **needs-validation**.
 No production deployment, provider mutation, newsletter submission, vote,
 identity action or release was performed by the audit. Keep findings open until
 their specific candidate and, where relevant, deployed flows are verified.
+
+## T-9047 / T-9048 bundled candidate follow-up
+
+The existing draft PR #534 includes the keyboard code-region fix and the safe
+follow-ups; #533's subscriber-name change is already on main. This candidate
+is **not deployed**. Static text colors are narrowly scoped; heading levels
+preserve their visual styling; real QR SVGs have localized names. The global
+SSE display is a named region, not a modal. Static EL/EN controls now also set
+`document.documentElement.lang`. No data, API, money or navigation behavior changes.
+
+Local evidence: `/private/tmp/T9048-local-axe.json` (Chromium 153.0.8010.12,
+Playwright 1.63.0, axe 4.13.0). Six routes × EL/EN × 390/1280 = 24 HTTP-200
+cases, zero reported axe violations, zero page errors, zero page overflow,
+zero attempted writes and no language mismatches. API/SSE/QR data are synthetic
+offline fixtures, not a production data or authentication check. Twelve
+incomplete node checks remain for manual validation; full keyboard/modal,
+screen-reader, real-device and deployed validation remain open. Quick Start
+additionally passed EL→EN→EL, Tab/Shift-Tab, inset focus and scrolling in both
+Chromium and WebKit, including the stabilized 650ms-after-focus rerun.
+
+The initial fixture run exposed eight further detail contrast targets. Those
+were fixed with darker text on light surfaces and lighter count labels on the
+dark results surface; the final 24-case rerun passes. Initial source-test parsing
+mistook a comment mentioning `<style>` for an element; HTMLParser now collects
+real style elements without weakening color assertions. Local Render tests use
+cached Vitest 4.1.11/jsdom 29.1.1; the local dev build uses Next 16.3.1 and Node
+24.19.0. The exact lockfile matrix, full green head CI and gio-dd cross-review
+remain mandatory merge gates. Immutable R0 and general preservation rules remain
+unchanged; only the affected exact fingerprints and UTC sitemap hashes update.

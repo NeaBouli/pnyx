@@ -286,6 +286,12 @@
   <link rel="stylesheet" href="assets/redesign-v2/tokens.css"/>
   <link rel="stylesheet" href="assets/redesign-v2/foundation.css"/>
   <link rel="stylesheet" href="assets/redesign-v2/r4-community.css"/>
+  <style>
+    /* T-9048: only measured logo/principle/structure text contrast. */
+    .nav-logo > span { color: #475569 !important; }
+    .principle-grid .pc > p { color: #475569; }
+    p[data-el="Όλοι συνεισφέρουν ισότιμα. Κανείς δεν ελέγχει."] { color: #475569 !important; }
+  </style>
 </head>
 <body>
 <a href="#main" class="pnx2-skip" data-el="Μετάβαση στο κύριο περιεχόμενο" data-en="Skip to main content">Μετάβαση στο κύριο περιεχόμενο</a>
@@ -324,12 +330,12 @@
 
   <h2 class="fade-in" data-el="Οι Αρχές μας" data-en="Our Principles">Οι Αρχές μας</h2>
   <div class="principle-grid">
-    <div class="pc fade-in"><div class="pc-icon">🔓</div><h4 data-el="Πλήρης Διαφάνεια" data-en="Full Transparency">Πλήρης Διαφάνεια</h4><p data-el="Κάθε γραμμή κώδικα δημόσια." data-en="Every line of code public.">Κάθε γραμμή κώδικα δημόσια.</p></div>
-    <div class="pc fade-in"><div class="pc-icon">🌐</div><h4 data-el="Αποκέντρωση" data-en="Decentralization">Αποκέντρωση</h4><p data-el="Η κοινότητα αποφασίζει." data-en="The community decides.">Η κοινότητα αποφασίζει.</p></div>
-    <div class="pc fade-in"><div class="pc-icon">🤲</div><h4 data-el="Κοινοτική Χρηματοδότηση" data-en="Community Funding">Κοινοτική Χρηματοδότηση</h4><p data-el="Από πολίτες, για πολίτες." data-en="By citizens, for citizens.">Από πολίτες, για πολίτες.</p></div>
-    <div class="pc fade-in"><div class="pc-icon">🚫</div><h4 data-el="Χωρίς Διαφημίσεις" data-en="No Ads">Χωρίς Διαφημίσεις</h4><p data-el="Ποτέ." data-en="Never.">Ποτέ.</p></div>
-    <div class="pc fade-in"><div class="pc-icon">⚖️</div><h4 data-el="Πολιτική Ουδετερότητα" data-en="Political Neutrality">Πολιτική Ουδετερότητα</h4><p data-el="Καμία κομματική σύνδεση." data-en="No party affiliation.">Καμία κομματική σύνδεση.</p></div>
-    <div class="pc fade-in"><div class="pc-icon">🔐</div><h4 data-el="Ιδιωτικότητα" data-en="Privacy">Ιδιωτικότητα</h4><p>GDPR by design.</p></div>
+    <div class="pc fade-in"><div class="pc-icon">🔓</div><h4 role="heading" aria-level="3" data-el="Πλήρης Διαφάνεια" data-en="Full Transparency">Πλήρης Διαφάνεια</h4><p data-el="Κάθε γραμμή κώδικα δημόσια." data-en="Every line of code public.">Κάθε γραμμή κώδικα δημόσια.</p></div>
+    <div class="pc fade-in"><div class="pc-icon">🌐</div><h4 role="heading" aria-level="3" data-el="Αποκέντρωση" data-en="Decentralization">Αποκέντρωση</h4><p data-el="Η κοινότητα αποφασίζει." data-en="The community decides.">Η κοινότητα αποφασίζει.</p></div>
+    <div class="pc fade-in"><div class="pc-icon">🤲</div><h4 role="heading" aria-level="3" data-el="Κοινοτική Χρηματοδότηση" data-en="Community Funding">Κοινοτική Χρηματοδότηση</h4><p data-el="Από πολίτες, για πολίτες." data-en="By citizens, for citizens.">Από πολίτες, για πολίτες.</p></div>
+    <div class="pc fade-in"><div class="pc-icon">🚫</div><h4 role="heading" aria-level="3" data-el="Χωρίς Διαφημίσεις" data-en="No Ads">Χωρίς Διαφημίσεις</h4><p data-el="Ποτέ." data-en="Never.">Ποτέ.</p></div>
+    <div class="pc fade-in"><div class="pc-icon">⚖️</div><h4 role="heading" aria-level="3" data-el="Πολιτική Ουδετερότητα" data-en="Political Neutrality">Πολιτική Ουδετερότητα</h4><p data-el="Καμία κομματική σύνδεση." data-en="No party affiliation.">Καμία κομματική σύνδεση.</p></div>
+    <div class="pc fade-in"><div class="pc-icon">🔐</div><h4 role="heading" aria-level="3" data-el="Ιδιωτικότητα" data-en="Privacy">Ιδιωτικότητα</h4><p>GDPR by design.</p></div>
   </div>
 
   <h2 class="fade-in" data-el="Αποκεντρωμένη Δομή" data-en="Decentralized Structure">Αποκεντρωμένη Δομή</h2>
@@ -706,7 +712,7 @@
 
   <!-- Transparenz Live-Zusammenfassung -->
   <div id="transparencyCard" style="background:#f0fdf4;border:2px solid #86efac;border-radius:1rem;padding:1.5rem;margin:1.5rem 0" class="fade-in">
-    <h4 style="font-weight:900;margin-bottom:0.75rem;font-size:1rem;color:#166534;display:flex;align-items:center;gap:0.5rem">
+    <h4 role="heading" aria-level="3" style="font-weight:900;margin-bottom:0.75rem;font-size:1rem;color:#166534;display:flex;align-items:center;gap:0.5rem">
       <span>🔍</span>
       <span data-el="Ζωντανή Διαφάνεια" data-en="Live Transparency">Ζωντανή Διαφάνεια</span>
       <span style="display:inline-flex;align-items:center;gap:0.3rem;font-size:0.6rem;background:#dcfce7;padding:0.15rem 0.5rem;border-radius:999px;font-weight:600"><span style="width:5px;height:5px;border-radius:50%;background:#22c55e;animation:blink 2s infinite"></span> Live</span>
@@ -768,31 +774,31 @@
   <div class="participate-grid fade-in">
     <div class="pgc">
       <div class="pgc-icon">🧑‍💻</div>
-      <h4 data-el="Κώδικας" data-en="Code">Κώδικας</h4>
+      <h4 role="heading" aria-level="3" data-el="Κώδικας" data-en="Code">Κώδικας</h4>
       <p data-el="Συνεισφορά μέσω GitHub" data-en="Contribute via GitHub">Συνεισφορά μέσω GitHub</p>
       <a href="https://github.com/NeaBouli/pnyx" target="_blank">GitHub →</a>
     </div>
     <div class="pgc">
       <div class="pgc-icon">🐛</div>
-      <h4 data-el="Σφάλματα" data-en="Bug Reports">Σφάλματα</h4>
+      <h4 role="heading" aria-level="3" data-el="Σφάλματα" data-en="Bug Reports">Σφάλματα</h4>
       <p data-el="Αναφορά στο GitHub Issues" data-en="Report on GitHub Issues">Αναφορά GitHub Issues</p>
       <a href="https://github.com/NeaBouli/pnyx/issues" target="_blank">Issues →</a>
     </div>
     <div class="pgc">
       <div class="pgc-icon">📝</div>
-      <h4 data-el="Τεκμηρίωση" data-en="Documentation">Τεκμηρίωση</h4>
+      <h4 role="heading" aria-level="3" data-el="Τεκμηρίωση" data-en="Documentation">Τεκμηρίωση</h4>
       <p data-el="Wiki, μεταφράσεις, οδηγοί" data-en="Wiki, translations, guides">Wiki &amp; μεταφράσεις</p>
       <a href="wiki/">Wiki →</a>
     </div>
     <div class="pgc">
       <div class="pgc-icon">📢</div>
-      <h4 data-el="Διάδοση" data-en="Spread">Διάδοση</h4>
+      <h4 role="heading" aria-level="3" data-el="Διάδοση" data-en="Spread">Διάδοση</h4>
       <p data-el="Μοιράσου με φίλους" data-en="Share with friends">Μοιράσου με φίλους</p>
       <a href="#" onclick="openSharePopup();return false;" style="background:#16a34a" data-el="Μοιράσου →" data-en="Share →">Μοιράσου →</a>
     </div>
     <div class="pgc">
       <div class="pgc-icon">✈️</div>
-      <h4>Telegram</h4>
+      <h4 role="heading" aria-level="3">Telegram</h4>
       <p data-el="Κανάλι + Ομάδα" data-en="Channel + Group">Κανάλι + Ομάδα</p>
       <div style="display:flex;gap:0.3rem;flex-direction:column;align-items:center">
         <a href="https://t.me/ekklesia_gr" target="_blank" style="font-size:0.75rem;background:#0088cc">📢 Channel</a>
@@ -801,13 +807,13 @@
     </div>
     <div class="pgc">
       <div class="pgc-icon">🏛️</div>
-      <h4 data-el="NGO / Κίνηση" data-en="NGO / Movement">NGO / Κίνηση</h4>
+      <h4 role="heading" aria-level="3" data-el="NGO / Κίνηση" data-en="NGO / Movement">NGO / Κίνηση</h4>
       <p data-el="Συνεργασία ΜΚΟ" data-en="NGO cooperation">Συνεργασία ΜΚΟ</p>
       <a href="#" onclick="openNgoModal();return false;" data-el="Επικοινωνία →" data-en="Contact →">Επικοινωνία →</a>
     </div>
     <div class="pgc hl">
       <div class="pgc-icon">💳</div>
-      <h4 data-el="Ανάλαβε ή Πλήρωσε" data-en="Cover or Pay">Ανάλαβε ή Πλήρωσε</h4>
+      <h4 role="heading" aria-level="3" data-el="Ανάλαβε ή Πλήρωσε" data-en="Cover or Pay">Ανάλαβε ή Πλήρωσε</h4>
       <p data-el="Κάλυψε hosting ή domain άμεσα." data-en="Cover hosting or domain directly.">Κάλυψε hosting ή domain.</p>
       <a href="#finance" onclick="document.getElementById('finance').scrollIntoView({behavior:'smooth'});return false;" data-el="Χρεώσεις →" data-en="Invoices →">Χρεώσεις →</a>
     </div>
@@ -1000,6 +1006,7 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape")closeLegalMo
 var currentLang = "el";
 function toggleLang() {
   currentLang = currentLang === "el" ? "en" : "el";
+  document.documentElement.lang = currentLang;
   document.getElementById("langBtn").textContent = currentLang === "el" ? "EN" : "ΕΛ";
   document.querySelectorAll("[data-el]").forEach(function(el) {
     var t = el.getAttribute("data-" + currentLang);
