@@ -14,6 +14,7 @@ assert.ok(inline, 'Community financial-status script must exist');
 
 function harness(lang = 'el') {
   const elements = new Map();
+  const innerHTMLWrites = [];
   for (const match of html.matchAll(/<[^!\/][^>]*\bid="([^"]+)"[^>]*>/g)) {
     const opening = match[0];
     const attrs = new Map([...opening.matchAll(/([\w-]+)="([^"]*)"/g)]
@@ -31,7 +32,7 @@ function harness(lang = 'el') {
       get textContent() { return content; },
       set textContent(value) { content = String(value); },
       get innerHTML() { return content; },
-      set innerHTML(value) { content = String(value).replace(/<[^>]*>/g, ''); },
+      set innerHTML(value) { innerHTMLWrites.push(match[1]); content = String(value).replace(/<[^>]*>/g, ''); },
     };
     elements.set(element.id, element);
   }
@@ -63,6 +64,7 @@ function harness(lang = 'el') {
   vm.runInContext(inline, context, { timeout: 5000, filename: 'community.html:inline-finance' });
   const flush = async () => { for (let index = 0; index < 20; index += 1) await Promise.resolve(); };
   return {
+    innerHTMLWrites() { return innerHTMLWrites.slice(); },
     text(id) { assert.ok(elements.has(id), `Missing DOM element ${id}`); return elements.get(id).textContent; },
     element(id) { assert.ok(elements.has(id), `Missing DOM element ${id}`); return elements.get(id); },
     language(value) { context.currentLang = value; this.tick(); },
@@ -121,6 +123,41 @@ function assertKnown(page, reserve = '5,00€') {
 }
 
 for (const lang of ['el', 'en']) {
+  test(`available:false alone is unknown, not zero accounting (${lang})`, async () => {
+    const page = harness(lang);
+    await page.respond(200, { available: false });
+    assertUnknown(page);
+    for (const id of ['sDataHint', 'dDataHint', 'rUnavailable']) {
+      assert.notEqual(page.element(id).style.display, 'none');
+      assert.match(page.text(id), lang === 'en' ? /unavailable/i : /διαθέσι/i);
+    }
+  });
+
+  test(`available:false retains all three snapshots and available:true zero recovers (${lang})`, async () => {
+    const page = harness(lang);
+    await page.respond(200, { ...snapshot(), available: true });
+    await page.refresh(200, { available: false });
+    assertKnown(page);
+    for (const id of ['sDataHint', 'dDataHint', 'rUnavailable']) {
+      assert.notEqual(page.element(id).style.display, 'none');
+      assert.match(page.text(id), lang === 'en' ? /last valid|stale/i : /Τελευταία έγκυρα|παλαι/i);
+    }
+    page.tick();
+    assertKnown(page);
+    const zero = snapshot();
+    zero.available = true;
+    zero.server = { ...zero.server, received: 0, cost_total: 0, balance: 0 };
+    zero.domain = { ...zero.domain, received: 0, cost_total: 0, balance: 0 };
+    zero.reserve = 0;
+    await page.refresh(200, zero);
+    for (const id of ['sReceived', 'sBalanceVal', 'dReceived', 'dBalanceVal', 'rReserveVal']) {
+      assert.equal(page.text(id), '0,00€');
+    }
+    for (const id of ['sDataHint', 'dDataHint', 'rUnavailable']) {
+      assert.equal(page.element(id).style.display, 'none');
+    }
+  });
+
   test(`initial pending request shows unknown accounting, not funding debt (${lang})`, () => {
     const page = harness(lang);
     assertUnknown(page);
@@ -245,6 +282,34 @@ const invalidReserveResponses = [
   { name: 'null payload', status: 200, body: null },
   { name: 'unavailable with numeric reserve', status: 200, body: { ...snapshot(), available: false, reserve: 99 } },
 ];
+
+test('payment response data never attempts an innerHTML sink in accounting values', async () => {
+  const page = harness();
+  await page.respond(200, { ...snapshot(), available: true });
+  await page.refresh(200, {
+    server: { ...snapshot().server, received: '<img src=x onerror=alert(1)>' },
+    domain: { ...snapshot().domain, balance: '<svg onload=alert(1)>' },
+    reserve: '<script>alert(1)</script>',
+  });
+  assertKnown(page);
+  const accountingIds = new Set(['sReceived', 'sCost', 'sBalanceVal', 'dReceived', 'dCost', 'dBalanceVal', 'rReserveVal']);
+  assert.deepEqual(page.innerHTMLWrites().filter((id) => accountingIds.has(id)), []);
+});
+
+test('dated annual infrastructure text keeps EUR, USD, once and variable fees separate', () => {
+  const support = html.slice(html.indexOf('<!-- DEVELOPER DONATIONS'), html.indexOf('<!-- Transparenz Live-Zusammenfassung'));
+  const banner = html.slice(html.indexOf('<!-- TOTAL BANNER'), html.indexOf('<h2 class="fade-in" data-el="Πώς να Συμμετέχεις"'));
+  for (const text of ['25 € × 12 = 300 €/έτος', '€25 × 12 = €300/year', '9,30 €/έτος', '€9.30/year', '~309,30 €', '~€309.30', '10.2026', '$99/έτος (ξεχωριστά USD)', '$99/year (separate USD)', '$25 εφάπαξ', '$25 one-time', '~$0.002/έλεγχο (μεταβλητό)', '~$0.002/lookup (variable)', 'no currency conversion']) {
+    assert.ok(support.includes(text), `Missing support cost text: ${text}`);
+  }
+  assert.equal(25 * 12 + 9.30, 309.30);
+  assert.equal((support.match(/data-en="Free"/g) || []).length, 2, 'EAS and Brevo remain free');
+  for (const text of ['Annual Fixed Infrastructure in EUR (10.2026)', '~309,30 €', '~€309.30', '€300/year', '€9.30/year', 'not Apple USD, AI/HLR or one-time charges']) {
+    assert.ok(banner.includes(text), `Missing annual infrastructure text: ${text}`);
+  }
+  assert.doesNotMatch(support, /~€130-200/);
+  assert.doesNotMatch(banner, /~250€|~120€/);
+});
 
 for (const { name, status, body } of invalidReserveResponses) {
   test(`last valid reserve is retained and marked stale after ${name}`, async () => {

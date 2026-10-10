@@ -76,6 +76,7 @@ async def test_public_finance_runway_matches_status_cost_basis(
     assert status["server"]["balance"] == support_balance
     assert status["last_payment"] == {"amount": server_received, "allocation": allocation}
     assert finance == {
+        "available": True,
         "server_gedeckt_monate": expected_runway,
         "hlr_verifikationen_moeglich": 2450,
         "spenden_gesamt": status["payment_count"],
