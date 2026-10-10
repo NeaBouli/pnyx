@@ -44,8 +44,8 @@ The Docs Redesign Gates job also runs `node --test scripts/public-seo.check.mjs
 scripts/static-docs-remote-sinks.check.mjs scripts/redesign/community_payment_status.check.mjs`:
 public SEO contracts, static-page remote sinks, and community payment-status behavior.
 Node comes from `.nvmrc` through SHA-pinned `actions/setup-node`; these checks use only
-the standard library and require no `npm install`. Only the Docs job uses
-`fetch-depth: 0`, so the SEO history comparisons have the complete Git history.
+the standard library and require no `npm install`. Within `ci.yml`, only the Docs job
+uses `fetch-depth: 0`, so the SEO history comparisons have the complete Git history.
 SEO and remote-sink checks additionally run in the Web Client job, whose checkout
 remains shallow.
 
@@ -67,5 +67,7 @@ provenance, and pass the service healthcheck and API/real-Redis tests. ECR avail
 and anonymous quotas remain external dependencies. Runner selection, ports,
 healthcheck, workflow permissions and production Redis configuration are unchanged.
 
-Not covered: `deploy.yml` (manual `workflow_dispatch` deploy; changes there are deploy scope)
-and `scraper.yml` (scheduled data job) still reference actions by tag.
+All 15 action references across `ci.yml`, `security-audit.yml`, `deploy.yml` and
+`scraper.yml` are pinned to full commit SHAs as of PR #520. The deploy and scraper
+changes were reference-only; the credentials, permissions and other hardening
+claims above remain scoped to `ci.yml` and `security-audit.yml`.

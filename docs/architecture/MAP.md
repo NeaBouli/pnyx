@@ -2022,3 +2022,101 @@ flowchart LR
    `main-path.puml::T9029_docs_ci_path`.
 7. **Nächster Schritt:** local checks, gio-dd cross-review and green head-bound CI
    before merge. This source change does not deploy or change runner variables.
+
+## T-9033 — Nightly source consolidation (2026-10-10)
+
+### 1. Grundidee
+
+Ekklesia supports parliamentary and municipal citizen voting (`README.md`).
+This bounded delta maps public support accounting, its Community display,
+municipal decision identifiers and the existing CI guards around those sources.
+Payment intake remains a separate legal gate, not enabled by this documentation.
+All states below describe inspected source, not a deployment or live verification.
+
+### 2. Spur — grounded callsite hops
+
+- `apps/api/routers/payments.py::stripe_webhook -> allocate_donation`: verified,
+  paid EUR Checkout amount, only after the existing intake gate.
+- `payments.py::stripe_webhook -> _append_payment_record -> _projection_state`:
+  allocation record becomes validated integer-cent state and public aggregates.
+- `payments.py::stripe_webhook -> _process_stripe_adjustment ->
+  _apply_public_payment_adjustment -> _target_remaining_allocation`: refunds and
+  disputes adjust the same server/domain/reserve projection using cent totals.
+- `payments.py::payment_status -> _load_public_support_projection`: reads public
+  aggregates, returns server/domain accounting and numeric `reserve`.
+- `docs/community.html::fetchPaymentStatus -> payments.py::payment_status ->
+  docs/community.html::updateServerTile/updateDomainTile/updateReserveTile`:
+  independent validated snapshots, including real finite zero values.
+- `apps/api/services/diavgeia_scraper.py::scrape_decisions ->
+  services/diavgeia_client.py::DiavgeiaClient.iter_decisions ->
+  models.py::DiavgeiaDecision`: upstream ADA remains the exact upsert key.
+- `.github/workflows/ci.yml::test-docs-redesign -> node --test`: full-history
+  checkout feeds the SEO, remote-sink and Community payment-status checks.
+
+### 3. Module
+
+| Module | One responsibility | Entry | Source state |
+| --- | --- | --- | --- |
+| MOD-18 allocation | Server target, domain need, then reserve | `payments.py::allocate_donation` | built, #512 |
+| MOD-18 projection | Public verified totals and cent-based adjustments | `payments.py::_append_payment_record/_apply_public_payment_adjustment` | built |
+| Community funding | Render validated snapshots, never invent unknown balances | `docs/community.html::fetchPaymentStatus` | built, #515/#519 |
+| MOD-21 ADA constraint | Accept unchanged identifiers of 9..32 characters | `models.py::DiavgeiaDecision`, revision `y801a2b3c4d5` | built, #516 |
+| Documentation CI | Dependency-free source/history/behavior checks | `ci.yml::test-docs-redesign` | built, #518 |
+| Workflow action refs | Immutable same-version remote action references | `ci.yml/deploy.yml/scraper.yml/security-audit.yml::uses` | built, #520 |
+
+### 4. Verdrahtung
+
+#512 sends only the remaining allocation after server/domain needs to reserve;
+`_append_payment_record` updates private and public reserve totals atomically with
+the record. `_projection_state` requires allocation cents to sum to amount cents;
+`_target_remaining_allocation` distributes refund residual cents deterministically.
+The adjustment Lua commit updates all three buckets together; dispute outcomes
+can restore or retain adjustments without inventing a second accounting path.
+`payment_status` exposes reserve; Community now consumes it via `liveReserveData`.
+#515/#519 track loading/ready/unavailable/stale separately per funding tile:
+invalid or failed refreshes retain the last valid snapshot, including zero;
+unknown stays a neutral dash. `tick` and `community-language-change` re-render
+cached values and bilingual notices without a second payment request.
+#516 model and forward migration share `length(ada) BETWEEN 9 AND 32`, not a
+Latin-only regex: `ΕΘΘ9Η-58Ψ`, `Ψ7ΙΤΗ-ΗΩΞ` and `6ΣΣΡΗ-ΘΑΤ` remain unchanged.
+Downgrade restores 10..32 as NOT VALID: old nine-character rows survive, but new
+inserts/updates must satisfy the restored rule. Neither direction contains DML.
+#518 adds full history only to Docs CI; Security Audit already used full history.
+#520 leaves all 15 remote `uses` SHA-pinned at the same documented versions,
+including Checkout v5.1.0 and ssh-action v1.2.5; no runner or behavior change.
+
+### 5. Widerspruch und Lücken
+
+The historic `monetary reserve consumer / unavailable state` open leaf is closed
+by the current source paths above; old snapshots remain intentionally untouched.
+API projection fallback semantics are still distinct from client HTTP/data
+availability. No production migration, deploy, intake opening or deletion is
+claimed; those owner gates and actual release evidence remain separate.
+
+### 6. Diagramme
+
+`map.puml::T9033_nightly_mindmap/T9033_nightly_components` and
+`main-path.puml::T9033_payment_projection/T9033_funding_snapshot/
+T9033_ada_constraint/T9033_docs_ci` append this delta; no generated SVG is added.
+
+```mermaid
+mindmap
+  root((T-9033 source consolidation))
+    MOD-18 support
+      allocate_donation to reserve
+      cent-based projection adjustments
+    Community
+      three retained funding snapshots
+      bilingual availability rendering
+    MOD-21
+      unchanged ADA and 9..32 check
+    CI
+      Docs full-history Node guards
+      15 same-version action SHA pins
+```
+
+### 7. Nächster Schritt
+
+One module/hop: architecture documentation -> gio-dd cross-review and existing
+CI gates. Codex owns local validation; gio-dd owns head-bound merge. API, Community HTML,
+workflow sources, migration files and all production/store controls stay untouched.

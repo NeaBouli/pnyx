@@ -579,3 +579,87 @@ DocsCI -> Checks : existing Python redesign tests (unchanged)
 Node -> Checks : node --test SEO / remote-sinks / community
 Checks --> DocsCI : pass or fail CI gate
 @enduml
+
+' T-9033 nightly consolidation: built source paths only; no live action simulated.
+@startuml T9033_payment_projection
+participant "payments.py::stripe_webhook" as Webhook
+participant "allocate_donation" as Allocation
+participant "_append_payment_record\n_projection_state" as Append
+participant "_process_stripe_adjustment\n_apply_public_payment_adjustment" as Adjust
+database "Redis private/public buckets\nand integer-cent payment state" as Redis
+alt verified Checkout and intake enabled
+  Webhook -> Allocation : paid EUR amount
+  Allocation --> Webhook : server need, domain need, remainder reserve
+  Webhook -> Append : allocation record
+  Append -> Append : validate allocation cents == amount cents
+  Append -> Redis : atomic record / buckets / public projection / state
+else verified refund or dispute
+  Webhook -> Adjust : event before new-payment intake gate
+  Adjust -> Redis : read original/remaining cent allocation under lock
+  Adjust -> Adjust : target remaining cents + deterministic residual
+  Adjust -> Redis : Lua commit all bucket deltas / state / dedup
+else Checkout with intake closed
+  Webhook --> Webhook : 503; no new payment allocation
+end
+@enduml
+
+@startuml T9033_funding_snapshot
+participant "community.html::fetchPaymentStatus" as Fetch
+participant "payments.py::payment_status" as Status
+database "Public support projection" as Projection
+participant "Community server/domain/reserve\nsnapshot state" as Snapshot
+participant "updateServerTile / updateDomainTile\nupdateReserveTile" as Tiles
+Fetch -> Status : GET /api/v1/payments/status
+Status -> Projection : _load_public_support_projection
+Projection --> Status : PII-free bucket totals
+Status --> Fetch : server / domain / numeric reserve
+alt corresponding tile has valid finite data (zero included)
+  Fetch -> Snapshot : replace snapshot; ready
+else HTTP / malformed / unavailable data
+  Fetch -> Snapshot : stale if cached; otherwise unavailable
+end
+Fetch -> Tiles : render independent snapshots
+Snapshot --> Tiles : last valid values or neutral unknown dash
+Tiles -> Tiles : tick / language-change re-render bilingual hints
+note over Snapshot,Tiles
+Initial state: loading, no invented balance.
+Recovery hides the unavailable/stale hint.
+end note
+@enduml
+
+@startuml T9033_ada_constraint
+participant "diavgeia_scraper.py::scrape_decisions" as Scraper
+participant "diavgeia_client.py::DiavgeiaClient" as Client
+database "PostgreSQL diavgeia_decisions" as DB
+participant "Alembic y801a2b3c4d5" as Migration
+group Forward schema source (no production execution claim)
+  Migration -> DB : replace named check with length(ada) BETWEEN 9 AND 32
+end
+Scraper -> Client : iter_decisions
+Client --> Scraper : exact upstream ada
+Scraper -> DB : pg_insert / on_conflict_do_update(ada)
+DB --> Scraper : unchanged nine-character Greek ADA accepted
+note over Migration,DB
+Downgrade: 10..32 NOT VALID preserves existing short rows,
+but subsequent inserts/updates must obey the old rule.
+No DML; no Latin-only regex or transliteration.
+end note
+@enduml
+
+@startuml T9033_docs_ci
+participant "ci.yml::test-docs-redesign" as DocsCI
+participant "SHA-pinned workflow actions" as Actions
+participant "Full Git history / .nvmrc Node" as Inputs
+participant "Three dependency-free Node gates" as Checks
+DocsCI -> Actions : checkout / setup-node via immutable refs
+Actions --> Inputs : full checkout and configured Node
+DocsCI -> Checks : node --test public-seo / static-docs-remote-sinks / community
+Inputs --> Checks : source, history, runtime
+Checks --> DocsCI : pass/fail
+note over Actions
+All 15 remote action uses across four workflows are pinned.
+Same documented versions; no runner/behavior policy change.
+Security Audit full history predates #518.
+end note
+@enduml
+' End T-9033 nightly consolidation.
