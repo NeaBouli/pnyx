@@ -1637,7 +1637,8 @@
         <label style="color:#64748b;font-size:0.8rem;display:flex;align-items:center;gap:0.3rem"><input type="radio" name="freq" value="weekly" checked style="accent-color:#2563eb"> <span data-el="Εβδομαδιαίο" data-en="Weekly">Εβδομαδιαίο</span></label>
         <label style="color:#64748b;font-size:0.8rem;display:flex;align-items:center;gap:0.3rem"><input type="radio" name="freq" value="monthly" style="accent-color:#2563eb"> <span data-el="Μηνιαίο" data-en="Monthly">Μηνιαίο</span></label>
       </div>
-      <select id="nlType" style="width:100%;padding:0.5rem;background:white;border:2px solid #e2e8f0;border-radius:0.5rem;color:#64748b;font-size:0.8rem;margin-bottom:0.75rem">
+      <span id="nlTypeLabel" hidden data-el="Τύπος συνδρομητή" data-en="Subscriber type">Τύπος συνδρομητή</span>
+      <select id="nlType" aria-labelledby="nlTypeLabel" style="width:100%;padding:0.5rem;background:white;border:2px solid #e2e8f0;border-radius:0.5rem;color:#64748b;font-size:0.8rem;margin-bottom:0.75rem">
         <option value="citizens" data-el="Πολίτης" data-en="Citizen">Πολίτης</option>
         <option value="press" data-el="Τύπος" data-en="Press">Τύπος</option>
         <option value="parties" data-el="Κόμμα" data-en="Party">Κόμμα</option>
