@@ -4,7 +4,7 @@ These protect existing DOI behavior; they do not assert delivery or suppression
 propagation that the current implementation does not provide.
 """
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
@@ -12,6 +12,7 @@ import pytest
 from fastapi import HTTPException
 
 from routers import newsletter, newsletter_admin
+from services.newsletter_consent import CONFIRM_ONCE, classify_contact, readiness_summary
 
 
 def _request() -> SimpleNamespace:
@@ -55,6 +56,85 @@ async def test_confirmation_preserves_original_preferences(
     assert stored["confirmation_method"] == "double_opt_in"
     assert stored["consent_schema"] == 1  # Legacy pending proof is not upgraded.
     assert "requested_at" not in stored
+    consent_redis.hset.assert_not_awaited()
+    consent_redis.delete.assert_not_awaited()
+
+
+@pytest.mark.parametrize("frequency,language,topics", [
+    ("weekly", "en", {"new_proposals": True, "active_votes": False,
+                       "vote_results": True, "system_news": True, "breaking_news": False}),
+    ("monthly", "el", {"new_proposals": True, "active_votes": True,
+                        "vote_results": True, "system_news": True, "breaking_news": True}),
+])
+async def test_subscribe_then_confirm_preserves_schema2_without_delivery_permission(
+    consent_redis: MagicMock, monkeypatch: pytest.MonkeyPatch,
+    frequency: str, language: str, topics: dict[str, bool],
+) -> None:
+    """Exercise both routers with their real pending payload, using mail mocks only."""
+    requested_at = datetime(2026, 8, 31, 10, tzinfo=timezone.utc)
+    confirmed_at = datetime(2026, 8, 31, 11, tzinfo=timezone.utc)
+    moments = iter((requested_at, confirmed_at))
+
+    class Clock:
+        @classmethod
+        def now(cls, tz: object) -> datetime:
+            assert tz is timezone.utc
+            return next(moments)
+
+    monkeypatch.setattr(newsletter, "datetime", Clock)
+    monkeypatch.setattr(newsletter.secrets, "token_urlsafe", lambda size: "synthetic-schema2-token")
+    monkeypatch.setattr(newsletter, "BREVO_API_KEY", "synthetic-schema2-key")
+    mail = AsyncMock()
+    mail.__aenter__.return_value = mail
+    mail.post.return_value = SimpleNamespace(status_code=201)
+    factory = MagicMock(return_value=mail)
+    monkeypatch.setattr(newsletter.httpx, "AsyncClient", factory)
+    req = newsletter.SubscribeRequest(
+        email="schema2@example.org", name="Synthetic", frequency=frequency, language=language,
+        **{f"topic_{name}": enabled for name, enabled in topics.items()},
+    )
+
+    assert (await newsletter.subscribe(req, _request()))["success"] is True
+    consent_redis.setex.assert_awaited_once()
+    pending_key, ttl, raw = consent_redis.setex.await_args.args
+    assert pending_key == "newsletter:pending:synthetic-schema2-token"
+    assert ttl == 86400
+    pending = json.loads(raw)
+    assert pending == {
+        "consent_schema": 2, "requested_at": requested_at.isoformat(),
+        "email": "schema2@example.org", "name": "Synthetic", "subscriber_type": "citizens",
+        "frequency": frequency, "language": language, "topics": topics,
+    }
+    assert "confirmed_at" not in pending
+    assert consent_redis.eval.await_count == 2  # The real signup rate-limit checks.
+    mail.post.assert_awaited_once()
+    assert mail.post.await_args.args == ("https://api.brevo.com/v3/smtp/email",)
+    payload = mail.post.await_args.kwargs["json"]
+    assert payload["to"] == [{"email": "schema2@example.org"}]
+    assert "synthetic-schema2-token" in payload["htmlContent"]
+
+    consent_redis.get.return_value = raw
+    assert (await newsletter.confirm_subscription("synthetic-schema2-token")).status_code == 200
+    assert consent_redis.eval.await_count == 3
+    args = consent_redis.eval.await_args.args
+    assert args[:6] == (CONFIRM_ONCE, 2, pending_key, "newsletter:confirmed", raw, "schema2@example.org")
+    confirmed = json.loads(args[6])
+    assert {key: confirmed[key] for key in pending} == pending
+    assert confirmed["confirmed_at"] == confirmed_at.isoformat()
+    assert confirmed["confirmation_method"] == "double_opt_in"
+    decision = classify_contact("schema2@example.org", args[6], 200, {
+        "email": "schema2@example.org", "emailBlacklisted": False,
+        "listIds": [], "listUnsubscribed": [],
+    }, 2, confirmed_at)
+    assert decision[0] == "HOLD"
+    assert "missing_confirmation_evidence" not in decision[1]
+    assert "campaign_preferences_not_enforced" in decision[1]
+    assert ("unsupported_delivery_profile" in decision[1]) is (frequency == "weekly")
+    summary = readiness_summary([decision], 1, True)
+    assert summary["proposed_writes"] == 0
+    assert summary["delivery_ready"] is False
+    # Confirmation records the click but never sends another message or directly mutates consent.
+    factory.assert_called_once_with(timeout=10.0)
     consent_redis.hset.assert_not_awaited()
     consent_redis.delete.assert_not_awaited()
 
