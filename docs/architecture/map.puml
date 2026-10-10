@@ -768,3 +768,12 @@ Identity --> clearVoteMarks
 clearVoteMarks --> Queue
 Queue --> Marks : deleteItemAsync
 @enduml
+@startuml T9026_community_funding
+component "payments/status" as Status
+component "Community fetchPaymentStatus" as Fetch
+component "Validated server/domain snapshots" as Snapshot
+component "Server/domain renderers" as Tiles
+Status --> Fetch : response or HTTP failure
+Fetch --> Snapshot : valid finite account / retain on failure
+Snapshot --> Tiles : loading / ready / unavailable / stale
+@enduml
