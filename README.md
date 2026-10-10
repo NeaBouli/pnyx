@@ -231,7 +231,7 @@ production rollout.
 | [Synthetic backup/restore drill](docs/operations/SYNTHETIC_BACKUP_RESTORE_DRILL.md) | Local synthetic PG15 dump/restore harness only; not a production backup, RPO/RTO or schema proof |
 | [Public API client guide](docs/operations/PUBLIC_API_CLIENT_GUIDE.md) | Shared public-read quota, separate default-covered routes; API-key and HTTP 429 handling |
 | [Mobile performance snapshot 2026-10-10](docs/operations/MOBILE_PERFORMANCE_SNAPSHOT_2026-10-10.md) | Observational 390 px throttled lab run of 5 public pages; no score, no production change; quick-win proposals |
-| [Monitoring/alert gap analysis 2026-10-10](docs/operations/MONITORING_ALERT_GAPS_2026-10-10.md) | Source-only review; NO-GO to claiming complete unattended alert coverage; not a deploy decision |
+| [Monitoring/alert gap analysis 2026-10-10](docs/operations/MONITORING_ALERT_GAPS_2026-10-10.md) | Source-only review (historical baseline + current-source status, PRs 554–563); NO-GO to claiming complete unattended alert coverage; not a deploy decision |
 | [Modules](https://ekklesia.gr/wiki/modules.html) | MOD-01 through MOD-25 |
 | [Security](https://ekklesia.gr/wiki/security.html) | Ed25519, Nullifier, threat model |
 | [Architecture](https://ekklesia.gr/wiki/architecture.html) | Stack, monorepo, lifecycle |
