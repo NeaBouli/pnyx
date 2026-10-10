@@ -83,6 +83,15 @@ function harness(lang = 'el') {
       timer.callback();
       await this.respond(status, body);
     },
+    async failRefresh() {
+      const timer = intervals.find(({ callback }) => callback.name === 'fetchPaymentStatus');
+      assert.ok(timer, 'Real financial refresh must be registered');
+      timer.callback();
+      const request = requests.shift();
+      assert.ok(request, 'A financial-status request must be pending');
+      request.reject(new Error('Synthetic network failure'));
+      await flush();
+    },
   };
 }
 
@@ -142,17 +151,17 @@ test('later 503 preserves last-known balances, flags stale data, and recovers', 
   const page = harness('en');
   await page.respond(200, snapshot());
   await page.refresh(503, { detail: 'Temporarily unavailable' });
-  assertKnown(page, '—');
+  assertKnown(page);
   assert.notEqual(page.element('rUnavailable').style.display, 'none');
   for (const id of ['sDataHint', 'dDataHint']) {
     assert.notEqual(page.element(id).style.display, 'none');
     assert.match(page.text(id), /unavailable|last|stale/i);
   }
   page.language('el');
-  assertKnown(page, '—');
+  assertKnown(page);
   assert.match(page.text('sDataHint'), /διαθέσι|Τελευτα|παλαι/i);
   page.language('en');
-  assertKnown(page, '—');
+  assertKnown(page);
   assert.match(page.text('sDataHint'), /unavailable|last|stale/i);
   await page.refresh(200, snapshot());
   assertKnown(page);
@@ -216,3 +225,105 @@ test('legitimate zero balances are received data, not unavailable placeholders',
   page.language('el');
   assert.equal(page.text('rReserveVal'), '0,00€');
 });
+
+function assertStaleReserve(page, value = '5,00€', lang = 'en') {
+  assert.equal(page.text('rReserveVal'), value);
+  assert.notEqual(page.element('rUnavailable').style.display, 'none');
+  assert.match(page.text('rUnavailable'), lang === 'en'
+    ? /last valid|stale/i
+    : /Τελευταία έγκυρα|παλαι/i);
+}
+
+const invalidReserveResponses = [
+  { name: '503', status: 503, body: { detail: 'Temporarily unavailable' } },
+  { name: 'numeric string', status: 200, body: { ...snapshot(), reserve: '5' } },
+  { name: 'null reserve', status: 200, body: { ...snapshot(), reserve: null } },
+  { name: 'missing reserve', status: 200, body: { server: snapshot().server, domain: snapshot().domain } },
+  { name: 'NaN reserve', status: 200, body: { ...snapshot(), reserve: NaN } },
+  { name: 'infinite reserve', status: 200, body: { ...snapshot(), reserve: Infinity } },
+  { name: 'object reserve', status: 200, body: { ...snapshot(), reserve: {} } },
+  { name: 'null payload', status: 200, body: null },
+  { name: 'unavailable with numeric reserve', status: 200, body: { ...snapshot(), available: false, reserve: 99 } },
+];
+
+for (const { name, status, body } of invalidReserveResponses) {
+  test(`last valid reserve is retained and marked stale after ${name}`, async () => {
+    const page = harness('en');
+    await page.respond(200, snapshot());
+    await page.refresh(status, body);
+    assertKnown(page);
+    assertStaleReserve(page);
+    page.tick();
+    assertStaleReserve(page);
+  });
+}
+
+test('reserve survives a network failure without suppressing cached server/domain balances', async () => {
+  const page = harness('en');
+  await page.respond(200, snapshot());
+  await page.failRefresh();
+  assertKnown(page);
+  assertStaleReserve(page);
+});
+
+test('zero is a valid cached reserve and remains zero after a failed refresh', async () => {
+  const page = harness('en');
+  await page.respond(200, { ...snapshot(), reserve: 0 });
+  assert.equal(page.text('rReserveVal'), '0,00€');
+  assert.equal(page.element('rUnavailable').style.display, 'none');
+  await page.refresh(503, { detail: 'Temporarily unavailable' });
+  assertStaleReserve(page, '0,00€');
+});
+
+test('stale reserve rerenders EL/EN and a new valid value or zero clears the notice', async () => {
+  const page = harness('el');
+  await page.respond(200, snapshot());
+  await page.refresh(503, { detail: 'Temporarily unavailable' });
+  assertStaleReserve(page, '5,00€', 'el');
+  page.language('en');
+  assertStaleReserve(page);
+  page.language('el');
+  assertStaleReserve(page, '5,00€', 'el');
+  await page.refresh(200, { ...snapshot(), reserve: 11.25 });
+  assert.equal(page.text('rReserveVal'), '11,25€');
+  assert.equal(page.element('rUnavailable').style.display, 'none');
+  await page.refresh(503, { detail: 'Temporarily unavailable' });
+  assertStaleReserve(page, '11,25€', 'el');
+  await page.refresh(200, { ...snapshot(), reserve: 0 });
+  assert.equal(page.text('rReserveVal'), '0,00€');
+  assert.equal(page.element('rUnavailable').style.display, 'none');
+});
+
+test('an invalid reserve does not suppress independently valid server and domain updates', async () => {
+  const page = harness('en');
+  await page.respond(200, snapshot());
+  const updated = snapshot();
+  updated.server.received = 200;
+  updated.server.balance = 125;
+  updated.domain.received = 10.3;
+  updated.domain.balance = 1;
+  updated.reserve = 'invalid';
+  await page.refresh(200, updated);
+  assert.equal(page.text('sReceived'), '200,00€');
+  assert.equal(page.text('sBalanceVal'), '125,00€');
+  assert.equal(page.text('dReceived'), '10,30€');
+  assert.equal(page.text('dBalanceVal'), '1,00€');
+  assert.equal(page.element('sDataHint').style.display, 'none');
+  assert.equal(page.element('dDataHint').style.display, 'none');
+  assertStaleReserve(page);
+});
+
+for (const body of [{ ...snapshot(), reserve: null }, { ...snapshot(), reserve: '5' },
+  { ...snapshot(), available: false, reserve: 99 }]) {
+  test(`without a prior valid reserve unavailable does not invent cached money: ${JSON.stringify(body)}`, async () => {
+    const page = harness('en');
+    await page.respond(200, body);
+    assert.equal(page.text('rReserveVal'), '—');
+    assert.notEqual(page.element('rUnavailable').style.display, 'none');
+    assert.match(page.text('rUnavailable'), /unavailable/i);
+    assert.doesNotMatch(page.text('rUnavailable'), /last valid|stale/i);
+    page.language('el');
+    assert.equal(page.text('rReserveVal'), '—');
+    assert.match(page.text('rUnavailable'), /διαθέσι/i);
+  });
+}

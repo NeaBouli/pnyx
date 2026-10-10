@@ -431,7 +431,7 @@
       <div class="fc-info">
         <div class="fc-row"><span style="color:var(--gray-700)" data-el="Υπόλοιπο:" data-en="Balance:">Υπόλοιπο:</span><strong id="rReserveVal" style="color:#1e40af">—</strong></div>
       </div>
-      <div class="fc-status" id="rUnavailable" style="display:none;background:#f8fafc;color:#475569"><span data-el="Τα στοιχεία δεν είναι διαθέσιμα αυτή τη στιγμή" data-en="Data currently unavailable">Τα στοιχεία δεν είναι διαθέσιμα αυτή τη στιγμή</span></div>
+      <div class="fc-status" id="rUnavailable" style="background:#f8fafc;color:#475569" data-el="Φόρτωση οικονομικών στοιχείων…" data-en="Loading funding data…">Φόρτωση οικονομικών στοιχείων…</div>
     </div>
 
     <!-- MIRROR SERVER — VOLUNTEERS WANTED -->
@@ -1034,6 +1034,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
   // Live data from API (updated by fetchPaymentStatus)
   var liveServerData = null, liveDomainData = null;
   var serverDataState = "loading", domainDataState = "loading";
+  var liveReserveData = null, reserveDataState = "loading";
 
   function validFundingAccount(acct) {
     return acct && acct.available !== false && ["received", "cost_total", "balance"].every(function(key) {
@@ -1041,17 +1042,19 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
     });
   }
 
-  function updateReserveTile(reserve) {
+  function updateReserveTile() {
     var val = document.getElementById("rReserveVal");
     var na = document.getElementById("rUnavailable");
     if (!val) return;
-    if (typeof reserve === "number" && isFinite(reserve)) {
-      val.textContent = reserve.toLocaleString("el-GR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "\u20AC";
-      if (na) na.style.display = "none";
+    if (liveReserveData !== null) {
+      val.textContent = liveReserveData.toLocaleString("el-GR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "\u20AC";
     } else {
       // Unknown is not zero: never show a balance we did not receive.
       val.textContent = "\u2014";
-      if (na) na.style.display = "";
+    }
+    if (na) {
+      na.style.display = reserveDataState === "ready" ? "none" : "";
+      na.textContent = reserveDataState === "loading" ? t("Φόρτωση οικονομικών στοιχείων…", "Loading funding data…") : liveReserveData !== null ? t("Τελευταία έγκυρα στοιχεία — η ενημέρωση δεν είναι διαθέσιμη", "Last valid data — update unavailable") : t("Τα στοιχεία δεν είναι διαθέσιμα αυτή τη στιγμή", "Data currently unavailable");
     }
   }
   function fetchPaymentStatus() {
@@ -1069,14 +1072,18 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
         domainDataState = domainOK ? "ready" : liveDomainData ? "stale" : "unavailable";
         if (serverOK) liveServerData = data.server;
         if (domainOK) { liveDomainData = data.domain; if (expiry) DOMAIN_EXPIRY = new Date(expiry + "T00:00:00"); }
+        var reserveOK = data && data.available !== false && typeof data.reserve === "number" && isFinite(data.reserve);
+        reserveDataState = reserveOK ? "ready" : liveReserveData !== null ? "stale" : "unavailable";
+        if (reserveOK) liveReserveData = data.reserve;
         updateServerTile();
         updateDomainTile();
-        updateReserveTile(data && data.reserve);
+        updateReserveTile();
       })
       .catch(function() {
         serverDataState = liveServerData ? "stale" : "unavailable";
         domainDataState = liveDomainData ? "stale" : "unavailable";
-        updateServerTile(); updateDomainTile(); updateReserveTile(null);
+        reserveDataState = liveReserveData !== null ? "stale" : "unavailable";
+        updateServerTile(); updateDomainTile(); updateReserveTile();
       });
   }
   var AR_WARN_THRESHOLD = 1.0;  // AR — yellow below this
@@ -1577,6 +1584,7 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
   function tick() {
     updateServerTile();
     updateDomainTile();
+    updateReserveTile();
     updateAutoRecoveryTransparency();
   }
 

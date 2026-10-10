@@ -45,8 +45,11 @@ import r0_inventory
 # unknown loading balances and bilingual unavailable notices, not seeded debt.
 # Refresh failures retain each last valid snapshot with a stale-data notice;
 # the existing reserve behavior, costs and paused payment links are unchanged.
+# T-9030 (owner-requested 2026-10-10): reserve now retains its last valid snapshot
+# on refresh failure with the same EL/EN stale notice as server/domain; zero is
+# valid, unknown stays "—" and valid recovery hides the notice. Display only.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "4d92815e5247bf7ce007ca9117320410e1ed3e1e27b4533abf46e4fea6a5bda4",
+    "docs/community.html": "1706e73b323e2c0f80aee071adea6413960761fa3d8ea1fad4547ba530ceeb73",
     "docs/wiki/api.html": "0f2b6771a112f089c7fba6b1ef3185e061b073cd338f3db10a38a3c3c3c2515f",
     "docs/wiki/architecture.html": "8198bc8764e1d848f512a14195d2a219e6ce36398227f6744ce2793f401273d3",
     "docs/wiki/broadcasting.html": "9e14ffa72fa9e524c109748881d2ed941aeeb257d44570b191aaa24d5fb47b62",
