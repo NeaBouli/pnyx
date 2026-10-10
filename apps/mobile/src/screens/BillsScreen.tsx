@@ -60,6 +60,9 @@ export default function BillsScreen() {
   // refreshed on every focus so it is current after voting and returning.
   useFocusEffect(useCallback(() => {
     let cancelled = false;
+    // Never show a previous owner's snapshot while this focus's reads are pending.
+    setVoteMarks({});
+    setVerified(false);
     (async () => {
       const [marks, ok] = await Promise.all([loadVoteMarks(), isVerified().catch(() => false)]);
       if (!cancelled) {

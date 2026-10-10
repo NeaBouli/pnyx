@@ -397,6 +397,46 @@ describe("BillsScreen vote snapshot focus lifecycle", () => {
     expect(screen.tileVoteLabel).toHaveBeenLastCalledWith("ACTIVE", undefined, false);
   });
 
+  it("clears an already rendered owner snapshot on refocus before the next owner's reads resolve", async () => {
+    const ownerA = { marks: deferred<VoteMarks>(), verified: deferred<boolean>() };
+    const ownerB = { marks: deferred<VoteMarks>(), verified: deferred<boolean>() };
+    const screen = loadScreen({
+      loadVoteMarks: vi.fn()
+        .mockReturnValueOnce(ownerA.marks.promise)
+        .mockReturnValueOnce(ownerB.marks.promise),
+      isVerified: vi.fn()
+        .mockReturnValueOnce(ownerA.verified.promise)
+        .mockReturnValueOnce(ownerB.verified.promise),
+    });
+    await flush();
+    finishMixed(screen, 0, [bill("A")]);
+    ownerA.marks.resolve({ A: { corrected: false, at: 1 } });
+    ownerA.verified.resolve(true);
+    await flush();
+    expect(cardTexts(screen).join("")).toContain("Ψηφίσατε");
+    expect(screen.tileVoteLabel).toHaveBeenLastCalledWith("ACTIVE", { corrected: false, at: 1 }, true);
+
+    screen.blur();
+    const refocusStart = screen.requests.length;
+    screen.focus();
+    expect(screen.loadVoteMarks).toHaveBeenCalledTimes(2);
+    expect(screen.isVerified).toHaveBeenCalledTimes(2);
+    await flush();
+    finishMixed(screen, refocusStart, [bill("A")]);
+    await flush();
+
+    // B reads still pending: no A label or A verified eligibility may remain.
+    expect(ids(screen)).toEqual(["A"]);
+    expect(cardTexts(screen).join("")).not.toContain("Ψηφίσατε");
+    expect(screen.tileVoteLabel).toHaveBeenLastCalledWith("ACTIVE", undefined, false);
+
+    ownerB.marks.resolve({});
+    ownerB.verified.resolve(false);
+    await flush();
+    expect(cardTexts(screen).join("")).not.toContain("Ψηφίσατε");
+    expect(screen.tileVoteLabel).toHaveBeenLastCalledWith("ACTIVE", undefined, false);
+  });
+
   it("ignores late vote marks and verification after blur without refocus", async () => {
     const ownerA = { marks: deferred<VoteMarks>(), verified: deferred<boolean>() };
     const screen = loadScreen({
