@@ -19,6 +19,7 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import r2_landing_check
 
@@ -494,8 +495,10 @@ class T9067HiddenPnxLazyTest(unittest.TestCase):
             self.assertNotIn('loading="lazy"', tag)
 
     def test_negative_fixture_eager_pnx_is_detected(self) -> None:
-        bad = '<img src="pnx.png" alt="x"/>'
-        self.assertNotIn('loading="lazy"', re.findall(r'<img\b[^>]*\bsrc="pnx\.png"[^>]*>', bad)[0])
+        bad = self.html.replace(' loading="lazy"', '')
+        with patch.object(self, 'html', bad):
+            with self.assertRaises(AssertionError):
+                self.test_two_hidden_pnx_imgs_are_lazy_with_unchanged_src()
 
 
 # ---------------------------------------------------------------------------
