@@ -2006,3 +2006,19 @@ flowchart LR
   Scraper -->|pg_insert / conflict key| Model[DiavgeiaDecision]
   Model --> Check[diavgeia_decisions_ada_chk: 9..32 characters]
 ```
+
+## T-9029 — CI documentation checks (2026-10-10)
+
+1. **Grundidee:** static public documentation must be guarded on every CI run.
+2. **Spur:** `ci.yml::test-docs-redesign -> setup-node (.nvmrc) -> node --test`.
+3. **Module:** Docs Redesign Gates; existing Python redesign gates stay unchanged.
+4. **Verdrahtung:** a full-history checkout feeds public SEO source/hash/history
+   assertions, remote-sink regressions and Community payment-status behavior.
+   The three Node checks are dependency-free; no npm installation is needed.
+5. **Widerspruch/Lücken:** Web already executes SEO and remote-sinks, but its
+   shallow checkout skips SEO history assertions; Community behavior had no CI
+   entry. Only the Docs job receives full history. Runner/fork guards are unchanged.
+6. **Diagramme:** `map.puml::T9029_docs_ci` and
+   `main-path.puml::T9029_docs_ci_path`.
+7. **Nächster Schritt:** local checks, gio-dd cross-review and green head-bound CI
+   before merge. This source change does not deploy or change runner variables.

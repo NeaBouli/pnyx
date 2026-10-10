@@ -787,3 +787,13 @@ Client --> Scraper : unchanged ada
 Scraper --> Model : pg_insert / on_conflict_do_update
 Model --> ADAcheck : length(ada) BETWEEN 9 AND 32
 @enduml
+
+@startuml T9029_docs_ci
+component "Docs Redesign Gates" as DocsCI
+component "Full Git history" as History
+component "Node from .nvmrc" as Node
+component "SEO / remote-sinks / community checks" as Checks
+History --> DocsCI : checkout fetch-depth 0
+DocsCI --> Node : existing pinned setup-node action
+Node --> Checks : node --test
+@enduml
