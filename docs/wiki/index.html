@@ -182,6 +182,8 @@
     .fnode-p { border-color: var(--purple); background: #faf5ff; color: #6b21a8; }
     .farr { color: var(--blue); font-weight: 900; }
     .fade-in { opacity: 0; transform: translateY(14px); transition: all 0.5s ease; }
+    /* Keep the full-bleed Quick Start keyboard ring inside the viewport. */
+    .code-block[tabindex="0"]:focus-visible { outline-offset: calc(-1 * var(--pnx2-focus-offset)); }
     .fade-in.visible { opacity: 1; transform: translateY(0); }
     @media (max-width: 640px) { .nav-links a { font-size: 0.75rem; padding: 0.22rem 0.45rem; } }
   </style>
@@ -240,8 +242,8 @@
     <a href="audit.html"        class="card"><div class="card-icon">📋</div><h4 data-el="Έλεγχος" data-en="Audit">Έλεγχος</h4><p data-el="EKA Διαφάνεια, 64 Ευρήματα" data-en="EKA Transparency, 64 Findings">EKA Διαφάνεια, 64 Ευρήματα</p></a>
   </div>
 
-  <h2 class="fade-in" data-el="Γρήγορη Εκκίνηση" data-en="Quick Start">Γρήγορη Εκκίνηση</h2>
-  <div class="code-block fade-in"><span class="code-c"># Clone</span>
+  <h2 id="quickStartTitle" class="fade-in" data-el="Γρήγορη Εκκίνηση" data-en="Quick Start">Γρήγορη Εκκίνηση</h2>
+  <div class="code-block fade-in" tabindex="0" role="region" aria-labelledby="quickStartTitle"><span class="code-c"># Clone</span>
 git clone https://github.com/NeaBouli/pnyx && cd pnyx
 
 <span class="code-c"># Services</span>
@@ -325,6 +327,14 @@ var obs = new IntersectionObserver(function(entries) {
   entries.forEach(function(e) { if (e.isIntersecting) e.target.classList.add("visible"); });
 }, { threshold: 0.1 });
 document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); });
+// Horizontal arrow scrolling is not native for focused regions in every engine.
+document.querySelector(".code-block").addEventListener("keydown", function(e) {
+  if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey ||
+      (e.key !== "ArrowLeft" && e.key !== "ArrowRight") ||
+      this.scrollWidth <= this.clientWidth) return;
+  e.preventDefault();
+  this.scrollLeft += e.key === "ArrowRight" ? 40 : -40;
+});
 </script>
 
 
