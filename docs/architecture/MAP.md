@@ -2121,12 +2121,14 @@ One module/hop: architecture documentation -> gio-dd cross-review and existing
 CI gates. Codex owns local validation; gio-dd owns head-bound merge. API, Community HTML,
 workflow sources, migration files and all production/store controls stay untouched.
 
-## T-9055 — Bundled source consolidation #528–#540 (2026-10-10 UTC)
+## T-9055 — Bundled source consolidation #528–#541 (2026-10-10 UTC)
 
-Snapshot: main `4a7f6577118432a2e0b208d2093e5063e0358214`. Historical
+Source baseline: main `4a7f6577118432a2e0b208d2093e5063e0358214`, plus
+merged #541 `e1d1c7672bfc544a0d4c8f8b7376fb1e8114eda8` test/documentation receipts. Historical
 sections and diagram decks above remain unchanged. This append maps inspected
 source, not a new feature, security scan, deployment or native-device receipt.
-The status snapshot is `.fleet/STATUS.md`; private Bridge history is not copied.
+The private operational `.fleet/STATUS.md` is maintained locally, not published
+by this PR; private Bridge history is not copied.
 
 ### 1. Grundidee
 
@@ -2140,7 +2142,7 @@ The status snapshot is `.fleet/STATUS.md`; private Bridge history is not copied.
 - Auth/rate controls have explicit scopes, not an assumed global ceiling
   (`dependencies.py::verify_admin_key`, `rate_limit.py`, `public_api.py`).
 - Device-local unread state and vote marks are separate from OEM delivery and
-  retained-navigation proof (`notifications.ts`, `BillsScreen.tsx`, #540 tests).
+  retained-navigation proof (`notifications.ts`, `BillsScreen.tsx`, #540/#541 tests).
 - Manual browser evidence uses local source and mocked APIs, not production
   (`t356-browser.yml`, `t356_democracy_cycle.browser.cjs`).
 
@@ -2174,15 +2176,22 @@ Support/validation paths are separate, not fictitious calls by that page:
   Bearer credential -> UTF-8 byte `hmac.compare_digest`; fail closed for missing
   or default production key, with no query-key authentication.
 - `rate_limit.py::limiter/get_rate_limit_key -> voting.py::submit_vote`:
-  explicit 120/min HMAC-IP bucket wraps the HTTP vote route. Included-router
-  default middleware lookup is not API-wide protection; existing shared public
+  explicit 120/min HMAC-IP bucket wraps the HTTP vote route. The 60/min default
+  applies to direct App routes such as `/health`, not `include_router` endpoints;
+  existing shared public
   100/1000 quotas and handler mail guards remain separate and unchanged.
 - `notifications.ts::persistPushAndReconcile/ingestPushPayload ->
   unread-events.ts::createUnreadEventsStore/ingest/markRead ->
   notification-badge.ts::set`: canonical event ID, persisted preferences,
   durable serialized ledger/read tombstones and absolute count. Local display
   is only for `added`; automatic zero skips native clear, explicit read permits
-  it. F-Droid does not load native push/badge wiring.
+  it. F-Droid does not load native push/badge wiring. Direct offline neighbor:
+  `unread-events.ts::ingest/ingestOne -> notification-preferences.ts::isNotificationEnabled`:
+  persisted master=false suppresses acceptance even if the category is enabled.
+  #541 Play/Direct fixtures recreate runtime/queues/adapters with only storage
+  shared, assert suppression after restart, then explicit enable accepts the
+  previously suppressed event once. Replay may repeat the same absolute native
+  count but does not create a second ledger entry or local notification.
 - `BillsScreen.tsx::useFocusEffect -> loadVoteMarks/isVerified -> tileVoteLabel`:
   local display evidence; blur cancels late callbacks. #540 mocks validate this
   cancellation, not real retained navigation or an already-rendered A snapshot.
@@ -2198,7 +2207,7 @@ Support/validation paths are separate, not fictitious calls by that page:
 | Accessibility | Name controls/regions, expose language and keyboard access | newsletter audience, wiki code region, QR SVG/live region | gebaut, #533–535; not full screen-reader acceptance |
 | Admin auth | Verify the existing Bearer contract | `verify_admin_key` | gebaut, #536; no new credentials |
 | API rate limits | Enforce explicitly scoped counters | `submit_vote/rate_limit_check` | gebaut, #537–539; default router gap explicit |
-| Mobile local evidence | Retain unread and cancel stale focus callbacks | ledger/badge, `BillsScreen::useFocusEffect` | gebaut; #540 offline regression evidence |
+| Mobile local evidence | Retain unread and honor persisted master preferences | ledger/badge/preferences, `BillsScreen::useFocusEffect` | gebaut; #540/#541 offline regression evidence |
 | Newsletter fixtures | Verify consent/readiness without provider writes | `test_newsletter_consent_contract/test_newsletter_readiness` | gebaut, #531 test-only |
 
 ### 4. Verdrahtung and exact merge receipts
@@ -2229,11 +2238,13 @@ GitHub metadata receipts (UTC, 2026-10-10); a merge is **not** a deployment:
 | #538 | `47a1d5aff54bd23e8adf9389e18439d8c57247c5` | 07:29:35 | client shared-quota/routing documentation |
 | #539 | `9b4842212a2ad9c59d02b3653b000c084a75b948` | 07:51:21 | explicit vote write limit, default-gap evidence |
 | #540 | `4a7f6577118432a2e0b208d2093e5063e0358214` | 08:12:36 | unread restart and focus-cancellation tests |
+| #541 | `e1d1c7672bfc544a0d4c8f8b7376fb1e8114eda8` | 08:58:22 | Play/Direct persisted master opt-out restart tests and GH290 status |
 
 ### 5. Widerspruch und Lücken
 
-Historic default-60 interpretations are superseded: current included-router
-routes skip that default lookup, while explicit wrappers/handler Redis guards
+Historic API-wide default-60 interpretations are superseded: the current
+60/min default applies to direct App routes such as `/health`, not
+`include_router` endpoints, while explicit wrappers/handler Redis guards
 have their own contract. Public shared quotas are not throughput guarantees.
 The docs' CPLM refresh wording and frontend timer are distinct from cached
 server recomputation; this bundle does not equate them or change either.
@@ -2246,7 +2257,8 @@ Owner-reported prod remains API/Web `550549c7`; no release/deploy is performed
 or independently rechecked here. Source version 1.0.34/vC63 is not a published
 artifact. Data-only producers remain OFF and payment intake closed. Follow-up
 deploy/migration backup, server cleanup and #517 wording require Gio approval.
-The later #541 test candidate is outside this merged #528–540 snapshot.
+#541 is merged and included as offline evidence (owner: 445 Mobile tests and
+clean TypeScript), not a second review or a device/provider/release acceptance.
 
 ### 6. Diagramme
 
@@ -2271,7 +2283,9 @@ mindmap
     Explicit boundaries
       Bearer constant-time comparison
       per-route counters not global default
+      direct App health default60 versus explicit vote120
       durable unread and focus cleanup
+      persisted master opt-out restart and explicit enable
       open OEM provider release gates
 ```
 
@@ -2281,4 +2295,4 @@ One module/hop: this architecture/status documentation -> local checks ->
 gio-dd cross-review and exact-head CI -> head-bound merge. API, Landing/Web/
 Mobile runtime files, workflows, migration/flags and all production controls
 stay untouched. Subsequent work chooses the oldest useful non-Gio backlog
-item; pending #541, device/v2 decisions and owner gates are not duplicated.
+item; completed #541, device/v2 decisions and owner gates are not duplicated.
