@@ -227,6 +227,7 @@ production rollout.
 |---|---|
 | [Wiki](https://ekklesia.gr/wiki/) | Full technical documentation (14 pages) |
 | [API Docs](https://ekklesia.gr/wiki/api.html) | 70+ endpoints, all modules |
+| [Public API client guide](docs/operations/PUBLIC_API_CLIENT_GUIDE.md) | Independent per-endpoint and shared quotas; API-key and HTTP 429 handling |
 | [Modules](https://ekklesia.gr/wiki/modules.html) | MOD-01 through MOD-25 |
 | [Security](https://ekklesia.gr/wiki/security.html) | Ed25519, Nullifier, threat model |
 | [Architecture](https://ekklesia.gr/wiki/architecture.html) | Stack, monorepo, lifecycle |

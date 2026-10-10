@@ -2,10 +2,13 @@
 MOD-11: Public API + Rate Limiting + API Keys
 Öffentliche REST API für NGOs, Journalisten, Forscher.
 
-Rate Limits:
-  - Anonym:       100 req/min
-  - Mit API Key: 1000 req/min
+Independent rate limits (when the default middleware is enabled):
+  - Default middleware: 60 req/min per client IP and endpoint, also with a key
+  - Shared public-data quota: anonymous IP 100 / valid API key 1000 per 60s
+  - The shared quota is not guaranteed throughput for one endpoint.
   - API Keys:    community-generiert, kein Konto nötig
+
+Client guide: docs/operations/PUBLIC_API_CLIENT_GUIDE.md
 
 @ai-anchor MOD11_PUBLIC_API
 """
@@ -172,7 +175,12 @@ async def rate_limit_check(
     request: Request,
     x_api_key: Optional[str] = Header(None, alias="X-API-Key")
 ):
-    """Dependency für Rate Limiting."""
+    """Shared public-data quota, independent of the 60/min IP+endpoint default.
+
+    A valid X-API-Key selects a 1000/60s key bucket across dependent routes;
+    missing or invalid keys use the anonymous IP bucket (100/60s). Neither
+    bucket bypasses the middleware limit.
+    """
     r = await get_redis()
     valid_key = bool(x_api_key and await verify_api_key(x_api_key))
     limit = 1000 if valid_key else 100
@@ -200,7 +208,11 @@ async def rate_limit_check(
 
 @router.post("/keys/generate")
 async def generate_api_key(request: Request, label: str = "ekklesia-client"):
-    """Generiert einen API Key — kein Konto nötig. Rate-limited: 5/hour per IP."""
+    """Generate a key without an account; at most 5/hour per IP.
+
+    The returned rate_limit describes the shared public-data quota, not an
+    exemption from the independent default middleware limit.
+    """
     # Rate limit: max 5 key generations per hour per IP
     r = await get_redis()
     rate_key = rate_limit_key_for_ip(request, "public_api:keygen")
@@ -227,7 +239,11 @@ async def generate_api_key(request: Request, label: str = "ekklesia-client"):
 
 @router.get("/keys/status")
 async def api_key_status(x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
-    """Prüft Status des API Keys."""
+    """Check key status; rate_limit describes only the shared public-data quota.
+
+    Unlike dependent public-data reads, an invalid key here returns HTTP 401.
+    The independent default middleware limit still applies.
+    """
     if not x_api_key:
         return {"authenticated": False, "rate_limit": "100 req/min"}
 
@@ -619,7 +635,11 @@ async def public_representation(
 
 @router.get("/info")
 async def api_info():
-    """API Dokumentation + Endpoints Übersicht."""
+    """API overview; rate_limits describes the shared public-data quota only.
+
+    The default middleware independently limits requests per IP and endpoint;
+    the advertised shared budget is not guaranteed single-endpoint throughput.
+    """
     return {
         "name": "Ekklesia.gr Public API", "version": "1.0.0-beta",
         "description": "Ψηφιακή Άμεση Δημοκρατία — Public Data API",
