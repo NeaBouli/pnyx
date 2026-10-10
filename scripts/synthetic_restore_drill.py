@@ -63,16 +63,17 @@ def expected_heads() -> list[str]:
     return sorted(ScriptDirectory(str(API_DIR / "alembic")).get_heads())
 
 
-def check_local_docker(environ: dict, run: Runner) -> None:
+def check_local_docker(environ: dict, run: Runner) -> str:
     host = environ.get("DOCKER_HOST", "")
     if host and not host.startswith("unix://"):
         raise DrillError("remote DOCKER_HOST refused")
-    if environ.get("DOCKER_CONTEXT") and not host:
-        pass  # endpoint verified below
+    if environ.get("DOCKER_CONTEXT"):
+        raise DrillError("explicit DOCKER_CONTEXT refused; use a default local context")
     endpoint = host or run(["docker", "context", "inspect", "--format",
                             "{{.Endpoints.docker.Host}}"])
     if not endpoint.startswith("unix://"):
         raise DrillError("non-local Docker endpoint refused")
+    return endpoint
 
 
 def check_major(version: str) -> None:
@@ -146,7 +147,9 @@ def psql(cid: str, sql: str, run: Runner) -> str:
 def drill(run: Runner = default_runner, run_env: Callable = default_runner) -> dict:
     os.umask(0o077)
     heads = expected_heads()
-    check_local_docker(dict(os.environ), run)
+    endpoint = check_local_docker({k: os.environ.get(k, "") for k in ("DOCKER_HOST", "DOCKER_CONTEXT")}, run)
+    unbound_run = run
+    run = lambda cmd: unbound_run(["docker", "--host", endpoint, *cmd[1:]] if cmd[0] == "docker" else cmd)
     run(["docker", "image", "inspect", "--format", "{{.Id}}", IMAGE_ID])
     tag = uuid.uuid4().hex[:12]
     password = secrets.token_hex(8)

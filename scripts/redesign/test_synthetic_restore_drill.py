@@ -28,6 +28,8 @@ class DrillTests(unittest.TestCase):
             d.check_local_docker({"DOCKER_HOST": "tcp://10.0.0.1:2375"}, lambda c: "")
         with self.assertRaises(d.DrillError):
             d.check_local_docker({}, lambda c: "ssh://u@h")
+        with self.assertRaises(d.DrillError):
+            d.check_local_docker({"DOCKER_HOST": "unix:///var/run/docker.sock", "DOCKER_CONTEXT": "remote"}, lambda c: "")
         d.check_local_docker({}, lambda c: "unix:///var/run/docker.sock")
 
     def test_binding_and_major(self):
@@ -71,6 +73,8 @@ class DrillTests(unittest.TestCase):
 
         def run(cmd):
             calls.append(list(cmd))
+            if cmd[:2] == ["docker", "--host"]:
+                cmd = ["docker", *cmd[3:]]
             if "pg_restore" in cmd and "--exit-on-error" in cmd:
                 raise d.subprocess.CalledProcessError(1, cmd)
             if cmd[:2] == ["docker", "context"]:
@@ -88,12 +92,13 @@ class DrillTests(unittest.TestCase):
             return "50,2550,7,y801a2b3c4d5"
 
         with mock.patch.object(d, "expected_heads", return_value=HEADS), \
-             mock.patch.dict(d.os.environ, {}, clear=False), \
+             mock.patch.dict(d.os.environ, {}, clear=True), \
              mock.patch.object(d.os, "umask"):
             d.os.environ.pop("DOCKER_HOST", None)
             with self.assertRaises(d.subprocess.CalledProcessError):
                 d.drill(run=run, run_env=lambda *a, **k: "y801a2b3c4d5")
         flat = [" ".join(c) for c in calls]
+        self.assertTrue(any(c[:3] == ["docker", "--host", "unix:///var/run/docker.sock"] for c in calls))
         for word in ("docker rm", "prune", "docker stop", "--clean", "DROP"):
             self.assertFalse(any(word in c for c in flat), word)
 

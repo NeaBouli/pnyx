@@ -14,7 +14,7 @@ python3 -m unittest test_synthetic_restore_drill  # from scripts/redesign, offli
 
 `--run` prerequisites: local Unix-socket Docker endpoint, the cached
 `postgres:15` image ID pinned in the script (`--pull=never`, no implicit pull),
-and the API Python deps (`alembic`, `sqlalchemy`, `asyncpg`, `pydantic-settings`).
+and the API Python deps (`alembic`, `sqlalchemy` 2.x, `asyncpg`, `pydantic-settings`).
 Nothing is installed by the script. There are no DSN, dump, SQL or container
 arguments.
 
@@ -38,6 +38,7 @@ survived. No repo migrations are applied, no stamp/upgrade is run.
 ## Safety
 
 - Refuses remote `DOCKER_HOST` and non-`unix://` contexts before creating anything.
+- Refuses explicit `DOCKER_CONTEXT` overrides and pins every Docker action to the validated Unix endpoint with `--host`.
 - Server major 15 and the `127.0.0.1` port binding are verified before fixtures/Alembic.
 - Containers get UUID names and label `ekklesia.drill=t9065-synthetic`; no `--rm`,
   no stop/delete/prune/drop/`--clean`. No env/`.env`/production config is read.
