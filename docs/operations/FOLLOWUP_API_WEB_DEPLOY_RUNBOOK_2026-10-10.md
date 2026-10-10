@@ -14,6 +14,10 @@ the two differ for this release, this file governs the order
 build → migration → per-service stop/up (the older "stop `api` before build"
 guidance does not apply here).
 
+The web scope also includes #565 (merged as `537eecd8`): request-time SSR for
+EL/EN bills and results with uncached public reads (`cache: "no-store"`).
+Its merge is not a deploy approval; the follow-up release remains a Gio gate.
+
 Placeholders: `<SHA>` full 40-character approved commit, `<REL>` release
 directory `/opt/ekklesia/releases/<name>-<SHA8>-<UTC TS>/`, `<TS>` UTC timestamp,
 `<PRIV>` a private operator directory (mode `0700`, never in the repo, never
@@ -154,6 +158,9 @@ step-6 candidate ID; `api` → `https://api.ekklesia.gr/health`.
 
 - Viewports 390 and 1280: `/el`, `/en`, bills list + detail, results,
   `/community.html`, `/wiki/`; language switch EL↔EN; CPLM checks as in the release scope.
+- #565: populated EL/EN bills/results contain initial cards in SSR HTML;
+  successful seeded views make no duplicate client GET. Check empty/API-failure
+  fallback separately; do not assume visible result counts.
 - Community funding block shows exactly one of ready / unavailable / stale —
   never invented numbers.
 - `HETZNER_MONTHLY_COST`: check only that the variable name exists or that the
