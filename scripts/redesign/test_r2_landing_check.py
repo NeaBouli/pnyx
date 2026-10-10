@@ -471,6 +471,34 @@ class ParityTest(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# T9067HiddenPnxLazyTest — hidden pnx.png imgs defer, visible nav logo does not
+# ---------------------------------------------------------------------------
+
+class T9067HiddenPnxLazyTest(unittest.TestCase):
+    """Hidden legacy hero + #pwaModal pnx.png use native lazy; nav mark stays eager."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.html = (r2_landing_check.DOCS_DIR / "index.html").read_text(encoding="utf-8")
+
+    def test_two_hidden_pnx_imgs_are_lazy_with_unchanged_src(self) -> None:
+        imgs = re.findall(r'<img\b[^>]*\bsrc="pnx\.png"[^>]*>', self.html)
+        self.assertEqual(2, len(imgs))
+        for tag in imgs:
+            self.assertIn('loading="lazy"', tag)
+
+    def test_visible_nav_mark_is_not_lazy(self) -> None:
+        marks = re.findall(r'<img\b[^>]*ekklesia-mark\.png[^>]*>', self.html)
+        self.assertTrue(marks)
+        for tag in marks:
+            self.assertNotIn('loading="lazy"', tag)
+
+    def test_negative_fixture_eager_pnx_is_detected(self) -> None:
+        bad = '<img src="pnx.png" alt="x"/>'
+        self.assertNotIn('loading="lazy"', re.findall(r'<img\b[^>]*\bsrc="pnx\.png"[^>]*>', bad)[0])
+
+
+# ---------------------------------------------------------------------------
 # HistorySectionTest — Acropolis/Pnyx silhouette regression
 # ---------------------------------------------------------------------------
 

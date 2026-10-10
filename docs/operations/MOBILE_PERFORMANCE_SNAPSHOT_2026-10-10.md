@@ -177,3 +177,18 @@ Source clarification: the landing `pnx.png` references are a hidden legacy hero 
 page, 1280 px, other engines, the bill detail results panel, causes of the
 failed requests, and whether production runs any given commit (live commit:
 UNVERIFIED).
+
+## Addendum T-9067 — hidden pnx.png native lazy loading (local only)
+
+Method: headless Chromium (Playwright 1.63, cached), `docs/` served on 127.0.0.1,
+fresh context per case, all non-local requests aborted (5 per load). Before =
+`docs/index.html` from fbbf5968, after = d600cdac. Default locale only.
+
+| Case | pnx.png requests at load (bytes) | After opening #pwaModal | Image in modal |
+|------|----------------------------------|-------------------------|----------------|
+| before 390x844 / 1280x900 | 1 (1,379,712) | 1 | natural 1024x1024, shown 64x64 |
+| after 390x844 / 1280x900 | 0 (0) | 1 | natural 1024x1024, shown 64x64 |
+
+No horizontal overflow (scrollWidth = viewport) and the modal closes in every case.
+This is a local fetch-deferral receipt only. It makes no LCP, CLS, timing or field
+claim. Not checked: EN locale, WebKit/iOS Safari, and production.
