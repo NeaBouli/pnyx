@@ -305,7 +305,7 @@ def public_quota_backend(
             main.app.dependency_overrides.pop(get_db, None)
 
 
-def test_public_valid_key_hits_default_sixty_before_thousand_quota(
+def test_public_valid_key_sixty_first_read_reaches_shared_quota(
     client: TestClient, public_quota_backend: PublicQuotaBackend,
 ) -> None:
     headers = {"X-API-Key": VALID_QUOTA_KEY, "Origin": "https://ekklesia.gr"}
@@ -313,17 +313,20 @@ def test_public_valid_key_hits_default_sixty_before_thousand_quota(
         response = client.get(PARTIES_ROUTE, headers=headers)
         assert response.status_code == 200
         assert response.json() == {"data": [], "data_license": "CC BY 4.0"}
-    before = public_quota_backend.effects()
     response = client.get(PARTIES_ROUTE, headers=headers)
-    assert response.status_code == 429 and "error" in response.json()
+    assert response.status_code == 200
+    assert response.json() == {"data": [], "data_license": "CC BY 4.0"}
     assert response.headers["access-control-allow-origin"] == "https://ekklesia.gr"
     assert response.headers["x-robots-tag"] == "noindex, nofollow"
-    assert public_quota_backend.effects() == before
-    assert list(public_quota_backend.redis.counts.values()) == [60]
+    assert list(public_quota_backend.redis.counts.values()) == [61]
+    assert public_quota_backend.redis.evaluations == 61
+    assert public_quota_backend.db.executions == 61
+    assert public_quota_backend.db.aggregates == 0
+    assert public_quota_backend.helper.await_count == 61
     public_quota_backend.assert_helper_quota(1000)
 
 
-def test_public_valid_key_default_ceiling_is_per_endpoint(
+def test_public_valid_key_sixty_first_reads_share_cross_endpoint_budget(
     client: TestClient, public_quota_backend: PublicQuotaBackend,
 ) -> None:
     headers = {"X-API-Key": VALID_QUOTA_KEY}
@@ -333,11 +336,14 @@ def test_public_valid_key_default_ceiling_is_per_endpoint(
     assert list(public_quota_backend.redis.counts.values()) == [120]
     assert public_quota_backend.db.executions == 60
     assert public_quota_backend.db.aggregates == 60
-    before = public_quota_backend.effects()
     for route in (PARTIES_ROUTE, CPLM_ROUTE):
         response = client.get(route, headers=headers)
-        assert response.status_code == 429 and "error" in response.json()
-    assert public_quota_backend.effects() == before
+        assert response.status_code == 200
+    assert list(public_quota_backend.redis.counts.values()) == [122]
+    assert public_quota_backend.redis.evaluations == 122
+    assert public_quota_backend.db.executions == 61
+    assert public_quota_backend.db.aggregates == 61
+    assert public_quota_backend.helper.await_count == 122
     public_quota_backend.assert_helper_quota(1000)
 
 

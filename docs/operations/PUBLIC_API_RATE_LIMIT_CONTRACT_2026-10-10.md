@@ -1,4 +1,4 @@
-# Public API layered quota contract — offline validation
+# Public API shared quota contract — offline validation
 
 2026-10-10, T-9050; source baseline `c727a3c8`. This follows the
 needs-validation item in T-9049. Test/report-only: no limiter, advertisement,
@@ -22,13 +22,20 @@ explicitly enabled in-memory middleware limiter replaces the storage backend.
 No lifespan startup, public key generation, external service or live request
 is involved.
 
+The current framework boundary matters: FastAPI 0.142.2 includes the public
+router as an `_IncludedRouter` without a direct `endpoint`. SlowAPI 0.1.10's
+`_find_route_handler` inspects only top-level routes with that attribute;
+`_should_exempt` skips its check when no handler is found. This is an observed
+integration effect, not a newly added or intentionally configured exemption.
+The existing public dependency still executes and enforces its shared budget.
+
 ## Boundaries exercised
 
 | Dummy principal / budget | Real route sequence | Expected composition |
 | --- | --- | --- |
-| Valid key, empty budget | 60 VAA parties calls, then one more | Default 429 before any additional Redis/DB work |
-| Valid key, empty budget | 60 calls per VAA and CPLM route | Separate middleware buckets, shared backend count 120 |
-| Anonymous | 60 VAA + 40 CPLM, then CPLM again | Shared public budget 100 denies before the CPLM default is full |
+| Valid key, empty budget | 60 VAA parties calls, then one more | 61st read returns 200; dependency/helper/DB count 61 |
+| Valid key, empty budget | 61 calls per VAA and CPLM route | All reads return 200; one shared backend count 122 |
+| Anonymous | 60 VAA + 40 CPLM, then CPLM again | Shared public budget 100 rejects request 101 before data work |
 | Invalid key | Anonymous/invalid-key requests share the same sequence | No fresh quota bucket or valid-key budget |
 | Valid key, synthetic prior usage 999 | One VAA then one CPLM call | Shared 1000 boundary with only two actual requests |
 
@@ -40,16 +47,21 @@ are restored by the fixtures.
 
 ## Interpretation and scope
 
-**Observed offline:** all five new cases pass with the actual router and
-middleware composition. Hypothesis 1 is supported; no public-route exemption
-was observed. The explicit enabled memory limiter prevents hypothesis 3 from
-silencing the middleware in these tests.
+**Correction after exact-head CI and owner reproduction:** the two original
+default-ceiling assertions failed with `assert (200 == 429)`. Hypothesis 2,
+not hypothesis 1, describes the observed current public-read integration:
+the exercised public routes are outside the default 60/min ceiling and use
+the dependency's shared 100/1000 budget. An enabled test limiter does not mean
+its default is applied to every route. Other default-covered routes, such as
+`/health`, retain their separate existing default-limit regressions.
 
-The advertised public budget does not imply 1000 calls to one endpoint. The
-default ceiling remains independent and may be reached first. API-facing
-documentation should make both dimensions explicit before any promise of a
-higher per-route quota. Changing or exempting the middleware is not justified
-by this test-only task and remains a separate policy decision.
+The corrected tests require the 61st valid-key read to reach the real dependency
+and endpoint, and require 61 reads on each of two routes to produce one shared
+counter of 122. The seeded 999 -> 1000 -> 1001 test separately proves the keyed
+boundary with two actual requests; it is not a 1001-request load/timing test.
+This is consistent with the advertised public shared budget, not a guarantee
+of successful data work or production throughput. No limiter or route exemption
+is introduced or changed by this test-only correction.
 
 This is an offline contract check, not a load test, timing exploit, production
 measurement, real Redis test or confirmed security vulnerability. Exact-lock
@@ -59,12 +71,23 @@ deployment or Codex Security scan is authorized.
 ## Validation evidence
 
 `pytest` over middleware, limiter privacy, client-IP helpers and Admin Bearer
-tests: **47 passed, 1 skipped**, 10.89s. The skip requires a real Redis service;
-none was exposed. A Starlette/httpx deprecation warning was recorded.
-Execution used cached image `4b50ab6021c0`, no network/install/pull, read-only
-source/container, non-root, empty explicit synthetic environment and a scratch
-tmpfs. Caps were 1 CPU, 512 MiB, 64 processes, 128 file descriptors, 1 MiB
-file size, 32 MiB scratch and 90 seconds wall time. Cached FastAPI 0.136.1 /
-httpx 0.28.1 / pytest 9.0.3 differ from the lock; exact-head CI is still required.
-The fake executes the helper interface, not Redis Lua; production quota,
-forwarded-peer attribution and outage behavior are not measured here.
+tests originally reported **47 passed, 1 skipped**, 10.89s in cached image
+`4b50ab6021c0` with FastAPI 0.136.1. **That evidence is withdrawn for the current
+public-route/default contract:** the current FastAPI 0.142.2 CI job
+`114156668516` instead reported the two failures above (2153 passed, 36 skipped,
+25 xfailed). Cache/toolchain mismatch was a hypothesis requiring revalidation,
+not grounds to publish the older behavior as current.
+
+Corrected local suites: **47 passed, 1 skipped**, 12.58s, with one cached
+Starlette/httpx deprecation warning. The real-Redis integration skip is expected
+in the isolated offline run. Cached image `4b50ab6021c0` was overlaid read-only
+with existing FastAPI 0.142.2, Starlette 1.7.0, SlowAPI 0.1.10 and limits 5.8.0
+packages, matching the relevant routing versions installed in the failed CI
+job. Other cached dependencies are not claimed to match the full CI matrix.
+No download, install or provider call was performed. Execution used network
+none, read-only source/root/toolchain, non-root, an empty explicit environment,
+dropped capabilities/no-new-privileges, bounded resources and a 120s timeout.
+The full local command and versions are recorded in the PR/Bridge handoff.
+The fake executes the helper interface, not Redis Lua. Exact-head CI and owner
+cross-review remain required; production quota, forwarded-peer attribution,
+actual Redis and outage behavior are not measured here.
