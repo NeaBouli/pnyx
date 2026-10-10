@@ -19,6 +19,16 @@ No default, middleware, read quota or exemption policy is changed here.
 | POST `/api/v1/vote` | Shared SlowAPI, 120/min/IP | New decorator before identity lookup |
 | POST `/api/v1/newsletter/subscribe` | Redis 10/IP/hour + 3/normalized-email/day | Existing guards retained; no second counter |
 | POST `/api/v1/contact/ngo` | Redis 3/IP/hour | Existing guard retained; no second counter |
+| POST `/api/v1/polis/register-key` | Shared SlowAPI, 120/min/IP | T-9058 decorator before identity lookup |
+| POST `/api/v1/polis/tickets` | Shared SlowAPI, 120/min/IP | T-9058 decorator before key binding |
+| POST `/api/v1/polis/tickets/{ticket_id}/votes` | Shared SlowAPI, 120/min/IP, fixed scope | T-9058 `shared_limit` before key binding |
+| POST `/api/v1/bills/{bill_id}/flag` | Shared SlowAPI, 120/min/IP, fixed scope | T-9058 `shared_limit` before identity lookup |
+
+SlowAPI's default `key_style="url"` buckets `limit()` by concrete path, so a
+plain decorator on a path-parameter route would let rotating ticket/bill IDs
+mint unlimited fresh buckets (observed locally before the fix). Those two
+routes use `shared_limit` with a fixed scope; counters still hold only the
+route scope plus HMAC-IP, never identities, nullifiers or body keys.
 
 120/min is a deliberately generous initial per-IP voting ceiling for shared
 carrier/NAT addresses, not a per-person entitlement or replacement for Ed25519,

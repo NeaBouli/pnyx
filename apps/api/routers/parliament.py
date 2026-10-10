@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text
 from sqlalchemy.exc import IntegrityError
 from database import get_db
+from rate_limit import limiter
 
 DISCOURSE_BASE = os.getenv("DISCOURSE_BASE_URL", "https://pnyx.ekklesia.gr")
 from dependencies import verify_admin_key
@@ -484,10 +485,15 @@ def _integrity_error_sqlstate(exc: IntegrityError) -> str | None:
 
 
 @router.post("/{bill_id}/flag")
+# Fixed scope: SlowAPI keys by URL, so a per-path limit would let rotating
+# bill IDs mint fresh buckets. Same shared HMAC-IP key, 120/min.
+@limiter.shared_limit("120/minute", scope="bill-flag")
 async def flag_bill(
     bill_id: str,
     req: FlagRequest,
     db: AsyncSession = Depends(get_db),
+    *,
+    request: Request = None,
 ):
     """Flag a bill as irrelevant/spam. One flag per ACTIVE identity (signed)."""
     from keypair import verify_signature
