@@ -3,6 +3,7 @@ import { ed25519 } from "@noble/curves/ed25519.js";
 
 import { loadUserBillScope } from "./bill-scope-storage";
 import { storeProfileLocation } from "./profile-location";
+import { clearVoteMarks } from "./vote-marks";
 
 export interface ImportedAccountCredentials {
   privateKey: string;
@@ -91,6 +92,11 @@ export async function importAccountCredentials(
 
     await SecureStore.setItemAsync("onboarding_completed", "true");
     await SecureStore.setItemAsync("user_profile_completed", "true");
+    // Only clear after all rollback-capable writes succeed. A rejected import
+    // restores the original identity and must retain its local evidence.
+    if (snapshot.get("ekklesia_nullifier") !== credentials.nullifier) {
+      await clearVoteMarks();
+    }
   } catch (error) {
     await restoreImportState(snapshot);
     throw error;

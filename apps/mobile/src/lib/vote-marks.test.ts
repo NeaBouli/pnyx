@@ -11,7 +11,7 @@ const store = vi.hoisted(() => {
 });
 vi.mock("expo-secure-store", () => store);
 
-import { MAX_AGE_MS, MAX_MARKS, loadVoteMarks, recordVoteMark, syncVoteMark, tileVoteLabel } from "./vote-marks";
+import { MAX_AGE_MS, MAX_MARKS, clearVoteMarks, loadVoteMarks, recordVoteMark, syncVoteMark, tileVoteLabel } from "./vote-marks";
 
 const OWNER = "a".repeat(64);
 const OTHER_OWNER = "b".repeat(64);
@@ -71,6 +71,69 @@ describe("vote marks storage", () => {
     store.data.set("ekklesia_vote_marks_v1", "{not json");
     expect(await loadVoteMarks(NOW)).toEqual({});
     await expect(recordVoteMark("GR-1", false, OWNER, NOW)).resolves.toBeUndefined();
+  });
+});
+
+describe("vote marks clearing", () => {
+  beforeEach(() => {
+    store.data.clear();
+    store.data.set("ekklesia_nullifier", OWNER);
+    store.setItemAsync.mockClear();
+    store.deleteItemAsync.mockClear();
+  });
+
+  it("reports a deletion error without poisoning the mutation queue", async () => {
+    await recordVoteMark("GR-1", false, OWNER, NOW);
+    store.deleteItemAsync.mockRejectedValueOnce(new Error("storage unavailable"));
+
+    await expect(clearVoteMarks()).rejects.toThrow("storage unavailable");
+    await clearVoteMarks();
+
+    expect(store.data.has("ekklesia_vote_marks_v1")).toBe(false);
+    await recordVoteMark("GR-2", false, OWNER, NOW);
+    expect((await loadVoteMarks(NOW))["GR-2"]).toBeDefined();
+  });
+
+  it.each([true, false])("physically removes stored marks with current identity=%s", async (hasIdentity) => {
+    await recordVoteMark("GR-1", true, OWNER, NOW);
+    expect(store.data.has("ekklesia_vote_marks_v1")).toBe(true);
+    if (!hasIdentity) store.data.delete("ekklesia_nullifier");
+
+    await clearVoteMarks();
+
+    expect(await loadVoteMarks(NOW)).toEqual({});
+    expect(store.data.has("ekklesia_vote_marks_v1")).toBe(false);
+    expect(store.deleteItemAsync).toHaveBeenCalledExactlyOnceWith("ekklesia_vote_marks_v1");
+    expect(store.data.get("ekklesia_nullifier")).toBe(hasIdentity ? OWNER : undefined);
+  });
+
+  it.each(["record", "sync"] as const)("waits behind an in-flight %s write before clearing", async (operation) => {
+    await recordVoteMark("existing", false, OWNER, NOW);
+    const writeStarted = deferred<void>();
+    const releaseWrite = deferred<void>();
+    store.setItemAsync.mockImplementationOnce(async (key, value) => {
+      writeStarted.resolve(undefined);
+      await releaseWrite.promise;
+      store.data.set(key, value);
+    });
+    const update = operation === "record"
+      ? recordVoteMark("GR-1", true, OWNER, NOW + 1)
+      : syncVoteMark("GR-1", { has_voted: true, is_correction: false }, OWNER, NOW + 1);
+    await writeStarted.promise;
+    const clearing = clearVoteMarks();
+
+    try {
+      expect(store.deleteItemAsync).not.toHaveBeenCalled();
+      expect(store.data.has("ekklesia_vote_marks_v1")).toBe(true);
+    } finally {
+      releaseWrite.resolve(undefined);
+      await Promise.all([update, clearing]);
+    }
+
+    expect(store.deleteItemAsync).toHaveBeenCalledExactlyOnceWith("ekklesia_vote_marks_v1");
+    expect(store.data.has("ekklesia_vote_marks_v1")).toBe(false);
+    expect(await loadVoteMarks(NOW + 1)).toEqual({});
+    expect(store.data.get("ekklesia_nullifier")).toBe(OWNER);
   });
 });
 

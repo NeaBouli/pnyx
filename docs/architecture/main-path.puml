@@ -533,3 +533,12 @@ Community -> Status : fetchPaymentStatus
 Status --> Community : server / domain / reserve
 Community -> Community : updateServerTile / updateDomainTile
 @enduml
+@startuml T9023_identity_cleanup_path
+participant Identity
+participant "Vote marks queue" as Queue
+database SecureStore
+Identity -> Queue : clearVoteMarks
+Queue -> Queue : await prior record/sync
+Queue -> SecureStore : deleteItemAsync(marks key)
+Queue --> Identity : deletion complete
+@enduml

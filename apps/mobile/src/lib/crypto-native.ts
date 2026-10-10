@@ -15,6 +15,7 @@
  * @module ekklesia/crypto-native
  */
 import * as SecureStore from "expo-secure-store";
+import { clearVoteMarks } from "./vote-marks";
 import { hmac } from "@noble/hashes/hmac.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { pbkdf2 } from "@noble/hashes/pbkdf2.js";
@@ -175,7 +176,10 @@ async function secureSet(key: string, value: string): Promise<void> {
  * Uses biometrics if available, falls back gracefully.
  */
 export async function storeNullifierRoot(root: Uint8Array): Promise<void> {
-  await secureSet(KEYS.NULLIFIER_ROOT, bytesToHex(root));
+  const value = bytesToHex(root);
+  const previous = await SecureStore.getItemAsync(KEYS.NULLIFIER_ROOT);
+  await secureSet(KEYS.NULLIFIER_ROOT, value);
+  if (previous !== value) await clearVoteMarks();
 }
 
 export async function loadNullifierRoot(): Promise<Uint8Array | null> {
@@ -207,7 +211,9 @@ export async function loadKeypair(): Promise<{ privateKeyHex: string; publicKeyH
 }
 
 export async function storeNullifier(nullifier: string): Promise<void> {
+  const previous = await SecureStore.getItemAsync(KEYS.NULLIFIER);
   await SecureStore.setItemAsync(KEYS.NULLIFIER, nullifier);
+  if (previous !== nullifier) await clearVoteMarks();
 }
 
 export async function loadNullifier(): Promise<string | null> {
@@ -527,6 +533,7 @@ export async function clearKeys(): Promise<void> {
   await SecureStore.deleteItemAsync(KEYS.NULLIFIER);
   // A new identity must never inherit a still-fresh push registration marker.
   await SecureStore.deleteItemAsync("push_registration_marker");
+  await clearVoteMarks();
 }
 
 // ─── Vote Signing (Tier 1) ───────────────────────────────────────────────────

@@ -35,6 +35,7 @@ vi.mock("./crypto-native", () => ({
 }));
 
 import { importAccountCredentials } from "./import-account";
+import { loadVoteMarks, recordVoteMark } from "./vote-marks";
 
 const PRIVATE_KEY = "01".repeat(32);
 const PUBLIC_KEY = Array.from(
@@ -60,6 +61,34 @@ describe("importAccountCredentials", () => {
       periferia_id: 6,
       dimos_id: 22,
     });
+  });
+
+  it("physically removes the previous identity's marks after a successful import", async () => {
+    const owner = "a".repeat(64);
+    state.values.set("ekklesia_nullifier", owner);
+    await recordVoteMark("old-bill", false, owner);
+    expect(state.values.has("ekklesia_vote_marks_v1")).toBe(true);
+
+    await importAccountCredentials(NEW_ACCOUNT);
+
+    expect(state.values.has("ekklesia_vote_marks_v1")).toBe(false);
+    expect(await loadVoteMarks()).toEqual({});
+    state.values.set("ekklesia_nullifier", owner);
+    expect(await loadVoteMarks()).toEqual({});
+  });
+
+  it("preserves marks when a failed import restores the original identity", async () => {
+    const owner = "a".repeat(64);
+    state.values.set("ekklesia_nullifier", owner);
+    await recordVoteMark("old-bill", false, owner);
+    const raw = state.values.get("ekklesia_vote_marks_v1");
+    state.failOnceForKey = "user_profile_completed";
+
+    await expect(importAccountCredentials(NEW_ACCOUNT)).rejects.toThrow("write failed");
+
+    expect(state.values.get("ekklesia_nullifier")).toBe(owner);
+    expect(state.values.get("ekklesia_vote_marks_v1")).toBe(raw);
+    expect((await loadVoteMarks())["old-bill"]).toBeDefined();
   });
 
   it("caches only the imported server scope without invalid legacy-key access", async () => {

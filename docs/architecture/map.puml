@@ -759,3 +759,12 @@ Allocation --> Publicprojection : _append_payment_record
 Publicprojection --> Publicstatus : _load_public_support_projection
 Publicstatus --> Community : fetchPaymentStatus
 @enduml
+@startuml T9023_vote_mark_cleanup
+component "Identity removal/replacement" as Identity
+component clearVoteMarks
+component "Existing serialized queue" as Queue
+database "SecureStore marks entry" as Marks
+Identity --> clearVoteMarks
+clearVoteMarks --> Queue
+Queue --> Marks : deleteItemAsync
+@enduml
