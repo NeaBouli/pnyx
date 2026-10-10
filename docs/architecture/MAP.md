@@ -1954,3 +1954,33 @@ flowchart LR
   Record[recordVoteMark / syncVoteMark] --> Queue
   Queue --> Store[SecureStore marks entry]
 ```
+
+## T-9027 — MOD-21 Diavgeia ADA length (bounded extension)
+
+1. Grundidee: preserve public Diavgeia decision identities for municipal voting
+   (`README.md`, `services/diavgeia_scraper.py`).
+2. Spur: `diavgeia_client.py::DiavgeiaClient.iter_decisions` supplies `ada`;
+   `diavgeia_scraper.py::scrape_decisions` passes it unchanged into
+   `pg_insert(DiavgeiaDecision)`; `models.py::DiavgeiaDecision` maps the table;
+   Alembic revision `y801a2b3c4d5` replaces its named length check.
+3. Module: MOD-21 intake — built; database ADA check — built, lower bound corrected
+   from 10 to 9 characters, upper bound still 32.
+4. Verdrahtung: the exact upstream identifier remains the upsert conflict key,
+   document reference and downstream `diavgeia_ada`; no transliteration occurs.
+5. Widerspruch und Lücken: the constraint is not a Latin-only regex; valid ADAs
+   `ΕΘΘ9Η-58Ψ`, `Ψ7ΙΤΗ-ΗΩΞ`, `6ΣΣΡΗ-ΘΑΤ` are nine characters. Migration and
+   model shared the excessive lower bound. Forward migration has no DML.
+   Downgrade restores the old check as NOT VALID to retain existing short rows;
+   it still enforces the old rule on subsequent inserts/updates.
+6. Diagramme: `docs/architecture/map.puml`, `docs/architecture/main-path.puml`.
+7. Nächster Schritt: local predicate/migration regression checks, then gio-dd
+   cross-review and head-bound green CI. Production migration/deploy and any
+   backfill remain separate owner gates; scraper, routes and historic migrations
+   are unchanged. Production release 550549c7 is owner-reported, not verified here.
+
+```mermaid
+flowchart LR
+  Client[DiavgeiaClient.iter_decisions] -->|unchanged ADA| Scraper[scrape_decisions]
+  Scraper -->|pg_insert / conflict key| Model[DiavgeiaDecision]
+  Model --> Check[diavgeia_decisions_ada_chk: 9..32 characters]
+```

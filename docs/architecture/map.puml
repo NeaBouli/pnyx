@@ -768,3 +768,12 @@ Identity --> clearVoteMarks
 clearVoteMarks --> Queue
 Queue --> Marks : deleteItemAsync
 @enduml
+@startuml T9027_diavgeia_ada_length
+component "DiavgeiaClient.iter_decisions" as Client
+component scrape_decisions as Scraper
+component DiavgeiaDecision as Model
+database "diavgeia_decisions_ada_chk" as ADAcheck
+Client --> Scraper : unchanged ada
+Scraper --> Model : pg_insert / on_conflict_do_update
+Model --> ADAcheck : length(ada) BETWEEN 9 AND 32
+@enduml

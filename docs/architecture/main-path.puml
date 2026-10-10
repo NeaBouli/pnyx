@@ -542,3 +542,13 @@ Queue -> Queue : await prior record/sync
 Queue -> SecureStore : deleteItemAsync(marks key)
 Queue --> Identity : deletion complete
 @enduml
+@startuml T9027_diavgeia_ada_path
+participant DiavgeiaClient as Client
+participant scrape_decisions as Scraper
+participant DiavgeiaDecision as Model
+database PostgreSQL
+Client --> Scraper : raw decision / exact ada
+Scraper -> Model : pg_insert(ada=upstream ada)
+Model -> PostgreSQL : upsert / named check (9..32)
+PostgreSQL --> Scraper : unchanged nine-character ADA accepted
+@enduml
