@@ -364,8 +364,10 @@ def test_current_community_server_cost_copy_is_bilingual_and_dated():
     from tests.repo_paths import repo_path_or_skip_in_image
 
     community = repo_path_or_skip_in_image("docs/community.html").read_text(encoding="utf-8")
-    assert community.count('data-el="~25 €/μήνα (στοιχεία 10.2026)"') == 2
-    assert community.count('data-en="~€25/month (as of 10.2026)"') == 2
+    assert 'data-el="~25 €/μήνα (στοιχεία 10.2026)"' in community
+    assert 'data-en="~€25/month (as of 10.2026)"' in community
+    assert 'data-el="25 € × 12 = 300 €/έτος"' in community
+    assert 'data-en="€25 × 12 = €300/year"' in community
     assert '<strong>~€10/μ</strong>' not in community
     assert '<strong>10€/<span data-el="μήνα"' not in community
 
