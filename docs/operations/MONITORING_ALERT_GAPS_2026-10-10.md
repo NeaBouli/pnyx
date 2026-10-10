@@ -132,7 +132,9 @@ attempts, not daemon restarts. Do **not** widen the proxy or enable auto-recover
 **P2-7 Stripe webhook outcomes not aggregated.** `payments.py` webhook (L948 ff.): 503
 secret missing (`logger.error`, L960); 400 missing/invalid signature or bad payload
 (noise, `logger.warning`); 503 "awaiting legal recipient approval" when the intake gate is
-closed (L989, expected/legal); 503 claim/projection retry states; unexpected 5xx log-only.
+closed (L989, expected/legal); 503 claim/projection retry states. No webhook-specific
+aggregate alert is wired in the inspected monitor; external Sentry/ingress alert policies
+and actual exception delivery are unverified, not assumed absent.
 *Proposal:* low-cardinality counters `{status_class, reason_label}` only (no payload,
 headers, customer, email, event id, amount); exclude legal gate-closed 503; alert on
 unexpected 5xx > 0 and signature-failure bursts.
