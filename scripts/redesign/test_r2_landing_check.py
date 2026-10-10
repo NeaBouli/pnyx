@@ -139,6 +139,24 @@ class PreservationTest(unittest.TestCase):
         violations = r2_landing_check.check_index_preservation(self.baseline, changed)
         self.assertTrue(any("external_hosts" in item for item in violations))
 
+    def test_comparison_api_addition_is_exact_and_required(self) -> None:
+        for key, additions in r2_landing_check.ALLOWED_COMPARISON_API_ADDITIONS.items():
+            for invalid in ([], [additions[0], additions[0]], ["/api/v1/private/bills/"]):
+                with self.subTest(key=key, invalid=invalid):
+                    changed = copy.deepcopy(self.current)
+                    changed["api_contracts"][key] = [
+                        item for item in changed["api_contracts"][key]
+                        if item != additions[0]
+                    ] + invalid
+                    violations = r2_landing_check.check_index_preservation(self.baseline, changed)
+                    self.assertTrue(any("api_contracts" in item for item in violations))
+
+    def test_unknown_api_contract_key_fails_closed(self) -> None:
+        changed = copy.deepcopy(self.current)
+        changed["api_contracts"]["extra"] = []
+        violations = r2_landing_check.check_index_preservation(self.baseline, changed)
+        self.assertTrue(any("api_contracts" in item for item in violations))
+
     def test_lost_bilingual_pair_fails_closed(self) -> None:
         changed = copy.deepcopy(self.current)
         target = next(

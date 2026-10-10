@@ -44,6 +44,16 @@ const CPLM_LIVE = {
   x: 2.5, y: -1.5, total_voters: 1234, quadrant: "libertarian_right",
   trend: { x_delta: 0.5, y_delta: -0.25 },
 };
+const COMPARISON_LIVE = {
+  bill_id: "GR-T356", status: "PARLIAMENT_VOTED", results_hidden: false,
+  citizen_votes: { yes: 60, no: 35, abstain: 5, unknown: 0, total: 100 },
+  parliament_votes: { A: "YES", B: "NO", C: "ABSTAIN" },
+};
+function representationFixture(score = 50, billId = "GR-T356") {
+  return { cumulative_representation: score, cumulative_divergence: score === null ? null : 100 - score,
+    bills_analyzed: score === null ? 0 : 2, total_citizen_votes: score === null ? 0 : 1234,
+    last_bill: billId ? { bill_id: billId, title_el: "Νομοσχέδιο δοκιμής", citizen_votes: 100, divergence: 40, representation: score } : null };
+}
 const STATES = {
   live: (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(LIVE) }),
   empty: (route) => route.fulfill({ status: 200, contentType: "application/json", body: "{}" }),
@@ -79,6 +89,11 @@ async function newPage(browser, base, vp, state, opts = {}) {
   // Record every change of the active phase from page start (hash-open check).
   await page.addInitScript(() => {
     window.__t356Seq = [];
+    const nativeSetInterval = window.setInterval.bind(window);
+    window.setInterval = (callback, ms, ...args) => {
+      if (callback.name === "fetchRepresentation") window.__t356RepRefresh = callback;
+      return nativeSetInterval(callback, ms, ...args);
+    };
     document.addEventListener("DOMContentLoaded", () => {
       const grid = document.getElementById("cyclePhases");
       if (!grid) return;
@@ -94,8 +109,15 @@ async function newPage(browser, base, vp, state, opts = {}) {
     const url = route.request().url();
     if (url.startsWith(base)) return route.continue();
     if (url.includes("api.ekklesia.gr/api/v1/vote/results/latest")) return STATES[state](route);
+    if (url.includes("api.ekklesia.gr/api/v1/analytics/representation") && opts.onRepresentationRoute)
+      return opts.onRepresentationRoute(route);
     if (url.includes("api.ekklesia.gr/api/v1/analytics/representation") && opts.representation !== undefined)
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(opts.representation) });
+    if (/api\.ekklesia\.gr\/api\/v1\/public\/bills\/[^/]+\/results(?:\?|$)/.test(url)) {
+      if (opts.onPublicResultsRoute) return opts.onPublicResultsRoute(route);
+      return route.fulfill({ status: opts.publicResultsStatus || 200, contentType: "application/json",
+        body: JSON.stringify(opts.publicResults === undefined ? COMPARISON_LIVE : opts.publicResults) });
+    }
     if (url.includes("api.ekklesia.gr/api/v1/cplm/aggregate") && opts.cplm !== undefined) {
       if (opts.onCplmRoute) return opts.onCplmRoute(route); // Caller controls delivery after the real EN click.
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(opts.cplm) });
@@ -103,7 +125,7 @@ async function newPage(browser, base, vp, state, opts = {}) {
     if (url.includes("api.ekklesia.gr")) return route.fulfill({ status: 503, contentType: "application/json", body: "{}" });
     return route.abort("blockedbyclient");
   });
-  await page.goto(base + (opts.hash || ""), { waitUntil: opts.onCplmRoute ? "domcontentloaded" : "load" });
+  await page.goto(base + (opts.hash || ""), { waitUntil: opts.onCplmRoute || opts.onPublicResultsRoute ? "domcontentloaded" : "load" });
   await page.waitForTimeout(600);
   return { ctx, page, errors };
 }
@@ -358,8 +380,7 @@ async function aggregateChecks(page, name, score, lang) {
     const text = (id) => document.getElementById(id).textContent.trim();
     const attr = (id, key) => document.getElementById(id).getAttribute(key);
     return {
-      score: text("repScore"), fill: document.getElementById("repFill").style.width,
-      marker: document.getElementById("repMarker").style.left, mouth: attr("moodMouth", "d"),
+      score: text("repScore"), mouth: attr("moodMouth", "d"),
       mood: text("moodStatus"), moodEl: attr("moodStatus", "data-el"), moodEn: attr("moodStatus", "data-en"),
       noData: document.getElementById("repNoData").style.display,
       x: text("cplmX"), y: text("cplmY"), voters: text("cplmVoters"), quadrant: text("cplmQuadrant"),
@@ -374,7 +395,7 @@ async function aggregateChecks(page, name, score, lang) {
   const mouth = empty || (score >= 45 && score < 50) ? "M36 80 L84 80" : score < 45 ? "M36 88 Q60 66 84 88" : "M36 74 Q60 96 84 74";
   const el = empty ? "Αναμονή πραγματικών δεδομένων. Ο δείκτης ενεργοποιείται μόλις υπάρξουν αρκετά συγκρίσιμα δεδομένα." : score < 45 ? `Αντιπροσωπευτικότητα ${score}%: απόκλιση από τη γνώμη των πολιτών.` : score < 50 ? `Οριακή αντιπροσωπευτικότητα: ${score}%.` : `Η Βουλή αντιπροσωπεύει τη γνώμη των πολιτών στο ${score}%.`;
   const en = empty ? "Waiting for real data. The indicator activates once sufficient comparable data is available." : score < 45 ? `Representativeness ${score}%: divergence from citizen opinion.` : score < 50 ? `Marginal representativeness: ${score}%.` : `Parliament represents citizen opinion at ${score}%.`;
-  check(name, `${lang}: representation score/fill/marker and exact mood threshold`, actual.score === (empty ? "—" : `${score}%`) && actual.fill === `${empty ? 0 : score}%` && actual.marker === `${empty ? 0 : score}%` && actual.mouth === mouth && actual.noData === (empty ? "inline" : "none"), actual);
+  check(name, `${lang}: cumulative score and exact mood threshold remain independent`, actual.score === (empty ? "—" : `${score}%`) && actual.mouth === mouth && actual.noData === (empty ? "inline" : "none"), actual);
   check(name, `${lang}: bilingual mood follows actual toggle`, actual.mood === (lang === "en" ? en : el) && actual.moodEl === el && actual.moodEn === en && actual.lang === lang, actual);
   check(name, `${lang}: CPLM axes/voters/dot/arrow and hidden fallback`, actual.x === "2.50" && actual.y === "-1.50" && actual.voters.replace(/[.,\s]/g, "") === "1234" && JSON.stringify(actual.dot) === '["175","161"]' && JSON.stringify(actual.arrow) === '["175","161","189","168","0.6"]' && actual.fallback === "0", actual);
   check(name, `${lang}: live quadrant translation independent of document.lang`, actual.quadrant === (lang === "en" ? "Lib. Right" : "Ελευθ. Δεξιά") && actual.quadEl === "Ελευθ. Δεξιά" && actual.quadEn === "Lib. Right" && actual.documentLang === "el", actual);
@@ -403,7 +424,7 @@ async function revealAggregatePanels(page, name) {
 async function aggregateDataChecks(browser, base, engine, vp) {
   for (const score of [44, 45, 49, 50, null]) {
     const name = `${engine}-${vp.w}x${vp.h}-aggregates-${score === null ? "empty" : score}`;
-    const representation = { cumulative_representation: score, cumulative_divergence: score === null ? null : 100 - score, bills_analyzed: score === null ? 0 : 2, total_citizen_votes: score === null ? 0 : 1234 };
+    const representation = representationFixture(score, score === null ? null : "GR-T356");
     const { ctx, page, errors } = await newPage(browser, base, vp, "live", { hash: "#demo", representation, cplm: CPLM_LIVE });
     try {
       page.setDefaultTimeout(8000);
@@ -413,6 +434,7 @@ async function aggregateDataChecks(browser, base, engine, vp) {
         if (index > 0) await toggleAggregateLanguage(page);
         await revealAggregatePanels(page, `${name}-${lang}`);
         await aggregateChecks(page, name, score, lang);
+        await comparisonChecks(page, name, lang, score === null);
         await layoutChecks(page, `${name}-${lang}`, vp);
         if (index < 2) await page.locator(".pnx2-democracy-data").screenshot({ path: path.join(OUT, `${name}-${lang}.png`) });
       }
@@ -423,7 +445,7 @@ async function aggregateDataChecks(browser, base, engine, vp) {
   const name = `${engine}-${vp.w}x${vp.h}-cplm-delayed-after-en`;
   let capture, timer;
   const pendingRoute = new Promise((resolve) => { capture = resolve; });
-  const { ctx, page, errors } = await newPage(browser, base, vp, "live", { hash: "#demo", representation: { cumulative_representation: 50, bills_analyzed: 2 }, cplm: CPLM_LIVE, onCplmRoute: capture });
+  const { ctx, page, errors } = await newPage(browser, base, vp, "live", { hash: "#demo", representation: representationFixture(), cplm: CPLM_LIVE, onCplmRoute: capture });
   try {
     page.setDefaultTimeout(8000);
     const route = await Promise.race([pendingRoute, new Promise((_, reject) => {
@@ -444,6 +466,101 @@ async function aggregateDataChecks(browser, base, engine, vp) {
   } finally { clearTimeout(timer); await ctx.close(); }
 }
 
+async function comparisonChecks(page, name, lang, neutral = false, parliament = 100 / 3, citizen = 60) {
+  const state = await page.evaluate(() => {
+    const fill = (id) => { const el = document.getElementById(id), track = getComputedStyle(el.parentElement);
+      return { width: parseFloat(el.style.width), height: parseFloat(track.height), radius: parseFloat(track.borderRadius), borderLeft: parseFloat(track.borderLeftWidth), borderTop: parseFloat(track.borderTopWidth) }; };
+    return { parliament: fill("repParliamentFill"), citizen: fill("repCitizenFill"),
+      p: document.getElementById("repParliamentValue").textContent,
+      c: document.getElementById("repCitizenValue").textContent,
+      note: document.getElementById("repComparisonNote").textContent,
+      oldScale: !!document.getElementById("repFill") || !!document.getElementById("repMarker") };
+  });
+  const label = (value) => value.toFixed(2).replace(".", lang === "el" ? "," : ".") + (lang === "el" ? "% Υπέρ" : "% YES");
+  check(name, `${lang}: same-bill comparison values or both neutral`, neutral ? state.p === "—" && state.c === "—" && state.parliament.width === 0 && state.citizen.width === 0 : state.p === label(parliament) && state.c === label(citizen) && Math.abs(state.parliament.width - parliament) < 0.02 && Math.abs(state.citizen.width - citizen) < 0.02, state);
+  check(name, "original two 14px tracks / 2px frame and corners; old cumulative scale removed", [state.parliament, state.citizen].every((track) => track.height === 14 && track.radius === 2 && track.borderLeft === 2 && track.borderTop === 2) && !state.oldScale, state);
+  check(name, `${lang}: explicit comparison provenance notice`, /bill|νομοσχέδιο/i.test(state.note) && /part|κομμ/i.test(state.note), state.note);
+}
+
+async function comparisonDataChecks(browser, base, engine, vp) {
+  const zeroName = `${engine}-${vp.w}-comparison-legitimate-zero`;
+  const zero = await newPage(browser, base, vp, "live", { hash: "#demo", representation: representationFixture(), cplm: CPLM_LIVE,
+    publicResults: { ...COMPARISON_LIVE, citizen_votes: { yes: 0, no: 95, abstain: 5, unknown: 0, total: 100 }, parliament_votes: { A: "NO", B: "ABSTAIN" } } });
+  try {
+    await zero.page.waitForFunction(() => document.getElementById("repCitizenValue").textContent === "0,00% Υπέρ");
+    for (const [index, lang] of ["el", "en", "el"].entries()) {
+      if (index) await toggleAggregateLanguage(zero.page);
+      await revealAggregatePanels(zero.page, `${zeroName}-${lang}`);
+      await comparisonChecks(zero.page, zeroName, lang, false, 0, 0);
+      await layoutChecks(zero.page, `${zeroName}-${lang}`, vp);
+    }
+    check(zeroName, "no page errors", zero.errors.length === 0, zero.errors);
+  } finally { await zero.ctx.close(); }
+  const cases = [
+    ["hidden", { ...COMPARISON_LIVE, results_hidden: true }],
+    ["missing-hidden", { ...COMPARISON_LIVE, results_hidden: undefined }],
+    ["active", { ...COMPARISON_LIVE, status: "ACTIVE" }],
+    ["wrong-bill", { ...COMPARISON_LIVE, bill_id: "GR-OTHER" }],
+    ["missing-counts", { ...COMPARISON_LIVE, citizen_votes: null }],
+    ["inconsistent-counts", { ...COMPARISON_LIVE, citizen_votes: { yes: 60, no: 35, abstain: 5, unknown: 0, total: 101 } }],
+    ["unsafe-count", { ...COMPARISON_LIVE, citizen_votes: { yes: Number.MAX_SAFE_INTEGER + 1, no: 0, abstain: 0, unknown: 0, total: Number.MAX_SAFE_INTEGER + 1 } }],
+    ["empty-positions", { ...COMPARISON_LIVE, parliament_votes: {} }],
+    ["unknown-position", { ...COMPARISON_LIVE, parliament_votes: { A: "YES", B: "UNKNOWN" } }],
+    ["http503", COMPARISON_LIVE, 503],
+  ];
+  for (const [kind, publicResults, publicResultsStatus] of cases) {
+    const name = `${engine}-${vp.w}-comparison-${kind}`;
+    const { ctx, page, errors } = await newPage(browser, base, vp, "live", { hash: "#demo", representation: representationFixture(), cplm: CPLM_LIVE, publicResults, publicResultsStatus });
+    try {
+      for (const [index, lang] of ["el", "en", "el"].entries()) {
+        if (index) await toggleAggregateLanguage(page);
+        await revealAggregatePanels(page, `${name}-${lang}`);
+        await comparisonChecks(page, name, lang, true);
+        await layoutChecks(page, `${name}-${lang}`, vp);
+      }
+      check(name, "no page errors", errors.length === 0, errors);
+    } finally { await ctx.close(); }
+  }
+  const name = `${engine}-${vp.w}-comparison-delayed-after-en`;
+  let release, timer;
+  const held = new Promise((resolve) => { release = resolve; });
+  const { ctx, page, errors } = await newPage(browser, base, vp, "live", { hash: "#demo", representation: representationFixture(), cplm: CPLM_LIVE, onPublicResultsRoute: release });
+  try {
+    const route = await Promise.race([held, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("Public result route not captured")), 8000); })]).finally(() => clearTimeout(timer));
+    await toggleAggregateLanguage(page);
+    await comparisonChecks(page, name, "en", true);
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(COMPARISON_LIVE) });
+    await page.waitForFunction(() => document.getElementById("repCitizenValue").textContent === "60.00% YES");
+    await comparisonChecks(page, name, "en");
+    await toggleAggregateLanguage(page);
+    await comparisonChecks(page, name, "el");
+    check(name, "no page errors", errors.length === 0, errors);
+  } finally { clearTimeout(timer); await ctx.close(); }
+
+  const raceName = `${engine}-${vp.w}-comparison-stale-bill-response`;
+  const pending = [];
+  let representationRequests = 0;
+  const race = await newPage(browser, base, vp, "live", { hash: "#demo", cplm: CPLM_LIVE,
+    onRepresentationRoute: (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(representationFixture(50, ++representationRequests === 1 ? "GR-A" : "GR-B")) }),
+    onPublicResultsRoute: (route) => { pending.push(route); } });
+  try {
+    for (let i = 0; i < 80 && pending.length < 1; i++) await race.page.waitForTimeout(100);
+    if (!pending.length) throw new Error("First comparison route not captured");
+    await race.page.evaluate(() => window.__t356RepRefresh());
+    for (let i = 0; i < 80 && pending.length < 2; i++) await race.page.waitForTimeout(100);
+    if (pending.length < 2) throw new Error("Refreshed comparison route not captured");
+    await pending[1].fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ...COMPARISON_LIVE, bill_id: "GR-B", citizen_votes: { yes: 20, no: 75, abstain: 5, unknown: 0, total: 100 } }) });
+    await race.page.waitForFunction(() => document.getElementById("repCitizenValue").textContent === "20,00% Υπέρ");
+    await pending[0].fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ...COMPARISON_LIVE, bill_id: "GR-A" }) });
+    await race.page.waitForTimeout(100);
+    await comparisonChecks(race.page, raceName, "el", false, 100 / 3, 20);
+    check(raceName, "older bill response cannot replace current bill provenance", /GR-B/.test(await race.page.locator("#repComparisonNote").textContent()), {});
+    await toggleAggregateLanguage(race.page);
+    await comparisonChecks(race.page, raceName, "en", false, 100 / 3, 20);
+    check(raceName, "no page errors", race.errors.length === 0, race.errors);
+  } finally { await race.ctx.close(); }
+}
+
 (async () => {
   const server = await serve();
   const base = `http://127.0.0.1:${server.address().port}/`;
@@ -458,7 +575,10 @@ async function aggregateDataChecks(browser, base, engine, vp) {
         await reducedMotionCheck(browser, base, engine, VIEWPORTS[2]);
         await stateChecks(browser, base, engine, engine === "webkit" ? VIEWPORTS[2] : VIEWPORTS[0]);
       }
-      for (const vp of [VIEWPORTS[0], VIEWPORTS[2]]) await aggregateDataChecks(browser, base, engine, vp);
+      for (const vp of [VIEWPORTS[0], VIEWPORTS[2]]) {
+        await aggregateDataChecks(browser, base, engine, vp);
+        await comparisonDataChecks(browser, base, engine, vp);
+      }
       await browser.close();
     }
   } finally {
