@@ -123,11 +123,9 @@ with the exact five requested routes, including a real bill detail page.
 context, 390x844 DPR 3 mobile, `el-GR`; CDP 150 ms RTT, 200 KiB/s down,
 75 KiB/s up, CPU 4x. One shared context, five navigations in order, no retries,
 `domcontentloaded` (25 s cap) plus 8 s settle; the observation window ends at
-the "obs end" column. Because the context and HTTP cache are shared, later
-pages may reuse earlier assets; CDP reported 0 cache-served requests, but cold/warm
-state is not otherwise established. GET/HEAD only, `ekklesia.gr` and
+the "obs end" column. Route interception disables HTTP cache ([Playwright](https://playwright.dev/docs/api/class-browsercontext#browser-context-route)); this is not a warm-cache comparison. GET/HEAD only, `ekklesia.gr` and
 `api.ekklesia.gr` only, TLS checks on, route interception active (it can alter
-browser caching behaviour). Public GETs of `vote/results/latest`,
+browser caching behaviour). All five document responses were HTTP 200, without redirects. Public GETs of `vote/results/latest`,
 `vote/results/in-progress` and `vote/<id>/results` were allowed; all other vote
 paths and identity/claude/budget/agent/auth/admin/checkout/webhook/translation
 paths were blocked. Total: 5 documents, 20 API, 113 requests; no cap hit;
@@ -173,6 +171,7 @@ results 6 failed requests, cause not classified). Field data: UNKNOWN.
 (proposal 1 above) with local 390/1280 browser checks and hash updates did not
 fit the deadline. Proposal 1 is still open, now with its byte share measured.
 Proposals 2 and 3 are unchanged; the bill detail TBT proxy adds to proposal 2.
+Source clarification: the landing `pnx.png` references are a hidden legacy hero and hidden modal, not the actual navigation logo (`docs/index.html`, `docs/assets/redesign-v2/r5-landing-fidelity.css`). Existing image boxes already have fixed CSS dimensions; adding dimensions alone would not reduce bytes or establish a CLS improvement.
 
 **Not checked in this run.** Median of several runs, cold vs warm cache per
 page, 1280 px, other engines, the bill detail results panel, causes of the
