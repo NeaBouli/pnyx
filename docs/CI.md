@@ -51,6 +51,13 @@ uses `fetch-depth: 0`, so the SEO history comparisons have the complete Git hist
 SEO and remote-sink checks additionally run in the Web Client job, whose checkout
 remains shallow.
 
+The Dashboard Client job runs `node --test` on `apps/dashboard/health-shapes.test.mjs`
+and `apps/dashboard/overview.test.mjs` (plus the image-codec and client-YAML checks).
+They transpile the real `src/lib` sources and cover health payload normalization and the
+overview source contract: HLR unavailable vs. zero, initial capacity, timeout cleanup,
+bad responses/JSON and hanging-body abort. They do not cover responsive UI, browser or
+live verification; those remain separate gates.
+
 ## Manual T-356 browser gate
 
 Dispatch `.github/workflows/t356-browser.yml` with `mode: data-only` (the default)
