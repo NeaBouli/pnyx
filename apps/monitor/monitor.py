@@ -1133,7 +1133,24 @@ def check_scraper_jobs(r) -> list[Alert]:
         if count > 20:
             alerts.append(Alert("scraper_job_errors", "ekklesia-api", "warning",
                                 f"Job {name}: {count} Fehler", False))
+            continue
+        try:
+            outcome = r.get(f"scraper:{name}:last_outcome")
+            reason = r.get(f"scraper:{name}:last_outcome_reason")
+        except Exception:
+            continue
+        outcome = outcome.decode("utf-8", "replace") if isinstance(outcome, bytes) else outcome
+        reason = reason.decode("utf-8", "replace") if isinstance(reason, bytes) else reason
+        if outcome in _NONCLEAN_OUTCOMES:
+            if reason not in _OUTCOME_REASONS:
+                reason = "unknown"
+            alerts.append(Alert("scraper_job_errors", "ekklesia-api", "warning",
+                                f"Job {name}: last run {outcome} ({reason})", False))
     return alerts
+
+
+_NONCLEAN_OUTCOMES = {"degraded", "failed"}
+_OUTCOME_REASONS = {"scrape_errors", "conversion_failed", "exception"}
 
 
 def _rollback_if_possible(conn) -> None:

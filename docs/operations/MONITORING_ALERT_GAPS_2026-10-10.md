@@ -175,6 +175,11 @@ Deployed monitor parity with this source; actual env thresholds/interval; Telegr
 config, delivery and readback; host disk and docker-data usage; container restart history;
 whether #516/`y801a2b3c4d5` is applied in production; Stripe webhook traffic.
 
+## 8. Repository follow-up — scheduler/scraper outcomes (T-9069, not deployed)
+
+The candidate adds `scraper:<job>:last_outcome`, `last_outcome_reason`, `last_outcome_count`, `last_outcome_time` and historical `last_nonclean_time` (14-day TTL) in the existing success/failure pipeline. Outcomes are `clean/degraded/failed`; only fixed reason codes, bounded counts and timestamps enter new fields/warnings. Diavgeia partial scrape errors and caught main conversion exceptions become degraded, first tracked full failures become failed, and the next clean run clears the latest warning. Existing circuit counters/intervals are unchanged; legacy `last_success` still means run completed, not necessarily clean.
+The monitor reuses per-job `scraper_job_errors` warnings without auto-recovery. Focused offline tests include the actual scheduler function body loaded via AST with shared fake DB/Redis → monitor; app startup/registration, real Redis transactions, deployment parity and actual alert delivery remain unverified. Inner per-row conversion skips, health-module exposure and untracked finance/digest/push jobs remain separate gaps. No channel/secret/proxy/restart change or production action is included.
+
 ## Repository follow-up: notification delivery state (T-9070)
 
 P2-4's candidate commits incident cooldowns only after a sender acknowledgement and retains failed resolved notices for the next ordinary monitor cycle. HTTP 200 alone is insufficient: Telegram's JSON `ok` must be `true`. Legacy markers without acknowledged severity trigger a conservative resend; expired incident payloads are not sent as identity-only resolutions.

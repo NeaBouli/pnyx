@@ -549,6 +549,8 @@ async def scheduled_diavgeia_scrape():
         logger.warning("[MOD-21] Circuit breaker OPEN for %s — skipping", name)
         return
     await record_run(name)
+    scrape_error_count = 0
+    conversion_failed = False
     try:
         async with AsyncSessionLocal() as session:
             result = await scrape_decisions(
@@ -560,6 +562,7 @@ async def scheduled_diavgeia_scrape():
             logger.info("[MOD-21] Scheduled Diavgeia scrape: %d fetched, %d inserted, %d errors",
                         result.fetched, result.inserted, len(result.errors))
             if result.errors:
+                scrape_error_count = len(result.errors)
                 logger.warning("[MOD-21] Scrape errors: %s", result.errors[:3])
 
         # NEA-199: Convert new decisions to votable bills
@@ -573,9 +576,15 @@ async def scheduled_diavgeia_scrape():
                 if backfilled > 0:
                     logger.info("[NEA-199] Backfilled %d Diavgeia bill source dates", backfilled)
         except Exception as e:
+            conversion_failed = True
             logger.warning("[NEA-199] Conversion failed (non-blocking): %s", e)
 
-        await record_success(name)
+        if scrape_error_count:
+            await record_success(name, "degraded", "scrape_errors", scrape_error_count)
+        elif conversion_failed:
+            await record_success(name, "degraded", "conversion_failed", 1)
+        else:
+            await record_success(name)
     except Exception as e:
         logger.error("[MOD-21] Scheduled Diavgeia scrape failed: %s", e)
         await record_failure(name, str(e))
