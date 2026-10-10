@@ -768,6 +768,16 @@ Identity --> clearVoteMarks
 clearVoteMarks --> Queue
 Queue --> Marks : deleteItemAsync
 @enduml
+@startuml T9026_community_funding
+component "payments/status" as Status
+component "Community fetchPaymentStatus" as Fetch
+component "Validated server/domain snapshots" as Snapshot
+component "Server/domain renderers" as Tiles
+Status --> Fetch : response or HTTP failure
+Fetch --> Snapshot : valid finite account / retain on failure
+Snapshot --> Tiles : loading / ready / unavailable / stale
+@enduml
+
 @startuml T9027_diavgeia_ada_length
 component "DiavgeiaClient.iter_decisions" as Client
 component scrape_decisions as Scraper

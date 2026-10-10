@@ -353,8 +353,11 @@ def test_public_community_page_keeps_payment_links_paused():
     assert "HLR credits are procured privately" in community
     assert "BTC → HLR" not in community
     assert "LTC → HLR" not in community
-    assert "var liveServerData = { received: 0, cost_total: 25, balance: -25 };" in community
-    assert "var liveDomainData = { received: 0, cost_total: 9.30, balance: -9.30 };" in community
+    # No seeded balances: unknown funding data must never render as a known deficit (T-9026).
+    assert "var liveServerData = null, liveDomainData = null;" in community
+    assert 'var serverDataState = "loading", domainDataState = "loading";' in community
+    assert "balance: -25" not in community
+    assert "balance: -9.30" not in community
 
 
 def test_current_community_server_cost_copy_is_bilingual_and_dated():
