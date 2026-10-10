@@ -99,8 +99,52 @@ async def is_circuit_open(name: str) -> bool:
         await r.aclose()
 
 
+def _safe_time(v) -> str | None:
+    """Valid tz-aware ISO timestamp -> UTC ISO; anything else (bytes, junk, naive) -> None."""
+    if not isinstance(v, str) or len(v) > 64:
+        return None
+    try:
+        dt = datetime.fromisoformat(v)
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        return None
+    return dt.astimezone(timezone.utc).isoformat()
+
+
+def _safe_int(v) -> int | None:
+    if not isinstance(v, str) or not v.lstrip("-").isdigit() or len(v) > 12:
+        return None
+    return int(v)
+
+
+def safe_outcome(outcome, reason, count, time, nonclean_time) -> dict:
+    """Whitelist latest-outcome fields; never echoes stored text outside fixed codes."""
+    c = _safe_int(count)
+    return {
+        "last_outcome": outcome if isinstance(outcome, str) and outcome in OUTCOMES else "unknown",
+        "last_outcome_reason": reason if isinstance(reason, str) and reason in OUTCOME_REASONS else "unknown",
+        "last_outcome_count": None if c is None else max(0, min(c, 10_000)),
+        "last_outcome_time": _safe_time(time),
+        "last_nonclean_time": _safe_time(nonclean_time),
+    }
+
+
+def classify(error_count: int | None, last_outcome: str) -> str:
+    """Legacy circuit/warning first; then latest outcome; no outcome evidence -> unknown."""
+    if error_count is not None and error_count >= CIRCUIT_BREAKER_THRESHOLD:
+        return "circuit_open"
+    if error_count is not None and error_count > 0:
+        return "warning"
+    if last_outcome in ("degraded", "failed"):
+        return "warning"
+    if last_outcome == "clean" and error_count == 0:
+        return "ok"
+    return "unknown"
+
+
 async def get_all_states(names: list[str]) -> list[dict]:
-    """Get state for all named scrapers."""
+    """Get state for all named scrapers (read-only)."""
     r = await _redis()
     try:
         states = []
@@ -111,20 +155,24 @@ async def get_all_states(names: list[str]) -> list[dict]:
             pipe.get(f"scraper:{name}:last_error")
             pipe.get(f"scraper:{name}:error_count")
             pipe.get(f"scraper:{name}:last_error_time")
+            pipe.get(f"scraper:{name}:last_outcome")
+            pipe.get(f"scraper:{name}:last_outcome_reason")
+            pipe.get(f"scraper:{name}:last_outcome_count")
+            pipe.get(f"scraper:{name}:last_outcome_time")
+            pipe.get(f"scraper:{name}:last_nonclean_time")
             vals = await pipe.execute()
-            error_count = int(vals[3] or 0)
-            status = "ok"
-            if error_count >= CIRCUIT_BREAKER_THRESHOLD:
-                status = "circuit_open"
-            elif error_count > 0:
-                status = "warning"
+            # Absent key = 0 (producer default); malformed = None (no evidence).
+            parsed = 0 if vals[3] is None else _safe_int(vals[3])
+            error_count = None if parsed is None else max(0, parsed)
+            outcome = safe_outcome(*vals[5:10])
             states.append({
                 "name": name,
                 "last_run": vals[0],
                 "last_success": vals[1],
                 "last_error": vals[2],
-                "error_count": error_count,
-                "status": status,
+                "error_count": error_count or 0,
+                "status": classify(error_count, outcome["last_outcome"]),
+                **outcome,
             })
         return states
     finally:
