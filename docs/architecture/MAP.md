@@ -2120,3 +2120,165 @@ mindmap
 One module/hop: architecture documentation -> gio-dd cross-review and existing
 CI gates. Codex owns local validation; gio-dd owns head-bound merge. API, Community HTML,
 workflow sources, migration files and all production/store controls stay untouched.
+
+## T-9055 — Bundled source consolidation #528–#540 (2026-10-10 UTC)
+
+Snapshot: main `4a7f6577118432a2e0b208d2093e5063e0358214`. Historical
+sections and diagram decks above remain unchanged. This append maps inspected
+source, not a new feature, security scan, deployment or native-device receipt.
+The status snapshot is `.fleet/STATUS.md`; private Bridge history is not copied.
+
+### 1. Grundidee
+
+- Citizens see real, informative non-binding bill votes (`README.md`, `docs/index.html`).
+- Landing comparison panels use public same-bill results, not invented values
+  (`docs/index.html::fetchBillComparison`).
+- Parliament YES share refers to reported party positions, not MP headcounts or
+  an independently confirmed official decision (`renderBillComparison`).
+- CPLM aggregates include only visible-result votes; the browser consumes that
+  server contract (`services/cplm.py::compute_cplm`, `index.html::fetchCPLM`).
+- Auth/rate controls have explicit scopes, not an assumed global ceiling
+  (`dependencies.py::verify_admin_key`, `rate_limit.py`, `public_api.py`).
+- Device-local unread state and vote marks are separate from OEM delivery and
+  retained-navigation proof (`notifications.ts`, `BillsScreen.tsx`, #540 tests).
+- Manual browser evidence uses local source and mocked APIs, not production
+  (`t356-browser.yml`, `t356_democracy_cycle.browser.cjs`).
+
+### 2. Spur
+
+Primary user path, inspected on 2026-10-10:
+
+1. `docs/index.html::fetchRepresentation -> routers/analytics.py::
+   cumulative_representation -> compute_cumulative_representation`: public
+   closed-bill representation summary and `last_bill.bill_id`.
+2. `fetchRepresentation -> fetchBillComparison -> routers/public_api.py::
+   public_bill_results`: the selected bill's citizen counts, reported party
+   positions, lifecycle status and `results_hidden`.
+3. `fetchBillComparison -> renderBillComparison`: only matching bill ID,
+   `PARLIAMENT_VOTED`/`OPEN_END`, explicitly visible results, positive exact
+   integer total/sum and known party-position values yield percentages.
+   An obsolete request cannot replace the current response; invalid or missing
+   data remains neutral instead of an invented zero-percent comparison.
+4. Direct aggregate neighbor: `index.html::fetchCPLM -> routers/cplm.py::
+   cplm_aggregate -> services/cplm.py::get_cplm_cached/compute_cplm`: visible-vote
+   X/Y, voter count and quadrant; bilingual attributes and current language are
+   applied when the response arrives. `toggleLang` updates document language.
+
+Support/validation paths are separate, not fictitious calls by that page:
+
+- `t356-browser.yml::browser -> t356_democracy_cycle.browser.cjs`: manually
+  selected data-only/full mode, locked Playwright 1.63.0, Chromium/WebKit,
+  loopback docs and mocked API responses. Unknown external page requests abort.
+  Harness -> `results.json`/PNG/logs -> workflow validate/upload (3-day retention).
+- `routers/admin.py::verify_admin -> dependencies.py::verify_admin_key`:
+  Bearer credential -> UTF-8 byte `hmac.compare_digest`; fail closed for missing
+  or default production key, with no query-key authentication.
+- `rate_limit.py::limiter/get_rate_limit_key -> voting.py::submit_vote`:
+  explicit 120/min HMAC-IP bucket wraps the HTTP vote route. Included-router
+  default middleware lookup is not API-wide protection; existing shared public
+  100/1000 quotas and handler mail guards remain separate and unchanged.
+- `notifications.ts::persistPushAndReconcile/ingestPushPayload ->
+  unread-events.ts::createUnreadEventsStore/ingest/markRead ->
+  notification-badge.ts::set`: canonical event ID, persisted preferences,
+  durable serialized ledger/read tombstones and absolute count. Local display
+  is only for `added`; automatic zero skips native clear, explicit read permits
+  it. F-Droid does not load native push/badge wiring.
+- `BillsScreen.tsx::useFocusEffect -> loadVoteMarks/isVerified -> tileVoteLabel`:
+  local display evidence; blur cancels late callbacks. #540 mocks validate this
+  cancellation, not real retained navigation or an already-rendered A snapshot.
+
+### 3. Module
+
+| Module | One responsibility | Entry | Source state |
+| --- | --- | --- | --- |
+| Landing comparison | Qualify same-bill party/citizen percentages | `fetchBillComparison/renderBillComparison` | gebaut, #528 |
+| Public representation | Return closed-bill representation/results | `cumulative_representation/public_bill_results` | gebaut, existing API contract |
+| CPLM/localization | Render aggregate quadrant in current language | `fetchCPLM/toggleLang` | gebaut; no broad input-hardening claim |
+| Browser evidence | Exercise static source without production data | `t356-browser.yml::browser` | gebaut, #529; manual only |
+| Accessibility | Name controls/regions, expose language and keyboard access | newsletter audience, wiki code region, QR SVG/live region | gebaut, #533–535; not full screen-reader acceptance |
+| Admin auth | Verify the existing Bearer contract | `verify_admin_key` | gebaut, #536; no new credentials |
+| API rate limits | Enforce explicitly scoped counters | `submit_vote/rate_limit_check` | gebaut, #537–539; default router gap explicit |
+| Mobile local evidence | Retain unread and cancel stale focus callbacks | ledger/badge, `BillsScreen::useFocusEffect` | gebaut; #540 offline regression evidence |
+| Newsletter fixtures | Verify consent/readiness without provider writes | `test_newsletter_consent_contract/test_newsletter_readiness` | gebaut, #531 test-only |
+
+### 4. Verdrahtung and exact merge receipts
+
+Representation identifies one bill; the result endpoint supplies counts and
+positions; client qualification gates the two rendered bars. CPLM is an
+independent aggregate, not the denominator for those bars. Language assignment
+and control names improve presentation without changing vote eligibility.
+The manual harness supplies fixtures and reports assertions independently of
+deployed backend state. Auth and explicit quota wrappers protect their named
+entry points; unread mocks cross storage/runtime boundaries without certifying
+an OEM or provider. No new architecture or runtime edge is introduced here.
+
+GitHub metadata receipts (UTC, 2026-10-10); a merge is **not** a deployment:
+
+| PR | Merge SHA | UTC | Scope |
+| --- | --- | --- | --- |
+| #528 | `7080a1e76abd3dc90220fbc51129b477c773adfe` | 05:23:38 | qualified same-bill comparison bars |
+| #529 | `c60c4aaea029ed6a04e0e84bf365de12984a704c` | 05:24:43 | manual locked browser workflow |
+| #530 | — CLOSED, unmerged; superseded by #531 | — | not counted as a merge |
+| #531 | `d24ef97c3f3f2517a386ba9f273acdf69a911b09` | 05:36:00 | offline newsletter consent/readiness tests |
+| #532 | `bfe8bf3ac8c765883cccc6596ec4a6f7ff5c1c4c` | 05:45:58 | prior offline diagram-rendering receipt only |
+| #533 | `69002d010bc968ca6f89a551d802834b74be1c34` | 06:00:34 | newsletter audience accessible name |
+| #534 | `5a266335c97e6c006c740842afc15ac7a3e62959` | 06:15:29 | wiki keyboard-scroll accessibility |
+| #535 | `759685682c823626855864e0f412a89dad5fd352` | 06:48:23 | safe Web/static accessibility follow-ups |
+| #536 | `c727a3c8ee11dfddbe5d5f730ab5c96422d379a3` | 06:46:44 | constant-time admin Bearer comparison |
+| #537 | `d81f852447e15bef07c25328087f89ec7c478d71` | 07:29:27 | real-router public quota contract tests |
+| #538 | `47a1d5aff54bd23e8adf9389e18439d8c57247c5` | 07:29:35 | client shared-quota/routing documentation |
+| #539 | `9b4842212a2ad9c59d02b3653b000c084a75b948` | 07:51:21 | explicit vote write limit, default-gap evidence |
+| #540 | `4a7f6577118432a2e0b208d2093e5063e0358214` | 08:12:36 | unread restart and focus-cancellation tests |
+
+### 5. Widerspruch und Lücken
+
+Historic default-60 interpretations are superseded: current included-router
+routes skip that default lookup, while explicit wrappers/handler Redis guards
+have their own contract. Public shared quotas are not throughput guarantees.
+The docs' CPLM refresh wording and frontend timer are distinct from cached
+server recomputation; this bundle does not equate them or change either.
+Auth source inspection is not a new security scan. Static audit/mocked browser
+coverage is not complete accessibility or production verification. NV1/NV2,
+real OEM/provider delivery and publication remain separate open gates. F-Droid
+is foreground-feed/in-app, not FCM or promised numeric launcher/background push.
+
+Owner-reported prod remains API/Web `550549c7`; no release/deploy is performed
+or independently rechecked here. Source version 1.0.34/vC63 is not a published
+artifact. Data-only producers remain OFF and payment intake closed. Follow-up
+deploy/migration backup, server cleanup and #517 wording require Gio approval.
+The later #541 test candidate is outside this merged #528–540 snapshot.
+
+### 6. Diagramme
+
+`map.puml::T9055_source_mindmap/T9055_source_components` and
+`main-path.puml::T9055_public_comparison/T9055_manual_browser_gate/
+T9055_mobile_unread` append this delta. Rendering/structural evidence is a
+separate validation receipt; no generated SVG gallery is overwritten.
+
+```mermaid
+mindmap
+  root((T-9055 inspected source))
+    Public comparison
+      one qualified closed bill
+      reported party positions not MPs
+      neutral missing or invalid data
+    CPLM and accessibility
+      visible-vote aggregate
+      current language and named controls
+    Manual browser evidence
+      locked engines and local mocks
+      complete results PNG logs
+    Explicit boundaries
+      Bearer constant-time comparison
+      per-route counters not global default
+      durable unread and focus cleanup
+      open OEM provider release gates
+```
+
+### 7. Nächster Schritt
+
+One module/hop: this architecture/status documentation -> local checks ->
+gio-dd cross-review and exact-head CI -> head-bound merge. API, Landing/Web/
+Mobile runtime files, workflows, migration/flags and all production controls
+stay untouched. Subsequent work chooses the oldest useful non-Gio backlog
+item; pending #541, device/v2 decisions and owner gates are not duplicated.
