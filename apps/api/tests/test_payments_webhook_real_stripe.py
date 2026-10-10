@@ -184,3 +184,56 @@ async def test_real_stripe_rejects_wrong_signature():
 
     assert exc.value.status_code == 400
     assert exc.value.detail == "Invalid signature"
+
+
+@pytest.mark.asyncio
+async def test_real_signed_lost_dispute_after_partial_refund_reconciles_once(monkeypatch):
+    redis = _SuccessRedis()
+
+    async def fake_get_redis():
+        return redis
+
+    async def fake_allocate(_amount, _target):
+        return {"server": 12.0, "domain": 4.0, "reserve": 4.0}
+
+    monkeypatch.setattr(payments, "_get_redis", fake_get_redis)
+    monkeypatch.setattr(payments, "allocate_donation", fake_allocate)
+
+    await payments.stripe_webhook(_signed(_checkout_event("evt_t9081_paid", 2000, livemode=True)))
+    refund = {
+        "id": "evt_t9081_refund", "object": "event", "type": "charge.refunded", "livemode": True,
+        "data": {"object": {"id": "ch_t9081", "object": "charge", "payment_intent": "pi_t610_paid",
+                            "currency": "eur", "amount_refunded": 500}},
+    }
+    await payments.stripe_webhook(_signed(refund))
+    buckets = (payments.R_PUBLIC_SERVER_RECEIVED, payments.R_PUBLIC_DOMAIN_RECEIVED, payments.R_PUBLIC_RESERVE,
+               payments.R_SERVER_RECEIVED, payments.R_DOMAIN_RECEIVED, payments.R_RESERVE)
+    assert [float(redis.values[key]) for key in buckets] == [9.0, 3.0, 3.0, 9.0, 3.0, 3.0]
+    assert redis.values[payments.R_PUBLIC_PAYMENT_COUNT] == "1"
+
+    # Lost dispute without a prior charge.dispute.created, for the remaining 15 EUR.
+    lost = {
+        "id": "evt_t9081_lost", "object": "event", "type": "charge.dispute.closed", "livemode": True,
+        "data": {"object": {"id": "dp_t9081", "object": "dispute", "payment_intent": "pi_t610_paid",
+                            "currency": "eur", "amount": 1500, "status": "lost"}},
+    }
+    result = await payments.stripe_webhook(_signed(lost))
+
+    assert result == {"received": True, "processed": True, "requires_manual_review": False}
+    assert [float(redis.values[key]) for key in buckets] == [0.0] * 6
+    assert redis.values[payments.R_PUBLIC_PAYMENT_COUNT] == "0"
+    assert payments.R_PUBLIC_LAST_PAYMENT not in redis.values
+    state = json.loads(redis.values[f"{payments.R_PUBLIC_PAYMENT_STATE_PREFIX}stripe:cs_t610_paid"])
+    assert (state["refund_cents"], state["dispute_cents"], state["adjusted_cents"]) == (500, 1500, 2000)
+    assert state["dispute_terminal"] is True
+    assert state["remaining_allocation_cents"] == {"server": 0, "domain": 0, "reserve": 0}
+    assert redis.values[f"{payments.R_ADJUSTMENT_STATE_PREFIX}cs_t610_paid"] == "dispute_closed"
+    lost_events = [json.loads(raw) for key, raw in redis.pushed
+                   if key == payments.R_FINANCE_EVENTS and json.loads(raw)["event_id"] == "evt_t9081_lost"]
+    assert [event["adjustment_state"] for event in lost_events] == ["dispute_closed"]
+
+    duplicate = await payments.stripe_webhook(_signed(lost))
+
+    assert duplicate == {"received": True, "processed": False, "duplicate": True}
+    assert [float(redis.values[key]) for key in buckets] == [0.0] * 6
+    assert redis.values[payments.R_PUBLIC_PAYMENT_COUNT] == "0"
