@@ -113,3 +113,67 @@ serving production.
 Field CWV and traffic popularity of routes, WebKit/Firefox, 1280 px, a fully
 cold cache per page, the actual bill detail page, server-side timings, and
 whether the measured build matches any given commit.
+
+## Follow-up run: exact Scope5 routes (T-9064, 2026-10-10 11:15:08Z)
+
+The earlier run above stays as recorded. This is a separate single lab sample
+with the exact five requested routes, including a real bill detail page.
+
+**Method.** Same cached Playwright 1.63 / headless Chromium 153, fresh anonymous
+context, 390x844 DPR 3 mobile, `el-GR`; CDP 150 ms RTT, 200 KiB/s down,
+75 KiB/s up, CPU 4x. One shared context, five navigations in order, no retries,
+`domcontentloaded` (25 s cap) plus 8 s settle; the observation window ends at
+the "obs end" column. Route interception disables HTTP cache ([Playwright](https://playwright.dev/docs/api/class-browsercontext#browser-context-route)); this is not a warm-cache comparison. GET/HEAD only, `ekklesia.gr` and
+`api.ekklesia.gr` only, TLS checks on, route interception active (it can alter
+browser caching behaviour). All five document responses were HTTP 200, without redirects. Public GETs of `vote/results/latest`,
+`vote/results/in-progress` and `vote/<id>/results` were allowed; all other vote
+paths and identity/claude/budget/agent/auth/admin/checkout/webhook/translation
+paths were blocked. Total: 5 documents, 20 API, 113 requests; no cap hit;
+run 69.7 s. A private Playwright trace exists and is not published.
+
+**Bill detail.** No rendered `/bills/` anchor was found on `/el/bills`. The
+bill id was taken from the list JSON that `/el/bills` already requested
+(no extra GET); the page is reported as `/el/bills/<ID>`.
+
+| Route | TTFB | FCP | DCL | Observed LCP | CLS | Long tasks (ms) | TBT proxy | Obs end | Req / API | Encoded bytes (known/unknown) |
+|---|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|
+| `/` | 833 | 2476 | 5984 | 2476 | 0 | 232, 67, 72, 154 | 143 | 14434 | 17 / 5 | 1 577 770 (17/0) |
+| `/el/bills` | 678 | 1472 | 1273 | 5832 | 0.037 | 118, 413, 54, 67, 162 | 564 | 9492 | 29 / 3 | 308 995 (24/5) |
+| `/el/bills/<ID>` | 261 | 1568 | 1444 | 3412 | 0.006 | 528, 163, 203, 73, 140 | 857 | 9770 | 25 / 2 | 305 047 (23/3) |
+| `/el/results` | 924 | 2328 | 2273 | 5728 | 0.132 | 51 | 1 | 10890 | 29 / 2 | 283 012 (22/7) |
+| `/community.html` | 213 | 2048 | 3283 | 2048 | 0 | 119, 52, 83 | 35 | 12541 | 13 / 8 | 37 130 (12/4) |
+
+All times in ms. "TBT proxy" is the measured windowed blocking time, the sum of
+`max(duration − 50, 0)` over long tasks starting after FCP up to the obs end.
+It is **not** Lighthouse TBT (no TTI). The long-task column lists all raw
+durations, including tasks before FCP. "Unknown" bytes are requests without a
+`loadingFinished` event: in flight, cancelled or failed (bills 4, detail 1,
+results 6 failed requests, cause not classified). Field data: UNKNOWN.
+
+**Observed details (Chromium-supported APIs).**
+
+- `/`: LCP element is the text tagline, not an image. Largest response
+  `/pnx.png` at 1 380 557 bytes (≈87 % of the page), then
+  `assets/redesign-v2/pnyx-acropolis-white.png` 112 765 and the HTML 44 890.
+  5 resource entries were `renderBlockingStatus=blocking`.
+- `/el/bills`, `/el/bills/<ID>`, `/el/results`: largest responses are the
+  same Next.js chunk (≈71.7 KB) and a font file (≈48.5 KB); LCP is a text
+  heading or paragraph; 1 render-blocking entry each. The bill detail page
+  had the largest TBT proxy (857 ms; first long task 528 ms).
+- `/el/results`: CLS 0.132 reproduced (one sample each run).
+- `/el/bills/<ID>`: its `vote/<id>/results` request was blocked by the probe's
+  vote-path filter (the id is percent-encoded and the allow pattern did not
+  accept `%`), so that page's results panel was not measured.
+- `/community.html`: 3 requests blocked by policy (an external price origin,
+  `identity/hlr/credits`, `claude/budget`), so its community data is incomplete.
+
+**Quick wins.** No HTML change in this point. Validating the `pnx.png` swap
+(proposal 1 above) with local 390/1280 browser checks and hash updates did not
+fit the deadline. Proposal 1 is still open, now with its byte share measured.
+Proposals 2 and 3 are unchanged; the bill detail TBT proxy adds to proposal 2.
+Source clarification: the landing `pnx.png` references are a hidden legacy hero and hidden modal, not the actual navigation logo (`docs/index.html`, `docs/assets/redesign-v2/r5-landing-fidelity.css`). Existing image boxes already have fixed CSS dimensions; adding dimensions alone would not reduce bytes or establish a CLS improvement.
+
+**Not checked in this run.** Median of several runs, cold vs warm cache per
+page, 1280 px, other engines, the bill detail results panel, causes of the
+failed requests, and whether production runs any given commit (live commit:
+UNVERIFIED).
