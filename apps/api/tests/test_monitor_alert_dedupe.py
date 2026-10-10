@@ -62,6 +62,7 @@ def test_repeated_active_alert_is_suppressed_within_cooldown(monkeypatch):
     second = _disk_alert("Disk 92% voll — 2.5 GB frei")
 
     first_due = monitor.prepare_alert_notifications([first], redis)
+    monitor.commit_alert_cooldown(first, redis)
     monitor.record_active_alerts([first], redis)
     second_due = monitor.prepare_alert_notifications([second], redis)
 
@@ -88,6 +89,7 @@ def test_different_lifecycle_bills_do_not_share_cooldown(monkeypatch):
     )
 
     first_due = monitor.prepare_alert_notifications([first], redis)
+    monitor.commit_alert_cooldown(first, redis)
     monitor.record_active_alerts([first], redis)
     second_due = monitor.prepare_alert_notifications([second], redis)
 
@@ -104,7 +106,7 @@ def test_resolved_notification_is_sent_once(monkeypatch):
 
     monitor.record_active_alerts([alert], redis, now=now)
     previous_keys = redis.smembers(monitor.ALERT_STATE_SET_KEY)
-    monkeypatch.setattr(monitor, "send_telegram", sent.append)
+    monkeypatch.setattr(monitor, "send_telegram", lambda msg: sent.append(msg) or True)
 
     monitor.send_resolved_notifications([], redis, now=now, previous_keys=previous_keys)
     monitor.record_active_alerts([], redis, now=now)

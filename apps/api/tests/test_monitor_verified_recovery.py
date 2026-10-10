@@ -66,7 +66,7 @@ def test_verified_recovery_returns_t1v_only_after_source_lag_is_proven_repaired(
     monkeypatch.setattr(monitor, "ADMIN_KEY", "test-key")
     monkeypatch.setattr(monitor, "REPAIR_VERIFY_WAIT_SECONDS", 0)
     monkeypatch.setattr(monitor, "PARLIAMENT_SOURCE_MAX_LAG_HOURS", 24)
-    monkeypatch.setattr(monitor, "send_telegram", sent.append)
+    monkeypatch.setattr(monitor, "send_telegram", lambda msg: sent.append(msg) or True)
 
     def fake_post(*_args, **_kwargs):
         return FakeResponse(status_code=200)
@@ -101,7 +101,7 @@ def test_verified_recovery_keeps_alert_unresolved_when_proof_fails(monkeypatch):
     monkeypatch.setattr(monitor, "ADMIN_KEY", "test-key")
     monkeypatch.setattr(monitor, "REPAIR_VERIFY_WAIT_SECONDS", 0)
     monkeypatch.setattr(monitor, "PARLIAMENT_SOURCE_MAX_LAG_HOURS", 24)
-    monkeypatch.setattr(monitor, "send_telegram", sent.append)
+    monkeypatch.setattr(monitor, "send_telegram", lambda msg: sent.append(msg) or True)
     monkeypatch.setattr(monitor.httpx, "post", lambda *_args, **_kwargs: FakeResponse(status_code=200))
     monkeypatch.setattr(
         monitor.httpx,
