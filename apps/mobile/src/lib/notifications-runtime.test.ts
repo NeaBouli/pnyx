@@ -322,6 +322,54 @@ describe("notification runtime wiring", () => {
       template_id, title: "Νέο", body: "Κείμενο", local_display: "1", ...extra,
     });
 
+    it.each(["play", "direct"])("%s preserves master opt-out across restarts and accepts a previously suppressed event only after re-enabling", async (flavor) => {
+      const persisted = new Map<string, string>([
+        ["push_master", "false"],
+        ["push_vote_24h", "true"],
+      ]);
+      const payload = dataOnly("vote_24h", { bill_id: "master-restart" });
+      const first = runtime(flavor, null, persisted);
+      await first.startup;
+      await first.task.defineTask.mock.calls[0][1]({ data: { data: payload }, error: null });
+      const firstUnread = first.exports.getUnreadEventsStore() as ledger.UnreadEventsStore;
+      expect(await firstUnread.list()).toEqual([]);
+      expect(await firstUnread.unreadCount()).toBe(0);
+      expect(first.native.scheduleNotificationAsync).not.toHaveBeenCalled();
+      expect(first.native.setBadgeCountAsync).not.toHaveBeenCalled();
+      expect(first.native.getBadgeCountAsync).not.toHaveBeenCalled();
+
+      // Only durable preference/storage data crosses the runtime boundary.
+      const restarted = runtime(flavor, null, persisted);
+      await restarted.startup;
+      const unread = restarted.exports.getUnreadEventsStore() as ledger.UnreadEventsStore;
+      expect(unread).not.toBe(firstUnread);
+      expect(restarted.storage).not.toBe(first.storage);
+      expect(await restarted.storage.getItemAsync("push_master")).toBe("false");
+      expect(await restarted.storage.getItemAsync("push_vote_24h")).toBe("true");
+      const background = restarted.task.defineTask.mock.calls[0][1];
+      await background({ data: { data: payload }, error: null });
+      expect(await unread.list()).toEqual([]);
+      expect(await unread.unreadCount()).toBe(0);
+      expect(restarted.native.scheduleNotificationAsync).not.toHaveBeenCalled();
+      expect(restarted.native.setBadgeCountAsync).not.toHaveBeenCalled();
+      expect(restarted.native.getBadgeCountAsync).not.toHaveBeenCalled();
+
+      await restarted.storage.setItemAsync("push_master", "true");
+      await background({ data: { data: payload }, error: null });
+      expect((await unread.list()).map((event) => event.id)).toEqual(["vote_24h:master-restart"]);
+      expect(await unread.unreadCount()).toBe(1);
+      expect(restarted.native.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
+      expect(restarted.native.setBadgeCountAsync).toHaveBeenCalledExactlyOnceWith(1);
+
+      await background({ data: { data: payload }, error: null });
+      expect((await unread.list()).map((event) => event.id)).toEqual(["vote_24h:master-restart"]);
+      expect(await unread.unreadCount()).toBe(1);
+      expect(restarted.native.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
+      expect(restarted.native.setBadgeCountAsync).toHaveBeenCalledTimes(2);
+      expect(restarted.native.setBadgeCountAsync.mock.calls.every(([count]) => count === 1)).toBe(true);
+      expect(restarted.native.getBadgeCountAsync).not.toHaveBeenCalled();
+    });
+
     it("shows one local notification for an enabled category in the background", async () => {
       const { native, task } = runtime();
       const background = task.defineTask.mock.calls[0][1];
