@@ -6,9 +6,31 @@
   `apps/api/services/scraper_state.py`, `apps/api/routers/payments.py` (Stripe webhook)
   and `infra/docker/docker-compose.prod.yml`. No production, SSH, live HTTP, Stripe or
   Telegram calls. Architecture node: monitor boundary (EKA13 — monitor, private
-  docker-proxy, Tier-2 recovery off). Docs-only; nothing implemented.
+  docker-proxy, Tier-2 recovery off). The initial audit itself was docs-only and implemented nothing;
+  sections 1-7 remain the **historical baseline snapshot at `fbbf5968`**. Later repository
+  follow-ups are listed in "Current-source status" below; they do not rewrite the baseline.
 - **Decision: NO-GO to claiming complete unattended alert coverage. This is not a deploy
   decision** and not an operational launch certification.
+
+## Current-source status (snapshot `9a6d96787e75b12ef2729afe0dc394d2c6ff3809`, 2026-10-10)
+
+Source-only comparison of known symbols against owner-merged follow-ups. No live delivery,
+real Redis, production job, browser, deploy or complete unattended coverage is claimed.
+
+| Baseline finding | Current source (PR) | Still open |
+|---|---|---|
+| Diavgeia per-item errors recorded as clean success | `main.scheduled_diavgeia_scrape` records degraded latest outcome via `scraper_state._queue_outcome`/`safe_outcome` (#554) | runtime proof |
+| Cooldown set before Telegram delivery | `monitor.prepare_alert_notifications` → `send_telegram` (HTTP 200 + JSON `ok: true`) → `commit_alert_cooldown` only after ack; failed resolved notices stay pending while state exists (#555) | state expiry, Redis or channel outage not guaranteed |
+| Status readers optimistic on unknown/Redis error | `scraper_state.get_all_states` + `main.health_modules` whitelist outcome fields, unknown → `unknown` (#556) | modules still hard-coded `ok` where no telemetry |
+| Dashboard discarded outcome fields | existing dashboard health-shapes adapter + monitor/logs view pass outcome (#558) | browser release gate open; no `/system` fix |
+| Completeness outer outcome ignored by monitor | `monitor.check_scraper_jobs` consumes outcome (#561) | — |
+| Completeness caught per-item text errors counted clean | `main.scheduled_completeness_check` records degraded (#563) | empty/None/rejected/manual missing votes are not automatic errors; legacy counter 0 can still be degraded |
+
+Unchanged from baseline: `/health` is static liveness; monitor polls a DB-backed GET;
+hard-coded modules are not readiness. Gaps remain: missing/stale/timeout/misfire/duration
+detection, idle schema, untracked finance/push/digest/monthly jobs, host disk/restart,
+dead-man and provider outages. Section 4's "Dashboard adapters still discard" sentence
+reflects the pre-#558 state.
 
 ## 1. Health endpoints
 
@@ -168,7 +190,7 @@ needs positive evidence, otherwise `unknown`. Outcome detail is fixed labels onl
 
 ### Repository follow-up — public status readers (T-9071, not deployed)
 
-`apps/api/services/scraper_state.py::get_all_states` (`/api/v1/scraper/jobs`) and `apps/api/main.py::health_modules` (`/api/v1/health/modules`) now return the whitelisted latest-outcome fields (unknown/invalid values → `unknown`/`null`, count clamped 0..10000, tz-aware UTC ISO times only; no raw text in new fields). A degraded/failed latest outcome yields `warning` (jobs) / `degraded` (module) even with `error_count` 0; legacy count/circuit precedence is unchanged. Missing outcome telemetry or unreadable counts yield `unknown` unless a known nonclean outcome or legacy counter already proves warning/error; Redis errors yield `unknown`, never a false `ok`; `last_success` alone is not clean evidence. `overall` precedence: error > degraded > unknown > ok (disabled/deferred excluded). Until each job records an outcome after deploy, its module can read `unknown` rather than optimistic `ok`. Dashboard adapters still discard the extra fields and the jobs table derives status from `error_count`, so rendered visibility, real Redis and browser behaviour are unverified.
+`apps/api/services/scraper_state.py::get_all_states` (`/api/v1/scraper/jobs`) and `apps/api/main.py::health_modules` (`/api/v1/health/modules`) now return the whitelisted latest-outcome fields (unknown/invalid values → `unknown`/`null`, count clamped 0..10000, tz-aware UTC ISO times only; no raw text in new fields). A degraded/failed latest outcome yields `warning` (jobs) / `degraded` (module) even with `error_count` 0; legacy count/circuit precedence is unchanged. Missing outcome telemetry or unreadable counts yield `unknown` unless a known nonclean outcome or legacy counter already proves warning/error; Redis errors yield `unknown`, never a false `ok`; `last_success` alone is not clean evidence. `overall` precedence: error > degraded > unknown > ok (disabled/deferred excluded). Until each job records an outcome after deploy, its module can read `unknown` rather than optimistic `ok`. At that time (pre-#558) dashboard adapters still discarded the extra fields and the jobs table derives status from `error_count`, so rendered visibility, real Redis and browser behaviour are unverified.
 
 ## 5. Offline test / acceptance plan (no live fault injection, no paid calls)
 
