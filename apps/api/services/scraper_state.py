@@ -11,6 +11,10 @@ logger = logging.getLogger(__name__)
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 CIRCUIT_BREAKER_THRESHOLD = 3
 CIRCUIT_BREAKER_COOLDOWN_H = 24
+# Latest-outcome visibility (independent of circuit error_count).
+OUTCOME_TTL_S = 14 * 24 * 3600
+OUTCOMES = {"clean", "degraded", "failed"}
+OUTCOME_REASONS = {"none", "scrape_errors", "conversion_failed", "exception"}
 
 
 async def _redis() -> aioredis.Redis:
@@ -46,10 +50,47 @@ async def record_failure(name: str, error: str) -> int:
         pipe.incr(f"scraper:{name}:error_count")
         pipe.set(f"scraper:{name}:last_error", error[:500])
         pipe.set(f"scraper:{name}:last_error_time", datetime.now(timezone.utc).isoformat())
+        _queue_outcome(pipe, name, "failed", "exception", 1)
         results = await pipe.execute()
         return int(results[0])
     finally:
         await r.aclose()
+
+
+def _queue_outcome(pipe, name: str, outcome: str, reason: str, count: int) -> None:
+    """Queue bounded latest-outcome keys; only fixed codes, never raw error text."""
+    if outcome not in OUTCOMES:
+        outcome = "failed"
+    if reason not in OUTCOME_REASONS:
+        reason = "exception"
+    count = max(0, min(int(count), 10_000))
+    now = datetime.now(timezone.utc).isoformat()
+    pipe.set(f"scraper:{name}:last_outcome", outcome, ex=OUTCOME_TTL_S)
+    pipe.set(f"scraper:{name}:last_outcome_reason", reason, ex=OUTCOME_TTL_S)
+    pipe.set(f"scraper:{name}:last_outcome_count", count, ex=OUTCOME_TTL_S)
+    pipe.set(f"scraper:{name}:last_outcome_time", now, ex=OUTCOME_TTL_S)
+    if outcome != "clean":
+        pipe.set(f"scraper:{name}:last_nonclean_time", now, ex=OUTCOME_TTL_S)
+
+
+async def record_outcome(name: str, outcome: str, reason: str = "none", count: int = 0) -> None:
+    """Record latest run outcome (clean|degraded|failed). Never raises."""
+    try:
+        r = await _redis()
+    except Exception:
+        logger.warning("[scraper_state] outcome record unavailable for %s", name)
+        return
+    try:
+        pipe = r.pipeline()
+        _queue_outcome(pipe, name, outcome, reason, count)
+        await pipe.execute()
+    except Exception:
+        logger.warning("[scraper_state] outcome record failed for %s", name)
+    finally:
+        try:
+            await r.aclose()
+        except Exception:
+            pass
 
 
 async def is_circuit_open(name: str) -> bool:
