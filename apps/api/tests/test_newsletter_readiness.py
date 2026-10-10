@@ -147,7 +147,7 @@ async def test_provider_redirect_is_not_followed_or_disclosed(
     monkeypatch: pytest.MonkeyPatch, status: int, caplog: pytest.LogCaptureFixture,
 ) -> None:
     caplog.set_level(logging.INFO, logger="httpx")
-    api_key = "synthetic-redirect-key"
+    api_key = "synthetic-test-key"
     private_body = "redirect-body+private@example.org"
     location = f"https://outside.invalid/contacts/{private_body}?api-key={api_key}"
     store = MagicMock()
