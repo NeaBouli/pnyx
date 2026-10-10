@@ -38,8 +38,11 @@ import r0_inventory
 # owner's approximate 25 EUR cost basis, explicitly dated 10.2026 in EL/EN;
 # the existing zero-receipts fallback uses the same 25 EUR monthly estimate.
 # Historical audit/planning records and the immutable R0 inventory are unchanged.
+# T-658 (coordinator decision (a), 2026-10-10): community.html gains a reserve tile that shows the
+# public monetary reserve from payments/status (surplus beyond server target and domain need);
+# unknown/unavailable data shows "—" with a notice, never a zero balance.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "c0d803c0cdb20a5eea6e99fd4d342e74145665409f207c315689135813b2da98",
+    "docs/community.html": "49a4ce5ff46115ebe96bb1cc875a6a45577e9de0e4968219371a89d27e51728e",
     "docs/wiki/api.html": "0f2b6771a112f089c7fba6b1ef3185e061b073cd338f3db10a38a3c3c3c2515f",
     "docs/wiki/architecture.html": "8198bc8764e1d848f512a14195d2a219e6ce36398227f6744ce2793f401273d3",
     "docs/wiki/broadcasting.html": "9e14ffa72fa9e524c109748881d2ed941aeeb257d44570b191aaa24d5fb47b62",

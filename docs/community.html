@@ -420,6 +420,18 @@
       </div>
     </div>
 
+    <!-- RESERVE (monetary surplus beyond server target and domain need) -->
+    <div class="fc" id="rCard" style="border-color:#93c5fd">
+      <div class="fc-badge" style="background:#3b82f6" data-el="ΑΠΟΘΕΜΑΤΙΚΟ" data-en="RESERVE">ΑΠΟΘΕΜΑΤΙΚΟ</div>
+      <div class="fc-icon">🏦</div>
+      <div class="fc-title" data-el="Αποθεματικό" data-en="Reserve">Αποθεματικό</div>
+      <div class="fc-sub" data-el="Ό,τι περισσεύει μετά τον server (2 μήνες) και το domain" data-en="Whatever remains after the server (2 months) and the domain">Ό,τι περισσεύει μετά τον server (2 μήνες) και το domain</div>
+      <div class="fc-info">
+        <div class="fc-row"><span style="color:var(--gray-700)" data-el="Υπόλοιπο:" data-en="Balance:">Υπόλοιπο:</span><strong id="rReserveVal" style="color:#1e40af">—</strong></div>
+      </div>
+      <div class="fc-status" id="rUnavailable" style="display:none;background:#f8fafc;color:#475569"><span data-el="Τα στοιχεία δεν είναι διαθέσιμα αυτή τη στιγμή" data-en="Data currently unavailable">Τα στοιχεία δεν είναι διαθέσιμα αυτή τη στιγμή</span></div>
+    </div>
+
     <!-- MIRROR SERVER — VOLUNTEERS WANTED -->
     <div class="fc" style="border-color:#a855f7">
       <div class="fc-badge" style="background:#a855f7" data-el="ΚΑΤΟΠΤΡΑ" data-en="MIRRORS">ΚΑΤΟΠΤΡΑ</div>
@@ -1020,17 +1032,31 @@ document.querySelectorAll(".fade-in").forEach(function(el) { obs.observe(el); })
   var liveServerData = { received: 0, cost_total: 25, balance: -25 };
   var liveDomainData = { received: 0, cost_total: 9.30, balance: -9.30 };
 
+  function updateReserveTile(reserve) {
+    var val = document.getElementById("rReserveVal");
+    var na = document.getElementById("rUnavailable");
+    if (!val) return;
+    if (typeof reserve === "number" && isFinite(reserve)) {
+      val.textContent = reserve.toLocaleString("el-GR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "\u20AC";
+      if (na) na.style.display = "none";
+    } else {
+      // Unknown is not zero: never show a balance we did not receive.
+      val.textContent = "\u2014";
+      if (na) na.style.display = "";
+    }
+  }
   function fetchPaymentStatus() {
     fetch("https://api.ekklesia.gr/api/v1/payments/status")
-      .then(function(r) { return r.json(); })
+      .then(function(r) { if (!r.ok) throw new Error("status " + r.status); return r.json(); })
       .then(function(data) {
         if (data.server) liveServerData = data.server;
         if (data.domain) liveDomainData = data.domain;
         if (data.domain && data.domain.expires) DOMAIN_EXPIRY = new Date(data.domain.expires + "T00:00:00");
         updateServerTile();
         updateDomainTile();
+        updateReserveTile(data.reserve);
       })
-      .catch(function() { /* use fallback values */ });
+      .catch(function() { /* server/domain keep fallback values; reserve shows unavailable */ updateReserveTile(null); });
   }
   var AR_WARN_THRESHOLD = 1.0;  // AR — yellow below this
   var AR_CRIT_THRESHOLD = 0.1;  // AR — red below this
