@@ -8,7 +8,7 @@
       "changefreq": "weekly",
       "priority": "1.0",
       "lastmod": "2026-10-10",
-      "sha256": "b7533b8d2217f0809364622f720fae91ad9f1e6ebcd5e13065f9752d3d07ae4e"
+      "sha256": "dca77dbdf2a2870cc4718686829d56b8f56f688c2e9e229fab4c0227dcf9f663"
     },
     {
       "loc": "/el/bills",
@@ -34,7 +34,7 @@
       "changefreq": "monthly",
       "priority": "0.8",
       "lastmod": "2026-10-10",
-      "sha256": "cddd021dd8e2bf5abbff84372db0ddfa2494ba7e0c27069b6ce46387ea977425"
+      "sha256": "24fabdd254b957e71c1811897265c2df1f34d5bd41a3ef8e2ba873edc2698311"
     },
     {
       "loc": "/legal.html",
@@ -66,7 +66,7 @@
       "changefreq": "weekly",
       "priority": "0.9",
       "lastmod": "2026-10-10",
-      "sha256": "96613f7bd90201d03f573de83ebc425b9294af8bad224cdea80549b51b2c6827"
+      "sha256": "14fe40bea844ae3f5ce3fd9d5afd9198a92686a0e8d15d3a67c1c7aa28b7d8b0"
     },
     {
       "loc": "/wiki/faq.html",

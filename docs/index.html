@@ -475,6 +475,10 @@
   <link rel="stylesheet" href="assets/redesign-v2/r2-landing.css"/>
   <link rel="stylesheet" href="assets/redesign-v2/r5-landing-fidelity.css"/>
   <script src="assets/redesign-v2/landing-folds.js" defer></script>
+  <style>
+    /* T-9048: measured newsletter-label contrast; no layout/token changes. */
+    #newsletter label > span[data-el] { color: #475569; }
+  </style>
 </head>
 <body>
 <a href="#main" class="pnx2-skip" data-el="Μετάβαση στο κύριο περιεχόμενο" data-en="Skip to main content">Μετάβαση στο κύριο περιεχόμενο</a>
@@ -613,21 +617,21 @@
     <h2 class="section-title fade-in" data-el="Ψηφοφορίες σε Εξέλιξη" data-en="Votes in Progress">Ψηφοφορίες σε Εξέλιξη</h2>
     <div class="ticker-grid">
       <div class="fade-in">
-        <h4><span class="dot"></span> <span data-el="Τρέχουσες" data-en="Active">Τρέχουσες</span></h4>
+        <h4 role="heading" aria-level="3"><span class="dot"></span> <span data-el="Τρέχουσες" data-en="Active">Τρέχουσες</span></h4>
         <div class="ticker-cards-wrap" id="t1">
           <div class="t-card al t-empty visible"><strong data-el="Σύντομα πραγματικά δεδομένα" data-en="Real data soon">Σύντομα πραγματικά δεδομένα</strong><span data-el="Θα εμφανιστούν ψηφοφορίες όταν περάσουν το όριο συμμετοχής." data-en="Votes appear after they pass the participation threshold.">Θα εμφανιστούν ψηφοφορίες όταν περάσουν το όριο συμμετοχής.</span></div>
         </div>
         <a href="/el/bills" class="t-more" data-el="Προβολή τρεχουσών" data-en="View active votes">Προβολή τρεχουσών</a>
       </div>
       <div class="fade-in">
-        <h4><span class="dot"></span> <span data-el="Τελευταίες 24ω" data-en="Last 24h">Τελευταίες 24ω</span></h4>
+        <h4 role="heading" aria-level="3"><span class="dot"></span> <span data-el="Τελευταίες 24ω" data-en="Last 24h">Τελευταίες 24ω</span></h4>
         <div class="ticker-cards-wrap" id="t2">
           <div class="t-card rc t-empty visible"><strong data-el="Καμία ψηφοφορία πάνω από το όριο" data-en="No vote above threshold">Καμία ψηφοφορία πάνω από το όριο</strong><span data-el="Μόνο πραγματικές, συγκεντρωτικές ψήφοι εμφανίζονται εδώ." data-en="Only real aggregated votes appear here.">Μόνο πραγματικές, συγκεντρωτικές ψήφοι εμφανίζονται εδώ.</span></div>
         </div>
         <a href="/el/bills?status=WINDOW_24H" class="t-more" data-el="Προβολή παραθύρου 24ω" data-en="View 24h window">Προβολή παραθύρου 24ω</a>
       </div>
       <div class="fade-in">
-        <h4><span class="dot"></span> <span data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</span></h4>
+        <h4 role="heading" aria-level="3"><span class="dot"></span> <span data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</span></h4>
         <div class="ticker-cards-wrap" id="t3">
           <div class="t-card rs t-empty visible"><strong data-el="Αποτελέσματα όταν υπάρχουν αρκετές ψήφοι" data-en="Results after enough votes">Αποτελέσματα όταν υπάρχουν αρκετές ψήφοι</strong><span data-el="Δεν προβάλλονται δοκιμαστικοί αριθμοί." data-en="No demo numbers are shown.">Δεν προβάλλονται δοκιμαστικοί αριθμοί.</span></div>
         </div>
@@ -1759,6 +1763,7 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape")closeLegalMo
 var currentLang = "el";
 function toggleLang() {
   currentLang = currentLang === "el" ? "en" : "el";
+  document.documentElement.lang = currentLang;
   document.getElementById("langFlag").textContent = currentLang === "el" ? "EN" : "ΕΛ";
   document.querySelectorAll("[data-el]").forEach(function(el) {
     var t = el.getAttribute("data-" + currentLang);

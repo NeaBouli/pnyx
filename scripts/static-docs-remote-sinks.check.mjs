@@ -405,9 +405,10 @@ test('index.html CPLM: successful data follows actual EL→EN→EL toggle', asyn
   assert.equal(quadrant.getAttribute('data-en'), 'Lib. Right');
   ctx.toggleLang();
   assert.equal(ctx.currentLang, 'en');
-  assert.equal(document.documentElement.lang, 'el', 'actual toggle does not change document.lang');
+  assert.equal(document.documentElement.lang, 'en', 'actual toggle updates document.lang');
   assert.equal(quadrant.textContent, 'Lib. Right');
   ctx.toggleLang();
+  assert.equal(document.documentElement.lang, 'el');
   assert.equal(quadrant.textContent, 'Ελευθ. Δεξιά');
   assert.equal(document.getElementById('cplmX').textContent, '2.50');
   assert.equal(document.getElementById('cplmY').textContent, '-1.50');
@@ -423,7 +424,7 @@ test('index.html CPLM: successful data follows actual EL→EN→EL toggle', asyn
 test('index.html CPLM: pending and refresh responses render current EN language', async () => {
   const { ctx, document, intervals, respond } = loadCplmLanguage();
   ctx.toggleLang(); // Resolve the initial request only after the real toggle.
-  assert.equal(document.documentElement.lang, 'el');
+  assert.equal(document.documentElement.lang, 'en');
   await respond();
   const quadrant = document.getElementById('cplmQuadrant');
   assert.equal(quadrant.textContent, 'Lib. Right');
@@ -435,6 +436,7 @@ test('index.html CPLM: pending and refresh responses render current EN language'
   assert.equal(quadrant.getAttribute('data-el'), 'Κέντρο');
   assert.equal(quadrant.getAttribute('data-en'), 'Center');
   ctx.toggleLang();
+  assert.equal(document.documentElement.lang, 'el');
   assert.equal(quadrant.textContent, 'Κέντρο');
 });
 

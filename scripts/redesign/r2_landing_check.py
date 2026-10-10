@@ -127,6 +127,13 @@ ALLOWED_R5_INLINE_SCRIPTS = {
         "sha256": "6fe520730691e4008650826b6b0b9211d77dddf848548cd0535c523bc8188016",
         "bytes": 2394,
     },
+    4: {
+        "index": 4,
+        # T-9048: the existing EL/EN toggle also sets documentElement.lang.
+        # No other script behavior or fingerprint is exempted.
+        "sha256": "eb7fa7f5de3c172fd478774f0a567c40a6a8250a60db2562f4023aac7a16617d",
+        "bytes": 647,
+    },
     5: {
         "index": 5,
         # T-394 (EKA-14): ticket login/avatar rendered via DOM properties with
