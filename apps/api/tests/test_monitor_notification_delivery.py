@@ -190,3 +190,51 @@ def test_send_telegram_exception_and_missing_config(monkeypatch):
     assert monitor.send_telegram("hi") is False
     monkeypatch.setattr(monitor, "TG_TOKEN", "")
     assert monitor.send_telegram("hi") is False
+
+
+def test_legacy_marker_is_due_until_real_ack_then_escalation_retries(monkeypatch):
+    h = Harness(monkeypatch)
+    warning = _alert("warning")
+    key = f"{monitor._alert_state_key(monitor.alert_identity(warning))}:last_sent"
+    h.redis.values[key] = "1"  # legacy marker, acknowledged severity unknown
+    h.alerts = [warning]
+    h.run(True, True)  # one conservative resend on migration
+    assert len(h.sent) == 2
+    assert _cooldown(h, warning) == "warning"
+
+    h.redis.values[key] = "1"
+    critical = _alert("critical")
+    h.alerts = [critical]
+    h.run(False, False)  # failed escalation; observed severity overwritten
+    assert len(h.sent) == 2
+    assert _cooldown(h, critical) == "1"
+
+    h.run(False, False)  # still due: legacy marker never acked critical
+    assert len(h.sent) == 2
+
+    h.run(True, True)
+    assert _cooldown(h, critical) == "critical"
+    h.run()
+    assert h.sent == []
+
+
+def test_expired_resolved_state_dropped_without_identity_only_entwarnung(monkeypatch):
+    h = Harness(monkeypatch)
+    alert = _alert()
+    h.alerts = [alert]
+    h.run(True, True)
+
+    h.alerts = []
+    h.run(False)  # Entwarnung fails, incident stays pending
+    identity = monitor.alert_identity(alert)
+    state_key = monitor._alert_state_key(identity)
+    assert identity in h.redis.smembers(monitor.ALERT_STATE_SET_KEY)
+
+    h.redis.values.pop(state_key)  # payload TTL expired, membership did not
+    h.run()
+    assert h.sent == []
+    assert identity not in h.redis.smembers(monitor.ALERT_STATE_SET_KEY)
+    assert f"{state_key}:last_sent" not in h.redis.values
+
+    h.run()
+    assert h.sent == []

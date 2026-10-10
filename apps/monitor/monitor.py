@@ -280,15 +280,10 @@ def prepare_alert_notifications(
 
     for alert in alerts:
         identity = alert_identity(alert)
-        state = _load_alert_state(r, identity)
         acked = _safe_redis_get(r, f"{_alert_state_key(identity)}:last_sent")
-        if not acked:
-            due = True
-        elif acked == "1":
-            # Legacy marker without acknowledged severity.
-            due = bool(state and state.get("severity") != alert.severity)
-        else:
-            due = acked != alert.severity
+        # Legacy marker "1" carries no acknowledged severity: treat it as due
+        # until a real ack stores the severity (one conservative resend).
+        due = not acked or acked == "1" or acked != alert.severity
 
         notification_due[identity] = due
 
@@ -359,7 +354,14 @@ def send_resolved_notifications(
 
     for identity in sorted(resolved_keys):
         state_key = _alert_state_key(identity)
-        state = _load_alert_state(r, identity) or {}
+        state = _load_alert_state(r, identity)
+        if state is None:
+            # Payload expired (TTL) or unreadable: drop stale membership and
+            # cooldown without an identity-only Entwarnung.
+            logger.info("[RESOLVED] Alert state expired, dropped silently: %s", identity)
+            _safe_redis_srem(r, ALERT_STATE_SET_KEY, identity)
+            _safe_redis_delete(r, state_key, f"{state_key}:last_sent")
+            continue
         msg = (
             "🟢 <b>Monitor Entwarnung</b>\n\n"
             f"<b>Type:</b> {state.get('type', identity)}\n"
