@@ -18,10 +18,19 @@ and the API Python deps (`alembic`, `sqlalchemy` 2.x, `asyncpg`, `pydantic-setti
 Nothing is installed by the script. There are no DSN, dump, SQL or container
 arguments.
 
+Before any Docker command, temp dir or container, `--run` checks these imports
+in a child of the same interpreter (`PATH`-only env, cwd `/`, fixed import-only
+code; no app config/database/models/`env.py`, no `.env`, no DB connection).
+A missing or incompatible dependency (e.g. SQLAlchemy 1.4 without
+`async_sessionmaker`), a timeout or a missing interpreter exits 1 with a fixed
+dependency message and no raw child output; nothing is created. Install the
+`apps/api` requirements yourself and retry.
+
 ## Flow
 
 ```text
-synthetic fixtures -> NEW PG15 source (--network none)
+dependency import preflight (fail closed) -> repo heads -> local Docker/image checks
+  -> synthetic fixtures -> NEW PG15 source (--network none)
   -> pg_dump -Fc (in container) -> PGDMP magic check -> pg_restore -l (TOC kept private)
   -> NEW PG15 target (127.0.0.1 ephemeral port) -> pg_restore --exit-on-error --no-owner --no-acl
   -> SQL sample counts/aggregates source == target
@@ -48,7 +57,7 @@ survived. No repo migrations are applied, no stamp/upgrade is run.
 
 ## Failure interpretation
 
-Any readiness timeout, wrong major, non-loopback binding, non-PGDMP archive,
+Any dependency preflight failure, readiness timeout, wrong major, non-loopback binding, non-PGDMP archive,
 TOC/restore non-zero exit, count mismatch or Alembic head mismatch exits 1.
 Investigate locally; do not extrapolate to production.
 
