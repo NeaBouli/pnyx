@@ -110,6 +110,12 @@ finance-export flags untouched.
 **Still open:** swallowed inner per-item errors of completeness_check, missing-telemetry /
 staleness / deadline detection, and untracked finance_export, push_categories,
 weekly_digest, monthly_newsletter. No live alert delivery verified.
+*Follow-up T-9078 (partial, offline-tested only):* `scheduled_completeness_check` now
+counts caught per-item text fetch/merge exceptions and records `degraded` /
+`scrape_errors` / count (closed codes only, legacy `error_count` unchanged); empty, `None`
+or rejected text stays clean. **Still open:** missing party votes (manual entry, not an
+error), missing-telemetry / staleness / deadline detection, finance_export,
+push_categories, weekly_digest, monthly_newsletter. No deploy or live delivery verified.
 
 **P2-4 Telegram delivery and cooldown.** `prepare_alert_notifications` (monitor.py
 L284-291) writes `:last_sent` **before** delivery; default cooldown 21600 s (L94).

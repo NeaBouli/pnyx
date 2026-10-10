@@ -779,6 +779,7 @@ async def scheduled_completeness_check():
                 return
 
             logger.info("[COMPLETENESS] %d bills with missing data", len(incomplete))
+            text_errors = 0
             for bill in incomplete:
                 # Try to scrape parliament text if summary missing
                 if (
@@ -797,13 +798,19 @@ async def scheduled_completeness_check():
                             logger.info("[COMPLETENESS] Rejected bad fetched text for %s", bill.id)
                     except Exception as e:
                         logger.warning("[COMPLETENESS] Text fetch failed for %s: %s", bill.id, e)
+                        text_errors += 1
 
                 # Log missing party votes (manual entry required via dashboard)
                 if not bill.party_votes_parliament:
                     logger.info("[COMPLETENESS] %s missing party_votes — awaiting admin input", bill.id)
 
             await db.commit()
-        await record_success(name)
+        await record_success(
+            name,
+            outcome="degraded" if text_errors else "clean",
+            reason="scrape_errors" if text_errors else "none",
+            count=text_errors,
+        )
     except Exception as e:
         logger.error("[COMPLETENESS] Failed: %s", e)
         await record_failure(name, str(e))
