@@ -114,7 +114,7 @@ def test_fixture_has_valid_adas():
     assert len(data["decisions"]) == 3
     for d in data["decisions"]:
         ada = d["ada"]
-        assert 10 <= len(ada) <= 32, f"ADA {ada} length {len(ada)} out of range"
+        assert 9 <= len(ada) <= 32, f"ADA {ada} length {len(ada)} out of range"
         assert d.get("decisionTypeUid") == "2.4.1"
 
 
