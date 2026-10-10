@@ -50,8 +50,8 @@ Surfaces distinguished:
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | [#110](https://github.com/NeaBouli/pnyx/security/dependabot/110) representative, GHSA-hp3w-g68c-fv3c / CVE-2026-97058, medium | sprintf-js `<=1.1.3` → `1.0.3` | `sprintf-js@1.0.3` ← root `argparse@1.0.10` ← `@istanbuljs/load-nyc-config/node_modules/js-yaml@3.15.2` ← `@istanbuljs/load-nyc-config` (Jest coverage). Correction (T-9061): `@expo/xcpretty/node_modules/js-yaml@4.3.2` → `argparse@2.0.1` has **no** `sprintf-js` edge and is not in this chain | S3 (Jest coverage config loader) | Source: CLI args/format strings inside argparse. Control: developer/CI. Sink: `sprintf`. | Proven: lockfile edge only. Not proven: whether argparse ever formats attacker-controlled precision; whether anything is bundled into S1. No direct `sprintf-js`/`argparse` import in inspected `apps/representative/App.tsx` or `apps/representative/web` (rg, absence ≠ proof). | needs_review | 6 |
 | 2 | [#109](https://github.com/NeaBouli/pnyx/security/dependabot/109) mobile, GHSA-hp3w-g68c-fv3c / CVE-2026-97058, medium | sprintf-js `<=1.1.3` → `1.0.3` | same chain as #110 in `apps/mobile` | S3 | as #110 | as #110 (`apps/mobile/src`) | needs_review | 7 |
-| 3 | [#107](https://github.com/NeaBouli/pnyx/security/dependabot/107) web, GHSA-vfj7-8cjw-p6xm / CVE-2026-93687, high | braces `<=3.0.3` → `3.0.3` | `micromatch` ← `fast-glob` (+ `@next/eslint-plugin-next/node_modules/fast-glob`) ← `@ducanh2912/next-pwa`, `@next/eslint-plugin-next` | S3 (`next.config.mjs` l.1/6/69 `withPWA`, `next build` in `Dockerfile.prod` l.23); S2 not excluded | Source: glob patterns from repo config. Control: repo owner. Sink: `braces` expansion during build. | Proven: build-plugin edge (`next.config.mjs::withPWA`), Dockerfile build stage installs the full tree (l.5). Not proven: whether Next output-file tracing copies `braces`/`micromatch` into `.next/standalone` (S2), and whether any S2 request path passes request data into a glob. | needs_review | 1 |
-| 4 | [#106](https://github.com/NeaBouli/pnyx/security/dependabot/106) representative, GHSA-vfj7-8cjw-p6xm / CVE-2026-93687, high | braces `<=3.0.3` → `3.0.3` | `micromatch` ← `metro-file-map`, `jest-haste-map`, `@jest/transform`, `jest-message-util`; `metro-file-map` ← `metro`, `@expo/metro`, `expo/node_modules/@expo/cli` | S3/S4 (Metro, Jest) | Source: project/Metro/Jest config globs. Control: repo owner. Sink: braces. | Proven: lockfile edges to Metro/Jest. Not proven: absence from S1 bundle; any S4 dev-server path taking network-supplied patterns. | needs_review | 4 |
+| 3 | [#107](https://github.com/NeaBouli/pnyx/security/dependabot/107) web, GHSA-vfj7-8cjw-p6xm / CVE-2026-93687, high | braces `<=3.0.3` → `3.0.3` | `micromatch` ← `fast-glob` (+ `@next/eslint-plugin-next/node_modules/fast-glob`) ← `@ducanh2912/next-pwa`, `@next/eslint-plugin-next` | S3 (`next.config.mjs` l.1/6/69 `withPWA`, `next build` in `Dockerfile.prod` l.23); S2 not excluded | Source: glob patterns from `next-pwa` constants and `next.config.mjs` options (T-9061: `sync()` calls in `@ducanh2912/next-pwa@10.2.9` `dist/index.cjs` l.738/869/1029/1038). Control: repo owner. Sink: `braces` via `fast-glob` `expandBraceExpansion` → `micromatch.braces` (T-9061 evidence below). | Proven: build-plugin edge (`next.config.mjs::withPWA`), Dockerfile build stage installs the full tree (l.5). Not proven: whether Next output-file tracing copies `braces`/`micromatch` into `.next/standalone` (S2), and whether any S2 request path passes request data into a glob. | needs_review | 1 |
+| 4 | [#106](https://github.com/NeaBouli/pnyx/security/dependabot/106) representative, GHSA-vfj7-8cjw-p6xm / CVE-2026-93687, high | braces `<=3.0.3` → `3.0.3` | `micromatch` ← `metro-file-map`, `jest-haste-map`, `@jest/transform`, `jest-message-util`; `metro-file-map` ← `metro`, `@expo/metro`, `expo/node_modules/@expo/cli` | S3/S4 (Metro, Jest) | Source: project/Metro/Jest config globs. Control: repo owner. Sink (corrected T-9061): `metro-file-map@0.83.8` calls only `micromatch.some` → `picomatch`, not the `braces` package; Jest-side callers not read. | Proven: lockfile edges to Metro/Jest. Not proven: absence from S1 bundle; any S4 dev-server path taking network-supplied patterns. | needs_review | 4 |
 | 5 | [#105](https://github.com/NeaBouli/pnyx/security/dependabot/105) mobile, GHSA-vfj7-8cjw-p6xm / CVE-2026-93687, high | braces `<=3.0.3` → `3.0.3` | same chain as #106 in `apps/mobile` | S3/S4 | as #106 | as #106 | needs_review | 5 |
 | 6 | [#103](https://github.com/NeaBouli/pnyx/security/dependabot/103) representative, GHSA-86w9-cpqp-85rv / CVE-2026-85393, high | node-forge `<=1.4.0` → `1.4.0` | `@expo/code-signing-certificates` ← `expo/node_modules/@expo/cli`; `@expo/cli` also depends on `node-forge` directly | S3/S4 (Expo CLI) | Source: certificates/signatures handled by Expo CLI (code signing, dev-server HTTPS/manifest signing). Control: unknown — possibly network-supplied in dev flows. Sink: node-forge RSA verify. | Proven: lockfile edges into Expo CLI. Not proven: which CLI commands verify (vs. only create) signatures and with whose input; `expo-updates` absence from `apps/representative` was not re-verified at file level. No direct `node-forge` import in inspected `apps/representative/App.tsx` or `apps/representative/web` (rg). | needs_review | 2 |
 | 7 | [#102](https://github.com/NeaBouli/pnyx/security/dependabot/102) mobile, GHSA-86w9-cpqp-85rv / CVE-2026-85393, high | node-forge `<=1.4.0` → `1.4.0` | same chain as #103 in `apps/mobile` | S3/S4 | as #103 | as #103 (`apps/mobile/src`) | needs_review | 3 |
@@ -82,8 +82,7 @@ was installed, executed or bundled. Tarball integrity vs. this source (source pa
   `micromatch.braces` (l.451–456) and `micromatch.braces(..., {expand: true})` (l.465). The
   matching entry points `micromatch()` (l.32/49), `isMatch` (l.128), `matcher` (l.109) and
   `makeRe` (l.392) call `picomatch` directly, whose own brace handling is not the `braces`
-  package. Not read: which of these functions `fast-glob@3.3.x` and `metro-file-map@0.83.8` call,
-  and with which pattern origin. #105/#106/#107 therefore stay `needs_review`.
+  package. Callers: see the fast-glob and metro-file-map items below.
 - **argparse 1.0.10** (`https://raw.githubusercontent.com/nodeca/argparse/1.0.10/lib/help/formatter.js`):
   l.16 `require('sprintf-js').sprintf`; calls at l.325 (`usage`, `{prog}`), l.559 (description
   text, `{prog}`) and l.744 (`sprintf(this._getHelpString(action), params)`). The format string is
@@ -105,15 +104,68 @@ was installed, executed or bundled. Tarball integrity vs. this source (source pa
   `node-forge@1.4.0` use, or whether any dev-server flow verifies network-supplied signatures.
   #102/#103 stay `needs_review`.
 
+### Follow-up callers (T-9061 continuation, static read only)
+
+Local cached modules were read as text only (never required/executed) from the main checkout
+`/Users/gio/Desktop/repo/pnyx/apps/web/node_modules` where the version matched the lockfile;
+other files are published-version-addressed plain-file GETs from `unpkg.com`. Tarball
+integrity/source parity is **not verified** for either source.
+
+- **fast-glob 3.3.2** (local cache, version = lock): `out/managers/tasks.js` l.26–27
+  `if (settings.braceExpansion) patterns = utils.pattern.expandPatternsWithBraceExpansion(patterns)`;
+  `out/utils/pattern.js` l.136–137 `expandBraceExpansion` →
+  `micromatch.braces(pattern, { expand: true, nodupes: true, keepEscaping: true })`, i.e. the
+  `braces` package (micromatch l.451–456). `micromatch.scan`/`makeRe` (pattern.js l.150/170) go to
+  `picomatch`. **fast-glob 3.3.1** (local cache, `@next/eslint-plugin-next/node_modules`): same
+  lines, `micromatch.braces(pattern, { expand: true, nodupes: true })`. So the #107 braces sink
+  is real for both copies, on the brace-expansion default path.
+- Pattern origin #107: `@ducanh2912/next-pwa@10.2.9` (local cache, version = lock)
+  `dist/index.cjs` l.738 (`**/*` plus negations built from the configured `swPath`), l.869
+  (`"{src/,}index.{ts,js}"`, `cwd: customWorkerSrc`), l.1029/1038 (fixed worker names, `swPath`,
+  `customWorkerPrefix`). All are package constants or `next.config.mjs` options: repo-owner
+  controlled, build time (S3). `@next/eslint-plugin-next` `dist/utils/get-root-dirs.js` l.15
+  `globSync(rootDir…)` takes ESLint `rootDir` settings; the cached copy is 16.3.1 while the lock
+  pins 16.3.8, so that caller is **not verified at the pinned version**. No request-data → glob
+  path was found; S2 presence stays G2.
+- **metro-file-map 0.83.8** (`https://unpkg.com/metro-file-map@0.83.8/src/watchers/common.js`):
+  l.14 `require("micromatch")`; `includedByGlob(type, globs, dot, relativePath)` l.23–29 calls
+  only `micromatch.some(relativePath, "**/*")` / `micromatch.some(relativePath, globs, {dot})`.
+  `micromatch.some` (4.0.8 l.264–273) compiles each pattern with `picomatch`, not `braces`.
+  Correction: the earlier "Sink: braces" for #105/#106 is not supported by this file. Not read:
+  other `metro-file-map` files (grep of the cached 0.83.3 found only this file), `jest-haste-map`,
+  `@jest/transform`, `jest-message-util`; any of them could still call `micromatch.braces`.
+- **@expo/cli 54.0.27** (`https://unpkg.com/@expo/cli@54.0.27/build/src/utils/codesigning.js`):
+  `getProjectPrivateKeyAndCertificateFromFilePathsAsync` l.315–325 →
+  `validateSelfSignedCertificate(certificate, {publicKey: certificate.publicKey, privateKey})`
+  on the project's own cert/key files; `validateStoredDevelopmentExpoRootCertificateCodeSigningInfo`
+  l.335–358 parses the cached Expo certificate chain and checks only `validity` dates (no
+  signature verify); `fetchAndCacheNewDevelopmentCodeSigningInfoAsync` l.367–387 generates key
+  pair + CSR; `signManifestString` l.412–415 → `signBufferRSASHA256AndVerify` (verifies its own
+  signature). **Direct node-forge** (`https://unpkg.com/@expo/cli@54.0.27/build/src/run/ios/codeSigning/Security.js` l.41–42
+  `require("node-forge")`, l.70 `pki.certificateFromPem(pem)` on output of the local macOS
+  `security` tool): parse only, no verify. No call verifies a third-party RSA PKCS#1 v1.5
+  signature in these two files. **Trust boundary unresolved, not a safety claim:** the file list
+  came from a grep of the cached 54.0.24 build; other 54.0.27 files, the Expo-server-delivered
+  certificate chain (no signature check in the inspected validation function, l.342–349;
+  transport/protocol trust was not assessed) and whether `expo-updates`/
+  `expo-dev-client` verify manifests in the app were not read.
+- **js-yaml 3.15.2** (`https://unpkg.com/js-yaml@3.15.2/index.js`, `/package.json`):
+  `index.js` requires only `./lib/js-yaml.js`; package.json `bin: {js-yaml: bin/js-yaml.js}`,
+  `dependencies.argparse ^1.0.7`. **@istanbuljs/load-nyc-config 1.1.0**
+  (`https://unpkg.com/@istanbuljs/load-nyc-config@1.1.0/index.js`) l.80
+  `require('js-yaml').load(...)`: library import, not the CLI binary. Not read: `lib/js-yaml/*.js`
+  to prove the library never requires `argparse` (expected only in `bin/`). If confirmed, the
+  argparse/sprintf-js edge is install-only for #109/#110.
+
 ## Missing facts and safe next steps
 
 | Gap | Missing fact | Safe next step (not done here) |
 | --- | --- | --- |
-| G1 | Partly closed (T-9061 upstream source above). Open: tarball/source parity; callers in `fast-glob`, `metro-file-map`, `@expo/cli`, `js-yaml` | Read those pinned sources in an isolated sandbox, without executing them |
+| G1 | Partly closed (T-9061 sources above). Open: tarball/source parity; `@next/eslint-plugin-next@16.3.8` caller; Jest-side micromatch callers; remaining `metro-file-map`/`@expo/cli` files; `js-yaml/lib` argparse absence | Read those pinned sources in an isolated sandbox, without executing them |
 | G2 (#107) | Is `braces` in `.next/standalone`? | List `.next/standalone/node_modules` and `.next/*.nft.json` from a sandboxed `next build` of this commit |
 | G3 (#105/#106) | Is braces/micromatch in the Metro bundle? | Inspect the sandboxed release bundle's module map |
-| G4 (#102/#103) | Which Expo CLI flows verify untrusted signatures? | Read `@expo/cli@54.0.27` callers and its direct `node-forge` use; confirm `expo-updates` absence in both manifests |
-| G5 (#109/#110) | Does argparse ever format with attacker-controlled precision? | `argparse@1.0.10` sprintf sites read (help/usage only); confirm no help-format call from `js-yaml@3.15.2`/`load-nyc-config` |
+| G4 (#102/#103) | Which Expo CLI flows verify untrusted signatures? | Two `@expo/cli@54.0.27` files read (no third-party verify). Open: full-package grep at the pinned version, server-delivered chain trust, `expo-updates`/`expo-dev-client` manifest verification |
+| G5 (#109/#110) | Does argparse ever format with attacker-controlled precision? | sprintf sites help/usage only; `load-nyc-config` imports the js-yaml library, not the bin. Open: grep `js-yaml@3.15.2/lib` for `argparse` |
 | G6 | Upstream fix availability | Re-check advisories before `review_by` 2026-11-01. Any override or upgrade needs a full app build/tests and owner review. |
 
 Ranks order the queue for that follow-up: shipped Web server exposure first (#107), then Expo
