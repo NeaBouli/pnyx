@@ -353,8 +353,18 @@ def test_public_community_page_keeps_payment_links_paused():
     assert "HLR credits are procured privately" in community
     assert "BTC → HLR" not in community
     assert "LTC → HLR" not in community
-    assert "var liveServerData = { received: 0, cost_total: 10, balance: -10 };" in community
+    assert "var liveServerData = { received: 0, cost_total: 25, balance: -25 };" in community
     assert "var liveDomainData = { received: 0, cost_total: 9.30, balance: -9.30 };" in community
+
+
+def test_current_community_server_cost_copy_is_bilingual_and_dated():
+    from tests.repo_paths import repo_path_or_skip_in_image
+
+    community = repo_path_or_skip_in_image("docs/community.html").read_text(encoding="utf-8")
+    assert community.count('data-el="~25 €/μήνα (στοιχεία 10.2026)"') == 2
+    assert community.count('data-en="~€25/month (as of 10.2026)"') == 2
+    assert '<strong>~€10/μ</strong>' not in community
+    assert '<strong>10€/<span data-el="μήνα"' not in community
 
 
 @pytest.mark.asyncio

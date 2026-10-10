@@ -7,7 +7,7 @@ GET  /api/v1/admin/payments/logs      — Admin: Zahlungs-Log
 
 Verteilungslogik:
   Eingehende Spenden werden automatisch priorisiert:
-  1. Server (10€/Monat) — höchste Priorität, läuft ständig
+  1. Server (ca. 25€/Monat) — höchste Priorität, läuft ständig
   2. Domain (9,30€/Jahr) — niedrigere Frequenz
   3. Reserve — Überschuss als Puffer
 
@@ -47,7 +47,7 @@ async def _get_redis() -> aioredis.Redis:
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-SERVER_COST_MONTHLY = 10.00
+SERVER_COST_MONTHLY = 25.00  # ca., Stand 10.2026, laut Owner
 SERVER_START = "2026-04-16"
 DOMAIN_COST_YEARLY = 9.30
 DOMAIN_EXPIRY = "2028-03-29"
@@ -1484,7 +1484,7 @@ BTC_ADDRESS = os.getenv("BTC_ADDRESS", "")
 LTC_ADDRESS = os.getenv("LTC_ADDRESS", "")
 ARWEAVE_ADDRESS = os.getenv("ARWEAVE_ADDRESS", "")
 HETZNER_API_TOKEN = os.getenv("HETZNER_API_TOKEN", "")
-HETZNER_MONTHLY = float(os.getenv("HETZNER_MONTHLY_COST", "15.00"))
+HETZNER_MONTHLY = float(os.getenv("HETZNER_MONTHLY_COST", "25.00"))  # ca., Stand 10.2026, laut Owner
 
 
 @router.get("/admin/finance/server")

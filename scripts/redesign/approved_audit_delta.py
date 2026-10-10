@@ -34,8 +34,12 @@ import r0_inventory
 # CX43 (8 vCPU / 16 GB, verified on host) instead of CX33, in the server tile subtitle and the
 # development-support cost row; the row's monthly figure follows the API config (server
 # cost_monthly 10.0 €), shown as ~€10/μ.
+# T-9022 (owner-approved 2026-10-10): current CX43 monthly figures follow the
+# owner's approximate 25 EUR cost basis, explicitly dated 10.2026 in EL/EN;
+# the existing zero-receipts fallback uses the same 25 EUR monthly estimate.
+# Historical audit/planning records and the immutable R0 inventory are unchanged.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "8eb8f6893a3d796b023801860df727023513815d33769fc65dd0ca1a4fea0694",
+    "docs/community.html": "c0d803c0cdb20a5eea6e99fd4d342e74145665409f207c315689135813b2da98",
     "docs/wiki/api.html": "0f2b6771a112f089c7fba6b1ef3185e061b073cd338f3db10a38a3c3c3c2515f",
     "docs/wiki/architecture.html": "8198bc8764e1d848f512a14195d2a219e6ce36398227f6744ce2793f401273d3",
     "docs/wiki/broadcasting.html": "9e14ffa72fa9e524c109748881d2ed941aeeb257d44570b191aaa24d5fb47b62",
