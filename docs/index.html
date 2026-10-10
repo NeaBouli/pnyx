@@ -1159,8 +1159,14 @@
         if (xEl) xEl.textContent = d.x.toFixed(2);
         if (yEl) yEl.textContent = d.y.toFixed(2);
         if (vEl) vEl.textContent = d.total_voters.toLocaleString();
-        var lang = document.documentElement.lang === "en" ? "en" : "el";
-        if (qEl) qEl.textContent = (lang === "en" ? QUAD_EN : QUAD_EL)[d.quadrant] || d.quadrant;
+        var lang = typeof currentLang !== "undefined" ? currentLang : "el";
+        if (qEl) {
+          var quadEl = QUAD_EL[d.quadrant] || d.quadrant || "";
+          var quadEn = QUAD_EN[d.quadrant] || d.quadrant || "";
+          qEl.setAttribute("data-el", quadEl);
+          qEl.setAttribute("data-en", quadEn);
+          qEl.textContent = lang === "en" ? quadEn : quadEl;
+        }
         // Trend arrow
         if (arrow && d.trend && (Math.abs(d.trend.x_delta) > 0.001 || Math.abs(d.trend.y_delta) > 0.001)) {
           var ax = px + (d.trend.x_delta / 10) * 280;
