@@ -72,7 +72,8 @@ describe("notification runtime wiring", () => {
     await first.startup;
     await first.task.defineTask.mock.calls[0][1]({ data: { data: payload }, error: null });
     expect(first.native.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
-    expect(first.data.has(ledger.UNREAD_EVENTS_STORAGE_KEY)).toBe(true);
+    // The ledger persists in chunks: a manifest plus data parts under the base key.
+    expect(first.data.has(`${ledger.UNREAD_EVENTS_STORAGE_KEY}.manifest`)).toBe(true);
 
     const restarted = runtime(flavor, response, first.data);
     await restarted.startup;
