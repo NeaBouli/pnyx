@@ -147,6 +147,12 @@ Keep the strict 90 % threshold; *proposal:* separate host disk/inode check (owne
 passive panels or return `unknown`. **P3-3** Missing Redis keys silence staleness checks;
 treat missing as `unknown` after grace.
 
+*Dashboard consumer follow-up (T-9073, not deployed):* `/monitor` and `/logs` job status cells
+now use one shared adapter helper. Circuit/error status and the legacy counter keep precedence;
+a validated `degraded`/`failed` latest outcome qualifies the row even with `error_count` 0; green
+needs positive evidence, otherwise `unknown`. Outcome detail is fixed labels only. `/monitor`
+"Last OK" is renamed "Last completed". The `/system` legacy cards remain an open follow-up.
+
 
 ### Repository follow-up — public status readers (T-9071, not deployed)
 

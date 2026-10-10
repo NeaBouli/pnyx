@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { healthModulesFrom, scraperJobsFrom } from '@/lib/health-shapes'
+import { healthModulesFrom, jobHealth, jobOutcomeLabel, scraperJobsFrom } from '@/lib/health-shapes'
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://api.ekklesia.gr'
 
@@ -32,6 +32,8 @@ interface ScraperJob {
   error?: string
   error_count?: number
   next_run?: string
+  outcome: string
+  outcome_time: string | null
 }
 
 interface ScraperStatus {
@@ -107,9 +109,11 @@ export default function LogsPage() {
         setJobs(scraperJobsFrom(settled[3].value).map(job => ({
           name: job.name,
           last_run: job.last_run ?? undefined,
-          status: job.status,
+          status: jobHealth(job),
           error: job.last_error ?? undefined,
           error_count: job.error_count,
+          outcome: jobOutcomeLabel(job),
+          outcome_time: job.last_outcome_time,
         })))
       }
       if (settled[4].status === 'fulfilled') setScraperStatus(settled[4].value as ScraperStatus)
@@ -365,6 +369,9 @@ export default function LogsPage() {
                         </td>
                         <td className="px-4 py-3">
                           <StatusBadge status={job.status} />
+                          <div className="mt-1 text-xs text-gray-500 whitespace-nowrap">
+                            {job.outcome} · {job.outcome_time ? new Date(job.outcome_time).toLocaleString('el-GR') : '—'}
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-xs text-red-600 max-w-xs truncate">
                           {job.error ? String(job.error) : '—'}
