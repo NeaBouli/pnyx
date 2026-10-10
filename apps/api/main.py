@@ -1039,7 +1039,7 @@ async def health_modules():
 
     # Helper: check scraper state from Redis
     async def scraper_status(name: str) -> dict:
-        from services.scraper_state import classify, safe_outcome
+        from services.scraper_state import classify, parse_error_count, safe_outcome
         try:
             raw_count = await r.get(f"scraper:{name}:error_count")
             last_ok = await r.get(f"scraper:{name}:last_success")
@@ -1050,7 +1050,7 @@ async def health_modules():
         except Exception:
             # Redis unreachable: no telemetry, never a false ok.
             return {"status": "unknown"}
-        err_count = 0 if raw_count is None else (int(raw_count) if str(raw_count).isdigit() else None)
+        err_count = parse_error_count(raw_count)
         state = classify(err_count, outcome["last_outcome"])
         if state == "circuit_open":
             return {"status": "error", "error": last_err or "circuit breaker open", "error_count": err_count, **outcome}

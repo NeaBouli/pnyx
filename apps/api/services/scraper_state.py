@@ -2,6 +2,7 @@
 
 import logging
 import os
+import re
 from datetime import datetime, timedelta, timezone
 
 import redis.asyncio as aioredis
@@ -109,13 +110,25 @@ def _safe_time(v) -> str | None:
         return None
     if dt.tzinfo is None:
         return None
-    return dt.astimezone(timezone.utc).isoformat()
+    try:
+        return dt.astimezone(timezone.utc).isoformat()
+    except (OverflowError, ValueError):
+        return None
 
 
 def _safe_int(v) -> int | None:
-    if not isinstance(v, str) or not v.lstrip("-").isdigit() or len(v) > 12:
+    """ASCII-only bounded integer; '--1', unicode digits, oversized -> None."""
+    if not isinstance(v, str) or not re.fullmatch(r"-?[0-9]{1,12}", v):
         return None
     return int(v)
+
+
+def parse_error_count(raw) -> int | None:
+    """Legacy error_count for both readers: absent -> 0, malformed -> None, negative -> 0."""
+    if raw is None:
+        return 0
+    parsed = _safe_int(raw)
+    return None if parsed is None else max(0, parsed)
 
 
 def safe_outcome(outcome, reason, count, time, nonclean_time) -> dict:
@@ -162,8 +175,7 @@ async def get_all_states(names: list[str]) -> list[dict]:
             pipe.get(f"scraper:{name}:last_nonclean_time")
             vals = await pipe.execute()
             # Absent key = 0 (producer default); malformed = None (no evidence).
-            parsed = 0 if vals[3] is None else _safe_int(vals[3])
-            error_count = None if parsed is None else max(0, parsed)
+            error_count = parse_error_count(vals[3])
             outcome = safe_outcome(*vals[5:10])
             states.append({
                 "name": name,

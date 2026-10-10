@@ -224,6 +224,39 @@ async def test_malformed_error_count_is_unknown_not_crash(env):
     assert (await _get("/api/v1/health/modules"))["modules"]["MOD-03"]["status"] == "unknown"
 
 
+@pytest.mark.parametrize("raw", ["--1", "\u00b2", "1\u00b2", "\u0663", "9" * 13, "9" * 400])
+async def test_non_ascii_or_oversized_counts_are_unknown_not_500(env, raw):
+    store, _ = env
+    await _all_clean()
+    store["scraper:parliament:error_count"] = raw
+    store["scraper:parliament:last_outcome_count"] = raw
+    job = _job(await _get("/api/v1/scraper/jobs"), "parliament")
+    assert job["status"] == "unknown" and job["last_outcome_count"] is None
+    assert raw not in str(job)
+    mod = (await _get("/api/v1/health/modules"))["modules"]["MOD-03"]
+    assert mod["status"] == "unknown" and raw not in str(mod)
+
+
+async def test_negative_legacy_count_clamped_consistently(env):
+    store, _ = env
+    await _all_clean()
+    store["scraper:parliament:error_count"] = "-5"
+    assert _job(await _get("/api/v1/scraper/jobs"), "parliament")["status"] == "ok"
+    assert (await _get("/api/v1/health/modules"))["modules"]["MOD-03"]["status"] == "ok"
+
+
+async def test_timezone_overflow_time_is_none_not_500(env):
+    store, _ = env
+    await _all_clean()
+    p = "scraper:parliament:"
+    store[p + "last_outcome_time"] = "9999-12-31T23:59:59-12:00"
+    store[p + "last_nonclean_time"] = "0001-01-01T00:00:00+12:00"
+    job = _job(await _get("/api/v1/scraper/jobs"), "parliament")
+    assert job["last_outcome_time"] is None and job["last_nonclean_time"] is None
+    mod = (await _get("/api/v1/health/modules"))["modules"]["MOD-03"]
+    assert mod["last_outcome_time"] is None
+
+
 async def test_legacy_counts_and_circuit_precedence(env):
     store, _ = env
     await _all_clean()
