@@ -110,4 +110,34 @@ describe("ResultsClient first-page SSR seed", () => {
     expect(container.textContent).toContain("Failed to load results.");
     expect(container.textContent).not.toContain("No results yet.");
   });
+
+  it.each([
+    ["el", "12.345", "Ψήφοι"],
+    ["en", "12,345", "Votes"],
+  ])("formats large %s vote totals with the route locale, not the runtime default", async (locale, total, label) => {
+    // Server (Node) and browser disagree on the default locale; an implicit
+    // toLocaleString() would render different text on each side.
+    const original = Number.prototype.toLocaleString;
+    const withDefault = (fallback: string) => function (this: number, locales?: Intl.LocalesArgument, options?: Intl.NumberFormatOptions) {
+      return original.call(this, locales ?? fallback, options);
+    };
+    context.locale = locale;
+    const big = [result("BIG", 12_000, 0.1), result("MORE", 345, "")];
+    const tree = <StrictMode><ResultsClient initial={big} /></StrictMode>;
+    const errors: unknown[] = [];
+    try {
+      Number.prototype.toLocaleString = withDefault("de-CH");
+      container.innerHTML = renderToString(tree);
+      Number.prototype.toLocaleString = withDefault("hi-IN");
+      await act(async () => {
+        root = hydrateRoot(container, tree, { onRecoverableError: (error) => errors.push(error) });
+      });
+    } finally {
+      Number.prototype.toLocaleString = original;
+    }
+    expect(errors).toEqual([]);
+    const stat = [...container.querySelectorAll("div")].find((node) => node.textContent === label)!;
+    expect(stat.previousElementSibling!.textContent).toBe(total);
+  });
 });
+

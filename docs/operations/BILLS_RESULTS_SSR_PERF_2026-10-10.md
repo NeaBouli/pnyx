@@ -12,16 +12,29 @@ Local lab comparison of base `9a6d9678` (BEFORE) and the T-9080 working tree
 - The server fetch uses the same public GET and query as the client:
   `/api/v1/bills?limit=11&offset=0&include_institutional=true[&status=…]` and
   `/api/v1/export/results.json?min_votes=1`. It uses native `fetch` with
-  `next.revalidate = 60`, `AbortSignal.timeout(3000)`, only an `Accept` header and
-  no cookies. The origin is the existing `API_URL`.
+  `next.revalidate = 60`, only an `Accept` header and no cookies. The origin is the existing `API_URL`.
 - Bills are prefetched only for the five known `?status=` values. Unknown values
   take the previous client-only path, so the number of server cache keys stays bounded.
 - On a non-2xx response, a network error, a timeout or a malformed body, the
   server passes `null` and the client mount fetch runs as before. A failure is
   never shown as an empty list.
-- **Staleness:** SSR HTML can be up to 60 s (+3 s timeout) behind the API. The API's
-  #456 result-visibility rules still decide what is published, but a hide can
-  reach the SSR HTML up to about 60 s late.
+- **Freshness (fail closed):** `revalidate = 60` is not a staleness bound. Next 16.3.8
+  serves an expired cache entry while it refreshes in the background, and keeps the
+  old entry when that refresh fails. So the helper checks the origin `Date` header
+  (plus `Age`, if present) of every response, including cache hits. The Next fetch
+  cache keeps the original headers. If the body is older than 120 s, or `Date` is
+  missing or malformed, or `Date` is more than 5 s in the future, or `Age` is
+  malformed, the server passes `null` and the client loads live data. 120 s is two
+  revalidate windows, so data that refreshes normally stays under the limit. A
+  failing or idle API only costs the SSR seed. This bound uses the API clock against
+  the web server clock (the same host in the Compose setup). The bound is checked in
+  code and was not verified against live production headers.
+- **Remaining staleness:** within those 120 s, the SSR HTML can still show a result
+  that the API has hidden since (#456). The client's own later fetches still follow the API.
+- **Timeout scope:** the page waits at most 3 s for the helper (`AbortSignal.timeout`
+  plus a deadline inside the same helper). Next's background revalidation drops the
+  caller's signal, so a refresh to a slow API can outlive the request. It does not
+  delay the page. There is no global timeout guarantee.
 
 ## Method
 
@@ -55,9 +68,10 @@ Encoded bytes per navigation were 280–310 KB in both builds and did not differ
 about 3–4.5 s earlier under this throttle. CLS falls to 0 on both pages. There is
 one fewer client API GET per page, and no mount fetch after hydration.
 
-**Not shown:** an LCP improvement. In this fixture the LCP element is a text
-paragraph that paints at FCP in both builds, and FCP/LCP vary by ±0.5 s
-between samples. /results AFTER can paint slightly later because the HTML is larger. Production LCP depends on real
+**Not shown:** an LCP improvement. In this fixture the LCP element is text that
+paints at FCP in both builds: the subtitle `<p>` on /bills, the footer `<p>` on
+BEFORE /results and the first result `<h2>` on AFTER /results. FCP/LCP vary by
+±0.5 s between samples. /results AFTER can paint slightly later because the HTML is larger. Production LCP depends on real
 API latency, real content and server cache state, and has not been measured here.
 
 ## Raw HTML / cache evidence (AFTER, `curl`, no JS)
@@ -69,5 +83,35 @@ API latency, real content and server cache state, and has not been measured here
   GETs, one per cache key (default bills, `OPEN_END` bills, results).
 - JS-disabled Chromium at 390: `/el/bills` 10 cards and `/el/results` 12 cards.
 - BEFORE raw HTML: no fixture titles; the bills page contains the skeleton.
+
+## Freshness and fallback evidence (final head, local production build)
+
+The perf table above and the raw-HTML list come from commit `b88fd622`. They were not
+re-measured. The freshness check adds only a header comparison to the seeded path.
+The following checks were rerun on the final head (`next build` + `next start`,
+local fixture only):
+
+- **Real elapsed time, Node fixture `Date` header:** the first render caused one upstream
+  GET per key, and the next 4 renders per page were cache hits with no upstream GET.
+  The cached entries in `.next/cache/fetch-cache` keep the origin `Date`. Then the API
+  hid one result and answered 503. At t+66 s the stale entry (under 120 s old) was
+  still rendered, including the hidden result. Next made one background refresh per
+  request, and each refresh failed. Then the API was taken down. At t+130–144 s, with
+  the API down or answering 503, `/en/results` and `/en/bills` raw HTML had no fixture
+  cards. They showed the loading state, never "no results". After the API recovered,
+  the first render was still `null` and started the refresh, and the next renders
+  showed fresh data without the hidden result. Over 13 SSR page renders,
+  each key caused at most one upstream GET per page render.
+- **Backdated origin `Date` (−200 s, fixture switch):** once a refresh stored the
+  backdated body, raw HTML had no cards and the client made one fallback GET and
+  rendered all cards (390 and 1280). Without JS, the page showed the loading state.
+- **Page-return bound:** with the API answering after 10 s on an uncached key, the
+  page returned in 3.04 s without cards. The background refresh is not bounded.
+- **Locale:** with 25 800 votes, `/el/results` shows `25.800` in an `en-US` browser and
+  `/en/results` shows `25,800` in an `el-GR` browser, with and without JS, and there
+  are no hydration errors.
+- **Controls:** 390 and 1280, EL and EN. Seeded cards are present, there is no mount
+  fetch, a status change makes one fetch, page 2 and the results filter, sort and links
+  work, and there is 0 px horizontal overflow.
 
 Raw JSON, screenshots and traces stay private and are not committed.

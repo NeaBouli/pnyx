@@ -75,7 +75,7 @@ export default function ResultsClient({ initial }: { initial: PublishedResult[] 
 
         <div className="mb-8 grid grid-cols-3 gap-3">
           {[
-            [totalVotes.toLocaleString(), isEl ? "Ψήφοι" : "Votes", "text-blue-600"],
+            [totalVotes.toLocaleString(isEl ? "el-GR" : "en-US"), isEl ? "Ψήφοι" : "Votes", "text-blue-600"],
             [data.length, isEl ? "Θέματα" : "Bills", "text-gray-800"],
             [highDivergence, isEl ? "Έντονη απόκλιση" : "High divergence", "text-red-700"],
           ].map(([value, label, color]) => (
