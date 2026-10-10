@@ -2,7 +2,8 @@
 """Synthetic local Postgres 15 custom-format dump/restore drill (T-9065).
 
 Default: offline plan only (no Docker, DB or subprocess calls).
---run: creates two NEW labelled PG15 containers from a cached image ID,
+--run: first verifies the API/Alembic Python imports in a child (fail closed),
+then creates two NEW labelled PG15 containers from a cached image ID,
 loads synthetic fixtures, pg_dump -Fc, pg_restore -l, restores into the
 fresh target and compares counts plus the repo Alembic version marker.
 Nothing is deleted; created containers and the private temp dir are kept
@@ -43,6 +44,22 @@ SAMPLE_SQL = (
     "(SELECT string_agg(version_num, ' ' ORDER BY version_num) FROM alembic_version);"
 )
 EXPECTED_SAMPLE_PREFIX = "50,2550,7,"
+# Static import-only probe of what alembic env.py -> database/config need.
+# Never imports app modules, settings, .env or env.py; never connects.
+PREFLIGHT_CODE = (
+    "from sqlalchemy.ext.asyncio import async_sessionmaker,create_async_engine,"
+    "AsyncSession,async_engine_from_config;from sqlalchemy.orm import DeclarativeBase;"
+    "import asyncpg;from pydantic import AliasChoices,Field;"
+    "from pydantic_settings import BaseSettings,SettingsConfigDict;"
+    "from alembic.config import Config;from alembic import command,context;"
+    "from alembic.script import ScriptDirectory"
+)
+DEPENDENCY_FAIL = (
+    "API Python dependencies missing or incompatible for this interpreter "
+    "(need SQLAlchemy 2.x async_sessionmaker/DeclarativeBase, asyncpg, pydantic "
+    "AliasChoices, pydantic-settings BaseSettings/SettingsConfigDict, alembic); "
+    "install apps/api requirements yourself and retry. Nothing was created."
+)
 
 Runner = Callable[[Sequence[str]], str]
 
@@ -61,6 +78,15 @@ def expected_heads() -> list[str]:
     """Offline: read repo heads via ScriptDirectory (no DB, no env.py)."""
     from alembic.script import ScriptDirectory
     return sorted(ScriptDirectory(str(API_DIR / "alembic")).get_heads())
+
+
+def preflight_imports(run_env: Callable = default_runner) -> None:
+    """Import-only child before any resource: same interpreter, PATH-only env, cwd /."""
+    try:
+        run_env([sys.executable, "-c", PREFLIGHT_CODE],
+                env={"PATH": os.environ.get("PATH", "")}, cwd=os.sep)
+    except (subprocess.SubprocessError, OSError):
+        raise DrillError(DEPENDENCY_FAIL) from None
 
 
 def check_local_docker(environ: dict, run: Runner) -> str:
@@ -146,6 +172,7 @@ def psql(cid: str, sql: str, run: Runner) -> str:
 
 def drill(run: Runner = default_runner, run_env: Callable = default_runner) -> dict:
     os.umask(0o077)
+    preflight_imports(run_env)
     heads = expected_heads()
     endpoint = check_local_docker({k: os.environ.get(k, "") for k in ("DOCKER_HOST", "DOCKER_CONTEXT")}, run)
     unbound_run = run
@@ -198,7 +225,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(json.dumps(drill(), indent=1))
     except (DrillError, subprocess.SubprocessError, OSError) as exc:
         tail = (getattr(exc, "stderr", "") or "").strip().splitlines()[-1:]
-        print(f"FAIL: {type(exc).__name__}: {tail}", file=sys.stderr)
+        detail = str(exc) if isinstance(exc, DrillError) else tail
+        print(f"FAIL: {type(exc).__name__}: {detail}", file=sys.stderr)
         return 1
     return 0
 
