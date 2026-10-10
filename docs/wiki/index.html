@@ -193,6 +193,11 @@
   <link rel="stylesheet" href="../assets/redesign-v2/r3-wiki.css"/>
 
 
+  <style>
+    /* T-9048: measured logo and footer paragraph contrast only. */
+    .nav-logo > span { color: #475569 !important; }
+    footer > p { color: #cbd5e1; }
+  </style>
 </head>
 <body>
 <a href="#main" class="pnx2-skip" data-el="Μετάβαση στο κύριο περιεχόμενο" data-en="Skip to main content">Μετάβαση στο κύριο περιεχόμενο</a>
@@ -227,19 +232,19 @@
 
   <h2 class="fade-in" data-el="Σελίδες Wiki" data-en="Wiki Pages">Σελίδες Wiki</h2>
   <div class="card-grid fade-in">
-    <a href="architecture.html" class="card"><div class="card-icon">🏗️</div><h4 data-el="Αρχιτεκτονική" data-en="Architecture">Αρχιτεκτονική</h4><p>Stack, Monorepo, Bill Lifecycle</p></a>
-    <a href="security.html"     class="card"><div class="card-icon">🔐</div><h4 data-el="Ασφάλεια" data-en="Security">Ασφάλεια</h4><p>Ed25519, Nullifier, ZK</p></a>
-    <a href="api.html"          class="card"><div class="card-icon">⚡</div><h4>API</h4><p data-el="70+ Endpoints, 25 Modules" data-en="70+ Endpoints, 25 Modules">70+ Endpoints, 25 Modules</p></a>
-    <a href="modules.html"      class="card"><div class="card-icon">🧩</div><h4>Modules</h4><p>MOD-01 — MOD-25</p></a>
-    <a href="roadmap.html"      class="card"><div class="card-icon">🗺️</div><h4>Roadmap</h4><p>Beta → Alpha → V2</p></a>
-    <a href="privacy.html"      class="card"><div class="card-icon">🛡️</div><h4 data-el="Ιδιωτικότητα" data-en="Privacy">Ιδιωτικότητα</h4><p>GDPR, k-Anonymity</p></a>
-    <a href="database.html"     class="card"><div class="card-icon">🗄️</div><h4>Database</h4><p data-el="15+ Πίνακες, Alembic" data-en="15+ Tables, Alembic">15+ Πίνακες, Alembic</p></a>
-    <a href="contributing.html" class="card"><div class="card-icon">🤝</div><h4>Contributing</h4><p data-el="Setup, Tests, Commits" data-en="Setup, Tests, Commits">Setup, Tests, Commits</p></a>
-    <a href="../community.html#community-driven" class="card"><div class="card-icon">🏛️</div><h4 data-el="Community Driven" data-en="Community Driven">Community Driven</h4><p data-el="POLIS, Tickets, Χωρίς Ομάδα" data-en="POLIS, Tickets, No Team">POLIS, Tickets, Χωρίς Ομάδα</p></a>
-    <a href="whitepaper.html"   class="card"><div class="card-icon">📄</div><h4>Whitepaper</h4><p data-el="Λευκό Βιβλίο v1.0" data-en="Technical Whitepaper v1.0">Λευκό Βιβλίο v1.0</p></a>
-    <a href="faq.html"          class="card"><div class="card-icon">❓</div><h4>FAQ</h4><p data-el="Συχνές Ερωτήσεις" data-en="Frequently Asked Questions">Συχνές Ερωτήσεις</p></a>
-    <a href="broadcasting.html" class="card"><div class="card-icon">📡</div><h4>Broadcasting</h4><p data-el="ΜΜΕ, Κοινοποίηση, API" data-en="Press, Sharing, API">ΜΜΕ, Κοινοποίηση, API</p></a>
-    <a href="audit.html"        class="card"><div class="card-icon">📋</div><h4 data-el="Έλεγχος" data-en="Audit">Έλεγχος</h4><p data-el="EKA Διαφάνεια, 64 Ευρήματα" data-en="EKA Transparency, 64 Findings">EKA Διαφάνεια, 64 Ευρήματα</p></a>
+    <a href="architecture.html" class="card"><div class="card-icon">🏗️</div><h4 role="heading" aria-level="3" data-el="Αρχιτεκτονική" data-en="Architecture">Αρχιτεκτονική</h4><p>Stack, Monorepo, Bill Lifecycle</p></a>
+    <a href="security.html"     class="card"><div class="card-icon">🔐</div><h4 role="heading" aria-level="3" data-el="Ασφάλεια" data-en="Security">Ασφάλεια</h4><p>Ed25519, Nullifier, ZK</p></a>
+    <a href="api.html"          class="card"><div class="card-icon">⚡</div><h4 role="heading" aria-level="3">API</h4><p data-el="70+ Endpoints, 25 Modules" data-en="70+ Endpoints, 25 Modules">70+ Endpoints, 25 Modules</p></a>
+    <a href="modules.html"      class="card"><div class="card-icon">🧩</div><h4 role="heading" aria-level="3">Modules</h4><p>MOD-01 — MOD-25</p></a>
+    <a href="roadmap.html"      class="card"><div class="card-icon">🗺️</div><h4 role="heading" aria-level="3">Roadmap</h4><p>Beta → Alpha → V2</p></a>
+    <a href="privacy.html"      class="card"><div class="card-icon">🛡️</div><h4 role="heading" aria-level="3" data-el="Ιδιωτικότητα" data-en="Privacy">Ιδιωτικότητα</h4><p>GDPR, k-Anonymity</p></a>
+    <a href="database.html"     class="card"><div class="card-icon">🗄️</div><h4 role="heading" aria-level="3">Database</h4><p data-el="15+ Πίνακες, Alembic" data-en="15+ Tables, Alembic">15+ Πίνακες, Alembic</p></a>
+    <a href="contributing.html" class="card"><div class="card-icon">🤝</div><h4 role="heading" aria-level="3">Contributing</h4><p data-el="Setup, Tests, Commits" data-en="Setup, Tests, Commits">Setup, Tests, Commits</p></a>
+    <a href="../community.html#community-driven" class="card"><div class="card-icon">🏛️</div><h4 role="heading" aria-level="3" data-el="Community Driven" data-en="Community Driven">Community Driven</h4><p data-el="POLIS, Tickets, Χωρίς Ομάδα" data-en="POLIS, Tickets, No Team">POLIS, Tickets, Χωρίς Ομάδα</p></a>
+    <a href="whitepaper.html"   class="card"><div class="card-icon">📄</div><h4 role="heading" aria-level="3">Whitepaper</h4><p data-el="Λευκό Βιβλίο v1.0" data-en="Technical Whitepaper v1.0">Λευκό Βιβλίο v1.0</p></a>
+    <a href="faq.html"          class="card"><div class="card-icon">❓</div><h4 role="heading" aria-level="3">FAQ</h4><p data-el="Συχνές Ερωτήσεις" data-en="Frequently Asked Questions">Συχνές Ερωτήσεις</p></a>
+    <a href="broadcasting.html" class="card"><div class="card-icon">📡</div><h4 role="heading" aria-level="3">Broadcasting</h4><p data-el="ΜΜΕ, Κοινοποίηση, API" data-en="Press, Sharing, API">ΜΜΕ, Κοινοποίηση, API</p></a>
+    <a href="audit.html"        class="card"><div class="card-icon">📋</div><h4 role="heading" aria-level="3" data-el="Έλεγχος" data-en="Audit">Έλεγχος</h4><p data-el="EKA Διαφάνεια, 64 Ευρήματα" data-en="EKA Transparency, 64 Findings">EKA Διαφάνεια, 64 Ευρήματα</p></a>
   </div>
 
   <h2 id="quickStartTitle" class="fade-in" data-el="Γρήγορη Εκκίνηση" data-en="Quick Start">Γρήγορη Εκκίνηση</h2>
@@ -317,6 +322,7 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape")closeLegalMo
 var currentLang = "el";
 function toggleLang() {
   currentLang = currentLang === "el" ? "en" : "el";
+  document.documentElement.lang = currentLang;
   document.getElementById("langBtn").textContent = currentLang === "el" ? "EN" : "ΕΛ";
   document.querySelectorAll("[data-el]").forEach(function(el) {
     var t = el.getAttribute("data-" + currentLang);

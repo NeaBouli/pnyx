@@ -57,7 +57,7 @@ export default function RelevanceButtons({
         className={`${btnBase} ${
           voted === 1
             ? "bg-blue-600 border-blue-600 text-white"
-            : "bg-transparent border-gray-700 text-gray-400 hover:border-blue-500 hover:text-blue-400"
+            : "bg-transparent border-gray-700 text-gray-600 hover:border-blue-500 hover:text-blue-700"
         } ${loading || voted !== null ? "opacity-60 cursor-not-allowed" : ""}`}
       >
         ▲{!compact && <span className="hidden sm:inline">{locale === "el" ? "Σημαντικό" : "Important"}</span>}

@@ -30,7 +30,7 @@ function renderOfficialLine(line: string, idx: number) {
   if (!trimmed) return <div key={idx} className="h-3" />;
   const heading = trimmed.match(/^###\s+(.+)$/);
   if (heading) {
-    return <h4 key={idx} className="font-bold text-gray-900 mt-4 mb-2">{heading[1]}</h4>;
+    return <h3 key={idx} className="font-bold text-gray-900 mt-4 mb-2">{heading[1]}</h3>;
   }
   const link = trimmed.match(/^-?\s*\[([^\]]+)\]\((https?:\/\/[^)]+)\)$/);
   if (link) {
@@ -230,20 +230,20 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
               </span>
             )}
           </div>
-          <span className="text-xs text-gray-400 font-mono">{bill.id}</span>
+          <span className="text-xs text-gray-600 font-mono">{bill.id}</span>
         </div>
 
         {/* Region Banner */}
         {bill.governance_level === "REGIONAL" && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 text-sm">
             <span className="font-bold text-blue-700">📍 {locale === "el" ? "Περιφερειακή ψηφοφορία" : "Regional vote"}</span>
-            <span className="text-blue-500 ml-2">{locale === "el" ? "— Αφορά μόνο τους κατοίκους της περιοχής" : "— Only for residents of this region"}</span>
+            <span className="text-blue-700 ml-2">{locale === "el" ? "— Αφορά μόνο τους κατοίκους της περιοχής" : "— Only for residents of this region"}</span>
           </div>
         )}
         {bill.governance_level === "MUNICIPAL" && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 text-sm">
             <span className="font-bold text-blue-700">📍 {locale === "el" ? "Δημοτική ψηφοφορία" : "Municipal vote"}</span>
-            <span className="text-blue-500 ml-2">{locale === "el" ? "— Αφορά μόνο τους κατοίκους του Δήμου" : "— Only for residents of this municipality"}</span>
+            <span className="text-blue-700 ml-2">{locale === "el" ? "— Αφορά μόνο τους κατοίκους του Δήμου" : "— Only for residents of this municipality"}</span>
           </div>
         )}
         {bill.governance_level === "INSTITUTIONAL" && readableText(bill.pill_el) && (
@@ -264,7 +264,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
               {isDiavgeia ? "📋" : "🏛️"} {officialLabel}
             </a>
             {!isDiavgeia && (
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-gray-600">
                 ({locale === "el" ? "αν δεν ανοίγει:" : "if blocked:"}
                 <a
                   href={`https://r.jina.ai/${officialUrl}`}
@@ -314,7 +314,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                 className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
                   expanded === level
                     ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-500 hover:text-gray-900"
+                    : "bg-gray-100 text-gray-700 hover:text-gray-900"
                 }`}
               >
                 {level === "short"
@@ -327,7 +327,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                 href={`https://pnyx.ekklesia.gr/t/${bill.forum_topic_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-gray-100 text-gray-500 hover:text-gray-900 hover:bg-gray-200 inline-flex items-center gap-1"
+                className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors bg-gray-100 text-gray-700 hover:text-gray-900 hover:bg-gray-200 inline-flex items-center gap-1"
               >
                 {locale === "el" ? "Συζήτηση" : "Discussion"}
               </a>
@@ -348,7 +348,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                     : "No separate reviewed analysis is available. The official text and documents are shown below."}
                 </p>
               ) : (
-                <p className="text-gray-400">
+                <p className="text-gray-600">
                   {locale === "el"
                     ? "Δεν υπάρχει ακόμα ελεγμένη ανάλυση. Δείτε την επίσημη πηγή."
                     : "No reviewed analysis is available yet. See the official source."}
@@ -356,9 +356,9 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
               )}
               {officialText && (
                 <div className="mt-5 pt-5 border-t border-gray-200">
-                  <h3 className="font-bold text-gray-900 mb-3">
+                  <h2 className="font-bold text-gray-900 mb-3">
                     {locale === "el" ? "Επίσημο κείμενο και έγγραφα" : "Official text and documents"}
-                  </h3>
+                  </h2>
                   <div className="text-gray-700 leading-relaxed space-y-1 whitespace-pre-wrap">
                     {officialText.split("\n").map(renderOfficialLine)}
                   </div>
@@ -448,7 +448,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             )}
 
-            <p className="text-gray-400 text-xs mt-3">
+            <p className="text-gray-600 text-xs mt-3">
               {locale === "el"
                 ? "Η ψηφοφορία δεν είναι νομικά δεσμευτική."
                 : "This vote is not legally binding."}
@@ -475,9 +475,9 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
         {/* ── Konsensierung für OPEN_END Bills ── */}
         {bill?.status === "OPEN_END" && (
           <div className="bg-purple-50 border border-purple-200 rounded-2xl p-6 mb-6">
-            <h3 className="text-lg font-bold text-purple-800 mb-2">
+            <h2 className="text-lg font-bold text-purple-800 mb-2">
               ⚖️ {locale === "el" ? "Κλίμακα Συναίνεσης" : "Consensus Scale"}
-            </h3>
+            </h2>
             <p className="text-purple-600 text-sm mb-4">
               {locale === "el"
                 ? bill.source === "DIAVGEIA"
@@ -564,7 +564,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                   </button>
                 ) : (
                   <div className="mt-4">
-                    <p className="text-xs text-purple-500 text-center mb-3">
+                    <p className="text-xs text-purple-700 text-center mb-3">
                       {locale === "el"
                         ? "Σαρώστε τον κωδικό QR με την εφαρμογή εκκλησία για να ξεκλειδώσετε την αξιολόγηση"
                         : "Scan the QR code with the ekklesia app to unlock rating"}
@@ -586,7 +586,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                 <span className="text-xl font-black text-purple-700">
                   {(bill.consensus_score || 0) > 0 ? "+" : ""}{(bill.consensus_score || 0).toFixed(1)}
                 </span>
-                <span className="text-sm text-purple-500 ml-2">
+                <span className="text-sm text-purple-700 ml-2">
                   ({bill.consensus_count} {locale === "el" ? "αξιολογήσεις" : "ratings"})
                 </span>
               </div>
@@ -633,7 +633,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 px-6 py-6 text-center text-xs text-gray-400">
+      <footer className="border-t border-gray-200 px-6 py-6 text-center text-xs text-gray-600">
         <p>
           {locale === "el"
             ? "Μη κρατική εφαρμογή — ενημερωτικός χαρακτήρας"

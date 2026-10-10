@@ -403,7 +403,7 @@ export default function BillsPage() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 px-6 py-6 text-center text-xs text-gray-400">
+      <footer className="border-t border-gray-200 px-6 py-6 text-center text-xs text-gray-600">
         <p>
           {isEl
             ? "Μη κρατική εφαρμογή — ενημερωτικός χαρακτήρας"
