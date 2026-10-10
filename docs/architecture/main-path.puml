@@ -556,3 +556,14 @@ else HTTP / malformed / unavailable
 end
 Snapshot -> Tiles : render values or neutral dash + bilingual hint
 @enduml
+@startuml T9029_docs_ci_path
+participant "Docs Redesign Gates" as DocsCI
+participant "Full-history checkout" as Checkout
+participant "Node (.nvmrc)" as Node
+participant "Documentation checks" as Checks
+DocsCI -> Checkout : fetch-depth 0, credentials not persisted
+DocsCI -> Node : SHA-pinned setup-node
+DocsCI -> Checks : existing Python redesign tests (unchanged)
+Node -> Checks : node --test SEO / remote-sinks / community
+Checks --> DocsCI : pass or fail CI gate
+@enduml

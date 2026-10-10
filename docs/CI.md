@@ -15,7 +15,7 @@ Which jobs follow `CI_RUNNER`:
 | Job | On fallback | Why |
 |---|---|---|
 | Crypto Package Tests | yes | the `apt-get` step is skipped there; the PyNaCl wheel bundles libsodium |
-| Docs Redesign Gates | yes | standard-library Python only |
+| Docs Redesign Gates | yes | standard-library Python and Node checks; no npm dependencies |
 | Client Web/Dashboard/Mobile/Representative/Crypto-TS | yes | Node from `.nvmrc` via `setup-node` |
 | Python API Tests | no, stays GitHub-hosted | needs the `redis` service container; pnyx has no Docker on the fallback host |
 | Secret Detection, Dependency Audit, Security Summary | no, stays GitHub-hosted | rely on the toolchain of the hosted image |
@@ -37,6 +37,17 @@ switching back (`ci-switch.sh github pnyx`). Every switch is recorded in
 - Client jobs set `NPM_CONFIG_IGNORE_SCRIPTS=true`, because the root `.npmrc`
   (`ignore-scripts=true`) is not read inside `apps/*`.
 - Workflow token permissions stay `contents: read`.
+
+## Docs behavior checks
+
+The Docs Redesign Gates job also runs `node --test scripts/public-seo.check.mjs
+scripts/static-docs-remote-sinks.check.mjs scripts/redesign/community_payment_status.check.mjs`:
+public SEO contracts, static-page remote sinks, and community payment-status behavior.
+Node comes from `.nvmrc` through SHA-pinned `actions/setup-node`; these checks use only
+the standard library and require no `npm install`. Only the Docs job uses
+`fetch-depth: 0`, so the SEO history comparisons have the complete Git history.
+SEO and remote-sink checks additionally run in the Web Client job, whose checkout
+remains shallow.
 
 ## Redis test-service image
 
