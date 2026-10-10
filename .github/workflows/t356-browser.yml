@@ -1,0 +1,132 @@
+name: T356 — Manual Browser Gate
+# Copyright (c) 2026 Vendetta Labs — MIT License
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Data panels only, or full democracy-cycle browser gate
+        required: true
+        default: data-only
+        type: choice
+        options: [data-only, full]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: t356-browser-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  browser:
+    name: T356 ${{ inputs.mode }}
+    if: ${{ github.repository == 'NeaBouli/pnyx' && github.event_name == 'workflow_dispatch' }}
+    runs-on: ${{ fromJSON(vars.CI_RUNNER || '["ubuntu-latest"]') }}
+    timeout-minutes: ${{ inputs.mode == 'full' && 20 || 15 }}
+    env:
+      NPM_CONFIG_IGNORE_SCRIPTS: "true"
+      PLAYWRIGHT_MODULE: ${{ github.workspace }}/scripts/redesign/browser-tooling/node_modules/playwright
+      T356_MODE: ${{ inputs.mode }}
+
+    steps:
+      - name: Require a trusted same-repository branch
+        shell: bash
+        env:
+          T356_REF: ${{ github.ref }}
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/t356-browsers-${{ github.run_id }}-${{ github.run_attempt }}
+          T356_OUT: ${{ runner.temp }}/t356-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          mkdir -p "$T356_OUT"
+          # runner context is available at step scope, not job.env scope.
+          printf 'T356_OUT=%s\nPLAYWRIGHT_BROWSERS_PATH=%s\n' "$T356_OUT" "$PLAYWRIGHT_BROWSERS_PATH" >> "$GITHUB_ENV"
+          printf 'Requested ref: %s; mode: %s\n' "$T356_REF" "$T356_MODE" | tee "$T356_OUT/setup.log"
+          [[ "$T356_REF" == refs/heads/main || "$T356_REF" =~ ^refs/heads/agent/(codex|claude|kimi)/T-[0-9]+$ ]]
+          [[ "$T356_MODE" == data-only || "$T356_MODE" == full ]]
+
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install locked browser tooling
+        working-directory: scripts/redesign/browser-tooling
+        shell: bash
+        run: |
+          set -o pipefail
+          npm ci --ignore-scripts --no-audit --no-fund 2>&1 | tee -a "$T356_OUT/setup.log"
+
+      - name: Install browsers and dependencies on GitHub-hosted runner
+        if: ${{ !vars.CI_RUNNER }}
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/redesign/browser-tooling/node_modules/playwright/cli.js install --with-deps chromium webkit 2>&1 | tee -a "$T356_OUT/setup.log"
+
+      - name: Install browsers without sudo on fallback runner
+        if: ${{ vars.CI_RUNNER }}
+        # System libraries must already be provisioned; never mutate this host.
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/redesign/browser-tooling/node_modules/playwright/cli.js install chromium webkit 2>&1 | tee -a "$T356_OUT/setup.log"
+
+      - name: Run local mocked browser harness
+        id: harness
+        shell: bash
+        run: |
+          set -o pipefail
+          (
+            node -e 'const assert=require("node:assert/strict"),fs=require("node:fs");const p=process.env.PLAYWRIGHT_MODULE;assert.equal(require(p+"/package.json").version,require("./scripts/redesign/browser-tooling/package-lock.json").packages["node_modules/playwright"].version);const pw=require(p);for(const e of ["chromium","webkit"])assert.ok(fs.existsSync(pw[e].executablePath()),"missing "+e);' || exit $?
+            # Read-only static source; bounded output lives outside the checkout.
+            chmod -R a-w docs scripts/redesign || exit $?
+            args=()
+            limit=8m
+            if [[ "$T356_MODE" == data-only ]]; then args+=(--data-only); else limit=12m; fi
+            env -i PATH="$PATH" PLAYWRIGHT_MODULE="$PLAYWRIGHT_MODULE" PLAYWRIGHT_BROWSERS_PATH="$PLAYWRIGHT_BROWSERS_PATH" \
+              timeout --kill-after=10s "$limit" node scripts/redesign/t356_democracy_cycle.browser.cjs "$T356_OUT" "${args[@]}"
+          ) 2>&1 | tee "$T356_OUT/harness.log"
+
+      - name: Restore checkout permissions for later runner jobs
+        if: ${{ always() && steps.harness.outcome != 'skipped' }}
+        run: chmod -R u+w docs scripts/redesign
+
+      - name: Validate complete evidence
+        if: ${{ always() && env.T356_OUT != '' }}
+        shell: bash
+        run: |
+          node <<'NODE'
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const out = process.env.T356_OUT;
+          const data = JSON.parse(fs.readFileSync(path.join(out, 'results.json'), 'utf8'));
+          assert.ok(Number.isSafeInteger(data.total) && data.total > 0, 'missing checks');
+          assert.ok(Array.isArray(data.results) && data.results.length === data.total, 'incomplete checks');
+          assert.ok(data.results.every(r => r && typeof r.ok === 'boolean'), 'invalid checks');
+          const failed = data.results.filter(r => !r.ok).length;
+          assert.equal(data.failed, failed, 'invalid failed count');
+          assert.equal(failed, 0, 'browser assertions failed');
+          assert.equal(data.meta.dataOnly, process.env.T356_MODE === 'data-only', 'incorrect mode');
+          assert.deepEqual(Object.keys(data.meta.engines).sort(), ['chromium', 'webkit']);
+          assert.ok(Object.values(data.meta.engines).every(v => typeof v === 'string' && v.length > 0), 'missing engine');
+          assert.ok(fs.readdirSync(out).some(name => name.endsWith('.png')), 'missing screenshots');
+          NODE
+
+      - name: Upload browser evidence even on failure
+        # Failed initialization must never turn an unset OUT into root-level globs.
+        if: ${{ always() && env.T356_OUT != '' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: t356-${{ inputs.mode }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.T356_OUT }}/results.json
+            ${{ env.T356_OUT }}/*.png
+            ${{ env.T356_OUT }}/harness.log
+            ${{ env.T356_OUT }}/setup.log
+          retention-days: 3
+          if-no-files-found: error
