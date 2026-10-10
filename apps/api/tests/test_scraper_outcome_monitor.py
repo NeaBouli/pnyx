@@ -284,3 +284,174 @@ def test_completeness_distinct_identity_from_parliament(monkeypatch):
     asyncio.run(scraper_state.record_failure("completeness_check", "e"))
     ids = {monitor.alert_identity(a) for a in _outcome_alerts(store)}
     assert len(ids) == 2
+
+
+# T-9078: caught per-item text fetch/merge errors in completeness_check -> degraded
+def _load_completeness(monkeypatch, bills, fetch, commit_exc=None, src_path=None):
+    path = src_path or os.path.join(os.path.dirname(__file__), "..", "main.py")
+    src = open(path, encoding="utf-8").read()
+    fn = next(n for n in ast.parse(src).body
+              if isinstance(n, ast.AsyncFunctionDef) and n.name == "scheduled_completeness_check")
+    mod = ast.Module(body=[fn], type_ignores=[])
+    calls = []
+
+    class _Col:
+        def __getattr__(self, n):
+            return self
+
+        def __call__(self, *a, **k):
+            return self
+
+        def __eq__(self, o):
+            return self
+
+        __hash__ = object.__hash__
+
+    class _Sel:
+        def where(self, *a, **k):
+            return self
+
+    class _Res:
+        def __init__(self, rows):
+            self.rows = rows
+
+        def scalars(self):
+            return self
+
+        def all(self):
+            return list(self.rows)
+
+    class _DB:
+        async def execute(self, *a, **k):
+            calls.append("execute")
+            return _Res(bills)
+
+        async def commit(self):
+            calls.append("commit")
+            if commit_exc:
+                raise commit_exc
+
+    class _CM:
+        async def __aenter__(self):
+            return _DB()
+
+        async def __aexit__(self, *a):
+            return False
+
+    def merge(text, existing):
+        return text
+
+    fakes = {
+        "database": types.SimpleNamespace(AsyncSessionLocal=_CM),
+        "sqlalchemy": types.SimpleNamespace(select=lambda *a: _Sel(), or_=lambda *a: None),
+        "models": types.SimpleNamespace(ParliamentBill=_Col(), BillStatus=_Col()),
+        "services.parliament_fetcher": types.SimpleNamespace(
+            _DOCUMENT_BLOCK_HEADING="DOC", _is_bad_parliament_text=lambda t: t == "BAD",
+            _is_parliament_document_block_only=lambda s: False,
+            _merge_text_with_existing_document_block=merge, fetch_bill_text=fetch),
+    }
+    for k, v in fakes.items():
+        monkeypatch.setitem(sys.modules, k, v)
+    g = {"logger": logging.getLogger("t9078"), "__name__": "t9078"}
+    exec(compile(mod, "main.py", "exec"), g)
+    return g["scheduled_completeness_check"], calls
+
+
+def _bill(bid, votes=None):
+    return types.SimpleNamespace(id=bid, parliament_url="u://" + bid, summary_long_el=None,
+                                 party_votes_parliament=votes)
+
+
+_LEAKS = ("B-1", "B-2", "B-3", "u://", "boom-xyz", "dsn=pw")
+
+
+def _no_leak(store, alerts):
+    vals = [v for k, v in store.items() if not k.endswith(":last_error")] + [a.message for a in alerts]
+    for v in vals:
+        for leak in _LEAKS:
+            assert leak not in v, (leak, v)
+
+
+def test_completeness_one_text_failure_degraded_other_merged(monkeypatch):
+    store = {}
+    _patch(monkeypatch, store)
+    b1, b2 = _bill("B-1", votes={"x": 1}), _bill("B-2", votes={"x": 1})
+
+    async def fetch(bid, url):
+        if bid == "B-1":
+            raise RuntimeError("boom-xyz dsn=pw")
+        return "good text"
+
+    fn, calls = _load_completeness(monkeypatch, [b1, b2], fetch)
+    asyncio.run(fn())
+    assert calls.count("commit") == 1
+    assert b2.summary_long_el == "good text" and b1.summary_long_el is None
+    assert b1.party_votes_parliament == {"x": 1} and b2.party_votes_parliament == {"x": 1}
+    assert store["scraper:completeness_check:last_outcome"] == "degraded"
+    assert store["scraper:completeness_check:last_outcome_reason"] == "scrape_errors"
+    assert store["scraper:completeness_check:last_outcome_count"] == "1"
+    assert store["scraper:completeness_check:error_count"] == "0"
+    alerts = _cc_alerts(store)
+    assert len(alerts) == 1 and alerts[0].severity == "warning" and alerts[0].recovery_allowed is False
+    _no_leak(store, alerts)
+
+
+def test_completeness_multiple_failures_counted_then_clean_clears(monkeypatch):
+    store = {}
+    _patch(monkeypatch, store)
+    bills = [_bill("B-1"), _bill("B-2"), _bill("B-3")]
+
+    async def fail(bid, url):
+        raise RuntimeError("boom-xyz")
+
+    fn, _ = _load_completeness(monkeypatch, bills, fail)
+    asyncio.run(fn())
+    assert store["scraper:completeness_check:last_outcome_count"] == "3"
+    assert len(_cc_alerts(store)) == 1
+    _no_leak(store, _cc_alerts(store))
+
+    async def ok(bid, url):
+        return "fine"
+
+    fn, _ = _load_completeness(monkeypatch, [_bill("B-1")], ok)
+    asyncio.run(fn())
+    assert store["scraper:completeness_check:last_outcome"] == "clean"
+    assert _cc_alerts(store) == []
+
+
+def test_completeness_empty_none_rejected_text_stay_clean(monkeypatch):
+    store = {}
+    _patch(monkeypatch, store)
+    texts = {"B-1": None, "B-2": "", "B-3": "BAD"}
+    bills = [_bill(b) for b in texts]
+
+    async def fetch(bid, url):
+        return texts[bid]
+
+    fn, calls = _load_completeness(monkeypatch, bills, fetch)
+    asyncio.run(fn())
+    assert calls.count("commit") == 1
+    assert all(b.summary_long_el is None and b.party_votes_parliament is None for b in bills)
+    assert store["scraper:completeness_check:last_outcome"] == "clean"
+    assert _cc_alerts(store) == []
+    # no candidates at all -> clean
+    store.clear()
+    fn, _ = _load_completeness(monkeypatch, [], fetch)
+    asyncio.run(fn())
+    assert store["scraper:completeness_check:last_outcome"] == "clean"
+
+
+def test_completeness_commit_failure_stays_failed(monkeypatch):
+    store = {}
+    _patch(monkeypatch, store)
+
+    async def ok(bid, url):
+        return "fine"
+
+    fn, _ = _load_completeness(monkeypatch, [_bill("B-1")], ok, commit_exc=RuntimeError("dsn=pw"))
+    asyncio.run(fn())
+    assert store["scraper:completeness_check:last_outcome"] == "failed"
+    assert store["scraper:completeness_check:last_outcome_reason"] == "exception"
+    assert store["scraper:completeness_check:error_count"] == "1"
+    alerts = _cc_alerts(store)
+    assert len(alerts) == 1 and "pw" not in alerts[0].message
