@@ -14,13 +14,14 @@ import os
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Header, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Header, Query, Request, Response, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_, or_, select, func, union, update, text
 from sqlalchemy.exc import IntegrityError
 
 from database import get_db
+from rate_limit import limiter
 from models import (
     CITIZEN_VOTE_NULLIFIER_UNIQUE_INDEX,
     CitizenVote, VoteChoice, IdentityRecord, KeyStatus,
@@ -605,7 +606,13 @@ async def _commit_vote_write(db: AsyncSession) -> None:
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
 @router.post("", response_model=VoteResponse)
-async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
+@limiter.limit("120/minute")
+async def submit_vote(
+    req: VoteRequest,
+    db: AsyncSession = Depends(get_db),
+    *,
+    request: Request = None,
+):
     """
     Kernfunktion: Bürger-Abstimmung zu einem Parlamentsbeschluss.
 
@@ -619,6 +626,9 @@ async def submit_vote(req: VoteRequest, db: AsyncSession = Depends(get_db)):
     - ACTIVE: keine Änderung (Stimme gesperrt)
     - WINDOW_24H + OPEN_END: Änderung erlaubt
     """
+    # HTTP requests receive an injected Request; the default preserves existing
+    # direct unit calls with the limiter disabled. Shared HMAC-IP buckets allow
+    # 120/min for carrier NAT; identity/signature/nullifier checks stay unchanged.
     # 1. Identity prüfen
     id_result = await db.execute(
         select(IdentityRecord).where(

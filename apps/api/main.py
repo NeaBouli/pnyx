@@ -921,7 +921,9 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# SlowAPIMiddleware must be registered or default_limits are never enforced.
+# Middleware enforces defaults on direct routes (e.g. /health), not on current
+# FastAPI _IncludedRouter entries. Router coverage requires explicit decorators
+# or handler-level Redis guards; do not assume an API-wide 60/min ceiling.
 # Added before CORSMiddleware so 429 responses still carry CORS headers.
 app.add_middleware(SlowAPIMiddleware)
 
