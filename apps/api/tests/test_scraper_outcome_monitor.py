@@ -107,6 +107,8 @@ def test_first_full_failure_warns_without_leaking(monkeypatch):
     assert store["scraper:parliament:last_outcome_reason"] == "exception"
     alerts = _outcome_alerts(store)
     assert len(alerts) == 1 and "postgres" not in alerts[0].message
+    asyncio.run(scraper_state.record_success("parliament"))
+    assert _outcome_alerts(store) == []
 
 
 def test_unknown_codes_sanitized(monkeypatch):

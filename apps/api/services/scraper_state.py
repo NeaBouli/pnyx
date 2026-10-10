@@ -37,6 +37,7 @@ async def record_success(name: str) -> None:
         pipe.set(f"scraper:{name}:last_success", now)
         pipe.set(f"scraper:{name}:error_count", 0)
         pipe.delete(f"scraper:{name}:last_error")
+        _queue_outcome(pipe, name, "clean", "none", 0)
         await pipe.execute()
     finally:
         await r.aclose()
