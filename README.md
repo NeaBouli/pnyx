@@ -227,6 +227,7 @@ production rollout.
 |---|---|
 | [Wiki](https://ekklesia.gr/wiki/) | Full technical documentation (14 pages) |
 | [API Docs](https://ekklesia.gr/wiki/api.html) | 70+ endpoints, all modules |
+| [Follow-up API/Web deploy runbook](docs/operations/FOLLOWUP_API_WEB_DEPLOY_RUNBOOK_2026-10-10.md) | Documentation only, not executed, not a deploy approval: backup, y801 migration, smoke, rollback gates |
 | [Public API client guide](docs/operations/PUBLIC_API_CLIENT_GUIDE.md) | Shared public-read quota, separate default-covered routes; API-key and HTTP 429 handling |
 | [Modules](https://ekklesia.gr/wiki/modules.html) | MOD-01 through MOD-25 |
 | [Security](https://ekklesia.gr/wiki/security.html) | Ed25519, Nullifier, threat model |
