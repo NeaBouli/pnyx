@@ -1039,17 +1039,28 @@ async def health_modules():
 
     # Helper: check scraper state from Redis
     async def scraper_status(name: str) -> dict:
+        from services.scraper_state import classify, parse_error_count, safe_outcome
         try:
-            err_count = int(await r.get(f"scraper:{name}:error_count") or 0)
+            raw_count = await r.get(f"scraper:{name}:error_count")
             last_ok = await r.get(f"scraper:{name}:last_success")
             last_err = await r.get(f"scraper:{name}:last_error")
-            if err_count >= 3:
-                return {"status": "error", "error": last_err or "circuit breaker open", "error_count": err_count}
-            if err_count > 0:
-                return {"status": "degraded", "error": last_err, "error_count": err_count}
-            return {"status": "ok", "last_success": last_ok}
+            outcome = safe_outcome(*[await r.get(f"scraper:{name}:{k}") for k in (
+                "last_outcome", "last_outcome_reason", "last_outcome_count",
+                "last_outcome_time", "last_nonclean_time")])
         except Exception:
-            return {"status": "ok"}
+            # Redis unreachable: no telemetry, never a false ok.
+            return {"status": "unknown"}
+        err_count = parse_error_count(raw_count)
+        state = classify(err_count, outcome["last_outcome"])
+        if state == "circuit_open":
+            return {"status": "error", "error": last_err or "circuit breaker open", "error_count": err_count, **outcome}
+        if state == "warning" and err_count:
+            return {"status": "degraded", "error": last_err, "error_count": err_count, **outcome}
+        if state == "warning":
+            return {"status": "degraded", "error_count": 0, **outcome}
+        if state == "ok":
+            return {"status": "ok", "last_success": last_ok, **outcome}
+        return {"status": "unknown", **outcome}
 
     # MOD-01 Identity
     modules["MOD-01"] = {"name": "HLR Identity", "status": "ok"}
@@ -1145,6 +1156,8 @@ async def health_modules():
         overall = "error"
     elif "degraded" in active_statuses:
         overall = "degraded"
+    elif "unknown" in active_statuses:
+        overall = "unknown"
     else:
         overall = "ok"
 
