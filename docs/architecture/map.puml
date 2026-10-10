@@ -797,3 +797,65 @@ History --> DocsCI : checkout fetch-depth 0
 DocsCI --> Node : existing pinned setup-node action
 Node --> Checks : node --test
 @enduml
+
+' T-9033 nightly consolidation: current source delta; historical diagrams retained.
+@startmindmap T9033_nightly_mindmap
+* Ekklesia: bounded nightly source consolidation
+** MOD-18 support accounting
+*** built: payments.py::allocate_donation (remainder -> reserve)
+*** built: _append_payment_record / _projection_state
+*** built: _apply_public_payment_adjustment / _target_remaining_allocation
+*** built: payment_status / _load_public_support_projection
+** Community funding
+*** built: fetchPaymentStatus / validFundingAccount
+*** built: updateServerTile / updateDomainTile / updateReserveTile
+*** built: loading / ready / unavailable / stale; finite zero retained
+*** built: tick / community-language-change
+** MOD-21 Diavgeia
+*** built: DiavgeiaClient.iter_decisions / scrape_decisions
+*** built: DiavgeiaDecision named length check (9..32)
+*** built: y801a2b3c4d5 upgrade / NOT VALID downgrade
+** CI source guards
+*** built: ci.yml::test-docs-redesign full-history Node checks
+*** built: 15 same-version remote action SHA pins
+*** deferred: production migration/deploy and payment intake owner gates
+@endmindmap
+
+@startuml T9033_nightly_components
+title T-9033 inspected source hops (not a production release)
+component "payments.py::stripe_webhook" as Webhook
+component "payments.py::allocate_donation" as Allocation
+component "payments.py::_append_payment_record\n_projection_state" as Append
+component "payments.py::_process_stripe_adjustment\n_apply_public_payment_adjustment" as Adjustment
+database "Redis support projection\nserver / domain / reserve" as Projection
+component "payments.py::payment_status\n_load_public_support_projection" as Status
+component "community.html::fetchPaymentStatus\nthree snapshot renderers" as Community
+Webhook --> Allocation : allocate_donation(amount)
+Webhook --> Append : _append_payment_record(record)
+Webhook --> Adjustment : verified refund/dispute event
+Append --> Projection : transaction: record + totals + cent state
+Adjustment --> Projection : cent allocation deltas via Lua commit
+Status --> Projection : _load_public_support_projection / mget
+Community --> Status : GET /api/v1/payments/status
+
+component "diavgeia_scraper.py::scrape_decisions" as Scraper
+component "diavgeia_client.py::DiavgeiaClient" as Client
+database "diavgeia_decisions\nnamed ADA check 9..32" as Decisions
+component "models.py::DiavgeiaDecision\ny801a2b3c4d5 migration" as Schema
+Scraper --> Client : iter_decisions
+Scraper --> Decisions : pg_insert / upsert exact ada
+Schema --> Decisions : named check definition / replacement
+
+component "ci.yml::test-docs-redesign" as DocsCI
+artifact "Full checkout / .nvmrc Node" as Inputs
+component "SEO / remote-sinks /\nCommunity behavior checks" as Checks
+DocsCI --> Inputs : checkout fetch-depth 0 / setup-node
+DocsCI --> Checks : node --test (dependency-free)
+note bottom of DocsCI
+#518: only Docs job gains full history;
+Security Audit already has it.
+#520: 15 remote action references are SHA-pinned
+at the same versions; runner policy unchanged.
+end note
+@enduml
+' End T-9033 nightly consolidation.
