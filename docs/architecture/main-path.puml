@@ -663,3 +663,104 @@ Security Audit full history predates #518.
 end note
 @enduml
 ' End T-9033 nightly consolidation.
+
+' T-9055 built source traces; no production/OEM proof implied.
+@startuml T9055_public_comparison
+participant "index.html::fetchRepresentation\nfetchBillComparison" as Landing
+participant "analytics.py::cumulative_representation\ncompute_cumulative_representation" as Analytics
+participant "public_api.py::public_bill_results" as Results
+participant "renderBillComparison / toggleLang" as View
+participant "index.html::fetchCPLM" as CPLMView
+participant "cplm.py::cplm_aggregate" as CPLMRouter
+participant "services/cplm.py::get_cplm_cached\ncompute_cplm" as CPLMService
+Landing -> View : reset comparison to neutral
+Landing -> Analytics : GET /analytics/representation
+Analytics --> Landing : public closed bills; last_bill.bill_id
+Landing -> Results : GET /public/bills/{bill_id}/results
+Results --> Landing : citizen counts / party positions / hidden flag
+alt current request, same bill, closed and results_hidden=false
+  Landing -> Landing : safe nonnegative integer counts; sum=total>0\nknown reported party positions
+  Landing -> View : party-position YES share / citizen YES share
+else missing / invalid / current failure
+  Landing -> View : neutral bars and explanatory bilingual note
+else stale request response
+  Landing -> Landing : ignore response
+end
+note over Landing,View
+Closed statuses: PARLIAMENT_VOTED / OPEN_END.
+Parliament bar is reported PARTY POSITIONS, not MPs.
+Rendered data-el/data-en uses currentLang at resolution.
+end note
+group Separate CPLM request (not invoked by comparison)
+  CPLMView -> CPLMRouter : GET /cplm/aggregate
+  CPLMRouter -> CPLMService : get_cplm_cached
+  CPLMService -> CPLMService : on cache miss compute_cplm\npublic_bill_filter + results_visible_filter
+  CPLMService --> CPLMView : aggregate / quadrant
+  CPLMView -> CPLMView : store data-el/data-en; render currentLang
+end
+View -> View : toggleLang updates currentLang, documentElement.lang\nand data-* text (including delayed-result labels)
+@enduml
+
+@startuml T9055_manual_browser_gate
+actor "Authorized workflow dispatcher" as Dispatcher
+participant "t356-browser.yml" as Workflow
+participant "SHA-pinned actions / locked\nPlaywright 1.63.0" as Tooling
+participant "t356_democracy_cycle.browser.cjs" as Harness
+participant "Chromium / WebKit\nlocal docs + mocked API" as Browsers
+collections "results.json / PNG / logs" as Evidence
+Dispatcher -> Workflow : workflow_dispatch: data-only or full
+Workflow -> Workflow : trusted same-repo branch / CI_RUNNER policy
+Workflow -> Tooling : .nvmrc; npm ci; install browsers
+Workflow -> Harness : bounded local harness invocation
+Harness -> Browsers : responsive fixtures / language / data checks
+Browsers --> Harness : assertions and screenshots
+Harness -> Evidence : results.json / PNG
+Harness --> Workflow : exit 0 pass / 1 assertions / 2 infrastructure
+Workflow -> Workflow : validate complete evidence / fail incomplete output
+Workflow -> Evidence : upload evidence even on failure; retention 3 days
+note over Workflow,Browsers
+Manual-only gate, no production requests or deployment.
+Fallback runner installs browsers without sudo;
+system libraries must already be provisioned.
+end note
+@enduml
+
+@startuml T9055_mobile_unread
+participant "notifications.ts" as Notifications
+participant "unread-events.ts::createUnreadEventsStore" as Ledger
+database "Serialized local storage" as Storage
+participant "Local notification adapter" as Local
+participant "notification-badge.ts::set" as Badge
+participant "Native badge adapter" as Native
+Notifications -> Ledger : ingestPushPayload / ingest(stable event)
+Ledger -> Storage : queued load / preference check / durable write
+Storage --> Ledger : persisted ledger
+Ledger --> Notifications : added / duplicate / disabled / invalid
+alt added + local_display content + supported adapter
+  Notifications -> Local : schedule local display (flag removed)
+else replay / disabled / invalid
+  Notifications -> Notifications : no duplicate local display
+end
+Notifications -> Ledger : unreadCount
+Ledger --> Notifications : persisted unread count
+alt F-Droid
+  Notifications -> Notifications : return before native badge / FCM
+else Play / Direct
+  Notifications -> Badge : set(absolute count; clearTray=false)
+  alt count > 0
+    Badge -> Native : setBadgeCountAsync(min(count,99))
+  else automatic zero
+    Badge -> Badge : skip native zero; preserve tray
+  end
+end
+Notifications -> Ledger : explicit markRead / category / all
+Ledger -> Storage : serialized acknowledgement / read tombstone
+Notifications -> Badge : supported flavor: reconcile(clearTray=true)
+Badge -> Native : explicit final zero may clear tray
+note over Notifications,Native
+Source and offline restart/replay tests are not OEM/provider proof.
+NV1/NV2 and release/device gates remain open.
+BillsScreen focus cancellation is not retained-native-navigation proof.
+end note
+@enduml
+' End T-9055 built source traces.

@@ -859,3 +859,75 @@ at the same versions; runner policy unchanged.
 end note
 @enduml
 ' End T-9033 nightly consolidation.
+
+' T-9055 bundled source map for #528..#540; historical prefixes retained.
+@startmindmap T9055_source_mindmap
+* Ekklesia: inspected source boundaries, not release evidence
+** Public comparison / language
+*** built: index.html::fetchRepresentation / fetchBillComparison / renderBillComparison
+*** built: analytics.py::cumulative_representation / compute_cumulative_representation
+*** built: public_api.py::public_bill_results; same closed bill, visible results
+*** built: index.html::fetchCPLM / toggleLang; currentLang at response time
+*** built: cplm.py::cplm_aggregate / get_cplm_cached / compute_cplm
+*** boundary: party-position YES share, not MP counts; invalid data neutral
+** Manual browser evidence
+*** built: t356-browser.yml workflow_dispatch only; CI_RUNNER policy retained
+*** built: locked Playwright 1.63.0 / Chromium / WebKit
+*** built: t356_democracy_cycle.browser.cjs; local docs and mocked API
+*** built: results.json / PNG / logs; validate then retain artifacts 3 days
+*** boundary: harness exit 0 / 1 / 2; no production verification
+** API hardening
+*** built: admin.py::verify_admin -> dependencies.py::verify_admin_key
+*** built: Bearer-only, UTF-8 hmac.compare_digest, production fail closed
+*** built: voting.py::submit_vote explicit 120/minute IP limiter
+*** boundary: included-router default 60/minute is not API-wide protection
+*** unchanged: shared public 100/1000 quota; existing mail guards
+** Mobile unread / lifecycle
+*** built: notifications.ts::persistPushAndReconcile / ingestPushPayload
+*** built: unread-events.ts::createUnreadEventsStore / ingest / markRead
+*** built: serialized persisted ledger -> notification-badge.ts::set
+*** built: local display only on added; automatic zero never clears tray
+*** built: explicit read clearTray; F-Droid skips native FCM / badge calls
+*** open: NV1/NV2 native identity lifecycle, OEM/provider and release gates
+*** boundary: BillsScreen focus-cancellation tests are not native navigation proof
+@endmindmap
+
+@startuml T9055_source_components
+title T-9055 inspected source hops (no deploy or device-proof claim)
+component "index.html::fetchRepresentation\nfetchBillComparison / renderBillComparison" as Comparison
+component "analytics.py::cumulative_representation\ncompute_cumulative_representation" as Representation
+component "public_api.py::public_bill_results" as Results
+component "index.html::fetchCPLM / toggleLang" as CPLMView
+component "cplm.py::cplm_aggregate" as CPLMRouter
+component "services/cplm.py::get_cplm_cached\ncompute_cplm" as CPLMService
+Comparison --> Representation : GET /analytics/representation
+Comparison --> Results : GET /public/bills/{last_bill.bill_id}/results
+CPLMView --> CPLMRouter : GET /cplm/aggregate
+CPLMRouter --> CPLMService : get_cplm_cached (visible-results filter on compute)
+component "t356-browser.yml\nmanual dispatch only" as BrowserWorkflow
+component "Locked Playwright 1.63.0\nChromium / WebKit" as Browsers
+component "t356_democracy_cycle.browser.cjs\nlocal docs + mocked API" as Harness
+artifact "results.json / PNG / logs\n3-day retention" as Evidence
+BrowserWorkflow --> Browsers : install locked tooling / browsers
+BrowserWorkflow --> Harness : data-only or full; exit 0 / 1 / 2
+Harness --> Evidence : bounded evidence output
+BrowserWorkflow --> Evidence : validate / upload
+component "admin.py::verify_admin" as Admin
+component "dependencies.py::verify_admin_key" as Bearer
+component "voting.py::submit_vote" as Vote
+component "Explicit limiter\n120/minute per IP" as VoteLimit
+Admin --> Bearer : central Bearer dependency
+VoteLimit --> Vote : decorator; signatures / nullifiers still required
+component "notifications.ts::persistPushAndReconcile\ningestPushPayload / explicit read" as Notifications
+component "unread-events.ts::createUnreadEventsStore\ningest / markRead" as Ledger
+database "Serialized local unread storage" as Storage
+component "notification-badge.ts::set" as Badge
+Notifications --> Ledger : ingest / acknowledge / unreadCount
+Ledger --> Storage : queued durable read / write
+Notifications --> Badge : absolute ledger count; explicit clearTray only
+note bottom of Badge
+F-Droid returns before native badge/FCM.
+Native OEM/provider/release gates remain open.
+end note
+@enduml
+' End T-9055 bundled source map.
