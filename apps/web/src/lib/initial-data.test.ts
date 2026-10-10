@@ -1,22 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { API_URL } from "./api";
-import {
-  getInitialBills, getInitialResults, INITIAL_DATA_MAX_AGE_MS, INITIAL_DATA_REVALIDATE_SECONDS,
-  INITIAL_DATA_TIMEOUT_MS, responseAgeMs,
-} from "./initial-data";
+import { getInitialBills, getInitialResults, INITIAL_DATA_TIMEOUT_MS } from "./initial-data";
 
 const bill = { id: "BILL-1", title_el: "Νομοσχέδιο", title_en: "Bill", status: "ACTIVE" };
 const result = { bill_id: "BILL-1", title_el: "Νομοσχέδιο", title_en: "Bill", citizen_total: 3 };
 
-function json(data: unknown, status = 200, extra: Record<string, string> = {}): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", Date: new Date().toUTCString(), ...extra },
-  });
-}
-
-function dated(data: unknown, ageMs: number, extra: Record<string, string> = {}): Response {
-  return json(data, 200, { Date: new Date(Date.now() - ageMs).toUTCString(), ...extra });
+function json(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 }
 
 describe("server initial data", () => {
@@ -28,13 +18,11 @@ describe("server initial data", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("requests the client's default bills query from the fixed public origin with bounded cache and timeout", async () => {
+  it("requests the client's default bills query from the fixed public origin uncached with a timeout", async () => {
     fetchMock.mockResolvedValue(json([bill]));
     await expect(getInitialBills("")).resolves.toEqual({ status: "", bills: [bill] });
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe(`${API_URL}/api/v1/bills?limit=11&offset=0&include_institutional=true`);
-    expect(init.next).toEqual({ revalidate: INITIAL_DATA_REVALIDATE_SECONDS });
-    expect(INITIAL_DATA_REVALIDATE_SECONDS).toBe(60);
     expect(init.signal).toBeInstanceOf(AbortSignal);
     expect(init.credentials).toBeUndefined();
     expect(Object.keys(init.headers).map((key) => key.toLowerCase())).toEqual(["accept"]);
@@ -70,7 +58,6 @@ describe("server initial data", () => {
     fetchMock.mockResolvedValue(json({ count: 1, data: [result] }));
     await expect(getInitialResults()).resolves.toEqual([result]);
     expect(fetchMock.mock.calls[0][0]).toBe(`${API_URL}/api/v1/export/results.json?min_votes=1`);
-    expect(fetchMock.mock.calls[0][1].next).toEqual({ revalidate: 60 });
   });
 
   it.each([
@@ -88,53 +75,31 @@ describe("server initial data", () => {
     await expect(getInitialResults()).resolves.toEqual([]);
   });
 
-  it.each([
-    ["fresh", 0, true],
-    ["exactly the max age", INITIAL_DATA_MAX_AGE_MS, true],
-    ["one second over the max age", INITIAL_DATA_MAX_AGE_MS + 1000, false],
-    ["far expired (failed background refresh)", 3_600_000, false],
-  ])("freshness: %s cached response", async (_name, ageMs, accepted) => {
-    vi.useFakeTimers({ toFake: ["Date"], now: Date.UTC(2026, 9, 10, 12, 0, 0) });
-    try {
-      fetchMock.mockResolvedValue(dated([bill], ageMs));
-      await expect(getInitialBills("")).resolves.toEqual(accepted ? { status: "", bills: [bill] } : null);
-      fetchMock.mockResolvedValue(dated({ data: [result] }, ageMs));
-      await expect(getInitialResults()).resolves.toEqual(accepted ? [result] : null);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
+  it("never reuses a seed across requests: both helpers fetch no-store, so a hidden item disappears", async () => {
+    // Cache-aware stub: honours next.revalidate / force-cache like the Next data
+    // cache would, and only goes to the origin for cache: "no-store".
+    const cache = new Map<string, unknown>();
+    let origin = { bills: [bill] as unknown[], results: [result] as unknown[] };
+    fetchMock.mockImplementation(async (url: string, init: RequestInit & { next?: unknown }) => {
+      const cacheable = init.cache !== "no-store" && (init.next !== undefined || init.cache === "force-cache");
+      if (cacheable && cache.has(url)) return json(cache.get(url));
+      const body = url.includes("/export/") ? { count: origin.results.length, data: origin.results } : origin.bills;
+      if (cacheable) cache.set(url, body);
+      return json(body);
+    });
 
-  it.each([
-    ["missing Date", { Date: "" }],
-    ["malformed Date", { Date: "yesterday" }],
-    ["Date 1h in the future", { Date: new Date(Date.now() + 3_600_000).toUTCString() }],
-    ["Age pushing over the limit", { Age: String(INITIAL_DATA_MAX_AGE_MS / 1000 + 1) }],
-    ["malformed Age", { Age: "-5" }],
-    ["non-numeric Age", { Age: "Infinity" }],
-    ["fractional Age", { Age: "1.5" }],
-  ] as [string, Record<string, string>][])("fails closed on %s", async (_name, headers) => {
-    const res = json([bill], 200, headers);
-    if (headers.Date === "") res.headers.delete("date");
-    fetchMock.mockResolvedValue(res);
-    await expect(getInitialBills("")).resolves.toBeNull();
-  });
-
-  it("measures origin age from Date plus Age", () => {
-    const now = Date.UTC(2026, 9, 10, 12, 0, 0);
-    const at = (s: number) => new Date(now - s * 1000).toUTCString();
-    expect(responseAgeMs(new Headers({ date: at(10) }), now)).toBe(10_000);
-    expect(responseAgeMs(new Headers({ date: at(10), age: "30" }), now)).toBe(40_000);
-    expect(responseAgeMs(new Headers({ date: new Date(now + 4000).toUTCString() }), now)).toBe(-4000);
-    expect(responseAgeMs(new Headers({ date: new Date(now + 6000).toUTCString() }), now)).toBeNull();
-    expect(responseAgeMs(new Headers(), now)).toBeNull();
-  });
-
-  it("keeps an empty success when fresh and drops it when expired", async () => {
-    fetchMock.mockResolvedValue(dated([], 1000));
+    await expect(getInitialBills("")).resolves.toEqual({ status: "", bills: [bill] });
+    await expect(getInitialResults()).resolves.toEqual([result]);
+    origin = { bills: [], results: [] };
     await expect(getInitialBills("")).resolves.toEqual({ status: "", bills: [] });
-    fetchMock.mockResolvedValue(dated([], INITIAL_DATA_MAX_AGE_MS + 5000));
-    await expect(getInitialBills("")).resolves.toBeNull();
+    await expect(getInitialResults()).resolves.toEqual([]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    for (const [, init] of fetchMock.mock.calls) {
+      expect(init.cache).toBe("no-store");
+      expect(init).not.toHaveProperty("next");
+    }
+    expect(cache.size).toBe(0);
   });
 
   it("returns null when the fetch never settles within the page deadline", async () => {
