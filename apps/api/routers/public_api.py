@@ -2,10 +2,11 @@
 MOD-11: Public API + Rate Limiting + API Keys
 Öffentliche REST API für NGOs, Journalisten, Forscher.
 
-Independent rate limits (when the default middleware is enabled):
-  - Default middleware: 60 req/min per client IP and endpoint, also with a key
+Public reads declaring Depends(rate_limit_check):
   - Shared public-data quota: anonymous IP 100 / valid API key 1000 per 60s
-  - The shared quota is not guaranteed throughput for one endpoint.
+  - These reads are excluded from SlowAPI's default 60/min in current wiring.
+  - The 60/min default covers other routes (for example /health), not these reads.
+  - The shared quota is not a production throughput guarantee.
   - API Keys:    community-generiert, kein Konto nötig
 
 Client guide: docs/operations/PUBLIC_API_CLIENT_GUIDE.md
@@ -175,11 +176,12 @@ async def rate_limit_check(
     request: Request,
     x_api_key: Optional[str] = Header(None, alias="X-API-Key")
 ):
-    """Shared public-data quota, independent of the 60/min IP+endpoint default.
+    """Shared public-data quota across routes declaring this dependency.
 
     A valid X-API-Key selects a 1000/60s key bucket across dependent routes;
-    missing or invalid keys use the anonymous IP bucket (100/60s). Neither
-    bucket bypasses the middleware limit.
+    missing or invalid keys use the anonymous IP bucket (100/60s). Current
+    dependent public reads are excluded from SlowAPI's 60/min default; that
+    default is not an additional per-endpoint ceiling on these reads.
     """
     r = await get_redis()
     valid_key = bool(x_api_key and await verify_api_key(x_api_key))
@@ -210,8 +212,8 @@ async def rate_limit_check(
 async def generate_api_key(request: Request, label: str = "ekklesia-client"):
     """Generate a key without an account; at most 5/hour per IP.
 
-    The returned rate_limit describes the shared public-data quota, not an
-    exemption from the independent default middleware limit.
+    The returned rate_limit describes the shared public-data read quota.
+    Key generation has its own 5/hour counter, not the public read dependency.
     """
     # Rate limit: max 5 key generations per hour per IP
     r = await get_redis()
@@ -242,7 +244,7 @@ async def api_key_status(x_api_key: Optional[str] = Header(None, alias="X-API-Ke
     """Check key status; rate_limit describes only the shared public-data quota.
 
     Unlike dependent public-data reads, an invalid key here returns HTTP 401.
-    The independent default middleware limit still applies.
+    This route does not install the shared public read dependency.
     """
     if not x_api_key:
         return {"authenticated": False, "rate_limit": "100 req/min"}
@@ -637,8 +639,8 @@ async def public_representation(
 async def api_info():
     """API overview; rate_limits describes the shared public-data quota only.
 
-    The default middleware independently limits requests per IP and endpoint;
-    the advertised shared budget is not guaranteed single-endpoint throughput.
+    Only routes declaring rate_limit_check consume that shared budget.
+    The advertised budget is not a production throughput guarantee.
     """
     return {
         "name": "Ekklesia.gr Public API", "version": "1.0.0-beta",
