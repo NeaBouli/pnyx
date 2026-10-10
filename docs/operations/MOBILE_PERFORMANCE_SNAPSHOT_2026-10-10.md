@@ -164,7 +164,8 @@ results 6 failed requests, cause not classified). Field data: UNKNOWN.
   had the largest TBT proxy (857 ms; first long task 528 ms).
 - `/el/results`: CLS 0.132 reproduced (one sample each run).
 - `/el/bills/<ID>`: its `vote/<id>/results` request was blocked by the probe's
-  vote-path filter, so that page's results panel was not measured.
+  vote-path filter (the id is percent-encoded and the allow pattern did not
+  accept `%`), so that page's results panel was not measured.
 - `/community.html`: 3 requests blocked by policy (an external price origin,
   `identity/hlr/credits`, `claude/budget`), so its community data is incomplete.
 
