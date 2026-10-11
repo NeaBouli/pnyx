@@ -76,3 +76,18 @@ def test_route_template_transaction_name_is_kept() -> None:
     event = {"transaction": "/api/v1/polis/qr-session/{session_id}", "transaction_info": {"source": "route"}}
 
     assert main._before_send_filter(event, {})["transaction"] == "/api/v1/polis/qr-session/{session_id}"
+
+
+def test_citizen_signature_headers_and_camelcase_query_keys_are_scrubbed() -> None:
+    event = {"request": {
+        "headers": {"X-Evaluation-Read-Signature": SIGNATURE, "X-Nullifier-Hash": NULLIFIER,
+                    "content-type": "application/json", "accept-encoding": "gzip"},
+        "query_string": f"publicKey={PUBLIC_KEY}&nullifierHash={NULLIFIER}&page=2",
+    }}
+    result = main._before_send_filter(event, {})
+
+    text = repr(result)
+    assert SIGNATURE not in text and NULLIFIER not in text and PUBLIC_KEY not in text
+    assert result["request"]["headers"]["content-type"] == "application/json"
+    assert result["request"]["headers"]["accept-encoding"] == "gzip"
+    assert "page=2" in result["request"]["query_string"]

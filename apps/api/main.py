@@ -175,12 +175,29 @@ def _sentry_redact(value: Any) -> Any:
     return value
 
 
+_SENTRY_SENSITIVE_QUERY_PREFIXES = tuple(
+    prefix.replace("_", "") for prefix in _ACCESS_LOG_SENSITIVE_QUERY_PREFIXES
+)
+# Citizen identifiers/signatures carried in custom headers, e.g.
+# X-Evaluation-Read-Signature (T-9098 review). Substring match on the
+# normalized header name; deliberately narrower than the query set.
+_SENTRY_SENSITIVE_HEADER_PARTS = ("nullifier", "signature", "publickey", "nonce")
+
+
 def _sentry_is_sensitive_query_key(key: Any) -> bool:
     """Query keys: the generic secret words plus the EVA-008 access-log set
-    (nullifier, signature, public key, SSO, OAuth code/state, nonce). The
-    access-log set is applied only to query keys, so dict keys such as
-    status_code are not over-redacted."""
-    return _sentry_is_sensitive_key(key) or _access_log_is_sensitive_query_key(str(key).strip())
+    (nullifier, signature, public key, SSO, OAuth code/state, nonce), matched
+    as prefixes after normalization (case, "_", "-"), so publicKey is covered.
+    Applied only to query keys, so dict keys such as status_code stay readable."""
+    if _sentry_is_sensitive_key(key):
+        return True
+    norm = _sentry_norm_key(str(key).strip())
+    return any(norm.startswith(prefix) for prefix in _SENTRY_SENSITIVE_QUERY_PREFIXES)
+
+
+def _sentry_is_sensitive_header(key: Any) -> bool:
+    norm = _sentry_norm_key(key)
+    return _sentry_is_sensitive_key(key) or any(part in norm for part in _SENTRY_SENSITIVE_HEADER_PARTS)
 
 
 def _sentry_redact_url(url: Any) -> Any:
@@ -221,7 +238,8 @@ def _before_send_filter(event, hint):
         headers = request.get("headers")
         if isinstance(headers, dict):
             request["headers"] = _sentry_redact({
-                k: v for k, v in headers.items()
+                k: _SENTRY_REDACTED if _sentry_is_sensitive_header(k) else v
+                for k, v in headers.items()
                 if _sentry_norm_key(k) not in _SENTRY_DROPPED_HEADERS
             })
         for field in ("data", "cookies"):

@@ -327,3 +327,20 @@ def test_unmatched_route_transaction_does_not_ship_qr_session_or_confirm_token(s
 
     assert [kind for kind, _ in transport.payloads].count("transaction") >= 1
     assert all(qr_secret not in body and confirm_secret not in body for _, body in transport.payloads)
+
+
+
+def test_evaluation_read_signature_header_does_not_reach_transport(sdk_reset):
+    """EVA-036 / T-9098: the citizen read signature header is scrubbed end to end."""
+    signature = "ab" * 64
+    transport = _init_sdk()
+    client = TestClient(main.app, raise_server_exceptions=False)
+    client.get(
+        "/api/v1/evaluation/my-evaluations",
+        params={"nullifier_hash": "cd" * 32, "timestamp_ms": 1},
+        headers={"X-Evaluation-Read-Signature": signature},
+    )
+    sentry_sdk.flush()
+
+    assert any(kind == "transaction" for kind, _ in transport.payloads)
+    assert all(signature not in body for _, body in transport.payloads)
