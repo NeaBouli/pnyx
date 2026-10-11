@@ -55,10 +55,10 @@ class IdentityRecord(Base):
     nullifier_version = Column(String(8), default="v1", server_default="v1", nullable=False)
     nullifier_migrated_at = Column(DateTime, nullable=True)
     public_key_hex  = Column(String(128), nullable=False)
-    demographic_hash= Column(String(64), nullable=True)   # SHA256(region+gender+salt)
-    age_group       = Column(String(20), nullable=True)   # AGE_18_25 .. AGE_65_PLUS
-    region          = Column(String(30), nullable=True)   # REG_ATTICA etc. (legacy)
-    gender_code     = Column(String(20), nullable=True)   # GENDER_MALE etc.
+    demographic_hash= Column(String(64), nullable=True)   # Legacy (EVA-002): nie geschrieben, bei Revoke genullt
+    age_group       = Column(String(20), nullable=True)   # Legacy (EVA-002): nie geschrieben, bei Revoke genullt
+    region          = Column(String(30), nullable=True)   # Legacy (EVA-002): nie geschrieben, bei Revoke genullt
+    gender_code     = Column(String(20), nullable=True)   # Legacy (EVA-002): nie geschrieben, bei Revoke genullt
     periferia_id    = Column(Integer, ForeignKey("periferia.id", ondelete="SET NULL"), nullable=True)
     dimos_id        = Column(Integer, ForeignKey("dimos.id", ondelete="SET NULL"), nullable=True)
     region_locked   = Column(Boolean, default=False, nullable=False, server_default="false")
