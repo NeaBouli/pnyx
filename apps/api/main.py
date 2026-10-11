@@ -4,7 +4,7 @@ import os
 import secrets
 from contextlib import asynccontextmanager
 from typing import Any
-from urllib.parse import parse_qsl, urlencode
+from urllib.parse import parse_qsl, unquote_plus, urlencode
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -19,6 +19,120 @@ from security_startup import validate_identity_kdf_config, validate_server_salt_
 
 logger = logging.getLogger(__name__)
 local_error_logger = logging.getLogger("ekklesia.errors")
+
+# ── EVA-008: uvicorn access-log redaction ────────────────────────────────────
+# Prod runs `uvicorn main:app --workers 2` with the default access log; each
+# line embeds path + query string, so citizen identifiers (nullifier_hash) and
+# one-time secrets (signatures, SSO/OAuth codes, double-opt-in tokens) would
+# land in docker logs. This filter rewrites the request-target argument of
+# every uvicorn.access record before formatting. Installed at import time, so
+# it is active in every worker process. Zero API-behaviour impact.
+_ACCESS_LOG_REDACTED = "[redacted]"
+# Query keys whose values are identifiers/secrets. Compared case-insensitively
+# as prefixes (covers nullifier_hash, signature_hex, public_key_hex, ...).
+_ACCESS_LOG_SENSITIVE_QUERY_PREFIXES = (
+    "nullifier", "signature", "sig", "public_key",
+    "sso", "nonce", "code", "state", "token",
+)
+# Path prefixes whose next segment carries a one-time secret.
+# The QR session id is a short-lived bearer secret: polling it returns the
+# nullifier once the user has authenticated (T-9092 review).
+_ACCESS_LOG_SENSITIVE_PATH_MARKERS = ("/newsletter/confirm/", "/polis/qr-session/")
+# uvicorn.access format: '%s - "%s %s HTTP/%s" %d' — the request target is the
+# argument right before the HTTP-version token.
+_ACCESS_LOG_HTTP_VERSIONS = frozenset({"1.0", "1.1", "2", "2.0", "3"})
+
+
+def _access_log_is_sensitive_query_key(key: str) -> bool:
+    lowered = key.lower()
+    return any(
+        lowered.startswith(prefix) for prefix in _ACCESS_LOG_SENSITIVE_QUERY_PREFIXES
+    )
+
+
+def redact_access_log_path(path: str) -> str:
+    """Replace the segment after a sensitive path marker with [redacted]."""
+    for marker in _ACCESS_LOG_SENSITIVE_PATH_MARKERS:
+        idx = path.find(marker)
+        if idx == -1:
+            continue
+        start = idx + len(marker)
+        end = path.find("/", start)
+        segment_end = len(path) if end == -1 else end
+        path = path[:start] + _ACCESS_LOG_REDACTED + path[segment_end:]
+    return path
+
+
+def redact_access_log_query(query: str) -> str:
+    """Redact values of sensitive keys; keep everything else byte-identical."""
+    parts = query.split("&")
+    changed = False
+    for i, part in enumerate(parts):
+        key, eq, _value = part.partition("=")
+        if eq and _access_log_is_sensitive_query_key(unquote_plus(key).strip()):
+            parts[i] = f"{key}={_ACCESS_LOG_REDACTED}"
+            changed = True
+    return "&".join(parts) if changed else query
+
+
+def redact_access_log_target(target: str) -> str:
+    """Redact a request target (path + query) while keeping method/path shape."""
+    path, sep, query = target.partition("?")
+    path = redact_access_log_path(path)
+    if not sep:
+        return path
+    return f"{path}?{redact_access_log_query(query)}"
+
+
+class AccessLogRedactionFilter(logging.Filter):
+    """Keep citizen identifiers and one-time secrets out of uvicorn access logs.
+
+    Rewrites the request-target argument of the access record in place.
+    Fail-safe: records that cannot be parsed are logged unchanged, and no log
+    line is ever dropped (filter always returns True, never raises).
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        try:
+            self._redact(record)
+        except Exception:  # logging must never break a request
+            pass
+        return True
+
+    @staticmethod
+    def _redact(record: logging.LogRecord) -> None:
+        args = record.args
+        if not isinstance(args, tuple):
+            return
+        # uvicorn's own shape: (client, method, target, http_version, status).
+        # Use the fixed position first so a crafted method token cannot shift it.
+        if len(args) == 5 and isinstance(args[2], str):
+            redacted = redact_access_log_target(args[2])
+            if redacted != args[2]:
+                record.args = (*args[:2], redacted, *args[3:])
+            return
+        for i in range(1, len(args)):
+            version = args[i]
+            if isinstance(version, str) and version in _ACCESS_LOG_HTTP_VERSIONS:
+                target = args[i - 1]
+                if isinstance(target, str):
+                    redacted = redact_access_log_target(target)
+                    if redacted != target:
+                        record.args = (*args[: i - 1], redacted, *args[i:])
+                return
+
+
+def _install_access_log_redaction() -> None:
+    """Attach the filter to the uvicorn.access logger (idempotent)."""
+    access_logger = logging.getLogger("uvicorn.access")
+    if not any(
+        isinstance(existing, AccessLogRedactionFilter)
+        for existing in access_logger.filters
+    ):
+        access_logger.addFilter(AccessLogRedactionFilter())
+
+
+_install_access_log_redaction()
 
 # ── Sentry Cloud Integration (Hybrid: Cloud + lokaler Fallback) ──────────────
 SENTRY_ENABLED = False

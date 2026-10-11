@@ -765,7 +765,11 @@ async def _load_vote_status(
     )
     bill = bill_result.scalar_one_or_none()
     if not bill or not is_public_bill(bill):
-        raise HTTPException(404, f"Το νομοσχέδιο {bill_id} δεν βρέθηκε.")
+        raise HTTPException(
+            404,
+            f"Το νομοσχέδιο {bill_id} δεν βρέθηκε.",
+            headers=VOTE_STATUS_CACHE_HEADERS,
+        )
 
     vote_result = await db.execute(
         select(CitizenVote).where(
