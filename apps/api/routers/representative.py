@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from dependencies import verify_admin_key
+from ip_utils import log_reference
 from models import ParliamentBill, BillStatus
 from services.bill_visibility import is_public_bill, public_bill_filter
 from services.evaluation_integrity import (
@@ -125,7 +126,7 @@ async def create_invite(
     })
     await db.commit()
 
-    logger.info("[REP] Invite created: %s role=%s region=%s", code, req.role, req.region)
+    logger.info("[REP] Invite created: ref=%s role=%s region=%s", log_reference(code, "rep-invite"), req.role, req.region)
     return {
         "invite_code": code,
         "role": req.role,
@@ -174,7 +175,7 @@ async def _verify_ada_diavgeia(ada: str) -> dict | None:
                     "type": d.get("decisionTypeId", ""),
                 }
     except Exception as e:
-        logger.warning("[REP] Diavgeia check failed for %s: %s", ada, e)
+        logger.warning("[REP] Diavgeia check failed: ada_ref=%s error=%s", log_reference(ada, "rep-ada"), type(e).__name__)
     return None
 
 
@@ -266,7 +267,10 @@ async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(g
     ), {"ada": req.ada_number, "id": invite_id})
     await db.commit()
 
-    logger.info("[REP] Verified: ada=%s role=%s invite=%s", req.ada_number, role, req.invite_code)
+    logger.info(
+        "[REP] Verified: ada_ref=%s role=%s invite_ref=%s",
+        log_reference(req.ada_number, "rep-ada"), role, log_reference(req.invite_code, "rep-invite"),
+    )
     return {
         "ada_number": req.ada_number,
         "token": token,
@@ -515,7 +519,7 @@ async def enable_evaluation(
         "UPDATE representative_tokens SET evaluation_enabled = TRUE WHERE ada_number = :ada"
     ), {"ada": rep["ada_number"]})
     await db.commit()
-    logger.info("[REP] Evaluation enabled: ada=%s", rep["ada_number"])
+    logger.info("[REP] Evaluation enabled: ada_ref=%s", log_reference(rep["ada_number"], "rep-ada"))
     return {"ada_number": rep["ada_number"], "evaluation_enabled": True}
 
 

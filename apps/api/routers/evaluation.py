@@ -13,6 +13,7 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
+from ip_utils import log_reference
 from keypair import verify_signature
 from models import EvaluationQuestion, PoliticianEvaluation, IdentityRecord, KeyStatus
 from services.evaluation_integrity import (
@@ -288,7 +289,7 @@ async def evaluate_politician(
             raise HTTPException(426, "Απαιτείται ενημέρωση της εφαρμογής για ασφαλή αξιολόγηση.")
         payload = f"evaluate:{ada_number}:{req.nullifier_hash}"
         integrity = "legacy"
-        logger.warning("[EVAL] Legacy evaluation signature accepted: ada=%s", ada_number)
+        logger.warning("[EVAL] Legacy evaluation signature accepted: ada_ref=%s", log_reference(ada_number, "rep-ada"))
 
     if not verify_signature(identity.public_key_hex, payload, req.signature_hex):
         raise HTTPException(401, "Μη έγκυρη υπογραφή.")
