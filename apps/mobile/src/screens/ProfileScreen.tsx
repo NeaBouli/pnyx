@@ -310,6 +310,11 @@ export default function ProfileScreen() {
           <Text style={s.legalLink}>Πηγαίος Κώδικας</Text>
         </TouchableOpacity>
       </View>
+
+      {/* EVA-034: in-app only entry for admin test identities (no deep link). */}
+      <TouchableOpacity onPress={() => nav.navigate("ImportAccount")} accessibilityRole="button">
+        <Text style={s.versionInfo}>Εισαγωγή δοκιμαστικού λογαριασμού</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }

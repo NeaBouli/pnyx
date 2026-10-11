@@ -86,8 +86,9 @@ async def test_admin_test_account_defaults_to_locked_test_region():
     assert record.periferia_id == 6
     assert record.dimos_id == 22
     assert record.region_locked is True
-    assert "periferia_id=6" in result.qr_data
-    assert "dimos_id=22" in result.qr_data
+    # EVA-034/035: an import code, not a deep-link URL; location stays server-side.
+    assert result.qr_data.startswith("EKKLESIA-IMPORT-V1:")
+    assert "ekklesia://" not in result.qr_data and "periferia_id" not in result.qr_data
     assert audit.details["periferia_id"] == 6
     assert audit.details["dimos_id"] == 22
     assert audit.details["region_locked"] is True

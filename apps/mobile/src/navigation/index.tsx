@@ -23,6 +23,7 @@ import NotificationSettingsScreen from "../screens/NotificationSettingsScreen";
 import CompassScreen from "../screens/CompassScreen";
 import PolisLoginScreen from "../screens/PolisLoginScreen";
 import ImportAccountScreen from "../screens/ImportAccountScreen";
+import { linking } from "./linking";
 import PolitikoiScreen from "../screens/PolitikoiScreen";
 import EvaluatePoliticianScreen from "../screens/EvaluatePoliticianScreen";
 import ZkSemaphoreScreen from "../screens/ZkSemaphoreScreen";
@@ -40,7 +41,7 @@ export type RootStackParams = {
   Politikoi: undefined;
   EvaluatePolitician: { adaNumber: string; orgLabel: string };
   PolisLogin: { session?: string; challenge?: string; purpose?: string; bill_id?: string };
-  ImportAccount: { key?: string; nullifier?: string; pubkey?: string };
+  ImportAccount: undefined;
   ZkSemaphore: undefined;
   DiavgeiaResults: undefined;
 };
@@ -112,22 +113,6 @@ export default function Navigation() {
   }, []);
 
   if (loading) return <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background }}><ActivityIndicator color={colors.primary} /></View>;
-
-  const linking = {
-    prefixes: ["ekklesia://", "https://ekklesia.gr"],
-    config: {
-      screens: {
-        PolisLogin: "polis-login",
-        ImportAccount: "import-account",
-        Vote: {
-          path: "el/bills/:billId",
-          parse: {
-            billId: (id: string) => id,
-          },
-        },
-      },
-    },
-  };
 
   return (
     <NavigationContainer linking={linking}>

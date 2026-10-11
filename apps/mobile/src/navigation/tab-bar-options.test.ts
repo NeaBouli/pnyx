@@ -35,6 +35,7 @@ function loadTabNavigator(): El {
     }
     if (id === "expo-secure-store") return { getItemAsync: async () => null };
     if (id === "../theme") return { colors };
+    if (id === "./linking") return { linking: { prefixes: [], config: { screens: {} } } };
     if (id.startsWith("../components/") || id.startsWith("../screens/")) {
       return { __esModule: true, default: id, ChannelNotice: id, MirrorReadOnlyBanner: id, UpdateBanner: id };
     }
