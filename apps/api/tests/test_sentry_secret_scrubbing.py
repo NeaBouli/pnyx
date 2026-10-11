@@ -313,3 +313,17 @@ def test_fastapi_events_leak_plain_request_body_without_option(sdk_reset):
     transport = _post_plain_body(max_request_body_size="always")
 
     assert any(kind == "event" and BODY_SENTINEL in body for kind, body in transport.payloads)
+
+
+
+def test_unmatched_route_transaction_does_not_ship_qr_session_or_confirm_token(sdk_reset):
+    """EVA-036 / T-9097: raw-URL transaction names for unmatched routes are scrubbed."""
+    qr_secret, confirm_secret = "qrSecretViaTransportZ9", "confirmSecretViaTransportZ9"
+    transport = _init_sdk()
+    client = TestClient(main.app, raise_server_exceptions=False)
+    client.get(f"/api/v1/polis/qr-session/{qr_secret}/", follow_redirects=False)
+    client.get(f"/api/v1/newsletter/confirm/{confirm_secret}/extra")
+    sentry_sdk.flush()
+
+    assert [kind for kind, _ in transport.payloads].count("transaction") >= 1
+    assert all(qr_secret not in body and confirm_secret not in body for _, body in transport.payloads)

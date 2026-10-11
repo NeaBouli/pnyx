@@ -55,3 +55,24 @@ def test_list_style_breadcrumbs_and_missing_fields_are_tolerated() -> None:
 
     assert SIGNATURE not in repr(result)
     assert result["request"]["url"] is None
+
+
+def test_raw_url_transaction_name_and_http_query_are_scrubbed() -> None:
+    event = {
+        "transaction": f"/api/v1/polis/qr-session/{QR_SESSION}/",
+        "transaction_info": {"source": "url"},
+        "breadcrumbs": {"values": [{"data": {"url": "https://x.test/a", "http.query": f"nullifier_hash={NULLIFIER}"}}]},
+        "spans": [{"description": f"GET https://x.test/a?nullifier_hash={NULLIFIER}",
+                   "data": {"http.query": f"signature_hex={SIGNATURE}", "url": "https://x.test/a"}}],
+    }
+    result = main._before_send_filter(event, {})
+
+    text = repr(result)
+    assert QR_SESSION not in text and NULLIFIER not in text and SIGNATURE not in text
+    assert result["transaction"] == "/api/v1/polis/qr-session/[redacted]/"
+
+
+def test_route_template_transaction_name_is_kept() -> None:
+    event = {"transaction": "/api/v1/polis/qr-session/{session_id}", "transaction_info": {"source": "route"}}
+
+    assert main._before_send_filter(event, {})["transaction"] == "/api/v1/polis/qr-session/{session_id}"

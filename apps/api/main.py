@@ -231,12 +231,24 @@ def _before_send_filter(event, hint):
             request["query_string"] = _sentry_redact_query(request["query_string"])
         if "url" in request:
             request["url"] = _sentry_redact_url(request["url"])
+    # Unmatched routes name the transaction after the raw URL (source "url");
+    # route templates (source "route") carry no values and stay readable.
+    if (event.get("transaction_info") or {}).get("source") == "url":
+        event["transaction"] = _sentry_redact_url(event.get("transaction"))
     breadcrumbs = event.get("breadcrumbs")
     crumbs = breadcrumbs.get("values") if isinstance(breadcrumbs, dict) else breadcrumbs
-    for crumb in crumbs or []:
-        data = crumb.get("data") if isinstance(crumb, dict) else None
-        if isinstance(data, dict) and "url" in data:
-            data["url"] = _sentry_redact_url(data["url"])
+    spans = event.get("spans") if isinstance(event.get("spans"), list) else []
+    for item in [*(crumbs or []), *spans]:
+        data = item.get("data") if isinstance(item, dict) else None
+        if not isinstance(data, dict):
+            continue
+        for key in ("url", "http.url"):
+            if key in data:
+                data[key] = _sentry_redact_url(data[key])
+        if "http.query" in data:
+            data["http.query"] = _sentry_redact_query(data["http.query"])
+        if isinstance(item.get("description"), str):
+            item["description"] = _sentry_redact_url(item["description"])
     if "extra" in event:
         event["extra"] = _sentry_redact(event["extra"])
     for container in ("exception", "threads"):
