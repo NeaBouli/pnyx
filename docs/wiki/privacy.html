@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Ιδιωτικότητα & GDPR | εκκλησία Wiki</title>
   <!-- SEO Meta Tags -->
-  <meta name="description" content="Πολιτική ιδιωτικότητας ekklesia.gr — κανένα cookie, κανένα tracking, k-anonymity, GDPR by design."/>
+  <meta name="description" content="Πολιτική ιδιωτικότητας ekklesia.gr — κανένα cookie, κανένα tracking, k-anonymity, ελαχιστοποίηση δεδομένων."/>
   <meta name="keywords" content="GDPR, ιδιωτικότητα, k-anonymity, Ed25519, HLR, Arweave, privacy"/>
   <meta name="author" content="V-Labs IT Solutions &amp; Development — Community"/>
   <meta name="robots" content="index, follow"/>
@@ -15,7 +15,7 @@
   <meta property="og:type" content="website"/>
   <meta property="og:url" content="https://ekklesia.gr/wiki/privacy.html"/>
   <meta property="og:title" content="Ιδιωτικότητα & GDPR | εκκλησία Wiki"/>
-  <meta property="og:description" content="Πολιτική ιδιωτικότητας ekklesia.gr — κανένα cookie, κανένα tracking, k-anonymity, GDPR by design."/>
+  <meta property="og:description" content="Πολιτική ιδιωτικότητας ekklesia.gr — κανένα cookie, κανένα tracking, k-anonymity, ελαχιστοποίηση δεδομένων."/>
   <meta property="og:image" content="https://ekklesia.gr/assets/og-image.png"/>
   <meta property="og:locale" content="el_GR"/>
   <meta property="og:locale:alternate" content="en_US"/>
@@ -24,7 +24,7 @@
   <!-- Twitter/X Card -->
   <meta name="twitter:card" content="summary_large_image"/>
   <meta name="twitter:title" content="Ιδιωτικότητα & GDPR | εκκλησία Wiki"/>
-  <meta name="twitter:description" content="Πολιτική ιδιωτικότητας ekklesia.gr — κανένα cookie, κανένα tracking, k-anonymity, GDPR by design."/>
+  <meta name="twitter:description" content="Πολιτική ιδιωτικότητας ekklesia.gr — κανένα cookie, κανένα tracking, k-anonymity, ελαχιστοποίηση δεδομένων."/>
   <meta name="twitter:image" content="https://ekklesia.gr/assets/og-image.png"/>
 
   <!-- Hreflang -->
@@ -185,7 +185,7 @@
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "Privacy & GDPR",
-  "description": "Privacy policy of ekklesia.gr — no cookies, no tracking, GDPR by design.",
+  "description": "Privacy policy of ekklesia.gr — no cookies, no tracking, data minimization.",
   "author": {"@type": "Organization", "name": "V-Labs IT Solutions & Development"},
   "publisher": {"@type": "Organization", "name": "ekklesia.gr", "url": "https://ekklesia.gr"},
   "inLanguage": "el",
@@ -230,8 +230,8 @@
     <table>
       <tr><th data-el="Δεδομένο" data-en="Data">Δεδομένο</th><th data-el="Αποθηκεύεται;" data-en="Stored?">Αποθηκεύεται;</th><th data-el="Λόγος" data-en="Reason">Λόγος</th></tr>
       <tr><td data-el="Αριθμός κινητού" data-en="Phone number">Αριθμός κινητού</td><td style="color:var(--red);font-weight:700">❌ Ποτέ</td><td data-el="Διαγράφεται μετά το hashing" data-en="Deleted after hashing">Διαγράφεται μετά το hashing</td></tr>
-      <tr><td>Private Key</td><td style="color:var(--red);font-weight:700">❌ Ποτέ</td><td data-el="Μόνο στη συσκευή" data-en="Device only">Μόνο στη συσκευή</td></tr>
-      <tr><td data-el="Ηλικία, Φύλο" data-en="Age, Gender">Ηλικία, Φύλο</td><td style="color:var(--red);font-weight:700">❌ Ποτέ</td><td data-el="Μόνο μετά hash" data-en="Only after hash">Μόνο μετά hash</td></tr>
+      <tr><td>Private Key</td><td style="color:var(--red);font-weight:700">❌ Ποτέ</td><td data-el="Δημιουργείται στον server κατά την επαλήθευση και παραδίδεται μία φορά στη συσκευή· δεν αποθηκεύεται ούτε καταγράφεται" data-en="Created on the server during verification and handed to the device once; never stored or logged">Δημιουργείται στον server κατά την επαλήθευση και παραδίδεται μία φορά στη συσκευή· δεν αποθηκεύεται ούτε καταγράφεται</td></tr>
+      <tr><td data-el="Ηλικία, Φύλο, Περιφέρεια (δημογραφικά)" data-en="Age, Gender, Region (demographics)">Ηλικία, Φύλο, Περιφέρεια (δημογραφικά)</td><td style="color:var(--red);font-weight:700" data-el="❌ Όχι" data-en="❌ No">❌ Όχι</td><td data-el="Δεν αποθηκεύονται για νέες ή ανανεωμένες επαληθεύσεις (από 11/10/2026). Παλαιότερες εγγραφές αφαιρούνται· τα αντίγραφα ασφαλείας λήγουν σύμφωνα με την πολιτική διατήρησης." data-en="Not stored for new or renewed verifications (since 2026-10-11). Older entries are being removed; backups expire according to the retention policy.">Δεν αποθηκεύονται για νέες ή ανανεωμένες επαληθεύσεις (από 11/10/2026). Παλαιότερες εγγραφές αφαιρούνται· τα αντίγραφα ασφαλείας λήγουν σύμφωνα με την πολιτική διατήρησης.</td></tr>
       <tr><td>IP Address</td><td style="color:#f59e0b;font-weight:700" data-el="⚠️ Περιορισμένα" data-en="⚠️ Limited">⚠️ Περιορισμένα</td><td data-el="Μόνο για rate limiting / ασφάλεια, όχι σύνδεση με ψήφο ή ταυτότητα" data-en="Only for rate limiting / security, not linked to vote or identity">Μόνο για rate limiting / ασφάλεια, όχι σύνδεση με ψήφο ή ταυτότητα</td></tr>
     </table>
   </div>
@@ -242,7 +242,8 @@
       <tr><th data-el="Δεδομένο" data-en="Data">Δεδομένο</th><th>Format</th><th data-el="Λόγος" data-en="Reason">Λόγος</th></tr>
       <tr><td>Identity Nullifiers</td><td data-el="Argon2id v2 + SHA256 compatibility anchor" data-en="Argon2id v2 + SHA256 compatibility anchor">Argon2id v2 + SHA256 compatibility anchor</td><td data-el="Μοναδικότητα χωρίς αποθήκευση τηλεφώνου" data-en="Uniqueness without storing the phone number">Μοναδικότητα χωρίς αποθήκευση τηλεφώνου</td></tr>
       <tr><td>Public Key</td><td>Ed25519 Hex</td><td data-el="Επαλήθευση υπογραφής" data-en="Signature verification">Επαλήθευση υπογραφής</td></tr>
-      <tr><td data-el="Ψήφοι (ανώνυμα)" data-en="Votes (anonymous)">Ψήφοι (ανώνυμα)</td><td>YES/NO/ABSTAIN</td><td data-el="Αποτελέσματα" data-en="Results">Αποτελέσματα</td></tr>
+      <tr><td data-el="Ψήφοι (ψευδώνυμα)" data-en="Votes (pseudonymous)">Ψήφοι (ψευδώνυμα)</td><td>YES/NO/ABSTAIN</td><td data-el="Αποτελέσματα· συνδέονται με ψευδώνυμο nullifier, όχι με όνομα ή αριθμό τηλεφώνου" data-en="Results; linked to a pseudonymous nullifier, not to a name or phone number">Αποτελέσματα· συνδέονται με ψευδώνυμο nullifier, όχι με όνομα ή αριθμό τηλεφώνου</td></tr>
+      <tr><td data-el="Περιφέρεια / Δήμος (προαιρετικά)" data-en="Region / Municipality (optional)">Περιφέρεια / Δήμος (προαιρετικά)</td><td data-el="Αυτοδήλωση, κλειδωμένη" data-en="Self-declared, locked">Αυτοδήλωση, κλειδωμένη</td><td data-el="Τοπικές ψηφοφορίες — δεν αποτελεί επαληθευμένη κατοικία" data-en="Local votes — not verified residence">Τοπικές ψηφοφορίες — δεν αποτελεί επαληθευμένη κατοικία</td></tr>
       <tr><td data-el="VAA Απαντήσεις" data-en="VAA Answers">VAA Απαντήσεις</td><td data-el="Ψευδώνυμο (Public Key Hash)" data-en="Pseudonymous (Public Key Hash)">Ψευδώνυμο (Public Key Hash)</td><td data-el="Πολιτική Πυξίδα — Art. 9 GDPR · Διαγράφονται με revoke" data-en="Political Compass — Art. 9 GDPR · Deleted on revoke">Πολιτική Πυξίδα — Art. 9 GDPR · Διαγράφονται με revoke</td></tr>
     </table>
   </div>
@@ -256,8 +257,8 @@
 
   <h2 class="fade-in">GDPR</h2>
   <div class="success-box fade-in">
-    <p data-el="Servers στην Ευρώπη (Hetzner). Privacy by design. Κανένα personal data στον server." data-en="Servers in Europe (Hetzner). Privacy by design. No personal data on server.">
-      Servers στην Ευρώπη (Hetzner). Privacy by design. Κανένα personal data στον server.
+    <p data-el="Servers στην Ευρώπη (Hetzner). Ελαχιστοποίηση δεδομένων: ο αριθμός κινητού δεν αποθηκεύεται και η ταυτότητα στον server είναι ψευδώνυμη (nullifier, δημόσιο κλειδί). Οι ψήφοι αποθηκεύονται ψευδώνυμα: συνδέονται με ένα ψευδώνυμο nullifier, όχι με όνομα ή αριθμό τηλεφώνου. Δεν είναι ανώνυμες απέναντι στον διαχειριστή με την κρυπτογραφική έννοια. Τα ψευδώνυμα δεδομένα παραμένουν προσωπικά δεδομένα κατά τον GDPR· η σελίδα αυτή δεν αποτελεί βεβαίωση νομικής συμμόρφωσης." data-en="Servers in Europe (Hetzner). Data minimization: the phone number is not stored and the identity on the server is pseudonymous (nullifier, public key). Votes are stored pseudonymously: they are linked to a pseudonymous nullifier, not to a name or phone number. They are not anonymous towards the operator in the cryptographic sense. Pseudonymous data is still personal data under the GDPR; this page is not a statement of legal compliance.">
+      Servers στην Ευρώπη (Hetzner). Ελαχιστοποίηση δεδομένων: ο αριθμός κινητού δεν αποθηκεύεται και η ταυτότητα στον server είναι ψευδώνυμη (nullifier, δημόσιο κλειδί). Οι ψήφοι αποθηκεύονται ψευδώνυμα: συνδέονται με ένα ψευδώνυμο nullifier, όχι με όνομα ή αριθμό τηλεφώνου. Δεν είναι ανώνυμες απέναντι στον διαχειριστή με την κρυπτογραφική έννοια. Τα ψευδώνυμα δεδομένα παραμένουν προσωπικά δεδομένα κατά τον GDPR· η σελίδα αυτή δεν αποτελεί βεβαίωση νομικής συμμόρφωσης.
     </p>
   </div>
 
@@ -346,7 +347,7 @@
   </div>
 </div>
 <script>
-var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP συνδεδεμένη με ψήφο ή ταυτότητα.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ανώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
+var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP συνδεδεμένη με ψήφο ή ταυτότητα.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ψευδώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
 var _deleteHtml='<h2 style="margin-top:0">Διαγραφή Λογαριασμού</h2><p>Απεγκαταστήστε την εφαρμογή — Private Key και Nullifier διαγράφονται αμέσως.</p><p><a href="delete-account.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#ef4444;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Αναλυτικές Οδηγίες Διαγραφής →</a></p>';
 function openLegalModal(t){document.getElementById("legalContent").innerHTML=t==="privacy"?_privacyHtml:_deleteHtml;document.getElementById("legalModal").style.display="flex"}
 function closeLegalModal(){document.getElementById("legalModal").style.display="none"}

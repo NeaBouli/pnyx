@@ -52,22 +52,31 @@ import r0_inventory
 # preserves the existing stale/unknown UI contract. Both annual-cost displays
 # show server + domain (~309.30 EUR/year, 10.2026); recurring USD, one-time and
 # variable costs remain separately disclosed, without currency conversion.
+# T-9106 (Gio approved "correct now", 2026-10-11, EVA-001/002/006/010/013/015/032):
+# public claims match the current implementation. Every page's legal modal says
+# "Ψήφοι (ψευδώνυμα)"; privacy/faq/roadmap/zk-voting/whitepaper/delete-account/api
+# say the Ed25519 key pair is created on the server and handed to the device once
+# (not stored or logged), votes are pseudonymous (not anonymous towards the
+# operator), raw demographics are not stored for new/renewed verifications,
+# region is self-declared and locked, GDPR/"no personal data" badges are replaced
+# by factual minimization statements, and TrueRepublic/iOS are labelled planned /
+# not available. community.html: "Data minimization." and pseudonymous POLIS identity.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "e697e7e0c31de6e019259bf9fc75cf9ae17ac11dff36a0ca3ac973e3d88e4667",  # T-9048: scoped contrast, heading semantics and document-language toggle
-    "docs/wiki/api.html": "0f2b6771a112f089c7fba6b1ef3185e061b073cd338f3db10a38a3c3c3c2515f",
-    "docs/wiki/architecture.html": "8198bc8764e1d848f512a14195d2a219e6ce36398227f6744ce2793f401273d3",
-    "docs/wiki/broadcasting.html": "9e14ffa72fa9e524c109748881d2ed941aeeb257d44570b191aaa24d5fb47b62",
-    "docs/wiki/contributing.html": "08d936e733910ef72639759b7ec5ff92993db2d7a2ad9ef21d86fa3a1cf3838c",
-    "docs/wiki/database.html": "9a86616c03c17a3cf3b8f95458d10286056bb99c760e0daf944ed1e54e4d35b2",
-    "docs/wiki/delete-account.html": "426b3c7c2a252a4b1520ad1bdd0bfee812904c43f057e8c805114803f09778e9",
-    "docs/wiki/faq.html": "4bda2ccff854016b88249d18952e3c62de297b909d70a8e5e15886cc170a09db",
-    "docs/wiki/index.html": "2f6de1a1e879478c686a220d0cc68ea495c28b1c18d40ad77420d3adcde323ea",  # T-9047/T-9048: named code region, contrast, headings and document language
-    "docs/wiki/modules.html": "c5708c74924dac9c813a184e33b20e3381f3e47345fe4c933f8709852c47552d",  # T-9072: neutral unknown health dots, MOD-23/25 mapping, localized status labels
-    "docs/wiki/privacy.html": "8887a4b19c0fdca6f52cec50289d5c4e17eb21e8839c5dc9405cd9395ee97ba1",
-    "docs/wiki/roadmap.html": "0bc54ef66ee79ec0db67ed8f1e334dc22174039f1e6d64d23ed2723763e34b77",
-    "docs/wiki/security.html": "5dac9dce20e8552fa031fdd03c0501a752e6e4ae05f16c384c697882258da44f",
-    "docs/wiki/whitepaper.html": "ebf88a4bbbbaf7c4350cdfe9076c5010eaa2f207ef4a275e0d65d5aa9828b6c0",
-    "docs/wiki/zk-voting.html": "a9d955a74ad6b0f50a6d504effb3f38c0a07210e9b6a948241e89dead0401e24",
+    "docs/community.html": "01cadf7469b64df69c23c1ebff8bde67c7e6b5e0f4b2d12394509b5f20413b86",  # T-9048: scoped contrast, heading semantics and document-language toggle
+    "docs/wiki/api.html": "e56012799245533915b72606ffc8955bd4c3ce61f3ba5f9926fd07abb101106c",
+    "docs/wiki/architecture.html": "1af2aa9c102d66887e52627c277ebfea03935a2ff3b772235cf07ed3d4313f0b",
+    "docs/wiki/broadcasting.html": "eb345ed4551a94220e47aeb4b40c7c745bf6dfeaa5f330eac6f629a09d31f716",
+    "docs/wiki/contributing.html": "bb4048480c3b75cb98ee668305833fe36b2c939f29ef27f1f8bec230c9d49d88",
+    "docs/wiki/database.html": "08ac70323ffa6a6db969f41678ad8de9afd5fdd8f5b74981665cbf8e38afb9f9",
+    "docs/wiki/delete-account.html": "629acdeb25479effd175be01104adaec2b74855128039afa23016b290cb9bc47",
+    "docs/wiki/faq.html": "6427c63a93d3bc840755c446b1309e53098752aad51710e13c44653a7cb36863",
+    "docs/wiki/index.html": "ea418f9164a41aafa72721bdc8feaf7612a26fc83a32e7e781d7f166fe278419",  # T-9047/T-9048: named code region, contrast, headings and document language
+    "docs/wiki/modules.html": "dd1f4addfdc25337790028ac3f3d4d608832a11ad682c9068dae1c9b0a265544",  # T-9072: neutral unknown health dots, MOD-23/25 mapping, localized status labels
+    "docs/wiki/privacy.html": "50b4cd9514ecac989fe1cc2e28dd1e513cb04286f9c3ad70717cdd0c71891d98",
+    "docs/wiki/roadmap.html": "84468c8a672a819d07e1d2649084356993d13fde0c41c1df4a26054c611b76a1",
+    "docs/wiki/security.html": "8ade2139559176c15551f19ce8c5d2aa8a09e0d66235ff326bf4fa13da71db97",
+    "docs/wiki/whitepaper.html": "495f7182ea35f22de6cdb18783c7dbf1f4d80b4991f10ad4ca9e40c124a32200",
+    "docs/wiki/zk-voting.html": "5dafa29250109c593a4aaabe65b7bc2a824d9f1efc90485d0278dd6325b07ccf",
 }
 # T-420 changed only the "24 Ώρες" footer target; T-421 only drops the same-URL
 # hreflang="en" head link. Findings text is unchanged.
