@@ -111,6 +111,18 @@ def hashed_rate_subject(subject: str, namespace: str, today: date | None = None)
     return digest[:32]
 
 
+def log_reference(value: str, namespace: str) -> str:
+    """Return a short stable HMAC reference for logs instead of a secret or identifier.
+
+    EVA-004: invite codes and representative ADAs must not appear in logs. The
+    reference is stable (no daily rotation) so an invite's creation and its use
+    can still be correlated by an operator, but the value cannot be recovered
+    from the log line.
+    """
+    msg = f"log:{namespace}:{value}".encode()
+    return hmac.new(_rate_limit_salt().encode(), msg, hashlib.sha256).hexdigest()[:12]
+
+
 def rate_limit_key_for_ip(request: Request, namespace: str, today: date | None = None) -> str:
     subject = get_client_ip(request)
     day = (today or date.today()).isoformat()
