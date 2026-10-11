@@ -238,9 +238,9 @@ async def _release_identity_verify_lock(lock_key: str, token: str) -> None:
 
 class VerifyRequest(BaseModel):
     phone_number: str = Field(..., description="Griechische Mobilnummer (+30...)")
-    age_group:    str | None = Field(None, description="AGE_18_25 .. AGE_65_PLUS")
-    region:       str | None = Field(None, description="REG_ATTICA, REG_CRETE ...")
-    gender_code:  str | None = Field(None, description="GENDER_MALE / FEMALE / DIVERSE / NO_ANSWER")
+    age_group:    str | None = Field(None, description="Legacy: akzeptiert, wird nicht gespeichert (EVA-002)")
+    region:       str | None = Field(None, description="Legacy: akzeptiert, wird nicht gespeichert (EVA-002)")
+    gender_code:  str | None = Field(None, description="Legacy: akzeptiert, wird nicht gespeichert (EVA-002)")
 
 class VerifyResponse(BaseModel):
     success:         bool
@@ -331,26 +331,22 @@ async def verify_identity(req: VerifyRequest, request: Request, db: AsyncSession
         # 4. Keypair erzeugen
         keypair = generate_keypair()
 
-        # 5. Demographischen Hash berechnen (optional, Beta)
-        demographic_hash = None
-        if req.age_group and req.region:
-            from nullifier import generate_demographic_hash
-            demographic_hash = generate_demographic_hash(
-                req.age_group,
-                req.region,
-                req.gender_code or "GENDER_NO_ANSWER"
-            )
+        # 5. Roh-Demographie (EVA-002): Felder aus alten App-Versionen werden
+        # akzeptiert, aber nie persistiert — nur Public Key + Nullifier.
+        if req.age_group or req.region or req.gender_code:
+            logger.info("[MOD-01] demographic fields supplied and discarded")
 
         # 6. Nur Public Key + Nullifier speichern
         if existing:
-            # Revoked record reaktivieren
+            # Revoked record reaktivieren — Legacy-Demographie (falls aus
+            # alten Releases vorhanden) wird dabei mitgelöscht.
             update_values = {
                 "public_key_hex": keypair["public_key_hex"],
                 "status": KeyStatus.ACTIVE,
-                "demographic_hash": demographic_hash,
-                "age_group": req.age_group,
-                "region": req.region,
-                "gender_code": req.gender_code,
+                "demographic_hash": None,
+                "age_group": None,
+                "region": None,
+                "gender_code": None,
                 "revoked_at": None,
                 "created_at": datetime.now(timezone.utc).replace(tzinfo=None),
             }
@@ -372,10 +368,6 @@ async def verify_identity(req: VerifyRequest, request: Request, db: AsyncSession
                 nullifier_version="v2" if nullifier_v2 else "v1",
                 nullifier_migrated_at=datetime.now(timezone.utc).replace(tzinfo=None) if nullifier_v2 else None,
                 public_key_hex=keypair["public_key_hex"],
-                demographic_hash=demographic_hash,
-                age_group=req.age_group,
-                region=req.region,
-                gender_code=req.gender_code,
                 status=KeyStatus.ACTIVE,
             )
             db.add(record)
@@ -423,7 +415,15 @@ async def revoke_identity(req: RevokeRequest, db: AsyncSession = Depends(get_db)
     await db.execute(
         update(IdentityRecord)
         .where(IdentityRecord.nullifier_hash == new_nullifier)
-        .values(status=KeyStatus.REVOKED, revoked_at=datetime.now(timezone.utc).replace(tzinfo=None))
+        .values(
+            status=KeyStatus.REVOKED,
+            revoked_at=datetime.now(timezone.utc).replace(tzinfo=None),
+            # EVA-002: Datenminimierung — Roh-Demographie bei Revokation löschen
+            demographic_hash=None,
+            age_group=None,
+            region=None,
+            gender_code=None,
+        )
     )
     await db.commit()
 
