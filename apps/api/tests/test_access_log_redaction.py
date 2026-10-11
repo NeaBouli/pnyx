@@ -214,3 +214,28 @@ def test_vote_status_get_404_carries_no_store(monkeypatch: pytest.MonkeyPatch) -
         )
     assert response.status_code == 404
     assert response.headers["cache-control"] == "private, no-store"
+
+
+def test_qr_session_id_in_path_is_redacted(access_log_capture: Any) -> None:
+    session_id = "qrSessionSecret_0123456789"
+    _emit("GET", f"/api/v1/polis/qr-session/{session_id}")
+    message = _only_message(access_log_capture)
+    assert session_id not in message
+    assert "/api/v1/polis/qr-session/[redacted]" in message
+
+
+def test_qr_session_creation_route_stays_readable(access_log_capture: Any) -> None:
+    _emit("GET", "/api/v1/polis/qr-session?purpose=vote")
+    assert "/api/v1/polis/qr-session?purpose=vote" in _only_message(access_log_capture)
+
+
+def test_truly_percent_encoded_and_padded_keys_are_redacted(access_log_capture: Any) -> None:
+    _emit("GET", f"/api/v1/vote/GR-1/status?%6Eullifier_hash={NULLIFIER}&+signature_hex={SIGNATURE}")
+    message = _only_message(access_log_capture)
+    assert NULLIFIER not in message
+    assert SIGNATURE not in message
+
+
+def test_crafted_method_token_cannot_shift_the_target(access_log_capture: Any) -> None:
+    _emit("2", f"/api/v1/vote/GR-1/status?nullifier_hash={NULLIFIER}")
+    assert NULLIFIER not in _only_message(access_log_capture)

@@ -35,7 +35,9 @@ _ACCESS_LOG_SENSITIVE_QUERY_PREFIXES = (
     "sso", "nonce", "code", "state", "token",
 )
 # Path prefixes whose next segment carries a one-time secret.
-_ACCESS_LOG_SENSITIVE_PATH_MARKERS = ("/newsletter/confirm/",)
+# The QR session id is a short-lived bearer secret: polling it returns the
+# nullifier once the user has authenticated (T-9092 review).
+_ACCESS_LOG_SENSITIVE_PATH_MARKERS = ("/newsletter/confirm/", "/polis/qr-session/")
 # uvicorn.access format: '%s - "%s %s HTTP/%s" %d' — the request target is the
 # argument right before the HTTP-version token.
 _ACCESS_LOG_HTTP_VERSIONS = frozenset({"1.0", "1.1", "2", "2.0", "3"})
@@ -67,7 +69,7 @@ def redact_access_log_query(query: str) -> str:
     changed = False
     for i, part in enumerate(parts):
         key, eq, _value = part.partition("=")
-        if eq and _access_log_is_sensitive_query_key(unquote_plus(key)):
+        if eq and _access_log_is_sensitive_query_key(unquote_plus(key).strip()):
             parts[i] = f"{key}={_ACCESS_LOG_REDACTED}"
             changed = True
     return "&".join(parts) if changed else query
@@ -101,6 +103,13 @@ class AccessLogRedactionFilter(logging.Filter):
     def _redact(record: logging.LogRecord) -> None:
         args = record.args
         if not isinstance(args, tuple):
+            return
+        # uvicorn's own shape: (client, method, target, http_version, status).
+        # Use the fixed position first so a crafted method token cannot shift it.
+        if len(args) == 5 and isinstance(args[2], str):
+            redacted = redact_access_log_target(args[2])
+            if redacted != args[2]:
+                record.args = (*args[:2], redacted, *args[3:])
             return
         for i in range(1, len(args)):
             version = args[i]
