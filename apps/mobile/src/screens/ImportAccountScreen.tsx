@@ -47,7 +47,13 @@ export default function ImportAccountScreen({ navigation }: Props) {
       return;
     }
     setCode("");
-    const existing = await SecureStore.getItemAsync("ekklesia_public_key");
+    let existing: string | null;
+    try {
+      existing = await SecureStore.getItemAsync("ekklesia_public_key");
+    } catch {
+      setStep({ kind: "error", message: "Δεν ήταν δυνατή η ανάγνωση της τρέχουσας ταυτότητας." });
+      return;
+    }
     setStep({
       kind: "confirm",
       credentials,
@@ -89,6 +95,7 @@ export default function ImportAccountScreen({ navigation }: Props) {
             autoComplete="off"
             importantForAutofill="no"
             spellCheck={false}
+            keyboardType="visible-password"
             multiline
             accessibilityLabel="Κωδικός εισαγωγής"
           />

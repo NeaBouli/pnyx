@@ -43,6 +43,7 @@ describe("import code", () => {
   });
 
   it("never echoes the code in error messages", () => {
+    expect.assertions(2);
     try {
       parseImportCode(code(PRIVATE_KEY, NULLIFIER, PUBLIC_KEY, "00000000"));
     } catch (error) {

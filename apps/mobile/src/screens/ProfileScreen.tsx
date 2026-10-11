@@ -25,6 +25,7 @@ interface Dimos { id: number; name_el: string; name_en: string; population: numb
 export default function ProfileScreen() {
   const nav = useNavigation<Nav>();
   const [periferias, setPeriferias] = useState<Periferia[]>([]);
+  const [showTestImport, setShowTestImport] = useState(false);
   const [dimoi, setDimoi] = useState<Dimos[]>([]);
   const [selectedPeriferia, setSelectedPeriferia] = useState<number | null>(null);
   const [selectedDimos, setSelectedDimos] = useState<number | null>(null);
@@ -233,7 +234,8 @@ export default function ProfileScreen() {
       </TouchableOpacity>
 
       {/* Version + Channel + Update Check */}
-      <Text style={s.versionInfo}>
+      {/* Long-press reveals the test-account import entry (EVA-034, not shown to regular users). */}
+      <Text style={s.versionInfo} onLongPress={() => setShowTestImport(true)} suppressHighlighting>
         Έκδοση: {getCurrentVersionName()} (v{getCurrentVersionCode()}) | Κανάλι: {getDistributionChannelLabel(Constants.expoConfig?.extra?.distributionChannel)}
       </Text>
       <TouchableOpacity
@@ -312,9 +314,11 @@ export default function ProfileScreen() {
       </View>
 
       {/* EVA-034: in-app only entry for admin test identities (no deep link). */}
-      <TouchableOpacity onPress={() => nav.navigate("ImportAccount")} accessibilityRole="button">
-        <Text style={s.versionInfo}>Εισαγωγή δοκιμαστικού λογαριασμού</Text>
-      </TouchableOpacity>
+      {showTestImport && (
+        <TouchableOpacity onPress={() => nav.navigate("ImportAccount")} accessibilityRole="button">
+          <Text style={s.versionInfo}>Εισαγωγή δοκιμαστικού λογαριασμού</Text>
+        </TouchableOpacity>
+      )}
     </ScrollView>
   );
 }
