@@ -91,3 +91,42 @@ def test_citizen_signature_headers_and_camelcase_query_keys_are_scrubbed() -> No
     assert result["request"]["headers"]["content-type"] == "application/json"
     assert result["request"]["headers"]["accept-encoding"] == "gzip"
     assert "page=2" in result["request"]["query_string"]
+
+
+def test_sqlalchemy_parameters_are_scrubbed_from_exception_text() -> None:
+    message = (
+        '(sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) duplicate key value\n'
+        '[SQL: INSERT INTO identity_records (nullifier_hash, public_key_hex) VALUES ($1, $2)]\n'
+        f"[parameters: ('{NULLIFIER}', '{PUBLIC_KEY} [x]')]\n"
+        '(Background on this error at: https://sqlalche.me/e/20/gkpj)'
+    )
+    event = {"exception": {"values": [{"type": "IntegrityError", "value": message}]}}
+    result = main._before_send_filter(event, {})
+
+    value = result["exception"]["values"][0]["value"]
+    assert NULLIFIER not in value and PUBLIC_KEY not in value
+    assert "[SQL: INSERT INTO identity_records" in value and "(Background on this error" in value
+
+
+def test_database_engine_hides_bound_parameters() -> None:
+    import database
+
+    assert database.engine.sync_engine.hide_parameters is True
+
+
+def test_sentry_options_disable_redis_and_info_breadcrumbs() -> None:
+    import logging
+
+    from sentry_sdk.integrations.logging import LoggingIntegration
+    from sentry_sdk.integrations.redis import RedisIntegration
+
+    options = main._sentry_init_options("https://public@o0.ingest.sentry.io/1")
+    assert any(isinstance(i, RedisIntegration) for i in options["disabled_integrations"])
+    logging_integration = next(i for i in options["integrations"] if isinstance(i, LoggingIntegration))
+    assert logging_integration._breadcrumb_handler.level == logging.WARNING
+
+
+def test_http_fragment_is_scrubbed() -> None:
+    event = {"breadcrumbs": {"values": [{"data": {"url": "https://x.test/a", "http.fragment": f"n={NULLIFIER}"}}]}}
+
+    assert NULLIFIER not in repr(main._before_send_filter(event, {}))

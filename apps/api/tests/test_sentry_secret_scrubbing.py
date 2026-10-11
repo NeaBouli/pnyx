@@ -344,3 +344,23 @@ def test_evaluation_read_signature_header_does_not_reach_transport(sdk_reset):
 
     assert any(kind == "transaction" for kind, _ in transport.payloads)
     assert all(signature not in body for _, body in transport.payloads)
+
+
+def test_info_log_breadcrumb_does_not_reach_transport(sdk_reset):
+    """EVA-036 / T-9101: INFO log lines (with identifier prefixes) are not breadcrumbs."""
+    import logging
+
+    marker = "infoBreadcrumbMarkerZ9"
+    transport = _init_sdk()
+    qr_logger = logging.getLogger("routers.polis_qr")
+    old_level = qr_logger.level
+    qr_logger.setLevel(logging.INFO)  # as in a deployment with INFO logging
+    try:
+        qr_logger.info("QR web vote: nullifier=%s...", marker)
+        sentry_sdk.capture_message("boom")
+        sentry_sdk.flush()
+    finally:
+        qr_logger.setLevel(old_level)
+
+    assert any(kind == "event" for kind, _ in transport.payloads)
+    assert all(marker not in body for _, body in transport.payloads)

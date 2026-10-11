@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import re
 import secrets
 from contextlib import asynccontextmanager
 from typing import Any
@@ -230,6 +231,11 @@ def _sentry_redact_query(query: Any) -> Any:
     return _sentry_redact(query)
 
 
+# From "[parameters:" up to SQLAlchemy's trailing "(Background on this error ...)"
+# line or the end of the text; values may themselves contain brackets.
+_SQL_PARAMETERS_RE = re.compile(r"\[parameters: .*?(?=\n\(Background|\Z)", re.DOTALL)
+
+
 def _before_send_filter(event, hint):
     """GDPR: keine PII/Secrets senden (Request-Body, Query, Header, Frame-Locals, Extras)."""
     request = event.get("request")
@@ -265,6 +271,8 @@ def _before_send_filter(event, hint):
                 data[key] = _sentry_redact_url(data[key])
         if "http.query" in data:
             data["http.query"] = _sentry_redact_query(data["http.query"])
+        if "http.fragment" in data:
+            data["http.fragment"] = _SENTRY_REDACTED
         if isinstance(item.get("description"), str):
             item["description"] = _sentry_redact_url(item["description"])
     if "extra" in event:
@@ -272,6 +280,10 @@ def _before_send_filter(event, hint):
     for container in ("exception", "threads"):
         values = (event.get(container) or {}).get("values") or []
         for value in values:
+            # Defense in depth next to hide_parameters: SQLAlchemy appends the
+            # bound values as "[parameters: ...]" to DBAPI error text.
+            if isinstance(value, dict) and isinstance(value.get("value"), str):
+                value["value"] = _SQL_PARAMETERS_RE.sub("[parameters: [Filtered]]", value["value"])
             frames = ((value or {}).get("stacktrace") or {}).get("frames") or []
             for frame in frames:
                 if isinstance(frame, dict) and "vars" in frame:
@@ -283,10 +295,21 @@ def _sentry_init_options(dsn: str) -> dict[str, Any]:
     """sentry_sdk.init-Optionen; Filter gilt fuer Error- UND Transaction-Events."""
     from sentry_sdk.integrations.fastapi import FastApiIntegration
     from sentry_sdk.integrations.starlette import StarletteIntegration
+    from sentry_sdk.integrations.logging import LoggingIntegration
+    from sentry_sdk.integrations.redis import RedisIntegration
 
     return {
         "dsn": dsn,
-        "integrations": [FastApiIntegration(), StarletteIntegration()],
+        # EVA-036 (T-9101): only WARNING+ log records become breadcrumbs (INFO
+        # lines carry identifier prefixes); redis spans/breadcrumbs would carry
+        # keys with QR session ids, SSO nonces and nullifiers, so redis
+        # instrumentation is disabled.
+        "integrations": [
+            FastApiIntegration(),
+            StarletteIntegration(),
+            LoggingIntegration(level=logging.WARNING, event_level=logging.ERROR),
+        ],
+        "disabled_integrations": [RedisIntegration()],
         "traces_sample_rate": float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
         "environment": os.getenv("SENTRY_ENVIRONMENT", "production"),
         "send_default_pii": False,
