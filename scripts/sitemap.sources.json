@@ -8,7 +8,7 @@
       "changefreq": "weekly",
       "priority": "1.0",
       "lastmod": "2026-10-11",
-      "sha256": "2b514b225ea4a8020c2b50bdb362fe36d0377ed129980a81aa7fed222b019483"
+      "sha256": "fa56d5d5530876fdde57bb400ccbd79ed29cdf42c1a2afd871db19e5934d7543"
     },
     {
       "loc": "/el/bills",
@@ -58,7 +58,7 @@
       "changefreq": "monthly",
       "priority": "0.7",
       "lastmod": "2026-10-11",
-      "sha256": "b149a8523ebe34b6b4fbfefe9ff0f1accb66b8464a53ed62900bfbf43b0b70f1"
+      "sha256": "e1dec23dae5d973c144fa945d4cf94fe9615bb1e57fb8a3d2f4a76769aa574b2"
     },
     {
       "loc": "/wiki/index.html",
@@ -90,7 +90,7 @@
       "changefreq": "monthly",
       "priority": "0.8",
       "lastmod": "2026-10-11",
-      "sha256": "91fcf8d2c2d68ab91fcc2d657f6326b027c84e8b799405bd0a8db9b8de66b19a"
+      "sha256": "a9a582426c9903d7d811eba264eb58e10a2db2ece1fb6deace6d5cb9674dab51"
     },
     {
       "loc": "/wiki/security.html",
@@ -162,7 +162,7 @@
       "changefreq": "monthly",
       "priority": "0.5",
       "lastmod": "2026-10-11",
-      "sha256": "a9ebf920b9e3858ebc607d358671a68a23c815b5ceb03751b8a34f77057d8c7a"
+      "sha256": "cae7bffbaf4349cb379935a0198a76bdb6e22280144d60c853c994317499fe53"
     },
     {
       "loc": "/wiki/zk-voting.html",

@@ -62,17 +62,17 @@ import r0_inventory
 # by factual minimization statements, and TrueRepublic/iOS are labelled planned /
 # not available. community.html: "Data minimization." and pseudonymous POLIS identity.
 APPROVED_WIKI_INVENTORY_HASH = {
-    "docs/community.html": "01cadf7469b64df69c23c1ebff8bde67c7e6b5e0f4b2d12394509b5f20413b86",  # T-9048: scoped contrast, heading semantics and document-language toggle
+    "docs/community.html": "01cadf7469b64df69c23c1ebff8bde67c7e6b5e0f4b2d12394509b5f20413b86",  # T-9048: scoped contrast, heading semantics and document-language toggle; T-9106: legal-modal claims text
     "docs/wiki/api.html": "e56012799245533915b72606ffc8955bd4c3ce61f3ba5f9926fd07abb101106c",
     "docs/wiki/architecture.html": "1af2aa9c102d66887e52627c277ebfea03935a2ff3b772235cf07ed3d4313f0b",
     "docs/wiki/broadcasting.html": "eb345ed4551a94220e47aeb4b40c7c745bf6dfeaa5f330eac6f629a09d31f716",
     "docs/wiki/contributing.html": "bb4048480c3b75cb98ee668305833fe36b2c939f29ef27f1f8bec230c9d49d88",
     "docs/wiki/database.html": "08ac70323ffa6a6db969f41678ad8de9afd5fdd8f5b74981665cbf8e38afb9f9",
-    "docs/wiki/delete-account.html": "06dead96d90d919ea6d985223666ed15bb6f63babeb755c9db2a47fc55a255bf",
+    "docs/wiki/delete-account.html": "23e161c6767392c8c7507a68ad4240b66e8e2e5bedb34a63d050b85f6e1a89a9",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
     "docs/wiki/faq.html": "6427c63a93d3bc840755c446b1309e53098752aad51710e13c44653a7cb36863",
-    "docs/wiki/index.html": "ea418f9164a41aafa72721bdc8feaf7612a26fc83a32e7e781d7f166fe278419",  # T-9047/T-9048: named code region, contrast, headings and document language
-    "docs/wiki/modules.html": "dd1f4addfdc25337790028ac3f3d4d608832a11ad682c9068dae1c9b0a265544",  # T-9072: neutral unknown health dots, MOD-23/25 mapping, localized status labels
-    "docs/wiki/privacy.html": "7c448390d04044ede24af538313d0052b34a339ea1db97b2a0a6ade3216a4f8d",
+    "docs/wiki/index.html": "ea418f9164a41aafa72721bdc8feaf7612a26fc83a32e7e781d7f166fe278419",  # T-9047/T-9048: named code region, contrast, headings and document language; T-9106: legal-modal claims text
+    "docs/wiki/modules.html": "dd1f4addfdc25337790028ac3f3d4d608832a11ad682c9068dae1c9b0a265544",  # T-9072: neutral unknown health dots, MOD-23/25 mapping, localized status labels; T-9106: legal-modal claims text
+    "docs/wiki/privacy.html": "53017decbc23d65f3f794573b001b00e29a48b5e636d7fceec32763d4de71ad6",  # T-9106: EVA claims (keys, pseudonymous votes, demographics, email/newsletter)
     "docs/wiki/roadmap.html": "84468c8a672a819d07e1d2649084356993d13fde0c41c1df4a26054c611b76a1",
     "docs/wiki/security.html": "8ade2139559176c15551f19ce8c5d2aa8a09e0d66235ff326bf4fa13da71db97",
     "docs/wiki/whitepaper.html": "495f7182ea35f22de6cdb18783c7dbf1f4d80b4991f10ad4ca9e40c124a32200",

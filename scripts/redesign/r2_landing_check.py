@@ -131,10 +131,10 @@ ALLOWED_R5_INLINE_SCRIPTS = {
         "index": 3,
         # T-9106 (EVA-001/002/006/015, Gio approved "correct now"): the legal
         # modal's privacy text only. Votes are pseudonymous, age/gender are not
-        # stored for new or renewed verifications, and the GDPR line no longer
+        # stored, and the GDPR line no longer
         # claims "no personal data on server". No behavior change.
-        "sha256": "1c050b2ecd377bb01c034047d852da606128bf0b3704bd09740668a3b9639655",
-        "bytes": 3608,
+        "sha256": "7ab5831a0c2160dc634020f38663598e33eac9972553440ea9e295a99e173651",
+        "bytes": 3539,
     },
     4: {
         "index": 4,
