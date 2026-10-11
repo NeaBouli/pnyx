@@ -376,16 +376,6 @@ export function signVote(
   return bytesToHex(signature);
 }
 
-export function signEvaluation(
-  privateKeyHex: string,
-  adaNumber: string,
-  nullifierHash: string,
-): string {
-  const message = new TextEncoder().encode(`evaluate:${adaNumber}:${nullifierHash}`);
-  const signature = ed25519.sign(message, hexToBytes(privateKeyHex));
-  return bytesToHex(signature);
-}
-
 export interface EvaluationScorePayload {
   question_id: number;
   score: number;

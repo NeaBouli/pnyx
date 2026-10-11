@@ -49,10 +49,21 @@ def build_evaluation_v2_payload(
 
 
 def evaluation_v2_required() -> bool:
-    """Allow a reversible compatibility window for already released v1 clients."""
-    return os.getenv(EVALUATION_REQUIRE_V2_ENV, "").strip().lower() in {
-        "1", "true", "yes", "on",
-    }
+    """Allow a reversible compatibility window for already released v1 clients.
+
+    Fail closed: an unrecognised non-empty value requires v2 so a typo can
+    never silently reopen the legacy path. The raw value is never logged.
+    """
+    raw = os.getenv(EVALUATION_REQUIRE_V2_ENV, "").strip().lower()
+    if raw in {"1", "true", "yes", "on"}:
+        return True
+    if raw in {"", "0", "false", "no", "off"}:
+        return False
+    logger.warning(
+        "Invalid %s value; requiring v2 evaluation payloads",
+        EVALUATION_REQUIRE_V2_ENV,
+    )
+    return True
 
 
 def build_evaluation_read_payload(

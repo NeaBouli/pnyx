@@ -126,6 +126,18 @@ def test_legacy_clients_remain_compatible_until_cutoff(
 
 
 @pytest.mark.parametrize("ada", [ADA, None])
+def test_invalid_cutoff_value_fails_closed_on_unsigned_read(
+    client: Any, monkeypatch: pytest.MonkeyPatch, ada: str | None,
+) -> None:
+    http, db = client
+    monkeypatch.setenv("EVALUATION_REQUIRE_V2", "ture")
+    response = http.get(path(ada), params={"nullifier_hash": NULLIFIER})
+    assert response.status_code == 426
+    assert response.headers["cache-control"] == "private, no-store"
+    assert db.calls == []
+
+
+@pytest.mark.parametrize("ada", [ADA, None])
 @pytest.mark.parametrize("tamper", ["target", "owner", "timestamp", "key", "write_payload"])
 def test_bad_signature_never_downgrades_to_legacy(client: Any, ada: str | None, tamper: str) -> None:
     http, db = client
