@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 from fastapi import HTTPException
 from nacl.signing import SigningKey
@@ -114,6 +116,32 @@ def test_v2_cutoff_is_explicit_and_reversible(monkeypatch):
 
     monkeypatch.setenv("EVALUATION_REQUIRE_V2", "true")
     assert evaluation_v2_required() is True
+
+    monkeypatch.setenv("EVALUATION_REQUIRE_V2", "false")
+    assert evaluation_v2_required() is False
+
+
+@pytest.mark.parametrize("value", ["1", "TRUE", " yes ", "on"])
+def test_v2_cutoff_truthy_values(monkeypatch, value):
+    monkeypatch.setenv("EVALUATION_REQUIRE_V2", value)
+    assert evaluation_v2_required() is True
+
+
+@pytest.mark.parametrize("value", ["0", "FALSE", " no ", "off"])
+def test_v2_cutoff_falsy_values_keep_legacy_window(monkeypatch, value):
+    monkeypatch.setenv("EVALUATION_REQUIRE_V2", value)
+    assert evaluation_v2_required() is False
+
+
+@pytest.mark.parametrize("value", ["ture", "flase", "enabled", "require"])
+def test_invalid_v2_cutoff_value_fails_closed_without_leaking_value(
+    monkeypatch, caplog, value,
+):
+    monkeypatch.setenv("EVALUATION_REQUIRE_V2", value)
+    with caplog.at_level(logging.WARNING, logger="services.evaluation_integrity"):
+        assert evaluation_v2_required() is True
+    assert "Invalid EVALUATION_REQUIRE_V2 value" in caplog.text
+    assert value not in caplog.text
 
 
 def test_timestamp_window_rejects_stale_payloads(monkeypatch):
@@ -252,6 +280,34 @@ async def test_legacy_endpoint_is_rejected_after_cutoff(monkeypatch):
 
     monkeypatch.setattr(evaluation, "_get_enabled_politician", _enabled)
     monkeypatch.setenv("EVALUATION_REQUIRE_V2", "true")
+    db = _Session([_Result(scalar=identity)])
+    request = EvaluateRequest(
+        nullifier_hash="f" * 64,
+        scores=_scores(),
+        signature_hex="0" * 128,
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        await evaluation.evaluate_politician("ADA-1", request, db=db)
+
+    assert exc_info.value.status_code == 426
+
+
+@pytest.mark.asyncio
+async def test_invalid_cutoff_value_rejects_legacy_write(monkeypatch) -> None:
+    signing_key = SigningKey(bytes.fromhex("06" * 32))
+    identity = SimpleNamespace(
+        public_key_hex=signing_key.verify_key.encode().hex(),
+        region_locked=True,
+        periferia_id=6,
+        dimos_id=None,
+    )
+
+    async def _enabled(_ada_number: str, _db: object) -> dict[str, object]:
+        return {"role": "Βουλευτής", "periferia_id": 6, "dimos_id": None}
+
+    monkeypatch.setattr(evaluation, "_get_enabled_politician", _enabled)
+    monkeypatch.setenv("EVALUATION_REQUIRE_V2", "ture")
     db = _Session([_Result(scalar=identity)])
     request = EvaluateRequest(
         nullifier_hash="f" * 64,
