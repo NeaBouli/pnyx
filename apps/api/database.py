@@ -2,7 +2,13 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import DeclarativeBase
 from config import settings
 
-engine = create_async_engine(settings.database_url, echo=settings.env == "development")
+# hide_parameters: DBAPI errors must not carry bound values (nullifiers,
+# public keys) into logs or Sentry exception text (EVA-036 review T-9101).
+engine = create_async_engine(
+    settings.database_url,
+    echo=settings.env == "development",
+    hide_parameters=True,
+)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 class Base(DeclarativeBase):

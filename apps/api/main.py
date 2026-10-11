@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import re
 import secrets
 from contextlib import asynccontextmanager
 from typing import Any
@@ -175,6 +176,39 @@ def _sentry_redact(value: Any) -> Any:
     return value
 
 
+_SENTRY_SENSITIVE_QUERY_PREFIXES = tuple(
+    prefix.replace("_", "") for prefix in _ACCESS_LOG_SENSITIVE_QUERY_PREFIXES
+)
+# Citizen identifiers/signatures carried in custom headers, e.g.
+# X-Evaluation-Read-Signature (T-9098 review). Substring match on the
+# normalized header name; deliberately narrower than the query set.
+_SENTRY_SENSITIVE_HEADER_PARTS = ("nullifier", "signature", "publickey", "nonce")
+
+
+def _sentry_is_sensitive_query_key(key: Any) -> bool:
+    """Query keys: the generic secret words plus the EVA-008 access-log set
+    (nullifier, signature, public key, SSO, OAuth code/state, nonce), matched
+    as prefixes after normalization (case, "_", "-"), so publicKey is covered.
+    Applied only to query keys, so dict keys such as status_code stay readable."""
+    if _sentry_is_sensitive_key(key):
+        return True
+    norm = _sentry_norm_key(str(key).strip())
+    return any(norm.startswith(prefix) for prefix in _SENTRY_SENSITIVE_QUERY_PREFIXES)
+
+
+def _sentry_is_sensitive_header(key: Any) -> bool:
+    norm = _sentry_norm_key(key)
+    return _sentry_is_sensitive_key(key) or any(part in norm for part in _SENTRY_SENSITIVE_HEADER_PARTS)
+
+
+def _sentry_redact_url(url: Any) -> Any:
+    """EVA-036: same path/query redaction as the access log (QR session id,
+    newsletter confirm token, nullifier/signature query values)."""
+    if not isinstance(url, str) or not url:
+        return url
+    return redact_access_log_target(url)
+
+
 def _sentry_redact_query(query: Any) -> Any:
     if isinstance(query, str):
         if not query:
@@ -184,16 +218,23 @@ def _sentry_redact_query(query: Any) -> Any:
             return f"b{query[1]}{_sentry_redact_query(query[2:-1])}{query[1]}"
         pairs = parse_qsl(query, keep_blank_values=True)
         return urlencode([
-            (k, _SENTRY_REDACTED if _sentry_is_sensitive_key(k) else v) for k, v in pairs
+            (k, _SENTRY_REDACTED if _sentry_is_sensitive_query_key(k) else v) for k, v in pairs
         ])
     if isinstance(query, list):
         return [
             [item[0], _SENTRY_REDACTED]
-            if isinstance(item, (list, tuple)) and len(item) == 2 and _sentry_is_sensitive_key(item[0])
+            if isinstance(item, (list, tuple)) and len(item) == 2
+            and isinstance(item[0], str) and _sentry_is_sensitive_query_key(item[0])
             else item
             for item in query
         ]
     return _sentry_redact(query)
+
+
+# From "[parameters:" up to SQLAlchemy's trailing "(Background on this error ...)"
+# line or the end of the text; values may themselves contain brackets.
+_SQL_PARAMETERS_RE = re.compile(r"\[parameters: .*?(?=\n\(Background|\Z)", re.DOTALL)
+_PG_DETAIL_RE = re.compile(r"(DETAIL:\s*).*?(?=\n|\Z)")
 
 
 def _before_send_filter(event, hint):
@@ -204,7 +245,8 @@ def _before_send_filter(event, hint):
         headers = request.get("headers")
         if isinstance(headers, dict):
             request["headers"] = _sentry_redact({
-                k: v for k, v in headers.items()
+                k: _SENTRY_REDACTED if _sentry_is_sensitive_header(k) else v
+                for k, v in headers.items()
                 if _sentry_norm_key(k) not in _SENTRY_DROPPED_HEADERS
             })
         for field in ("data", "cookies"):
@@ -212,11 +254,43 @@ def _before_send_filter(event, hint):
                 request[field] = _sentry_redact(request[field])
         if "query_string" in request:
             request["query_string"] = _sentry_redact_query(request["query_string"])
+        if "url" in request:
+            request["url"] = _sentry_redact_url(request["url"])
+    # Unmatched routes name the transaction after the raw URL (source "url");
+    # route templates (source "route") carry no values and stay readable.
+    transaction_info = event.get("transaction_info")
+    if isinstance(transaction_info, dict) and transaction_info.get("source") == "url":
+        event["transaction"] = _sentry_redact_url(event.get("transaction"))
+    breadcrumbs = event.get("breadcrumbs")
+    crumbs = breadcrumbs.get("values") if isinstance(breadcrumbs, dict) else breadcrumbs
+    spans = event.get("spans") if isinstance(event.get("spans"), list) else []
+    for item in [*(crumbs or []), *spans]:
+        if not isinstance(item, dict):
+            continue
+        if isinstance(item.get("description"), str):
+            item["description"] = _sentry_redact_url(item["description"])
+        data = item.get("data")
+        if not isinstance(data, dict):
+            continue
+        for key in ("url", "http.url"):
+            if key in data:
+                data[key] = _sentry_redact_url(data[key])
+        if "http.query" in data:
+            data["http.query"] = _sentry_redact_query(data["http.query"])
+        if "http.fragment" in data:
+            data["http.fragment"] = _SENTRY_REDACTED
     if "extra" in event:
         event["extra"] = _sentry_redact(event["extra"])
     for container in ("exception", "threads"):
         values = (event.get(container) or {}).get("values") or []
         for value in values:
+            # Defense in depth next to hide_parameters: SQLAlchemy appends the
+            # bound values as "[parameters: ...]" to DBAPI error text.
+            # Postgres also echoes the offending values in "DETAIL: Key (...)=(...)"
+            # / "Failing row contains (...)", in chained asyncpg exceptions too.
+            if isinstance(value, dict) and isinstance(value.get("value"), str):
+                text = _SQL_PARAMETERS_RE.sub("[parameters: [Filtered]]", value["value"])
+                value["value"] = _PG_DETAIL_RE.sub(r"\1[Filtered]", text)
             frames = ((value or {}).get("stacktrace") or {}).get("frames") or []
             for frame in frames:
                 if isinstance(frame, dict) and "vars" in frame:
@@ -228,10 +302,21 @@ def _sentry_init_options(dsn: str) -> dict[str, Any]:
     """sentry_sdk.init-Optionen; Filter gilt fuer Error- UND Transaction-Events."""
     from sentry_sdk.integrations.fastapi import FastApiIntegration
     from sentry_sdk.integrations.starlette import StarletteIntegration
+    from sentry_sdk.integrations.logging import LoggingIntegration
+    from sentry_sdk.integrations.redis import RedisIntegration
 
     return {
         "dsn": dsn,
-        "integrations": [FastApiIntegration(), StarletteIntegration()],
+        # EVA-036 (T-9101): only WARNING+ log records become breadcrumbs (INFO
+        # lines carry identifier prefixes); redis spans/breadcrumbs would carry
+        # keys with QR session ids, SSO nonces and nullifiers, so redis
+        # instrumentation is disabled.
+        "integrations": [
+            FastApiIntegration(),
+            StarletteIntegration(),
+            LoggingIntegration(level=logging.WARNING, event_level=logging.ERROR),
+        ],
+        "disabled_integrations": [RedisIntegration()],
         "traces_sample_rate": float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
         "environment": os.getenv("SENTRY_ENVIRONMENT", "production"),
         "send_default_pii": False,

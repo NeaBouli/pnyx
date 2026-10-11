@@ -313,3 +313,83 @@ def test_fastapi_events_leak_plain_request_body_without_option(sdk_reset):
     transport = _post_plain_body(max_request_body_size="always")
 
     assert any(kind == "event" and BODY_SENTINEL in body for kind, body in transport.payloads)
+
+
+
+def test_unmatched_route_transaction_does_not_ship_qr_session_or_confirm_token(sdk_reset):
+    """EVA-036 / T-9097: raw-URL transaction names for unmatched routes are scrubbed."""
+    qr_secret, confirm_secret = "qrSecretViaTransportZ9", "confirmSecretViaTransportZ9"
+    transport = _init_sdk()
+    client = TestClient(main.app, raise_server_exceptions=False)
+    client.get(f"/api/v1/polis/qr-session/{qr_secret}/", follow_redirects=False)
+    client.get(f"/api/v1/newsletter/confirm/{confirm_secret}/extra")
+    sentry_sdk.flush()
+
+    assert [kind for kind, _ in transport.payloads].count("transaction") >= 1
+    assert all(qr_secret not in body and confirm_secret not in body for _, body in transport.payloads)
+
+
+
+def test_evaluation_read_signature_header_does_not_reach_transport(sdk_reset):
+    """EVA-036 / T-9098: the citizen read signature header is scrubbed end to end."""
+    signature = "ab" * 64
+    transport = _init_sdk()
+    client = TestClient(main.app, raise_server_exceptions=False)
+    client.get(
+        "/api/v1/evaluation/my-evaluations",
+        params={"nullifier_hash": "cd" * 32, "timestamp_ms": 1},
+        headers={"X-Evaluation-Read-Signature": signature},
+    )
+    sentry_sdk.flush()
+
+    assert any(kind == "transaction" for kind, _ in transport.payloads)
+    assert all(signature not in body for _, body in transport.payloads)
+
+
+def test_info_log_breadcrumb_does_not_reach_transport(sdk_reset):
+    """EVA-036 / T-9101: INFO log lines (with identifier prefixes) are not breadcrumbs."""
+    import logging
+
+    marker = "infoBreadcrumbMarkerZ9"
+    transport = _init_sdk()
+    qr_logger = logging.getLogger("routers.polis_qr")
+    old_level = qr_logger.level
+    qr_logger.setLevel(logging.INFO)  # as in a deployment with INFO logging
+    try:
+        qr_logger.info("QR web vote: nullifier=%s...", marker)
+        sentry_sdk.capture_message("boom")
+        sentry_sdk.flush()
+    finally:
+        qr_logger.setLevel(old_level)
+
+    assert any(kind == "event" for kind, _ in transport.payloads)
+    assert all(marker not in body for _, body in transport.payloads)
+
+
+def test_chained_db_integrity_error_does_not_ship_detail_values(sdk_reset):
+    """EVA-036 / T-9102: Postgres DETAIL text in chained DB errors is scrubbed end to end."""
+    from sqlalchemy.exc import IntegrityError
+
+    nullifier = "9a" * 32
+
+    class UniqueViolationError(Exception):
+        pass
+
+    orig = UniqueViolationError(
+        'duplicate key value violates unique constraint "identity_records_nullifier_hash_key"\n'
+        f"DETAIL:  Key (nullifier_hash)=({nullifier}) already exists."
+    )
+    transport = _init_sdk()
+    try:
+        try:
+            raise orig
+        except UniqueViolationError as inner:
+            raise IntegrityError("INSERT INTO identity_records (nullifier_hash) VALUES ($1)",
+                                 (nullifier,), inner, hide_parameters=True) from inner
+    except IntegrityError:
+        sentry_sdk.capture_exception()
+    sentry_sdk.flush()
+
+    events = [body for kind, body in transport.payloads if kind == "event"]
+    assert events and "duplicate key value" in events[0]
+    assert all(nullifier not in body for _, body in transport.payloads)
