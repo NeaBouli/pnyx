@@ -313,8 +313,8 @@ async def evaluate_politician(
     await db.commit()
 
     logger.info(
-        "[EVAL] Citizen evaluated %s: %d scores, payload_version=%d",
-        ada_number, len(req.scores), req.payload_version,
+        "[EVAL] Citizen evaluated ada_ref=%s: %d scores, payload_version=%d",
+        log_reference(ada_number, "rep-ada"), len(req.scores), req.payload_version,
     )
     return {
         "ada_number": ada_number,

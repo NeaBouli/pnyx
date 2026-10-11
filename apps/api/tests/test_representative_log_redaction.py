@@ -155,7 +155,7 @@ async def test_legacy_evaluation_warning_logs_reference_not_ada(monkeypatch, cap
         return {"role": "Βουλευτής", "periferia_id": 6, "dimos_id": None}
 
     monkeypatch.setattr(evaluation, "_get_enabled_politician", _enabled)
-    caplog.set_level(logging.WARNING, logger=evaluation.logger.name)
+    caplog.set_level(logging.INFO, logger=evaluation.logger.name)
     db = _EvalSession([
         _EvalResult(scalar=identity),
         _EvalResult(scalars=[SimpleNamespace(id=2), SimpleNamespace(id=8)]),
@@ -170,5 +170,40 @@ async def test_legacy_evaluation_warning_logs_reference_not_ada(monkeypatch, cap
     result = await evaluation.evaluate_politician(ADA, request, db=db)
 
     assert result["integrity"] == "legacy"
+    assert ADA not in caplog.text
+    assert f"ada_ref={log_reference(ADA, 'rep-ada')}" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_v2_evaluation_info_log_has_no_ada(monkeypatch, caplog) -> None:
+    signing_key = SigningKey(bytes([11]) * 32)
+    nullifier = "d" * 64
+    identity = SimpleNamespace(
+        public_key_hex=signing_key.verify_key.encode().hex(),
+        region_locked=True, periferia_id=6, dimos_id=None,
+    )
+
+    async def _enabled(_ada_number, _db):
+        return {"role": "Βουλευτής", "periferia_id": 6, "dimos_id": None}
+
+    monkeypatch.setattr(evaluation, "_get_enabled_politician", _enabled)
+    monkeypatch.setattr(evaluation, "evaluation_timestamp_is_fresh", lambda _ts: True)
+    caplog.set_level(logging.INFO, logger=evaluation.logger.name)
+    scores = [ScoreItem(question_id=8, score=5), ScoreItem(question_id=2, score=-3)]
+    timestamp_ms = 1_787_999_123_456
+    payload = evaluation.build_evaluation_v2_payload(ADA, nullifier, timestamp_ms, scores)
+    db = _EvalSession([
+        _EvalResult(scalar=identity),
+        _EvalResult(scalars=[SimpleNamespace(id=2), SimpleNamespace(id=8)]),
+        _EvalResult(), _EvalResult(),
+    ])
+    request = EvaluateRequest(
+        nullifier_hash=nullifier, scores=scores, payload_version=2, timestamp_ms=timestamp_ms,
+        signature_hex=signing_key.sign(payload.encode()).signature.hex(),
+    )
+
+    result = await evaluation.evaluate_politician(ADA, request, db=db)
+
+    assert result["integrity"] == "bound"
     assert ADA not in caplog.text
     assert f"ada_ref={log_reference(ADA, 'rep-ada')}" in caplog.text
