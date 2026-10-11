@@ -68,11 +68,11 @@ APPROVED_WIKI_INVENTORY_HASH = {
     "docs/wiki/broadcasting.html": "eb345ed4551a94220e47aeb4b40c7c745bf6dfeaa5f330eac6f629a09d31f716",
     "docs/wiki/contributing.html": "bb4048480c3b75cb98ee668305833fe36b2c939f29ef27f1f8bec230c9d49d88",
     "docs/wiki/database.html": "08ac70323ffa6a6db969f41678ad8de9afd5fdd8f5b74981665cbf8e38afb9f9",
-    "docs/wiki/delete-account.html": "629acdeb25479effd175be01104adaec2b74855128039afa23016b290cb9bc47",
+    "docs/wiki/delete-account.html": "06dead96d90d919ea6d985223666ed15bb6f63babeb755c9db2a47fc55a255bf",
     "docs/wiki/faq.html": "6427c63a93d3bc840755c446b1309e53098752aad51710e13c44653a7cb36863",
     "docs/wiki/index.html": "ea418f9164a41aafa72721bdc8feaf7612a26fc83a32e7e781d7f166fe278419",  # T-9047/T-9048: named code region, contrast, headings and document language
     "docs/wiki/modules.html": "dd1f4addfdc25337790028ac3f3d4d608832a11ad682c9068dae1c9b0a265544",  # T-9072: neutral unknown health dots, MOD-23/25 mapping, localized status labels
-    "docs/wiki/privacy.html": "50b4cd9514ecac989fe1cc2e28dd1e513cb04286f9c3ad70717cdd0c71891d98",
+    "docs/wiki/privacy.html": "7c448390d04044ede24af538313d0052b34a339ea1db97b2a0a6ade3216a4f8d",
     "docs/wiki/roadmap.html": "84468c8a672a819d07e1d2649084356993d13fde0c41c1df4a26054c611b76a1",
     "docs/wiki/security.html": "8ade2139559176c15551f19ce8c5d2aa8a09e0d66235ff326bf4fa13da71db97",
     "docs/wiki/whitepaper.html": "495f7182ea35f22de6cdb18783c7dbf1f4d80b4991f10ad4ca9e40c124a32200",

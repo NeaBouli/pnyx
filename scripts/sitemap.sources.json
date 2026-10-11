@@ -90,7 +90,7 @@
       "changefreq": "monthly",
       "priority": "0.8",
       "lastmod": "2026-10-11",
-      "sha256": "2b8b4f9facad607978ea59eb5dc2292e2029fb1179c710006dfa1966e83e28b3"
+      "sha256": "91fcf8d2c2d68ab91fcc2d657f6326b027c84e8b799405bd0a8db9b8de66b19a"
     },
     {
       "loc": "/wiki/security.html",
@@ -162,7 +162,7 @@
       "changefreq": "monthly",
       "priority": "0.5",
       "lastmod": "2026-10-11",
-      "sha256": "821475767cffee067e8e62254d2400363d2c3d7ff253d06e4555fb89371465d9"
+      "sha256": "a9ebf920b9e3858ebc607d358671a68a23c815b5ceb03751b8a34f77057d8c7a"
     },
     {
       "loc": "/wiki/zk-voting.html",
