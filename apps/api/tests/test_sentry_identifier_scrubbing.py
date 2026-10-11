@@ -130,3 +130,36 @@ def test_http_fragment_is_scrubbed() -> None:
     event = {"breadcrumbs": {"values": [{"data": {"url": "https://x.test/a", "http.fragment": f"n={NULLIFIER}"}}]}}
 
     assert NULLIFIER not in repr(main._before_send_filter(event, {}))
+
+
+def test_postgres_detail_values_are_scrubbed_including_chained_exception() -> None:
+    sqlalchemy_text = (
+        "(sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.UniqueViolationError'>: "
+        'duplicate key value violates unique constraint "identity_records_nullifier_hash_key"\n'
+        f"DETAIL:  Key (nullifier_hash)=({NULLIFIER}) already exists.\n"
+        "[SQL: INSERT INTO identity_records (nullifier_hash) VALUES ($1)]\n"
+        "[parameters: [Filtered]]\n"
+        "(Background on this error at: https://sqlalche.me/e/20/gkpj)"
+    )
+    asyncpg_text = (
+        'duplicate key value violates unique constraint "identity_records_nullifier_hash_key"\n'
+        f"DETAIL:  Failing row contains ({NULLIFIER}, {PUBLIC_KEY}, ACTIVE)."
+    )
+    event = {"exception": {"values": [
+        {"type": "UniqueViolationError", "value": asyncpg_text},
+        {"type": "IntegrityError", "value": sqlalchemy_text},
+    ]}}
+    result = main._before_send_filter(event, {})
+
+    text = repr(result)
+    assert NULLIFIER not in text and PUBLIC_KEY not in text
+    assert "duplicate key value violates unique constraint" in result["exception"]["values"][1]["value"]
+    assert "DETAIL:  [Filtered]" in result["exception"]["values"][0]["value"]
+
+
+def test_span_description_is_scrubbed_without_data_and_bad_transaction_info_is_tolerated() -> None:
+    event = {"transaction": "x", "transaction_info": "url",
+             "spans": [{"description": f"GET https://x.test/a?nullifier_hash={NULLIFIER}"}]}
+    result = main._before_send_filter(event, {})
+
+    assert NULLIFIER not in repr(result)

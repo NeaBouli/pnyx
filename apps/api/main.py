@@ -234,6 +234,7 @@ def _sentry_redact_query(query: Any) -> Any:
 # From "[parameters:" up to SQLAlchemy's trailing "(Background on this error ...)"
 # line or the end of the text; values may themselves contain brackets.
 _SQL_PARAMETERS_RE = re.compile(r"\[parameters: .*?(?=\n\(Background|\Z)", re.DOTALL)
+_PG_DETAIL_RE = re.compile(r"(DETAIL:\s*).*?(?=\n|\Z)")
 
 
 def _before_send_filter(event, hint):
@@ -257,13 +258,18 @@ def _before_send_filter(event, hint):
             request["url"] = _sentry_redact_url(request["url"])
     # Unmatched routes name the transaction after the raw URL (source "url");
     # route templates (source "route") carry no values and stay readable.
-    if (event.get("transaction_info") or {}).get("source") == "url":
+    transaction_info = event.get("transaction_info")
+    if isinstance(transaction_info, dict) and transaction_info.get("source") == "url":
         event["transaction"] = _sentry_redact_url(event.get("transaction"))
     breadcrumbs = event.get("breadcrumbs")
     crumbs = breadcrumbs.get("values") if isinstance(breadcrumbs, dict) else breadcrumbs
     spans = event.get("spans") if isinstance(event.get("spans"), list) else []
     for item in [*(crumbs or []), *spans]:
-        data = item.get("data") if isinstance(item, dict) else None
+        if not isinstance(item, dict):
+            continue
+        if isinstance(item.get("description"), str):
+            item["description"] = _sentry_redact_url(item["description"])
+        data = item.get("data")
         if not isinstance(data, dict):
             continue
         for key in ("url", "http.url"):
@@ -273,8 +279,6 @@ def _before_send_filter(event, hint):
             data["http.query"] = _sentry_redact_query(data["http.query"])
         if "http.fragment" in data:
             data["http.fragment"] = _SENTRY_REDACTED
-        if isinstance(item.get("description"), str):
-            item["description"] = _sentry_redact_url(item["description"])
     if "extra" in event:
         event["extra"] = _sentry_redact(event["extra"])
     for container in ("exception", "threads"):
@@ -282,8 +286,11 @@ def _before_send_filter(event, hint):
         for value in values:
             # Defense in depth next to hide_parameters: SQLAlchemy appends the
             # bound values as "[parameters: ...]" to DBAPI error text.
+            # Postgres also echoes the offending values in "DETAIL: Key (...)=(...)"
+            # / "Failing row contains (...)", in chained asyncpg exceptions too.
             if isinstance(value, dict) and isinstance(value.get("value"), str):
-                value["value"] = _SQL_PARAMETERS_RE.sub("[parameters: [Filtered]]", value["value"])
+                text = _SQL_PARAMETERS_RE.sub("[parameters: [Filtered]]", value["value"])
+                value["value"] = _PG_DETAIL_RE.sub(r"\1[Filtered]", text)
             frames = ((value or {}).get("stacktrace") or {}).get("frames") or []
             for frame in frames:
                 if isinstance(frame, dict) and "vars" in frame:

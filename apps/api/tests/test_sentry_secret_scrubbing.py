@@ -364,3 +364,32 @@ def test_info_log_breadcrumb_does_not_reach_transport(sdk_reset):
 
     assert any(kind == "event" for kind, _ in transport.payloads)
     assert all(marker not in body for _, body in transport.payloads)
+
+
+def test_chained_db_integrity_error_does_not_ship_detail_values(sdk_reset):
+    """EVA-036 / T-9102: Postgres DETAIL text in chained DB errors is scrubbed end to end."""
+    from sqlalchemy.exc import IntegrityError
+
+    nullifier = "9a" * 32
+
+    class UniqueViolationError(Exception):
+        pass
+
+    orig = UniqueViolationError(
+        'duplicate key value violates unique constraint "identity_records_nullifier_hash_key"\n'
+        f"DETAIL:  Key (nullifier_hash)=({nullifier}) already exists."
+    )
+    transport = _init_sdk()
+    try:
+        try:
+            raise orig
+        except UniqueViolationError as inner:
+            raise IntegrityError("INSERT INTO identity_records (nullifier_hash) VALUES ($1)",
+                                 (nullifier,), inner, hide_parameters=True) from inner
+    except IntegrityError:
+        sentry_sdk.capture_exception()
+    sentry_sdk.flush()
+
+    events = [body for kind, body in transport.payloads if kind == "event"]
+    assert events and "duplicate key value" in events[0]
+    assert all(nullifier not in body for _, body in transport.payloads)
