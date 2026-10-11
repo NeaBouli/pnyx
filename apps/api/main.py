@@ -175,6 +175,22 @@ def _sentry_redact(value: Any) -> Any:
     return value
 
 
+def _sentry_is_sensitive_query_key(key: Any) -> bool:
+    """Query keys: the generic secret words plus the EVA-008 access-log set
+    (nullifier, signature, public key, SSO, OAuth code/state, nonce). The
+    access-log set is applied only to query keys, so dict keys such as
+    status_code are not over-redacted."""
+    return _sentry_is_sensitive_key(key) or _access_log_is_sensitive_query_key(str(key).strip())
+
+
+def _sentry_redact_url(url: Any) -> Any:
+    """EVA-036: same path/query redaction as the access log (QR session id,
+    newsletter confirm token, nullifier/signature query values)."""
+    if not isinstance(url, str) or not url:
+        return url
+    return redact_access_log_target(url)
+
+
 def _sentry_redact_query(query: Any) -> Any:
     if isinstance(query, str):
         if not query:
@@ -184,12 +200,13 @@ def _sentry_redact_query(query: Any) -> Any:
             return f"b{query[1]}{_sentry_redact_query(query[2:-1])}{query[1]}"
         pairs = parse_qsl(query, keep_blank_values=True)
         return urlencode([
-            (k, _SENTRY_REDACTED if _sentry_is_sensitive_key(k) else v) for k, v in pairs
+            (k, _SENTRY_REDACTED if _sentry_is_sensitive_query_key(k) else v) for k, v in pairs
         ])
     if isinstance(query, list):
         return [
             [item[0], _SENTRY_REDACTED]
-            if isinstance(item, (list, tuple)) and len(item) == 2 and _sentry_is_sensitive_key(item[0])
+            if isinstance(item, (list, tuple)) and len(item) == 2
+            and isinstance(item[0], str) and _sentry_is_sensitive_query_key(item[0])
             else item
             for item in query
         ]
@@ -212,6 +229,14 @@ def _before_send_filter(event, hint):
                 request[field] = _sentry_redact(request[field])
         if "query_string" in request:
             request["query_string"] = _sentry_redact_query(request["query_string"])
+        if "url" in request:
+            request["url"] = _sentry_redact_url(request["url"])
+    breadcrumbs = event.get("breadcrumbs")
+    crumbs = breadcrumbs.get("values") if isinstance(breadcrumbs, dict) else breadcrumbs
+    for crumb in crumbs or []:
+        data = crumb.get("data") if isinstance(crumb, dict) else None
+        if isinstance(data, dict) and "url" in data:
+            data["url"] = _sentry_redact_url(data["url"])
     if "extra" in event:
         event["extra"] = _sentry_redact(event["extra"])
     for container in ("exception", "threads"):
