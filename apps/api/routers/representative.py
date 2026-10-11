@@ -41,6 +41,32 @@ DEMO_DIMOS_ID = int(os.getenv("DEMO_REP_DIMOS_ID", "22"))
 DEMO_REGION = os.getenv("DEMO_REP_REGION", "Πελοποννήσου")
 DEMO_MUNICIPALITY = os.getenv("DEMO_REP_MUNICIPALITY", "Καλαμάτας")
 
+# EVA-012: single source of truth for the demo account ADA.
+DEMO_ADA = "DEMO-123"
+REP_DEMO_ENABLED_ENV = "REP_DEMO_ENABLED"
+
+
+def rep_demo_enabled() -> bool:
+    """EVA-012: gate for the DEMO-123 Diavgeia bypass.
+
+    Unset → enabled (current behaviour; the ekprosopos store review keeps
+    working). "true"/"1"/"yes" → enabled; "false"/"0"/"no" → disabled.
+    Any other value → disabled (fail-safe off) with a scope-only warning.
+    """
+    raw = os.getenv(REP_DEMO_ENABLED_ENV)
+    if raw is None:
+        return True
+    value = raw.strip().lower()
+    if value in {"true", "1", "yes"}:
+        return True
+    if value in {"false", "0", "no"}:
+        return False
+    logger.warning(
+        "[REP] Invalid %s value; demo bypass disabled (fail-safe off)",
+        REP_DEMO_ENABLED_ENV,
+    )
+    return False
+
 VALID_ROLES = ["Βουλευτής", "Περιφερειάρχης", "Δήμαρχος", "Δημοτικός Σύμβουλος"]
 
 # ASCII-only header values for X-Rep-Role (Greek labels stay in JSON body only)
@@ -228,8 +254,9 @@ async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(g
     invite_periferia_id = invite[6] if len(invite) > 6 else None
     invite_dimos_id = invite[7] if len(invite) > 7 else None
 
-    # 2. Demo bypass
-    if req.ada_number == "DEMO-123":
+    # 2. Demo bypass (EVA-012: gated by REP_DEMO_ENABLED; when the flag is off,
+    #    DEMO-123 is treated like any other ADA and must exist in Diavgeia)
+    if req.ada_number == DEMO_ADA and rep_demo_enabled():
         ada_info = {"org_label": "Demo Δήμος", "subject": "Demo — Εκπρόσωπος"}
         invite_periferia_id = invite_periferia_id or DEMO_PERIFERIA_ID
         invite_dimos_id = invite_dimos_id or DEMO_DIMOS_ID
@@ -515,6 +542,17 @@ async def enable_evaluation(
     db: AsyncSession = Depends(get_db),
 ):
     """Representative consents to being evaluated by verified citizens."""
+    # EVA-012: the demo account must never enter public evaluation,
+    # regardless of REP_DEMO_ENABLED.
+    if rep["ada_number"] == DEMO_ADA:
+        logger.warning(
+            "[REP] Demo account tried to enable evaluation: ada_ref=%s",
+            log_reference(rep["ada_number"], "rep-ada"),
+        )
+        raise HTTPException(
+            403,
+            "Ο δοκιμαστικός λογαριασμός δεν μπορεί να συμμετάσχει στην αξιολόγηση.",
+        )
     await db.execute(text(
         "UPDATE representative_tokens SET evaluation_enabled = TRUE WHERE ada_number = :ada"
     ), {"ada": rep["ada_number"]})

@@ -16,6 +16,7 @@ from database import get_db
 from ip_utils import log_reference
 from keypair import verify_signature
 from models import EvaluationQuestion, PoliticianEvaluation, IdentityRecord, KeyStatus
+from routers.representative import DEMO_ADA
 from services.evaluation_integrity import (
     EVALUATION_K_ANONYMITY_MIN,
     build_evaluation_read_payload,
@@ -111,6 +112,11 @@ async def _authorize_evaluation_read(
 
 async def _get_enabled_politician(ada_number: str, db: AsyncSession) -> dict:
     """Fetch politician with evaluation_enabled=TRUE or raise 404."""
+    # EVA-012: the demo account is never evaluable and never listed, even if a
+    # seeded row carries evaluation_enabled=TRUE. Same 404 as a missing or
+    # disabled politician, so the demo account stays indistinguishable.
+    if ada_number == DEMO_ADA:
+        raise HTTPException(404, "Ο εκπρόσωπος δεν βρέθηκε ή δεν έχει ενεργοποιήσει την αξιολόγηση.")
     result = await db.execute(text(
         "SELECT ada_number, role, region, org_label, evaluation_enabled, periferia_id, dimos_id "
         "FROM representative_tokens WHERE ada_number = :ada"
@@ -135,9 +141,10 @@ async def list_politicians(db: AsyncSession = Depends(get_db)):
         FROM representative_tokens rt
         LEFT JOIN politician_evaluations pe ON pe.ada_number = rt.ada_number
         WHERE rt.evaluation_enabled = TRUE
+          AND rt.ada_number <> :demo_ada
         GROUP BY rt.ada_number, rt.role, rt.region, rt.org_label
         ORDER BY rt.role, rt.org_label
-    """))
+    """), {"demo_ada": DEMO_ADA})
     rows = result.fetchall()
     politicians = []
     for row in rows:
