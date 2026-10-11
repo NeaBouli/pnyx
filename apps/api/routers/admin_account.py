@@ -1,6 +1,6 @@
 """
 Admin Test Account — generates Ed25519 keypair + nullifier for test devices.
-POST /api/v1/admin/test-account → QR deep-link data
+POST /api/v1/admin/test-account → in-app import code (EVA-034/035: no deep-link URL)
 """
 import hashlib
 import logging
@@ -22,6 +22,21 @@ router = APIRouter(prefix="/api/v1/admin", tags=["Admin"])
 SERVER_SALT = os.getenv("SERVER_SALT", "dev-salt")
 DEFAULT_TEST_PERIFERIA_ID = int(os.getenv("ADMIN_TEST_DEFAULT_PERIFERIA_ID", "6"))
 DEFAULT_TEST_DIMOS_ID = int(os.getenv("ADMIN_TEST_DEFAULT_DIMOS_ID", "22"))
+IMPORT_CODE_PREFIX = "EKKLESIA-IMPORT-V1"
+
+
+def build_import_code(private_key_hex: str, nullifier_hash: str, public_key_hex: str) -> str:
+    """Return the in-app import code for a test identity.
+
+    EVA-035: the code is pasted into the app's import screen; it is never a
+    URL, so the operating system does not route or log it as a deep link.
+    The 8-hex SHA-256 checksum lets the app reject typos and truncation before
+    it shows the confirmation step. Location is not part of the code: the app
+    reads it from the server-authoritative identity status.
+    """
+    body = f"{private_key_hex}:{nullifier_hash}:{public_key_hex}".lower()
+    checksum = hashlib.sha256(f"{IMPORT_CODE_PREFIX}:{body}".encode()).hexdigest()[:8]
+    return f"{IMPORT_CODE_PREFIX}:{body}:{checksum}"
 
 
 class TestAccountResponse(BaseModel):
@@ -113,17 +128,8 @@ async def create_test_account(
     await db.commit()
     await db.refresh(record)
 
-    # Build QR deep-link
-    qr_data = (
-        f"ekklesia://import-account"
-        f"?key={private_key_hex}"
-        f"&nullifier={nullifier_hash}"
-        f"&pubkey={public_key_hex}"
-    )
-    if record.periferia_id:
-        qr_data += f"&periferia_id={record.periferia_id}"
-    if record.dimos_id:
-        qr_data += f"&dimos_id={record.dimos_id}"
+    # In-app import code (field name kept for dashboard compatibility).
+    qr_data = build_import_code(private_key_hex, nullifier_hash, public_key_hex)
 
     logger.info("[ADMIN] Test account created: id=%d nullifier=%s...%s",
                 record.id, nullifier_hash[:8], nullifier_hash[-4:])
