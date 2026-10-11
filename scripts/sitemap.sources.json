@@ -7,8 +7,8 @@
       "source": "docs/index.html",
       "changefreq": "weekly",
       "priority": "1.0",
-      "lastmod": "2026-10-10",
-      "sha256": "5c3ef33f66e02e7725351661ed2e5f5b76fd33cea70d16b8d739dd284b945a19"
+      "lastmod": "2026-10-11",
+      "sha256": "2b514b225ea4a8020c2b50bdb362fe36d0377ed129980a81aa7fed222b019483"
     },
     {
       "loc": "/el/bills",
@@ -33,8 +33,8 @@
       "source": "docs/community.html",
       "changefreq": "monthly",
       "priority": "0.8",
-      "lastmod": "2026-10-10",
-      "sha256": "24fabdd254b957e71c1811897265c2df1f34d5bd41a3ef8e2ba873edc2698311"
+      "lastmod": "2026-10-11",
+      "sha256": "a9a0097d6bef38ab82c8a55aeda54295efdb28b3722f932a57aa7ad001fa1004"
     },
     {
       "loc": "/legal.html",
@@ -57,120 +57,120 @@
       "source": "docs/representative.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-09-27",
-      "sha256": "c9ae8dd89084f07c968d6d625842a8bc766d65b47a3d2b28e6ecf1c7826ba03f"
+      "lastmod": "2026-10-11",
+      "sha256": "b149a8523ebe34b6b4fbfefe9ff0f1accb66b8464a53ed62900bfbf43b0b70f1"
     },
     {
       "loc": "/wiki/index.html",
       "source": "docs/wiki/index.html",
       "changefreq": "weekly",
       "priority": "0.9",
-      "lastmod": "2026-10-10",
-      "sha256": "14fe40bea844ae3f5ce3fd9d5afd9198a92686a0e8d15d3a67c1c7aa28b7d8b0"
+      "lastmod": "2026-10-11",
+      "sha256": "fd62ba936b5929be1ef125dc8b157b5e05be5d84c3a69f990bf8e7339aff4441"
     },
     {
       "loc": "/wiki/faq.html",
       "source": "docs/wiki/faq.html",
       "changefreq": "monthly",
       "priority": "0.9",
-      "lastmod": "2026-10-08",
-      "sha256": "c93b862673522b47b3ad5d026f486ffba787aac3f1e3760ec33c7eeef3b016b8"
+      "lastmod": "2026-10-11",
+      "sha256": "2d3ac72f5ac9bb0bf428d4402527222f8132a2c71172f637498c0a1e9072184c"
     },
     {
       "loc": "/wiki/whitepaper.html",
       "source": "docs/wiki/whitepaper.html",
       "changefreq": "monthly",
       "priority": "0.8",
-      "lastmod": "2026-09-27",
-      "sha256": "a0594349ab9ddc8d2baaeab6f4056ec6d99725ce47ff74dfb363184190cb43cc"
+      "lastmod": "2026-10-11",
+      "sha256": "ce568c9ea88050c5aa8a1ce9d9e37fe825fe5f2e4a32cfbfbbb62abda5bd1679"
     },
     {
       "loc": "/wiki/privacy.html",
       "source": "docs/wiki/privacy.html",
       "changefreq": "monthly",
       "priority": "0.8",
-      "lastmod": "2026-09-27",
-      "sha256": "d347804e8deaa556967adbae6438a0da84c76ff5b659e63b65d647e1758cb8e5"
+      "lastmod": "2026-10-11",
+      "sha256": "2b8b4f9facad607978ea59eb5dc2292e2029fb1179c710006dfa1966e83e28b3"
     },
     {
       "loc": "/wiki/security.html",
       "source": "docs/wiki/security.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-09-27",
-      "sha256": "20d125140708c9d5833b6906e2a07955637246e5ed616a4068ba62b372518981"
+      "lastmod": "2026-10-11",
+      "sha256": "c8312aca72a41aed56d38b00a8d98bfd018c7f3057520baa6ee679e1b2ce9396"
     },
     {
       "loc": "/wiki/api.html",
       "source": "docs/wiki/api.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-09-27",
-      "sha256": "b1f0cb2446bb38d24384bb89e1888c2858ca216b3eb3bc7ca7429c323d523c7c"
+      "lastmod": "2026-10-11",
+      "sha256": "9bac338849ffcaea8754d3ae1fa4ea8d8ae82bca28cbc1dc547946ddd3928e65"
     },
     {
       "loc": "/wiki/architecture.html",
       "source": "docs/wiki/architecture.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-09-27",
-      "sha256": "81c07bd51777a79afd3dab82e2862f58f9daafdcd8a37518f65e0f7cb71f2965"
+      "lastmod": "2026-10-11",
+      "sha256": "a10853f57f12ae2d7fc3ece63699aebc8805538ddaf407d1f6b1a561cec05881"
     },
     {
       "loc": "/wiki/modules.html",
       "source": "docs/wiki/modules.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-10-10",
-      "sha256": "5d01af581de48dde54d57e87da3fb129ddeff7bc80c8a65a8bfea681ed3fadb2"
+      "lastmod": "2026-10-11",
+      "sha256": "110c0ea1be98121e3cc5608489a6831a05e7f3810344c889c84014d4daae6c28"
     },
     {
       "loc": "/wiki/roadmap.html",
       "source": "docs/wiki/roadmap.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-10-08",
-      "sha256": "f39c3b9d6b21fad1eb8a5c30933cbdbe8374d2929c4cace4e189104c4fa9cf01"
+      "lastmod": "2026-10-11",
+      "sha256": "2717cc363eaba941381bba4b7031faecf68aae2faae8688be93ffc707f9b55c3"
     },
     {
       "loc": "/wiki/database.html",
       "source": "docs/wiki/database.html",
       "changefreq": "monthly",
       "priority": "0.6",
-      "lastmod": "2026-09-27",
-      "sha256": "f9a2f8fd41c58d38485ead368c4b31a40b2303657e4bc9b88b4279c7b863d5c6"
+      "lastmod": "2026-10-11",
+      "sha256": "7dd5db2da690f728ef62e6e9da51bf3af942b3a5a55da8778c6a7e582f6967ee"
     },
     {
       "loc": "/wiki/broadcasting.html",
       "source": "docs/wiki/broadcasting.html",
       "changefreq": "monthly",
       "priority": "0.6",
-      "lastmod": "2026-09-27",
-      "sha256": "02176181cb7105e2eaacc487bb0ac5c1cce336f2aa2c2ef395f05bb298a9f8a1"
+      "lastmod": "2026-10-11",
+      "sha256": "4279a9e19bac08e6418f42ab80f902a3ac12d08e5f1dcf188441db80246ad9d0"
     },
     {
       "loc": "/wiki/contributing.html",
       "source": "docs/wiki/contributing.html",
       "changefreq": "monthly",
       "priority": "0.6",
-      "lastmod": "2026-09-27",
-      "sha256": "6d9eb5a7b9c1f2367164bce8adb21db0eb0b45df9e02b47573eb6851156b9bb8"
+      "lastmod": "2026-10-11",
+      "sha256": "c32082321b1181696158a7ea58e6e5a572169bd74ee3c30c8b058e4dc9d3e28a"
     },
     {
       "loc": "/wiki/delete-account.html",
       "source": "docs/wiki/delete-account.html",
       "changefreq": "monthly",
       "priority": "0.5",
-      "lastmod": "2026-09-27",
-      "sha256": "7c4b7999d6a092d9bf3f4a3a1b9174b8f8f728c66e1d4d60b13d9f4d9f016313"
+      "lastmod": "2026-10-11",
+      "sha256": "821475767cffee067e8e62254d2400363d2c3d7ff253d06e4555fb89371465d9"
     },
     {
       "loc": "/wiki/zk-voting.html",
       "source": "docs/wiki/zk-voting.html",
       "changefreq": "monthly",
       "priority": "0.7",
-      "lastmod": "2026-10-04",
-      "sha256": "d7f1365b8a37e97433e20a24f3f40a9f6eea1a66d18b171e264a4eb7c8be8ada"
+      "lastmod": "2026-10-11",
+      "sha256": "2506107c777651642a476ba220f1b5870aa4f2720e3a167b3d5a6af3d15bdd54"
     },
     {
       "loc": "/wiki/audit.html",
