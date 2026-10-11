@@ -242,5 +242,7 @@ def test_unknown_bill_preserves_404(client: Any) -> None:
     db.bill = None
     response = http.post(f"/api/v1/vote/{BILL}/status", json=signed_body())
     assert response.status_code == 404
+    assert response.headers["cache-control"] == "private, no-store"
     legacy = http.get(f"/api/v1/vote/{BILL}/status", params={"nullifier_hash": NULLIFIER})
     assert legacy.status_code == 404
+    assert legacy.headers["cache-control"] == "private, no-store"
