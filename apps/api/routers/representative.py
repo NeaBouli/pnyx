@@ -285,7 +285,7 @@ async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(g
             raise HTTPException(403, "Ο αριθμός ADA δεν βρέθηκε στη Διαύγεια.")
 
     # 4. Consume the invite atomically: of two concurrent redemptions only one
-    #    passes the used = FALSE condition (EVA-033 review: SELECT-then-UPDATE race).
+    #    passes the used = FALSE condition (EVA-033 review: read-then-consume race).
     #    Expiry is rechecked against a fresh timestamp taken after the Diavgeia
     #    call (NOW() would be the transaction start); review of #594.
     consumed = await db.execute(text(
