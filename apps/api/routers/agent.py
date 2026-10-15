@@ -805,6 +805,125 @@ def _is_answer_poor(answer: str) -> bool:
     return any(sig in low for sig in bad_signals)
 
 
+# BUG-CHAT-20261013-01: a model answer claimed the platform was down / under
+# maintenance although the API had just answered with HTTP 200. Such claims are
+# never knowledge-base facts, so they are replaced.
+#
+# Detection is sentence based on lowercased, accent-free NFKD text with
+# collapsed whitespace: a sentence must START with this platform as subject
+# (optionally after "unfortunately"/"currently"), followed only by copula /
+# time words and then an outage predicate. Denials ("isn't under maintenance",
+# "δεν ισχύει ότι ..."), conditionals ("if the platform ..."), other subjects
+# or qualifiers ("η πλατφόρμα της ΑΑΔΕ", "the iOS app", "η εφαρμογή της
+# απόφασης") and statements about something else therefore do not match.
+# Captures the terminator so questions ("?", Greek ";") can be skipped.
+_OUTAGE_SENTENCE_SPLIT = re.compile(r"([.!?;·]+|\n[ \t]*(?:[-*•]|\d+[.)])[ \t]+)")
+_OUTAGE_TIME = (
+    r"(?:δυστυχως|unfortunately|currently|προς το παρον|αυτη τη στιγμη|at the moment|"
+    r"right now|προσωρινα|temporarily|still)"
+)
+_OUTAGE_LEAD = r"(?:" + _OUTAGE_TIME + r",? )*"
+_OUTAGE_SUBJECT = (
+    r"(?:(?:η |ο |το |the )?(?:ekklesia(?:_gr)? )?"
+    r"(?:πλατφορμα|ιστοτοπος|ιστοσελιδα|βοηθος|εφαρμογη|platform|website|site|assistant|app)"
+    r"(?: (?:του |της )?ekklesia(?:_gr)?| εκκλησια(?: του εθνους)?)?"
+    r"|(?:το )?ekklesia(?:_gr)?)"
+)
+_OUTAGE_FILLER = r"(?:(?:ειναι|βρισκεται|is|" + _OUTAGE_TIME[3:-1] + r") )*"
+# "does not meet the needs/requirements" (EL and EN) is not unresponsiveness.
+_NOT_MEETING_NEEDS = (
+    r"(?!.*(?:αναγκ|απαιτησ|προσδοκ|κριτηρι|προδιαγραφ|needs|requirement|expectation|criteri|demand))"
+)
+# A reason clause after an ambiguous predicate only counts when it names an
+# actual service outage cause; release, approval or requirement reasons
+# ("unreleased iOS version", "App Store approval", "τεχνικές απαιτήσεις") do not.
+_OUTAGE_CAUSE = (
+    r"(?:\w+ ){0,3}(?:συντηρησ|βλαβ|διακοπ|δυσλειτουργ|τεχνικ\w* (?:προβλημ|βλαβ|δυσλειτουργ|σφαλμ)|"
+    r"maintenance|outage|downtime|server|technical (?:problem|issue|failure|difficult|error))"
+)
+# Unambiguous outage statements: anything may follow.
+_OUTAGE_STRONG = (
+    # "δεν ανταποκρίνεται στις ανάγκες/απαιτήσεις" means "does not meet", not unresponsive.
+    r"(?:(?:δεν ανταποκρινεται|not responding|isn't responding|is not responding)" + _NOT_MEETING_NEEDS + r"|"
+    r"εκτος λειτουργιας|(?:υπο|σε) συντηρηση|under maintenance|down for maintenance|"
+    r"experiencing an outage)(?!\w)"
+)
+# Ambiguous ones ("not available on iOS yet", "συντηρείται από εθελοντές") only
+# count when the sentence ends right after them or only time words follow.
+_OUTAGE_WEAK = (
+    r"(?:δεν λειτουργει|δεν ειναι διαθεσιμ[ηο]|μη διαθεσιμ[ηο]|συντηρειται|unavailable|"
+    r"not available|not working|isn't working|is not working|down)"
+    r"(?: " + _OUTAGE_TIME + r")*(?: (?:λογω|εξαιτιας|due to|because of) " + _OUTAGE_CAUSE + r".*)?\s*$"
+)
+_OUTAGE_SENTENCE = re.compile(
+    "^" + _OUTAGE_LEAD + _OUTAGE_SUBJECT + " " + _OUTAGE_FILLER + "(?:" + _OUTAGE_STRONG + "|" + _OUTAGE_WEAK + ")"
+)
+
+
+_GREEK_LETTER = re.compile(r"[\u0370-\u03ff]")
+
+
+# Chat answers are short; bounding the inspected text keeps the guard linear
+# even for adversarial model output.
+_OUTAGE_MAX_CHARS = 8000
+
+
+def _normalize_for_outage(text: str) -> str:
+    # Per-character NFKD: whole-string NFKD reorders long combining-mark runs
+    # quadratically (Codex review round 7); per character it stays linear.
+    lowered = text[:_OUTAGE_MAX_CHARS].lower().replace("\u2019", "'")
+    folded = "".join(
+        base
+        for ch in lowered
+        for base in unicodedata.normalize("NFKD", ch)
+        if not unicodedata.combining(base)
+    )
+    # Markdown emphasis/headings carry no meaning here.
+    folded = re.sub(r"[*_#`>]+", " ", folded)
+    # Keep the domain intact for the sentence split below.
+    return folded.replace("ekklesia.gr", "ekklesia_gr")
+
+
+def _claims_platform_outage(text: str) -> bool:
+    """True when a sentence affirmatively claims the platform itself is down or in maintenance."""
+    if not text:
+        return False
+    parts = _OUTAGE_SENTENCE_SPLIT.split(_normalize_for_outage(text))
+    for index in range(0, len(parts), 2):
+        terminator = parts[index + 1] if index + 1 < len(parts) else ""
+        # "?" always ends a question; ";" is the Greek question mark but an
+        # ordinary clause separator in English.
+        if "?" in terminator or (";" in terminator and _GREEK_LETTER.search(parts[index])):
+            continue  # a question, not an assertion
+        # Plain line breaks wrap a sentence; they never start a new one.
+        normalized = " ".join(parts[index].split())
+        if normalized and _OUTAGE_SENTENCE.search(normalized):
+            return True
+    return False
+
+
+def _outage_claim_response(question: str, lang: str, sources: list[dict]) -> dict:
+    """Neutral reply instead of an invented outage claim; keeps the retrieved sources.
+
+    The chat cannot verify platform health, so the reply neither claims an
+    outage nor asserts that everything works.
+    """
+    answer = (
+        "Δεν βρήκα επιβεβαιωμένη απάντηση σε αυτή την ερώτηση. Δεν έχω επιβεβαιωμένη "
+        "πληροφορία για βλάβη ή συντήρηση της πλατφόρμας· δείτε τις πηγές παρακάτω ή το Wiki."
+        if _is_greek(lang)
+        else "I could not find a confirmed answer to this question. I have no confirmed "
+        "information about an outage or maintenance of the platform; please see the sources below or the Wiki."
+    )
+    return {
+        "question": question,
+        "answer": _with_disclaimer(answer, lang),
+        "model": "outage-guard",
+        "sources": sources,
+        "lang": lang,
+    }
+
+
 def _output_guard_response(question: str, lang: str) -> dict:
     """Neutral fail-closed reply; never echoes the rejected model text."""
     return {
@@ -859,6 +978,9 @@ async def ask_agent(
         if _has_payment_link(ollama_answer):
             logger.warning("[Hybrid] Ollama answer carried a payment link; replaced")
             return _payments_paused_response(req.question, req.lang)
+        if _claims_platform_outage(ollama_answer):
+            logger.warning("[Hybrid] chat answer path=outage-guard (ollama claimed an outage)")
+            return _outage_claim_response(req.question, req.lang, sources)
 
     # Step 2: If Ollama failed or gave poor answer → Claude fallback
     if _is_answer_poor(ollama_answer):
@@ -869,8 +991,12 @@ async def ask_agent(
         if claude_answer and _has_payment_link(claude_answer):
             logger.warning("[Hybrid] Claude answer carried a payment link; replaced")
             return _payments_paused_response(req.question, req.lang)
+        if claude_answer and _claims_platform_outage(claude_answer):
+            logger.warning("[Hybrid] chat answer path=outage-guard (claude claimed an outage)")
+            return _outage_claim_response(req.question, req.lang, sources)
         if claude_answer:
             model_used = "claude-haiku"
+            logger.warning("[Hybrid] chat answer path=claude")
             return {
                 "question": req.question,
                 "answer": _with_disclaimer(claude_answer, req.lang),
@@ -882,6 +1008,7 @@ async def ask_agent(
 
     # Step 3: Return Ollama answer (or error)
     if not ollama_answer:
+        logger.warning("[Hybrid] chat answer path=none (assistant unavailable)")
         fallback = (
             "Ο βοηθός δεν είναι διαθέσιμος αυτή τη στιγμή. Δοκιμάστε ξανά αργότερα."
             if req.lang == "el"
@@ -895,6 +1022,7 @@ async def ask_agent(
             "lang": req.lang,
         }
 
+    logger.warning("[Hybrid] chat answer path=ollama")
     return {
         "question": req.question,
         "answer": ollama_answer,
