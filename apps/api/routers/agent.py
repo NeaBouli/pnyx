@@ -833,21 +833,30 @@ _OUTAGE_FILLER = r"(?:(?:ειναι|βρισκεται|is|" + _OUTAGE_TIME[3:-1]
 # Unambiguous outage statements: anything may follow.
 _OUTAGE_STRONG = (
     # "δεν ανταποκρίνεται στις ανάγκες/απαιτήσεις" means "does not meet", not unresponsive.
-    r"(?:δεν ανταποκρινεται(?! (?:σ\w* )?(?:\w+ )?(?:αναγκ|απαιτησ|προσδοκ|κριτηρι|προδιαγραφ))|"
+    r"(?:δεν ανταποκρινεται(?!.*(?:αναγκ|απαιτησ|προσδοκ|κριτηρι|προδιαγραφ))|"
     r"εκτος λειτουργιας|(?:υπο|σε) συντηρηση|not responding|"
     r"isn't responding|is not responding|under maintenance|down for maintenance|"
     r"experiencing an outage)(?!\w)"
+)
+# A reason clause after an ambiguous predicate only counts when it names an
+# outage cause; "because of its unreleased iOS version" does not.
+_OUTAGE_CAUSE = (
+    r"(?:\w+ ){0,3}(?:συντηρησ|τεχνικ|βλαβ|προβλημ|σφαλμ|διακοπ|maintenance|technical|"
+    r"outage|server|failure|issue|error|problem)"
 )
 # Ambiguous ones ("not available on iOS yet", "συντηρείται από εθελοντές") only
 # count when the sentence ends right after them or only time words follow.
 _OUTAGE_WEAK = (
     r"(?:δεν λειτουργει|δεν ειναι διαθεσιμ[ηο]|μη διαθεσιμ[ηο]|συντηρειται|unavailable|"
     r"not available|not working|isn't working|is not working|down)"
-    r"(?: " + _OUTAGE_TIME + r")*(?: (?:λογω|εξαιτιας|due to|because of)\b.*)?\s*$"
+    r"(?: " + _OUTAGE_TIME + r")*(?: (?:λογω|εξαιτιας|due to|because of) " + _OUTAGE_CAUSE + r".*)?\s*$"
 )
 _OUTAGE_SENTENCE = re.compile(
     "^" + _OUTAGE_LEAD + _OUTAGE_SUBJECT + " " + _OUTAGE_FILLER + "(?:" + _OUTAGE_STRONG + "|" + _OUTAGE_WEAK + ")"
 )
+
+
+_GREEK_LETTER = re.compile(r"[\u0370-\u03ff]")
 
 
 def _normalize_for_outage(text: str) -> str:
@@ -866,7 +875,9 @@ def _claims_platform_outage(text: str) -> bool:
     parts = _OUTAGE_SENTENCE_SPLIT.split(_normalize_for_outage(text))
     for index in range(0, len(parts), 2):
         terminator = parts[index + 1] if index + 1 < len(parts) else ""
-        if "?" in terminator or ";" in terminator:
+        # "?" always ends a question; ";" is the Greek question mark but an
+        # ordinary clause separator in English.
+        if "?" in terminator or (";" in terminator and _GREEK_LETTER.search(parts[index])):
             continue  # a question, not an assertion
         # Plain line breaks wrap a sentence; they never start a new one.
         normalized = " ".join(parts[index].split())

@@ -35,6 +35,9 @@ OUTAGE_CLAIMS = [
     # Round 4 review.
     "Η πλατφόρμα δεν λειτουργεί προσωρινά λόγω τεχνικού προβλήματος.",
     "The platform is currently unavailable due to maintenance.",
+    # Round 5 review.
+    "The platform is currently under maintenance; please try again later.",
+    "Η πλατφόρμα δεν είναι διαθέσιμη λόγω βλάβης στον server.",
 ]
 
 # Legitimate answers that must stay untouched.
@@ -73,6 +76,10 @@ LEGITIMATE = [
     "Η πλατφόρμα δεν ανταποκρίνεται στις ανάγκες των χρηστών με αναπηρία.",
     "Η πλατφόρμα είναι σε συντήρηση; Όχι, λειτουργεί κανονικά.",
     "Is the platform under maintenance? No, it works normally.",
+    # Round 5 review.
+    "Η πλατφόρμα δεν ανταποκρίνεται πλήρως στις ανάγκες των χρηστών.",
+    "The app is not available because of its unreleased iOS version.",
+    "Η εφαρμογή δεν είναι διαθέσιμη λόγω της έκδοσης iOS που δεν έχει κυκλοφορήσει.",
 ]
 
 
