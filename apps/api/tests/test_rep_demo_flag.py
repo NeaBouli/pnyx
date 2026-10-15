@@ -44,10 +44,15 @@ class _CaptureDB:
         self.executed.append((sql, params or {}))
         if "FROM rep_invitations" in sql:
             return _Row(self.invite_row)
+        if "UPDATE rep_invitations" in sql and "RETURNING" in sql:
+            return _Row((self.invite_row or (1,))[0:1])
         return _Row()
 
     async def commit(self):
         self.committed = True
+
+    async def rollback(self):
+        pass
 
 
 def _invite_row() -> tuple:

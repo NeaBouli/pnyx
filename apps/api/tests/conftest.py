@@ -4,6 +4,8 @@ import os
 # The global slowapi limiter (60/min/IP) would break request-heavy test
 # modules; tests run with the limiter disabled unless explicitly enabled.
 os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
+# EVA-033: invite codes are hashed with SERVER_SALT; tests need a non-production value.
+os.environ.setdefault("SERVER_SALT", "test-only-server-salt-not-for-production")
 
 import pytest
 from routers import public_api

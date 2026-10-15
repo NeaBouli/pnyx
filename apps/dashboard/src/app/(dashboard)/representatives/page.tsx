@@ -7,7 +7,8 @@ type Role = 'Βουλευτής' | 'Περιφερειάρχης' | 'Δήμαρ�
 
 interface Invite {
   id: number
-  invite_code: string
+  // EVA-033: codes are stored only as a hash; the list shows a display hint.
+  invite_code_hint: string
   ada_number: string | null
   role: string
   region: string | null
@@ -66,7 +67,7 @@ export default function RepresentativesPage() {
       const data = await r.json()
       setLastCode(data.invite_code)
       setLastExpires(data.expires_at)
-      setSuccess(`Πρόσκληση δημιουργήθηκε: ${data.invite_code}`)
+      setSuccess('Πρόσκληση δημιουργήθηκε. Αντιγράψτε τον κωδικό τώρα — εμφανίζεται μόνο μία φορά.')
       setRegion('')
       setMunicipality('')
       setCopied(false)
@@ -153,7 +154,9 @@ export default function RepresentativesPage() {
       {lastCode && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-blue-800">Κωδικός Πρόσκλησης</h3>
+            <h3 className="text-sm font-medium text-blue-800">
+              Κωδικός Πρόσκλησης — αντιγράψτε τον τώρα, δεν θα εμφανιστεί ξανά
+            </h3>
             {lastExpires && (
               <span className="text-xs text-blue-600">
                 Ισχύει έως: {new Date(lastExpires).toLocaleString('el-GR')}
@@ -206,7 +209,7 @@ export default function RepresentativesPage() {
               <tbody className="divide-y divide-gray-100">
                 {invites.map((inv) => (
                   <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-mono font-medium text-gray-900">{inv.invite_code}</td>
+                    <td className="px-4 py-3 font-mono font-medium text-gray-900">{inv.invite_code_hint}</td>
                     <td className="px-4 py-3 text-gray-700">{inv.role}</td>
                     <td className="px-4 py-3 text-gray-500 text-xs">
                       {[inv.region, inv.municipality].filter(Boolean).join(', ') || '—'}
