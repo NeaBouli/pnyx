@@ -127,6 +127,15 @@ ALLOWED_R5_INLINE_SCRIPTS = {
         "sha256": "6fe520730691e4008650826b6b0b9211d77dddf848548cd0535c523bc8188016",
         "bytes": 2394,
     },
+    3: {
+        "index": 3,
+        # T-9106 (EVA-001/002/006/015, Gio approved "correct now"): the legal
+        # modal's privacy text only. Votes are pseudonymous, age/gender are not
+        # stored, and the GDPR line no longer
+        # claims "no personal data on server". No behavior change.
+        "sha256": "7ab5831a0c2160dc634020f38663598e33eac9972553440ea9e295a99e173651",
+        "bytes": 3539,
+    },
     4: {
         "index": 4,
         # T-9048: the existing EL/EN toggle also sets documentElement.lang.
@@ -188,6 +197,38 @@ ALLOWED_ZK_PAUSE_BILINGUAL_REMOVALS = {
 ALLOWED_V62_BILINGUAL_REMOVALS = {
     ("v1.0.32 · vC61 δημοσιευμένο", "v1.0.32 · vC61 published"),
     ("vC61 υποβλήθηκε · αναμονή έγκρισης", "vC61 submitted · approval pending"),
+}
+# T-9106 (Gio approved "correct now", 2026-10-11): public claims match the
+# current implementation. The key pair is created on the server and handed to
+# the device (EVA-001); votes are pseudonymous, not anonymous (EVA-006);
+# unproven GDPR/"no personal data" badges are removed (EVA-015); iOS is not
+# available and TrueRepublic/PnyxCoin is labelled planned (EVA-032).
+# Counts are exact: "Πλήρης Ανωνυμία" appeared twice (feature card + values).
+ALLOWED_T9106_CLAIMS_BILINGUAL_REMOVALS = Counter({
+    ("Πλήρης Ανωνυμία", "Full Anonymity"): 2,
+})
+ALLOWED_T9106_CLAIMS_BILINGUAL_REMOVALS.update({
+    ("Πλήρης συμμόρφωση", "Fully compliant"),
+    ("Ed25519 κλειδί μόνο στη συσκευή σας.", "Ed25519 key only on your device."),
+    ("Ed25519 κρυπτογραφία. Κανένα προσωπικό δεδομένο στον server.",
+     "Ed25519 cryptography. No personal data on server."),
+    ("Ανώνυμη Συμμετοχή", "Anonymous Participation"),
+    ("TrueRepublic Bridge και PnyxCoin", "TrueRepublic Bridge and PnyxCoin"),
+    ("Κανένα email · Κανένα προσωπικό δεδομένο · Η κοινότητα αποφασίζει",
+     "No email · No personal data · Community decides"),
+    ("Ed25519 υπογραφή — πλήρως ανώνυμο", "Ed25519 signature — fully anonymous"),
+    ("Ψηφίστε απευθείας από το κινητό σας. Ανώνυμα, ασφαλή, κρυπτογραφημένα. Android APK διαθέσιμο — iOS μέσω PWA.",
+     "Vote directly from your phone. Anonymous, secure, encrypted. Android APK available — iOS via PWA."),
+    ("Secure Enclave · Ed25519 · Βιομετρική Επαλήθευση",
+     "Secure Enclave · Ed25519 · Biometric Verification"),
+    ("Κανένα όνομα, email ή λογαριασμός. Μόνο κρυπτογραφικό κλειδί στη συσκευή σας.",
+     "No name, email, or account. Only a cryptographic key on your device."),
+})
+# T-9106: meta description/og/twitter and the JSON-LD featureList/description
+# drop "Ανώνυμο"/"Anonymous" and "GDPR compliant"; exact category hashes.
+ALLOWED_T9106_CLAIMS_HASH = {
+    "meta": "eb846fa69692692139d693340e54f627ed00bcb29061e6e2e2b0ad4d1bc22c98",
+    "json_ld": "50d218729cc05d97bd7444bb5570a28a22d6df4cf214e687586b07729d52b8fa",
 }
 ALLOWED_APK_HREF_REPLACEMENT = {
     "https://github.com/NeaBouli/pnyx/releases/download/v1.0.32/ekklesia-v1.0.32-vC61-DIRECT.apk":
@@ -363,6 +404,10 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
             approved_analytics_delta.APPROVED_SEO_HASH.get("docs/index.html")
         ):
             continue
+        if key in ALLOWED_T9106_CLAIMS_HASH and r0_inventory.hash_category(current.get(key)) == (
+            ALLOWED_T9106_CLAIMS_HASH[key]
+        ):
+            continue
         if current.get(key) != baseline.get(key):
             violations.append(f"preservation: exact contract changed: {key}")
 
@@ -380,6 +425,7 @@ def check_index_preservation(baseline: dict, current: dict) -> list[str]:
             baseline_pairs[pair] -= 1
             if not baseline_pairs[pair]:
                 del baseline_pairs[pair]
+    baseline_pairs -= ALLOWED_T9106_CLAIMS_BILINGUAL_REMOVALS
     current_pairs = Counter(
         (item.get("data_el", ""), item.get("data_en", ""))
         for item in current["bilingual"]["pairs"]

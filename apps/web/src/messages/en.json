@@ -46,7 +46,7 @@
   },
   "identity": {
     "title": "Identity Verification",
-    "subtitle": "Once — Anonymous — Secure",
+    "subtitle": "Once — Pseudonymous — Secure",
     "phone_label": "Greek mobile number",
     "phone_placeholder": "+306912345678",
     "verify_button": "Verify",

@@ -215,8 +215,8 @@
   </div>
 
   <div class="info-box fade-in">
-    <p data-el="Κανένας αριθμός τηλεφώνου, email ή άλλο προσωπικό δεδομένο δεν αποθηκεύεται ποτέ στον server. Ο αριθμός τηλεφώνου χρησιμοποιείται μόνο κατά την επαλήθευση και διαγράφεται αμέσως μετά τη δημιουργία του nullifier." data-en="No phone number, email, or other personal data is ever stored on the server. The phone number is used only during verification and deleted immediately after nullifier generation.">
-      Κανένας αριθμός τηλεφώνου, email ή άλλο προσωπικό δεδομένο δεν αποθηκεύεται ποτέ στον server. Ο αριθμός τηλεφώνου χρησιμοποιείται μόνο κατά την επαλήθευση και διαγράφεται αμέσως μετά τη δημιουργία του nullifier.
+    <p data-el="Ο λογαριασμός δεν έχει email και ο αριθμός τηλεφώνου δεν αποθηκεύεται στον server (το email, και προαιρετικά όνομα, αποθηκεύεται μόνο αν εγγραφείτε στο newsletter, με διπλή επιβεβαίωση). Ο αριθμός τηλεφώνου χρησιμοποιείται μόνο κατά την επαλήθευση και διαγράφεται αμέσως μετά τη δημιουργία του nullifier. Ο server κρατά ψευδώνυμα δεδομένα (nullifier, δημόσιο κλειδί, ψήφους και, αν τα δηλώσετε, Περιφέρεια/Δήμο)." data-en="Your account has no email, and your phone number is not stored on the server (an email, and optionally a name, is stored only if you subscribe to the newsletter, with double opt-in). The phone number is used only during verification and deleted immediately after nullifier generation. The server keeps pseudonymous data (nullifier, public key, votes and, if you declare them, Region/Municipality).">
+      Ο λογαριασμός δεν έχει email και ο αριθμός τηλεφώνου δεν αποθηκεύεται στον server (το email, και προαιρετικά όνομα, αποθηκεύεται μόνο αν εγγραφείτε στο newsletter, με διπλή επιβεβαίωση). Ο αριθμός τηλεφώνου χρησιμοποιείται μόνο κατά την επαλήθευση και διαγράφεται αμέσως μετά τη δημιουργία του nullifier. Ο server κρατά ψευδώνυμα δεδομένα (nullifier, δημόσιο κλειδί, ψήφους και, αν τα δηλώσετε, Περιφέρεια/Δήμο).
     </p>
   </div>
 
@@ -244,8 +244,8 @@
 
   <h3 class="fade-in" data-el="Βήμα 3 — Αυτόματη ανάκληση (Re-registration)" data-en="Step 3 — Automatic revocation (Re-registration)">Βήμα 3 — Αυτόματη ανάκληση (Re-registration)</h3>
   <div class="success-box fade-in">
-    <p data-el="Αν επανεγκαταστήσετε την εφαρμογή και επαληθεύσετε ξανά με τον ίδιο αριθμό τηλεφώνου, ο παλιός Nullifier ανακαλείται αυτόματα (auto-revoke). Δημιουργείται νέο ζεύγος κλειδιών και νέος Nullifier." data-en="If you reinstall the app and re-verify with the same phone number, the old Nullifier is automatically revoked (auto-revoke). A new key pair and new Nullifier are created.">
-      Αν επανεγκαταστήσετε την εφαρμογή και επαληθεύσετε ξανά με τον ίδιο αριθμό τηλεφώνου, ο παλιός Nullifier <strong>ανακαλείται αυτόματα</strong> (auto-revoke). Δημιουργείται νέο ζεύγος κλειδιών και νέος Nullifier.
+    <p data-el="Αν επανεγκαταστήσετε την εφαρμογή και επαληθεύσετε ξανά με τον ίδιο αριθμό τηλεφώνου, το παλιό κλειδί αντικαθίσταται αυτόματα: δημιουργείται νέο ζεύγος κλειδιών για τον ίδιο Nullifier και το παλιό κλειδί παύει να ισχύει." data-en="If you reinstall the app and re-verify with the same phone number, the old key is replaced automatically: a new key pair is created for the same Nullifier and the old key stops working.">
+      Αν επανεγκαταστήσετε την εφαρμογή και επαληθεύσετε ξανά με τον ίδιο αριθμό τηλεφώνου, το παλιό κλειδί <strong>αντικαθίσταται αυτόματα</strong>: δημιουργείται νέο ζεύγος κλειδιών για τον ίδιο Nullifier και το παλιό κλειδί παύει να ισχύει.
     </p>
   </div>
 
@@ -279,7 +279,7 @@
 
   <h2 class="fade-in" data-el="English Summary" data-en="English Summary">English Summary</h2>
   <p class="fade-in">
-    ekklesia.gr does not store any personal data (no phone number, no email, no name). Your identity is a cryptographic nullifier hash and an Ed25519 public key on the server, plus a private key stored only on your device.
+    ekklesia.gr does not store your phone number. An email (and an optional name) is stored only if you subscribe to the newsletter, with double opt-in. Your identity on the server is pseudonymous: a cryptographic nullifier hash and an Ed25519 public key. In the current version the private key is created on the server during verification, handed to your device once and then kept only on your device; the server does not store or log it.
   </p>
   <p class="fade-in"><strong>To delete your account:</strong></p>
   <ol class="fade-in">
@@ -322,7 +322,7 @@
   </div>
 </div>
 <script>
-var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP συνδεδεμένη με ψήφο ή ταυτότητα.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ανώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
+var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP συνδεδεμένη με ψήφο ή ταυτότητα.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ψευδώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
 var _deleteHtml='<h2 style="margin-top:0">Διαγραφή Λογαριασμού</h2><p>Απεγκαταστήστε την εφαρμογή — Private Key και Nullifier διαγράφονται αμέσως.</p><p><a href="delete-account.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#ef4444;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Αναλυτικές Οδηγίες Διαγραφής →</a></p>';
 function openLegalModal(t){document.getElementById("legalContent").innerHTML=t==="privacy"?_privacyHtml:_deleteHtml;document.getElementById("legalModal").style.display="flex"}
 function closeLegalModal(){document.getElementById("legalModal").style.display="none"}

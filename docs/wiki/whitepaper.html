@@ -230,8 +230,8 @@
   </div>
 
   <h2 class="fade-in" data-el="1. Περίληψη" data-en="1. Abstract">1. Περίληψη</h2>
-  <p class="fade-in" data-el="Η Ekklesia.gr είναι ανοιχτού κώδικα πλατφόρμα ψηφιακής άμεσης δημοκρατίας. Καλύπτει τρία επίπεδα διακυβέρνησης: εθνικό, περιφερειακό και τοπικό. Η ανωνυμία εξασφαλίζεται μέσω Ed25519 και Nullifier Hash." data-en="Ekklesia.gr is an open-source digital direct democracy platform. Covers three governance levels: national, regional and local. Anonymity ensured via Ed25519 and Nullifier Hash.">
-    Η Ekklesia.gr είναι ανοιχτού κώδικα πλατφόρμα ψηφιακής άμεσης δημοκρατίας. Καλύπτει τρία επίπεδα: εθνικό, περιφερειακό και τοπικό. Ανωνυμία μέσω Ed25519 και Nullifier Hash.
+  <p class="fade-in" data-el="Η Ekklesia.gr είναι ανοιχτού κώδικα πλατφόρμα ψηφιακής άμεσης δημοκρατίας. Καλύπτει τρία επίπεδα διακυβέρνησης: εθνικό, περιφερειακό και τοπικό. Η ψευδωνυμία εξασφαλίζεται μέσω Ed25519 και Nullifier Hash." data-en="Ekklesia.gr is an open-source digital direct democracy platform. Covers three governance levels: national, regional and local. Pseudonymity ensured via Ed25519 and Nullifier Hash.">
+    Η Ekklesia.gr είναι ανοιχτού κώδικα πλατφόρμα ψηφιακής άμεσης δημοκρατίας. Καλύπτει τρία επίπεδα: εθνικό, περιφερειακό και τοπικό. Ψευδωνυμία μέσω Ed25519 και Nullifier Hash.
   </p>
 
   <h2 class="fade-in" data-el="2. Πρόβλημα" data-en="2. Problem">2. Πρόβλημα</h2>
@@ -281,7 +281,7 @@ divergence = abs(citizen_yes_pct - (1.0 if authority_passed else 0.0))
 # Μετά: η ψηφοφορία παραμένει ανοιχτή (OPEN_END) — ιστορικά, αναδρομικά</span></div>
 
   <h2 class="fade-in" data-el="7. Ιδιωτικότητα & GDPR" data-en="7. Privacy & GDPR">7. Ιδιωτικότητα &amp; GDPR</h2>
-  <div class="success-box fade-in"><p data-el="Κανένα personal data στον server. k-Anonymity ≥ 10. Servers Ευρώπη (Hetzner). GDPR by design." data-en="No personal data on server. k-Anonymity ≥ 10. Servers Europe (Hetzner). GDPR by design.">Κανένα personal data στον server. k-Anonymity ≥ 10. Servers Ευρώπη. GDPR by design.</p></div>
+  <div class="success-box fade-in"><p data-el="Ψευδώνυμα δεδομένα στον server (nullifier, δημόσιο κλειδί, ψήφοι)· ο αριθμός κινητού δεν αποθηκεύεται. k-Anonymity ≥ 10. Servers Ευρώπη (Hetzner). Δεν αποτελεί βεβαίωση νομικής συμμόρφωσης." data-en="Pseudonymous data on the server (nullifier, public key, votes); the phone number is not stored. k-Anonymity ≥ 10. Servers Europe (Hetzner). Not a statement of legal compliance.">Ψευδώνυμα δεδομένα στον server· ο αριθμός κινητού δεν αποθηκεύεται. k-Anonymity ≥ 10. Servers Ευρώπη. Δεν αποτελεί βεβαίωση νομικής συμμόρφωσης.</p></div>
 
   <h2 class="fade-in" data-el="8. Στρατηγική" data-en="8. Strategy">8. Στρατηγική</h2>
   <div class="info-box fade-in"><p data-el="Legitimacy before deployment. Ανοιχτός κώδικας = στρατηγική προστασία. Κανείς δεν μπορεί να κατηγορήσει αυτό που ελέγχει ο καθένας." data-en="Legitimacy before deployment. Open source = strategic protection.">Legitimacy before deployment. Open source = στρατηγική προστασία.</p></div>
@@ -294,7 +294,7 @@ divergence = abs(citizen_yes_pct - (1.0 if authority_passed else 0.0))
     <div class="fnode fnode-p">COMMUNITY</div>
   </div>
 
-  <h2 class="fade-in" data-el="10. TrueRepublic" data-en="10. TrueRepublic">10. TrueRepublic</h2>
+  <h2 class="fade-in" data-el="10. TrueRepublic (προγραμματισμένο)" data-en="10. TrueRepublic (planned)">10. TrueRepublic (προγραμματισμένο)</h2>
   <div class="flow fade-in">
     <div class="fnode fnode-b">Ekklesia Identity</div><div class="farr">→</div>
     <div class="fnode">ZK-Proof</div><div class="farr">→</div>
@@ -359,7 +359,7 @@ divergence = abs(citizen_yes_pct - (1.0 if authority_passed else 0.0))
   </div>
 </div>
 <script>
-var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP συνδεδεμένη με ψήφο ή ταυτότητα.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ανώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
+var _privacyHtml='<h2 style="margin-top:0">Πολιτική Απορρήτου</h2><p><strong>Τι ΔΕΝ αποθηκεύουμε:</strong> Αριθμό κινητού, Private Key, IP συνδεδεμένη με ψήφο ή ταυτότητα.</p><p><strong>Τι αποθηκεύουμε:</strong> Nullifier Hash, Public Key, Ψήφοι (ψευδώνυμα).</p><p><strong>GDPR:</strong> Servers στην Ευρώπη. Privacy by design.</p><p><a href="privacy.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#2563eb;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Πλήρης Πολιτική Απορρήτου →</a></p>';
 var _deleteHtml='<h2 style="margin-top:0">Διαγραφή Λογαριασμού</h2><p>Απεγκαταστήστε την εφαρμογή — Private Key και Nullifier διαγράφονται αμέσως.</p><p><a href="delete-account.html" style="display:inline-block;padding:0.6rem 1.5rem;background:#ef4444;color:#fff;border-radius:0.5rem;text-decoration:none;font-weight:700;font-size:0.9rem">Αναλυτικές Οδηγίες Διαγραφής →</a></p>';
 function openLegalModal(t){document.getElementById("legalContent").innerHTML=t==="privacy"?_privacyHtml:_deleteHtml;document.getElementById("legalModal").style.display="flex"}
 function closeLegalModal(){document.getElementById("legalModal").style.display="none"}
