@@ -816,7 +816,8 @@ def _is_answer_poor(answer: str) -> bool:
 # "δεν ισχύει ότι ..."), conditionals ("if the platform ..."), other subjects
 # or qualifiers ("η πλατφόρμα της ΑΑΔΕ", "the iOS app", "η εφαρμογή της
 # απόφασης") and statements about something else therefore do not match.
-_OUTAGE_SENTENCE_SPLIT = re.compile(r"[.!?;·]+|\n\s*(?:[-*•]|\d+[.)])\s+")
+# Captures the terminator so questions ("?", Greek ";") can be skipped.
+_OUTAGE_SENTENCE_SPLIT = re.compile(r"([.!?;·]+|\n\s*(?:[-*•]|\d+[.)])\s+)")
 _OUTAGE_TIME = (
     r"(?:δυστυχως|unfortunately|currently|προς το παρον|αυτη τη στιγμη|at the moment|"
     r"right now|προσωρινα|temporarily|still)"
@@ -831,7 +832,9 @@ _OUTAGE_SUBJECT = (
 _OUTAGE_FILLER = r"(?:(?:ειναι|βρισκεται|is|" + _OUTAGE_TIME[3:-1] + r") )*"
 # Unambiguous outage statements: anything may follow.
 _OUTAGE_STRONG = (
-    r"(?:δεν ανταποκρινεται|εκτος λειτουργιας|(?:υπο|σε) συντηρηση|not responding|"
+    # "δεν ανταποκρίνεται στις ανάγκες/απαιτήσεις" means "does not meet", not unresponsive.
+    r"(?:δεν ανταποκρινεται(?! (?:σ\w* )?(?:\w+ )?(?:αναγκ|απαιτησ|προσδοκ|κριτηρι|προδιαγραφ))|"
+    r"εκτος λειτουργιας|(?:υπο|σε) συντηρηση|not responding|"
     r"isn't responding|is not responding|under maintenance|down for maintenance|"
     r"experiencing an outage)(?!\w)"
 )
@@ -840,7 +843,7 @@ _OUTAGE_STRONG = (
 _OUTAGE_WEAK = (
     r"(?:δεν λειτουργει|δεν ειναι διαθεσιμ[ηο]|μη διαθεσιμ[ηο]|συντηρειται|unavailable|"
     r"not available|not working|isn't working|is not working|down)"
-    r"(?: " + _OUTAGE_TIME + r")*\s*$"
+    r"(?: " + _OUTAGE_TIME + r")*(?: (?:λογω|εξαιτιας|due to|because of)\b.*)?\s*$"
 )
 _OUTAGE_SENTENCE = re.compile(
     "^" + _OUTAGE_LEAD + _OUTAGE_SUBJECT + " " + _OUTAGE_FILLER + "(?:" + _OUTAGE_STRONG + "|" + _OUTAGE_WEAK + ")"
@@ -860,9 +863,13 @@ def _claims_platform_outage(text: str) -> bool:
     """True when a sentence affirmatively claims the platform itself is down or in maintenance."""
     if not text:
         return False
-    for sentence in _OUTAGE_SENTENCE_SPLIT.split(_normalize_for_outage(text)):
+    parts = _OUTAGE_SENTENCE_SPLIT.split(_normalize_for_outage(text))
+    for index in range(0, len(parts), 2):
+        terminator = parts[index + 1] if index + 1 < len(parts) else ""
+        if "?" in terminator or ";" in terminator:
+            continue  # a question, not an assertion
         # Plain line breaks wrap a sentence; they never start a new one.
-        normalized = " ".join(sentence.split())
+        normalized = " ".join(parts[index].split())
         if normalized and _OUTAGE_SENTENCE.search(normalized):
             return True
     return False

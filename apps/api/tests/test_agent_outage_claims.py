@@ -32,6 +32,9 @@ OUTAGE_CLAIMS = [
     "Δυστυχώς, αυτή τη στιγμή η πλατφόρμα δεν ανταποκρίνεται.",
     "Το ekklesia.gr είναι προσωρινά εκτός λειτουργίας.",
     "The platform isn't working right now.",
+    # Round 4 review.
+    "Η πλατφόρμα δεν λειτουργεί προσωρινά λόγω τεχνικού προβλήματος.",
+    "The platform is currently unavailable due to maintenance.",
 ]
 
 # Legitimate answers that must stay untouched.
@@ -66,6 +69,10 @@ LEGITIMATE = [
     "Η εφαρμογή δεν είναι διαθέσιμη για iOS ακόμη.",
     "The app is not available on iOS yet.",
     "Η πλατφόρμα συντηρείται από εθελοντές.",
+    # Round 4 review.
+    "Η πλατφόρμα δεν ανταποκρίνεται στις ανάγκες των χρηστών με αναπηρία.",
+    "Η πλατφόρμα είναι σε συντήρηση; Όχι, λειτουργεί κανονικά.",
+    "Is the platform under maintenance? No, it works normally.",
 ]
 
 
