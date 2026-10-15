@@ -80,6 +80,10 @@ LEGITIMATE = [
     "Η πλατφόρμα δεν ανταποκρίνεται πλήρως στις ανάγκες των χρηστών.",
     "The app is not available because of its unreleased iOS version.",
     "Η εφαρμογή δεν είναι διαθέσιμη λόγω της έκδοσης iOS που δεν έχει κυκλοφορήσει.",
+    # Round 6 review.
+    "The platform is not responding to the needs of disabled users.",
+    "The app is not available due to issues getting App Store approval.",
+    "Η εφαρμογή δεν είναι διαθέσιμη λόγω τεχνικών απαιτήσεων του App Store.",
 ]
 
 
@@ -147,3 +151,12 @@ async def test_claude_outage_answer_is_replaced(monkeypatch: pytest.MonkeyPatch)
 
     assert response["model"] == "outage-guard"
     assert "under maintenance" not in response["answer"]
+
+
+def test_many_newlines_are_processed_linearly() -> None:
+    import time
+
+    text = "Η πλατφόρμα λειτουργεί" + ("\n" * 8000) + "κανονικά."
+    started = time.perf_counter()
+    assert _claims_platform_outage(text) is False
+    assert time.perf_counter() - started < 0.2

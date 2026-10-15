@@ -817,7 +817,7 @@ def _is_answer_poor(answer: str) -> bool:
 # or qualifiers ("η πλατφόρμα της ΑΑΔΕ", "the iOS app", "η εφαρμογή της
 # απόφασης") and statements about something else therefore do not match.
 # Captures the terminator so questions ("?", Greek ";") can be skipped.
-_OUTAGE_SENTENCE_SPLIT = re.compile(r"([.!?;·]+|\n\s*(?:[-*•]|\d+[.)])\s+)")
+_OUTAGE_SENTENCE_SPLIT = re.compile(r"([.!?;·]+|\n[ \t]*(?:[-*•]|\d+[.)])[ \t]+)")
 _OUTAGE_TIME = (
     r"(?:δυστυχως|unfortunately|currently|προς το παρον|αυτη τη στιγμη|at the moment|"
     r"right now|προσωρινα|temporarily|still)"
@@ -830,19 +830,23 @@ _OUTAGE_SUBJECT = (
     r"|(?:το )?ekklesia(?:_gr)?)"
 )
 _OUTAGE_FILLER = r"(?:(?:ειναι|βρισκεται|is|" + _OUTAGE_TIME[3:-1] + r") )*"
+# "does not meet the needs/requirements" (EL and EN) is not unresponsiveness.
+_NOT_MEETING_NEEDS = (
+    r"(?!.*(?:αναγκ|απαιτησ|προσδοκ|κριτηρι|προδιαγραφ|needs|requirement|expectation|criteri|demand))"
+)
+# A reason clause after an ambiguous predicate only counts when it names an
+# actual service outage cause; release, approval or requirement reasons
+# ("unreleased iOS version", "App Store approval", "τεχνικές απαιτήσεις") do not.
+_OUTAGE_CAUSE = (
+    r"(?:\w+ ){0,3}(?:συντηρησ|βλαβ|διακοπ|δυσλειτουργ|τεχνικ\w* (?:προβλημ|βλαβ|δυσλειτουργ|σφαλμ)|"
+    r"maintenance|outage|downtime|server|technical (?:problem|issue|failure|difficult|error))"
+)
 # Unambiguous outage statements: anything may follow.
 _OUTAGE_STRONG = (
     # "δεν ανταποκρίνεται στις ανάγκες/απαιτήσεις" means "does not meet", not unresponsive.
-    r"(?:δεν ανταποκρινεται(?!.*(?:αναγκ|απαιτησ|προσδοκ|κριτηρι|προδιαγραφ))|"
-    r"εκτος λειτουργιας|(?:υπο|σε) συντηρηση|not responding|"
-    r"isn't responding|is not responding|under maintenance|down for maintenance|"
+    r"(?:(?:δεν ανταποκρινεται|not responding|isn't responding|is not responding)" + _NOT_MEETING_NEEDS + r"|"
+    r"εκτος λειτουργιας|(?:υπο|σε) συντηρηση|under maintenance|down for maintenance|"
     r"experiencing an outage)(?!\w)"
-)
-# A reason clause after an ambiguous predicate only counts when it names an
-# outage cause; "because of its unreleased iOS version" does not.
-_OUTAGE_CAUSE = (
-    r"(?:\w+ ){0,3}(?:συντηρησ|τεχνικ|βλαβ|προβλημ|σφαλμ|διακοπ|maintenance|technical|"
-    r"outage|server|failure|issue|error|problem)"
 )
 # Ambiguous ones ("not available on iOS yet", "συντηρείται από εθελοντές") only
 # count when the sentence ends right after them or only time words follow.
