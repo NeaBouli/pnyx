@@ -816,32 +816,42 @@ def _is_answer_poor(answer: str) -> bool:
 # "δεν ισχύει ότι ..."), conditionals ("if the platform ..."), other subjects
 # or qualifiers ("η πλατφόρμα της ΑΑΔΕ", "the iOS app", "η εφαρμογή της
 # απόφασης") and statements about something else therefore do not match.
-_OUTAGE_SENTENCE_SPLIT = re.compile(r"[.!?;·\n]+")
-_OUTAGE_LEAD = r"(?:(?:δυστυχως|unfortunately|currently|προς το παρον|αυτη τη στιγμη|at the moment|right now),? )?"
+_OUTAGE_SENTENCE_SPLIT = re.compile(r"[.!?;·]+|\n\s*(?:[-*•]|\d+[.)])\s+")
+_OUTAGE_TIME = (
+    r"(?:δυστυχως|unfortunately|currently|προς το παρον|αυτη τη στιγμη|at the moment|"
+    r"right now|προσωρινα|temporarily|still)"
+)
+_OUTAGE_LEAD = r"(?:" + _OUTAGE_TIME + r",? )*"
 _OUTAGE_SUBJECT = (
-    r"(?:(?:η |ο |the )?(?:ekklesia(?:_gr)? )?"
+    r"(?:(?:η |ο |το |the )?(?:ekklesia(?:_gr)? )?"
     r"(?:πλατφορμα|ιστοτοπος|ιστοσελιδα|βοηθος|εφαρμογη|platform|website|site|assistant|app)"
     r"(?: (?:του |της )?ekklesia(?:_gr)?| εκκλησια(?: του εθνους)?)?"
-    r"|ekklesia(?:_gr)?)"
+    r"|(?:το )?ekklesia(?:_gr)?)"
 )
-_OUTAGE_FILLER = (
-    r"(?:(?:ειναι|βρισκεται|is|currently|temporarily|still|προσωρινα|προς το παρον|"
-    r"αυτη τη στιγμη|at the moment|right now) )*"
-)
-_OUTAGE_PREDICATE = (
-    r"(?:δεν ανταποκρινεται|εκτος λειτουργιας|(?:υπο|σε) συντηρηση|συντηρειται|δεν λειτουργει|"
-    r"δεν ειναι διαθεσιμ[ηο]|μη διαθεσιμ[ηο]|not responding|isn't responding|is not responding|"
-    r"under maintenance|down for maintenance|down|unavailable|not available|not working|"
+_OUTAGE_FILLER = r"(?:(?:ειναι|βρισκεται|is|" + _OUTAGE_TIME[3:-1] + r") )*"
+# Unambiguous outage statements: anything may follow.
+_OUTAGE_STRONG = (
+    r"(?:δεν ανταποκρινεται|εκτος λειτουργιας|(?:υπο|σε) συντηρηση|not responding|"
+    r"isn't responding|is not responding|under maintenance|down for maintenance|"
     r"experiencing an outage)(?!\w)"
 )
+# Ambiguous ones ("not available on iOS yet", "συντηρείται από εθελοντές") only
+# count when the sentence ends right after them or only time words follow.
+_OUTAGE_WEAK = (
+    r"(?:δεν λειτουργει|δεν ειναι διαθεσιμ[ηο]|μη διαθεσιμ[ηο]|συντηρειται|unavailable|"
+    r"not available|not working|isn't working|is not working|down)"
+    r"(?: " + _OUTAGE_TIME + r")*\s*$"
+)
 _OUTAGE_SENTENCE = re.compile(
-    "^" + _OUTAGE_LEAD + _OUTAGE_SUBJECT + " " + _OUTAGE_FILLER + _OUTAGE_PREDICATE
+    "^" + _OUTAGE_LEAD + _OUTAGE_SUBJECT + " " + _OUTAGE_FILLER + "(?:" + _OUTAGE_STRONG + "|" + _OUTAGE_WEAK + ")"
 )
 
 
 def _normalize_for_outage(text: str) -> str:
     decomposed = unicodedata.normalize("NFKD", text.lower().replace("\u2019", "'"))
     folded = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+    # Markdown emphasis/headings carry no meaning here.
+    folded = re.sub(r"[*_#`>]+", " ", folded)
     # Keep the domain intact for the sentence split below.
     return folded.replace("ekklesia.gr", "ekklesia_gr")
 
@@ -851,6 +861,7 @@ def _claims_platform_outage(text: str) -> bool:
     if not text:
         return False
     for sentence in _OUTAGE_SENTENCE_SPLIT.split(_normalize_for_outage(text)):
+        # Plain line breaks wrap a sentence; they never start a new one.
         normalized = " ".join(sentence.split())
         if normalized and _OUTAGE_SENTENCE.search(normalized):
             return True
