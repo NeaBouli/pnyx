@@ -14,6 +14,12 @@ OUTAGE_CLAIMS = [
     "The ekklesia.gr website is down for maintenance right now.",
     "The app is not responding at the moment.",
     "The platform is experiencing an outage.",
+    # T-9113 Codex review: accents/case, inflections, temporary wording.
+    "Η πλατφόρμα είναι ΣΕ ΣΥΝΤΗΡΗΣΗ.",
+    "Η πλατφορμα ειναι εκτος λειτουργιας.",
+    "Η πλατφόρμα συντηρείται αυτή τη στιγμή.",
+    "Η πλατφόρμα δεν λειτουργεί προσωρινά.",
+    "The platform is temporarily unavailable.",
 ]
 
 # Legitimate answers that must stay untouched.
@@ -26,6 +32,12 @@ LEGITIMATE = [
     "Η εκκλησία του χωριού χρειάζεται συντήρηση σύμφωνα με την απόφαση.",
     "Η πλατφόρμα λειτουργεί κανονικά.",
     "The decision covers scheduled maintenance of school buildings.",
+    # T-9113 Codex review: denials, other subjects, downloads.
+    "The platform is not under maintenance.",
+    "Η πλατφόρμα δεν είναι σε συντήρηση.",
+    "Η εφαρμογή της απόφασης αφορά κτίριο που είναι σε συντήρηση.",
+    "Η πλατφόρμα λειτουργεί, αλλά το σχολείο είναι σε συντήρηση.",
+    "The app is currently downloading an update.",
 ]
 
 
@@ -59,6 +71,7 @@ async def test_ollama_outage_answer_is_replaced_with_honest_fallback(monkeypatch
     monkeypatch.setattr(agent, "answer_citizen_question", fake_answer)
     monkeypatch.setattr(agent, "_claude_answer", no_claude)
     monkeypatch.setattr(agent, "_is_answer_poor", lambda answer: False)
+    monkeypatch.setattr(agent, "_sources", lambda *args, **kwargs: [{"type": "knowledge_base", "topic": "kept"}])
 
     response = await agent.ask_agent.__wrapped__(
         object(), agent.AskRequest(question="Πώς ψηφίζω;" if lang == "el" else "How do I vote?", lang=lang), db=object(),
@@ -66,7 +79,9 @@ async def test_ollama_outage_answer_is_replaced_with_honest_fallback(monkeypatch
 
     assert response["model"] == "outage-guard"
     assert "δεν ανταποκρίνεται" not in response["answer"] and "under maintenance" not in response["answer"]
-    assert ("λειτουργεί κανονικά" if lang == "el" else "working normally") in response["answer"]
+    assert ("επιβεβαιωμένη" if lang == "el" else "no confirmed information") in response["answer"]
+    assert "λειτουργεί κανονικά" not in response["answer"] and "working normally" not in response["answer"]
+    assert response["sources"] == [{"type": "knowledge_base", "topic": "kept"}]
 
 
 @pytest.mark.asyncio

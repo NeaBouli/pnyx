@@ -807,35 +807,48 @@ def _is_answer_poor(answer: str) -> bool:
 
 # BUG-CHAT-20261013-01: a model answer claimed the platform was down / under
 # maintenance although the API had just answered with HTTP 200. Such claims are
-# never knowledge-base facts, so they are replaced. Only statements about the
-# platform itself match; "payments are paused" or "iOS is not available" do not.
-_PLATFORM_SUBJECT = (
-    r"(πλατφόρμα|εφαρμογή|ιστότοπος|ιστοσελίδα|βοηθός|ekklesia(?:\.gr)?|"
-    r"platform|website|\bapp\b|assistant)"
+# never knowledge-base facts, so they are replaced. Matching runs on lowercased,
+# accent-free NFKD text and requires an affirmative statement whose subject is
+# the platform itself: the gap between subject and predicate may not contain a
+# negation, a comma/clause break or a relative pronoun ("that", "που", ...).
+_PLATFORM_SUBJECTS = (
+    r"(?:η |την )?(?:πλατφορμα|εφαρμογη(?! της)(?! του)|ιστοτοπος|ιστοσελιδα|βοηθος|ekklesia(?:\.gr)?|"
+    r"(?:the )?(?:platform|website|app|assistant))"
 )
-_OUTAGE_PATTERNS = [
-    re.compile(_PLATFORM_SUBJECT + r"[^.!;\n]{0,60}(δεν ανταποκρίνεται|εκτός λειτουργίας|"
-               r"(υπό|σε) συντήρηση)", re.IGNORECASE),
-    re.compile(_PLATFORM_SUBJECT + r"[^.!;\n]{0,60}(not responding|under maintenance|"
-               r"down for maintenance|is down\b|currently down|experiencing an outage)", re.IGNORECASE),
-]
+_OUTAGE_GAP = r"(?:(?!\b(?:not|no|never|δεν|ουτε|χωρις|μη|που|οποι\w*|that|which|but|αλλα)\b)[^,.;:!?\n]){0,40}?"
+_OUTAGE_PREDICATES = (
+    r"(?:δεν ανταποκρινεται|εκτος λειτουργιας|(?:υπο|σε) συντηρηση|συντηρειται|"
+    r"δεν λειτουργει προσωρινα|προσωρινα δεν λειτουργει|προσωρινα μη διαθεσιμη|"
+    r"not responding|under maintenance|down for maintenance|is down|currently down|"
+    r"temporarily unavailable|temporarily down|experiencing an outage)\b"
+)
+_OUTAGE_RE = re.compile(r"\b" + _PLATFORM_SUBJECTS + r"\b" + _OUTAGE_GAP + _OUTAGE_PREDICATES)
+
+
+def _normalize_for_outage(text: str) -> str:
+    decomposed = unicodedata.normalize("NFKD", text.lower())
+    return "".join(ch for ch in decomposed if not unicodedata.combining(ch))
 
 
 def _claims_platform_outage(text: str) -> bool:
-    """True when a model answer claims the platform itself is down or in maintenance."""
+    """True when a model answer affirmatively claims the platform itself is down or in maintenance."""
     if not text:
         return False
-    return any(pattern.search(text) for pattern in _OUTAGE_PATTERNS)
+    return _OUTAGE_RE.search(_normalize_for_outage(text)) is not None
 
 
 def _outage_claim_response(question: str, lang: str, sources: list[dict]) -> dict:
-    """Honest reply instead of an invented outage claim; keeps the retrieved sources."""
+    """Neutral reply instead of an invented outage claim; keeps the retrieved sources.
+
+    The chat cannot verify platform health, so the reply neither claims an
+    outage nor asserts that everything works.
+    """
     answer = (
-        "Δεν βρήκα επιβεβαιωμένη απάντηση σε αυτή την ερώτηση. Η πλατφόρμα λειτουργεί κανονικά· "
-        "δείτε τις πηγές παρακάτω ή το Wiki."
+        "Δεν βρήκα επιβεβαιωμένη απάντηση σε αυτή την ερώτηση. Δεν έχω επιβεβαιωμένη "
+        "πληροφορία για βλάβη ή συντήρηση της πλατφόρμας· δείτε τις πηγές παρακάτω ή το Wiki."
         if _is_greek(lang)
-        else "I could not find a confirmed answer to this question. The platform is working normally; "
-        "please see the sources below or the Wiki."
+        else "I could not find a confirmed answer to this question. I have no confirmed "
+        "information about an outage or maintenance of the platform; please see the sources below or the Wiki."
     )
     return {
         "question": question,
