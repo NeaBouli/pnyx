@@ -175,6 +175,12 @@ describe("importAccountCredentials", () => {
 });
 
 describe("importAccountCredentials ends demo mode (audit F4)", () => {
+  beforeEach(() => {
+    state.values.clear();
+    state.failOnceForKey = null;
+    vi.clearAllMocks();
+  });
+
   it("removes a stale demo flag when a real identity is imported", async () => {
     state.values.set("is_demo_mode", "true");
     state.checkIdentityStatus.mockResolvedValue({ periferia_id: null, dimos_id: null });
