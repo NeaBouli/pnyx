@@ -230,32 +230,38 @@ You don't have permission to access "/" on this server. Reference #18.63c7cf17.1
 import { correctionBanner } from "./source-resolver";
 
 describe("correctionBanner — Golden Path GH#102", () => {
-  it("WINDOW_24H + not corrected → available text", () => {
-    const r = correctionBanner("WINDOW_24H", false);
+  it("WINDOW_24H + own vote, not corrected → available text", () => {
+    const r = correctionBanner("WINDOW_24H", false, true);
     expect(r.visible).toBe(true);
     expect(r.style).toBe("available");
     expect(r.text).toContain("μπορείτε να διορθώσετε");
   });
 
   it("WINDOW_24H + already corrected → used text", () => {
-    const r = correctionBanner("WINDOW_24H", true);
+    const r = correctionBanner("WINDOW_24H", true, false);
     expect(r.visible).toBe(true);
     expect(r.style).toBe("used");
     expect(r.text).toContain("χρησιμοποιήσει");
   });
 
+  it("WINDOW_24H without an own vote → no correction offer (audit F1)", () => {
+    const r = correctionBanner("WINDOW_24H", false, false);
+    expect(r.visible).toBe(false);
+    expect(r.text).toBe("");
+  });
+
   it("ACTIVE → no banner", () => {
-    const r = correctionBanner("ACTIVE", false);
+    const r = correctionBanner("ACTIVE", false, true);
     expect(r.visible).toBe(false);
   });
 
   it("PARLIAMENT_VOTED → no banner", () => {
-    const r = correctionBanner("PARLIAMENT_VOTED", true);
+    const r = correctionBanner("PARLIAMENT_VOTED", true, false);
     expect(r.visible).toBe(false);
   });
 
   it("OPEN_END → no banner", () => {
-    const r = correctionBanner("OPEN_END", false);
+    const r = correctionBanner("OPEN_END", false, true);
     expect(r.visible).toBe(false);
   });
 });

@@ -432,7 +432,7 @@ export default function VoteScreen({ route, navigation }: Props) {
   const canCorrectVote = hasVoted && billStatus === "WINDOW_24H" && !isCorrected && !tier1LockedByZk;
   const voteLocked = tier1LockedByZk || (hasVoted && !canCorrectVote);
   const showVoteControls = billLoaded && (billStatus === "ACTIVE" || billStatus === "WINDOW_24H");
-  const correctionState = correctionBanner(billStatus, isCorrected);
+  const correctionState = correctionBanner(billStatus, isCorrected, canCorrectVote);
   const canUsePillAsSummary = billSource !== "DIAVGEIA" && readableText(billPill);
   const summaryFallback = sourceUrl && sourceKind === "official"
     ? "Το επίσημο κείμενο συγχρονίζεται — διαθέσιμο σύντομα. Δείτε την επίσημη πηγή."

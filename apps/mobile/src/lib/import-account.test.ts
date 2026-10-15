@@ -173,3 +173,26 @@ describe("importAccountCredentials", () => {
     expect(state.checkIdentityStatus).not.toHaveBeenCalled();
   });
 });
+
+describe("importAccountCredentials ends demo mode (audit F4)", () => {
+  it("removes a stale demo flag when a real identity is imported", async () => {
+    state.values.set("is_demo_mode", "true");
+    state.checkIdentityStatus.mockResolvedValue({ periferia_id: null, dimos_id: null });
+
+    await importAccountCredentials(NEW_ACCOUNT);
+
+    expect(state.values.has("is_demo_mode")).toBe(false);
+  });
+
+  it("restores the demo flag together with the previous identity if the import fails", async () => {
+    state.values.set("is_demo_mode", "true");
+    state.values.set("ekklesia_nullifier", "demo_1");
+    state.failOnceForKey = "onboarding_completed";
+    state.checkIdentityStatus.mockResolvedValue({ periferia_id: null, dimos_id: null });
+
+    await expect(importAccountCredentials(NEW_ACCOUNT)).rejects.toThrow("write failed");
+
+    expect(state.values.get("is_demo_mode")).toBe("true");
+    expect(state.values.get("ekklesia_nullifier")).toBe("demo_1");
+  });
+});

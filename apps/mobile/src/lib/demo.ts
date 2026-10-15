@@ -20,9 +20,19 @@ export async function activateDemo(): Promise<void> {
   await SecureStore.setItemAsync(DEMO_KEY, "true");
 }
 
+/** Prefix of the synthetic nullifier VerifyScreen stores for the demo identity. */
+export const DEMO_NULLIFIER_PREFIX = "demo_";
+
+/**
+ * Demo mode is active only while the stored identity is the synthetic demo
+ * identity. A stale flag next to a real (verified or imported) identity must
+ * never turn a real vote into a simulated one (audit F4, 2026-10-13).
+ */
 export async function isDemoMode(): Promise<boolean> {
   const val = await SecureStore.getItemAsync(DEMO_KEY);
-  return val === "true";
+  if (val !== "true") return false;
+  const nullifier = await SecureStore.getItemAsync("ekklesia_nullifier");
+  return typeof nullifier === "string" && nullifier.startsWith(DEMO_NULLIFIER_PREFIX);
 }
 
 export async function clearDemo(): Promise<void> {
