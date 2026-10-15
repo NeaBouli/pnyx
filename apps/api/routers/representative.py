@@ -263,7 +263,7 @@ async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(g
         raise HTTPException(403, "Μη έγκυρος κωδικός πρόσκλησης.")
     if invite[4]:  # used
         raise HTTPException(403, "Ο κωδικός πρόσκλησης έχει ήδη χρησιμοποιηθεί.")
-    if invite[5] and invite[5] < datetime.now():
+    if invite[5] and invite[5] < datetime.now(timezone.utc).replace(tzinfo=None):  # stored as naive UTC
         raise HTTPException(403, "Ο κωδικός πρόσκλησης έχει λήξει.")
 
     invite_id, role, region, municipality = invite[0], invite[1], invite[2], invite[3]
@@ -286,13 +286,15 @@ async def verify_representative(req: VerifyRequest, db: AsyncSession = Depends(g
 
     # 4. Consume the invite atomically: of two concurrent redemptions only one
     #    passes the used = FALSE condition (EVA-033 review: SELECT-then-UPDATE race).
+    #    Expiry is rechecked against a fresh timestamp taken after the Diavgeia
+    #    call (NOW() would be the transaction start); review of #594.
     consumed = await db.execute(text(
-        "UPDATE rep_invitations SET used = TRUE, used_at = NOW(), ada_number = :ada "
-        "WHERE id = :id AND used = FALSE RETURNING id"
-    ), {"ada": req.ada_number, "id": invite_id})
+        "UPDATE rep_invitations SET used = TRUE, used_at = :now, ada_number = :ada "
+        "WHERE id = :id AND used = FALSE AND (expires_at IS NULL OR expires_at > :now) RETURNING id"
+    ), {"ada": req.ada_number, "id": invite_id, "now": datetime.now(timezone.utc).replace(tzinfo=None)})
     if consumed.fetchone() is None:
         await db.rollback()
-        raise HTTPException(403, "Ο κωδικός πρόσκλησης έχει ήδη χρησιμοποιηθεί.")
+        raise HTTPException(403, "Ο κωδικός πρόσκλησης έχει ήδη χρησιμοποιηθεί ή έχει λήξει.")
 
     # 5. Generate token + auto-detect role from org_label
     token = secrets.token_urlsafe(48)

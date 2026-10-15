@@ -2,7 +2,7 @@
 import hashlib
 import hmac
 import importlib.util
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -35,11 +35,20 @@ class _Row:
         return self._row or []
 
 
+class _Invite:
+    """Shared server-side state of one invite row (simulates the database)."""
+
+    def __init__(self, expires_at):
+        self.used = False
+        self.expires_at = expires_at
+
+
 class _DB:
-    def __init__(self, invite_row=None, consumed=True, list_rows=None):
+    def __init__(self, invite_row=None, consumed=True, list_rows=None, state: "_Invite | None" = None):
         self.invite_row = invite_row
         self.consumed = consumed
         self.list_rows = list_rows or []
+        self.state = state
         self.executed: list[tuple[str, dict]] = []
         self.committed = False
         self.rolled_back = False
@@ -52,7 +61,15 @@ class _DB:
         if "FROM rep_invitations" in sql:
             return _Row(self.invite_row)
         if "UPDATE rep_invitations" in sql and "RETURNING" in sql:
-            return _Row((7,) if self.consumed else None)
+            if self.state is None:
+                return _Row((7,) if self.consumed else None)
+            # Apply only the conditions the SQL actually states.
+            if "used = FALSE" in sql and self.state.used:
+                return _Row(None)
+            if "expires_at > :now" in sql and self.state.expires_at <= params["now"]:
+                return _Row(None)
+            self.state.used = True
+            return _Row((7,))
         return _Row()
 
     async def commit(self):
@@ -158,3 +175,51 @@ def test_no_module_reads_the_plaintext_column() -> None:
     text = source.read_text(encoding="utf-8")
     assert "WHERE invite_code =" not in text
     assert "SELECT id, invite_code," not in text
+
+
+async def _ok_diavgeia(_ada):
+    return {"org_label": "ΔΗΜΟΣ ΚΑΛΑΜΑΤΑΣ", "subject": "x"}
+
+
+def _stale_unused_row(expires_at):
+    # SELECT result as seen by a request: unused, not yet expired.
+    return (7, "Δήμαρχος", None, None, False, expires_at, None, None)
+
+
+@pytest.mark.asyncio
+async def test_second_redemption_of_the_same_code_is_rejected(monkeypatch) -> None:
+    monkeypatch.setattr(representative, "_verify_ada_diavgeia", _ok_diavgeia)
+    expires = datetime.now() + timedelta(hours=1)
+    state = _Invite(expires)
+    # Both requests read the row before either consumed it (the race).
+    first = _DB(invite_row=_stale_unused_row(expires), state=state)
+    second = _DB(invite_row=_stale_unused_row(expires), state=state)
+
+    await representative.verify_representative(VerifyRequest(ada_number="ΨΚΛ4ΟΡ1Γ-7ΑΒ", invite_code=CODE), db=first)
+    with pytest.raises(HTTPException) as exc_info:
+        await representative.verify_representative(VerifyRequest(ada_number="ΨΚΛ4ΟΡ1Γ-7ΑΒ", invite_code=CODE), db=second)
+
+    assert exc_info.value.status_code == 403
+    assert first.committed is True and second.committed is False and second.rolled_back is True
+    assert not any("INSERT INTO representative_tokens" in sql for sql, _ in second.executed)
+
+
+@pytest.mark.asyncio
+async def test_invite_expiring_during_diavgeia_check_is_not_consumed(monkeypatch) -> None:
+    expires = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=1)
+    state = _Invite(expires)
+
+    async def slow_diavgeia(_ada):
+        import asyncio
+        await asyncio.sleep(1.3)  # the invite expires while Diavgeia is queried
+        return {"org_label": "ΔΗΜΟΣ ΚΑΛΑΜΑΤΑΣ", "subject": "x"}
+
+    monkeypatch.setattr(representative, "_verify_ada_diavgeia", slow_diavgeia)
+    db = _DB(invite_row=_stale_unused_row(datetime.now() + timedelta(hours=1)), state=state)
+
+    with pytest.raises(HTTPException) as exc_info:
+        await representative.verify_representative(VerifyRequest(ada_number="ΨΚΛ4ΟΡ1Γ-7ΑΒ", invite_code=CODE), db=db)
+
+    assert exc_info.value.status_code == 403
+    assert state.used is False and db.committed is False
+    assert not any("INSERT INTO representative_tokens" in sql for sql, _ in db.executed)
