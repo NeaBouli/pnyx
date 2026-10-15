@@ -20,6 +20,11 @@ OUTAGE_CLAIMS = [
     "Η πλατφόρμα συντηρείται αυτή τη στιγμή.",
     "Η πλατφόρμα δεν λειτουργεί προσωρινά.",
     "The platform is temporarily unavailable.",
+    # Round 2 review.
+    "Η πλατφόρμα δεν λειτουργεί αυτή τη στιγμή.",
+    "Η πλατφόρμα δεν είναι διαθέσιμη αυτή τη στιγμή.",
+    "The platform isn't responding at the moment.",
+    "Δυστυχώς, η πλατφόρμα βρίσκεται σε συντήρηση.",
 ]
 
 # Legitimate answers that must stay untouched.
@@ -38,6 +43,17 @@ LEGITIMATE = [
     "Η εφαρμογή της απόφασης αφορά κτίριο που είναι σε συντήρηση.",
     "Η πλατφόρμα λειτουργεί, αλλά το σχολείο είναι σε συντήρηση.",
     "The app is currently downloading an update.",
+    # Round 2 review.
+    "The platform isn't under maintenance.",
+    "Δεν ισχύει ότι η πλατφόρμα είναι σε συντήρηση.",
+    "If the platform is under maintenance, try again later.",
+    "Η πλατφόρμα λειτουργεί· το σχολείο είναι σε συντήρηση.",
+    "The platform reports a school is under maintenance.",
+    "Η πλατφόρμα της ΑΑΔΕ είναι σε συντήρηση.",
+    "The iOS app is temporarily unavailable because it has not launched yet.",
+    "Η εφαρμογή  της απόφασης αφορά κτίριο σε συντήρηση.",
+    "Η εφαρμογή\tτης απόφασης αφορά κτίριο σε συντήρηση.",
+    "The platform breaks this down into clear steps.",
 ]
 
 

@@ -807,34 +807,54 @@ def _is_answer_poor(answer: str) -> bool:
 
 # BUG-CHAT-20261013-01: a model answer claimed the platform was down / under
 # maintenance although the API had just answered with HTTP 200. Such claims are
-# never knowledge-base facts, so they are replaced. Matching runs on lowercased,
-# accent-free NFKD text and requires an affirmative statement whose subject is
-# the platform itself: the gap between subject and predicate may not contain a
-# negation, a comma/clause break or a relative pronoun ("that", "που", ...).
-_PLATFORM_SUBJECTS = (
-    r"(?:η |την )?(?:πλατφορμα|εφαρμογη(?! της)(?! του)|ιστοτοπος|ιστοσελιδα|βοηθος|ekklesia(?:\.gr)?|"
-    r"(?:the )?(?:platform|website|app|assistant))"
+# never knowledge-base facts, so they are replaced.
+#
+# Detection is sentence based on lowercased, accent-free NFKD text with
+# collapsed whitespace: a sentence must START with this platform as subject
+# (optionally after "unfortunately"/"currently"), followed only by copula /
+# time words and then an outage predicate. Denials ("isn't under maintenance",
+# "δεν ισχύει ότι ..."), conditionals ("if the platform ..."), other subjects
+# or qualifiers ("η πλατφόρμα της ΑΑΔΕ", "the iOS app", "η εφαρμογή της
+# απόφασης") and statements about something else therefore do not match.
+_OUTAGE_SENTENCE_SPLIT = re.compile(r"[.!?;·\n]+")
+_OUTAGE_LEAD = r"(?:(?:δυστυχως|unfortunately|currently|προς το παρον|αυτη τη στιγμη|at the moment|right now),? )?"
+_OUTAGE_SUBJECT = (
+    r"(?:(?:η |ο |the )?(?:ekklesia(?:_gr)? )?"
+    r"(?:πλατφορμα|ιστοτοπος|ιστοσελιδα|βοηθος|εφαρμογη|platform|website|site|assistant|app)"
+    r"(?: (?:του |της )?ekklesia(?:_gr)?| εκκλησια(?: του εθνους)?)?"
+    r"|ekklesia(?:_gr)?)"
 )
-_OUTAGE_GAP = r"(?:(?!\b(?:not|no|never|δεν|ουτε|χωρις|μη|που|οποι\w*|that|which|but|αλλα)\b)[^,.;:!?\n]){0,40}?"
-_OUTAGE_PREDICATES = (
-    r"(?:δεν ανταποκρινεται|εκτος λειτουργιας|(?:υπο|σε) συντηρηση|συντηρειται|"
-    r"δεν λειτουργει προσωρινα|προσωρινα δεν λειτουργει|προσωρινα μη διαθεσιμη|"
-    r"not responding|under maintenance|down for maintenance|is down|currently down|"
-    r"temporarily unavailable|temporarily down|experiencing an outage)\b"
+_OUTAGE_FILLER = (
+    r"(?:(?:ειναι|βρισκεται|is|currently|temporarily|still|προσωρινα|προς το παρον|"
+    r"αυτη τη στιγμη|at the moment|right now) )*"
 )
-_OUTAGE_RE = re.compile(r"\b" + _PLATFORM_SUBJECTS + r"\b" + _OUTAGE_GAP + _OUTAGE_PREDICATES)
+_OUTAGE_PREDICATE = (
+    r"(?:δεν ανταποκρινεται|εκτος λειτουργιας|(?:υπο|σε) συντηρηση|συντηρειται|δεν λειτουργει|"
+    r"δεν ειναι διαθεσιμ[ηο]|μη διαθεσιμ[ηο]|not responding|isn't responding|is not responding|"
+    r"under maintenance|down for maintenance|down|unavailable|not available|not working|"
+    r"experiencing an outage)(?!\w)"
+)
+_OUTAGE_SENTENCE = re.compile(
+    "^" + _OUTAGE_LEAD + _OUTAGE_SUBJECT + " " + _OUTAGE_FILLER + _OUTAGE_PREDICATE
+)
 
 
 def _normalize_for_outage(text: str) -> str:
-    decomposed = unicodedata.normalize("NFKD", text.lower())
-    return "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+    decomposed = unicodedata.normalize("NFKD", text.lower().replace("\u2019", "'"))
+    folded = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+    # Keep the domain intact for the sentence split below.
+    return folded.replace("ekklesia.gr", "ekklesia_gr")
 
 
 def _claims_platform_outage(text: str) -> bool:
-    """True when a model answer affirmatively claims the platform itself is down or in maintenance."""
+    """True when a sentence affirmatively claims the platform itself is down or in maintenance."""
     if not text:
         return False
-    return _OUTAGE_RE.search(_normalize_for_outage(text)) is not None
+    for sentence in _OUTAGE_SENTENCE_SPLIT.split(_normalize_for_outage(text)):
+        normalized = " ".join(sentence.split())
+        if normalized and _OUTAGE_SENTENCE.search(normalized):
+            return True
+    return False
 
 
 def _outage_claim_response(question: str, lang: str, sources: list[dict]) -> dict:
