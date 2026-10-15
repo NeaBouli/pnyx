@@ -863,9 +863,21 @@ _OUTAGE_SENTENCE = re.compile(
 _GREEK_LETTER = re.compile(r"[\u0370-\u03ff]")
 
 
+# Chat answers are short; bounding the inspected text keeps the guard linear
+# even for adversarial model output.
+_OUTAGE_MAX_CHARS = 8000
+
+
 def _normalize_for_outage(text: str) -> str:
-    decomposed = unicodedata.normalize("NFKD", text.lower().replace("\u2019", "'"))
-    folded = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+    # Per-character NFKD: whole-string NFKD reorders long combining-mark runs
+    # quadratically (Codex review round 7); per character it stays linear.
+    lowered = text[:_OUTAGE_MAX_CHARS].lower().replace("\u2019", "'")
+    folded = "".join(
+        base
+        for ch in lowered
+        for base in unicodedata.normalize("NFKD", ch)
+        if not unicodedata.combining(base)
+    )
     # Markdown emphasis/headings carry no meaning here.
     folded = re.sub(r"[*_#`>]+", " ", folded)
     # Keep the domain intact for the sentence split below.

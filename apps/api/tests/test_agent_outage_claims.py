@@ -160,3 +160,16 @@ def test_many_newlines_are_processed_linearly() -> None:
     started = time.perf_counter()
     assert _claims_platform_outage(text) is False
     assert time.perf_counter() - started < 0.2
+
+
+def test_long_combining_mark_runs_stay_fast() -> None:
+    import time
+
+    text = "a" + "\u0315" * 12000 + "\u0300" * 12000
+    started = time.perf_counter()
+    assert _claims_platform_outage(text) is False
+    assert time.perf_counter() - started < 0.1
+
+
+def test_claim_is_detected_after_normalization_still_works_with_long_prefix() -> None:
+    assert _claims_platform_outage("Η πλατφόρμα είναι σε συντήρηση.") is True
