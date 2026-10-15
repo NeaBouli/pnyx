@@ -183,9 +183,15 @@ export interface CorrectionBannerState {
   style: "available" | "used" | "none";
 }
 
+/**
+ * 24h correction banner. `canCorrect` must reflect a recorded vote of the
+ * current identity (audit F1, 2026-10-13): without one there is nothing to
+ * correct, so the "you can correct your vote" offer is not shown.
+ */
 export function correctionBanner(
   billStatus: string,
   isCorrected: boolean,
+  canCorrect: boolean,
 ): CorrectionBannerState {
   if (billStatus !== "WINDOW_24H") {
     return { visible: false, text: "", style: "none" };
@@ -196,6 +202,9 @@ export function correctionBanner(
       text: "Έχετε χρησιμοποιήσει το δικαίωμα της μίας διόρθωσης της ψήφου σας.",
       style: "used",
     };
+  }
+  if (!canCorrect) {
+    return { visible: false, text: "", style: "none" };
   }
   return {
     visible: true,

@@ -25,6 +25,7 @@ const IMPORT_STATE_KEYS = [
   "pending_user_dimos_id",
   "onboarding_completed",
   "user_profile_completed",
+  "is_demo_mode",
 ] as const;
 
 function requireHex32(value: string, label: string): void {
@@ -80,6 +81,8 @@ export async function importAccountCredentials(
     await SecureStore.deleteItemAsync("ekklesia_nullifier_root");
     await SecureStore.deleteItemAsync("ekklesia_identity_commitment");
     await SecureStore.deleteItemAsync("polis_registered");
+    // An imported identity is real; end any earlier demo session (audit F4).
+    await SecureStore.deleteItemAsync("is_demo_mode");
 
     // Clear any previous identity's cached scope before asking the API. If the
     // primary is unavailable, loadUserBillScope returns this empty, owner-bound
