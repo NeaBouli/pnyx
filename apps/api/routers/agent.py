@@ -805,6 +805,47 @@ def _is_answer_poor(answer: str) -> bool:
     return any(sig in low for sig in bad_signals)
 
 
+# BUG-CHAT-20261013-01: a model answer claimed the platform was down / under
+# maintenance although the API had just answered with HTTP 200. Such claims are
+# never knowledge-base facts, so they are replaced. Only statements about the
+# platform itself match; "payments are paused" or "iOS is not available" do not.
+_PLATFORM_SUBJECT = (
+    r"(πλατφόρμα|εφαρμογή|ιστότοπος|ιστοσελίδα|βοηθός|ekklesia(?:\.gr)?|"
+    r"platform|website|\bapp\b|assistant)"
+)
+_OUTAGE_PATTERNS = [
+    re.compile(_PLATFORM_SUBJECT + r"[^.!;\n]{0,60}(δεν ανταποκρίνεται|εκτός λειτουργίας|"
+               r"(υπό|σε) συντήρηση)", re.IGNORECASE),
+    re.compile(_PLATFORM_SUBJECT + r"[^.!;\n]{0,60}(not responding|under maintenance|"
+               r"down for maintenance|is down\b|currently down|experiencing an outage)", re.IGNORECASE),
+]
+
+
+def _claims_platform_outage(text: str) -> bool:
+    """True when a model answer claims the platform itself is down or in maintenance."""
+    if not text:
+        return False
+    return any(pattern.search(text) for pattern in _OUTAGE_PATTERNS)
+
+
+def _outage_claim_response(question: str, lang: str, sources: list[dict]) -> dict:
+    """Honest reply instead of an invented outage claim; keeps the retrieved sources."""
+    answer = (
+        "Δεν βρήκα επιβεβαιωμένη απάντηση σε αυτή την ερώτηση. Η πλατφόρμα λειτουργεί κανονικά· "
+        "δείτε τις πηγές παρακάτω ή το Wiki."
+        if _is_greek(lang)
+        else "I could not find a confirmed answer to this question. The platform is working normally; "
+        "please see the sources below or the Wiki."
+    )
+    return {
+        "question": question,
+        "answer": _with_disclaimer(answer, lang),
+        "model": "outage-guard",
+        "sources": sources,
+        "lang": lang,
+    }
+
+
 def _output_guard_response(question: str, lang: str) -> dict:
     """Neutral fail-closed reply; never echoes the rejected model text."""
     return {
@@ -859,6 +900,9 @@ async def ask_agent(
         if _has_payment_link(ollama_answer):
             logger.warning("[Hybrid] Ollama answer carried a payment link; replaced")
             return _payments_paused_response(req.question, req.lang)
+        if _claims_platform_outage(ollama_answer):
+            logger.warning("[Hybrid] chat answer path=outage-guard (ollama claimed an outage)")
+            return _outage_claim_response(req.question, req.lang, sources)
 
     # Step 2: If Ollama failed or gave poor answer → Claude fallback
     if _is_answer_poor(ollama_answer):
@@ -869,8 +913,12 @@ async def ask_agent(
         if claude_answer and _has_payment_link(claude_answer):
             logger.warning("[Hybrid] Claude answer carried a payment link; replaced")
             return _payments_paused_response(req.question, req.lang)
+        if claude_answer and _claims_platform_outage(claude_answer):
+            logger.warning("[Hybrid] chat answer path=outage-guard (claude claimed an outage)")
+            return _outage_claim_response(req.question, req.lang, sources)
         if claude_answer:
             model_used = "claude-haiku"
+            logger.warning("[Hybrid] chat answer path=claude")
             return {
                 "question": req.question,
                 "answer": _with_disclaimer(claude_answer, req.lang),
@@ -882,6 +930,7 @@ async def ask_agent(
 
     # Step 3: Return Ollama answer (or error)
     if not ollama_answer:
+        logger.warning("[Hybrid] chat answer path=none (assistant unavailable)")
         fallback = (
             "Ο βοηθός δεν είναι διαθέσιμος αυτή τη στιγμή. Δοκιμάστε ξανά αργότερα."
             if req.lang == "el"
@@ -895,6 +944,7 @@ async def ask_agent(
             "lang": req.lang,
         }
 
+    logger.warning("[Hybrid] chat answer path=ollama")
     return {
         "question": req.question,
         "answer": ollama_answer,
