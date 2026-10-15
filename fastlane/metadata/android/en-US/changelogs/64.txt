@@ -1,0 +1,5 @@
+After voting you can close the dialog and return to the overview.
+Bill tiles show when you have already voted (stored only on your device).
+The 24-hour correction offer now appears only if you have voted.
+Demo mode no longer stays active after a real verification.
+Safer import of test accounts.
