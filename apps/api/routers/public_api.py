@@ -27,6 +27,7 @@ from typing import Annotated, Optional
 import httpx
 
 from database import get_db
+from rate_limit import limiter
 from ip_utils import rate_limit_key_for_ip, redis_fixed_window_limit
 from services.bill_visibility import (
     is_public_bill,
@@ -241,7 +242,8 @@ async def generate_api_key(request: Request, label: str = "ekklesia-client"):
 
 
 @router.get("/keys/status")
-async def api_key_status(x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
+@limiter.limit("10/minute")
+async def api_key_status(x_api_key: Optional[str] = Header(None, alias="X-API-Key"), request: Request = None):
     """Check key status; rate_limit describes only the shared public-data quota.
 
     Unlike dependent public-data reads, an invalid key here returns HTTP 401.
@@ -530,7 +532,8 @@ async def public_cplm(
 
 
 @router.get("/scraper/status")
-async def public_scraper_status(db: AsyncSession = Depends(get_db)):
+@limiter.limit("30/minute")
+async def public_scraper_status(db: AsyncSession = Depends(get_db), request: Request = None):
     """Public scraper & archival health status."""
     import redis.asyncio as aioredis
     import os
@@ -572,13 +575,15 @@ async def public_scraper_status(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/mirrors/status")
-async def public_mirror_status():
+@limiter.limit("30/minute")
+async def public_mirror_status(request: Request = None):
     """Live read-only mirror health for the community page traffic light."""
     return await _build_mirror_status()
 
 
 @router.get("/deepl/usage")
-async def public_deepl_usage():
+@limiter.limit("30/minute")
+async def public_deepl_usage(request: Request = None):
     """Public: aggregate DeepL usage (available/count/limit only; key stays server-side)."""
     api_key = os.getenv("DEEPL_API_KEY", "")
     if not api_key:
@@ -601,7 +606,8 @@ async def public_deepl_usage():
 
 
 @router.post("/share")
-async def record_share():
+@limiter.limit("30/minute")
+async def record_share(request: Request = None):
     """Anonymous share counter — no tracking, just a number."""
     import redis.asyncio as aioredis
     import os

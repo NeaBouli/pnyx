@@ -70,7 +70,7 @@ import r0_inventory
 # and FAQ/roadmap ZK status follows the security-review pause since 2026-10-03.
 APPROVED_WIKI_INVENTORY_HASH = {
     "docs/community.html": "070111774fa4640a4bde4857a2aca7bbf73f0a06db73e748e73c5e045422084f",  # T-9048: scoped contrast, heading semantics and document-language toggle; T-9106: legal-modal claims text
-    "docs/wiki/api.html": "e56012799245533915b72606ffc8955bd4c3ce61f3ba5f9926fd07abb101106c",
+    "docs/wiki/api.html": "96fc5780f70af8945a5f3c7bded3e3a9bb206e806babebd83fb1e95adf807ecf",  # T-9136: signed preflight 120/IP; QR 30/session + 600/IP (EL/EN).
     "docs/wiki/architecture.html": "1af2aa9c102d66887e52627c277ebfea03935a2ff3b772235cf07ed3d4313f0b",
     "docs/wiki/broadcasting.html": "eb345ed4551a94220e47aeb4b40c7c745bf6dfeaa5f330eac6f629a09d31f716",
     "docs/wiki/contributing.html": "bb4048480c3b75cb98ee668305833fe36b2c939f29ef27f1f8bec230c9d49d88",

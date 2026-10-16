@@ -13,11 +13,12 @@ from datetime import datetime, timezone
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database import get_db
+from rate_limit import limiter
 from models import ParliamentBill, BillStatusLog
 from config import settings
 from services.bill_visibility import is_public_bill
@@ -160,7 +161,8 @@ async def _verify_arweave_tx(tx_id: str, attempts: int = 6, delay_sec: float = 5
 
 
 @router.get("/status")
-async def arweave_status():
+@limiter.limit("30/minute")
+async def arweave_status(request: Request = None):
     """
     Status des Arweave Moduls.
     Zeigt ob Wallet konfiguriert ist und Wallet-Adresse (öffentlich).

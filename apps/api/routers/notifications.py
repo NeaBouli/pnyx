@@ -13,6 +13,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from typing import AsyncGenerator, Optional
+from rate_limit import limiter
 from fastapi import APIRouter, Query, Request, WebSocket, WebSocketDisconnect, HTTPException, Depends
 from dependencies import verify_admin_key
 
@@ -77,6 +78,7 @@ from fastapi.responses import StreamingResponse
 
 
 @router.get("/stream")
+@limiter.limit("30/minute")
 async def event_stream(
     request: Request,
     bill_id: Optional[str] = Query(None),

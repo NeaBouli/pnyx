@@ -27,7 +27,9 @@ def get_rate_limit_key(request: Request) -> str:
 # FastAPI 0.142.2 includes routers via _IncludedRouter (no top-level endpoint).
 # SlowAPI 0.1.10 skips default_limits for those routes. The 60/min default is
 # NOT an API-wide guarantee: router writes need an explicit decorator or a
-# handler-level Redis guard. Keep the existing default policy unchanged.
+# handler-level Redis guard. tests/test_rate_limit_coverage.py audits the
+# registered app, with reasoned exceptions for Redis guards/provider callbacks.
+# Keep the existing default policy unchanged.
 limiter = Limiter(
     key_func=get_rate_limit_key,
     default_limits=["60/minute"],
@@ -36,3 +38,15 @@ limiter = Limiter(
     key_prefix="ekklesia-api",
     enabled=os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true",
 )
+
+
+async def enforce_route_limit(request: Request) -> None:
+    """Run the endpoint's registered policy before expensive dependencies.
+
+    Install as a route dependency before authentication. Reuse SlowAPI's
+    storage/fallback and completion flag so the endpoint wrapper does not
+    consume a second request from the same bucket.
+    """
+    if limiter.enabled and not getattr(request.state, "_rate_limiting_complete", False):
+        limiter._check_request_limit(request, request.scope["endpoint"], False)
+        request.state._rate_limiting_complete = True
