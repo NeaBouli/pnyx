@@ -313,6 +313,7 @@ async def test_zk_vote_write_lifecycle(monkeypatch, zk_mode, bill_status):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("bill_status", list(BillStatus))
 async def test_zk_opt_in_write_lifecycle(monkeypatch, voter, zk_mode, bill_status):
+    monkeypatch.setenv("SERVER_SALT", "s" * 64)
     key, identity = voter
     signature = key.sign(f"zk_opt_in:{BILL_ID}:123456789:{NULLIFIER}".encode()).signature.hex()
     db = _Db([identity, _zk_bill(bill_status, zk_mode), None, None])
