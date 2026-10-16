@@ -4,6 +4,8 @@
  * Copyright (c) 2026 V-Labs Development — MIT License
  */
 import axios from "axios";
+import { buildVoteMessage } from "./crypto";
+import type { WebSigner } from "./keystore";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.ekklesia.gr";
 
@@ -12,6 +14,53 @@ export const api = axios.create({
   timeout: 10000,
   headers: { "Content-Type": "application/json" },
 });
+
+/** Read signed server state so a retry never consumes the one correction. */
+export async function submitSignedVote(
+  billId: string,
+  choice: string,
+  signer: WebSigner & { nullifier: string },
+): Promise<{ response: Response; isCorrection: boolean }> {
+  const timestampMs = Date.now();
+  const statusSignature = await signer.sign(
+    `vote-status-read:v1:${JSON.stringify([billId, signer.nullifier, timestampMs])}`,
+  );
+  const statusResponse = await fetch(`${API_URL}/api/v1/vote/${encodeURIComponent(billId)}/status`, {
+    method: "POST",
+    cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      nullifier_hash: signer.nullifier,
+      timestamp_ms: timestampMs,
+      signature_hex: statusSignature,
+    }),
+  });
+  if (!statusResponse.ok) return { response: statusResponse, isCorrection: false };
+  const voteStatus: { status: string; has_voted: boolean; vote: string | null } = await statusResponse.json();
+  const vote = choice.toUpperCase();
+  const isCorrection = voteStatus.status === "WINDOW_24H"
+    && voteStatus.has_voted && voteStatus.vote !== vote;
+  // /correct verifies the same canonical bill:VOTE:nullifier payload as POST.
+  const signatureHex = await signer.sign(buildVoteMessage({
+    bill_id: billId, vote, nullifier_hash: signer.nullifier,
+  }));
+  const response = await fetch(
+    isCorrection
+      ? `${API_URL}/api/v1/vote/${encodeURIComponent(billId)}/correct`
+      : `${API_URL}/api/v1/vote`,
+    {
+      method: isCorrection ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nullifier_hash: signer.nullifier,
+        bill_id: billId,
+        vote,
+        signature_hex: signatureHex,
+      }),
+    },
+  );
+  return { response, isCorrection };
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

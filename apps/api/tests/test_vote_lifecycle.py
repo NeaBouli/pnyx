@@ -1,4 +1,5 @@
-"""T-9127: archived bills retain results/consensus but accept no citizen votes."""
+"""Citizen vote lifecycle: closed bills, one correction and immutable retries."""
+from datetime import datetime
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -150,13 +151,15 @@ async def test_citizen_vote_write_lifecycle(
         ), db)
 
     closed = bill_status not in (BillStatus.ACTIVE, BillStatus.WINDOW_24H)
-    if closed or (has_vote and bill_status == BillStatus.ACTIVE):
+    if closed or has_vote:
         with pytest.raises(HTTPException) as exc:
             await submit()
         assert exc.value.status_code == (400 if closed else 409)
         if closed:
             assert exc.value.detail.startswith("Η ψηφοφορία έχει κλείσει")
             assert len(db.executed) == 2  # no vote lookup or write
+        elif bill_status == BillStatus.WINDOW_24H:
+            assert "λειτουργία διόρθωσης" in exc.value.detail
         assert db.added == []
         assert db.commits == 0
         assert redis.claims == 0
@@ -168,16 +171,107 @@ async def test_citizen_vote_write_lifecycle(
     result = await submit()
     assert (result["success"] if endpoint == "qr" else result.success) is True
     assert db.commits == 1
-    if stored is not None:
-        assert db.added == []
-        assert stored.vote == VoteChoice.NO
-        assert stored.signature_hex != "original"
-    else:
-        assert len(db.added) == 1
-        assert db.added[0].vote == VoteChoice.NO
+    assert len(db.added) == 1
+    assert db.added[0].vote == VoteChoice.NO
     if endpoint == "qr":
         assert redis.claims == 1
         assert redis.data["status"] == "used"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("endpoint", ["signed", "qr"])
+@pytest.mark.parametrize("bill_status", [BillStatus.ACTIVE, BillStatus.WINDOW_24H])
+@pytest.mark.parametrize("corrected", [False, True])
+@pytest.mark.parametrize("level", LEVELS)
+async def test_vote_identical_retry_never_mutates(
+    monkeypatch, voter, endpoint, bill_status, corrected, level,
+):
+    key, identity = voter
+    stored = _stored_vote()
+    stored.is_correction = corrected
+    stored.original_vote = "NO" if corrected else None
+    stored.corrected_at = datetime(2026, 10, 16) if corrected else None
+    # Even old Tier-1 metadata must survive a no-op with the flag disabled.
+    stored.pk_eph = "1" * 64
+    stored.vote_nullifier = "2" * 64
+    stored.linkage_tag = "3" * 64
+    stored.timestamp_ms = 1
+    before = dict(vars(stored))
+    db = _Db([identity, _bill(bill_status, level), stored])
+    redis = await _install_redis(monkeypatch, identity)
+
+    async def submit():
+        if endpoint == "qr":
+            return await polis_qr.qr_web_vote(polis_qr.QRVoteRequest(
+                session_id=SESSION_ID, bill_id=BILL_ID, vote="YES",
+            ), db)
+        signature = key.sign(f"{BILL_ID}:YES:{NULLIFIER}".encode()).signature.hex()
+        return await voting.submit_vote(voting.VoteRequest(
+            nullifier_hash=NULLIFIER, bill_id=BILL_ID, vote="yes", signature_hex=signature,
+        ), db)
+
+    if bill_status == BillStatus.ACTIVE:
+        with pytest.raises(HTTPException) as exc:
+            await submit()
+        assert exc.value.status_code == 409
+        assert redis.claims == 0
+    else:
+        result = await submit()
+        assert (result["vote"] if endpoint == "qr" else result.vote) == "YES"
+        if endpoint == "qr":
+            assert redis.claims == 1
+            assert redis.data["status"] == "used"
+    assert vars(stored) == before
+    assert db.commits == 0
+    assert db.added == []
+    assert "FOR UPDATE" in str(db.executed[-1])
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("endpoint", ["signed", "qr"])
+@pytest.mark.parametrize("level", LEVELS)
+async def test_post_cannot_overwrite_an_already_corrected_vote(monkeypatch, voter, endpoint, level):
+    key, identity = voter
+    stored = _stored_vote()
+    stored.is_correction = True
+    stored.original_vote = "NO"
+    before = dict(vars(stored))
+    db = _Db([identity, _bill(BillStatus.WINDOW_24H, level), stored])
+    redis = await _install_redis(monkeypatch, identity)
+    with pytest.raises(HTTPException) as exc:
+        if endpoint == "qr":
+            await polis_qr.qr_web_vote(polis_qr.QRVoteRequest(
+                session_id=SESSION_ID, bill_id=BILL_ID, vote="NO",
+            ), db)
+        else:
+            signature = key.sign(f"{BILL_ID}:NO:{NULLIFIER}".encode()).signature.hex()
+            await voting.submit_vote(voting.VoteRequest(
+                nullifier_hash=NULLIFIER, bill_id=BILL_ID, vote="NO", signature_hex=signature,
+            ), db)
+    assert exc.value.status_code == 409
+    assert "λειτουργία διόρθωσης" in exc.value.detail
+    assert vars(stored) == before
+    assert db.commits == 0
+    assert db.added == []
+    assert redis.claims == 0
+    assert redis.data["status"] == "authenticated"
+
+
+@pytest.mark.asyncio
+async def test_identical_signed_vote_retry_still_requires_valid_identity_signature(voter):
+    key, identity = voter
+    stored = _stored_vote()
+    before = dict(vars(stored))
+    db = _Db([identity, _bill(BillStatus.WINDOW_24H, GovernanceLevel.NATIONAL), stored])
+    signature = key.sign(f"{BILL_ID}:NO:{NULLIFIER}".encode()).signature.hex()
+    with pytest.raises(HTTPException) as exc:
+        await voting.submit_vote(voting.VoteRequest(
+            nullifier_hash=NULLIFIER, bill_id=BILL_ID, vote="YES", signature_hex=signature,
+        ), db)
+    assert exc.value.status_code == 401
+    assert vars(stored) == before
+    assert db.commits == 0
+    assert db.added == []
 
 
 @pytest.mark.asyncio
@@ -206,6 +300,21 @@ async def test_vote_correction_remains_window_only(voter, bill_status, level):
         assert stored.is_correction is True
         assert stored.original_vote == "YES"
         assert db.commits == 1
+        corrected = dict(vars(stored))
+        # A retry of /correct is still a second correction, even with the same choice.
+        for choice in ("NO", "YES"):
+            signature = key.sign(f"{BILL_ID}:{choice}:{NULLIFIER}".encode()).signature.hex()
+            retry = voting.CorrectionRequest(
+                nullifier_hash=NULLIFIER, bill_id=BILL_ID, vote=choice, signature_hex=signature,
+            )
+            retry_db = _Db([_bill(bill_status, level), identity, stored])
+            with pytest.raises(HTTPException) as exc:
+                await voting.correct_vote(BILL_ID, retry, retry_db)
+            assert exc.value.status_code == 409
+            assert "μόνο μία διόρθωση" in exc.value.detail
+            assert vars(stored) == corrected
+            assert retry_db.commits == 0
+            assert "FOR UPDATE" in str(retry_db.executed[-1])
     assert db.added == []
 
 

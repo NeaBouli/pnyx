@@ -447,21 +447,45 @@ def _stored_vote(*, tier1: bool, timestamp_ms: int | None = None):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("stored_tier1", [True, False])
-async def test_resubmit_refuses_tier_switch(stored_tier1):
+async def test_correction_refuses_tier_switch(stored_tier1):
     stored = _stored_vote(tier1=stored_tier1, timestamp_ms=1)
     snapshot = dict(vars(stored))
     if stored_tier1:
-        req, values = _request(vote="NO"), [_identity(), _window_bill(), stored]
+        req, values = _request(vote="NO"), [_window_bill(), _identity(), stored]
     else:
         req = _request(vote="NO", **_tier1_fields(sign_choice="NO"))
-        values = [_identity(), _window_bill(), None, stored]
+        values = [_window_bill(), _identity(), stored, None]
+    req = voting.CorrectionRequest(**req.model_dump())
     db = _FakeDb(values)
     with pytest.raises(HTTPException) as exc:
-        await voting.submit_vote(req, db)
+        await voting.correct_vote(BILL_ID, req, db)
     assert exc.value.status_code == 409
     assert db.commits == 0
     assert vars(stored) == snapshot
-    assert "FOR UPDATE" in str(db.executed[-1])
+    assert "FOR UPDATE" in str(db.executed[2])
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("valid_signature", [False, True])
+async def test_identical_tier1_retry_validates_payload_without_requiring_new_timestamp(valid_signature):
+    fields = _tier1_fields()
+    stored = _stored_vote(tier1=True, timestamp_ms=fields["timestamp_ms"])
+    stored.pk_eph = fields["pk_eph"]
+    snapshot = dict(vars(stored))
+    if not valid_signature:
+        fields["tier1_signature_hex"] = "0" * 128
+    db = _FakeDb([_identity(), _window_bill(), None, stored])
+    if valid_signature:
+        result = await voting.submit_vote(_request(**fields), db)
+        assert result.success is True
+        assert result.vote == "YES"
+    else:
+        with pytest.raises(HTTPException) as exc:
+            await voting.submit_vote(_request(**fields), db)
+        assert exc.value.status_code == 401
+    assert vars(stored) == snapshot
+    assert db.commits == 0
+    assert db.added == []
 
 
 @pytest.mark.asyncio
@@ -534,14 +558,18 @@ def test_tier1_metadata_flag_defaults_off(monkeypatch) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("send_tier1", [False, True])
-async def test_stored_tier1_row_can_be_updated_with_flag_off(monkeypatch, send_tier1):
+async def test_post_cannot_update_stored_tier1_row_with_flag_off(monkeypatch, send_tier1):
     monkeypatch.delenv("TIER1_METADATA_ACCEPTED", raising=False)
     stored = _stored_vote(tier1=True, timestamp_ms=1)
+    snapshot = dict(vars(stored))
     extra = _tier1_fields(sign_choice="NO") if send_tier1 else {}
     db = _FakeDb([_identity(), _window_bill(), stored])
-    await voting.submit_vote(_request(vote="NO", **extra), db)
-    assert db.commits == 1
-    assert (stored.pk_eph, stored.vote_nullifier, stored.linkage_tag, stored.timestamp_ms) == (None, None, None, None)
+    with pytest.raises(HTTPException) as exc:
+        await voting.submit_vote(_request(vote="NO", **extra), db)
+    assert exc.value.status_code == 409
+    assert "λειτουργία διόρθωσης" in exc.value.detail
+    assert db.commits == 0
+    assert vars(stored) == snapshot
 
 
 @pytest.mark.asyncio

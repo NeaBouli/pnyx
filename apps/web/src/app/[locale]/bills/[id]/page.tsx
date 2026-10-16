@@ -3,8 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { useLocale } from "next-intl";
 import Link from "next/link";
-import { ekklesia, Bill, BillResults } from "@/lib/api";
-import { buildVoteMessage } from "@/lib/crypto";
+import { ekklesia, Bill, BillResults, submitSignedVote } from "@/lib/api";
 import { getSigner } from "@/lib/keystore";
 import StatusBadge from "@/components/StatusBadge";
 import RelevanceButtons from "@/components/RelevanceButtons";
@@ -63,7 +62,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
   const [results, setResults]   = useState<BillResults | null>(null);
   const [loading, setLoading]   = useState(true);
   const [expanded, setExpanded] = useState<"short" | "long">("short");
-  const [voteStatus, setVoteStatus] = useState<"idle" | "needs_key" | "voted" | "already" | "invalid_sig" | "error">("idle");
+  const [voteStatus, setVoteStatus] = useState<"idle" | "needs_key" | "voted" | "already" | "already_corrected" | "invalid_sig" | "error">("idle");
   const [selectedVote, setSelectedVote] = useState<string | null>(null);
   const [voteLoading, setVoteLoading] = useState(false);
   const [voteError, setVoteError] = useState<string | null>(null);
@@ -97,24 +96,15 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
       setVoteError(null);
       setSelectedVote(choice);
       try {
-        const signatureHex = await signer.sign(buildVoteMessage({
-          bill_id: billId,
-          vote: choice,
-          nullifier_hash: nullifier,
-        }));
-        const res = await fetch(`${API_URL}/api/v1/vote`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            nullifier_hash: nullifier,
-            bill_id: billId,
-            vote: choice,
-            signature_hex: signatureHex,
-          }),
-        });
+        const { response: res, isCorrection } = await submitSignedVote(billId, choice, { ...signer, nullifier });
         if (res.ok) {
           setVoteStatus("voted");
           try { const r = await ekklesia.getResults(billId); setResults(r.data); } catch {}
+        } else if (res.status === 409 && isCorrection) {
+          const e = await res.json().catch(() => ({}));
+          if (typeof e.detail === "string" && e.detail.startsWith("Η διόρθωση έχει ήδη χρησιμοποιηθεί")) {
+            setVoteStatus("already_corrected");
+          } else { setVoteError(e.detail || `Error ${res.status}`); setVoteStatus("error"); }
         } else if (res.status === 409) { setVoteStatus("already"); }
         else if (res.status === 401) { setVoteStatus("invalid_sig"); }
         else { const e = await res.json().catch(() => ({})); setVoteError(e.detail || `Error ${res.status}`); setVoteStatus("error"); }
@@ -382,12 +372,12 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                 <button
                   key={opt.value}
                   onClick={() => handleVoteClick(opt.value)}
-                  disabled={voteLoading || voteStatus === "voted"}
+                  disabled={voteLoading || voteStatus === "voted" || voteStatus === "already_corrected"}
                   className={`py-4 px-4 rounded-xl font-semibold border-2 transition-all ${opt.color} ${
                     selectedVote === opt.value
                       ? "ring-2 ring-blue-600 scale-105"
                       : "opacity-90"
-                  } ${(voteLoading || voteStatus === "voted") ? "opacity-50 cursor-not-allowed" : ""}`}
+                  } ${(voteLoading || voteStatus === "voted" || voteStatus === "already_corrected") ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   {voteLoading && selectedVote === opt.value
                     ? (locale === "el" ? "Υπογραφή..." : "Signing...")
@@ -433,6 +423,14 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                 {locale === "el"
                   ? "Έχετε ήδη ψηφίσει για αυτό το νομοσχέδιο."
                   : "You have already voted on this bill."}
+              </div>
+            )}
+
+            {voteStatus === "already_corrected" && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-yellow-800 text-sm">
+                {locale === "el"
+                  ? "Η διόρθωση έχει ήδη χρησιμοποιηθεί. Επιτρέπεται μόνο μία διόρθωση ανά ψηφοφορία."
+                  : "You have already corrected this vote. Only one correction is allowed per vote."}
               </div>
             )}
 
