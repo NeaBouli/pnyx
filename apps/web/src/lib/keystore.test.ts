@@ -371,3 +371,32 @@ describe("review round 4 (Codex)", () => {
     expect((await loadProfile({ aesKey: k })).selectedModel).toBe("left-right"); // now encrypted with k
   });
 });
+
+describe("review round 5 (Codex)", () => {
+  it("a transient legacy decrypt failure keeps the legacy key and succeeds on retry", async () => {
+    legacyBrowser();
+    await saveProfile({ ...createEmptyProfile(), selectedModel: "left-right" } as ReturnType<typeof createEmptyProfile>, PRIV);
+    const realDecrypt = crypto.subtle.decrypt.bind(crypto.subtle);
+    let calls = 0;
+    vi.spyOn(crypto.subtle, "decrypt").mockImplementation(((...args: Parameters<SubtleCrypto["decrypt"]>) => {
+      calls += 1;
+      // 1st call: "already migrated?" probe with the new key (fails anyway);
+      // 2nd call: the legacy decrypt -> transient failure.
+      if (calls === 2) return Promise.reject(new DOMException("transient", "OperationError"));
+      return realDecrypt(...args);
+    }) as SubtleCrypto["decrypt"]);
+    expect(await migrateLegacyWebKey(deps())).toBe("retry_later");
+    expect(ls.get("ekklesia_private_key")).toBe(PRIV);
+    vi.restoreAllMocks();
+    expect(await migrateLegacyWebKey(deps())).toBe("migrated");
+    const { loadProfile } = await import("./compass/storage");
+    expect((await loadProfile({ aesKey: (await getCompassKey())! })).selectedModel).toBe("left-right");
+  });
+
+  it("a structurally broken Compass blob does not block the migration forever", async () => {
+    legacyBrowser();
+    ls.set("ekklesia_compass_encrypted", "not*base64");
+    expect(await migrateLegacyWebKey(deps())).toBe("migrated");
+    expect(ls.get("ekklesia_compass_encrypted")).toBe("not*base64"); // left untouched
+  });
+});

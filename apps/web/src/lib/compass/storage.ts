@@ -105,12 +105,22 @@ async function decryptWithAny(blob: string, keys: CompassKeys): Promise<string |
   return null;
 }
 
+function isStructurallyValidBlob(blob: string): boolean {
+  try {
+    return atob(blob).length >= 12 + 16; // IV + GCM tag at minimum
+  } catch {
+    return false;
+  }
+}
+
 /**
  * EVA-003 migration step: move the stored ciphertext from the legacy
  * HKDF key to the new key. Idempotent. Returns false only if the blob is
  * readable with the legacy key but could not be re-encrypted/stored, so the
- * caller keeps the legacy key. An absent, already migrated or unreadable blob
- * (never decryptable with either key) returns true and is left untouched.
+ * caller keeps the legacy key. An absent or already migrated blob returns
+ * true; so does a STRUCTURALLY broken blob (not base64 / shorter than IV+tag),
+ * which no key can ever read. A failed AES-GCM decrypt is ambiguous (wrong key
+ * or transient error) and returns false, so the legacy key is kept for retry.
  */
 export async function reencryptLegacyCompassBlob(legacyPrivateKeyHex: string, aesKey: CryptoKey): Promise<boolean> {
   let blob: string | null;
@@ -132,11 +142,12 @@ export async function reencryptLegacyCompassBlob(legacyPrivateKeyHex: string, ae
   } catch {
     return false; // operational crypto failure: keep the legacy key and retry
   }
+  if (!isStructurallyValidBlob(blob)) return true; // corrupt: unreadable with any key
   let json: string;
   try {
     json = await decrypt(blob, legacyKey);
   } catch {
-    return true; // genuinely not decryptable with the legacy key (corrupt/foreign)
+    return false; // ambiguous decrypt failure: keep the legacy key and retry
   }
   try {
     const next = await encrypt(json, aesKey);
